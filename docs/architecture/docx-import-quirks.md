@@ -81,8 +81,11 @@ does; `Sections`/paragraph grouping are computed exactly as before and are never
 chapter list is kept, and a notice ("The table of contents listed N entries; M matched a chapter in the manuscript.") is added
 whenever the counts differ either way. No real user manuscript with a Word TOC field was available when this shipped; it is
 verified against a hand-built OOXML fixture with real `_Toc` bookmarks (`docx_test.go`), not a real one - treat it as **awaiting a
-real manuscript**. Markdown does not yet read its own table of contents (a `[text](#slug)` link list); chapters there still come
-only from the heading structure.
+real manuscript**. Markdown reads its own table of contents the same way ([ADR 0240](../adr/0240-a-markdown-table-of-contents-is-the-first-list-of-in-file-heading-links-matched-as-a-docx-one-is.md),
+`markdown_toc.go`). The TOC is the first list of two or more items that are each one link to an in-file anchor
+(`- [Chapter One](#chapter-one)`), read at its outermost level. Its anchors are matched to the headings' GitHub-style slugs
+(lower-cased, punctuation dropped, spaces to hyphens, `-1`/`-2` on a repeat) in place of Word's bookmarks. The same 80% rule, the
+same notice and the same "only `chapterTitles` changes" apply, through the one shared `applyTableOfContents`.
 
 ## Adding a quirk
 

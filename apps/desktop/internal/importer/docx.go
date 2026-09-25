@@ -479,19 +479,7 @@ func docxWithProgress(path string, progress Progress) (Draft, error) {
 	// heading (S6): only the exposed chapterTitles list changes here, never Sections/grouping, so a document without a TOC (or
 	// whose TOC only weakly matches) is entirely unaffected. Title and Contents were never in `titles`, so they are naturally
 	// excluded whenever the TOC does not name them, without special-casing either.
-	if len(tocEntries) > 0 {
-		matchedTitles, matchedCount := tocMatchedTitles(tocEntries, titles, bookmarkChapter)
-		if float64(matchedCount)/float64(len(tocEntries)) >= tocAuthorityThreshold {
-			draft.ChapterTitles = matchedTitles
-		}
-		if matchedCount != len(tocEntries) {
-			word := "entries"
-			if len(tocEntries) == 1 {
-				word = "entry"
-			}
-			notices = append(notices, fmt.Sprintf("The table of contents listed %d %s; %d matched a chapter in the manuscript.", len(tocEntries), word, matchedCount))
-		}
-	}
+	notices = applyTableOfContents(&draft, notices, tocEntries, titles, bookmarkChapter)
 	draft.Notices = notices
 	progress.report(95, "Found %d chapters in %d sections", len(titles), len(draft.Sections))
 	return draft, nil
