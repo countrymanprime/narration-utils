@@ -1,9 +1,12 @@
-"""Seek control channel for the Manuscript Teleprompter (see script_tracker.py;
-ADR: the control channel). The desktop host tells a running sidecar to move
-the tracker to a chosen script word by appending one JSON object per line to
-a plain sentinel file (`--control-file PATH`):
+"""Control channel for the Manuscript Teleprompter (see script_tracker.py;
+ADR 0104, ADR 0248). The desktop host tells a running sidecar to move the
+tracker to a chosen script word, or to pause and resume listening, by
+appending one JSON object per line to a plain sentinel file
+(`--control-file PATH`):
 
     {"cmd": "seek", "word": 42}
+    {"cmd": "pause"}
+    {"cmd": "resume"}
 
 This is the same sentinel-file pattern `--stop-file` already uses (ADR 0022:
 no loopback server, no port): the host appends, and this module tails the
@@ -66,3 +69,9 @@ def seek_word(command: dict) -> int | None:
         return None
     word = command.get("word")
     return word if isinstance(word, int) and not isinstance(word, bool) else None
+
+
+def pause_state(command: dict) -> bool | None:
+    """True for `{"cmd": "pause"}`, False for `{"cmd": "resume"}`, None for
+    anything else - never raises, like seek_word."""
+    return {"pause": True, "resume": False}.get(command.get("cmd")) if isinstance(command.get("cmd"), str) else None

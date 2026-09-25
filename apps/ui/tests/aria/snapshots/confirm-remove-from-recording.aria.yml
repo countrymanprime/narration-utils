@@ -1,0 +1,16 @@
+# The page behind a modal is aria-hidden, so <body> holds the alert dialog and the two empty toast live regions, nothing else.
+- /children: equal
+# The two toast live regions stay in the tree on purpose: Base UI leaves live regions exposed behind a modal, so an error raised
+# from inside a dialog is still announced. They are empty here, and they are the only thing under <main>.
+- main:
+  - alert
+  - status
+- alertdialog "Remove Chapter 1 from recording?":
+  - heading "Remove Chapter 1 from recording?" [level=2]
+  - button "Close"
+  - paragraph: It leaves the chapter table, totals, the reader and the teleprompter. Its text stays in the manuscript, and its track link is cleared. You can restore it below the table.
+  - radiogroup "What is it?":
+    - radio "Not a chapter" [checked]
+    - radio "Front matter"
+  - button "Cancel"
+  - button "Remove from recording"

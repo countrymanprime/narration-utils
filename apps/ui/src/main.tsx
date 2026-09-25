@@ -59,6 +59,10 @@ const mockManuscriptMixed = mockParams.get('mockManuscript') === 'mixed';
 // through the first chapter, as a session the host kept running (`flagged`: further in, with suspected flags raised);
 // `ended` boots one that already stopped itself at the end of the chapter (the host's auto-stop).
 const mockTeleprompter = (['listening', 'waiting', 'done', 'ended', 'flagged'] as const).find((seed) => seed === mockParams.get('mockTeleprompter'));
+// `?mockLevel=-18` makes every microphone level the teleprompter mock sends that RMS in dBFS (-100 to 0), so the level meter
+// holds still for a capture (read-aloud-control-bar.prd.md Phase 4).
+const mockLevelParam = Number(mockParams.get('mockLevel') ?? Number.NaN);
+const mockLevel = Number.isFinite(mockLevelParam) && mockLevelParam >= -100 && mockLevelParam <= 0 ? mockLevelParam : undefined;
 // `?mockResume=agree|disagree|prompter_only|low_confidence|complete|not_found|ambiguous|none|no_recording|source_missing|source_unsupported|error`
 // makes the read-aloud dialog's resume prompt (read-aloud-resume-from-daw.prd.md Phase 1) show that state for any chapter,
 // so each can be seen without a REAPER project, a recording or a Whisper run.
@@ -225,6 +229,7 @@ const mockInitial = {
   ...(mockPreviewError ? { previewError: mockPreviewError } : {}),
   ...(mockTeleprompter ? { teleprompter: mockTeleprompter } : {}),
   ...(mockNoDevices ? { teleprompterDevices: [] } : {}),
+  ...(mockLevel === undefined ? {} : { teleprompterLevel: mockLevel }),
   ...(mockResume ? { resume: mockResume } : {}),
   ...(mockRemoved ? { removedChapter: true } : {}),
   ...(mockChapterSync ? { chapterSync: mockChapterSync } : {}),

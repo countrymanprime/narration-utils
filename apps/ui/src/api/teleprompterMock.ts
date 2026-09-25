@@ -79,13 +79,22 @@ type Deps = {
   devices: TeleprompterDevice[];
   /** Which resume card state `teleprompterLocate` answers (see `MockResumeSeed`); unset, the mock project's tracks decide. */
   resume?: MockResumeSeed;
+  /** `?mockLevel=`: every level the mock sends is this RMS in dBFS (a still meter for a capture); unset, it moves like speech. */
+  level?: number;
 };
+
+// A level as `levels.py` sends it: the peak sits about 9 dB over the RMS (a sine is 3 dB; speech is peakier), both in [-100, 0].
+function mockLevelEvent(rms: number): TeleprompterEvent {
+  const clamp = (value: number) => Math.round(Math.min(0, Math.max(-100, value)) * 10) / 10;
+  return { type: 'level', peak: clamp(rms + 9), rms: clamp(rms) };
+}
 
 const idle: TeleprompterState = {
   phase: 'idle',
   message: 'Choose a chapter to start the teleprompter.',
   engine: null,
   chapter: null,
+  paused: false,
   script: null,
   position: null,
 };
@@ -295,6 +304,11 @@ export function createTeleprompterMock(deps: Deps): TeleprompterApi {
   let timers: ReturnType<typeof setTimeout>[] = [];
   let autoStop: ReturnType<typeof setTimeout> | undefined;
   let seeding: Promise<void> | undefined;
+  let metering = false;
+  // The words of the session running now, so a resume replays on from where the pause left it.
+  let sessionWords: string[] = [];
+  // The replay's steps carry a level each (no timer of their own), so a session's meter moves and ends with it.
+  const levelAt = (step: number) => mockLevelEvent(deps.level ?? -24 + 6 * Math.sin(step * 1.7));
 
   const clone = (): TeleprompterState => JSON.parse(JSON.stringify(state));
   const publish = () => stateSubscribers.forEach((notify) => notify(clone()));
@@ -332,6 +346,11 @@ export function createTeleprompterMock(deps: Deps): TeleprompterApi {
     timers = [];
     cancelAutoStop();
   };
+  const stopMeter = () => {
+    if (!metering) return;
+    metering = false;
+    emit({ type: 'meter_stopped', error: null });
+  };
   const findChapter = (query: string) => deps.chapters().find((chapter) => chapter.id === query || chapter.title === query);
   type Planned = { id: string; built: ReturnType<typeof buildScript> };
   const planChapter = (query: string): Planned => {
@@ -353,7 +372,7 @@ export function createTeleprompterMock(deps: Deps): TeleprompterApi {
     const total = words.length;
     const seconds = Math.min(MAX_REPLAY_SECONDS, Math.max(MIN_REPLAY_SECONDS, (total - from) * REPLAY_SECONDS_PER_WORD));
     const scale = (value: number) => from + Math.round((value / recording.tokens) * (total - from));
-    for (const { t, event } of recording.events) {
+    for (const [step, { t, event }] of recording.events.entries()) {
       const at = (t / recordingSeconds) * seconds;
       if (event.type === 'flag') {
         timers.push(setTimeout(() => emit(scaleFlag(event, scale)), at * 1000));
@@ -364,6 +383,7 @@ export function createTeleprompterMock(deps: Deps): TeleprompterApi {
       const scaled: TeleprompterPosition = { ...event, read, committed: scale(event.committed), skipped: skipped && skipped[0] < skipped[1] ? skipped : null };
       timers.push(
         setTimeout(() => {
+          emit(levelAt(step));
           const heard = words.slice(Math.max(0, read - HEARD_WORDS), read);
           if (heard.length > 0) emit({ type: 'partial', segment: 0, words: heard.map((word) => ({ word, start: at, end: at })) });
           emit(scaled);
@@ -379,7 +399,8 @@ export function createTeleprompterMock(deps: Deps): TeleprompterApi {
     await deps.ready;
     const chapter = deps.chapters()[0];
     if (!chapter || !deps.seed) return;
-    const { script } = buildScript(chapter, deps.paragraphs());
+    const { script, words } = buildScript(chapter, deps.paragraphs());
+    sessionWords = words;
     const firstParagraph = script.spans[1]?.start ?? 0;
     const atEnd = deps.seed === 'done' || deps.seed === 'ended';
     const into = deps.seed === 'flagged' ? FLAGGED_WORDS_INTO_TEXT : SEED_WORDS_INTO_TEXT;
@@ -406,9 +427,11 @@ export function createTeleprompterMock(deps: Deps): TeleprompterApi {
       await deps.ready;
       const { id, built } = options.credits ? planCredits(options.credits) : planChapter(options.chapter);
       cancelReplay();
-      state = { phase: 'starting', message: 'Starting the teleprompter…', engine, chapter: id, script: null, position: null };
+      stopMeter();
+      state = { phase: 'starting', message: 'Starting the teleprompter…', engine, chapter: id, paused: false, script: null, position: null };
       publish();
       const { script, words } = built;
+      sessionWords = words;
       state = { ...state, phase: 'running', message: LISTENING };
       publish();
       emit(script);
@@ -420,9 +443,18 @@ export function createTeleprompterMock(deps: Deps): TeleprompterApi {
     teleprompterStop: async () => {
       cancelReplay();
       if (state.phase === 'starting' || state.phase === 'running') {
-        state = { ...state, phase: 'stopped', message: 'Stopped.' };
+        state = { ...state, phase: 'stopped', message: 'Stopped.', paused: false };
         publish();
       }
+    },
+    // The host's Pause (service.go): only a running session; the replay stops and a resume replays on from the current word.
+    teleprompterPause: async (paused) => {
+      if (state.phase !== 'running') throw new Error('no teleprompter session is running');
+      if (Boolean(state.paused) === paused) return;
+      cancelReplay();
+      state = { ...state, paused, message: paused ? 'Paused.' : LISTENING };
+      publish();
+      if (!paused) replay(sessionWords, state.position?.read ?? 0);
     },
     teleprompterSeek: async (word) => {
       if (state.phase !== 'running') throw new Error('no teleprompter session is running');
@@ -435,6 +467,17 @@ export function createTeleprompterMock(deps: Deps): TeleprompterApi {
       return clone();
     },
     teleprompterDevices: async () => ({ devices: deps.devices.map((device) => ({ ...device })), error: null }),
+    // The host's meter (meter.go): refused while a session runs, one level straight away (no timer, so a capture is still),
+    // then `meter_stopped` when it is stopped or replaced.
+    teleprompterMeterStart: async (device) => {
+      if (!device.trim()) throw new Error('choose a microphone');
+      if (state.phase === 'starting' || state.phase === 'running' || state.phase === 'stopping')
+        throw new Error('the reading session is using the microphone; its level shows in the bar');
+      stopMeter();
+      metering = true;
+      emit(levelAt(0));
+    },
+    teleprompterMeterStop: async () => stopMeter(),
     teleprompterLocate: async (chapterId, options) => {
       await deps.ready;
       if (deps.resume === 'error') throw new Error('Narration Utils could not read Alice.rpp: the file is locked by another program.');

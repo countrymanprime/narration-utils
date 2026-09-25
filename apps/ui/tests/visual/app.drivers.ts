@@ -605,6 +605,11 @@ export const APP_DRIVERS: Record<string, Record<string, Driver>> = {
     'chapter-table-expanded': async (page) => {
       await clickVisible(page, 'button', /Show per-chapter breakdown/);
     },
+    'chapter-sync-consent': async (page) => {
+      await page.goto('/?mockChapterSync=ask');
+      await settlePage(page);
+      await page.getByRole('alertdialog', { name: 'Sync chapters to tracks?' }).waitFor();
+    },
     'chapter-sync-toast-undo': async (page) => {
       // The mock's `?mockChapterSync=linked` seam runs its first sync once something subscribes (see mockApi.ts),
       // which Home's AudiobookEstimatePanel does on mount, so the toast appears without a click (Phase 3, S12).
@@ -653,6 +658,20 @@ export const APP_DRIVERS: Record<string, Record<string, Driver>> = {
     'chapter-track-panel-missing': async (page) => {
       const dialog = await openTrackPanel(page, 'Chapter 1', 'mockChapterLink=missing');
       await dialog.getByText('Track missing').waitFor();
+    },
+    'chapter-remove-confirm': async (page) => {
+      await openTrackPanel(page, 'Chapter 1', 'mockChapterLink=confirmed');
+      await clickVisible(page, 'button', 'Remove from recording…');
+      await page.getByRole('alertdialog', { name: 'Remove Chapter 1 from recording?' }).waitFor();
+    },
+    'chapter-removed-list': async (page) => {
+      await page.goto('/?mockRemoved=1');
+      await settlePage(page);
+      await homeLoaded(page);
+      await clickVisible(page, 'button', /Show per-chapter breakdown/);
+      const removed = page.getByText(/Removed from recording/);
+      await removed.waitFor();
+      await removed.scrollIntoViewIfNeeded();
     },
     'chapter-track-no-project': async (page) => {
       await page.goto('/?mockNoRpp=1');
@@ -1389,6 +1408,19 @@ export const APP_DRIVERS: Record<string, Record<string, Driver>> = {
       await goToPage(page, 'Tracks');
       // Chapter 2's mock source file is missing on disk.
       await clickVisible(page, 'button', /Chapter 2/);
+    },
+    'sync-off': async (page) => {
+      await page.goto('/?mockChapterSync=off');
+      await settlePage(page);
+      await goToPage(page, 'Tracks');
+      await page.getByText('Chapter sync is off.').waitFor();
+    },
+    'sync-consent': async (page) => {
+      // The consent dialog is a global, modal alertdialog (App.tsx): it can appear on any page and blocks the nav
+      // behind it, so this goes straight to Tracks by URL instead of navigating there through the (blocked) sidebar.
+      await page.goto('/tracks?mockChapterSync=ask');
+      await settlePage(page);
+      await page.getByRole('alertdialog', { name: 'Sync chapters to tracks?' }).waitFor();
     },
     'rpp-picker': async (page) => {
       // Reload with the mock's two-.rpp seam (see main.tsx) - the outer

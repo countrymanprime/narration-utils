@@ -512,3 +512,90 @@ describe('chapter-sync toast on Home (daw-chapter-track-auto-sync.prd.md Phase 3
     expect(notify).toHaveBeenCalledTimes(1);
   });
 });
+
+describe('remove from recording (chapter-track-link-control.prd.md Phase 3)', () => {
+  const openTracks = async (overrides: Parameters<typeof createMockApi>[0] = {}, initial: Parameters<typeof createMockApi>[1] = {}) => {
+    const notify = vi.fn();
+    const api = createMockApi(overrides, initial);
+    render(
+      <MemoryRouter>
+        <ApiProvider api={api}>
+          <AudiobookEstimatePanel notify={notify} goToManuscript={() => {}} />
+        </ApiProvider>
+      </MemoryRouter>,
+    );
+    await screen.findByText('Audiobook estimate');
+    fireEvent.click(screen.getByRole('button', { name: /Show per-chapter breakdown/ }));
+    return { api, notify };
+  };
+  const trackButton = (title: string) =>
+    within(screen.getByRole('link', { name: new RegExp(`^${title}\\b`) }).closest('tr') as HTMLElement).getByRole('button', {
+      name: new RegExp(`^Track for ${title}:`),
+    });
+
+  it('removes a chapter from recording, drops it from the table, and lists it under Removed from recording with Restore', async () => {
+    const { notify } = await openTracks();
+    fireEvent.click(trackButton('Chapter 3'));
+    const panel = await screen.findByRole('dialog', { name: 'Track: Chapter 3' });
+    fireEvent.click(within(panel).getByRole('button', { name: 'Remove from recording…' }));
+    const confirm = await screen.findByRole('alertdialog', { name: 'Remove Chapter 3 from recording?' });
+    fireEvent.click(within(confirm).getByRole('button', { name: 'Remove from recording' }));
+    await waitFor(() => expect(notify).toHaveBeenCalledWith('Chapter 3 removed from recording.'));
+    // The slide-over closes with the row it was about, and the row itself leaves the table.
+    await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Track: Chapter 3' })).toBeNull());
+    expect(screen.queryByRole('link', { name: /^Chapter 3\b/ })).toBeNull();
+    expect(await screen.findByText('Removed from recording (1)')).toBeTruthy();
+    expect(screen.getByText(/removed today as not a chapter/)).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Restore' }));
+    await waitFor(() => expect(notify).toHaveBeenCalledWith('Chapter 3 restored.'));
+    expect(await screen.findByRole('link', { name: /^Chapter 3\b/ })).toBeTruthy();
+    expect(screen.queryByText(/Removed from recording/)).toBeNull();
+  });
+
+  it('reclassifies as front matter when that option is chosen', async () => {
+    await openTracks();
+    fireEvent.click(trackButton('Chapter 3'));
+    const panel = await screen.findByRole('dialog', { name: 'Track: Chapter 3' });
+    fireEvent.click(within(panel).getByRole('button', { name: 'Remove from recording…' }));
+    const confirm = await screen.findByRole('alertdialog', { name: 'Remove Chapter 3 from recording?' });
+    fireEvent.click(within(confirm).getByRole('radio', { name: 'Front matter' }));
+    fireEvent.click(within(confirm).getByRole('button', { name: 'Remove from recording' }));
+    expect(await screen.findByText(/removed today as front matter/)).toBeTruthy();
+  });
+
+  it('cancels without changing anything', async () => {
+    await openTracks();
+    fireEvent.click(trackButton('Chapter 3'));
+    const panel = await screen.findByRole('dialog', { name: 'Track: Chapter 3' });
+    fireEvent.click(within(panel).getByRole('button', { name: 'Remove from recording…' }));
+    const confirm = await screen.findByRole('alertdialog', { name: 'Remove Chapter 3 from recording?' });
+    fireEvent.click(within(confirm).getByRole('button', { name: 'Cancel' }));
+    expect(screen.queryByRole('alertdialog', { name: 'Remove Chapter 3 from recording?' })).toBeNull();
+    // The track panel itself is untouched: still open on the same chapter, nothing removed.
+    expect(await screen.findByRole('dialog', { name: 'Track: Chapter 3' })).toBeTruthy();
+  });
+
+  it('shows the reason and a failure toast when the host refuses (the last narration chapter)', async () => {
+    const manuscriptSetChapterKind = vi.fn().mockRejectedValue(new Error('the last narration chapter cannot be removed from recording'));
+    const notify = vi.fn();
+    const api = createMockApi({ manuscriptSetChapterKind });
+    render(
+      <MemoryRouter>
+        <ApiProvider api={api}>
+          <AudiobookEstimatePanel notify={notify} goToManuscript={() => {}} />
+        </ApiProvider>
+      </MemoryRouter>,
+    );
+    await screen.findByText('Audiobook estimate');
+    fireEvent.click(screen.getByRole('button', { name: /Show per-chapter breakdown/ }));
+    fireEvent.click(trackButton('Chapter 3'));
+    const panel = await screen.findByRole('dialog', { name: 'Track: Chapter 3' });
+    fireEvent.click(within(panel).getByRole('button', { name: 'Remove from recording…' }));
+    const confirm = await screen.findByRole('alertdialog', { name: 'Remove Chapter 3 from recording?' });
+    fireEvent.click(within(confirm).getByRole('button', { name: 'Remove from recording' }));
+    await waitFor(() => expect(notify).toHaveBeenCalledWith('Error: the last narration chapter cannot be removed from recording', 'error'));
+    // The confirm stays open so the narrator sees the failure and can cancel or retry.
+    expect(screen.getByRole('alertdialog', { name: 'Remove Chapter 3 from recording?' })).toBeTruthy();
+  });
+});

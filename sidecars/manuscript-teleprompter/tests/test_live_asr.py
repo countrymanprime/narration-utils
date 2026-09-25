@@ -671,3 +671,144 @@ def test_a_plain_script_still_emits_no_script_event(tmp_path, monkeypatch):
     _tracker, script_event, text = live_asr._load_script(ap, ap.parse_args(["--wav", "r.wav", "--script", str(script)]))
 
     assert (script_event, text) == (None, None)
+
+
+# Input level (read-aloud-control-bar PRD Phase 4): a session reports `level` events beside its words, and --meter reports
+# only levels, with no model and no script, until the stop file appears.
+def _loud_chunks(count):
+    t = np.arange(HALF_SECOND) / live_asr.SAMPLE_RATE
+    for _ in range(count):
+        yield (0.5 * np.sin(2 * np.pi * 440 * t)).astype(np.float32)
+
+
+def test_a_session_reports_the_level_of_what_it_hears(capsys):
+    args = live_asr.build_parser().parse_args(["--wav", "r.wav"])
+
+    def stream(chunks):
+        list(chunks)
+        yield {"type": "segment_end", "segment": 0}
+
+    live_asr._run(args, stream, _loud_chunks(2), None)
+
+    printed = [json.loads(line) for line in capsys.readouterr().out.splitlines()]
+    levels = [event for event in printed if event["type"] == "level"]
+    assert len(levels) == 10  # one second of audio, every 100 ms
+    assert all(event["peak"] == pytest.approx(-6.0, abs=0.1) for event in levels)
+    assert printed[-1] == {"type": "segment_end", "segment": 0}
+
+
+def test_meter_mode_prints_only_levels_and_loads_no_model(monkeypatch, capsys):
+    monkeypatch.syspath_prepend(str(LIVE_ASR_PATH.parent))
+    monkeypatch.setattr(live_asr, "iter_microphone_chunks", lambda name: _loud_chunks(2))
+    monkeypatch.setattr(live_asr, "_load_whisper_engine", lambda args: pytest.fail("the meter must not load a model"))
+    monkeypatch.setattr(sys, "argv", ["live_asr.py", "--meter", "--mic", "Mic"])
+
+    live_asr.main()
+
+    printed = [json.loads(line) for line in capsys.readouterr().out.splitlines()]
+    assert len(printed) == 10
+    assert {event["type"] for event in printed} == {"level"}
+
+
+def test_meter_mode_ends_on_the_stop_file(monkeypatch, capsys, tmp_path):
+    monkeypatch.syspath_prepend(str(LIVE_ASR_PATH.parent))
+    stop_file = tmp_path / "meter.stop"
+
+    def endless(name):
+        for index, chunk in enumerate(_loud_chunks(1000)):
+            if index == 2:
+                stop_file.write_text("")
+            yield chunk
+
+    monkeypatch.setattr(live_asr, "iter_microphone_chunks", endless)
+    monkeypatch.setattr(sys, "argv", ["live_asr.py", "--meter", "--mic", "Mic", "--stop-file", str(stop_file)])
+
+    live_asr.main()
+
+    assert len(capsys.readouterr().out.splitlines()) == 10  # the two chunks before the stop file
+
+
+@pytest.mark.parametrize(
+    "extra",
+    [[], ["--manuscript", "m.json", "--chapter", "c1"], ["--script", "s.txt"], ["--control-file", "c.ctl"], ["--locate"], ["--list-devices"]],
+)
+def test_meter_mode_needs_a_microphone_and_takes_no_session_options(extra, monkeypatch, capsys):
+    argv = ["live_asr.py", "--meter", *(extra if extra == [] else ["--mic", "Mic", *extra])]
+    monkeypatch.setattr(sys, "argv", argv)
+
+    with pytest.raises(SystemExit):
+        live_asr.main()
+
+    assert "--meter" in capsys.readouterr().err
+
+
+# Pause (read-aloud-control-bar PRD Phase 5): while paused the device stays open and its level still shows, but the
+# engine hears nothing and the tracker's clock stands still, so it never reports `waiting` for the pause itself.
+def test_a_paused_stream_clock_stands_still_and_resumes_without_the_pause():
+    wall = [10.0]
+    clock = live_asr.StreamClock(capture_started=10.0, time_fn=lambda: wall[0])
+    wall[0] = 12.0
+    clock.pause()
+    wall[0] = 40.0
+
+    assert clock.now() == pytest.approx(2.0)
+
+    clock.resume()
+    wall[0] = 41.0
+    assert clock.now() == pytest.approx(3.0)
+
+
+def test_pausing_twice_or_resuming_while_listening_changes_nothing():
+    clock = live_asr.StreamClock()
+    clock.resume()
+    clock.note_chunk(np.zeros(HALF_SECOND, dtype=np.float32))
+    clock.pause()
+    clock.pause()
+    clock.note_chunk(np.zeros(HALF_SECOND, dtype=np.float32))
+    clock.resume()
+    clock.note_chunk(np.zeros(HALF_SECOND, dtype=np.float32))
+
+    assert clock.now() == pytest.approx(1.0)
+
+
+def test_gated_drops_chunks_while_paused():
+    paused = iter([False, True, True, False])
+
+    passed = list(live_asr.gated(_chunks(4), lambda: next(paused)))
+
+    assert len(passed) == 2
+
+
+def test_a_paused_session_hears_nothing_keeps_its_levels_and_does_not_wait(tmp_path, capsys, monkeypatch):
+    monkeypatch.syspath_prepend(str(LIVE_ASR_PATH.parent))
+    script = tmp_path / "script.txt"
+    script.write_text("one two three four", encoding="utf-8")
+    control = tmp_path / "c.ctl"
+    control.write_text("")
+    ap = live_asr.build_parser()
+    args = ap.parse_args(["--wav", "r.wav", "--script", str(script), "--control-file", str(control)])
+    tracker, _script_event, _text = live_asr._load_script(ap, args)
+    heard_chunks = []
+
+    def chunks():
+        # Two chunks heard, pause, ten chunks (5 s) of pause, resume, two chunks heard.
+        for index in range(14):
+            if index == 2:
+                control.write_text('{"cmd": "pause"}\n')
+            if index == 12:
+                control.write_text('{"cmd": "pause"}\n{"cmd": "resume"}\n')
+            yield np.full(HALF_SECOND, index, dtype=np.float32)
+
+    def stream(audio):
+        for chunk in audio:
+            heard_chunks.append(int(chunk[0]))
+            if len(heard_chunks) == 1:
+                yield {"type": "word", "segment": 0, "word": "one", "start": 0.0, "end": 0.1}
+        yield {"type": "segment_end", "segment": 0}
+
+    live_asr._run(args, stream, chunks(), tracker)
+
+    printed = [json.loads(line) for line in capsys.readouterr().out.splitlines()]
+    assert heard_chunks == [0, 1, 12, 13]
+    assert len([event for event in printed if event["type"] == "level"]) == 14 * 5
+    assert all(event["status"] != "waiting" for event in printed if event["type"] == "position")
