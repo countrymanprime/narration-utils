@@ -212,6 +212,21 @@ def test_align_only_refuses_before_anything_is_decoded_when_an_item_is_not_cache
     assert not any(stage in ("DECODE", "TRANSCRIBE", "LOAD") for stage, _pct, _message in progress.lines)
 
 
+def test_align_only_never_transcribes_even_when_the_cache_changes_mid_run():
+    item = mode.ManifestItem(3, "{C}", "c.wav", 0.0, 1.0, "item-3.json", False)
+    with pytest.raises(mode.AlignOnlyError, match="item 3"):
+        mode._refuse_transcription(item, lambda _seconds: None)
+
+
+def test_a_chapter_whose_words_do_not_match_its_tokens_fails_rather_than_misplacing_them(tmp_path, cached_project, progress, monkeypatch):
+    manuscript, manifest = cached_project
+    monkeypatch.setattr(mode, "_token_words", lambda *_args: [])
+    args = _args(tmp_path, manuscript, manifest)
+    with pytest.raises(ValueError, match="could not be matched"):
+        mode.run(args, compare, _never_transcribe)
+    assert not Path(args.out).exists()
+
+
 def test_the_cli_takes_align_only_with_coverage_and_exits_1_when_words_are_missing(tmp_path, cached_project):
     manuscript, manifest = cached_project
     (tmp_path / "words" / "item-2.json").unlink()
