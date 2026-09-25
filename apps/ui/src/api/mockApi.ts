@@ -520,9 +520,10 @@ export function createMockApi(
     removedChapter?: boolean;
     /** Chapter sync's consent at boot (daw-chapter-track-auto-sync PRD Phase 3): `ask` has not been asked yet (the consent
      * dialog shows), `off` answered Not now, and `linked` is on and, once something subscribes, runs a sync that links the
-     * confident chapters and sends the batch for the toast. Unset, sync is on and has run before with nothing new, so no
-     * dialog or toast covers the other states. */
-    chapterSync?: 'ask' | 'off' | 'linked';
+     * confident chapters and sends the batch for the toast. `unsaved` is on, with REAPER holding unsaved edits and a Sync
+     * activity row from a save in REAPER (Phase 4). Unset, sync is on and has run before with nothing new, so no dialog or
+     * toast covers the other states. */
+    chapterSync?: 'ask' | 'off' | 'linked' | 'unsaved';
     /** Whether the mock project boots with a linked DAW project file (PRD W13/W14). Defaults to true. */
     dawFileLinked?: boolean;
     /** Makes the next `linkDawFile()` call behave like a chosen file outside the project folder (PRD W15): refused, not linked. */
@@ -900,6 +901,12 @@ export function createMockApi(
   let chapterSyncDecidedAt: string | null = chapterSyncConsent === 'undecided' ? null : '2026-09-24T09:00:00Z';
   let chapterSyncLastSync: string | null = chapterSyncConsent === 'on' && initial.chapterSync !== 'linked' ? '2026-09-24T09:00:00Z' : null;
   const chapterSyncRejected = new Set<string>();
+  const chapterSyncUnsavedEdits = initial.chapterSync === 'unsaved';
+  // The Sync activity list, newest first (the host keeps 20): the unsaved seed shows one row from a save in REAPER.
+  let chapterSyncActivity: ChapterSyncBatch[] =
+    initial.chapterSync === 'unsaved'
+      ? [{ at: '2026-09-24T09:05:00Z', trigger: 'watch', linked: [], newTracks: [{ guid: '{mock-room-tone}', name: 'Room tone', index: 9, marker: '' }] }]
+      : [];
   const chapterSyncSubscribers = new Set<(state: ChapterSyncState) => void>();
   const mockLinksRead = () => {
     const state = tracksDiscovery.candidates.length === 0 ? 'none' : tracksDiscovery.selected ? 'ready' : 'choose';
@@ -928,6 +935,8 @@ export function createMockApi(
         pickupTracks: plan.pickupTracks.length,
       },
       batch,
+      unsavedEdits: chapterSyncUnsavedEdits,
+      activity: chapterSyncActivity,
     };
   };
   const publishChapterSync = (state: ChapterSyncState) => chapterSyncSubscribers.forEach((fn) => fn(wireClone(state)));
@@ -945,7 +954,9 @@ export function createMockApi(
     }));
     chapterTrackMappings = [...chapterTrackMappings, ...linked];
     chapterSyncLastSync = at;
-    const state = mockChapterSyncState(linked.length > 0 ? { at, trigger, linked, newTracks: [] } : null);
+    const batch: ChapterSyncBatch | null = linked.length > 0 ? { at, trigger, linked, newTracks: [] } : null;
+    if (batch) chapterSyncActivity = [batch, ...chapterSyncActivity].slice(0, 20);
+    const state = mockChapterSyncState(batch);
     publishChapterSync(state);
     return state;
   };

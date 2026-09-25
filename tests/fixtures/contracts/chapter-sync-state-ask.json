@@ -1,4 +1,5 @@
 {
+  "activity": [],
   "ask": true,
   "batch": null,
   "consent": "undecided",
@@ -16,5 +17,6 @@
   "message": "",
   "project": "ready",
   "projectFile": "C:/Projects/Alice/Alice.rpp",
-  "savedAt": "2026-09-21T10:00:00Z"
+  "savedAt": "2026-09-21T10:00:00Z",
+  "unsavedEdits": false
 }

@@ -58,6 +58,20 @@ describe('ToastRegion', () => {
     expect(dismiss).toHaveBeenCalledExactlyOnceWith(2);
   });
 
+  it('shows an action button before the dismiss button, and pressing it runs the action and dismisses the toast', () => {
+    const dismiss = vi.fn();
+    const onAction = vi.fn();
+    render(<ToastRegion messages={[{ ...info(1, 'Linked track “Ch. 11” to Chapter 11.'), action: { label: 'Undo', onAction } }]} dismiss={dismiss} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Undo' }));
+    expect(onAction).toHaveBeenCalledOnce();
+    expect(dismiss).toHaveBeenCalledExactlyOnceWith(1);
+  });
+
+  it('shows no action button when a message has none', () => {
+    render(<ToastRegion messages={[info(1, 'Saved.')]} dismiss={vi.fn()} />);
+    expect(screen.queryByRole('button', { name: 'Undo' })).toBeNull();
+  });
+
   it('starts a message over when it is replaced by one with a new id, and shows the whole queue at once', () => {
     const dismiss = vi.fn();
     const { rerender } = render(<ToastRegion messages={[info(1, 'Same'), info(2, 'Other')]} dismiss={dismiss} />);

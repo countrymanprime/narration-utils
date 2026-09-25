@@ -678,7 +678,8 @@ describe('answers of the mock client for the manuscript, Story Bible and project
     expectMatches(chapterSchema, await api.manuscriptSetChapterStatus(chapters[0]?.id ?? '', 'recording'), 'mock chapter status');
   });
 
-  // daw-chapter-track-auto-sync.prd.md Phase 3: consent, the first sync and its batch, Undo, and chaptersync:state.
+  // daw-chapter-track-auto-sync.prd.md Phases 3 and 4: consent, the first sync and its batch, Undo, chaptersync:state, unsaved
+  // edits and the Sync activity.
   it('chapter sync answers and events', async () => {
     const quiet = await createMockApi().chapterSyncState();
     expectMatches(chapterSyncStateSchema, quiet, 'mock chapter sync, synced before');
@@ -699,8 +700,15 @@ describe('answers of the mock client for the manuscript, Story Bible and project
     const undone = await api.chapterSyncUndo(preview.autoLink[0].trackGuid);
     expectMatches(chapterSyncStateSchema, undone, 'mock chapter sync, undone');
     expect((await api.chapterSyncPreview()).autoLink.map((link) => link.trackGuid)).not.toContain(preview.autoLink[0].trackGuid);
+    expect(synced.activity[0]).toEqual(synced.batch);
     for (const state of seen) expectMatches(chapterSyncStateSchema, state, 'mock chaptersync:state');
     expect(seen.length).toBeGreaterThanOrEqual(2);
+
+    // Phase 4: REAPER holds unsaved edits, and the Sync activity keeps a row from a save in REAPER.
+    const unsaved = await createMockApi({}, { chapterSync: 'unsaved' }).chapterSyncState();
+    expectMatches(chapterSyncStateSchema, unsaved, 'mock chapter sync, unsaved edits');
+    expect(unsaved).toMatchObject({ consent: 'on', unsavedEdits: true, batch: null });
+    expect(unsaved.activity.map((row) => row.trigger)).toEqual(['watch']);
   });
 
   // chapter-track-link-control.prd.md Phase 3: Remove from recording clears the chapter's links, and Restore brings it back.

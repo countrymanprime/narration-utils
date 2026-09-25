@@ -5,7 +5,9 @@ import { useApi } from '../../api/ApiContext';
 import { Heading } from '../primitives/Heading';
 import { Panel } from '../primitives/Panel';
 import { Button } from '../primitives/Button';
+import type { Notify } from '../primitives/Toast';
 import { ChapterLinksTable } from './ChapterLinksTable';
+import { ChapterSyncPanel } from './ChapterSyncPanel';
 import { useTrackPlayback } from './useTrackPlayback';
 import { LinkChaptersDialog } from './LinkChaptersDialog';
 import { PickupsDialog } from './PickupsDialog';
@@ -131,13 +133,16 @@ function Transport({ tracks, activeIndex, onActiveIndexChange }: { tracks: Track
   );
 }
 
-export function TracksPage({ dawFileLinked, onLinkDawFile }: { dawFileLinked: boolean; onLinkDawFile: () => void }) {
+export function TracksPage({ dawFileLinked, onLinkDawFile, notify }: { dawFileLinked: boolean; onLinkDawFile: () => void; notify: Notify }) {
   const api = useApi();
   const [discovery, setDiscovery] = useState<TracksDiscovery>();
   const [project, setProject] = useState<TracksProject>();
   const [error, setError] = useState('');
   const [activeIndex, setActiveIndex] = useState(0);
   const [chapters, setChapters] = useState<ManuscriptChapter[]>([]);
+  // Bumped by the chapter-sync panel's own actions (toggle, Link), so the Chapter links table below re-reads the
+  // mapping it doesn't otherwise hear about (chapterTrackSet and chapterSyncSetEnabled send no event of their own).
+  const [chapterSyncRefresh, setChapterSyncRefresh] = useState(0);
   const [linkChaptersOpen, setLinkChaptersOpen] = useState(false);
   const [pickupsOpen, setPickupsOpen] = useState(false);
   const [renderConfigOpen, setRenderConfigOpen] = useState(false);
@@ -236,6 +241,7 @@ export function TracksPage({ dawFileLinked, onLinkDawFile }: { dawFileLinked: bo
         )}
       </div>
       <DawFileLink dawFileLinked={dawFileLinked} onLinkDawFile={onLinkDawFile} />
+      <ChapterSyncPanel notify={notify} onChanged={() => setChapterSyncRefresh((count) => count + 1)} />
       {linkChaptersOpen && project && <LinkChaptersDialog chapters={chapters} tracks={project.tracks} onClose={() => setLinkChaptersOpen(false)} />}
       {pickupsOpen && <PickupsDialog onClose={() => setPickupsOpen(false)} />}
       {renderConfigOpen && <RenderConfigDialog onClose={() => setRenderConfigOpen(false)} />}
@@ -270,7 +276,7 @@ export function TracksPage({ dawFileLinked, onLinkDawFile }: { dawFileLinked: bo
           </ul>
         </>
       )}
-      {project && <ChapterLinksTable tracks={project.tracks} />}
+      {project && <ChapterLinksTable tracks={project.tracks} refreshKey={chapterSyncRefresh} />}
     </div>
   );
 }
