@@ -55,6 +55,8 @@ var eventSpecs = map[string]eventSpec{
 	"LINES_CONFLICT": {required: []fieldSpec{text("run"), text("guid")}},
 	// updated, ambiguous and failed were appended by create_regions (narration_regions.lua), which replaced
 	// create_chapter_regions: optional, so the older three-count answer still reads.
+	"PLAY_POSITION":    {required: []fieldSpec{text("run"), count("state"), number("heard"), number("processed"), number("cursor")}},
+	"PUNCHED":          {required: []fieldSpec{text("run"), number("cursor")}},
 	"REGIONS_CREATED":  {required: []fieldSpec{text("run"), count("created"), count("existing"), count("invalid")}, optional: []fieldSpec{count("updated"), count("ambiguous"), count("failed")}},
 	"PICKUPS_IMPORTED": {required: []fieldSpec{text("run"), count("added"), count("existing"), count("invalid")}},
 	"PICKUPS_EXPORTED": {required: []fieldSpec{text("run"), text("path"), count("count")}},

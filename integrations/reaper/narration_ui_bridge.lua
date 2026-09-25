@@ -6,7 +6,8 @@
 -- commands; every command lives in a feature file listed in FEATURE_FILES
 -- (narration_cleanup.lua, narration_compare.lua, narration_line_identity.lua, narration_pickups.lua,
 -- narration_render.lua, narration_project_state.lua, narration_retake_lanes.lua, narration_take_review.lua, narration_navigation.lua,
--- narration_track_state.lua, narration_transport.lua, narration_workspace.lua, narration_regions.lua).
+-- narration_track_state.lua, narration_transport.lua, narration_workspace.lua, narration_regions.lua,
+-- narration_punch.lua).
 -- To add a command, put it in a new narration_<feature>.lua that returns
 -- `function(registry)` and calls `registry.register(name, function(ctx, args) ... end)`,
 -- list the file below and in scripts/release/reaper-files.mjs, and write its
@@ -29,6 +30,7 @@ M.FEATURE_FILES = {
   'narration_track_state.lua',
   'narration_transport.lua',
   'narration_workspace.lua',
+  'narration_punch.lua',
   'narration_regions.lua',
 }
 

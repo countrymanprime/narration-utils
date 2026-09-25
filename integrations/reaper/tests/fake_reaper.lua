@@ -56,6 +56,9 @@ function Fake.new(host)
   self.play_state = 0
   -- GetPlayPosition (narration_track_state.lua): the what-you-hear position, set by a test.
   self.play_position = 0
+  -- GetPlayPosition2 (narration_punch.lua): the position being processed, which REAPER documents as the one that has
+  -- not yet passed the audio device's output latency. Spike S4 decides which of the two anchors a word; both are read.
+  self.play_position2 = 0
   -- GetAudioDeviceInfo('IDENT_IN'): the open input device's name; nil when the device is closed (REAPER answers false).
   self.audio_input = nil
   self.exit_handlers = {}
@@ -482,6 +485,9 @@ function Fake:add_transport_api(api)
   end
   function api.GetPlayPosition()
     return fake.play_position
+  end
+  function api.GetPlayPosition2()
+    return fake.play_position2
   end
   -- GetAudioDeviceInfo(attribute): false when the attribute is unknown or no device is open, like REAPER.
   function api.GetAudioDeviceInfo(attribute)

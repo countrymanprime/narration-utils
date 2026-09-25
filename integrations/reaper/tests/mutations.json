@@ -646,5 +646,41 @@
     "file": "narration_compare.lua",
     "find": "  if (app_folder or '') ~= '' then\n    project_folder = app_folder\n  end",
     "replace": "  if false then\n    project_folder = app_folder\n  end"
+  },
+  {
+    "name": "punch_to can move the cursor before the project start",
+    "file": "narration_punch.lua",
+    "find": "local target = math.max(0, time - preroll)",
+    "replace": "local target = time - preroll"
+  },
+  {
+    "name": "punch_to moves the cursor while REAPER records",
+    "file": "narration_punch.lua",
+    "find": "if reaper.GetPlayState() & 4 == 4 then",
+    "replace": "if false then"
+  },
+  {
+    "name": "punch_to also seeks playback",
+    "file": "narration_punch.lua",
+    "find": "reaper.SetEditCurPos(target, true, false)",
+    "replace": "reaper.SetEditCurPos(target, true, true)"
+  },
+  {
+    "name": "punch_to accepts a pre-roll over the limit",
+    "file": "narration_punch.lua",
+    "find": "if not time or not preroll or preroll > MAX_PREROLL then",
+    "replace": "if not time or not preroll then"
+  },
+  {
+    "name": "play_position reads the play position without asking REAPER whether it can",
+    "file": "narration_punch.lua",
+    "find": "if not reaper.APIExists('GetPlayPosition2') then",
+    "replace": "if false then"
+  },
+  {
+    "name": "play_position reports the heard position twice",
+    "file": "narration_punch.lua",
+    "find": "    seconds(reaper.GetPlayPosition2()),",
+    "replace": "    seconds(reaper.GetPlayPosition()),"
   }
 ]
