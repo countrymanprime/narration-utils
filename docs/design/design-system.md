@@ -79,6 +79,10 @@ The custom-CSS system (`.btn`, `.panel-head`/`.panel-body`, `.progressbar`, etc.
 - **A field that is read-only, locked or not-yet-persisted is `disabled`, not hidden**, so the user can see what exists without being able to edit it. Story Bible entries open read-only and gain Edit/Save/Cancel controls only on request ([ADR 0018](../adr/0018-story-bible-entries-read-only-until-edit.md)); see `GuideDetail.tsx`.s `editingDisabled`.
 - **A non-destructive "peek at something else" action is a `SlideOver` primitive, never a navigation that replaces the current view's state.** See `Manuscript.tsx`'s Chapters & Search overlay and `GuideDetail.tsx`'s "Review entry" overlay — both exist specifically so switching context doesn't discard an in-progress edit.
 
+## Layout and scrolling
+
+The document (`html`/`body`) never scrolls; it is locked (`overflow: hidden`, `styles.css`) once nothing needs it to (app-shell-vertical-overflow.prd.md). Every page scrolls inside the shell's own page area (`AppShell.tsx`'s `<main>`, `.scroll-chrome-hidden`), which is the shell's single scroll container and also gives absolutely positioned descendants (an `sr-only` label, a Base UI hidden input) a containing block so they scroll and clip with their row instead of escaping to the window. Before a project is attached, `StartupScreen` and `ProjectPicker` scroll in the same way inside their own `flex-1 overflow-y-auto` container, with `DemoBanner` above it in a `flex h-full flex-col` so the banner's own height never pushes the document past the viewport. The shell is sized off a `height: 100%` chain from `html`/`body`/`#root` (`h-full`), not `100vh`/`100dvh`, because only the `%` chain stays exact under both WebView2's zoom and a CSS `zoom` on `<html>`.
+
 ## Settings rows
 
 `apps/ui/src/components/settings/ScopedSetting.tsx` renders one Settings field by its `kind`, and the host (`apps/desktop/app.go`, `fieldSchemas` and `validateSettingValue`) validates it by the same kind. Every value is a string in the settings files.
