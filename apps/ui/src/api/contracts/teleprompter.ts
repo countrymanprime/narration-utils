@@ -295,6 +295,20 @@ export type ReadAloudReaperState = {
   recording: boolean;
 };
 
+/**
+ * Which microphone REAPER records from (`TeleprompterReaperInput`, teleprompter-manuscript-integration PRD Phase 11, ADR 0250). The
+ * picker preselects `device` only when `status` is `matched`, and shows `message` as the reason; `uncertain` names the `candidates`
+ * that fit equally well; `no_match` and `unavailable` (with a `reason`) leave the list and the narrator's choice alone.
+ */
+export type TeleprompterReaperInput = {
+  status: 'matched' | 'uncertain' | 'no_match' | 'unavailable';
+  reason?: 'standalone' | 'not_running' | 'experimental_off' | 'failed' | 'reaper_no_device' | 'devices_failed';
+  message: string;
+  reaperDevice?: string;
+  device?: string;
+  candidates: string[];
+};
+
 export interface TeleprompterApi {
   teleprompterStart(options: TeleprompterStartOptions): Promise<TeleprompterStartResult>;
   teleprompterStop(): Promise<void>;
@@ -314,6 +328,8 @@ export interface TeleprompterApi {
   teleprompterPause(paused: boolean): Promise<void>;
   /** Ask REAPER, once, whether it is ready to record `chapterId` with reading; read-only. Ask on open, toggle, Play and Refresh, never on a timer. */
   readAloudReaperState(chapterId: string): Promise<ReadAloudReaperState>;
+  /** Ask REAPER, once, which of the microphones it records from, to preselect it only when sure; read-only. */
+  teleprompterReaperInput(): Promise<TeleprompterReaperInput>;
   /** Where to resume `chapterId` from its recorded audio (the last seconds of its track, placed in the chapter); read-only. */
   teleprompterLocate(chapterId: string, options?: TeleprompterLocateOptions): Promise<TeleprompterLocateResult>;
   subscribeTeleprompterEvent(onEvent: (event: TeleprompterEvent) => void): () => void;

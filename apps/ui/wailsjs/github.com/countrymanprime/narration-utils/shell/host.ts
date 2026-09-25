@@ -1129,6 +1129,15 @@ export function TeleprompterPause(paused: boolean): $CancellablePromise<string> 
 }
 
 /**
+ * TeleprompterReaperInput answers which of the teleprompter's microphones REAPER records from, so the picker can
+ * preselect it with a reason (teleprompter-manuscript-integration.prd.md Phase 11). It asks REAPER once, read-only,
+ * and never on a timer; a REAPER that is not there or cannot say is an answer, and the picker then keeps its list.
+ */
+export function TeleprompterReaperInput(): $CancellablePromise<string> {
+    return $Call.ByID(3054312412);
+}
+
+/**
  * TeleprompterSaveFlags writes a read-aloud session's suspected flags into the project's findings store as unreviewed
  * findings (teleprompter-manuscript-integration.prd.md Phase 7, ADR 0117): a misread, extra or skip as a
  * transcript_discrepancy, a restart as a pickup. The dialog calls it when a session ends and when it closes, so it is

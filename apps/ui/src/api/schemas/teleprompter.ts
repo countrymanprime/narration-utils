@@ -2,6 +2,7 @@ import { z } from 'zod';
 import type {
   HeardWord,
   ReadAloudReaperState,
+  TeleprompterReaperInput,
   TeleprompterDevice,
   TeleprompterDevicesResult,
   TeleprompterEngine,
@@ -264,3 +265,18 @@ export const readAloudReaperStateSchema = z.object({
   playing: z.boolean(),
   recording: z.boolean(),
 }) satisfies z.ZodType<ReadAloudReaperState>;
+
+/** `TeleprompterReaperInput` (`apps/desktop/teleprompterinput.go`, ADR 0250): a device to preselect only when `matched`. */
+export const teleprompterReaperInputSchema = z
+  .object({
+    status: z.enum(['matched', 'uncertain', 'no_match', 'unavailable']),
+    reason: z.enum(['standalone', 'not_running', 'experimental_off', 'failed', 'reaper_no_device', 'devices_failed']).optional(),
+    message: z.string(),
+    reaperDevice: z.string().optional(),
+    device: z.string().optional(),
+    candidates: z.array(z.string()),
+  })
+  .refine((input) => (input.status === 'matched') === (input.device !== undefined), {
+    message: 'a device to preselect comes with a match, and only with one',
+    path: ['device'],
+  }) satisfies z.ZodType<TeleprompterReaperInput>;

@@ -101,7 +101,7 @@ import { loadAliceManuscript } from './aliceManuscript';
 import { mockChapterRegionPlan, mockChapterSyncPreview, mockChapterTrackLinks, mockChapterTrackMatch, mockRecordedLength } from './chapterTrackMatchMock';
 import { mockChapterSuggestion } from './chapterSuggestionMock';
 import { mockImportPreview, mockImportPreviewLog, type MockImportKind } from './mockImportPreview';
-import { createTeleprompterMock, type MockReaperSeed, type TeleprompterSeed } from './teleprompterMock';
+import { createTeleprompterMock, type MockReaperInputSeed, type MockReaperSeed, type TeleprompterSeed } from './teleprompterMock';
 import { createCoverageMock, type CoverageSeed } from './coverageMock';
 import { createStagesMock, type StagesSeed } from './stagesMock';
 import type { MockResumeSeed } from './resumeMockSeed';
@@ -513,6 +513,8 @@ export function createMockApi(
     teleprompterLevel?: number;
     /** `?mockReaperState=`: what `readAloudReaperState` answers for every chapter (see `MockReaperSeed`). */
     reaperState?: MockReaperSeed;
+    /** `?mockReaperInput=`: what `teleprompterReaperInput` answers (see `MockReaperInputSeed`). */
+    reaperInput?: MockReaperInputSeed;
     /** Which resume card state `teleprompterLocate` answers for every chapter (see `MockResumeSeed`). */
     resume?: MockResumeSeed;
     /** Boots with the manuscript's last narration chapter already removed from recording (chapter-track-link-control PRD
@@ -1227,6 +1229,7 @@ export function createMockApi(
     devices: initial.teleprompterDevices ?? WIRE_TELEPROMPTER_DEVICES,
     ...(initial.teleprompterLevel === undefined ? {} : { level: initial.teleprompterLevel }),
     ...(initial.reaperState ? { reaper: initial.reaperState } : {}),
+    ...(initial.reaperInput ? { reaperInput: initial.reaperInput } : {}),
     resume: initial.resume,
   });
   const { withMeasurement, ...coverage } = createCoverageMock({

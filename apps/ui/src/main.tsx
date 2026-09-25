@@ -7,7 +7,7 @@ import { createMockApi } from './api/mockApi';
 import { WIRE_CHAPTERS, WIRE_TRACKS_PROJECT } from './api/mockFixtures';
 import { COVERAGE_REFUSAL_REASONS } from './api/schemas/coverage';
 import { MOCK_RESUME_SEEDS } from './api/resumeMockSeed';
-import { MOCK_REAPER_SEEDS } from './api/teleprompterMock';
+import { MOCK_REAPER_INPUT_SEEDS, MOCK_REAPER_SEEDS } from './api/teleprompterMock';
 import { ThemeProvider } from './theme/ThemeContext';
 import './fonts';
 import './styles.css';
@@ -67,6 +67,9 @@ const mockLevel = Number.isFinite(mockLevelParam) && mockLevelParam >= -100 && m
 // `?mockReaperState=ready|not_armed|other_armed|several_armed|no_link|recording_elsewhere|unavailable|experimental_off` makes
 // the read-aloud dialog's REAPER state (read-aloud-control-bar.prd.md Phase 6) answer that for every chapter.
 const mockReaperState = MOCK_REAPER_SEEDS.find((seed) => seed === mockParams.get('mockReaperState'));
+// `?mockReaperInput=matched|uncertain|no_match|reaper_no_device|experimental_off` makes the microphone REAPER records from
+// (teleprompter-manuscript-integration.prd.md Phase 11) answer that.
+const mockReaperInput = MOCK_REAPER_INPUT_SEEDS.find((seed) => seed === mockParams.get('mockReaperInput'));
 // `?mockResume=agree|disagree|prompter_only|low_confidence|complete|not_found|ambiguous|none|no_recording|source_missing|source_unsupported|error`
 // makes the read-aloud dialog's resume prompt (read-aloud-resume-from-daw.prd.md Phase 1) show that state for any chapter,
 // so each can be seen without a REAPER project, a recording or a Whisper run.
@@ -234,6 +237,7 @@ const mockInitial = {
   ...(mockNoDevices ? { teleprompterDevices: [] } : {}),
   ...(mockLevel === undefined ? {} : { teleprompterLevel: mockLevel }),
   ...(mockReaperState ? { reaperState: mockReaperState } : {}),
+  ...(mockReaperInput ? { reaperInput: mockReaperInput } : {}),
   ...(mockResume ? { resume: mockResume } : {}),
   ...(mockRemoved ? { removedChapter: true } : {}),
   ...(mockChapterSync ? { chapterSync: mockChapterSync } : {}),

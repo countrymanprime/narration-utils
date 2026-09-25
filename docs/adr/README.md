@@ -213,3 +213,4 @@ The `design-spec-guard` skill (`.claude/skills/design-spec-guard/`) reads this f
 | [0247](0247-the-input-level-comes-from-the-sidecars-own-capture-and-a-model-free-meter-child-runs-before-start.md) | The input level comes from the sidecar's own capture, and a model-free meter child runs before Start | Accepted |
 | [0248](0248-pause-is-a-pause-and-resume-pair-on-the-control-file-and-a-paused-session-stays-running.md) | Pause is a pause and resume pair on the control file, and a paused session stays running | Accepted (amends ADR-0104) |
 | [0249](0249-read-aloud-asks-reaper-once-whether-the-chapters-linked-track-is-the-one-track-armed.md) | Read Aloud asks REAPER once whether the chapter's linked track is the one track armed | Accepted |
+| [0250](0250-the-teleprompter-preselects-reapers-microphone-only-on-a-sure-match-of-its-device-name.md) | The teleprompter preselects REAPER's microphone only on a sure match of its device name | Accepted |

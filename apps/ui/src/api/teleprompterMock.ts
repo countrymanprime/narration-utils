@@ -15,6 +15,7 @@ import type {
   ManuscriptParagraph,
   ReadAloudReaperState,
   TeleprompterApi,
+  TeleprompterReaperInput,
   TeleprompterDevice,
   TeleprompterEngine,
   TeleprompterEvent,
@@ -68,6 +69,47 @@ export const MOCK_REAPER_SEEDS = [
 ] as const;
 export type MockReaperSeed = (typeof MOCK_REAPER_SEEDS)[number];
 
+/** `?mockReaperInput=`: what `teleprompterReaperInput` answers (unset: REAPER records from the first microphone listed). */
+export const MOCK_REAPER_INPUT_SEEDS = ['matched', 'uncertain', 'no_match', 'reaper_no_device', 'experimental_off'] as const;
+export type MockReaperInputSeed = (typeof MOCK_REAPER_INPUT_SEEDS)[number];
+
+// The host's answers (apps/desktop/teleprompterinput.go), in the same words, over the mock's own microphone list.
+function mockReaperInput(seed: MockReaperInputSeed, devices: string[]): TeleprompterReaperInput {
+  const [first = 'Microphone Array (Realtek(R) Audio)'] = devices;
+  switch (seed) {
+    case 'matched':
+      return { status: 'matched', reaperDevice: first, device: first, candidates: [], message: `REAPER records from "${first}", so "${first}" is selected.` };
+    case 'uncertain':
+      return {
+        status: 'uncertain',
+        reaperDevice: 'Focusrite USB ASIO',
+        candidates: devices,
+        message: `REAPER records from "Focusrite USB ASIO", which could be any of ${devices.length} microphones here. Choose the one REAPER uses.`,
+      };
+    case 'no_match':
+      return {
+        status: 'no_match',
+        reaperDevice: 'ASIO4ALL v2',
+        candidates: [],
+        message: 'REAPER records from "ASIO4ALL v2", which does not match a microphone here. Choose the microphone yourself.',
+      };
+    case 'reaper_no_device':
+      return {
+        status: 'unavailable',
+        reason: 'reaper_no_device',
+        candidates: [],
+        message: 'REAPER did not say which input device it has open. Choose the microphone yourself.',
+      };
+    case 'experimental_off':
+      return {
+        status: 'unavailable',
+        reason: 'experimental_off',
+        candidates: [],
+        message: "Reading REAPER's tracks is an experimental action. Turn on Experimental REAPER actions in Settings to use it.",
+      };
+  }
+}
+
 // The host's auto-stop (apps/desktop/internal/teleprompter/autostop.go): the same delay and messages, so a replay that
 // reaches the end of the chapter ends itself the way a live session does.
 const AUTO_STOP_MS = 5000;
@@ -97,6 +139,8 @@ type Deps = {
   level?: number;
   /** `?mockReaperState=`: what `readAloudReaperState` answers; unset, the chapter's track is ready. */
   reaper?: MockReaperSeed;
+  /** `?mockReaperInput=`: what `teleprompterReaperInput` answers; unset, REAPER records from the first microphone listed. */
+  reaperInput?: MockReaperInputSeed;
 };
 
 const MOCK_REAPER_TRACK = '{11111111-1111-4111-8111-111111111111}';
@@ -544,6 +588,11 @@ export function createTeleprompterMock(deps: Deps): TeleprompterApi {
       emit(levelAt(0));
     },
     teleprompterMeterStop: async () => stopMeter(),
+    teleprompterReaperInput: async () =>
+      mockReaperInput(
+        deps.reaperInput ?? 'matched',
+        deps.devices.map((device) => device.name),
+      ),
     readAloudReaperState: async (chapterId) => {
       await deps.ready;
       const chapter = findChapter(chapterId);
