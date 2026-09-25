@@ -112,6 +112,9 @@ type DiagnosticInput struct {
 	// Progress, when set, is told the audio bytes read so far, as for
 	// AnalyzeContext (ADR 0015).
 	Progress Progress
+	// Cleanup are the silence cleanup thresholds (cleanup.go); zero means
+	// DefaultCleanupOptions.
+	Cleanup CleanupOptions
 }
 
 // Diagnostics is what the windowed analyzers found in one file.
@@ -133,6 +136,9 @@ type Diagnostics struct {
 	// none: no transcript, or timing that does not resolve against this
 	// audio. It is never guessed from the silence map.
 	Pacing PauseProfileEvidence `json:"pacing"`
+	// Cleanup is the silence cleanup analyzer's candidates (cleanup.go),
+	// raised as findings only by CleanupFindings.
+	Cleanup CleanupDiagnostics `json:"cleanup"`
 
 	// words is how many timed words Pacing was profiled from (0 when it is
 	// unavailable), for the summary's speaking rate.
@@ -153,6 +159,10 @@ func diagnose(ctx context.Context, r io.Reader, in DiagnosticInput, streamBytes 
 		return Diagnostics{}, err
 	}
 	opts, err := in.Options.resolve()
+	if err != nil {
+		return Diagnostics{}, err
+	}
+	cleanup, err := in.Cleanup.resolve()
 	if err != nil {
 		return Diagnostics{}, err
 	}
@@ -183,7 +193,7 @@ func diagnose(ctx context.Context, r io.Reader, in DiagnosticInput, streamBytes 
 	}
 	meter.finish()
 
-	result := meters.result()
+	result := meters.result(cleanup)
 	result.SourceKind, result.Options = in.SourceKind, opts
 	if in.Range != nil {
 		rng := *in.Range
@@ -221,6 +231,7 @@ type diagnosticMeters struct {
 	clips     *clipRegionMeter
 	shortTerm *shortTermMeter
 	silences  *silenceMapper
+	cleanup   *cleanupMeter
 	frames    int64
 }
 
@@ -231,6 +242,7 @@ func newDiagnosticMeters(format Format, opts DiagnosticOptions) *diagnosticMeter
 		clips:     newClipRegionMeter(format, opts.ClipCeilingdBFS),
 		shortTerm: newShortTermMeter(format.SampleRate, format.Channels),
 		silences:  newSilenceMapper(format, opts.SilenceFloordBFS, opts.MinSilenceSeconds),
+		cleanup:   newCleanupMeter(format, opts.SilenceFloordBFS),
 	}
 }
 
@@ -251,24 +263,29 @@ func (m *diagnosticMeters) readAll(ctx context.Context, reader *WAVReader, limit
 		m.clips.Add(block)
 		m.shortTerm.Add(block)
 		m.silences.Add(block)
+		m.cleanup.Add(block)
 		m.frames += int64(len(block[0]))
 		meter.tick()
 	}
 	return nil
 }
 
-func (m *diagnosticMeters) result() Diagnostics {
+func (m *diagnosticMeters) result(cleanup CleanupOptions) Diagnostics {
 	m.clips.Flush()
 	m.silences.Flush()
+	m.cleanup.Flush()
+	duration := float64(m.frames) / float64(m.format.SampleRate)
+	silences := m.silences.regions()
 	return Diagnostics{
 		SampleRate:        m.format.SampleRate,
 		Channels:          m.format.Channels,
-		DurationSeconds:   float64(m.frames) / float64(m.format.SampleRate),
+		DurationSeconds:   duration,
 		Clipping:          m.clips.result(),
 		ShortTermLoudness: m.shortTerm.points,
 		LevelShifts:       m.shortTerm.levelShifts(m.opts.LevelShiftLU),
-		Silences:          m.silences.regions(),
+		Silences:          silences,
 		RoomTone:          m.silences.roomToneSegments(m.opts.RoomToneStepDB),
+		Cleanup:           m.cleanup.result(silences, m.opts.SilenceFloordBFS, duration, cleanup),
 	}
 }
 

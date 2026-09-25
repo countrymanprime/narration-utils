@@ -1058,7 +1058,10 @@ export const APP_DRIVERS: Record<string, Record<string, Driver>> = {
     'chapter-header-columns': async (page) => {
       await page.goto('/?mockManuscript=mixed');
       await settlePage(page);
-      await goToPage(page, 'Manuscript');
+      // Not goToPage: the reader opens with only its first entry expanded, which here is the Opening credits card (no
+      // [data-paragraph-text]), so the page has arrived once its heading and the rows waited for below are there.
+      await clickNav(page, 'Manuscript');
+      await page.getByRole('heading', { level: 1, name: PAGE_HEADING.Manuscript, exact: true }).waitFor();
       await clickVisible(page, 'button', 'Collapse all chapters');
       await page.getByRole('button', { name: 'Front Matter' }).waitFor();
       await page

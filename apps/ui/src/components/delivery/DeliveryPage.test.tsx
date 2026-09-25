@@ -54,8 +54,8 @@ describe('DeliveryPage', () => {
     renderPage();
     expect(await screen.findByText('ACX (September 2026)')).toBeTruthy();
     expect(screen.getByText('Built in · read-only')).toBeTruthy();
-    expect(screen.getByText('6 checked by the app')).toBeTruthy();
-    expect(screen.getByText('5 not checked by the app')).toBeTruthy();
+    expect(screen.getByText('9 checked by the app')).toBeTruthy();
+    expect(screen.getByText('2 not checked by the app')).toBeTruthy();
     expect(screen.getByText('2 listen')).toBeTruthy();
     expect(screen.getByText('6 to verify')).toBeTruthy();
     expect(await screen.findByText(/Nothing measured yet/)).toBeTruthy();
@@ -65,7 +65,7 @@ describe('DeliveryPage', () => {
     expect(within(rules).getAllByRole('row')).toHaveLength(14);
     expect(within(rules).getByRole('columnheader', { name: 'ACX requires' })).toBeTruthy();
     expect(within(rules).getByText('Measured: −23 to −18 dBFS')).toBeTruthy();
-    expect(within(rules).getByText(/The WAV is measured; check the MP3 you upload/)).toBeTruthy();
+    expect(within(rules).getByText('Measured: 192 kbps+ CBR')).toBeTruthy();
     expect(within(rules).getByText('Conflicting sources')).toBeTruthy();
     expect(within(rules).getByText('“Opening and closing credits should be separate files”')).toBeTruthy();
   });
@@ -77,7 +77,6 @@ describe('DeliveryPage', () => {
 
     expect(await screen.findByText('Measured 2 of 3 files; 1 could not be measured. Judged against ACX (September 2026).')).toBeTruthy();
     expect(screen.getByText('1 rule not met in 1 file: sample rate in Chapter 01.wav.')).toBeTruthy();
-    expect(screen.getByText(/3 rules per file are not checked by the app \(room tone at the head and tail and MP3 format\)/)).toBeTruthy();
     const table = screen.getByRole('table', { name: 'Measurements' });
     expect(within(table).getByRole('columnheader', { name: /RMS\s+−23 to −18 dBFS/ })).toBeTruthy();
     expect(within(table).getByRole('columnheader', { name: /Room tone\s+head · tail/ })).toBeTruthy();
@@ -86,13 +85,13 @@ describe('DeliveryPage', () => {
     expect(chapter.textContent).toContain('−21.2');
     expect(chapter.textContent).toContain('48 kHz · stereo');
     expect(chapter.textContent).toContain('Not met not 44.1 kHz');
-    expect(within(chapter).getAllByText('Not checked')).toHaveLength(2);
+    expect(within(chapter).getAllByText('Not checked')).toHaveLength(1);
     expect(chapter.textContent).toContain('1 not met');
-    expect(chapter.textContent).toContain('4 met · 3 not checked');
+    expect(chapter.textContent).toContain('6 met · 1 not checked');
 
     const silent = await rowFor('Chapter 02.wav');
-    expect(within(silent).getAllByText('Not measurable')).toHaveLength(3);
-    expect(silent.textContent).toContain('3 not checked · 3 not measurable');
+    expect(within(silent).getAllByText('Not measurable')).toHaveLength(5);
+    expect(silent.textContent).toContain('1 not checked · 5 not measurable');
     expect(screen.getByText(/It is never counted as met/)).toBeTruthy();
 
     expect((await rowFor('Chapter 03.mp3')).textContent).toContain('Could not be measured: not a RIFF/WAVE file');
@@ -116,7 +115,7 @@ describe('DeliveryPage', () => {
       .getAllByRole('row')
       .find((row) => row.textContent?.includes('acx.format'));
     expect(format?.textContent).toContain('Not checked by the app');
-    expect(format?.textContent).toContain('This is a WAV render; check the MP3 you upload.');
+    expect(format?.textContent).toContain('This is a WAV render; measure the MP3 you upload to check its format.');
 
     await user.click(screen.getByRole('button', { name: 'Close' }));
     expect(screen.queryByRole('table', { name: 'Chapter 01.wav, rule by rule' })).toBeNull();

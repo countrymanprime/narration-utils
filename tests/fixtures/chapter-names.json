@@ -1,0 +1,117 @@
+{
+  "about": "Written by apps/desktop/internal/chaptername's test (UPDATE_CONTRACTS=1); never edit by hand. The Go, Python and TypeScript chapter-name helpers must each give these names.",
+  "cases": [
+    {
+      "title": "CHAPTER ONE",
+      "subtitle": "Bad Ideas Look Great in Neon",
+      "full": "CHAPTER ONE — Bad Ideas Look Great in Neon",
+      "short": "CHAPTER ONE",
+      "plain": "CHAPTER ONE - Bad Ideas Look Great in Neon",
+      "readAloud": "Read aloud: CHAPTER ONE — Bad Ideas Look Great in Neon"
+    },
+    {
+      "title": "Prologue",
+      "subtitle": null,
+      "full": "Prologue",
+      "short": "Prologue",
+      "plain": "Prologue",
+      "readAloud": "Read aloud: Prologue"
+    },
+    {
+      "title": "CHAPTER ONE\nBad Ideas Look Great in Neon",
+      "subtitle": null,
+      "full": "CHAPTER ONE — Bad Ideas Look Great in Neon",
+      "short": "CHAPTER ONE",
+      "plain": "CHAPTER ONE - Bad Ideas Look Great in Neon",
+      "readAloud": "Read aloud: CHAPTER ONE — Bad Ideas Look Great in Neon"
+    },
+    {
+      "title": "CHAPTER ONE\nBad Ideas",
+      "subtitle": "",
+      "full": "CHAPTER ONE",
+      "short": "CHAPTER ONE",
+      "plain": "CHAPTER ONE",
+      "readAloud": "Read aloud: CHAPTER ONE"
+    },
+    {
+      "title": "CHAPTER ONE\nBad Ideas",
+      "subtitle": "The Real Subtitle",
+      "full": "CHAPTER ONE — The Real Subtitle",
+      "short": "CHAPTER ONE",
+      "plain": "CHAPTER ONE - The Real Subtitle",
+      "readAloud": "Read aloud: CHAPTER ONE — The Real Subtitle"
+    },
+    {
+      "title": "Chapter 1:",
+      "subtitle": "The Beginning",
+      "full": "Chapter 1 — The Beginning",
+      "short": "Chapter 1:",
+      "plain": "Chapter 1 - The Beginning",
+      "readAloud": "Read aloud: Chapter 1 — The Beginning"
+    },
+    {
+      "title": "Chapter 3 —",
+      "subtitle": "Night",
+      "full": "Chapter 3 — Night",
+      "short": "Chapter 3 —",
+      "plain": "Chapter 3 - Night",
+      "readAloud": "Read aloud: Chapter 3 — Night"
+    },
+    {
+      "title": "Chapter 4 -  ",
+      "subtitle": "Dawn",
+      "full": "Chapter 4 — Dawn",
+      "short": "Chapter 4 -",
+      "plain": "Chapter 4 - Dawn",
+      "readAloud": "Read aloud: Chapter 4 — Dawn"
+    },
+    {
+      "title": "Chapter One: The Storm",
+      "subtitle": null,
+      "full": "Chapter One: The Storm",
+      "short": "Chapter One: The Storm",
+      "plain": "Chapter One: The Storm",
+      "readAloud": "Read aloud: Chapter One: The Storm"
+    },
+    {
+      "title": "  A   Message from\tthe Author ",
+      "subtitle": "   ",
+      "full": "A Message from the Author",
+      "short": "A Message from the Author",
+      "plain": "A Message from the Author",
+      "readAloud": "Read aloud: A Message from the Author"
+    },
+    {
+      "title": "PART ONE\nCHAPTER TWO\nThe Storm",
+      "subtitle": null,
+      "full": "PART ONE — CHAPTER TWO The Storm",
+      "short": "PART ONE",
+      "plain": "PART ONE - CHAPTER TWO The Storm",
+      "readAloud": "Read aloud: PART ONE — CHAPTER TWO The Storm"
+    },
+    {
+      "title": "",
+      "subtitle": "Only a Subtitle",
+      "full": "Only a Subtitle",
+      "short": "",
+      "plain": "Only a Subtitle",
+      "readAloud": "Read aloud: Only a Subtitle"
+    },
+    {
+      "title": "Épilogue",
+      "subtitle": "L’été — encore",
+      "full": "Épilogue — L’été — encore",
+      "short": "Épilogue",
+      "plain": "Épilogue - L’été — encore",
+      "readAloud": "Read aloud: Épilogue — L’été — encore"
+    },
+    {
+      "title": "Ch 5",
+      "subtitle": "No break  here",
+      "full": "Ch 5 — No break here",
+      "short": "Ch 5",
+      "plain": "Ch 5 - No break here",
+      "readAloud": "Read aloud: Ch 5 — No break here"
+    }
+  ]
+}
