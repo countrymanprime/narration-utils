@@ -1202,6 +1202,8 @@ describe('answers of the mock client for the settings, voice, model, transcript 
       'acx.rms',
       'acx.peak',
       'acx.noise_floor',
+      'acx.room_tone_head',
+      'acx.room_tone_tail',
     ]);
     const api = createMockApi();
     const picked = await api.measurePickFiles();
@@ -1267,7 +1269,7 @@ describe('answers of the mock client for the settings, voice, model, transcript 
     while (job.phase === 'running') job = await api.measureState();
     const written = await api.deliveryExportReport(false);
     expectMatches(deliveryReportExportSchema, written, 'mock report export');
-    expect(written).toMatchObject({ folder: pinned.folder, htmlFile: pinned.htmlFile, files: 3, findings: 4, openFindings: 4, pathsIncluded: false });
+    expect(written).toMatchObject({ folder: pinned.folder, htmlFile: pinned.htmlFile, files: 3, findings: 6, openFindings: 6, pathsIncluded: false });
     const again = await api.deliveryExportReport(true);
     expect(again.htmlFile).toBe('delivery-report-20260923-140000Z-2.html');
     expect(again.pathsIncluded).toBe(true);

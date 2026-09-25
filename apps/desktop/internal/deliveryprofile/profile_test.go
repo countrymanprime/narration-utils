@@ -24,8 +24,8 @@ var acxRuleTable = []struct {
 	{"acx.noise_floor", ScopeFile, CheckedMeasured, ToVerify},
 	{"acx.sample_rate", ScopeFile, CheckedMeasured, Verified},
 	{"acx.file_length", ScopeFile, CheckedMeasured, Verified},
-	{"acx.room_tone_head", ScopeFile, CheckedNotYet, Conflicting},
-	{"acx.room_tone_tail", ScopeFile, CheckedNotYet, Verified},
+	{"acx.room_tone_head", ScopeFile, CheckedMeasured, Conflicting},
+	{"acx.room_tone_tail", ScopeFile, CheckedMeasured, Verified},
 	{"acx.format", ScopeFile, CheckedNotYet, Verified},
 	{"acx.channels", ScopeBook, CheckedMeasured, ToVerify},
 	{"acx.one_section_per_file", ScopeBook, CheckedListen, Verified},
@@ -92,6 +92,7 @@ func passingReport() measure.Report {
 	return measure.Report{
 		File: "C:/Renders/Chapter 01.wav", SampleRate: 44100, Channels: 1, DurationSeconds: 7200,
 		IntegratedLUFS: v(-19), RMSdBFS: v(-23), SamplePeakdBFS: v(-3), TruePeakdBTP: v(-3), NoiseFloordBFS: v(-60),
+		HeadRoomToneSeconds: v(0.5), TailRoomToneSeconds: v(5), HeadDigitalSilenceSeconds: v(0), TailDigitalSilenceSeconds: v(0),
 	}
 }
 
@@ -109,12 +110,12 @@ func TestAFileOnEveryBoundaryMeetsEveryMeasuredRuleAndTheRestAreNotChecked(t *te
 		t.Fatalf("findings = %+v, want none", judgement.Findings)
 	}
 	got := resultsByRule(judgement.Results)
-	for _, id := range []string{"acx.rms", "acx.peak", "acx.noise_floor", "acx.sample_rate", "acx.file_length"} {
+	for _, id := range []string{"acx.rms", "acx.peak", "acx.noise_floor", "acx.sample_rate", "acx.file_length", "acx.room_tone_head", "acx.room_tone_tail"} {
 		if got[id].Status != StatusMet || got[id].Value == nil {
 			t.Errorf("%s = %+v, want met with its value", id, got[id])
 		}
 	}
-	for _, id := range []string{"acx.room_tone_head", "acx.room_tone_tail", "acx.format"} {
+	for _, id := range []string{"acx.format"} {
 		if got[id].Status != StatusNotChecked || got[id].Why == "" || got[id].Value != nil {
 			t.Errorf("%s = %+v, want not checked with why and no value", id, got[id])
 		}
@@ -293,5 +294,48 @@ func TestOnlyAMeasuredRangeIsAdjustable(t *testing.T) {
 		if rule.Adjustable() != want[rule.ID] {
 			t.Errorf("%s adjustable = %v, want %v", rule.ID, rule.Adjustable(), want[rule.ID])
 		}
+	}
+}
+
+func TestRoomToneIsJudgedFromTheMeasuredEdges(t *testing.T) {
+	report := passingReport()
+	report.HeadRoomToneSeconds, report.TailRoomToneSeconds = v(0.3), v(6)
+	got := resultsByRule(EvaluateFile(report, ACX()).Results)
+	if got["acx.room_tone_head"].Status != StatusNotMet || got["acx.room_tone_head"].Violation != ViolationBelowMin {
+		t.Errorf("a 0.3 s head = %+v, want not met below the minimum", got["acx.room_tone_head"])
+	}
+	if got["acx.room_tone_tail"].Status != StatusNotMet || got["acx.room_tone_tail"].Violation != ViolationAboveMax {
+		t.Errorf("a 6 s tail = %+v, want not met above the maximum", got["acx.room_tone_tail"])
+	}
+
+	report = passingReport()
+	report.HeadRoomToneSeconds, report.TailRoomToneSeconds = nil, nil
+	got = resultsByRule(EvaluateFile(report, ACX()).Results)
+	for _, id := range []string{"acx.room_tone_head", "acx.room_tone_tail"} {
+		if got[id].Status != StatusNotMeasurable {
+			t.Errorf("%s with no reading in the file = %+v, want not measurable", id, got[id])
+		}
+	}
+}
+
+func TestDigitalSilenceAtAnEdgeIsAdviceBesideTheRoomToneRule(t *testing.T) {
+	report := passingReport()
+	report.HeadRoomToneSeconds, report.HeadDigitalSilenceSeconds = v(1), v(0.4)
+	report.TailRoomToneSeconds, report.TailDigitalSilenceSeconds = v(2), v(2)
+	judgement := EvaluateFile(report, ACX())
+	got := resultsByRule(judgement.Results)
+	for _, id := range []string{"acx.room_tone_head", "acx.room_tone_tail"} {
+		if got[id].Status != StatusMet || !strings.Contains(got[id].Advice, "digital silence") {
+			t.Errorf("%s = %+v, want met with the digital-silence advice", id, got[id])
+		}
+	}
+	warnings := 0
+	for _, finding := range judgement.Findings {
+		if finding.Severity == findings.SeverityWarning && finding.Evidence["advice"] != nil {
+			warnings++
+		}
+	}
+	if warnings != 2 {
+		t.Errorf("%d advice warnings, want one per edge", warnings)
 	}
 }

@@ -55,6 +55,16 @@ type Report struct {
 	// would look like a perfect floor.
 	DigitalSilentWindows int `json:"digital_silent_windows"`
 
+	// HeadRoomToneSeconds and TailRoomToneSeconds time the room tone at the
+	// audio's edges: up to the first, and after the last, 50 ms window at or
+	// above the -50 dBFS edge floor (edges.go). The DigitalSilence pair say
+	// how much of each edge is exact zeros, which is not room tone. All four
+	// are null when no window reaches the floor.
+	HeadRoomToneSeconds       *float64 `json:"head_room_tone_seconds"`
+	TailRoomToneSeconds       *float64 `json:"tail_room_tone_seconds"`
+	HeadDigitalSilenceSeconds *float64 `json:"head_digital_silence_seconds"`
+	TailDigitalSilenceSeconds *float64 `json:"tail_digital_silence_seconds"`
+
 	// FullScaleSamples counts samples pinned at the format's limit, in any
 	// channel. ClipRunCount counts runs of minClipRunSamples or more of
 	// them in one channel (clipping); ClipRuns lists the first
@@ -104,6 +114,7 @@ type meterSet struct {
 	peaks    *truePeakMeter
 	floor    *noiseFloorMeter
 	clips    *clipMeter
+	edges    *edgeMeter
 	energy   float64
 	frames   int64
 }
@@ -115,6 +126,7 @@ func newMeterSet(format Format) *meterSet {
 		peaks:    newTruePeakMeter(format.SampleRate, format.Channels),
 		floor:    newNoiseFloorMeter(format.SampleRate, format.Channels),
 		clips:    newClipMeter(format),
+		edges:    newEdgeMeter(format),
 	}
 }
 
@@ -123,6 +135,7 @@ func (m *meterSet) Add(block [][]float64) {
 	m.peaks.Add(block)
 	m.floor.Add(block)
 	m.clips.Add(block)
+	m.edges.Add(block)
 	for _, channel := range block {
 		for _, s := range channel {
 			m.energy += s * s
@@ -134,6 +147,7 @@ func (m *meterSet) Add(block [][]float64) {
 func (m *meterSet) Report() Report {
 	m.peaks.Flush()
 	m.clips.Flush()
+	m.edges.Flush()
 	report := Report{
 		SampleRate:           m.format.SampleRate,
 		Channels:             m.format.Channels,
@@ -147,6 +161,7 @@ func (m *meterSet) Report() Report {
 		ClipRunCount:         m.clips.runCount,
 		ClipRuns:             m.clips.runs,
 	}
+	report.HeadRoomToneSeconds, report.TailRoomToneSeconds, report.HeadDigitalSilenceSeconds, report.TailDigitalSilenceSeconds = m.edges.edges()
 	if m.frames > 0 {
 		report.RMSdBFS = energyToDB(m.energy / float64(m.frames*int64(m.format.Channels)))
 	}

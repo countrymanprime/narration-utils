@@ -191,3 +191,4 @@ The `design-spec-guard` skill (`.claude/skills/design-spec-guard/`) reads this f
 | [0233](0233-the-app-may-make-a-take-active-by-guid-in-one-undo-step.md) | The app may make a take active, by GUID, in one undo step | Accepted |
 | [0234](0234-fx-chains-go-on-tracks-and-a-passage-of-a-take-gets-one-plug-in-at-a-time.md) | FX chains go on tracks, and a passage of a take gets one plug-in at a time | Accepted |
 | [0235](0235-one-create-regions-command-serves-chapter-and-credits-regions-and-replaces-create-chapter-regions.md) | One create_regions command serves chapter and credits regions and replaces create_chapter_regions | Accepted |
+| [0236](0236-room-tone-at-a-files-edges-is-timed-against-the-silence-floor-and-a-custom-copy-takes-how-a-rule-is-checked-from-its-built-in.md) | Room tone at a file's edges is timed against the silence floor, and a custom copy takes how a rule is checked from its built-in | Proposed |

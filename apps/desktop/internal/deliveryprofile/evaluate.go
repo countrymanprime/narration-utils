@@ -47,8 +47,8 @@ type Judgement struct {
 	Findings []findings.Finding
 }
 
-// metricValue reads a file metric from a report. known is false for a metric the report does not hold (room tone at the
-// edges, the MP3 container): such a rule is not checked, whatever its CheckedBy says.
+// metricValue reads a file metric from a report. known is false for a metric the report does not hold (the MP3
+// container): such a rule is not checked, whatever its CheckedBy says.
 func metricValue(report measure.Report, metric string) (value *float64, known bool) {
 	switch metric {
 	case "integrated_lufs":
@@ -67,6 +67,14 @@ func metricValue(report measure.Report, metric string) (value *float64, known bo
 		return number(float64(report.SampleRate)), true
 	case "channels":
 		return number(float64(report.Channels)), true
+	case "head_room_tone_seconds":
+		return report.HeadRoomToneSeconds, true
+	case "tail_room_tone_seconds":
+		return report.TailRoomToneSeconds, true
+	case "head_digital_silence_seconds":
+		return report.HeadDigitalSilenceSeconds, true
+	case "tail_digital_silence_seconds":
+		return report.TailDigitalSilenceSeconds, true
 	}
 	return nil, false
 }

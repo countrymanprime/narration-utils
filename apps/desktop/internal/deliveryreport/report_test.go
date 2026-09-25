@@ -32,6 +32,7 @@ func measuredReport(path string, lufs, truePeak *float64) *measure.Report {
 		File: path, SampleRate: 48000, Channels: 2, DurationSeconds: 1843.5,
 		IntegratedLUFS: lufs, RMSdBFS: number(-21.2), SamplePeakdBFS: number(-3.6), TruePeakdBTP: truePeak,
 		NoiseFloordBFS: number(-66.8), ClipRuns: []measure.ClipRun{},
+		HeadRoomToneSeconds: number(0.8), TailRoomToneSeconds: number(2.5), HeadDigitalSilenceSeconds: number(0), TailDigitalSilenceSeconds: number(0),
 	}
 }
 
@@ -288,7 +289,7 @@ func TestTheReportNamesTheProfileAndEveryRuleWithItsSourceAndResults(t *testing.
 	if got := byID["acx.channels"].Results; got.Met != 1 {
 		t.Errorf("channels (book) results = %+v, want met once for the book", got)
 	}
-	if report.Summary.FilesNotMet != 2 || report.Summary.RuleResults.NotMet != 2 || report.Summary.RuleResults.NotChecked != 6 {
+	if report.Summary.FilesNotMet != 2 || report.Summary.RuleResults.NotMet != 2 || report.Summary.RuleResults.NotChecked != 2 { // the MP3 format, on both WAV renders
 		t.Errorf("summary = %+v", report.Summary)
 	}
 	for _, file := range report.Files {

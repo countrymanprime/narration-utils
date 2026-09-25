@@ -152,10 +152,14 @@
         "max": 5,
         "oneOf": null,
         "sameAcrossFiles": false,
-        "advice": null,
+        "advice": {
+          "metric": "head_digital_silence_seconds",
+          "max": 0,
+          "unit": "s",
+          "text": "the head holds digital silence (exact zeros): ACX asks for room tone, not silence"
+        },
         "level": "required",
-        "checkedBy": "not_yet",
-        "notCheckedWhy": "Not checked by the app yet: measuring room tone at the file's edges comes later.",
+        "checkedBy": "measured",
         "source": {
           "title": "ACX Audio Submission Requirements",
           "url": "https://help.acx.com/s/article/what-are-the-acx-audio-submission-requirements",
@@ -176,10 +180,14 @@
         "max": 5,
         "oneOf": null,
         "sameAcrossFiles": false,
-        "advice": null,
+        "advice": {
+          "metric": "tail_digital_silence_seconds",
+          "max": 0,
+          "unit": "s",
+          "text": "the tail holds digital silence (exact zeros): ACX asks for room tone, not silence"
+        },
         "level": "required",
-        "checkedBy": "not_yet",
-        "notCheckedWhy": "Not checked by the app yet: measuring room tone at the file's edges comes later.",
+        "checkedBy": "measured",
         "source": {
           "title": "ACX Audio Submission Requirements",
           "url": "https://help.acx.com/s/article/what-are-the-acx-audio-submission-requirements",
