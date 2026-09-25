@@ -334,7 +334,7 @@ Every spike phase below launches REAPER. D3 approves that on copies of `Challeng
 - **Success signal**: progress equals matched item lengths; no timer added by default.
 - **Status: complete, delivered elsewhere (reconciled by stream B5, 2026-09-25).** Open Question 11 was answered (a): progress only, no time tracking. The view this phase asked for shipped with [the actual-recorded column PRD](actual-recorded-column.prd.md) (complete, Phases 1 to 3), which took over the Home half of the diagnostics PRD's Phase 8 (its AR7). This phase's own dependency is that same work.
   - Home's per-chapter table shows each chapter's **Actual recorded** time, and the stat row sums it. The time is the confirmed track's recorded seconds in the saved `.rpp` (`tracks.Track.RecordedSeconds`: the union of the unmuted items' project-time intervals, playing lanes only on a fixed-lane track), so progress equals matched item lengths. A chapter without one confirmed link, or without a readable project, shows a dash with its reason, never an estimate.
-  - Tests: `apps/desktop/internal/tracks/recorded_seconds*_test.go`, `apps/desktop/recordedlengths_test.go`, and the `AudiobookEstimatePanel` Vitest ("Status is inert").
+  - Tests: `apps/desktop/internal/tracks/recorded_seconds_test.go`, `apps/desktop/recordedlengths_test.go`, and the `AudiobookEstimatePanel` Vitest ("Status is inert").
   - No timer was added, and no REAPER code: the phase's goal was "per-chapter progress without new REAPER code".
   - Time tracking stays out until a data source exists (REAPER has no documented per-project active-time source).
 
