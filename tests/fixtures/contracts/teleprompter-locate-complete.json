@@ -1,6 +1,21 @@
 {
   "lastReading": null,
-  "located": null,
+  "located": {
+    "confidence": 0.812,
+    "confident": true,
+    "heard": 32,
+    "heardText": "do once or twice she had peeped into the book her sister was reading but it had no pictures or conversations in it and what is the use of a",
+    "last": 2185,
+    "matched": 30,
+    "runnerUp": 4,
+    "sentence": {
+      "end": 59,
+      "start": 23,
+      "text": "Once or twice she had peeped into the book her sister was reading, but it had no pictures or conversations in it, and what is the use of a book, thought Alice, without pictures or conversations?"
+    },
+    "tokens": 2186,
+    "word": 2186
+  },
   "match": {
     "candidates": [
       {
@@ -19,7 +34,7 @@
       "approximate": false,
       "itemGuid": "{22222222-1111-4111-8111-111111111111}",
       "projectTime": 17,
-      "sourceAvailable": false,
+      "sourceAvailable": true,
       "sourceFile": "C:/Projects/Alice/media/ch1.wav",
       "sourceStart": 2,
       "sourceTime": 9.5,
@@ -59,23 +74,36 @@
     "approximate": false,
     "itemGuid": "{22222222-1111-4111-8111-111111111111}",
     "projectTime": 17,
-    "sourceAvailable": false,
+    "sourceAvailable": true,
     "sourceFile": "C:/Projects/Alice/media/ch1.wav",
     "sourceStart": 2,
     "sourceTime": 9.5,
     "supported": true,
     "takeGuid": "{32222222-1111-4111-8111-111111111111}"
   },
-  "status": "source_missing",
-  "tail": null,
+  "status": "found",
+  "tail": {
+    "from": 2,
+    "to": 9.5
+  },
   "track": {
     "guid": "{11111111-1111-4111-8111-111111111111}",
     "index": 0,
     "name": "Chapter I"
   },
   "verdict": {
-    "daw": null,
-    "kind": "none",
+    "daw": {
+      "confident": true,
+      "number": 2187,
+      "sentence": {
+        "end": 2186,
+        "start": 2179,
+        "text": "* * * * * * *"
+      },
+      "source": "saved",
+      "word": 2186
+    },
+    "kind": "complete",
     "prompter": null,
     "start": null,
     "tokens": 2186

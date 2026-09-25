@@ -59,10 +59,12 @@ const mockManuscriptMixed = mockParams.get('mockManuscript') === 'mixed';
 // through the first chapter, as a session the host kept running (`flagged`: further in, with suspected flags raised);
 // `ended` boots one that already stopped itself at the end of the chapter (the host's auto-stop).
 const mockTeleprompter = (['listening', 'waiting', 'done', 'ended', 'flagged'] as const).find((seed) => seed === mockParams.get('mockTeleprompter'));
-// `?mockResume=low_confidence|complete|not_found|ambiguous|none|no_recording|source_missing|source_unsupported|error`
+// `?mockResume=agree|disagree|prompter_only|low_confidence|complete|not_found|ambiguous|none|no_recording|source_missing|source_unsupported|error`
 // makes the read-aloud dialog's resume prompt (read-aloud-resume-from-daw.prd.md Phase 1) show that state for any chapter,
 // so each can be seen without a REAPER project, a recording or a Whisper run.
 const mockResume = MOCK_RESUME_SEEDS.find((seed) => seed === mockParams.get('mockResume'));
+// `?mockRemoved=1`: the last narration chapter boots removed from recording (chapter-track-link-control.prd.md Phase 3).
+const mockRemoved = mockParams.get('mockRemoved') === '1';
 // `?mockNoDevices=1` boots the teleprompter with an empty device listing, so the
 // blocked "No microphone found" state (no typed fallback) can be seen without a host.
 const mockNoDevices = mockParams.has('mockNoDevices');
@@ -217,6 +219,7 @@ const mockInitial = {
   ...(mockTeleprompter ? { teleprompter: mockTeleprompter } : {}),
   ...(mockNoDevices ? { teleprompterDevices: [] } : {}),
   ...(mockResume ? { resume: mockResume } : {}),
+  ...(mockRemoved ? { removedChapter: true } : {}),
   ...(mockCreditsFilled ? { creditValues: { title: 'Alice’s Adventures in Wonderland', author: 'Lewis Carroll', narrator: 'Ada Finch' } } : {}),
   ...(mockCreditsExtras ? { chapterAnnouncement: '[Chapter]{: [Chapter Title]}.', retailSample: { chapterIndex: 2, startLine: 1, endLine: 3 } } : {}),
   ...(mockNoProject ? { projectFolder: '' } : {}),

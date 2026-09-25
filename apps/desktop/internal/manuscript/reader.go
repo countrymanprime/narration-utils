@@ -449,6 +449,14 @@ func chapterPayload(chapter, notes map[string]any, recorded map[string]float64, 
 	if subtitle := text(chapter, "subtitle"); subtitle != "" {
 		result["subtitle"] = subtitle
 	}
+	// A chapter reclassified after import (SetChapterKind) says when; one imported as narration and now another kind
+	// was removed from recording and is listed for Restore (chapter-track-link-control PRD Phase 3).
+	if changed := text(chapter, "kindChangedAt"); changed != "" {
+		result["kindChangedAt"] = changed
+		if text(chapter, "importedKind") == "narration" && !isNarration(chapter) {
+			result["removedFromRecording"] = true
+		}
+	}
 	if fraction, measured := recorded[text(chapter, "id")]; measured {
 		result["recordedFraction"] = fraction
 	}

@@ -75,6 +75,7 @@ var stressReaders = []stressReader{
 	{"ChapterTrackLinks", func(h *Host) { _, _ = h.ChapterTrackLinks() }},
 	{"ChapterTrackSet (unknown chapter)", func(h *Host) { _, _ = h.ChapterTrackSet("missing", "track-guid") }},
 	{"ChapterTrackUnlink (unknown chapter)", func(h *Host) { _, _ = h.ChapterTrackUnlink("missing") }},
+	{"ManuscriptSetChapterKind (unknown chapter)", func(h *Host) { _, _ = h.ManuscriptSetChapterKind("missing", "reference") }},
 	{"ChapterSuggestion", func(h *Host) { _, _ = h.ChapterSuggestion() }},
 	{"CreditsStatuses", func(h *Host) { _, _ = h.CreditsStatuses() }},
 	{"CreditsSetStatus (unknown kind)", func(h *Host) { _, _ = h.CreditsSetStatus("missing", "finalized") }},

@@ -676,6 +676,15 @@ export function ManuscriptSelectFile(): $CancellablePromise<string> {
     return $Call.ByID(258840892);
 }
 
+/**
+ * ManuscriptSetChapterKind reclassifies a chapter after import (chapter-track-link-control PRD Phase 3):
+ * "reference" or "opening" removes it from recording, "narration" restores it. A removal clears the chapter's
+ * track links (TL5 A). See manuscriptSetChapterKind.
+ */
+export function ManuscriptSetChapterKind(chapterID: string, kind: string): $CancellablePromise<string> {
+    return $Call.ByID(3035504737, chapterID, kind);
+}
+
 export function ManuscriptSetChapterStatus(chapter: string, status: string): $CancellablePromise<string> {
     return $Call.ByID(2496889981, chapter, status);
 }
@@ -1020,7 +1029,8 @@ export function TeleprompterDevices(): $CancellablePromise<string> {
  * narrator picked one), where its audio ends as of the .rpp's last save (Phase 8), and the last
  * teleprompter.DefaultTailSeconds before that end transcribed and placed in the chapter by the sidecar. model is the
  * Whisper model id ("" for the teleprompter's default); like TeleprompterStart it answers asset_required instead of
- * downloading one, but only once there is audio to read. It only reads: nothing is recorded, moved or linked.
+ * downloading one, but only once there is audio to read. Every other answer carries the prompter's last reading and the
+ * reconciled verdict (PRD Phase 3). It only reads: nothing is recorded, moved or linked.
  */
 export function TeleprompterLocate(chapterID: string, trackGUID: string, model: string): $CancellablePromise<string> {
     return $Call.ByID(379348061, chapterID, trackGUID, model);

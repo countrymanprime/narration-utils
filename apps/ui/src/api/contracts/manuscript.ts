@@ -1,3 +1,4 @@
+import type { TrackMapping } from './chapterTrackMap';
 export type ChapterStatus = 'not_started' | 'recording' | 'editing' | 'proofing' | 'finalized';
 export type ManuscriptContentKind = 'narration' | 'opening' | 'reference';
 /** Why a chapter has no recorded length (actual-recorded-column PRD AR3): no linked track, several, the linked track is
@@ -18,7 +19,22 @@ export type ManuscriptChapter = {
   status: ChapterStatus;
   /** Omitted by manuscripts imported before structural classification. */
   contentKind?: ManuscriptContentKind;
+  /** When the chapter's kind was changed after import (`manuscriptSetChapterKind`, chapter-track-link-control PRD Phase 3). */
+  kindChangedAt?: string;
+  /** Set while a chapter imported as narration has been removed from recording: list it under "Removed from recording"
+   * with Restore (`manuscriptSetChapterKind(id, 'narration')`). */
+  removedFromRecording?: true;
   paragraphIds?: Array<{ id: string; index: number }>;
+};
+
+/**
+ * `manuscriptSetChapterKind`'s answer (chapter-track-link-control PRD Phase 3): the chapter as the chapter list now sends it,
+ * the kind it had before, and the track links a removal cleared (TL5 A; empty on Restore or when it had none).
+ */
+export type ManuscriptChapterKindResult = {
+  chapter: ManuscriptChapter;
+  previousKind: ManuscriptContentKind;
+  clearedLinks: TrackMapping[];
 };
 /** Inline formatting over a paragraph's `text`. Offsets are UTF-16 code units (JS string indexes). */
 export type TextSpan = { start: number; end: number; style: 'bold' | 'italic' | 'underline' };
@@ -145,6 +161,11 @@ export interface ManuscriptApi {
   manuscriptParagraphs(chapter: string): Promise<ManuscriptParagraph[]>;
   manuscriptSearch(query: string): Promise<SearchHit[]>;
   manuscriptSetChapterStatus(chapter: string, status: ChapterStatus): Promise<ManuscriptChapter>;
+  /**
+   * Remove a chapter from recording (`reference`, or `opening` for Front Matter) or Restore it (`narration`). Nothing is
+   * deleted: ids, text, status, notes and results stay. Refused for the last narration chapter and while an import runs.
+   */
+  manuscriptSetChapterKind(chapterId: string, kind: ManuscriptContentKind): Promise<ManuscriptChapterKindResult>;
   noteList(chapter?: string): Promise<ManuscriptNote[]>;
   manuscriptReader(): Promise<ManuscriptReader>;
   readerState(): Promise<ReaderState>;

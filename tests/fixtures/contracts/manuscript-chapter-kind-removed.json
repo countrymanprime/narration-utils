@@ -1,0 +1,23 @@
+{
+  "chapter": {
+    "contentKind": "reference",
+    "id": "c-0001",
+    "index": 0,
+    "kindChangedAt": "2026-09-25T12:00:00Z",
+    "removedFromRecording": true,
+    "status": "not_started",
+    "title": "Chapter I: Down the Rabbit-Hole",
+    "wordCount": 2181
+  },
+  "clearedLinks": [
+    {
+      "chapterId": "c-0001",
+      "chapterTitle": "Chapter I: Down the Rabbit-Hole",
+      "confirmedAt": "2026-09-25T11:00:00Z",
+      "match": null,
+      "origin": "manual",
+      "trackGuid": "{11111111-1111-4111-8111-111111111111}"
+    }
+  ],
+  "previousKind": "narration"
+}
