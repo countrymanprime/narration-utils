@@ -89,11 +89,10 @@ func ACX() Profile {
 				Verification: Verified,
 			},
 			{
-				ID: "acx.format", Label: "MP3 format", Scope: ScopeFile, Metric: "mp3_format", BoundText: "192 kbps+ CBR",
-				Level: LevelRequired, CheckedBy: CheckedNotYet,
-				NotCheckedWhy: "This is a WAV render; check the MP3 you upload.",
-				Source:        acxSource("Each file is an MP3 at 192 kbps or higher, constant bit rate (CBR).", acxLevelsReadOn, false),
-				Verification:  Verified,
+				ID: "acx.format", Label: "MP3 format", Scope: ScopeFile, Metric: "mp3_format", Unit: "kbps", Min: number(192),
+				BoundText: "192 kbps+ CBR", Level: LevelRequired, CheckedBy: CheckedMeasured,
+				Source:       acxSource("Each file is an MP3 at 192 kbps or higher, constant bit rate (CBR).", acxLevelsReadOn, false),
+				Verification: Verified,
 			},
 			{
 				ID: "acx.channels", Label: "Channels", Scope: ScopeBook, Metric: "channels", Unit: "", OneOf: []float64{1, 2},

@@ -355,6 +355,11 @@ func withCurrentChecks(profile Profile) Profile {
 			}
 			fresh := current.clone()
 			rule.CheckedBy, rule.NotCheckedWhy, rule.Advice = fresh.CheckedBy, fresh.NotCheckedWhy, fresh.Advice
+			if rule.Min == nil && rule.Max == nil && len(rule.OneOf) == 0 {
+				// A rule saved with no bound at all was one the app could not check (the MP3 format before Phase 6):
+				// the narrator never had a number to change, so it takes the built-in's.
+				rule.Min, rule.Max, rule.OneOf, rule.Unit = fresh.Min, fresh.Max, fresh.OneOf, fresh.Unit
+			}
 			break
 		}
 	}

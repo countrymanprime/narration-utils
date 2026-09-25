@@ -57,6 +57,7 @@ if str(_SHARED_PYTHON) not in sys.path:
     sys.path.insert(0, str(_SHARED_PYTHON))
 
 from narration_common import manuscript as canonical_manuscript
+from narration_common.chapter_names import chapter_display_name
 from narration_common.config import get_default
 from narration_common.logging_utils import log, set_log_file
 from narration_common.progress import write_progress
@@ -807,12 +808,19 @@ def clean_marker_field(value):
 def display_title(title):
     """Headings can contain a manual line break embedding a subtitle (e.g.
     "CHAPTER ONE\\nBad Ideas Look Great in Neon", confirmed live) - join
-    into one clean line ("CHAPTER ONE: Bad Ideas Look Great in Neon") for
-    error/log messages and markdown headings alike."""
+    into one line ("CHAPTER ONE: Bad Ideas Look Great in Neon"). This is a
+    matching key: the chapter candidates, an explicit chapter selection and
+    the take comparison's title are compared in this form, so it never
+    changes. Text a person reads uses chapter_name instead."""
     if not title:
         return title
     lines = [line.strip() for line in title.splitlines() if line.strip()]
     return ": ".join(lines)
+
+
+def chapter_name(chapter):
+    """A chapter's name for logs and headings: "Title — Subtitle" by the app's one rule (ADR 0191)."""
+    return chapter_display_name(chapter["title"], chapter.get("subtitle"))
 
 
 def normalized_tokens(s):
@@ -1064,14 +1072,14 @@ def _find_chapter_by_label(chapters, track_name, target_tokens, candidate_titles
     if best is None or best_score < 0.75:
         log(
             f"No chapter heading matched track name '{track_name}' well enough "
-            f"(best guess '{display_title(best['title']) if best else '?'}' scored {best_score:.2f}). "
+            f"(best guess '{chapter_name(best) if best else '?'}' scored {best_score:.2f}). "
             f"Detected headings:\n{titles}\nAsking for an explicit chapter selection."
         )
         return None, 0.0, candidate_titles
 
     log(
         f"WARNING: no exact/prefix heading match for track '{track_name}' - "
-        f"using closest fuzzy match '{display_title(best['title'])}' (score={best_score:.2f}). "
+        f"using closest fuzzy match '{chapter_name(best)}' (score={best_score:.2f}). "
         f"Detected headings:\n{titles}"
     )
     return best, best_score, candidate_titles
@@ -1495,7 +1503,7 @@ def write_unified_diff(chapter, transcript_words, diff_path, covered_range, sent
     Returns diff_path; the .txt pair's paths are deterministically
     derivable from it (swap the .diff extension), so callers needing them
     don't require a separate return value."""
-    heading = display_title(chapter["title"])
+    heading = chapter_name(chapter)
 
     if covered_range is not None:
         first_u, last_u = covered_range
@@ -1814,12 +1822,12 @@ def run(args):
         if chapter is None:
             raise ValueError(f"Chapter title override '{args.chapter_title}' not found in the document.")
         score = 1.0
-        log(f"Using explicitly-selected chapter '{display_title(chapter['title'])}'")
+        log(f"Using explicitly-selected chapter '{chapter_name(chapter)}'")
     else:
         chapter, score, candidates = find_chapter_by_track_name(chapters, args.track_name)
         if chapter is None:
             raise NeedsChapterSelection(candidates)
-        log(f"Matched track '{args.track_name}' to chapter '{display_title(chapter['title'])}' (score={score:.3f})")
+        log(f"Matched track '{args.track_name}' to chapter '{chapter_name(chapter)}' (score={score:.3f})")
 
     check_cancelled(progress_path)
     full_audio, segments = build_concatenated_audio(segments, progress_path)
@@ -1857,7 +1865,7 @@ def run(args):
 
     diff_path = write_unified_diff(chapter, transcript_words, args.diff_out, covered_range, sentence_units, alignment)
 
-    summary = f"MATCH: '{display_title(chapter['title'])}' (score {score:.2f}) - {len(markers)} discrepancy marker(s)"
+    summary = f"MATCH: '{chapter_name(chapter)}' (score {score:.2f}) - {len(markers)} discrepancy marker(s)"
 
     check_cancelled(progress_path)
     write_progress(progress_path, "WRITE", 99, "Writing results...")
