@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/countrymanprime/narration-utils/shell/internal/assets"
+	"github.com/wailsapp/wails/v3/pkg/application"
 )
 
 // The app must never download because it opened, and choosing a model in Settings must never download it (first-use brief, "Intended
@@ -89,8 +90,8 @@ func launchHost(t *testing.T, guard *networkGuard, how launch) *Host {
 			t.Fatal(err)
 		}
 	}
-	host.Startup(context.Background())
-	t.Cleanup(func() { host.Shutdown(context.Background()) })
+	_ = host.ServiceStartup(context.Background(), application.ServiceOptions{})
+	t.Cleanup(func() { _ = host.ServiceShutdown() })
 	return host
 }
 

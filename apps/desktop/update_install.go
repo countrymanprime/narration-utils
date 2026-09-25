@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/countrymanprime/narration-utils/shell/internal/update"
-	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
 // quitDelay is how long the host waits after answering UpdateInstall before it closes: the answer has to reach the window first.
@@ -117,7 +116,7 @@ func (h *Host) closeForUpdate() {
 	ctx := h.ctx
 	h.mu.RUnlock()
 	if ctx != nil {
-		runtime.Quit(ctx)
+		quitApplication()
 	}
 }
 
