@@ -601,6 +601,23 @@ export const STATE_CATALOG: StateEntry[] = [
   },
   {
     page: 'tracks',
+    state: 'sync-off',
+    description: 'Tracks, the Chapter sync panel with sync turned off (?mockChapterSync=off, daw-chapter-track-auto-sync.prd.md Phase 3, mockup 02)',
+  },
+  {
+    page: 'tracks',
+    state: 'sync-consent',
+    description:
+      'Tracks, "Sync chapters to tracks?" (?mockChapterSync=ask, daw-chapter-track-auto-sync.prd.md Phase 3, mockups/daw-chapter-track-auto-sync/01-sync-consent-dialog.webp). The default fixture only has 3 tracks against 12 chapters, so its Needs-you and Tracks-that-are-not-chapters lists differ from the mockup\'s content; wording and layout for those sections are covered by ChapterSyncConsentDialog.test.tsx and ChapterSyncPanel.test.tsx instead, over a constructed preview - the mock has no seam yet for an ambiguous or uncertain match (a gap for lane A, not built here), so "tracks/sync-needs-you" is not a capturable state and is not in this catalog.',
+  },
+  {
+    page: 'home',
+    state: 'chapter-sync-consent',
+    description:
+      'Home, the same "Sync chapters to tracks?" dialog (?mockChapterSync=ask) - it shows from every link path, not only Tracks (Phase 3\'s "Home variant" row)',
+  },
+  {
+    page: 'tracks',
     state: 'unplayable-track-selected',
     description: 'Tracks, a track whose source file is missing selected - "no playable audio" message with disabled transport',
   },

@@ -7,8 +7,10 @@ import type {
   TeleprompterEvent,
   TeleprompterFlag,
   TeleprompterFlagFinding,
+  TeleprompterLevel,
   TeleprompterLocateResult,
   TeleprompterLocated,
+  TeleprompterMeterStopped,
   TeleprompterPosition,
   TeleprompterReading,
   TeleprompterResumePlace,
@@ -59,6 +61,15 @@ const teleprompterFlagSchema = z
   })
   .refine((flag) => flag.start <= flag.end, { message: 'a flag cannot end before it starts', path: ['end'] }) satisfies z.ZodType<TeleprompterFlag>;
 
+// The input level (levels.py): dBFS, from the floor of -100 up to 0.
+const dbfsSchema = z.number().min(-100).max(0);
+const teleprompterLevelSchema = z.object({ type: z.literal('level'), peak: dbfsSchema, rms: dbfsSchema }) satisfies z.ZodType<TeleprompterLevel>;
+
+const teleprompterMeterStoppedSchema = z.object({
+  type: z.literal('meter_stopped'),
+  error: z.string().nullable(),
+}) satisfies z.ZodType<TeleprompterMeterStopped>;
+
 const heardWordShape = { word: z.string(), start: z.number(), end: z.number() };
 const heardWordSchema = z.object(heardWordShape) satisfies z.ZodType<HeardWord>;
 
@@ -66,13 +77,24 @@ export const teleprompterEventSchema = z.discriminatedUnion('type', [
   teleprompterScriptSchema,
   teleprompterPositionSchema,
   teleprompterFlagSchema,
+  teleprompterLevelSchema,
+  teleprompterMeterStoppedSchema,
   z.object({ type: z.literal('partial'), segment: z.number(), words: z.array(heardWordSchema) }),
   z.object({ type: z.literal('word'), segment: z.number(), ...heardWordShape }),
   z.object({ type: z.literal('segment_end'), segment: z.number() }),
 ]) satisfies z.ZodType<TeleprompterEvent>;
 
 /** The event types the UI understands. An event of another type is a newer sidecar talking, not a malformed payload. */
-export const TELEPROMPTER_EVENT_TYPES: ReadonlySet<string> = new Set(['script', 'position', 'flag', 'partial', 'word', 'segment_end']);
+export const TELEPROMPTER_EVENT_TYPES: ReadonlySet<string> = new Set([
+  'script',
+  'position',
+  'flag',
+  'level',
+  'meter_stopped',
+  'partial',
+  'word',
+  'segment_end',
+]);
 
 /**
  * The snapshot the host builds (teleprompter/service.go): always all six keys, the script and position being the last events

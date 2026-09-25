@@ -22,7 +22,7 @@ const STATE_COLOR: Record<ChapterLinkState, string> = {
 // picture" list lives here, beside the per-chapter inline prompt used wherever a check needs it). It shows every
 // narration chapter whether or not it has a confirmed link, so an unlinked chapter and a link pointing at a track
 // that no longer exists are both visible in one place, not just the one chapter a narrator happens to be checking.
-export function ChapterLinksTable({ tracks }: { tracks: Track[] }) {
+export function ChapterLinksTable({ tracks, refreshKey }: { tracks: Track[]; refreshKey?: number }) {
   const api = useApi();
   const [chapters, setChapters] = useState<ManuscriptChapter[]>([]);
   const [mappings, setMappings] = useState<TrackMapping[]>([]);
@@ -43,7 +43,9 @@ export function ChapterLinksTable({ tracks }: { tracks: Track[] }) {
     return () => {
       active = false;
     };
-  }, [reload]);
+    // refreshKey has no meaning of its own: it only asks this effect to run again, for a caller (chapter sync's panel) whose own
+    // action changed the mapping this table reads.
+  }, [reload, refreshKey]);
 
   // Set, not Confirm: it replaces the chapter's link rather than adding a second one beside it
   // (chapter-track-link-control PRD Phase 1), so a Change never leaves the chapter linked to two tracks.

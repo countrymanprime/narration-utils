@@ -90,7 +90,10 @@ type Service struct {
 	controlFile string
 	// +checklocks:mu
 	scriptFile string
-	stopping   bool
+	// meter is the running level meter child (meter.go), or nil; its stopping flag is also guarded by mu.
+	// +checklocks:mu
+	meter    *meterRun
+	stopping bool
 	// afterFunc schedules the auto-stop (time.AfterFunc outside tests); autoStop is the pending one, autoStopRound
 	// tells a stale callback from the current one, and autoStopped records that the session ended itself at Done.
 	afterFunc     func(time.Duration, func()) stoppable
@@ -345,6 +348,8 @@ func (s *Service) begin(plan launch) error {
 	s.autoStopped = false
 	s.mu.Unlock()
 	s.notify()
+	// The session opens the same microphone and reports its own levels: the meter lets go of it first.
+	s.stopMeterAndWait()
 
 	_ = os.MkdirAll(s.config.SessionDir, 0o755)
 	_ = os.Remove(plan.stopFile)
@@ -585,9 +590,10 @@ func (s *Service) Seek(word int) error {
 	return file.Close()
 }
 
-// Close stops any session and waits for the sidecar to be gone, for host
-// shutdown.
+// Close stops any session and the level meter and waits for both sidecars to be
+// gone, for host shutdown.
 func (s *Service) Close(ctx context.Context) error {
+	s.stopMeterAndWait()
 	s.Stop()
 	s.mu.RLock()
 	child, grace, finished := s.child, s.grace, s.finished

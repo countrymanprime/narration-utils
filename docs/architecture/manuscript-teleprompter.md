@@ -331,7 +331,7 @@ sequenceDiagram
   S->>P: StartStream(onLine, program, args)
   P->>T: exec, no shell, assigned to the Job Object
   S-->>UI: teleprompter:state starting, then running
-  T-->>P: stdout NDJSON: script, then partial, word, position, segment_end, flag
+  T-->>P: stdout NDJSON: script, then level, partial, word, position, segment_end, flag
   P->>S: onLine(line) on its own goroutine
   S->>S: valid JSON object with a string type, else dropped and counted
   S-->>UI: teleprompter:event, the line verbatim (emitTeleprompterEvent)
@@ -420,6 +420,22 @@ on. The device picker itself (consuming `TeleprompterDevices`, replacing the
 typed field entirely with a dropdown-only picker, the "not found" state, and a
 blocking message on an empty or failed listing - the PRD's "Microphone is
 never typed" decision) is Phase 2.
+
+## Input level and the meter (read-aloud-control-bar PRD, Phase 4)
+
+Every session reports the microphone's level beside its words:
+`{"type": "level", "peak": -12.3, "rms": -24.1}` for every 100 ms of audio,
+in dBFS from -100 (silence) to 0 (full scale), computed by `levels.py` on the
+same 16 kHz chunks the recognizer decodes. Before Start, the microphone
+popover runs a second, model-free child, `live_asr.py --meter --mic NAME`,
+which prints only `level` events until its stop file appears
+(`TeleprompterMeterStart` / `TeleprompterMeterStop`, `internal/teleprompter/meter.go`).
+At most one meter runs, never beside a session: a session start stops it and
+waits for it to release the device. Its levels travel on `teleprompter:event`
+like a session's, and the host adds one `meter_stopped` event (with the
+sidecar's last stderr line as `error` when it failed by itself) when it ends
+([ADR 0247](../adr/0247-the-input-level-comes-from-the-sidecars-own-capture-and-a-model-free-meter-child-runs-before-start.md)).
+Level events never enter the snapshot or the session model.
 
 ## UI: what shipped and what is still open
 

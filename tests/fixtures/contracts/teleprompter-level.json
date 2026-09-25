@@ -1,0 +1,17 @@
+[
+  {
+    "peak": -100.0,
+    "rms": -100.0,
+    "type": "level"
+  },
+  {
+    "peak": -6.0,
+    "rms": -9.0,
+    "type": "level"
+  },
+  {
+    "peak": 0.0,
+    "rms": -1.1,
+    "type": "level"
+  }
+]

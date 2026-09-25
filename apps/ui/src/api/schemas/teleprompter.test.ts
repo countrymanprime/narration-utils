@@ -68,7 +68,7 @@ describe('teleprompterEventSchema', () => {
   });
 
   it('lists the event types the UI understands, so an unknown one can be told from a malformed one', () => {
-    expect([...TELEPROMPTER_EVENT_TYPES].sort()).toEqual(['flag', 'partial', 'position', 'script', 'segment_end', 'word']);
+    expect([...TELEPROMPTER_EVENT_TYPES].sort()).toEqual(['flag', 'level', 'meter_stopped', 'partial', 'position', 'script', 'segment_end', 'word']);
   });
 });
 
