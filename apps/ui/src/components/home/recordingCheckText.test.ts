@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { COVERAGE_EVALUATOR_REASONS, COVERAGE_REFUSAL_REASONS } from '../../api/schemas/coverage';
-import type { CoverageRegion, CoverageReport, ManuscriptChapter } from '../../types';
+import type { CoverageJudgement, CoverageRegion, CoverageReport, ManuscriptChapter } from '../../types';
 import {
   COVERAGE_REASON_TEXT,
   describeParagraphs,
@@ -56,10 +56,25 @@ describe('recording check text', () => {
     }
   });
 
-  it('says every word was recorded only when none is missing', () => {
+  it('falls back to the plain word count with no judgement (an older stored result)', () => {
     expect(verdict(report(1000, 1000))).toEqual({ complete: true, headline: 'All the text is recorded', detail: 'Text present: 1,000 of 1,000 words.' });
     expect(verdict(report(986, 1000))).toMatchObject({ complete: false, headline: '14 words not recorded' });
     expect(verdict(report(0, 1)).headline).toBe('1 word not recorded');
+  });
+
+  it("leads with the host judgement when one is given, sharing the stage signal's rule (ADR 0204)", () => {
+    const met: CoverageJudgement = {
+      state: 'met',
+      reason: 'Text present: 1,000 of 1,000 words; every paragraph passes.',
+      thresholds: { minParagraphPresent: 0.8, maxMissingRun: 3 },
+    };
+    expect(verdict(report(1000, 1000), met)).toEqual({ complete: true, headline: 'Passes the check', detail: met.reason });
+    const notMet: CoverageJudgement = {
+      state: 'not_met',
+      reason: 'paragraph 14: 9 words not read.',
+      thresholds: { minParagraphPresent: 0.8, maxMissingRun: 3 },
+    };
+    expect(verdict(report(986, 1000), notMet)).toEqual({ complete: false, headline: 'Not complete', detail: notMet.reason });
   });
 
   it('numbers paragraphs within their chapter and keeps the manuscript index for a link', () => {

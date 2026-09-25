@@ -4,7 +4,7 @@ import { App } from './App';
 import { ApiProvider } from './api/ApiContext';
 import { wailsClient } from './api/wailsClient';
 import { createMockApi } from './api/mockApi';
-import { WIRE_CHAPTERS, WIRE_TRACKS_PROJECT } from './api/mockFixtures';
+import { WIRE_CHAPTERS, WIRE_FINDINGS, WIRE_TRACKS_PROJECT, takeReviewPickupFor } from './api/mockFixtures';
 import { COVERAGE_REFUSAL_REASONS } from './api/schemas/coverage';
 import { MOCK_RESUME_SEEDS } from './api/resumeMockSeed';
 import { ThemeProvider } from './theme/ThemeContext';
@@ -295,6 +295,10 @@ const mockInitial = {
         },
       }
     : {}),
+  // Chapter 4's other pickups (recording-check-summary.prd.md Phase 3, RS4 A): one unreviewed take-review pickup
+  // for the same chapter `?mockCoverage=pickups` gives interior gaps, so the summary's own gaps and its "Take
+  // review" count and Open Review link can be seen together, as the mockup does.
+  ...(mockCoverage === 'pickups' ? { findings: [...WIRE_FINDINGS, takeReviewPickupFor(WIRE_CHAPTERS[3].id, WIRE_CHAPTERS[3].title)] } : {}),
   ...(mockChapterSuggestion ? { armedTracks: MOCK_ARMED_TRACKS[mockChapterSuggestion] } : {}),
   ...(mockStages ? { stages: MOCK_STAGES_SEEDS[mockStages] } : {}),
 };

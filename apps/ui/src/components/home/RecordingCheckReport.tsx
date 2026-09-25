@@ -1,9 +1,11 @@
-import { useState } from 'react';
-import type { CoverageReport, CoverageRegionKind, ManuscriptChapter } from '../../types';
+import { useEffect, useState } from 'react';
+import { useApi } from '../../api/ApiContext';
+import type { CoverageJudgement, CoverageReport, CoverageRegionKind, ManuscriptChapter } from '../../types';
 import { Button } from '../primitives/Button';
 import { Disclosure } from '../primitives/Disclosure';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../primitives/Table';
 import { REGION_LABEL, describePosition, describeRegion, formatAudioTime, paragraphRefs, plural, recordedTo, verdict } from './recordingCheckText';
+import { TakeReviewPickups } from './TakeReviewPickups';
 
 const MONO = "font-['IBM_Plex_Mono',ui-monospace,monospace]";
 const EYEBROW = "font-['Barlow_Condensed',sans-serif] text-[0.72rem] font-semibold tracking-[0.08em] text-[var(--text-muted)] uppercase";
@@ -29,21 +31,24 @@ function StatTile({ label, value, hint }: { label: string; value: string; hint?:
 
 /**
  * A stored recording check read out as a chapter summary first (recording-check-summary.prd.md Phase 1): the headline
- * (counts only, ADR 0130 - a shared verdict with the stage signal is Phase 2), the chapter figures, an unread start or
- * end stated as "recorded to" rather than listed, then the check's own interior gaps as one-line Pickups, with the
- * full paragraph table folded away (RS6 A) since every pickup already names and links to its paragraphs.
+ * (the host's judgement, ADR 0204 - the same rule the stage signal uses), the chapter figures, an unread start or end
+ * stated as "recorded to" rather than listed, then the check's own interior gaps as one-line Pickups, with the full
+ * paragraph table folded away (RS6 A) since every pickup already names and links to its paragraphs.
  */
 export function RecordingCheckReport({
   chapter,
   report,
+  judgement,
   goToParagraph,
 }: {
   chapter: ManuscriptChapter;
   report: CoverageReport;
+  /** The host's pass/fail for this report (ADR 0204); absent falls back to the plain word count. */
+  judgement?: CoverageJudgement;
   /** Opens the manuscript at a paragraph (its index in the whole manuscript). */
   goToParagraph: (index: number) => void;
 }) {
-  const { complete, headline } = verdict(report);
+  const { complete, headline } = verdict(report, judgement);
   const refs = paragraphRefs(
     chapter,
     report.paragraphs.map((paragraph) => paragraph.id),
@@ -57,6 +62,24 @@ export function RecordingCheckReport({
   const listed = short.length > 0 ? short : rows;
   const [paragraphsOpen, setParagraphsOpen] = useState(false);
   const pickups = report.regions.filter((region) => PICKUP_KINDS.has(region.kind));
+  const api = useApi();
+  // RS4 A (recording-check-summary.prd.md Phase 3): the chapter's other pickups - take review's unreviewed repeated
+  // reads, a different kind from the check's own gaps above. A background count with nothing to guard or retry, so
+  // a failure is silent (SILENT_CATCHES) and just leaves it out of the list.
+  const [otherPickups, setOtherPickups] = useState<number>();
+  useEffect(() => {
+    setOtherPickups(undefined);
+    let current = true;
+    void api
+      .findingsList({ category: 'pickup', chapterId: chapter.id, status: 'unreviewed' })
+      .then((page) => {
+        if (current) setOtherPickups(page.total);
+      })
+      .catch(() => undefined);
+    return () => {
+      current = false;
+    };
+  }, [api, chapter.id]);
   const to = recordedTo(report, chapter);
   const presentPercent = report.bodyTokens > 0 ? Math.round((report.presentTokens / report.bodyTokens) * 100) : 100;
   const pace = report.playedSeconds > 0 ? Math.round((report.presentTokens / report.playedSeconds) * 60) : undefined;
@@ -94,7 +117,7 @@ export function RecordingCheckReport({
         <h3 id="recording-check-pickups" className={EYEBROW}>
           Pickups ({pickups.length})
         </h3>
-        {pickups.length === 0 ? (
+        {pickups.length === 0 && !otherPickups ? (
           <p className="mt-1 text-sm" style={{ color: 'var(--text-muted)' }}>
             None from this check.
           </p>
@@ -127,6 +150,7 @@ export function RecordingCheckReport({
                 </li>
               );
             })}
+            {!!otherPickups && <TakeReviewPickups count={otherPickups} />}
           </ul>
         )}
       </section>

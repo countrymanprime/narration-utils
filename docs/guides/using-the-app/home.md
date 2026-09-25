@@ -75,14 +75,17 @@ If the Whisper model is not installed yet, the app asks before downloading it, a
 
 ![Home - a chapter's recording check with text still to record](../../images/ui/home-recording-check.webp)
 
-The result reads as a **chapter summary first**: the count ("N words not recorded", or "All the
-text is recorded"), an unread start or end stated in plain words ("Recorded to paragraph N of
-M"), then the chapter's own figures (text present, paragraphs fully read, audio checked, pace).
-Under that, **Pickups** lists only the check's own interior gaps worth reading again on their
-own — a skipped block, a short read or different text read — each with its paragraphs, word
-count, first and last missing words, where the gap sits in the audio, and **Go to paragraph** to
-open the manuscript there. An unread start or end is unfinished recording, not a pickup, so it
-never appears in that list. **Paragraph detail** stays folded by default; open it to see how many
+The result reads as a **chapter summary first**: "Passes the check" or "Not complete" with the
+one thing that fails first ("paragraph 14: 9 words not read"), an unread start or end stated in
+plain words ("Recorded to paragraph N of M"), then the chapter's own figures (text present,
+paragraphs fully read, audio checked, pace). Under that, **Pickups** lists only the check's own
+interior gaps worth reading again on their own — a skipped block, a short read or different text
+read — each with its paragraphs, word count, first and last missing words, where the gap sits in
+the audio, and **Go to paragraph** to open the manuscript there. An unread start or end is
+unfinished recording, not a pickup, so it never appears in that list. When the chapter has its own
+unreviewed take-review pickups — repeated reads already recorded, waiting to be compared and kept
+or discarded — the list also shows their count with **Open Review**, a different kind of pickup
+from the gaps above it. **Paragraph detail** stays folded by default; open it to see how many
 words of each short paragraph were recorded. Misreads, false starts, retakes and a spoken chapter
 title never count against you. The check changes nothing: it never edits the project or moves a
 chapter's status.
