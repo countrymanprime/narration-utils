@@ -44,6 +44,8 @@ type backgroundChecks struct {
 }
 
 // forFolderLocked resets what the loop remembers when the project changed. The caller holds mu.
+//
+// +checklocks:b.mu
 func (b *backgroundChecks) forFolderLocked(folder string) {
 	if b.folder != folder || b.attempted == nil {
 		b.folder, b.attempted, b.last, b.looked = folder, map[string]time.Time{}, coverage.BackgroundDecision{}, false
@@ -93,7 +95,7 @@ func (h *Host) backgroundCheckTick(now time.Time) coverage.BackgroundDecision {
 		return coverage.BackgroundDecision{}
 	}
 	transcription, modelReady := h.coverageTranscription(svc)
-	power := coverage.PowerUnknown
+	var power coverage.Power
 	if h.powerState != nil {
 		power = h.powerState()
 	} else {
