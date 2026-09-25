@@ -116,9 +116,9 @@ func TestParseReleasesRefusesEachHostileOrMalformedRelease(t *testing.T) {
 		return release
 	}
 	cases := map[string]fakeRelease{
-		"a draft":                                   mutate(func(r *fakeRelease) { r.Draft = true }),
-		"a tag with another suffix":                 mutate(func(r *fakeRelease) { r.TagName = "v0.2.8-beta" }),
-		"a tag that is a path":                      mutate(func(r *fakeRelease) { r.TagName = "v0.2.8/../../x" }),
+		"a draft":                   mutate(func(r *fakeRelease) { r.Draft = true }),
+		"a tag with another suffix": mutate(func(r *fakeRelease) { r.TagName = "v0.2.8-beta" }),
+		"a tag that is a path":      mutate(func(r *fakeRelease) { r.TagName = "v0.2.8/../../x" }),
 		"a candidate tag that is not a pre-release": mutate(func(r *fakeRelease) { r.TagName = "v0.2.8-rc" }),
 		"a stable tag marked as a pre-release":      mutate(func(r *fakeRelease) { r.Prerelease = true }),
 		"no platform asset":                         mutate(func(r *fakeRelease) { r.Assets = r.Assets[1:] }),
