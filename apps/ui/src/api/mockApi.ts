@@ -509,6 +509,8 @@ export function createMockApi(
     assets?: MockAssetSeed;
     /** What `teleprompterDevices` reports; defaults to `WIRE_TELEPROMPTER_DEVICES`. An empty array exercises the picker's no-devices fallback. */
     teleprompterDevices?: TeleprompterDevice[];
+    /** `?mockLevel=`: the RMS in dBFS of every input level the teleprompter mock sends, for a still meter. */
+    teleprompterLevel?: number;
     /** Which resume card state `teleprompterLocate` answers for every chapter (see `MockResumeSeed`). */
     resume?: MockResumeSeed;
     /** Boots with the manuscript's last narration chapter already removed from recording (chapter-track-link-control PRD
@@ -1232,6 +1234,7 @@ export function createMockApi(
     tracksProject: WIRE_TRACKS_PROJECT,
     seed: initial.teleprompter,
     devices: initial.teleprompterDevices ?? WIRE_TELEPROMPTER_DEVICES,
+    ...(initial.teleprompterLevel === undefined ? {} : { level: initial.teleprompterLevel }),
     resume: initial.resume,
   });
   const { withMeasurement, ...coverage } = createCoverageMock({

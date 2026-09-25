@@ -17,6 +17,8 @@ const state = (overrides: Partial<ChapterSyncState> = {}): ChapterSyncState => (
   lastSync: '2026-09-24T09:00:00Z',
   counts: { linked: 1, needsYou: 0, noTrack: 0, unmatched: 0, pickupTracks: 0 },
   batch: null,
+  unsavedEdits: false,
+  activity: [],
   ...overrides,
 });
 

@@ -1,0 +1,10 @@
+[
+  {
+    "error": null,
+    "type": "meter_stopped"
+  },
+  {
+    "error": "Could not open the microphone: device not found",
+    "type": "meter_stopped"
+  }
+]

@@ -639,6 +639,26 @@ func (h *Host) TeleprompterSeek(word int) (string, error) {
 	return encodeBinding(nil, service.Seek(word))
 }
 
+// TeleprompterMeterStart shows the chosen microphone's level before reading starts (read-aloud-control-bar.prd.md Phase 4):
+// a separate `--meter` sidecar child that loads no model and prints only `level` events, relayed as "teleprompter:event"
+// like a session's own, then one `meter_stopped` when it ends. It replaces a meter already running, and is refused while a
+// session runs (the session reports its own levels) or with no microphone chosen.
+func (h *Host) TeleprompterMeterStart(device string) (string, error) {
+	service := h.services().teleprompter
+	if service == nil {
+		return "", fmt.Errorf("the teleprompter service is unavailable")
+	}
+	return encodeBinding(nil, service.MeterStart(device))
+}
+
+// TeleprompterMeterStop ends the level meter (the microphone popover closed); it does nothing when none runs.
+func (h *Host) TeleprompterMeterStop() (string, error) {
+	if service := h.services().teleprompter; service != nil {
+		service.MeterStop()
+	}
+	return encodeBinding(nil, nil)
+}
+
 // teleprompterDevicesTimeout bounds one `--list-devices` sidecar run: it prints one JSON line and exits, so this only
 // needs to cover process start-up and dshow's own listing time, not anything as slow as a model load.
 const teleprompterDevicesTimeout = 10 * time.Second

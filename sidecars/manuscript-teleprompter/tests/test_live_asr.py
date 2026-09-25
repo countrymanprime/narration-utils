@@ -671,3 +671,72 @@ def test_a_plain_script_still_emits_no_script_event(tmp_path, monkeypatch):
     _tracker, script_event, text = live_asr._load_script(ap, ap.parse_args(["--wav", "r.wav", "--script", str(script)]))
 
     assert (script_event, text) == (None, None)
+
+
+# Input level (read-aloud-control-bar PRD Phase 4): a session reports `level` events beside its words, and --meter reports
+# only levels, with no model and no script, until the stop file appears.
+def _loud_chunks(count):
+    t = np.arange(HALF_SECOND) / live_asr.SAMPLE_RATE
+    for _ in range(count):
+        yield (0.5 * np.sin(2 * np.pi * 440 * t)).astype(np.float32)
+
+
+def test_a_session_reports_the_level_of_what_it_hears(capsys):
+    args = live_asr.build_parser().parse_args(["--wav", "r.wav"])
+
+    def stream(chunks):
+        list(chunks)
+        yield {"type": "segment_end", "segment": 0}
+
+    live_asr._run(args, stream, _loud_chunks(2), None)
+
+    printed = [json.loads(line) for line in capsys.readouterr().out.splitlines()]
+    levels = [event for event in printed if event["type"] == "level"]
+    assert len(levels) == 10  # one second of audio, every 100 ms
+    assert all(event["peak"] == pytest.approx(-6.0, abs=0.1) for event in levels)
+    assert printed[-1] == {"type": "segment_end", "segment": 0}
+
+
+def test_meter_mode_prints_only_levels_and_loads_no_model(monkeypatch, capsys):
+    monkeypatch.syspath_prepend(str(LIVE_ASR_PATH.parent))
+    monkeypatch.setattr(live_asr, "iter_microphone_chunks", lambda name: _loud_chunks(2))
+    monkeypatch.setattr(live_asr, "_load_whisper_engine", lambda args: pytest.fail("the meter must not load a model"))
+    monkeypatch.setattr(sys, "argv", ["live_asr.py", "--meter", "--mic", "Mic"])
+
+    live_asr.main()
+
+    printed = [json.loads(line) for line in capsys.readouterr().out.splitlines()]
+    assert len(printed) == 10
+    assert {event["type"] for event in printed} == {"level"}
+
+
+def test_meter_mode_ends_on_the_stop_file(monkeypatch, capsys, tmp_path):
+    monkeypatch.syspath_prepend(str(LIVE_ASR_PATH.parent))
+    stop_file = tmp_path / "meter.stop"
+
+    def endless(name):
+        for index, chunk in enumerate(_loud_chunks(1000)):
+            if index == 2:
+                stop_file.write_text("")
+            yield chunk
+
+    monkeypatch.setattr(live_asr, "iter_microphone_chunks", endless)
+    monkeypatch.setattr(sys, "argv", ["live_asr.py", "--meter", "--mic", "Mic", "--stop-file", str(stop_file)])
+
+    live_asr.main()
+
+    assert len(capsys.readouterr().out.splitlines()) == 10  # the two chunks before the stop file
+
+
+@pytest.mark.parametrize(
+    "extra",
+    [[], ["--manuscript", "m.json", "--chapter", "c1"], ["--script", "s.txt"], ["--control-file", "c.ctl"], ["--locate"], ["--list-devices"]],
+)
+def test_meter_mode_needs_a_microphone_and_takes_no_session_options(extra, monkeypatch, capsys):
+    argv = ["live_asr.py", "--meter", *(extra if extra == [] else ["--mic", "Mic", *extra])]
+    monkeypatch.setattr(sys, "argv", argv)
+
+    with pytest.raises(SystemExit):
+        live_asr.main()
+
+    assert "--meter" in capsys.readouterr().err

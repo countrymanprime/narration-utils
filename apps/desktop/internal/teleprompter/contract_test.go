@@ -41,3 +41,34 @@ func TestContractRunningStateFromTheSidecarsOwnEvents(t *testing.T) {
 	}
 	contractfile.Check(t, "teleprompter-state-running", service.Snapshot())
 }
+
+// The meter's stream (read-aloud-control-bar PRD Phase 4): every `level` the Python sidecar's own test pins
+// (teleprompter-level.json) passes the meter's filter unchanged, and the `meter_stopped` events the host adds when a meter
+// ends by request and on a failure are pinned for the UI's schema.
+func TestContractMeterRelaysTheSidecarsLevelsAndEndsWithMeterStopped(t *testing.T) {
+	dir, err := contractfile.Dir()
+	if err != nil {
+		t.Fatal(err)
+	}
+	bytes, err := os.ReadFile(filepath.Join(dir, "teleprompter-level.json"))
+	if err != nil {
+		t.Fatalf("the sidecar's level file is missing (run the Python contract test with UPDATE_CONTRACTS=1): %v", err)
+	}
+	var levels []json.RawMessage
+	if err := json.Unmarshal(bytes, &levels); err != nil {
+		t.Fatal(err)
+	}
+	var relayed []json.RawMessage
+	service := New(Config{}, nil, func(raw json.RawMessage) { relayed = append(relayed, raw) }, nil)
+	for _, level := range levels {
+		service.onMeterLine(string(level))
+	}
+	if len(relayed) != len(levels) {
+		t.Fatalf("the meter relayed %d of %d levels", len(relayed), len(levels))
+	}
+	stopped := []map[string]any{
+		{"type": meterStoppedType, "error": nil},
+		{"type": meterStoppedType, "error": "Could not open the microphone: device not found"},
+	}
+	contractfile.Check(t, "teleprompter-meter-stopped", stopped)
+}

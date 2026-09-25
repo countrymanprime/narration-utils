@@ -37,7 +37,7 @@ func flagValue(args []string, name string) string {
 }
 
 func runFakeSidecar(mode string) {
-	if runFakeDeviceLister(mode) || runFakeLocator(mode) {
+	if runFakeMeter(mode) || runFakeDeviceLister(mode) || runFakeLocator(mode) {
 		return
 	}
 	args, _ := json.Marshal(os.Args[1:])
