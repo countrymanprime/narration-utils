@@ -48,7 +48,7 @@ We believe a like-for-like move, with every v3 default that differs from v2 set 
 
 ## Open Questions
 
-- [x] **Q1. Which pin?** `v3.0.0-beta.25`, the newest v3 tag on 2026-09-24 (D29). `@wailsio/runtime` 3.0.0-beta.25 was published on 2026-09-22 and was inside pnpm's three-day `minimumReleaseAge`; it is resolved once the cooldown clears, never through `minimumReleaseAgeExclude` ([ADR 0200](../adr/0200-the-desktop-shell-runs-on-wails-v3-beta-pinned-at-v3-0-0-beta-25.md)).
+- [x] **Q1. Which pin?** `v3.0.0-beta.25`, the newest v3 tag on 2026-09-24 (D29). `@wailsio/runtime` 3.0.0-beta.25 was published on 2026-09-22 and was inside pnpm's three-day `minimumReleaseAge`; the owner allowed it through a one-version `minimumReleaseAgeExclude` entry on 2026-09-25, removed once the cooldown has passed ([ADR 0200](../adr/0200-the-desktop-shell-runs-on-wails-v3-beta-pinned-at-v3-0-0-beta-25.md)).
 - [ ] **Q2. Zoom range under v3 on Windows (for nav P2, its Q6).** v3 beta.25 cannot set a zoom below 100% on Windows, while WebView2's own Ctrl+wheel can. Recorded as Proposed [ADR 0201](../adr/0201-app-zoom-under-wails-v3-on-windows-runs-from-100-to-200-percent-and-reads-the-level-back-from-the-window.md); recommendation: nav P2's buttons run from 100% to 200%, reset works from any level, and the readout reads the level back from the window.
 - [x] **Q3. Hot-reload dev loop?** Not built (What We're NOT Building); the recommendation is taken under D22.
 
@@ -120,7 +120,7 @@ Runs alone (D42). Lanes B and C work in parallel on files this stack does not to
 | --- | --- | --- | --- |
 | Migrate to v3 (owner, 2026-09-24, D29) | Wails v3 beta, pinned | A patched v2; CSS zoom | v2 has no runtime zoom; see the nav PRD's Decisions Log |
 | Pin (D29) | `v3.0.0-beta.25`, `@wailsio/runtime` 3.0.0-beta.25 | A newer beta | The newest tag on 2026-09-24; nothing newer existed |
-| The pnpm cooldown (ADR 0200) | Wait the three days, resolve under the normal policy | `minimumReleaseAgeExclude` | The exclusion is for urgent security fixes (`pnpm-workspace.yaml`); ADR 0062 waited the same way |
+| The pnpm cooldown (owner, 2026-09-25, ADR 0200) | A one-version `minimumReleaseAgeExclude` entry for `@wailsio/runtime@3.0.0-beta.25`, removed after the cooldown | Wait the three days | The owner: the cooldown is there for Dependabot's routine updates, and this pin is a reviewed, deliberate choice; the lockfile hash still pins the bytes |
 | Build (ADR 0200) | One script runs the Taskfile's steps | Adopt v3's Taskfile and `wails3 build` | One entry point for CI and a developer; no new tool (go-task) in the release path |
 | Bindings folder (ADR 0200) | `apps/ui/wailsjs/` kept, TypeScript output | v3's default `frontend/bindings` | ADR 0062's rule, Knip, ESLint and the quality scripts already name it |
 | v2 defaults kept (ADR 0200) | Ctrl+wheel on, browser menu off, macOS quits with its window, error text, cancel is empty | v3's defaults | Nothing the narrator sees may change in a like-for-like move |
