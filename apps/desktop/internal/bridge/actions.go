@@ -54,12 +54,14 @@ var experimentalCommands = map[string]bool{
 	"list_fx":             true,
 	"add_take_fx":         true,
 	"create_regions":      true,
+	"play_position":       true,
+	"punch_to":            true,
 }
 
 // actionTags are the events Actions consumes: every answer of every command it sends, and ERROR.
 var actionTags = []string{"TRACK_STATE", "TRACK_ITEM", "TRACK_STATE_END", "TRACK_STALE", "ARMED", "RECORD_STARTED", "RECORD_STOPPED", "RECORD_ENDED", "RECORD_NOT_OURS",
 	"ACTIVE_TAKE_SET", "ITEM_STALE", "FX_CHAIN", "FX_CHAINS_LISTED", "FX_CHAIN_APPLIED",
-	"FX_PLUGIN", "FX_PLUGINS_LISTED", "TAKE_FX_ADDED", "REGIONS_CREATED", "ERROR"}
+	"FX_PLUGIN", "FX_PLUGINS_LISTED", "TAKE_FX_ADDED", "REGIONS_CREATED", "PLAY_POSITION", "PUNCHED", "ERROR"}
 
 // ErrExperimentalOff: the command is experimental and the setting is off, so nothing was sent to REAPER.
 var ErrExperimentalOff = errors.New("this REAPER action is experimental and switched off: turn on Experimental REAPER actions in Settings")
@@ -219,6 +221,10 @@ func actionError(event Event) error {
 		return ErrScriptOutdated
 	case "REAPER is recording. Stop recording first.":
 		return ErrRecording
+	case "REAPER is recording. Stop it before moving to a word.":
+		return ErrPunchWhileRecording
+	case "The word time or pre-roll is not a usable number of seconds.":
+		return ErrBadPunch
 	}
 	if known, ok := refusals[message]; ok {
 		return known
