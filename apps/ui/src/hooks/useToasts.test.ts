@@ -53,6 +53,13 @@ describe('useToasts', () => {
     expect(result.current.messages.map((m) => m.text)).toEqual(['Could not save.']);
   });
 
+  it('carries an action through to the message', () => {
+    const { result } = renderHook(() => useToasts());
+    const onAction = () => {};
+    act(() => result.current.notify('Linked track “Ch. 11” to Chapter 11.', 'info', { label: 'Undo', onAction }));
+    expect(result.current.messages[0].action).toEqual({ label: 'Undo', onAction });
+  });
+
   it('keeps notify and dismiss the same functions across renders, so an effect that lists them does not re-run', () => {
     const { result, rerender } = renderHook(() => useToasts());
     const { notify, dismiss } = result.current;
