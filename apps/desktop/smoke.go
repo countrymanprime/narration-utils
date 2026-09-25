@@ -65,6 +65,7 @@ var smokeReaperFiles = []string{
 	"narration_render.lua",
 	"narration_retake_lanes.lua",
 	"narration_take_review.lua",
+	"narration_track_state.lua",
 	"narration_ui_bridge.lua",
 	"reaper_common_core.lua",
 	"reaper_common_process.lua",

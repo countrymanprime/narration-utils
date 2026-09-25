@@ -15,13 +15,13 @@ end
 H.test('the first tick sends a heartbeat naming the saved project, unsaved flag 0', function()
   local s = H.session({ project_path = 'C:\\Projects\\Book\\Book.rpp' })
   s:tick()
-  H.eq(only_event(s), { 'PROJECT_STATUS', '', 'C:\\Projects\\Book\\Book.rpp', '0' })
+  H.eq(only_event(s), { 'PROJECT_STATUS', '', 'C:\\Projects\\Book\\Book.rpp', '0', '0' })
 end)
 
 H.test('an unsaved project heartbeats with an empty path and unsaved flag 1', function()
   local s = H.session({ project_path = '' })
   s:tick()
-  H.eq(only_event(s), { 'PROJECT_STATUS', '', '', '1' })
+  H.eq(only_event(s), { 'PROJECT_STATUS', '', '', '1', '0' })
 end)
 
 H.test('the heartbeat run field is always empty, the broadcast shape events.go delivers to every subscriber', function()
@@ -58,4 +58,22 @@ H.test('events() filters the heartbeat out so every other test file sees only it
   local s = H.session({ project_path = 'C:\\Projects\\Book\\Book.rpp' })
   s:tick()
   H.eq(s:events(), {}, 'the plain events() reader must not surface the heartbeat')
+end)
+
+H.test('the heartbeat carries the REAPER edit counter as its fourth field, and it follows the project', function()
+  local s = H.session({ project_path = 'C:\\Projects\\Book\\Book.rpp' })
+  s.fake.change_count = 41
+  s:tick()
+  H.eq(only_event(s)[5], '41')
+  s.fake.change_count = 42
+  s:tick() -- throttled: no heartbeat
+  s:tick()
+  H.eq(only_event(s)[5], '42')
+end)
+
+H.test('the heartbeat sends an empty edit counter on a REAPER without the call, and still sends the rest', function()
+  local s = H.session({ project_path = 'C:\\Projects\\Book\\Book.rpp' })
+  s.fake:remove_api('GetProjectStateChangeCount')
+  s:tick()
+  H.eq(only_event(s), { 'PROJECT_STATUS', '', 'C:\\Projects\\Book\\Book.rpp', '0', '' })
 end)
