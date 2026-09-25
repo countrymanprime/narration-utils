@@ -13,10 +13,13 @@
   - button "Close"
   - paragraph: /Based on the saved REAPER project, file modified Sep \d+, \d+, \d+:\d+ AM\./
   - paragraph: /Checked Sep \d+, \d+, \d+:\d+ AM with the small Whisper model\./
-  - heading "Not complete" [level=3]
+  - 'heading /Not complete: .+/ [level=3]'
   - paragraph: /Recorded to paragraph \d+ of \d+ \(\d+ words left\)\./
   - region "Pickups (0)":
     - heading "Pickups (0)" [level=3]
     - paragraph: None from this check.
+    - text: "Repeated reads (Review): none waiting"
+    - link "Open Review":
+      - /url: /review
   - button /Paragraph detail \d+ of \d+ fully recorded/
   - button "Check again"

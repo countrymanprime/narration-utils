@@ -48,7 +48,7 @@ export function RecordingCheckReport({
   /** Opens the manuscript at a paragraph (its index in the whole manuscript). */
   goToParagraph: (index: number) => void;
 }) {
-  const { complete, headline } = verdict(report, judgement);
+  const { complete, headline, detail } = verdict(report, judgement);
   const refs = paragraphRefs(
     chapter,
     report.paragraphs.map((paragraph) => paragraph.id),
@@ -90,6 +90,11 @@ export function RecordingCheckReport({
         <h3 className="text-base font-semibold" style={{ color: complete ? 'var(--text)' : 'var(--danger-text)' }}>
           {headline}
         </h3>
+        {detail && (
+          <p className="mt-1 text-sm" style={{ color: 'var(--text-muted)' }}>
+            {detail}
+          </p>
+        )}
         {to && (
           <p className="mt-1 text-sm">
             {to.kind === 'tail'
@@ -117,7 +122,7 @@ export function RecordingCheckReport({
         <h3 id="recording-check-pickups" className={EYEBROW}>
           Pickups ({pickups.length})
         </h3>
-        {pickups.length === 0 && !otherPickups ? (
+        {pickups.length === 0 ? (
           <p className="mt-1 text-sm" style={{ color: 'var(--text-muted)' }}>
             None from this check.
           </p>
@@ -150,9 +155,9 @@ export function RecordingCheckReport({
                 </li>
               );
             })}
-            {!!otherPickups && <TakeReviewPickups count={otherPickups} />}
           </ul>
         )}
+        <TakeReviewPickups count={otherPickups ?? 0} />
       </section>
       {report.paragraphs.length > 0 && (
         <Disclosure

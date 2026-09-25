@@ -74,7 +74,7 @@ describe('recording check text', () => {
       reason: 'paragraph 14: 9 words not read.',
       thresholds: { minParagraphPresent: 0.8, maxMissingRun: 3 },
     };
-    expect(verdict(report(986, 1000), notMet)).toEqual({ complete: false, headline: 'Not complete', detail: notMet.reason });
+    expect(verdict(report(986, 1000), notMet)).toEqual({ complete: false, headline: `Not complete: ${notMet.reason}`, detail: '' });
   });
 
   it('numbers paragraphs within their chapter and keeps the manuscript index for a link', () => {
