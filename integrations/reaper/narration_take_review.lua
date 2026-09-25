@@ -46,7 +46,7 @@ end
 
 -- The bridge's wire protocol caps a command at a handful of positional fields (narration_bridge_core.lua's split,
 -- count 8: protocol version, command name, then 6 argument fields with the last one free to contain a literal
--- pipe). create_take needs six values of its own, so - like stamp_item_lines and create_chapter_regions - the
+-- pipe). create_take needs six values of its own, so - like stamp_item_lines and create_regions - the
 -- narrator-facing fields travel in a one-row payload file and the command itself takes only a run id and that
 -- file's path. The row is `target_item_guid|candidate_item_guid|source_start|source_end|finding_id|source_file`;
 -- source_file is last because it is the field most likely to contain an unusual character.
