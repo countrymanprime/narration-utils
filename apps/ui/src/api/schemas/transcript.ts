@@ -39,6 +39,7 @@ export const transcriptStateSchema = z.object({
   trackName: optionalFromNull(z.string()),
   audioItemCount: optionalFromNull(z.number()),
   completedAt: optionalFromNull(z.string()),
+  projectChangeCount: optionalFromNull(z.number().int().min(0)),
   phase: z.enum(['idle', 'preparing', 'running', 'inspecting', 'need_chapter', 'success', 'cancelled', 'error']),
   percent: z.number(),
   message: z.string(),

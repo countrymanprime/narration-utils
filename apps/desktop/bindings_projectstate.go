@@ -9,9 +9,9 @@ import (
 // The Phase 13 (reaper-automation-follow-through PRD, "Change-driven re-compare indicator") bindings: a
 // Could-tier, on-demand check of REAPER's own live edit counter (analysis-evidence-ledger PRD Open Question 12,
 // answered (B)). h.emitProjectState (app.go) relays every state change as the "projectstate:state" live event,
-// the way h.emitRenderConfig does. Nothing in apps/ui calls these yet - no schema, mock or wireContracts.test.ts
-// row - since no consumer exists to wire real usage against: a future UI phase, or a staleness evaluator that
-// wants an additional live hint alongside its own saved-file-mtime basis, adds those when it starts calling in.
+// the way h.emitRenderConfig does. The UI side (apps/ui/src/api/schemas/projectstate.ts, the mock and the
+// wireContracts.test.ts rows) is wired for the "changed since comparison" label: a comparison records its baseline
+// (TranscriptState.projectChangeCount, from prepare_compare) and the Transcript page compares a later check with it.
 
 // ProjectStateCheck asks REAPER (when it is open from this app) for its live change count and the current
 // project's saved-file path. The result (ProjectStateState's changeCount, projectFile and savedModifiedAt) comes
