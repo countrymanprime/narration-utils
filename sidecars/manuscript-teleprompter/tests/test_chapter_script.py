@@ -55,16 +55,20 @@ def test_a_chapter_can_be_selected_by_id_or_by_title_ignoring_case_and_line_brea
     by_id = chapter_script.load_chapter_script(path, "c2")
     by_title = chapter_script.load_chapter_script(path, "chapter TWO")
     by_display_title = chapter_script.load_chapter_script(path, "CHAPTER ONE: Bad Ideas Look Great")
+    by_chapter_name = chapter_script.load_chapter_script(path, "CHAPTER ONE — Bad Ideas Look Great")
 
     assert by_id.chapter_id == by_title.chapter_id == "c2"
-    assert by_display_title.chapter_id == "c1"
+    assert by_display_title.chapter_id == by_chapter_name.chapter_id == "c1"
 
 
 def test_an_unknown_chapter_lists_the_narration_chapters_that_can_be_chosen(tmp_path):
     with pytest.raises(chapter_script.ChapterError) as error:
         chapter_script.load_chapter_script(_manuscript(tmp_path), "Chapter Nine")
 
-    assert error.value.candidates == ["CHAPTER ONE: Bad Ideas Look Great", "Chapter Two"]
+    # Named by the app's rule (ADR 0191), and each can be passed back to select its chapter.
+    assert error.value.candidates == ["CHAPTER ONE — Bad Ideas Look Great", "Chapter Two"]
+    for name in error.value.candidates:
+        assert chapter_script.load_chapter_script(_manuscript(tmp_path), name).title
 
 
 def test_reference_sections_and_empty_chapters_cannot_be_read_from(tmp_path):
