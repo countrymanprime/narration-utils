@@ -52,6 +52,11 @@ func markdownWithProgress(path string, headingLevel int, progress Progress) (Dra
 	// title - now ends the section instead of leaking every later short heading in as a candidate.
 	headingLevels := map[string]int{}
 	notices := []string{}
+	// toc collects the manuscript's own table of contents; slugs gives each heading the anchor a TOC link names, and
+	// anchorChapter maps a chapter heading's anchor to its chapter title (markdown_toc.go).
+	var toc markdownTOCReader
+	var slugs markdownSlugger
+	anchorChapter := map[string]string{}
 	flush := func() {
 		if len(pending) == 0 {
 			return
@@ -85,10 +90,12 @@ func markdownWithProgress(path string, headingLevel int, progress Progress) (Dra
 	for _, line := range strings.Split(content, "\n") {
 		if matches := markdownHeading.FindStringSubmatch(strings.TrimSuffix(line, "\r")); matches != nil {
 			flush()
+			toc.close()
 			level := len(matches[1])
 			var headingText richBuilder
 			appendInline(&headingText, matches[2], 0)
 			text, _ := headingText.build(true)
+			anchor := slugs.next(text)
 			if level == headingLevel {
 				if isNonChapterHeading(text) {
 					chapter, subtitle, section = collapse(text), "", ""
@@ -104,6 +111,7 @@ func markdownWithProgress(path string, headingLevel int, progress Progress) (Dra
 				}
 				section = ""
 				titles = append(titles, chapter)
+				anchorChapter[anchor] = chapter
 				if _, seen := headingLevels[chapter]; !seen {
 					headingLevels[chapter] = level
 				}
@@ -112,6 +120,7 @@ func markdownWithProgress(path string, headingLevel int, progress Progress) (Dra
 			}
 			continue
 		}
+		toc.line(line)
 		if strings.TrimSpace(line) == "" {
 			flush()
 		} else {
@@ -119,6 +128,7 @@ func markdownWithProgress(path string, headingLevel int, progress Progress) (Dra
 		}
 	}
 	flush()
+	toc.close()
 	pre := []string{}
 	preIndexes := []int{}
 	for index, paragraph := range paragraphs {
@@ -136,6 +146,9 @@ func markdownWithProgress(path string, headingLevel int, progress Progress) (Dra
 	}
 	progress.report(80, "Classifying front matter, chapters and reference sections")
 	draft, err := newDraft("markdown", filepath.Base(path), paragraphs, titles, headingLevels, nil)
+	if err == nil {
+		notices = applyTableOfContents(&draft, notices, toc.entries, titles, anchorChapter)
+	}
 	draft.Notices = notices
 	if err == nil {
 		progress.report(95, "Found %d chapters in %d sections", len(titles), len(draft.Sections))
