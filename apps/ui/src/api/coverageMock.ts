@@ -260,7 +260,7 @@ export function createCoverageMock(deps: Deps): CoverageApi & {
     const fraction = measured.get(chapter.id) ?? chapter.recordedFraction;
     if (fraction === undefined) return { chapterId, state: 'never', reasons: [], basis: { ...MOCK_BASIS } };
     const record = { id: `mock-coverage-${chapter.id}`, outcome: 'complete' as const, startedAt: MOCK_TIME, completedAt: MOCK_TIME };
-    const report = reportFor(chapter, fraction);
+    const report = reportOf(chapter, fraction);
     const judgement = judgeMock(report);
     if (stale.has(chapter.id)) return { chapterId, state: 'stale', reasons: ['item_trimmed'], basis: { ...MOCK_BASIS }, record, result: report, judgement };
     // The same number the chapter payload carries (withMeasurement): the host sends one number to both.
