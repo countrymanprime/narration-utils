@@ -10,6 +10,7 @@ import type {
   CreditsAnnouncement,
   CreditsRenderResult,
   ChapterSyncBatch,
+  ChapterSyncChapter,
   ChapterSyncConsent,
   ChapterSyncState,
   ChapterSyncTrigger,
@@ -933,8 +934,32 @@ export function createMockApi(
       batch,
       unsavedEdits: chapterSyncUnsavedEdits,
       activity: chapterSyncActivity,
+      chapters: links.project === 'ready' ? mockChapterSyncRows(links) : [],
     };
   };
+  // Phase 6's status rows, as the host builds them: the link, and the recording check's own answer (the coverage mock's).
+  const mockChapterSyncRows = (links: ReturnType<typeof mockLinksRead>): ChapterSyncChapter[] =>
+    links.chapters.map((chapter) => {
+      const link = chapter.links.length === 1 ? chapter.links[0] : undefined;
+      const track = link ? links.tracks.find((summary) => summary.guid === link.trackGuid) : undefined;
+      const result = peekCoverage(chapter.chapterId);
+      const checkedAt = result.state === 'never' ? null : (result.record?.completedAt ?? null);
+      const newestSourceAt = track ? '2026-09-21T10:00:00Z' : null;
+      return {
+        chapterId: chapter.chapterId,
+        chapterTitle: chapter.chapterTitle,
+        trackGuid: link?.trackGuid ?? '',
+        trackName: track?.name ?? '',
+        origin: link ? (link.origin ?? 'manual') : '',
+        freshness: result.state,
+        reasons: result.reasons,
+        checkedAt,
+        checking: false,
+        trackChangedAt: null,
+        newestSourceAt,
+        lastChanged: newestSourceAt,
+      };
+    });
   const publishChapterSync = (state: ChapterSyncState) => chapterSyncSubscribers.forEach((fn) => fn(wireClone(state)));
   // One sync, as the host's runChapterSync does it: the confident links written as auto, the batch when anything was linked.
   const runMockChapterSync = (trigger: ChapterSyncTrigger): ChapterSyncState => {
@@ -1234,10 +1259,18 @@ export function createMockApi(
     devices: initial.teleprompterDevices ?? WIRE_TELEPROMPTER_DEVICES,
     resume: initial.resume,
   });
-  const { withMeasurement, ...coverage } = createCoverageMock({
+  const {
+    withMeasurement,
+    peekResult: peekCoverage,
+    ...coverage
+  } = createCoverageMock({
     chapters: () => chapters,
     assetRequired: whisperAssetRequired,
-    endJob,
+    // A finished check changes its chapter's status row, so chaptersync:state goes out again (auto-sync Phase 6).
+    endJob: (event) => {
+      endJob(event);
+      publishChapterSync(mockChapterSyncState(null));
+    },
     seed: initial.coverage,
   });
   const stages = createStagesMock({

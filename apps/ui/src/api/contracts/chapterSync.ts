@@ -24,6 +24,31 @@ export type ChapterSyncCounts = { linked: number; needsYou: number; noTrack: num
 
 export type ChapterSyncTrackRef = { guid: string; name: string; index: number; marker: ChapterSyncMarker };
 
+/** Whether a chapter's recording check is current, out of date (`stale`, with its reasons) or has never run. */
+export type ChapterSyncFreshness = 'current' | 'stale' | 'never';
+
+/**
+ * One narration chapter's status without a click (Phase 6, S14): Home's row reads it instead of a Check button. The link
+ * (`trackGuid`, `trackName` and `origin` are empty when the chapter has none); `freshness` and `reasons` from the recording
+ * check's own evaluation against the saved project (reading it never starts a check); `checkedAt`, when the stored check
+ * finished; `checking`, a check runs now. `lastChanged` is the later of `trackChangedAt` (the sync at which the track's
+ * items last changed; null until a later sync sees a change) and `newestSourceAt` (the newest audio file the track plays).
+ */
+export type ChapterSyncChapter = {
+  chapterId: string;
+  chapterTitle: string;
+  trackGuid: string;
+  trackName: string;
+  origin: '' | 'manual' | 'auto';
+  freshness: ChapterSyncFreshness;
+  reasons: string[];
+  checkedAt: string | null;
+  checking: boolean;
+  trackChangedAt: string | null;
+  newestSourceAt: string | null;
+  lastChanged: string | null;
+};
+
 /**
  * What one sync just did, for the toast (S12: one toast per batch, "Linked track 'Ch. 7' to Chapter 7" with Undo through
  * `chapterSyncUndo(link.trackGuid)`). `newTracks` are tracks new since the last sync that match no chapter: list them
@@ -56,6 +81,8 @@ export type ChapterSyncState = {
   batch: ChapterSyncBatch | null;
   unsavedEdits: boolean;
   activity: ChapterSyncBatch[];
+  /** One row per narration chapter (Phase 6), empty while the manuscript or the saved .rpp cannot be read. */
+  chapters: ChapterSyncChapter[];
 };
 
 export type ChapterSyncAutoLink = { trackGuid: string; trackName: string; chapterId: string; chapterTitle: string; match: TrackLinkMatch };
@@ -103,6 +130,6 @@ export interface ChapterSyncApi {
   /** Removes one automatic link and remembers the pair so sync never makes it again; a manual link is refused. */
   chapterSyncUndo(trackGuid: string): Promise<ChapterSyncState>;
   /** `chaptersync:state`: sent after each link path (a DAW link, an import, an attach), each sync or Undo, each sync the
-   * watcher runs after a save in REAPER, and when `unsavedEdits` changes. */
+   * watcher runs after a save in REAPER, when `unsavedEdits` changes, and when a recording check ends (its row's status). */
   subscribeChapterSync(onUpdate: (state: ChapterSyncState) => void): () => void;
 }

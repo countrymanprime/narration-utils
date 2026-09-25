@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import type { ChapterSyncBatch, ChapterSyncPreview, ChapterSyncState, ChapterSyncTrackRef } from '../contracts/chapterSync';
+import type { ChapterSyncBatch, ChapterSyncChapter, ChapterSyncPreview, ChapterSyncState, ChapterSyncTrackRef } from '../contracts/chapterSync';
 import { listFromNull } from './base';
 import { chapterTrackCandidateSchema, trackMappingSchema } from './chapterTrackMap';
 
@@ -17,6 +17,30 @@ const batchSchema = z.object({
   linked: listFromNull(trackMappingSchema),
   newTracks: listFromNull(trackRefSchema),
 }) satisfies z.ZodType<ChapterSyncBatch>;
+
+const chapterSchema = z
+  .object({
+    chapterId: z.string(),
+    chapterTitle: z.string(),
+    trackGuid: z.string(),
+    trackName: z.string(),
+    origin: z.enum(['', 'manual', 'auto']),
+    freshness: z.enum(['current', 'stale', 'never']),
+    reasons: listFromNull(z.string()),
+    checkedAt: z.string().nullable(),
+    checking: z.boolean(),
+    trackChangedAt: z.string().nullable(),
+    newestSourceAt: z.string().nullable(),
+    lastChanged: z.string().nullable(),
+  })
+  .refine((row) => row.freshness === 'never' || row.checkedAt !== null, {
+    message: 'a current or stale check has the time it finished',
+    path: ['checkedAt'],
+  })
+  .refine((row) => (row.trackGuid === '') === (row.origin === ''), {
+    message: 'a chapter has a track exactly when its link has an origin',
+    path: ['origin'],
+  }) satisfies z.ZodType<ChapterSyncChapter>;
 
 /** `ChapterSyncState`, `ChapterSyncSetEnabled`, `ChapterSyncUndo` and the `chaptersync:state` event (`apps/desktop/chaptersync.go`, ADR 0209). */
 export const chapterSyncStateSchema = z
@@ -41,6 +65,7 @@ export const chapterSyncStateSchema = z
     batch: batchSchema.nullable(),
     unsavedEdits: z.boolean(),
     activity: listFromNull(batchSchema).refine((list) => list.length <= 20, { message: 'the host keeps at most 20 activity rows' }),
+    chapters: listFromNull(chapterSchema),
   })
   .refine((state) => !state.ask || (state.consent === 'undecided' && state.manuscript && state.dawLinked), {
     message: 'the consent is asked only while undecided, with a manuscript and a linked DAW project',

@@ -239,7 +239,7 @@ func Build(in Input) Plan {
 		plan.Unmatched = append(plan.Unmatched, TrackRef{GUID: t.GUID, Name: t.Name, Index: t.Index, Marker: match.Marker})
 	}
 
-	plan.Snapshot = snapshotOf(in.Project, in.Now)
+	plan.Snapshot = snapshotOf(in.Project, in.Previous, in.Now)
 	compare(&plan, in)
 	return plan
 }
@@ -321,19 +321,38 @@ type Snapshot struct {
 	Tracks   []TrackState `json:"tracks"`
 }
 
-// TrackState is one track in a Snapshot.
+// TrackState is one track in a Snapshot. ChangedAt is the sync at which the
+// track's fingerprint last changed, or it first appeared (Phase 6's "last
+// changed"); nil when every sync since the first saw it the same. A rename
+// alone is not a change.
 type TrackState struct {
-	GUID        string `json:"guid"`
-	Name        string `json:"name"`
-	Fingerprint string `json:"fingerprint"`
+	GUID        string     `json:"guid"`
+	Name        string     `json:"name"`
+	Fingerprint string     `json:"fingerprint"`
+	ChangedAt   *time.Time `json:"changedAt,omitempty"`
 }
 
-func snapshotOf(project tracks.Project, at time.Time) Snapshot {
+func snapshotOf(project tracks.Project, previous Snapshot, at time.Time) Snapshot {
+	first := previous.SyncedAt.IsZero() && len(previous.Tracks) == 0
+	before := map[string]TrackState{}
+	for _, state := range previous.Tracks {
+		before[state.GUID] = state
+	}
+	synced := at.UTC()
 	states := make([]TrackState, 0, len(project.Tracks))
 	for _, t := range project.Tracks {
-		states = append(states, TrackState{GUID: t.GUID, Name: t.Name, Fingerprint: Fingerprint(t)})
+		state := TrackState{GUID: t.GUID, Name: t.Name, Fingerprint: Fingerprint(t)}
+		old, seen := before[t.GUID]
+		switch {
+		case seen && old.Fingerprint == state.Fingerprint:
+			state.ChangedAt = old.ChangedAt
+		case !first:
+			changed := synced
+			state.ChangedAt = &changed
+		}
+		states = append(states, state)
 	}
-	return Snapshot{SyncedAt: at.UTC(), Tracks: states}
+	return Snapshot{SyncedAt: synced, Tracks: states}
 }
 
 // Fingerprint is a hash of what the saved project says a track plays: each
