@@ -52,6 +52,15 @@ func markdownWithProgress(path string, headingLevel int, progress Progress) (Dra
 	// title - now ends the section instead of leaking every later short heading in as a candidate.
 	headingLevels := map[string]int{}
 	notices := []string{}
+	// toc collects the manuscript's own table of contents; slugs gives each heading the anchor a TOC link names, and
+	// anchorChapter maps a chapter heading's anchor to its chapter title (markdown_toc.go).
+	var toc markdownTOCReader
+	var slugs markdownSlugger
+	anchorChapter := map[string]string{}
+	// open says a chapter heading was just read with nothing after it yet, so a deeper heading right under it is its subtitle
+	// (subtitleHeading; import heading misreads F5, #387); apart says the subtitle came from such a heading, which returns to
+	// the text if the narrator turns it off.
+	open, apart := false, false
 	flush := func() {
 		if len(pending) == 0 {
 			return
@@ -78,17 +87,32 @@ func markdownWithProgress(path string, headingLevel int, progress Progress) (Dra
 				copy := subtitle
 				subtitleValue = &copy
 			}
-			paragraphs = append(paragraphs, Paragraph{Chapter: chapter, ChapterSubtitle: subtitleValue, Section: sectionValue, Text: body, Spans: spans, SourceIndex: len(paragraphs)})
+			paragraphs = append(paragraphs, Paragraph{Chapter: chapter, ChapterSubtitle: subtitleValue, SubtitleReturnsToBody: apart && subtitleValue != nil, Section: sectionValue, Text: body, Spans: spans, SourceIndex: len(paragraphs)})
+			apart = false
 		}
 		pending = nil
 	}
-	for _, line := range strings.Split(content, "\n") {
+	lines := strings.Split(content, "\n")
+	levels := make([]int, len(lines))
+	for index, line := range lines {
+		if matches := markdownHeading.FindStringSubmatch(strings.TrimSuffix(line, "\r")); matches != nil {
+			levels[index] = len(matches[1])
+		}
+	}
+	for lineIndex, line := range lines {
 		if matches := markdownHeading.FindStringSubmatch(strings.TrimSuffix(line, "\r")); matches != nil {
 			flush()
+			toc.close()
 			level := len(matches[1])
 			var headingText richBuilder
 			appendInline(&headingText, matches[2], 0)
 			text, _ := headingText.build(true)
+			anchor := slugs.next(text)
+			if open && subtitle == "" && level > headingLevel && subtitleHeading(chapter, headingLevel, collapse(text), level) && aloneAtItsLevel(levels, lineIndex, headingLevel) {
+				subtitle, apart, open = collapse(text), true, false
+				continue
+			}
+			open = false
 			if level == headingLevel {
 				if isNonChapterHeading(text) {
 					chapter, subtitle, section = collapse(text), "", ""
@@ -104,6 +128,8 @@ func markdownWithProgress(path string, headingLevel int, progress Progress) (Dra
 				}
 				section = ""
 				titles = append(titles, chapter)
+				anchorChapter[anchor] = chapter
+				open, apart = true, false
 				if _, seen := headingLevels[chapter]; !seen {
 					headingLevels[chapter] = level
 				}
@@ -112,13 +138,16 @@ func markdownWithProgress(path string, headingLevel int, progress Progress) (Dra
 			}
 			continue
 		}
+		toc.line(line)
 		if strings.TrimSpace(line) == "" {
 			flush()
 		} else {
+			open = false
 			pending = append(pending, markdownLineOf(line))
 		}
 	}
 	flush()
+	toc.close()
 	pre := []string{}
 	preIndexes := []int{}
 	for index, paragraph := range paragraphs {
@@ -136,6 +165,9 @@ func markdownWithProgress(path string, headingLevel int, progress Progress) (Dra
 	}
 	progress.report(80, "Classifying front matter, chapters and reference sections")
 	draft, err := newDraft("markdown", filepath.Base(path), paragraphs, titles, headingLevels, nil)
+	if err == nil {
+		notices = applyTableOfContents(&draft, notices, toc.entries, titles, anchorChapter)
+	}
 	draft.Notices = notices
 	if err == nil {
 		progress.report(95, "Found %d chapters in %d sections", len(titles), len(draft.Sections))

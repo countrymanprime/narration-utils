@@ -4,6 +4,7 @@ import type {
   MeasureClipRun,
   MeasureFingerprint,
   MeasureJob,
+  MeasureMP3,
   MeasurePickResult,
   MeasureRange,
   MeasureReport,
@@ -23,6 +24,21 @@ export const measureClipRunSchema = z.object({
   samples: z.number(),
 }) satisfies z.ZodType<MeasureClipRun>;
 
+const measureMP3Schema = z.object({
+  version: z.string(),
+  layer: z.number(),
+  bitrate_kbps: z.number(),
+  average_bitrate_kbps: z.number(),
+  cbr: z.boolean(),
+  vbr_tag: z.string(),
+  sample_rate: z.number(),
+  channel_mode: z.enum(['stereo', 'joint_stereo', 'dual_channel', 'mono']),
+  frames: z.number(),
+  duration_seconds: z.number(),
+  id3v2_bytes: z.number(),
+  lost_bytes: z.number(),
+}) satisfies z.ZodType<MeasureMP3>;
+
 export const measureReportSchema = z.object({
   file: z.string().optional(),
   sample_rate: z.number(),
@@ -41,6 +57,7 @@ export const measureReportSchema = z.object({
   full_scale_samples: z.number(),
   clip_run_count: z.number(),
   clip_runs: listFromNull(measureClipRunSchema),
+  mp3: measureMP3Schema.optional(),
   range: measureRangeSchema.optional(),
 }) satisfies z.ZodType<MeasureReport>;
 
@@ -87,7 +104,7 @@ export const deliveryQcEvidenceSchema = z.object({
   rule: z.string(),
   profile: z.string(),
   value: z.number().optional(),
-  violation: z.enum(['above_max', 'below_min', 'not_one_of']).optional(),
+  violation: z.enum(['above_max', 'below_min', 'not_one_of', 'not_cbr']).optional(),
   limit_min: z.number().optional(),
   limit_max: z.number().optional(),
   allowed: z.array(z.number()).optional(),

@@ -21,7 +21,7 @@ describe('naming a profile', () => {
   });
 
   it('counts the rules the app checks, does not check, leaves to listening and has yet to verify', () => {
-    expect(profileCounts(MOCK_ACX)).toEqual({ checked: 6, notChecked: 5, listen: 2, off: 0, toVerify: 5, conflicting: 1 });
+    expect(profileCounts(MOCK_ACX)).toEqual({ checked: 9, notChecked: 2, listen: 2, off: 0, toVerify: 5, conflicting: 1 });
     expect(profileCounts(mockCustomProfile()).off).toBe(2);
   });
 });
@@ -51,8 +51,9 @@ describe('writing a rule', () => {
 
   it('says how the app checks each rule, and never reads a rule it cannot check as measured', () => {
     expect(describeCheck(rule('acx.rms'))).toBe('Measured: −23 to −18 dBFS');
-    expect(describeCheck(rule('acx.room_tone_tail'))).toBe('Not checked by the app.');
-    expect(describeCheck(rule('acx.format'))).toMatch(/check the MP3 you upload/);
+    expect(describeCheck(rule('acx.room_tone_tail'))).toBe('Measured: 1 to 5 s');
+    expect(describeCheck(rule('acx.format'))).toBe('Measured: 192 kbps+ CBR');
+    expect(describeCheck(rule('acx.credits'))).toBe('Not checked by the app.');
     expect(describeCheck(rule('acx.consistency'))).toBe('Listen');
     expect(describeCheck({ ...rule('acx.rms'), off: true })).toMatch(/^Off/);
   });

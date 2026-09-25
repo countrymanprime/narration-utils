@@ -60,7 +60,7 @@ export const deliveryRuleResultSchema = z.object({
   ruleId: z.string(),
   status: z.enum(['met', 'not_met', 'not_measurable', 'not_checked', 'off']),
   value: z.number().nullable(),
-  violation: z.enum(['above_max', 'below_min', 'not_one_of', 'differs_across_files']).optional(),
+  violation: z.enum(['above_max', 'below_min', 'not_one_of', 'differs_across_files', 'not_cbr']).optional(),
   why: z.string().optional(),
   advice: z.string().optional(),
 }) satisfies z.ZodType<DeliveryRuleResult>;

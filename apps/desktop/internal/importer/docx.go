@@ -427,7 +427,28 @@ func docxWithProgress(path string, progress Progress) (Draft, error) {
 		}
 	}
 	var tocEntries []tocEntry
+	// open is the chapter heading just read while nothing has followed it yet, so a subtitle set apart from it can still join it:
+	// a deeper heading (subtitleHeading) or a paragraph in Word's own "Subtitle" style (import heading misreads F4 and F5, #387).
+	// apart says the chapter's subtitle came from such a line, which then returns to the text if the narrator turns it off.
+	var open *paragraphRecord
+	apart := false
+	levels := make([]int, len(records))
 	for index, record := range records {
+		if record.heading && record.hasLevel {
+			levels[index] = max(record.level, 1)
+		}
+	}
+	for index, record := range records {
+		if open != nil && subtitle == "" {
+			line := collapse(record.text)
+			underHeading := record.heading && record.hasLevel && open.hasLevel && subtitleHeading(chapter, open.level, line, record.level) &&
+				aloneAtItsLevel(levels, index, open.level)
+			if underHeading || (!record.heading && record.style == "subtitle") {
+				subtitle, apart, open = line, true, nil
+				continue
+			}
+		}
+		open = nil
 		if record.heading {
 			if isNonChapterHeading(collapse(record.text)) {
 				chapter = collapse(record.text)
@@ -444,6 +465,8 @@ func docxWithProgress(path string, progress Progress) (Draft, error) {
 			titles = append(titles, chapter)
 			recordLevel(chapter, record)
 			recordBookmarks(chapter, record)
+			heading := record
+			open, apart = &heading, false
 			continue
 		}
 		// A paragraph is a TOC entry only when it is itself "TOC N"-styled; a hyperlink's "_Toc" anchor alone is not enough to
@@ -464,7 +487,8 @@ func docxWithProgress(path string, progress Progress) (Draft, error) {
 			copy := subtitle
 			subtitlePointer = &copy
 		}
-		paragraphs = append(paragraphs, Paragraph{Chapter: chapter, ChapterSubtitle: subtitlePointer, Text: record.text, Spans: record.spans, SourceIndex: len(paragraphs)})
+		paragraphs = append(paragraphs, Paragraph{Chapter: chapter, ChapterSubtitle: subtitlePointer, SubtitleReturnsToBody: apart && subtitlePointer != nil, Text: record.text, Spans: record.spans, SourceIndex: len(paragraphs)})
+		apart = false
 	}
 	for _, notice := range notices {
 		progress.report(70, "%s", notice)
@@ -479,19 +503,7 @@ func docxWithProgress(path string, progress Progress) (Draft, error) {
 	// heading (S6): only the exposed chapterTitles list changes here, never Sections/grouping, so a document without a TOC (or
 	// whose TOC only weakly matches) is entirely unaffected. Title and Contents were never in `titles`, so they are naturally
 	// excluded whenever the TOC does not name them, without special-casing either.
-	if len(tocEntries) > 0 {
-		matchedTitles, matchedCount := tocMatchedTitles(tocEntries, titles, bookmarkChapter)
-		if float64(matchedCount)/float64(len(tocEntries)) >= tocAuthorityThreshold {
-			draft.ChapterTitles = matchedTitles
-		}
-		if matchedCount != len(tocEntries) {
-			word := "entries"
-			if len(tocEntries) == 1 {
-				word = "entry"
-			}
-			notices = append(notices, fmt.Sprintf("The table of contents listed %d %s; %d matched a chapter in the manuscript.", len(tocEntries), word, matchedCount))
-		}
-	}
+	notices = applyTableOfContents(&draft, notices, tocEntries, titles, bookmarkChapter)
 	draft.Notices = notices
 	progress.report(95, "Found %d chapters in %d sections", len(titles), len(draft.Sections))
 	return draft, nil

@@ -438,6 +438,15 @@ func epubWithProgress(filePath string, progress Progress) (Draft, error) {
 	titles := []string{}
 	headingLevels := map[string]int{}
 	preIndexes := []int{}
+	levels := make([]int, len(blocks))
+	for index, block := range blocks {
+		levels[index] = block.heading
+	}
+	// openLevel is the heading level of the chapter start just read while nothing has followed it yet (0 when there is none), so
+	// a subtitle set apart from its heading can still join it: a deeper heading alone at its level (subtitleHeading) or a
+	// <p class="subtitle"> (import heading misreads F4 and F5, #387, #388). apart says the subtitle came from such a block, which
+	// returns to the text if the narrator turns it off.
+	openLevel, apart := 0, false
 	for index, block := range blocks {
 		if position, ok := startAt[index]; ok {
 			chapter, subtitle = starts[position].title, starts[position].subtitle
@@ -445,12 +454,19 @@ func epubWithProgress(filePath string, progress Progress) (Draft, error) {
 			if _, seen := headingLevels[chapter]; !seen {
 				headingLevels[chapter] = 1
 			}
+			apart = false
 			if block.heading > 0 {
+				openLevel = block.heading
 				continue
 			}
-		} else if block.heading > 0 {
-			continue // a heading that is not itself a chapter start is not emitted as body text
+		} else if openLevel > 0 && subtitle == "" && (block.subtitle ||
+			(block.heading > 0 && subtitleHeading(chapter, openLevel, collapse(block.text), block.heading) && aloneAtItsLevel(levels, index, openLevel))) {
+			subtitle, apart, openLevel = collapse(block.text), true, 0
+			continue
 		}
+		openLevel = 0
+		// A heading that does not start a chapter (a scene heading, a subtitle that could not be read as one) is kept as the
+		// chapter's text rather than dropped (#388).
 		if block.text == "" {
 			continue
 		}
@@ -459,7 +475,8 @@ func epubWithProgress(filePath string, progress Progress) (Draft, error) {
 			copySubtitle := subtitle
 			subtitlePointer = &copySubtitle
 		}
-		paragraphs = append(paragraphs, Paragraph{Chapter: chapter, ChapterSubtitle: subtitlePointer, Text: block.text, Spans: block.spans, SourceIndex: len(paragraphs)})
+		paragraphs = append(paragraphs, Paragraph{Chapter: chapter, ChapterSubtitle: subtitlePointer, SubtitleReturnsToBody: apart && subtitlePointer != nil, Text: block.text, Spans: block.spans, SourceIndex: len(paragraphs)})
+		apart = false
 		if chapter == "Front Matter" {
 			preIndexes = append(preIndexes, len(paragraphs)-1)
 		}

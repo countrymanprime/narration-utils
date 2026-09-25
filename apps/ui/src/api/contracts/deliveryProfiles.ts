@@ -64,7 +64,7 @@ export type DeliveryRuleResult = {
   ruleId: string;
   status: DeliveryRuleStatus;
   value: number | null;
-  violation?: 'above_max' | 'below_min' | 'not_one_of' | 'differs_across_files';
+  violation?: 'above_max' | 'below_min' | 'not_one_of' | 'differs_across_files' | 'not_cbr';
   why?: string;
   advice?: string;
 };
