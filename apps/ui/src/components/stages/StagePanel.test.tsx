@@ -172,6 +172,19 @@ describe('stage suggestions on Home', () => {
     await waitFor(() => expect(stageRecommendations.mock.calls.length).toBe(reads + 1));
     await waitFor(() => expect(within(row('Chapter 6')).queryByText('Not ready for Editing')).toBeNull());
   });
+
+  it('reads the suggestions and the chapter list again when the window regains focus (home-stage-check-line.prd.md Phase 2)', async () => {
+    const base = mixedApi();
+    const stageRecommendations = vi.fn(base.stageRecommendations);
+    const manuscriptChapters = vi.fn(base.manuscriptChapters);
+    renderPanel({ ...base, stageRecommendations, manuscriptChapters });
+    await expandBreakdown();
+    const stageReads = stageRecommendations.mock.calls.length;
+    const chapterReads = manuscriptChapters.mock.calls.length;
+    fireEvent(window, new Event('focus'));
+    await waitFor(() => expect(stageRecommendations.mock.calls.length).toBe(stageReads + 1));
+    await waitFor(() => expect(manuscriptChapters.mock.calls.length).toBe(chapterReads + 1));
+  });
 });
 
 describe('the evidence view', () => {

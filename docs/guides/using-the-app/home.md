@@ -139,8 +139,10 @@ there too.
 
 ![Home - evidence changed since you confirmed](../../images/ui/home-stage-evidence-changed.webp)
 
-The suggestions are read again when Home opens, when a recording check ends, and when you change a
-status yourself, so nothing above the table asks you to press anything. If a read fails, the
+The suggestions are read again when Home opens, when a recording check ends, when you change a
+status yourself, and when you switch back to the app after saving in REAPER (throttled, so
+switching back and forth does not read every time), so nothing above the table asks you to press
+anything. If a read fails, the
 reason appears above the table with **Try again**, which only reads the evidence again; it never
 starts a check. The evidence view keeps its own **Check now** for the same purpose. If the
 evidence changed while you were looking, Confirm and Dismiss refuse and say so, and the
