@@ -72,8 +72,8 @@ import coverage_harness as harness
 import coverage_spike as spike
 
 CORE = spike.CORE
-if str(CORE) not in sys.path:
-    sys.path.insert(0, str(CORE))
+# One statement, so it is covered whichever test module put CORE on the path first.
+sys.path[:0] = [] if str(CORE) in sys.path else [str(CORE)]
 
 import compare as engine  # needs CORE on sys.path, as coverage_mode itself does
 import coverage_mode
@@ -141,7 +141,8 @@ def read_results(path: Path, seconds: float = 0.0) -> SidecarResult:
     lines: dict[str, list[dict]] = {"COVERAGE": [], "COVERAGE_ITEM": [], "COVERAGE_PARAGRAPH": [], "COVERAGE_REGION": []}
     for line in path.read_text(encoding="utf-8").splitlines():
         tag, _, payload = line.partition("|")
-        lines[tag].append(json.loads(payload))
+        if tag in lines:  # the format is additive (ADR 0127): the word alignment's lines are not measurements
+            lines[tag].append(json.loads(payload))
     (summary,) = lines["COVERAGE"]
     return SidecarResult(summary, tuple(lines["COVERAGE_PARAGRAPH"]), tuple(lines["COVERAGE_REGION"]), tuple(lines["COVERAGE_ITEM"]), seconds)
 

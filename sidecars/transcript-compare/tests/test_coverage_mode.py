@@ -678,7 +678,7 @@ def test_the_cli_writes_the_report_and_exits_0(tmp_path, cached_project):
     completed, args = _cli(tmp_path, manuscript, manifest, "--min-anchor-run", "3")
 
     assert completed.returncode == 0, completed.stderr
-    assert set(_lines(args.out)) == {"COVERAGE", "COVERAGE_ITEM", "COVERAGE_PARAGRAPH", "COVERAGE_REGION"}
+    assert set(_lines(args.out)) == {"COVERAGE", "COVERAGE_ITEM", "COVERAGE_PARAGRAPH", "COVERAGE_REGION", "COVERAGE_TOKEN"}
     assert Path(args.progress).read_text(encoding="utf-8").startswith("DONE|100|")
 
 

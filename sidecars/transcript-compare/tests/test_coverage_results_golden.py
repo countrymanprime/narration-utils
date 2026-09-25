@@ -6,7 +6,11 @@ host reads these exact lines as a check's results (`apps/desktop/internal/covera
 and the recording signal and the stages engine must suggest `editing` for exactly the cases whose
 label is `textComplete`. Pinning the lines here keeps that Go test on what the shipped analyzer
 really produces, not on hand-written reports. Regenerate the file with `UPDATE_CONTRACTS=1` only
-when a change to the coverage output is intended, and say why in the PR."""
+when a change to the coverage output is intended, and say why in the PR.
+
+Only the measurement lines are pinned: the word alignment the same run writes for the edit and
+proof workspace (`COVERAGE_TOKEN`, `COVERAGE_EXTRA`, ADR 0242) is about 50 bytes a word, which would
+outgrow the committed fixtures' size budget, and `test_coverage_alignment.py` covers it."""
 
 import json
 import os
@@ -16,6 +20,7 @@ import coverage_harness as harness
 
 GOLDEN_PATH = harness.FIXTURE_DIR / "results.golden.json"
 MANUSCRIPT = harness.FIXTURE_DIR / "manuscript.json"
+MEASUREMENT_TAGS = frozenset({"COVERAGE", "COVERAGE_ITEM", "COVERAGE_PARAGRAPH", "COVERAGE_REGION"})
 
 
 def _render_all(work):
@@ -30,7 +35,7 @@ def _render_all(work):
             "split": case.split,
             "textComplete": case.expected.text_complete,
             "analyzerTextComplete": cal.text_complete(result, cal.SHIPPED),
-            "lines": results_file.read_text(encoding="utf-8").splitlines(),
+            "lines": [line for line in results_file.read_text(encoding="utf-8").splitlines() if line.split("|", 1)[0] in MEASUREMENT_TAGS],
         }
     settings = {
         "minParagraphPresent": cal.SHIPPED.min_paragraph_present,

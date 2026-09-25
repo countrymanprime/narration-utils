@@ -362,6 +362,81 @@ def _paragraphs(aligned: AlignedChapter, status: Sequence[str | None], runs: Seq
     return tuple(ParagraphCoverage(pid, tokens[k], present[k], longest[k]) for k, pid in enumerate(aligned.paragraph_ids))
 
 
+# ---------------------------------------------------------------------------
+# token by token (the edit and proof workspace, PRD Phase 1)
+
+
+READ = "read"
+MISREAD = "misread"
+HEADING_STATUS = "heading"
+
+
+@dataclass(frozen=True)
+class AlignedToken:
+    """One chapter token as the check judged it: `read` (in an anchor), `misread` (present, but in a
+    gap where the narrator said something else in its place), one of `REGION_KINDS` (missing), or
+    `heading`; and the transcript token it was heard as, or None when nothing was said for it."""
+
+    status: str
+    audio: int | None
+
+
+def _gap_audio(aligned: AlignedChapter, gap: _Gap, params: AlignmentParams) -> dict[int, int]:
+    """The transcript token each doc token of a gap was heard as, by the rule `_gap_statuses`
+    counts with: a heading-only gap pairs its tokens in order, a misread gap pairs its body tokens
+    in order up to what was said, and a larger gap pairs nothing."""
+    said = gap.j2 - gap.j1
+    body = [i for i in range(gap.i1, gap.i2) if aligned.token_paragraph[i] != HEADING]
+    if not body:
+        return {i: gap.j1 + n for n, i in enumerate(range(gap.i1, gap.i2)) if n < said}
+    if len(body) > params.max_misread_run:
+        return {}
+    return {i: gap.j1 + n for n, i in enumerate(body) if n < said}
+
+
+def align_tokens(aligned: AlignedChapter, params: AlignmentParams | None = None) -> tuple[tuple[AlignedToken, ...], tuple[tuple[int, int], ...]]:
+    """Every doc token's status and the transcript token it was heard as, and the runs
+    `(start, end)` of transcript tokens no doc token accounts for (the extra words). The statuses
+    are `compute_coverage`'s own, so a screen built on them shows exactly what the check counted,
+    and the extra runs add up to its `extra_tokens`."""
+    params = params or AlignmentParams()
+    status, _audio_at, _matched = _statuses(aligned, params)
+    heard: dict[int, int] = {}
+    used = [False] * len(aligned.audio_tokens)
+    in_anchor: set[int] = set()
+    for kind, gap in _segments(aligned.opcodes, params.min_anchor_run):
+        if kind == "anchor":
+            said = gap.j2 - gap.j1
+            for n, i in enumerate(range(gap.i1, gap.i2)):
+                heard[i] = gap.j1 + min(n, said - 1)
+                in_anchor.add(i)
+            used[gap.j1 : gap.j2] = [True] * said
+        else:
+            pairs = _gap_audio(aligned, gap, params)
+            heard.update(pairs)
+            for j in pairs.values():
+                used[j] = True
+    tokens = []
+    for i, value in enumerate(status):
+        audio = heard.get(i)
+        if value is None:
+            tokens.append(AlignedToken(HEADING_STATUS, audio))
+        elif value == _PRESENT:
+            misread = i not in in_anchor and audio is not None and aligned.audio_tokens[audio] != aligned.doc_tokens[i]
+            tokens.append(AlignedToken(MISREAD if misread else READ, audio))
+        else:
+            tokens.append(AlignedToken(value, None))
+    extras = []
+    start = None
+    for j, taken in enumerate([*used, True]):
+        if not taken and start is None:
+            start = j
+        elif taken and start is not None:
+            extras.append((start, j))
+            start = None
+    return tuple(tokens), tuple(extras)
+
+
 def compute_coverage(aligned: AlignedChapter, params: AlignmentParams | None = None) -> ChapterCoverage:
     """Present, missing and extra tokens, per-paragraph figures and regions for one alignment."""
     params = params or AlignmentParams()

@@ -23,7 +23,9 @@ import (
 // reaper-automation-follow-through PRD's Phase 7 (Line-identity UI): the
 // "Link chapters" preview names, by GUID, exactly which item each stamp
 // would write to (never a position or an index), and LineIdentityStamp's
-// rows are keyed by item GUID. The remaining fields are the parser superset
+// rows are keyed by item GUID. TakeGUID, SourceStart and PlayRate (the
+// played range) joined it in the edit-and-proof-workspace PRD's Phase 1. The
+// remaining fields are the parser superset
 // (EL Phase 1) added for that PRD and its siblings; they are not yet part of
 // the wire contract (json:"-") because no UI or binding surface consumes
 // them in this phase - a later phase (5, 6 or 7) decides how much of this an
@@ -42,6 +44,17 @@ type Item struct {
 	// single item-position GUID line). It identifies the item across edits
 	// that don't change its take content (a move, for example).
 	GUID string `json:"guid"`
+	// TakeGUID, SourceStart and PlayRate are the active take's played range
+	// (edit-and-proof-workspace PRD Phase 1): the take's GUID, where the item
+	// starts in its source (the SECTION start, when the source is a trimmed
+	// section, plus SOFFS) and the take's rate (1 when the .rpp has no
+	// PLAYRATE). The item plays Length * PlayRate seconds of source from
+	// SourceStart, so a player honours the narrator's trim instead of playing
+	// the whole file from 0. Stretch markers and a section that loops still
+	// bend this (RecordedEnd's Approximate).
+	TakeGUID    string  `json:"takeGuid"`
+	SourceStart float64 `json:"sourceStart"`
+	PlayRate    float64 `json:"playRate"`
 	// Muted is the item's own mute flag (MUTE, distinct from a take's own
 	// state - REAPER has no per-take mute).
 	Muted bool `json:"-"`
@@ -102,6 +115,24 @@ type Take struct {
 	// Ext is the take's own extension data (<EXT>), nil when the take
 	// carries none.
 	Ext map[string]string
+}
+
+// Rate is the take's play rate, with REAPER's default of 1 when the .rpp has
+// no PLAYRATE line (or a value that cannot be a rate).
+func (take Take) Rate() float64 {
+	if take.PlayRate <= 0 {
+		return 1
+	}
+	return take.PlayRate
+}
+
+// SourceStart is where the take's item starts in the source file: SOFFS, plus
+// the section's start when the source is a trimmed section of a larger file.
+func (take Take) SourceStart() float64 {
+	if take.Section != nil {
+		return take.Section.StartPos + take.SOFFS
+	}
+	return take.SOFFS
 }
 
 // SectionOffsets is a <SOURCE SECTION ...> wrapper's own offsets into the
