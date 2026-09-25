@@ -673,13 +673,15 @@ export const wireSettings = (): Record<string, ScopedSettingField[]> => ({
     deliveryLimit('true_peak_dbtp_max', 'True peak, highest', -60, 'dBTP'),
     deliveryLimit('noise_floor_dbfs_max', 'Noise floor, highest', -120, 'dBFS'),
   ],
-  // The recording check's four settings (docs/utilities/recording-coverage.md, ADR 0131), mirroring the host's fieldSchemas and
-  // numberSpecs.
+  // The recording check's four settings (docs/utilities/recording-coverage.md, ADR 0131) and its background switch, mirroring the
+  // host's fieldSchemas and numberSpecs.
   RecordingCoverage: [
     recordingCheck('min_paragraph_present', 'Share of each paragraph that must be read', '0.8', { min: 0, max: 1, step: 0.01, unit: '' }),
     recordingCheck('max_missing_run', 'Longest run of missing words allowed', '3', { min: 0, max: 200, step: 1, unit: 'words' }),
     recordingCheck('max_misread_run', 'Longest misread still counted as read', '8', { min: 0, max: 200, step: 1, unit: 'words' }),
     recordingCheck('min_anchor_run', 'Shortest match that counts as read', '3', { min: 1, max: 50, step: 1, unit: 'words' }),
+    // Background checks of changed chapters (daw-chapter-track-auto-sync PRD Phase 7, ADR 0211), on by default.
+    bool('background_checks', 'Check changed chapters in the background', 'true'),
   ],
 });
 export const WIRE_TRACKS_PROJECT: TracksProject = {

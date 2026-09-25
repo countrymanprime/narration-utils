@@ -176,7 +176,11 @@ type Host struct {
 	chapterSyncRuns chapterSyncRuns
 	// chapterSyncWatch is what the saved-.rpp watcher saw last (chaptersync_watch.go).
 	chapterSyncWatch chapterSyncWatcher
-	transcriptRuns   transcriptWatch
+	// backgroundChecks is what the background recording check loop remembers (coverage_background.go).
+	backgroundChecks backgroundChecks
+	// powerState is a seam for tests: nil means platformPower, the operating system's own answer.
+	powerState     func() coverage.Power
+	transcriptRuns transcriptWatch
 	// coverageRuns turns recording check states into job ends (bindings_coverage.go).
 	coverageRuns coverageWatch
 	// coverageLauncher is a seam for tests: nil means the recording check's sidecar starts under h.sidecars.
@@ -342,6 +346,7 @@ func (h *Host) ServiceStartup(ctx context.Context, _ application.ServiceOptions)
 	}
 	go h.transcriptLoop(runtimeContext)
 	go h.chapterSyncWatchLoop(runtimeContext)
+	go h.backgroundCheckLoop(runtimeContext)
 	go h.startupUpdateCheck(runtimeContext, delay)
 	go h.cleanStaleDownloads()
 	return nil
@@ -1185,12 +1190,14 @@ var fieldSchemas = map[string][]fieldSchema{
 	// RecordingCoverage is the recording check's four settings (docs/utilities/recording-coverage.md Q3, ADR 0131),
 	// read by coverage.ResolveSettings. The two thresholds judge a stored result on read; the two alignment settings are
 	// in a result's parameter hash, so changing one makes older results stale (Q13 B). Their defaults are Proposed and
-	// uncalibrated (Q15) until Phase 8.
+	// uncalibrated (Q15) until Phase 8. background_checks lets the host re-check a changed chapter on its own while REAPER
+	// is idle, not recording and the computer is on mains power (DAW chapter-track auto-sync Phase 7, D27, ADR 0211).
 	"RecordingCoverage": {
 		{"min_paragraph_present", "Share of each paragraph that must be read", "number", nil},
 		{"max_missing_run", "Longest run of missing words allowed", "number", nil},
 		{"max_misread_run", "Longest misread still counted as read", "number", nil},
 		{"min_anchor_run", "Shortest match that counts as read", "number", nil},
+		{"background_checks", "Check changed chapters in the background", "bool", nil},
 	},
 }
 

@@ -1,6 +1,10 @@
 {
   "activity": [],
   "ask": true,
+  "background": {
+    "enabled": true,
+    "wait": ""
+  },
   "batch": null,
   "chapters": [
     {

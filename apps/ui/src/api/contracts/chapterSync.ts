@@ -83,7 +83,15 @@ export type ChapterSyncState = {
   activity: ChapterSyncBatch[];
   /** One row per narration chapter (Phase 6), empty while the manuscript or the saved .rpp cannot be read. */
   chapters: ChapterSyncChapter[];
+  /** Background recording checks (Phase 7, ADR 0211): on or off (`RecordingCoverage.background_checks`), and why none runs
+   * now; `wait` is '' before the host has looked or when one just started. */
+  background: { enabled: boolean; wait: ChapterSyncBackgroundWait };
 };
+
+/** Why no background check runs: off; a job the narrator started runs; the Whisper model is not installed; on battery (or the
+ * power state is unknown); REAPER is running and may be recording; REAPER or the chapter changed in the last three minutes;
+ * nothing has changed since its check. */
+export type ChapterSyncBackgroundWait = '' | 'off' | 'busy' | 'model' | 'battery' | 'recording' | 'quiet' | 'nothing';
 
 export type ChapterSyncAutoLink = { trackGuid: string; trackName: string; chapterId: string; chapterTitle: string; match: TrackLinkMatch };
 export type ChapterSyncNeedsYou = {

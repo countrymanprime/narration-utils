@@ -1,5 +1,6 @@
 {
   "state": {
+    "background": false,
     "chapterId": "c-0001",
     "message": "Starting the recording check...",
     "percent": 0,

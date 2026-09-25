@@ -64,6 +64,7 @@ export const coverageStateSchema = z.object({
   recordId: z.string().optional(),
   startedAt: z.string().optional(),
   completedAt: z.string().optional(),
+  background: z.boolean().optional(),
 }) satisfies z.ZodType<CoverageState>;
 
 export const coverageStartResultSchema = z.discriminatedUnion('status', [
