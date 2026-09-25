@@ -54,6 +54,10 @@ function Fake.new(host)
   self.loop_points = { 0, 0 }
   self.repeat_on = 0
   self.play_state = 0
+  -- GetPlayPosition (narration_track_state.lua): the what-you-hear position, set by a test.
+  self.play_position = 0
+  -- GetAudioDeviceInfo('IDENT_IN'): the open input device's name; nil when the device is closed (REAPER answers false).
+  self.audio_input = nil
   self.exit_handlers = {}
   -- The Main section of REAPER's action list, in enumeration order: { id = command ID, name = action-list text }.
   -- Starts with a few real native actions (IDs confirmed in REAPER 7.80 by the S5 spike) so a lookup has to skip
@@ -75,8 +79,9 @@ function Fake:new_guid()
   return guid
 end
 
+-- A track's record arm (I_RECARM) is `track.armed`; its record input (I_RECINPUT) is `track.rec_input`, 0 when unset.
 function Fake:add_track(name, selected)
-  local track = { name = name or 'Track', selected = selected or false, items = {}, guid = self:new_guid() }
+  local track = { name = name or 'Track', selected = selected or false, items = {}, guid = self:new_guid(), armed = false }
   self.tracks[#self.tracks + 1] = track
   return track
 end
@@ -440,6 +445,16 @@ function Fake:add_transport_api(api)
   function api.GetPlayState()
     return fake.play_state
   end
+  function api.GetPlayPosition()
+    return fake.play_position
+  end
+  -- GetAudioDeviceInfo(attribute): false when the attribute is unknown or no device is open, like REAPER.
+  function api.GetAudioDeviceInfo(attribute)
+    if attribute == 'IDENT_IN' and fake.audio_input then
+      return true, fake.audio_input
+    end
+    return false, ''
+  end
   function api.OnPlayButton()
     fake.calls[#fake.calls + 1] = { name = 'OnPlayButton' }
     fake.play_state = 1
@@ -481,6 +496,12 @@ function Fake:add_item_api(api)
   end
   function api.GetTrackMediaItem(track, index)
     return track.items[index + 1]
+  end
+  function api.CountTracks(_)
+    return #fake.tracks
+  end
+  function api.GetTrack(_, index)
+    return fake.tracks[index + 1]
   end
   function api.GetMediaItem_Track(item)
     return item.track
@@ -721,6 +742,10 @@ function Fake:add_lane_api(api)
       return track.free_mode or 0
     elseif key == 'I_NUMFIXEDLANES' then
       return track.lane_count or 1
+    elseif key == 'I_RECARM' then
+      return track.armed and 1 or 0
+    elseif key == 'I_RECINPUT' then
+      return track.rec_input or 0
     end
     local lane = key:match('^C_LANEPLAYS:(%d+)$')
     if lane then
