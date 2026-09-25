@@ -24,14 +24,14 @@ ul.plain { list-style: none; padding: 0; margin: 0; }
 <header>
 <h1>Delivery report</h1>
 <p class="muted">Generated 2026-09-23T14:00:00Z by Narration Utils 0.9.0 · measure analyzer v2 · diagnostics analyzer v2</p>
-<p class="profile"><strong>Judged against ACX (September 2026)</strong> · profile <code>acx@2026-09</code> · built in, read-only<br><span class="muted">Rules cite ACX Audio Submission Requirements (https://help.acx.com/s/article/what-are-the-acx-audio-submission-requirements), read 2026-09-20. 13 rules: 6 checked by the app, 5 not checked by the app, 2 listen. 5 to verify, 1 with conflicting sources.</span></p>
+<p class="profile"><strong>Judged against ACX (September 2026)</strong> · profile <code>acx@2026-09</code> · built in, read-only<br><span class="muted">Rules cite ACX Audio Submission Requirements (https://help.acx.com/s/article/what-are-the-acx-audio-submission-requirements), read 2026-09-20. 13 rules: 9 checked by the app, 2 not checked by the app, 2 listen. 5 to verify, 1 with conflicting sources.</span></p>
 <p class="notice">A generic technical measurement of the files listed, made on the narrator&#39;s computer. It is not a certification: it does not say that a distributor (ACX or another) will accept these files, and it does not replace an engineer&#39;s review. A rule marked &#34;not checked by the app&#34; or &#34;listen&#34; was not judged, and never counts as met. Every open finding, and every file that was not measured or checked, is listed.</p>
 </header>
 
 <h2>Summary</h2>
 <ul>
 <li>4 file(s): 2 measured, 2 not measured; 2 checked for diagnostics, 2 not checked.</li>
-<li><span class="open">Against ACX (September 2026): 2 rule result(s) not met in 2 file(s); 8 met; 6 not checked by the app; 0 not measurable.</span></li>
+<li><span class="open">Against ACX (September 2026): 2 rule result(s) not met in 2 file(s); 12 met; 2 not checked by the app; 0 not measurable.</span></li>
 <li><span class="open">4 open finding(s)</span> of 4 (open means not dismissed). By review: unreviewed 4. By severity: error 2, warning 2.</li>
 <li>Scope: The files the narrator chose on the Delivery page in this session: the last measurement and the last diagnostics check. Files are not matched to chapters yet, so each is listed by its file name.</li>
 <li>Privacy: Files are named by their file name only; no folder or full path is written, and any path in a message is replaced. No audio is embedded or linked, and no manuscript text is written.</li>
@@ -80,21 +80,21 @@ ul.plain { list-style: none; padding: 0; margin: 0; }
 <tr id="rule-acx.room_tone_head">
 <td><code>acx.room_tone_head</code><br>Room tone, head <span class="muted">(file)</span></td>
 <td>1 to 5 seconds of room tone at the beginning of each file.</td>
-<td>Not checked by the app</td>
+<td>Measured, 0.5 to 5 s</td>
 <td>Conflicting sources: ACX&#39;s page was read as 1 to 5 s; current guides say 0.5 to 1 s. Judged 0.5 to 5 s (the looser reading) until the owner reads ACX&#39;s page.</td>
-<td>2 not checked</td>
+<td>2 met</td>
 </tr>
 <tr id="rule-acx.room_tone_tail">
 <td><code>acx.room_tone_tail</code><br>Room tone, tail <span class="muted">(file)</span></td>
 <td>1 to 5 seconds of room tone at the end of each file.</td>
-<td>Not checked by the app</td>
+<td>Measured, 1 to 5 s</td>
 <td>Verified 2026-09-20</td>
-<td>2 not checked</td>
+<td>2 met</td>
 </tr>
 <tr id="rule-acx.format">
 <td><code>acx.format</code><br>MP3 format <span class="muted">(file)</span></td>
 <td>Each file is an MP3 at 192 kbps or higher, constant bit rate (CBR).</td>
-<td>Not checked by the app</td>
+<td>Measured, 192 kbps&#43; CBR</td>
 <td>Verified 2026-09-23</td>
 <td>2 not checked</td>
 </tr>
@@ -144,7 +144,7 @@ ul.plain { list-style: none; padding: 0; margin: 0; }
 <td><strong>F1</strong> Chapter 01.wav</td>
 <td class="open">3 open findings</td>
 <td><ul class="plain"><li>Loudness (LUFS): −19.4</li><li>RMS (dBFS): −21.2</li><li>Sample peak (dBFS): −3.6</li><li>True peak (dBTP): −2.4</li><li>Noise floor (dBFS): −66.8</li><li>Sample rate (Hz): 48000</li><li>Channels: 2</li><li>Length: 30:43.500</li><li>Silent windows: 0</li></ul></td>
-<td><ul class="plain"><li>RMS: met</li><li>Peak: met (advice: true peak above −3 dBTP may clip after MP3 encoding)</li><li>Noise floor: met</li><li>Sample rate: NOT MET</li><li>File length: met</li><li>Room tone, head: not checked</li><li>Room tone, tail: not checked</li><li>MP3 format: not checked</li></ul></td>
+<td><ul class="plain"><li>RMS: met</li><li>Peak: met (advice: true peak above −3 dBTP may clip after MP3 encoding)</li><li>Noise floor: met</li><li>Sample rate: NOT MET</li><li>File length: met</li><li>Room tone, head: met</li><li>Room tone, tail: met</li><li>MP3 format: not checked</li></ul></td>
 <td><ul class="plain"><li>Clip regions: 1</li><li>Level shifts: 0</li><li>Silences: 0</li><li>Room-tone segments: 0</li><li>Pacing: not available (no transcript timing)</li></ul></td>
 <td><code title="SHA-256 9f9f9f9f9f9f9f9f9f9f9f9f9f9f9f9f9f9f9f9f9f9f9f9f9f9f9f9f9f9f9f9f">9f9f9f9f9f9f</code><br><span class="muted">530928044 bytes, modified 2026-09-23T14:02:11.5Z</span></td>
 </tr>
@@ -152,7 +152,7 @@ ul.plain { list-style: none; padding: 0; margin: 0; }
 <td><strong>F2</strong> Chapter 02.wav</td>
 <td class="open">1 open finding</td>
 <td><ul class="plain"><li>Loudness (LUFS): Not measurable</li><li>RMS (dBFS): −21.2</li><li>Sample peak (dBFS): −3.6</li><li>True peak (dBTP): Not measurable</li><li>Noise floor (dBFS): −66.8</li><li>Sample rate (Hz): 48000</li><li>Channels: 2</li><li>Length: 30:43.500</li><li>Silent windows: 0</li></ul></td>
-<td><ul class="plain"><li>RMS: met</li><li>Peak: met</li><li>Noise floor: met</li><li>Sample rate: NOT MET</li><li>File length: met</li><li>Room tone, head: not checked</li><li>Room tone, tail: not checked</li><li>MP3 format: not checked</li></ul></td>
+<td><ul class="plain"><li>RMS: met</li><li>Peak: met</li><li>Noise floor: met</li><li>Sample rate: NOT MET</li><li>File length: met</li><li>Room tone, head: met</li><li>Room tone, tail: met</li><li>MP3 format: not checked</li></ul></td>
 <td><ul class="plain"><li>Clip regions: 1</li><li>Level shifts: 0</li><li>Silences: 0</li><li>Room-tone segments: 0</li><li>Pacing: not available (no transcript timing)</li></ul></td>
 <td><code title="SHA-256 e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3">e3e3e3e3e3e3</code><br><span class="muted">176444 bytes, modified 2026-09-23T14:05:00Z</span></td>
 </tr>
