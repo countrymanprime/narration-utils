@@ -26,7 +26,7 @@ var procGetSystemPowerStatus = windows.NewLazySystemDLL("kernel32.dll").NewProc(
 // as battery (D27).
 func platformPower() coverage.Power {
 	var status systemPowerStatus
-	if ok, _, _ := procGetSystemPowerStatus.Call(uintptr(unsafe.Pointer(&status))); ok == 0 {
+	if ok, _, _ := procGetSystemPowerStatus.Call(uintptr(unsafe.Pointer(&status))); ok == 0 { //nolint:gosec // G103: the Win32 call fills a struct that outlives it
 		return coverage.PowerUnknown
 	}
 	return powerFrom(status.ACLineStatus, status.BatteryFlag)
