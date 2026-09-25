@@ -31,6 +31,8 @@ import { guideBuildResultSchema, guideCreatedSchema, guideEntitiesSchema, guideP
 import { settingsForScopeSchema } from './schemas/settings';
 import { tracksDiscoverySchema, tracksProjectSchema } from './schemas/tracks';
 import {
+  chapterRegionPlanSchema,
+  chapterRegionsCreatedSchema,
   chapterSuggestionSchema,
   chapterTrackLinksSchema,
   chapterTrackMappingSchema,
@@ -374,6 +376,10 @@ export const wailsClient: NarrationApi = {
   chapterTrackSet: (chapterId, trackGuid) => decode(chapterTrackSetSchema, 'ChapterTrackSet', host.ChapterTrackSet(chapterId, trackGuid)),
   chapterTrackUnlink: (chapterId) => decode(chapterTrackMappingSchema, 'ChapterTrackUnlink', host.ChapterTrackUnlink(chapterId)),
   chapterTrackLinks: () => decode(chapterTrackLinksSchema, 'ChapterTrackLinks', host.ChapterTrackLinks()),
+  chapterRegionsPreview: (openingTrackGuid, closingTrackGuid) =>
+    decode(chapterRegionPlanSchema, 'ChapterRegionsPreview', host.ChapterRegionsPreview(openingTrackGuid, closingTrackGuid)),
+  chapterRegionsCreate: (openingTrackGuid, closingTrackGuid, update) =>
+    decode(chapterRegionsCreatedSchema, 'ChapterRegionsCreate', host.ChapterRegionsCreate(openingTrackGuid, closingTrackGuid, update)),
   chapterTrackMatch: (chapterId) => decode(chapterTrackMatchSchema, 'ChapterTrackMatch', host.ChapterTrackMatch(chapterId)),
   chapterSuggestion: () => decode(chapterSuggestionSchema, 'ChapterSuggestion', host.ChapterSuggestion()),
   findingsList: (query) => decode(findingsPageSchema, 'FindingsList', host.FindingsList(query)),
