@@ -31,19 +31,19 @@
   },
   {
     "name": "an existing region is created again",
-    "file": "narration_line_identity.lua",
-    "find": "found = found or same_region(region, row.title, row.first, row.last)",
-    "replace": "found = false"
+    "file": "narration_regions.lua",
+    "find": "exists = exists or same_bounds(region, row.first, row.last)",
+    "replace": "exists = false"
   },
   {
     "name": "the region tolerance widens",
-    "file": "narration_line_identity.lua",
+    "file": "narration_regions.lua",
     "find": "local REGION_TOLERANCE = 0.01",
     "replace": "local REGION_TOLERANCE = 1"
   },
   {
     "name": "a malformed region row is accepted",
-    "file": "narration_line_identity.lua",
+    "file": "narration_regions.lua",
     "find": "if first and last and first >= 0 and last > first and title ~= '' then",
     "replace": "if first and last and title ~= '' then"
   },
@@ -484,5 +484,113 @@
     "file": "narration_transport.lua",
     "find": "      if recording() then\n        reaper.OnStopButton()\n      elseif record.waited < START_WAIT_CYCLES then",
     "replace": "      if false then\n        reaper.OnStopButton()\n      elseif record.waited < START_WAIT_CYCLES then"
+  },
+  {
+    "name": "the update flag moves a region whose title several regions share",
+    "file": "narration_regions.lua",
+    "find": "    elseif update and #titled == 1 then",
+    "replace": "    elseif update and #titled >= 1 then"
+  },
+  {
+    "name": "regions move without the update flag",
+    "file": "narration_regions.lua",
+    "find": "    elseif update and #titled == 1 then",
+    "replace": "    elseif #titled == 1 then"
+  },
+  {
+    "name": "a region REAPER refused is counted as created",
+    "file": "narration_regions.lua",
+    "find": "      if reaper.AddProjectMarker2(0, true, row.first, row.last, row.title, -1, region_color) >= 0 then",
+    "replace": "      if reaper.AddProjectMarker2(0, true, row.first, row.last, row.title, -1, region_color) then"
+  },
+  {
+    "name": "regions open an undo block when nothing changes",
+    "file": "narration_regions.lua",
+    "find": "  if #plan.add > 0 or #plan.move > 0 then",
+    "replace": "  if true then"
+  },
+  {
+    "name": "an already active take makes an undo point",
+    "file": "narration_workspace.lua",
+    "find": "  if reaper.GetActiveTake(item) == take then\n    event(session_dir, 'ACTIVE_TAKE_SET', run_id, item_guid(item), take_guid(take), 0)",
+    "replace": "  if false then\n    event(session_dir, 'ACTIVE_TAKE_SET', run_id, item_guid(item), take_guid(take), 0)"
+  },
+  {
+    "name": "a stale item resolves to another one",
+    "file": "narration_workspace.lua",
+    "find": "  if not item then\n    return nil, nil, item_text, 'item'",
+    "replace": "  item = item or reaper.GetMediaItem(0, 0)\n  if not item then\n    return nil, nil, item_text, 'item'"
+  },
+  {
+    "name": "a take of the item is used when the named one is gone",
+    "file": "narration_workspace.lua",
+    "find": "  return nil, nil, take_text, 'take'\nend",
+    "replace": "  return item, reaper.GetActiveTake(item)\nend"
+  },
+  {
+    "name": "the active take changes while REAPER records",
+    "file": "narration_workspace.lua",
+    "find": "  if recording() then\n    event(session_dir, 'ERROR', run_id, 'REAPER is recording. Stop recording first.')\n    return\n  end\n  local item, take, stale, reason = resolve(item_text, take_text)\n  if not item then\n    event(session_dir, 'ITEM_STALE', run_id, stale, reason)\n    return\n  end\n  if reaper.GetActiveTake(item) == take then",
+    "replace": "  local item, take, stale, reason = resolve(item_text, take_text)\n  if not item then\n    event(session_dir, 'ITEM_STALE', run_id, stale, reason)\n    return\n  end\n  if reaper.GetActiveTake(item) == take then"
+  },
+  {
+    "name": "a chain the listing does not hold is applied",
+    "file": "narration_workspace.lua",
+    "find": "    if listed == name then",
+    "replace": "    if true then"
+  },
+  {
+    "name": "the chain listing depth limit is lifted",
+    "file": "narration_workspace.lua",
+    "find": "local CHAIN_DEPTH_LIMIT = 4",
+    "replace": "local CHAIN_DEPTH_LIMIT = 40"
+  },
+  {
+    "name": "the chain listing count limit is lifted",
+    "file": "narration_workspace.lua",
+    "find": "local CHAIN_COUNT_LIMIT = 500",
+    "replace": "local CHAIN_COUNT_LIMIT = 5000"
+  },
+  {
+    "name": "the chain listing is not refreshed",
+    "file": "narration_workspace.lua",
+    "find": "  enumerate(directory, -1)\n  local names, index = {}, 0",
+    "replace": "  local names, index = {}, 0"
+  },
+  {
+    "name": "a passage outside the item is applied",
+    "file": "narration_workspace.lua",
+    "find": "  if from < first - EDGE_EPSILON or to > last + EDGE_EPSILON then",
+    "replace": "  if false then"
+  },
+  {
+    "name": "a passage on a take that does not play is applied",
+    "file": "narration_workspace.lua",
+    "find": "  if reaper.GetActiveTake(item) ~= take then\n    event(session_dir, 'ERROR', run_id, 'The passage is not on the take that plays.')",
+    "replace": "  if false then\n    event(session_dir, 'ERROR', run_id, 'The passage is not on the take that plays.')"
+  },
+  {
+    "name": "an FX chain is applied while REAPER records",
+    "file": "narration_workspace.lua",
+    "find": "  if recording() then\n    event(session_dir, 'ERROR', run_id, 'REAPER is recording. Stop recording first.')\n    return\n  end\n  local item, take, stale, reason = resolve(item_text, take_text)\n  if not item then\n    event(session_dir, 'ITEM_STALE', run_id, stale, reason)\n    return\n  end\n  if reaper.GetActiveTake(item) ~= take then",
+    "replace": "  local item, take, stale, reason = resolve(item_text, take_text)\n  if not item then\n    event(session_dir, 'ITEM_STALE', run_id, stale, reason)\n    return\n  end\n  if reaper.GetActiveTake(item) ~= take then"
+  },
+  {
+    "name": "a chain REAPER did not load is reported as applied",
+    "file": "narration_workspace.lua",
+    "find": "    if index < 0 or added <= 0 then",
+    "replace": "    if false then"
+  },
+  {
+    "name": "the whole item is split at its own edge",
+    "file": "narration_workspace.lua",
+    "find": "  if not failure and from > first + EDGE_EPSILON then",
+    "replace": "  if not failure and from >= first - 1 then"
+  },
+  {
+    "name": "the UI refresh hold is not released",
+    "file": "narration_workspace.lua",
+    "find": "  reaper.PreventUIRefresh(-1)\n",
+    "replace": "\n"
   }
 ]

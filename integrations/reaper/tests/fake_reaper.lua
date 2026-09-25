@@ -345,6 +345,28 @@ function Fake:add_project_api(api)
     end
     return names[index + 1]
   end
+  -- Subdirectories are cached like files (REAPER documents the same -1 re-read for both) and handed back in reverse
+  -- order, so a caller that needs an order must sort.
+  function api.EnumerateSubdirectories(directory, index)
+    local key = 'dirs:' .. directory
+    if index == -1 then
+      fake.listing_cache[key] = nil
+      return nil
+    end
+    local names = fake.listing_cache[key]
+    if not names then
+      names = {}
+      local listed = fake.host.listsubdirs(directory)
+      for position = #listed, 1, -1 do
+        names[#names + 1] = listed[position]
+      end
+      fake.listing_cache[key] = names
+    end
+    return names[index + 1]
+  end
+  function api.PreventUIRefresh(delta)
+    fake.ui_refresh_hold = (fake.ui_refresh_hold or 0) + delta
+  end
   function api.RecursiveCreateDirectory(path, _)
     return fake.host.makedirs(path)
   end
@@ -625,12 +647,67 @@ function Fake:add_take_api(api)
     return item.takes[index + 1]
   end
   -- AddTakeToMediaItem appends a new, inactive take (REAPER: it never touches I_CURTAKE - the previously active
-  -- take stays active, confirmed by the take-mechanics spike). No SetActiveTake is modelled anywhere in this fake,
-  -- so a bridge command that tried to switch the active take would fail loudly here rather than silently pass.
+  -- take stays active, confirmed by the take-mechanics spike). SetActiveTake (set_active_take, narration_workspace.lua)
+  -- records every call in fake.calls, so a test of any other command can assert it never switched the active take.
   function api.AddTakeToMediaItem(item)
     local take = { item = item, source = { file = '' }, startoffs = 0, playrate = 1, midi = false, name = '', markers = {}, ext = {}, guid = fake:new_guid() }
     item.takes[#item.takes + 1] = take
     return take
+  end
+  function api.SetActiveTake(take)
+    fake.calls[#fake.calls + 1] = { name = 'SetActiveTake' }
+    for index, candidate in ipairs(take.item.takes) do
+      if candidate == take then
+        take.item.active_index = index
+      end
+    end
+  end
+  function api.UpdateItemInProject(_)
+    fake.item_updates = (fake.item_updates or 0) + 1
+  end
+  -- Take FX (apply_fx_chain). A chain file adds one FX per `fake.chain_fx_count` (1 unless a test sets it); a test sets
+  -- fake.fx_load_fails to model REAPER refusing the file. Every call is recorded in fake.calls.
+  function api.TakeFX_AddByName(take, name, instantiate)
+    fake.calls[#fake.calls + 1] = { name = 'TakeFX_AddByName', fx = name, instantiate = instantiate }
+    if fake.fx_load_fails then
+      return -1
+    end
+    take.fx = take.fx or {}
+    local first = #take.fx
+    for _ = 1, fake.chain_fx_count or 1 do
+      take.fx[#take.fx + 1] = { name = name }
+    end
+    return first
+  end
+  function api.TakeFX_GetCount(take)
+    return #(take.fx or {})
+  end
+  -- SplitMediaItem the way REAPER documents it: the original item becomes the left half and the right half is a new
+  -- item (new GUID) returned, or nil when the position is not strictly inside the item. Both halves keep the item's
+  -- extension data and every take (the right half's takes get new GUIDs and a source offset moved by the split), with
+  -- the same take active and each take's FX copied.
+  function api.SplitMediaItem(item, at)
+    fake.calls[#fake.calls + 1] = { name = 'SplitMediaItem', at = at }
+    if at <= item.position or at >= item.position + item.length then
+      return nil
+    end
+    local right = fake:add_item(item.track, { position = at, length = item.position + item.length - at })
+    right.active_index = item.active_index
+    for key, value in pairs(item.ext) do
+      right.ext[key] = value
+    end
+    for index, take in ipairs(item.takes) do
+      local copy =
+        { item = right, source = take.source, playrate = take.playrate, midi = take.midi, name = take.name, markers = {}, ext = {}, guid = fake:new_guid() }
+      copy.startoffs = take.startoffs + (at - item.position) * take.playrate
+      copy.fx = {}
+      for _, fx in ipairs(take.fx or {}) do
+        copy.fx[#copy.fx + 1] = { name = fx.name }
+      end
+      right.takes[index] = copy
+    end
+    item.length = at - item.position
+    return right
   end
   function api.SetMediaItemTake_Source(take, source)
     take.source = source
@@ -701,6 +778,9 @@ function Fake:add_marker_api(api)
     return index + 1, marker.is_region, marker.pos, marker.rgnend, marker.name, marker.index, marker.color
   end
   function api.AddProjectMarker2(_, is_region, pos, rgnend, name, wantidx, color)
+    if fake.add_marker_fails then
+      return -1
+    end
     local marker = { is_region = is_region, pos = pos, rgnend = rgnend, name = name, color = color or 0 }
     if wantidx and wantidx >= 0 then
       marker.index = wantidx
@@ -713,6 +793,21 @@ function Fake:add_marker_api(api)
   -- Renames or repositions a marker or region found by its markrgnindexnumber (the sixth EnumProjectMarkers3
   -- return value); unlike SetProjectMarker4 it cannot clear a name, which none of this bridge's callers need
   -- (research: `reaper-automation-surface.md:97`).
+  -- SetProjectMarker4: color 0 leaves the colour unchanged; flags & 1 clears the name (never used by this bridge).
+  function api.SetProjectMarker4(_, markrgnindexnumber, is_region, pos, rgnend, name, color, flags)
+    fake.calls[#fake.calls + 1] = { name = 'SetProjectMarker4', index = markrgnindexnumber }
+    for _, marker in ipairs(fake.markers) do
+      if marker.index == markrgnindexnumber and marker.is_region == is_region then
+        marker.pos, marker.rgnend, marker.name = pos, rgnend, (flags or 0) % 2 == 1 and '' or name
+        if color and color ~= 0 then
+          marker.color = color
+        end
+        table.sort(fake.markers, by_position)
+        return true
+      end
+    end
+    return false
+  end
   function api.SetProjectMarker3(_, markrgnindexnumber, is_region, pos, rgnend, name, color)
     for _, marker in ipairs(fake.markers) do
       if marker.index == markrgnindexnumber and marker.is_region == is_region then

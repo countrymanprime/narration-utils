@@ -34,12 +34,13 @@ H.test('the bridge registers exactly the commands the host and the docs know abo
   local s = H.session()
   H.eq(s.bridge.new_registry().names(), {
     'add_finding_marker',
+    'apply_fx_chain',
     'arm_only',
     'chapter_track_state',
     'close',
     'configure_chapter_render',
     'count_pickups',
-    'create_chapter_regions',
+    'create_regions',
     'create_take',
     'export_compare_markers',
     'export_pickups',
@@ -47,6 +48,7 @@ H.test('the bridge registers exactly the commands the host and the docs know abo
     'inspect_compare_results',
     'jump_to_compare_marker',
     'launch_cleanup_tool',
+    'list_fx_chains',
     'loop_context',
     'navigate_item',
     'next_pickup',
@@ -58,6 +60,7 @@ H.test('the bridge registers exactly the commands the host and the docs know abo
     'record_start',
     'record_stop',
     'resolve_pickup',
+    'set_active_take',
     'stamp_item_lines',
     'stop_loop',
   })

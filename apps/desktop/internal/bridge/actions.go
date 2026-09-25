@@ -48,10 +48,15 @@ var experimentalCommands = map[string]bool{
 	"arm_only":            true,
 	"record_start":        true,
 	"record_stop":         true,
+	"set_active_take":     true,
+	"list_fx_chains":      true,
+	"apply_fx_chain":      true,
+	"create_regions":      true,
 }
 
 // actionTags are the events Actions consumes: every answer of every command it sends, and ERROR.
-var actionTags = []string{"TRACK_STATE", "TRACK_ITEM", "TRACK_STATE_END", "TRACK_STALE", "ARMED", "RECORD_STARTED", "RECORD_STOPPED", "RECORD_ENDED", "RECORD_NOT_OURS", "ERROR"}
+var actionTags = []string{"TRACK_STATE", "TRACK_ITEM", "TRACK_STATE_END", "TRACK_STALE", "ARMED", "RECORD_STARTED", "RECORD_STOPPED", "RECORD_ENDED", "RECORD_NOT_OURS",
+	"ACTIVE_TAKE_SET", "ITEM_STALE", "FX_CHAIN", "FX_CHAINS_LISTED", "FX_CHAIN_APPLIED", "REGIONS_CREATED", "ERROR"}
 
 // ErrExperimentalOff: the command is experimental and the setting is off, so nothing was sent to REAPER.
 var ErrExperimentalOff = errors.New("this REAPER action is experimental and switched off: turn on Experimental REAPER actions in Settings")
@@ -91,11 +96,8 @@ func Experimental(command string) bool { return experimentalCommands[command] }
 // request sends command with a new run ID and returns every event of that run up to and including the first one whose
 // tag is in closing. An ERROR for the run ends it with its message.
 func (a *Actions) request(ctx context.Context, command string, closing []string, args ...string) ([]Event, error) {
-	if experimentalCommands[command] && (a.enabled == nil || !a.enabled()) {
-		return nil, ErrExperimentalOff
-	}
-	if a.client == nil {
-		return nil, ErrUnavailable
+	if err := a.allowed(command); err != nil {
+		return nil, err
 	}
 	runID, run, timeout := a.open(closing)
 	defer a.close(runID)
@@ -112,6 +114,18 @@ func (a *Actions) request(ctx context.Context, command string, closing []string,
 	case <-ctx.Done():
 		return nil, ctx.Err()
 	}
+}
+
+// allowed refuses an experimental command while the setting is off, and any command with no bridge, before anything
+// is written.
+func (a *Actions) allowed(command string) error {
+	if experimentalCommands[command] && (a.enabled == nil || !a.enabled()) {
+		return ErrExperimentalOff
+	}
+	if a.client == nil {
+		return ErrUnavailable
+	}
+	return nil
 }
 
 func (a *Actions) open(closing []string) (string, *actionRun, time.Duration) {

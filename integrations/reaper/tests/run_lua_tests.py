@@ -42,6 +42,11 @@ def build_host(lua: LuaRuntime, reaper_dir: Path, scratch: Path) -> object:
         names = sorted(entry.name for entry in directory.iterdir() if entry.is_file()) if directory.is_dir() else []
         return lua.table_from(names)
 
+    def listsubdirs(path: str):
+        directory = Path(path)
+        names = sorted(entry.name for entry in directory.iterdir() if entry.is_dir()) if directory.is_dir() else []
+        return lua.table_from(names)
+
     def makedirs(path: str) -> int:
         Path(path).mkdir(parents=True, exist_ok=True)
         return 1
@@ -50,6 +55,7 @@ def build_host(lua: LuaRuntime, reaper_dir: Path, scratch: Path) -> object:
         {
             "tmpdir": tmpdir,
             "listdir": listdir,
+            "listsubdirs": listsubdirs,
             "makedirs": makedirs,
             "reaper_dir": str(reaper_dir),
             "is_windows": sys.platform == "win32",

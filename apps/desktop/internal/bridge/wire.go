@@ -48,12 +48,14 @@ var eventSpecs = map[string]eventSpec{
 	"COMPARE_EXPORT_MARKER": {required: []fieldSpec{text("run"), text("row"), text("state")}, optional: []fieldSpec{text("existingName")}},
 	"COMPARE_EXPORTED":      {required: []fieldSpec{text("run"), count("added"), count("skipped")}},
 	// ERROR|<message> is the shape before the run id was added (ADR 0068); it stays readable and consumers ignore it.
-	"ERROR":            {required: []fieldSpec{text("run")}, optional: []fieldSpec{text("message")}},
-	"LINES_STAMPED":    {required: []fieldSpec{text("run"), count("applied"), count("unchanged"), count("missing"), count("conflicts")}},
-	"LINES_READ":       {required: []fieldSpec{text("run"), text("path"), count("count")}},
-	"LINES_STALE":      {required: []fieldSpec{text("run"), text("guid")}},
-	"LINES_CONFLICT":   {required: []fieldSpec{text("run"), text("guid")}},
-	"REGIONS_CREATED":  {required: []fieldSpec{text("run"), count("created"), count("existing"), count("invalid")}},
+	"ERROR":          {required: []fieldSpec{text("run")}, optional: []fieldSpec{text("message")}},
+	"LINES_STAMPED":  {required: []fieldSpec{text("run"), count("applied"), count("unchanged"), count("missing"), count("conflicts")}},
+	"LINES_READ":     {required: []fieldSpec{text("run"), text("path"), count("count")}},
+	"LINES_STALE":    {required: []fieldSpec{text("run"), text("guid")}},
+	"LINES_CONFLICT": {required: []fieldSpec{text("run"), text("guid")}},
+	// updated, ambiguous and failed were appended by create_regions (narration_regions.lua), which replaced
+	// create_chapter_regions: optional, so the older three-count answer still reads.
+	"REGIONS_CREATED":  {required: []fieldSpec{text("run"), count("created"), count("existing"), count("invalid")}, optional: []fieldSpec{count("updated"), count("ambiguous"), count("failed")}},
 	"PICKUPS_IMPORTED": {required: []fieldSpec{text("run"), count("added"), count("existing"), count("invalid")}},
 	"PICKUPS_EXPORTED": {required: []fieldSpec{text("run"), text("path"), count("count")}},
 	"PICKUPS_COUNTED":  {required: []fieldSpec{text("run"), count("remaining"), count("total")}},
@@ -109,6 +111,14 @@ var eventSpecs = map[string]eventSpec{
 	"RECORD_STOPPED":  {required: []fieldSpec{text("run"), count("restored"), count("kept")}},
 	"RECORD_ENDED":    {required: []fieldSpec{text("run"), count("restored"), count("kept")}},
 	"RECORD_NOT_OURS": {required: []fieldSpec{text("run")}},
+	// set_active_take, list_fx_chains, apply_fx_chain (narration_workspace.lua; edit-and-proof-workspace P6, P8, P9).
+	// changed is 0 or 1; reason is item, take or range; name is a chain's path relative to FXChains with forward
+	// slashes; splits is 0 to 2 and added the number of FX the chain added.
+	"ACTIVE_TAKE_SET":  {required: []fieldSpec{text("run"), text("itemGuid"), text("takeGuid"), count("changed")}},
+	"ITEM_STALE":       {required: []fieldSpec{text("run"), text("guid"), text("reason")}},
+	"FX_CHAIN":         {required: []fieldSpec{text("run"), text("name")}},
+	"FX_CHAINS_LISTED": {required: []fieldSpec{text("run"), count("count"), count("truncated")}},
+	"FX_CHAIN_APPLIED": {required: []fieldSpec{text("run"), text("name"), text("itemGuid"), text("takeGuid"), count("splits"), count("added")}},
 }
 
 // CheckEvent validates one decoded event line (the tag first) against the table. The error names the tag, the position and name of
