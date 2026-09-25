@@ -914,3 +914,10 @@ func moonshineDownloadSize(model moonshine.Model) int64 {
 	}
 	return total
 }
+
+// ManuscriptSetChapterKind reclassifies a chapter after import (chapter-track-link-control PRD Phase 3):
+// "reference" or "opening" removes it from recording, "narration" restores it. A removal clears the chapter's
+// track links (TL5 A). See manuscriptSetChapterKind.
+func (h *Host) ManuscriptSetChapterKind(chapterID, kind string) (string, error) {
+	return encodeBinding(h.manuscriptSetChapterKind(chapterID, kind))
+}

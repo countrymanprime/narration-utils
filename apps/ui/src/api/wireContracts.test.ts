@@ -16,6 +16,7 @@ import { MOCK_ACX, evaluateMockFile, mockCustomProfile } from './deliveryProfile
 import { diagnosticsJobSchema } from './schemas/diagnostics';
 import {
   bookmarkSchema,
+  chapterKindResultSchema,
   chapterSchema,
   chaptersSchema,
   fileSelectionSchema,
@@ -136,6 +137,7 @@ const GOLDEN: Record<string, z.ZodType> = {
   'manuscript-import-success.json': workJobSchema,
   'manuscript-chapters.json': chaptersSchema,
   'manuscript-chapter-status.json': chapterSchema,
+  'manuscript-chapter-kind-removed.json': chapterKindResultSchema,
   'manuscript-paragraphs.json': paragraphsSchema,
   'manuscript-search.json': searchHitsSchema,
   'manuscript-note.json': noteSchema,
@@ -624,6 +626,24 @@ describe('answers of the mock client for the manuscript, Story Bible and project
       'mock saved state',
     );
     expectMatches(chapterSchema, await api.manuscriptSetChapterStatus(chapters[0]?.id ?? '', 'recording'), 'mock chapter status');
+  });
+
+  // chapter-track-link-control.prd.md Phase 3: Remove from recording clears the chapter's links, and Restore brings it back.
+  it('a chapter removed from recording and restored', async () => {
+    const api = createMockApi();
+    const [first] = await api.manuscriptChapters();
+    const tracks = await api.chapterTrackLinks();
+    const guid = tracks.tracks[0]?.guid ?? '';
+    await api.chapterTrackSet(first.id, guid);
+    const removed = await api.manuscriptSetChapterKind(first.id, 'reference');
+    expectMatches(chapterKindResultSchema, removed, 'mock chapter removed');
+    expect(removed).toMatchObject({ previousKind: 'narration', chapter: { contentKind: 'reference', removedFromRecording: true } });
+    expect(removed.clearedLinks.map((link) => link.trackGuid)).toEqual([guid]);
+    const restored = await api.manuscriptSetChapterKind(first.id, 'narration');
+    expectMatches(chapterKindResultSchema, restored, 'mock chapter restored');
+    expect(restored.chapter.removedFromRecording).toBeUndefined();
+    expect(restored.clearedLinks).toEqual([]);
+    await expect(api.manuscriptSetChapterKind('no-such-chapter', 'reference')).rejects.toThrow('unknown manuscript chapter');
   });
 
   it('a created note and bookmark', async () => {
@@ -1613,6 +1633,7 @@ describe('answers of the mock client for the settings, voice, model, transcript 
       'manuscriptParagraphs',
       'manuscriptSearch',
       'manuscriptSetChapterStatus',
+      'manuscriptSetChapterKind',
       'noteList',
       'noteCreate',
       'manuscriptReader',

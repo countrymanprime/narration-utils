@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import type {
+  ManuscriptChapterKindResult,
   ManuscriptChapter,
   ManuscriptCharacterCandidate,
   ManuscriptFileSelection,
@@ -15,6 +16,7 @@ import type {
   WorkJob,
 } from '../contracts/manuscript';
 import { listFromNull, optionalFromNull } from './base';
+import { trackMappingSchema } from './chapterTrackMap';
 
 const contentKindSchema = z.enum(['narration', 'opening', 'reference']);
 
@@ -35,8 +37,17 @@ export const chapterSchema = z.object({
   recordedUnavailable: z.enum(['unlinked', 'multiple_tracks', 'track_missing', 'no_project']).optional(),
   status: z.enum(['not_started', 'recording', 'editing', 'proofing', 'finalized']),
   contentKind: contentKindFromWire,
+  kindChangedAt: z.string().optional(),
+  removedFromRecording: z.literal(true).optional(),
   paragraphIds: z.array(z.object({ id: z.string(), index: z.number() })).optional(),
 }) satisfies z.ZodType<ManuscriptChapter>;
+
+/** `ManuscriptSetChapterKind` (`apps/desktop/chapterkind.go`, chapter-track-link-control PRD Phase 3). */
+export const chapterKindResultSchema = z.object({
+  chapter: chapterSchema,
+  previousKind: contentKindSchema,
+  clearedLinks: z.array(trackMappingSchema),
+}) satisfies z.ZodType<ManuscriptChapterKindResult>;
 
 const spanSchema = z.object({ start: z.number(), end: z.number(), style: z.enum(['bold', 'italic', 'underline']) }) satisfies z.ZodType<TextSpan>;
 

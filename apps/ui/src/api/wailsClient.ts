@@ -9,6 +9,7 @@ import {
   fileSelectionSchema,
   noteSchema,
   notesSchema,
+  chapterKindResultSchema,
   chapterSchema,
   paragraphsSchema,
   readerSchema,
@@ -289,6 +290,7 @@ export const wailsClient: NarrationApi = {
   manuscriptParagraphs: (chapter) => decode(paragraphsSchema, 'ManuscriptParagraphs', host.ManuscriptParagraphs(chapter)),
   manuscriptSearch: (query) => decode(searchHitsSchema, 'ManuscriptSearch', host.ManuscriptSearch(query)),
   manuscriptSetChapterStatus: (chapter, status) => decode(chapterSchema, 'ManuscriptSetChapterStatus', host.ManuscriptSetChapterStatus(chapter, status)),
+  manuscriptSetChapterKind: (chapterId, kind) => decode(chapterKindResultSchema, 'ManuscriptSetChapterKind', host.ManuscriptSetChapterKind(chapterId, kind)),
   noteList: (chapter) => decode(notesSchema, 'ManuscriptNotes', host.ManuscriptNotes(chapter ?? '')),
   noteCreate: (chapterId, paragraphId, text, anchorStart, anchorEnd, anchorText) =>
     decode(

@@ -4,7 +4,7 @@
 
 **Not covered here (sibling PRDs drafted the same day):** what the Actual recorded column shows (`actual-recorded-column.prd.md`); linking the chapters to tracks automatically, the consent prompt when REAPER is linked, normalised title matching and retiring the manual per-row Check (`daw-chapter-track-auto-sync.prd.md`); the recording check as a whole-chapter summary (`recording-check-summary.prd.md`); credits rows ([Credits in the Chapter Table](credits-in-chapter-table.prd.md)); the stage check line above the table ([Home Stage Check Line](home-stage-check-line.prd.md)). The sibling file names may differ slightly; check `docs/prds/` before planning a phase.
 
-**Status (2026-09-24):** draft; open questions TL1 to TL10 wait for the owner. No tracking issue yet: open one (`docs/operations/github-workflow.md`) before Phase 1.
+**Status (2026-09-25):** in delivery (lane train, [implementation plan](implementation-plan.md) section 8). The open questions take the owner's answers (D31, D32) and otherwise the recommendations (D39; Decisions Log). Phases 1 and 2 are built; Phase 3's host half is built and its UI (the confirm and the Removed list) is lane C's stream C3.
 
 ## Problem Statement
 
@@ -108,14 +108,14 @@ We believe a visible, colour-matched track button with a slide-over for relinkin
 
 ## Open Questions
 
-- [ ] **TL1. Which icon?** Options:
+- [x] **TL1. Which icon?** Options:
   - (A) `faLayerGroup`, the Tracks navigation icon (`AppShell.tsx:33`), beside a dot in the track's own REAPER colour;
   - (B) `faWaveSquare`, a waveform. It reads as audio but already means Proofing and a pronunciation preview;
   - (C) `faLink` or `faLinkSlash`. It says "linked", not "track";
   - (D) a custom track-lane glyph (needs an ADR and an atlas story).
 
   Recommendation: A. It is the icon narrators already click to reach tracks, and the colour dot is what connects it to the track they see in REAPER. The link state goes in a small badge on the icon, not in a second icon.
-- [ ] **TL2. Remove, exclude or merge?** A mis-imported chapter is usually one of: a heading that is not a chapter (a part title, an epigraph); front matter imported as narration; or a false split of one chapter into two. Options:
+- [x] **TL2. Remove, exclude or merge?** A mis-imported chapter is usually one of: a heading that is not a chapter (a part title, an epigraph); front matter imported as narration; or a false split of one chapter into two. Options:
   - (A) **Remove from recording**: reclassify as `reference`. Every recording surface already hides reference chapters and the text stays (ADR 0088). Restore sets `narration` again.
   - (B) Mark as Front Matter (`opening`). It stays in navigation (ADR 0004).
   - (C) A new `excluded` flag, separate from the kind.
@@ -123,41 +123,41 @@ We believe a visible, colour-matched track button with a slide-over for relinkin
   - (E) Merge into the previous chapter.
 
   Recommendation: A, with B offered as a second choice in the same confirm ("Not a chapter" or "Front matter"). Leave E (merge) to a follow-up PRD, because it rewrites paragraph `chapterId`s and invalidates findings and check results. Refuse D: it breaks ids that fourteen packages read.
-- [ ] **TL3. One track per chapter, or several?** Options:
+- [x] **TL3. One track per chapter, or several?** Options:
   - (A) one track per chapter, keeping D5. A relink replaces the link.
   - (B) several tracks per chapter, for a chapter recorded across tracks or a pickups track. The slide-over would list them, but coverage and the matcher would need a multi-track rule (`coverage/manifest.go:190-192`).
 
   Recommendation: A for this PRD. When a chapter already has several links (made by the old Change), the slide-over shows every one and asks the narrator to keep one.
-- [ ] **TL4. Where does Check go?** The auto-sync PRD proposes retiring the manual per-row Check, and the recording check summary PRD changes what it shows. Options:
+- [x] **TL4. Where does Check go?** The auto-sync PRD proposes retiring the manual per-row Check, and the recording check summary PRD changes what it shows. Options:
   - (A) the track button replaces the Check column, and the slide-over gets a "Check recording" action;
   - (B) both stay side by side;
   - (C) whatever the auto-sync PRD decides, with the track button added as its own column either way.
 
   Recommendation: C, putting the track button immediately after Chapter so it reads as "this chapter, this track". Decide together with the sibling PRDs.
-- [ ] **TL5. What happens to a removed chapter's links and results?** Options:
+- [x] **TL5. What happens to a removed chapter's links and results?** Options:
   - (A) clear its track links (the confirm says so, and the track becomes free for another chapter), and keep its status, notes, findings and check results on disk;
   - (B) keep everything, including links.
 
   Recommendation: A. A link held by a hidden chapter makes that track ineligible for every other chapter (`resolve.go:151-154`) without the narrator being able to see why.
-- [ ] **TL6. Undo.** Options:
+- [x] **TL6. Undo.** Options:
   - (A) a confirm dialog before, and a "Removed from recording (N)" list under the table with Restore per chapter;
   - (B) an Undo action in the toast (needs a `Toast` action slot, a primitive change and `design-spec-guard`);
   - (C) confirm only.
 
   Recommendation: A. It is permanent, findable later, and needs no primitive change.
-- [ ] **TL7. The "no project" state.** When no `.rpp` is readable (none found, several and none chosen, or a parse error), options:
+- [x] **TL7. The "no project" state.** When no `.rpp` is readable (none found, several and none chosen, or a parse error), options:
   - (A) every row's button shows a neutral "no project" state, and the slide-over explains and links to Tracks;
   - (B) hide the track buttons and show one line above the table ("Choose the REAPER project on Tracks to see chapter tracks"), keeping Remove from recording reachable from a row menu;
   - (C) disable every button with a reason.
 
   Recommendation: B, since twenty identical disabled buttons say one thing twenty times. Coordinate with the Home stage check line PRD, which frees the space above the table.
-- [ ] **TL8. Show unconfirmed matches?** A confident name match (`matched`) that the narrator has not confirmed: show it as "suggested" with a one-click Confirm in the slide-over, or as "not linked"? Recommendation: suggested. If the auto-sync PRD confirms matches automatically, this state becomes rare and stays as the fallback for `uncertain` and `ambiguous`.
-- [ ] **TL9. Remember a removal across Replace manuscript?** Options:
+- [x] **TL8. Show unconfirmed matches?** A confident name match (`matched`) that the narrator has not confirmed: show it as "suggested" with a one-click Confirm in the slide-over, or as "not linked"? Recommendation: suggested. If the auto-sync PRD confirms matches automatically, this state becomes rare and stays as the fallback for `uncertain` and `ambiguous`.
+- [x] **TL9. Remember a removal across Replace manuscript?** Options:
   - (A) no: the import review asks for kinds again, as today;
   - (B) pre-select `reference` in the import review for a section whose title was removed before (stored by title, like `SuggestFromPrevious`).
 
   Recommendation: A now, B as a Could, because a new manuscript file may have fixed the heading.
-- [ ] **TL10. Keyboard and narrow widths.** The table already scrolls sideways inside its panel at tablet width (`AudiobookEstimatePanel.tsx:192`). Should the track button sit inside the Chapter cell (no new column) at the tablet viewport? Recommendation: its own narrow column. Check it in the visual suite before deciding otherwise.
+- [x] **TL10. Keyboard and narrow widths.** The table already scrolls sideways inside its panel at tablet width (`AudiobookEstimatePanel.tsx:192`). Should the track button sit inside the Chapter cell (no new column) at the tablet viewport? Recommendation: its own narrow column. Check it in the visual suite before deciding otherwise.
 
 ## Users & Context
 
@@ -235,7 +235,7 @@ Next, they notice "PART TWO" (212 words) listed as a chapter. They open its slid
   - `ManuscriptSetChapterKind(chapterID, kind)` accepts `narration`, `reference` or `opening` (TL2). It rewrites only that chapter's `contentKind` in `manuscript.json` through the same temp-file-and-rename, keeping `documentId`, ids, paragraphs and `importedAt`, and records `kindChangedAt`. Keeping `documentId` is what keeps the mapping, statuses and notes of the other chapters valid (`mapping.go:62-66`).
   - It refuses while an import job runs (`CanSwitchProject`, `service.go:106`), and refuses the last narration chapter.
   - Per TL5 A, it clears the chapter's links in the same call.
-  - Every consumer already filters by kind, so no consumer changes. Tests pin that each one (the Home table, `narratableManuscriptStats`, the reader, the teleprompter, stages, coverage, retail sample, Tracks) drops the chapter.
+  - Every recording surface already filters by kind, so no consumer changes. Tests pin that each one (the Home table, `narratableManuscriptStats`, the reader, the teleprompter, stages, coverage, retail sample, Tracks) drops the chapter. One exception found at delivery: the matcher's candidate pool (`manuscriptChapters`, and `ChapterTrackLinks`' pool) is every chapter on purpose, so chapter sync must link narration chapters only (ADR 0207).
   - The Story Bible guide's mention counts were built with the chapter included. The guide shows its existing "rebuild" staleness if it has one; otherwise this is a known limitation noted in the confirm's help text (see Risks).
   - A golden for the changed chapter payload (`manuscript-chapters.json` gains nothing if only `contentKind` changes; add `manuscript-chapter-kind.json` for the binding's result).
   - One ADR: a chapter's kind can change after import and "remove from recording" is a reclassification, never a delete. It builds on ADR 0005, 0088 and 0090 and supersedes none.
@@ -260,7 +260,7 @@ Next, they notice "PART TWO" (212 words) listed as a chapter. They open its slid
 | --- | --- | --- | --- | --- | --- | --- |
 | 1 | Host: atomic relink and the links read | `SetChapter`/`ClearChapter`, `ChapterTrackSet`/`ChapterTrackUnlink`/`ChapterTrackLinks`, schemas, goldens, wireContracts rows, mock, `hostAPIVersion` bump; Tracks page Change and Clear moved onto them | complete | - | TL3 | - |
 | 2 | Track button and slide-over | Per-row `ChapterTrackButton` with the seven states, `ChapterTrackPanel` with facts, candidates, link, relink, unlink and the displaced-chapter warning; visual states, aria snapshot, guide | complete (#534) | 3 (after 1) | 1; TL1, TL4, TL7, TL8, TL10 | - |
-| 3 | Remove from recording and restore | `ManuscriptSetChapterKind`, links cleared, Removed list with Restore, confirm dialog; consumer tests; ADR | pending | 2 (host part) | 1 for the link clear; TL2, TL5, TL6 | - |
+| 3 | Remove from recording and restore | `ManuscriptSetChapterKind`, links cleared, Removed list with Restore, confirm dialog; consumer tests; ADR | host complete: `ManuscriptSetChapterKind` (`manuscript.Service.SetChapterKind`, links cleared by `ClearChapter`), `removedFromRecording`/`kindChangedAt` on the chapter list, golden `manuscript-chapter-kind-removed.json`, `chapterKindResultSchema`, the mock and `?mockRemoved=1`, `hostAPIVersion` 51 ([ADR 0207](../adr/0207-a-chapters-kind-can-change-after-import-and-removing-it-from-recording-is-a-reclassification-never-a-delete.md)). UI pending: the confirm, the Removed list, visual and aria states, guides (lane C, C3) | 2 (host part) | 1 for the link clear; TL2, TL5, TL6 | - |
 | 4 | Play and select in REAPER (Could) | Playback in the slide-over; optional "Select in REAPER" bridge command with harness tests first | pending | - | 2 | - |
 
 ### Phase Details
@@ -341,6 +341,7 @@ Cross-cutting: each phase follows `CLAUDE.md`:
 | Unbuilt data in the real app (owner, 2026-09-24, D24) | Visible UI is built in full; in mock mode it runs on sample data, and in the real app a surface whose data is not built yet shows an honest "not available yet" state. Controls that would act on REAPER stay disabled with the reason | Hide unbuilt UI until its data exists | The owner can use and judge every screen now; each backend phase switches on a screen that already exists |
 | REAPER commands before the owner's verification pass (owner, 2026-09-24, D38) | Built in full with harness tests, their ReaScript calls documented from the API reference, and behind an "Experimental REAPER actions" Settings switch (off) until the owner and Claude verify them on a copy of a test project; commands that write to REAPER stay off until then | Wait to build them until the owner can test | Nothing waits on hardware, and nothing touches a real project before it is verified |
 | Removing a mis-imported chapter (owner, 2026-09-24, TL2, D31) | Reclassify it as reference material; never delete | Hard delete; front matter | Reference is already hidden everywhere, keeps text and statuses, and is reversible |
+| Remove from recording (2026-09-25, Phase 3, ADR 0207) | `ManuscriptSetChapterKind` rewrites only `contentKind` (plus `importedKind` once and `kindChangedAt`), refuses during an import and for the last narration chapter, and clears the chapter's links as rejections; the chapter list marks `removedFromRecording` | A separate removed flag; keep links | One field every consumer already filters on; a hidden chapter must not hold a track |
 | Tracks per chapter (owner, 2026-09-24, TL3, D32) | Exactly one track per chapter: this is a one-track-per-chapter workflow | Several tracks per chapter | Coverage and the matcher already assume it |
 
 ## Research Summary
@@ -367,7 +368,7 @@ Cross-cutting: each phase follows `CLAUDE.md`:
 ---
 
 *Generated: 2026-09-24*
-*Status: DRAFT - open questions TL1 to TL10 wait for the owner*
+*Status: in delivery - open questions answered (D31, D32, D39)*
 
 ## Visual Spec
 
