@@ -387,7 +387,14 @@ describe('wailsClient', () => {
 
   it('decodes the ChapterTrackMap list, confirm, and clear bindings', async () => {
     const empty = { documentId: 'doc-1', mappings: [] };
-    const confirmed = { trackGuid: 'track-guid-a', chapterId: 'c-0001', chapterTitle: 'Chapter One', confirmedAt: '2026-09-22T00:00:00Z' };
+    const confirmed = {
+      trackGuid: 'track-guid-a',
+      chapterId: 'c-0001',
+      chapterTitle: 'Chapter One',
+      confirmedAt: '2026-09-22T00:00:00Z',
+      origin: 'manual' as const,
+      match: null,
+    };
     const withOne = { documentId: 'doc-1', mappings: [confirmed] };
     const confirm = vi.fn().mockResolvedValue(JSON.stringify(confirmed));
     const clear = vi.fn().mockResolvedValue(JSON.stringify(empty));

@@ -6,6 +6,21 @@ export type TrackMapping = {
   chapterId: string;
   chapterTitle: string;
   confirmedAt: string;
+  /** Who made the link (daw-chapter-track-auto-sync PRD Phase 2, ADR 0202): the narrator, or chapter sync once the narrator
+   * consented for the project. Both are links. The host always sends it; it is optional here only so hand-built fixtures that
+   * predate it still type-check, and a missing one means `manual`. */
+  origin?: TrackLinkOrigin;
+  /** How an automatic link matched; `null` for a manual one. */
+  match?: TrackLinkMatch | null;
+};
+
+export type TrackLinkOrigin = 'manual' | 'auto';
+
+/** An automatic link's basis: the matcher's score and whether the track name matched exactly, as the one title it is a
+ * whole-token prefix of, or because the track held this chapter's title before a manuscript re-import. */
+export type TrackLinkMatch = {
+  score: number;
+  kind: 'exact' | 'contained' | 'previous-link';
 };
 
 /** Every confirmed link for one manuscript document (Q6: the store is keyed by `documentId`). */

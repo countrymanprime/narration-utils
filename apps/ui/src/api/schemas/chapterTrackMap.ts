@@ -19,6 +19,8 @@ export const trackMappingSchema = z.object({
   chapterId: z.string(),
   chapterTitle: z.string(),
   confirmedAt: z.string(),
+  origin: z.enum(['manual', 'auto']),
+  match: z.object({ score: z.number().min(0).max(1), kind: z.enum(['exact', 'contained', 'previous-link']) }).nullable(),
 }) satisfies z.ZodType<TrackMapping>;
 
 /** `mappings` is a null slice on the wire when nothing has been confirmed yet. */
