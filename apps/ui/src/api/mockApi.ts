@@ -19,6 +19,7 @@ import type {
   GuidePronunciation,
   LineIdentityState,
   ManuscriptChapter,
+  ManuscriptContentKind,
   ManuscriptNote,
   ManuscriptParagraph,
   NarrationApi,
@@ -474,6 +475,9 @@ export function createMockApi(
     teleprompterDevices?: TeleprompterDevice[];
     /** Which resume card state `teleprompterLocate` answers for every chapter (see `MockResumeSeed`). */
     resume?: MockResumeSeed;
+    /** Boots with the manuscript's last narration chapter already removed from recording (chapter-track-link-control PRD
+     * Phase 3), so the "Removed from recording" list and its Restore can be seen without driving a removal. */
+    removedChapter?: boolean;
     /** Whether the mock project boots with a linked DAW project file (PRD W13/W14). Defaults to true. */
     dawFileLinked?: boolean;
     /** Makes the next `linkDawFile()` call behave like a chosen file outside the project folder (PRD W15): refused, not linked. */
@@ -562,6 +566,8 @@ export function createMockApi(
   });
   let entities = wireClone(WIRE_ENTITIES);
   let chapters = wireClone(WIRE_CHAPTERS);
+  // The kind each reclassified chapter was imported as (the host's `importedKind`), so Restore knows it was removed.
+  const importedKinds = new Map<string, ManuscriptContentKind>();
   let paragraphs = wireClone(WIRE_PARAGRAPHS);
   let notes = wireClone(WIRE_NOTES);
   let readerState: ReaderState = wireClone(WIRE_READER_STATE);
@@ -690,6 +696,15 @@ export function createMockApi(
       const mixed = applyMixedManuscriptMock(chapters, paragraphs);
       chapters = mixed.chapters;
       paragraphs = mixed.paragraphs;
+    }
+    if (initial.removedChapter) {
+      const last = [...chapters].reverse().find((chapter) => (chapter.contentKind ?? 'narration') === 'narration');
+      if (last) {
+        importedKinds.set(last.id, 'narration');
+        chapters = chapters.map((chapter) =>
+          chapter.id === last.id ? { ...chapter, contentKind: 'reference', kindChangedAt: '2026-09-25T12:00:00Z', removedFromRecording: true } : chapter,
+        );
+      }
     }
     // WIRE_ENTITIES' occurrence paragraph numbers are computed against the
     // small local seed fixture, not the real manuscript text just loaded
@@ -1601,6 +1616,28 @@ export function createMockApi(
             matchStart,
           })),
       );
+    },
+    // The host's ManuscriptSetChapterKind (apps/desktop/chapterkind.go): only the kind changes, and a removal clears the
+    // chapter's links (chapter-track-link-control PRD Phase 3, TL5 A).
+    manuscriptSetChapterKind: async (chapterId, kind) => {
+      await manuscriptReady;
+      const found = chapters.find((item) => item.id === chapterId);
+      if (!found) throw new Error('unknown manuscript chapter');
+      const previousKind = found.contentKind ?? 'narration';
+      if (previousKind !== kind) {
+        const narration = chapters.filter((item) => (item.contentKind ?? 'narration') === 'narration').length;
+        if (previousKind === 'narration' && narration <= 1) throw new Error('the last narration chapter cannot be removed from recording');
+        const importedKind = importedKinds.get(chapterId) ?? previousKind;
+        importedKinds.set(chapterId, importedKind);
+        const changed: ManuscriptChapter = { ...found, contentKind: kind, kindChangedAt: new Date().toISOString() };
+        delete changed.removedFromRecording;
+        const next = importedKind === 'narration' && kind !== 'narration' ? { ...changed, removedFromRecording: true as const } : changed;
+        chapters = chapters.map((item) => (item.id === chapterId ? next : item));
+      }
+      const clearedLinks = kind === 'narration' ? [] : chapterTrackMappings.filter((link) => link.chapterId === chapterId);
+      chapterTrackMappings = chapterTrackMappings.filter((link) => !clearedLinks.includes(link));
+      const chapter = chapters.find((item) => item.id === chapterId) ?? found;
+      return wireClone({ chapter: withMeasurement(chapter), previousKind, clearedLinks });
     },
     manuscriptSetChapterStatus: async (chapter, status) => {
       await manuscriptReady;
