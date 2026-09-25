@@ -57,6 +57,12 @@ export const STATE_CATALOG: StateEntry[] = [
   },
   {
     page: 'home',
+    state: 'chapter-names',
+    description:
+      "Home, chapter table expanded with the owner's heading shapes (?mockManuscript=mixed): a source-capitals title with a subtitle, a title with no subtitle, a long subtitle and a title already ending in a colon, one style (chapterName()/TitleSubtitle) throughout (chapter-title-display-consistency.prd.md Phase 2, mockups/chapter-title-display-consistency/02-home-table-*.webp)",
+  },
+  {
+    page: 'home',
     state: 'hint-chips',
     description: 'Vocabulary hint chips widget (accepted + pending) - lives on Proofing, catalogued under "home" for historical reasons',
   },

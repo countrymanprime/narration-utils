@@ -597,6 +597,23 @@ export const APP_DRIVERS: Record<string, Record<string, Driver>> = {
       await homeLoaded(page);
       await clickVisible(page, 'button', /Show per-chapter breakdown/);
     },
+    // The rule (chapter-title-display-consistency.prd.md): " — " once, never twice, and never CSS capitals on a
+    // chapter name - source capitals ("CHAPTER ONE") are the book's own text, not a text-transform. The row names
+    // below are chapterName()'s output, so a regression that drops the primitive or the trailing-separator fix
+    // ("Chapter 12: — …") fails these waits, not just the screenshot.
+    'chapter-names': async (page) => {
+      await page.goto('/?mockManuscript=mixed');
+      await settlePage(page);
+      await homeLoaded(page);
+      await clickVisible(page, 'button', /Show per-chapter breakdown/);
+      await page.getByRole('link', { name: 'CHAPTER ONE — Bad Ideas Look Great in Neon' }).waitFor();
+      await page.getByRole('link', { name: 'A Message from the Author' }).waitFor();
+      await page.getByRole('link', { name: /^Chapter 12 — Alice.s Evidence$/ }).waitFor();
+      await page.waitForFunction(() => {
+        const links = [...document.querySelectorAll<HTMLAnchorElement>('td a[href*="/manuscript#c"]')];
+        return links.length > 0 && links.every((link) => getComputedStyle(link).textTransform === 'none');
+      });
+    },
     'hint-chips': async (page) => {
       await goToPage(page, 'Proofing');
       await clickVisible(page, 'button', /Suggest from manuscript/);

@@ -5,6 +5,8 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faChevronDown, faChevronUp, faTriangleExclamation } from '@fortawesome/free-solid-svg-icons';
 import type { ChapterStatus, CoverageState, ManuscriptChapter, RecordedUnavailable } from '../../types';
 import { estimateFinishedHours } from '../../state';
+import { chapterName } from '../../chapterName';
+import { TitleSubtitle } from '../primitives/TitleSubtitle';
 import { useCreditsSeconds } from './useCreditsSeconds';
 import { useCreditsRows, type CreditsKind } from './useCreditsRows';
 import { useApi } from '../../api/ApiContext';
@@ -327,22 +329,16 @@ export function AudiobookEstimatePanel({
                     <TableCell>
                       <div>
                         <Link
-                          className="font-medium hover:underline"
+                          className="hover:underline"
                           to={`/manuscript#c${encodeURIComponent(chapter.id)}`}
-                          aria-label={chapter.subtitle ? `${chapter.title} — ${chapter.subtitle}` : chapter.title}
+                          aria-label={chapterName(chapter)}
                           onClick={(event) => {
                             if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
                             event.preventDefault();
                             goToManuscript(chapter.id);
                           }}
                         >
-                          {chapter.title}
-                          {chapter.subtitle && (
-                            <span style={{ color: 'var(--text-muted)' }}>
-                              {' — '}
-                              {chapter.subtitle}
-                            </span>
-                          )}
+                          <TitleSubtitle title={chapter.title} subtitle={chapter.subtitle} />
                         </Link>
                       </div>
                     </TableCell>

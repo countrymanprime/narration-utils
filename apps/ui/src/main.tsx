@@ -51,7 +51,9 @@ const mockNoManuscript = mockParams.has('mockNoManuscript');
 const mockManuscriptCandidate = mockParams.has('mockManuscriptCandidate');
 // `?mockManuscript=mixed` adds a buttonless Front Matter row and a 5-digit word count to the Manuscript page's chapter
 // list, so the header's aligned stat block and action slot can be seen across a mix of row shapes
-// (manuscript-chapter-header-alignment.prd.md).
+// (manuscript-chapter-header-alignment.prd.md), plus four of the owner's chapter-heading shapes - source capitals
+// with a subtitle, no subtitle, a long subtitle, and a title already ending in a colon - so a chapter's name reads
+// the same way everywhere it is drawn (chapter-title-display-consistency.prd.md).
 const mockManuscriptMixed = mockParams.get('mockManuscript') === 'mixed';
 // `?mockTeleprompter=listening|waiting|done|flagged` boots the teleprompter already part-way
 // through the first chapter, as a session the host kept running (`flagged`: further in, with suspected flags raised);
