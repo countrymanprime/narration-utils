@@ -13,6 +13,7 @@ import type {
   ChapterTrackMatch,
   ManuscriptChapter,
   ManuscriptParagraph,
+  ReadAloudReaperState,
   TeleprompterApi,
   TeleprompterDevice,
   TeleprompterEngine,
@@ -54,6 +55,19 @@ const SENTENCE_END = /[.!?…]["'”’)\]]*$/;
  */
 export type TeleprompterSeed = 'listening' | 'waiting' | 'done' | 'ended' | 'flagged';
 
+/** `?mockReaperState=`: what `readAloudReaperState` answers for every chapter (each status, plus the experimental switch being off). */
+export const MOCK_REAPER_SEEDS = [
+  'ready',
+  'not_armed',
+  'other_armed',
+  'several_armed',
+  'no_link',
+  'recording_elsewhere',
+  'unavailable',
+  'experimental_off',
+] as const;
+export type MockReaperSeed = (typeof MOCK_REAPER_SEEDS)[number];
+
 // The host's auto-stop (apps/desktop/internal/teleprompter/autostop.go): the same delay and messages, so a replay that
 // reaches the end of the chapter ends itself the way a live session does.
 const AUTO_STOP_MS = 5000;
@@ -81,7 +95,59 @@ type Deps = {
   resume?: MockResumeSeed;
   /** `?mockLevel=`: every level the mock sends is this RMS in dBFS (a still meter for a capture); unset, it moves like speech. */
   level?: number;
+  /** `?mockReaperState=`: what `readAloudReaperState` answers; unset, the chapter's track is ready. */
+  reaper?: MockReaperSeed;
 };
+
+const MOCK_REAPER_TRACK = '{11111111-1111-4111-8111-111111111111}';
+
+// The host's answers (apps/desktop/readaloudreaper.go), in the same words, for a chapter titled `title`.
+function mockReaperState(seed: MockReaperSeed, title: string): ReadAloudReaperState {
+  const asked = (status: ReadAloudReaperState['status'], armedCount: number, message: string, recording = false): ReadAloudReaperState => ({
+    status,
+    message,
+    trackGuid: MOCK_REAPER_TRACK,
+    armedCount,
+    playing: recording,
+    recording,
+  });
+  switch (seed) {
+    case 'ready':
+      return asked('ready', 1, `The track for "${title}" is armed and ready.`);
+    case 'not_armed':
+      return asked('not_armed', 0, `The track for "${title}" is not armed in REAPER.`);
+    case 'other_armed':
+      return asked('other_armed', 1, `Another track is armed in REAPER, not the one for "${title}".`);
+    case 'several_armed':
+      return asked('several_armed', 3, `3 tracks are armed in REAPER. Only the track for "${title}" should be.`);
+    case 'recording_elsewhere':
+      return asked('recording_elsewhere', 1, 'REAPER is already recording. Stop it in REAPER before recording with reading.', true);
+    case 'no_link':
+      return {
+        status: 'no_link',
+        reason: 'unlinked',
+        message: `"${title}" has no linked track. Link it to its REAPER track on the Tracks page.`,
+        playing: false,
+        recording: false,
+      };
+    case 'unavailable':
+      return {
+        status: 'unavailable',
+        reason: 'standalone',
+        message: 'REAPER is not connected to this app. To record with reading, open this app from the Narration Utils action in REAPER.',
+        playing: false,
+        recording: false,
+      };
+    case 'experimental_off':
+      return {
+        status: 'unavailable',
+        reason: 'experimental_off',
+        message: "Reading REAPER's tracks is an experimental action. Turn on Experimental REAPER actions in Settings to use it.",
+        playing: false,
+        recording: false,
+      };
+  }
+}
 
 // A level as `levels.py` sends it: the peak sits about 9 dB over the RMS (a sine is 3 dB; speech is peakier), both in [-100, 0].
 function mockLevelEvent(rms: number): TeleprompterEvent {
@@ -478,6 +544,19 @@ export function createTeleprompterMock(deps: Deps): TeleprompterApi {
       emit(levelAt(0));
     },
     teleprompterMeterStop: async () => stopMeter(),
+    readAloudReaperState: async (chapterId) => {
+      await deps.ready;
+      const chapter = findChapter(chapterId);
+      if (!chapter) throw new Error('that chapter is not part of the current manuscript');
+      return mockReaperState(
+        deps.reaper ?? 'ready',
+        chapter.title
+          .split('\n')
+          .map((line) => line.trim())
+          .filter(Boolean)
+          .join(': '),
+      );
+    },
     teleprompterLocate: async (chapterId, options) => {
       await deps.ready;
       if (deps.resume === 'error') throw new Error('Narration Utils could not read Alice.rpp: the file is locked by another program.');

@@ -882,6 +882,16 @@ export function ProjectSwitch(path: string, name: string): $CancellablePromise<s
     return $Call.ByID(633630375, path, name);
 }
 
+/**
+ * ReadAloudReaperState answers whether REAPER is ready to record chapterID with reading
+ * (read-aloud-control-bar.prd.md Phase 6): its linked track the one track armed, and REAPER not already recording. A
+ * chapter with no link, a REAPER that is not there and the experimental switch being off are answers, not errors; only
+ * a chapter the manuscript does not have is an error. It reads, and changes nothing in REAPER.
+ */
+export function ReadAloudReaperState(chapterID: string): $CancellablePromise<string> {
+    return $Call.ByID(1177651655, chapterID);
+}
+
 export function Ready(): $CancellablePromise<{ [_ in string]?: any }> {
     return $Call.ByID(3393741589).then(($result: any) => {
         return $$createType0($result);

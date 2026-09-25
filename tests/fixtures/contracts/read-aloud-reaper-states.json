@@ -1,0 +1,64 @@
+{
+  "experimental_off": {
+    "status": "unavailable",
+    "reason": "experimental_off",
+    "message": "Reading REAPER's tracks is an experimental action. Turn on Experimental REAPER actions in Settings to use it.",
+    "playing": false,
+    "recording": false
+  },
+  "no_link": {
+    "status": "no_link",
+    "reason": "unlinked",
+    "message": "\"Chapter II: The Pool of Tears\" has no linked track. Link it to its REAPER track on the Tracks page.",
+    "playing": false,
+    "recording": false
+  },
+  "not_armed": {
+    "status": "not_armed",
+    "message": "The track for \"Chapter I: Down the Rabbit-Hole\" is not armed in REAPER.",
+    "trackGuid": "{11111111-1111-4111-8111-111111111111}",
+    "armedCount": 0,
+    "playing": false,
+    "recording": false
+  },
+  "other_armed": {
+    "status": "other_armed",
+    "message": "Another track is armed in REAPER, not the one for \"Chapter I: Down the Rabbit-Hole\".",
+    "trackGuid": "{11111111-1111-4111-8111-111111111111}",
+    "armedCount": 1,
+    "playing": false,
+    "recording": false
+  },
+  "ready": {
+    "status": "ready",
+    "message": "The track for \"Chapter I: Down the Rabbit-Hole\" is armed and ready.",
+    "trackGuid": "{11111111-1111-4111-8111-111111111111}",
+    "armedCount": 1,
+    "playing": false,
+    "recording": false
+  },
+  "recording_elsewhere": {
+    "status": "recording_elsewhere",
+    "message": "REAPER is already recording. Stop it in REAPER before recording with reading.",
+    "trackGuid": "{11111111-1111-4111-8111-111111111111}",
+    "armedCount": 1,
+    "playing": true,
+    "recording": true
+  },
+  "several_armed": {
+    "status": "several_armed",
+    "message": "3 tracks are armed in REAPER. Only the track for \"Chapter I: Down the Rabbit-Hole\" should be.",
+    "trackGuid": "{11111111-1111-4111-8111-111111111111}",
+    "armedCount": 3,
+    "playing": false,
+    "recording": false
+  },
+  "track_missing": {
+    "status": "no_link",
+    "reason": "track_missing",
+    "message": "The track linked to \"Chapter I: Down the Rabbit-Hole\" is no longer in the REAPER project. Link it again on the Tracks page.",
+    "trackGuid": "{11111111-1111-4111-8111-111111111111}",
+    "playing": false,
+    "recording": false
+  }
+}

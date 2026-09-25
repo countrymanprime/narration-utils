@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import type {
   HeardWord,
+  ReadAloudReaperState,
   TeleprompterDevice,
   TeleprompterDevicesResult,
   TeleprompterEngine,
@@ -252,3 +253,14 @@ const teleprompterFlagFindingSchema = z.object({
 
 /** `TeleprompterSaveFlags`: one finding per flag sent, in order. */
 export const teleprompterFlagFindingsSchema = z.array(teleprompterFlagFindingSchema);
+
+/** `ReadAloudReaperState` (`apps/desktop/readaloudreaper.go`, ADR 0249): REAPER's arms against the chapter's linked track. */
+export const readAloudReaperStateSchema = z.object({
+  status: z.enum(['ready', 'not_armed', 'other_armed', 'several_armed', 'no_link', 'recording_elsewhere', 'unavailable']),
+  reason: z.enum(['unlinked', 'several_links', 'track_missing', 'standalone', 'not_running', 'experimental_off', 'failed']).optional(),
+  message: z.string(),
+  trackGuid: z.string().optional(),
+  armedCount: z.number().int().nonnegative().optional(),
+  playing: z.boolean(),
+  recording: z.boolean(),
+}) satisfies z.ZodType<ReadAloudReaperState>;
