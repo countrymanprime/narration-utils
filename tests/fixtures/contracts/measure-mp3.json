@@ -1,43 +1,224 @@
 {
-  "id": "measure-1",
+  "id": "measure-2",
   "kind": "measurement",
-  "phase": "error",
-  "message": "The measurement stopped unexpectedly.",
-  "percent": 0,
+  "phase": "success",
+  "message": "Measured 2 files.",
+  "percent": 100,
   "logs": [
-    "Measuring 3 files.",
-    "The measurement stopped unexpectedly."
+    "Measuring 2 files.",
+    "Measured Chapter 01.mp3.",
+    "Measured Chapter 02.mp3.",
+    "Measured 2 files."
   ],
   "elapsed": 3.5,
-  "error": "runtime error: index out of range [4] with length 4",
   "files": [
     {
-      "path": "C:/Renders/Chapter 01.wav",
-      "name": "Chapter 01.wav",
-      "status": "failed",
-      "report": null,
-      "fingerprint": null,
+      "path": "C:/Renders/Chapter 01.mp3",
+      "name": "Chapter 01.mp3",
+      "status": "measured",
+      "report": {
+        "file": "C:/Renders/Chapter 01.mp3",
+        "sample_rate": 44100,
+        "channels": 1,
+        "duration_seconds": 1828.5714285714287,
+        "integrated_lufs": null,
+        "rms_dbfs": null,
+        "sample_peak_dbfs": null,
+        "true_peak_dbtp": null,
+        "noise_floor_dbfs": null,
+        "digital_silent_windows": 0,
+        "head_room_tone_seconds": null,
+        "tail_room_tone_seconds": null,
+        "head_digital_silence_seconds": null,
+        "tail_digital_silence_seconds": null,
+        "full_scale_samples": 0,
+        "clip_run_count": 0,
+        "clip_runs": [],
+        "mp3": {
+          "version": "MPEG-1",
+          "layer": 3,
+          "bitrate_kbps": 192,
+          "average_bitrate_kbps": 192,
+          "cbr": true,
+          "vbr_tag": "Info",
+          "sample_rate": 44100,
+          "channel_mode": "mono",
+          "frames": 70000,
+          "duration_seconds": 1828.5714285714287,
+          "id3v2_bytes": 4096,
+          "lost_bytes": 0
+        }
+      },
+      "fingerprint": {
+        "size_bytes": 43900000,
+        "modified_at": "2026-09-25T09:00:00Z",
+        "sha256": "b5bb9d8014a0f9b1d61e21e796d78dccdf1352f23cd32812f4850b878ae4944c"
+      },
       "findings": [],
-      "rules": [],
-      "error": "the measurement stopped unexpectedly: runtime error: index out of range [4] with length 4"
+      "rules": [
+        {
+          "ruleId": "acx.rms",
+          "status": "not_checked",
+          "value": null,
+          "why": "Not measured on an MP3: the app reads its headers only and does not decode it. Measure the WAV render it came from."
+        },
+        {
+          "ruleId": "acx.peak",
+          "status": "not_checked",
+          "value": null,
+          "why": "Not measured on an MP3: the app reads its headers only and does not decode it. Measure the WAV render it came from."
+        },
+        {
+          "ruleId": "acx.noise_floor",
+          "status": "not_checked",
+          "value": null,
+          "why": "Not measured on an MP3: the app reads its headers only and does not decode it. Measure the WAV render it came from."
+        },
+        {
+          "ruleId": "acx.sample_rate",
+          "status": "met",
+          "value": 44100
+        },
+        {
+          "ruleId": "acx.file_length",
+          "status": "met",
+          "value": 1828.5714285714287
+        },
+        {
+          "ruleId": "acx.room_tone_head",
+          "status": "not_checked",
+          "value": null,
+          "why": "Not measured on an MP3: the app reads its headers only and does not decode it. Measure the WAV render it came from."
+        },
+        {
+          "ruleId": "acx.room_tone_tail",
+          "status": "not_checked",
+          "value": null,
+          "why": "Not measured on an MP3: the app reads its headers only and does not decode it. Measure the WAV render it came from."
+        },
+        {
+          "ruleId": "acx.format",
+          "status": "met",
+          "value": 192
+        }
+      ]
     },
     {
-      "path": "C:/Renders/Chapter 02.wav",
-      "name": "Chapter 02.wav",
-      "status": "cancelled",
-      "report": null,
-      "fingerprint": null,
-      "findings": [],
-      "rules": []
-    },
-    {
-      "path": "C:/Renders/Chapter 03.mp3",
-      "name": "Chapter 03.mp3",
-      "status": "cancelled",
-      "report": null,
-      "fingerprint": null,
-      "findings": [],
-      "rules": []
+      "path": "C:/Renders/Chapter 02.mp3",
+      "name": "Chapter 02.mp3",
+      "status": "measured",
+      "report": {
+        "file": "C:/Renders/Chapter 02.mp3",
+        "sample_rate": 44100,
+        "channels": 1,
+        "duration_seconds": 1044.8979591836735,
+        "integrated_lufs": null,
+        "rms_dbfs": null,
+        "sample_peak_dbfs": null,
+        "true_peak_dbtp": null,
+        "noise_floor_dbfs": null,
+        "digital_silent_windows": 0,
+        "head_room_tone_seconds": null,
+        "tail_room_tone_seconds": null,
+        "head_digital_silence_seconds": null,
+        "tail_digital_silence_seconds": null,
+        "full_scale_samples": 0,
+        "clip_run_count": 0,
+        "clip_runs": [],
+        "mp3": {
+          "version": "MPEG-1",
+          "layer": 3,
+          "bitrate_kbps": 0,
+          "average_bitrate_kbps": 176.3,
+          "cbr": false,
+          "vbr_tag": "Xing",
+          "sample_rate": 44100,
+          "channel_mode": "mono",
+          "frames": 40000,
+          "duration_seconds": 1044.8979591836735,
+          "id3v2_bytes": 0,
+          "lost_bytes": 417
+        }
+      },
+      "fingerprint": {
+        "size_bytes": 43900001,
+        "modified_at": "2026-09-25T09:00:00Z",
+        "sha256": "b5bb9d8014a0f9b1d61e21e796d78dccdf1352f23cd32812f4850b878ae4944c"
+      },
+      "findings": [
+        {
+          "schema_version": 1,
+          "id": "5000bbe58ae6662451a1bd30",
+          "analyzer": "measure",
+          "project": {},
+          "source": {
+            "file": "C:/Renders/Chapter 02.mp3"
+          },
+          "category": "delivery_qc",
+          "severity": "error",
+          "confidence": 1,
+          "confidence_reason": "deterministic measurement of the decoded samples",
+          "evidence": {
+            "limit_min": 192,
+            "metric": "mp3_format",
+            "profile": "acx@2026-09",
+            "rule": "acx.format",
+            "value": 176.3,
+            "violation": "not_cbr"
+          },
+          "review": {
+            "status": "unreviewed"
+          }
+        }
+      ],
+      "rules": [
+        {
+          "ruleId": "acx.rms",
+          "status": "not_checked",
+          "value": null,
+          "why": "Not measured on an MP3: the app reads its headers only and does not decode it. Measure the WAV render it came from."
+        },
+        {
+          "ruleId": "acx.peak",
+          "status": "not_checked",
+          "value": null,
+          "why": "Not measured on an MP3: the app reads its headers only and does not decode it. Measure the WAV render it came from."
+        },
+        {
+          "ruleId": "acx.noise_floor",
+          "status": "not_checked",
+          "value": null,
+          "why": "Not measured on an MP3: the app reads its headers only and does not decode it. Measure the WAV render it came from."
+        },
+        {
+          "ruleId": "acx.sample_rate",
+          "status": "met",
+          "value": 44100
+        },
+        {
+          "ruleId": "acx.file_length",
+          "status": "met",
+          "value": 1044.8979591836735
+        },
+        {
+          "ruleId": "acx.room_tone_head",
+          "status": "not_checked",
+          "value": null,
+          "why": "Not measured on an MP3: the app reads its headers only and does not decode it. Measure the WAV render it came from."
+        },
+        {
+          "ruleId": "acx.room_tone_tail",
+          "status": "not_checked",
+          "value": null,
+          "why": "Not measured on an MP3: the app reads its headers only and does not decode it. Measure the WAV render it came from."
+        },
+        {
+          "ruleId": "acx.format",
+          "status": "not_met",
+          "value": 176.3,
+          "violation": "not_cbr"
+        }
+      ]
     }
   ],
   "profile": {
@@ -378,9 +559,8 @@
   "bookRules": [
     {
       "ruleId": "acx.channels",
-      "status": "not_measurable",
-      "value": null,
-      "why": "No measured file to judge."
+      "status": "met",
+      "value": 1
     },
     {
       "ruleId": "acx.one_section_per_file",

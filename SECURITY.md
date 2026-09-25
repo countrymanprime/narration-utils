@@ -31,7 +31,7 @@ especially welcome:
   which the host builds from the saved REAPER project; the app's only input to a check is a chapter id), or the audio
   an analysis manifest names (for example the per-take divergence manifest the take comparison writes, which the app
   builds only from the saved REAPER project, never from what the page sends), or the rendered audio files the narrator
-  measures or checks for diagnostics (the app reads only files chosen in its own file picker in that session, and never writes to them,
+  measures or checks for diagnostics, including an MP3 read for its frame headers only, never decoded (the app reads only files chosen in its own file picker in that session, and never writes to them,
   [ADR 0156](docs/adr/0156-measurement-reads-only-files-picked-this-session-as-one-job-and-fingerprints-the-bytes-it-read.md)),
   and the Delivery report it writes (only into the project's `narration-utils/delivery` folder, never over an earlier report, and without
   any local path, audio or manuscript text unless the narrator chooses to include file locations); a report that leaks a path the narrator
