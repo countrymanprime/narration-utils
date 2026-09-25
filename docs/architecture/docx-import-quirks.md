@@ -87,6 +87,12 @@ real manuscript**. Markdown reads its own table of contents the same way ([ADR 0
 (lower-cased, punctuation dropped, spaces to hyphens, `-1`/`-2` on a repeat) in place of Word's bookmarks. The same 80% rule, the
 same notice and the same "only `chapterTitles` changes" apply, through the one shared `applyTableOfContents`.
 
+**A subtitle set apart from its heading** ([ADR 0241](../adr/0241-a-subtitle-set-apart-from-its-heading-is-read-as-the-subtitle-and-an-epub-heading-that-starts-no-chapter-is-kept-as-text.md), #387, #388). DOCX, Markdown and EPUB read a chapter's subtitle from a line after the heading, not only from inside it, in two cases:
+- a deeper heading met before any of the chapter's text, when it is the only heading of its level in the chapter and the chapter heading is level 1 or deeper, not a Part or Book heading and not a reference section;
+- Word's own "Subtitle" paragraph style, or an EPUB `class="subtitle"` block.
+
+Turned off in the review, such a subtitle returns to the text. An EPUB heading that starts no chapter and is not a subtitle is kept as text (it used to be dropped). The glued-heading repair also splits a two-word number ("Twenty OneThe Storm") and a one-letter "A"/"I" glued to a number written in words ("TwoA Night"), never a lone letter after a roman numeral.
+
 ## Adding a quirk
 
 1. Reproduce it with a minimal in-test document (`docxFixture` builds a `.docx` from WordprocessingML; `importMarkdown` takes a string; TXT tests write a plain string to a temp file; `epubFixture` builds an in-memory EPUB from a name-to-content map).

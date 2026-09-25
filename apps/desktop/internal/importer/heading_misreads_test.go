@@ -26,6 +26,8 @@ type headingMisreadCase struct {
 		Subtitle       string   `json:"subtitle"`
 		FirstParagraph string   `json:"firstParagraph"`
 	} `json:"observed"`
+	// FixedBy names the issue whose importer fix made a misread read as intended; such a case is held to its intended reading.
+	FixedBy string `json:"fixedBy"`
 	// Override is the per-heading subtitle choice that reads the case as intended (Phase 5), on the cases it can fix.
 	Override *struct {
 		SecondLineIsSubtitle bool   `json:"secondLineIsSubtitle"`
@@ -75,10 +77,10 @@ func TestHeadingMisreadFixtures(t *testing.T) {
 			if first := firstParagraphOf(draft, observed.ChapterTitles[0]); first != observed.FirstParagraph {
 				t.Fatalf("first paragraph = %q, want %q", first, observed.FirstParagraph)
 			}
-			isControl := testCase.Mode == "control"
+			wantCorrect := testCase.Mode == "control" || testCase.FixedBy != ""
 			readCorrectly := title == testCase.Intended.Title && subtitle == testCase.Intended.Subtitle
-			if isControl != readCorrectly {
-				t.Fatalf("mode %q but the heading was read as %q / %q against the intended %q / %q", testCase.Mode, title, subtitle, testCase.Intended.Title, testCase.Intended.Subtitle)
+			if wantCorrect != readCorrectly {
+				t.Fatalf("mode %q (fixed by %q) but the heading was read as %q / %q against the intended %q / %q", testCase.Mode, testCase.FixedBy, title, subtitle, testCase.Intended.Title, testCase.Intended.Subtitle)
 			}
 		})
 	}
@@ -173,4 +175,45 @@ func firstParagraphOf(draft Draft, chapter string) string {
 		}
 	}
 	return ""
+}
+
+// TestASubtitleSetApartReturnsToTheTextWhenTurnedOff covers the subtitles the importer now reads from a line apart from the
+// heading (F4, F5; #387, #388): turned off in the review, the line is the chapter's first paragraph again, so nothing is lost.
+func TestASubtitleSetApartReturnsToTheTextWhenTurnedOff(t *testing.T) {
+	apart := map[string]bool{"docx-subtitle-style-paragraph": true, "epub-subtitle-class-paragraph": true, "docx-subtitle-as-heading-2": true, "md-subtitle-as-h2": true, "epub-subtitle-as-h2": true}
+	seen := 0
+	for _, testCase := range loadHeadingMisreadCases(t) {
+		if !apart[testCase.ID] {
+			continue
+		}
+		seen++
+		t.Run(testCase.ID, func(t *testing.T) {
+			draft, err := BuildDraft(fixture(headingMisreadsDir+"/"+testCase.File), 1)
+			if err != nil {
+				t.Fatal(err)
+			}
+			var section DraftSection
+			for _, candidate := range draft.Sections {
+				if candidate.Title == testCase.Intended.Title {
+					section = candidate
+				}
+			}
+			if section.SubtitleOff != SubtitleOffReturnsToBody {
+				t.Fatalf("SubtitleOff = %q, want %q", section.SubtitleOff, SubtitleOffReturnsToBody)
+			}
+			corrected, err := ApplySubtitleOverrides(draft, map[string]bool{section.ID: false})
+			if err != nil {
+				t.Fatal(err)
+			}
+			if title, subtitle := firstChapterHeading(corrected, testCase.Intended.Title); title != testCase.Intended.Title || subtitle != "" {
+				t.Fatalf("heading after turning it off = %q / %q", title, subtitle)
+			}
+			if first := firstParagraphOf(corrected, testCase.Intended.Title); first != testCase.Intended.Subtitle {
+				t.Fatalf("first paragraph after turning it off = %q, want the subtitle's line %q", first, testCase.Intended.Subtitle)
+			}
+		})
+	}
+	if seen != len(apart) {
+		t.Fatalf("%d of the %d cases were found in cases.json", seen, len(apart))
+	}
 }

@@ -57,6 +57,10 @@ func markdownWithProgress(path string, headingLevel int, progress Progress) (Dra
 	var toc markdownTOCReader
 	var slugs markdownSlugger
 	anchorChapter := map[string]string{}
+	// open says a chapter heading was just read with nothing after it yet, so a deeper heading right under it is its subtitle
+	// (subtitleHeading; import heading misreads F5, #387); apart says the subtitle came from such a heading, which returns to
+	// the text if the narrator turns it off.
+	open, apart := false, false
 	flush := func() {
 		if len(pending) == 0 {
 			return
@@ -83,11 +87,19 @@ func markdownWithProgress(path string, headingLevel int, progress Progress) (Dra
 				copy := subtitle
 				subtitleValue = &copy
 			}
-			paragraphs = append(paragraphs, Paragraph{Chapter: chapter, ChapterSubtitle: subtitleValue, Section: sectionValue, Text: body, Spans: spans, SourceIndex: len(paragraphs)})
+			paragraphs = append(paragraphs, Paragraph{Chapter: chapter, ChapterSubtitle: subtitleValue, SubtitleReturnsToBody: apart && subtitleValue != nil, Section: sectionValue, Text: body, Spans: spans, SourceIndex: len(paragraphs)})
+			apart = false
 		}
 		pending = nil
 	}
-	for _, line := range strings.Split(content, "\n") {
+	lines := strings.Split(content, "\n")
+	levels := make([]int, len(lines))
+	for index, line := range lines {
+		if matches := markdownHeading.FindStringSubmatch(strings.TrimSuffix(line, "\r")); matches != nil {
+			levels[index] = len(matches[1])
+		}
+	}
+	for lineIndex, line := range lines {
 		if matches := markdownHeading.FindStringSubmatch(strings.TrimSuffix(line, "\r")); matches != nil {
 			flush()
 			toc.close()
@@ -96,6 +108,11 @@ func markdownWithProgress(path string, headingLevel int, progress Progress) (Dra
 			appendInline(&headingText, matches[2], 0)
 			text, _ := headingText.build(true)
 			anchor := slugs.next(text)
+			if open && subtitle == "" && level > headingLevel && subtitleHeading(chapter, headingLevel, collapse(text), level) && aloneAtItsLevel(levels, lineIndex, headingLevel) {
+				subtitle, apart, open = collapse(text), true, false
+				continue
+			}
+			open = false
 			if level == headingLevel {
 				if isNonChapterHeading(text) {
 					chapter, subtitle, section = collapse(text), "", ""
@@ -112,6 +129,7 @@ func markdownWithProgress(path string, headingLevel int, progress Progress) (Dra
 				section = ""
 				titles = append(titles, chapter)
 				anchorChapter[anchor] = chapter
+				open, apart = true, false
 				if _, seen := headingLevels[chapter]; !seen {
 					headingLevels[chapter] = level
 				}
@@ -124,6 +142,7 @@ func markdownWithProgress(path string, headingLevel int, progress Progress) (Dra
 		if strings.TrimSpace(line) == "" {
 			flush()
 		} else {
+			open = false
 			pending = append(pending, markdownLineOf(line))
 		}
 	}
