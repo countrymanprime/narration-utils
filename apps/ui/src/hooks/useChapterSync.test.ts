@@ -75,6 +75,22 @@ describe('useChapterSync', () => {
     expect(result.current).toEqual(withBatch);
   });
 
+  it('leaves the state undefined when the initial read fails, until a real event arrives (SILENT_CATCHES)', async () => {
+    const subscribers = new Set<(next: ChapterSyncState) => void>();
+    const api = {
+      chapterSyncState: vi.fn().mockRejectedValue(new Error('offline')),
+      subscribeChapterSync: vi.fn((onUpdate: (next: ChapterSyncState) => void) => {
+        subscribers.add(onUpdate);
+        return () => subscribers.delete(onUpdate);
+      }),
+    };
+    const { result } = renderHook(() => useChapterSync(api));
+    await waitFor(() => expect(api.chapterSyncState).toHaveBeenCalledOnce());
+    expect(result.current).toBeUndefined();
+    act(() => subscribers.forEach((fn) => fn(state())));
+    expect(result.current).toEqual(state());
+  });
+
   it('unsubscribes on unmount', async () => {
     const { api, subscriberCount } = fakeApi(state());
     const { unmount } = renderHook(() => useChapterSync(api));
