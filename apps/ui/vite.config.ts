@@ -12,8 +12,9 @@ export default defineConfig(({ mode }) => ({
   test: {
     // tests/visual/**/*.spec.ts and tests/aria/**/*.spec.ts are Playwright specs (run via `pnpm run
     // screenshots` and `pnpm run aria`), not Vitest tests - Vitest's default include pattern
-    // matches *.spec.ts too, so they must be excluded explicitly.
-    exclude: ['node_modules/**', 'tests/visual/**', 'tests/aria/**', 'tests/atlas/**'],
+    // matches *.spec.ts too, so they must be excluded explicitly. scripts/*.test.mjs are node:test suites (the
+    // `test-node` target).
+    exclude: ['node_modules/**', 'tests/visual/**', 'tests/aria/**', 'tests/atlas/**', 'scripts/**'],
     setupFiles: ['./src/test-setup.ts'],
     // Vitest's 5 s default is a unit-test value. App.test.tsx mounts the whole app (Story Bible included) in jsdom: about a
     // second on a developer machine, three to five times that on a busy CI runner. 15 s still fails a genuine hang, and

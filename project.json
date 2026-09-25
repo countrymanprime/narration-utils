@@ -25,7 +25,6 @@
     "narration-common",
     "reaper",
     "repo-scripts",
-    "transcript-compare",
-    "ui-atlas-kit"
+    "transcript-compare"
   ]
 }

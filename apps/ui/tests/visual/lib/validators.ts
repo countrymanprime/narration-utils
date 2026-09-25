@@ -1,7 +1,6 @@
-// ui-atlas-kit 0.3.6 vendored: do not edit here. Change plugin/templates/core in the kit and run `ui-atlas sync`.
 // Pure checks over what one visual-suite run captured. Kept free of Playwright
 // and Node APIs so they are unit-tested by Vitest (src/visualSuite.test.ts) and
-// reused unchanged by global-setup.ts's post-run teardown.
+// reused unchanged by the whole-run checks in run-checks.ts.
 
 // One axe rule that a page reported in one capture (the run's violations, grouped by rule).
 export interface AxeFinding {
@@ -121,10 +120,10 @@ export const SIGNATURE_WIDTH = 64;
 export const SIGNATURE_HEIGHT = 36;
 // Largest per-cell brightness difference (0-255) still treated as the same picture: above
 // anti-aliasing noise, below a tooltip or a changed control.
-export const SIGNATURE_TOLERANCE = 3;
-export const BLANK_STDEV_THRESHOLD = 1;
+const SIGNATURE_TOLERANCE = 3;
+const BLANK_STDEV_THRESHOLD = 1;
 export const OVERFLOW_TOLERANCE_PX = 1;
-export const VERTICAL_OVERFLOW_TOLERANCE_PX = 1;
+const VERTICAL_OVERFLOW_TOLERANCE_PX = 1;
 // Narrower than this, a text box or select cannot show a value or be operated (a hex colour is six characters and a
 // select needs its arrow). Flat, not a fraction of the container: the failure it exists for is a control squeezed to a
 // sliver by a layout, and the smallest legitimate control (a colour hex box beside its swatch) is more than twice this.
@@ -140,10 +139,6 @@ export function isSameImage(a: readonly number[], b: readonly number[]): boolean
 
 export function findBlankCaptures(records: readonly CaptureRecord[]): CaptureRecord[] {
   return records.filter((record) => record.maxChannelStdev < BLANK_STDEV_THRESHOLD);
-}
-
-export function findOverflowingCaptures(records: readonly CaptureRecord[]): CaptureRecord[] {
-  return records.filter((record) => record.overflowPx > OVERFLOW_TOLERANCE_PX);
 }
 
 // Problems for one capture's vertical-overflow measurement and escaped-absolute scan. Both are recorded on every capture
@@ -275,7 +270,7 @@ export function findNarrowestControl(records: readonly CaptureRecord[]): (Captur
 }
 
 // How many selectors of a rule's offending elements a finding lists (enough to find them, not a page of markup).
-export const AXE_TARGET_LIMIT = 3;
+const AXE_TARGET_LIMIT = 3;
 
 // The part of axe's `results.violations` this suite reads (kept structural so nothing here imports axe-core).
 export interface RawAxeViolation {

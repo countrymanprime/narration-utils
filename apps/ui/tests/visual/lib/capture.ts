@@ -1,4 +1,3 @@
-// ui-atlas-kit 0.3.6 vendored: do not edit here. Change plugin/templates/core in the kit and run `ui-atlas sync`.
 import { createHash } from 'node:crypto';
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { createRequire } from 'node:module';

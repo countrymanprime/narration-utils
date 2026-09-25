@@ -45,7 +45,7 @@ Cut the critical path and the number of job slots, without caching test verdicts
 1. **Overlap the Windows build with quality.** The build needs only `ui-dist` and `version`; only publishing needs `quality`. Split the release job into *build* (starts at once, uploads `release-assets`) and *publish* (needs build and quality, attests, prunes, creates the prerelease). Critical path becomes max(ui-visual, build) + ~1 min.
 2. **Make the two Playwright suites faster per test.** Visual: one navigation per `{page, state}`, then resize through the viewports in the same page, instead of a fresh page per `{page, state, viewport}` (487 tests become ~165 test bodies making the same captures and checks). Atlas: the same for the 4 theme x width variants of a story. Measure first; if navigation and state driving are not most of the per-test time, shard instead (Phase 5).
 3. **Cache build outputs that are pure functions of their inputs.** The frozen PyInstaller sidecars are keyed on a hash of `sidecars/`, `libs/python`, `uv.lock` and `prepare-resources.py`; a hit skips the freeze. This caches a build artifact, not a test result, and the smoke test still runs on the packaged app every time. Same for the Go toolchain on Windows.
-4. **Spend fewer job slots.** Fold the five sub-minute ubuntu jobs (`repo-scripts`, `ui-atlas-kit`, `docs-site`, `python`, `lua (ubuntu-latest)`) into one `quick` job that runs them as separate steps with `if: !cancelled()`, so one red step does not hide another. 13 slots per CI run become 9.
+4. **Spend fewer job slots.** Fold the five sub-minute ubuntu jobs (`repo-scripts`, `ui-atlas-kit` (since removed with the kit, ADR 0243), `docs-site`, `python`, `lua (ubuntu-latest)`) into one `quick` job that runs them as separate steps with `if: !cancelled()`, so one red step does not hide another. 13 slots per CI run become 9.
 5. **Stop queuing superseded work.** Prerelease keeps `cancel-in-progress: false` for a run that is publishing; a pending run is already replaced by a newer push (GitHub keeps one pending run per group). Document that, and add `concurrency` with `cancel-in-progress: true` to the PR-triggered workflows that lack it.
 
 On splitting into separately built and published libraries: see Decisions Log D1.
@@ -143,9 +143,9 @@ The owner (sole maintainer) merging stacks of agent-authored PRs several times a
 | 1 | Build beside quality | Split `release` in `prerelease.yml` into `windows-build` and `publish`; write permissions only on `publish`; threat-model row | complete (the red-quality check is moot: open question 1 removed quality from the Prerelease) | with 2, 3, 4 | 0 | - |
 | 2 | Cache the sidecar freeze and Go | Content-hash cache of PyInstaller output, `--reuse` in `prepare-resources.py`, saved on `main` only; Go toolchain cache on Windows (dropped, D4) | in-progress (implemented; cold vs hit comparison on one commit pending) | with 1, 3, 4 | 0 | - |
 | 3 | Visual suite: one load per state | One test per `{page, state}` with a step per viewport; diff old vs new output once | in-progress (implemented, ADR 0105; 24 rows reload per viewport; local run 4.9 to 3.2 min; CI timing pending) | with 1, 2, 4 | 0 | - |
-| 4 | Atlas: one load per story | Group a story's four variants; reload only where `play()` needs it | pending | with 1, 2, 3 | 0 | - |
-| 5 | Shard if still slow | Only if 3 or 4 misses 4 min: `--shard` across 2 jobs, merged report | pending | - | 3, 4 | - |
-| 6 | Fewer job slots | Fold the five sub-minute ubuntu jobs into `quick`; cancel-in-progress on PR-triggered workflows; update `docs/operations/ci-and-releases.md` | pending | with 1 to 4 | 0 | - |
+| 4 | Atlas: one load per story | Group a story's four variants; reload only where `play()` needs it | pending (the atlas is sharded meanwhile, Phase 5; this would cut the shards' time or their number) | with 1, 2, 3 | 0 | - |
+| 5 | Shard if still slow | Only if 3 or 4 misses 4 min: `--shard` across 2 jobs, merged report | complete (Phase 3 left `ui-visual` at 9.4 min of tests; [ADR 0244](../adr/0244-the-playwright-suites-are-sharded-in-ci-the-quick-checks-share-a-runner-per-os-and-one-check-sums-up-the-run.md): visual in 3 shards with the whole-run checks over the merged records, atlas in 2; CI timing pending) | - | 3, 4 | - |
+| 6 | Fewer job slots | Fold the five sub-minute ubuntu jobs into `quick`; cancel-in-progress on PR-triggered workflows; update `docs/operations/ci-and-releases.md` | complete ([ADR 0244](../adr/0244-the-playwright-suites-are-sharded-in-ci-the-quick-checks-share-a-runner-per-os-and-one-check-sums-up-the-run.md): `quick-ubuntu` and `quick-windows`, Go lint beside the Windows harness; every PR-triggered workflow already had `cancel-in-progress`; with Phase 5's shards a CI run is 14 jobs, not 9) | with 1 to 4 | 0 | - |
 | 7 | Steady state | Measure against Success Metrics; ADR for the build/publish split and the build-output cache rule; move the rules to `docs/operations/ci-and-releases.md`; delete this PRD | pending | - | 1 to 6 | - |
 
 ### Phase Details
@@ -168,7 +168,7 @@ Phases 1 and 2 both touch the Windows build but different files (`prerelease.yml
 | 1 | `.github/workflows/prerelease.yml`, `docs/architecture/threat-model.md` | any release-pipeline PR; the pipeline phases of [Release Readiness](release-readiness-provisioning-and-docs-site.prd.md) |
 | 2 | `.github/actions/build-native/action.yml`, `.github/actions/setup-toolchain/action.yml`, `scripts/release/prepare-resources.py` | sidecar packaging changes (Moonshine provisioning in [Teleprompter Engines](teleprompter-engines-and-input-devices.prd.md)) |
 | 3 | `apps/ui/tests/visual/app.spec.ts`, `app.drivers.ts`, `state-catalog.ts`, `global-setup.ts` | every UI PR that adds a catalog row (mostly a rebase, not a conflict) |
-| 4 | `apps/ui/tests/atlas/**`, `apps/ui/playwright.atlas.config.ts`, possibly the vendored core in `tools/ui-atlas-kit` | the kit's drift check: change the kit and `apps/ui` together |
+| 4 | `apps/ui/tests/atlas/**`, `apps/ui/playwright.atlas.config.ts`, (the kit's vendored core is gone, ADR 0243) | none beyond the atlas files |
 | 6 | `.github/workflows/_quality.yml`, `docs/operations/ci-and-releases.md` | any PR adding a quality job |
 
 ## Decisions Log
@@ -179,6 +179,7 @@ Phases 1 and 2 both touch the Windows build but different files (`prerelease.yml
 | D2 | Cache build outputs, never test verdicts. | Keeps the `nx-run` rule that a green check means the checks ran; a cached build output is still exercised by the smoke test every run. |
 | D3 | Fix per-test cost before sharding. | Sharding multiplies job slots, and slots are what the queue is short of. |
 | D4 | No Go toolchain cache on Windows. | `setup-go` (v5.6.0, `cacheWindowsDir`) extracts Go to `D:` and leaves a junction in the `C:` tool cache, so an `actions/cache` of the tool cache stores the link, not Go. Doing it anyway means copying `setup-go`'s internals; revisit only if Phase 0's timings show `setup-toolchain` still costs a minute on the Windows jobs. |
+| D5 | Shard both Playwright suites before Phase 4, against D3's order, and give back slots by folding the quick jobs. | Phase 3 landed and `ui-visual` still ran 9.4 min of tests (CI run 36130938887), far past the 4-minute target; the owner asked for the parallelism on 2026-09-25. Folding the sub-minute jobs and dropping the kit's job offsets most of the extra slots (12 to 14 per run), and a pull request that does not touch the UI holds the shard slots for about 25 s. |
 
 ## Research Summary
 

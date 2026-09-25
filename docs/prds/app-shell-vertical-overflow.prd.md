@@ -140,7 +140,7 @@ The narrator at a desk, often with the window at less than full screen height be
   - `TakeComparisonView.tsx`: `relative` on the word's wrapper.
   - `StartupScreen.tsx:39`, `ProjectPicker.tsx:112`: `h-full overflow-y-auto` in place of `min-h-screen`, with the `DemoBanner` inside a flex column so the banner no longer adds to the height.
 - **Sticky and fixed content still works.** `position: relative` on the scroller does not change sticky headers (the sticky `thead`, `Table.tsx:19`, the Manuscript chapter headers, the teleprompter's sticky panel). Portalled popups (dialogs, tooltips, menus, slide-overs) are outside `#root`'s shell, and fixed ones are unaffected. A Base UI positioner uses `position: absolute` against `<body>`: Phase 1 checks that a tooltip near the bottom edge still flips instead of extending the document (the gate covers it on `*-tooltip` rows).
-- **The gate** goes in `tools/ui-atlas-kit/plugin/templates/core/tests/visual/lib/capture.ts` and `validators.ts`:
+- **The gate** goes in `tools/ui-atlas-kit/plugin/templates/core/tests/visual/lib/capture.ts` and `validators.ts` (delivered in kit 0.3.6; the kit has since been dissolved, [ADR 0243](../adr/0243-the-ui-atlas-kit-is-dissolved-into-apps-ui-which-owns-its-visual-suite-and-atlas-outright.md), and the gate lives only in `apps/ui/tests/visual/lib/`):
   - A `measureVerticalOverflow` beside `measureHorizontalOverflow`.
   - A `findEscapedAbsolutes` that lists, with a selector and its bottom edge, the elements under the app root whose computed `position` is `absolute` and whose `offsetParent` is `<body>` or null while rendered. This is the check that found the culprits above.
   - Both recorded in `CaptureRecord`, and both failing when the app opts in.

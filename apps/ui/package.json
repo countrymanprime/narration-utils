@@ -18,7 +18,9 @@
     "format:check": "prettier --check \"src/**/*.{ts,tsx,css}\" \"tests/**/*.ts\" \"*.{json,ts}\"",
     "screenshots": "playwright test tests/visual",
     "aria": "playwright test -c playwright.aria.config.ts",
+    "visual:check-run": "playwright test -c playwright.visual-run.config.ts",
     "docs:sync-screenshots": "node scripts/sync-doc-screenshots.mjs",
+    "docs:atlas": "node scripts/atlas-docs.mjs",
     "storybook": "storybook dev --port 6006",
     "build-storybook": "storybook build --output-dir storybook-static",
     "atlas": "pnpm run build-storybook && playwright test -c playwright.atlas.config.ts"

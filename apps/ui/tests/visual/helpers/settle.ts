@@ -1,4 +1,3 @@
-// ui-atlas-kit 0.3.1 vendored: do not edit here. Change plugin/templates/core in the kit and run `ui-atlas sync`.
 import type { Page } from '@playwright/test';
 
 const KILL_MOTION_CSS = `
@@ -36,8 +35,9 @@ export function screenshotDir(pageName: string, state: string): string {
   return `screenshots/app/${pageName}/${state}`;
 }
 
-// Per-capture sidecar records (hash, contrast, overflow) that global-setup.ts's
-// teardown validates once the whole run is done. Cleared at the start of a run.
+// Per-capture sidecar records (hash, contrast, overflow) that run-checks.ts validates
+// once the whole run is done (global-setup.ts's teardown, or whole-run.check.ts over a
+// sharded CI run's merged records). Cleared at the start of a run.
 export const RUN_DIR = 'screenshots/.run';
 
 export function runRecordPath(viewport: string, pageName: string, state: string): string {

@@ -49,7 +49,6 @@ narration-utils/
     audacity/                  placeholder notes for a future Audacity driver
   config/                      shipped JSON: defaults, asset catalogs, roadmap
   tests/fixtures/              manuscripts used by tests across projects
-  tools/ui-atlas-kit/          the reusable UI-atlas plugin (development tooling)
   tools/docs-site/             the public docs site: MkDocs config, include list and hooks (reads docs/, holds no content)
   scripts/                     repo automation, release and CI tooling
   docs/                        documentation, ADRs and PRDs

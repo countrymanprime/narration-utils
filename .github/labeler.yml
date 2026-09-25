@@ -2,9 +2,7 @@
 # .github/labels.json (a test enforces that).
 area:ui:
   - changed-files:
-      - any-glob-to-any-file:
-          - apps/ui/**
-          - tools/ui-atlas-kit/**
+      - any-glob-to-any-file: apps/ui/**
 
 area:shell:
   - changed-files:

@@ -37,3 +37,25 @@ jobs:
           path: release-assets/
           if-no-files-found: error
           retention-days: 7
+
+  # One check that sums up the run, for a ruleset to require (#544) instead of every job by name: sharding, folding or
+  # renaming a job then changes nothing a ruleset lists, and a job skipped because Nx found nothing affected counts as
+  # passed. `always()` so it reports red, not skipped, when a job it needs fails. A documentation-only pull request does
+  # not run this workflow (paths-ignore above), so requiring this check also needs that trigger changed.
+  ci-passed:
+    name: CI passed
+    needs: [quality, ui-dist, build-windows]
+    if: always()
+    timeout-minutes: 5
+    runs-on: ubuntu-latest
+    steps:
+      - env:
+          RESULTS: ${{ join(needs.*.result, ' ') }}
+        run: |
+          echo "needed jobs: $RESULTS"
+          for result in $RESULTS; do
+            case "$result" in
+              success|skipped) ;;
+              *) echo "::error::a job this run needs ended $result"; exit 1 ;;
+            esac
+          done

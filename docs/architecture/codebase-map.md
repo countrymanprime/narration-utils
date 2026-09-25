@@ -22,7 +22,6 @@ config/           shipped JSON: defaults, asset catalogs, roadmap
 tests/
   fixtures/       manuscripts and other data used by tests across projects
 tools/
-  ui-atlas-kit/   the reusable UI-atlas plugin (development tooling only)
   docs-site/      the public docs site: MkDocs config, include list and link hooks; reads docs/ in place
 scripts/          repo automation, release and CI tooling
 docs/             documentation, ADRs and PRDs
@@ -37,8 +36,8 @@ old-to-new path map live in `scripts/ci/layout.json`.
 Tests follow the toolchain. Colocate them where the toolchain wants that: Go `_test.go` beside the package,
 Vitest `*.test.tsx` beside the component, Storybook stories beside the primitive, `node:test` files beside
 the script. Otherwise a project has one `tests/` folder at its root (`libs/python/tests`,
-`sidecars/<name>/tests`, `scripts/release/tests`). The Playwright visual and atlas suites stay in
-`apps/ui/tests`, because the atlas kit scaffolds them into the project it serves. Data shared by several
+`sidecars/<name>/tests`, `scripts/release/tests`). The Playwright visual, atlas and aria suites live in
+`apps/ui/tests`, one folder each, because they drive the whole app or the whole Storybook rather than one file. Data shared by several
 projects lives in `tests/fixtures`. Go code and tests name repo-relative locations through
 `apps/desktop/internal/layout`, and `scripts/release/prepare-resources.py` keeps its own constants, so the
 next move is a one-line change in each.

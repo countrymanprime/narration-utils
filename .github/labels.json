@@ -14,7 +14,7 @@
   { "name": "github_actions", "color": "000000", "description": "Pull requests that update GitHub Actions code" },
   { "name": "javascript", "color": "168700", "description": "Pull requests that update javascript code" },
   { "name": "python:uv", "color": "2b67c6", "description": "Pull requests that update python:uv code" },
-  { "name": "area:ui", "color": "1d76db", "description": "Shared UI: pages, primitives, styles, and the UI atlas kit" },
+  { "name": "area:ui", "color": "1d76db", "description": "Shared UI: pages, primitives, styles, and the visual suite and atlas" },
   { "name": "area:shell", "color": "5319e7", "description": "The Go/Wails desktop shell (apps/desktop/)" },
   { "name": "area:python", "color": "3572a5", "description": "Python tools and libs/python" },
   { "name": "area:reaper", "color": "006b75", "description": "REAPER Lua scripts and helpers (integrations/reaper)" },
