@@ -1,7 +1,6 @@
-# Wails emits blank indentation in its generated model stubs. Keep generated
-# bindings source-controlled without treating that upstream formatting as a
-# handwritten whitespace error.
-apps/ui/wailsjs/go/models.ts -whitespace
+# The generated Wails v3 bindings (apps/desktop `pnpm run bindings`, docs/adr/0200) are written with LF on every platform; keep
+# checkouts matching so a regeneration on Windows is a no-op diff. Its doc comments keep the blank "* " lines of the Go comments.
+apps/ui/wailsjs/** text eol=lf -whitespace
 
 # Prettier's endOfLine is "lf" (matches what's committed). Force LF checkouts
 # on every platform so Windows contributors and CI runners with autocrlf=true

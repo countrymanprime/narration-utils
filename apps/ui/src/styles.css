@@ -149,6 +149,14 @@
   #root {
     height: 100%;
   }
+  /* The document itself never scrolls (app-shell-vertical-overflow.prd.md Phase 2, Q4): every page scrolls inside the
+     shell's own page area (or, before a project is loaded, StartupScreen/ProjectPicker's own scroll container), not
+     the window. This is the second guard after the containing-block fix (Phase 1) - it also removes Base UI's
+     scroll-lock gutter, which only appears when the document itself can scroll. */
+  html,
+  body {
+    overflow: hidden;
+  }
   body {
     margin: 0;
     background: var(--bg);

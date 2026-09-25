@@ -158,7 +158,7 @@ The narrator at a desk, often with the window at less than full screen height be
 | # | Phase | Description | Status | Parallel | Depends | PRP Plan |
 | --- | --- | --- | --- | --- | --- | --- |
 | 1 | Anchor escaped content and gate it | Shell root and page area `relative`, `height: 100%` chain, `TableHeader` and take comparison anchored; the kit's vertical-overflow and escaped-absolute checks (0.3.6, opt-in, on here) | partial — pending owner: the WebView2 scrollbar/gutter itself was not seen (no Windows run available); the kit's own fixture-page unit test and the 8-size zoom re-sweep were not added/run this pass (verified instead with a headless before/after Playwright run of the affected states, see PR) | - | Q1, Q2, Q3 | - |
-| 2 | One scroll container, document locked | Picker and startup screen scroll in their own container, `SlideOver` `h-full`, `html, body { overflow: hidden }`, a dialog-gutter assertion; the owner's WebView2 check at 100/125/150% | pending | - | 1, Q4 | - |
+| 2 | One scroll container, document locked | Picker and startup screen scroll in their own container, `SlideOver` `h-full`, `html, body { overflow: hidden }`, a dialog-gutter assertion; the owner's WebView2 check at 100/125/150% | partial — pending owner: the scripted WebView2 check at 100/125/150% zoom needs a Windows run (#510); everything else is done: `StartupScreen`/`ProjectPicker` scroll in their own `flex-1 overflow-y-auto` container inside a `flex h-full flex-col` (so `DemoBanner` no longer adds to document height), `SlideOver`'s `h-screen` is `h-full`, `html, body { overflow: hidden }` is in `styles.css`, and `global/confirm-dialog`'s driver asserts `<html>` gets no `scrollbar-gutter` | - | 1, Q4 | - |
 
 ### Phase Details
 

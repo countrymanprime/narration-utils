@@ -125,9 +125,9 @@ test('the installer signs nothing: signing is the owner decision D7 keeps out of
 });
 
 // Git ignores everything in build/windows except what is listed (.gitignore). The definition has to be tracked or the release build
-// would silently fall back to Wails' embedded default; the generated file and the downloaded bootstrapper must not be.
+// would have no definition to compile; the rendered wails_tools.nsh and the bootstrapper the wails3 CLI writes beside it must not be.
 test('git tracks the definition and ignores what Wails generates beside it', () => {
   assert.equal(gitCheckIgnore(`${installerDir}/project.nsi`), 1, 'project.nsi must not be ignored');
   assert.equal(gitCheckIgnore(`${installerDir}/wails_tools.nsh`), 0, 'wails_tools.nsh is generated and must stay ignored');
-  assert.equal(gitCheckIgnore(`${installerDir}/tmp/MicrosoftEdgeWebview2Setup.exe`), 0, 'the bootstrapper is downloaded and must stay ignored');
+  assert.equal(gitCheckIgnore(`${installerDir}/MicrosoftEdgeWebview2Setup.exe`), 0, 'the bootstrapper is written by the build and must stay ignored');
 });

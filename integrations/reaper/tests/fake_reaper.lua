@@ -207,6 +207,13 @@ end
 -- Runs every function queued at the time of the call once (one REAPER "frame"). Functions queued while running
 -- wait for the next call, exactly like reaper.defer.
 function Fake:pump()
+  if self.record_pending then
+    self.record_pending = self.record_pending - 1
+    if self.record_pending <= 0 then
+      self.record_pending = nil
+      self.play_state = 5
+    end
+  end
   local queue = self.deferred
   self.deferred = {}
   for _, fn in ipairs(queue) do
@@ -458,6 +465,19 @@ function Fake:add_transport_api(api)
   function api.OnPlayButton()
     fake.calls[#fake.calls + 1] = { name = 'OnPlayButton' }
     fake.play_state = 1
+  end
+  -- CSurf_OnRecord toggles recording ("Toggles recording on and off. Starts recording from edit-cursor-position."). A
+  -- test sets fake.record_fails to model a REAPER that did not start (no input, a dialog in the way), or
+  -- fake.record_delay_ticks to have GetPlayState report recording only that many defer cycles later.
+  function api.CSurf_OnRecord()
+    fake.calls[#fake.calls + 1] = { name = 'CSurf_OnRecord' }
+    if math.floor(fake.play_state / 4) % 2 == 1 then
+      fake.play_state = 0
+    elseif fake.record_delay_ticks then
+      fake.record_pending = fake.record_delay_ticks
+    elseif not fake.record_fails then
+      fake.play_state = 5
+    end
   end
   function api.OnStopButton()
     fake.calls[#fake.calls + 1] = { name = 'OnStopButton' }
@@ -762,6 +782,8 @@ function Fake:add_lane_api(api)
       track.free_mode = value
     elseif key == 'I_NUMFIXEDLANES' then
       track.lane_count = value
+    elseif key == 'I_RECARM' then
+      track.armed = value ~= 0
     elseif not lane then
       error('fake reaper: unmodelled track value setter ' .. tostring(key))
     end
