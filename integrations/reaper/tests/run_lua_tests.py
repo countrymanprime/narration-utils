@@ -75,12 +75,15 @@ def run_file(test_file: Path, reaper_dir: Path, scratch: Path) -> tuple[int, int
     return int(passed), int(failed), str(report)
 
 
-def run_suite(reaper_dir: Path, verbose: bool = True) -> tuple[int, int, list[str]]:
+def run_suite(reaper_dir: Path, verbose: bool = True, first: tuple[str, ...] = (), stop_at_failure: bool = False) -> tuple[int, int, list[str]]:
+    """Runs every test file. `first` names test files to run before the rest; with `stop_at_failure` the run ends at the
+    first file with a failing test (the mutation checks need one failure, not all of them)."""
     scratch = Path(tempfile.mkdtemp(prefix="reaper-harness-"))
     passed = failed = 0
     reports: list[str] = []
+    test_files = sorted(TESTS_DIR.glob("*_test.lua"), key=lambda path: (path.name not in first, path.name))
     try:
-        for test_file in sorted(TESTS_DIR.glob("*_test.lua")):
+        for test_file in test_files:
             ok, bad, report = run_file(test_file, reaper_dir, scratch)
             passed, failed = passed + ok, failed + bad
             if report:
@@ -90,6 +93,8 @@ def run_suite(reaper_dir: Path, verbose: bool = True) -> tuple[int, int, list[st
                 failed += 1
             if verbose:
                 print(f"{test_file.name}: {ok} passed, {bad} failed")
+            if stop_at_failure and failed:
+                break
     finally:
         shutil.rmtree(scratch, ignore_errors=True)
     return passed, failed, reports
