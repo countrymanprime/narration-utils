@@ -56,7 +56,7 @@ A finding that carries a REAPER item GUID can also be gone to and looped in REAP
 
 ## Initial categories
 
-`transcript_discrepancy`, `pronunciation`, `entity`, `pickup`, `duplicate_read`, `take_comparison`, `character_continuity`, `pacing`, `audio_quality`, `delivery_qc`, `silence_cleanup`, and `level_consistency`. The planned silence cleanup, and clause split and level normalize, tools that would produce the last two are specified in [diagnostics-delivery-and-cleanup-tools.prd.md](../prds/diagnostics-delivery-and-cleanup-tools.prd.md).
+`transcript_discrepancy`, `pronunciation`, `entity`, `pickup`, `duplicate_read`, `take_comparison`, `character_continuity`, `pacing`, `audio_quality`, `delivery_qc`, `silence_cleanup`, and `level_consistency`. `silence_cleanup` is raised by the silence cleanup classifier (`measure.Diagnostics.CleanupFindings`, [ADR 0238](../adr/0238-silence-cleanup-candidates-are-classed-in-the-diagnostics-pass-and-raised-apart-from-the-diagnostics-findings.md)). Each is an info candidate classed silence, breath or click, with `suggested_action` `{kind: "split_and_trim", parameters: {class, cut_start_seconds, cut_end_seconds}, requires_confirmation: true}` in source-file seconds. The clause split and level normalize tools that would produce `level_consistency` are specified in [diagnostics-delivery-and-cleanup-tools.prd.md](../prds/diagnostics-delivery-and-cleanup-tools.prd.md).
 
 ## Acceptance criteria
 

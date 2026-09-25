@@ -283,6 +283,9 @@ func TestACopySavedBeforeTheAppCheckedARuleIsJudgedWithTheCurrentCheck(t *testin
 		if rule.ID == "acx.room_tone_head" {
 			rule.Min = v(0.8)
 		}
+		if rule.ID == "acx.format" {
+			rule.CheckedBy, rule.NotCheckedWhy, rule.Min, rule.Unit = CheckedNotYet, "This is a WAV render; check the MP3 you upload.", nil, ""
+		}
 	}
 	raw, _ = json.Marshal(file)
 	if err := os.WriteFile(path, raw, 0o600); err != nil {
@@ -299,6 +302,10 @@ func TestACopySavedBeforeTheAppCheckedARuleIsJudgedWithTheCurrentCheck(t *testin
 		if rule.CheckedBy != CheckedMeasured || rule.NotCheckedWhy != "" || rule.Advice == nil {
 			t.Errorf("%s = %+v, want measured with the digital-silence advice", rule.ID, rule)
 		}
+	}
+	format, _ := resolved.Rule("acx.format")
+	if format.CheckedBy != CheckedMeasured || format.Min == nil || *format.Min != 192 || format.Unit != "kbps" {
+		t.Errorf("acx.format = %+v, want measured with the built-in's 192 kbps minimum (the copy never had a bound)", format)
 	}
 	if *head.Min != 0.8 {
 		t.Errorf("the narrator's head minimum became %v, want 0.8 kept", *head.Min)

@@ -17,6 +17,9 @@ type epubBlock struct {
 	heading int
 	text    string
 	spans   []Span
+	// subtitle marks a text block whose class names it the subtitle (<p class="subtitle">), the markup an EPUB gives a chapter
+	// subtitle set apart from its heading (import heading misreads F4, #387).
+	subtitle bool
 }
 
 // epubHeadingTags maps a heading tag name to its outline level.
@@ -175,7 +178,7 @@ func (p *epubXHTMLParser) walkContainer(n *html.Node) {
 			p.collectInline(&b, c, p.classStyleOf(c))
 			text, spans := b.build(false)
 			if text != "" {
-				p.blocks = append(p.blocks, epubBlock{text: text, spans: spans})
+				p.blocks = append(p.blocks, epubBlock{text: text, spans: spans, subtitle: hasClass(c, "subtitle")})
 			}
 			continue
 		}
@@ -249,4 +252,14 @@ func findElement(n *html.Node, tag string) *html.Node {
 		}
 	}
 	return nil
+}
+
+// hasClass reports whether n's class attribute names class, ignoring case.
+func hasClass(n *html.Node, class string) bool {
+	for _, name := range strings.Fields(htmlAttr(n, "class")) {
+		if strings.EqualFold(name, class) {
+			return true
+		}
+	}
+	return false
 }

@@ -2,6 +2,7 @@ package main
 
 import (
 	"errors"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -83,8 +84,35 @@ func TestContractMeasureBindings(t *testing.T) {
 	cancelled.finish(true, nil)
 	pinMeasureJob(t, "measure-cancelled", cancelled.snapshot())
 
+	pinMeasureJob(t, "measure-mp3", contractMP3Job())
+
 	broken := contractMeasureJob()
 	broken.begin(0)
 	broken.finish(false, errors.New("runtime error: index out of range [4] with length 4"))
 	pinMeasureJob(t, "measure-error", broken.snapshot())
+}
+
+// contractMP3Job is a finished measurement of two MP3s read for their container (delivery profiles PRD Phase 6): a
+// 192 kbps CBR file that meets ACX's format, and a VBR one that does not; neither has a level, since neither is decoded.
+func contractMP3Job() MeasureJob {
+	paths := []string{"C:/Renders/Chapter 01.mp3", "C:/Renders/Chapter 02.mp3"}
+	job := &measureJob{id: "measure-2", phase: "running", started: time.Now(), cancel: func() {}, message: "Measuring 2 files."}
+	job.logs = []string{job.message}
+	for _, path := range paths {
+		job.files = append(job.files, MeasureFileResult{Path: path, Name: filepath.Base(path), Status: measureFilePending})
+		job.weights = append(job.weights, 1000)
+		job.totalWeight += 1000
+	}
+	infos := []measure.MP3Info{
+		{Version: "MPEG-1", Layer: 3, BitrateKbps: 192, AverageBitrateKbps: 192, CBR: true, VBRTag: "Info", SampleRate: 44100,
+			ChannelMode: "mono", Frames: 70_000, DurationSeconds: 1828.5714285714287, ID3v2Bytes: 4096},
+		{Version: "MPEG-1", Layer: 3, AverageBitrateKbps: 176.3, VBRTag: "Xing", SampleRate: 44100, ChannelMode: "mono",
+			Frames: 40_000, DurationSeconds: 1044.8979591836735, LostBytes: 417},
+	}
+	for i, info := range infos {
+		report := measure.Report{File: paths[i], SampleRate: info.SampleRate, Channels: info.Channels(), DurationSeconds: info.DurationSeconds, ClipRuns: []measure.ClipRun{}, MP3: &info}
+		job.complete(i, measure.FileMeasurement{Report: report, Fingerprint: measure.Fingerprint{SizeBytes: 43_900_000 + int64(i), ModifiedAt: "2026-09-25T09:00:00Z", SHA256: "b5bb9d8014a0f9b1d61e21e796d78dccdf1352f23cd32812f4850b878ae4944c"}}, nil)
+	}
+	job.finish(false, nil)
+	return job.snapshot()
 }

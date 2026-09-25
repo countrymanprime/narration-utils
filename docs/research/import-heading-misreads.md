@@ -17,7 +17,7 @@ The heuristic only ever looks inside the heading. No importer treats a separate 
 
 ## Results
 
-The 23 cases are 5 controls, which read correctly, and 18 misreads in 8 failure modes. Each case uses one chapter heading followed by the same two body paragraphs. "Toggle" means a per-heading "second line is subtitle" switch over the lines the importer already splits on (PRD I2).
+The 23 cases are 5 controls, which read correctly, and 18 misreads in 8 failure modes. Seven of the misreads have since been fixed (see "What #387 and #388 fixed"); the table below describes them as first found. Each case uses one chapter heading followed by the same two body paragraphs. "Toggle" means a per-heading "second line is subtitle" switch over the lines the importer already splits on (PRD I2).
 
 | Mode | What goes wrong | Cases | Formats | Where the subtitle ends up | Toggle fixes it |
 | --- | --- | --- | --- | --- | --- |
@@ -43,16 +43,16 @@ The file names are in `tests/fixtures/heading-misreads/`. "Intended" is title / 
 | `epub-two-line-title-br.epub` | F1 | The Girl Who Fell Through the Ice / (none) | The Girl Who / Fell Through the Ice |
 | `docx-three-line-heading.docx` | F2 | Chapter One / The Storm (under Part One) | Part One / Chapter One The Storm |
 | `txt-epigraph-under-heading.txt` | F3 | Chapter One / (none), epigraph in the body | Chapter One / "Water finds its level." |
-| `docx-subtitle-style-paragraph.docx` | F4 | Chapter One / The Storm | Chapter One / (none), body starts "The Storm" |
+| `docx-subtitle-style-paragraph.docx` | F4 | Chapter One / The Storm | Fixed by #387: Chapter One / The Storm (was: (none), body starts "The Storm") |
 | `md-subtitle-emphasis-line.md` | F4 | Chapter One / The Storm | Chapter One / (none), body starts "The Storm" |
 | `txt-subtitle-own-block.txt` | F4 | Chapter One / The Storm | Chapter One / (none), body starts "The Storm" |
-| `epub-subtitle-class-paragraph.epub` | F4 | Chapter One / The Storm | Chapter One / (none), body starts "The Storm" |
-| `docx-subtitle-as-heading-2.docx` | F5 | Chapter One / The Storm | Two chapters: "Chapter One" (empty) and "The Storm" |
-| `md-subtitle-as-h2.md` | F5 | Chapter One / The Storm | Chapter One / (none), section "The Storm" |
-| `epub-subtitle-as-h2.epub` | F5 | Chapter One / The Storm | Chapter One / (none); "The Storm" is not imported |
+| `epub-subtitle-class-paragraph.epub` | F4 | Chapter One / The Storm | Fixed by #387: Chapter One / The Storm (was: (none), body starts "The Storm") |
+| `docx-subtitle-as-heading-2.docx` | F5 | Chapter One / The Storm | Fixed by #387: Chapter One / The Storm (was: two chapters, "Chapter One" empty) |
+| `md-subtitle-as-h2.md` | F5 | Chapter One / The Storm | Fixed by #387: Chapter One / The Storm (was: (none), section "The Storm") |
+| `epub-subtitle-as-h2.epub` | F5 | Chapter One / The Storm | Fixed by #388: Chapter One / The Storm (was: (none), "The Storm" not imported) |
 | `docx-glued-all-caps.docx` | F6 | CHAPTER ONE / THE STORM | CHAPTER ONETHE STORM / (none), no repair notice |
-| `docx-glued-one-letter-word.docx` | F6 | Chapter Two / A Night on the Levee | Chapter TwoA Night on the Levee / (none) |
-| `docx-glued-two-word-number.docx` | F6 | Chapter Twenty One / The Storm | Chapter Twenty OneThe Storm / (none) |
+| `docx-glued-one-letter-word.docx` | F6 | Chapter Two / A Night on the Levee | Fixed by #387: Chapter Two / A Night on the Levee, with the repair notice |
+| `docx-glued-two-word-number.docx` | F6 | Chapter Twenty One / The Storm | Fixed by #387: Chapter Twenty One / The Storm, with the repair notice |
 | `docx-separator-one-line.docx` | F7 | Chapter One / The Storm | Chapter One: The Storm / (none) |
 | `txt-title-above-number.txt` | F8 | Chapter One / The Storm | No heading; one chapter "txt-title-above-number" |
 | `txt-three-line-heading.txt` | F8 | Chapter One / The Storm (under Part One) | No heading; one chapter "txt-three-line-heading" |
@@ -62,7 +62,7 @@ The file names are in `tests/fixtures/heading-misreads/`. "Intended" is title / 
 - **F1, F2.** `headingParts` treats every line break inside a heading as "title, then subtitle". It cannot tell a subtitle from a title that the author broke by hand to make it look right on the page. It also has no idea of a part line above the chapter line.
 - **F3.** `classifyTxtHeading` accepts any second line under a chapter marker as the subtitle. It does not check what the line looks like, so a quotation is accepted too.
 - **F4.** No importer looks past the heading paragraph or block. The DOCX reader counts a paragraph as a heading only if its style name starts with "heading", or is "title" or "toc heading", or if it has an outline level (`docx.go:339`). Word's built-in "Subtitle" style is none of these, so the subtitle becomes an ordinary paragraph.
-- **F5.** Every DOCX heading, at any level, starts a chapter (`docx.go:430-446`). A Markdown heading below the chapter level becomes a section name (`markdown.go:110`). An EPUB heading that is not a table-of-contents target is skipped as a heading, and it is not emitted as body text either (`epub.go:452`), so its words disappear from the import with no notice. This is the only mode that loses text.
+- **F5.** Every DOCX heading, at any level, starts a chapter (`docx.go:430-446`). A Markdown heading below the chapter level becomes a section name (`markdown.go:110`). An EPUB heading that is not a table-of-contents target is skipped as a heading, and it is not emitted as body text either (`epub.go:452`), so its words disappear from the import with no notice. This is the only mode that loses text. (This describes the importer before #387 and #388; see "What #387 and #388 fixed" below.)
 - **F6.** `splitGluedHeading` splits only where a capital letter followed by a lowercase letter begins a word, straight after one complete number token (`headings.go:71`). That rules out an all-caps subtitle, a subtitle whose first word is a single letter ("A", "I"), and a number written as two words ("Twenty One"). No repair notice is shown in these cases, so the review gives no sign that anything is wrong.
 - **F7.** No importer splits on ":" or a dash. This is by design today: `alice.docx` and `alice.md` rely on "Chapter I: Down the Rabbit-Hole" staying one title (`TestDocxFixtureRetainsTitleAndNarrativeChapters`, `TestMarkdownFixtureRetainsTitleAndNarrativeChapters`). It is listed here so that Phase 5 decides it deliberately, not as a defect to fix silently.
 - **F8.** Plain text finds headings conservatively. A heading must start with its chapter marker and have at most two lines. A title above the number, or a part/chapter/title stack, is read as an ordinary paragraph. When nothing in the file is a heading, the whole file becomes one chapter ([import quirks](../architecture/docx-import-quirks.md) covers the DOCX side).
@@ -70,6 +70,17 @@ The file names are in `tests/fixtures/heading-misreads/`. "Intended" is title / 
 ## What Phase 5 did
 
 Phase 5 built the override ([ADR 0135](../adr/0135-a-subtitle-turned-off-in-the-import-review-joins-the-title-or-returns-to-the-text-by-where-its-line-came-from.md)). A section's subtitle turned off in the review joins the title when the line was inside a heading (F1) and returns to the body when it was the second line of a plain-text heading (F3); the host says which in the preview (`subtitleOff`). The four cases it fixes carry an `override` entry in `cases.json`, and `TestHeadingMisreadOverrides` applies it and expects `intended`; the same test checks that no override changes any case. F2 and F4 to F8 are unchanged and are listed in [#387](https://github.com/countrymanprime/narration-utils/issues/387); the EPUB `<h2>` that is dropped (F5) is its own bug, [#388](https://github.com/countrymanprime/narration-utils/issues/388).
+
+## What #387 and #388 fixed (2026-09-25)
+
+Seven of the 18 misreads now read as intended; `cases.json` marks each with `fixedBy`, and `TestHeadingMisreadFixtures` holds them to `intended` like the controls ([ADR 0241](../adr/0241-a-subtitle-set-apart-from-its-heading-is-read-as-the-subtitle-and-an-epub-heading-that-starts-no-chapter-is-kept-as-text.md)).
+
+- **F5, all three formats, and the EPUB loss (#388).** A heading deeper than the chapter heading, met before any of the chapter's text, is the chapter's subtitle. This holds only when it is the only heading at its level before the next chapter, the chapter heading is level 1 or deeper, not a book title, a Part or Book heading or a reference section such as Characters, and the heading does not itself name a chapter, part or prologue. A chapter whose scenes are `##` headings keeps them as scenes. An EPUB heading that starts no chapter and is not a subtitle is now kept as the chapter's text instead of being dropped.
+- **F4, the explicit markers only.** A paragraph in Word's own "Subtitle" style, or an EPUB `<p class="subtitle">`, right under the chapter heading is its subtitle. The Markdown emphasis line and the plain-text block are left as they are, because an epigraph looks the same.
+- **Off in the review.** A subtitle read from a line apart from the heading returns to the text when the narrator turns it off (`SubtitleOffReturnsToBody`), so nothing is lost (`TestASubtitleSetApartReturnsToTheTextWhenTurnedOff`).
+- **F6, the two narrow shapes.** A number of two words ("Twenty OneThe Storm") and a one-letter "A" or "I" glued to a number written in words ("TwoA Night") are split, with the repair notice. The all-caps glue ("ONETHE STORM") is left: without a dictionary, "ONE" + "THE" cannot be told from a number word that runs on. A lone letter after a roman numeral is never split, because "XI" is a number.
+
+Still open under #387: F2 (a three-part heading), F3's and F4's ambiguous shapes, the all-caps F6 case, F7 (a separator on one line, kept by design) and F8 (plain-text title above number, three-line blocks).
 
 ## What this meant for Phase 5 (written before it)
 

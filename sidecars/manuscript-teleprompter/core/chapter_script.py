@@ -25,6 +25,7 @@ if str(_SHARED_PYTHON) not in sys.path:
     sys.path.insert(0, str(_SHARED_PYTHON))
 
 from narration_common import manuscript as canonical_manuscript
+from narration_common.chapter_names import chapter_display_name
 
 
 class ChapterError(ValueError):
@@ -60,7 +61,9 @@ def _collapse(text: str) -> str:
 
 def display_title(title: str) -> str:
     """A title with a manual line break for a subtitle, joined onto one line
-    the way Transcript Compare shows it ("CHAPTER ONE: Bad Ideas...")."""
+    ("CHAPTER ONE: Bad Ideas..."): a form a caller may still name a chapter
+    by, so _select keeps accepting it. Text a person reads uses the app's
+    rule, chapter_display_name ("CHAPTER ONE — Bad Ideas...")."""
     return ": ".join(line.strip() for line in title.splitlines() if line.strip())
 
 
@@ -72,9 +75,13 @@ def _narratable_chapters(data: dict) -> list[dict]:
 def _select(chapters: list[dict], query: str) -> dict:
     wanted = _collapse(query)
     for chapter in chapters:
-        if chapter["id"] == query or wanted in (_collapse(chapter["title"]), _collapse(display_title(chapter["title"]))):
+        names = (chapter["title"], display_title(chapter["title"]), chapter_display_name(chapter["title"], chapter.get("subtitle")))
+        if chapter["id"] == query or wanted in {_collapse(name) for name in names}:
             return chapter
-    raise ChapterError(f"Chapter {query!r} was not found among the narration chapters.", [display_title(c["title"]) for c in chapters])
+    raise ChapterError(
+        f"Chapter {query!r} was not found among the narration chapters.",
+        [chapter_display_name(c["title"], c.get("subtitle")) for c in chapters],
+    )
 
 
 def load_chapter_script(manuscript_path: str | Path, chapter: str) -> ChapterScript:

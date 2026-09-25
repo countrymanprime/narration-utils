@@ -1,5 +1,5 @@
 {
-  "about": "Constructed heading cases for the import title/subtitle heuristic (story-bible-and-import-ux-briefs PRD, Phase 4). 'intended' is what the author meant; 'observed' is what the importer produced when this file was written and is pinned by TestHeadingMisreadFixtures (apps/desktop/internal/importer/heading_misreads_test.go). 'subtitleWentTo' says where the authored subtitle text ended up. 'lineToggleFixes' says whether a per-heading 'second line is subtitle' toggle over the importer's existing lines (PRD I2) is enough to reach 'intended'. 'override', on a case the Phase 5 subtitle override fixes, is the per-heading choice that does it and the chapter's first paragraph afterwards; TestHeadingMisreadOverrides applies it and expects 'intended'. See docs/research/import-heading-misreads.md.",
+  "about": "Constructed heading cases for the import title/subtitle heuristic (story-bible-and-import-ux-briefs PRD, Phase 4). 'intended' is what the author meant; 'observed' is what the importer produced when this file was written and is pinned by TestHeadingMisreadFixtures (apps/desktop/internal/importer/heading_misreads_test.go). 'subtitleWentTo' says where the authored subtitle text ended up. 'lineToggleFixes' says whether a per-heading 'second line is subtitle' toggle over the importer's existing lines (PRD I2) is enough to reach 'intended'. 'override', on a case the Phase 5 subtitle override fixes, is the per-heading choice that does it and the chapter's first paragraph afterwards; TestHeadingMisreadOverrides applies it and expects 'intended'. See docs/research/import-heading-misreads.md. 'fixedBy', on a misread the importer now reads as intended, names the issue whose fix did it; such a case must read as intended, like a control.",
   "cases": [
     {
       "id": "docx-soft-break-subtitle",
@@ -153,10 +153,11 @@
       "observed": {
         "chapterTitles": ["Chapter One"],
         "title": "Chapter One",
-        "subtitle": "",
-        "firstParagraph": "The Storm"
+        "subtitle": "The Storm",
+        "firstParagraph": "The rain had not stopped for three days, and the river was already over the lower road."
       },
-      "subtitleWentTo": "first body paragraph",
+      "subtitleWentTo": "subtitle",
+      "fixedBy": "#387",
       "lineToggleFixes": false
     },
     {
@@ -195,10 +196,11 @@
       "observed": {
         "chapterTitles": ["Chapter One"],
         "title": "Chapter One",
-        "subtitle": "",
-        "firstParagraph": "The Storm"
+        "subtitle": "The Storm",
+        "firstParagraph": "The rain had not stopped for three days, and the river was already over the lower road."
       },
-      "subtitleWentTo": "first body paragraph",
+      "subtitleWentTo": "subtitle",
+      "fixedBy": "#387",
       "lineToggleFixes": false
     },
     {
@@ -207,12 +209,13 @@
       "mode": "F5",
       "intended": { "title": "Chapter One", "subtitle": "The Storm" },
       "observed": {
-        "chapterTitles": ["Chapter One", "The Storm"],
+        "chapterTitles": ["Chapter One"],
         "title": "Chapter One",
-        "subtitle": "",
-        "firstParagraph": ""
+        "subtitle": "The Storm",
+        "firstParagraph": "The rain had not stopped for three days, and the river was already over the lower road."
       },
-      "subtitleWentTo": "a second, separate chapter; 'Chapter One' is left empty",
+      "subtitleWentTo": "subtitle",
+      "fixedBy": "#387",
       "lineToggleFixes": false
     },
     {
@@ -223,10 +226,11 @@
       "observed": {
         "chapterTitles": ["Chapter One"],
         "title": "Chapter One",
-        "subtitle": "",
+        "subtitle": "The Storm",
         "firstParagraph": "The rain had not stopped for three days, and the river was already over the lower road."
       },
-      "subtitleWentTo": "section name of every following paragraph",
+      "subtitleWentTo": "subtitle",
+      "fixedBy": "#387",
       "lineToggleFixes": false
     },
     {
@@ -237,10 +241,11 @@
       "observed": {
         "chapterTitles": ["Chapter One"],
         "title": "Chapter One",
-        "subtitle": "",
+        "subtitle": "The Storm",
         "firstParagraph": "The rain had not stopped for three days, and the river was already over the lower road."
       },
-      "subtitleWentTo": "dropped: not in the title, subtitle, section or body",
+      "subtitleWentTo": "subtitle",
+      "fixedBy": "#388",
       "lineToggleFixes": false
     },
     {
@@ -263,12 +268,13 @@
       "mode": "F6",
       "intended": { "title": "Chapter Two", "subtitle": "A Night on the Levee" },
       "observed": {
-        "chapterTitles": ["Chapter TwoA Night on the Levee"],
-        "title": "Chapter TwoA Night on the Levee",
-        "subtitle": "",
+        "chapterTitles": ["Chapter Two"],
+        "title": "Chapter Two",
+        "subtitle": "A Night on the Levee",
         "firstParagraph": "The rain had not stopped for three days, and the river was already over the lower road."
       },
-      "subtitleWentTo": "glued onto the title",
+      "subtitleWentTo": "subtitle",
+      "fixedBy": "#387",
       "lineToggleFixes": false
     },
     {
@@ -277,12 +283,13 @@
       "mode": "F6",
       "intended": { "title": "Chapter Twenty One", "subtitle": "The Storm" },
       "observed": {
-        "chapterTitles": ["Chapter Twenty OneThe Storm"],
-        "title": "Chapter Twenty OneThe Storm",
-        "subtitle": "",
+        "chapterTitles": ["Chapter Twenty One"],
+        "title": "Chapter Twenty One",
+        "subtitle": "The Storm",
         "firstParagraph": "The rain had not stopped for three days, and the river was already over the lower road."
       },
-      "subtitleWentTo": "glued onto the title",
+      "subtitleWentTo": "subtitle",
+      "fixedBy": "#387",
       "lineToggleFixes": false
     },
     {

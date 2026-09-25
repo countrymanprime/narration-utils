@@ -26,7 +26,7 @@ var acxRuleTable = []struct {
 	{"acx.file_length", ScopeFile, CheckedMeasured, Verified},
 	{"acx.room_tone_head", ScopeFile, CheckedMeasured, Conflicting},
 	{"acx.room_tone_tail", ScopeFile, CheckedMeasured, Verified},
-	{"acx.format", ScopeFile, CheckedNotYet, Verified},
+	{"acx.format", ScopeFile, CheckedMeasured, Verified},
 	{"acx.channels", ScopeBook, CheckedMeasured, ToVerify},
 	{"acx.one_section_per_file", ScopeBook, CheckedListen, Verified},
 	{"acx.credits", ScopeBook, CheckedNotYet, Verified},
@@ -120,7 +120,7 @@ func TestAFileOnEveryBoundaryMeetsEveryMeasuredRuleAndTheRestAreNotChecked(t *te
 			t.Errorf("%s = %+v, want not checked with why and no value", id, got[id])
 		}
 	}
-	if !strings.Contains(got["acx.format"].Why, "WAV") {
+	if !strings.Contains(got["acx.format"].Why, "WAV") || !strings.Contains(got["acx.format"].Why, "measure the MP3") {
 		t.Errorf("the MP3 rule's reason %q does not say the WAV render was measured", got["acx.format"].Why)
 	}
 	if len(judgement.Results) != 8 {
@@ -288,7 +288,7 @@ func TestBuiltInLooksUpByIDAndVersion(t *testing.T) {
 func TestOnlyAMeasuredRangeIsAdjustable(t *testing.T) {
 	want := map[string]bool{
 		"acx.rms": true, "acx.peak": true, "acx.noise_floor": true, "acx.file_length": true, "acx.room_tone_head": true,
-		"acx.room_tone_tail": true,
+		"acx.room_tone_tail": true, "acx.format": true,
 	}
 	for _, rule := range ACX().Rules {
 		if rule.Adjustable() != want[rule.ID] {
@@ -337,5 +337,58 @@ func TestDigitalSilenceAtAnEdgeIsAdviceBesideTheRoomToneRule(t *testing.T) {
 	}
 	if warnings != 2 {
 		t.Errorf("%d advice warnings, want one per edge", warnings)
+	}
+}
+
+func mp3Report(cbr bool, bitrate int, average float64) measure.Report {
+	return measure.Report{
+		File: "C:/Renders/Chapter 01.mp3", SampleRate: 44100, Channels: 1, DurationSeconds: 1800, ClipRuns: []measure.ClipRun{},
+		MP3: &measure.MP3Info{Version: "MPEG-1", Layer: 3, CBR: cbr, BitrateKbps: bitrate, AverageBitrateKbps: average,
+			SampleRate: 44100, ChannelMode: "mono", Frames: 68906, DurationSeconds: 1800},
+	}
+}
+
+func TestAnMP3IsJudgedOnItsContainerAndItsLevelsAreNotChecked(t *testing.T) {
+	judgement := EvaluateFile(mp3Report(true, 192, 192), ACX())
+	got := resultsByRule(judgement.Results)
+	if got["acx.format"].Status != StatusMet || got["acx.format"].Value == nil || *got["acx.format"].Value != 192 {
+		t.Errorf("a 192 kbps CBR MP3 = %+v, want the format met at 192", got["acx.format"])
+	}
+	for _, id := range []string{"acx.sample_rate", "acx.file_length"} {
+		if got[id].Status != StatusMet {
+			t.Errorf("%s on an MP3 = %+v, want met from its headers", id, got[id])
+		}
+	}
+	for _, id := range []string{"acx.rms", "acx.peak", "acx.noise_floor", "acx.room_tone_head", "acx.room_tone_tail"} {
+		if got[id].Status != StatusNotChecked || !strings.Contains(got[id].Why, "does not decode") {
+			t.Errorf("%s on an MP3 = %+v, want not checked because it is not decoded", id, got[id])
+		}
+	}
+	if len(judgement.Findings) != 0 {
+		t.Errorf("findings = %+v, want none: nothing unmeasured on an MP3 is reported as missing", judgement.Findings)
+	}
+}
+
+func TestAnMP3BelowTheBitrateOrNotCBRMissesTheFormatRule(t *testing.T) {
+	low := resultsByRule(EvaluateFile(mp3Report(true, 128, 128), ACX()).Results)["acx.format"]
+	if low.Status != StatusNotMet || low.Violation != ViolationBelowMin || *low.Value != 128 {
+		t.Errorf("a 128 kbps CBR MP3 = %+v, want not met below the minimum", low)
+	}
+	judgement := EvaluateFile(mp3Report(false, 0, 201.4), ACX())
+	vbr := resultsByRule(judgement.Results)["acx.format"]
+	if vbr.Status != StatusNotMet || vbr.Violation != ViolationNotCBR || *vbr.Value != 201.4 {
+		t.Errorf("a VBR MP3 averaging 201 kbps = %+v, want not met as not CBR with its average", vbr)
+	}
+	if len(judgement.Findings) != 1 || judgement.Findings[0].Evidence["violation"] != ViolationNotCBR || judgement.Findings[0].Severity != findings.SeverityError {
+		t.Errorf("findings = %+v, want one error saying not CBR", judgement.Findings)
+	}
+}
+
+func TestTheBookJudgesChannelsAcrossWAVAndMP3Files(t *testing.T) {
+	stereoMP3 := mp3Report(true, 192, 192)
+	stereoMP3.Channels = 2
+	got := resultsByRule(EvaluateBook([]measure.Report{passingReport(), stereoMP3}, ACX()))
+	if got["acx.channels"].Status != StatusNotMet || got["acx.channels"].Violation != ViolationDiffers {
+		t.Errorf("a mono WAV beside a stereo MP3 = %+v, want the channels differing", got["acx.channels"])
 	}
 }

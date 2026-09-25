@@ -49,7 +49,9 @@ func FingerprintFile(path string) (Fingerprint, error) {
 	return fingerprintOf(info, digest), nil
 }
 
-// MeasureFile measures the WAV file at path (or opts.Range of it) and fingerprints it in the same pass. The fingerprint
+// MeasureFile measures the WAV file at path (or opts.Range of it) and fingerprints it in the same pass. A file that
+// starts as an MP3 (an ID3v2 tag or a frame sync) is read for its container only (mp3header.go); a range is refused
+// for it, since it has no decoded audio to take a range of. The fingerprint
 // always covers every byte of the file, so a range measurement still reads the file to its end, hashing what follows
 // the range without decoding it. The file is opened read-only and never written. A file whose size or modified time
 // changed between the start and the end answers ErrFileChanged; cancelling ctx answers ctx's error.
@@ -62,7 +64,14 @@ func MeasureFile(ctx context.Context, path string, opts Options) (FileMeasuremen
 
 	digest := sha256.New()
 	counted := &countingReader{r: io.TeeReader(file, digest)}
-	report, err := analyze(ctx, counted, opts, before.Size())
+	head := make([]byte, 4)
+	n, _ := file.ReadAt(head, 0)
+	var report Report
+	if looksLikeMP3(head[:n]) {
+		report, err = measureMP3(ctx, counted, opts, before.Size())
+	} else {
+		report, err = analyze(ctx, counted, opts, before.Size())
+	}
 	if err != nil {
 		return FileMeasurement{}, err
 	}
@@ -131,4 +140,20 @@ func (c *countingReader) Read(p []byte) (int, error) {
 	n, err := c.r.Read(p)
 	c.n += int64(n)
 	return n, err
+}
+
+// measureMP3 reads an MP3's frame headers into a report, telling opts.Progress the bytes read.
+func measureMP3(ctx context.Context, r io.Reader, opts Options, size int64) (Report, error) {
+	if opts.Range != nil {
+		return Report{}, errors.New("a range can only be measured in a WAV file")
+	}
+	var progress func(int64)
+	if opts.Progress != nil {
+		progress = func(done int64) { opts.Progress(done, size) }
+	}
+	info, err := ReadMP3(ctx, r, progress)
+	if err != nil {
+		return Report{}, err
+	}
+	return mp3Report(info), nil
 }

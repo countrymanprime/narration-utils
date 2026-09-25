@@ -74,6 +74,11 @@ type Report struct {
 	ClipRunCount     int       `json:"clip_run_count"`
 	ClipRuns         []ClipRun `json:"clip_runs"`
 
+	// MP3 is what the frame headers of an MP3 say (mp3header.go), set
+	// only for an MP3; its levels, clipping and edges are then null or
+	// zero because the audio is not decoded. Nil for a WAV.
+	MP3 *MP3Info `json:"mp3,omitempty"`
+
 	// Range is the requested range when the report measures part of a
 	// file (AnalyzeRange); DurationSeconds is then how much of that range
 	// the file actually held. Nil for a whole-file report.

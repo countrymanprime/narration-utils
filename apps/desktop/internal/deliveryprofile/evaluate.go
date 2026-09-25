@@ -28,7 +28,33 @@ const (
 	ViolationBelowMin = "below_min"
 	ViolationNotOneOf = "not_one_of"
 	ViolationDiffers  = "differs_across_files"
+	// ViolationNotCBR is an MP3 whose frames do not all share one bitrate (or that carries a VBR header).
+	ViolationNotCBR = "not_cbr"
 )
+
+// Why a rule is not checked on a file of the other kind: an MP3 is not decoded, so nothing measured from its samples is
+// known; a WAV has no MP3 container to check.
+const (
+	whyNotDecoded = "Not measured on an MP3: the app reads its headers only and does not decode it. Measure the WAV render it came from."
+	whyNotAnMP3   = "This is a WAV render; measure the MP3 you upload to check its format."
+)
+
+// fromSamples are the metrics measured from decoded samples, which an MP3's report does not hold.
+var fromSamples = map[string]bool{
+	"integrated_lufs": true, "rms_dbfs": true, "sample_peak_dbfs": true, "true_peak_dbtp": true, "noise_floor_dbfs": true,
+	"head_room_tone_seconds": true, "tail_room_tone_seconds": true,
+}
+
+// otherKindWhy says why a rule cannot be checked on this kind of file, or "" when it can.
+func otherKindWhy(report measure.Report, metric string) string {
+	switch {
+	case report.MP3 != nil && fromSamples[metric]:
+		return whyNotDecoded
+	case report.MP3 == nil && metric == "mp3_format":
+		return whyNotAnMP3
+	}
+	return ""
+}
 
 // Result is one rule's result. Value is what was measured (nil when nothing was); Violation says how a not_met value
 // missed; Why says why a rule was not measurable or not checked; Advice is the rule's softer check when it fired.
@@ -48,7 +74,7 @@ type Judgement struct {
 }
 
 // metricValue reads a file metric from a report. known is false for a metric the report does not hold (the MP3
-// container): such a rule is not checked, whatever its CheckedBy says.
+// container of a WAV): such a rule is not checked, whatever its CheckedBy says.
 func metricValue(report measure.Report, metric string) (value *float64, known bool) {
 	switch metric {
 	case "integrated_lufs":
@@ -75,6 +101,15 @@ func metricValue(report measure.Report, metric string) (value *float64, known bo
 		return report.HeadDigitalSilenceSeconds, true
 	case "tail_digital_silence_seconds":
 		return report.TailDigitalSilenceSeconds, true
+	case "mp3_format":
+		// The bitrate: every frame's when the file is CBR, the average when it is not (and then not met, not_cbr).
+		if report.MP3 == nil {
+			return nil, false
+		}
+		if report.MP3.CBR {
+			return number(float64(report.MP3.BitrateKbps)), true
+		}
+		return number(report.MP3.AverageBitrateKbps), true
 	}
 	return nil, false
 }
@@ -131,6 +166,10 @@ func evaluateFileRule(report measure.Report, rule Rule) Result {
 		result.Status, result.Why = StatusOff, "Turned off in this profile: not judged."
 		return result
 	}
+	if why := otherKindWhy(report, rule.Metric); why != "" && rule.CheckedBy == CheckedMeasured {
+		result.Status, result.Why = StatusNotChecked, why
+		return result
+	}
 	value, known := metricValue(report, rule.Metric)
 	if rule.CheckedBy != CheckedMeasured || !known {
 		result.Status, result.Why = StatusNotChecked, notCheckedWhy(rule)
@@ -145,6 +184,9 @@ func evaluateFileRule(report measure.Report, rule Rule) Result {
 	result.Status = StatusMet
 	if violation := violationOf(rule, *value); violation != "" {
 		result.Status, result.Violation = StatusNotMet, violation
+	}
+	if rule.Metric == "mp3_format" && !report.MP3.CBR {
+		result.Status, result.Violation = StatusNotMet, ViolationNotCBR
 	}
 	if rule.Advice != nil {
 		if advised, ok := metricValue(report, rule.Advice.Metric); ok && finite(advised) && *advised > rule.Advice.Max {

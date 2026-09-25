@@ -156,9 +156,10 @@ export const MOCK_ACX: DeliveryProfile = {
       label: 'MP3 format',
       scope: 'file',
       metric: 'mp3_format',
+      unit: 'kbps',
+      min: 192,
       boundText: '192 kbps+ CBR',
-      checkedBy: 'not_yet',
-      notCheckedWhy: 'This is a WAV render; check the MP3 you upload.',
+      checkedBy: 'measured',
       source: source('Each file is an MP3 at 192 kbps or higher, constant bit rate (CBR).', LEVELS_READ),
       verification: 'verified',
     }),
@@ -264,9 +265,30 @@ const metricValue = (report: MeasureReport, metric: string): number | null | und
     case 'head_digital_silence_seconds':
     case 'tail_digital_silence_seconds':
       return report[metric];
+    case 'mp3_format':
+      // The bitrate: every frame's when the file is CBR, the average when it is not (then not met, not_cbr).
+      if (!report.mp3) return undefined;
+      return report.mp3.cbr ? report.mp3.bitrate_kbps : report.mp3.average_bitrate_kbps;
   }
   return undefined;
 };
+
+/** deliveryprofile.otherKindWhy: an MP3 is not decoded, and a WAV has no MP3 container to check. */
+const FROM_SAMPLES = new Set([
+  'integrated_lufs',
+  'rms_dbfs',
+  'sample_peak_dbfs',
+  'true_peak_dbtp',
+  'noise_floor_dbfs',
+  'head_room_tone_seconds',
+  'tail_room_tone_seconds',
+]);
+const otherKindWhy = (report: MeasureReport, metric: string): string | undefined =>
+  report.mp3 && FROM_SAMPLES.has(metric)
+    ? 'Not measured on an MP3: the app reads its headers only and does not decode it. Measure the WAV render it came from.'
+    : !report.mp3 && metric === 'mp3_format'
+      ? 'This is a WAV render; measure the MP3 you upload to check its format.'
+      : undefined;
 
 const violationOf = (one: DeliveryRule, value: number): DeliveryRuleResult['violation'] =>
   one.oneOf.length > 0 && !one.oneOf.includes(value)
@@ -313,6 +335,11 @@ export function evaluateMockFile(report: MeasureReport, file: string, profile: D
       rules.push({ ruleId: one.id, status: 'off', value: null, why: OFF });
       continue;
     }
+    const otherKind = one.checkedBy === 'measured' ? otherKindWhy(report, one.metric) : undefined;
+    if (otherKind) {
+      rules.push({ ruleId: one.id, status: 'not_checked', value: null, why: otherKind });
+      continue;
+    }
     if (one.checkedBy !== 'measured' || value === undefined) {
       rules.push({ ruleId: one.id, status: 'not_checked', value: null, why: notCheckedWhy(one) });
       continue;
@@ -333,7 +360,7 @@ export function evaluateMockFile(report: MeasureReport, file: string, profile: D
       );
       continue;
     }
-    const violation = violationOf(one, value);
+    const violation = one.metric === 'mp3_format' && report.mp3 && !report.mp3.cbr ? 'not_cbr' : violationOf(one, value);
     const advised = one.advice ? metricValue(report, one.advice.metric) : undefined;
     const advice = one.advice && typeof advised === 'number' && advised > one.advice.max ? one.advice.text : undefined;
     rules.push({ ruleId: one.id, status: violation ? 'not_met' : 'met', value, ...(violation ? { violation } : {}), ...(advice ? { advice } : {}) });

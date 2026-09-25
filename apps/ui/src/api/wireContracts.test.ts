@@ -9,7 +9,7 @@ import { WIRE_TAKE_COMPARISON_FINDING } from './takeComparisonMock';
 import { MOCK_MEASURE_PATHS } from './measureMock';
 import { deliveryQcEvidenceSchema, deliveryReportExportSchema, measureJobSchema, measurePickResultSchema } from './schemas/measure';
 import { deliveryProfileSchema, deliveryProfilesStateSchema } from './schemas/deliveryProfiles';
-import { MOCK_ACX, mockCustomProfile } from './deliveryProfilesMock';
+import { MOCK_ACX, evaluateMockFile, mockCustomProfile } from './deliveryProfilesMock';
 import { diagnosticsJobSchema } from './schemas/diagnostics';
 import {
   bookmarkSchema,
@@ -262,6 +262,7 @@ const GOLDEN: Record<string, z.ZodType> = {
   'measure-idle.json': measureJobSchema,
   'measure-running.json': measureJobSchema,
   'measure-success.json': measureJobSchema,
+  'measure-mp3.json': measureJobSchema,
   'measure-cancelled.json': measureJobSchema,
   'measure-error.json': measureJobSchema,
   'delivery-report-export.json': deliveryReportExportSchema,
@@ -1192,6 +1193,20 @@ describe('answers of the mock client for the settings, voice, model, transcript 
     const cancelled = await api.measureCancel();
     expectMatches(measureJobSchema, cancelled, 'mock measurement, cancelled');
     expect(cancelled.files.map((file) => file.status)).toEqual(['cancelled', 'cancelled', 'cancelled']);
+  });
+
+  it('an MP3 is judged on its container, and the mock judges it as the host pins', () => {
+    const pinned = measureJobSchema.parse(readGolden('measure-mp3.json'));
+    expect(pinned.profile).not.toBeNull();
+    for (const file of pinned.files) {
+      expect(file.report?.mp3).toBeDefined();
+      const mock = evaluateMockFile(file.report!, file.path, pinned.profile!);
+      expect(mock.rules).toEqual(file.rules);
+      expect(mock.findings.map((finding) => deliveryQcEvidenceSchema.parse(finding.evidence))).toEqual(
+        file.findings.map((finding) => deliveryQcEvidenceSchema.parse(finding.evidence)),
+      );
+    }
+    expect(pinned.files.map((file) => file.rules.find((rule) => rule.ruleId === 'acx.format')?.violation)).toEqual([undefined, 'not_cbr']);
   });
 
   it("a measurement is judged by the host against the project's profile, rule by rule, in the shape the host pins", async () => {

@@ -129,8 +129,9 @@ func TestMeasureAnalyzeMeasuresEveryPickedFileWithItsFingerprint(t *testing.T) {
 	if unavailable.Status != "measured" || unavailable.Report.IntegratedLUFS != nil || unavailable.Report.RMSdBFS != nil {
 		t.Fatalf("silence must be measured as unavailable, not a number: %+v", unavailable.Report)
 	}
-	if failed.Status != "failed" || failed.Report != nil || failed.Fingerprint != nil || !strings.Contains(failed.Error, "WAVE") {
-		t.Fatalf("an MP3 must fail with a named reason: %+v", failed)
+	// An MP3 is read for its container (delivery profiles PRD Phase 6); this one is a tag with nothing after it.
+	if failed.Status != "failed" || failed.Report != nil || failed.Fingerprint != nil || !strings.Contains(failed.Error, "ID3v2 tag") {
+		t.Fatalf("a broken MP3 must fail with a named reason: %+v", failed)
 	}
 	for path, fingerprint := range before {
 		after, err := measure.FingerprintFile(path)
