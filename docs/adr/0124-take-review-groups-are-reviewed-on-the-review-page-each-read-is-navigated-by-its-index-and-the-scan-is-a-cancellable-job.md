@@ -1,9 +1,9 @@
 # 0124. Take-review groups are reviewed on the Review page, each read is navigated by its index, and the scan is a cancellable job
 
-**Status:** Proposed
-**Date:** 2026-09-23
+- **Status:** Proposed
+- **Date:** 2026-09-23
 
-## Context
+## Context and problem
 
 `docs/prds/take-review-pickups-duplicates-take-intelligence.prd.md` Phase 5 shipped only part of its scope, because the
 Review page did not exist yet: a synchronous `TakeReviewScan` binding, a `TakeReviewFindings` read-back, and a
@@ -25,7 +25,22 @@ What remained was to put take review on that surface. Four things had to be sett
 - **When a read may be added as a take.** The PRD's user flow says take creation is for an accepted finding; the Tracks
   panel offered it for any finding.
 
-## Decision
+## Decision drivers
+
+- Two lists of the same findings, one of which cannot record a decision, should not exist side by side.
+- A group's reads each have their own item, take and range, and the finding's `source` names only one of them.
+- Transcribing every take of a chapter track takes minutes; ADR 0015 requires real progress, and the PRD asks for cancel.
+- Take creation is for an accepted finding (the PRD's user flow).
+
+## Considered options
+
+1. Review take-review groups on the Review page, navigate each read by its index, and run the scan as a cancellable job
+2. Keep the status quo: the Tracks page's `TakeReviewPanel`, a synchronous `TakeReviewScan` and `TakeReviewFindings`
+3. Navigate a group through `FindingsGoTo(id)` and `FindingsLoop(id)`
+
+## Decision outcome
+
+**Chosen option: review take-review groups on the Review page, navigate each read by its index, and run the scan as a cancellable job**, because one place then lists and decides every finding, and each read is placed by its own item and take GUIDs.
 
 1. **Take review has no list of its own.** Its findings are read and decided on the Review page through the generic
    bindings, like every other analyzer's. `TakeReviewPanel`, `TakeReviewScan` and `TakeReviewFindings` are removed. A
@@ -57,14 +72,29 @@ What remained was to put take review on that surface. Four things had to be sett
    unchanged; the host does not re-check the review status, since the take is the narrator's own confirmed action and
    the finding id is recorded as its provenance.
 
-## Consequences
+### Consequences
 
-- One place lists and decides every finding; the Tracks page is back to tracks, playback and the REAPER tools.
-- Host API 39 to 40: two bindings added, the scan's three replace the two synchronous ones, wire contracts for the job
+- **Good:** One place lists and decides every finding; the Tracks page is back to tracks, playback and the REAPER tools.
+- **Neutral:** Host API 39 to 40: two bindings added, the scan's three replace the two synchronous ones, wire contracts for the job
   and for each read's navigation, and a golden of the take-review findings as `FindingsList` sends them.
-- The scan's progress is only as fine as the sidecar reports it: one step per read transcribed.
-- The per-read bindings are generic over any finding whose evidence lists `members` with item, take and range, not
+- **Neutral:** The scan's progress is only as fine as the sidecar reports it: one step per read transcribed.
+- **Good:** The per-read bindings are generic over any finding whose evidence lists `members` with item, take and range, not
   only take review's.
-- A `take_review` scan that ends while the dialog is open is also announced by a toast, as a Story Bible rebuild is.
-- `evidence.members` is now read by the host as well as shown; a change to its shape is a wire-contract change
+- **Neutral:** A `take_review` scan that ends while the dialog is open is also announced by a toast, as a Story Bible rebuild is.
+- **Neutral:** `evidence.members` is now read by the host as well as shown; a change to its shape is a wire-contract change
   (`findings-list-take-review.json`, `takeReviewEvidenceSchema`).
+
+### Confirmation
+
+Wire contracts cover the job and each read's navigation, and a golden (`findings-list-take-review.json`) holds the take-review findings as `FindingsList` sends them; the page checks `evidence` against `takeReviewEvidenceSchema` before it shows or acts on the reads.
+
+## Pros and cons of the options
+
+### Keep the status quo
+
+- Bad, because it would mean two lists of the same findings, one of which could not record a decision.
+- Bad, because the Tracks panel offered "Add as take" for any finding, while the PRD's user flow says take creation is for an accepted finding.
+
+### Navigate a group through `FindingsGoTo(id)` and `FindingsLoop(id)`
+
+- Bad, because the finding's `source` names only one read and it has no `time_range`, so `FindingsGoTo(id)` could reach only that read, and `FindingsLoop(id)` none.

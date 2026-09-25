@@ -1,9 +1,9 @@
 # 0158. Windowed diagnostics are one read pass with fixed windows, narrator thresholds and candidate findings
 
-**Status:** Proposed
-**Date:** 2026-09-23
+- **Status:** Proposed
+- **Date:** 2026-09-23
 
-## Context
+## Context and problem
 
 Phase 4 of [the diagnostics PRD](../prds/diagnostics-delivery-and-cleanup-tools.prd.md) asks for shared, tested
 detectors for clipping, level shifts, silence and room tone, in Go beside `measure`, that emit findings. The PRD says
@@ -13,7 +13,23 @@ view), 7 (the report) and 9 (silence cleanup, which reuses the silence map) buil
 Phase 1 is changing `measure.Analyze` and its `Report` at the same time, [ADR 0025](0025-delivery-measurements-in-go-profiles-deferred.md)
 rules out any delivery specification's numbers, and a long pause must never be called a defect by default.
 
-## Decision
+## Decision drivers
+
+- Every threshold is the narrator's (the PRD).
+- ADR 0025 rules out any delivery specification's numbers.
+- A long pause must never be called a defect by default.
+- Phase 1 is changing `measure.Analyze` and its `Report` at the same time.
+- Phases 6, 7 and 9 build on these choices.
+
+## Considered options
+
+1. A separate one-pass `measure.Diagnose` entry point with fixed windows, narrator thresholds with starting values, and candidate findings
+
+No alternatives were recorded when this decision was made.
+
+## Decision outcome
+
+**Chosen option: a separate one-pass `measure.Diagnose` entry point with fixed windows, narrator thresholds with starting values, and candidate findings**, because Phase 1 was changing `Analyze` and `Report` at the same time, every threshold is the narrator's, and a long pause must never be called a defect by default.
 
 1. **A separate entry point.** `measure.Diagnose` / `DiagnoseFile` (`apps/desktop/internal/measure/diagnostics.go`)
    read the WAV once, optionally a `Range`, check a `context` between blocks, and return a `Diagnostics` value. They do
@@ -50,18 +66,22 @@ rules out any delivery specification's numbers, and a long pause must never be c
    change. A file measured on its own has no project, so `time_range` holds source seconds in both its project and
    source fields. A caller that knows where the audio sits in a project re-bases the project fields.
 
-## Consequences
+### Consequences
 
-- Phases 6, 7 and 9 have one detector set to bind, report and reuse, and it is tested on generated fixtures: a clean
+- **Good:** Phases 6, 7 and 9 have one detector set to bind, report and reuse, and it is tested on generated fixtures: a clean
   read, an intentional silence, clipping, a room-tone change, a level shift and unresolved transcript timing. Each
   reported range reproduces its condition when `AnalyzeRange` measures that range again.
-- Phase 1's job and `Report` are untouched, so the two phases merge independently. Running diagnostics as a job with
+- **Good:** Phase 1's job and `Report` are untouched, so the two phases merge independently. Running diagnostics as a job with
   progress is left to the phase that binds it (Phase 6, which added `DiagnosticInput.Progress` beside the ctx hook).
-- The starting thresholds are judgement calls and have not been checked against real chapters. A narrator who finds
+- **Bad:** The starting thresholds are judgement calls and have not been checked against real chapters. A narrator who finds
   them wrong will change them once settings keys carry them, using
   [ADR 0155](0155-settings-gain-a-number-kind-with-a-declared-range-and-delivery-limits-are-the-narrators-own.md)'s
   number kind. Phase 6 (the Diagnostics view, read-only) shows them with every check and on every finding; the keys
   arrive with Phase 9, which brings the analyzer thresholds into the layered settings.
-- The id ignores the audio's content (like `measure.Evaluate`'s). A re-render that moves an event keeps or changes its
+- **Neutral:** The id ignores the audio's content (like `measure.Evaluate`'s). A re-render that moves an event keeps or changes its
   id with its start time, and stale-dismissal handling stays with the fingerprint evidence of Open Question 5.
-- Changing a window, the id or the severity policy needs a new ADR that supersedes this one.
+- **Neutral:** Changing a window, the id or the severity policy needs a new ADR that supersedes this one.
+
+### Confirmation
+
+The detectors are tested on generated fixtures (a clean read, an intentional silence, clipping, a room-tone change, a level shift and unresolved transcript timing), and each reported range reproduces its condition when `AnalyzeRange` measures that range again.

@@ -1,9 +1,10 @@
 # 0110. One Go chapter-to-track matcher, ported from Transcript Compare, with explicit confidence states
 
-**Status:** Proposed
-**Date:** 2026-09-23
+- **Status:** Proposed
+- **Date:** 2026-09-23
+- **Related:** Amended by [ADR-0175](0175-chapter-track-matching-reads-chapter-labels-through-one-shared-pre-pass-and-a-take-or-pickup-track-is-never-confident.md)
 
-## Context
+## Context and problem
 
 `docs/prds/teleprompter-manuscript-integration.prd.md` Phase 8 needs "given a chapter, find its track and where the
 recorded audio ends", and the same answer is wanted by Home's measured duration, line identity, the review
@@ -19,7 +20,21 @@ in numbers. The Python matcher itself does pick silently: several whole-token pr
 title at 0.9, and its fuzzy fallback accepts any ratio from 0.75, so "Chapter 1" against a manuscript with only
 "Chapter 11" matches it at 0.947.
 
-## Decision
+## Decision drivers
+
+- Several consumers want the same chapter-to-track answer (Home's measured duration, line identity, the review dashboard's chapter grouping, teleprompter-engines Phase 11, the diagnostics DAW scan).
+- The PRD settled a Go port of Transcript Compare's `find_chapter_by_track_name`, with shared parity cases and `chapter-track-map.json` as the manual override.
+- The matcher must never silently pick between near-equal candidates.
+- The Python matcher itself picks silently: "Chapter 1" against a manuscript with only "Chapter 11" matches at 0.947.
+
+## Considered options
+
+1. A faithful Go port in one package, with explicit confidence states
+2. Keep the status quo: the exact-title placeholder in `apps/desktop/internal/evidence/mapping.go`
+
+## Decision outcome
+
+**Chosen option: a faithful Go port in one package, with explicit confidence states**, because the PRD settled on a Go port with shared parity cases, and explicit states keep near-equal candidates from being picked silently.
 
 1. **A faithful port, one package.** `apps/desktop/internal/chaptermatch` ports `tokenize` (quote normalization,
    `TOKEN_RE`, the homophone canon, the possessive fold), `merge_number_words`, `normalized_tokens`,
@@ -51,15 +66,19 @@ title at 0.9, and its fuzzy fallback accepts any ratio from 0.75, so "Chapter 1"
    or plays past its section's end. It is read from the saved `.rpp`, so the binding returns the file's save time for
    an "as of last save" label.
 
-## Consequences
+### Consequences
 
-- Transcript Compare and the app agree on what a track name means; a change to one matcher that the other does not
+- **Good:** Transcript Compare and the app agree on what a track name means; a change to one matcher that the other does not
   follow fails a parity test, and the homophone list cannot drift silently.
-- Consumers get one answer shape (`chaptermatch.Result`) and one binding (`ChapterTrackMatch`, host API 31) instead of
+- **Good:** Consumers get one answer shape (`chaptermatch.Result`) and one binding (`ChapterTrackMatch`, host API 31) instead of
   each scoring names.
-- A Python-confident match can be `uncertain` here (the 0.9 prefix pick and any fuzzy score): the narrator confirms
+- **Neutral:** A Python-confident match can be `uncertain` here (the 0.9 prefix pick and any fuzzy score): the narrator confirms
   it once and the confirmed link takes over.
-- Roman numerals are not merged ("Chapter I" is the token `i`), as in Transcript Compare; whole-token prefix matching
+- **Neutral:** Roman numerals are not merged ("Chapter I" is the token `i`), as in Transcript Compare; whole-token prefix matching
   still pairs "Chapter I" with "Chapter I: Down the Rabbit-Hole" and not with "Chapter II".
-- Stretch markers, looped sources and unsaved recording make the source time inexact; the result says so rather than
+- **Neutral:** Stretch markers, looped sources and unsaved recording make the source time inexact; the result says so rather than
   guessing, and live REAPER state (PRD Phase 11) is the later refinement.
+
+### Confirmation
+
+`tests/fixtures/chapter-track-match/parity-cases.json` holds inputs and the Python matcher's own answers, read by both `chaptermatch` and `test_chapter_track_parity.py`; a Go test and a Python test fail when the embedded homophone copy drifts.

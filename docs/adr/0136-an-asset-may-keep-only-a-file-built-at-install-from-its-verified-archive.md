@@ -1,10 +1,10 @@
 # 0136. An asset may keep only a file built at install from its verified archive
 
-**Status:** Proposed
-**Date:** 2026-09-23
-**Supersedes:** (none; extends ADR-0080, which unpacks an archive at install, and ADR-0078, whose manifest the built file joins)
+- **Status:** Proposed
+- **Date:** 2026-09-23
+- **Related:** Extends [ADR-0080](0080-the-story-bible-language-model-is-a-catalog-asset-unpacked-at-install-and-the-build-asks-before-it-downloads.md), which unpacks an archive at install, and [ADR-0078](0078-asset-state-comes-from-the-manifest-an-asset-is-read-in-full-once-per-session-and-a-failed-download-resumes.md), whose manifest the built file joins; supersedes none.
 
-## Context
+## Context and problem
 
 [ADR 0097](0097-the-manuscript-reader-word-lookup-uses-the-open-english-wordnet-as-a-downloadable-asset.md) chose the Open English
 WordNet as the manuscript reader's offline dictionary, read from Go with no server. Its JSON release (`english-wordnet-2025-json.zip`,
@@ -23,7 +23,22 @@ Three shapes were weighed: keep the raw release and build an in-memory index at 
 large resident memory, 72 MB on disk); build an index beside the release in a place of its own outside the lifecycle (a second
 provenance and repair story for the same asset); or let the install itself build the index from the verified bytes and keep only it.
 
-## Decision
+## Decision drivers
+
+- The PRD's success signal is a lookup p95 under 250 ms.
+- Reading the release as it is means parsing all of it (about 300 MB of memory and one to two seconds) at the first lookup of every session, and keeping 72 MB on disk.
+- The asset lifecycle had no way to keep anything but the catalog's files or what an archive unpacked to.
+- One provenance and repair story per asset.
+
+## Considered options
+
+1. Let the install build the index from the verified bytes and keep only it
+2. Keep the raw release and build an in-memory index at the first lookup of each session
+3. Build an index beside the release in a place of its own outside the lifecycle
+
+## Decision outcome
+
+**Chosen option: let the install build the index from the verified bytes and keep only it**, because it avoids both the raw release's slow first lookup, resident memory and 72 MB on disk, and a second provenance and repair story for the same asset.
 
 `assets.Options` gains a `Derive` step. It runs in the staging folder after an archive has been checked and unpacked, and before
 anything is recorded: it may build what the install keeps from what was unpacked and remove the rest, and it returns the files kept,
@@ -39,18 +54,32 @@ closes it. Only single-word lemmas are keys (phrases are out of scope, ADR 0097)
 with a regular ending that is not a key is tried against WordNet's own detachment rules. The catalog carries the index's measured
 size (`installedSize`) so the first-use dialog states what the dictionary takes on disk, not the download or the dataset.
 
-## Consequences
+### Consequences
 
-- On the 2025 release the index is 17,174,403 bytes (a quarter of the dataset), built once in about a second; 130 lookups had a p95
+- **Good:** On the 2025 release the index is 17,174,403 bytes (a quarter of the dataset), built once in about a second; 130 lookups had a p95
   of about 1.5 ms. Nothing stays open or resident between lookups, so Settings > Local assets can remove or repair the dictionary at
   any time (Windows refuses to delete an open file).
-- A change to the index format or the builder changes the bytes an existing install holds: the next Verify still passes (the manifest
+- **Neutral:** A change to the index format or the builder changes the bytes an existing install holds: the next Verify still passes (the manifest
   hashes are the ones the old builder wrote), so a format change must bump the catalog entry's `version`, which installs it afresh
   in a new folder. The bytes of the index are deterministic for one release and one builder (a test builds twice and compares).
-- `installedSize` is measured, not computed: a new edition or a builder change must re-measure it, and the gated
+- **Neutral:** `installedSize` is measured, not computed: a new edition or a builder change must re-measure it, and the gated
   `TestThePinnedArchiveInstallsToTheCatalogsMeasuredSize` (run with `NARRATION_OEWN_ZIP`) fails when it drifts.
-- The dataset is parsed inside the desktop process rather than a sidecar. It is parsed by `encoding/json` only after its hash
+- **Neutral:** The dataset is parsed inside the desktop process rather than a sidecar. It is parsed by `encoding/json` only after its hash
   matched, and every later read of the index is bounded against the file, so a damaged or hostile index is an error, not a crash or a
   large allocation (threat model row 1e).
-- Any later asset that is cheaper to use in another shape (a pronunciation table, a compiled grammar) can use the same step without a
+- **Good:** Any later asset that is cheaper to use in another shape (a pronunciation table, a compiled grammar) can use the same step without a
   new lifecycle.
+
+### Confirmation
+
+A test builds the index twice and compares the bytes, and the gated `TestThePinnedArchiveInstallsToTheCatalogsMeasuredSize` (run with `NARRATION_OEWN_ZIP`) fails when `installedSize` drifts.
+
+## Pros and cons of the options
+
+### Keep the raw release and build an in-memory index at the first lookup of each session
+
+- Bad, because of the slow first lookup, the large resident memory and the 72 MB on disk.
+
+### Build an index beside the release in a place of its own outside the lifecycle
+
+- Bad, because it is a second provenance and repair story for the same asset.

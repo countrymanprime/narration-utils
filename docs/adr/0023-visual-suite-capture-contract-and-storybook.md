@@ -1,9 +1,9 @@
 # 0023. The visual suite is a validated capture contract, and Storybook is the component layer
 
-- Status: accepted
-- Date: 2026-09-19
+- **Status:** Accepted
+- **Date:** 2026-09-19
 
-## Context
+## Context and problem
 
 The Playwright visual suite (ADR 0011) only ran when someone remembered to, and when it did run it was
 inconsistent: no CI job, a single test per state looping four viewports with `retries: 1`, `waitForTimeout`
@@ -12,7 +12,24 @@ Measured on identical code, 9 of 244 screenshots differed between two runs, and 
 identically without anyone noticing (ADR 0011 recorded three by accident). Nothing exercised the
 `components/primitives/` library in isolation.
 
-## Decision
+## Decision drivers
+
+- The visual suite only ran when someone remembered to, had no CI job, and its output was checked only by eye.
+- Runs were inconsistent: 9 of 244 screenshots differed between two runs on identical code, and identical states went unnoticed.
+- Nothing exercised the `components/primitives/` library in isolation.
+- The target repos for the shared kit vary in package manager, and there is no private registry.
+
+## Considered options
+
+1. The suite as a gate on what it can prove, Storybook as the component layer, and a shared kit of checksummed templates
+2. Keep the status quo: a suite run by hand and checked by eye
+3. Pixel-diff baselines
+4. `@storybook/addon-vitest`
+5. Ship the kit's logic as an npm package
+
+## Decision outcome
+
+**Chosen option: the suite as a gate on what it can prove, Storybook as the component layer, and a shared kit of checksummed templates**, because the suite only ran when someone remembered to and nobody checked its output except by eye, and nothing exercised the primitives in isolation.
 
 1. **The suite becomes a gate on what it can prove.** Each `{page, state, viewport}` is its own test with no
    retries. A capture fails on an uncaught page error, a failed request, sideways overflow, a blank image, or
@@ -33,7 +50,7 @@ identically without anyone noticing (ADR 0011 recorded three by accident). Nothi
    if they drift. Logic ships as copied, checksummed templates refreshed by `ui-atlas sync` rather than an npm
    package, because the target repos vary in package manager and there is no private registry.
 
-## Consequences
+### Consequences
 
 Turning the checks on immediately found real defects: `ProjectPicker`'s card overflowed a 390px viewport by
 63px, `manuscript/sticky-header-scrolled` and `settings/reset-override` never showed what they claimed, and two
@@ -48,3 +65,22 @@ The primitives atlas (`pnpm --dir shared/ui atlas`: every story x light/dark x 1
 Running both suites against `main` after its React 19 / Tailwind 4 / router 7 upgrade found more: the Manuscript deep-link effect looped ("Maximum update depth exceeded") because it re-fired for a `#p...` hash the router had not yet cleared, fixed by consuming each hash once; the capture driver's mobile-drawer helper opened the nav drawer over a page that was merely still rendering; and the selection-popup and add-note states had silently stopped selecting anything after a markup change, which the duplicate-screenshot check caught. The active nav item (accent text on an accent tint, 4.03:1) and `Highlight` (category colours on their own tint, 3.2-3.8:1) join the recorded contrast debt. A page-wide fake clock is not used: it stops React 19 transitions, so only the toast state freezes timers.
 
 Generated documentation for the component library lives in `docs/ui/` (one page per primitive with its stories, an image, and its consumers, plus `inventory.json`), written by `ui-atlas docs` from the Storybook build.
+
+### Confirmation
+
+Point 1: CI runs the suite as the `ui-visual` job, each capture fails on the listed checks, and the count of `undriven` catalog rows cannot grow. Point 3: a test fails if the kit's vendored files drift from `shared/ui`. The primitives atlas (`pnpm --dir shared/ui atlas`) runs `play()`, axe and overflow checks on every story, and contrast debt is ratcheted in `shared/ui/tests/atlas/a11y-debt.ts`.
+
+## Pros and cons of the options
+
+### Pixel-diff baselines
+
+- Good, because a pixel-diff gate could say whether a layout looks right, which this suite cannot.
+- Bad, because some captures still differ by sub-pixel anti-aliasing between runs on Windows; baselines would have to come from a pinned Linux container, not a developer machine.
+
+### `@storybook/addon-vitest`
+
+- Bad, because it needs Vitest 3+, and this repo is on 2.
+
+### Ship the kit's logic as an npm package
+
+- Bad, because the target repos vary in package manager and there is no private registry.

@@ -1,9 +1,9 @@
 # 0104. Seek reaches a running teleprompter session through a tailed control file
 
-**Status:** Accepted
-**Date:** 2026-09-22
+- **Status:** Accepted
+- **Date:** 2026-09-22
 
-## Context
+## Context and problem
 
 `docs/prds/teleprompter-manuscript-integration.prd.md` Phase 3 ("Seek channel") needs a way for the host to move a
 running teleprompter session's tracker to a word the narrator chose (a click on a word, "Start here" / "Go back to
@@ -20,7 +20,21 @@ position in the same index space as `script_words(text)` (the whitespace-split s
 `nextCursor` already follows a one-word-back "restart" jump). A seek is the same kind of discontinuity, triggered by
 the narrator instead of by what the tracker heard.
 
-## Decision
+## Decision drivers
+
+- The host must move a running session's tracker to a word the narrator chose, and start a session already at a word.
+- ADR 0022: no loopback server, port or polling endpoint; Wails events for sidecar-to-host, and a sentinel file for host-to-sidecar.
+- The PRD's Decisions Log already chose a sentinel file the sidecar tails, the same pattern as `--stop-file`.
+- A bad command must never stop the tracker following what the narrator actually said.
+
+## Considered options
+
+1. A control file the sidecar tails, the same pattern as `--stop-file`
+2. A server, port or socket
+
+## Decision outcome
+
+**Chosen option: a control file the sidecar tails, the same pattern as `--stop-file`**, because the PRD's Decisions Log already chose it, and it adds no server, port or new polling loop, consistent with ADR 0022.
 
 1. `sidecars/manuscript-teleprompter/core/control_channel.py` adds `ControlChannel`, which tails a plain text file
    (`--control-file PATH`) for whole lines shaped `{"cmd": "seek", "word": N}`, remembering a byte offset so each
@@ -50,20 +64,30 @@ the narrator instead of by what the tracker heard.
    timeline (seek *UI* - a click affordance and the "Start here" / "Go back to here" menu - is Phase 4, not this
    phase).
 
-## Consequences
+### Consequences
 
-- No server, port or new polling loop: seek adds one more sentinel file tailed on the same chunk cadence
+- **Good:** No server, port or new polling loop: seek adds one more sentinel file tailed on the same chunk cadence
   `--stop-file` already uses, consistent with ADR 0022.
-- A seek cannot arrive faster than about one capture chunk (`CHUNK_SECONDS`, 0.32s by default) after it is written;
+- **Bad:** A seek cannot arrive faster than about one capture chunk (`CHUNK_SECONDS`, 0.32s by default) after it is written;
   acceptable for a narrator's click, not for anything higher-frequency.
-- Because a seek is reported as `jump: "restart"`, any UI logic that treats a restart jump specially (for example a
+- **Bad:** Because a seek is reported as `jump: "restart"`, any UI logic that treats a restart jump specially (for example a
   visual "jumped back" cue) also fires for a forward seek. Phase 4 (seek UI) should account for this rather than
   assume "restart" always means the narrator went backward.
-- A malformed or unrecognized control line is silently ignored rather than crashing the session or the poll loop,
+- **Neutral:** A malformed or unrecognized control line is silently ignored rather than crashing the session or the poll loop,
   matching the sidecar's existing tolerance for stray/invalid input.
-- Future phases that need the host to move the tracker (resume, in `docs/prds/teleprompter-manuscript-integration.prd.md`
+- **Neutral:** Future phases that need the host to move the tracker (resume, in `docs/prds/teleprompter-manuscript-integration.prd.md`
   Phases 9-10; punch, Phase 12) reuse this same control file and `reset_to`, rather than adding a second channel or
   sentinel file.
-- A future change that needs a *different* kind of host-to-sidecar command (not a seek) extends the same
+- **Neutral:** A future change that needs a *different* kind of host-to-sidecar command (not a seek) extends the same
   `{"cmd": ...}` line shape and `ControlChannel`/`live_asr.py` dispatch rather than inventing a new file; a change
   that needs a different transport entirely (a second sentinel file, a socket) supersedes this ADR.
+
+### Confirmation
+
+Not recorded when this decision was made.
+
+## Pros and cons of the options
+
+### A server, port or socket
+
+- Bad, because ADR 0022 settled that the host talks to this sidecar with no loopback server, port or polling endpoint.

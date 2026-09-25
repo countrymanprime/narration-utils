@@ -4,20 +4,26 @@
 
 This folder is the fix for a recurring problem: agentic refactoring sessions have silently reverted deliberate decisions (styling, naming, behavior) because too much code and too many commits pile up between when a decision was made and when a later agent "cleans up" without knowing it was deliberate. An ADR is the durable record that a future agent — or person — checks *before* changing something, not after.
 
-## Format: lightweight Nygard-style ADRs
+## Format: MADR-based ADRs
 
-We use a lightweight, Nygard-style format: Status, Date, Context, Decision, Consequences. It is deliberately not [MADR](https://adr.github.io/madr/) (no YAML front matter, no Decision Drivers or Considered Options sections): for one maintainer the extra sections are overhead, so the alternatives that mattered are named in Context. Each ADR is one file: `NNNN-short-title.md`, numbered sequentially starting at `0001`. Use [`template.md`](template.md) for the section structure.
+We use a [MADR](https://adr.github.io/madr/)-based format ([ADR 0247](0247-adrs-follow-the-madr-template-and-the-architecture-decision-records-skill.md)):
+- a metadata list: Status, Date, and Deciders and Related when recorded;
+- Context and problem, Decision drivers, Considered options;
+- Decision outcome, with its Consequences (Good, Bad, Neutral) and Confirmation;
+- optionally, Pros and cons of the options, and More information.
+
+There is no YAML front matter. Each ADR is one file, `NNNN-short-title.md`, numbered sequentially from `0001`. Use [`template.md`](template.md) for the section structure. The log was converted to this format once, on 2026-09-25. Sections the original records did not capture say "Not recorded when this decision was made."
 
 ## Rules
 
 1. **Immutable once Accepted.** Never edit an accepted ADR's Decision or Consequences to reflect a change of mind. If a decision changes, write a **new** ADR that supersedes the old one.
-2. **Superseding, not deleting.** The old ADR's `Status` line becomes `Superseded by ADR-NNNN`, and the new ADR's front matter links back (`Supersedes ADR-NNNN`). The old file stays — it's still useful history.
+2. **Superseding, not deleting.** The old ADR's `Status` line becomes `Superseded by [ADR-NNNN](NNNN-title.md)` and its `Date` becomes the day that happened. The new ADR's `Related` line links back (`Supersedes [ADR-NNNN](NNNN-title.md)`). A partial supersession or an amendment goes on the `Related` line of both records; the status line stays a single value. A record that no longer applies, with no replacement, becomes `Deprecated`, with a one-line reason. The old file stays — it's still useful history.
 3. **One decision per ADR.** Don't bundle unrelated decisions; a future agent needs to be able to supersede one without touching the others.
 4. **Concrete, not aspirational.** An ADR records a decision that was actually made and applied to the code, with a pointer to where. It is not a proposal — proposals for future work belong in `docs/prds/` (see its [README](../prds/README.md) for the format).
 
 ## How this is enforced
 
-The `design-spec-guard` skill (`.claude/skills/design-spec-guard/`) reads this folder plus [`docs/design/design-system.md`](../design/design-system.md) before/during a refactor and flags any change that contradicts a recorded decision, unless that exact change is listed in an approved plan. The `adr-author` skill (`.claude/skills/adr-author/`) scaffolds new ADRs and handles the supersede bookkeeping so numbering and cross-links stay consistent.
+The `design-spec-guard` skill (`.claude/skills/design-spec-guard/`) reads this folder plus [`docs/design/design-system.md`](../design/design-system.md) before/during a refactor and flags any change that contradicts a recorded decision, unless that exact change is listed in an approved plan. The `architecture-decision-records` skill (`.claude/skills/architecture-decision-records/`, tracked in the repo) writes new ADRs from `template.md` and handles the supersede and deprecate bookkeeping, so numbering, cross-links and this index stay consistent.
 
 ## Index
 
@@ -206,3 +212,4 @@ The `design-spec-guard` skill (`.claude/skills/design-spec-guard/`) reads this f
 | [0243](0243-the-ui-atlas-kit-is-dissolved-into-apps-ui-which-owns-its-visual-suite-and-atlas-outright.md) | The UI atlas kit is dissolved into apps/ui, which owns its visual suite and atlas outright | Accepted (amends ADR-0023) |
 | [0244](0244-the-playwright-suites-are-sharded-in-ci-the-quick-checks-share-a-runner-per-os-and-one-check-sums-up-the-run.md) | The Playwright suites are sharded in CI, the quick checks share a runner per OS, and one check sums up the run | Accepted |
 | [0245](0245-chapter-and-credits-regions-are-planned-by-the-host-from-confirmed-links-and-the-saved-project.md) | Chapter and credits regions are planned by the host from confirmed links and the saved project | Proposed |
+| [0247](0247-adrs-follow-the-madr-template-and-the-architecture-decision-records-skill.md) | ADRs follow the MADR template and the architecture-decision-records skill | Accepted |

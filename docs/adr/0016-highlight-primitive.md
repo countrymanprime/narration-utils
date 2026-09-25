@@ -1,14 +1,26 @@
 # 0016. One `Highlight` primitive for entity, note and review highlights
 
-**Status:** Accepted (amended by [ADR 0063](0063-the-proofing-diff-marks-its-own-words-and-adr-0016-covers-entry-highlights.md), which reads "the only way to render highlighted text" as covering entry highlights, so the proofing diff's own word marks are outside it; and by [ADR 0118](0118-read-aloud-flags-are-highlight-kinds-with-an-inline-hint-and-skips-and-restarts-show-by-default.md), proposed, which adds the read-aloud flag kinds; the rest stands)
-**Date:** 2026-09-18
-**Amends:** ADR-0009 (replaces the `HL_STYLE`/`hlClassName` lookups it lists)
+- **Status:** Accepted
+- **Date:** 2026-09-18
+- **Related:** Amends [ADR-0009](0009-complete-tailwind-migration.md) (replaces the `HL_STYLE`/`hlClassName` lookups it lists). Amended by [ADR-0063](0063-the-proofing-diff-marks-its-own-words-and-adr-0016-covers-entry-highlights.md), which reads "the only way to render highlighted text" as covering entry highlights, so the proofing diff's own word marks are outside it; and by [ADR-0118](0118-read-aloud-flags-are-highlight-kinds-with-an-inline-hint-and-skips-and-restarts-show-by-default.md), proposed, which adds the read-aloud flag kinds; the rest stands.
 
-## Context
+## Context and problem
 
 Highlighted text was implemented three ways: the Manuscript drew notes as a bare `border-b-2` underline (so only a thin line, and visibly offset), entity names used `HL_STYLE` plus an inset shadow, and Story Bible evidence excerpts used the same lookup keyed by the raw category. `HL_STYLE` had no entry for `"Needs Review"` (only `"Review"`), so review entries fell through to the browser's default yellow `<mark>` — a different yellow from the review color. The user asked for one consistent treatment matching each entry's type color, filling the whole line height.
 
-## Decision
+## Decision drivers
+
+- The user asked for one consistent treatment matching each entry's type color, filling the whole line height.
+- An unfamiliar category should never fall through to the browser's default yellow `<mark>`.
+
+## Considered options
+
+1. One `Highlight` primitive with a single category-to-kind mapping
+2. Keep the status quo: three separate implementations (a bare underline for notes, `HL_STYLE` for entities and evidence excerpts)
+
+## Decision outcome
+
+**Chosen option: one `Highlight` primitive with a single category-to-kind mapping**, because the user asked for one consistent treatment matching each entry's type color instead of three separate implementations.
 
 `shared/ui/src/components/primitives/Highlight.tsx` is the only way to render highlighted text.
 
@@ -20,8 +32,12 @@ Highlighted text was implemented three ways: the Manuscript drew notes as a bare
 
 Note anchors are also corrected: offsets are measured from the paragraph's prose element (`data-paragraph-text`), not the row that includes the line-number gutter, whose digits previously shifted every underline to the right. Anchors saved with the old offsets are re-located by their stored `anchorText` at render time (`resolveNoteAnchor`), falling back to the stored range if the text cannot be found.
 
-## Consequences
+### Consequences
 
-- A new highlight color or kind is one edit in `Highlight.tsx`.
-- Tests select `[data-highlight="…"]`; the legacy `.note-overlay` / `hl-*` marker classes no longer exist.
-- Per-size `--hl-pad-y` values are visual constants; retune them if reader line-heights change.
+- **Good:** A new highlight color or kind is one edit in `Highlight.tsx`.
+- **Neutral:** Tests select `[data-highlight="…"]`; the legacy `.note-overlay` / `hl-*` marker classes no longer exist.
+- **Neutral:** Per-size `--hl-pad-y` values are visual constants; retune them if reader line-heights change.
+
+### Confirmation
+
+Not recorded when this decision was made.

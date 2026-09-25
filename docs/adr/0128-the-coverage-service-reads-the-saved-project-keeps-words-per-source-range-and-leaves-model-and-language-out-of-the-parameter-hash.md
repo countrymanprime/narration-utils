@@ -1,9 +1,9 @@
 # 0128. The coverage service reads the saved project, keeps words per source range, and leaves model and language out of the parameter hash
 
-**Status:** Proposed
-**Date:** 2026-09-23
+- **Status:** Proposed
+- **Date:** 2026-09-23
 
-## Context
+## Context and problem
 
 Phase 4 of `docs/prds/recording-coverage-analysis.prd.md` is the Go side of recording coverage: `apps/desktop/internal/coverage`. It sits between the sidecar mode of [ADR 0127](0127-the-coverage-sidecar-mode-reads-a-json-manifest-keeps-one-words-file-per-item-and-writes-tagged-json-lines.md) and the analysis evidence platform of [ADR 0100](0100-analysis-evidence-is-two-hash-keys-one-ledger-record-per-run-and-a-narrator-confirmed-track-map.md) (fingerprints, one ledger record per run, the per-source cache, the confirmed track map). The PRD settles the inputs: the saved `.rpp` only, never live REAPER state (Q6); the active take (Q5); many items on one track, concatenated in position order, and a multi-track chapter unknown (Q9); muted items listed and skipped (Q10); and model and language must not make a record stale while the alignment parameters must (Q13). Four things were left to this phase:
 
@@ -12,7 +12,24 @@ Phase 4 of `docs/prds/recording-coverage-analysis.prd.md` is the Go side of reco
 - Where a result's report is kept. A ledger record holds counts (`map[string]int`) and no text.
 - What a chapter that cannot be measured does: an unmapped chapter, a missing source file, an item that is not audio.
 
-## Decision
+## Decision drivers
+
+- The saved `.rpp` only, never live REAPER state (Q6), and the active take (Q5).
+- Many items on one track, concatenated in position order; a multi-track chapter unknown (Q9); muted items listed and skipped (Q10).
+- Model and language must not make a record stale, while the alignment parameters must (Q13).
+- EL's `EvaluateFingerprints` marks a record stale on any difference, so the parameter hash decides what "current" means.
+- A narrator often splits one long recording into many items, and each item plays a different range of the same file.
+- A ledger record holds counts and no text.
+
+## Considered options
+
+1. A parameter hash without model and language, words cached per source range, and stored results beside the ledger
+
+No alternatives were recorded when this decision was made.
+
+## Decision outcome
+
+**Chosen option: a parameter hash without model and language, words cached per source range, and stored results beside the ledger**, because a record made with another model then stays current, as Q13 asks, while a changed alignment parameter, equivalence or hint makes it stale.
 
 - **Two hashes.** The record's parameter hash covers the alignment parameters (`max_misread_run`, `min_anchor_run`) and the project inputs that change which words count or how they were heard: the hash of `TranscriptCompare/equivalences.csv`, the hash of the vocabulary hints (Whisper hotwords), the words format version and the voice activity filter. It leaves out the Whisper model and the language. The words cache key does include the model, the language and the hints hash. So a record made with another model stays current and is labeled with its model, as Q13 asks, and the narrator's next check with a new model transcribes again instead of reusing the old model's words. A changed equivalence or hint makes the record stale (`params_changed`).
 - **Words per source range.** A cache entry, one per source file, holds a list of words files, the sidecar's own JSON, each for a range of the source. Before a run, the host copies into `--words-dir` the narrowest cached words file that covers each item's played range. After every run, including a cancel or a failure, it stores each words file the run left, unless a cached one already covers that range, and drops the cached ones the new file covers. A source keeps at most 256 ranges, and the oldest go first. A words file is named `w-<hash>.json` from the source identity and the played range, so two items that play the same range share one file and one transcription. A narrowing trim or a move reuses the cached words; a widening trim transcribes that item again.
@@ -21,10 +38,14 @@ Phase 4 of `docs/prds/recording-coverage-analysis.prd.md` is the Go side of reco
 - **Paths from the saved project only.** The `.rpp` is the Tracks page's selection and must sit directly in the project folder. The manifest, words directory, results and progress files are in a per-run folder under `narration-utils/analysis/coverage/runs/`, which is removed when the run ends (threat-model row 4e).
 - **One job, real progress.** One run at a time. The service follows the sidecar's progress file, never lets the percent go back (the sidecar's `CANCELLED` line reports 0), and ignores and logs a malformed line. Cancel writes the sidecar's `.cancel` file, and a project switch waits while a check runs. The service is built for each project in `app.go`, and nothing binds it yet (Phase 5).
 
-## Consequences
+### Consequences
 
-- Changing a threshold never touches a record. Changing an alignment parameter, an equivalence or a hint makes the result stale, and the next check re-aligns from cached words without transcribing. Changing the model does neither until the narrator checks again.
-- A one-item edit re-transcribes only that item, and an unchanged chapter re-transcribes nothing. Both are pinned by service tests with a fake sidecar that counts transcriptions. A test that runs the real sidecar, skipped where the checkout has no Python environment, holds the host's manifest and words files to what `coverage_mode.py` reads.
-- The report lives in two places, the ledger's counts and the stored result. The stored result is the one the UI will read (Phase 5), and the ledger stays a record of runs, as ADR 0100 intends.
-- Stored results are not pruned yet. Each is a few kilobytes, and one is written per complete run. Pruning belongs with the ledger's `Retain` once something calls it.
-- An item whose audio is gone blocks the whole chapter's check. Coverage cannot tell unread text from unheard audio, so this is the safe direction. The narrator sees the reason and can mute or remove the item.
+- **Good:** Changing a threshold never touches a record. Changing an alignment parameter, an equivalence or a hint makes the result stale, and the next check re-aligns from cached words without transcribing. Changing the model does neither until the narrator checks again.
+- **Good:** A one-item edit re-transcribes only that item, and an unchanged chapter re-transcribes nothing. Both are pinned by service tests with a fake sidecar that counts transcriptions. A test that runs the real sidecar, skipped where the checkout has no Python environment, holds the host's manifest and words files to what `coverage_mode.py` reads.
+- **Neutral:** The report lives in two places, the ledger's counts and the stored result. The stored result is the one the UI will read (Phase 5), and the ledger stays a record of runs, as ADR 0100 intends.
+- **Bad:** Stored results are not pruned yet. Each is a few kilobytes, and one is written per complete run. Pruning belongs with the ledger's `Retain` once something calls it.
+- **Neutral:** An item whose audio is gone blocks the whole chapter's check. Coverage cannot tell unread text from unheard audio, so this is the safe direction. The narrator sees the reason and can mute or remove the item.
+
+### Confirmation
+
+Service tests with a fake sidecar that counts transcriptions pin that a one-item edit re-transcribes only that item and an unchanged chapter re-transcribes nothing. A test that runs the real sidecar, skipped where the checkout has no Python environment, holds the host's manifest and words files to what `coverage_mode.py` reads.

@@ -1,9 +1,9 @@
 # 0120. Findings are read and decided through four generic bindings, and a decision carries the evidence version it was made against
 
-**Status:** Proposed
-**Date:** 2026-09-23
+- **Status:** Proposed
+- **Date:** 2026-09-23
 
-## Context
+## Context and problem
 
 `docs/prds/review-dashboard-and-findings-adoption.prd.md` Phase 4 gives the UI a way to read and decide the findings
 that Transcript Compare, the Story Bible and take review already write into the project's findings store
@@ -22,7 +22,23 @@ Three questions were still open when the bindings were written:
 - **How the query crosses the boundary.** Every other string binding takes positional arguments; a filter with
   eleven optional fields does not fit that shape, and the teleprompter phase will want to add filters.
 
-## Decision
+## Decision drivers
+
+- Filtering and sorting run in Go over `findings.Query` (Q9), and the decision history is append-only with an `evidence_version` beside each id (Q2, Q5).
+- More analyzers are coming (live teleprompter sessions, the character and diagnostics PRDs).
+- A decision must never be recorded against evidence the narrator never saw.
+- A filter with eleven optional fields does not fit positional arguments, and more filters are coming.
+
+## Considered options
+
+1. Four generic bindings, with a decision carrying the evidence version it was made against
+2. A binding per analyzer
+3. The host filling in the evidence version itself (`FindingsReview(id, status, note)`)
+4. Positional query arguments
+
+## Decision outcome
+
+**Chosen option: four generic bindings, with a decision carrying the evidence version it was made against**, because a new analyzer that saves into the store then appears on the Review page with no binding, schema or host API change, and a decision is never applied to evidence the narrator did not see.
 
 1. **Four generic bindings serve every analyzer** (`apps/desktop/bindings_findings.go`): `FindingsList(query)`,
    `FindingsGet(id)`, `FindingsReview(id, evidenceVersion, status, note)` and `FindingsSummary()`. They read the
@@ -53,15 +69,33 @@ Three questions were still open when the bindings were written:
    (`apps/ui/src/api/schemas/findings.ts`) keeps `category` and `analyzer` open strings, so a newer host's category
    still loads, and types `evidence` as an opaque record, since each analyzer documents its own keys.
 
-## Consequences
+### Consequences
 
-- The teleprompter's live flags, character continuity and diagnostics findings need only save into the store to be
+- **Good:** The teleprompter's live flags, character continuity and diagnostics findings need only save into the store to be
   listed, filtered, decided and counted.
-- The browser mock (`apps/ui/src/api/findingsMock.ts`) repeats the host's filter and sort rules so the Review page can
+- **Neutral:** The browser mock (`apps/ui/src/api/findingsMock.ts`) repeats the host's filter and sort rules so the Review page can
   be built without a host; the host's tests (`internal/findings/query_test.go`) are the ones that define them, and a
   drift shows up as a mock that orders differently from the golden payloads.
-- A narrator who decides a finding after its analyzer re-ran gets an error and must look again; the Review page
+- **Bad:** A narrator who decides a finding after its analyzer re-ran gets an error and must look again; the Review page
   (Phase 5) has to reload the finding when that happens.
-- Every call still reads every scope file; paging bounds what crosses the boundary, not what is read. If real books
+- **Neutral:** Every call still reads every scope file; paging bounds what crosses the boundary, not what is read. If real books
   make that slow, an index belongs behind `Store.Page` without changing the bindings.
-- `hostAPIVersion` went from 36 to 37 for the four new bindings.
+- **Neutral:** `hostAPIVersion` went from 36 to 37 for the four new bindings.
+
+### Confirmation
+
+The host's tests (`internal/findings/query_test.go`) define the filter and sort rules; the browser mock repeats them, and a drift shows up as a mock that orders differently from the golden payloads.
+
+## Pros and cons of the options
+
+### A binding per analyzer
+
+- Bad, because each one would mean a host API bump, a schema and a mock.
+
+### The host filling in the evidence version
+
+- Bad, because a re-run between the page showing a finding and the narrator clicking would record the decision against evidence the narrator never saw.
+
+### Positional query arguments
+
+- Bad, because a filter with eleven optional fields does not fit that shape.

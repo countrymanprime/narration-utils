@@ -1,9 +1,9 @@
 # 0191. A chapter's name is "Title — Subtitle" in source casing, through one formatter and one primitive
 
-**Status:** Accepted
-**Date:** 2026-09-24
+- **Status:** Accepted
+- **Date:** 2026-09-24
 
-## Context
+## Context and problem
 
 [Chapter Title Display Consistency](../prds/chapter-title-display-consistency.prd.md): the owner reported the same
 chapter name drawn at least five different ways across the app — `Title: Subtitle`, `TITLE SUBTITLE` in CSS capitals
@@ -11,7 +11,20 @@ with no separator, `Title — Subtitle` in three different styles, a stacked tit
 and the title alone with the subtitle silently dropped. About 30 call sites built the name inline, each with its own
 separator, casing and font choices; nothing recorded a rule.
 
-## Decision
+## Decision drivers
+
+- The owner reported the same chapter name drawn at least five different ways across the app.
+- About 30 call sites built the name inline, each with its own separator, casing and font choices, and nothing recorded a rule.
+- A visual rule is checked in the component atlas (`design-spec-guard`).
+
+## Considered options
+
+1. One rule, "Title — Subtitle" in source casing, through one formatter and one primitive
+2. Keep the status quo: each call site builds the name inline with its own separator, casing and fonts
+
+## Decision outcome
+
+**Chosen option: one rule, "Title — Subtitle" in source casing, through one formatter and one primitive**, because the same chapter name was drawn at least five different ways across about 30 call sites, with no recorded rule.
 
 - **One separator, one casing rule, one set of styles:** a chapter's name is `Title — Subtitle` (a plain space, the
   em dash U+2014, a plain space), in the source's own casing — never CSS `uppercase`, never italic, never monospace.
@@ -45,16 +58,20 @@ separator, casing and font choices; nothing recorded a rule.
   expected to stay non-zero forever at that site; what the ratchet catches is a *second*, ad hoc formatting of the
   name bypassing the shared formatter and component.
 
-## Consequences
+### Consequences
 
-- Every migrated screen (so far: the Manuscript chapter and credits cards, the Chapters & Search rows, the import
+- **Good:** Every migrated screen (so far: the Manuscript chapter and credits cards, the Chapters & Search rows, the import
   review's section rows) shows and speaks the same name for the same chapter, in the source's own casing.
-- A future site that draws a chapter's name must go through `chapterName()`/`TitleSubtitle`, or add itself to the
+- **Neutral:** A future site that draws a chapter's name must go through `chapterName()`/`TitleSubtitle`, or add itself to the
   guard's allow-list with a reason (deciding which subtitle survives an import choice, matching a tracked word span —
   not a display site).
-- The "separator as a bare text node" rule is now load-bearing for accessibility, not just a styling nicety: a
+- **Neutral:** The "separator as a bare text node" rule is now load-bearing for accessibility, not just a styling nicety: a
   reviewer touching `TitleSubtitle.tsx` who reaches for a wrapping `<span>` around the dash, even for `sr-only`
   visibility in the stacked layout, will reintroduce a swallowed separator — test the accessible name in context, not
   only `textContent`.
-- Spoken and matched text are unaffected: the credits chapter announcement is the narrator's own template (ADR 0151),
+- **Neutral:** Spoken and matched text are unaffected: the credits chapter announcement is the narrator's own template (ADR 0151),
   and the chapter matchers still compare on `title` alone. Only what is shown and read changes.
+
+### Confirmation
+
+`TitleSubtitle.test.tsx` pins the accessible name computed inside a `<button>` for both layouts, and the source-scan guard `apps/ui/src/chapterNameFormatting.test.ts` ratchets down every other read of `.subtitle` under `src/components/**`.

@@ -1,16 +1,32 @@
 # 0069. Payloads are validated with Zod behind `parseWire`, and a wrong shape fails loudly
 
-**Status:** Accepted
-**Date:** 2026-09-21
-**Supersedes:**
+- **Status:** Accepted
+- **Date:** 2026-09-21
+- **Deciders:** the owner
 
-## Context
+## Context and problem
 
 Data crosses four boundaries in this app and, until now, none of them was checked at runtime. The UI called `JSON.parse(value) as T` on 65 of the 67 Wails bindings (they return a string, so Wails generates no model), cast every live event, and read `Bootstrap` and `Ready` with `as`. The Go host built payloads as `map[string]any`, read sidecar output and REAPER events by field index with helpers that turn a parse error into `0`, and read six persisted files that fell back to "empty" without saying so. The result was drift that showed up far from its cause: `TranscriptState` declares `runId?: string` while Go sends `null`, the `normalize*` helpers each patch one field, and the mock client and fixtures could diverge from what the real host sends because nothing compared them. The client also had no host log to write to: `SystemReportDiagnostic` discarded its arguments.
 
 The owner approved runtime validation at the boundaries and answered the open questions of the runtime schema validation PRD (`docs/prds/boundary-schema-validation.prd.md`, deleted when the work was done; recover it from git history; the steady state is [wire contracts](../architecture/wire-contracts.md)) (owner decisions D16 and D22). A fifth boundary, the in-app update manifest (D14), is coming and is remote JSON.
 
-## Decision
+## Decision drivers
+
+- None of the four boundaries (bindings, live events, sidecar and REAPER output, persisted files) was checked at runtime, so drift showed up far from its cause.
+- The mock client and fixtures could diverge from what the real host sends, because nothing compared them.
+- The client had no host log to write to.
+- A fifth boundary, the in-app update manifest (D14), is coming and is remote JSON.
+- The owner approved runtime validation at the boundaries (owner decisions D16 and D22).
+
+## Considered options
+
+1. Zod 4 behind one `parseWire` helper, with one schema per payload
+2. A hand-written validation route
+3. Keep the status quo: `JSON.parse(value) as T` and casts, with no runtime checks
+
+## Decision outcome
+
+**Chosen option: Zod 4 behind one `parseWire` helper, with one schema per payload**, because no boundary was checked at runtime, so drift showed up far from its cause, and Zod buys behaviour (inference, readable paths) that a hand-written route would reinvent.
 
 1. **Zod 4 behind one helper.** `parseWire(schema, payload, { boundary, payload })` in `apps/ui/src/api/wire/` validates a value and throws a `WireError`. It is typed on Standard Schema (`standardSchema.ts` is the spec's interface, copied), not on Zod, so no caller depends on the library; `parseWireJson` does the same for the JSON text a string binding returns, and an empty string means no value. Only files under `apps/ui/src/api/` import `zod` (the `zod-only-in-api` rule of `.dependency-cruiser.mjs`, run by `pnpm --dir apps/ui architecture`, [ADR 0062](0062-ui-import-rules-are-a-dependency-cruiser-config-and-a-mark-scan-that-name-their-adr.md)). Zod is MIT, which AGPL-3.0-or-later can include.
 2. **One schema per payload, by domain,** in `apps/ui/src/api/schemas/`. The hand-written types in `api/contracts/*.ts` stay the contract and each schema asserts `satisfies z.ZodType<Contract>`, so the two cannot drift silently. A schema models what the host really sends: where Go sends `null` for a field the contract declares `?:`, the schema maps `null` to `undefined` (`optionalFromNull`), which replaces the hand-written `normalize*` helpers.
@@ -23,11 +39,31 @@ The owner approved runtime validation at the boundaries and answered the open qu
 9. **Versioning.** An additive change (a new field, a new event) needs no `hostAPIVersion` bump. Removing, renaming, retyping or newly requiring a field bumps it in the three places, as the README rule says. There is no separate payload version. A version field on the REAPER event lines is added only where the Lua harness makes it small ([ADR 0066](0066-the-lua-bridge-is-tested-by-a-harness-under-lua-5-4-and-reaper-api-behaviour-is-checked-in-reaper.md)).
 10. **Live events are validated in full** and the cost is measured against the recorded teleprompter stream; an envelope-only check for the high-rate events is the fallback if the measurement asks for it.
 
-## Consequences
+### Consequences
 
-- A wrong shape fails a named test in CI or, in the app, shows a specific recoverable message and a host log line. A payload that worked by accident (a field the UI never read) now fails if the schema declares it wrongly, which is why schemas are built from real captures and land per domain.
-- A dependency is added to the UI (Zod, 4.6.5 at the time, already in the lockfile through ESLint's tooling). The repository's near-zero runtime dependency stance is relaxed here for the same reason it was for Base UI: it buys behaviour (inference, readable paths) a hand-written route would reinvent.
-- Every new binding, event or persisted file has a schema to write. Other PRDs that add wire contracts follow rule 4 in their own pull request.
-- Schemas and contract types are two definitions until a domain is quiet enough to move to `z.infer`; the `satisfies` assertion is what keeps them honest meanwhile.
-- The update manifest boundary uses the same helper: a remote JSON payload is `parseWireJson` with its own schema and the same failure policy, and needs no second validator.
-- To change the library, replace the schema files and the one import of `zod`; `parseWire` and its callers do not change. To change the failure policy, write a new ADR that supersedes this one.
+- **Good:** A wrong shape fails a named test in CI or, in the app, shows a specific recoverable message and a host log line. A payload that worked by accident (a field the UI never read) now fails if the schema declares it wrongly, which is why schemas are built from real captures and land per domain.
+- **Neutral:** A dependency is added to the UI (Zod, 4.6.5 at the time, already in the lockfile through ESLint's tooling). The repository's near-zero runtime dependency stance is relaxed here for the same reason it was for Base UI: it buys behaviour (inference, readable paths) a hand-written route would reinvent.
+- **Bad:** Every new binding, event or persisted file has a schema to write. Other PRDs that add wire contracts follow rule 4 in their own pull request.
+- **Neutral:** Schemas and contract types are two definitions until a domain is quiet enough to move to `z.infer`; the `satisfies` assertion is what keeps them honest meanwhile.
+- **Good:** The update manifest boundary uses the same helper: a remote JSON payload is `parseWireJson` with its own schema and the same failure policy, and needs no second validator.
+- **Neutral:** To change the library, replace the schema files and the one import of `zod`; `parseWire` and its callers do not change. To change the failure policy, write a new ADR that supersedes this one.
+
+### Confirmation
+
+The `zod-only-in-api` rule of `.dependency-cruiser.mjs` (run by `pnpm --dir apps/ui architecture`) keeps `zod` inside `apps/ui/src/api/`. Each schema asserts `satisfies z.ZodType<Contract>`, and the contract tests validate the golden files under `tests/fixtures/contracts/`, every `createMockApi` answer and every `WIRE_*` fixture, failing on any key the schema does not declare.
+
+## Pros and cons of the options
+
+### Zod 4
+
+- Good, because it buys behaviour (inference, readable paths) a hand-written route would reinvent.
+- Good, because Zod is MIT, which AGPL-3.0-or-later can include.
+- Bad, because it adds a dependency to the UI and relaxes the repository's near-zero runtime dependency stance.
+
+### A hand-written validation route
+
+- Bad, because it would reinvent the inference and readable paths Zod provides.
+
+### Keep the status quo: no runtime checks
+
+- Bad, because drift showed up far from its cause: `TranscriptState` declares `runId?: string` while Go sends `null`, and the `normalize*` helpers each patch one field.

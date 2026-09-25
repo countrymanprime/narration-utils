@@ -1,10 +1,10 @@
 # 0187. The resume prompt is a compact notice that settles once per dialog open
 
-**Status:** Proposed
-**Date:** 2026-09-24
-**Supersedes:** [ADR 0112](0112-the-resume-card-looks-up-where-the-recording-ends-on-open-and-a-choice-only-sets-where-start-begins.md), decisions 4 and 5
+- **Status:** Proposed
+- **Date:** 2026-09-24
+- **Related:** Supersedes [ADR-0112](0112-the-resume-card-looks-up-where-the-recording-ends-on-open-and-a-choice-only-sets-where-start-begins.md), decisions 4 and 5
 
-## Context
+## Context and problem
 
 The read-aloud dialog's resume card (ADR 0112) sat above the reading view as a bordered `Panel`, centred on the dialog
 body rather than the text column beside the reading panel (`read-aloud-control-bar.prd.md`). The owner reported it
@@ -13,7 +13,22 @@ again every time a session ended, and a fully recorded chapter was still offered
 word of the script (`docs/prds/read-aloud-resume-from-daw.prd.md`). Phase 1 of that PRD fixes the UI's behaviour and
 shape without yet reading REAPER's live state or a stored prompter position (its own Phases 2-5).
 
-## Decision
+## Decision drivers
+
+- The owner reported that the resume card never went away after a choice, folding into a "Change" summary instead.
+- It came back and asked again every time a session ended.
+- A fully recorded chapter was still offered a word to "resume" at, past the last word of the script.
+- The card was centred on the dialog body rather than the text column beside the reading panel.
+- Phase 1 fixes the UI's behaviour and shape without yet reading REAPER's live state or a stored prompter position.
+
+## Considered options
+
+1. A compact resume prompt in the text column's header slot that settles once per dialog open
+2. Keep the status quo: ADR 0112's bordered resume card, which folds into a "Change" summary and asks again after every session
+
+## Decision outcome
+
+**Chosen option: a compact resume prompt in the text column's header slot that settles once per dialog open**, because the owner reported that the card never went away after a choice, came back every time a session ended, and offered a fully recorded chapter a word to resume at.
 
 1. **The resume card becomes a resume prompt**: one compact bordered notice (`ResumePrompt.tsx`, replacing
    `ResumeCard.tsx`/`ResumeOffer.tsx`), not a `Panel`, rendered in the text column's `header` slot
@@ -36,14 +51,25 @@ shape without yet reading REAPER's live state or a stored prompter position (its
    (`/tracks`). Choosing a different track in place is [Chapter Track Link Control](../prds/chapter-track-link-control.prd.md)'s
    job, not this dialog's.
 
-## Consequences
+### Consequences
 
-- `ResumeCard.tsx`, `ResumeOffer.tsx` and their test are deleted; `ResumePrompt.tsx` and `ResumePrompt.test.tsx` replace
+- **Neutral:** `ResumeCard.tsx`, `ResumeOffer.tsx` and their test are deleted; `ResumePrompt.tsx` and `ResumePrompt.test.tsx` replace
   them. The eleven `manuscript/read-aloud-resume-*` visual states become nine: offer, low-confidence, complete,
   not-found, no-track, model-required, error, after-choice (no prompt) and after-session (no prompt).
   `dialog-read-aloud-resume.aria.yml` drops the card's heading (the prompt is named by `aria-label`, not a visible
   `<h2>`) and the "Another track" button.
-- A narrator who wants to read a different track than the one matched must go to the Tracks page; this is a narrower
+- **Bad:** A narrator who wants to read a different track than the one matched must go to the Tracks page; this is a narrower
   affordance than before, deliberately, until Chapter Track Link Control's own picker exists.
-- The prompt still reads only the saved `.rpp` tail (ADR 0111); reading REAPER's live state, a stored prompter
+- **Neutral:** The prompt still reads only the saved `.rpp` tail (ADR 0111); reading REAPER's live state, a stored prompter
   position and reconciling the two are `read-aloud-resume-from-daw.prd.md` Phases 2-5, not built here.
+
+### Confirmation
+
+`ResumePrompt.test.tsx`, the nine `manuscript/read-aloud-resume-*` visual states (offer, low-confidence, complete, not-found, no-track, model-required, error, after-choice and after-session) and `dialog-read-aloud-resume.aria.yml`.
+
+## Pros and cons of the options
+
+### Keep the status quo: ADR 0112's bordered resume card, which folds into a "Change" summary and asks again after every session
+
+- Bad, because it never went away after a choice and came back every time a session ended.
+- Bad, because a fully recorded chapter was still offered a word to resume at.

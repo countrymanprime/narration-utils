@@ -1,9 +1,9 @@
 # 0156. Measurement reads only files picked this session, as one job, and fingerprints the bytes it read
 
-**Status:** Proposed
-**Date:** 2026-09-23
+- **Status:** Proposed
+- **Date:** 2026-09-23
 
-## Context
+## Context and problem
 
 `internal/measure` could measure a WAV file but nothing in the app called it for the narrator's own files. Phase 1 of
 [the diagnostics PRD](../prds/diagnostics-delivery-and-cleanup-tools.prd.md) exposes it through bindings. That opens a
@@ -14,7 +14,21 @@ it takes to read the files (about 90 s per hour of 48 kHz stereo on the developm
 progress and stop when the narrator asks (ADR 0015). And the PRD's Open Question 5 recommends that a finding keep its
 id when the audio changes and carry a fingerprint of the audio as evidence instead.
 
-## Decision
+## Decision drivers
+
+- Whatever path the UI sends, the host reads, and every earlier boundary of that kind keeps the page from naming a path.
+- A measurement runs for as long as it takes to read the files, so it has to report real progress and stop when the narrator asks (ADR 0015).
+- Open Question 5 recommends that a finding keep its id when the audio changes and carry a fingerprint of the audio as evidence.
+
+## Considered options
+
+1. Measure only files picked in a native dialog this session, as one job, fingerprinting the bytes read
+
+No alternatives were recorded when this decision was made.
+
+## Decision outcome
+
+**Chosen option: measure only files picked in a native dialog this session, as one job, fingerprinting the bytes read**, because the page must not be able to make the host read any file but one the narrator chose, and a long measurement has to report real progress and stop when asked.
 
 1. **Only picked files.** `MeasurePickFiles` opens the operating system's multiple-file picker (WAV first, "All files"
    second) and the host remembers every absolute path it chose, for the rest of the app session; it is not per project.
@@ -38,15 +52,19 @@ id when the audio changes and carry a fingerprint of the audio as evidence inste
    still being recorded is measured again once it is finished. `measure.FingerprintFile` fingerprints a file on its own.
 5. **Read-only.** The files are opened read-only and nothing is written: no cache, no sidecar file, no log of the paths.
 
-## Consequences
+### Consequences
 
-- The page cannot turn the host into a reader of arbitrary files: the worst a hostile page can do is re-measure a file the
+- **Good:** The page cannot turn the host into a reader of arbitrary files: the worst a hostile page can do is re-measure a file the
   narrator already picked. Threat model row 6g.
-- A later phase that measures something other than a picked file (the items of a REAPER project, Phase 8; a report's
+- **Neutral:** A later phase that measures something other than a picked file (the items of a REAPER project, Phase 8; a report's
   re-measure) needs its own source of paths, built by the host (for example from the saved `.rpp`, as `/media` does),
   not a wider allowlist. Measuring again after a restart means picking the files again.
-- Measuring a range of a long file costs a read to the end of the file for the fingerprint. Per-item measurement (Phase
+- **Bad:** Measuring a range of a long file costs a read to the end of the file for the fingerprint. Per-item measurement (Phase
   11) that does not need a fingerprint keeps using `AnalyzeFileRange`.
-- The throughput baseline is recorded by `BenchmarkAnalyzeOneHourStereo48k`; the true-peak oversampler takes about 80% of
+- **Neutral:** The throughput baseline is recorded by `BenchmarkAnalyzeOneHourStereo48k`; the true-peak oversampler takes about 80% of
   the time, so that is where a target would be met.
-- Owner review: this ADR is Proposed; it records a trust-boundary choice (point 1) the PRD left to the implementation.
+- **Neutral:** Owner review: this ADR is Proposed; it records a trust-boundary choice (point 1) the PRD left to the implementation.
+
+### Confirmation
+
+Not recorded when this decision was made.

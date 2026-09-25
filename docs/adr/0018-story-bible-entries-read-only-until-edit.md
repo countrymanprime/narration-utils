@@ -1,13 +1,26 @@
 # 0018. Story Bible entries are read-only until Edit is pressed
 
-**Status:** Accepted (its "read-only actions stay available regardless of mode" clause is superseded by [ADR 0087](0087-story-bible-header-actions-are-mode-based-and-lock-cannot-happen-mid-edit.md); [ADR 0036](0036-story-bible-read-only-view-is-the-disabled-form-not-entitysummary.md) amends it by recording the alternative it did not choose; the rest stands)
-**Date:** 2026-09-18
+- **Status:** Accepted
+- **Date:** 2026-09-18
+- **Related:** Its "read-only actions stay available regardless of mode" clause is superseded by [ADR-0087](0087-story-bible-header-actions-are-mode-based-and-lock-cannot-happen-mid-edit.md); [ADR-0036](0036-story-bible-read-only-view-is-the-disabled-form-not-entitysummary.md) amends it by recording the alternative it did not choose; the rest stands.
 
-## Context
+## Context and problem
 
 Story Bible entries opened fully editable, with a Save button always visible; locking an entry only disabled the fields, leaving a greyed-out Save. The user asked for entries to be read-only to start, with an explicit action to edit, and no Save button once an entry is locked. Server-side enforcement of locks is separate and unchanged ([ADR-0007](0007-story-bible-locked-entry-enforcement.md)).
 
-## Decision
+## Decision drivers
+
+- The user asked for entries to be read-only to start, with an explicit action to edit, and no Save button once an entry is locked.
+- Entries should not be edited by accident.
+
+## Considered options
+
+1. An explicit edit mode: entries open read-only, and Edit shows Save and Cancel editing
+2. Keep the status quo: entries open fully editable, with a Save button always visible
+
+## Decision outcome
+
+**Chosen option: an explicit edit mode: entries open read-only, and Edit shows Save and Cancel editing**, because the user asked for read-only entries with an explicit action to edit, and the extra click is the intended trade for not editing by accident.
 
 `GuideDetail.tsx` has an explicit edit mode.
 
@@ -18,8 +31,12 @@ Story Bible entries opened fully editable, with a Save button always visible; lo
 - A brand-new draft is unchanged: it is created by choosing its category, not through the edit form.
 - Read-only actions stay available regardless of mode: play pronunciation preview, rescan occurrences, lock/unlock, delete (unlocked), and Go to line.
 
-## Consequences
+### Consequences
 
-- The UI-level `disabled` controls remain a convenience; the Python `edit()` guard is still what enforces locks (ADR-0007).
-- Editing an entry is now two clicks (Edit, then Save); this is the intended trade for not editing by accident.
-- Tests: `GuideDetail.test.tsx` covers read-only start, Edit/Cancel, and the locked case; `App.test.tsx` covers the icon-only Edit and Save buttons.
+- **Neutral:** The UI-level `disabled` controls remain a convenience; the Python `edit()` guard is still what enforces locks (ADR-0007).
+- **Neutral:** Editing an entry is now two clicks (Edit, then Save); this is the intended trade for not editing by accident.
+- **Good:** Tests: `GuideDetail.test.tsx` covers read-only start, Edit/Cancel, and the locked case; `App.test.tsx` covers the icon-only Edit and Save buttons.
+
+### Confirmation
+
+`GuideDetail.test.tsx` covers read-only start, Edit/Cancel, and the locked case; `App.test.tsx` covers the icon-only Edit and Save buttons.

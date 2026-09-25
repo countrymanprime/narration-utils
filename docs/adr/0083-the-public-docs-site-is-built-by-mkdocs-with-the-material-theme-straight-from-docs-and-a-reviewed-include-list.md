@@ -1,9 +1,10 @@
 # 0083. The public docs site is built by MkDocs with the Material theme straight from docs/, and a reviewed include list decides what is published
 
-**Status:** Accepted
-**Date:** 2026-09-21
+- **Status:** Accepted
+- **Date:** 2026-09-21
+- **Deciders:** the owner
 
-## Context
+## Context and problem
 
 The repository has no published documentation: readers use GitHub's file view, the wiki is disabled on purpose because an unreviewed copy drifts ([github-workflow](../operations/github-workflow.md)), and there is no link check anywhere. The [release-readiness PRD](../prds/release-readiness-provisioning-and-docs-site.prd.md) (phases 10 and 11) asked for a public site generated from `docs/` on every build, never a hand-kept copy, and the owner decided two things: compare VitePress and MkDocs Material on the real tree before choosing (question 8), and publish a curated include list, with `docs/research/` staying out until reviewed (question 9).
 
@@ -16,7 +17,22 @@ The [spike](../research/docs-site-generator-spike.md) built the real tree (187 M
 - 29 wheels with no install script (MkDocs 1.6.1, Material 9.7.7) against 126 npm packages with one (VitePress 1.6.4, on Vite 5 and the `esbuild` the OSV baseline already reports).
 - Neither tool can gate a link from a published page to a page the include list leaves out: VitePress reports it, MkDocs logs it at a fixed `INFO` level. MkDocs Material is in a maintenance line (MkDocs 2.0 will not run it), the reason the versions are pinned exactly.
 
-## Decision
+## Decision drivers
+
+- The repository had no published documentation and no link check, and the wiki is disabled because an unreviewed copy drifts.
+- The release-readiness PRD asked for a public site generated from `docs/` on every build, never a hand-kept copy.
+- The owner's decisions: compare VitePress and MkDocs Material on the real tree before choosing (question 8), and publish a curated include list, with `docs/research/` out until reviewed (question 9).
+- The docs are GitHub-flavoured Markdown, read by GitHub and by `apps/ui/src/docsGuide.test.ts` with GitHub's rules.
+
+## Considered options
+
+1. MkDocs 1.6.1 with Material 9.7.7, built straight from `docs/`, publishing a reviewed include list
+2. VitePress
+3. A hand-kept copy of the docs (such as the GitHub wiki)
+
+## Decision outcome
+
+**Chosen option: MkDocs 1.6.1 with Material 9.7.7, built straight from `docs/`, publishing a reviewed include list**, because on the real tree MkDocs built every file unchanged as GitHub-flavoured Markdown and its strict build reported exactly the links that need an answer, where VitePress failed on 9 files and missed links and anchors.
 
 1. **The generator is MkDocs 1.6.1 with Material 9.7.7**, pinned exactly in a `docs` dependency group of the root `pyproject.toml` and locked with hashes in `uv.lock`. The group is not one of the `default-groups`, so the release build and the other jobs never install it; the docs-site targets and the docs job run `uv run --locked --only-group docs` (and `uv sync --locked --only-group docs`), and `pytest` and `ruff` sit in the docs group so that job needs nothing else. It is a build tool: nothing of it is in the desktop app or its sidecars. `mkdocs<2` is a hard constraint (Material's own).
 2. **The site is generated from `docs/` and nothing is copied by hand.** The build reads `docs/` (`docs_dir`); a check fails when the site's source is anything else. Generated pages (the component atlas under `docs/ui/atlas/`) are produced into `docs/` by their own tool and read from there like any other page.
@@ -24,11 +40,40 @@ The [spike](../research/docs-site-generator-spike.md) built the real tree (187 M
 4. **A link never silently dies.** `tools/docs-site/hooks.py` rewrites a link that leaves `docs/`, or that points at a page the manifest leaves out, to the GitHub file view of that path at the ref being built (a repository-relative link is not left to 404 on the site). Whatever is still unresolved after that fails `mkdocs build --strict`, and a second check reads the built HTML and fails on any internal `href`, `src` or `#fragment` that does not resolve. `nx run docs-site:build` runs both: `pnpm check`, the `quality / docs-site` job of `_quality.yml` (code pull requests) and the `Pages` workflow's build job (also a pull request that changes `docs/`, because `ci.yml` skips documentation-only pull requests) gate on it, and the same build is what Pages publishes.
 5. **The site is deployed beside Storybook.** The Pages artifact holds the docs at the root and the Storybook atlas of phase 9 under `/storybook/`; the atlas pages in `docs/ui/atlas/` link to it. Pages is still enabled by the owner ([owner settings](../operations/github-workflow.md#repository-settings-that-only-the-owner-can-change)).
 
-## Consequences
+### Consequences
 
-- One change to `docs/` is one change to the site: nothing to keep in step, and a docs pull request that breaks a link fails a job for the first time.
-- Every published page must keep being valid GitHub Markdown; MkDocs does not reward writing for the generator, so the docs stay readable in the file view.
-- The include list is a reviewed file, so a new ADR or guide page that should be public needs one added line. A page not listed is not public, which is the safe default for material such as `docs/research/`.
-- A Python dependency group is added to the repository; Dependabot's `uv` entry (3-day cooldown) proposes its updates and OSV reads `uv.lock`. The two exact pins are the only direct dependencies; Material's 27 transitive dependencies are locked with hashes but not pinned by us, and `mergedeep`'s licence field is empty in its metadata (not looked up further).
-- **Accepted risk: the MkDocs line is in maintenance.** MkDocs 1.6.1 is from 2024 and MkDocs 2.0 is incompatible with Material. If the pinned versions stop being fixable, the migration path is Zensical (announced as a drop-in for MkDocs 1.x) or VitePress; the manifest and the output check do not depend on MkDocs and the link-rewrite hook is a small script against its API, so the choice is reversible by a new ADR. Superseding this decision needs the spike's numbers re-run on the tree at that time.
-- Material prints a warning banner about MkDocs 2.0 on every build; the site job sets `NO_MKDOCS_2_WARNING=true` so the log stays readable.
+- **Good:** One change to `docs/` is one change to the site: nothing to keep in step, and a docs pull request that breaks a link fails a job for the first time.
+- **Neutral:** Every published page must keep being valid GitHub Markdown; MkDocs does not reward writing for the generator, so the docs stay readable in the file view.
+- **Neutral:** The include list is a reviewed file, so a new ADR or guide page that should be public needs one added line. A page not listed is not public, which is the safe default for material such as `docs/research/`.
+- **Neutral:** A Python dependency group is added to the repository; Dependabot's `uv` entry (3-day cooldown) proposes its updates and OSV reads `uv.lock`. The two exact pins are the only direct dependencies; Material's 27 transitive dependencies are locked with hashes but not pinned by us, and `mergedeep`'s licence field is empty in its metadata (not looked up further).
+- **Bad:** **Accepted risk: the MkDocs line is in maintenance.** MkDocs 1.6.1 is from 2024 and MkDocs 2.0 is incompatible with Material. If the pinned versions stop being fixable, the migration path is Zensical (announced as a drop-in for MkDocs 1.x) or VitePress; the manifest and the output check do not depend on MkDocs and the link-rewrite hook is a small script against its API, so the choice is reversible by a new ADR. Superseding this decision needs the spike's numbers re-run on the tree at that time.
+- **Neutral:** Material prints a warning banner about MkDocs 2.0 on every build; the site job sets `NO_MKDOCS_2_WARNING=true` so the log stays readable.
+
+### Confirmation
+
+`nx run docs-site:build` runs `mkdocs build --strict` and a second check that reads the built HTML and fails on any internal `href`, `src` or `#fragment` that does not resolve; `pnpm check`, the `quality / docs-site` job and the `Pages` workflow's build job gate on it. A check fails when the site's source is anything other than `docs/`.
+
+## Pros and cons of the options
+
+### MkDocs with Material
+
+- Good, because it built all 187 files unchanged.
+- Good, because it serves each `README.md` as the folder index.
+- Good, because its `--strict` build reported exactly the 26 links that need an answer, and checks anchors.
+- Good, because it generates the navigation from the folders.
+- Good, because it is 29 wheels with no install script.
+- Bad, because MkDocs Material is in a maintenance line (MkDocs 2.0 will not run it).
+- Bad, because it cannot gate a link from a published page to a page the include list leaves out (it logs it at a fixed `INFO` level).
+
+### VitePress
+
+- Bad, because it compiles Markdown as a Vue template and failed on 9 files.
+- Bad, because it does not serve `README.md` as the folder index, and the rewrite that makes it do so leaves 48 dead references without its checker noticing.
+- Bad, because its heading slugs differ from GitHub's, which broke one working anchor.
+- Bad, because its checker missed the 6 links to `.json`/`.yml` files and does not check anchors.
+- Bad, because it needs code for the navigation.
+- Bad, because it is 126 npm packages with an install script, on Vite 5 and the `esbuild` the OSV baseline already reports.
+
+### A hand-kept copy of the docs
+
+- Bad, because an unreviewed copy drifts.

@@ -187,7 +187,7 @@ Phases 1 to 5 are the MVP: the recording signal end to end, from contract to Hom
 - **UI.** A `StageSuggestion` component (badge, Confirm, Dismiss, Why, stale notice) in `apps/ui/src/components/stages/`, used in the breakdown table's status cell and reused by the Proofing panel; evidence in a `SlideOver` (Q11). Loading and error states are explicit: a failed evaluation reads "Couldn't check", never silence.
 - **Settings.** A `StageRecommendations` tool with `choice` values `required | ignored` per optional signal, project scope over global over built-in default, mirrored in `config/defaults.json` and `builtinDefaults` (`store.go:38-42`), with keys derived from signal ids.
 - **Docs.** A new `docs/architecture/stage-recommendations.md` records the contract; `home.md`, `proofing.md`, `tracks.md` and `manuscript.md` under `docs/guides/using-the-app/` gain the new states; a workflow doc under `docs/workflows/` states the three rules.
-- **ADRs expected** (written with `adr-author` after code lands; next free number at merge time, PR #44 uses 0027 to 0035): one for "stage recommendations are computed on read and applied only by narrator confirmation; the confirmation record lives beside the status", extending draft ADR 0031 (PR #44); another only if Q3 chooses a `proofed` state.
+- **ADRs expected** (written with `architecture-decision-records` after code lands; next free number at merge time, PR #44 uses 0027 to 0035): one for "stage recommendations are computed on read and applied only by narrator confirmation; the confirmation record lives beside the status", extending draft ADR 0031 (PR #44); another only if Q3 chooses a `proofed` state.
 
 **Technical Risks**
 
@@ -265,7 +265,7 @@ Every phase follows the `CLAUDE.md` workflow: plan (find or open the tracking is
 
 **Phase 9 - Secondary surfaces and close-out**
 - **Goal**: Finish the set and prove it end to end.
-- **Scope**: The non-interactive ChapterNav marker with "Suggested: <stage>" (Q6); the Tracks page hint where a chapter's track is not linked, pointing at EL's mapping UI; end-to-end validation of the verdicts on the RC, ER and PS corpora against the narrator's own stage labels (D12, requires permissioned chapters; TBD - needs the user), with the false-recommendation result recorded; the ADR(s) via `adr-author`; `docs/README.md` inventory, `home.md`, `proofing.md`, `tracks.md`, `manuscript.md`, the workflow doc; no roadmap or milestone edit (the implementation plan's owner decision D9; Q14 dropped); `feature-cleanup`.
+- **Scope**: The non-interactive ChapterNav marker with "Suggested: <stage>" (Q6); the Tracks page hint where a chapter's track is not linked, pointing at EL's mapping UI; end-to-end validation of the verdicts on the RC, ER and PS corpora against the narrator's own stage labels (D12, requires permissioned chapters; TBD - needs the user), with the false-recommendation result recorded; the ADR(s) via `architecture-decision-records`; `docs/README.md` inventory, `home.md`, `proofing.md`, `tracks.md`, `manuscript.md`, the workflow doc; no roadmap or milestone edit (the implementation plan's owner decision D9; Q14 dropped); `feature-cleanup`.
 - **Success signal**: Corpus result recorded and any false recommendation explained or fixed; docs, screenshots and roadmap consistent; `pnpm check` and the visual suite green.
 
 ### Parallelism Notes

@@ -1,10 +1,11 @@
 # 0118. Read-aloud flags are Highlight kinds with an inline hint, and skips and restarts show by default
 
-**Status:** Proposed
-**Date:** 2026-09-23
-**Amends:** [ADR 0016](0016-highlight-primitive.md) (`Highlight` also draws the read-aloud flags, a second vocabulary beside the entry categories)
+- **Status:** Proposed
+- **Date:** 2026-09-23
+- **Deciders:** the owner
+- **Related:** Amends [ADR-0016](0016-highlight-primitive.md) (`Highlight` also draws the read-aloud flags, a second vocabulary beside the entry categories)
 
-## Context
+## Context and problem
 
 `docs/prds/teleprompter-manuscript-integration.prd.md` Phase 7 draws the sidecar's suspected flags
 ([ADR 0115](0115-live-flags-are-suspected-judged-per-closed-segment-and-forgive-what-transcript-compare-forgives.md)) in the
@@ -23,7 +24,22 @@ highlights and kept the proofing diff's own `<mark>` outside it; its first alter
 vocabulary. A flag is not an entry, but unlike the diff words it is interactive, it layers over entity and note marks, and it
 travels the reader's mark path, which is built on `Highlight`.
 
-## Decision
+## Decision drivers
+
+- Flags are drawn "through `Highlight` or a documented equivalent" (ADR 0016/0017), in Transcript Compare's colours, each a control with a hint (ADR 0049).
+- `misread` measured 2.07 false flags per 100 heard words on synthetic speech, against a target of at most 1.
+- A flag is interactive, layers over entity and note marks, and travels the reader's mark path, which is built on `Highlight`.
+- A flag must keep the text colour's contrast and let a Story Bible name's tint show through.
+
+## Considered options
+
+1. Four new `Highlight` kinds with an inline hint, and skipped and restart shown by default
+2. Flag marks outside `Highlight`, as the proofing diff keeps its own `<mark>` (ADR 0063)
+3. A background tint on the paragraph being read
+
+## Decision outcome
+
+**Chosen option: four new `Highlight` kinds with an inline hint, and skipped and restart shown by default**, because unlike the proofing diff's words a flag is interactive, layers over entity and note marks, and travels the reader's mark path built on `Highlight`, and the owner decided the defaults after Phase 6's measurement.
 
 1. **`Highlight` gains four kinds: `Misread`, `Extra`, `Skipped`, `Restart`.** They are decorations only, never a tint or a
    text colour, so the words keep the text colour's contrast and a flag over a Story Bible name still shows the name's tint:
@@ -51,12 +67,22 @@ travels the reader's mark path, which is built on `Highlight`.
    tint would sit under the entity, note and flag marks and lower their contrast, and the dimmed read words already show
    where in the paragraph the narrator is.
 
-## Consequences
+### Consequences
 
-- A new flag colour or decoration is one edit in `Highlight.tsx`, and the atlas's `Highlight` stories show all four kinds and
+- **Good:** A new flag colour or decoration is one edit in `Highlight.tsx`, and the atlas's `Highlight` stories show all four kinds and
   a flag inside a name; the palette guard is unaffected because no new token or text colour is introduced.
-- `Highlight` now knows two vocabularies. If the owner later takes ADR 0063's first alternative for the proofing diff, the
+- **Neutral:** `Highlight` now knows two vocabularies. If the owner later takes ADR 0063's first alternative for the proofing diff, the
   flag kinds are the precedent.
-- Misreads and extras are off until a measurement meets the target (human microphone readings are still owed, PRD Phase 6);
+- **Neutral:** Misreads and extras are off until a measurement meets the target (human microphone readings are still owed, PRD Phase 6);
   turning one on by default is a change to decision 4 only.
-- Restarts show as a single marked word; the whole re-read is in the Flags tab and in the kept finding (ADR 0117).
+- **Neutral:** Restarts show as a single marked word; the whole re-read is in the Flags tab and in the kept finding (ADR 0117).
+
+### Confirmation
+
+The atlas's `Highlight` stories show all four kinds and a flag inside a name; the palette guard is unaffected because no new token or text colour is introduced.
+
+## Pros and cons of the options
+
+### A background tint on the paragraph being read
+
+- Bad, because it would sit under the entity, note and flag marks and lower their contrast.

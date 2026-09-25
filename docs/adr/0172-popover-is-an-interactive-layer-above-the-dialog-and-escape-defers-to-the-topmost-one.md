@@ -1,9 +1,9 @@
 # 0172. Popover is an interactive layer above the dialog, and Escape defers to the topmost one
 
-**Status:** Proposed
-**Date:** 2026-09-24
+- **Status:** Proposed
+- **Date:** 2026-09-24
 
-## Context
+## Context and problem
 
 [Read Aloud Control Bar](../prds/read-aloud-control-bar.prd.md) redesigns the Read aloud dialog's configuration card as
 a compact bar with a microphone device picker and a Settings panel, each opened from a button inside a full-size
@@ -15,7 +15,21 @@ UI's `Popover` already) is a read-only hint: it never moves focus in, and it mar
 `HINT_POPUP_ATTRIBUTE` so `Dialog.tsx`'s Escape handler defers to it instead of closing the dialog underneath. Neither
 shape is right for a popup a person operates (a device list, a Refresh button, a meter).
 
-## Decision
+## Decision drivers
+
+- The popups hold controls a person operates (a device list, a Refresh button, a meter), opened from inside a full-size `Dialog`.
+- A popup opened from inside a dialog must draw above it.
+- Escape in such a popup must not close the dialog underneath.
+
+## Considered options
+
+1. A new interactive `Popover` primitive at `z-[70]`
+2. `Menu` (ADR 0052)
+3. The info icon's hint popup (`Tooltip`)
+
+## Decision outcome
+
+**Chosen option: a new interactive `Popover` primitive at `z-[70]`**, because neither `Menu` nor the read-only hint popup is right for a popup a person operates from inside a dialog.
 
 - **A new primitive, `primitives/Popover.tsx`**, wraps Base UI's `Popover` (ADR 0047) as an interactive popup: a click
   opens it, focus moves in and returns to the trigger on close (Base UI's defaults, left un-overridden — the opposite
@@ -34,15 +48,30 @@ shape is right for a popup a person operates (a device list, a Refresh button, a
   read-only behaviour and `HINT_POPUP_ATTRIBUTE`; it does not become a consumer of the new `Popover` primitive; the two
   serve different contracts (read a note vs. operate a control) on the same underlying library component.
 
-## Consequences
+### Consequences
 
-- A dialog can now host a device picker, a settings panel or any other interactive popup without it drawing behind
+- **Good:** A dialog can now host a device picker, a settings panel or any other interactive popup without it drawing behind
   the dialog's backdrop, and closing that popup with Escape no longer closes the dialog underneath it by accident.
-- Two Base UI `Popover` usages now exist in the primitives (the hint inside `Tooltip.tsx` and the new `Popover.tsx`)
+- **Neutral:** Two Base UI `Popover` usages now exist in the primitives (the hint inside `Tooltip.tsx` and the new `Popover.tsx`)
   with different focus and marker behaviour; `design-spec-guard` and this ADR are the record of why they differ, so a
   future primitive change does not merge them by mistake.
-- `Menu`'s `z-[55]` is unchanged: nothing here needs a `Menu` opened inside a dialog, so that fix stays with whichever
+- **Neutral:** `Menu`'s `z-[55]` is unchanged: nothing here needs a `Menu` opened inside a dialog, so that fix stays with whichever
   PRD needs it first.
-- A future interactive layer above the dialog (a third kind of popup) should extend the same Escape-precedence check
+- **Neutral:** A future interactive layer above the dialog (a third kind of popup) should extend the same Escape-precedence check
   in `Dialog.tsx` rather than add a fourth ad hoc marker attribute; changing the layer order itself needs a new ADR
   that supersedes this one.
+
+### Confirmation
+
+`design-spec-guard` and this ADR are the record of why the hint popup and the new `Popover` differ, so a future primitive change does not merge them by mistake.
+
+## Pros and cons of the options
+
+### `Menu` (ADR 0052)
+
+- Bad, because it only holds a flat list of action items, with no room for a `Select`, a meter or a gain control.
+- Bad, because its popup sits at `z-[55]`, below the dialog's `z-[60]`, so opened from inside a dialog it would draw behind it.
+
+### The info icon's hint popup (`Tooltip`)
+
+- Bad, because it is a read-only hint that never moves focus in.

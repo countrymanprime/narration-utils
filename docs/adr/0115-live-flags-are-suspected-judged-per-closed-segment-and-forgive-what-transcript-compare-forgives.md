@@ -1,9 +1,9 @@
 # 0115. Live flags are suspected, judged per closed segment, and forgive what Transcript Compare forgives
 
-**Status:** Proposed
-**Date:** 2026-09-23
+- **Status:** Proposed
+- **Date:** 2026-09-23
 
-## Context
+## Context and problem
 
 `docs/prds/teleprompter-manuscript-integration.prd.md` Phase 6 asks the teleprompter sidecar to report suspected misreads,
 extra words, skipped words and (owner decision 2026-09-23) restarts, with precision over recall, as engine-independent
@@ -19,7 +19,22 @@ evidence): most false flags on clean reads were the engine's own errors, and two
 not tell from a narrator's mistake: the engine re-emitting the same audio's words (up to six words, identical timestamps)
 and splitting one written word across a matched neighbour ("7 o" + "clock" for "seven o'clock").
 
-## Decision
+## Decision drivers
+
+- Precision over recall, as engine-independent events (ADR 0021).
+- A live word is never proof: a wrong engine word looks exactly like a misread, and Transcript Compare over the recorded take is authoritative.
+- Most false flags on clean reads were the engine's own errors, and re-emitted and split words were artefacts that text alone could not tell from a narrator's mistake.
+- `Validate` rejects unknown findings categories.
+
+## Considered options
+
+1. Suspected flags judged per closed segment, with normalization shared with Transcript Compare
+2. Duplicating a subset of Transcript Compare's normalization
+3. Keeping flags in the host's `teleprompter:state` snapshot
+
+## Decision outcome
+
+**Chosen option: suspected flags judged per closed segment, with normalization shared with Transcript Compare**, because a live word is never proof, so precision is kept over recall, and a shared normalization makes a live flag and Transcript Compare forgive the same spellings.
 
 1. A new `flag` event joins the stream: `{"type": "flag", "id", "kind", "start", "end", "heard"}` with `kind` one of
    `misread`, `extra`, `skipped`, `restart`; `start`/`end` are `script_words()` indices (an `extra` is zero-width at the
@@ -48,18 +63,33 @@ and splitting one written word across a matched neighbour ("7 o" + "clock" for "
 6. `replay.py` measures it: it replays a Moonshine probe recording or a printed `live_asr.py` session (`--stream`)
    through `FlaggingTracker` and reports flags per 100 heard words by kind, the false-flag rate on a clean read.
 
-## Consequences
+### Consequences
 
-- The UI can show or hide each kind (skipped and misread by default, extra behind a toggle, per the owner) without the
+- **Good:** The UI can show or hide each kind (skipped and misread by default, extra behind a toggle, per the owner) without the
   sidecar changing; no engine-specific flag logic exists.
-- A live flag and Transcript Compare forgive the same spellings, and a new homophone added in one place reaches both.
+- **Neutral:** A live flag and Transcript Compare forgive the same spellings, and a new homophone added in one place reaches both.
   Editing the homophone list is now a code change in `spoken_forms.py` rather than a CSV edit.
-- Recall is given up on purpose: short restarts, engine-dropped articles, discrepancies at segment edges and anything a
+- **Bad:** Recall is given up on purpose: short restarts, engine-dropped articles, discrepancies at segment edges and anything a
   spelling difference could explain are never flagged. The measured clean-read rate with Whisper tiny over synthetic
   speech (2,852 heard words: `misread` 2.07, `skipped` 0.42, `restart` 0.04, `extra` 0.00 per 100; 41 of 44 planted
   errors flagged) is mostly real engine mishearings, which no text rule can remove; Phase 7 should hold a kind off by default while its measured
   rate misses the PRD target, and human microphone readings are still owed.
-- A flag arrives up to one segment late (a pause or the 12 s buffer cap), which is acceptable for review marks and not
+- **Neutral:** A flag arrives up to one segment late (a pause or the 12 s buffer cap), which is acceptable for review marks and not
   meant for anything that must react mid-sentence.
-- Changing the event shape, the gates' meaning, the shared normalization home or the restart category needs a new ADR
+- **Neutral:** Changing the event shape, the gates' meaning, the shared normalization home or the restart category needs a new ADR
   that supersedes this one.
+
+### Confirmation
+
+`replay.py` measures flags per 100 heard words by kind, the false-flag rate on a clean read; a test pins Transcript Compare's tokenizer as unchanged.
+
+## Pros and cons of the options
+
+### Shared normalization
+
+- Good, because a new homophone added in one place reaches both.
+- Bad, because editing the homophone list is now a code change in `spoken_forms.py` rather than a CSV edit.
+
+### Keeping flags in the snapshot
+
+- Bad, because the findings store is what a view opened mid-session reads, so a bounded flag list in the snapshot would be a second copy.

@@ -1,9 +1,9 @@
 # 0150. The teleprompter reads the credits as a host-rendered script file, not as a chapter
 
-**Status:** Proposed
-**Date:** 2026-09-23
+- **Status:** Proposed
+- **Date:** 2026-09-23
 
-## Context
+## Context and problem
 
 `audiobook-credits-templates.prd.md` Phase 4 asks for "Opening credits" and "Closing credits" to be selectable on the
 teleprompter, readable with the highlight following, through the one Go renderer (`internal/credits.Render`) so what the
@@ -14,7 +14,20 @@ pseudo-entries of Phase 3 exist outside the chapter list by construction. The te
 `--script FILE` mode read plain text and sent no spans. The PRD's Technical Approach names the two options: spans for
 `--script`, or a pseudo-chapter. Owner decision C6 (2026-09-23): unresolved tokens warn, and Start is still allowed.
 
-## Decision
+## Decision drivers
+
+- What the narrator previews is what is read, through the one Go renderer (`internal/credits.Render`).
+- The credits are not manuscript chapters and must never become one.
+- Owner decision C6: unresolved tokens warn, and Start is still allowed.
+
+## Considered options
+
+1. Spans for a named `--script`, read from a host-rendered file
+2. A pseudo-chapter
+
+## Decision outcome
+
+**Chosen option: spans for a named `--script`, read from a host-rendered file**, because the credits must never become a manuscript chapter, and one renderer keeps what the narrator previews equal to what is read.
 
 - **The UI names only the kind.** `TeleprompterStart` takes `credits: "opening" | "closing"` instead of `chapter`
   (`apps/ui/src/api/contracts/teleprompter.ts`). The host (`creditsScript`, `apps/desktop/creditsbindings.go`) picks the first
@@ -36,15 +49,25 @@ pseudo-entries of Phase 3 exist outside the chapter list by construction. The te
   dialog (opened from a Manuscript chapter) is not given the credits here: its flags are kept as findings per chapter
   (ADR 0117), which credits are not.
 
-## Consequences
+### Consequences
 
-- One renderer: the preview, the estimate, the Manuscript entry and the teleprompter all render through `credits.Render`, and a
+- **Good:** One renderer: the preview, the estimate, the Manuscript entry and the teleprompter all render through `credits.Render`, and a
   test pins that the teleprompter text equals the preview's.
-- The payload shapes are unchanged (the `script` event already allowed `index: null`), so no binding, `hostAPIVersion` bump or
+- **Good:** The payload shapes are unchanged (the `script` event already allowed `index: null`), so no binding, `hostAPIVersion` bump or
   new schema is needed; the new golden is checked by the existing event schema.
-- The narrator's credits text sits in the session directory for the length of a session. It is their own text in their own
+- **Neutral:** The narrator's credits text sits in the session directory for the length of a session. It is their own text in their own
   profile's temp directory, readable by them only, and removed at the end; a crash that skips the watcher can leave it behind,
   like the stop and control files.
-- Choosing which template a project reads (instead of the first of each kind) is still ADR 0093's open follow-up; when it lands,
+- **Neutral:** Choosing which template a project reads (instead of the first of each kind) is still ADR 0093's open follow-up; when it lands,
   only `creditsScript`'s lookup changes. Offering the credits in the read-aloud dialog would need its flags kept somewhere other
   than a chapter's findings, and a new ADR.
+
+### Confirmation
+
+The golden `teleprompter-credits-script.json` and a cross-check in `wireContracts.test.ts` pin that the sidecar and the reader split the text the same way, and a test pins that the teleprompter text equals the preview's.
+
+## Pros and cons of the options
+
+### A pseudo-chapter
+
+- Bad, because the credits are not manuscript chapters and must never become one.

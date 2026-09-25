@@ -1,9 +1,9 @@
 # 0160. Stage recommendations are computed from tri-state signals by a pure engine
 
-**Status:** Proposed
-**Date:** 2026-09-23
+- **Status:** Proposed
+- **Date:** 2026-09-23
 
-## Context
+## Context and problem
 
 The narrator asked for the app to suggest when a chapter is done recording, editing or proofing, always as a suggestion
 they confirm ([chapter stage recommendations PRD](../prds/chapter-stage-recommendations.prd.md)). The evidence comes
@@ -23,7 +23,25 @@ Alternatives considered: boolean signals (cannot tell clean from never ran), a s
 number, hides which check failed), letting `unknown` outrank `not_met` (hides the concrete reason when both are
 present), and a free-text reason only for `unknown` (the UI cannot route the action that resolves it).
 
-## Decision
+## Decision drivers
+
+- A recommendation is computed on read and never stored as truth (D1).
+- A signal is tri-state, with `unknown` for anything never run, stale, unmapped, partial or unavailable (D2).
+- A false "done" hides real work until delivery, so the costs of the two errors are not symmetric.
+- Three PRDs written in parallel need one contract to code against.
+- Rule D22: Phase 1 adopted each open question's recommendation where it needed one.
+
+## Considered options
+
+1. Tri-state signals with a closed list of unknown causes, judged by a pure engine
+2. Boolean signals
+3. A single readiness score
+4. Letting `unknown` outrank `not_met`
+5. A free-text reason only for `unknown`
+
+## Decision outcome
+
+**Chosen option: tri-state signals with a closed list of unknown causes, judged by a pure engine**, because boolean signals cannot tell clean from never ran, and a signal that reads "no findings" as success would report "done" for a chapter nobody analyzed.
 
 `apps/desktop/internal/stages` defines the contract and the engine:
 
@@ -47,14 +65,36 @@ present), and a free-text reason only for `unknown` (the UI cannot route the act
 The contract is described for implementers in
 [stage recommendations](../architecture/stage-recommendations.md).
 
-## Consequences
+### Consequences
 
-- A chapter is suggested only when every required check was actually made on the current audio and passed; missing,
+- **Good:** A chapter is suggested only when every required check was actually made on the current audio and passed; missing,
   malformed or failed evidence can hold a chapter back but never move it forward.
-- The recording, editing and proofing signals plug in as providers without changing the engine, and the UI can route
+- **Good:** The recording, editing and proofing signals plug in as providers without changing the engine, and the UI can route
   an action from each `unknown` cause.
-- Most chapters will read `unknown` until the signals and the confirmed track mapping exist; the Home copy has to name
+- **Bad:** Most chapters will read `unknown` until the signals and the confirmed track mapping exist; the Home copy has to name
   the cause and the fix to keep that from being noise.
-- A new cause, a new stage or a change to the verdict precedence changes this contract and needs an ADR that
+- **Neutral:** A new cause, a new stage or a change to the verdict precedence changes this contract and needs an ADR that
   supersedes this one. Where the narrator's decisions are stored and how Confirm writes the status is a separate
   decision for the PRD's Phase 2.
+
+### Confirmation
+
+Not recorded when this decision was made.
+
+## Pros and cons of the options
+
+### Boolean signals
+
+- Bad, because they cannot tell clean from never ran.
+
+### A single readiness score
+
+- Bad, because it over-trusts one number and hides which check failed.
+
+### Letting `unknown` outrank `not_met`
+
+- Bad, because it hides the concrete reason when both are present.
+
+### A free-text reason only for `unknown`
+
+- Bad, because the UI cannot route the action that resolves it.

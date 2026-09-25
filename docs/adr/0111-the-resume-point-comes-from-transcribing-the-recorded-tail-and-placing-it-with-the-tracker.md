@@ -1,9 +1,9 @@
 # 0111. The resume point comes from transcribing the recorded tail and placing it with the tracker
 
-**Status:** Proposed
-**Date:** 2026-09-23
+- **Status:** Proposed
+- **Date:** 2026-09-23
 
-## Context
+## Context and problem
 
 `docs/prds/teleprompter-manuscript-integration.prd.md` Phase 9 ("Tail-audio locate") turns what is already recorded
 for a chapter into the word the narrator resumes from. Phase 8 ([ADR 0110](0110-one-go-chapter-to-track-matcher-ported-from-transcript-compare-with-explicit-confidence-states.md))
@@ -20,7 +20,21 @@ session). What that decision left open:
 - how this reaches the sidecar and the UI without a model download (the teleprompter's first-use gate) and without
   forced alignment ([ADR 0008](0008-timing-confidence-over-forced-alignment-model-for-transcript-compare.md)).
 
-## Decision
+## Decision drivers
+
+- The PRD's Decisions Log chose running the tracker over the tail audio, because it also works for audio not recorded through the teleprompter.
+- The live tracker's `locate()` only searches 40 words back and 30 ahead of where it already is.
+- No model download without the teleprompter's first-use gate, and no forced alignment (ADR 0008).
+- A tail inside a passage the chapter repeats must report low confidence.
+
+## Considered options
+
+1. Transcribe the recorded tail and place it with the tracker
+2. Anchors from past live sessions
+
+## Decision outcome
+
+**Chosen option: transcribe the recorded tail and place it with the tracker**, because the tail is the one source that describes what is actually on the track, and it also works for audio that was not recorded through the teleprompter.
 
 1. **Anchors from past sessions are not used.** They exist only for audio recorded through a live session, would need
    a store kept in step with every later edit of the take, and Phase 12 introduces live anchors for punch-in, not for
@@ -69,18 +83,33 @@ session). What that decision left open:
    never guesses; the narrator's pick (`trackGUID`, any track of the selected project) is read instead. No UI calls it
    yet (Phase 10 is the resume card).
 
-## Consequences
+### Consequences
 
-- The resume point is "as of the .rpp's last save" (Phase 8): a take REAPER holds unsaved is not seen until Phase 11
+- **Neutral:** The resume point is "as of the .rpp's last save" (Phase 8): a take REAPER holds unsaved is not seen until Phase 11
   reads live REAPER state. Phase 10 labels it.
-- A recording that ends in a long ad-lib, or a track whose last item holds another chapter, places poorly or not at
+- **Bad:** A recording that ends in a long ad-lib, or a track whose last item holds another chapter, places poorly or not at
   all; that shows as low confidence or `not_found`, and the narrator picks a word (Phase 10's "Pick a word").
-- Only the last item is read. A chapter whose last item is a few-second pickup gets a short tail and lower
+- **Bad:** Only the last item is read. A chapter whose last item is a few-second pickup gets a short tail and lower
   confidence (the 8-second fixture still scores 0.63); reading back across items is a later change if real use needs it.
-- The fixtures measure recognition of a synthetic voice, not a human narrator's pacing, accent or room; a real reading
+- **Neutral:** The fixtures measure recognition of a synthetic voice, not a human narrator's pacing, accent or room; a real reading
   is still a manual check, and the recorded tails should be extended with real ones when a narrator's recording can be
   committed.
-- The tracker's constants (`MAX_SKIP`, `BACK_WORDS`, `JUMP_MARGIN`) now shape the resume point too: a change to them
+- **Neutral:** The tracker's constants (`MAX_SKIP`, `BACK_WORDS`, `JUMP_MARGIN`) now shape the resume point too: a change to them
   re-runs `test_locate.py` against the recorded tails, which is the point.
-- The sidecar gains a second one-shot mode beside `--list-devices`, with the same exit-status and stderr contract the
+- **Neutral:** The sidecar gains a second one-shot mode beside `--list-devices`, with the same exit-status and stderr contract the
   host already reads for it; the threat model's row 4a covers the new arguments.
+
+### Confirmation
+
+`test_locate.py` enforces the accuracy target on recorded tails (`tests/fixtures/teleprompter-locate/tails.json`): every placeable tail resumes within 2 words of the truth and is confident, and the repeated passage scores below 0.1. A real reading is still a manual check.
+
+## Pros and cons of the options
+
+### Transcribe the recorded tail
+
+- Good, because it also works for audio that was not recorded through the teleprompter.
+
+### Anchors from past live sessions
+
+- Bad, because they exist only for audio recorded through a live session.
+- Bad, because they would need a store kept in step with every later edit of the take.

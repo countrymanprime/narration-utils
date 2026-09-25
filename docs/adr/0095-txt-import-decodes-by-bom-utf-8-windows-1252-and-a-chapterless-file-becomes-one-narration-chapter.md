@@ -1,9 +1,9 @@
 # 0095. TXT import decodes by BOM/UTF-8/Windows-1252, and a chapterless file becomes one narration chapter
 
-**Status:** Accepted
-**Date:** 2026-09-22
+- **Status:** Accepted
+- **Date:** 2026-09-22
 
-## Context
+## Context and problem
 
 The txt-and-epub-import PRD's Phase 1 adds a plain-text (`.txt`) manuscript importer alongside DOCX and Markdown
 (`apps/desktop/internal/importer/txt.go`). Its own Open Questions (T1, T2, T4) already carried the owner's recommended answers
@@ -17,7 +17,24 @@ sidecars exclude), and TXT would hit this far more often. Plain text also carrie
 text is hard-wrapped at a fixed column width with structural line breaks in some places (verse, addresses) and none in others
 (ordinary prose).
 
-## Decision
+## Decision drivers
+
+- Plain text has no chapter markup at all, which the PRD's Evidence names as the common case, not an edge case.
+- A chapterless Word or Markdown import becomes `opening`, which totals and sidecars exclude, so it is silently un-narratable.
+- Plain text carries no declared encoding.
+- Gutenberg-style text is hard-wrapped at a fixed column width, with structural line breaks in some places (verse, addresses) and none in others (ordinary prose).
+- The PRD's recommended answers to its Open Questions are adopted (`implementation-plan.md` D22) rather than re-decided.
+
+## Considered options
+
+1. Decode by BOM, then UTF-8, then Windows-1252, detect hard wrapping per file, and make a chapterless file one `narration` chapter
+2. Keep a chapterless TXT file as `opening`, as Word and Markdown do
+3. Decide hard wrapping per block instead of per file
+4. Fold a file with no blank lines into one giant paragraph
+
+## Decision outcome
+
+**Chosen option: decode by BOM, then UTF-8, then Windows-1252, detect hard wrapping per file, and make a chapterless file one `narration` chapter**, because the PRD's recommended answers already settled this shape, and plain text is usually chapterless, so Word's and Markdown's `opening` fallback would leave TXT imports silently un-narratable far more often.
 
 - **Charset (T1).** `decodeTxt` (`txt.go`) tries, in order: a UTF-8, UTF-16 LE or UTF-16 BE byte-order mark (decides the encoding
   outright); otherwise text that is already valid UTF-8 (trusted as is); otherwise Windows-1252 (decoded and reported as a
@@ -49,13 +66,23 @@ text is hard-wrapped at a fixed column width with structural line breaks in some
   independently, so a span like Gutenberg's own `_took a watch out of its waistcoat-pocket_` is not broken by the line it happens
   to wrap on); `snake_case_name` and a lone underscore stay literal text, mirroring the Markdown importer's own underscore rule.
 
-## Consequences
+### Consequences
 
-- TXT is the first importer whose chapterless behavior differs from the other two; a narrator who imports a short story with no
+- **Good:** TXT is the first importer whose chapterless behavior differs from the other two; a narrator who imports a short story with no
   "Chapter" line gets a single real, narratable chapter instead of a silently empty one. Word and Markdown are unchanged.
-- The wrap-detection thresholds are a considered guess, not a measured one (no real TXT files were available - PRD F1). A future
+- **Bad:** The wrap-detection thresholds are a considered guess, not a measured one (no real TXT files were available - PRD F1). A future
   change that tunes them, or that makes the decision per-block instead of per-file, should supersede this ADR rather than edit
   `txt.go`'s constants silently.
-- Only the exposed formats list (`formats.go`) changes what the native picker, `BuildDraftProgress`'s error message and the UI
+- **Neutral:** Only the exposed formats list (`formats.go`) changes what the native picker, `BuildDraftProgress`'s error message and the UI
   union accept; `manuscript.DetectSource`'s own extension list (the "found in your project folder" offer, ADR 0019) is
   unchanged by this ADR - offering `.txt` automatically is Phase 4's own, separate decision.
+
+### Confirmation
+
+Not recorded when this decision was made.
+
+## Pros and cons of the options
+
+### Keep a chapterless TXT file as `opening`
+
+- Bad, because a chapterless import is then silently un-narratable (totals and sidecars exclude `opening`), and TXT would hit this far more often than Word or Markdown.

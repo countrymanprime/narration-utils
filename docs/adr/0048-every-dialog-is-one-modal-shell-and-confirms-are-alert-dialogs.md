@@ -1,10 +1,10 @@
 # 0048. Every dialog is one modal shell, confirms are alert dialogs, and Escape, the backdrop and focus follow one policy
 
-**Status:** Accepted
-**Date:** 2026-09-20
-**Supersedes:**
+- **Status:** Accepted
+- **Date:** 2026-09-20
+- **Deciders:** the owner
 
-## Context
+## Context and problem
 
 `Dialog`, `ConfirmDialog`, `WorkDialog` and `AddNoteDialog` (built on `Dialog`) declared `aria-modal="true"` and were not modal: Escape did nothing, focus was neither moved in nor trapped nor restored, and the page behind stayed focusable and readable. It was the only high-severity entry in the retired UI defects register. The owner moved the mechanism to Base UI ([ADR 0047](0047-the-ui-primitives-wrap-base-ui-and-app-code-never-imports-it.md)), gave the foundation PRD ownership of dialog modality (implementation plan D4) and chose `AlertDialog` for every confirm and red confirm buttons for the six destructive ones (D12). The dialog PRD's recommendations for Escape, the backdrop and initial focus (its questions 3, 5 and 6) were adopted (D22).
 
@@ -14,7 +14,22 @@ What building it showed, beyond the spike in ADR 0047:
 - When the opener is removed while the dialog is open, Base UI returns focus to the first tabbable control of the `finalFocus` element it is given, so giving it `<main>` lands on the first control in the page rather than `<body>`.
 - Home's import dialogs used to sit in an overlay that stopped 16 px short of the bottom of the window in the captured states. Portalled to `<body>` the scrim covers the window and the dialog centres in it (8 px lower at the desktop viewport).
 
-## Decision
+## Decision drivers
+
+- The dialogs declared `aria-modal="true"` and were not modal, the only high-severity entry in the retired UI defects register.
+- A job that is still running must never be dismissed by a stray key.
+- An accidental click on the scrim must not discard a confirm.
+- A screen reader should read the message before any control.
+
+## Considered options
+
+1. One modal shell on Base UI's Dialog and AlertDialog, with one Escape, backdrop and focus policy
+2. Keep the status quo: dialogs that declare `aria-modal` and are not modal
+3. Backdrop dismissal
+
+## Decision outcome
+
+**Chosen option: one modal shell on Base UI's Dialog and AlertDialog, with one Escape, backdrop and focus policy**, because the dialogs declared themselves modal and were not, and the owner moved the mechanism to Base UI and adopted the dialog PRD's recommendations for Escape, the backdrop and initial focus.
 
 There is one modal shell, `apps/ui/src/components/primitives/Dialog.tsx`, on Base UI's Dialog and AlertDialog, and every dialog goes through it. The layout of [ADR 0001](0001-import-dialog-max-width-and-overflow.md) and [ADR 0002](0002-dialog-action-button-placement.md) is unchanged.
 
@@ -28,11 +43,21 @@ There is one modal shell, `apps/ui/src/components/primitives/Dialog.tsx`, on Bas
 - **Announcements still work.** The toast that reports a failure raised from inside a dialog has an explicit `aria-live="polite"`: Base UI hides the rest of the page from assistive technology while a dialog is open but keeps `[aria-live]` regions reachable, and `role="status"` alone does not carry the attribute. `Dialog` also refuses `variant="alert"` without a `description` at the type level, and an empty description renders no `aria-describedby`.
 - **Tests.** Each behaviour is a story `play()` in the Chromium atlas (Escape, Tab loop, focus start, focus return, backdrop, alertdialog description, progress value) that also runs in jsdom, plus RTL tests in `Dialog.test.tsx` and `ConfirmDialog.test.tsx` and one consumer flow (Story Bible delete returns focus to the Delete entity button). Stories look for popups through `primitives/portalScreen.ts`.
 
-## Consequences
+### Consequences
 
-- All four consumers inherit the same keyboard behaviour, and a new dialog is one `Dialog` with a story. The visible changes are the red confirm on the six destructive confirms, a focus ring on the message when a dialog opens from the keyboard or on load, the scrim covering the whole window on Home, and the guide text describing the keyboard behaviour.
-- Reduced motion for the indeterminate bar and a status line for jobs with no Cancel (the dialog PRD's phase 3) are not part of this decision; a job that cannot be cancelled has nothing focusable except the body and log regions, so focus is never lost, but the bar still slides under `prefers-reduced-motion`.
-- Two dialogs that replace one another (the import flow: preparing, preview confirm, committing) each return focus to whatever held it when they mounted, which for the second is inside the first, so the last one falls back into `<main>` rather than the Import button.
-- `AddNoteDialog` is opened from the selection popup, which unmounts as the dialog mounts, so there is no opener to return to and focus goes into `<main>` (its first control) rather than back to the reader text. Returning it there needs the reader to be a focus target and is a follow-up.
-- A hover tooltip inside a dialog would close with Escape together with the dialog; no tooltip is inside a dialog today, and the tooltip phase handles it.
-- To change any of this (Escape or backdrop dismissal, a non-alert confirm), write a new ADR that supersedes this one.
+- **Good:** All four consumers inherit the same keyboard behaviour, and a new dialog is one `Dialog` with a story. The visible changes are the red confirm on the six destructive confirms, a focus ring on the message when a dialog opens from the keyboard or on load, the scrim covering the whole window on Home, and the guide text describing the keyboard behaviour.
+- **Neutral:** Reduced motion for the indeterminate bar and a status line for jobs with no Cancel (the dialog PRD's phase 3) are not part of this decision; a job that cannot be cancelled has nothing focusable except the body and log regions, so focus is never lost, but the bar still slides under `prefers-reduced-motion`.
+- **Bad:** Two dialogs that replace one another (the import flow: preparing, preview confirm, committing) each return focus to whatever held it when they mounted, which for the second is inside the first, so the last one falls back into `<main>` rather than the Import button.
+- **Bad:** `AddNoteDialog` is opened from the selection popup, which unmounts as the dialog mounts, so there is no opener to return to and focus goes into `<main>` (its first control) rather than back to the reader text. Returning it there needs the reader to be a focus target and is a follow-up.
+- **Neutral:** A hover tooltip inside a dialog would close with Escape together with the dialog; no tooltip is inside a dialog today, and the tooltip phase handles it.
+- **Neutral:** To change any of this (Escape or backdrop dismissal, a non-alert confirm), write a new ADR that supersedes this one.
+
+### Confirmation
+
+Each behaviour is a story `play()` in the Chromium atlas that also runs in jsdom, plus RTL tests in `Dialog.test.tsx` and `ConfirmDialog.test.tsx` and one consumer flow (Story Bible delete returns focus to the Delete entity button).
+
+## Pros and cons of the options
+
+### Backdrop dismissal
+
+- Bad, because an accidental click on the scrim could discard a confirm.

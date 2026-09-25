@@ -1,9 +1,10 @@
 # 0088. Contents and Characters stay stored as reference chapters; hiding them in the reader is the reader PRD's own phase
 
-**Status:** Accepted
-**Date:** 2026-09-21
+- **Status:** Accepted
+- **Date:** 2026-09-21
+- **Deciders:** the owner
 
-## Context
+## Context and problem
 
 The import-structure-toc-and-characters PRD's Open Questions S1 and S2 asked whether a detected Contents (table of contents) section
 and an accepted Characters section should be dropped at import, given a new `contents` classification, or kept as `reference` and
@@ -26,7 +27,22 @@ which reverses the reader half of ADR 0005. That PRD had not landed (stack S19b 
 phase's own design. This ADR records the decision the storage side has already settled, and leaves the reader wiring to the PRD that
 owns `Manuscript.tsx`.
 
-## Decision
+## Decision drivers
+
+- The import-structure-toc-and-characters PRD's Open Questions S1 and S2 asked whether Contents and Characters should be dropped at import, given a new `contents` classification, or kept as `reference` and hidden from the reader.
+- `implementation-plan.md` D22 (owner instruction of 2026-09-20) adopts each PRD's stated recommendation where the owner did not already decide it.
+- Both are already `reference` at the storage/classification layer (`isReferenceHeading`).
+- The reader belongs to the manuscript-reader-search-and-controls PRD, so this PRD cannot change what the reader displays without duplicating or pre-empting that phase's design.
+
+## Considered options
+
+1. Keep Contents and Characters stored as `reference`, and leave hiding them in the reader to the reader PRD's own phase
+2. Drop them at import
+3. A new `contents` classification (S1 option (c))
+
+## Decision outcome
+
+**Chosen option: keep Contents and Characters stored as `reference`, and leave hiding them in the reader to the reader PRD's own phase**, because both are already classified as `reference`, a distinct `contents` kind would touch every consumer for no behavioural gain, and the reader wiring belongs to the PRD that owns `Manuscript.tsx`.
 
 - Contents/TOC sections and Characters sections stay `contentKind: "reference"`. No new `contents` kind is added (S1 option (c) is
   declined): a distinct wire value would touch the `service.go` validator, the TS enum, the `Home.tsx` section-kind options and both
@@ -42,13 +58,23 @@ owns `Manuscript.tsx`.
   classification were settled here, and the read-through hiding was deferred to that phase rather than built twice; that phase has
   since landed, and import-structure-toc-and-characters.prd.md's own Phase 2 row now reads `complete`.
 
-## Consequences
+### Consequences
 
-- No code change was needed for the storage-side half of this decision; it was already the existing behaviour, pinned by stack
+- **Neutral:** No code change was needed for the storage-side half of this decision; it was already the existing behaviour, pinned by stack
   S19c's Phase 1 tests (`TestNewDraftGivesContentsItsOwnGroupInsteadOfLeakingIntoPriorSection` and the new Phase 1 docx/markdown
   TOC-recognition tests) and a new explicit regression test for the Characters heading itself
   (`TestNewDraftClassifiesACharactersHeadingAsReference`, `model_test.go`).
-- A narrator importing today still meets Contents and Characters as readable chapters in the page-flip reader until
+- **Neutral:** A narrator importing today still meets Contents and Characters as readable chapters in the page-flip reader until
   manuscript-reader-search-and-controls Phase 5 lands; this is unchanged by this stack and is not a regression it introduces.
-- This ADR does not itself supersede ADR 0005: the reader PRD's own Phase 5 will record that supersession jointly when it reverses
+- **Neutral:** This ADR does not itself supersede ADR 0005: the reader PRD's own Phase 5 will record that supersession jointly when it reverses
   the reader half, per `docs/prds/README.md`'s "Accepted ADRs reversed by PRDs" note.
+
+### Confirmation
+
+The storage-side behaviour is pinned by stack S19c's Phase 1 tests (`TestNewDraftGivesContentsItsOwnGroupInsteadOfLeakingIntoPriorSection` and the docx/markdown TOC-recognition tests) and by `TestNewDraftClassifiesACharactersHeadingAsReference` in `model_test.go`.
+
+## Pros and cons of the options
+
+### A new `contents` classification
+
+- Bad, because a distinct wire value would touch the `service.go` validator, the TS enum, the `Home.tsx` section-kind options and both denylist consumers, for no behavioural gain over the existing `reference` value.

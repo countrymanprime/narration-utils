@@ -1,10 +1,10 @@
 # 0091. Story Bible pronunciation is a narrator-edited value the preview speaks directly
 
-**Status:** Accepted
-**Date:** 2026-09-21
-**Supersedes:** (none)
+- **Status:** Accepted
+- **Date:** 2026-09-21
+- **Deciders:** the owner
 
-## Context
+## Context and problem
 
 `docs/prds/story-bible-and-import-ux-briefs.prd.md` Phase 9 (open questions P1-P2) asks what a pronunciation "provider"
 means for Story Bible entries, and whether the preview can be made to speak a chosen pronunciation at all before any
@@ -23,7 +23,22 @@ narrator-edited project pronunciation dictionary; (c) a hosted IPA API; (d) maki
 that already exists. The owner's decision for this stack picked (b) plus (d) and explicitly excluded (a) and (c) for
 now.
 
-## Decision
+## Decision drivers
+
+- The preview ignores the pronunciation: `render_audio` speaks the spelled name through Piper, so a narrator who corrects a pronunciation hears no difference when they press Preview.
+- The pronunciation value (an IPA string from `cmu` or `espeak`) already exists and the narrator can already choose and edit it.
+- Reusing `phonemizer`, eSpeak NG and Piper, already recorded under owner decision D17, introduces no new licence question (P2).
+- The owner's decision for this stack picked options (b) and (d), and excluded (a) and (c) for now.
+
+## Considered options
+
+1. A narrator-edited pronunciation value that the preview speaks directly (options (b) plus (d))
+2. A second local G2P engine (option (a))
+3. A hosted IPA API (option (c))
+
+## Decision outcome
+
+**Chosen option: a narrator-edited pronunciation value that the preview speaks directly (options (b) plus (d))**, because a narrator who corrects a pronunciation hears no difference on Preview today, and the owner picked (b) plus (d) and excluded a second engine and a hosted API for now.
 
 "Provider" for this PRD means the pronunciation value the narrator already edits through `edit()`/`GuideEdit` (option
 b), not a second engine and not a hosted API. The Story Bible preview will be changed (Phase 10, not this stack) to
@@ -38,19 +53,23 @@ compatible with them; reusing them introduces no new licence question (P2). A li
 item for whichever later stack adds a genuinely new engine (the PRD's "Could" row), not a new artifact evaluation this
 ADR performs, because there is no new artifact yet.
 
-## Consequences
+### Consequences
 
-- Phase 10 (narrator pronunciation storage and preview) has a settled target: change `render_audio` to prefer the
+- **Good:** Phase 10 (narrator pronunciation storage and preview) has a settled target: change `render_audio` to prefer the
   stored pronunciation's phoneme path when one exists and is compatible, falling back to speaking the spelled name
   otherwise (an entity with no pronunciation, or a pronunciation source whose symbol set does not map cleanly).
-- The `espeak`-sourced pronunciation (already IPA from the same espeak-ng library Piper embeds) is the more likely
+- **Bad:** The `espeak`-sourced pronunciation (already IPA from the same espeak-ng library Piper embeds) is the more likely
   compatible path; the `cmu`-sourced pronunciation (ARPABET, a different symbol set) is a compatibility risk this ADR
   does **not** resolve — Phase 10 needs a real trial (synthesize and listen) before deciding whether `cmu` pronunciations
   need a conversion step or are excluded from "the preview speaks what you wrote" until they have one. That trial is
   Phase 10's job, not this spike's.
-- No engine addition needs its own licence review yet, because none is added; a future PRD that proposes MFA G2P or
+- **Neutral:** No engine addition needs its own licence review yet, because none is added; a future PRD that proposes MFA G2P or
   any other second engine must still re-read `docs/architecture/model-provenance.md` and
   `docs/research/local-dependency-evaluation.md#license-classes` first, unchanged from the standing policy.
-- The owner accepted this direction on 2026-09-23, before Phase 10's real trial of whether an edited pronunciation is
+- **Neutral:** The owner accepted this direction on 2026-09-23, before Phase 10's real trial of whether an edited pronunciation is
   actually audible and correct through the Piper phoneme-input path — a desk check of the API surface is not the same
   as hearing it work. If that listening trial fails, a new ADR supersedes this one.
+
+### Confirmation
+
+Not recorded when this decision was made.

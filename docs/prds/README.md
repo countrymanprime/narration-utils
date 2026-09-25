@@ -10,7 +10,7 @@ Planned work in this repository is specified here as PRDs: one file per feature 
 | **ADR** | [`docs/adr/`](../adr/README.md) | Records a decision that was actually made and applied to the code. Immutable once accepted; a changed decision gets a new ADR that supersedes the old one. |
 | Docs for shipped behavior | `docs/architecture/`, `docs/design/`, `docs/utilities/`, `docs/guides/`, `docs/workflows/` | Describe how the code works today, how to use it, and the design records of what shipped. |
 
-PRDs never replace ADRs. A PRD names the decisions it expects to make and links the ADR when it is written; an ADR that came out of PRD work links back to the PRD. When a phase settles a real decision, record it with the `adr-author` workflow after the code lands, and check the next free ADR number at merge time (see [Cross-PRD sequencing](#cross-prd-sequencing)).
+PRDs never replace ADRs. A PRD names the decisions it expects to make and links the ADR when it is written; an ADR that came out of PRD work links back to the PRD. When a phase settles a real decision, record it with the `architecture-decision-records` workflow after the code lands, and check the next free ADR number at merge time (see [Cross-PRD sequencing](#cross-prd-sequencing)).
 
 ## Lifecycle of a PRD
 

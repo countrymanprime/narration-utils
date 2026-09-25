@@ -1,15 +1,31 @@
 # 0078. Asset state comes from the manifest, an asset is read in full once per session, and a failed download resumes
 
-**Status:** Accepted
-**Date:** 2026-09-21
+- **Status:** Accepted
+- **Date:** 2026-09-21
+- **Deciders:** the owner
 
-## Context
+## Context and problem
 
 `assets.State` hashed every byte of every file on each call. The Whisper catalog lists five models (75 MB to 3.09 GB, 5.3 GB together), `Catalog()` called it for each, `Dir()` called it before every use, and each `asset_required` reply called it again: a full read of an installed `large-v3` on every catalog fetch and every transcription start. The manifest an install wrote held only provider, id and version, so it could not stand in for the hash, and it could not give diagnostics the exact provenance the first-use brief asks for. A download that failed at 2.9 GB of 3.09 restarted from zero, replacing a corrupt install removed the target before renaming the new one into place (a crash between the two left neither), the disk was never asked, and the cache root fell back to the temporary folder when `os.UserCacheDir()` failed, where a cleanup tool can delete a multi-gigabyte download.
 
 Owner decisions (Q3 a, Q4, Q5 a of the release-readiness PRD): show the cache path and never delete an installed asset; resume with a `.part` file and HTTP Range if the hosts honour ranges (checked: Hugging Face answers `206 Partial Content` with a `Content-Range` for the pinned Piper and Whisper URLs); trust a manifest on listing and startup, hash in full on an explicit Verify and before the first load of a session.
 
-## Decision
+## Decision drivers
+
+- `assets.State` hashed every byte of every file on each call: a full read of an installed `large-v3` on every catalog fetch and every transcription start.
+- The manifest held only provider, id and version, so it could not stand in for the hash or give diagnostics the exact provenance the first-use brief asks for.
+- A download that failed at 2.9 GB of 3.09 restarted from zero, a crash while replacing a corrupt install could leave neither copy, and the disk was never asked.
+- The cache root fell back to the temporary folder, where a cleanup tool can delete a multi-gigabyte download.
+- The owner's decisions (Q3 a, Q4, Q5 a): show the cache path and never delete an installed asset; resume with a `.part` file and HTTP Range; trust a manifest on listing and startup, and hash in full on an explicit Verify and before the first load of a session.
+
+## Considered options
+
+1. Trust the manifest on listing and startup, read an asset in full once per session and on Verify, and resume a failed download
+2. Keep the status quo: hash every byte of every file on each call, and restart a failed download from zero
+
+## Decision outcome
+
+**Chosen option: trust the manifest on listing and startup, read an asset in full once per session and on Verify, and resume a failed download**, because hashing on each call meant a full read of an installed `large-v3` on every catalog fetch and every transcription start, and the owner chose to trust a manifest on listing and hash in full on Verify and before the first load of a session.
 
 - **The manifest holds the asset's record** (`apps/desktop/internal/assets/manifest.go`): provider, id, exact version, every file with its size, SHA-256, source URL and modification time, `installedAt`, `verifiedAt` and a `damaged` flag.
 - **`State` reads no file contents.** An asset is `installed` when the manifest names exactly the catalog's files with the catalog's sizes and hashes and every file still has its recorded size and modification time. An asset whose manifest predates this (identity only), whose file changed, or whose catalog entry changed is hashed, as before. A `damaged` manifest is `verification_failed` without hashing.
@@ -20,10 +36,21 @@ Owner decisions (Q3 a, Q4, Q5 a of the release-readiness PRD): show the cache pa
 - **The disk is asked first.** `RequireFreeSpace` is the managers' default `Preflight`: the bytes still to be downloaded (what a resumed staging folder holds is not counted) plus 64 MB must fit, and the refusal is an `InsufficientSpaceError` that names both sizes. A disk that cannot be measured does not block an install. The free-space call moved from `internal/update` to `internal/assets`; `update.FreeBytes` delegates.
 - **No temporary-folder fallback.** When `os.UserCacheDir()` fails no manager is built, the host log records `asset_cache_unavailable`, and the first-use gates report the catalog unavailable.
 
-## Consequences
+### Consequences
 
-- Listing the five Whisper models with all of them installed takes 0.6 ms where reading them took 3.2 s (`go test ./internal/assets -run '^$' -bench State`, Windows 11, Ryzen 9 9955HX, files created at the real sizes). The first transcription of a session still reads the model once, in exchange for finding damage before the model loads it.
-- The cheap check trusts the manifest, the file size and the modification time: a file changed in place to the same size with its time put back is not noticed until the next `Verify` or the next session's first use. That is what the owner chose (Q5 a) and it is stated in the tests.
-- A network failure no longer costs the bytes already fetched. A staging folder can sit on the disk for up to a week after a failed download; it is not an installed asset and is removed at start after that.
-- Every later asset kind (spaCy, dictionaries, Moonshine) gets the manifest, resume, repair and the disk check by using `assets.InstallWith`; nothing in this decision is specific to voices or models.
-- To trust less (hash on every listing) or more (skip the once-per-session read) write a new ADR that supersedes this one.
+- **Neutral:** Listing the five Whisper models with all of them installed takes 0.6 ms where reading them took 3.2 s (`go test ./internal/assets -run '^$' -bench State`, Windows 11, Ryzen 9 9955HX, files created at the real sizes). The first transcription of a session still reads the model once, in exchange for finding damage before the model loads it.
+- **Bad:** The cheap check trusts the manifest, the file size and the modification time: a file changed in place to the same size with its time put back is not noticed until the next `Verify` or the next session's first use. That is what the owner chose (Q5 a) and it is stated in the tests.
+- **Neutral:** A network failure no longer costs the bytes already fetched. A staging folder can sit on the disk for up to a week after a failed download; it is not an installed asset and is removed at start after that.
+- **Good:** Every later asset kind (spaCy, dictionaries, Moonshine) gets the manifest, resume, repair and the disk check by using `assets.InstallWith`; nothing in this decision is specific to voices or models.
+- **Neutral:** To trust less (hash on every listing) or more (skip the once-per-session read) write a new ADR that supersedes this one.
+
+### Confirmation
+
+The benchmark `go test ./internal/assets -run '^$' -bench State` measures the listing, and the cheap check's limit (a file changed in place to the same size with its time put back) is stated in the tests.
+
+## Pros and cons of the options
+
+### Keep the status quo: hash on each call
+
+- Bad, because it read an installed `large-v3` in full on every catalog fetch and every transcription start (listing the five installed Whisper models took 3.2 s).
+- Bad, because a download that failed at 2.9 GB of 3.09 restarted from zero.

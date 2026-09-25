@@ -1,10 +1,11 @@
 # 0119. A hand scroll pauses following until the current word is back in the band
 
-**Status:** Proposed
-**Date:** 2026-09-23
-**Amends:** [ADR 0024](0024-teleprompter-highlight-follows-the-sidecars-spans.md) (its last consequence, that a narrator who scrolls by hand can be pulled back)
+- **Status:** Proposed
+- **Date:** 2026-09-23
+- **Deciders:** the owner
+- **Related:** Amends [ADR-0024](0024-teleprompter-highlight-follows-the-sidecars-spans.md) (its last consequence, that a narrator who scrolls by hand can be pulled back); decision 2 is amended by [ADR-0196](0196-the-read-aloud-control-bar-lives-in-a-dialog-footer-slot-and-space-plays-or-stops-a-session.md) (Space is no longer always a scroll key)
 
-## Context
+## Context and problem
 
 The shared reader (`ReaderText`, used by the Teleprompter page and the read-aloud dialog through `ReadAlongView`) scrolls the
 current word to the middle whenever it leaves the 25%-70% band of the viewport, on every cursor change while a session runs.
@@ -13,7 +14,21 @@ ADR 0024 records the consequence: a narrator who scrolls to look ahead or back i
 answered its open question on 2026-09-23: pause on a user scroll, resume automatically when the current word is back inside
 the follow band, plus a visible Follow control, with scroll intent detected from input rather than from scroll events.
 
-## Decision
+## Decision drivers
+
+- Manual scroll without the pull-back (PRD Phase 10).
+- The owner's answer: pause on a user scroll, resume automatically when the current word is back inside the follow band, plus a visible Follow control, with scroll intent detected from input rather than from scroll events.
+- The reader's own follow scrolling fires scroll events too.
+
+## Considered options
+
+1. Pause on input, resume when the current word is back in the band, plus a Follow button
+2. Keep the status quo: pull the narrator back at the next word (ADR 0024)
+3. Detect scroll intent from scroll events
+
+## Decision outcome
+
+**Chosen option: pause on input, resume when the current word is back in the band, plus a Follow button**, because the owner answered the PRD's open question this way on 2026-09-23.
 
 1. Following lives in one hook, `useFollowCursor` (`components/teleprompter/useFollowCursor.ts`), called by `ReadAlongView`, so
    both surfaces get it; `ReaderText` keeps its `follow` prop and scrolls only while it is true. The band check and the
@@ -29,12 +44,22 @@ the follow band, plus a visible Follow control, with scroll intent detected from
    "Following paused" under the status. Pressing it resumes and scrolls straight back to the word. Each session starts
    following.
 
-## Consequences
+### Consequences
 
-- A narrator can scroll ahead or back and read there; the text is never pulled away from them. Scrolling past the word so it
+- **Good:** A narrator can scroll ahead or back and read there; the text is never pulled away from them. Scrolling past the word so it
   sits above the band means following resumes by itself once reading brings the word down into it.
-- A wheel or touch over another scrolling area inside the same container (the read-aloud rail) also pauses, but the word is
+- **Neutral:** A wheel or touch over another scrolling area inside the same container (the read-aloud rail) also pauses, but the word is
   still in the band then, so following resumes at the next step without anything moving.
-- Other ways of scrolling (a find-in-page jump, a screen reader's virtual cursor) are not detected and are pulled back as
+- **Bad:** Other ways of scrolling (a find-in-page jump, a screen reader's virtual cursor) are not detected and are pulled back as
   before; they can be added to the input list if they turn out to matter.
-- The band is still measured against the window, not the scroll container, as ADR 0024's reader did.
+- **Neutral:** The band is still measured against the window, not the scroll container, as ADR 0024's reader did.
+
+### Confirmation
+
+Not recorded when this decision was made.
+
+## Pros and cons of the options
+
+### Detect scroll intent from scroll events
+
+- Bad, because the reader's own follow scrolling fires them too.

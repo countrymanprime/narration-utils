@@ -1,9 +1,9 @@
 # 0092. REAPER executable discovery, heartbeat mechanism and script-plus-project launch are resolved
 
-**Status:** Accepted
-**Date:** 2026-09-22
+- **Status:** Accepted
+- **Date:** 2026-09-22
 
-## Context
+## Context and problem
 
 The project-workspace-and-daw-link PRD's Phase 6 spike existed to answer three Open Questions before Phases 7 and 8 (open-project
 verification, launch DAW) could be scoped: W10 (can the app know REAPER is running and which project is open?), W11 (where is
@@ -12,7 +12,21 @@ records the method and evidence in full: two isolated REAPER 7.80 runs (`-cfgfil
 `Challenges_001.rpp`, owner decision D3), plus a registry read on this machine's real REAPER install. W12's citation
 (`reaper-automation-surface.md:150`, "a project and a script can be passed together, unverified") is now verified.
 
-## Decision
+## Decision drivers
+
+- Phases 7 and 8 (open-project verification, launch DAW) could not be scoped until Open Questions W10, W11 and W12 were answered.
+- The evidence comes from two isolated REAPER 7.80 runs on a copy of a project (owner decision D3) and a registry read on the real install.
+- Auto-detect with a manual override is the owner's own recommendation for locating `reaper.exe`.
+- Owner decision D10: auto-starting the launcher ships behind a Settings toggle defaulting OFF.
+
+## Considered options
+
+1. Registry lookup with a Settings override for `reaper.exe`, an `events.log` heartbeat event, and the script passed beside the project on REAPER's command line
+2. A polled heartbeat file (one line, rewritten in place) for W10
+
+## Decision outcome
+
+**Chosen option: registry lookup with a Settings override for `reaper.exe`, an `events.log` heartbeat event, and the script passed beside the project on REAPER's command line**, because each mechanism was confirmed in real REAPER 7.80 runs and a registry read, and the existing event fan-out already delivers an event with an empty run ID to every subscriber, which is the broadcast shape a heartbeat needs.
 
 - **W11 (resolved).** `reaper.exe` is located via the Windows "Uninstall" registry key's `InstallLocation` value (both the native
   and `WOW6432Node` views), matching a `DisplayName` of exactly `REAPER` or `REAPER (<arch>)`; the `.rpp` file-association command
@@ -35,17 +49,32 @@ records the method and evidence in full: two isolated REAPER 7.80 runs (`-cfgfil
   defaulting OFF, and only because this spike proved it works — this ADR records the technical proof, not a change to D10's own
   policy gate.
 
-## Consequences
+### Consequences
 
-- Phases 7 and 8 can now be scoped from real evidence (a working registry lookup, a named event-fan-out mechanism, a confirmed CLI
+- **Good:** Phases 7 and 8 can now be scoped from real evidence (a working registry lookup, a named event-fan-out mechanism, a confirmed CLI
   form) instead of "unverified"/"needs a spike," which is exactly what Phase 6's success signal ("a written decision") asked for.
-- `apps/desktop/internal/daw` is new product surface landed ahead of the phase that will call it end-to-end (Phase 8); it is fully
+- **Neutral:** `apps/desktop/internal/daw` is new product surface landed ahead of the phase that will call it end-to-end (Phase 8); it is fully
   unit-tested (`locate_test.go`, pure parsing/selection functions plus a `Resolve` precedence test) and was also run once against
   the real Windows registry on the development machine to confirm the integration, but has no caller yet and no Settings field —
   it is inert until Phase 8 wires it in.
-- The `events.log`-event recommendation for W10 is a design choice this ADR states in advance of Phase 7's own implementation; if
+- **Neutral:** The `events.log`-event recommendation for W10 is a design choice this ADR states in advance of Phase 7's own implementation; if
   Phase 7 finds a reason to prefer the polled-file heartbeat instead (for example, a case where an event cannot reach a subscriber
   that has not subscribed yet), that is a legitimate deviation to record in a new, superseding ADR rather than silently ignoring
   this one.
-- Multi-tab REAPER sessions were not separately exercised beyond confirming `EnumProjects` enumerates exactly one tab in both spike
+- **Neutral:** Multi-tab REAPER sessions were not separately exercised beyond confirming `EnumProjects` enumerates exactly one tab in both spike
   runs (REAPER's own default); nothing observed suggests different behavior with more tabs open, but it was not directly tested.
+
+### Confirmation
+
+`locate_test.go` unit-tests the parsing and selection functions and the `Resolve` precedence, and the lookup was run once against the real Windows registry on the development machine. The spike's method and evidence are in `docs/research/reaper-spike-s6-daw-reachability.md`.
+
+## Pros and cons of the options
+
+### An `events.log` heartbeat event
+
+- Good, because the fan-out already delivers any event whose run-ID field is empty to every subscriber regardless of `Owns`, which is exactly the broadcast shape a heartbeat needs.
+
+### A polled heartbeat file
+
+- Good, because it is a viable mechanism with no new REAPER capability needed.
+- Bad, because it would be a second polled file beside `events.log`.

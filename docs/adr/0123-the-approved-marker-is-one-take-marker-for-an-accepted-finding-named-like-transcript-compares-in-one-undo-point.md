@@ -1,9 +1,10 @@
 # 0123. The approved marker is one take marker for an accepted finding, named like Transcript Compare's, in one undo point
 
-**Status:** Proposed
-**Date:** 2026-09-23
+- **Status:** Proposed
+- **Date:** 2026-09-23
+- **Deciders:** the owner
 
-## Context
+## Context and problem
 
 `docs/prds/review-dashboard-and-findings-adoption.prd.md` Phase 8 (the owner's answer to Q8) puts a per-finding "add
 approved marker" action in milestone 1, to meet the adapter criterion in `docs/architecture/daw-integration.md` ("a
@@ -21,7 +22,22 @@ this action changes the project, so several things had to be settled:
 - **The "generic execute suggested action" path the PRD sketches for TR-5.** TR-5's take creation had already landed
   with its own executor (`apps/desktop/internal/takereview/createtake.go`) before this phase.
 
-## Decision
+## Decision drivers
+
+- Meet `daw-integration.md`'s adapter criterion: navigate, loop, and add an approved marker from a valid finding.
+- A finding suggests and the narrator confirms (the findings contract).
+- A finding marked from the Review page and then exported from Proofing must not be marked twice.
+- A project change from the bridge must be one undo point (`daw-integration.md`).
+
+## Considered options
+
+1. One take marker for an accepted finding, named like Transcript Compare's, in one undo point
+2. A project marker at a project time
+3. A generic "execute suggested action" path (the PRD's sketch for TR-5)
+
+## Decision outcome
+
+**Chosen option: one take marker for an accepted finding, named like Transcript Compare's, in one undo point**, because a take marker at a source time follows the item when it moves, and sharing the export's name and duplicate rule keeps a row from being marked twice.
 
 1. **Only an accepted finding gets a marker, and only after a confirm.** `FindingsAddMarker(id)` refuses a finding
    whose review status is not `accepted` (`not_accepted`). The Review page keeps **Add marker in REAPER** off until the
@@ -44,13 +60,23 @@ this action changes the project, so several things had to be settled:
    awaited answer (`FINDING_MARKER|run|added or existing|take_guid|source_time|name`) on the same plumbing as Go to
    and Loop. This phase does not move TR-5's `CreateTake` onto it.
 
-## Consequences
+### Consequences
 
-- `daw-integration.md`'s acceptance criterion is met in code. Whether REAPER's own undo takes the marker away in one
+- **Neutral:** `daw-integration.md`'s acceptance criterion is met in code. Whether REAPER's own undo takes the marker away in one
   step, and whether the marker shows where expected, still needs a check in REAPER (the owner's checklist in
   `docs/architecture/reaper-navigation.md`, steps 10 and 11).
-- Accepting a finding does not add a marker by itself; the marker is a second, confirmed click.
-- The Proofing page's rows still say `pending` for a row marked from the Review page. Its export rechecks each take
+- **Neutral:** Accepting a finding does not add a marker by itself; the marker is a second, confirmed click.
+- **Bad:** The Proofing page's rows still say `pending` for a row marked from the Review page. Its export rechecks each take
   before adding and counts that row as skipped.
-- The mock repeats the host's marker name and words, and `findingsMock.test.ts` checks them against the golden payloads.
-- `hostAPIVersion` went from 38 to 39.
+- **Neutral:** The mock repeats the host's marker name and words, and `findingsMock.test.ts` checks them against the golden payloads.
+- **Neutral:** `hostAPIVersion` went from 38 to 39.
+
+### Confirmation
+
+Whether REAPER's own undo takes the marker away in one step, and whether it shows where expected, is in the owner's checklist in `docs/architecture/reaper-navigation.md` (steps 10 and 11); `findingsMock.test.ts` checks the mock's marker name and words against the golden payloads.
+
+## Pros and cons of the options
+
+### A project marker at a project time
+
+- Bad, because it goes wrong when the item moves.

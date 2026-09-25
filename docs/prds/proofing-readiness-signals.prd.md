@@ -184,7 +184,7 @@ Phases 1, 2, 4, 5 (metric checks), 6 and 7: the pickup roll-up over Transcript C
 - **Evaluation is a read.** Check now and Home load read the store, ledger, project file and file stats. They never start Compare, a scan or a measurement. A missing analysis shows its action. Hashing large files follows EL's hash policy; if evaluation is not instant it shows real activity only (ADR 0015).
 - **Host surface.** Readiness reads flow through SR's evaluation binding. This PRD adds bindings only for the render association (choose, clear, state) and reuses DX-1's measurement job for the measurement. Host API version bumps in `apps/desktop/app.go`, `apps/desktop/app_test.go`, `apps/ui/src/hostApi.ts` (currently 5; take the next number at merge), Wails bindings regenerated, services snapshot pointers under `h.mu.RLock` (`h.services()`, see `docs/architecture/host-binding-concurrency.md`).
 - **UI.** Readiness detail on the Proofing page as a `Panel` with the existing `table.dtable` style; state shown as text plus icon, never colour alone; SR's evidence popover and Confirm are reused. New primitives, if any, need stories and atlas coverage. New states get `state-catalog.ts` rows and drivers in `app.drivers.ts`, doc screenshots and `docs/guides/using-the-app/proofing.md` updates (`visual-catalog-sync`, `doc-screenshot-sync`; `apps/ui/src/docsGuide.test.ts` guards the guide).
-- **ADR.** After code lands, use `adr-author` for the proofing-complete definition (open-item semantics, source availability rule, render attestation). Take the next free number at merge time (0027 at d5cc994; PR #44 uses 0027-0035).
+- **ADR.** After code lands, use `architecture-decision-records` for the proofing-complete definition (open-item semantics, source availability rule, render attestation). Take the next free number at merge time (0027 at d5cc994; PR #44 uses 0027-0035).
 
 **Technical Risks**
 
@@ -252,7 +252,7 @@ Every phase follows the `CLAUDE.md` workflow: plan (find or open the tracking is
 
 **Phase 7 - Mark proofing done and close-out**
 - **Goal**: Complete the loop: suggest, review evidence, confirm.
-- **Scope**: "Mark proofing done" routed through SR's Confirm, enabled only when recommended (Q14), with the consequence stated; signals callable for a confirmed chapter so SR can show "evidence changed since you confirmed"; docs (`proofing.md`, `docs/utilities/transcript-compare.md`, `docs/workflows/technical-qc-and-handoff.md`, `docs/architecture/findings-contract.md` if needed, `docs/README.md` only if a doc is added); ADR via `adr-author`; `feature-cleanup`.
+- **Scope**: "Mark proofing done" routed through SR's Confirm, enabled only when recommended (Q14), with the consequence stated; signals callable for a confirmed chapter so SR can show "evidence changed since you confirmed"; docs (`proofing.md`, `docs/utilities/transcript-compare.md`, `docs/workflows/technical-qc-and-handoff.md`, `docs/architecture/findings-contract.md` if needed, `docs/README.md` only if a doc is added); ADR via `architecture-decision-records`; `feature-cleanup`.
 - **Success signal**: Confirm writes SR's record with this PRD's basis; a new pickup or an edited item after confirm shows the changed-evidence note with revert; nothing changes status without the click; docs consistent.
 
 ### Parallelism Notes

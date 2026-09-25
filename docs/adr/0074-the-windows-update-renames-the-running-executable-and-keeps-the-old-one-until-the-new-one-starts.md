@@ -1,14 +1,28 @@
 # 0074. The Windows update renames the running executable and keeps the old one until the new one starts
 
-**Status:** Accepted
-**Date:** 2026-09-21
-**Supersedes:**
+- **Status:** Accepted
+- **Date:** 2026-09-21
 
-## Context
+## Context and problem
 
 [ADR 0072](0072-the-app-updates-itself-from-this-repositorys-releases-and-never-installs-without-a-click.md) decides that the app replaces itself on Windows after one explicit click. A Windows release is one self-contained executable (`narration-utils.exe`: the host, the UI and the Python sidecars as embedded resources, extracted into a per-user cache keyed by their content), so the replacement is one file. A running Windows program can be renamed but not overwritten or deleted. The host has a single-instance lock (a Wails `SingleInstanceLock`), so a second copy started while the first is alive forwards its arguments and exits. REAPER starts the app through its launcher with `--project-folder`, `--session-dir` and `--daw`, and the launcher reads the path the app records from `os.Executable()` on every start, so a replacement at the same path and name needs no launcher change. Nothing signs the executable (owner decision D7), so the app has no signature to check and a failed update must never leave a narrator without a working program.
 
-## Decision
+## Decision drivers
+
+- A Windows release is one self-contained executable, so the replacement is one file.
+- A running Windows program can be renamed but not overwritten or deleted.
+- The host holds a single-instance lock, so a second copy started while the first is alive forwards its arguments and exits.
+- The launcher reads the path the app records from `os.Executable()`, so a replacement at the same path and name needs no launcher change.
+- Nothing signs the executable (owner decision D7), so a failed update must never leave a narrator without a working program.
+
+## Considered options
+
+1. A rename swap of the running executable, keeping the old one until the new one's first `Bootstrap`
+2. Keep the old program until the next update
+
+## Decision outcome
+
+**Chosen option: a rename swap of the running executable, keeping the old one until the new one's first `Bootstrap`**, because a running Windows program can be renamed but not overwritten, and a failed update must never leave a narrator without a working program.
 
 1. **The swap is a rename, in this order, in `internal/update.Install`:** the folder must be writable (a probe file; the app never asks for elevation) and have room; the staged program is copied beside the running one as `<name>.new` while it is hashed, and must match the size and SHA-256 it was staged with (one pass, so what was checked is what was copied); the copy is run once with `--version` and must print the version the release names; a record is written to the per-user cache (`update/pending.json`: from, to, executable, attempts); the running program is renamed to `<name>.old` (a running program can be renamed, not overwritten); the copy is renamed to the running program's name and path. Every rename is retried for about a second and a half, because antivirus software holds a just-written program open for a moment. Any failure before the start puts everything back (the record and the copy are removed, `.old` goes back under its name); if putting it back is not possible the record and `.old` are kept and the error names the file to rename. It is called only by the narrator's confirmed click, and only when nothing the restart would displace is running: the same busy rule as a REAPER second launch (`idleLocked`: an import draft, a Story Bible build, a download, a comparison, a teleprompter session), checked at the click and once more just before the swap (`InstallOptions.Ready`), with the update job itself taken from `ready` to `installing` atomically so a second click cannot race the first, and no project can be attached while the job is installing.
 2. **The new copy is started detached, with the same arguments,** outside any job object (breakaway is tried first and dropped if the job forbids it) and in its own process group, with `--relaunch-after <pid>` in front. Before anything else `main` runs `update.Startup`: it strips that argument and waits (at most 30 s) for that process to exit, because the single-instance lock is held until then. The old process closes itself a moment after `UpdateInstall` answers (sidecars stopped, `runtime.Quit`). If starting the copy fails, the running program is put back and the error is shown; the app keeps running.
@@ -16,11 +30,22 @@
 4. **Where the app may not replace itself** (Program Files, a locked-down folder), `Status.canInstall` is false with the reason before the narrator tries, and the panel offers the download and **Show the downloaded file** (Explorer at the cache folder) instead of installing. macOS and Linux never install (D7).
 5. **Proof.** The install tests run real programs: a fake application built from `internal/update/testdata/fakeapp` (which uses the same `Startup` and `Confirm` as `main`) is replaced while it runs, relaunched with the original arguments after the old one is killed, and restored after two starts that never confirmed. A rehearsal (`go test -tags rehearsal`, `rehearsal_test.go`) does the same with two real builds of the application on copies in a temporary folder: on 2026-09-21 it swapped a real 0.1.0 build for a real 0.9.9 build while 0.1.0 was running, the new build started once the old one was gone, loaded its window, asked for its `Bootstrap`, and removed `.old` and the record.
 
-## Consequences
+### Consequences
 
-- An update is one rename pair and one relaunch, with the old program on disk until the new one has been seen to start; nothing else in the install folder is touched.
-- Antivirus or SmartScreen may block the relaunch of an unsigned executable: the failure to start restores the running program at once, and the release notes say the build is unsigned.
-- A power cut or a killed process between the two renames leaves `.old` and no program at the path: the next launch cannot happen from that path; the documented manual recovery is to rename `.old` back (steady-state docs).
-- The confirmation is the first `Bootstrap`, so a build that starts but is broken later is not caught; its `.old` is already gone. The alternative (keep `.old` until the next update) trades disk (about 400 MB) for a rollback that needs the narrator to ask for it.
-- A relaunched copy waits up to 30 s for the old one to exit; if the old one never exits, the new one starts anyway and the single-instance lock decides.
-- Changing this (a helper process, an installer-managed update, a signed update) means a new ADR that supersedes this one.
+- **Good:** An update is one rename pair and one relaunch, with the old program on disk until the new one has been seen to start; nothing else in the install folder is touched.
+- **Neutral:** Antivirus or SmartScreen may block the relaunch of an unsigned executable: the failure to start restores the running program at once, and the release notes say the build is unsigned.
+- **Bad:** A power cut or a killed process between the two renames leaves `.old` and no program at the path: the next launch cannot happen from that path; the documented manual recovery is to rename `.old` back (steady-state docs).
+- **Bad:** The confirmation is the first `Bootstrap`, so a build that starts but is broken later is not caught; its `.old` is already gone. The alternative (keep `.old` until the next update) trades disk (about 400 MB) for a rollback that needs the narrator to ask for it.
+- **Neutral:** A relaunched copy waits up to 30 s for the old one to exit; if the old one never exits, the new one starts anyway and the single-instance lock decides.
+- **Neutral:** Changing this (a helper process, an installer-managed update, a signed update) means a new ADR that supersedes this one.
+
+### Confirmation
+
+Decision point 5: the install tests replace a running fake application built from `internal/update/testdata/fakeapp`, relaunch it and restore it after two unconfirmed starts, and a rehearsal (`go test -tags rehearsal`, `rehearsal_test.go`) does the same with two real builds of the application.
+
+## Pros and cons of the options
+
+### Keep the old program until the next update
+
+- Good, because a build that starts but is broken later could still be rolled back.
+- Bad, because it trades disk (about 400 MB) for a rollback that needs the narrator to ask for it.

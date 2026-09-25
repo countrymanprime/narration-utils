@@ -1,9 +1,9 @@
 # 0152. The retail sample is a paragraph range on the project manifest, held to five minutes by the host
 
-**Status:** Proposed
-**Date:** 2026-09-23
+- **Status:** Proposed
+- **Date:** 2026-09-23
 
-## Context
+## Context and problem
 
 ACX asks for a retail sample of 5 minutes or less. The PRD recommended a computed marker on the first five minutes of chapter
 one (Open Question C10); the owner decided on 2026-09-23 that the narrator picks the range, at most 5 minutes, anywhere in the
@@ -13,7 +13,21 @@ words per finished hour (`WORDS_PER_FINISHED_HOUR`, `apps/ui/src/state.ts`). Cre
 or any folder that Replace or "Clear derived project data" deletes (PRD Evidence); the project manifest already holds the
 credits values (`project.Manifest.Credits`).
 
-## Decision
+## Decision drivers
+
+- ACX asks for a retail sample of 5 minutes or less.
+- The owner's decision (2026-09-23): the narrator picks the range, at most 5 minutes, anywhere in the book, stored per project, and it adds no time to the estimate.
+- Before any audio exists, the only measure of "5 minutes" is the estimate's own rate, 9,300 words per finished hour.
+- Credits data must not live in `manuscript.json` or any folder that Replace or "Clear derived project data" deletes.
+
+## Considered options
+
+1. A narrator-picked paragraph range on the project manifest, held to five minutes by the host
+2. A computed marker on the first five minutes of chapter one (the PRD's recommendation, C10)
+
+## Decision outcome
+
+**Chosen option: a narrator-picked paragraph range on the project manifest, held to five minutes by the host**, because the owner decided the narrator picks the range and it is stored per project, and the project manifest already holds the credits values outside what Replace and Clear delete.
 
 - **Stored by paragraph id on the manifest.** `project.Manifest.RetailSample` (`{startParagraphId, endParagraphId}`, both
   included, additive and omitted when unset) holds the range. Paragraph ids are what notes and Transcript Compare anchor to;
@@ -31,13 +45,17 @@ credits values (`project.Manifest.Credits`).
   header and marks the sampled rows (`retailSampleRange.ts`, from each chapter's `paragraphIds`, so no paragraph text is
   loaded). The Home estimate never reads it.
 
-## Consequences
+### Consequences
 
-- The sample survives Replace and Clear (the manifest is outside both), and a replaced manuscript that keeps its paragraph ids
+- **Good:** The sample survives Replace and Clear (the manifest is outside both), and a replaced manuscript that keeps its paragraph ids
   keeps the sample in place; one that does not reports the problem and asks for a new pick instead of marking the wrong lines.
-- "5 minutes" is an estimate from words, not a measured recording: a slow read of a 775-word range can run past 5 minutes. The
+- **Bad:** "5 minutes" is an estimate from words, not a measured recording: a slow read of a 775-word range can run past 5 minutes. The
   guide says it is measured at about 155 words a minute. Measuring the recorded audio would need the chapter's audio and a new
   decision.
-- Picking by chapter and line in Settings is less direct than selecting text in the reader; a reader action to set the sample
+- **Bad:** Picking by chapter and line in Settings is less direct than selecting text in the reader; a reader action to set the sample
   from a selection could be added later without changing the stored shape.
-- `hostAPIVersion` goes to 35 with ADR 0151's binding; the golden payloads are `credits-retail-sample*.json`.
+- **Neutral:** `hostAPIVersion` goes to 35 with ADR 0151's binding; the golden payloads are `credits-retail-sample*.json`.
+
+### Confirmation
+
+The Go constant and the UI's rate are both pinned by tests (`sample_test.go`, `state.test.ts`).

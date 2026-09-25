@@ -1,17 +1,30 @@
 # 0060. The visual suite fails a collapsed control, and a row may declare one narrow on purpose
 
-**Status:** Accepted
-**Date:** 2026-09-21
-**Supersedes:**
-**Amends:** [ADR 0023](0023-visual-suite-capture-contract-and-storybook.md) (what a capture fails on)
+- **Status:** Accepted
+- **Date:** 2026-09-21
+- **Deciders:** the owner
+- **Related:** Amends [ADR-0023](0023-visual-suite-capture-contract-and-storybook.md) (what a capture fails on)
 
-## Context
+## Context and problem
 
 At a 390 px window every Settings row with a select or a colour box rendered its control as a blank sliver: the model and chunk-length selects were 44.8 px wide and the hex boxes 26 px (defect 8 of the retired defects register). The row was a grid with no breakpoint, and a grid gives a fixed-range track (the label's `minmax(12rem,16rem)`) its full maximum before a flexible track gets any. The visual suite that exists to catch layout bugs did not see it: [ADR 0023](0023-visual-suite-capture-contract-and-storybook.md)'s checks are page errors, failed requests, sideways overflow, a blank image and undeclared duplicates, and a collapsed control does not overflow, it shrinks. Nothing measured a control. The same defect would have shipped again with the next Settings field.
 
 The owner answered the settings mobile layout PRD's questions with their recommendations (implementation plan D22): the check belongs in the kit core (question 1a), at a flat 64 px with colour swatches and check boxes exempt by type (question 2), and a row may opt out with a reason.
 
-## Decision
+## Decision drivers
+
+- A collapsed control does not overflow, it shrinks, so the visual suite did not see it, and the same defect would have shipped again with the next Settings field.
+- The failure to catch is a control squeezed to a sliver by a layout, not a control that is a little tight.
+- The check belongs in the kit core, so every repo using the kit gets it.
+
+## Considered options
+
+1. A flat 64 px minimum in the kit core, with non-text inputs exempt by type and a reasoned per-row declaration
+2. A minimum as a fraction of the container
+
+## Decision outcome
+
+**Chosen option: a flat 64 px minimum in the kit core, with non-text inputs exempt by type and a reasoned per-row declaration**, because 64 px is 1.5 to 2.5 times above what collapsed and less than half of the smallest legitimate control, while a fraction of the container would move with the layout it is meant to judge.
 
 **A capture fails when a visible text-like control is narrower than 64 px.** `captureState` (`tests/visual/lib/capture.ts`) measures, after the driver has settled and the pointer is parked, every `input`, `select` and `textarea` that is in the layout (it has a box and is not `visibility: hidden`), except the `input` types a person does not type into (`NON_TEXT_INPUT_TYPES`: `color`, `checkbox`, `radio`, `range`, `file`, `hidden`, `button`, `submit`, `reset`, `image`). A colour swatch, a check box and the Base UI switch are small by design and are exempt by type, not by a list of names. A control in the layout with no width is collapsed, not missing. The failure names the control (its accessible name), its kind, its width and the viewport, and it is raised after the screenshot is taken and recorded, so the picture of the failure exists.
 
@@ -23,11 +36,21 @@ The owner answered the settings mobile layout PRD's questions with their recomme
 
 **It is a kit change.** The check is in the kit core (`tools/ui-atlas-kit/plugin/templates/core/tests/visual/lib/`), so every repo using the kit gets it: kit 0.3.3 (0.3.2 was S07's scaffold-only release), `apps/ui` stays the upstream and `refresh-core.mjs` copies the files, the drift test and the CHANGELOG (with the "adopt by hand" lines for the scaffold test) keep the release honest.
 
-## Consequences
+### Consequences
 
-- The class of bug in defect 8 fails the gate at the state and viewport where it happens, naming the control. It was proved red on the pre-fix layout (`settings / global-proofing / reflow`: five controls named, 44.8 px and 26 px) and green on the fixed one.
-- A new field, or a new page, with a squeezed control is caught by whoever adds it. The cost is one `page.evaluate` per capture and a check nobody has to remember.
-- It only sees widths the suite captures. That is why the Settings rows are also captured at the reflow width (ADR 0061); a layout that collapses at some other width is invisible to it.
-- A control that is legitimately narrow needs a `narrowControls` entry with a reason, which is deliberately more work than fixing a layout.
-- The kit's adopters must copy the new tests into their `src/visualSuite.test.ts` and may find controls that were already collapsed.
-- To change the minimum, the exempt types or the rule, write a new ADR that supersedes this one.
+- **Good:** The class of bug in defect 8 fails the gate at the state and viewport where it happens, naming the control. It was proved red on the pre-fix layout (`settings / global-proofing / reflow`: five controls named, 44.8 px and 26 px) and green on the fixed one.
+- **Neutral:** A new field, or a new page, with a squeezed control is caught by whoever adds it. The cost is one `page.evaluate` per capture and a check nobody has to remember.
+- **Bad:** It only sees widths the suite captures. That is why the Settings rows are also captured at the reflow width (ADR 0061); a layout that collapses at some other width is invisible to it.
+- **Neutral:** A control that is legitimately narrow needs a `narrowControls` entry with a reason, which is deliberately more work than fixing a layout.
+- **Neutral:** The kit's adopters must copy the new tests into their `src/visualSuite.test.ts` and may find controls that were already collapsed.
+- **Neutral:** To change the minimum, the exempt types or the rule, write a new ADR that supersedes this one.
+
+### Confirmation
+
+`findCollapsedControls`, `checkControlWidths` and `findNarrowestControl` are unit-tested in `src/visualSuite.test.ts`; the catalog integrity test requires a reason on every `narrowControls` declaration, and a declaration fails when it stops being true.
+
+## Pros and cons of the options
+
+### A minimum as a fraction of the container
+
+- Bad, because it would move with the layout it is meant to judge.

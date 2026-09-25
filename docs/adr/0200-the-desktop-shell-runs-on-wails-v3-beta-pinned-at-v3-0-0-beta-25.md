@@ -1,16 +1,31 @@
 # 0200. The desktop shell runs on Wails v3 beta, pinned at v3.0.0-beta.25
 
-**Status:** Accepted
-**Date:** 2026-09-25
-**Supersedes:** none. It changes how [ADR 0082](0082-windows-installs-per-user-from-an-nsis-setup-program-that-wails-builds-and-the-release-carries-beside-the-update-zip.md)'s setup program is built (by `scripts/release/wails-build.mjs` instead of `wails build -nsis`), not what it installs.
+- **Status:** Accepted
+- **Date:** 2026-09-25
+- **Deciders:** the owner
+- **Related:** Supersedes none. It changes how [ADR-0082](0082-windows-installs-per-user-from-an-nsis-setup-program-that-wails-builds-and-the-release-carries-beside-the-update-zip.md)'s setup program is built (by `scripts/release/wails-build.mjs` instead of `wails build -nsis`), not what it installs.
 
-## Context
+## Context and problem
 
 The owner decided on 2026-09-24 to move the desktop shell from Wails v2.16 to the Wails v3 beta, pinned starting at `v3.0.0-beta.25`, so the header zoom controls can use the window's runtime `SetZoom` (D29 in `docs/prds/implementation-plan.md`; [Wails v3 Migration](../prds/wails-v3-migration.prd.md); nav PRD Q3). Wails v2.16 has only a startup zoom factor. `v3.0.0-beta.25` was the newest v3 tag that day.
 
 v3 is not a drop-in: the app is `application.New` plus a window instead of `wails.Run`; bound objects are services; every runtime call is a method of the application instead of a function of a context; the bindings are generated anew and call the host through `@wailsio/runtime`; and `wails build` no longer builds the program, its resources and the installer from `wails.json`. Reading v3 beta.25 against v2.16 also found defaults that change what the narrator gets: Ctrl+wheel zoom off, the browser's right-click menu on, a macOS app that outlives its window, a cancelled Windows file dialog that is an error, a failed Go method that rejects with a `RuntimeError` instead of its text, and a Windows manifest with a three-part version.
 
-## Decision
+## Decision drivers
+
+- The header zoom controls need the window's runtime `SetZoom`, and Wails v2.16 has only a startup zoom factor.
+- `v3.0.0-beta.25` was the newest v3 tag on the day of the decision.
+- v3 is not a drop-in, and it changes defaults that change what the narrator gets.
+
+## Considered options
+
+1. Wails v3 beta, pinned at `v3.0.0-beta.25`
+2. Keep the status quo: Wails v2.16
+3. Build with v3's Taskfile
+
+## Decision outcome
+
+**Chosen option: Wails v3 beta, pinned at `v3.0.0-beta.25`**, because the header zoom controls can then use the window's runtime `SetZoom`, which Wails v2.16 lacks.
 
 1. **Pin.** `apps/desktop/go.mod` requires `github.com/wailsapp/wails/v3 v3.0.0-beta.25`; `apps/ui/package.json` pins `@wailsio/runtime` to exactly `3.0.0-beta.25` (it has no dependencies); the CLI is `github.com/wailsapp/wails/v3/cmd/wails3@v3.0.0-beta.25` (`scripts/toolchain.json`, `.github/actions/setup-toolchain`, built with `CGO_ENABLED=0`). A new beta is its own reviewed change of all three. The npm package was inside pnpm's three-day `minimumReleaseAge` when the migration was written (published 2026-09-22T15:17Z). The owner allowed it through `minimumReleaseAgeExclude` (2026-09-25): the entry names exactly `@wailsio/runtime@3.0.0-beta.25`, carries its reason in `pnpm-workspace.yaml`, and is removed once that version is older than the cooldown; the lockfile's integrity hash still pins the bytes.
 2. **The Host is the one service.** `main.go` passes `application.NewService(host)`; nothing else is bound. `Startup`/`Shutdown` are `ServiceStartup`/`ServiceShutdown`, the lifecycle names v3 excludes from the bindings. v3 binds every other exported method, so an exported method on `Host` is a binding, as on v2. Wails' notification service is started by hand (`notifications.go`) and never registered, so its methods are not callable from the page.
@@ -20,12 +35,27 @@ v3 is not a drop-in: the app is `application.New` plus a window instead of `wail
 6. **Events.** The host emits one value per event (`emitEvent(name, data)`); the page receives a `WailsEvent` and the client checks its `data` against the event's schema, as before ([ADR 0069](0069-payloads-are-validated-with-zod-behind-parsewire-and-a-wrong-shape-fails-loudly.md)). Event names and payloads are unchanged, so no golden file or schema moves.
 7. **Build.** `scripts/release/wails-build.mjs`, run from `apps/desktop` by CI and by `pnpm run build`, does what v3's Windows Taskfile does, with no Taskfile: `wails3 update build-assets` renders the Windows version resource, manifest and `wails_tools.nsh` and the macOS `Info.plist` from `wails.json` into a temporary folder (`wails.json` stays the product-facts file `sync-version.mjs` keeps at the release version; v3 itself never reads it); `wails3 generate syso` embeds them; `go build -tags production -trimpath -buildvcs=false -ldflags "-w -s [-H windowsgui] -X main.version=…"`; and `--installer` writes the WebView2 bootstrapper the pinned CLI carries (no download) beside `project.nsi` and runs `makensis`, failing when makensis or the setup program is missing. Linux links GTK 4 and WebKitGTK 6.0; CI installs them.
 
-## Consequences
+### Consequences
 
-- The zoom controls can set the real page zoom while the app runs, which was the point (nav PRD Phase 2).
-- The release path no longer downloads the WebView2 bootstrapper while it builds: it comes from the pinned CLI, which the Go checksum database verifies; `build-native` still checks its Microsoft signature. The Windows program's Go dependencies are fewer (no echo, gorilla or the v2 asset server).
-- The shell depends on a beta. The pin is exact and each bump is reviewed alone; a Wails bug found in the owner's launch on Windows is fixed by a pin change or reported upstream, not patched here.
-- `wails dev`'s hot reload is gone: UI work uses the mock backend (`pnpm --dir apps/ui dev:mock`), and `pnpm --dir apps/desktop dev` builds the UI and runs the app.
-- The generated bindings carry the Go doc comments, so a changed comment on a `Host` method changes `host.ts` on the next `pnpm run bindings`; regenerate with any binding change, as before.
-- On Windows, v3 beta.25 cannot set a zoom below 100% from the host ([ADR 0201](0201-app-zoom-under-wails-v3-on-windows-runs-from-100-to-200-percent-and-reads-the-level-back-from-the-window.md), Proposed).
-- Going back to v2, or to a Taskfile build, needs a new ADR that supersedes this one.
+- **Good:** The zoom controls can set the real page zoom while the app runs, which was the point (nav PRD Phase 2).
+- **Good:** The release path no longer downloads the WebView2 bootstrapper while it builds: it comes from the pinned CLI, which the Go checksum database verifies; `build-native` still checks its Microsoft signature. The Windows program's Go dependencies are fewer (no echo, gorilla or the v2 asset server).
+- **Bad:** The shell depends on a beta. The pin is exact and each bump is reviewed alone; a Wails bug found in the owner's launch on Windows is fixed by a pin change or reported upstream, not patched here.
+- **Bad:** `wails dev`'s hot reload is gone: UI work uses the mock backend (`pnpm --dir apps/ui dev:mock`), and `pnpm --dir apps/desktop dev` builds the UI and runs the app.
+- **Neutral:** The generated bindings carry the Go doc comments, so a changed comment on a `Host` method changes `host.ts` on the next `pnpm run bindings`; regenerate with any binding change, as before.
+- **Bad:** On Windows, v3 beta.25 cannot set a zoom below 100% from the host ([ADR 0201](0201-app-zoom-under-wails-v3-on-windows-runs-from-100-to-200-percent-and-reads-the-level-back-from-the-window.md), Proposed).
+- **Neutral:** Going back to v2, or to a Taskfile build, needs a new ADR that supersedes this one.
+
+### Confirmation
+
+Point 4: each v2 behaviour kept where v3 changed a default is held by a test (`wailsapp_test.go`, `wailsClient.test.ts`). Point 5: the `wails-bindings-only-in-api` and `wails-runtime-only-in-api` import rules.
+
+## Pros and cons of the options
+
+### Wails v3 beta, pinned at `v3.0.0-beta.25`
+
+- Good, because the zoom controls can set the real page zoom while the app runs.
+- Bad, because the shell depends on a beta, and v3 is not a drop-in.
+
+### Keep the status quo: Wails v2.16
+
+- Bad, because it has only a startup zoom factor.

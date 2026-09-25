@@ -1,9 +1,9 @@
 # 0131. The recording signal is read from stored checks, with thresholds applied on read and the alignment taken from settings
 
-**Status:** Proposed
-**Date:** 2026-09-23
+- **Status:** Proposed
+- **Date:** 2026-09-23
 
-## Context
+## Context and problem
 
 Phase 7 of `docs/prds/recording-coverage-analysis.prd.md` gives the stage recommendations engine
 ([ADR 0160](0160-stage-recommendations-are-computed-from-tri-state-signals-by-a-pure-engine.md)) its `recording` signal, and
@@ -18,7 +18,23 @@ were left open:
   stay in step.
 - What `not_met` names when several things fail.
 
-## Decision
+## Decision drivers
+
+- The tri-state rule: `unknown` is never `met` (D2).
+- A confirmed mapping is an input (D5).
+- Thresholds are applied in Go on read, so a change never re-runs ASR.
+- A different model or language keeps a result current, while different alignment parameters make it stale (Q13).
+- The start and the read of a check must stay in step (Phase 5 used `DefaultAlignmentParams` in both).
+
+## Considered options
+
+1. One `recording.text_present` signal read from stored checks, with thresholds applied on read and the alignment taken from settings
+
+No alternatives were recorded when this decision was made.
+
+## Decision outcome
+
+**Chosen option: one `recording.text_present` signal read from stored checks, with thresholds applied on read and the alignment taken from settings**, because the PRD fixes that thresholds are applied on read and that alignment parameters, unlike the model or language, make a result stale.
 
 - **One signal, `recording.text_present`,** from `coverage.RecordingSignal(SignalInput)`, a pure function (no file, no
   clock) over the result reader's answer, the chapter's newest coverage ledger record, whether a check of it is running,
@@ -55,14 +71,18 @@ were left open:
   makes earlier results stale (`params_changed`, Q13 B). Changing a threshold only changes the verdict. The signal also
   treats a current result whose stored alignment differs from the settings as stale, as a guard.
 
-## Consequences
+### Consequences
 
-- The umbrella's service (a later SR phase) plugs in `NewSignalProvider` with the settings, the model check and a clock.
+- **Neutral:** The umbrella's service (a later SR phase) plugs in `NewSignalProvider` with the settings, the model check and a clock.
   Nothing calls the provider until then.
-- A narrator who lowers a threshold sees the verdict change at once, without a transcription. A narrator who changes an
+- **Neutral:** A narrator who lowers a threshold sees the verdict change at once, without a transcription. A narrator who changes an
   alignment setting sees every recorded chapter go back to "check again", and the Home recorded column goes back to
   estimates until they check again. The Settings page says so.
-- The Home dialog still states counts, not the verdict. Showing `met` or `not_met` beside the counts is the umbrella's
+- **Neutral:** The Home dialog still states counts, not the verdict. Showing `met` or `not_met` beside the counts is the umbrella's
   Home work.
-- The numbers are placeholders by design. Phase 8 runs the synthetic fixtures through this path and either keeps them or
+- **Neutral:** The numbers are placeholders by design. Phase 8 runs the synthetic fixtures through this path and either keeps them or
   tightens them, still labelled uncalibrated until a real corpus exists.
+
+### Confirmation
+
+Not recorded when this decision was made.

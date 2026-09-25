@@ -1,9 +1,9 @@
 # 0116. Read-aloud marks cover whole words, the innermost is the control, and a mark never seeks
 
-**Status:** Proposed
-**Date:** 2026-09-23
+- **Status:** Proposed
+- **Date:** 2026-09-23
 
-## Context
+## Context and problem
 
 `docs/prds/teleprompter-manuscript-integration.prd.md` Phase 5 puts the Story Bible and note marks of the Manuscript reader
 into the read-aloud dialog, opening in a side rail (Key, Notes, Story bible), and requires that clicking a mark never moves
@@ -15,7 +15,21 @@ how a character range becomes words, what a click on a marked word does when eve
 what to do when marks overlap: `ParagraphView` nests one `role="button"` mark inside another, which axe reports as
 `nested-interactive` (the open #155, carried as debt in `apps/ui/tests/visual/axe-debt.ts`, which may not grow).
 
-## Decision
+## Decision drivers
+
+- Clicking a mark must never move the cursor or the scroll.
+- The read-aloud reader renders whitespace tokens, because the tracker's position and click-to-seek are per word.
+- Nested `role="button"` marks are reported by axe as `nested-interactive` (#155), debt that may not grow.
+- The rail's open state and tab are per-viewer layout (owner decision 2026-09-23).
+
+## Considered options
+
+1. Marks cover whole words, the innermost is the control, and a mark never seeks
+2. Nesting one `role="button"` mark inside another, as `ParagraphView` does
+
+## Decision outcome
+
+**Chosen option: marks cover whole words, the innermost is the control, and a mark never seeks**, because the read-aloud reader then has no nested controls and adds no axe debt, and opening a mark only changes the rail, never the cursor or the scroll.
 
 1. A mark covers every word its character range touches (`readerModel.marksOnWords`, over `wordOffsets`, the same words
    `splitWords` finds): a name across a word boundary ("Mr. Hale") marks both words, a mention inside a word ("Hale" in
@@ -38,13 +52,23 @@ what to do when marks overlap: `ParagraphView` nests one `role="button"` mark in
    access guarded and a default when it fails (the PRD's Decisions Log, owner decision 2026-09-23). The selection is not
    kept.
 
-## Consequences
+### Consequences
 
-- The read-aloud reader has no nested controls and adds no axe debt; the Manuscript reader still nests (#155) and could
+- **Good:** The read-aloud reader has no nested controls and adds no axe debt; the Manuscript reader still nests (#155) and could
   adopt the same rule, which is that issue's design decision to make, not this one's.
-- A word inside a mark cannot be clicked to seek; the narrator seeks from a neighbouring word. A mention inside a longer
+- **Bad:** A word inside a mark cannot be clicked to seek; the narrator seeks from a neighbouring word. A mention inside a longer
   word tints the whole word, a coarser picture than the Manuscript reader's.
-- A mark opened while the rail is hidden shows the rail again, which narrows the text column (the one reflow a mark can
+- **Neutral:** A mark opened while the rail is hidden shows the rail again, which narrows the text column (the one reflow a mark can
   cause); with the rail open, nothing about the text changes.
-- Changing what a mark click does, letting marks nest as controls, or moving the rail preferences to settings needs a new
+- **Neutral:** Changing what a mark click does, letting marks nest as controls, or moving the rail preferences to settings needs a new
   ADR that supersedes this one.
+
+### Confirmation
+
+Not recorded when this decision was made.
+
+## Pros and cons of the options
+
+### Nesting marks as controls
+
+- Bad, because axe reports it as `nested-interactive` (#155), debt in `apps/ui/tests/visual/axe-debt.ts` that may not grow.

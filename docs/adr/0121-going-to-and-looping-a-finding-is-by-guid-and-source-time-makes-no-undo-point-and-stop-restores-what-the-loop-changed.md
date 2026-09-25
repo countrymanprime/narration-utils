@@ -1,9 +1,10 @@
 # 0121. Going to and looping a finding is by GUID and source time, makes no undo point, and Stop restores what the loop changed
 
-**Status:** Proposed
-**Date:** 2026-09-23
+- **Status:** Proposed
+- **Date:** 2026-09-23
+- **Deciders:** the owner
 
-## Context
+## Context and problem
 
 `docs/prds/review-dashboard-and-findings-adoption.prd.md` Phase 6 asks the REAPER bridge to go to a finding, loop its
 context and say whether it is listening. The owner answered Q6 on 2026-09-23: Loop sets REAPER's time selection to
@@ -23,7 +24,22 @@ and repeat the narrator had. Four things were still open:
 - **What Stop restores when the narrator has changed something meanwhile,** and what happens when the script ends
   with a loop still running.
 
-## Decision
+## Decision drivers
+
+- The owner's answer to Q6: Loop sets the time selection to the context window, turns repeat on and starts playback, and Stop puts back the time selection and repeat the narrator had.
+- GUIDs are preferred and positions are a fallback (`findings-contract.md`), and a stale GUID must never operate on an adjacent item (`daw-integration.md`).
+- An undo point per click would sit between the narrator and their last real edit.
+- REAPER repeats the loop points, not the time selection, and the preference that links them can be turned off.
+
+## Considered options
+
+1. Item and take GUID with a source time, no undo point, and Stop restoring only what is still the loop's
+2. Keep the status quo: `jump_to_compare_marker`'s Lua table of live item pointers and a project time
+3. An undo point per navigation or loop command
+
+## Decision outcome
+
+**Chosen option: item and take GUID with a source time, no undo point, and Stop restoring only what is still the loop's**, because a GUID and source time follow the item when the narrator moves it and never land on a neighbour, and navigation and looping change no project content.
 
 1. **Identity is the item GUID, optionally the take GUID, and a time inside that take's source.** `navigate_item`,
    `loop_context` (`integrations/reaper/narration_navigation.lua`) resolve the item by GUID (case and braces do not
@@ -59,15 +75,29 @@ and repeat the narrator had. Four things were still open:
    answer (routed by run ID, 3 s timeout, `ErrNoAnswer`, `ErrUnavailable` without a bridge), typed results, and a
    `StaleError` that `errors.Is(ErrStale)`. It is not wired to a binding yet (Phase 7).
 
-## Consequences
+### Consequences
 
-- A stale finding is reported in plain words and never lands on a neighbour; the mutation checks in
+- **Good:** A stale finding is reported in plain words and never lands on a neighbour; the mutation checks in
   `integrations/reaper/tests/mutations.json` break each of those guards and the harness catches every one.
-- Because the loop state lives in the running script, a launcher restart forgets it: Stop then answers `0|0` and the
+- **Bad:** Because the loop state lives in the running script, a launcher restart forgets it: Stop then answers `0|0` and the
   narrator's time selection stays as the loop left it. The narrator can also stop REAPER themselves; the loop state is
   kept for Stop, and `ping` reports `looping` with `playing` 0.
-- Hearing the loop, REAPER's own Stop button and `ping` after a REAPER restart need audio hardware or the owner; they
+- **Neutral:** Hearing the loop, REAPER's own Stop button and `ping` after a REAPER restart need audio hardware or the owner; they
   are in the manual checklist of `docs/architecture/reaper-navigation.md`. If Stop's restore turns out unreliable in
   real use, the PRD's fallback is the in-app raw-source loop.
-- `jump_to_compare_marker` is unchanged and still uses `SelectAllMediaItems` and the run table; Phase 7 moves the
+- **Neutral:** `jump_to_compare_marker` is unchanged and still uses `SelectAllMediaItems` and the run table; Phase 7 moves the
   Review page to `navigate_item`.
+
+### Confirmation
+
+The mutation checks in `integrations/reaper/tests/mutations.json` break each stale-finding guard and the harness catches every one; a scripted REAPER 7.80 check found no undo point and no dirty project after any of the four commands; hearing the loop, REAPER's own Stop button and `ping` after a REAPER restart are in the manual checklist of `docs/architecture/reaper-navigation.md`.
+
+## Pros and cons of the options
+
+### Keep the status quo
+
+- Bad, because the table dies with the launcher and would point at whatever sits at that time once anything moved.
+
+### An undo point per navigation or loop command
+
+- Bad, because Ctrl+Z after listening would undo "go to finding" instead of the cut the narrator just made.

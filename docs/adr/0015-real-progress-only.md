@@ -1,9 +1,9 @@
 # 0015. Progress bars and activity logs show real work only
 
-**Status:** Accepted
-**Date:** 2026-09-18
+- **Status:** Accepted
+- **Date:** 2026-09-18
 
-## Context
+## Context and problem
 
 The import and Story Bible rebuild dialogs looked broken: the preview step's progress bar and log window did nothing, and after choosing Import the bar moved part way, stalled, then jumped to the end while the log said only "Waiting for activity…". The cause was that the numbers were placeholders, not measurements:
 
@@ -12,7 +12,19 @@ The import and Story Bible rebuild dialogs looked broken: the preview step's pro
 - The slow part — seeding each checked character suggestion by launching a Python process — ran after the job had already been reported, in the binding.
 - The Story Bible build passed progress and log file paths to the Python sidecar, which wrote real stages, but the host only read the log after the build finished and never read the progress file at all.
 
-## Decision
+## Decision drivers
+
+- The import and Story Bible rebuild dialogs looked broken because their numbers were placeholders, not measurements.
+- A stage that looks stalled should really be stalled.
+
+## Considered options
+
+1. Progress and log lines come from the code doing the work, and the UI only displays them
+2. Keep the status quo: placeholder progress, UI-faked steps and log lines, and a minimum-duration delay
+
+## Decision outcome
+
+**Chosen option: progress and log lines come from the code doing the work, and the UI only displays them**, because placeholder numbers made the dialogs look broken, while measured progress is honest rather than paced.
 
 Progress and log lines are produced by the code doing the work, and the UI only displays them.
 
@@ -21,9 +33,20 @@ Progress and log lines are produced by the code doing the work, and the UI only 
 - **UI** (`Home.tsx`, `WorkDialog`): polls the job while it is `preparing` or `committing`, refreshes application state once on `success`, and never sets a percent or log line of its own. The artificial minimum delay is removed. "Waiting for activity…" appears only before the first real line.
 - `Elapsed` is measured from job start.
 
-## Consequences
+### Consequences
 
-- Fast stages finish quickly and their log lines appear in one burst; the bar is honest rather than paced.
-- A new long-running stage must report itself (a `report` call, or a line in the sidecar's log) or it will look stalled — which is the correct signal.
-- Tests pin the behavior: `TestImportJobReportsRealProgressAndLogs` (logs populated, progress monotonic, hook lines included) and `TestPollWorkJobTailsSidecarProgressAndLogOnce`.
-- Reintroducing client-side placeholder progress or a minimum-duration delay would supersede this ADR.
+- **Neutral:** Fast stages finish quickly and their log lines appear in one burst; the bar is honest rather than paced.
+- **Neutral:** A new long-running stage must report itself (a `report` call, or a line in the sidecar's log) or it will look stalled — which is the correct signal.
+- **Good:** Tests pin the behavior: `TestImportJobReportsRealProgressAndLogs` (logs populated, progress monotonic, hook lines included) and `TestPollWorkJobTailsSidecarProgressAndLogOnce`.
+- **Neutral:** Reintroducing client-side placeholder progress or a minimum-duration delay would supersede this ADR.
+
+### Confirmation
+
+`TestImportJobReportsRealProgressAndLogs` (logs populated, progress monotonic, hook lines included) and `TestPollWorkJobTailsSidecarProgressAndLogOnce` pin the behavior.
+
+## Pros and cons of the options
+
+### Placeholder progress with a minimum-duration delay
+
+- Good, because the minimum delay kept the dialog from flashing by.
+- Bad, because the bar moved part way, stalled, then jumped to the end while the log said only "Waiting for activity…", so the dialogs looked broken.

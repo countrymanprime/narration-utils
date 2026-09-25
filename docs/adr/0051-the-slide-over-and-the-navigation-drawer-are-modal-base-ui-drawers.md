@@ -1,14 +1,26 @@
 # 0051. The slide-over and the navigation drawer are modal Base UI drawers
 
-**Status:** Accepted
-**Date:** 2026-09-20
-**Supersedes:**
+- **Status:** Accepted
+- **Date:** 2026-09-20
+- **Deciders:** the owner
 
-## Context
+## Context and problem
 
 `SlideOver` (the Manuscript "Chapters & Search" and note or entity panels, and the Story Bible "Review entry" panel) and the narrow layout's navigation drawer in `AppShell` closed only on a press of their backdrop. They had no Escape, no focus trap, no focus return, and the page behind stayed readable to a screen reader. The dialog PRD had left them out (its question 7 chose the dialog family only). The owner decided (foundation PRD question 6a, D22) to put both on Base UI's Drawer with `modal` true, which reverses that. The navigation drawer was inline markup inside `AppShell.tsx` with a `z-[70]` div.
 
-## Decision
+## Decision drivers
+
+- The slide-over and the navigation drawer closed only on a press of their backdrop: no Escape, no focus trap, no focus return, and the page behind stayed readable to a screen reader.
+
+## Considered options
+
+1. Modal Base UI Drawers: `SlideOver` from the right and `NavDrawer` from the left
+2. Keep the status quo: leave them out of the dialog family (the dialog PRD's question 7)
+3. A positioned Dialog behind the same props for `SlideOver`
+
+## Decision outcome
+
+**Chosen option: modal Base UI Drawers: `SlideOver` from the right and `NavDrawer` from the left**, because the owner decided to put both on Base UI's Drawer with `modal` true, which gives them Escape, a focus trap and focus return.
 
 - **`SlideOver`** (`primitives/SlideOver.tsx`) is a Base UI Drawer from the right edge, and **`NavDrawer`** (`primitives/NavDrawer.tsx`, new) a Drawer from the left for `AppShell`, which now imports only our primitive. Both are modal: the page behind is hidden from assistive technology and unreachable by Tab, Tab loops inside, page scroll is locked, Escape and a press on the backdrop close them, and focus returns to what opened them. Both are named dialogs (`SlideOver` by its title, as an `h3`; `NavDrawer` "Navigation", visually hidden).
 - **API and markers unchanged.** `SlideOver` keeps `open`, `title`, `closeLabel`, `onClose`, `children`, the `data-slide-over` marker on the panel and `data-slide-over-backdrop` on its transparent backdrop (`z-[45]`, panel `z-50`), the width, the border and shadow and the slide-in from the right ([ADR 0017](0017-no-legacy-css-shadowing-tailwind.md): Tailwind only). `NavDrawer` keeps the app scrim (`--backdrop`, `z-[70]`), the width `min(17rem, 86vw)` and the Close button, and gains `data-nav-drawer-backdrop`. The Manuscript and Story Bible call sites are untouched.
@@ -18,10 +30,14 @@
 - **`NavDrawer` closes when the window grows past `md`** (48rem), where the menu button that opened it no longer exists and the desktop navigation is already on screen.
 - **Tests.** RTL tests for both (`SlideOver.test.tsx`, `NavDrawer.test.tsx`), atlas stories for Escape, backdrop, Close button, the Tab loop, the hidden page and focus return. The visual suite captures no phone viewport ([ADR 0037](0037-visual-suite-captures-no-phone-viewport.md)), so the `NavDrawer` stories are its visual record; every existing visual state with a slide-over open is pixel-identical.
 
-## Consequences
+### Consequences
 
-- A keyboard or screen-reader user can leave a panel with Escape, cannot tab into the page behind it, and lands back where they were.
-- `Manuscript.tsx` still closes its sheet with its own `window` Escape listener; the drawer's own handling makes it redundant but harmless.
-- A drawer's content unmounts after it slides out, so a caller that kept state inside a closed panel would lose it; neither caller does.
-- The Drawer's touch swipe is a behaviour the app did not have. It suits the narrow layout's navigation and does no harm to the panels; if it proves unwanted, `SlideOver` can move to a positioned Dialog behind the same props, which is a primitives-only change.
-- To change any of this, write a new ADR that supersedes this one.
+- **Good:** A keyboard or screen-reader user can leave a panel with Escape, cannot tab into the page behind it, and lands back where they were.
+- **Neutral:** `Manuscript.tsx` still closes its sheet with its own `window` Escape listener; the drawer's own handling makes it redundant but harmless.
+- **Neutral:** A drawer's content unmounts after it slides out, so a caller that kept state inside a closed panel would lose it; neither caller does.
+- **Neutral:** The Drawer's touch swipe is a behaviour the app did not have. It suits the narrow layout's navigation and does no harm to the panels; if it proves unwanted, `SlideOver` can move to a positioned Dialog behind the same props, which is a primitives-only change.
+- **Neutral:** To change any of this, write a new ADR that supersedes this one.
+
+### Confirmation
+
+RTL tests (`SlideOver.test.tsx`, `NavDrawer.test.tsx`) and atlas stories for Escape, backdrop, Close button, the Tab loop, the hidden page and focus return; the `NavDrawer` stories are its visual record.

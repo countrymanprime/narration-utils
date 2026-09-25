@@ -1,9 +1,10 @@
 # 0113. The Teleprompter suggests a chapter from the saved armed track, and preselects only a confident match
 
-**Status:** Proposed
-**Date:** 2026-09-23
+- **Status:** Proposed
+- **Date:** 2026-09-23
+- **Deciders:** the owner
 
-## Context
+## Context and problem
 
 `docs/prds/teleprompter-engines-and-input-devices.prd.md` Phase 11 ("Chapter from REAPER track name") is to
 "preselect the chapter the narrator is recording" from the `.rpp`'s track names, using the shared chapter-to-track
@@ -24,7 +25,21 @@ Building this also showed that ADR 0110's "a fuzzy score is uncertain" did not h
 the score alone, and a difflib ratio can reach 0.95 or more ("The Rabit Hole" against "The Rabbit Hole" is 0.97), so a
 near-miss name was `matched` (and suggested by the evidence suggester).
 
-## Decision
+## Decision drivers
+
+- The owner chose to suggest from the saved `.rpp` with the matcher, standalone.
+- "Chapter 1" never suggests "Chapter 11", and no match leaves the current default.
+- A project usually has a track for every chapter recorded so far, so track names alone say which chapters exist, not which one is being recorded.
+- The matcher only answers chapter to track; the page needs track to chapter.
+
+## Considered options
+
+1. Suggest from the saved armed (else selected) track, and preselect only a confident match
+2. Follow the live selected or armed track in a running REAPER through the bridge
+
+## Decision outcome
+
+**Chosen option: suggest from the saved armed (else selected) track, and preselect only a confident match**, because the owner chose the saved `.rpp` with the matcher, standalone, and following the live track is later work.
 
 1. **The track is the saved record-armed track, else the saved selected track.** The `.rpp` stores each track's
    selection (`SEL 1`) and record arm (the first field of `REC`) as of the last save; `internal/tracks` now reads both
@@ -47,13 +62,17 @@ near-miss name was `matched` (and suggested by the evidence suggester).
    single prefix (`Confident`); `ForChapter`, `ForTrack` and the evidence suggester use it, so a fuzzy match is never
    `matched` or suggested whatever its ratio, as ADR 0110 already said.
 
-## Consequences
+### Consequences
 
-- The picker follows what the narrator set up in REAPER without a live connection, and a narrator who never arms a
+- **Good:** The picker follows what the narrator set up in REAPER without a live connection, and a narrator who never arms a
   track, or does not save after arming one, sees the page exactly as before.
-- A stale save can suggest last session's chapter; the hint names the track and says "as of its last save", and one
+- **Bad:** A stale save can suggest last session's chapter; the hint names the track and says "as of its last save", and one
   click on the picker overrides it. Following the live arm is the planned refinement.
-- A near-miss track name that ADR 0110's code used to call `matched` is now `uncertain` in the resume card and the
+- **Neutral:** A near-miss track name that ADR 0110's code used to call `matched` is now `uncertain` in the resume card and the
   Tracks page's link suggestions too: the narrator picks once, and the confirmed link takes over.
-- The Review page's chapter grouping and the diagnostics phase that need track to chapter can use `ForTrack` rather
+- **Good:** The Review page's chapter grouping and the diagnostics phase that need track to chapter can use `ForTrack` rather
   than inverting `ForChapter` themselves.
+
+### Confirmation
+
+Parity tests pin `ForTrack` and `ForChapter` against each other.

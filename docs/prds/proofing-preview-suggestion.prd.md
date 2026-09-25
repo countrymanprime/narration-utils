@@ -146,7 +146,7 @@ Phases 1 to 3, with Phase 4's target setting if it is cheap: the manuscript-only
 - **Providers for the audio layer.** Findings by range (RD-1), ledger record and staleness for a chapter (EL), recording coverage (RC), windowed analyzer findings (DX-4), pace (chapter words over recorded seconds), a paragraph-to-time mapper (Phase 6). Each provider answers `met`, `not_met` or `unknown` with a reason and action; the engine composes them. Evaluation is a read and starts no analysis.
 - **Host surface.** One read binding for candidates, later bindings for pin and clear. Host API version bumps in `apps/desktop/app.go`, `apps/desktop/app_test.go` and `apps/ui/src/hostApi.ts`, and `Host.{js,d.ts}` is regenerated (take the next number at merge). Bindings read services through `h.services()` and add a row to `stressReaders` in `hostrace_test.go` ([host binding concurrency](../architecture/host-binding-concurrency.md)). The wire contract gets a Zod schema behind `parseWire` (implementation plan D16).
 - **UI.** A `Panel` on the Proofing page with the existing `table.dtable` style; state shown as text plus icon, never colour alone; reuse SR's evidence popover if it exists by then. New primitives, if any, need stories and atlas coverage. New states get `state-catalog.ts` rows and drivers in `app.drivers.ts`, `doc-screenshots.json`, and `docs/guides/using-the-app/proofing.md` updates (`visual-catalog-sync`, `doc-screenshot-sync`; `apps/ui/src/docsGuide.test.ts` guards the guide).
-- **ADR.** After code lands, use `adr-author` for the preview definition (eligibility, the audio-checked rule, findings gating). Take the next free number at merge time.
+- **ADR.** After code lands, use `architecture-decision-records` for the preview definition (eligibility, the audio-checked rule, findings gating). Take the next free number at merge time.
 
 **Technical Risks**
 
@@ -216,7 +216,7 @@ Every phase follows the `CLAUDE.md` workflow: plan (find or open the tracking is
 
 **Phase 8 - Pin, adjust and close-out**
 - **Goal**: Let the narrator settle on a window and keep it.
-- **Scope**: Pin and edge adjustment by paragraph with recomputed length and evidence; sidecar store with atomic write and stale detection; `resetDerived` entry; docs (`proofing.md` and a steady-state architecture doc); ADR via `adr-author`; `feature-cleanup`.
+- **Scope**: Pin and edge adjustment by paragraph with recomputed length and evidence; sidecar store with atomic write and stale detection; `resetDerived` entry; docs (`proofing.md` and a steady-state architecture doc); ADR via `architecture-decision-records`; `feature-cleanup`.
 - **Success signal**: A pin survives restart and recomputation; changed text under a pin shows stale; re-import clears the store; docs consistent.
 
 ### Parallelism Notes

@@ -1,15 +1,29 @@
 # 0013. Manuscript import preserves structural whitespace and repairs glued headings
 
-**Status:** Accepted
-**Date:** 2026-09-18
+- **Status:** Accepted
+- **Date:** 2026-09-18
 
-## Context
+## Context and problem
 
 After importing a Word manuscript, a chapter appeared as "CHAPTER ONEBad Ideas Look Great in Neon" — title and subtitle fused with no space — and line breaks inside paragraphs (verse, address blocks, dialogue set on separate lines) were lost. The same class of bug had already been fixed and regressed more than once during revisions, because nothing recorded *why* it happens.
 
 Root cause: Word stores a soft line break (`<w:br/>`) and a tab (`<w:tab/>`) as empty elements, not as characters inside `<w:t>`. The importer concatenated `<w:t>` text only, so the visible separation between "CHAPTER ONE" and its subtitle simply vanished. `docx.go` even contained the split-on-`"\n"` logic for subtitles, but no code path ever produced a `"\n"`. Markdown had the mirror-image problem: wrapped source lines were joined with spaces, and hard breaks (two trailing spaces, trailing backslash, `<br>`) were ignored. Another variant is a heading whose number and title are separate runs with a style change but no whitespace between them.
 
-## Decision
+## Decision drivers
+
+- Titles and subtitles must not fuse, and line breaks inside paragraphs must survive import.
+- The bug had been fixed and regressed more than once because nothing recorded why it happens.
+- Formatting offsets must be computed against the final text.
+
+## Considered options
+
+1. Treat structural whitespace as content, with a last-resort repair for glued headings
+2. Keep the status quo: concatenate `<w:t>` text only, and join or ignore Markdown line breaks
+3. Leave glued headings unrepaired
+
+## Decision outcome
+
+**Chosen option: treat structural whitespace as content, with a last-resort repair for glued headings**, because the separation Word and Markdown encode as breaks and tabs is real content, and losing it fused titles and dropped line breaks.
 
 The importer treats structural whitespace as content, not noise.
 
@@ -20,9 +34,20 @@ The importer treats structural whitespace as content, not noise.
 
 The catalogue of known formatting hazards and how each is handled lives in [`docs/architecture/docx-import-quirks.md`](../architecture/docx-import-quirks.md). New hazards found in the wild are added there with a test next to the fix.
 
-## Consequences
+### Consequences
 
-- `Paragraph.Text` may now contain `"\n"`; consumers must treat it as whitespace (the Python sidecars already split on whitespace) and the reader renders it with `white-space: pre-line`.
-- A heading such as "Chapter Oneness" is never split (the number must be complete), but a real title like "Chapter MIDnight" can be mis-split; that trade-off was accepted over leaving `ONEBad` glued.
-- Existing imported manuscripts keep the old glued text until re-imported; Replace manuscript is the supported path while the product is in dev/QA.
-- Changing this behavior means superseding this ADR and updating the quirks catalogue and its tests.
+- **Neutral:** `Paragraph.Text` may now contain `"\n"`; consumers must treat it as whitespace (the Python sidecars already split on whitespace) and the reader renders it with `white-space: pre-line`.
+- **Neutral:** A heading such as "Chapter Oneness" is never split (the number must be complete), but a real title like "Chapter MIDnight" can be mis-split; that trade-off was accepted over leaving `ONEBad` glued.
+- **Bad:** Existing imported manuscripts keep the old glued text until re-imported; Replace manuscript is the supported path while the product is in dev/QA.
+- **Neutral:** Changing this behavior means superseding this ADR and updating the quirks catalogue and its tests.
+
+### Confirmation
+
+Each hazard in [`docs/architecture/docx-import-quirks.md`](../architecture/docx-import-quirks.md) has a test next to its fix, and new hazards are added there the same way.
+
+## Pros and cons of the options
+
+### Leave glued headings unrepaired
+
+- Good, because a real title like "Chapter MIDnight" can never be mis-split.
+- Bad, because a heading such as `ONEBad` stays glued.

@@ -1,9 +1,10 @@
 # 0127. The coverage sidecar mode reads a JSON manifest, keeps one words file per item, and writes tagged JSON lines
 
-**Status:** Proposed (amended by [ADR 0168](0168-a-coverage-region-carries-its-bounds-as-optional-before-and-after-points-with-no-version-bump.md), which adds a region's `before` and `after` bounds; the rest stands)
-**Date:** 2026-09-23
+- **Status:** Proposed
+- **Date:** 2026-09-23
+- **Related:** Amended by [ADR-0168](0168-a-coverage-region-carries-its-bounds-as-optional-before-and-after-points-with-no-version-bump.md), which adds a region's `before` and `after` bounds; the rest stands.
 
-## Context
+## Context and problem
 
 Phase 3 of `docs/prds/recording-coverage-analysis.prd.md` adds a coverage mode to the Transcript Compare sidecar (`sidecars/transcript-compare/core/compare.py`). The mode sits between two things that are already decided. On one side is the coverage model of [ADR 0126](0126-recording-coverage-reads-the-take-markers-sequencematcher-alignment-and-folds-chance-matches-into-gaps.md). On the other is the Go service of Phase 4, which builds the list of items from the saved project and owns the cache keys, the ledger and the thresholds ([ADR 0100](0100-analysis-evidence-is-two-hash-keys-one-ledger-record-per-run-and-a-narrator-confirmed-track-map.md)). The PRD's Decisions Log fixes three points. The output is tagged lines with JSON payloads in their own results file, not more `MARKER` fields, because of the field-count hazard ADR 0008 records. The sidecar reports measurements and Go applies the thresholds on read. Progress comes from real work (ADR 0015). Four things were still open:
 
@@ -12,7 +13,25 @@ Phase 3 of `docs/prds/recording-coverage-analysis.prd.md` adds a coverage mode t
 - The trust boundary. The host names files that the sidecar reads, and files that it writes.
 - The module name. The Phase 2 model was `core/coverage.py`, which has the same import name as the `coverage` package that pytest's coverage measurement loads, so the sidecar could not import it by name.
 
-## Decision
+## Decision drivers
+
+- The PRD's Decisions Log: the output is tagged lines with JSON payloads in their own results file, not more `MARKER` fields, because of the field-count hazard ADR 0008 records.
+- The sidecar reports measurements, and Go applies the thresholds on read.
+- Progress comes from real work (ADR 0015).
+- The coverage manifest needs more fields per item than the pipe-delimited manifests carry: the item GUID, the words file, and whether the item is muted (Q10).
+- A check after a one-item edit should transcribe only that item, and a trim should not lose a transcript.
+- The host names the files the sidecar reads and the files it writes (the trust boundary).
+- `core/coverage.py` has the same import name as the `coverage` package that pytest's coverage measurement loads.
+
+## Considered options
+
+1. A JSON manifest, one words file per item, and tagged JSON lines in a results file
+2. Keep the status quo: the pipe-delimited manifest (`index|source_file|startoffs|length`)
+3. More `MARKER` fields for the output
+
+## Decision outcome
+
+**Chosen option: a JSON manifest, one words file per item, and tagged JSON lines in a results file**, because the coverage manifest needs more fields per item than the pipe-delimited format holds, and the PRD fixes the output as tagged JSON lines because of the field-count hazard ADR 0008 records.
 
 - **Entry.** `compare.py --coverage --manifest <json> --manuscript <json> --chapter-id <id> --words-dir <dir> --out <file> [--progress <file>] [--max-misread-run N] [--min-anchor-run N]`, plus the existing model, language and device options. It works from a chapter id with no name matching, and `--chunk-seconds` and `--find-repeats` are refused with it. The mode itself is `core/coverage_mode.py`. `compare.py` passes it its own loaded module, so the tokenizing, decoding and alignment are exactly the marker path's. `compare.py` itself only gains the flags, two helpers split out of `run()` (project equivalences and vocabulary hints) and the chapter's `subtitle`.
 - **Manifest.** The manifest is a JSON object, `{"schemaVersion": 1, "items": [...]}`. Each item has exactly `index`, `itemGuid`, `sourceFile`, `startOffset`, `length`, `wordsFile` and `muted`. The items are the active takes of one track, in play order. The sidecar checks every field (types, finite numbers, a positive length, unique indices, no unknown keys) and refuses a bad manifest before it reads any audio or writes any file. A muted item is listed in the output and never transcribed.
@@ -21,10 +40,24 @@ Phase 3 of `docs/prds/recording-coverage-analysis.prd.md` adds a coverage mode t
 - **Progress and exit codes.** Progress uses the usual `stage|pct|message` file with the stages START, DECODE, LOAD, TRANSCRIBE, ALIGN, WRITE and DONE. TRANSCRIBE moves with the seconds transcribed over the seconds that need transcribing, and the whole run never goes backwards. The Whisper model is loaded once, and only when an item needs transcribing. The exit code is 0 when the results file is complete. It is 1 on a failure, with an `ERROR|0|<message>` progress line and no results file. It is 2 on a cancel through `<progress>.cancel`, with a `CANCELLED` progress line, no results file, and the finished words files kept. `argparse` also exits with 2 on a usage error, with no progress line.
 - **Rename.** `core/coverage.py` becomes `core/recording_coverage.py`, and ADR 0126's text and the docs follow.
 
-## Consequences
+### Consequences
 
-- The Go service of Phase 4 writes one JSON manifest and reads four tagged lines, with no pipe-field counting on either side. The existing readers do nothing with the new tags (the Lua bridge acts on `SUMMARY` and `MARKER`; the Go transcript service checks `NEED_CHAPTER|`).
-- Because a words file covers a source range and is sliced, Phase 4 can keep it in the analysis-evidence cache as the opaque blob D8 describes. The host copies the blob into `--words-dir` before the run and stores the new files after it. A narrowing trim then costs no transcription.
-- The sidecar writes only inside `--words-dir`, apart from the results and progress files. It still trusts the host's choice of that directory, of the audio files, and of the output paths (threat-model row 4e).
-- The mode transcribes each item in one pass and does not support `--chunk-seconds`. Long items take one pass each, with real progress and a cancel check between Whisper segments.
-- The pipe-delimited manifests of the compare and `--find-repeats` modes stay as they are. The two manifest formats differ on purpose, and a later change can move them to JSON.
+- **Good:** The Go service of Phase 4 writes one JSON manifest and reads four tagged lines, with no pipe-field counting on either side. The existing readers do nothing with the new tags (the Lua bridge acts on `SUMMARY` and `MARKER`; the Go transcript service checks `NEED_CHAPTER|`).
+- **Good:** Because a words file covers a source range and is sliced, Phase 4 can keep it in the analysis-evidence cache as the opaque blob D8 describes. The host copies the blob into `--words-dir` before the run and stores the new files after it. A narrowing trim then costs no transcription.
+- **Neutral:** The sidecar writes only inside `--words-dir`, apart from the results and progress files. It still trusts the host's choice of that directory, of the audio files, and of the output paths (threat-model row 4e).
+- **Neutral:** The mode transcribes each item in one pass and does not support `--chunk-seconds`. Long items take one pass each, with real progress and a cancel check between Whisper segments.
+- **Neutral:** The pipe-delimited manifests of the compare and `--find-repeats` modes stay as they are. The two manifest formats differ on purpose, and a later change can move them to JSON.
+
+### Confirmation
+
+Not recorded when this decision was made.
+
+## Pros and cons of the options
+
+### Keep the status quo: the pipe-delimited manifest
+
+- Bad, because the coverage manifest needs more fields per item: the item GUID, the words file, and whether the item is muted.
+
+### More `MARKER` fields for the output
+
+- Bad, because of the field-count hazard ADR 0008 records.

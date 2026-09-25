@@ -1,15 +1,29 @@
 # 0234. FX chains go on tracks, and a passage of a take gets one plug-in at a time
 
-**Status:** Accepted (the owner, 2026-09-25)
-**Date:** 2026-09-25
+- **Status:** Accepted
+- **Date:** 2026-09-25
+- **Deciders:** the owner
 
-## Context
+## Context and problem
 
 The [edit and proof workspace](../prds/edit-and-proof-workspace.prd.md) lets the narrator add effects from the app (EP8 and EP9). The first design (this ADR while Proposed) applied a whole `.RfxChain` as take FX to a split-out passage. Reviewing it, the owner decided: **FX chains are applied only to tracks, including the master track; takes and items get single FX. They can add several, one at a time, but never a chain.**
 
 REAPER can tell the two apart. A chain is a `.RfxChain` file under `<resource path>/FXChains`; a single plug-in is an entry of `EnumInstalledFX`, which also lists REAPER's FX container (ident `Container`, the thing a chain lives in) and its video processor, which are not single plug-ins ([the calls](../research/reaper-api-for-planned-commands.md)). No REAPER MCP server we read loads a chain by path, so the verification pass (rows A7, A8) is the first evidence of what REAPER does with one.
 
-## Decision
+## Decision drivers
+
+- The owner's decision: FX chains are applied only to tracks, including the master track; takes and items get single FX, several one at a time, but never a chain.
+- REAPER can tell the two apart: a chain is a `.RfxChain` file under `FXChains`, and a single plug-in is an entry of `EnumInstalledFX`.
+- No REAPER MCP server read loads a chain by path, so the verification pass is the first evidence of what REAPER does with one.
+
+## Considered options
+
+1. FX chains on tracks, and one plug-in at a time on a passage of a take
+2. The first design: a whole `.RfxChain` applied as take FX to a split-out passage
+
+## Decision outcome
+
+**Chosen option: FX chains on tracks, and one plug-in at a time on a passage of a take**, because the owner, reviewing the first design, decided that chains go only on tracks and that takes and items get single FX.
 
 In `integrations/reaper/narration_workspace.lua`:
 
@@ -18,9 +32,13 @@ In `integrations/reaper/narration_workspace.lua`:
 3. A passage that crosses items is refused by the host (one item per request).
 4. All four are experimental ([ADR 0230](0230-reaper-commands-built-before-the-verification-pass-are-refused-by-the-host-while-the-experimental-switch-is-off.md)). `bridge.Actions.ApplyFXChain(track, chain)` (with `bridge.MasterTrack`), `ListFXChains`, `ListFX` and `AddTakeFX(passage, plugin)` also refuse a chain name that is not a plain relative `.RfxChain` path, and a plug-in name that is empty or a chain file, before anything is sent.
 
-## Consequences
+### Consequences
 
-- A chain changes a whole track's sound (or the whole mix, on the master track), which is where the narrator's multi-plug-in chains belong; a passage gets a targeted plug-in, which is visible and removable in its own take FX window.
-- The workspace's effects menu needs two lists: chains for a track, plug-ins for a selection. Favourites (EP8 B) apply to both and are a Settings row lane C adds.
-- A chain's and a plug-in's code runs inside REAPER: a same-user process that can write the command folder can add any chain the narrator keeps in `FXChains` to a track, or any installed plug-in to an item whose GUID it knows (threat row 5h). It cannot name a file outside `FXChains`.
-- Open for the verification pass: what REAPER does with a chain loaded by path onto a track and the master track, its split crossfade, and whether one Undo rejoins the pieces.
+- **Good:** A chain changes a whole track's sound (or the whole mix, on the master track), which is where the narrator's multi-plug-in chains belong; a passage gets a targeted plug-in, which is visible and removable in its own take FX window.
+- **Neutral:** The workspace's effects menu needs two lists: chains for a track, plug-ins for a selection. Favourites (EP8 B) apply to both and are a Settings row lane C adds.
+- **Neutral:** A chain's and a plug-in's code runs inside REAPER: a same-user process that can write the command folder can add any chain the narrator keeps in `FXChains` to a track, or any installed plug-in to an item whose GUID it knows (threat row 5h). It cannot name a file outside `FXChains`.
+- **Neutral:** Open for the verification pass: what REAPER does with a chain loaded by path onto a track and the master track, its split crossfade, and whether one Undo rejoins the pieces.
+
+### Confirmation
+
+The verification pass, rows A7 and A8.

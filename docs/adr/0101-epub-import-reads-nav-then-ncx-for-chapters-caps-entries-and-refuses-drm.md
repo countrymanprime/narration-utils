@@ -1,9 +1,9 @@
 # 0101. EPUB import reads nav then NCX for chapters, caps entries, and refuses DRM
 
-**Status:** Accepted
-**Date:** 2026-09-22
+- **Status:** Accepted
+- **Date:** 2026-09-22
 
-## Context
+## Context and problem
 
 The txt-and-epub-import PRD's Phase 2 adds an EPUB (`.epub`) manuscript importer alongside DOCX, Markdown and TXT
 (`apps/desktop/internal/importer/epub.go`, `epub_toc.go`, `epub_xhtml.go`). Its own Open Questions (E1-E5) already carried the
@@ -18,7 +18,21 @@ No real EPUB was available to check against (PRD Open Question F1, still unsuppl
 fixtures (`epub_test.go`) for hostile and quirk shapes. The thresholds and fallbacks below should be revisited once a real,
 owner-supplied EPUB is available.
 
-## Decision
+## Decision drivers
+
+- The PRD's recommended answers to its Open Questions (E1-E5) are adopted (`implementation-plan.md` D22) rather than re-decided.
+- No real EPUB was available to check against (PRD Open Question F1); Phase 2 ships against a generated fixture.
+- An EPUB is also a zip, so its reader must be capped, and a crafted `../../secret` href must not be read.
+- The PRD's "No un-narratable import" success metric names EPUB explicitly.
+
+## Considered options
+
+1. Chapters from the nav, then the NCX, table of contents, with capped entries and DRM refused
+2. A heading heuristic guessing at chapter boundaries, as DOCX and Markdown use
+
+## Decision outcome
+
+**Chosen option: chapters from the nav, then the NCX, table of contents, with capped entries and DRM refused**, because the PRD's recommended answers already settled this shape, and a real table of contents gives the chapters in the shape the author gave them.
 
 - **Chapters come from the table of contents first (E1).** `epubWithProgress` reads the EPUB 3 nav document
   (`<nav epub:type="toc">`) when the package manifest has one, falling back to the EPUB 2 NCX (`toc.ncx`) when it does not or the
@@ -53,18 +67,28 @@ owner-supplied EPUB is available.
   divergence from Word/Markdown's `opening`-only chapterless behavior that ADR 0095 records for TXT, required by the PRD's own
   Success Metrics ("No un-narratable import" names EPUB explicitly, not just TXT).
 
-## Consequences
+### Consequences
 
-- A well-formed EPUB 3 or EPUB 2 book with a real table of contents imports its chapters in the shape the author gave them,
+- **Good:** A well-formed EPUB 3 or EPUB 2 book with a real table of contents imports its chapters in the shape the author gave them,
   without a heading heuristic guessing at chapter boundaries the way DOCX and Markdown still do.
-- The size limits and the semantic-emphasis-only scope are considered guesses, not measured ones (no real EPUB was available -
+- **Bad:** The size limits and the semantic-emphasis-only scope are considered guesses, not measured ones (no real EPUB was available -
   PRD F1). A future change that tunes the limits, adds CSS-class emphasis, or adds `epub:type` classification (Phase 3) should
   supersede this ADR rather than edit `epub.go`'s constants or `collectInline`'s tag set silently.
-- Only the exposed formats list (`formats.go`) changes what the native picker, `BuildDraftProgress`'s error message and the UI
+- **Neutral:** Only the exposed formats list (`formats.go`) changes what the native picker, `BuildDraftProgress`'s error message and the UI
   union (`apps/ui/src/api/contracts/manuscript.ts`, `apps/ui/src/api/schemas/manuscript.ts`) accept; `manuscript.DetectSource`'s
   own extension list (the "found in your project folder" offer, ADR 0019) is unchanged by this ADR - offering `.epub`
   automatically is Phase 4's own, separate decision (F2).
-- `golang.org/x/net` moves from an indirect to a direct dependency of `apps/desktop/go.mod` (its `html` package parses XHTML
+- **Neutral:** `golang.org/x/net` moves from an indirect to a direct dependency of `apps/desktop/go.mod` (its `html` package parses XHTML
   content documents and the nav document); it is BSD-3, already in the module graph as an indirect requirement, and compatible
   with the AGPL-3.0-or-later relicense (D17) - no new dependency licence check was needed beyond confirming what the PRD's
   Evidence already established.
+
+### Confirmation
+
+Phase 2 is tested against a generated fixture (`tests/fixtures/alice.epub`, from `tests/fixtures/generate_alice.py`'s `write_epub`) and in-memory Go fixtures (`epub_test.go`) for hostile and quirk shapes; no real EPUB has been checked.
+
+## Pros and cons of the options
+
+### A heading heuristic
+
+- Bad, because it guesses at chapter boundaries instead of importing them in the shape the author gave them.

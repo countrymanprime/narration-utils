@@ -281,7 +281,7 @@ Cross-cutting: follow `CLAUDE.md`:
 - TDD
 - `full-verification-gate`, with the visual suite and PNG review at every viewport, the atlas (Phase 1) and `run aria` (Phases 2 and 3)
 - `design-spec-guard` (the primitive, Phase 1)
-- `feature-cleanup`, including the ADR (`adr-author`)
+- `feature-cleanup`, including the ADR (`architecture-decision-records`)
 
 This work crosses no trust boundary: display text only, and file names are unchanged unless Q7 C is revisited. `hostAPIVersion` is unchanged.
 

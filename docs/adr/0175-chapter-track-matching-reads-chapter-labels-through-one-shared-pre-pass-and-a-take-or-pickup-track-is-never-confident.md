@@ -1,10 +1,10 @@
 # 0175. Chapter-track matching reads chapter labels through one shared pre-pass, and a take or pickup track is never confident
 
-**Status:** Proposed
-**Date:** 2026-09-24
-**Amends:** ADR-0110
+- **Status:** Proposed
+- **Date:** 2026-09-24
+- **Related:** Amends [ADR-0110](0110-one-go-chapter-to-track-matcher-ported-from-transcript-compare-with-explicit-confidence-states.md).
 
-## Context
+## Context and problem
 
 [DAW Chapter-Track Auto-Sync](../prds/daw-chapter-track-auto-sync.prd.md) measured the matcher of [ADR 0110](0110-one-go-chapter-to-track-matcher-ported-from-transcript-compare-with-explicit-confidence-states.md)
 against real track-name habits. "Ch. 6", "Ch6", "CH06", "06" and "Sixth Chapter" matched nothing; "Chapter 06",
@@ -14,7 +14,20 @@ against real track-name habits. "Ch. 6", "Ch6", "CH06", "06" and "Sixth Chapter"
 to match its chapter or nothing, never a wrong one. S5 lists the forms; S9 asks that Transcript Compare, which has the
 same gaps, keep parity.
 
-## Decision
+## Decision drivers
+
+- Automatic linking needs every conventional name to match its chapter or nothing, never a wrong one.
+- S5 lists the forms, and S9 asks that Transcript Compare keep parity.
+- A pickup track is not the chapter's own recording (S11).
+
+## Considered options
+
+1. One shared label pre-pass on both sides, with take and pickup markers reported and never confident
+2. Keep the status quo: ADR 0110's matcher on `normalized_tokens`
+
+## Decision outcome
+
+**Chosen option: one shared label pre-pass on both sides, with take and pickup markers reported and never confident**, because the measured matcher missed conventional names and matched two to the wrong chapter, and automatic linking needs every conventional name to match its chapter or nothing.
 
 1. **A label pre-pass on both sides.** `chaptermatch.LabelTokens` (`apps/desktop/internal/chaptermatch/label.go`) and
    `label_tokens` (`sidecars/transcript-compare/core/compare.py`) replace `normalized_tokens` inside
@@ -38,14 +51,25 @@ same gaps, keep parity.
    table's names as `matches` cases, with the Python matcher's answers; both suites read them. The fuzz target checks
    that a take or pickup match is never confident.
 
-## Consequences
+### Consequences
 
-- Every conventionally named track in the PRD's Evidence table now matches its right chapter, confidently where the
+- **Good:** Every conventionally named track in the PRD's Evidence table now matches its right chapter, confidently where the
   name is the chapter's own, and "Chapter VI" and "Chapter 6 v2" can no longer land on Chapter 1 or 2.
-- Transcript Compare's track-name lookup gains the same forms, so a "Ch. 6" track in REAPER compares against
+- **Good:** Transcript Compare's track-name lookup gains the same forms, so a "Ch. 6" track in REAPER compares against
   Chapter 6 instead of asking for a chapter.
-- A title whose own words look like a marker after a number ("Chapter 12 Final") reads without them; both sides of a
+- **Neutral:** A title whose own words look like a marker after a number ("Chapter 12 Final") reads without them; both sides of a
   match go through the same pass, so this only matters when a track name and a title differ in those words.
-- The confidence rule of ADR 0110 (the kind of match, not the score) is unchanged; a marker only lowers a match.
-- Changing the rules means changing both implementations and the parity file together; a new form is a new
+- **Neutral:** The confidence rule of ADR 0110 (the kind of match, not the score) is unchanged; a marker only lowers a match.
+- **Neutral:** Changing the rules means changing both implementations and the parity file together; a new form is a new
   `labelTokens` case.
+
+### Confirmation
+
+`tests/fixtures/chapter-track-match/parity-cases.json` holds `labelTokens` and `matches` cases with the Python matcher's answers, and both suites read them. The fuzz target checks that a take or pickup match is never confident.
+
+## Pros and cons of the options
+
+### Keep the status quo: ADR 0110's matcher on `normalized_tokens`
+
+- Bad, because "Ch. 6", "Ch6", "CH06", "06" and "Sixth Chapter" matched nothing, and a pickup or take track matched nothing at all.
+- Bad, because "Chapter VI" went to Chapter 1 and "Chapter 6 v2" to Chapter 2.

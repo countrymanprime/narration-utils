@@ -26,7 +26,7 @@ remove it when a maintainer has looked at the issue.
 
 - Keep one problem per issue. Link the ADR, PRD or brief it touches instead of pasting it.
 - A feature that changes a recorded decision should say so; the resulting change adds or supersedes an ADR (see
-  the `adr-author` skill).
+  the `architecture-decision-records` skill).
 - Set the milestone when the work belongs to a roadmap milestone. Unscheduled work has none.
 
 ## Labels

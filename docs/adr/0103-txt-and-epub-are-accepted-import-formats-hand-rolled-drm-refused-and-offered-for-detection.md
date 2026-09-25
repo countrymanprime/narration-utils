@@ -1,10 +1,10 @@
 # 0103. TXT and EPUB are accepted import formats, hand-rolled without a library, DRM is refused, and both are offered for detection
 
-**Status:** Accepted
-**Date:** 2026-09-22
-**Amends:** the extension list of [ADR 0019](0019-detected-manuscript-is-offered-not-imported.md), which named `.docx`, `.md` and `.markdown` only and explicitly called `.txt` unsupported
+- **Status:** Accepted
+- **Date:** 2026-09-22
+- **Related:** Amends the extension list of [ADR-0019](0019-detected-manuscript-is-offered-not-imported.md), which named `.docx`, `.md` and `.markdown` only and explicitly called `.txt` unsupported
 
-## Context
+## Context and problem
 
 The txt-and-epub-import PRD's Phase 4 is "Detection, ADR and documentation... retire the PRD." Phases 1-3 shipped the TXT and EPUB
 importers and recorded their own implementation-level decisions in [ADR 0095](0095-txt-import-decodes-by-bom-utf-8-windows-1252-and-a-chapterless-file-becomes-one-narration-chapter.md)
@@ -27,7 +27,21 @@ their own, because each is a standing project-wide stance rather than one format
 F2 needed its own ADR because it changes ADR 0019's Decision text directly (an extension list an Accepted ADR names verbatim),
 and ADR 0019 is immutable once accepted (`docs/adr/README.md` rule 1): a changed decision gets a new ADR, not an edit.
 
-## Decision
+## Decision drivers
+
+- Four standing, project-wide decisions from the PRD's Decisions Log were left as "(proposed)" rows with no ADR of their own.
+- ADR 0019 names its extension list verbatim and is immutable once accepted, so changing it needs a new ADR.
+- Detection must stay an offer the user accepts, never an automatic import.
+- Match the existing DOCX/Markdown precedent of hand-written parsers.
+
+## Considered options
+
+1. Hand-written TXT and EPUB parsers on the standard library plus `x/net/html` and `x/text`, with DRM refused and both formats offered for detection
+2. A third-party Go EPUB library (`kapmahc/epub`, `timsims/pamphlet`, `mathieu-keller/epub-parser`)
+
+## Decision outcome
+
+**Chosen option: hand-written TXT and EPUB parsers on the standard library plus `x/net/html` and `x/text`, with DRM refused and both formats offered for detection**, because the candidate EPUB libraries are each small, stale or copyleft in a way that adds nothing the standard library plus two already-indirect dependencies doesn't already cover.
 
 - **TXT and EPUB are accepted manuscript formats**, alongside DOCX and Markdown, through the same seam every format already
   used (`newDraft`, `Draft.Notices`, no source is read again after import) - the PRD's central premise, now built in full
@@ -46,14 +60,24 @@ and ADR 0019 is immutable once accepted (`docs/adr/README.md` rule 1): a changed
   manuscript?", and nothing is read until the user agrees - ADR 0019's actual mechanism (the offer/accept flow, the
   session-only decline, `BeginDetected`'s exact-path check) is untouched and stays in force.
 
-## Consequences
+### Consequences
 
-- ADR 0019's own file keeps its Decision text (ADRs are immutable once accepted); its `Status` line is updated to point here for
+- **Neutral:** ADR 0019's own file keeps its Decision text (ADRs are immutable once accepted); its `Status` line is updated to point here for
   the one bullet this ADR supersedes (the extension list), the same "amends" pattern ADR 0016/ADR 0017 used for ADR 0009.
-- A project folder holding both a `manuscript.epub` and a `manuscript.md` (for example, a DRM-free EPUB export kept alongside
+- **Neutral:** A project folder holding both a `manuscript.epub` and a `manuscript.md` (for example, a DRM-free EPUB export kept alongside
   notes) now offers the EPUB first, ahead of both Markdown variants and TXT, matching the same "richest format wins" ordering
   the original three extensions used.
-- The four decisions above (parsers, options, DRM, detection) were already built during Phases 1-3; this ADR records them
+- **Neutral:** The four decisions above (parsers, options, DRM, detection) were already built during Phases 1-3; this ADR records them
   without changing any code beyond `detectableExtensions` (Phase 4's own scope) and closes the "(proposed)" rows the PRD's
   Decisions Log carried with no ADR link.
-- Nothing here changes `hostAPIVersion`: `manuscriptCandidate`'s shape is unchanged, only which extensions can appear in it.
+- **Good:** Nothing here changes `hostAPIVersion`: `manuscriptCandidate`'s shape is unchanged, only which extensions can appear in it.
+
+### Confirmation
+
+Not recorded when this decision was made.
+
+## Pros and cons of the options
+
+### A third-party Go EPUB library
+
+- Bad, because `kapmahc/epub`, `timsims/pamphlet` and `mathieu-keller/epub-parser` are each small, stale or copyleft in a way that adds nothing the standard library plus two already-indirect dependencies doesn't already cover.

@@ -1,9 +1,9 @@
 # 0151. Chapter announcements render per narration chapter and are timed with the credits; room tone is the narrator's setting
 
-**Status:** Proposed
-**Date:** 2026-09-23
+- **Status:** Proposed
+- **Date:** 2026-09-23
 
-## Context
+## Context and problem
 
 `audiobook-credits-templates.prd.md` Phase 5 ("Extras") carries the optional chapter announcement template (Open Question C8:
 "[Chapter], [Chapter Title] computed from manuscript.json") and the room tone setting the Phase 2 time model left at 0 with no
@@ -14,7 +14,20 @@ segments, the other Phase 5 item, shipped in Phase 1 (C5, `renderer.go`). Import
 1") and, when the importer split one from it, a `subtitle` ("Down the Rabbit-Hole", ADR 0013); `chapter.wordCount` counts
 paragraph text only, so a spoken heading is in no estimate today.
 
-## Decision
+## Decision drivers
+
+- Open Question C8: `[Chapter]`, `[Chapter Title]` computed from `manuscript.json`.
+- C9 and ADR 0025: published room-tone guidance disagrees, so no number is baked in without a user setting.
+- `CreditsPreview` has no chapter to fill `[Chapter]` from.
+
+## Considered options
+
+1. `[Chapter]` as the heading and `[Chapter Title]` as the subtitle, rendered per narration chapter, with room tone as the narrator's setting
+2. Computing an ordinal chapter number
+
+## Decision outcome
+
+**Chosen option: `[Chapter]` as the heading and `[Chapter Title]` as the subtitle, rendered per narration chapter, with room tone as the narrator's setting**, because the heading already says what the book calls the chapter, and room-tone guidance disagrees, so no number is baked in without a user setting.
 
 - **`[Chapter]` is the chapter's heading and `[Chapter Title]` its subtitle.** `credits.RenderAnnouncements`
   (`internal/credits/announcements.go`) renders one body once per chapter through `credits.Render`, adding those two tokens to
@@ -34,15 +47,25 @@ paragraph text only, so a spoken heading is in no estimate today.
   (`estimateCreditsSeconds`'s existing per-file allowance). The label says "per credits file"; the tooltip says it counts head
   and tail together and cites ACX's 1 to 5 seconds at each end.
 
-## Consequences
+### Consequences
 
-- One renderer still: the announcement preview and the estimate use `credits.Render`, and the `{...}` segment that drops a
+- **Good:** One renderer still: the announcement preview and the estimate use `credits.Render`, and the `{...}` segment that drops a
   missing subtitle is the Phase 1 grammar, not a new one.
-- The Credits stat grows by every chapter's announcement, which is honest (the words are read) but new: a narrator who adds an
+- **Neutral:** The Credits stat grows by every chapter's announcement, which is honest (the words are read) but new: a narrator who adds an
   announcement template sees the stat rise by about a second or two per chapter.
-- The announcement is not shown in the Manuscript reader or read on the teleprompter, and Proofing still prepends only the
+- **Bad:** The announcement is not shown in the Manuscript reader or read on the teleprompter, and Proofing still prepends only the
   spoken chapter title (`compare.py`): an announcement with more words than the heading and subtitle is reported as extra words.
   The guide says to keep it to those. Reading announcements on the teleprompter, or prepending the rendered announcement in
   Proofing, would each need their own change and ADR.
-- `hostAPIVersion` goes to 35 for the new binding. A later per-project template choice (ADR 0093's open follow-up) changes only
+- **Neutral:** `hostAPIVersion` goes to 35 for the new binding. A later per-project template choice (ADR 0093's open follow-up) changes only
   which template `useCreditsSeconds` picks.
+
+### Confirmation
+
+Not recorded when this decision was made.
+
+## Pros and cons of the options
+
+### Computing an ordinal chapter number
+
+- Bad, because the heading already says what the book calls it.

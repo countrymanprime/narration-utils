@@ -19,4 +19,5 @@ max_retries = 2
 accept = ["200..=299", "429"]
 # The dot folders hold Markdown too (the pull request template, the issue forms' docs), so they are read; .git is not.
 hidden = true
-exclude_path = ['^\.git/']
+# A tracked skill's templates hold placeholder links (NNNN-title.md) that only resolve once copied into a real log.
+exclude_path = ['^\.git/', '(^|[\\/])\.claude[\\/]skills[\\/][^\\/]+[\\/]templates[\\/]']

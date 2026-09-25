@@ -1,10 +1,9 @@
 # 0039. The project is licensed AGPL-3.0-or-later
 
-**Status:** Accepted
-**Date:** 2026-09-20
-**Supersedes:**
+- **Status:** Accepted
+- **Date:** 2026-09-20
 
-## Context
+## Context and problem
 
 The repository was MIT-licensed from its first commit. The maintainer builds Narration Utils to help narrators with their workflow for free, after finding that every alternative was a subscription that covered one or two needs. The stated goal is that the work stays free, with no exceptions.
 
@@ -12,7 +11,22 @@ MIT lets anyone take the code into a closed, paid product. A copyleft license cl
 
 The shipped Guide sidecar already imports GPL-3.0-or-later packages (`piper-tts`, `phonemizer`, and eSpeak NG underneath). Under MIT that was an open question in `docs/research/local-dependency-evaluation.md` and in the docs-security PRD; under a GPL-family license it is not one.
 
-## Decision
+## Decision drivers
+
+- The maintainer's stated goal: the work stays free, with no exceptions.
+- MIT lets anyone take the code into a closed, paid product; a copyleft license closes that door.
+- The shipped Guide sidecar already imports GPL-3.0-or-later packages (`piper-tts`, `phonemizer`, and eSpeak NG underneath).
+- The sidecars and the host could be run as a hosted service.
+
+## Considered options
+
+1. AGPL-3.0-or-later
+2. Keep the status quo: MIT
+3. GPL
+
+## Decision outcome
+
+**Chosen option: AGPL-3.0-or-later**, because a copyleft license keeps the work free with no exceptions, and AGPL section 13 extends the source obligation to running it as a hosted service, which GPL does not.
 
 Narration Utils is licensed under the GNU Affero General Public License v3.0 or later (SPDX `AGPL-3.0-or-later`), effective on the merge of the pull request that adds this ADR.
 
@@ -22,10 +36,25 @@ Narration Utils is licensed under the GNU Affero General Public License v3.0 or 
 - Contributions are accepted under the same license (inbound equals outbound). There is no contributor license agreement.
 - A dependency is acceptable if its license is compatible with AGPL-3.0-or-later: permissive licenses (MIT, BSD, ISC, Apache-2.0, 0BSD, CC0), LGPL, GPL-3.0-or-later and AGPL-3.0-or-later. GPL-2.0-only, source-available, non-commercial and no-derivatives licenses are not. Model and voice weights are checked per artifact, because a weight file's terms are separate from the code that loads it.
 
-## Consequences
+### Consequences
 
-- The Piper, phonemizer and eSpeak NG question ends. No separate-download split is needed for license reasons.
-- Anyone who distributes a modified build, or runs one as a network service, must offer its source under the same terms. The license does not forbid selling copies; it guarantees that every copy stays free to use, study, change and share.
-- The dependency allow-list in the docs-security PRD gains GPL, LGPL and AGPL entries, and third-party notices plus a source offer ship with releases (docs-security phases 7, 9 and 10).
-- A future move back to a permissive license would need every contributor's consent, which is deliberate: it keeps the commitment hard to undo.
-- To change this decision, write a new ADR that supersedes this one.
+- **Good:** The Piper, phonemizer and eSpeak NG question ends. No separate-download split is needed for license reasons.
+- **Neutral:** Anyone who distributes a modified build, or runs one as a network service, must offer its source under the same terms. The license does not forbid selling copies; it guarantees that every copy stays free to use, study, change and share.
+- **Neutral:** The dependency allow-list in the docs-security PRD gains GPL, LGPL and AGPL entries, and third-party notices plus a source offer ship with releases (docs-security phases 7, 9 and 10).
+- **Neutral:** A future move back to a permissive license would need every contributor's consent, which is deliberate: it keeps the commitment hard to undo.
+- **Neutral:** To change this decision, write a new ADR that supersedes this one.
+
+### Confirmation
+
+Not recorded when this decision was made.
+
+## Pros and cons of the options
+
+### MIT
+
+- Bad, because it lets anyone take the code into a closed, paid product.
+- Bad, because shipping the GPL-3.0-or-later Guide sidecar packages under it was an open question.
+
+### GPL
+
+- Bad, because its source obligation does not extend to the sidecars and the host being run as a hosted service; AGPL section 13 does.

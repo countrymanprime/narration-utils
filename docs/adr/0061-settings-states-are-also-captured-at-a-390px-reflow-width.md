@@ -1,11 +1,11 @@
 # 0061. Settings states are also captured at a 390 px reflow width
 
-**Status:** Accepted
-**Date:** 2026-09-21
-**Supersedes:**
-**Amends:** [ADR 0037](0037-visual-suite-captures-no-phone-viewport.md) (which widths the suite captures)
+- **Status:** Accepted
+- **Date:** 2026-09-21
+- **Deciders:** the owner
+- **Related:** Amends [ADR-0037](0037-visual-suite-captures-no-phone-viewport.md) (which widths the suite captures)
 
-## Context
+## Context and problem
 
 [ADR 0037](0037-visual-suite-captures-no-phone-viewport.md) dropped the 390 px viewport: nobody runs the app on a phone, the desktop shell's `MinWidth` is 960 px, and mobile was a third of the `ui-visual` job's time. It noted that a layout regression below 768 px would no longer be caught, and named the Settings layout at 390 px as the known example.
 
@@ -13,16 +13,44 @@ That example is the reason to revisit it. The Settings row collapsed only below 
 
 This decision reverses part of an owner decision, so it was written as `Proposed`: the work follows the recommended path, and the owner accepted it on 2026-09-23. The settings mobile layout PRD's own recommendation (its metrics ask for control widths "at 390px") points the same way, and the implementation plan's instruction for this stack was to run the check "at the viewports the suite captures plus any the PRD needs".
 
-## Decision
+## Decision drivers
+
+- The collapsed-control check passes at all three captured widths on the pre-fix layout, so it could not have caught the bug it was written for.
+- The layout is still reachable: browser zoom divides the shell's 960 CSS px minimum, and WCAG 1.4.10 Reflow asks content to survive 320 CSS px.
+- A full mobile viewport cost about a third of the `ui-visual` job's time.
+
+## Considered options
+
+1. An opt-in 390 px reflow viewport, used by the Settings states only
+2. Keep the status quo: the three viewports of ADR 0037
+3. A phone width for every state
+
+## Decision outcome
+
+**Chosen option: an opt-in 390 px reflow viewport, used by the Settings states only**, because the collapsed-control check cannot see the Settings bug at the three default widths, and opting in per row costs about 5 s, not the third of the job a full mobile viewport cost.
 
 **The default matrix stays desktop, small-desktop and tablet (ADR 0037 stands).** One more viewport exists, `REFLOW_VIEWPORT` (`reflow`, 390 x 844) in `apps/ui/tests/visual/viewports.ts`, and it is opt-in per catalog row: `StateEntry.extraViewports` (a kit 0.3.3 field, see ADR 0060) lists it, and `app.spec.ts` captures `[...VIEWPORTS, ...extraViewports]`. Only the 13 Settings states opt in (`...REFLOW` in `state-catalog.ts`); a unit test requires every Settings state to.
 
 **`clickNav` opens the drawer** when the layout shows the "Open navigation" button instead of the item: it clicks the button, picks the item in the `Navigation` dialog and waits for the dialog to close. This is what ADR 0037 asked for ("teach this helper to open the drawer; do not guess with a timeout"), it only runs at the reflow width, and no state that opens the drawer itself is restored (`global/nav-drawer-open` stays removed; the drawer's record is still its atlas stories).
 
-## Consequences
+### Consequences
 
-- The collapsed-control check runs on the Settings rows at 390 px, and the PNGs at `screenshots/app/settings/<state>/reflow.png` are reviewed with the others. It was proved red on the pre-fix layout at `reflow` (five controls named) and green at the other three widths, which is the whole argument for the width.
-- The suite runs 235 tests instead of 222: 13 more at about 1.5 s each, in parallel, about 5 s of `ui-visual` time, far from the third that a full mobile viewport cost.
-- Rows opt in one at a time, so another page whose layout changes below `md` can do the same with a line in its catalog rows; nothing else pays.
-- If the owner rejects this: delete `...REFLOW` from the Settings rows and the extra-viewport test; the check keeps running at three widths and can no longer see this class of bug at 390 px.
-- To capture a phone width for every state again, add it to `VIEWPORTS` and write a new ADR that supersedes 0037.
+- **Good:** The collapsed-control check runs on the Settings rows at 390 px, and the PNGs at `screenshots/app/settings/<state>/reflow.png` are reviewed with the others. It was proved red on the pre-fix layout at `reflow` (five controls named) and green at the other three widths, which is the whole argument for the width.
+- **Neutral:** The suite runs 235 tests instead of 222: 13 more at about 1.5 s each, in parallel, about 5 s of `ui-visual` time, far from the third that a full mobile viewport cost.
+- **Good:** Rows opt in one at a time, so another page whose layout changes below `md` can do the same with a line in its catalog rows; nothing else pays.
+- **Neutral:** If the owner rejects this: delete `...REFLOW` from the Settings rows and the extra-viewport test; the check keeps running at three widths and can no longer see this class of bug at 390 px.
+- **Neutral:** To capture a phone width for every state again, add it to `VIEWPORTS` and write a new ADR that supersedes 0037.
+
+### Confirmation
+
+A unit test requires every Settings state to opt in to the reflow width.
+
+## Pros and cons of the options
+
+### Keep the three viewports of ADR 0037
+
+- Bad, because the collapsed-control check passes at all three on the pre-fix layout, so it cannot see this class of bug.
+
+### A phone width for every state
+
+- Bad, because a full mobile viewport cost about a third of the `ui-visual` job's time.

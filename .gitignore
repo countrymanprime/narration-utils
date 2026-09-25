@@ -17,9 +17,13 @@ apps/ui/coverage/
 .hypothesis/
 *.tsbuildinfo
 logs/
-# Local Claude Code state stays out; the shared settings (plugin marketplaces for cloud sessions) are tracked.
+# Local Claude Code state stays out; the shared settings (plugin marketplaces for cloud sessions) are tracked,
+# and so are the skills the repo's docs depend on (the ADR skill, docs/adr/0247). Other skills stay local.
 .claude/*
 !.claude/settings.json
+!.claude/skills/
+.claude/skills/*
+!.claude/skills/architecture-decision-records/
 apps/desktop/cmd/narration-utils/frontend/dist/*
 !apps/desktop/cmd/narration-utils/frontend/dist/.gitkeep
 apps/desktop/cmd/narration-utils/frontend/wailsjs/

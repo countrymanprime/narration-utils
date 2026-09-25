@@ -1,10 +1,10 @@
 # 0196. The read-aloud control bar lives in a Dialog footer slot, and Space plays or stops a session
 
-**Status:** Proposed
-**Date:** 2026-09-24
-**Amends:** [ADR 0094](0094-dialog-gains-a-full-size-variant-that-fills-the-viewport-with-a-margin.md) (a new `footer` slot) and [ADR 0119](0119-a-hand-scroll-pauses-following-until-the-current-word-is-back-in-the-band.md) decision 2 (Space is no longer always a scroll key)
+- **Status:** Proposed
+- **Date:** 2026-09-24
+- **Related:** Amends [ADR-0094](0094-dialog-gains-a-full-size-variant-that-fills-the-viewport-with-a-margin.md) (a new `footer` slot) and [ADR-0119](0119-a-hand-scroll-pauses-following-until-the-current-word-is-back-in-the-band.md) decision 2 (Space is no longer always a scroll key)
 
-## Context
+## Context and problem
 
 [Read Aloud Control Bar](../prds/read-aloud-control-bar.prd.md) Phase 3 replaces the read-aloud dialog's configuration
 card - Microphone, Engine, Model and Start reading, a `Panel` that scrolls with the rest of the dialog body and is
@@ -14,7 +14,22 @@ full-height column and moved the resume prompt into the text column's own axis; 
 interactive layer above the dialog. This phase is the bar itself: where it lives in the dialog shell, what it puts in
 front of a popover instead of inline, and how Space reaches it without also scrolling the page.
 
-## Decision
+## Decision drivers
+
+- The owner reported losing the Start button while reading down a long chapter.
+- The configuration card scrolls with the rest of the dialog body and is sticky only once a session is active.
+- Space must reach the bar without also scrolling the page.
+- The PRD's Q10 A, the recommended answer the owner's mockups already assume.
+
+## Considered options
+
+1. A compact, always-visible media bar in a new `Dialog` footer slot, with Space playing or stopping a session
+2. Keep the status quo: the configuration card, a `Panel` that scrolls with the dialog body
+3. A bespoke footer region hand-rolled at the call site
+
+## Decision outcome
+
+**Chosen option: a compact, always-visible media bar in a new `Dialog` footer slot, with Space playing or stopping a session**, because the owner reported losing the Start button while reading down a long chapter.
 
 1. **`Dialog` gains a `footer` slot** (`apps/ui/src/components/primitives/Dialog.tsx`): a `ReactNode` prop rendered in
    its own `flex-none` region, bordered on top, between the scrolling body and the existing `actions` row. It has no
@@ -50,20 +65,39 @@ front of a popover instead of inline, and how Space reaches it without also scro
    already skips a prevented event (`useFollowCursor.ts`), so Space stops being read as a scroll-and-pause key
    wherever this bar is mounted, without touching `isScrollKey` itself or any other scroll key.
 
-## Consequences
+### Consequences
 
-- The control bar is visible in every dialog state, idle or active, at any scroll position, which is metrics rows 1
+- **Good:** The control bar is visible in every dialog state, idle or active, at any scroll position, which is metrics rows 1
   and 2 of the PRD: the narrator never loses Play, Stop or the microphone by scrolling down a long chapter.
-- `Dialog`'s footer slot is a second `flex-none` region alongside `actions`; a future dialog that wants a persistent
+- **Neutral:** `Dialog`'s footer slot is a second `flex-none` region alongside `actions`; a future dialog that wants a persistent
   toolbar reuses it instead of inventing another one-off layout, and a change to what the slot means should supersede
   this ADR (the same posture ADR 0094 took for `size`).
-- Engine, Model and the microphone move from always-visible fields to popovers: one more click to change them, traded
+- **Neutral:** Engine, Model and the microphone move from always-visible fields to popovers: one more click to change them, traded
   for the bar staying compact at every width (metrics row 2, `read-aloud-mic-popover` and `read-aloud-settings-popover`
   visual rows). The standalone Teleprompter page gets the same bar for free (Q11 A) without a REAPER toggle, since it
   has no fixed chapter until one is chosen.
-- Space no longer scrolls the page inside this dialog outside of a field or widget; a narrator who relied on Space to
+- **Bad:** Space no longer scrolls the page inside this dialog outside of a field or widget; a narrator who relied on Space to
   page down the reader text while idle (unusual - the reader tracks the cursor for them during a session) now plays
   or stops the session instead. This is the PRD's Q10 A, the recommended answer the owner's mockups already assume.
-- Pause, the level meter, REAPER's live transport state and "Record in REAPER" are unbuilt: Play is simply disabled
+- **Neutral:** Pause, the level meter, REAPER's live transport state and "Record in REAPER" are unbuilt: Play is simply disabled
   during a session rather than becoming a Pause toggle, and the bar's mic popover and Settings popover show no meter
   and no REAPER row. Phases 4-7 extend this same bar; they should not need to change its layout, only add to it.
+
+### Confirmation
+
+Point 4: `rawNatives.test.ts`'s ceiling for `MicrophoneField` drops to zero (ADR 0053's ratchet). The popovers are the `read-aloud-mic-popover` and `read-aloud-settings-popover` visual rows.
+
+## Pros and cons of the options
+
+### A compact, always-visible media bar in a new `Dialog` footer slot, with Space playing or stopping a session
+
+- Good, because the narrator never loses Play, Stop or the microphone by scrolling down a long chapter.
+- Bad, because Engine, Model and the microphone take one more click to change.
+
+### Keep the status quo: the configuration card, a `Panel` that scrolls with the dialog body
+
+- Bad, because the narrator lost the Start button while reading down a long chapter.
+
+### A bespoke footer region hand-rolled at the call site
+
+- Bad, because it is not a documented extension point on the one modal shell.

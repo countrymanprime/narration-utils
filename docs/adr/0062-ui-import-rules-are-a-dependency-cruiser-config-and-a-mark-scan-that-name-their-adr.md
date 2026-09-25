@@ -1,10 +1,10 @@
 # 0062. UI import rules are a dependency-cruiser config and a `<mark>` scan that name their ADR
 
-**Status:** Accepted
-**Date:** 2026-09-21
-**Supersedes:**
+- **Status:** Accepted
+- **Date:** 2026-09-21
+- **Deciders:** the owner
 
-## Context
+## Context and problem
 
 [ADR 0046](0046-architecture-rules-taken-from-adrs-are-lint-and-test-rules.md) put the Go and Python import rules into the existing lint and test runners and said the UI rules would follow the Base UI stack and get their own ADR. That stack is delivered ([ADR 0047](0047-the-ui-primitives-wrap-base-ui-and-app-code-never-imports-it.md) to [ADR 0058](0058-heading-has-a-level-and-panel-names-its-region-with-a-level-2-title.md)), so the primitives are what they will be and the rules can be written against them. Three facts about `apps/ui` are mechanical and had only review behind them:
 
@@ -14,7 +14,20 @@
 
 The owner adopted the PRD's recommendations (implementation plan D22, questions 7 and 8): fix the story import, and start the ADR 0016 rule with a one-entry, reasoned allowlist that goes to the owner as a design question ([ADR 0063](0063-the-proofing-diff-marks-its-own-words-and-adr-0016-covers-entry-highlights.md), Proposed).
 
-## Decision
+## Decision drivers
+
+- Three facts about `apps/ui` are mechanical and had only review behind them.
+- ADR 0046 said the UI rules would follow the Base UI stack and get their own ADR.
+- The tooling's config-protection hook refuses edits to `eslint.config.js`, and that guard is not bypassed.
+
+## Considered options
+
+1. A dependency-cruiser config for the import-graph rules and a syntax-tree scan for `<mark>`, each with a fixture that proves it fires
+2. An ESLint `no-restricted-syntax` rule for `<mark>` (the PRD's plan)
+
+## Decision outcome
+
+**Chosen option: a dependency-cruiser config for the import-graph rules and a syntax-tree scan for `<mark>`, each with a fixture that proves it fires**, because the import-graph facts had only review behind them, and the `<mark>` rule follows ADR 0047's scan since the config-protection hook refuses edits to `eslint.config.js`.
 
 **Import-graph rules are a dependency-cruiser config.** `apps/ui/.dependency-cruiser.mjs` holds three forbidden-dependency rules, run over `src` and `tests` by the `architecture` Nx target of `narration-utils-ui` (`pnpm --dir apps/ui architecture`), which `pnpm check` and the `js` CI job run (about 2 s). The rule names appear in a failure and each has a `comment` that says what to do instead.
 
@@ -30,10 +43,20 @@ The owner adopted the PRD's recommendations (implementation plan D22, questions 
 
 `design-spec-guard` stays for judgement (which tokens, which look) and cites these rules so it stops re-checking them.
 
-## Consequences
+### Consequences
 
-- A primitive cannot depend on a feature, a component cannot call the host around the API client, and a second `<mark>` cannot appear, without a red check that names the rule.
-- `dependency-cruiser` 18.3.1 (MIT, dev-only, AGPL-compatible per [ADR 0039](0039-the-project-is-licensed-agpl-3-or-later.md)) is a devDependency of `apps/ui`. The lockfile pins it; the newer 18.4.0 was inside the repository's minimum release age, so it was not taken.
-- A new feature folder needs no edit: `primitives-are-leaves` forbids everything under `components/` but `primitives/`. A new layer rule (for example that features do not import each other) is one more entry in the file.
-- The rules read imports. A module name built at run time, or a `<mark>` produced by a string of HTML, is not seen.
-- To drop or reshape a rule, write a new ADR that supersedes this one.
+- **Good:** A primitive cannot depend on a feature, a component cannot call the host around the API client, and a second `<mark>` cannot appear, without a red check that names the rule.
+- **Neutral:** `dependency-cruiser` 18.3.1 (MIT, dev-only, AGPL-compatible per [ADR 0039](0039-the-project-is-licensed-agpl-3-or-later.md)) is a devDependency of `apps/ui`. The lockfile pins it; the newer 18.4.0 was inside the repository's minimum release age, so it was not taken.
+- **Good:** A new feature folder needs no edit: `primitives-are-leaves` forbids everything under `components/` but `primitives/`. A new layer rule (for example that features do not import each other) is one more entry in the file.
+- **Bad:** The rules read imports. A module name built at run time, or a `<mark>` produced by a string of HTML, is not seen.
+- **Neutral:** To drop or reshape a rule, write a new ADR that supersedes this one.
+
+### Confirmation
+
+`src/architectureRules.test.ts` cruises a small tree with one deliberate violation per rule and a legal look-alike, and `highlightBoundary.test.ts` has a bad fixture for each way of writing a `<mark>`; the `architecture` target runs in `pnpm check` and the `js` CI job.
+
+## Pros and cons of the options
+
+### An ESLint `no-restricted-syntax` rule for `<mark>`
+
+- Bad, because the config-protection hook refuses edits to `eslint.config.js`, and that guard is not bypassed.

@@ -1,9 +1,10 @@
 # 0112. The resume card looks up where the recording ends when the dialog opens, and a choice only sets where Start begins
 
-**Status:** Proposed
-**Date:** 2026-09-23
+- **Status:** Proposed
+- **Date:** 2026-09-23
+- **Related:** Decisions 4 and 5 are superseded by [ADR-0187](0187-the-resume-prompt-is-a-compact-notice-that-settles-once-per-dialog-open.md); decision 3 is amended by [ADR-0206](0206-resume-reconciles-the-recording-with-the-prompters-last-word-in-the-host-and-asks-only-when-they-disagree.md) (a choice is no longer the only thing that sets where Start begins)
 
-## Context
+## Context and problem
 
 `docs/prds/teleprompter-manuscript-integration.prd.md` Phase 10 ("Resume UI") puts the resume point from Phase 9
 ([ADR 0111](0111-the-resume-point-comes-from-transcribing-the-recorded-tail-and-placing-it-with-the-tracker.md),
@@ -18,7 +19,21 @@ itself". Three things were left to settle while building it:
   and the reader cannot make words clickable before the sidecar has sent the script's spans;
 - what happens to the card, and to a chosen word, while a session is running.
 
-## Decision
+## Decision drivers
+
+- The modal never starts anything by itself; without a matching track it starts from the top and says so.
+- The lookup transcribes up to 30 s of audio with Whisper and may need a model that is not downloaded.
+- The tracker only takes a word to seek to once it is running, and the reader cannot make words clickable before the sidecar has sent the script's spans.
+- The PRD's "under 30 s" target for seeing where a chapter stopped.
+
+## Considered options
+
+1. Look up when the dialog opens, and let a choice only set where Start begins
+2. Wait for a button press before looking up
+
+## Decision outcome
+
+**Chosen option: look up when the dialog opens, and let a choice only set where Start begins**, because waiting for a button press would put a click and a wait between opening a chapter and seeing where it stopped, the step the PRD's "under 30 s" target is about.
 
 1. **The card asks the host once, when the dialog opens**, with the session's Whisper model, and again only when the
    narrator picks a track, presses Try again, or has just downloaded the model it needed. It only reads: the host's
@@ -44,15 +59,29 @@ itself". Three things were left to settle while building it:
 6. **Every answer is labelled "as of the project's last save"** with the `.rpp`'s save time, because the lookup reads
    the saved project, not REAPER's live state (Phase 11).
 
-## Consequences
+### Consequences
 
-- Opening the dialog on a recorded chapter costs one short Whisper run on the narrator's CPU even when they meant to
+- **Bad:** Opening the dialog on a recorded chapter costs one short Whisper run on the narrator's CPU even when they meant to
   start from the top. A narrator on a slow machine sees "Finding where your recording of this chapter ends…" for longer;
   reading can still be started at any time, from the top.
-- `?mockResume=` (main.tsx, `resumeMockSeed.ts`) reaches every card state in the browser mock, and the visual suite
+- **Neutral:** `?mockResume=` (main.tsx, `resumeMockSeed.ts`) reaches every card state in the browser mock, and the visual suite
   captures each one (`manuscript/read-aloud-resume-*`); the aria suite pins the card's region, quote and choices.
-- Resuming a session that is already running (the dialog opened onto a session the host kept) is not offered: the
+- **Neutral:** Resuming a session that is already running (the dialog opened onto a session the host kept) is not offered: the
   narrator stops, or clicks the word. A later phase that wants a "Go to where I stopped" during a session can seek with
   `TeleprompterSeek` instead of setting the start word.
-- Changing when the lookup runs (for example only on request, if its CPU cost matters on real machines) supersedes
+- **Neutral:** Changing when the lookup runs (for example only on request, if its CPU cost matters on real machines) supersedes
   point 1 in a new ADR.
+
+### Confirmation
+
+`?mockResume=` reaches every card state in the browser mock; the visual suite captures each one (`manuscript/read-aloud-resume-*`), and the aria suite pins the card's region, quote and choices.
+
+## Pros and cons of the options
+
+### Look up when the dialog opens
+
+- Bad, because it costs one short Whisper run on the narrator's CPU even when they meant to start from the top.
+
+### Wait for a button press
+
+- Bad, because it would put a click and a wait between opening a chapter and seeing where it stopped.

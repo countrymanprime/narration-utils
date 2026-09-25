@@ -1,9 +1,10 @@
 # 0117. Live flags are kept as suspected findings, merged per chapter, when a session ends
 
-**Status:** Proposed
-**Date:** 2026-09-23
+- **Status:** Proposed
+- **Date:** 2026-09-23
+- **Deciders:** the owner
 
-## Context
+## Context and problem
 
 `docs/prds/teleprompter-manuscript-integration.prd.md` Phase 7 carries an owner decision (2026-09-23, overriding the
 recommendation to keep flags for the session only): the read-aloud dialog's suspected flags are written as findings with
@@ -18,7 +19,22 @@ say; and a live session usually reads part of a chapter, and each session is a n
 not raise again is no evidence that the first one went away. `Store.SaveAnalyzerFindings` treats every run as a full one and
 marks whatever it did not reproduce `not_in_latest_run`, which would hide the first session's flags after the second.
 
-## Decision
+## Decision drivers
+
+- The owner decided the dialog's suspected flags are written as `unreviewed` findings through the shared findings contract, not a parallel data model.
+- Only the manuscript knows what a flag's word indices say.
+- A live session usually reads part of a chapter and each session is a new take, so a flag a later session does not raise again is no evidence that it went away.
+- `SaveAnalyzerFindings` treats every run as a full one and would hide the first session's flags after the second.
+
+## Considered options
+
+1. Merge each session's flags per chapter into the findings store through one host binding
+2. Keep flags for the session only
+3. Replace a chapter's findings with each run (`SaveAnalyzerFindings`' full-run semantics)
+
+## Decision outcome
+
+**Chosen option: merge each session's flags per chapter into the findings store through one host binding**, because the owner decided flags are kept as findings, and full-run semantics would hide an earlier session's flags after a partial later one.
 
 1. **One host binding, `TeleprompterSaveFlags(chapterId, flags)`** (host API 34). The dialog sends each flag as its paragraph
    and that paragraph's words (`[wordStart, wordEnd)`, the reader's own split, JavaScript's `\S+` runs), the event's chapter
@@ -51,21 +67,31 @@ marks whatever it did not reproduce `not_in_latest_run`, which would hide the fi
    alone: `source` is empty and there is no `time_range`. When the bridge can say what is recording, the same finding gains
    the take's GUIDs first and project time as the fallback, per `daw-integration.md`; the id does not change.
 
-## Consequences
+### Consequences
 
-- A live flag and a Transcript Compare row about the same words are separate findings from separate analyzers; the review
+- **Neutral:** A live flag and a Transcript Compare row about the same words are separate findings from separate analyzers; the review
   surface lists both, and Transcript Compare stays the authoritative one.
-- Re-running a chapter never piles up duplicates, and a partial session never hides an earlier one's flags. The cost is that
+- **Neutral:** Re-running a chapter never piles up duplicates, and a partial session never hides an earlier one's flags. The cost is that
   a flag stays `unreviewed` until someone reviews it, even after a clean re-read, because the earlier take may still be the
   one used.
-- Flags on the title (not a manuscript paragraph) or in a paragraph whose words disagree with the sidecar's script are shown
+- **Bad:** Flags on the title (not a manuscript paragraph) or in a paragraph whose words disagree with the sidecar's script are shown
   but not kept. A flag across two paragraphs is kept as one finding per paragraph.
-- Flags that arrive after a close while reading (the sidecar's last segment, flushed on stop) are not kept, because the
+- **Bad:** Flags that arrive after a close while reading (the sidecar's last segment, flushed on stop) are not kept, because the
   dialog is gone; a session stopped with Stop first keeps them. A view opened mid-session does not see the flags raised
   before it opened until the review surface reads the store (the review dashboard's read bindings, another PRD).
-- The standalone Teleprompter page draws no flags and keeps none; it is retired in Phase 13.
-- Hidden misreads are kept at the measured synthetic rate of about 2 per 100 words, so a long chapter can add dozens of
+- **Neutral:** The standalone Teleprompter page draws no flags and keeps none; it is retired in Phase 13.
+- **Bad:** Hidden misreads are kept at the measured synthetic rate of about 2 per 100 words, so a long chapter can add dozens of
   unreviewed `transcript_discrepancy` findings; if that is too noisy for the review surface, keep only the kinds shown, which
   is a change to decision 6 only.
-- Changing what a flag's id or evidence is made of, or replacing merge with full-run semantics, needs a new ADR that
+- **Neutral:** Changing what a flag's id or evidence is made of, or replacing merge with full-run semantics, needs a new ADR that
   supersedes this one.
+
+### Confirmation
+
+Not recorded when this decision was made.
+
+## Pros and cons of the options
+
+### Replace a chapter's findings with each run
+
+- Bad, because it marks whatever a run did not reproduce `not_in_latest_run`, which would hide the first session's flags after the second.

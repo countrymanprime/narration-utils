@@ -1,9 +1,9 @@
 # 0190. A Manuscript card's whole header is its disclosure button, in fixed columns
 
-**Status:** Accepted
-**Date:** 2026-09-24
+- **Status:** Accepted
+- **Date:** 2026-09-24
 
-## Context
+## Context and problem
 
 [Manuscript Chapter Header Alignment](../prds/manuscript-chapter-header-alignment.prd.md) and
 [Manuscript Credits Card Parity](../prds/manuscript-credits-card-parity.prd.md) both change the same header and land
@@ -17,7 +17,23 @@ which copied the chapter card's frame but none of its header behaviour. Neither 
 a toggle that covered the header (the chapter header's button was a plain `<button className="text-left">` around the
 title only; the credits header's button wrapped just its title text, so only that text opened the card).
 
-## Decision
+## Decision drivers
+
+- The owner reported that the chapter header's stat block and Read aloud button zigzag down the page.
+- The owner asked that the opening credits panel work the same as a chapter card; only its title text opened and closed it.
+- Neither header had `aria-expanded`/`aria-controls` on a toggle that covered the header.
+- A control inside a button is not valid HTML.
+
+## Considered options
+
+1. One shared `ReaderCard` whose whole header is one native disclosure button, in fixed columns
+2. Keep the status quo: an inline chapter header and a separate `CreditsEntry` header, each with a button around the title only
+3. A second control layered over the header
+4. A page-wide `subgrid` to line up the columns
+
+## Decision outcome
+
+**Chosen option: one shared `ReaderCard` whose whole header is one native disclosure button, in fixed columns**, because the owner reported the header's stats and button zigzagging down the page and asked that the credits card open and close the way a chapter card does.
 
 - **One shared component, `apps/ui/src/components/manuscript/ReaderCard.tsx`** (not a primitive: used only by the
   Manuscript page), renders both a chapter card and a credits card. `CreditsEntry.tsx` supplies only its own body
@@ -57,16 +73,20 @@ title only; the credits header's button wrapped just its title text, so only tha
   (`creditsExpandedStorage.ts`), open by default, wrapped in `try`/`catch` so a blocked or full store still renders
   correctly (the choice just does not persist). Expand all and Collapse all set the chapters and the credits together.
 
-## Consequences
+### Consequences
 
-- Every Manuscript card (chapter or credits) now opens and closes from anywhere on its header, announces its state to
+- **Good:** Every Manuscript card (chapter or credits) now opens and closes from anywhere on its header, announces its state to
   a screen reader, and lines up its stats and its action column with every other card on the page.
-- The whole-header toggle only works through the CSS overlay; a future change to the header's markup (a new column, a
+- **Bad:** The whole-header toggle only works through the CSS overlay; a future change to the header's markup (a new column, a
   repositioned control) must keep the toggle button un-positioned (no `relative`) and keep the other controls'
   `relative z-[1]`, or the overlay stops covering the header, or stops yielding to the other controls' clicks.
-- The "empty child instead of an absent one" rule applies to any future optional leading/trailing grid cell in this
+- **Neutral:** The "empty child instead of an absent one" rule applies to any future optional leading/trailing grid cell in this
   header; a reviewer adding a new conditional column here should render a placeholder, not omit the branch.
-- `CreditsEntry.tsx`'s own raw `<button>` (`src/rawNatives.test.ts`) is gone; its ceiling entry is deleted rather than
+- **Neutral:** `CreditsEntry.tsx`'s own raw `<button>` (`src/rawNatives.test.ts`) is gone; its ceiling entry is deleted rather than
   set to 0.
-- A future third kind of Manuscript card (if one is ever added) extends `ReaderCard`'s slots rather than writing a
+- **Good:** A future third kind of Manuscript card (if one is ever added) extends `ReaderCard`'s slots rather than writing a
   third hand-rolled header.
+
+### Confirmation
+
+`ReaderCard.test.tsx` pins the header's child count, the Playwright driver for `manuscript/chapter-header-columns` presses real pixels, and `src/rawNatives.test.ts` loses `CreditsEntry.tsx`'s ceiling entry.

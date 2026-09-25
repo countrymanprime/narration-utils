@@ -1,9 +1,9 @@
 # 0170. The Delivery report is built by the host into the project sidecar without paths, and the host judges the limits
 
-**Status:** Proposed
-**Date:** 2026-09-23
+- **Status:** Proposed
+- **Date:** 2026-09-23
 
-## Context
+## Context and problem
 
 Phase 7 of [the diagnostics PRD](../prds/diagnostics-delivery-and-cleanup-tools.prd.md) asks for an exported report, HTML
 and JSON with the same finding IDs and review states, redactable, in a sidecar folder, and deterministic. Before it, the
@@ -13,7 +13,22 @@ the host needs the host's own findings with their IDs. Open Question 7 recommend
 local paths redacted by default with an explicit opt-in, no audio and no zip. Writing a file the narrator will send to
 someone else is a new place the app writes (threat model row 6h).
 
-## Decision
+## Decision drivers
+
+- The PRD's report: HTML and JSON with the same finding IDs and review states, redactable, in a sidecar folder, and deterministic.
+- A report written by the host needs the host's own findings with their IDs.
+- Open Question 7: one self-contained HTML plus a JSON, local paths redacted by default with an explicit opt-in, no audio and no zip.
+- Writing a file the narrator will send to someone else is a new place the app writes (threat model row 6h).
+
+## Considered options
+
+1. The host judges the limits and builds the report into the project sidecar, with paths redacted by default
+2. Keep the status quo: the Delivery page judges each measured value itself, mirroring `measure.Evaluate` in TypeScript
+3. A save dialog for where the report goes
+
+## Decision outcome
+
+**Chosen option: the host judges the limits and builds the report into the project sidecar, with paths redacted by default**, because a report written by the host needs the host's own findings with their IDs.
 
 - **The host judges.** Every answer of the measurement job (`MeasureAnalyze/State/Cancel`) carries each measured file's
   `delivery_qc` findings from `measure.Evaluate`, judged against the effective Delivery settings at the moment it is read
@@ -35,15 +50,29 @@ someone else is a new place the app writes (threat model row 6h).
 - **Open means not dismissed.** Every finding the narrator has not dismissed is listed as open, and every file not measured
   or not checked is listed with why. The report says it is a measurement, not a certification.
 
-## Consequences
+### Consequences
 
-- The page and the report cannot disagree about a value, and a finding has one ID in both; a second TypeScript copy of
+- **Good:** The page and the report cannot disagree about a value, and a finding has one ID in both; a second TypeScript copy of
   `Evaluate`'s rules is gone (the browser mock keeps one, as mocks do).
-- A limit changed in Settings still re-judges what is on screen, because the host judges on every read; the price is one
+- **Neutral:** A limit changed in Settings still re-judges what is on screen, because the host judges on every read; the price is one
   settings read per poll, which is small.
-- Delivery's findings are not in the findings store, so their review state reads unreviewed until the review dashboard
+- **Bad:** Delivery's findings are not in the findings store, so their review state reads unreviewed until the review dashboard
   ingests them; the report reads the store anyway, so nothing changes here when it does.
-- A fixed folder needs no save dialog and adds no path the page can name. A narrator who wants the report elsewhere copies
+- **Neutral:** A fixed folder needs no save dialog and adds no path the page can name. A narrator who wants the report elsewhere copies
   it. Markdown, a zipped package and an opt-in manuscript excerpt are left for when they are asked for.
-- Changing where the report goes, what it redacts, or moving the judgement back to the page needs a new ADR that
+- **Neutral:** Changing where the report goes, what it redacts, or moving the judgement back to the page needs a new ADR that
   supersedes this one.
+
+### Confirmation
+
+Not recorded when this decision was made.
+
+## Pros and cons of the options
+
+### Keep the status quo: the Delivery page judges each measured value itself
+
+- Bad, because a report written by the host needs the host's own findings with their IDs.
+
+### A save dialog for where the report goes
+
+- Bad, because a fixed folder needs no save dialog and adds no path the page can name.

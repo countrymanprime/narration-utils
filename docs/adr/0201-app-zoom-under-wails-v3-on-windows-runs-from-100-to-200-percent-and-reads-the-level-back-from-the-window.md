@@ -1,10 +1,10 @@
 # 0201. App zoom under Wails v3 on Windows runs from 100% to 200% and reads the level back from the window
 
-**Status:** Proposed (needs the owner: it narrows the nav PRD's recommended zoom range, Q6)
-**Date:** 2026-09-25
-**Supersedes:** none. It answers, if accepted, how [App Navigation and Zoom Controls](../prds/app-navigation-and-zoom-controls.prd.md) Phase 2 applies Q6 on Wails v3 ([ADR 0200](0200-the-desktop-shell-runs-on-wails-v3-beta-pinned-at-v3-0-0-beta-25.md)).
+- **Status:** Proposed
+- **Date:** 2026-09-25
+- **Related:** Supersedes none. It answers, if accepted, how [App Navigation and Zoom Controls](../prds/app-navigation-and-zoom-controls.prd.md) Phase 2 applies Q6 on Wails v3 ([ADR-0200](0200-the-desktop-shell-runs-on-wails-v3-beta-pinned-at-v3-0-0-beta-25.md)).
 
-## Context
+## Context and problem
 
 The nav PRD recommends (Q6 A) WebView2's own zoom steps clamped to 50%–200%, with Ctrl+wheel clamped to the same range, and a readout that follows Ctrl+wheel through a zoom-changed callback. Reading Wails v3.0.0-beta.25 while migrating to it (ADR 0200) found two limits on Windows:
 
@@ -13,7 +13,22 @@ The nav PRD recommends (Q6 A) WebView2's own zoom steps clamped to 50%–200%, w
 
 Options: (A) the buttons and Ctrl+=/−/0 run from 100% to 200% and the page reads the level back from the window when it changes; (B) patch Wails, or wait for an upstream beta that allows a level under 1.0, and keep Q6 A's 50%; (C) imitate the levels under 100% with CSS zoom, which the nav PRD rejects because the breakpoints do not move.
 
-## Decision
+## Decision drivers
+
+- Wails v3.0.0-beta.25 cannot set a zoom below 100% from the host on Windows.
+- v3 surfaces no zoom-changed event, so the host cannot tell the page that a Ctrl+wheel moved the level.
+- Q6's reason for the 200% ceiling: the known cramped layouts at 390 px.
+- The nav PRD rejects CSS zoom because the breakpoints do not move.
+
+## Considered options
+
+1. (A) The buttons and Ctrl+=/−/0 run from 100% to 200%, and the page reads the level back from the window
+2. (B) Patch Wails, or wait for an upstream beta that allows a level under 1.0, and keep Q6 A's 50%
+3. (C) Imitate the levels under 100% with CSS zoom
+
+## Decision outcome
+
+**Chosen option: (A) the buttons and Ctrl+=/−/0 run from 100% to 200%, and the page reads the level back from the window**, because Wails v3 on Windows can neither set a level under 100% from the host nor report a zoom change, and A needs no fork and no CSS zoom.
 
 Proposed, recommendation A (under D22):
 
@@ -22,10 +37,34 @@ Proposed, recommendation A (under D22):
 3. **The readout reads the level back.** When the page sees a zoom change (the window's `devicePixelRatio` changes, which WebView2 zoom does, and a `resize` fires), the UI asks the host for the level (`GetZoom` through nav Phase 2's binding) instead of waiting for a host event.
 4. **Revisit when Wails lifts the floor.** A Wails beta that allows `SetZoom` under 1.0 on Windows, or surfaces `ZoomFactorChanged`, is a pin change (ADR 0200) and a new ADR that supersedes this one to restore Q6 A's 50%.
 
-## Consequences
+### Consequences
 
-- The narrator can make the app larger from the header and return to 100% in one click from any level, including one Ctrl+wheel set under 100%.
-- Making it smaller than 100% stays possible, but only with Ctrl+wheel or pinch, not with the header's button; the readout still shows the level.
-- No fork and no CSS zoom: the level is always the webview's real zoom.
-- Nav Phase 2 adds the zoom binding with `GetZoom` and `SetZoom`, reached through the window ADR 0200 names `main`; no event is added for zoom.
-- If the owner prefers B, nav Phase 2 waits on a Wails change; if C, the nav PRD's rejection of CSS zoom is reopened.
+- **Good:** The narrator can make the app larger from the header and return to 100% in one click from any level, including one Ctrl+wheel set under 100%.
+- **Bad:** Making it smaller than 100% stays possible, but only with Ctrl+wheel or pinch, not with the header's button; the readout still shows the level.
+- **Good:** No fork and no CSS zoom: the level is always the webview's real zoom.
+- **Neutral:** Nav Phase 2 adds the zoom binding with `GetZoom` and `SetZoom`, reached through the window ADR 0200 names `main`; no event is added for zoom.
+- **Neutral:** If the owner prefers B, nav Phase 2 waits on a Wails change; if C, the nav PRD's rejection of CSS zoom is reopened.
+
+### Confirmation
+
+Not recorded when this decision was made.
+
+## Pros and cons of the options
+
+### (A) The buttons and Ctrl+=/−/0 run from 100% to 200%, and the page reads the level back from the window
+
+- Good, because the level is always the webview's real zoom, with no fork and no CSS zoom.
+- Bad, because making the app smaller than 100% needs Ctrl+wheel or pinch, not the header's button.
+
+### (B) Patch Wails, or wait for an upstream beta that allows a level under 1.0, and keep Q6 A's 50%
+
+- Good, because it keeps Q6 A's 50%.
+- Bad, because nav Phase 2 waits on a Wails change.
+
+### (C) Imitate the levels under 100% with CSS zoom
+
+- Bad, because the breakpoints do not move, which is why the nav PRD rejects it.
+
+## More information
+
+Needs the owner: it narrows the nav PRD's recommended zoom range, Q6.

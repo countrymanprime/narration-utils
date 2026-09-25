@@ -1,13 +1,26 @@
 # 0079. Every downloadable asset is listed, installed, verified and removed through one registry of providers
 
-**Status:** Accepted
-**Date:** 2026-09-21
+- **Status:** Accepted
+- **Date:** 2026-09-21
 
-## Context
+## Context and problem
 
 The voice and Whisper downloads each had their own bindings (`TtsCatalog`, `TtsInstall`, `WhisperRemove` and so on), their own manager, and a manager that `configureLocked` rebuilt on every project attach although a downloaded voice belongs to the machine and not to the project ([host binding concurrency](../architecture/host-binding-concurrency.md), [ADR 0041](0041-host-bindings-read-project-services-through-one-snapshot-accessor.md) left this out of scope). A page that lists every download (the Manage local assets page, the next phase) would have had to know each kind, and each later kind (spaCy models, the Story Bible dictionary, Moonshine) would have added another set of bindings and another copy of the UI.
 
-## Decision
+## Decision drivers
+
+- The voice and Whisper downloads each had their own bindings and manager, and `configureLocked` rebuilt a manager on every project attach although a downloaded voice belongs to the machine and not to the project.
+- A page that lists every download (the Manage local assets page) would have had to know each kind.
+- Each later kind (spaCy models, the Story Bible dictionary, Moonshine) would have added another set of bindings and another copy of the UI.
+
+## Considered options
+
+1. One registry of asset providers, built once, behind six generic bindings
+2. Keep the status quo: bindings and a manager per kind of asset, rebuilt on every project attach
+
+## Decision outcome
+
+**Chosen option: one registry of asset providers, built once, behind six generic bindings**, because a page that lists every download would otherwise have to know each kind, and each later kind would add another set of bindings and another copy of the UI.
 
 - **One provider per kind of asset** (`apps/desktop/assetregistry.go`, `assetproviders.go`). `assetProvider` says what the registry needs of a kind: its `kind` word, its label and noun in sentences, the `job:ended` kind its install ends with, its items (identity, publisher, licence and provenance links, files, install folder), its state, `install` (which repairs a damaged asset and leaves an installed one alone), `verify` and `remove`. The voice and Whisper managers each get a thin provider; a later kind implements the interface and is registered, and the list, the bindings and the page serve it without another binding.
 - **The registry is built once and never replaced.** `Startup` builds it after the first `configureLocked` (`buildAssetRegistry`: the per-user cache folder, then one manager per approved catalog, the checkout's or the packaged one), and `configureLocked` no longer touches an asset manager. `Host.assets` is set once and read with `registry()` (a read lock around one pointer), so nothing that holds a manager can see it swapped; `tts` and `whisper` left `hostServices` and the swappable-field list of `hostguard_test.go`. When the cache folder cannot be named the registry holds no provider and says why (`unavailable`), and every asset binding reports that reason.
@@ -15,9 +28,20 @@ The voice and Whisper downloads each had their own bindings (`TtsCatalog`, `TtsI
 - **The `Tts*` and `Whisper*` bindings stay as thin wrappers** over the same functions (they answer with `voiceId` or `modelId` besides `assetId`), because the three pages that use them and the settings choices are not migrated by this decision; they are removed in a later change when nothing calls them.
 - **The payloads are wire contracts** ([ADR 0069](0069-payloads-are-validated-with-zod-behind-parsewire-and-a-wrong-shape-fails-loudly.md)): `assetCatalogSchema`, `assetInstallJobSchema` and `assetVerifyResultSchema`, golden files written by a Go test (`assets-list.json`, `asset-install-downloading.json`, `assets-verify.json`), and a mock that passes the same schemas. `hostAPIVersion` is 11.
 
-## Consequences
+### Consequences
 
-- The Manage local assets page needs one call to list everything and one job type to follow, and adding spaCy is a catalog file, a provider and a page row.
-- A project switch cannot rebuild, and so cannot race, an asset manager; the two managers hold a catalog read once at start (a catalog changed on disk is picked up at the next launch, as a release catalog only changes with a release).
-- The registry lists the providers in a fixed order (voices, then models); a page that wants another order sorts.
-- To let an asset kind bring its own bindings, or to build the registry per project again, write a new ADR that supersedes this one.
+- **Good:** The Manage local assets page needs one call to list everything and one job type to follow, and adding spaCy is a catalog file, a provider and a page row.
+- **Neutral:** A project switch cannot rebuild, and so cannot race, an asset manager; the two managers hold a catalog read once at start (a catalog changed on disk is picked up at the next launch, as a release catalog only changes with a release).
+- **Neutral:** The registry lists the providers in a fixed order (voices, then models); a page that wants another order sorts.
+- **Neutral:** To let an asset kind bring its own bindings, or to build the registry per project again, write a new ADR that supersedes this one.
+
+### Confirmation
+
+The payloads are wire contracts (ADR-0069): golden files written by a Go test (`assets-list.json`, `asset-install-downloading.json`, `assets-verify.json`) and a mock that passes the same schemas. `tts` and `whisper` left the swappable-field list of `hostguard_test.go`.
+
+## Pros and cons of the options
+
+### Keep the status quo: bindings and a manager per kind
+
+- Bad, because a page that lists every download would have had to know each kind.
+- Bad, because each later kind would have added another set of bindings and another copy of the UI.
