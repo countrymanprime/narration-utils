@@ -51,9 +51,10 @@ Every folder above except `docs/` is an Nx project with a `project.json`; `pnpm 
 
 ## Stable boundaries
 
-- `apps/desktop/` is the Go/Wails desktop host. It exposes generated, typed Wails
+- `apps/desktop/` is the Go/Wails desktop host, on Wails v3 beta ([ADR 0200](../adr/0200-the-desktop-shell-runs-on-wails-v3-beta-pinned-at-v3-0-0-beta-25.md)). It exposes generated, typed Wails
   bindings and native events only; it has no loopback HTTP surface, port, or
-  browser fallback. Its Go module path is still
+  browser fallback. `main.go` creates the application and its one window, and every other call into Wails
+  (events, the window, file dialogs, the browser, quitting) goes through `wailsapp.go`. Its Go module path is still
   `github.com/countrymanprime/narration-utils/shell`; nothing imports it.
 - `apps/ui/` is the React application. It communicates only through the
   typed API facade; feature components do not import HTTP transport code.
@@ -125,7 +126,7 @@ flowchart LR
 
 | Arrow | What it is | Read more |
 | --- | --- | --- |
-| `apps/ui` to `bindings*.go` | One Wails binding call per action, a JSON string back; events (`teleprompter:event`, `teleprompter:state`, `transcript:state`, `coverage:state`, `job:ended`, `update:status`, `system:*`) go the other way | [wire contracts](wire-contracts.md) |
+| `apps/ui` to `bindings*.go` | One Wails binding call per action through the generated `apps/ui/wailsjs/` TypeScript (`pnpm --dir apps/desktop run bindings`), a JSON string back; events (`teleprompter:event`, `teleprompter:state`, `transcript:state`, `coverage:state`, `job:ended`, `update:status`, `system:*`) go the other way | [wire contracts](wire-contracts.md) |
 | `apps/ui` to `media.go` | The webview asks `/media` for a track's audio (Range requests); the route serves only a source file that the current project's `.rpp` names | [ADR 0012](../adr/0012-media-route-for-track-playback.md) |
 | `services` and `media.go` to the project file | The host reads the `.rpp` (tracks, items, source files) and never writes it; REAPER's own Lua bridge changes the project (markers, regions, item data), one undo block per command | [Tracks](../utilities/tracks.md) |
 | `services` to `internal/process` to a sidecar | `exec.CommandContext` with an argv slice, no shell, inside a Windows Job Object; results come back on stdout (NDJSON for the teleprompter) and in files | [ADR 0022](../adr/0022-live-sidecar-events-over-wails-and-stop-file.md) |

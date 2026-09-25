@@ -1,18 +1,12 @@
 {
-  "$schema": "https://wails.io/schemas/config.v2.json",
+  "$comment": "The product facts of the desktop app (docs/adr/0200): scripts/release/wails-build.mjs renders the Windows version resource, manifest, installer defines and macOS Info.plist from them on every build. Wails v3 does not read this file itself. info.productVersion is kept at the root package.json version by scripts/release/sync-version.mjs.",
   "name": "Narration Utils",
   "outputfilename": "narration-utils",
-  "frontend:dir": "../ui",
-  "frontend:build": "pnpm run build && node ../../scripts/copy-wails-frontend.mjs",
-  "frontend:dev:watcher": "pnpm run dev",
-  "frontend:dev:serverUrl": "",
-  "author": {
-    "name": "Narration Utils"
-  },
   "info": {
     "companyName": "Narration Utils",
     "productName": "Narration Utils",
     "productVersion": "0.1.0",
-    "copyright": "Copyright © Narration Utils"
+    "copyright": "Copyright © Narration Utils",
+    "productIdentifier": "com.narrationutils.app"
   }
 }

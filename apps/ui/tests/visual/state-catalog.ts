@@ -57,6 +57,40 @@ export const STATE_CATALOG: StateEntry[] = [
   },
   {
     page: 'home',
+    state: 'chapter-names',
+    description:
+      "Home, chapter table expanded with the owner's heading shapes (?mockManuscript=mixed): a source-capitals title with a subtitle, a title with no subtitle, a long subtitle and a title already ending in a colon, one style (chapterName()/TitleSubtitle) throughout (chapter-title-display-consistency.prd.md Phase 2, mockups/chapter-title-display-consistency/02-home-table-*.webp)",
+  },
+  // chapter-track-link-control.prd.md Phase 2: the Track column and its slide-over (mockups/chapter-track-link-control/).
+  // "chapter-table-expanded" above already carries mockup 01's variety of default states (suggested, not linked); the
+  // renamed state (04) has no host or mock simulation yet (nothing records a track's name at confirm time to compare
+  // against), so it is not captured here.
+  {
+    page: 'home',
+    state: 'chapter-track-panel-linked',
+    description:
+      'Home, chapter track panel open on a confirmed link, showing its facts and how it was found (?mockChapterLink=confirmed, mockups/chapter-track-link-control/02-slideover-linked.webp)',
+  },
+  {
+    page: 'home',
+    state: 'chapter-track-panel-ambiguous',
+    description:
+      'Home, chapter track panel open on a chapter confirmed to two tracks at once, offering to keep one (?mockChapterLink=ambiguous, TL6, mockups/chapter-track-link-control/03-slideover-ambiguous.webp)',
+  },
+  {
+    page: 'home',
+    state: 'chapter-track-panel-missing',
+    description:
+      'Home, chapter track panel open on a confirmed link whose track is no longer in the project (?mockChapterLink=missing, mockups/chapter-track-link-control/05-slideover-track-missing.webp)',
+  },
+  {
+    page: 'home',
+    state: 'chapter-track-no-project',
+    description:
+      'Home, chapter table expanded with no REAPER project found: the Track column is absent and its place names why (TL7, ?mockNoRpp=1, mockups/chapter-track-link-control/08-no-project-line.webp)',
+  },
+  {
+    page: 'home',
     state: 'hint-chips',
     description: 'Vocabulary hint chips widget (accepted + pending) - lives on Proofing, catalogued under "home" for historical reasons',
   },
@@ -143,13 +177,20 @@ export const STATE_CATALOG: StateEntry[] = [
   {
     page: 'home',
     state: 'recording-check-complete',
-    description: 'Home, recording check result for a chapter read in full: all the text is recorded, the paragraph list folded',
+    description:
+      'Home, recording check result for a chapter read in full: the chapter summary (text present, paragraphs, audio checked), no pickups, the paragraph detail folded (recording-check-summary.prd.md Phase 1)',
   },
   {
     page: 'home',
     state: 'recording-check-incomplete',
     description:
-      'Home, recording check result with text missing: the count, the missing region with its paragraphs, first and last words and audio position, and every paragraph',
+      'Home, recording check result for a chapter not finished: the summary states "Recorded to paragraph N of M" rather than listing the unread end as a pickup (RS2), with no pickups from this check (recording-check-summary.prd.md Phase 1)',
+  },
+  {
+    page: 'home',
+    state: 'recording-check-pickups',
+    description:
+      'Home, recording check result with interior gaps (?mockCoverage=pickups): a skip and a short read listed one per line under Pickups, each with Go to paragraph, alongside a small unread tail stated in the summary, not listed (recording-check-summary.prd.md Phase 1, RS2/RS8)',
   },
   {
     page: 'home',
@@ -1276,6 +1317,13 @@ export const STATE_CATALOG: StateEntry[] = [
     state: 'project-credits',
     description:
       'Settings, Project scope / Credits category (PRD audiobook-credits-templates.prd.md, Phase 1): template library, live preview and project credit values',
+    ...REFLOW,
+  },
+  {
+    page: 'settings',
+    state: 'project-credits-detected',
+    description:
+      'Settings, Project scope / Credits, every empty field with a manuscript-detected candidate captioned with its source (?mockCredits=detected): Title and Author from the title page, Year and Copyright holder from the copyright line, and a low-confidence Publisher marked "(check this)" (credits-token-setup-and-front-matter-detection.prd.md Phase 1)',
     ...REFLOW,
   },
   {

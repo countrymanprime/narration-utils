@@ -4,8 +4,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/wailsapp/wails/v2/pkg/runtime"
-
 	"github.com/countrymanprime/narration-utils/shell/internal/manuscript"
 )
 
@@ -85,7 +83,7 @@ func (h *Host) publishJobEnded(event jobEnded) {
 		return
 	}
 	if ctx != nil {
-		runtime.EventsEmit(ctx, jobEndedEvent, event)
+		emitEvent(jobEndedEvent, event)
 	}
 }
 

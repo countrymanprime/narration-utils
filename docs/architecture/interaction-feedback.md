@@ -43,7 +43,7 @@ The host emits one `job:ended` per finished job, `{ id, kind, outcome, message, 
 | `tts_install`, `whisper_install` | the install ends | its modal dialog |
 | `app_update` | the download ends | its modal dialog |
 
-One owner per kind: `toastForJobEnd` returns nothing for a cancelled job and for the kinds whose modal dialog is on screen while they run, so nothing is announced twice. The event reaches every listener, which is what a notification feature reads: `kind` and `durationMs` to decide whether the narrator was waiting, `document.hasFocus()` in the webview to decide whether they were looking (Wails v2 has no window-focus query).
+One owner per kind: `toastForJobEnd` returns nothing for a cancelled job and for the kinds whose modal dialog is on screen while they run, so nothing is announced twice. The event reaches every listener, which is what a notification feature reads: `kind` and `durationMs` to decide whether the narrator was waiting, `document.hasFocus()` in the webview to decide whether they were looking (the webview is the side that knows; the host does not ask Wails for window focus).
 
 The payload is a wire contract ([wire contracts](wire-contracts.md)): `jobEndedSchema`, the golden files `job-ended-success.json` and `job-ended-error.json`, a row in `wireContracts.test.ts`, and the mock (which ends only the Story Bible rebuild this way: its comparison run is stepped by timers the visual suite drives). An additive event needs no `hostAPIVersion` bump.
 

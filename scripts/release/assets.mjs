@@ -45,10 +45,10 @@ function requireNotices(binDir, name = NOTICES_FILE) {
   }
 }
 
-// `wails build -nsis` only warns, and still exits 0, when makensis is missing, so a build can succeed without its setup program.
+// The setup program is a second output of the Windows build (scripts/release/wails-build.mjs --installer); a build without it must not ship.
 export function requireInstaller(binDir, name = WINDOWS_INSTALLER) {
   if (!existsSync(join(binDir, name))) {
-    throw new Error(`Expected the setup program ${name} in ${binDir}. Wails builds it with NSIS when the build is run with -nsis and makensis is on PATH; without makensis it only warns.`);
+    throw new Error(`Expected the setup program ${name} in ${binDir}. scripts/release/wails-build.mjs builds it with makensis when it is run with --installer on Windows.`);
   }
 }
 

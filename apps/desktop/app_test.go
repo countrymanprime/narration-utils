@@ -15,7 +15,7 @@ import (
 	"github.com/countrymanprime/narration-utils/shell/internal/recents"
 	"github.com/countrymanprime/narration-utils/shell/internal/transcript"
 	"github.com/countrymanprime/narration-utils/shell/internal/tts"
-	"github.com/wailsapp/wails/v2/pkg/options"
+	"github.com/wailsapp/wails/v3/pkg/application"
 )
 
 func TestResourceKeyChangesWithEmbeddedContent(t *testing.T) {
@@ -281,7 +281,7 @@ func TestOnSecondInstanceMapsTheRppToItsLinkedProjectInsteadOfTheRppsOwnFolder(t
 	}
 
 	host := NewHost()
-	host.onSecondInstance(options.SecondInstanceData{Args: []string{
+	host.onSecondInstance(application.SecondInstanceData{Args: []string{
 		"--project-folder", rppFolder,
 		"--project-name", "Book",
 		"--project-file", rpp,
@@ -627,7 +627,7 @@ func TestProjectSelectFolderRejectsWhenHostNotReady(t *testing.T) {
 func TestOnSecondInstanceRefreshesSessionDirFromNewArgs(t *testing.T) {
 	host := NewHost()
 	host.config.sessionDir = `C:\old\session`
-	host.onSecondInstance(options.SecondInstanceData{Args: []string{
+	host.onSecondInstance(application.SecondInstanceData{Args: []string{
 		"--project-folder", t.TempDir(),
 		"--session-dir", `C:\new\session`,
 		"--daw", "REAPER",

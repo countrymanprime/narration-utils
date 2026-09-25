@@ -292,11 +292,16 @@ function resolveMockCreditValues(values: CreditValues, narratorGlobal: string): 
   };
 }
 
-// `?mockManuscript=mixed` (manuscript-chapter-header-alignment.prd.md): a buttonless row (Front Matter, contentKind
-// 'opening') before the narration chapters, and one narration chapter's word count raised to 5 digits, so the
-// header's stat block and action slot can be shown lining up across a 3-, a 4- and a 5-digit count, with and without
-// a Read aloud button, without a second, forked mock. A pure function (not inlined in the Alice-loading promise
-// chain) so it has its own unit test, independent of whether the bundled Alice text loads in a given environment.
+// `?mockManuscript=mixed` (manuscript-chapter-header-alignment.prd.md; heading cases added by
+// chapter-title-display-consistency.prd.md Phase 1): a buttonless row (Front Matter, contentKind 'opening') before
+// the narration chapters, one narration chapter's word count raised to 5 digits, so the header's stat block and
+// action slot can be shown lining up across a 3-, a 4- and a 5-digit count, with and without a Read aloud button,
+// and four of the owner's heading shapes (mockups/chapter-title-display-consistency/02-home-table-*.webp) so
+// chapterName()/TitleSubtitle can be seen against a title in source capitals with a subtitle, a title with no
+// subtitle at all, a subtitle long enough to wrap, and a one-line heading that already ends in a colon before the
+// formatter appends its own " — subtitle" - without a second, forked mock. A pure function (not inlined in the
+// Alice-loading promise chain) so it has its own unit test, independent of whether the bundled Alice text loads in
+// a given environment.
 export function applyMixedManuscriptMock(
   chapters: ManuscriptChapter[],
   paragraphs: ManuscriptParagraph[],
@@ -320,8 +325,30 @@ export function applyMixedManuscriptMock(
     contentKind: 'opening',
     paragraphIds: [{ id: frontMatterParagraph.id, index: frontMatterParagraph.index }],
   };
+  const withoutSubtitle = (chapter: ManuscriptChapter): ManuscriptChapter => {
+    const rest = { ...chapter };
+    delete rest.subtitle;
+    return rest;
+  };
+  // Applied by index, so the two-chapter fixture in mockApi.test.ts still exercises the first two cases; the real
+  // (12-chapter) Alice manuscript loaded by the browser demo shows all four.
+  const headingCases: Record<number, (chapter: ManuscriptChapter) => ManuscriptChapter> = {
+    0: (chapter) => ({ ...chapter, wordCount: 12_406, title: 'CHAPTER ONE', subtitle: 'Bad Ideas Look Great in Neon' }),
+    1: (chapter) => withoutSubtitle({ ...chapter, title: 'A Message from the Author' }),
+    2: (chapter) => ({
+      ...chapter,
+      subtitle: 'Or, How the Understudy Learned Every Line by Heart and Several That Were Cut in Rehearsal',
+    }),
+  };
+  const mutated = chapters.map((chapter, index) => {
+    const applyCase = headingCases[index];
+    if (applyCase) return applyCase(chapter);
+    // A heading that already ends in a separator: chapterName() must drop it, not double it up ("Chapter 12: — …").
+    if (index === chapters.length - 1) return { ...chapter, title: `${chapter.title}:` };
+    return chapter;
+  });
   return {
-    chapters: [frontMatter, ...chapters.map((chapter, index) => (index === 0 ? { ...chapter, wordCount: 12_406 } : chapter))],
+    chapters: [frontMatter, ...mutated],
     paragraphs: [frontMatterParagraph, ...paragraphs],
   };
 }
@@ -411,6 +438,11 @@ export function createMockApi(
     /** Drops the closing credit templates from the seeded library (credits-in-chapter-table.prd.md Phase 2, CT5): the
      * Home table's Closing credits row then shows "Not set up" with a link to Settings > Credits. */
     creditsMissingClosing?: boolean;
+    /** Widens `creditsProjectValues().detected` past Title/Author to every token the front matter parser can find
+     * (credits-token-setup-and-front-matter-detection.prd.md Phase 1), including one low-confidence candidate, so
+     * Settings > Credits' per-field source caption can be seen on every field, not just the two the default mock
+     * always detects. */
+    creditsDetected?: boolean;
     /** The project's retail sample at boot (Phase 5): by paragraph id, or by lines of the chapter at this index in the
      * manuscript once it has loaded (the bundled text replaces the seed's paragraph ids). */
     retailSample?: { startParagraphId: string; endParagraphId: string } | { chapterIndex: number; startLine: number; endLine: number };
@@ -500,7 +532,9 @@ export function createMockApi(
      * `mixed` adds a buttonless Front Matter chapter (contentKind 'opening', a 3-digit word count) before the Alice
      * chapters and raises one chapter's word count to 5 digits, so the header alignment mock has a mix of 3-, 4- and
      * 5-digit counts and a row with no Read aloud button alongside rows that have one
-     * (manuscript-chapter-header-alignment.prd.md). Off by default so every existing screenshot is unchanged.
+     * (manuscript-chapter-header-alignment.prd.md), plus four heading shapes - source capitals with a subtitle, no
+     * subtitle, a long subtitle, a title already ending in a colon - for chapterName()/TitleSubtitle
+     * (chapter-title-display-consistency.prd.md). Off by default so every existing screenshot is unchanged.
      */
     mockManuscript?: 'mixed';
     /** Boots with a custom delivery profile chosen for the project (delivery-platform-profiles.prd.md); ACX judges otherwise. */
@@ -1948,10 +1982,18 @@ export function createMockApi(
       values: wireClone(creditValues),
       narratorGlobal: settings.global.General.find((field) => field.key === 'narrator_name')?.effectiveValue ?? '',
       suggestions: { Title: 'Alice’s Adventures in Wonderland', Author: 'Lewis Carroll' },
-      detected: [
-        { token: 'Title', value: 'Alice’s Adventures in Wonderland', source: 'the title page', confidence: 'high' },
-        { token: 'Author', value: 'Lewis Carroll', source: 'the byline', confidence: 'high' },
-      ],
+      detected: initial.creditsDetected
+        ? [
+            { token: 'Title', value: 'Alice’s Adventures in Wonderland', source: 'the title page', confidence: 'high' },
+            { token: 'Author', value: 'Lewis Carroll', source: 'the byline and the copyright line', confidence: 'high' },
+            { token: 'Year', value: '1865', source: 'the copyright line', confidence: 'high' },
+            { token: 'CopyrightHolder', value: 'Lewis Carroll', source: 'the copyright line', confidence: 'high' },
+            { token: 'Publisher', value: 'Macmillan', source: 'a line ending in "Publishers"', confidence: 'low' },
+          ]
+        : [
+            { token: 'Title', value: 'Alice’s Adventures in Wonderland', source: 'the title page', confidence: 'high' },
+            { token: 'Author', value: 'Lewis Carroll', source: 'the byline', confidence: 'high' },
+          ],
     }),
     saveCreditsProjectValues: async (values) => {
       creditValues = wireClone(values);

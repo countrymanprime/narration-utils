@@ -51,7 +51,9 @@ const mockNoManuscript = mockParams.has('mockNoManuscript');
 const mockManuscriptCandidate = mockParams.has('mockManuscriptCandidate');
 // `?mockManuscript=mixed` adds a buttonless Front Matter row and a 5-digit word count to the Manuscript page's chapter
 // list, so the header's aligned stat block and action slot can be seen across a mix of row shapes
-// (manuscript-chapter-header-alignment.prd.md).
+// (manuscript-chapter-header-alignment.prd.md), plus four of the owner's chapter-heading shapes - source capitals
+// with a subtitle, no subtitle, a long subtitle, and a title already ending in a colon - so a chapter's name reads
+// the same way everywhere it is drawn (chapter-title-display-consistency.prd.md).
 const mockManuscriptMixed = mockParams.get('mockManuscript') === 'mixed';
 // `?mockTeleprompter=listening|waiting|done|flagged` boots the teleprompter already part-way
 // through the first chapter, as a session the host kept running (`flagged`: further in, with suspected flags raised);
@@ -70,6 +72,10 @@ const mockNoDevices = mockParams.has('mockNoDevices');
 // Chapter 3 (credits PRD Phase 5), so the announcement preview and the sample marker can be seen without picking them.
 const mockCreditsExtras = mockParams.get('mockCredits') === 'extras';
 const mockCreditsFilled = mockParams.get('mockCredits') === 'filled' || mockCreditsExtras;
+// `?mockCredits=detected` widens the manuscript-detected candidates past Title/Author to every token the front matter
+// parser can find - Year, Copyright holder, a low-confidence Publisher - so Settings > Credits' per-field source
+// caption can be seen on every field (credits-token-setup-and-front-matter-detection.prd.md Phase 1).
+const mockCreditsDetected = mockParams.get('mockCredits') === 'detected';
 // `?mockPreviewError=<text>` makes the Story Bible preview fail with that text once the
 // preview voice is installed, so the failure toast can be seen without a real host.
 const mockPreviewError = mockParams.get('mockPreviewError');
@@ -104,10 +110,12 @@ const mockDictionary = (['missing', 'damaged'] as const).find((seed) => seed ===
 // Word file whose headings the importer had to repair (so the repairs note can), or a plain-text file with an epigraph read as a subtitle (so a subtitle
 // that returns to the text when it is turned off can).
 const mockImportPreview = (['markdown', 'repaired', 'text'] as const).find((kind) => kind === mockParams.get('mockImportPreview'));
-// `?mockChapterLink=missing` seeds the first chapter with a confirmed link to a track GUID that is not in the mock
-// REAPER project, so the Tracks page's "Track missing" state can be seen without confirming and then deleting a
-// track first (analysis evidence ledger PRD, Phase 7).
-const mockChapterLinkMissing = mockParams.get('mockChapterLink') === 'missing';
+// `?mockChapterLink=missing|ambiguous|confirmed` seeds the first chapter's mapping directly, so a track-link state
+// that would otherwise need a real REAPER round trip (or several link/relink clicks) can be seen on load: `missing`
+// confirms a track GUID that is not in the mock REAPER project (Tracks page's "Track missing" state, analysis
+// evidence ledger PRD Phase 7); `ambiguous` confirms it to two tracks at once (chapter-track-link-control.prd.md
+// Phase 2, TL6); `confirmed` links it to its own suggested "Chapter 1" track outright, without a Change/Confirm click.
+const mockChapterLink = (['missing', 'ambiguous', 'confirmed'] as const).find((seed) => seed === mockParams.get('mockChapterLink'));
 // `?mockLineIdentity=success|conflict|error` boots the Tracks page's "Link chapters" dialog with LineIdentityState already at that
 // result, so its stale/conflict/drift and error states can be seen without a real REAPER round trip.
 const mockLineIdentity = (['success', 'conflict', 'error'] as const).find((seed) => seed === mockParams.get('mockLineIdentity'));
@@ -130,10 +138,13 @@ const mockRetakeLanes = (['picked', 'error', 'none'] as const).find((seed) => se
 // `?mockChapterTagsEmbedError=1` makes the embed action always fail, so the error state can be seen too.
 const mockChapterTags = (['ready', 'not-rendered'] as const).find((seed) => seed === mockParams.get('mockChapterTags'));
 const mockChapterTagsEmbedError = mockParams.has('mockChapterTagsEmbedError');
-// `?mockCoverage=hold|stale` holds a started recording check at its last transcribing step (so the running dialog can be seen), or
-// makes Chapter 4's stored check read stale (an item was trimmed since), and `?mockCoverageRefusal=<reason>` answers every start
-// with that refusal (docs/utilities/recording-coverage.md, ADR 0130).
-const mockCoverage = (['hold', 'stale'] as const).find((seed) => seed === mockParams.get('mockCoverage'));
+// `?mockCoverage=hold|stale|pickups` holds a started recording check at its last transcribing step (so the running
+// dialog can be seen), makes Chapter 4's stored check read stale (an item was trimmed since), or gives Chapter 4 two
+// interior pickups (a skip and a short read) plus a small tail instead of its default tail-only split, so the
+// recording check summary's headline, "Recorded to" line and Pickups list can all be seen together
+// (recording-check-summary.prd.md Phase 1). `?mockCoverageRefusal=<reason>` answers every start with that refusal
+// (docs/utilities/recording-coverage.md, ADR 0130).
+const mockCoverage = (['hold', 'stale', 'pickups'] as const).find((seed) => seed === mockParams.get('mockCoverage'));
 const mockCoverageRefusal = COVERAGE_REFUSAL_REASONS.find((reason) => reason === mockParams.get('mockCoverageRefusal'));
 // `?mockStages=mixed|error` puts the Home breakdown's stage suggestions (chapter-stage-recommendations.prd.md Phase 5) in every state at
 // once, or makes reading them fail. `mixed`: Chapter 4 read in full (suggested: Editing), Chapter 5 with no track linked (can't tell),
@@ -201,6 +212,7 @@ const mockInitial = {
   ...(mockNoDaw ? { dawFileLinked: false } : {}),
   ...(mockDawNotDetected ? { dawCatalogInstalled: false } : {}),
   ...(mockCreditsMissing ? { creditsMissingClosing: true } : {}),
+  ...(mockCreditsDetected ? { creditsDetected: true } : {}),
   ...(mockPreviewError ? { previewError: mockPreviewError } : {}),
   ...(mockTeleprompter ? { teleprompter: mockTeleprompter } : {}),
   ...(mockNoDevices ? { teleprompterDevices: [] } : {}),
@@ -212,10 +224,40 @@ const mockInitial = {
   ...(mockNoRpp ? { tracksCandidates: [] } : {}),
   ...(mockManuscriptCandidate ? { manuscriptCandidate: { path: 'C:/Projects/Alice-in-Wonderland/manuscript.docx', name: 'manuscript.docx' } } : {}),
   ...(mockManuscriptMixed ? { mockManuscript: 'mixed' as const } : {}),
-  ...(mockChapterLinkMissing
+  ...(mockChapterLink === 'missing'
     ? {
         chapterTrackMappings: [
           { trackGuid: '{NOT-A-REAL-TRACK-GUID}', chapterId: WIRE_CHAPTERS[0].id, chapterTitle: WIRE_CHAPTERS[0].title, confirmedAt: '2026-09-01T12:00:00Z' },
+        ],
+      }
+    : {}),
+  ...(mockChapterLink === 'ambiguous'
+    ? {
+        chapterTrackMappings: [
+          {
+            trackGuid: WIRE_TRACKS_PROJECT.tracks[0].guid,
+            chapterId: WIRE_CHAPTERS[0].id,
+            chapterTitle: WIRE_CHAPTERS[0].title,
+            confirmedAt: '2026-09-01T12:00:00Z',
+          },
+          {
+            trackGuid: WIRE_TRACKS_PROJECT.tracks[1].guid,
+            chapterId: WIRE_CHAPTERS[0].id,
+            chapterTitle: WIRE_CHAPTERS[0].title,
+            confirmedAt: '2026-09-02T12:00:00Z',
+          },
+        ],
+      }
+    : {}),
+  ...(mockChapterLink === 'confirmed'
+    ? {
+        chapterTrackMappings: [
+          {
+            trackGuid: WIRE_TRACKS_PROJECT.tracks[0].guid,
+            chapterId: WIRE_CHAPTERS[0].id,
+            chapterTitle: WIRE_CHAPTERS[0].title,
+            confirmedAt: '2026-09-01T12:00:00Z',
+          },
         ],
       }
     : {}),
@@ -232,6 +274,7 @@ const mockInitial = {
           ...(mockStages === 'mixed' ? { measured: MOCK_STAGES_MEASURED } : {}),
           ...(mockCoverage === 'hold' ? { hold: true } : {}),
           ...(mockCoverage === 'stale' ? { stale: [WIRE_CHAPTERS[3].id] } : {}),
+          ...(mockCoverage === 'pickups' ? { pickups: [WIRE_CHAPTERS[3].id] } : {}),
           ...(mockCoverageRefusal ? { refusal: mockCoverageRefusal } : {}),
         },
       }
