@@ -4,11 +4,13 @@ import { Link } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faChevronDown, faChevronUp, faTriangleExclamation } from '@fortawesome/free-solid-svg-icons';
 import type { ChapterStatus, ChapterTrackLinks, CoverageState, ManuscriptChapter, RecordedUnavailable } from '../../types';
+import type { ManuscriptContentKind } from '../../api/contracts/manuscript';
 import { estimateFinishedHours } from '../../state';
 import { chapterName } from '../../chapterName';
 import { TitleSubtitle } from '../primitives/TitleSubtitle';
 import { ChapterTrackButton } from './ChapterTrackButton';
 import { ChapterTrackPanel } from './ChapterTrackPanel';
+import { RemovedFromRecordingList } from './RemovedFromRecordingList';
 import { useCreditsSeconds } from './useCreditsSeconds';
 import { useCreditsRows, type CreditsKind } from './useCreditsRows';
 import { useApi } from '../../api/ApiContext';
@@ -165,17 +167,48 @@ export function AudiobookEstimatePanel({
     setMeasuredRun(coverage.runId);
   }, [coverage.phase, coverage.runId]);
 
+  const loadChapters = useCallback(async () => {
+    try {
+      setChapters(await api.manuscriptChapters());
+    } catch (error) {
+      // Say why the estimate is empty: an empty table alone reads as a manuscript with no chapters.
+      setChapters([]);
+      notify(describeApiError(error), 'error');
+    }
+  }, [api, notify]);
+
   useEffect(() => {
-    (async () => {
-      try {
-        setChapters(await api.manuscriptChapters());
-      } catch (error) {
-        // Say why the estimate is empty: an empty table alone reads as a manuscript with no chapters.
-        setChapters([]);
-        notify(describeApiError(error), 'error');
-      }
-    })();
-  }, [api, notify, refreshKey, measuredRun]);
+    void loadChapters();
+  }, [loadChapters, refreshKey, measuredRun]);
+
+  // Remove from recording / Restore (chapter-track-link-control.prd.md Phase 3): both re-read the chapter list (the
+  // row leaves or rejoins the table) and ChapterTrackLinks (a removal clears the chapter's link). Remove rethrows on
+  // failure so the slide-over's confirm dialog knows to stay open for a retry, matching every other action there.
+  const [restoringId, setRestoringId] = useState('');
+  const removeFromRecording = async (chapterId: string, kind: ManuscriptContentKind) => {
+    try {
+      const result = await api.manuscriptSetChapterKind(chapterId, kind);
+      notify(`${result.chapter.title} removed from recording.`);
+      await loadChapters();
+      await loadTrackLinks();
+    } catch (error) {
+      notify(describeApiError(error), 'error');
+      throw error;
+    }
+  };
+  const restore = async (chapterId: string) => {
+    setRestoringId(chapterId);
+    try {
+      const result = await api.manuscriptSetChapterKind(chapterId, 'narration');
+      notify(`${result.chapter.title} restored.`);
+      await loadChapters();
+      await loadTrackLinks();
+    } catch (error) {
+      notify(describeApiError(error), 'error');
+    } finally {
+      setRestoringId('');
+    }
+  };
 
   const creditsTableRow = (kind: CreditsKind) => {
     const row = creditsRows![kind];
@@ -497,6 +530,7 @@ export function AudiobookEstimatePanel({
               {creditsRows && creditsTableRow('closing')}
             </TableBody>
           </Table>
+          <RemovedFromRecordingList chapters={chapters} restoringId={restoringId} onRestore={(chapterId) => void restore(chapterId)} />
         </CollapsiblePanel>
       </div>
       {checking && (
@@ -553,6 +587,7 @@ export function AudiobookEstimatePanel({
               notify={notify}
               onClose={() => setTrackChapter({ ...trackChapter, open: false })}
               onChanged={loadTrackLinks}
+              onRemoveFromRecording={(kind) => removeFromRecording(trackChapter.chapterId, kind)}
             />
           );
         })()}

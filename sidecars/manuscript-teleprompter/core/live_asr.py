@@ -50,7 +50,10 @@ turns them into these three event types:
         while running the host can move it there with --control-file PATH,
         which is tailed for lines shaped {"cmd": "seek", "word": N}
         (control_channel.py) - both emit a "position" event with
-        jump: "restart", the same sentinel-file pattern as --stop-file
+        jump: "restart", the same sentinel-file pattern as --stop-file.
+        {"cmd": "pause"} and {"cmd": "resume"} on the same file stop and
+        restart listening: the device stays open and levels still flow, but
+        the engine hears nothing and the tracker's clock stands still
     {"type": "flag", "id": 1, "kind": "misread", "start": 7, "end": 8, "heard": "chairs"}
         with a tracker, after a segment closes: a suspected misread, extra,
         skipped or restart, judged from confirmed words only (see flags.py)
@@ -74,6 +77,11 @@ turns them into these three event types:
         only with --locate --wav FILE --tail-start S --tail-end E: seconds S
         to E of a recording, placed in the script; prints once and exits,
         no session follows (see locate.py for every field)
+    {"type": "level", "peak": -12.3, "rms": -24.1}
+        the input level in dBFS every 100 ms of audio, in every session (see
+        levels.py). With --meter --mic NAME it is the only event: no model,
+        no script, until the stop file appears, so the narrator can check the
+        microphone before Start
 Word timings come from the engine and are advisory: they can be noisy or run
 backwards (Moonshine's do, mostly in partials), so the only guarantee is that
 `end` is never before `start`. Consumers should rely on word ORDER, not times.
@@ -494,20 +502,41 @@ def event_lag_seconds(event: dict, elapsed: float) -> float | None:
 class StreamClock:
     """Stream time for the script tracker: wall time since capture began for a
     mic, or the audio consumed so far for a file (which replays faster than
-    real time)."""
+    real time). While paused it stands still, and after a resume it runs on
+    without the paused time, so the tracker's pause timeout never counts a
+    pause the narrator asked for (ADR 0248)."""
 
     def __init__(self, capture_started: float | None = None, time_fn: Callable[[], float] = time.perf_counter) -> None:
         self._capture_started = capture_started
         self._time = time_fn
         self._audio_seconds = 0.0
+        self._paused_at: float | None = None
+        self._paused_total = 0.0
 
     def note_chunk(self, chunk: np.ndarray) -> None:
         self._audio_seconds += len(chunk) / SAMPLE_RATE
 
-    def now(self) -> float:
+    def _raw(self) -> float:
         if self._capture_started is None:
             return self._audio_seconds
         return self._time() - self._capture_started
+
+    def pause(self) -> None:
+        if self._paused_at is None:
+            self._paused_at = self._raw()
+
+    def resume(self) -> None:
+        if self._paused_at is not None:
+            self._paused_total += self._raw() - self._paused_at
+            self._paused_at = None
+
+    @property
+    def paused(self) -> bool:
+        return self._paused_at is not None
+
+    def now(self) -> float:
+        raw = self._paused_at if self._paused_at is not None else self._raw()
+        return raw - self._paused_total
 
 
 def stoppable(chunks: Iterable[np.ndarray], stop_path: str | None) -> Iterator[np.ndarray]:
@@ -529,6 +558,15 @@ def ticking(chunks: Iterable[np.ndarray], clock: StreamClock, on_tick: Callable[
         clock.note_chunk(chunk)
         on_tick(clock.now())
         yield chunk
+
+
+def gated(chunks: Iterable[np.ndarray], is_paused: Callable[[], bool]) -> Iterator[np.ndarray]:
+    """Pass chunks through except while paused, when they are read from the
+    device and dropped: the device stays open, so a resume is instant, and the
+    engine never hears the pause (ADR 0248)."""
+    for chunk in chunks:
+        if not is_paused():
+            yield chunk
 
 
 EventStream = Callable[[Iterable[np.ndarray]], Iterator[dict]]
@@ -637,7 +675,8 @@ def _emit(event: dict) -> None:
 def _run(args, stream: EventStream, chunks: Iterator[np.ndarray], tracker) -> None:
     """Stream engine events (and, with a tracker, the position events they
     cause) to stdout until the input ends or Ctrl+C."""
-    from control_channel import ControlChannel, seek_word
+    from control_channel import ControlChannel, pause_state, seek_word
+    from levels import LevelMeter, metered
 
     capture_started = None
     try:
@@ -647,20 +686,23 @@ def _run(args, stream: EventStream, chunks: Iterator[np.ndarray], tracker) -> No
         if tracker and args.start_word is not None:
             for position in tracker.reset_to(args.start_word, clock.now()):
                 _emit(position)
-        chunks = stoppable(chunks, args.stop_file)
+        chunks = metered(stoppable(chunks, args.stop_file), LevelMeter(), _emit)
         if tracker:
             control = ControlChannel(args.control_file)
 
             def on_tick(now: float) -> None:
                 for command in control.poll():
+                    paused = pause_state(command)
+                    if paused is not None:
+                        clock.pause() if paused else clock.resume()
                     word = seek_word(command)
                     if word is not None:
-                        for position in tracker.reset_to(word, now):
+                        for position in tracker.reset_to(word, clock.now()):
                             _emit(position)
-                for position in tracker.tick(now):
+                for position in tracker.tick(clock.now()):
                     _emit(position)
 
-            chunks = ticking(chunks, clock, on_tick)
+            chunks = gated(ticking(chunks, clock, on_tick), lambda: clock.paused)
         for event in stream(chunks):
             _emit(event)
             if tracker:
@@ -670,6 +712,28 @@ def _run(args, stream: EventStream, chunks: Iterator[np.ndarray], tracker) -> No
                 lag = event_lag_seconds(event, clock.now())
                 if lag is not None:
                     log(f"lag {lag:.2f}s behind ({event['type']})")
+    except KeyboardInterrupt:
+        log("Stopped.")
+
+
+# What --meter cannot be combined with: it opens a microphone and reports its level, nothing else.
+_SESSION_ONLY_OPTIONS = ("wav", "manuscript", "script", "control_file", "start_word", "locate", "list_devices", "check_moonshine")
+
+
+def _run_meter(ap: argparse.ArgumentParser, args) -> None:
+    """--meter: report the microphone's level (levels.py) until the stop file appears. No model loads and no script is
+    read, so it starts in about the time the device takes to open (read-aloud-control-bar PRD Phase 4, Q6 A)."""
+    from levels import LevelMeter, metered
+
+    if not args.mic:
+        ap.error("--meter needs --mic")
+    taken = [f"--{name.replace('_', '-')}" for name in _SESSION_ONLY_OPTIONS if getattr(args, name) not in (None, False)]
+    if taken:
+        ap.error(f"--meter takes only --mic and --stop-file, not {' '.join(taken)}")
+    log(f"Metering {args.mic}...")
+    try:
+        for _chunk in metered(stoppable(iter_microphone_chunks(args.mic), args.stop_file), LevelMeter(), _emit):
+            pass
     except KeyboardInterrupt:
         log("Stopped.")
 
@@ -685,6 +749,11 @@ def build_parser() -> argparse.ArgumentParser:
         "--check-moonshine",
         action="store_true",
         help="Print whether this build can run --engine moonshine (one JSON object: {type: engine_check, engine, ok, detail}), then exit (1 if not)",
+    )
+    ap.add_argument(
+        "--meter",
+        action="store_true",
+        help="Report only the --mic input level ({type: level, peak, rms} in dBFS every 100 ms) until --stop-file appears; no model, no script",
     )
     ap.add_argument("--wav", default=None, help="Replay this audio file as if it were live mic input (fixture testing)")
     ap.add_argument("--mic", default=None, help="Capture from this input device name instead of --wav (Windows dshow device name)")
@@ -751,6 +820,9 @@ def main() -> None:
 
     if args.log:
         set_log_file(open(args.log, "a", encoding="utf-8"))  # noqa: SIM115
+    if args.meter:
+        _run_meter(ap, args)
+        return
     if args.list_devices:
         from devices import list_input_devices
 

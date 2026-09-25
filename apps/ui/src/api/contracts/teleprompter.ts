@@ -80,10 +80,23 @@ export type TeleprompterFlagFinding = {
 };
 
 export type HeardWord = { word: string; start: number; end: number };
+
+/**
+ * The microphone's input level (`levels.py`, read-aloud-control-bar PRD Phase 4): every 100 ms of audio, the peak sample and the
+ * loudest 50 ms RMS, in dBFS from -100 (silence) to 0 (full scale). A session sends it beside its words; the meter
+ * (`teleprompterMeterStart`) sends only this. It is for a meter, never for the session model.
+ */
+export type TeleprompterLevel = { type: 'level'; peak: number; rms: number };
+
+/** The host's word that the level meter ended: `error` is why when it ended by itself (a microphone that would not open), else null. */
+export type TeleprompterMeterStopped = { type: 'meter_stopped'; error: string | null };
+
 export type TeleprompterEvent =
   | TeleprompterScript
   | TeleprompterPosition
   | TeleprompterFlag
+  | TeleprompterLevel
+  | TeleprompterMeterStopped
   | { type: 'partial'; segment: number; words: HeardWord[] }
   | ({ type: 'word'; segment: number } & HeardWord)
   | { type: 'segment_end'; segment: number };
@@ -94,6 +107,11 @@ export type TeleprompterState = {
   engine: string | null;
   /** The chapter id or title the session was started with. */
   chapter: string | null;
+  /**
+   * A running session whose listening is paused (`teleprompterPause`, ADR 0248): the phase stays `running`, the microphone and
+   * its level stay live, the tracker holds its word. Absent from a host before host API 55, which reads as not paused.
+   */
+  paused?: boolean;
   script: TeleprompterScript | null;
   position: TeleprompterPosition | null;
 };
@@ -268,6 +286,14 @@ export interface TeleprompterApi {
   teleprompterSaveFlags(chapterId: string, flags: TeleprompterFlagSave[]): Promise<TeleprompterFlagFinding[]>;
   teleprompterState(): Promise<TeleprompterState>;
   teleprompterDevices(): Promise<TeleprompterDevicesResult>;
+  /**
+   * Show `device`'s level before reading starts: `level` events, then one `meter_stopped`, on `subscribeTeleprompterEvent`. It
+   * replaces a meter already running and is refused while a session runs. Stop it when the microphone popover closes.
+   */
+  teleprompterMeterStart(device: string): Promise<void>;
+  teleprompterMeterStop(): Promise<void>;
+  /** Pause (true) or resume (false) a running session's listening without ending it; flags are kept only on Stop (ADR 0117). */
+  teleprompterPause(paused: boolean): Promise<void>;
   /** Where to resume `chapterId` from its recorded audio (the last seconds of its track, placed in the chapter); read-only. */
   teleprompterLocate(chapterId: string, options?: TeleprompterLocateOptions): Promise<TeleprompterLocateResult>;
   subscribeTeleprompterEvent(onEvent: (event: TeleprompterEvent) => void): () => void;

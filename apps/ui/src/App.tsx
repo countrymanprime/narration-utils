@@ -6,7 +6,10 @@ import { AppShell } from './components/layout/AppShell';
 import { StartupScreen, type StartupState } from './components/layout/StartupScreen';
 import { ToastRegion } from './components/primitives/Toast';
 import { useToasts } from './hooks/useToasts';
+import { useChapterSync } from './hooks/useChapterSync';
 import { usePendingAction } from './hooks/usePendingAction';
+import { ChapterSyncConsentDialog } from './components/tracks/ChapterSyncConsentDialog';
+import type { ChapterSyncPreview } from './api/contracts/chapterSync';
 import { useAppHistory } from './hooks/useAppHistory';
 import { notificationForJobEnd, shouldNotifyForJobEnd, toastForJobEnd } from './jobEnded';
 import { ConfirmDialog } from './components/primitives/ConfirmDialog';
@@ -62,6 +65,28 @@ function AppRoutes() {
   // One queue for the whole app: messages stack instead of replacing each other, an identical one that is showing starts its time again, and
   // an error stays until it is dismissed (ADR 0075). `notify` and `dismiss` keep their identity, so a page effect that lists them never re-runs.
   const { messages, notify: setNotice, dismiss: dismissMessage } = useToasts();
+  // Chapter sync's consent (daw-chapter-track-auto-sync.prd.md Phase 3): read here, once, so "Sync chapters to
+  // tracks?" shows from every link path (the pill, Tracks, an import, an attach) wherever the narrator happens to
+  // be, not only on Home or Tracks.
+  const chapterSync = useChapterSync(api);
+  const [syncPreview, setSyncPreview] = useState<ChapterSyncPreview>();
+  const [syncBusy, setSyncBusy] = useState(false);
+  useEffect(() => {
+    if (!chapterSync?.ask) {
+      setSyncPreview(undefined);
+      return;
+    }
+    let active = true;
+    void api
+      .chapterSyncPreview()
+      .then((preview) => {
+        if (active) setSyncPreview(preview);
+      })
+      .catch((error) => setNotice(describeApiError(error), 'error'));
+    return () => {
+      active = false;
+    };
+  }, [api, chapterSync?.ask, setNotice]);
   const [startup, setStartup] = useState<StartupState>('connecting');
   const [startupError, setStartupError] = useState('');
   const [startupDetails, setStartupDetails] = useState<string>();
@@ -423,7 +448,7 @@ function AppRoutes() {
                 path="/teleprompter"
                 element={data.manuscript ? <TeleprompterPage onFixCredits={() => guardedNavigate('/settings#credits')} /> : <Navigate to="/" replace />}
               />
-              <Route path="/tracks" element={<TracksPage dawFileLinked={data.dawFileLinked} onLinkDawFile={() => void linkDawFile()} />} />
+              <Route path="/tracks" element={<TracksPage dawFileLinked={data.dawFileLinked} onLinkDawFile={() => void linkDawFile()} notify={setNotice} />} />
               <Route
                 path="/review"
                 element={
@@ -453,6 +478,21 @@ function AppRoutes() {
             </Routes>
           </ErrorBoundary>
           <ToastRegion messages={messages} dismiss={dismissMessage} />
+          {chapterSync?.ask && (
+            <ChapterSyncConsentDialog
+              projectFile={chapterSync.projectFile}
+              preview={syncPreview}
+              busy={syncBusy}
+              onSync={() => {
+                setSyncBusy(true);
+                void api
+                  .chapterSyncSetEnabled(true)
+                  .catch((error) => setNotice(describeApiError(error), 'error'))
+                  .finally(() => setSyncBusy(false));
+              }}
+              onNotNow={() => void api.chapterSyncSetEnabled(false).catch((error) => setNotice(describeApiError(error), 'error'))}
+            />
+          )}
         </AppShell>
       </TooltipProvider>
       {pendingMove && (

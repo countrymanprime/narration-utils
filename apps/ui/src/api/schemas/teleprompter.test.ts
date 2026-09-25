@@ -68,7 +68,7 @@ describe('teleprompterEventSchema', () => {
   });
 
   it('lists the event types the UI understands, so an unknown one can be told from a malformed one', () => {
-    expect([...TELEPROMPTER_EVENT_TYPES].sort()).toEqual(['flag', 'partial', 'position', 'script', 'segment_end', 'word']);
+    expect([...TELEPROMPTER_EVENT_TYPES].sort()).toEqual(['flag', 'level', 'meter_stopped', 'partial', 'position', 'script', 'segment_end', 'word']);
   });
 });
 
@@ -79,13 +79,14 @@ describe('teleprompterStateSchema', () => {
       message: '',
       engine: null,
       chapter: null,
+      paused: false,
       script: null,
       position: null,
     });
   });
 
   it('accepts the snapshot the host builds mid-session, with the script and position events inside', () => {
-    const snapshot = { phase: 'running', message: 'Listening…', engine: 'whisper', chapter: 'c1', script, position };
+    const snapshot = { phase: 'running', message: 'Listening…', engine: 'whisper', chapter: 'c1', paused: true, script, position };
     expect(parseWire(teleprompterStateSchema, snapshot, { boundary: 'host.event', payload: 'teleprompter:state' })).toEqual(snapshot);
   });
 
