@@ -5,8 +5,8 @@ permissions: { contents: read }
 # Every job runs its Nx targets through .github/actions/nx-run: on a pull request only the projects
 # the change affects (see each project's project.json and `implicitDependencies`), otherwise all of
 # them. The two Playwright jobs keep their own `run:` steps (the atlas kit's audit looks for them) and
-# use .github/actions/nx-affected to decide whether to run. The jobs and their names are unchanged
-# (docs/operations/ci-and-releases.md lists them as GitHub shows them; no ruleset requires any of them). Checkouts
+# use .github/actions/nx-affected to decide whether to run, and skip on a pull request stacked on another one (docs/adr/0242).
+# docs/operations/ci-and-releases.md lists the jobs as GitHub shows them; no ruleset requires any of them. Checkouts
 # fetch full history so Nx can diff against the base branch.
 jobs:
   js:
@@ -33,12 +33,24 @@ jobs:
           projects: narration-utils
           always: 'true'
 
-  ui-visual:
-    # Captures every {page, state, viewport} of the mock-backed app and fails on
-    # errors, sideways overflow, blank or duplicate screenshots (see
-    # apps/ui/tests/visual/global-setup.ts). Not a pixel-diff gate.
-    timeout-minutes: 20
-    runs-on: ubuntu-latest
+  ui-visual-shard:
+    # Captures every {page, state, viewport} of the mock-backed app and fails on errors, sideways overflow, blank
+    # screenshots and the other per-capture checks (apps/ui/tests/visual). Not a pixel-diff gate. Split across three
+    # runners with Playwright's --shard (docs/adr/0243); the `ui-visual` job below brings the shards together and runs the
+    # checks that compare captures with each other. Skipped on a pull request stacked on another pull request (its base
+    # is not the default branch): it runs when the pull request is retargeted to the default branch, which ci.yml listens
+    # for (docs/adr/0242). PLAYWRIGHT_RUNNER and PLAYWRIGHT_WORKERS (repository variables) move both Playwright suites
+    # to a larger runner and more workers, should the repository ever have one (ADR 0243).
+    name: ui-visual (${{ matrix.shard }}/3)
+    if: github.event_name != 'pull_request' || github.base_ref == github.event.repository.default_branch
+    timeout-minutes: 15
+    runs-on: ${{ vars.PLAYWRIGHT_RUNNER || 'ubuntu-latest' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3]
+    outputs:
+      affected: ${{ steps.scope.outputs.affected }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with: { fetch-depth: 0, persist-credentials: false }
@@ -56,11 +68,63 @@ jobs:
       - if: steps.scope.outputs.affected == 'true'
         uses: ./.github/actions/setup-playwright
       - if: steps.scope.outputs.affected == 'true'
-        run: pnpm --dir apps/ui run screenshots
+        env:
+          SHARD: ${{ matrix.shard }}/${{ strategy.job-total }}
+          WORKERS: ${{ vars.PLAYWRIGHT_WORKERS || '4' }}
+        run: pnpm --dir apps/ui run screenshots --shard="$SHARD" --workers="$WORKERS"
       # The role trees of the dialogs, the slide-over and the navigation (tests/aria, ADR 0065): a second Playwright run on
-      # the same mock build, after the screenshots so a red visual run does not hide it and the reverse.
-      - if: steps.scope.outputs.affected == 'true' && !cancelled()
+      # its own mock build, on the first shard's runner, after its screenshots so a red visual run does not hide it and the reverse.
+      - if: matrix.shard == 1 && steps.scope.outputs.affected == 'true' && !cancelled()
         run: pnpm --dir apps/ui run aria
+      # The screenshots and, in the hidden screenshots/.run, the capture records the `ui-visual` job judges together.
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: always() && steps.scope.outputs.affected == 'true'
+        with:
+          name: ui-visual-shard-${{ matrix.shard }}
+          path: apps/ui/screenshots
+          include-hidden-files: true
+          if-no-files-found: ignore
+          retention-days: 1
+      # Playwright keeps a trace only for a failing test (`trace: 'retain-on-failure'`), so a green run has nothing
+      # to upload and a red one ships a trace.zip per failing test. Open it with `playwright show-trace`.
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: failure()
+        with:
+          name: ui-visual-traces-${{ matrix.shard }}
+          path: apps/ui/test-results
+          if-no-files-found: ignore
+          retention-days: 3
+  ui-visual:
+    # The visual suite's verdict: the capture records of every shard in one screenshots/.run, judged by a check run
+    # (UI_VISUAL_CHECK_RUN=1, apps/ui/tests/visual/global-setup.ts): identical screenshots across the whole run, stale
+    # sameAs declarations, blank captures and a record for every {page, state, viewport} the catalog drives. It captures
+    # nothing, so it needs no browser and no server. It runs when a shard failed too, so both verdicts show, and fails
+    # when any shard did.
+    needs: ui-visual-shard
+    if: ${{ !cancelled() && needs.ui-visual-shard.outputs.affected == 'true' }}
+    timeout-minutes: 10
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup-toolchain
+        with:
+          need-go: 'false'
+          need-python: 'false'
+          need-wails-tools: 'false'
+          need-stylua: 'false'
+          need-linux-native-deps: 'false'
+          pnpm-filter: narration-utils-ui
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          pattern: ui-visual-shard-*
+          merge-multiple: true
+          path: apps/ui/screenshots
+      - env:
+          UI_VISUAL_CHECK_RUN: '1'
+        run: pnpm --dir apps/ui exec playwright test tests/visual --pass-with-no-tests
+      # Every shard's screenshots as one artifact, laid out as a local run leaves them (the records stay out: hidden files).
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         if: always()
         with:
@@ -68,21 +132,25 @@ jobs:
           path: apps/ui/screenshots
           if-no-files-found: ignore
           retention-days: 7
-      # Playwright keeps a trace only for a failing test (`trace: 'retain-on-failure'`), so a green run has nothing
-      # to upload and a red one ships a trace.zip per failing test. Open it with `playwright show-trace`.
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        if: failure()
-        with:
-          name: ui-visual-traces
-          path: apps/ui/test-results
-          if-no-files-found: ignore
-          retention-days: 3
+      - if: needs.ui-visual-shard.result != 'success'
+        env:
+          SHARDS: ${{ needs.ui-visual-shard.result }}
+        run: |
+          echo "::error::A shard of the visual suite did not pass ($SHARDS); see the ui-visual (n/3) jobs."
+          exit 1
   ui-atlas:
-    # The component library: every Storybook story x light/dark x wide/narrow,
-    # with play() interactions, axe accessibility and overflow checks
-    # (apps/ui/tests/atlas). `pnpm atlas` builds Storybook first.
+    # The component library: every Storybook story x light/dark x wide/narrow, with play() interactions, axe accessibility
+    # and overflow checks (apps/ui/tests/atlas). `pnpm atlas` builds Storybook first. Split across two runners with
+    # --shard (docs/adr/0243); each test judges one story variant on its own, so the shards need no step that brings them
+    # together. Skipped on a stacked pull request, like ui-visual (docs/adr/0242).
+    name: ui-atlas (${{ matrix.shard }}/2)
+    if: github.event_name != 'pull_request' || github.base_ref == github.event.repository.default_branch
     timeout-minutes: 15
-    runs-on: ubuntu-latest
+    runs-on: ${{ vars.PLAYWRIGHT_RUNNER || 'ubuntu-latest' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2]
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with: { fetch-depth: 0, persist-credentials: false }
@@ -100,111 +168,88 @@ jobs:
       - if: steps.scope.outputs.affected == 'true'
         uses: ./.github/actions/setup-playwright
       - if: steps.scope.outputs.affected == 'true'
-        run: pnpm --dir apps/ui run atlas
+        env:
+          SHARD: ${{ matrix.shard }}/${{ strategy.job-total }}
+          WORKERS: ${{ vars.PLAYWRIGHT_WORKERS || '4' }}
+        run: pnpm --dir apps/ui run atlas --shard="$SHARD" --workers="$WORKERS"
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         if: always()
         with:
-          name: ui-atlas-screenshots
+          name: ui-atlas-screenshots-${{ matrix.shard }}
           path: apps/ui/screenshots/atlas
           if-no-files-found: ignore
           retention-days: 7
-  ui-atlas-kit:
-    # The reusable UI-atlas plugin under tools/ui-atlas-kit: CLI, hooks, and a check that
-    # apps/ui has not drifted from the vendored core files the kit ships. It runs on every pull
-    # request (`always`), because that drift check reads apps/ui but Nx does not see the link.
-    timeout-minutes: 10
+  quick:
+    # The Linux checks that each took under a minute and used to be five jobs (ui-atlas-kit, repo-scripts, docs-site,
+    # python and lua on ubuntu-latest), on one runner with one toolchain setup: a CI run takes fewer of the account's 20
+    # concurrent job slots, which is what a stack of pull requests queues on (docs/prds/ci-pipeline-speed.prd.md, Phase 6).
+    # Every step after the setup runs `if: !cancelled()`, so a red step never hides the verdict of the next one.
+    timeout-minutes: 20
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with: { fetch-depth: 0, persist-credentials: false }
+      # Every dependency group: the default one (with `lua`: Lua 5.4 through lupa) for pytest and the bridge harness, and
+      # `docs` for the MkDocs build, whose `uv run --only-group docs` then finds everything already installed.
       - uses: ./.github/actions/setup-toolchain
         with:
           need-go: 'false'
-          need-python: 'false'
           need-wails-tools: 'false'
-          need-stylua: 'false'
           need-linux-native-deps: 'false'
+          python-sync-args: --all-groups
           pnpm-filter: narration-utils
-      - uses: ./.github/actions/nx-run
-        with:
-          targets: test
-          projects: ui-atlas-kit
-          always: 'true'
-  repo-scripts:
-    # Plain-Node scripts with no dependencies: the ones that keep GitHub metadata (labels,
-    # milestones) in step with the repo, the release scripts (version sync, asset packaging), and the
-    # layout guard (scripts/ci/layout.test.mjs: top-level allowlist and retired-path check).
-    timeout-minutes: 5
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with: { fetch-depth: 0, persist-credentials: false }
-      - uses: ./.github/actions/setup-toolchain
-        with:
-          need-go: 'false'
-          need-python: 'false'
-          need-wails-tools: 'false'
-          need-stylua: 'false'
-          need-linux-native-deps: 'false'
-          pnpm-filter: narration-utils
-      # `always`: the layout and project guards read every tracked file, so a change anywhere can break them.
-      - uses: ./.github/actions/nx-run
+      # The plain-Node scripts with no dependencies: the ones that keep GitHub metadata (labels, milestones) in step with the
+      # repo, the release scripts (version sync, asset packaging) and the layout guard (scripts/ci/layout.test.mjs). Their
+      # ruff and pytest run in the `python` step. `always`: the layout and project guards read every tracked file.
+      - name: repo-scripts
+        if: ${{ !cancelled() }}
+        uses: ./.github/actions/nx-run
         with:
           targets: test-node
           projects: repo-scripts
           always: 'true'
-  docs-site:
-    # The public docs site (tools/docs-site, ADR 0083): unit tests of the include list and link rewriting, a strict MkDocs
-    # build of docs/ (a dead link or heading link fails it) and a link check over the built HTML. `always`: the site reads
-    # docs/, which belongs to no Nx project, so Nx cannot see that a change there affects it. ci.yml skips documentation-only
-    # pull requests, so pages.yml runs the same build for a pull request that changes docs/.
-    timeout-minutes: 10
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with: { fetch-depth: 0, persist-credentials: false }
-      - uses: ./.github/actions/setup-toolchain
+      # The reusable UI-atlas plugin under tools/ui-atlas-kit: CLI, hooks, and a check that apps/ui has not drifted from the
+      # vendored core files the kit ships. `always`: that drift check reads apps/ui, and Nx does not see the link.
+      - name: ui-atlas-kit
+        if: ${{ !cancelled() }}
+        uses: ./.github/actions/nx-run
         with:
-          need-go: 'false'
-          need-wails-tools: 'false'
-          need-stylua: 'false'
-          need-linux-native-deps: 'false'
-          python-sync-args: --only-group docs
-          pnpm-filter: narration-utils
-      - uses: ./.github/actions/nx-run
+          targets: test
+          projects: ui-atlas-kit
+          always: 'true'
+      # ruff and pytest for libs/python, the sidecars, scripts/ (release tests) and tests/fixtures.
+      - name: python
+        if: ${{ !cancelled() }}
+        uses: ./.github/actions/nx-run
+        with:
+          targets: lint test
+          projects: tag:toolchain:python,fixtures
+      # StyLua and ruff, then the REAPER bridge harness (integrations/reaper/tests): Lua 5.4, a fake `reaper` driven through
+      # the file protocol, and the mutation checks. Windows runs it too, in the `lua` job below.
+      - name: lua
+        if: ${{ !cancelled() }}
+        uses: ./.github/actions/nx-run
+        with:
+          targets: lint test
+          projects: reaper
+      # The public docs site (tools/docs-site, ADR 0083): unit tests of the include list and link rewriting, a strict MkDocs
+      # build of docs/ (a dead link or heading link fails it) and a link check over the built HTML. `always`: the site reads
+      # docs/, which belongs to no Nx project, so Nx cannot see that a change there affects it. ci.yml skips documentation-only
+      # pull requests, so pages.yml runs the same build for a pull request that changes docs/.
+      - name: docs-site
+        if: ${{ !cancelled() }}
+        uses: ./.github/actions/nx-run
         with:
           targets: lint test build
           projects: docs-site
           always: 'true'
-  python:
-    # ruff and pytest for libs/python, the sidecars, scripts/ (release tests) and tests/fixtures.
-    timeout-minutes: 15
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with: { fetch-depth: 0, persist-credentials: false }
-      - uses: ./.github/actions/setup-toolchain
-        with:
-          need-go: 'false'
-          need-wails-tools: 'false'
-          need-stylua: 'false'
-          need-linux-native-deps: 'false'
-          pnpm-filter: narration-utils
-      - uses: ./.github/actions/nx-run
-        with:
-          targets: lint test
-          projects: tag:toolchain:python,fixtures
 
   lua:
-    # stylua, then the bridge harness (integrations/reaper/tests): Lua 5.4 from the lupa wheel in uv.lock, a fake
-    # `reaper` driven through the file protocol, and the mutation checks. Linux and Windows both run it: the bridge
-    # builds paths from package.config, and REAPER's own Lua writes CRLF on Windows.
+    # The bridge harness on Windows (Linux runs it in `quick`): the bridge builds paths from package.config, and REAPER's own
+    # Lua writes CRLF on Windows. Named as the matrix entry it used to be, so the check GitHub shows keeps its name.
+    name: lua (windows-latest)
     timeout-minutes: 10
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ubuntu-latest, windows-latest]
-    runs-on: ${{ matrix.os }}
+    runs-on: windows-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with: { fetch-depth: 0, persist-credentials: false }

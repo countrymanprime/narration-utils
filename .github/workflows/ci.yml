@@ -1,18 +1,26 @@
 name: CI
 on:
   pull_request:
+    # `edited` for one edit only, a change of base branch: a pull request stacked on another one skips the Playwright
+    # suites and the Windows build (docs/adr/0242), and when its parent merges and GitHub retargets it to the default
+    # branch, this event runs them. Any other edit (title, body) starts a run whose jobs all skip, in a concurrency group
+    # of its own so it cannot cancel the run in progress.
+    types: [opened, synchronize, reopened, edited]
     paths-ignore:
       - 'docs/**'
       - '**/*.md'
   workflow_dispatch:
 permissions: { contents: read }
 concurrency:
-  group: ci-${{ github.workflow }}-${{ github.ref }}
+  group: ci-${{ github.workflow }}-${{ github.ref }}${{ github.event.action == 'edited' && !github.event.changes.base && format('-edit-{0}', github.run_id) || '' }}
   cancel-in-progress: true
 jobs:
   quality:
+    if: github.event.action != 'edited' || github.event.changes.base
     uses: ./.github/workflows/_quality.yml
+  # Only the Windows build reads the bundle, so it skips with it on a stacked pull request (docs/adr/0242).
   ui-dist:
+    if: (github.event.action != 'edited' || github.event.changes.base) && (github.event_name != 'pull_request' || github.base_ref == github.event.repository.default_branch)
     uses: ./.github/workflows/_ui-dist.yml
   # Windows is the supported platform, so it is the only native build a pull request waits on.
   # macOS and Linux build after the Windows release is published (see prerelease.yml).
