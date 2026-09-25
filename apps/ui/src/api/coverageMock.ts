@@ -25,6 +25,10 @@ export type CoverageSeed = {
   hold?: boolean;
   /** Chapters with a current check that found this share of their words, as if checked in this session (instead of their fixture's). */
   measured?: Record<string, number>;
+  /** Chapters whose report gets two interior pickups (a skip and a short read) plus a small tail, instead of the
+   * default tail-only split (recording-check-summary.prd.md Phase 1, RS2/RS8): so the summary's headline, "Recorded
+   * to" line and Pickups list can all be seen together. */
+  pickups?: string[];
 };
 
 type Deps = {
@@ -112,6 +116,75 @@ function reportFor(chapter: ManuscriptChapter, fraction: number): CoverageReport
   };
 }
 
+/** A report with two interior pickups (a skip and a short read) plus a small tail, so the summary's headline, "Recorded
+ * to" line and Pickups list can all be seen together (recording-check-summary.prd.md, mockups 01b/03b). Built from the
+ * same proportional paragraph split as reportFor, so it stays sane for whichever chapter is seeded. */
+function pickupsReportFor(chapter: ManuscriptChapter): CoverageReport {
+  const bodyTokens = chapter.wordCount;
+  const paragraphs = (chapter.paragraphIds ?? [{ id: `${chapter.id}-p1`, index: 0 }]).map(({ id }) => id);
+  const share = Math.floor(bodyTokens / paragraphs.length);
+  const sizes = paragraphs.map((_, index) => (index === paragraphs.length - 1 ? bodyTokens - share * (paragraphs.length - 1) : share));
+  // Proportional to the paragraph count, not a fixed index, so a short chapter still gets three distinct paragraphs
+  // (a skip, a short read and a one-paragraph tail) instead of the indices colliding.
+  const n = paragraphs.length;
+  const tailStart = n - 1;
+  const shortIndex = n >= 3 ? Math.floor(n / 2) : Math.max(0, tailStart - 1);
+  const skipIndex = n >= 4 ? Math.floor(n / 4) : Math.max(0, shortIndex - 1);
+  const missingIn = sizes.map((size, index) => {
+    if (index === skipIndex) return size;
+    if (index === shortIndex) return Math.ceil(size / 2);
+    if (index >= tailStart) return size;
+    return 0;
+  });
+  const presentTokens = sizes.reduce((sum, size, index) => sum + (size - missingIn[index]), 0);
+  const missingTokens = bodyTokens - presentTokens;
+  const itemGuid = `{${chapter.id}-item-1}`;
+  const playedSeconds = Math.round((presentTokens / WORDS_PER_MINUTE) * 60);
+  const regions: CoverageReport['regions'] = [];
+  if (missingIn[skipIndex] > 0)
+    regions.push({
+      kind: 'skip',
+      paragraphIds: [paragraphs[skipIndex]],
+      tokenCount: missingIn[skipIndex],
+      firstWord: 'and',
+      lastWord: 'door',
+      position: { itemIndex: 0, itemGuid, sourceTime: Math.round(playedSeconds * 0.2) },
+    });
+  if (shortIndex !== skipIndex && missingIn[shortIndex] > 0)
+    regions.push({
+      kind: 'short_read',
+      paragraphIds: [paragraphs[shortIndex]],
+      tokenCount: missingIn[shortIndex],
+      firstWord: 'never',
+      lastWord: 'never',
+      position: { itemIndex: 0, itemGuid, sourceTime: Math.round(playedSeconds * 0.6) },
+    });
+  const tailIds = paragraphs.filter((id, index) => index >= tailStart && missingIn[index] > 0);
+  if (tailIds.length > 0)
+    regions.push({
+      kind: 'tail',
+      paragraphIds: tailIds,
+      tokenCount: tailIds.reduce((sum, id) => sum + missingIn[paragraphs.indexOf(id)], 0),
+      firstWord: 'the',
+      lastWord: 'end.',
+      position: { itemIndex: 0, itemGuid, sourceTime: playedSeconds },
+      before: { itemIndex: 0, itemGuid, sourceTime: playedSeconds },
+    });
+  return {
+    model: 'small',
+    alignment: { maxMisreadRun: 8, minAnchorRun: 3 },
+    bodyTokens,
+    presentTokens,
+    missingTokens,
+    extraTokens: Math.round(bodyTokens * 0.02),
+    longestMissingRun: Math.max(...missingIn),
+    playedSeconds,
+    items: [{ index: 0, itemGuid, status: 'analyzed', words: 'reused', playedSeconds, wordCount: presentTokens, model: 'small' }],
+    paragraphs: paragraphs.map((id, index) => ({ id, tokens: sizes[index], present: sizes[index] - missingIn[index], longestMissingRun: missingIn[index] })),
+    regions,
+  };
+}
+
 export function createCoverageMock(deps: Deps): CoverageApi & {
   /** The chapter as the host sends it: recordedFraction only from a current check. */
   withMeasurement: (chapter: ManuscriptChapter) => ManuscriptChapter;
@@ -122,6 +195,9 @@ export function createCoverageMock(deps: Deps): CoverageApi & {
   // Fractions measured by a check run in this session; they replace the fixture's.
   const measured = new Map<string, number>(Object.entries(deps.seed?.measured ?? {}));
   const stale = new Set(deps.seed?.stale ?? []);
+  const pickupChapters = new Set(deps.seed?.pickups ?? []);
+  const reportOf = (chapter: ManuscriptChapter, fraction: number) =>
+    pickupChapters.has(chapter.id) ? pickupsReportFor(chapter) : reportFor(chapter, fraction);
 
   const publish = () => subscribers.forEach((listener) => listener({ ...state }));
   const stop = () => {
@@ -138,7 +214,7 @@ export function createCoverageMock(deps: Deps): CoverageApi & {
     const fraction = measured.get(chapter.id) ?? chapter.recordedFraction;
     if (fraction === undefined) return { chapterId, state: 'never', reasons: [], basis: { ...MOCK_BASIS } };
     const record = { id: `mock-coverage-${chapter.id}`, outcome: 'complete' as const, startedAt: MOCK_TIME, completedAt: MOCK_TIME };
-    const report = reportFor(chapter, fraction);
+    const report = reportOf(chapter, fraction);
     if (stale.has(chapter.id)) return { chapterId, state: 'stale', reasons: ['item_trimmed'], basis: { ...MOCK_BASIS }, record, result: report };
     // The same number the chapter payload carries (withMeasurement): the host sends one number to both.
     return { chapterId, state: 'current', reasons: [], basis: { ...MOCK_BASIS }, record, result: report, recordedFraction: fraction };
@@ -150,7 +226,7 @@ export function createCoverageMock(deps: Deps): CoverageApi & {
     const fraction = measured.get(chapter.id) ?? chapter.recordedFraction ?? 1;
     measured.set(chapter.id, fraction);
     stale.delete(chapter.id);
-    const report = reportFor(chapter, fraction);
+    const report = reportOf(chapter, fraction);
     const message = `Text present: ${report.presentTokens} of ${report.bodyTokens} words.`;
     state = {
       ...state,

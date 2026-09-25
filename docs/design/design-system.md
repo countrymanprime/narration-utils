@@ -55,7 +55,7 @@ A page builds a control from a primitive and never writes the native element ([A
 
 ### Import rules
 
-Three import facts are checked, not reviewed ([ADR 0062](../adr/0062-ui-import-rules-are-a-dependency-cruiser-config-and-a-mark-scan-that-name-their-adr.md), `pnpm --dir apps/ui architecture`): a file in `components/primitives/` (a story or a test too) imports nothing else under `components/`, so shared data such as the chapter status labels sits above the feature folders (`src/chapterStatus.ts`); only `src/api/` imports the generated `wailsjs/` bindings; and only a primitive imports Base UI. `Highlight` is the only file that writes a `<mark>`, with one reasoned exception, the proofing diff's `InlineDiffRow`, which waits on the owner ([ADR 0063](../adr/0063-the-proofing-diff-marks-its-own-words-and-adr-0016-covers-entry-highlights.md), Proposed); `src/highlightBoundary.test.ts` is the check.
+Three import facts are checked, not reviewed ([ADR 0062](../adr/0062-ui-import-rules-are-a-dependency-cruiser-config-and-a-mark-scan-that-name-their-adr.md), `pnpm --dir apps/ui architecture`): a file in `components/primitives/` (a story or a test too) imports nothing else under `components/`, so shared data such as the chapter status labels sits above the feature folders (`src/chapterStatus.ts`); only `src/api/` imports the generated `wailsjs/` bindings and the Wails runtime (`@wailsio/runtime`, [ADR 0200](../adr/0200-the-desktop-shell-runs-on-wails-v3-beta-pinned-at-v3-0-0-beta-25.md)); and only a primitive imports Base UI. `Highlight` is the only file that writes a `<mark>`, with one reasoned exception, the proofing diff's `InlineDiffRow`, which waits on the owner ([ADR 0063](../adr/0063-the-proofing-diff-marks-its-own-words-and-adr-0016-covers-entry-highlights.md), Proposed); `src/highlightBoundary.test.ts` is the check.
 
 ### Base UI wrappers
 
@@ -78,6 +78,10 @@ The custom-CSS system (`.btn`, `.panel-head`/`.panel-body`, `.progressbar`, etc.
 - **Disabled interactive elements never show a hover affordance.** Use `disabled:pointer-events-none` (Tailwind) alongside `disabled:opacity-*`, not just the opacity change alone — a hover transform/background change that still fires on a disabled element reads as clickable when it isn't.
 - **A field that is read-only, locked or not-yet-persisted is `disabled`, not hidden**, so the user can see what exists without being able to edit it. Story Bible entries open read-only and gain Edit/Save/Cancel controls only on request ([ADR 0018](../adr/0018-story-bible-entries-read-only-until-edit.md)); see `GuideDetail.tsx`.s `editingDisabled`.
 - **A non-destructive "peek at something else" action is a `SlideOver` primitive, never a navigation that replaces the current view's state.** See `Manuscript.tsx`'s Chapters & Search overlay and `GuideDetail.tsx`'s "Review entry" overlay — both exist specifically so switching context doesn't discard an in-progress edit.
+
+## Layout and scrolling
+
+The document (`html`/`body`) never scrolls; it is locked (`overflow: hidden`, `styles.css`) once nothing needs it to (app-shell-vertical-overflow.prd.md). Every page scrolls inside the shell's own page area (`AppShell.tsx`'s `<main>`, `.scroll-chrome-hidden`), which is the shell's single scroll container and also gives absolutely positioned descendants (an `sr-only` label, a Base UI hidden input) a containing block so they scroll and clip with their row instead of escaping to the window. Before a project is attached, `StartupScreen` and `ProjectPicker` scroll in the same way inside their own `flex-1 overflow-y-auto` container, with `DemoBanner` above it in a `flex h-full flex-col` so the banner's own height never pushes the document past the viewport. The shell is sized off a `height: 100%` chain from `html`/`body`/`#root` (`h-full`), not `100vh`/`100dvh`, because only the `%` chain stays exact under both WebView2's zoom and a CSS `zoom` on `<html>`.
 
 ## Settings rows
 

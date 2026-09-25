@@ -81,6 +81,15 @@ describe('the import-graph rules (ADR 0062)', () => {
     expect(await violations('src/components/home/Direct.ts')).toEqual(['wails-bindings-only-in-api: src/components/home/Direct.ts -> wailsjs/go/main/Host.ts']);
   });
 
+  test('only the API layer may reach the Wails runtime (ADR 0200)', async () => {
+    write('src/api/events.ts', "import { Events } from '@wailsio/runtime';\nexport const on = Events.On;\n");
+    write('src/components/home/Listen.ts', "import { Events } from '@wailsio/runtime';\nexport const listen = Events.On;\n");
+    expect(await violations('src/api/events.ts')).toEqual([]);
+    const found = await violations('src/components/home/Listen.ts');
+    expect(found).toHaveLength(1);
+    expect(found[0]).toMatch(/^wails-runtime-only-in-api: src\/components\/home\/Listen\.ts -> .*node_modules\/@wailsio\/runtime\//);
+  });
+
   test('Base UI is imported only by a primitive (the second guard behind baseUiBoundary.test.ts)', async () => {
     write('src/components/primitives/Popup.ts', "import { Dialog } from '@base-ui/react/dialog';\nexport const popup = Dialog;\n");
     write('src/components/settings/Popup.ts', "import { Dialog } from '@base-ui/react/dialog';\nexport const popup = Dialog;\n");

@@ -92,8 +92,8 @@ The narrator gets the same app; nothing on screen changes. The developers of the
 | # | Phase | Description | Status | Parallel | Depends | PRP Plan |
 | --- | --- | --- | --- | --- | --- | --- |
 | 1 | Plan | This PRD, ADR 0200 and Proposed ADR 0201, the nav PRD reconciled with D29 | complete | - | - | - |
-| 2 | Shell on v3 | Host, bindings, client, events, build, installer, release pipeline, threat model and `SECURITY.md` | pending | - | 1 | - |
-| 3 | Steady-state docs | CI and releases, the in-app update, the codebase map and its diagrams, verification tooling | pending | - | 2 | - |
+| 2 | Shell on v3 | Host, bindings, client, events, build, installer, release pipeline, threat model and `SECURITY.md` | complete | - | 1 | - |
+| 3 | Steady-state docs | CI and releases, the in-app update, the codebase map and its diagrams, verification tooling | complete | - | 2 | - |
 | 4 | Owner launch | The owner launches the v3 build on Windows ([#510](https://github.com/countrymanprime/narration-utils/issues/510) item 1) | pending | - | 2 | - |
 
 ### Phase Details

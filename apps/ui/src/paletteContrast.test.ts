@@ -315,6 +315,8 @@ const tokensUsedAsText = (): Set<string> => new Set([...textColourUses().values(
 const NON_TEXT_USES: Record<string, { count: number; what: string }> = {
   'components/delivery/DeliveryProfilePanel.tsx': { count: 1, what: 'the ear icon beside a rule the narrator checks by listening' },
   'chapterStatus.ts': { count: 1, what: 'the Not Started status colour: a dot and a meter segment, never text' },
+  'components/home/ChapterTrackButton.tsx': { count: 1, what: "the row button's linked-track colour dot" },
+  'components/home/ChapterTrackPanel.tsx': { count: 1, what: "the panel header's linked-track colour dot" },
   'components/layout/AppShell.tsx': { count: 2, what: 'the folder icon beside the project name, and the header pill dot when no DAW file is linked' },
   'components/manuscript/ChapterNav.tsx': { count: 1, what: 'a line-hit result row icon (faParagraph)' },
   'components/manuscript/ReaderCard.tsx': { count: 1, what: 'the idle chapter bookmark icon' },
