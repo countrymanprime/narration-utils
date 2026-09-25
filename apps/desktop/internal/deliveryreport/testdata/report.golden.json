@@ -192,7 +192,7 @@
         "max": 5,
         "bound": "0.5 to 5 s",
         "level": "required",
-        "checked_by": "not_yet",
+        "checked_by": "measured",
         "requirement": "1 to 5 seconds of room tone at the beginning of each file.",
         "quoted": false,
         "source_url": "https://help.acx.com/s/article/what-are-the-acx-audio-submission-requirements",
@@ -200,10 +200,10 @@
         "verification": "conflicting",
         "verification_note": "ACX's page was read as 1 to 5 s; current guides say 0.5 to 1 s. Judged 0.5 to 5 s (the looser reading) until the owner reads ACX's page.",
         "results": {
-          "met": 0,
+          "met": 2,
           "not_met": 0,
           "not_measurable": 0,
-          "not_checked": 2,
+          "not_checked": 0,
           "off": 0
         }
       },
@@ -217,17 +217,17 @@
         "max": 5,
         "bound": "1 to 5 s",
         "level": "required",
-        "checked_by": "not_yet",
+        "checked_by": "measured",
         "requirement": "1 to 5 seconds of room tone at the end of each file.",
         "quoted": false,
         "source_url": "https://help.acx.com/s/article/what-are-the-acx-audio-submission-requirements",
         "read_on": "2026-09-20",
         "verification": "verified",
         "results": {
-          "met": 0,
+          "met": 2,
           "not_met": 0,
           "not_measurable": 0,
-          "not_checked": 2,
+          "not_checked": 0,
           "off": 0
         }
       },
@@ -439,10 +439,10 @@
     "findings": 4,
     "open_findings": 4,
     "rule_results": {
-      "met": 8,
+      "met": 12,
       "not_met": 2,
       "not_measurable": 0,
-      "not_checked": 6,
+      "not_checked": 2,
       "off": 0
     },
     "files_not_met": 2,
@@ -472,6 +472,10 @@
           "true_peak_dbtp": -2.4,
           "noise_floor_dbfs": -66.8,
           "digital_silent_windows": 0,
+          "head_room_tone_seconds": 0.8,
+          "tail_room_tone_seconds": 2.5,
+          "head_digital_silence_seconds": 0,
+          "tail_digital_silence_seconds": 0,
           "full_scale_samples": 0,
           "clip_run_count": 0,
           "clip_runs": []
@@ -511,15 +515,13 @@
           },
           {
             "rule": "acx.room_tone_head",
-            "status": "not_checked",
-            "value": null,
-            "why": "Not checked by the app yet: measuring room tone at the file's edges comes later."
+            "status": "met",
+            "value": 0.8
           },
           {
             "rule": "acx.room_tone_tail",
-            "status": "not_checked",
-            "value": null,
-            "why": "Not checked by the app yet: measuring room tone at the file's edges comes later."
+            "status": "met",
+            "value": 2.5
           },
           {
             "rule": "acx.format",
@@ -565,6 +567,10 @@
           "true_peak_dbtp": null,
           "noise_floor_dbfs": -66.8,
           "digital_silent_windows": 0,
+          "head_room_tone_seconds": 0.8,
+          "tail_room_tone_seconds": 2.5,
+          "head_digital_silence_seconds": 0,
+          "tail_digital_silence_seconds": 0,
           "full_scale_samples": 0,
           "clip_run_count": 0,
           "clip_runs": []
@@ -603,15 +609,13 @@
           },
           {
             "rule": "acx.room_tone_head",
-            "status": "not_checked",
-            "value": null,
-            "why": "Not checked by the app yet: measuring room tone at the file's edges comes later."
+            "status": "met",
+            "value": 0.8
           },
           {
             "rule": "acx.room_tone_tail",
-            "status": "not_checked",
-            "value": null,
-            "why": "Not checked by the app yet: measuring room tone at the file's edges comes later."
+            "status": "met",
+            "value": 2.5
           },
           {
             "rule": "acx.format",
