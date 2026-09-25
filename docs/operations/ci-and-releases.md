@@ -45,6 +45,11 @@ repository (read with `gh api repos/countrymanprime/narration-utils/rulesets`, a
   with `cancel-in-progress`, so a newer push cancels the run before it, and `cancel-closed-pr.yml` cancels whatever is
   still queued or running when the pull request is merged or closed (a merge starts its own runs on `main`). Runs on
   `main` and the release workflows are never cancelled.
+- **A stacked pull request skips the slow jobs until it targets `main`** ([ADR 0242](../adr/0242-a-pull-request-stacked-on-another-skips-the-playwright-suites-and-the-windows-build-until-it-targets-main.md)).
+  When a pull request's base is another branch, `ui-visual`, `ui-atlas`, `ui-dist / build` and `Build (Windows)` show as
+  skipped; `js`, `quick`, `lua (windows-latest)` and `go` run, scoped by Nx against the parent branch. When the parent merges
+  and GitHub retargets the pull request to `main`, `ci.yml`'s `edited` trigger (a base change only) runs everything. A title
+  or body edit starts a run whose jobs all skip, in a concurrency group of its own, so it never cancels the run in progress.
 - macOS and Linux are deliberately
   not built on pull requests (see [ADR-0027](../adr/0027-windows-gates-and-creates-the-release.md)), so `Build (Windows)`
   is the only native build a pull request runs.
@@ -55,13 +60,11 @@ The checks a pull request shows, by the name GitHub displays (`ci.yml` calls `_q
 | Check | What it runs |
 | --- | --- |
 | `quality / js` | `lint`, `format`, `architecture` (the import rules) and `test` of `narration-utils-ui` (Vitest with the coverage ratchet), then Knip over the whole repository |
-| `quality / ui-visual` | the Playwright visual suite of the mock-backed app (`pnpm --dir apps/ui run screenshots`); uploads screenshots, and traces when it fails |
-| `quality / ui-atlas` | the Storybook component atlas: every story in light and dark at a wide and a narrow viewport, with axe |
-| `quality / ui-atlas-kit` | the tests of `tools/ui-atlas-kit` and its drift check against `apps/ui` |
-| `quality / docs-site` | the public docs site ([below](#the-public-docs-site)): ruff and pytest of `tools/docs-site`, a strict MkDocs build of `docs/` and the link check over the built HTML; fails on any dead internal link |
-| `quality / repo-scripts` | the plain-Node tests of `scripts/` (labels, milestones, release tooling, the layout and project guards) |
-| `quality / python` | ruff and pytest for `libs/python`, the sidecars, `scripts/` and `tests/fixtures` |
-| `quality / lua (ubuntu-latest)`, `quality / lua (windows-latest)` | StyLua and ruff on `integrations/reaper`, then its bridge harness under Lua 5.4 (a fake `reaper` driven through the file protocol, and the mutation checks; [ADR 0066](../adr/0066-the-lua-bridge-is-tested-by-a-harness-under-lua-5-4-and-reaper-api-behaviour-is-checked-in-reaper.md)) |
+| `quality / ui-visual (1/3)`, `(2/3)`, `(3/3)` | a third each of the Playwright visual suite of the mock-backed app (`pnpm --dir apps/ui run screenshots --shard=i/3`, [ADR 0243](../adr/0243-the-playwright-suites-run-sharded-in-ci-and-a-check-run-judges-the-visual-suite-across-its-shards.md)) with every per-capture check; the first shard also runs the aria snapshots. Each uploads its screenshots and capture records, and traces when it fails |
+| `quality / ui-visual` | the visual suite's verdict: a check run over every shard's capture records (identical screenshots, stale `sameAs`, blank captures, a record for every capture the catalog drives); uploads the screenshots of all shards as `ui-visual-screenshots`, and fails when a shard did |
+| `quality / ui-atlas (1/2)`, `(2/2)` | half each of the Storybook component atlas: every story in light and dark at a wide and a narrow viewport, with axe |
+| `quality / quick` | one Linux runner, a step each (a red step does not stop the next): `repo-scripts` (the plain-Node tests of `scripts/`: labels, milestones, release tooling, the layout and project guards), `ui-atlas-kit` (its tests and drift check against `apps/ui`), `python` (ruff and pytest for `libs/python`, the sidecars, `scripts/` and `tests/fixtures`), `lua` (StyLua, ruff and the REAPER bridge harness under Lua 5.4: a fake `reaper` driven through the file protocol, and the mutation checks; [ADR 0066](../adr/0066-the-lua-bridge-is-tested-by-a-harness-under-lua-5-4-and-reaper-api-behaviour-is-checked-in-reaper.md)) and `docs-site` (the public docs site, [below](#the-public-docs-site): ruff and pytest of `tools/docs-site`, a strict MkDocs build of `docs/` and the link check over the built HTML; fails on any dead internal link) |
+| `quality / lua (windows-latest)` | the `lua` step of `quick` on Windows: the bridge builds paths from `package.config`, and REAPER's own Lua writes CRLF there |
 | `quality / go` | Windows: gofmt, go vet, golangci-lint, checklocks, the tests (the race detector on every package with concurrency), then `test-schedules` |
 | `ui-dist / build` | builds the UI bundle the Windows build reuses |
 | `Build (Windows)` | the native Windows build, starting as soon as `ui-dist / build` finishes |
@@ -98,7 +101,7 @@ Each file in `.github/workflows`, what starts it, and the checks it shows on a p
 | `pages.yml` (`Pages`) | push to `main` (any change, docs included); a pull request that changes `docs/`, `tools/docs-site/`, the Storybook config, `pyproject.toml`, `uv.lock` or the workflow (`build` only); manual | `build`, `deploy` ([below](#the-pages-workflow)); `deploy` never runs for a pull request | the `build` job is the docs link check for a documentation-only pull request; advisory like the rest |
 | `sync-labels.yml`, `sync-milestones.yml` | push to `main` that changes `.github/labels.json`, `config/roadmap.json` or `scripts/github/**`, and the workflow file; manual | `sync` | run after a merge, never on a pull request |
 
-The tests of `scripts/github/*.test.mjs` (the label and milestone sync) run in `quality / repo-scripts`. Nothing runs on a schedule except
+The tests of `scripts/github/*.test.mjs` (the label and milestone sync) run in the `repo-scripts` step of `quality / quick`. Nothing runs on a schedule except
 CodeQL, the security scan and the online link check. There is no `github-scripts` job and no changed-file classification: Nx `affected` decides what a pull
 request runs (see [Nx projects and the quality gate](#nx-projects-and-the-quality-gate)).
 
@@ -420,9 +423,9 @@ The `.sha256` beside a file only detects a damaged download: it is not evidence 
 - **`Links (offline)`** (shown as `Docs / Links (offline)`) starts on **every** pull request: the trigger has no `paths` filter, on purpose. `ci.yml` skips documentation-only pull requests, so a docs job that shared its filter would also skip a *code* change that renames a file a document links to, and a check that GitHub skips because of a path filter stays pending if it is ever required (see the note at the top of this document). Offline mode reads only the tree and never opens a network connection: a relative link must resolve to a file, and a `#fragment` to a heading of that file (checked; `include_fragments = "anchor-only"` works with `--offline`). A local run over the 227 Markdown files and 1,356 links takes 0.13 seconds (the Actions run adds the runner set-up), so it is cheap enough to block on, and it is deterministic. **It blocks in the sense that a dead link turns the check red**; a red check does not stop a merge while no ruleset requires it (owner decision D11), so the maintainer reads it like the others, and adding `Docs / Links (offline)` to the `Pull Request` ruleset's required checks is an owner-only setting that is safe to make. It replaces nothing: the docs-site build ([below](#the-public-docs-site)) checks the built HTML of the pages it publishes, and `apps/ui/src/docsGuide.test.ts` checks the guide's own anchors.
 - **`Links (online, advisory)`** starts weekly and by hand. It also follows the `http(s)` links (with `actions/cache` on `.lycheecache`, one day), reports the ones that rotted in the job summary, and **never fails**: a link on someone else's server is not a regression in this repository. `429 Too Many Requests` is accepted. The `GITHUB_TOKEN` is passed only to lift GitHub's anonymous rate limit.
 
-**Diagrams.** lychee reads a Mermaid block as text, so `scripts/ci/mermaid-diagrams.test.mjs` (in `quality / repo-scripts`, and so in `pnpm check`) hands every ```` ```mermaid ```` block of every tracked Markdown file to Mermaid's own parser (`mermaid.parse`, the `mermaid` devDependency of the root package) and fails with the file, the line and the parser's message. It needs no browser: Mermaid's sanitizer only wants a DOM, and the test gives it jsdom (already a dependency of the UI's tests) before it imports Mermaid. It proves the syntax, not that the names in a picture are still true; the five diagrams of [the codebase map](../architecture/codebase-map.md#how-the-parts-connect) and the four flows each say which files they were checked against, and the test fails if one of the five owning docs loses its diagram.
+**Diagrams.** lychee reads a Mermaid block as text, so `scripts/ci/mermaid-diagrams.test.mjs` (in the `repo-scripts` step of `quality / quick`, and so in `pnpm check`) hands every ```` ```mermaid ```` block of every tracked Markdown file to Mermaid's own parser (`mermaid.parse`, the `mermaid` devDependency of the root package) and fails with the file, the line and the parser's message. It needs no browser: Mermaid's sanitizer only wants a DOM, and the test gives it jsdom (already a dependency of the UI's tests) before it imports Mermaid. It proves the syntax, not that the names in a picture are still true; the five diagrams of [the codebase map](../architecture/codebase-map.md#how-the-parts-connect) and the four flows each say which files they were checked against, and the test fails if one of the five owning docs loses its diagram.
 
-What it does not see: a path in a code comment (`docs/prds/<name>.prd.md` in a Go or Python file) is not a Markdown link, so `scripts/ci/prd-references.test.mjs` (in `quality / repo-scripts`) fails when a source file cites a PRD that is not in the tree ([ADR 0028](../adr/0028-planned-work-is-specified-as-prds-and-deleted-when-built.md) deletes them by design). Mermaid diagrams are text to lychee.
+What it does not see: a path in a code comment (`docs/prds/<name>.prd.md` in a Go or Python file) is not a Markdown link, so `scripts/ci/prd-references.test.mjs` (in the `repo-scripts` step of `quality / quick`) fails when a source file cites a PRD that is not in the tree ([ADR 0028](../adr/0028-planned-work-is-specified-as-prds-and-deleted-when-built.md) deletes them by design). Mermaid diagrams are text to lychee.
 
 The baseline on 2026-09-21 (S17 phase 1): 0 dead repository links; 7 external links rotted or unreachable, six of them pull requests of the owner's private repositories cited as history in `tools/ui-atlas-kit/docs/rollout-ledger.md` (now ignored, with the reason, in `.lycheeignore`) and one real finding, the README's link to the published site `https://countrymanprime.github.io/narration-utils/`, which answers 404 until the owner enables GitHub Pages ([#231](https://github.com/countrymanprime/narration-utils/issues/231)). To add a link the checker should not chase, add a regular expression to `.lycheeignore` with its reason; to run the check locally, install lychee (`cargo install lychee --locked`) and run `lychee --config .lychee.toml --offline .` (drop `--offline` for the online run).
 
@@ -463,7 +466,7 @@ demand: the docs at the root ([below](#the-public-docs-site)) and the Storybook 
 - **A pull request runs `build` only.** `ci.yml` skips documentation-only pull requests, and those are the ones that break links, so
   a pull request that changes `docs/`, `tools/docs-site/`, `apps/ui/.storybook/`, `pyproject.toml`, `uv.lock` or the workflow runs the
   build job too: a read-only `pull_request` token (a fork's is read-only by GitHub's rule), nothing uploaded, its own concurrency
-  group that the next push replaces, and `deploy` skipped by its `if`. The `docs-site` job of `_quality.yml` runs the same target
+  group that the next push replaces, and `deploy` skipped by its `if`. The `docs-site` step of `_quality.yml`'s `quick` job runs the same target
   for a code change.
 - **It works under a project sub-path.** Pages serves this repository at `/narration-utils/`, not at `/`. Storybook's build writes
   every asset URL relative (`./sb-manager/...`, `./assets/...`), so no `base` setting is needed. Checked by serving the build
@@ -496,7 +499,7 @@ fails if it gains one, or if `docs_dir` stops being `docs/`.
   strict build reports it. Links inside code spans and fenced blocks are examples and are left alone.
 - **The link check.** `mkdocs build --strict` fails on any warning (a missing page, a `#heading` that is not on the page it names, a link it
   cannot place), then `tools/docs-site/check_site.py` reads the built HTML and fails on any internal `href`, `src` or `#fragment` that does not
-  resolve, under the `/narration-utils/` base. Both run in `nx run docs-site:build`, so `pnpm check`, the `quality / docs-site` job and the
+  resolve, under the `/narration-utils/` base. Both run in `nx run docs-site:build`, so `pnpm check`, the `docs-site` step of `quality / quick` and the
   `Pages` build job all gate on them. This is the first link check the repository has. Proof it fails: `tools/docs-site/tests/test_build.py`
   builds a tiny tree in which a dead page link, a dead heading link and a stale include line each fail the build.
 - **Build and browse it.** `pnpm exec nx run docs-site:build` writes `tools/docs-site/build/site` (ignored); serve that folder from a
@@ -532,16 +535,21 @@ runner called:
 | `config`, `fixtures` | `config`, `tests/fixtures` | none (fixtures: `lint`); they exist so a change to them affects the projects that read them |
 | `narration-utils` | the repo root | `knip` (unused files, exports and dependencies, gated at zero: see below); also the `nx release` project |
 
-- **`pnpm check`** runs `nx run-many` over `lint format architecture knip test test-node build`, one project at a time and never from
-  the Nx cache, so a green gate means every check ran. `check:fast` and the Git hooks still use
-  `scripts/quality.mjs` on staged files.
+- **`pnpm check`** runs `nx run-many` over `lint format architecture knip test test-node build` for every project, never from
+  the Nx cache, so a green gate means every check ran. On a developer's machine it runs half the CPUs' worth of tasks side by
+  side (`NX_PARALLEL=1 pnpm check` for one at a time, as before; any number overrides; with `CI` set it is one;
+  `scripts/ci/local-gate.mjs`). **`pnpm check:affected`** runs the same targets for only the projects the branch changes
+  (committed since it left `origin/main`, or `NX_BASE`, plus staged, unstaged and untracked files) and the ones CI checks on
+  every pull request (`narration-utils` for Knip, `repo-scripts`, `ui-atlas-kit`, `docs-site`), and everything when a
+  workspace-wide file changed (the pattern of `scripts/ci/nx-scope.sh`): a quicker loop while working. `pnpm check` is still
+  the gate before a change is done. `check:fast` and the Git hooks still use `scripts/quality.mjs` on staged files.
 - **Look around** with `pnpm exec nx show projects`, `pnpm exec nx graph`, and
   `pnpm exec nx show projects --affected --files=<path>`. Run one project's check with, for example,
   `pnpm exec nx run manuscript-guide:test`.
-- **CI** keeps the job names it had before the Nx move (`js`, `ui-visual`, `ui-atlas`, `ui-atlas-kit`, `repo-scripts`,
-  `python`, `lua`, `go`; the table above lists them as GitHub shows them). Each job runs its targets through
+- **CI** runs the jobs the table above lists as GitHub shows them (`js`, the `ui-visual` shards and check, the `ui-atlas`
+  shards, `quick`, `lua (windows-latest)`, `go`). Each job or step runs its targets through
   `.github/actions/nx-run`: on a pull request `nx affected` against the base branch, otherwise every selected
-  project, one task at a time (parallel tasks starve the two-vCPU runners and trip the UI tests' timeouts).
+  project, one task at a time (parallel tasks starve the hosted runners' four vCPUs and trip the UI tests' timeouts).
   `scripts/ci/nx-scope.sh` decides: everything runs when the event is not a pull request, or the change
   touches a file no project owns but all depend on (`nx.json`, `package.json`, `pnpm-lock.yaml`,
   `pnpm-workspace.yaml`, `pyproject.toml`, `uv.lock`, the root `project.json`, `stylua.toml`, `.prettierrc.json`,
@@ -549,8 +557,9 @@ runner called:
   `scripts/ci/coverage-floors.json`, anything under
   `.github/workflows` or `.github/actions`). The two Playwright jobs keep
   their own `run:` steps (the atlas kit's audit looks for them) and skip them through
-  `.github/actions/nx-affected` when the UI is not affected. The atlas-kit job always runs, because its drift check
-  reads `apps/ui`, and so does the `repo-scripts` job, because the layout and project guards read every tracked file.
+  `.github/actions/nx-affected` when the UI is not affected. The `ui-atlas-kit` step of `quick` always runs, because its drift
+  check reads `apps/ui`, and so do the `repo-scripts` step, because the layout and project guards read every tracked file,
+  and the `docs-site` step, because the site reads `docs/`, which no project owns.
 - **No changed-file classifier.** `scripts/ci/changed-files.mjs` (and its test) sorted a pull request into `bootstrap` and
   `package` scopes for a four-platform bootstrap and installer matrix that no longer exists. No workflow, script, Nx target or
   document called it, and Nx `affected` with `nx-scope.sh` does the job, so both files were deleted (2026-09-21) rather than wired
@@ -558,7 +567,7 @@ runner called:
 - **Failure diagnostics.** A failing visual test leaves `apps/ui/test-results/<test>/trace.zip` (Playwright
   `trace: 'retain-on-failure'`: DOM snapshots, network and console for every action; a passing test keeps nothing,
   and no retry is involved, [ADR 0023](../adr/0023-visual-suite-capture-contract-and-storybook.md)). When a step of the
-  `ui-visual` job fails, the job uploads that folder as the `ui-visual-traces` artifact for three days. Open a trace
+  `ui-visual (i/3)` shard fails, the shard uploads that folder as the `ui-visual-traces-<i>` artifact for three days. Open a trace
   with `pnpm exec playwright show-trace <trace.zip>` from `apps/ui`, or drop it on trace.playwright.dev. The atlas
   config is vendored from `tools/ui-atlas-kit`, so it keeps no trace until a kit release adds one.
 - **Dependencies** are `implicitDependencies` in each `project.json`: the desktop app reads the UI, the sidecars,
@@ -608,7 +617,7 @@ exactly that. What the suites do so that timing is not a variable:
   driver (or a real duplicate); `Unable to find` or `Test timed out` in a frontend test is a wait that does not match the
   state, or a genuinely slow test; a Go failure that comes and goes with the CPU count is an ordering bug.
 - **Aria snapshots** ([ADR 0065](../adr/0065-aria-snapshots-pin-the-role-trees-of-the-dialogs-the-slide-over-and-the-navigation.md)):
-  the `ui-visual` job also runs `pnpm --dir apps/ui run aria` after the screenshots (its own config, the same mock build, no
+  the first `ui-visual` shard also runs `pnpm --dir apps/ui run aria` after its screenshots (its own config, its own mock build, no
   retries, traces in `test-results/aria`), so a dialog that loses its role or name, a modal that stops hiding the page, or a
   changed navigation list fails there (comparison-only on CI). See [Verification and code-health tooling](verification-tooling.md#aria-snapshots).
 - **Axe on app states** ([ADR 0064](../adr/0064-the-visual-suite-runs-axe-on-every-app-state-and-a-violation-fails-unless-it-is-declared-debt.md)):
@@ -672,6 +681,23 @@ StyLua v2.1.0 binary where needed, as declared in `scripts/toolchain.json`; none
 of them use Cargo. Lua 5.4 for the REAPER harness is the `lupa` wheel in the `lua` dependency group of `pyproject.toml` (hashed in `uv.lock`); the Lua job installs only that group. Platform-specific sidecars must be built on their target OS,
 so the built UI bundle is shared between jobs as a one-day artifact rather than
 rebuilt per platform.
+
+### Sharding, stacks and the job slots
+
+The account runs 20 hosted jobs at once, so a burst of pushes queues on job slots before it waits on compute. Three
+rules keep both down ([CI pipeline speed](../prds/ci-pipeline-speed.prd.md)):
+
+- **The two Playwright suites are sharded** ([ADR 0243](../adr/0243-the-playwright-suites-run-sharded-in-ci-and-a-check-run-judges-the-visual-suite-across-its-shards.md)):
+  the visual suite over three runners and a check run, the atlas over two. Unsharded they took 7 m 43 s and 6 m 33 s
+  (run 36095186043, 260 catalog rows); a local shard of the visual suite takes about 2.5 to 3 minutes on 4 workers. The
+  repository variables `PLAYWRIGHT_RUNNER` (a runner label) and `PLAYWRIGHT_WORKERS` move both suites to a larger runner, which
+  GitHub sells only to organisations on the Team or Enterprise plans; unset, they are `ubuntu-latest` and 4.
+- **The sub-minute Linux checks share one job**, `quick`, instead of five.
+- **A stacked pull request skips the Playwright suites and the Windows build** until it targets `main` ([ADR 0242](../adr/0242-a-pull-request-stacked-on-another-skips-the-playwright-suites-and-the-windows-build-until-it-targets-main.md)).
+
+The `go` job stays one job. In run 36095186043 its Nx step took 4 m 10 s: `lint` 45 s, `test` with the race detector
+2 m 38 s (the root package alone 72 s, most of it building with `-race` on Windows) and `test-schedules` 46 s. Splitting it
+would save about a minute and a half on a job that ends with `Build (Windows)` anyway, for one more Windows runner.
 
 ### The sidecar freeze cache
 

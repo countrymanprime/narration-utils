@@ -143,9 +143,9 @@ The owner (sole maintainer) merging stacks of agent-authored PRs several times a
 | 1 | Build beside quality | Split `release` in `prerelease.yml` into `windows-build` and `publish`; write permissions only on `publish`; threat-model row | complete (the red-quality check is moot: open question 1 removed quality from the Prerelease) | with 2, 3, 4 | 0 | - |
 | 2 | Cache the sidecar freeze and Go | Content-hash cache of PyInstaller output, `--reuse` in `prepare-resources.py`, saved on `main` only; Go toolchain cache on Windows (dropped, D4) | in-progress (implemented; cold vs hit comparison on one commit pending) | with 1, 3, 4 | 0 | - |
 | 3 | Visual suite: one load per state | One test per `{page, state}` with a step per viewport; diff old vs new output once | in-progress (implemented, ADR 0105; 24 rows reload per viewport; local run 4.9 to 3.2 min; CI timing pending) | with 1, 2, 4 | 0 | - |
-| 4 | Atlas: one load per story | Group a story's four variants; reload only where `play()` needs it | pending | with 1, 2, 3 | 0 | - |
-| 5 | Shard if still slow | Only if 3 or 4 misses 4 min: `--shard` across 2 jobs, merged report | pending | - | 3, 4 | - |
-| 6 | Fewer job slots | Fold the five sub-minute ubuntu jobs into `quick`; cancel-in-progress on PR-triggered workflows; update `docs/operations/ci-and-releases.md` | pending | with 1 to 4 | 0 | - |
+| 4 | Atlas: one load per story | Group a story's four variants; reload only where `play()` needs it | pending (not needed for the target now: the atlas is sharded in Phase 5; still worth doing if the shards grow past 4 min) | with 1, 2, 3 | 0 | - |
+| 5 | Shard if still slow | Only if 3 or 4 misses 4 min: `--shard` across 2 jobs, merged report | in-progress (implemented, [ADR 0243](../adr/0243-the-playwright-suites-run-sharded-in-ci-and-a-check-run-judges-the-visual-suite-across-its-shards.md): visual 3 shards and a check run, atlas 2 shards; `PLAYWRIGHT_RUNNER`/`PLAYWRIGHT_WORKERS` for a larger runner; CI timing pending) | - | 3, 4 | - |
+| 6 | Fewer job slots | Fold the five sub-minute ubuntu jobs into `quick`; cancel-in-progress on PR-triggered workflows; update `docs/operations/ci-and-releases.md` | in-progress (implemented: `quick`; stacked pull requests skip the Playwright suites and the Windows build until they target `main`, [ADR 0242](../adr/0242-a-pull-request-stacked-on-another-skips-the-playwright-suites-and-the-windows-build-until-it-targets-main.md); `ci.yml` already cancels in progress; CI timing pending) | with 1 to 4 | 0 | - |
 | 7 | Steady state | Measure against Success Metrics; ADR for the build/publish split and the build-output cache rule; move the rules to `docs/operations/ci-and-releases.md`; delete this PRD | pending | - | 1 to 6 | - |
 
 ### Phase Details
@@ -179,6 +179,9 @@ Phases 1 and 2 both touch the Windows build but different files (`prerelease.yml
 | D2 | Cache build outputs, never test verdicts. | Keeps the `nx-run` rule that a green check means the checks ran; a cached build output is still exercised by the smoke test every run. |
 | D3 | Fix per-test cost before sharding. | Sharding multiplies job slots, and slots are what the queue is short of. |
 | D4 | No Go toolchain cache on Windows. | `setup-go` (v5.6.0, `cacheWindowsDir`) extracts Go to `D:` and leaves a junction in the `C:` tool cache, so an `actions/cache` of the tool cache stores the link, not Go. Doing it anyway means copying `setup-go`'s internals; revisit only if Phase 0's timings show `setup-toolchain` still costs a minute on the Windows jobs. |
+| D5 | Shard the Playwright suites now (overrides D3). | The catalog grew from 150 to 260 rows in two days after Phase 3, and `ui-visual` was back at 7 m 43 s (run 36095186043). The slots sharding spends are paid for by D6 and the `quick` job. Larger runners were the alternative; GitHub sells them only to organisations on Team or Enterprise plans, so they stay a repository variable away (ADR 0243). |
+| D6 | A stacked pull request skips the Playwright suites and the Windows build until it targets `main`. | On 2026-09-25 a five-deep stack started 40 CI runs in two hours, none green; the slow jobs' verdict on a child is against its parent's branch and is redone after the parent merges (ADR 0242). |
+| D7 | The Go job stays one job. | Its Nx step was 4 m 10 s (lint 45 s, race tests 2 m 38 s, `test-schedules` 46 s); it ends with `Build (Windows)` anyway, so a split buys no wall clock for one more Windows runner. |
 
 ## Research Summary
 
