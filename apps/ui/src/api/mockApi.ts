@@ -87,7 +87,7 @@ import {
   wireSettings,
 } from './mockFixtures';
 import { loadAliceManuscript } from './aliceManuscript';
-import { mockChapterTrackLinks, mockChapterTrackMatch, mockRecordedLength } from './chapterTrackMatchMock';
+import { mockChapterRegionPlan, mockChapterTrackLinks, mockChapterTrackMatch, mockRecordedLength } from './chapterTrackMatchMock';
 import { mockChapterSuggestion } from './chapterSuggestionMock';
 import { mockImportPreview, mockImportPreviewLog, type MockImportKind } from './mockImportPreview';
 import { createTeleprompterMock, type TeleprompterSeed } from './teleprompterMock';
@@ -2077,6 +2077,24 @@ export function createMockApi(
       await manuscriptReady;
       const state = tracksDiscovery.candidates.length === 0 ? 'none' : tracksDiscovery.selected ? 'ready' : 'choose';
       return wireClone(mockChapterTrackLinks(chapters, WIRE_TRACKS_PROJECT, chapterTrackMappings, state));
+    },
+    chapterRegionsPreview: async (openingTrackGuid, closingTrackGuid) => {
+      await manuscriptReady;
+      const state = tracksDiscovery.candidates.length === 0 ? 'none' : tracksDiscovery.selected ? 'ready' : 'choose';
+      const links = mockChapterTrackLinks(chapters, WIRE_TRACKS_PROJECT, chapterTrackMappings, state);
+      return wireClone(mockChapterRegionPlan(links, openingTrackGuid, closingTrackGuid));
+    },
+    chapterRegionsCreate: async (openingTrackGuid, closingTrackGuid, update) => {
+      await manuscriptReady;
+      const state = tracksDiscovery.candidates.length === 0 ? 'none' : tracksDiscovery.selected ? 'ready' : 'choose';
+      const plan = mockChapterRegionPlan(mockChapterTrackLinks(chapters, WIRE_TRACKS_PROJECT, chapterTrackMappings, state), openingTrackGuid, closingTrackGuid);
+      if (plan.project !== 'ready') throw new Error(plan.message);
+      if (plan.rows.length === 0) throw new Error('no chapter or credits entry has a linked track with recorded items, so there are no regions to create');
+      const created = plan.rows.filter((row) => row.state === 'new' || (!update && row.state !== 'exists')).length;
+      const updated = update ? plan.rows.filter((row) => row.state === 'moves').length : 0;
+      const ambiguous = update ? plan.rows.filter((row) => row.state === 'ambiguous').length : 0;
+      const existing = plan.rows.filter((row) => row.state === 'exists').length;
+      return { sent: plan.rows.length, created, existing, invalid: 0, updated, ambiguous, failed: 0 };
     },
     chapterTrackMatch: async (chapterId) => {
       await manuscriptReady;

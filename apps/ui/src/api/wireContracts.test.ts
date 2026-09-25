@@ -41,6 +41,8 @@ import { findingMarkerSchema, findingNavigationSchema, findingSchema, findingsPa
 import { tracksDiscoverySchema, tracksProjectSchema } from './schemas/tracks';
 import {
   chapterSuggestionSchema,
+  chapterRegionPlanSchema,
+  chapterRegionsCreatedSchema,
   chapterTrackLinksSchema,
   chapterTrackMappingSchema,
   chapterTrackMatchSchema,
@@ -213,6 +215,9 @@ const GOLDEN: Record<string, z.ZodType> = {
   'chapter-track-links-ready.json': chapterTrackLinksSchema,
   'chapter-track-links-no-project.json': chapterTrackLinksSchema,
   'chapter-track-links-conflict.json': chapterTrackLinksSchema,
+  'chapter-regions-preview.json': chapterRegionPlanSchema,
+  'chapter-regions-no-project.json': chapterRegionPlanSchema,
+  'chapter-regions-created.json': chapterRegionsCreatedSchema,
   'chapter-track-set-displaced.json': chapterTrackSetSchema,
   'chapter-track-unlink.json': chapterTrackMappingSchema,
   'chapter-suggestion-matched.json': chapterSuggestionSchema,
@@ -948,6 +953,24 @@ describe('answers of the mock client for the settings, voice, model, transcript 
     expect(noProject.tracks).toHaveLength(0);
   });
 
+  it('the ChapterRegionsPreview and ChapterRegionsCreate answers', async () => {
+    const api = createMockApi();
+    const chapters = await api.manuscriptChapters();
+    const [first] = WIRE_TRACKS_PROJECT.tracks;
+    await api.chapterTrackSet(chapters[0].id, first.guid);
+    const plan = await api.chapterRegionsPreview(first.guid, first.guid);
+    expectMatches(chapterRegionPlanSchema, plan, 'mock chapter regions preview');
+    expect(plan.rows.map((row) => row.kind)).toEqual(['opening', 'chapter', 'closing']);
+    expect(plan.skipped.length).toBeGreaterThan(0);
+    const created = await api.chapterRegionsCreate(first.guid, '', false);
+    expectMatches(chapterRegionsCreatedSchema, created, 'mock chapter regions created');
+    expect(created.sent).toBe(2);
+
+    const noProject = createMockApi({}, { tracksCandidates: [] });
+    expectMatches(chapterRegionPlanSchema, await noProject.chapterRegionsPreview('', ''), 'mock chapter regions, no project');
+    await expect(noProject.chapterRegionsCreate('', '', false)).rejects.toThrow();
+  });
+
   it('the chapter list carries recorded seconds only for a chapter with a linked track', async () => {
     const api = createMockApi();
     const chapters = await api.manuscriptChapters();
@@ -1609,6 +1632,8 @@ describe('answers of the mock client for the settings, voice, model, transcript 
       'chapterTrackSet',
       'chapterTrackUnlink',
       'chapterTrackLinks',
+      'chapterRegionsPreview',
+      'chapterRegionsCreate',
       'chapterTrackMatch',
       'chapterSuggestion',
       'lineIdentityStamp',

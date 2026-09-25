@@ -1,0 +1,52 @@
+{
+  "message": "",
+  "project": "ready",
+  "projectFile": "C:/Projects/Alice/Alice.rpp",
+  "rows": [
+    {
+      "chapterId": "",
+      "end": 25,
+      "kind": "opening",
+      "start": 20,
+      "state": "moves",
+      "title": "Opening credits",
+      "trackGuid": "{44444444-4444-4444-8444-444444444444}",
+      "trackName": "Credits"
+    },
+    {
+      "chapterId": "c-0001",
+      "end": 17,
+      "kind": "chapter",
+      "start": 0,
+      "state": "new",
+      "title": "Chapter I: Down the Rabbit-Hole",
+      "trackGuid": "{11111111-1111-4111-8111-111111111111}",
+      "trackName": "Chapter I"
+    },
+    {
+      "chapterId": "",
+      "end": 25,
+      "kind": "closing",
+      "start": 20,
+      "state": "new",
+      "title": "Closing credits",
+      "trackGuid": "{44444444-4444-4444-8444-444444444444}",
+      "trackName": "Credits"
+    }
+  ],
+  "savedAt": "2026-09-21T10:00:00Z",
+  "skipped": [
+    {
+      "chapterId": "c-0002",
+      "kind": "chapter",
+      "reason": "The linked track has no recorded items.",
+      "title": "Chapter II: The Pool of Tears"
+    },
+    {
+      "chapterId": "c-0003",
+      "kind": "chapter",
+      "reason": "No track is linked to this chapter.",
+      "title": "Chapter III: A Caucus-Race and a Long Tale"
+    }
+  ]
+}
