@@ -11,7 +11,6 @@ import (
 	"github.com/countrymanprime/narration-utils/shell/internal/deliveryprofile"
 	"github.com/countrymanprime/narration-utils/shell/internal/findings"
 	"github.com/countrymanprime/narration-utils/shell/internal/measure"
-	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
 // Measuring the narrator's rendered chapter files as a job (diagnostics-delivery-and-cleanup-tools.prd.md Phase 1,
@@ -249,12 +248,9 @@ func (h *Host) openAudioFilesDialog() ([]string, error) {
 	if ctx == nil {
 		return nil, fmt.Errorf("the desktop host is not ready")
 	}
-	return runtime.OpenMultipleFilesDialog(ctx, runtime.OpenDialogOptions{
-		Title: "Choose the rendered chapter files to measure",
-		Filters: []runtime.FileFilter{
-			{DisplayName: "WAV audio (*.wav)", Pattern: "*.wav;*.wave"},
-			{DisplayName: "All files (*.*)", Pattern: "*.*"},
-		},
+	return pickFiles("Choose the rendered chapter files to measure", []fileFilter{
+		{"WAV audio (*.wav)", "*.wav;*.wave"},
+		{"All files (*.*)", "*.*"},
 	})
 }
 

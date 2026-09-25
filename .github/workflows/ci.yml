@@ -29,3 +29,11 @@ jobs:
       - uses: ./.github/actions/build-native
         with:
           platform: windows-x64
+      # The packaged program, setup program, notices and checksums of this pull request, for a by-hand launch on Windows (the owner's
+      # check of a shell change, for example the Wails v3 migration, docs/adr/0200). Never a release: releases are built by prerelease.yml.
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: narration-utils-windows-x64
+          path: release-assets/
+          if-no-files-found: error
+          retention-days: 7

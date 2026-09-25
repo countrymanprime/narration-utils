@@ -259,7 +259,7 @@ Next, they notice "PART TWO" (212 words) listed as a chapter. They open its slid
 | # | Phase | Description | Status | Parallel | Depends | PRP Plan |
 | --- | --- | --- | --- | --- | --- | --- |
 | 1 | Host: atomic relink and the links read | `SetChapter`/`ClearChapter`, `ChapterTrackSet`/`ChapterTrackUnlink`/`ChapterTrackLinks`, schemas, goldens, wireContracts rows, mock, `hostAPIVersion` bump; Tracks page Change and Clear moved onto them | complete | - | TL3 | - |
-| 2 | Track button and slide-over | Per-row `ChapterTrackButton` with the seven states, `ChapterTrackPanel` with facts, candidates, link, relink, unlink and the displaced-chapter warning; visual states, aria snapshot, guide | pending | 3 (after 1) | 1; TL1, TL4, TL7, TL8, TL10 | - |
+| 2 | Track button and slide-over | Per-row `ChapterTrackButton` with the seven states, `ChapterTrackPanel` with facts, candidates, link, relink, unlink and the displaced-chapter warning; visual states, aria snapshot, guide | complete (#534) | 3 (after 1) | 1; TL1, TL4, TL7, TL8, TL10 | - |
 | 3 | Remove from recording and restore | `ManuscriptSetChapterKind`, links cleared, Removed list with Restore, confirm dialog; consumer tests; ADR | pending | 2 (host part) | 1 for the link clear; TL2, TL5, TL6 | - |
 | 4 | Play and select in REAPER (Could) | Playback in the slide-over; optional "Select in REAPER" bridge command with harness tests first | pending | - | 2 | - |
 
@@ -276,9 +276,15 @@ Next, they notice "PART TWO" (212 words) listed as a chapter. They open its slid
 **Phase 2 - Track button and slide-over.**
 - **Scope:** the button and panel with TDD in Vitest.
 - **New visual states** (rows in `state-catalog.ts`, drivers in `app.drivers.ts`, mocks seeded for each state):
-  - `home/chapter-track-states`: the table with one row per button state;
-  - `home/chapter-track-panel-linked` and `home/chapter-track-panel-ambiguous`;
+  - `home/chapter-track-panel-linked`, `home/chapter-track-panel-ambiguous` and `home/chapter-track-panel-missing`;
   - `home/chapter-track-no-project`.
+  - Delivered as built: a dedicated `home/chapter-track-states` row (one row per button state) was dropped in favour
+    of `home/chapter-table-expanded`, which already shows the default demo's own variety (suggested, not linked)
+    without widening `mockFixtures.ts`'s shared `WIRE_TRACKS_PROJECT` fixture (3 tracks) to fit every state into one
+    screenshot - a change with its own consumers to re-check, out of this phase's scope. `renamed` has no capture at
+    all: nothing records a track's name at confirm time to compare against, in the host or the mock, so the state
+    cannot be produced yet; TL8's warning copy is implemented and covered by `chapterTrackButtonState.test.ts`, just
+    not screenshotted.
 - **Other visual work:** re-capture `home/chapter-table-expanded` and the `home/stage-*` states. Look at every PNG at desktop, small-desktop and tablet. No new `axe-debt.ts` entries.
 - **ARIA:** a new `apps/ui/tests/aria/dialogs.spec.ts` entry, "the chapter track panel is a modal slide-over named for the chapter", with its snapshot.
 - **Docs:** the `home.md` guide section and `doc-screenshot-sync` for the Home screenshots; the Tracks utility doc mentions the Home entry point.

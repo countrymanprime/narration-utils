@@ -26,6 +26,12 @@ type Actions struct {
 	pending map[string]*actionRun
 	// +checklocks:mu
 	next uint64
+	// recordingRun is the run of the recording record_start started, so its RECORD_ENDED (the narrator stopped it in
+	// REAPER) reaches onRecordEnded after the request itself has returned.
+	// +checklocks:mu
+	recordingRun string
+	// +checklocks:mu
+	onRecordEnded func(RecordEnded)
 }
 
 // The setting that switches the experimental commands on: DAW.experimental_reaper_actions, a bool that defaults off
@@ -39,10 +45,13 @@ const (
 // a real REAPER. A command leaves this list in the PR that records its pass.
 var experimentalCommands = map[string]bool{
 	"chapter_track_state": true,
+	"arm_only":            true,
+	"record_start":        true,
+	"record_stop":         true,
 }
 
 // actionTags are the events Actions consumes: every answer of every command it sends, and ERROR.
-var actionTags = []string{"TRACK_STATE", "TRACK_ITEM", "TRACK_STATE_END", "TRACK_STALE", "ERROR"}
+var actionTags = []string{"TRACK_STATE", "TRACK_ITEM", "TRACK_STATE_END", "TRACK_STALE", "ARMED", "RECORD_STARTED", "RECORD_STOPPED", "RECORD_ENDED", "RECORD_NOT_OURS", "ERROR"}
 
 // ErrExperimentalOff: the command is experimental and the setting is off, so nothing was sent to REAPER.
 var ErrExperimentalOff = errors.New("this REAPER action is experimental and switched off: turn on Experimental REAPER actions in Settings")
@@ -128,7 +137,7 @@ func (a *Actions) owns(runID string) bool {
 	a.mu.Lock()
 	defer a.mu.Unlock()
 	_, ok := a.pending[runID]
-	return ok
+	return ok || (runID != "" && runID == a.recordingRun)
 }
 
 func (a *Actions) handle(event Event) {
@@ -140,6 +149,15 @@ func (a *Actions) handle(event Event) {
 			for _, run := range a.pending {
 				finish(run, answerSet{err: actionError(event)})
 			}
+		}
+		return
+	}
+	if event.Tag == "RECORD_ENDED" && event.RunID == a.recordingRun {
+		a.recordingRun = ""
+		if a.onRecordEnded != nil {
+			ended := RecordEnded{Restored: int(numberAt(event.Fields, 2)), Kept: int(numberAt(event.Fields, 3))}
+			// Handle runs inside Dispatch: the callback must be quick and must not make a request.
+			go a.onRecordEnded(ended)
 		}
 		return
 	}
@@ -184,6 +202,9 @@ func actionError(event Event) error {
 		return ErrScriptOutdated
 	case "REAPER is recording. Stop recording first.":
 		return ErrRecording
+	}
+	if known, ok := refusals[message]; ok {
+		return known
 	}
 	return errors.New(message)
 }

@@ -34,9 +34,9 @@ export function StartupScreen({ state, error, details, diagnosticId, retry }: Pr
           ? 'Lost connection to the Narration Utils server. It may have been closed or crashed - check that it is still running.'
           : error;
   return (
-    <>
+    <div className="flex h-full flex-col overflow-hidden">
       <DemoBanner />
-      <main className="grid min-h-screen place-items-center p-6">
+      <main className="grid min-h-0 flex-1 place-items-center overflow-y-auto p-6">
         <div className="max-w-lg rounded-lg border border-[var(--border)] bg-[var(--surface)] p-6 text-center shadow-[var(--shadow)]">
           <h1 className="text-lg font-semibold">
             {waiting ? (
@@ -81,6 +81,6 @@ export function StartupScreen({ state, error, details, diagnosticId, retry }: Pr
           )}
         </div>
       </main>
-    </>
+    </div>
   );
 }

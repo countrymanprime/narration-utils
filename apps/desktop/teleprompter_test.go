@@ -132,7 +132,7 @@ func TestShutdownStopsARunningTeleprompterWithoutDeadlocking(t *testing.T) {
 
 	done := make(chan struct{})
 	go func() {
-		host.Shutdown(context.Background())
+		_ = host.ServiceShutdown()
 		close(done)
 	}()
 
