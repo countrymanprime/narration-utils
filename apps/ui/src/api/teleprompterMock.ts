@@ -24,6 +24,7 @@ import type {
   TeleprompterLocated,
   TeleprompterModelRequired,
   TeleprompterPosition,
+  TeleprompterReading,
   TeleprompterScript,
   TeleprompterStartResult,
   TeleprompterState,
@@ -227,6 +228,11 @@ function createFlagStore(deps: Pick<Deps, 'chapters' | 'paragraphs'>) {
       };
     });
   };
+}
+
+/** A chapter's last reading as the host writes it at session end (ADR 0205), for the mock of Phase 3's locate result. */
+export function mockLastReading(chapterId: string, read: number, tokens: number): TeleprompterReading {
+  return { version: 1, chapterId, read: Math.min(read, tokens), tokens, scriptHash: '0'.repeat(64), status: 'listening', endedAt: '2026-09-24T21:04:00Z' };
 }
 
 export function createTeleprompterMock(deps: Deps): TeleprompterApi {

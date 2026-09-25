@@ -10,6 +10,7 @@ import type {
   TeleprompterLocateResult,
   TeleprompterLocated,
   TeleprompterPosition,
+  TeleprompterReading,
   TeleprompterScript,
   TeleprompterStartResult,
   TeleprompterState,
@@ -185,3 +186,16 @@ const teleprompterFlagFindingSchema = z.object({
 
 /** `TeleprompterSaveFlags`: one finding per flag sent, in order. */
 export const teleprompterFlagFindingsSchema = z.array(teleprompterFlagFindingSchema);
+
+/** The host's per-chapter reading file (`<project>/narration-utils/teleprompter/<chapter>.reading.json`, ADR 0205). */
+export const teleprompterReadingSchema = z
+  .object({
+    version: z.literal(1),
+    chapterId: z.string().min(1),
+    read: z.number().int().nonnegative(),
+    tokens: z.number().int().positive(),
+    scriptHash: z.string().regex(/^[0-9a-f]{64}$/),
+    status: z.enum(['listening', 'waiting', 'done']),
+    endedAt: z.string(),
+  })
+  .refine((reading) => reading.read <= reading.tokens, { message: 'read is past the last word', path: ['read'] }) satisfies z.ZodType<TeleprompterReading>;

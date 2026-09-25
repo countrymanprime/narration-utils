@@ -198,6 +198,19 @@ export type TeleprompterLocateOptions = {
 };
 
 /** One input device the sidecar's `--list-devices` reported, by the exact name its capture path opens it under. */
+/** Where the prompter last was in a chapter (read-aloud-resume-from-daw PRD Phase 2, ADR 0205): the host writes it when a
+ * chapter session ends and reads it back only while the chapter's text is unchanged (`scriptHash`). `read` is the index
+ * space of a position event's `read` and of locate's `word`. Phase 3 carries it on the locate result as `lastReading`. */
+export type TeleprompterReading = {
+  version: 1;
+  chapterId: string;
+  read: number;
+  tokens: number;
+  scriptHash: string;
+  status: TeleprompterStatus;
+  endedAt: string;
+};
+
 export type TeleprompterDevice = { name: string };
 
 /**
