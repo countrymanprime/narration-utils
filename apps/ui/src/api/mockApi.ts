@@ -937,6 +937,7 @@ export function createMockApi(
       unsavedEdits: chapterSyncUnsavedEdits,
       activity: chapterSyncActivity,
       chapters: links.project === 'ready' ? mockChapterSyncRows(links) : [],
+      background: { enabled: true, wait: 'nothing' },
     };
   };
   // Phase 6's status rows, as the host builds them: the link, and the recording check's own answer (the coverage mock's).

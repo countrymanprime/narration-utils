@@ -16,6 +16,13 @@ import (
 func TestTheRecordingCoverageFieldsAreTheCoverageSettings(t *testing.T) {
 	var fields []string
 	for _, schema := range fieldSchemas[coverage.SettingsTool] {
+		// The one switch beside the four numbers: background checks (auto-sync Phase 7, ADR 0211).
+		if schema.key == settingBackgroundChecks {
+			if schema.kind != "bool" {
+				t.Errorf("%s is %q, want a bool", schema.key, schema.kind)
+			}
+			continue
+		}
 		if schema.kind != "number" {
 			t.Errorf("%s is %q, want a number", schema.key, schema.kind)
 		}
@@ -37,6 +44,12 @@ func TestTheRecordingCoverageDefaultsAreTheShippedValues(t *testing.T) {
 		t.Fatalf("coverageSettings = %+v, want %+v", got, coverage.DefaultSettings)
 	}
 	for key, value := range effectiveValues(host, coverage.SettingsTool) {
+		if key == settingBackgroundChecks {
+			if value != "true" {
+				t.Errorf("background checks default to %q, want on (S7 B)", value)
+			}
+			continue
+		}
 		if err := validateNumberSetting(key, numberSpecs[coverage.SettingsTool][key], value); err != nil {
 			t.Errorf("the default %s = %q fails its own range: %v", key, value, err)
 		}

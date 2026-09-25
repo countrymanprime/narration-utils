@@ -40,7 +40,7 @@ func (j *job) resultsPath() string  { return filepath.Join(j.dir, "coverage.txt"
 
 func (j *job) initialState() State {
 	started := j.startedAt
-	return State{RunID: j.runID, ChapterID: j.basis.ChapterID, Phase: PhaseRunning, Stage: "START", Message: "Starting the recording check...", StartedAt: &started}
+	return State{RunID: j.runID, ChapterID: j.basis.ChapterID, Phase: PhaseRunning, Stage: "START", Message: "Starting the recording check...", StartedAt: &started, Background: j.request.Background}
 }
 
 // watch follows a run's progress file until the sidecar exits, then finishes

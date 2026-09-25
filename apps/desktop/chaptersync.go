@@ -80,6 +80,8 @@ type chapterSyncState struct {
 	UnsavedEdits bool                   `json:"unsavedEdits"`
 	Activity     []chaptersync.Activity `json:"activity"`
 	Chapters     []chapterSyncChapter   `json:"chapters"`
+	// Background is whether background recording checks are on and why none runs now (Phase 7, ADR 0211).
+	Background chapterSyncBackground `json:"background"`
 }
 
 // chapterSyncChapter is one narration chapter's status without a click (daw-chapter-track-auto-sync.prd.md Phase 6,
@@ -152,6 +154,8 @@ type chapterSyncInputs struct {
 	parsedProject tracks.Project
 	// unsavedEdits is the watcher's answer for this project (chaptersync_watch.go).
 	unsavedEdits bool
+	// background is the background check loop's answer for this project (coverage_background.go).
+	background chapterSyncBackground
 }
 
 // readChapterSyncInputs reads the manifest, the manuscript's narration chapters (sync links only those, ADR 0207) and
@@ -162,7 +166,10 @@ func (h *Host) readChapterSyncInputs() (chapterSyncInputs, error) {
 	if folder == "" {
 		return chapterSyncInputs{}, errors.New("open a project before syncing chapters to tracks")
 	}
-	in := chapterSyncInputs{svc: svc, unsavedEdits: h.chapterSyncWatch.unsavedFor(folder)}
+	in := chapterSyncInputs{
+		svc: svc, unsavedEdits: h.chapterSyncWatch.unsavedFor(folder),
+		background: h.backgroundChecks.stateFor(folder, backgroundChecksEnabled(svc)),
+	}
 	manifest, ok, err := project.Load(h.persist, folder)
 	if err != nil {
 		return chapterSyncInputs{}, fmt.Errorf("could not read the project manifest: %w", err)
@@ -249,6 +256,7 @@ func (in chapterSyncInputs) stateOf(plan chaptersync.Plan, kept []evidence.Track
 	}
 	state.Ask = consent == consentUndecided && state.Manuscript && state.DawLinked
 	state.UnsavedEdits = in.unsavedEdits
+	state.Background = in.background
 	store := chaptersync.NewStore(in.svc.config.projectFolder)
 	state.Activity = store.Activity()
 	snapshot := store.Read()

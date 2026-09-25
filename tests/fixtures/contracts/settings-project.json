@@ -216,6 +216,16 @@
         "unit": "words"
       },
       "value": ""
+    },
+    {
+      "choices": null,
+      "effectiveSource": "repo_default",
+      "effectiveValue": "true",
+      "isSet": false,
+      "key": "background_checks",
+      "kind": "bool",
+      "label": "Check changed chapters in the background",
+      "value": ""
     }
   ],
   "Teleprompter": [

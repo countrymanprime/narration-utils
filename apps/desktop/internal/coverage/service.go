@@ -83,6 +83,9 @@ type State struct {
 	RecordID    string     `json:"recordId,omitempty"`
 	StartedAt   *time.Time `json:"startedAt,omitempty"`
 	CompletedAt *time.Time `json:"completedAt,omitempty"`
+	// Background is true for a run the host started on its own (Phase 7 of the auto-sync PRD, ADR 0211), not the
+	// narrator: the UI labels it, and a narrator's own start pre-empts it.
+	Background bool `json:"background"`
 }
 
 // Request is one coverage run.
@@ -90,6 +93,8 @@ type Request struct {
 	ChapterID     string
 	Transcription Transcription
 	Alignment     AlignmentParams
+	// Background marks a run the host started on its own (NextBackground), not the narrator.
+	Background bool
 }
 
 // Service runs one coverage analysis at a time and reads results back.

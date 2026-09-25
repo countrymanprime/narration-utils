@@ -20,6 +20,10 @@
     }
   ],
   "ask": false,
+  "background": {
+    "enabled": true,
+    "wait": ""
+  },
   "batch": {
     "at": "2026-09-21T10:00:00Z",
     "linked": [
