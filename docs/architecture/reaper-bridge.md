@@ -121,6 +121,8 @@ The feature files are `loadfile`d when the bridge module loads, so a missing or 
 | `count_pickups` | `run_id` | `PICKUPS_COUNTED\|run\|remaining\|total` |
 | `configure_chapter_render` | `run_id`, `output_folder` | `RENDER_CONFIGURED\|run\|folder\|count\|targets`, or `ERROR` |
 | `project_state` | `run_id` | `PROJECT_STATE\|run\|change_count\|project_path`, or `ERROR` |
+| `play_position` | `run_id` | `PLAY_POSITION\|run\|state\|heard\|processed\|cursor` (read-only; `GetPlayPosition`, `GetPlayPosition2`, the edit cursor), or `ERROR` |
+| `punch_to` | `run_id`, `time`, `preroll` | `PUNCHED\|run\|cursor` (the edit cursor at `max(0, time − preroll)`; no undo block, refused while recording), or `ERROR` |
 | `launch_cleanup_tool` | `run_id`, `tool` (`repair_pops_clicks` or `magnolius_declick`, nothing else) | `CLEANUP_LAUNCHED\|run\|tool\|action-name`, or `ERROR` |
 | `pick_retake_lane` | `run_id`, `line_id`, `item_guid` | `RETAKE_LANE_PICKED\|run\|line-id\|item-guid\|lane` (0-based), or `ERROR` |
 | `create_take` | `run_id`, `payload_path` (one row: `target_item_guid\|candidate_item_guid\|source_start\|source_end\|finding_id\|source_file`) | `TAKE_CREATED\|run\|target-item-guid\|new-take-guid`, `TAKE_STALE\|run\|guid`, or `ERROR` |
