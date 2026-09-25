@@ -109,3 +109,37 @@ func TestReachabilitySubscribesToARealBridgeClient(t *testing.T) {
 		t.Fatalf("CurrentProject() = (%q, %v), want the dispatched path and unsaved false", rpp, unsaved)
 	}
 }
+
+func TestReachabilityKeepsREAPERsEditCounterFromTheHeartbeat(t *testing.T) {
+	reach := NewReachability(nil)
+	if _, known := reach.ChangeCount(); known {
+		t.Fatal("ChangeCount() is known before any heartbeat")
+	}
+	reach.Record(bridge.Event{Fields: []string{"PROJECT_STATUS", "", "C:/p/Book.rpp", "0", "41"}})
+	if count, known := reach.ChangeCount(); !known || count != 41 {
+		t.Fatalf("ChangeCount() = (%d, %v), want (41, true)", count, known)
+	}
+}
+
+func TestReachabilityForgetsTheEditCounterWhenAHeartbeatDoesNotCarryOne(t *testing.T) {
+	reach := NewReachability(nil)
+	reach.Record(bridge.Event{Fields: []string{"PROJECT_STATUS", "", "C:/p/Book.rpp", "0", "41"}})
+	// An older script (three fields) and a REAPER without GetProjectStateChangeCount (an empty fourth field).
+	for _, fields := range [][]string{{"PROJECT_STATUS", "", "C:/p/Book.rpp", "0"}, {"PROJECT_STATUS", "", "C:/p/Book.rpp", "0", ""}} {
+		reach.Record(bridge.Event{Fields: fields})
+		if _, known := reach.ChangeCount(); known {
+			t.Fatalf("ChangeCount() is still known after %v", fields)
+		}
+	}
+}
+
+func TestReachabilityChangeCountIsUnknownOnceTheHeartbeatIsStale(t *testing.T) {
+	reach := NewReachability(nil)
+	clock := time.Now()
+	reach.now = func() time.Time { return clock }
+	reach.Record(bridge.Event{Fields: []string{"PROJECT_STATUS", "", "C:/p/Book.rpp", "0", "3"}})
+	clock = clock.Add(heartbeatTimeout + time.Second)
+	if _, known := reach.ChangeCount(); known {
+		t.Fatal("ChangeCount() is known from a stale heartbeat")
+	}
+}

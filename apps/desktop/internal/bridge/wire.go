@@ -70,7 +70,9 @@ var eventSpecs = map[string]eventSpec{
 	// reaches every subscriber, Subscription.wants) delivers it as a broadcast with no dedicated route needed. rpp is
 	// EnumProjects(-1, '')'s second return value verbatim (the empty string for an unsaved project, never omitted -
 	// spike S6 confirmed REAPER never returns nil there), and unsaved is "1" exactly when rpp is empty.
-	"PROJECT_STATUS": {required: []fieldSpec{text("run"), text("rpp"), count("unsaved")}},
+	// changeCount (GetProjectStateChangeCount(0)) was appended for DAW chapter-track auto-sync Phase 4: optional, so an
+	// older script's three-field heartbeat still passes, and empty on a REAPER without the call.
+	"PROJECT_STATUS": {required: []fieldSpec{text("run"), text("rpp"), count("unsaved")}, optional: []fieldSpec{count("changeCount")}},
 	// Phase 23 (reaper-automation-follow-through PRD, ADR 0146): a cleanup launcher opened its dialog. tool is the
 	// allow-listed key the host sent; action is the action-list name REAPER matched (so the narrator sees what opened).
 	"CLEANUP_LAUNCHED": {required: []fieldSpec{text("run"), text("tool"), text("action")}},
@@ -90,6 +92,15 @@ var eventSpecs = map[string]eventSpec{
 	"FINDING_STALE": {required: []fieldSpec{text("run"), text("guid"), text("reason")}},
 	// review-dashboard PRD Phase 8: the approved marker, "added" or "existing" (the take already had one; nothing changed).
 	"FINDING_MARKER": {required: []fieldSpec{text("run"), text("state"), text("takeGuid"), number("sourceTime"), text("name")}},
+	// chapter_track_state (narration_track_state.lua; read-aloud-resume P4, read-aloud-control-bar P6, TMI-11): the
+	// transport and one track, read-only. guid is empty when no track was named; playState is GetPlayState's bit field;
+	// times are seconds; recInput is the track's I_RECINPUT (empty with no track); inputDevice is empty when REAPER has
+	// no input open. One TRACK_ITEM per item on the track follows, then TRACK_STATE_END (listed, and the track's total).
+	"TRACK_STATE": {required: []fieldSpec{text("run"), text("guid"), count("playState"), number("editCursor"), number("playPosition"), text("rpp"), count("unsaved"),
+		count("changeCount"), count("thisArmed"), count("armedCount")}, optional: []fieldSpec{count("recInput"), text("inputDevice")}},
+	"TRACK_ITEM":      {required: []fieldSpec{text("run"), text("itemGuid"), text("takeGuid"), number("position"), number("length"), number("sourceOffset"), number("playrate"), text("sourceFile")}},
+	"TRACK_STATE_END": {required: []fieldSpec{text("run"), count("listed"), count("total")}},
+	"TRACK_STALE":     {required: []fieldSpec{text("run"), text("guid")}},
 }
 
 // CheckEvent validates one decoded event line (the tag first) against the table. The error names the tag, the position and name of
