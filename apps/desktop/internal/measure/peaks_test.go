@@ -136,7 +136,8 @@ func TestAnHourOfPeaksIsSmall(t *testing.T) {
 	if testing.Short() {
 		t.Skip("reads an hour of generated audio")
 	}
-	peaks, err := ComputePeaks(context.Background(), newToneStream(t, 48000, 3600), nil, DefaultPeaksPerSecond)
+	// The size depends only on the duration, so an 8 kHz hour keeps the test quick; the benchmark reads 48 kHz.
+	peaks, err := ComputePeaks(context.Background(), newToneStream(t, 8000, 3600), nil, DefaultPeaksPerSecond)
 	if err != nil {
 		t.Fatal(err)
 	}
