@@ -3,9 +3,12 @@ import { faCircleExclamation, faXmark } from '@fortawesome/free-solid-svg-icons'
 import { useEffect, useState } from 'react';
 
 export type ToastTone = 'info' | 'error';
-export type ToastMessage = { id: number; text: string; tone: ToastTone };
-/** How a page or a component tells the narrator something. An error is announced at once and stays until it is dismissed (ADR 0075). */
-export type Notify = (text: string, tone?: ToastTone) => void;
+/** A toast's one action (for example Undo): its own label, run when pressed, which also dismisses the toast. */
+export type ToastAction = { label: string; onAction: () => void };
+export type ToastMessage = { id: number; text: string; tone: ToastTone; action?: ToastAction };
+/** How a page or a component tells the narrator something. An error is announced at once and stays until it is dismissed (ADR 0075).
+ * `action` adds one button (for example Undo) before the dismiss button; pressing it runs the action and dismisses the toast. */
+export type Notify = (text: string, tone?: ToastTone, action?: ToastAction) => void;
 
 /** How long an information message stays. An error has no timer. */
 export const TOAST_INFO_MS = 5_000;
@@ -31,6 +34,17 @@ function ToastItem({ message, dismiss }: { message: ToastMessage; dismiss: (id: 
     >
       {sticky && <FontAwesomeIcon icon={faCircleExclamation} aria-hidden="true" />}
       <span className="min-w-0 break-words">{message.text}</span>
+      {message.action && (
+        <button
+          className="flex-none font-semibold underline underline-offset-2"
+          onClick={() => {
+            message.action!.onAction();
+            dismiss(id);
+          }}
+        >
+          {message.action.label}
+        </button>
+      )}
       <button aria-label="Dismiss message" className="flex-none" onClick={() => dismiss(id)}>
         <FontAwesomeIcon icon={faXmark} />
       </button>
