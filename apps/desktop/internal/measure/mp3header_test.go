@@ -206,3 +206,60 @@ func FuzzReadMP3(f *testing.F) {
 		}
 	})
 }
+
+func TestParseMP3HeaderReadsMPEG25AndRefusesReservedAndFreeFormatHeaders(t *testing.T) {
+	h, err := parseMP3Header(mp3Frame(t, 25, 8, 0, 3, "")[:frameHeaderBytes])
+	if err != nil || h.versionName() != "MPEG-2.5" || h.sampleRate != 11025 || h.samples != 576 {
+		t.Fatalf("MPEG-2.5 header = %+v, %v", h, err)
+	}
+	for name, header := range map[string][]byte{
+		"a reserved version":     {0xff, 0xeb, 0x90, 0x00}, // version bits 01
+		"free format":            {0xff, 0xfb, 0x00, 0x00}, // bitrate index 0
+		"an invalid bitrate":     {0xff, 0xfb, 0xf0, 0x00}, // bitrate index 15
+		"a reserved sample rate": {0xff, 0xfb, 0x9c, 0x00}, // rate index 3
+	} {
+		if _, err := parseMP3Header(header); err == nil || errors.Is(err, errNoSync) {
+			t.Errorf("%s: err = %v, want a named refusal", name, err)
+		}
+	}
+}
+
+func TestReadMP3ReadsAVBRIHeaderAsVariableBitRate(t *testing.T) {
+	first := mp3Frame(t, 1, 9, 0, 1, "")
+	copy(first[36:], "VBRI")
+	if info := readMP3(t, concat8(first, mp3Frames(t, 10, 9, 1))); info.CBR || info.VBRTag != "VBRI" || info.Frames != 10 {
+		t.Fatalf("VBRI-tagged = %+v, want VBR with the tag frame not counted", info)
+	}
+}
+
+func TestReadMP3RefusesALoneFrameLongJunkATagFrameAloneAndTooMuchSkipped(t *testing.T) {
+	var gappy bytes.Buffer
+	for range 20 {
+		gappy.Write(mp3Frames(t, 3, 11, 1))
+		gappy.Write(bytes.Repeat([]byte{0x11}, 60<<10))
+	}
+	tagOnly := concat8(mp3Frame(t, 1, 9, 0, 3, "Xing"), mp3Frame(t, 1, 9, 0, 3, "")[:frameHeaderBytes+10])
+	for name, c := range map[string]struct {
+		raw  []byte
+		want string
+	}{
+		"one frame and nothing after it": {mp3Frame(t, 1, 11, 0, 1, ""), "no MPEG audio frames"},
+		"70 KiB without a frame":         {bytes.Repeat([]byte{0x11}, 70<<10), "no MPEG audio frames"},
+		"a VBR tag frame and no audio":   {tagOnly, "no MPEG audio frames"},
+		"over 1 MiB between frames":      {gappy.Bytes(), "the file is damaged"},
+	} {
+		if _, err := ReadMP3(context.Background(), bytes.NewReader(c.raw), nil); err == nil || !strings.Contains(err.Error(), c.want) {
+			t.Errorf("%s: err = %v, want one saying %q", name, err, c.want)
+		}
+	}
+}
+
+func TestMeasureFileAnswersWhyAnMP3CouldNotBeRead(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "Chapter 02.mp3")
+	if err := os.WriteFile(path, id3v2(500)[:100], 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := MeasureFile(context.Background(), path, Options{}); err == nil || !strings.Contains(err.Error(), "ID3v2 tag") {
+		t.Fatalf("err = %v, want the MP3 reader's reason", err)
+	}
+}

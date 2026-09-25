@@ -185,3 +185,47 @@ func TestCleanupOptionsAreCheckedAndDefaultWhenUnset(t *testing.T) {
 		t.Fatal("Diagnose accepted a 5 s hold")
 	}
 }
+
+func TestCleanupAcceptsNarratorOptionsAndRefusesAZeroBreath(t *testing.T) {
+	custom := CleanupOptions{PadSeconds: 0.2, MinBreathSeconds: 0.1, MaxBreathSeconds: 1, BreathBelowSpeechDB: 10, ClickAboveSilenceDB: 25}
+	if got, err := custom.resolve(); err != nil || got != custom {
+		t.Fatalf("custom options = %+v, %v; want them kept", got, err)
+	}
+	custom.MinBreathSeconds = 0
+	if _, err := custom.resolve(); err == nil {
+		t.Fatal("a zero minimum breath was accepted")
+	}
+}
+
+func TestCleanupHeightAndFlanksDecideAClick(t *testing.T) {
+	spike := func(amplitude float64) []float64 {
+		room := roomTone(cleanupRate, 1.5, -65, 31)
+		at := int(0.7 * cleanupRate)
+		for i := range 88 {
+			room[at+i] = amplitude
+		}
+		return room
+	}
+	quiet := cleanupDiagnose(t, concat(speech(1), spike(0.5), speech(1)), DiagnosticInput{Cleanup: CleanupOptions{PadSeconds: 0.15, MinBreathSeconds: 0.12, MaxBreathSeconds: 0.9, BreathBelowSpeechDB: 12, ClickAboveSilenceDB: 80}})
+	if clicks := candidatesOf(quiet, CleanupClick); len(clicks) != 0 {
+		t.Fatalf("clicks = %+v, want none: 80 dB above the silence is more than the burst stands", clicks)
+	}
+	// A burst 30 ms after the read ends has speech within its flank, so it is the word's tail, not a click.
+	room := roomTone(cleanupRate, 1, -65, 37)
+	for i := range 88 {
+		room[int(0.03*cleanupRate)+i] = 0.5
+	}
+	if clicks := candidatesOf(cleanupDiagnose(t, concat(speech(1), room, speech(1)), DiagnosticInput{}), CleanupClick); len(clicks) != 0 {
+		t.Fatalf("clicks = %+v, want none beside speech", clicks)
+	}
+	loud := cleanupDiagnose(t, concat(speech(1), spike(0.5), speech(1)), DiagnosticInput{})
+	for _, finding := range loud.CleanupFindings() {
+		if finding.Evidence["class"] == CleanupClick {
+			if _, ok := finding.Evidence["peak_dbfs"]; !ok {
+				t.Fatalf("click evidence %v lacks its peak", finding.Evidence)
+			}
+			return
+		}
+	}
+	t.Fatal("no click finding")
+}
