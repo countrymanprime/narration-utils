@@ -28,6 +28,14 @@ export type MeasureReport = {
   true_peak_dbtp: number | null;
   noise_floor_dbfs: number | null;
   digital_silent_windows: number;
+  /**
+   * The room tone at the audio's edges, in seconds: up to the first and after the last 50 ms window at or above -50 dBFS,
+   * and how much of each is exact zeros (digital silence, not room tone). Null when no window reaches that level.
+   */
+  head_room_tone_seconds: number | null;
+  tail_room_tone_seconds: number | null;
+  head_digital_silence_seconds: number | null;
+  tail_digital_silence_seconds: number | null;
   full_scale_samples: number;
   clip_run_count: number;
   clip_runs: MeasureClipRun[];

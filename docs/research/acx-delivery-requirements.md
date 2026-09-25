@@ -26,8 +26,8 @@ Because only paraphrases were recorded (except the credits line), the profile ma
 | `acx.noise_floor` | Noise floor no higher than −60 dB RMS | file | Measured: `noise_floor_dbfs` at most −60 (quietest 0.5 s window, digital silence excluded) | to verify | Window definition; compare with ACX Check |
 | `acx.sample_rate` | 44.1 kHz | file | Measured on the WAV render: `sample_rate` = 44100 | verified (2026-09-23) | Checked on the MP3 after PRD Phase 6 |
 | `acx.file_length` | Each file 120 minutes or shorter | file | Measured: `duration_seconds` at most 7200 | verified (2026-09-20) | |
-| `acx.room_tone_head` | Room tone at the beginning of each file | file | Not checked by the app until PRD Phase 5; judged 0.5 to 5 s once measured (PRD P4, the looser reading) | **conflicting** | ACX's page was read as 1 to 5 s; the guides say 0.5 to 1 s. The owner reads the page |
-| `acx.room_tone_tail` | 1 to 5 s of room tone at the end of each file | file | Not checked by the app until PRD Phase 5 | verified (2026-09-20) | |
+| `acx.room_tone_head` | Room tone at the beginning of each file | file | Measured since PRD Phase 5 (ADR 0236): judged 0.5 to 5 s (PRD P4, the looser reading), digital silence in the head is advice | **conflicting** | ACX's page was read as 1 to 5 s; the guides say 0.5 to 1 s. The owner reads the page |
+| `acx.room_tone_tail` | 1 to 5 s of room tone at the end of each file | file | Measured since PRD Phase 5 (ADR 0236): judged 1 to 5 s, digital silence in the tail is advice | verified (2026-09-20) | |
 | `acx.format` | MP3, 192 kbps or higher, constant bit rate | file | Not checked by the app: the WAV render is measured; the MP3 container check is PRD Phase 6 | verified (2026-09-23) | |
 | `acx.channels` | Mono or stereo, the same in every file | book | Measured: every file mono or stereo, and the same in every file | to verify | The "same in every file" wording and any mono preference |
 | `acx.one_section_per_file` | One chapter or section per file, starting with a section header | book | Listen | verified (2026-09-20) | Later: the chapter-track mapping can flag a file with two chapter titles |

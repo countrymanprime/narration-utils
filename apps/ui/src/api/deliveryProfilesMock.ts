@@ -29,7 +29,6 @@ const source = (requirement: string, readOn: string, quoted = false): DeliverySo
 });
 const READ = '2026-09-20';
 const LEVELS_READ = '2026-09-23';
-const EDGES = "Not checked by the app yet: measuring room tone at the file's edges comes later.";
 const CHECKLIST = 'Not checked by the app yet: the book checklist comes later.';
 
 type RuleSeed = Partial<DeliveryRule> & Pick<DeliveryRule, 'id' | 'label' | 'scope' | 'metric' | 'checkedBy' | 'source' | 'verification'>;
@@ -122,8 +121,13 @@ export const MOCK_ACX: DeliveryProfile = {
       unit: 's',
       min: 0.5,
       max: 5,
-      checkedBy: 'not_yet',
-      notCheckedWhy: EDGES,
+      checkedBy: 'measured',
+      advice: {
+        metric: 'head_digital_silence_seconds',
+        max: 0,
+        unit: 's',
+        text: 'the head holds digital silence (exact zeros): ACX asks for room tone, not silence',
+      },
       source: source('1 to 5 seconds of room tone at the beginning of each file.', READ),
       verification: 'conflicting',
       verificationNote:
@@ -137,8 +141,13 @@ export const MOCK_ACX: DeliveryProfile = {
       unit: 's',
       min: 1,
       max: 5,
-      checkedBy: 'not_yet',
-      notCheckedWhy: EDGES,
+      checkedBy: 'measured',
+      advice: {
+        metric: 'tail_digital_silence_seconds',
+        max: 0,
+        unit: 's',
+        text: 'the tail holds digital silence (exact zeros): ACX asks for room tone, not silence',
+      },
       source: source('1 to 5 seconds of room tone at the end of each file.', READ),
       verification: 'verified',
     }),
@@ -250,6 +259,11 @@ const metricValue = (report: MeasureReport, metric: string): number | null | und
       return report.sample_rate;
     case 'channels':
       return report.channels;
+    case 'head_room_tone_seconds':
+    case 'tail_room_tone_seconds':
+    case 'head_digital_silence_seconds':
+    case 'tail_digital_silence_seconds':
+      return report[metric];
   }
   return undefined;
 };

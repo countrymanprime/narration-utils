@@ -23,6 +23,7 @@ func contractMeasured(path string) measure.FileMeasurement {
 			File: path, SampleRate: 48000, Channels: 2, DurationSeconds: 1843.5,
 			IntegratedLUFS: value(-19.4), RMSdBFS: value(-21.2), SamplePeakdBFS: value(-3.6), TruePeakdBTP: value(-3.1),
 			NoiseFloordBFS: value(-66.8), DigitalSilentWindows: 0, FullScaleSamples: 4, ClipRunCount: 1,
+			HeadRoomToneSeconds: value(0.8), TailRoomToneSeconds: value(2.5), HeadDigitalSilenceSeconds: value(0), TailDigitalSilenceSeconds: value(0),
 			ClipRuns: []measure.ClipRun{{Channel: 1, StartSeconds: 612.25, DurationSeconds: 0.0000833, Samples: 4}},
 		},
 		Fingerprint: measure.Fingerprint{SizeBytes: 530_928_044, ModifiedAt: "2026-09-23T14:02:11.5Z", SHA256: "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"},

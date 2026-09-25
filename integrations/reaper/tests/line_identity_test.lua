@@ -1,4 +1,4 @@
--- Manuscript line identity: stamping item extension data by GUID, reading it back, and creating chapter regions.
+-- Manuscript line identity: stamping item extension data by GUID and reading it back (regions: regions_test.lua).
 
 local H = require('harness')
 
@@ -134,7 +134,7 @@ H.test('stamp_item_lines ignores rows with no GUID or no line ID and blank lines
   H.eq(item.ext, {})
 end)
 
-H.test('stamp_item_lines and create_chapter_regions read a payload with Windows line endings', function()
+H.test('stamp_item_lines and create_regions read a payload with Windows line endings', function()
   local s, track = new_session()
   local item = s.fake:add_item(track, { guid = '{AAAAAAAA-0000-4000-8000-000000000001}' })
   local stamps = s:path('crlf-stamps.txt')
@@ -143,7 +143,7 @@ H.test('stamp_item_lines and create_chapter_regions read a payload with Windows 
   H.eq(item.ext[TEXT_KEY], 'Text')
   local regions = s:path('crlf-regions.txt')
   H.write_file(regions, '0|30|Chapter 1\r\n')
-  s:send('create_chapter_regions', 't2', regions, '')
+  s:send('create_regions', 't2', regions, '', '0')
   H.eq(s.fake.markers[1].name, 'Chapter 1')
 end)
 
@@ -204,81 +204,4 @@ H.test('an item split keeps the stamp on both halves and a round trip reads them
   local out = s:path('lines.txt')
   s:send('read_line_ids', 't2', out)
   H.eq(s:events()[1][4], '2')
-end)
-
--- create_chapter_regions --------------------------------------------------------------------------------------------
-
-H.test('create_chapter_regions needs AddProjectMarker2', function()
-  local s = new_session()
-  s.fake:remove_api('AddProjectMarker2')
-  s:send('create_chapter_regions', 't1', payload(s, 'r.txt', { '0|30|Chapter 1' }), '')
-  H.eq(s:events(), { { 'ERROR', 't1', 'This REAPER version cannot add regions.' } })
-end)
-
-H.test('create_chapter_regions reports a missing payload', function()
-  local s = new_session()
-  s:send('create_chapter_regions', 't1', s:path('missing.txt'), '')
-  H.eq(s:events(), { { 'ERROR', 't1', 'The chapter region list was not found.' } })
-end)
-
-H.test('create_chapter_regions adds a coloured region per row in one undo step', function()
-  local s = new_session()
-  s:send('create_chapter_regions', 't1', payload(s, 'r.txt', { '0|30|Chapter 1', '30|61.5|Chapter 2' }), 'FF8800')
-  H.eq(s:events(), { { 'REGIONS_CREATED', 't1', '2', '0', '0' } })
-  H.eq(#s.fake.markers, 2)
-  local first = s.fake.markers[1]
-  H.eq({ first.is_region, first.pos, first.rgnend, first.name }, { true, 0, 30, 'Chapter 1' })
-  H.eq(first.color, 0x1000000 + 0xFF + 0x88 * 256)
-  H.eq(s.fake:undo_labels(), { 'Narration Utils: create chapter regions' })
-end)
-
-H.test('create_chapter_regions without a colour uses the default colour', function()
-  local s = new_session()
-  s:send('create_chapter_regions', 't1', payload(s, 'r.txt', { '0|30|Chapter 1' }), '')
-  H.eq(s.fake.markers[1].color, 0)
-end)
-
-H.test('create_chapter_regions is idempotent: an existing region within 0.01 s is not added again', function()
-  local s = new_session()
-  local path = payload(s, 'r.txt', { '0|30|Chapter 1' })
-  s:send('create_chapter_regions', 't1', path, '')
-  s:events()
-  s:send('create_chapter_regions', 't2', path, '')
-  H.eq(s:events(), { { 'REGIONS_CREATED', 't2', '0', '1', '0' } })
-  H.eq(#s.fake.markers, 1)
-  H.eq(#s.fake.undo, 1)
-end)
-
-H.test('create_chapter_regions treats a different title or a bound off by more than 0.01 s as new', function()
-  local s = new_session()
-  s.fake:add_region(0, 30, 'Chapter 1')
-  local path = payload(s, 'r.txt', { '0.005|30.005|Chapter 1', '0|30|Renamed', '0|30.02|Chapter 1' })
-  s:send('create_chapter_regions', 't1', path, '')
-  H.eq(s:events(), { { 'REGIONS_CREATED', 't1', '2', '1', '0' } })
-end)
-
-H.test('create_chapter_regions dedupes rows within one payload', function()
-  local s = new_session()
-  s:send('create_chapter_regions', 't1', payload(s, 'r.txt', { '0|30|Chapter 1', '0|30|Chapter 1' }), '')
-  H.eq(s:events(), { { 'REGIONS_CREATED', 't1', '1', '1', '0' } })
-end)
-
-H.test('create_chapter_regions counts malformed rows as invalid and skips blank lines', function()
-  local s = new_session()
-  local path = payload(s, 'r.txt', { '0|30|Chapter 1', '', 'nonsense', '-1|5|Negative', '10|5|Backwards', '5|9|', '1|2' })
-  s:send('create_chapter_regions', 't1', path, '')
-  H.eq(s:events(), { { 'REGIONS_CREATED', 't1', '1', '0', '5' } })
-end)
-
-H.test('create_chapter_regions keeps a pipe in the title', function()
-  local s = new_session()
-  s:send('create_chapter_regions', 't1', payload(s, 'r.txt', { '0|30|Part 1 | The Start' }), '')
-  H.eq(s.fake.markers[1].name, 'Part 1 | The Start')
-end)
-
-H.test('create_chapter_regions ignores markers when looking for an existing region', function()
-  local s = new_session()
-  s.fake:insert_marker({ is_region = false, pos = 0, rgnend = 0, name = 'Chapter 1', color = 0 })
-  s:send('create_chapter_regions', 't1', payload(s, 'r.txt', { '0|30|Chapter 1' }), '')
-  H.eq(s:events(), { { 'REGIONS_CREATED', 't1', '1', '0', '0' } })
 end)

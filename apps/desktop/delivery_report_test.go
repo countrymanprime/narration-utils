@@ -65,8 +65,8 @@ func TestTheHostJudgesAMeasurementAgainstTheProjectsProfileWhenItIsRead(t *testi
 	if len(first.Findings) != 1 || first.Findings[0].ID != want[0].ID {
 		t.Fatalf("Chapter 01 findings = %+v, want EvaluateFile's %+v", first.Findings, want)
 	}
-	if got := len(judged.Files[1].Findings); got != 3 {
-		t.Fatalf("the silent render raises %d findings, want 3 not-measurable ones", got)
+	if got := len(judged.Files[1].Findings); got != 5 {
+		t.Fatalf("the silent render raises %d findings, want 5 not-measurable ones (levels and room tone)", got)
 	}
 	if judged.Files[2].Findings == nil || len(judged.Files[2].Findings) != 0 || len(judged.Files[2].Rules) != 0 {
 		t.Fatal("a file that could not be measured is not judged, and its lists are empty, not null")

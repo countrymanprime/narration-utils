@@ -341,6 +341,26 @@ var knownMetrics = map[string]bool{
 	"retail_sample_seconds": true, "consistency": true,
 }
 
+// withCurrentChecks gives each rule of a custom profile its built-in's current way of being checked: CheckedBy, the
+// reason it is not checked, and its advice. How a rule is checked is what this build of the app can do, not the
+// narrator's choice, so a copy saved before the app measured a rule (room tone at the edges, PRD Phase 5) is judged
+// by the measurement now; the narrator's numbers and switches are kept.
+func withCurrentChecks(profile Profile) Profile {
+	for i := range profile.Rules {
+		rule := &profile.Rules[i]
+		for _, builtIn := range BuiltIns() {
+			current, ok := builtIn.Rule(rule.ID)
+			if !ok {
+				continue
+			}
+			fresh := current.clone()
+			rule.CheckedBy, rule.NotCheckedWhy, rule.Advice = fresh.CheckedBy, fresh.NotCheckedWhy, fresh.Advice
+			break
+		}
+	}
+	return profile
+}
+
 // validateProfile checks a custom profile as read from the file or about to be written: an id and a name, known
 // rules with unique ids, and finite bounds with the lowest not above the highest.
 func validateProfile(profile Profile) error {
@@ -389,6 +409,9 @@ func (s *Store) readLocked() (storeFile, error) {
 			if err := validateProfile(profile); err != nil {
 				return err
 			}
+		}
+		for i, profile := range decoded.Profiles {
+			decoded.Profiles[i] = withCurrentChecks(profile)
 		}
 		loaded, found = decoded, true
 		return nil
