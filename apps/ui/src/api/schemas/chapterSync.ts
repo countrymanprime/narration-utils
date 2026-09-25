@@ -13,7 +13,7 @@ const trackRefSchema = z.object({
 
 const batchSchema = z.object({
   at: z.string(),
-  trigger: z.enum(['consent', 'daw-link', 'import', 'attach', 'undo']),
+  trigger: z.enum(['consent', 'daw-link', 'import', 'attach', 'undo', 'watch']),
   linked: listFromNull(trackMappingSchema),
   newTracks: listFromNull(trackRefSchema),
 }) satisfies z.ZodType<ChapterSyncBatch>;
@@ -39,6 +39,8 @@ export const chapterSyncStateSchema = z
       pickupTracks: z.number().int().nonnegative(),
     }),
     batch: batchSchema.nullable(),
+    unsavedEdits: z.boolean(),
+    activity: listFromNull(batchSchema).refine((list) => list.length <= 20, { message: 'the host keeps at most 20 activity rows' }),
   })
   .refine((state) => !state.ask || (state.consent === 'undecided' && state.manuscript && state.dawLinked), {
     message: 'the consent is asked only while undecided, with a manuscript and a linked DAW project',

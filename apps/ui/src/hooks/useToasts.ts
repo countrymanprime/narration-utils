@@ -1,5 +1,5 @@
 import { useCallback, useRef, useState } from 'react';
-import type { Notify, ToastMessage, ToastTone } from '../components/primitives/Toast';
+import type { Notify, ToastAction, ToastMessage, ToastTone } from '../components/primitives/Toast';
 
 /** How many messages are on screen at once; the oldest information message goes first, then the oldest error. */
 export const TOAST_VISIBLE_LIMIT = 4;
@@ -24,10 +24,10 @@ export function pushToast(current: readonly ToastMessage[], next: ToastMessage):
 export function useToasts(): { messages: ToastMessage[]; notify: Notify; dismiss: (id: number) => void } {
   const [messages, setMessages] = useState<ToastMessage[]>([]);
   const lastId = useRef(0);
-  const notify = useCallback((text: string, tone: ToastTone = 'info') => {
+  const notify = useCallback((text: string, tone: ToastTone = 'info', action?: ToastAction) => {
     if (!text) return;
     lastId.current += 1;
-    const message = { id: lastId.current, text, tone };
+    const message = { id: lastId.current, text, tone, action };
     setMessages((current) => pushToast(current, message));
   }, []);
   const dismiss = useCallback((id: number) => setMessages((current) => current.filter((message) => message.id !== id)), []);

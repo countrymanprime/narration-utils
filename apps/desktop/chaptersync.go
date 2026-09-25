@@ -17,7 +17,7 @@ import (
 // (S2). With consent, every link path (the answer itself, a DAW link, an import, a project attach) runs one sync:
 // chaptersync.Build over the narration chapters and the saved .rpp, MappingStore.AutoLink for the confident two-way
 // matches (ADR 0202), and the snapshot stored for the next sync. Each run tells the UI through chaptersync:state.
-// Watching the .rpp for changes is Phase 4.
+// Watching the saved .rpp for changes (Phase 4) is chaptersync_watch.go.
 
 const chapterSyncEvent = "chaptersync:state"
 
@@ -35,6 +35,8 @@ const (
 	syncTriggerImport  = "import"
 	syncTriggerAttach  = "attach"
 	syncTriggerUndo    = "undo"
+	// syncTriggerWatch: the watcher saw the saved .rpp change and settle (chaptersync_watch.go, Phase 4).
+	syncTriggerWatch = "watch"
 )
 
 // chapterSyncCounts is the last plan in numbers: links the narration chapters hold (either origin), chapters that need
@@ -48,31 +50,31 @@ type chapterSyncCounts struct {
 }
 
 // chapterSyncBatch is what one sync just did, for the toast (S12): the links it made (each undoable with
-// ChapterSyncUndo) and the tracks new since the last sync that match no chapter (listed quietly, never toasted).
-type chapterSyncBatch struct {
-	At        time.Time               `json:"at"`
-	Trigger   string                  `json:"trigger"`
-	Linked    []evidence.TrackMapping `json:"linked"`
-	NewTracks []chaptersync.TrackRef  `json:"newTracks"`
-}
+// ChapterSyncUndo) and the tracks new since the last sync that match no chapter (listed quietly, never toasted). The
+// same entry heads the stored activity list (Phase 4), so a batch and an activity row have one shape.
+type chapterSyncBatch = chaptersync.Activity
 
 // chapterSyncState is ChapterSyncState's payload and what chaptersync:state carries. Ask says to show the consent
 // dialog. Project is the saved .rpp's state (ready, none, choose, error) with its file and save time. LastSync is the
 // last stored snapshot's time (null before the first sync). Batch is set only on the answer or event of a sync that
-// linked something or found a new unmatched track.
+// linked something or found a new unmatched track. UnsavedEdits says REAPER, running this project, has edits since the
+// last sync that are not saved yet (Phase 4: the heartbeat's edit counter moved; a sync reads only the saved file).
+// Activity is the stored list of batches, newest first (the Tracks page's Sync activity).
 type chapterSyncState struct {
-	Consent     string            `json:"consent"`
-	DecidedAt   *time.Time        `json:"decidedAt"`
-	Ask         bool              `json:"ask"`
-	Manuscript  bool              `json:"manuscript"`
-	DawLinked   bool              `json:"dawLinked"`
-	Project     linksProjectState `json:"project"`
-	Message     string            `json:"message"`
-	ProjectFile string            `json:"projectFile"`
-	SavedAt     string            `json:"savedAt"`
-	LastSync    *time.Time        `json:"lastSync"`
-	Counts      chapterSyncCounts `json:"counts"`
-	Batch       *chapterSyncBatch `json:"batch"`
+	Consent      string                 `json:"consent"`
+	DecidedAt    *time.Time             `json:"decidedAt"`
+	Ask          bool                   `json:"ask"`
+	Manuscript   bool                   `json:"manuscript"`
+	DawLinked    bool                   `json:"dawLinked"`
+	Project      linksProjectState      `json:"project"`
+	Message      string                 `json:"message"`
+	ProjectFile  string                 `json:"projectFile"`
+	SavedAt      string                 `json:"savedAt"`
+	LastSync     *time.Time             `json:"lastSync"`
+	Counts       chapterSyncCounts      `json:"counts"`
+	Batch        *chapterSyncBatch      `json:"batch"`
+	UnsavedEdits bool                   `json:"unsavedEdits"`
+	Activity     []chaptersync.Activity `json:"activity"`
 }
 
 // chapterSyncPreview is ChapterSyncPreview's payload: the plan a sync would carry out now, and the links it keeps.
@@ -119,6 +121,8 @@ type chapterSyncInputs struct {
 	projectFile string
 	savedAt     string
 	parsed      bool
+	// unsavedEdits is the watcher's answer for this project (chaptersync_watch.go).
+	unsavedEdits bool
 }
 
 // readChapterSyncInputs reads the manifest, the manuscript's narration chapters (sync links only those, ADR 0207) and
@@ -129,7 +133,7 @@ func (h *Host) readChapterSyncInputs() (chapterSyncInputs, error) {
 	if folder == "" {
 		return chapterSyncInputs{}, errors.New("open a project before syncing chapters to tracks")
 	}
-	in := chapterSyncInputs{svc: svc}
+	in := chapterSyncInputs{svc: svc, unsavedEdits: h.chapterSyncWatch.unsavedFor(folder)}
 	manifest, ok, err := project.Load(h.persist, folder)
 	if err != nil {
 		return chapterSyncInputs{}, fmt.Errorf("could not read the project manifest: %w", err)
@@ -215,7 +219,10 @@ func (in chapterSyncInputs) stateOf(plan chaptersync.Plan, kept []evidence.Track
 		Project: in.project, Message: in.message, ProjectFile: in.projectFile, SavedAt: in.savedAt,
 	}
 	state.Ask = consent == consentUndecided && state.Manuscript && state.DawLinked
-	if snapshot := chaptersync.NewStore(in.svc.config.projectFolder).Read(); !snapshot.SyncedAt.IsZero() {
+	state.UnsavedEdits = in.unsavedEdits
+	store := chaptersync.NewStore(in.svc.config.projectFolder)
+	state.Activity = store.Activity()
+	if snapshot := store.Read(); !snapshot.SyncedAt.IsZero() {
 		synced := snapshot.SyncedAt
 		state.LastSync = &synced
 	}
@@ -328,11 +335,6 @@ func (h *Host) runChapterSync(trigger string) (chapterSyncState, error) {
 	if err != nil {
 		return chapterSyncState{}, err
 	}
-	if err := chaptersync.NewStore(in.svc.config.projectFolder).Write(plan.Snapshot); err != nil {
-		return chapterSyncState{}, err
-	}
-	state := in.stateOf(plan, kept, planned)
-	state.Counts.Linked = len(kept) + len(written)
 	newUnmatched := []chaptersync.TrackRef{}
 	unmatched := map[string]bool{}
 	for _, track := range plan.Unmatched {
@@ -343,12 +345,21 @@ func (h *Host) runChapterSync(trigger string) (chapterSyncState, error) {
 			newUnmatched = append(newUnmatched, track)
 		}
 	}
+	var batch *chapterSyncBatch
+	entries := []chaptersync.Activity{}
 	if len(written) > 0 || len(newUnmatched) > 0 {
 		if written == nil {
 			written = []evidence.TrackMapping{}
 		}
-		state.Batch = &chapterSyncBatch{At: now.UTC(), Trigger: trigger, Linked: written, NewTracks: newUnmatched}
+		batch = &chapterSyncBatch{At: now.UTC(), Trigger: trigger, Linked: written, NewTracks: newUnmatched}
+		entries = append(entries, *batch)
 	}
+	if err := chaptersync.NewStore(in.svc.config.projectFolder).Write(plan.Snapshot, entries...); err != nil {
+		return chapterSyncState{}, err
+	}
+	state := in.stateOf(plan, kept, planned)
+	state.Counts.Linked = len(kept) + len(written)
+	state.Batch = batch
 	h.emitChapterSync(state)
 	return state, nil
 }

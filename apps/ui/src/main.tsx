@@ -69,8 +69,9 @@ const mockLevel = Number.isFinite(mockLevelParam) && mockLevelParam >= -100 && m
 const mockResume = MOCK_RESUME_SEEDS.find((seed) => seed === mockParams.get('mockResume'));
 // `?mockRemoved=1`: the last narration chapter boots removed from recording (chapter-track-link-control.prd.md Phase 3).
 const mockRemoved = mockParams.get('mockRemoved') === '1';
-// `?mockChapterSync=ask|off|linked`: chapter sync's consent at boot (daw-chapter-track-auto-sync.prd.md Phase 3).
-const mockChapterSync = (['ask', 'off', 'linked'] as const).find((seed) => seed === mockParams.get('mockChapterSync'));
+// `?mockChapterSync=ask|off|linked|unsaved`: chapter sync's consent at boot (daw-chapter-track-auto-sync.prd.md Phases 3
+// and 4; `unsaved` is REAPER holding unsaved edits, with a Sync activity row).
+const mockChapterSync = (['ask', 'off', 'linked', 'unsaved'] as const).find((seed) => seed === mockParams.get('mockChapterSync'));
 // `?mockNoDevices=1` boots the teleprompter with an empty device listing, so the
 // blocked "No microphone found" state (no typed fallback) can be seen without a host.
 const mockNoDevices = mockParams.has('mockNoDevices');

@@ -174,7 +174,9 @@ type Host struct {
 	chapterSyncEvents func(chapterSyncState)
 	// chapterSyncRuns serialises chapter syncs (chaptersync.go).
 	chapterSyncRuns chapterSyncRuns
-	transcriptRuns  transcriptWatch
+	// chapterSyncWatch is what the saved-.rpp watcher saw last (chaptersync_watch.go).
+	chapterSyncWatch chapterSyncWatcher
+	transcriptRuns   transcriptWatch
 	// coverageRuns turns recording check states into job ends (bindings_coverage.go).
 	coverageRuns coverageWatch
 	// coverageLauncher is a seam for tests: nil means the recording check's sidecar starts under h.sidecars.
@@ -339,6 +341,7 @@ func (h *Host) ServiceStartup(ctx context.Context, _ application.ServiceOptions)
 		delay = startupUpdateDelay
 	}
 	go h.transcriptLoop(runtimeContext)
+	go h.chapterSyncWatchLoop(runtimeContext)
 	go h.startupUpdateCheck(runtimeContext, delay)
 	go h.cleanStaleDownloads()
 	return nil
