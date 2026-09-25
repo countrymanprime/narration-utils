@@ -67,13 +67,20 @@ func splitGluedHeading(title string) (string, string, bool) {
 			split = end
 		}
 	} else {
-		for index := 1; index+1 < len(runes); index++ {
-			startsWord := unicode.IsUpper(runes[index]) && unicode.IsLower(runes[index+1])
-			if startsWord && isChapterNumber(string(runes[:index])) {
-				split = index
-				break
-			}
+		// A number of two words ("Twenty One") is complete after its first word, so the glue sits in the second.
+		number := ""
+		if isChapterNumber(token) && !isRoman(token) && tail != "" {
+			number = token + " "
+			token, tail, _ = strings.Cut(strings.TrimLeft(tail, " "), " ")
+			runes = []rune(token)
 		}
+		split = gluedWordSplit(runes, tail != "")
+		if split >= 0 {
+			head := keyword + " " + number + string(runes[:split])
+			subtitle := strings.TrimSpace(string(runes[split:]) + " " + tail)
+			return head, subtitle, true
+		}
+		return title, "", false
 	}
 	if split < 0 {
 		return title, "", false
@@ -81,6 +88,38 @@ func splitGluedHeading(title string) (string, string, bool) {
 	head := keyword + " " + string(runes[:split])
 	subtitle := strings.TrimSpace(string(runes[split:]) + " " + tail)
 	return head, subtitle, true
+}
+
+// gluedWordSplit finds where a number written in words or roman numerals ends inside a token: at the first capital that begins a
+// capitalized word after a complete number ("OneBad"), or, after a number written in words and before more words, at a closing
+// one-letter "A" or "I" ("TwoA Night"). A roman numeral is never split before a final "I", since "XI" is a number. -1 when there
+// is no such boundary.
+func gluedWordSplit(runes []rune, moreWords bool) int {
+	for index := 1; index+1 < len(runes); index++ {
+		startsWord := unicode.IsUpper(runes[index]) && unicode.IsLower(runes[index+1])
+		if startsWord && isChapterNumber(string(runes[:index])) {
+			return index
+		}
+	}
+	if last := len(runes) - 1; moreWords && last > 0 && (runes[last] == 'A' || runes[last] == 'I') {
+		if prefix := string(runes[:last]); isChapterNumber(prefix) && !isRoman(prefix) {
+			return last
+		}
+	}
+	return -1
+}
+
+// subtitleHeading reports whether a heading met right under a chapter's own heading, before any of its text, is that chapter's
+// subtitle set as a heading of its own (import heading misreads F5, #387, #388): it is deeper than the chapter heading, the chapter
+// heading is a real heading (level 1 or deeper, so never a book title), not a reference section (a Characters section's
+// subheadings are its entries) and not a part or book heading (whose next heading is its first chapter), and the heading does not
+// itself name a chapter, part, prologue or the like.
+func subtitleHeading(chapterTitle string, chapterLevel int, heading string, level int) bool {
+	if chapterLevel < 1 || level <= chapterLevel || isNarrativeMarker(heading) || isNonChapterHeading(heading) || isReferenceHeading(chapterTitle) {
+		return false
+	}
+	v := normalizedHeading(chapterTitle)
+	return !strings.HasPrefix(v, "part ") && !strings.HasPrefix(v, "book ")
 }
 
 // headingParts separates a heading's title from its subtitle. Word authors
@@ -94,4 +133,20 @@ func headingParts(text string) (title, subtitle string, glued bool) {
 		return title, collapse(strings.Join(lines[1:], " ")), false
 	}
 	return splitGluedHeading(title)
+}
+
+// aloneAtItsLevel reports whether the heading at index at is the only heading of its level under the chapter it follows: levels holds
+// each block's heading level (0 for text), and the chapter ends at the next heading of chapterLevel or shallower. A chapter whose
+// scenes are headings of that level has more than one, and its first scene is then a scene, never the chapter's subtitle.
+func aloneAtItsLevel(levels []int, at, chapterLevel int) bool {
+	for index := at + 1; index < len(levels); index++ {
+		switch level := levels[index]; {
+		case level == 0:
+		case level <= chapterLevel:
+			return true
+		case level == levels[at]:
+			return false
+		}
+	}
+	return true
 }
