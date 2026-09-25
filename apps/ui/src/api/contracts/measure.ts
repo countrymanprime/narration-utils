@@ -39,7 +39,29 @@ export type MeasureReport = {
   full_scale_samples: number;
   clip_run_count: number;
   clip_runs: MeasureClipRun[];
+  /** Set only for an MP3, read for its container; its levels and edges are then null, since it is not decoded. */
+  mp3?: MeasureMP3;
   range?: MeasureRange;
+};
+
+/**
+ * What the frame headers of an MP3 say (internal/measure.MP3Info): read, never decoded. `bitrate_kbps` is every frame's
+ * bitrate when the file is constant bit rate (`cbr`), 0 otherwise; `vbr_tag` names a Xing, Info or VBRI header ("" when
+ * there is none); `lost_bytes` counts bytes skipped between frames.
+ */
+export type MeasureMP3 = {
+  version: string;
+  layer: number;
+  bitrate_kbps: number;
+  average_bitrate_kbps: number;
+  cbr: boolean;
+  vbr_tag: string;
+  sample_rate: number;
+  channel_mode: 'stereo' | 'joint_stereo' | 'dual_channel' | 'mono';
+  frames: number;
+  duration_seconds: number;
+  id3v2_bytes: number;
+  lost_bytes: number;
 };
 
 /** The exact bytes a report was measured from: size, modified time (UTC, RFC 3339) and the SHA-256 of the whole file. */
