@@ -31,6 +31,12 @@ type ResultView struct {
 	// RecordedFraction is the chapter's share of body words present, only for
 	// a current result (D11): the same number the chapter payload carries.
 	RecordedFraction *float64 `json:"recordedFraction,omitempty"`
+	// Judgement is the report judged by the narrator's thresholds, the same
+	// judgement the stage signal makes (Judge, ADR 0204). It is set for any
+	// complete result with a report, stale included (the dialog labels it as
+	// of the last check), and absent for never, a partial or failed record,
+	// or thresholds that are not valid.
+	Judgement *Judgement `json:"judgement,omitempty"`
 }
 
 // BasisView is "saved project, file modified <time>" and whether the saved
@@ -66,8 +72,8 @@ type ReportView struct {
 	Regions           []RegionLine    `json:"regions"`
 }
 
-// View is the result as the binding sends it.
-func (r ChapterResult) View(chapterID string) ResultView {
+// View is the result as the binding sends it, judged by thresholds.
+func (r ChapterResult) View(chapterID string, thresholds Thresholds) ResultView {
 	view := ResultView{ChapterID: chapterID, State: r.State, Reasons: r.Reasons}
 	if view.Reasons == nil {
 		view.Reasons = []string{}
@@ -91,6 +97,10 @@ func (r ChapterResult) View(chapterID string) ResultView {
 	if r.Current() {
 		fraction := r.Result.Report.PresentFraction()
 		view.RecordedFraction = &fraction
+	}
+	if r.Result != nil && (r.Record == nil || r.Record.Outcome == evidence.LedgerComplete) && thresholds.validate() == nil {
+		judgement := Judge(r.Result.Report, thresholds)
+		view.Judgement = &judgement
 	}
 	return view
 }

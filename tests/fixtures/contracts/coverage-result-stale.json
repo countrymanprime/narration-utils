@@ -5,6 +5,14 @@
     "stale": false
   },
   "chapterId": "c-0001",
+  "judgement": {
+    "reason": "Text present: 8 of 10 words; every paragraph passes.",
+    "state": "met",
+    "thresholds": {
+      "maxMissingRun": 3,
+      "minParagraphPresent": 0.8
+    }
+  },
   "reasons": [
     "item_trimmed"
   ],

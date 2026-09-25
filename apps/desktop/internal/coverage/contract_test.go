@@ -16,7 +16,7 @@ import (
 // embeds the saved file's time, which Stabilize only replaces as a whole value, so it is fixed here.
 func pinResult(t *testing.T, name string, result ChapterResult) {
 	t.Helper()
-	view := result.View(testChapter)
+	view := result.View(testChapter, DefaultThresholds)
 	if view.Basis != nil {
 		view.Basis.Label = "saved project, file modified " + contractfile.FixedTime
 	}
@@ -54,9 +54,9 @@ func TestAResultViewCarriesTheFractionOnlyWhenCurrent(t *testing.T) {
 	service := p.service(&fakeSidecar{present: 8})
 	run(t, service, testRequest())
 
-	current := currentResult(t, service, DefaultAlignmentParams).View(testChapter)
+	current := currentResult(t, service, DefaultAlignmentParams).View(testChapter, DefaultThresholds)
 	p.writeManuscript(testDocument, "Chapter One", "Alice was beginning to get very tired indeed.")
-	stale := currentResult(t, service, DefaultAlignmentParams).View(testChapter)
+	stale := currentResult(t, service, DefaultAlignmentParams).View(testChapter, DefaultThresholds)
 
 	if current.RecordedFraction == nil || *current.RecordedFraction != 0.8 || current.Result == nil || current.Record == nil {
 		t.Fatalf("current = %+v", current)

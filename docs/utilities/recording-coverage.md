@@ -78,7 +78,11 @@ flowchart LR
   removed, trimmed, moved, muted or switched to another take, or an audio file changed. It also goes stale when the
   chapter's text, the equivalences, the vocabulary hints or an alignment setting changes. A different Whisper model or
   language keeps it current and labelled with the model (Q13).
-- **Three readers.** The Home dialog (`RecordingCheck.tsx`) shows the stored report. `recordedFraction` on the chapter
+- **Three readers.** The Home dialog (`RecordingCheck.tsx`) shows the stored report. The `CoverageResult` payload also
+  carries `judgement`: met or not met by the narrator's thresholds, with the gap that fails first. It comes from
+  `coverage.Judge`, the same function the stage signal uses, so the two cannot disagree. It is set for any complete
+  result with a report, a stale one included (as of the last check)
+  ([ADR 0204](../adr/0204-the-recording-check-result-carries-the-hosts-judgement-by-the-stage-signals-rule.md)). `recordedFraction` on the chapter
   payload is the present share of a current complete check only; it no longer feeds Home's **Actual recorded** column,
   which instead reads `recordedSeconds`, a real duration from the chapter's linked track in the saved project, unrelated
   to any check ([Actual Recorded](../prds/actual-recorded-column.prd.md) Phase 3, superseding Q12 below).

@@ -134,6 +134,16 @@ export type CoverageResult = {
   result?: CoverageReport;
   /** The share of the chapter's words present, only for a current result: the chapter payload's recordedFraction (D11). */
   recordedFraction?: number;
+  /** The report judged by the narrator's thresholds, by the same rule as the stage signal (recording-check-summary PRD Phase 2,
+   * ADR 0204): set for any complete result with a report, stale included (as of the last check), absent otherwise. */
+  judgement?: CoverageJudgement;
+};
+
+/** Passes the check (`met`) or not, with the gap that fails first, and the thresholds it was judged by. */
+export type CoverageJudgement = {
+  state: 'met' | 'not_met';
+  reason: string;
+  thresholds: { minParagraphPresent: number; maxMissingRun: number };
 };
 
 export interface CoverageApi {

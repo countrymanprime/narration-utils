@@ -167,17 +167,13 @@ func staleSignal(signal stages.Signal, reasons []string) stages.Signal {
 	return signal
 }
 
-// measuredSignal applies the thresholds to a current, complete report.
+// measuredSignal applies the thresholds to a current, complete report, by
+// Judge: the recording check dialog's headline is the same judgement.
 func measuredSignal(signal stages.Signal, stored *StoredResult, settings Settings) stages.Signal {
 	report := stored.Report
 	signal.Evidence = measuredEvidence(stored, settings)
-	if report.TextComplete(settings.Thresholds) {
-		signal.State = stages.SignalMet
-		signal.Reason = fmt.Sprintf("Text present: %d of %s; every paragraph passes.", report.Summary.PresentTokens, words(report.Summary.BodyTokens))
-		return signal
-	}
-	signal.State = stages.SignalNotMet
-	signal.Reason = largestGap(report, settings.Thresholds)
+	judgement := Judge(report, settings.Thresholds)
+	signal.State, signal.Reason = judgement.State, judgement.Reason
 	return signal
 }
 
