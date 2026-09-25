@@ -1,6 +1,8 @@
 import { useState, type ReactNode } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
+  faArrowLeft,
+  faArrowRight,
   faBars,
   faBookOpen,
   faFileLines,
@@ -50,6 +52,7 @@ export function AppShell({
   dawProjectMatches = false,
   onLinkDawFile,
   linkingDawFile = false,
+  history,
   children,
 }: {
   pathname: string;
@@ -64,6 +67,8 @@ export function AppShell({
   onLinkDawFile: () => void;
   /** True while the shared DAW-link binding is running for any of its three call sites (ADR 0075's ref guard). */
   linkingDawFile?: boolean;
+  /** Page-level Back/Forward (app-navigation-and-zoom-controls.prd.md Phase 1): already guarded and gated by App.tsx. */
+  history: { canGoBack: boolean; canGoForward: boolean; back: () => void; forward: () => void };
   children: ReactNode;
 }) {
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -86,6 +91,8 @@ export function AppShell({
     : dawFileLinked
       ? 'Change the linked REAPER project (.rpp) file'
       : 'Link a REAPER project (.rpp) file';
+  const backTooltip = history.canGoBack ? 'Back (Alt+Left)' : 'Back (Alt+Left): no earlier page in this project';
+  const forwardTooltip = history.canGoForward ? 'Forward (Alt+Right)' : 'Forward (Alt+Right): no later page yet';
   const pillDotStyle = dawMismatch
     ? { backgroundColor: 'var(--warn)', boxShadow: '0 0 5px var(--warn)' }
     : dawFileLinked
@@ -160,9 +167,24 @@ export function AppShell({
             <IconButton label="Open navigation" onClick={() => setDrawerOpen(true)} className="hidden max-md:inline-flex">
               <FontAwesomeIcon icon={faBars} />
             </IconButton>
+            {/* Page history (Phase 1, Q1 A): walks the app's own page moves only, through App.tsx's guards. */}
+            <div className="flex flex-none items-center gap-1" role="group" aria-label="Page history">
+              <TooltipTarget text={backTooltip}>
+                <IconButton label="Back" disabledReason={history.canGoBack ? undefined : backTooltip} onClick={history.back}>
+                  <FontAwesomeIcon icon={faArrowLeft} />
+                </IconButton>
+              </TooltipTarget>
+              <TooltipTarget text={forwardTooltip}>
+                <IconButton label="Forward" disabledReason={history.canGoForward ? undefined : forwardTooltip} onClick={history.forward}>
+                  <FontAwesomeIcon icon={faArrowRight} />
+                </IconButton>
+              </TooltipTarget>
+            </div>
             <div className="flex min-w-0 items-center gap-2">
-              <span className="section-label">Project</span>
-              <FontAwesomeIcon icon={faFolder} style={{ color: 'var(--non-text)' }} />
+              {/* Below `md` the two new history buttons leave less room (Phase 1, Q10 A): the label and
+                  folder icon drop first, and the project name is left to truncate on its own. */}
+              <span className="section-label max-md:hidden">Project</span>
+              <FontAwesomeIcon icon={faFolder} style={{ color: 'var(--non-text)' }} className="max-md:hidden" />
               <span className="truncate font-medium">{projectName}</span>
             </div>
             <TooltipTarget text={pillTooltip}>
@@ -172,10 +194,11 @@ export function AppShell({
                 disabled={linkingDawFile}
                 aria-busy={linkingDawFile || undefined}
                 aria-label={`${pillLabel} — ${pillTooltip}`}
-                className="inline-flex items-center gap-[0.4rem] rounded-full border border-[var(--border)] bg-[var(--surface-2)] px-[0.6rem] py-[0.2rem] font-['Barlow_Condensed',sans-serif] text-[0.8rem] font-semibold tracking-[0.03em] hover:border-[var(--accent)] disabled:pointer-events-none disabled:opacity-60"
+                className="inline-flex items-center gap-[0.4rem] rounded-full border border-[var(--border)] bg-[var(--surface-2)] px-[0.6rem] py-[0.2rem] font-['Barlow_Condensed',sans-serif] text-[0.8rem] font-semibold tracking-[0.03em] hover:border-[var(--accent)] disabled:pointer-events-none disabled:opacity-60 max-md:px-[0.35rem]"
               >
                 <span className="size-[7px] flex-none rounded-full" style={pillDotStyle} />
-                {pillLabel}
+                {/* Q10 A: below `md` the pill shortens to its dot; the full text stays in the accessible name above. */}
+                <span className="max-md:hidden">{pillLabel}</span>
               </button>
             </TooltipTarget>
           </header>

@@ -7,6 +7,7 @@ import { StartupScreen, type StartupState } from './components/layout/StartupScr
 import { ToastRegion } from './components/primitives/Toast';
 import { useToasts } from './hooks/useToasts';
 import { usePendingAction } from './hooks/usePendingAction';
+import { useAppHistory } from './hooks/useAppHistory';
 import { notificationForJobEnd, shouldNotifyForJobEnd, toastForJobEnd } from './jobEnded';
 import { ConfirmDialog } from './components/primitives/ConfirmDialog';
 import { Home } from './components/home/Home';
@@ -43,10 +44,20 @@ export function App() {
   );
 }
 
+// A pending guarded move, either a path (the nav, a "go to" link) or a Back/Forward delta; the two guards below
+// (unsaved Settings, leaving Proofing) apply to both the same way (App.tsx:258-272, Phase 1).
+type PendingMove = { kind: 'path'; path: string } | { kind: 'delta'; direction: 1 | -1 };
+
 function AppRoutes() {
   const api = useApi();
   const navigate = useNavigate();
   const location = useLocation();
+  const history = useAppHistory();
+  // The latest guarded back/forward, read by the one document-level listener below (mounted once) instead
+  // of resubscribing it on every render.
+  const guardedBackRef = useRef<() => void>(() => {});
+  const guardedForwardRef = useRef<() => void>(() => {});
+  const prevPathnameRef = useRef(location.pathname);
   const [data, setData] = useState<Bootstrap>();
   // One queue for the whole app: messages stack instead of replacing each other, an identical one that is showing starts its time again, and
   // an error stays until it is dismissed (ADR 0075). `notify` and `dismiss` keep their identity, so a page effect that lists them never re-runs.
@@ -57,7 +68,7 @@ function AppRoutes() {
   const [diagnosticId, setDiagnosticId] = useState('');
   const [retryKey, setRetryKey] = useState(0);
   const [settingsDirty, setSettingsDirty] = useState(false);
-  const [pendingPath, setPendingPath] = useState<string>();
+  const [pendingMove, setPendingMove] = useState<PendingMove>();
   const settingsActions = useRef<{ save: () => Promise<void>; discard: () => Promise<void> } | undefined>(undefined);
   const hasBootstrap = data !== undefined;
 
@@ -197,10 +208,14 @@ function AppRoutes() {
   useEffect(() => {
     if (!hasBootstrap) return;
     return api.subscribeProjectAttach((state) => {
-      if (state.attached) void refreshBootstrap();
-      else if (state.reason) setNotice(state.reason);
+      // Entries from the project that was open before this switch stay behind the new floor (Q8): they
+      // would open this project's pages with the previous project's data, so Back stops here.
+      if (state.attached) {
+        history.resetFloor();
+        void refreshBootstrap();
+      } else if (state.reason) setNotice(state.reason);
     });
-  }, [api, hasBootstrap, refreshBootstrap, setNotice]);
+  }, [api, hasBootstrap, history, refreshBootstrap, setNotice]);
 
   useEffect(() => {
     if (!hasBootstrap) return;
@@ -224,6 +239,66 @@ function AppRoutes() {
       )
       .catch(() => {});
   }, [api, hasBootstrap]);
+
+  // Alt+Left/Right, the keyboard's Browser Back/Forward keys, Cmd+[ / Cmd+] on macOS, and the mouse's back
+  // and forward buttons (Phase 1). One listener for the app, mounted once: `mousedown` also calls
+  // `preventDefault` to stop WebView2 acting on the press itself (unverified until Phase 0 runs on
+  // Windows), `mouseup` is where the app actually moves, like a browser's own button-4/5 handling. Nothing
+  // fires while a modal dialog or drawer is open (the page is inert behind it) or when the key was already
+  // handled (`defaultPrevented`).
+  useEffect(() => {
+    const modalOpen = () => Boolean(document.querySelector('[role="dialog"], [role="alertdialog"]'));
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.defaultPrevented || modalOpen()) return;
+      const isBack =
+        event.key === 'BrowserBack' || (event.altKey && !event.ctrlKey && !event.shiftKey && event.key === 'ArrowLeft') || (event.metaKey && event.key === '[');
+      const isForward =
+        event.key === 'BrowserForward' ||
+        (event.altKey && !event.ctrlKey && !event.shiftKey && event.key === 'ArrowRight') ||
+        (event.metaKey && event.key === ']');
+      if (isBack) {
+        event.preventDefault();
+        guardedBackRef.current();
+      } else if (isForward) {
+        event.preventDefault();
+        guardedForwardRef.current();
+      }
+    };
+    const onMouseButton = (event: MouseEvent) => {
+      if (event.button !== 3 && event.button !== 4) return;
+      event.preventDefault();
+      if (event.type !== 'mouseup' || modalOpen()) return;
+      if (event.button === 3) guardedBackRef.current();
+      else guardedForwardRef.current();
+    };
+    document.addEventListener('keydown', onKeyDown);
+    document.addEventListener('mousedown', onMouseButton);
+    document.addEventListener('mouseup', onMouseButton);
+    return () => {
+      document.removeEventListener('keydown', onKeyDown);
+      document.removeEventListener('mousedown', onMouseButton);
+      document.removeEventListener('mouseup', onMouseButton);
+    };
+  }, []);
+
+  // Recovery for a `popstate` the app did not start (Risk 3: a mouse-button gesture WebView2 acts on
+  // despite `preventDefault`, if Phase 0 finds that happens). The move already took effect; if it left
+  // Settings dirty, push Settings back and ask, so the change is not lost silently. Leaving Proofing still
+  // resets its run either way.
+  useEffect(() => {
+    if (history.unexpectedPop) {
+      const leftPathname = prevPathnameRef.current;
+      history.clearUnexpectedPop();
+      if (leftPathname === '/settings' && settingsDirty) {
+        const landedAt = location.pathname + location.hash;
+        navigate('/settings');
+        setPendingMove({ kind: 'path', path: landedAt });
+      } else if (leftPathname === '/proofing') {
+        void api.transcriptReset().catch(() => {});
+      }
+    }
+    prevPathnameRef.current = location.pathname;
+  }, [location.pathname, location.hash, history, settingsDirty, api, navigate]);
 
   if (!data)
     return (
@@ -264,12 +339,34 @@ function AppRoutes() {
       return;
     }
     if (nextPath !== location.pathname && location.pathname === '/settings' && settingsDirty) {
-      setPendingPath(next);
+      setPendingMove({ kind: 'path', path: next });
       return;
     }
     if (nextPath !== location.pathname && location.pathname === '/proofing') void api.transcriptReset().catch(() => {});
     navigate(next);
   };
+
+  // Back and Forward run the same two guards as the nav (Phase 1): dirty Settings asks first, leaving
+  // Proofing resets its run. Each moves exactly one page, and does nothing where `useAppHistory` already
+  // says there is nowhere to go (the buttons are disabled there too; this covers the shortcuts and mouse
+  // buttons, which have no disabled state to rely on).
+  const attemptDelta = (direction: 1 | -1) => {
+    if (location.pathname === '/settings' && settingsDirty) {
+      setPendingMove({ kind: 'delta', direction });
+      return;
+    }
+    if (location.pathname === '/proofing') void api.transcriptReset().catch(() => {});
+    if (direction === -1) history.back();
+    else history.forward();
+  };
+  const guardedBack = () => {
+    if (history.canGoBack) attemptDelta(-1);
+  };
+  const guardedForward = () => {
+    if (history.canGoForward) attemptDelta(1);
+  };
+  guardedBackRef.current = guardedBack;
+  guardedForwardRef.current = guardedForward;
 
   return (
     <div className="relative h-full overflow-hidden" style={{ background: 'var(--bg)' }}>
@@ -284,6 +381,7 @@ function AppRoutes() {
           dawProjectMatches={data.dawProjectMatches}
           onLinkDawFile={() => void linkDawFile()}
           linkingDawFile={dawLink.isBusy}
+          history={{ canGoBack: history.canGoBack, canGoForward: history.canGoForward, back: guardedBack, forward: guardedForward }}
         >
           <ErrorBoundary key={location.pathname.split('/')[1] || 'home'}>
             <Routes>
@@ -357,7 +455,7 @@ function AppRoutes() {
           <ToastRegion messages={messages} dismiss={dismissMessage} />
         </AppShell>
       </TooltipProvider>
-      {pendingPath && (
+      {pendingMove && (
         <ConfirmDialog
           title="Unsaved settings"
           body="Save or discard changes before leaving Settings?"
@@ -365,21 +463,27 @@ function AppRoutes() {
           confirm={() =>
             void settingsActions.current?.save().then(() => {
               setSettingsDirty(false);
-              navigate(pendingPath);
-              setPendingPath(undefined);
+              resolvePendingMove(pendingMove);
+              setPendingMove(undefined);
             })
           }
           dangerLabel="Discard & continue"
           danger={() =>
             void settingsActions.current?.discard().then(() => {
               setSettingsDirty(false);
-              navigate(pendingPath);
-              setPendingPath(undefined);
+              resolvePendingMove(pendingMove);
+              setPendingMove(undefined);
             })
           }
-          cancel={() => setPendingPath(undefined)}
+          cancel={() => setPendingMove(undefined)}
         />
       )}
     </div>
   );
+
+  function resolvePendingMove(move: PendingMove) {
+    if (move.kind === 'path') navigate(move.path);
+    else if (move.direction === -1) history.back();
+    else history.forward();
+  }
 }

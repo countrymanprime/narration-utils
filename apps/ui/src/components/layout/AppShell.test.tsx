@@ -6,10 +6,12 @@ import { TooltipProvider } from '../primitives/Tooltip';
 
 afterEach(cleanup);
 
+const noHistory = { canGoBack: false, canGoForward: false, back: () => {}, forward: () => {} };
+
 function renderShell(props: Partial<Parameters<typeof AppShell>[0]> = {}) {
   return render(
     <TooltipProvider>
-      <AppShell pathname="/" navigate={() => {}} projectName="Alice" hasManuscript dawFileLinked onLinkDawFile={() => {}} {...props}>
+      <AppShell pathname="/" navigate={() => {}} projectName="Alice" hasManuscript dawFileLinked onLinkDawFile={() => {}} history={noHistory} {...props}>
         <div>page content</div>
       </AppShell>
     </TooltipProvider>,
@@ -77,5 +79,31 @@ describe('AppShell header pill mismatch state (Phase 7)', () => {
     renderShell({ dawFileLinked: true, dawReachable: true, dawProjectMatches: true });
     expect(screen.getByRole('button', { name: /REAPER project linked/ })).toBeTruthy();
     expect(screen.queryByText(/Wrong REAPER project open/)).toBeNull();
+  });
+});
+
+// Phase 1 (app-navigation-and-zoom-controls.prd.md, Q1 A, Q8): Back and Forward at the left of the header.
+describe('AppShell header history controls (Phase 1)', () => {
+  it('are disabled with a reason when there is nowhere to go', () => {
+    renderShell({ history: noHistory });
+    expect((screen.getByRole('button', { name: 'Back' }) as HTMLButtonElement).getAttribute('aria-disabled')).toBe('true');
+    expect((screen.getByRole('button', { name: 'Forward' }) as HTMLButtonElement).getAttribute('aria-disabled')).toBe('true');
+  });
+
+  it('calls back()/forward() only when enabled', () => {
+    const back = vi.fn();
+    const forward = vi.fn();
+    renderShell({ history: { canGoBack: true, canGoForward: true, back, forward } });
+    fireEvent.click(screen.getByRole('button', { name: 'Back' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Forward' }));
+    expect(back).toHaveBeenCalledTimes(1);
+    expect(forward).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not call back() when disabled', () => {
+    const back = vi.fn();
+    renderShell({ history: { ...noHistory, back } });
+    fireEvent.click(screen.getByRole('button', { name: 'Back' }));
+    expect(back).not.toHaveBeenCalled();
   });
 });

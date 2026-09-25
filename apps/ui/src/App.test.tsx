@@ -907,3 +907,87 @@ describe('App (integration, driven through the mock NarrationApi)', () => {
     expect(screen.queryByRole('button', { name: 'Link a REAPER project file' })).toBeNull();
   });
 });
+
+// app-navigation-and-zoom-controls.prd.md Phase 1: page-level Back and Forward in the header, their
+// shortcuts, and the two guards they share with the nav (unsaved Settings, leaving Proofing).
+describe('App Back and Forward (Phase 1)', () => {
+  it('are disabled on the first page and enable after moving, one page at a time', async () => {
+    renderApp();
+    await screen.findByRole('heading', { name: 'Welcome back' });
+    expect((screen.getByRole('button', { name: 'Back' }) as HTMLButtonElement).getAttribute('aria-disabled')).toBe('true');
+    expect((screen.getByRole('button', { name: 'Forward' }) as HTMLButtonElement).getAttribute('aria-disabled')).toBe('true');
+
+    fireEvent.click(screen.getAllByRole('button', { name: 'Manuscript' })[0]);
+    await screen.findByRole('heading', { name: 'Manuscript' });
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Back' }).getAttribute('aria-disabled')).toBeNull());
+
+    fireEvent.click(screen.getByRole('button', { name: 'Back' }));
+    await screen.findByRole('heading', { name: 'Welcome back' });
+    // The location updates at once; `useAppHistory`'s own `idx` (and so the disabled state) settles one
+    // render later, once its effect has run - real for a person, imperceptible, but needs a wait here.
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Back' }).getAttribute('aria-disabled')).toBe('true'));
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Forward' }).getAttribute('aria-disabled')).toBeNull());
+
+    fireEvent.click(screen.getByRole('button', { name: 'Forward' }));
+    await screen.findByRole('heading', { name: 'Manuscript' });
+  });
+
+  it('Alt+Left and Alt+Right do what the buttons do', async () => {
+    renderApp();
+    await screen.findByRole('heading', { name: 'Welcome back' });
+    fireEvent.click(screen.getAllByRole('button', { name: 'Manuscript' })[0]);
+    await screen.findByRole('heading', { name: 'Manuscript' });
+
+    fireEvent.keyDown(document, { key: 'ArrowLeft', altKey: true });
+    await screen.findByRole('heading', { name: 'Welcome back' });
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Forward' }).getAttribute('aria-disabled')).toBeNull());
+
+    fireEvent.keyDown(document, { key: 'ArrowRight', altKey: true });
+    await screen.findByRole('heading', { name: 'Manuscript' });
+  });
+
+  it("the mouse's back and forward buttons do what the header buttons do", async () => {
+    renderApp();
+    await screen.findByRole('heading', { name: 'Welcome back' });
+    fireEvent.click(screen.getAllByRole('button', { name: 'Manuscript' })[0]);
+    await screen.findByRole('heading', { name: 'Manuscript' });
+
+    fireEvent.mouseUp(document, { button: 3 });
+    await screen.findByRole('heading', { name: 'Welcome back' });
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Forward' }).getAttribute('aria-disabled')).toBeNull());
+
+    fireEvent.mouseUp(document, { button: 4 });
+    await screen.findByRole('heading', { name: 'Manuscript' });
+  });
+
+  it('Back from dirty Settings shows the same "Unsaved settings" confirm as the nav, and completes the move on Save', async () => {
+    const saveSettings = vi.fn(createMockApi().saveSettings);
+    renderApp({ saveSettings });
+    await screen.findByRole('heading', { name: 'Welcome back' });
+    fireEvent.click(screen.getAllByRole('button', { name: 'Settings' })[0]);
+    await screen.findByRole('heading', { name: 'Settings' });
+
+    const modelField = await screen.findByDisplayValue('normal');
+    fireEvent.change(modelField, { target: { value: 'verbose' } });
+    expect(screen.getByRole('button', { name: 'Back' }).getAttribute('aria-disabled')).toBeNull();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Back' }));
+    expect(await screen.findByText('Save or discard changes before leaving Settings?')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Save & continue' }));
+
+    await waitFor(() => expect(screen.getByRole('heading', { name: 'Welcome back' })).toBeTruthy());
+    expect(saveSettings).toHaveBeenCalledWith('General', 'global', expect.objectContaining({ log_verbosity: 'verbose' }));
+  });
+
+  it('Back from Proofing resets the transcript run, like the nav', async () => {
+    const transcriptReset = vi.fn(createMockApi().transcriptReset);
+    renderApp({ transcriptReset });
+    await screen.findByRole('heading', { name: 'Welcome back' });
+    fireEvent.click(screen.getAllByRole('button', { name: 'Proofing' })[0]);
+    await screen.findByRole('heading', { name: 'Proofing' });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Back' }));
+    await screen.findByRole('heading', { name: 'Welcome back' });
+    expect(transcriptReset).toHaveBeenCalled();
+  });
+});

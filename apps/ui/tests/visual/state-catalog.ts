@@ -1409,4 +1409,11 @@ export const STATE_CATALOG: StateEntry[] = [
     sameAs: { of: 'home/default', reason: 'Light is what Home already renders in by default, so explicitly selecting it changes nothing visible.' },
   },
   { page: 'global', state: 'theme-dark', description: 'Home with Dark explicitly selected in Settings > Appearance' },
+
+  // The header's page history (app-navigation-and-zoom-controls.prd.md Phase 1, Q1 A): the default states
+  // already show both Back and Forward disabled at the first page, so that needs no row of its own. Captured
+  // at the reflow width too (ADR 0061's declared extension, PRD Solution Detail): the header at 390px is what
+  // the narrator sees at high zoom, and no shell state was captured there before.
+  { page: 'shell', state: 'history-enabled', description: 'Header, after one navigation: Back enabled, Forward disabled', ...REFLOW },
+  { page: 'shell', state: 'history-forward', description: 'Header, after a Back: both Back and Forward enabled', ...REFLOW },
 ];

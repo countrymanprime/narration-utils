@@ -20,3 +20,10 @@ test('the icon rail is a named region of buttons (no navigation landmark yet, #1
   await openApp(page, RAIL);
   await expect(page.getByRole('complementary', { name: 'Primary navigation' })).toMatchAriaSnapshot({ name: 'navigation-rail.aria.yml' });
 });
+
+// app-navigation-and-zoom-controls.prd.md Phase 1 (Q1 A): Back and Forward are navigation, so they get the
+// same role-tree pin as the other navigation shapes above.
+test('the header names its page-history group, with Back and Forward', async ({ page }) => {
+  await openApp(page, DESKTOP);
+  await expect(page.getByRole('group', { name: 'Page history' })).toMatchAriaSnapshot({ name: 'navigation-header.aria.yml' });
+});
