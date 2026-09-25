@@ -163,7 +163,7 @@ type Project struct {
 	// Regions are the project's regions (not its plain markers), in file
 	// order. The chapter-to-track matcher (internal/chaptermatch) reads their
 	// names beside track names, for example the chapter regions
-	// create_chapter_regions makes. Not on the TracksList wire contract
+	// create_regions makes. Not on the TracksList wire contract
 	// (json:"-"): no UI shows them yet.
 	Regions []Region `json:"-"`
 }
