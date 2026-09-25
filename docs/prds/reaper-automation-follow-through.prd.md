@@ -228,7 +228,7 @@ Every spike phase below launches REAPER. D3 approves that on copies of `Challeng
 | 19 | Spike S6: web interface defaults (approved, D3) | Port, auth and CORS defaults; payload and escaping limits for `SET/EXTSTATE` | pending | 18 | D3; Open Question 8 | - |
 | 20 | Transport ADR | Decide web/OSC client vs staying on the file bridge; amend `daw-integration.md` language via a new ADR | pending | 22, 23 | 18, 19 | - |
 | 21 | Go transport client (web/OSC) | Trimmed OSC listener and web command client behind a setting; only if Phase 20 says yes | pending | - | 20 | - |
-| 22 | Session progress stats | Per-chapter progress from the `.rpp`; time tracking only if a data source is found | pending | 23 | diagnostics PRD Phase 8 | - |
+| 22 | Session progress stats | Per-chapter progress from the `.rpp`; time tracking only if a data source is found | complete (delivered by the actual-recorded column; no timer, Open Question 11 (a)) | 23 | diagnostics PRD Phase 8 | - |
 | 23 | Cleanup launchers | Lua allow-listed named-action launcher (Repair Pops/Clicks; Magnolius only if installed) | partial | 22 | 4 | [ADR 0146](../adr/0146-cleanup-launchers-open-an-allow-listed-reaper-action-found-by-its-name-and-change-nothing-themselves.md), [evidence](../research/reaper-cleanup-launchers.md) |
 | 24 | Spike S7: fixed-lane API behavior (approved, D3) | Added by this PRD: `I_FREEMODE`, `C_LANEPLAYS`, `I_FIXEDLANE` behavior and undo | complete | - | D3; take-review PRD decisions | [S7 result](../research/reaper-spike-s7-fixed-lanes.md), [ADR 0147](../adr/0147-retakes-on-fixed-lanes-are-chosen-by-lane-play-state-and-the-app-never-converts-takes-and-lanes.md) |
 | 25 | Retakes as fixed lanes | Choose the good lane per line; only after S7 and take-review decisions | partial | - | 24 | [ADR 0147](../adr/0147-retakes-on-fixed-lanes-are-chosen-by-lane-play-state-and-the-app-never-converts-takes-and-lanes.md), [evidence](../research/reaper-retake-lanes.md) |
@@ -332,6 +332,11 @@ Every spike phase below launches REAPER. D3 approves that on copies of `Challeng
 - **Goal**: per-chapter progress without new REAPER code.
 - **Scope**: reuse the diagnostics PRD's measured recorded duration; a small view; time tracking only with a defined source (Open Question 11).
 - **Success signal**: progress equals matched item lengths; no timer added by default.
+- **Status: complete, delivered elsewhere (reconciled by stream B5, 2026-09-25).** Open Question 11 was answered (a): progress only, no time tracking. The view this phase asked for shipped with [the actual-recorded column PRD](actual-recorded-column.prd.md) (complete, Phases 1 to 3), which took over the Home half of the diagnostics PRD's Phase 8 (its AR7). This phase's own dependency is that same work.
+  - Home's per-chapter table shows each chapter's **Actual recorded** time, and the stat row sums it. The time is the confirmed track's recorded seconds in the saved `.rpp` (`tracks.Track.RecordedSeconds`: the union of the unmuted items' project-time intervals, playing lanes only on a fixed-lane track), so progress equals matched item lengths. A chapter without one confirmed link, or without a readable project, shows a dash with its reason, never an estimate.
+  - Tests: `apps/desktop/internal/tracks/recorded_seconds*_test.go`, `apps/desktop/recordedlengths_test.go`, and the `AudiobookEstimatePanel` Vitest ("Status is inert").
+  - No timer was added, and no REAPER code: the phase's goal was "per-chapter progress without new REAPER code".
+  - Time tracking stays out until a data source exists (REAPER has no documented per-project active-time source).
 
 **Phase 23 - Cleanup launchers**
 - **Goal**: one-click launch of REAPER's own repair dialog on selected items.
