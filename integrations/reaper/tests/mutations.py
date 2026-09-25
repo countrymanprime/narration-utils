@@ -38,6 +38,14 @@ def _mutated_copy(reaper_dir: Path, scratch: Path, entry: dict) -> Path:
     return target
 
 
+def _own_tests(lua_file: str) -> tuple[str, ...]:
+    """The test file named after a feature file (narration_transport.lua -> transport_test.lua), which almost always
+    catches a mutation of it: running it first, and stopping at the first failure, keeps the whole check fast. A
+    mutation no test catches still runs every file, so the outcome is the same as a full run."""
+    stem = Path(lua_file).stem.removeprefix("narration_")
+    return (f"{stem}_test.lua",)
+
+
 def run_mutations(tests_dir: Path, reaper_dir: Path, run_suite: SuiteRunner) -> int:
     entries = json.loads((tests_dir / "mutations.json").read_text(encoding="utf-8"))
     scratch = Path(tempfile.mkdtemp(prefix="reaper-mutations-"))
@@ -46,7 +54,7 @@ def run_mutations(tests_dir: Path, reaper_dir: Path, run_suite: SuiteRunner) -> 
         for entry in entries:
             mutated = _mutated_copy(reaper_dir, scratch, entry)
             try:
-                _, failed, _ = run_suite(mutated, verbose=False)
+                _, failed, _ = run_suite(mutated, verbose=False, first=_own_tests(entry["file"]), stop_at_failure=True)
             except (LuaError, RuntimeError) as error:  # a mutation that breaks loading is caught too
                 failed = 1
                 print(f"  caught (suite raised {type(error).__name__}): {entry['name']}")
