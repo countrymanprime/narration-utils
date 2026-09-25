@@ -10,11 +10,14 @@
           "guid": "{4DA91027-F908-FE46-98A0-950A8D5A4661}",
           "length": 12.5,
           "name": "ch1_take1.wav",
+          "playRate": 1,
           "position": 0,
           "sourceAvailable": true,
           "sourceFile": "C:/Projects/Alice/media/ch1_take1.wav",
           "sourceKind": "WAVE",
-          "supported": true
+          "sourceStart": 0,
+          "supported": true,
+          "takeGuid": "{4DA91027-F908-FE46-98A0-950A8D5A4661}"
         }
       ],
       "muted": false,
@@ -30,11 +33,14 @@
           "guid": "{816A96BA-02D1-214C-BB0F-A3D2FCD96160}",
           "length": 4,
           "name": "click MIDI item",
+          "playRate": 1,
           "position": 0,
           "sourceAvailable": false,
           "sourceFile": "",
           "sourceKind": "MIDI",
-          "supported": false
+          "sourceStart": 0,
+          "supported": false,
+          "takeGuid": "{816A96BA-02D1-214C-BB0F-A3D2FCD96160}"
         }
       ],
       "muted": true,
@@ -50,11 +56,14 @@
           "guid": "{0A607125-0D79-C34E-8E66-054BC8FE3AFD}",
           "length": 8,
           "name": "ch2_take1.wav",
+          "playRate": 1,
           "position": 0,
           "sourceAvailable": false,
           "sourceFile": "C:/Projects/Alice/media/missing.wav",
           "sourceKind": "WAVE",
-          "supported": true
+          "sourceStart": 0,
+          "supported": true,
+          "takeGuid": "{0A607125-0D79-C34E-8E66-054BC8FE3AFD}"
         }
       ],
       "muted": false,

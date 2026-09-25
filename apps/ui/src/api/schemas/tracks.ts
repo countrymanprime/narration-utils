@@ -11,6 +11,9 @@ const trackItemSchema = z.object({
   sourceFile: z.string(),
   sourceAvailable: z.boolean(),
   supported: z.boolean(),
+  takeGuid: z.string(),
+  sourceStart: z.number().nonnegative(),
+  playRate: z.number().positive(),
 }) satisfies z.ZodType<TrackItem>;
 
 const trackSchema = z.object({

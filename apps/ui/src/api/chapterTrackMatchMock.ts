@@ -62,7 +62,7 @@ const candidate = (track: Track, score: number, source: ChapterTrackCandidate['s
   region: null,
 });
 
-// The mock project's items carry no SOFFS or PLAYRATE on the wire, so the source runs from 0 to the item's own length.
+// The item's played range from the wire: from sourceStart for length * playRate seconds of source (tracks.RecordedEnd).
 export const mockRecordedEnd = (track: Track): RecordedEnd | null => {
   const last = track.items.reduce<Track['items'][number] | null>(
     (best, item) => (!best || item.position + item.length > best.position + best.length ? item : best),
@@ -72,10 +72,10 @@ export const mockRecordedEnd = (track: Track): RecordedEnd | null => {
   return {
     projectTime: last.position + last.length,
     itemGuid: last.guid,
-    takeGuid: '',
+    takeGuid: last.takeGuid,
     sourceFile: last.sourceFile,
-    sourceStart: 0,
-    sourceTime: last.length,
+    sourceStart: last.sourceStart,
+    sourceTime: last.sourceStart + last.length * last.playRate,
     sourceAvailable: last.sourceAvailable,
     supported: last.supported,
     approximate: false,

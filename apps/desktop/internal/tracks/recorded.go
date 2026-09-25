@@ -52,18 +52,11 @@ func (track Track) RecordedEnd(within *Span) (RecordedEnd, bool) {
 		return RecordedEnd{}, false
 	}
 	take := last.Active()
-	rate := take.PlayRate
-	if rate <= 0 {
-		rate = 1 // no PLAYRATE line: REAPER's default rate
-	}
-	played := take.SOFFS + last.Length*rate
-	sourceStart, sourceTime, approximate := take.SOFFS, played, take.StretchMarkerCount > 0
-	if take.Section != nil {
-		sourceStart += take.Section.StartPos
-		sourceTime += take.Section.StartPos
-		if take.Section.Length > 0 && played > take.Section.Length {
-			approximate = true
-		}
+	played := take.SOFFS + last.Length*take.Rate()
+	sourceStart := take.SourceStart()
+	sourceTime, approximate := sourceStart+last.Length*take.Rate(), take.StretchMarkerCount > 0
+	if take.Section != nil && take.Section.Length > 0 && played > take.Section.Length {
+		approximate = true
 	}
 	return RecordedEnd{
 		ProjectTime:     last.Position + last.Length,

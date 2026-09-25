@@ -171,6 +171,9 @@ func parseItem(n *node, projectFolder string) Item {
 	item.SourceFile = active.SourceFile
 	item.SourceAvailable = active.SourceAvailable
 	item.Supported = active.Supported
+	item.TakeGUID = active.GUID
+	item.SourceStart = active.SourceStart()
+	item.PlayRate = active.Rate()
 	return item
 }
 

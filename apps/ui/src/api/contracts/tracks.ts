@@ -8,6 +8,15 @@ export type TrackItem = {
   sourceFile: string;
   sourceAvailable: boolean;
   supported: boolean;
+  /** The active take's GUID. */
+  takeGuid: string;
+  /**
+   * Where the item starts in `sourceFile`, in source seconds (a trimmed section's start plus SOFFS). The item plays
+   * `length * playRate` seconds of source from here, not the whole file from 0.
+   */
+  sourceStart: number;
+  /** The take's play rate; 1 when the project sets none. */
+  playRate: number;
 };
 
 export type Track = {
