@@ -30,7 +30,7 @@ inputs:
     description: Install the pinned standalone StyLua binary
     default: 'true'
   need-linux-native-deps:
-    description: Install the native GTK/WebKit libs needed to build the Wails app on Linux
+    description: Install the native GTK 4 and WebKitGTK 6.0 libs needed to build and test the Wails v3 app on Linux
     default: 'true'
 
 runs:
@@ -38,7 +38,8 @@ runs:
   steps:
     - if: runner.os == 'Linux' && inputs.need-linux-native-deps == 'true'
       shell: bash
-      run: sudo apt-get update && sudo apt-get install -y libglib2.0-dev libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
+      # Wails v3 links GTK 4 and WebKitGTK 6.0 through cgo on Linux (docs/adr/0200); v2 used GTK 3 and WebKit2GTK 4.1.
+      run: sudo apt-get update && sudo apt-get install -y libglib2.0-dev libgtk-4-dev libwebkitgtk-6.0-dev libsoup-3.0-dev librsvg2-dev patchelf
     - if: inputs.need-pnpm == 'true'
       uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4.3.0
       with: { version: 11.27.0 }
@@ -70,12 +71,15 @@ runs:
       id: wails-cache
       uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
       with:
-        path: ~/go/bin/wails${{ runner.os == 'Windows' && '.exe' || '' }}
-        key: go-tool-wails-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('scripts/toolchain.json') }}
+        path: ~/go/bin/wails3${{ runner.os == 'Windows' && '.exe' || '' }}
+        key: go-tool-wails3-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('scripts/toolchain.json') }}
     - if: inputs.need-wails-tools == 'true' && steps.wails-cache.outputs.cache-hit != 'true'
       name: Install pinned Wails CLI
       shell: bash
-      run: go install github.com/wailsapp/wails/v2/cmd/wails@v2.16.0
+      # The CLI only renders files, generates bindings and resources; it needs no webview, so it is built without cgo on every runner.
+      env:
+        CGO_ENABLED: '0'
+      run: go install github.com/wailsapp/wails/v3/cmd/wails3@v3.0.0-beta.25
     # golangci-lint is built here with the job's Go toolchain (`go install`), not downloaded as a release
     # binary: a prebuilt binary is compiled with one Go version and refuses to lint a module that targets a newer one.
     - if: inputs.need-golangci-lint == 'true'

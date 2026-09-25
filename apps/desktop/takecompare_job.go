@@ -54,6 +54,10 @@ type takeComparisonJob struct {
 	findingID string
 	// +checklocks:mu
 	comparisonID string
+	// cancelling is set by cancelTakeComparison: a progress line the sidecar wrote before it saw the cancel file no longer
+	// replaces the "Cancelling" message.
+	// +checklocks:mu
+	cancelling   bool
 	progressPath string
 	cancel       context.CancelFunc
 }
@@ -82,7 +86,7 @@ func (j *takeComparisonJob) pollProgress() {
 	}
 	j.mu.Lock()
 	defer j.mu.Unlock()
-	if j.phase != "running" {
+	if j.phase != "running" || j.cancelling {
 		return
 	}
 	if int(percent) > j.percent && percent < 100 {
@@ -223,7 +227,7 @@ func (h *Host) cancelTakeComparison() TakeComparisonJob {
 		return h.takeComparisonState()
 	}
 	job.mu.Lock()
-	job.message = "Cancelling the comparison."
+	job.message, job.cancelling = "Cancelling the comparison.", true
 	job.mu.Unlock()
 	_ = os.WriteFile(job.progressPath+".cancel", nil, 0o600)
 	job.cancel()

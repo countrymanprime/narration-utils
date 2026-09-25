@@ -21,7 +21,6 @@ import (
 	"github.com/countrymanprime/narration-utils/shell/internal/teleprompter"
 	"github.com/countrymanprime/narration-utils/shell/internal/tts"
 	"github.com/countrymanprime/narration-utils/shell/internal/whisper"
-	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
 // Each exported method is a concrete Wails binding. Keep this boundary
@@ -226,7 +225,7 @@ func (h *Host) ProjectSelectFolder() (string, error) {
 	if ctx == nil {
 		return "", fmt.Errorf("the desktop host is not ready")
 	}
-	path, err := runtime.OpenDirectoryDialog(ctx, runtime.OpenDialogOptions{Title: "Choose a project folder", CanCreateDirectories: true})
+	path, err := pickFolder("Choose a project folder")
 	if err != nil {
 		return "", err
 	}
@@ -272,9 +271,9 @@ func pickerSwitchDAW(launched string) string {
 func reportAttach(ctx context.Context, attached bool, reason string) (string, error) {
 	if ctx != nil {
 		if attached {
-			runtime.EventsEmit(ctx, "system:attached", map[string]any{"attached": true})
+			emitEvent("system:attached", map[string]any{"attached": true})
 		} else if reason != "" {
-			runtime.EventsEmit(ctx, "system:attached", map[string]any{"attached": false, "reason": reason})
+			emitEvent("system:attached", map[string]any{"attached": false, "reason": reason})
 		}
 	}
 	return attachResult(attached, reason)
@@ -360,7 +359,7 @@ func (h *Host) ManuscriptSelectFile() (string, error) {
 	if ctx == nil {
 		return "", fmt.Errorf("the desktop host is not ready")
 	}
-	path, err := runtime.OpenFileDialog(ctx, runtime.OpenDialogOptions{Title: "Select manuscript", Filters: []runtime.FileFilter{{DisplayName: "Manuscripts", Pattern: importer.PickerPattern()}}})
+	path, err := pickFile("Select manuscript", []fileFilter{{"Manuscripts", importer.PickerPattern()}})
 	if err != nil {
 		return "", err
 	}

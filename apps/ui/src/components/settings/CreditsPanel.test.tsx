@@ -42,10 +42,10 @@ describe('CreditsPanel', () => {
     expect(await screen.findByText(/Bad Ideas Look Great in Neon/)).toBeTruthy();
   });
 
-  it('offers the manuscript-seeded suggestion for an empty Title field, and accepting it saves the value', async () => {
+  it('offers a source-captioned detected value for every empty field with a candidate, and accepting one saves it (credits-token-setup-and-front-matter-detection.prd.md Phase 1)', async () => {
     renderPanel();
-    const suggestions = await screen.findAllByText(/Suggested from the manuscript/);
-    expect(suggestions.length).toBeGreaterThanOrEqual(2);
+    const detected = await screen.findAllByText(/Detected from/);
+    expect(detected.length).toBeGreaterThanOrEqual(2);
     fireEvent.click(screen.getAllByRole('button', { name: 'Use suggestion' })[0]);
     await waitFor(() => expect((screen.getByLabelText('Title') as HTMLInputElement).value).not.toBe(''));
   });

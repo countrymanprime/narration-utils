@@ -107,9 +107,9 @@ export function ProjectPicker() {
 
   return (
     // tabIndex -1 like AppShell's <main>: a dialog that closes with nothing to give focus back to sends it here, not to <body>.
-    <>
+    <div className="flex h-full flex-col overflow-hidden">
       <DemoBanner />
-      <main tabIndex={-1} className="grid min-h-screen place-items-center p-6 focus:outline-none">
+      <main tabIndex={-1} className="grid min-h-0 flex-1 place-items-center overflow-y-auto p-6 focus:outline-none">
         {/* min-w-0: as a grid item the card otherwise grows to its longest nowrap child (a project path) and overflows narrow screens. */}
         <div className="w-full max-w-2xl min-w-0 rounded-lg border border-[var(--border)] bg-[var(--surface)] p-6 shadow-[var(--shadow)]">
           <h1 className="text-lg font-semibold">Open a project</h1>
@@ -188,6 +188,6 @@ export function ProjectPicker() {
         </div>
         {newProjectOpen && <NewProjectDialog onClose={() => setNewProjectOpen(false)} onCreated={projectCreated} />}
       </main>
-    </>
+    </div>
   );
 }

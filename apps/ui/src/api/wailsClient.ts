@@ -69,12 +69,24 @@ import { cleanupToolsStartResultSchema, cleanupToolsStateSchema } from './schema
 import { dictionaryLookupResultSchema } from './schemas/dictionary';
 import { retakeLanesListSchema, retakeLanesStartResultSchema, retakeLanesStateSchema } from './schemas/retakelanes';
 import type { NarrationApi } from '../types';
-import * as host from '../../wailsjs/go/main/Host';
-import { EventsOn } from '../../wailsjs/runtime/runtime';
+import * as host from '../../wailsjs/github.com/countrymanprime/narration-utils/shell/host';
+import { Events } from '@wailsio/runtime';
 
-declare global {
-  interface Window {
-    go?: { main?: { Host?: unknown } };
+/**
+ * A Go method that returns an error rejected with the error's text on Wails v2. Wails v3 rejects with a `RuntimeError` whose `message`
+ * is that text (ADR 0200), and pages show a rejection with `String(reason)`, which would then read "RuntimeError: ...". `decode` and
+ * `decodeObject`, which every binding call goes through, keep v2's contract: the text alone. Any other rejection (an unknown method,
+ * a wrong argument, a lost transport) passes through as it is.
+ */
+function hostErrorText(reason: unknown): unknown {
+  return reason instanceof Error && reason.name === 'RuntimeError' ? reason.message : reason;
+}
+
+async function hostResult<T>(request: Promise<T>): Promise<T> {
+  try {
+    return await request;
+  } catch (reason) {
+    throw hostErrorText(reason);
   }
 }
 
@@ -125,7 +137,13 @@ function liveEvent<S extends StandardSchemaV1>(schema: S, payload: string, value
 }
 
 function subscribeChecked<S extends StandardSchemaV1>(event: string, schema: S, onValid: (value: InferOutput<S>) => void): () => void {
-  return EventsOn(event, (value) => liveEvent(schema, event, value, onValid));
+  return onHostEvent(event, (value) => liveEvent(schema, event, value, onValid));
+}
+
+// Wails v3 delivers each event as a WailsEvent; what the host emitted is its `data` (apps/desktop/wailsapp.go emitEvent), which is
+// what every subscriber below checks. The name is the host's; the sender (a window name) is not used.
+function onHostEvent(event: string, onPayload: (payload: unknown) => void): () => void {
+  return Events.On(event, (wailsEvent) => onPayload(wailsEvent.data));
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -135,7 +153,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 // The host relays each sidecar line as a JSON value; tolerate the string form too so a transport change cannot silently drop the
 // whole stream. A type the UI does not know is a newer sidecar: ignored and named once, not counted as a failure.
 function subscribeTeleprompterEvents(onEvent: (event: InferOutput<typeof teleprompterEventSchema>) => void): () => void {
-  return EventsOn('teleprompter:event', (payload) => {
+  return onHostEvent('teleprompter:event', (payload) => {
     let value: unknown = payload;
     if (typeof payload === 'string') {
       try {
@@ -155,7 +173,7 @@ function subscribeTeleprompterEvents(onEvent: (event: InferOutput<typeof telepro
 
 /** A Wails string binding: the host sends JSON text, and it is checked against `schema` before anything reads it. */
 async function decode<S extends StandardSchemaV1>(schema: S, payload: string, request: Promise<string>): Promise<InferOutput<S>> {
-  const text = await request;
+  const text = await hostResult(request);
   return checked(() => parseWireJson(schema, text, bindingContext(payload)));
 }
 
@@ -168,7 +186,7 @@ function toStartOptions({ startWord, ...rest }: TeleprompterStartOptions): Recor
 
 /** Ready and Bootstrap are the two bindings that return an object, not JSON text. */
 async function decodeObject<S extends StandardSchemaV1>(schema: S, payload: string, request: Promise<unknown>): Promise<InferOutput<S>> {
-  const value = await request;
+  const value = await hostResult(request);
   return checked(() => parseWire(schema, value, bindingContext(payload)));
 }
 
@@ -210,7 +228,7 @@ export const wailsClient: NarrationApi = {
   guideDelete: (id) => decode(voidResult, 'GuideDelete', host.GuideDelete(id)),
   guideRelate: (id, otherId, label) => decode(voidResult, 'GuideRelate', host.GuideRelate(id, otherId, label)),
   guideUnrelate: (id, otherId, label) => decode(voidResult, 'GuideUnrelate', host.GuideUnrelate(id, otherId, label)),
-  guidePreview: (id, aliasIndex) => decode(guidePreviewSchema, 'GuidePreview', host.GuidePreview(id, aliasIndex)),
+  guidePreview: (id, aliasIndex) => decode(guidePreviewSchema, 'GuidePreview', host.GuidePreview(id, aliasIndex ?? null)),
   guidePronounce: (id, source, aliasIndex) => decode(voidResult, 'GuidePronounce', host.GuidePronounce(id, aliasIndex ?? null, source)),
   ttsCatalog: () => decode(ttsCatalogSchema, 'TtsCatalog', host.TtsCatalog()),
   ttsInstall: (voiceId) => decode(ttsInstallJobSchema, 'TtsInstall', host.TtsInstall(voiceId)),
@@ -261,7 +279,7 @@ export const wailsClient: NarrationApi = {
     decode(
       readerStateSchema,
       'ManuscriptSaveReaderState',
-      host.ManuscriptSaveReaderState(values.activeChapter ?? '', values.activeSourceLine, values.expandedChapters ?? []),
+      host.ManuscriptSaveReaderState(values.activeChapter ?? '', values.activeSourceLine ?? null, values.expandedChapters ?? []),
     ),
   readerBookmarkCreate: (bookmark) => decode(bookmarkSchema, 'ManuscriptCreateBookmark', host.ManuscriptCreateBookmark(bookmark)),
   readerBookmarkDelete: (id) => decode(voidResult, 'ManuscriptDeleteBookmark', host.ManuscriptDeleteBookmark(id)),
@@ -270,7 +288,11 @@ export const wailsClient: NarrationApi = {
   manuscriptSetChapterStatus: (chapter, status) => decode(chapterSchema, 'ManuscriptSetChapterStatus', host.ManuscriptSetChapterStatus(chapter, status)),
   noteList: (chapter) => decode(notesSchema, 'ManuscriptNotes', host.ManuscriptNotes(chapter ?? '')),
   noteCreate: (chapterId, paragraphId, text, anchorStart, anchorEnd, anchorText) =>
-    decode(noteSchema, 'ManuscriptCreateNote', host.ManuscriptCreateNote(chapterId, paragraphId, text, anchorText ?? '', anchorStart, anchorEnd)),
+    decode(
+      noteSchema,
+      'ManuscriptCreateNote',
+      host.ManuscriptCreateNote(chapterId, paragraphId, text, anchorText ?? '', anchorStart ?? null, anchorEnd ?? null),
+    ),
   noteDelete: (id) => decode(voidResult, 'ManuscriptDeleteNote', host.ManuscriptDeleteNote(id)),
   subscribeTranscript: (onUpdate) => subscribeChecked('transcript:state', transcriptStateSchema, onUpdate),
   coverageStart: (chapterId) => decode(coverageStartResultSchema, 'CoverageStart', host.CoverageStart(chapterId)),

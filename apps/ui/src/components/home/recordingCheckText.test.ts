@@ -1,7 +1,16 @@
 import { describe, expect, it } from 'vitest';
 import { COVERAGE_EVALUATOR_REASONS, COVERAGE_REFUSAL_REASONS } from '../../api/schemas/coverage';
 import type { CoverageRegion, CoverageReport, ManuscriptChapter } from '../../types';
-import { COVERAGE_REASON_TEXT, describeParagraphs, describePosition, describeRegion, formatAudioTime, paragraphRefs, verdict } from './recordingCheckText';
+import {
+  COVERAGE_REASON_TEXT,
+  describeParagraphs,
+  describePosition,
+  describeRegion,
+  formatAudioTime,
+  paragraphRefs,
+  recordedTo,
+  verdict,
+} from './recordingCheckText';
 
 const report = (present: number, body: number): CoverageReport => ({
   model: 'small',
@@ -82,5 +91,20 @@ describe('recording check text', () => {
     expect(formatAudioTime(7.9)).toBe('0:07');
     expect(formatAudioTime(3729)).toBe('1:02:09');
     expect(formatAudioTime(-3)).toBe('0:00');
+  });
+
+  it('states an unread end or start as "recorded to", never as a pickup (RS2 A)', () => {
+    const paragraphs = [
+      { id: 'p-a', tokens: 40, present: 40, longestMissingRun: 0 },
+      { id: 'p-b', tokens: 30, present: 30, longestMissingRun: 0 },
+      { id: 'p-c', tokens: 30, present: 16, longestMissingRun: 14 },
+    ];
+    const withTail = { ...report(86, 100), paragraphs, regions: [region] };
+    expect(recordedTo(withTail, chapter)).toEqual({ kind: 'tail', paragraph: 1, total: 3, wordsLeft: 14 });
+
+    const withHead = { ...report(86, 100), paragraphs, regions: [{ ...region, kind: 'head' as const, paragraphIds: ['p-a', 'p-b'] }] };
+    expect(recordedTo(withHead, chapter)).toEqual({ kind: 'head', paragraph: 2, total: 3, wordsLeft: 14 });
+
+    expect(recordedTo({ ...report(100, 100), paragraphs }, chapter)).toBeUndefined();
   });
 });
