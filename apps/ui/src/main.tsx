@@ -110,10 +110,12 @@ const mockDictionary = (['missing', 'damaged'] as const).find((seed) => seed ===
 // Word file whose headings the importer had to repair (so the repairs note can), or a plain-text file with an epigraph read as a subtitle (so a subtitle
 // that returns to the text when it is turned off can).
 const mockImportPreview = (['markdown', 'repaired', 'text'] as const).find((kind) => kind === mockParams.get('mockImportPreview'));
-// `?mockChapterLink=missing` seeds the first chapter with a confirmed link to a track GUID that is not in the mock
-// REAPER project, so the Tracks page's "Track missing" state can be seen without confirming and then deleting a
-// track first (analysis evidence ledger PRD, Phase 7).
-const mockChapterLinkMissing = mockParams.get('mockChapterLink') === 'missing';
+// `?mockChapterLink=missing|ambiguous|confirmed` seeds the first chapter's mapping directly, so a track-link state
+// that would otherwise need a real REAPER round trip (or several link/relink clicks) can be seen on load: `missing`
+// confirms a track GUID that is not in the mock REAPER project (Tracks page's "Track missing" state, analysis
+// evidence ledger PRD Phase 7); `ambiguous` confirms it to two tracks at once (chapter-track-link-control.prd.md
+// Phase 2, TL6); `confirmed` links it to its own suggested "Chapter 1" track outright, without a Change/Confirm click.
+const mockChapterLink = (['missing', 'ambiguous', 'confirmed'] as const).find((seed) => seed === mockParams.get('mockChapterLink'));
 // `?mockLineIdentity=success|conflict|error` boots the Tracks page's "Link chapters" dialog with LineIdentityState already at that
 // result, so its stale/conflict/drift and error states can be seen without a real REAPER round trip.
 const mockLineIdentity = (['success', 'conflict', 'error'] as const).find((seed) => seed === mockParams.get('mockLineIdentity'));
@@ -222,10 +224,40 @@ const mockInitial = {
   ...(mockNoRpp ? { tracksCandidates: [] } : {}),
   ...(mockManuscriptCandidate ? { manuscriptCandidate: { path: 'C:/Projects/Alice-in-Wonderland/manuscript.docx', name: 'manuscript.docx' } } : {}),
   ...(mockManuscriptMixed ? { mockManuscript: 'mixed' as const } : {}),
-  ...(mockChapterLinkMissing
+  ...(mockChapterLink === 'missing'
     ? {
         chapterTrackMappings: [
           { trackGuid: '{NOT-A-REAL-TRACK-GUID}', chapterId: WIRE_CHAPTERS[0].id, chapterTitle: WIRE_CHAPTERS[0].title, confirmedAt: '2026-09-01T12:00:00Z' },
+        ],
+      }
+    : {}),
+  ...(mockChapterLink === 'ambiguous'
+    ? {
+        chapterTrackMappings: [
+          {
+            trackGuid: WIRE_TRACKS_PROJECT.tracks[0].guid,
+            chapterId: WIRE_CHAPTERS[0].id,
+            chapterTitle: WIRE_CHAPTERS[0].title,
+            confirmedAt: '2026-09-01T12:00:00Z',
+          },
+          {
+            trackGuid: WIRE_TRACKS_PROJECT.tracks[1].guid,
+            chapterId: WIRE_CHAPTERS[0].id,
+            chapterTitle: WIRE_CHAPTERS[0].title,
+            confirmedAt: '2026-09-02T12:00:00Z',
+          },
+        ],
+      }
+    : {}),
+  ...(mockChapterLink === 'confirmed'
+    ? {
+        chapterTrackMappings: [
+          {
+            trackGuid: WIRE_TRACKS_PROJECT.tracks[0].guid,
+            chapterId: WIRE_CHAPTERS[0].id,
+            chapterTitle: WIRE_CHAPTERS[0].title,
+            confirmedAt: '2026-09-01T12:00:00Z',
+          },
         ],
       }
     : {}),

@@ -61,6 +61,34 @@ export const STATE_CATALOG: StateEntry[] = [
     description:
       "Home, chapter table expanded with the owner's heading shapes (?mockManuscript=mixed): a source-capitals title with a subtitle, a title with no subtitle, a long subtitle and a title already ending in a colon, one style (chapterName()/TitleSubtitle) throughout (chapter-title-display-consistency.prd.md Phase 2, mockups/chapter-title-display-consistency/02-home-table-*.webp)",
   },
+  // chapter-track-link-control.prd.md Phase 2: the Track column and its slide-over (mockups/chapter-track-link-control/).
+  // "chapter-table-expanded" above already carries mockup 01's variety of default states (suggested, not linked); the
+  // renamed state (04) has no host or mock simulation yet (nothing records a track's name at confirm time to compare
+  // against), so it is not captured here.
+  {
+    page: 'home',
+    state: 'chapter-track-panel-linked',
+    description:
+      'Home, chapter track panel open on a confirmed link, showing its facts and how it was found (?mockChapterLink=confirmed, mockups/chapter-track-link-control/02-slideover-linked.webp)',
+  },
+  {
+    page: 'home',
+    state: 'chapter-track-panel-ambiguous',
+    description:
+      'Home, chapter track panel open on a chapter confirmed to two tracks at once, offering to keep one (?mockChapterLink=ambiguous, TL6, mockups/chapter-track-link-control/03-slideover-ambiguous.webp)',
+  },
+  {
+    page: 'home',
+    state: 'chapter-track-panel-missing',
+    description:
+      'Home, chapter track panel open on a confirmed link whose track is no longer in the project (?mockChapterLink=missing, mockups/chapter-track-link-control/05-slideover-track-missing.webp)',
+  },
+  {
+    page: 'home',
+    state: 'chapter-track-no-project',
+    description:
+      'Home, chapter table expanded with no REAPER project found: the Track column is absent and its place names why (TL7, ?mockNoRpp=1, mockups/chapter-track-link-control/08-no-project-line.webp)',
+  },
   {
     page: 'home',
     state: 'hint-chips',

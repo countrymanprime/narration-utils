@@ -1,12 +1,14 @@
 import { describeApiError } from '../../api/errorMessage';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faChevronDown, faChevronUp, faTriangleExclamation } from '@fortawesome/free-solid-svg-icons';
-import type { ChapterStatus, CoverageState, ManuscriptChapter, RecordedUnavailable } from '../../types';
+import type { ChapterStatus, ChapterTrackLinks, CoverageState, ManuscriptChapter, RecordedUnavailable } from '../../types';
 import { estimateFinishedHours } from '../../state';
 import { chapterName } from '../../chapterName';
 import { TitleSubtitle } from '../primitives/TitleSubtitle';
+import { ChapterTrackButton } from './ChapterTrackButton';
+import { ChapterTrackPanel } from './ChapterTrackPanel';
 import { useCreditsSeconds } from './useCreditsSeconds';
 import { useCreditsRows, type CreditsKind } from './useCreditsRows';
 import { useApi } from '../../api/ApiContext';
@@ -116,7 +118,25 @@ export function AudiobookEstimatePanel({
   });
   const [why, setWhy] = useState<{ chapterId: string; open: boolean }>();
 
+  // Chapter track links (chapter-track-link-control.prd.md Phase 2): one read of every narration chapter's link
+  // state and track facts from a single .rpp parse (Phase 1's ChapterTrackLinks), so twenty rows never each parse the
+  // saved project on their own. `trackChapter` is the row whose ChapterTrackPanel is open; kept while the panel
+  // slides shut so its content does not vanish mid-animation, matching `why` above.
+  const [trackLinks, setTrackLinks] = useState<ChapterTrackLinks>();
+  const [trackChapter, setTrackChapter] = useState<{ chapterId: string; open: boolean }>();
+  const loadTrackLinks = useCallback(async () => {
+    try {
+      setTrackLinks(await api.chapterTrackLinks());
+    } catch (error) {
+      notify(describeApiError(error), 'error');
+    }
+  }, [api, notify]);
+
   useEffect(() => api.subscribeCoverage(setCoverage), [api]);
+
+  useEffect(() => {
+    void loadTrackLinks();
+  }, [loadTrackLinks, refreshKey, measuredRun]);
 
   useEffect(() => {
     if (coverage.phase !== 'complete' || !coverage.runId || lastCompleted.current === coverage.runId) return;
@@ -151,6 +171,7 @@ export function AudiobookEstimatePanel({
               </Link>
             </div>
           </TableCell>
+          {trackLinks?.project === 'ready' && <TableCell />}
           <TableCell align="right" className="font-['IBM_Plex_Mono',ui-monospace,monospace]">
             —
           </TableCell>
@@ -184,6 +205,7 @@ export function AudiobookEstimatePanel({
             )}
           </div>
         </TableCell>
+        {trackLinks?.project === 'ready' && <TableCell />}
         <TableCell align="right" className="font-['IBM_Plex_Mono',ui-monospace,monospace]">
           {(row.words ?? 0).toLocaleString()}
         </TableCell>
@@ -303,10 +325,25 @@ export function AudiobookEstimatePanel({
         </div>
         <CollapsiblePanel className="overflow-x-auto border-t border-[var(--border)] pt-1">
           <StageCheckLine state={stages.state} onCheckNow={() => void stages.refresh()} />
+          {trackLinks && trackLinks.project !== 'ready' && (
+            <p className="px-[1.1rem] py-1.5 text-sm" style={{ color: 'var(--text-muted)' }}>
+              {trackLinks.message}
+              {trackLinks.project === 'choose' && (
+                <>
+                  {' '}
+                  <Link className="font-semibold underline" to="/tracks">
+                    Choose it on Tracks
+                  </Link>
+                  {' to see chapter tracks.'}
+                </>
+              )}
+            </p>
+          )}
           <Table label="Chapters">
             <TableHead>
               <TableRow>
                 <TableHeader>Chapter</TableHeader>
+                {trackLinks?.project === 'ready' && <TableHeader>Track</TableHeader>}
                 <TableHeader align="right">Words</TableHeader>
                 <TableHeader align="right">Est. finished length</TableHeader>
                 <TableHeader
@@ -342,6 +379,24 @@ export function AudiobookEstimatePanel({
                         </Link>
                       </div>
                     </TableCell>
+                    {trackLinks?.project === 'ready' && (
+                      <TableCell>
+                        {(() => {
+                          const link = trackLinks.chapters.find((entry) => entry.chapterId === chapter.id);
+                          if (!link) return null;
+                          const trackGuid = link.track?.trackGuid;
+                          const trackSummary = trackGuid ? trackLinks.tracks.find((track) => track.guid === trackGuid) : undefined;
+                          return (
+                            <ChapterTrackButton
+                              chapterTitle={chapter.title}
+                              link={link}
+                              trackColor={trackSummary?.color}
+                              onClick={() => setTrackChapter({ chapterId: chapter.id, open: true })}
+                            />
+                          );
+                        })()}
+                      </TableCell>
+                    )}
                     <TableCell align="right" className="font-['IBM_Plex_Mono',ui-monospace,monospace]">
                       {chapter.wordCount.toLocaleString()}
                     </TableCell>
@@ -460,6 +515,26 @@ export function AudiobookEstimatePanel({
           goToParagraph={(paragraph) => goToManuscript(why.chapterId, paragraph)}
         />
       )}
+      {trackChapter &&
+        (() => {
+          const chapter = narrationChapters.find((item) => item.id === trackChapter.chapterId);
+          const link = trackLinks?.chapters.find((entry) => entry.chapterId === trackChapter.chapterId);
+          const trackGuid = link?.track?.trackGuid;
+          const trackSummary = trackGuid ? trackLinks?.tracks.find((track) => track.guid === trackGuid) : undefined;
+          return (
+            <ChapterTrackPanel
+              open={trackChapter.open}
+              chapterId={trackChapter.chapterId}
+              chapterTitle={chapter?.title ?? ''}
+              link={link}
+              trackSummary={trackSummary}
+              savedAt={trackLinks?.savedAt ?? ''}
+              notify={notify}
+              onClose={() => setTrackChapter({ ...trackChapter, open: false })}
+              onChanged={loadTrackLinks}
+            />
+          );
+        })()}
     </Collapsible>
   );
 }
