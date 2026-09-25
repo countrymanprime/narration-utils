@@ -397,6 +397,20 @@ async function openRecordingCheck(page: Page, chapter: string, seed?: string) {
   return dialog;
 }
 
+// Opens a chapter's track slide-over from the per-chapter breakdown (chapter-track-link-control.prd.md Phase 2),
+// booted with a mock seed (main.tsx's `?mockChapterLink=`), and waits for its saved-project facts to have loaded.
+// Returns the dialog.
+async function openTrackPanel(page: Page, chapter: string, seed: string) {
+  await page.goto(`/?${seed}`);
+  await settlePage(page);
+  await homeLoaded(page);
+  await clickVisible(page, 'button', /Show per-chapter breakdown/);
+  await clickVisible(page, 'button', new RegExp(`^Track for ${chapter}:`));
+  const dialog = page.getByRole('dialog', { name: `Track: ${chapter}` });
+  await dialog.getByText('Reading the saved project…').waitFor({ state: 'detached' });
+  return dialog;
+}
+
 // Home booted with a stage suggestions seed (`?mockStages=`, main.tsx), once the first read has answered: the chips on the collapsed
 // card (`mixed`) or its error chip (`error`) are on screen (chapter-stage-recommendations.prd.md Phase 5).
 async function openStageSuggestions(page: Page, seed: 'mixed' | 'error', expand = true) {
@@ -613,6 +627,27 @@ export const APP_DRIVERS: Record<string, Record<string, Driver>> = {
         const links = [...document.querySelectorAll<HTMLAnchorElement>('td a[href*="/manuscript#c"]')];
         return links.length > 0 && links.every((link) => getComputedStyle(link).textTransform === 'none');
       });
+    },
+    'chapter-track-panel-linked': async (page) => {
+      const dialog = await openTrackPanel(page, 'Chapter 1', 'mockChapterLink=confirmed');
+      // "Linked" also names the confirmed-at Fact row's label, so this scopes to the header's state eyebrow.
+      await dialog.getByText('Linked').first().waitFor();
+      await dialog.getByText('Found through').waitFor();
+    },
+    'chapter-track-panel-ambiguous': async (page) => {
+      const dialog = await openTrackPanel(page, 'Chapter 1', 'mockChapterLink=ambiguous');
+      await dialog.getByText('Linked to 2 tracks').waitFor();
+    },
+    'chapter-track-panel-missing': async (page) => {
+      const dialog = await openTrackPanel(page, 'Chapter 1', 'mockChapterLink=missing');
+      await dialog.getByText('Track missing').waitFor();
+    },
+    'chapter-track-no-project': async (page) => {
+      await page.goto('/?mockNoRpp=1');
+      await settlePage(page);
+      await homeLoaded(page);
+      await clickVisible(page, 'button', /Show per-chapter breakdown/);
+      await page.getByText('No REAPER project (.rpp) file was found in this project folder.').waitFor();
     },
     'hint-chips': async (page) => {
       await goToPage(page, 'Proofing');
