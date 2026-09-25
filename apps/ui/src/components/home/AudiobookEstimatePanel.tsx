@@ -27,6 +27,7 @@ import type { Notify } from '../primitives/Toast';
 import { Button } from '../primitives/Button';
 import { RecordingCheck } from './RecordingCheck';
 import { useStageRecommendations } from '../stages/useStageRecommendations';
+import { useRefreshOnFocus } from '../stages/useRefreshOnFocus';
 import { StageSuggestion } from '../stages/StageSuggestion';
 import { StageEvidence } from '../stages/StageEvidence';
 import { StageCheckLine, StageSummaryChips } from '../stages/StageSummary';
@@ -180,6 +181,13 @@ export function AudiobookEstimatePanel({
   useEffect(() => {
     void loadChapters();
   }, [loadChapters, refreshKey, measuredRun]);
+
+  // home-stage-check-line.prd.md Phase 2 (Q2 A): the one evidence change the app's own reads miss is the narrator
+  // saving the project in REAPER, or a recording check result changing, while Home stays open.
+  useRefreshOnFocus(() => {
+    void stages.refresh();
+    void loadChapters();
+  }, stages.busy);
 
   // Remove from recording / Restore (chapter-track-link-control.prd.md Phase 3): both re-read the chapter list (the
   // row leaves or rejoins the table) and ChapterTrackLinks (a removal clears the chapter's link). Remove rethrows on

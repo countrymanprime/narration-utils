@@ -1290,4 +1290,48 @@ export const WIRE_FINDINGS: Finding[] = [
   },
 ];
 
+/** One unreviewed take-review pickup finding for chapterId (recording-check-summary.prd.md Phase 3, RS4 A): the
+ * summary's "Take review" count and Open Review link demo, seeded additively (never into the default
+ * `WIRE_FINDINGS` other tests hardcode exact counts against) alongside the coverage mock's own interior-pickups
+ * seed for the same chapter. */
+export function takeReviewPickupFor(chapterId: string, chapterTitle: string): Finding {
+  return {
+    schema_version: 1,
+    id: `pickup-${chapterId}`,
+    analyzer: 'take-review',
+    project: { path: 'C:/Projects/Alice-in-Wonderland/Alice.rpp' },
+    source: {
+      file: `C:/Projects/Alice-in-Wonderland/media/${chapterId}_take1.wav`,
+      item_guid: `{11111111-0000-0000-0000-${chapterId.replace(/\D/g, '').padStart(12, '0')}}`,
+      take_guid: `{22222222-0000-0000-0000-${chapterId.replace(/\D/g, '').padStart(12, '0')}}`,
+    },
+    manuscript: { chapter_id: chapterId, chapter_title: chapterTitle },
+    category: 'pickup',
+    severity: 'info',
+    confidence: 0.6,
+    evidence_version: `sha256:pickup-${chapterId}`,
+    confidence_reason: "average of 2 member(s)' alignment match quality (fraction of aligned tokens that matched the manuscript exactly)",
+    evidence: {
+      kind: 'pickup',
+      matched_span_first: 5,
+      matched_span_last: 9,
+      members: [
+        {
+          item_index: 0,
+          item_guid: `{11111111-0000-0000-0000-${chapterId.replace(/\D/g, '').padStart(12, '0')}}`,
+          take_guid: `{22222222-0000-0000-0000-${chapterId.replace(/\D/g, '').padStart(12, '0')}}`,
+          source_file: `C:/Projects/Alice-in-Wonderland/media/${chapterId}_take1.wav`,
+          source_start: 0,
+          source_length: 3.8,
+          coverage: 1,
+          quality: 0.64,
+          exact_copy_group: '',
+        },
+      ],
+    },
+    suggested_action: { kind: 'create_take', requires_confirmation: true },
+    review: { status: 'unreviewed' },
+  };
+}
+
 export const wireClone = <T>(value: T): T => structuredClone(value);
