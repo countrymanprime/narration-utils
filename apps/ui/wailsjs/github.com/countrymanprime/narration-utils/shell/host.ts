@@ -93,6 +93,36 @@ export function ChapterSuggestion(): $CancellablePromise<string> {
 }
 
 /**
+ * ChapterSyncPreview plans a sync without writing anything: the consent dialog's preview.
+ */
+export function ChapterSyncPreview(): $CancellablePromise<string> {
+    return $Call.ByID(2662742132);
+}
+
+/**
+ * ChapterSyncSetEnabled stores the narrator's answer (Sync is true, Not now is false, and the Tracks page's toggle
+ * uses the same call) and, when on, runs the first sync. It returns the new state with the sync's batch.
+ */
+export function ChapterSyncSetEnabled(on: boolean): $CancellablePromise<string> {
+    return $Call.ByID(1374797281, on);
+}
+
+/**
+ * ChapterSyncState reads the consent, whether to ask, and the last sync. It only reads.
+ */
+export function ChapterSyncState(): $CancellablePromise<string> {
+    return $Call.ByID(2066232613);
+}
+
+/**
+ * ChapterSyncUndo removes one automatic link and remembers the pair so no later sync makes it again (ADR 0203). A
+ * manual link is refused. It returns the new state.
+ */
+export function ChapterSyncUndo(trackGUID: string): $CancellablePromise<string> {
+    return $Call.ByID(2733438718, trackGUID);
+}
+
+/**
  * ChapterTagsEmbed builds the chapter timeline from Phase 11's known per-chapter files and writes ID3v2 CHAP and
  * CTOC frames into a NEW copy of destPath (the narrator-supplied combined-book MP3), returning that new file's
  * path. destPath is never modified. The narrator confirms this explicitly in the UI before it is called.

@@ -28,6 +28,7 @@ import {
   searchHitsSchema,
   workJobSchema,
 } from './schemas/manuscript';
+import { chapterSyncPreviewSchema, chapterSyncStateSchema } from './schemas/chapterSync';
 import { assetCatalogSchema, assetInstallJobSchema, assetVerifyResultSchema } from './schemas/assets';
 import { settingsForScopeSchema } from './schemas/settings';
 import {
@@ -220,6 +221,9 @@ const GOLDEN: Record<string, z.ZodType> = {
   'chapter-track-match-ambiguous.json': chapterTrackMatchSchema,
   'chapter-track-match-none.json': chapterTrackMatchSchema,
   'chapter-track-links-ready.json': chapterTrackLinksSchema,
+  'chapter-sync-state-ask.json': chapterSyncStateSchema,
+  'chapter-sync-state-synced.json': chapterSyncStateSchema,
+  'chapter-sync-preview.json': chapterSyncPreviewSchema,
   'chapter-track-links-no-project.json': chapterTrackLinksSchema,
   'chapter-track-links-conflict.json': chapterTrackLinksSchema,
   'chapter-regions-preview.json': chapterRegionPlanSchema,
@@ -629,6 +633,31 @@ describe('answers of the mock client for the manuscript, Story Bible and project
       'mock saved state',
     );
     expectMatches(chapterSchema, await api.manuscriptSetChapterStatus(chapters[0]?.id ?? '', 'recording'), 'mock chapter status');
+  });
+
+  // daw-chapter-track-auto-sync.prd.md Phase 3: consent, the first sync and its batch, Undo, and chaptersync:state.
+  it('chapter sync answers and events', async () => {
+    const quiet = await createMockApi().chapterSyncState();
+    expectMatches(chapterSyncStateSchema, quiet, 'mock chapter sync, synced before');
+    expect(quiet).toMatchObject({ consent: 'on', ask: false, batch: null });
+
+    const api = createMockApi({}, { chapterSync: 'ask' });
+    const seen: unknown[] = [];
+    api.subscribeChapterSync((state) => seen.push(state));
+    const asking = await api.chapterSyncState();
+    expectMatches(chapterSyncStateSchema, asking, 'mock chapter sync, asking');
+    expect(asking).toMatchObject({ consent: 'undecided', ask: true });
+    const preview = await api.chapterSyncPreview();
+    expectMatches(chapterSyncPreviewSchema, preview, 'mock chapter sync preview');
+    expect(preview.autoLink.length).toBeGreaterThan(0);
+    const synced = await api.chapterSyncSetEnabled(true);
+    expectMatches(chapterSyncStateSchema, synced, 'mock chapter sync, synced');
+    expect(synced.batch?.linked.map((link) => link.trackGuid)).toEqual(preview.autoLink.map((link) => link.trackGuid));
+    const undone = await api.chapterSyncUndo(preview.autoLink[0].trackGuid);
+    expectMatches(chapterSyncStateSchema, undone, 'mock chapter sync, undone');
+    expect((await api.chapterSyncPreview()).autoLink.map((link) => link.trackGuid)).not.toContain(preview.autoLink[0].trackGuid);
+    for (const state of seen) expectMatches(chapterSyncStateSchema, state, 'mock chaptersync:state');
+    expect(seen.length).toBeGreaterThanOrEqual(2);
   });
 
   // chapter-track-link-control.prd.md Phase 3: Remove from recording clears the chapter's links, and Restore brings it back.
@@ -1704,6 +1733,10 @@ describe('answers of the mock client for the settings, voice, model, transcript 
       'chapterTrackMapClear',
       'chapterTrackSet',
       'chapterTrackUnlink',
+      'chapterSyncState',
+      'chapterSyncPreview',
+      'chapterSyncSetEnabled',
+      'chapterSyncUndo',
       'chapterTrackLinks',
       'chapterRegionsPreview',
       'chapterRegionsCreate',
@@ -1839,6 +1872,7 @@ describe('answers of the mock client for the settings, voice, model, transcript 
       'subscribeUpdate',
       'subscribeLineIdentity',
       'subscribePickups',
+      'subscribeChapterSync',
       'subscribeRenderConfig',
       'subscribeCleanupTools',
       'subscribeProjectState',

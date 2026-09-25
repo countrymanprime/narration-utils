@@ -29,6 +29,7 @@ import {
   retailSampleAnswerSchema,
 } from './schemas/credits';
 import { dawCatalogListSchema } from './schemas/dawCatalog';
+import { chapterSyncPreviewSchema, chapterSyncStateSchema } from './schemas/chapterSync';
 import { guideBuildResultSchema, guideCreatedSchema, guideEntitiesSchema, guidePreviewSchema } from './schemas/storyBible';
 import { settingsForScopeSchema } from './schemas/settings';
 import { tracksDiscoverySchema, tracksProjectSchema } from './schemas/tracks';
@@ -392,6 +393,11 @@ export const wailsClient: NarrationApi = {
   chapterTrackMapClear: (trackGuid) => decode(chapterTrackMappingSchema, 'ChapterTrackMapClear', host.ChapterTrackMapClear(trackGuid)),
   chapterTrackSet: (chapterId, trackGuid) => decode(chapterTrackSetSchema, 'ChapterTrackSet', host.ChapterTrackSet(chapterId, trackGuid)),
   chapterTrackUnlink: (chapterId) => decode(chapterTrackMappingSchema, 'ChapterTrackUnlink', host.ChapterTrackUnlink(chapterId)),
+  chapterSyncState: () => decode(chapterSyncStateSchema, 'ChapterSyncState', host.ChapterSyncState()),
+  chapterSyncPreview: () => decode(chapterSyncPreviewSchema, 'ChapterSyncPreview', host.ChapterSyncPreview()),
+  chapterSyncSetEnabled: (on) => decode(chapterSyncStateSchema, 'ChapterSyncSetEnabled', host.ChapterSyncSetEnabled(on)),
+  chapterSyncUndo: (trackGuid) => decode(chapterSyncStateSchema, 'ChapterSyncUndo', host.ChapterSyncUndo(trackGuid)),
+  subscribeChapterSync: (onUpdate) => subscribeChecked('chaptersync:state', chapterSyncStateSchema, onUpdate),
   chapterTrackLinks: () => decode(chapterTrackLinksSchema, 'ChapterTrackLinks', host.ChapterTrackLinks()),
   chapterRegionsPreview: (openingTrackGuid, closingTrackGuid) =>
     decode(chapterRegionPlanSchema, 'ChapterRegionsPreview', host.ChapterRegionsPreview(openingTrackGuid, closingTrackGuid)),

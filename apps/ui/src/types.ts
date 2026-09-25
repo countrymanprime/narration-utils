@@ -11,6 +11,7 @@ export * from './api/contracts/project';
 export * from './api/contracts/dawCatalog';
 export * from './api/contracts/tracks';
 export * from './api/contracts/chapterTrackMap';
+export * from './api/contracts/chapterSync';
 export * from './api/contracts/teleprompter';
 export * from './api/contracts/update';
 export * from './api/contracts/credits';
@@ -31,6 +32,7 @@ export * from './api/contracts/deliveryProfiles';
 export * from './api/contracts/diagnostics';
 
 import type { ChapterTrackMapApi } from './api/contracts/chapterTrackMap';
+import type { ChapterSyncApi } from './api/contracts/chapterSync';
 import type { DawCatalogApi } from './api/contracts/dawCatalog';
 import type { FindingsApi } from './api/contracts/findings';
 import type { ManuscriptApi } from './api/contracts/manuscript';
@@ -74,6 +76,7 @@ export interface NarrationApi
     DawCatalogApi,
     TracksApi,
     ChapterTrackMapApi,
+    ChapterSyncApi,
     TeleprompterApi,
     UpdateApi,
     CreditsApi,

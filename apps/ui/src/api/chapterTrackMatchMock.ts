@@ -1,3 +1,4 @@
+import type { ChapterSyncPreview } from './contracts/chapterSync';
 import type {
   ChapterRegionKind,
   ChapterRegionPlan,
@@ -219,6 +220,68 @@ export function mockRecordedLength(
   }
   if (current) total += current[1] - current[0];
   return { recordedSeconds: total };
+}
+
+/**
+ * The mock's ChapterSyncPreview (daw-chapter-track-auto-sync PRD Phase 3): chaptersync.Build's rules over the mock's links read.
+ * A chapter's own links are kept; a confident track-name match links (unless the pair was undone); a tie, a guess or an undone
+ * pair needs the narrator; nothing is no track. A track no chapter holds or names is unmatched.
+ */
+export function mockChapterSyncPreview(links: ChapterTrackLinks, rejected: ReadonlySet<string>): ChapterSyncPreview {
+  const preview: ChapterSyncPreview = {
+    project: links.project,
+    message: links.message,
+    projectFile: links.projectFile,
+    savedAt: links.savedAt,
+    kept: [],
+    autoLink: [],
+    needsYou: [],
+    noTrack: [],
+    unmatched: [],
+    pickupTracks: [],
+    new: [],
+    changed: [],
+    renamed: [],
+    missing: [],
+  };
+  if (links.project !== 'ready') return preview;
+  const named = new Set<string>();
+  for (const chapter of links.chapters) {
+    chapter.candidates.forEach((candidate) => named.add(candidate.trackGuid));
+    chapter.links.forEach((link) => named.add(link.trackGuid));
+    if (chapter.links.length > 0) {
+      preview.kept.push(...chapter.links);
+      continue;
+    }
+    const track = chapter.track;
+    if (chapter.status === 'matched' && track && track.source === 'track-name' && !rejected.has(`${track.trackGuid}\u0000${chapter.chapterTitle}`)) {
+      preview.autoLink.push({
+        trackGuid: track.trackGuid,
+        trackName: track.trackName,
+        chapterId: chapter.chapterId,
+        chapterTitle: chapter.chapterTitle,
+        match: { score: track.score, kind: track.score >= 1 ? 'exact' : 'contained' },
+      });
+      continue;
+    }
+    if (chapter.candidates.length === 0) {
+      preview.noTrack.push({ chapterId: chapter.chapterId, chapterTitle: chapter.chapterTitle });
+      continue;
+    }
+    const reason =
+      chapter.status === 'ambiguous' ? 'ambiguous' : chapter.status === 'matched' ? (track?.source === 'region-name' ? 'region' : 'rejected') : 'uncertain';
+    preview.needsYou.push({
+      chapterId: chapter.chapterId,
+      chapterTitle: chapter.chapterTitle,
+      reason,
+      best: track ?? chapter.candidates[0] ?? null,
+      candidates: chapter.candidates,
+    });
+  }
+  for (const track of links.tracks) {
+    if (!named.has(track.guid)) preview.unmatched.push({ guid: track.guid, name: track.name, index: track.index, marker: '' });
+  }
+  return preview;
 }
 
 /** The mock's chapter region plan (reaper-automation-follow-through PRD Phase 7, credits-in-chapter-table PRD Phase 4)
