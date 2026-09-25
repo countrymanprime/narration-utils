@@ -19,7 +19,7 @@ function renderTracksPage(overrides: Partial<NarrationApi> = {}, initial: Parame
   const api = createMockApi(overrides, initial);
   render(
     <ApiProvider api={api}>
-      <TracksPage dawFileLinked onLinkDawFile={() => {}} />
+      <TracksPage dawFileLinked onLinkDawFile={() => {}} notify={() => {}} />
     </ApiProvider>,
   );
   return api;
@@ -155,7 +155,7 @@ describe('TracksPage', () => {
     const api = createMockApi();
     render(
       <ApiProvider api={api}>
-        <TracksPage dawFileLinked={false} onLinkDawFile={onLinkDawFile} />
+        <TracksPage dawFileLinked={false} onLinkDawFile={onLinkDawFile} notify={() => {}} />
       </ApiProvider>,
     );
     const link = await screen.findByRole('button', { name: 'Link a REAPER project file' });
@@ -165,7 +165,7 @@ describe('TracksPage', () => {
 
     render(
       <ApiProvider api={api}>
-        <TracksPage dawFileLinked onLinkDawFile={onLinkDawFile} />
+        <TracksPage dawFileLinked onLinkDawFile={onLinkDawFile} notify={() => {}} />
       </ApiProvider>,
     );
     expect(await screen.findByRole('button', { name: 'Link a different REAPER project file' })).toBeTruthy();
