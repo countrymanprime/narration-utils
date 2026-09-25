@@ -19,6 +19,7 @@ type fakeReview struct {
 	subscriptions []dawadapter.Subscription
 	queued        []dawadapter.Event
 	failWith      error
+	projectFolder string
 }
 
 var _ dawadapter.Review = (*fakeReview)(nil)
@@ -42,8 +43,9 @@ func (f *fakeReview) Dispatch() error {
 	return nil
 }
 
-func (f *fakeReview) PrepareReview(runID string) error {
+func (f *fakeReview) PrepareReview(runID, projectFolder string) error {
 	f.calls = append(f.calls, "prepare")
+	f.projectFolder = projectFolder
 	return f.failWith
 }
 
@@ -162,5 +164,17 @@ func TestNoAdapterIsTheUnavailableBridgeError(t *testing.T) {
 	}
 	if err := service.Jump("row-1"); err == nil {
 		t.Fatal("no adapter must be an error, not a panic")
+	}
+}
+
+// The app's project folder, not the .rpp's, is where REAPER reads the manuscript and writes the diffs (project-workspace
+// PRD Phase 5, W4): Start passes the folder it has just checked the manuscript in.
+func TestStartPassesTheAppsProjectFolderToTheDAW(t *testing.T) {
+	service, fake := adapterService(t)
+	if err := service.Start(map[string]string{}); err != nil {
+		t.Fatal(err)
+	}
+	if fake.projectFolder == "" || fake.projectFolder != service.config.Project {
+		t.Fatalf("PrepareReview got folder %q, want the service's project %q", fake.projectFolder, service.config.Project)
 	}
 }

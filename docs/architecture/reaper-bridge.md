@@ -108,7 +108,7 @@ The feature files are `loadfile`d when the bridge module loads, so a missing or 
 
 | Command | Arguments after the name | Events |
 | --- | --- | --- |
-| `prepare_compare` | `run_id` | `COMPARE_PREPARED\|run\|manifest\|manuscript\|track\|diff\|items[\|changeCount]` (REAPER's edit counter as the audio was listed, the baseline for "changed since comparison"; absent without `GetProjectStateChangeCount`), or `ERROR` |
+| `prepare_compare` | `run_id`, optional `project_folder` (the app's project folder; the manuscript is read and the diffs written there instead of beside the `.rpp`) | `COMPARE_PREPARED\|run\|manifest\|manuscript\|track\|diff\|items[\|changeCount]` (REAPER's edit counter as the audio was listed, the baseline for "changed since comparison"; absent without `GetProjectStateChangeCount`), or `ERROR` |
 | `inspect_compare_results` | `run_id`, `results_path` | `COMPARE_MARKER\|...` per row, then `COMPARE_INSPECTED\|run\|summary\|total\|already-marked` |
 | `export_compare_markers` | `run_id`, `results_path`, three `RRGGBB` colours | `COMPARE_EXPORT_MARKER\|run\|row\|state\|existing-name` per row, then `COMPARE_EXPORTED\|run\|added\|skipped` |
 | `jump_to_compare_marker` | `run_id`, `row_id` | none, or `ERROR` |

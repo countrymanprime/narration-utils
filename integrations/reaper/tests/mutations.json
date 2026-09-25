@@ -640,5 +640,11 @@
     "file": "narration_compare.lua",
     "find": "if reaper.APIExists('GetProjectStateChangeCount') then\n    local changes",
     "replace": "if true then\n    local changes"
+  },
+  {
+    "name": "prepare_compare ignores the project folder the app passes",
+    "file": "narration_compare.lua",
+    "find": "  if (app_folder or '') ~= '' then\n    project_folder = app_folder\n  end",
+    "replace": "  if false then\n    project_folder = app_folder\n  end"
   }
 ]

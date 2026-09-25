@@ -192,7 +192,9 @@ func (s *Service) Start(options map[string]string) error {
 	if s.bridge == nil {
 		return fmt.Errorf("the REAPER bridge is unavailable")
 	}
-	if err := s.bridge.PrepareReview(runID); err != nil {
+	// The app's project folder, which need not hold the .rpp (project-workspace PRD Phase 5, W4): Start has just checked its
+	// manuscript, so REAPER reads that one and writes the diffs beside it.
+	if err := s.bridge.PrepareReview(runID, s.config.Project); err != nil {
 		s.fail(err.Error())
 		return err
 	}
