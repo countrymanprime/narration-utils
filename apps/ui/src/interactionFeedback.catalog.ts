@@ -122,6 +122,7 @@ export const FEEDBACK_CATALOG: Record<string, FeedbackRow> = {
   'src/components/home/RecordingCheck.tsx::coverageCancel#1': row('click', 'instant', 'pending', 'pending', 'ui', 'toast', 'na', 'ok', 'A second press is ignored until the host answers; the next state event turns the work dialog to Cancelled, and a failed cancel is a toast.'),
   'src/components/home/RecordingCheck.tsx::tracksList#1': row('mount', 'file-io', 'na', 'na', 'ui', 'inline', 'na', 'ok', 'The REAPER tracks for the chapter-track link shown when a check needs one; the block says it is reading them, and a failure is written in place with a link to the Tracks page.'),
   'src/components/home/RecordingCheck.tsx::chapterTrackMapConfirm#1': row('click', 'file-io', 'pending', 'pending', 'ui', 'inline', 'no', 'ok', 'Confirm on the in-dialog MappingConfirm: busy until the link is written, then the stored result is read again; a failure is written in place.'),
+  'src/components/home/RecordingCheckReport.tsx::findingsList#1': row('mount', 'file-io', 'na', 'na', 'ui', 'silent', 'na', 'exempt', 'A background count of the chapter\'s other pickups - take review\'s unreviewed repeated reads (recording-check-summary.prd.md Phase 3, RS4 A) - alongside the check\'s own gaps; nothing for the narrator to guard or retry, so a failure just leaves the line out (SILENT_CATCHES).'),
   'src/components/home/ChapterTrackPanel.tsx::tracksList#1': row('mount', 'file-io', 'na', 'na', 'ui', 'inline', 'na', 'ok', 'The REAPER tracks for the panel\'s own MappingConfirm; the section says it is reading them, and a failure is written in place instead of the picker.'),
   'src/components/home/ChapterTrackPanel.tsx::chapterTrackSet#1': row('click', 'file-io', 'pending', 'pending', 'ui', 'toast', 'no', 'ok', 'Confirm, a candidate\'s Link, or a conflict\'s Keep this one: busy until the link replaces the chapter\'s old one; a toast names the displaced chapter when the track was linked elsewhere, and a failure is a toast.'),
   'src/components/home/ChapterTrackPanel.tsx::chapterTrackUnlink#1': row('click', 'file-io', 'pending', 'pending', 'ui', 'toast', 'no', 'ok', 'Clear: busy until every link the chapter holds is removed; a toast confirms, and a failure is a toast.'),
@@ -608,4 +609,6 @@ export const SILENT_CATCHES: Record<string, string> = {
     'Hydrates whatever launch was already in flight when the dialog reopened; the narrator can press Open either way, and a launch shows its own failure inline.',
   'src/components/tracks/RenderConfigDialog.tsx#1':
     'Hydrates whatever configure run was already in flight, then offers a suggested output folder when none was configured yet; the narrator can still type a folder and press Configure render either way.',
+  'src/components/home/RecordingCheckReport.tsx#1':
+    "A background count of the chapter's other pickups (take review, RS4 A); a failure just leaves that line out of the Pickups list, with the check's own gaps unaffected.",
 };

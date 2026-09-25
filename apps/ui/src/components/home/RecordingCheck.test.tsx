@@ -5,7 +5,7 @@ import { MemoryRouter } from 'react-router-dom';
 import { AudiobookEstimatePanel } from './AudiobookEstimatePanel';
 import { ApiProvider } from '../../api/ApiContext';
 import { createMockApi } from '../../api/mockApi';
-import { WIRE_CHAPTERS } from '../../api/mockFixtures';
+import { WIRE_CHAPTERS, WIRE_FINDINGS, takeReviewPickupFor } from '../../api/mockFixtures';
 import type { NarrationApi } from '../../types';
 
 afterEach(cleanup);
@@ -72,7 +72,7 @@ describe('recording check on Home', () => {
   it('states an unfinished chapter as "recorded to", not as a pickup (recording-check-summary.prd.md RS2)', async () => {
     await openBreakdown();
     const dialog = await openCheck('Chapter 4');
-    expect(await within(dialog).findByText(/words not recorded$/)).toBeTruthy();
+    expect(await within(dialog).findByText(/^Not complete: /)).toBeTruthy();
     expect(within(dialog).getByText(/^Recorded to paragraph \d+ of \d+ \(.*words? left\)\.$/)).toBeTruthy();
     expect(within(dialog).getByText('Pickups (0)')).toBeTruthy();
     expect(within(dialog).queryByText('End not read')).toBeNull();
@@ -95,10 +95,26 @@ describe('recording check on Home', () => {
     expect(goToManuscript).toHaveBeenCalledWith(chapter.id, chapter.paragraphIds![number - 1].index);
   });
 
+  it("shows the chapter's other pickups from take review, a different kind from the check's own gaps (recording-check-summary.prd.md RS4 A)", async () => {
+    const chapter = WIRE_CHAPTERS[3];
+    await openBreakdown({ findings: [...WIRE_FINDINGS, takeReviewPickupFor(chapter.id, chapter.title)] });
+    const dialog = await openCheck('Chapter 4');
+    expect(await within(dialog).findByText('Repeated reads (Review): 1 group not reviewed yet')).toBeTruthy();
+    expect(within(dialog).getByRole('link', { name: 'Open Review' }).getAttribute('href')).toBe('/review');
+  });
+
+  it('says none are waiting when the chapter has no take-review pickups of its own', async () => {
+    const chapter = WIRE_CHAPTERS[3];
+    await openBreakdown({ findings: [...WIRE_FINDINGS, takeReviewPickupFor(WIRE_CHAPTERS[0].id, WIRE_CHAPTERS[0].title)] });
+    const dialog = await openCheck(chapter.title);
+    await within(dialog).findByText(/^Recorded to paragraph \d+ of \d+/);
+    expect(await within(dialog).findByText('Repeated reads (Review): none waiting')).toBeTruthy();
+  });
+
   it('reads a complete chapter as all recorded, with no pickups and its paragraph detail folded', async () => {
     await openBreakdown();
     const dialog = await openCheck('Chapter 1');
-    expect(await within(dialog).findByText('All the text is recorded')).toBeTruthy();
+    expect(await within(dialog).findByText('Passes the check')).toBeTruthy();
     expect(within(dialog).getByText('Pickups (0)')).toBeTruthy();
     expect(within(dialog).queryByRole('table', { name: 'Paragraphs' })).toBeNull();
     expect(within(dialog).getByRole('button', { name: /^Paragraph detail/ })).toBeTruthy();
@@ -112,7 +128,7 @@ describe('recording check on Home', () => {
     expect(within(progress).getByRole('progressbar')).toBeTruthy();
     expect(within(progress).getByRole('button', { name: 'Cancel' })).toBeTruthy();
     const result = await screen.findByRole('dialog', { name: 'Recording check: Chapter 7' }, { timeout: 3000 });
-    expect(await within(result).findByText('All the text is recorded')).toBeTruthy();
+    expect(await within(result).findByText('Passes the check')).toBeTruthy();
     fireEvent.click(within(result).getByRole('button', { name: 'Close' }));
     await waitFor(() => expect(within(row('Chapter 7')).getByText('—', { selector: 'td:nth-child(5) *' })).toBeTruthy());
   });
