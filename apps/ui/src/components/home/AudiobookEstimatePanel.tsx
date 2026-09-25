@@ -12,6 +12,8 @@ import { ChapterTrackPanel } from './ChapterTrackPanel';
 import { useCreditsSeconds } from './useCreditsSeconds';
 import { useCreditsRows, type CreditsKind } from './useCreditsRows';
 import { useApi } from '../../api/ApiContext';
+import { useChapterSync } from '../../hooks/useChapterSync';
+import { chapterSyncBatchToastText } from './chapterSyncToastText';
 import { Collapsible, CollapsiblePanel, CollapsibleTrigger } from '../primitives/Collapsible';
 import { MeterBar } from '../primitives/MeterBar';
 import { Panel } from '../primitives/Panel';
@@ -137,6 +139,25 @@ export function AudiobookEstimatePanel({
   useEffect(() => {
     void loadTrackLinks();
   }, [loadTrackLinks, refreshKey, measuredRun]);
+
+  // Chapter sync (daw-chapter-track-auto-sync.prd.md Phase 3, S12): one toast per batch that linked something, never
+  // for `newTracks` (listed quietly elsewhere, not built yet). `lastBatchAt` guards against re-toasting the same
+  // batch on a re-render, since the subscription and the state it carries both outlive any one render.
+  const chapterSync = useChapterSync(api);
+  const lastBatchAt = useRef<string>(undefined);
+  useEffect(() => {
+    const batch = chapterSync?.batch;
+    if (!batch || batch.linked.length === 0 || lastBatchAt.current === batch.at) return;
+    lastBatchAt.current = batch.at;
+    const trackName = (guid: string) => trackLinks?.tracks.find((track) => track.guid === guid)?.name;
+    notify(chapterSyncBatchToastText(batch, trackName), 'info', {
+      label: 'Undo',
+      onAction: () => {
+        void Promise.all(batch.linked.map((link) => api.chapterSyncUndo(link.trackGuid))).catch((error) => notify(describeApiError(error), 'error'));
+      },
+    });
+    void loadTrackLinks();
+  }, [chapterSync?.batch, trackLinks, api, notify, loadTrackLinks]);
 
   useEffect(() => {
     if (coverage.phase !== 'complete' || !coverage.runId || lastCompleted.current === coverage.runId) return;
