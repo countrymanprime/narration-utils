@@ -2311,6 +2311,10 @@ export const APP_DRIVERS: Record<string, Record<string, Driver>> = {
       await clickVisible(page, 'button', 'Edit this entry');
       await clickVisible(page, 'button', 'Delete entity');
       await confirmDialog(page, 'Delete entry').waitFor();
+      // Base UI's scroll lock only reserves a scrollbar gutter on <html> when the document itself can scroll
+      // (app-shell-vertical-overflow.prd.md): with the document locked, a modal over Story Bible - the state that
+      // measured a full-height gutter before Phase 1's fix - must leave no inline scrollbar-gutter behind.
+      await page.waitForFunction(() => document.documentElement.style.scrollbarGutter === '');
     },
     'theme-light': async (page) => {
       await goToPage(page, 'Settings');

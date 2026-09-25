@@ -49,7 +49,7 @@ export function SlideOver({
           <Drawer.Popup
             data-slide-over
             finalFocus={finalFocus}
-            className="flex h-screen w-[min(20rem,100vw)] [transform:translateX(var(--drawer-swipe-movement-x,0px))] flex-col border-l border-[var(--border)] bg-[var(--surface)] shadow-[var(--shadow-lg)] transition-transform duration-200 ease-out outline-none data-[ending-style]:[transform:translateX(100%)] data-[starting-style]:[transform:translateX(100%)] data-[swiping]:duration-0"
+            className="flex h-full w-[min(20rem,100vw)] [transform:translateX(var(--drawer-swipe-movement-x,0px))] flex-col border-l border-[var(--border)] bg-[var(--surface)] shadow-[var(--shadow-lg)] transition-transform duration-200 ease-out outline-none data-[ending-style]:[transform:translateX(100%)] data-[starting-style]:[transform:translateX(100%)] data-[swiping]:duration-0"
           >
             {/* Content: a mouse drag inside the panel selects text instead of starting a swipe-to-dismiss (touch still swipes). */}
             <Drawer.Content className="flex min-h-0 flex-1 flex-col">
