@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"os"
+	"path/filepath"
 	"testing"
 )
 
@@ -158,5 +160,57 @@ func BenchmarkPeaksOneHourStereo48k(b *testing.B) {
 		if _, err := ComputePeaks(context.Background(), stream, nil, DefaultPeaksPerSecond); err != nil {
 			b.Fatal(err)
 		}
+	}
+}
+
+func TestPeaksReportAnIOFailureWhileSkippingOrReading(t *testing.T) {
+	raw := encodeWAV(t, 1, 8000, 16, false, sine(8000, 2, 220, -6, 0))
+	dataAt := bytes.Index(raw, []byte("data"))
+	if _, err := ComputePeaks(context.Background(), ioChain(raw[:dataAt+8], failingReader{errBoom}), &Range{StartSeconds: 1, LengthSeconds: 1}, 50); !errors.Is(err, errBoom) {
+		t.Fatalf("skipping: err = %v, want the I/O failure", err)
+	}
+	if _, err := ComputePeaks(context.Background(), ioChain(raw[:dataAt+8], failingReader{errBoom}), nil, 50); !errors.Is(err, errBoom) {
+		t.Fatalf("reading: err = %v, want the I/O failure", err)
+	}
+}
+
+// cancelAfter cancels its context once the reader behind it has served more than limit bytes.
+type cancelAfter struct {
+	reader *bytes.Reader
+	limit  int
+	served int
+	cancel context.CancelFunc
+}
+
+func (c *cancelAfter) Read(p []byte) (int, error) {
+	n, err := c.reader.Read(p)
+	c.served += n
+	if c.served > c.limit {
+		c.cancel()
+	}
+	return n, err
+}
+
+func TestPeaksStopWhenCancelledPartWayThrough(t *testing.T) {
+	raw := encodeWAV(t, 1, 8000, 16, false, sine(8000, 60, 220, -6, 0))
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	_, err := ComputePeaks(ctx, &cancelAfter{reader: bytes.NewReader(raw), limit: 1024, cancel: cancel}, nil, 50)
+	if !errors.Is(err, context.Canceled) {
+		t.Fatalf("err = %v, want context.Canceled", err)
+	}
+}
+
+func TestPeaksFileReadsAFileAndReportsAMissingOne(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "take.wav")
+	if err := os.WriteFile(path, encodeWAV(t, 1, 8000, 16, false, sine(8000, 1, 220, -6, 0)), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	peaks, err := PeaksFile(context.Background(), path, &Range{StartSeconds: 0.5, LengthSeconds: 0.5}, 50)
+	if err != nil || peaks.Buckets != 25 {
+		t.Fatalf("peaks = %d buckets, err %v; want 25", peaks.Buckets, err)
+	}
+	if _, err := PeaksFile(context.Background(), filepath.Join(t.TempDir(), "missing.wav"), nil, 50); !errors.Is(err, os.ErrNotExist) {
+		t.Fatalf("err = %v, want a missing file", err)
 	}
 }
