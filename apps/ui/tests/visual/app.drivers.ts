@@ -605,6 +605,18 @@ export const APP_DRIVERS: Record<string, Record<string, Driver>> = {
     'chapter-table-expanded': async (page) => {
       await clickVisible(page, 'button', /Show per-chapter breakdown/);
     },
+    'chapter-sync-toast-undo': async (page) => {
+      // The mock's `?mockChapterSync=linked` seam runs its first sync once something subscribes (see mockApi.ts),
+      // which Home's AudiobookEstimatePanel does on mount, so the toast appears without a click (Phase 3, S12).
+      await page.goto('/?mockChapterSync=linked');
+      await settlePage(page);
+      await homeLoaded(page);
+      await page
+        .getByRole('status')
+        .getByText(/^Linked /)
+        .waitFor();
+      await page.getByRole('button', { name: 'Undo' }).waitFor();
+    },
     'chapter-table-credits-missing': async (page) => {
       await page.goto('/?mockCreditsMissing=1');
       await settlePage(page);
