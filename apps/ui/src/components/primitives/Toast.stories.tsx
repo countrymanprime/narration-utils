@@ -35,6 +35,19 @@ export const Queue: Story = {
   },
 };
 
+// A toast can carry one action (for example Undo) before its dismiss button (daw-chapter-track-auto-sync.prd.md
+// Phase 3, S12: one toast per chapter-sync batch, with Undo).
+export const WithAction: Story = {
+  args: { messages: [{ ...info(1, 'Linked track “Ch. 11” to Chapter 11.'), action: { label: 'Undo', onAction: fn() } }] },
+  play: async ({ canvasElement, args }) => {
+    const canvas = within(canvasElement);
+    const button = canvas.getByRole('button', { name: 'Undo' });
+    await expect(button).toBeInTheDocument();
+    await userEvent.click(button);
+    await expect(args.messages[0].action?.onAction).toHaveBeenCalledOnce();
+  },
+};
+
 // A long message wraps inside the toast instead of pushing it off a narrow window.
 export const LongMessage: Story = {
   args: {

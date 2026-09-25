@@ -83,6 +83,7 @@ var stressReaders = []stressReader{
 	{"ChapterSyncState", func(h *Host) { _, _ = h.ChapterSyncState() }},
 	{"ChapterSyncPreview", func(h *Host) { _, _ = h.ChapterSyncPreview() }},
 	{"ChapterSyncUndo (no link)", func(h *Host) { _, _ = h.ChapterSyncUndo("missing") }},
+	{"chapterSyncWatchTick (the .rpp watcher)", func(h *Host) { h.chapterSyncWatchTick(time.Now()) }},
 	{"CreditsStatuses", func(h *Host) { _, _ = h.CreditsStatuses() }},
 	{"CreditsSetupState", func(h *Host) { _, _ = h.CreditsSetupState() }},
 	{"CreditsSetupDismiss (unknown scope)", func(h *Host) { _, _ = h.CreditsSetupDismiss("forever") }},
