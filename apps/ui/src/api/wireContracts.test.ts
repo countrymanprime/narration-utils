@@ -225,6 +225,7 @@ const GOLDEN: Record<string, z.ZodType> = {
   'chapter-track-links-ready.json': chapterTrackLinksSchema,
   'chapter-sync-state-ask.json': chapterSyncStateSchema,
   'chapter-sync-state-synced.json': chapterSyncStateSchema,
+  'chapter-sync-state-stale.json': chapterSyncStateSchema,
   'chapter-sync-preview.json': chapterSyncPreviewSchema,
   'chapter-track-links-no-project.json': chapterTrackLinksSchema,
   'chapter-track-links-conflict.json': chapterTrackLinksSchema,
@@ -650,8 +651,8 @@ describe('answers of the mock client for the manuscript, Story Bible and project
     expectMatches(chapterSchema, await api.manuscriptSetChapterStatus(chapters[0]?.id ?? '', 'recording'), 'mock chapter status');
   });
 
-  // daw-chapter-track-auto-sync.prd.md Phases 3 and 4: consent, the first sync and its batch, Undo, chaptersync:state, unsaved
-  // edits and the Sync activity.
+  // daw-chapter-track-auto-sync.prd.md Phases 3, 4 and 6: consent, the first sync and its batch, Undo, chaptersync:state,
+  // unsaved edits, the Sync activity and each chapter's status.
   it('chapter sync answers and events', async () => {
     const quiet = await createMockApi().chapterSyncState();
     expectMatches(chapterSyncStateSchema, quiet, 'mock chapter sync, synced before');
@@ -681,6 +682,13 @@ describe('answers of the mock client for the manuscript, Story Bible and project
     expectMatches(chapterSyncStateSchema, unsaved, 'mock chapter sync, unsaved edits');
     expect(unsaved).toMatchObject({ consent: 'on', unsavedEdits: true, batch: null });
     expect(unsaved.activity.map((row) => row.trigger)).toEqual(['watch']);
+
+    // Phase 6: a status row per narration chapter, the recording check's own answer, with no Check press.
+    expect(quiet.chapters.length).toBeGreaterThan(0);
+    const staleApi = createMockApi({}, { coverage: { stale: [quiet.chapters[0].chapterId] } });
+    const staleState = await staleApi.chapterSyncState();
+    expectMatches(chapterSyncStateSchema, staleState, 'mock chapter sync, a stale row');
+    expect(staleState.chapters[0]).toMatchObject({ freshness: 'stale', reasons: ['item_trimmed'] });
   });
 
   // chapter-track-link-control.prd.md Phase 3: Remove from recording clears the chapter's links, and Restore brings it back.

@@ -1,0 +1,40 @@
+{
+  "activity": [],
+  "ask": false,
+  "batch": null,
+  "chapters": [
+    {
+      "chapterId": "c-0001",
+      "chapterTitle": "Chapter One",
+      "checkedAt": "2026-09-21T10:00:00Z",
+      "checking": false,
+      "freshness": "stale",
+      "lastChanged": "2026-09-21T10:00:00Z",
+      "newestSourceAt": "2026-09-21T10:00:00Z",
+      "origin": "manual",
+      "reasons": [
+        "item_trimmed"
+      ],
+      "trackChangedAt": null,
+      "trackGuid": "{TRACK-1}",
+      "trackName": "Chapter One"
+    }
+  ],
+  "consent": "undecided",
+  "counts": {
+    "linked": 1,
+    "needsYou": 0,
+    "noTrack": 0,
+    "pickupTracks": 0,
+    "unmatched": 0
+  },
+  "dawLinked": false,
+  "decidedAt": null,
+  "lastSync": null,
+  "manuscript": true,
+  "message": "",
+  "project": "ready",
+  "projectFile": "C:/Projects/Book/book.rpp",
+  "savedAt": "2026-09-21T10:00:00Z",
+  "unsavedEdits": false
+}

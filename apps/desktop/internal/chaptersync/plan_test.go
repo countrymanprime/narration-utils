@@ -244,3 +244,43 @@ func TestPlanRequestsFeedTheStore(t *testing.T) {
 		t.Fatalf("Requests = %#v", requests)
 	}
 }
+
+func TestTheSnapshotRemembersWhenEachTrackLastChanged(t *testing.T) {
+	first := time.Date(2026, 9, 25, 10, 0, 0, 0, time.UTC)
+	before := project(track("{1}", "Chapter 1", item("{i}", 0, 60, "one.wav")), track("{2}", "Chapter 2", item("{j}", 0, 60, "two.wav")))
+	plan := Build(Input{Chapters: book, Project: before, Now: first})
+	for _, state := range plan.Snapshot.Tracks {
+		if state.ChangedAt != nil {
+			t.Fatalf("a first sync knows no change time, got %v for %s", state.ChangedAt, state.GUID)
+		}
+	}
+
+	second := first.Add(time.Hour)
+	after := project(
+		track("{1}", "Chapter 1", item("{i}", 0, 58, "one.wav")),   // trimmed
+		track("{2}", "Chapter Two", item("{j}", 0, 60, "two.wav")), // renamed only
+		track("{7}", "Chapter 7"),                                  // new
+	)
+	plan = Build(Input{Chapters: book, Project: after, Previous: plan.Snapshot, Now: second})
+	changed := map[string]*time.Time{}
+	for _, state := range plan.Snapshot.Tracks {
+		changed[state.GUID] = state.ChangedAt
+	}
+	if changed["{1}"] == nil || !changed["{1}"].Equal(second) {
+		t.Fatalf("the trimmed track's change time = %v, want %v", changed["{1}"], second)
+	}
+	if changed["{2}"] != nil {
+		t.Fatalf("a rename is not a change of what the track plays, got %v", changed["{2}"])
+	}
+	if changed["{7}"] == nil || !changed["{7}"].Equal(second) {
+		t.Fatalf("a new track's change time = %v, want %v", changed["{7}"], second)
+	}
+
+	third := second.Add(time.Hour)
+	plan = Build(Input{Chapters: book, Project: after, Previous: plan.Snapshot, Now: third})
+	for _, state := range plan.Snapshot.Tracks {
+		if state.GUID == "{1}" && (state.ChangedAt == nil || !state.ChangedAt.Equal(second)) {
+			t.Fatalf("an unchanged track keeps its change time, got %v", state.ChangedAt)
+		}
+	}
+}

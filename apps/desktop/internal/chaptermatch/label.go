@@ -71,8 +71,13 @@ var (
 	romanPattern     = regexp.MustCompile(`^[ivxlc]+$`)
 	ordinalDigits    = regexp.MustCompile(`^(\d+)(st|nd|rd|th)$`)
 	letterThenDigits = regexp.MustCompile(`([A-Za-z])(\d)`)
-	accentFolder     = transform.Chain(norm.NFD, runes.Remove(runes.In(unicode.Mn)), norm.NFC)
 )
+
+// accentFolder removes accents. It is built per call: a transform.Chain keeps state between calls and is not safe for
+// concurrent use, and chapter sync reads labels from several goroutines at once.
+func accentFolder() transform.Transformer {
+	return transform.Chain(norm.NFD, runes.Remove(runes.In(unicode.Mn)), norm.NFC)
+}
 
 // LabelTokens is NormalizedTokens with the label pre-pass, and the marker
 // the pre-pass took off the end. In order: accents are folded ("Épilogue"),
@@ -87,7 +92,7 @@ var (
 // "Chapter 6 (pickups)"), and a credits name ("End Credits") is reported as
 // credits.
 func LabelTokens(text string) ([]string, Marker) {
-	folded, _, err := transform.String(accentFolder, text)
+	folded, _, err := transform.String(accentFolder(), text)
 	if err != nil {
 		folded = text
 	}

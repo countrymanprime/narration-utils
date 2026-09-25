@@ -22,6 +22,13 @@ two thresholds, the chapter's `recording` signal is `met`, and the stage recomme
 narrator always confirms. See [Using the app: Home](../guides/using-the-app/home.md#checking-a-chapters-recording) for
 the screens and [Settings](../guides/using-the-app/settings.md) for the four numbers.
 
+Each chapter's status is also known without a click. Chapter sync's `chaptersync:state` event
+([DAW chapter-track auto-sync](../prds/daw-chapter-track-auto-sync.prd.md) Phase 6) carries one row per narration
+chapter: its track, whether its check is `current`, `stale` (with the reasons above) or `never` run, when the check
+finished, whether one is running, and when the track last changed. The row is this evaluation of the stored result
+against the saved project, so reading it still never starts a check (Q14). The event is sent after each sync, each
+save the watcher picks up, and each check that ends.
+
 ## How it works
 
 ```mermaid
