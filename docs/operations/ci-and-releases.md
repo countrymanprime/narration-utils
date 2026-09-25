@@ -85,7 +85,7 @@ Each file in `.github/workflows`, what starts it, and the checks it shows on a p
 | Workflow | Starts on | Jobs and check names | Blocking? |
 | --- | --- | --- | --- |
 | `ci.yml` (`CI`) | pull request that is not docs- or Markdown-only; manual | `quality / *` and `ui-dist / build` (the reusable `_quality.yml` and `_ui-dist.yml`), `Build (Windows)` | no ruleset requires it |
-| `prerelease.yml` (`Prerelease`) | push to `main` that is not docs- or Markdown-only; manual | `quality / *`, `ui-dist / build`, `version`, `Windows build` (needs `ui-dist` and `version`, so it runs beside the quality jobs) and `Windows release` (needs the build and every quality job); both run only when `version` found a releasable change. A manual run can tick `cold-freeze` to freeze the sidecars without the [freeze cache](#the-sidecar-freeze-cache) | not a pull request check |
+| `prerelease.yml` (`Prerelease`) | push to `main` that is not docs- or Markdown-only; manual | `ui-dist / build`, `version`, `Windows build` (needs `ui-dist` and `version`) and `Windows release` (needs the build); no quality jobs, the pull request's `CI` run is the quality gate ([#544](https://github.com/countrymanprime/narration-utils/issues/544) tracks making it a required one); both run only when `version` found a releasable change. A manual run can tick `cold-freeze` to freeze the sidecars without the [freeze cache](#the-sidecar-freeze-cache) | not a pull request check |
 | `promote-release.yml` | manual, with an RC tag; behind the `production` environment | `promote` | not a pull request check |
 | `build-macos.yml`, `build-linux.yml` | manual, or started by the `Windows release` job | one reusable `_attach-platform.yml` run: `Check the release`, `ui-dist / build`, `Build and attach <platform>` | not a pull request check |
 | `docs.yml` (`Docs`) | every pull request (no path filter), weekly (Monday 07:17 UTC), manual | `Links (offline)` (pull requests and manual) and `Links (online, advisory)` (weekly and manual) ([below](#the-docs-link-check)) | the offline job **fails the run** on a dead repository link; no ruleset requires it (owner-only setting) |
@@ -194,13 +194,14 @@ the run log; a fork or Dependabot pull request scans but does not upload, becaus
 
 ## Version lifecycle
 
-The pre-release workflow runs after each push to `main` that changes more than `docs/**` or Markdown (and by hand). It runs the quality
-Windows build beside the quality jobs, and its Windows release job waits for both. Nx Release
+The pre-release workflow runs after each push to `main` that changes more than `docs/**` or Markdown (and by hand). It does not run the quality
+jobs again: the pull request's `CI` run already checked the code, and no ruleset yet requires that run to be green before a merge, so
+merging with a red one is the owner's call ([#544](https://github.com/countrymanprime/narration-utils/issues/544)). Nx Release
 uses the squash commit title to calculate the synchronized application version:
 `feat` is minor; `fix`, `perf`, `refactor`, `docs`, `test`, `build`, `ci`,
 `chore`, and `revert` are patch. Pre-1.0 breaking changes are handled as the
 next minor release. The workflow tags `v<version>-rc`, builds the Windows
-package, and once quality is green its `publish` job creates the GitHub pre-release with the Windows
+package, and its `publish` job creates the GitHub pre-release with the Windows
 zip and the Windows setup program ([The Windows setup program](#the-windows-setup-program)). The last step starts the optional **Build macOS** and **Build Linux**
 workflows, which build the release tag and attach their asset
 ([ADR-0027](../adr/0027-windows-gates-and-creates-the-release.md)). They are

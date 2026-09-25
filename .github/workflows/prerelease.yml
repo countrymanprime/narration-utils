@@ -15,9 +15,9 @@ permissions: { contents: read }
 concurrency:
   group: prerelease
   cancel-in-progress: false
+# No quality jobs: the pull request's CI run is the quality gate, so a push to main is not checked a second time.
+# No ruleset requires those checks yet; merging with them red is the owner's call (#544).
 jobs:
-  quality:
-    uses: ./.github/workflows/_quality.yml
   ui-dist:
     uses: ./.github/workflows/_ui-dist.yml
 
@@ -61,8 +61,7 @@ jobs:
   # Windows is the supported platform: its build creates the GitHub prerelease, and that is the only
   # build a release needs. macOS and Linux are optional extras started at the end of the publish job.
   #
-  # The build needs only the UI bundle and the version, so it runs beside the quality jobs instead of after them;
-  # only publishing waits for a green quality. It holds no write permission: the job that runs the third-party
+  # The build needs only the UI bundle and the version. It holds no write permission: the job that runs the third-party
   # build tooling (PyInstaller, Wails, NSIS, pnpm) cannot create a release, a tag or an attestation.
   windows-build:
     name: Windows build
@@ -109,11 +108,10 @@ jobs:
           if-no-files-found: error
           retention-days: 1
 
-  # Attests, prunes and publishes what windows-build made, once every quality job is green. A red quality job
-  # leaves no release, no tag and no attestation.
+  # Attests, prunes and publishes what windows-build made. A failed build leaves no release, no tag and no attestation.
   publish:
     name: Windows release
-    needs: [quality, windows-build, version]
+    needs: [windows-build, version]
     if: needs.version.outputs.release == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 15

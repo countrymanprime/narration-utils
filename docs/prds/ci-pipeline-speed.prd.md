@@ -78,7 +78,7 @@ Median of 5 runs each, idle runners, compared with the Evidence table:
 
 ## Open Questions
 
-1. **Push-to-main scope.** Pushes to `main` run every project (`scripts/ci/nx-scope.sh`). Should they run only what the merge affects compared with the last green Prerelease commit? It would save most of the Prerelease quality time, but a squash merge is not the tree the PR tested (no merge queue), so it trusts the PR run for the untouched projects. Recommendation: no, keep full runs on `main`; Phase 1 already takes quality off the release's critical path.
+1. **Push-to-main scope.** Pushes to `main` run every project (`scripts/ci/nx-scope.sh`). Should they run only what the merge affects compared with the last green Prerelease commit? It would save most of the Prerelease quality time, but a squash merge is not the tree the PR tested (no merge queue), so it trusts the PR run for the untouched projects. Recommendation: no, keep full runs on `main`; Phase 1 already takes quality off the release's critical path. **Answered (owner, 2026-09-24): further than asked. `prerelease.yml` runs no quality jobs at all; the pull request's CI run is the gate, and the owner, the only one who can merge, decides whether a red one merges. Making those checks required is [#544](https://github.com/countrymanprime/narration-utils/issues/544).**
 2. **Merge queue.** GitHub's merge queue would test the merged tree once and make the push run's quality redundant. It changes how the owner merges (and stacks). Worth it?
 3. **Larger runners.** If Phases 3 to 5 land and ui-visual is still above 4 minutes, is a paid 8-core Linux runner for the two Playwright jobs acceptable?
 4. **Release job split and provenance.** With build and publish split, the publish job attests the downloaded artifact by digest. Confirm that still meets the SLSA Build L2 claim in `docs/operations/ci-and-releases.md`, or keep attest in the build job and let publish only upload.
@@ -91,7 +91,7 @@ The owner (sole maintainer) merging stacks of agent-authored PRs several times a
 
 **Must**
 
-- Windows build runs in parallel with quality; publishing still waits for a green quality (Phase 1).
+- Windows build runs in parallel with quality; publishing still waits for a green quality (Phase 1). Superseded by the answer to open question 1: the Prerelease has no quality jobs to wait for.
 - Sidecar freeze cached on a content hash; smoke test unchanged (Phase 2).
 - Visual suite captures all viewports of a state from one navigation (Phase 3).
 - Every check that runs today still runs and can still fail the run.
@@ -140,7 +140,7 @@ The owner (sole maintainer) merging stacks of agent-authored PRs several times a
 | # | Phase | Description | Status | Parallel | Depends | PRP Plan |
 | --- | --- | --- | --- | --- | --- | --- |
 | 0 | Baseline | `scripts/ci/run-timings.mjs <run-id>` prints per-job and per-step times and queue offsets; profile one visual and one atlas test (navigation vs driving vs checks vs screenshot) | complete (profile: load 0.77 s, drive 0.64 s, axe 0.45 s, rest 0.2 s per capture; ADR 0105) | - | - | - |
-| 1 | Build beside quality | Split `release` in `prerelease.yml` into `windows-build` and `publish`; write permissions only on `publish`; threat-model row | in-progress (implemented; `workflow_dispatch` check of a red quality pending) | with 2, 3, 4 | 0 | - |
+| 1 | Build beside quality | Split `release` in `prerelease.yml` into `windows-build` and `publish`; write permissions only on `publish`; threat-model row | complete (the red-quality check is moot: open question 1 removed quality from the Prerelease) | with 2, 3, 4 | 0 | - |
 | 2 | Cache the sidecar freeze and Go | Content-hash cache of PyInstaller output, `--reuse` in `prepare-resources.py`, saved on `main` only; Go toolchain cache on Windows (dropped, D4) | in-progress (implemented; cold vs hit comparison on one commit pending) | with 1, 3, 4 | 0 | - |
 | 3 | Visual suite: one load per state | One test per `{page, state}` with a step per viewport; diff old vs new output once | in-progress (implemented, ADR 0105; 24 rows reload per viewport; local run 4.9 to 3.2 min; CI timing pending) | with 1, 2, 4 | 0 | - |
 | 4 | Atlas: one load per story | Group a story's four variants; reload only where `play()` needs it | pending | with 1, 2, 3 | 0 | - |
@@ -151,7 +151,7 @@ The owner (sole maintainer) merging stacks of agent-authored PRs several times a
 ### Phase Details
 
 - **0.** Without the profile, Phases 3 and 4 are guesses. If navigation plus state driving is under half of a test's time, go to Phase 5 for that suite instead.
-- **1.** The biggest single win (~6 min off every release) with no test change. Verify on a `workflow_dispatch` run that a red quality job leaves no release and no tag.
+- **1.** The biggest single win (~6 min off every release) with no test change. ~~Verify on a `workflow_dispatch` run that a red quality job leaves no release and no tag.~~ Moot since the Prerelease runs no quality jobs (open question 1).
 - **2.** Check that a cache hit and a cold build on the same commit give the same sidecars (or explain the difference: PyInstaller embeds timestamps).
 - **3.** Keep the layout `apps/ui/screenshots/app/<page>/<state>/<viewport>.png`: `CLAUDE.md`, `doc-screenshot-sync` and `visual-catalog-sync` depend on it.
 - **6.** Last, because it renames jobs that the other phases' PRs are watched by.
