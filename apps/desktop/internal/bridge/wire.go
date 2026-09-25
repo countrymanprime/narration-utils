@@ -37,7 +37,7 @@ func count(name string) fieldSpec  { return fieldSpec{name, intField} }
 func number(name string) fieldSpec { return fieldSpec{name, numberField} }
 
 var eventSpecs = map[string]eventSpec{
-	"COMPARE_PREPARED": {required: []fieldSpec{text("run"), text("manifest"), text("manuscript"), text("track"), text("diff"), count("items")}},
+	"COMPARE_PREPARED": {required: []fieldSpec{text("run"), text("manifest"), text("manuscript"), text("track"), text("diff"), count("items")}, optional: []fieldSpec{count("changeCount")}},
 	"COMPARE_MARKER": {
 		required: []fieldSpec{text("run"), text("id"), text("kind"), text("name"), text("docText"), text("audioText"), number("projectTime"), count("itemIndex")},
 		optional: []fieldSpec{text("chapter"), count("paragraph"), text("scriptContext"), text("audioContext"), text("markerState"), text("existingMarkerName"), number("srcpos"),

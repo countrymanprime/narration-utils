@@ -38,7 +38,9 @@ type MarkerColors struct{ Misread, Skipped, Extra string }
 type Review interface {
 	Events
 	// PrepareReview asks the DAW for the audio the narrator selected, to compare against the manuscript (COMPARE_PREPARED).
-	PrepareReview(runID string) error
+	// projectFolder is the app's project folder, where the manuscript is read and the diffs are written, which need not be
+	// the DAW project file's folder (project-workspace PRD Phase 5, W4); empty means the DAW project file's folder.
+	PrepareReview(runID, projectFolder string) error
 	// InspectFindings asks the DAW which of the findings in findingsPath it already carries as a marker or label, which is how a
 	// finding that was reviewed earlier is recognised (COMPARE_MARKER per finding, then COMPARE_INSPECTED).
 	InspectFindings(runID, findingsPath string) error

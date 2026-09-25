@@ -785,6 +785,26 @@ func (h *Host) ChapterTrackUnlink(chapterID string) (string, error) {
 }
 func (h *Host) ChapterTrackLinks() (string, error) { return encodeBinding(h.chapterTrackLinks()) }
 
+// ChapterRegionsPreview and ChapterRegionsCreate are the chapter and credits
+// regions (reaper-automation-follow-through PRD Phase 7, credits-in-chapter-
+// table PRD Phase 4; chapterregions.go): Preview plans one region per linked
+// chapter, plus the opening and closing credits when their tracks are given
+// (empty leaves them out), from the saved .rpp and writes nothing; Create
+// recomputes the same plan and sends it to REAPER's create_regions in one
+// undo step, moving a region whose title already exists with other bounds
+// only when update is true.
+func (h *Host) ChapterRegionsPreview(openingTrackGUID, closingTrackGUID string) (string, error) {
+	return encodeBinding(chapterRegionPlanIn(h.services(), openingTrackGUID, closingTrackGUID))
+}
+func (h *Host) ChapterRegionsCreate(openingTrackGUID, closingTrackGUID string, update bool) (string, error) {
+	svc := h.services()
+	var creator regionCreator
+	if svc.actions != nil {
+		creator = svc.actions
+	}
+	return encodeBinding(createChapterRegions(context.Background(), svc, creator, openingTrackGUID, closingTrackGUID, update))
+}
+
 func (h *Host) TracksDiscover() (string, error) { return encodeBinding(h.tracksDiscover()) }
 func (h *Host) TracksSelect(path string) (string, error) {
 	return encodeBinding(h.tracksSelect(path))

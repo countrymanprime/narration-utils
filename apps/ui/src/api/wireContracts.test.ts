@@ -4,6 +4,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { z } from 'zod';
 import { DESKTOP_HOST_API_VERSION } from '../hostApi';
 import { createMockApi } from './mockApi';
+import type { ProjectStateState } from './contracts/projectstate';
 import { WIRE_TAKE_REVIEW_FINDINGS, WIRE_TRACKS_PROJECT, WIRE_TRANSCRIPT } from './mockFixtures';
 import { WIRE_TAKE_COMPARISON_FINDING } from './takeComparisonMock';
 import { MOCK_MEASURE_PATHS } from './measureMock';
@@ -43,6 +44,8 @@ import { findingMarkerSchema, findingNavigationSchema, findingSchema, findingsPa
 import { tracksDiscoverySchema, tracksProjectSchema } from './schemas/tracks';
 import {
   chapterSuggestionSchema,
+  chapterRegionPlanSchema,
+  chapterRegionsCreatedSchema,
   chapterTrackLinksSchema,
   chapterTrackMappingSchema,
   chapterTrackMatchSchema,
@@ -81,6 +84,7 @@ import { lineIdentityStartResultSchema, lineIdentityStateSchema } from './schema
 import { pickupsImportResultSchema, pickupsStartResultSchema, pickupsStateSchema } from './schemas/pickups';
 import { renderConfigStartResultSchema, renderConfigStateSchema, renderConfigSuggestedFolderSchema } from './schemas/renderconfig';
 import { cleanupToolsStartResultSchema, cleanupToolsStateSchema } from './schemas/cleanuptools';
+import { projectStateChangedSchema, projectStateStartResultSchema, projectStateStateSchema } from './schemas/projectstate';
 import { retakeLanesListSchema, retakeLanesStartResultSchema, retakeLanesStateSchema } from './schemas/retakelanes';
 import { chapterTagsEmbedResultSchema, chapterTagsPreviewSchema } from './schemas/chaptertags';
 import { dictionaryLookupResultSchema } from './schemas/dictionary';
@@ -222,6 +226,9 @@ const GOLDEN: Record<string, z.ZodType> = {
   'chapter-sync-preview.json': chapterSyncPreviewSchema,
   'chapter-track-links-no-project.json': chapterTrackLinksSchema,
   'chapter-track-links-conflict.json': chapterTrackLinksSchema,
+  'chapter-regions-preview.json': chapterRegionPlanSchema,
+  'chapter-regions-no-project.json': chapterRegionPlanSchema,
+  'chapter-regions-created.json': chapterRegionsCreatedSchema,
   'chapter-track-set-displaced.json': chapterTrackSetSchema,
   'chapter-track-unlink.json': chapterTrackMappingSchema,
   'chapter-suggestion-matched.json': chapterSuggestionSchema,
@@ -235,6 +242,9 @@ const GOLDEN: Record<string, z.ZodType> = {
   'render-config-success.json': renderConfigStateSchema,
   'cleanup-tools-idle.json': cleanupToolsStateSchema,
   'cleanup-tools-launched.json': cleanupToolsStateSchema,
+  'project-state-idle.json': projectStateStateSchema,
+  'project-state-checked.json': projectStateStateSchema,
+  'project-state-changed-since.json': projectStateChangedSchema,
   'retake-lanes-list.json': retakeLanesListSchema,
   'retake-lanes-idle.json': retakeLanesStateSchema,
   'retake-lanes-picked.json': retakeLanesStateSchema,
@@ -1022,6 +1032,24 @@ describe('answers of the mock client for the settings, voice, model, transcript 
     expect(noProject.tracks).toHaveLength(0);
   });
 
+  it('the ChapterRegionsPreview and ChapterRegionsCreate answers', async () => {
+    const api = createMockApi();
+    const chapters = await api.manuscriptChapters();
+    const [first] = WIRE_TRACKS_PROJECT.tracks;
+    await api.chapterTrackSet(chapters[0].id, first.guid);
+    const plan = await api.chapterRegionsPreview(first.guid, first.guid);
+    expectMatches(chapterRegionPlanSchema, plan, 'mock chapter regions preview');
+    expect(plan.rows.map((row) => row.kind)).toEqual(['opening', 'chapter', 'closing']);
+    expect(plan.skipped.length).toBeGreaterThan(0);
+    const created = await api.chapterRegionsCreate(first.guid, '', false);
+    expectMatches(chapterRegionsCreatedSchema, created, 'mock chapter regions created');
+    expect(created.sent).toBe(2);
+
+    const noProject = createMockApi({}, { tracksCandidates: [] });
+    expectMatches(chapterRegionPlanSchema, await noProject.chapterRegionsPreview('', ''), 'mock chapter regions, no project');
+    await expect(noProject.chapterRegionsCreate('', '', false)).rejects.toThrow();
+  });
+
   it('the chapter list carries recorded seconds only for a chapter with a linked track', async () => {
     const api = createMockApi();
     const chapters = await api.manuscriptChapters();
@@ -1199,6 +1227,28 @@ describe('answers of the mock client for the settings, voice, model, transcript 
     const api = createMockApi();
     const [line] = (await api.retakeLanesList()).lines;
     await expect(api.retakeLanesPick('line-000099', line.retakes[0].itemGuid)).rejects.toThrow(/not on a fixed-lane track/);
+  });
+
+  it('the project-state check against the last comparison baseline (follow-through Phase 13)', async () => {
+    vi.useFakeTimers();
+    try {
+      const api = createMockApi();
+      const seen: ProjectStateState[] = [];
+      api.subscribeProjectState((state) => seen.push(structuredClone(state)));
+      expectMatches(projectStateStartResultSchema, await api.projectStateCheck(), 'mock project-state check start');
+      await vi.advanceTimersByTimeAsync(200);
+      for (const state of seen) expectMatches(projectStateStateSchema, state, 'mock projectstate:state');
+      const checked = await api.projectStateState();
+      expectMatches(projectStateStateSchema, checked, 'mock project-state state');
+      const baseline = (await api.transcriptLastCompleted())?.projectChangeCount;
+      expect(baseline).toBe(41);
+      const changed = await api.projectStateChangedSince(checked.changeCount ?? 0, baseline ?? 0);
+      expectMatches(projectStateChangedSchema, changed, 'mock project-state changed since');
+      expect(changed.changed).toBe(true);
+      await expect(createMockApi({}, { projectState: 'error' }).projectStateCheck()).rejects.toThrow();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('cleanupToolsLaunch refuses a tool off the allow-list, the way the Go service does', async () => {
@@ -1688,6 +1738,8 @@ describe('answers of the mock client for the settings, voice, model, transcript 
       'chapterSyncSetEnabled',
       'chapterSyncUndo',
       'chapterTrackLinks',
+      'chapterRegionsPreview',
+      'chapterRegionsCreate',
       'chapterTrackMatch',
       'chapterSuggestion',
       'lineIdentityStamp',
@@ -1704,6 +1756,9 @@ describe('answers of the mock client for the settings, voice, model, transcript 
       'renderConfigState',
       'cleanupToolsLaunch',
       'cleanupToolsState',
+      'projectStateCheck',
+      'projectStateChangedSince',
+      'projectStateState',
       'retakeLanesList',
       'retakeLanesPick',
       'retakeLanesState',
@@ -1820,6 +1875,7 @@ describe('answers of the mock client for the settings, voice, model, transcript 
       'subscribeChapterSync',
       'subscribeRenderConfig',
       'subscribeCleanupTools',
+      'subscribeProjectState',
       'subscribeRetakeLanes',
     ];
     expect([...CHECKED, ...VOID, ...NOT_A_REQUEST].sort()).toEqual(Object.keys(createMockApi()).sort());

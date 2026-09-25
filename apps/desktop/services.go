@@ -45,6 +45,9 @@ type hostServices struct {
 	// configureLocked built no bridge client (no session directory).
 	reachability *daw.Reachability
 	bridge       *bridge.Client
+	// actions sends the S28 bridge commands (internal/bridge/actions.go), create_regions among them, on the same
+	// client; never nil once configured (with no client every request is bridge.ErrUnavailable).
+	actions *bridge.Actions
 	// navigation is the Review page's REAPER navigator (bindings_navigation.go); standalone when there is no bridge.
 	navigation *findingNavigation
 }
@@ -93,6 +96,7 @@ func (h *Host) services() hostServices {
 		stages:       h.stages,
 		reachability: h.reachability,
 		bridge:       h.bridge,
+		actions:      h.actions,
 		navigation:   h.navigation,
 	}
 }

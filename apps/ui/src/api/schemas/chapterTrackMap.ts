@@ -1,6 +1,8 @@
 import { z } from 'zod';
 import type {
   ChapterCandidate,
+  ChapterRegionPlan,
+  ChapterRegionsCreated,
   ChapterSuggestion,
   ChapterTrackCandidate,
   ChapterTrackLink,
@@ -127,3 +129,39 @@ export const chapterTrackLinksSchema = z.object({
   tracks: z.array(chapterTrackSummarySchema),
   chapters: z.array(chapterTrackLinkSchema),
 }) satisfies z.ZodType<ChapterTrackLinks>;
+
+const chapterRegionKindSchema = z.enum(['opening', 'chapter', 'closing']);
+
+/** ChapterRegionsPreview's answer (reaper-automation-follow-through PRD Phase 7, credits-in-chapter-table PRD Phase 4). */
+export const chapterRegionPlanSchema = z.object({
+  project: z.enum(['ready', 'none', 'choose', 'error']),
+  message: z.string(),
+  projectFile: z.string(),
+  savedAt: z.string(),
+  rows: z.array(
+    z.object({
+      kind: chapterRegionKindSchema,
+      chapterId: z.string(),
+      title: z.string().min(1),
+      trackGuid: z.string(),
+      trackName: z.string(),
+      start: z.number().min(0),
+      end: z.number(),
+      state: z.enum(['new', 'exists', 'moves', 'ambiguous']),
+    }),
+  ),
+  skipped: z.array(z.object({ kind: chapterRegionKindSchema, chapterId: z.string(), title: z.string(), reason: z.string() })),
+}) satisfies z.ZodType<ChapterRegionPlan>;
+
+const count = z.number().int().min(0);
+
+/** ChapterRegionsCreate's answer: the rows sent and create_regions' counts. */
+export const chapterRegionsCreatedSchema = z.object({
+  sent: count,
+  created: count,
+  existing: count,
+  invalid: count,
+  updated: count,
+  ambiguous: count,
+  failed: count,
+}) satisfies z.ZodType<ChapterRegionsCreated>;

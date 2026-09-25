@@ -8,7 +8,7 @@ import (
 // Real events, field for field, as integrations/reaper/tests/compare_test.lua and line_identity_test.lua pin them: the harness proves
 // what Lua emits, and these prove what Go accepts, so the two halves of the protocol are tied to the same lines.
 var realEvents = map[string][]string{
-	"COMPARE_PREPARED":      {"COMPARE_PREPARED", "r1", "C:/s/manifest.json", "C:/p/narration-utils/manuscript/manuscript.json", "Narrator", "C:/s/diff.txt", "3"},
+	"COMPARE_PREPARED":      {"COMPARE_PREPARED", "r1", "C:/s/manifest.json", "C:/p/narration-utils/manuscript/manuscript.json", "Narrator", "C:/s/diff.txt", "3", "41"},
 	"COMPARE_MARKER":        {"COMPARE_MARKER", "r1", "0@12.500000", "MISREAD", "MISREAD: alice", "Alice", "Alyss", "102.5", "0", "Chapter 1", "4", "script ctx", "audio ctx", "pending", "", "12.5", "{AAAAAAAA-0000-4000-8000-000000000001}", "{AAAAAAAA-0000-4000-8000-0000000000A1}", "{00000001-0000-4000-8000-000000000001}"},
 	"COMPARE_INSPECTED":     {"COMPARE_INSPECTED", "r1", "2 discrepancy(s) found.", "2", "0"},
 	"COMPARE_EXPORT_MARKER": {"COMPARE_EXPORT_MARKER", "r1", "0@12.500000", "exported", ""},
@@ -109,6 +109,17 @@ func TestAnOlderScriptThatSendsFewerOptionalMarkerFieldsIsAccepted(t *testing.T)
 		if err := CheckEvent(realEvents["COMPARE_MARKER"][:cut]); err != nil {
 			t.Errorf("a marker of %d fields: %v", cut, err)
 		}
+	}
+}
+
+func TestAnOlderScriptsPreparedAnswerWithoutTheChangeCountIsAccepted(t *testing.T) {
+	// The change count (follow-through PRD Phase 13) is the seventh field; a script older than it, or a REAPER without
+	// GetProjectStateChangeCount, sends six.
+	if err := CheckEvent(realEvents["COMPARE_PREPARED"][:7]); err != nil {
+		t.Fatalf("a six-field COMPARE_PREPARED: %v", err)
+	}
+	if err := CheckEvent(append(append([]string{}, realEvents["COMPARE_PREPARED"][:7]...), "many")); err == nil {
+		t.Fatal("a change count that is not a number was accepted")
 	}
 }
 

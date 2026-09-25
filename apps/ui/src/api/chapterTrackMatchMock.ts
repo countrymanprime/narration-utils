@@ -1,5 +1,9 @@
 import type { ChapterSyncPreview } from './contracts/chapterSync';
 import type {
+  ChapterRegionKind,
+  ChapterRegionPlan,
+  ChapterRegionRow,
+  ChapterRegionSkip,
   ChapterTrackCandidate,
   ChapterTrackLinks,
   ChapterTrackLinksProject,
@@ -278,4 +282,55 @@ export function mockChapterSyncPreview(links: ChapterTrackLinks, rejected: Reado
     if (!named.has(track.guid)) preview.unmatched.push({ guid: track.guid, name: track.name, index: track.index, marker: '' });
   }
   return preview;
+}
+
+/** The mock's chapter region plan (reaper-automation-follow-through PRD Phase 7, credits-in-chapter-table PRD Phase 4)
+ * by the host's rule (chapterregions.go): the opening credits, every chapter with exactly one confirmed link to a track
+ * with items, then the closing credits, each spanning its track; every other chapter is skipped with a reason. The mock
+ * project holds no regions, so every row is new. */
+export function mockChapterRegionPlan(links: ChapterTrackLinks, openingTrackGuid: string, closingTrackGuid: string): ChapterRegionPlan {
+  const plan: ChapterRegionPlan = {
+    project: links.project,
+    message: links.message,
+    projectFile: links.projectFile,
+    savedAt: links.savedAt,
+    rows: [],
+    skipped: [],
+  };
+  if (links.project !== 'ready') return plan;
+  const add = (kind: ChapterRegionKind, chapterId: string, title: string, trackGuid: string) => {
+    const track = links.tracks.find((candidate) => candidate.guid === trackGuid);
+    const reason = !track
+      ? 'The linked track is not in the saved REAPER project.'
+      : !track.span || track.span.end <= track.span.start
+        ? 'The linked track has no recorded items.'
+        : '';
+    if (!track?.span || reason) {
+      plan.skipped.push({ kind, chapterId, title, reason } satisfies ChapterRegionSkip);
+      return;
+    }
+    plan.rows.push({
+      kind,
+      chapterId,
+      title,
+      trackGuid,
+      trackName: track.name,
+      start: track.span.start,
+      end: track.span.end,
+      state: 'new',
+    } satisfies ChapterRegionRow);
+  };
+  if (openingTrackGuid) add('opening', '', 'Opening credits', openingTrackGuid);
+  for (const chapter of links.chapters) {
+    if (chapter.links.length === 1) add('chapter', chapter.chapterId, chapter.chapterTitle, chapter.links[0].trackGuid);
+    else
+      plan.skipped.push({
+        kind: 'chapter',
+        chapterId: chapter.chapterId,
+        title: chapter.chapterTitle,
+        reason: chapter.links.length === 0 ? 'No track is linked to this chapter.' : 'Several tracks are linked to this chapter; link one.',
+      });
+  }
+  if (closingTrackGuid) add('closing', '', 'Closing credits', closingTrackGuid);
+  return plan;
 }

@@ -16,6 +16,7 @@ import type {
   ReaderState,
   RenderConfigState,
   CleanupToolsState,
+  ProjectStateState,
   RetakeLanesList,
   RetakeLanesState,
   ScopedSettingField,
@@ -944,6 +945,20 @@ export const WIRE_RENDER_CONFIG_ERROR: RenderConfigState = {
   folder: '',
   targets: [],
   count: 0,
+};
+
+/** The Go host's ProjectStateState before any check (mirrors tests/fixtures/contracts/project-state-idle.json). */
+export const WIRE_PROJECT_STATE_IDLE: ProjectStateState = { phase: 'idle', message: '', projectFile: '' };
+
+/** REAPER answered a change count for the saved project (mirrors tests/fixtures/contracts/project-state-checked.json). The
+ * mock's last comparison started at count 41, so 42 reads as "changed since comparison". */
+export const WIRE_PROJECT_STATE_CHECKED: ProjectStateState = {
+  runId: '1790000000000000',
+  phase: 'success',
+  message: "Checked REAPER's project state.",
+  changeCount: 42,
+  projectFile: 'C:/Projects/Alice/Alice.rpp',
+  savedModifiedAt: 1789984800000,
 };
 
 /** The Go host's CleanupToolsState answer before any launch (mirrors tests/fixtures/contracts/cleanup-tools-idle.json). */
