@@ -72,7 +72,7 @@ describe('recording check on Home', () => {
   it('states an unfinished chapter as "recorded to", not as a pickup (recording-check-summary.prd.md RS2)', async () => {
     await openBreakdown();
     const dialog = await openCheck('Chapter 4');
-    expect(await within(dialog).findByText('Not complete')).toBeTruthy();
+    expect(await within(dialog).findByText(/^Not complete: /)).toBeTruthy();
     expect(within(dialog).getByText(/^Recorded to paragraph \d+ of \d+ \(.*words? left\)\.$/)).toBeTruthy();
     expect(within(dialog).getByText('Pickups (0)')).toBeTruthy();
     expect(within(dialog).queryByText('End not read')).toBeNull();
@@ -99,16 +99,16 @@ describe('recording check on Home', () => {
     const chapter = WIRE_CHAPTERS[3];
     await openBreakdown({ findings: [...WIRE_FINDINGS, takeReviewPickupFor(chapter.id, chapter.title)] });
     const dialog = await openCheck('Chapter 4');
-    expect(await within(dialog).findByText('Take review: 1 group of repeated reads not reviewed yet')).toBeTruthy();
+    expect(await within(dialog).findByText('Repeated reads (Review): 1 group not reviewed yet')).toBeTruthy();
     expect(within(dialog).getByRole('link', { name: 'Open Review' }).getAttribute('href')).toBe('/review');
   });
 
-  it('leaves out the chapter with no take-review pickups of its own', async () => {
+  it('says none are waiting when the chapter has no take-review pickups of its own', async () => {
     const chapter = WIRE_CHAPTERS[3];
     await openBreakdown({ findings: [...WIRE_FINDINGS, takeReviewPickupFor(WIRE_CHAPTERS[0].id, WIRE_CHAPTERS[0].title)] });
     const dialog = await openCheck(chapter.title);
     await within(dialog).findByText(/^Recorded to paragraph \d+ of \d+/);
-    expect(within(dialog).queryByText(/^Take review:/)).toBeNull();
+    expect(await within(dialog).findByText('Repeated reads (Review): none waiting')).toBeTruthy();
   });
 
   it('reads a complete chapter as all recorded, with no pickups and its paragraph detail folded', async () => {

@@ -73,15 +73,17 @@ export function formatAudioTime(seconds: number): string {
 
 /**
  * The report's headline. With a judgement (recording-check-summary PRD Phase 2, ADR 0204) it leads with the host's
- * pass/fail, the same rule the stage signal uses, so the dialog and the stage engine never disagree: "Passes the
- * check" or "Not complete", with the judgement's own reason (the gap that fails first, or the present-word count) as
- * the detail. Without one - an older stored result, or a result missing entirely - it falls back to the plain word
- * count ADR 0130 originally specified.
+ * pass/fail, the same rule the stage signal uses, so the dialog and the stage engine never disagree: a passing
+ * chapter reads "Passes the check" with the judgement's own reason as a plain detail line below it; a failing one
+ * folds the reason (the gap that fails first) straight into the headline itself - "Not complete: paragraph 14: 9
+ * words not read." - as the approved mockups show it (`01-slideover-not-complete.webp`,
+ * `02-slideover-passes.webp`), with no separate detail line. Without a judgement - an older stored result, or a
+ * result missing entirely - it falls back to the plain word count ADR 0130 originally specified.
  */
 export function verdict(report: CoverageReport, judgement?: CoverageJudgement): { complete: boolean; headline: string; detail: string } {
   if (judgement) {
     const complete = judgement.state === 'met';
-    return { complete, headline: complete ? 'Passes the check' : 'Not complete', detail: judgement.reason };
+    return { complete, headline: complete ? 'Passes the check' : `Not complete: ${judgement.reason}`, detail: complete ? judgement.reason : '' };
   }
   const complete = report.missingTokens === 0;
   return {
