@@ -88,6 +88,23 @@ Serves the chapter regions of the [REAPER automation follow-through](../prds/rea
 
 The pass checks one Undo removes every region one call made, and that a region moved by `SetProjectMarker4` keeps its number and colour.
 
+## Cross-check against the REAPER MCP servers
+
+At the owner's suggestion (a comment on PR #513), the five REAPER MCP servers listed in [the automation survey](reaper-automation-surface.md) were read on 2026-09-25 **for approach only**, at these commits: [TwelveTake-Studios/reaper-mcp](https://github.com/TwelveTake-Studios/reaper-mcp) `3e1ec10` (MIT), [shiehn/total-reaper-mcp](https://github.com/shiehn/total-reaper-mcp) `5e87d52` (MIT), [danishaft/reaper-mcp](https://github.com/danishaft/reaper-mcp) `b4c0487` (MIT; now a file-polling Lua bridge like ours, no longer reapy), [yeeking/reaper-mcp-server](https://github.com/yeeking/reaper-mcp-server) `0403762` (MIT, reapy) and [danielkinahan/ReaMCP](https://github.com/danielkinahan/ReaMCP) `670dda4` (GPL-3.0). No code was copied; our architecture (the registry, one Lua file per feature, the harness, the file protocol, the experimental switch) is unchanged.
+
+| Job | What they do | What this stack takes from it |
+| --- | --- | --- |
+| Start and stop recording | TwelveTake and ReaMCP call `OnRecordButton`/`OnStopButton`; total-reaper calls `CSurf_OnRecord`/`CSurf_OnStop`; danishaft calls `Main_OnCommand(1013, 0)` and refuses unless a track is armed. None waits for `GetPlayState` to report recording, and none uses `GetPlayPosition2`. | `record_start` refuses unless exactly the named track is armed, presses `CSurf_OnRecord` once, and waits up to 30 defer cycles for the record bit instead of reading it once, so a REAPER that reports it a cycle late is not misread as a failure. |
+| Arming | Every one sets `I_RECARM` with `SetMediaTrackInfo_Value`; TwelveTake and danishaft wrap it in an undo block, the others do not. | `arm_only` opens no undo block (the PRD's evidence: an arm is not in REAPER's undo history). Recorded as a Proposed decision ([ADR 0232](../adr/0232-arming-for-a-recording-remembers-the-narrators-arms-makes-no-undo-point-and-the-app-stops-only-the-recording-it-started.md)); the verification pass (row A4) settles it. |
+| Active take | Every one calls `SetActiveTake`; danishaft follows it with `UpdateItemInProject(item)` and `UpdateArrange()`. | `set_active_take` does the same. |
+| FX | None loads an `.RfxChain` or lists the `FXChains` folder; they add plug-ins by name with `TakeFX_AddByName(take, name, -1)` and danishaft refuses a negative return. | `apply_fx_chain` refuses a negative return and checks `TakeFX_GetCount` grew. Loading a chain by path has no outside precedent, so the verification pass (row A8) is its only evidence. |
+| Splitting | danishaft splits the end first, then the start, skips a split within an epsilon of the item's edges, and refuses when `SplitMediaItem` returns nil; TwelveTake reports a nil split. | `apply_fx_chain` does the same, inside its one undo block. |
+| Regions | `AddProjectMarker2(0, true, …, -1, color)`; danishaft refuses a negative return and re-reads the region by `EnumProjectMarkers3`. None deduplicates. | `create_regions` refuses a negative return; its deduplication is ours. |
+| Edit counter | danishaft reports `GetProjectStateChangeCount` and rejects a plan built at an older count. | The heartbeat and `chapter_track_state` carry the count, so the host can use it the same way before a write. |
+| Undo and errors | TwelveTake and danishaft close their undo block on the error path too (`pcall` around the handler). | Every command here validates before `Undo_BeginBlock2` and makes no call that can raise inside the block, and the harness fails a test that leaves a block open. |
+| Dialogs | TwelveTake refuses anything that could open REAPER's modal overwrite prompt, because a modal dialog blocks the defer loop. | No S28 command opens a dialog; `record_stop`'s `OnStopButton` can open REAPER's own "save recorded media" prompt, and the verification pass (row B3) records what the bridge's loop does while it is open. |
+| Directory listings | TwelveTake clears `EnumerateFiles` with `-1` before each scan and warns that cost grows with the entries. | `list_fx_chains` clears each folder and caps its depth and count. |
+
 ## What this page does not cover
 
 Punch-in (`punch_to`, teleprompter PRD Phase 12), the live track list (auto-sync Phase 5, `list_tracks`) and the workspace's play-position feed (Phase 7) are later stacks. Their calls are added here when they are planned.
