@@ -258,3 +258,54 @@ func TestAProjectsOwnLimitsChooseItsProfile(t *testing.T) {
 		t.Fatal("a lowest above its highest was moved")
 	}
 }
+
+func TestACopySavedBeforeTheAppCheckedARuleIsJudgedWithTheCurrentCheck(t *testing.T) {
+	store, path := newTestStore(t)
+	copied, err := store.Duplicate(Ref{ID: "acx"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	// Rewrite the saved copy as an older build wrote it: room tone not checked yet, no digital-silence advice, and the
+	// narrator's own head minimum.
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var file storeFile
+	if err := json.Unmarshal(raw, &file); err != nil {
+		t.Fatal(err)
+	}
+	for i := range file.Profiles[0].Rules {
+		rule := &file.Profiles[0].Rules[i]
+		if rule.ID == "acx.room_tone_head" || rule.ID == "acx.room_tone_tail" {
+			rule.CheckedBy, rule.NotCheckedWhy, rule.Advice = CheckedNotYet, "Not checked by the app yet.", nil
+		}
+		if rule.ID == "acx.room_tone_head" {
+			rule.Min = v(0.8)
+		}
+	}
+	raw, _ = json.Marshal(file)
+	if err := os.WriteFile(path, raw, 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	resolved, found, err := store.Resolve(Ref{ID: copied.ID})
+	if err != nil || !found {
+		t.Fatalf("Resolve = %v %v", found, err)
+	}
+	head, _ := resolved.Rule("acx.room_tone_head")
+	tail, _ := resolved.Rule("acx.room_tone_tail")
+	for _, rule := range []Rule{head, tail} {
+		if rule.CheckedBy != CheckedMeasured || rule.NotCheckedWhy != "" || rule.Advice == nil {
+			t.Errorf("%s = %+v, want measured with the digital-silence advice", rule.ID, rule)
+		}
+	}
+	if *head.Min != 0.8 {
+		t.Errorf("the narrator's head minimum became %v, want 0.8 kept", *head.Min)
+	}
+	report := passingReport()
+	report.HeadRoomToneSeconds = v(0.6)
+	if got := resultsByRule(EvaluateFile(report, resolved).Results)["acx.room_tone_head"]; got.Status != StatusNotMet {
+		t.Errorf("a 0.6 s head against the copy's 0.8 s minimum = %+v, want not met", got)
+	}
+}

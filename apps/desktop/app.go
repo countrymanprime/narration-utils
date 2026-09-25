@@ -43,8 +43,7 @@ import (
 	"github.com/countrymanprime/narration-utils/shell/internal/tts"
 	"github.com/countrymanprime/narration-utils/shell/internal/update"
 	"github.com/countrymanprime/narration-utils/shell/internal/whisper"
-	"github.com/wailsapp/wails/v2/pkg/options"
-	"github.com/wailsapp/wails/v2/pkg/runtime"
+	"github.com/wailsapp/wails/v3/pkg/application"
 )
 
 // Keep this in lockstep with apps/ui/src/hostApi.ts.  The frontend rejects
@@ -157,7 +156,7 @@ type Host struct {
 	// updateDelay is a seam for tests: how long Startup waits before the automatic update check; zero means startupUpdateDelay.
 	// +checklocks:mu
 	updateDelay time.Duration
-	// updateEvents and openURL are seams for tests: nil means the Wails runtime.
+	// updateEvents and openURL are seams for tests: nil means the Wails application (wailsapp.go).
 	// +checklocks:mu
 	updateEvents func(updateStatus)
 	// +checklocks:mu
@@ -196,7 +195,7 @@ type Host struct {
 	// persist reports a file that cannot be read: to the host log and, for the narrator's own data, to the narrator (ADR 0069).
 	persist *persist.Reporter
 	// notifySender is a seam for tests: nil means the real Wails notification API. notifyInitOnce guards the lazy
-	// InitializeNotifications call SystemNotify makes on the first qualifying send (notifications.go, N2).
+	// start of the notification service SystemNotify makes on the first qualifying send (notifications.go, N2).
 	notifySender   notificationSender
 	notifyInitOnce sync.Once
 }
@@ -273,7 +272,7 @@ func (h *Host) noticeNarrator(text string) {
 	ctx := h.ctx
 	h.mu.RUnlock()
 	if ctx != nil {
-		runtime.EventsEmit(ctx, "system:notice", noticePayload(text))
+		emitEvent("system:notice", noticePayload(text))
 	}
 }
 
@@ -311,7 +310,9 @@ func creditTemplatesPath() string {
 	return filepath.Join("AppData", "Roaming", "narration-utils", "credit-templates.json")
 }
 
-func (h *Host) Startup(ctx context.Context) {
+// ServiceStartup is Wails v3's start hook for the Host service (main.go): it runs once, before the window loads the UI, with a
+// context Wails cancels when the application quits. It never fails: a project that cannot be attached is reported to the window.
+func (h *Host) ServiceStartup(ctx context.Context, _ application.ServiceOptions) error {
 	h.mu.Lock()
 	h.ctx, h.cancel = context.WithCancel(ctx)
 	next := h.resolveProjectFileLocked(parseConfig(h.config.repoRoot))
@@ -322,7 +323,7 @@ func (h *Host) Startup(ctx context.Context) {
 	runtimeContext, delay := h.ctx, h.updateDelay
 	h.mu.Unlock()
 	if unresolvedReaperLaunch {
-		runtime.EventsEmit(runtimeContext, "system:attached", map[string]any{"attached": false, "reason": unresolvedReason})
+		emitEvent("system:attached", map[string]any{"attached": false, "reason": unresolvedReason})
 	}
 	if delay == 0 {
 		delay = startupUpdateDelay
@@ -330,6 +331,7 @@ func (h *Host) Startup(ctx context.Context) {
 	go h.transcriptLoop(runtimeContext)
 	go h.startupUpdateCheck(runtimeContext, delay)
 	go h.cleanStaleDownloads()
+	return nil
 }
 
 // cleanStaleDownloads removes the leftovers of a download or repair that was interrupted long ago. It never runs while a download of this
@@ -613,7 +615,7 @@ func (h *Host) emitTranscript(state map[string]any) {
 	ctx := h.ctx
 	h.mu.RUnlock()
 	if ctx != nil {
-		runtime.EventsEmit(ctx, "transcript:state", state)
+		emitEvent("transcript:state", state)
 	}
 }
 
@@ -624,7 +626,7 @@ func (h *Host) emitTeleprompterEvent(event json.RawMessage) {
 	ctx := h.ctx
 	h.mu.RUnlock()
 	if ctx != nil {
-		runtime.EventsEmit(ctx, "teleprompter:event", event)
+		emitEvent("teleprompter:event", event)
 	}
 }
 
@@ -633,7 +635,7 @@ func (h *Host) emitTeleprompterState(state map[string]any) {
 	ctx := h.ctx
 	h.mu.RUnlock()
 	if ctx != nil {
-		runtime.EventsEmit(ctx, "teleprompter:state", state)
+		emitEvent("teleprompter:state", state)
 	}
 }
 
@@ -645,7 +647,7 @@ func (h *Host) emitLineIdentity(state map[string]any) {
 	ctx := h.ctx
 	h.mu.RUnlock()
 	if ctx != nil {
-		runtime.EventsEmit(ctx, "lineidentity:state", state)
+		emitEvent("lineidentity:state", state)
 	}
 }
 
@@ -656,7 +658,7 @@ func (h *Host) emitPickups(state map[string]any) {
 	ctx := h.ctx
 	h.mu.RUnlock()
 	if ctx != nil {
-		runtime.EventsEmit(ctx, "pickups:state", state)
+		emitEvent("pickups:state", state)
 	}
 }
 
@@ -667,7 +669,7 @@ func (h *Host) emitRenderConfig(state map[string]any) {
 	ctx := h.ctx
 	h.mu.RUnlock()
 	if ctx != nil {
-		runtime.EventsEmit(ctx, "renderconfig:state", state)
+		emitEvent("renderconfig:state", state)
 	}
 }
 
@@ -678,7 +680,7 @@ func (h *Host) emitRetakeLanes(state map[string]any) {
 	ctx := h.ctx
 	h.mu.RUnlock()
 	if ctx != nil {
-		runtime.EventsEmit(ctx, "retakelanes:state", state)
+		emitEvent("retakelanes:state", state)
 	}
 }
 
@@ -689,7 +691,7 @@ func (h *Host) emitCleanupTools(state map[string]any) {
 	ctx := h.ctx
 	h.mu.RUnlock()
 	if ctx != nil {
-		runtime.EventsEmit(ctx, "cleanuptools:state", state)
+		emitEvent("cleanuptools:state", state)
 	}
 }
 
@@ -701,7 +703,7 @@ func (h *Host) emitProjectState(state map[string]any) {
 	ctx := h.ctx
 	h.mu.RUnlock()
 	if ctx != nil {
-		runtime.EventsEmit(ctx, "projectstate:state", state)
+		emitEvent("projectstate:state", state)
 	}
 }
 
@@ -727,7 +729,8 @@ func (h *Host) pollTranscript() {
 	}
 }
 
-func (h *Host) Shutdown(context.Context) {
+// ServiceShutdown is Wails v3's stop hook for the Host service: the window is closing or the app was asked to quit.
+func (h *Host) ServiceShutdown() error {
 	// Stop a live session first, without holding h.mu: the service reports its
 	// phase changes through emitTeleprompterState, which takes h.mu.RLock.
 	if live := h.services().teleprompter; live != nil {
@@ -748,6 +751,7 @@ func (h *Host) Shutdown(context.Context) {
 	if h.sidecars != nil {
 		_ = h.sidecars.Close()
 	}
+	return nil
 }
 
 // attachBusyReason is what the UI is told when an attach is refused because
@@ -779,7 +783,7 @@ func (h *Host) attachProjectLocked(next config) (bool, string) {
 	return true, ""
 }
 
-func (h *Host) onSecondInstance(instance options.SecondInstanceData) {
+func (h *Host) onSecondInstance(instance application.SecondInstanceData) {
 	h.mu.Lock()
 	ctx := h.ctx
 	attached, reason := false, ""
@@ -793,14 +797,11 @@ func (h *Host) onSecondInstance(instance options.SecondInstanceData) {
 	}
 	h.mu.Unlock()
 	if ctx != nil {
-		runtime.WindowShow(ctx)
-		runtime.WindowUnminimise(ctx)
-		runtime.WindowSetAlwaysOnTop(ctx, true)
-		runtime.WindowSetAlwaysOnTop(ctx, false)
+		bringWindowForward()
 		if attached {
-			runtime.EventsEmit(ctx, "system:attached", map[string]any{"attached": true})
+			emitEvent("system:attached", map[string]any{"attached": true})
 		} else if reason != "" {
-			runtime.EventsEmit(ctx, "system:attached", map[string]any{"attached": false, "reason": reason})
+			emitEvent("system:attached", map[string]any{"attached": false, "reason": reason})
 		}
 	}
 }
@@ -1154,7 +1155,10 @@ var fieldSchemas = map[string][]fieldSchema{
 	// NarrationUtils_Launcher.lua as REAPER's trailing script argument when it starts REAPER (Phase 8, ADR 0092
 	// W12), so the bridge is live without the narrator running the action by hand - but only when this is on, and
 	// it defaults off.
-	"DAW": {{"reaper_path", "REAPER executable (override)", "text", nil}, {"auto_start_launcher", "Start the launcher script automatically", "bool", nil}},
+	// DAW.experimental_reaper_actions is owner decision D38: the REAPER bridge commands built before the owner's
+	// verification pass (docs/operations/reaper-verification-pass.md) are refused by the host while it is off, and it
+	// defaults off (bridge.ExperimentalSettingTool/Key, internal/bridge/actions.go).
+	"DAW": {{"reaper_path", "REAPER executable (override)", "text", nil}, {"auto_start_launcher", "Start the launcher script automatically", "bool", nil}, {"experimental_reaper_actions", "Experimental REAPER actions", "bool", nil}},
 	// RecordingCoverage is the recording check's four settings (docs/utilities/recording-coverage.md Q3, ADR 0131),
 	// read by coverage.ResolveSettings. The two thresholds judge a stored result on read; the two alignment settings are
 	// in a result's parameter hash, so changing one makes older results stale (Q13 B). Their defaults are Proposed and

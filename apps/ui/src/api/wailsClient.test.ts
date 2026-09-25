@@ -2,21 +2,59 @@
 
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
+import { Call } from '@wailsio/runtime';
+
 import { wailsClient } from './wailsClient';
 import { WireError } from './wire/WireError';
 
-const originalGo = window.go;
-const originalRuntime = (window as unknown as { runtime?: unknown }).runtime;
+// The generated bindings call the host through @wailsio/runtime (Wails v3). Each test stands a fake host in front of them: every
+// generated function forwards to the method of the same name in `fakeHost`, and a method the test did not give is missing, as an
+// unbound one would be. Events.On hands its listener a WailsEvent, whose `data` is what the host emitted, as the runtime does.
+type Listener = (payload: unknown) => void;
+type EventsOn = (event: string, listener: Listener) => () => void;
+const fake: { host: Record<string, unknown>; eventsOn: EventsOn | undefined } = { host: {}, eventsOn: undefined };
+
+function standInHost(methods: Record<string, unknown>): void {
+  fake.host = methods;
+}
+
+function standInEvents(eventsOn: EventsOn): void {
+  fake.eventsOn = eventsOn;
+}
+
+vi.mock('../../wailsjs/github.com/countrymanprime/narration-utils/shell/host', async (importOriginal) => {
+  const generated = await importOriginal<Record<string, unknown>>();
+  return Object.fromEntries(
+    Object.keys(generated).map((name) => [
+      name,
+      (...args: unknown[]) => {
+        const method = fake.host[name];
+        if (typeof method !== 'function') throw new TypeError(`the fake host has no ${name}`);
+        return method(...args);
+      },
+    ]),
+  );
+});
+
+vi.mock('@wailsio/runtime', async (importOriginal) => ({
+  ...(await importOriginal<Record<string, unknown>>()),
+  Events: {
+    On: (event: string, listener: (wailsEvent: { name: string; data: unknown }) => void) => {
+      if (!fake.eventsOn) throw new TypeError('the test did not stand in for Events.On');
+      return fake.eventsOn(event, (payload) => listener({ name: event, data: payload }));
+    },
+  },
+}));
 
 afterEach(() => {
-  window.go = originalGo;
-  (window as unknown as { runtime?: unknown }).runtime = originalRuntime;
+  fake.host = {};
+  fake.eventsOn = undefined;
 });
 
 describe('wailsClient', () => {
   it('uses generated Wails methods rather than an operation-string transport', async () => {
     const select = vi.fn().mockResolvedValue(JSON.stringify({ selected: true, jobId: 'import-1' }));
-    window.go = { main: { Host: { Ready: () => Promise.resolve({ apiVersion: 1, diagnosticId: 'native' }), ManuscriptSelectFile: select } } };
+    standInHost({ Ready: () => Promise.resolve({ apiVersion: 1, diagnosticId: 'native' }), ManuscriptSelectFile: select });
 
     await expect(wailsClient.ready()).resolves.toEqual({ apiVersion: 1, diagnosticId: 'native' });
     await expect(wailsClient.selectManuscript()).resolves.toEqual({ selected: true, jobId: 'import-1' });
@@ -40,7 +78,7 @@ describe('wailsClient', () => {
     const analyze = vi.fn().mockResolvedValue(JSON.stringify(job));
     const state = vi.fn().mockResolvedValue(JSON.stringify({ ...job, phase: 'success', percent: 100 }));
     const cancel = vi.fn().mockResolvedValue(JSON.stringify({ ...job, phase: 'cancelled' }));
-    window.go = { main: { Host: { MeasurePickFiles: pick, MeasureAnalyze: analyze, MeasureState: state, MeasureCancel: cancel } } };
+    standInHost({ MeasurePickFiles: pick, MeasureAnalyze: analyze, MeasureState: state, MeasureCancel: cancel });
 
     const picked = await wailsClient.measurePickFiles();
     expect(picked).toEqual({ paths: ['C:/R/Chapter 01.wav'] });
@@ -74,7 +112,7 @@ describe('wailsClient', () => {
     const analyze = vi.fn().mockResolvedValue(JSON.stringify(job));
     const state = vi.fn().mockResolvedValue(JSON.stringify({ ...job, phase: 'success', percent: 100 }));
     const cancel = vi.fn().mockResolvedValue(JSON.stringify({ ...job, phase: 'cancelled' }));
-    window.go = { main: { Host: { DiagnosticsAnalyze: analyze, DiagnosticsState: state, DiagnosticsCancel: cancel } } };
+    standInHost({ DiagnosticsAnalyze: analyze, DiagnosticsState: state, DiagnosticsCancel: cancel });
 
     await expect(wailsClient.diagnosticsAnalyze(['C:/R/Chapter 01.wav'], 'raw_recording')).resolves.toMatchObject({ phase: 'running', logs: [], files: [] });
     expect(analyze).toHaveBeenCalledWith(['C:/R/Chapter 01.wav'], 'raw_recording');
@@ -94,7 +132,7 @@ describe('wailsClient', () => {
       elapsed: 0,
       files: [{ path: 'a', name: 'a', status: 'measured', report, fingerprint: null }],
     };
-    window.go = { main: { Host: { MeasureState: () => Promise.resolve(JSON.stringify(job)), SystemReportDiagnostic: vi.fn().mockResolvedValue('null') } } };
+    standInHost({ MeasureState: () => Promise.resolve(JSON.stringify(job)), SystemReportDiagnostic: vi.fn().mockResolvedValue('null') });
     await expect(wailsClient.measureState()).rejects.toBeInstanceOf(WireError);
   });
 
@@ -126,7 +164,7 @@ describe('wailsClient', () => {
       runtime: { Reaper: { launcherPath: '' } },
       transcript: idle,
     };
-    window.go = { main: { Host: { Bootstrap: () => Promise.resolve(bootstrap) } } };
+    standInHost({ Bootstrap: () => Promise.resolve(bootstrap) });
 
     const parsed = await wailsClient.bootstrap();
 
@@ -136,14 +174,10 @@ describe('wailsClient', () => {
 
   it('rejects a Bootstrap with the wrong shape as a WireError and writes it to the host log without values', async () => {
     const report = vi.fn().mockResolvedValue('null');
-    window.go = {
-      main: {
-        Host: {
-          Bootstrap: () => Promise.resolve({ apiVersion: 6, version: '0.2.7', projectName: 'A SECRET TITLE', transcript: 'nope' }),
-          SystemReportDiagnostic: report,
-        },
-      },
-    };
+    standInHost({
+      Bootstrap: () => Promise.resolve({ apiVersion: 6, version: '0.2.7', projectName: 'A SECRET TITLE', transcript: 'nope' }),
+      SystemReportDiagnostic: report,
+    });
 
     await expect(wailsClient.bootstrap()).rejects.toBeInstanceOf(WireError);
 
@@ -156,12 +190,12 @@ describe('wailsClient', () => {
   });
 
   it('still throws the WireError when there is no host to report to', async () => {
-    window.go = { main: { Host: { Ready: () => Promise.resolve({ diagnosticId: 'x' }) } } };
+    standInHost({ Ready: () => Promise.resolve({ diagnosticId: 'x' }) });
     await expect(wailsClient.ready()).rejects.toBeInstanceOf(WireError);
   });
 
   it('rejects a host binding that answers with text that is not JSON', async () => {
-    window.go = { main: { Host: { SystemReportDiagnostic: () => Promise.resolve('<html>') } } };
+    standInHost({ SystemReportDiagnostic: () => Promise.resolve('<html>') });
     await expect(wailsClient.reportClientDiagnostic('k', 'm')).rejects.toBeInstanceOf(WireError);
   });
 
@@ -171,13 +205,13 @@ describe('wailsClient', () => {
       callback = listener;
       return () => {};
     });
-    (window as unknown as { runtime: { EventsOnMultiple: typeof eventsOn } }).runtime = { EventsOnMultiple: eventsOn };
+    standInEvents(eventsOn);
     const update = vi.fn();
 
     wailsClient.subscribeTranscript(update);
     callback?.({ phase: 'running', percent: 10, message: 'Working', logs: [], chapters: [], rows: [], diff: '', summary: '', elapsed: 1 });
 
-    expect(eventsOn).toHaveBeenCalledWith('transcript:state', expect.any(Function), -1);
+    expect(eventsOn).toHaveBeenCalledWith('transcript:state', expect.any(Function));
     expect(update).toHaveBeenCalledWith(expect.objectContaining({ markerExport: { phase: 'idle', message: '', added: 0, skipped: 0 } }));
   });
 
@@ -195,15 +229,11 @@ describe('wailsClient', () => {
       available: null,
     };
     const report = vi.fn().mockResolvedValue('null');
-    window.go = {
-      main: {
-        Host: {
-          UpdateStatus: () => Promise.resolve(JSON.stringify(status)),
-          UpdateCheck: () => Promise.resolve('{"version":3}'),
-          SystemReportDiagnostic: report,
-        },
-      },
-    };
+    standInHost({
+      UpdateStatus: () => Promise.resolve(JSON.stringify(status)),
+      UpdateCheck: () => Promise.resolve('{"version":3}'),
+      SystemReportDiagnostic: report,
+    });
 
     await expect(wailsClient.updateStatus()).resolves.toEqual(status);
     await expect(wailsClient.updateCheck()).rejects.toBeInstanceOf(WireError);
@@ -212,7 +242,7 @@ describe('wailsClient', () => {
 
   it('opens the release notes through a binding that takes no address', async () => {
     const open = vi.fn().mockResolvedValue('null');
-    window.go = { main: { Host: { UpdateOpenNotes: open } } };
+    standInHost({ UpdateOpenNotes: open });
     await expect(wailsClient.updateOpenNotes()).resolves.toBeUndefined();
     expect(open).toHaveBeenCalledWith();
   });
@@ -220,15 +250,11 @@ describe('wailsClient', () => {
   it('starts, polls and cancels an update download through the job schema', async () => {
     const job = { id: 'update-1', version: '0.2.7', phase: 'downloading', message: 'Downloading', percent: 40, bytesDone: 4, bytesTotal: 10, error: '' };
     const cancel = vi.fn().mockResolvedValue(JSON.stringify({ ...job, phase: 'cancelled' }));
-    window.go = {
-      main: {
-        Host: {
-          UpdateDownload: () => Promise.resolve(JSON.stringify(job)),
-          UpdateJobState: () => Promise.resolve(JSON.stringify({ ...job, phase: 'verifying', percent: 100 })),
-          UpdateJobCancel: cancel,
-        },
-      },
-    };
+    standInHost({
+      UpdateDownload: () => Promise.resolve(JSON.stringify(job)),
+      UpdateJobState: () => Promise.resolve(JSON.stringify({ ...job, phase: 'verifying', percent: 100 })),
+      UpdateJobCancel: cancel,
+    });
 
     await expect(wailsClient.updateDownload()).resolves.toEqual(job);
     await expect(wailsClient.updateJobState('update-1')).resolves.toMatchObject({ phase: 'verifying' });
@@ -242,7 +268,7 @@ describe('wailsClient', () => {
       callback = listener;
       return () => {};
     });
-    (window as unknown as { runtime: { EventsOnMultiple: typeof eventsOn } }).runtime = { EventsOnMultiple: eventsOn };
+    standInEvents(eventsOn);
     const seen = vi.fn();
 
     wailsClient.subscribeUpdate(seen);
@@ -259,7 +285,7 @@ describe('wailsClient', () => {
       available: null,
     });
 
-    expect(eventsOn).toHaveBeenCalledWith('update:status', expect.any(Function), -1);
+    expect(eventsOn).toHaveBeenCalledWith('update:status', expect.any(Function));
     expect(seen).toHaveBeenCalledWith(expect.objectContaining({ channel: 'stable' }));
   });
 
@@ -267,7 +293,7 @@ describe('wailsClient', () => {
     const commit = vi
       .fn()
       .mockResolvedValue(JSON.stringify({ id: 'import-1', kind: 'manuscript_import', phase: 'success', message: '', percent: 100, logs: [], elapsed: 0 }));
-    window.go = { main: { Host: { ManuscriptImportCommit: commit } } };
+    standInHost({ ManuscriptImportCommit: commit });
 
     await wailsClient.manuscriptImportCommit('import-1', {
       confirmedReset: false,
@@ -281,7 +307,7 @@ describe('wailsClient', () => {
     const commit = vi
       .fn()
       .mockResolvedValue(JSON.stringify({ id: 'import-1', kind: 'manuscript_import', phase: 'success', message: '', percent: 100, logs: [], elapsed: 0 }));
-    window.go = { main: { Host: { ManuscriptImportCommit: commit } } };
+    standInHost({ ManuscriptImportCommit: commit });
 
     await wailsClient.manuscriptImportCommit('import-1', { confirmedReset: true, selection: { subtitleDefault: false, subtitleOverrides: { 's-1': false } } });
 
@@ -295,20 +321,20 @@ describe('wailsClient', () => {
       callback = listener;
       return () => {};
     });
-    (window as unknown as { runtime: { EventsOnMultiple: typeof eventsOn } }).runtime = { EventsOnMultiple: eventsOn };
+    standInEvents(eventsOn);
     const update = vi.fn();
 
     wailsClient.subscribeProjectAttach(update);
     callback?.({ attached: false, reason: 'Busy' });
 
-    expect(eventsOn).toHaveBeenCalledWith('system:attached', expect.any(Function), -1);
+    expect(eventsOn).toHaveBeenCalledWith('system:attached', expect.any(Function));
     expect(update).toHaveBeenCalledWith({ attached: false, reason: 'Busy' });
   });
 
   it('lists recent projects from the native binding', async () => {
     const recents = [{ path: 'C:/Projects/Alice', name: 'Alice', lastOpened: '2026-09-10T12:00:00Z' }];
     const projectRecents = vi.fn().mockResolvedValue(JSON.stringify(recents));
-    window.go = { main: { Host: { ProjectRecents: projectRecents } } };
+    standInHost({ ProjectRecents: projectRecents });
 
     await expect(wailsClient.projectRecents()).resolves.toEqual(recents);
     expect(projectRecents).toHaveBeenCalledWith();
@@ -316,7 +342,7 @@ describe('wailsClient', () => {
 
   it('opens the native folder-browse dialog for selecting a project folder', async () => {
     const selectProjectFolder = vi.fn().mockResolvedValue(JSON.stringify({ selected: true, path: 'C:/Projects/New-Project' }));
-    window.go = { main: { Host: { ProjectSelectFolder: selectProjectFolder } } };
+    standInHost({ ProjectSelectFolder: selectProjectFolder });
 
     await expect(wailsClient.selectProjectFolder()).resolves.toEqual({ selected: true, path: 'C:/Projects/New-Project' });
     expect(selectProjectFolder).toHaveBeenCalledWith();
@@ -324,7 +350,7 @@ describe('wailsClient', () => {
 
   it('switches the active project, defaulting an omitted name to an empty string for the backend to fill in', async () => {
     const switchProject = vi.fn().mockResolvedValue(JSON.stringify({ switched: true }));
-    window.go = { main: { Host: { ProjectSwitch: switchProject } } };
+    standInHost({ ProjectSwitch: switchProject });
 
     await expect(wailsClient.switchProject('C:/Projects/Alice')).resolves.toEqual({ switched: true });
     expect(switchProject).toHaveBeenCalledWith('C:/Projects/Alice', '');
@@ -335,14 +361,14 @@ describe('wailsClient', () => {
 
   it('surfaces a refusal reason when switching project fails', async () => {
     const switchProject = vi.fn().mockResolvedValue(JSON.stringify({ switched: false, reason: 'Narration Utils is busy.' }));
-    window.go = { main: { Host: { ProjectSwitch: switchProject } } };
+    standInHost({ ProjectSwitch: switchProject });
 
     await expect(wailsClient.switchProject('C:/Projects/Alice')).resolves.toEqual({ switched: false, reason: 'Narration Utils is busy.' });
   });
 
   it('creates a new project under a parent directory and a name, through ProjectCreateIn', async () => {
     const createProject = vi.fn().mockResolvedValue(JSON.stringify({ switched: true }));
-    window.go = { main: { Host: { ProjectCreateIn: createProject } } };
+    standInHost({ ProjectCreateIn: createProject });
 
     await expect(wailsClient.createProject('C:/Projects', 'New Project')).resolves.toEqual({ switched: true });
     expect(createProject).toHaveBeenCalledWith('C:/Projects', 'New Project');
@@ -350,7 +376,7 @@ describe('wailsClient', () => {
 
   it('creates a new project with an empty parent, letting the backend default to the projects directory', async () => {
     const createProject = vi.fn().mockResolvedValue(JSON.stringify({ switched: true }));
-    window.go = { main: { Host: { ProjectCreateIn: createProject } } };
+    standInHost({ ProjectCreateIn: createProject });
 
     await expect(wailsClient.createProject('', 'New Project')).resolves.toEqual({ switched: true });
     expect(createProject).toHaveBeenCalledWith('', 'New Project');
@@ -359,7 +385,7 @@ describe('wailsClient', () => {
   it('removes a recent project via the native binding and resolves with the updated list', async () => {
     const remaining = [{ path: 'C:/Projects/Alice', name: 'Alice', lastOpened: '2026-09-10T12:00:00Z' }];
     const removeRecentProject = vi.fn().mockResolvedValue(JSON.stringify(remaining));
-    window.go = { main: { Host: { ProjectRemoveRecent: removeRecentProject } } };
+    standInHost({ ProjectRemoveRecent: removeRecentProject });
 
     await expect(wailsClient.removeRecentProject('C:/Projects/Voltage-and-the-Undercroft')).resolves.toEqual(remaining);
     expect(removeRecentProject).toHaveBeenCalledWith('C:/Projects/Voltage-and-the-Undercroft');
@@ -369,15 +395,11 @@ describe('wailsClient', () => {
     const discovery = { candidates: ['C:/Projects/Alice/Alice.rpp'], selected: 'C:/Projects/Alice/Alice.rpp' };
     const project = { path: 'C:/Projects/Alice/Alice.rpp', tracks: [] };
     const select = vi.fn().mockResolvedValue(JSON.stringify(discovery));
-    window.go = {
-      main: {
-        Host: {
-          TracksDiscover: vi.fn().mockResolvedValue(JSON.stringify(discovery)),
-          TracksSelect: select,
-          TracksList: vi.fn().mockResolvedValue(JSON.stringify(project)),
-        },
-      },
-    };
+    standInHost({
+      TracksDiscover: vi.fn().mockResolvedValue(JSON.stringify(discovery)),
+      TracksSelect: select,
+      TracksList: vi.fn().mockResolvedValue(JSON.stringify(project)),
+    });
 
     await expect(wailsClient.tracksDiscover()).resolves.toEqual(discovery);
     await expect(wailsClient.tracksSelect('C:/Projects/Alice/Alice.rpp')).resolves.toEqual(discovery);
@@ -398,15 +420,11 @@ describe('wailsClient', () => {
     const withOne = { documentId: 'doc-1', mappings: [confirmed] };
     const confirm = vi.fn().mockResolvedValue(JSON.stringify(confirmed));
     const clear = vi.fn().mockResolvedValue(JSON.stringify(empty));
-    window.go = {
-      main: {
-        Host: {
-          ChapterTrackMapList: vi.fn().mockResolvedValueOnce(JSON.stringify(empty)).mockResolvedValueOnce(JSON.stringify(withOne)),
-          ChapterTrackMapConfirm: confirm,
-          ChapterTrackMapClear: clear,
-        },
-      },
-    };
+    standInHost({
+      ChapterTrackMapList: vi.fn().mockResolvedValueOnce(JSON.stringify(empty)).mockResolvedValueOnce(JSON.stringify(withOne)),
+      ChapterTrackMapConfirm: confirm,
+      ChapterTrackMapClear: clear,
+    });
 
     await expect(wailsClient.chapterTrackMapList()).resolves.toEqual(empty);
     await expect(wailsClient.chapterTrackMapConfirm('track-guid-a', 'c-0001')).resolves.toEqual(confirmed);
@@ -434,9 +452,7 @@ describe('wailsClient', () => {
     const list = vi.fn().mockResolvedValue(JSON.stringify({ findings: null, total: 0 }));
     const get = vi.fn().mockResolvedValue(JSON.stringify(finding));
     const review = vi.fn().mockResolvedValue(JSON.stringify(finding));
-    window.go = {
-      main: { Host: { FindingsList: list, FindingsGet: get, FindingsReview: review, FindingsSummary: vi.fn().mockResolvedValue(JSON.stringify(summary)) } },
-    };
+    standInHost({ FindingsList: list, FindingsGet: get, FindingsReview: review, FindingsSummary: vi.fn().mockResolvedValue(JSON.stringify(summary)) });
 
     await expect(wailsClient.findingsList({ sort: 'confidence', limit: 50 })).resolves.toEqual({ findings: [], total: 0 });
     expect(list).toHaveBeenCalledWith({ sort: 'confidence', limit: 50 });
@@ -454,7 +470,7 @@ describe('wailsClient', () => {
     const loop = vi.fn().mockResolvedValue(JSON.stringify({ outcome: 'refused', reason: 'stale', message: 'Gone.' }));
     const stop = vi.fn().mockResolvedValue(JSON.stringify({ outcome: 'stopped', restored: 2, kept: 1 }));
     const status = vi.fn().mockResolvedValue(JSON.stringify({ connection: 'connected', loopingFindingId: 'f1' }));
-    window.go = { main: { Host: { FindingsGoTo: goTo, FindingsLoop: loop, FindingsStopLoop: stop, FindingsReaperStatus: status } } };
+    standInHost({ FindingsGoTo: goTo, FindingsLoop: loop, FindingsStopLoop: stop, FindingsReaperStatus: status });
 
     await expect(wailsClient.findingsGoTo('f1')).resolves.toEqual({ outcome: 'navigated', projectTime: 102.5 });
     expect(goTo).toHaveBeenCalledWith('f1');
@@ -466,18 +482,18 @@ describe('wailsClient', () => {
 
   it('sends Add marker for a finding to the host and decodes what REAPER added', async () => {
     const addMarker = vi.fn().mockResolvedValue(JSON.stringify({ outcome: 'added', name: "MISREAD: 'a' as 'b'", sourceTime: 12.5 }));
-    window.go = { main: { Host: { FindingsAddMarker: addMarker } } };
+    standInHost({ FindingsAddMarker: addMarker });
     await expect(wailsClient.findingsAddMarker('f1')).resolves.toEqual({ outcome: 'added', name: "MISREAD: 'a' as 'b'", sourceTime: 12.5 });
     expect(addMarker).toHaveBeenCalledWith('f1');
   });
 
   it('rejects a marker answer the host never sends', async () => {
-    window.go = { main: { Host: { FindingsAddMarker: vi.fn().mockResolvedValue(JSON.stringify({ outcome: 'added', name: 'x' })) } } };
+    standInHost({ FindingsAddMarker: vi.fn().mockResolvedValue(JSON.stringify({ outcome: 'added', name: 'x' })) });
     await expect(wailsClient.findingsAddMarker('f1')).rejects.toBeInstanceOf(WireError);
   });
 
   it('rejects a navigation answer the host never sends', async () => {
-    window.go = { main: { Host: { FindingsGoTo: vi.fn().mockResolvedValue(JSON.stringify({ outcome: 'refused', reason: 'busy', message: 'x' })) } } };
+    standInHost({ FindingsGoTo: vi.fn().mockResolvedValue(JSON.stringify({ outcome: 'refused', reason: 'busy', message: 'x' })) });
     await expect(wailsClient.findingsGoTo('f1')).rejects.toBeInstanceOf(WireError);
   });
 
@@ -494,7 +510,7 @@ describe('wailsClient', () => {
       confidence_reason: 'r',
       review: { status: 'approved' },
     };
-    window.go = { main: { Host: { FindingsGet: vi.fn().mockResolvedValue(JSON.stringify(bad)) } } };
+    standInHost({ FindingsGet: vi.fn().mockResolvedValue(JSON.stringify(bad)) });
     await expect(wailsClient.findingsGet('f1')).rejects.toBeInstanceOf(WireError);
   });
 
@@ -502,7 +518,7 @@ describe('wailsClient', () => {
     const start = vi.fn().mockResolvedValue(JSON.stringify({ status: 'started' }));
     const stop = vi.fn().mockResolvedValue('null');
     const state = vi.fn().mockResolvedValue(JSON.stringify({ phase: 'idle', script: null, position: null }));
-    window.go = { main: { Host: { TeleprompterStart: start, TeleprompterStop: stop, TeleprompterState: state } } };
+    standInHost({ TeleprompterStart: start, TeleprompterStop: stop, TeleprompterState: state });
     const options = { chapter: 'chapter-1', device: 'Microphone (USB)', model: 'tiny' };
 
     await expect(wailsClient.teleprompterStart(options)).resolves.toEqual({ status: 'started' });
@@ -514,7 +530,7 @@ describe('wailsClient', () => {
 
   it('sends the credits kind, not a chapter, to TeleprompterStart for the credits (credits PRD Phase 4)', async () => {
     const start = vi.fn().mockResolvedValue(JSON.stringify({ status: 'started' }));
-    window.go = { main: { Host: { TeleprompterStart: start } } };
+    standInHost({ TeleprompterStart: start });
 
     await wailsClient.teleprompterStart({ credits: 'closing', device: 'Microphone (USB)', model: 'tiny' });
 
@@ -527,7 +543,7 @@ describe('wailsClient', () => {
       listeners.set(event, listener);
       return () => {};
     });
-    (window as unknown as { runtime: { EventsOnMultiple: typeof eventsOn } }).runtime = { EventsOnMultiple: eventsOn };
+    standInEvents(eventsOn);
     const onEvent = vi.fn();
     const onState = vi.fn();
 
@@ -559,9 +575,9 @@ describe('live events (ADR 0069: dropped and counted, never thrown inside the ca
       if (name === event) listener = callback;
       return () => {};
     });
-    (window as unknown as { runtime: { EventsOnMultiple: typeof eventsOn } }).runtime = { EventsOnMultiple: eventsOn };
+    standInEvents(eventsOn);
     const report = vi.fn().mockResolvedValue('null');
-    window.go = { main: { Host: { SystemReportDiagnostic: report } } };
+    standInHost({ SystemReportDiagnostic: report });
     return { client, emit: (payload: unknown) => listener?.(payload), report };
   }
 
@@ -664,14 +680,31 @@ describe('live events (ADR 0069: dropped and counted, never thrown inside the ca
   it('reads the teleprompter state binding through the same schema', async () => {
     vi.resetModules();
     const { wailsClient: client } = await import('./wailsClient');
-    window.go = {
-      main: {
-        Host: {
-          TeleprompterState: () =>
-            Promise.resolve(JSON.stringify({ phase: 'idle', message: 'Choose', engine: null, chapter: null, script: null, position: null })),
-        },
-      },
-    };
+    standInHost({
+      TeleprompterState: () => Promise.resolve(JSON.stringify({ phase: 'idle', message: 'Choose', engine: null, chapter: null, script: null, position: null })),
+    });
     await expect(client.teleprompterState()).resolves.toMatchObject({ phase: 'idle', engine: null });
+  });
+});
+
+// Wails v2 rejected a failed Go method with the error's text; v3 rejects with a RuntimeError carrying it (ADR 0200). Pages render a
+// rejection with String(reason), so the text must arrive alone, never as "RuntimeError: ...".
+describe('host errors keep the text a page shows', () => {
+  it('rejects with the Go error text when a host method fails', async () => {
+    standInHost({ ProjectRecents: () => Promise.reject(new Call.RuntimeError('The recent projects file could not be read.')) });
+
+    const reason = await wailsClient.projectRecents().catch((error: unknown) => error);
+
+    expect(reason).toBe('The recent projects file could not be read.');
+    expect(String(reason)).toBe('The recent projects file could not be read.');
+  });
+
+  it('passes every other rejection through unchanged', async () => {
+    const unknownMethod = new ReferenceError('unknown bound method');
+    standInHost({ ProjectRecents: () => Promise.reject(unknownMethod) });
+    await expect(wailsClient.projectRecents()).rejects.toBe(unknownMethod);
+
+    standInHost({ ProjectRecents: () => Promise.reject('already text') });
+    await expect(wailsClient.projectRecents()).rejects.toBe('already text');
   });
 });

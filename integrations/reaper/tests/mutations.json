@@ -31,19 +31,19 @@
   },
   {
     "name": "an existing region is created again",
-    "file": "narration_line_identity.lua",
-    "find": "found = found or same_region(region, row.title, row.first, row.last)",
-    "replace": "found = false"
+    "file": "narration_regions.lua",
+    "find": "exists = exists or same_bounds(region, row.first, row.last)",
+    "replace": "exists = false"
   },
   {
     "name": "the region tolerance widens",
-    "file": "narration_line_identity.lua",
+    "file": "narration_regions.lua",
     "find": "local REGION_TOLERANCE = 0.01",
     "replace": "local REGION_TOLERANCE = 1"
   },
   {
     "name": "a malformed region row is accepted",
-    "file": "narration_line_identity.lua",
+    "file": "narration_regions.lua",
     "find": "if first and last and first >= 0 and last > first and title ~= '' then",
     "replace": "if first and last and title ~= '' then"
   },
@@ -382,5 +382,251 @@
     "file": "narration_retake_lanes.lua",
     "find": "if not has_lane_api() then",
     "replace": "if false then"
+  },
+  {
+    "name": "a stale track GUID answers for another track",
+    "file": "narration_track_state.lua",
+    "find": "track = find_track(wanted)\n    if not track then",
+    "replace": "track = find_track(wanted) or reaper.GetTrack(0, 0)\n    if not track then"
+  },
+  {
+    "name": "the track item limit is lifted",
+    "file": "narration_track_state.lua",
+    "find": "local ITEM_LIMIT = 1000",
+    "replace": "local ITEM_LIMIT = 100000"
+  },
+  {
+    "name": "every track counts as armed",
+    "file": "narration_track_state.lua",
+    "find": "if armed(reaper.GetTrack(0, index)) then",
+    "replace": "if true then"
+  },
+  {
+    "name": "the first take is reported instead of the active one",
+    "file": "narration_track_state.lua",
+    "find": "local take = reaper.GetActiveTake(item)",
+    "replace": "local take = reaper.GetTake(item, 0)"
+  },
+  {
+    "name": "track state is answered on a REAPER without the calls it needs",
+    "file": "narration_track_state.lua",
+    "find": "    if not reaper.APIExists(name) then\n      event(session_dir, 'ERROR', run_id, 'This REAPER version cannot report its transport and tracks.')",
+    "replace": "    if false then\n      event(session_dir, 'ERROR', run_id, 'This REAPER version cannot report its transport and tracks.')"
+  },
+  {
+    "name": "the heartbeat drops the edit counter",
+    "file": "narration_ui_bridge.lua",
+    "find": "ctx.event('PROJECT_STATUS', '', rpp, rpp == '' and '1' or '0', change_count)",
+    "replace": "ctx.event('PROJECT_STATUS', '', rpp, rpp == '' and '1' or '0')"
+  },
+  {
+    "name": "record_stop stops a recording the app did not start",
+    "file": "narration_transport.lua",
+    "find": "  if not state.recording then\n    event(session_dir, 'RECORD_NOT_OURS', run_id)",
+    "replace": "  if false then\n    event(session_dir, 'RECORD_NOT_OURS', run_id)"
+  },
+  {
+    "name": "an arm the narrator changed during the take is overwritten",
+    "file": "narration_transport.lua",
+    "find": "        if now == left then",
+    "replace": "        if true then"
+  },
+  {
+    "name": "a second arm_only forgets the arms the narrator had",
+    "file": "narration_transport.lua",
+    "find": "  if not state.saved_arms then\n    local arms = {}",
+    "replace": "  if true then\n    local arms = {}"
+  },
+  {
+    "name": "recording starts with another track armed",
+    "file": "narration_transport.lua",
+    "find": "  elseif armed_tracks[1] ~= target then",
+    "replace": "  elseif false then"
+  },
+  {
+    "name": "recording starts with several tracks armed",
+    "file": "narration_transport.lua",
+    "find": "  elseif #armed_tracks > 1 then",
+    "replace": "  elseif false then"
+  },
+  {
+    "name": "recording starts while REAPER plays",
+    "file": "narration_transport.lua",
+    "find": "  if reaper.GetPlayState() ~= 0 then",
+    "replace": "  if false then"
+  },
+  {
+    "name": "arms change while REAPER records",
+    "file": "narration_transport.lua",
+    "find": "  if recording() then\n    event(session_dir, 'ERROR', run_id, 'REAPER is recording. Stop recording first.')",
+    "replace": "  if false then\n    event(session_dir, 'ERROR', run_id, 'REAPER is recording. Stop recording first.')"
+  },
+  {
+    "name": "a recording the narrator stops keeps the arms_only arms",
+    "file": "narration_transport.lua",
+    "find": "    local restored, kept = finish(state)\n    event(session_dir, 'RECORD_ENDED'",
+    "replace": "    local restored, kept = 0, 0\n    event(session_dir, 'RECORD_ENDED'"
+  },
+  {
+    "name": "a stale track is armed in place of another",
+    "file": "narration_transport.lua",
+    "find": "  local target = find_track(guid_text)\n  if not target then\n    event(session_dir, 'TRACK_STALE', run_id, guid_text)\n    return\n  end\n  if not state.saved_arms",
+    "replace": "  local target = find_track(guid_text) or tracks()[1]\n  if not target then\n    event(session_dir, 'TRACK_STALE', run_id, guid_text)\n    return\n  end\n  if not state.saved_arms"
+  },
+  {
+    "name": "a start REAPER never reports is still claimed as the app recording",
+    "file": "narration_transport.lua",
+    "find": "          state.recording = nil\n          event(session_dir, 'ERROR', record.run_id, 'REAPER did not start recording.')",
+    "replace": "          event(session_dir, 'ERROR', record.run_id, 'REAPER did not start recording.')"
+  },
+  {
+    "name": "a start cancelled while REAPER was starting is left running",
+    "file": "narration_transport.lua",
+    "find": "      if recording() then\n        reaper.OnStopButton()\n      elseif record.waited < START_WAIT_CYCLES then",
+    "replace": "      if false then\n        reaper.OnStopButton()\n      elseif record.waited < START_WAIT_CYCLES then"
+  },
+  {
+    "name": "the update flag moves a region whose title several regions share",
+    "file": "narration_regions.lua",
+    "find": "    elseif update and #titled == 1 then",
+    "replace": "    elseif update and #titled >= 1 then"
+  },
+  {
+    "name": "regions move without the update flag",
+    "file": "narration_regions.lua",
+    "find": "    elseif update and #titled == 1 then",
+    "replace": "    elseif #titled == 1 then"
+  },
+  {
+    "name": "a region REAPER refused is counted as created",
+    "file": "narration_regions.lua",
+    "find": "      if reaper.AddProjectMarker2(0, true, row.first, row.last, row.title, -1, region_color) >= 0 then",
+    "replace": "      if reaper.AddProjectMarker2(0, true, row.first, row.last, row.title, -1, region_color) then"
+  },
+  {
+    "name": "regions open an undo block when nothing changes",
+    "file": "narration_regions.lua",
+    "find": "  if #plan.add > 0 or #plan.move > 0 then",
+    "replace": "  if true then"
+  },
+  {
+    "name": "an already active take makes an undo point",
+    "file": "narration_workspace.lua",
+    "find": "  if reaper.GetActiveTake(item) == take then\n    event(session_dir, 'ACTIVE_TAKE_SET', run_id, item_guid(item), take_guid(take), 0)",
+    "replace": "  if false then\n    event(session_dir, 'ACTIVE_TAKE_SET', run_id, item_guid(item), take_guid(take), 0)"
+  },
+  {
+    "name": "a stale item resolves to another one",
+    "file": "narration_workspace.lua",
+    "find": "  if not item then\n    return nil, nil, item_text, 'item'",
+    "replace": "  item = item or reaper.GetMediaItem(0, 0)\n  if not item then\n    return nil, nil, item_text, 'item'"
+  },
+  {
+    "name": "a take of the item is used when the named one is gone",
+    "file": "narration_workspace.lua",
+    "find": "  return nil, nil, take_text, 'take'\nend",
+    "replace": "  return item, reaper.GetActiveTake(item)\nend"
+  },
+  {
+    "name": "the active take changes while REAPER records",
+    "file": "narration_workspace.lua",
+    "find": "  if recording() then\n    event(session_dir, 'ERROR', run_id, 'REAPER is recording. Stop recording first.')\n    return\n  end\n  local item, take, stale, reason = resolve(item_text, take_text)\n  if not item then\n    event(session_dir, 'ITEM_STALE', run_id, stale, reason)\n    return\n  end\n  if reaper.GetActiveTake(item) == take then",
+    "replace": "  local item, take, stale, reason = resolve(item_text, take_text)\n  if not item then\n    event(session_dir, 'ITEM_STALE', run_id, stale, reason)\n    return\n  end\n  if reaper.GetActiveTake(item) == take then"
+  },
+  {
+    "name": "a chain the listing does not hold is applied",
+    "file": "narration_workspace.lua",
+    "find": "    if listed == name then\n      local path = chain_root()",
+    "replace": "    if true then\n      local path = chain_root()"
+  },
+  {
+    "name": "the chain listing depth limit is lifted",
+    "file": "narration_workspace.lua",
+    "find": "local CHAIN_DEPTH_LIMIT = 4",
+    "replace": "local CHAIN_DEPTH_LIMIT = 40"
+  },
+  {
+    "name": "the chain listing count limit is lifted",
+    "file": "narration_workspace.lua",
+    "find": "local CHAIN_COUNT_LIMIT = 500",
+    "replace": "local CHAIN_COUNT_LIMIT = 5000"
+  },
+  {
+    "name": "the chain listing is not refreshed",
+    "file": "narration_workspace.lua",
+    "find": "  enumerate(directory, -1)\n  local names, index = {}, 0",
+    "replace": "  local names, index = {}, 0"
+  },
+  {
+    "name": "take FX are added to a passage outside the item",
+    "file": "narration_workspace.lua",
+    "find": "  if from < first - EDGE_EPSILON or to > last + EDGE_EPSILON then",
+    "replace": "  if false then"
+  },
+  {
+    "name": "take FX are added to a take that does not play",
+    "file": "narration_workspace.lua",
+    "find": "  if reaper.GetActiveTake(item) ~= take then\n    event(session_dir, 'ERROR', run_id, 'The passage is not on the take that plays.')",
+    "replace": "  if false then\n    event(session_dir, 'ERROR', run_id, 'The passage is not on the take that plays.')"
+  },
+  {
+    "name": "take FX are added while REAPER records",
+    "file": "narration_workspace.lua",
+    "find": "  if recording() then\n    event(session_dir, 'ERROR', run_id, 'REAPER is recording. Stop recording first.')\n    return\n  end\n  local item, take, stale, reason = resolve(item_text, take_text)\n  if not item then\n    event(session_dir, 'ITEM_STALE', run_id, stale, reason)\n    return\n  end\n  if reaper.GetActiveTake(item) ~= take then",
+    "replace": "  local item, take, stale, reason = resolve(item_text, take_text)\n  if not item then\n    event(session_dir, 'ITEM_STALE', run_id, stale, reason)\n    return\n  end\n  if reaper.GetActiveTake(item) ~= take then"
+  },
+  {
+    "name": "a chain REAPER did not load is reported as applied",
+    "file": "narration_workspace.lua",
+    "find": "  if index < 0 or added <= 0 then",
+    "replace": "  if false then"
+  },
+  {
+    "name": "the whole item is split at its own edge",
+    "file": "narration_workspace.lua",
+    "find": "  if not failure and from > first + EDGE_EPSILON then",
+    "replace": "  if not failure and from >= first - 1 then"
+  },
+  {
+    "name": "the UI refresh hold is not released",
+    "file": "narration_workspace.lua",
+    "find": "  reaper.PreventUIRefresh(-1)\n",
+    "replace": "\n"
+  },
+  {
+    "name": "a plug-in REAPER does not list is added to a take",
+    "file": "narration_workspace.lua",
+    "find": "    if listed == name then\n      return true",
+    "replace": "    if true then\n      return true"
+  },
+  {
+    "name": "the FX container is listed as a plug-in",
+    "file": "narration_workspace.lua",
+    "find": "    if name ~= '' and not NOT_A_PLUGIN[ident] and not NOT_A_PLUGIN[name] then",
+    "replace": "    if name ~= '' then"
+  },
+  {
+    "name": "a take gets more than one FX from one request",
+    "file": "narration_workspace.lua",
+    "find": "    if index < 0 or reaper.TakeFX_GetCount(middle_take) - before ~= 1 then",
+    "replace": "    if index < 0 or reaper.TakeFX_GetCount(middle_take) - before < 1 then"
+  },
+  {
+    "name": "the plug-in list limit is lifted",
+    "file": "narration_workspace.lua",
+    "find": "local PLUGIN_LIMIT = 2000",
+    "replace": "local PLUGIN_LIMIT = 20000"
+  },
+  {
+    "name": "a stale track gets a chain in place of another",
+    "file": "narration_workspace.lua",
+    "find": "      return track, wanted\n    end\n  end\n  return nil",
+    "replace": "      return track, wanted\n    end\n  end\n  return reaper.GetTrack(0, 0), wanted"
+  },
+  {
+    "name": "an FX chain is applied while REAPER records",
+    "file": "narration_workspace.lua",
+    "find": "  if recording() then\n    event(session_dir, 'ERROR', run_id, 'REAPER is recording. Stop recording first.')\n    return\n  end\n  local track, answer = find_track(track_text)",
+    "replace": "  local track, answer = find_track(track_text)"
   }
 ]

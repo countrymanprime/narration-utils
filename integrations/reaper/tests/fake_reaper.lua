@@ -54,7 +54,17 @@ function Fake.new(host)
   self.loop_points = { 0, 0 }
   self.repeat_on = 0
   self.play_state = 0
+  -- GetPlayPosition (narration_track_state.lua): the what-you-hear position, set by a test.
+  self.play_position = 0
+  -- GetAudioDeviceInfo('IDENT_IN'): the open input device's name; nil when the device is closed (REAPER answers false).
+  self.audio_input = nil
   self.exit_handlers = {}
+  -- The master track (GetMasterTrack): not in self.tracks, as REAPER keeps it out of CountTracks/GetTrack. Its GUID is
+  -- fixed so it never shifts the GUIDs the other tests' tracks and items get.
+  self.master = { name = 'MASTER', items = {}, guid = '{0000FFFF-0000-4000-8000-00000000FFFE}', armed = false }
+  -- EnumInstalledFX's list, in REAPER's order: { name = ..., ident = ... }. REAPER lists its video processor and the
+  -- FX container among them (ident "Video processor", "Container"); a test sets what it needs.
+  self.installed_fx = {}
   -- The Main section of REAPER's action list, in enumeration order: { id = command ID, name = action-list text }.
   -- Starts with a few real native actions (IDs confirmed in REAPER 7.80 by the S5 spike) so a lookup has to skip
   -- past non-matching entries; a test adds more with Fake:add_action.
@@ -75,8 +85,9 @@ function Fake:new_guid()
   return guid
 end
 
+-- A track's record arm (I_RECARM) is `track.armed`; its record input (I_RECINPUT) is `track.rec_input`, 0 when unset.
 function Fake:add_track(name, selected)
-  local track = { name = name or 'Track', selected = selected or false, items = {}, guid = self:new_guid() }
+  local track = { name = name or 'Track', selected = selected or false, items = {}, guid = self:new_guid(), armed = false }
   self.tracks[#self.tracks + 1] = track
   return track
 end
@@ -202,6 +213,13 @@ end
 -- Runs every function queued at the time of the call once (one REAPER "frame"). Functions queued while running
 -- wait for the next call, exactly like reaper.defer.
 function Fake:pump()
+  if self.record_pending then
+    self.record_pending = self.record_pending - 1
+    if self.record_pending <= 0 then
+      self.record_pending = nil
+      self.play_state = 5
+    end
+  end
   local queue = self.deferred
   self.deferred = {}
   for _, fn in ipairs(queue) do
@@ -333,6 +351,28 @@ function Fake:add_project_api(api)
     end
     return names[index + 1]
   end
+  -- Subdirectories are cached like files (REAPER documents the same -1 re-read for both) and handed back in reverse
+  -- order, so a caller that needs an order must sort.
+  function api.EnumerateSubdirectories(directory, index)
+    local key = 'dirs:' .. directory
+    if index == -1 then
+      fake.listing_cache[key] = nil
+      return nil
+    end
+    local names = fake.listing_cache[key]
+    if not names then
+      names = {}
+      local listed = fake.host.listsubdirs(directory)
+      for position = #listed, 1, -1 do
+        names[#names + 1] = listed[position]
+      end
+      fake.listing_cache[key] = names
+    end
+    return names[index + 1]
+  end
+  function api.PreventUIRefresh(delta)
+    fake.ui_refresh_hold = (fake.ui_refresh_hold or 0) + delta
+  end
   function api.RecursiveCreateDirectory(path, _)
     return fake.host.makedirs(path)
   end
@@ -440,9 +480,32 @@ function Fake:add_transport_api(api)
   function api.GetPlayState()
     return fake.play_state
   end
+  function api.GetPlayPosition()
+    return fake.play_position
+  end
+  -- GetAudioDeviceInfo(attribute): false when the attribute is unknown or no device is open, like REAPER.
+  function api.GetAudioDeviceInfo(attribute)
+    if attribute == 'IDENT_IN' and fake.audio_input then
+      return true, fake.audio_input
+    end
+    return false, ''
+  end
   function api.OnPlayButton()
     fake.calls[#fake.calls + 1] = { name = 'OnPlayButton' }
     fake.play_state = 1
+  end
+  -- CSurf_OnRecord toggles recording ("Toggles recording on and off. Starts recording from edit-cursor-position."). A
+  -- test sets fake.record_fails to model a REAPER that did not start (no input, a dialog in the way), or
+  -- fake.record_delay_ticks to have GetPlayState report recording only that many defer cycles later.
+  function api.CSurf_OnRecord()
+    fake.calls[#fake.calls + 1] = { name = 'CSurf_OnRecord' }
+    if math.floor(fake.play_state / 4) % 2 == 1 then
+      fake.play_state = 0
+    elseif fake.record_delay_ticks then
+      fake.record_pending = fake.record_delay_ticks
+    elseif not fake.record_fails then
+      fake.play_state = 5
+    end
   end
   function api.OnStopButton()
     fake.calls[#fake.calls + 1] = { name = 'OnStopButton' }
@@ -481,6 +544,38 @@ function Fake:add_item_api(api)
   end
   function api.GetTrackMediaItem(track, index)
     return track.items[index + 1]
+  end
+  function api.CountTracks(_)
+    return #fake.tracks
+  end
+  function api.GetTrack(_, index)
+    return fake.tracks[index + 1]
+  end
+  function api.GetMasterTrack(_)
+    return fake.master
+  end
+  function api.EnumInstalledFX(index)
+    local fx = fake.installed_fx[index + 1]
+    if not fx then
+      return false, '', ''
+    end
+    return true, fx.name, fx.ident
+  end
+  -- Track FX (apply_fx_chain): a chain adds fake.chain_fx_count FX (1 unless set); fake.fx_load_fails refuses it.
+  function api.TrackFX_AddByName(track, name, rec_fx, instantiate)
+    fake.calls[#fake.calls + 1] = { name = 'TrackFX_AddByName', fx = name, rec_fx = rec_fx, instantiate = instantiate }
+    if fake.fx_load_fails then
+      return -1
+    end
+    track.fx = track.fx or {}
+    local first = #track.fx
+    for _ = 1, fake.chain_fx_count or 1 do
+      track.fx[#track.fx + 1] = { name = name }
+    end
+    return first
+  end
+  function api.TrackFX_GetCount(track)
+    return #(track.fx or {})
   end
   function api.GetMediaItem_Track(item)
     return item.track
@@ -584,12 +679,67 @@ function Fake:add_take_api(api)
     return item.takes[index + 1]
   end
   -- AddTakeToMediaItem appends a new, inactive take (REAPER: it never touches I_CURTAKE - the previously active
-  -- take stays active, confirmed by the take-mechanics spike). No SetActiveTake is modelled anywhere in this fake,
-  -- so a bridge command that tried to switch the active take would fail loudly here rather than silently pass.
+  -- take stays active, confirmed by the take-mechanics spike). SetActiveTake (set_active_take, narration_workspace.lua)
+  -- records every call in fake.calls, so a test of any other command can assert it never switched the active take.
   function api.AddTakeToMediaItem(item)
     local take = { item = item, source = { file = '' }, startoffs = 0, playrate = 1, midi = false, name = '', markers = {}, ext = {}, guid = fake:new_guid() }
     item.takes[#item.takes + 1] = take
     return take
+  end
+  function api.SetActiveTake(take)
+    fake.calls[#fake.calls + 1] = { name = 'SetActiveTake' }
+    for index, candidate in ipairs(take.item.takes) do
+      if candidate == take then
+        take.item.active_index = index
+      end
+    end
+  end
+  function api.UpdateItemInProject(_)
+    fake.item_updates = (fake.item_updates or 0) + 1
+  end
+  -- Take FX (apply_fx_chain). A chain file adds one FX per `fake.chain_fx_count` (1 unless a test sets it); a test sets
+  -- fake.fx_load_fails to model REAPER refusing the file. Every call is recorded in fake.calls.
+  function api.TakeFX_AddByName(take, name, instantiate)
+    fake.calls[#fake.calls + 1] = { name = 'TakeFX_AddByName', fx = name, instantiate = instantiate }
+    if fake.fx_load_fails then
+      return -1
+    end
+    take.fx = take.fx or {}
+    local first = #take.fx
+    for _ = 1, fake.chain_fx_count or 1 do
+      take.fx[#take.fx + 1] = { name = name }
+    end
+    return first
+  end
+  function api.TakeFX_GetCount(take)
+    return #(take.fx or {})
+  end
+  -- SplitMediaItem the way REAPER documents it: the original item becomes the left half and the right half is a new
+  -- item (new GUID) returned, or nil when the position is not strictly inside the item. Both halves keep the item's
+  -- extension data and every take (the right half's takes get new GUIDs and a source offset moved by the split), with
+  -- the same take active and each take's FX copied.
+  function api.SplitMediaItem(item, at)
+    fake.calls[#fake.calls + 1] = { name = 'SplitMediaItem', at = at }
+    if at <= item.position or at >= item.position + item.length then
+      return nil
+    end
+    local right = fake:add_item(item.track, { position = at, length = item.position + item.length - at })
+    right.active_index = item.active_index
+    for key, value in pairs(item.ext) do
+      right.ext[key] = value
+    end
+    for index, take in ipairs(item.takes) do
+      local copy =
+        { item = right, source = take.source, playrate = take.playrate, midi = take.midi, name = take.name, markers = {}, ext = {}, guid = fake:new_guid() }
+      copy.startoffs = take.startoffs + (at - item.position) * take.playrate
+      copy.fx = {}
+      for _, fx in ipairs(take.fx or {}) do
+        copy.fx[#copy.fx + 1] = { name = fx.name }
+      end
+      right.takes[index] = copy
+    end
+    item.length = at - item.position
+    return right
   end
   function api.SetMediaItemTake_Source(take, source)
     take.source = source
@@ -660,6 +810,9 @@ function Fake:add_marker_api(api)
     return index + 1, marker.is_region, marker.pos, marker.rgnend, marker.name, marker.index, marker.color
   end
   function api.AddProjectMarker2(_, is_region, pos, rgnend, name, wantidx, color)
+    if fake.add_marker_fails then
+      return -1
+    end
     local marker = { is_region = is_region, pos = pos, rgnend = rgnend, name = name, color = color or 0 }
     if wantidx and wantidx >= 0 then
       marker.index = wantidx
@@ -672,6 +825,21 @@ function Fake:add_marker_api(api)
   -- Renames or repositions a marker or region found by its markrgnindexnumber (the sixth EnumProjectMarkers3
   -- return value); unlike SetProjectMarker4 it cannot clear a name, which none of this bridge's callers need
   -- (research: `reaper-automation-surface.md:97`).
+  -- SetProjectMarker4: color 0 leaves the colour unchanged; flags & 1 clears the name (never used by this bridge).
+  function api.SetProjectMarker4(_, markrgnindexnumber, is_region, pos, rgnend, name, color, flags)
+    fake.calls[#fake.calls + 1] = { name = 'SetProjectMarker4', index = markrgnindexnumber }
+    for _, marker in ipairs(fake.markers) do
+      if marker.index == markrgnindexnumber and marker.is_region == is_region then
+        marker.pos, marker.rgnend, marker.name = pos, rgnend, (flags or 0) % 2 == 1 and '' or name
+        if color and color ~= 0 then
+          marker.color = color
+        end
+        table.sort(fake.markers, by_position)
+        return true
+      end
+    end
+    return false
+  end
   function api.SetProjectMarker3(_, markrgnindexnumber, is_region, pos, rgnend, name, color)
     for _, marker in ipairs(fake.markers) do
       if marker.index == markrgnindexnumber and marker.is_region == is_region then
@@ -721,6 +889,10 @@ function Fake:add_lane_api(api)
       return track.free_mode or 0
     elseif key == 'I_NUMFIXEDLANES' then
       return track.lane_count or 1
+    elseif key == 'I_RECARM' then
+      return track.armed and 1 or 0
+    elseif key == 'I_RECINPUT' then
+      return track.rec_input or 0
     end
     local lane = key:match('^C_LANEPLAYS:(%d+)$')
     if lane then
@@ -737,6 +909,8 @@ function Fake:add_lane_api(api)
       track.free_mode = value
     elseif key == 'I_NUMFIXEDLANES' then
       track.lane_count = value
+    elseif key == 'I_RECARM' then
+      track.armed = value ~= 0
     elseif not lane then
       error('fake reaper: unmodelled track value setter ' .. tostring(key))
     end

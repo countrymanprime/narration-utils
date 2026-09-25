@@ -25,6 +25,10 @@
         "true_peak_dbtp": -3.1,
         "noise_floor_dbfs": -66.8,
         "digital_silent_windows": 0,
+        "head_room_tone_seconds": 0.8,
+        "tail_room_tone_seconds": 2.5,
+        "head_digital_silence_seconds": 0,
+        "tail_digital_silence_seconds": 0,
         "full_scale_samples": 4,
         "clip_run_count": 1,
         "clip_runs": [
@@ -98,15 +102,13 @@
         },
         {
           "ruleId": "acx.room_tone_head",
-          "status": "not_checked",
-          "value": null,
-          "why": "Not checked by the app yet: measuring room tone at the file's edges comes later."
+          "status": "met",
+          "value": 0.8
         },
         {
           "ruleId": "acx.room_tone_tail",
-          "status": "not_checked",
-          "value": null,
-          "why": "Not checked by the app yet: measuring room tone at the file's edges comes later."
+          "status": "met",
+          "value": 2.5
         },
         {
           "ruleId": "acx.format",
@@ -280,10 +282,14 @@
         "max": 5,
         "oneOf": null,
         "sameAcrossFiles": false,
-        "advice": null,
+        "advice": {
+          "metric": "head_digital_silence_seconds",
+          "max": 0,
+          "unit": "s",
+          "text": "the head holds digital silence (exact zeros): ACX asks for room tone, not silence"
+        },
         "level": "required",
-        "checkedBy": "not_yet",
-        "notCheckedWhy": "Not checked by the app yet: measuring room tone at the file's edges comes later.",
+        "checkedBy": "measured",
         "source": {
           "title": "ACX Audio Submission Requirements",
           "url": "https://help.acx.com/s/article/what-are-the-acx-audio-submission-requirements",
@@ -304,10 +310,14 @@
         "max": 5,
         "oneOf": null,
         "sameAcrossFiles": false,
-        "advice": null,
+        "advice": {
+          "metric": "tail_digital_silence_seconds",
+          "max": 0,
+          "unit": "s",
+          "text": "the tail holds digital silence (exact zeros): ACX asks for room tone, not silence"
+        },
         "level": "required",
-        "checkedBy": "not_yet",
-        "notCheckedWhy": "Not checked by the app yet: measuring room tone at the file's edges comes later.",
+        "checkedBy": "measured",
         "source": {
           "title": "ACX Audio Submission Requirements",
           "url": "https://help.acx.com/s/article/what-are-the-acx-audio-submission-requirements",

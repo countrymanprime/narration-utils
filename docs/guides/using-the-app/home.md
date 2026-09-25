@@ -22,6 +22,16 @@ chapter with its word count, estimated and actual recorded length, and status.
 
 ![Home, per-chapter breakdown expanded](../../images/ui/home-chapter-table-expanded.webp)
 
+**Track** shows each chapter's link to a REAPER track: a filled icon with the track's own colour
+for a linked chapter, a dashed outline for one the app suggests by name but hasn't confirmed, and
+a plain icon for one with no link at all. A number badge means the chapter is linked to more than
+one track at once; an exclamation mark means its linked track is no longer in the saved project.
+Selecting it opens the chapter's track panel, with what the saved project knows about the track
+(its item count, span and how the link was found) and the same link, change or clear picker as the
+[Tracks](tracks.md) page - so a chapter's track never needs a trip there just to be linked. The
+column, and every chapter's Track button, is absent when no REAPER project is linked yet; the table
+says so in its place, with a link to [Tracks](tracks.md) if more than one project file was found.
+
 **Actual recorded** shows how much audio a chapter's linked REAPER track holds, as of the last
 save: the union of its unmuted items, overlaps counted once. A chapter with no confirmed link, a
 link to more than one track, a linked track no longer in the saved project, or no project at all
@@ -57,13 +67,17 @@ If the Whisper model is not installed yet, the app asks before downloading it, a
 
 ![Home - a chapter's recording check with text still to record](../../images/ui/home-recording-check.webp)
 
-The result reads "Text present: N of M words", then lists the missing text: where it is (the
-start or the end not read, a skipped block, a short read, or different text read), which
-paragraphs, how many words, the first and last missing words, and where the gap sits in the
-audio (the item on the track and the time in its audio file). **Go to paragraph** opens the
-manuscript there. The paragraph list shows how many words of each short paragraph were
-recorded. Misreads, false starts, retakes and a spoken chapter title never count against you.
-The check changes nothing: it never edits the project or moves a chapter's status.
+The result reads as a **chapter summary first**: the count ("N words not recorded", or "All the
+text is recorded"), an unread start or end stated in plain words ("Recorded to paragraph N of
+M"), then the chapter's own figures (text present, paragraphs fully read, audio checked, pace).
+Under that, **Pickups** lists only the check's own interior gaps worth reading again on their
+own — a skipped block, a short read or different text read — each with its paragraphs, word
+count, first and last missing words, where the gap sits in the audio, and **Go to paragraph** to
+open the manuscript there. An unread start or end is unfinished recording, not a pickup, so it
+never appears in that list. **Paragraph detail** stays folded by default; open it to see how many
+words of each short paragraph were recorded. Misreads, false starts, retakes and a spoken chapter
+title never count against you. The check changes nothing: it never edits the project or moves a
+chapter's status.
 
 A result goes **out of date** when the saved project changes under it (an item added, removed,
 trimmed, moved, muted or switched to another take, an audio file changed) or the chapter's text

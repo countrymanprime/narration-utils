@@ -59,6 +59,11 @@ const MODALS: { name: string; state: [string, string]; snapshot: string }[] = [
     state: ['manuscript', 'word-lookup-not-installed'],
     snapshot: 'confirm-download-dictionary.aria.yml',
   },
+  {
+    name: 'the chapter track panel is a modal slide-over named for the chapter, with its facts and the Change/Clear link',
+    state: ['home', 'chapter-track-panel-linked'],
+    snapshot: 'slide-over-chapter-track.aria.yml',
+  },
 ];
 
 for (const modal of MODALS) {

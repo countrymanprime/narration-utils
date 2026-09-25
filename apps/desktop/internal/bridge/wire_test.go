@@ -18,7 +18,7 @@ var realEvents = map[string][]string{
 	"LINES_READ":            {"LINES_READ", "t1", "C:/s/lines.txt", "12"},
 	"LINES_STALE":           {"LINES_STALE", "t1", "{AAAAAAAA-0000-4000-8000-000000000001}"},
 	"LINES_CONFLICT":        {"LINES_CONFLICT", "t1", "{AAAAAAAA-0000-4000-8000-000000000002}"},
-	"REGIONS_CREATED":       {"REGIONS_CREATED", "t1", "4", "0", "0"},
+	"REGIONS_CREATED":       {"REGIONS_CREATED", "t1", "2", "0", "0", "0", "0", "0"},
 	"PROJECT_STATUS":        {"PROJECT_STATUS", "", "C:/p/Book.rpp", "0"},
 	"PICKUPS_IMPORTED":      {"PICKUPS_IMPORTED", "t1", "2", "0", "0"},
 	"PICKUPS_EXPORTED":      {"PICKUPS_EXPORTED", "t1", "C:/s/pickups.txt", "2"},
@@ -39,6 +39,26 @@ var realEvents = map[string][]string{
 	"FINDING_STALE": {"FINDING_STALE", "n1", "{FFFFFFFF-0000-4000-8000-00000000FFFF}", "item"},
 	// integrations/reaper/tests/finding_marker_test.lua (review-dashboard PRD Phase 8).
 	"FINDING_MARKER": {"FINDING_MARKER", "m1", "added", "{AAAAAAAA-0000-4000-8000-0000000000A1}", "12.500000", "MISREAD: 'pink eyes' as 'pink ice'"},
+	// integrations/reaper/tests/track_state_test.lua (chapter_track_state).
+	"TRACK_STATE":     {"TRACK_STATE", "t1", "{00000001-0000-4000-8000-000000000001}", "0", "2.500000", "1.250000", "C:/p/Book.rpp", "0", "7", "1", "2", "1024", ""},
+	"TRACK_ITEM":      {"TRACK_ITEM", "t1", "{AAAAAAAA-0000-4000-8000-000000000001}", "{00000004-0000-4000-8000-000000000004}", "0.000000", "4.000000", "0.000000", "1.000000", "C:\\Audio\\ch1|take 1.wav"},
+	"TRACK_STATE_END": {"TRACK_STATE_END", "t1", "2", "2"},
+	"TRACK_STALE":     {"TRACK_STALE", "t1", "{FFFFFFFF-0000-4000-8000-00000000FFFF}"},
+	// integrations/reaper/tests/transport_test.lua (arm_only, record_start, record_stop).
+	"ARMED":           {"ARMED", "a1", "{00000001-0000-4000-8000-000000000001}", "2", "1"},
+	"RECORD_STARTED":  {"RECORD_STARTED", "r1", "{00000001-0000-4000-8000-000000000001}", "42.500000"},
+	"RECORD_STOPPED":  {"RECORD_STOPPED", "s1", "3", "0"},
+	"RECORD_ENDED":    {"RECORD_ENDED", "r1", "2", "0"},
+	"RECORD_NOT_OURS": {"RECORD_NOT_OURS", "s1"},
+	// integrations/reaper/tests/workspace_test.lua (set_active_take, list_fx_chains, apply_fx_chain).
+	"ACTIVE_TAKE_SET":   {"ACTIVE_TAKE_SET", "u1", "{AAAAAAAA-0000-4000-8000-000000000001}", "{00000004-0000-4000-8000-000000000004}", "1"},
+	"ITEM_STALE":        {"ITEM_STALE", "x3", "{AAAAAAAA-0000-4000-8000-000000000001}", "range"},
+	"FX_CHAIN":          {"FX_CHAIN", "f1", "Voice/Test EQ.RfxChain"},
+	"FX_CHAINS_LISTED":  {"FX_CHAINS_LISTED", "f1", "3", "0"},
+	"FX_CHAIN_APPLIED":  {"FX_CHAIN_APPLIED", "c1", "Voice/Test EQ.RfxChain", "{00000001-0000-4000-8000-000000000001}", "1"},
+	"FX_PLUGIN":         {"FX_PLUGIN", "p1", "VST3: ReaEQ (Cockos)"},
+	"FX_PLUGINS_LISTED": {"FX_PLUGINS_LISTED", "p1", "2", "0"},
+	"TAKE_FX_ADDED":     {"TAKE_FX_ADDED", "x1", "VST3: ReaEQ (Cockos)", "{00000005-0000-4000-8000-000000000005}", "{00000006-0000-4000-8000-000000000006}", "2"},
 }
 
 func TestEveryRealEventPassesItsTable(t *testing.T) {

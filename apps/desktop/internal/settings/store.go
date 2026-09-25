@@ -67,7 +67,9 @@ var builtinDefaults = map[string]Values{
 	"Teleprompter":      {"engine": "whisper", "model": "tiny"},
 	// auto_start_launcher defaults off (owner decision D10): the spike that proved REAPER auto-runs a script
 	// argument (ADR 0092, W12) does not by itself decide whether the app should always do it.
-	"DAW": {"auto_start_launcher": "false"},
+	// experimental_reaper_actions defaults off (owner decision D38): the bridge commands not yet verified in a real
+	// REAPER stay off until the narrator turns them on (internal/bridge/actions.go).
+	"DAW": {"auto_start_launcher": "false", "experimental_reaper_actions": "false"},
 	// RecordingCoverage mirrors coverage.DefaultSettings: the recording check's shipped values, chosen on synthetic fixtures
 	// and still Proposed and uncalibrated on real narration (docs/utilities/recording-coverage.md, ADR 0132, Q15).
 	"RecordingCoverage": {"min_paragraph_present": "0.8", "max_missing_run": "3", "max_misread_run": "8", "min_anchor_run": "3"},

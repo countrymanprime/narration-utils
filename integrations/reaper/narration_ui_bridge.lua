@@ -5,7 +5,8 @@
 -- This file owns the command loop and the registry that dispatches to the
 -- commands; every command lives in a feature file listed in FEATURE_FILES
 -- (narration_cleanup.lua, narration_compare.lua, narration_line_identity.lua, narration_pickups.lua,
--- narration_render.lua, narration_project_state.lua, narration_retake_lanes.lua, narration_take_review.lua, narration_navigation.lua).
+-- narration_render.lua, narration_project_state.lua, narration_retake_lanes.lua, narration_take_review.lua, narration_navigation.lua,
+-- narration_track_state.lua, narration_transport.lua, narration_workspace.lua, narration_regions.lua).
 -- To add a command, put it in a new narration_<feature>.lua that returns
 -- `function(registry)` and calls `registry.register(name, function(ctx, args) ... end)`,
 -- list the file below and in scripts/release/reaper-files.mjs, and write its
@@ -25,6 +26,10 @@ M.FEATURE_FILES = {
   'narration_retake_lanes.lua',
   'narration_take_review.lua',
   'narration_navigation.lua',
+  'narration_track_state.lua',
+  'narration_transport.lua',
+  'narration_workspace.lua',
+  'narration_regions.lua',
 }
 
 local function own_directory()
@@ -92,7 +97,11 @@ function M.run(session_dir, registry)
     -- delivers to every subscriber regardless of which run they own (Subscription.wants).
     local _, rpp = reaper.EnumProjects(-1, '')
     rpp = rpp or ''
-    ctx.event('PROJECT_STATUS', '', rpp, rpp == '' and '1' or '0')
+    -- The fourth field is REAPER's edit counter (GetProjectStateChangeCount), appended for DAW chapter-track auto-sync
+    -- Phase 4, so the host can tell the project changed before it is saved. It is empty on a REAPER without the call,
+    -- and wire.go treats it as optional, so an older script's three-field heartbeat still passes.
+    local change_count = reaper.APIExists('GetProjectStateChangeCount') and reaper.GetProjectStateChangeCount(0) or ''
+    ctx.event('PROJECT_STATUS', '', rpp, rpp == '' and '1' or '0', change_count)
   end
   local function tick()
     for _, name in ipairs(core.command_files(commands_dir)) do

@@ -2,6 +2,7 @@ package daw
 
 import (
 	"path/filepath"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -28,7 +29,13 @@ type Reachability struct {
 	rpp string
 	// +checklocks:mu
 	unsaved bool
-	now     func() time.Time
+	// changeCount is REAPER's edit counter from the heartbeat's optional fourth field; hasChangeCount is false when
+	// the last heartbeat did not carry one (an older script, or a REAPER without GetProjectStateChangeCount).
+	// +checklocks:mu
+	changeCount int
+	// +checklocks:mu
+	hasChangeCount bool
+	now            func() time.Time
 }
 
 // NewReachability subscribes to client's PROJECT_STATUS broadcasts. client may be nil (no live bridge for this
@@ -46,7 +53,8 @@ func NewReachability(client *bridge.Client) *Reachability {
 
 // Record is the Subscription.Handle callback (exported so a test can deliver an event directly, without a real
 // bridge.Client): event.Fields is [tag, run, rpp, unsaved] once it has passed wire.go's table (CheckEvent), so
-// both trailing fields are always present.
+// both trailing fields are always present, and a
+// fifth, the edit counter, may follow.
 func (r *Reachability) Record(event bridge.Event) {
 	rpp, unsaved := "", false
 	if len(event.Fields) > 2 {
@@ -55,11 +63,31 @@ func (r *Reachability) Record(event bridge.Event) {
 	if len(event.Fields) > 3 {
 		unsaved = event.Fields[3] == "1"
 	}
+	changeCount, hasChangeCount := 0, false
+	if len(event.Fields) > 4 && event.Fields[4] != "" {
+		// wire.go has already checked a non-empty changeCount is a whole number.
+		changeCount, _ = strconv.Atoi(event.Fields[4])
+		hasChangeCount = true
+	}
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	r.lastSeen = r.now()
 	r.rpp = rpp
 	r.unsaved = unsaved
+	r.changeCount, r.hasChangeCount = changeCount, hasChangeCount
+}
+
+// ChangeCount returns REAPER's edit counter (GetProjectStateChangeCount) from the last heartbeat, and whether it is
+// known: the heartbeat must be fresh and must have carried one (DAW chapter-track auto-sync Phase 4). The counter
+// rises on every edit in REAPER, saved or not, and starts again when a project is (re)opened, so a consumer compares
+// it only with a count read from the same open project.
+func (r *Reachability) ChangeCount() (int, bool) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	if !r.reachableLocked() || !r.hasChangeCount {
+		return 0, false
+	}
+	return r.changeCount, true
 }
 
 // Reachable reports whether a heartbeat arrived recently enough to trust: REAPER is running and the bridge tick

@@ -48,12 +48,14 @@ var eventSpecs = map[string]eventSpec{
 	"COMPARE_EXPORT_MARKER": {required: []fieldSpec{text("run"), text("row"), text("state")}, optional: []fieldSpec{text("existingName")}},
 	"COMPARE_EXPORTED":      {required: []fieldSpec{text("run"), count("added"), count("skipped")}},
 	// ERROR|<message> is the shape before the run id was added (ADR 0068); it stays readable and consumers ignore it.
-	"ERROR":            {required: []fieldSpec{text("run")}, optional: []fieldSpec{text("message")}},
-	"LINES_STAMPED":    {required: []fieldSpec{text("run"), count("applied"), count("unchanged"), count("missing"), count("conflicts")}},
-	"LINES_READ":       {required: []fieldSpec{text("run"), text("path"), count("count")}},
-	"LINES_STALE":      {required: []fieldSpec{text("run"), text("guid")}},
-	"LINES_CONFLICT":   {required: []fieldSpec{text("run"), text("guid")}},
-	"REGIONS_CREATED":  {required: []fieldSpec{text("run"), count("created"), count("existing"), count("invalid")}},
+	"ERROR":          {required: []fieldSpec{text("run")}, optional: []fieldSpec{text("message")}},
+	"LINES_STAMPED":  {required: []fieldSpec{text("run"), count("applied"), count("unchanged"), count("missing"), count("conflicts")}},
+	"LINES_READ":     {required: []fieldSpec{text("run"), text("path"), count("count")}},
+	"LINES_STALE":    {required: []fieldSpec{text("run"), text("guid")}},
+	"LINES_CONFLICT": {required: []fieldSpec{text("run"), text("guid")}},
+	// updated, ambiguous and failed were appended by create_regions (narration_regions.lua), which replaced
+	// create_chapter_regions: optional, so the older three-count answer still reads.
+	"REGIONS_CREATED":  {required: []fieldSpec{text("run"), count("created"), count("existing"), count("invalid")}, optional: []fieldSpec{count("updated"), count("ambiguous"), count("failed")}},
 	"PICKUPS_IMPORTED": {required: []fieldSpec{text("run"), count("added"), count("existing"), count("invalid")}},
 	"PICKUPS_EXPORTED": {required: []fieldSpec{text("run"), text("path"), count("count")}},
 	"PICKUPS_COUNTED":  {required: []fieldSpec{text("run"), count("remaining"), count("total")}},
@@ -70,7 +72,9 @@ var eventSpecs = map[string]eventSpec{
 	// reaches every subscriber, Subscription.wants) delivers it as a broadcast with no dedicated route needed. rpp is
 	// EnumProjects(-1, '')'s second return value verbatim (the empty string for an unsaved project, never omitted -
 	// spike S6 confirmed REAPER never returns nil there), and unsaved is "1" exactly when rpp is empty.
-	"PROJECT_STATUS": {required: []fieldSpec{text("run"), text("rpp"), count("unsaved")}},
+	// changeCount (GetProjectStateChangeCount(0)) was appended for DAW chapter-track auto-sync Phase 4: optional, so an
+	// older script's three-field heartbeat still passes, and empty on a REAPER without the call.
+	"PROJECT_STATUS": {required: []fieldSpec{text("run"), text("rpp"), count("unsaved")}, optional: []fieldSpec{count("changeCount")}},
 	// Phase 23 (reaper-automation-follow-through PRD, ADR 0146): a cleanup launcher opened its dialog. tool is the
 	// allow-listed key the host sent; action is the action-list name REAPER matched (so the narrator sees what opened).
 	"CLEANUP_LAUNCHED": {required: []fieldSpec{text("run"), text("tool"), text("action")}},
@@ -90,6 +94,37 @@ var eventSpecs = map[string]eventSpec{
 	"FINDING_STALE": {required: []fieldSpec{text("run"), text("guid"), text("reason")}},
 	// review-dashboard PRD Phase 8: the approved marker, "added" or "existing" (the take already had one; nothing changed).
 	"FINDING_MARKER": {required: []fieldSpec{text("run"), text("state"), text("takeGuid"), number("sourceTime"), text("name")}},
+	// chapter_track_state (narration_track_state.lua; read-aloud-resume P4, read-aloud-control-bar P6, TMI-11): the
+	// transport and one track, read-only. guid is empty when no track was named; playState is GetPlayState's bit field;
+	// times are seconds; recInput is the track's I_RECINPUT (empty with no track); inputDevice is empty when REAPER has
+	// no input open. One TRACK_ITEM per item on the track follows, then TRACK_STATE_END (listed, and the track's total).
+	"TRACK_STATE": {required: []fieldSpec{text("run"), text("guid"), count("playState"), number("editCursor"), number("playPosition"), text("rpp"), count("unsaved"),
+		count("changeCount"), count("thisArmed"), count("armedCount")}, optional: []fieldSpec{count("recInput"), text("inputDevice")}},
+	"TRACK_ITEM":      {required: []fieldSpec{text("run"), text("itemGuid"), text("takeGuid"), number("position"), number("length"), number("sourceOffset"), number("playrate"), text("sourceFile")}},
+	"TRACK_STATE_END": {required: []fieldSpec{text("run"), count("listed"), count("total")}},
+	"TRACK_STALE":     {required: []fieldSpec{text("run"), text("guid")}},
+	// arm_only, record_start, record_stop (narration_transport.lua; read-aloud-control-bar P7, D28). changed is 0 or 1;
+	// position is the edit cursor where recording began; restored/kept count the track arms put back and kept. RECORD_ENDED
+	// carries the run of the record_start whose recording the narrator stopped in REAPER.
+	"ARMED":           {required: []fieldSpec{text("run"), text("guid"), count("disarmed"), count("changed")}},
+	"RECORD_STARTED":  {required: []fieldSpec{text("run"), text("guid"), number("position")}},
+	"RECORD_STOPPED":  {required: []fieldSpec{text("run"), count("restored"), count("kept")}},
+	"RECORD_ENDED":    {required: []fieldSpec{text("run"), count("restored"), count("kept")}},
+	"RECORD_NOT_OURS": {required: []fieldSpec{text("run")}},
+	// set_active_take, list_fx_chains, apply_fx_chain, list_fx, add_take_fx (narration_workspace.lua;
+	// edit-and-proof-workspace P6, P8, P9). changed is 0 or 1; reason is item, take or range; a chain's name is its path
+	// relative to FXChains with forward slashes, a plug-in's is EnumInstalledFX's; splits is 0 to 2 and added the number
+	// of FX a chain added.
+	"ACTIVE_TAKE_SET":  {required: []fieldSpec{text("run"), text("itemGuid"), text("takeGuid"), count("changed")}},
+	"ITEM_STALE":       {required: []fieldSpec{text("run"), text("guid"), text("reason")}},
+	"FX_CHAIN":         {required: []fieldSpec{text("run"), text("name")}},
+	"FX_CHAINS_LISTED": {required: []fieldSpec{text("run"), count("count"), count("truncated")}},
+	// ADR 0234 (the owner's 2026-09-25 decision): a chain goes on a track or the master track (track is its GUID or
+	// "master"); a passage of a take gets one installed plug-in per request (list_fx, add_take_fx).
+	"FX_CHAIN_APPLIED":  {required: []fieldSpec{text("run"), text("name"), text("track"), count("added")}},
+	"FX_PLUGIN":         {required: []fieldSpec{text("run"), text("name")}},
+	"FX_PLUGINS_LISTED": {required: []fieldSpec{text("run"), count("count"), count("truncated")}},
+	"TAKE_FX_ADDED":     {required: []fieldSpec{text("run"), text("name"), text("itemGuid"), text("takeGuid"), count("splits")}},
 }
 
 // CheckEvent validates one decoded event line (the tag first) against the table. The error names the tag, the position and name of

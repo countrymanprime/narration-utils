@@ -85,7 +85,7 @@ Each file in `.github/workflows`, what starts it, and the checks it shows on a p
 | Workflow | Starts on | Jobs and check names | Blocking? |
 | --- | --- | --- | --- |
 | `ci.yml` (`CI`) | pull request that is not docs- or Markdown-only; manual | `quality / *` and `ui-dist / build` (the reusable `_quality.yml` and `_ui-dist.yml`), `Build (Windows)` | no ruleset requires it |
-| `prerelease.yml` (`Prerelease`) | push to `main` that is not docs- or Markdown-only; manual | `quality / *`, `ui-dist / build`, `version`, `Windows build` (needs `ui-dist` and `version`, so it runs beside the quality jobs) and `Windows release` (needs the build and every quality job); both run only when `version` found a releasable change. A manual run can tick `cold-freeze` to freeze the sidecars without the [freeze cache](#the-sidecar-freeze-cache) | not a pull request check |
+| `prerelease.yml` (`Prerelease`) | push to `main` that is not docs- or Markdown-only; manual | `ui-dist / build`, `version`, `Windows build` (needs `ui-dist` and `version`) and `Windows release` (needs the build); no quality jobs, the pull request's `CI` run is the quality gate ([#544](https://github.com/countrymanprime/narration-utils/issues/544) tracks making it a required one); both run only when `version` found a releasable change. A manual run can tick `cold-freeze` to freeze the sidecars without the [freeze cache](#the-sidecar-freeze-cache) | not a pull request check |
 | `promote-release.yml` | manual, with an RC tag; behind the `production` environment | `promote` | not a pull request check |
 | `build-macos.yml`, `build-linux.yml` | manual, or started by the `Windows release` job | one reusable `_attach-platform.yml` run: `Check the release`, `ui-dist / build`, `Build and attach <platform>` | not a pull request check |
 | `docs.yml` (`Docs`) | every pull request (no path filter), weekly (Monday 07:17 UTC), manual | `Links (offline)` (pull requests and manual) and `Links (online, advisory)` (weekly and manual) ([below](#the-docs-link-check)) | the offline job **fails the run** on a dead repository link; no ruleset requires it (owner-only setting) |
@@ -194,13 +194,14 @@ the run log; a fork or Dependabot pull request scans but does not upload, becaus
 
 ## Version lifecycle
 
-The pre-release workflow runs after each push to `main` that changes more than `docs/**` or Markdown (and by hand). It runs the quality
-Windows build beside the quality jobs, and its Windows release job waits for both. Nx Release
+The pre-release workflow runs after each push to `main` that changes more than `docs/**` or Markdown (and by hand). It does not run the quality
+jobs again: the pull request's `CI` run already checked the code, and no ruleset yet requires that run to be green before a merge, so
+merging with a red one is the owner's call ([#544](https://github.com/countrymanprime/narration-utils/issues/544)). Nx Release
 uses the squash commit title to calculate the synchronized application version:
 `feat` is minor; `fix`, `perf`, `refactor`, `docs`, `test`, `build`, `ci`,
 `chore`, and `revert` are patch. Pre-1.0 breaking changes are handled as the
 next minor release. The workflow tags `v<version>-rc`, builds the Windows
-package, and once quality is green its `publish` job creates the GitHub pre-release with the Windows
+package, and its `publish` job creates the GitHub pre-release with the Windows
 zip and the Windows setup program ([The Windows setup program](#the-windows-setup-program)). The last step starts the optional **Build macOS** and **Build Linux**
 workflows, which build the release tag and attach their asset
 ([ADR-0027](../adr/0027-windows-gates-and-creates-the-release.md)). They are
@@ -248,14 +249,14 @@ version was in the asset names, cannot be promoted this way.
 ## The version inside the program
 
 The root `package.json` version is the single source: `sync-version.mjs` copies it to the two `package.json` files and to
-`apps/desktop/wails.json` (`info.productVersion`, the Windows file version), and `scripts/release/wails-build.mjs` stamps it
-into the Go variable `main.version` with `-ldflags "-X main.version=<version>"`. CI (`.github/actions/build-native`) and a local
+`apps/desktop/wails.json` (`info.productVersion`, which the build renders into the Windows version resource and the installer), and
+`scripts/release/wails-build.mjs` stamps it into the Go variable `main.version` with `-ldflags "-X main.version=<version>"`. CI (`.github/actions/build-native`) and a local
 build (`pnpm --dir apps/desktop run build`, or the Nx `package` target) both go through that script, so a build never reports a
 version that depends on who built it. `Bootstrap` returns it and Settings > About shows it.
 
 - The version is **bare semver** (`0.2.7`). A release candidate and its promotion are the same bytes, so they report the same
-  version; `wails-build.mjs` refuses a version with a suffix, and refuses caller-supplied `-ldflags` that would replace the stamp.
-- A build with no stamp (`go run`, `go test`, `wails dev`) reports `0.0.0-dev`.
+  version; `wails-build.mjs` refuses a version with a suffix, and sets every Go flag itself, so a caller cannot replace the stamp.
+- A build with no stamp (`go run`, `go test`, `pnpm --dir apps/desktop dev`) reports `0.0.0-dev`.
 - `narration-utils --version` prints the stamped version and exits without opening a window. On Windows the program is a GUI
   application, so a console shows nothing; a program that reads its standard output (a test, the update flow) gets the text.
 - The program is named by `wails.json` `outputfilename` (`narration-utils`, `.exe` on Windows). Clean old build output before you
@@ -276,34 +277,35 @@ names looks for `narration-utils-windows-x64.zip`, finds nothing on a newer rele
 
 ## The Windows setup program
 
-A narrator installs from `narration-utils-<version>-windows-x64-setup.exe`, an NSIS installer that Wails builds ([ADR 0082](../adr/0082-windows-installs-per-user-from-an-nsis-setup-program-that-wails-builds-and-the-release-carries-beside-the-update-zip.md)).
+A narrator installs from `narration-utils-<version>-windows-x64-setup.exe`, an NSIS installer ([ADR 0082](../adr/0082-windows-installs-per-user-from-an-nsis-setup-program-that-wails-builds-and-the-release-carries-beside-the-update-zip.md)) that the build script compiles on Wails v3 ([ADR 0200](../adr/0200-the-desktop-shell-runs-on-wails-v3-beta-pinned-at-v3-0-0-beta-25.md)).
 
-- **How it is built.** `.github/actions/build-native` passes `-nsis` to `scripts/release/wails-build.mjs` on `windows-x64`, after a step
-  that installs NSIS (`choco install nsis`, version pinned in the step) when `makensis` is not already on the runner. `wails doctor`
-  on the hosted runner lists `nsis` as available, not installed, and Wails only warns, and exits 0, when `makensis` is missing. So
-  `wails-build.mjs` removes a setup program left by an earlier build before it runs and fails when `-nsis` was passed and the file is not
-  there afterwards, and `assets.mjs package` refuses to package Windows without it. The log shows `makensis version:` and Wails'
-  `Building 'amd64' installer` line, and the job summary lists the release files with their sizes.
+- **How it is built.** `.github/actions/build-native` passes `--installer` to `scripts/release/wails-build.mjs` on `windows-x64`, after a
+  step that installs NSIS (`choco install nsis`, version pinned in the step) when `makensis` is not already on the runner. The script
+  renders `wails_tools.nsh` for the release version (`wails3 update build-assets`, from `wails.json`), writes the WebView2 bootstrapper
+  beside `project.nsi` (`wails3 generate webview2bootstrapper`) and runs `makensis -DARG_WAILS_AMD64_BINARY=<the program> project.nsi` in
+  `apps/desktop/build/windows/installer`. It removes a setup program left by an earlier build first and fails when `makensis` cannot start
+  or the file is not there afterwards, and `assets.mjs package` refuses to package Windows without it. The log shows `makensis version:`
+  and makensis's own `Output:` line, and the job summary lists the release files with their sizes.
 - **What it does.** Per user (no elevation, `%LOCALAPPDATA%\Programs\Narration Utils`, uninstall entry under `HKCU`), `narration-utils.exe`
   as the program name, a Start Menu shortcut and a second one, "Narration Utils for Audacity", that passes `--daw Audacity` ([ADR 0145](../adr/0145-the-audacity-launcher-is-an-installer-start-menu-entry-and-a-picker-switch-keeps-an-audacity-launch.md)),
   a desktop shortcut the narrator can untick, the WebView2 runtime installed by Microsoft's
   bootstrapper only when it is missing, and an uninstaller that removes the program, the update copies (`.new`, `.old`, `.failed`) and the
   shortcuts and leaves settings, downloaded assets, the WebView2 data and project folders alone. The definition is
-  `apps/desktop/build/windows/installer/project.nsi`; `wails_tools.nsh` beside it is regenerated on every build and is not checked in. The
+  `apps/desktop/build/windows/installer/project.nsi`; `wails_tools.nsh` beside it is rendered on every installer build and is not checked in. The
   publisher, product name and version come from `apps/desktop/wails.json` (`info`), whose version `sync-version.mjs` keeps equal to the
   release version.
-- **What CI showed** (the `Build (Windows)` job of pull request 224, 2026-09-21): `makensis` was not on the runner; the pinned step installed `nsis.install` 3.11.0 and printed `makensis version: v3.11`; Wails printed `Building 'amd64' installer: Done.`; the setup program was 196,676,207 bytes and the zip 195,290,110; the bootstrapper check printed `Valid, CN=Microsoft Corporation`. The NSIS step adds about 15 seconds and the installer build about a minute.
+- **What CI showed on Wails v2** (the `Build (Windows)` job of pull request 224, 2026-09-21): `makensis` was not on the runner; the pinned step installed `nsis.install` 3.11.0 and printed `makensis version: v3.11`; Wails printed `Building 'amd64' installer: Done.`; the setup program was 196,676,207 bytes and the zip 195,290,110; the bootstrapper check printed `Valid, CN=Microsoft Corporation`. The NSIS step adds about 15 seconds and the installer build about a minute.
 - **Why per user.** The in-app updater renames the running program in its folder and never asks for elevation; under Program Files
   it would answer that it cannot replace itself. Per machine is not offered.
-- **The WebView2 bootstrapper** Wails embeds is downloaded from Microsoft while the installer is built and nothing pins it, so the build
-  checks that `installer/tmp/MicrosoftEdgeWebview2Setup.exe` has a valid Authenticode signature from Microsoft Corporation before the
-  release is packaged.
+- **The WebView2 bootstrapper** the setup program embeds comes from inside the pinned `wails3` CLI (Wails v2 downloaded it from
+  Microsoft while it built and nothing pinned it; the CLI is verified by the Go checksum database). The build still checks that
+  `installer/MicrosoftEdgeWebview2Setup.exe` has a valid Authenticode signature from Microsoft Corporation before the release is packaged.
 - **Unsigned.** The setup program is not signed (owner decision D7); the release notes say so and tell a narrator to choose **More info**
   then **Run anyway** on the SmartScreen warning (`scripts/release/generate-notes.mjs`). No workflow here signs anything.
 - **Tests.** `scripts/release/installer.test.mjs` holds the definition to the decisions of the ADR (the file names, per user, what the
   uninstaller deletes, no network, no signing, that the file is tracked); `assets.test.mjs` and `wails-build.test.mjs` cover packaging, the
-  checksum, the promote checks and the missing-installer failure. `makensis` is not on a development machine, so the compile is proven only by the
-  `Build (Windows)` job; an install on a clean machine is the owner's check (the first stable rehearsal, PRD phase 16).
+  checksum, the promote checks and the missing-installer failure. `makensis` is not on a development machine as a rule (it can be: NSIS runs on Linux,
+  and the Wails v3 migration compiled `project.nsi` there against a cross-built program), so the compile is proven by the `Build (Windows)` job; an install on a clean machine is the owner's check (the first stable rehearsal, PRD phase 16).
 - **Install and uninstall by hand** for a check: run the setup program; `narration-utils-<version>-windows-x64-setup.exe /S` installs silently
   (both shortcuts) and `"%LOCALAPPDATA%\Programs\Narration Utils\uninstall.exe" /S` removes it.
 
@@ -339,7 +341,7 @@ more than the risk it covers. What a freeze loses (the espeak-ng data, the dicti
 exercise without a voice; the one-word synthesis is a local check with `--piper-model`, run whenever the freeze arguments change
 (`scripts/release/prepare-resources.py`). Seed the voice with `pnpm run assets:seed -- tts`.
 
-`scripts/release/verify-installable.mjs`, which runs before the Wails build, keeps its checks separate: the three sidecars, the
+`scripts/release/verify-installable.mjs`, which runs before the native build, keeps its checks separate: the three sidecars, the
 Piper and ONNX Runtime folders of the frozen guide, the guide's `piper/espeak-ng-data`, `cmudict/data` and cmudict package metadata
 (`cmudict-<version>.dist-info`), on Windows the Teleprompter's `moonshine_voice/moonshine.dll` and `moonshine_voice/onnxruntime.dll`
 (loaded with `ctypes`, so PyInstaller cannot find them; `--collect-binaries moonshine_voice`, [ADR 0107](../adr/0107-moonshine-ships-inside-the-windows-teleprompter-sidecar-and-runs-only-from-a-verified-catalog-install.md)),
@@ -438,7 +440,7 @@ Each part is read from the thing the release is built from, so nobody keeps a li
 | --- | --- | --- |
 | Python | The `Analysis-00.toc` and `PYZ-00.toc` PyInstaller writes for each of the three freezes (`.release-build/<sidecar>/work/<sidecar>/`): every module, binary and data file it took, with its source path. The `site-packages` ones are the shipped packages; `importlib.metadata` of the same environment gives their licences and licence files | 74 distributions on the local build. The freeze takes more than the runtime needs (`hypothesis`, `pytest`, `setuptools`, `fastapi`: [#245](https://github.com/countrymanprime/narration-utils/issues/245)); the report lists what is really there rather than what `pyproject.toml` says |
 | npm | `pnpm licenses list --prod --json` in `apps/ui`, with each package's licence file | 44 packages |
-| Go | `go list -deps` of the desktop program for `windows/amd64` with the Wails build tags, minus the main module and the standard library, with each module's licence file classified by its text | 18 modules; `giraffesyo/pdf` is behind the `pdf_candidate` tag and not in a build |
+| Go | `go list -deps` of the desktop program for `windows/amd64` with the build's tags, minus the main module and the standard library, with each module's licence file classified by its text | 8 modules on Wails v3 (18 on v2: its asset server's echo, gorilla and friends are gone); `giraffesyo/pdf` is behind the `pdf_candidate` tag and not in a build. Wails vendors code with its own licence files inside its module (`internal/webview2/webviewloader`, `internal/go-common-file-dialog`), as v2 did; the report names the module's top-level licence only |
 | By hand | `scripts/licenses/manual.json`: the Python runtime, the PyInstaller bootloader, OpenSSL, libffi, the Visual C++ runtime, the FFmpeg libraries and the OpenBLAS and GCC runtime vendored inside the PyAV and numpy wheels, eSpeak NG's data inside Piper, the Silero VAD model, WebView2 | What no package manager knows. The FFmpeg entry records what was measured (`avutil_license()` reports LGPL v3 or later) and what is not verified (whether libx264 and libx265 make the build GPL, and libx265's exact licence) |
 | Models and voices | `config/*-assets.json` | Not in the package; listed as downloaded on request, with their licence and source |
 
@@ -520,7 +522,7 @@ runner called:
 | Project | Folder | Targets |
 | --- | --- | --- |
 | `narration-utils-ui` | `apps/ui` | `lint`, `format`, `architecture` (the import rules of [ADR 0062](../adr/0062-ui-import-rules-are-a-dependency-cruiser-config-and-a-mark-scan-that-name-their-adr.md)), `test`, `build`, `visual` (Playwright screenshots), `atlas` |
-| `narration-utils-shell` | `apps/desktop` | `lint` (gofmt, go vet, golangci-lint v2: errcheck, staticcheck, gosec and the `standard` set; checklocks), `test` (`-race` in the `ci` configuration, on the packages with concurrency; see [Go lint and the race detector](verification-tooling.md#go-lint-and-the-race-detector)), `test-schedules` (the teleprompter and shutdown tests on one and on four CPUs, five times each; run by the CI `go` job, not by `pnpm check`), `package` (`wails build`, not part of the gate) |
+| `narration-utils-shell` | `apps/desktop` | `lint` (gofmt, go vet, golangci-lint v2: errcheck, staticcheck, gosec and the `standard` set; checklocks), `test` (`-race` in the `ci` configuration, on the packages with concurrency; see [Go lint and the race detector](verification-tooling.md#go-lint-and-the-race-detector)), `test-schedules` (the teleprompter and shutdown tests on one and on four CPUs, five times each; run by the CI `go` job, not by `pnpm check`), `package` (`scripts/release/wails-build.mjs`, not part of the gate) |
 | `narration-common` | `libs/python` | `lint` (ruff), `test` (pytest) |
 | `manuscript-guide`, `manuscript-teleprompter`, `transcript-compare` | `sidecars/<name>` | `lint`, `test` |
 | `reaper` | `integrations/reaper` | `lint` (StyLua, and ruff for the harness runner), `test` (the Lua bridge harness and its mutation checks, [reaper-bridge](../architecture/reaper-bridge.md)) |
@@ -628,7 +630,7 @@ by deleting the code or dropping the `export`. Add an `ignore`, `ignoreIssues`, 
 `ignoreBinaries` entry only with a written reason in the file (generated code, files another repository receives by
 copy, external tools, byte-identical vendored files). It does not read Go, Python or Lua. The standing exceptions
 are the generated `apps/ui/wailsjs`, the UI atlas kit's `plugin/templates`, the wire-contract types, the exports of the
-byte-identical `apps/ui/tests/visual/lib`, `@nx/js` (loaded by `nx release`) and the binaries `go`, `gofmt`, `wails` and
+byte-identical `apps/ui/tests/visual/lib`, `@nx/js` (loaded by `nx release`) and the binaries `go`, `gofmt`, `wails3` and
 `playwright`. Scripts and the kit are entries and their exports are reported too (`includeEntryExports`), so a helper
 exported by habit is flagged once nothing imports it. When a dependency that
 Knip cannot see through arrives (a schema library, `@base-ui/react`), run it once and add the false positive with its
@@ -659,13 +661,13 @@ Windows native build needs only the UI bundle, so it starts as soon as that
 finishes instead of waiting for lint and tests. macOS and Linux are not built on
 pull requests, and the Go quality job runs on Windows only. pnpm's
 content-addressable store, uv's package cache, Go's module/build caches, the
-compiled Wails and golangci-lint binaries (keyed on `scripts/toolchain.json`), and
+compiled `wails3` and golangci-lint binaries (keyed on `scripts/toolchain.json`), and
 Playwright's Chromium download (keyed on the Playwright version) are restored by
 the workflows; they never cache `node_modules`, `.venv`, test results or release assets. The one build output that is
 cached is the [sidecar freeze](#the-sidecar-freeze-cache).
 `setup-node`, `setup-python`, and `setup-go` provision the exact pinned Node,
-Python, and Go versions. Wails v2.16.0 is installed only in jobs that run a
-native build, golangci-lint v2.13.2 (built with the pinned Go, config in `apps/desktop/.golangci.yml`) only in the Go quality job, and the standalone
+Python, and Go versions. The Wails v3 CLI, `wails3` v3.0.0-beta.25 (built with `CGO_ENABLED=0`, [ADR 0200](../adr/0200-the-desktop-shell-runs-on-wails-v3-beta-pinned-at-v3-0-0-beta-25.md)), is installed only in jobs that run a
+native build, and on Linux `setup-toolchain` installs GTK 4 and WebKitGTK 6.0, which Wails v3 links through cgo, golangci-lint v2.13.2 (built with the pinned Go, config in `apps/desktop/.golangci.yml`) only in the Go quality job, and the standalone
 StyLua v2.1.0 binary where needed, as declared in `scripts/toolchain.json`; none
 of them use Cargo. Lua 5.4 for the REAPER harness is the `lupa` wheel in the `lua` dependency group of `pyproject.toml` (hashed in `uv.lock`); the Lua job installs only that group. Platform-specific sidecars must be built on their target OS,
 so the built UI bundle is shared between jobs as a one-day artifact rather than

@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { apiErrorMessage } from '../../api/errorMessage';
 import { useApi } from '../../api/ApiContext';
 import { previewParts } from '../../creditsPreviewParts';
-import type { CreditsRenderResult, CreditTemplate, CreditValues } from '../../types';
+import type { CreditsRenderResult, CreditTemplate, CreditValues, DetectedCandidate } from '../../types';
 import { RetailSamplePanel } from './RetailSamplePanel';
 import { Button } from '../primitives/Button';
 import { Field } from '../primitives/Field';
@@ -25,10 +25,10 @@ const DEFAULT_BODY_HINT =
 
 /** The project's own credit token value fields (Open Questions C2/C4/C7): every one is optional and per-project except
  * `narrator`, which overrides the global narrator default only for this project. */
-const VALUE_FIELDS: { key: keyof CreditValues; label: string; suggestionKey?: string }[] = [
-  { key: 'title', label: 'Title', suggestionKey: 'Title' },
+const VALUE_FIELDS: { key: keyof CreditValues; label: string }[] = [
+  { key: 'title', label: 'Title' },
   { key: 'subtitle', label: 'Subtitle' },
-  { key: 'author', label: 'Author', suggestionKey: 'Author' },
+  { key: 'author', label: 'Author' },
   { key: 'series', label: 'Series' },
   { key: 'bookNumber', label: 'Book number' },
   { key: 'copyright', label: 'Copyright' },
@@ -37,6 +37,11 @@ const VALUE_FIELDS: { key: keyof CreditValues; label: string; suggestionKey?: st
   { key: 'publisher', label: 'Publisher' },
   { key: 'narrator', label: 'Narrator (override the global default)' },
 ];
+
+// A DetectedCandidate's token is a credits.Values Go field name ("Title", "CopyrightHolder"), not this panel's
+// lowerCamelCase key (credits-token-setup-and-front-matter-detection.prd.md Phase 1); every VALUE_FIELDS key maps to
+// its token by capitalizing the first letter, with no exceptions to keep track of as fields are added.
+const detectedToken = (key: keyof CreditValues): string => key.charAt(0).toUpperCase() + key.slice(1);
 
 // previewParts (splitting an unresolved token out as its own chip marker) now lives in ../../creditsPreviewParts,
 // shared with the Manuscript pseudo-entries (Phase 3) so both surfaces highlight an unresolved token the same way.
@@ -57,7 +62,7 @@ export function CreditsPanel({ notify }: { notify: Notify }) {
   const [templateDirty, setTemplateDirty] = useState(false);
   const [values, setValues] = useState<CreditValues>({});
   const [narratorGlobal, setNarratorGlobal] = useState('');
-  const [suggestions, setSuggestions] = useState<Record<string, string>>({});
+  const [detected, setDetected] = useState<DetectedCandidate[]>([]);
   const [preview, setPreview] = useState<CreditsRenderResult>();
   // A chapter announcement previews for the first narration chapter (Phase 5): which one, out of how many, and why there
   // is nothing to show when the project has no manuscript yet.
@@ -77,7 +82,7 @@ export function CreditsPanel({ notify }: { notify: Notify }) {
       setTemplates(nextTemplates);
       setValues(projectValues.values);
       setNarratorGlobal(projectValues.narratorGlobal);
-      setSuggestions(projectValues.suggestions);
+      setDetected(projectValues.detected);
       setLoadError('');
       setSelectedId((current) => {
         if (nextTemplates.some((template) => template.id === current)) return current;
@@ -191,8 +196,8 @@ export function CreditsPanel({ notify }: { notify: Notify }) {
       setSavingKey((current) => (current === key ? undefined : current));
     }
   };
-  const acceptSuggestion = (key: keyof CreditValues, suggestionKey: string) => {
-    void saveValue(key, suggestions[suggestionKey] ?? '');
+  const acceptDetected = (key: keyof CreditValues, candidate: DetectedCandidate) => {
+    void saveValue(key, candidate.value);
   };
 
   const parts = useMemo(() => (preview ? previewParts(preview) : []), [preview]);
@@ -300,16 +305,18 @@ export function CreditsPanel({ notify }: { notify: Notify }) {
           The global narrator default is {narratorGlobal ? <strong>{narratorGlobal}</strong> : 'not set (see Settings &gt; General)'}; a narrator override here
           applies only to this project.
         </p>
-        {VALUE_FIELDS.map(({ key, label, suggestionKey }) => {
-          const suggestion = suggestionKey ? suggestions[suggestionKey] : undefined;
+        {VALUE_FIELDS.map(({ key, label }) => {
+          const candidate = detected.find((item) => item.token === detectedToken(key));
           const currentValue = values[key] ?? '';
           return (
             <div key={key}>
               <Field label={label} value={currentValue} disabled={savingKey === key} onChange={(value) => void saveValue(key, value)} />
-              {suggestion && !currentValue && (
+              {candidate && !currentValue && (
                 <p className="mt-1 flex items-center gap-2 text-xs" style={{ color: 'var(--text-muted)' }}>
-                  <span>Suggested from the manuscript: “{suggestion}”.</span>
-                  <Button variant="ghost" type="button" className="px-2 py-0.5 text-[0.7rem] normal-case" onClick={() => acceptSuggestion(key, suggestionKey!)}>
+                  <span>
+                    Detected from {candidate.source}: “{candidate.value}”{candidate.confidence === 'low' ? ' (check this)' : ''}.
+                  </span>
+                  <Button variant="ghost" type="button" className="px-2 py-0.5 text-[0.7rem] normal-case" onClick={() => acceptDetected(key, candidate)}>
                     Use suggestion
                   </Button>
                 </p>

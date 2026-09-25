@@ -47,6 +47,9 @@ This folder documents a local-first audiobook narration toolkit: how it is built
    [Verification and code-health tooling](operations/verification-tooling.md).
 8. For issues, labels, milestones, and the project board, use
    [Tracking work on GitHub](operations/github-workflow.md).
+   Before switching on a REAPER bridge command that ships behind the Experimental REAPER actions switch, run
+   [the REAPER verification pass](operations/reaper-verification-pass.md); the calls each command makes are in
+   [the ReaScript calls behind the planned commands](research/reaper-api-for-planned-commands.md).
 9. Before changing what crosses a trust boundary (a download, the update, a sidecar's arguments, the REAPER bridge, the
    files the app opens), read the [threat model](architecture/threat-model.md) and update its row in the same pull request.
 
