@@ -160,7 +160,7 @@ We believe a result that opens on the chapter's verdict and figures and lists on
 
 | # | Phase | Description | Status | Parallel | Depends | PRP Plan |
 | --- | --- | --- | --- | --- | --- | --- |
-| 1 | Summary layout | Summary block, pickups list (RS2), paragraph detail folded (RS6), from the existing `ResultView`; tests, visual states, aria snapshot, guide, doc screenshot | pending | with 2 | RS2, RS3, RS6, RS8 | - |
+| 1 | Summary layout | Summary block, pickups list (RS2), paragraph detail folded (RS6), from the existing `ResultView`; tests, visual states, aria snapshot, guide, doc screenshot | complete — the chapter summary (text present, paragraphs, audio checked, pace), the "Recorded to" line for an unread start/end (RS2 A), the Pickups list filtered to interior regions, and Paragraph detail folded by default in every state (RS6 A) are built and tested; the headline stays count-based (ADR 0130) since the shared host judgement is Phase 2 (RS1) | with 2 | RS2, RS3, RS6, RS8 | - |
 | 2 | Host judgement | Additive `judgement` on `ResultView` sharing `measuredSignal`'s rule; Zod, golden, `wireContracts` row, mock; headline uses it; ADR | pending | with 1 | RS1 | - |
 | 3 | The chapter's other pickups | Take review pickup count and link (RS4); pickup list count (RS5) | pending | - | 1; RS4, RS5 | - |
 | 4 | Move the summary | Mount it in the surface RS7 chooses once the per-row Check button is retired | pending | - | 1; `daw-chapter-track-auto-sync.prd.md`, `chapter-track-link-control.prd.md`; RS7 | - |

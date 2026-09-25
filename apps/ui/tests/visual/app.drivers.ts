@@ -701,9 +701,18 @@ export const APP_DRIVERS: Record<string, Record<string, Driver>> = {
       const dialog = await openRecordingCheck(page, 'Chapter 1');
       await dialog.getByText('All the text is recorded').waitFor();
     },
+    // RS2 A (recording-check-summary.prd.md): a chapter that is simply unfinished states it in the summary
+    // ("Recorded to paragraph N of M") rather than listing its unread end as a pickup.
     'recording-check-incomplete': async (page) => {
       const dialog = await openRecordingCheck(page, 'Chapter 4');
-      await dialog.getByText('End not read').waitFor();
+      await dialog.getByText(/^Recorded to paragraph \d+ of \d+/).waitFor();
+      await dialog.getByText('Pickups (0)').waitFor();
+    },
+    'recording-check-pickups': async (page) => {
+      const dialog = await openRecordingCheck(page, 'Chapter 4', 'mockCoverage=pickups');
+      await dialog.getByText('Pickups (2)').waitFor();
+      await dialog.getByText('Skipped').waitFor();
+      await dialog.getByText('Read short').waitFor();
     },
     'recording-check-stale': async (page) => {
       const dialog = await openRecordingCheck(page, 'Chapter 4', 'mockCoverage=stale');
