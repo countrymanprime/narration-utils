@@ -360,3 +360,109 @@ describe('credits rows in the chapter table (credits-in-chapter-table.prd.md Pha
     expect(chapters.some((chapter) => chapter.id.startsWith('credits-'))).toBe(false);
   });
 });
+
+// chapter-track-link-control.prd.md Phase 2: the Track column and its slide-over, driven against the same
+// ChapterTrackLinks mock the row cells read (chapterTrackMatchMock.ts). The default demo project ("ready") names its
+// tracks "Chapter 1" and "Chapter 2" (mockFixtures.ts's WIRE_TRACKS_PROJECT), which match those two chapters'
+// titles exactly, so they read "suggested"; every other chapter has no name match and reads "not linked" (TL1-TL4).
+describe('chapter-track link control on Home', () => {
+  const openTracks = async (overrides: Parameters<typeof createMockApi>[0] = {}, initial: Parameters<typeof createMockApi>[1] = {}) => {
+    const notify = vi.fn();
+    const api = createMockApi(overrides, initial);
+    render(
+      <MemoryRouter>
+        <ApiProvider api={api}>
+          <AudiobookEstimatePanel notify={notify} goToManuscript={() => {}} />
+        </ApiProvider>
+      </MemoryRouter>,
+    );
+    await screen.findByText('Audiobook estimate');
+    fireEvent.click(screen.getByRole('button', { name: /Show per-chapter breakdown/ }));
+    return { api, notify };
+  };
+  const row = (title: string) => screen.getByRole('link', { name: new RegExp(`^${title}\\b`) }).closest('tr') as HTMLElement;
+  const trackButton = (title: string) => within(row(title)).getByRole('button', { name: new RegExp(`^Track for ${title}:`) });
+
+  it("shows the Track column with each row's suggested or not-linked state (TL1-TL4)", async () => {
+    await openTracks();
+    expect(screen.getByRole('columnheader', { name: 'Track' })).toBeTruthy();
+    expect(trackButton('Chapter 1').getAttribute('aria-label')).toBe('Track for Chapter 1: suggested Chapter 1, not confirmed');
+    expect(trackButton('Chapter 2').getAttribute('aria-label')).toBe('Track for Chapter 2: suggested Chapter 2, not confirmed');
+    expect(trackButton('Chapter 3').getAttribute('aria-label')).toBe('Track for Chapter 3: not linked');
+  });
+
+  it("opens the row's track panel showing what the suggestion was found through, and confirms it via Change (TL5)", async () => {
+    const { notify } = await openTracks();
+    fireEvent.click(trackButton('Chapter 1'));
+    const dialog = await screen.findByRole('dialog', { name: 'Track: Chapter 1' });
+    expect(within(dialog).getByText('Suggested')).toBeTruthy();
+    expect(within(dialog).getByText('Found through')).toBeTruthy();
+    expect(within(dialog).getByText('Track name')).toBeTruthy();
+    // A suggestion is shown pre-filled (MappingConfirm's read view), not with its own Confirm button: Change reveals
+    // the picker, already on the suggested track, to confirm it. `findBy` (rather than `getBy`) gives MappingConfirm's
+    // mount effect a tick to settle first, so this click isn't racing it (it only resets `picking` when already
+    // false, but a synchronous click right after mount can otherwise land in the same React batch as that effect).
+    fireEvent.click(await within(dialog).findByRole('button', { name: 'Change' }));
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Confirm' }));
+    await waitFor(() => expect(notify).toHaveBeenCalledWith('Track linked.'));
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Close' }));
+    await waitFor(() => expect(trackButton('Chapter 1').getAttribute('aria-label')).toBe('Track for Chapter 1: Chapter 1, linked'));
+  });
+
+  it('offers every unclaimed track to a chapter with no suggestion, and reflects the link after Confirm (TL3)', async () => {
+    const { notify } = await openTracks();
+    fireEvent.click(trackButton('Chapter 3'));
+    const dialog = await screen.findByRole('dialog', { name: 'Track: Chapter 3' });
+    expect(within(dialog).queryByText('Possible tracks')).toBeNull();
+    const select = await within(dialog).findByLabelText('Track for Chapter 3');
+    fireEvent.change(select, { target: { value: '{DA2D209F-D10F-5E46-93E7-098D96499ED0}' } }); // "Chapter 2" track
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Confirm' }));
+    await waitFor(() => expect(notify).toHaveBeenCalledWith('Track linked.'));
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Close' }));
+    await waitFor(() => expect(trackButton('Chapter 3').getAttribute('aria-label')).toBe('Track for Chapter 3: Chapter 2, linked'));
+  });
+
+  it("tells the narrator when linking a track displaces another chapter's confirmed link, and lets it be unlinked (TL5, TL6)", async () => {
+    const { notify } = await openTracks();
+    // Confirm Chapter 1 onto its suggested "Chapter 1" track first, so a second chapter can displace it.
+    fireEvent.click(trackButton('Chapter 1'));
+    const first = await screen.findByRole('dialog', { name: 'Track: Chapter 1' });
+    fireEvent.click(await within(first).findByRole('button', { name: 'Change' }));
+    fireEvent.click(within(first).getByRole('button', { name: 'Confirm' }));
+    await waitFor(() => expect(notify).toHaveBeenCalledWith('Track linked.'));
+    fireEvent.click(within(first).getByRole('button', { name: 'Close' }));
+    await waitFor(() => expect(trackButton('Chapter 1').getAttribute('aria-label')).toBe('Track for Chapter 1: Chapter 1, linked'));
+
+    // Chapter 3 has no suggestion of its own; link it onto the same "Chapter 1" track Chapter 1 just confirmed.
+    fireEvent.click(trackButton('Chapter 3'));
+    const second = await screen.findByRole('dialog', { name: 'Track: Chapter 3' });
+    fireEvent.change(await within(second).findByLabelText('Track for Chapter 3'), { target: { value: '{0E4D1D7F-D039-674D-87E6-719376DE95EC}' } });
+    fireEvent.click(within(second).getByRole('button', { name: 'Confirm' }));
+    await waitFor(() => expect(notify).toHaveBeenCalledWith('Linked. This track was linked to Chapter 1, which is now unlinked.'));
+    fireEvent.click(within(second).getByRole('button', { name: 'Close' }));
+    // Chapter 1 has no other track to suggest while this one is claimed elsewhere.
+    await waitFor(() => expect(trackButton('Chapter 1').getAttribute('aria-label')).toBe('Track for Chapter 1: not linked'));
+
+    // Unlink Chapter 3: freeing the track lets the matcher suggest it back to Chapter 1 by name, same as at the start.
+    fireEvent.click(trackButton('Chapter 3'));
+    const third = await screen.findByRole('dialog', { name: 'Track: Chapter 3' });
+    fireEvent.click(await within(third).findByRole('button', { name: 'Clear' }));
+    await waitFor(() => expect(notify).toHaveBeenCalledWith('Track unlinked.'));
+    fireEvent.click(within(third).getByRole('button', { name: 'Close' }));
+    await waitFor(() => expect(trackButton('Chapter 3').getAttribute('aria-label')).toBe('Track for Chapter 3: not linked'));
+    expect(trackButton('Chapter 1').getAttribute('aria-label')).toBe('Track for Chapter 1: suggested Chapter 1, not confirmed');
+  });
+
+  it('shows the project message and no Track column when no REAPER project was found, instead of a row button (TL7)', async () => {
+    await openTracks({}, { tracksCandidates: [] });
+    expect(screen.getByText('No REAPER project (.rpp) file was found in this project folder.')).toBeTruthy();
+    expect(screen.queryByRole('columnheader', { name: 'Track' })).toBeNull();
+    expect(screen.queryByRole('button', { name: /^Track for/ })).toBeNull();
+  });
+
+  it('points to the Tracks page to choose a project when more than one REAPER project file is found (TL7)', async () => {
+    await openTracks({}, { tracksCandidates: ['C:/proj/one.rpp', 'C:/proj/two.rpp'] });
+    expect(screen.getByText(/Choose which REAPER project file to use on the Tracks page\./)).toBeTruthy();
+    expect(screen.getByRole('link', { name: 'Choose it on Tracks' }).getAttribute('href')).toBe('/tracks');
+  });
+});
