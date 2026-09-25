@@ -158,7 +158,8 @@ SWS count-in toggles: `_SWS_AWCOUNTRECTOG`, `_SWS_AWCOUNTPLAYTOG`.
 | [TwelveTake-Studios/reaper-mcp](https://github.com/TwelveTake-Studios/reaper-mcp) | File-polling Lua, about 50 ms per call, Windows supported. |
 | [shiehn/total-reaper-mcp](https://github.com/shiehn/total-reaper-mcp) | File-polling Lua; unfinished UDP path on ports 9000/9001. |
 | [danielkinahan/ReaMCP](https://github.com/danielkinahan/ReaMCP) | Lua TCP bridge on 127.0.0.1:9001 via mavriq-lua-sockets. |
-| [danishaft/reaper-mcp](https://github.com/danishaft/reaper-mcp), [yeeking/reaper-mcp-server](https://github.com/yeeking/reaper-mcp-server) | reapy. |
+| [danishaft/reaper-mcp](https://github.com/danishaft/reaper-mcp) | File-polling Lua bridge with one module per area (it used reapy earlier; corrected 2026-09-25, see [the planned commands' cross-check](reaper-api-for-planned-commands.md#cross-check-against-the-reaper-mcp-servers)). |
+| [yeeking/reaper-mcp-server](https://github.com/yeeking/reaper-mcp-server) | reapy. |
 | [johnjallday/reaper-plugin](https://github.com/johnjallday/reaper-plugin) | Go over the web interface. |
 
 None push events. Design lesson from the mature ones: keep the bridge a thin executor, own validation and safety in the server, and report "uncertain outcome" on timeout rather than guessing.
