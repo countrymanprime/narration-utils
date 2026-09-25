@@ -74,6 +74,11 @@ turns them into these three event types:
         only with --locate --wav FILE --tail-start S --tail-end E: seconds S
         to E of a recording, placed in the script; prints once and exits,
         no session follows (see locate.py for every field)
+    {"type": "level", "peak": -12.3, "rms": -24.1}
+        the input level in dBFS every 100 ms of audio, in every session (see
+        levels.py). With --meter --mic NAME it is the only event: no model,
+        no script, until the stop file appears, so the narrator can check the
+        microphone before Start
 Word timings come from the engine and are advisory: they can be noisy or run
 backwards (Moonshine's do, mostly in partials), so the only guarantee is that
 `end` is never before `start`. Consumers should rely on word ORDER, not times.
@@ -638,6 +643,7 @@ def _run(args, stream: EventStream, chunks: Iterator[np.ndarray], tracker) -> No
     """Stream engine events (and, with a tracker, the position events they
     cause) to stdout until the input ends or Ctrl+C."""
     from control_channel import ControlChannel, seek_word
+    from levels import LevelMeter, metered
 
     capture_started = None
     try:
@@ -647,7 +653,7 @@ def _run(args, stream: EventStream, chunks: Iterator[np.ndarray], tracker) -> No
         if tracker and args.start_word is not None:
             for position in tracker.reset_to(args.start_word, clock.now()):
                 _emit(position)
-        chunks = stoppable(chunks, args.stop_file)
+        chunks = metered(stoppable(chunks, args.stop_file), LevelMeter(), _emit)
         if tracker:
             control = ControlChannel(args.control_file)
 
@@ -674,6 +680,28 @@ def _run(args, stream: EventStream, chunks: Iterator[np.ndarray], tracker) -> No
         log("Stopped.")
 
 
+# What --meter cannot be combined with: it opens a microphone and reports its level, nothing else.
+_SESSION_ONLY_OPTIONS = ("wav", "manuscript", "script", "control_file", "start_word", "locate", "list_devices", "check_moonshine")
+
+
+def _run_meter(ap: argparse.ArgumentParser, args) -> None:
+    """--meter: report the microphone's level (levels.py) until the stop file appears. No model loads and no script is
+    read, so it starts in about the time the device takes to open (read-aloud-control-bar PRD Phase 4, Q6 A)."""
+    from levels import LevelMeter, metered
+
+    if not args.mic:
+        ap.error("--meter needs --mic")
+    taken = [f"--{name.replace('_', '-')}" for name in _SESSION_ONLY_OPTIONS if getattr(args, name) not in (None, False)]
+    if taken:
+        ap.error(f"--meter takes only --mic and --stop-file, not {' '.join(taken)}")
+    log(f"Metering {args.mic}...")
+    try:
+        for _chunk in metered(stoppable(iter_microphone_chunks(args.mic), args.stop_file), LevelMeter(), _emit):
+            pass
+    except KeyboardInterrupt:
+        log("Stopped.")
+
+
 def build_parser() -> argparse.ArgumentParser:
     ap = argparse.ArgumentParser(description="Stream live word-timestamp ASR as NDJSON for the Manuscript Teleprompter prototype")
     ap.add_argument(
@@ -685,6 +713,11 @@ def build_parser() -> argparse.ArgumentParser:
         "--check-moonshine",
         action="store_true",
         help="Print whether this build can run --engine moonshine (one JSON object: {type: engine_check, engine, ok, detail}), then exit (1 if not)",
+    )
+    ap.add_argument(
+        "--meter",
+        action="store_true",
+        help="Report only the --mic input level ({type: level, peak, rms} in dBFS every 100 ms) until --stop-file appears; no model, no script",
     )
     ap.add_argument("--wav", default=None, help="Replay this audio file as if it were live mic input (fixture testing)")
     ap.add_argument("--mic", default=None, help="Capture from this input device name instead of --wav (Windows dshow device name)")
@@ -751,6 +784,9 @@ def main() -> None:
 
     if args.log:
         set_log_file(open(args.log, "a", encoding="utf-8"))  # noqa: SIM115
+    if args.meter:
+        _run_meter(ap, args)
+        return
     if args.list_devices:
         from devices import list_input_devices
 

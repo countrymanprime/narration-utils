@@ -132,6 +132,8 @@ const GOLDEN: Record<string, z.ZodType> = {
   'teleprompter-save-flags.json': teleprompterFlagFindingsSchema,
   // The per-chapter reading file the host writes at session end and reads back (ADR 0205).
   'teleprompter-reading.json': teleprompterReadingSchema,
+  'teleprompter-level.json': teleprompterEventSchema.array(),
+  'teleprompter-meter-stopped.json': teleprompterEventSchema.array(),
   'manuscript-import-selected.json': workJobSchema,
   'manuscript-import-preview.json': workJobSchema,
   'manuscript-import-preview-repaired.json': workJobSchema,
@@ -382,6 +384,19 @@ describe('golden payloads written by the Go host and the Python sidecars', () =>
     expect(() => parseWire(teleprompterReadingSchema, { ...golden, read: 5, tokens: 4 }, ctx('teleprompter reading'))).toThrow();
   });
 
+  it('the mock meter sends a level, refuses while reading and ends with meter_stopped, all passing the event schema', async () => {
+    const api = createMockApi({}, { teleprompterLevel: -18 });
+    const events: unknown[] = [];
+    api.subscribeTeleprompterEvent((event) => events.push(event));
+    await api.teleprompterMeterStart('Microphone Array (Realtek(R) Audio)');
+    await api.teleprompterMeterStop();
+    expect(events).toEqual([
+      { type: 'level', peak: -9, rms: -18 },
+      { type: 'meter_stopped', error: null },
+    ]);
+    events.forEach((event) => expectMatches(teleprompterEventSchema, event, 'mock meter event'));
+  });
+
   it('the stage cause and refusal lists are the ones the host declares', () => {
     expect([...STAGE_UNKNOWN_CAUSES]).toEqual(z.array(z.string()).parse(readGolden('stages-causes.json')));
     expect([...STAGE_REFUSAL_REASONS]).toEqual(z.array(z.string()).parse(readGolden('stages-refusal-reasons.json')));
@@ -456,7 +471,7 @@ describe('answers of the mock client (it must pass the schemas the real host ans
     await api.teleprompterStart({ chapter: chapter?.id ?? '', device: 'Microphone' });
     await vi.advanceTimersByTimeAsync(120_000);
     await api.teleprompterStop();
-    expect(new Set(events.map((event) => (event as { type: string }).type))).toEqual(new Set(['script', 'partial', 'position', 'flag']));
+    expect(new Set(events.map((event) => (event as { type: string }).type))).toEqual(new Set(['script', 'level', 'partial', 'position', 'flag']));
     for (const event of events) expectMatches(teleprompterEventSchema, event, 'mock teleprompter event');
     for (const state of states) expectMatches(teleprompterStateSchema, state, 'mock teleprompter state');
   });
@@ -1851,6 +1866,8 @@ describe('answers of the mock client for the settings, voice, model, transcript 
       'transcriptExportMarkers',
       'transcriptSaveHints',
       'teleprompterStop',
+      'teleprompterMeterStart',
+      'teleprompterMeterStop',
       'dawCatalogOpenDownloadPage',
       'teleprompterSeek',
       'reportClientDiagnostic',
