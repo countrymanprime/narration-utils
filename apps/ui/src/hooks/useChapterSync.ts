@@ -17,9 +17,13 @@ export function useChapterSync(api: Pick<ChapterSyncApi, 'chapterSyncState' | 's
       receivedEvent = true;
       setState(next);
     });
-    void api.chapterSyncState().then((next) => {
-      if (!receivedEvent) setState(next);
-    });
+    void api
+      .chapterSyncState()
+      .then((next) => {
+        if (!receivedEvent) setState(next);
+      })
+      // A failed seed leaves the state undefined until the next real chaptersync:state event (SILENT_CATCHES).
+      .catch(() => undefined);
     return unsubscribe;
   }, [api]);
   return state;
