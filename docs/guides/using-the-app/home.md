@@ -22,6 +22,16 @@ chapter with its word count, estimated and actual recorded length, and status.
 
 ![Home, per-chapter breakdown expanded](../../images/ui/home-chapter-table-expanded.webp)
 
+**Track** shows each chapter's link to a REAPER track: a filled icon with the track's own colour
+for a linked chapter, a dashed outline for one the app suggests by name but hasn't confirmed, and
+a plain icon for one with no link at all. A number badge means the chapter is linked to more than
+one track at once; an exclamation mark means its linked track is no longer in the saved project.
+Selecting it opens the chapter's track panel, with what the saved project knows about the track
+(its item count, span and how the link was found) and the same link, change or clear picker as the
+[Tracks](tracks.md) page - so a chapter's track never needs a trip there just to be linked. The
+column, and every chapter's Track button, is absent when no REAPER project is linked yet; the table
+says so in its place, with a link to [Tracks](tracks.md) if more than one project file was found.
+
 **Actual recorded** shows how much audio a chapter's linked REAPER track holds, as of the last
 save: the union of its unmuted items, overlaps counted once. A chapter with no confirmed link, a
 link to more than one track, a linked track no longer in the saved project, or no project at all
