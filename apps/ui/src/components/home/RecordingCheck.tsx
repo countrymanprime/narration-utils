@@ -296,7 +296,7 @@ function ResultBody({
           {result.result ? ` with the ${result.result.model} Whisper model` : ''}.
         </p>
       )}
-      {result.result && <RecordingCheckReport chapter={chapter} report={result.result} goToParagraph={goToParagraph} />}
+      {result.result && <RecordingCheckReport chapter={chapter} report={result.result} judgement={result.judgement} goToParagraph={goToParagraph} />}
     </>
   );
 }

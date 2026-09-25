@@ -1,7 +1,7 @@
 // The words of the recording check (docs/utilities/recording-coverage.md, ADR 0130): every reason the host can give
 // for a check it refused or a result it cannot trust, in the narrator's terms, and the sentences a stored report is read
 // out as. Pure functions, so the dialog only lays them out.
-import type { CoverageReason, CoverageRegion, CoverageRegionKind, CoverageReport, ManuscriptChapter } from '../../types';
+import type { CoverageJudgement, CoverageReason, CoverageRegion, CoverageRegionKind, CoverageReport, ManuscriptChapter } from '../../types';
 
 /**
  * One plain sentence per reason. The host also sends its own message with a refusal, but that one is written for a log
@@ -71,8 +71,18 @@ export function formatAudioTime(seconds: number): string {
   return hours > 0 ? `${hours}:${String(minutes).padStart(2, '0')}:${rest}` : `${minutes}:${rest}`;
 }
 
-/** The report's headline: whether every word was read, and how many were. Thresholds are Phase 7's, so this states counts only. */
-export function verdict(report: CoverageReport): { complete: boolean; headline: string; detail: string } {
+/**
+ * The report's headline. With a judgement (recording-check-summary PRD Phase 2, ADR 0204) it leads with the host's
+ * pass/fail, the same rule the stage signal uses, so the dialog and the stage engine never disagree: "Passes the
+ * check" or "Not complete", with the judgement's own reason (the gap that fails first, or the present-word count) as
+ * the detail. Without one - an older stored result, or a result missing entirely - it falls back to the plain word
+ * count ADR 0130 originally specified.
+ */
+export function verdict(report: CoverageReport, judgement?: CoverageJudgement): { complete: boolean; headline: string; detail: string } {
+  if (judgement) {
+    const complete = judgement.state === 'met';
+    return { complete, headline: complete ? 'Passes the check' : 'Not complete', detail: judgement.reason };
+  }
   const complete = report.missingTokens === 0;
   return {
     complete,
