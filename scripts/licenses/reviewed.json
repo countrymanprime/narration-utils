@@ -5,7 +5,8 @@
   "noText": {
     "ctranslate2": "The wheel ships no licence file; its metadata declares MIT. The text is not in the notices yet: issue 246.",
     "tokenizers": "The wheel ships no licence file; its classifier declares Apache-2.0. The text is not in the notices yet: issue 246.",
-    "@rolldown/binding-win32-x64-msvc": "A build tool binary reached through the UI's production dependency closure, not part of the built UI; its package has no licence file. Issue 246."
+    "@rolldown/binding-win32-x64-msvc": "A build tool binary reached through the UI's production dependency closure, not part of the built UI; its package has no licence file. Issue 246.",
+    "@wailsio/runtime": "The Wails v3 runtime (docs/adr/0200), published from the Wails repository without a licence file; its package.json declares MIT. The same MIT text from the same repository and tag travels in these notices under the Go module github.com/wailsapp/wails/v3."
   },
   "ignoredModules": []
 }
