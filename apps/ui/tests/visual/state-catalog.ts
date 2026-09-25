@@ -22,6 +22,7 @@ const TOOLTIP_CLOSES_ON_RESIZE = { reloadPerViewport: true } as const;
 const KEEPS_DESKTOP_SCROLL = { reloadPerViewport: true } as const;
 const POPUP_ANCHORED_AT_FIRST_WIDTH = { reloadPerViewport: true } as const;
 const LIVE_PROGRESS_MOVES_ON = { reloadPerViewport: true } as const;
+const TOAST_FADES_OUT = { reloadPerViewport: true } as const;
 const FREEZES_THE_CLOCK = { reloadPerViewport: true } as const;
 
 export const STATE_CATALOG: StateEntry[] = [
@@ -88,6 +89,13 @@ export const STATE_CATALOG: StateEntry[] = [
     state: 'chapter-track-no-project',
     description:
       'Home, chapter table expanded with no REAPER project found: the Track column is absent and its place names why (TL7, ?mockNoRpp=1, mockups/chapter-track-link-control/08-no-project-line.webp)',
+  },
+  {
+    page: 'home',
+    state: 'chapter-sync-toast-undo',
+    description:
+      'Home, the toast for a chapter-sync batch that just linked a track, with Undo (?mockChapterSync=linked, daw-chapter-track-auto-sync.prd.md Phase 3, S12, mockups/daw-chapter-track-auto-sync/03-auto-linked-toast-undo.webp)',
+    ...TOAST_FADES_OUT,
   },
   {
     page: 'home',
@@ -590,6 +598,23 @@ export const STATE_CATALOG: StateEntry[] = [
     page: 'tracks',
     state: 'default',
     description: 'Tracks, a single .rpp auto-selected - first track active with transport controls, other tracks flagged for missing/unsupported items',
+  },
+  {
+    page: 'tracks',
+    state: 'sync-off',
+    description: 'Tracks, the Chapter sync panel with sync turned off (?mockChapterSync=off, daw-chapter-track-auto-sync.prd.md Phase 3, mockup 02)',
+  },
+  {
+    page: 'tracks',
+    state: 'sync-consent',
+    description:
+      'Tracks, "Sync chapters to tracks?" (?mockChapterSync=ask, daw-chapter-track-auto-sync.prd.md Phase 3, mockups/daw-chapter-track-auto-sync/01-sync-consent-dialog.webp). The default fixture only has 3 tracks against 12 chapters, so its Needs-you and Tracks-that-are-not-chapters lists differ from the mockup\'s content; wording and layout for those sections are covered by ChapterSyncConsentDialog.test.tsx and ChapterSyncPanel.test.tsx instead, over a constructed preview - the mock has no seam yet for an ambiguous or uncertain match (a gap for lane A, not built here), so "tracks/sync-needs-you" is not a capturable state and is not in this catalog.',
+  },
+  {
+    page: 'home',
+    state: 'chapter-sync-consent',
+    description:
+      'Home, the same "Sync chapters to tracks?" dialog (?mockChapterSync=ask) - it shows from every link path, not only Tracks (Phase 3\'s "Home variant" row)',
   },
   {
     page: 'tracks',

@@ -114,6 +114,25 @@ change the REAPER project.
 
 ![Tracks page chapter links list with one chapter confirmed to a track](../../images/ui/tracks-chapter-links.webp)
 
+## Chapter sync
+
+The first time a REAPER project is linked with a manuscript already imported, a dialog asks **Sync
+chapters to tracks?**. It shows what would happen without changing anything yet: which chapters will
+be linked by a confident, matching track name, which need you (two tracks look alike, or the closest
+one isn't a confident match), which have no track yet, and which tracks name no chapter. **Sync**
+turns chapter sync on and links the confident matches; **Not now** leaves every chapter as it was and
+asks again only if you unlink and relink the project. The same question can come up from any of the
+ways to link a project (the header pill, choosing a project on this page, an import, or reopening a
+linked project).
+
+Once on, the Chapter sync panel above the track list says when it last synced and how many chapters
+are linked. **Turn off** stops it (chapter links you already made are kept); **Turn on** asks again
+from a project that had it off. Its own Needs you list lets you pick the right track and press
+**Link** for a chapter sync couldn't confidently match, the same link Chapter links below records. A
+track sync doesn't recognize as any chapter's is listed under "Tracks that are not chapters" so it
+isn't mistaken for a missing link. Chapter sync only reads the saved project: nothing in REAPER
+changes, and a chapter you link yourself is never overwritten.
+
 ---
 
 [← Teleprompter](teleprompter.md) · [Index](README.md) · [Review →](review.md)

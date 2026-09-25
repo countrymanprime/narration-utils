@@ -466,3 +466,49 @@ describe('chapter-track link control on Home', () => {
     expect(screen.getByRole('link', { name: 'Choose it on Tracks' }).getAttribute('href')).toBe('/tracks');
   });
 });
+
+describe('chapter-sync toast on Home (daw-chapter-track-auto-sync.prd.md Phase 3, S12)', () => {
+  it('shows one toast with Undo for a sync batch, and Undo calls chapterSyncUndo for each link', async () => {
+    const notify = vi.fn();
+    const api = createMockApi({}, { chapterSync: 'linked' });
+    render(
+      <MemoryRouter>
+        <ApiProvider api={api}>
+          <AudiobookEstimatePanel notify={notify} goToManuscript={() => {}} />
+        </ApiProvider>
+      </MemoryRouter>,
+    );
+    await screen.findByText('Audiobook estimate');
+    await waitFor(() => expect(notify).toHaveBeenCalled());
+    const [text, tone, action] = notify.mock.calls[0];
+    expect(text).toMatch(/^Linked (track “.+” to Chapter \d+|\d+ tracks to chapters)\.$/);
+    expect(tone).toBe('info');
+    expect(action).toEqual({ label: 'Undo', onAction: expect.any(Function) });
+    const undoSpy = vi.spyOn(api, 'chapterSyncUndo');
+    action.onAction();
+    await waitFor(() => expect(undoSpy).toHaveBeenCalled());
+  });
+
+  it('never toasts twice for the same batch', async () => {
+    const notify = vi.fn();
+    const api = createMockApi({}, { chapterSync: 'linked' });
+    const { rerender } = render(
+      <MemoryRouter>
+        <ApiProvider api={api}>
+          <AudiobookEstimatePanel notify={notify} goToManuscript={() => {}} />
+        </ApiProvider>
+      </MemoryRouter>,
+    );
+    await screen.findByText('Audiobook estimate');
+    await waitFor(() => expect(notify).toHaveBeenCalledTimes(1));
+    rerender(
+      <MemoryRouter>
+        <ApiProvider api={api}>
+          <AudiobookEstimatePanel notify={notify} goToManuscript={() => {}} refreshKey="again" />
+        </ApiProvider>
+      </MemoryRouter>,
+    );
+    await screen.findByText('Audiobook estimate');
+    expect(notify).toHaveBeenCalledTimes(1);
+  });
+});
