@@ -24,7 +24,7 @@ export const measureClipRunSchema = z.object({
   samples: z.number(),
 }) satisfies z.ZodType<MeasureClipRun>;
 
-export const measureMP3Schema = z.object({
+const measureMP3Schema = z.object({
   version: z.string(),
   layer: z.number(),
   bitrate_kbps: z.number(),
