@@ -40,7 +40,7 @@ Needs the owner present and approval for one test recording on a copy of a proje
 | B3 | `record_stop` | After about five seconds, `record_stop`. | REAPER stops; its own "save recorded media" prompt (if on) is left for the owner; `RECORD_STOPPED` reports the arms restored ("Chapter 2" and "Pickups" armed again, "Chapter 1" not). |
 | B4 | Stop in REAPER | `record_start` again; press Stop in REAPER itself. | The bridge reports `RECORD_ENDED` for the start's run and restores the arms; a later `record_stop` answers `RECORD_NOT_OURS`. |
 | B5 | A recording the app did not start | Press Record in REAPER; send `record_stop`. | `RECORD_NOT_OURS`; REAPER keeps recording. Stop it by hand. |
-| B6 | The narrator changes an arm mid-take | `record_start`; arm "Pickups" by hand during the take; `record_stop`. | "Pickups" stays as the narrator set it and is reported as kept. |
+| B6 | The narrator changes an arm mid-take | Arm "Chapter 2" by hand; `arm_only` "Chapter 1"; `record_start`; arm "Pickups" (not armed before) by hand during the take; `record_stop`. | "Pickups" stays armed as the narrator set it and is reported as kept; "Chapter 2" is armed again. |
 
 ## Switching a command on
 

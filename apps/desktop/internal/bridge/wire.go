@@ -101,6 +101,14 @@ var eventSpecs = map[string]eventSpec{
 	"TRACK_ITEM":      {required: []fieldSpec{text("run"), text("itemGuid"), text("takeGuid"), number("position"), number("length"), number("sourceOffset"), number("playrate"), text("sourceFile")}},
 	"TRACK_STATE_END": {required: []fieldSpec{text("run"), count("listed"), count("total")}},
 	"TRACK_STALE":     {required: []fieldSpec{text("run"), text("guid")}},
+	// arm_only, record_start, record_stop (narration_transport.lua; read-aloud-control-bar P7, D28). changed is 0 or 1;
+	// position is the edit cursor where recording began; restored/kept count the track arms put back and kept. RECORD_ENDED
+	// carries the run of the record_start whose recording the narrator stopped in REAPER.
+	"ARMED":           {required: []fieldSpec{text("run"), text("guid"), count("disarmed"), count("changed")}},
+	"RECORD_STARTED":  {required: []fieldSpec{text("run"), text("guid"), number("position")}},
+	"RECORD_STOPPED":  {required: []fieldSpec{text("run"), count("restored"), count("kept")}},
+	"RECORD_ENDED":    {required: []fieldSpec{text("run"), count("restored"), count("kept")}},
+	"RECORD_NOT_OURS": {required: []fieldSpec{text("run")}},
 }
 
 // CheckEvent validates one decoded event line (the tag first) against the table. The error names the tag, the position and name of
