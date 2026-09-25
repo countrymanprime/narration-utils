@@ -3,6 +3,8 @@
 import { existsSync, mkdirSync } from 'node:fs';
 import { isAbsolute, join, relative } from 'node:path';
 import { spawnSync } from 'node:child_process';
+import { availableParallelism } from 'node:os';
+import { gateParallelism, workspaceWideChanges } from './ci/local-gate.mjs';
 
 const mode = process.argv[2] ?? 'check';
 const root = process.cwd();
@@ -185,12 +187,62 @@ if (mode === 'go-lint') {
   process.exit(0);
 }
 
-if (mode !== 'check') {
+if (mode !== 'check' && mode !== 'affected') {
   console.error(`Unknown quality mode: ${mode}`);
   process.exit(2);
 }
 
-// The full gate: every project's lint, format, knip, test, test-node and build target, one at a time, never from
-// the Nx cache (a green gate must mean the checks ran). CI runs the same targets with
+const GATE_TARGETS = ['lint', 'format', 'architecture', 'knip', 'test', 'test-node', 'build'];
+// Never from the Nx cache (a green gate must mean the checks ran). Tasks run side by side on a developer's machine, half
+// the CPUs by default and NX_PARALLEL=1 for one at a time; CI's own jobs run one at a time (scripts/ci/local-gate.mjs).
+const GATE_ARGS = ['--skip-nx-cache', `--parallel=${gateParallelism({ cpus: availableParallelism() })}`, '--nx-bail', '--output-style=stream'];
+// The projects CI checks on every pull request whatever it changes (`always` in .github/workflows/_quality.yml): Knip reads
+// every workspace, the layout and project guards every tracked file, the atlas kit's drift check apps/ui, the docs site docs/.
+const ALWAYS = ['narration-utils', 'repo-scripts', 'ui-atlas-kit', 'docs-site'];
+
+function gitLines(args) {
+  const result = spawnSync('git', args, { cwd: root, encoding: 'utf8' });
+  if (result.status !== 0) {
+    console.error(result.stderr.trim());
+    process.exit(result.status ?? 1);
+  }
+  return result.stdout.split(/\r?\n/).filter(Boolean);
+}
+
+if (mode === 'affected') {
+  // A quicker gate while working: only the projects the branch changes (committed since it left the base, staged, unstaged or
+  // untracked), plus ALWAYS, as CI scopes a pull request. Everything when a workspace-wide file changed, as CI does
+  // (scripts/ci/nx-scope.sh). `pnpm check` is still the gate before calling a change done.
+  const base = process.env.NX_BASE ?? 'origin/main';
+  const changed = [
+    ...new Set([...gitLines(['diff', '--name-only', `${base}...HEAD`]), ...gitLines(['diff', '--name-only', 'HEAD']), ...gitLines(['ls-files', '--others', '--exclude-standard'])]),
+  ];
+  const wide = workspaceWideChanges(changed);
+  if (wide.length > 0) {
+    console.log(`Workspace-wide change (${wide.slice(0, 3).join(', ')}${wide.length > 3 ? ', ...' : ''}): checking every project.`);
+    run('pnpm', ['exec', 'nx', 'run-many', '-t', ...GATE_TARGETS, ...GATE_ARGS]);
+    process.exit(0);
+  }
+  let affected = [];
+  if (changed.length) {
+    const shown = spawnSync('pnpm', ['exec', 'nx', 'show', 'projects', '--affected', `--files=${changed.join(',')}`, '--json'], {
+      cwd: root,
+      encoding: 'utf8',
+      shell: process.platform === 'win32',
+    });
+    // Never "nothing affected" because Nx failed: that would pass a gate that checked nothing.
+    if (shown.status !== 0) {
+      console.error(shown.stderr.trim());
+      process.exit(shown.status ?? 1);
+    }
+    affected = JSON.parse(shown.stdout);
+  }
+  const projects = [...new Set([...affected, ...ALWAYS])];
+  console.log(`${changed.length} changed file(s) against ${base}; checking ${projects.join(', ')}.`);
+  run('pnpm', ['exec', 'nx', 'run-many', '-t', ...GATE_TARGETS, `--projects=${projects.join(',')}`, ...GATE_ARGS]);
+  process.exit(0);
+}
+
+// The full gate: every project's lint, format, knip, test, test-node and build target. CI runs the same targets with
 // `nx affected` (see .github/actions/nx-run).
-run('pnpm', ['exec', 'nx', 'run-many', '-t', 'lint', 'format', 'architecture', 'knip', 'test', 'test-node', 'build', '--skip-nx-cache', '--parallel=1', '--nx-bail', '--output-style=stream']);
+run('pnpm', ['exec', 'nx', 'run-many', '-t', ...GATE_TARGETS, ...GATE_ARGS]);

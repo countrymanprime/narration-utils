@@ -11,6 +11,7 @@
     "test:bootstrap": "node --test scripts/bootstrap.test.mjs",
     "assets:seed": "go -C apps/desktop run ./cmd/seed-assets",
     "check": "node scripts/quality.mjs check",
+    "check:affected": "node scripts/quality.mjs affected",
     "check:fast": "node scripts/quality.mjs staged",
     "knip": "knip",
     "fix:staged": "lint-staged",
