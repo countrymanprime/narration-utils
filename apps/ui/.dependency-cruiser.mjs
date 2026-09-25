@@ -32,6 +32,16 @@ export default {
       to: { path: '^wailsjs/' },
     },
     {
+      // The same boundary for the Wails v3 runtime (ADR 0200): its Events, Window and Call reach the host without the generated
+      // bindings, so a component that imported it would skip the API client, and the mock backend, as surely as one that imported
+      // wailsjs/. Only src/api/wailsClient.ts subscribes to host events, and src/api's tests stand in for it.
+      name: 'wails-runtime-only-in-api',
+      comment: 'Only src/api/ imports @wailsio/runtime (ADR 0200). Subscribe to host events through the API client so the mock backend covers them.',
+      severity: 'error',
+      from: { path: '^(src|tests)/', pathNot: '^src/api/' },
+      to: { path: 'node_modules/@wailsio/runtime/' },
+    },
+    {
       // A second guard for ADR 0047. The first is baseUiBoundary.test.ts, which also sees dynamic imports, vi.mock and
       // declare module; this one is the plain import graph, so an import that resolves to the package is flagged with
       // the file it came from.

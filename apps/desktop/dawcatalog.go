@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/countrymanprime/narration-utils/shell/internal/dawcatalog"
-	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
 // DawCatalogEntry is what DawCatalogList answers per catalog entry: the
@@ -83,8 +82,10 @@ func (h *Host) DawCatalogOpenDownloadPage(id string) (string, error) {
 		return encodeBinding(nil, nil)
 	}
 	if ctx == nil {
-		return "", fmt.Errorf("the desktop host is not ready")
+		return "", errHostNotReady
 	}
-	runtime.BrowserOpenURL(ctx, entry.DownloadURL)
+	if err := openInBrowser(entry.DownloadURL); err != nil {
+		return "", err
+	}
 	return encodeBinding(nil, nil)
 }

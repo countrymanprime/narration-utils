@@ -8,7 +8,6 @@ import (
 
 	"github.com/countrymanprime/narration-utils/shell/internal/persist"
 	"github.com/countrymanprime/narration-utils/shell/internal/project"
-	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
 // ProjectLinkDawFile is the one shared binding behind the header pill, the
@@ -29,10 +28,7 @@ func (h *Host) ProjectLinkDawFile() (string, error) {
 	if projectFolder == "" {
 		return "", fmt.Errorf("open a project before linking a REAPER project file")
 	}
-	path, err := runtime.OpenFileDialog(ctx, runtime.OpenDialogOptions{
-		Title:   "Select REAPER project file",
-		Filters: []runtime.FileFilter{{DisplayName: "REAPER projects", Pattern: "*.rpp"}},
-	})
+	path, err := pickFile("Select REAPER project file", []fileFilter{{"REAPER projects", "*.rpp"}})
 	if err != nil {
 		return "", err
 	}

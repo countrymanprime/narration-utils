@@ -397,6 +397,20 @@ async function openRecordingCheck(page: Page, chapter: string, seed?: string) {
   return dialog;
 }
 
+// Opens a chapter's track slide-over from the per-chapter breakdown (chapter-track-link-control.prd.md Phase 2),
+// booted with a mock seed (main.tsx's `?mockChapterLink=`), and waits for its saved-project facts to have loaded.
+// Returns the dialog.
+async function openTrackPanel(page: Page, chapter: string, seed: string) {
+  await page.goto(`/?${seed}`);
+  await settlePage(page);
+  await homeLoaded(page);
+  await clickVisible(page, 'button', /Show per-chapter breakdown/);
+  await clickVisible(page, 'button', new RegExp(`^Track for ${chapter}:`));
+  const dialog = page.getByRole('dialog', { name: `Track: ${chapter}` });
+  await dialog.getByText('Reading the saved project…').waitFor({ state: 'detached' });
+  return dialog;
+}
+
 // Home booted with a stage suggestions seed (`?mockStages=`, main.tsx), once the first read has answered: the chips on the collapsed
 // card (`mixed`) or its error chip (`error`) are on screen (chapter-stage-recommendations.prd.md Phase 5).
 async function openStageSuggestions(page: Page, seed: 'mixed' | 'error', expand = true) {
@@ -597,6 +611,44 @@ export const APP_DRIVERS: Record<string, Record<string, Driver>> = {
       await homeLoaded(page);
       await clickVisible(page, 'button', /Show per-chapter breakdown/);
     },
+    // The rule (chapter-title-display-consistency.prd.md): " — " once, never twice, and never CSS capitals on a
+    // chapter name - source capitals ("CHAPTER ONE") are the book's own text, not a text-transform. The row names
+    // below are chapterName()'s output, so a regression that drops the primitive or the trailing-separator fix
+    // ("Chapter 12: — …") fails these waits, not just the screenshot.
+    'chapter-names': async (page) => {
+      await page.goto('/?mockManuscript=mixed');
+      await settlePage(page);
+      await homeLoaded(page);
+      await clickVisible(page, 'button', /Show per-chapter breakdown/);
+      await page.getByRole('link', { name: 'CHAPTER ONE — Bad Ideas Look Great in Neon' }).waitFor();
+      await page.getByRole('link', { name: 'A Message from the Author' }).waitFor();
+      await page.getByRole('link', { name: /^Chapter 12 — Alice.s Evidence$/ }).waitFor();
+      await page.waitForFunction(() => {
+        const links = [...document.querySelectorAll<HTMLAnchorElement>('td a[href*="/manuscript#c"]')];
+        return links.length > 0 && links.every((link) => getComputedStyle(link).textTransform === 'none');
+      });
+    },
+    'chapter-track-panel-linked': async (page) => {
+      const dialog = await openTrackPanel(page, 'Chapter 1', 'mockChapterLink=confirmed');
+      // "Linked" also names the confirmed-at Fact row's label, so this scopes to the header's state eyebrow.
+      await dialog.getByText('Linked').first().waitFor();
+      await dialog.getByText('Found through').waitFor();
+    },
+    'chapter-track-panel-ambiguous': async (page) => {
+      const dialog = await openTrackPanel(page, 'Chapter 1', 'mockChapterLink=ambiguous');
+      await dialog.getByText('Linked to 2 tracks').waitFor();
+    },
+    'chapter-track-panel-missing': async (page) => {
+      const dialog = await openTrackPanel(page, 'Chapter 1', 'mockChapterLink=missing');
+      await dialog.getByText('Track missing').waitFor();
+    },
+    'chapter-track-no-project': async (page) => {
+      await page.goto('/?mockNoRpp=1');
+      await settlePage(page);
+      await homeLoaded(page);
+      await clickVisible(page, 'button', /Show per-chapter breakdown/);
+      await page.getByText('No REAPER project (.rpp) file was found in this project folder.').waitFor();
+    },
     'hint-chips': async (page) => {
       await goToPage(page, 'Proofing');
       await clickVisible(page, 'button', /Suggest from manuscript/);
@@ -684,9 +736,18 @@ export const APP_DRIVERS: Record<string, Record<string, Driver>> = {
       const dialog = await openRecordingCheck(page, 'Chapter 1');
       await dialog.getByText('All the text is recorded').waitFor();
     },
+    // RS2 A (recording-check-summary.prd.md): a chapter that is simply unfinished states it in the summary
+    // ("Recorded to paragraph N of M") rather than listing its unread end as a pickup.
     'recording-check-incomplete': async (page) => {
       const dialog = await openRecordingCheck(page, 'Chapter 4');
-      await dialog.getByText('End not read').waitFor();
+      await dialog.getByText(/^Recorded to paragraph \d+ of \d+/).waitFor();
+      await dialog.getByText('Pickups (0)').waitFor();
+    },
+    'recording-check-pickups': async (page) => {
+      const dialog = await openRecordingCheck(page, 'Chapter 4', 'mockCoverage=pickups');
+      await dialog.getByText('Pickups (2)').waitFor();
+      await dialog.getByText('Skipped').waitFor();
+      await dialog.getByText('Read short').waitFor();
     },
     'recording-check-stale': async (page) => {
       const dialog = await openRecordingCheck(page, 'Chapter 4', 'mockCoverage=stale');
@@ -2189,6 +2250,17 @@ export const APP_DRIVERS: Record<string, Record<string, Driver>> = {
       await clickVisible(page, 'tab', 'This Project');
       await clickSettingsCategory(page, 'Credits');
     },
+    // Every empty field with a manuscript-detected candidate shows its own source caption (credits-token-setup-and-
+    // front-matter-detection.prd.md Phase 1), not just Title and Author.
+    'project-credits-detected': async (page) => {
+      await page.goto('/?mockCredits=detected');
+      await settlePage(page);
+      await goToPage(page, 'Settings');
+      await clickVisible(page, 'tab', 'This Project');
+      await clickSettingsCategory(page, 'Credits');
+      await page.getByText('Detected from the copyright line: “1865”.').waitFor();
+      await page.getByText(/Detected from a line ending in .Publishers.: “Macmillan” \(check this\)\./).waitFor();
+    },
     // Credits PRD Phase 5: the chapter announcement template ?mockCredits=extras adds, previewed for Chapter 1.
     'project-credits-chapter-announcement': async (page) => {
       await page.goto('/?mockCredits=extras');
@@ -2294,6 +2366,10 @@ export const APP_DRIVERS: Record<string, Record<string, Driver>> = {
       await clickVisible(page, 'button', 'Edit this entry');
       await clickVisible(page, 'button', 'Delete entity');
       await confirmDialog(page, 'Delete entry').waitFor();
+      // Base UI's scroll lock only reserves a scrollbar gutter on <html> when the document itself can scroll
+      // (app-shell-vertical-overflow.prd.md): with the document locked, a modal over Story Bible - the state that
+      // measured a full-height gutter before Phase 1's fix - must leave no inline scrollbar-gutter behind.
+      await page.waitForFunction(() => document.documentElement.style.scrollbarGutter === '');
     },
     'theme-light': async (page) => {
       await goToPage(page, 'Settings');

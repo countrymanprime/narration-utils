@@ -14,7 +14,10 @@ allowBuilds:
 # release is not picked up. Matches the Dependabot cooldown for npm's minor and patch updates. To take an urgent
 # security fix sooner, add `name@version` to minimumReleaseAgeExclude for that one install and remove it after.
 minimumReleaseAge: 4320
-minimumReleaseAgeExclude: []
+# @wailsio/runtime@3.0.0-beta.25 is the Wails v3 runtime the desktop shell is pinned to (docs/adr/0200), published
+# 2026-09-22T15:17Z. The owner allowed it before its three days were up (2026-09-25). Remove the entry after 2026-09-25T15:17Z.
+minimumReleaseAgeExclude:
+  - '@wailsio/runtime@3.0.0-beta.25'
 # Fail the install when a dependency has a build script that allowBuilds above does not name.
 strictDepBuilds: true
 # Refuse a transitive dependency that comes from a git repository or a tarball URL instead of the registry.
