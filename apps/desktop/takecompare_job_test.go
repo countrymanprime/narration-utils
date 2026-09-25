@@ -359,3 +359,25 @@ func TestComparisonChapterIDFindsTheChapterTheScanAlignedTo(t *testing.T) {
 		t.Errorf("two chapters with one title: %v", err)
 	}
 }
+
+// A progress line the sidecar wrote before it saw the cancel file must not put "Transcribing take 2/3" back over "Cancelling the
+// comparison." (the race quality/go caught on Windows: pollProgress ran between the cancel's message and its snapshot).
+func TestTakeComparisonProgressAfterCancelKeepsTheCancellingMessage(t *testing.T) {
+	progress := filepath.Join(t.TempDir(), "progress.txt")
+	if err := os.WriteFile(progress, []byte("TRANSCRIBE|33|Transcribing take 2/3\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	job := &takeComparisonJob{id: "compare-1", phase: "running", message: "Comparing 3 reads.", started: time.Now(), progressPath: progress, cancel: func() {}}
+	host := &Host{}
+	host.mu.Lock()
+	host.takeComparisonJob = job
+	host.mu.Unlock()
+
+	if cancelling := host.cancelTakeComparison(); cancelling.Message != "Cancelling the comparison." {
+		t.Fatalf("cancel answered %q", cancelling.Message)
+	}
+	job.pollProgress()
+	if state := job.snapshot(); state.Message != "Cancelling the comparison." {
+		t.Errorf("after a late progress line the job says %q, want the cancelling message", state.Message)
+	}
+}

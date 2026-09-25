@@ -1,0 +1,15 @@
+- main:
+  - alert
+  - status
+- 'dialog "Track: Chapter 1"':
+  - 'heading "Track: Chapter 1" [level=3]'
+  - button "Close"
+  - text: Chapter 1 Track 1 Linked
+  - region /As of last save Sep \d+, \d+, \d+:\d+ AM/:
+    - heading /As of last save Sep \d+, \d+, \d+:\d+ AM/ [level=3]
+    - text: /Items 1 playable of 1 Span 0:\d+ to \d+:\d+ Found through Confirmed link Linked Sep 1, \d+, \d+:\d+ PM/
+  - region "Link":
+    - heading "Link" [level=3]
+    - text: Chapter 1
+    - button "Change"
+    - button "Clear"

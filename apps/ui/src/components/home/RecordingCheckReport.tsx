@@ -1,17 +1,37 @@
 import { useState } from 'react';
-import type { CoverageReport, ManuscriptChapter } from '../../types';
+import type { CoverageReport, CoverageRegionKind, ManuscriptChapter } from '../../types';
 import { Button } from '../primitives/Button';
 import { Disclosure } from '../primitives/Disclosure';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../primitives/Table';
-import { REGION_LABEL, describePosition, describeRegion, paragraphRefs, verdict } from './recordingCheckText';
+import { REGION_LABEL, describePosition, describeRegion, formatAudioTime, paragraphRefs, plural, recordedTo, verdict } from './recordingCheckText';
 
 const MONO = "font-['IBM_Plex_Mono',ui-monospace,monospace]";
 const EYEBROW = "font-['Barlow_Condensed',sans-serif] text-[0.72rem] font-semibold tracking-[0.08em] text-[var(--text-muted)] uppercase";
 
+// A pickup is one of the check's own interior gaps (recording-check-summary.prd.md, RS8, D33): a place worth reading
+// on its own. An unread start or end is unfinished recording, not a pickup (RS2 A) - recordedTo() states it in the
+// summary instead, so a chapter that is a third unread reads as "not finished", not as "3 pickups".
+const PICKUP_KINDS: ReadonlySet<CoverageRegionKind> = new Set(['skip', 'short_read', 'different_text']);
+
+function StatTile({ label, value, hint }: { label: string; value: string; hint?: string }) {
+  return (
+    <div>
+      <div className={EYEBROW}>{label}</div>
+      <div className={`mt-0.5 text-xl font-semibold ${MONO}`}>{value}</div>
+      {hint && (
+        <div className="text-xs" style={{ color: 'var(--text-muted)' }}>
+          {hint}
+        </div>
+      )}
+    </div>
+  );
+}
+
 /**
- * A stored recording check read out (docs/utilities/recording-coverage.md, ADR 0130): how much of the chapter's text is in the
- * saved recording, each missing region with its paragraphs, first and last words and where it sits in the audio, and every paragraph's
- * count. It states counts only: whether they are good enough is the `recording` signal's call (Phase 7), not this view's.
+ * A stored recording check read out as a chapter summary first (recording-check-summary.prd.md Phase 1): the headline
+ * (counts only, ADR 0130 - a shared verdict with the stage signal is Phase 2), the chapter figures, an unread start or
+ * end stated as "recorded to" rather than listed, then the check's own interior gaps as one-line Pickups, with the
+ * full paragraph table folded away (RS6 A) since every pickup already names and links to its paragraphs.
  */
 export function RecordingCheckReport({
   chapter,
@@ -23,7 +43,7 @@ export function RecordingCheckReport({
   /** Opens the manuscript at a paragraph (its index in the whole manuscript). */
   goToParagraph: (index: number) => void;
 }) {
-  const { complete, headline, detail } = verdict(report);
+  const { complete, headline } = verdict(report);
   const refs = paragraphRefs(
     chapter,
     report.paragraphs.map((paragraph) => paragraph.id),
@@ -31,29 +51,56 @@ export function RecordingCheckReport({
   const rows = report.paragraphs.map((paragraph, index) => ({ paragraph, number: refs[index].number, missing: paragraph.tokens - paragraph.present }));
   const short = rows.filter((row) => row.missing > 0);
   const fullyRead = rows.length - short.length;
-  // With text missing, the list is open and holds only the paragraphs that are short, so they are read without scrolling past the rest;
-  // a complete chapter keeps every paragraph, folded.
+  // With text missing, the table holds only the paragraphs that are short, so they are read without scrolling past the rest;
+  // a complete chapter keeps every paragraph. Either way it stays folded by default (RS6 A): a pickup already names its own
+  // paragraphs, and largestGap's thin-read case (a paragraph with no region of its own) is the one reason to open it.
   const listed = short.length > 0 ? short : rows;
-  const [paragraphsOpen, setParagraphsOpen] = useState(!complete);
+  const [paragraphsOpen, setParagraphsOpen] = useState(false);
+  const pickups = report.regions.filter((region) => PICKUP_KINDS.has(region.kind));
+  const to = recordedTo(report, chapter);
+  const presentPercent = report.bodyTokens > 0 ? Math.round((report.presentTokens / report.bodyTokens) * 100) : 100;
+  const pace = report.playedSeconds > 0 ? Math.round((report.presentTokens / report.playedSeconds) * 60) : undefined;
+  const mutedItems = report.items.filter((item) => item.status === 'muted').length;
   return (
     <div className="space-y-4">
       <div>
         <h3 className="text-base font-semibold" style={{ color: complete ? 'var(--text)' : 'var(--danger-text)' }}>
           {headline}
         </h3>
-        <p className="mt-1 text-sm">{detail}</p>
-        <p className="mt-1 text-xs" style={{ color: 'var(--text-muted)' }}>
-          Extra words (false starts, retakes, a spoken title) never count against the reading.
-          {report.extraTokens > 0 && ` ${report.extraTokens.toLocaleString()} extra ${report.extraTokens === 1 ? 'word was' : 'words were'} heard.`}
-        </p>
+        {to && (
+          <p className="mt-1 text-sm">
+            {to.kind === 'tail'
+              ? `Recorded to paragraph ${to.paragraph} of ${to.total} (${plural(to.wordsLeft, 'word')} left).`
+              : `Start not read: paragraphs 1 to ${to.paragraph} (${plural(to.wordsLeft, 'word')}).`}
+          </p>
+        )}
       </div>
-      {report.regions.length > 0 && (
-        <section aria-labelledby="recording-check-regions">
-          <h3 id="recording-check-regions" className={EYEBROW}>
-            Missing text
-          </h3>
+      <div className="grid grid-cols-2 gap-x-4 gap-y-3 sm:grid-cols-4">
+        <StatTile label="Text present" value={`${presentPercent}%`} hint={`${report.presentTokens.toLocaleString()} of ${plural(report.bodyTokens, 'word')}`} />
+        <StatTile label="Paragraphs" value={`${fullyRead} of ${rows.length}`} hint="fully read" />
+        <StatTile
+          label="Audio checked"
+          value={formatAudioTime(report.playedSeconds)}
+          hint={`in ${plural(report.items.length, 'item')}${mutedItems > 0 ? ` (${mutedItems} muted)` : ''}`}
+        />
+        {pace !== undefined && <StatTile label="Pace" value={`about ${pace.toLocaleString()}/min`} />}
+      </div>
+      {report.extraTokens > 0 && (
+        <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
+          {plural(report.extraTokens, 'extra word')} heard (retakes, asides, a spoken title); extra words never count against the reading.
+        </p>
+      )}
+      <section aria-labelledby="recording-check-pickups">
+        <h3 id="recording-check-pickups" className={EYEBROW}>
+          Pickups ({pickups.length})
+        </h3>
+        {pickups.length === 0 ? (
+          <p className="mt-1 text-sm" style={{ color: 'var(--text-muted)' }}>
+            None from this check.
+          </p>
+        ) : (
           <ul className="mt-2 space-y-2">
-            {report.regions.map((region, index) => {
+            {pickups.map((region, index) => {
               const regionRefs = paragraphRefs(chapter, region.paragraphIds);
               const first = regionRefs.find((ref) => ref.index !== undefined);
               const position = describePosition(region);
@@ -81,11 +128,11 @@ export function RecordingCheckReport({
               );
             })}
           </ul>
-        </section>
-      )}
+        )}
+      </section>
       {report.paragraphs.length > 0 && (
         <Disclosure
-          title="Paragraphs"
+          title="Paragraph detail"
           summary={`${fullyRead} of ${report.paragraphs.length} fully recorded`}
           open={paragraphsOpen}
           onOpenChange={setParagraphsOpen}

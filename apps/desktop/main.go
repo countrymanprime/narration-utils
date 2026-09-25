@@ -9,9 +9,7 @@ import (
 	"log"
 	"os"
 
-	"github.com/wailsapp/wails/v2"
-	"github.com/wailsapp/wails/v2/pkg/options"
-	"github.com/wailsapp/wails/v2/pkg/options/assetserver"
+	"github.com/wailsapp/wails/v3/pkg/application"
 )
 
 // cmd/narration-utils/frontend/dist is populated from apps/ui/dist by the shell build script.
@@ -37,21 +35,40 @@ func main() {
 	if !startAfterUpdate() {
 		return
 	}
-	app := NewHost()
-	err := wails.Run(&options.App{
-		Title:              "Narration Utils",
-		Width:              1280,
-		Height:             860,
-		MinWidth:           960,
-		MinHeight:          640,
-		AssetServer:        &assetserver.Options{Assets: frontendAssets, Middleware: app.mediaMiddleware},
-		OnStartup:          app.Startup,
-		OnShutdown:         app.Shutdown,
-		Bind:               []interface{}{app},
-		SingleInstanceLock: &options.SingleInstanceLock{UniqueId: "b742fa00-67d8-4a0c-a290-b70b193cc785", OnSecondInstanceLaunch: app.onSecondInstance},
+	host := NewHost()
+	app := application.New(application.Options{
+		Name: "Narration Utils",
+		// The Host is the one bound service: the page calls only its exported methods (docs/adr/0200).
+		Services: []application.Service{application.NewService(host)},
+		// Wails finds index.html inside the embedded folder, as v2 did; /media is the host's own route (media.go).
+		Assets:         application.AssetOptions{Handler: application.AssetFileServerFS(frontendAssets), Middleware: host.mediaMiddleware},
+		SingleInstance: &application.SingleInstanceOptions{UniqueID: "b742fa00-67d8-4a0c-a290-b70b193cc785", OnSecondInstanceLaunch: host.onSecondInstance},
+		// Closing the window quits on every platform, as it did on v2 (a macOS app stays running by default under v3).
+		Mac: application.MacOptions{ApplicationShouldTerminateAfterLastWindowClosed: true},
 	})
-	if err != nil {
+	app.Window.NewWithOptions(mainWindowOptions())
+	if err := app.Run(); err != nil {
 		log.Fatal(err)
+	}
+}
+
+// mainWindowOptions is the app's one window. What differs from Wails v3's defaults is deliberate and kept as it was on v2
+// (docs/adr/0200, main_test.go):
+//   - ZoomControlEnabled: v3 turns WebView2's zoom control off unless asked, which would silently stop Ctrl+wheel zoom. Pinch zoom
+//     stays on because v3 leaves WebView2's IsPinchZoomEnabled at its default. The header's zoom controls (nav PRD Phase 2) set the
+//     level at runtime with Window.SetZoom on the window this names.
+//   - DefaultContextMenuDisabled: v2 hid the browser's right-click menu (Reload, Inspect) in a production build; v3 shows it.
+func mainWindowOptions() application.WebviewWindowOptions {
+	return application.WebviewWindowOptions{
+		Name:                       mainWindowName,
+		Title:                      "Narration Utils",
+		Width:                      1280,
+		Height:                     860,
+		MinWidth:                   960,
+		MinHeight:                  640,
+		URL:                        "/",
+		ZoomControlEnabled:         true,
+		DefaultContextMenuDisabled: true,
 	}
 }
 

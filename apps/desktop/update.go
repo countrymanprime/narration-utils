@@ -10,7 +10,6 @@ import (
 
 	"github.com/countrymanprime/narration-utils/shell/internal/hostlog"
 	"github.com/countrymanprime/narration-utils/shell/internal/update"
-	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
 // startupUpdateDelay is how long the automatic update check waits after the window is up: the check is metadata only and must
@@ -139,7 +138,7 @@ func (h *Host) publishUpdate(status updateStatus) {
 		return
 	}
 	if ctx != nil {
-		runtime.EventsEmit(ctx, updateStatusEvent, status)
+		emitEvent(updateStatusEvent, status)
 	}
 }
 
@@ -158,10 +157,9 @@ func (h *Host) openReleaseNotes() error {
 		return nil
 	}
 	if ctx == nil {
-		return fmt.Errorf("the desktop host is not ready")
+		return errHostNotReady
 	}
-	runtime.BrowserOpenURL(ctx, status.Available.NotesURL)
-	return nil
+	return openInBrowser(status.Available.NotesURL)
 }
 
 // startAfterUpdate runs before the window and the single-instance lock: it takes the relaunch arguments off os.Args, waits for the
