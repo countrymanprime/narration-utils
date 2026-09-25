@@ -71,4 +71,13 @@ Every check is unattended: nothing plays, records or needs an audio device. **Li
 
 ## Peaks cost
 
-**Pending** the host peaks slice of Phase 5 (stream B3's third pull request), which adds `measure.Peaks` and its 60-minute benchmark and records the numbers here.
+**Measured on 2026-09-25 with `measure.ComputePeaks`**, the host peaks for Phase 5 (EP12 A). Each bucket holds the lowest and highest sample over every channel, stored as two signed bytes scaled to ±127. The default is 50 buckets a second. The numbers come from `go test ./internal/measure -bench PeaksOneHour -benchtime 2x`, on the 4-core Linux container the stream ran in:
+
+| Input | Peaks | Full analysis (`AnalyzeContext`), for comparison |
+| --- | --- | --- |
+| 60 minutes of 48 kHz stereo 24-bit WAV (1.04 GB of audio data), generated in memory | **3.4 s** (305 MB/s, about 1,000× real time) | 58.8 s (17.6 MB/s) |
+
+- **Size:** an hour is 180,000 buckets, or 360 KB (about 480 KB as base64 in a binding's JSON). `TestAnHourOfPeaksIsSmall` pins it.
+- **Where the time goes:** the time is the WAV reader decoding every sample to `float64`. The bucket loop itself was cut from 5.6 s to 3.4 s by stepping to each bucket's end instead of dividing on every frame.
+- **What the host should do:** the budget is met without a cache for a chapter-length file (a chapter is usually under an hour, and a disk read adds to the in-memory figure). The PRD's evidence cache, keyed by source identity, still saves the time on every open after the first; that's the binding's job, in lane A.
+- **Not measured:** a cold read from a spinning disk, and Windows. The owner's machine will differ from this container.

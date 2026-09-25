@@ -27,7 +27,9 @@ const (
 )
 
 var (
-	errNotWAV    = errors.New("not a RIFF/WAVE file")
+	// ErrNotWAV is the answer for a source that is not a RIFF/WAVE file (an MP3, say): a caller can
+	// show "no waveform" or "not measured" for it rather than a failure.
+	ErrNotWAV    = errors.New("not a RIFF/WAVE file")
 	errNonFinite = errors.New("WAV contains a non-finite (NaN or infinite) sample; the file is corrupt")
 )
 
@@ -83,12 +85,12 @@ func NewWAVReader(r io.Reader) (*WAVReader, error) {
 	var header [12]byte
 	if _, err := io.ReadFull(src, header[:]); err != nil {
 		if isShortRead(err) {
-			return nil, errNotWAV
+			return nil, ErrNotWAV
 		}
 		return nil, fmt.Errorf("reading WAV header: %w", err)
 	}
 	if string(header[0:4]) != "RIFF" || string(header[8:12]) != "WAVE" {
-		return nil, errNotWAV
+		return nil, ErrNotWAV
 	}
 
 	var format Format
