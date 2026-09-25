@@ -18,7 +18,7 @@ var realEvents = map[string][]string{
 	"LINES_READ":            {"LINES_READ", "t1", "C:/s/lines.txt", "12"},
 	"LINES_STALE":           {"LINES_STALE", "t1", "{AAAAAAAA-0000-4000-8000-000000000001}"},
 	"LINES_CONFLICT":        {"LINES_CONFLICT", "t1", "{AAAAAAAA-0000-4000-8000-000000000002}"},
-	"REGIONS_CREATED":       {"REGIONS_CREATED", "t1", "4", "0", "0"},
+	"REGIONS_CREATED":       {"REGIONS_CREATED", "t1", "2", "0", "0", "0", "0", "0"},
 	"PROJECT_STATUS":        {"PROJECT_STATUS", "", "C:/p/Book.rpp", "0"},
 	"PICKUPS_IMPORTED":      {"PICKUPS_IMPORTED", "t1", "2", "0", "0"},
 	"PICKUPS_EXPORTED":      {"PICKUPS_EXPORTED", "t1", "C:/s/pickups.txt", "2"},
@@ -50,6 +50,15 @@ var realEvents = map[string][]string{
 	"RECORD_STOPPED":  {"RECORD_STOPPED", "s1", "3", "0"},
 	"RECORD_ENDED":    {"RECORD_ENDED", "r1", "2", "0"},
 	"RECORD_NOT_OURS": {"RECORD_NOT_OURS", "s1"},
+	// integrations/reaper/tests/workspace_test.lua (set_active_take, list_fx_chains, apply_fx_chain).
+	"ACTIVE_TAKE_SET":   {"ACTIVE_TAKE_SET", "u1", "{AAAAAAAA-0000-4000-8000-000000000001}", "{00000004-0000-4000-8000-000000000004}", "1"},
+	"ITEM_STALE":        {"ITEM_STALE", "x3", "{AAAAAAAA-0000-4000-8000-000000000001}", "range"},
+	"FX_CHAIN":          {"FX_CHAIN", "f1", "Voice/Test EQ.RfxChain"},
+	"FX_CHAINS_LISTED":  {"FX_CHAINS_LISTED", "f1", "3", "0"},
+	"FX_CHAIN_APPLIED":  {"FX_CHAIN_APPLIED", "c1", "Voice/Test EQ.RfxChain", "{00000001-0000-4000-8000-000000000001}", "1"},
+	"FX_PLUGIN":         {"FX_PLUGIN", "p1", "VST3: ReaEQ (Cockos)"},
+	"FX_PLUGINS_LISTED": {"FX_PLUGINS_LISTED", "p1", "2", "0"},
+	"TAKE_FX_ADDED":     {"TAKE_FX_ADDED", "x1", "VST3: ReaEQ (Cockos)", "{00000005-0000-4000-8000-000000000005}", "{00000006-0000-4000-8000-000000000006}", "2"},
 }
 
 func TestEveryRealEventPassesItsTable(t *testing.T) {

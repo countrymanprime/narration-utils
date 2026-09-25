@@ -1,9 +1,9 @@
--- Manuscript line identity over the bridge: stamp_item_lines, read_line_ids and create_chapter_regions (see
--- docs/architecture/manuscript-line-identity.md). Loaded by narration_ui_bridge.lua, which passes the shared helpers
--- as the chunk argument.
+-- Manuscript line identity over the bridge: stamp_item_lines and read_line_ids (see
+-- docs/architecture/manuscript-line-identity.md; chapter regions are narration_regions.lua's create_regions). Loaded by
+-- narration_ui_bridge.lua, which passes the shared helpers as the chunk argument.
 
 local core = ...
-local pipe_fields, event, color = core.pipe_fields, core.event, core.color
+local pipe_fields, event = core.pipe_fields, core.event
 
 -- Manuscript line identity lives in the project itself, as namespaced item
 -- extension data, so it survives moves, splits and copies. Nothing below
@@ -11,7 +11,6 @@ local pipe_fields, event, color = core.pipe_fields, core.event, core.color
 local LINE_ID_KEY = 'P_EXT:narration_utils_line_id'
 local LINE_TEXT_KEY = 'P_EXT:narration_utils_line_text'
 local UNRESOLVED_EVENT_LIMIT = 50
-local REGION_TOLERANCE = 0.01
 
 local function normalize_guid(guid)
   local bare = tostring(guid or ''):gsub('[{}%s]', ''):upper()
@@ -144,89 +143,11 @@ local function read_line_ids(session_dir, run_id, path)
   event(session_dir, 'LINES_READ', run_id, path, count)
 end
 
--- Payload rows are `start|end|title` in project seconds; the title is last so
--- it may contain pipes. Returns the valid rows and how many were rejected.
-local function read_region_payload(path)
-  local input = io.open(path, 'r')
-  if not input then
-    return nil, 0
-  end
-  local rows, invalid = {}, 0
-  for line in input:lines() do
-    local fields = pipe_fields((line:gsub('\r$', '')), 3)
-    local first, last, title = tonumber(fields[1]), tonumber(fields[2]), one_line(fields[3])
-    if first and last and first >= 0 and last > first and title ~= '' then
-      rows[#rows + 1] = { first = first, last = last, title = title }
-    elseif line ~= '' then
-      invalid = invalid + 1
-    end
-  end
-  input:close()
-  return rows, invalid
-end
-local function same_region(region, title, first, last)
-  return region.title == title and math.abs(region.first - first) <= REGION_TOLERANCE and math.abs(region.last - last) <= REGION_TOLERANCE
-end
-local function project_regions()
-  local regions, index = {}, 0
-  while true do
-    local next_index, is_region, first, last, name = reaper.EnumProjectMarkers3(0, index)
-    if next_index == 0 then
-      break
-    end
-    if is_region then
-      regions[#regions + 1] = { title = name, first = first, last = last }
-    end
-    index = index + 1
-  end
-  return regions
-end
-
--- Creates one region per payload row, skipping any that already exist (same
--- title and bounds within a hundredth of a second), so re-running is safe.
-local function create_chapter_regions(session_dir, run_id, path, hex)
-  if not reaper.APIExists('AddProjectMarker2') then
-    event(session_dir, 'ERROR', run_id, 'This REAPER version cannot add regions.')
-    return
-  end
-  local rows, invalid = read_region_payload(path)
-  if not rows then
-    event(session_dir, 'ERROR', run_id, 'The chapter region list was not found.')
-    return
-  end
-  local known, pending, existing_count = project_regions(), {}, 0
-  for _, row in ipairs(rows) do
-    local found = false
-    for _, region in ipairs(known) do
-      found = found or same_region(region, row.title, row.first, row.last)
-    end
-    if found then
-      existing_count = existing_count + 1
-    else
-      pending[#pending + 1] = row
-      known[#known + 1] = { title = row.title, first = row.first, last = row.last }
-    end
-  end
-  if #pending > 0 then
-    local region_color = (hex or '') ~= '' and color(hex) or 0
-    reaper.Undo_BeginBlock2(0)
-    for _, row in ipairs(pending) do
-      reaper.AddProjectMarker2(0, true, row.first, row.last, row.title, -1, region_color)
-    end
-    reaper.Undo_EndBlock2(0, 'Narration Utils: create chapter regions', -1)
-    reaper.UpdateArrange()
-  end
-  event(session_dir, 'REGIONS_CREATED', run_id, #pending, existing_count, invalid)
-end
-
 return function(registry)
   registry.register('stamp_item_lines', function(ctx, args)
     stamp_item_lines(ctx.session_dir, args[1] or '', args[2] or '', args[3] == '1')
   end)
   registry.register('read_line_ids', function(ctx, args)
     read_line_ids(ctx.session_dir, args[1] or '', args[2] or '')
-  end)
-  registry.register('create_chapter_regions', function(ctx, args)
-    create_chapter_regions(ctx.session_dir, args[1] or '', args[2] or '', args[3] or '')
   end)
 end

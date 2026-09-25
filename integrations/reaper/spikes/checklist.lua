@@ -328,19 +328,19 @@ local body = function()
   -- 9. Regions ---------------------------------------------------------------------------------------------------
   local regions = native(CHK .. '/regions.txt')
   write_file(regions, '0|30|Chapter 1\n')
-  events = run('create_chapter_regions', 'REGIONS_CREATED', 't8', regions, 'FF8800')
-  check('9. regions: REGIONS_CREATED|t8|1|0|0', join_events(events) == 'REGIONS_CREATED|t8|1|0|0', join_events(events))
+  events = run('create_regions', 'REGIONS_CREATED', 't8', regions, 'FF8800', '0')
+  check('9. regions: REGIONS_CREATED|t8|1|0|0|0|0|0', join_events(events) == 'REGIONS_CREATED|t8|1|0|0|0|0|0', join_events(events))
   local _, is_region, first, last_pos, name, _, color = reaper.EnumProjectMarkers3(0, 0)
   check(
     '9. regions: a region 0-30 named Chapter 1 with colour',
     is_region and first == 0 and last_pos == 30 and name == 'Chapter 1' and color == reaper.ColorToNative(255, 136, 0) + 0x1000000,
     tostring(color)
   )
-  events = run('create_chapter_regions', 'REGIONS_CREATED', 't9', regions, 'FF8800')
-  check('9. regions again: REGIONS_CREATED|t9|0|1|0', join_events(events) == 'REGIONS_CREATED|t9|0|1|0', join_events(events))
+  events = run('create_regions', 'REGIONS_CREATED', 't9', regions, 'FF8800', '0')
+  check('9. regions again: REGIONS_CREATED|t9|0|1|0|0|0|0', join_events(events) == 'REGIONS_CREATED|t9|0|1|0|0|0|0', join_events(events))
   write_file(regions, '0|30|Chapter 1\nnot a region\n')
-  events = run('create_chapter_regions', 'REGIONS_CREATED', 't10', regions, '')
-  check('9. malformed row counted invalid: REGIONS_CREATED|t10|0|1|1', join_events(events) == 'REGIONS_CREATED|t10|0|1|1', join_events(events))
+  events = run('create_regions', 'REGIONS_CREATED', 't10', regions, '', '0')
+  check('9. malformed row counted invalid: REGIONS_CREATED|t10|0|1|1|0|0|0', join_events(events) == 'REGIONS_CREATED|t10|0|1|1|0|0|0', join_events(events))
   local count_regions = select(3, reaper.CountProjectMarkers(0))
   check('9. still exactly one region', count_regions == 1, count_regions)
 

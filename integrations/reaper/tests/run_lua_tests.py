@@ -42,6 +42,11 @@ def build_host(lua: LuaRuntime, reaper_dir: Path, scratch: Path) -> object:
         names = sorted(entry.name for entry in directory.iterdir() if entry.is_file()) if directory.is_dir() else []
         return lua.table_from(names)
 
+    def listsubdirs(path: str):
+        directory = Path(path)
+        names = sorted(entry.name for entry in directory.iterdir() if entry.is_dir()) if directory.is_dir() else []
+        return lua.table_from(names)
+
     def makedirs(path: str) -> int:
         Path(path).mkdir(parents=True, exist_ok=True)
         return 1
@@ -50,6 +55,7 @@ def build_host(lua: LuaRuntime, reaper_dir: Path, scratch: Path) -> object:
         {
             "tmpdir": tmpdir,
             "listdir": listdir,
+            "listsubdirs": listsubdirs,
             "makedirs": makedirs,
             "reaper_dir": str(reaper_dir),
             "is_windows": sys.platform == "win32",
@@ -69,12 +75,15 @@ def run_file(test_file: Path, reaper_dir: Path, scratch: Path) -> tuple[int, int
     return int(passed), int(failed), str(report)
 
 
-def run_suite(reaper_dir: Path, verbose: bool = True) -> tuple[int, int, list[str]]:
+def run_suite(reaper_dir: Path, verbose: bool = True, first: tuple[str, ...] = (), stop_at_failure: bool = False) -> tuple[int, int, list[str]]:
+    """Runs every test file. `first` names test files to run before the rest; with `stop_at_failure` the run ends at the
+    first file with a failing test (the mutation checks need one failure, not all of them)."""
     scratch = Path(tempfile.mkdtemp(prefix="reaper-harness-"))
     passed = failed = 0
     reports: list[str] = []
+    test_files = sorted(TESTS_DIR.glob("*_test.lua"), key=lambda path: (path.name not in first, path.name))
     try:
-        for test_file in sorted(TESTS_DIR.glob("*_test.lua")):
+        for test_file in test_files:
             ok, bad, report = run_file(test_file, reaper_dir, scratch)
             passed, failed = passed + ok, failed + bad
             if report:
@@ -84,6 +93,8 @@ def run_suite(reaper_dir: Path, verbose: bool = True) -> tuple[int, int, list[st
                 failed += 1
             if verbose:
                 print(f"{test_file.name}: {ok} passed, {bad} failed")
+            if stop_at_failure and failed:
+                break
     finally:
         shutil.rmtree(scratch, ignore_errors=True)
     return passed, failed, reports
