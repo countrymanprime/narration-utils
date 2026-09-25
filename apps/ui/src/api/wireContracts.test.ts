@@ -7,6 +7,7 @@ import { createMockApi } from './mockApi';
 import { WIRE_TAKE_REVIEW_FINDINGS, WIRE_TRACKS_PROJECT, WIRE_TRANSCRIPT } from './mockFixtures';
 import { WIRE_TAKE_COMPARISON_FINDING } from './takeComparisonMock';
 import { MOCK_MEASURE_PATHS } from './measureMock';
+import { judgeMock } from './coverageMock';
 import { deliveryQcEvidenceSchema, deliveryReportExportSchema, measureJobSchema, measurePickResultSchema } from './schemas/measure';
 import { deliveryProfileSchema, deliveryProfilesStateSchema } from './schemas/deliveryProfiles';
 import { MOCK_ACX, evaluateMockFile, mockCustomProfile } from './deliveryProfilesMock';
@@ -335,6 +336,17 @@ describe('golden payloads written by the Go host and the Python sidecars', () =>
     const older = { ...golden, result: { ...golden.result, regions } };
     const [oldTail] = parseWire(coverageResultSchema, older, ctx('coverage result')).result?.regions ?? [];
     expect([oldTail.before, oldTail.after]).toEqual([undefined, undefined]);
+  });
+
+  it("a coverage result carries the host's judgement, and the mock judges its reports by the same rule (ADR 0204)", () => {
+    for (const name of ['coverage-result-current.json', 'coverage-result-stale.json']) {
+      const golden = parseWire(coverageResultSchema, readGolden(name), ctx('coverage result'));
+      expect(golden.judgement).toBeDefined();
+      expect(golden.result && judgeMock(golden.result, golden.judgement?.thresholds)).toEqual(golden.judgement);
+    }
+    for (const name of ['coverage-result-never.json', 'coverage-result-unmapped.json']) {
+      expect(parseWire(coverageResultSchema, readGolden(name), ctx('coverage result')).judgement).toBeUndefined();
+    }
   });
 
   it('the stage cause and refusal lists are the ones the host declares', () => {

@@ -105,7 +105,7 @@ func (h *Host) CoverageResult(chapterID string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return encodeBinding(result.View(chapterID), nil)
+	return encodeBinding(result.View(chapterID, coverageSettings(svc.settings).Thresholds), nil)
 }
 
 // coverageRecordedFractions is the manuscript service's recordedFraction provider: measured fractions of chapters

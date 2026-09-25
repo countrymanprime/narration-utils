@@ -179,6 +179,14 @@ func TestStageRecommendationsOverTheCoverageCorpus(t *testing.T) {
 				t.Fatalf("signals = %+v", got.Signals)
 			}
 			signal := got.Signals[0]
+			result, err := coverage.Result(c.ChapterID, settings.Alignment)
+			if err != nil {
+				t.Fatal(err)
+			}
+			// The dialog's judgement is the stage signal's (recording-check-summary PRD Phase 2, ADR 0204).
+			if judgement := result.View(c.ChapterID, settings.Thresholds).Judgement; judgement == nil || judgement.State != signal.State || judgement.Reason != signal.Reason {
+				t.Fatalf("judgement %+v, signal %s %q", judgement, signal.State, signal.Reason)
+			}
 			if c.TextComplete {
 				assertCorpusRecommended(t, service, p, got)
 			} else {

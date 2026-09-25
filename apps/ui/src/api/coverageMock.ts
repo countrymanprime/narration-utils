@@ -7,6 +7,7 @@ import type {
   CoverageApi,
   CoverageRefusalReason,
   CoverageReport,
+  CoverageJudgement,
   CoverageResult,
   CoverageStartResult,
   CoverageState,
@@ -74,6 +75,11 @@ const WORDS_PER_MINUTE = 155;
 const idle: CoverageState = { phase: 'idle', percent: 0, message: 'Save the REAPER project, then check a chapter’s recording.' };
 
 const narratable = (chapter: ManuscriptChapter) => chapter.contentKind !== 'opening' && chapter.contentKind !== 'reference';
+
+/** The shipped thresholds (ADR 0132), which the mock judges by. */
+const MOCK_THRESHOLDS = { minParagraphPresent: 0.8, maxMissingRun: 3 };
+
+const plural = (count: number, noun: string) => (count === 1 ? `1 ${noun}` : `${count} ${noun}s`);
 
 /** A report of a chapter read with `fraction` of its words present; what is missing is its tail. */
 function reportFor(chapter: ManuscriptChapter, fraction: number): CoverageReport {
@@ -185,6 +191,46 @@ function pickupsReportFor(chapter: ManuscriptChapter): CoverageReport {
   };
 }
 
+/** The host's `coverage.Judge` (ADR 0204), so the mock's headline reads as the real one: met when every paragraph passes
+ * and no run is too long, otherwise the largest region over the limit, then the longest run, then the thinnest paragraph. */
+export function judgeMock(report: CoverageReport, thresholds = MOCK_THRESHOLDS): CoverageJudgement {
+  const numbers = new Map(report.paragraphs.map((paragraph, index) => [paragraph.id, index + 1]));
+  const describe = (ids: string[]) => {
+    const found = ids.map((id) => numbers.get(id));
+    if (found.some((number) => number === undefined)) return `paragraph ${ids.join(', ')}`;
+    const known = found.filter((number): number is number => number !== undefined);
+    if (known.length === 0) return 'the chapter';
+    const [first, last] = [Math.min(...known), Math.max(...known)];
+    return first === last ? `paragraph ${first}` : `paragraphs ${first} to ${last}`;
+  };
+  const share = (paragraph: CoverageReport['paragraphs'][number]) => (paragraph.tokens === 0 ? 1 : paragraph.present / paragraph.tokens);
+  const passes = (paragraph: CoverageReport['paragraphs'][number]) =>
+    share(paragraph) >= thresholds.minParagraphPresent && paragraph.longestMissingRun <= thresholds.maxMissingRun;
+  const judged = (state: CoverageJudgement['state'], reason: string): CoverageJudgement => ({ state, reason, thresholds: { ...thresholds } });
+  if (report.longestMissingRun <= thresholds.maxMissingRun && report.paragraphs.every(passes)) {
+    return judged('met', `Text present: ${report.presentTokens} of ${plural(report.bodyTokens, 'word')}; every paragraph passes.`);
+  }
+  const region = report.regions
+    .filter((candidate) => candidate.tokenCount > thresholds.maxMissingRun)
+    .reduce<CoverageReport['regions'][number] | undefined>(
+      (worst, candidate) => (!worst || candidate.tokenCount > worst.tokenCount ? candidate : worst),
+      undefined,
+    );
+  if (region) return judged('not_met', `${describe(region.paragraphIds)}: ${plural(region.tokenCount, 'word')} not read.`);
+  const longest = report.paragraphs
+    .filter((paragraph) => paragraph.longestMissingRun > thresholds.maxMissingRun)
+    .reduce<CoverageReport['paragraphs'][number] | undefined>(
+      (worst, paragraph) => (!worst || paragraph.longestMissingRun > worst.longestMissingRun ? paragraph : worst),
+      undefined,
+    );
+  if (longest) return judged('not_met', `${describe([longest.id])}: ${plural(longest.longestMissingRun, 'word')} in a row not read.`);
+  const thinnest = report.paragraphs
+    .filter((paragraph) => share(paragraph) < thresholds.minParagraphPresent)
+    .reduce<CoverageReport['paragraphs'][number] | undefined>((worst, paragraph) => (!worst || share(paragraph) < share(worst) ? paragraph : worst), undefined);
+  if (thinnest) return judged('not_met', `${describe([thinnest.id])}: ${thinnest.present} of ${plural(thinnest.tokens, 'word')} read.`);
+  return judged('not_met', `${plural(report.longestMissingRun, 'word')} in a row not read.`);
+}
+
 export function createCoverageMock(deps: Deps): CoverageApi & {
   /** The chapter as the host sends it: recordedFraction only from a current check. */
   withMeasurement: (chapter: ManuscriptChapter) => ManuscriptChapter;
@@ -215,9 +261,10 @@ export function createCoverageMock(deps: Deps): CoverageApi & {
     if (fraction === undefined) return { chapterId, state: 'never', reasons: [], basis: { ...MOCK_BASIS } };
     const record = { id: `mock-coverage-${chapter.id}`, outcome: 'complete' as const, startedAt: MOCK_TIME, completedAt: MOCK_TIME };
     const report = reportOf(chapter, fraction);
-    if (stale.has(chapter.id)) return { chapterId, state: 'stale', reasons: ['item_trimmed'], basis: { ...MOCK_BASIS }, record, result: report };
+    const judgement = judgeMock(report);
+    if (stale.has(chapter.id)) return { chapterId, state: 'stale', reasons: ['item_trimmed'], basis: { ...MOCK_BASIS }, record, result: report, judgement };
     // The same number the chapter payload carries (withMeasurement): the host sends one number to both.
-    return { chapterId, state: 'current', reasons: [], basis: { ...MOCK_BASIS }, record, result: report, recordedFraction: fraction };
+    return { chapterId, state: 'current', reasons: [], basis: { ...MOCK_BASIS }, record, result: report, recordedFraction: fraction, judgement };
   };
 
   const refuse = (reason: CoverageRefusalReason): CoverageStartResult => ({ status: 'refused', reason, message: COVERAGE_REFUSAL_MESSAGES[reason] });

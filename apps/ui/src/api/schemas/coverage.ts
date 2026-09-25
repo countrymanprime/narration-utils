@@ -120,4 +120,11 @@ export const coverageResultSchema = z.object({
   record: z.object({ id: z.string(), outcome: z.enum(['complete', 'partial', 'failed']), startedAt: z.string(), completedAt: z.string() }).optional(),
   result: reportSchema.optional(),
   recordedFraction: z.number().min(0).max(1).optional(),
+  judgement: z
+    .object({
+      state: z.enum(['met', 'not_met']),
+      reason: z.string(),
+      thresholds: z.object({ minParagraphPresent: z.number().min(0).max(1), maxMissingRun: z.number().int().nonnegative() }),
+    })
+    .optional(),
 }) satisfies z.ZodType<CoverageResult>;
