@@ -518,9 +518,10 @@ export function createMockApi(
     /** Chapter sync's consent at boot (daw-chapter-track-auto-sync PRD Phase 3): `ask` has not been asked yet (the consent
      * dialog shows), `off` answered Not now, and `linked` is on and, once something subscribes, runs a sync that links the
      * confident chapters and sends the batch for the toast. `unsaved` is on, with REAPER holding unsaved edits and a Sync
-     * activity row from a save in REAPER (Phase 4). Unset, sync is on and has run before with nothing new, so no dialog or
+     * activity row from a save in REAPER (Phase 4). `pickups` is on, with the first chapter's pickup track changed since its
+     * last take-review scan (Phase 8). Unset, sync is on and has run before with nothing new, so no dialog or
      * toast covers the other states. */
-    chapterSync?: 'ask' | 'off' | 'linked' | 'unsaved';
+    chapterSync?: 'ask' | 'off' | 'linked' | 'unsaved' | 'pickups';
     /** Whether the mock project boots with a linked DAW project file (PRD W13/W14). Defaults to true. */
     dawFileLinked?: boolean;
     /** Makes the next `linkDawFile()` call behave like a chosen file outside the project folder (PRD W15): refused, not linked. */
@@ -940,12 +941,14 @@ export function createMockApi(
   };
   // Phase 6's status rows, as the host builds them: the link, and the recording check's own answer (the coverage mock's).
   const mockChapterSyncRows = (links: ReturnType<typeof mockLinksRead>): ChapterSyncChapter[] =>
-    links.chapters.map((chapter) => {
+    links.chapters.map((chapter, index) => {
       const link = chapter.links.length === 1 ? chapter.links[0] : undefined;
       const track = link ? links.tracks.find((summary) => summary.guid === link.trackGuid) : undefined;
       const result = peekCoverage(chapter.chapterId);
       const checkedAt = result.state === 'never' ? null : (result.record?.completedAt ?? null);
       const newestSourceAt = track ? '2026-09-21T10:00:00Z' : null;
+      // The pickups seed gives the first chapter a pickup track (recognised by its name, never a link) changed since its scan.
+      const pickups = initial.chapterSync === 'pickups' && index === 0;
       return {
         chapterId: chapter.chapterId,
         chapterTitle: chapter.chapterTitle,
@@ -959,6 +962,10 @@ export function createMockApi(
         trackChangedAt: null,
         newestSourceAt,
         lastChanged: newestSourceAt,
+        pickupTrackGuid: pickups ? '{mock-pickups-track}' : '',
+        pickupTrackName: pickups ? `${chapter.chapterTitle} (pickups)` : '',
+        pickupsScannedAt: pickups ? '2026-09-21T09:00:00Z' : null,
+        pickupsChanged: pickups,
       };
     });
   const publishChapterSync = (state: ChapterSyncState) => chapterSyncSubscribers.forEach((fn) => fn(wireClone(state)));

@@ -224,6 +224,7 @@ const GOLDEN: Record<string, z.ZodType> = {
   'chapter-sync-state-ask.json': chapterSyncStateSchema,
   'chapter-sync-state-synced.json': chapterSyncStateSchema,
   'chapter-sync-state-stale.json': chapterSyncStateSchema,
+  'chapter-sync-state-pickups.json': chapterSyncStateSchema,
   'chapter-sync-preview.json': chapterSyncPreviewSchema,
   'chapter-track-links-no-project.json': chapterTrackLinksSchema,
   'chapter-track-links-conflict.json': chapterTrackLinksSchema,
@@ -674,6 +675,11 @@ describe('answers of the mock client for the manuscript, Story Bible and project
     const staleState = await staleApi.chapterSyncState();
     expectMatches(chapterSyncStateSchema, staleState, 'mock chapter sync, a stale row');
     expect(staleState.chapters[0]).toMatchObject({ freshness: 'stale', reasons: ['item_trimmed'] });
+
+    // Phase 8: a chapter's pickup track, changed since its last scan.
+    const pickups = await createMockApi({}, { chapterSync: 'pickups' }).chapterSyncState();
+    expectMatches(chapterSyncStateSchema, pickups, 'mock chapter sync, pickups changed');
+    expect(pickups.chapters.filter((row) => row.pickupsChanged)).toHaveLength(1);
   });
 
   // chapter-track-link-control.prd.md Phase 3: Remove from recording clears the chapter's links, and Restore brings it back.
