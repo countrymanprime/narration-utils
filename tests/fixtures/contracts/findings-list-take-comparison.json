@@ -29,6 +29,8 @@
                 "duration_seconds": 8,
                 "file": "C:/Projects/Alice/media/read-a.wav",
                 "full_scale_samples": 0,
+                "head_digital_silence_seconds": 0,
+                "head_room_tone_seconds": 0,
                 "integrated_lufs": -16.91656294958627,
                 "noise_floor_dbfs": -69.0609578547269,
                 "range": {
@@ -38,6 +40,8 @@
                 "rms_dbfs": -18.062028847622233,
                 "sample_peak_dbfs": -12.024251743839539,
                 "sample_rate": 16000,
+                "tail_digital_silence_seconds": 0,
+                "tail_room_tone_seconds": 1,
                 "true_peak_dbtp": -12.023609380121488
               },
               "clipping": {
@@ -206,6 +210,8 @@
                 "duration_seconds": 8,
                 "file": "C:/Projects/Alice/media/read-b.wav",
                 "full_scale_samples": 0,
+                "head_digital_silence_seconds": 0,
+                "head_room_tone_seconds": 0.5,
                 "integrated_lufs": -17.00911935906063,
                 "noise_floor_dbfs": -69.0609578547269,
                 "range": {
@@ -215,6 +221,8 @@
                 "rms_dbfs": -18.062029359602946,
                 "sample_peak_dbfs": -12.024251743839539,
                 "sample_rate": 16000,
+                "tail_digital_silence_seconds": 0,
+                "tail_room_tone_seconds": 0.5,
                 "true_peak_dbtp": -12.023609380121488
               },
               "clipping": {
@@ -383,6 +391,8 @@
                 "duration_seconds": 8,
                 "file": "C:/Projects/Alice/media/read-c.wav",
                 "full_scale_samples": 0,
+                "head_digital_silence_seconds": 0,
+                "head_room_tone_seconds": 0,
                 "integrated_lufs": -16.91656294958627,
                 "noise_floor_dbfs": -69.0609578547269,
                 "range": {
@@ -392,6 +402,8 @@
                 "rms_dbfs": -18.062028847622233,
                 "sample_peak_dbfs": -12.024251743839539,
                 "sample_rate": 16000,
+                "tail_digital_silence_seconds": 0,
+                "tail_room_tone_seconds": 1,
                 "true_peak_dbtp": -12.023609380121488
               },
               "clipping": {

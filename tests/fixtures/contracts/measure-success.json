@@ -28,6 +28,10 @@
         "true_peak_dbtp": -3.1,
         "noise_floor_dbfs": -66.8,
         "digital_silent_windows": 0,
+        "head_room_tone_seconds": 0.8,
+        "tail_room_tone_seconds": 2.5,
+        "head_digital_silence_seconds": 0,
+        "tail_digital_silence_seconds": 0,
         "full_scale_samples": 4,
         "clip_run_count": 1,
         "clip_runs": [
@@ -101,15 +105,13 @@
         },
         {
           "ruleId": "acx.room_tone_head",
-          "status": "not_checked",
-          "value": null,
-          "why": "Not checked by the app yet: measuring room tone at the file's edges comes later."
+          "status": "met",
+          "value": 0.8
         },
         {
           "ruleId": "acx.room_tone_tail",
-          "status": "not_checked",
-          "value": null,
-          "why": "Not checked by the app yet: measuring room tone at the file's edges comes later."
+          "status": "met",
+          "value": 2.5
         },
         {
           "ruleId": "acx.format",
@@ -134,6 +136,10 @@
         "true_peak_dbtp": null,
         "noise_floor_dbfs": null,
         "digital_silent_windows": 4,
+        "head_room_tone_seconds": null,
+        "tail_room_tone_seconds": null,
+        "head_digital_silence_seconds": null,
+        "tail_digital_silence_seconds": null,
         "full_scale_samples": 0,
         "clip_run_count": 0,
         "clip_runs": []
@@ -209,6 +215,50 @@
           "review": {
             "status": "unreviewed"
           }
+        },
+        {
+          "schema_version": 1,
+          "id": "27044c473e2d41e2451f450f",
+          "analyzer": "measure",
+          "project": {},
+          "source": {
+            "file": "C:/Renders/Chapter 02.wav"
+          },
+          "category": "delivery_qc",
+          "severity": "info",
+          "confidence": 1,
+          "confidence_reason": "the measurement could not be made (silence, or audio shorter than the measurement window)",
+          "evidence": {
+            "available": false,
+            "metric": "head_room_tone_seconds",
+            "profile": "acx@2026-09",
+            "rule": "acx.room_tone_head"
+          },
+          "review": {
+            "status": "unreviewed"
+          }
+        },
+        {
+          "schema_version": 1,
+          "id": "ebd908dd98bb33b1ce3d72ff",
+          "analyzer": "measure",
+          "project": {},
+          "source": {
+            "file": "C:/Renders/Chapter 02.wav"
+          },
+          "category": "delivery_qc",
+          "severity": "info",
+          "confidence": 1,
+          "confidence_reason": "the measurement could not be made (silence, or audio shorter than the measurement window)",
+          "evidence": {
+            "available": false,
+            "metric": "tail_room_tone_seconds",
+            "profile": "acx@2026-09",
+            "rule": "acx.room_tone_tail"
+          },
+          "review": {
+            "status": "unreviewed"
+          }
         }
       ],
       "rules": [
@@ -242,15 +292,15 @@
         },
         {
           "ruleId": "acx.room_tone_head",
-          "status": "not_checked",
+          "status": "not_measurable",
           "value": null,
-          "why": "Not checked by the app yet: measuring room tone at the file's edges comes later."
+          "why": "Could not be measured (silence, or audio shorter than the measurement needs); never counted as met."
         },
         {
           "ruleId": "acx.room_tone_tail",
-          "status": "not_checked",
+          "status": "not_measurable",
           "value": null,
-          "why": "Not checked by the app yet: measuring room tone at the file's edges comes later."
+          "why": "Could not be measured (silence, or audio shorter than the measurement needs); never counted as met."
         },
         {
           "ruleId": "acx.format",
@@ -416,10 +466,14 @@
         "max": 5,
         "oneOf": null,
         "sameAcrossFiles": false,
-        "advice": null,
+        "advice": {
+          "metric": "head_digital_silence_seconds",
+          "max": 0,
+          "unit": "s",
+          "text": "the head holds digital silence (exact zeros): ACX asks for room tone, not silence"
+        },
         "level": "required",
-        "checkedBy": "not_yet",
-        "notCheckedWhy": "Not checked by the app yet: measuring room tone at the file's edges comes later.",
+        "checkedBy": "measured",
         "source": {
           "title": "ACX Audio Submission Requirements",
           "url": "https://help.acx.com/s/article/what-are-the-acx-audio-submission-requirements",
@@ -440,10 +494,14 @@
         "max": 5,
         "oneOf": null,
         "sameAcrossFiles": false,
-        "advice": null,
+        "advice": {
+          "metric": "tail_digital_silence_seconds",
+          "max": 0,
+          "unit": "s",
+          "text": "the tail holds digital silence (exact zeros): ACX asks for room tone, not silence"
+        },
         "level": "required",
-        "checkedBy": "not_yet",
-        "notCheckedWhy": "Not checked by the app yet: measuring room tone at the file's edges comes later.",
+        "checkedBy": "measured",
         "source": {
           "title": "ACX Audio Submission Requirements",
           "url": "https://help.acx.com/s/article/what-are-the-acx-audio-submission-requirements",
