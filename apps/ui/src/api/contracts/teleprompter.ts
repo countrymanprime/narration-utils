@@ -107,6 +107,11 @@ export type TeleprompterState = {
   engine: string | null;
   /** The chapter id or title the session was started with. */
   chapter: string | null;
+  /**
+   * A running session whose listening is paused (`teleprompterPause`, ADR 0248): the phase stays `running`, the microphone and
+   * its level stay live, the tracker holds its word. Absent from a host before host API 55, which reads as not paused.
+   */
+  paused?: boolean;
   script: TeleprompterScript | null;
   position: TeleprompterPosition | null;
 };
@@ -287,6 +292,8 @@ export interface TeleprompterApi {
    */
   teleprompterMeterStart(device: string): Promise<void>;
   teleprompterMeterStop(): Promise<void>;
+  /** Pause (true) or resume (false) a running session's listening without ending it; flags are kept only on Stop (ADR 0117). */
+  teleprompterPause(paused: boolean): Promise<void>;
   /** Where to resume `chapterId` from its recorded audio (the last seconds of its track, placed in the chapter); read-only. */
   teleprompterLocate(chapterId: string, options?: TeleprompterLocateOptions): Promise<TeleprompterLocateResult>;
   subscribeTeleprompterEvent(onEvent: (event: TeleprompterEvent) => void): () => void;

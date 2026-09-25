@@ -97,7 +97,7 @@ export const TELEPROMPTER_EVENT_TYPES: ReadonlySet<string> = new Set([
 ]);
 
 /**
- * The snapshot the host builds (teleprompter/service.go): always all six keys, the script and position being the last events
+ * The snapshot the host builds (teleprompter/service.go): always all seven keys, the script and position being the last events
  * of those types so a view that opens mid-session can catch up. A missing key takes the idle value, which is what the hand-written
  * `normalizeTeleprompterState` did for the `Partial` it accepted.
  */
@@ -106,6 +106,7 @@ export const teleprompterStateSchema = z.object({
   message: z.string().default(''),
   engine: z.string().nullable().default(null),
   chapter: z.string().nullable().default(null),
+  paused: z.boolean().default(false),
   script: teleprompterScriptSchema.nullable().default(null),
   position: teleprompterPositionSchema.nullable().default(null),
 }) satisfies z.ZodType<TeleprompterState>;

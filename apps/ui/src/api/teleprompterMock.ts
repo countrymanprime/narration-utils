@@ -94,6 +94,7 @@ const idle: TeleprompterState = {
   message: 'Choose a chapter to start the teleprompter.',
   engine: null,
   chapter: null,
+  paused: false,
   script: null,
   position: null,
 };
@@ -304,6 +305,8 @@ export function createTeleprompterMock(deps: Deps): TeleprompterApi {
   let autoStop: ReturnType<typeof setTimeout> | undefined;
   let seeding: Promise<void> | undefined;
   let metering = false;
+  // The words of the session running now, so a resume replays on from where the pause left it.
+  let sessionWords: string[] = [];
   // The replay's steps carry a level each (no timer of their own), so a session's meter moves and ends with it.
   const levelAt = (step: number) => mockLevelEvent(deps.level ?? -24 + 6 * Math.sin(step * 1.7));
 
@@ -396,7 +399,8 @@ export function createTeleprompterMock(deps: Deps): TeleprompterApi {
     await deps.ready;
     const chapter = deps.chapters()[0];
     if (!chapter || !deps.seed) return;
-    const { script } = buildScript(chapter, deps.paragraphs());
+    const { script, words } = buildScript(chapter, deps.paragraphs());
+    sessionWords = words;
     const firstParagraph = script.spans[1]?.start ?? 0;
     const atEnd = deps.seed === 'done' || deps.seed === 'ended';
     const into = deps.seed === 'flagged' ? FLAGGED_WORDS_INTO_TEXT : SEED_WORDS_INTO_TEXT;
@@ -424,9 +428,10 @@ export function createTeleprompterMock(deps: Deps): TeleprompterApi {
       const { id, built } = options.credits ? planCredits(options.credits) : planChapter(options.chapter);
       cancelReplay();
       stopMeter();
-      state = { phase: 'starting', message: 'Starting the teleprompter…', engine, chapter: id, script: null, position: null };
+      state = { phase: 'starting', message: 'Starting the teleprompter…', engine, chapter: id, paused: false, script: null, position: null };
       publish();
       const { script, words } = built;
+      sessionWords = words;
       state = { ...state, phase: 'running', message: LISTENING };
       publish();
       emit(script);
@@ -438,9 +443,18 @@ export function createTeleprompterMock(deps: Deps): TeleprompterApi {
     teleprompterStop: async () => {
       cancelReplay();
       if (state.phase === 'starting' || state.phase === 'running') {
-        state = { ...state, phase: 'stopped', message: 'Stopped.' };
+        state = { ...state, phase: 'stopped', message: 'Stopped.', paused: false };
         publish();
       }
+    },
+    // The host's Pause (service.go): only a running session; the replay stops and a resume replays on from the current word.
+    teleprompterPause: async (paused) => {
+      if (state.phase !== 'running') throw new Error('no teleprompter session is running');
+      if (Boolean(state.paused) === paused) return;
+      cancelReplay();
+      state = { ...state, paused, message: paused ? 'Paused.' : LISTENING };
+      publish();
+      if (!paused) replay(sessionWords, state.position?.read ?? 0);
     },
     teleprompterSeek: async (word) => {
       if (state.phase !== 'running') throw new Error('no teleprompter session is running');

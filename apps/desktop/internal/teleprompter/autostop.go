@@ -14,6 +14,7 @@ const autoStopDelay = 5 * time.Second
 
 const (
 	listeningMessage     = "Listening…"
+	pausedMessage        = "Paused."
 	stoppedMessage       = "Stopped."
 	autoStoppingMessage  = "Reached the end of the chapter. Stopping…"
 	autoStoppedMessage   = "Stopped at the end of the chapter."
@@ -38,7 +39,7 @@ func positionStatus(raw json.RawMessage) string {
 	return position.Status
 }
 
-// trackAutoStopLocked arms the auto-stop on the first `done` position of a running session and cancels it on any later
+// trackAutoStopLocked arms the auto-stop on the first `done` position of a running, unpaused session and cancels it on any later
 // position that is not `done`. It reports whether the state message changed, so the caller can notify once unlocked.
 // Repeated `done` positions keep the timer that is already running: the delay counts from the first one.
 func (s *Service) trackAutoStopLocked(done bool) bool {
@@ -51,7 +52,9 @@ func (s *Service) trackAutoStopLocked(done bool) bool {
 		return true
 	}
 	// The phase, not s.child, says a session is live: the sidecar can print before StartStream has returned the child.
-	if phase, _ := s.state["phase"].(string); s.autoStop != nil || s.stopping || (phase != "starting" && phase != "running") {
+	// A paused session is not armed (ADR 0248): Pause(false) arms it if the last position is still done.
+	paused, _ := s.state["paused"].(bool)
+	if phase, _ := s.state["phase"].(string); s.autoStop != nil || s.stopping || paused || (phase != "starting" && phase != "running") {
 		return false
 	}
 	s.autoStopRound++

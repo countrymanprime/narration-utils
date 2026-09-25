@@ -1109,6 +1109,16 @@ export function TeleprompterMeterStop(): $CancellablePromise<string> {
 }
 
 /**
+ * TeleprompterPause stops (true) or restarts (false) a running session's listening without ending it
+ * (read-aloud-control-bar.prd.md Phase 5, ADR 0248): the microphone stays open and its level still shows, the recognizer
+ * hears nothing and the tracker holds its word. The state keeps phase "running" with `paused` set. It errors when no
+ * session is running.
+ */
+export function TeleprompterPause(paused: boolean): $CancellablePromise<string> {
+    return $Call.ByID(3709351835, paused);
+}
+
+/**
  * TeleprompterSaveFlags writes a read-aloud session's suspected flags into the project's findings store as unreviewed
  * findings (teleprompter-manuscript-integration.prd.md Phase 7, ADR 0117): a misread, extra or skip as a
  * transcript_discrepancy, a restart as a pickup. The dialog calls it when a session ends and when it closes, so it is

@@ -2,6 +2,7 @@
   "chapter": null,
   "engine": null,
   "message": "Choose a chapter to start the teleprompter.",
+  "paused": false,
   "phase": "idle",
   "position": null,
   "script": null

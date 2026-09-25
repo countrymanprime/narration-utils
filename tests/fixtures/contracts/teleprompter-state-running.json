@@ -2,6 +2,7 @@
   "chapter": "c1",
   "engine": "whisper",
   "message": "Reached the end of the chapter. Stopping in 5 seconds unless you keep reading.",
+  "paused": false,
   "phase": "running",
   "position": {
     "committed": 33,
