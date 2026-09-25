@@ -1,0 +1,5 @@
+# Back and Forward at the left of the header (app-navigation-and-zoom-controls.prd.md Phase 1, Q1 A). Both start
+# disabled on the first page of a project (Q8); enabling on a move is exercised by the visual suite, not pinned here.
+- group "Page history":
+  - button "Back" [disabled]
+  - button "Forward" [disabled]

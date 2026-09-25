@@ -30,6 +30,19 @@ change) the project's `.rpp` file:
 The file must be saved inside the project folder; one from another folder is refused with a message saying
 so. The same link can be made from the [Tracks](tracks.md) page and from [Settings](settings.md#daw-integration).
 
+## Moving around: Back and Forward
+
+Two buttons at the left of the header walk the pages you have visited in this project, the way a browser's Back
+and Forward do: **Back** (`Alt+Left`, or your mouse's back button) returns to the page you came from; **Forward**
+(`Alt+Right`, or your mouse's forward button) goes there again after a Back. Each is disabled — with a tooltip
+saying why — when there is nowhere to go: Back on the first page you opened in this project, Forward until you
+have gone Back at least once. Switching to a different project starts a fresh history; Back does not cross into
+the project you left.
+
+Back and Forward respect the same checks the nav does: leaving unsaved changes in [Settings](settings.md) asks
+first, and leaving [Proofing](proofing.md) resets its run the same way. They only move between pages — closing a
+slide-over, the previous chapter, or the previous Story Bible entry are not Back steps.
+
 ---
 
 [← Getting started](getting-started.md) · [Index](README.md) · [Home →](home.md)

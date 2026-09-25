@@ -74,7 +74,21 @@ export const FEEDBACK_CATALOG: Record<string, FeedbackRow> = {
   'src/App.tsx::subscribeLiveUpdateHealth#1': subscription('Degraded live updates become one toast.'),
   'src/App.tsx::subscribeProjectAttach#1': subscription('A project attach refreshes the bootstrap or shows why it was refused.'),
   'src/App.tsx::settingsForScope#1': row('mount', 'file-io', 'na', 'na', 'ui', 'silent', 'na', 'exempt', 'Cosmetic: the narrator\'s entity colours; the built-in colours stay if the settings cannot be read, and Settings reports the real error.'),
-  'src/App.tsx::transcriptReset#1': row('click', 'instant', 'na', 'na', 'na', 'silent', 'na', 'exempt', 'Best effort when leaving Proofing: a reset that fails leaves the finished results in place, which is harmless.'),
+  // Phase 1 (app-navigation-and-zoom-controls.prd.md) added two more transcriptReset call sites in this file (Back/Forward's
+  // own guard, and the popstate-recovery effect for a browser/mouse gesture that bypassed it), renumbering this one from #1.
+  'src/App.tsx::transcriptReset#1': row(
+    'effect',
+    'instant',
+    'na',
+    'na',
+    'na',
+    'silent',
+    'na',
+    'exempt',
+    "Best effort recovery for a popstate the app did not start (Risk 3): if it left Proofing, the run is reset the same way a guarded move would; a reset that fails leaves the finished results in place, which is harmless.",
+  ),
+  'src/App.tsx::transcriptReset#2': row('click', 'instant', 'na', 'na', 'na', 'silent', 'na', 'exempt', 'Best effort when leaving Proofing through the nav: a reset that fails leaves the finished results in place, which is harmless.'),
+  'src/App.tsx::transcriptReset#3': row('click', 'instant', 'na', 'na', 'na', 'silent', 'na', 'exempt', 'Best effort when leaving Proofing through guarded Back/Forward (a button, Alt+Left/Right, or a mouse button): same as the nav.'),
   'src/App.tsx::linkDawFile#1': row(
     'click',
     'os-dialog',
@@ -529,7 +543,11 @@ export const SILENT_CATCHES: Record<string, string> = {
   'src/App.tsx#2': 'The window error handler reports a diagnostic; a failing report must not raise another window error.',
   'src/App.tsx#3': 'The unhandled-rejection handler reports a diagnostic; a failing report must not raise another rejection.',
   'src/App.tsx#4': "Cosmetic: the narrator's entity colours. The built-in colours stay if the settings cannot be read, and Settings reports the real error.",
-  'src/App.tsx#5': 'Best effort when leaving Proofing: a reset that fails leaves the finished results in place, which is harmless.',
+  // Phase 1 (app-navigation-and-zoom-controls.prd.md) added two more bare catches in this file (Back/Forward's own guard,
+  // and the nav's original one, now #6), renumbering what follows.
+  'src/App.tsx#5': 'Best effort recovery for a popstate the app did not start: a reset that fails leaves the finished results in place, which is harmless.',
+  'src/App.tsx#6': 'Best effort when leaving Proofing through the nav: a reset that fails leaves the finished results in place, which is harmless.',
+  'src/App.tsx#7': 'Best effort when leaving Proofing through guarded Back/Forward: same as the nav, harmless either way.',
   'src/components/home/Home.tsx#1': 'Only decides whether the "entries need review" nudge shows; without it the nudge is absent.',
   'src/components/home/Home.tsx#2':
     'Only pre-fills the "Build the Story Bible after import" checkbox from Settings; it keeps its on-by-default (D8) local state without it, and the narrator can still change it per import.',
