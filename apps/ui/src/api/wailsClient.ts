@@ -21,6 +21,7 @@ import { dawLaunchResultSchema, dawLinkResultSchema, projectFolderSelectionSchem
 import {
   creditsAnnouncementsSchema,
   creditsProjectValuesResultSchema,
+  creditsSetupStateSchema,
   creditsRenderResultSchema,
   creditsStatusesSchema,
   creditTemplateSchema,
@@ -342,6 +343,14 @@ export const wailsClient: NarrationApi = {
   duplicateCreditsTemplate: (id) => decode(creditTemplateSchema, 'CreditsDuplicateTemplate', host.CreditsDuplicateTemplate(id)),
   deleteCreditsTemplate: (id) => decode(voidResult, 'CreditsDeleteTemplate', host.CreditsDeleteTemplate(id)),
   creditsProjectValues: () => decode(creditsProjectValuesResultSchema, 'CreditsProjectValues', host.CreditsProjectValues()),
+  creditsSetupState: () => decode(creditsSetupStateSchema, 'CreditsSetupState', host.CreditsSetupState()),
+  creditsSetupDismiss: (scope) => decode(creditsSetupStateSchema, 'CreditsSetupDismiss', host.CreditsSetupDismiss(scope)),
+  creditsSetupSave: (values) =>
+    decode(
+      creditsSetupStateSchema,
+      'CreditsSetupSave',
+      host.CreditsSetupSave(Object.fromEntries(Object.entries(values).filter((entry): entry is [string, string] => typeof entry[1] === 'string'))),
+    ),
   saveCreditsProjectValues: (values) =>
     decode(
       creditsProjectValuesResultSchema.shape.values,

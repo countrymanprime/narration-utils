@@ -78,6 +78,8 @@ var stressReaders = []stressReader{
 	{"ManuscriptSetChapterKind (unknown chapter)", func(h *Host) { _, _ = h.ManuscriptSetChapterKind("missing", "reference") }},
 	{"ChapterSuggestion", func(h *Host) { _, _ = h.ChapterSuggestion() }},
 	{"CreditsStatuses", func(h *Host) { _, _ = h.CreditsStatuses() }},
+	{"CreditsSetupState", func(h *Host) { _, _ = h.CreditsSetupState() }},
+	{"CreditsSetupDismiss (unknown scope)", func(h *Host) { _, _ = h.CreditsSetupDismiss("forever") }},
 	{"CreditsSetStatus (unknown kind)", func(h *Host) { _, _ = h.CreditsSetStatus("missing", "finalized") }},
 	{"TeleprompterLocate", func(h *Host) { _, _ = h.TeleprompterLocate("c-0001", "", "") }},
 	{"TeleprompterSaveFlags", func(h *Host) {

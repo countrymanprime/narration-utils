@@ -4,7 +4,7 @@
 
 **Builds on:** [Audiobook Credits Templates](audiobook-credits-templates.prd.md). Its C3 ("Seeding") is delivered as `internal/credits/suggestions.go`, and this PRD extends that code rather than adding a second one. Its C2 (token ownership) and C6 (warn, never block) stand. When this PRD is delivered it amends C3's "cover lines and `docProps/core.xml`" design. It does not reopen the credits PRD's phases, but that PRD's steady-state docs must describe the prompt once it ships. **Sibling:** [Credits in the Chapter Table](credits-in-chapter-table.prd.md) also adds a field to `project.Manifest` (its CT3). It does not cover setting token values. **Precedent:** [ADR 0019](../adr/0019-detected-manuscript-is-offered-not-imported.md): something detected at open is offered and never applied on its own.
 
-**Status (2026-09-24):** draft. Open questions CS1 to CS10 are waiting for the owner. There is no tracking issue yet: open one before Phase 1 (`docs/operations/github-workflow.md`).
+**Status (2026-09-25):** in delivery (lane train, [implementation plan](implementation-plan.md) section 8). The open questions take the owner's answers (D34, D35) and otherwise the recommendations (D39; Decisions Log). Phase 1 is built; Phase 2's host half is built and its dialog is lane C's stream C4.
 
 ## Problem Statement
 
@@ -119,45 +119,45 @@ We believe that asking for the credits values once, when a project with a manusc
 
 ## Open Questions
 
-- [ ] **CS1. Dialog or banner?**
+- [x] **CS1. Dialog or banner?**
   - (A) A modal dialog on Home the first time the project needs setup. It is hard to miss, but it interrupts.
   - (B) A banner or card at the top of Home and above the Manuscript credits card, with "Fill in", like the ADR 0019 manuscript offer. It never blocks, but it is easier to ignore.
   - (C) Both: a dialog once per project, then the banner until the tokens are resolved or the narrator says "don't ask".
 
   Recommendation: (C). The owner asked to be *prompted*, and the banner keeps it discoverable without a second interruption. The dialog is a `Dialog` primitive (ADR 0048), not an alert.
-- [ ] **CS2. How often does it ask again?** Options:
+- [x] **CS2. How often does it ask again?** Options:
   - every launch until resolved;
   - once per project, with "Not now" meaning this session only and "Don't ask for this project" stored;
   - once per imported manuscript (ask again after Replace manuscript).
 
   Recommendation: ask once per project on first load. "Not now" lasts for the session, like the ADR 0019 decline. "Don't ask again for this project" is stored on the manifest with the manuscript's `documentId`, so a Replace manuscript asks again, because the new file may have a different title. The banner (CS1 C) stays while tokens are unresolved, unless the narrator chose "Don't ask".
-- [ ] **CS3. Title casing.** The owner's title page is all capitals.
+- [x] **CS3. Title casing.** The owner's title page is all capitals.
   - (A) Convert an all-capitals title to title case with the usual small words kept lower case ("After the Applause"). Mixed-case titles stay as they are.
   - (B) Keep the capitals ("AFTER THE APPLAUSE").
   - (C) Offer both.
 
   Recommendation: (A), prefilled and editable. ACX wants the credits to match the title's metadata, which is rarely all capitals, and the narrator reads the text aloud anyway. Proper nouns and acronyms inside an all-capitals title ("NASA", "McCOY") cannot be recovered, so the source caption shows the original lines.
-- [ ] **CS4. Which tokens does the prompt ask for?**
+- [x] **CS4. Which tokens does the prompt ask for?**
   - (A) Only the unresolved tokens used by the first opening and closing templates (for the default templates: Title, Author, Narrator).
   - (B) Those, plus any token in the first chapter announcement template.
   - (C) Every token in `credits.Values`, with the unused ones collapsed.
 
   Recommendation: (A) in the dialog, with a "More fields" link to Settings > Credits. Detected values for tokens the templates do not use (Year, Copyright Holder, Series, Publisher) appear as suggestions in Settings, not in the dialog.
-- [ ] **CS5. "A Novel" and other descriptor lines.** Is "A Novel" (or "A Memoir", "Stories", "A Thriller") a `[Subtitle]`? Recommendation: no. Treat it as a genre descriptor and skip it, because ACX opening credits rarely say "A Novel". A real subtitle ("Book One of the Ember Trilogy", or a line after a colon) is offered as Subtitle or Series.
-- [ ] **CS6. Precedence when sources disagree.** Current code: docProps beats the cover lines (`suggestions.go:43-53`). Recommendation:
+- [x] **CS5. "A Novel" and other descriptor lines.** Is "A Novel" (or "A Memoir", "Stories", "A Thriller") a `[Subtitle]`? Recommendation: no. Treat it as a genre descriptor and skip it, because ACX opening credits rarely say "A Novel". A real subtitle ("Book One of the Ember Trilogy", or a line after a colon) is offered as Subtitle or Series.
+- [x] **CS6. Precedence when sources disagree.** Current code: docProps beats the cover lines (`suggestions.go:43-53`). Recommendation:
   - EPUB OPF metadata beats the front matter (publishers fill it in on purpose).
   - The front matter beats DOCX core properties.
   - DOCX properties are used only when the front matter found nothing, and never when the value looks like a machine default ("Microsoft Office User", "Author", "Title", a file name).
   - When two sources agree, confidence is high. When they disagree, the prompt prefills the winner and shows the other as a one-click alternative.
-- [ ] **CS7. Where does Narrator come from?**
+- [x] **CS7. Where does Narrator come from?**
   - (A) `General.narrator_name` only.
   - (B) As (A); when that is empty the prompt asks for it and, with a checked "Use for all my projects", saves it to the global setting rather than to the project override.
   - (C) Also suggest the operating system's display name.
 
   Recommendation: (B). (C) reads personal data the narrator did not give the app, and is often a login name or an employer's naming.
-- [ ] **CS8. Copyright tokens.** From `Copyright © 2026 Adrian Crow`, fill `[Year]` = 2026 and `[Copyright Holder]` = Adrian Crow. What goes in the free-form `[Copyright]` (C4)? "2026 Adrian Crow", "© 2026 Adrian Crow", or nothing? The contractual template reads "Copyright by [Copyright]." Recommendation: `[Copyright]` = "2026 by Adrian Crow", so the shipped with-copyright template reads naturally. Offer it only as a Settings suggestion (CS4 A), since the default templates do not use it.
-- [ ] **CS9. The upgrade case beyond credits.** Should the state-based "needs setup" check become a general pattern (a small per-project list of feature setups a project has seen), or stay credits-only? Recommendation: credits-only now, and record the pattern in the ADR so a later feature can reuse the manifest marker's shape.
-- [ ] **CS10. Improve the importer's own Cover heuristic too?** Detect runs over every `opening` chapter's lines, so the "Cover" label no longer matters to credits. Should `classifyPreHeading` also learn split title lines and bare bylines, so the import review shows a Cover section for this book? Recommendation: no, not in this PRD. It changes section grouping for every importer and moves ADR 0004's sites and the import-structure goldens, for no credits gain.
+- [x] **CS8. Copyright tokens.** From `Copyright © 2026 Adrian Crow`, fill `[Year]` = 2026 and `[Copyright Holder]` = Adrian Crow. What goes in the free-form `[Copyright]` (C4)? "2026 Adrian Crow", "© 2026 Adrian Crow", or nothing? The contractual template reads "Copyright by [Copyright]." Recommendation: `[Copyright]` = "2026 by Adrian Crow", so the shipped with-copyright template reads naturally. Offer it only as a Settings suggestion (CS4 A), since the default templates do not use it.
+- [x] **CS9. The upgrade case beyond credits.** Should the state-based "needs setup" check become a general pattern (a small per-project list of feature setups a project has seen), or stay credits-only? Recommendation: credits-only now, and record the pattern in the ADR so a later feature can reuse the manifest marker's shape.
+- [x] **CS10. Improve the importer's own Cover heuristic too?** Detect runs over every `opening` chapter's lines, so the "Cover" label no longer matters to credits. Should `classifyPreHeading` also learn split title lines and bare bylines, so the import review shows a Cover section for this book? Recommendation: no, not in this PRD. It changes section grouping for every importer and moves ADR 0004's sites and the import-structure goldens, for no credits gain.
 
 ## Users & Context
 
@@ -260,7 +260,7 @@ All three are prefilled in the prompt. Low confidence is marked "check this", an
     - `documentId`;
     - `dismissed`.
   - `CreditsSetupDismiss(scope)` stores `project.Manifest.CreditsSetup{DismissedFor: documentId, DismissedAt}`. The field is additive with `omitempty`, like `Credits` (`manifest.go:34-43`).
-  - Save reuses `CreditsSaveProjectValues`, merging over the loaded values so empty prompt fields never clear a set value. The global narrator is saved through the existing settings save binding.
+  - Save is a third binding, `CreditsSetupSave(fields)`, which merges over the loaded values on the host so an empty or stale prompt field never clears or replaces a set value (delivered 2026-09-25; `CreditsSaveProjectValues` replaces all ten fields, so reusing it would have put the merge rule in every caller). The global narrator is saved through the existing settings save binding.
   - With no manuscript, `needed` is false (nothing to detect from, and the Settings panel already covers that case).
 - **UI.**
   - A `CreditsSetupDialog` under `components/credits/` is built from `Dialog`, `Field`/`TextField` and `Checkbox`.
@@ -299,7 +299,7 @@ All three are prefilled in the prompt. Low confidence is marked "check this", an
 | # | Phase | Description | Status | Parallel | Depends | PRP Plan |
 | --- | --- | --- | --- | --- | --- | --- |
 | 1 | Detection | Fix the `storedPath` join; the front matter parser; EPUB OPF metadata; DOCX property filtering and CS6 precedence; `detected` in `CreditsProjectValues` with source captions in Settings > Credits | complete — the host-side detector, the `storedPath` fix, and the additive `detected` field were done and wire-tested first; `CreditsPanel.tsx` now shows a "Detected from …" source caption for every field with a candidate (not just Title/Author), via a new `settings/project-credits-detected` visual state (`?mockCredits=detected`) | - | CS3, CS5, CS6, CS8 | - |
-| 2 | Setup prompt | `CreditsSetupState` and `CreditsSetupDismiss`, the manifest marker, the dialog on Home after load and after import, the narrator default option, the ADR | pending | - | 1; CS1, CS2, CS4, CS7 | - |
+| 2 | Setup prompt | `CreditsSetupState` and `CreditsSetupDismiss`, the manifest marker, the dialog on Home after load and after import, the narrator default option, the ADR | host complete: `CreditsSetupState`, `CreditsSetupDismiss(session\|project)`, `CreditsSetupSave` (fills empty values only), `credits.SetupFields`/`OpenCandidates`/`FillEmpty`, `project.Manifest.CreditsSetup`, goldens `credits-setup-state-{needed,dismissed}.json`, `creditsSetupStateSchema`, mock `?mockCredits=setup`, `hostAPIVersion` 52 ([ADR 0208](../adr/0208-credits-values-are-asked-for-once-per-project-keyed-on-project-state-and-never-saved-without-the-narrator.md)). UI pending: the dialog, its sequencing on Home, visual and aria states (lane C, C4) | - | 1; CS1, CS2, CS4, CS7 | - |
 | 3 | Entry points | Banner on Home and above the Manuscript credits card, "Fill in" on `CreditsEntry`, ask again after Replace manuscript; steady-state docs and the credits PRD amendment | pending | - | 2 | - |
 | 4 | Import-time metadata (Could) | Markdown YAML front matter and DOCX `Title`/`Subtitle` styles kept as `sourceMetadata` at import, fed into Detect | pending | 3 | 1; CS10 | - |
 
@@ -354,6 +354,7 @@ Cross-cutting:
 | Open questions (owner, 2026-09-24) | Every open question takes this PRD's recommended answer, as shown in its approved Visual Spec mockups, except where a row below says otherwise | Answer each question separately | The owner approved the mockups that depict the recommendations; see D39 in the [implementation plan](implementation-plan.md#6-owner-decisions-2026-09-24) |
 | Unbuilt data in the real app (owner, 2026-09-24, D24) | Visible UI is built in full; in mock mode it runs on sample data, and in the real app a surface whose data is not built yet shows an honest "not available yet" state. Controls that would act on REAPER stay disabled with the reason | Hide unbuilt UI until its data exists | The owner can use and judge every screen now; each backend phase switches on a screen that already exists |
 | Prompt form (owner, 2026-09-24, CS1, D35) | A dialog once per project, then a banner while tokens stay unresolved | Banner only | The owner asked to be prompted; the banner keeps it from nagging |
+| Setup prompt host (2026-09-25, Phase 2, ADR 0208) | `CreditsSetupState` keys on state (manuscript, unresolved tokens of the first opening and closing templates, no dismissal); "Not now" is host memory per project and document, "Don't ask" is `creditsSetup.dismissedFor` on the manifest; `CreditsSetupSave` fills empty values only; the mock asks only with `?mockCredits=setup` | Reuse `CreditsSaveProjectValues`; store "Not now" in the UI | One merge rule on the host; the prompt must survive a Home remount within the session |
 | Title casing (owner, 2026-09-24, CS3, D34) | Re-case only an all-capitals title to title case; otherwise keep the book's own casing | Always title case | Matches the title display rule |
 
 ## Research Summary
@@ -375,7 +376,7 @@ Cross-cutting:
 ---
 
 *Generated: 2026-09-24*
-*Status: DRAFT - open questions CS1 to CS10 wait for the owner*
+*Status: in delivery - open questions answered (D34, D35, D39)*
 
 ## Visual Spec
 

@@ -278,6 +278,31 @@ export function CreditsSetStatus(kind: string, status: string): $CancellableProm
 }
 
 /**
+ * CreditsSetupDismiss records the narrator's answer to the prompt: "session" for "Not now" (this run of the app only)
+ * or "project" for "Don't ask for this project" (stored on the manifest for this manuscript). It returns the new state.
+ */
+export function CreditsSetupDismiss(scope: string): $CancellablePromise<string> {
+    return $Call.ByID(2480637187, scope);
+}
+
+/**
+ * CreditsSetupSave fills the project's empty credits values from the prompt's fields (Values JSON keys to values)
+ * and never replaces one already set, so an empty or stale prompt field cannot clear or overwrite the narrator's
+ * own value. It returns the new state. "Use for all my projects" saves the global narrator through the settings
+ * binding instead, with no narrator field here.
+ */
+export function CreditsSetupSave(fields: { [_ in string]?: string }): $CancellablePromise<string> {
+    return $Call.ByID(829535288, fields);
+}
+
+/**
+ * CreditsSetupState says whether to ask for the credits values and what to ask for. It only reads.
+ */
+export function CreditsSetupState(): $CancellablePromise<string> {
+    return $Call.ByID(2742126118);
+}
+
+/**
  * CreditsStatuses reads this project's credits row statuses. A kind never set is simply absent from the map; the UI
  * treats that the same way it treats a manuscript chapter with no note: "not_started".
  */

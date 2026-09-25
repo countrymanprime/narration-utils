@@ -3,6 +3,8 @@ import type {
   CreditsAnnouncement,
   CreditsProjectValuesResult,
   CreditsRenderResult,
+  CreditsSetupField,
+  CreditsSetupState,
   CreditsStatuses,
   CreditTemplate,
   CreditValues,
@@ -83,3 +85,26 @@ export const retailSampleAnswerSchema = z.object({
 const creditsStatusSchema = z.enum(['not_started', 'recording', 'editing', 'proofing', 'finalized']);
 
 export const creditsStatusesSchema = z.record(z.string(), creditsStatusSchema) satisfies z.ZodType<CreditsStatuses>;
+
+const setupFieldSchema = z.object({
+  token: z.string(),
+  field: creditValuesSchema.keyof(),
+  candidate: detectedCandidateSchema.nullable(),
+}) satisfies z.ZodType<CreditsSetupField>;
+
+/** `CreditsSetupState`, `CreditsSetupDismiss` and `CreditsSetupSave` (`apps/desktop/creditsetup.go`, ADR 0208). */
+export const creditsSetupStateSchema = z
+  .object({
+    needed: z.boolean(),
+    banner: z.boolean(),
+    dismissed: z.enum(['', 'session', 'project']),
+    dismissedAt: z.string().nullable(),
+    documentId: z.string(),
+    narratorGlobal: z.string(),
+    fields: listFromNull(setupFieldSchema),
+    candidates: listFromNull(detectedCandidateSchema),
+  })
+  .refine((state) => !state.needed || (state.dismissed === '' && state.fields.length > 0), {
+    message: 'the dialog is needed only with fields to ask for and no dismissal',
+    path: ['needed'],
+  }) satisfies z.ZodType<CreditsSetupState>;
