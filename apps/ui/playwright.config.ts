@@ -14,6 +14,10 @@ const LAUNCH = { args: ['--disable-partial-raster'] };
 // vite preview's own default) when another project's preview is already listening there.
 const PORT = Number(process.env.UI_APP_PORT ?? 4173);
 const ORIGIN = `http://localhost:${PORT}`;
+// UI_VISUAL_CHECK_RUN=1: a run that captures nothing and only judges the capture records already in screenshots/.run,
+// brought together from every shard of a sharded run (tests/visual/global-setup.ts; the ui-visual CI job, ADR 0243). It
+// selects no test (run it with --pass-with-no-tests) and so needs no server.
+const CHECK_RUN = process.env.UI_VISUAL_CHECK_RUN === '1';
 
 export default defineConfig({
   testDir: './tests/visual',
@@ -35,11 +39,15 @@ export default defineConfig({
     video: 'off',
     screenshot: 'off',
   },
-  webServer: {
-    command: `pnpm run build:mock && pnpm exec vite preview --outDir node_modules/.cache/mock-build --port ${PORT} --strictPort`,
-    url: ORIGIN,
-    // Always build fresh: attaching to an old preview would screenshot an old bundle.
-    reuseExistingServer: false,
-    timeout: 120_000,
-  },
+  ...(CHECK_RUN
+    ? { testIgnore: '**' }
+    : {
+        webServer: {
+          command: `pnpm run build:mock && pnpm exec vite preview --outDir node_modules/.cache/mock-build --port ${PORT} --strictPort`,
+          url: ORIGIN,
+          // Always build fresh: attaching to an old preview would screenshot an old bundle.
+          reuseExistingServer: false,
+          timeout: 120_000,
+        },
+      }),
 });

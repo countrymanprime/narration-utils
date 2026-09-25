@@ -3,6 +3,20 @@
 `ui-atlas sync` refreshes the vendored core files (`plugin/templates/core`) and stamps the version. It does NOT touch
 scaffold files (yours after `init`), so the **Adopt by hand** lines below are what to copy across on upgrade.
 
+## 0.3.7
+
+- **Core:** the app suite can run sharded. `global-setup.ts` receives Playwright's config and, when the run is a shard
+  (`--shard=i/n` with n > 1), its teardown judges only that shard's captures (blank screenshots, the axe summary) and
+  skips the checks that compare captures with each other (identical screenshots, stale `sameAs`), since a shard sees only
+  some of them. Those run in a **check run**: with `UI_VISUAL_CHECK_RUN=1` the setup keeps `screenshots/.run` instead of
+  clearing it, and the teardown judges the records found there (brought together from every shard) with every run-wide
+  check, plus `findMissingCaptures` (`lib/validators.ts`): each `{page, state, viewport}` the catalog drives must have a
+  record, so a shard that never ran fails the check run instead of passing unseen. An unsharded run is unchanged.
+  **Adopt by hand:** to shard in CI, run `screenshots --shard=i/n` on n runners, upload each `screenshots/` (with
+  `include-hidden-files: true`: the records live in `.run`), download them into one `screenshots/` and run
+  `UI_VISUAL_CHECK_RUN=1 playwright test tests/visual --pass-with-no-tests`. Your `playwright.config.ts` should drop the
+  `webServer` and select no test in a check run (`testIgnore: '**'`), as this repo's `apps/ui/playwright.config.ts` does.
+
 ## 0.3.6
 
 - **Core, opt-in:** a project can declare `export const documentScroll = 'locked'` from its `app.drivers.ts` to turn on

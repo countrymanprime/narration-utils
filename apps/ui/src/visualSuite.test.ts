@@ -12,6 +12,7 @@ import {
   disambiguateLabels,
   findBlankCaptures,
   findCollapsedControls,
+  findMissingCaptures,
   findNarrowestControl,
   findStaleSameAs,
   findUndeclaredDuplicates,
@@ -76,6 +77,19 @@ describe('findBlankCaptures', () => {
 
   test('returns nothing when every capture has visible content', () => {
     expect(findBlankCaptures([record('home', 'default', 'desktop', 'a')])).toEqual([]);
+  });
+});
+
+describe('findMissingCaptures', () => {
+  test('names the expected captures that have no record, as <viewport>/<page>__<state>', () => {
+    const records = [record('home', 'default', 'desktop', 'a'), record('home', 'default', 'tablet', 'a')];
+    const expected = ['desktop/home__default', 'tablet/home__default', 'desktop/tracks__empty'];
+    expect(findMissingCaptures(records, expected)).toEqual(['desktop/tracks__empty']);
+  });
+
+  test('returns nothing when every expected capture was made, extra records included', () => {
+    const records = [record('home', 'default', 'desktop', 'a'), record('home', 'other', 'desktop', 'b')];
+    expect(findMissingCaptures(records, ['desktop/home__default'])).toEqual([]);
   });
 });
 

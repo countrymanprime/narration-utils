@@ -1,11 +1,13 @@
-// ui-atlas-kit 0.3.4 vendored: do not edit here. Change plugin/templates/core in the kit and run `ui-atlas sync`.
+// ui-atlas-kit 0.3.7 vendored: do not edit here. Change plugin/templates/core in the kit and run `ui-atlas sync`.
 import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
+import type { FullConfig } from '@playwright/test';
 import * as appDrivers from './app.drivers';
 import { RUN_DIR, screenshotDir } from './helpers/settle';
 import {
   checkAxeModeForCi,
   findBlankCaptures,
+  findMissingCaptures,
   findNarrowestControl,
   findStaleSameAs,
   findUndeclaredDuplicates,
@@ -17,7 +19,13 @@ import {
 import { STATE_CATALOG } from './state-catalog';
 import { VIEWPORTS } from './viewports';
 
+// `UI_VISUAL_CHECK_RUN=1` makes a run that captures nothing: it only judges the records already in RUN_DIR, which a CI job
+// assembled from every shard of a sharded run (`--shard`). A shard judges only its own captures, so the checks that compare
+// captures with each other (identical screenshots, stale sameAs) and the check that every capture was made wait for this.
+const CHECK_RUN_ENV = 'UI_VISUAL_CHECK_RUN';
+
 function readRecords(): CaptureRecord[] {
+  if (!existsSync(RUN_DIR)) return [];
   return readdirSync(RUN_DIR, { withFileTypes: true })
     .filter((viewportDir) => viewportDir.isDirectory())
     .flatMap((viewportDir) =>
@@ -48,15 +56,30 @@ function pruneStaleScreenshots(): void {
   }
 }
 
+// Every {page, state, viewport} the catalog drives, as `<viewport>/<page>__<state>`: what a merged sharded run must hold.
+function expectedCaptures(): string[] {
+  const drivers = (appDrivers as { APP_DRIVERS?: Record<string, Record<string, unknown>> }).APP_DRIVERS ?? {};
+  return STATE_CATALOG.filter((entry) => drivers[entry.page]?.[entry.state]).flatMap((entry) =>
+    [...VIEWPORTS, ...(entry.extraViewports ?? [])].map((viewport) => `${viewport.name}/${entry.page}__${entry.state}`),
+  );
+}
+
 // Playwright runs this once before the suite; the function it returns runs
 // once after. The per-test checks (console errors, overflow) can only judge one
 // capture at a time - this teardown judges the run as a whole, so a screenshot
 // that silently documents nothing new fails the run instead of waiting for a
 // reviewer to happen to notice.
-export default function globalSetup(): () => Promise<void> {
-  rmSync(RUN_DIR, { recursive: true, force: true });
-  mkdirSync(RUN_DIR, { recursive: true });
-  pruneStaleScreenshots();
+//
+// Sharded (`--shard=i/n`), each shard's teardown judges its own captures, and a check run (CHECK_RUN_ENV) over the records
+// of every shard makes the comparisons across captures.
+export default function globalSetup(config: FullConfig): () => Promise<void> {
+  const checkRun = process.env[CHECK_RUN_ENV] === '1';
+  const sharded = (config.shard?.total ?? 1) > 1;
+  if (!checkRun) {
+    rmSync(RUN_DIR, { recursive: true, force: true });
+    mkdirSync(RUN_DIR, { recursive: true });
+    pruneStaleScreenshots();
+  }
   // Resolved once here as well as per capture: a mistyped UI_AXE fails the run at its start, not after every capture.
   const declaresAxeDebt = (appDrivers as { axeDebt?: readonly AxeDebt[] }).axeDebt !== undefined;
   const axeMode = resolveAxeMode(process.env.UI_AXE, declaresAxeDebt);
@@ -81,16 +104,26 @@ export default function globalSetup(): () => Promise<void> {
         }
       }
     }
+    if (sharded)
+      console.log(`shard ${config.shard?.current}/${config.shard?.total}: identical-screenshot and sameAs checks run over every shard (${CHECK_RUN_ENV}=1)`);
+    const missing = checkRun ? findMissingCaptures(records, expectedCaptures()) : [];
     const problems = [
       ...checkAxeModeForCi(axeMode, declaresAxeDebt, Boolean(process.env.CI), process.env.UI_AXE),
+      ...(checkRun && records.length === 0 ? [`no capture records in ${RUN_DIR}: a check run judges the records of a run that already captured`] : []),
+      ...(missing.length > 0 ? [`${missing.length} capture(s) have no record, first: ${missing.slice(0, 5).join(', ')} - did every shard run?`] : []),
       ...findBlankCaptures(records).map((record) => `blank screenshot: ${record.page}/${record.state} at ${record.viewport}`),
-      ...findUndeclaredDuplicates(records, STATE_CATALOG).map(
-        (group) =>
-          `identical screenshots at ${group.viewport}: ${group.states.join(' == ')} - fix the driver, or declare sameAs on the row in state-catalog.ts`,
-      ),
-      ...findStaleSameAs(records, STATE_CATALOG).map(
-        (stale) => `sameAs no longer holds at ${stale.viewport}: ${stale.state} was declared identical to ${stale.of} but now differs - remove the declaration`,
-      ),
+      ...(sharded
+        ? []
+        : [
+            ...findUndeclaredDuplicates(records, STATE_CATALOG).map(
+              (group) =>
+                `identical screenshots at ${group.viewport}: ${group.states.join(' == ')} - fix the driver, or declare sameAs on the row in state-catalog.ts`,
+            ),
+            ...findStaleSameAs(records, STATE_CATALOG).map(
+              (stale) =>
+                `sameAs no longer holds at ${stale.viewport}: ${stale.state} was declared identical to ${stale.of} but now differs - remove the declaration`,
+            ),
+          ]),
     ];
     if (problems.length > 0) throw new Error(`Visual suite validation failed:\n  ${problems.join('\n  ')}`);
   };

@@ -1,4 +1,4 @@
-// ui-atlas-kit 0.3.6 vendored: do not edit here. Change plugin/templates/core in the kit and run `ui-atlas sync`.
+// ui-atlas-kit 0.3.7 vendored: do not edit here. Change plugin/templates/core in the kit and run `ui-atlas sync`.
 // Pure checks over what one visual-suite run captured. Kept free of Playwright
 // and Node APIs so they are unit-tested by Vitest (src/visualSuite.test.ts) and
 // reused unchanged by global-setup.ts's post-run teardown.
@@ -192,6 +192,13 @@ export function findUndeclaredDuplicates(records: readonly CaptureRecord[], decl
     }
   }
   return groups;
+}
+
+// Captures a run should hold (`<viewport>/<page>__<state>`, the layout of the run records) that have no record: in a check
+// run over a sharded suite, a shard that never ran or whose records were not brought together with the others'.
+export function findMissingCaptures(records: readonly CaptureRecord[], expected: readonly string[]): string[] {
+  const made = new Set(records.map((record) => `${record.viewport}/${record.page}__${record.state}`));
+  return expected.filter((key) => !made.has(key));
 }
 
 // A sameAs declaration is an allowlist entry; an allowlist only stays honest if
