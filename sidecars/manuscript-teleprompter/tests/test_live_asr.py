@@ -740,3 +740,75 @@ def test_meter_mode_needs_a_microphone_and_takes_no_session_options(extra, monke
         live_asr.main()
 
     assert "--meter" in capsys.readouterr().err
+
+
+# Pause (read-aloud-control-bar PRD Phase 5): while paused the device stays open and its level still shows, but the
+# engine hears nothing and the tracker's clock stands still, so it never reports `waiting` for the pause itself.
+def test_a_paused_stream_clock_stands_still_and_resumes_without_the_pause():
+    wall = [10.0]
+    clock = live_asr.StreamClock(capture_started=10.0, time_fn=lambda: wall[0])
+    wall[0] = 12.0
+    clock.pause()
+    wall[0] = 40.0
+
+    assert clock.now() == pytest.approx(2.0)
+
+    clock.resume()
+    wall[0] = 41.0
+    assert clock.now() == pytest.approx(3.0)
+
+
+def test_pausing_twice_or_resuming_while_listening_changes_nothing():
+    clock = live_asr.StreamClock()
+    clock.resume()
+    clock.note_chunk(np.zeros(HALF_SECOND, dtype=np.float32))
+    clock.pause()
+    clock.pause()
+    clock.note_chunk(np.zeros(HALF_SECOND, dtype=np.float32))
+    clock.resume()
+    clock.note_chunk(np.zeros(HALF_SECOND, dtype=np.float32))
+
+    assert clock.now() == pytest.approx(1.0)
+
+
+def test_gated_drops_chunks_while_paused():
+    paused = iter([False, True, True, False])
+
+    passed = list(live_asr.gated(_chunks(4), lambda: next(paused)))
+
+    assert len(passed) == 2
+
+
+def test_a_paused_session_hears_nothing_keeps_its_levels_and_does_not_wait(tmp_path, capsys, monkeypatch):
+    monkeypatch.syspath_prepend(str(LIVE_ASR_PATH.parent))
+    script = tmp_path / "script.txt"
+    script.write_text("one two three four", encoding="utf-8")
+    control = tmp_path / "c.ctl"
+    control.write_text("")
+    ap = live_asr.build_parser()
+    args = ap.parse_args(["--wav", "r.wav", "--script", str(script), "--control-file", str(control)])
+    tracker, _script_event, _text = live_asr._load_script(ap, args)
+    heard_chunks = []
+
+    def chunks():
+        # Two chunks heard, pause, ten chunks (5 s) of pause, resume, two chunks heard.
+        for index in range(14):
+            if index == 2:
+                control.write_text('{"cmd": "pause"}\n')
+            if index == 12:
+                control.write_text('{"cmd": "pause"}\n{"cmd": "resume"}\n')
+            yield np.full(HALF_SECOND, index, dtype=np.float32)
+
+    def stream(audio):
+        for chunk in audio:
+            heard_chunks.append(int(chunk[0]))
+            if len(heard_chunks) == 1:
+                yield {"type": "word", "segment": 0, "word": "one", "start": 0.0, "end": 0.1}
+        yield {"type": "segment_end", "segment": 0}
+
+    live_asr._run(args, stream, chunks(), tracker)
+
+    printed = [json.loads(line) for line in capsys.readouterr().out.splitlines()]
+    assert heard_chunks == [0, 1, 12, 13]
+    assert len([event for event in printed if event["type"] == "level"]) == 14 * 5
+    assert all(event["status"] != "waiting" for event in printed if event["type"] == "position")

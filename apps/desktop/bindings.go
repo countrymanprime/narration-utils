@@ -659,6 +659,18 @@ func (h *Host) TeleprompterMeterStop() (string, error) {
 	return encodeBinding(nil, nil)
 }
 
+// TeleprompterPause stops (true) or restarts (false) a running session's listening without ending it
+// (read-aloud-control-bar.prd.md Phase 5, ADR 0248): the microphone stays open and its level still shows, the recognizer
+// hears nothing and the tracker holds its word. The state keeps phase "running" with `paused` set. It errors when no
+// session is running.
+func (h *Host) TeleprompterPause(paused bool) (string, error) {
+	service := h.services().teleprompter
+	if service == nil {
+		return "", fmt.Errorf("the teleprompter service is unavailable")
+	}
+	return encodeBinding(nil, service.Pause(paused))
+}
+
 // teleprompterDevicesTimeout bounds one `--list-devices` sidecar run: it prints one JSON line and exits, so this only
 // needs to cover process start-up and dshow's own listing time, not anything as slow as a model load.
 const teleprompterDevicesTimeout = 10 * time.Second
@@ -695,7 +707,7 @@ func (h *Host) TeleprompterState() (string, error) {
 	if service := h.services().teleprompter; service != nil {
 		return encodeBinding(service.Snapshot(), nil)
 	}
-	return encodeBinding(map[string]any{"phase": "idle", "script": nil, "position": nil}, nil)
+	return encodeBinding(map[string]any{"phase": "idle", "paused": false, "script": nil, "position": nil}, nil)
 }
 func (h *Host) TranscriptCancel() (string, error) {
 	if service := h.services().transcript; service != nil {

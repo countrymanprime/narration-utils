@@ -32,7 +32,7 @@ func TestContractRunningStateFromTheSidecarsOwnEvents(t *testing.T) {
 	}
 	var relayed int
 	service := New(Config{}, nil, func(json.RawMessage) { relayed++ }, nil)
-	service.state = map[string]any{"phase": "running", "message": "Listening…", "engine": "whisper", "chapter": "c1"}
+	service.state = map[string]any{"phase": "running", "message": "Listening…", "engine": "whisper", "chapter": "c1", "paused": false}
 	for _, event := range events {
 		service.onLine(string(event))
 	}

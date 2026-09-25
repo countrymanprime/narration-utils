@@ -114,7 +114,7 @@ func New(config Config, sidecars *process.Supervisor, emit func(json.RawMessage)
 }
 
 func idleState() map[string]any {
-	return map[string]any{"phase": "idle", "message": "Choose a chapter to start the teleprompter.", "engine": nil, "chapter": nil}
+	return map[string]any{"phase": "idle", "message": "Choose a chapter to start the teleprompter.", "engine": nil, "chapter": nil, "paused": false}
 }
 
 func active(phase string) bool {
@@ -342,7 +342,7 @@ func (s *Service) begin(plan launch) error {
 		s.mu.Unlock()
 		return errors.New("a teleprompter session is already running")
 	}
-	s.state = map[string]any{"phase": "starting", "message": "Starting the teleprompter…", "engine": plan.engine, "chapter": plan.chapter}
+	s.state = map[string]any{"phase": "starting", "message": "Starting the teleprompter…", "engine": plan.engine, "chapter": plan.chapter, "paused": false}
 	s.script, s.position, s.stopping, s.stopFile, s.controlFile, s.scriptFile = nil, nil, false, plan.stopFile, plan.controlFile, plan.scriptFile
 	s.cancelAutoStopLocked()
 	s.autoStopped = false
@@ -498,7 +498,7 @@ func (s *Service) watch(child *process.StreamChild, cancel context.CancelFunc, f
 	} else {
 		s.state["phase"], s.state["message"] = "error", failureMessage(code, child.StderrTail(), "The teleprompter stopped unexpectedly")
 	}
-	s.child, s.stopping = nil, false
+	s.child, s.stopping, s.state["paused"] = nil, false, false
 	s.mu.Unlock()
 	close(finished)
 	_ = os.Remove(stopFile)
@@ -575,7 +575,50 @@ func (s *Service) Seek(word int) error {
 	if child == nil {
 		return errors.New("no teleprompter session is running")
 	}
-	line, err := json.Marshal(map[string]any{"cmd": "seek", "word": word})
+	return appendControl(controlFile, map[string]any{"cmd": "seek", "word": word})
+}
+
+// Pause stops (true) or restarts (false) a running session's listening without ending it (read-aloud-control-bar PRD
+// Phase 5, ADR 0248): a `pause` or `resume` line on the control file, where the sidecar keeps the device open but drops
+// what it hears and stands the tracker's clock still. The state keeps phase "running" and gains `paused`; flags are
+// kept only when the session ends, as before. A pending auto-stop is cancelled by a pause and armed again by a resume
+// at Done. Pausing a paused session (or resuming a listening one) changes nothing.
+func (s *Service) Pause(pause bool) error {
+	s.mu.RLock()
+	phase, _ := s.state["phase"].(string)
+	current, _ := s.state["paused"].(bool)
+	child, stopping, controlFile := s.child, s.stopping, s.controlFile
+	s.mu.RUnlock()
+	if child == nil || stopping || phase != "running" {
+		return errors.New("no teleprompter session is running")
+	}
+	if current == pause {
+		return nil
+	}
+	command := "resume"
+	if pause {
+		command = "pause"
+	}
+	if err := appendControl(controlFile, map[string]any{"cmd": command}); err != nil {
+		return err
+	}
+	s.mu.Lock()
+	s.state["paused"] = pause
+	if pause {
+		s.cancelAutoStopLocked()
+		s.state["message"] = pausedMessage
+	} else {
+		s.state["message"] = listeningMessage
+		s.trackAutoStopLocked(positionStatus(s.position) == positionDoneStatus)
+	}
+	s.mu.Unlock()
+	s.notify()
+	return nil
+}
+
+// appendControl appends one command line to a session's control file (control_channel.py tails it).
+func appendControl(controlFile string, command map[string]any) error {
+	line, err := json.Marshal(command)
 	if err != nil {
 		return err
 	}

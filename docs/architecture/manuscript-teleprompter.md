@@ -437,6 +437,14 @@ sidecar's last stderr line as `error` when it failed by itself) when it ends
 ([ADR 0247](../adr/0247-the-input-level-comes-from-the-sidecars-own-capture-and-a-model-free-meter-child-runs-before-start.md)).
 Level events never enter the snapshot or the session model.
 
+A running session can pause without ending: `TeleprompterPause(true)` appends
+`{"cmd": "pause"}` to the control file (and `false`, `{"cmd": "resume"}`). While
+paused the sidecar keeps the device open and reports its level, drops every
+chunk before the engine and stands the tracker's clock still, so no `waiting`
+is reported for the pause. The host's state stays `running` with `paused: true`
+and no auto-stop is armed; flags are kept only when the session ends
+([ADR 0248](../adr/0248-pause-is-a-pause-and-resume-pair-on-the-control-file-and-a-paused-session-stays-running.md)).
+
 ## UI: what shipped and what is still open
 
 **Shipped (Teleprompter page, `apps/ui/src/components/teleprompter/`).** Pick a

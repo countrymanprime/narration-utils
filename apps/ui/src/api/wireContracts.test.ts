@@ -398,6 +398,20 @@ describe('golden payloads written by the Go host and the Python sidecars', () =>
     events.forEach((event) => expectMatches(teleprompterEventSchema, event, 'mock meter event'));
   });
 
+  it('the mock pauses only a running session, and its paused state passes the state schema', async () => {
+    const api = createMockApi({}, { teleprompter: 'listening' });
+    const states: unknown[] = [];
+    api.subscribeTeleprompterState((state) => states.push(state));
+    await api.teleprompterState();
+    await api.teleprompterPause(true);
+    expect(await api.teleprompterState()).toMatchObject({ phase: 'running', paused: true, message: 'Paused.' });
+    await api.teleprompterPause(false);
+    expect(await api.teleprompterState()).toMatchObject({ phase: 'running', paused: false });
+    states.forEach((state) => expectMatches(teleprompterStateSchema, state, 'mock paused state'));
+    await api.teleprompterStop();
+    await expect(api.teleprompterPause(true)).rejects.toThrow('no teleprompter session is running');
+  });
+
   it('the stage cause and refusal lists are the ones the host declares', () => {
     expect([...STAGE_UNKNOWN_CAUSES]).toEqual(z.array(z.string()).parse(readGolden('stages-causes.json')));
     expect([...STAGE_REFUSAL_REASONS]).toEqual(z.array(z.string()).parse(readGolden('stages-refusal-reasons.json')));
@@ -1884,6 +1898,7 @@ describe('answers of the mock client for the settings, voice, model, transcript 
       'teleprompterStop',
       'teleprompterMeterStart',
       'teleprompterMeterStop',
+      'teleprompterPause',
       'dawCatalogOpenDownloadPage',
       'teleprompterSeek',
       'reportClientDiagnostic',

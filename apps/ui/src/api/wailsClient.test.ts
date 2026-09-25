@@ -525,7 +525,15 @@ describe('wailsClient', () => {
     expect(start).toHaveBeenCalledWith(options);
     await wailsClient.teleprompterStop();
     expect(stop).toHaveBeenCalledWith();
-    await expect(wailsClient.teleprompterState()).resolves.toEqual({ phase: 'idle', message: '', engine: null, chapter: null, script: null, position: null });
+    await expect(wailsClient.teleprompterState()).resolves.toEqual({
+      phase: 'idle',
+      message: '',
+      engine: null,
+      chapter: null,
+      paused: false,
+      script: null,
+      position: null,
+    });
   });
 
   it('sends the credits kind, not a chapter, to TeleprompterStart for the credits (credits PRD Phase 4)', async () => {
@@ -654,7 +662,7 @@ describe('live events (ADR 0069: dropped and counted, never thrown inside the ca
     emit({ phase: 'running' });
     emit({ phase: 'paused' });
     expect(onState).toHaveBeenCalledTimes(1);
-    expect(onState).toHaveBeenCalledWith({ phase: 'running', message: '', engine: null, chapter: null, script: null, position: null });
+    expect(onState).toHaveBeenCalledWith({ phase: 'running', message: '', engine: null, chapter: null, paused: false, script: null, position: null });
   });
 
   it('drops a project-attach event with the wrong shape', async () => {

@@ -73,6 +73,7 @@ var stressReaders = []stressReader{
 	{"TeleprompterSeek", func(h *Host) { _, _ = h.TeleprompterSeek(1) }},
 	{"TeleprompterMeterStart", func(h *Host) { _, _ = h.TeleprompterMeterStart("Microphone Array") }},
 	{"TeleprompterMeterStop", func(h *Host) { _, _ = h.TeleprompterMeterStop() }},
+	{"TeleprompterPause", func(h *Host) { _, _ = h.TeleprompterPause(true) }},
 	{"ChapterTrackMatch", func(h *Host) { _, _ = h.ChapterTrackMatch("c-0001") }},
 	{"ChapterTrackLinks", func(h *Host) { _, _ = h.ChapterTrackLinks() }},
 	{"ChapterTrackSet (unknown chapter)", func(h *Host) { _, _ = h.ChapterTrackSet("missing", "track-guid") }},

@@ -212,3 +212,4 @@ The `design-spec-guard` skill (`.claude/skills/design-spec-guard/`) reads this f
 | [0245](0245-chapter-and-credits-regions-are-planned-by-the-host-from-confirmed-links-and-the-saved-project.md) | Chapter and credits regions are planned by the host from confirmed links and the saved project | Proposed |
 | [0246](0246-punch-and-roll-moves-only-the-edit-cursor-and-anchors-words-by-a-polled-play-position.md) | Punch and roll moves only the edit cursor, and anchors words by a polled play position | Proposed |
 | [0247](0247-the-input-level-comes-from-the-sidecars-own-capture-and-a-model-free-meter-child-runs-before-start.md) | The input level comes from the sidecar's own capture, and a model-free meter child runs before Start | Accepted |
+| [0248](0248-pause-is-a-pause-and-resume-pair-on-the-control-file-and-a-paused-session-stays-running.md) | Pause is a pause and resume pair on the control file, and a paused session stays running | Accepted (amends ADR-0104) |
