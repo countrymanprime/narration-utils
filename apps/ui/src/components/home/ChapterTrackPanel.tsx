@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useApi } from '../../api/ApiContext';
 import { describeApiError } from '../../api/errorMessage';
+import type { ManuscriptContentKind } from '../../api/contracts/manuscript';
 import type { ChapterTrackLink, ChapterTrackSummary, Track } from '../../types';
 import { formatAudioTime, formatWhen } from './recordingCheckText';
 import { MappingConfirm } from '../mapping/MappingConfirm';
@@ -8,6 +9,7 @@ import { Button } from '../primitives/Button';
 import { SlideOver } from '../primitives/SlideOver';
 import type { Notify } from '../primitives/Toast';
 import { chapterTrackButtonState } from './chapterTrackButtonState';
+import { RemoveFromRecordingDialog } from './RemoveFromRecordingDialog';
 
 const EYEBROW = "font-['Barlow_Condensed',sans-serif] text-[0.72rem] font-semibold tracking-[0.08em] text-[var(--text-muted)] uppercase";
 
@@ -16,8 +18,8 @@ const EYEBROW = "font-['Barlow_Condensed',sans-serif] text-[0.72rem] font-semibo
  * project knows about the chapter's track as of its last save, and the narrator's link/relink/unlink actions. Reuses
  * MappingConfirm for the track picker, so Change/Clear behave the same way here as on the Tracks page - one host
  * operation (`chapterTrackSet`) makes a relink atomic (Phase 1), so a narrator can never end up with two links.
- * "Remove from recording" is chapter-track-link-control.prd.md Phase 3, not built yet (D24): it needs a manuscript
- * binding this lane's UI-only scope does not add.
+ * "Remove from recording" (Phase 3) opens from here too: the chapter's own reclassification, so it lives beside its
+ * track controls rather than on the row itself.
  */
 export function ChapterTrackPanel({
   open,
@@ -29,6 +31,7 @@ export function ChapterTrackPanel({
   notify,
   onClose,
   onChanged,
+  onRemoveFromRecording,
 }: {
   open: boolean;
   chapterId: string;
@@ -42,11 +45,15 @@ export function ChapterTrackPanel({
   onClose: () => void;
   /** Re-reads ChapterTrackLinks after a link, relink or unlink. */
   onChanged: () => Promise<void>;
+  /** Reclassifies the chapter (manuscriptSetChapterKind); the caller re-reads the chapter list and ChapterTrackLinks
+   * and shows its own notify/error. Rejects on failure, which keeps the confirm open for a retry. */
+  onRemoveFromRecording: (kind: ManuscriptContentKind) => Promise<void>;
 }) {
   const api = useApi();
   const [tracks, setTracks] = useState<Track[]>();
   const [tracksError, setTracksError] = useState('');
   const [busy, setBusy] = useState(false);
+  const [removeOpen, setRemoveOpen] = useState(false);
 
   useEffect(() => {
     if (!open) return;
@@ -81,6 +88,18 @@ export function ChapterTrackPanel({
       await onChanged();
     } catch (error) {
       notify(describeApiError(error), 'error');
+    } finally {
+      setBusy(false);
+    }
+  };
+  const remove = async (kind: ManuscriptContentKind) => {
+    setBusy(true);
+    try {
+      await onRemoveFromRecording(kind);
+      setRemoveOpen(false);
+      onClose();
+    } catch {
+      // The caller already showed why (its own notify); leave the confirm open so the narrator can retry or cancel.
     } finally {
       setBusy(false);
     }
@@ -177,7 +196,18 @@ export function ChapterTrackPanel({
               />
             )}
           </section>
+          <section aria-labelledby="chapter-track-remove" className="space-y-2 border-t border-[var(--border)] pt-3">
+            <h3 id="chapter-track-remove" className="sr-only">
+              Chapter
+            </h3>
+            <Button variant="ghost" onClick={() => setRemoveOpen(true)}>
+              Remove from recording…
+            </Button>
+          </section>
         </div>
+      )}
+      {removeOpen && (
+        <RemoveFromRecordingDialog chapterTitle={chapterTitle} busy={busy} onConfirm={(kind) => void remove(kind)} onCancel={() => setRemoveOpen(false)} />
       )}
     </SlideOver>
   );

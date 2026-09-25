@@ -3,6 +3,7 @@ package main
 import (
 	"errors"
 	"fmt"
+	"os"
 	"sync"
 	"time"
 
@@ -10,6 +11,7 @@ import (
 	"github.com/countrymanprime/narration-utils/shell/internal/chaptersync"
 	"github.com/countrymanprime/narration-utils/shell/internal/evidence"
 	"github.com/countrymanprime/narration-utils/shell/internal/project"
+	"github.com/countrymanprime/narration-utils/shell/internal/tracks"
 )
 
 // Chapter sync's consent and first sync (daw-chapter-track-auto-sync.prd.md Phase 3, ADR 0209). The narrator is asked
@@ -59,7 +61,9 @@ type chapterSyncBatch = chaptersync.Activity
 // last stored snapshot's time (null before the first sync). Batch is set only on the answer or event of a sync that
 // linked something or found a new unmatched track. UnsavedEdits says REAPER, running this project, has edits since the
 // last sync that are not saved yet (Phase 4: the heartbeat's edit counter moved; a sync reads only the saved file).
-// Activity is the stored list of batches, newest first (the Tracks page's Sync activity).
+// Activity is the stored list of batches, newest first (the Tracks page's Sync activity). Chapters is one row per
+// narration chapter with its link and the status of its recording check (Phase 6), when the manuscript and the saved
+// .rpp can be read; empty otherwise.
 type chapterSyncState struct {
 	Consent      string                 `json:"consent"`
 	DecidedAt    *time.Time             `json:"decidedAt"`
@@ -75,6 +79,29 @@ type chapterSyncState struct {
 	Batch        *chapterSyncBatch      `json:"batch"`
 	UnsavedEdits bool                   `json:"unsavedEdits"`
 	Activity     []chaptersync.Activity `json:"activity"`
+	Chapters     []chapterSyncChapter   `json:"chapters"`
+}
+
+// chapterSyncChapter is one narration chapter's status without a click (daw-chapter-track-auto-sync.prd.md Phase 6,
+// S14): its link (TrackGUID, TrackName and Origin are empty when it has none), whether its recording check is current,
+// stale (Reasons say why) or never run, from the recording check's own evaluation against the saved .rpp (no check is
+// started, Q14), when that check last finished, and whether one is running now. The last change is the later of two
+// times: TrackChangedAt, the sync at which the linked track's items last changed (chaptersync.TrackState.ChangedAt;
+// null until a sync after the first sees a change), and NewestSourceAt, the newest modification time of an audio file
+// the track plays (a new recording writes a new file).
+type chapterSyncChapter struct {
+	ChapterID      string     `json:"chapterId"`
+	ChapterTitle   string     `json:"chapterTitle"`
+	TrackGUID      string     `json:"trackGuid"`
+	TrackName      string     `json:"trackName"`
+	Origin         string     `json:"origin"`
+	Freshness      string     `json:"freshness"`
+	Reasons        []string   `json:"reasons"`
+	CheckedAt      *time.Time `json:"checkedAt"`
+	Checking       bool       `json:"checking"`
+	TrackChangedAt *time.Time `json:"trackChangedAt"`
+	NewestSourceAt *time.Time `json:"newestSourceAt"`
+	LastChanged    *time.Time `json:"lastChanged"`
 }
 
 // chapterSyncPreview is ChapterSyncPreview's payload: the plan a sync would carry out now, and the links it keeps.
@@ -121,6 +148,8 @@ type chapterSyncInputs struct {
 	projectFile string
 	savedAt     string
 	parsed      bool
+	// parsedProject is the saved .rpp as plan read it (when parsed).
+	parsedProject tracks.Project
 	// unsavedEdits is the watcher's answer for this project (chaptersync_watch.go).
 	unsavedEdits bool
 }
@@ -177,7 +206,7 @@ func (in *chapterSyncInputs) plan(now time.Time) (chaptersync.Plan, []evidence.T
 	parsed, state, message := readLinksProject(in.svc)
 	in.project, in.message = state, message
 	if state == linksProjectReady {
-		in.projectFile, in.savedAt, in.parsed = parsed.Path, savedAt(parsed.Path), true
+		in.projectFile, in.savedAt, in.parsed, in.parsedProject = parsed.Path, savedAt(parsed.Path), true, parsed
 	}
 	if in.store == nil || state != linksProjectReady {
 		return chaptersync.Plan{}, nil, false, nil
@@ -222,10 +251,12 @@ func (in chapterSyncInputs) stateOf(plan chaptersync.Plan, kept []evidence.Track
 	state.UnsavedEdits = in.unsavedEdits
 	store := chaptersync.NewStore(in.svc.config.projectFolder)
 	state.Activity = store.Activity()
-	if snapshot := store.Read(); !snapshot.SyncedAt.IsZero() {
+	snapshot := store.Read()
+	if !snapshot.SyncedAt.IsZero() {
 		synced := snapshot.SyncedAt
 		state.LastSync = &synced
 	}
+	state.Chapters = in.chapterRows(snapshot)
 	if planned {
 		state.Counts = chapterSyncCounts{
 			Linked: len(kept) + len(plan.AutoLink), NeedsYou: len(plan.NeedsYou), NoTrack: len(plan.NoTrack),
@@ -233,6 +264,96 @@ func (in chapterSyncInputs) stateOf(plan chaptersync.Plan, kept []evidence.Track
 		}
 	}
 	return state
+}
+
+// chapterRows is Chapters for in, from the links stored now (after any sync this call made), the saved project plan
+// read, and the stored snapshot. Without a readable manuscript and project it is empty.
+func (in chapterSyncInputs) chapterRows(snapshot chaptersync.Snapshot) []chapterSyncChapter {
+	rows := []chapterSyncChapter{}
+	if in.store == nil || !in.parsed {
+		return rows
+	}
+	links, err := in.store.List(in.documentID)
+	if err != nil {
+		return rows
+	}
+	linkOf := map[string]evidence.TrackMapping{}
+	for _, link := range links {
+		linkOf[link.ChapterID] = link
+	}
+	trackOf := map[string]tracks.Track{}
+	for _, track := range in.parsedProject.Tracks {
+		trackOf[track.GUID] = track
+	}
+	changedAt := map[string]*time.Time{}
+	for _, state := range snapshot.Tracks {
+		changedAt[state.GUID] = state.ChangedAt
+	}
+	projectFile := evidence.LedgerProjectFile{Path: in.parsedProject.Path}
+	if info, err := os.Stat(in.parsedProject.Path); err == nil {
+		projectFile.ModTime = info.ModTime().UTC()
+	}
+	check := in.svc.coverage
+	alignment := coverageSettings(in.svc.settings).Alignment
+	for _, chapter := range in.chapters {
+		row := chapterSyncChapter{ChapterID: chapter.ID, ChapterTitle: chapter.Title, Freshness: string(evidence.StateNever), Reasons: []string{}}
+		if link, ok := linkOf[chapter.ID]; ok {
+			row.TrackGUID, row.Origin = link.TrackGUID, string(link.Origin)
+			if track, ok := trackOf[link.TrackGUID]; ok {
+				row.TrackName = track.Name
+				row.TrackChangedAt = changedAt[track.GUID]
+				row.NewestSourceAt = newestSource(track)
+			}
+		}
+		row.LastChanged = later(row.TrackChangedAt, row.NewestSourceAt)
+		if check != nil {
+			row.Checking = check.Checking(chapter.ID)
+			if result, err := check.ResultIn(in.parsedProject, projectFile, chapter.ID, alignment); err == nil {
+				row.Freshness = string(result.State)
+				if result.Reasons != nil {
+					row.Reasons = result.Reasons
+				}
+				if result.Record != nil && !result.Record.CompletedAt.IsZero() {
+					completed := result.Record.CompletedAt.UTC()
+					row.CheckedAt = &completed
+				}
+			}
+		}
+		rows = append(rows, row)
+	}
+	return rows
+}
+
+// newestSource is the newest modification time of an audio file track's items play (the active take's source), or nil
+// when none can be read. It stats the files and reads nothing.
+func newestSource(track tracks.Track) *time.Time {
+	var newest time.Time
+	for _, item := range track.Items {
+		source := item.Active().SourceFile
+		if source == "" {
+			continue
+		}
+		if info, err := os.Stat(source); err == nil && info.ModTime().After(newest) {
+			newest = info.ModTime()
+		}
+	}
+	if newest.IsZero() {
+		return nil
+	}
+	newest = newest.UTC()
+	return &newest
+}
+
+// later is the later of two optional times, or nil when both are.
+func later(a, b *time.Time) *time.Time {
+	switch {
+	case a == nil:
+		return b
+	case b == nil || a.After(*b):
+		return a
+	default:
+		return b
+	}
 }
 
 func (h *Host) chapterSyncState() (chapterSyncState, error) {

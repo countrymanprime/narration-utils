@@ -19,6 +19,7 @@ const state = (overrides: Partial<ChapterSyncState> = {}): ChapterSyncState => (
   batch: null,
   unsavedEdits: false,
   activity: [],
+  chapters: [],
   ...overrides,
 });
 
