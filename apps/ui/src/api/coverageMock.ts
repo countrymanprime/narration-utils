@@ -234,6 +234,7 @@ export function judgeMock(report: CoverageReport, thresholds = MOCK_THRESHOLDS):
 export function createCoverageMock(deps: Deps): CoverageApi & {
   /** The chapter as the host sends it: recordedFraction only from a current check. */
   withMeasurement: (chapter: ManuscriptChapter) => ManuscriptChapter;
+  peekResult: (chapterId: string) => CoverageResult;
 } {
   let state: CoverageState = { ...idle };
   let timers: ReturnType<typeof setTimeout>[] = [];
@@ -289,6 +290,8 @@ export function createCoverageMock(deps: Deps): CoverageApi & {
   };
 
   return {
+    /** The chapter's result as `coverageResult` answers it, synchronously: chapter sync's status rows read it. */
+    peekResult: result,
     withMeasurement: (chapter) => {
       const fraction = fractionOf(chapter);
       if (fraction !== undefined) return { ...chapter, recordedFraction: fraction };

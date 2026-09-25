@@ -2,6 +2,50 @@
   "activity": [],
   "ask": true,
   "batch": null,
+  "chapters": [
+    {
+      "chapterId": "c-0001",
+      "chapterTitle": "Chapter I: Down the Rabbit-Hole",
+      "checkedAt": null,
+      "checking": false,
+      "freshness": "never",
+      "lastChanged": null,
+      "newestSourceAt": null,
+      "origin": "",
+      "reasons": [],
+      "trackChangedAt": null,
+      "trackGuid": "",
+      "trackName": ""
+    },
+    {
+      "chapterId": "c-0002",
+      "chapterTitle": "Chapter II: The Pool of Tears",
+      "checkedAt": null,
+      "checking": false,
+      "freshness": "never",
+      "lastChanged": null,
+      "newestSourceAt": null,
+      "origin": "",
+      "reasons": [],
+      "trackChangedAt": null,
+      "trackGuid": "",
+      "trackName": ""
+    },
+    {
+      "chapterId": "c-0003",
+      "chapterTitle": "Chapter III: A Caucus-Race and a Long Tale",
+      "checkedAt": null,
+      "checking": false,
+      "freshness": "never",
+      "lastChanged": null,
+      "newestSourceAt": null,
+      "origin": "",
+      "reasons": [],
+      "trackChangedAt": null,
+      "trackGuid": "",
+      "trackName": ""
+    }
+  ],
   "consent": "undecided",
   "counts": {
     "linked": 1,

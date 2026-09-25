@@ -103,3 +103,23 @@ func TestAPickupTrackBesideTheChapterTrackLeavesTheChapterMatched(t *testing.T) 
 		t.Fatalf("chapter track %+v, pickups track %+v: want the pickups track clearly behind and not confident", chapter, pickups)
 	}
 }
+
+// LabelTokens is called from several goroutines at once (chapter sync's watcher, its bindings and the host's own
+// status emits), so it must share no stateful transformer between calls: a shared transform.Chain races and can panic.
+func TestLabelTokensIsSafeForConcurrentUse(t *testing.T) {
+	done := make(chan struct{})
+	for g := 0; g < 8; g++ {
+		go func() {
+			defer func() { done <- struct{}{} }()
+			for i := 0; i < 200; i++ {
+				if tokens, _ := LabelTokens("Chapître Six (pickups)"); len(tokens) == 0 {
+					t.Error("no tokens")
+					return
+				}
+			}
+		}()
+	}
+	for g := 0; g < 8; g++ {
+		<-done
+	}
+}
