@@ -14,6 +14,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/countrymanprime/narration-utils/shell/internal/chaptersync"
 	"github.com/countrymanprime/narration-utils/shell/internal/coverage"
 	"github.com/countrymanprime/narration-utils/shell/internal/evidence"
 	"github.com/countrymanprime/narration-utils/shell/internal/findings"
@@ -383,7 +384,13 @@ func (s *Service) runCommit(job *ImportJob, confirmedReset bool, choices Choices
 		s.fail(job, err)
 		return
 	}
+	var carry evidence.CarryOver
 	if confirmedReset {
+		// The old links name chapter ids the re-import renumbers, so they are
+		// cleared, but read first: the new document's mapping file carries them
+		// (and the auto-links the narrator undid) for chapter sync to re-link by
+		// title (daw-chapter-track-auto-sync PRD Phase 2, ADR 0202).
+		carry = evidence.ReadCarryOver(project)
 		s.report(job, 8, "Clearing derived data: Story Bible, notes, bookmarks, chapter statuses and proofing results")
 		if err := resetDerived(project); err != nil {
 			s.fail(job, err)
@@ -395,6 +402,10 @@ func (s *Service) runCommit(job *ImportJob, confirmedReset bool, choices Choices
 	if err != nil {
 		s.fail(job, err)
 		return
+	}
+	if documentID, _ := canonical["documentId"].(string); documentID != "" {
+		// Losing the carry only means linking again by hand, so it never fails the import.
+		_ = evidence.NewMappingStore(project).Carry(documentID, carry)
 	}
 	if post != nil {
 		if err := post(func(percent int, message string) { s.report(job, 85+percent*14/100, message) }); err != nil {
@@ -569,7 +580,7 @@ func resetDerived(project string) error {
 	// Findings are anchored to manuscript chapter and paragraph ids, so a
 	// replace or Clear that invalidates those ids clears findings too
 	// (review-dashboard-and-findings-adoption.prd.md Q5).
-	for _, path := range []string{filepath.Join(project, "ManuscriptGuide"), filepath.Join(project, "TranscriptCompare"), filepath.Join(project, "narration-utils", "manuscript-notes.json"), filepath.Join(project, ".narration-last-comparison.json"), filepath.Join(project, filepath.FromSlash(findings.Dir)), evidence.LedgerDir(project), evidence.CacheDir(project), evidence.MappingFile(project), coverage.Dir(project), stages.DecisionsFile(project)} {
+	for _, path := range []string{filepath.Join(project, "ManuscriptGuide"), filepath.Join(project, "TranscriptCompare"), filepath.Join(project, "narration-utils", "manuscript-notes.json"), filepath.Join(project, ".narration-last-comparison.json"), filepath.Join(project, filepath.FromSlash(findings.Dir)), evidence.LedgerDir(project), evidence.CacheDir(project), evidence.MappingFile(project), chaptersync.File(project), coverage.Dir(project), stages.DecisionsFile(project)} {
 		if err := os.RemoveAll(path); err != nil {
 			return fmt.Errorf("could not clear project data: %w", err)
 		}

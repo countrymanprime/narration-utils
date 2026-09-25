@@ -595,7 +595,8 @@ export function createMockApi(
   // The confirmed chapter-track mapping (analysis evidence ledger PRD, Phase 5): keyed to one mock documentId, since the
   // mock always has exactly one manuscript document loaded.
   const mockDocumentId = 'mock-document-1';
-  let chapterTrackMappings: TrackMapping[] = wireClone(initial.chapterTrackMappings ?? []);
+  // A seed built before links had an origin (ADR 0202) reads as the narrator's own link, as the host reads a v1 file.
+  let chapterTrackMappings: TrackMapping[] = wireClone(initial.chapterTrackMappings ?? []).map((link) => ({ origin: 'manual', match: null, ...link }));
   let recentProjects: RecentProject[] = [
     { path: 'C:/Projects/Alice-in-Wonderland', name: 'Alice’s Adventures in Wonderland', lastOpened: '2026-09-15T09:00:00Z' },
     { path: 'C:/Projects/Voltage-and-the-Undercroft', name: 'Voltage and the Undercroft', lastOpened: '2026-09-10T18:30:00Z' },
@@ -2048,7 +2049,7 @@ export function createMockApi(
       await manuscriptReady;
       const chapter = chapters.find((candidate) => candidate.id === chapterId);
       if (!chapter) throw new Error('that chapter is not part of the current manuscript');
-      const mapping: TrackMapping = { trackGuid, chapterId, chapterTitle: chapter.title, confirmedAt: new Date().toISOString() };
+      const mapping: TrackMapping = { trackGuid, chapterId, chapterTitle: chapter.title, confirmedAt: new Date().toISOString(), origin: 'manual', match: null };
       chapterTrackMappings = [...chapterTrackMappings.filter((existing) => existing.trackGuid !== trackGuid), mapping];
       return wireClone(mapping);
     },
@@ -2062,7 +2063,7 @@ export function createMockApi(
       if (!chapter) throw new Error('that chapter is not part of the current manuscript');
       if (!trackGuid) throw new Error('choose a track before linking a chapter');
       const displaced = chapterTrackMappings.find((existing) => existing.trackGuid === trackGuid && existing.chapterId !== chapterId) ?? null;
-      const link: TrackMapping = { trackGuid, chapterId, chapterTitle: chapter.title, confirmedAt: new Date().toISOString() };
+      const link: TrackMapping = { trackGuid, chapterId, chapterTitle: chapter.title, confirmedAt: new Date().toISOString(), origin: 'manual', match: null };
       chapterTrackMappings = [...chapterTrackMappings.filter((existing) => existing.trackGuid !== trackGuid && existing.chapterId !== chapterId), link];
       return wireClone({ documentId: mockDocumentId, link, displaced, mappings: chapterTrackMappings });
     },
