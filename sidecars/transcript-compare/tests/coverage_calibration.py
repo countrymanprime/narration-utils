@@ -72,8 +72,8 @@ import coverage_harness as harness
 import coverage_spike as spike
 
 CORE = spike.CORE
-if str(CORE) not in sys.path:
-    sys.path.insert(0, str(CORE))
+# One statement, so it is covered whichever test module put CORE on the path first.
+sys.path[:0] = [] if str(CORE) in sys.path else [str(CORE)]
 
 import compare as engine  # needs CORE on sys.path, as coverage_mode itself does
 import coverage_mode
