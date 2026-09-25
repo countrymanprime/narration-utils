@@ -124,7 +124,7 @@ func (s *Service) ownsRun(runID string) bool {
 func empty() map[string]any {
 	return map[string]any{
 		"runId": nil, "phase": "idle", "percent": 0, "message": "Select a track in REAPER, then start a comparison.",
-		"logs": []string{}, "chapters": []string{}, "rows": []map[string]any{}, "diff": "", "summary": "", "trackName": nil, "audioItemCount": nil, "completedAt": nil,
+		"logs": []string{}, "chapters": []string{}, "rows": []map[string]any{}, "diff": "", "summary": "", "trackName": nil, "audioItemCount": nil, "completedAt": nil, "projectChangeCount": nil,
 		"markerExport": map[string]any{"phase": "idle", "message": "", "added": 0, "skipped": 0}, "elapsed": 0,
 	}
 }
@@ -568,6 +568,11 @@ func (s *Service) handlePrepared(fields []string) {
 	}
 	s.state["manifest"], s.state["diffPath"], s.state["trackName"] = fields[2], fields[5], fields[4]
 	s.state["audioItemCount"] = intAt(fields, 6)
+	// REAPER's edit counter as the audio was listed: the baseline the "changed since comparison" label compares a later
+	// project_state count against (follow-through PRD Phase 13). An older script, or a REAPER without the call, sends none.
+	if len(fields) > 7 && fields[7] != "" {
+		s.state["projectChangeCount"] = intAt(fields, 7)
+	}
 	options, _ := s.state["options"].(map[string]string)
 	runID, _ := s.state["runId"].(string)
 	s.mu.Unlock()

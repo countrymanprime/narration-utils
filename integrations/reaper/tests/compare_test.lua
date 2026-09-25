@@ -89,8 +89,31 @@ H.test('prepare_compare writes the manifest of the selected items in time order 
     'Alice: chapter 1',
     diff_path,
     '2',
+    '0',
   })
   H.eq(host.listdir(H.join(H.join(folder, 'TranscriptCompare'), 'diffs')), {}, 'the diffs directory is created and empty')
+end)
+
+-- The comparison's baseline for the "changed since comparison" label (follow-through PRD Phase 13): REAPER's own edit
+-- counter as the audio was listed, read in the same call so no edit can fall between the two.
+H.test('prepare_compare answers the change count the comparison starts from', function()
+  local s = project_session()
+  local track = audio_track(s)
+  s.fake:add_item(track, { selected = true, position = 0, length = 10, source = 'a.wav' })
+  s.fake.change_count = 41
+  s:send('prepare_compare', 'r1')
+  H.eq(first_event(s)[8], '41')
+end)
+
+H.test('prepare_compare leaves the change count off when REAPER cannot report it', function()
+  local s = project_session()
+  local track = audio_track(s)
+  s.fake:add_item(track, { selected = true, position = 0, length = 10, source = 'a.wav' })
+  s.fake:remove_api('GetProjectStateChangeCount')
+  s:send('prepare_compare', 'r1')
+  local event = first_event(s)
+  H.eq(event[1], 'COMPARE_PREPARED')
+  H.eq(#event, 7, 'an older REAPER answers the six fields it always did')
 end)
 
 H.test('prepare_compare from a selected track uses every item on it, skipping MIDI and empty takes', function()

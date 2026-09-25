@@ -274,3 +274,26 @@ func TestDrainWithoutABridgeIsANoOp(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+// The comparison's baseline for the "changed since comparison" label (follow-through PRD Phase 13): the change count
+// REAPER appends to COMPARE_PREPARED is kept in the state, and an older script's six-field answer leaves it null.
+func TestPreparedKeepsREAPERsChangeCountAsTheComparisonBaseline(t *testing.T) {
+	for _, c := range []struct {
+		name   string
+		fields []string
+		want   any
+	}{
+		{"a current script", []string{"COMPARE_PREPARED", "run-1", "m.txt", "manuscript.json", "Narrator", "d.diff", "2", "41"}, 41.0},
+		{"an older script", []string{"COMPARE_PREPARED", "run-1", "m.txt", "manuscript.json", "Narrator", "d.diff", "2"}, nil},
+	} {
+		t.Run(c.name, func(t *testing.T) {
+			service, _ := testService(t)
+			service.state = empty()
+			service.state["runId"], service.state["phase"] = "run-1", "preparing"
+			service.Handle(c.fields)
+			if got := service.Snapshot()["projectChangeCount"]; got != c.want {
+				t.Fatalf("projectChangeCount = %#v, want %#v", got, c.want)
+			}
+		})
+	}
+}

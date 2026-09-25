@@ -4,6 +4,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { z } from 'zod';
 import { DESKTOP_HOST_API_VERSION } from '../hostApi';
 import { createMockApi } from './mockApi';
+import type { ProjectStateState } from './contracts/projectstate';
 import { WIRE_TAKE_REVIEW_FINDINGS, WIRE_TRACKS_PROJECT, WIRE_TRANSCRIPT } from './mockFixtures';
 import { WIRE_TAKE_COMPARISON_FINDING } from './takeComparisonMock';
 import { MOCK_MEASURE_PATHS } from './measureMock';
@@ -80,6 +81,7 @@ import { lineIdentityStartResultSchema, lineIdentityStateSchema } from './schema
 import { pickupsImportResultSchema, pickupsStartResultSchema, pickupsStateSchema } from './schemas/pickups';
 import { renderConfigStartResultSchema, renderConfigStateSchema, renderConfigSuggestedFolderSchema } from './schemas/renderconfig';
 import { cleanupToolsStartResultSchema, cleanupToolsStateSchema } from './schemas/cleanuptools';
+import { projectStateChangedSchema, projectStateStartResultSchema, projectStateStateSchema } from './schemas/projectstate';
 import { retakeLanesListSchema, retakeLanesStartResultSchema, retakeLanesStateSchema } from './schemas/retakelanes';
 import { chapterTagsEmbedResultSchema, chapterTagsPreviewSchema } from './schemas/chaptertags';
 import { dictionaryLookupResultSchema } from './schemas/dictionary';
@@ -227,6 +229,9 @@ const GOLDEN: Record<string, z.ZodType> = {
   'render-config-success.json': renderConfigStateSchema,
   'cleanup-tools-idle.json': cleanupToolsStateSchema,
   'cleanup-tools-launched.json': cleanupToolsStateSchema,
+  'project-state-idle.json': projectStateStateSchema,
+  'project-state-checked.json': projectStateStateSchema,
+  'project-state-changed-since.json': projectStateChangedSchema,
   'retake-lanes-list.json': retakeLanesListSchema,
   'retake-lanes-idle.json': retakeLanesStateSchema,
   'retake-lanes-picked.json': retakeLanesStateSchema,
@@ -1146,6 +1151,28 @@ describe('answers of the mock client for the settings, voice, model, transcript 
     await expect(api.retakeLanesPick('line-000099', line.retakes[0].itemGuid)).rejects.toThrow(/not on a fixed-lane track/);
   });
 
+  it('the project-state check against the last comparison baseline (follow-through Phase 13)', async () => {
+    vi.useFakeTimers();
+    try {
+      const api = createMockApi();
+      const seen: ProjectStateState[] = [];
+      api.subscribeProjectState((state) => seen.push(structuredClone(state)));
+      expectMatches(projectStateStartResultSchema, await api.projectStateCheck(), 'mock project-state check start');
+      await vi.advanceTimersByTimeAsync(200);
+      for (const state of seen) expectMatches(projectStateStateSchema, state, 'mock projectstate:state');
+      const checked = await api.projectStateState();
+      expectMatches(projectStateStateSchema, checked, 'mock project-state state');
+      const baseline = (await api.transcriptLastCompleted())?.projectChangeCount;
+      expect(baseline).toBe(41);
+      const changed = await api.projectStateChangedSince(checked.changeCount ?? 0, baseline ?? 0);
+      expectMatches(projectStateChangedSchema, changed, 'mock project-state changed since');
+      expect(changed.changed).toBe(true);
+      await expect(createMockApi({}, { projectState: 'error' }).projectStateCheck()).rejects.toThrow();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('cleanupToolsLaunch refuses a tool off the allow-list, the way the Go service does', async () => {
     await expect(createMockApi().cleanupToolsLaunch('40209' as never)).rejects.toThrow(/unknown cleanup tool/);
   });
@@ -1646,6 +1673,9 @@ describe('answers of the mock client for the settings, voice, model, transcript 
       'renderConfigState',
       'cleanupToolsLaunch',
       'cleanupToolsState',
+      'projectStateCheck',
+      'projectStateChangedSince',
+      'projectStateState',
       'retakeLanesList',
       'retakeLanesPick',
       'retakeLanesState',
@@ -1758,6 +1788,7 @@ describe('answers of the mock client for the settings, voice, model, transcript 
       'subscribePickups',
       'subscribeRenderConfig',
       'subscribeCleanupTools',
+      'subscribeProjectState',
       'subscribeRetakeLanes',
     ];
     expect([...CHECKED, ...VOID, ...NOT_A_REQUEST].sort()).toEqual(Object.keys(createMockApi()).sort());

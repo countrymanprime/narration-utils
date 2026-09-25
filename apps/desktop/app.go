@@ -705,8 +705,8 @@ func (h *Host) emitCleanupTools(state map[string]any) {
 }
 
 // emitProjectState relays a projectstate.Service snapshot to the frontend (Phase 13's live "project changed
-// since this check" hint), the same simple relay emitRenderConfig uses. Nothing subscribes to it yet: the
-// binding is available for a future UI phase, or for a staleness evaluator, to poll or watch.
+// since this check" hint), the same simple relay emitRenderConfig uses. The UI's subscribeProjectState reads it and
+// compares the count with the comparison's baseline (TranscriptState.projectChangeCount).
 func (h *Host) emitProjectState(state map[string]any) {
 	h.mu.RLock()
 	ctx := h.ctx

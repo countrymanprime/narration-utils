@@ -30,6 +30,7 @@ import type {
   RecentProject,
   RenderConfigState,
   CleanupToolsState,
+  ProjectStateState,
   RetakeLanesState,
   RetailSampleAnswer,
   Scope,
@@ -70,6 +71,8 @@ import {
   WIRE_RENDER_CONFIG_ERROR,
   WIRE_CLEANUP_TOOLS_ERROR,
   WIRE_CLEANUP_TOOLS_IDLE,
+  WIRE_PROJECT_STATE_CHECKED,
+  WIRE_PROJECT_STATE_IDLE,
   WIRE_CLEANUP_TOOLS_LAUNCHED,
   WIRE_RETAKE_LANES_ERROR,
   WIRE_RETAKE_LANES_IDLE,
@@ -497,6 +500,9 @@ export function createMockApi(
     renderConfig?: 'success' | 'no-regions' | 'error';
     /** Boots CleanupToolsState already at this result, so the cleanup launcher's states can be seen without a launch. 'error' also makes every launch fail. */
     cleanupTools?: 'launched' | 'error';
+    /** How a project-state check answers (follow-through PRD Phase 13): 'changed' (count 42, one more than the last
+     * comparison's 41, the default), 'unchanged' (41), or 'error' (REAPER is not open from this app). */
+    projectState?: 'changed' | 'unchanged' | 'error';
     /** Boots the retake-lane list and RetakeLanesState at this result, so "Retakes on lanes" states can be seen without a pick. 'none' lists a project with no lane tracks; 'error' also makes every pick fail. */
     retakeLanes?: 'picked' | 'error' | 'none';
     /** Boots ChapterTagsPreview already at this result, so "Embed chapter tags" states can be seen without a real render. */
@@ -725,6 +731,7 @@ export function createMockApi(
     trackName: 'Chapter 1',
     audioItemCount: 3,
     completedAt: '2026-09-15T14:30:00Z',
+    projectChangeCount: 41,
   };
   const globalSettings = wireSettings();
   const settings: Record<Scope, Record<string, ScopedSettingField[]>> = {
@@ -824,6 +831,9 @@ export function createMockApi(
   const cleanupToolsAlwaysErrors = initial.cleanupTools === 'error';
   const cleanupToolsSubscribers = new Set<(state: CleanupToolsState) => void>();
   const publishCleanupTools = () => cleanupToolsSubscribers.forEach((fn) => fn(wireClone(cleanupTools)));
+  let projectState: ProjectStateState = wireClone(WIRE_PROJECT_STATE_IDLE);
+  const projectStateSubscribers = new Set<(state: ProjectStateState) => void>();
+  const publishProjectState = () => projectStateSubscribers.forEach((fn) => fn(wireClone(projectState)));
   const retakeLanesList = wireClone(initial.retakeLanes === 'none' ? WIRE_RETAKE_LANES_NONE : WIRE_RETAKE_LANES_LIST);
   let retakeLanes: RetakeLanesState = wireClone(
     initial.retakeLanes === 'picked' ? WIRE_RETAKE_LANES_PICKED : initial.retakeLanes === 'error' ? WIRE_RETAKE_LANES_ERROR : WIRE_RETAKE_LANES_IDLE,
@@ -1878,6 +1888,25 @@ export function createMockApi(
       cleanupToolsSubscribers.add(onUpdate);
       onUpdate(wireClone(cleanupTools));
       return () => cleanupToolsSubscribers.delete(onUpdate);
+    },
+    projectStateCheck: async () => {
+      if (initial.projectState === 'error') throw new Error('the REAPER bridge is unavailable');
+      projectState = { ...wireClone(WIRE_PROJECT_STATE_IDLE), runId: String(Date.now()), phase: 'checking', message: "Checking REAPER's project state…" };
+      publishProjectState();
+      setTimeout(() => {
+        if (projectState.phase !== 'checking') return;
+        const changeCount = initial.projectState === 'unchanged' ? 41 : (WIRE_PROJECT_STATE_CHECKED.changeCount ?? 42);
+        projectState = { ...wireClone(WIRE_PROJECT_STATE_CHECKED), runId: projectState.runId, changeCount };
+        publishProjectState();
+      }, 150);
+      return { status: 'started' as const };
+    },
+    projectStateChangedSince: async (current, baseline) => ({ changed: current !== baseline }),
+    projectStateState: async () => wireClone(projectState),
+    subscribeProjectState: (onUpdate) => {
+      projectStateSubscribers.add(onUpdate);
+      onUpdate(wireClone(projectState));
+      return () => projectStateSubscribers.delete(onUpdate);
     },
     retakeLanesList: async () => wireClone(retakeLanesList),
     retakeLanesPick: async (lineId, itemGuid) => {

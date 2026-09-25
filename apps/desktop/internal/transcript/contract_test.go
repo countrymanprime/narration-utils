@@ -27,7 +27,7 @@ func TestContractIdleState(t *testing.T) {
 func TestContractCompletedStateWithRowsAndAMarkerExport(t *testing.T) {
 	service, _ := testService(t)
 	service.state = empty()
-	service.state["runId"], service.state["phase"] = "run-1", "inspecting"
+	service.state["runId"], service.state["phase"], service.state["projectChangeCount"] = "run-1", "inspecting", 41
 	service.Handle([]string{"COMPARE_MARKER", "run-1", "row-1", "MISREAD", "Alice", "alice", "Alyss", "3.5", "2", "Chapter 1", "4", "script context", "audio context", "pending", "", "1.25"})
 	service.Handle([]string{"COMPARE_MARKER", "run-1", "row-2", "EXTRA", "Hatter", "hatter", "", "9.25", "3", "Chapter 1", "6", "", "", "existing", "Hatter (marker)", "8.5"})
 	service.Handle([]string{"COMPARE_INSPECTED", "run-1", "2 discrepancies found.", "2", "0"})
