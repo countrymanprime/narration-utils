@@ -5,8 +5,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/wailsapp/wails/v2/pkg/runtime"
-
 	"github.com/countrymanprime/narration-utils/shell/internal/coverage"
 	"github.com/countrymanprime/narration-utils/shell/internal/evidence"
 	"github.com/countrymanprime/narration-utils/shell/internal/settings"
@@ -126,7 +124,7 @@ func (h *Host) emitCoverage(state coverage.State) {
 	ctx := h.ctx
 	h.mu.RUnlock()
 	if ctx != nil {
-		runtime.EventsEmit(ctx, coverageStateEvent, state)
+		emitEvent(coverageStateEvent, state)
 	}
 }
 

@@ -27,12 +27,14 @@ apps/desktop/cmd/narration-utils/resources/config/
 apps/desktop/cmd/narration-utils/resources/runtime/
 apps/desktop/cmd/narration-utils/resources/reaper/
 apps/desktop/build/*
+# The Windows icon, version and manifest resource wails-build.mjs embeds and removes after the Go build.
+apps/desktop/*.syso
 !apps/desktop/build/appicon.png
 !apps/desktop/build/windows/
 apps/desktop/build/windows/*
 !apps/desktop/build/windows/icon.ico
-# The one installer file that differs from Wails' default (docs/adr/0082); wails_tools.nsh is regenerated on every build and tmp/ holds the
-# WebView2 bootstrapper Wails downloads.
+# The one installer file that differs from Wails' default (docs/adr/0082). scripts/release/wails-build.mjs renders wails_tools.nsh
+# and writes the WebView2 bootstrapper beside it on every installer build (docs/adr/0200).
 !apps/desktop/build/windows/installer/
 apps/desktop/build/windows/installer/*
 !apps/desktop/build/windows/installer/project.nsi

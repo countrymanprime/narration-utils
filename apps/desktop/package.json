@@ -4,11 +4,10 @@
   "version": "0.1.0",
   "license": "AGPL-3.0-or-later",
   "scripts": {
-    "dev": "wails dev",
+    "dev": "pnpm --dir ../ui run build && node ../../scripts/copy-wails-frontend.mjs && go run .",
+    "bindings": "wails3 generate bindings -ts -noevents -noindex -silent -d ../ui/wailsjs .",
     "build": "node ../../scripts/release/wails-build.mjs",
-    "build:windows": "pnpm run build -- -platform windows/amd64 -nsis",
-    "build:macos": "pnpm run build -- -platform darwin/universal",
-    "build:linux": "pnpm run build -- -platform linux/amd64"
+    "build:windows": "pnpm run build -- --installer"
   },
   "devDependencies": {}
 }
