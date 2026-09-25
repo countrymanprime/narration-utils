@@ -2,6 +2,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createTeleprompterMock } from './teleprompterMock';
 import { mockChapterTrackMatch } from './chapterTrackMatchMock';
 import { tokenize } from '../components/teleprompter/readerModel';
+import { MOCK_RESUME_SEEDS } from './resumeMockSeed';
+import { teleprompterLocateResultSchema } from './schemas/teleprompter';
 import type { ManuscriptChapter, ManuscriptParagraph, TeleprompterEvent, TeleprompterState } from '../types';
 
 const DEVICES = [{ name: 'Microphone Array (Realtek(R) Audio)' }, { name: 'Headset Microphone (USB Audio Device)' }];
@@ -286,5 +288,28 @@ describe('teleprompter mock locate', () => {
     const locate = await build({ assetRequired: () => required }).teleprompterLocate('chapter-1');
     expect(locate.status).toBe('asset_required');
     expect(locate).not.toHaveProperty('engine');
+  });
+
+  // read-aloud-resume-from-daw.prd.md Phase 3: every seed answers a result the host could send, with its verdict.
+  it.each(MOCK_RESUME_SEEDS.filter((seed) => seed !== 'error'))('answers %s with a result that passes the schema', async (seed) => {
+    const result = await build({ resume: seed }).teleprompterLocate('chapter-1');
+
+    expect(teleprompterLocateResultSchema.safeParse(result).success).toBe(true);
+  });
+
+  it.each([
+    [undefined, 'daw_only'],
+    ['agree', 'agree'],
+    ['disagree', 'disagree'],
+    ['prompter_only', 'prompter_only'],
+    ['complete', 'complete'],
+    ['not_found', 'none'],
+  ] as const)('seed %s reconciles to %s', async (seed, kind) => {
+    const result = await build(seed ? { resume: seed } : {}).teleprompterLocate('chapter-1');
+
+    if (result.status === 'asset_required') throw new Error('expected a locate result');
+    expect(result.verdict.kind).toBe(kind);
+    expect(result.verdict.start === null).toBe(kind !== 'agree');
+    expect(result.lastReading === null).toBe(!['agree', 'disagree', 'prompter_only'].includes(kind));
   });
 });
