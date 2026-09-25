@@ -32,6 +32,14 @@ Selecting it opens the chapter's track panel, with what the saved project knows 
 column, and every chapter's Track button, is absent when no REAPER project is linked yet; the table
 says so in its place, with a link to [Tracks](tracks.md) if more than one project file was found.
 
+The track panel's **Remove from recording…** takes a mis-imported heading (a part title, an
+epigraph, or front matter that was read in as a chapter) out of the table, the totals, the reader
+and the teleprompter. Choose **Not a chapter** to hide it from navigation too, or **Front matter**
+to keep it in the manuscript's navigation without recording it. Nothing is deleted - its text stays
+in the manuscript and its track link is cleared - and the last narration chapter can't be removed.
+A removed chapter is listed under **Removed from recording**, below the table, with **Restore** to
+bring it back with its status and any notes intact.
+
 **Actual recorded** shows how much audio a chapter's linked REAPER track holds, as of the last
 save: the union of its unmuted items, overlaps counted once. A chapter with no confirmed link, a
 link to more than one track, a linked track no longer in the saved project, or no project at all
