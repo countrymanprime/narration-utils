@@ -10,7 +10,7 @@
 
 **Not covered here:** the dialog's control bar, its layout, and aligning the resume area to the text column: those are in the sibling PRD `read-aloud-control-bar.prd.md` (in progress when this was written, same day). The renamed-track warning, the track picker and relinking: [Chapter Track Link Control](chapter-track-link-control.prd.md). Credits have no resume ([Manuscript Credits Card Parity](manuscript-credits-card-parity.prd.md) MC9). Punch-and-roll, which moves the REAPER cursor to a word, stays Phase 12 of the teleprompter PRD.
 
-**Status (2026-09-24):** draft; open questions RD1 to RD9 wait for the owner. No tracking issue yet: open one (`docs/operations/github-workflow.md`) before Phase 1.
+**Status (2026-09-25):** in delivery (lane train, [implementation plan](implementation-plan.md) section 8). The open questions take the recommended answers (D39; Decisions Log). Phases 1 and 2 are built; see the phase table.
 
 Citations are `file:line` at `a62fcd6`.
 
@@ -165,7 +165,7 @@ Phases 1 to 3 answer the owner's report without REAPER running: the prompt goes 
 | # | Phase | Description | Status | Parallel | Depends | PRP Plan |
 | --- | --- | --- | --- | --- | --- | --- |
 | 1 | The prompt goes away | `ResumePrompt` (one line or compact choice), dismissed per open, finished-chapter state, one-based words, track problems as a link; visual and aria states; supersedes ADR 0112 points 4 and 5 ([ADR 0187](../adr/0187-the-resume-prompt-is-a-compact-notice-that-settles-once-per-dialog-open.md)) | complete | 2 | RD9; sequence with `read-aloud-control-bar.prd.md` | - |
-| 2 | Prompter position store | `<chapter>.reading.json` written at session end, read back; schema, golden, `wireContracts` row, mock; threat model row | pending | 1 | - | - |
+| 2 | Prompter position store | `<chapter>.reading.json` written at session end, read back; schema, golden, `wireContracts` row, mock; threat model row | complete: `teleprompter.WriteReading`/`LoadReading` and the write at session end (`Service.recordReading`), golden `teleprompter-reading.json`, `teleprompterReadingSchema`, `mockLastReading`, threat model row 6k ([ADR 0205](../adr/0205-the-prompter-remembers-its-last-word-per-chapter-in-a-host-named-file-dropped-when-the-text-changes.md)). No binding reads it yet: Phase 3 adds `lastReading` to the locate result | 1 | - | - |
 | 3 | Reconcile two sources | `teleprompter.Reconcile`, `TeleprompterLocate` gains `lastReading` and `verdict`, `hostAPIVersion` bump, agreement notice and compact choice; ADR | pending | - | 1, 2; RD1, RD3, RD8 | - |
 | 4 | Live DAW state | `chapter_track_state` in `narration_track_state.lua` (harness tests first), `wire.go`, Go client with fallback, cursor-to-source mapping, "in REAPER now" label; threat model; scripted REAPER check (owner sign-off pending) | pending | - | 3; RD2 | - |
 | 5 | Follow REAPER while idle | Bounded poll while the prompt shows; play or record dismisses; optional cursor re-sync | pending | - | 4; RD6, RD7 | - |
@@ -211,6 +211,7 @@ Cross-cutting: each phase follows `CLAUDE.md`: plan, `change-impact-scan` (`Read
 | Open questions (owner, 2026-09-24) | Every open question takes this PRD's recommended answer, as shown in its approved Visual Spec mockups, except where a row below says otherwise | Answer each question separately | The owner approved the mockups that depict the recommendations; see D39 in the [implementation plan](implementation-plan.md#6-owner-decisions-2026-09-24) |
 | Unbuilt data in the real app (owner, 2026-09-24, D24) | Visible UI is built in full; in mock mode it runs on sample data, and in the real app a surface whose data is not built yet shows an honest "not available yet" state. Controls that would act on REAPER stay disabled with the reason | Hide unbuilt UI until its data exists | The owner can use and judge every screen now; each backend phase switches on a screen that already exists |
 | REAPER commands before the owner's verification pass (owner, 2026-09-24, D38) | Built in full with harness tests, their ReaScript calls documented from the API reference, and behind an "Experimental REAPER actions" Settings switch (off) until the owner and Claude verify them on a copy of a test project; commands that write to REAPER stay off until then | Wait to build them until the owner can test | Nothing waits on hardware, and nothing touches a real project before it is verified |
+| Prompter position store (2026-09-25, Phase 2, ADR 0205) | Written before the session reports `stopped`, for stop, auto-stop and a crash after positions; nothing for credits, no position or `read` 0; `scriptHash` covers the document id so a re-import drops it; the file is host-named | Store every session; hash only the text | A reading must never point into a different text; the id never names a path |
 
 ## Research Summary
 

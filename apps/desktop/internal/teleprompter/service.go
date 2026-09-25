@@ -481,6 +481,7 @@ func (s *Service) watch(child *process.StreamChild, cancel context.CancelFunc, f
 	<-child.Done()
 	cancel()
 	code, _ := child.ExitCode()
+	s.recordReading()
 	s.mu.Lock()
 	stopFile, controlFile, scriptFile := s.stopFile, s.controlFile, s.scriptFile
 	s.cancelAutoStopLocked()
@@ -501,6 +502,26 @@ func (s *Service) watch(child *process.StreamChild, cancel context.CancelFunc, f
 		_ = os.Remove(scriptFile)
 	}
 	s.notify()
+}
+
+// recordReading keeps the ending session's last position for its chapter
+// (Reading, ADR 0205), before the phase says the session stopped, so a reader
+// that waits for "stopped" finds it. A session that never positioned, a credits
+// session and a chapter the manuscript does not have leave nothing. A write
+// that fails costs only the next open's comparison, so it is logged, never
+// shown.
+func (s *Service) recordReading() {
+	s.mu.RLock()
+	chapter, _ := s.state["chapter"].(string)
+	credits, script, position, project, report := s.scriptFile != "", s.script, s.position, s.config.Project, s.report
+	s.mu.RUnlock()
+	read, tokens, status, ok := endedReading(chapter, credits, script, position)
+	if !ok {
+		return
+	}
+	if err := WriteReading(project, chapter, read, tokens, status, time.Now()); err != nil && report != nil {
+		report("teleprompter_reading_not_saved", err.Error())
+	}
 }
 
 // Stop asks the sidecar to finish (it flushes what it heard, then exits) by

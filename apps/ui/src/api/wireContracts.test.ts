@@ -8,6 +8,7 @@ import { WIRE_TAKE_REVIEW_FINDINGS, WIRE_TRACKS_PROJECT, WIRE_TRANSCRIPT } from 
 import { WIRE_TAKE_COMPARISON_FINDING } from './takeComparisonMock';
 import { MOCK_MEASURE_PATHS } from './measureMock';
 import { judgeMock } from './coverageMock';
+import { mockLastReading } from './teleprompterMock';
 import { deliveryQcEvidenceSchema, deliveryReportExportSchema, measureJobSchema, measurePickResultSchema } from './schemas/measure';
 import { deliveryProfileSchema, deliveryProfilesStateSchema } from './schemas/deliveryProfiles';
 import { MOCK_ACX, evaluateMockFile, mockCustomProfile } from './deliveryProfilesMock';
@@ -66,6 +67,7 @@ import {
   teleprompterDevicesResultSchema,
   teleprompterEventSchema,
   teleprompterFlagFindingsSchema,
+  teleprompterReadingSchema,
   teleprompterLocatedSchema,
   teleprompterLocateResultSchema,
   teleprompterStartResultSchema,
@@ -117,6 +119,8 @@ const GOLDEN: Record<string, z.ZodType> = {
   'teleprompter-locate-no-recording.json': teleprompterLocateResultSchema,
   'teleprompter-locate-source-missing.json': teleprompterLocateResultSchema,
   'teleprompter-save-flags.json': teleprompterFlagFindingsSchema,
+  // The per-chapter reading file the host writes at session end and reads back (ADR 0205).
+  'teleprompter-reading.json': teleprompterReadingSchema,
   'manuscript-import-selected.json': workJobSchema,
   'manuscript-import-preview.json': workJobSchema,
   'manuscript-import-preview-repaired.json': workJobSchema,
@@ -347,6 +351,12 @@ describe('golden payloads written by the Go host and the Python sidecars', () =>
     for (const name of ['coverage-result-never.json', 'coverage-result-unmapped.json']) {
       expect(parseWire(coverageResultSchema, readGolden(name), ctx('coverage result')).judgement).toBeUndefined();
     }
+  });
+
+  it('the mock last reading passes the reading schema, and a read past the last word does not', () => {
+    expectMatches(teleprompterReadingSchema, mockLastReading('c-0001', 812, 900), 'mock teleprompter reading');
+    const golden = z.looseObject({}).parse(readGolden('teleprompter-reading.json'));
+    expect(() => parseWire(teleprompterReadingSchema, { ...golden, read: 5, tokens: 4 }, ctx('teleprompter reading'))).toThrow();
   });
 
   it('the stage cause and refusal lists are the ones the host declares', () => {
