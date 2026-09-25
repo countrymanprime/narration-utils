@@ -5,13 +5,19 @@ local core = ...
 local join, dirname, file_exists, safe_name, color, pipe_fields, event =
   core.join, core.dirname, core.file_exists, core.safe_name, core.color, core.pipe_fields, core.event
 
-local function prepare_compare(session_dir, runs, run_id)
+-- app_folder is the app's own project folder when the host passes one (project-workspace PRD Phase 5, W4): the .rpp may
+-- live elsewhere, so the manuscript is read and the diffs are written there, never beside the .rpp. An older host passes
+-- none, and the .rpp's folder is used as before.
+local function prepare_compare(session_dir, runs, run_id, app_folder)
   if not reaper.APIExists('SetTakeMarker') then
     event(session_dir, 'ERROR', run_id, 'This REAPER version cannot add take markers.')
     return
   end
   local _, rpp = reaper.EnumProjects(-1, '')
   local project_folder = rpp and dirname(rpp) or ''
+  if (app_folder or '') ~= '' then
+    project_folder = app_folder
+  end
   if project_folder == '' then
     event(session_dir, 'ERROR', run_id, 'Save the REAPER project before starting Transcript Compare.')
     return
@@ -97,7 +103,14 @@ local function prepare_compare(session_dir, runs, run_id)
   reaper.RecursiveCreateDirectory(diffs, 0)
   local diff_path = join(diffs, safe_name(track_name) .. '_' .. run_id .. '.diff')
   runs[run_id] = { mapping = mapping, track = track_name, diff_path = diff_path, rows = {} }
-  event(session_dir, 'COMPARE_PREPARED', run_id, manifest_path, manuscript, track_name, diff_path, tostring(#manifest))
+  -- The comparison's baseline for the "changed since comparison" label (follow-through PRD Phase 13): REAPER's own edit
+  -- counter, read with the audio it describes. A REAPER without the call answers the six fields it always did.
+  if reaper.APIExists('GetProjectStateChangeCount') then
+    local changes = tostring(reaper.GetProjectStateChangeCount(0))
+    event(session_dir, 'COMPARE_PREPARED', run_id, manifest_path, manuscript, track_name, diff_path, tostring(#manifest), changes)
+  else
+    event(session_dir, 'COMPARE_PREPARED', run_id, manifest_path, manuscript, track_name, diff_path, tostring(#manifest))
+  end
 end
 
 local existing = core.existing_take_marker
@@ -217,7 +230,7 @@ end
 return function(registry)
   local runs = {}
   registry.register('prepare_compare', function(ctx, args)
-    prepare_compare(ctx.session_dir, runs, args[1] or '')
+    prepare_compare(ctx.session_dir, runs, args[1] or '', args[2] or '')
   end)
   registry.register('inspect_compare_results', function(ctx, args)
     inspect_results(ctx.session_dir, runs, args[1] or '', args[2] or '')

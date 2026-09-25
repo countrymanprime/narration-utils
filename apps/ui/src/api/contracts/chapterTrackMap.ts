@@ -161,6 +161,58 @@ export type ChapterTrackLinks = {
   chapters: ChapterTrackLink[];
 };
 
+/** What a planned region is: the opening or closing credits (named like the chapter table's rows) or a narration chapter
+ * (reaper-automation-follow-through PRD Phase 7, credits-in-chapter-table PRD Phase 4). */
+export type ChapterRegionKind = 'opening' | 'chapter' | 'closing';
+
+/** What create_regions is expected to do with a row, judged against the saved .rpp's regions: add it, leave a matching
+ * region alone, move the one region with its title (an update run only) or leave several with its title alone (an
+ * update run only). Without update, a `moves` or `ambiguous` row adds a second region with that title. */
+export type ChapterRegionState = 'new' | 'exists' | 'moves' | 'ambiguous';
+
+/** One region the plan asks REAPER for, bounded by its track's first item start and last item end (project seconds). */
+export type ChapterRegionRow = {
+  kind: ChapterRegionKind;
+  /** Empty for a credits row. */
+  chapterId: string;
+  title: string;
+  trackGuid: string;
+  trackName: string;
+  start: number;
+  end: number;
+  state: ChapterRegionState;
+};
+
+/** A chapter or credits entry that gets no region, and why. */
+export type ChapterRegionSkip = {
+  kind: ChapterRegionKind;
+  chapterId: string;
+  title: string;
+  reason: string;
+};
+
+/** ChapterRegionsPreview's answer: rows run opening credits, the linked chapters in book order, then closing credits.
+ * When `project` is not ready, `message` says why and both lists are empty. Nothing is written. */
+export type ChapterRegionPlan = {
+  project: ChapterTrackLinksProject;
+  message: string;
+  projectFile: string;
+  savedAt: string;
+  rows: ChapterRegionRow[];
+  skipped: ChapterRegionSkip[];
+};
+
+/** ChapterRegionsCreate's answer: the rows sent and REAPER's counts (create_regions, ADR 0235). */
+export type ChapterRegionsCreated = {
+  sent: number;
+  created: number;
+  existing: number;
+  invalid: number;
+  updated: number;
+  ambiguous: number;
+  failed: number;
+};
+
 export interface ChapterTrackMapApi {
   chapterTrackMapList(): Promise<ChapterTrackMapping>;
   /** Confirms trackGuid as chapterId's link; refuses a chapterId outside the current manuscript. */
@@ -177,4 +229,8 @@ export interface ChapterTrackMapApi {
   chapterTrackMatch(chapterId: string): Promise<ChapterTrackMatch>;
   /** Suggests the chapter being recorded from the selected .rpp's armed (else selected) track; read-only. */
   chapterSuggestion(): Promise<ChapterSuggestion>;
+  /** Plans one REAPER region per linked chapter, plus the credits on the given tracks ('' leaves one out); read-only. */
+  chapterRegionsPreview(openingTrackGuid: string, closingTrackGuid: string): Promise<ChapterRegionPlan>;
+  /** Recomputes the plan and sends it to REAPER in one undo step; `update` moves a region whose title already exists. */
+  chapterRegionsCreate(openingTrackGuid: string, closingTrackGuid: string, update: boolean): Promise<ChapterRegionsCreated>;
 }

@@ -52,7 +52,7 @@ The review workflow (`apps/desktop/internal/transcript`, Transcript Compare) rea
 
 | `Review` method | What the review workflow asks | REAPER bridge command | Result events |
 | --- | --- | --- | --- |
-| `PrepareReview(run)` | The selected audio to compare against the manuscript | `prepare_compare` | `COMPARE_PREPARED` |
+| `PrepareReview(run, projectFolder)` | The selected audio to compare against the manuscript, read from and written beside the app's project folder (the DAW file may live elsewhere) | `prepare_compare` | `COMPARE_PREPARED` |
 | `InspectFindings(run, path)` | Which findings the DAW already carries as a marker or label (the reviewed-state signal) | `inspect_compare_results` | `COMPARE_MARKER` per finding, `COMPARE_INSPECTED` |
 | `NavigateToFinding(run, id)` | Move the cursor or selection to one finding | `jump_to_compare_marker` | none |
 | `ExportFindings(run, path, colors)` | Write the pending findings into the DAW, skipping ones already there | `export_compare_markers` | `COMPARE_EXPORT_MARKER` per finding, `COMPARE_EXPORTED` |

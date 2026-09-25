@@ -628,5 +628,23 @@
     "file": "narration_workspace.lua",
     "find": "  if recording() then\n    event(session_dir, 'ERROR', run_id, 'REAPER is recording. Stop recording first.')\n    return\n  end\n  local track, answer = find_track(track_text)",
     "replace": "  local track, answer = find_track(track_text)"
+  },
+  {
+    "name": "the comparison baseline is not REAPER's change count",
+    "file": "narration_compare.lua",
+    "find": "local changes = tostring(reaper.GetProjectStateChangeCount(0))",
+    "replace": "local changes = '0'"
+  },
+  {
+    "name": "prepare_compare reads the change count without asking REAPER whether it can",
+    "file": "narration_compare.lua",
+    "find": "if reaper.APIExists('GetProjectStateChangeCount') then\n    local changes",
+    "replace": "if true then\n    local changes"
+  },
+  {
+    "name": "prepare_compare ignores the project folder the app passes",
+    "file": "narration_compare.lua",
+    "find": "  if (app_folder or '') ~= '' then\n    project_folder = app_folder\n  end",
+    "replace": "  if false then\n    project_folder = app_folder\n  end"
   }
 ]

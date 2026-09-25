@@ -15,8 +15,11 @@ func (r *Reaper) Subscribe(sub Subscription) (unsubscribe func()) { return r.cli
 
 func (r *Reaper) Dispatch() error { return r.client.Dispatch() }
 
-func (r *Reaper) PrepareReview(runID string) error {
-	return r.send("prepare_compare", runID)
+func (r *Reaper) PrepareReview(runID, projectFolder string) error {
+	if projectFolder == "" {
+		return r.send("prepare_compare", runID)
+	}
+	return r.send("prepare_compare", runID, projectFolder)
 }
 
 func (r *Reaper) InspectFindings(runID, findingsPath string) error {

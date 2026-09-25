@@ -124,7 +124,7 @@ func (s *Service) ownsRun(runID string) bool {
 func empty() map[string]any {
 	return map[string]any{
 		"runId": nil, "phase": "idle", "percent": 0, "message": "Select a track in REAPER, then start a comparison.",
-		"logs": []string{}, "chapters": []string{}, "rows": []map[string]any{}, "diff": "", "summary": "", "trackName": nil, "audioItemCount": nil, "completedAt": nil,
+		"logs": []string{}, "chapters": []string{}, "rows": []map[string]any{}, "diff": "", "summary": "", "trackName": nil, "audioItemCount": nil, "completedAt": nil, "projectChangeCount": nil,
 		"markerExport": map[string]any{"phase": "idle", "message": "", "added": 0, "skipped": 0}, "elapsed": 0,
 	}
 }
@@ -192,7 +192,9 @@ func (s *Service) Start(options map[string]string) error {
 	if s.bridge == nil {
 		return fmt.Errorf("the REAPER bridge is unavailable")
 	}
-	if err := s.bridge.PrepareReview(runID); err != nil {
+	// The app's project folder, which need not hold the .rpp (project-workspace PRD Phase 5, W4): Start has just checked its
+	// manuscript, so REAPER reads that one and writes the diffs beside it.
+	if err := s.bridge.PrepareReview(runID, s.config.Project); err != nil {
 		s.fail(err.Error())
 		return err
 	}
@@ -568,6 +570,11 @@ func (s *Service) handlePrepared(fields []string) {
 	}
 	s.state["manifest"], s.state["diffPath"], s.state["trackName"] = fields[2], fields[5], fields[4]
 	s.state["audioItemCount"] = intAt(fields, 6)
+	// REAPER's edit counter as the audio was listed: the baseline the "changed since comparison" label compares a later
+	// project_state count against (follow-through PRD Phase 13). An older script, or a REAPER without the call, sends none.
+	if len(fields) > 7 && fields[7] != "" {
+		s.state["projectChangeCount"] = intAt(fields, 7)
+	}
 	options, _ := s.state["options"].(map[string]string)
 	runID, _ := s.state["runId"].(string)
 	s.mu.Unlock()

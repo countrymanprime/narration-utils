@@ -70,7 +70,7 @@ var _ Review = unavailable{}
 
 func (u unavailable) Subscribe(Subscription) (unsubscribe func()) { return func() {} }
 func (u unavailable) Dispatch() error                             { return nil }
-func (u unavailable) PrepareReview(string) error                  { return u.err }
+func (u unavailable) PrepareReview(string, string) error          { return u.err }
 func (u unavailable) InspectFindings(string, string) error        { return u.err }
 func (u unavailable) NavigateToFinding(string, string) error      { return u.err }
 func (u unavailable) ExportFindings(string, string, MarkerColors) error {

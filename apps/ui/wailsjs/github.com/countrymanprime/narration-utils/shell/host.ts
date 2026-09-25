@@ -64,6 +64,24 @@ export function Bootstrap(): $CancellablePromise<{ [_ in string]?: any }> {
     });
 }
 
+export function ChapterRegionsCreate(openingTrackGUID: string, closingTrackGUID: string, update: boolean): $CancellablePromise<string> {
+    return $Call.ByID(3672636080, openingTrackGUID, closingTrackGUID, update);
+}
+
+/**
+ * ChapterRegionsPreview and ChapterRegionsCreate are the chapter and credits
+ * regions (reaper-automation-follow-through PRD Phase 7, credits-in-chapter-
+ * table PRD Phase 4; chapterregions.go): Preview plans one region per linked
+ * chapter, plus the opening and closing credits when their tracks are given
+ * (empty leaves them out), from the saved .rpp and writes nothing; Create
+ * recomputes the same plan and sends it to REAPER's create_regions in one
+ * undo step, moving a region whose title already exists with other bounds
+ * only when update is true.
+ */
+export function ChapterRegionsPreview(openingTrackGUID: string, closingTrackGUID: string): $CancellablePromise<string> {
+    return $Call.ByID(2311254464, openingTrackGUID, closingTrackGUID);
+}
+
 /**
  * ChapterSuggestion suggests the chapter the narrator is recording from the
  * selected .rpp's record-armed (else selected) track as of its last save

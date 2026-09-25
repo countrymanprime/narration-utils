@@ -32,7 +32,7 @@ func TestAnAudacityLaunchGetsAnAdapterThatRefusesEveryReviewRequest(t *testing.T
 		t.Fatal("an Audacity launch must get an adapter, not the standalone nil")
 	}
 	requests := map[string]error{
-		"PrepareReview":     review.PrepareReview("run-1"),
+		"PrepareReview":     review.PrepareReview("run-1", ""),
 		"InspectFindings":   review.InspectFindings("run-1", "findings.json"),
 		"NavigateToFinding": review.NavigateToFinding("run-1", "row-1"),
 		"ExportFindings":    review.ExportFindings("run-1", "findings.json", MarkerColors{}),
