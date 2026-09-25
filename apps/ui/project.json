@@ -31,6 +31,15 @@
         "command": "node scripts/ci/coverage-gate.mjs vitest {projectRoot}"
       }
     },
+    "test-node": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "node --test {projectRoot}/scripts/*.test.mjs"
+      },
+      "metadata": {
+        "description": "node:test suites of the plain-Node scripts under apps/ui/scripts (the docs/ui generator)."
+      }
+    },
     "build": {
       "executor": "nx:run-commands",
       "options": {

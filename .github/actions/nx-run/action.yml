@@ -12,7 +12,7 @@ inputs:
     description: Nx configuration to apply to targets that define it (for example `ci`)
     default: ''
   always:
-    description: Set to `true` to run the selected projects even when the change does not affect them (the atlas kit's drift check reads apps/ui, which is not one of its Nx dependencies)
+    description: Set to `true` to run the selected projects even when the change does not affect them (a check that reads files outside its own project, such as the layout guard or the docs site)
     default: 'false'
 
 runs:

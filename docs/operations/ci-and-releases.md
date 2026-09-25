@@ -54,17 +54,16 @@ The checks a pull request shows, by the name GitHub displays (`ci.yml` calls `_q
 
 | Check | What it runs |
 | --- | --- |
-| `quality / js` | `lint`, `format`, `architecture` (the import rules) and `test` of `narration-utils-ui` (Vitest with the coverage ratchet), then Knip over the whole repository |
-| `quality / ui-visual` | the Playwright visual suite of the mock-backed app (`pnpm --dir apps/ui run screenshots`); uploads screenshots, and traces when it fails |
-| `quality / ui-atlas` | the Storybook component atlas: every story in light and dark at a wide and a narrow viewport, with axe |
-| `quality / ui-atlas-kit` | the tests of `tools/ui-atlas-kit` and its drift check against `apps/ui` |
-| `quality / docs-site` | the public docs site ([below](#the-public-docs-site)): ruff and pytest of `tools/docs-site`, a strict MkDocs build of `docs/` and the link check over the built HTML; fails on any dead internal link |
-| `quality / repo-scripts` | the plain-Node tests of `scripts/` (labels, milestones, release tooling, the layout and project guards) |
-| `quality / python` | ruff and pytest for `libs/python`, the sidecars, `scripts/` and `tests/fixtures` |
-| `quality / lua (ubuntu-latest)`, `quality / lua (windows-latest)` | StyLua and ruff on `integrations/reaper`, then its bridge harness under Lua 5.4 (a fake `reaper` driven through the file protocol, and the mutation checks; [ADR 0066](../adr/0066-the-lua-bridge-is-tested-by-a-harness-under-lua-5-4-and-reaper-api-behaviour-is-checked-in-reaper.md)) |
-| `quality / go` | Windows: gofmt, go vet, golangci-lint, checklocks, the tests (the race detector on every package with concurrency), then `test-schedules` |
+| `quality / js` | `lint`, `format`, `architecture` (the import rules), `test` (Vitest with the coverage ratchet) and `test-node` (the node:test suites of `apps/ui/scripts`) of `narration-utils-ui`, then Knip over the whole repository |
+| `quality / ui-visual (shard 1/3)` to `(shard 3/3)` | the Playwright visual suite of the mock-backed app (`pnpm --dir apps/ui run screenshots --shard=i/3`), a third each, with the per-capture checks; shard 1 also runs `aria`. Each uploads its capture records, its screenshots, and traces when it fails ([ADR 0244](../adr/0244-the-playwright-suites-are-sharded-in-ci-the-quick-checks-share-a-runner-per-os-and-one-check-sums-up-the-run.md)) |
+| `quality / ui-visual` | the whole-run checks over the three shards' records (`pnpm --dir apps/ui run visual:check-run`): every expected capture present, none blank, no undeclared duplicate, no stale `sameAs`. Skipped when the UI is not affected |
+| `quality / ui-atlas (shard 1/2)`, `(shard 2/2)` | the Storybook component atlas, half the stories each: every story in light and dark at a wide and a narrow viewport, with axe |
+| `quality / quick-ubuntu` | one step each, every step runs even after a red one: `repo-scripts` (the plain-Node tests of `scripts/`: labels, milestones, release tooling, the layout and project guards); `docs-site` (the public docs site, [below](#the-public-docs-site): ruff and pytest of `tools/docs-site`, a strict MkDocs build of `docs/` and the link check over the built HTML); `python` (ruff and pytest for `libs/python`, the sidecars, `scripts/` and `tests/fixtures`); `reaper (Lua)` (StyLua and ruff on `integrations/reaper`, then its bridge harness under Lua 5.4: a fake `reaper` driven through the file protocol, and the mutation checks; [ADR 0066](../adr/0066-the-lua-bridge-is-tested-by-a-harness-under-lua-5-4-and-reaper-api-behaviour-is-checked-in-reaper.md)) |
+| `quality / quick-windows` | Windows, one step each: `reaper (Lua)` again (paths from `package.config`, CRLF), then `go lint` (gofmt, go vet, golangci-lint, checklocks) |
+| `quality / go-test` | Windows: the Go tests (the race detector on every package with concurrency), then `test-schedules` |
 | `ui-dist / build` | builds the UI bundle the Windows build reuses |
 | `Build (Windows)` | the native Windows build, starting as soon as `ui-dist / build` finishes |
+| `CI passed` | needs every job above and fails if any failed or was cancelled (skipped passes): the one check for a ruleset to require ([#544](https://github.com/countrymanprime/narration-utils/issues/544)). Documentation-only pull requests do not run `CI`, so requiring it also needs `ci.yml`'s `paths-ignore` changed |
 
 `codeql.yml`, `dependency-review.yml`, `docs.yml`, `security.yml` and `zizmor.yml` run their own checks and are advisory too
 ([every workflow](#every-workflow), [Tracking work on GitHub](github-workflow.md)). A pull request that changes only `docs/**` or
@@ -84,7 +83,7 @@ Each file in `.github/workflows`, what starts it, and the checks it shows on a p
 
 | Workflow | Starts on | Jobs and check names | Blocking? |
 | --- | --- | --- | --- |
-| `ci.yml` (`CI`) | pull request that is not docs- or Markdown-only; manual | `quality / *` and `ui-dist / build` (the reusable `_quality.yml` and `_ui-dist.yml`), `Build (Windows)` | no ruleset requires it |
+| `ci.yml` (`CI`) | pull request that is not docs- or Markdown-only; manual | `quality / *` and `ui-dist / build` (the reusable `_quality.yml` and `_ui-dist.yml`), `Build (Windows)`, `CI passed` | no ruleset requires it |
 | `prerelease.yml` (`Prerelease`) | push to `main` that is not docs- or Markdown-only; manual | `ui-dist / build`, `version`, `Windows build` (needs `ui-dist` and `version`) and `Windows release` (needs the build); no quality jobs, the pull request's `CI` run is the quality gate ([#544](https://github.com/countrymanprime/narration-utils/issues/544) tracks making it a required one); both run only when `version` found a releasable change. A manual run can tick `cold-freeze` to freeze the sidecars without the [freeze cache](#the-sidecar-freeze-cache) | not a pull request check |
 | `promote-release.yml` | manual, with an RC tag; behind the `production` environment | `promote` | not a pull request check |
 | `build-macos.yml`, `build-linux.yml` | manual, or started by the `Windows release` job | one reusable `_attach-platform.yml` run: `Check the release`, `ui-dist / build`, `Build and attach <platform>` | not a pull request check |
@@ -98,7 +97,7 @@ Each file in `.github/workflows`, what starts it, and the checks it shows on a p
 | `pages.yml` (`Pages`) | push to `main` (any change, docs included); a pull request that changes `docs/`, `tools/docs-site/`, the Storybook config, `pyproject.toml`, `uv.lock` or the workflow (`build` only); manual | `build`, `deploy` ([below](#the-pages-workflow)); `deploy` never runs for a pull request | the `build` job is the docs link check for a documentation-only pull request; advisory like the rest |
 | `sync-labels.yml`, `sync-milestones.yml` | push to `main` that changes `.github/labels.json`, `config/roadmap.json` or `scripts/github/**`, and the workflow file; manual | `sync` | run after a merge, never on a pull request |
 
-The tests of `scripts/github/*.test.mjs` (the label and milestone sync) run in `quality / repo-scripts`. Nothing runs on a schedule except
+The tests of `scripts/github/*.test.mjs` (the label and milestone sync) run in the `repo-scripts` step of `quality / quick-ubuntu`. Nothing runs on a schedule except
 CodeQL, the security scan and the online link check. There is no `github-scripts` job and no changed-file classification: Nx `affected` decides what a pull
 request runs (see [Nx projects and the quality gate](#nx-projects-and-the-quality-gate)).
 
@@ -420,11 +419,11 @@ The `.sha256` beside a file only detects a damaged download: it is not evidence 
 - **`Links (offline)`** (shown as `Docs / Links (offline)`) starts on **every** pull request: the trigger has no `paths` filter, on purpose. `ci.yml` skips documentation-only pull requests, so a docs job that shared its filter would also skip a *code* change that renames a file a document links to, and a check that GitHub skips because of a path filter stays pending if it is ever required (see the note at the top of this document). Offline mode reads only the tree and never opens a network connection: a relative link must resolve to a file, and a `#fragment` to a heading of that file (checked; `include_fragments = "anchor-only"` works with `--offline`). A local run over the 227 Markdown files and 1,356 links takes 0.13 seconds (the Actions run adds the runner set-up), so it is cheap enough to block on, and it is deterministic. **It blocks in the sense that a dead link turns the check red**; a red check does not stop a merge while no ruleset requires it (owner decision D11), so the maintainer reads it like the others, and adding `Docs / Links (offline)` to the `Pull Request` ruleset's required checks is an owner-only setting that is safe to make. It replaces nothing: the docs-site build ([below](#the-public-docs-site)) checks the built HTML of the pages it publishes, and `apps/ui/src/docsGuide.test.ts` checks the guide's own anchors.
 - **`Links (online, advisory)`** starts weekly and by hand. It also follows the `http(s)` links (with `actions/cache` on `.lycheecache`, one day), reports the ones that rotted in the job summary, and **never fails**: a link on someone else's server is not a regression in this repository. `429 Too Many Requests` is accepted. The `GITHUB_TOKEN` is passed only to lift GitHub's anonymous rate limit.
 
-**Diagrams.** lychee reads a Mermaid block as text, so `scripts/ci/mermaid-diagrams.test.mjs` (in `quality / repo-scripts`, and so in `pnpm check`) hands every ```` ```mermaid ```` block of every tracked Markdown file to Mermaid's own parser (`mermaid.parse`, the `mermaid` devDependency of the root package) and fails with the file, the line and the parser's message. It needs no browser: Mermaid's sanitizer only wants a DOM, and the test gives it jsdom (already a dependency of the UI's tests) before it imports Mermaid. It proves the syntax, not that the names in a picture are still true; the five diagrams of [the codebase map](../architecture/codebase-map.md#how-the-parts-connect) and the four flows each say which files they were checked against, and the test fails if one of the five owning docs loses its diagram.
+**Diagrams.** lychee reads a Mermaid block as text, so `scripts/ci/mermaid-diagrams.test.mjs` (in the `repo-scripts` step of `quality / quick-ubuntu`, and so in `pnpm check`) hands every ```` ```mermaid ```` block of every tracked Markdown file to Mermaid's own parser (`mermaid.parse`, the `mermaid` devDependency of the root package) and fails with the file, the line and the parser's message. It needs no browser: Mermaid's sanitizer only wants a DOM, and the test gives it jsdom (already a dependency of the UI's tests) before it imports Mermaid. It proves the syntax, not that the names in a picture are still true; the five diagrams of [the codebase map](../architecture/codebase-map.md#how-the-parts-connect) and the four flows each say which files they were checked against, and the test fails if one of the five owning docs loses its diagram.
 
-What it does not see: a path in a code comment (`docs/prds/<name>.prd.md` in a Go or Python file) is not a Markdown link, so `scripts/ci/prd-references.test.mjs` (in `quality / repo-scripts`) fails when a source file cites a PRD that is not in the tree ([ADR 0028](../adr/0028-planned-work-is-specified-as-prds-and-deleted-when-built.md) deletes them by design). Mermaid diagrams are text to lychee.
+What it does not see: a path in a code comment (`docs/prds/<name>.prd.md` in a Go or Python file) is not a Markdown link, so `scripts/ci/prd-references.test.mjs` (in the `repo-scripts` step of `quality / quick-ubuntu`) fails when a source file cites a PRD that is not in the tree ([ADR 0028](../adr/0028-planned-work-is-specified-as-prds-and-deleted-when-built.md) deletes them by design). Mermaid diagrams are text to lychee.
 
-The baseline on 2026-09-21 (S17 phase 1): 0 dead repository links; 7 external links rotted or unreachable, six of them pull requests of the owner's private repositories cited as history in `tools/ui-atlas-kit/docs/rollout-ledger.md` (now ignored, with the reason, in `.lycheeignore`) and one real finding, the README's link to the published site `https://countrymanprime.github.io/narration-utils/`, which answers 404 until the owner enables GitHub Pages ([#231](https://github.com/countrymanprime/narration-utils/issues/231)). To add a link the checker should not chase, add a regular expression to `.lycheeignore` with its reason; to run the check locally, install lychee (`cargo install lychee --locked`) and run `lychee --config .lychee.toml --offline .` (drop `--offline` for the online run).
+The baseline on 2026-09-21 (S17 phase 1): 0 dead repository links; 7 external links rotted or unreachable, six of them pull requests of the owner's private repositories cited as history in the UI atlas kit's rollout ledger (deleted with the kit, [ADR 0243](../adr/0243-the-ui-atlas-kit-is-dissolved-into-apps-ui-which-owns-its-visual-suite-and-atlas-outright.md)) and one real finding, the README's link to the published site `https://countrymanprime.github.io/narration-utils/`, which answers 404 until the owner enables GitHub Pages ([#231](https://github.com/countrymanprime/narration-utils/issues/231)). To add a link the checker should not chase, add a regular expression to `.lycheeignore` with its reason; to run the check locally, install lychee (`cargo install lychee --locked`) and run `lychee --config .lychee.toml --offline .` (drop `--offline` for the online run).
 
 ## Third-party notices
 
@@ -496,7 +495,7 @@ fails if it gains one, or if `docs_dir` stops being `docs/`.
   strict build reports it. Links inside code spans and fenced blocks are examples and are left alone.
 - **The link check.** `mkdocs build --strict` fails on any warning (a missing page, a `#heading` that is not on the page it names, a link it
   cannot place), then `tools/docs-site/check_site.py` reads the built HTML and fails on any internal `href`, `src` or `#fragment` that does not
-  resolve, under the `/narration-utils/` base. Both run in `nx run docs-site:build`, so `pnpm check`, the `quality / docs-site` job and the
+  resolve, under the `/narration-utils/` base. Both run in `nx run docs-site:build`, so `pnpm check`, the `docs-site` step of `quality / quick-ubuntu` and the
   `Pages` build job all gate on them. This is the first link check the repository has. Proof it fails: `tools/docs-site/tests/test_build.py`
   builds a tiny tree in which a dead page link, a dead heading link and a stale include line each fail the build.
 - **Build and browse it.** `pnpm exec nx run docs-site:build` writes `tools/docs-site/build/site` (ignored); serve that folder from a
@@ -521,13 +520,12 @@ runner called:
 
 | Project | Folder | Targets |
 | --- | --- | --- |
-| `narration-utils-ui` | `apps/ui` | `lint`, `format`, `architecture` (the import rules of [ADR 0062](../adr/0062-ui-import-rules-are-a-dependency-cruiser-config-and-a-mark-scan-that-name-their-adr.md)), `test`, `build`, `visual` (Playwright screenshots), `atlas` |
-| `narration-utils-shell` | `apps/desktop` | `lint` (gofmt, go vet, golangci-lint v2: errcheck, staticcheck, gosec and the `standard` set; checklocks), `test` (`-race` in the `ci` configuration, on the packages with concurrency; see [Go lint and the race detector](verification-tooling.md#go-lint-and-the-race-detector)), `test-schedules` (the teleprompter and shutdown tests on one and on four CPUs, five times each; run by the CI `go` job, not by `pnpm check`), `package` (`scripts/release/wails-build.mjs`, not part of the gate) |
+| `narration-utils-ui` | `apps/ui` | `lint`, `format`, `architecture` (the import rules of [ADR 0062](../adr/0062-ui-import-rules-are-a-dependency-cruiser-config-and-a-mark-scan-that-name-their-adr.md)), `test`, `test-node` (`node --test` over `apps/ui/scripts`: the `docs/ui` generator), `build`, `visual` (Playwright screenshots), `atlas` |
+| `narration-utils-shell` | `apps/desktop` | `lint` (gofmt, go vet, golangci-lint v2: errcheck, staticcheck, gosec and the `standard` set; checklocks), `test` (`-race` in the `ci` configuration, on the packages with concurrency; see [Go lint and the race detector](verification-tooling.md#go-lint-and-the-race-detector)), `test-schedules` (the teleprompter and shutdown tests on one and on four CPUs, five times each; run by the CI `go-test` job, not by `pnpm check`), `package` (`scripts/release/wails-build.mjs`, not part of the gate) |
 | `narration-common` | `libs/python` | `lint` (ruff), `test` (pytest) |
 | `manuscript-guide`, `manuscript-teleprompter`, `transcript-compare` | `sidecars/<name>` | `lint`, `test` |
 | `reaper` | `integrations/reaper` | `lint` (StyLua, and ruff for the harness runner), `test` (the Lua bridge harness and its mutation checks, [reaper-bridge](../architecture/reaper-bridge.md)) |
 | `repo-scripts` | `scripts` | `lint`, `test` (pytest), `test-node` (`node --test`) |
-| `ui-atlas-kit` | `tools/ui-atlas-kit` | `test` |
 | `docs-site` | `tools/docs-site` | `lint` (ruff), `test` (pytest), `build` (the strict MkDocs build of `docs/` and the link check; [above](#the-public-docs-site)) |
 | `config`, `fixtures` | `config`, `tests/fixtures` | none (fixtures: `lint`); they exist so a change to them affects the projects that read them |
 | `narration-utils` | the repo root | `knip` (unused files, exports and dependencies, gated at zero: see below); also the `nx release` project |
@@ -538,19 +536,19 @@ runner called:
 - **Look around** with `pnpm exec nx show projects`, `pnpm exec nx graph`, and
   `pnpm exec nx show projects --affected --files=<path>`. Run one project's check with, for example,
   `pnpm exec nx run manuscript-guide:test`.
-- **CI** keeps the job names it had before the Nx move (`js`, `ui-visual`, `ui-atlas`, `ui-atlas-kit`, `repo-scripts`,
-  `python`, `lua`, `go`; the table above lists them as GitHub shows them). Each job runs its targets through
+- **CI** jobs are listed [above](#what-the-repository-enforces-and-what-ci-is-for) as GitHub shows them ([ADR 0244](../adr/0244-the-playwright-suites-are-sharded-in-ci-the-quick-checks-share-a-runner-per-os-and-one-check-sums-up-the-run.md)
+  shaped them). Each job runs its targets through
   `.github/actions/nx-run`: on a pull request `nx affected` against the base branch, otherwise every selected
-  project, one task at a time (parallel tasks starve the two-vCPU runners and trip the UI tests' timeouts).
+  project, one task at a time (parallel tasks starve the runners and trip the UI tests' timeouts).
   `scripts/ci/nx-scope.sh` decides: everything runs when the event is not a pull request, or the change
   touches a file no project owns but all depend on (`nx.json`, `package.json`, `pnpm-lock.yaml`,
   `pnpm-workspace.yaml`, `pyproject.toml`, `uv.lock`, the root `project.json`, `stylua.toml`, `.prettierrc.json`,
   `.prettierignore`, `.editorconfig`, `.gitattributes`, `scripts/quality.mjs`, `scripts/toolchain.json`, `scripts/ci/coverage-gate.mjs`,
   `scripts/ci/coverage-floors.json`, anything under
-  `.github/workflows` or `.github/actions`). The two Playwright jobs keep
-  their own `run:` steps (the atlas kit's audit looks for them) and skip them through
-  `.github/actions/nx-affected` when the UI is not affected. The atlas-kit job always runs, because its drift check
-  reads `apps/ui`, and so does the `repo-scripts` job, because the layout and project guards read every tracked file.
+  `.github/workflows` or `.github/actions`). The Playwright jobs keep
+  their own `run:` steps (they pass a shard) and skip them through
+  `.github/actions/nx-affected` when the UI is not affected. The `repo-scripts` and `docs-site` steps always run,
+  because the layout and project guards read every tracked file and the docs site reads `docs/`, which no project owns.
 - **No changed-file classifier.** `scripts/ci/changed-files.mjs` (and its test) sorted a pull request into `bootstrap` and
   `package` scopes for a four-platform bootstrap and installer matrix that no longer exists. No workflow, script, Nx target or
   document called it, and Nx `affected` with `nx-scope.sh` does the job, so both files were deleted (2026-09-21) rather than wired
@@ -558,9 +556,9 @@ runner called:
 - **Failure diagnostics.** A failing visual test leaves `apps/ui/test-results/<test>/trace.zip` (Playwright
   `trace: 'retain-on-failure'`: DOM snapshots, network and console for every action; a passing test keeps nothing,
   and no retry is involved, [ADR 0023](../adr/0023-visual-suite-capture-contract-and-storybook.md)). When a step of the
-  `ui-visual` job fails, the job uploads that folder as the `ui-visual-traces` artifact for three days. Open a trace
+  `ui-visual (shard i/3)` job fails, the job uploads that folder as the `ui-visual-traces-<i>` artifact for three days. Open a trace
   with `pnpm exec playwright show-trace <trace.zip>` from `apps/ui`, or drop it on trace.playwright.dev. The atlas
-  config is vendored from `tools/ui-atlas-kit`, so it keeps no trace until a kit release adds one.
+  config (`playwright.atlas.config.ts`) keeps no trace yet.
 - **Dependencies** are `implicitDependencies` in each `project.json`: the desktop app reads the UI, the sidecars,
   `config`, `fixtures` and `reaper`; the sidecars read `narration-common` and `config`.
   `scripts/ci/projects.test.mjs` fails if a Python, Go, Lua or `apps/` TypeScript file is not covered by a project
@@ -596,7 +594,7 @@ exactly that. What the suites do so that timing is not a variable:
   `UI_CPU_THROTTLE=20 pnpm --dir apps/ui run screenshots` (any factor of 1 or more; a mistyped value is an error). A
   racing driver fails or photographs the wrong page there on demand instead of once in twenty CI runs. At 20x the two
   Story Bible confirm states exceed Playwright's 30 s test timeout inside the capture's own steps: they fail loudly, they
-  do not photograph the wrong page. The reusable version of this lives in the kit's scaffold (`clickNav`, `beforeCapture`).
+  do not photograph the wrong page.
   `UI_THEME=dark pnpm --dir apps/ui run screenshots` starts every capture in the dark theme, which is how the whole suite
   is looked at in dark (the palette work checks every state in both themes). Its end-of-run validation fails on
   `theme-dark` and `reader-dark` matching their default states, so copy `apps/ui/screenshots/app` aside after the run and read the PNGs; the
@@ -627,11 +625,10 @@ suite has been stable for 50 runs, [#153](https://github.com/countrymanprime/nar
 and `tools/`, configured in `knip.jsonc`. It fails on an unused file, export or dependency, and on an unlisted
 dependency or binary; the repository is at zero, and CI runs it on every pull request in the `js` job. Fix a finding
 by deleting the code or dropping the `export`. Add an `ignore`, `ignoreIssues`, `ignoreDependencies` or
-`ignoreBinaries` entry only with a written reason in the file (generated code, files another repository receives by
-copy, external tools, byte-identical vendored files). It does not read Go, Python or Lua. The standing exceptions
-are the generated `apps/ui/wailsjs`, the UI atlas kit's `plugin/templates`, the wire-contract types, the exports of the
-byte-identical `apps/ui/tests/visual/lib`, `@nx/js` (loaded by `nx release`) and the binaries `go`, `gofmt`, `wails3` and
-`playwright`. Scripts and the kit are entries and their exports are reported too (`includeEntryExports`), so a helper
+`ignoreBinaries` entry only with a written reason in the file (generated code, external tools). It does not read Go,
+Python or Lua. The standing exceptions are the generated `apps/ui/wailsjs`, the wire-contract types, `@nx/js` (loaded by
+`nx release`) and the binaries `go`, `gofmt`, `wails3` and `playwright`. Scripts are entries and their exports are
+reported too (`includeEntryExports`), so a helper
 exported by habit is flagged once nothing imports it. When a dependency that
 Knip cannot see through arrives (a schema library, `@base-ui/react`), run it once and add the false positive with its
 reason rather than the whole package to an ignore list.

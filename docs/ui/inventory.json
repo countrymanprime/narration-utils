@@ -1,5 +1,5 @@
 {
-  "generatedBy": "ui-atlas 0.3.6",
+  "generatedBy": "apps/ui scripts/atlas-docs.mjs",
   "components": [
     {
       "title": "Primitives/Button",

@@ -8,8 +8,7 @@ import type { AxeDebt } from './lib/validators';
 // unnamed chapter bookmark toggle and the project picker with no main landmark or heading), 122 elements over 44 captures after,
 // all of it in the five rules below and none of it colour contrast.
 //
-// Kept apart from the kit-vendored files under lib/ (project-owned), and reached by the capture through `axeDebt` in
-// app.drivers.ts.
+// Kept apart from the capture machinery under lib/, and reached by the capture through `axeDebt` in app.drivers.ts.
 
 // Overlapping highlights render as nested role=button marks (#155).
 const NESTED_HIGHLIGHT_STATES = [

@@ -1,4 +1,3 @@
-// ui-atlas-kit 0.3.5 vendored: do not edit here. Change plugin/templates/core in the kit and run `ui-atlas sync`.
 import { test } from '@playwright/test';
 import { APP_DRIVERS } from './app.drivers';
 import { captureAcrossViewports, captureState } from './lib/capture';
@@ -11,7 +10,7 @@ import { VIEWPORTS } from './viewports';
 // every viewport is captured and checked even when an earlier one fails. A row with `reloadPerViewport` keeps one test per
 // viewport, each on a freshly loaded page (the old shape), for a state whose driving or rendering depends on the width it
 // was reached at. How each state is reached lives in
-// app.drivers.ts; what is checked about each capture lives in lib/capture.ts and, across the whole run, global-setup.ts.
+// app.drivers.ts; what is checked about each capture lives in lib/capture.ts and, across the whole run, run-checks.ts.
 for (const entry of STATE_CATALOG) {
   const driver = APP_DRIVERS[entry.page]?.[entry.state];
   const viewports = [...VIEWPORTS, ...(entry.extraViewports ?? [])];

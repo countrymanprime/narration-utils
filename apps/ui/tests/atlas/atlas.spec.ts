@@ -1,4 +1,3 @@
-// ui-atlas-kit 0.3.1 vendored: do not edit here. Change plugin/templates/core in the kit and run `ui-atlas sync`.
 /* eslint-disable @typescript-eslint/no-explicit-any -- in-page access to Storybook's untyped window globals */
 import { expect, test, type Page } from '@playwright/test';
 import { mkdirSync, readFileSync } from 'node:fs';

@@ -27,7 +27,7 @@ test('applyPathMap leaves look-alikes, prose and the Go module path alone', () =
     'reshared/ui and shared/uikit',
     'the shell is a Go program',
     'github.com/countrymanprime/narration-utils/shell/internal/bridge',
-    'tools/ui-atlas-kit/README.md',
+    'tools/docs-site/README.md',
     'narration-utils-shell',
   ];
   for (const line of untouched) assert.equal(applyPathMap(line, renames), line);

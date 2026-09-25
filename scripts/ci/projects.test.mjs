@@ -18,7 +18,7 @@ const LINTED = [
   { extension: '.py', tool: 'ruff' },
   { extension: '.go', tool: 'go-lint' },
   { extension: '.lua', tool: 'stylua' },
-  // The UI's ESLint config covers apps/ui only; the atlas kit's template .ts files were never linted.
+  // The UI's ESLint config covers apps/ui only.
   { extension: '.ts', tool: 'lint:ci', within: 'apps/' },
   { extension: '.tsx', tool: 'lint:ci', within: 'apps/' },
 ];

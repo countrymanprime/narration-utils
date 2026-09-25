@@ -3,21 +3,15 @@
 // Workspaces come from pnpm-workspace.yaml (apps/ui, apps/desktop); the root workspace covers scripts/ and tools/.
 {
   "$schema": "https://unpkg.com/knip@6/schema.json",
-  // The scripts and the kit are entries (nothing imports them), and an entry's exports are normally never reported.
+  // The scripts are entries (nothing imports them), and an entry's exports are normally never reported.
   // Reporting them keeps a helper exported by habit from outliving its last importer.
   "includeEntryExports": true,
   "workspaces": {
     ".": {
       // Plain Node scripts run by hand, by package.json scripts, by workflows and by Nx targets, and their
       // node:test files. None of them is imported, so each is an entry.
-      "entry": ["scripts/**/*.mjs", "tools/ui-atlas-kit/scripts/*.mjs", "tools/ui-atlas-kit/plugin/**/*.mjs", "tools/ui-atlas-kit/test/**/*.mjs"],
-      "project": ["scripts/**", "tools/**/*.{mjs,js,ts,tsx}"],
-      "ignore": [
-        // The UI atlas kit ships these files to other repositories by copying them (`ui-atlas scaffold`,
-        // `refresh-core`); nothing imports them here. apps/ui holds the live copies, which the drift check
-        // in the kit's tests compares byte for byte, and Knip checks those.
-        "tools/ui-atlas-kit/plugin/templates/**"
-      ],
+      "entry": ["scripts/**/*.mjs"],
+      "project": ["scripts/**"],
       "ignoreDependencies": [
         // Loaded by `nx release version` (nx.json "release"), not imported anywhere.
         "@nx/js"
@@ -39,9 +33,9 @@
         "wailsjs/**"
       ],
       "ignoreDependencies": [
-        // Injected into every captured page by the vendored tests/visual/lib/capture.ts, which reads the file through
-        // `createRequire(...).resolve('axe-core')` only when axe runs (a kit repo that never turns axe on needs no
-        // package), so no import names it (ADR 0064). It is the version @storybook/addon-a11y already brings.
+        // Injected into every captured page by tests/visual/lib/capture.ts, which reads the file through
+        // `createRequire(...).resolve('axe-core')` only when axe runs, so no import names it (ADR 0064). It is the
+        // version @storybook/addon-a11y already brings.
         "axe-core"
       ]
     }
@@ -49,9 +43,6 @@
   // Exported types in the wire contracts document what the host sends and accepts, whether or not a component
   // names each one yet (the boundary schema PRD turns these into schemas). Unused ones are not dead code.
   "ignoreIssues": {
-    "apps/ui/src/api/contracts/**": ["types"],
-    // Vendored from tools/ui-atlas-kit core (`refresh-core`) and kept byte-identical: the kit's drift check fails on
-    // any edit, and these exports are the kit's API for the visual suite it scaffolds into other repositories.
-    "apps/ui/tests/visual/lib/**": ["exports", "types"]
+    "apps/ui/src/api/contracts/**": ["types"]
   }
 }
