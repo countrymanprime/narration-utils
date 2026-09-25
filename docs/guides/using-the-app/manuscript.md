@@ -53,6 +53,12 @@ The [retail sample](settings.md#retail-sample), once picked, is marked where it 
 a **Retail sample** tag, and in the open chapter its lines have a rule down their left edge, with "Retail
 sample starts" and its length above the first line and "Last line of the retail sample" above the last.
 
+A heading that isn't really a chapter (a part title, an epigraph, or front matter your source read in
+as one) is removed from recording from its track panel on [Home](home.md), not from here: choosing
+**Not a chapter** takes it out of this chapter list and search too, and **Front matter** keeps it in the
+list without recording it. Either way its text is untouched and **Restore** on Home brings it back as a
+narration chapter.
+
 ![Manuscript, the retail sample marked on lines 1 to 3 of Chapter 3](../../images/ui/manuscript-retail-sample.webp)
 
 Each narration chapter's header has a **Read aloud** button. It opens the [Teleprompter](teleprompter.md)
