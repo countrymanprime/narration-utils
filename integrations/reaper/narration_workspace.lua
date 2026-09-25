@@ -1,13 +1,15 @@
 -- The edit and proof workspace's REAPER actions, over the bridge (edit-and-proof-workspace PRD Phases 6, 8 and 9; the
--- calls are in docs/research/reaper-api-for-planned-commands.md): set_active_take ("Use this take", EP7 A),
--- list_fx_chains (EP8) and apply_fx_chain (EP9 A). Loaded by narration_ui_bridge.lua, which passes the shared helpers as
--- the chunk argument.
+-- calls are in docs/research/reaper-api-for-planned-commands.md): set_active_take ("Use this take", EP7 A), and FX as
+-- the owner decided on 2026-09-25 (ADR 0234): an FX chain goes on a track or the master track only (list_fx_chains,
+-- apply_fx_chain), and a passage of a take gets one installed plug-in at a time, never a chain (list_fx, add_take_fx).
+-- Loaded by narration_ui_bridge.lua, which passes the shared helpers as the chunk argument.
 --
 -- An item and a take are named by GUID; a GUID that does not resolve, a take no longer on the item and a passage the
 -- item no longer covers answer ITEM_STALE|run|guid|reason (item, take or range) and change nothing. Nothing changes
 -- while REAPER records. An FX chain is named by its path relative to <resource path>/FXChains, with forward slashes,
--- and is resolved here, never taken as a path: it must be a chain list_fx_chains would list. A change is one undo
--- block. None of these calls Main_OnCommand.
+-- and is resolved here, never taken as a path: it must be a chain list_fx_chains would list. A plug-in is named exactly as
+-- EnumInstalledFX lists it, and the FX container (which holds a chain) is not a plug-in. A change is one undo block.
+-- None of these calls Main_OnCommand.
 
 local core = ...
 local event = core.event
@@ -167,14 +169,118 @@ local function chain_path(name)
   return nil
 end
 
-local function apply_fx_chain(session_dir, run_id, item_text, take_text, start_text, end_text, name)
-  if not reaper.APIExists('TakeFX_AddByName') or not reaper.APIExists('SplitMediaItem') or not reaper.APIExists('TakeFX_GetCount') then
+local PLUGIN_LIMIT = 2000
+-- What EnumInstalledFX lists that is not one plug-in: REAPER's video processor and the FX container, which holds a chain.
+local NOT_A_PLUGIN = { ['Video processor'] = true, ['Container'] = true }
+
+-- Every installed plug-in's name, sorted, at most PLUGIN_LIMIT; the second value says whether the limit cut the list.
+local function list_plugins()
+  local names, index = {}, 0
+  while true do
+    local ok, name, ident = reaper.EnumInstalledFX(index)
+    if not ok then
+      break
+    end
+    if name ~= '' and not NOT_A_PLUGIN[ident] and not NOT_A_PLUGIN[name] then
+      names[#names + 1] = name
+    end
+    index = index + 1
+  end
+  table.sort(names)
+  local truncated = #names > PLUGIN_LIMIT
+  for position = #names, PLUGIN_LIMIT + 1, -1 do
+    names[position] = nil
+  end
+  return names, truncated
+end
+
+local function list_fx(session_dir, run_id)
+  if not reaper.APIExists('EnumInstalledFX') then
+    event(session_dir, 'ERROR', run_id, 'This REAPER version cannot list its plug-ins.')
+    return
+  end
+  local names, truncated = list_plugins()
+  for _, name in ipairs(names) do
+    event(session_dir, 'FX_PLUGIN', run_id, name)
+  end
+  event(session_dir, 'FX_PLUGINS_LISTED', run_id, #names, truncated and 1 or 0)
+end
+
+-- True when name is exactly one plug-in list_fx lists, which holds no chain file, path or FX container.
+local function is_plugin(name)
+  for _, listed in ipairs(list_plugins()) do
+    if listed == name then
+      return true
+    end
+  end
+  return false
+end
+
+-- The track a request names: "master" (or the master track's GUID) for the master track, else a track by GUID.
+local function find_track(guid_text)
+  local master = reaper.GetMasterTrack(0)
+  local wanted = normalize_guid(guid_text)
+  if guid_text == 'master' or (wanted ~= '' and normalize_guid(reaper.GetTrackGUID(master)) == wanted) then
+    return master, 'master'
+  end
+  for index = 0, reaper.CountTracks(0) - 1 do
+    local track = reaper.GetTrack(0, index)
+    if wanted ~= '' and normalize_guid(reaper.GetTrackGUID(track)) == wanted then
+      return track, wanted
+    end
+  end
+  return nil
+end
+
+-- An FX chain goes on a whole track or the master track, never on an item or take (ADR 0234): TrackFX_AddByName with
+-- the chain's full path, built here from REAPER's resource path, in one undo block.
+local function apply_fx_chain(session_dir, run_id, track_text, name)
+  if not reaper.APIExists('TrackFX_AddByName') or not reaper.APIExists('TrackFX_GetCount') or not reaper.APIExists('GetMasterTrack') then
     event(session_dir, 'ERROR', run_id, 'This REAPER version cannot apply an FX chain.')
     return
   end
   local path = chain_path(name)
   if not path then
     event(session_dir, 'ERROR', run_id, 'That FX chain is not in the FXChains folder REAPER lists.')
+    return
+  end
+  if recording() then
+    event(session_dir, 'ERROR', run_id, 'REAPER is recording. Stop recording first.')
+    return
+  end
+  local track, answer = find_track(track_text)
+  if not track then
+    event(session_dir, 'TRACK_STALE', run_id, track_text)
+    return
+  end
+  local label = answer == 'master' and 'the master track' or select(2, reaper.GetTrackName(track))
+  local before = reaper.TrackFX_GetCount(track)
+  reaper.Undo_BeginBlock2(0)
+  local index = reaper.TrackFX_AddByName(track, path, false, -1)
+  local added = reaper.TrackFX_GetCount(track) - before
+  reaper.Undo_EndBlock2(0, 'Narration Utils: apply FX chain ' .. name .. ' to ' .. label, -1)
+  reaper.UpdateArrange()
+  if index < 0 or added <= 0 then
+    event(session_dir, 'ERROR', run_id, 'REAPER did not load the FX chain.')
+    return
+  end
+  event(session_dir, 'FX_CHAIN_APPLIED', run_id, name, answer, added)
+end
+
+-- One installed plug-in on a passage of the take that plays (ADR 0234): split at the passage's edges and add the
+-- plug-in, by its listed name, to the middle piece's take, in one undo block. Sending it again adds another.
+local function add_take_fx(session_dir, run_id, item_text, take_text, start_text, end_text, name)
+  if
+    not reaper.APIExists('TakeFX_AddByName')
+    or not reaper.APIExists('SplitMediaItem')
+    or not reaper.APIExists('TakeFX_GetCount')
+    or not reaper.APIExists('EnumInstalledFX')
+  then
+    event(session_dir, 'ERROR', run_id, 'This REAPER version cannot add take FX.')
+    return
+  end
+  if not is_plugin(name) then
+    event(session_dir, 'ERROR', run_id, 'A passage takes one installed plug-in; FX chains go on a track.')
     return
   end
   local source_start, source_end = tonumber(start_text), tonumber(end_text)
@@ -208,7 +314,6 @@ local function apply_fx_chain(session_dir, run_id, item_text, take_text, start_t
     event(session_dir, 'ITEM_STALE', run_id, item_guid(item), 'range')
     return
   end
-  local label = 'Narration Utils: apply FX chain ' .. name
   reaper.PreventUIRefresh(1)
   reaper.Undo_BeginBlock2(0)
   local middle, splits, failure = item, 0, nil
@@ -227,17 +332,16 @@ local function apply_fx_chain(session_dir, run_id, item_text, take_text, start_t
       failure = 'REAPER could not split the item.'
     end
   end
-  local middle_take, added = nil, 0
+  local middle_take = nil
   if not failure then
     middle_take = reaper.GetActiveTake(middle)
     local before = reaper.TakeFX_GetCount(middle_take)
-    local index = reaper.TakeFX_AddByName(middle_take, path, -1)
-    added = reaper.TakeFX_GetCount(middle_take) - before
-    if index < 0 or added <= 0 then
-      failure = 'REAPER did not load the FX chain.'
+    local index = reaper.TakeFX_AddByName(middle_take, name, -1)
+    if index < 0 or reaper.TakeFX_GetCount(middle_take) - before ~= 1 then
+      failure = 'REAPER did not add exactly one plug-in.'
     end
   end
-  reaper.Undo_EndBlock2(0, label, -1)
+  reaper.Undo_EndBlock2(0, 'Narration Utils: add take FX ' .. name, -1)
   reaper.PreventUIRefresh(-1)
   reaper.UpdateArrange()
   if failure then
@@ -248,7 +352,7 @@ local function apply_fx_chain(session_dir, run_id, item_text, take_text, start_t
     event(session_dir, 'ERROR', run_id, message)
     return
   end
-  event(session_dir, 'FX_CHAIN_APPLIED', run_id, name, item_guid(middle), take_guid(middle_take), splits, added)
+  event(session_dir, 'TAKE_FX_ADDED', run_id, name, item_guid(middle), take_guid(middle_take), splits)
 end
 
 return function(registry)
@@ -258,7 +362,13 @@ return function(registry)
   registry.register('list_fx_chains', function(ctx, args)
     list_fx_chains(ctx.session_dir, args[1] or '')
   end)
+  registry.register('list_fx', function(ctx, args)
+    list_fx(ctx.session_dir, args[1] or '')
+  end)
   registry.register('apply_fx_chain', function(ctx, args)
-    apply_fx_chain(ctx.session_dir, args[1] or '', args[2] or '', args[3] or '', args[4] or '', args[5] or '', args[6] or '')
+    apply_fx_chain(ctx.session_dir, args[1] or '', args[2] or '', args[3] or '')
+  end)
+  registry.register('add_take_fx', function(ctx, args)
+    add_take_fx(ctx.session_dir, args[1] or '', args[2] or '', args[3] or '', args[4] or '', args[5] or '', args[6] or '')
   end)
 end

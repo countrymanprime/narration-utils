@@ -1,6 +1,7 @@
 -- The edit and proof workspace's REAPER actions (narration_workspace.lua; edit-and-proof-workspace PRD Phases 6, 8 and
--- 9): set_active_take ("Use this take", EP7 A), list_fx_chains (EP8) and apply_fx_chain (EP9 A: split at the passage's
--- edges and add the chain as take FX on the middle piece, in one undo block).
+-- 9): set_active_take ("Use this take", EP7 A); FX (ADR 0234, the owner's 2026-09-25 decision): an FX chain goes on a
+-- track or the master track only (list_fx_chains, apply_fx_chain), and a passage of a take gets one installed plug-in
+-- at a time, never a chain (list_fx, add_take_fx: split at the passage's edges, the plug-in on the middle piece).
 
 local H = require('harness')
 
@@ -151,7 +152,45 @@ H.test('list_fx_chains changes nothing', function()
   H.eq(#s.fake.undo, 0)
 end)
 
--- apply_fx_chain -------------------------------------------------------------------------------------------------
+-- list_fx --------------------------------------------------------------------------------------------------------
+
+H.test('list_fx lists the installed plug-ins by name, sorted, and never an FX container or the video processor', function()
+  local s = new_session()
+  s.fake.installed_fx = {
+    { name = 'Video processor', ident = 'Video processor' },
+    { name = 'Container', ident = 'Container' },
+    { name = 'VST3: ReaEQ (Cockos)', ident = 'C:\\Plugins\\reaeq.vst3' },
+    { name = 'JS: De-esser', ident = 'deesser' },
+  }
+  s:send('list_fx', 'p1')
+  H.eq(s:events(), {
+    { 'FX_PLUGIN', 'p1', 'JS: De-esser' },
+    { 'FX_PLUGIN', 'p1', 'VST3: ReaEQ (Cockos)' },
+    { 'FX_PLUGINS_LISTED', 'p1', '2', '0' },
+  })
+  H.eq(#s.fake.undo, 0)
+end)
+
+H.test('list_fx stops at its limit and says it did', function()
+  local s = new_session()
+  s.fake.installed_fx = {}
+  for index = 1, 2005 do
+    s.fake.installed_fx[index] = { name = string.format('JS: Effect %04d', index), ident = 'x' }
+  end
+  s:send('list_fx', 'p1')
+  local events = s:events()
+  H.eq(#events, 2001)
+  H.eq(events[#events], { 'FX_PLUGINS_LISTED', 'p1', '2000', '1' })
+end)
+
+H.test('list_fx needs EnumInstalledFX', function()
+  local s = new_session()
+  s.fake:remove_api('EnumInstalledFX')
+  s:send('list_fx', 'p1')
+  H.eq(s:events(), { { 'ERROR', 'p1', 'This REAPER version cannot list its plug-ins.' } })
+end)
+
+-- add_take_fx ----------------------------------------------------------------------------------------------------
 
 -- An item at 10..15 s whose take starts 2 s into its source: source 3..4 s is project 11..12 s.
 local function trimmed_item(s, track)
@@ -160,88 +199,95 @@ local function trimmed_item(s, track)
   return item
 end
 
-H.test('apply_fx_chain splits at both edges and adds the chain to the middle take only, in one undo step', function()
+local EQ = 'VST3: ReaEQ (Cockos)'
+
+local function plugins(s)
+  s.fake.installed_fx = { { name = EQ, ident = 'reaeq.vst3' }, { name = 'JS: De-esser', ident = 'deesser' }, { name = 'Container', ident = 'Container' } }
+end
+
+H.test('add_take_fx splits at both edges and adds one plug-in to the middle take only, in one undo step', function()
   local s, track = new_session()
-  local root = chains(s, { 'Voice/Test EQ.RfxChain' })
+  plugins(s)
   local item = trimmed_item(s, track)
-  s:send('apply_fx_chain', 'x1', ITEM, item.takes[1].guid, '3', '4', 'Voice/Test EQ.RfxChain')
+  s:send('add_take_fx', 'x1', ITEM, item.takes[1].guid, '3', '4', EQ)
   local events = s:events()
-  H.eq(#events, 1)
-  H.eq({ events[1][1], events[1][2], events[1][3], events[1][6], events[1][7] }, { 'FX_CHAIN_APPLIED', 'x1', 'Voice/Test EQ.RfxChain', '2', '1' })
   local pieces = track.items
+  H.eq(events, { { 'TAKE_FX_ADDED', 'x1', EQ, pieces[2].guid, pieces[2].takes[1].guid, '2' } })
   H.eq(#pieces, 3)
   H.eq({ pieces[1].position, pieces[1].length, pieces[2].position, pieces[2].length, pieces[3].position }, { 10, 1, 11, 1, 12 })
   H.eq({ #(pieces[1].takes[1].fx or {}), #pieces[2].takes[1].fx, #pieces[3].takes[1].fx }, { 0, 1, 0 })
-  H.eq(pieces[2].takes[1].fx[1].name, H.join(H.join(root, 'Voice'), 'Test EQ.RfxChain'), 'the chain is loaded by its full path')
-  H.eq(events[1][4], pieces[2].guid)
-  H.eq(events[1][5], pieces[2].takes[1].guid)
+  H.eq(pieces[2].takes[1].fx[1].name, EQ, 'the plug-in is added by its name, never by a file path')
   H.eq(
     { pieces[1].ext['narration_utils_line_id'], pieces[2].ext['narration_utils_line_id'], pieces[3].ext['narration_utils_line_id'] },
     { 'line-000001', 'line-000001', 'line-000001' }
   )
-  H.eq(s.fake:undo_labels(), { 'Narration Utils: apply FX chain Voice/Test EQ.RfxChain' })
+  H.eq(s.fake:undo_labels(), { 'Narration Utils: add take FX ' .. EQ })
   H.eq(s.fake.ui_refresh_hold or 0, 0, 'every PreventUIRefresh(1) is released')
 end)
 
-H.test('apply_fx_chain on the whole item splits nothing, and at one edge splits once', function()
+H.test('add_take_fx adds a second plug-in to the same piece without splitting it again', function()
   local s, track = new_session()
-  chains(s, { 'A.RfxChain' })
+  plugins(s)
   local item = trimmed_item(s, track)
-  s:send('apply_fx_chain', 'x1', ITEM, item.takes[1].guid, '2', '7', 'A.RfxChain')
+  s:send('add_take_fx', 'x1', ITEM, item.takes[1].guid, '3', '4', EQ)
+  local middle = track.items[2]
+  s:events()
+  s:send('add_take_fx', 'x2', middle.guid, middle.takes[1].guid, '3', '4', 'JS: De-esser')
+  H.eq(s:events(), { { 'TAKE_FX_ADDED', 'x2', 'JS: De-esser', middle.guid, middle.takes[1].guid, '0' } })
+  H.eq(#track.items, 3)
+  H.eq(#middle.takes[1].fx, 2)
+end)
+
+H.test('add_take_fx on the whole item splits nothing, and at one edge splits once', function()
+  local s, track = new_session()
+  plugins(s)
+  local item = trimmed_item(s, track)
+  s:send('add_take_fx', 'x1', ITEM, item.takes[1].guid, '2', '7', EQ)
   local whole = s:events()[1]
   H.eq({ whole[4], whole[6] }, { ITEM, '0' })
   H.eq(#track.items, 1)
-  s:send('apply_fx_chain', 'x2', ITEM, item.takes[1].guid, '2', '3', 'A.RfxChain')
+  s:send('add_take_fx', 'x2', ITEM, item.takes[1].guid, '2', '3', EQ)
   H.eq(s:events()[1][6], '1')
   H.eq(#track.items, 2)
 end)
 
-H.test('apply_fx_chain refuses a chain it would not list, a path outside the folder and a missing file', function()
+H.test('add_take_fx refuses an FX chain, a container and a plug-in REAPER does not list', function()
   local s, track = new_session()
+  plugins(s)
   chains(s, { 'A.RfxChain' })
-  H.write_file(H.join(s.dir, 'reaper.ini'), '[reaper]\n')
   local item = trimmed_item(s, track)
-  for _, name in ipairs({ '../reaper.ini', '..\\reaper.ini', '/etc/passwd', 'C:\\Windows\\x.RfxChain', 'Voice/../A.RfxChain', 'A.txt', 'Missing.RfxChain', '' }) do
-    s:send('apply_fx_chain', 'x1', ITEM, item.takes[1].guid, '3', '4', name)
-    H.eq(s:events(), { { 'ERROR', 'x1', 'That FX chain is not in the FXChains folder REAPER lists.' } }, name)
+  for _, name in ipairs({ 'A.RfxChain', H.join(H.join(s.dir, 'FXChains'), 'A.RfxChain'), 'Container', 'VST3: Not Installed', '' }) do
+    s:send('add_take_fx', 'x1', ITEM, item.takes[1].guid, '3', '4', name)
+    H.eq(s:events(), { { 'ERROR', 'x1', 'A passage takes one installed plug-in; FX chains go on a track.' } }, name)
   end
   H.eq(#track.items, 1)
   H.eq(#s.fake.undo, 0)
   H.eq(calls_named(s, 'TakeFX_AddByName'), 0)
 end)
 
-H.test('apply_fx_chain refuses a chain file that is there but deeper than the listing reaches', function()
+H.test('add_take_fx reports a stale item, take or passage and changes nothing', function()
   local s, track = new_session()
-  chains(s, { 'a/b/c/d/e/Deep.RfxChain' })
-  local item = trimmed_item(s, track)
-  s:send('apply_fx_chain', 'x1', ITEM, item.takes[1].guid, '3', '4', 'a/b/c/d/e/Deep.RfxChain')
-  H.eq(s:events(), { { 'ERROR', 'x1', 'That FX chain is not in the FXChains folder REAPER lists.' } })
-  H.eq(calls_named(s, 'TakeFX_AddByName'), 0)
-end)
-
-H.test('apply_fx_chain reports a stale item, take or passage and changes nothing', function()
-  local s, track = new_session()
-  chains(s, { 'A.RfxChain' })
+  plugins(s)
   local item = trimmed_item(s, track)
   local take = item.takes[1].guid
-  s:send('apply_fx_chain', 'x1', STALE, take, '3', '4', 'A.RfxChain')
-  s:send('apply_fx_chain', 'x2', ITEM, STALE, '3', '4', 'A.RfxChain')
-  s:send('apply_fx_chain', 'x3', ITEM, take, '8', '9', 'A.RfxChain')
+  s:send('add_take_fx', 'x1', STALE, take, '3', '4', EQ)
+  s:send('add_take_fx', 'x2', ITEM, STALE, '3', '4', EQ)
+  s:send('add_take_fx', 'x3', ITEM, take, '8', '9', EQ)
   H.eq(s:events(), { { 'ITEM_STALE', 'x1', STALE, 'item' }, { 'ITEM_STALE', 'x2', STALE, 'take' }, { 'ITEM_STALE', 'x3', ITEM, 'range' } })
   H.eq(#track.items, 1)
   H.eq(#s.fake.undo, 0)
 end)
 
-H.test('apply_fx_chain refuses a passage on a take that is not playing, an unusable time and recording', function()
+H.test('add_take_fx refuses a passage on a take that is not playing, an unusable time and recording', function()
   local s, track = new_session()
-  chains(s, { 'A.RfxChain' })
+  plugins(s)
   local item = trimmed_item(s, track)
   local other = s.fake.reaper.AddTakeToMediaItem(item)
-  s:send('apply_fx_chain', 'x1', ITEM, other.guid, '0', '1', 'A.RfxChain')
-  s:send('apply_fx_chain', 'x2', ITEM, item.takes[1].guid, '4', '3', 'A.RfxChain')
-  s:send('apply_fx_chain', 'x3', ITEM, item.takes[1].guid, 'soon', '3', 'A.RfxChain')
+  s:send('add_take_fx', 'x1', ITEM, other.guid, '0', '1', EQ)
+  s:send('add_take_fx', 'x2', ITEM, item.takes[1].guid, '4', '3', EQ)
+  s:send('add_take_fx', 'x3', ITEM, item.takes[1].guid, 'soon', '3', EQ)
   s.fake.play_state = 5
-  s:send('apply_fx_chain', 'x4', ITEM, item.takes[1].guid, '3', '4', 'A.RfxChain')
+  s:send('add_take_fx', 'x4', ITEM, item.takes[1].guid, '3', '4', EQ)
   H.eq(s:events(), {
     { 'ERROR', 'x1', 'The passage is not on the take that plays.' },
     { 'ERROR', 'x2', 'The passage has no usable time.' },
@@ -251,41 +297,126 @@ H.test('apply_fx_chain refuses a passage on a take that is not playing, an unusa
   H.eq(#track.items, 1)
 end)
 
+H.test('add_take_fx says so when REAPER does not add the plug-in, or adds more than one, and closes its undo step', function()
+  for _, case in ipairs({ { fails = true }, { count = 2 } }) do
+    local s, track = new_session()
+    plugins(s)
+    local item = trimmed_item(s, track)
+    s.fake.fx_load_fails = case.fails
+    s.fake.chain_fx_count = case.count
+    s:send('add_take_fx', 'x1', ITEM, item.takes[1].guid, '3', '4', EQ)
+    H.eq(s:events(), { { 'ERROR', 'x1', 'REAPER did not add exactly one plug-in. The item was split: press Undo in REAPER to rejoin it.' } })
+    H.eq(s.fake:undo_labels(), { 'Narration Utils: add take FX ' .. EQ })
+    H.eq(s.fake.ui_refresh_hold or 0, 0)
+  end
+end)
+
+H.test('add_take_fx needs the split, take FX and plug-in list APIs', function()
+  for _, api in ipairs({ 'TakeFX_AddByName', 'SplitMediaItem', 'EnumInstalledFX' }) do
+    local s, track = new_session()
+    plugins(s)
+    local item = trimmed_item(s, track)
+    s.fake:remove_api(api)
+    s:send('add_take_fx', 'x1', ITEM, item.takes[1].guid, '3', '4', EQ)
+    H.eq(s:events(), { { 'ERROR', 'x1', 'This REAPER version cannot add take FX.' } }, api)
+  end
+end)
+
+-- apply_fx_chain -------------------------------------------------------------------------------------------------
+
+H.test('apply_fx_chain adds the chain to the named track in one undo step and touches no item', function()
+  local s, track = new_session()
+  local root = chains(s, { 'Voice/Test EQ.RfxChain' })
+  local item = trimmed_item(s, track)
+  s:send('apply_fx_chain', 'c1', track.guid, 'Voice/Test EQ.RfxChain')
+  H.eq(s:events(), { { 'FX_CHAIN_APPLIED', 'c1', 'Voice/Test EQ.RfxChain', track.guid, '1' } })
+  H.eq(track.fx[1].name, H.join(H.join(root, 'Voice'), 'Test EQ.RfxChain'), 'the chain is loaded by its full path, built here')
+  H.eq(#track.items, 1)
+  H.eq(#(item.takes[1].fx or {}), 0)
+  H.eq(calls_named(s, 'SplitMediaItem'), 0)
+  H.eq(s.fake:undo_labels(), { 'Narration Utils: apply FX chain Voice/Test EQ.RfxChain to Chapter 1' })
+end)
+
+H.test('apply_fx_chain adds the chain to the master track by name or by its GUID', function()
+  local s = new_session()
+  chains(s, { 'Master.RfxChain' })
+  s.fake.chain_fx_count = 3
+  s:send('apply_fx_chain', 'c1', 'master', 'Master.RfxChain')
+  s:send('apply_fx_chain', 'c2', s.fake.master.guid, 'Master.RfxChain')
+  H.eq(s:events(), { { 'FX_CHAIN_APPLIED', 'c1', 'Master.RfxChain', 'master', '3' }, { 'FX_CHAIN_APPLIED', 'c2', 'Master.RfxChain', 'master', '3' } })
+  H.eq(#s.fake.master.fx, 6)
+  H.eq(
+    s.fake:undo_labels(),
+    { 'Narration Utils: apply FX chain Master.RfxChain to the master track', 'Narration Utils: apply FX chain Master.RfxChain to the master track' }
+  )
+end)
+
+H.test('apply_fx_chain refuses a chain it would not list, a path outside the folder, a missing file and a plug-in name', function()
+  local s, track = new_session()
+  chains(s, { 'A.RfxChain' })
+  H.write_file(H.join(s.dir, 'reaper.ini'), '[reaper]\n')
+  for _, name in ipairs({
+    '../reaper.ini',
+    '..\\reaper.ini',
+    '/etc/passwd',
+    'C:\\Windows\\x.RfxChain',
+    'Voice/../A.RfxChain',
+    'A.txt',
+    'Missing.RfxChain',
+    'VST3: ReaEQ (Cockos)',
+    '',
+  }) do
+    s:send('apply_fx_chain', 'c1', track.guid, name)
+    H.eq(s:events(), { { 'ERROR', 'c1', 'That FX chain is not in the FXChains folder REAPER lists.' } }, name)
+  end
+  H.eq(#s.fake.undo, 0)
+  H.eq(calls_named(s, 'TrackFX_AddByName'), 0)
+end)
+
+H.test('apply_fx_chain refuses a chain file that is there but deeper than the listing reaches', function()
+  local s, track = new_session()
+  chains(s, { 'a/b/c/d/e/Deep.RfxChain' })
+  s:send('apply_fx_chain', 'c1', track.guid, 'a/b/c/d/e/Deep.RfxChain')
+  H.eq(s:events(), { { 'ERROR', 'c1', 'That FX chain is not in the FXChains folder REAPER lists.' } })
+  H.eq(calls_named(s, 'TrackFX_AddByName'), 0)
+end)
+
+H.test('apply_fx_chain reports a track that is gone, refuses while recording, and adds to no other track', function()
+  local s, track = new_session()
+  chains(s, { 'A.RfxChain' })
+  s:send('apply_fx_chain', 'c1', STALE, 'A.RfxChain')
+  s.fake.play_state = 5
+  s:send('apply_fx_chain', 'c2', track.guid, 'A.RfxChain')
+  H.eq(s:events(), { { 'TRACK_STALE', 'c1', STALE }, { 'ERROR', 'c2', 'REAPER is recording. Stop recording first.' } })
+  H.eq(calls_named(s, 'TrackFX_AddByName'), 0)
+end)
+
 H.test('apply_fx_chain says so when REAPER does not load the chain, and closes its undo step', function()
   local s, track = new_session()
   chains(s, { 'A.RfxChain' })
-  local item = trimmed_item(s, track)
   s.fake.fx_load_fails = true
-  s:send('apply_fx_chain', 'x1', ITEM, item.takes[1].guid, '3', '4', 'A.RfxChain')
-  H.eq(s:events(), { { 'ERROR', 'x1', 'REAPER did not load the FX chain. The item was split: press Undo in REAPER to rejoin it.' } })
-  H.eq(s.fake:undo_labels(), { 'Narration Utils: apply FX chain A.RfxChain' })
-  H.eq(s.fake.ui_refresh_hold or 0, 0)
+  s:send('apply_fx_chain', 'c1', track.guid, 'A.RfxChain')
+  H.eq(s:events(), { { 'ERROR', 'c1', 'REAPER did not load the FX chain.' } })
+  H.eq(s.fake.open_undo_blocks, 0)
 end)
 
-H.test('apply_fx_chain reports how many FX a chain added', function()
+H.test('apply_fx_chain needs the track FX API', function()
   local s, track = new_session()
   chains(s, { 'A.RfxChain' })
-  local item = trimmed_item(s, track)
-  s.fake.chain_fx_count = 3
-  s:send('apply_fx_chain', 'x1', ITEM, item.takes[1].guid, '3', '4', 'A.RfxChain')
-  H.eq(s:events()[1][7], '3')
-end)
-
-H.test('apply_fx_chain needs the split and take FX APIs', function()
-  local s, track = new_session()
-  chains(s, { 'A.RfxChain' })
-  local item = trimmed_item(s, track)
-  s.fake:remove_api('TakeFX_AddByName')
-  s:send('apply_fx_chain', 'x1', ITEM, item.takes[1].guid, '3', '4', 'A.RfxChain')
-  H.eq(s:events(), { { 'ERROR', 'x1', 'This REAPER version cannot apply an FX chain.' } })
+  s.fake:remove_api('TrackFX_AddByName')
+  s:send('apply_fx_chain', 'c1', track.guid, 'A.RfxChain')
+  H.eq(s:events(), { { 'ERROR', 'c1', 'This REAPER version cannot apply an FX chain.' } })
 end)
 
 H.test('the workspace commands never call Main_OnCommand', function()
   local s, track = new_session()
+  plugins(s)
   chains(s, { 'A.RfxChain' })
   local item = trimmed_item(s, track)
   s:send('list_fx_chains', 'f1')
-  s:send('apply_fx_chain', 'x1', ITEM, item.takes[1].guid, '3', '4', 'A.RfxChain')
+  s:send('list_fx', 'p1')
+  s:send('apply_fx_chain', 'c1', track.guid, 'A.RfxChain')
+  s:send('add_take_fx', 'x1', ITEM, item.takes[1].guid, '3', '4', EQ)
   s:send('set_active_take', 'u1', ITEM, item.takes[1].guid)
   H.eq(calls_named(s, 'Main_OnCommand'), 0)
 end)

@@ -59,6 +59,12 @@ function Fake.new(host)
   -- GetAudioDeviceInfo('IDENT_IN'): the open input device's name; nil when the device is closed (REAPER answers false).
   self.audio_input = nil
   self.exit_handlers = {}
+  -- The master track (GetMasterTrack): not in self.tracks, as REAPER keeps it out of CountTracks/GetTrack. Its GUID is
+  -- fixed so it never shifts the GUIDs the other tests' tracks and items get.
+  self.master = { name = 'MASTER', items = {}, guid = '{0000FFFF-0000-4000-8000-00000000FFFE}', armed = false }
+  -- EnumInstalledFX's list, in REAPER's order: { name = ..., ident = ... }. REAPER lists its video processor and the
+  -- FX container among them (ident "Video processor", "Container"); a test sets what it needs.
+  self.installed_fx = {}
   -- The Main section of REAPER's action list, in enumeration order: { id = command ID, name = action-list text }.
   -- Starts with a few real native actions (IDs confirmed in REAPER 7.80 by the S5 spike) so a lookup has to skip
   -- past non-matching entries; a test adds more with Fake:add_action.
@@ -544,6 +550,32 @@ function Fake:add_item_api(api)
   end
   function api.GetTrack(_, index)
     return fake.tracks[index + 1]
+  end
+  function api.GetMasterTrack(_)
+    return fake.master
+  end
+  function api.EnumInstalledFX(index)
+    local fx = fake.installed_fx[index + 1]
+    if not fx then
+      return false, '', ''
+    end
+    return true, fx.name, fx.ident
+  end
+  -- Track FX (apply_fx_chain): a chain adds fake.chain_fx_count FX (1 unless set); fake.fx_load_fails refuses it.
+  function api.TrackFX_AddByName(track, name, rec_fx, instantiate)
+    fake.calls[#fake.calls + 1] = { name = 'TrackFX_AddByName', fx = name, rec_fx = rec_fx, instantiate = instantiate }
+    if fake.fx_load_fails then
+      return -1
+    end
+    track.fx = track.fx or {}
+    local first = #track.fx
+    for _ = 1, fake.chain_fx_count or 1 do
+      track.fx[#track.fx + 1] = { name = name }
+    end
+    return first
+  end
+  function api.TrackFX_GetCount(track)
+    return #(track.fx or {})
   end
   function api.GetMediaItem_Track(item)
     return item.track

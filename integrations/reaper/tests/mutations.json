@@ -536,8 +536,8 @@
   {
     "name": "a chain the listing does not hold is applied",
     "file": "narration_workspace.lua",
-    "find": "    if listed == name then",
-    "replace": "    if true then"
+    "find": "    if listed == name then\n      local path = chain_root()",
+    "replace": "    if true then\n      local path = chain_root()"
   },
   {
     "name": "the chain listing depth limit is lifted",
@@ -558,19 +558,19 @@
     "replace": "  local names, index = {}, 0"
   },
   {
-    "name": "a passage outside the item is applied",
+    "name": "take FX are added to a passage outside the item",
     "file": "narration_workspace.lua",
     "find": "  if from < first - EDGE_EPSILON or to > last + EDGE_EPSILON then",
     "replace": "  if false then"
   },
   {
-    "name": "a passage on a take that does not play is applied",
+    "name": "take FX are added to a take that does not play",
     "file": "narration_workspace.lua",
     "find": "  if reaper.GetActiveTake(item) ~= take then\n    event(session_dir, 'ERROR', run_id, 'The passage is not on the take that plays.')",
     "replace": "  if false then\n    event(session_dir, 'ERROR', run_id, 'The passage is not on the take that plays.')"
   },
   {
-    "name": "an FX chain is applied while REAPER records",
+    "name": "take FX are added while REAPER records",
     "file": "narration_workspace.lua",
     "find": "  if recording() then\n    event(session_dir, 'ERROR', run_id, 'REAPER is recording. Stop recording first.')\n    return\n  end\n  local item, take, stale, reason = resolve(item_text, take_text)\n  if not item then\n    event(session_dir, 'ITEM_STALE', run_id, stale, reason)\n    return\n  end\n  if reaper.GetActiveTake(item) ~= take then",
     "replace": "  local item, take, stale, reason = resolve(item_text, take_text)\n  if not item then\n    event(session_dir, 'ITEM_STALE', run_id, stale, reason)\n    return\n  end\n  if reaper.GetActiveTake(item) ~= take then"
@@ -578,8 +578,8 @@
   {
     "name": "a chain REAPER did not load is reported as applied",
     "file": "narration_workspace.lua",
-    "find": "    if index < 0 or added <= 0 then",
-    "replace": "    if false then"
+    "find": "  if index < 0 or added <= 0 then",
+    "replace": "  if false then"
   },
   {
     "name": "the whole item is split at its own edge",
@@ -592,5 +592,41 @@
     "file": "narration_workspace.lua",
     "find": "  reaper.PreventUIRefresh(-1)\n",
     "replace": "\n"
+  },
+  {
+    "name": "a plug-in REAPER does not list is added to a take",
+    "file": "narration_workspace.lua",
+    "find": "    if listed == name then\n      return true",
+    "replace": "    if true then\n      return true"
+  },
+  {
+    "name": "the FX container is listed as a plug-in",
+    "file": "narration_workspace.lua",
+    "find": "    if name ~= '' and not NOT_A_PLUGIN[ident] and not NOT_A_PLUGIN[name] then",
+    "replace": "    if name ~= '' then"
+  },
+  {
+    "name": "a take gets more than one FX from one request",
+    "file": "narration_workspace.lua",
+    "find": "    if index < 0 or reaper.TakeFX_GetCount(middle_take) - before ~= 1 then",
+    "replace": "    if index < 0 or reaper.TakeFX_GetCount(middle_take) - before < 1 then"
+  },
+  {
+    "name": "the plug-in list limit is lifted",
+    "file": "narration_workspace.lua",
+    "find": "local PLUGIN_LIMIT = 2000",
+    "replace": "local PLUGIN_LIMIT = 20000"
+  },
+  {
+    "name": "a stale track gets a chain in place of another",
+    "file": "narration_workspace.lua",
+    "find": "      return track, wanted\n    end\n  end\n  return nil",
+    "replace": "      return track, wanted\n    end\n  end\n  return reaper.GetTrack(0, 0), wanted"
+  },
+  {
+    "name": "an FX chain is applied while REAPER records",
+    "file": "narration_workspace.lua",
+    "find": "  if recording() then\n    event(session_dir, 'ERROR', run_id, 'REAPER is recording. Stop recording first.')\n    return\n  end\n  local track, answer = find_track(track_text)",
+    "replace": "  local track, answer = find_track(track_text)"
   }
 ]

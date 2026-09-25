@@ -111,14 +111,20 @@ var eventSpecs = map[string]eventSpec{
 	"RECORD_STOPPED":  {required: []fieldSpec{text("run"), count("restored"), count("kept")}},
 	"RECORD_ENDED":    {required: []fieldSpec{text("run"), count("restored"), count("kept")}},
 	"RECORD_NOT_OURS": {required: []fieldSpec{text("run")}},
-	// set_active_take, list_fx_chains, apply_fx_chain (narration_workspace.lua; edit-and-proof-workspace P6, P8, P9).
-	// changed is 0 or 1; reason is item, take or range; name is a chain's path relative to FXChains with forward
-	// slashes; splits is 0 to 2 and added the number of FX the chain added.
+	// set_active_take, list_fx_chains, apply_fx_chain, list_fx, add_take_fx (narration_workspace.lua;
+	// edit-and-proof-workspace P6, P8, P9). changed is 0 or 1; reason is item, take or range; a chain's name is its path
+	// relative to FXChains with forward slashes, a plug-in's is EnumInstalledFX's; splits is 0 to 2 and added the number
+	// of FX a chain added.
 	"ACTIVE_TAKE_SET":  {required: []fieldSpec{text("run"), text("itemGuid"), text("takeGuid"), count("changed")}},
 	"ITEM_STALE":       {required: []fieldSpec{text("run"), text("guid"), text("reason")}},
 	"FX_CHAIN":         {required: []fieldSpec{text("run"), text("name")}},
 	"FX_CHAINS_LISTED": {required: []fieldSpec{text("run"), count("count"), count("truncated")}},
-	"FX_CHAIN_APPLIED": {required: []fieldSpec{text("run"), text("name"), text("itemGuid"), text("takeGuid"), count("splits"), count("added")}},
+	// ADR 0234 (the owner's 2026-09-25 decision): a chain goes on a track or the master track (track is its GUID or
+	// "master"); a passage of a take gets one installed plug-in per request (list_fx, add_take_fx).
+	"FX_CHAIN_APPLIED":  {required: []fieldSpec{text("run"), text("name"), text("track"), count("added")}},
+	"FX_PLUGIN":         {required: []fieldSpec{text("run"), text("name")}},
+	"FX_PLUGINS_LISTED": {required: []fieldSpec{text("run"), count("count"), count("truncated")}},
+	"TAKE_FX_ADDED":     {required: []fieldSpec{text("run"), text("name"), text("itemGuid"), text("takeGuid"), count("splits")}},
 }
 
 // CheckEvent validates one decoded event line (the tag first) against the table. The error names the tag, the position and name of

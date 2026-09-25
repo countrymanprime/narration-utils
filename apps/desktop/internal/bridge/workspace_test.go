@@ -20,8 +20,14 @@ func TestTheWorkspaceAndRegionCommandsAreExperimentalAndRefusedWhileTheSettingIs
 	if _, err := actions.ListFXChains(ctx); !errors.Is(err, ErrExperimentalOff) {
 		t.Errorf("ListFXChains: %v", err)
 	}
-	if _, err := actions.ApplyFXChain(ctx, Passage{ItemGUID: testItem, TakeGUID: testTake, SourceStart: 1, SourceEnd: 2}, "A.RfxChain"); !errors.Is(err, ErrExperimentalOff) {
+	if _, err := actions.ApplyFXChain(ctx, testTrack, "A.RfxChain"); !errors.Is(err, ErrExperimentalOff) {
 		t.Errorf("ApplyFXChain: %v", err)
+	}
+	if _, err := actions.ListFX(ctx); !errors.Is(err, ErrExperimentalOff) {
+		t.Errorf("ListFX: %v", err)
+	}
+	if _, err := actions.AddTakeFX(ctx, Passage{ItemGUID: testItem, TakeGUID: testTake, SourceStart: 1, SourceEnd: 2}, "VST3: ReaEQ (Cockos)"); !errors.Is(err, ErrExperimentalOff) {
+		t.Errorf("AddTakeFX: %v", err)
 	}
 	if _, err := actions.CreateRegions(ctx, []Region{{Start: 0, End: 30, Title: "Chapter 1"}}, "", false); !errors.Is(err, ErrExperimentalOff) {
 		t.Errorf("CreateRegions: %v", err)
@@ -30,7 +36,7 @@ func TestTheWorkspaceAndRegionCommandsAreExperimentalAndRefusedWhileTheSettingIs
 	if len(fake.commands()) != 0 {
 		t.Fatalf("commands were written: %v", fake.commands())
 	}
-	for _, command := range []string{"set_active_take", "list_fx_chains", "apply_fx_chain", "create_regions"} {
+	for _, command := range []string{"set_active_take", "list_fx_chains", "apply_fx_chain", "list_fx", "add_take_fx", "create_regions"} {
 		if !Experimental(command) {
 			t.Errorf("%s must stay experimental until the verification pass", command)
 		}
@@ -91,45 +97,48 @@ func TestListFXChainsReadsTheNamesAndWhetherTheListWasCut(t *testing.T) {
 	}
 }
 
-func TestApplyFXChainSendsThePassageAndReadsWhatChanged(t *testing.T) {
+func TestApplyFXChainSendsTheTrackAndChainAndReadsWhatWasAdded(t *testing.T) {
 	actions, client, dir := newActionsSession(t, true)
 	fake := startFakeReaper(t, client, dir, func(command []string) [][]string {
-		return [][]string{{"FX_CHAIN_APPLIED", run(command), command[7], "{BBBBBBBB-0000-4000-8000-000000000002}", "{BBBBBBBB-0000-4000-8000-0000000000B2}", "2", "1"}}
+		return [][]string{{"FX_CHAIN_APPLIED", run(command), command[4], command[3], "3"}}
 	})
-	got, err := actions.ApplyFXChain(context.Background(), Passage{ItemGUID: testItem, TakeGUID: testTake, SourceStart: 3, SourceEnd: 4.25}, "Voice/Test EQ.RfxChain")
+	got, err := actions.ApplyFXChain(context.Background(), MasterTrack, "Voice/Master.RfxChain")
 	if err != nil {
 		t.Fatal(err)
 	}
-	want := FXChainApplied{Chain: "Voice/Test EQ.RfxChain", ItemGUID: "{BBBBBBBB-0000-4000-8000-000000000002}", TakeGUID: "{BBBBBBBB-0000-4000-8000-0000000000B2}", Splits: 2, Added: 1}
-	if got != want {
+	if got != (FXChainApplied{Chain: "Voice/Master.RfxChain", Track: MasterTrack, Added: 3}) {
 		t.Fatalf("got %+v", got)
 	}
 	command := fake.commands()[0]
-	if !reflect.DeepEqual(command[1:], []string{"apply_fx_chain", run(command), testItem, testTake, "3.000000", "4.250000", "Voice/Test EQ.RfxChain"}) {
+	if !reflect.DeepEqual(command[1:], []string{"apply_fx_chain", run(command), "master", "Voice/Master.RfxChain"}) {
 		t.Fatalf("command = %v", command)
+	}
+}
+
+func TestApplyFXChainReportsATrackThatIsGone(t *testing.T) {
+	actions, client, dir := newActionsSession(t, true)
+	startFakeReaper(t, client, dir, func(command []string) [][]string {
+		return [][]string{{"TRACK_STALE", run(command), command[3]}}
+	})
+	if _, err := actions.ApplyFXChain(context.Background(), testTrack, "A.RfxChain"); !errors.Is(err, ErrStale) {
+		t.Fatalf("err = %v, want ErrStale", err)
 	}
 }
 
 func TestApplyFXChainRefusesBeforeSendingWhatREAPERWouldRefuse(t *testing.T) {
 	actions, client, dir := newActionsSession(t, true)
 	fake := startFakeReaper(t, client, dir, func([]string) [][]string { return nil })
-	ok := Passage{ItemGUID: testItem, TakeGUID: testTake, SourceStart: 1, SourceEnd: 2}
-	for _, c := range []struct {
-		passage Passage
-		chain   string
-	}{
-		{Passage{TakeGUID: testTake, SourceStart: 1, SourceEnd: 2}, "A.RfxChain"},
-		{Passage{ItemGUID: testItem, SourceStart: 1, SourceEnd: 2}, "A.RfxChain"},
-		{Passage{ItemGUID: testItem, TakeGUID: testTake, SourceStart: 2, SourceEnd: 2}, "A.RfxChain"},
-		{ok, "../reaper.ini"},
-		{ok, `C:\x.RfxChain`},
-		{ok, "/abs/x.RfxChain"},
-		{ok, "Voice/../A.RfxChain"},
-		{ok, "A.txt"},
-		{ok, ""},
+	for _, c := range []struct{ track, chain string }{
+		{"", "A.RfxChain"},
+		{testTrack, "../reaper.ini"},
+		{testTrack, `C:\x.RfxChain`},
+		{testTrack, "/abs/x.RfxChain"},
+		{testTrack, "Voice/../A.RfxChain"},
+		{testTrack, "VST3: ReaEQ (Cockos)"},
+		{testTrack, ""},
 	} {
-		if _, err := actions.ApplyFXChain(context.Background(), c.passage, c.chain); err == nil {
-			t.Errorf("%+v %q was accepted", c.passage, c.chain)
+		if _, err := actions.ApplyFXChain(context.Background(), c.track, c.chain); err == nil {
+			t.Errorf("%q %q was accepted", c.track, c.chain)
 		}
 	}
 	time.Sleep(20 * time.Millisecond)
@@ -138,14 +147,79 @@ func TestApplyFXChainRefusesBeforeSendingWhatREAPERWouldRefuse(t *testing.T) {
 	}
 }
 
-func TestApplyFXChainPassesREAPERsRefusalOn(t *testing.T) {
+func TestListFXReadsThePluginNamesAndWhetherTheListWasCut(t *testing.T) {
 	actions, client, dir := newActionsSession(t, true)
 	startFakeReaper(t, client, dir, func(command []string) [][]string {
-		return [][]string{{"ERROR", run(command), "REAPER did not load the FX chain. The item was split: press Undo in REAPER to rejoin it."}}
+		return [][]string{
+			{"FX_PLUGIN", run(command), "JS: De-esser"},
+			{"FX_PLUGIN", run(command), "VST3: ReaEQ (Cockos)"},
+			{"FX_PLUGINS_LISTED", run(command), "2", "0"},
+		}
 	})
-	_, err := actions.ApplyFXChain(context.Background(), Passage{ItemGUID: testItem, TakeGUID: testTake, SourceStart: 1, SourceEnd: 2}, "A.RfxChain")
-	if err == nil || !strings.Contains(err.Error(), "press Undo") {
+	got, err := actions.ListFX(context.Background())
+	if err != nil || !reflect.DeepEqual(got, FXPlugins{Names: []string{"JS: De-esser", "VST3: ReaEQ (Cockos)"}}) {
+		t.Fatalf("got %+v, %v", got, err)
+	}
+}
+
+func TestAddTakeFXSendsThePassageAndOnePluginAndReadsWhatChanged(t *testing.T) {
+	actions, client, dir := newActionsSession(t, true)
+	fake := startFakeReaper(t, client, dir, func(command []string) [][]string {
+		return [][]string{{"TAKE_FX_ADDED", run(command), command[7], "{BBBBBBBB-0000-4000-8000-000000000002}", "{BBBBBBBB-0000-4000-8000-0000000000B2}", "2"}}
+	})
+	got, err := actions.AddTakeFX(context.Background(), Passage{ItemGUID: testItem, TakeGUID: testTake, SourceStart: 3, SourceEnd: 4.25}, "VST3: ReaEQ (Cockos)")
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := TakeFXAdded{Plugin: "VST3: ReaEQ (Cockos)", ItemGUID: "{BBBBBBBB-0000-4000-8000-000000000002}", TakeGUID: "{BBBBBBBB-0000-4000-8000-0000000000B2}", Splits: 2}
+	if got != want {
+		t.Fatalf("got %+v", got)
+	}
+	command := fake.commands()[0]
+	if !reflect.DeepEqual(command[1:], []string{"add_take_fx", run(command), testItem, testTake, "3.000000", "4.250000", "VST3: ReaEQ (Cockos)"}) {
+		t.Fatalf("command = %v", command)
+	}
+}
+
+func TestAddTakeFXRefusesAChainAndAnUnusablePassageBeforeSending(t *testing.T) {
+	actions, client, dir := newActionsSession(t, true)
+	fake := startFakeReaper(t, client, dir, func([]string) [][]string { return nil })
+	ok := Passage{ItemGUID: testItem, TakeGUID: testTake, SourceStart: 1, SourceEnd: 2}
+	for _, c := range []struct {
+		passage Passage
+		plugin  string
+	}{
+		{Passage{TakeGUID: testTake, SourceStart: 1, SourceEnd: 2}, "JS: De-esser"},
+		{Passage{ItemGUID: testItem, SourceStart: 1, SourceEnd: 2}, "JS: De-esser"},
+		{Passage{ItemGUID: testItem, TakeGUID: testTake, SourceStart: 2, SourceEnd: 2}, "JS: De-esser"},
+		{ok, "Voice/Test EQ.RfxChain"},
+		{ok, " "},
+	} {
+		if _, err := actions.AddTakeFX(context.Background(), c.passage, c.plugin); err == nil {
+			t.Errorf("%+v %q was accepted", c.passage, c.plugin)
+		}
+	}
+	time.Sleep(20 * time.Millisecond)
+	if len(fake.commands()) != 0 {
+		t.Fatalf("a refused request wrote a command: %v", fake.commands())
+	}
+}
+
+func TestAddTakeFXPassesREAPERsRefusalOnAndReportsAStalePassage(t *testing.T) {
+	actions, client, dir := newActionsSession(t, true)
+	var answer func([]string) [][]string
+	startFakeReaper(t, client, dir, func(command []string) [][]string { return answer(command) })
+	passage := Passage{ItemGUID: testItem, TakeGUID: testTake, SourceStart: 1, SourceEnd: 2}
+	answer = func(command []string) [][]string {
+		return [][]string{{"ERROR", run(command), "REAPER did not add exactly one plug-in. The item was split: press Undo in REAPER to rejoin it."}}
+	}
+	if _, err := actions.AddTakeFX(context.Background(), passage, "JS: De-esser"); err == nil || !strings.Contains(err.Error(), "press Undo") {
 		t.Fatalf("err = %v", err)
+	}
+	answer = func(command []string) [][]string { return [][]string{{"ITEM_STALE", run(command), testItem, "range"}} }
+	var stale *StaleError
+	if _, err := actions.AddTakeFX(context.Background(), passage, "JS: De-esser"); !errors.As(err, &stale) || stale.Reason != "range" {
+		t.Fatalf("err = %v, want a range StaleError", err)
 	}
 }
 

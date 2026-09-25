@@ -51,12 +51,15 @@ var experimentalCommands = map[string]bool{
 	"set_active_take":     true,
 	"list_fx_chains":      true,
 	"apply_fx_chain":      true,
+	"list_fx":             true,
+	"add_take_fx":         true,
 	"create_regions":      true,
 }
 
 // actionTags are the events Actions consumes: every answer of every command it sends, and ERROR.
 var actionTags = []string{"TRACK_STATE", "TRACK_ITEM", "TRACK_STATE_END", "TRACK_STALE", "ARMED", "RECORD_STARTED", "RECORD_STOPPED", "RECORD_ENDED", "RECORD_NOT_OURS",
-	"ACTIVE_TAKE_SET", "ITEM_STALE", "FX_CHAIN", "FX_CHAINS_LISTED", "FX_CHAIN_APPLIED", "REGIONS_CREATED", "ERROR"}
+	"ACTIVE_TAKE_SET", "ITEM_STALE", "FX_CHAIN", "FX_CHAINS_LISTED", "FX_CHAIN_APPLIED",
+	"FX_PLUGIN", "FX_PLUGINS_LISTED", "TAKE_FX_ADDED", "REGIONS_CREATED", "ERROR"}
 
 // ErrExperimentalOff: the command is experimental and the setting is off, so nothing was sent to REAPER.
 var ErrExperimentalOff = errors.New("this REAPER action is experimental and switched off: turn on Experimental REAPER actions in Settings")
