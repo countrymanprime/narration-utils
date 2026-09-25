@@ -189,6 +189,7 @@ function pickupsReportFor(chapter: ManuscriptChapter): CoverageReport {
     paragraphs: paragraphs.map((id, index) => ({ id, tokens: sizes[index], present: sizes[index] - missingIn[index], longestMissingRun: missingIn[index] })),
     regions,
   };
+}
 
 /** The host's `coverage.Judge` (ADR 0204), so the mock's headline reads as the real one: met when every paragraph passes
  * and no run is too long, otherwise the largest region over the limit, then the longest run, then the thinnest paragraph. */
