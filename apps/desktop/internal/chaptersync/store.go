@@ -29,9 +29,9 @@ type fileShape struct {
 // Store keeps the last sync's Snapshot. It is disposable data: a missing,
 // corrupt or newer file reads as the zero Snapshot.
 type Store struct {
-	path     string
+	path     string // +checklocksignore: set once by NewStore, read-only after
 	mu       sync.Mutex
-	Reporter *persist.Reporter
+	Reporter *persist.Reporter // +checklocksignore: set once before first use, read-only after
 }
 
 // NewStore returns the Store for project.
