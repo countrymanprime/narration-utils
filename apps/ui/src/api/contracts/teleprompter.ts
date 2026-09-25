@@ -187,8 +187,47 @@ export type TeleprompterLocateResult =
       /** The seconds of the source file that were transcribed. */
       tail: { from: number; to: number } | null;
       located: TeleprompterLocated | null;
+      /** Where the prompter last stopped in this chapter, or null (none stored, or the chapter's text changed since). */
+      lastReading: TeleprompterReading | null;
+      /** The host's reconciliation of `located` with `lastReading` (read-aloud-resume-from-daw PRD Phase 3): render it, never recompute it. */
+      verdict: TeleprompterResumeVerdict;
     }
   | TeleprompterModelRequired;
+
+/**
+ * What the resume prompt shows (read-aloud-resume-from-daw PRD Phase 3, `teleprompter.Reconcile`):
+ * - `agree`: REAPER and the last reading are within ten words or in the same sentence; Start reading is preset to `start`
+ *   and a one-line notice says so (with Change and Start from the top).
+ * - `disagree`: both places are known and far apart; the narrator picks `daw` or `prompter` (or the top, or a word).
+ * - `complete`: the recording reaches the last word; say "recorded to the end" and offer no resume.
+ * - `daw_only` / `prompter_only`: one source has a place; offer it in the compact form, never preset it.
+ * - `none`: nothing to show; Start reading begins at the top.
+ */
+export type TeleprompterResumeVerdictKind = 'agree' | 'disagree' | 'complete' | 'daw_only' | 'prompter_only' | 'none';
+
+/**
+ * One source's place: `word` is the zero-based next word to read (what `startWord` takes), `number` the same word one-based
+ * for display, and `sentence` the sentence holding the last word read before it (token range `[start, end)`). `source` is
+ * set on the DAW place: `saved` is the saved project ("as of the project's last save"); Phase 4 adds a live source.
+ */
+export type TeleprompterResumePlace = {
+  word: number;
+  number: number;
+  sentence: { start: number; end: number; text: string } | null;
+  confident: boolean;
+  source?: 'saved';
+};
+
+export type TeleprompterResumeVerdict = {
+  kind: TeleprompterResumeVerdictKind;
+  /** Set only for `agree`: the word Start reading begins at without a click. */
+  start: number | null;
+  /** `prompter` when a low-confidence DAW word was settled by the last reading agreeing with it. */
+  confirmedBy?: 'prompter';
+  daw: TeleprompterResumePlace | null;
+  prompter: TeleprompterResumePlace | null;
+  tokens: number;
+};
 
 export type TeleprompterLocateOptions = {
   /** Read this track instead of the matcher's (the narrator's pick when the match is not confident). */

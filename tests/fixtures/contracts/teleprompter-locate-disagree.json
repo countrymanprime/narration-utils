@@ -1,5 +1,13 @@
 {
-  "lastReading": null,
+  "lastReading": {
+    "chapterId": "c-0001",
+    "endedAt": "2026-09-21T10:00:00Z",
+    "read": 400,
+    "scriptHash": "0000000000000000000000000000000000000000000000000000000000000000",
+    "status": "listening",
+    "tokens": 2186,
+    "version": 1
+  },
   "located": {
     "confidence": 0.812,
     "confident": true,
@@ -103,8 +111,17 @@
       "source": "saved",
       "word": 52
     },
-    "kind": "daw_only",
-    "prompter": null,
+    "kind": "disagree",
+    "prompter": {
+      "confident": true,
+      "number": 401,
+      "sentence": {
+        "end": 404,
+        "start": 352,
+        "text": "First, she tried to look down and make out what she was coming to, but it was too dark to see anything; then she looked at the sides of the well, and noticed that they were filled with cupboards and book-shelves; here and there she saw maps and pictures hung upon pegs."
+      },
+      "word": 400
+    },
     "start": null,
     "tokens": 2186
   }
