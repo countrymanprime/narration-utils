@@ -198,7 +198,9 @@ project copy (`STAGES_TIMING_PROJECT`).
 
 Phase 5 shows the recommendations in the Home estimate card (`apps/ui/src/components/stages/`, wired into
 `components/home/AudiobookEstimatePanel.tsx`). `useStageRecommendations` reads `StageRecommendations()` when Home opens,
-after a manuscript import, after a recording check ends or its dialog closes, after a status is changed by hand and, on a
+after a manuscript import, after a recording check ends or its dialog closes, after a status is changed by hand, when the
+window regains focus or the page becomes visible again (`useRefreshOnFocus`, throttled to once per 30 s and skipped while
+a decision is pending, `home-stage-check-line.prd.md` Phase 2, Q2 A) and, on a
 failed read, when Try again is pressed; nothing is cached across reads (D1, Q5). `StageSuggestion` sits under each
 chapter's status select, which stays the narrator's override: the verdict in a few words, Confirm and Dismiss for
 `recommended`, Revert for a live confirmation, and the "evidence changed since you confirmed" notice with Revert for a
