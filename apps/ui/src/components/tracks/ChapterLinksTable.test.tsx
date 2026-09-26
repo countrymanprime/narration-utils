@@ -2,7 +2,7 @@
 import { cleanup, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { ChapterLinksTable } from './ChapterLinksTable';
 import { ApiProvider } from '../../api/ApiContext';
 import { createMockApi } from '../../api/mockApi';
@@ -10,12 +10,14 @@ import { WIRE_CHAPTERS, WIRE_TRACKS_PROJECT } from '../../api/mockFixtures';
 
 afterEach(cleanup);
 
+const notify = vi.fn();
+
 function renderTable() {
   const api = createMockApi();
   render(
     <ApiProvider api={api}>
       <MemoryRouter>
-        <ChapterLinksTable tracks={WIRE_TRACKS_PROJECT.tracks} />
+        <ChapterLinksTable tracks={WIRE_TRACKS_PROJECT.tracks} notify={notify} />
       </MemoryRouter>
     </ApiProvider>,
   );
@@ -97,7 +99,7 @@ describe('ChapterLinksTable', () => {
     render(
       <ApiProvider api={api}>
         <MemoryRouter>
-          <ChapterLinksTable tracks={WIRE_TRACKS_PROJECT.tracks} />
+          <ChapterLinksTable tracks={WIRE_TRACKS_PROJECT.tracks} notify={notify} />
         </MemoryRouter>
       </ApiProvider>,
     );
@@ -118,7 +120,7 @@ describe('ChapterLinksTable', () => {
     render(
       <ApiProvider api={api}>
         <MemoryRouter>
-          <ChapterLinksTable tracks={WIRE_TRACKS_PROJECT.tracks} />
+          <ChapterLinksTable tracks={WIRE_TRACKS_PROJECT.tracks} notify={notify} />
         </MemoryRouter>
       </ApiProvider>,
     );

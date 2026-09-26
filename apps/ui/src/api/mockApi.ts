@@ -2444,6 +2444,10 @@ export function createMockApi(
     ...deliveryProfiles,
     ...diagnostics,
     ...editing,
+    // Reads the same findings store FindingsReview decides against (apps/desktop/internal/editing/scan.go's
+    // Candidates), not editingMock's own state: a candidate is seeded like any other finding (`initial.findings`,
+    // editingCandidateFor in mockFixtures.ts), so Accept/Dismiss/Defer on it go through the real review binding.
+    editingCandidates: async (chapterId) => (await findings.findingsList({ analyzer: 'editing', chapterId })).findings,
     takeReviewCreateTake: async (request) => ({
       targetItemGuid: request.targetItemGuid,
       newTakeGuid: '{99999999-0000-4000-8000-000000000099}',

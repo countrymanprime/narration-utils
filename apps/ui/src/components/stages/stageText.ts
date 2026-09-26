@@ -27,6 +27,33 @@ export const CAUSE_TEXT: Record<StageUnknownCause, { short: string; action: stri
   provider_error: { short: 'the evidence could not be read', action: 'Check now to read it again.', resolve: 'check-now' },
 };
 
+/** The same causes, worded for the editing check instead of the recording check (editing-readiness-analysis.prd.md
+ * Phase 7): the two signal providers share one cause vocabulary (apps/desktop/internal/editing/signals.go reuses
+ * `stages.UnknownCause`), so a bare `CAUSE_TEXT` lookup would send an editing signal's "Open recording check" -
+ * wrong dialog entirely. `causeText` picks this table instead whenever the signal's id is one of editing's three. */
+const EDITING_CAUSE_TEXT: Partial<Record<StageUnknownCause, { short: string; action: string; resolve: StageCauseAction }>> = {
+  never_analyzed: { short: 'not checked yet', action: 'Run an editing check of this chapter.', resolve: 'check' },
+  stale: { short: 'changed since the last check', action: 'Check editing again; only the changed items are re-decoded.', resolve: 'check' },
+  incomplete_run: { short: 'the last check did not finish', action: 'Run the editing check again, to the end.', resolve: 'check' },
+  analysis_running: { short: 'a check is running', action: 'Wait for the check to end; the suggestion is read again then.', resolve: 'wait' },
+  unmapped_track: { short: 'no track linked', action: 'Link the track in the editing check, or on the Tracks page.', resolve: 'check' },
+  unconfirmed_mapping: { short: 'track link not confirmed', action: 'Confirm the matching track in the editing check.', resolve: 'check' },
+  multiple_tracks: { short: 'more than one track linked', action: 'Keep one track link on the Tracks page.', resolve: 'tracks' },
+  measurement_unavailable: { short: 'cannot be checked here', action: 'The editing check says what it needs first.', resolve: 'check' },
+  project_unreadable: { short: 'project file not readable', action: 'Choose or save the REAPER project file, then check now.', resolve: 'tracks' },
+  provider_error: { short: 'the evidence could not be read', action: 'Check now to read it again.', resolve: 'check-now' },
+};
+
+/** True for the three signal ids the editing-readiness PRD's Phase 6 registers (apps/desktop/internal/editing/signals.go). */
+export const isEditingSignal = (signalId: string): boolean => signalId.startsWith('editing.');
+
+/** A signal's cause, worded for whichever check produced it: `stageText.ts`'s `CAUSE_TEXT` is shared by every
+ * provider, but "Open recording check" is the wrong sentence, and the wrong dialog, for an editing signal. */
+export function causeText(signal: Pick<StageSignal, 'id' | 'cause'>): { short: string; action: string; resolve: StageCauseAction } | undefined {
+  if (!signal.cause) return undefined;
+  return (isEditingSignal(signal.id) ? EDITING_CAUSE_TEXT[signal.cause] : undefined) ?? CAUSE_TEXT[signal.cause];
+}
+
 /** A signal's id as a sentence of what was checked; an id this build does not know is shown as it is. */
 const SIGNAL_NAMES: Record<string, string> = {
   'recording.text_present': 'Every paragraph of the chapter’s text is in the recording, in order',

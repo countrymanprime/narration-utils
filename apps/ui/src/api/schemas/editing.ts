@@ -6,7 +6,7 @@ import { findingSchema } from './findings';
 // The editing-readiness check payloads (editing-readiness-analysis.prd.md Phase 5). The reason list is pinned
 // against the host by tests/fixtures/contracts/editing-start-refused-unmapped.json.
 
-const EDITING_REFUSAL_REASONS = [
+export const EDITING_REFUSAL_REASONS = [
   'unmapped',
   'multiple_tracks',
   'mapped_track_missing',

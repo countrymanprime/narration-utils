@@ -28,6 +28,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '.
 import type { Notify } from '../primitives/Toast';
 import { Button } from '../primitives/Button';
 import { RecordingCheck } from './RecordingCheck';
+import { EditingCheckPanel } from '../editing/EditingCheckPanel';
 import { useStageRecommendations } from '../stages/useStageRecommendations';
 import { useRefreshOnFocus } from '../stages/useRefreshOnFocus';
 import { StageSuggestion } from '../stages/StageSuggestion';
@@ -112,6 +113,7 @@ export function AudiobookEstimatePanel({
   // shows its percent even after its dialog was sent to the background, and the chapter whose check dialog is open.
   const [coverage, setCoverage] = useState<CoverageState>({ phase: 'idle', percent: 0, message: '' });
   const [checking, setChecking] = useState<ManuscriptChapter>();
+  const [editingChecking, setEditingChecking] = useState<ManuscriptChapter>();
   // A check that completes changes the chapter's measured recordedFraction, so the list is read again, once per run.
   const [measuredRun, setMeasuredRun] = useState<string>();
   const lastCompleted = useRef<string>(undefined);
@@ -596,7 +598,24 @@ export function AudiobookEstimatePanel({
             setWhy({ ...why, open: false });
             if (chapter) setChecking(chapter);
           }}
+          onOpenEditingCheck={() => {
+            const chapter = narrationChapters.find((item) => item.id === why.chapterId);
+            setWhy({ ...why, open: false });
+            if (chapter) setEditingChecking(chapter);
+          }}
           goToParagraph={(paragraph) => goToManuscript(why.chapterId, paragraph)}
+        />
+      )}
+      {editingChecking && (
+        <EditingCheckPanel
+          key={editingChecking.id}
+          chapter={editingChecking}
+          notify={notify}
+          close={() => {
+            setEditingChecking(undefined);
+            // Accepting, dismissing or deferring an editing candidate changes the evidence SR reads.
+            void stages.refresh();
+          }}
         />
       )}
       {trackChapter &&

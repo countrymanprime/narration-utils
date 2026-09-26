@@ -297,6 +297,58 @@ export const STATE_CATALOG: StateEntry[] = [
       'Home, "Evidence changed since you confirmed": when it was confirmed, the check now not met, and Revert to Recording; nothing moved on its own',
   },
 
+  // Editing check panel (editing-readiness-analysis.prd.md Phase 7), opened from SR's evidence popover's "Open
+  // editing check" (?mockEditingSignal=, main.tsx). The panel never starts a scan on its own (Q9), so every state but
+  // running/partial is reached with no click at all, straight from the signal or the seeded findings.
+  {
+    page: 'home',
+    state: 'editing-check-never-checked',
+    description:
+      'Home, editing check panel: empty space "Can’t tell yet: not checked yet", click and breath always "Not yet validated on the corpus" (Phase 4 not shipped), the source-audio caveat, Check editing (?mockEditingSignal=never)',
+  },
+  {
+    page: 'home',
+    state: 'editing-check-running',
+    description:
+      'Home, editing check panel: Check editing pressed, real progress and Cancel over the previous candidates still listed below (?mockEditing=hold&mockEditingSignal=not-met&mockEditingCandidates=1)',
+    ...LIVE_PROGRESS_MOVES_ON,
+  },
+  {
+    page: 'home',
+    state: 'editing-check-partial',
+    description:
+      'Home, editing check panel: Cancel pressed mid-run - the items already checked stay cached, and Check again offers a fresh run (?mockEditing=hold&mockEditingSignal=not-met&mockEditingCandidates=1)',
+  },
+  {
+    page: 'home',
+    state: 'editing-check-complete-candidates',
+    description:
+      'Home, editing check panel: empty space "Not met" with two open candidates, each with time range, confidence, reason, Hear, Accept/Dismiss/Defer (RD-4) and Go to/Loop in REAPER (RD Phase 7) (?mockEditingCandidates=1&mockEditingSignal=not-met)',
+  },
+  {
+    page: 'home',
+    state: 'editing-check-complete-clean',
+    description: 'Home, editing check panel: empty space "Met. Checked; no open empty-space candidate remains." (?mockEditingSignal=met)',
+  },
+  {
+    page: 'home',
+    state: 'editing-check-stale',
+    description:
+      'Home, editing check panel: empty space "Can’t tell yet: Check editing again: since the last check an item on this chapter’s track changed." (?mockEditingSignal=stale)',
+  },
+  {
+    page: 'home',
+    state: 'editing-check-settings-unset',
+    description:
+      'Home, editing check panel: empty space "Can’t tell yet: No maximum gap is set for empty space." with a link to Settings > Editing (?mockEditingSignal=settings-unset)',
+  },
+  {
+    page: 'home',
+    state: 'editing-check-unsupported',
+    description:
+      'Home, editing check panel: empty space "Can’t tell yet: An item on this chapter’s track is not a WAV file the check can analyze." (?mockEditingSignal=unsupported)',
+  },
+
   // Manuscript
   { page: 'manuscript', state: 'reader-text-small', description: 'Manuscript, small text size' },
   { page: 'manuscript', state: 'reader-text-medium', description: 'Manuscript, medium text size' },
@@ -759,6 +811,13 @@ export const STATE_CATALOG: StateEntry[] = [
     state: 'chapter-link-missing',
     description:
       'Tracks, a chapter confirmed to a track GUID no longer in the project - Track missing, with the missing-track message and Change/Clear (reached via the ?mockChapterLink=missing mock seam)',
+    ...KEEPS_DESKTOP_SCROLL,
+  },
+  {
+    page: 'tracks',
+    state: 'editing-check-unmapped',
+    description:
+      'Tracks, the Chapter links list\'s "Editing check…" opened on an unlinked chapter, Check editing pressed: "This chapter can\'t be checked yet" with the inline track-link prompt, same as Home\'s recording check offers (?mockEditingRefusal=unmapped)',
     ...KEEPS_DESKTOP_SCROLL,
   },
   {
