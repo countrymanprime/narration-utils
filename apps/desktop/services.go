@@ -5,6 +5,7 @@ import (
 	"github.com/countrymanprime/narration-utils/shell/internal/cleanuptools"
 	"github.com/countrymanprime/narration-utils/shell/internal/coverage"
 	"github.com/countrymanprime/narration-utils/shell/internal/daw"
+	"github.com/countrymanprime/narration-utils/shell/internal/editing"
 	"github.com/countrymanprime/narration-utils/shell/internal/findings"
 	"github.com/countrymanprime/narration-utils/shell/internal/guide"
 	"github.com/countrymanprime/narration-utils/shell/internal/lineidentity"
@@ -41,6 +42,7 @@ type hostServices struct {
 	transcript   *transcript.Service
 	coverage     *coverage.Service
 	stages       *stages.Service
+	editing      *editing.Service
 	// reachability tracks the current bridge client's PROJECT_STATUS heartbeat (ADR 0092, Phase 7, W10). Nil when
 	// configureLocked built no bridge client (no session directory).
 	reachability *daw.Reachability
@@ -94,6 +96,7 @@ func (h *Host) services() hostServices {
 		transcript:   h.transcript,
 		coverage:     h.coverage,
 		stages:       h.stages,
+		editing:      h.editing,
 		reachability: h.reachability,
 		bridge:       h.bridge,
 		actions:      h.actions,

@@ -20,6 +20,7 @@ import (
 	"github.com/countrymanprime/narration-utils/shell/internal/dawadapter"
 	"github.com/countrymanprime/narration-utils/shell/internal/dawcatalog"
 	"github.com/countrymanprime/narration-utils/shell/internal/deliveryprofile"
+	"github.com/countrymanprime/narration-utils/shell/internal/editing"
 	"github.com/countrymanprime/narration-utils/shell/internal/findings"
 	"github.com/countrymanprime/narration-utils/shell/internal/guide"
 	"github.com/countrymanprime/narration-utils/shell/internal/hostlog"
@@ -50,7 +51,7 @@ import (
 // Keep this in lockstep with apps/ui/src/hostApi.ts.  The frontend rejects
 // an older host before bootstrapping so a partial update cannot run against a
 // binding contract it does not understand.
-const hostAPIVersion = 59
+const hostAPIVersion = 60
 
 // Host is the Wails binding boundary. The frontend invokes only this bound
 // object; it never receives a loopback port or an HTTP capability.
@@ -98,6 +99,11 @@ type Host struct {
 	// the recording signal over coverage, the decision store and the manuscript's status path. Swapped with coverage on every
 	// project switch; it computes on read and stores no recommendation (D1).
 	stages *stages.Service
+	// editing is the editing-readiness scan service (docs/prds/editing-readiness-analysis.prd.md Phase 5,
+	// bindings_editing.go): played-range empty-space analysis over the chapter's confirmed track, cache-first, with its
+	// own ledger records and silence_cleanup findings. Swapped on every project switch like coverage; it starts only on
+	// the narrator's own request (Q9), never in the background.
+	editing *editing.Service
 	// findings is the project's findings store: Transcript Compare's and the
 	// Guide's adapters save into it on every completed run
 	// (review-dashboard-and-findings-adoption.prd.md Phases 2-3), and
@@ -454,6 +460,12 @@ func (h *Host) configureLocked(next config) {
 	// (actual-recorded-column PRD Phase 2); never an estimate.
 	h.manuscript.SetRecordedLengths(recordedLengths(projectFolder, settingsStore, h.manuscript))
 	h.stages = stagesService(h.config.projectFolder, h.manuscript, h.coverage, settingsStore, h.coverageUnavailable(h.config.comparePython, settingsStore), h.persist)
+	h.editing = editing.New(editing.Config{
+		Project:     h.config.projectFolder,
+		ProjectFile: func() (string, error) { return selectedProjectFile(projectFolder, settingsStore) },
+		Policy:      func() editing.Policy { return editingPolicy(settingsStore) },
+		Reporter:    h.persist,
+	}, nil)
 	// The Review page's Go to, Loop and Stop (review dashboard PRD Phase 7, bindings_navigation.go) are one more
 	// consumer of the same client: the navigator's answers arrive through the same Drain the transcript loop pumps.
 	h.navigation = newFindingNavigation(client)
