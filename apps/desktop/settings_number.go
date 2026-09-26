@@ -43,6 +43,19 @@ var numberSpecs = map[string]map[string]numberSpec{
 	"Proofing": {
 		"render_length_tolerance_seconds": {min: bound(0), step: bound(0.1), unit: "s"},
 	},
+	// The preview suggestion's three numeric settings (proofing-preview-suggestion.prd.md Phase 4). target_seconds
+	// is bounded at 60 (below a minute is not a meaningful audition excerpt - the engine's own window is whole
+	// paragraphs, and a target that short would leave almost every chapter "Shorter") and 3600 (an hour: past a
+	// "sample" or "spot check" excerpt this is no longer a preview, and it is already longer than most chapters), on
+	// a 1 s step (finer control buys nothing at this scale). tolerance_fraction and exclude_ending_fraction are
+	// fractions, at least 1% (a 0% tolerance would demand an exact word count, unreachable in whole paragraphs) and
+	// at most 50% (past half the target or half the book, the setting is no longer doing the job its name says), on
+	// a 1% step.
+	"Preview": {
+		"target_seconds":          {min: bound(60), max: bound(3600), step: bound(1), unit: "s"},
+		"tolerance_fraction":      {min: bound(0.01), max: bound(0.5), step: bound(0.01)},
+		"exclude_ending_fraction": {min: bound(0), max: bound(0.5), step: bound(0.01)},
+	},
 }
 
 // wire is the range as the Settings page receives it (the `number` object of a ScopedSettingField).
