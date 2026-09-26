@@ -399,6 +399,13 @@
     "caption": "Manuscript - a suspected restart opened in the Flags tab, with the script's words and what was heard"
   },
   {
+    "page": "manuscript",
+    "state": "read-aloud-credits-unresolved",
+    "viewport": "desktop",
+    "docName": "manuscript-read-aloud-credits",
+    "caption": "Manuscript - the Read aloud dialog on the opening credits, with the unresolved-token warning in place of the resume notice"
+  },
+  {
     "page": "review",
     "state": "default",
     "viewport": "desktop",

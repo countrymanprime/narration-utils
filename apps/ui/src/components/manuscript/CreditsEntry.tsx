@@ -21,6 +21,7 @@ export function CreditsEntry({
   onToggle,
   textClass,
   onFillIn,
+  onReadAloud,
 }: {
   kind: 'opening' | 'closing';
   preview?: CreditsRenderResult;
@@ -32,11 +33,23 @@ export function CreditsEntry({
    * shown beside the unresolved-token line whenever there is one to show. Omitted, the line renders with no button (a
    * caller that has not wired the dialog up yet). */
   onFillIn?: () => void;
+  /** Read aloud (manuscript-credits-card-parity.prd.md, Phase 2): the same header action a narration chapter has,
+   * shown only once there is something to read (`preview.words > 0`, matching the standalone Teleprompter picker). */
+  onReadAloud?: () => void;
 }) {
   const label = KIND_LABEL[kind];
   const lines = preview ? creditsParagraphs(kind, preview.text) : [];
   return (
-    <ReaderCard creditsKind={kind} eyebrow="Credits" title={label} expanded={expanded} onToggleExpand={onToggle} wordCount={preview?.words ?? 0}>
+    <ReaderCard
+      creditsKind={kind}
+      eyebrow="Credits"
+      title={label}
+      expanded={expanded}
+      onToggleExpand={onToggle}
+      wordCount={preview?.words ?? 0}
+      showReadAloud={Boolean(preview && preview.words > 0)}
+      onReadAloud={onReadAloud}
+    >
       {preview ? (
         <div className="relative bg-[var(--surface)]">
           {lines.map((line, index) => (

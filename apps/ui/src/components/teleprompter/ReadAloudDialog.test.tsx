@@ -2,15 +2,20 @@
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { ReadAloudDialog } from './ReadAloudDialog';
+import { ReadAloudDialog, type ReadAloudSource } from './ReadAloudDialog';
 import { ApiProvider } from '../../api/ApiContext';
 import { createMockApi } from '../../api/mockApi';
 import { WIRE_TELEPROMPTER_DEVICES } from '../../api/mockFixtures';
-import type { GuideEntity, ManuscriptNote, ManuscriptParagraph, NarrationApi, TeleprompterEvent, TeleprompterState } from '../../types';
+import type { CreditsRenderResult, GuideEntity, ManuscriptNote, ManuscriptParagraph, NarrationApi, TeleprompterEvent, TeleprompterState } from '../../types';
 import { RAIL_STORAGE_KEY } from './readerPreferences';
 
 const DEVICE_NAME = WIRE_TELEPROMPTER_DEVICES[0].name;
 const CHAPTER = { id: 'chapter-1', title: 'Chapter 1', subtitle: 'Down the Rabbit-Hole' };
+const CREDITS_PREVIEW: CreditsRenderResult = {
+  text: '[Title], written by [Author], narrated by [Narrator].',
+  words: 6,
+  unresolved: ['Title', 'Author', 'Narrator'],
+};
 
 afterEach(() => {
   cleanup();
@@ -18,7 +23,11 @@ afterEach(() => {
   window.localStorage.clear();
 });
 
-function renderDialog(overrides: Partial<NarrationApi> = {}, onClose = vi.fn(), content: { entities?: GuideEntity[]; notes?: ManuscriptNote[] } = {}) {
+function renderDialog(
+  overrides: Partial<NarrationApi> = {},
+  onClose = vi.fn(),
+  content: { entities?: GuideEntity[]; notes?: ManuscriptNote[]; source?: ReadAloudSource; onFixCredits?: () => void } = {},
+) {
   const eventListeners = new Set<(event: TeleprompterEvent) => void>();
   const stateListeners = new Set<(state: TeleprompterState) => void>();
   const api = createMockApi({
@@ -34,7 +43,13 @@ function renderDialog(overrides: Partial<NarrationApi> = {}, onClose = vi.fn(), 
   });
   render(
     <ApiProvider api={api}>
-      <ReadAloudDialog chapter={CHAPTER} entities={content.entities} notes={content.notes} onClose={onClose} />
+      <ReadAloudDialog
+        source={content.source ?? { kind: 'chapter', chapter: CHAPTER }}
+        entities={content.entities}
+        notes={content.notes}
+        onClose={onClose}
+        onFixCredits={content.onFixCredits}
+      />
     </ApiProvider>,
   );
   return {
@@ -46,6 +61,10 @@ function renderDialog(overrides: Partial<NarrationApi> = {}, onClose = vi.fn(), 
         stateListeners.forEach((listener) => listener({ phase: 'idle', message: '', engine: null, chapter: null, script: null, position: null, ...state })),
       ),
   };
+}
+
+function renderCredits(overrides: Partial<NarrationApi> = {}, onClose = vi.fn(), preview: CreditsRenderResult = CREDITS_PREVIEW, onFixCredits?: () => void) {
+  return renderDialog(overrides, onClose, { source: { kind: 'credits', credits: 'opening', preview }, onFixCredits });
 }
 
 async function openMicPopover(user: ReturnType<typeof userEvent.setup>) {
@@ -437,5 +456,129 @@ describe('ReadAloudDialog flags (teleprompter-manuscript-integration.prd.md Phas
     setState({ phase: 'stopped', chapter: 'chapter-1' });
 
     expect(await screen.findByText('The flags could not be kept for review: the disk is full')).toBeTruthy();
+  });
+});
+
+describe('ReadAloudDialog credits mode (manuscript-credits-card-parity.prd.md, Phase 2)', () => {
+  it('titles itself for the credits kind, with no chapter picker and no resume prompt (MC9)', async () => {
+    renderCredits();
+    expect(await screen.findByRole('dialog', { name: 'Read aloud — Opening credits' })).toBeTruthy();
+    expect(screen.queryByRole('region', { name: 'Where you stopped' })).toBeNull();
+  });
+
+  it("shows the C6 unresolved-token warning with a working Fill them in Settings, in the resume prompt's slot", async () => {
+    const user = userEvent.setup();
+    const onFixCredits = vi.fn();
+    renderCredits({}, vi.fn(), CREDITS_PREVIEW, onFixCredits);
+
+    const warning = await screen.findByRole('status', { name: 'Some opening credits tokens have no value' });
+    expect(within(warning).getByText(/Title, Author, Narrator will show as written/)).toBeTruthy();
+
+    await user.click(within(warning).getByRole('button', { name: 'Fill them in Settings' }));
+    expect(onFixCredits).toHaveBeenCalledTimes(1);
+  });
+
+  it('shows no warning and no Fill them in Settings button when every token is resolved', async () => {
+    renderCredits({}, vi.fn(), { text: 'Alice, written by Lewis Carroll, narrated by Ada Finch.', words: 7, unresolved: [] });
+    await screen.findByRole('button', { name: /^Microphone:/ });
+    expect(screen.queryByRole('status', { name: /tokens have no value/ })).toBeNull();
+  });
+
+  it('shows no Fill them in Settings button when onFixCredits is not given, even with unresolved tokens', async () => {
+    renderCredits();
+    const warning = await screen.findByRole('status', { name: 'Some opening credits tokens have no value' });
+    expect(within(warning).queryByRole('button', { name: 'Fill them in Settings' })).toBeNull();
+  });
+
+  it('starts a session for the credits, not a chapter', async () => {
+    const user = userEvent.setup();
+    const teleprompterStart = vi.fn().mockResolvedValue({ status: 'started' });
+    renderCredits({ teleprompterStart });
+
+    await openMicPopover(user);
+    const field = await screen.findByRole('combobox', { name: 'Microphone' });
+    await user.selectOptions(field, DEVICE_NAME);
+    await user.click(screen.getByRole('button', { name: 'Play' }));
+
+    expect(teleprompterStart).toHaveBeenCalledWith({ credits: 'opening', device: DEVICE_NAME, engine: 'whisper', model: 'tiny' });
+  });
+
+  it('shows flags during the session but never keeps them (MC8 a), saying so in the Flags tab', async () => {
+    const user = userEvent.setup();
+    const teleprompterSaveFlags = vi.fn();
+    const { setState, emit } = renderCredits({ teleprompterSaveFlags });
+    await screen.findByRole('button', { name: /^Microphone:/ });
+    setState({ phase: 'running', chapter: 'credits-opening' });
+    emit({
+      type: 'script',
+      chapter: { id: 'credits-opening', title: 'Opening credits' },
+      tokens: 7,
+      spans: [{ kind: 'paragraph', id: 'credits-opening-1', index: 0, start: 0, count: 7 }],
+    });
+    emit({ type: 'position', read: 0, committed: 0, status: 'listening', jump: null, skipped: null });
+    emit({ type: 'flag', id: 1, kind: 'skipped', start: 0, end: 1, heard: '' });
+    await waitFor(() => expect(document.querySelector('[data-highlight="Skipped"][role="button"]')).toBeTruthy());
+
+    const rail = screen.getByRole('complementary', { name: 'Reading panel' });
+    await user.click(within(rail).getByRole('tab', { name: 'Flags' }));
+    expect(within(rail).getByText('Flags on the credits are not kept.')).toBeTruthy();
+
+    setState({ phase: 'stopped', chapter: 'credits-opening' });
+    expect(teleprompterSaveFlags).not.toHaveBeenCalled();
+  });
+
+  it('closes without keeping any flag, even after dismissing one', async () => {
+    const user = userEvent.setup();
+    const teleprompterSaveFlags = vi.fn();
+    const { onClose, emit, setState } = renderCredits({ teleprompterSaveFlags });
+    await screen.findByRole('button', { name: /^Microphone:/ });
+    setState({ phase: 'running', chapter: 'credits-opening' });
+    emit({
+      type: 'script',
+      chapter: { id: 'credits-opening', title: 'Opening credits' },
+      tokens: 7,
+      spans: [{ kind: 'paragraph', id: 'credits-opening-1', index: 0, start: 0, count: 7 }],
+    });
+    emit({ type: 'position', read: 0, committed: 0, status: 'listening', jump: null, skipped: null });
+    emit({ type: 'flag', id: 1, kind: 'skipped', start: 0, end: 1, heard: '' });
+    await waitFor(() => expect(document.querySelector('[data-highlight="Skipped"][role="button"]')).toBeTruthy());
+    setState({ phase: 'stopped', chapter: 'credits-opening' });
+
+    await user.click(screen.getByRole('button', { name: 'Close' }));
+    expect(onClose).toHaveBeenCalled();
+    expect(teleprompterSaveFlags).not.toHaveBeenCalled();
+  });
+
+  it('asks "Stop reading?" before leaving for Settings while a session is listening, then leaves once confirmed', async () => {
+    const user = userEvent.setup();
+    const teleprompterStop = vi.fn().mockResolvedValue(undefined);
+    const onFixCredits = vi.fn();
+    const { onClose, setState } = renderCredits({ teleprompterStop }, vi.fn(), CREDITS_PREVIEW, onFixCredits);
+    setState({ phase: 'running', chapter: 'credits-opening' });
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Stop reading' })).toBeTruthy());
+
+    const warning = screen.getByRole('status', { name: 'Some opening credits tokens have no value' });
+    await user.click(within(warning).getByRole('button', { name: 'Fill them in Settings' }));
+
+    const confirm = await screen.findByRole('alertdialog', { name: 'Stop reading?' });
+    expect(onFixCredits).not.toHaveBeenCalled();
+    await user.click(within(confirm).getByRole('button', { name: 'Stop and close' }));
+
+    expect(teleprompterStop).toHaveBeenCalled();
+    expect(onClose).toHaveBeenCalled();
+    expect(onFixCredits).toHaveBeenCalledTimes(1);
+  });
+
+  it('leaves for Settings at once, with no confirm, when no session is running', async () => {
+    const user = userEvent.setup();
+    const onFixCredits = vi.fn();
+    const { onClose } = renderCredits({}, vi.fn(), CREDITS_PREVIEW, onFixCredits);
+
+    const warning = await screen.findByRole('status', { name: 'Some opening credits tokens have no value' });
+    await user.click(within(warning).getByRole('button', { name: 'Fill them in Settings' }));
+
+    expect(screen.queryByRole('alertdialog')).toBeNull();
+    expect(onClose).toHaveBeenCalledTimes(1);
+    expect(onFixCredits).toHaveBeenCalledTimes(1);
   });
 });

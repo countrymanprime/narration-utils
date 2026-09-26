@@ -42,7 +42,7 @@ import { LOOKUP_ACTION, useWordLookup } from './useWordLookup';
 import { CAT_DOT_BG, CAT_DOT_CLASS, EntitySummary } from './EntitySummary';
 import { IconButton } from '../primitives/IconButton';
 import type { Notify } from '../primitives/Toast';
-import { ReadAloudDialog } from '../teleprompter/ReadAloudDialog';
+import { ReadAloudDialog, type ReadAloudSource } from '../teleprompter/ReadAloudDialog';
 
 // Read aloud (teleprompter-manuscript-integration.prd.md) reads narration chapters only, matching the standalone
 // Teleprompter page's own chapter filter.
@@ -98,7 +98,7 @@ export function Manuscript({
   const [detail, setDetail] = useState<{ entity?: GuideEntity; note?: ManuscriptNote }>();
   const [pendingNote, setPendingNote] = useState<{ paragraphIndex: number; anchorStart: number; anchorEnd: number; anchorText: string }>();
   const [jumpTarget, setJumpTarget] = useState<number>();
-  const [readAloudChapter, setReadAloudChapter] = useState<ManuscriptChapter>();
+  const [readAloud, setReadAloud] = useState<ReadAloudSource>();
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<SearchHit[]>([]);
   // The query text a result was actually fetched for - not the debounce hook's own state, so an
@@ -154,11 +154,12 @@ export function Manuscript({
   const openingTemplate = creditsTemplates.find((template) => template.kind === 'opening');
   const closingTemplate = creditsTemplates.find((template) => template.kind === 'closing');
   // The read-aloud dialog's notes, memoized so its marks (and every memoized row of its reader) keep their identity.
-  const readAloudNotes = useMemo(
-    () =>
-      readAloudChapter ? notes.filter((item) => item.chapterId === readAloudChapter.id || (!item.chapterId && item.chapter === readAloudChapter.title)) : [],
-    [notes, readAloudChapter],
-  );
+  // Chapter mode only (manuscript-credits-card-parity.prd.md Phase 2): credits pass no story or note marks.
+  const readAloudNotes = useMemo(() => {
+    if (readAloud?.kind !== 'chapter') return [];
+    const { chapter } = readAloud;
+    return notes.filter((item) => item.chapterId === chapter.id || (!item.chapterId && item.chapter === chapter.title));
+  }, [notes, readAloud]);
 
   useEffect(() => {
     const element = bandRef.current;
@@ -575,6 +576,7 @@ export function Manuscript({
             onToggle={() => setCreditsExpanded((current) => ({ ...current, opening: !current.opening }))}
             textClass={READER_TEXT_CLASSES[textSize]}
             onFillIn={creditsSetup ? () => setFillingInCredits(true) : undefined}
+            onReadAloud={() => setReadAloud({ kind: 'credits', credits: 'opening', preview: creditsPreviews.opening! })}
           />
         )}
         {recordedChapters.map((chapter) => {
@@ -592,7 +594,7 @@ export function Manuscript({
               onToggleBookmark={() => void toggleChapterBookmark(chapter.id)}
               showRetailSample={Boolean(sampleRange?.chapterIds.has(chapter.id))}
               showReadAloud={isNarrationChapter(chapter)}
-              onReadAloud={() => setReadAloudChapter(chapter)}
+              onReadAloud={() => setReadAloud({ kind: 'chapter', chapter })}
               wordCount={chapter.wordCount}
             >
               {loadingChapters.has(chapter.id) ? (
@@ -631,6 +633,7 @@ export function Manuscript({
             onToggle={() => setCreditsExpanded((current) => ({ ...current, closing: !current.closing }))}
             textClass={READER_TEXT_CLASSES[textSize]}
             onFillIn={creditsSetup ? () => setFillingInCredits(true) : undefined}
+            onReadAloud={() => setReadAloud({ kind: 'credits', credits: 'closing', preview: creditsPreviews.closing! })}
           />
         )}
       </div>
@@ -760,8 +763,14 @@ export function Manuscript({
           </>
         )}
       </SlideOver>
-      {readAloudChapter && (
-        <ReadAloudDialog chapter={readAloudChapter} entities={entities} notes={readAloudNotes} onClose={() => setReadAloudChapter(undefined)} />
+      {readAloud && (
+        <ReadAloudDialog
+          source={readAloud}
+          entities={readAloud.kind === 'chapter' ? entities : undefined}
+          notes={readAloud.kind === 'chapter' ? readAloudNotes : undefined}
+          onClose={() => setReadAloud(undefined)}
+          onFixCredits={() => routerNavigate('/settings#credits')}
+        />
       )}
     </div>
   );

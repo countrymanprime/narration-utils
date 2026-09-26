@@ -708,4 +708,62 @@ describe('Manuscript page (integration, driven through the mock NarrationApi)', 
       await waitFor(() => expect(screen.queryByRole('dialog', { name: /Read aloud/ })).toBeNull());
     });
   });
+
+  describe('Read aloud on the credits cards (manuscript-credits-card-parity.prd.md, Phase 2)', () => {
+    it('opens the read-aloud modal on the opening credits, titled for the credits kind', async () => {
+      renderManuscript();
+      const openingHeading = await screen.findByRole('heading', { name: 'Opening credits' });
+      const opening = openingHeading.closest('[data-credits-entry]') as HTMLElement;
+      await within(opening).findByRole('button', { name: 'Read Opening credits aloud' });
+
+      fireEvent.click(within(opening).getByRole('button', { name: 'Read Opening credits aloud' }));
+
+      expect(await screen.findByRole('dialog', { name: 'Read aloud — Opening credits' })).toBeTruthy();
+    });
+
+    it('opens the read-aloud modal on the closing credits, titled for that kind', async () => {
+      renderManuscript();
+      const closingHeading = await screen.findByRole('heading', { name: 'Closing credits' });
+      const closing = closingHeading.closest('[data-credits-entry]') as HTMLElement;
+      await within(closing).findByRole('button', { name: 'Read Closing credits aloud' });
+
+      fireEvent.click(within(closing).getByRole('button', { name: 'Read Closing credits aloud' }));
+
+      expect(await screen.findByRole('dialog', { name: 'Read aloud — Closing credits' })).toBeTruthy();
+    });
+
+    it('shows no Read aloud button on a credits card with nothing to read (preview.words === 0)', async () => {
+      renderManuscript({ creditsPreview: async () => ({ text: '', words: 0, unresolved: [] }) });
+      const openingHeading = await screen.findByRole('heading', { name: 'Opening credits' });
+      const opening = openingHeading.closest('[data-credits-entry]') as HTMLElement;
+      await within(opening).findByText('Nothing to preview yet.');
+      expect(within(opening).queryByRole('button', { name: /Read .* aloud/ })).toBeNull();
+    });
+
+    it('closing the credits read-aloud modal returns to the Manuscript reader', async () => {
+      renderManuscript();
+      const openingHeading = await screen.findByRole('heading', { name: 'Opening credits' });
+      const opening = openingHeading.closest('[data-credits-entry]') as HTMLElement;
+      await within(opening).findByRole('button', { name: 'Read Opening credits aloud' });
+      fireEvent.click(within(opening).getByRole('button', { name: 'Read Opening credits aloud' }));
+      await screen.findByRole('dialog', { name: 'Read aloud — Opening credits' });
+
+      fireEvent.click(screen.getByRole('button', { name: 'Close' }));
+
+      await waitFor(() => expect(screen.queryByRole('dialog', { name: /Read aloud/ })).toBeNull());
+    });
+
+    it('"Fill them in Settings" in the credits dialog closes it (Manuscript wires onFixCredits to navigate away)', async () => {
+      renderManuscript();
+      const openingHeading = await screen.findByRole('heading', { name: 'Opening credits' });
+      const opening = openingHeading.closest('[data-credits-entry]') as HTMLElement;
+      await within(opening).findByRole('button', { name: 'Read Opening credits aloud' });
+      fireEvent.click(within(opening).getByRole('button', { name: 'Read Opening credits aloud' }));
+      const dialog = await screen.findByRole('dialog', { name: 'Read aloud — Opening credits' });
+
+      fireEvent.click(within(dialog).getByRole('button', { name: 'Fill them in Settings' }));
+
+      await waitFor(() => expect(screen.queryByRole('dialog', { name: /Read aloud/ })).toBeNull());
+    });
+  });
 });
