@@ -99,7 +99,7 @@ Each question has a recommendation, which is adopted if the owner does not answe
 
 | Priority | Capability |
 | --- | --- |
-| Must | The shared vocabulary in `internal/port`: `Level` (`Unsupported`, `NotYetAvailable`, `Experimental`, `Supported`), `Support{Level, Reason}`, and `NotSupportedError`, with a message for the narrator and `Is` support |
+| Must | The shared vocabulary in `internal/port`: `Level` (`Unsupported`, `NotYetAvailable`, `Experimental`, `Supported`), `Support{Level, Reason}`, and `NotSupportedError`, with a message for the narrator and `Is` support. Provider ports P2 adds the generic `Registry[P]` beside them |
 | Must | `dawport.Adapter` (`Kind()`, `Declares() map[Capability]port.Level`), the role interfaces below, `Resolver`, and `Role[T]` |
 | Must | The conformance suite `dawporttest.Run(t, factory)` and a fake adapter in `dawporttest` |
 | Must | The REAPER adapter wrapping today's bridge types, with declarations matching today's behaviour exactly |
@@ -206,7 +206,7 @@ func Role[T any](r *Resolver, c Capability) (T, error) // *port.NotSupportedErro
 
 | # | Phase | Description | Status | Parallel | Depends | PRP Plan |
 | --- | --- | --- | --- | --- | --- | --- |
-| 1 | Port vocabulary and contracts | `internal/port`; `internal/dawport` types, role interfaces, `Resolver`, `Role[T]`; `dawporttest` fake and conformance suite. No callers | pending | Can run with provider-ports P1 only if that phase waits for this one's `internal/port` commit (see Parallelism) | none | |
+| 1 | Port vocabulary and contracts | `internal/port`; `internal/dawport` types, role interfaces, `Resolver`, `Role[T]`; `dawporttest` fake and conformance suite. No callers | pending | Runs alongside provider-ports P1 (Python only); provider-ports P2 waits for this phase's `internal/port` | none | |
 | 2 | REAPER and Audacity adapters | `dawport/reaper` wraps the bridge types; `dawport/audacity` declares all `NotYetAvailable`; registry; both pass `dawporttest.Run` | pending | no | 1 | |
 | 3 | Per-capability toggles | `DAW.capability.<name>` rows (append-only in `config/defaults.json`, `settings/store.go`), the resolver reads them, `experimental_reaper_actions` mapped; `bridge.Actions` gating delegates to the resolver | pending | no | 2 | |
 | 4 | Capabilities on the wire | `DawCapabilities` binding and `daw_capabilities_changed` event; schema, golden, `wireContracts` row, mock; `hostAPIVersion` + 1; Settings lists capabilities with their toggles | pending | no | 3 | |
@@ -217,6 +217,7 @@ func Role[T any](r *Resolver, c Capability) (T, error) // *port.NotSupportedErro
 | 6 | Boundary test | `dawport_boundary_test.go`: no `*bridge.Client` / `*bridge.Actions` outside `bridge` and `dawport/reaper`; no `Kind` or `"REAPER"` branching outside `dawport` and launch code; remove `app.go`'s `KindREAPER` check and `dawfacts.go`'s label compare | pending | no | 5a–5d | |
 | 7 | UI callers on capabilities | Nav `requiresDaw`, "Punch from here", "Record in REAPER" and Settings' REAPER wording read `useCapability`; `dawAvailability.ts` reduced to a capability adapter | pending | no | 4, studio-ui-primitives CapabilityGate phase | |
 | 8 | Steady state | Update `docs/architecture/daw-integration.md` (the seam table becomes the capability table), the threat model row for `--daw` and the new toggles, `SECURITY.md` if needed; retire `internal/dawadapter`; accept ADR 0300; delete this PRD | pending | no | 6, 7 | |
+| 9 | Live transport state (Should) | The `Heartbeat` role also reports play and record state; the resolver emits `daw_transport_changed` (`{playing, recording, position?}`) with schema, golden, `wireContracts` row and mock, so the UI can keep the booth silent while recording ([input commands and pedals](input-commands-and-pedals.prd.md) P10) without a click-refreshed read (`ReadAloudReaperState.recording`, ADR 0249) | pending | with 5a–5d | 4 | |
 
 ### Phase details
 
@@ -258,7 +259,7 @@ func Role[T any](r *Resolver, c Capability) (T, error) // *port.NotSupportedErro
 
 | Phase | Files it touches | Collides with |
 | --- | --- | --- |
-| 1 | `apps/desktop/internal/port/**`, `internal/dawport/**` (new) | provider-ports P1 (on `internal/port`, so provider-ports waits) |
+| 1 | `apps/desktop/internal/port/**`, `internal/dawport/**` (new) | provider-ports P2 (on `internal/port`, so provider-ports P2 waits) |
 | 2 | `internal/dawport/reaper/**`, `internal/dawport/audacity/**` (new) | none |
 | 3 | `config/defaults.json`, `internal/settings/store.go`, `internal/bridge/actions.go`, `internal/dawport/resolver.go` | any phase adding a settings row (append-only; the coordinator merges) |
 | 4 | a new `apps/desktop/bindings_daw.go`, `app.go` (`hostAPIVersion`), `app_test.go`, `apps/ui/src/hostApi.ts`, `api/contracts/daw.ts`, `api/schemas/daw.ts`, `api/dawMock.ts`, `wireContracts.test.ts`, `tests/fixtures/contracts/daw-capabilities*.json`, regenerated `Host.*` | any phase that bumps `hostAPIVersion` |
@@ -268,6 +269,7 @@ func Role[T any](r *Resolver, c Capability) (T, error) // *port.NotSupportedErro
 | 5d | `internal/transcript/**`, `internal/tracks/**` callers, `app.go` wiring lines | 5a–5c on `app.go` only |
 | 6 | `internal/dawport/boundary_test.go`, `app.go`, `dawfacts.go` | none after 5 |
 | 7 | `apps/ui/src/dawAvailability.ts`, `components/layout/AppShell.tsx` (`NAV`, one at a time train-wide), `components/teleprompter/ReaderFlagsPanel.tsx`, `ReadingControlBar.tsx`, `components/settings/Settings.tsx`, `tests/visual/**` rows | any other `AppShell.tsx` change |
+| 9 | `internal/dawport/**`, a new binding file for the event, `api/contracts/daw.ts`, `api/schemas/daw.ts`, `api/dawMock.ts`, `wireContracts.test.ts`, goldens | 4 on the same schema files (so 9 waits for 4) |
 | 8 | `docs/architecture/daw-integration.md`, `docs/architecture/threat-model.md`, `SECURITY.md`, `docs/adr/0300-*`, `internal/dawadapter/**` (deleted) | none |
 
 ## Decisions Log
