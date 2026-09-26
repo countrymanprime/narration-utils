@@ -1,7 +1,8 @@
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCircleDot, faCrosshairs, faGear, faMicrophone, faPause, faPlay, faRotate, faStop, faXmark } from '@fortawesome/free-solid-svg-icons';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { useCommand } from '../../input/useCommand';
 import { Button } from '../primitives/Button';
 import { IconButton } from '../primitives/IconButton';
 import { Popover } from '../primitives/Popover';
@@ -11,7 +12,7 @@ import { InputLevelMeter } from './InputLevelMeter';
 import { MicrophoneField } from './MicrophoneField';
 import { useInputLevel } from './useInputLevel';
 import { useReadAloudReaperState } from './useReadAloudReaperState';
-import { EDITABLE, SPACE_ACTIVATES, KEY_WIDGET_ROLES, type FollowCursor } from './useFollowCursor';
+import type { FollowCursor } from './useFollowCursor';
 import { ENGINE_LABELS, MODELS, type TeleprompterSession } from './useTeleprompterSession';
 import type { ReadAloudReaperState } from '../../types';
 
@@ -67,33 +68,6 @@ function ReaperStateIndicator({ chapterId }: { chapterId: string }) {
   );
 }
 
-/** Whether a keydown's target already owns the key: a field, a button, a tab or another interactive widget (the same
- * check `isScrollKey` makes, `useFollowCursor.ts`), so Space there activates the widget instead of the reading toggle. */
-function isWidgetTarget(target: EventTarget | null): boolean {
-  if (!(target instanceof Element)) return false;
-  if (target.closest(EDITABLE) || target.closest(SPACE_ACTIVATES)) return true;
-  const role = target.getAttribute('role');
-  return Boolean(role && KEY_WIDGET_ROLES.has(role));
-}
-
-/**
- * Space toggles Play/Pause when focus is not in a field, button, tab or other widget (Q10 A, amends ADR 0119 decision 2
- * for this dialog): `preventDefault` stops it also being read as a scroll key by `useFollowCursor`'s own document
- * listener, which already skips a prevented event (`isScrollKey`, `useFollowCursor.ts`). Stop has no shortcut.
- */
-function useSpaceShortcut(onToggle: () => void) {
-  useEffect(() => {
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key !== ' ' || event.defaultPrevented || event.ctrlKey || event.metaKey || event.altKey) return;
-      if (isWidgetTarget(event.target)) return;
-      event.preventDefault();
-      onToggle();
-    };
-    document.addEventListener('keydown', onKeyDown);
-    return () => document.removeEventListener('keydown', onKeyDown);
-  }, [onToggle]);
-}
-
 /**
  * The read-aloud media bar (read-aloud-control-bar.prd.md Phases 3-6), replacing the configuration `Panel`: a Play/Pause
  * toggle and Stop, status and word count, the start-point chip, Follow, a microphone popover (device list, Refresh and a
@@ -113,7 +87,10 @@ export function ReadingControlBar({ session: t, follow, startPoint, chapterId }:
     if (!t.active) void t.start();
     else t.pause(listening);
   };
-  useSpaceShortcut(() => {
+  // Space toggles Play/Pause while this bar's booth scope is active (Phase 4, ADR 0361 decision 4, keeping ADR 0196
+  // decision 5 unchanged): the router already applies the target guard, so a field, button, tab or other widget
+  // still gets the key. Stop has no shortcut.
+  useCommand('reading.toggle', () => {
     if (!playPauseDisabled) onPlayPause();
   });
 
