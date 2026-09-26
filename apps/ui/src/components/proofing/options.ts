@@ -28,5 +28,14 @@ export const proofingChoiceLabel = (key: string, value: string) => {
         moonshine: 'Moonshine',
       }[value] ?? value
     );
+  // The preview suggestion's two presets (proofing-preview-suggestion.prd.md Q1, apps/desktop/internal/preview
+  // Preset): a clean, varied, shareable excerpt versus a passage worth a second look.
+  if (key === 'preset')
+    return (
+      {
+        sample: 'Sample',
+        spot_check: 'Spot check',
+      }[value] ?? value
+    );
   return value;
 };

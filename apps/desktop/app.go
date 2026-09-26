@@ -1290,6 +1290,15 @@ var fieldSchemas = map[string][]fieldSchema{
 		{"head_max_seconds", "Maximum leading silence (head)", "number", nil},
 		{"tail_max_seconds", "Maximum trailing silence (tail)", "number", nil},
 	},
+	// Preview is the proofing-preview-suggestion PRD's Phase 4 settings: the narrator's target length, tolerance,
+	// preset and optional ending exclusion, read by previewSettings (bindings_preview.go) on every PreviewCandidates
+	// call. Defaults (5:00, 10%, "sample", ending exclusion off) mirror preview.DefaultSettings.
+	"Preview": {
+		{"target_seconds", "Target length (seconds)", "number", nil},
+		{"tolerance_fraction", "Tolerance (fraction of target)", "number", nil},
+		{"preset", "Preset", "choice", []string{"sample", "spot_check"}},
+		{"exclude_ending_fraction", "Exclude the ending (fraction of chapters)", "number", nil},
+	},
 }
 
 // settingsSchemas is the settings the app offers with each choice that comes from an approved catalog filled in from it: the spaCy model

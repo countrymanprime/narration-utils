@@ -2,8 +2,10 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/countrymanprime/narration-utils/shell/internal/contractfile"
@@ -137,4 +139,119 @@ func TestPreviewCandidatesRanksOneCandidatePerEligibleChapter(t *testing.T) {
 		t.Fatalf("a candidate with no reasons is unexplained: %v", first)
 	}
 	contractfile.Check(t, "preview-candidates-ok", result)
+}
+
+// previewManyParagraphManuscript is one chapter of paragraphCount paragraphs, each exactly 20 words (counted by
+// strings.Fields, the engine's own word counter), so its total word count is a clean multiple of 20 - enough
+// paragraphs for the window scan (internal/preview/engine.go's bestWindow) to have room to pick a sub-window
+// short of the whole chapter once a small enough target asks for one.
+func previewManyParagraphManuscript(paragraphCount int) string {
+	const twentyWords = "one two three four five six seven eight nine ten eleven twelve thirteen fourteen fifteen sixteen seventeen eighteen nineteen twenty"
+	type chapter struct {
+		ID          string `json:"id"`
+		Title       string `json:"title"`
+		Index       int    `json:"index"`
+		ContentKind string `json:"contentKind"`
+	}
+	type paragraph struct {
+		ID        string `json:"id"`
+		ChapterID string `json:"chapterId"`
+		Index     int    `json:"index"`
+		Text      string `json:"text"`
+	}
+	manuscript := struct {
+		SchemaVersion int         `json:"schemaVersion"`
+		DocumentID    string      `json:"documentId"`
+		Chapters      []chapter   `json:"chapters"`
+		Paragraphs    []paragraph `json:"paragraphs"`
+	}{
+		SchemaVersion: 1,
+		DocumentID:    "doc-1",
+		Chapters:      []chapter{{ID: "c-0001", Title: "Chapter One", Index: 0, ContentKind: "narration"}},
+	}
+	for i := 0; i < paragraphCount; i++ {
+		manuscript.Paragraphs = append(manuscript.Paragraphs, paragraph{
+			ID:        fmt.Sprintf("p-%06d", i+1),
+			ChapterID: "c-0001",
+			Index:     i,
+			Text:      twentyWords,
+		})
+	}
+	encoded, err := json.Marshal(manuscript)
+	if err != nil {
+		panic(err)
+	}
+	return string(encoded)
+}
+
+// Phase 4's own success signal: "changing the target changes candidates deterministically". This chapter's 600
+// words (30 paragraphs of 20) fall short of the 5:00 default target's lower tolerance bound, so the default answer
+// is the whole chapter, honestly marked Shorter (preview.Candidate.Shorter's own doc); a 60s target with 50%
+// tolerance asks for far less, so the engine picks a short in-tolerance sub-window instead - a different, smaller
+// WordCount and Shorter: false - and reading twice more at that same setting gives the identical result both times
+// (byte-for-byte, Suggest's own determinism doc).
+func TestPreviewCandidatesChangesDeterministicallyWithTheTargetSetting(t *testing.T) {
+	host := previewSuggestHost(t, previewManyParagraphManuscript(30))
+
+	before := decodePreviewCandidates(t)(host.PreviewCandidates())
+	beforeCandidates, _ := before["candidates"].([]any)
+	if len(beforeCandidates) != 1 {
+		t.Fatalf("expected one candidate for the one eligible chapter before the setting change: %v", before)
+	}
+	beforeCandidate, _ := beforeCandidates[0].(map[string]any)
+	if beforeCandidate["shorter"] != true || beforeCandidate["wordCount"] != float64(600) {
+		t.Fatalf("at the 5:00 default target this 600-word chapter must answer the whole chapter, Shorter: %v", before)
+	}
+
+	// Project scope, not global: no APPDATA/USERPROFILE override here (unlike newTestHostForDeliverySettings), so a
+	// "global" save would write to this machine's real settings.Store path and could bleed into another test.
+	if err := host.saveSettings("Preview", "project", map[string]*string{"target_seconds": ptr("60"), "tolerance_fraction": ptr("0.5")}); err != nil {
+		t.Fatal(err)
+	}
+
+	after := decodePreviewCandidates(t)(host.PreviewCandidates())
+	afterCandidates, _ := after["candidates"].([]any)
+	if len(afterCandidates) != 1 {
+		t.Fatalf("changing the target must not change which chapters are eligible: before %v after %v", before, after)
+	}
+	afterCandidate, _ := afterCandidates[0].(map[string]any)
+	if afterCandidate["shorter"] != false {
+		t.Fatalf("a 60s target with 50%% tolerance must find an in-tolerance sub-window, not fall back to Shorter: %v", after)
+	}
+	if afterCandidate["wordCount"] == beforeCandidate["wordCount"] {
+		t.Fatalf("the narrower target must pick a different-sized window: before %v after %v", beforeCandidate, afterCandidate)
+	}
+
+	repeat := decodePreviewCandidates(t)(host.PreviewCandidates())
+	if fmt.Sprint(after) != fmt.Sprint(repeat) {
+		t.Fatalf("PreviewCandidates must be deterministic for the same settings and manuscript: %v vs %v", after, repeat)
+	}
+}
+
+// Phase 4's other success signal: "invalid values are rejected at the boundary" - a target outside numberSpecs'
+// declared range never reaches the store (the same saveSettings boundary every other number field already enforces,
+// delivery_settings_test.go's TestSavingANumberSettingValidatesItAndStoresIt).
+func TestSavingAnOutOfRangePreviewTargetIsRejected(t *testing.T) {
+	// Project scope (previewSuggestHost's own attached temp project), not global: a "global" save would write to
+	// this machine's real settings.Store path (no APPDATA/USERPROFILE override here, unlike
+	// newTestHostForDeliverySettings) and could bleed into another test.
+	host := previewSuggestHost(t, previewManuscriptOK)
+	if err := host.saveSettings("Preview", "project", map[string]*string{"target_seconds": ptr("30")}); err == nil || !strings.Contains(err.Error(), "target_seconds") {
+		t.Fatalf("saveSettings(30) = %v, want a below-minimum target rejected", err)
+	}
+	if value, source := host.settings.Effective("Preview", "target_seconds", ""); value != "300" || source != "repo_default" {
+		t.Fatalf("a rejected save must not change the effective value: got %q from %s, want the 300s repo default untouched", value, source)
+	}
+	if err := host.saveSettings("Preview", "project", map[string]*string{"tolerance_fraction": ptr("0.9")}); err == nil || !strings.Contains(err.Error(), "tolerance_fraction") {
+		t.Fatalf("saveSettings(0.9) = %v, want an above-maximum tolerance rejected", err)
+	}
+	if err := host.saveSettings("Preview", "project", map[string]*string{"preset": ptr("epic")}); err == nil {
+		t.Fatalf("saveSettings(epic) = %v, want an unsupported preset rejected", err)
+	}
+	if err := host.saveSettings("Preview", "project", map[string]*string{"target_seconds": ptr("600")}); err != nil {
+		t.Fatalf("an in-range target must be accepted: %v", err)
+	}
+	if value, source := host.settings.Effective("Preview", "target_seconds", ""); value != "600" || source != "project" {
+		t.Fatalf("Effective() = %q from %s, want 600 from project", value, source)
+	}
 }
