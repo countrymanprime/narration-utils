@@ -161,7 +161,7 @@ ENGINES: Registry[AsrEngine]        # filled by each sidecar's adapters at impor
 | --- | --- | --- | --- | --- | --- | --- |
 | 1 | Python port kit | `narration_common/ports`: `Level`, `NotSupportedError`, `Registry`, `Descriptor`, conformance runner; level golden check | complete | with 2, daw-port P1 | - | - |
 | 2 | Go port registry | `port.Registry[P]` in `internal/port/registry.go` with its tests | complete | with 1 | daw-port P1 | - |
-| 3 | ASR contract (Python) | `ports/asr.py`: `AsrEngine`, `LiveTranscriber`, `BatchTranscriber`; `Word`, `Hypothesis` moved; `asr_conformance` | pending | with 4, 7, 9, 10, 12 | 1 | - |
+| 3 | ASR contract (Python) | `ports/asr.py`: `AsrEngine`, `LiveTranscriber`, `BatchTranscriber`; `Word`, `Hypothesis` moved; `asr_conformance` | complete | with 4, 7, 9, 10, 12 | 1 | - |
 | 4 | ASR registry (Go) | `internal/asrport` + `asrporttest`; `teleprompter.Engines`/`SupportsEngine` delegate to it | pending | with 3, 7, 9, 10, 12 | 2 | - |
 | 5 | Live ASR adapters | Whisper and Moonshine adapters; `live_asr.py` selects through the registry | pending | with 6, 8 | 3 | - |
 | 6 | Batch ASR adapter | faster-whisper adapter; `compare.py`'s `transcribe()` goes through it | pending | with 5, 8 | 3 | - |
@@ -189,6 +189,7 @@ Each phase lists the port it defines or migrates. All are refactors: existing te
 - **P3 (lane K). Port: `AsrEngine` (Python).**
   - `ports/asr.py` with the roles above and `asr_conformance.py`. `Word` and `Hypothesis` move here (Q3); `live_asr.py` re-exports them so every existing import works.
   - A fake engine in the test passes the suite; a fake that declares live but raises from `live()` fails it.
+  - Built: `LiveRequest` and `BatchRequest` carry the model, `model_dir`, language, hotwords and device, plus a read-only `options` map for what one engine alone takes (the adapter checks its own keys); `BatchRequest.progress(done, total)` replaces `write_progress`/`check_cancelled` for P6 (raising from it cancels). `BatchResult` carries the words and the detected language and probability. `AsrDescriptor` adds `languages` and `asset_kind`, and `refuse(mode)` gives the refusal. `ENGINES` is empty until P5 and P6 register their adapters. `asr_conformance.run(engine, live_request=, batch_request=, chunks=, audio=)` also checks that segments never go back or reopen after a final hypothesis, and that words are non-blank. Validate: `libs/python/tests/test_ports_asr.py`.
 - **P4 (lane K). Port: `AsrEngine` (Go).**
   - `internal/asrport`: rows `whisper` (live and batch, every platform, asset kind `whisper`) and `moonshine` (live, `windows`, asset kind `moonshine`, ADR 0107). `asrporttest.Run` over every row.
   - `teleprompter.Engines` and `SupportsEngine` keep their signatures and call `asrport.Engines.Names`. `app.go` and `bindings.go` are untouched.
