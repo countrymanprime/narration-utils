@@ -41,6 +41,11 @@ const TOOLTIP: Record<string, string> = {
   suggestions_enabled: 'Turns every stage suggestion on Home off at once, without changing which signals are required below.',
   'recording.text_present':
     'Whether every paragraph present in order, as the recording check measures it, must be met before Home suggests moving a chapter from Recording to Editing.',
+  target_seconds: 'How long a preview excerpt should be, in seconds. The Preview panel suggests candidates near this length.',
+  tolerance_fraction: 'How far a candidate may sit from the target length and still count as on target, as a fraction of the target (0.1 = 10%).',
+  preset: 'Sample favors a clean, varied, shareable excerpt. Spot check favors a passage worth a second look.',
+  exclude_ending_fraction:
+    "Drops this share of the book's final chapters from consideration, so a preview candidate never spoils the ending. 0 leaves every chapter eligible.",
 };
 const optionTip = (field: ScopedSettingField, value: string) =>
   field.key.includes('color')

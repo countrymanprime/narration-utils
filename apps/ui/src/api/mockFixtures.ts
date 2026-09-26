@@ -690,6 +690,15 @@ export const wireSettings = (): Record<string, ScopedSettingField[]> => ({
     bool('suggestions_enabled', 'Suggest stage advances', 'true'),
     choice('recording.text_present', 'Text present in order (recording)', ['required', 'ignored'], 'required'),
   ],
+  // The preview suggestion's four settings (proofing-preview-suggestion.prd.md Phase 4), mirroring the host's
+  // fieldSchemas and numberSpecs: preview.DefaultSettings' own shipped defaults (5:00, 10%, Sample, ending
+  // exclusion off), all still unset at every scope (repo default only) the way a fresh install reads them.
+  Preview: [
+    recordingCheck('target_seconds', 'Target length (seconds)', '300', { min: 60, max: 3600, step: 1, unit: 's' }),
+    recordingCheck('tolerance_fraction', 'Tolerance (fraction of target)', '0.1', { min: 0.01, max: 0.5, step: 0.01, unit: '' }),
+    choice('preset', 'Preset', ['sample', 'spot_check'], 'sample'),
+    recordingCheck('exclude_ending_fraction', 'Exclude the ending (fraction of chapters)', '0', { min: 0, max: 0.5, step: 0.01, unit: '' }),
+  ],
 });
 export const WIRE_TRACKS_PROJECT: TracksProject = {
   path: 'C:/Projects/Alice-in-Wonderland/Alice.rpp',
