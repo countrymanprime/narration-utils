@@ -30,6 +30,11 @@ export const globalStates: StateEntry[] = [
   },
   {
     page: 'global',
+    state: 'shortcut-sheet',
+    description: 'The "?" shortcut sheet (input-commands-and-pedals.prd.md Phase 7), listing every command grouped by scope',
+  },
+  {
+    page: 'global',
     state: 'nav-rail-tooltip',
     description:
       "Primary navigation - hovering an enabled icon in the icon-only rail shows that page's name; at desktop width there is no icon-only rail, so this is a no-op there",
