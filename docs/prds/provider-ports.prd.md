@@ -168,7 +168,7 @@ ENGINES: Registry[AsrEngine]        # filled by each sidecar's adapters at impor
 | 7 | TTS and pronunciation contracts (Python) | `ports/tts.py`, `ports/pronunciation.py` (with the `BrowserLookup` role, Should) and their suites | pending | with 3, 4, 9, 10, 12 | 1 | - |
 | 8 | Piper and pronunciation adapters | Piper, CMU and eSpeak adapters; `manuscript_guide.py` selects through the registries | pending | with 5, 6 | 7 | - |
 | 9 | TTS and pronunciation registries (Go) | `internal/ttsport`, `internal/pronunciationport`; setting choices and the catalog payload from them; `Pronounce` checks the source | pending | with 3, 4, 7, 10, 12 | 2 | - |
-| 10 | Capture contract (Python) | `ports/capture.py`: `CaptureBackend` (`list_devices`, `chunks`) and its suite | pending | with 3, 4, 7, 9, 12 | 1 | - |
+| 10 | Capture contract (Python) | `ports/capture.py`: `CaptureBackend` (`list_devices`, `chunks`) and its suite | complete | with 3, 4, 7, 9, 12 | 1 | - |
 | 11 | dshow capture adapter | `devices.py` and `iter_microphone_chunks` behind a dshow adapter | pending | with 6, 8 | 5, 10 | - |
 | 12 | Capture registry (Go) | `internal/captureport` with the dshow row (Windows) | pending | with 3, 4, 7, 9, 10 | 2 | - |
 | 13 | Encoder and Packager ports (Could) | `internal/encodeport`: interfaces, empty registry, suite | pending | with any | 2 | - |
@@ -211,6 +211,7 @@ Each phase lists the port it defines or migrates. All are refactors: existing te
   - Validate: the settings schema test and `tests/fixtures/contracts/` goldens unchanged.
 - **P10 (lane K). Port: `CaptureBackend` (Python).**
   - `ports/capture.py`: `list_devices() -> (devices, error)` and `chunks(device, chunk_seconds) -> Iterator[array]`, matching `list_input_devices` and `iter_microphone_chunks` today. Descriptor platforms.
+  - Built: `CaptureDescriptor` must name its platforms (a backend opens one platform's audio API) and has no modes; `BACKENDS` ("capture backend") is empty until P11. `SAMPLE_RATE`, `CHUNK_SECONDS` and `chunk_samples()` are `live_asr.py`'s values and rounding, kept equal by a test that reads its source. `InputDevice` is a `name` plus `to_json()`, the `devices` event's entry. `capture_conformance.run(backend, device=, missing_device=, chunk_seconds=, take=)` checks that `list_devices()` never raises and returns devices or a sentence (never both), that each device's `to_json()` is JSON carrying its name, that the first listed name opens, that each chunk is a non-empty 1-D `float32` array of finite samples, whole except the last, that the stream closes twice, and that a device that does not exist raises instead of giving audio or ending quietly. The modules are imported as `narration_common.ports.capture` and `.capture_conformance`, so `ports/__init__.py` is unchanged. Validate: `libs/python/tests/test_ports_capture.py`.
 - **P11 (lane B). Port: `CaptureBackend`, dshow adapter.**
   - `sidecars/manuscript-teleprompter/core/capture_dshow.py` wraps `devices.py` and the body of `iter_microphone_chunks`; `live_asr.py`'s two capture callers, the session (`:886`) and the level meter (`:769`), look up the backend for this platform. Off Windows the lookup gives today's error string.
   - Validate: `test_devices.py`, `test_levels.py`, `test_live_asr.py` unchanged; the suite with the fake log capture `test_devices.py` uses.
