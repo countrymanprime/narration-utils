@@ -22,4 +22,4 @@ The Read Aloud control bar ([read-aloud-control-bar PRD](../prds/read-aloud-cont
 - A pause costs nothing to resume from: no model load, no new session, no second set of flags.
 - A segment that was open when the narrator paused stays open until they speak again. Its words so far are confirmed when it closes, as before.
 - The recorded REAPER take is not paused by this. What Pause does to a recording the app started is Phase 7's (Q8, owner answer: a pause is a take boundary), built on this command.
-- Pause in the bar, its tooltip and the Space shortcut are the UI half, built on this binding by the UI lane.
+- Pause in the bar is built: Play and Pause share one toggle button (`aria-pressed`, named "Play" or "Pause" by state), Space now toggles Play/Pause instead of Stop while a session runs (amending the Space shortcut ADR 0119 amendment made for this dialog), and the status line reads "Paused" from `host.paused`.

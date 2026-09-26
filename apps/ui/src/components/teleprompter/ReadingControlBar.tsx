@@ -1,15 +1,19 @@
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faCrosshairs, faGear, faMicrophone, faPlay, faStop, faXmark } from '@fortawesome/free-solid-svg-icons';
-import { useEffect } from 'react';
+import { faCircleDot, faCrosshairs, faGear, faMicrophone, faPause, faPlay, faRotate, faStop, faXmark } from '@fortawesome/free-solid-svg-icons';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '../primitives/Button';
 import { IconButton } from '../primitives/IconButton';
 import { Popover } from '../primitives/Popover';
 import { ToggleGroup } from '../primitives/ToggleGroup';
 import { TooltipTarget } from '../primitives/Tooltip';
+import { InputLevelMeter } from './InputLevelMeter';
 import { MicrophoneField } from './MicrophoneField';
+import { useInputLevel } from './useInputLevel';
+import { useReadAloudReaperState } from './useReadAloudReaperState';
 import { EDITABLE, SPACE_ACTIVATES, KEY_WIDGET_ROLES, type FollowCursor } from './useFollowCursor';
 import { ENGINE_LABELS, MODELS, type TeleprompterSession } from './useTeleprompterSession';
+import type { ReadAloudReaperState } from '../../types';
 
 const LABEL_CLASS = 'block text-[0.82rem] font-medium text-[var(--text-muted)]';
 
@@ -20,7 +24,48 @@ type Props = {
   session: TeleprompterSession;
   follow: FollowCursor;
   startPoint?: StartPoint;
+  /**
+   * The chapter Phase 6's REAPER state indicator asks about; absent in credits mode (no chapter track, Phase 7's own
+   * scope) and on the standalone page (Q11 A - it has no fixed chapter until Phase 13 retires it), where the bar shows
+   * no REAPER control at all.
+   */
+  chapterId?: string;
 };
+
+const REAPER_STATUS_TEXT: Record<ReadAloudReaperState['status'], string> = {
+  ready: 'Chapter armed',
+  not_armed: 'Not armed',
+  other_armed: 'Other track armed',
+  several_armed: 'Several armed',
+  no_link: 'No linked track',
+  recording_elsewhere: 'Recording',
+  unavailable: 'Unavailable',
+};
+
+/**
+ * The read-only REAPER state the bar shows (read-aloud-control-bar.prd.md Phase 6, ADR 0249): whether the chapter's
+ * linked track is the one track armed in REAPER, and whether it is recording. It is always disabled - Phase 7's
+ * "Record in REAPER" toggle (arming, recording start and stop) is a later phase, not built here - so this is
+ * information only, refreshed on mount and by its own Refresh button, never on a timer (ADR 0122).
+ */
+function ReaperStateIndicator({ chapterId }: { chapterId: string }) {
+  const { state, error, refresh } = useReadAloudReaperState(chapterId);
+  const message = state?.message ?? error ?? 'Checking REAPER…';
+  const label = state ? `Record in REAPER: ${REAPER_STATUS_TEXT[state.status]}` : 'Record in REAPER';
+  return (
+    <div className="flex items-center gap-1">
+      <TooltipTarget text={message}>
+        <Button aria-label={label} variant="ghost" disabled className="max-w-[9rem] lg:max-w-[13rem]">
+          <FontAwesomeIcon icon={faCircleDot} className={state?.recording ? 'text-[var(--danger-text)]' : undefined} />
+          <span className="hidden truncate lg:inline">{state ? REAPER_STATUS_TEXT[state.status] : 'Record in REAPER'}</span>
+        </Button>
+      </TooltipTarget>
+      <IconButton label="Refresh REAPER state" onClick={refresh}>
+        <FontAwesomeIcon icon={faRotate} className="text-[0.7rem]" />
+      </IconButton>
+    </div>
+  );
+}
 
 /** Whether a keydown's target already owns the key: a field, a button, a tab or another interactive widget (the same
  * check `isScrollKey` makes, `useFollowCursor.ts`), so Space there activates the widget instead of the reading toggle. */
@@ -32,9 +77,9 @@ function isWidgetTarget(target: EventTarget | null): boolean {
 }
 
 /**
- * Space toggles Play/Stop when focus is not in a field, button, tab or other widget (Q10 A, amends ADR 0119 decision 2
+ * Space toggles Play/Pause when focus is not in a field, button, tab or other widget (Q10 A, amends ADR 0119 decision 2
  * for this dialog): `preventDefault` stops it also being read as a scroll key by `useFollowCursor`'s own document
- * listener, which already skips a prevented event (`isScrollKey`, `useFollowCursor.ts`).
+ * listener, which already skips a prevented event (`isScrollKey`, `useFollowCursor.ts`). Stop has no shortcut.
  */
 function useSpaceShortcut(onToggle: () => void) {
   useEffect(() => {
@@ -50,16 +95,26 @@ function useSpaceShortcut(onToggle: () => void) {
 }
 
 /**
- * The read-aloud media bar (read-aloud-control-bar.prd.md Phase 3), replacing the configuration `Panel`: Play/Stop, status
- * and word count, the start-point chip, Follow, a microphone popover (device list and Refresh - the level meter is Phase
- * 4) and a Settings popover (Engine and Model). Rendered outside the dialog's scrolling body (`Dialog`'s `footer` slot) or,
- * on the standalone page, sticky at the bottom of its own column (Q11), so it is never scrolled out of view. No Pause (Q3)
- * and no "Record in REAPER" toggle (Q7-Q9) yet - both are later phases.
+ * The read-aloud media bar (read-aloud-control-bar.prd.md Phases 3-6), replacing the configuration `Panel`: a Play/Pause
+ * toggle and Stop, status and word count, the start-point chip, Follow, a microphone popover (device list, Refresh and a
+ * live level meter, Phase 4), the chapter's read-only REAPER state (Phase 6) and a Settings popover (Engine and Model).
+ * Rendered outside the dialog's scrolling body (`Dialog`'s `footer` slot) or, on the standalone page, sticky at the bottom
+ * of its own column (Q11), so it is never scrolled out of view. No "Record in REAPER" toggle yet (Q7-Q9, Phase 7): the
+ * host actions it would call (arming, starting and stopping a REAPER recording) are not built.
  */
-export function ReadingControlBar({ session: t, follow, startPoint }: Props) {
+export function ReadingControlBar({ session: t, follow, startPoint, chapterId }: Props) {
+  const [micOpen, setMicOpen] = useState(false);
+  const { level, error: levelError } = useInputLevel(t.device, { active: t.active, enabled: micOpen });
+  // While a session runs, listening is either live (Pause) or held (Play resumes it, Q3); while idle, Play starts one.
+  const listening = t.active && !t.paused;
+  const playPauseLabel = listening ? 'Pause' : 'Play';
+  const playPauseDisabled = t.host.phase === 'starting' || t.host.phase === 'stopping' || (!t.active && !t.canStart);
+  const onPlayPause = () => {
+    if (!t.active) void t.start();
+    else t.pause(listening);
+  };
   useSpaceShortcut(() => {
-    if (t.active) t.stop();
-    else if (t.canStart) void t.start();
+    if (!playPauseDisabled) onPlayPause();
   });
 
   const micLabel = `Microphone: ${t.device || 'not chosen'}`;
@@ -69,10 +124,10 @@ export function ReadingControlBar({ session: t, follow, startPoint }: Props) {
   return (
     <div role="toolbar" aria-label="Reading controls" className="flex flex-wrap items-center gap-x-4 gap-y-2 px-4 py-2.5">
       <div className="flex items-center gap-2">
-        <TooltipTarget text={t.startReason}>
-          <Button aria-label="Play" onClick={() => void t.start()} disabled={t.active || !t.canStart}>
-            <FontAwesomeIcon icon={faPlay} />
-            <span className="hidden lg:inline">Play</span>
+        <TooltipTarget text={t.active ? playPauseLabel : t.startReason}>
+          <Button aria-label={playPauseLabel} aria-pressed={listening} onClick={onPlayPause} disabled={playPauseDisabled}>
+            <FontAwesomeIcon icon={listening ? faPause : faPlay} />
+            <span className="hidden lg:inline">{playPauseLabel}</span>
           </Button>
         </TooltipTarget>
         <Button aria-label="Stop reading" variant="danger" onClick={t.stop} disabled={!t.active || t.host.phase === 'stopping'}>
@@ -121,14 +176,17 @@ export function ReadingControlBar({ session: t, follow, startPoint }: Props) {
         <Popover
           label="Microphone"
           side="top"
+          open={micOpen}
+          onOpenChange={setMicOpen}
           trigger={
             <Button aria-label={micLabel} variant="ghost" className="max-w-[9rem] lg:max-w-[13rem]">
               <FontAwesomeIcon icon={faMicrophone} />
               <span className="truncate">{t.device || 'Choose a microphone…'}</span>
+              <InputLevelMeter level={level} decorative className="w-8 flex-none" />
             </Button>
           }
         >
-          <div className="w-72">
+          <div className="w-72 space-y-2">
             <MicrophoneField
               value={t.device}
               onChange={t.changeDevice}
@@ -137,8 +195,16 @@ export function ReadingControlBar({ session: t, follow, startPoint }: Props) {
               onRefresh={t.loadDevices}
               refreshing={t.devicesLoading}
             />
+            <InputLevelMeter level={level} className="h-2.5" />
+            {levelError && (
+              <p role="alert" className="text-xs" style={{ color: 'var(--danger-text)' }}>
+                {levelError}
+              </p>
+            )}
           </div>
         </Popover>
+
+        {chapterId && <ReaperStateIndicator chapterId={chapterId} />}
 
         <Popover
           label="Settings"
