@@ -8,11 +8,11 @@
 [DAW Chapter-Track Auto-Sync](../prds/daw-chapter-track-auto-sync.prd.md) Phase 6 ("Status without a click", S14)
 retires Home's per-row **Check** button in favour of a status that is always there: `chaptersync:state` already
 carries, per narration chapter, whether its check is `current`, `stale` (with reasons) or `never`, when it was
-checked, whether one is running, and when its track last changed (host-complete before this PR). [Recording Check
-Summary](../prds/recording-check-summary.prd.md) RS7 (D26, owner 2026-09-24) answered where the summary goes once the
-button is gone: "a chapter slide-over opened from the row's check-status cell or track button", built in the same
-change that retires the button "so the dialog is never unreachable" — the two PRDs deliberately left this as one
-piece of work rather than two.
+checked, whether one is running, and when its track last changed (host-complete before this PR).
+[Recording Check Summary](../prds/recording-check-summary.prd.md) RS7 (D26, owner 2026-09-24) answered where the
+summary goes once the button is gone: "a chapter slide-over opened from the row's check-status cell or track
+button", built in the same change that retires the button "so the dialog is never unreachable" — the two PRDs
+deliberately left this as one piece of work rather than two.
 
 `ChapterTrackButton`/`ChapterTrackPanel` ([Chapter Track Link Control](../prds/chapter-track-link-control.prd.md)
 Phase 2, already merged in #534) already opens a slide-over for the chapter's *track* facts and links from a button in
