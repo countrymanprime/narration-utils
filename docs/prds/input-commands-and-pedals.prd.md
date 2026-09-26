@@ -168,7 +168,7 @@ Lanes: **U** = primitives and input (Sonnet), **A** = host (Go settings). ADRs c
 | --- | --- | --- | --- | --- | --- | --- |
 | 1 | Registry core (U) | `src/input/`: catalog, gestures, `InputSource`, KeyboardSource, router, scopes, target guard, conflict function, `useCommand`. Listener guard scan with a ratchet allowlist. ADR 0361 to Accepted | complete | alone | - | - |
 | 2 | Migrate app navigation (U) | Back/Forward in `App.tsx` become `global` commands. Mouse buttons 3 and 4 stay | pending | with 3, 4, 5 | 1 | - |
-| 3 | Migrate workspace keys (U) | `WorkspacePage.tsx` Space, arrows, `[ ]` become `page` commands, with tests first | pending | with 2, 4, 5 | 1 | - |
+| 3 | Migrate workspace keys (U) | `WorkspacePage.tsx` Space, arrows, `[ ]` become `page` commands, with tests first | complete | with 2, 4, 5 | 1 | - |
 | 4 | Migrate the reading Space (U) | `ReadingControlBar.tsx` Space becomes the `booth` command `reading.toggle`. ADR 0196 behaviour is kept | pending | with 2, 3, 5 | 1 | - |
 | 5 | Keymap settings row (A) | `Keymap.overrides` in defaults, store, `fieldSchemas`, contracts, mock | pending | with 1 to 4 | Q2 | - |
 | 6 | Keyboard & pedals settings (U) | Settings category: list, remap by pressing, conflict message, reset. Visual rows | pending | with 7 | 1, 5, Kbd | - |

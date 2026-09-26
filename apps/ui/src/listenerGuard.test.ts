@@ -23,7 +23,6 @@ const PERMANENT: Record<string, Reason> = {
 // `useCommand` and is deleted in that phase's pull request.
 const TEMPORARY: Record<string, Reason> = {
   'src/App.tsx': { note: 'Back/Forward - migrated in Phase 2 (input-commands-and-pedals.prd.md)' },
-  'src/components/workspace/WorkspacePage.tsx': { note: 'Space, arrows, [ ] - migrated in Phase 3 (input-commands-and-pedals.prd.md)' },
   'src/components/teleprompter/ReadingControlBar.tsx': { note: 'the reading Space (ADR 0196) - migrated in Phase 4 (input-commands-and-pedals.prd.md)' },
 };
 
