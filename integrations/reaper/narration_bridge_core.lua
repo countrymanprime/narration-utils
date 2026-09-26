@@ -41,6 +41,36 @@ local function event(session_dir, tag, ...)
     handle:close()
   end
 end
+local JSON_ESCAPES = { ['\\'] = '\\\\', ['"'] = '\\"', ['\n'] = '\\n', ['\r'] = '\\r', ['\t'] = '\\t' }
+local function json_escape(value)
+  return (tostring(value or ''):gsub('[\\"\n\r\t]', JSON_ESCAPES))
+end
+-- One JSON line per bridge command at debug level (docs/prds/tool-run-logging.prd.md phase 6), correlated by the
+-- host's run id (runlog.Run.ID(), a different id than the per-request one `event` above carries) so a "Copy
+-- diagnostics" bundle can show REAPER's side of a run next to the host's run.jsonl and a sidecar's stderr. A no-op
+-- unless the host asked for debug (level == 'debug') and sent a run id; `fields` is an ordered list of {key, value}
+-- string pairs (ordered, not a table, so a test can read them back deterministically). The same content rule as the
+-- host's run log (ADR 0069, threat-model row 7a) applies: ids, counts, tags and refusal reasons only, never project
+-- text.
+local function debug_log(session_dir, run_id, level, event_name, fields)
+  if level ~= 'debug' or not run_id or run_id == '' then
+    return
+  end
+  local parts = {
+    '"ts":"' .. os.date('!%Y-%m-%dT%H:%M:%S') .. '.000Z"',
+    '"level":"debug"',
+    '"run":"' .. json_escape(run_id) .. '"',
+    '"event":"' .. json_escape(event_name) .. '"',
+  }
+  for _, pair in ipairs(fields or {}) do
+    parts[#parts + 1] = '"' .. json_escape(pair[1]) .. '":"' .. json_escape(pair[2]) .. '"'
+  end
+  local handle = io.open(join(session_dir, 'bridge.jsonl'), 'a')
+  if handle then
+    handle:write('{' .. table.concat(parts, ',') .. '}\n')
+    handle:close()
+  end
+end
 -- reaper.EnumerateFiles caches a directory's listing until it is called with index -1: without that, a file created
 -- after the first call is not listed and a removed one still is (seen in REAPER 7.80), so a command would be read late
 -- or as a ghost. The clear comes first on every call.
@@ -150,6 +180,7 @@ M.encode = encode
 M.decode = decode
 M.split = split
 M.event = event
+M.debug_log = debug_log
 M.command_files = command_files
 M.file_exists = file_exists
 M.dirname = dirname

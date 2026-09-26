@@ -93,7 +93,7 @@ func (s *Service) Launch(key string, run *runlog.Run) error {
 	s.state["runId"], s.state["phase"], s.state["tool"] = runID, "launching", tool.Key
 	s.state["message"] = fmt.Sprintf("Opening %s in REAPER…", tool.Label)
 	s.mu.Unlock()
-	if _, err := s.bridge.Send("launch_cleanup_tool", []string{runID, tool.Key}); err != nil {
+	if _, err := s.bridge.Send("launch_cleanup_tool", []string{runID, tool.Key, run.ID(), run.Level()}); err != nil {
 		s.fail(err.Error())
 		return err
 	}

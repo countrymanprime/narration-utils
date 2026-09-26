@@ -75,7 +75,7 @@ func (s *Service) Pick(project tracks.Project, lineID, itemGUID string, run *run
 	s.state["lineId"], s.state["itemGuid"], s.state["trackName"] = lineID, itemGUID, line.TrackName
 	s.state["message"] = fmt.Sprintf("Asking REAPER to play this retake on %s…", line.TrackName)
 	s.mu.Unlock()
-	if _, err := s.bridge.Send("pick_retake_lane", []string{runID, lineID, itemGUID}); err != nil {
+	if _, err := s.bridge.Send("pick_retake_lane", []string{runID, lineID, itemGUID, run.ID(), run.Level()}); err != nil {
 		s.fail(err.Error())
 		return err
 	}
