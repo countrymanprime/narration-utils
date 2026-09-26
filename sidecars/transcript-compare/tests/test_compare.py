@@ -1,5 +1,7 @@
 import importlib.util
+import io
 import json
+from contextlib import redirect_stderr
 from pathlib import Path
 
 import pytest
@@ -105,6 +107,37 @@ def _markers(title, paragraphs, said):
     words = [(word, index * 0.4, index * 0.4 + 0.3) for index, word in enumerate(said.split())]
     markers, covered_range, _alignment = compare.diff_and_build_markers(tokens, unit_idx, raw_words, words, 1)
     return [(marker[1], marker[3], marker[4]) for marker in markers], covered_range
+
+
+def test_the_alignment_window_and_gap_count_are_recorded_at_debug_level(monkeypatch):
+    monkeypatch.setenv("NARRATION_LOG_LEVEL", "debug")
+    _units, tokens, unit_idx, raw_words = compare.build_chapter_units({"title": "Chapter One", "paragraphs": ["Ada opened the ledger at the first page."]})
+    said = "Ada opened the page."
+    words = [(word, index * 0.4, index * 0.4 + 0.3) for index, word in enumerate(said.split())]
+
+    buffer = io.StringIO()
+    with redirect_stderr(buffer):
+        compare.diff_and_build_markers(tokens, unit_idx, raw_words, words, 1)
+
+    records = [json.loads(line) for line in buffer.getvalue().splitlines() if line]
+    (record,) = [r for r in records if r.get("event") == "compare.alignment"]
+    assert record["level"] == "debug"
+    assert record["aligned_start"] is not None
+    assert record["gap_count"] >= 1
+    assert "ledger" not in json.dumps(record)
+
+
+def test_no_alignment_record_is_written_when_debug_is_off(monkeypatch):
+    monkeypatch.delenv("NARRATION_LOG_LEVEL", raising=False)
+    _units, tokens, unit_idx, raw_words = compare.build_chapter_units({"title": "Chapter One", "paragraphs": ["Ada opened the ledger."]})
+    said = "Ada opened the ledger."
+    words = [(word, index * 0.4, index * 0.4 + 0.3) for index, word in enumerate(said.split())]
+
+    buffer = io.StringIO()
+    with redirect_stderr(buffer):
+        compare.diff_and_build_markers(tokens, unit_idx, raw_words, words, 1)
+
+    assert buffer.getvalue() == ""
 
 
 PARAGRAPHS = ["Ada opened the ledger at the first page.", "She read the column twice.", "Then she closed the book."]

@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/countrymanprime/narration-utils/shell/internal/character"
 	"github.com/countrymanprime/narration-utils/shell/internal/coverage"
 	"github.com/countrymanprime/narration-utils/shell/internal/evidence"
 	"github.com/countrymanprime/narration-utils/shell/internal/importer"
@@ -315,6 +316,28 @@ func TestResetDerivedClearsTheStageDecisionsFile(t *testing.T) {
 	}
 	if _, err := os.Stat(path); !os.IsNotExist(err) {
 		t.Fatalf("resetDerived left the stage decisions file behind: %v", err)
+	}
+}
+
+// A reference names a region of the REAPER project accompanying one specific
+// manuscript (character-continuity-review.prd.md Q7), so resetDerived clears
+// it with the rest: a replaced manuscript's characters are not the ones a
+// stale reference was approved against.
+func TestResetDerivedClearsTheCharacterReferencesDirectory(t *testing.T) {
+	project := t.TempDir()
+	dir := character.Dir(project)
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "references.json"), []byte(`{"schemaVersion":1,"references":[]}`), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := resetDerived(project); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := os.Stat(dir); !os.IsNotExist(err) {
+		t.Fatalf("resetDerived left the character references directory behind: %v", err)
 	}
 }
 

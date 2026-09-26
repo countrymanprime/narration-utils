@@ -50,7 +50,7 @@ import (
 // Keep this in lockstep with apps/ui/src/hostApi.ts.  The frontend rejects
 // an older host before bootstrapping so a partial update cannot run against a
 // binding contract it does not understand.
-const hostAPIVersion = 59
+const hostAPIVersion = 60
 
 // Host is the Wails binding boundary. The frontend invokes only this bound
 // object; it never receives a loopback port or an HTTP capability.
@@ -1219,6 +1219,15 @@ var fieldSchemas = map[string][]fieldSchema{
 		{"max_misread_run", "Longest misread still counted as read", "number", nil},
 		{"min_anchor_run", "Shortest match that counts as read", "number", nil},
 		{"background_checks", "Check changed chapters in the background", "bool", nil},
+	},
+	// StageRecommendations (docs/prds/chapter-stage-recommendations.prd.md Phase 6, Q8) chooses which signals must be
+	// met for a stage suggestion: one choice field per signal id a provider declares (apps/desktop/bindings_stages.go's
+	// requiredStageSignals reads it), "required" or "ignored", plus the optional master switch. Only the recording
+	// signal exists today (coverage.RecordingSignalID); the editing and proofing signal PRDs add their own keys here
+	// in their own phases, the way this list already grows with each analyzer.
+	"StageRecommendations": {
+		{"suggestions_enabled", "Suggest stage advances", "bool", nil},
+		{coverage.RecordingSignalID, "Text present in order (recording)", "choice", []string{"required", "ignored"}},
 	},
 }
 

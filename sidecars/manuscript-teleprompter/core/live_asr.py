@@ -679,13 +679,47 @@ def _run(args, stream: EventStream, chunks: Iterator[np.ndarray], tracker) -> No
     from levels import LevelMeter, metered
 
     capture_started = None
+    last_logged_commit = None
+
+    def track(position: dict) -> dict:
+        """Debug-log a tracker position, sampled so a session's ~0.32s ticks don't flood the log: a jump (resync)
+        always logs, and a plain commit logs only when the committed word actually advances. A tracker can also emit
+        a `flag` event (script_tracker.py, flags.py) carrying the heard words as content, which this must never
+        touch, so anything that is not a `position` passes straight through."""
+        nonlocal last_logged_commit
+        if position.get("type") != "position":
+            return position
+        if position.get("jump"):
+            log(
+                "the tracker resynced",
+                level="debug",
+                event="teleprompter.tracker_resync",
+                read=position["read"],
+                committed=position["committed"],
+                status=position["status"],
+                jump=position["jump"],
+                skipped=len(position["skipped"]) if position.get("skipped") else 0,
+            )
+            last_logged_commit = position["committed"]
+        elif position["committed"] != last_logged_commit:
+            log(
+                "the tracker committed",
+                level="debug",
+                event="teleprompter.tracker_commit",
+                read=position["read"],
+                committed=position["committed"],
+                status=position["status"],
+            )
+            last_logged_commit = position["committed"]
+        return position
+
     try:
         if args.mic:
             chunks, capture_started = _anchor_capture_clock(chunks)
         clock = StreamClock(capture_started)
         if tracker and args.start_word is not None:
             for position in tracker.reset_to(args.start_word, clock.now()):
-                _emit(position)
+                _emit(track(position))
         chunks = metered(stoppable(chunks, args.stop_file), LevelMeter(), _emit)
         if tracker:
             control = ControlChannel(args.control_file)
@@ -698,16 +732,16 @@ def _run(args, stream: EventStream, chunks: Iterator[np.ndarray], tracker) -> No
                     word = seek_word(command)
                     if word is not None:
                         for position in tracker.reset_to(word, clock.now()):
-                            _emit(position)
+                            _emit(track(position))
                 for position in tracker.tick(clock.now()):
-                    _emit(position)
+                    _emit(track(position))
 
             chunks = gated(ticking(chunks, clock, on_tick), lambda: clock.paused)
         for event in stream(chunks):
             _emit(event)
             if tracker:
                 for tracked in tracker.feed(event, clock.now()):
-                    _emit(tracked)
+                    _emit(track(tracked))
             if args.timing and capture_started is not None:
                 lag = event_lag_seconds(event, clock.now())
                 if lag is not None:

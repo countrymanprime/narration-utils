@@ -345,7 +345,12 @@ def _words_for(item: ManifestItem, path: Path, transcriber: Transcriber, progres
 
 def _collect_words(items: Sequence[ManifestItem], words_dir: Path, transcriber: Transcriber, engine: ModuleType, args) -> list[_ItemResult]:
     playing = [item for item in items if not item.muted]
-    pending = [item for item in playing if not _is_covered(words_dir, item)]
+    pending = []
+    for item in playing:
+        hit = _is_covered(words_dir, item)
+        engine.log("checked the item's cached words", level="debug", event="coverage.cache", item_index=item.index, item_guid=item.item_guid, hit=hit)
+        if not hit:
+            pending.append(item)
     progress = _Progress(engine, args.progress, sum(item.length for item in pending))
     results = {item.index: _ItemResult(item, None, None, ()) for item in items if item.muted}
     for position, item in enumerate(playing):

@@ -79,7 +79,7 @@ func (s *Service) assess(ctx context.Context, chapter ChapterContext, view Evide
 	target, _ := chapter.Status.Next()
 	assessment := Evaluate(Input{
 		Chapter:            chapter,
-		Required:           DeclaredSignalIDs(s.config.Providers, chapter.Status),
+		Required:           s.required(chapter.Status),
 		Signals:            Collect(ctx, s.config.Providers, chapter, view),
 		DismissedBasisKeys: dismissedKeys(decisions, chapter.ChapterID, target),
 	})
@@ -93,7 +93,7 @@ func (s *Service) assess(ctx context.Context, chapter ChapterContext, view Evide
 	// No dismissals here: only the signals and the basis key are read, never the verdict.
 	previous := Evaluate(Input{
 		Chapter:  confirmed,
-		Required: DeclaredSignalIDs(s.config.Providers, live.From),
+		Required: s.required(live.From),
 		Signals:  Collect(ctx, s.config.Providers, confirmed, view),
 	})
 	confirmation := live
@@ -103,6 +103,20 @@ func (s *Service) assess(ctx context.Context, chapter ChapterContext, view Evide
 		recommendation.Contradiction = &Contradiction{RevertTo: live.From, Signals: notMet}
 	}
 	return recommendation
+}
+
+// required is stage's required set: every id its providers declare, narrowed
+// by the narrator's required-check settings when Config.RequiredSignals is
+// set (Phase 6, Q8). An empty result is never treated as "not configured
+// yet" - the engine's own empty-required-set rule (NoneNoRequiredSignals)
+// applies to it, which is also how the settings' master switch turns
+// suggestions off.
+func (s *Service) required(stage Stage) []string {
+	declared := DeclaredSignalIDs(s.config.Providers, stage)
+	if s.config.RequiredSignals == nil {
+		return declared
+	}
+	return s.config.RequiredSignals(stage, declared)
 }
 
 // liveConfirmation is the chapter's latest confirmed or reverted decision when

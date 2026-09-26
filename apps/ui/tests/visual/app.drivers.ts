@@ -2132,6 +2132,12 @@ export const APP_DRIVERS: Record<string, Record<string, Driver>> = {
       await clickVisible(page, 'tab', 'Global');
       await clickSettingsCategory(page, 'Manuscript');
     },
+    'global-stage-recommendations': async (page) => {
+      await goToPage(page, 'Settings');
+      await clickVisible(page, 'tab', 'Global');
+      await clickSettingsCategory(page, 'Stage suggestions');
+      await page.getByText('Suggest stage advances').waitFor();
+    },
     'global-recording-check': async (page) => {
       await goToPage(page, 'Settings');
       await clickVisible(page, 'tab', 'Global');

@@ -75,35 +75,42 @@ local function find_actions(tool)
   return found
 end
 
-local function launch_cleanup_tool(session_dir, run_id, key)
+local function launch_cleanup_tool(session_dir, run_id, key, host_run, level)
+  core.debug_log(session_dir, host_run, level, 'launch_cleanup_tool.received', { { 'tool_key', key } })
   local tool = TOOLS[key]
   if not tool then
+    core.debug_log(session_dir, host_run, level, 'launch_cleanup_tool.refused', { { 'reason', 'unknown_tool' } })
     event(session_dir, 'ERROR', run_id, 'Unknown cleanup tool.')
     return
   end
   if not reaper.APIExists('kbd_enumerateActions') or not reaper.APIExists('SectionFromUniqueID') then
+    core.debug_log(session_dir, host_run, level, 'launch_cleanup_tool.refused', { { 'reason', 'actions_unavailable' } })
     event(session_dir, 'ERROR', run_id, 'This REAPER version cannot look up its actions by name.')
     return
   end
   if reaper.CountSelectedMediaItems(0) == 0 then
+    core.debug_log(session_dir, host_run, level, 'launch_cleanup_tool.refused', { { 'reason', 'no_selection' } })
     event(session_dir, 'ERROR', run_id, 'Select the items to repair in REAPER first.')
     return
   end
   local found = find_actions(tool)
   if #found == 0 then
+    core.debug_log(session_dir, host_run, level, 'launch_cleanup_tool.refused', { { 'reason', 'tool_missing' } })
     event(session_dir, 'ERROR', run_id, tool.missing)
     return
   end
   if #found > 1 then
+    core.debug_log(session_dir, host_run, level, 'launch_cleanup_tool.refused', { { 'reason', 'ambiguous_action' }, { 'matches', tostring(#found) } })
     event(session_dir, 'ERROR', run_id, 'More than one REAPER action is named like ' .. tool.label .. ', so none was opened.')
     return
   end
   reaper.Main_OnCommand(found[1].id, 0)
+  core.debug_log(session_dir, host_run, level, 'launch_cleanup_tool.launched', { { 'tool_key', key } })
   event(session_dir, 'CLEANUP_LAUNCHED', run_id, key, found[1].name)
 end
 
 return function(registry)
   registry.register('launch_cleanup_tool', function(ctx, args)
-    launch_cleanup_tool(ctx.session_dir, args[1] or '', args[2] or '')
+    launch_cleanup_tool(ctx.session_dir, args[1] or '', args[2] or '', args[3] or '', args[4] or '')
   end)
 end

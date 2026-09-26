@@ -77,6 +77,10 @@ var builtinDefaults = map[string]Values{
 	// background_checks defaults on (S7 B, D27): it only ever runs with the model installed, on mains power and while
 	// REAPER is idle (coverage.NextBackground, ADR 0211).
 	"RecordingCoverage": {"min_paragraph_present": "0.8", "max_missing_run": "3", "max_misread_run": "8", "min_anchor_run": "3", "background_checks": "true"},
+	// StageRecommendations defaults every signal to required and suggestions on (docs/prds/chapter-stage-recommendations.prd.md
+	// Phase 6, Q8): a narrator who never opens this settings page keeps the behaviour Phase 1 shipped with (every declared
+	// signal id required).
+	"StageRecommendations": {"suggestions_enabled": "true", "recording.text_present": "required"},
 	// TakeReview holds the pickup/duplicate detector's Q12 thresholds and
 	// Q3 scan-scope settings (internal/takereview), layered like every
 	// other tool here. Thresholds mirror repeats.DefaultThresholds();

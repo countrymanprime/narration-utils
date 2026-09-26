@@ -2,10 +2,12 @@
 last words in the chapter, the sentence shown for confirmation, the audio cut, and the `--locate` CLI the host drives."""
 
 import importlib.util
+import io
 import json
 import sys
 import time
 import wave
+from contextlib import redirect_stderr
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -184,6 +186,20 @@ def test_the_locate_event_for_silence_has_no_word_and_no_sentence():
     event = locate.locate_event([], TOKENS)
 
     assert (event["word"], event["last"], event["sentence"], event["heardText"]) == (None, None, None, "")
+
+
+def test_the_chosen_span_is_recorded_at_debug_level_with_no_heard_text(monkeypatch):
+    monkeypatch.setenv("NARRATION_LOG_LEVEL", "debug")
+
+    buffer = io.StringIO()
+    with redirect_stderr(buffer):
+        event = locate.locate_event(_spoken(20, 50), TOKENS)
+
+    records = [json.loads(line) for line in buffer.getvalue().splitlines() if line]
+    (record,) = [r for r in records if r.get("event") == "locate.span"]
+    assert (record["word"], record["matched"], record["heard"]) == (event["word"], event["matched"], event["heard"])
+    assert "heardText" not in record
+    assert "heard_text" not in record
 
 
 def test_a_long_chapter_is_searched_quickly():

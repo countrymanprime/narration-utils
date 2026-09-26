@@ -39,6 +39,7 @@ import {
   takeReviewScanJobSchema,
 } from './schemas/takeReview';
 import { COVERAGE_EVALUATOR_REASONS, COVERAGE_REFUSAL_REASONS, coverageResultSchema, coverageStartResultSchema, coverageStateSchema } from './schemas/coverage';
+import { workspaceAlignmentResultSchema } from './schemas/workspace';
 import { STAGE_REFUSAL_REASONS, STAGE_UNKNOWN_CAUSES, stageDecisionResultSchema, stageRecommendationsSchema } from './schemas/stages';
 import { findingMarkerSchema, findingNavigationSchema, findingSchema, findingsPageSchema, findingsSummarySchema, reaperStatusSchema } from './schemas/findings';
 import { tracksDiscoverySchema, tracksProjectSchema } from './schemas/tracks';
@@ -281,6 +282,10 @@ const GOLDEN: Record<string, z.ZodType> = {
   'coverage-state-complete.json': coverageStateSchema,
   // Not a payload: the reason words the host can send, which the schema's lists must equal (the test below).
   'coverage-reasons.json': z.object({ refusal: z.array(z.string()), evaluator: z.array(z.string()) }),
+  'workspace-alignment-current.json': workspaceAlignmentResultSchema,
+  'workspace-alignment-stale.json': workspaceAlignmentResultSchema,
+  'workspace-alignment-never.json': workspaceAlignmentResultSchema,
+  'workspace-alignment-needs-align-again.json': workspaceAlignmentResultSchema,
   'stages-recommendations-unknown.json': stageRecommendationsSchema,
   'stages-recommendations-recommended.json': stageRecommendationsSchema,
   'stages-recommendations-dismissed.json': stageRecommendationsSchema,
@@ -1721,6 +1726,25 @@ describe('answers of the mock client for the settings, voice, model, transcript 
     expect(gated.status).toBe('asset_required');
   });
 
+  it('the workspace alignment shares the coverage result state and reads the chapter as tokens', async () => {
+    const api = createMockApi();
+    const chapters = await api.manuscriptChapters();
+    const measured = chapters.find((chapter) => chapter.recordedFraction !== undefined);
+    if (!measured) throw new Error('the mock chapters carry a measured recordedFraction');
+
+    const current = await api.workspaceAlignment(measured.id);
+    expectMatches(workspaceAlignmentResultSchema, current, 'mock workspace alignment, current');
+    expect(current.state).toBe('current');
+    expect(current.needsAlignAgain).toBe(false);
+    expect(current.paragraphs.length).toBeGreaterThan(0);
+    expect(current.tokens.length).toBeGreaterThan(0);
+    expect(current.tokens.every((token) => token.status === 'read')).toBe(true);
+
+    const unknown = await api.workspaceAlignment('no-such-chapter');
+    expectMatches(workspaceAlignmentResultSchema, unknown, 'mock workspace alignment, never');
+    expect(unknown).toMatchObject({ state: 'never', paragraphs: [], tokens: [] });
+  });
+
   it('the stage recommendations: every verdict, every unknown cause, a confirmation, the notice, and every refusal', async () => {
     const api = createMockApi(
       {},
@@ -1878,6 +1902,7 @@ describe('answers of the mock client for the settings, voice, model, transcript 
       'coverageStart',
       'coverageState',
       'coverageResult',
+      'workspaceAlignment',
       'stageRecommendations',
       'stageConfirm',
       'stageDismiss',

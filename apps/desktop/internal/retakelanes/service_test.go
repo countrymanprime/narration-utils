@@ -80,7 +80,7 @@ func TestPickSendsTheExactBridgeCommand(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	want := []string{"1", "pick_retake_lane", runID, "line-000004", retake.ItemGUID}
+	want := []string{"1", "pick_retake_lane", runID, "line-000004", retake.ItemGUID, "", "info"}
 	if strings.Join(decoded, "|") != strings.Join(want, "|") {
 		t.Fatalf("decoded = %#v, want %#v", decoded, want)
 	}

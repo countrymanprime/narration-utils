@@ -26,6 +26,8 @@ The bridge polls the commands folder with `reaper.EnumerateFiles`, which **cache
 
 Every command that writes to the project is one undo block, writes nothing when there is nothing to change, and is safe to send twice.
 
+Two commands, `launch_cleanup_tool` and `pick_retake_lane`, additionally carry the host's `runlog` run id and debug level (`internal/runlog`, [tool-run-logging PRD](../prds/tool-run-logging.prd.md) Phase 6) as two new trailing fields, after their own — a different id than the per-request one every command's first argument already is. When the level is `debug` and a run id is present, Lua writes one JSON line per command received and one per its result or refusal to `bridge.jsonl` in the session folder (`core.debug_log`, [ADR 0253](../adr/0253-bridge-commands-carry-the-hosts-run-id-as-trailing-fields-and-lua-logs-them-to-bridge-jsonl-at-debug-level.md)): ids, counts and a fixed refusal-reason key only, the same content rule as every other log this PRD adds. It is a no-op otherwise, so an ordinary session never creates the file. Widening this past these two commands is future work, one command at a time, the same trailing-field way.
+
 ### One command, step by step
 
 Starting the bridge, and one Transcript Compare command travelling through it and back.

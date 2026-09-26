@@ -1287,6 +1287,13 @@ export const STATE_CATALOG: StateEntry[] = [
     ...REFLOW,
   },
   { page: 'settings', state: 'global-manuscript', description: 'Settings, Global scope / Manuscript category (note color picker)', ...REFLOW },
+  {
+    page: 'settings',
+    state: 'global-stage-recommendations',
+    description:
+      'Settings, Global scope / Stage suggestions category (chapter-stage-recommendations PRD Phase 6, Q8): the master switch and the recording signal choice (required/ignored)',
+    ...REFLOW,
+  },
   { page: 'settings', state: 'global-tts', description: 'Settings, Global scope / TTS category', ...REFLOW },
   {
     page: 'settings',

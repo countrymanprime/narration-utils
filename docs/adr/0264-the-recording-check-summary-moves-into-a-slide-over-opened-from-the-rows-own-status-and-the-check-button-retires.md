@@ -1,4 +1,4 @@
-# 0263. The recording check summary moves into a slide-over opened from the row's own status, and the Check button retires
+# 0264. The recording check summary moves into a slide-over opened from the row's own status, and the Check button retires
 
 **Status:** Proposed
 **Date:** 2026-09-26

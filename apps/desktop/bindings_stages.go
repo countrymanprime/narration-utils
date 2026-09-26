@@ -110,9 +110,27 @@ func stagesService(project string, text *manuscript.Service, checks *coverage.Se
 			Settings:    func() coverage.Settings { return coverageSettings(store) },
 			Unavailable: unavailable,
 		})},
-		View:     checks.EvidenceView,
-		Reporter: reporter,
+		View:            checks.EvidenceView,
+		Reporter:        reporter,
+		RequiredSignals: func(_ stages.Stage, declared []string) []string { return requiredStageSignals(store, declared) },
 	})
+}
+
+// requiredStageSignals is the narrator's required set out of declared (Phase 6, Q8): every declared id is
+// required unless its own StageRecommendations setting is "ignored", and none is required while the master
+// switch (suggestions_enabled) is off. An empty result is not special-cased here: the engine's own
+// empty-required-set rule (stages.NoneNoRequiredSignals) is what keeps it from ever recommending.
+func requiredStageSignals(store *settings.Store, declared []string) []string {
+	if enabled, _ := store.Effective("StageRecommendations", "suggestions_enabled", "true"); enabled != "true" {
+		return nil
+	}
+	required := make([]string, 0, len(declared))
+	for _, id := range declared {
+		if choice, _ := store.Effective("StageRecommendations", id, "required"); choice != "ignored" {
+			required = append(required, id)
+		}
+	}
+	return required
 }
 
 // coverageUnavailable says why a recording check could not be started here now, "" when one could: the same gates

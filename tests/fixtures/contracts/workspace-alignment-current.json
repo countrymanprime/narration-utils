@@ -1,0 +1,133 @@
+{
+  "basis": {
+    "label": "saved project, file modified 2026-09-21T10:00:00Z",
+    "modifiedAt": "2026-09-21T10:00:00Z",
+    "stale": false
+  },
+  "chapterId": "c-0001",
+  "extras": [
+    {
+      "afterToken": 6,
+      "end": {
+        "itemGuid": "{ITEM-B}",
+        "itemIndex": 1,
+        "sourceTime": 0.8
+      },
+      "start": {
+        "itemGuid": "{ITEM-B}",
+        "itemIndex": 1,
+        "sourceTime": 0.6
+      },
+      "text": "um",
+      "tokens": 1
+    }
+  ],
+  "items": [
+    {
+      "index": 0,
+      "itemGuid": "{ITEM-A}",
+      "length": 10,
+      "live": true,
+      "playRate": 1,
+      "sourceStart": 5,
+      "takeGuid": "{ITEM-A-take"
+    },
+    {
+      "index": 1,
+      "itemGuid": "{ITEM-B}",
+      "length": 6,
+      "live": true,
+      "playRate": 1,
+      "position": 10,
+      "takeGuid": "{ITEM-B-take"
+    }
+  ],
+  "needsAlignAgain": false,
+  "paragraphs": [
+    {
+      "id": "p-000001",
+      "text": "Alice was beginning to get very tired."
+    }
+  ],
+  "reasons": [],
+  "state": "current",
+  "tokens": [
+    {
+      "end": 5.3,
+      "heard": null,
+      "i": 0,
+      "item": 0,
+      "p": "p-000001",
+      "start": 5,
+      "status": "read",
+      "text": "Alice",
+      "w": 0
+    },
+    {
+      "end": 5.5,
+      "heard": null,
+      "i": 1,
+      "item": 0,
+      "p": "p-000001",
+      "start": 5.3,
+      "status": "read",
+      "text": "was",
+      "w": 1
+    },
+    {
+      "end": 6,
+      "heard": "begging",
+      "i": 2,
+      "item": 0,
+      "p": "p-000001",
+      "start": 5.5,
+      "status": "misread",
+      "text": "beginning",
+      "w": 2
+    },
+    {
+      "end": 6.1,
+      "heard": null,
+      "i": 3,
+      "item": 0,
+      "p": "p-000001",
+      "start": 6,
+      "status": "read",
+      "text": "to",
+      "w": 3
+    },
+    {
+      "end": 6.3,
+      "heard": null,
+      "i": 4,
+      "item": 0,
+      "p": "p-000001",
+      "start": 6.1,
+      "status": "read",
+      "text": "get",
+      "w": 4
+    },
+    {
+      "end": 0.3,
+      "heard": null,
+      "i": 5,
+      "item": 1,
+      "p": "p-000001",
+      "start": 0,
+      "status": "read",
+      "text": "very",
+      "w": 5
+    },
+    {
+      "end": 0.6,
+      "heard": null,
+      "i": 6,
+      "item": 1,
+      "p": "p-000001",
+      "start": 0.3,
+      "status": "read",
+      "text": "tired.",
+      "w": 6
+    }
+  ]
+}
