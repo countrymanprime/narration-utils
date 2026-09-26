@@ -160,7 +160,7 @@ ENGINES: Registry[AsrEngine]        # filled by each sidecar's adapters at impor
 | # | Phase | Description | Status | Parallel | Depends | PRP Plan |
 | --- | --- | --- | --- | --- | --- | --- |
 | 1 | Python port kit | `narration_common/ports`: `Level`, `NotSupportedError`, `Registry`, `Descriptor`, conformance runner; level golden check | complete | with 2, daw-port P1 | - | - |
-| 2 | Go port registry | `port.Registry[P]` in `internal/port/registry.go` with its tests | pending | with 1 | daw-port P1 | - |
+| 2 | Go port registry | `port.Registry[P]` in `internal/port/registry.go` with its tests | complete | with 1 | daw-port P1 | - |
 | 3 | ASR contract (Python) | `ports/asr.py`: `AsrEngine`, `LiveTranscriber`, `BatchTranscriber`; `Word`, `Hypothesis` moved; `asr_conformance` | complete | with 4, 7, 9, 10, 12 | 1 | - |
 | 4 | ASR registry (Go) | `internal/asrport` + `asrporttest`; `teleprompter.Engines`/`SupportsEngine` delegate to it | pending | with 3, 7, 9, 10, 12 | 2 | - |
 | 5 | Live ASR adapters | Whisper and Moonshine adapters; `live_asr.py` selects through the registry | pending | with 6, 8 | 3 | - |
