@@ -859,6 +859,16 @@ func (h *Host) ChapterSuggestion() (string, error) {
 	return encodeBinding(h.chapterSuggestionFor())
 }
 
+// ChaptersForTracks is ForTrack (ADR 0113) run over every GUID in guids: the
+// Review page's chapter grouping (diagnostics-delivery-and-cleanup-tools PRD
+// Phase 8 remainder) for findings that carry only a track, item or take GUID
+// rather than a manuscript-anchored chapter. One GUID the project no longer
+// has is reported as an error alongside the others, never as a failed call.
+// Read-only.
+func (h *Host) ChaptersForTracks(guids []string) (string, error) {
+	return encodeBinding(h.chaptersForTracks(guids))
+}
+
 // TakeReviewScanStart starts a pickup and duplicate scan of scope as a job (take-review phase 5): the chapter track's
 // items and takes, plus at most one pickup track or time range (Q3). It answers the job; TakeReviewScanState reports
 // its real progress (ADR 0015) and TakeReviewScanCancel stops it. The findings it saves are read and decided through

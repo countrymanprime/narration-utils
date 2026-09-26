@@ -100,7 +100,7 @@ import {
 } from './mockFixtures';
 import { loadAliceManuscript } from './aliceManuscript';
 import { mockChapterRegionPlan, mockChapterSyncPreview, mockChapterTrackLinks, mockChapterTrackMatch, mockRecordedLength } from './chapterTrackMatchMock';
-import { mockChapterSuggestion } from './chapterSuggestionMock';
+import { mockChapterSuggestion, mockChaptersForTracks } from './chapterSuggestionMock';
 import { mockImportPreview, mockImportPreviewLog, type MockImportKind } from './mockImportPreview';
 import { createTeleprompterMock, type MockReaperInputSeed, type MockReaperSeed, type TeleprompterSeed } from './teleprompterMock';
 import { createCoverageMock, type CoverageSeed } from './coverageMock';
@@ -2419,6 +2419,10 @@ export function createMockApi(
     chapterSuggestion: async () => {
       await manuscriptReady;
       return wireClone(mockChapterSuggestion(chapters, WIRE_TRACKS_PROJECT, chapterTrackMappings, initial.armedTracks ?? []));
+    },
+    chaptersForTracks: async (guids) => {
+      await manuscriptReady;
+      return wireClone(mockChaptersForTracks(guids, chapters, WIRE_TRACKS_PROJECT, chapterTrackMappings));
     },
     ...takeReviewScan,
     ...takeComparison,

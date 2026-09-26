@@ -36,6 +36,7 @@ import { tracksDiscoverySchema, tracksProjectSchema } from './schemas/tracks';
 import {
   chapterRegionPlanSchema,
   chapterRegionsCreatedSchema,
+  chaptersForTracksSchema,
   chapterSuggestionSchema,
   chapterTrackLinksSchema,
   chapterTrackMappingSchema,
@@ -407,6 +408,7 @@ export const wailsClient: NarrationApi = {
     decode(chapterRegionsCreatedSchema, 'ChapterRegionsCreate', host.ChapterRegionsCreate(openingTrackGuid, closingTrackGuid, update)),
   chapterTrackMatch: (chapterId) => decode(chapterTrackMatchSchema, 'ChapterTrackMatch', host.ChapterTrackMatch(chapterId)),
   chapterSuggestion: () => decode(chapterSuggestionSchema, 'ChapterSuggestion', host.ChapterSuggestion()),
+  chaptersForTracks: (guids) => decode(chaptersForTracksSchema, 'ChaptersForTracks', host.ChaptersForTracks(guids)),
   findingsList: (query) => decode(findingsPageSchema, 'FindingsList', host.FindingsList(query)),
   findingsGet: (id) => decode(findingSchema, 'FindingsGet', host.FindingsGet(id)),
   findingsReview: ({ id, evidenceVersion, status, note }) => decode(findingSchema, 'FindingsReview', host.FindingsReview(id, evidenceVersion, status, note)),
