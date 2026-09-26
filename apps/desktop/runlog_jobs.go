@@ -16,7 +16,8 @@ const teleprompterSessionRunID = "teleprompter-session"
 // tracked run there (jobRuns.end) is the one place every kind's run.end record comes from too: most job-start sites
 // need only call begin where they first learn their id, not remember to end it later.
 type jobRuns struct {
-	mu   sync.Mutex
+	mu sync.Mutex
+	// +checklocks:mu
 	runs map[string]*runlog.Run
 }
 
