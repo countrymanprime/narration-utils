@@ -42,6 +42,13 @@ export const globalDrivers: Record<string, Driver> = {
     // measured a full-height gutter before Phase 1's fix - must leave no inline scrollbar-gutter behind.
     await page.waitForFunction(() => document.documentElement.style.scrollbarGutter === '');
   },
+  'shortcut-sheet': async (page) => {
+    await goToPage(page, 'Home');
+    // The registry's own binding (commands.catalog.ts: `help.shortcuts`), by physical key rather than the
+    // character it types (PRD Q1) - same as a real Shift+Slash keydown.
+    await page.keyboard.press('Shift+Slash');
+    await page.getByRole('dialog', { name: 'Keyboard shortcuts' }).waitFor();
+  },
   'theme-light': async (page) => {
     await goToPage(page, 'Settings');
     await clickVisible(page, 'tab', 'Global');
