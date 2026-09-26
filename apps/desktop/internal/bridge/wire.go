@@ -87,6 +87,14 @@ var eventSpecs = map[string]eventSpec{
 	"CLEANUP_STALE":     {required: []fieldSpec{text("run"), text("findingId"), text("guid"), text("reason")}},
 	"CLEANUP_PREVIEWED": {required: []fieldSpec{text("run"), count("added"), count("existing")}},
 	"CLEANUP_APPLIED":   {required: []fieldSpec{text("run"), count("applied")}},
+	// Phase 11's level-normalize half (diagnostics-delivery-and-cleanup-tools PRD, ADR 0252):
+	// apply_item_gain (narration_level_normalize.lua). GAIN_STALE is one per item that no longer resolves (reason is
+	// always "item": there is no take or range concept for a whole-item gain change); GAIN_ITEM is one per item
+	// actually changed, its D_VOL before and after (linear, REAPER's own unit); GAIN_APPLIED is the call's one
+	// summary event.
+	"GAIN_STALE":   {required: []fieldSpec{text("run"), text("findingId"), text("guid"), text("reason")}},
+	"GAIN_ITEM":    {required: []fieldSpec{text("run"), text("guid"), number("before"), number("after")}},
+	"GAIN_APPLIED": {required: []fieldSpec{text("run"), count("applied")}},
 	// Phase 25 (reaper-automation-follow-through PRD, ADR 0147): the narrator's retake now plays alone. lineId and
 	// itemGuid name the retake (a line id alone names several items on a lane track); lane is the 0-based lane REAPER
 	// read from the item when the pick ran.

@@ -598,6 +598,8 @@ function Fake:add_item_api(api)
       return item.lane
     elseif key == 'C_LANEPLAYS' then
       return fake:lane_plays(item.track, item.lane)
+    elseif key == 'D_VOL' then
+      return item.vol or 1
     end
     error('fake reaper: unmodelled item value ' .. tostring(key))
   end
@@ -945,6 +947,8 @@ function Fake:add_lane_api(api)
       item.lane = value
     elseif key == 'C_LANEPLAYS' and item.track.lane_plays then
       fake:set_lane_plays(item.track, item.lane, value)
+    elseif key == 'D_VOL' then
+      item.vol = value
     else
       error('fake reaper: unmodelled item value setter ' .. tostring(key))
     end

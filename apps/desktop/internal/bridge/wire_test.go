@@ -31,9 +31,13 @@ var realEvents = map[string][]string{
 	"PROJECT_STATE":         {"PROJECT_STATE", "t1", "7", "C:/p/Book.rpp"},
 	"CLEANUP_LAUNCHED":      {"CLEANUP_LAUNCHED", "t1", "repair_pops_clicks", "Item: Repair pops/clicks..."},
 	// integrations/reaper/tests/cleanup_preview_test.lua (diagnostics-delivery-and-cleanup-tools PRD Phase 10, ADR 0251).
-	"CLEANUP_STALE":      {"CLEANUP_STALE", "c1", "f-0001", "{AAAAAAAA-0000-4000-8000-000000000001}", "range"},
-	"CLEANUP_PREVIEWED":  {"CLEANUP_PREVIEWED", "c1", "2", "0"},
-	"CLEANUP_APPLIED":    {"CLEANUP_APPLIED", "c1", "1"},
+	"CLEANUP_STALE":     {"CLEANUP_STALE", "c1", "f-0001", "{AAAAAAAA-0000-4000-8000-000000000001}", "range"},
+	"CLEANUP_PREVIEWED": {"CLEANUP_PREVIEWED", "c1", "2", "0"},
+	"CLEANUP_APPLIED":   {"CLEANUP_APPLIED", "c1", "1"},
+	// integrations/reaper/tests/level_normalize_test.lua (diagnostics-delivery-and-cleanup-tools PRD Phase 11, ADR 0252).
+	"GAIN_STALE":         {"GAIN_STALE", "g1", "f-0001", "{AAAAAAAA-0000-4000-8000-000000000001}", "item"},
+	"GAIN_ITEM":          {"GAIN_ITEM", "g1", "{AAAAAAAA-0000-4000-8000-000000000001}", "1.000000", "1.412538"},
+	"GAIN_APPLIED":       {"GAIN_APPLIED", "g1", "1"},
 	"RETAKE_LANE_PICKED": {"RETAKE_LANE_PICKED", "t1", "line-000004", "{AAAAAAAA-0000-4000-8000-000000000001}", "2"},
 	"TAKE_CREATED":       {"TAKE_CREATED", "t1", "{AAAAAAAA-0000-4000-8000-000000000001}", "{BBBBBBBB-0000-4000-8000-000000000002}"},
 	"TAKE_STALE":         {"TAKE_STALE", "t1", "{AAAAAAAA-0000-4000-8000-000000000001}"},

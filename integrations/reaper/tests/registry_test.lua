@@ -37,6 +37,7 @@ H.test('the bridge registers exactly the commands the host and the docs know abo
     'add_take_fx',
     'apply_cleanup_trims',
     'apply_fx_chain',
+    'apply_item_gain',
     'arm_only',
     'chapter_track_state',
     'close',

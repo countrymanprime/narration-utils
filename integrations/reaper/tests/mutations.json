@@ -360,6 +360,18 @@
     "replace": "table.sort(plan, function(a, b)\n    return false\n  end)"
   },
   {
+    "name": "apply_item_gain opens an undo block even when nothing was applied",
+    "file": "narration_level_normalize.lua",
+    "find": "if #plan > 0 then\n    reaper.Undo_BeginBlock2(0)",
+    "replace": "if true then\n    reaper.Undo_BeginBlock2(0)"
+  },
+  {
+    "name": "apply_item_gain applies the delta from scratch instead of onto the item's existing volume",
+    "file": "narration_level_normalize.lua",
+    "find": "local after = before * 10 ^ (change.delta_db / 20)",
+    "replace": "local after = 10 ^ (change.delta_db / 20)"
+  },
+  {
     "name": "pick_retake_lane plays a lane on a track that is not in fixed-lane mode",
     "file": "narration_retake_lanes.lua",
     "find": "if reaper.GetMediaTrackInfo_Value(track, 'I_FREEMODE') ~= FIXED_LANE_MODE then",
