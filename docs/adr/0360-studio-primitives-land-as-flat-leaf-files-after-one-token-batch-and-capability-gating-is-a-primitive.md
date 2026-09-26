@@ -16,7 +16,7 @@ Three facts forced a decision on *how* the new primitives land, not only which o
 
 1. **Parallel sessions.** The benchmark train runs several agent sessions at once. Lane U builds the primitives and lane C the feature screens. Primitives that share files cannot land in parallel.
 2. **Two conflict hot spots.** Every colour token lives in the two theme blocks of `apps/ui/src/styles.css`, and every colour pair must be listed in `PAIRS` in `apps/ui/src/paletteContrast.test.ts`, with `KNOWN_FAILURES` empty ([ADR 0059](0059-text-colours-meet-wcag-aa-with-two-text-levels-a-non-text-token-and-derived-on-tint-text.md)). Two phases adding tokens conflict every time.
-3. **Hard-coded DAW gating.** "Punch from here" (`teleprompter/ReaderFlagsPanel.tsx`, the `PUNCH_PENDING` constant) and "Record in REAPER" (`teleprompter/ReadingControlBar.tsx`) are always disabled, each with a reason string the UI wrote. The DAW port work (`docs/prds/daw-port-and-capabilities.prd.md`, ADR 0300, drafted alongside this ADR) makes the host report what each DAW can do, as a level (`unsupported`, `not_yet_available`, `experimental`, `supported`) with a reason for the narrator. If nothing changes, every hard-coded button must be found and edited by hand when the host starts reporting. Also, a disabled child of `TooltipTarget` becomes a `role="group"` wrapper named by the reason, so a screen reader hears why the control is off but never what the control is.
+3. **Hard-coded DAW gating.** "Punch from here" (`teleprompter/ReaderFlagsPanel.tsx`, the `PUNCH_PENDING` constant) and "Record in REAPER" (`teleprompter/ReadingControlBar.tsx`) are always disabled, each with a reason string the UI wrote. The DAW port work ([DAW Port and Capabilities](../prds/daw-port-and-capabilities.prd.md), [ADR 0300](0300-every-daw-is-reached-through-one-port-of-small-role-interfaces-and-callers-ask-a-resolver-what-it-supports.md), drafted alongside this ADR) makes the host report what each DAW can do: per capability a level (`unsupported`, `not_yet_available`, `experimental`, `supported`), whether it is available right now, and a message for the narrator. If nothing changes, every hard-coded button must be found and edited by hand when the host starts reporting. Also, a disabled child of `TooltipTarget` becomes a `role="group"` wrapper named by the reason, so a screen reader hears why the control is off but never what the control is.
 
 ## Decision
 
@@ -44,16 +44,16 @@ Each token goes in both theme blocks of `styles.css`, and the booth block covers
 
 **Capability gating is a primitive, fed by a hook outside the primitives.**
 
-- **The primitive.** `CapabilityGate` is presentational. It takes a plain `{ level, reason }` and one control:
-  - `supported`: renders the control unchanged.
-  - `experimental`: renders the control enabled, with an "Experimental" `StatusBadge` and the reason as its description.
-  - `not_yet_available` and `unsupported`: render the control `aria-disabled` and still focusable. The gate swallows its press, and the reason is both its `aria-describedby` and its tooltip. The narrator hears the control's name first, then why it is off.
-- **The hook.** `useCapability(cap)` lives in `apps/ui/src/useCapability.ts`, not in `primitives/`. It reads the host's report through `useApi()` (`api.dawCapabilities()` and `subscribeDawCapabilities`, defined by the DAW port PRD). It has its row in `src/interactionFeedback.catalog.ts` ([ADR 0075](0075-every-action-that-leaves-the-interface-acknowledges-within-100-ms-cannot-be-fired-twice-and-tells-the-narrator-when-it-ends.md)).
-- **Where the reason comes from.** The reason text comes from the host. A feature file does not write its own "not built yet" string for a DAW capability.
-- **The two existing buttons.** "Punch from here" and "Record in REAPER" move onto the gate. Until the DAW port binding lands, the gate runs on the mock (`createMockApi` in `src/api/mockApi.ts`).
-- **Other disabled controls.** Nav requirement gating (`requiresManuscript`, `requiresDaw`, `src/dawAvailability.ts`) moves onto the same gate in a later phase of the PRD. `TooltipTarget`'s disabled-child behaviour stays for disabled controls that are not about a capability or a requirement.
+- **The primitive.** `CapabilityGate` is presentational. It takes one capability entry, `{ level, available, message? }`, typed locally so the primitive imports nothing from `src/api`, and one control:
+  - available at `supported`: renders the control unchanged.
+  - available at `experimental`: renders the control enabled, with an "Experimental" `StatusBadge` and the message as its description.
+  - not available, at any level: renders the control `aria-disabled` and still focusable. The gate swallows its press, and the host's message is both its `aria-describedby` and its tooltip. The narrator hears the control's name first, then why it is off. A caller may choose to hide an `unsupported` control instead.
+- **The hook.** `useCapability(cap)` lives in `apps/ui/src/useCapability.ts`, not in `primitives/`. It reads the host's `DawCapabilities` report and follows its `daw_capabilities_changed` event through `useApi()`. The binding, contract, schema, golden and mock (`src/api/dawMock.ts`) are the DAW port PRD's; this decision adds none of them. The hook's call and subscription have their rows in `src/interactionFeedback.catalog.ts` ([ADR 0075](0075-every-action-that-leaves-the-interface-acknowledges-within-100-ms-cannot-be-fired-twice-and-tells-the-narrator-when-it-ends.md)).
+- **Where the message comes from.** The text comes from the host. Neither the gate nor a feature file writes its own "not built yet" string for a DAW capability.
+- **The existing gated controls.** "Punch from here", "Record in REAPER" and the nav's `requiresDaw` move onto the gate in the DAW port PRD's P7, after the gate and the hook land. One PRD edits those files, not two. The gate itself needs no API, so it lands and is judged in the atlas before the binding exists.
+- **Other disabled controls.** `TooltipTarget`'s disabled-child behaviour stays for disabled controls that are not about a DAW capability.
 
-**`Kbd` only draws keys.** The command registry, key bindings and pedal input belong to `docs/prds/input-commands-and-pedals.prd.md` (ADR 0361).
+**`Kbd` only draws keys.** The command registry, key bindings and pedal input belong to [Input Commands and Pedals](../prds/input-commands-and-pedals.prd.md) ([ADR 0361](0361-app-commands-go-through-one-registry-and-keyboard-midi-and-hid-are-input-sources-bound-by-a-remappable-keymap.md)).
 
 **The two shells are layout only.**
 
@@ -63,7 +63,7 @@ Each token goes in both theme blocks of `styles.css`, and the booth block covers
 ## Consequences
 
 - **Parallel work.** After the token batch, phases 2 to 10 of the PRD add only new files and one table row, so up to nine lane U sessions can run at once. Lane C feature PRDs get finished parts instead of writing local widgets. The existing checks enforce the rules without new tooling: `atlasCoverage.test.ts`, `baseUiBoundary.test.ts`, `rawNatives.test.ts`, `paletteContrast.test.ts`, `legacyCss.test.ts` and the dependency-cruiser rules.
-- **Capabilities switch on without UI edits.** When the host moves a capability from `not_yet_available` to `supported`, every gated control comes to life with no UI change. Keyboard and screen-reader users hear what a disabled DAW action is and why it is off.
+- **Capabilities switch on without UI edits.** When the host reports a capability available (it moved to `supported`, or REAPER started), every gated control comes to life with no UI change. Keyboard and screen-reader users hear what a disabled DAW action is and why it is off.
 - **What was given up.** Colour work is serialized: a primitive that needs a token after Phase 1 waits for another batch. The booth look is a scoped token block that the palette guard checks as a third map, so every future token needs a booth value as well as light and dark. Disabled capability controls use `aria-disabled` rather than `disabled`, so the gate, not the browser, must stop the press, and a test must prove it does.
-- **Dependencies.** `useCapability` depends on the DAW port PRD's contract. If ADR 0300 changes the capability shape, only the hook changes, not the primitive or its callers.
+- **Dependencies.** `useCapability` depends on the DAW port PRD's binding (its P4), and the call-site moves depend on its P7. If ADR 0300 changes the capability shape, only the hook and the gate's local entry type change, not the callers.
 - **Changing this decision.** To let a primitive add its own tokens, to make a primitive import the API, or to gate DAW actions differently, write a new ADR that supersedes this one (see [the ADR README](README.md)). This ADR moves to Accepted when the PRD's first phases land. Further decisions from the PRD take the next free number in lane U's block (0362 to 0379), checked at merge time.

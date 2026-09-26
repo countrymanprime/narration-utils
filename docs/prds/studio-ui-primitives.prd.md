@@ -27,7 +27,7 @@ Verified in code (main at 91bbf98):
 
 ## Proposed Solution
 
-Add ten presentational primitives in lane U, each one flat file with its story and test, after a single phase that lands every new colour token at once: `Kbd`, `LevelMeter`, `StatusBadge`, `StatTile`, `Toolbar`, `Timeline` (with `TimelineLane`), `StageGrid`, `FocusShell`, `CompactShell` and `CapabilityGate`. `CapabilityGate` is paired with a `useCapability(cap)` hook in `src/` that reads the host's capability report through the API port, so a control the DAW cannot do yet is drawn the same way everywhere, with the host's own narrator-facing reason. The two hard-coded REAPER controls move onto it. Feature PRDs then compose the booth, production board, proof timeline, master page and companion panel from these parts.
+Add ten presentational primitives in lane U, each one flat file with its story and test, after a single phase that lands every new colour token at once: `Kbd`, `LevelMeter`, `StatusBadge`, `StatTile`, `Toolbar`, `Timeline` (with `TimelineLane`), `StageGrid`, `FocusShell`, `CompactShell` and `CapabilityGate`. `CapabilityGate` is paired with a `useCapability(cap)` hook in `src/` that reads the host's capability report through the API port, so a control the DAW cannot do yet is drawn the same way everywhere, with the host's own narrator-facing message. The DAW port PRD's P7 then moves the two hard-coded REAPER controls and the nav's `requiresDaw` onto it. Feature PRDs compose the booth, production board, proof timeline, master page and companion panel from these parts.
 
 ## Key Hypothesis
 
@@ -39,11 +39,12 @@ We believe that landing these primitives, file-disjoint after one token batch, w
 | --- | --- |
 | Booth mode, the production board, the proof timeline page, the master page, the companion mode | Feature PRDs (lane C). This PRD gives them parts, not screens |
 | A native always-on-top window | A host concern (window flags, focus, global hotkeys); `CompactShell` is only the narrow layout |
-| The command registry, hotkey binding, pedal and MIDI input | `docs/prds/input-commands-and-pedals.prd.md` (ADR 0361). `Kbd` only draws a key |
-| The capability binding and its levels | `docs/prds/daw-port-and-capabilities.prd.md` (ADR 0300). This PRD consumes it |
+| The command registry, hotkey binding, pedal and MIDI input | [Input Commands and Pedals](input-commands-and-pedals.prd.md) (ADR 0361). `Kbd` only draws a key |
+| The capability binding, its levels, its schema, golden and mock | [DAW Port and Capabilities](daw-port-and-capabilities.prd.md) P4 (ADR 0300). This PRD consumes it |
+| Moving "Punch from here", "Record in REAPER" and the nav's `requiresDaw` onto the gate | DAW port P7, which depends on phases 11 and 12 here; one PRD owns those files, not two |
 | A second token system, a new theme picker, new fonts | Tokens stay CSS custom properties in `styles.css` ([ADR 0003](../adr/0003-tailwind-tokenized-primitives.md), [ADR 0017](../adr/0017-no-legacy-css-shadowing-tailwind.md)); the booth variant is a token block, not a theme option |
 | Charts (the burndown of mock 01, the book-wide loudness spread of mock 05), waveform drawing | Feature-local or a later PRD; `Timeline` takes a decorative backdrop (Q5) |
-| Migrating every status dot and every requirement gate in one go | Phases 3 and 12 move the named call sites; the rest move with their feature's next change |
+| Migrating every status dot in one go | Phase 3 adds the tone map; the dots move with their feature's next change |
 
 ## Success Metrics
 
@@ -52,7 +53,7 @@ We believe that landing these primitives, file-disjoint after one token batch, w
 | New primitives covered | 10 new primitives, each with a story (light and dark, wide and narrow) and a test | `atlasCoverage.test.ts` with `ATLAS_EXEMPT` still empty; atlas debt still 0 |
 | Contrast | Every new token in both themes and the booth block, every new pair in `PAIRS` | `paletteContrast.test.ts` with `KNOWN_FAILURES` still empty |
 | Keyboard | Every interactive primitive driven by keyboard in its story's `play()` | `pnpm --dir apps/ui atlas`; `src/stories.test.tsx` |
-| Hard-coded DAW gating | 0 (`PUNCH_PENDING` and the always-disabled Record button gone) | Unit tests on both call sites with the mock reporting each capability level |
+| Hard-coded DAW gating | 0 once DAW port P7 lands on this gate (`PUNCH_PENDING` and the always-disabled Record button gone) | That phase's unit tests, with the mock reporting each level and `available` state |
 | No drift into feature code | Feature PRDs of the train add no native control, no Base UI import, no token | `rawNatives.test.ts` ceilings, `baseUiBoundary.test.ts`, `paletteContrast.test.ts` |
 | Bundle | Stays under the 800,000-byte raw budget | `pnpm --dir apps/ui build`, per [design-system.md](../design/design-system.md#primitive-components) |
 
@@ -62,8 +63,8 @@ For the owner; each has a recommendation.
 
 - [ ] **Q1.** The booth's high-contrast look: a token block scoped to `FocusShell` (`[data-surface='booth']`, checked as a third token map by the palette guard), or a third app theme in the theme picker? **Recommend scoped:** the booth is a place, not a preference, and the picker stays light/dark/system.
 - [ ] **Q2.** `LevelMeter` zones: fixed at ACX's −3 dB peak ceiling and −60 dB noise floor, or props with those as defaults? **Recommend props with ACX defaults**, since both values are still "to verify" in [ACX delivery requirements](../research/acx-delivery-requirements.md) and other platforms may differ.
-- [ ] **Q3.** A capability at `unsupported`: disabled with its reason, or hidden? **Recommend disabled with the reason** by default, so the narrator learns the feature exists and why it is off; a caller may opt to hide.
-- [ ] **Q4.** A capability at `experimental`: enabled with an "Experimental" badge and the host's reason as the description? **Recommend yes**, subject to ADR 0300's rule for who may use an experimental command.
+- [ ] **Q3.** A capability at `unsupported`: disabled with the host's message, or hidden? **Recommend disabled with the message** by default, so the narrator learns the feature exists and why it is off; a caller may opt to hide.
+- [ ] **Q4.** A capability at `experimental`: enabled with an "Experimental" badge and the host's message as the description? **Recommend yes**, subject to ADR 0300's rule for who may use an experimental command.
 - [ ] **Q5.** `Timeline` waveform: may the caller pass a decorative backdrop (a waveform the feature draws) under the markers? **Recommend yes**, `aria-hidden`, drawn by the feature; the primitive draws no audio.
 - [ ] **Q6.** `StatusBadge` tones: a closed set of meanings (`neutral`, `info`, `progress`, `success`, `warning`, `danger`, `experimental`) with the stage-to-tone maps in `src/*.ts`, rather than one tone per stage name? **Recommend meanings**; stage names change, meanings do not.
 
@@ -83,23 +84,22 @@ For the owner; each has a recommendation.
 | Must | Phase 1 token batch: meter zones, badge fills, the booth block, all in `PAIRS` |
 | Must | `LevelMeter` (peak and RMS, zones, peak hold, throttled accessible value), replacing `InputLevelMeter` |
 | Must | `StatusBadge`, `Kbd`, `Toolbar` (roving tabindex) |
-| Must | `CapabilityGate` + `useCapability`, moving "Punch from here" and "Record in REAPER" onto it |
+| Must | `CapabilityGate` + `useCapability`, ready for DAW port P7 to move "Punch from here", "Record in REAPER" and nav gating onto it |
 | Must | `FocusShell` (the booth layout) and `StageGrid` (grid keyboard navigation) |
 | Should | `Timeline` + `TimelineLane`, `StatTile`, `CompactShell` |
-| Should | Nav requirement gating (`requiresManuscript`/`requiresDaw`, `combinedRequiredReason`) drawn through `CapabilityGate` |
 | Could | A `vertical` `LevelMeter`; a dot-only `StatusBadge` for dense lists |
 | Won't | Screens, window flags, the command registry, charts, waveform drawing |
 
 ### MVP scope
 
-Phases 1, 2, 3, 5, 6, 9 and 11: the tokens, `Kbd`, `StatusBadge`, `LevelMeter`, `Toolbar`, `FocusShell` and `CapabilityGate`. That is everything the booth mock needs, and it retires the hard-coded REAPER gating.
+Phases 1, 2, 3, 5, 6, 9, 11 and 12: the tokens, `Kbd`, `StatusBadge`, `LevelMeter`, `Toolbar`, `FocusShell`, `CapabilityGate` and `useCapability`. That is everything the booth mock needs, and it is what DAW port P7 needs to retire the hard-coded REAPER gating.
 
 ### User flow
 
 1. A lane C agent building booth mode wraps the page in `FocusShell`, which applies the booth surface.
 2. The top bar shows a `StatusBadge` ("REC · P&R", tone `danger`) and a `LevelMeter` fed by `useInputLevel`; the bar's zones turn amber and red above the peak ceiling.
 3. The bottom bar is a `Toolbar` of commands, each labelled with a `Kbd` taken from the input PRD's registry.
-4. "Punch & roll" is wrapped in `CapabilityGate` with `useCapability('punch')`. While the host reports `not_yet_available`, the control stays focusable, says "unavailable" and describes why in the host's words; when the host reports `supported`, the same code renders it live with no UI change.
+4. "Punch & roll" is wrapped in `CapabilityGate` with `useCapability('punch')`. While the host reports it `not_yet_available`, or `supported` but not available now (REAPER not running), the control stays focusable, reads as unavailable and describes why in the host's message; when the host reports it available, the same code renders it live with no UI change.
 
 ## Technical Approach
 
@@ -117,7 +117,8 @@ Phases 1, 2, 3, 5, 6, 9 and 11: the tokens, `Kbd`, `StatusBadge`, `LevelMeter`, 
 - **`StageGrid`:** `rows` (chapters), `columns` (stages), `cell(row, col)` returning `{ tone, label, onActivate? }` drawn as a `StatusBadge`. `role="grid"` on table elements inside the primitive, one tab stop, arrow keys move by cell, Home/End by row, Ctrl+Home/End to corners, Enter activates, row and column headers name each cell.
 - **`FocusShell`:** a full-viewport layout with `status` (top), `rail` (side, collapsible), `commands` (bottom) and the main region, each a landmark; it sets `data-surface="booth"` so the Phase 1 booth tokens apply inside it (Q1). It owns no Escape or exit logic; the feature decides whether it is a route or sits in `Dialog size="full"`.
 - **`CompactShell`:** a narrow (320–480 px) stacked layout with a header (`title`, `status`, one `action` such as "Full app") and sections; judged at the atlas's 390 px width. Always-on-top is the host's.
-- **`CapabilityGate` + `useCapability`:** the primitive takes `capability: { level, reason }` and one control. `supported` renders the control as is; `experimental` renders it with an "Experimental" `StatusBadge` and the reason as its description (Q4); `not_yet_available` and `unsupported` render it `aria-disabled` (still focusable), with its press swallowed, the reason as its `aria-describedby` and as its tooltip (Q3). The hook in `src/useCapability.ts` reads `api.dawCapabilities()` and `subscribeDawCapabilities` through `useApi()`. The contract, schema, golden payload, `wireContracts.test.ts` row and mock come from the DAW port PRD; if its binding phase has not landed, this phase adds only the mock half in `src/api/mockApi.ts` against that PRD's declared shape and leaves the rest to it ([wire contracts](../architecture/wire-contracts.md)).
+- **`CapabilityGate`:** a presentational primitive that takes one capability entry, `{ level, available, message? }` (the shape of one entry of the DAW port's `DawCapabilities` payload, copied as a local type so the primitive imports nothing from `src/api`), and one control. Available at `supported` renders the control as is; available at `experimental` adds an "Experimental" `StatusBadge` and the message as its description (Q4). Not available, at any level, renders the control `aria-disabled` (still focusable), swallows its press, and gives the host's message as its `aria-describedby` and its tooltip (Q3; `unsupported` may be hidden instead). The gate never words a reason itself.
+- **`useCapability(cap)`:** a hook in `src/useCapability.ts` (not in `primitives/`) that reads `DawCapabilities` once and follows the `daw_capabilities_changed` event through `useApi()`, returning the entry for `cap`. The contract, schema, golden, `wireContracts.test.ts` row and the mock in `api/dawMock.ts` are the DAW port's P4 ([wire contracts](../architecture/wire-contracts.md)); this PRD adds none of them. Its call and subscription get their rows in `src/interactionFeedback.catalog.ts`.
 
 **Risks:**
 
@@ -125,7 +126,8 @@ Phases 1, 2, 3, 5, 6, 9 and 11: the tokens, `Kbd`, `StatusBadge`, `LevelMeter`, 
 | --- | --- | --- |
 | Two phases edit `styles.css` or `PAIRS` and conflict | Medium | Every token lands in Phase 1, which runs alone; later phases may not add one (ADR 0360) |
 | The booth block fails contrast in a pair nobody listed | Medium | Phase 1 teaches `tokenContrast.ts` to parse the block and runs every existing pair over it as a third map |
-| The capability shape changes before the DAW PRD lands | Medium | The gate takes a plain `{ level, reason }`; only `useCapability` knows the wire |
+| The capability shape changes before the DAW PRD lands | Medium | The gate takes a plain local entry type; only `useCapability` knows the wire, and it waits for DAW port P4 |
+| This PRD and the DAW port PRD both edit the gated call sites | Medium | Only DAW port P7 edits `ReaderFlagsPanel.tsx`, `ReadingControlBar.tsx`, `AppShell.tsx` and `dawAvailability.ts` for gating; this PRD ships the parts |
 | `aria-disabled` controls get pressed | Low | The gate swallows the press and a test asserts the handler never runs |
 | A grid or timeline traps keyboard users | Low | One tab stop in and out, tested in `play()` and unit tests |
 | The shared `design-system.md` table row conflicts across parallel phases | High but trivial | Each phase adds one row; the coordinator resolves it mechanically |
@@ -145,13 +147,13 @@ Phases 1, 2, 3, 5, 6, 9 and 11: the tokens, `Kbd`, `StatusBadge`, `LevelMeter`, 
 | 8 | StageGrid | Chapter × stage grid with grid keyboard navigation | pending | with 2, 4-7, 9, 10 | 1, 3 | - |
 | 9 | FocusShell | Full-screen booth layout on the booth surface | pending | with 2-8, 10 | 1 | - |
 | 10 | CompactShell | Narrow companion panel layout | pending | with 2-9 | 1 | - |
-| 11 | CapabilityGate | Primitive, `useCapability`, mock; "Punch from here" and "Record in REAPER" move onto it (Q3, Q4) | pending | with 4-10 | 3; DAW port binding phase (real data only) | - |
-| 12 | Requirement gating | Nav `requiresManuscript`/`requiresDaw` and `combinedRequiredReason` drawn through `CapabilityGate` | pending | - | 11 | - |
+| 11 | CapabilityGate | Presentational gate over a capability entry (Q3, Q4); no API | pending | with 4-10 | 3 | - |
+| 12 | useCapability | Hook in `src/` over DAW port P4's binding, event and mock; feedback-catalog rows | pending | with 2-11 | DAW port P4 | - |
 | 13 | Close-out | Regenerate `docs/ui`, design-system prose, bundle measure, ADR 0360 accepted, steady-state docs, delete this PRD | pending | - | 2-12 | - |
 
 ### Phase details
 
-Every phase is one pull request and about two hours of agent work. Each writes its tests first, runs `pnpm --dir apps/ui test`, `pnpm --dir apps/ui architecture` and `pnpm --dir apps/ui atlas` for its stories, then `pnpm check`, and runs `design-spec-guard` against ADRs 0003, 0009, 0017, 0047, 0059 and 0062 because it touches `primitives/`. A phase that changes a page (4, 5, 11, 12) also runs the visual suite for that page's states and looks at every viewport's PNG. Each adds exactly one row to the primitive table in `docs/design/design-system.md`; that row is the only shared edit, and the coordinator resolves it mechanically. No phase but 13 runs `docs:atlas`, because `docs/ui/inventory.json` is shared.
+Every phase is one pull request and about two hours of agent work. Each writes its tests first and runs `pnpm --dir apps/ui test`, `pnpm --dir apps/ui architecture` and `pnpm check`. Phases 1 to 11 also run `pnpm --dir apps/ui atlas` for their stories and `design-spec-guard` against ADRs 0003, 0009, 0017, 0047, 0059 and 0062, because they touch `primitives/` or `styles.css`. A phase that changes a page (4, 5) also runs the visual suite for that page's states and looks at every viewport's PNG. Phases 2 to 11 each add exactly one row to the primitive table in `docs/design/design-system.md`; that row is the only shared edit, and the coordinator resolves it mechanically. No phase but 13 runs `docs:atlas`, because `docs/ui/inventory.json` is shared.
 
 **Phase 1 (lane U).** Adds to both theme blocks of `src/styles.css`: meter-zone tokens (floor, body, hot, over), badge fills where a tint of `--ok`/`--warn`/`--info`/`--danger` does not reach 4.5:1 under its `-text` colour, an `experimental` tone, and a `[data-surface='booth']` block (dark, high contrast, larger script size) per Q1. Every one gets a `PAIRS` row; `tokenContrast.ts` learns the booth block and the guard checks every pair over it too. Names are settled in the phase and recorded in [colour and contrast](../design/colour-and-contrast.md). Done when `KNOWN_FAILURES` is still empty and a story shows every new token in light, dark and booth.
 
@@ -173,15 +175,15 @@ Every phase is one pull request and about two hours of agent work. Each writes i
 
 **Phase 10 (U).** `CompactShell.tsx`; story at the narrow atlas width with header, status and three sections.
 
-**Phase 11 (U).** `CapabilityGate.tsx`, `src/useCapability.ts` and its test, the mock capabilities in `src/api/mockApi.ts` if the DAW PRD has not added them, a row in `src/interactionFeedback.catalog.ts` for the hook's call and subscription. `ReaderFlagsPanel.tsx` loses `PUNCH_PENDING` and wraps "Punch from here" in the gate; `ReadingControlBar.tsx` wraps "Record in REAPER" the same way. The story shows the four levels; tests assert the press is swallowed and the reason is the description. Runs `pnpm --dir apps/ui run aria` if a pinned role tree changes. Works on the mock until the DAW port binding lands; no `hostAPIVersion` bump here.
+**Phase 11 (U).** `CapabilityGate.tsx`, story and test. The story shows each level, available and not, with a `Button`, an `IconButton` and a `NavButton` inside; `play()` tabs onto a gated control and checks its description. Tests assert the press never reaches the handler, the message is both description and tooltip, and a missing message falls back to the control's own name with no invented text. Needs no API, so it can land before the DAW port binding.
 
-**Phase 12 (lane C).** `AppShell.tsx` draws a disabled nav item through `CapabilityGate` with the `combinedRequiredReason` text as a `not_yet_available` reason, so pages and nav share one pattern. Touches the navigation, so it runs the aria snapshots and the whole visual suite and lands on its own, like a nav addition.
+**Phase 12 (U).** `src/useCapability.ts` and its test against DAW port P4's `dawMock`: first read, a `daw_capabilities_changed` update, an unknown capability (treated as `unsupported`, not available), and unsubscribe on unmount. Two rows in `src/interactionFeedback.catalog.ts`. No `hostAPIVersion` bump; the binding is P4's. After it, DAW port P7 moves "Punch from here" (`PUNCH_PENDING`), "Record in REAPER" and the nav's `requiresDaw` onto the gate.
 
 **Phase 13 (U).** Runs `pnpm --dir apps/ui docs:atlas` once for all new stories, updates the prose around the primitive table, measures the bundle, moves ADR 0360 to Accepted with its index row in `docs/adr/README.md`, and deletes this PRD (README index row updated) once the steady-state docs say everything durable here.
 
 ### Parallelism notes
 
-Phase 1 is the one serialization point: it runs alone, because `src/styles.css`, `src/paletteContrast.test.ts` and `src/tokenContrast.ts` are conflict hot spots. After it, phases 2 to 10 add only new files (the `.tsx`, `.stories.tsx`, `.test.tsx`, plus `src/levelMeter.ts` in 5) and the one `design-system.md` row, so all nine can run at once. Phase 8 waits for 3 because its cells are `StatusBadge`s; phase 11 waits for 3 for the experimental badge. Phase 11 can run with the other primitives but not with a lane C phase editing `ReaderFlagsPanel.tsx` or `ReadingControlBar.tsx`. Phase 12 runs alone on the navigation. Phase 13 is last.
+Phase 1 is the one serialization point: it runs alone, because `src/styles.css`, `src/paletteContrast.test.ts` and `src/tokenContrast.ts` are conflict hot spots. After it, phases 2 to 10 add only new files (the `.tsx`, `.stories.tsx`, `.test.tsx`, plus `src/levelMeter.ts` in 5) and the one `design-system.md` row, so all nine can run at once. Phase 8 waits for 3 because its cells are `StatusBadge`s; phase 11 waits for 3 for the experimental badge. Phase 12 waits only for DAW port P4 and touches no primitive, so it can run beside any of 2 to 11; its one shared edit is the feedback catalog. DAW port P7 waits for 11 and 12. Phase 13 is last.
 
 ### Parallel-session compatibility
 
@@ -191,14 +193,14 @@ Phase 1 is the one serialization point: it runs alone, because `src/styles.css`,
 | 2 | `primitives/Kbd*` (new), design-system row | Input PRD (consumes `Kbd`; coordinate the API) |
 | 3 | `primitives/StatusBadge*` (new), `src/chapterStatus.ts`, design-system row | Anything editing `chapterStatus.ts` |
 | 4 | `primitives/StatTile*` (new), `home/RecordingCheckReport.tsx`, design-system row | Recording-check work |
-| 5 | `primitives/LevelMeter*` (new), `src/levelMeter.ts` (new), `teleprompter/InputLevelMeter*` (deleted), `teleprompter/useInputLevel*`, `teleprompter/ReadingControlBar.tsx`, design-system row | Read-aloud control bar, booth mode, phase 11 (same bar) |
+| 5 | `primitives/LevelMeter*` (new), `src/levelMeter.ts` (new), `teleprompter/InputLevelMeter*` (deleted), `teleprompter/useInputLevel*`, `teleprompter/ReadingControlBar.tsx`, design-system row | Read-aloud control bar, booth mode, DAW port P7 (same bar) |
 | 6 | `primitives/Toolbar*` (new), design-system row | None |
 | 7 | `primitives/Timeline*` (new), design-system row | None |
 | 8 | `primitives/StageGrid*` (new), design-system row | None |
 | 9 | `primitives/FocusShell*` (new), design-system row | None |
 | 10 | `primitives/CompactShell*` (new), design-system row | None |
-| 11 | `primitives/CapabilityGate*` (new), `src/useCapability*` (new), `src/api/mockApi.ts`, `src/interactionFeedback.catalog.ts`, `teleprompter/ReaderFlagsPanel.tsx`, `teleprompter/ReadingControlBar.tsx`, design-system row | DAW port PRD (API files), read-aloud and booth work, phase 5 |
-| 12 | `layout/AppShell.tsx`, `src/dawAvailability.ts`, aria snapshots | Any nav addition; App Navigation PRD |
+| 11 | `primitives/CapabilityGate*` (new), design-system row | None |
+| 12 | `src/useCapability.ts`, `src/useCapability.test.ts` (new), `src/interactionFeedback.catalog.ts` | Any phase adding a host call site (the catalog); waits for DAW port P4's `api/contracts/daw.ts`, `api/schemas/daw.ts`, `api/dawMock.ts` |
 | 13 | `docs/ui/**`, `docs/design/design-system.md`, `docs/adr/0360-*`, `docs/adr/README.md`, `docs/prds/README.md`, this PRD | Any PRD regenerating `docs/ui` |
 
 ## Decisions Log
@@ -211,6 +213,7 @@ Phase 1 is the one serialization point: it runs alone, because `src/styles.css`,
 | Capability gating | A presentational primitive plus `useCapability` in `src/` (ADR 0360) | Hard-coded disabled buttons; gate inside each feature | One pattern, reasons from the host, and the primitive stays a leaf with no API import |
 | Disabled semantics | `aria-disabled`, focusable, reason as description | `disabled` inside a `TooltipTarget` group | The narrator hears the control's name and then why, instead of only the reason |
 | `Kbd` vs registry | `Kbd` here; bindings in the input PRD (ADR 0361) | One PRD | Drawing a key and owning a keymap are separate concerns and lanes |
+| Who moves the gated call sites | DAW port P7, on this PRD's gate and hook | This PRD's gate phase | One PRD edits `ReaderFlagsPanel.tsx`, `ReadingControlBar.tsx` and `AppShell.tsx` for gating, and the real data only exists after DAW port P4 |
 | Shells | Layout only; window flags and Escape belong to the host and the feature | A booth dialog primitive | Feature PRDs still choose route or `Dialog size="full"` (ADR 0094) |
 
 ## Research Summary
