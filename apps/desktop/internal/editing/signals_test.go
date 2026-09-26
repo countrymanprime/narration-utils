@@ -40,6 +40,50 @@ func TestEmptySpaceSignalNotMetWithOpenCandidate(t *testing.T) {
 	}
 }
 
+// TestEmptySpaceSignalCarriesTheProcessedAudioCaveat: chapter-stage-recommendations.prd.md Phase 7's own evidence
+// entry ("analysis of source audio; take FX not applied") is on every result, whatever the verdict - met, not_met
+// and every unknown cause alike.
+func TestEmptySpaceSignalCarriesTheProcessedAudioCaveat(t *testing.T) {
+	hasCaveat := func(t *testing.T, signal stages.Signal) {
+		t.Helper()
+		for _, entry := range signal.Evidence {
+			if entry.Kind == "caveat" {
+				return
+			}
+		}
+		t.Fatalf("signal %+v carries no caveat evidence", signal)
+	}
+	hasCaveat(t, EmptySpaceSignal(baseInput()))
+	notMet := baseInput()
+	notMet.Candidates = []CandidateStatus{{Open: true}}
+	hasCaveat(t, EmptySpaceSignal(notMet))
+	unmapped := baseInput()
+	unmapped.Coverage.Mapping = MappingUnmapped
+	hasCaveat(t, EmptySpaceSignal(unmapped))
+}
+
+// TestEmptySpaceSignalListsOpenCandidatesAsEvidence: Phase 7's "evidence lists remaining candidates" - a not_met
+// signal's evidence carries each open candidate's own entry, and a dismissed one's is left out.
+func TestEmptySpaceSignalListsOpenCandidatesAsEvidence(t *testing.T) {
+	in := baseInput()
+	openEvidence := stages.Evidence{Kind: "candidate", Label: "Candidate", Value: "a gap"}
+	dismissedEvidence := stages.Evidence{Kind: "candidate", Label: "Candidate", Value: "a dismissed gap"}
+	in.Candidates = []CandidateStatus{{Open: true, Evidence: openEvidence}, {Open: false, Evidence: dismissedEvidence}}
+	signal := EmptySpaceSignal(in)
+	found := false
+	for _, entry := range signal.Evidence {
+		if entry.Value == dismissedEvidence.Value {
+			t.Fatalf("a dismissed candidate's evidence must not appear: %+v", signal.Evidence)
+		}
+		if entry.Value == openEvidence.Value {
+			found = true
+		}
+	}
+	if !found {
+		t.Fatalf("the open candidate's evidence is missing: %+v", signal.Evidence)
+	}
+}
+
 func TestEmptySpaceSignalMetWithOnlyDismissedCandidates(t *testing.T) {
 	in := baseInput()
 	in.Candidates = []CandidateStatus{{Open: false}, {Open: false}}

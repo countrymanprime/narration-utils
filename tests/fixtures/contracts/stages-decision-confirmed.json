@@ -23,7 +23,13 @@
         },
         "cause": "measurement_unavailable",
         "computedAt": "2026-09-21T10:00:00Z",
-        "evidence": [],
+        "evidence": [
+          {
+            "kind": "caveat",
+            "label": "Caveat",
+            "value": "Analysis of source audio; take FX, item gain and fades are not applied."
+          }
+        ],
         "id": "editing.breaths",
         "reason": "This detector has not been validated on a labeled corpus yet (Phase 4 of the editing-readiness-analysis PRD has not run), so it can never say \"done\" - only \"unknown\".",
         "stage": "editing",
@@ -37,7 +43,13 @@
         },
         "cause": "measurement_unavailable",
         "computedAt": "2026-09-21T10:00:00Z",
-        "evidence": [],
+        "evidence": [
+          {
+            "kind": "caveat",
+            "label": "Caveat",
+            "value": "Analysis of source audio; take FX, item gain and fades are not applied."
+          }
+        ],
         "id": "editing.clicks",
         "reason": "This detector has not been validated on a labeled corpus yet (Phase 4 of the editing-readiness-analysis PRD has not run), so it can never say \"done\" - only \"unknown\".",
         "stage": "editing",
@@ -51,7 +63,13 @@
         },
         "cause": "never_analyzed",
         "computedAt": "2026-09-21T10:00:00Z",
-        "evidence": [],
+        "evidence": [
+          {
+            "kind": "caveat",
+            "label": "Caveat",
+            "value": "Analysis of source audio; take FX, item gain and fades are not applied."
+          }
+        ],
         "id": "editing.empty_space",
         "reason": "This chapter's editing has not been checked yet.",
         "stage": "editing",

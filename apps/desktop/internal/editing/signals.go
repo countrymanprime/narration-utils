@@ -62,9 +62,22 @@ type ChapterCoverage struct {
 }
 
 // CandidateStatus is one composed empty-space candidate's open/closed state
-// (D9: dismissed is the only status that is not open).
+// (D9: dismissed is the only status that is not open) and, for an open one,
+// the evidence entry a narrator would see for it (chapter-stage-
+// recommendations.prd.md Phase 7: "evidence lists remaining candidates -
+// time range, class, confidence and reason").
 type CandidateStatus struct {
-	Open bool
+	Open     bool
+	Evidence stages.Evidence
+}
+
+// processedAudioCaveat is chapter-stage-recommendations.prd.md Phase 7's own
+// evidence entry, carried on every editing signal regardless of its state:
+// this package analyzes the source audio (editing-readiness-analysis.prd.md
+// Architecture Notes), so what REAPER's take FX, item gain and fades apply
+// at playback can differ from what a candidate here reports.
+func processedAudioCaveat() stages.Evidence {
+	return stages.Evidence{Kind: "caveat", Label: "Caveat", Value: "Analysis of source audio; take FX, item gain and fades are not applied."}
 }
 
 // EmptySpaceInput is everything EmptySpaceSignal reads.
@@ -84,7 +97,7 @@ type EmptySpaceInput struct {
 // cause, for everything else. The same input always gives the same signal.
 func EmptySpaceSignal(in EmptySpaceInput) stages.Signal {
 	signal := stages.Signal{
-		ID: EmptySpaceSignalID, Stage: stages.StageEditing, Evidence: []stages.Evidence{},
+		ID: EmptySpaceSignalID, Stage: stages.StageEditing, Evidence: []stages.Evidence{processedAudioCaveat()},
 		Basis: in.Basis, ComputedAt: in.ComputedAt,
 	}
 	if cause, reason, ok := mappingCause(in.Coverage, in.Unconfirmed()); ok {
@@ -109,6 +122,7 @@ func EmptySpaceSignal(in EmptySpaceInput) stages.Signal {
 	for _, candidate := range in.Candidates {
 		if candidate.Open {
 			open++
+			signal.Evidence = append(signal.Evidence, candidate.Evidence)
 		}
 	}
 	if open > 0 {
@@ -232,10 +246,8 @@ func IsValidated(analyzerVersion string) bool { return validatedAnalyzerVersions
 // narrator can see raw candidates even though the signal itself can never
 // resolve them from an unvalidated detector.
 func UnvalidatedSignal(id, analyzerVersion string, evidenceEntries []stages.Evidence, basis stages.Basis, now time.Time) stages.Signal {
-	signal := stages.Signal{ID: id, Stage: stages.StageEditing, Basis: basis, ComputedAt: now, Evidence: []stages.Evidence{}}
-	if evidenceEntries != nil {
-		signal.Evidence = evidenceEntries
-	}
+	signal := stages.Signal{ID: id, Stage: stages.StageEditing, Basis: basis, ComputedAt: now, Evidence: []stages.Evidence{processedAudioCaveat()}}
+	signal.Evidence = append(signal.Evidence, evidenceEntries...)
 	if !IsValidated(analyzerVersion) {
 		return unknownEditingSignal(signal, stages.CauseMeasurementUnavailable, unvalidatedReason)
 	}

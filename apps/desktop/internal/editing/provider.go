@@ -78,7 +78,7 @@ func (p *SignalProvider) Signals(ctx context.Context, chapter stages.ChapterCont
 func (p *SignalProvider) projectUnreadableSignals(err error, now time.Time) []stages.Signal {
 	basis := stages.Basis{LedgerRecordIDs: []string{}}
 	emptySpace := unknownEditingSignal(
-		stages.Signal{ID: EmptySpaceSignalID, Stage: stages.StageEditing, Evidence: []stages.Evidence{}, Basis: basis, ComputedAt: now},
+		stages.Signal{ID: EmptySpaceSignalID, Stage: stages.StageEditing, Evidence: []stages.Evidence{processedAudioCaveat()}, Basis: basis, ComputedAt: now},
 		stages.CauseProjectUnreadable, "The saved REAPER project file could not be read: "+err.Error()+".",
 	)
 	return []stages.Signal{
@@ -158,7 +158,7 @@ func (s *Service) gatherCandidates(chapterID string) (statuses []CandidateStatus
 		class, _ := finding.Evidence["class"].(string)
 		switch class {
 		case "silence":
-			statuses = append(statuses, CandidateStatus{Open: finding.Review.Status != findings.StatusDismissed})
+			statuses = append(statuses, CandidateStatus{Open: finding.Review.Status != findings.StatusDismissed, Evidence: findingEvidence(finding)})
 		case "click":
 			clickEvidence = append(clickEvidence, findingEvidence(finding))
 		case "breath":
