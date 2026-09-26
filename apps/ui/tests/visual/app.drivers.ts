@@ -713,6 +713,12 @@ export const APP_DRIVERS: Record<string, Record<string, Driver>> = {
       await settlePage(page);
       await page.getByRole('dialog', { name: 'Set up the credits' }).waitFor();
     },
+    'credits-setup-banner': async (page) => {
+      await page.goto('/?mockCredits=setup');
+      await settlePage(page);
+      await clickVisible(page, 'button', 'Not now');
+      await page.getByText(/The credits need 3 values/).waitFor();
+    },
     'import-activity-log': async (page) => {
       await clickVisible(page, 'button', 'Replace manuscript');
       // This state is about the import dialog's own activity log, not the chained Story Bible build (B1-B3, on by
@@ -1183,6 +1189,21 @@ export const APP_DRIVERS: Record<string, Record<string, Driver>> = {
       // render as unresolved chips (C6) - expanding it shows both the chip and the "unresolved token(s)" count.
       await clickVisible(page, 'button', 'Opening credits');
       await page.getByText(/unresolved token/).waitFor();
+    },
+    // The credits-setup banner and the credits card's own Fill in button (credits-token-setup-and-front-matter-
+    // detection.prd.md Phase 3): the mock's setup seam, with the real chapters collapsed for the same reason as
+    // 'credits-entries' above.
+    'credits-entries-fill-in': async (page) => {
+      await page.goto('/?mockCredits=setup');
+      await settlePage(page);
+      // Home's own dialog opens first (it is modal, so the nav below is unreachable until it closes) - dismiss it for
+      // the session, leaving the banner (which stays while tokens are unresolved) to reach this page's own banner.
+      await clickVisible(page, 'button', 'Not now');
+      await goToPage(page, 'Manuscript');
+      await clickVisible(page, 'button', 'Collapse all chapters');
+      await clickVisible(page, 'button', 'Opening credits');
+      await page.getByText(/The credits need 3 values/).waitFor();
+      await page.getByRole('button', { name: 'Fill in' }).first().waitFor();
     },
     // The retail sample (credits PRD Phase 5): ?mockCredits=extras picks lines 1-3 of Chapter 3; the chapter is opened so
     // the marked lines show, the rest collapsed (overlapping marks elsewhere are the tracked axe debt of other states, #155).

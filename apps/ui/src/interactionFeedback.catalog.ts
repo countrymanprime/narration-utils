@@ -549,6 +549,8 @@ export const FEEDBACK_CATALOG: Record<string, FeedbackRow> = {
   'src/components/credits/CreditsSetupDialog.tsx::creditsSetupSave#1': row('click', 'file-io', 'disabled', 'disabled', 'ui', 'toast', 'na', 'ok', 'Save: fields disable while busy; the dialog closes once the host answers "not needed any more" and a failure is a toast with every typed value kept on screen to retry.'),
   'src/components/credits/CreditsSetupDialog.tsx::creditsSetupDismiss#1': row('click', 'instant', 'disabled', 'disabled', 'ui', 'toast', 'na', 'ok', '"Not now": the dialog closes for this session once the host confirms; a failure is a toast and the dialog stays open to retry.'),
   'src/components/credits/CreditsSetupDialog.tsx::creditsSetupDismiss#2': row('click', 'instant', 'disabled', 'disabled', 'ui', 'toast', 'na', 'ok', '"Don\'t ask for this project": same as "Not now", stored on the manifest instead of the session.'),
+  'src/components/credits/CreditsSetupBanner.tsx::creditsSetupDismiss#1': row('click', 'instant', 'disabled', 'disabled', 'ui', 'toast', 'na', 'ok', 'The banner\'s own "Don\'t ask for this project" (Phase 3): the banner disappears once the host confirms; a failure is a toast and it stays.'),
+  'src/components/manuscript/Manuscript.tsx::creditsSetupState#1': row('mount', 'file-io', 'na', 'na', 'ui', 'silent', 'na', 'exempt', 'Only decides whether the credits-setup banner and the credits cards\' Fill in button show; a failed read leaves both absent, same as creditsTemplates on this page.'),
 };
 
 /**

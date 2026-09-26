@@ -447,3 +447,54 @@ describe('the "Set up the credits" prompt (credits-token-setup-and-front-matter-
     expect(screen.queryByRole('dialog', { name: 'Set up the credits' })).toBeNull();
   });
 });
+
+describe('the credits-setup banner, the way back after Not now (credits-token-setup-and-front-matter-detection.prd.md, Phase 3)', () => {
+  async function renderHomePastNotNow() {
+    const api = createMockApi({}, { creditsSetup: true });
+    const data: Bootstrap = await api.bootstrap();
+    render(
+      <MemoryRouter>
+        <ApiProvider api={api}>
+          <Home data={data} go={() => {}} notify={() => {}} goToManuscript={() => {}} refreshBootstrap={async () => {}} />
+        </ApiProvider>
+      </MemoryRouter>,
+    );
+    fireEvent.click(await screen.findByRole('button', { name: 'Not now' }));
+    await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Set up the credits' })).toBeNull());
+    return { api };
+  }
+
+  it('appears once "Not now" leaves the tokens unresolved, naming them', async () => {
+    await renderHomePastNotNow();
+    expect(await screen.findByText(/The credits need 3 values/)).toBeTruthy();
+    expect(screen.getByText(/Title, Author, Narrator will be read as written, in brackets\./)).toBeTruthy();
+  });
+
+  it('Fill in reopens the same dialog, and the banner steps aside while it is open', async () => {
+    await renderHomePastNotNow();
+    fireEvent.click(await screen.findByRole('button', { name: 'Fill in' }));
+    expect(await screen.findByRole('dialog', { name: 'Set up the credits' })).toBeTruthy();
+    expect(screen.queryByText(/The credits need 3 values/)).toBeNull();
+  });
+
+  it('"Don\'t ask for this project" on the banner removes it, without reopening the dialog', async () => {
+    await renderHomePastNotNow();
+    fireEvent.click(await screen.findByRole('button', { name: /^Don.t ask for this project$/ }));
+    await waitFor(() => expect(screen.queryByText(/The credits need 3 values/)).toBeNull());
+    expect(screen.queryByRole('dialog', { name: 'Set up the credits' })).toBeNull();
+  });
+
+  it('no banner on the default mock boot (setup already dismissed at the project scope)', async () => {
+    const api = createMockApi({}, {});
+    const data: Bootstrap = await api.bootstrap();
+    render(
+      <MemoryRouter>
+        <ApiProvider api={api}>
+          <Home data={data} go={() => {}} notify={() => {}} goToManuscript={() => {}} refreshBootstrap={async () => {}} />
+        </ApiProvider>
+      </MemoryRouter>,
+    );
+    await screen.findByRole('button', { name: 'Replace manuscript' });
+    expect(screen.queryByText(/The credits need/)).toBeNull();
+  });
+});
