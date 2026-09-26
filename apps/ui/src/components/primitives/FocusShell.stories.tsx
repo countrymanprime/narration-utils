@@ -13,7 +13,7 @@ const meta = {
   args: {
     status: (
       <>
-        <span className="rounded-full bg-[var(--danger)]/20 px-2 py-0.5 text-xs font-semibold text-[var(--danger-text)]">REC · P&amp;R</span>
+        <span className="text-xs font-semibold text-[var(--danger-text)]">REC · P&amp;R</span>
         <span className="text-[var(--text-muted)]">Room −64.1 dB</span>
         <span className="ml-auto text-[var(--text-muted)]">REAPER · take 4</span>
       </>
