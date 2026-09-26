@@ -138,7 +138,7 @@ Phases 1, 2, 3, 5, 6, 9, 11 and 12: the tokens, `Kbd`, `StatusBadge`, `LevelMete
 | # | Phase | Description | Status | Parallel | Depends | PRP Plan |
 | --- | --- | --- | --- | --- | --- | --- |
 | 1 | Token batch | Meter-zone and badge-fill tokens, the scoped booth block (Q1), all in both themes and `PAIRS`; `tokenContrast.ts` reads the booth block | complete | - (runs alone) | - | - |
-| 2 | Kbd | Key cap primitive | pending | with 3-10 | 1 | - |
+| 2 | Kbd | Key cap primitive | complete | with 3-10 | 1 | - |
 | 3 | StatusBadge | Tone badge (Q6); chapter-status tone map in `src/chapterStatus.ts` | pending | with 2, 4-7, 9, 10 | 1 | - |
 | 4 | StatTile | KPI tile; replaces the local one in `RecordingCheckReport.tsx` | complete | with 2, 3, 5-10 | 1 | - |
 | 5 | LevelMeter | Peak/RMS meter with zones (Q2); `src/levelMeter.ts`; replaces `InputLevelMeter` | pending | with 2-4, 6-10 | 1 | - |
