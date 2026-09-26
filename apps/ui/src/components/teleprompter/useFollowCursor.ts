@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState, type RefObject } from 'react';
+import { EDITABLE, KEY_WIDGET_ROLES, SPACE_ACTIVATES } from '../../input/targets';
 
 /** The part of the viewport the current word may sit in without the reader scrolling (ADR 0024): 25% to 70% of its height. */
 const FOLLOW_BAND = { top: 0.25, bottom: 0.7 } as const;
@@ -10,29 +11,10 @@ const FOLLOW_BAND = { top: 0.25, bottom: 0.7 } as const;
 export const SCROLL_SETTLE_MS = 150;
 
 const SCROLL_KEYS = new Set(['PageUp', 'PageDown', 'Home', 'End', 'ArrowUp', 'ArrowDown', ' ']);
-// Roles whose arrow keys move a selection or a value, not the page. Exported for `ReadingControlBar`'s Space shortcut
-// (read-aloud-control-bar.prd.md Phase 3, Q10), which reuses the same "is this a widget, not the page" check.
-export const KEY_WIDGET_ROLES = new Set([
-  'combobox',
-  'grid',
-  'listbox',
-  'menu',
-  'menuitem',
-  'menuitemcheckbox',
-  'menuitemradio',
-  'option',
-  'radio',
-  'radiogroup',
-  'slider',
-  'spinbutton',
-  'tab',
-  'tablist',
-  'textbox',
-  'tree',
-  'treeitem',
-]);
-export const EDITABLE = 'input, textarea, select, [contenteditable]:not([contenteditable="false"])';
-export const SPACE_ACTIVATES = 'button, a[href], summary, [role="button"], [role="checkbox"], [role="switch"]';
+// Moved to `src/input/targets.ts` (ADR 0361 decision 4, input-commands-and-pedals.prd.md Phase 1): the command
+// router's target guard reuses the same three constants. Re-exported here so `isScrollKey` below, `ReadingControlBar`'s
+// Space shortcut and their tests keep working unchanged.
+export { EDITABLE, SPACE_ACTIVATES, KEY_WIDGET_ROLES };
 
 const prefersReducedMotion = (): boolean => typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
