@@ -55,9 +55,9 @@ type LevelMatchClient struct {
 }
 
 type levelMatchRun struct {
-	// +checklocks:LevelMatchClient.mu
+	// guarded by LevelMatchClient.mu (checklocks cannot name another type's lock)
 	stale []StaleGainCandidate
-	// +checklocks:LevelMatchClient.mu
+	// guarded by LevelMatchClient.mu (checklocks cannot name another type's lock)
 	changed []GainChange
 	done    chan levelMatchAnswer
 }

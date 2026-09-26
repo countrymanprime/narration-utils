@@ -62,7 +62,7 @@ type CleanupClient struct {
 }
 
 type cleanupRun struct {
-	// +checklocks:CleanupClient.mu
+	// guarded by CleanupClient.mu (checklocks cannot name another type's lock)
 	stale []StaleCandidate
 	done  chan cleanupAnswer
 }
