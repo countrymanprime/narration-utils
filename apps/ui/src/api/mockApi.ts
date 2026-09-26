@@ -939,6 +939,7 @@ export function createMockApi(
       unsavedEdits: chapterSyncUnsavedEdits,
       activity: chapterSyncActivity,
       chapters: links.project === 'ready' ? mockChapterSyncRows(links) : [],
+      background: { enabled: true, wait: 'nothing' },
     };
   };
   // Phase 6's status rows, as the host builds them: the link, and the recording check's own answer (the coverage mock's).
@@ -2371,8 +2372,14 @@ export function createMockApi(
     subscribeChapterSync: (onUpdate) => {
       chapterSyncSubscribers.add(onUpdate);
       if (initial.chapterSync === 'linked' && chapterSyncLastSync === null) {
+        // App.tsx subscribes immediately on mount, well before bootstrap resolves and Home's AudiobookEstimatePanel
+        // gets its own turn to subscribe; running this straight off manuscriptReady fires (and broadcasts) the
+        // batch before that second subscriber exists, so its toast never shows. A short delay past the mock's own
+        // settling lets every mount-time subscriber that will ever exist register first.
         void manuscriptReady.then(() => {
-          if (chapterSyncSubscribers.has(onUpdate) && chapterSyncLastSync === null) runMockChapterSync('daw-link');
+          setTimeout(() => {
+            if (chapterSyncSubscribers.has(onUpdate) && chapterSyncLastSync === null) runMockChapterSync('daw-link');
+          }, 250);
         });
       }
       return () => chapterSyncSubscribers.delete(onUpdate);

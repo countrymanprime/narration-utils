@@ -66,6 +66,10 @@ export const chapterSyncStateSchema = z
     unsavedEdits: z.boolean(),
     activity: listFromNull(batchSchema).refine((list) => list.length <= 20, { message: 'the host keeps at most 20 activity rows' }),
     chapters: listFromNull(chapterSchema),
+    background: z.object({
+      enabled: z.boolean(),
+      wait: z.enum(['', 'off', 'busy', 'model', 'battery', 'recording', 'quiet', 'nothing']),
+    }),
   })
   .refine((state) => !state.ask || (state.consent === 'undecided' && state.manuscript && state.dawLinked), {
     message: 'the consent is asked only while undecided, with a manuscript and a linked DAW project',

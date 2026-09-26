@@ -1,7 +1,8 @@
-# The recording check (docs/utilities/recording-coverage.md, ADR 0130; recording-check-summary.prd.md Phase 1): a
-# modal dialog named for its chapter, with the count as a heading, an unfinished chapter's "recorded to" line, the
-# chapter's stat grid, its own interior gaps as a named Pickups region (a paragraph when there are none), the
-# paragraph detail as a folded disclosure (never auto-expanded, RS6 A), and one action. The page behind it is aria-hidden.
+# The recording check (docs/utilities/recording-coverage.md, ADR 0130; recording-check-summary.prd.md Phases 1-2): a
+# modal dialog named for its chapter, with the host's judgement as a heading (ADR 0204), an unfinished chapter's
+# "recorded to" line, the chapter's stat grid, its own interior gaps as a named Pickups region (a paragraph when there
+# are none), the paragraph detail as a folded disclosure (never auto-expanded, RS6 A), and one action. The page behind
+# it is aria-hidden.
 - /children: equal
 # The two toast live regions stay in the tree on purpose (see dialog-add-note.aria.yml).
 - main:
@@ -12,10 +13,13 @@
   - button "Close"
   - paragraph: /Based on the saved REAPER project, file modified Sep \d+, \d+, \d+:\d+ AM\./
   - paragraph: /Checked Sep \d+, \d+, \d+:\d+ AM with the small Whisper model\./
-  - heading /\d+ words not recorded/ [level=3]
+  - 'heading /Not complete: .+/ [level=3]'
   - paragraph: /Recorded to paragraph \d+ of \d+ \(\d+ words left\)\./
   - region "Pickups (0)":
     - heading "Pickups (0)" [level=3]
     - paragraph: None from this check.
+    - text: "Repeated reads (Review): none waiting"
+    - link "Open Review":
+      - /url: /review
   - button /Paragraph detail \d+ of \d+ fully recorded/
   - button "Check again"

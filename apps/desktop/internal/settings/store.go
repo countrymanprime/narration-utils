@@ -72,7 +72,9 @@ var builtinDefaults = map[string]Values{
 	"DAW": {"auto_start_launcher": "false", "experimental_reaper_actions": "false"},
 	// RecordingCoverage mirrors coverage.DefaultSettings: the recording check's shipped values, chosen on synthetic fixtures
 	// and still Proposed and uncalibrated on real narration (docs/utilities/recording-coverage.md, ADR 0132, Q15).
-	"RecordingCoverage": {"min_paragraph_present": "0.8", "max_missing_run": "3", "max_misread_run": "8", "min_anchor_run": "3"},
+	// background_checks defaults on (S7 B, D27): it only ever runs with the model installed, on mains power and while
+	// REAPER is idle (coverage.NextBackground, ADR 0211).
+	"RecordingCoverage": {"min_paragraph_present": "0.8", "max_missing_run": "3", "max_misread_run": "8", "min_anchor_run": "3", "background_checks": "true"},
 	// TakeReview holds the pickup/duplicate detector's Q12 thresholds and
 	// Q3 scan-scope settings (internal/takereview), layered like every
 	// other tool here. Thresholds mirror repeats.DefaultThresholds();

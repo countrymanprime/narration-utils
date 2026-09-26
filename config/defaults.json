@@ -38,7 +38,8 @@
     "min_paragraph_present": "0.8",
     "max_missing_run": "3",
     "max_misread_run": "8",
-    "min_anchor_run": "3"
+    "min_anchor_run": "3",
+    "background_checks": "true"
   },
   "TakeReview": {
     "full_coverage_threshold": "0.9",

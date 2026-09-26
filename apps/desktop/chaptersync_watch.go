@@ -47,6 +47,22 @@ type chapterSyncWatcher struct {
 	hasCountBase bool
 	// +checklocks:mu
 	unsavedEdits bool
+	// lastCount is the last edit counter seen, and lastActivity when the saved .rpp's modification time or that counter
+	// last moved: background recording checks wait until REAPER has been quiet (coverage.BackgroundQuiet, Phase 7).
+	// +checklocks:mu
+	lastCount int
+	// +checklocks:mu
+	lastActivity time.Time
+}
+
+// lastActivityFor is when the watcher last saw folder's project change, zero when it has not.
+func (w *chapterSyncWatcher) lastActivityFor(folder string) time.Time {
+	w.mu.Lock()
+	defer w.mu.Unlock()
+	if w.folder != folder {
+		return time.Time{}
+	}
+	return w.lastActivity
 }
 
 // unsavedFor reports whether REAPER has unsaved edits to folder's watched project.
@@ -94,6 +110,7 @@ func (h *Host) chapterSyncWatchTick(now time.Time) {
 		cleared := w.unsavedEdits
 		w.folder, w.path, w.modTime, w.changedAt = folder, path, modTime, time.Time{}
 		w.countBase, w.hasCountBase, w.unsavedEdits = count, counted, false
+		w.lastCount, w.lastActivity = count, time.Time{}
 		w.mu.Unlock()
 		if cleared {
 			h.emitChapterSyncState()
@@ -101,7 +118,10 @@ func (h *Host) chapterSyncWatchTick(now time.Time) {
 		return
 	}
 	if !modTime.Equal(w.modTime) {
-		w.modTime, w.changedAt = modTime, now
+		w.modTime, w.changedAt, w.lastActivity = modTime, now, now
+	}
+	if counted && count != w.lastCount {
+		w.lastCount, w.lastActivity = count, now
 	}
 	flipped := false
 	switch {

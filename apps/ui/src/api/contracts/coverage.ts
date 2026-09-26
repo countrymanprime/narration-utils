@@ -57,6 +57,9 @@ export type CoverageState = {
   recordId?: string;
   startedAt?: string;
   completedAt?: string;
+  /** The host started this check on its own (daw-chapter-track-auto-sync PRD Phase 7, ADR 0211): label it "(background)". The
+   * narrator's own Check pre-empts it. The host always sends it; absent reads as false (a state the page builds itself). */
+  background?: boolean;
 };
 
 export type CoverageStartResult =
