@@ -1,4 +1,4 @@
-# 0251. Cleanup trims are found by matching the measured file to a live item and applied as a split-and-delete inside one undo block
+# 0262. Cleanup trims are found by matching the measured file to a live item and applied as a split-and-delete inside one undo block
 
 **Status:** Proposed
 **Date:** 2026-09-26
