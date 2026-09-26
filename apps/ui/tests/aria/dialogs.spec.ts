@@ -40,9 +40,9 @@ const MODALS: { name: string; state: [string, string]; snapshot: string }[] = [
     snapshot: 'slide-over-chapters.aria.yml',
   },
   {
-    name: 'the recording check is a modal dialog with its count, the missing region and its paragraph link, and Check again',
+    name: 'the recording check is a modal slide-over with its count, the missing region and its paragraph link, and Check again',
     state: ['home', 'recording-check-incomplete'],
-    snapshot: 'dialog-recording-check.aria.yml',
+    snapshot: 'slide-over-recording-check.aria.yml',
   },
   {
     name: 'the delivery profile editor is a modal dialog with its name field, a switch and number boxes per rule, and Save profile',

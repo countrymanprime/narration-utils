@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { chapterName, context } from '../../chapterName';
 import { useApi } from '../../api/ApiContext';
@@ -10,7 +10,7 @@ import { AssetFacts } from '../assets/AssetFacts';
 import { AssetInstallPrompt } from '../assets/AssetInstallPrompt';
 import { MappingConfirm } from '../mapping/MappingConfirm';
 import { Button } from '../primitives/Button';
-import { Dialog } from '../primitives/Dialog';
+import { SlideOver } from '../primitives/SlideOver';
 import type { Notify } from '../primitives/Toast';
 import { WorkDialog } from '../primitives/WorkDialog';
 import { RecordingCheckReport } from './RecordingCheckReport';
@@ -47,9 +47,16 @@ function coverageWorkJob(state: CoverageState, logs: string[], now: number): Wor
  * One chapter's recording check (docs/utilities/recording-coverage.md, ADR 0130): the stored result (current, stale or never, with
  * its reasons and the saved-project basis), the check itself on demand (never on its own, Q14) with real progress and Cancel in the shared
  * work dialog, the Whisper model's first-use question when it is not installed (the download is never silent), and the chapter-track link
- * right in the dialog when the check needs one.
+ * right in the panel when the check needs one.
+ *
+ * A slide-over, opened from the row's check-status cell (daw-chapter-track-auto-sync.prd.md Phase 6, S14; recording-check-summary.prd.md
+ * Phase 4, RS7, D26): retiring the row's own Check button left the summary needing a new home, and a slide-over leaves the table visible
+ * beside it, the same choice chapter-track-link-control.prd.md made for the track panel.
  *
  * `coverage` is the live state the Home panel follows, so a check that was left running in the background is picked up again here.
+ * Mounted conditionally by the caller, same as the dialog it replaces (`{checking && <RecordingCheck .../>}`): a
+ * reopened chapter is a fresh mount, so a run left going in the background, or a refusal from the last time it was
+ * open, is never shown stale.
  */
 export function RecordingCheck({
   chapter,
@@ -200,17 +207,13 @@ export function RecordingCheck({
 
   const otherRunning = coverage.phase === 'running' && coverage.chapterId !== chapter.id;
   const checked = result?.state === 'current' || result?.state === 'stale';
+  const checkButton = (
+    <Button onClick={() => void start()} pending={actions.isPending('check')} disabled={otherRunning}>
+      {checked ? 'Check again' : 'Check recording'}
+    </Button>
+  );
   return (
-    <Dialog
-      title={chapterName(chapter, context('Recording check'))}
-      onClose={close}
-      actionsAlign="end"
-      actions={
-        <Button onClick={() => void start()} pending={actions.isPending('check')} disabled={otherRunning}>
-          {checked ? 'Check again' : 'Check recording'}
-        </Button>
-      }
-    >
+    <SlideOver open title={chapterName(chapter, context('Recording check'))} onClose={close}>
       <div className="space-y-4 text-sm">
         {refusal && (
           <ReasonBlock
@@ -230,9 +233,17 @@ export function RecordingCheck({
             Another chapter is being checked. Check this one when it finishes.
           </p>
         )}
-        <ResultBody chapter={chapter} result={result} loadError={loadError} retry={load} goToParagraph={goToParagraph} showReasons={!refusal} />
+        <ResultBody
+          chapter={chapter}
+          result={result}
+          loadError={loadError}
+          retry={load}
+          goToParagraph={goToParagraph}
+          showReasons={!refusal}
+          checkButton={checkButton}
+        />
       </div>
-    </Dialog>
+    </SlideOver>
   );
 }
 
@@ -243,6 +254,7 @@ function ResultBody({
   retry,
   goToParagraph,
   showReasons,
+  checkButton,
 }: {
   chapter: ManuscriptChapter;
   result?: CoverageResult;
@@ -250,6 +262,9 @@ function ResultBody({
   retry: () => Promise<void>;
   goToParagraph: (index: number) => void;
   showReasons: boolean;
+  /** Check recording / Check again (recording-check-summary.prd.md Phase 4): the slide-over has no dialog action bar,
+   * so it sits with the report's own figures when there is a report, and right here otherwise. */
+  checkButton: ReactNode;
 }) {
   if (loadError) {
     return (
@@ -279,6 +294,7 @@ function ResultBody({
           {showReasons && result.reasons.length > 0 && (
             <ReasonBlock tone="note" title="Before checking" reasons={result.reasons} chapter={chapter} onLinked={retry} />
           )}
+          {checkButton}
         </>
       )}
       {result.state === 'stale' && (
@@ -297,7 +313,9 @@ function ResultBody({
           {result.result ? ` with the ${result.result.model} Whisper model` : ''}.
         </p>
       )}
-      {result.result && <RecordingCheckReport chapter={chapter} report={result.result} judgement={result.judgement} goToParagraph={goToParagraph} />}
+      {result.result && (
+        <RecordingCheckReport chapter={chapter} report={result.result} judgement={result.judgement} goToParagraph={goToParagraph} actionsSlot={checkButton} />
+      )}
     </>
   );
 }
