@@ -1,0 +1,36 @@
+{
+  "experimental_off": {
+    "status": "unavailable",
+    "reason": "experimental_off",
+    "message": "Reading REAPER's tracks is an experimental action. Turn on Experimental REAPER actions in Settings to use it.",
+    "candidates": []
+  },
+  "matched": {
+    "status": "matched",
+    "message": "REAPER records from \"Shure MV7\", so \"Microphone (2- Shure MV7)\" is selected.",
+    "reaperDevice": "Shure MV7",
+    "device": "Microphone (2- Shure MV7)",
+    "candidates": []
+  },
+  "no_match": {
+    "status": "no_match",
+    "message": "REAPER records from \"ASIO4ALL v2\", which does not match a microphone here. Choose the microphone yourself.",
+    "reaperDevice": "ASIO4ALL v2",
+    "candidates": []
+  },
+  "reaper_no_device": {
+    "status": "unavailable",
+    "reason": "reaper_no_device",
+    "message": "REAPER did not say which input device it has open. Choose the microphone yourself.",
+    "candidates": []
+  },
+  "uncertain": {
+    "status": "uncertain",
+    "message": "REAPER records from \"Focusrite USB ASIO\", which could be any of 2 microphones here. Choose the one REAPER uses.",
+    "reaperDevice": "Focusrite USB ASIO",
+    "candidates": [
+      "Microphone (Focusrite USB Audio)",
+      "Line (Focusrite USB Audio)"
+    ]
+  }
+}

@@ -9,7 +9,7 @@ import { WIRE_TAKE_REVIEW_FINDINGS, WIRE_TRACKS_PROJECT, WIRE_TRANSCRIPT } from 
 import { WIRE_TAKE_COMPARISON_FINDING } from './takeComparisonMock';
 import { MOCK_MEASURE_PATHS } from './measureMock';
 import { judgeMock } from './coverageMock';
-import { MOCK_REAPER_SEEDS, mockLastReading } from './teleprompterMock';
+import { MOCK_REAPER_INPUT_SEEDS, MOCK_REAPER_SEEDS, mockLastReading } from './teleprompterMock';
 import { deliveryQcEvidenceSchema, deliveryReportExportSchema, measureJobSchema, measurePickResultSchema } from './schemas/measure';
 import { deliveryProfileSchema, deliveryProfilesStateSchema } from './schemas/deliveryProfiles';
 import { MOCK_ACX, evaluateMockFile, mockCustomProfile } from './deliveryProfilesMock';
@@ -71,6 +71,7 @@ import { guideBuildResultSchema, guideCreatedSchema, guideEntitiesSchema, guideP
 import { bootstrapSchema, jobEndedSchema, noticeSchema, projectAttachStateSchema, readySchema } from './schemas/system';
 import {
   readAloudReaperStateSchema,
+  teleprompterReaperInputSchema,
   teleprompterDevicesResultSchema,
   teleprompterEventSchema,
   teleprompterFlagFindingsSchema,
@@ -136,6 +137,7 @@ const GOLDEN: Record<string, z.ZodType> = {
   'teleprompter-level.json': teleprompterEventSchema.array(),
   'teleprompter-meter-stopped.json': teleprompterEventSchema.array(),
   'read-aloud-reaper-states.json': z.record(z.string(), readAloudReaperStateSchema),
+  'teleprompter-reaper-inputs.json': z.record(z.string(), teleprompterReaperInputSchema),
   'manuscript-import-selected.json': workJobSchema,
   'manuscript-import-preview.json': workJobSchema,
   'manuscript-import-preview-repaired.json': workJobSchema,
@@ -425,6 +427,19 @@ describe('golden payloads written by the Go host and the Python sidecars', () =>
       const host = golden[seed === 'unavailable' ? 'experimental_off' : seed];
       if (seed !== 'unavailable') expect([state.status, state.reason]).toEqual([host.status, host.reason]);
     }
+  });
+
+  it("every mock REAPER input answer passes the schema, preselects only a listed microphone, and matches the host's golden", async () => {
+    const golden = z.record(z.string(), teleprompterReaperInputSchema).parse(readGolden('teleprompter-reaper-inputs.json'));
+    for (const seed of MOCK_REAPER_INPUT_SEEDS) {
+      const api = createMockApi({}, { reaperInput: seed });
+      const input = await api.teleprompterReaperInput();
+      expectMatches(teleprompterReaperInputSchema, input, `mock reaper input ${seed}`);
+      expect([input.status, input.reason]).toEqual([golden[seed].status, golden[seed].reason]);
+      const listed = (await api.teleprompterDevices()).devices.map((device) => device.name);
+      if (input.device !== undefined) expect(listed).toContain(input.device);
+    }
+    expect(() => parseWire(teleprompterReaperInputSchema, { status: 'no_match', device: 'X', message: '', candidates: [] }, ctx('reaper input'))).toThrow();
   });
 
   it('the stage cause and refusal lists are the ones the host declares', () => {
@@ -1873,6 +1888,7 @@ describe('answers of the mock client for the settings, voice, model, transcript 
       'teleprompterLocate',
       'teleprompterSaveFlags',
       'readAloudReaperState',
+      'teleprompterReaperInput',
       'updateStatus',
       'updateCheck',
       'updateDownload',

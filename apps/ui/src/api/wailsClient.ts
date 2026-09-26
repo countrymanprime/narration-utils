@@ -58,6 +58,7 @@ import { bootstrapSchema, jobEndedSchema, noticeSchema, projectAttachStateSchema
 import {
   TELEPROMPTER_EVENT_TYPES,
   readAloudReaperStateSchema,
+  teleprompterReaperInputSchema,
   teleprompterDevicesResultSchema,
   teleprompterEventSchema,
   teleprompterFlagFindingsSchema,
@@ -459,6 +460,7 @@ export const wailsClient: NarrationApi = {
   teleprompterMeterStop: () => decode(voidResult, 'TeleprompterMeterStop', host.TeleprompterMeterStop()),
   teleprompterPause: (paused) => decode(voidResult, 'TeleprompterPause', host.TeleprompterPause(paused)),
   readAloudReaperState: (chapterId) => decode(readAloudReaperStateSchema, 'ReadAloudReaperState', host.ReadAloudReaperState(chapterId)),
+  teleprompterReaperInput: () => decode(teleprompterReaperInputSchema, 'TeleprompterReaperInput', host.TeleprompterReaperInput()),
   teleprompterLocate: (chapterId, options) =>
     decode(teleprompterLocateResultSchema, 'TeleprompterLocate', host.TeleprompterLocate(chapterId, options?.trackGuid ?? '', options?.model ?? '')),
   subscribeTeleprompterEvent: subscribeTeleprompterEvents,
