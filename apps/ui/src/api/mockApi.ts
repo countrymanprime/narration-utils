@@ -104,6 +104,7 @@ import { mockChapterSuggestion, mockChaptersForTracks } from './chapterSuggestio
 import { mockImportPreview, mockImportPreviewLog, type MockImportKind } from './mockImportPreview';
 import { createTeleprompterMock, type MockReaperInputSeed, type MockReaperSeed, type TeleprompterSeed } from './teleprompterMock';
 import { createCoverageMock, type CoverageSeed } from './coverageMock';
+import { createWorkspaceMock } from './workspaceMock';
 import { createStagesMock, type StagesSeed } from './stagesMock';
 import type { MockResumeSeed } from './resumeMockSeed';
 import { createFindingsMock, type MockReaper } from './findingsMock';
@@ -1293,6 +1294,7 @@ export function createMockApi(
     },
     seed: initial.coverage,
   });
+  const workspace = createWorkspaceMock({ chapters: () => chapters, paragraphs: () => paragraphs, coverageResult: peekCoverage });
   const stages = createStagesMock({
     ready: manuscriptReady,
     chapters: () => chapters.map(withMeasurement),
@@ -2533,6 +2535,7 @@ export function createMockApi(
     },
     ...teleprompter,
     ...coverage,
+    ...workspace,
     ...stages,
     ...findings,
     mediaUrl: (sourceFile) => mockAudioSource() ?? sourceFile,
