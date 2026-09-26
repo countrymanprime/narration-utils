@@ -342,6 +342,24 @@
     "replace": "if false then"
   },
   {
+    "name": "apply_cleanup_trims opens an undo block even when nothing was applied",
+    "file": "narration_cleanup_preview.lua",
+    "find": "if #plan > 0 then\n    reaper.Undo_BeginBlock2(0)",
+    "replace": "if true then\n    reaper.Undo_BeginBlock2(0)"
+  },
+  {
+    "name": "the cleanup range tolerance widens, so a stale trim is applied anyway",
+    "file": "narration_cleanup_preview.lua",
+    "find": "local EDGE_TOLERANCE = 0.000001",
+    "replace": "local EDGE_TOLERANCE = 1"
+  },
+  {
+    "name": "apply_cleanup_trims stops sorting candidates by descending cut-start, so an earlier split silently drops a later one on the same item",
+    "file": "narration_cleanup_preview.lua",
+    "find": "table.sort(plan, function(a, b)\n    return a.cut_start > b.cut_start\n  end)",
+    "replace": "table.sort(plan, function(a, b)\n    return false\n  end)"
+  },
+  {
     "name": "pick_retake_lane plays a lane on a track that is not in fixed-lane mode",
     "file": "narration_retake_lanes.lua",
     "find": "if reaper.GetMediaTrackInfo_Value(track, 'I_FREEMODE') ~= FIXED_LANE_MODE then",

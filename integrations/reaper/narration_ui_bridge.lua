@@ -19,6 +19,7 @@ local M = {}
 -- the load, so the launcher reports it before it starts the app.
 M.FEATURE_FILES = {
   'narration_cleanup.lua',
+  'narration_cleanup_preview.lua',
   'narration_compare.lua',
   'narration_line_identity.lua',
   'narration_pickups.lua',

@@ -30,9 +30,13 @@ var realEvents = map[string][]string{
 	"RENDER_CONFIGURED":     {"RENDER_CONFIGURED", "t1", "C:/p/renders", "2", "C:/p/renders/Chapter 1.wav;C:/p/renders/Chapter 2.wav"},
 	"PROJECT_STATE":         {"PROJECT_STATE", "t1", "7", "C:/p/Book.rpp"},
 	"CLEANUP_LAUNCHED":      {"CLEANUP_LAUNCHED", "t1", "repair_pops_clicks", "Item: Repair pops/clicks..."},
-	"RETAKE_LANE_PICKED":    {"RETAKE_LANE_PICKED", "t1", "line-000004", "{AAAAAAAA-0000-4000-8000-000000000001}", "2"},
-	"TAKE_CREATED":          {"TAKE_CREATED", "t1", "{AAAAAAAA-0000-4000-8000-000000000001}", "{BBBBBBBB-0000-4000-8000-000000000002}"},
-	"TAKE_STALE":            {"TAKE_STALE", "t1", "{AAAAAAAA-0000-4000-8000-000000000001}"},
+	// integrations/reaper/tests/cleanup_preview_test.lua (diagnostics-delivery-and-cleanup-tools PRD Phase 10, ADR 0251).
+	"CLEANUP_STALE":      {"CLEANUP_STALE", "c1", "f-0001", "{AAAAAAAA-0000-4000-8000-000000000001}", "range"},
+	"CLEANUP_PREVIEWED":  {"CLEANUP_PREVIEWED", "c1", "2", "0"},
+	"CLEANUP_APPLIED":    {"CLEANUP_APPLIED", "c1", "1"},
+	"RETAKE_LANE_PICKED": {"RETAKE_LANE_PICKED", "t1", "line-000004", "{AAAAAAAA-0000-4000-8000-000000000001}", "2"},
+	"TAKE_CREATED":       {"TAKE_CREATED", "t1", "{AAAAAAAA-0000-4000-8000-000000000001}", "{BBBBBBBB-0000-4000-8000-000000000002}"},
+	"TAKE_STALE":         {"TAKE_STALE", "t1", "{AAAAAAAA-0000-4000-8000-000000000001}"},
 	// integrations/reaper/tests/navigation_test.lua (review-dashboard PRD Phase 6).
 	"NAVIGATED":     {"NAVIGATED", "n1", "{AAAAAAAA-0000-4000-8000-000000000001}", "102.500000"},
 	"LOOP_STARTED":  {"LOOP_STARTED", "l1", "{AAAAAAAA-0000-4000-8000-000000000001}", "101.000000", "105.000000"},

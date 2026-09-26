@@ -643,6 +643,23 @@ function Fake:add_item_api(api)
     end
     return false, ''
   end
+  -- Forgets the item's reference to its take(s): the source file on disk is never touched, matching REAPER's own
+  -- documented behaviour (narration_cleanup_preview.lua's apply_cleanup_trims). Returns true when found, like REAPER.
+  function api.DeleteTrackMediaItem(track, item)
+    for index, candidate in ipairs(track.items) do
+      if candidate == item then
+        table.remove(track.items, index)
+        for global_index, global_item in ipairs(fake.items) do
+          if global_item == item then
+            table.remove(fake.items, global_index)
+            break
+          end
+        end
+        return true
+      end
+    end
+    return false
+  end
 end
 
 function Fake:add_take_api(api)

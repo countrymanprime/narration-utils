@@ -35,6 +35,7 @@ H.test('the bridge registers exactly the commands the host and the docs know abo
   H.eq(s.bridge.new_registry().names(), {
     'add_finding_marker',
     'add_take_fx',
+    'apply_cleanup_trims',
     'apply_fx_chain',
     'arm_only',
     'chapter_track_state',
@@ -58,6 +59,7 @@ H.test('the bridge registers exactly the commands the host and the docs know abo
     'ping',
     'play_position',
     'prepare_compare',
+    'preview_cleanup_markers',
     'project_state',
     'punch_to',
     'read_line_ids',
