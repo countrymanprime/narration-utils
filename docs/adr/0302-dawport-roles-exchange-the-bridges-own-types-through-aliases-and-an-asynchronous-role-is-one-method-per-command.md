@@ -35,7 +35,7 @@ ADR 0300 names the role interfaces but not what goes through them. Phase 1 (`app
 
 **Refusal wording.** An adapter may implement `Explainer` to word its own refusals, for example Audacity's ADR 0144 sentence or REAPER's "open this app from the Narration Utils action". Otherwise the resolver's own sentence is used. An `experimental_off` refusal also matches `bridge.ErrExperimentalOff` under `errors.Is`, so today's reason mapping keeps working.
 
-**The shared vocabulary lives in `dawport` for now.** `Level`, `Reason`, `Support` and `NotSupportedError` are declared in `dawport` until `internal/port` exists. That package belongs to other lane-K work. Moving the vocabulary there is a type alias in `dawport/vocabulary.go`.
+**The shared vocabulary lives in `internal/port`.** `Level`, `Reason`, `Support` and `NotSupportedError` are declared in `port`, a leaf package the provider ports also use. `dawport/vocabulary.go` makes `Level`, `Reason` and `Support` type aliases of them, and `ErrNotSupported` is `port.ErrNotSupported`. `dawport.NotSupportedError` stays a `dawport` type, for two reasons. Its `Capability` is a `dawport.Capability`, where port's is a string. And its `Is` also matches `bridge.ErrExperimentalOff`, which `port` must not import. It unwraps to the `*port.NotSupportedError`, so `errors.As` and `errors.Is` work with either package's names. That is the sense in which ADR 0300 has `Role` return a `*port.NotSupportedError`.
 
 ## Consequences
 

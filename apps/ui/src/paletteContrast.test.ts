@@ -2,7 +2,7 @@
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, relative, sep } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { countRootRules, parseThemes, resolveContrast, rootRules, type Theme, type TokenMap } from './tokenContrast';
+import { countBoothBlocks, countRootRules, parseThemes, resolveContrast, rootRules, type Theme, type TokenMap } from './tokenContrast';
 
 // The palette guard (ADR 0059). It reads the tokens out of styles.css, in both themes, and asserts that every colour pair
 // the app draws meets WCAG 2.x: 4.5:1 for text (SC 1.4.3) and 3:1 for the marks that carry meaning without being text
@@ -16,7 +16,9 @@ import { countRootRules, parseThemes, resolveContrast, rootRules, type Theme, ty
 
 const CSS = readFileSync(join(__dirname, 'styles.css'), 'utf8');
 const THEMES = parseThemes(CSS);
-const THEME_NAMES: Theme[] = ['light', 'dark'];
+// 'booth' is FocusShell's high-contrast surface (studio-ui-primitives.prd.md Phase 1, ADR 0360 Q1), layered over dark
+// (tokenContrast.ts): every pair below is checked over it too, not only light and dark.
+const THEME_NAMES: Theme[] = ['light', 'dark', 'booth'];
 
 const SURFACES = ['bg', 'surface', 'surface-2', 'surface-3', 'row-alt'] as const;
 const PAGE_SURFACES = ['bg', 'surface', 'surface-2'] as const;
@@ -88,6 +90,12 @@ const PAIRS: PairSpec[] = [
   text('warn-on-accent-soft', 'SKIPPED word in the inline diff: warn text on accent-soft', 'var(--warn-text)', ['surface-2'], 'var(--accent-soft)'),
   text('info', 'the text-safe info colour on the page', 'var(--info-text)', PAGE_SURFACES),
   text('ok', 'a rule met on the Delivery page: the text-safe ok colour', 'var(--ok-text)', PAGE_SURFACES),
+  text(
+    'experimental',
+    'the text-safe experimental colour: an ADR 0300 capability the host reports as experimental (studio-ui-primitives.prd.md Phase 1, ADR 0360 Q6)',
+    'var(--experimental-text)',
+    PAGE_SURFACES,
+  ),
   text('info-on-place-soft', 'EXTRA word in the inline diff: info text on place-soft', 'var(--info-text)', ['surface-2'], 'var(--place-soft)'),
   ...KINDS.map((kind) =>
     text(
@@ -129,6 +137,24 @@ const PAIRS: PairSpec[] = [
   ...[...KINDS, 'note', 'search'].map((kind) => mark(`mark-${kind}`, `the ${kind} highlight underline and category dot`, `var(--${kind})`, READING_SURFACES)),
   mark('mark-warn', 'the Editing status dot and meter segment, and the dotted underline of a skipped word: warn on the surface', 'var(--warn)', ['surface']),
   mark('mark-info', 'the Recording status dot and meter segment: info on the surface', 'var(--info)', ['surface']),
+  // LevelMeter's zones (Phase 1): aliases of --non-text/--ok/--warn/--danger (src/styles.css), each already a declared
+  // pair above; a dedicated row per zone protects the meter's own contrast if a later phase breaks the alias.
+  mark('meter-floor', 'LevelMeter: the below-floor zone, drawn as dim as an icon or a dot', 'var(--meter-floor)', ['surface']),
+  mark('meter-body', 'LevelMeter: the safe recording zone', 'var(--meter-body)', ['surface']),
+  mark('meter-hot', 'LevelMeter: the zone approaching the peak ceiling', 'var(--meter-hot)', ['surface']),
+  mark('meter-over', 'LevelMeter: the zone at or over the peak ceiling', 'var(--meter-over)', ['surface']),
+  // StatusBadge's chip fills (Phase 1): each tone's -text colour on the badge's own 14% tint of that tone.
+  text('badge-ok-fill', "StatusBadge (success): ok text on the badge's own 14% tint", 'var(--ok-text)', ['surface'], 'var(--badge-ok-fill)'),
+  text('badge-warn-fill', "StatusBadge (warning): warn text on the badge's own 14% tint", 'var(--warn-text)', ['surface'], 'var(--badge-warn-fill)'),
+  text('badge-info-fill', "StatusBadge (info): info text on the badge's own 14% tint", 'var(--info-text)', ['surface'], 'var(--badge-info-fill)'),
+  text('badge-danger-fill', "StatusBadge (danger): danger text on the badge's own 14% tint", 'var(--danger-text)', ['surface'], 'var(--badge-danger-fill)'),
+  text(
+    'badge-experimental-fill',
+    "StatusBadge (experimental): experimental text on the badge's own 14% tint",
+    'var(--experimental-text)',
+    ['surface'],
+    'var(--badge-experimental-fill)',
+  ),
 ];
 
 interface KnownFailure {
@@ -165,9 +191,16 @@ describe('the token parser sees every :root rule of styles.css', () => {
     expect(Object.keys(THEMES.light).length).toBeGreaterThan(30);
     expect(THEMES.dark.surface).not.toBe(THEMES.light.surface);
   });
+
+  it('finds exactly one booth block, layered over dark', () => {
+    expect(countBoothBlocks(CSS)).toBe(1);
+    expect(THEMES.booth.surface).not.toBe(THEMES.dark.surface);
+    // Only the tokens the booth block lists are overridden; everything else falls through from dark.
+    expect(THEMES.booth.danger).toBe(THEMES.dark.danger);
+  });
 });
 
-describe('every declared pair meets its minimum contrast, in both themes', () => {
+describe('every declared pair meets its minimum contrast, in every theme', () => {
   for (const theme of THEME_NAMES) {
     for (const spec of PAIRS) {
       const known = KNOWN_FAILURES[spec.id]?.themes.includes(theme);
@@ -262,7 +295,7 @@ describe('placeholder text', () => {
 describe('the text ramp keeps its order', () => {
   // Contrast against the same surface must step down text, then muted, then the non-text mark: equal levels would mean the
   // hierarchy the palette exists to give the eye has collapsed.
-  it('text is stronger than muted, and muted stronger than the non-text mark, on every surface, in both themes', () => {
+  it('text is stronger than muted, and muted stronger than the non-text mark, on every surface, in every theme', () => {
     for (const theme of THEME_NAMES) {
       for (const over of SURFACES) {
         const contrast = (token: string) => resolveContrast(THEMES[theme], { fg: `var(--${token})`, over });
@@ -330,6 +363,7 @@ const NON_TEXT_USES: Record<string, { count: number; what: string }> = {
   },
   'components/storybible/Guide.tsx': { count: 1, what: 'the lock icon beside a locked entry' },
   'components/tracks/TracksPage.tsx': { count: 1, what: 'the dot of a track that has no colour' },
+  'styles.css': { count: 1, what: "LevelMeter's below-floor zone (Phase 1): --meter-floor is a derived alias of --non-text, not text" },
 };
 
 function nonTextMentions(): Record<string, number> {

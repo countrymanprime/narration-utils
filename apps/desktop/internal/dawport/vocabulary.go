@@ -1,55 +1,35 @@
 package dawport
 
 import (
-	"errors"
-
 	"github.com/countrymanprime/narration-utils/shell/internal/bridge"
+	"github.com/countrymanprime/narration-utils/shell/internal/port"
 )
 
-// The shared vocabulary below (Level, Reason, Support, NotSupportedError) is the part of the port the provider ports reuse. The PRD
-// places it in internal/port; until that package exists it lives here, and moving it is a type alias in this file, with no caller
-// change (see the PR for DAW port P1).
+// The shared vocabulary (Level, Reason, Support and the refusal) lives in internal/port, which the provider ports reuse. The names
+// below are aliases of it, so dawport's callers and the port's other users see one set of types and values.
 
 // Level is how far an engine supports a capability, least to most capable, so `level >= Experimental` means the adapter has a role
 // for it.
-type Level int
+type Level = port.Level
 
 const (
-	// Unsupported: the engine cannot do this at all (Audacity has no punch-and-roll).
-	Unsupported Level = iota
-	// NotYetAvailable: the engine can, but this app cannot drive it yet (Audacity until its pipe client lands).
-	NotYetAvailable
-	// Experimental: built, but not yet through the owner's REAPER verification pass. Off unless the narrator turns it on.
-	Experimental
-	// Supported: verified, and on unless the narrator turns it off.
-	Supported
+	Unsupported     = port.Unsupported     // the engine cannot do this at all (Audacity has no punch-and-roll)
+	NotYetAvailable = port.NotYetAvailable // the engine can, but this app cannot drive it yet (Audacity until its pipe client lands)
+	Experimental    = port.Experimental    // built, not yet through the owner's REAPER verification pass; off unless turned on
+	Supported       = port.Supported       // verified, and on unless the narrator turns it off
 )
 
-func (l Level) String() string {
-	switch l {
-	case NotYetAvailable:
-		return "not_yet_available"
-	case Experimental:
-		return "experimental"
-	case Supported:
-		return "supported"
-	default:
-		return "unsupported"
-	}
-}
-
-// Reason is why a capability is unavailable now. The values are the wire enum the UI already switches on (standalone, not_running,
-// experimental_off, failed), extended; the payload carries a Message beside it, so the UI never words a refusal itself.
-type Reason string
+// Reason is why a capability is unavailable now: the wire enum the UI switches on. See port.Reason for each value.
+type Reason = port.Reason
 
 const (
-	ReasonStandalone      Reason = "standalone"       // no bridge at all: the app was opened on its own
-	ReasonNotRunning      Reason = "not_running"      // a bridge, but the DAW's heartbeat has gone quiet
-	ReasonExperimentalOff Reason = "experimental_off" // Experimental and left on auto while experimental actions are off
-	ReasonFailed          Reason = "failed"           // the request was made and failed; never the resolver's answer, only a call's
-	ReasonTurnedOff       Reason = "turned_off"       // the narrator switched this capability off
-	ReasonNotYet          Reason = "not_yet"          // declared NotYetAvailable
-	ReasonUnsupported     Reason = "unsupported"      // declared Unsupported, or not declared at all
+	ReasonStandalone      = port.ReasonStandalone
+	ReasonNotRunning      = port.ReasonNotRunning
+	ReasonExperimentalOff = port.ReasonExperimentalOff
+	ReasonFailed          = port.ReasonFailed
+	ReasonTurnedOff       = port.ReasonTurnedOff
+	ReasonNotYet          = port.ReasonNotYet
+	ReasonUnsupported     = port.ReasonUnsupported
 )
 
 // Toggle is the narrator's per-capability setting, DAW.capability.<name>.
@@ -65,17 +45,15 @@ const (
 
 // Support is the resolver's answer for one capability: the declared Level, whether it can be used now, and when it cannot, why
 // (Reason) in the narrator's words (Message). An available capability has neither.
-type Support struct {
-	Level     Level
-	Available bool
-	Reason    Reason
-	Message   string
-}
+type Support = port.Support
 
-// ErrNotSupported matches every *NotSupportedError under errors.Is.
-var ErrNotSupported = errors.New("dawport: capability not available")
+// ErrNotSupported matches every *NotSupportedError, and every *port.NotSupportedError, under errors.Is.
+var ErrNotSupported = port.ErrNotSupported
 
-// NotSupportedError is Role's refusal. Its Error is Support.Message, a whole sentence for the narrator.
+// NotSupportedError is Role's refusal. Its Error is Support.Message, a whole sentence for the narrator. It is dawport's own type, not
+// an alias of port.NotSupportedError, for two reasons: its Capability is a dawport.Capability, and its Is also matches
+// bridge.ErrExperimentalOff, which port (a leaf shared with the provider ports) must not import. It unwraps to the
+// port.NotSupportedError, so errors.As and errors.Is work with either package's names.
 type NotSupportedError struct {
 	Capability Capability
 	Support    Support
@@ -83,8 +61,14 @@ type NotSupportedError struct {
 
 func (e *NotSupportedError) Error() string { return e.Support.Message }
 
-// Is matches ErrNotSupported and, for an experimental_off refusal, bridge.ErrExperimentalOff: today's consumers map that error to
-// their "experimental_off" reason, and must keep doing so when their role comes from the resolver instead of bridge.Actions.
+// Unwrap is the same refusal in port's vocabulary.
+func (e *NotSupportedError) Unwrap() error {
+	return &port.NotSupportedError{Capability: string(e.Capability), Support: e.Support}
+}
+
+// Is matches, for an experimental_off refusal, bridge.ErrExperimentalOff: today's consumers map that error to their
+// "experimental_off" reason, and must keep doing so when their role comes from the resolver instead of bridge.Actions. It matches
+// ErrNotSupported through Unwrap.
 func (e *NotSupportedError) Is(target error) bool {
-	return target == ErrNotSupported || (e.Support.Reason == ReasonExperimentalOff && target == bridge.ErrExperimentalOff)
+	return e.Support.Reason == ReasonExperimentalOff && target == bridge.ErrExperimentalOff
 }
