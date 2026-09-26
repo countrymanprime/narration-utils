@@ -996,6 +996,10 @@ export function StageRevert(chapterID: string): $CancellablePromise<string> {
  * A selection that is not one word is an error the UI shows as it is. The dictionary is not project-scoped: it is read through the
  * set-once asset registry, not the project services (so there is no h.services() snapshot to take).
  */
+export function SystemCopyDiagnostics(scope: string): $CancellablePromise<string> {
+    return $Call.ByID(399038062, scope);
+}
+
 export function SystemLookup(word: string): $CancellablePromise<string> {
     return $Call.ByID(3310775553, word);
 }
@@ -1012,6 +1016,10 @@ export function SystemLookup(word: string): $CancellablePromise<string> {
  */
 export function SystemNotify(kind: string, title: string, body: string): $CancellablePromise<string> {
     return $Call.ByID(529278034, kind, title, body);
+}
+
+export function SystemOpenLogFolder(): $CancellablePromise<string> {
+    return $Call.ByID(2499200111);
 }
 
 export function SystemReportDiagnostic(kind: string, message: string): $CancellablePromise<string> {

@@ -69,7 +69,7 @@ import {
 } from './schemas/credits';
 import { dawCatalogListSchema } from './schemas/dawCatalog';
 import { guideBuildResultSchema, guideCreatedSchema, guideEntitiesSchema, guidePreviewSchema } from './schemas/storyBible';
-import { bootstrapSchema, jobEndedSchema, noticeSchema, projectAttachStateSchema, readySchema } from './schemas/system';
+import { bootstrapSchema, copyDiagnosticsResultSchema, jobEndedSchema, noticeSchema, projectAttachStateSchema, readySchema } from './schemas/system';
 import {
   readAloudReaperStateSchema,
   teleprompterReaperInputSchema,
@@ -168,6 +168,7 @@ const GOLDEN: Record<string, z.ZodType> = {
   'guide-preview-asset-required.json': guidePreviewSchema,
   'system-lookup-found.json': dictionaryLookupResultSchema,
   'system-lookup-asset-required.json': dictionaryLookupResultSchema,
+  'system-copy-diagnostics.json': copyDiagnosticsResultSchema,
   'project-recents.json': recentProjectsSchema,
   'project-recents-empty.json': recentProjectsSchema,
   'project-switch-attached.json': projectSwitchResultSchema,
@@ -835,6 +836,11 @@ describe('answers of the mock client for the manuscript, Story Bible and project
       'mock lookup, asking for the dictionary',
     );
     await expect(api.systemLookup('two words')).rejects.toThrow(/single word/);
+  });
+
+  it('copy diagnostics answers the saved path', async () => {
+    const api = createMockApi();
+    expectMatches(copyDiagnosticsResultSchema, await api.systemCopyDiagnostics('last_run'), 'mock copy diagnostics');
   });
 
   it('the project picker answers', async () => {
@@ -1775,6 +1781,7 @@ describe('answers of the mock client for the settings, voice, model, transcript 
       'ready',
       'bootstrap',
       'systemLookup',
+      'systemCopyDiagnostics',
       'saveSettings',
       'settingsForScope',
       'selectManuscript',
@@ -1960,6 +1967,7 @@ describe('answers of the mock client for the settings, voice, model, transcript 
       'teleprompterSeek',
       'reportClientDiagnostic',
       'systemNotify',
+      'systemOpenLogFolder',
       'updateOpenNotes',
       'updateShowDownload',
       'deleteCreditsTemplate',

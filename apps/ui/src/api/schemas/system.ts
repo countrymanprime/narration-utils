@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import type { Bootstrap, HostReady, JobEnded, ProjectAttachState } from '../contracts/system';
+import type { Bootstrap, CopyDiagnosticsResult, HostReady, JobEnded, ProjectAttachState } from '../contracts/system';
 import { transcriptStateSchema } from './transcript';
 
 /**
@@ -49,3 +49,6 @@ export const jobEndedSchema = z.object({
   message: z.string(),
   durationMs: z.number(),
 }) satisfies z.ZodType<JobEnded>;
+
+/** SystemCopyDiagnostics's answer (docs/prds/tool-run-logging.prd.md phase 7). */
+export const copyDiagnosticsResultSchema = z.object({ path: z.string() }) satisfies z.ZodType<CopyDiagnosticsResult>;

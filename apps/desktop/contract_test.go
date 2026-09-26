@@ -152,6 +152,22 @@ func TestContractDictionaryLookup(t *testing.T) {
 	contractfile.Check(t, "system-lookup-asset-required", dictionaryAssetRequired(entry, "not_installed", "C:/Users/narrator/AppData/Local/narration-utils/assets/dictionary/oewn/oewn-2025/2025"))
 }
 
+// TestContractCopyDiagnostics pins SystemCopyDiagnostics's answer shape (docs/prds/tool-run-logging.prd.md phase 7).
+func TestContractCopyDiagnostics(t *testing.T) {
+	t.Setenv("APPDATA", t.TempDir())
+	host := NewHost()
+	host.diagnosticsNow = func() time.Time { return time.Date(2026, 9, 26, 12, 0, 0, 0, time.UTC) }
+	host.runLog.Begin("guide").End("ok")
+	folder := t.TempDir()
+	host.pickDiagnosticsFolder = func() (string, error) { return folder, nil }
+	path, err := host.copyDiagnostics(CopyDiagnosticsLastRun)
+	if err != nil {
+		t.Fatal(err)
+	}
+	fixed := strings.ReplaceAll(filepath.ToSlash(path), filepath.ToSlash(folder), "C:/Users/narrator/Documents")
+	contractfile.Check(t, "system-copy-diagnostics", map[string]any{"path": fixed})
+}
+
 // The approved catalogs, built from the repository's real config files with nothing installed (ADR 0069), and the install jobs.
 // contractFixture is what the catalog payloads are built from: the registry of approved assets and the settings that say which is selected.
 type contractFixture struct {

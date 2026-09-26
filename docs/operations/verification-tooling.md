@@ -66,6 +66,12 @@ pnpm --dir apps/ui run aria --update-snapshots    # rewrite the files with the f
 
 Snapshots live in `tests/aria/snapshots/*.aria.yml`, hand-trimmed and commented. Reach a new state with a driver in `tests/visual/app.drivers.ts` (the visual suite needs it anyway) and add a test to `tests/aria/dialogs.spec.ts`. A red run uploads the traces with the visual suite's (`test-results/aria`).
 
+## Reading a run
+
+Every tool run (a host job, a sidecar launch, a Go tool decision) writes one JSON line per event to `%APPDATA%\narration-utils\logs\run.jsonl` (`run`, `tool`, `event`, `ts`, `level`, plus the event's own fields; never manuscript, audio or transcript text, [ADR 0251](../adr/0251-tool-runs-are-logged-as-json-lines-through-slog-with-a-run-id-and-content-is-never-logged.md)), rotated at 5 MiB with two backups (`internal/runlog`). `grep '"run":"<id>"' run.jsonl` (or `jq 'select(.run=="<id>")'`) isolates one run; `Begin`/`End` bound it and `Decision` records why a tool chose what it chose. A sidecar's own stderr for a run with debug on is captured separately, one file per run, at `logs/runs/<run-id>.stderr.jsonl` (pruned to the newest 20, or 7 days).
+
+Turning on Settings > General > "Debug logging" raises the level from `info` to `debug` for new runs (a `NARRATION_DEBUG=1` environment variable forces `debug` for the whole session and cannot be turned back off from Settings, for a support session run from a terminal). "Open log folder" and "Copy diagnostics" (Settings; `SystemOpenLogFolder`, `SystemCopyDiagnostics`) reach the same files: the former opens `logs/` in the file manager, the latter saves one `.jsonl` bundle (the matching `run.jsonl` lines plus, for "last run", that run's stderr file) to a folder the narrator picks, for handing to an agent or attaching to a bug report.
+
 ## Not built, on purpose
 
 These were considered and left out; the reasons are current as of the work that delivered this tooling (`git log` for `docs/prds/verification-and-code-health-tooling.prd.md` recovers the full PRD).

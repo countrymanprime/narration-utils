@@ -55,7 +55,7 @@ import { assetCatalogSchema, assetInstallJobSchema, assetVerifyResultSchema } fr
 import { ttsCatalogSchema, ttsInstallJobSchema } from './schemas/tts';
 import { updateJobSchema, updateStatusSchema } from './schemas/update';
 import { startResultSchema, whisperCatalogSchema, whisperInstallJobSchema } from './schemas/whisper';
-import { bootstrapSchema, jobEndedSchema, noticeSchema, projectAttachStateSchema, readySchema } from './schemas/system';
+import { bootstrapSchema, copyDiagnosticsResultSchema, jobEndedSchema, noticeSchema, projectAttachStateSchema, readySchema } from './schemas/system';
 import {
   TELEPROMPTER_EVENT_TYPES,
   readAloudReaperStateSchema,
@@ -277,6 +277,8 @@ export const wailsClient: NarrationApi = {
   reportClientDiagnostic: (kind, message) => decode(voidResult, 'SystemReportDiagnostic', host.SystemReportDiagnostic(kind, message)),
   systemNotify: (kind, title, body) => decode(voidResult, 'SystemNotify', host.SystemNotify(kind, title, body)),
   systemLookup: (word) => decode(dictionaryLookupResultSchema, 'SystemLookup', host.SystemLookup(word)),
+  systemOpenLogFolder: () => decode(voidResult, 'SystemOpenLogFolder', host.SystemOpenLogFolder()),
+  systemCopyDiagnostics: (scope) => decode(copyDiagnosticsResultSchema, 'SystemCopyDiagnostics', host.SystemCopyDiagnostics(scope)),
   subscribeProjectAttach: (onUpdate) => subscribeChecked('system:attached', projectAttachStateSchema, onUpdate),
   subscribeLiveUpdateHealth: (onDegraded) => liveHealth.subscribe(onDegraded),
   subscribeNotices: (onNotice) => subscribeChecked('system:notice', noticeSchema, (event) => onNotice(event.text)),

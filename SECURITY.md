@@ -36,6 +36,7 @@ especially welcome:
   and the Delivery report it writes (only into the project's `narration-utils/delivery` folder, never over an earlier report, and without
   any local path, audio or manuscript text unless the narrator chooses to include file locations); a report that leaks a path the narrator
   did not include is in scope.
+- The run log every tool run writes (`logs/run.jsonl`, `logs/runs/*.stderr.jsonl`; [ADR 0251](docs/adr/0251-tool-runs-are-logged-as-json-lines-through-slog-with-a-run-id-and-content-is-never-logged.md)) and the diagnostics bundle Settings can save from it (`SystemCopyDiagnostics`) or the folder it can open (`SystemOpenLogFolder`): manuscript, audio or transcript text reaching either is in scope, as is the export landing anywhere but the folder the narrator picked in that session's file picker.
 - The delivery profiles the app reads back to judge the rendered files (the user-level `delivery-profiles.json` beside
   `credit-templates.json`, and the project's choice in `project.json`,
   [ADR 0180](docs/adr/0180-custom-delivery-profiles-are-copies-of-a-built-in-kept-in-a-user-level-file.md)): a file that makes the app
