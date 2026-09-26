@@ -391,7 +391,9 @@ async function openRecordingCheck(page: Page, chapter: string, seed?: string) {
   await homeLoaded(page);
   await clickVisible(page, 'button', /Show per-chapter breakdown/);
   await clickVisible(page, 'button', `Check recording of ${chapter}`);
-  const dialog = page.getByRole('dialog', { name: `Recording check: ${chapter}` });
+  // A prefix match: the dialog's full name also carries the chapter's subtitle when it has one
+  // (chapter-title-display-consistency.prd.md Q6), which this helper's callers do not all pass.
+  const dialog = page.getByRole('dialog', { name: new RegExp(`^Recording check: ${chapter}\\b`) });
   await dialog.getByRole('button', { name: /^Check (recording|again)$/ }).waitFor();
   await dialog.getByText('Reading the last check…').waitFor({ state: 'detached' });
   return dialog;
@@ -432,7 +434,8 @@ async function scrollToStageRows(page: Page) {
 async function openStageEvidence(page: Page, chapter: string) {
   await openStageSuggestions(page, 'mixed');
   await clickVisible(page, 'button', `Why: ${chapter}`);
-  const view = page.getByRole('dialog', { name: `Stage suggestion: ${chapter}` });
+  // A prefix match, for the same reason as openRecordingCheck's above.
+  const view = page.getByRole('dialog', { name: new RegExp(`^Stage suggestion: ${chapter}\\b`) });
   await view.getByRole('button', { name: 'Check now' }).waitFor();
   return view;
 }
@@ -932,7 +935,7 @@ export const APP_DRIVERS: Record<string, Record<string, Driver>> = {
       await settlePage(page);
       await goToPage(page, 'Manuscript');
       await clickVisible(page, 'button', 'Read Chapter 1 aloud');
-      await page.locator('[data-word="35"] [data-highlight="Cursor"]').waitFor();
+      await page.locator('[data-word="32"] [data-highlight="Cursor"]').waitFor();
     },
     // Manual scroll (teleprompter-engines-and-input-devices.prd.md Phase 10), in the dialog: see the Teleprompter page's `following-paused`.
     'read-aloud-following-paused': async (page) => {
@@ -940,7 +943,7 @@ export const APP_DRIVERS: Record<string, Record<string, Driver>> = {
       await settlePage(page);
       await goToPage(page, 'Manuscript');
       await clickVisible(page, 'button', 'Read Chapter 1 aloud');
-      await page.locator('[data-word="35"] [data-highlight="Cursor"]').waitFor();
+      await page.locator('[data-word="32"] [data-highlight="Cursor"]').waitFor();
       await scrollReaderByHand(page);
     },
     // Word-click seek (teleprompter-manuscript-integration.prd.md Phase 4): from the same listening state as above, click
@@ -950,7 +953,7 @@ export const APP_DRIVERS: Record<string, Record<string, Driver>> = {
       await settlePage(page);
       await goToPage(page, 'Manuscript');
       await clickVisible(page, 'button', 'Read Chapter 1 aloud');
-      await page.locator('[data-word="35"] [data-highlight="Cursor"]').waitFor();
+      await page.locator('[data-word="32"] [data-highlight="Cursor"]').waitFor();
       await page
         .getByRole('button', { name: /^Go back to here/ })
         .first()
@@ -965,7 +968,7 @@ export const APP_DRIVERS: Record<string, Record<string, Driver>> = {
       await goToPage(page, 'Manuscript');
       await clickVisible(page, 'button', 'Read Chapter 1 aloud');
       const dialog = page.getByRole('dialog', { name: /Read aloud/ });
-      await dialog.locator('[data-word="35"] [data-highlight="Cursor"]').waitFor();
+      await dialog.locator('[data-word="32"] [data-highlight="Cursor"]').waitFor();
       await dialog.locator('[data-highlight="Character"][role="button"]').first().click();
       await dialog.getByRole('tab', { name: 'Story bible', selected: true }).waitFor();
     },
@@ -1042,7 +1045,7 @@ export const APP_DRIVERS: Record<string, Record<string, Driver>> = {
       await settlePage(page);
       await goToPage(page, 'Manuscript');
       await clickVisible(page, 'button', 'Read Opening credits aloud');
-      const dialog = page.getByRole('dialog', { name: 'Read aloud — Opening credits' });
+      const dialog = page.getByRole('dialog', { name: 'Read aloud: Opening credits' });
       await dialog.getByText('Alice’s Adventures in Wonderland, written by Lewis Carroll, narrated by Ada Finch.').waitFor();
     },
     // The default mock project has no Title/Author/Narrator value set (same as 'credits-entries' above): the C6
@@ -1051,7 +1054,7 @@ export const APP_DRIVERS: Record<string, Record<string, Driver>> = {
     'read-aloud-credits-unresolved': async (page) => {
       await goToPage(page, 'Manuscript');
       await clickVisible(page, 'button', 'Read Opening credits aloud');
-      const dialog = page.getByRole('dialog', { name: 'Read aloud — Opening credits' });
+      const dialog = page.getByRole('dialog', { name: 'Read aloud: Opening credits' });
       await dialog.getByRole('status', { name: /have no value/ }).waitFor();
     },
     'reader-text-small': async (page) => {
@@ -2045,7 +2048,7 @@ export const APP_DRIVERS: Record<string, Record<string, Driver>> = {
       await page.goto('/?mockTeleprompter=listening');
       await settlePage(page);
       await goToPage(page, 'Teleprompter');
-      await page.locator('[data-word="35"] [data-highlight="Cursor"]').waitFor();
+      await page.locator('[data-word="32"] [data-highlight="Cursor"]').waitFor();
     },
     // Manual scroll (teleprompter-engines-and-input-devices.prd.md Phase 10): from the listening state, a mouse wheel over
     // the text pauses following; the text stays where the narrator scrolled it, well past the highlighted word.
@@ -2053,14 +2056,14 @@ export const APP_DRIVERS: Record<string, Record<string, Driver>> = {
       await page.goto('/?mockTeleprompter=listening');
       await settlePage(page);
       await goToPage(page, 'Teleprompter');
-      await page.locator('[data-word="35"] [data-highlight="Cursor"]').waitFor();
+      await page.locator('[data-word="32"] [data-highlight="Cursor"]').waitFor();
       await scrollReaderByHand(page);
     },
     waiting: async (page) => {
       await page.goto('/?mockTeleprompter=waiting');
       await settlePage(page);
       await goToPage(page, 'Teleprompter');
-      await page.locator('[data-word="35"] [data-highlight="Cursor"]').waitFor();
+      await page.locator('[data-word="32"] [data-highlight="Cursor"]').waitFor();
     },
     done: async (page) => {
       await page.goto('/?mockTeleprompter=done');

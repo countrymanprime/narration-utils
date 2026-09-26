@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { chapterName, context } from '../../chapterName';
 import { useApi } from '../../api/ApiContext';
 import { ConfirmDialog } from '../primitives/ConfirmDialog';
 import { Dialog } from '../primitives/Dialog';
@@ -172,12 +173,15 @@ export function ReadAloudDialog({ source, entities = NO_ENTITIES, notes = NO_NOT
     finish(thenFixCredits);
   };
 
-  const title = source.kind === 'chapter' ? source.chapter.title : CREDITS_LABEL[source.credits];
+  // "Read aloud: " is a context prefix (chapter-title-display-consistency.prd.md Q4), so the em dash inside
+  // chapterName's own full name (a subtitle, when there is one) is the only em dash in the title - never two meanings
+  // for the same character. Credits have no subtitle, so this is just "Read aloud: Opening credits" for them.
+  const title = chapterName(source.kind === 'chapter' ? source.chapter : { title: CREDITS_LABEL[source.credits] }, context('Read aloud'));
 
   return (
     <>
       <Dialog
-        title={`Read aloud — ${title}`}
+        title={title}
         size="full"
         onClose={requestClose}
         actions={null}

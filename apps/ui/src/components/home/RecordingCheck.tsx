@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { chapterName, context } from '../../chapterName';
 import { useApi } from '../../api/ApiContext';
 import { describeApiError } from '../../api/errorMessage';
 import { useAssetInstall } from '../../hooks/useAssetInstall';
@@ -184,7 +185,7 @@ export function RecordingCheck({
   if (live) {
     return (
       <WorkDialog
-        title={`Checking ${chapter.title}`}
+        title={`Checking ${chapterName(chapter, 'short')}`}
         job={coverageWorkJob(live, logs, now)}
         cancel={cancel}
         // The check ends with a job:ended event the app announces wherever the narrator is (ADR 0076), and the Home row keeps its percent.
@@ -201,7 +202,7 @@ export function RecordingCheck({
   const checked = result?.state === 'current' || result?.state === 'stale';
   return (
     <Dialog
-      title={`Recording check: ${chapter.title}`}
+      title={chapterName(chapter, context('Recording check'))}
       onClose={close}
       actionsAlign="end"
       actions={

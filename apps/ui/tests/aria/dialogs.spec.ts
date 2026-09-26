@@ -145,16 +145,19 @@ test('the note on reference material reached by keyboard also takes the first Es
 // alone returns focus to the row's Why.
 test('Open recording check in a stage suggestion moves focus into the recording check dialog', async ({ page }) => {
   await openApp(page, DESKTOP, ['home', 'stage-evidence-unknown']);
-  await page.getByRole('dialog', { name: 'Stage suggestion: Chapter 5' }).getByRole('button', { name: 'Open recording check' }).click();
-  const check = page.getByRole('dialog', { name: 'Recording check: Chapter 5' });
+  await page
+    .getByRole('dialog', { name: 'Stage suggestion: Chapter 5 — Advice from a Caterpillar' })
+    .getByRole('button', { name: 'Open recording check' })
+    .click();
+  const check = page.getByRole('dialog', { name: 'Recording check: Chapter 5 — Advice from a Caterpillar' });
   await expect(check).toBeVisible();
-  await expect(page.getByRole('dialog', { name: 'Stage suggestion: Chapter 5' })).toHaveCount(0);
+  await expect(page.getByRole('dialog', { name: 'Stage suggestion: Chapter 5 — Advice from a Caterpillar' })).toHaveCount(0);
   await expect.poll(() => check.evaluate((dialog) => dialog.contains(document.activeElement))).toBe(true);
 });
 
 test('Escape closes a stage suggestion’s evidence and returns focus to its Why button', async ({ page }) => {
   await openApp(page, DESKTOP, ['home', 'stage-evidence-recommended']);
   await page.keyboard.press('Escape');
-  await expect(page.getByRole('dialog', { name: 'Stage suggestion: Chapter 4' })).toHaveCount(0);
+  await expect(page.getByRole('dialog', { name: 'Stage suggestion: Chapter 4 — The Rabbit Sends in a Little Bill' })).toHaveCount(0);
   await expect(page.getByRole('button', { name: 'Why: Chapter 4' })).toBeFocused();
 });

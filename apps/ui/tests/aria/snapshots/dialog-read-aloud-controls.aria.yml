@@ -7,8 +7,8 @@
 - main:
   - alert
   - status
-- dialog "Read aloud — Chapter 1":
-  - heading "Read aloud — Chapter 1" [level=2]
+- 'dialog "Read aloud: Chapter 1 — Down the Rabbit-Hole"':
+  - 'heading "Read aloud: Chapter 1 — Down the Rabbit-Hole" [level=2]'
   - button "Close"
   - toolbar "Reading controls":
     - group "Choose a microphone first.":

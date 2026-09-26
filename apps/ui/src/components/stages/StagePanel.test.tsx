@@ -192,7 +192,7 @@ describe('the evidence view', () => {
     renderPanel(mixedApi());
     await expandBreakdown();
     fireEvent.click(screen.getByRole('button', { name: 'Why: Chapter 4' }));
-    const view = await screen.findByRole('dialog', { name: 'Stage suggestion: Chapter 4' });
+    const view = await screen.findByRole('dialog', { name: 'Stage suggestion: Chapter 4 — The Rabbit Sends in a Little Bill' });
     expect(within(view).getByText(/looks ready to move from Recording to Editing/)).toBeTruthy();
     const check = within(view).getByRole('region', { name: /Every paragraph of the chapter’s text is in the recording/ });
     expect(within(check).getByText('Met.')).toBeTruthy();
@@ -207,19 +207,19 @@ describe('the evidence view', () => {
     renderPanel(mixedApi());
     await expandBreakdown();
     fireEvent.click(screen.getByRole('button', { name: 'Why: Chapter 5' }));
-    const view = await screen.findByRole('dialog', { name: 'Stage suggestion: Chapter 5' });
+    const view = await screen.findByRole('dialog', { name: 'Stage suggestion: Chapter 5 — Advice from a Caterpillar' });
     expect(within(view).getByText('Can’t tell yet.')).toBeTruthy();
     expect(within(view).getByText(/never counts as done/)).toBeTruthy();
     expect(within(view).getByText('Link the track in the recording check, or on the Tracks page.')).toBeTruthy();
     fireEvent.click(within(view).getByRole('button', { name: 'Open recording check' }));
-    expect(await screen.findByRole('dialog', { name: 'Recording check: Chapter 5' })).toBeTruthy();
+    expect(await screen.findByRole('dialog', { name: 'Recording check: Chapter 5 — Advice from a Caterpillar' })).toBeTruthy();
   });
 
   it('links a paragraph the evidence names to the manuscript', async () => {
     const { goToManuscript } = renderPanel(mixedApi());
     await expandBreakdown();
     fireEvent.click(screen.getByRole('button', { name: 'Why: Chapter 6' }));
-    const view = await screen.findByRole('dialog', { name: 'Stage suggestion: Chapter 6' });
+    const view = await screen.findByRole('dialog', { name: 'Stage suggestion: Chapter 6 — Pig and Pepper' });
     expect(within(view).getByText('Not met.')).toBeTruthy();
     fireEvent.click(within(view).getByRole('button', { name: /^Go to paragraph \d+$/ }));
     expect(goToManuscript).toHaveBeenCalledWith(WIRE_CHAPTERS[5].id, expect.any(Number));
@@ -229,7 +229,7 @@ describe('the evidence view', () => {
     renderPanel(mixedApi());
     await expandBreakdown();
     fireEvent.click(screen.getByRole('button', { name: 'Why: Chapter 7' }));
-    const view = await screen.findByRole('dialog', { name: 'Stage suggestion: Chapter 7' });
+    const view = await screen.findByRole('dialog', { name: 'Stage suggestion: Chapter 7 — A Mad Tea-Party' });
     const notice = within(view).getByRole('region', { name: 'Evidence changed since you confirmed' });
     expect(within(notice).getByText(/Nothing has changed/)).toBeTruthy();
     expect(within(view).getByText('What changed')).toBeTruthy();

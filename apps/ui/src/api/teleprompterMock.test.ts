@@ -100,13 +100,14 @@ describe('teleprompter mock', () => {
 
     const script = events[0];
     if (script.type !== 'script') throw new Error('the script event must come first');
-    const words =
-      tokenize(`${chapters[0].title} ${chapters[0].subtitle}`).length + paragraphs.reduce((total, paragraph) => total + tokenize(paragraph.text).length, 0);
+    // The title span counts the title's own words only (chapter-title-display-consistency.prd.md Q9); the subtitle is
+    // shown but never part of what is tracked.
+    const words = tokenize(chapters[0].title).length + paragraphs.reduce((total, paragraph) => total + tokenize(paragraph.text).length, 0);
     expect(script.tokens).toBe(words);
     expect(script.spans.map((span) => [span.kind, span.start, span.count])).toEqual([
-      ['title', 0, 5],
-      ['paragraph', 5, 15],
-      ['paragraph', 20, 15],
+      ['title', 0, 2],
+      ['paragraph', 2, 15],
+      ['paragraph', 17, 15],
     ]);
     const positions = events.flatMap((event) => (event.type === 'position' ? [event] : []));
     expect(positions.at(-1)).toMatchObject({ read: words, status: 'done' });
@@ -125,7 +126,9 @@ describe('teleprompter mock', () => {
     const states: TeleprompterState[] = [];
     mock.subscribeTeleprompterState((state) => states.push(state));
     await mock.teleprompterStart(options);
-    await vi.advanceTimersByTimeAsync(20_000);
+    // 32 tracked words * REPLAY_SECONDS_PER_WORD (0.45) is a 14.4s replay, so the auto-stop timer (armed at the end,
+    // AUTO_STOP_MS later) fires at ~19.4s: 17s lands after the replay ends but before it fires.
+    await vi.advanceTimersByTimeAsync(17_000);
     expect(states.at(-1)?.message).toMatch(/Stopping in 5 seconds/);
 
     await mock.teleprompterSeek(3);
@@ -198,7 +201,7 @@ describe('teleprompter mock', () => {
     const reads = events.flatMap((event) => (event.type === 'position' ? [event.read] : []));
     expect(reads[0]).toBe(12);
     expect(Math.min(...reads)).toBe(12);
-    expect(reads.at(-1)).toBe(35);
+    expect(reads.at(-1)).toBe(32);
   });
 
   it('asks for the model first when it is not installed', async () => {

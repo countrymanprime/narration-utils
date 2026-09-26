@@ -35,6 +35,10 @@ export type ReaderRow = {
   /** The whitespace after each word, aligned with `words`; null exactly when `words` is. */
   gaps: string[] | null;
   text: string;
+  /** The title row's subtitle (chapter-title-display-consistency.prd.md Q9), kept off a paragraph row: shown under the
+   * title, in source casing, but never joined into `text` - only the title's own words are in the sidecar's span, so
+   * the subtitle stays on screen without being tracked. */
+  subtitle?: string;
 };
 
 /**
@@ -51,11 +55,12 @@ export function buildRows(
   const rows: ReaderRow[] = [];
   for (const span of script.spans) {
     if (span.kind === 'title') {
-      const candidates = [chapter.title, chapter.subtitle ? `${chapter.title} ${chapter.subtitle}` : ''].filter(Boolean);
-      const fit = candidates.find((text) => tokenize(text).length === span.count);
-      const text = fit ?? candidates[0] ?? script.chapter.title;
-      const split = fit ? splitWords(fit) : null;
-      rows.push({ key: span.id, kind: 'title', start: span.start, words: split?.words ?? null, gaps: split?.gaps ?? null, text });
+      // The sidecar's title span counts the title's own words only (chapter_script.py) - the subtitle is never glued
+      // into the tracked text, so it renders as its own line without being part of what the tracker follows (Q9).
+      const text = chapter.title || script.chapter.title;
+      const fit = tokenize(text).length === span.count;
+      const split = fit ? splitWords(text) : null;
+      rows.push({ key: span.id, kind: 'title', start: span.start, words: split?.words ?? null, gaps: split?.gaps ?? null, text, subtitle: chapter.subtitle });
       continue;
     }
     const paragraph = byId.get(span.id);
@@ -76,9 +81,8 @@ export function buildRows(
 
 /** The chapter as plain rows, for reading it before a session (and so its spans) exists. */
 export function previewRows(chapter: Pick<ManuscriptChapter, 'title' | 'subtitle'>, paragraphs: ManuscriptParagraph[]): ReaderRow[] {
-  const title = chapter.subtitle ? `${chapter.title} ${chapter.subtitle}` : chapter.title;
   return [
-    { key: 'title', kind: 'title', start: 0, words: null, gaps: null, text: title },
+    { key: 'title', kind: 'title', start: 0, words: null, gaps: null, text: chapter.title, subtitle: chapter.subtitle },
     ...paragraphs.map((paragraph): ReaderRow => ({ key: paragraph.id, kind: 'paragraph', start: 0, words: null, gaps: null, text: paragraph.text })),
   ];
 }

@@ -210,7 +210,9 @@ const idle: TeleprompterState = {
 };
 
 function buildScript(chapter: ManuscriptChapter, paragraphs: ManuscriptParagraph[]): { script: TeleprompterScript; words: string[] } {
-  const titleWords = tokenize(chapter.subtitle ? `${chapter.title} ${chapter.subtitle}` : chapter.title);
+  // The title span counts the title's own words only (chapter-title-display-consistency.prd.md Q9) - the same as the
+  // real sidecar (chapter_script.py); the subtitle is shown but never tracked, so it must not shift word positions.
+  const titleWords = tokenize(chapter.title);
   const words = [...titleWords];
   const spans: TeleprompterScript['spans'] = [{ kind: 'title', id: chapter.id, index: null, start: 0, count: titleWords.length }];
   for (const paragraph of paragraphs.filter((item) => item.chapterId === chapter.id)) {

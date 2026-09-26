@@ -5,8 +5,8 @@
 - main:
   - alert
   - status
-- 'dialog "Stage suggestion: Chapter 4"':
-  - 'heading "Stage suggestion: Chapter 4" [level=3]'
+- 'dialog "Stage suggestion: Chapter 4 — The Rabbit Sends in a Little Bill"':
+  - 'heading "Stage suggestion: Chapter 4 — The Rabbit Sends in a Little Bill" [level=3]'
   - button "Close"
   - button "Confirm Editing"
   - button "Dismiss"

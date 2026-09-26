@@ -525,7 +525,7 @@ export const STATE_CATALOG: StateEntry[] = [
     page: 'manuscript',
     state: 'read-aloud-credits',
     description:
-      'Manuscript, the "Read aloud" dialog opened from the Opening credits card\'s own Read aloud button (manuscript-credits-card-parity.prd.md Phase 2, ADR 0260) - titled "Read aloud — Opening credits", every token filled (?mockCredits=filled), no resume prompt and no unresolved-token warning',
+      'Manuscript, the "Read aloud" dialog opened from the Opening credits card\'s own Read aloud button (manuscript-credits-card-parity.prd.md Phase 2, ADR 0260) - titled "Read aloud: Opening credits" (chapter-title-display-consistency.prd.md Q4), every token filled (?mockCredits=filled), no resume prompt and no unresolved-token warning',
   },
   {
     page: 'manuscript',

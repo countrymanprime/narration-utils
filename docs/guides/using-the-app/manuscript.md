@@ -68,8 +68,9 @@ narration chapter.
 ![Manuscript, the retail sample marked on lines 1 to 3 of Chapter 3](../../images/ui/manuscript-retail-sample.webp)
 
 Each narration chapter's header has a **Read aloud** button. It opens the [Teleprompter](teleprompter.md)
-read-along for that chapter in a full-screen dialog titled "Read aloud — " and the chapter title, with a
-compact control bar at the bottom that stays in view while you scroll: **Play**, **Stop reading**, the
+read-along for that chapter in a full-screen dialog titled "Read aloud: " and the chapter's name - its
+title, and its subtitle after an em dash when it has one, the same as everywhere else the app shows a
+chapter's name. A compact control bar at the bottom stays in view while you scroll: **Play**, **Stop reading**, the
 microphone (a popover with its device list and Refresh) and **Settings** (a popover with the engine and
 model). Closing the dialog while it is still listening asks first ("Stop reading?"); Stop and close ends the
 session, and nothing recorded in REAPER is affected.
@@ -112,8 +113,8 @@ chapter again does not add the same flag twice.
 
 ![Manuscript - a suspected restart opened in the Flags tab, with the script's words and what was heard](../../images/ui/manuscript-read-aloud-flag.webp)
 
-Reading the opening or closing credits opens the same dialog and control bar, titled "Read aloud —
-Opening credits" or "Read aloud — Closing credits", but a few things are different: there is no **Where
+Reading the opening or closing credits opens the same dialog and control bar, titled "Read aloud:
+Opening credits" or "Read aloud: Closing credits", but a few things are different: there is no **Where
 you stopped** notice (the credits are not on a REAPER track), and a warning naming any token still
 without a value takes its place when one is unresolved, with **Fill them in Settings** — the same
 warning and action the [Teleprompter](teleprompter.md) page shows for the credits. Flags are still shown
