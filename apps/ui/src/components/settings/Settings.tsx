@@ -29,6 +29,9 @@ const SETTINGS_CATEGORIES: SettingsCategory[] = [
   // The recording check's thresholds and alignment (docs/utilities/recording-coverage.md, ADR 0131), Proposed and uncalibrated.
   { key: 'RecordingCoverage', label: 'Recording check', tool: 'RecordingCoverage', scopes: ['global', 'project'] },
   { key: 'TranscriptCompare', label: 'Proofing', tool: 'TranscriptCompare', scopes: ['global', 'project'] },
+  // Which signals must be met for a stage suggestion (docs/prds/chapter-stage-recommendations.prd.md Phase 6, Q8):
+  // one choice field per signal id a provider declares, plus the master switch.
+  { key: 'StageRecommendations', label: 'Stage suggestions', tool: 'StageRecommendations', scopes: ['global', 'project'] },
   { key: 'ManuscriptGuide', label: 'Story Bible', tool: 'ManuscriptGuide', scopes: ['global', 'project'] },
   // The delivery profile a project is judged against, and the custom profiles (docs/prds/delivery-platform-profiles.prd.md, ADR 0179).
   { key: 'Delivery', label: 'Delivery', scopes: ['project', 'global'] },

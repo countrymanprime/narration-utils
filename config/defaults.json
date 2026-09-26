@@ -42,6 +42,10 @@
     "min_anchor_run": "3",
     "background_checks": "true"
   },
+  "StageRecommendations": {
+    "suggestions_enabled": "true",
+    "recording.text_present": "required"
+  },
   "TakeReview": {
     "full_coverage_threshold": "0.9",
     "near_duplicate_quality_threshold": "0.97",
