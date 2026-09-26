@@ -34,7 +34,9 @@ async function openBreakdown(initial: Initial = {}, overrides: Partial<Narration
 const row = (title: string) => screen.getByRole('link', { name: new RegExp(`^${title}\\b`) }).closest('tr') as HTMLElement;
 const openCheck = async (title: string) => {
   fireEvent.click(screen.getByRole('button', { name: `Check recording of ${title}` }));
-  return screen.findByRole('dialog', { name: `Recording check: ${title}` });
+  // The dialog title is the chapter's full name (chapter-title-display-consistency.prd.md Q6): a prefix match keeps
+  // this helper working whether or not the mock chapter also carries a subtitle after the title.
+  return screen.findByRole('dialog', { name: new RegExp(`^Recording check: ${title}\\b`) });
 };
 
 describe('recording check on Home', () => {
@@ -127,7 +129,7 @@ describe('recording check on Home', () => {
     const progress = await screen.findByRole('dialog', { name: 'Checking Chapter 7' });
     expect(within(progress).getByRole('progressbar')).toBeTruthy();
     expect(within(progress).getByRole('button', { name: 'Cancel' })).toBeTruthy();
-    const result = await screen.findByRole('dialog', { name: 'Recording check: Chapter 7' }, { timeout: 3000 });
+    const result = await screen.findByRole('dialog', { name: 'Recording check: Chapter 7 — A Mad Tea-Party' }, { timeout: 3000 });
     expect(await within(result).findByText('Passes the check')).toBeTruthy();
     fireEvent.click(within(result).getByRole('button', { name: 'Close' }));
     await waitFor(() => expect(within(row('Chapter 7')).getByText('—', { selector: 'td:nth-child(5) *' })).toBeTruthy());
@@ -141,7 +143,7 @@ describe('recording check on Home', () => {
     fireEvent.click(within(progress).getByRole('button', { name: 'Cancel' }));
     expect((await within(progress).findByRole('status')).textContent).toMatch(/^Cancelled\./);
     fireEvent.click(within(progress).getByRole('button', { name: 'Close' }));
-    expect(await screen.findByRole('dialog', { name: 'Recording check: Chapter 7' })).toBeTruthy();
+    expect(await screen.findByRole('dialog', { name: 'Recording check: Chapter 7 — A Mad Tea-Party' })).toBeTruthy();
   });
 
   it('keeps the row’s percent when the check is sent to the background, and reopens its progress', async () => {

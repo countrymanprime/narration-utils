@@ -19,14 +19,16 @@ import {
 } from './readerModel';
 import type { GuideEntity, ManuscriptNote, ManuscriptParagraph, TeleprompterPosition, TeleprompterScript, TeleprompterState } from '../../types';
 
+// The sidecar's title span counts the title's own words only (chapter-title-display-consistency.prd.md Q9) - "CHAPTER
+// ONE" is 2 tokens; the subtitle is never part of what the span tracks.
 const script: TeleprompterScript = {
   type: 'script',
-  chapter: { id: 'c1', title: 'CHAPTER ONE Down the Rabbit-Hole' },
-  tokens: 11,
+  chapter: { id: 'c1', title: 'CHAPTER ONE' },
+  tokens: 8,
   spans: [
-    { kind: 'title', id: 'c1', index: null, start: 0, count: 5 },
-    { kind: 'paragraph', id: 'p1', index: 0, start: 5, count: 4 },
-    { kind: 'paragraph', id: 'p2', index: 1, start: 9, count: 2 },
+    { kind: 'title', id: 'c1', index: null, start: 0, count: 2 },
+    { kind: 'paragraph', id: 'p1', index: 0, start: 2, count: 4 },
+    { kind: 'paragraph', id: 'p2', index: 1, start: 6, count: 2 },
   ],
 };
 
@@ -98,10 +100,18 @@ describe('buildRows', () => {
     const rows = buildRows(script, { title: 'CHAPTER ONE', subtitle: 'Down the Rabbit-Hole' }, paragraphs);
 
     expect(rows.map((row) => [row.kind, row.start, row.words?.length])).toEqual([
-      ['title', 0, 5],
-      ['paragraph', 5, 4],
-      ['paragraph', 9, 2],
+      ['title', 0, 2],
+      ['paragraph', 2, 4],
+      ['paragraph', 6, 2],
     ]);
+  });
+
+  it('gives the title row the subtitle apart from its tracked words (chapter-title-display-consistency.prd.md Q9)', () => {
+    const rows = buildRows(script, { title: 'CHAPTER ONE', subtitle: 'Down the Rabbit-Hole' }, paragraphs);
+
+    expect(rows[0].subtitle).toBe('Down the Rabbit-Hole');
+    expect(rows[0].text).toBe('CHAPTER ONE');
+    expect(rows[1].subtitle).toBeUndefined();
   });
 
   it('shows a paragraph as plain text, without word tracking, when its word count disagrees with the sidecar', () => {
@@ -119,21 +129,23 @@ describe('buildRows', () => {
     expect(rows.map((row) => row.key)).toEqual(['c1', 'p2']);
   });
 
-  it('accepts a title that already carries its subtitle', () => {
-    const rows = buildRows(script, { title: 'CHAPTER ONE Down the Rabbit-Hole' }, paragraphs);
+  it('tracks a title whose own word count matches the span, subtitle or none', () => {
+    const gluedScript: TeleprompterScript = { ...script, spans: [{ ...script.spans[0], count: 5 }, ...script.spans.slice(1)] };
+    const rows = buildRows(gluedScript, { title: 'CHAPTER ONE Down the Rabbit-Hole' }, paragraphs);
 
     expect(rows[0].words).toHaveLength(5);
+    expect(rows[0].subtitle).toBeUndefined();
   });
 });
 
 describe('previewRows', () => {
-  it('lists the title and every paragraph as untracked text before a session starts', () => {
+  it('lists the title and every paragraph as untracked text before a session starts, the subtitle apart from the title', () => {
     const rows = previewRows({ title: 'CHAPTER ONE', subtitle: 'Down the Rabbit-Hole' }, paragraphs);
 
-    expect(rows.map((row) => [row.kind, row.words, row.text])).toEqual([
-      ['title', null, 'CHAPTER ONE Down the Rabbit-Hole'],
-      ['paragraph', null, 'Alice was  beginning\nto'],
-      ['paragraph', null, 'very tired'],
+    expect(rows.map((row) => [row.kind, row.words, row.text, row.subtitle])).toEqual([
+      ['title', null, 'CHAPTER ONE', 'Down the Rabbit-Hole'],
+      ['paragraph', null, 'Alice was  beginning\nto', undefined],
+      ['paragraph', null, 'very tired', undefined],
     ]);
   });
 });

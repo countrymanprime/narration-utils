@@ -8,8 +8,8 @@
 - main:
   - alert
   - status
-- dialog "Read aloud — Opening credits":
-  - heading "Read aloud — Opening credits" [level=2]
+- 'dialog "Read aloud: Opening credits"':
+  - 'heading "Read aloud: Opening credits" [level=2]'
   - button "Close"
   - status "Some opening credits tokens have no value":
     - paragraph: Some opening credits tokens have no value

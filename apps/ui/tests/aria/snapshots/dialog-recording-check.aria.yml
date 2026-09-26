@@ -8,8 +8,8 @@
 - main:
   - alert
   - status
-- 'dialog "Recording check: Chapter 4"':
-  - 'heading "Recording check: Chapter 4" [level=2]'
+- 'dialog "Recording check: Chapter 4 — The Rabbit Sends in a Little Bill"':
+  - 'heading "Recording check: Chapter 4 — The Rabbit Sends in a Little Bill" [level=2]'
   - button "Close"
   - paragraph: /Based on the saved REAPER project, file modified Sep \d+, \d+, \d+:\d+ AM\./
   - paragraph: /Checked Sep \d+, \d+, \d+:\d+ AM with the small Whisper model\./

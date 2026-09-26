@@ -462,7 +462,7 @@ describe('ReadAloudDialog flags (teleprompter-manuscript-integration.prd.md Phas
 describe('ReadAloudDialog credits mode (manuscript-credits-card-parity.prd.md, Phase 2)', () => {
   it('titles itself for the credits kind, with no chapter picker and no resume prompt (MC9)', async () => {
     renderCredits();
-    expect(await screen.findByRole('dialog', { name: 'Read aloud — Opening credits' })).toBeTruthy();
+    expect(await screen.findByRole('dialog', { name: 'Read aloud: Opening credits' })).toBeTruthy();
     expect(screen.queryByRole('region', { name: 'Where you stopped' })).toBeNull();
   });
 

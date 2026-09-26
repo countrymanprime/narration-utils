@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
+import { chapterName, context } from '../../chapterName';
 import type { ManuscriptChapter, StageChapterRecommendation, StageEvidence as Evidence, StageSignal } from '../../types';
 import { Button } from '../primitives/Button';
 import { SlideOver } from '../primitives/SlideOver';
@@ -33,7 +34,7 @@ type Props = {
 export function StageEvidence(props: Props) {
   const { open, chapter, recommendation, onClose } = props;
   return (
-    <SlideOver open={open} title={`Stage suggestion: ${chapter?.title ?? recommendation?.title ?? ''}`} onClose={onClose}>
+    <SlideOver open={open} title={chapterName(chapter ?? { title: recommendation?.title ?? '' }, context('Stage suggestion'))} onClose={onClose}>
       {recommendation && chapter ? <EvidenceBody {...props} chapter={chapter} recommendation={recommendation} /> : <Unread {...props} />}
     </SlideOver>
   );

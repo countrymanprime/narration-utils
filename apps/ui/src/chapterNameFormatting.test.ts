@@ -17,6 +17,9 @@ const ALLOW_LIST = new Set([
   join('src', 'components', 'home', 'importReviewModel.ts'),
   // Fits the sidecar's tracked title tokens - not a display site (chapter-title-display-consistency.prd.md, Q9).
   join('src', 'components', 'teleprompter', 'readerModel.ts'),
+  // Renders the read-aloud heading's own stacked title/subtitle (Q9), the same visual convention TitleSubtitle.tsx
+  // uses - but cannot use that primitive itself, since the title here is per-word tracked markup, not a plain string.
+  join('src', 'components', 'teleprompter', 'ReaderText.tsx'),
 ]);
 
 // Phase 1's snapshot of today's count, one entry per file that still reads `.subtitle` directly. Phase 2 moves Home,
@@ -37,7 +40,6 @@ const CEILING: Record<string, number> = {
   // is now only the prop handoff (`subtitle={chapter.subtitle}`), since ReaderCard reads the plain `subtitle` prop,
   // not `.subtitle`.
   [join('src', 'components', 'manuscript', 'Manuscript.tsx')]: 1,
-  [join('src', 'components', 'teleprompter', 'TeleprompterPage.tsx')]: 1,
 };
 
 const uiRoot = join(__dirname, '..');

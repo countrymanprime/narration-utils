@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { chapterName } from '../../chapterName';
 import { Heading } from '../primitives/Heading';
 import { Panel } from '../primitives/Panel';
 import { Select } from '../primitives/Select';
@@ -104,11 +105,7 @@ export function TeleprompterPage({ onFixCredits }: Props = {}) {
   };
 
   const creditsOption = (kind: CreditsKind) => (creditsPreviews[kind] ? [{ value: `${CREDITS_PREFIX}${kind}`, label: CREDITS_LABEL[kind] }] : []);
-  const options = [
-    ...creditsOption('opening'),
-    ...(chapters ?? []).map((item) => ({ value: item.id, label: item.subtitle ? `${item.title}: ${item.subtitle}` : item.title })),
-    ...creditsOption('closing'),
-  ];
+  const options = [...creditsOption('opening'), ...(chapters ?? []).map((item) => ({ value: item.id, label: chapterName(item) })), ...creditsOption('closing')];
 
   return (
     <div className="mx-auto max-w-3xl space-y-4">

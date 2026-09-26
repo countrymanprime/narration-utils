@@ -718,7 +718,7 @@ describe('Manuscript page (integration, driven through the mock NarrationApi)', 
 
       fireEvent.click(within(opening).getByRole('button', { name: 'Read Opening credits aloud' }));
 
-      expect(await screen.findByRole('dialog', { name: 'Read aloud — Opening credits' })).toBeTruthy();
+      expect(await screen.findByRole('dialog', { name: 'Read aloud: Opening credits' })).toBeTruthy();
     });
 
     it('opens the read-aloud modal on the closing credits, titled for that kind', async () => {
@@ -729,7 +729,7 @@ describe('Manuscript page (integration, driven through the mock NarrationApi)', 
 
       fireEvent.click(within(closing).getByRole('button', { name: 'Read Closing credits aloud' }));
 
-      expect(await screen.findByRole('dialog', { name: 'Read aloud — Closing credits' })).toBeTruthy();
+      expect(await screen.findByRole('dialog', { name: 'Read aloud: Closing credits' })).toBeTruthy();
     });
 
     it('shows no Read aloud button on a credits card with nothing to read (preview.words === 0)', async () => {
@@ -746,7 +746,7 @@ describe('Manuscript page (integration, driven through the mock NarrationApi)', 
       const opening = openingHeading.closest('[data-credits-entry]') as HTMLElement;
       await within(opening).findByRole('button', { name: 'Read Opening credits aloud' });
       fireEvent.click(within(opening).getByRole('button', { name: 'Read Opening credits aloud' }));
-      await screen.findByRole('dialog', { name: 'Read aloud — Opening credits' });
+      await screen.findByRole('dialog', { name: 'Read aloud: Opening credits' });
 
       fireEvent.click(screen.getByRole('button', { name: 'Close' }));
 
@@ -759,7 +759,7 @@ describe('Manuscript page (integration, driven through the mock NarrationApi)', 
       const opening = openingHeading.closest('[data-credits-entry]') as HTMLElement;
       await within(opening).findByRole('button', { name: 'Read Opening credits aloud' });
       fireEvent.click(within(opening).getByRole('button', { name: 'Read Opening credits aloud' }));
-      const dialog = await screen.findByRole('dialog', { name: 'Read aloud — Opening credits' });
+      const dialog = await screen.findByRole('dialog', { name: 'Read aloud: Opening credits' });
 
       fireEvent.click(within(dialog).getByRole('button', { name: 'Fill them in Settings' }));
 
