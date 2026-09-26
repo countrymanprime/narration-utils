@@ -33,6 +33,17 @@ test('adrEntry turns a link into its text and escapes a pipe, so the cell stays 
   assert.equal(entry.status, 'Accepted (its exception is superseded by ADR 0056)');
 });
 
+test('adrEntry escapes a backslash too, so a backslash before a pipe cannot unescape it and split the cell', () => {
+  const entry = adrEntry('0042-x.md', '# 0042. A path C:\\| and more\n\n**Status:** Accepted\n');
+  // GFM splits a row at every pipe that an even number of backslashes (none included) precedes.
+  const cells = renderIndex([entry])
+    .split('\n')[2]
+    .split(/(?<=(?:^|[^\\])(?:\\\\)*)\|/);
+
+  assert.equal(entry.title, 'A path C:\\\\\\| and more');
+  assert.equal(cells.length, 5, 'the row has three cells between its outer pipes');
+});
+
 test('adrEntry refuses a file whose heading number is not its file number, or that has no status', () => {
   assert.throws(() => adrEntry('0042-x.md', '# 0043. X\n\n**Status:** Accepted\n'), /0042-x\.md: its heading says 0043/);
   assert.throws(() => adrEntry('0042-x.md', '# 0042. X\n\n**Date:** 2026-09-20\n'), /0042-x\.md has no Status line/);

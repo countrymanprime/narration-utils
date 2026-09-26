@@ -23,7 +23,7 @@ A row is:
 
 - **Number:** the ADR's number, linking to its file.
 - **Title:** the title from its `# NNNN. Title` heading.
-- **Status:** its Status line as written. A Markdown link reads as its text, a `|` is escaped, and the first letter is capitalised, because the first ADRs write `- Status: accepted`.
+- **Status:** its Status line as written. A Markdown link reads as its text, a `\` and a `|` are escaped (the backslash first, so it cannot unescape the pipe), and the first letter is capitalised, because the first ADRs write `- Status: accepted`.
 
 The Status line is the one place a status is recorded, which the README's rule 2 already requires ("The old ADR's `Status` line becomes `Superseded by ADR-NNNN`"). A relationship the index should show goes in the ADR's Status line, not in the table.
 

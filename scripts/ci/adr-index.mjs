@@ -1,7 +1,7 @@
 // Builds the index table of docs/adr/README.md from the ADR files themselves, so the table can never disagree with them.
 //
 // A row is the ADR's number (linking to its file), the title from its `# NNNN. Title` heading, and its Status line as written:
-// a link reads as its text and a pipe is escaped, so every row stays one table row. The ADR's Status line is where a change of
+// a link reads as its text and a backslash or pipe is escaped, so every row stays one table row. The ADR's Status line is where a change of
 // status is recorded (docs/adr/README.md, rule 2), so a superseded ADR shows it here once its own file says so.
 //
 //   node scripts/ci/adr-index.mjs           exits 1 when the table in the README is stale
@@ -25,7 +25,8 @@ const HEADING = /^# (\d{4})\. (.+)$/m;
 const STATUS = /^(?:\*\*Status:\*\*|- Status:)[ \t]*(.+)$/m;
 const LINK = /\[([^\]]+)\]\([^)]+\)/g;
 
-const cell = (text) => text.replace(LINK, '$1').replace(/\|/g, '\\|').trim();
+// Backslashes first, so a backslash in the text cannot unescape the pipe after it.
+const cell = (text) => text.replace(LINK, '$1').replace(/\\/g, '\\\\').replace(/\|/g, '\\|').trim();
 
 /** One ADR's row: its number, file, title and status, as the index shows them. */
 export function adrEntry(file, text) {
