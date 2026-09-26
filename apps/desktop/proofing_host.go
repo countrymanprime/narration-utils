@@ -3,9 +3,12 @@ package main
 import (
 	"fmt"
 	"os"
+	"path/filepath"
+	"time"
 
 	"github.com/countrymanprime/narration-utils/shell/internal/evidence"
 	"github.com/countrymanprime/narration-utils/shell/internal/manuscript"
+	"github.com/countrymanprime/narration-utils/shell/internal/measure"
 	"github.com/countrymanprime/narration-utils/shell/internal/persist"
 	"github.com/countrymanprime/narration-utils/shell/internal/proofing"
 	"github.com/countrymanprime/narration-utils/shell/internal/settings"
@@ -31,6 +34,24 @@ func comparisonRecorder(folder string, text *manuscript.Service, store *settings
 		})
 		if err != nil {
 			reporter.Warn("comparison_record_failed", fmt.Sprintf("The Transcript Compare run was not recorded for the proofing check: %v", err))
+		}
+	}
+}
+
+// renderMeasurementRecorder is the measurement job's per-file hook (proofing-readiness-signals.prd.md Phase 4): a
+// measured file that is some chapter's chosen render becomes one ledger record per such chapter, keyed by the render's
+// fingerprint, with its Report (or failed, with the error). Nil without a project or a manuscript. A record that cannot
+// be written is logged; the measurement the narrator is looking at is unaffected.
+func renderMeasurementRecorder(folder string, text *manuscript.Service, reporter *persist.Reporter) measuredFileFunc {
+	if folder == "" || text == nil {
+		return nil
+	}
+	ledger, renders := evidence.NewLedgerStore(folder), proofing.NewRenderStore(folder)
+	return func(path string, measured measure.FileMeasurement, measureErr error, began time.Time) {
+		_, err := proofing.RecordRenderMeasurements(ledger, renders, manuscriptDocumentID(text), folder, path,
+			measured.Report, measured.Fingerprint.SHA256, measureErr, began, time.Now().UTC())
+		if err != nil {
+			reporter.Warn("render_measurement_record_failed", fmt.Sprintf("The measurement of %s was not recorded for the proofing check: %v", filepath.Base(path), err))
 		}
 	}
 }

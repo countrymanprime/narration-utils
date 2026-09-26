@@ -100,7 +100,13 @@ type measureJob struct {
 	// +checklocks:mu
 	doneWeight int64
 	cancel     context.CancelFunc
+	// measured is told each file's result as it finishes (not a cancelled one), for the proofing signals' render
+	// measurement record (proofing_host.go). Set once before the job's goroutine starts; nil records nothing.
+	measured measuredFileFunc
 }
+
+// measuredFileFunc is told one finished file's result and when its measurement began.
+type measuredFileFunc func(path string, measured measure.FileMeasurement, err error, began time.Time)
 
 func (j *measureJob) running() bool {
 	j.mu.RLock()
@@ -289,9 +295,11 @@ func (h *Host) startMeasure(requested []string) (MeasureJob, error) {
 	ctx, cancel := context.WithCancel(context.Background())
 	id := fmt.Sprintf("measure-%d", time.Now().UnixNano())
 	ctx = runlog.WithRun(ctx, h.jobRuns.begin(h.runLog, id, jobKindMeasurement, "file_count", len(paths)))
+	svc := h.services()
 	job := &measureJob{
 		id: id, phase: "running", started: time.Now(), cancel: cancel,
-		message: fmt.Sprintf("Measuring %s.", countFiles(len(paths))),
+		message:  fmt.Sprintf("Measuring %s.", countFiles(len(paths))),
+		measured: renderMeasurementRecorder(svc.config.projectFolder, svc.manuscript, h.persist),
 	}
 	job.logs = []string{job.message}
 	for _, path := range paths {
@@ -340,11 +348,15 @@ func (h *Host) runMeasure(ctx context.Context, job *measureJob, paths []string, 
 			return
 		}
 		job.begin(index)
+		began := time.Now().UTC()
 		measured, err := measureFile(ctx, path, measure.Options{Progress: func(done, total int64) { job.progress(index, done, total) }})
 		if ctx.Err() != nil {
 			return
 		}
 		job.complete(index, measured, err)
+		if job.measured != nil {
+			job.measured(path, measured, err, began)
+		}
 	}
 }
 

@@ -12,6 +12,7 @@ import (
 	"github.com/countrymanprime/narration-utils/shell/internal/evidence"
 	"github.com/countrymanprime/narration-utils/shell/internal/importer"
 	"github.com/countrymanprime/narration-utils/shell/internal/layout"
+	"github.com/countrymanprime/narration-utils/shell/internal/proofing"
 	"github.com/countrymanprime/narration-utils/shell/internal/stages"
 )
 
@@ -296,6 +297,25 @@ func TestResetDerivedClearsTheRecordingCoverageDirectory(t *testing.T) {
 	}
 	if _, err := os.Stat(coverage.Dir(project)); !os.IsNotExist(err) {
 		t.Fatalf("resetDerived left the recording coverage directory behind: %v", err)
+	}
+}
+
+// The proofing signals' chapter-to-render choices are keyed by documentId and chapter id, which a re-import renumbers,
+// so resetDerived clears their folder (proofing-readiness-signals.prd.md Phase 4: "re-import clears the store").
+func TestResetDerivedClearsTheProofingRenderChoices(t *testing.T) {
+	project := t.TempDir()
+	if err := os.MkdirAll(proofing.Dir(project), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(proofing.RendersFile(project), []byte(`{"version":1,"documents":{}}`), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := resetDerived(project); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := os.Stat(proofing.Dir(project)); !os.IsNotExist(err) {
+		t.Fatalf("resetDerived left the proofing folder behind: %v", err)
 	}
 }
 
