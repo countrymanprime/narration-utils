@@ -468,8 +468,10 @@ func (h *Host) configureLocked(next config) {
 	}, nil)
 	// Every finished comparison is recorded for the proofing pickups signal (proofing-readiness-signals PRD Phase 2).
 	h.transcript.SetRunRecorder(comparisonRecorder(h.config.projectFolder, h.manuscript, settingsStore, h.persist))
+	// The proofing delivery checks judge the chapter's render against the project's delivery profile as it is when the
+	// stages are evaluated (h.proofingProfile reads it then, never under this lock).
 	h.stages = stagesService(h.config.projectFolder, h.manuscript, h.coverage, h.editing, settingsStore, h.coverageUnavailable(h.config.comparePython, settingsStore), h.persist,
-		proofingProvider(h.findings))
+		proofingProvider(h.findings, proofingSources{project: h.config.projectFolder, profile: h.proofingProfile, lengthTolerance: renderLengthTolerance(settingsStore)}))
 	// The Review page's Go to, Loop and Stop (review dashboard PRD Phase 7, bindings_navigation.go) are one more
 	// consumer of the same client: the navigator's answers arrive through the same Drain the transcript loop pumps.
 	h.navigation = newFindingNavigation(client)
@@ -1254,6 +1256,27 @@ var fieldSchemas = map[string][]fieldSchema{
 		// The proofing signal PRD's pickup roll-up (PS Phase 1): open Transcript Compare discrepancies, take review
 		// pickups and repeated reads and read-aloud flags for the chapter, with a current comparison to vouch for it.
 		{proofing.PickupsSignalID, "No pickups left to clear up (proofing)", "choice", []string{"required", "ignored"}},
+		// The proofing delivery checks (PS Phase 5), one per metric proofing.DeliveryChecks lists, plus the render length
+		// check. Choosing "required" here is necessary but not enough: a metric check is required only while the project's
+		// delivery profile has a required rule for it turned on, and the length check only while a tolerance is set
+		// (bindings_stages.go filterRequired, Q7 B), so a narrator with no limit on a metric is never blocked by it.
+		{"proofing.delivery.integrated_lufs", "Rendered file: integrated loudness (proofing)", "choice", []string{"required", "ignored"}},
+		{"proofing.delivery.rms_dbfs", "Rendered file: RMS (proofing)", "choice", []string{"required", "ignored"}},
+		{"proofing.delivery.sample_peak_dbfs", "Rendered file: sample peak (proofing)", "choice", []string{"required", "ignored"}},
+		{"proofing.delivery.true_peak_dbtp", "Rendered file: true peak (proofing)", "choice", []string{"required", "ignored"}},
+		{"proofing.delivery.noise_floor_dbfs", "Rendered file: noise floor (proofing)", "choice", []string{"required", "ignored"}},
+		{"proofing.delivery.sample_rate", "Rendered file: sample rate (proofing)", "choice", []string{"required", "ignored"}},
+		{"proofing.delivery.duration_seconds", "Rendered file: file length (proofing)", "choice", []string{"required", "ignored"}},
+		{"proofing.delivery.head_room_tone_seconds", "Rendered file: room tone, head (proofing)", "choice", []string{"required", "ignored"}},
+		{"proofing.delivery.tail_room_tone_seconds", "Rendered file: room tone, tail (proofing)", "choice", []string{"required", "ignored"}},
+		{proofing.RenderLengthSignalID, "Rendered file: length matches the chapter (proofing)", "choice", []string{"required", "ignored"}},
+	},
+	// Proofing is the proofing signals' own setting (docs/prds/proofing-readiness-signals.prd.md Q9 C): how far, in
+	// seconds, a chapter's rendered file may differ in length from its items' span before the render length check is not
+	// met. Unset by default and then the check is not required: no default is proposed until render-versus-project
+	// lengths are measured on real renders (tails, padding).
+	"Proofing": {
+		{"render_length_tolerance_seconds", "Render length tolerance", "number", nil},
 	},
 	// Editing is the editing-readiness analysis's own policy (docs/prds/editing-readiness-analysis.prd.md Phase 3, Q2,
 	// Q3): the empty-space signal's maximum gap and optional head/tail limits. Every one of the three is unset by

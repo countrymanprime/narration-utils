@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/countrymanprime/narration-utils/shell/internal/deliveryprofile"
 	"github.com/countrymanprime/narration-utils/shell/internal/evidence"
 	"github.com/countrymanprime/narration-utils/shell/internal/manuscript"
 	"github.com/countrymanprime/narration-utils/shell/internal/measure"
@@ -54,6 +55,14 @@ func renderMeasurementRecorder(folder string, text *manuscript.Service, reporter
 			reporter.Warn("render_measurement_record_failed", fmt.Sprintf("The measurement of %s was not recorded for the proofing check: %v", filepath.Base(path), err))
 		}
 	}
+}
+
+// proofingProfile is the delivery profile the open project is judged against now, for the proofing delivery checks
+// (proofing-readiness-signals.prd.md Phase 5). It takes a services() snapshot, so it must not be called with h.mu held:
+// configureLocked passes it as a value and the stages service calls it at evaluation time.
+func (h *Host) proofingProfile() deliveryprofile.Profile {
+	profile, _, _ := h.selectedDeliveryProfile(h.services())
+	return profile
 }
 
 // manuscriptDocumentID is the imported manuscript's documentId, "" before an import.

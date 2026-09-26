@@ -38,6 +38,11 @@ var numberSpecs = map[string]map[string]numberSpec{
 		"head_max_seconds": {min: bound(0), step: bound(0.1), unit: "s"},
 		"tail_max_seconds": {min: bound(0), step: bound(0.1), unit: "s"},
 	},
+	// The proofing render length tolerance (proofing-readiness-signals.prd.md Q9 C) is seconds, at least 0, with no
+	// declared maximum and a 0.1 s step; blank (no default) keeps the length check not required.
+	"Proofing": {
+		"render_length_tolerance_seconds": {min: bound(0), step: bound(0.1), unit: "s"},
+	},
 }
 
 // wire is the range as the Settings page receives it (the `number` object of a ScopedSettingField).

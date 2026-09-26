@@ -89,6 +89,14 @@ var builtinDefaults = map[string]Values{
 		"editing.empty_space": "required", "editing.clicks": "required", "editing.breaths": "required",
 		// proofing.pickups is the always-required proofing signal (proofing-readiness-signals.prd.md Proposed Solution 1).
 		"proofing.pickups": "required",
+		// The proofing delivery checks default to required; each is required only while the project's delivery profile
+		// has a required rule for it (and the length check only while a tolerance is set), so this default blocks nothing
+		// the narrator has not limited (proofing-readiness-signals.prd.md Q7 B).
+		"proofing.delivery.integrated_lufs": "required", "proofing.delivery.rms_dbfs": "required",
+		"proofing.delivery.sample_peak_dbfs": "required", "proofing.delivery.true_peak_dbtp": "required",
+		"proofing.delivery.noise_floor_dbfs": "required", "proofing.delivery.sample_rate": "required",
+		"proofing.delivery.duration_seconds": "required", "proofing.delivery.head_room_tone_seconds": "required",
+		"proofing.delivery.tail_room_tone_seconds": "required", "proofing.delivery.render_length": "required",
 	},
 	// TakeReview holds the pickup/duplicate detector's Q12 thresholds and
 	// Q3 scan-scope settings (internal/takereview), layered like every

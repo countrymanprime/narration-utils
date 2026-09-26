@@ -212,6 +212,24 @@
       "value": ""
     }
   ],
+  "Proofing": [
+    {
+      "choices": null,
+      "effectiveSource": "hardcoded",
+      "effectiveValue": "",
+      "isSet": false,
+      "key": "render_length_tolerance_seconds",
+      "kind": "number",
+      "label": "Render length tolerance",
+      "number": {
+        "max": null,
+        "min": 0,
+        "step": 0.1,
+        "unit": "s"
+      },
+      "value": ""
+    }
+  ],
   "RecordingCoverage": [
     {
       "choices": null,
@@ -362,6 +380,136 @@
       "key": "proofing.pickups",
       "kind": "choice",
       "label": "No pickups left to clear up (proofing)",
+      "value": ""
+    },
+    {
+      "choices": [
+        "required",
+        "ignored"
+      ],
+      "effectiveSource": "repo_default",
+      "effectiveValue": "required",
+      "isSet": false,
+      "key": "proofing.delivery.integrated_lufs",
+      "kind": "choice",
+      "label": "Rendered file: integrated loudness (proofing)",
+      "value": ""
+    },
+    {
+      "choices": [
+        "required",
+        "ignored"
+      ],
+      "effectiveSource": "repo_default",
+      "effectiveValue": "required",
+      "isSet": false,
+      "key": "proofing.delivery.rms_dbfs",
+      "kind": "choice",
+      "label": "Rendered file: RMS (proofing)",
+      "value": ""
+    },
+    {
+      "choices": [
+        "required",
+        "ignored"
+      ],
+      "effectiveSource": "repo_default",
+      "effectiveValue": "required",
+      "isSet": false,
+      "key": "proofing.delivery.sample_peak_dbfs",
+      "kind": "choice",
+      "label": "Rendered file: sample peak (proofing)",
+      "value": ""
+    },
+    {
+      "choices": [
+        "required",
+        "ignored"
+      ],
+      "effectiveSource": "repo_default",
+      "effectiveValue": "required",
+      "isSet": false,
+      "key": "proofing.delivery.true_peak_dbtp",
+      "kind": "choice",
+      "label": "Rendered file: true peak (proofing)",
+      "value": ""
+    },
+    {
+      "choices": [
+        "required",
+        "ignored"
+      ],
+      "effectiveSource": "repo_default",
+      "effectiveValue": "required",
+      "isSet": false,
+      "key": "proofing.delivery.noise_floor_dbfs",
+      "kind": "choice",
+      "label": "Rendered file: noise floor (proofing)",
+      "value": ""
+    },
+    {
+      "choices": [
+        "required",
+        "ignored"
+      ],
+      "effectiveSource": "repo_default",
+      "effectiveValue": "required",
+      "isSet": false,
+      "key": "proofing.delivery.sample_rate",
+      "kind": "choice",
+      "label": "Rendered file: sample rate (proofing)",
+      "value": ""
+    },
+    {
+      "choices": [
+        "required",
+        "ignored"
+      ],
+      "effectiveSource": "repo_default",
+      "effectiveValue": "required",
+      "isSet": false,
+      "key": "proofing.delivery.duration_seconds",
+      "kind": "choice",
+      "label": "Rendered file: file length (proofing)",
+      "value": ""
+    },
+    {
+      "choices": [
+        "required",
+        "ignored"
+      ],
+      "effectiveSource": "repo_default",
+      "effectiveValue": "required",
+      "isSet": false,
+      "key": "proofing.delivery.head_room_tone_seconds",
+      "kind": "choice",
+      "label": "Rendered file: room tone, head (proofing)",
+      "value": ""
+    },
+    {
+      "choices": [
+        "required",
+        "ignored"
+      ],
+      "effectiveSource": "repo_default",
+      "effectiveValue": "required",
+      "isSet": false,
+      "key": "proofing.delivery.tail_room_tone_seconds",
+      "kind": "choice",
+      "label": "Rendered file: room tone, tail (proofing)",
+      "value": ""
+    },
+    {
+      "choices": [
+        "required",
+        "ignored"
+      ],
+      "effectiveSource": "repo_default",
+      "effectiveValue": "required",
+      "isSet": false,
+      "key": "proofing.delivery.render_length",
+      "kind": "choice",
+      "label": "Rendered file: length matches the chapter (proofing)",
       "value": ""
     }
   ],
