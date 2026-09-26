@@ -9,6 +9,7 @@ import { parseWire } from './api/wire/parseWire';
 import { bootstrapSchema } from './api/schemas/system';
 import type { GuideBuildResult, WorkJob } from './types';
 import type { JobEnded } from './api/contracts/system';
+import { CommandRouter } from './input/router';
 
 // BrowserRouter reads/writes the real window.location via history.pushState,
 // which jsdom keeps alive across tests in this file - reset it so each test
@@ -23,7 +24,11 @@ function renderApp(overrides: Parameters<typeof createMockApi>[0] = {}, initial:
   render(
     <ThemeProvider>
       <ApiProvider api={api}>
-        <App />
+        {/* Matches main.tsx's tree (input-commands-and-pedals.prd.md Phase 2): App now calls useCommand for
+            nav.back/nav.forward, which throws outside a <CommandRouter>. */}
+        <CommandRouter>
+          <App />
+        </CommandRouter>
       </ApiProvider>
     </ThemeProvider>,
   );
@@ -732,7 +737,9 @@ describe('App (integration, driven through the mock NarrationApi)', () => {
     });
     render(
       <ApiProvider api={api}>
-        <App />
+        <CommandRouter>
+          <App />
+        </CommandRouter>
       </ApiProvider>,
     );
 
@@ -938,11 +945,13 @@ describe('App Back and Forward (Phase 1)', () => {
     fireEvent.click(screen.getAllByRole('button', { name: 'Manuscript' })[0]);
     await screen.findByRole('heading', { name: 'Manuscript' });
 
-    fireEvent.keyDown(document, { key: 'ArrowLeft', altKey: true });
+    // `code` is what the registry's KeyboardSource matches on (PRD Q1: the physical key, not the layout-dependent
+    // character); a real Alt+Left keydown carries both, so the fixture does too.
+    fireEvent.keyDown(document, { key: 'ArrowLeft', code: 'ArrowLeft', altKey: true });
     await screen.findByRole('heading', { name: 'Welcome back' });
     await waitFor(() => expect(screen.getByRole('button', { name: 'Forward' }).getAttribute('aria-disabled')).toBeNull());
 
-    fireEvent.keyDown(document, { key: 'ArrowRight', altKey: true });
+    fireEvent.keyDown(document, { key: 'ArrowRight', code: 'ArrowRight', altKey: true });
     await screen.findByRole('heading', { name: 'Manuscript' });
   });
 
@@ -989,5 +998,30 @@ describe('App Back and Forward (Phase 1)', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Back' }));
     await screen.findByRole('heading', { name: 'Welcome back' });
     expect(transcriptReset).toHaveBeenCalled();
+  });
+
+  // input-commands-and-pedals.prd.md Phase 2: nav.back/nav.forward are now global commands, and nothing yet wraps an
+  // open dialog's content in <CommandScope kind="dialog"> (Phase 7 does that for its own sheet), so App.tsx keeps the
+  // direct `[role="dialog"]`/`[role="alertdialog"]` check the old listener made by hand instead of relying on scope
+  // resolution for it. A plain probe element (rather than a real app dialog, which also marks the page behind it
+  // inert and would make every other assertion here fail for an unrelated reason) isolates exactly that check.
+  it('Alt+Left does nothing while something on screen has role="dialog", and works again once it is gone', async () => {
+    renderApp();
+    await screen.findByRole('heading', { name: 'Welcome back' });
+    fireEvent.click(screen.getAllByRole('button', { name: 'Manuscript' })[0]);
+    await screen.findByRole('heading', { name: 'Manuscript' });
+
+    const probe = document.createElement('div');
+    probe.setAttribute('role', 'dialog');
+    document.body.appendChild(probe);
+    try {
+      fireEvent.keyDown(document, { key: 'ArrowLeft', code: 'ArrowLeft', altKey: true });
+      expect(screen.getByRole('heading', { name: 'Manuscript' })).toBeTruthy();
+    } finally {
+      probe.remove();
+    }
+
+    fireEvent.keyDown(document, { key: 'ArrowLeft', code: 'ArrowLeft', altKey: true });
+    await screen.findByRole('heading', { name: 'Welcome back' });
   });
 });
