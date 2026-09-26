@@ -5,9 +5,9 @@ import { resolveGesture, type Gesture } from './gestures';
  * Detail); the narrator's overrides, stored through the host settings (Phase 5, PRD Q2), are layered on top later. */
 export type Keymap = Record<CommandId, Gesture[]>;
 
-/** `navigator`-based, so `keymap.ts`'s own default export stays real without every caller passing a platform flag;
+/** `navigator`-based, so `defaultKeymap`'s own default stays real without every caller passing a platform flag;
  * `resolveGesture` itself takes a plain boolean and needs no `navigator` at all. */
-export function isMacPlatform(): boolean {
+function isMacPlatform(): boolean {
   if (typeof navigator === 'undefined') return false;
   const platform = (navigator as { userAgentData?: { platform?: string } }).userAgentData?.platform || navigator.platform || navigator.userAgent || '';
   return /Mac|iPhone|iPad|iPod/.test(platform);

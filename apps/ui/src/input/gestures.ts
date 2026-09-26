@@ -11,7 +11,7 @@ export type ModifierKey = 'Alt' | 'Ctrl' | 'Meta' | 'Shift';
 
 /** A modifier as written in a catalog default: `Mod` is a placeholder ADR 0361 resolves to `Meta` on macOS and
  * `Ctrl` elsewhere, so one default reads right on every platform. `resolveGesture` turns it into a `Gesture`. */
-export type DefaultModifierKey = ModifierKey | 'Mod';
+type DefaultModifierKey = ModifierKey | 'Mod';
 
 export type Gesture = {
   source: GestureSource;
