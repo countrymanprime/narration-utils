@@ -106,6 +106,7 @@ Phase counts are the rows of each PRD's phase table.
 | [Booth Mode and Companion Panel](booth-mode-and-companion-panel.prd.md) | Feature (benchmark recommendation 2) | 8 | None; composes booth actions enablement's Punch/Record controls and Studio UI Primitives' `FocusShell`/`CompactShell` into a full-screen booth and a same-window companion mode ([ADR 0401](../adr/0401-companion-mode-resizes-and-pins-the-one-existing-window-and-never-opens-a-second-one.md), Proposed) |
 | [Production Tracking](production-tracking.prd.md) | Feature | 6 | None; [audiobook studio benchmark](../research/audiobook-studio-benchmark.md) recommendation 5 |
 | [Prep Depth](prep-depth.prd.md) | Feature | 7 | None; [audiobook studio benchmark](../research/audiobook-studio-benchmark.md) recommendation 6 |
+| [Render, Encode and Master](render-encode-master.prd.md) | Feature | 8 (0-7) | None; [audiobook studio benchmark](../research/audiobook-studio-benchmark.md) recommendation 7; implements the `Encoder`/`Packager` ports [Provider Ports](provider-ports.prd.md) declares |
 
 ## Replaced briefs
 
