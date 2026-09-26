@@ -1,6 +1,7 @@
 import { previewParts } from '../../creditsPreviewParts';
 import { creditsParagraphs } from '../teleprompter/readerModel';
 import type { CreditsRenderResult } from '../../types';
+import { Button } from '../primitives/Button';
 import { ReaderCard } from './ReaderCard';
 
 const KIND_LABEL = { opening: 'Opening credits', closing: 'Closing credits' } as const;
@@ -19,6 +20,7 @@ export function CreditsEntry({
   expanded,
   onToggle,
   textClass,
+  onFillIn,
 }: {
   kind: 'opening' | 'closing';
   preview?: CreditsRenderResult;
@@ -26,6 +28,10 @@ export function CreditsEntry({
   onToggle: () => void;
   /** The reader's Text size setting (MC3): credits rows follow it exactly as chapter paragraphs do. */
   textClass: string;
+  /** "Fill in" (credits-token-setup-and-front-matter-detection.prd.md, Phase 3): opens the same setup dialog Home does,
+   * shown beside the unresolved-token line whenever there is one to show. Omitted, the line renders with no button (a
+   * caller that has not wired the dialog up yet). */
+  onFillIn?: () => void;
 }) {
   const label = KIND_LABEL[kind];
   const lines = preview ? creditsParagraphs(kind, preview.text) : [];
@@ -53,9 +59,16 @@ export function CreditsEntry({
             </div>
           ))}
           {preview.unresolved.length > 0 && (
-            <p className="p-4 text-xs" style={{ color: 'var(--text-muted)' }}>
-              {preview.unresolved.length} unresolved token{preview.unresolved.length === 1 ? '' : 's'}: {preview.unresolved.join(', ')}
-            </p>
+            <div className="flex flex-wrap items-center justify-between gap-2 p-4">
+              <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
+                {preview.unresolved.length} unresolved token{preview.unresolved.length === 1 ? '' : 's'}: {preview.unresolved.join(', ')}
+              </p>
+              {onFillIn && (
+                <Button variant="ghost" type="button" className="px-2 py-0.5 text-[0.7rem] normal-case" onClick={onFillIn}>
+                  Fill in
+                </Button>
+              )}
+            </div>
           )}
         </div>
       ) : (

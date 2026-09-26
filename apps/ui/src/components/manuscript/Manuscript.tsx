@@ -6,6 +6,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faAnglesDown, faAnglesUp, faFont, faList } from '@fortawesome/free-solid-svg-icons';
 import type {
   CreditsRenderResult,
+  CreditsSetupState,
   CreditTemplate,
   GuideEntity,
   ManuscriptChapter,
@@ -26,6 +27,8 @@ import { ToggleGroup } from '../primitives/ToggleGroup';
 import { SlideOver } from '../primitives/SlideOver';
 import { Tooltip, TooltipTarget } from '../primitives/Tooltip';
 import { ChapterNav } from './ChapterNav';
+import { CreditsSetupBanner } from '../credits/CreditsSetupBanner';
+import { CreditsSetupDialog } from '../credits/CreditsSetupDialog';
 import { CreditsEntry } from './CreditsEntry';
 import { loadCreditsExpanded, saveCreditsExpanded, type CreditsExpanded } from './creditsExpandedStorage';
 import { ReaderCard } from './ReaderCard';
@@ -115,6 +118,11 @@ export function Manuscript({
   // library returns, rendered with the current project's values.
   const [creditsTemplates, setCreditsTemplates] = useState<CreditTemplate[]>([]);
   const [creditsPreviews, setCreditsPreviews] = useState<{ opening?: CreditsRenderResult; closing?: CreditsRenderResult }>({});
+  // The credits-setup banner and its "Fill in" way back (credits-token-setup-and-front-matter-detection.prd.md,
+  // Phase 3): the dialog itself never opens on its own here (only Home does that, on load and after an import) -
+  // this page only ever shows it because the narrator pressed Fill in.
+  const [creditsSetup, setCreditsSetup] = useState<CreditsSetupState>();
+  const [fillingInCredits, setFillingInCredits] = useState(false);
   // Open by default (MC5), remembered per project in browser storage - never in expandedChapters/readerStateSave,
   // since a credits id is not a chapter id and the host's paragraph fetch would fail for one.
   const [creditsExpanded, setCreditsExpandedState] = useState<CreditsExpanded>(() => loadCreditsExpanded(projectFolder));
@@ -247,6 +255,16 @@ export function Manuscript({
       .creditsRetailSample()
       .then((answer) => active && setRetailSample(answer.sample))
       .catch(() => active && setRetailSample(null));
+    return () => {
+      active = false;
+    };
+  }, [api, loadAttempt]);
+  useEffect(() => {
+    let active = true;
+    void api
+      .creditsSetupState()
+      .then((state) => active && setCreditsSetup(state))
+      .catch(() => active && setCreditsSetup(undefined));
     return () => {
       active = false;
     };
@@ -544,6 +562,11 @@ export function Manuscript({
         </div>
       </div>
       <div ref={readerRef} className="reader-chapters pt-3">
+        {creditsSetup?.banner && !fillingInCredits && (
+          <div className="mx-[var(--reader-inline)] mb-4">
+            <CreditsSetupBanner state={creditsSetup} notify={notify} onDone={setCreditsSetup} onFillIn={() => setFillingInCredits(true)} />
+          </div>
+        )}
         {openingTemplate && (
           <CreditsEntry
             kind="opening"
@@ -551,6 +574,7 @@ export function Manuscript({
             expanded={creditsExpanded.opening}
             onToggle={() => setCreditsExpanded((current) => ({ ...current, opening: !current.opening }))}
             textClass={READER_TEXT_CLASSES[textSize]}
+            onFillIn={creditsSetup ? () => setFillingInCredits(true) : undefined}
           />
         )}
         {recordedChapters.map((chapter) => {
@@ -606,9 +630,21 @@ export function Manuscript({
             expanded={creditsExpanded.closing}
             onToggle={() => setCreditsExpanded((current) => ({ ...current, closing: !current.closing }))}
             textClass={READER_TEXT_CLASSES[textSize]}
+            onFillIn={creditsSetup ? () => setFillingInCredits(true) : undefined}
           />
         )}
       </div>
+      {fillingInCredits && creditsSetup && (
+        <CreditsSetupDialog
+          state={creditsSetup}
+          notify={notify}
+          onDone={(next) => {
+            setCreditsSetup(next);
+            setFillingInCredits(false);
+          }}
+          onMoreFields={() => routerNavigate('/settings#credits')}
+        />
+      )}
       {selection && !pendingNote && (
         <SelectionMenu
           selection={selection}

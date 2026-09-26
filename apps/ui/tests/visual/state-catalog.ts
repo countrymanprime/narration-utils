@@ -128,6 +128,12 @@ export const STATE_CATALOG: StateEntry[] = [
     description:
       'Home, "Set up the credits" dialog when the narrator token already has a value (?mockCredits=setup-narrator-default): only Title and Author are asked, with no Narrator field or checkbox - the state a returning narrator with a saved default sees',
   },
+  {
+    page: 'home',
+    state: 'credits-setup-banner',
+    description:
+      'Home, the credits-setup banner after "Not now" - naming the unresolved tokens, "Don\'t ask for this project" and "Fill in" (credits-token-setup-and-front-matter-detection.prd.md Phase 3, mockups/credits-token-setup-and-front-matter-detection/02-home-banner-after-not-now.webp)',
+  },
   { page: 'home', state: 'import-activity-log', description: 'Home, manuscript import finished with its live activity log populated' },
   {
     page: 'home',
@@ -362,6 +368,12 @@ export const STATE_CATALOG: StateEntry[] = [
     state: 'credits-entries',
     description:
       'Manuscript, the Opening credits pseudo-entry expanded before Chapter 1 with an unresolved-token chip (audiobook-credits-templates.prd.md Phase 3)',
+  },
+  {
+    page: 'manuscript',
+    state: 'credits-entries-fill-in',
+    description:
+      'Manuscript, the credits-setup banner above the Opening credits card and its own "Fill in" button beside the unresolved-token line (credits-token-setup-and-front-matter-detection.prd.md Phase 3, ?mockCredits=setup, mockups/credits-token-setup-and-front-matter-detection/03-manuscript-banner-and-fill-in.webp)',
   },
   {
     page: 'manuscript',

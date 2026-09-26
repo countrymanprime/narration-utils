@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { cleanup, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { CreditsEntry } from './CreditsEntry';
 import type { CreditsRenderResult } from '../../types';
@@ -73,5 +73,25 @@ describe('CreditsEntry (Manuscript pseudo-entry for opening/closing credits, PRD
     const article = container.querySelector('article')!;
     expect(article.getAttribute('data-credits-entry')).toBe('opening');
     expect(article.hasAttribute('data-chapter-id')).toBe(false);
+  });
+
+  it('shows a Fill in button beside the unresolved line when onFillIn is given (credits-token-setup-and-front-matter-detection.prd.md, Phase 3)', () => {
+    const preview: CreditsRenderResult = { text: '[Title], written by [Author].', words: 4, unresolved: ['Title', 'Author'] };
+    const onFillIn = vi.fn();
+    render(<CreditsEntry kind="opening" preview={preview} expanded onToggle={vi.fn()} textClass="text-sm" onFillIn={onFillIn} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Fill in' }));
+    expect(onFillIn).toHaveBeenCalledTimes(1);
+  });
+
+  it('shows no Fill in button when onFillIn is omitted, even with unresolved tokens', () => {
+    const preview: CreditsRenderResult = { text: '[Title], written by [Author].', words: 4, unresolved: ['Title', 'Author'] };
+    render(<CreditsEntry kind="opening" preview={preview} expanded onToggle={vi.fn()} textClass="text-sm" />);
+    expect(screen.queryByRole('button', { name: 'Fill in' })).toBeNull();
+  });
+
+  it('shows no Fill in button when every token is resolved, even with onFillIn given', () => {
+    const preview: CreditsRenderResult = { text: 'Alice, written by Lewis Carroll.', words: 5, unresolved: [] };
+    render(<CreditsEntry kind="opening" preview={preview} expanded onToggle={vi.fn()} textClass="text-sm" onFillIn={vi.fn()} />);
+    expect(screen.queryByRole('button', { name: 'Fill in' })).toBeNull();
   });
 });

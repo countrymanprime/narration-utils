@@ -44,7 +44,10 @@ closing template. Each shows its word count and a read time, and opens and close
 chapter card does — press anywhere on its header, not just the title — with a chevron showing which
 way it is set. Both are open by default and stay open or closed the way you leave them for as long as
 you keep the project open. Open one to read the credits with the project's values filled in. A token
-with no value yet stays in brackets, highlighted, and a line below lists the unresolved tokens. These
+with no value yet stays in brackets, highlighted, and a line below lists the unresolved tokens, with a
+**Fill in** next to it that opens the same "Set up the credits" dialog Home offers — see
+[Home](home.md) for what it asks and when. A banner above Opening credits does the same while any
+token stays unresolved and setup has not been dismissed for the project. These
 entries are read-only and are not chapters: they are not in the chapter list or search. Record the
 credits as their own files, as ACX expects, not inside a chapter file: Proofing compares a chapter file
 with that chapter's text only, so credits recorded inside it are reported as extra words.

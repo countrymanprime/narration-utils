@@ -596,6 +596,53 @@ describe('Manuscript page (integration, driven through the mock NarrationApi)', 
     });
   });
 
+  describe('the credits-setup banner and Fill in (credits-token-setup-and-front-matter-detection.prd.md, Phase 3)', () => {
+    it('shows the banner above the credits cards while setup is not dismissed at the project scope', async () => {
+      renderManuscript({}, vi.fn(), ['/manuscript'], { creditsSetup: true });
+      await waitFor(() => screen.getByRole('heading', { name: 'Chapter 1 — Down the Rabbit-Hole' }));
+      const banner = await screen.findByText(/The credits need 3 values/);
+      const opening = screen.getByRole('heading', { name: 'Opening credits' }).closest('[data-credits-entry]')!;
+      // The banner sits before the opening credits card in source order (mockups/.../03-manuscript-banner-and-fill-in.webp).
+      expect(banner.compareDocumentPosition(opening) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    });
+
+    it('no banner on the default mock boot, even though the default project has unresolved tokens (already dismissed at the project scope)', async () => {
+      renderManuscript();
+      await waitFor(() => screen.getByRole('heading', { name: 'Chapter 1 — Down the Rabbit-Hole' }));
+      await waitFor(() => expect(screen.getAllByText(/3 unresolved tokens: Title, Author, Narrator/).length).toBeGreaterThan(0));
+      expect(screen.queryByText(/The credits need/)).toBeNull();
+    });
+
+    it('Fill in on the credits card opens the setup dialog, prefilled from the same detected candidates as Home', async () => {
+      renderManuscript();
+      await waitFor(() => screen.getByRole('heading', { name: 'Chapter 1 — Down the Rabbit-Hole' }));
+      const opening = screen.getByRole('heading', { name: 'Opening credits' }).closest('[data-credits-entry]') as HTMLElement;
+      await within(opening).findByText(/unresolved token/);
+      fireEvent.click(within(opening).getByRole('button', { name: 'Fill in' }));
+      expect(await screen.findByRole('dialog', { name: 'Set up the credits' })).toBeTruthy();
+    });
+
+    it('Fill in on the banner opens the same dialog and the banner steps aside while it is open', async () => {
+      renderManuscript({}, vi.fn(), ['/manuscript'], { creditsSetup: true });
+      await waitFor(() => screen.getByRole('heading', { name: 'Chapter 1 — Down the Rabbit-Hole' }));
+      const banner = (await screen.findByText(/The credits need 3 values/)).closest('section') as HTMLElement;
+      fireEvent.click(within(banner).getByRole('button', { name: 'Fill in' }));
+      expect(await screen.findByRole('dialog', { name: 'Set up the credits' })).toBeTruthy();
+      expect(screen.queryByText(/The credits need 3 values/)).toBeNull();
+    });
+
+    it('Save in the dialog opened from Manuscript resolves the credits card, closing the dialog', async () => {
+      renderManuscript({}, vi.fn(), ['/manuscript'], { creditsSetup: true });
+      await waitFor(() => screen.getByRole('heading', { name: 'Chapter 1 — Down the Rabbit-Hole' }));
+      const banner = (await screen.findByText(/The credits need 3 values/)).closest('section') as HTMLElement;
+      fireEvent.click(within(banner).getByRole('button', { name: 'Fill in' }));
+      const dialog = within(await screen.findByRole('dialog', { name: 'Set up the credits' }));
+      fireEvent.change(dialog.getByLabelText('Narrator'), { target: { value: 'Ada Finch' } });
+      fireEvent.click(dialog.getByRole('button', { name: 'Save' }));
+      await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Set up the credits' })).toBeNull());
+    });
+  });
+
   describe('retail sample marker (PRD audiobook-credits-templates.prd.md, Phase 5, C10)', () => {
     const sampleOnChapterTwo = async () => {
       const chapter = (await createMockApi().manuscriptChapters())[1];

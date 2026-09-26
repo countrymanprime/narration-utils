@@ -7,6 +7,7 @@ import { usePendingAction } from '../../hooks/usePendingAction';
 import { useWorkJob } from '../../hooks/useWorkJob';
 import type { CreditsSetupState, GuideEntity, ManuscriptImportSelection, TranscriptState, WorkJob } from '../../types';
 import type { Bootstrap } from '../../types';
+import { CreditsSetupBanner } from '../credits/CreditsSetupBanner';
 import { CreditsSetupDialog } from '../credits/CreditsSetupDialog';
 import { Heading } from '../primitives/Heading';
 import { AudiobookEstimatePanel } from './AudiobookEstimatePanel';
@@ -90,6 +91,9 @@ export function Home({
   // re-read on first load, after an import commits (data.manuscript?.importedAt changes once refreshBootstrap runs) and
   // after Replace manuscript (a new documentId). Whether to show it (`needed`) is answered entirely by the host.
   const [creditsSetup, setCreditsSetup] = useState<CreditsSetupState>();
+  // "Fill in" on the banner (Phase 3) forces the dialog open even though `needed` is false (the narrator already said
+  // "Not now" or "Don't ask", or only some tokens remain), independent of the auto-open condition below.
+  const [fillingInCredits, setFillingInCredits] = useState(false);
   useEffect(() => {
     void api
       .creditsSetupState()
@@ -311,8 +315,21 @@ export function Home({
       )}
       {/* The manuscript offer comes first and the credits prompt follows the import (Solution Detail, Phase 2): held
           back while that offer or an import is on screen, so the two dialogs never stack. */}
-      {!offerCandidate && !importJob && creditsSetup?.needed && (
-        <CreditsSetupDialog state={creditsSetup} notify={notify} onDone={setCreditsSetup} onMoreFields={() => go('/settings#credits')} />
+      {!offerCandidate && !importJob && creditsSetup && (creditsSetup.needed || fillingInCredits) && (
+        <CreditsSetupDialog
+          state={creditsSetup}
+          notify={notify}
+          onDone={(next) => {
+            setCreditsSetup(next);
+            setFillingInCredits(false);
+          }}
+          onMoreFields={() => go('/settings#credits')}
+        />
+      )}
+      {/* The way back (Phase 3): shown whenever the host says tokens are still unresolved and the narrator has not
+          said "Don't ask" - never while the dialog above is already open, auto or by hand. */}
+      {!offerCandidate && !importJob && creditsSetup?.banner && !creditsSetup.needed && !fillingInCredits && (
+        <CreditsSetupBanner state={creditsSetup} notify={notify} onDone={setCreditsSetup} onFillIn={() => setFillingInCredits(true)} />
       )}
       <AudiobookEstimatePanel
         notify={notify}

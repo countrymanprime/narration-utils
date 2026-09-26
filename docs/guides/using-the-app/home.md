@@ -199,6 +199,16 @@ in a live activity log, so the progress bar and log always match the real work.
 
 Once a manuscript is imported you can read it on the [Manuscript](manuscript.md) page.
 
+The first time a project with an imported manuscript loads, and again right after an import
+finishes, Home asks you to **Set up the credits** if the opening and closing credits still have
+unresolved tokens. The dialog is prefilled from whatever the manuscript's own title page and
+copyright line already say, with the source of each guess shown underneath; a field with nothing
+detected starts empty. Save only writes the fields you confirm — nothing already set in
+[Settings, Credits](settings.md#credits) is changed. **Not now** leaves it for this session;
+**Don't ask for this project** stops it until you replace the manuscript. Either way, a banner
+stays above the estimate — and above the [Manuscript](manuscript.md) page's own Opening credits
+card — with **Fill in** to reopen the same dialog for as long as a token stays unresolved.
+
 ---
 
 [← Navigation](navigation.md) · [Index](README.md) · [Manuscript →](manuscript.md)
