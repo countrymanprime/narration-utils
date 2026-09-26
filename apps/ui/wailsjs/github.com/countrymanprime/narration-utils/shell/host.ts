@@ -501,6 +501,46 @@ export function DiagnosticsState(): $CancellablePromise<string> {
 }
 
 /**
+ * EditingCancel asks a running check to stop after its current item; the
+ * items it already finished stay cached and ledgered. With nothing running
+ * it does nothing.
+ */
+export function EditingCancel(): $CancellablePromise<string> {
+    return $Call.ByID(3490924300);
+}
+
+/**
+ * EditingCandidates lists the chapter's current empty-space findings
+ * (silence_cleanup, evidence.class "silence"): what a scan found, in the
+ * review-dashboard findings shape, so the narrator can hear and act on each
+ * one (Phase 7's own scope; this binding only reads what a scan already
+ * persisted).
+ */
+export function EditingCandidates(chapterID: string): $CancellablePromise<string> {
+    return $Call.ByID(435807084, chapterID);
+}
+
+/**
+ * EditingStart starts an editing-readiness scan of one chapter: played-range
+ * empty-space (and, cached alongside it, click/breath candidates - always
+ * unknown until Phase 4 validates them). It answers {status: "started",
+ * state} or {status: "refused", reason, message} when the chapter cannot be
+ * resolved to exactly one confirmed track and its items in the saved
+ * project (nothing was run or written); any other error is a rejected
+ * promise.
+ */
+export function EditingStart(documentID: string, chapterID: string, chapterTitle: string): $CancellablePromise<string> {
+    return $Call.ByID(3019150774, documentID, chapterID, chapterTitle);
+}
+
+/**
+ * EditingState is the current check, or the last one that ended.
+ */
+export function EditingState(): $CancellablePromise<string> {
+    return $Call.ByID(2969112107);
+}
+
+/**
  * FindingsAddMarker adds one take marker in REAPER at an accepted finding's spot, on its take, named like the marker
  * Transcript Compare's export adds (approvedMarker). A finding not accepted, one with no item or no time in its audio,
  * and a REAPER that is not listening are refused before anything is sent.
@@ -984,6 +1024,15 @@ export function StageRevert(chapterID: string): $CancellablePromise<string> {
 }
 
 /**
+ * SystemCopyDiagnostics saves scope's records as one .jsonl file in a folder the narrator chooses, and answers its
+ * path (the UI copies it to the clipboard, Q5). "last_run" with no run yet logged is refused rather than saving an
+ * empty file with nothing to show for it.
+ */
+export function SystemCopyDiagnostics(scope: string): $CancellablePromise<string> {
+    return $Call.ByID(399038062, scope);
+}
+
+/**
  * SystemLookup looks one word from the manuscript reader up in the offline dictionary (ADR 0097: the Open English WordNet, read from Go in
  * this process; no cloud API and no server). The answer is one of:
  * 
@@ -996,10 +1045,6 @@ export function StageRevert(chapterID: string): $CancellablePromise<string> {
  * A selection that is not one word is an error the UI shows as it is. The dictionary is not project-scoped: it is read through the
  * set-once asset registry, not the project services (so there is no h.services() snapshot to take).
  */
-export function SystemCopyDiagnostics(scope: string): $CancellablePromise<string> {
-    return $Call.ByID(399038062, scope);
-}
-
 export function SystemLookup(word: string): $CancellablePromise<string> {
     return $Call.ByID(3310775553, word);
 }
@@ -1018,6 +1063,10 @@ export function SystemNotify(kind: string, title: string, body: string): $Cancel
     return $Call.ByID(529278034, kind, title, body);
 }
 
+/**
+ * SystemOpenLogFolder shows the run log's folder (logs/run.jsonl, host.log and logs/runs/) in the file manager, the
+ * way TeleprompterStop's sibling bindings already do for the update cache (update_install.go's showDownloadedUpdate).
+ */
 export function SystemOpenLogFolder(): $CancellablePromise<string> {
     return $Call.ByID(2499200111);
 }

@@ -112,6 +112,7 @@ import { createTakeComparisonMock } from './takeComparisonMock';
 import { createMeasureMock, type MockMeasureSeed } from './measureMock';
 import { createDeliveryProfilesMock, type MockDeliveryProfileSeed } from './deliveryProfilesMock';
 import { createDiagnosticsMock, type MockDiagnosticsSeed } from './diagnosticsMock';
+import { createEditingMock, type EditingSeed } from './editingMock';
 import { createInstallMock, installSeedFor, LOCAL_ASSETS_SEEDS, type MockAssetSeed } from './assetInstallMock';
 import type { AssetInstallState } from './contracts/assets';
 import { MOCK_DICTIONARY, MOCK_DICTIONARY_DISK_SIZE, MOCK_DICTIONARY_DOWNLOAD_SIZE, mockDictionaryLookup } from './dictionaryMock';
@@ -583,6 +584,8 @@ export function createMockApi(
     measure?: MockMeasureSeed;
     /** Holds a started diagnostics check part way through, or breaks it (diagnostics PRD Phase 6). */
     diagnostics?: MockDiagnosticsSeed;
+    /** Seeds the editing-readiness check mock (a refusal, a held-running state, or seeded candidates), see `EditingSeed`. */
+    editing?: EditingSeed;
     /** The project's Delivery limits, by key (`true_peak_dbtp_max: '-3'`), set as if saved in Settings (diagnostics PRD Phase 5). */
     deliveryLimits?: Record<string, string>;
     /**
@@ -1307,6 +1310,7 @@ export function createMockApi(
   const measurePicked = new Set<string>();
   const { current: deliveryProfile, ...deliveryProfiles } = createDeliveryProfilesMock(initial.deliveryProfile);
   const { peekDiagnostics, ...diagnostics } = createDiagnosticsMock(endJob, measurePicked, initial.diagnostics);
+  const editing = createEditingMock(initial.editing);
   const measurement = createMeasureMock(endJob, initial.measure, measurePicked, deliveryProfile, peekDiagnostics);
   const publish = () => {
     subscribers.forEach((fn) => fn(wireClone(transcript)));
@@ -2431,6 +2435,7 @@ export function createMockApi(
     ...measurement,
     ...deliveryProfiles,
     ...diagnostics,
+    ...editing,
     takeReviewCreateTake: async (request) => ({
       targetItemGuid: request.targetItemGuid,
       newTakeGuid: '{99999999-0000-4000-8000-000000000099}',
