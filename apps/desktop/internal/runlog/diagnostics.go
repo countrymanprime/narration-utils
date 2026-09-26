@@ -31,7 +31,7 @@ func (l *Logger) LastRunID() (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("could not open the run log: %w", err)
 	}
-	defer file.Close()
+	defer func() { _ = file.Close() }() // read-only
 
 	var last string
 	scanner := bufio.NewScanner(file)
@@ -65,7 +65,7 @@ func (l *Logger) ExportDiagnostics(scope DiagnosticsScope, destPath string) (int
 	if err != nil {
 		return 0, fmt.Errorf("could not create the diagnostics file: %w", err)
 	}
-	defer out.Close()
+	defer func() { _ = out.Close() }()
 
 	written, err := copyMatchingLines(out, l.path, scope, l.now())
 	if err != nil {
@@ -78,6 +78,9 @@ func (l *Logger) ExportDiagnostics(scope DiagnosticsScope, destPath string) (int
 		if err != nil {
 			return written, err
 		}
+	}
+	if err := out.Close(); err != nil {
+		return written, fmt.Errorf("could not finish the diagnostics file: %w", err)
 	}
 	return written, nil
 }
@@ -93,7 +96,7 @@ func copyMatchingLines(out *os.File, path string, scope DiagnosticsScope, now ti
 	if err != nil {
 		return 0, fmt.Errorf("could not open the run log: %w", err)
 	}
-	defer file.Close()
+	defer func() { _ = file.Close() }() // read-only
 
 	cutoff := now.Add(-scope.Since)
 	written := 0
@@ -136,7 +139,7 @@ func copyRawLines(out *os.File, path string) (int, error) {
 	if err != nil {
 		return 0, fmt.Errorf("could not open the run's stderr file: %w", err)
 	}
-	defer file.Close()
+	defer func() { _ = file.Close() }() // read-only
 
 	written := 0
 	scanner := bufio.NewScanner(file)
