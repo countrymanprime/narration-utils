@@ -119,3 +119,15 @@ func TestApplyGainTranslatesAWholeSessionError(t *testing.T) {
 		t.Fatalf("got %v, want ErrRecording", err)
 	}
 }
+
+func TestApplyGainFailsTheRequestWhenItsOwnAnswerIsMalformed(t *testing.T) {
+	levelMatch, client, dir := newLevelMatchSession(t)
+	startFakeReaper(t, client, dir, func(command []string) [][]string {
+		// GAIN_APPLIED requires a run and a count; this run's own answer is missing the count.
+		return [][]string{{"GAIN_APPLIED", run(command)}}
+	})
+	_, err := levelMatch.Apply(context.Background(), oneGainCandidate())
+	if err == nil || !strings.Contains(err.Error(), "could not read") {
+		t.Fatalf("got %v, want a could-not-read error", err)
+	}
+}
