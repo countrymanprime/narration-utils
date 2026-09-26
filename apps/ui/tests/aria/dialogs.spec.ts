@@ -69,6 +69,11 @@ const MODALS: { name: string; state: [string, string]; snapshot: string }[] = [
     state: ['home', 'chapter-remove-confirm'],
     snapshot: 'confirm-remove-from-recording.aria.yml',
   },
+  {
+    name: 'the "Set up the credits" prompt is a modal dialog with the detected fields and the three dismissal actions',
+    state: ['home', 'credits-setup-dialog'],
+    snapshot: 'dialog-credits-setup.aria.yml',
+  },
 ];
 
 for (const modal of MODALS) {

@@ -701,6 +701,18 @@ export const APP_DRIVERS: Record<string, Record<string, Driver>> = {
       await settlePage(page);
       await confirmDialog(page, 'Import manuscript?').waitFor();
     },
+    // credits-token-setup-and-front-matter-detection.prd.md Phase 2: the "Set up the credits" dialog, reached with no
+    // manuscript-candidate offer in the way (see main.tsx's ?mockCredits=setup seam).
+    'credits-setup-dialog': async (page) => {
+      await page.goto('/?mockCredits=setup');
+      await settlePage(page);
+      await page.getByRole('dialog', { name: 'Set up the credits' }).waitFor();
+    },
+    'credits-setup-dialog-narrator-default': async (page) => {
+      await page.goto('/?mockCredits=setup-narrator-default');
+      await settlePage(page);
+      await page.getByRole('dialog', { name: 'Set up the credits' }).waitFor();
+    },
     'import-activity-log': async (page) => {
       await clickVisible(page, 'button', 'Replace manuscript');
       // This state is about the import dialog's own activity log, not the chained Story Bible build (B1-B3, on by

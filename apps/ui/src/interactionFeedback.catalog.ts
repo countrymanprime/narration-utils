@@ -542,6 +542,13 @@ export const FEEDBACK_CATALOG: Record<string, FeedbackRow> = {
   'src/components/settings/CreditsPanel.tsx::duplicateCreditsTemplate#1': row('click', 'file-io', 'disabled', 'disabled', 'toast', 'toast', 'na', 'ok', 'Duplicate disables while busy and cannot fire twice; a failure is a toast.'),
   'src/components/settings/CreditsPanel.tsx::deleteCreditsTemplate#1': row('click', 'file-io', 'disabled', 'disabled', 'toast', 'toast', 'na', 'ok', 'Delete disables while busy and cannot fire twice; a failure is a toast, and the template stays in the library to retry.'),
   'src/components/settings/CreditsPanel.tsx::saveCreditsProjectValues#1': row('input', 'file-io', 'disabled', 'disabled', 'ui', 'toast', 'na', 'ok', "Saves on every change to a project value field (never blocks on an unresolved token, C6); the field being saved disables until it ends, so a second edit cannot race the first, and a failure is a toast while the typed value stays on screen."),
+
+  // "Set up the credits" (credits-token-setup-and-front-matter-detection.prd.md, Phase 2, ADR 0208)
+  'src/components/home/Home.tsx::creditsSetupState#1': row('mount', 'file-io', 'na', 'na', 'ui', 'silent', 'na', 'exempt', 'Only decides whether the "Set up the credits" dialog shows; a failed read leaves it absent for this load, same as guideEntities.'),
+  'src/components/credits/CreditsSetupDialog.tsx::saveSettings#1': row('click', 'file-io', 'disabled', 'disabled', 'ui', 'toast', 'na', 'ok', 'Inside Save, only when "Use for all my projects" is checked: the whole dialog is busy/disabled until both this and creditsSetupSave finish, and a failure of either is one toast leaving every field editable to retry.'),
+  'src/components/credits/CreditsSetupDialog.tsx::creditsSetupSave#1': row('click', 'file-io', 'disabled', 'disabled', 'ui', 'toast', 'na', 'ok', 'Save: fields disable while busy; the dialog closes once the host answers "not needed any more" and a failure is a toast with every typed value kept on screen to retry.'),
+  'src/components/credits/CreditsSetupDialog.tsx::creditsSetupDismiss#1': row('click', 'instant', 'disabled', 'disabled', 'ui', 'toast', 'na', 'ok', '"Not now": the dialog closes for this session once the host confirms; a failure is a toast and the dialog stays open to retry.'),
+  'src/components/credits/CreditsSetupDialog.tsx::creditsSetupDismiss#2': row('click', 'instant', 'disabled', 'disabled', 'ui', 'toast', 'na', 'ok', '"Don\'t ask for this project": same as "Not now", stored on the manifest instead of the session.'),
 };
 
 /**

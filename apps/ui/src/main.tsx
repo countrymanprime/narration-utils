@@ -88,7 +88,10 @@ const mockCreditsFilled = mockParams.get('mockCredits') === 'filled' || mockCred
 const mockCreditsDetected = mockParams.get('mockCredits') === 'detected';
 // `?mockCredits=setup`: the project has no credits values and its setup prompt has not been answered, so Home asks
 // (credits-token-setup-and-front-matter-detection.prd.md Phase 2).
-const mockCreditsSetup = mockParams.get('mockCredits') === 'setup';
+const mockCreditsSetup = mockParams.get('mockCredits') === 'setup' || mockParams.get('mockCredits') === 'setup-narrator-default';
+// `?mockCredits=setup-narrator-default`: as `setup`, but the narrator token already has a value, so the prompt asks
+// for only Title and Author - the state a returning narrator with a saved default sees (CS7 B).
+const mockCreditsSetupNarratorDefault = mockParams.get('mockCredits') === 'setup-narrator-default';
 // `?mockPreviewError=<text>` makes the Story Bible preview fail with that text once the
 // preview voice is installed, so the failure toast can be seen without a real host.
 const mockPreviewError = mockParams.get('mockPreviewError');
@@ -235,6 +238,7 @@ const mockInitial = {
   ...(mockRemoved ? { removedChapter: true } : {}),
   ...(mockChapterSync ? { chapterSync: mockChapterSync } : {}),
   ...(mockCreditsFilled ? { creditValues: { title: 'Alice’s Adventures in Wonderland', author: 'Lewis Carroll', narrator: 'Ada Finch' } } : {}),
+  ...(mockCreditsSetupNarratorDefault ? { creditValues: { narrator: 'Jamie Rivers' } } : {}),
   ...(mockCreditsExtras ? { chapterAnnouncement: '[Chapter]{: [Chapter Title]}.', retailSample: { chapterIndex: 2, startLine: 1, endLine: 3 } } : {}),
   ...(mockNoProject ? { projectFolder: '' } : {}),
   ...(mockMultipleRpp ? { tracksCandidates: ['C:/Projects/Alice-in-Wonderland/Alice.rpp', 'C:/Projects/Alice-in-Wonderland/Alice-alt-mix.rpp'] } : {}),

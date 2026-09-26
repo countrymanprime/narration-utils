@@ -116,6 +116,18 @@ export const STATE_CATALOG: StateEntry[] = [
   },
   { page: 'home', state: 'info-tooltip', description: 'Home, info icon tooltip visible', pointer: 'keep', ...TOOLTIP_CLOSES_ON_RESIZE },
   { page: 'home', state: 'manuscript-candidate-offer', description: 'Home, offer to import a manuscript file found in the project folder' },
+  {
+    page: 'home',
+    state: 'credits-setup-dialog',
+    description:
+      'Home, "Set up the credits" dialog (credits-token-setup-and-front-matter-detection.prd.md Phase 2, CS1 C / D35, ?mockCredits=setup): Title and Author prefilled from the detected front matter with their source captions, Narrator empty with "Use for all my projects" checked (CS7 B) since no global default is set, "Don\'t ask for this project" alongside Not now and Save (mockups/credits-token-setup-and-front-matter-detection/01b-alt-setup-dialog-narrator-empty.webp)',
+  },
+  {
+    page: 'home',
+    state: 'credits-setup-dialog-narrator-default',
+    description:
+      'Home, "Set up the credits" dialog when the narrator token already has a value (?mockCredits=setup-narrator-default): only Title and Author are asked, with no Narrator field or checkbox - the state a returning narrator with a saved default sees',
+  },
   { page: 'home', state: 'import-activity-log', description: 'Home, manuscript import finished with its live activity log populated' },
   {
     page: 'home',
