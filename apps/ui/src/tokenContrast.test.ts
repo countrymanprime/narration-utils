@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest';
-import { contrastRatio, countRootRules, parseColor, parseThemes, resolveContrast, rootRules } from './tokenContrast';
+import { boothTokens, contrastRatio, countBoothBlocks, countRootRules, parseColor, parseThemes, resolveContrast, rootRules } from './tokenContrast';
 
 // The palette guard (paletteContrast.test.ts) is only as good as its arithmetic, so the arithmetic is checked against
 // values that can be verified by hand or against a browser: the WCAG extremes, CSS's own colour-mix rules, and the
@@ -97,5 +97,34 @@ describe('parseThemes', () => {
     const { light } = parseThemes(':root { --s: #ffffff; }');
     const ratio = resolveContrast(light, { fg: '#000000', bg: 'color-mix(in srgb, #000000 20%, transparent)', over: 's' });
     expect(ratio).toBeCloseTo(13.08, 1);
+  });
+});
+
+describe('the booth block (studio-ui-primitives.prd.md Phase 1)', () => {
+  const css = `
+    :root { --a: #111111; --b: #222222; }
+    :root[data-theme='dark'] { --a: #eeeeee; }
+    [data-surface='booth'] { --a: #000000; }
+  `;
+
+  it("reads the declarations of [data-surface='booth'], with either quote", () => {
+    expect(boothTokens(css)).toEqual({ a: '#000000' });
+    expect(boothTokens(':root { --a: #111; } [data-surface="booth"] { --a: #000; }')).toEqual({ a: '#000' });
+  });
+
+  it('returns an empty map when the file has no booth block', () => {
+    expect(boothTokens(':root { --a: #111111; }')).toEqual({});
+  });
+
+  it('counts a booth-surface rule the parser cannot read, so the guard fails instead of measuring a stale booth map', () => {
+    expect(countBoothBlocks(css)).toBe(1);
+    const two = `${css} [data-surface='booth'] { --c: #333; }`;
+    expect(countBoothBlocks(two)).toBe(2);
+  });
+
+  it('layers the booth block over dark, as a third theme: unlisted tokens fall through to dark, listed ones override', () => {
+    const { dark, booth } = parseThemes(css);
+    expect(booth).toEqual({ ...dark, a: '#000000' });
+    expect(booth.b).toBe(dark.b);
   });
 });
