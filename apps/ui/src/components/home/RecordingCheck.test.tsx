@@ -32,8 +32,10 @@ async function openBreakdown(initial: Initial = {}, overrides: Partial<Narration
 }
 
 const row = (title: string) => screen.getByRole('link', { name: new RegExp(`^${title}\\b`) }).closest('tr') as HTMLElement;
+// The row's check-status cell (daw-chapter-track-auto-sync.prd.md Phase 6, S14) replaced the Check button: its
+// accessible name always starts with "Recording check for <chapter>", whatever state it is showing.
 const openCheck = async (title: string) => {
-  fireEvent.click(screen.getByRole('button', { name: `Check recording of ${title}` }));
+  fireEvent.click(within(row(title)).getByRole('button', { name: new RegExp(`^Recording check for ${title}\\b`) }));
   // The dialog title is the chapter's full name (chapter-title-display-consistency.prd.md Q6): a prefix match keeps
   // this helper working whether or not the mock chapter also carries a subtitle after the title.
   return screen.findByRole('dialog', { name: new RegExp(`^Recording check: ${title}\\b`) });

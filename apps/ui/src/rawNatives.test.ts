@@ -24,6 +24,10 @@ const CEILING: Record<NativeTag, Record<string, number>> = {
     // `Button`'s fixed base classes (rounded-md, border, px-4/py-2) cannot express through an appended className.
     'src/components/layout/AppShell.tsx': 1,
     'src/components/home/Home.tsx': 2,
+    // The row's check-status cell (daw-chapter-track-auto-sync.prd.md Phase 6, S14): a bold label with a small muted
+    // line under it and a leading icon, which neither `Button` (a padded, uppercase pill) nor `IconButton` (icon-only,
+    // one accessible name with no visible text) can express. One JSX `<button>`, written once, reused per row.
+    'src/components/home/ChapterCheckStatusButton.tsx': 1,
     'src/components/manuscript/ChapterNav.tsx': 4,
     // The card's bookmark toggle and its whole-header toggle (manuscript-credits-card-parity.prd.md). `CreditsEntry.tsx`
     // now renders through this and has no raw button of its own (its old toggle button is gone, ceiling 0 below).

@@ -8,6 +8,8 @@ import type { ManuscriptContentKind } from '../../api/contracts/manuscript';
 import { estimateFinishedHours } from '../../state';
 import { chapterName } from '../../chapterName';
 import { TitleSubtitle } from '../primitives/TitleSubtitle';
+import { ChapterCheckStatusButton } from './ChapterCheckStatusButton';
+import { chapterCheckStatus } from './chapterCheckStatus';
 import { ChapterTrackButton } from './ChapterTrackButton';
 import { ChapterTrackPanel } from './ChapterTrackPanel';
 import { RemovedFromRecordingList } from './RemovedFromRecordingList';
@@ -188,6 +190,22 @@ export function AudiobookEstimatePanel({
     void stages.refresh();
     void loadChapters();
   }, stages.busy);
+
+  // Stage and chapter re-read on the sync event (daw-chapter-track-auto-sync.prd.md Phase 6 Decisions Log): every
+  // `chaptersync:state` - a link path, a sync, a finished check - is a moment the saved project or a stored result
+  // may have changed, so this replaces the need for the focus read above once a project is chapter-synced. The
+  // first state (the initial read on mount) is skipped: loadChapters and stages already run once on their own.
+  const sawChapterSync = useRef(false);
+  useEffect(() => {
+    if (!chapterSync) return;
+    if (!sawChapterSync.current) {
+      sawChapterSync.current = true;
+      return;
+    }
+    void loadChapters();
+    void stages.refresh();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- only chapterSync (a new object per event) should retrigger this
+  }, [chapterSync]);
 
   // Remove from recording / Restore (chapter-track-link-control.prd.md Phase 3): both re-read the chapter list (the
   // row leaves or rejoins the table) and ChapterTrackLinks (a removal clears the chapter's link). Remove rethrows on
@@ -415,7 +433,7 @@ export function AudiobookEstimatePanel({
                   Actual recorded
                 </TableHeader>
                 <TableHeader>Status</TableHeader>
-                <TableHeader hiddenLabel="Recording check" />
+                <TableHeader>Recording check</TableHeader>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -423,6 +441,9 @@ export function AudiobookEstimatePanel({
               {narrationChapters.map((chapter) => {
                 const finished = estimateFinishedHours(chapter.wordCount);
                 const running = coverage.phase === 'running' && coverage.chapterId === chapter.id;
+                const link = trackLinks?.chapters.find((entry) => entry.chapterId === chapter.id);
+                const syncRow = chapterSync?.chapters.find((entry) => entry.chapterId === chapter.id);
+                const checkStatus = chapterCheckStatus(link, syncRow, running || (syncRow?.checking ?? false), running ? coverage.percent : undefined);
                 return (
                   <TableRow key={chapter.id}>
                     <TableCell>
@@ -444,7 +465,6 @@ export function AudiobookEstimatePanel({
                     {trackLinks?.project === 'ready' && (
                       <TableCell>
                         {(() => {
-                          const link = trackLinks.chapters.find((entry) => entry.chapterId === chapter.id);
                           if (!link) return null;
                           const trackGuid = link.track?.trackGuid;
                           const trackSummary = trackGuid ? trackLinks.tracks.find((track) => track.guid === trackGuid) : undefined;
@@ -520,17 +540,7 @@ export function AudiobookEstimatePanel({
                       />
                     </TableCell>
                     <TableCell align="right">
-                      <Button
-                        variant="ghost"
-                        className="px-3 py-1 whitespace-nowrap"
-                        // The visible words start the name (label in name), and the chapter tells twelve Check buttons apart.
-                        aria-label={
-                          running ? `Checking ${Math.floor(coverage.percent)}%, recording of ${chapter.title}` : `Check recording of ${chapter.title}`
-                        }
-                        onClick={() => setChecking(chapter)}
-                      >
-                        {running ? `Checking ${Math.floor(coverage.percent)}%` : 'Check'}
-                      </Button>
+                      <ChapterCheckStatusButton chapterTitle={chapter.title} status={checkStatus} onClick={() => setChecking(chapter)} />
                     </TableCell>
                   </TableRow>
                 );

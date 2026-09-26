@@ -61,17 +61,25 @@ progress bar and the rest of the row totals stay narration-only, as before.
 
 ### Checking a chapter's recording
 
-**Check** at the end of a row opens the chapter's recording check. Nothing runs until you ask:
-the dialog first shows the last result, or says the chapter was never checked, and names the
-saved project file it reads ("Based on the saved REAPER project, file modified ..."). Save the
-project in REAPER before checking, because the check reads the saved file, not the open session.
+Every row already shows its recording check without a click: a bold label ("Current", "Out of
+date", "Never checked") and, under it, when it was checked or when the track last changed. A
+chapter with no confirmed track yet shows its link trouble instead ("Needs a track", "Suggested
+track", "Track missing" or "No track yet") — a check's freshness means nothing until there is a
+track to check. Press the row's status to open the chapter's recording-check panel. Nothing runs
+until you ask: the panel first shows the last result, or says the chapter was never checked, and
+names the saved project file it reads ("Based on the saved REAPER project, file modified ...").
+Save the project in REAPER before checking, because the check reads the saved file, not the open
+session.
 
 **Check recording** (or **Check again**) transcribes the audio items on the chapter's REAPER
 track with the Whisper model chosen in Settings, then compares the words with the chapter's text
 in order. The progress is real, from the transcription itself; **Cancel** stops it and keeps the
 items already transcribed, so the next check is quicker, and **Continue in background** closes
-the dialog while the row keeps its percent. The app tells you when it ends, wherever you are.
-If the Whisper model is not installed yet, the app asks before downloading it, as Proofing does.
+the work dialog while the row keeps its percent ("Checking 42%"). The app tells you when it ends,
+wherever you are. If the Whisper model is not installed yet, the app asks before downloading it,
+as Proofing does. A changed chapter can also be re-checked on its own, in the background, once
+REAPER has been quiet for a few minutes and the app is not otherwise busy (Settings' **Check
+changed chapters in the background**); pressing **Check recording** yourself always pre-empts it.
 
 ![Home - a chapter's recording check with text still to record](../../images/ui/home-recording-check.webp)
 
@@ -93,10 +101,10 @@ status.
 
 A result goes **out of date** when the saved project changes under it (an item added, removed,
 trimmed, moved, muted or switched to another take, an audio file changed) or the chapter's text
-changes. The dialog says which, keeps the old counts labelled as from then, and offers
+changes. The panel says which, keeps the old counts labelled as from then, and offers
 **Check again**; only the changed items are transcribed again.
 
-When a chapter cannot be checked, the dialog says why in plain words and where to fix it: a
+When a chapter cannot be checked, the panel says why in plain words and where to fix it: a
 chapter that is not linked to its REAPER track gets the track picker right there (the same link
 as on the [Tracks](tracks.md) page), a missing project file points to Tracks, and a missing
 Transcript Compare tool points to [Settings](settings.md).

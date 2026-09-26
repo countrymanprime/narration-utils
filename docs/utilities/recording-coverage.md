@@ -13,21 +13,30 @@ recording" from memory. The cost of a wrong call is an editing pass started on a
 
 ## Workflow
 
-Save the REAPER project, then press **Check** on a chapter's row of the Home breakdown and **Check recording**. The
-check reads the chapter's confirmed REAPER track from the saved project file. It transcribes each item's played range
-that it has not transcribed before, and then aligns the chapter's text to the words in order. The result reads "Text
-present: N of M words" and lists each missing region: which paragraphs, how many words, the first and last missing
-words, and where the gap sits in the audio. When every paragraph passes the
+Save the REAPER project. Every narration chapter's row of the Home breakdown already shows its check without a click
+(Phase 6, S14 below): a bold label ("Current", "Out of date", "Never checked", "Needs a track", "Suggested track",
+"Track missing" or "No track yet") and, under it, when it was checked or last changed. There is no separate Check
+button any more; the row itself opens the chapter's recording-check panel, a slide-over with the stored result and
+**Check recording** (or **Check again**). The check reads the chapter's confirmed REAPER track from the saved project
+file. It transcribes each item's played range that it has not transcribed before, and then aligns the chapter's text
+to the words in order. The result reads "Text present: N of M words" and lists each missing region: which paragraphs,
+how many words, the first and last missing words, and where the gap sits in the audio. When every paragraph passes the
 two thresholds, the chapter's `recording` signal is `met`, and the stage recommendations can suggest moving it on. The
 narrator always confirms. See [Using the app: Home](../guides/using-the-app/home.md#checking-a-chapters-recording) for
 the screens and [Settings](../guides/using-the-app/settings.md) for the four numbers.
 
-Each chapter's status is also known without a click. Chapter sync's `chaptersync:state` event
+Each chapter's status is known without a click for exactly this reason. Chapter sync's `chaptersync:state` event
 ([DAW chapter-track auto-sync](../prds/daw-chapter-track-auto-sync.prd.md) Phase 6) carries one row per narration
 chapter: its track, whether its check is `current`, `stale` (with the reasons above) or `never` run, when the check
 finished, whether one is running, and when the track last changed. The row is this evaluation of the stored result
 against the saved project, so reading it still never starts a check (Q14). The event is sent after each sync, each
-save the watcher picks up, and each check that ends.
+save the watcher picks up, and each check that ends; Home re-reads its chapter list and stage suggestions on the same
+event, so the row and the rest of the page never disagree.
+
+A chapter with no confirmed track yet reads its link trouble instead of a freshness word ("Needs a track", "Suggested
+track", "Track missing" or "No track yet": chapter-track-link-control.prd.md), since a check's freshness means nothing
+until there is a track to check. The row is still clickable in every state: opening the panel on an unlinked chapter
+shows the same in-place track-link prompt a refused check always has.
 
 A chapter whose recording changed since its check is also re-checked in the background
 ([ADR 0211](../adr/0211-a-changed-chapter-is-rechecked-in-the-background-only-on-mains-power-with-reaper-quiet-and-not-recording.md)):
@@ -92,7 +101,8 @@ flowchart LR
   removed, trimmed, moved, muted or switched to another take, or an audio file changed. It also goes stale when the
   chapter's text, the equivalences, the vocabulary hints or an alignment setting changes. A different Whisper model or
   language keeps it current and labelled with the model (Q13).
-- **Three readers.** The Home dialog (`RecordingCheck.tsx`) shows the stored report. The `CoverageResult` payload also
+- **Three readers.** The Home slide-over (`RecordingCheck.tsx`, opened from the row's check-status cell since Phase 6
+  retired the row's own Check button) shows the stored report. The `CoverageResult` payload also
   carries `judgement`: met or not met by the narrator's thresholds, with the gap that fails first. It comes from
   `coverage.Judge`, the same function the stage signal uses, so the two cannot disagree. It is set for any complete
   result with a report, a stale one included (as of the last check)

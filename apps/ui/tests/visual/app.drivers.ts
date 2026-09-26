@@ -382,8 +382,9 @@ async function openImportReview(page: Page, preview?: 'markdown' | 'repaired' | 
   return dialog;
 }
 
-// Opens a chapter's recording check from the per-chapter breakdown (docs/utilities/recording-coverage.md, ADR 0130), optionally booted with a
-// mock seed (main.tsx), and waits until the stored result has been read into the dialog. Returns the dialog.
+// Opens a chapter's recording check from the per-chapter breakdown's check-status cell (docs/utilities/recording-coverage.md, ADR 0130;
+// daw-chapter-track-auto-sync.prd.md Phase 6, which retired the row's own Check button), optionally booted with a mock seed
+// (main.tsx), and waits until the stored result has been read into the slide-over. Returns the slide-over.
 async function openRecordingCheck(page: Page, chapter: string, seed?: string) {
   if (seed) {
     await page.goto(`/?${seed}`);
@@ -391,8 +392,9 @@ async function openRecordingCheck(page: Page, chapter: string, seed?: string) {
   }
   await homeLoaded(page);
   await clickVisible(page, 'button', /Show per-chapter breakdown/);
-  await clickVisible(page, 'button', `Check recording of ${chapter}`);
-  // A prefix match: the dialog's full name also carries the chapter's subtitle when it has one
+  // A prefix match: the button's own accessible name also carries its freshness or link state, which differs per row and mock seed.
+  await clickVisible(page, 'button', new RegExp(`^Recording check for ${chapter}:`));
+  // A prefix match: the panel's full name also carries the chapter's subtitle when it has one
   // (chapter-title-display-consistency.prd.md Q6), which this helper's callers do not all pass.
   const dialog = page.getByRole('dialog', { name: new RegExp(`^Recording check: ${chapter}\\b`) });
   await dialog.getByRole('button', { name: /^Check (recording|again)$/ }).waitFor();

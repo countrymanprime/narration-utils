@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { useApi } from '../../api/ApiContext';
 import type { CoverageJudgement, CoverageReport, CoverageRegionKind, ManuscriptChapter } from '../../types';
 import { Button } from '../primitives/Button';
@@ -40,6 +40,7 @@ export function RecordingCheckReport({
   report,
   judgement,
   goToParagraph,
+  actionsSlot,
 }: {
   chapter: ManuscriptChapter;
   report: CoverageReport;
@@ -47,6 +48,9 @@ export function RecordingCheckReport({
   judgement?: CoverageJudgement;
   /** Opens the manuscript at a paragraph (its index in the whole manuscript). */
   goToParagraph: (index: number) => void;
+  /** Check again, placed after the chapter figures and before Pickups (recording-check-summary.prd.md Phase 4
+   * mockups, `01-slideover-not-complete.webp`): the one action the panel has, kept close to the figures it refreshes. */
+  actionsSlot?: ReactNode;
 }) {
   const { complete, headline, detail } = verdict(report, judgement);
   const refs = paragraphRefs(
@@ -118,6 +122,7 @@ export function RecordingCheckReport({
           {plural(report.extraTokens, 'extra word')} heard (retakes, asides, a spoken title); extra words never count against the reading.
         </p>
       )}
+      {actionsSlot}
       <section aria-labelledby="recording-check-pickups">
         <h3 id="recording-check-pickups" className={EYEBROW}>
           Pickups ({pickups.length})
