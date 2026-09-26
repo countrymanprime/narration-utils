@@ -7,6 +7,7 @@ import { Heading } from '../primitives/Heading';
 import { Panel } from '../primitives/Panel';
 import { ProgressBar } from '../primitives/ProgressBar';
 import { Tab, TabList, TabPanel, Tabs } from '../primitives/Tabs';
+import { BookChecklistPanel } from './BookChecklistPanel';
 import { deliveryProfileKey, deliveryProfileTitle } from './deliveryProfile';
 import { DeliveryProfilePanel, type ProfileState } from './DeliveryProfilePanel';
 import { DiagnosticsTab } from './DiagnosticsTab';
@@ -248,6 +249,7 @@ export function DeliveryPage({ openSettings }: { openSettings: () => void }) {
               )
             )}
           </Panel>
+          {judgedBy && job && job.bookRules.length > 0 && <BookChecklistPanel profile={judgedBy} bookRules={job.bookRules} />}
           {detail && judgedBy && <FileRulesPanel file={detail} profile={judgedBy} onClose={() => setSelected(undefined)} />}
         </TabPanel>
         <TabPanel value="diagnostics">

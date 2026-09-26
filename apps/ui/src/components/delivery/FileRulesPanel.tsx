@@ -114,8 +114,8 @@ export function FileRulesPanel({ file, profile, onClose }: { file: MeasureFileRe
         </Table>
       </div>
       <p className="mt-2 text-xs" style={MUTED}>
-        Book rules (channels the same across files, credits files, retail sample, one section per file, consistency) are listed in the profile; the checklist
-        for them comes later.
+        Book rules (channels the same across files, credits files, retail sample, one section per file, consistency) judge the book as a whole, not this one
+        file: see the Book checklist above.
       </p>
     </Panel>
   );
