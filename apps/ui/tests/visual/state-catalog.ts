@@ -409,6 +409,27 @@ export const STATE_CATALOG: StateEntry[] = [
   },
   {
     page: 'manuscript',
+    state: 'read-aloud-resume-agree',
+    description:
+      "Manuscript, the resume prompt when REAPER's recording and the prompter's last reading agree (read-aloud-resume-from-daw.prd.md Phase 3, RD3/RD4, ?mockResume=agree) - a one-line notice presets Start reading to the DAW word without asking, with Change and Start from the top as links; the control bar's start-point chip shows the same preset with no click made",
+    ...REFLOW,
+  },
+  {
+    page: 'manuscript',
+    state: 'read-aloud-resume-disagree',
+    description:
+      'Manuscript, the resume prompt when REAPER and the last reading are far apart (Phase 3, RD1, ?mockResume=disagree) - a compact two-way choice, REAPER and Last reading side by side with their own sentence and word number, plus Start from the top and Pick a word',
+    ...REFLOW,
+  },
+  {
+    page: 'manuscript',
+    state: 'read-aloud-resume-prompter-only',
+    description:
+      'Manuscript, the resume prompt when only the prompter remembers a last reading - no track, no recording (Phase 3, RD8, ?mockResume=prompter_only) - one line, "Your last reading stopped at … Continue there?", never taken silently',
+    ...REFLOW,
+  },
+  {
+    page: 'manuscript',
     state: 'read-aloud-resume-not-found',
     description:
       "Manuscript, the resume prompt when the recording's tail did not match the chapter (?mockResume=not_found) - no resume word; says reading starts from the top, shows what was heard, offers Pick a word",

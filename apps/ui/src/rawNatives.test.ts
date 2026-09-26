@@ -50,6 +50,13 @@ const CEILING: Record<NativeTag, Record<string, number>> = {
     // Phase 2, CS4): an inline word inside a paragraph, the same case `ReaderText.tsx` above is for - `Button`'s padded,
     // uppercase chrome would break the sentence it sits in.
     'src/components/credits/CreditsSetupDialog.tsx': 1,
+    // read-aloud-resume-from-daw.prd.md Phase 3's compact reconciliation notices (Change, Start from the top, Pick a word,
+    // Continue there): plain underlined text links inline in a one-line sentence, the same `ReaderText.tsx`/
+    // `CreditsSetupDialog.tsx` case above (`TextLink`, written once, reused by every call). The other is the disagree
+    // choice's own card ("a card that is a button" - two places, REAPER and Last reading - written once as `card()`,
+    // called twice): `Button`'s padded, uppercase chrome fits neither a plain link nor a card naming a source, a time and
+    // a quoted sentence.
+    'src/components/teleprompter/ResumePrompt.tsx': 2,
   },
   select: {},
   // Reaper-automation-follow-through PRD Phase 9: `PickupsDialog`'s CSV picker is a hidden native `<input type="file">`
