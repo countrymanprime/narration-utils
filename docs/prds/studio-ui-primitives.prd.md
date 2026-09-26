@@ -145,7 +145,7 @@ Phases 1, 2, 3, 5, 6, 9, 11 and 12: the tokens, `Kbd`, `StatusBadge`, `LevelMete
 | 6 | Toolbar | Roving-tabindex toolbar | pending | with 2-5, 7-10 | 1 | - |
 | 7 | Timeline | `Timeline` + `TimelineLane`, keyboard-navigable markers (Q5) | pending | with 2-6, 8-10 | 1 | - |
 | 8 | StageGrid | Chapter × stage grid with grid keyboard navigation | pending | with 2, 4-7, 9, 10 | 1, 3 | - |
-| 9 | FocusShell | Full-screen booth layout on the booth surface | pending | with 2-8, 10 | 1 | - |
+| 9 | FocusShell | Full-screen booth layout on the booth surface | complete | with 2-8, 10 | 1 | - |
 | 10 | CompactShell | Narrow companion panel layout | pending | with 2-9 | 1 | - |
 | 11 | CapabilityGate | Presentational gate over a capability entry (Q3, Q4); no API | pending | with 4-10 | 3 | - |
 | 12 | useCapability | Hook in `src/` over DAW port P4's binding, event and mock; feedback-catalog rows | pending | with 2-11 | DAW port P4 | - |
