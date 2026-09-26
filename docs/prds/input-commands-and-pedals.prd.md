@@ -173,7 +173,7 @@ Lanes: **U** = primitives and input (Sonnet), **A** = host (Go settings). ADRs c
 | 5 | Keymap settings row (A) | `Keymap.overrides` in defaults, store, `fieldSchemas`, contracts, mock | pending | with 1 to 4 | Q2 | - |
 | 6 | Keyboard & pedals settings (U) | Settings category: list, remap by pressing, conflict message, reset. Visual rows | pending | with 7 | 1, 5, Kbd | - |
 | 7 | Shortcut sheet (U) | "?" opens a dialog of the active commands by scope. Aria snapshot, visual row | pending | with 6 | 2, Kbd | - |
-| 8 | Spike: Web MIDI and WebHID (U) | Availability and permission in WebView2, WKWebView and WebKitGTK 6.0. A research note | pending | with 2 to 7 | - | - |
+| 8 | Spike: Web MIDI and WebHID (U) | Availability and permission in WebView2, WKWebView and WebKitGTK 6.0. A research note | complete | with 2 to 7 | - | - |
 | 9 | MidiSource (U, A if needed) | Web MIDI note-on and CC presses, learned in the Phase 6 recorder. Threat model | pending | with 10 | 6, 8 | - |
 | 10 | Silent while recording (U) | `noisy` commands suppressed while the DAW port reports recording | pending | with 9 | 1, DAW port P9 | - |
 | 11 | HidSource (U, Could) | WebHID buttons as gestures, if Phase 8 finds it usable | pending | - | 8, 9 | - |
