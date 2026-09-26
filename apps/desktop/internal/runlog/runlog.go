@@ -225,9 +225,9 @@ func (w *rotatingWriter) Write(p []byte) (int, error) {
 	if err != nil {
 		return 0, fmt.Errorf("could not open the run log: %w", err)
 	}
-	defer func() { _ = file.Close() }()
 	n, err := file.Write(p)
 	if err != nil {
+		_ = file.Close()
 		return n, err
 	}
 	return n, file.Close()
