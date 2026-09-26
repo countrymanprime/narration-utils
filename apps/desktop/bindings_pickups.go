@@ -39,7 +39,14 @@ func (h *Host) PickupsImport(csvText string) (string, error) {
 		}
 		return "", fmt.Errorf("%s", message)
 	}
-	return encodeBinding(PickupsImportResult{Status: "started", RowErrors: rowErrors}, service.Import(rows))
+	run := h.runLog.Begin("pickups_import", "row_count", len(rows), "row_error_count", len(rowErrors))
+	err := service.Import(rows)
+	if err != nil {
+		run.End("error")
+	} else {
+		run.End("ok")
+	}
+	return encodeBinding(PickupsImportResult{Status: "started", RowErrors: rowErrors}, err)
 }
 
 func (h *Host) PickupsExport() (string, error) {

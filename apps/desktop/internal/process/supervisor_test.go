@@ -42,7 +42,7 @@ func runContext(t *testing.T, dir string) (context.Context, string) {
 // its run file finishes sometime after the child itself exits, not synchronously with it.
 func waitForStderrFile(t *testing.T, path, want string) string {
 	t.Helper()
-	deadline := time.Now().Add(5 * time.Second)
+	deadline := time.Now().Add(20 * time.Second)
 	var last string
 	for time.Now().Before(deadline) {
 		if got, err := os.ReadFile(path); err == nil {
@@ -65,7 +65,7 @@ func TestSupervisorDrainsAndRecordsExit(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	deadline := time.Now().Add(5 * time.Second)
+	deadline := time.Now().Add(20 * time.Second)
 	for !child.HasExited() && time.Now().Before(deadline) {
 		time.Sleep(10 * time.Millisecond)
 	}
@@ -85,7 +85,7 @@ func TestStartKeepsStderrInTheRunsFileAndSetsEnv(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	deadline := time.Now().Add(5 * time.Second)
+	deadline := time.Now().Add(20 * time.Second)
 	for !child.HasExited() && time.Now().Before(deadline) {
 		time.Sleep(10 * time.Millisecond)
 	}

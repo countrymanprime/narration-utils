@@ -12,6 +12,7 @@ import (
 	"github.com/countrymanprime/narration-utils/shell/internal/chaptersync"
 	"github.com/countrymanprime/narration-utils/shell/internal/findings"
 	"github.com/countrymanprime/narration-utils/shell/internal/process"
+	"github.com/countrymanprime/narration-utils/shell/internal/runlog"
 	"github.com/countrymanprime/narration-utils/shell/internal/takereview"
 	"github.com/countrymanprime/narration-utils/shell/internal/tracks"
 )
@@ -169,8 +170,10 @@ func (h *Host) startTakeReviewScan(requested TakeReviewScanScope) (TakeReviewSca
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
+	id := fmt.Sprintf("take-review-%d", time.Now().UnixNano())
+	ctx = runlog.WithRun(ctx, h.jobRuns.begin(h.runLog, id, jobKindTakeReview, "chapter_track", scope.ChapterTrackName))
 	job := &takeReviewScanJob{
-		id: fmt.Sprintf("take-review-%d", time.Now().UnixNano()), phase: "running", started: time.Now(), scope: requested, cancel: cancel,
+		id: id, phase: "running", started: time.Now(), scope: requested, cancel: cancel,
 		message: fmt.Sprintf("Scanning %s for pickups and duplicates.", scope.ChapterTrackName),
 	}
 	job.logs = []string{job.message}

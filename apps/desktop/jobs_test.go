@@ -71,26 +71,26 @@ func TestTranscriptRunEndsOnceWhateverHowItEnds(t *testing.T) {
 	}
 	var watch transcriptWatch
 	for _, phase := range []string{"idle", "preparing", "running", "running", "inspecting"} {
-		if _, ended := watch.observe(state(phase)); ended {
+		if _, ended := watch.observe(nil, state(phase)); ended {
 			t.Fatalf("phase %q is not an end", phase)
 		}
 	}
-	event, ended := watch.observe(state("success"))
+	event, ended := watch.observe(nil, state("success"))
 	if !ended || event.Kind != jobKindTranscript || event.Outcome != jobOutcomeSuccess || event.ID != "run-7" || event.Message != "Comparison complete." {
 		t.Fatalf("success = %+v, %v", event, ended)
 	}
 	// The marker export keeps the phase at success and changes other fields: none of that is a new end.
-	if _, again := watch.observe(state("success")); again {
+	if _, again := watch.observe(nil, state("success")); again {
 		t.Fatal("a second state in the same phase reported a second end")
 	}
 	// Discarding the results is not the end of a run either.
-	if _, discarded := watch.observe(state("idle")); discarded {
+	if _, discarded := watch.observe(nil, state("idle")); discarded {
 		t.Fatal("a reset reported an end")
 	}
 	for _, c := range []struct{ phase, outcome string }{{"error", jobOutcomeError}, {"cancelled", jobOutcomeCancelled}} {
-		watch.observe(state("preparing"))
-		watch.observe(state("need_chapter"))
-		event, ended := watch.observe(state(c.phase))
+		watch.observe(nil, state("preparing"))
+		watch.observe(nil, state("need_chapter"))
+		event, ended := watch.observe(nil, state(c.phase))
 		if !ended || event.Outcome != c.outcome {
 			t.Fatalf("%s = %+v, %v", c.phase, event, ended)
 		}

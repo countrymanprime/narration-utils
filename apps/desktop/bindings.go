@@ -373,6 +373,7 @@ func (h *Host) ManuscriptSelectFile() (string, error) {
 	// their time in the picker, and the import belongs to the project that is
 	// open when a file was chosen.
 	job := h.services().manuscript.Begin(path)
+	h.jobRuns.begin(h.runLog, job.ID, jobKindManuscriptImport, "source", path)
 	return encodeBinding(map[string]any{"selected": true, "jobId": job.ID}, nil)
 }
 
@@ -383,6 +384,7 @@ func (h *Host) ManuscriptBeginImport(path string) (string, error) {
 	if err != nil {
 		return "", err
 	}
+	h.jobRuns.begin(h.runLog, job.ID, jobKindManuscriptImport, "source", path)
 	return encodeBinding(map[string]any{"selected": true, "jobId": job.ID}, nil)
 }
 func (h *Host) ManuscriptImportState(jobID string) (string, error) {
@@ -554,6 +556,13 @@ func (h *Host) TeleprompterStart(options map[string]string) (string, error) {
 		started[key] = value
 	}
 	started["engine"], started["model"], started["modelDir"] = engine, modelID, modelDir
+	// teleprompterSessionRunID is a fixed key, not a per-run id: at most one session runs at a time (like MeterStart),
+	// so ending a stale entry (a previous session that exited without TeleprompterStop) before beginning this one
+	// guarantees every run.start still gets a run.end, if only an approximate "cancelled".
+	if stale := h.jobRuns.end(teleprompterSessionRunID); stale != nil {
+		stale.End("cancelled")
+	}
+	h.jobRuns.begin(h.runLog, teleprompterSessionRunID, "teleprompter", "engine", engine)
 	// `credits` ("opening" or "closing") reads the credits instead of a chapter (audiobook-credits-templates.prd.md
 	// Phase 4, ADR 0150): the host renders the text itself, so the UI names only which credits, never the text.
 	if kind := strings.TrimSpace(options["credits"]); kind != "" {
@@ -623,6 +632,9 @@ func (h *Host) teleprompterModel(requested string) (id, dir string, required map
 func (h *Host) TeleprompterStop() (string, error) {
 	if service := h.services().teleprompter; service != nil {
 		service.Stop()
+	}
+	if run := h.jobRuns.end(teleprompterSessionRunID); run != nil {
+		run.End("ok")
 	}
 	return encodeBinding(nil, nil)
 }

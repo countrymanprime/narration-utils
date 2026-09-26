@@ -75,6 +75,10 @@ func (h *Host) coverageStart(chapterID string) (any, error) {
 	if err != nil {
 		return nil, err
 	}
+	// The sidecar is already launched by the time Start returns its run id, so unlike the job kinds that build their
+	// own context up front, this run cannot carry into coverage's own launch — recording coverage's stderr capture
+	// waits on a context (or run) parameter threaded into internal/coverage.Service.Start itself.
+	h.jobRuns.begin(h.runLog, state.RunID, jobKindCoverage, "chapter_id", chapterID)
 	return map[string]any{"status": "started", "state": state}, nil
 }
 

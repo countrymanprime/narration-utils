@@ -11,6 +11,7 @@ import (
 	"github.com/countrymanprime/narration-utils/shell/internal/deliveryprofile"
 	"github.com/countrymanprime/narration-utils/shell/internal/findings"
 	"github.com/countrymanprime/narration-utils/shell/internal/measure"
+	"github.com/countrymanprime/narration-utils/shell/internal/runlog"
 )
 
 // Measuring the narrator's rendered chapter files as a job (diagnostics-delivery-and-cleanup-tools.prd.md Phase 1,
@@ -286,8 +287,10 @@ func (h *Host) startMeasure(requested []string) (MeasureJob, error) {
 		return MeasureJob{}, err
 	}
 	ctx, cancel := context.WithCancel(context.Background())
+	id := fmt.Sprintf("measure-%d", time.Now().UnixNano())
+	ctx = runlog.WithRun(ctx, h.jobRuns.begin(h.runLog, id, jobKindMeasurement, "file_count", len(paths)))
 	job := &measureJob{
-		id: fmt.Sprintf("measure-%d", time.Now().UnixNano()), phase: "running", started: time.Now(), cancel: cancel,
+		id: id, phase: "running", started: time.Now(), cancel: cancel,
 		message: fmt.Sprintf("Measuring %s.", countFiles(len(paths))),
 	}
 	job.logs = []string{job.message}

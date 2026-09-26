@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/countrymanprime/narration-utils/shell/internal/assets"
+	"github.com/countrymanprime/narration-utils/shell/internal/runlog"
 )
 
 // The kinds of asset install. The wrappers over the voice and model bindings (TtsInstall, WhisperInstall) each start one.
@@ -129,7 +130,9 @@ func (h *Host) startInstall(spec installSpec) (map[string]any, error) {
 		}
 		ctx, cancel := context.WithCancel(context.Background())
 		downloading := "Downloading and verifying the approved " + spec.noun + "…"
-		job := &installJob{id: fmt.Sprintf("%s-%d-%d", spec.kind, time.Now().UnixNano(), installSeq.Add(1)), kind: spec.kind, assetID: spec.assetID, phase: installPhaseDownloading,
+		id := fmt.Sprintf("%s-%d-%d", spec.kind, time.Now().UnixNano(), installSeq.Add(1))
+		ctx = runlog.WithRun(ctx, h.jobRuns.begin(h.runLog, id, spec.endedKind, "asset_id", spec.assetID))
+		job := &installJob{id: id, kind: spec.kind, assetID: spec.assetID, phase: installPhaseDownloading,
 			message: downloading, downloadingText: downloading, total: total, received: map[string]int64{}, ctx: ctx, cancel: cancel, finished: make(chan struct{}), started: time.Now()}
 		h.installJobs[job.id] = job
 		h.mu.Unlock()

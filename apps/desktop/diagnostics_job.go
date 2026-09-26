@@ -10,6 +10,7 @@ import (
 
 	"github.com/countrymanprime/narration-utils/shell/internal/findings"
 	"github.com/countrymanprime/narration-utils/shell/internal/measure"
+	"github.com/countrymanprime/narration-utils/shell/internal/runlog"
 )
 
 // The Diagnostics view's job (diagnostics-delivery-and-cleanup-tools.prd.md Phase 6). It runs the windowed analyzers
@@ -228,8 +229,10 @@ func (h *Host) startDiagnostics(requested []string, sourceKind string) (Diagnost
 		return DiagnosticsJob{}, err
 	}
 	ctx, cancel := context.WithCancel(context.Background())
+	id := fmt.Sprintf("diagnostics-%d", time.Now().UnixNano())
+	ctx = runlog.WithRun(ctx, h.jobRuns.begin(h.runLog, id, jobKindDiagnostics, "source_kind", sourceKind, "file_count", len(paths)))
 	job := &diagnosticsJob{
-		id: fmt.Sprintf("diagnostics-%d", time.Now().UnixNano()), phase: "running", started: time.Now(), cancel: cancel,
+		id: id, phase: "running", started: time.Now(), cancel: cancel,
 		sourceKind: kind, thresholds: diagnosticThresholds(), message: fmt.Sprintf("Checking %s.", countFiles(len(paths))),
 	}
 	job.logs = []string{job.message}

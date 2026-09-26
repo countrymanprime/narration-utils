@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/countrymanprime/narration-utils/shell/internal/manuscript"
+	"github.com/countrymanprime/narration-utils/shell/internal/runlog"
 )
 
 // jobEndedEvent is the one event every host job ends with (ADR 0076). The UI shows the completion from it whatever page the narrator is
@@ -75,6 +76,9 @@ func endedJob(id, kind, phase, message string, started time.Time) (jobEnded, boo
 // publishJobEnded sends the event. It never holds h.mu while emitting, and before the window exists (or in a test with a sink) it goes to
 // the seam or nowhere.
 func (h *Host) publishJobEnded(event jobEnded) {
+	if run := h.jobRuns.end(event.ID); run != nil {
+		run.End(event.Outcome)
+	}
 	h.mu.RLock()
 	ctx, sink := h.ctx, h.jobEvents
 	h.mu.RUnlock()
@@ -105,6 +109,12 @@ type transcriptWatch struct {
 	active bool
 	// +checklocks:mu
 	started time.Time
+	// run is this comparison's own run.start/run.end pair. Unlike every other job kind, transcript_compare's id is a
+	// bridge run id the host only learns from a live state, not from starting the job itself, so its runlog.Run lives
+	// here rather than in jobRuns (runlog_jobs.go), begun and ended in the same observe call that already tracks
+	// active/started.
+	// +checklocks:mu
+	run *runlog.Run
 }
 
 // transcriptActive is every phase a comparison is still going through; need_chapter waits for the narrator, so it belongs to the run.
@@ -117,13 +127,14 @@ func transcriptActive(phase string) bool {
 }
 
 // observe is called with every state the transcript service reports. It returns the event to publish when this state ended a run.
-func (w *transcriptWatch) observe(state map[string]any) (jobEnded, bool) {
+func (w *transcriptWatch) observe(logger *runlog.Logger, state map[string]any) (jobEnded, bool) {
 	phase, _ := state["phase"].(string)
 	w.mu.Lock()
 	defer w.mu.Unlock()
 	if transcriptActive(phase) {
 		if !w.active {
 			w.active, w.started = true, time.Now()
+			w.run = logger.Begin(jobKindTranscript, "run_id", state["runId"])
 		}
 		return jobEnded{}, false
 	}
@@ -134,5 +145,10 @@ func (w *transcriptWatch) observe(state map[string]any) (jobEnded, bool) {
 	id, _ := state["runId"].(string)
 	message, _ := state["message"].(string)
 	// idle after a reset is not an end: the run was discarded, not finished.
-	return endedJob(id, jobKindTranscript, phase, message, w.started)
+	event, ok := endedJob(id, jobKindTranscript, phase, message, w.started)
+	if ok {
+		w.run.End(event.Outcome)
+	}
+	w.run = nil
+	return event, ok
 }

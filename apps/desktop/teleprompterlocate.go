@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/countrymanprime/narration-utils/shell/internal/chaptermatch"
+	"github.com/countrymanprime/narration-utils/shell/internal/runlog"
 	"github.com/countrymanprime/narration-utils/shell/internal/teleprompter"
 	"github.com/countrymanprime/narration-utils/shell/internal/tracks"
 )
@@ -137,12 +138,15 @@ func (h *Host) locateTail(svc hostServices, chapterID, trackGUID, model string, 
 	result.Tail = &tail
 	ctx, cancel := context.WithTimeout(context.Background(), teleprompterLocateTimeout)
 	defer cancel()
-	located, err := svc.teleprompter.Locate(ctx, teleprompter.LocateRequest{
+	run := h.runLog.Begin("teleprompter_locate", "chapter_id", chapterID)
+	located, err := svc.teleprompter.Locate(runlog.WithRun(ctx, run), teleprompter.LocateRequest{
 		Chapter: chapterID, Audio: end.SourceFile, From: tail.From, To: tail.To, Model: modelID, ModelDir: modelDir,
 	})
 	if err != nil {
+		run.End("error")
 		return nil, err
 	}
+	run.End("ok")
 	result.Located = &located
 	result.Status = locatedStatus(located)
 	return result, nil
