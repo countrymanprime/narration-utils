@@ -170,3 +170,15 @@ func TestPreviewTranslatesAWholeSessionErrorForEveryRequestInFlight(t *testing.T
 		t.Fatalf("got %v, want ErrScriptOutdated", err)
 	}
 }
+
+func TestApplyFailsTheRequestWhenItsOwnAnswerIsMalformed(t *testing.T) {
+	cleanup, client, dir := newCleanupSession(t)
+	startFakeReaper(t, client, dir, func(command []string) [][]string {
+		// CLEANUP_APPLIED requires a run and a count; this run's own answer is missing the count.
+		return [][]string{{"CLEANUP_APPLIED", run(command)}}
+	})
+	_, err := cleanup.Apply(context.Background(), oneCandidate())
+	if err == nil || !strings.Contains(err.Error(), "could not read") {
+		t.Fatalf("got %v, want a could-not-read error", err)
+	}
+}
