@@ -206,7 +206,7 @@ func Role[T any](r *Resolver, c Capability) (T, error) // *port.NotSupportedErro
 
 | # | Phase | Description | Status | Parallel | Depends | PRP Plan |
 | --- | --- | --- | --- | --- | --- | --- |
-| 1 | Port vocabulary and contracts | `internal/port`; `internal/dawport` types, role interfaces, `Resolver`, `Role[T]`; `dawporttest` fake and conformance suite. No callers | in progress: `internal/dawport` #621; conformance suite next; the vocabulary sits in `dawport` until `internal/port` exists (ADR 0302) | Runs alongside provider-ports P1 (Python only); provider-ports P2 waits for this phase's `internal/port` | none | |
+| 1 | Port vocabulary and contracts | `internal/port`; `internal/dawport` types, role interfaces, `Resolver`, `Role[T]`; `dawporttest` fake and conformance suite. No callers | in progress: `internal/dawport` merged (#621); the `dawporttest` conformance suite is #624; the vocabulary sits in `dawport` until `internal/port` exists (ADR 0302) | Runs alongside provider-ports P1 (Python only); provider-ports P2 waits for this phase's `internal/port` | none | |
 | 2 | REAPER and Audacity adapters | `dawport/reaper` wraps the bridge types; `dawport/audacity` declares all `NotYetAvailable`; registry; both pass `dawporttest.Run` | pending | no | 1 | |
 | 3 | Per-capability toggles | `DAW.capability.<name>` rows (append-only in `config/defaults.json`, `settings/store.go`), the resolver reads them, `experimental_reaper_actions` mapped; `bridge.Actions` gating delegates to the resolver | pending | no | 2 | |
 | 4 | Capabilities on the wire | `DawCapabilities` binding and `daw_capabilities_changed` event; schema, golden, `wireContracts` row, mock; `hostAPIVersion` + 1; Settings lists capabilities with their toggles | pending | no | 3 | |
