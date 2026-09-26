@@ -624,6 +624,14 @@ def build_entities(paragraphs: list[dict[str, str]], model_name: str, espeak_lib
                 "review_state": "needs review" if category == "Needs Review" else "generated",
             }
         )
+    found_counts = Counter(entity["category"] for entity in entities)
+    log(
+        "found entity candidates",
+        level="debug",
+        event="guide.entities_found",
+        entity_count=len(entities),
+        **{name.lower().replace(" ", "_"): count for name, count in found_counts.items()},
+    )
     return sorted(entities, key=lambda entity: (entity["category"], entity["canonical_name"].lower()))
 
 
@@ -759,6 +767,14 @@ def merge_locked(generated: list[dict[str, Any]], old: dict[str, Any] | None) ->
                         target.setdefault("aliases", []).append(candidate)
                         existing_alias_texts.add(key)
             target["occurrence_count"] = entity_occurrence_count(target)
+    log(
+        "merged generated entities with the saved guide",
+        level="debug",
+        event="guide.entities_merged",
+        generated_count=len(generated),
+        merged_count=len(merged),
+        redirected_count=sum(len(absorbed) for absorbed in redirected.values()),
+    )
     return merged
 
 

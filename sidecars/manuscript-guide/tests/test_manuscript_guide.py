@@ -2,11 +2,13 @@ import argparse
 import importlib.util
 import io
 import json
+import os
 import re
 import subprocess
 import sys
 import tempfile
 import unittest
+from contextlib import redirect_stderr
 from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
@@ -124,6 +126,51 @@ class ManuscriptGuideTests(unittest.TestCase):
         with patch.object(guide, "spacy_candidates", return_value=None):
             entities = guide.build_entities(paragraphs, "unused", None)
         self.assertEqual(["Black Halo"], [entity["canonical_name"] for entity in entities])
+
+    def test_entities_found_are_recorded_at_debug_level(self):
+        paragraphs = [
+            {"chapter": "Chapter 1", "text": "Black Halo appeared. About noon, it vanished."},
+            {"chapter": "Chapter 2", "text": "Black Halo appeared again."},
+            {"chapter": "Chapter 3", "text": "Black Halo appeared once more."},
+        ]
+        os.environ["NARRATION_LOG_LEVEL"] = "debug"
+        try:
+            buffer = io.StringIO()
+            with patch.object(guide, "spacy_candidates", return_value=None), redirect_stderr(buffer):
+                guide.build_entities(paragraphs, "unused", None)
+        finally:
+            os.environ.pop("NARRATION_LOG_LEVEL", None)
+
+        records = [json.loads(line) for line in buffer.getvalue().splitlines() if line]
+        (record,) = [r for r in records if r.get("event") == "guide.entities_found"]
+        self.assertEqual(1, record["entity_count"])
+        self.assertNotIn("Black Halo", json.dumps(record))
+
+    def test_entities_merged_are_recorded_at_debug_level(self):
+        generated = [
+            {
+                "id": "entity-abc",
+                "canonical_name": "Arelian",
+                "category": "Character",
+                "pronunciation": {"say_as": "Arelian"},
+                "description": {"text": ""},
+                "personality_notes": [],
+                "locked": False,
+            }
+        ]
+        os.environ["NARRATION_LOG_LEVEL"] = "debug"
+        try:
+            buffer = io.StringIO()
+            with redirect_stderr(buffer):
+                guide.merge_locked(generated, {"entities": []})
+        finally:
+            os.environ.pop("NARRATION_LOG_LEVEL", None)
+
+        records = [json.loads(line) for line in buffer.getvalue().splitlines() if line]
+        (record,) = [r for r in records if r.get("event") == "guide.entities_merged"]
+        self.assertEqual(1, record["generated_count"])
+        self.assertEqual(1, record["merged_count"])
+        self.assertEqual(0, record["redirected_count"])
 
     def test_locked_edit_survives_rebuild(self):
         generated = [
