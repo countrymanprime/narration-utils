@@ -34,6 +34,7 @@ import (
 	"github.com/countrymanprime/narration-utils/shell/internal/recents"
 	"github.com/countrymanprime/narration-utils/shell/internal/renderconfig"
 	"github.com/countrymanprime/narration-utils/shell/internal/retakelanes"
+	"github.com/countrymanprime/narration-utils/shell/internal/runlog"
 	"github.com/countrymanprime/narration-utils/shell/internal/settings"
 	"github.com/countrymanprime/narration-utils/shell/internal/stages"
 	"github.com/countrymanprime/narration-utils/shell/internal/takecompare"
@@ -136,6 +137,9 @@ type Host struct {
 	// ADR 0179): user-level like creditTemplates, set once in NewHost and never swapped by a project switch.
 	deliveryProfiles *deliveryprofile.Store
 	log              *hostlog.Log
+	// runLog is the structured, leveled run log (docs/prds/tool-run-logging.prd.md, ADR 0251): every host job and
+	// sidecar launch wraps itself in runLog.Begin/Run.End (phase 3); set once in NewHost and never swapped.
+	runLog *runlog.Logger
 	// takeReviewRunner is a seam for tests: nil means the real
 	// takereview.ProcessRunner built from project config (takereview.go).
 	takeReviewRunner takereview.SidecarRunner
@@ -264,6 +268,7 @@ func NewHost() *Host {
 	workingDirectory, _ := os.Getwd()
 	repoRoot := layout.FindRoot(workingDirectory)
 	logger := hostlog.New(hostlog.DefaultPath(), 0)
+	runLog := runlog.New(runlog.DefaultPath(), 0)
 	// The services are built and given their reporter before the Host exists, so nothing reads a swappable field off a Host here
 	// (hostguard_test.go); the reporter reaches the narrator through the host once it does.
 	var host *Host
@@ -277,7 +282,13 @@ func NewHost() *Host {
 	profiles := deliveryprofile.NewStore(deliveryProfilesPath())
 	profiles.SetPersist(reporter)
 	notes.SetOnJobEnd(func(job manuscript.ImportJob) { host.importJobEnded(job) })
-	host = &Host{diagnostic: fmt.Sprintf("go-%d", time.Now().UnixNano()), version: version, config: config{repoRoot: repoRoot}, manuscript: notes, sidecars: process.NewSupervisor(), settings: store, installJobs: map[string]*installJob{}, recents: recent, creditTemplates: templates, deliveryProfiles: profiles, log: logger, persist: reporter, updates: update.NewChecker(version, updateCachePath(), reporter), stager: newUpdateStager(), pendingPath: updatePendingPath()}
+	host = &Host{diagnostic: fmt.Sprintf("go-%d", time.Now().UnixNano()), version: version, config: config{repoRoot: repoRoot}, manuscript: notes, sidecars: process.NewSupervisor(), settings: store, installJobs: map[string]*installJob{}, recents: recent, creditTemplates: templates, deliveryProfiles: profiles, log: logger, runLog: runLog, persist: reporter, updates: update.NewChecker(version, updateCachePath(), reporter), stager: newUpdateStager(), pendingPath: updatePendingPath()}
+	// NARRATION_DEBUG=1 already forced the level in runlog.New; a saved General.debug_logging=true from a previous
+	// run turns it on too, so the narrator's last choice survives a restart (SetDebug is a no-op once the
+	// environment has forced it).
+	if value, _ := store.Effective("General", "debug_logging", "false"); value == "true" {
+		runLog.SetDebug(true)
+	}
 	return host
 }
 
@@ -1159,7 +1170,10 @@ var fieldSchemas = map[string][]fieldSchema{
 	// override it (project.Manifest.Credits.Narrator, credits.Values.Resolve). credits_room_tone_seconds is the room tone
 	// the estimate adds to each opening and closing credits file (C9, Phase 5, ADR 0151): the narrator's own figure,
 	// defaulting to 0, since published room-tone guidance disagrees (ADR 0025).
-	"General":           {{"log_verbosity", "Log verbosity", "choice", []string{"quiet", "normal", "verbose"}}, {"notifications", "Notify me when a long task finishes while I'm away", "bool", nil}, {"narrator_name", "Narrator name (default for credits)", "text", nil}, {"credits_room_tone_seconds", "Room tone per credits file (seconds)", "choice", []string{"0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10"}}},
+	// debug_logging turns on the run log's debug-level decision records (docs/prds/tool-run-logging.prd.md Q1, ADR
+	// 0251): global only (saveSettings refuses it at project scope), a machine switch like NARRATION_DEBUG=1, not a
+	// per-project preference.
+	"General":           {{"log_verbosity", "Log verbosity", "choice", []string{"quiet", "normal", "verbose"}}, {"notifications", "Notify me when a long task finishes while I'm away", "bool", nil}, {"narrator_name", "Narrator name (default for credits)", "text", nil}, {"credits_room_tone_seconds", "Room tone per credits file (seconds)", "choice", []string{"0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10"}}, {"debug_logging", "Debug logging (writes decision records to the run log)", "bool", nil}},
 	"Manuscript":        {{"color_note", "Note color", "color", nil}},
 	"ManuscriptGuide":   {{"spacy_model", "spaCy model", "choice", []string{"en_core_web_sm", "en_core_web_lg"}}, {"build_after_import", "Build the Story Bible after import", "bool", nil}},
 	"Piper":             {{"tts_provider", "TTS provider", "choice", []string{"piper"}}, {"tts_voice_id", "Preview voice", "choice", []string{"en_US-ljspeech-high"}}},
@@ -1267,6 +1281,11 @@ func (h *Host) saveSettings(tool, scope string, values map[string]*string) error
 	if tool == "Teleprompter" && scope != "global" {
 		return fmt.Errorf("teleprompter settings are global: the microphone is wired to this computer, not this project")
 	}
+	if tool == "General" && scope != "global" {
+		if _, ok := values["debug_logging"]; ok {
+			return fmt.Errorf("debug logging is global: it is a switch for this machine, not this project")
+		}
+	}
 	valid := map[string]fieldSchema{}
 	for _, schema := range schemas {
 		valid[schema.key] = schema
@@ -1283,7 +1302,15 @@ func (h *Host) saveSettings(tool, scope string, values map[string]*string) error
 			return err
 		}
 	}
-	return h.services().settings.Save(tool, scope, values)
+	if err := h.services().settings.Save(tool, scope, values); err != nil {
+		return err
+	}
+	if tool == "General" {
+		if value, ok := values["debug_logging"]; ok && value != nil {
+			h.runLog.SetDebug(*value == "true")
+		}
+	}
+	return nil
 }
 
 // validateSettingValue checks one value against its field's kind. Every value is a string in the settings files, so a

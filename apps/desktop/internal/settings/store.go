@@ -56,8 +56,10 @@ func (s *Store) Effective(tool, key, fallback string) (string, string) {
 // effective default read back empty - most visibly the Settings color pickers,
 // which rendered #000000 for every color. store_test.go keeps the two in sync.
 var builtinDefaults = map[string]Values{
-	// notifications defaults on (D8: OS notifications on by default, opt-out in Settings, N2).
-	"General": {"log_verbosity": "normal", "notifications": "true", "credits_room_tone_seconds": "0"},
+	// notifications defaults on (D8: OS notifications on by default, opt-out in Settings, N2). debug_logging defaults
+	// off (docs/prds/tool-run-logging.prd.md Q1, ADR 0251): decision records are opt-in, on the Settings page or with
+	// NARRATION_DEBUG=1.
+	"General": {"log_verbosity": "normal", "notifications": "true", "credits_room_tone_seconds": "0", "debug_logging": "false"},
 	// build_after_import defaults on (D8: build the Story Bible after import by default, B1-B3).
 	"ManuscriptGuide":   {"spacy_model": "en_core_web_sm", "build_after_import": "true"},
 	"Piper":             {"tts_provider": "piper", "tts_voice_id": "en_US-ljspeech-high"},
