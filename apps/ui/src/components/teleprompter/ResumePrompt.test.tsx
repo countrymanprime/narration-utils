@@ -42,7 +42,7 @@ function renderDialog(overrides: Partial<NarrationApi> = {}, initial: Initial = 
   render(
     <MemoryRouter>
       <ApiProvider api={api}>
-        <ReadAloudDialog chapter={CHAPTER} onClose={vi.fn()} />
+        <ReadAloudDialog source={{ kind: 'chapter', chapter: CHAPTER }} onClose={vi.fn()} />
       </ApiProvider>
     </MemoryRouter>,
   );

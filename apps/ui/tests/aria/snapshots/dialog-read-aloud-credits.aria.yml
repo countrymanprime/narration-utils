@@ -1,0 +1,25 @@
+# The read-aloud dialog on the credits (manuscript-credits-card-parity.prd.md Phase 2, ADR 0260): no resume region (MC9 -
+# credits have no chapter to look up a REAPER track for). The C6 unresolved-token warning takes that header slot instead,
+# as a status naming the tokens with "Fill them in Settings" (dialog-read-aloud-resume.aria.yml pins the chapter dialog's
+# own resume region in the same slot). The credits text is one region, same as a chapter's, with placeholders shown in
+# brackets. The control bar (read-aloud-control-bar.prd.md Phase 3) is unchanged from a chapter's own.
+- /children: equal
+# The two toast live regions stay in the tree on purpose (see dialog-add-note.aria.yml).
+- main:
+  - alert
+  - status
+- dialog "Read aloud — Opening credits":
+  - heading "Read aloud — Opening credits" [level=2]
+  - button "Close"
+  - status "Some opening credits tokens have no value":
+    - paragraph: Some opening credits tokens have no value
+    - button "Fill them in Settings"
+  - region "Chapter text":
+    - paragraph: "[Title], written by [Author], narrated by [Narrator]."
+  - toolbar "Reading controls":
+    - group "Choose a microphone first.":
+      - button "Play" [disabled]
+    - button "Stop reading" [disabled]
+    - status: Ready
+    - 'button "Microphone: not chosen"'
+    - button "Settings"

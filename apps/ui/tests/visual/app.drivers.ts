@@ -1033,6 +1033,27 @@ export const APP_DRIVERS: Record<string, Record<string, Driver>> = {
       await dialog.locator('[data-highlight="Misread"][role="button"]').first().waitFor();
       await dialog.locator('[data-highlight="Extra"][role="button"]').first().waitFor();
     },
+    // Read aloud on the credits (manuscript-credits-card-parity.prd.md Phase 2, ADR 0260): the card's own Read aloud
+    // button (ReaderCard renders it in the header regardless of the card's open/closed state, so there is no need to
+    // expand the card first), opening the same dialog a chapter opens. ?mockCredits=filled resolves every token, the
+    // same seam the standalone Teleprompter page's 'credits-opening' state uses, so this shows no warning.
+    'read-aloud-credits': async (page) => {
+      await page.goto('/?mockCredits=filled');
+      await settlePage(page);
+      await goToPage(page, 'Manuscript');
+      await clickVisible(page, 'button', 'Read Opening credits aloud');
+      const dialog = page.getByRole('dialog', { name: 'Read aloud — Opening credits' });
+      await dialog.getByText('Alice’s Adventures in Wonderland, written by Lewis Carroll, narrated by Ada Finch.').waitFor();
+    },
+    // The default mock project has no Title/Author/Narrator value set (same as 'credits-entries' above): the C6
+    // warning takes the resume prompt's header slot instead (MC2/MC9 - credits have no resume card), naming the
+    // unresolved tokens with "Fill them in Settings", the same warning the standalone page's own credits states show.
+    'read-aloud-credits-unresolved': async (page) => {
+      await goToPage(page, 'Manuscript');
+      await clickVisible(page, 'button', 'Read Opening credits aloud');
+      const dialog = page.getByRole('dialog', { name: 'Read aloud — Opening credits' });
+      await dialog.getByRole('status', { name: /have no value/ }).waitFor();
+    },
     'reader-text-small': async (page) => {
       await goToPage(page, 'Manuscript');
       await clickVisible(page, 'button', 'small');

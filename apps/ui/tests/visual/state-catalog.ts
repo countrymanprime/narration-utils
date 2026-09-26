@@ -521,6 +521,18 @@ export const STATE_CATALOG: StateEntry[] = [
     description:
       'Manuscript, the "Read aloud" dialog with misreads and extra words turned on in the Flags tab (Phase 7) - a misread is a wavy underline, extra words heard are an insertion bar before the word they came before',
   },
+  {
+    page: 'manuscript',
+    state: 'read-aloud-credits',
+    description:
+      'Manuscript, the "Read aloud" dialog opened from the Opening credits card\'s own Read aloud button (manuscript-credits-card-parity.prd.md Phase 2, ADR 0260) - titled "Read aloud — Opening credits", every token filled (?mockCredits=filled), no resume prompt and no unresolved-token warning',
+  },
+  {
+    page: 'manuscript',
+    state: 'read-aloud-credits-unresolved',
+    description:
+      'Manuscript, the "Read aloud" dialog on the Opening credits with no project credits values set (Phase 2, MC2) - the C6 warning names the unresolved tokens with "Fill them in Settings" in the resume prompt\'s slot, Play still enabled',
+  },
   // Proofing
   { page: 'proofing', state: 'setup-default', description: 'Proofing, setup panel default selection' },
   { page: 'proofing', state: 'setup-alt-selection', description: 'Proofing, setup panel alternate model/worker/chunk selection' },

@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import { Button } from '../primitives/Button';
 import { Heading } from '../primitives/Heading';
 import { Panel } from '../primitives/Panel';
 import { Select } from '../primitives/Select';
@@ -8,6 +7,7 @@ import { ChapterSuggestionHint, preselectedChapter } from './ChapterSuggestionHi
 import { ReadAlongView } from './ReadAlongView';
 import { ReadingControlBar } from './ReadingControlBar';
 import { CREDITS_LABEL, type CreditsKind } from './readerModel';
+import { UnresolvedCreditsWarning } from './UnresolvedCreditsWarning';
 import { useFollowCursor } from './useFollowCursor';
 import { ACTIVE_PHASES, errorText, useTeleprompterSession } from './useTeleprompterSession';
 import type { ChapterSuggestion, CreditsRenderResult, ManuscriptChapter } from '../../types';
@@ -50,32 +50,6 @@ function useCreditsPreviews(): Partial<Record<CreditsKind, CreditsRenderResult>>
     };
   }, [api]);
   return previews;
-}
-
-/** C6 (owner decision 2026-09-23): a token with no value is named and linked to Settings, and Start stays allowed. */
-function UnresolvedCreditsWarning({ kind, tokens, onFix }: { kind: CreditsKind; tokens: string[]; onFix?: () => void }) {
-  const heading = `Some ${CREDITS_LABEL[kind].toLowerCase()} tokens have no value`;
-  return (
-    <div
-      role="status"
-      aria-label={heading}
-      className="rounded-lg border px-4 py-3 text-sm"
-      style={{ borderColor: 'var(--warn)', background: 'color-mix(in srgb, var(--warn) 10%, var(--surface))' }}
-    >
-      <p className="font-semibold" style={{ color: 'var(--warn-text)' }}>
-        {heading}
-      </p>
-      <p className="mt-1">
-        {tokens.join(', ')} will show as written, in brackets. You can still start reading; fill them in under Settings &gt; Credits first so the recording says
-        the right thing.
-      </p>
-      {onFix && (
-        <Button variant="ghost" className="mt-2" onClick={onFix}>
-          Fill them in Settings
-        </Button>
-      )}
-    </div>
-  );
 }
 
 export function TeleprompterPage({ onFixCredits }: Props = {}) {

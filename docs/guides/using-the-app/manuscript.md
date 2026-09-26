@@ -50,7 +50,10 @@ with no value yet stays in brackets, highlighted, and a line below lists the unr
 token stays unresolved and setup has not been dismissed for the project. These
 entries are read-only and are not chapters: they are not in the chapter list or search. Record the
 credits as their own files, as ACX expects, not inside a chapter file: Proofing compares a chapter file
-with that chapter's text only, so credits recorded inside it are reported as extra words.
+with that chapter's text only, so credits recorded inside it are reported as extra words. Each credits
+card also has a **Read aloud** button once it has anything to read, opening the same full-screen dialog
+described below, titled "Read aloud — Opening credits" or "Read aloud — Closing credits" — see the note
+at the end of that section for how it differs from reading a chapter.
 
 The [retail sample](settings.md#retail-sample), once picked, is marked where it is: the chapter header shows
 a **Retail sample** tag, and in the open chapter its lines have a rule down their left edge, with "Retail
@@ -108,6 +111,16 @@ unreviewed findings (a dismissed flag is kept as dismissed), so they can be revi
 chapter again does not add the same flag twice.
 
 ![Manuscript - a suspected restart opened in the Flags tab, with the script's words and what was heard](../../images/ui/manuscript-read-aloud-flag.webp)
+
+Reading the opening or closing credits opens the same dialog and control bar, titled "Read aloud —
+Opening credits" or "Read aloud — Closing credits", but a few things are different: there is no **Where
+you stopped** notice (the credits are not on a REAPER track), and a warning naming any token still
+without a value takes its place when one is unresolved, with **Fill them in Settings** — the same
+warning and action the [Teleprompter](teleprompter.md) page shows for the credits. Flags are still shown
+as you read, but the Flags tab says "Flags on the credits are not kept" instead of a save state: nothing
+about the credits is written to the project's findings, so re-reading them raises the same flags again.
+
+![Manuscript - the Read aloud dialog on the opening credits, with the unresolved-token warning in place of the resume notice](../../images/ui/manuscript-read-aloud-credits.webp)
 
 Selecting a stretch of text offers actions for it — adding a reader note or sending it to the
 Story Bible as a new entry. When the selection is one word, it also offers **Look up**.

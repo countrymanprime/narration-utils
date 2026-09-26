@@ -35,7 +35,9 @@ template library ([Settings, Credits](settings.md#credits)) has an opening or a 
 text is the first template of each kind filled in with the project's values, exactly as Settings
 previews it, and the highlight follows it like a chapter. If a value is missing, for example no
 narrator name yet, a warning names what is missing, the placeholder shows in brackets (such as
-[Narrator]), and Fill them in Settings opens the Credits settings. You can still start reading.
+[Narrator]), and Fill them in Settings opens the Credits settings. You can still start reading. The
+same credits reading also opens from the **Read aloud** button on the Opening credits or Closing
+credits card on [Manuscript](manuscript.md), in its own full-screen dialog, without needing this page.
 
 Press Play (or Space, when focus is not in a field, button or other control) to begin at the top of the
 chapter, title first; the bar's status and word count update as you go, and Follow appears enabled once

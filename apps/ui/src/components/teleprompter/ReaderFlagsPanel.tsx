@@ -19,8 +19,13 @@ const SHOW_LABELS: Record<TeleprompterFlagKind, string> = {
 // Punch and roll moves the REAPER edit cursor to a flag (Phase 12); until then the action is shown, disabled, with the reason.
 const PUNCH_PENDING = 'Punch and roll needs REAPER support that is not built yet.';
 
-/** Where keeping the session's flags as findings stands (ADR 0117); shown so a failed save is never silent. */
-export type FlagSaveState = { status: 'idle' } | { status: 'saving' } | { status: 'saved'; count: number } | { status: 'error'; message: string };
+/**
+ * Where keeping the session's flags as findings stands (ADR 0117); shown so a failed save is never silent.
+ * `not-kept` is the credits mode of the read-aloud dialog (manuscript-credits-card-parity.prd.md, Phase 2, MC8 a):
+ * credits carry no chapter id to keep a finding against, so their flags are shown during the session and never saved.
+ */
+export type FlagSaveState =
+  { status: 'idle' } | { status: 'saving' } | { status: 'saved'; count: number } | { status: 'error'; message: string } | { status: 'not-kept' };
 
 type Props = {
   /** Every flag of the session, in arrival order. */
@@ -48,7 +53,9 @@ function SaveStatus({ save }: { save: FlagSaveState }) {
         ? `${save.count === 1 ? '1 flag is' : `${save.count} flags are`} kept for review as suspected, unreviewed findings.`
         : save.status === 'error'
           ? `The flags could not be kept for review: ${save.message}`
-          : 'When reading stops, the flags are kept for review as suspected, unreviewed findings.';
+          : save.status === 'not-kept'
+            ? 'Flags on the credits are not kept.'
+            : 'When reading stops, the flags are kept for review as suspected, unreviewed findings.';
   return (
     <p role="status" className="text-xs" style={{ color: save.status === 'error' ? 'var(--danger-text)' : 'var(--text-muted)' }}>
       {text}

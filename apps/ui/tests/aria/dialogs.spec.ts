@@ -30,6 +30,11 @@ const MODALS: { name: string; state: [string, string]; snapshot: string }[] = [
     snapshot: 'dialog-read-aloud-controls.aria.yml',
   },
   {
+    name: 'the read-aloud dialog on the credits has no resume region; the unresolved-token warning is a status in its place',
+    state: ['manuscript', 'read-aloud-credits-unresolved'],
+    snapshot: 'dialog-read-aloud-credits.aria.yml',
+  },
+  {
     name: 'the chapters overlay is a modal slide-over named for what it holds',
     state: ['manuscript', 'chapters-overlay-open'],
     snapshot: 'slide-over-chapters.aria.yml',
