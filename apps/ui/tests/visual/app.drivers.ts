@@ -76,7 +76,8 @@ async function freezeClock(page: Page): Promise<void> {
 }
 
 // Opens Chapter 1's read-aloud dialog (after a reload with a mock seam, when one is given) and waits for its resume
-// prompt to have answered (read-aloud-resume-from-daw.prd.md Phase 1): the lookup's "Finding where..." line is gone.
+// prompt to have answered (read-aloud-resume-from-daw.prd.md Phase 1, wording updated by Phase 3): the lookup's
+// "Checking..." line is gone.
 async function openResumePrompt(page: Page, query = ''): Promise<void> {
   if (query) {
     await page.goto(`/${query}`);
@@ -86,7 +87,7 @@ async function openResumePrompt(page: Page, query = ''): Promise<void> {
   await clickVisible(page, 'button', 'Read Chapter 1 aloud');
   const card = page.getByRole('dialog', { name: /Read aloud/ }).getByRole('region', { name: 'Where you stopped' });
   await card.waitFor();
-  await card.getByText(/Finding where your recording/).waitFor({ state: 'detached' });
+  await card.getByText(/Checking where REAPER and your last reading are/).waitFor({ state: 'detached' });
 }
 
 // The control bar's own toolbar, scoped so its Microphone/Settings triggers never collide with a same-named control
@@ -894,6 +895,19 @@ export const APP_DRIVERS: Record<string, Record<string, Driver>> = {
     'read-aloud-resume-complete': async (page) => {
       await openResumePrompt(page, '?mockResume=complete');
       await page.getByText('This chapter is recorded to the end. Play reads from the top.').waitFor();
+    },
+    // Reconciliation (read-aloud-resume-from-daw.prd.md Phase 3): agree presets Start reading without a click.
+    'read-aloud-resume-agree': async (page) => {
+      await openResumePrompt(page, '?mockResume=agree');
+      await page.getByText(/REAPER and your last reading agree/).waitFor();
+    },
+    'read-aloud-resume-disagree': async (page) => {
+      await openResumePrompt(page, '?mockResume=disagree');
+      await page.getByText(/different places/).waitFor();
+    },
+    'read-aloud-resume-prompter-only': async (page) => {
+      await openResumePrompt(page, '?mockResume=prompter_only');
+      await page.getByText(/Your last reading stopped at/).waitFor();
     },
     'read-aloud-resume-not-found': async (page) => {
       await openResumePrompt(page, '?mockResume=not_found');

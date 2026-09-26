@@ -145,7 +145,7 @@ describe('ResumePrompt', () => {
     const teleprompterLocate = vi.fn(async (chapterId: string, options?: object) => {
       const result = await base.teleprompterLocate(chapterId, options);
       if (result.status !== 'found' || !result.located) return result;
-      return { ...result, located: { ...result.located, word: result.located.tokens } };
+      return { ...result, located: { ...result.located, word: result.located.tokens }, verdict: { ...result.verdict, kind: 'complete' as const, start: null } };
     });
     renderDialog({ teleprompterLocate });
 
@@ -245,5 +245,78 @@ describe('ResumePrompt', () => {
 
     setState({ phase: 'idle', message: '', chapter: null });
     expect(screen.queryByRole('region', { name: 'Where you stopped' })).toBeNull();
+  });
+
+  describe('reconciliation (Phase 3)', () => {
+    it('agree: presets Start to the DAW word without settling, and Start reading uses it with no click needed', async () => {
+      const { api, teleprompterStart } = renderDialog({}, { resume: 'agree' });
+      const located = await api.teleprompterLocate('chapter-1');
+      if (located.status === 'asset_required' || located.verdict.kind !== 'agree' || located.verdict.start === null) throw new Error('the mock must agree');
+
+      const region = await prompt();
+      expect(await within(region).findByText(/REAPER and your last reading agree/)).toBeTruthy();
+      expect(within(region).getByRole('button', { name: 'Change' })).toBeTruthy();
+      expect(within(region).getByRole('button', { name: 'Start from the top' })).toBeTruthy();
+
+      await startReading(userEvent.setup());
+      expect(teleprompterStart).toHaveBeenCalledWith(expect.objectContaining({ startWord: located.verdict.start }));
+      // The preset alone is not a choice, so the notice stays up until the session actually starts.
+      expect(await screen.findByRole('region', { name: 'Where you stopped' })).toBeTruthy();
+    });
+
+    it('agree: Start from the top clears the preset and settles the notice', async () => {
+      const user = userEvent.setup();
+      const { teleprompterStart } = renderDialog({}, { resume: 'agree' });
+
+      const region = await prompt();
+      await user.click(await within(region).findByRole('button', { name: 'Start from the top' }));
+      expect(screen.queryByRole('region', { name: 'Where you stopped' })).toBeNull();
+
+      await startReading(user);
+      expect(teleprompterStart).toHaveBeenCalledWith(expect.not.objectContaining({ startWord: expect.anything() }));
+    });
+
+    it('agree: Change reveals the same two-way choice as disagree', async () => {
+      const user = userEvent.setup();
+      renderDialog({}, { resume: 'agree' });
+
+      const region = await prompt();
+      await user.click(await within(region).findByRole('button', { name: 'Change' }));
+      expect(within(region).getByRole('button', { name: /REAPER/ })).toBeTruthy();
+      expect(within(region).getByRole('button', { name: /Last reading/ })).toBeTruthy();
+      expect(within(region).queryByRole('button', { name: 'Change' })).toBeNull();
+    });
+
+    it('disagree: offers both places, and picking one resumes there', async () => {
+      const { api, teleprompterStart } = renderDialog({}, { resume: 'disagree' });
+      const located = await api.teleprompterLocate('chapter-1');
+      if (located.status === 'asset_required' || located.verdict.kind !== 'disagree' || !located.verdict.prompter) throw new Error('the mock must disagree');
+
+      const region = await prompt();
+      expect(await within(region).findByText(/different places/)).toBeTruthy();
+      expect(within(region).getByRole('button', { name: 'Start from the top' })).toBeTruthy();
+      expect(within(region).getByRole('button', { name: 'Pick a word' })).toBeTruthy();
+
+      await userEvent.setup().click(within(region).getByRole('button', { name: /Last reading/ }));
+      expect(screen.queryByRole('region', { name: 'Where you stopped' })).toBeNull();
+      await startReading(userEvent.setup());
+      expect(teleprompterStart).toHaveBeenCalledWith(expect.objectContaining({ startWord: located.verdict.prompter.word }));
+    });
+
+    it('prompter_only: offers the last reading alone, in the compact one-line form', async () => {
+      const { api, teleprompterStart } = renderDialog({}, { resume: 'prompter_only' });
+      const located = await api.teleprompterLocate('chapter-1');
+      if (located.status === 'asset_required' || located.verdict.kind !== 'prompter_only' || !located.verdict.prompter)
+        throw new Error('the mock must offer the prompter alone');
+
+      const region = await prompt();
+      expect(await within(region).findByText(/Your last reading stopped at/)).toBeTruthy();
+      expect(within(region).getByRole('button', { name: 'Continue there' })).toBeTruthy();
+      expect(within(region).getByRole('button', { name: 'Start from the top' })).toBeTruthy();
+
+      await userEvent.setup().click(within(region).getByRole('button', { name: 'Continue there' }));
+      await startReading(userEvent.setup());
+      expect(teleprompterStart).toHaveBeenCalledWith(expect.objectContaining({ startWord: located.verdict.prompter.word }));
+    });
   });
 });
