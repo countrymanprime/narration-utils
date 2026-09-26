@@ -237,7 +237,7 @@ func TestChapterRegionsCreateReportsREAPERsRefusal(t *testing.T) {
 func TestChapterRegionsCreateBindingIsRefusedWithoutAREAPERSession(t *testing.T) {
 	host, ids, _ := newTestHostForChapterRegions(t)
 	linkChapter(t, host, ids[0], chapterLinksTrack)
-	host.actions = bridge.NewActions(nil, func() bool { return true })
+	host.actions = bridge.NewActions(nil, func(string) error { return nil })
 	if _, err := host.ChapterRegionsCreate("", "", false); !errors.Is(err, bridge.ErrUnavailable) {
 		t.Fatalf("err = %v, want ErrUnavailable from a host with no bridge client", err)
 	}

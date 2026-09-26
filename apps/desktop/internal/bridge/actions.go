@@ -11,15 +11,17 @@ import (
 
 // Actions sends the REAPER bridge commands of stack S28 (docs/research/reaper-api-for-planned-commands.md) and waits for
 // their answers. Every command it sends is on experimentalCommands until the owner and Claude have run the REAPER
-// verification pass for it (docs/operations/reaper-verification-pass.md, owner decision D38), and an experimental
-// command is refused before anything is written while the "Experimental REAPER actions" setting is off.
+// verification pass for it (docs/operations/reaper-verification-pass.md, owner decision D38). Whether a command may be
+// sent is its Gate's answer, asked before anything is written: the host builds the gate over the DAW port's resolver
+// (ADR 0300, DAW port PRD P3), so the narrator's per-capability settings decide it, and Actions does not check a
+// setting itself.
 //
 // Like Navigator, a request returns once its answer has been dispatched by the host's loop (Client.Dispatch), so a
 // request must never be made from a Subscription's Handle.
 type Actions struct {
-	client  *Client
-	enabled func() bool
-	mu      sync.Mutex // guards everything below
+	client *Client
+	gate   Gate
+	mu     sync.Mutex // guards everything below
 	// +checklocks:mu
 	timeout time.Duration
 	// +checklocks:mu
@@ -34,15 +36,17 @@ type Actions struct {
 	onRecordEnded func(RecordEnded)
 }
 
-// The setting that switches the experimental commands on: DAW.experimental_reaper_actions, a bool that defaults off
-// (config/defaults.json). The host reads it and passes it to NewActions.
+// The old single switch for the experimental commands: DAW.experimental_reaper_actions, a bool that defaults off
+// (config/defaults.json). The DAW port's resolver reads it (every Experimental capability left on auto is on while it
+// is on); Actions does not.
 const (
 	ExperimentalSettingTool = "DAW"
 	ExperimentalSettingKey  = "experimental_reaper_actions"
 )
 
-// experimentalCommands are the commands that stay behind the setting until the verification pass has confirmed them in
-// a real REAPER. A command leaves this list in the PR that records its pass.
+// experimentalCommands are the commands that stay Experimental until the verification pass has confirmed them in a
+// real REAPER. A command leaves this list in the PR that records its pass, and its capability's declaration in the DAW
+// port's REAPER adapter moves to Supported with it (dawport/reaper's tests parse this map to hold the two together).
 var experimentalCommands = map[string]bool{
 	"chapter_track_state": true,
 	"arm_only":            true,
@@ -63,7 +67,12 @@ var actionTags = []string{"TRACK_STATE", "TRACK_ITEM", "TRACK_STATE_END", "TRACK
 	"ACTIVE_TAKE_SET", "ITEM_STALE", "FX_CHAIN", "FX_CHAINS_LISTED", "FX_CHAIN_APPLIED",
 	"FX_PLUGIN", "FX_PLUGINS_LISTED", "TAKE_FX_ADDED", "REGIONS_CREATED", "PLAY_POSITION", "PUNCHED", "ERROR"}
 
-// ErrExperimentalOff: the command is experimental and the setting is off, so nothing was sent to REAPER.
+// Gate is asked, with the command's name, before Actions sends it. nil lets the command go; an error refuses it and
+// nothing is written. A refusal matching ErrExperimentalOff (errors.Is) reaches the caller as ErrExperimentalOff itself;
+// any other is passed on as it is.
+type Gate func(command string) error
+
+// ErrExperimentalOff: the command is experimental and switched off in Settings, so nothing was sent to REAPER.
 var ErrExperimentalOff = errors.New("this REAPER action is experimental and switched off: turn on Experimental REAPER actions in Settings")
 
 // actionRun collects the events of one request until one of its closing tags (or an ERROR) arrives.
@@ -78,10 +87,11 @@ type answerSet struct {
 	err    error
 }
 
-// NewActions subscribes to the answers of the S28 commands on client. enabled reports the setting and is asked on
-// every request; nil means off. With a nil client every request is ErrUnavailable.
-func NewActions(client *Client, enabled func() bool) *Actions {
-	a := &Actions{client: client, enabled: enabled, timeout: DefaultAnswerTimeout, pending: map[string]*actionRun{}}
+// NewActions subscribes to the answers of the S28 commands on client. gate is asked on every request; a nil gate
+// refuses every command with ErrExperimentalOff, so an Actions nobody gated sends nothing experimental. With a nil
+// client every request the gate lets through is ErrUnavailable.
+func NewActions(client *Client, gate Gate) *Actions {
+	a := &Actions{client: client, gate: gate, timeout: DefaultAnswerTimeout, pending: map[string]*actionRun{}}
 	if client != nil {
 		client.Subscribe(Subscription{Tags: actionTags, Owns: a.owns, Handle: a.handle, Invalid: a.invalid})
 	}
@@ -95,7 +105,7 @@ func (a *Actions) SetTimeout(timeout time.Duration) {
 	a.timeout = timeout
 }
 
-// Experimental reports whether command still needs the setting.
+// Experimental reports whether command is still experimental (not yet through the verification pass).
 func Experimental(command string) bool { return experimentalCommands[command] }
 
 // request sends command with a new run ID and returns every event of that run up to and including the first one whose
@@ -121,11 +131,16 @@ func (a *Actions) request(ctx context.Context, command string, closing []string,
 	}
 }
 
-// allowed refuses an experimental command while the setting is off, and any command with no bridge, before anything
-// is written.
+// allowed refuses a command its gate refuses, then any command with no bridge, before anything is written.
 func (a *Actions) allowed(command string) error {
-	if experimentalCommands[command] && (a.enabled == nil || !a.enabled()) {
+	if a.gate == nil {
 		return ErrExperimentalOff
+	}
+	if err := a.gate(command); err != nil {
+		if errors.Is(err, ErrExperimentalOff) {
+			return ErrExperimentalOff
+		}
+		return err
 	}
 	if a.client == nil {
 		return ErrUnavailable

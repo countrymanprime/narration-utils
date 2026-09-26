@@ -52,35 +52,13 @@ func (r *Resolver) All() map[Capability]Support {
 }
 
 // Support is whether c can be used now and, when not, why. The checks run in a fixed order, so the narrator is told the first thing
-// to change: what the engine declares, then the settings (as bridge.Actions.allowed refuses an experimental command before checking
-// the connection), then the runtime.
+// to change: what the engine declares, then the settings (as bridge.Actions refuses an experimental command before checking the
+// connection), then the runtime.
 func (r *Resolver) Support(c Capability) Support {
-	if r.cfg.Adapter == nil {
-		return r.refuse(c, Unsupported, ReasonStandalone)
+	spec, level, refusal, ok := r.permitted(c)
+	if !ok {
+		return refusal
 	}
-	spec, known := SpecOf(c)
-	level := Unsupported
-	if known {
-		level = r.cfg.Adapter.Declares()[c]
-	}
-	switch level {
-	case Supported, Experimental:
-	case NotYetAvailable:
-		return r.refuse(c, level, ReasonNotYet)
-	default:
-		return r.refuse(c, Unsupported, ReasonUnsupported)
-	}
-
-	switch r.toggle(c) {
-	case ToggleOff:
-		return r.refuse(c, level, ReasonTurnedOff)
-	case ToggleOn:
-	default:
-		if level == Experimental && (r.cfg.Experimental == nil || !r.cfg.Experimental()) {
-			return r.refuse(c, level, ReasonExperimentalOff)
-		}
-	}
-
 	var rt Runtime
 	if r.cfg.Runtime != nil {
 		rt = r.cfg.Runtime()
@@ -92,6 +70,48 @@ func (r *Resolver) Support(c Capability) Support {
 		return r.refuse(c, level, ReasonNotRunning)
 	}
 	return Support{Level: level, Available: true}
+}
+
+// Allowed is nil when the engine's declaration and the narrator's settings permit c, whatever the runtime state, and otherwise the
+// *NotSupportedError Support would give. It is the gate bridge.Actions asks before it sends a command (DAW port PRD P3): the
+// settings are decided here and nowhere else, and a command that is permitted still goes out and fails on its own terms while the
+// engine is not answering, as it did before the port.
+func (r *Resolver) Allowed(c Capability) error {
+	if _, _, refusal, ok := r.permitted(c); !ok {
+		return &NotSupportedError{Capability: c, Support: refusal}
+	}
+	return nil
+}
+
+// permitted is the first two of Support's checks: the declaration, then the settings. ok is false with the refusal when either
+// refuses c.
+func (r *Resolver) permitted(c Capability) (spec Spec, level Level, refusal Support, ok bool) {
+	if r.cfg.Adapter == nil {
+		return spec, Unsupported, r.refuse(c, Unsupported, ReasonStandalone), false
+	}
+	spec, known := SpecOf(c)
+	level = Unsupported
+	if known {
+		level = r.cfg.Adapter.Declares()[c]
+	}
+	switch level {
+	case Supported, Experimental:
+	case NotYetAvailable:
+		return spec, level, r.refuse(c, level, ReasonNotYet), false
+	default:
+		return spec, Unsupported, r.refuse(c, Unsupported, ReasonUnsupported), false
+	}
+
+	switch r.toggle(c) {
+	case ToggleOff:
+		return spec, level, r.refuse(c, level, ReasonTurnedOff), false
+	case ToggleOn:
+	default:
+		if level == Experimental && (r.cfg.Experimental == nil || !r.cfg.Experimental()) {
+			return spec, level, r.refuse(c, level, ReasonExperimentalOff), false
+		}
+	}
+	return spec, level, Support{}, true
 }
 
 func (r *Resolver) toggle(c Capability) Toggle {
