@@ -1,5 +1,6 @@
 {
   "lastReading": null,
+  "live": false,
   "located": {
     "confidence": 0.812,
     "confident": true,

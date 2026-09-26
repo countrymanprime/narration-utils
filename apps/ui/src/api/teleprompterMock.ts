@@ -243,7 +243,16 @@ function mockLocate(
   const picked = trackGuid ?? match.track?.trackGuid;
   const track = picked === undefined ? undefined : project.tracks.find((entry) => entry.guid === picked);
   if (picked !== undefined && !track) throw new Error('that track is not in the selected REAPER project');
-  const base = { match, track: track ? { guid: track.guid, name: track.name, index: track.index } : null, recordedEnd: null, tail: null, located: null };
+  // The mock has no live REAPER to read (read-aloud-resume-from-daw PRD Phase 4): it always answers from the saved
+  // project, like the host does when REAPER is unreachable or the experimental switch is off.
+  const base = {
+    match,
+    track: track ? { guid: track.guid, name: track.name, index: track.index } : null,
+    recordedEnd: null,
+    live: false,
+    tail: null,
+    located: null,
+  };
   if (!track) return { ...base, status: 'no_track' };
   const recordedEnd = mockRecordedEnd(track);
   if (!recordedEnd) return { ...base, status: 'no_recording' };
@@ -616,6 +625,10 @@ export function createTeleprompterMock(deps: Deps): TeleprompterApi {
       const result = mockLocate(match, deps.tracksProject, script, options?.trackGuid, whisperModelRequired(deps.assetRequired('whisper')));
       return structuredClone(withMockVerdict(seedLocateResult(result, deps.resume), deps.resume, chapterId, script));
     },
+    // The mock has no live REAPER to poll (read-aloud-resume-from-daw PRD Phase 5): starting and stopping the watch
+    // are no-ops, and subscribeTeleprompterResumeLive's event never fires, matching mockLocate's own `live: false`.
+    teleprompterWatchResume: async () => {},
+    teleprompterUnwatchResume: async () => {},
     subscribeTeleprompterEvent: (onEvent) => {
       eventSubscribers.add(onEvent);
       // A view that opens on a `flagged` session hears the flags it raised so far, as it would have while listening.
@@ -629,6 +642,7 @@ export function createTeleprompterMock(deps: Deps): TeleprompterApi {
       stateSubscribers.add(onState);
       return () => stateSubscribers.delete(onState);
     },
+    subscribeTeleprompterResumeLive: () => () => {},
   };
 }
 

@@ -49,7 +49,7 @@ import (
 // Keep this in lockstep with apps/ui/src/hostApi.ts.  The frontend rejects
 // an older host before bootstrapping so a partial update cannot run against a
 // binding contract it does not understand.
-const hostAPIVersion = 57
+const hostAPIVersion = 58
 
 // Host is the Wails binding boundary. The frontend invokes only this bound
 // object; it never receives a loopback port or an HTTP capability.
@@ -118,6 +118,11 @@ type Host struct {
 	cleanupTools *cleanuptools.Service
 	retakeLanes  *retakelanes.Service
 	teleprompter *teleprompter.Service
+	// resumeWatch is the read-aloud-resume-from-daw PRD Phase 5 poll: while a Read aloud dialog is open and idle (no
+	// session running), it asks REAPER's live track state about once a second and tells the UI to dismiss the resume
+	// prompt the moment REAPER starts playing or recording (RD7, teleprompterresumewatch.go). Not per project: it
+	// stops itself, so a project switch never needs to reach in and cancel it.
+	resumeWatch resumeWatch
 	// bridge is the REAPER session's file-based IPC client (nil when launched
 	// without a REAPER session directory); take-review's create-take action
 	// (takereview.go) is its first direct consumer outside transcript.Service,
@@ -663,6 +668,18 @@ func (h *Host) emitTeleprompterState(state map[string]any) {
 	h.mu.RUnlock()
 	if ctx != nil {
 		emitEvent("teleprompter:state", state)
+	}
+}
+
+// emitTeleprompterResumeLive tells the Read aloud dialog that REAPER started playing or recording on the watched
+// track (read-aloud-resume-from-daw PRD Phase 5, RD7): the resume prompt, if still shown, should dismiss itself. It
+// carries no data - the dialog already has everything it showed.
+func (h *Host) emitTeleprompterResumeLive() {
+	h.mu.RLock()
+	ctx := h.ctx
+	h.mu.RUnlock()
+	if ctx != nil {
+		emitEvent("teleprompter:resumeLive", map[string]any{})
 	}
 }
 

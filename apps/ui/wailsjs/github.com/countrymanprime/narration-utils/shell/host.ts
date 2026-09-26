@@ -1179,6 +1179,23 @@ export function TeleprompterStop(): $CancellablePromise<string> {
     return $Call.ByID(1610168667);
 }
 
+/**
+ * TeleprompterUnwatchResume stops the poll: the dialog closed, or the prompt already settled (Start reading, a
+ * choice, or a session beginning). Stopping a watch that is not running is not an error.
+ */
+export function TeleprompterUnwatchResume(): $CancellablePromise<string> {
+    return $Call.ByID(3905370268);
+}
+
+/**
+ * TeleprompterWatchResume starts polling trackGUID for RD7, replacing any watch already running. A track with no
+ * live bridge (REAPER unreachable, the experimental switch off, no track GUID) never polls: the resume prompt's own
+ * per-open lookup (Phase 4) already covers those states, and there is nothing here to watch for.
+ */
+export function TeleprompterWatchResume(trackGUID: string): $CancellablePromise<string> {
+    return $Call.ByID(2870428541, trackGUID);
+}
+
 export function TracksDiscover(): $CancellablePromise<string> {
     return $Call.ByID(1450079861);
 }

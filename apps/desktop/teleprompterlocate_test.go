@@ -392,6 +392,30 @@ func TestTeleprompterLocateReconcilesTheTailWithTheLastReading(t *testing.T) {
 	}
 }
 
+// withResumeVerdict labels the verdict's DAW place "live" only when the locate result itself says the recorded end
+// came from REAPER's live state (read-aloud-resume-from-daw PRD Phase 4, RD2); Reconcile itself never sees the
+// distinction.
+func TestWithResumeVerdictLabelsTheDAWPlaceLiveOnlyWhenTheEndWasLive(t *testing.T) {
+	f := newTestHostForLocate(t, true)
+	script, ok := teleprompter.LoadChapterScript(f.host.config.projectFolder, f.chapters[0])
+	if !ok {
+		t.Fatal("chapter has no script")
+	}
+	word := 40
+	located := teleprompter.Located{Word: &word, Last: &word, Confident: true, Tokens: len(script.Tokens)}
+	base := teleprompterLocate{Status: locateFound, Located: &located}
+
+	live := withResumeVerdict(f.host.config.projectFolder, f.chapters[0], func() teleprompterLocate { l := base; l.Live = true; return l }())
+	saved := withResumeVerdict(f.host.config.projectFolder, f.chapters[0], base)
+
+	if live.Verdict.DAW == nil || live.Verdict.DAW.Source != teleprompter.DAWSourceLive {
+		t.Fatalf("live verdict daw = %+v, want source %q", live.Verdict.DAW, teleprompter.DAWSourceLive)
+	}
+	if saved.Verdict.DAW == nil || saved.Verdict.DAW.Source != teleprompter.DAWSourceSaved {
+		t.Fatalf("non-live verdict daw = %+v, want source %q", saved.Verdict.DAW, teleprompter.DAWSourceSaved)
+	}
+}
+
 func TestTeleprompterLocateOffersTheLastReadingOfAChapterWithNoTrack(t *testing.T) {
 	f := newTestHostForLocate(t, false)
 	f.writeLastReading(t, f.chapters[2], 30)

@@ -176,9 +176,11 @@ export type TeleprompterLocated = {
  * Why a locate has a resume word or not (teleprompter manuscript integration PRD Phase 9, ADR 0111): `found` and
  * `low_confidence` carry one (only `found` is confident); `not_found` heard nothing that fits; `no_track` has no confirmed
  * or confident track (the narrator picks one from `match`); `no_recording` has nothing audible on the track; `source_missing`
- * and `source_unsupported` cannot read the last item's source file.
+ * and `source_unsupported` cannot read the last item's source file. `recording_live` (read-aloud-resume-from-daw PRD
+ * Phase 4) is REAPER reporting the linked track recording right now: the file is still growing, so nothing is located.
  */
-export type TeleprompterLocateStatus = 'found' | 'low_confidence' | 'not_found' | 'no_track' | 'no_recording' | 'source_missing' | 'source_unsupported';
+export type TeleprompterLocateStatus =
+  'found' | 'low_confidence' | 'not_found' | 'no_track' | 'no_recording' | 'source_missing' | 'source_unsupported' | 'recording_live';
 
 export type TeleprompterStartResult =
   | { status: 'started' }
@@ -202,6 +204,9 @@ export type TeleprompterLocateResult =
       /** The track that was read: the match's own, or the narrator's pick. */
       track: { guid: string; name: string; index: number } | null;
       recordedEnd: RecordedEnd | null;
+      /** Whether `recordedEnd` came from REAPER's live state (read-aloud-resume-from-daw PRD Phase 4, RD2) rather than
+       * the saved project; `verdict.daw.source` says the same thing in the narrator's words ("live" vs "saved"). */
+      live: boolean;
       /** The seconds of the source file that were transcribed. */
       tail: { from: number; to: number } | null;
       located: TeleprompterLocated | null;
@@ -226,14 +231,15 @@ export type TeleprompterResumeVerdictKind = 'agree' | 'disagree' | 'complete' | 
 /**
  * One source's place: `word` is the zero-based next word to read (what `startWord` takes), `number` the same word one-based
  * for display, and `sentence` the sentence holding the last word read before it (token range `[start, end)`). `source` is
- * set on the DAW place: `saved` is the saved project ("as of the project's last save"); Phase 4 adds a live source.
+ * set on the DAW place: `saved` is the saved project ("as of the project's last save"); `live` (Phase 4) is REAPER's edit
+ * cursor or its track's live end, "in REAPER now".
  */
 export type TeleprompterResumePlace = {
   word: number;
   number: number;
   sentence: { start: number; end: number; text: string } | null;
   confident: boolean;
-  source?: 'saved';
+  source?: 'saved' | 'live';
 };
 
 export type TeleprompterResumeVerdict = {
@@ -332,6 +338,19 @@ export interface TeleprompterApi {
   teleprompterReaperInput(): Promise<TeleprompterReaperInput>;
   /** Where to resume `chapterId` from its recorded audio (the last seconds of its track, placed in the chapter); read-only. */
   teleprompterLocate(chapterId: string, options?: TeleprompterLocateOptions): Promise<TeleprompterLocateResult>;
+  /**
+   * Poll trackGuid about once a second while the resume prompt is shown and idle (read-aloud-resume-from-daw PRD
+   * Phase 5, RD7): `subscribeTeleprompterResumeLive` fires once REAPER starts playing or recording on it, so the
+   * dialog can dismiss the prompt. Replaces any watch already running; read-only.
+   */
+  teleprompterWatchResume(trackGuid: string): Promise<void>;
+  /** Stop the poll `teleprompterWatchResume` started: the dialog closed, or the prompt already settled. */
+  teleprompterUnwatchResume(): Promise<void>;
   subscribeTeleprompterEvent(onEvent: (event: TeleprompterEvent) => void): () => void;
   subscribeTeleprompterState(onState: (state: TeleprompterState) => void): () => void;
+  /** REAPER started playing or recording on the watched track (Phase 5, RD7); carries no data. */
+  subscribeTeleprompterResumeLive(onEvent: () => void): () => void;
 }
+
+/** `subscribeTeleprompterResumeLive`'s event payload: empty, a pure dismiss signal. */
+export type TeleprompterResumeLive = Record<string, never>;

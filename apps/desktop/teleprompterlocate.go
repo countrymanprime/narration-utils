@@ -27,6 +27,10 @@ const (
 	locateNoRecording       = "no_recording"
 	locateSourceMissing     = "source_missing"
 	locateSourceUnsupported = "source_unsupported"
+	// locateRecordingLive: REAPER reports the chapter's linked track recording right now (read-aloud-resume-from-daw
+	// PRD Phase 4). The file underneath is still growing, so nothing is located; the saved project is not consulted
+	// either, since REAPER is plainly reachable and simply mid-take.
+	locateRecordingLive = "recording_live"
 )
 
 // tailRange is the stretch of the source file the locate transcribed, in seconds of that file.
@@ -37,15 +41,17 @@ type tailRange struct {
 
 // teleprompterLocate is TeleprompterLocate's payload. Match is the chapter's track match as ChapterTrackMatch reports
 // it (the picker and the "as of last save" time come from it); Track and RecordedEnd are the track that was read,
-// which is the narrator's pick when they made one; Tail and Located are set once the sidecar ran. LastReading is
-// where the prompter last stopped in the chapter (ADR 0205), and Verdict reconciles it with Located
-// (read-aloud-resume-from-daw PRD Phase 3): it is set on every status, so a chapter with no track still offers its
-// last reading.
+// which is the narrator's pick when they made one; Tail and Located are set once the sidecar ran. Live is true when
+// RecordedEnd came from REAPER's live state rather than the saved project (read-aloud-resume-from-daw PRD Phase 4,
+// RD2); withResumeVerdict labels the verdict's DAW place accordingly. LastReading is where the prompter last stopped
+// in the chapter (ADR 0205), and Verdict reconciles it with Located (Phase 3): it is set on every status, so a
+// chapter with no track still offers its last reading.
 type teleprompterLocate struct {
 	Status      string                     `json:"status"`
 	Match       chapterTrackMatch          `json:"match"`
 	Track       *trackOption               `json:"track"`
 	RecordedEnd *tracks.RecordedEnd        `json:"recordedEnd"`
+	Live        bool                       `json:"live"`
 	Tail        *tailRange                 `json:"tail"`
 	Located     *teleprompter.Located      `json:"located"`
 	LastReading *teleprompter.Reading      `json:"lastReading"`
@@ -96,6 +102,9 @@ func withResumeVerdict(projectFolder, chapterID string, result teleprompterLocat
 	}
 	result.LastReading = reading
 	result.Verdict = teleprompter.Reconcile(result.Located, reading, script, teleprompter.ResumeTolerance)
+	if result.Verdict.DAW != nil && result.Live {
+		result.Verdict.DAW.Source = teleprompter.DAWSourceLive
+	}
 	return result
 }
 
@@ -112,12 +121,21 @@ func (h *Host) locateTail(svc hostServices, chapterID, trackGUID, model string, 
 		return result, nil
 	}
 	result.Track = &trackOption{GUID: candidate.TrackGUID, Name: candidate.TrackName, Index: candidate.TrackIndex}
-	end, ok := chaptermatch.RecordedEnd(project, *candidate)
+	var reader trackStateReader
+	if svc.actions != nil {
+		reader = svc.actions
+	}
+	end, live, recording, ok := recordedEndFor(context.Background(), reader, reaperStatus(svc).Connection, project, *candidate)
+	if recording {
+		result.Status = locateRecordingLive
+		return result, nil
+	}
 	if !ok {
 		result.Status = locateNoRecording
 		return result, nil
 	}
 	result.RecordedEnd = &end
+	result.Live = live
 	switch {
 	case !end.SourceAvailable:
 		result.Status = locateSourceMissing

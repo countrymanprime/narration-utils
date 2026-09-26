@@ -15,6 +15,7 @@ import type {
   TeleprompterMeterStopped,
   TeleprompterPosition,
   TeleprompterReading,
+  TeleprompterResumeLive,
   TeleprompterResumePlace,
   TeleprompterResumeVerdict,
   TeleprompterScript,
@@ -172,7 +173,7 @@ const teleprompterResumePlaceSchema = z.object({
   number: z.number().int().positive(),
   sentence: sentenceSchema.nullable(),
   confident: z.boolean(),
-  source: z.literal('saved').optional(),
+  source: z.enum(['saved', 'live']).optional(),
 }) satisfies z.ZodType<TeleprompterResumePlace>;
 
 /** `teleprompter.Reconcile`'s verdict on the locate result (read-aloud-resume-from-daw PRD Phase 3). */
@@ -195,16 +196,20 @@ const teleprompterResumeVerdictSchema = z
 export const teleprompterLocateResultSchema = z.union([
   modelAssetRequiredSchema,
   z.object({
-    status: z.enum(['found', 'low_confidence', 'not_found', 'no_track', 'no_recording', 'source_missing', 'source_unsupported']),
+    status: z.enum(['found', 'low_confidence', 'not_found', 'no_track', 'no_recording', 'source_missing', 'source_unsupported', 'recording_live']),
     match: chapterTrackMatchSchema,
     track: z.object({ guid: z.string(), name: z.string(), index: z.number().int() }).nullable(),
     recordedEnd: recordedEndSchema.nullable(),
+    live: z.boolean(),
     tail: z.object({ from: z.number(), to: z.number() }).nullable(),
     located: teleprompterLocatedSchema.nullable(),
     lastReading: teleprompterReadingSchema.nullable(),
     verdict: teleprompterResumeVerdictSchema,
   }),
 ]) satisfies z.ZodType<TeleprompterLocateResult>;
+
+/** `subscribeTeleprompterResumeLive`'s event (read-aloud-resume-from-daw PRD Phase 5): no data, a pure dismiss signal. */
+export const teleprompterResumeLiveSchema = z.object({}) satisfies z.ZodType<TeleprompterResumeLive>;
 
 const flagKindSchema = z.enum(['misread', 'extra', 'skipped', 'restart']);
 

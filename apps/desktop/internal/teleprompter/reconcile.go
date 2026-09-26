@@ -28,9 +28,13 @@ const (
 // agreed with it: the prompter settles the ambiguity the confidence reports.
 const ConfirmedByPrompter = "prompter"
 
-// DAWSourceSaved is a DAW place read from the saved .rpp ("as of the project's last save"). Phase 4 adds the live
-// source ("in REAPER now").
-const DAWSourceSaved = "saved"
+// DAWSourceSaved is a DAW place read from the saved .rpp ("as of the project's last save"). DAWSourceLive is read from
+// REAPER's live state instead (Phase 4, RD2): the edit cursor on the linked track's recorded audio, or that audio's
+// live end. teleprompterlocate.go's withResumeVerdict sets whichever one was used; Reconcile itself never chooses.
+const (
+	DAWSourceSaved = "saved"
+	DAWSourceLive  = "live"
+)
 
 // ResumePlace is one source's place in the chapter. Word is the next script word to read, zero-based (the index
 // Start reading takes); Number is the same word one-based, for display; Sentence is the sentence holding the last
