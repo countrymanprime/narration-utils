@@ -190,8 +190,8 @@ Every phase follows the `CLAUDE.md` workflow: find or open the tracking issue fi
 | # | Phase | Description | Status | Parallel | Depends | PRP Plan |
 | --- | --- | --- | --- | --- | --- | --- |
 | 1 | Editing corpus and evaluation harness | Labeling format, permissioned corpus outside the repo, synthetic generators, per-class recall and precision harness with held-out split, baseline note; no product code | pending | 2 | - (soft: DX-4, DX-9 to score) | - |
-| 2 | Audio source and played-range scoping | Played range from parsed items, typed refusals, streaming native-rate decode with cancel and progress, FX-presence evidence | pending | 1 | DX-1, EL-1, EL-2 | - |
-| 3 | Empty-space analysis | Per-item silence runs cached, ledger record, timeline composition, maximum gap and head or tail policy on read, `silence_cleanup` findings, `Editing` settings | pending | 4 | 2, DX-2, DX-4, EL-3, EL-4 | - |
+| 2 | Audio source and played-range scoping | Played range from parsed items, typed refusals, streaming native-rate decode with cancel and progress, FX-presence evidence | complete | 1 | DX-1, EL-1, EL-2 | - |
+| 3 | Empty-space analysis | Per-item silence runs cached, ledger record, timeline composition, maximum gap and head or tail policy on read, `silence_cleanup` findings, `Editing` settings | complete | 4 | 2, DX-2, DX-4, EL-3, EL-4 | - |
 | 4 | Click and breath validation | Run DX-9 detectors on the corpus, tune, record results, validated-version gate, ledger and cache records for both classes | pending | 3 | 1, 2, DX-9 | - |
 | 5 | Editing check job and bindings | Chapter to track to items, cache-first scan, three ledger records per item, one job with progress and cancel, findings persisted, bindings, host API bump | pending | - | 3, EL-5, RD-1; also 4 for the click and breath classes | - |
 | 6 | Editing signals for SR | Three signals per SR's contract, evidence and basis, edit-type table tests, wiring into SR's engine | pending | 7 | 5, SR-1 | - |

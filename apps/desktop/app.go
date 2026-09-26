@@ -1229,6 +1229,18 @@ var fieldSchemas = map[string][]fieldSchema{
 		{"suggestions_enabled", "Suggest stage advances", "bool", nil},
 		{coverage.RecordingSignalID, "Text present in order (recording)", "choice", []string{"required", "ignored"}},
 	},
+	// Editing is the editing-readiness analysis's own policy (docs/prds/editing-readiness-analysis.prd.md Phase 3, Q2,
+	// Q3): the empty-space signal's maximum gap and optional head/tail limits. Every one of the three is unset by
+	// default (numberSpecs below has no builtinDefaults/config-defaults.json entry to match): D22's own recommendation
+	// is "unknown until the narrator sets a value", since no number in the repo has a cited source and a guessed
+	// default risks a false "done" in one direction or an unreachable "done" in the other (Q2's Decisions Log entry).
+	// A number field left unset reads back as "" (Store.Effective's own fallback, never "0"), which editing.PolicyFromSettings
+	// treats as "not checked" for that part, not as zero seconds.
+	"Editing": {
+		{"max_gap_seconds", "Maximum gap before it's flagged (empty space)", "number", nil},
+		{"head_max_seconds", "Maximum leading silence (head)", "number", nil},
+		{"tail_max_seconds", "Maximum trailing silence (tail)", "number", nil},
+	},
 }
 
 // settingsSchemas is the settings the app offers with each choice that comes from an approved catalog filled in from it: the spaCy model

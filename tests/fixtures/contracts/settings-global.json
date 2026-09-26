@@ -31,6 +31,56 @@
       "value": ""
     }
   ],
+  "Editing": [
+    {
+      "choices": null,
+      "effectiveSource": "hardcoded",
+      "effectiveValue": "",
+      "isSet": false,
+      "key": "max_gap_seconds",
+      "kind": "number",
+      "label": "Maximum gap before it's flagged (empty space)",
+      "number": {
+        "max": null,
+        "min": 0,
+        "step": 0.1,
+        "unit": "s"
+      },
+      "value": ""
+    },
+    {
+      "choices": null,
+      "effectiveSource": "hardcoded",
+      "effectiveValue": "",
+      "isSet": false,
+      "key": "head_max_seconds",
+      "kind": "number",
+      "label": "Maximum leading silence (head)",
+      "number": {
+        "max": null,
+        "min": 0,
+        "step": 0.1,
+        "unit": "s"
+      },
+      "value": ""
+    },
+    {
+      "choices": null,
+      "effectiveSource": "hardcoded",
+      "effectiveValue": "",
+      "isSet": false,
+      "key": "tail_max_seconds",
+      "kind": "number",
+      "label": "Maximum trailing silence (tail)",
+      "number": {
+        "max": null,
+        "min": 0,
+        "step": 0.1,
+        "unit": "s"
+      },
+      "value": ""
+    }
+  ],
   "General": [
     {
       "choices": [
