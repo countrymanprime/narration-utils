@@ -9,9 +9,12 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"os"
 	"os/exec"
 	"sync"
 	"time"
+
+	"github.com/countrymanprime/narration-utils/shell/internal/runlog"
 )
 
 type Child struct {
@@ -34,6 +37,17 @@ type Supervisor struct{ jobs jobSet }
 
 func NewSupervisor() *Supervisor { return &Supervisor{jobs: newJobSet()} }
 
+// runEnv is nil (inherit the parent environment, exec's own default) unless ctx carries a run, in which case it adds
+// NARRATION_RUN_ID and NARRATION_LOG_LEVEL (docs/prds/tool-run-logging.prd.md phase 2) to the child's environment
+// without losing the rest of it.
+func runEnv(ctx context.Context) []string {
+	run := runlog.FromContext(ctx)
+	if run == nil {
+		return nil
+	}
+	return append(os.Environ(), "NARRATION_RUN_ID="+run.ID(), "NARRATION_LOG_LEVEL="+run.Level())
+}
+
 // Start runs a sidecar without a console window on Windows, drains both
 // streams, and records exit status. Cancellation is intentionally separate:
 // existing Python tools use their documented .cancel sentinels rather than a
@@ -41,6 +55,7 @@ func NewSupervisor() *Supervisor { return &Supervisor{jobs: newJobSet()} }
 func (s *Supervisor) Start(ctx context.Context, program string, args ...string) (*Child, error) {
 	command := exec.CommandContext(ctx, program, args...)
 	configure(command)
+	command.Env = runEnv(ctx)
 	stdout, err := command.StdoutPipe()
 	if err != nil {
 		return nil, err
@@ -57,8 +72,9 @@ func (s *Supervisor) Start(ctx context.Context, program string, args ...string) 
 		return nil, err
 	}
 	child := &Child{}
+	stderrSink := runlog.FromContext(ctx).StderrWriter()
 	go func() { _, _ = io.Copy(io.Discard, stdout) }()
-	go func() { _, _ = io.Copy(io.Discard, stderr) }()
+	go func() { defer func() { _ = stderrSink.Close() }(); _, _ = io.Copy(stderrSink, stderr) }()
 	go func() {
 		err := command.Wait()
 		code := 0
@@ -86,8 +102,11 @@ const runWaitDelay = 5 * time.Second
 func (s *Supervisor) Run(ctx context.Context, program string, args ...string) (int, string, string, error) {
 	command := exec.CommandContext(ctx, program, args...)
 	configure(command)
+	command.Env = runEnv(ctx)
 	var out, failure bytes.Buffer
-	command.Stdout, command.Stderr = &out, &failure
+	stderrSink := runlog.FromContext(ctx).StderrWriter()
+	defer func() { _ = stderrSink.Close() }()
+	command.Stdout, command.Stderr = &out, io.MultiWriter(&failure, stderrSink)
 	command.WaitDelay = runWaitDelay
 	if err := command.Start(); err != nil {
 		return 0, "", "", fmt.Errorf("could not start %s: %w", program, err)

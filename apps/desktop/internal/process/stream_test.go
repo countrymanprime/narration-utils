@@ -8,6 +8,8 @@ import (
 	"sync"
 	"testing"
 	"time"
+
+	"github.com/countrymanprime/narration-utils/shell/internal/runlog"
 )
 
 const streamHelperEnv = "PROCESS_STREAM_HELPER_MODE"
@@ -36,6 +38,10 @@ func TestStreamHelperProcess(t *testing.T) {
 		fmt.Println("partial")
 		fmt.Fprintln(os.Stderr, "boom")
 		os.Exit(3)
+	case "env":
+		fmt.Fprintf(os.Stderr, "run=%s level=%s\n", os.Getenv("NARRATION_RUN_ID"), os.Getenv("NARRATION_LOG_LEVEL"))
+		fmt.Println("done")
+		os.Exit(0)
 	case "hang":
 		fmt.Println("ready")
 		time.Sleep(time.Minute)
@@ -102,6 +108,20 @@ func TestStartStreamDeliversEveryStdoutLineInOrderBeforeDone(t *testing.T) {
 	}
 	if !strings.Contains(child.StderrTail(), "warning: something") {
 		t.Fatalf("stderr tail = %q", child.StderrTail())
+	}
+}
+
+func TestStartStreamKeepsStderrInTheRunsFileAndSetsEnv(t *testing.T) {
+	dir := t.TempDir()
+	ctx, stderrPath := runContext(t, dir)
+	c := newCollector()
+	child := startHelper(t, ctx, "env", c)
+	waitDone(t, child)
+
+	run := runlog.FromContext(ctx)
+	got := waitForStderrFile(t, stderrPath, "run="+run.ID())
+	if !strings.Contains(got, "level=info") {
+		t.Fatalf("run stderr file = %q, want NARRATION_LOG_LEVEL echoed as info", got)
 	}
 }
 

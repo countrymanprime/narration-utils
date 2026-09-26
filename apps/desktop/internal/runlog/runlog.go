@@ -119,6 +119,11 @@ type Run struct {
 	logger  *slog.Logger
 	now     func() time.Time
 	started time.Time
+	// runsDir and level back phase 2's StderrWriter (the folder a sidecar's stderr lands in) and Level (the shared
+	// level a launched sidecar reads into NARRATION_LOG_LEVEL). Begin fills both; a Run built any other way (there is
+	// none today) would find them nil-safe regardless.
+	runsDir string
+	level   *slog.LevelVar
 }
 
 // ID is this run's id, shared with the sidecar it launches and the bridge commands it sends (phases 2 and 6).
@@ -137,12 +142,16 @@ func (l *Logger) Begin(tool string, attrs ...any) *Run {
 		return nil
 	}
 	id := l.newID()
+	runsDir := filepath.Join(filepath.Dir(l.path), "runs")
+	l.pruneRunFiles(runsDir)
 	run := &Run{
 		id:      id,
 		tool:    tool,
 		logger:  slog.New(l.handler).With("run", id, "tool", tool),
 		now:     l.now,
 		started: l.now(),
+		runsDir: runsDir,
+		level:   l.level,
 	}
 	run.logger.LogAttrs(context.Background(), slog.LevelInfo, tool+" run started", asAttrs(append([]any{"event", "run.start"}, attrs...))...)
 	return run
