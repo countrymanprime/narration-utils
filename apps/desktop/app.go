@@ -20,6 +20,7 @@ import (
 	"github.com/countrymanprime/narration-utils/shell/internal/dawadapter"
 	"github.com/countrymanprime/narration-utils/shell/internal/dawcatalog"
 	"github.com/countrymanprime/narration-utils/shell/internal/deliveryprofile"
+	"github.com/countrymanprime/narration-utils/shell/internal/editing"
 	"github.com/countrymanprime/narration-utils/shell/internal/findings"
 	"github.com/countrymanprime/narration-utils/shell/internal/guide"
 	"github.com/countrymanprime/narration-utils/shell/internal/hostlog"
@@ -31,6 +32,7 @@ import (
 	"github.com/countrymanprime/narration-utils/shell/internal/process"
 	"github.com/countrymanprime/narration-utils/shell/internal/project"
 	"github.com/countrymanprime/narration-utils/shell/internal/projectstate"
+	"github.com/countrymanprime/narration-utils/shell/internal/proofing"
 	"github.com/countrymanprime/narration-utils/shell/internal/recents"
 	"github.com/countrymanprime/narration-utils/shell/internal/renderconfig"
 	"github.com/countrymanprime/narration-utils/shell/internal/retakelanes"
@@ -98,6 +100,11 @@ type Host struct {
 	// the recording signal over coverage, the decision store and the manuscript's status path. Swapped with coverage on every
 	// project switch; it computes on read and stores no recommendation (D1).
 	stages *stages.Service
+	// editing is the editing-readiness scan service (docs/prds/editing-readiness-analysis.prd.md Phase 5,
+	// bindings_editing.go): played-range empty-space analysis over the chapter's confirmed track, cache-first, with its
+	// own ledger records and silence_cleanup findings. Swapped on every project switch like coverage; it starts only on
+	// the narrator's own request (Q9), never in the background.
+	editing *editing.Service
 	// findings is the project's findings store: Transcript Compare's and the
 	// Guide's adapters save into it on every completed run
 	// (review-dashboard-and-findings-adoption.prd.md Phases 2-3), and
@@ -453,7 +460,18 @@ func (h *Host) configureLocked(next config) {
 	// A chapter's recordedSeconds is its one confirmed track's recorded length in the saved .rpp, and a reason otherwise
 	// (actual-recorded-column PRD Phase 2); never an estimate.
 	h.manuscript.SetRecordedLengths(recordedLengths(projectFolder, settingsStore, h.manuscript))
-	h.stages = stagesService(h.config.projectFolder, h.manuscript, h.coverage, settingsStore, h.coverageUnavailable(h.config.comparePython, settingsStore), h.persist)
+	h.editing = editing.New(editing.Config{
+		Project:     h.config.projectFolder,
+		ProjectFile: func() (string, error) { return selectedProjectFile(projectFolder, settingsStore) },
+		Policy:      func() editing.Policy { return editingPolicy(settingsStore) },
+		Reporter:    h.persist,
+	}, nil)
+	// Every finished comparison is recorded for the proofing pickups signal (proofing-readiness-signals PRD Phase 2).
+	h.transcript.SetRunRecorder(comparisonRecorder(h.config.projectFolder, h.manuscript, settingsStore, h.persist))
+	// The proofing delivery checks judge the chapter's render against the project's delivery profile as it is when the
+	// stages are evaluated (h.proofingProfile reads it then, never under this lock).
+	h.stages = stagesService(h.config.projectFolder, h.manuscript, h.coverage, h.editing, settingsStore, h.coverageUnavailable(h.config.comparePython, settingsStore), h.persist,
+		proofingProvider(h.findings, proofingSources{project: h.config.projectFolder, profile: h.proofingProfile, lengthTolerance: renderLengthTolerance(settingsStore)}))
 	// The Review page's Go to, Loop and Stop (review dashboard PRD Phase 7, bindings_navigation.go) are one more
 	// consumer of the same client: the navigator's answers arrive through the same Drain the transcript loop pumps.
 	h.navigation = newFindingNavigation(client)
@@ -1228,6 +1246,49 @@ var fieldSchemas = map[string][]fieldSchema{
 	"StageRecommendations": {
 		{"suggestions_enabled", "Suggest stage advances", "bool", nil},
 		{coverage.RecordingSignalID, "Text present in order (recording)", "choice", []string{"required", "ignored"}},
+		// The editing signal PRD's own three ids (ER Phase 6): clicks and breaths can never actually be met yet (Phase
+		// 4, the corpus validation that would gate them, has not run), so they are offered here like any other
+		// declared signal, but choosing "required" for either one, while its detector stays unvalidated, means the
+		// stage can never be recommended - the honest cost of the D22 default, not a bug.
+		{editing.EmptySpaceSignalID, "No empty space left to trim", "choice", []string{"required", "ignored"}},
+		{editing.ClickSignalID, "No clicks left (not yet validated)", "choice", []string{"required", "ignored"}},
+		{editing.BreathSignalID, "No loud breaths left (not yet validated)", "choice", []string{"required", "ignored"}},
+		// The proofing signal PRD's pickup roll-up (PS Phase 1): open Transcript Compare discrepancies, take review
+		// pickups and repeated reads and read-aloud flags for the chapter, with a current comparison to vouch for it.
+		{proofing.PickupsSignalID, "No pickups left to clear up (proofing)", "choice", []string{"required", "ignored"}},
+		// The proofing delivery checks (PS Phase 5), one per metric proofing.DeliveryChecks lists, plus the render length
+		// check. Choosing "required" here is necessary but not enough: a metric check is required only while the project's
+		// delivery profile has a required rule for it turned on, and the length check only while a tolerance is set
+		// (bindings_stages.go filterRequired, Q7 B), so a narrator with no limit on a metric is never blocked by it.
+		{"proofing.delivery.integrated_lufs", "Rendered file: integrated loudness (proofing)", "choice", []string{"required", "ignored"}},
+		{"proofing.delivery.rms_dbfs", "Rendered file: RMS (proofing)", "choice", []string{"required", "ignored"}},
+		{"proofing.delivery.sample_peak_dbfs", "Rendered file: sample peak (proofing)", "choice", []string{"required", "ignored"}},
+		{"proofing.delivery.true_peak_dbtp", "Rendered file: true peak (proofing)", "choice", []string{"required", "ignored"}},
+		{"proofing.delivery.noise_floor_dbfs", "Rendered file: noise floor (proofing)", "choice", []string{"required", "ignored"}},
+		{"proofing.delivery.sample_rate", "Rendered file: sample rate (proofing)", "choice", []string{"required", "ignored"}},
+		{"proofing.delivery.duration_seconds", "Rendered file: file length (proofing)", "choice", []string{"required", "ignored"}},
+		{"proofing.delivery.head_room_tone_seconds", "Rendered file: room tone, head (proofing)", "choice", []string{"required", "ignored"}},
+		{"proofing.delivery.tail_room_tone_seconds", "Rendered file: room tone, tail (proofing)", "choice", []string{"required", "ignored"}},
+		{proofing.RenderLengthSignalID, "Rendered file: length matches the chapter (proofing)", "choice", []string{"required", "ignored"}},
+	},
+	// Proofing is the proofing signals' own setting (docs/prds/proofing-readiness-signals.prd.md Q9 C): how far, in
+	// seconds, a chapter's rendered file may differ in length from its items' span before the render length check is not
+	// met. Unset by default and then the check is not required: no default is proposed until render-versus-project
+	// lengths are measured on real renders (tails, padding).
+	"Proofing": {
+		{"render_length_tolerance_seconds", "Render length tolerance", "number", nil},
+	},
+	// Editing is the editing-readiness analysis's own policy (docs/prds/editing-readiness-analysis.prd.md Phase 3, Q2,
+	// Q3): the empty-space signal's maximum gap and optional head/tail limits. Every one of the three is unset by
+	// default (numberSpecs below has no builtinDefaults/config-defaults.json entry to match): D22's own recommendation
+	// is "unknown until the narrator sets a value", since no number in the repo has a cited source and a guessed
+	// default risks a false "done" in one direction or an unreachable "done" in the other (Q2's Decisions Log entry).
+	// A number field left unset reads back as "" (Store.Effective's own fallback, never "0"), which editing.PolicyFromSettings
+	// treats as "not checked" for that part, not as zero seconds.
+	"Editing": {
+		{"max_gap_seconds", "Maximum gap before it's flagged (empty space)", "number", nil},
+		{"head_max_seconds", "Maximum leading silence (head)", "number", nil},
+		{"tail_max_seconds", "Maximum trailing silence (tail)", "number", nil},
 	},
 }
 

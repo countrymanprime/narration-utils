@@ -80,7 +80,24 @@ var builtinDefaults = map[string]Values{
 	// StageRecommendations defaults every signal to required and suggestions on (docs/prds/chapter-stage-recommendations.prd.md
 	// Phase 6, Q8): a narrator who never opens this settings page keeps the behaviour Phase 1 shipped with (every declared
 	// signal id required).
-	"StageRecommendations": {"suggestions_enabled": "true", "recording.text_present": "required"},
+	// editing.empty_space/clicks/breaths default to required (Q5 option A: "it matches the product definition").
+	// Clicks and breaths can never actually be met while their detector is unvalidated (Phase 4 has not run), so
+	// this default means the editing stage cannot be recommended until either Phase 4 lands or the narrator sets
+	// editing.clicks/editing.breaths to "ignored" here - the documented cost of Q5's own recommendation, not a bug.
+	"StageRecommendations": {
+		"suggestions_enabled": "true", "recording.text_present": "required",
+		"editing.empty_space": "required", "editing.clicks": "required", "editing.breaths": "required",
+		// proofing.pickups is the always-required proofing signal (proofing-readiness-signals.prd.md Proposed Solution 1).
+		"proofing.pickups": "required",
+		// The proofing delivery checks default to required; each is required only while the project's delivery profile
+		// has a required rule for it (and the length check only while a tolerance is set), so this default blocks nothing
+		// the narrator has not limited (proofing-readiness-signals.prd.md Q7 B).
+		"proofing.delivery.integrated_lufs": "required", "proofing.delivery.rms_dbfs": "required",
+		"proofing.delivery.sample_peak_dbfs": "required", "proofing.delivery.true_peak_dbtp": "required",
+		"proofing.delivery.noise_floor_dbfs": "required", "proofing.delivery.sample_rate": "required",
+		"proofing.delivery.duration_seconds": "required", "proofing.delivery.head_room_tone_seconds": "required",
+		"proofing.delivery.tail_room_tone_seconds": "required", "proofing.delivery.render_length": "required",
+	},
 	// TakeReview holds the pickup/duplicate detector's Q12 thresholds and
 	// Q3 scan-scope settings (internal/takereview), layered like every
 	// other tool here. Thresholds mirror repeats.DefaultThresholds();

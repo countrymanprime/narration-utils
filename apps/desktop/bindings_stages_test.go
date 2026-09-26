@@ -11,6 +11,9 @@ import (
 
 	"github.com/countrymanprime/narration-utils/shell/internal/contractfile"
 	"github.com/countrymanprime/narration-utils/shell/internal/coverage"
+	"github.com/countrymanprime/narration-utils/shell/internal/findings"
+	"github.com/countrymanprime/narration-utils/shell/internal/proofing"
+	"github.com/countrymanprime/narration-utils/shell/internal/settings"
 	"github.com/countrymanprime/narration-utils/shell/internal/stages"
 )
 
@@ -111,6 +114,137 @@ func TestAChapterNeverCheckedIsUnknownAndCannotBeConfirmed(t *testing.T) {
 	pinStages(t, "stages-decision-refused", refused)
 }
 
+// TestAChapterInProofingIsJudgedByThePickupsRollUp is proofing-readiness-signals.prd.md Phase 1 through the host: the
+// proofing provider is registered, a chapter in proofing is judged by proofing.pickups against finalized, and an open
+// take review pickup for the chapter makes it not ready, listed by its finding id.
+func TestAChapterInProofingIsJudgedByThePickupsRollUp(t *testing.T) {
+	host := stagesHost(t, 10)
+	if _, err := host.ManuscriptSetChapterStatus("c-0001", "proofing"); err != nil {
+		t.Fatal(err)
+	}
+	chapter := stageChapters(t, host)[0]
+	if chapter["from"] != "proofing" || chapter["target"] != "finalized" || chapter["verdict"] != "unknown" {
+		t.Fatalf("chapter = %v", chapter)
+	}
+	signal := signalByID(t, chapter, proofing.PickupsSignalID)
+	if signal["cause"] != string(stages.CauseNeverAnalyzed) {
+		t.Fatalf("signal = %v", signal)
+	}
+
+	start, end := 1.0, 2.0
+	pickup := findings.Finding{
+		SchemaVersion: findings.SchemaVersion, ID: "pickup-1", Analyzer: proofing.AnalyzerTakeReview, Category: findings.CategoryPickup,
+		Severity: findings.SeverityWarning, Source: findings.Source{File: "chapter-one.wav"},
+		TimeRange:        &findings.TimeRange{Start: 1, End: 2, SourceStart: &start, SourceEnd: &end},
+		Manuscript:       &findings.Manuscript{ChapterID: "c-0001", Expected: "It was a bright cold day"},
+		ConfidenceReason: "test", Review: findings.ReviewState{Status: findings.StatusUnreviewed},
+	}
+	if _, err := host.services().findings.SaveAnalyzerFindings(proofing.AnalyzerTakeReview, "c-0001", []findings.Finding{pickup}); err != nil {
+		t.Fatal(err)
+	}
+	answer := decodeAnswer(t)(host.StageRecommendations())
+	chapter = answer["chapters"].([]any)[0].(map[string]any)
+	signal = signalByID(t, chapter, proofing.PickupsSignalID)
+	if chapter["verdict"] != "not_ready" || signal["state"] != "not_met" {
+		t.Fatalf("an open pickup must make the chapter not ready: %v", chapter)
+	}
+	listed := false
+	for _, entry := range signal["evidence"].([]any) {
+		listed = listed || entry.(map[string]any)["findingId"] == "pickup-1"
+	}
+	if !listed {
+		t.Fatalf("the open pickup is not listed by its finding id: %v", signal["evidence"])
+	}
+	pinStages(t, "stages-recommendations-proofing", answer)
+}
+
+// signalByID is the chapter's signal with the given id.
+func signalByID(t *testing.T, chapter map[string]any, id string) map[string]any {
+	t.Helper()
+	for _, raw := range chapter["signals"].([]any) {
+		if signal := raw.(map[string]any); signal["id"] == id {
+			return signal
+		}
+	}
+	t.Fatalf("no signal %s in %v", id, chapter["signals"])
+	return nil
+}
+
+// TestEveryProofingSignalHasASetting: each id the proofing provider declares is a StageRecommendations choice field
+// whose repo default is required, so the Settings page offers it and requiredStageSignals reads it.
+func TestEveryProofingSignalHasASetting(t *testing.T) {
+	keys := map[string]bool{}
+	for _, field := range fieldSchemas["StageRecommendations"] {
+		keys[field.key] = true
+	}
+	store := settings.New(t.TempDir(), "")
+	for _, id := range proofing.NewSignalProvider(proofing.Config{}).SignalIDs() {
+		if !keys[id] {
+			t.Errorf("%s has no StageRecommendations field", id)
+		}
+		if value, _ := store.Effective("StageRecommendations", id, ""); value != "required" {
+			t.Errorf("%s defaults to %q, want required", id, value)
+		}
+	}
+	if _, ok := numberSpecs["Proofing"]["render_length_tolerance_seconds"]; !ok {
+		t.Error("the render length tolerance has no number range")
+	}
+}
+
+func TestRenderLengthToleranceIsUnsetUntilANumberIsSaved(t *testing.T) {
+	store := settings.New(t.TempDir(), "")
+	tolerance := renderLengthTolerance(store)
+	if got := tolerance(); got != nil {
+		t.Fatalf("default tolerance = %v, want unset", *got)
+	}
+	number := func(v float64) *float64 { return &v }
+	for text, want := range map[string]*float64{"1.5": number(1.5), "0": number(0), "-1": nil, "abc": nil, "NaN": nil} {
+		if err := store.Save("Proofing", "global", map[string]*string{"render_length_tolerance_seconds": &text}); err != nil {
+			t.Fatal(err)
+		}
+		got := tolerance()
+		if (got == nil) != (want == nil) || (got != nil && *got != *want) {
+			t.Fatalf("tolerance(%q) = %v, want %v", text, got, want)
+		}
+	}
+}
+
+// TestProofingDeliveryChecksFollowTheProfile: with the default profile (ACX) the chapter's delivery checks are required
+// and unknown until a render is chosen and measured; ignoring the pickups signal and every delivery check leaves no
+// required signal, which never recommends.
+func TestProofingDeliveryChecksFollowTheProfile(t *testing.T) {
+	host := stagesHost(t, 10)
+	if _, err := host.ManuscriptSetChapterStatus("c-0001", "proofing"); err != nil {
+		t.Fatal(err)
+	}
+	chapter := stageChapters(t, host)[0]
+	ids := []string{}
+	for _, raw := range chapter["signals"].([]any) {
+		signal := raw.(map[string]any)
+		ids = append(ids, signal["id"].(string))
+		if signal["id"] != proofing.PickupsSignalID && (signal["state"] != "unknown" || signal["cause"] != string(stages.CauseNeverAnalyzed)) {
+			t.Fatalf("a delivery check with no render chosen: %v", signal)
+		}
+	}
+	want := []string{"proofing.delivery.duration_seconds", "proofing.delivery.head_room_tone_seconds", "proofing.delivery.noise_floor_dbfs", "proofing.delivery.rms_dbfs",
+		"proofing.delivery.sample_peak_dbfs", "proofing.delivery.sample_rate", "proofing.delivery.tail_room_tone_seconds", proofing.PickupsSignalID}
+	if !slices.Equal(ids, want) {
+		t.Fatalf("required proofing signals = %v, want ACX's measured WAV rules and pickups %v", ids, want)
+	}
+
+	ignored := "ignored"
+	changes := map[string]*string{}
+	for _, id := range proofing.NewSignalProvider(proofing.Config{}).SignalIDs() {
+		changes[id] = &ignored
+	}
+	if err := host.services().settings.Save("StageRecommendations", "project", changes); err != nil {
+		t.Fatal(err)
+	}
+	if chapter = stageChapters(t, host)[0]; chapter["verdict"] != "none" || chapter["noneReason"] != string(stages.NoneNoRequiredSignals) {
+		t.Fatalf("with every proofing signal ignored: %v", chapter)
+	}
+}
+
 func TestTheModelNotInstalledIsAnUnknownCauseOfItsOwn(t *testing.T) {
 	host := coverageHost(t, coverageProject(t), false, fakeCoverageSidecar(10))
 	if _, err := host.ManuscriptSetChapterStatus("c-0001", "recording"); err != nil {
@@ -148,9 +282,22 @@ func TestConfirmRevertAndDismissThroughTheHost(t *testing.T) {
 	if confirmation, _ := chapter["confirmation"].(map[string]any); confirmation["from"] != "recording" || confirmation["evidenceChanged"] != false {
 		t.Fatalf("the confirmed chapter carries its live confirmation: %v", chapter)
 	}
-	// With only the recording signal wired, editing has no required signal yet (Phase 7), so it is never recommended.
-	if chapter["verdict"] != "none" || chapter["noneReason"] != string(stages.NoneNoRequiredSignals) {
+	// Editing now has three required signals of its own (ER Phase 6): empty-space has never been checked (no editing
+	// scan has run in this fixture) and clicks/breaths can never be met at all while their detector stays
+	// unvalidated (Phase 4 has not run) - so the chapter's own editing evaluation reads unknown, never recommended,
+	// but for a different reason than before this phase landed (there is a required set now; it just cannot be met).
+	if chapter["verdict"] != "unknown" {
 		t.Fatalf("chapter = %v", chapter)
+	}
+	causes, _ := chapter["causes"].([]any)
+	wantCauses := []string{string(stages.CauseMeasurementUnavailable), string(stages.CauseNeverAnalyzed)}
+	gotCauses := make([]string, len(causes))
+	for i, c := range causes {
+		gotCauses[i] = c.(string)
+	}
+	slices.Sort(gotCauses)
+	if !slices.Equal(gotCauses, wantCauses) {
+		t.Fatalf("causes = %v, want %v", gotCauses, wantCauses)
 	}
 	pinStages(t, "stages-decision-confirmed", confirmed)
 

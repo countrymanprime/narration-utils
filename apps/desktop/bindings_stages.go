@@ -4,10 +4,17 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"math"
+	"strconv"
+	"strings"
 
 	"github.com/countrymanprime/narration-utils/shell/internal/coverage"
+	"github.com/countrymanprime/narration-utils/shell/internal/deliveryprofile"
+	"github.com/countrymanprime/narration-utils/shell/internal/editing"
+	"github.com/countrymanprime/narration-utils/shell/internal/findings"
 	"github.com/countrymanprime/narration-utils/shell/internal/manuscript"
 	"github.com/countrymanprime/narration-utils/shell/internal/persist"
+	"github.com/countrymanprime/narration-utils/shell/internal/proofing"
 	"github.com/countrymanprime/narration-utils/shell/internal/settings"
 	"github.com/countrymanprime/narration-utils/shell/internal/stages"
 )
@@ -95,9 +102,18 @@ func (h *Host) stageDecision(decide func(context.Context, *stages.Service) (stag
 }
 
 // stagesService builds one project's stage recommendation service in configureLocked: the manuscript's status path, the
-// recording signal over the coverage service, and the coverage service's shared evidence view. unavailable says why a
-// recording check cannot be run here now, read at evaluation time.
-func stagesService(project string, text *manuscript.Service, checks *coverage.Service, store *settings.Store, unavailable func() string, reporter *persist.Reporter) *stages.Service {
+// recording signal over the coverage service, the editing signals over the editing service (ER Phase 6), and the
+// coverage service's shared evidence view (both signal owners read the same saved project, parsed once). unavailable
+// says why a recording check cannot be run here now, read at evaluation time. extra are further stage providers (the
+// proofing signals, proofingProvider), appended after the recording and editing ones.
+func stagesService(project string, text *manuscript.Service, checks *coverage.Service, editingChecks *editing.Service, store *settings.Store, unavailable func() string, reporter *persist.Reporter, extra ...stages.Provider) *stages.Service {
+	providers := append([]stages.Provider{
+		coverage.NewSignalProvider(checks, coverage.SignalSources{
+			Settings:    func() coverage.Settings { return coverageSettings(store) },
+			Unavailable: unavailable,
+		}),
+		editing.NewSignalProvider(editingChecks),
+	}, extra...)
 	return stages.NewService(stages.Config{
 		Project:        project,
 		LoadManuscript: text.Load,
@@ -106,14 +122,69 @@ func stagesService(project string, text *manuscript.Service, checks *coverage.Se
 			_, err := text.SetChapterStatus(chapterID, string(status))
 			return err
 		},
-		Providers: []stages.Provider{coverage.NewSignalProvider(checks, coverage.SignalSources{
-			Settings:    func() coverage.Settings { return coverageSettings(store) },
-			Unavailable: unavailable,
-		})},
-		View:            checks.EvidenceView,
-		Reporter:        reporter,
-		RequiredSignals: func(_ stages.Stage, declared []string) []string { return requiredStageSignals(store, declared) },
+		Providers: providers,
+		View:      checks.EvidenceView,
+		Reporter:  reporter,
+		RequiredSignals: func(stage stages.Stage, declared []string) []string {
+			return filterRequired(providers, stage, requiredStageSignals(store, declared))
+		},
 	})
+}
+
+// requiredFilter is a provider whose own evidence decides that some of its declared signals are not required right
+// now (the proofing delivery checks: a check needs a limit in the project's delivery profile, Q7 of the proofing PRD).
+type requiredFilter interface {
+	FilterRequired(required []string) []string
+}
+
+// filterRequired lets every provider of stage that is a requiredFilter drop its own not-required ids from required.
+func filterRequired(providers []stages.Provider, stage stages.Stage, required []string) []string {
+	for _, provider := range providers {
+		if filter, ok := provider.(requiredFilter); ok && provider.Stage() == stage {
+			required = filter.FilterRequired(required)
+		}
+	}
+	return required
+}
+
+// proofingSources is what the proofing provider reads from the host besides the findings store: the delivery profile
+// the project is judged against now and the narrator's render length tolerance (nil when unset).
+type proofingSources struct {
+	project         string
+	profile         func() deliveryprofile.Profile
+	lengthTolerance func() *float64
+}
+
+// proofingProvider is the proofing stage's provider (docs/prds/proofing-readiness-signals.prd.md): the pickups roll-up
+// over the findings store's transcript_discrepancy, pickup and duplicate_read findings, with Transcript Compare's latest
+// run judged from the ledger records comparisonRecorder writes (Phase 2), and one delivery signal per check from the
+// chapter's chosen render, its stored measurement and the delivery profile (Phases 4 and 5). It reads only; it never
+// starts a comparison, a scan or a measurement.
+func proofingProvider(store *findings.Store, sources proofingSources) stages.Provider {
+	config := proofing.Config{
+		Runs:    map[string]proofing.RunJudge{proofing.AnalyzerTranscriptCompare: proofing.ComparisonJudge},
+		Profile: sources.profile, LengthTolerance: sources.lengthTolerance,
+	}
+	if store != nil {
+		config.Findings = store
+	}
+	if sources.project != "" {
+		config.Renders = proofing.NewRenderStore(sources.project)
+	}
+	return proofing.NewSignalProvider(config)
+}
+
+// renderLengthTolerance is the narrator's Proofing.render_length_tolerance_seconds, nil while unset (no default is
+// proposed until render-versus-project lengths are measured on real renders, Q9) or not a finite number at least 0.
+func renderLengthTolerance(store *settings.Store) func() *float64 {
+	return func() *float64 {
+		text, _ := store.Effective("Proofing", "render_length_tolerance_seconds", "")
+		value, err := strconv.ParseFloat(strings.TrimSpace(text), 64)
+		if err != nil || math.IsNaN(value) || math.IsInf(value, 0) || value < 0 {
+			return nil
+		}
+		return &value
+	}
 }
 
 // requiredStageSignals is the narrator's required set out of declared (Phase 6, Q8): every declared id is

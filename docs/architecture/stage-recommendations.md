@@ -90,6 +90,14 @@ type Provider interface {
   (default `required`), and a master switch (`suggestions_enabled`) empties every stage's required set at once when
   off. `Config.RequiredSignals` narrows `DeclaredSignalIDs` accordingly; a nil `RequiredSignals` (a caller not wired to
   settings) keeps every declared id required, the original Q8 default.
+- A provider may also drop its own ids that its evidence says are not required right now, by having a
+  `FilterRequired(required []string) []string` method: the host's `RequiredSignals` (`apps/desktop/bindings_stages.go`,
+  `filterRequired`) applies it after the settings, for the provider's own stage only, and never adds an id. The proofing
+  provider ([`apps/desktop/internal/proofing`](../../apps/desktop/internal/proofing),
+  [the proofing readiness signals PRD](../prds/proofing-readiness-signals.prd.md)) uses it so a delivery check
+  (`proofing.delivery.<metric>`) is required only while the project's delivery profile has a required rule for its
+  metric turned on, and `proofing.delivery.render_length` only while a tolerance is set; `proofing.pickups` is always
+  required unless the narrator ignores it.
 - `Signals` reads existing evidence only. It must not decode audio, transcribe, reach the network or start an
   analysis; the narrator starts analyses. `EvidenceView` is built once per evaluation and shared: the parsed saved
   project, its modified time, the ledger and the confirmed mapping, the inputs `evidence.EvaluateChapter` takes.

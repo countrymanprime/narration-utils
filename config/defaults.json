@@ -44,7 +44,21 @@
   },
   "StageRecommendations": {
     "suggestions_enabled": "true",
-    "recording.text_present": "required"
+    "recording.text_present": "required",
+    "editing.empty_space": "required",
+    "editing.clicks": "required",
+    "editing.breaths": "required",
+    "proofing.pickups": "required",
+    "proofing.delivery.integrated_lufs": "required",
+    "proofing.delivery.rms_dbfs": "required",
+    "proofing.delivery.sample_peak_dbfs": "required",
+    "proofing.delivery.true_peak_dbtp": "required",
+    "proofing.delivery.noise_floor_dbfs": "required",
+    "proofing.delivery.sample_rate": "required",
+    "proofing.delivery.duration_seconds": "required",
+    "proofing.delivery.head_room_tone_seconds": "required",
+    "proofing.delivery.tail_room_tone_seconds": "required",
+    "proofing.delivery.render_length": "required"
   },
   "TakeReview": {
     "full_coverage_threshold": "0.9",

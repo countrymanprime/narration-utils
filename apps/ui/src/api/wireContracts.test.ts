@@ -39,6 +39,7 @@ import {
   takeReviewScanJobSchema,
 } from './schemas/takeReview';
 import { COVERAGE_EVALUATOR_REASONS, COVERAGE_REFUSAL_REASONS, coverageResultSchema, coverageStartResultSchema, coverageStateSchema } from './schemas/coverage';
+import { editingCandidatesSchema, editingStartResultSchema, editingStateSchema } from './schemas/editing';
 import { workspaceAlignmentResultSchema } from './schemas/workspace';
 import { STAGE_REFUSAL_REASONS, STAGE_UNKNOWN_CAUSES, stageDecisionResultSchema, stageRecommendationsSchema } from './schemas/stages';
 import { findingMarkerSchema, findingNavigationSchema, findingSchema, findingsPageSchema, findingsSummarySchema, reaperStatusSchema } from './schemas/findings';
@@ -279,6 +280,9 @@ const GOLDEN: Record<string, z.ZodType> = {
   'coverage-start-started.json': coverageStartResultSchema,
   'coverage-start-refused.json': coverageStartResultSchema,
   'coverage-state-idle.json': coverageStateSchema,
+  'editing-state-idle.json': editingStateSchema,
+  'editing-start-refused-unmapped.json': editingStartResultSchema,
+  'editing-candidates-empty.json': editingCandidatesSchema,
   'coverage-state-complete.json': coverageStateSchema,
   // Not a payload: the reason words the host can send, which the schema's lists must equal (the test below).
   'coverage-reasons.json': z.object({ refusal: z.array(z.string()), evaluator: z.array(z.string()) }),
@@ -290,6 +294,7 @@ const GOLDEN: Record<string, z.ZodType> = {
   'stages-recommendations-recommended.json': stageRecommendationsSchema,
   'stages-recommendations-dismissed.json': stageRecommendationsSchema,
   'stages-recommendations-contradiction.json': stageRecommendationsSchema,
+  'stages-recommendations-proofing.json': stageRecommendationsSchema,
   'stages-decision-confirmed.json': stageDecisionResultSchema,
   'stages-decision-refused.json': stageDecisionResultSchema,
   // Not payloads: the cause and refusal words the host can send, which the schema's lists must equal (the test below).
@@ -1923,6 +1928,9 @@ describe('answers of the mock client for the settings, voice, model, transcript 
       'diagnosticsAnalyze',
       'diagnosticsState',
       'diagnosticsCancel',
+      'editingStart',
+      'editingState',
+      'editingCandidates',
       'findingsList',
       'findingsGet',
       'findingsReview',
@@ -1980,6 +1988,7 @@ describe('answers of the mock client for the settings, voice, model, transcript 
       'assetsRemove',
       'transcriptCancel',
       'coverageCancel',
+      'editingCancel',
       'transcriptReset',
       'transcriptJump',
       'transcriptExportMarkers',
