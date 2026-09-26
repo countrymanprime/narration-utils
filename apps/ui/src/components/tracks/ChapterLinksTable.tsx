@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useApi } from '../../api/ApiContext';
 import { MappingConfirm } from '../mapping/MappingConfirm';
 import { Panel } from '../primitives/Panel';
@@ -86,6 +87,7 @@ export function ChapterLinksTable({ tracks, refreshKey }: { tracks: Track[]; ref
           <TableRow>
             <TableHeader>Chapter</TableHeader>
             <TableHeader>Status</TableHeader>
+            <TableHeader hiddenLabel="Workspace" />
             <TableHeader hiddenLabel="Link" />
           </TableRow>
         </TableHead>
@@ -94,6 +96,13 @@ export function ChapterLinksTable({ tracks, refreshKey }: { tracks: Track[]; ref
             <TableRow key={row.chapter.id}>
               <TableCell className="font-medium">{row.chapter.title}</TableCell>
               <TableCell style={{ color: STATE_COLOR[row.state] }}>{STATE_LABEL[row.state]}</TableCell>
+              <TableCell>
+                {row.state === 'linked' && (
+                  <Link className="text-sm font-semibold underline" to={`/tracks/chapter/${encodeURIComponent(row.chapter.id)}`}>
+                    Open workspace
+                  </Link>
+                )}
+              </TableCell>
               <TableCell>
                 <MappingConfirm
                   chapterTitle={row.chapter.title}
@@ -109,7 +118,7 @@ export function ChapterLinksTable({ tracks, refreshKey }: { tracks: Track[]; ref
           ))}
           {rows.length === 0 && (
             <TableRow>
-              <TableCell colSpan={3} className="text-sm" style={{ color: 'var(--text-muted)' }}>
+              <TableCell colSpan={4} className="text-sm" style={{ color: 'var(--text-muted)' }}>
                 No chapters to link yet.
               </TableCell>
             </TableRow>

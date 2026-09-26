@@ -469,12 +469,23 @@ export function AudiobookEstimatePanel({
                           const trackGuid = link.track?.trackGuid;
                           const trackSummary = trackGuid ? trackLinks.tracks.find((track) => track.guid === trackGuid) : undefined;
                           return (
-                            <ChapterTrackButton
-                              chapterTitle={chapter.title}
-                              link={link}
-                              trackColor={trackSummary?.color}
-                              onClick={() => setTrackChapter({ chapterId: chapter.id, open: true })}
-                            />
+                            <div className="flex flex-col items-start gap-0.5">
+                              <ChapterTrackButton
+                                chapterTitle={chapter.title}
+                                link={link}
+                                trackColor={trackSummary?.color}
+                                onClick={() => setTrackChapter({ chapterId: chapter.id, open: true })}
+                              />
+                              {trackGuid && (
+                                <Link
+                                  className="text-xs underline"
+                                  style={{ color: 'var(--text-muted)' }}
+                                  to={`/tracks/chapter/${encodeURIComponent(chapter.id)}`}
+                                >
+                                  Open workspace
+                                </Link>
+                              )}
+                            </div>
                           );
                         })()}
                       </TableCell>

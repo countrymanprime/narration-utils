@@ -564,6 +564,21 @@ async function lookUpInReader(page: Page, word: string, url?: string): Promise<v
   await clickVisible(page, 'button', 'Look up');
 }
 
+/** Links a chapter to its first available track from the Tracks page's Chapter links table (the same real-UI path
+ * 'chapter-link-confirmed' above uses), then follows its "Open workspace" link and waits for the workspace to
+ * render (edit-and-proof-workspace.prd.md Phase 2: no chapter starts linked by default in the mock). */
+async function openWorkspaceFor(page: Page, chapterTitle: string): Promise<void> {
+  await goToPage(page, 'Tracks');
+  const table = page.getByRole('table', { name: 'Chapter links' });
+  await table.scrollIntoViewIfNeeded();
+  // An exact-name cell match, not `hasText` (a substring): "Chapter 1" is also a substring of "Chapter 10"-"Chapter 12".
+  const row = table.locator('tbody tr').filter({ has: page.getByRole('cell', { name: chapterTitle, exact: true }) });
+  await row.getByRole('combobox').selectOption({ index: 0 });
+  await row.getByRole('button', { name: 'Confirm' }).click();
+  await row.getByRole('link', { name: 'Open workspace' }).click();
+  await page.getByRole('heading', { level: 1, name: new RegExp(chapterTitle) }).waitFor();
+}
+
 // Some states have no known/safe driver yet (e.g. alias-typeahead, forcing
 // the manuscript-not-found banner without a mock-data override seam). Those
 // are left out here on purpose - the catalog entry is simply skipped.
@@ -1788,6 +1803,40 @@ export const APP_DRIVERS: Record<string, Record<string, Driver>> = {
       const message = page.getByText(/is not in fixed item lane mode/).first();
       await message.waitFor();
       await message.scrollIntoViewIfNeeded();
+    },
+  },
+  workspace: {
+    never: async (page) => {
+      // Chapter 7 has no recordedFraction in the fixture (mockFixtures.ts: only chapters 1-6 do), so it reads "never checked".
+      await openWorkspaceFor(page, 'Chapter 7');
+      await page.getByText(/hasn.t been checked yet/).waitFor();
+    },
+    stale: async (page) => {
+      // ?mockCoverage=stale marks Chapter 4's check stale (main.tsx).
+      await page.goto('/?mockCoverage=stale');
+      await settlePage(page);
+      await openWorkspaceFor(page, 'Chapter 4');
+      await page.getByText('Check stale').waitFor();
+    },
+    current: async (page) => {
+      await openWorkspaceFor(page, 'Chapter 1');
+      await page.getByText('Check current').waitFor();
+    },
+    playing: async (page) => {
+      await openWorkspaceFor(page, 'Chapter 1');
+      await clickVisible(page, 'button', 'Play');
+      await page.getByRole('button', { name: 'Pause' }).waitFor();
+    },
+    'flag-selected': async (page) => {
+      await openWorkspaceFor(page, 'Chapter 1');
+      await clickVisible(page, 'button', 'Next flag');
+      await page.getByText('Play from here').waitFor();
+    },
+    standalone: async (page) => {
+      await page.goto('/?mockReaper=standalone');
+      await settlePage(page);
+      await openWorkspaceFor(page, 'Chapter 1');
+      await page.getByText('Check current').waitFor();
     },
   },
   review: {

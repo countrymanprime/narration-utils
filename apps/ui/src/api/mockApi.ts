@@ -1294,7 +1294,13 @@ export function createMockApi(
     },
     seed: initial.coverage,
   });
-  const workspace = createWorkspaceMock({ chapters: () => chapters, paragraphs: () => paragraphs, coverageResult: peekCoverage });
+  const workspace = createWorkspaceMock({
+    chapters: () => chapters,
+    paragraphs: () => paragraphs,
+    coverageResult: peekCoverage,
+    project: WIRE_TRACKS_PROJECT,
+    mappings: () => chapterTrackMappings,
+  });
   const stages = createStagesMock({
     ready: manuscriptReady,
     chapters: () => chapters.map(withMeasurement),

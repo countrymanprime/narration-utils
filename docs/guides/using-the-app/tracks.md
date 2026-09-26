@@ -114,6 +114,9 @@ change the REAPER project.
 
 ![Tracks page chapter links list with one chapter confirmed to a track](../../images/ui/tracks-chapter-links.webp)
 
+A linked chapter's row also has **Open workspace**, into the [chapter workspace](workspace.md): one
+screen to listen to the chapter against its script and see where the recording check found a problem.
+
 ## Chapter sync
 
 The first time a REAPER project is linked with a manuscript already imported, a dialog asks **Sync
@@ -135,4 +138,4 @@ changes, and a chapter you link yourself is never overwritten.
 
 ---
 
-[← Teleprompter](teleprompter.md) · [Index](README.md) · [Review →](review.md)
+[← Teleprompter](teleprompter.md) · [Index](README.md) · [Chapter workspace →](workspace.md)
