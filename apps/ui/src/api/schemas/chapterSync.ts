@@ -32,6 +32,14 @@ const chapterSchema = z
     trackChangedAt: z.string().nullable(),
     newestSourceAt: z.string().nullable(),
     lastChanged: z.string().nullable(),
+    pickupTrackGuid: z.string(),
+    pickupTrackName: z.string(),
+    pickupsScannedAt: z.string().nullable(),
+    pickupsChanged: z.boolean(),
+  })
+  .refine((row) => row.pickupTrackGuid !== '' || (!row.pickupsChanged && row.pickupsScannedAt === null), {
+    message: 'only a chapter with a pickup track has pickups to scan',
+    path: ['pickupsChanged'],
   })
   .refine((row) => row.freshness === 'never' || row.checkedAt !== null, {
     message: 'a current or stale check has the time it finished',
@@ -66,6 +74,10 @@ export const chapterSyncStateSchema = z
     unsavedEdits: z.boolean(),
     activity: listFromNull(batchSchema).refine((list) => list.length <= 20, { message: 'the host keeps at most 20 activity rows' }),
     chapters: listFromNull(chapterSchema),
+    background: z.object({
+      enabled: z.boolean(),
+      wait: z.enum(['', 'off', 'busy', 'model', 'battery', 'recording', 'quiet', 'nothing']),
+    }),
   })
   .refine((state) => !state.ask || (state.consent === 'undecided' && state.manuscript && state.dawLinked), {
     message: 'the consent is asked only while undecided, with a manuscript and a linked DAW project',

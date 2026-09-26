@@ -5,8 +5,9 @@ import { faFileArrowUp, faFileLines } from '@fortawesome/free-solid-svg-icons';
 import { useApi } from '../../api/ApiContext';
 import { usePendingAction } from '../../hooks/usePendingAction';
 import { useWorkJob } from '../../hooks/useWorkJob';
-import type { GuideEntity, ManuscriptImportSelection, TranscriptState, WorkJob } from '../../types';
+import type { CreditsSetupState, GuideEntity, ManuscriptImportSelection, TranscriptState, WorkJob } from '../../types';
 import type { Bootstrap } from '../../types';
+import { CreditsSetupDialog } from '../credits/CreditsSetupDialog';
 import { Heading } from '../primitives/Heading';
 import { AudiobookEstimatePanel } from './AudiobookEstimatePanel';
 import { ImportReview, ImportSummary } from './ImportReview';
@@ -84,6 +85,17 @@ export function Home({
   }, [api]);
   const candidate = data.manuscriptCandidate;
   const offerCandidate = !found && candidate && !declinedCandidates.has(candidate.path) && !importJob;
+  // The "Set up the credits" prompt (credits-token-setup-and-front-matter-detection.prd.md, Phase 2): CreditsSetupState
+  // is not part of Bootstrap, so it is read here, keyed on the same manuscript identity as the effect below - it is
+  // re-read on first load, after an import commits (data.manuscript?.importedAt changes once refreshBootstrap runs) and
+  // after Replace manuscript (a new documentId). Whether to show it (`needed`) is answered entirely by the host.
+  const [creditsSetup, setCreditsSetup] = useState<CreditsSetupState>();
+  useEffect(() => {
+    void api
+      .creditsSetupState()
+      .then(setCreditsSetup)
+      .catch(() => setCreditsSetup(undefined));
+  }, [api, data.manuscript?.id, data.manuscript?.importedAt]);
   useEffect(() => {
     void api
       .guideEntities()
@@ -296,6 +308,11 @@ export function Home({
           close={() => setBuildAfterImportJob(undefined)}
           background={() => setBuildAfterImportJob(undefined)}
         />
+      )}
+      {/* The manuscript offer comes first and the credits prompt follows the import (Solution Detail, Phase 2): held
+          back while that offer or an import is on screen, so the two dialogs never stack. */}
+      {!offerCandidate && !importJob && creditsSetup?.needed && (
+        <CreditsSetupDialog state={creditsSetup} notify={notify} onDone={setCreditsSetup} onMoreFields={() => go('/settings#credits')} />
       )}
       <AudiobookEstimatePanel
         notify={notify}

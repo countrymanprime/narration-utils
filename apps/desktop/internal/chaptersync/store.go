@@ -38,10 +38,19 @@ type Activity struct {
 	NewTracks []TrackRef              `json:"newTracks"`
 }
 
+// PickupScan is the last take-review scan that included a chapter's pickup track (Phase 8): the track's Fingerprint as
+// scanned, and when. A pickup track whose fingerprint differs since has pickups the scan has not seen.
+type PickupScan struct {
+	TrackGUID   string    `json:"trackGuid"`
+	Fingerprint string    `json:"fingerprint"`
+	ScannedAt   time.Time `json:"scannedAt"`
+}
+
 type fileShape struct {
-	SchemaVersion int        `json:"schemaVersion"`
-	Snapshot      Snapshot   `json:"snapshot"`
-	Activity      []Activity `json:"activity,omitempty"`
+	SchemaVersion int          `json:"schemaVersion"`
+	Snapshot      Snapshot     `json:"snapshot"`
+	Activity      []Activity   `json:"activity,omitempty"`
+	PickupScans   []PickupScan `json:"pickupScans,omitempty"`
 }
 
 // Store keeps the last sync's Snapshot and the activity list. It is disposable
@@ -102,17 +111,47 @@ func (s *Store) readLocked() fileShape {
 func (s *Store) Write(snapshot Snapshot, entries ...Activity) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	activity := s.readLocked().Activity
+	file := s.readLocked()
 	for _, entry := range entries {
-		activity = append([]Activity{normalized(entry)}, activity...)
+		file.Activity = append([]Activity{normalized(entry)}, file.Activity...)
 	}
-	if len(activity) > ActivityLimit {
-		activity = activity[:ActivityLimit]
+	if len(file.Activity) > ActivityLimit {
+		file.Activity = file.Activity[:ActivityLimit]
 	}
+	file.Snapshot = snapshot
+	return s.writeLocked(file)
+}
+
+// PickupScans returns the recorded pickup scans, one per pickup track.
+func (s *Store) PickupScans() []PickupScan {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return append([]PickupScan{}, s.readLocked().PickupScans...)
+}
+
+// RecordPickupScan remembers scan as its track's last pickup scan, replacing an earlier one.
+func (s *Store) RecordPickupScan(scan PickupScan) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	file := s.readLocked()
+	kept := []PickupScan{}
+	for _, existing := range file.PickupScans {
+		if existing.TrackGUID != scan.TrackGUID {
+			kept = append(kept, existing)
+		}
+	}
+	scan.ScannedAt = scan.ScannedAt.UTC()
+	file.PickupScans = append(kept, scan)
+	return s.writeLocked(file)
+}
+
+// writeLocked writes file through a temp file and a rename. The caller holds mu.
+func (s *Store) writeLocked(file fileShape) error {
+	file.SchemaVersion = snapshotSchemaVersion
 	if err := os.MkdirAll(filepath.Dir(s.path), 0o755); err != nil {
 		return fmt.Errorf("could not create the project's narration-utils folder: %w", err)
 	}
-	bytes, err := json.MarshalIndent(fileShape{SchemaVersion: snapshotSchemaVersion, Snapshot: snapshot, Activity: activity}, "", "  ")
+	bytes, err := json.MarshalIndent(file, "", "  ")
 	if err != nil {
 		return err
 	}

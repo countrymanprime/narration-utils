@@ -1,6 +1,25 @@
 {
-  "activity": [],
-  "ask": true,
+  "activity": [
+    {
+      "at": "2026-09-21T10:00:00Z",
+      "linked": [
+        {
+          "chapterId": "c-0001",
+          "chapterTitle": "Chapter I: Down the Rabbit-Hole",
+          "confirmedAt": "2026-09-21T10:00:00Z",
+          "match": {
+            "kind": "contained",
+            "score": 0.95
+          },
+          "origin": "auto",
+          "trackGuid": "{11111111-1111-4111-8111-111111111111}"
+        }
+      ],
+      "newTracks": [],
+      "trigger": "consent"
+    }
+  ],
+  "ask": false,
   "background": {
     "enabled": true,
     "wait": ""
@@ -13,17 +32,17 @@
       "checkedAt": null,
       "checking": false,
       "freshness": "never",
-      "lastChanged": null,
-      "newestSourceAt": null,
-      "origin": "",
-      "pickupTrackGuid": "",
-      "pickupTrackName": "",
-      "pickupsChanged": false,
+      "lastChanged": "2026-09-21T10:00:00Z",
+      "newestSourceAt": "2026-09-21T10:00:00Z",
+      "origin": "auto",
+      "pickupTrackGuid": "{55555555-5555-4555-8555-555555555555}",
+      "pickupTrackName": "Chapter I (pickups)",
+      "pickupsChanged": true,
       "pickupsScannedAt": null,
       "reasons": [],
       "trackChangedAt": null,
-      "trackGuid": "",
-      "trackName": ""
+      "trackGuid": "{11111111-1111-4111-8111-111111111111}",
+      "trackName": "Chapter I"
     },
     {
       "chapterId": "c-0002",
@@ -62,17 +81,17 @@
       "trackName": ""
     }
   ],
-  "consent": "undecided",
+  "consent": "on",
   "counts": {
     "linked": 1,
     "needsYou": 1,
     "noTrack": 1,
-    "pickupTracks": 0,
+    "pickupTracks": 1,
     "unmatched": 0
   },
   "dawLinked": true,
-  "decidedAt": null,
-  "lastSync": null,
+  "decidedAt": "2026-09-21T10:00:00Z",
+  "lastSync": "2026-09-21T10:00:00Z",
   "manuscript": true,
   "message": "",
   "project": "ready",

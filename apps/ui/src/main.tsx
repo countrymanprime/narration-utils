@@ -4,7 +4,7 @@ import { App } from './App';
 import { ApiProvider } from './api/ApiContext';
 import { wailsClient } from './api/wailsClient';
 import { createMockApi } from './api/mockApi';
-import { WIRE_CHAPTERS, WIRE_TRACKS_PROJECT } from './api/mockFixtures';
+import { WIRE_CHAPTERS, WIRE_FINDINGS, WIRE_TRACKS_PROJECT, takeReviewPickupFor } from './api/mockFixtures';
 import { COVERAGE_REFUSAL_REASONS } from './api/schemas/coverage';
 import { MOCK_RESUME_SEEDS } from './api/resumeMockSeed';
 import { MOCK_REAPER_INPUT_SEEDS, MOCK_REAPER_SEEDS } from './api/teleprompterMock';
@@ -76,9 +76,10 @@ const mockReaperInput = MOCK_REAPER_INPUT_SEEDS.find((seed) => seed === mockPara
 const mockResume = MOCK_RESUME_SEEDS.find((seed) => seed === mockParams.get('mockResume'));
 // `?mockRemoved=1`: the last narration chapter boots removed from recording (chapter-track-link-control.prd.md Phase 3).
 const mockRemoved = mockParams.get('mockRemoved') === '1';
-// `?mockChapterSync=ask|off|linked|unsaved`: chapter sync's consent at boot (daw-chapter-track-auto-sync.prd.md Phases 3
-// and 4; `unsaved` is REAPER holding unsaved edits, with a Sync activity row).
-const mockChapterSync = (['ask', 'off', 'linked', 'unsaved'] as const).find((seed) => seed === mockParams.get('mockChapterSync'));
+// `?mockChapterSync=ask|off|linked|unsaved|pickups`: chapter sync's consent at boot (daw-chapter-track-auto-sync.prd.md
+// Phases 3, 4 and 8; `unsaved` is REAPER holding unsaved edits, with a Sync activity row; `pickups` is a chapter whose
+// pickup track changed since its last scan).
+const mockChapterSync = (['ask', 'off', 'linked', 'unsaved', 'pickups'] as const).find((seed) => seed === mockParams.get('mockChapterSync'));
 // `?mockNoDevices=1` boots the teleprompter with an empty device listing, so the
 // blocked "No microphone found" state (no typed fallback) can be seen without a host.
 const mockNoDevices = mockParams.has('mockNoDevices');
@@ -94,7 +95,10 @@ const mockCreditsFilled = mockParams.get('mockCredits') === 'filled' || mockCred
 const mockCreditsDetected = mockParams.get('mockCredits') === 'detected';
 // `?mockCredits=setup`: the project has no credits values and its setup prompt has not been answered, so Home asks
 // (credits-token-setup-and-front-matter-detection.prd.md Phase 2).
-const mockCreditsSetup = mockParams.get('mockCredits') === 'setup';
+const mockCreditsSetup = mockParams.get('mockCredits') === 'setup' || mockParams.get('mockCredits') === 'setup-narrator-default';
+// `?mockCredits=setup-narrator-default`: as `setup`, but the narrator token already has a value, so the prompt asks
+// for only Title and Author - the state a returning narrator with a saved default sees (CS7 B).
+const mockCreditsSetupNarratorDefault = mockParams.get('mockCredits') === 'setup-narrator-default';
 // `?mockPreviewError=<text>` makes the Story Bible preview fail with that text once the
 // preview voice is installed, so the failure toast can be seen without a real host.
 const mockPreviewError = mockParams.get('mockPreviewError');
@@ -243,6 +247,7 @@ const mockInitial = {
   ...(mockRemoved ? { removedChapter: true } : {}),
   ...(mockChapterSync ? { chapterSync: mockChapterSync } : {}),
   ...(mockCreditsFilled ? { creditValues: { title: 'Alice’s Adventures in Wonderland', author: 'Lewis Carroll', narrator: 'Ada Finch' } } : {}),
+  ...(mockCreditsSetupNarratorDefault ? { creditValues: { narrator: 'Jamie Rivers' } } : {}),
   ...(mockCreditsExtras ? { chapterAnnouncement: '[Chapter]{: [Chapter Title]}.', retailSample: { chapterIndex: 2, startLine: 1, endLine: 3 } } : {}),
   ...(mockNoProject ? { projectFolder: '' } : {}),
   ...(mockMultipleRpp ? { tracksCandidates: ['C:/Projects/Alice-in-Wonderland/Alice.rpp', 'C:/Projects/Alice-in-Wonderland/Alice-alt-mix.rpp'] } : {}),
@@ -304,6 +309,10 @@ const mockInitial = {
         },
       }
     : {}),
+  // Chapter 4's other pickups (recording-check-summary.prd.md Phase 3, RS4 A): one unreviewed take-review pickup
+  // for the same chapter `?mockCoverage=pickups` gives interior gaps, so the summary's own gaps and its "Take
+  // review" count and Open Review link can be seen together, as the mockup does.
+  ...(mockCoverage === 'pickups' ? { findings: [...WIRE_FINDINGS, takeReviewPickupFor(WIRE_CHAPTERS[3].id, WIRE_CHAPTERS[3].title)] } : {}),
   ...(mockChapterSuggestion ? { armedTracks: MOCK_ARMED_TRACKS[mockChapterSuggestion] } : {}),
   ...(mockStages ? { stages: MOCK_STAGES_SEEDS[mockStages] } : {}),
 };

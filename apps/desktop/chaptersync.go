@@ -80,6 +80,8 @@ type chapterSyncState struct {
 	UnsavedEdits bool                   `json:"unsavedEdits"`
 	Activity     []chaptersync.Activity `json:"activity"`
 	Chapters     []chapterSyncChapter   `json:"chapters"`
+	// Background is whether background recording checks are on and why none runs now (Phase 7, ADR 0211).
+	Background chapterSyncBackground `json:"background"`
 }
 
 // chapterSyncChapter is one narration chapter's status without a click (daw-chapter-track-auto-sync.prd.md Phase 6,
@@ -88,7 +90,10 @@ type chapterSyncState struct {
 // started, Q14), when that check last finished, and whether one is running now. The last change is the later of two
 // times: TrackChangedAt, the sync at which the linked track's items last changed (chaptersync.TrackState.ChangedAt;
 // null until a sync after the first sees a change), and NewestSourceAt, the newest modification time of an audio file
-// the track plays (a new recording writes a new file).
+// the track plays (a new recording writes a new file). PickupTrackGUID and PickupTrackName name the chapter's pickup
+// track ("Chapter 6 (pickups)", Phase 8: recognised by name, never a link); PickupsScannedAt is the last take-review
+// scan that included it, and PickupsChanged says the track has items that scan has not seen (it changed since, or was
+// never scanned).
 type chapterSyncChapter struct {
 	ChapterID      string     `json:"chapterId"`
 	ChapterTitle   string     `json:"chapterTitle"`
@@ -102,6 +107,11 @@ type chapterSyncChapter struct {
 	TrackChangedAt *time.Time `json:"trackChangedAt"`
 	NewestSourceAt *time.Time `json:"newestSourceAt"`
 	LastChanged    *time.Time `json:"lastChanged"`
+
+	PickupTrackGUID  string     `json:"pickupTrackGuid"`
+	PickupTrackName  string     `json:"pickupTrackName"`
+	PickupsScannedAt *time.Time `json:"pickupsScannedAt"`
+	PickupsChanged   bool       `json:"pickupsChanged"`
 }
 
 // chapterSyncPreview is ChapterSyncPreview's payload: the plan a sync would carry out now, and the links it keeps.
@@ -152,6 +162,8 @@ type chapterSyncInputs struct {
 	parsedProject tracks.Project
 	// unsavedEdits is the watcher's answer for this project (chaptersync_watch.go).
 	unsavedEdits bool
+	// background is the background check loop's answer for this project (coverage_background.go).
+	background chapterSyncBackground
 }
 
 // readChapterSyncInputs reads the manifest, the manuscript's narration chapters (sync links only those, ADR 0207) and
@@ -162,7 +174,10 @@ func (h *Host) readChapterSyncInputs() (chapterSyncInputs, error) {
 	if folder == "" {
 		return chapterSyncInputs{}, errors.New("open a project before syncing chapters to tracks")
 	}
-	in := chapterSyncInputs{svc: svc, unsavedEdits: h.chapterSyncWatch.unsavedFor(folder)}
+	in := chapterSyncInputs{
+		svc: svc, unsavedEdits: h.chapterSyncWatch.unsavedFor(folder),
+		background: h.backgroundChecks.stateFor(folder, backgroundChecksEnabled(svc)),
+	}
 	manifest, ok, err := project.Load(h.persist, folder)
 	if err != nil {
 		return chapterSyncInputs{}, fmt.Errorf("could not read the project manifest: %w", err)
@@ -249,6 +264,7 @@ func (in chapterSyncInputs) stateOf(plan chaptersync.Plan, kept []evidence.Track
 	}
 	state.Ask = consent == consentUndecided && state.Manuscript && state.DawLinked
 	state.UnsavedEdits = in.unsavedEdits
+	state.Background = in.background
 	store := chaptersync.NewStore(in.svc.config.projectFolder)
 	state.Activity = store.Activity()
 	snapshot := store.Read()
@@ -256,7 +272,7 @@ func (in chapterSyncInputs) stateOf(plan chaptersync.Plan, kept []evidence.Track
 		synced := snapshot.SyncedAt
 		state.LastSync = &synced
 	}
-	state.Chapters = in.chapterRows(snapshot)
+	state.Chapters = in.chapterRows(snapshot, plan.PickupTracks, store.PickupScans())
 	if planned {
 		state.Counts = chapterSyncCounts{
 			Linked: len(kept) + len(plan.AutoLink), NeedsYou: len(plan.NeedsYou), NoTrack: len(plan.NoTrack),
@@ -268,7 +284,7 @@ func (in chapterSyncInputs) stateOf(plan chaptersync.Plan, kept []evidence.Track
 
 // chapterRows is Chapters for in, from the links stored now (after any sync this call made), the saved project plan
 // read, and the stored snapshot. Without a readable manuscript and project it is empty.
-func (in chapterSyncInputs) chapterRows(snapshot chaptersync.Snapshot) []chapterSyncChapter {
+func (in chapterSyncInputs) chapterRows(snapshot chaptersync.Snapshot, pickups []chaptersync.PickupTrack, scans []chaptersync.PickupScan) []chapterSyncChapter {
 	rows := []chapterSyncChapter{}
 	if in.store == nil || !in.parsed {
 		return rows
@@ -289,6 +305,16 @@ func (in chapterSyncInputs) chapterRows(snapshot chaptersync.Snapshot) []chapter
 	for _, state := range snapshot.Tracks {
 		changedAt[state.GUID] = state.ChangedAt
 	}
+	pickupOf := map[string]chaptersync.PickupTrack{}
+	for _, pickup := range pickups {
+		if _, taken := pickupOf[pickup.ChapterID]; !taken {
+			pickupOf[pickup.ChapterID] = pickup
+		}
+	}
+	scanOf := map[string]chaptersync.PickupScan{}
+	for _, scan := range scans {
+		scanOf[scan.TrackGUID] = scan
+	}
 	projectFile := evidence.LedgerProjectFile{Path: in.parsedProject.Path}
 	if info, err := os.Stat(in.parsedProject.Path); err == nil {
 		projectFile.ModTime = info.ModTime().UTC()
@@ -306,6 +332,16 @@ func (in chapterSyncInputs) chapterRows(snapshot chaptersync.Snapshot) []chapter
 			}
 		}
 		row.LastChanged = later(row.TrackChangedAt, row.NewestSourceAt)
+		if pickup, ok := pickupOf[chapter.ID]; ok {
+			row.PickupTrackGUID, row.PickupTrackName = pickup.TrackGUID, pickup.TrackName
+			track := trackOf[pickup.TrackGUID]
+			scan, scanned := scanOf[pickup.TrackGUID]
+			if scanned {
+				at := scan.ScannedAt
+				row.PickupsScannedAt = &at
+			}
+			row.PickupsChanged = len(track.Items) > 0 && (!scanned || scan.Fingerprint != chaptersync.Fingerprint(track))
+		}
 		if check != nil {
 			row.Checking = check.Checking(chapter.ID)
 			if result, err := check.ResultIn(in.parsedProject, projectFile, chapter.ID, alignment); err == nil {

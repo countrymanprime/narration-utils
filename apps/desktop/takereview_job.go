@@ -9,6 +9,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/countrymanprime/narration-utils/shell/internal/chaptersync"
 	"github.com/countrymanprime/narration-utils/shell/internal/findings"
 	"github.com/countrymanprime/narration-utils/shell/internal/process"
 	"github.com/countrymanprime/narration-utils/shell/internal/takereview"
@@ -229,7 +230,34 @@ func (h *Host) runTakeReviewScan(ctx context.Context, job *takeReviewScanJob, sc
 	job.finish(saved, err, ctx.Err() != nil)
 	_ = os.Remove(job.progressPath)
 	_ = os.Remove(job.progressPath + ".cancel")
+	if err == nil && ctx.Err() == nil {
+		h.recordPickupScan(request)
+	}
 	h.publishTakeReviewEnd(job)
+}
+
+// recordPickupScan remembers, for a finished scan that included a pickup track, that track as it was scanned (its
+// fingerprint in the project the scan read), so the chapter's row can say when it has pickups the scan has not seen
+// (daw-chapter-track-auto-sync.prd.md Phase 8). A failure only means the row keeps saying the pickups changed; it is
+// logged, never raised.
+func (h *Host) recordPickupScan(request takereview.Request) {
+	if request.Scope.PickupTrackName == "" {
+		return
+	}
+	for _, track := range request.Project.Tracks {
+		if track.Name != request.Scope.PickupTrackName {
+			continue
+		}
+		scan := chaptersync.PickupScan{TrackGUID: track.GUID, Fingerprint: chaptersync.Fingerprint(track), ScannedAt: time.Now()}
+		if err := chaptersync.NewStore(request.ProjectPath).RecordPickupScan(scan); err != nil {
+			if h.log != nil {
+				_ = h.log.Report("pickup_scan_record_failed", err.Error())
+			}
+			return
+		}
+		h.emitChapterSyncState()
+		return
+	}
 }
 
 func (h *Host) publishTakeReviewEnd(job *takeReviewScanJob) {

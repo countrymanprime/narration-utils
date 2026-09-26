@@ -673,13 +673,15 @@ export const wireSettings = (): Record<string, ScopedSettingField[]> => ({
     deliveryLimit('true_peak_dbtp_max', 'True peak, highest', -60, 'dBTP'),
     deliveryLimit('noise_floor_dbfs_max', 'Noise floor, highest', -120, 'dBFS'),
   ],
-  // The recording check's four settings (docs/utilities/recording-coverage.md, ADR 0131), mirroring the host's fieldSchemas and
-  // numberSpecs.
+  // The recording check's four settings (docs/utilities/recording-coverage.md, ADR 0131) and its background switch, mirroring the
+  // host's fieldSchemas and numberSpecs.
   RecordingCoverage: [
     recordingCheck('min_paragraph_present', 'Share of each paragraph that must be read', '0.8', { min: 0, max: 1, step: 0.01, unit: '' }),
     recordingCheck('max_missing_run', 'Longest run of missing words allowed', '3', { min: 0, max: 200, step: 1, unit: 'words' }),
     recordingCheck('max_misread_run', 'Longest misread still counted as read', '8', { min: 0, max: 200, step: 1, unit: 'words' }),
     recordingCheck('min_anchor_run', 'Shortest match that counts as read', '3', { min: 1, max: 50, step: 1, unit: 'words' }),
+    // Background checks of changed chapters (daw-chapter-track-auto-sync PRD Phase 7, ADR 0211), on by default.
+    bool('background_checks', 'Check changed chapters in the background', 'true'),
   ],
 });
 export const WIRE_TRACKS_PROJECT: TracksProject = {
@@ -1287,5 +1289,49 @@ export const WIRE_FINDINGS: Finding[] = [
     not_in_latest_run: true,
   },
 ];
+
+/** One unreviewed take-review pickup finding for chapterId (recording-check-summary.prd.md Phase 3, RS4 A): the
+ * summary's "Take review" count and Open Review link demo, seeded additively (never into the default
+ * `WIRE_FINDINGS` other tests hardcode exact counts against) alongside the coverage mock's own interior-pickups
+ * seed for the same chapter. */
+export function takeReviewPickupFor(chapterId: string, chapterTitle: string): Finding {
+  return {
+    schema_version: 1,
+    id: `pickup-${chapterId}`,
+    analyzer: 'take-review',
+    project: { path: 'C:/Projects/Alice-in-Wonderland/Alice.rpp' },
+    source: {
+      file: `C:/Projects/Alice-in-Wonderland/media/${chapterId}_take1.wav`,
+      item_guid: `{11111111-0000-0000-0000-${chapterId.replace(/\D/g, '').padStart(12, '0')}}`,
+      take_guid: `{22222222-0000-0000-0000-${chapterId.replace(/\D/g, '').padStart(12, '0')}}`,
+    },
+    manuscript: { chapter_id: chapterId, chapter_title: chapterTitle },
+    category: 'pickup',
+    severity: 'info',
+    confidence: 0.6,
+    evidence_version: `sha256:pickup-${chapterId}`,
+    confidence_reason: "average of 2 member(s)' alignment match quality (fraction of aligned tokens that matched the manuscript exactly)",
+    evidence: {
+      kind: 'pickup',
+      matched_span_first: 5,
+      matched_span_last: 9,
+      members: [
+        {
+          item_index: 0,
+          item_guid: `{11111111-0000-0000-0000-${chapterId.replace(/\D/g, '').padStart(12, '0')}}`,
+          take_guid: `{22222222-0000-0000-0000-${chapterId.replace(/\D/g, '').padStart(12, '0')}}`,
+          source_file: `C:/Projects/Alice-in-Wonderland/media/${chapterId}_take1.wav`,
+          source_start: 0,
+          source_length: 3.8,
+          coverage: 1,
+          quality: 0.64,
+          exact_copy_group: '',
+        },
+      ],
+    },
+    suggested_action: { kind: 'create_take', requires_confirmation: true },
+    review: { status: 'unreviewed' },
+  };
+}
 
 export const wireClone = <T>(value: T): T => structuredClone(value);

@@ -29,6 +29,13 @@ finished, whether one is running, and when the track last changed. The row is th
 against the saved project, so reading it still never starts a check (Q14). The event is sent after each sync, each
 save the watcher picks up, and each check that ends.
 
+A chapter whose recording changed since its check is also re-checked in the background
+([ADR 0211](../adr/0211-a-changed-chapter-is-rechecked-in-the-background-only-on-mains-power-with-reaper-quiet-and-not-recording.md)):
+one at a time, the oldest change first, and only when the setting **Check changed chapters in the background** is on,
+no other job runs, the Whisper model is installed, the computer is on mains power, REAPER is closed (until the bridge
+says whether it is recording), and nothing has changed for three minutes. It is the same check as a press, labelled
+background, and pressing **Check recording** pre-empts it. `chaptersync:state`'s `background.wait` says why none runs.
+
 ## How it works
 
 ```mermaid
@@ -163,7 +170,7 @@ docs/prds/recording-coverage-analysis.prd.md` finds it).
 | Q11 | A spoken title or subtitle is optional, and never counted as missing or extra |
 | Q12 | *Superseded* by [Actual Recorded](../prds/actual-recorded-column.prd.md) Phase 3: an unmeasured chapter kept the status estimate, labelled "estimated from status"; the column now reads a real recorded length or a plain dash, never a guess |
 | Q13 | Another model or language keeps a result current (labelled). Another alignment setting makes it stale |
-| Q14 | On demand only: Home reads stored results and never starts a check |
+| Q14 | On demand only: Home reads stored results and never starts a check. Superseded in part by [ADR 0211](../adr/0211-a-changed-chapter-is-rechecked-in-the-background-only-on-mains-power-with-reaper-quiet-and-not-recording.md): the host re-checks a changed chapter on its own, only on mains power with REAPER quiet and not recording (`RecordingCoverage.background_checks`, on by default); reading a status still never starts one |
 | Q15 | Synthetic fixtures now, with `NARRATION_COVERAGE_CORPUS` for a real permissioned corpus later ([ADR 0125](../adr/0125-recording-coverage-ground-truth-is-scripted-recordings-with-paragraph-labels-and-a-corpus-directory-variable.md)) |
 
 ## Tests and tooling

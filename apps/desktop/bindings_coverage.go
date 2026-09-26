@@ -58,6 +58,12 @@ func (h *Host) coverageStart(chapterID string) (any, error) {
 	if err != nil {
 		return modelAssetRequired(model, models.State(model), models.InstallDir(model.ID)), nil
 	}
+	// A background check gives way to the narrator's own (ADR 0211): it is cancelled, keeping the items it finished, and
+	// this one starts once it has stopped.
+	if svc.coverage.Busy() && svc.coverage.State().Background {
+		svc.coverage.Cancel()
+		svc.coverage.Wait()
+	}
 	state, err := svc.coverage.Start(coverage.Request{
 		ChapterID:     chapterID,
 		Transcription: coverage.Transcription{Model: modelID, ModelDir: modelDir},

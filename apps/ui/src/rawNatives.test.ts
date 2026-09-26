@@ -46,6 +46,10 @@ const CEILING: Record<NativeTag, Record<string, number>> = {
     'src/components/teleprompter/ReaderFlagsPanel.tsx': 1,
     'src/components/storybible/GuideDetail.tsx': 1,
     'src/components/tracks/TracksPage.tsx': 2,
+    // The "Settings > Credits" link inside the "More fields" sentence (credits-token-setup-and-front-matter-detection.prd.md
+    // Phase 2, CS4): an inline word inside a paragraph, the same case `ReaderText.tsx` above is for - `Button`'s padded,
+    // uppercase chrome would break the sentence it sits in.
+    'src/components/credits/CreditsSetupDialog.tsx': 1,
   },
   select: {},
   // Reaper-automation-follow-through PRD Phase 9: `PickupsDialog`'s CSV picker is a hidden native `<input type="file">`
