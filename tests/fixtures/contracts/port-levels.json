@@ -1,0 +1,24 @@
+{
+  "levels": [
+    {
+      "name": "Unsupported",
+      "wire": "unsupported",
+      "value": 0
+    },
+    {
+      "name": "NotYetAvailable",
+      "wire": "not_yet_available",
+      "value": 1
+    },
+    {
+      "name": "Experimental",
+      "wire": "experimental",
+      "value": 2
+    },
+    {
+      "name": "Supported",
+      "wire": "supported",
+      "value": 3
+    }
+  ]
+}
