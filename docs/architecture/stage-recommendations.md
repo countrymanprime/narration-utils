@@ -85,8 +85,11 @@ type Provider interface {
 }
 ```
 
-- `SignalIDs` declares every id the provider can report. Until settings choose a required set, every declared id is
-  required (`DeclaredSignalIDs`), and settings keys come from these ids.
+- `SignalIDs` declares every id the provider can report. The narrator's `StageRecommendations` settings (Phase 6,
+  `apps/desktop/app.go`'s `fieldSchemas`) choose the required set out of these ids: each is `required` or `ignored`
+  (default `required`), and a master switch (`suggestions_enabled`) empties every stage's required set at once when
+  off. `Config.RequiredSignals` narrows `DeclaredSignalIDs` accordingly; a nil `RequiredSignals` (a caller not wired to
+  settings) keeps every declared id required, the original Q8 default.
 - `Signals` reads existing evidence only. It must not decode audio, transcribe, reach the network or start an
   analysis; the narrator starts analyses. `EvidenceView` is built once per evaluation and shared: the parsed saved
   project, its modified time, the ledger and the confirmed mapping, the inputs `evidence.EvaluateChapter` takes.

@@ -38,6 +38,9 @@ const TOOLTIP: Record<string, string> = {
   reaper_path: 'Leave blank to auto-detect reaper.exe. Set this only when auto-detect finds the wrong install or none at all.',
   auto_start_launcher:
     'When Narration Utils starts REAPER, also pass the Narration Utils action as a startup script, so the bridge is live immediately. Off by default: REAPER is never changed automatically.',
+  suggestions_enabled: 'Turns every stage suggestion on Home off at once, without changing which signals are required below.',
+  'recording.text_present':
+    'Whether every paragraph present in order, as the recording check measures it, must be met before Home suggests moving a chapter from Recording to Editing.',
 };
 const optionTip = (field: ScopedSettingField, value: string) =>
   field.key.includes('color')

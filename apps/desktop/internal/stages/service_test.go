@@ -129,6 +129,25 @@ func TestRecommendationsCoverNarrationChaptersOnly(t *testing.T) {
 	}
 }
 
+// TestRequiredSignalsNarrowsTheRequiredSet: Config.RequiredSignals (Phase 6, Q8) can drop a stage's declared signal
+// out of the required set; the engine's own empty-required-set rule then applies, so a chapter that would otherwise
+// be recommended reads none instead. A nil RequiredSignals (the other tests in this file) keeps the old behaviour:
+// every declared id required.
+func TestRequiredSignalsNarrowsTheRequiredSet(t *testing.T) {
+	manuscript := newFakeManuscript()
+	providers := newStageProviders()
+	service := NewService(Config{
+		Project: t.TempDir(), LoadManuscript: manuscript.load, Chapters: manuscript.list, SetChapterStatus: manuscript.setStatus,
+		Providers:       providers.all(),
+		RequiredSignals: func(_ Stage, _ []string) []string { return nil },
+	})
+
+	chapter := recommendationFor(t, service, "c-0002")
+	if chapter.Verdict != VerdictNone || chapter.NoneReason != NoneNoRequiredSignals {
+		t.Fatalf("an emptied required set: chapter %+v", chapter)
+	}
+}
+
 func TestRecommendationsReportAMissingManuscript(t *testing.T) {
 	manuscript := newFakeManuscript()
 	manuscript.loadErr = errors.New("import a manuscript first")
