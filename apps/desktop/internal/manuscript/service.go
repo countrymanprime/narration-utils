@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/countrymanprime/narration-utils/shell/internal/chaptersync"
+	"github.com/countrymanprime/narration-utils/shell/internal/character"
 	"github.com/countrymanprime/narration-utils/shell/internal/coverage"
 	"github.com/countrymanprime/narration-utils/shell/internal/evidence"
 	"github.com/countrymanprime/narration-utils/shell/internal/findings"
@@ -580,7 +581,7 @@ func resetDerived(project string) error {
 	// Findings are anchored to manuscript chapter and paragraph ids, so a
 	// replace or Clear that invalidates those ids clears findings too
 	// (review-dashboard-and-findings-adoption.prd.md Q5).
-	for _, path := range []string{filepath.Join(project, "ManuscriptGuide"), filepath.Join(project, "TranscriptCompare"), filepath.Join(project, "narration-utils", "manuscript-notes.json"), filepath.Join(project, ".narration-last-comparison.json"), filepath.Join(project, filepath.FromSlash(findings.Dir)), evidence.LedgerDir(project), evidence.CacheDir(project), evidence.MappingFile(project), chaptersync.File(project), coverage.Dir(project), stages.DecisionsFile(project)} {
+	for _, path := range []string{filepath.Join(project, "ManuscriptGuide"), filepath.Join(project, "TranscriptCompare"), filepath.Join(project, "narration-utils", "manuscript-notes.json"), filepath.Join(project, ".narration-last-comparison.json"), filepath.Join(project, filepath.FromSlash(findings.Dir)), evidence.LedgerDir(project), evidence.CacheDir(project), evidence.MappingFile(project), chaptersync.File(project), coverage.Dir(project), stages.DecisionsFile(project), character.Dir(project)} {
 		if err := os.RemoveAll(path); err != nil {
 			return fmt.Errorf("could not clear project data: %w", err)
 		}
