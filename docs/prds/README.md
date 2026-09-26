@@ -104,6 +104,7 @@ Phase counts are the rows of each PRD's phase table.
 | [Input Commands and Pedals](input-commands-and-pedals.prd.md) | Feature | 12 | None ([ADR 0361](../adr/0361-app-commands-go-through-one-registry-and-keyboard-midi-and-hid-are-input-sources-bound-by-a-remappable-keymap.md), Proposed) |
 | [Production Tracking](production-tracking.prd.md) | Feature | 6 | None; [audiobook studio benchmark](../research/audiobook-studio-benchmark.md) recommendation 5 |
 | [Prep Depth](prep-depth.prd.md) | Feature | 7 | None; [audiobook studio benchmark](../research/audiobook-studio-benchmark.md) recommendation 6 |
+| [Render, Encode and Master](render-encode-master.prd.md) | Feature | 8 (0-7) | None; [audiobook studio benchmark](../research/audiobook-studio-benchmark.md) recommendation 7; implements the `Encoder`/`Packager` ports [Provider Ports](provider-ports.prd.md) declares |
 
 ## Replaced briefs
 
