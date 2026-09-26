@@ -54,8 +54,12 @@ func (w *stderrFileWriter) Write(p []byte) (int, error) {
 	if err != nil {
 		return 0, fmt.Errorf("could not open the run's stderr file: %w", err)
 	}
-	defer file.Close()
-	return file.Write(p)
+	defer func() { _ = file.Close() }()
+	n, err := file.Write(p)
+	if err != nil {
+		return n, err
+	}
+	return n, file.Close()
 }
 
 func (w *stderrFileWriter) Close() error { return nil }

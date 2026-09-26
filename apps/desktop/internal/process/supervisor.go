@@ -74,7 +74,7 @@ func (s *Supervisor) Start(ctx context.Context, program string, args ...string) 
 	child := &Child{}
 	stderrSink := runlog.FromContext(ctx).StderrWriter()
 	go func() { _, _ = io.Copy(io.Discard, stdout) }()
-	go func() { defer stderrSink.Close(); _, _ = io.Copy(stderrSink, stderr) }()
+	go func() { defer func() { _ = stderrSink.Close() }(); _, _ = io.Copy(stderrSink, stderr) }()
 	go func() {
 		err := command.Wait()
 		code := 0
@@ -105,7 +105,7 @@ func (s *Supervisor) Run(ctx context.Context, program string, args ...string) (i
 	command.Env = runEnv(ctx)
 	var out, failure bytes.Buffer
 	stderrSink := runlog.FromContext(ctx).StderrWriter()
-	defer stderrSink.Close()
+	defer func() { _ = stderrSink.Close() }()
 	command.Stdout, command.Stderr = &out, io.MultiWriter(&failure, stderrSink)
 	command.WaitDelay = runWaitDelay
 	if err := command.Start(); err != nil {
