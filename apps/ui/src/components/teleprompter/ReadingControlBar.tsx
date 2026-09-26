@@ -5,10 +5,10 @@ import { Link } from 'react-router-dom';
 import { useCommand } from '../../input/useCommand';
 import { Button } from '../primitives/Button';
 import { IconButton } from '../primitives/IconButton';
+import { LevelMeter } from '../primitives/LevelMeter';
 import { Popover } from '../primitives/Popover';
 import { ToggleGroup } from '../primitives/ToggleGroup';
 import { TooltipTarget } from '../primitives/Tooltip';
-import { InputLevelMeter } from './InputLevelMeter';
 import { MicrophoneField } from './MicrophoneField';
 import { useInputLevel } from './useInputLevel';
 import { useReadAloudReaperState } from './useReadAloudReaperState';
@@ -159,7 +159,7 @@ export function ReadingControlBar({ session: t, follow, startPoint, chapterId }:
             <Button aria-label={micLabel} variant="ghost" className="max-w-[9rem] lg:max-w-[13rem]">
               <FontAwesomeIcon icon={faMicrophone} />
               <span className="truncate">{t.device || 'Choose a microphone…'}</span>
-              <InputLevelMeter level={level} decorative className="w-8 flex-none" />
+              <LevelMeter label="Input level" peak={level?.peak ?? null} rms={level?.rms ?? null} decorative size="compact" className="w-8 flex-none" />
             </Button>
           }
         >
@@ -172,7 +172,7 @@ export function ReadingControlBar({ session: t, follow, startPoint, chapterId }:
               onRefresh={t.loadDevices}
               refreshing={t.devicesLoading}
             />
-            <InputLevelMeter level={level} className="h-2.5" />
+            <LevelMeter label="Input level" peak={level?.peak ?? null} rms={level?.rms ?? null} />
             {levelError && (
               <p role="alert" className="text-xs" style={{ color: 'var(--danger-text)' }}>
                 {levelError}
