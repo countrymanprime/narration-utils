@@ -19,6 +19,7 @@ import (
 
 	"github.com/countrymanprime/narration-utils/shell/internal/findings"
 	"github.com/countrymanprime/narration-utils/shell/internal/repeats"
+	"github.com/countrymanprime/narration-utils/shell/internal/runlog"
 	"github.com/countrymanprime/narration-utils/shell/internal/tracks"
 )
 
@@ -134,7 +135,10 @@ func (s *Scanner) Scan(ctx context.Context, req Request) ([]findings.Finding, er
 	if err != nil {
 		return nil, err
 	}
+	run := runlog.FromContext(ctx)
+	run.Decision("scan.scope", "resolved the scan's segments", "segment_count", len(segments))
 	if len(segments) < minRepeatableSegments {
+		run.Decision("scan.skipped", "too few segments to compare for repeats", "segment_count", len(segments), "minimum", minRepeatableSegments)
 		return s.Store.SaveAnalyzerFindings(repeats.AnalyzerName, req.ChapterID, nil)
 	}
 	if s.Runner == nil {

@@ -31,7 +31,14 @@ func (h *Host) RetakeLanesPick(lineID, itemGUID string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return encodeBinding(map[string]any{"status": "started"}, service.Pick(project, lineID, itemGUID))
+	run := h.runLog.Begin("retake_lane_pick", "line_id", lineID, "item_guid", itemGUID)
+	err = service.Pick(project, lineID, itemGUID, run)
+	if err != nil {
+		run.End("error")
+	} else {
+		run.End("ok")
+	}
+	return encodeBinding(map[string]any{"status": "started"}, err)
 }
 
 // RetakeLanesState answers the last pick's state (idle before any).

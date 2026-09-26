@@ -50,7 +50,7 @@ func appendEvents(t *testing.T, session string, lines ...string) {
 
 func launch(t *testing.T, service *Service, tool string) string {
 	t.Helper()
-	if err := service.Launch(tool); err != nil {
+	if err := service.Launch(tool, nil); err != nil {
 		t.Fatal(err)
 	}
 	return service.Snapshot()["runId"].(string)
@@ -80,7 +80,7 @@ func TestLaunchSendsTheExactBridgeCommand(t *testing.T) {
 func TestLaunchRefusesAToolOffTheAllowListAndSendsNothing(t *testing.T) {
 	for _, tool := range []string{"", "40209", "_RS1234", "Item: Apply track/take FX to items", "Repair_Pops_Clicks", "repair_pops_clicks|40209"} {
 		service, session := testService(t)
-		if err := service.Launch(tool); err == nil || !strings.Contains(err.Error(), "unknown cleanup tool") {
+		if err := service.Launch(tool, nil); err == nil || !strings.Contains(err.Error(), "unknown cleanup tool") {
 			t.Fatalf("%q: err = %v", tool, err)
 		}
 		if commands := commandFiles(t, session); len(commands) != 0 {
@@ -95,7 +95,7 @@ func TestLaunchRefusesAToolOffTheAllowListAndSendsNothing(t *testing.T) {
 func TestEveryAllowListedToolIsLaunchable(t *testing.T) {
 	for _, tool := range Tools {
 		service, _ := testService(t)
-		if err := service.Launch(tool.Key); err != nil {
+		if err := service.Launch(tool.Key, nil); err != nil {
 			t.Fatalf("%s: %v", tool.Key, err)
 		}
 	}
@@ -106,7 +106,7 @@ func TestEveryAllowListedToolIsLaunchable(t *testing.T) {
 
 func TestLaunchWithoutABridgeFails(t *testing.T) {
 	service := New(Config{SessionDir: t.TempDir()}, nil, nil)
-	if err := service.Launch("repair_pops_clicks"); err == nil || !strings.Contains(err.Error(), "REAPER bridge is unavailable") {
+	if err := service.Launch("repair_pops_clicks", nil); err == nil || !strings.Contains(err.Error(), "REAPER bridge is unavailable") {
 		t.Fatalf("err = %v", err)
 	}
 }
