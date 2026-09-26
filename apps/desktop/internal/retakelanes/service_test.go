@@ -57,7 +57,7 @@ func retakeB(t *testing.T, project tracks.Project) Retake {
 
 func pick(t *testing.T, service *Service, project tracks.Project, guid string) string {
 	t.Helper()
-	if err := service.Pick(project, "line-000004", guid); err != nil {
+	if err := service.Pick(project, "line-000004", guid, nil); err != nil {
 		t.Fatal(err)
 	}
 	return service.Snapshot()["runId"].(string)
@@ -105,7 +105,7 @@ func TestPickRefusesARetakeTheSavedProjectDoesNotListAndSendsNothing(t *testing.
 	}
 	for _, c := range cases {
 		service, session := testService(t)
-		err := service.Pick(project, c.line, c.guid)
+		err := service.Pick(project, c.line, c.guid, nil)
 		if err == nil || !strings.Contains(err.Error(), c.want) {
 			t.Fatalf("%q %q: err = %v, want %q", c.line, c.guid, err, c.want)
 		}
@@ -121,7 +121,7 @@ func TestPickRefusesARetakeTheSavedProjectDoesNotListAndSendsNothing(t *testing.
 func TestPickWithoutABridgeFails(t *testing.T) {
 	project := fixture(t, "fixed-lanes.rpp")
 	service := New(Config{SessionDir: t.TempDir()}, nil, nil)
-	if err := service.Pick(project, "line-000004", retakeB(t, project).ItemGUID); err == nil || !strings.Contains(err.Error(), "REAPER bridge is unavailable") {
+	if err := service.Pick(project, "line-000004", retakeB(t, project).ItemGUID, nil); err == nil || !strings.Contains(err.Error(), "REAPER bridge is unavailable") {
 		t.Fatalf("err = %v", err)
 	}
 }

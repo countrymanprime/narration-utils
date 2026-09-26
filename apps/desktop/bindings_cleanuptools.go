@@ -17,7 +17,14 @@ func (h *Host) CleanupToolsLaunch(tool string) (string, error) {
 	if service == nil {
 		return "", fmt.Errorf("the cleanup launcher is unavailable")
 	}
-	return encodeBinding(map[string]any{"status": "started"}, service.Launch(tool))
+	run := h.runLog.Begin("cleanup_tool_launch", "tool_key", tool)
+	err := service.Launch(tool, run)
+	if err != nil {
+		run.End("error")
+	} else {
+		run.End("ok")
+	}
+	return encodeBinding(map[string]any{"status": "started"}, err)
 }
 
 // CleanupToolsState answers the last launch's state (idle before any).

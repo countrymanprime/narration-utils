@@ -31,7 +31,7 @@ func TestContractCleanupToolsLaunched(t *testing.T) {
 		t.Fatal(err)
 	}
 	service := New(Config{SessionDir: session}, client, nil)
-	if err := service.Launch("repair_pops_clicks"); err != nil {
+	if err := service.Launch("repair_pops_clicks", nil); err != nil {
 		t.Fatal(err)
 	}
 	runID := service.Snapshot()["runId"].(string)

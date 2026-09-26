@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/countrymanprime/narration-utils/shell/internal/bridge"
+	"github.com/countrymanprime/narration-utils/shell/internal/runlog"
 	"github.com/countrymanprime/narration-utils/shell/internal/tracks"
 )
 
@@ -52,7 +53,7 @@ func Idle() map[string]any {
 // Pick asks REAPER to make the named retake's lane the only one playing on its track. The retake must be one the
 // saved project lists (Lines), so only a retake the narrator was shown can be picked. The result comes back on
 // RETAKE_LANE_PICKED or ERROR (Handle).
-func (s *Service) Pick(project tracks.Project, lineID, itemGUID string) error {
+func (s *Service) Pick(project tracks.Project, lineID, itemGUID string, run *runlog.Run) error {
 	if strings.TrimSpace(lineID) == "" || !itemGUIDPattern.MatchString(itemGUID) {
 		return fmt.Errorf("choose a retake to play")
 	}
@@ -60,6 +61,7 @@ func (s *Service) Pick(project tracks.Project, lineID, itemGUID string) error {
 	if !ok {
 		return fmt.Errorf("that retake is not on a fixed-lane track in the saved project; save the project in REAPER and open the list again")
 	}
+	run.Decision("lane.chosen", "chose the retake's lane to play", "track_name", line.TrackName, "candidate_count", len(line.Retakes), "item_guid", itemGUID)
 	if s.bridge == nil {
 		return fmt.Errorf("the REAPER bridge is unavailable")
 	}

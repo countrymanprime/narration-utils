@@ -16,6 +16,7 @@ import (
 	"time"
 
 	"github.com/countrymanprime/narration-utils/shell/internal/bridge"
+	"github.com/countrymanprime/narration-utils/shell/internal/runlog"
 )
 
 // Tool is one allow-listed cleanup tool: the key the bridge carries and the name the narrator sees.
@@ -74,11 +75,12 @@ func Idle() map[string]any {
 
 // Launch asks REAPER to open the allow-listed tool's dialog on the selected items. The result comes back on
 // CLEANUP_LAUNCHED or ERROR (Handle).
-func (s *Service) Launch(key string) error {
+func (s *Service) Launch(key string, run *runlog.Run) error {
 	tool, ok := lookup(key)
 	if !ok {
 		return fmt.Errorf("unknown cleanup tool %q", key)
 	}
+	run.Decision("tool.matched", "matched an allow-listed cleanup tool", "tool_key", tool.Key)
 	if s.bridge == nil {
 		return fmt.Errorf("the REAPER bridge is unavailable")
 	}
