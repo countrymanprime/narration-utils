@@ -42,6 +42,11 @@ _CORE_DIR = Path(__file__).resolve().parent
 if str(_CORE_DIR) not in sys.path:
     sys.path.insert(0, str(_CORE_DIR))
 
+_SHARED_PYTHON = Path(__file__).resolve().parents[3] / "libs" / "python"
+if str(_SHARED_PYTHON) not in sys.path:
+    sys.path.insert(0, str(_SHARED_PYTHON))
+
+from narration_common.logging_utils import log
 from script_tracker import MIN_JUMP_MATCHES, ScriptTracker, advance, normalize_word, words_match
 
 SAMPLE_RATE = 16000
@@ -216,6 +221,18 @@ def locate_event(heard_words: list[str], tokens: list[str], breaks: set[int] | N
     if location.last is not None:
         start, end = sentence_bounds(tokens, location.last, breaks or set())
         sentence = {"start": start, "end": end, "text": " ".join(tokens[start:end])}
+    log(
+        "chose the tail's placement in the script",
+        level="debug",
+        event="locate.span",
+        word=location.word,
+        last=location.last,
+        confidence=location.confidence,
+        confident=location.confident,
+        matched=location.matched,
+        heard=location.heard,
+        runner_up=location.runner_up,
+    )
     return {
         "type": "locate",
         "word": location.word,

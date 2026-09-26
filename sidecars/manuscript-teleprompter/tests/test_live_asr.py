@@ -1,6 +1,8 @@
 import importlib.util
+import io
 import json
 import sys
+from contextlib import redirect_stderr
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -514,6 +516,33 @@ def test_a_session_with_a_script_prints_flags_after_the_segment_that_raised_them
     printed = [json.loads(line) for line in capsys.readouterr().out.splitlines()]
     assert printed[-1] == {"type": "flag", "id": 1, "kind": "misread", "start": 7, "end": 8, "heard": "chairs"}
     assert printed[-2] == {"type": "segment_end", "segment": 0}
+
+
+def test_tracker_commits_are_recorded_at_debug_level_and_deduped(tmp_path, monkeypatch):
+    monkeypatch.setenv("NARRATION_LOG_LEVEL", "debug")
+    monkeypatch.syspath_prepend(str(LIVE_ASR_PATH.parent))
+    script = tmp_path / "script.txt"
+    script.write_text("The old lighthouse keeper climbed the spiral stairs each evening.", encoding="utf-8")
+    ap = live_asr.build_parser()
+    args = ap.parse_args(["--wav", "r.wav", "--script", str(script)])
+    tracker, _script_event, _text = live_asr._load_script(ap, args)
+    heard = ["the", "old", "lighthouse", "keeper", "climbed"]
+
+    def stream(chunks):
+        list(chunks)
+        yield from ({"type": "word", "segment": 0, "word": word, "start": 0.0, "end": 0.1} for word in heard)
+        yield {"type": "segment_end", "segment": 0}
+
+    buffer = io.StringIO()
+    with redirect_stderr(buffer):
+        live_asr._run(args, stream, iter(_chunks(1)), tracker)
+
+    records = [json.loads(line) for line in buffer.getvalue().splitlines() if line]
+    commits = [r for r in records if r.get("event") == "teleprompter.tracker_commit"]
+    assert commits
+    committed_values = [r["committed"] for r in commits]
+    assert committed_values == sorted(set(committed_values))  # each logged commit strictly advances: no repeats
+    assert all("heard" not in r for r in records)
 
 
 def test_stoppable_passes_every_chunk_through_when_no_stop_file_is_given():
