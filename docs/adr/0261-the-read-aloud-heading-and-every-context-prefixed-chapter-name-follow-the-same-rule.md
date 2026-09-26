@@ -17,7 +17,7 @@ handful of context-prefixed titles elsewhere in the app ("Recording check: …",
 `chapterName`'s separator character for two different jobs — a name's own em dash and a context prefix's colon could
 otherwise collide inside one string ("Read aloud — PROLOGUE — The Last Good Applause" reads as three parts, not two).
 
-This also directly affects [Manuscript Credits Card Parity](manuscript-credits-card-parity.prd.md) Phase 2 (ADR 0260,
+This also directly affects [Manuscript Credits Card Parity](../prds/manuscript-credits-card-parity.prd.md) Phase 2 (ADR 0260,
 built in the same lane immediately before this phase): its read-aloud dialog titles ("Read aloud — Opening credits",
 "Read aloud — Chapter 1") used the pre-Phase-3 format and dropped the chapter's subtitle the same way row 10 of this
 PRD's own inventory found. Both PRDs are owned by the same stream here, so this ADR is where they agree, per the
