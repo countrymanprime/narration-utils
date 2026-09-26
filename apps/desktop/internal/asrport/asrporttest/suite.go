@@ -57,14 +57,14 @@ func Problems(entry port.Entry[asrport.Engine]) []string {
 		report("%q has no New", entry.Name)
 		return problems
 	}
-	first, err := build(entry)
-	if err != nil {
-		report("%q: %v", entry.Name, err)
+	first, broken := build(entry)
+	if broken != "" {
+		report("%q: %s", entry.Name, broken)
 		return problems
 	}
-	second, err := build(entry)
-	if err != nil {
-		report("%q: %v", entry.Name, err)
+	second, broken := build(entry)
+	if broken != "" {
+		report("%q: %s", entry.Name, broken)
 		return problems
 	}
 	if first.Name() != entry.Name {
@@ -80,14 +80,15 @@ func Problems(entry port.Entry[asrport.Engine]) []string {
 	return problems
 }
 
-func build(entry port.Entry[asrport.Engine]) (engine asrport.Engine, err error) {
+// build calls entry.New, and says how it broke when it panics or returns nil.
+func build(entry port.Entry[asrport.Engine]) (engine asrport.Engine, broken string) {
 	defer func() {
 		if r := recover(); r != nil {
-			err = fmt.Errorf("New panicked: %v", r)
+			broken = fmt.Sprintf("New panicked: %v", r)
 		}
 	}()
 	if engine = entry.New(); engine == nil {
-		return nil, fmt.Errorf("New returned a nil engine")
+		return nil, "New returned a nil engine"
 	}
-	return engine, nil
+	return engine, ""
 }
