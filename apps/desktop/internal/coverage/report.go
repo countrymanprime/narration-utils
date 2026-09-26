@@ -110,6 +110,11 @@ type Report struct {
 	Items      []ItemLine      `json:"items"`
 	Paragraphs []ParagraphLine `json:"paragraphs"`
 	Regions    []RegionLine    `json:"regions"`
+	// Tokens and Extras are the chapter's per-token alignment (COVERAGE_TOKEN
+	// and COVERAGE_EXTRA lines, ADR 0242, alignment.go): empty for a results
+	// file written before the sidecar carried them (HasAlignment).
+	Tokens []TokenLine `json:"tokens"`
+	Extras []ExtraLine `json:"extras"`
 }
 
 // PresentFraction is the chapter's share of body words read: what fills
@@ -169,6 +174,12 @@ func parseReport(raw []byte, chapterID string) (Report, error) {
 		case "COVERAGE_REGION":
 			report.Regions = append(report.Regions, RegionLine{})
 			target = &report.Regions[len(report.Regions)-1]
+		case "COVERAGE_TOKEN":
+			report.Tokens = append(report.Tokens, TokenLine{})
+			target = &report.Tokens[len(report.Tokens)-1]
+		case "COVERAGE_EXTRA":
+			report.Extras = append(report.Extras, ExtraLine{})
+			target = &report.Extras[len(report.Extras)-1]
 		default:
 			continue
 		}
@@ -214,7 +225,7 @@ func (r Report) check(chapterID string) error {
 			return fmt.Errorf("the coverage results have an invalid %q region", region.Kind)
 		}
 	}
-	return nil
+	return r.checkAlignment()
 }
 
 // Thresholds are the narrator's pass/fail settings (Q3), applied on read so a

@@ -118,6 +118,23 @@ func (h *Host) CoverageResult(chapterID string) (string, error) {
 	return encodeBinding(result.View(chapterID, coverageSettings(svc.settings).Thresholds), nil)
 }
 
+// WorkspaceAlignment reads a chapter's stored word alignment (edit-and-proof-workspace PRD Phase 1, ADR 0242) joined
+// with its current paragraphs and its items' current played ranges (coverage.AlignmentView). It never runs anything
+// (Q14), exactly like CoverageResult, whose state, reasons and basis it shares. A stored report from before the
+// sidecar wrote alignment lines answers needsAlignAgain: true (align-again re-aligns from cached words only, EP3 C).
+func (h *Host) WorkspaceAlignment(chapterID string) (string, error) {
+	svc := h.services()
+	service := svc.coverage
+	if service == nil {
+		return encodeBinding(coverage.AlignmentView{ChapterID: chapterID, State: evidence.StateNever, Reasons: []string{string(coverage.ReasonNoProject)}}, nil)
+	}
+	view, err := service.Alignment(chapterID, coverageSettings(svc.settings).Alignment)
+	if err != nil {
+		return "", err
+	}
+	return encodeBinding(view, nil)
+}
+
 // coverageRecordedFractions is the manuscript service's recordedFraction provider: measured fractions of chapters
 // with a current, complete check (D11). It is bound to one project's coverage service and settings in configureLocked.
 func coverageRecordedFractions(service *coverage.Service, store *settings.Store) func() map[string]float64 {

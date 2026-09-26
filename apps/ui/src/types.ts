@@ -30,6 +30,7 @@ export * from './api/contracts/findings';
 export * from './api/contracts/measure';
 export * from './api/contracts/deliveryProfiles';
 export * from './api/contracts/diagnostics';
+export * from './api/contracts/workspace';
 
 import type { ChapterTrackMapApi } from './api/contracts/chapterTrackMap';
 import type { ChapterSyncApi } from './api/contracts/chapterSync';
@@ -61,6 +62,7 @@ import type { DictionaryApi } from './api/contracts/dictionary';
 import type { MeasureApi } from './api/contracts/measure';
 import type { DeliveryProfilesApi } from './api/contracts/deliveryProfiles';
 import type { DiagnosticsApi } from './api/contracts/diagnostics';
+import type { WorkspaceApi } from './api/contracts/workspace';
 
 /** The app compatibility facade; domain interfaces remain independently testable. */
 export interface NarrationApi
@@ -94,4 +96,5 @@ export interface NarrationApi
     FindingsApi,
     MeasureApi,
     DeliveryProfilesApi,
-    DiagnosticsApi {}
+    DiagnosticsApi,
+    WorkspaceApi {}

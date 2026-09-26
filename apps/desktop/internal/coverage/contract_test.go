@@ -49,6 +49,45 @@ func TestContractCoverageResults(t *testing.T) {
 	pinResult(t, "coverage-result-unmapped", currentResult(t, service, DefaultAlignmentParams))
 }
 
+// pinAlignment pins a WorkspaceAlignment answer the same way pinResult does: the basis label's embedded time is fixed
+// before Stabilize, which only replaces a string that is a timestamp end to end.
+func pinAlignment(t *testing.T, name string, view AlignmentView) {
+	t.Helper()
+	if view.Basis != nil {
+		view.Basis.Label = "saved project, file modified " + contractfile.FixedTime
+	}
+	stable, err := contractfile.Stabilize(view)
+	if err != nil {
+		t.Fatal(err)
+	}
+	contractfile.Check(t, name, stable)
+}
+
+func TestContractWorkspaceAlignment(t *testing.T) {
+	p := newTestProject(t)
+	service := p.service(&fakeSidecar{})
+	pinAlignment(t, "workspace-alignment-never", alignmentOf(t, service))
+
+	run(t, service, testRequest())
+	pinAlignment(t, "workspace-alignment-needs-align-again", alignmentOf(t, service))
+
+	aligned := p.service(&fakeSidecar{results: alignedResults})
+	run(t, aligned, testRequest())
+	current := alignmentOf(t, aligned)
+	if current.State != evidence.StateCurrent || current.NeedsAlignAgain {
+		t.Fatalf("the current fixture must carry alignment: %+v", current)
+	}
+	pinAlignment(t, "workspace-alignment-current", current)
+
+	p.items[1].length = 9
+	p.writeRPP()
+	stale := alignmentOf(t, aligned)
+	if stale.State != evidence.StateStale {
+		t.Fatalf("the edited fixture must read stale: %+v", stale)
+	}
+	pinAlignment(t, "workspace-alignment-stale", stale)
+}
+
 func TestAResultViewCarriesTheFractionOnlyWhenCurrent(t *testing.T) {
 	p := newTestProject(t)
 	service := p.service(&fakeSidecar{present: 8})
