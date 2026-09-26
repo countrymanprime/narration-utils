@@ -946,6 +946,18 @@ export const APP_DRIVERS: Record<string, Record<string, Driver>> = {
       await page.locator('[data-word="32"] [data-highlight="Cursor"]').waitFor();
       await scrollReaderByHand(page);
     },
+    // Pause keeps the session, it does not stop it (read-aloud-control-bar.prd.md Phase 5, Q3, ADR 0248): the bar's
+    // toggle becomes Play again and the status reads "Paused" in place of "Listening".
+    'read-aloud-paused': async (page) => {
+      await page.goto('/?mockTeleprompter=listening');
+      await settlePage(page);
+      await goToPage(page, 'Manuscript');
+      await clickVisible(page, 'button', 'Read Chapter 1 aloud');
+      await page.locator('[data-word="32"] [data-highlight="Cursor"]').waitFor();
+      await controlBar(page).getByRole('button', { name: 'Pause' }).click();
+      await controlBar(page).getByRole('button', { name: 'Play' }).waitFor();
+      await controlBar(page).getByRole('status').getByText('Paused').waitFor();
+    },
     // Word-click seek (teleprompter-manuscript-integration.prd.md Phase 4): from the same listening state as above, click
     // the earliest "Go back to here" word (word 0) and wait for the highlight to land there without restarting.
     'read-aloud-seek-back': async (page) => {
@@ -1006,16 +1018,31 @@ export const APP_DRIVERS: Record<string, Record<string, Driver>> = {
       if (rail.y - box.y > 90) throw new Error("The reading panel does not start at the dialog body's content top.");
       if (box.y + box.height - (rail.y + rail.height) > 30) throw new Error("The reading panel does not reach the dialog body's bottom.");
     },
-    // The control bar's microphone popover (read-aloud-control-bar.prd.md Phase 3): the device list and Refresh, no level
-    // meter yet (Phase 4).
+    // The control bar's microphone popover (read-aloud-control-bar.prd.md Phases 3-4): the device list, Refresh, and a
+    // live level meter - fixed to -18 dBFS (?mockLevel=-18) for a stable, still capture (ADR 0247).
     'read-aloud-mic-popover': async (page) => {
-      await openResumePrompt(page);
+      await openResumePrompt(page, '?mockLevel=-18');
       await openMicPopover(page);
+      await page.getByRole('combobox', { name: 'Microphone' }).selectOption({ label: 'Microphone Array (Realtek(R) Audio)' });
+      await page.getByRole('meter', { name: 'Input level' }).waitFor();
     },
     // The control bar's Settings popover (Phase 3): Engine and Model, each a toggle group, and "More in Settings".
     'read-aloud-settings-popover': async (page) => {
       await openResumePrompt(page);
       await openSettingsPopover(page);
+    },
+    // The bar's read-only REAPER state (Phase 6, ADR 0249): always disabled - Phase 7's actionable toggle is not built.
+    'read-aloud-reaper-ready': async (page) => {
+      await openResumePrompt(page, '?mockReaperState=ready');
+      await controlBar(page).getByRole('button', { name: 'Record in REAPER: Chapter armed' }).waitFor();
+    },
+    'read-aloud-reaper-not-armed': async (page) => {
+      await openResumePrompt(page, '?mockReaperState=not_armed');
+      await controlBar(page).getByRole('button', { name: 'Record in REAPER: Not armed' }).waitFor();
+    },
+    'read-aloud-reaper-recording': async (page) => {
+      await openResumePrompt(page, '?mockReaperState=recording_elsewhere');
+      await controlBar(page).getByRole('button', { name: 'Record in REAPER: Recording' }).waitFor();
     },
     // Suspected flags (teleprompter-manuscript-integration.prd.md Phase 7): the `flagged` mock seam is a session further into
     // the chapter whose flags arrive as the dialog subscribes. The rail's key has flag swatches too, so marks are found as controls.

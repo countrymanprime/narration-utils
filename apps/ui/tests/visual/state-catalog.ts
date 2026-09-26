@@ -456,6 +456,13 @@ export const STATE_CATALOG: StateEntry[] = [
   },
   {
     page: 'manuscript',
+    state: 'read-aloud-paused',
+    description:
+      'Manuscript, the "Read aloud" dialog after pressing Pause mid-session (read-aloud-control-bar.prd.md Phase 5, Q3, ADR 0248) - the control bar\'s toggle shows Play (not pressed), the status reads "Paused", and the session keeps its place rather than stopping',
+    ...REFLOW,
+  },
+  {
+    page: 'manuscript',
     state: 'read-aloud-seek-back',
     description:
       'Manuscript, the "Read aloud" dialog after clicking an earlier word ("Go back to here", teleprompter-manuscript-integration.prd.md Phase 4) - the highlight has jumped back to the clicked word without restarting the session',
@@ -493,7 +500,7 @@ export const STATE_CATALOG: StateEntry[] = [
     page: 'manuscript',
     state: 'read-aloud-mic-popover',
     description:
-      'Manuscript, the "Read aloud" dialog with the control bar\'s microphone popover open (read-aloud-control-bar.prd.md Phase 3) - the device list, the selected device, and Refresh; no level meter yet (Phase 4)',
+      'Manuscript, the "Read aloud" dialog with the control bar\'s microphone popover open (read-aloud-control-bar.prd.md Phases 3-4) - the device list, the selected device, Refresh, and a live input-level meter (a fixed -18 dBFS reading, ?mockLevel=-18, ADR 0247) both inside the popover and, decoratively, in the bar\'s own microphone button',
     ...REFLOW,
   },
   {
@@ -502,6 +509,25 @@ export const STATE_CATALOG: StateEntry[] = [
     description:
       'Manuscript, the "Read aloud" dialog with the control bar\'s Settings popover open (read-aloud-control-bar.prd.md Phase 3) - Engine (when the host offers more than one) and Model as toggle groups, and a "More in Settings" link',
     ...REFLOW,
+  },
+  {
+    page: 'manuscript',
+    state: 'read-aloud-reaper-ready',
+    description:
+      'Manuscript, the "Read aloud" dialog with the control bar\'s read-only REAPER state showing the chapter\'s linked track armed and ready (read-aloud-control-bar.prd.md Phase 6, ADR 0249, ?mockReaperState=ready) - always disabled, since Phase 7\'s "Record in REAPER" toggle is not built',
+    ...REFLOW,
+  },
+  {
+    page: 'manuscript',
+    state: 'read-aloud-reaper-not-armed',
+    description:
+      'Manuscript, the "Read aloud" dialog with the control bar\'s read-only REAPER state showing the chapter\'s linked track not armed (Phase 6, ?mockReaperState=not_armed)',
+  },
+  {
+    page: 'manuscript',
+    state: 'read-aloud-reaper-recording',
+    description:
+      'Manuscript, the "Read aloud" dialog with the control bar\'s read-only REAPER state showing REAPER already recording elsewhere, marked in the danger colour (Phase 6, ?mockReaperState=recording_elsewhere)',
   },
   {
     page: 'manuscript',

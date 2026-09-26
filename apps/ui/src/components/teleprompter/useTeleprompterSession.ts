@@ -81,6 +81,8 @@ function statusText(host: TeleprompterState, session: Session): string {
   // The host says why a session stopped (the narrator pressed Stop, or it stopped itself at the end of the chapter, ADR 0106).
   if (host.phase === 'stopped') return host.message.trim() || 'Stopped';
   if (host.phase !== 'running') return '';
+  // Paused (Phase 5, ADR 0248): the tracker's clock is frozen, so it never reports `waiting` or `done` while paused.
+  if (host.paused) return 'Paused';
   if (session.position?.status === 'waiting') return 'Waiting for you to return to the script';
   if (session.position?.status === 'done')
     return session.script?.chapter.id.startsWith('credits-')
@@ -258,6 +260,10 @@ export function useTeleprompterSession({ chapterId, chapter, credits, migrateLeg
     }
   };
   const stop = () => void api.teleprompterStop().catch((reason) => setError(errorText(reason)));
+  // Pause (true) or resume (false) a running session's listening without ending it (read-aloud-control-bar.prd.md Phase 5,
+  // Q3, ADR 0248): the phase stays `running`, so `active` and every "is a session running" check stay as they are; only
+  // `host.paused` changes. Flags are kept on Stop only (ADR 0117 unchanged).
+  const pause = (paused: boolean) => void api.teleprompterPause(paused).catch((reason) => setError(errorText(reason)));
   // Moves a running tracker straight to a chosen script word ("Start here" / "Go back to here", wired to a word click by
   // Phase 4 of teleprompter-manuscript-integration.prd.md via `ReaderText`'s `onSeek`). `useCallback` keeps this a stable
   // reference across renders: `ReaderText` passes it into a `memo`-wrapped per-row component, and a fresh closure every
@@ -305,6 +311,8 @@ export function useTeleprompterSession({ chapterId, chapter, credits, migrateLeg
 
   return {
     host,
+    paused: Boolean(host.paused),
+    pause,
     session,
     device,
     devices,

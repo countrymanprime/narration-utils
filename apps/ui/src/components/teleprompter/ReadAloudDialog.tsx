@@ -190,6 +190,7 @@ export function ReadAloudDialog({ source, entities = NO_ENTITIES, notes = NO_NOT
             session={session}
             follow={follow}
             startPoint={session.startWord !== null ? { label: startLabel ?? 'a chosen word', onClear: () => setStartWord(null) } : undefined}
+            chapterId={source.kind === 'chapter' ? source.chapter.id : undefined}
           />
         }
       >
