@@ -1,0 +1,29 @@
+// The interaction feedback rows for the storyBible call sites (see interactionFeedback.catalog.ts for what a row says).
+import { type FeedbackRow, row, subscription } from './row';
+
+// prettier-ignore
+export const storyBibleFeedback: Record<string, FeedbackRow> = {
+  // Story Bible
+  'src/components/storybible/Guide.tsx::guideEntities#1': row('mount', 'file-io', 'na', 'na', 'ui', 'inline', 'na', 'exempt', 'The first load shows a load error with Retry; a later one is a toast.'),
+  'src/components/storybible/Guide.tsx::guideBuildState#1': row('mount', 'instant', 'dialog', 'na', 'poll', 'toast', 'yes', 'ok', 'Shows the rebuild dialog again when the narrator comes back to the page while it still runs.'),
+  'src/components/storybible/Guide.tsx::guideBuildState#2': row('timer', 'instant', 'dialog', 'dialog', 'event', 'dialog', 'yes', 'ok', 'The dialog polls for progress only while it is open; the end is announced by the job:ended event, so leaving the page or dismissing the dialog loses nothing (ADR 0076).'),
+  'src/components/storybible/Guide.tsx::subscribeJobEnded#1': subscription('A rebuild that ends while the dialog is dismissed still refreshes the entries.'),
+  'src/components/storybible/Guide.tsx::assetsInstall#1': row('click', 'download', 'dialog', 'host', 'dialog', 'dialog', 'no', 'ok', 'The language model download of the Story Bible build: the same first-use flow as the voice and Whisper downloads (useAssetInstall), and the host joins a download that is already running.'),
+  'src/components/storybible/Guide.tsx::assetsInstallState#1': row('timer', 'download', 'dialog', 'na', 'poll', 'dialog', 'no', 'ok', 'The one install-poll loop (useAssetInstall): the dialog shows the bytes as they arrive and a failed poll in the dialog.'),
+  'src/components/storybible/Guide.tsx::assetsInstallCancel#1': row('click', 'download', 'dialog', 'dialog', 'dialog', 'dialog', 'no', 'ok', 'Cancel stops the download and the dialog says so; it is drawn only while bytes arrive.'),
+  'src/components/storybible/Guide.tsx::guideBuild#1': row('click', 'job', 'pending', 'pending', 'event', 'toast', 'no', 'ok', 'The build button is busy while the start call runs and a second press cannot start a second rebuild; the dialog and the job-end event follow (phase 3).'),
+  'src/components/storybible/GuideDetail.tsx::guidePreview#1': row('click', 'python', 'pending', 'pending', 'toast', 'toast', 'na', 'ok', 'The play button is busy while an uncached preview renders (a Python process that loads a voice) and only one render runs at a time (phase 3).'),
+  'src/components/storybible/GuideDetail.tsx::guideEdit#1': row('click', 'python', 'pending', 'pending', 'toast', 'toast', 'na', 'ok', 'Save and the alias buttons run one at a time through usePendingAction: the control that was pressed is busy, the others (and the category menu) are off until it ends, a failure is a toast (phase 3). A Save is one process (phase 4).'),
+  'src/components/storybible/GuideDetail.tsx::ttsInstall#1': row('click', 'download', 'dialog', 'host', 'dialog', 'dialog', 'no', 'ok', 'The first-use dialog says Starting at once; the host joins a download that is already running for the same asset (S16), so a second press starts no second one. Real bytes, the check, Cancel while bytes arrive, and a failure sentence in the dialog, through useAssetInstall.'),
+  'src/components/storybible/GuideDetail.tsx::ttsInstallState#1': row('timer', 'download', 'dialog', 'na', 'poll', 'dialog', 'no', 'ok', 'The one install-poll loop (useAssetInstall), every 400 ms: the dialog shows the bytes as they arrive, and a failed poll is shown in the dialog. The download outlives the dialog and ends with job:ended.'),
+  'src/components/storybible/GuideDetail.tsx::ttsInstallCancel#1': row('click', 'download', 'dialog', 'dialog', 'dialog', 'dialog', 'no', 'ok', 'Cancel stops the download and the dialog says it was cancelled; it is drawn only while bytes arrive, and a failed cancel is shown in the dialog.'),
+  'src/components/storybible/GuideDetail.tsx::guideCreate#1': row('click', 'python', 'pending', 'pending', 'toast', 'toast', 'na', 'ok', 'Choosing a category creates the entry through usePendingAction: one at a time, the category menu is off until it ends, a failure is a toast (phase 3).'),
+  'src/components/storybible/GuideDetail.tsx::guideRescan#1': row('click', 'python', 'pending', 'pending', 'toast', 'toast', 'na', 'ok', 'Busy while it runs, one at a time (phase 3).'),
+  'src/components/storybible/GuideDetail.tsx::guidePronounce#1': row('click', 'python', 'pending', 'pending', 'toast', 'toast', 'na', 'ok', "Choosing CMU or eSpeak from the Generate/Replace menu runs pronounce() through usePendingAction: busy one at a time, a failure (e.g. the engine has nothing for the name) is a toast and the control stays usable to retry (story bible entries phase 3, D13)."),
+  'src/components/storybible/GuideDetail.tsx::guideSetLocked#1': row('click', 'python', 'pending', 'pending', 'toast', 'toast', 'na', 'ok', 'Busy while it runs, one at a time (phase 3).'),
+  'src/components/storybible/GuideDetail.tsx::guideUnrelate#1': row('click', 'python', 'pending', 'pending', 'toast', 'toast', 'na', 'ok', 'Busy on the row that was pressed, one at a time (phase 3).'),
+  'src/components/storybible/GuideDetail.tsx::guideRelate#1': row('click', 'python', 'pending', 'pending', 'toast', 'toast', 'na', 'ok', 'Busy while it runs, one at a time (phase 3).'),
+  'src/components/storybible/GuideDetail.tsx::guideDelete#1': row('click', 'python', 'pending', 'pending', 'toast', 'toast', 'na', 'ok', 'The confirm dialog stays open and busy until the delete ends and cannot be cancelled away (phase 3).'),
+  'src/components/storybible/GuideDetail.tsx::guideMerge#1': row('click', 'python', 'pending', 'pending', 'toast', 'toast', 'na', 'ok', 'The confirm dialog stays open and busy until the merge ends and cannot be cancelled away (phase 3).'),
+
+};

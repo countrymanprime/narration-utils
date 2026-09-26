@@ -70,9 +70,28 @@
   --warn-text: #755507;
   --info-text: color-mix(in srgb, var(--info) 90%, var(--text));
   --ok-text: color-mix(in srgb, var(--ok) 70%, var(--text));
+  /* The fifth status meaning (studio-ui-primitives.prd.md Phase 1, ADR 0360 Q6): a capability the host reports as
+     experimental (ADR 0300), distinct from every other kind and status hue. */
+  --experimental: #1f7a7a;
+  --experimental-text: color-mix(in srgb, var(--experimental) 85%, var(--text));
   --bookmark: #3b6fc4;
   /* Alternating reader rows: a touch darker than --surface, like banded table rows. */
   --row-alt: color-mix(in srgb, var(--surface) 94%, var(--text));
+  /* LevelMeter's zones (studio-ui-primitives.prd.md Phase 1): named for their role rather than duplicating the status
+     hues, but the same colours. A derived alias, like --row-alt above: it needs no dark or booth override of its own,
+     since it resolves through whichever theme's --non-text/--ok/--warn/--danger are active. */
+  --meter-floor: var(--non-text);
+  --meter-body: var(--ok);
+  --meter-hot: var(--warn);
+  --meter-over: var(--danger);
+  /* StatusBadge's chip fills (Phase 1): a 14% tint of the tone colour, the one percentage that holds 4.5:1 against every
+     tone's own -text colour in every theme, including booth. The entity badges' 18% (ADR 0059) does not: --danger-text
+     on an 18% --danger tint falls to 4.29:1 in the dark theme. Derived the same way as the meter zones above. */
+  --badge-ok-fill: color-mix(in srgb, var(--ok) 14%, transparent);
+  --badge-warn-fill: color-mix(in srgb, var(--warn) 14%, transparent);
+  --badge-info-fill: color-mix(in srgb, var(--info) 14%, transparent);
+  --badge-danger-fill: color-mix(in srgb, var(--danger) 14%, transparent);
+  --badge-experimental-fill: color-mix(in srgb, var(--experimental) 14%, transparent);
   --backdrop: rgba(20, 17, 12, 0.42);
   --shadow: 0 1px 2px rgba(30, 26, 16, 0.06), 0 1px 1px rgba(30, 26, 16, 0.04);
   --shadow-lg: 0 4px 16px rgba(30, 26, 16, 0.14), 0 2px 6px rgba(30, 26, 16, 0.08);
@@ -136,10 +155,30 @@
   --warn-text: var(--warn);
   --info-text: var(--info);
   --ok-text: var(--ok);
+  --experimental: #4fbdbd;
+  --experimental-text: var(--experimental);
   --bookmark: #6e9fdb;
   --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 2px 8px rgba(0, 0, 0, 0.25);
   --shadow-lg: 0 8px 28px rgba(0, 0, 0, 0.5), 0 3px 10px rgba(0, 0, 0, 0.3);
   color-scheme: dark;
+}
+/* FocusShell's booth surface (studio-ui-primitives.prd.md Phase 1, ADR 0360 Q1): scoped to the element that carries
+   `data-surface="booth"`, not a third app theme, so it applies regardless of the narrator's light/dark preference - the
+   booth is a place, not a preference. Custom properties cascade to the subtree, so only the tokens booth mode actually
+   changes are listed here; everything else (the kind colours, --danger/--warn/--info/--ok, --accent, the meter zones and
+   badge fills above, which are all derived from these) falls through from the dark theme (src/tokenContrast.ts layers
+   this block over dark, as a third map `paletteContrast.test.ts` checks every pair over). Darker and higher-contrast
+   than plain dark, for a room with the lights down; --font-size-booth-script is for the script view a later phase reads. */
+[data-surface='booth'] {
+  --bg: #0a0806;
+  --surface: #14110c;
+  --surface-2: #1d1811;
+  --surface-3: #292216;
+  --border: #3d3524;
+  --text: #fbf7ee;
+  --text-muted: #c9bea0;
+  --non-text: #8a8370;
+  --font-size-booth-script: 1.1rem;
 }
 @layer base {
   /* A height:100% chain, not 100vh/100dvh: exact under both WebView2 zoom and CSS zoom
