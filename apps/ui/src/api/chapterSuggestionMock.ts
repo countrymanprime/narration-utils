@@ -1,4 +1,4 @@
-import type { ChapterCandidate, ChapterSuggestion, TrackMapping } from './contracts/chapterTrackMap';
+import type { ChapterCandidate, ChaptersForTracksEntry, ChaptersForTracksResult, ChapterSuggestion, TrackMapping } from './contracts/chapterTrackMap';
 import type { ManuscriptChapter } from './contracts/manuscript';
 import type { Track, TracksProject } from './contracts/tracks';
 import { nameScore } from './chapterTrackMatchMock';
@@ -57,4 +57,27 @@ export function mockChapterSuggestion(
   const offered = answers.flatMap((answer) => (answer.chapter ? [answer.chapter, ...answer.candidates] : answer.candidates));
   const candidates = offered.filter((candidate, index) => offered.findIndex((other) => other.chapterId === candidate.chapterId) === index);
   return { ...base, basis: 'armed', track: null, status: candidates.length ? 'ambiguous' : 'none', chapter: null, candidates };
+}
+
+// The browser mock's stand-in for ChaptersForTracks (apps/desktop/chaptermatch.go, diagnostics-delivery-and-cleanup-
+// tools PRD Phase 8 remainder): forTrack run over every requested GUID, each resolved to its own track first (a track
+// GUID directly, or an item's or its active take's GUID) since the Review page's findings usually carry only one of
+// those. A GUID that resolves to no track in the mock project answers with `error` instead of failing the others.
+export function mockChaptersForTracks(
+  guids: readonly string[],
+  chapters: ManuscriptChapter[],
+  project: TracksProject,
+  mappings: TrackMapping[],
+): ChaptersForTracksResult {
+  const trackFor = (guid: string): Track | undefined =>
+    project.tracks.find((track) => track.guid === guid || track.items.some((item) => item.guid === guid || item.takeGuid === guid));
+
+  const tracks: Record<string, ChaptersForTracksEntry> = {};
+  for (const guid of guids) {
+    const track = trackFor(guid);
+    tracks[guid] = track
+      ? { ...forTrack(track, chapters, mappings), warnings: [] }
+      : { status: '', chapter: null, candidates: [], warnings: [], error: `"${guid}" is not in the current project` };
+  }
+  return { projectFile: project.path, savedAt: '2026-09-21T10:00:00Z', tracks };
 }

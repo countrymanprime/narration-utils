@@ -189,6 +189,18 @@ export function ChapterTrackUnlink(chapterID: string): $CancellablePromise<strin
 }
 
 /**
+ * ChaptersForTracks is ForTrack (ADR 0113) run over every GUID in guids: the
+ * Review page's chapter grouping (diagnostics-delivery-and-cleanup-tools PRD
+ * Phase 8 remainder) for findings that carry only a track, item or take GUID
+ * rather than a manuscript-anchored chapter. One GUID the project no longer
+ * has is reported as an error alongside the others, never as a failed call.
+ * Read-only.
+ */
+export function ChaptersForTracks(guids: string[]): $CancellablePromise<string> {
+    return $Call.ByID(1946035715, guids);
+}
+
+/**
  * CleanupToolsLaunch asks REAPER to open an allow-listed cleanup tool (cleanuptools.Tools: "repair_pops_clicks" or
  * "magnolius_declick") on the selected items. It changes nothing itself; the dialog it opens is the narrator's.
  */

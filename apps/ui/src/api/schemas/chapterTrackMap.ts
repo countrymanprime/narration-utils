@@ -3,6 +3,8 @@ import type {
   ChapterCandidate,
   ChapterRegionPlan,
   ChapterRegionsCreated,
+  ChaptersForTracksEntry,
+  ChaptersForTracksResult,
   ChapterSuggestion,
   ChapterTrackCandidate,
   ChapterTrackLink,
@@ -64,6 +66,10 @@ const chapterCandidateSchema = z.object({
   region: z.object({ name: z.string(), start: z.number(), end: z.number() }).nullable(),
 }) satisfies z.ZodType<ChapterCandidate>;
 
+// trackDirectionWarningSchema is the warning set the matcher's track-to-chapter direction can report (ForTrack, ADR
+// 0113): every ForChapter warning plus confirmed-chapter-missing, which only that direction can raise.
+const trackDirectionWarningSchema = z.enum(['confirmed-track-missing', 'confirmed-track-renamed', 'confirmed-links-conflict', 'confirmed-chapter-missing']);
+
 export const chapterSuggestionSchema = z.object({
   projectFile: z.string(),
   savedAt: z.string(),
@@ -72,8 +78,25 @@ export const chapterSuggestionSchema = z.object({
   status: matchStatusSchema,
   chapter: chapterCandidateSchema.nullable(),
   candidates: z.array(chapterCandidateSchema),
-  warnings: z.array(z.enum(['confirmed-track-missing', 'confirmed-track-renamed', 'confirmed-links-conflict', 'confirmed-chapter-missing'])),
+  warnings: z.array(trackDirectionWarningSchema),
 }) satisfies z.ZodType<ChapterSuggestion>;
+
+// ChaptersForTracksEntry.status is '' only alongside `error` (the requested GUID is not in the current project), so
+// it is not folded into matchStatusSchema itself: that enum stays the actual matcher statuses everywhere else.
+const chaptersForTracksEntrySchema = z.object({
+  status: z.union([matchStatusSchema, z.literal('')]),
+  chapter: chapterCandidateSchema.nullable(),
+  candidates: listFromNull(chapterCandidateSchema),
+  warnings: listFromNull(trackDirectionWarningSchema),
+  error: z.string().optional(),
+}) satisfies z.ZodType<ChaptersForTracksEntry>;
+
+/** ChaptersForTracks' answer (diagnostics-delivery-and-cleanup-tools PRD Phase 8 remainder). */
+export const chaptersForTracksSchema = z.object({
+  projectFile: z.string(),
+  savedAt: z.string(),
+  tracks: z.record(z.string(), chaptersForTracksEntrySchema),
+}) satisfies z.ZodType<ChaptersForTracksResult>;
 
 export const chapterTrackMatchSchema = z.object({
   chapterId: z.string(),

@@ -43,6 +43,7 @@ import { STAGE_REFUSAL_REASONS, STAGE_UNKNOWN_CAUSES, stageDecisionResultSchema,
 import { findingMarkerSchema, findingNavigationSchema, findingSchema, findingsPageSchema, findingsSummarySchema, reaperStatusSchema } from './schemas/findings';
 import { tracksDiscoverySchema, tracksProjectSchema } from './schemas/tracks';
 import {
+  chaptersForTracksSchema,
   chapterSuggestionSchema,
   chapterRegionPlanSchema,
   chapterRegionsCreatedSchema,
@@ -242,6 +243,7 @@ const GOLDEN: Record<string, z.ZodType> = {
   'chapter-suggestion-matched.json': chapterSuggestionSchema,
   'chapter-suggestion-ambiguous.json': chapterSuggestionSchema,
   'chapter-suggestion-none.json': chapterSuggestionSchema,
+  'chapters-for-tracks.json': chaptersForTracksSchema,
   'line-identity-idle.json': lineIdentityStateSchema,
   'line-identity-read-success.json': lineIdentityStateSchema,
   'pickups-idle.json': pickupsStateSchema,
@@ -1191,6 +1193,23 @@ describe('answers of the mock client for the settings, voice, model, transcript 
     expect(confirmed.chapter?.chapterId).toBe(chapters[4].id);
   });
 
+  it('the ChaptersForTracks answers', async () => {
+    const api = createMockApi();
+    const [track1] = WIRE_TRACKS_PROJECT.tracks;
+    const [item1] = track1.items;
+    const result = await api.chaptersForTracks([track1.guid, item1.guid, item1.takeGuid, 'not-a-real-guid']);
+    expectMatches(chaptersForTracksSchema, result, 'mock chapters for tracks');
+
+    expect(result.tracks[track1.guid].status).toBe('matched');
+    expect(result.tracks[track1.guid].chapter?.chapterTitle).toBe('Chapter 1');
+    // The item and its active take resolve through the same track as the track GUID itself.
+    expect(result.tracks[item1.guid]).toEqual(result.tracks[track1.guid]);
+    expect(result.tracks[item1.takeGuid]).toEqual(result.tracks[track1.guid]);
+
+    expect(result.tracks['not-a-real-guid'].status).toBe('');
+    expect(result.tracks['not-a-real-guid'].error).toBeTruthy();
+  });
+
   it('the line-identity state through a stamp and a read run, and its seeded states', async () => {
     vi.useFakeTimers();
     const api = createMockApi();
@@ -1822,6 +1841,7 @@ describe('answers of the mock client for the settings, voice, model, transcript 
       'chapterRegionsCreate',
       'chapterTrackMatch',
       'chapterSuggestion',
+      'chaptersForTracks',
       'lineIdentityStamp',
       'lineIdentityRead',
       'lineIdentityState',

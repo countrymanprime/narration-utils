@@ -1,0 +1,39 @@
+{
+  "projectFile": "C:/Projects/Alice/Alice.rpp",
+  "savedAt": "2026-09-21T10:00:00Z",
+  "tracks": {
+    "{22222222-2222-4222-8222-222222222222}": {
+      "candidates": [
+        {
+          "chapterId": "c-0002",
+          "chapterTitle": "Chapter II: The Pool of Tears",
+          "region": null,
+          "score": 0.95,
+          "source": "track-name"
+        }
+      ],
+      "chapter": {
+        "chapterId": "c-0002",
+        "chapterTitle": "Chapter II: The Pool of Tears",
+        "region": null,
+        "score": 0.95,
+        "source": "track-name"
+      },
+      "status": "matched",
+      "warnings": []
+    },
+    "{44444444-4444-4444-8444-444444444444}": {
+      "candidates": [],
+      "chapter": null,
+      "status": "none",
+      "warnings": []
+    },
+    "{99999999-9999-4999-8999-999999999999}": {
+      "candidates": null,
+      "chapter": null,
+      "error": "\"{99999999-9999-4999-8999-999999999999}\" is not in the current project",
+      "status": "",
+      "warnings": null
+    }
+  }
+}

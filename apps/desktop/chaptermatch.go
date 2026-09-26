@@ -132,6 +132,80 @@ func (h *Host) chapterSuggestionFor() (chapterSuggestion, error) {
 	return chapterSuggestion{ProjectFile: project.Path, SavedAt: savedAt(project.Path), Suggestion: suggestion}, nil
 }
 
+// trackChapterEntry is one requested GUID's answer within ChaptersForTracks:
+// chaptermatch.TrackResult when the GUID resolved to a track in the project,
+// or Error when it did not (a stale finding after a project switch or a
+// deleted item never fails the whole call).
+type trackChapterEntry struct {
+	chaptermatch.TrackResult
+	Error string `json:"error,omitempty"`
+}
+
+// chaptersForTracksResult is ChaptersForTracks's payload: every requested
+// GUID's chapter, from the same saved .rpp as of one read.
+type chaptersForTracksResult struct {
+	ProjectFile string                       `json:"projectFile"`
+	SavedAt     string                       `json:"savedAt"`
+	Tracks      map[string]trackChapterEntry `json:"tracks"`
+}
+
+// chaptersForTracks is ForTrack (ADR 0113) run over every GUID in guids, in
+// bulk: the Review page's chapter grouping (diagnostics-delivery-and-cleanup-
+// tools PRD Phase 8) needs a chapter for findings that carry only a track,
+// item or take GUID (apps/desktop/internal/findings.Source) instead of a
+// manuscript-anchored chapter id, and it groups many findings, from many
+// analyzers, at once. A GUID may name a track directly, or an item or take on
+// one (resolved via resolveTrackGUID); one unresolved GUID never fails the
+// others. It only reads: it never creates a track or a link.
+func (h *Host) chaptersForTracks(guids []string) (chaptersForTracksResult, error) {
+	chapters, project, confirmed, err := matchInputs(h.services())
+	if err != nil {
+		return chaptersForTracksResult{}, err
+	}
+	result := chaptersForTracksResult{
+		ProjectFile: project.Path,
+		SavedAt:     savedAt(project.Path),
+		Tracks:      make(map[string]trackChapterEntry, len(guids)),
+	}
+	for _, guid := range guids {
+		trackGUID, ok := resolveTrackGUID(project, guid)
+		if !ok {
+			result.Tracks[guid] = trackChapterEntry{Error: fmt.Sprintf("%q is not in the current project", guid)}
+			continue
+		}
+		match, err := chaptermatch.ForTrack(trackGUID, chapters, project, confirmed)
+		if err != nil {
+			result.Tracks[guid] = trackChapterEntry{Error: err.Error()}
+			continue
+		}
+		result.Tracks[guid] = trackChapterEntry{TrackResult: match}
+	}
+	return result, nil
+}
+
+// resolveTrackGUID finds the track guid names: itself, the track holding the
+// item it names, or the track holding the take it names. Source identity in
+// findings.Source is not always a track GUID, since an analyzer often only
+// knows the item or take it measured.
+func resolveTrackGUID(project tracks.Project, guid string) (string, bool) {
+	for _, track := range project.Tracks {
+		if track.GUID == guid {
+			return track.GUID, true
+		}
+		for _, item := range track.Items {
+			if item.GUID == guid {
+				return track.GUID, true
+			}
+			for _, take := range item.Takes {
+				if take.GUID == guid {
+					return track.GUID, true
+				}
+			}
+		}
+	}
+	return "", false
+}
+
 // manuscriptChapters is the current manuscript's chapter list in the
 // matcher's shape (every chapter, reference ones included, so a track named
 // after a reference section is not mistaken for a narration chapter).
