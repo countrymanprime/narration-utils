@@ -40,3 +40,20 @@ func chapterTrack(chapter stages.ChapterContext, view stages.EvidenceView) (trac
 	}
 	return tracks.Track{}, &RunStatus{State: RunUnknown, Cause: stages.CauseUnmappedTrack, Reason: "The track this chapter is linked to is no longer in the saved project. Link it again."}
 }
+
+// playedItems are the items of track that play: supported audio, not muted,
+// with a source, on a playing lane when the track uses fixed lanes. They are
+// what a comparison must have covered.
+func playedItems(track tracks.Track) []tracks.Item {
+	var played []tracks.Item
+	for _, item := range track.Items {
+		if item.Muted || !item.Supported || item.Active().SourceFile == "" {
+			continue
+		}
+		if track.FixedLanes && !track.LanePlays(item.Lane) {
+			continue
+		}
+		played = append(played, item)
+	}
+	return played
+}

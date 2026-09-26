@@ -126,10 +126,10 @@ func stagesService(project string, text *manuscript.Service, checks *coverage.Se
 
 // proofingProvider is the proofing stage's provider over the project's findings store
 // (docs/prds/proofing-readiness-signals.prd.md): the pickups roll-up reads the store's transcript_discrepancy,
-// pickup and duplicate_read findings for each chapter in proofing. It reads only; it never starts a comparison or
-// a scan.
+// pickup and duplicate_read findings for each chapter in proofing, and judges Transcript Compare's latest run from
+// the ledger records comparisonRecorder writes (Phase 2). It reads only; it never starts a comparison or a scan.
 func proofingProvider(store *findings.Store) stages.Provider {
-	config := proofing.Config{}
+	config := proofing.Config{Runs: map[string]proofing.RunJudge{proofing.AnalyzerTranscriptCompare: proofing.ComparisonJudge}}
 	if store != nil {
 		config.Findings = store
 	}

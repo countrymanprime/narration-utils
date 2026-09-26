@@ -466,6 +466,8 @@ func (h *Host) configureLocked(next config) {
 		Policy:      func() editing.Policy { return editingPolicy(settingsStore) },
 		Reporter:    h.persist,
 	}, nil)
+	// Every finished comparison is recorded for the proofing pickups signal (proofing-readiness-signals PRD Phase 2).
+	h.transcript.SetRunRecorder(comparisonRecorder(h.config.projectFolder, h.manuscript, settingsStore, h.persist))
 	h.stages = stagesService(h.config.projectFolder, h.manuscript, h.coverage, h.editing, settingsStore, h.coverageUnavailable(h.config.comparePython, settingsStore), h.persist,
 		proofingProvider(h.findings))
 	// The Review page's Go to, Loop and Stop (review dashboard PRD Phase 7, bindings_navigation.go) are one more

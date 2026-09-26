@@ -53,6 +53,10 @@ type Service struct {
 	findingsStore *findings.Store
 	// +checklocks:mu
 	manuscriptLookup ManuscriptLookup
+	// runRecorder is told how each comparison ended (runrecord.go); nil until
+	// app.go opts in with SetRunRecorder.
+	// +checklocks:mu
+	runRecorder func(CompletedRun)
 }
 
 // New builds the service over the REAPER bridge client (nil when there is no REAPER session); see NewWithReview.
@@ -425,6 +429,7 @@ func (s *Service) Handle(fields []string) {
 		return
 	}
 	changed := false
+	var ended CompletedRun
 	switch fields[0] {
 	case "COMPARE_MARKER":
 		if len(fields) >= 9 && s.state["phase"] == "inspecting" {
@@ -471,9 +476,15 @@ func (s *Service) Handle(fields []string) {
 		if exportPhase(s.state) == "exporting" {
 			s.state["markerExport"] = map[string]any{"phase": "error", "message": message, "added": 0, "skipped": 0}
 		} else {
+			if phase, _ := s.state["phase"].(string); runPhases[phase] {
+				ended = s.completedRunLocked(RunFailed)
+			}
 			s.state["phase"], s.state["message"] = "error", message
 		}
 		changed = true
+	}
+	if changed && fields[0] == "COMPARE_INSPECTED" {
+		ended = s.completedRunLocked(RunComplete)
 	}
 	snapshot := s.snapshotLocked()
 	s.mu.Unlock()
@@ -483,6 +494,9 @@ func (s *Service) Handle(fields []string) {
 		}
 		if fields[0] == "COMPARE_INSPECTED" {
 			s.saveFindings()
+		}
+		if ended.Outcome != "" {
+			s.recordRun(ended)
 		}
 		if s.changed != nil {
 			s.changed(snapshot)
@@ -502,10 +516,16 @@ func (s *Service) saveFindings() {
 	rows, _ := s.state["rows"].([]map[string]any)
 	output, _ := s.state["output"].(string)
 	runID, _ := s.state["runId"].(string)
+	summary, _ := s.state["summary"].(string)
+	options, _ := s.state["options"].(map[string]string)
 	project := s.config.Project
 	sessionDir := s.config.SessionDir
 	s.mu.RUnlock()
-	if store == nil || output == "" || len(rows) == 0 {
+	if store == nil || output == "" {
+		return
+	}
+	if len(rows) == 0 {
+		s.saveCleanRun(store, lookup, runChapterTitle(nil, summary, options))
 		return
 	}
 	manifestPath := filepath.Join(sessionDir, "manifest_"+runID+".txt")
@@ -529,6 +549,25 @@ func (s *Service) saveFindings() {
 		if _, err := store.SaveAnalyzerFindings(analyzerName, scope, valid); err != nil {
 			s.files.Load().Warn("findings_save_failed", fmt.Sprintf("Transcript Compare findings were not saved: %v", err))
 		}
+	}
+}
+
+// saveCleanRun records a complete comparison that found nothing as a full run
+// of its chapter (proofing-readiness-signals.prd.md Phase 2): the chapter's
+// earlier findings are kept, marked not_in_latest_run, exactly as a run with
+// rows does to the rows it did not reproduce. Readers that roll findings up
+// resolve such a finding only when the run covered its audio. A run whose
+// chapter title is unknown, or is shared by several chapters, saves nothing.
+func (s *Service) saveCleanRun(store *findings.Store, lookup ManuscriptLookup, title string) {
+	if lookup == nil || title == "" {
+		return
+	}
+	chapterID, ambiguous, ok := lookup.ChapterIDByTitle(title)
+	if !ok || ambiguous {
+		return
+	}
+	if _, err := store.SaveAnalyzerFindings(analyzerName, scopeFor(chapterID), nil); err != nil {
+		s.files.Load().Warn("findings_save_failed", fmt.Sprintf("Transcript Compare findings were not saved: %v", err))
 	}
 }
 
@@ -721,8 +760,15 @@ func (s *Service) finishBackend(child *process.Child) {
 }
 func (s *Service) fail(message string) {
 	s.mu.Lock()
+	var ended CompletedRun
+	if phase, _ := s.state["phase"].(string); runPhases[phase] {
+		ended = s.completedRunLocked(RunFailed)
+	}
 	s.state["phase"], s.state["message"] = "error", message
 	s.mu.Unlock()
+	if ended.Outcome != "" {
+		s.recordRun(ended)
+	}
 	s.notify()
 }
 func (s *Service) persist(snapshot map[string]any) {

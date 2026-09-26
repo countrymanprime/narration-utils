@@ -143,6 +143,13 @@ type LedgerRecord struct {
 	// analyzer counts, the same "store stays opaque" principle the PRD
 	// applies to Phase 4's cache blobs.
 	Counts map[string]int `json:"counts,omitempty"`
+	// Payload is an analyzer-defined JSON document the ledger stores and
+	// returns untouched, for what Counts cannot hold: the proofing signals
+	// keep a Transcript Compare run's compared set and a render
+	// measurement's values here (proofing-readiness-signals.prd.md Phases 2
+	// and 4). Additive and optional: absent on every other analyzer's
+	// records, so ledgerSchemaVersion stays 1.
+	Payload json.RawMessage `json:"payload,omitempty"`
 }
 
 // LedgerDir is the ledger's storage directory under a project (Q3
