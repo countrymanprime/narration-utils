@@ -382,3 +382,68 @@ describe('the Proofing card and a linked DAW file (PRD project-workspace-and-daw
     expect((button as HTMLButtonElement).disabled).toBe(false);
   });
 });
+
+describe('the "Set up the credits" prompt (credits-token-setup-and-front-matter-detection.prd.md, Phase 2)', () => {
+  async function renderHome(overrides: Partial<NarrationApi> = {}) {
+    const api = createMockApi(overrides, { creditsSetup: true });
+    const data: Bootstrap = await api.bootstrap();
+    render(
+      <MemoryRouter>
+        <ApiProvider api={api}>
+          <Home data={data} go={() => {}} notify={() => {}} goToManuscript={() => {}} refreshBootstrap={async () => {}} />
+        </ApiProvider>
+      </MemoryRouter>,
+    );
+    return { api };
+  }
+
+  it('shows the dialog on first load when the host reports it is needed', async () => {
+    await renderHome();
+    expect(await screen.findByRole('dialog', { name: 'Set up the credits' })).toBeTruthy();
+  });
+
+  it('does not show the dialog when the host reports nothing is needed (the default mock boot)', async () => {
+    const api = createMockApi({}, {});
+    const data: Bootstrap = await api.bootstrap();
+    render(
+      <MemoryRouter>
+        <ApiProvider api={api}>
+          <Home data={data} go={() => {}} notify={() => {}} goToManuscript={() => {}} refreshBootstrap={async () => {}} />
+        </ApiProvider>
+      </MemoryRouter>,
+    );
+    await screen.findByRole('button', { name: 'Replace manuscript' });
+    expect(screen.queryByRole('dialog', { name: 'Set up the credits' })).toBeNull();
+  });
+
+  it('drops the dialog once Save answers "needed: false"', async () => {
+    await renderHome();
+    const dialog = within(await screen.findByRole('dialog', { name: 'Set up the credits' }));
+    // Title and Author come prefilled from the mock's detected candidates; Narrator has none (no global default in
+    // this seed), so it stays unresolved - and the dialog stays open - unless it is typed in.
+    fireEvent.change(dialog.getByLabelText('Narrator'), { target: { value: 'Ada Finch' } });
+    fireEvent.click(dialog.getByRole('button', { name: 'Save' }));
+    await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Set up the credits' })).toBeNull());
+  });
+
+  it('drops the dialog once "Not now" dismisses it for the session', async () => {
+    await renderHome();
+    await screen.findByRole('dialog', { name: 'Set up the credits' });
+    fireEvent.click(screen.getByRole('button', { name: 'Not now' }));
+    await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Set up the credits' })).toBeNull());
+  });
+
+  it('holds back while the manuscript-candidate offer is on screen, so the two dialogs never stack', async () => {
+    const api = createMockApi({}, { creditsSetup: true, manuscriptCandidate: { path: '/tmp/book.docx', name: 'book.docx' } });
+    const data: Bootstrap = await api.bootstrap();
+    render(
+      <MemoryRouter>
+        <ApiProvider api={api}>
+          <Home data={data} go={() => {}} notify={() => {}} goToManuscript={() => {}} refreshBootstrap={async () => {}} />
+        </ApiProvider>
+      </MemoryRouter>,
+    );
+    await screen.findByRole('alertdialog', { name: 'Import manuscript?' });
+    expect(screen.queryByRole('dialog', { name: 'Set up the credits' })).toBeNull();
+  });
+});

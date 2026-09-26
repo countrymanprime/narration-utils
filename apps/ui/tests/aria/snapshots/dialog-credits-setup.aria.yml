@@ -1,0 +1,31 @@
+# "Set up the credits" (credits-token-setup-and-front-matter-detection.prd.md Phase 2, CS1 C / D35, ADR 0208): a modal
+# dialog named for itself, one labelled field per unresolved token with its detected-source caption, the narrator
+# default checkbox only where Narrator is asked, the "More fields" sentence naming what else was detected, and the
+# three dismissal actions (Don't ask for this project, Not now, Save). The page behind it is aria-hidden.
+- /children: equal
+# The two toast live regions stay in the tree on purpose (see dialog-add-note.aria.yml).
+- main:
+  - alert
+  - status
+- dialog "Set up the credits":
+  - heading "Set up the credits" [level=2]
+  - button "Close"
+  - paragraph: /Your opening and closing credits need 3 values\. We filled in what the manuscript already says/
+  - text: Title
+  - textbox "Title": Alice’s Adventures in Wonderland
+  - paragraph: "From the title page, lines 1–2: ALICE’S ADVENTURES / IN WONDERLAND (recased)"
+  - text: Author
+  - textbox "Author": Lewis Carroll
+  - paragraph: "From the byline and the copyright line, line 1: Lewis Carroll"
+  - text: Narrator
+  - textbox "Narrator"
+  - paragraph: "Not set yet: nothing in the manuscript names the narrator."
+  - checkbox "Use for all my projects (saved as your default in Settings > General)" [checked]
+  - text: Use for all my projects (saved as your default in Settings > General)
+  - paragraph:
+    - text: /Only empty values are filled in; nothing you have already set is changed\. Year, Copyright Holder and Publisher were also found/
+    - button "Settings > Credits"
+    - text: .
+  - button "Don’t ask for this project"
+  - button "Not now"
+  - button "Save"
