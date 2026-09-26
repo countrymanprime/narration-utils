@@ -7,6 +7,7 @@ import { createMockApi } from './api/mockApi';
 import { WIRE_CHAPTERS, WIRE_FINDINGS, WIRE_TRACKS_PROJECT, takeReviewPickupFor } from './api/mockFixtures';
 import { COVERAGE_REFUSAL_REASONS } from './api/schemas/coverage';
 import { MOCK_RESUME_SEEDS } from './api/resumeMockSeed';
+import { MOCK_REAPER_SEEDS } from './api/teleprompterMock';
 import { ThemeProvider } from './theme/ThemeContext';
 import './fonts';
 import './styles.css';
@@ -63,6 +64,9 @@ const mockTeleprompter = (['listening', 'waiting', 'done', 'ended', 'flagged'] a
 // holds still for a capture (read-aloud-control-bar.prd.md Phase 4).
 const mockLevelParam = Number(mockParams.get('mockLevel') ?? Number.NaN);
 const mockLevel = Number.isFinite(mockLevelParam) && mockLevelParam >= -100 && mockLevelParam <= 0 ? mockLevelParam : undefined;
+// `?mockReaperState=ready|not_armed|other_armed|several_armed|no_link|recording_elsewhere|unavailable|experimental_off` makes
+// the read-aloud dialog's REAPER state (read-aloud-control-bar.prd.md Phase 6) answer that for every chapter.
+const mockReaperState = MOCK_REAPER_SEEDS.find((seed) => seed === mockParams.get('mockReaperState'));
 // `?mockResume=agree|disagree|prompter_only|low_confidence|complete|not_found|ambiguous|none|no_recording|source_missing|source_unsupported|error`
 // makes the read-aloud dialog's resume prompt (read-aloud-resume-from-daw.prd.md Phase 1) show that state for any chapter,
 // so each can be seen without a REAPER project, a recording or a Whisper run.
@@ -234,6 +238,7 @@ const mockInitial = {
   ...(mockTeleprompter ? { teleprompter: mockTeleprompter } : {}),
   ...(mockNoDevices ? { teleprompterDevices: [] } : {}),
   ...(mockLevel === undefined ? {} : { teleprompterLevel: mockLevel }),
+  ...(mockReaperState ? { reaperState: mockReaperState } : {}),
   ...(mockResume ? { resume: mockResume } : {}),
   ...(mockRemoved ? { removedChapter: true } : {}),
   ...(mockChapterSync ? { chapterSync: mockChapterSync } : {}),

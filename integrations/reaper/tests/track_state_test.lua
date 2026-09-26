@@ -53,6 +53,19 @@ H.test('chapter_track_state matches the track GUID without braces or case, and a
   H.eq(s:events()[1][3], CH1)
 end)
 
+-- The arm counts the Read Aloud bar reads (read-aloud-control-bar PRD Phase 6): nothing armed, and the named track the
+-- only one armed (several armed and another track armed are the tests above and below).
+H.test('chapter_track_state reports nothing armed, and the named track as the only armed track', function()
+  local s, chapter = new_session()
+  s:send('chapter_track_state', 't1', chapter.guid)
+  local none = s:events()[1]
+  H.eq({ none[10], none[11] }, { '0', '0' }, 'nothing armed')
+  chapter.armed = true
+  s:send('chapter_track_state', 't2', chapter.guid)
+  local only = s:events()[1]
+  H.eq({ only[2], only[10], only[11] }, { 't2', '1', '1' }, 'the named track the only one armed')
+end)
+
 H.test('chapter_track_state reports an unsaved project, the named track not armed and REAPER input device', function()
   local s, chapter, pickups = new_session('')
   pickups.armed = true

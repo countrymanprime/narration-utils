@@ -277,6 +277,24 @@ export type TeleprompterDevice = { name: string };
  */
 export type TeleprompterDevicesResult = { devices: TeleprompterDevice[]; error: string | null };
 
+/**
+ * Whether REAPER is ready to record a chapter with reading (`ReadAloudReaperState`, read-aloud-control-bar PRD Phase 6, ADR 0249):
+ * `ready` only when the chapter's linked track is the one track armed and REAPER is not recording. `reason` qualifies `no_link`
+ * (`unlinked`, `several_links`, `track_missing`) and `unavailable` (`standalone`, `not_running`, `experimental_off`, `failed`).
+ * `armedCount`, `playing` and `recording` are what REAPER said; `armedCount` is absent when it was not asked.
+ */
+export type ReadAloudReaperStatus = 'ready' | 'not_armed' | 'other_armed' | 'several_armed' | 'no_link' | 'recording_elsewhere' | 'unavailable';
+export type ReadAloudReaperReason = 'unlinked' | 'several_links' | 'track_missing' | 'standalone' | 'not_running' | 'experimental_off' | 'failed';
+export type ReadAloudReaperState = {
+  status: ReadAloudReaperStatus;
+  reason?: ReadAloudReaperReason;
+  message: string;
+  trackGuid?: string;
+  armedCount?: number;
+  playing: boolean;
+  recording: boolean;
+};
+
 export interface TeleprompterApi {
   teleprompterStart(options: TeleprompterStartOptions): Promise<TeleprompterStartResult>;
   teleprompterStop(): Promise<void>;
@@ -294,6 +312,8 @@ export interface TeleprompterApi {
   teleprompterMeterStop(): Promise<void>;
   /** Pause (true) or resume (false) a running session's listening without ending it; flags are kept only on Stop (ADR 0117). */
   teleprompterPause(paused: boolean): Promise<void>;
+  /** Ask REAPER, once, whether it is ready to record `chapterId` with reading; read-only. Ask on open, toggle, Play and Refresh, never on a timer. */
+  readAloudReaperState(chapterId: string): Promise<ReadAloudReaperState>;
   /** Where to resume `chapterId` from its recorded audio (the last seconds of its track, placed in the chapter); read-only. */
   teleprompterLocate(chapterId: string, options?: TeleprompterLocateOptions): Promise<TeleprompterLocateResult>;
   subscribeTeleprompterEvent(onEvent: (event: TeleprompterEvent) => void): () => void;
