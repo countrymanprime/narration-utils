@@ -76,6 +76,29 @@ func TestChapterTrackSetRefusesAnUnknownChapterOrNoTrack(t *testing.T) {
 	}
 }
 
+// Credits are never chapters (ADR 0150), but the opening and closing credits rows get the same track-link controls
+// as a chapter (credits-in-chapter-table PRD Phase 3): ChapterTrackSet and ChapterTrackUnlink accept the credits ids
+// chapterTitle now resolves to their fixed row labels.
+func TestChapterTrackSetAndUnlinkAcceptACreditsID(t *testing.T) {
+	host, _ := newTestHostForChapterMatch(t)
+
+	raw, err := host.ChapterTrackSet("credits-closing", chapterLinksTrack)
+	if err != nil {
+		t.Fatalf("linking the closing credits: %v", err)
+	}
+	link, _ := decodeBinding(t, raw)["link"].(map[string]any)
+	if link["chapterId"] != "credits-closing" || link["chapterTitle"] != "Closing credits" || link["trackGuid"] != chapterLinksTrack {
+		t.Fatalf("ChapterTrackSet(credits-closing) = %#v", link)
+	}
+
+	if _, err := host.ChapterTrackUnlink("credits-closing"); err != nil {
+		t.Fatalf("unlinking the closing credits: %v", err)
+	}
+	if mappings := mappingCount(t, host); len(mappings) != 0 {
+		t.Fatalf("mappings = %#v, want the credits link removed", mappings)
+	}
+}
+
 func TestChapterTrackUnlinkClearsEveryLinkTheChapterHolds(t *testing.T) {
 	host, ids := newTestHostForChapterMatch(t)
 	for _, link := range [][2]string{{chapterLinksTrackII, ids[1]}, {chapterLinksTrackIJ, ids[1]}, {chapterLinksTrack, ids[0]}} {

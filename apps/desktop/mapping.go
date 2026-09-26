@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/countrymanprime/narration-utils/shell/internal/evidence"
 )
@@ -89,8 +90,16 @@ func (h *Host) mappingClear(trackGUID string) (map[string]any, error) {
 }
 
 // chapterTitle looks up chapterID's title among the current manuscript's
-// chapters, reporting false when chapterID is not one of them.
+// chapters, or, for "credits-opening"/"credits-closing" (credits-in-chapter-table
+// PRD Phase 3), the fixed row label creditsScriptTitles already gives that kind
+// for the teleprompter (ADR 0150) - credits are never chapters, so this lets the
+// existing chapter-track-link bindings (ChapterTrackSet, ChapterTrackUnlink,
+// ChapterTrackMapConfirm) accept a credits id without a new binding or a
+// manuscript.json entry. It reports false when chapterID is neither.
 func chapterTitle(svc hostServices, chapterID string) (string, bool, error) {
+	if title, ok := creditsRowTitle(chapterID); ok {
+		return title, true, nil
+	}
 	chapters, err := svc.manuscript.Chapters()
 	if err != nil {
 		return "", false, err
@@ -102,4 +111,17 @@ func chapterTitle(svc hostServices, chapterID string) (string, bool, error) {
 		}
 	}
 	return "", false, nil
+}
+
+// creditsRowTitle is chapterID's fixed row label when it names the opening or
+// closing credits ("credits-" + creditsScriptTitles' own kind), so every
+// caller that must store a real title (Q9's re-suggestion after a re-import)
+// stores the same words the Manuscript page and teleprompter show.
+func creditsRowTitle(chapterID string) (string, bool) {
+	kind, ok := strings.CutPrefix(chapterID, "credits-")
+	if !ok {
+		return "", false
+	}
+	title, known := creditsScriptTitles[kind]
+	return title, known
 }

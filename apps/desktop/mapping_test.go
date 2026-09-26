@@ -98,6 +98,46 @@ func TestChapterTrackMapConfirmRejectsAChapterIDNotInTheManuscript(t *testing.T)
 	}
 }
 
+// Credits are never chapters (ADR 0150), but credits-in-chapter-table PRD Phase 3 lets the narrator confirm a track
+// link for the opening or closing credits the same way as a chapter: chapterTitle recognizes "credits-opening" and
+// "credits-closing" with the fixed row labels creditsScriptTitles already gives them, so the existing
+// ChapterTrackMapConfirm binding accepts them without a new binding or a manuscript.json entry.
+func TestChapterTrackMapConfirmAcceptsACreditsID(t *testing.T) {
+	host, _ := newTestHostForMapping(t)
+
+	raw, err := host.ChapterTrackMapConfirm("track-guid-credits", "credits-opening")
+	if err != nil {
+		t.Fatalf("confirming the opening credits' track link: %v", err)
+	}
+	confirmed := decodeBinding(t, raw)
+	if confirmed["chapterId"] != "credits-opening" || confirmed["chapterTitle"] != "Opening credits" {
+		t.Fatalf("ChapterTrackMapConfirm(credits-opening) = %#v", confirmed)
+	}
+}
+
+func TestChapterTrackMapConfirmRejectsAnUnknownCreditsKind(t *testing.T) {
+	host, _ := newTestHostForMapping(t)
+	if _, err := host.ChapterTrackMapConfirm("track-guid-a", "credits-chapter_announcement"); err == nil {
+		t.Fatal("expected an error: only opening and closing have a fixed row label")
+	}
+}
+
+func TestCreditsRowTitle(t *testing.T) {
+	for chapterID, want := range map[string]string{
+		"credits-opening": "Opening credits",
+		"credits-closing": "Closing credits",
+	} {
+		if title, ok := creditsRowTitle(chapterID); !ok || title != want {
+			t.Fatalf("creditsRowTitle(%q) = %q, %v, want %q, true", chapterID, title, ok, want)
+		}
+	}
+	for _, chapterID := range []string{"credits-chapter_announcement", "credits-", "credits", "c-0001", ""} {
+		if _, ok := creditsRowTitle(chapterID); ok {
+			t.Fatalf("creditsRowTitle(%q) should not resolve", chapterID)
+		}
+	}
+}
+
 func TestChapterTrackMapClearRemovesTheLinkAndReturnsWhatRemains(t *testing.T) {
 	host, firstChapterID := newTestHostForMapping(t)
 	chapters, err := host.services().manuscript.Chapters()
