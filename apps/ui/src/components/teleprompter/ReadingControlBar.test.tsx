@@ -6,6 +6,7 @@ import { MemoryRouter } from 'react-router-dom';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { ApiProvider } from '../../api/ApiContext';
 import { createMockApi } from '../../api/mockApi';
+import { CommandRouter, CommandScope } from '../../input/router';
 import { ReadingControlBar } from './ReadingControlBar';
 import { initialSession } from './readerModel';
 import type { FollowCursor } from './useFollowCursor';
@@ -68,7 +69,13 @@ function renderBar(
   return render(
     <MemoryRouter>
       <ApiProvider api={api}>
-        <ReadingControlBar session={session} follow={follow} startPoint={options.startPoint} chapterId={options.chapterId} />
+        {/* The booth scope Phase 4 wraps the read-aloud dialog and the Teleprompter page in, so `reading.toggle` (Space)
+            resolves here the same as it does mounted there. */}
+        <CommandRouter>
+          <CommandScope kind="booth">
+            <ReadingControlBar session={session} follow={follow} startPoint={options.startPoint} chapterId={options.chapterId} />
+          </CommandScope>
+        </CommandRouter>
       </ApiProvider>
     </MemoryRouter>,
   );
@@ -84,7 +91,11 @@ function rerenderBar(
   rerender(
     <MemoryRouter>
       <ApiProvider api={api}>
-        <ReadingControlBar session={session} follow={follow} startPoint={options.startPoint} chapterId={options.chapterId} />
+        <CommandRouter>
+          <CommandScope kind="booth">
+            <ReadingControlBar session={session} follow={follow} startPoint={options.startPoint} chapterId={options.chapterId} />
+          </CommandScope>
+        </CommandRouter>
       </ApiProvider>
     </MemoryRouter>,
   );

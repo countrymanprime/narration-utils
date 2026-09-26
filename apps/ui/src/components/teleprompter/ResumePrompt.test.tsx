@@ -6,6 +6,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { ReadAloudDialog } from './ReadAloudDialog';
 import { ApiProvider } from '../../api/ApiContext';
 import { createMockApi } from '../../api/mockApi';
+import { CommandRouter } from '../../input/router';
 import { WIRE_TELEPROMPTER_DEVICES } from '../../api/mockFixtures';
 import type { NarrationApi, TeleprompterLocateResult, TeleprompterState } from '../../types';
 
@@ -42,7 +43,9 @@ function renderDialog(overrides: Partial<NarrationApi> = {}, initial: Initial = 
   render(
     <MemoryRouter>
       <ApiProvider api={api}>
-        <ReadAloudDialog source={{ kind: 'chapter', chapter: CHAPTER }} onClose={vi.fn()} />
+        <CommandRouter>
+          <ReadAloudDialog source={{ kind: 'chapter', chapter: CHAPTER }} onClose={vi.fn()} />
+        </CommandRouter>
       </ApiProvider>
     </MemoryRouter>,
   );
