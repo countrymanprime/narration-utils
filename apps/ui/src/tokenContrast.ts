@@ -3,7 +3,7 @@
 // contrast ratio is computed from the CSS that ships and not from a copy of its values. Anything else throws: a pair the
 // guard cannot evaluate must not pass by being skipped.
 
-export type Theme = 'light' | 'dark';
+export type Theme = 'light' | 'dark' | 'booth';
 export type TokenMap = Record<string, string>;
 export interface Rgba {
   r: number;
@@ -49,7 +49,9 @@ export function parseThemes(css: string): Record<Theme, TokenMap> {
   const light: TokenMap = {};
   const darkOverrides: TokenMap = {};
   for (const rule of rootRules(css)) Object.assign(rule.dark ? darkOverrides : light, rule.tokens);
-  return { light, dark: { ...light, ...darkOverrides } };
+  const dark = { ...light, ...darkOverrides };
+  const booth = { ...dark, ...boothTokens(css) };
+  return { light, dark, booth };
 }
 
 // The number of rules in the file whose selector mentions `:root`, whatever the rest of it says, so a rule the parser above
@@ -57,6 +59,20 @@ export function parseThemes(css: string): Record<Theme, TokenMap> {
 // its tokens.
 export function countRootRules(css: string): number {
   return (stripComments(css).match(/:root[^{}]*\{/g) ?? []).length;
+}
+
+// The `[data-surface='booth']` block (studio-ui-primitives.prd.md Phase 1, ADR 0360 Q1): FocusShell's own high-contrast
+// palette, scoped to a data attribute rather than a third app theme. It lists only the tokens booth mode changes; every
+// other token falls through to dark (see `parseThemes`), the way `:root[data-theme='dark']` falls through to light.
+export function boothTokens(css: string): TokenMap {
+  const match = /(?<=^|\})\s*\[data-surface=(['"])booth\1\]\s*\{([^}]*)\}/.exec(stripComments(css));
+  return match ? declarations(match[2]) : {};
+}
+
+// The number of rules whose selector mentions the booth surface, whatever the rest of it says, so a selector the parser
+// above cannot see fails a test instead of silently returning an empty map.
+export function countBoothBlocks(css: string): number {
+  return (stripComments(css).match(/\[data-surface=['"]booth['"]\][^{}]*\{/g) ?? []).length;
 }
 
 function splitTopLevel(text: string): string[] {
