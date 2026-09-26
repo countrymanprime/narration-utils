@@ -168,7 +168,7 @@ Every phase follows the `CLAUDE.md` workflow: plan (find or open the tracking is
 
 | # | Phase | Description | Status | Parallel | Depends | PRP Plan |
 | --- | --- | --- | --- | --- | --- | --- |
-| 1 | Window engine and text scoring | Pure Go package: eligibility, length model, prefix-sum windows, features, ranking, reasons, tie-breaks; table and property tests | pending | - | - | - |
+| 1 | Window engine and text scoring | Pure Go package: eligibility, length model, prefix-sum windows, features, ranking, reasons, tie-breaks; table and property tests | complete | - | - | - |
 | 2 | Binding, contract and mock | Read binding for candidates, TypeScript contract with Zod schema, mock fixtures for every state, host API bump, `stressReaders` row | pending | - | 1 | - |
 | 3 | Proofing page Preview panel | Panel, candidate rows, reasons and warnings, open in reader, copy range, named states; catalog rows and drivers, docs, screenshots | pending | 4 | 2 | - |
 | 4 | Preview settings | Target length, tolerance, preset, ending exclusion in Settings; defaults; validation | pending | 3 | 1, DX-2 (numeric settings kind) | - |
