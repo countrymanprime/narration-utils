@@ -41,6 +41,7 @@ import {
 import { COVERAGE_EVALUATOR_REASONS, COVERAGE_REFUSAL_REASONS, coverageResultSchema, coverageStartResultSchema, coverageStateSchema } from './schemas/coverage';
 import { editingCandidatesSchema, editingStartResultSchema, editingStateSchema } from './schemas/editing';
 import { workspaceAlignmentResultSchema } from './schemas/workspace';
+import { previewResultSchema } from './schemas/preview';
 import { STAGE_REFUSAL_REASONS, STAGE_UNKNOWN_CAUSES, stageDecisionResultSchema, stageRecommendationsSchema } from './schemas/stages';
 import { findingMarkerSchema, findingNavigationSchema, findingSchema, findingsPageSchema, findingsSummarySchema, reaperStatusSchema } from './schemas/findings';
 import { tracksDiscoverySchema, tracksProjectSchema } from './schemas/tracks';
@@ -290,6 +291,9 @@ const GOLDEN: Record<string, z.ZodType> = {
   'workspace-alignment-stale.json': workspaceAlignmentResultSchema,
   'workspace-alignment-never.json': workspaceAlignmentResultSchema,
   'workspace-alignment-needs-align-again.json': workspaceAlignmentResultSchema,
+  'preview-candidates-ok.json': previewResultSchema,
+  'preview-candidates-no-manuscript.json': previewResultSchema,
+  'preview-candidates-nothing-eligible.json': previewResultSchema,
   'stages-recommendations-unknown.json': stageRecommendationsSchema,
   'stages-recommendations-recommended.json': stageRecommendationsSchema,
   'stages-recommendations-dismissed.json': stageRecommendationsSchema,
@@ -1750,6 +1754,22 @@ describe('answers of the mock client for the settings, voice, model, transcript 
     expect(unknown).toMatchObject({ state: 'never', paragraphs: [], tokens: [] });
   });
 
+  it('the preview candidates: ok with candidates, no manuscript, and nothing eligible', async () => {
+    const withCandidates = await createMockApi().previewCandidates();
+    expectMatches(previewResultSchema, withCandidates, 'mock preview candidates, ok');
+    expect(withCandidates.outcome).toBe('ok');
+    expect(withCandidates.candidates.length).toBeGreaterThan(0);
+    expect(withCandidates.candidates.every((candidate) => candidate.reasons.length > 0)).toBe(true);
+
+    const noManuscript = await createMockApi({}, { preview: { outcome: 'no_manuscript' } }).previewCandidates();
+    expectMatches(previewResultSchema, noManuscript, 'mock preview candidates, no manuscript');
+    expect(noManuscript).toEqual({ outcome: 'no_manuscript', candidates: [] });
+
+    const nothingEligible = await createMockApi({}, { preview: { outcome: 'nothing_eligible' } }).previewCandidates();
+    expectMatches(previewResultSchema, nothingEligible, 'mock preview candidates, nothing eligible');
+    expect(nothingEligible).toEqual({ outcome: 'nothing_eligible', candidates: [] });
+  });
+
   it('the stage recommendations: every verdict, every unknown cause, a confirmation, the notice, and every refusal', async () => {
     const api = createMockApi(
       {},
@@ -1908,6 +1928,7 @@ describe('answers of the mock client for the settings, voice, model, transcript 
       'coverageState',
       'coverageResult',
       'workspaceAlignment',
+      'previewCandidates',
       'stageRecommendations',
       'stageConfirm',
       'stageDismiss',

@@ -112,6 +112,14 @@ var builtinDefaults = map[string]Values{
 		"pickup_range_start_seconds":       "",
 		"pickup_range_end_seconds":         "",
 	},
+	// Preview mirrors preview.DefaultSettings (proofing-preview-suggestion.prd.md Phase 4, Q1/Q2/Q4's own stated
+	// defaults): 5:00 target, 10% tolerance, the Sample preset, ending exclusion off.
+	"Preview": {
+		"target_seconds":          "300",
+		"tolerance_fraction":      "0.1",
+		"preset":                  "sample",
+		"exclude_ending_fraction": "0",
+	},
 }
 
 // Defaults returns the repo file's values for tool, with any key the file does

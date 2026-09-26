@@ -105,6 +105,7 @@ import { mockImportPreview, mockImportPreviewLog, type MockImportKind } from './
 import { createTeleprompterMock, type MockReaperInputSeed, type MockReaperSeed, type TeleprompterSeed } from './teleprompterMock';
 import { createCoverageMock, type CoverageSeed } from './coverageMock';
 import { createWorkspaceMock } from './workspaceMock';
+import { createPreviewMock, type PreviewSeed } from './previewMock';
 import { createStagesMock, type StagesSeed } from './stagesMock';
 import type { MockResumeSeed } from './resumeMockSeed';
 import { createFindingsMock, type MockReaper } from './findingsMock';
@@ -587,6 +588,8 @@ export function createMockApi(
     diagnostics?: MockDiagnosticsSeed;
     /** Seeds the editing-readiness check mock (a refusal, a held-running state, or seeded candidates), see `EditingSeed`. */
     editing?: EditingSeed;
+    /** Seeds the preview-candidates mock (an outcome or seeded candidates), see `PreviewSeed`. */
+    preview?: PreviewSeed;
     /** The project's Delivery limits, by key (`true_peak_dbtp_max: '-3'`), set as if saved in Settings (diagnostics PRD Phase 5). */
     deliveryLimits?: Record<string, string>;
     /**
@@ -1301,6 +1304,7 @@ export function createMockApi(
     project: WIRE_TRACKS_PROJECT,
     mappings: () => chapterTrackMappings,
   });
+  const preview = createPreviewMock({ chapters: () => chapters, paragraphs: () => paragraphs }, initial.preview);
   const stages = createStagesMock({
     ready: manuscriptReady,
     chapters: () => chapters.map(withMeasurement),
@@ -2546,6 +2550,7 @@ export function createMockApi(
     ...teleprompter,
     ...coverage,
     ...workspace,
+    ...preview,
     ...stages,
     ...findings,
     mediaUrl: (sourceFile) => mockAudioSource() ?? sourceFile,

@@ -66,5 +66,11 @@
     "pickup_track_name": "",
     "pickup_range_start_seconds": "",
     "pickup_range_end_seconds": ""
+  },
+  "Preview": {
+    "target_seconds": "300",
+    "tolerance_fraction": "0.1",
+    "preset": "sample",
+    "exclude_ending_fraction": "0"
   }
 }

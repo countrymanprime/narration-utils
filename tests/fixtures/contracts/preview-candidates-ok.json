@@ -1,0 +1,44 @@
+{
+  "candidates": [
+    {
+      "chapterId": "c-0001",
+      "chapterTitle": "Chapter One",
+      "estimatedSeconds": 11.61290322580645,
+      "paragraphIds": [
+        "p-000001",
+        "p-000002",
+        "p-000003"
+      ],
+      "reasons": [
+        "Mixes narration and dialogue (33% of paragraphs have dialogue).",
+        "No Story Bible entities mentioned in this range.",
+        "Starts and ends on paragraph boundaries."
+      ],
+      "shorter": true,
+      "warnings": [
+        "This chapter is shorter than the target length even in full."
+      ],
+      "wordCount": 30
+    },
+    {
+      "chapterId": "c-0002",
+      "chapterTitle": "Chapter Two",
+      "estimatedSeconds": 8.516129032258064,
+      "paragraphIds": [
+        "p-000004",
+        "p-000005"
+      ],
+      "reasons": [
+        "Mostly narration, little or no dialogue.",
+        "No Story Bible entities mentioned in this range.",
+        "Starts and ends on paragraph boundaries."
+      ],
+      "shorter": true,
+      "warnings": [
+        "This chapter is shorter than the target length even in full."
+      ],
+      "wordCount": 22
+    }
+  ],
+  "outcome": "ok"
+}

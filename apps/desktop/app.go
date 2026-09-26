@@ -52,7 +52,7 @@ import (
 // Keep this in lockstep with apps/ui/src/hostApi.ts.  The frontend rejects
 // an older host before bootstrapping so a partial update cannot run against a
 // binding contract it does not understand.
-const hostAPIVersion = 60
+const hostAPIVersion = 61
 
 // Host is the Wails binding boundary. The frontend invokes only this bound
 // object; it never receives a loopback port or an HTTP capability.
@@ -1289,6 +1289,15 @@ var fieldSchemas = map[string][]fieldSchema{
 		{"max_gap_seconds", "Maximum gap before it's flagged (empty space)", "number", nil},
 		{"head_max_seconds", "Maximum leading silence (head)", "number", nil},
 		{"tail_max_seconds", "Maximum trailing silence (tail)", "number", nil},
+	},
+	// Preview is the proofing-preview-suggestion PRD's Phase 4 settings: the narrator's target length, tolerance,
+	// preset and optional ending exclusion, read by previewSettings (bindings_preview.go) on every PreviewCandidates
+	// call. Defaults (5:00, 10%, "sample", ending exclusion off) mirror preview.DefaultSettings.
+	"Preview": {
+		{"target_seconds", "Target length (seconds)", "number", nil},
+		{"tolerance_fraction", "Tolerance (fraction of target)", "number", nil},
+		{"preset", "Preset", "choice", []string{"sample", "spot_check"}},
+		{"exclude_ending_fraction", "Exclude the ending (fraction of chapters)", "number", nil},
 	},
 }
 
