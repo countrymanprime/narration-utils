@@ -87,6 +87,16 @@
       "kind": "choice",
       "label": "Room tone per credits file (seconds)",
       "value": ""
+    },
+    {
+      "choices": null,
+      "effectiveSource": "repo_default",
+      "effectiveValue": "false",
+      "isSet": false,
+      "key": "debug_logging",
+      "kind": "bool",
+      "label": "Debug logging (writes decision records to the run log)",
+      "value": ""
     }
   ],
   "Manuscript": [
