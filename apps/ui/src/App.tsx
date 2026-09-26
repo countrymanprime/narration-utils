@@ -13,6 +13,7 @@ import type { ChapterSyncPreview } from './api/contracts/chapterSync';
 import { useAppHistory } from './hooks/useAppHistory';
 import { notificationForJobEnd, shouldNotifyForJobEnd, toastForJobEnd } from './jobEnded';
 import { ConfirmDialog } from './components/primitives/ConfirmDialog';
+import { ShortcutSheet } from './components/help/ShortcutSheet';
 import { Home } from './components/home/Home';
 import { Manuscript } from './components/manuscript/Manuscript';
 import { ProjectPicker } from './components/project/ProjectPicker';
@@ -103,6 +104,7 @@ function AppRoutes() {
   const [retryKey, setRetryKey] = useState(0);
   const [settingsDirty, setSettingsDirty] = useState(false);
   const [pendingMove, setPendingMove] = useState<PendingMove>();
+  const [shortcutsOpen, setShortcutsOpen] = useState(false);
   const settingsActions = useRef<{ save: () => Promise<void>; discard: () => Promise<void> } | undefined>(undefined);
   const hasBootstrap = data !== undefined;
 
@@ -304,6 +306,9 @@ function AppRoutes() {
   useCommand('nav.forward', () => {
     if (!isModalOpen()) guardedForwardRef.current();
   });
+  // The "?" shortcut sheet (input-commands-and-pedals.prd.md Phase 7): a `global` command mounted here, alongside
+  // Back/Forward, since both are always-available app-level commands rather than a feature's own.
+  useCommand('help.shortcuts', () => setShortcutsOpen(true));
 
   // Recovery for a `popstate` the app did not start (Risk 3: a mouse-button gesture WebView2 acts on
   // despite `preventDefault`, if Phase 0 finds that happens). The move already took effect; if it left
@@ -519,6 +524,15 @@ function AppRoutes() {
             })
           }
           cancel={() => setPendingMove(undefined)}
+        />
+      )}
+      {shortcutsOpen && (
+        <ShortcutSheet
+          onClose={() => setShortcutsOpen(false)}
+          onShowAll={() => {
+            setShortcutsOpen(false);
+            guardedNavigate('/settings');
+          }}
         />
       )}
     </div>
