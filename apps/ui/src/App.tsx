@@ -21,6 +21,7 @@ import { Transcript } from './components/proofing/Transcript';
 import { Settings } from './components/settings/Settings';
 import { TeleprompterPage } from './components/teleprompter/TeleprompterPage';
 import { TracksPage } from './components/tracks/TracksPage';
+import { WorkspacePage } from './components/workspace/WorkspacePage';
 import { ReviewPage } from './components/review/ReviewPage';
 import { DeliveryPage } from './components/delivery/DeliveryPage';
 import { TooltipProvider } from './components/primitives/Tooltip';
@@ -359,7 +360,10 @@ function AppRoutes() {
 
   const guardedNavigate = (next: string) => {
     const nextPath = next.split('#')[0] || '/';
-    if (!data.manuscript && ['/manuscript', '/proofing', '/story-bible', '/teleprompter'].includes(nextPath)) {
+    // The chapter workspace reads the chapter's paragraphs and alignment, both manuscript-scoped, same as the fixed
+    // routes below (edit-and-proof-workspace.prd.md Phase 2's route is the app's first parameterised path, so it
+    // needs its own startsWith check rather than joining the exact-match list).
+    if (!data.manuscript && (['/manuscript', '/proofing', '/story-bible', '/teleprompter'].includes(nextPath) || nextPath.startsWith('/tracks/chapter/'))) {
       navigate('/', { replace: true });
       return;
     }
@@ -449,6 +453,7 @@ function AppRoutes() {
                 element={data.manuscript ? <TeleprompterPage onFixCredits={() => guardedNavigate('/settings#credits')} /> : <Navigate to="/" replace />}
               />
               <Route path="/tracks" element={<TracksPage dawFileLinked={data.dawFileLinked} onLinkDawFile={() => void linkDawFile()} notify={setNotice} />} />
+              <Route path="/tracks/chapter/:chapterId" element={data.manuscript ? <WorkspacePage notify={setNotice} /> : <Navigate to="/" replace />} />
               <Route
                 path="/review"
                 element={

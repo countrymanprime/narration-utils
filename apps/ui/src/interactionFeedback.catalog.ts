@@ -525,6 +525,15 @@ export const FEEDBACK_CATALOG: Record<string, FeedbackRow> = {
     'Phase 12: writes ID3 CHAP/CTOC tags into a new copy of the narrator-chosen file. Gated on the confirm checkbox and a non-blank destination; the button and the confirm checkbox stay disabled while it runs. A success shows the new file path, a failure shows inline as an alert.',
   ),
 
+  // Chapter workspace (edit-and-proof-workspace.prd.md Phase 2): the chapter, its linked track's items and its
+  // stored alignment are all loaded together on mount; a failure in any of the first three (they run inside one
+  // Promise.all) shows the same page-level inline error, since none of them is useful without the others.
+  'src/components/workspace/WorkspacePage.tsx::manuscriptChapters#1': row('effect', 'file-io', 'na', 'na', 'ui', 'inline', 'na', 'ok', 'Finds the chapter by id from the route; a failure shows the page\'s inline error.'),
+  'src/components/workspace/WorkspacePage.tsx::chapterTrackMapList#1': row('effect', 'file-io', 'na', 'na', 'ui', 'inline', 'na', 'ok', 'Finds the chapter\'s linked track, same as ChapterLinksTable\'s own read of the same binding.'),
+  'src/components/workspace/WorkspacePage.tsx::tracksList#1': row('effect', 'file-io', 'na', 'na', 'ui', 'inline', 'na', 'ok', 'The linked track\'s items, to build the playlist honouring their played ranges.'),
+  'src/components/workspace/WorkspacePage.tsx::workspaceAlignment#1': row('mount', 'file-io', 'na', 'na', 'ui', 'inline', 'na', 'ok', 'Reads the chapter\'s stored word alignment on open and again after a check completes (never runs one, Q14); a failure is the page\'s own inline error.'),
+  'src/components/workspace/WorkspacePage.tsx::subscribeCoverage#1': subscription('The recording check state, same subscription and job dialog (RecordingCheck) Home\'s own row uses.'),
+
   // Review page (review-dashboard-and-findings-adoption.prd.md, Phase 5)
   'src/components/review/ReviewPage.tsx::findingsSummary#1': row('mount', 'file-io', 'na', 'na', 'ui', 'inline', 'na', 'exempt', 'Read together with the list: the first load failing is the page load error with Retry, a later one (after a filter change or a decision) is a toast and the list on screen stays.'),
   'src/components/review/ReviewPage.tsx::findingsList#1': row('input', 'file-io', 'na', 'na', 'ui', 'toast', 'na', 'ok', 'Runs on opening and on every filter, sort or Show more change; an answer to an older request is dropped, the first load failing is the page load error with Retry and a later one is a toast.'),

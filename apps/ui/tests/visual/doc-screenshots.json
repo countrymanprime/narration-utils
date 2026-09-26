@@ -252,6 +252,34 @@
     "caption": "Tracks - the chapter links list, one chapter confirmed to a track"
   },
   {
+    "page": "workspace",
+    "state": "never",
+    "viewport": "desktop",
+    "docName": "workspace-never",
+    "caption": "Chapter workspace - a linked chapter that hasn't been checked yet"
+  },
+  {
+    "page": "workspace",
+    "state": "current",
+    "viewport": "desktop",
+    "docName": "workspace-default",
+    "caption": "Chapter workspace - script, transport, and the Flags panel with its legend"
+  },
+  {
+    "page": "workspace",
+    "state": "playing",
+    "viewport": "desktop",
+    "docName": "workspace-playing",
+    "caption": "Chapter workspace - playing, the spoken word highlighted and the script following along"
+  },
+  {
+    "page": "workspace",
+    "state": "flag-selected",
+    "viewport": "desktop",
+    "docName": "workspace-flag-detail",
+    "caption": "Chapter workspace - a flag selected from the Flags panel, its script and heard text shown"
+  },
+  {
     "page": "settings",
     "state": "global-general",
     "viewport": "desktop",

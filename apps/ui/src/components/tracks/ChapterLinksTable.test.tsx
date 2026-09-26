@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { cleanup, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { MemoryRouter } from 'react-router-dom';
 import { afterEach, describe, expect, it } from 'vitest';
 import { ChapterLinksTable } from './ChapterLinksTable';
 import { ApiProvider } from '../../api/ApiContext';
@@ -13,7 +14,9 @@ function renderTable() {
   const api = createMockApi();
   render(
     <ApiProvider api={api}>
-      <ChapterLinksTable tracks={WIRE_TRACKS_PROJECT.tracks} />
+      <MemoryRouter>
+        <ChapterLinksTable tracks={WIRE_TRACKS_PROJECT.tracks} />
+      </MemoryRouter>
     </ApiProvider>,
   );
   return api;
@@ -93,7 +96,9 @@ describe('ChapterLinksTable', () => {
     await api.chapterTrackMapConfirm(WIRE_TRACKS_PROJECT.tracks[1].guid, WIRE_CHAPTERS[0].id);
     render(
       <ApiProvider api={api}>
-        <ChapterLinksTable tracks={WIRE_TRACKS_PROJECT.tracks} />
+        <MemoryRouter>
+          <ChapterLinksTable tracks={WIRE_TRACKS_PROJECT.tracks} />
+        </MemoryRouter>
       </ApiProvider>,
     );
     const table = await screen.findByRole('table', { name: 'Chapter links' });
@@ -112,7 +117,9 @@ describe('ChapterLinksTable', () => {
     await api.chapterTrackMapConfirm('{NOT-A-REAL-TRACK-GUID}', WIRE_CHAPTERS[0].id);
     render(
       <ApiProvider api={api}>
-        <ChapterLinksTable tracks={WIRE_TRACKS_PROJECT.tracks} />
+        <MemoryRouter>
+          <ChapterLinksTable tracks={WIRE_TRACKS_PROJECT.tracks} />
+        </MemoryRouter>
       </ApiProvider>,
     );
 
