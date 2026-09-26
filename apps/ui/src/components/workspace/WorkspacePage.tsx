@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { useApi } from '../../api/ApiContext';
 import { chapterName } from '../../chapterName';
@@ -10,6 +10,8 @@ import { Panel } from '../primitives/Panel';
 import type { Notify } from '../primitives/Toast';
 import type { CoverageState, ManuscriptChapter, TrackItem } from '../../types';
 import type { WorkspaceAlignmentResult, WorkspaceToken } from '../../api/contracts/workspace';
+import { CommandScope } from '../../input/router';
+import { useCommand } from '../../input/useCommand';
 import { buildFlags, type Flag } from './flags';
 import { buildPlaylist } from './playlist';
 import { buildTokenIndex, currentTokenIndex, seekTargetForToken } from './tokenAtTime';
@@ -145,126 +147,102 @@ export function WorkspacePage({ notify }: { notify: Notify }) {
     [alignment?.paragraphs, alignment?.tokens, currentToken, seekToken],
   );
 
-  useEffect(() => {
-    const onKeyDown = (event: KeyboardEvent) => {
-      const target = event.target as HTMLElement | null;
-      if (target && ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName)) return;
-      switch (event.key) {
-        case ' ':
-          event.preventDefault();
-          player.togglePlay();
-          break;
-        case 'ArrowLeft':
-          event.preventDefault();
-          stepWord(-1);
-          break;
-        case 'ArrowRight':
-          event.preventDefault();
-          stepWord(1);
-          break;
-        case 'ArrowUp':
-          event.preventDefault();
-          stepParagraph(-1);
-          break;
-        case 'ArrowDown':
-          event.preventDefault();
-          stepParagraph(1);
-          break;
-        case '[':
-          selectFlag(Math.max(0, (selectedFlagIndex ?? 0) - 1));
-          break;
-        case ']':
-          selectFlag(selectedFlagIndex === undefined ? 0 : Math.min(flags.length - 1, selectedFlagIndex + 1));
-          break;
-        default:
-          break;
-      }
-    };
-    window.addEventListener('keydown', onKeyDown);
-    return () => window.removeEventListener('keydown', onKeyDown);
-  }, [player, stepWord, stepParagraph, selectFlag, selectedFlagIndex, flags.length]);
+  // workspace.* page commands (input-commands-and-pedals.prd.md Phase 3), replacing the old window `keydown`
+  // listener: the registry (src/input/) applies the "not while typing" and modifier rules once, in one place,
+  // instead of this page repeating them. `workspace.play` is `noisy: true` in the catalog (silenced while the DAW
+  // records, Phase 10 - not this phase's job to wire that up).
+  useCommand('workspace.play', () => player.togglePlay());
+  useCommand('workspace.word.prev', () => stepWord(-1));
+  useCommand('workspace.word.next', () => stepWord(1));
+  useCommand('workspace.paragraph.prev', () => stepParagraph(-1));
+  useCommand('workspace.paragraph.next', () => stepParagraph(1));
+  useCommand('workspace.flag.prev', () => selectFlag(Math.max(0, (selectedFlagIndex ?? 0) - 1)));
+  useCommand('workspace.flag.next', () => selectFlag(selectedFlagIndex === undefined ? 0 : Math.min(flags.length - 1, selectedFlagIndex + 1)));
 
+  let content: ReactNode;
   if (loadError) {
-    return (
+    content = (
       <p role="alert" className="text-sm" style={{ color: 'var(--danger-text)' }}>
         {loadError}
       </p>
     );
+  } else if (chapter === undefined) {
+    content = null; // still loading, or the id doesn't resolve to a chapter
+  } else {
+    content = (
+      <div className="mx-auto max-w-4xl space-y-4">
+        <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
+          <Link to="/tracks">Tracks</Link> <span aria-hidden="true">&rsaquo;</span> Chapter workspace
+        </p>
+        <div className="flex flex-wrap items-start justify-between gap-2">
+          <Heading title={chapterName(chapter)} />
+          <div className="flex flex-wrap items-center gap-2 text-sm" style={{ color: 'var(--text-muted)' }}>
+            {alignment && <span className="section-label">{CHECK_STATE_LABEL[alignment.state]}</span>}
+            {alignment?.basis && <span>as of last save {formatWhen(alignment.basis.modifiedAt)}</span>}
+            <Button variant="ghost" onClick={() => setChecking(true)}>
+              {alignment?.state === 'never' ? 'Check recording' : 'Check again'}
+            </Button>
+          </div>
+        </div>
+        {alignment?.needsAlignAgain && (
+          <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
+            This chapter was last checked before the workspace could read its word alignment. Run Check again to see flags and word-by-word playback.
+          </p>
+        )}
+        {!linkedTrackGuid && (
+          <Panel title="No linked track">
+            <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
+              This chapter isn&rsquo;t linked to a REAPER track yet. Link one from the Chapter links table on Tracks, then reopen this workspace.
+            </p>
+          </Panel>
+        )}
+        {alignment?.state === 'never' && (
+          <Panel>
+            <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
+              This chapter hasn&rsquo;t been checked yet. Run Check recording to see its script, follow along, and see any flags.
+            </p>
+          </Panel>
+        )}
+        {alignment && alignment.state !== 'never' && (
+          <>
+            <TransportBar player={player} />
+            <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_18rem]">
+              <ScriptView
+                paragraphs={alignment.paragraphs}
+                tokens={alignment.tokens}
+                extras={alignment.extras}
+                currentTokenIndex={currentToken}
+                isPlaying={player.isPlaying}
+                onSeekToken={seekToken}
+              />
+              <FlagsPanel
+                flags={flags}
+                tokens={alignment.tokens}
+                selectedIndex={selectedFlagIndex}
+                onSelect={selectFlag}
+                onPlayFromFlag={(flag: Flag) => flag.seekTokenIndex !== undefined && seekToken(alignment.tokens[flag.seekTokenIndex])}
+              />
+            </div>
+          </>
+        )}
+        {checking && (
+          <RecordingCheck
+            chapter={chapter}
+            coverage={coverage}
+            notify={notify}
+            close={() => {
+              setChecking(false);
+              loadAlignment();
+            }}
+            goToParagraph={(index) => {
+              const targetId = chapter.paragraphIds?.find((entry) => entry.index === index)?.id;
+              if (targetId) document.getElementById(`workspace-paragraph-${targetId}`)?.scrollIntoView?.({ block: 'center' });
+            }}
+          />
+        )}
+      </div>
+    );
   }
 
-  if (chapter === undefined) return null; // still loading, or the id doesn't resolve to a chapter
-
-  return (
-    <div className="mx-auto max-w-4xl space-y-4">
-      <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
-        <Link to="/tracks">Tracks</Link> <span aria-hidden="true">&rsaquo;</span> Chapter workspace
-      </p>
-      <div className="flex flex-wrap items-start justify-between gap-2">
-        <Heading title={chapterName(chapter)} />
-        <div className="flex flex-wrap items-center gap-2 text-sm" style={{ color: 'var(--text-muted)' }}>
-          {alignment && <span className="section-label">{CHECK_STATE_LABEL[alignment.state]}</span>}
-          {alignment?.basis && <span>as of last save {formatWhen(alignment.basis.modifiedAt)}</span>}
-          <Button variant="ghost" onClick={() => setChecking(true)}>
-            {alignment?.state === 'never' ? 'Check recording' : 'Check again'}
-          </Button>
-        </div>
-      </div>
-      {alignment?.needsAlignAgain && (
-        <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
-          This chapter was last checked before the workspace could read its word alignment. Run Check again to see flags and word-by-word playback.
-        </p>
-      )}
-      {!linkedTrackGuid && (
-        <Panel title="No linked track">
-          <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
-            This chapter isn&rsquo;t linked to a REAPER track yet. Link one from the Chapter links table on Tracks, then reopen this workspace.
-          </p>
-        </Panel>
-      )}
-      {alignment?.state === 'never' && (
-        <Panel>
-          <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
-            This chapter hasn&rsquo;t been checked yet. Run Check recording to see its script, follow along, and see any flags.
-          </p>
-        </Panel>
-      )}
-      {alignment && alignment.state !== 'never' && (
-        <>
-          <TransportBar player={player} />
-          <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_18rem]">
-            <ScriptView
-              paragraphs={alignment.paragraphs}
-              tokens={alignment.tokens}
-              extras={alignment.extras}
-              currentTokenIndex={currentToken}
-              isPlaying={player.isPlaying}
-              onSeekToken={seekToken}
-            />
-            <FlagsPanel
-              flags={flags}
-              tokens={alignment.tokens}
-              selectedIndex={selectedFlagIndex}
-              onSelect={selectFlag}
-              onPlayFromFlag={(flag: Flag) => flag.seekTokenIndex !== undefined && seekToken(alignment.tokens[flag.seekTokenIndex])}
-            />
-          </div>
-        </>
-      )}
-      {checking && (
-        <RecordingCheck
-          chapter={chapter}
-          coverage={coverage}
-          notify={notify}
-          close={() => {
-            setChecking(false);
-            loadAlignment();
-          }}
-          goToParagraph={(index) => {
-            const targetId = chapter.paragraphIds?.find((entry) => entry.index === index)?.id;
-            if (targetId) document.getElementById(`workspace-paragraph-${targetId}`)?.scrollIntoView?.({ block: 'center' });
-          }}
-        />
-      )}
-    </div>
-  );
+  return <CommandScope kind="page">{content}</CommandScope>;
 }
