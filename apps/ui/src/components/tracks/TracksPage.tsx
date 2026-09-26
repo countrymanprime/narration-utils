@@ -276,7 +276,7 @@ export function TracksPage({ dawFileLinked, onLinkDawFile, notify }: { dawFileLi
           </ul>
         </>
       )}
-      {project && <ChapterLinksTable tracks={project.tracks} refreshKey={chapterSyncRefresh} />}
+      {project && <ChapterLinksTable tracks={project.tracks} refreshKey={chapterSyncRefresh} notify={notify} />}
     </div>
   );
 }

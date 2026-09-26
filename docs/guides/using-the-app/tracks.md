@@ -103,8 +103,8 @@ has changed since you last saved, the dialog says so and changes nothing.
 ## Linking chapters to tracks
 
 Below the track list, Chapter links shows every narration chapter with the track it's confirmed
-to, so checks that need to know "which audio is this chapter" (a future Home row, an evidence
-view) don't guess by name. A chapter starts **Not linked**; choose a track and press Confirm to
+to, so checks that need to know "which audio is this chapter" (the [editing check](#editing-check)
+below, an evidence view) don't guess by name. A chapter starts **Not linked**; choose a track and press Confirm to
 link it. A confirmed chapter shows **Linked** with the track's name, and Change or Clear. Change
 replaces the chapter's link, so a chapter is never left linked to two tracks; a track already
 linked to another chapter moves to this one. Clear removes every link the chapter has. If the
@@ -113,6 +113,39 @@ missing** until it's relinked or cleared. These links are kept in the app's own 
 change the REAPER project.
 
 ![Tracks page chapter links list with one chapter confirmed to a track](../../images/ui/tracks-chapter-links.webp)
+
+A linked chapter's row also has **Open workspace**, into the [chapter workspace](workspace.md): one
+screen to listen to the chapter against its script and see where the recording check found a problem.
+
+## Editing check
+
+Each chapter's row also has **Editing check…**, opening a panel over the same list: whether
+empty space, clicks and breaths still need trimming out. The same panel opens from
+[Home](home.md#stage-suggestions)'s evidence popover, under **Why**, when the editing signal
+names it as the way to resolve what's unknown.
+
+The panel never starts a check on its own: opening it only reads what the last check already
+found. **Check editing** (**Check again** once one has run) runs the scan with real progress and
+**Cancel**; items already checked are cached, so re-checking after a small edit is fast. Every
+result carries the caveat "Analysis of source audio; take FX, item gain and fades are not
+applied", since REAPER's own processing isn't part of what's analyzed.
+
+Each of the three classes — Empty space, Click, Breath — has its own state: **Met** (checked, no
+open candidate remains), **Not met** (one or more open candidates), or **Can't tell yet** with why
+(not checked yet, changed since the last check, no track linked, a maximum gap not set in
+[Settings](settings.md), an item this build can't analyze, or the check running). Click and
+breath read "Not yet validated on the corpus" until their detectors are validated on a labeled
+corpus — a class this build cannot vouch for is never shown as done.
+
+An open candidate lists its time range, class, confidence and reason, with **Hear** to play its
+own source audio (a short lead-in included) without touching REAPER, and **Accept**, **Dismiss**
+or **Defer** to record your decision — the same review the [Review](review.md) page uses, so a
+decision here also shows up there. **Go to in REAPER** and **Loop in REAPER** move REAPER's
+cursor or loop the candidate's spot when REAPER is connected; without a connection the buttons
+are off and say why, and the rest of the panel works the same either way.
+
+If the chapter isn't linked to a track yet, the panel offers the same track picker the recording
+check does, right in place.
 
 ## Chapter sync
 
@@ -135,4 +168,4 @@ changes, and a chapter you link yourself is never overwritten.
 
 ---
 
-[← Teleprompter](teleprompter.md) · [Index](README.md) · [Review →](review.md)
+[← Teleprompter](teleprompter.md) · [Index](README.md) · [Chapter workspace →](workspace.md)

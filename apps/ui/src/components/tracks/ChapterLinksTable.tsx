@@ -1,8 +1,12 @@
 import { useCallback, useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useApi } from '../../api/ApiContext';
+import { EditingCheckPanel } from '../editing/EditingCheckPanel';
 import { MappingConfirm } from '../mapping/MappingConfirm';
+import { Button } from '../primitives/Button';
 import { Panel } from '../primitives/Panel';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../primitives/Table';
+import type { Notify } from '../primitives/Toast';
 import { chapterTrackRows, type ChapterLinkState } from './chapterTrackRows';
 import type { ManuscriptChapter, Track, TrackMapping } from '../../types';
 
@@ -22,12 +26,13 @@ const STATE_COLOR: Record<ChapterLinkState, string> = {
 // picture" list lives here, beside the per-chapter inline prompt used wherever a check needs it). It shows every
 // narration chapter whether or not it has a confirmed link, so an unlinked chapter and a link pointing at a track
 // that no longer exists are both visible in one place, not just the one chapter a narrator happens to be checking.
-export function ChapterLinksTable({ tracks, refreshKey }: { tracks: Track[]; refreshKey?: number }) {
+export function ChapterLinksTable({ tracks, refreshKey, notify }: { tracks: Track[]; refreshKey?: number; notify: Notify }) {
   const api = useApi();
   const [chapters, setChapters] = useState<ManuscriptChapter[]>([]);
   const [mappings, setMappings] = useState<TrackMapping[]>([]);
   const [error, setError] = useState('');
   const [busyChapterId, setBusyChapterId] = useState('');
+  const [editingChecking, setEditingChecking] = useState<ManuscriptChapter>();
 
   const reload = useCallback(async () => {
     const [nextChapters, mapping] = await Promise.all([api.manuscriptChapters(), api.chapterTrackMapList()]);
@@ -86,6 +91,8 @@ export function ChapterLinksTable({ tracks, refreshKey }: { tracks: Track[]; ref
           <TableRow>
             <TableHeader>Chapter</TableHeader>
             <TableHeader>Status</TableHeader>
+            <TableHeader hiddenLabel="Workspace" />
+            <TableHeader hiddenLabel="Editing check" />
             <TableHeader hiddenLabel="Link" />
           </TableRow>
         </TableHead>
@@ -94,6 +101,18 @@ export function ChapterLinksTable({ tracks, refreshKey }: { tracks: Track[]; ref
             <TableRow key={row.chapter.id}>
               <TableCell className="font-medium">{row.chapter.title}</TableCell>
               <TableCell style={{ color: STATE_COLOR[row.state] }}>{STATE_LABEL[row.state]}</TableCell>
+              <TableCell>
+                {row.state === 'linked' && (
+                  <Link className="text-sm font-semibold underline" to={`/tracks/chapter/${encodeURIComponent(row.chapter.id)}`}>
+                    Open workspace
+                  </Link>
+                )}
+              </TableCell>
+              <TableCell>
+                <Button variant="ghost" className="text-sm" onClick={() => setEditingChecking(row.chapter)}>
+                  Editing check…
+                </Button>
+              </TableCell>
               <TableCell>
                 <MappingConfirm
                   chapterTitle={row.chapter.title}
@@ -109,13 +128,14 @@ export function ChapterLinksTable({ tracks, refreshKey }: { tracks: Track[]; ref
           ))}
           {rows.length === 0 && (
             <TableRow>
-              <TableCell colSpan={3} className="text-sm" style={{ color: 'var(--text-muted)' }}>
+              <TableCell colSpan={5} className="text-sm" style={{ color: 'var(--text-muted)' }}>
                 No chapters to link yet.
               </TableCell>
             </TableRow>
           )}
         </TableBody>
       </Table>
+      {editingChecking && <EditingCheckPanel key={editingChecking.id} chapter={editingChecking} notify={notify} close={() => setEditingChecking(undefined)} />}
     </Panel>
   );
 }

@@ -1297,7 +1297,13 @@ export function createMockApi(
     },
     seed: initial.coverage,
   });
-  const workspace = createWorkspaceMock({ chapters: () => chapters, paragraphs: () => paragraphs, coverageResult: peekCoverage });
+  const workspace = createWorkspaceMock({
+    chapters: () => chapters,
+    paragraphs: () => paragraphs,
+    coverageResult: peekCoverage,
+    project: WIRE_TRACKS_PROJECT,
+    mappings: () => chapterTrackMappings,
+  });
   const preview = createPreviewMock({ chapters: () => chapters, paragraphs: () => paragraphs }, initial.preview);
   const stages = createStagesMock({
     ready: manuscriptReady,
@@ -2442,6 +2448,10 @@ export function createMockApi(
     ...deliveryProfiles,
     ...diagnostics,
     ...editing,
+    // Reads the same findings store FindingsReview decides against (apps/desktop/internal/editing/scan.go's
+    // Candidates), not editingMock's own state: a candidate is seeded like any other finding (`initial.findings`,
+    // editingCandidateFor in mockFixtures.ts), so Accept/Dismiss/Defer on it go through the real review binding.
+    editingCandidates: async (chapterId) => (await findings.findingsList({ analyzer: 'editing', chapterId })).findings,
     takeReviewCreateTake: async (request) => ({
       targetItemGuid: request.targetItemGuid,
       newTakeGuid: '{99999999-0000-4000-8000-000000000099}',

@@ -1341,4 +1341,45 @@ export function takeReviewPickupFor(chapterId: string, chapterTitle: string): Fi
   };
 }
 
+/** One unreviewed empty-space candidate for chapterId (editing-readiness-analysis.prd.md Phase 3, matching
+ * apps/desktop/internal/editing.EmptySpaceFinding's shape exactly): a gap between two phrases past the narrator's
+ * maximum gap, with a source-relative range a Hear control can play. `index` spaces two or more candidates out in
+ * time so the panel's earliest-first order is visible. */
+export function editingCandidateFor(chapterId: string, chapterTitle: string, index = 0): Finding {
+  const start = 12.4 + index * 20;
+  const length = 1.8 + index * 0.4;
+  return {
+    schema_version: 1,
+    id: `editing-empty-space-${chapterId}-${index}`,
+    analyzer: 'editing',
+    project: { path: 'C:/Projects/Alice-in-Wonderland/Alice.rpp' },
+    source: {
+      file: `C:/Projects/Alice-in-Wonderland/media/${chapterId}_take1.wav`,
+      item_guid: `{33333333-0000-0000-0000-${chapterId.replace(/\D/g, '').padStart(12, '0')}}`,
+      take_guid: `{44444444-0000-0000-0000-${chapterId.replace(/\D/g, '').padStart(12, '0')}}`,
+    },
+    time_range: { start, end: start + length, source_start: start, source_end: start + length },
+    manuscript: { chapter_id: chapterId, chapter_title: chapterTitle },
+    category: 'silence_cleanup',
+    severity: 'info',
+    confidence: 0.6,
+    confidence_reason: 'an empty-space candidate against the narrator’s own threshold, not a calibrated score',
+    evidence_version: `sha256:editing-empty-space-${chapterId}-${index}`,
+    evidence: {
+      class: 'silence',
+      boundary: 'gap',
+      duration_seconds: length,
+      max_gap_seconds: 1.2,
+      item_guids: [`{33333333-0000-0000-0000-${chapterId.replace(/\D/g, '').padStart(12, '0')}}`],
+      reason: `a gap candidate: ${length.toFixed(2)} s of empty space (between two items); it is cut only once you approve it`,
+    },
+    suggested_action: {
+      kind: 'trim_empty_space',
+      parameters: { start_seconds: start, end_seconds: start + length, boundary: 'gap' },
+      requires_confirmation: true,
+    },
+    review: { status: 'unreviewed' },
+  };
+}
+
 export const wireClone = <T>(value: T): T => structuredClone(value);

@@ -6,7 +6,17 @@ import { Button } from '../primitives/Button';
 import { SlideOver } from '../primitives/SlideOver';
 import { formatWhen, paragraphRefs } from '../home/recordingCheckText';
 import type { StageDecision, StagesState } from './useStageRecommendations';
-import { CAUSE_TEXT, SIGNAL_STATE_LABEL, type StageCauseAction, evidenceValue, formatAge, signalName, stageLabel, verdictSentence } from './stageText';
+import {
+  SIGNAL_STATE_LABEL,
+  type StageCauseAction,
+  causeText,
+  evidenceValue,
+  formatAge,
+  isEditingSignal,
+  signalName,
+  stageLabel,
+  verdictSentence,
+} from './stageText';
 
 type Props = {
   open: boolean;
@@ -21,6 +31,9 @@ type Props = {
   onCheckNow: () => void;
   /** Opens the chapter's recording check, which runs a check, links a track or offers the Whisper model. */
   onOpenCheck: () => void;
+  /** Opens the chapter's editing check (editing-readiness-analysis.prd.md Phase 7), for an editing signal's own
+   * `cause.resolve === 'check'` - a bare `onOpenCheck` would open the recording check instead, the wrong panel. */
+  onOpenEditingCheck: () => void;
   /** Opens the manuscript at a paragraph (its index in the whole manuscript). */
   goToParagraph: (index: number) => void;
 };
@@ -61,6 +74,7 @@ function EvidenceBody({
   onDecide,
   onCheckNow,
   onOpenCheck,
+  onOpenEditingCheck,
   goToParagraph,
 }: Props & { chapter: ManuscriptChapter; recommendation: StageChapterRecommendation }) {
   const now = Date.now();
@@ -110,6 +124,7 @@ function EvidenceBody({
             now={now}
             onCheckNow={onCheckNow}
             onOpenCheck={onOpenCheck}
+            onOpenEditingCheck={onOpenEditingCheck}
             goToParagraph={goToParagraph}
           />
         ))}
@@ -132,6 +147,7 @@ function SignalCard({
   now,
   onCheckNow,
   onOpenCheck,
+  onOpenEditingCheck,
   goToParagraph,
 }: {
   signal: StageSignal;
@@ -139,9 +155,10 @@ function SignalCard({
   now: number;
   onCheckNow: () => void;
   onOpenCheck: () => void;
+  onOpenEditingCheck: () => void;
   goToParagraph: (index: number) => void;
 }) {
-  const cause = signal.cause ? CAUSE_TEXT[signal.cause] : undefined;
+  const cause = causeText(signal);
   const age = formatAge(signal.basis.projectFileModTime, now);
   return (
     <section className="space-y-2 rounded-md border border-[var(--border)] px-3 py-2" aria-label={signalName(signal)}>
@@ -157,7 +174,12 @@ function SignalCard({
           <p>
             <span className="font-semibold">What to do:</span> {cause.action}
           </p>
-          <CauseAction resolve={cause.resolve} onCheckNow={onCheckNow} onOpenCheck={onOpenCheck} />
+          <CauseAction
+            resolve={cause.resolve}
+            openLabel={isEditingSignal(signal.id) ? 'Open editing check' : 'Open recording check'}
+            onCheckNow={onCheckNow}
+            onOpenCheck={isEditingSignal(signal.id) ? onOpenEditingCheck : onOpenCheck}
+          />
         </div>
       )}
       {signal.evidence.length > 0 && (
@@ -175,11 +197,21 @@ function SignalCard({
   );
 }
 
-function CauseAction({ resolve, onCheckNow, onOpenCheck }: { resolve: StageCauseAction; onCheckNow: () => void; onOpenCheck: () => void }) {
+function CauseAction({
+  resolve,
+  openLabel,
+  onCheckNow,
+  onOpenCheck,
+}: {
+  resolve: StageCauseAction;
+  openLabel: string;
+  onCheckNow: () => void;
+  onOpenCheck: () => void;
+}) {
   if (resolve === 'check')
     return (
       <Button variant="ghost" onClick={onOpenCheck}>
-        Open recording check
+        {openLabel}
       </Button>
     );
   if (resolve === 'tracks')

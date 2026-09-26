@@ -297,6 +297,58 @@ export const STATE_CATALOG: StateEntry[] = [
       'Home, "Evidence changed since you confirmed": when it was confirmed, the check now not met, and Revert to Recording; nothing moved on its own',
   },
 
+  // Editing check panel (editing-readiness-analysis.prd.md Phase 7), opened from SR's evidence popover's "Open
+  // editing check" (?mockEditingSignal=, main.tsx). The panel never starts a scan on its own (Q9), so every state but
+  // running/partial is reached with no click at all, straight from the signal or the seeded findings.
+  {
+    page: 'home',
+    state: 'editing-check-never-checked',
+    description:
+      'Home, editing check panel: empty space "Can’t tell yet: not checked yet", click and breath always "Not yet validated on the corpus" (Phase 4 not shipped), the source-audio caveat, Check editing (?mockEditingSignal=never)',
+  },
+  {
+    page: 'home',
+    state: 'editing-check-running',
+    description:
+      'Home, editing check panel: Check editing pressed, real progress and Cancel over the previous candidates still listed below (?mockEditing=hold&mockEditingSignal=not-met&mockEditingCandidates=1)',
+    ...LIVE_PROGRESS_MOVES_ON,
+  },
+  {
+    page: 'home',
+    state: 'editing-check-partial',
+    description:
+      'Home, editing check panel: Cancel pressed mid-run - the items already checked stay cached, and Check again offers a fresh run (?mockEditing=hold&mockEditingSignal=not-met&mockEditingCandidates=1)',
+  },
+  {
+    page: 'home',
+    state: 'editing-check-complete-candidates',
+    description:
+      'Home, editing check panel: empty space "Not met" with two open candidates, each with time range, confidence, reason, Hear, Accept/Dismiss/Defer (RD-4) and Go to/Loop in REAPER (RD Phase 7) (?mockEditingCandidates=1&mockEditingSignal=not-met)',
+  },
+  {
+    page: 'home',
+    state: 'editing-check-complete-clean',
+    description: 'Home, editing check panel: empty space "Met. Checked; no open empty-space candidate remains." (?mockEditingSignal=met)',
+  },
+  {
+    page: 'home',
+    state: 'editing-check-stale',
+    description:
+      'Home, editing check panel: empty space "Can’t tell yet: Check editing again: since the last check an item on this chapter’s track changed." (?mockEditingSignal=stale)',
+  },
+  {
+    page: 'home',
+    state: 'editing-check-settings-unset',
+    description:
+      'Home, editing check panel: empty space "Can’t tell yet: No maximum gap is set for empty space." with a link to Settings > Editing (?mockEditingSignal=settings-unset)',
+  },
+  {
+    page: 'home',
+    state: 'editing-check-unsupported',
+    description:
+      'Home, editing check panel: empty space "Can’t tell yet: An item on this chapter’s track is not a WAV file the check can analyze." (?mockEditingSignal=unsupported)',
+  },
+
   // Manuscript
   { page: 'manuscript', state: 'reader-text-small', description: 'Manuscript, small text size' },
   { page: 'manuscript', state: 'reader-text-medium', description: 'Manuscript, medium text size' },
@@ -763,6 +815,13 @@ export const STATE_CATALOG: StateEntry[] = [
   },
   {
     page: 'tracks',
+    state: 'editing-check-unmapped',
+    description:
+      'Tracks, the Chapter links list\'s "Editing check…" opened on an unlinked chapter, Check editing pressed: "This chapter can\'t be checked yet" with the inline track-link prompt, same as Home\'s recording check offers (?mockEditingRefusal=unmapped)',
+    ...KEEPS_DESKTOP_SCROLL,
+  },
+  {
+    page: 'tracks',
     state: 'link-chapters-preview',
     description: 'Tracks, "Link chapters" dialog open with one chapter mapped to a track - preview of the items that will be stamped, nothing written yet',
   },
@@ -905,6 +964,48 @@ export const STATE_CATALOG: StateEntry[] = [
     state: 'retake-lanes-error',
     description:
       'Tracks, "Retakes on lanes" dialog when REAPER refuses a pick - "not in fixed item lane mode" inline alert, nothing changed (reached via the ?mockRetakeLanes=error mock seam)',
+  },
+
+  // Chapter workspace (edit-and-proof-workspace.prd.md Phase 2): a chapter route under Tracks, reached from a
+  // linked chapter's "Open workspace" link (captured on the Tracks and Home rows above, not repeated here).
+  {
+    page: 'workspace',
+    state: 'never',
+    description:
+      'Chapter workspace, a chapter with a confirmed track link that has never been checked - "hasn’t been checked yet", Check recording, no player or script yet',
+  },
+  {
+    page: 'workspace',
+    state: 'stale',
+    description:
+      'Chapter workspace, a stale check (an item was trimmed since) - "Check stale" state pill, the script and player still shown from the last check',
+  },
+  {
+    page: 'workspace',
+    state: 'current',
+    description:
+      'Chapter workspace, a current check - header, transport, script with its flags struck through/underlined in place, and the Flags panel with its legend',
+  },
+  {
+    page: 'workspace',
+    state: 'playing',
+    description: 'Chapter workspace, Play pressed - transport shows Pause and a live elapsed readout, the currently spoken word highlighted in the script',
+  },
+  {
+    page: 'workspace',
+    state: 'flag-selected',
+    description: 'Chapter workspace, a flag selected from the Flags panel - its script/heard text and "Play from here" shown in the panel’s detail section',
+  },
+  {
+    page: 'workspace',
+    state: 'standalone',
+    description:
+      'Chapter workspace with REAPER not running - everything here still works (Phase 2 has no REAPER-driven control yet: Go to/Loop are Phase 3), so this is the same page as "current"',
+    sameAs: {
+      of: 'workspace/current',
+      reason:
+        'Phase 2 adds no REAPER-driven control (Go to, Loop are Phase 3), so nothing on this page changes whether or not REAPER is running; the header’s REAPER pill is AppShell’s own, shown on every page.',
+    },
   },
 
   // Teleprompter
