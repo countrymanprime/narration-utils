@@ -103,6 +103,7 @@ Phase counts are the rows of each PRD's phase table.
 | [Studio UI Primitives](studio-ui-primitives.prd.md) | Feature (UI foundation) | 13 | None ([ADR 0360](../adr/0360-studio-primitives-land-as-flat-leaf-files-after-one-token-batch-and-capability-gating-is-a-primitive.md), Proposed) |
 | [Input Commands and Pedals](input-commands-and-pedals.prd.md) | Feature | 12 | None ([ADR 0361](../adr/0361-app-commands-go-through-one-registry-and-keyboard-midi-and-hid-are-input-sources-bound-by-a-remappable-keymap.md), Proposed) |
 | [Production Tracking](production-tracking.prd.md) | Feature | 6 | None; [audiobook studio benchmark](../research/audiobook-studio-benchmark.md) recommendation 5 |
+| [Prep Depth](prep-depth.prd.md) | Feature | 7 | None; [audiobook studio benchmark](../research/audiobook-studio-benchmark.md) recommendation 6 |
 
 ## Replaced briefs
 
