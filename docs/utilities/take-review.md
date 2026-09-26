@@ -16,7 +16,13 @@ makes a take active, moves or deletes audio, or ranks the reads.
 Everything happens on the [Review page](../guides/using-the-app/review.md#pickups-and-duplicates):
 
 1. **Find pickups and duplicates…**: the narrator picks the chapter track and at most one pickup addition, a pickup track
-   or a stretch of the timeline. The scan is a cancellable job with the sidecar's own progress.
+   or a stretch of the timeline. The scan is a cancellable job with the sidecar's own progress. A track named as the
+   chapter's pickup track ("Chapter 6 (pickups)") is recognised by chapter sync and carried on that chapter's row of
+   `chaptersync:state` (`pickupTrackName`), so the dialog can start with it
+   ([DAW chapter-track auto-sync](../prds/daw-chapter-track-auto-sync.prd.md) Phase 8). A finished scan that included
+   the pickup track records it as scanned, and the row's `pickupsChanged` says when the track has changed since, so the
+   scan can be offered again. A pickup track is never the chapter's link: the recording check still reads the chapter
+   track only.
 2. Each group of repeated reads is a finding (category `pickup` or `duplicate_read`) with its reads: range in its own file,
    whole or partial coverage of the span, match quality, exact-copy flag. Go to and Loop per read in REAPER; Audition two
    reads from their raw source over `/media`.

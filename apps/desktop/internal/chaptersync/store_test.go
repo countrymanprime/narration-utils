@@ -88,3 +88,27 @@ func TestTheFingerprintIgnoresTheNameAndFollowsTheItems(t *testing.T) {
 		t.Fatal("a trim did not change the fingerprint")
 	}
 }
+
+func TestAPickupScanIsRememberedPerTrackAndSurvivesASync(t *testing.T) {
+	project := t.TempDir()
+	store := NewStore(project)
+	if scans := store.PickupScans(); len(scans) != 0 {
+		t.Fatalf("a project with no file has scans %#v", scans)
+	}
+	first := time.Date(2026, 9, 25, 10, 0, 0, 0, time.UTC)
+	if err := store.RecordPickupScan(PickupScan{TrackGUID: "{p}", Fingerprint: "one", ScannedAt: first}); err != nil {
+		t.Fatal(err)
+	}
+	if err := store.RecordPickupScan(PickupScan{TrackGUID: "{p}", Fingerprint: "two", ScannedAt: first.Add(time.Hour)}); err != nil {
+		t.Fatal(err)
+	}
+	if err := store.Write(Snapshot{SyncedAt: first.Add(2 * time.Hour)}); err != nil {
+		t.Fatal(err)
+	}
+
+	scans := NewStore(project).PickupScans()
+
+	if len(scans) != 1 || scans[0].Fingerprint != "two" || !scans[0].ScannedAt.Equal(first.Add(time.Hour)) {
+		t.Fatalf("scans = %#v, want the newest scan of the one track", scans)
+	}
+}

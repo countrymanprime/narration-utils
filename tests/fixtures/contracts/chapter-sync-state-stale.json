@@ -16,6 +16,10 @@
       "lastChanged": "2026-09-21T10:00:00Z",
       "newestSourceAt": "2026-09-21T10:00:00Z",
       "origin": "manual",
+      "pickupTrackGuid": "",
+      "pickupTrackName": "",
+      "pickupsChanged": false,
+      "pickupsScannedAt": null,
       "reasons": [
         "item_trimmed"
       ],
