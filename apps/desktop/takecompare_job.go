@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/countrymanprime/narration-utils/shell/internal/findings"
+	"github.com/countrymanprime/narration-utils/shell/internal/runlog"
 	"github.com/countrymanprime/narration-utils/shell/internal/takecompare"
 )
 
@@ -140,8 +141,10 @@ func (h *Host) startTakeComparison(findingID string) (TakeComparisonJob, error) 
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
+	id := fmt.Sprintf("take-comparison-%d", time.Now().UnixNano())
+	ctx = runlog.WithRun(ctx, h.jobRuns.begin(h.runLog, id, jobKindTakeComparison, "finding_id", findingID))
 	job := &takeComparisonJob{
-		id: fmt.Sprintf("take-comparison-%d", time.Now().UnixNano()), phase: "running", started: time.Now(), findingID: findingID, cancel: cancel,
+		id: id, phase: "running", started: time.Now(), findingID: findingID, cancel: cancel,
 		message: fmt.Sprintf("Comparing %d reads.", len(parsed.Reads)),
 	}
 	job.logs = []string{job.message}

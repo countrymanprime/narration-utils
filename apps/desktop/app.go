@@ -140,6 +140,9 @@ type Host struct {
 	// runLog is the structured, leveled run log (docs/prds/tool-run-logging.prd.md, ADR 0251): every host job and
 	// sidecar launch wraps itself in runLog.Begin/Run.End (phase 3); set once in NewHost and never swapped.
 	runLog *runlog.Logger
+	// jobRuns is runLog's other half for most job kinds (runlog_jobs.go): the run each carries from its own start
+	// site to publishJobEnded, which ends it. Its zero value is ready to use, like installJobs.
+	jobRuns jobRuns
 	// takeReviewRunner is a seam for tests: nil means the real
 	// takereview.ProcessRunner built from project config (takereview.go).
 	takeReviewRunner takereview.SidecarRunner
@@ -646,7 +649,7 @@ func (h *Host) coverageLauncherLocked() coverage.Launcher {
 
 func (h *Host) emitTranscript(state map[string]any) {
 	// A run that just ended is reported once, as a job end, before the state event that carries its results (jobs.go).
-	if event, ended := h.transcriptRuns.observe(state); ended {
+	if event, ended := h.transcriptRuns.observe(h.runLog, state); ended {
 		h.publishJobEnded(event)
 	}
 	h.mu.RLock()
@@ -1425,6 +1428,7 @@ func (h *Host) startGuideBuild(rulesOnly bool) (map[string]any, error) {
 		}
 	}
 	job := &workJob{id: fmt.Sprintf("guide-%d", time.Now().UnixNano()), kind: "story_bible", phase: "running", message: "Story Bible rebuild started.", percent: 1, started: time.Now(), report: func(kind, message string) { _ = h.log.Report(kind, message) }}
+	h.jobRuns.begin(h.runLog, job.id, jobKindStoryBible, "rules_only", rulesOnly)
 	h.guideJob = job
 	h.mu.Unlock()
 	// The build runs on the snapshot's Story Bible and session directory, which

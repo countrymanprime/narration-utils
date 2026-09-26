@@ -8,6 +8,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/countrymanprime/narration-utils/shell/internal/runlog"
 	"github.com/countrymanprime/narration-utils/shell/internal/update"
 )
 
@@ -86,7 +87,9 @@ func (h *Host) startUpdateDownload() (map[string]any, error) {
 		parent = context.Background()
 	}
 	ctx, cancel := context.WithCancel(parent)
-	job := &updateJob{id: fmt.Sprintf("update-%d", time.Now().UnixNano()), version: release.Version.String(), phase: updatePhaseDownloading, total: release.Asset.Size, cancel: cancel, started: time.Now(),
+	id := fmt.Sprintf("update-%d", time.Now().UnixNano())
+	ctx = runlog.WithRun(ctx, h.jobRuns.begin(h.runLog, id, jobKindAppUpdate, "version", release.Version.String()))
+	job := &updateJob{id: id, version: release.Version.String(), phase: updatePhaseDownloading, total: release.Asset.Size, cancel: cancel, started: time.Now(),
 		message: "Downloading Narration Utils " + release.Version.String() + "…"}
 	h.updateJob = job
 	stager := h.stager

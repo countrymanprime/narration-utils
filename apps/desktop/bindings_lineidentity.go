@@ -32,7 +32,14 @@ func (h *Host) LineIdentityStamp(rows []LineIdentityStampRow, overwrite bool) (s
 	for _, row := range rows {
 		converted = append(converted, lineidentity.Row{ItemGUID: row.ItemGUID, LineID: row.LineID, Text: row.Text})
 	}
-	return encodeBinding(map[string]any{"status": "started"}, service.Stamp(converted, overwrite))
+	run := h.runLog.Begin("line_identity_stamp", "row_count", len(rows), "overwrite", overwrite)
+	err := service.Stamp(converted, overwrite)
+	if err != nil {
+		run.End("error")
+	} else {
+		run.End("ok")
+	}
+	return encodeBinding(map[string]any{"status": "started"}, err)
 }
 
 func (h *Host) LineIdentityRead() (string, error) {
