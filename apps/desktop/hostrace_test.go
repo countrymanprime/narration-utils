@@ -57,6 +57,7 @@ var stressReaders = []stressReader{
 	{"ManuscriptImportState", func(h *Host) { _, _ = h.ManuscriptImportState("missing") }},
 	{"ManuscriptNotes", func(h *Host) { _, _ = h.ManuscriptNotes("missing") }},
 	{"ManuscriptParagraphs", func(h *Host) { _, _ = h.ManuscriptParagraphs("missing") }},
+	{"PreviewCandidates", func(h *Host) { _, _ = h.PreviewCandidates() }},
 	{"ManuscriptReader", func(h *Host) { _, _ = h.ManuscriptReader() }},
 	{"ManuscriptReaderState", func(h *Host) { _, _ = h.ManuscriptReaderState() }},
 	{"ManuscriptSearch", func(h *Host) { _, _ = h.ManuscriptSearch("word") }},

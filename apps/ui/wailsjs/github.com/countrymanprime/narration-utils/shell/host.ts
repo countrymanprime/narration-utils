@@ -858,6 +858,15 @@ export function PickupsState(): $CancellablePromise<string> {
 }
 
 /**
+ * PreviewCandidates reads up to three ranked five-minute preview candidates from the imported manuscript
+ * (proofing-preview-suggestion.prd.md Phase 1's preview.Suggest over this file's own adapter). It never runs
+ * anything and stores nothing.
+ */
+export function PreviewCandidates(): $CancellablePromise<string> {
+    return $Call.ByID(2923797608);
+}
+
+/**
  * ProjectCreateIn makes a new project.json-manifested folder named name under
  * parent (the PRD's "Visual Studio model": a name plus a location) and
  * attaches it, replacing the old full-path ProjectCreate (PRD W9). An empty
@@ -1403,10 +1412,10 @@ export function WhisperRemove(modelID: string): $CancellablePromise<string> {
 }
 
 /**
- * WorkspaceAlignment reads a chapter's stored word alignment (edit-and-proof-workspace PRD Phase 1, ADR 0242) joined with its current
- * paragraphs and its items' current played ranges (coverage.AlignmentView). It never runs anything (Q14), exactly like CoverageResult,
- * whose state, reasons and basis it shares. A stored report from before the sidecar wrote alignment lines answers needsAlignAgain: true
- * (align-again re-aligns from cached words only, EP3 C).
+ * WorkspaceAlignment reads a chapter's stored word alignment (edit-and-proof-workspace PRD Phase 1, ADR 0242) joined
+ * with its current paragraphs and its items' current played ranges (coverage.AlignmentView). It never runs anything
+ * (Q14), exactly like CoverageResult, whose state, reasons and basis it shares. A stored report from before the
+ * sidecar wrote alignment lines answers needsAlignAgain: true (align-again re-aligns from cached words only, EP3 C).
  */
 export function WorkspaceAlignment(chapterID: string): $CancellablePromise<string> {
     return $Call.ByID(2240146208, chapterID);
