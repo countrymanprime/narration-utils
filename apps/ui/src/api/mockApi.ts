@@ -1800,6 +1800,8 @@ export function createMockApi(
     reportClientDiagnostic: async () => {},
     systemNotify: async () => {},
     systemLookup: async (word) => mockDictionaryLookup(word, dictionaryState),
+    systemOpenLogFolder: async () => {},
+    systemCopyDiagnostics: async () => ({ path: 'C:/Users/narrator/Documents/diagnostics-20260926T120000.jsonl' }),
     manuscriptChapters: async () => {
       await manuscriptReady;
       const readable = Boolean(tracksDiscovery.selected);

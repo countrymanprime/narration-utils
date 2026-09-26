@@ -50,7 +50,7 @@ import (
 // Keep this in lockstep with apps/ui/src/hostApi.ts.  The frontend rejects
 // an older host before bootstrapping so a partial update cannot run against a
 // binding contract it does not understand.
-const hostAPIVersion = 58
+const hostAPIVersion = 59
 
 // Host is the Wails binding boundary. The frontend invokes only this bound
 // object; it never receives a loopback port or an HTTP capability.
@@ -151,7 +151,11 @@ type Host struct {
 	// pickAudioFiles and measureFile are seams for tests (measure_job.go): nil means the operating system's multiple-file
 	// picker and measure.MeasureFile.
 	pickAudioFiles func() ([]string, error)
-	measureFile    measureFileFunc
+	// pickDiagnosticsFolder and diagnosticsNow are seams for tests (diagnostics_export.go): nil means the operating
+	// system's folder picker and time.Now.
+	pickDiagnosticsFolder func() (string, error)
+	diagnosticsNow        func() time.Time
+	measureFile           measureFileFunc
 	// diagnoseFile is the same seam for the diagnostics job: nil means measure.DiagnoseFile.
 	// +checklocks:mu
 	diagnoseFile diagnoseFileFunc
