@@ -1283,6 +1283,18 @@ def diff_and_build_markers(chapter_tokens, chapter_unit_idx, chapter_raw_words, 
         last_u = max(chapter_unit_idx[last_orig], 0)
         covered_range = (first_u, last_u)
 
+    gap_count = sum(1 for tag, i1, i2, _j1, _j2 in opcodes if tag == "delete" and aligned_start is not None and i2 > aligned_start and i1 < aligned_end)
+    log(
+        "aligned the chapter to the recording",
+        level="debug",
+        event="compare.alignment",
+        aligned_start=aligned_start,
+        aligned_end=aligned_end,
+        opcode_count=len(opcodes),
+        gap_count=gap_count,
+        marker_count=len(markers),
+    )
+
     # chapter_unit_idx is indexed by original chapter_tokens position;
     # re-express it in chapter_norm (merged) position, the space the
     # opcodes above actually use, so the audio-line renderer can reuse this

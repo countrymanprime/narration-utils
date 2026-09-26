@@ -7,12 +7,14 @@ progress comes from transcribed seconds (ADR 0015). No Whisper model is needed: 
 a fake, and the real one is driven with a fake model over a generated WAV file."""
 
 import argparse
+import io
 import json
 import math
 import os
 import subprocess
 import sys
 import wave
+from contextlib import redirect_stderr
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -271,6 +273,21 @@ def test_only_the_words_inside_the_played_range_are_used():
 
 # ---------------------------------------------------------------------------
 # the run
+
+
+def test_cache_hits_are_recorded_at_debug_level(tmp_path, cached_project, progress, monkeypatch):
+    monkeypatch.setenv("NARRATION_LOG_LEVEL", "debug")
+    manuscript, manifest = cached_project
+    args = _args(tmp_path, manuscript, manifest)
+
+    buffer = io.StringIO()
+    with redirect_stderr(buffer):
+        mode.run(args, compare, transcriber=_never_transcribe)
+
+    records = [json.loads(line) for line in buffer.getvalue().splitlines() if line]
+    cache_records = [r for r in records if r.get("event") == "coverage.cache"]
+    assert {r["item_index"] for r in cache_records} == {0, 2}
+    assert all(r["hit"] for r in cache_records)
 
 
 def test_cached_words_give_the_report_with_no_transcription(tmp_path, cached_project, progress):
