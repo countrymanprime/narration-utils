@@ -21,9 +21,7 @@ const PERMANENT: Record<string, Reason> = {
 
 // Temporary: today's three command listeners this PRD replaces. Each entry names the phase that migrates it onto
 // `useCommand` and is deleted in that phase's pull request.
-const TEMPORARY: Record<string, Reason> = {
-  'src/components/workspace/WorkspacePage.tsx': { note: 'Space, arrows, [ ] - migrated in Phase 3 (input-commands-and-pedals.prd.md)' },
-};
+const TEMPORARY: Record<string, Reason> = {};
 
 const ALLOWLIST: Record<string, Reason> = { ...PERMANENT, ...TEMPORARY };
 
