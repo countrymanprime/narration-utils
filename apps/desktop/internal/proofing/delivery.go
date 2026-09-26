@@ -319,7 +319,7 @@ func deliveryFingerprint(render RenderStatus, profileKey string, rules []deliver
 func hashText(parts ...string) string {
 	hash := sha256.New()
 	for _, part := range parts {
-		fmt.Fprintf(hash, "%d:%s", len(part), part)
+		_, _ = fmt.Fprintf(hash, "%d:%s", len(part), part)
 	}
 	return hex.EncodeToString(hash.Sum(nil))
 }

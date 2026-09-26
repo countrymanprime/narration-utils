@@ -456,7 +456,7 @@ func (s *Service) Handle(fields []string) {
 			if rows, ok := s.state["rows"].([]map[string]any); ok {
 				for _, row := range rows {
 					if row["id"] == fields[2] {
-						row["markerState"], row["existingMarkerName"] = fields[3], textAt(fields, 4)
+						row["markerState"], row["existingMarkerName"] = textAt(fields, 3), textAt(fields, 4)
 						changed = true
 					}
 				}

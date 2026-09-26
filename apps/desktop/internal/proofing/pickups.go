@@ -94,7 +94,7 @@ func (item PickupItem) Open() bool {
 	if item.Status == findings.StatusDismissed {
 		return false
 	}
-	return !(item.NotInLatestRun && item.ResolvedByRun)
+	return !item.NotInLatestRun || !item.ResolvedByRun
 }
 
 // SourceReport is everything the roll-up knows about one pickup source for
@@ -303,9 +303,9 @@ func rank(cause stages.UnknownCause) int {
 func basisFingerprint(sources []SourceReport) string {
 	hash := sha256.New()
 	for _, source := range sources {
-		fmt.Fprintf(hash, "source\x1f%s\x1f%s\x1f%s\x1f%s\x1f%s\n", source.Analyzer, source.Run.State, source.Run.Cause, strings.Join(distinct(source.Run.RecordIDs), ","), source.Run.Fingerprint)
+		_, _ = fmt.Fprintf(hash, "source\x1f%s\x1f%s\x1f%s\x1f%s\x1f%s\n", source.Analyzer, source.Run.State, source.Run.Cause, strings.Join(distinct(source.Run.RecordIDs), ","), source.Run.Fingerprint)
 		for _, it := range sortedItems(source.Items) {
-			fmt.Fprintf(hash, "item\x1f%s\x1f%s\x1f%t\x1f%t\n", it.FindingID, it.Status, it.NotInLatestRun, it.Open())
+			_, _ = fmt.Fprintf(hash, "item\x1f%s\x1f%s\x1f%t\x1f%t\n", it.FindingID, it.Status, it.NotInLatestRun, it.Open())
 		}
 	}
 	return hex.EncodeToString(hash.Sum(nil))
