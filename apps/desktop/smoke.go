@@ -57,6 +57,7 @@ var smokeReaperFiles = []string{
 	"NarrationUtils_Launcher.lua",
 	"narration_bridge_core.lua",
 	"narration_cleanup.lua",
+	"narration_cleanup_preview.lua",
 	"narration_compare.lua",
 	"narration_line_identity.lua",
 	"narration_navigation.lua",

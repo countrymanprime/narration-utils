@@ -80,6 +80,13 @@ var eventSpecs = map[string]eventSpec{
 	// Phase 23 (reaper-automation-follow-through PRD, ADR 0146): a cleanup launcher opened its dialog. tool is the
 	// allow-listed key the host sent; action is the action-list name REAPER matched (so the narrator sees what opened).
 	"CLEANUP_LAUNCHED": {required: []fieldSpec{text("run"), text("tool"), text("action")}},
+	// Phase 10 (diagnostics-delivery-and-cleanup-tools PRD, ADR 0251): preview_cleanup_markers and apply_cleanup_trims
+	// (narration_cleanup_preview.lua). CLEANUP_STALE is one per candidate whose item, take or cut range no longer
+	// resolves (reason: "item", "take" or "range", like FINDING_STALE); CLEANUP_PREVIEWED and CLEANUP_APPLIED are each
+	// call's one summary event.
+	"CLEANUP_STALE":     {required: []fieldSpec{text("run"), text("findingId"), text("guid"), text("reason")}},
+	"CLEANUP_PREVIEWED": {required: []fieldSpec{text("run"), count("added"), count("existing")}},
+	"CLEANUP_APPLIED":   {required: []fieldSpec{text("run"), count("applied")}},
 	// Phase 25 (reaper-automation-follow-through PRD, ADR 0147): the narrator's retake now plays alone. lineId and
 	// itemGuid name the retake (a line id alone names several items on a lane track); lane is the 0-based lane REAPER
 	// read from the item when the pick ran.
