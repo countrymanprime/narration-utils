@@ -1,14 +1,47 @@
 {
   "$schema": "https://json.schemastore.org/claude-code-settings.json",
-  "extraKnownMarketplaces": {
-    "ecc": {
-      "source": {
-        "source": "git",
-        "url": "https://github.com/affaan-m/ECC.git"
-      }
-    }
+  "extraKnownMarketplaces": { "ecc": { "source": { "source": "git", "url": "https://github.com/affaan-m/ECC.git" } } },
+  "enabledPlugins": { "ecc@ecc": true },
+  "env": { "ECC_GATEGUARD": "off", "ECC_DISABLED_HOOKS": "pre:config-protection" },
+  "permissions": {
+    "allow": [
+      "Bash(pnpm:*)",
+      "Bash(npx playwright:*)",
+      "Bash(node scripts/:*)",
+      "Bash(node --test:*)",
+      "Bash(go:*)",
+      "Bash(uv:*)",
+      "Bash(stylua:*)",
+      "Bash(golangci-lint:*)",
+      "Bash(git status:*)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)",
+      "Bash(git show:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git fetch:*)",
+      "Bash(git pull:*)",
+      "Bash(git merge:*)",
+      "Bash(git checkout:*)",
+      "Bash(git switch:*)",
+      "Bash(git branch:*)",
+      "Bash(git stash:*)",
+      "Bash(git push -u origin:*)",
+      "Bash(git push origin:*)"
+    ],
+    "deny": [
+      "Bash(git push --force:*)",
+      "Bash(git push -f:*)",
+      "Bash(git push --force-with-lease:*)",
+      "Bash(git reset --hard origin:*)",
+      "Bash(git rebase:*)",
+      "Bash(rm -rf /:*)",
+      "Bash(rm -rf ~:*)"
+    ]
   },
-  "enabledPlugins": {
-    "ecc@ecc": true
+  "hooks": {
+    "SessionStart": [
+      { "matcher": "startup", "hooks": [{ "type": "command", "command": "bash \"$CLAUDE_PROJECT_DIR/scripts/cloud/session-start.sh\"", "timeout": 600 }] }
+    ]
   }
 }
