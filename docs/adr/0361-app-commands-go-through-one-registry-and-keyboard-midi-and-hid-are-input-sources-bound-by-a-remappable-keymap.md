@@ -1,6 +1,6 @@
 # 0361. App commands go through one registry, and keyboard, MIDI and HID are input sources bound by a remappable keymap
 
-**Status:** Proposed
+**Status:** Accepted
 **Date:** 2026-09-26
 **Supersedes:**
 **Amends:** [ADR 0196](0196-the-read-aloud-control-bar-lives-in-a-dialog-footer-slot-and-space-plays-or-stops-a-session.md) decision 5. The mechanism changes: Space moves from `ReadingControlBar`'s own listener to the registry. The behaviour stays the same.
