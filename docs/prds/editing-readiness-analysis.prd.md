@@ -194,7 +194,7 @@ Every phase follows the `CLAUDE.md` workflow: find or open the tracking issue fi
 | 3 | Empty-space analysis | Per-item silence runs cached, ledger record, timeline composition, maximum gap and head or tail policy on read, `silence_cleanup` findings, `Editing` settings | complete | 4 | 2, DX-2, DX-4, EL-3, EL-4 | - |
 | 4 | Click and breath validation | Run DX-9 detectors on the corpus, tune, record results, validated-version gate, ledger and cache records for both classes | pending | 3 | 1, 2, DX-9 | - |
 | 5 | Editing check job and bindings | Chapter to track to items, cache-first scan, three ledger records per item, one job with progress and cancel, findings persisted, bindings, host API bump | complete | - | 3, EL-5, RD-1; also 4 for the click and breath classes | - |
-| 6 | Editing signals for SR | Three signals per SR's contract, evidence and basis, edit-type table tests, wiring into SR's engine | pending | 7 | 5, SR-1 | - |
+| 6 | Editing signals for SR | Three signals per SR's contract, evidence and basis, edit-type table tests, wiring into SR's engine | complete | 7 | 5, SR-1 | - |
 | 7 | Editing check panel | Slide-over with run, progress, per-class candidates, hear, dismiss, accept, defer, optional Go to in REAPER, states, docs, screenshots | pending | 6 | 5, RD-4, SR-5, EL-7 | - |
 | 8 | Rendered chapter WAV source (Could) | Whole-file source for a narrator-picked render, per-chapter choice, labeled evidence | pending | - | 5, 6, PS-4 | - |
 

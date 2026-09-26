@@ -148,9 +148,22 @@ func TestConfirmRevertAndDismissThroughTheHost(t *testing.T) {
 	if confirmation, _ := chapter["confirmation"].(map[string]any); confirmation["from"] != "recording" || confirmation["evidenceChanged"] != false {
 		t.Fatalf("the confirmed chapter carries its live confirmation: %v", chapter)
 	}
-	// With only the recording signal wired, editing has no required signal yet (Phase 7), so it is never recommended.
-	if chapter["verdict"] != "none" || chapter["noneReason"] != string(stages.NoneNoRequiredSignals) {
+	// Editing now has three required signals of its own (ER Phase 6): empty-space has never been checked (no editing
+	// scan has run in this fixture) and clicks/breaths can never be met at all while their detector stays
+	// unvalidated (Phase 4 has not run) - so the chapter's own editing evaluation reads unknown, never recommended,
+	// but for a different reason than before this phase landed (there is a required set now; it just cannot be met).
+	if chapter["verdict"] != "unknown" {
 		t.Fatalf("chapter = %v", chapter)
+	}
+	causes, _ := chapter["causes"].([]any)
+	wantCauses := []string{string(stages.CauseMeasurementUnavailable), string(stages.CauseNeverAnalyzed)}
+	gotCauses := make([]string, len(causes))
+	for i, c := range causes {
+		gotCauses[i] = c.(string)
+	}
+	slices.Sort(gotCauses)
+	if !slices.Equal(gotCauses, wantCauses) {
+		t.Fatalf("causes = %v, want %v", gotCauses, wantCauses)
 	}
 	pinStages(t, "stages-decision-confirmed", confirmed)
 

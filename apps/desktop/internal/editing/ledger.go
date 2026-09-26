@@ -65,10 +65,11 @@ func WriteLedgerRecord(ledger *evidence.LedgerStore, analyzerID, analyzerVersion
 // ItemStaleness is one item's answer to "is the newest complete record for
 // analyzerID still current" (EL Phase 6's Q4 rule, applied at item scope
 // rather than chapter scope): never (no complete record at all), stale (an
-// item, analyzer or parameter mismatch), or current.
+// item, analyzer or parameter mismatch, named by Reasons), or current.
 type ItemStaleness struct {
-	State  evidence.EvaluatorState
-	Record *evidence.LedgerRecord // nil for StateNever
+	State   evidence.EvaluatorState
+	Reasons []evidence.EvaluatorReason // set only when State is StateStale
+	Record  *evidence.LedgerRecord     // nil for StateNever
 }
 
 // CurrentItemRecord finds the newest complete record of analyzerID scoped to
@@ -87,7 +88,7 @@ func CurrentItemRecord(ledger *evidence.LedgerStore, analyzerID, analyzerVersion
 			continue
 		}
 		result := evidence.EvaluateFingerprints(record, itemFingerprint(in), in.TrackGUID, analyzerVersion, paramHash)
-		return ItemStaleness{State: result.State, Record: result.Record}, nil
+		return ItemStaleness{State: result.State, Reasons: result.Reasons, Record: result.Record}, nil
 	}
 	return ItemStaleness{State: evidence.StateNever}, nil
 }

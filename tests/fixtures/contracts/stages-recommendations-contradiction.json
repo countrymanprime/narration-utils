@@ -1,7 +1,11 @@
 {
   "chapters": [
     {
-      "causes": [],
+      "basisKey": "0000000000000000000000000000000000000000000000000000000000000000",
+      "causes": [
+        "measurement_unavailable",
+        "never_analyzed"
+      ],
       "chapterId": "c-0001",
       "confirmation": {
         "at": "2026-09-21T10:00:00Z",
@@ -55,11 +59,53 @@
         ]
       },
       "from": "editing",
-      "noneReason": "no_required_signals",
-      "signals": [],
+      "signals": [
+        {
+          "basis": {
+            "fingerprint": "",
+            "ledgerRecordIds": null,
+            "projectFileModTime": "2026-09-21T10:00:00Z"
+          },
+          "cause": "measurement_unavailable",
+          "computedAt": "2026-09-21T10:00:00Z",
+          "evidence": [],
+          "id": "editing.breaths",
+          "reason": "This detector has not been validated on a labeled corpus yet (Phase 4 of the editing-readiness-analysis PRD has not run), so it can never say \"done\" - only \"unknown\".",
+          "stage": "editing",
+          "state": "unknown"
+        },
+        {
+          "basis": {
+            "fingerprint": "",
+            "ledgerRecordIds": null,
+            "projectFileModTime": "2026-09-21T10:00:00Z"
+          },
+          "cause": "measurement_unavailable",
+          "computedAt": "2026-09-21T10:00:00Z",
+          "evidence": [],
+          "id": "editing.clicks",
+          "reason": "This detector has not been validated on a labeled corpus yet (Phase 4 of the editing-readiness-analysis PRD has not run), so it can never say \"done\" - only \"unknown\".",
+          "stage": "editing",
+          "state": "unknown"
+        },
+        {
+          "basis": {
+            "fingerprint": "",
+            "ledgerRecordIds": null,
+            "projectFileModTime": "2026-09-21T10:00:00Z"
+          },
+          "cause": "never_analyzed",
+          "computedAt": "2026-09-21T10:00:00Z",
+          "evidence": [],
+          "id": "editing.empty_space",
+          "reason": "This chapter's editing has not been checked yet.",
+          "stage": "editing",
+          "state": "unknown"
+        }
+      ],
       "target": "proofing",
       "title": "Chapter One",
-      "verdict": "none"
+      "verdict": "unknown"
     }
   ]
 }

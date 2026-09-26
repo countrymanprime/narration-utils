@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/countrymanprime/narration-utils/shell/internal/coverage"
+	"github.com/countrymanprime/narration-utils/shell/internal/editing"
 	"github.com/countrymanprime/narration-utils/shell/internal/manuscript"
 	"github.com/countrymanprime/narration-utils/shell/internal/persist"
 	"github.com/countrymanprime/narration-utils/shell/internal/settings"
@@ -95,9 +96,10 @@ func (h *Host) stageDecision(decide func(context.Context, *stages.Service) (stag
 }
 
 // stagesService builds one project's stage recommendation service in configureLocked: the manuscript's status path, the
-// recording signal over the coverage service, and the coverage service's shared evidence view. unavailable says why a
-// recording check cannot be run here now, read at evaluation time.
-func stagesService(project string, text *manuscript.Service, checks *coverage.Service, store *settings.Store, unavailable func() string, reporter *persist.Reporter) *stages.Service {
+// recording signal over the coverage service, the editing signals over the editing service (ER Phase 6), and the
+// coverage service's shared evidence view (both signal owners read the same saved project, parsed once). unavailable
+// says why a recording check cannot be run here now, read at evaluation time.
+func stagesService(project string, text *manuscript.Service, checks *coverage.Service, editingChecks *editing.Service, store *settings.Store, unavailable func() string, reporter *persist.Reporter) *stages.Service {
 	return stages.NewService(stages.Config{
 		Project:        project,
 		LoadManuscript: text.Load,
@@ -106,10 +108,13 @@ func stagesService(project string, text *manuscript.Service, checks *coverage.Se
 			_, err := text.SetChapterStatus(chapterID, string(status))
 			return err
 		},
-		Providers: []stages.Provider{coverage.NewSignalProvider(checks, coverage.SignalSources{
-			Settings:    func() coverage.Settings { return coverageSettings(store) },
-			Unavailable: unavailable,
-		})},
+		Providers: []stages.Provider{
+			coverage.NewSignalProvider(checks, coverage.SignalSources{
+				Settings:    func() coverage.Settings { return coverageSettings(store) },
+				Unavailable: unavailable,
+			}),
+			editing.NewSignalProvider(editingChecks),
+		},
 		View:            checks.EvidenceView,
 		Reporter:        reporter,
 		RequiredSignals: func(_ stages.Stage, declared []string) []string { return requiredStageSignals(store, declared) },

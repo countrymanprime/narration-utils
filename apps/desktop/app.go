@@ -459,13 +459,13 @@ func (h *Host) configureLocked(next config) {
 	// A chapter's recordedSeconds is its one confirmed track's recorded length in the saved .rpp, and a reason otherwise
 	// (actual-recorded-column PRD Phase 2); never an estimate.
 	h.manuscript.SetRecordedLengths(recordedLengths(projectFolder, settingsStore, h.manuscript))
-	h.stages = stagesService(h.config.projectFolder, h.manuscript, h.coverage, settingsStore, h.coverageUnavailable(h.config.comparePython, settingsStore), h.persist)
 	h.editing = editing.New(editing.Config{
 		Project:     h.config.projectFolder,
 		ProjectFile: func() (string, error) { return selectedProjectFile(projectFolder, settingsStore) },
 		Policy:      func() editing.Policy { return editingPolicy(settingsStore) },
 		Reporter:    h.persist,
 	}, nil)
+	h.stages = stagesService(h.config.projectFolder, h.manuscript, h.coverage, h.editing, settingsStore, h.coverageUnavailable(h.config.comparePython, settingsStore), h.persist)
 	// The Review page's Go to, Loop and Stop (review dashboard PRD Phase 7, bindings_navigation.go) are one more
 	// consumer of the same client: the navigator's answers arrive through the same Drain the transcript loop pumps.
 	h.navigation = newFindingNavigation(client)
@@ -1240,6 +1240,13 @@ var fieldSchemas = map[string][]fieldSchema{
 	"StageRecommendations": {
 		{"suggestions_enabled", "Suggest stage advances", "bool", nil},
 		{coverage.RecordingSignalID, "Text present in order (recording)", "choice", []string{"required", "ignored"}},
+		// The editing signal PRD's own three ids (ER Phase 6): clicks and breaths can never actually be met yet (Phase
+		// 4, the corpus validation that would gate them, has not run), so they are offered here like any other
+		// declared signal, but choosing "required" for either one, while its detector stays unvalidated, means the
+		// stage can never be recommended - the honest cost of the D22 default, not a bug.
+		{editing.EmptySpaceSignalID, "No empty space left to trim", "choice", []string{"required", "ignored"}},
+		{editing.ClickSignalID, "No clicks left (not yet validated)", "choice", []string{"required", "ignored"}},
+		{editing.BreathSignalID, "No loud breaths left (not yet validated)", "choice", []string{"required", "ignored"}},
 	},
 	// Editing is the editing-readiness analysis's own policy (docs/prds/editing-readiness-analysis.prd.md Phase 3, Q2,
 	// Q3): the empty-space signal's maximum gap and optional head/tail limits. Every one of the three is unset by

@@ -80,7 +80,14 @@ var builtinDefaults = map[string]Values{
 	// StageRecommendations defaults every signal to required and suggestions on (docs/prds/chapter-stage-recommendations.prd.md
 	// Phase 6, Q8): a narrator who never opens this settings page keeps the behaviour Phase 1 shipped with (every declared
 	// signal id required).
-	"StageRecommendations": {"suggestions_enabled": "true", "recording.text_present": "required"},
+	// editing.empty_space/clicks/breaths default to required (Q5 option A: "it matches the product definition").
+	// Clicks and breaths can never actually be met while their detector is unvalidated (Phase 4 has not run), so
+	// this default means the editing stage cannot be recommended until either Phase 4 lands or the narrator sets
+	// editing.clicks/editing.breaths to "ignored" here - the documented cost of Q5's own recommendation, not a bug.
+	"StageRecommendations": {
+		"suggestions_enabled": "true", "recording.text_present": "required",
+		"editing.empty_space": "required", "editing.clicks": "required", "editing.breaths": "required",
+	},
 	// TakeReview holds the pickup/duplicate detector's Q12 thresholds and
 	// Q3 scan-scope settings (internal/takereview), layered like every
 	// other tool here. Thresholds mirror repeats.DefaultThresholds();

@@ -44,7 +44,10 @@
   },
   "StageRecommendations": {
     "suggestions_enabled": "true",
-    "recording.text_present": "required"
+    "recording.text_present": "required",
+    "editing.empty_space": "required",
+    "editing.clicks": "required",
+    "editing.breaths": "required"
   },
   "TakeReview": {
     "full_coverage_threshold": "0.9",

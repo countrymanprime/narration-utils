@@ -311,6 +311,45 @@
       "kind": "choice",
       "label": "Text present in order (recording)",
       "value": ""
+    },
+    {
+      "choices": [
+        "required",
+        "ignored"
+      ],
+      "effectiveSource": "repo_default",
+      "effectiveValue": "required",
+      "isSet": false,
+      "key": "editing.empty_space",
+      "kind": "choice",
+      "label": "No empty space left to trim",
+      "value": ""
+    },
+    {
+      "choices": [
+        "required",
+        "ignored"
+      ],
+      "effectiveSource": "repo_default",
+      "effectiveValue": "required",
+      "isSet": false,
+      "key": "editing.clicks",
+      "kind": "choice",
+      "label": "No clicks left (not yet validated)",
+      "value": ""
+    },
+    {
+      "choices": [
+        "required",
+        "ignored"
+      ],
+      "effectiveSource": "repo_default",
+      "effectiveValue": "required",
+      "isSet": false,
+      "key": "editing.breaths",
+      "kind": "choice",
+      "label": "No loud breaths left (not yet validated)",
+      "value": ""
     }
   ],
   "Teleprompter": [
