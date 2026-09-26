@@ -49,7 +49,7 @@ func (s *Service) SetRunRecorder(record func(CompletedRun)) {
 
 // runPhases are the phases during which a run is under way, so an error then
 // ends a run (an error while exporting markers does not).
-var runPhases = map[string]bool{"preparing": true, "running": true, "need_chapter": true, "inspecting": true}
+var runPhases = map[string]bool{"preparing": true, "running": true, "need_chapter": true, "inspecting": true} // +checklocksignore: read-only data, read under the store lock by chance
 
 // completedRunLocked builds the report of the run in s.state.
 // +checklocksread:s.mu
