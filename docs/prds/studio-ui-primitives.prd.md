@@ -142,7 +142,7 @@ Phases 1, 2, 3, 5, 6, 9, 11 and 12: the tokens, `Kbd`, `StatusBadge`, `LevelMete
 | 3 | StatusBadge | Tone badge (Q6); chapter-status tone map in `src/chapterStatus.ts` | pending | with 2, 4-7, 9, 10 | 1 | - |
 | 4 | StatTile | KPI tile; replaces the local one in `RecordingCheckReport.tsx` | pending | with 2, 3, 5-10 | 1 | - |
 | 5 | LevelMeter | Peak/RMS meter with zones (Q2); `src/levelMeter.ts`; replaces `InputLevelMeter` | pending | with 2-4, 6-10 | 1 | - |
-| 6 | Toolbar | Roving-tabindex toolbar | pending | with 2-5, 7-10 | 1 | - |
+| 6 | Toolbar | Roving-tabindex toolbar | complete | with 2-5, 7-10 | 1 | - |
 | 7 | Timeline | `Timeline` + `TimelineLane`, keyboard-navigable markers (Q5) | pending | with 2-6, 8-10 | 1 | - |
 | 8 | StageGrid | Chapter × stage grid with grid keyboard navigation | pending | with 2, 4-7, 9, 10 | 1, 3 | - |
 | 9 | FocusShell | Full-screen booth layout on the booth surface | pending | with 2-8, 10 | 1 | - |
