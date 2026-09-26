@@ -112,6 +112,7 @@ type Service struct {
 	config Config
 	mu     sync.Mutex
 	// now stands in for time.Now in tests.
+	// +checklocks:mu
 	now func() time.Time
 	// rename is a test seam for the atomic write below; nil is os.Rename.
 	rename func(oldPath, newPath string) error
