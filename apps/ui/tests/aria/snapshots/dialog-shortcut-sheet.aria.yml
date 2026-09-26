@@ -1,0 +1,55 @@
+# The "?" shortcut sheet (input-commands-and-pedals.prd.md Phase 7): a modal dialog named for itself, every catalog
+# command grouped under its scope heading with its bound gestures as key caps, and "Show all shortcuts". The page
+# behind it is aria-hidden.
+- /children: equal
+# The two toast live regions stay in the tree on purpose (see dialog-add-note.aria.yml).
+- main:
+  - alert
+  - status
+- dialog "Keyboard shortcuts":
+  - heading "Keyboard shortcuts" [level=2]
+  - button "Close"
+  - heading "Global" [level=3]
+  - list:
+    - listitem:
+      - text: Back
+      - img "Alt + ←"
+      - img "Browser Back"
+      - img "Ctrl + ["
+    - listitem:
+      - text: Forward
+      - img "Alt + →"
+      - img "Browser Forward"
+      - img "Ctrl + ]"
+    - listitem:
+      - text: Show keyboard shortcuts
+      - img "Shift + /"
+  - heading "Page" [level=3]
+  - list:
+    - listitem:
+      - text: Play or pause the chapter
+      - img "Space"
+    - listitem:
+      - text: Previous word
+      - img "←"
+    - listitem:
+      - text: Next word
+      - img "→"
+    - listitem:
+      - text: Previous paragraph
+      - img "↑"
+    - listitem:
+      - text: Next paragraph
+      - img "↓"
+    - listitem:
+      - text: Previous flag
+      - img "["
+    - listitem:
+      - text: Next flag
+      - img "]"
+  - heading "Booth" [level=3]
+  - list:
+    - listitem:
+      - text: Play or pause reading
+      - img "Space"
+  - button "Show all shortcuts"
