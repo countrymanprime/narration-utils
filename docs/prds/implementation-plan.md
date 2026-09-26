@@ -218,6 +218,8 @@ Later, not in this train: the edit and proof workspace's Phase 10 (merging Telep
 
 ## 8. The lane train (2026-09-24)
 
+> Superseded for scheduling on 2026-09-26 by the [agent train](../operations/agent-train.md): its lanes, usage autoscaling and worker pause protocol replace D41 and D45. D40, D43, D44 and D46 still hold, and the queue below becomes filler behind the benchmark work.
+
 On 2026-09-24 the owner asked for every remaining PRD phase to be planned and run around the clock by parallel sessions that don't collide, with stacked pull requests and paced credit use. This section replaces section 7's scheduling. It adds the older PRDs' remaining phases and fixes section 7's gaps: seven pending phases were in no stream (auto-sync P0, nav P0, the remainders of control-bar P3, title P1 and overflow P1, workspace P0 and P7, delivery P0); two dependencies ran backwards (summary P3 before P1, auto-sync P6's host side before P4); host bindings sat in UI streams; and title P3 was split across two streams. Live state (lane status, queue, holds, the budget, reserved numbers) is on the [Train control issue #509](https://github.com/countrymanprime/narration-utils/issues/509), not in this file, so state updates never cause merge conflicts. Steps only the owner can take are on the [Owner queue issue #510](https://github.com/countrymanprime/narration-utils/issues/510).
 
 ### Owner decisions (2026-09-24, second set)
