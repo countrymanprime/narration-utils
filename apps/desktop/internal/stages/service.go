@@ -38,6 +38,11 @@ type Config struct {
 	// Providers supply the signals; every declared id is required until the
 	// required-check settings exist (Q8).
 	Providers []Provider
+	// RequiredSignals resolves stage's required set from the narrator's
+	// settings, given every id its providers declare for stage (Phase 6). Nil
+	// means every declared id is required (the Q8 default), so a caller not
+	// yet wired to settings keeps the old behaviour.
+	RequiredSignals func(stage Stage, declared []string) []string
 	// View builds the evidence every provider shares, once per evaluation. Nil
 	// gives a view with only the document id and the project folder.
 	View func(ctx context.Context, documentID string) EvidenceView

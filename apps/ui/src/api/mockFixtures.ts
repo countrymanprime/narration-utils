@@ -683,6 +683,13 @@ export const wireSettings = (): Record<string, ScopedSettingField[]> => ({
     // Background checks of changed chapters (daw-chapter-track-auto-sync PRD Phase 7, ADR 0211), on by default.
     bool('background_checks', 'Check changed chapters in the background', 'true'),
   ],
+  // Which signals must be met for a stage suggestion (chapter-stage-recommendations PRD Phase 6, Q8), mirroring the
+  // host's fieldSchemas: the master switch, then one choice per signal a provider declares. Only the recording
+  // signal is wired so far (coverage.RecordingSignalID); the editing and proofing signal phases add their own rows.
+  StageRecommendations: [
+    bool('suggestions_enabled', 'Suggest stage advances', 'true'),
+    choice('recording.text_present', 'Text present in order (recording)', ['required', 'ignored'], 'required'),
+  ],
 });
 export const WIRE_TRACKS_PROJECT: TracksProject = {
   path: 'C:/Projects/Alice-in-Wonderland/Alice.rpp',

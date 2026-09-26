@@ -238,6 +238,31 @@
       "value": ""
     }
   ],
+  "StageRecommendations": [
+    {
+      "choices": null,
+      "effectiveSource": "repo_default",
+      "effectiveValue": "true",
+      "isSet": false,
+      "key": "suggestions_enabled",
+      "kind": "bool",
+      "label": "Suggest stage advances",
+      "value": ""
+    },
+    {
+      "choices": [
+        "required",
+        "ignored"
+      ],
+      "effectiveSource": "repo_default",
+      "effectiveValue": "required",
+      "isSet": false,
+      "key": "recording.text_present",
+      "kind": "choice",
+      "label": "Text present in order (recording)",
+      "value": ""
+    }
+  ],
   "Teleprompter": [
     {
       "choices": null,
