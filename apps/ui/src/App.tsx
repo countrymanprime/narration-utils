@@ -29,11 +29,19 @@ import { ErrorBoundary } from './components/primitives/ErrorBoundary';
 import { DESKTOP_HOST_API_VERSION } from './hostApi';
 import { isWireError } from './api/wire/WireError';
 import { describeApiError } from './api/errorMessage';
+import { useCommand } from './input/useCommand';
 
 // The Settings categories another page can open Settings at, by URL anchor.
 const SETTINGS_ANCHORS: Record<string, string> = { '#credits': 'Credits', '#delivery': 'Delivery', '#teleprompter': 'Teleprompter' };
 
 const LIVE_UPDATES_DEGRADED = 'Some live updates from the desktop host could not be read, so what you see may be out of date. Reopen the page to refresh it.';
+
+// `nav.back`/`nav.forward`'s dialog check (input-commands-and-pedals.prd.md Phase 2): nothing yet wraps an open
+// dialog's content in `<CommandScope kind="dialog">` (router.tsx reserves that for Phase 7's shortcut sheet, not
+// existing dialogs), so the `dialog` scope never actually goes active and the router's own scope resolution would
+// let Back/Forward fire over an open dialog. Kept as the same direct check the old listener made by hand until a
+// dialog claims the scope generically.
+const isModalOpen = () => Boolean(document.querySelector('[role="dialog"], [role="alertdialog"]'));
 
 export function App() {
   // Every build except the demo serves from the site root (base: '/', vite.config.ts), so this is a
@@ -266,46 +274,36 @@ function AppRoutes() {
       .catch(() => {});
   }, [api, hasBootstrap]);
 
-  // Alt+Left/Right, the keyboard's Browser Back/Forward keys, Cmd+[ / Cmd+] on macOS, and the mouse's back
-  // and forward buttons (Phase 1). One listener for the app, mounted once: `mousedown` also calls
-  // `preventDefault` to stop WebView2 acting on the press itself (unverified until Phase 0 runs on
-  // Windows), `mouseup` is where the app actually moves, like a browser's own button-4/5 handling. Nothing
-  // fires while a modal dialog or drawer is open (the page is inert behind it) or when the key was already
-  // handled (`defaultPrevented`).
+  // The mouse's back and forward buttons (Phase 1), unchanged and out of this PRD's scope (a PointerSource is a
+  // later Could): `mousedown` also calls `preventDefault` to stop WebView2 acting on the press itself (unverified
+  // until Phase 0 runs on Windows), `mouseup` is where the app actually moves, like a browser's own button-4/5
+  // handling. Nothing fires while a modal dialog or drawer is open (the page is inert behind it).
   useEffect(() => {
-    const modalOpen = () => Boolean(document.querySelector('[role="dialog"], [role="alertdialog"]'));
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.defaultPrevented || modalOpen()) return;
-      const isBack =
-        event.key === 'BrowserBack' || (event.altKey && !event.ctrlKey && !event.shiftKey && event.key === 'ArrowLeft') || (event.metaKey && event.key === '[');
-      const isForward =
-        event.key === 'BrowserForward' ||
-        (event.altKey && !event.ctrlKey && !event.shiftKey && event.key === 'ArrowRight') ||
-        (event.metaKey && event.key === ']');
-      if (isBack) {
-        event.preventDefault();
-        guardedBackRef.current();
-      } else if (isForward) {
-        event.preventDefault();
-        guardedForwardRef.current();
-      }
-    };
     const onMouseButton = (event: MouseEvent) => {
       if (event.button !== 3 && event.button !== 4) return;
       event.preventDefault();
-      if (event.type !== 'mouseup' || modalOpen()) return;
+      if (event.type !== 'mouseup' || isModalOpen()) return;
       if (event.button === 3) guardedBackRef.current();
       else guardedForwardRef.current();
     };
-    document.addEventListener('keydown', onKeyDown);
     document.addEventListener('mousedown', onMouseButton);
     document.addEventListener('mouseup', onMouseButton);
     return () => {
-      document.removeEventListener('keydown', onKeyDown);
       document.removeEventListener('mousedown', onMouseButton);
       document.removeEventListener('mouseup', onMouseButton);
     };
   }, []);
+
+  // Alt+Left/Right, the keyboard's Browser Back/Forward keys and Cmd+[ / Cmd+] on macOS are `nav.back` and
+  // `nav.forward`, `global` commands in the registry (input-commands-and-pedals.prd.md Phase 2, ADR 0361), replacing
+  // the hand-written `keydown` listener this effect used to add. The registry applies the target guard and resolves
+  // scopes on its own; `isModalOpen()` above is the one piece kept from the old listener (see its comment).
+  useCommand('nav.back', () => {
+    if (!isModalOpen()) guardedBackRef.current();
+  });
+  useCommand('nav.forward', () => {
+    if (!isModalOpen()) guardedForwardRef.current();
+  });
 
   // Recovery for a `popstate` the app did not start (Risk 3: a mouse-button gesture WebView2 acts on
   // despite `preventDefault`, if Phase 0 finds that happens). The move already took effect; if it left
