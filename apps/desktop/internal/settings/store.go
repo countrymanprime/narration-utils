@@ -87,6 +87,8 @@ var builtinDefaults = map[string]Values{
 	"StageRecommendations": {
 		"suggestions_enabled": "true", "recording.text_present": "required",
 		"editing.empty_space": "required", "editing.clicks": "required", "editing.breaths": "required",
+		// proofing.pickups is the always-required proofing signal (proofing-readiness-signals.prd.md Proposed Solution 1).
+		"proofing.pickups": "required",
 	},
 	// TakeReview holds the pickup/duplicate detector's Q12 thresholds and
 	// Q3 scan-scope settings (internal/takereview), layered like every

@@ -294,6 +294,7 @@ const GOLDEN: Record<string, z.ZodType> = {
   'stages-recommendations-recommended.json': stageRecommendationsSchema,
   'stages-recommendations-dismissed.json': stageRecommendationsSchema,
   'stages-recommendations-contradiction.json': stageRecommendationsSchema,
+  'stages-recommendations-proofing.json': stageRecommendationsSchema,
   'stages-decision-confirmed.json': stageDecisionResultSchema,
   'stages-decision-refused.json': stageDecisionResultSchema,
   // Not payloads: the cause and refusal words the host can send, which the schema's lists must equal (the test below).

@@ -37,6 +37,7 @@ const evidenceSchema = z.object({
   file: optionalFromNull(z.string()),
   range: optionalFromNull(z.object({ start: z.number(), end: z.number() })),
   paragraphIds: optionalFromNull(z.array(z.string())),
+  findingId: optionalFromNull(z.string()),
 });
 
 const stageSignalSchema = z.object({

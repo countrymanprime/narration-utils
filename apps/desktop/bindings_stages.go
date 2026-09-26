@@ -7,8 +7,10 @@ import (
 
 	"github.com/countrymanprime/narration-utils/shell/internal/coverage"
 	"github.com/countrymanprime/narration-utils/shell/internal/editing"
+	"github.com/countrymanprime/narration-utils/shell/internal/findings"
 	"github.com/countrymanprime/narration-utils/shell/internal/manuscript"
 	"github.com/countrymanprime/narration-utils/shell/internal/persist"
+	"github.com/countrymanprime/narration-utils/shell/internal/proofing"
 	"github.com/countrymanprime/narration-utils/shell/internal/settings"
 	"github.com/countrymanprime/narration-utils/shell/internal/stages"
 )
@@ -98,8 +100,9 @@ func (h *Host) stageDecision(decide func(context.Context, *stages.Service) (stag
 // stagesService builds one project's stage recommendation service in configureLocked: the manuscript's status path, the
 // recording signal over the coverage service, the editing signals over the editing service (ER Phase 6), and the
 // coverage service's shared evidence view (both signal owners read the same saved project, parsed once). unavailable
-// says why a recording check cannot be run here now, read at evaluation time.
-func stagesService(project string, text *manuscript.Service, checks *coverage.Service, editingChecks *editing.Service, store *settings.Store, unavailable func() string, reporter *persist.Reporter) *stages.Service {
+// says why a recording check cannot be run here now, read at evaluation time. extra are further stage providers (the
+// proofing signals, proofingProvider), appended after the recording and editing ones.
+func stagesService(project string, text *manuscript.Service, checks *coverage.Service, editingChecks *editing.Service, store *settings.Store, unavailable func() string, reporter *persist.Reporter, extra ...stages.Provider) *stages.Service {
 	return stages.NewService(stages.Config{
 		Project:        project,
 		LoadManuscript: text.Load,
@@ -108,17 +111,29 @@ func stagesService(project string, text *manuscript.Service, checks *coverage.Se
 			_, err := text.SetChapterStatus(chapterID, string(status))
 			return err
 		},
-		Providers: []stages.Provider{
+		Providers: append([]stages.Provider{
 			coverage.NewSignalProvider(checks, coverage.SignalSources{
 				Settings:    func() coverage.Settings { return coverageSettings(store) },
 				Unavailable: unavailable,
 			}),
 			editing.NewSignalProvider(editingChecks),
-		},
+		}, extra...),
 		View:            checks.EvidenceView,
 		Reporter:        reporter,
 		RequiredSignals: func(_ stages.Stage, declared []string) []string { return requiredStageSignals(store, declared) },
 	})
+}
+
+// proofingProvider is the proofing stage's provider over the project's findings store
+// (docs/prds/proofing-readiness-signals.prd.md): the pickups roll-up reads the store's transcript_discrepancy,
+// pickup and duplicate_read findings for each chapter in proofing. It reads only; it never starts a comparison or
+// a scan.
+func proofingProvider(store *findings.Store) stages.Provider {
+	config := proofing.Config{}
+	if store != nil {
+		config.Findings = store
+	}
+	return proofing.NewSignalProvider(config)
 }
 
 // requiredStageSignals is the narrator's required set out of declared (Phase 6, Q8): every declared id is

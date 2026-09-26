@@ -32,6 +32,7 @@ import (
 	"github.com/countrymanprime/narration-utils/shell/internal/process"
 	"github.com/countrymanprime/narration-utils/shell/internal/project"
 	"github.com/countrymanprime/narration-utils/shell/internal/projectstate"
+	"github.com/countrymanprime/narration-utils/shell/internal/proofing"
 	"github.com/countrymanprime/narration-utils/shell/internal/recents"
 	"github.com/countrymanprime/narration-utils/shell/internal/renderconfig"
 	"github.com/countrymanprime/narration-utils/shell/internal/retakelanes"
@@ -465,7 +466,8 @@ func (h *Host) configureLocked(next config) {
 		Policy:      func() editing.Policy { return editingPolicy(settingsStore) },
 		Reporter:    h.persist,
 	}, nil)
-	h.stages = stagesService(h.config.projectFolder, h.manuscript, h.coverage, h.editing, settingsStore, h.coverageUnavailable(h.config.comparePython, settingsStore), h.persist)
+	h.stages = stagesService(h.config.projectFolder, h.manuscript, h.coverage, h.editing, settingsStore, h.coverageUnavailable(h.config.comparePython, settingsStore), h.persist,
+		proofingProvider(h.findings))
 	// The Review page's Go to, Loop and Stop (review dashboard PRD Phase 7, bindings_navigation.go) are one more
 	// consumer of the same client: the navigator's answers arrive through the same Drain the transcript loop pumps.
 	h.navigation = newFindingNavigation(client)
@@ -1247,6 +1249,9 @@ var fieldSchemas = map[string][]fieldSchema{
 		{editing.EmptySpaceSignalID, "No empty space left to trim", "choice", []string{"required", "ignored"}},
 		{editing.ClickSignalID, "No clicks left (not yet validated)", "choice", []string{"required", "ignored"}},
 		{editing.BreathSignalID, "No loud breaths left (not yet validated)", "choice", []string{"required", "ignored"}},
+		// The proofing signal PRD's pickup roll-up (PS Phase 1): open Transcript Compare discrepancies, take review
+		// pickups and repeated reads and read-aloud flags for the chapter, with a current comparison to vouch for it.
+		{proofing.PickupsSignalID, "No pickups left to clear up (proofing)", "choice", []string{"required", "ignored"}},
 	},
 	// Editing is the editing-readiness analysis's own policy (docs/prds/editing-readiness-analysis.prd.md Phase 3, Q2,
 	// Q3): the empty-space signal's maximum gap and optional head/tail limits. Every one of the three is unset by

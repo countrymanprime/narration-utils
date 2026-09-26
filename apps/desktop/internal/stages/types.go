@@ -99,6 +99,9 @@ type TimeRange struct {
 // (for example "coverage" or "region" for the recording signal); Label and
 // Value are what the evidence view shows; File, Range and ParagraphIDs are
 // set where they apply so the UI can link to the audio or the text.
+// FindingID, when set, is the findings-store id the entry is about (the
+// proofing pickups roll-up lists each open item by it, so the UI can open it
+// on the Review page).
 type Evidence struct {
 	Kind         string     `json:"kind"`
 	Label        string     `json:"label"`
@@ -106,6 +109,7 @@ type Evidence struct {
 	File         string     `json:"file,omitempty"`
 	Range        *TimeRange `json:"range,omitempty"`
 	ParagraphIDs []string   `json:"paragraphIds,omitempty"`
+	FindingID    string     `json:"findingId,omitempty"`
 }
 
 // Basis is what a signal was computed from. The engine treats every field as

@@ -47,7 +47,8 @@
     "recording.text_present": "required",
     "editing.empty_space": "required",
     "editing.clicks": "required",
-    "editing.breaths": "required"
+    "editing.breaths": "required",
+    "proofing.pickups": "required"
   },
   "TakeReview": {
     "full_coverage_threshold": "0.9",

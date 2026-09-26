@@ -350,6 +350,19 @@
       "kind": "choice",
       "label": "No loud breaths left (not yet validated)",
       "value": ""
+    },
+    {
+      "choices": [
+        "required",
+        "ignored"
+      ],
+      "effectiveSource": "repo_default",
+      "effectiveValue": "required",
+      "isSet": false,
+      "key": "proofing.pickups",
+      "kind": "choice",
+      "label": "No pickups left to clear up (proofing)",
+      "value": ""
     }
   ],
   "Teleprompter": [

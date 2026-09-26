@@ -39,6 +39,8 @@ export type StageEvidence = {
   /** Source-relative seconds. */
   range?: { start: number; end: number };
   paragraphIds?: string[];
+  /** The findings-store id the entry is about (the proofing pickups roll-up lists each open item by it), to open on the Review page. */
+  findingId?: string;
 };
 
 /** What a signal was computed from. `projectFileModTime` is the saved project's modified time, shown as the evidence's age. */

@@ -20,6 +20,10 @@ Each analyzer writes a versioned JSON finding record (schema v1) with these fiel
 | `review` | `unreviewed`, `accepted`, `dismissed`, or `deferred`, with optional narrator note and timestamp. |
 | `not_in_latest_run` | Set only by the store's merge, never by an analyzer: true when the latest run did not reproduce this finding. It is kept, not deleted, for audit. |
 
+### What the review states mean for "is anything still open"
+
+`accepted` means "this is real and needs fixing", not "resolved". A reader that asks whether a chapter has work left (the stage recommendation signals: the editing empty-space signal, `apps/desktop/internal/editing`, and the proofing pickups roll-up, `apps/desktop/internal/proofing`) counts `unreviewed`, `deferred` and `accepted` as open; only `dismissed` is not (D9 of the chapter stage recommendations set; `proofing-readiness-signals.prd.md` Q2). Deferring a finding therefore never clears a chapter. A finding marked `not_in_latest_run` counts as resolved only when the run that did not reproduce it was complete and covered its audio: take review's scans save only after a successful scan of the whole chapter scope, so their absences resolve; a Transcript Compare run covers only the items the narrator selected, so its absences resolve only for findings on an item that a recorded, complete run compared (a run with no ledger record resolves nothing). Otherwise the finding stays open.
+
 ## Identity
 
 A finding's `id` is manuscript-anchored: chapter, paragraph, kind, expected span text, and an ordinal for repeats (`findings.StableID`), so it survives a different ASR model or timing jitter that an audio-anchored id would not. `evidence_version` is a separate value carried alongside the id for exactly the case an id-only scheme cannot express: the same line, re-recorded to say something different.

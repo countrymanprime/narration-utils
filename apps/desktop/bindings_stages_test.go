@@ -11,6 +11,8 @@ import (
 
 	"github.com/countrymanprime/narration-utils/shell/internal/contractfile"
 	"github.com/countrymanprime/narration-utils/shell/internal/coverage"
+	"github.com/countrymanprime/narration-utils/shell/internal/findings"
+	"github.com/countrymanprime/narration-utils/shell/internal/proofing"
 	"github.com/countrymanprime/narration-utils/shell/internal/stages"
 )
 
@@ -109,6 +111,50 @@ func TestAChapterNeverCheckedIsUnknownAndCannotBeConfirmed(t *testing.T) {
 	}
 	pinStages(t, "stages-recommendations-unknown", decodeAnswer(t)(host.StageRecommendations()))
 	pinStages(t, "stages-decision-refused", refused)
+}
+
+// TestAChapterInProofingIsJudgedByThePickupsRollUp is proofing-readiness-signals.prd.md Phase 1 through the host: the
+// proofing provider is registered, a chapter in proofing is judged by proofing.pickups against finalized, and an open
+// take review pickup for the chapter makes it not ready, listed by its finding id.
+func TestAChapterInProofingIsJudgedByThePickupsRollUp(t *testing.T) {
+	host := stagesHost(t, 10)
+	if _, err := host.ManuscriptSetChapterStatus("c-0001", "proofing"); err != nil {
+		t.Fatal(err)
+	}
+	chapter := stageChapters(t, host)[0]
+	if chapter["from"] != "proofing" || chapter["target"] != "finalized" || chapter["verdict"] != "unknown" {
+		t.Fatalf("chapter = %v", chapter)
+	}
+	signal := chapter["signals"].([]any)[0].(map[string]any)
+	if signal["id"] != proofing.PickupsSignalID || signal["cause"] != string(stages.CauseNeverAnalyzed) {
+		t.Fatalf("signal = %v", signal)
+	}
+
+	start, end := 1.0, 2.0
+	pickup := findings.Finding{
+		SchemaVersion: findings.SchemaVersion, ID: "pickup-1", Analyzer: proofing.AnalyzerTakeReview, Category: findings.CategoryPickup,
+		Severity: findings.SeverityWarning, Source: findings.Source{File: "chapter-one.wav"},
+		TimeRange:        &findings.TimeRange{Start: 1, End: 2, SourceStart: &start, SourceEnd: &end},
+		Manuscript:       &findings.Manuscript{ChapterID: "c-0001", Expected: "It was a bright cold day"},
+		ConfidenceReason: "test", Review: findings.ReviewState{Status: findings.StatusUnreviewed},
+	}
+	if _, err := host.services().findings.SaveAnalyzerFindings(proofing.AnalyzerTakeReview, "c-0001", []findings.Finding{pickup}); err != nil {
+		t.Fatal(err)
+	}
+	answer := decodeAnswer(t)(host.StageRecommendations())
+	chapter = answer["chapters"].([]any)[0].(map[string]any)
+	signal = chapter["signals"].([]any)[0].(map[string]any)
+	if chapter["verdict"] != "not_ready" || signal["state"] != "not_met" {
+		t.Fatalf("an open pickup must make the chapter not ready: %v", chapter)
+	}
+	listed := false
+	for _, entry := range signal["evidence"].([]any) {
+		listed = listed || entry.(map[string]any)["findingId"] == "pickup-1"
+	}
+	if !listed {
+		t.Fatalf("the open pickup is not listed by its finding id: %v", signal["evidence"])
+	}
+	pinStages(t, "stages-recommendations-proofing", answer)
 }
 
 func TestTheModelNotInstalledIsAnUnknownCauseOfItsOwn(t *testing.T) {

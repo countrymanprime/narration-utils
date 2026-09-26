@@ -210,7 +210,7 @@ Every phase follows the `CLAUDE.md` workflow: plan (find or open the tracking is
 
 | # | Phase | Description | Status | Parallel | Depends | PRP Plan |
 | --- | --- | --- | --- | --- | --- | --- |
-| 1 | Pickup roll-up signal | Pure Go provider for `proofing.pickups`: source adapters over the findings store, D9 open rule, availability rule, tri-state, evidence and basis; matrix tests | pending | 2, 3, 4 | RD-1, EL-3, SR-1 | - |
+| 1 | Pickup roll-up signal | Pure Go provider for `proofing.pickups`: source adapters over the findings store, D9 open rule, availability rule, tri-state, evidence and basis; matrix tests | complete | 2, 3, 4 | RD-1, EL-3, SR-1 | - |
 | 2 | Comparison identity and currency | Ledger record on Compare ingest from the run manifest; chapter id and `documentId`; item coverage and saved-after-run rule; complete-run resolution | pending | 1, 3, 4 | RD-2, EL-3, EL-1, EL-5 | - |
 | 3 | Proofer marker source | Static `PICKUP:` project-marker read from the saved `.rpp`, chapter attribution, remaining count per RF convention (conditional) | pending | 1, 2, 4 | 1, EL-1, EL-5, RF-8 (convention only) | - |
 | 4 | Render association and measurement record | Sidecar for chapter-to-render association with fingerprints and attestation; measurement stored as a ledger record; `resetDerived` | pending | 1, 2, 3 | DX-1, EL-3, EL-5 | - |

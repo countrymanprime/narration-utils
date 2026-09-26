@@ -1,0 +1,55 @@
+{
+  "chapters": [
+    {
+      "basisKey": "0000000000000000000000000000000000000000000000000000000000000000",
+      "causes": [],
+      "chapterId": "c-0001",
+      "from": "proofing",
+      "signals": [
+        {
+          "basis": {
+            "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+            "ledgerRecordIds": [],
+            "projectFileModTime": "2026-09-21T10:00:00Z"
+          },
+          "computedAt": "2026-09-21T10:00:00Z",
+          "evidence": [
+            {
+              "kind": "source",
+              "label": "Transcript Compare",
+              "value": "no findings for this chapter (its runs are not recorded, so it cannot vouch for the chapter)"
+            },
+            {
+              "kind": "source",
+              "label": "Take review",
+              "value": "1 open, 0 dismissed (its runs are not recorded, so it cannot vouch for the chapter)"
+            },
+            {
+              "kind": "source",
+              "label": "Read-aloud flags",
+              "value": "no findings for this chapter (its runs are not recorded, so it cannot vouch for the chapter)"
+            },
+            {
+              "file": "chapter-one.wav",
+              "findingId": "pickup-1",
+              "kind": "pickup",
+              "label": "Take review: pickup",
+              "range": {
+                "end": 2,
+                "start": 1
+              },
+              "value": "“It was a bright cold day”"
+            }
+          ],
+          "id": "proofing.pickups",
+          "reason": "1 open pickup(s) to clear up (1 Take review). Decide each on the Review page; a dismissal is the only way to close one without re-recording.",
+          "stage": "proofing",
+          "state": "not_met"
+        }
+      ],
+      "target": "finalized",
+      "title": "Chapter One",
+      "verdict": "not_ready"
+    }
+  ]
+}

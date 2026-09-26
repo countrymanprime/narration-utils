@@ -34,6 +34,10 @@ import (
 
 const analyzerName = "transcript-compare"
 
+// AnalyzerName is the analyzer Transcript Compare's findings are saved under,
+// for readers that roll them up (apps/desktop/internal/proofing).
+const AnalyzerName = analyzerName
+
 // The row keys holding the REAPER identity COMPARE_MARKER carries after srcpos (review-dashboard PRD Phase 6): the item,
 // take and track GUIDs as they were when the comparison was prepared. Host-only: Service.snapshotLocked drops them.
 const (
