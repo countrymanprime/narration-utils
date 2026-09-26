@@ -20,6 +20,7 @@ import (
 	"github.com/countrymanprime/narration-utils/shell/internal/takereview"
 	"github.com/countrymanprime/narration-utils/shell/internal/teleprompter"
 	"github.com/countrymanprime/narration-utils/shell/internal/tts"
+	"github.com/countrymanprime/narration-utils/shell/internal/ttsport"
 	"github.com/countrymanprime/narration-utils/shell/internal/whisper"
 )
 
@@ -61,7 +62,7 @@ func ttsCatalogPayload(registry *assetRegistry, store *settings.Store) (map[stri
 		return nil, registry.catalogUnavailable("TTS")
 	}
 	catalog := registry.tts.Catalog()
-	provider, providerSource := store.Effective("Piper", "tts_provider", "piper")
+	provider, providerSource := store.Effective("Piper", "tts_provider", ttsport.Default())
 	voice, voiceSource := store.Effective("Piper", "tts_voice_id", "en_US-ljspeech-high")
 	catalog["provider"] = map[string]any{"id": provider, "effectiveSource": providerSource}
 	catalog["voice"] = map[string]any{"id": voice, "effectiveSource": voiceSource}

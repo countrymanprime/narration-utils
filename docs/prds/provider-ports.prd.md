@@ -167,7 +167,7 @@ ENGINES: Registry[AsrEngine]        # filled by each sidecar's adapters at impor
 | 6 | Batch ASR adapter | faster-whisper adapter; `compare.py`'s `transcribe()` goes through it | pending | with 5, 8 | 3 | - |
 | 7 | TTS and pronunciation contracts (Python) | `ports/tts.py`, `ports/pronunciation.py` (with the `BrowserLookup` role, Should) and their suites | pending | with 3, 4, 9, 10, 12 | 1 | - |
 | 8 | Piper and pronunciation adapters | Piper, CMU and eSpeak adapters; `manuscript_guide.py` selects through the registries | pending | with 5, 6 | 7 | - |
-| 9 | TTS and pronunciation registries (Go) | `internal/ttsport`, `internal/pronunciationport`; setting choices and the catalog payload from them; `Pronounce` checks the source | pending | with 3, 4, 7, 10, 12 | 2 | - |
+| 9 | TTS and pronunciation registries (Go) | `internal/ttsport`, `internal/pronunciationport`; setting choices and the catalog payload from them; `Pronounce` checks the source | complete | with 3, 4, 7, 10, 12 | 2 | - |
 | 10 | Capture contract (Python) | `ports/capture.py`: `CaptureBackend` (`list_devices`, `chunks`) and its suite | pending | with 3, 4, 7, 9, 12 | 1 | - |
 | 11 | dshow capture adapter | `devices.py` and `iter_microphone_chunks` behind a dshow adapter | pending | with 6, 8 | 5, 10 | - |
 | 12 | Capture registry (Go) | `internal/captureport` with the dshow row (Windows) | pending | with 3, 4, 7, 9, 10 | 2 | - |
