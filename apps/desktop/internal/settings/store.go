@@ -71,7 +71,16 @@ var builtinDefaults = map[string]Values{
 	// argument (ADR 0092, W12) does not by itself decide whether the app should always do it.
 	// experimental_reaper_actions defaults off (owner decision D38): the bridge commands not yet verified in a real
 	// REAPER stay off until the narrator turns them on (internal/bridge/actions.go).
-	"DAW": {"auto_start_launcher": "false", "experimental_reaper_actions": "false"},
+	// capability.<name> is the narrator's per-capability toggle for the DAW port (ADR 0300, DAW port PRD P3): auto, on or off,
+	// defaulting auto, which is today's behaviour (on when Supported; when Experimental, on only while
+	// experimental_reaper_actions is on). One row per dawport capability; dawport's toggles_test.go holds the rows to its catalog.
+	"DAW": {"auto_start_launcher": "false", "experimental_reaper_actions": "false",
+		"capability.review": "auto", "capability.navigate": "auto", "capability.markers": "auto", "capability.pickups": "auto",
+		"capability.line_identity": "auto", "capability.render_config": "auto", "capability.cleanup_tools": "auto",
+		"capability.retake_lanes": "auto", "capability.project_state": "auto", "capability.take_create": "auto",
+		"capability.heartbeat": "auto", "capability.project_read": "auto", "capability.track_state": "auto",
+		"capability.record": "auto", "capability.punch": "auto", "capability.regions": "auto", "capability.takes": "auto",
+		"capability.fx_chains": "auto", "capability.silence_trim": "auto", "capability.item_gain": "auto"},
 	// RecordingCoverage mirrors coverage.DefaultSettings: the recording check's shipped values, chosen on synthetic fixtures
 	// and still Proposed and uncalibrated on real narration (docs/utilities/recording-coverage.md, ADR 0132, Q15).
 	// background_checks defaults on (S7 B, D27): it only ever runs with the model installed, on mains power and while

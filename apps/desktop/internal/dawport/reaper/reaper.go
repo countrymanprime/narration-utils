@@ -10,6 +10,7 @@ package reaper
 
 import (
 	"errors"
+	"fmt"
 	"maps"
 
 	"github.com/countrymanprime/narration-utils/shell/internal/bridge"
@@ -53,6 +54,53 @@ var declares = map[dawport.Capability]dawport.Level{
 	dawport.CapItemGain:    dawport.Experimental,
 }
 
+// commandCapability is the capability each of bridge.Actions' commands belongs to. Actions asks its gate about a command by name, and
+// Gate answers with that capability's Allowed, so the resolver decides and the command list stays in bridge. Every command Actions
+// sends has a row, whether or not it is still Experimental: promoting one is a declaration change above, not a change here.
+var commandCapability = map[string]dawport.Capability{
+	"chapter_track_state": dawport.CapTrackState,
+	"arm_only":            dawport.CapRecord,
+	"record_start":        dawport.CapRecord,
+	"record_stop":         dawport.CapRecord,
+	"punch_to":            dawport.CapPunch,
+	"play_position":       dawport.CapPunch,
+	"create_regions":      dawport.CapRegions,
+	"set_active_take":     dawport.CapTakes,
+	"list_fx_chains":      dawport.CapFXChains,
+	"apply_fx_chain":      dawport.CapFXChains,
+	"list_fx":             dawport.CapFXChains,
+	"add_take_fx":         dawport.CapFXChains,
+}
+
+// Gate is bridge.Actions' gate over allowed (the resolver's Allowed): a command is sent only when its capability is allowed. A nil
+// allowed refuses every command as experimental and switched off, and a command with no capability is refused as a bug.
+func Gate(allowed func(dawport.Capability) error) bridge.Gate {
+	return func(command string) error {
+		c, ok := commandCapability[command]
+		if !ok {
+			return fmt.Errorf("the REAPER adapter has no capability for the command %s", command)
+		}
+		if allowed == nil {
+			return bridge.ErrExperimentalOff
+		}
+		return allowed(c)
+	}
+}
+
+// Declaration is REAPER's declaration with no session behind it: an adapter whose Role is always nil. It exists only so the host can
+// build a resolver to gate the bridge.Actions it still makes itself, until the DAW port PRD's P5a moves those consumers onto this
+// package's roles. It is never registered and fails the conformance suite by design; Role[T] on it is a *dawport.RoleError.
+func Declaration() dawport.Adapter { return declaration{} }
+
+type declaration struct{}
+
+func (declaration) Kind() dawport.Kind                             { return dawport.KindREAPER }
+func (declaration) Declares() map[dawport.Capability]dawport.Level { return maps.Clone(declares) }
+func (declaration) Role(dawport.Capability) any                    { return nil }
+func (d declaration) Explain(c dawport.Capability, r dawport.Reason) string {
+	return (*Adapter)(nil).Explain(c, r)
+}
+
 // The host's existing wording for a REAPER that is not connected or not answering (bindings_navigation.go, bridge.ErrUnavailable
 // and bridge.ErrNoAnswer), as whole sentences.
 const (
@@ -85,19 +133,19 @@ func Factory(env dawport.Env) (dawport.Adapter, error) {
 	if env.Log != nil {
 		client.SetLog(env.Log)
 	}
-	return New(client, env.Experimental)
+	return New(client, env.Allowed)
 }
 
-// New wraps client, which must not be nil (ErrNoSession). experimental is the old DAW.experimental_reaper_actions switch that
-// bridge.Actions checks itself until the per-capability toggles take over its gating (PRD P3); nil reads as off.
+// New wraps client, which must not be nil (ErrNoSession). allowed is the resolver's Allowed, asked through Gate before each of
+// bridge.Actions' commands is sent; nil refuses them all as experimental and switched off.
 //
 // Each wrapped consumer subscribes to client here, once. Use one adapter per client.
-func New(client *bridge.Client, experimental func() bool) (*Adapter, error) {
+func New(client *bridge.Client, allowed func(dawport.Capability) error) (*Adapter, error) {
 	if client == nil {
 		return nil, ErrNoSession
 	}
 	navigator := bridge.NewNavigator(client)
-	actions := bridge.NewActions(client, experimental)
+	actions := bridge.NewActions(client, Gate(allowed))
 	heartbeat := daw.NewReachability(client)
 	commands := events{client: client}
 	return &Adapter{

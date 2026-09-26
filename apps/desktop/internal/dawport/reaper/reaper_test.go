@@ -12,6 +12,7 @@ import (
 	"slices"
 	"strconv"
 	"testing"
+	"time"
 
 	"github.com/countrymanprime/narration-utils/shell/internal/bridge"
 	"github.com/countrymanprime/narration-utils/shell/internal/dawport"
@@ -29,10 +30,10 @@ func newClient(t testing.TB) (*bridge.Client, string) {
 	return client, dir
 }
 
-func newAdapter(t testing.TB, experimental func() bool) (*Adapter, string) {
+func newAdapter(t testing.TB, allowed func(dawport.Capability) error) (*Adapter, string) {
 	t.Helper()
 	client, dir := newClient(t)
-	adapter, err := New(client, experimental)
+	adapter, err := New(client, allowed)
 	if err != nil {
 		t.Fatalf("New: %v", err)
 	}
@@ -41,13 +42,13 @@ func newAdapter(t testing.TB, experimental func() bool) (*Adapter, string) {
 
 // The adapter over a session whose directory has gone (REAPER closed and the launcher cleaned up): every command fails to write.
 func TestConformance(t *testing.T) {
-	for name, experimental := range map[string]func() bool{
+	for name, allowed := range map[string]func(dawport.Capability) error{
 		"experimental actions off": nil,
-		"experimental actions on":  func() bool { return true },
+		"experimental actions on":  func(dawport.Capability) error { return nil },
 	} {
 		t.Run(name, func(t *testing.T) {
 			dawporttest.Run(t, func(tb testing.TB) dawport.Adapter {
-				adapter, dir := newAdapter(tb, experimental)
+				adapter, dir := newAdapter(tb, allowed)
 				if err := os.RemoveAll(dir); err != nil {
 					tb.Fatalf("closing the transport: %v", err)
 				}
@@ -228,16 +229,125 @@ func TestTheSynchronousRolesAreTodaysTypes(t *testing.T) {
 
 func typeName(v any) string { return fmt.Sprintf("%T", v) }
 
-// The old switch still gates the experimental commands inside bridge.Actions until P3 moves it to the resolver.
-func TestActionsKeepTheOldSwitch(t *testing.T) {
-	on := false
-	adapter, dir := newAdapter(t, func() bool { return on })
+// bridge.Actions' gating is the resolver's (DAW port PRD P3): with nothing allowed, an experimental command is refused before anything
+// is written, as it was behind the old switch.
+func TestActionsWithNothingAllowedWriteNothing(t *testing.T) {
+	adapter, dir := newAdapter(t, nil)
 	punch := adapter.Role(dawport.CapPunch).(dawport.Puncher)
 	if _, err := punch.PlayPosition(t.Context()); !errors.Is(err, bridge.ErrExperimentalOff) {
-		t.Errorf("PlayPosition with the switch off = %v, want ErrExperimentalOff", err)
+		t.Errorf("PlayPosition with nothing allowed = %v, want ErrExperimentalOff", err)
 	}
 	if entries, _ := os.ReadDir(filepath.Join(dir, "commands")); len(entries) != 0 {
 		t.Errorf("a refused command wrote %d files", len(entries))
+	}
+}
+
+// resolverOver is the composition root's wiring in miniature: the adapter's Env.Allowed is a closure over the resolver built over
+// that same adapter, reading the narrator's settings from values.
+func resolverOver(t *testing.T, values map[string]string) (*dawport.Resolver, *Adapter, string) {
+	t.Helper()
+	var resolver *dawport.Resolver
+	adapter, dir := newAdapter(t, func(c dawport.Capability) error { return resolver.Allowed(c) })
+	effective := func(tool, key, fallback string) (string, string) {
+		if v, ok := values[tool+"."+key]; ok {
+			return v, "global"
+		}
+		return fallback, "hardcoded"
+	}
+	resolver = dawport.NewResolver(dawport.ResolverConfig{
+		Adapter:      adapter,
+		Runtime:      adapter.Runtime,
+		Toggle:       dawport.SettingsToggles(effective),
+		Experimental: dawport.SettingsExperimental(effective),
+	})
+	return resolver, adapter, dir
+}
+
+func commandsWritten(t *testing.T, dir string) int {
+	t.Helper()
+	entries, _ := os.ReadDir(filepath.Join(dir, "commands"))
+	return len(entries)
+}
+
+// The PRD's hypothesis: turning punch on alone in Settings lets punch's commands out and nothing else.
+func TestTurningPunchOnAloneSendsPunchAndNothingElse(t *testing.T) {
+	_, adapter, dir := resolverOver(t, map[string]string{"DAW.capability.punch": "on"})
+	fx := adapter.Role(dawport.CapFXChains).(dawport.FXManager)
+	if _, err := fx.ListFXChains(t.Context()); !errors.Is(err, bridge.ErrExperimentalOff) {
+		t.Fatalf("ListFXChains with only punch on = %v, want ErrExperimentalOff", err)
+	}
+	if n := commandsWritten(t, dir); n != 0 {
+		t.Fatalf("a refused FX command wrote %d files", n)
+	}
+	adapter.roles[dawport.CapPunch].(*bridge.Actions).SetTimeout(time.Millisecond)
+	punch := adapter.Role(dawport.CapPunch).(dawport.Puncher)
+	if _, err := punch.PlayPosition(t.Context()); errors.Is(err, bridge.ErrExperimentalOff) {
+		t.Fatalf("PlayPosition with punch on = %v: it was refused", err)
+	}
+	if n := commandsWritten(t, dir); n != 1 {
+		t.Fatalf("PlayPosition with punch on wrote %d command files, want 1", n)
+	}
+}
+
+// The old switch keeps working through the resolver: on, it lets every Experimental capability on auto out, but not one the
+// narrator turned off.
+func TestTheOldSwitchStillTurnsExperimentalCapabilitiesOn(t *testing.T) {
+	_, adapter, dir := resolverOver(t, map[string]string{"DAW.experimental_reaper_actions": "true", "DAW.capability.fx_chains": "off"})
+	fx := adapter.Role(dawport.CapFXChains).(dawport.FXManager)
+	_, err := fx.ListFXChains(t.Context())
+	var refusal *dawport.NotSupportedError
+	if !errors.As(err, &refusal) || refusal.Support.Reason != dawport.ReasonTurnedOff {
+		t.Fatalf("ListFXChains turned off = %v, want a turned_off refusal", err)
+	}
+	if n := commandsWritten(t, dir); n != 0 {
+		t.Fatalf("a refused FX command wrote %d files", n)
+	}
+	adapter.roles[dawport.CapPunch].(*bridge.Actions).SetTimeout(time.Millisecond)
+	if _, err := adapter.Role(dawport.CapPunch).(dawport.Puncher).PlayPosition(t.Context()); errors.Is(err, bridge.ErrExperimentalOff) {
+		t.Fatalf("PlayPosition on auto with the old switch on = %v: it was refused", err)
+	}
+	if n := commandsWritten(t, dir); n != 1 {
+		t.Fatalf("wrote %d command files, want 1", n)
+	}
+}
+
+// Gate knows every command bridge.Actions sends: each experimental command (parsed from actions.go) maps to the capability this
+// test file says it belongs to, and an unknown command is refused rather than let through.
+func TestGateMapsEveryActionsCommandToItsCapability(t *testing.T) {
+	for _, command := range experimentalCommandsInSource(t) {
+		if got, want := commandCapability[command], experimentalCapability[command]; got != want {
+			t.Errorf("commandCapability[%q] = %q, want %q", command, got, want)
+		}
+	}
+	var asked []dawport.Capability
+	gate := Gate(func(c dawport.Capability) error { asked = append(asked, c); return nil })
+	if err := gate("punch_to"); err != nil || len(asked) != 1 || asked[0] != dawport.CapPunch {
+		t.Errorf("gate(punch_to) = %v, asked %v; want nil after asking about punch", err, asked)
+	}
+	if err := gate("no_such_command"); err == nil {
+		t.Error("gate(no_such_command) let an unknown command through")
+	}
+	if err := Gate(nil)("punch_to"); !errors.Is(err, bridge.ErrExperimentalOff) {
+		t.Errorf("Gate(nil)(punch_to) = %v, want ErrExperimentalOff", err)
+	}
+}
+
+// Declaration is the same declaration and wording as the adapter, with no roles: the host gates with it until P5a.
+func TestDeclarationIsTheAdaptersDeclarationWithNoRoles(t *testing.T) {
+	adapter, _ := newAdapter(t, nil)
+	d := Declaration()
+	if d.Kind() != dawport.KindREAPER || !maps.Equal(d.Declares(), adapter.Declares()) {
+		t.Fatalf("Declaration() = %v %v, want the adapter's %v", d.Kind(), d.Declares(), adapter.Declares())
+	}
+	for _, spec := range dawport.Capabilities() {
+		if role := d.Role(spec.Capability); role != nil {
+			t.Errorf("Declaration().Role(%s) = %T, want nil", spec.Capability, role)
+		}
+	}
+	for _, reason := range []dawport.Reason{dawport.ReasonStandalone, dawport.ReasonNotRunning, dawport.ReasonTurnedOff} {
+		if got, want := d.(dawport.Explainer).Explain(dawport.CapPunch, reason), adapter.Explain(dawport.CapPunch, reason); got != want {
+			t.Errorf("Explain(%s) = %q, want the adapter's %q", reason, got, want)
+		}
 	}
 }
 

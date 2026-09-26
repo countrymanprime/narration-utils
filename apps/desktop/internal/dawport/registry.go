@@ -12,9 +12,11 @@ import (
 type Env struct {
 	// SessionDir is REAPER's file bridge directory, made by NarrationUtils_Launcher.lua; empty when the launch has none.
 	SessionDir string
-	// Experimental is the old DAW.experimental_reaper_actions switch, which bridge.Actions still checks itself until the
-	// per-capability toggles take over its gating (DAW port PRD P3). nil reads as off.
-	Experimental func() bool
+	// Allowed is the launch's Resolver.Allowed: whether the declaration and the narrator's settings permit a capability. An
+	// adapter whose transport gates its own commands (REAPER's bridge.Actions) asks it before each one, so the settings are
+	// decided by the resolver alone (DAW port PRD P3). The composition root builds the resolver over the adapter the factory
+	// returns, so this is a closure over it. nil refuses every gated command.
+	Allowed func(Capability) error
 	// Log receives the transport's diagnostics (bridge.Client.SetLog); nil discards them.
 	Log func(kind, message string)
 }

@@ -1,6 +1,6 @@
 # The REAPER verification pass
 
-**Status: planned; not run yet.** Stack S37 of the [implementation plan](../prds/implementation-plan.md) (section 7) runs it with the owner. Until it has run, every command below stays behind the **Experimental REAPER actions** Settings switch (`DAW.experimental_reaper_actions`, off by default; owner decision D38): the host refuses to send them while the switch is off.
+**Status: planned; not run yet.** Stack S37 of the [implementation plan](../prds/implementation-plan.md) (section 7) runs it with the owner. Until it has run, every command below stays Experimental: the host refuses to send it unless the narrator turns its capability on, with its own `DAW.capability.<name>` setting or, for one left on `auto`, the **Experimental REAPER actions** switch (`DAW.experimental_reaper_actions`, off by default; owner decision D38, [ADR 0304](../adr/0304-bridge-actions-asks-a-per-command-gate-and-the-daw-ports-resolver-answers-it-from-the-per-capability-settings.md)).
 
 The harness ([ADR 0066](../adr/0066-the-lua-bridge-is-tested-by-a-harness-under-lua-5-4-and-reaper-api-behaviour-is-checked-in-reaper.md), `integrations/reaper/tests`) proves each command's logic, refusals and events against a fake REAPER. It cannot prove what REAPER itself does with a call. This pass checks that, command by command, in a real REAPER. The calls and what the reference leaves open are in [the ReaScript calls behind the planned commands](../research/reaper-api-for-planned-commands.md).
 
@@ -52,7 +52,7 @@ Needs the owner present and approval for one test recording on a copy of a proje
 A command passes when every row that names it passes and the report is recorded. Then, in one PR:
 
 1. Record the run here (a "Verification record" section: date, REAPER version, OS, the report, every value that differed from the fake) and correct the fake to match.
-2. Take the command off the host's experimental list (`experimentalCommands` in `apps/desktop/internal/bridge/actions.go`), so it no longer needs the switch. A command whose row failed stays on the list, and its PRD phase stays partial, with the finding on the phase.
+2. Take the command off the host's experimental list (`experimentalCommands` in `apps/desktop/internal/bridge/actions.go`) and move its capability's declaration in `apps/desktop/internal/dawport/reaper/reaper.go` to Supported, in the same PR ([ADR 0400](../adr/0400-promoting-a-reaper-command-from-experimental-to-supported-is-a-one-line-daw-port-declaration-change.md)), so it no longer needs to be turned on. A command whose row failed stays on the list, and its PRD phase stays partial, with the finding on the phase.
 3. Set the PRD phases the command completes to `complete`, and update the threat model rows that say "pending" for it.
 
 When every command is off the list, the switch has nothing left to gate; the PR that empties the list removes the switch and its `config/defaults.json` default.

@@ -290,7 +290,7 @@ func TestCreateRegionsRefusesRowsREAPERWouldCountInvalidBeforeSending(t *testing
 }
 
 func TestCreateRegionsWithNoBridgeIsUnavailable(t *testing.T) {
-	actions := NewActions(nil, func() bool { return true })
+	actions := NewActions(nil, switchGate(true))
 	if _, err := actions.CreateRegions(context.Background(), []Region{{Start: 0, End: 1, Title: "A"}}, "", false); !errors.Is(err, ErrUnavailable) {
 		t.Fatalf("err = %v, want ErrUnavailable", err)
 	}

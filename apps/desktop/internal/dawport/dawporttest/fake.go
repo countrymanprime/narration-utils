@@ -11,7 +11,7 @@ import (
 
 // ErrClosed is every fake role call's answer once the fake is closed: the transport is gone, and the call must fail rather than
 // hang or panic.
-var ErrClosed = errors.New("dawporttest: the fake's transport is closed")
+var ErrClosed = errors.New("dawporttest: the fake's transport is closed") // +checklocksignore: an error value, returned under the lock by chance
 
 // Fake is an in-memory adapter with a role for every capability. It declares what its caller says, hands out a role for each
 // capability declared Experimental or Supported, records every role call as "<capability>.<Method>", and fails every call with

@@ -33,7 +33,27 @@
   },
   "DAW": {
     "auto_start_launcher": "false",
-    "experimental_reaper_actions": "false"
+    "experimental_reaper_actions": "false",
+    "capability.review": "auto",
+    "capability.navigate": "auto",
+    "capability.markers": "auto",
+    "capability.pickups": "auto",
+    "capability.line_identity": "auto",
+    "capability.render_config": "auto",
+    "capability.cleanup_tools": "auto",
+    "capability.retake_lanes": "auto",
+    "capability.project_state": "auto",
+    "capability.take_create": "auto",
+    "capability.heartbeat": "auto",
+    "capability.project_read": "auto",
+    "capability.track_state": "auto",
+    "capability.record": "auto",
+    "capability.punch": "auto",
+    "capability.regions": "auto",
+    "capability.takes": "auto",
+    "capability.fx_chains": "auto",
+    "capability.silence_trim": "auto",
+    "capability.item_gain": "auto"
   },
   "RecordingCoverage": {
     "min_paragraph_present": "0.8",
