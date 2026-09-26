@@ -8,6 +8,8 @@ import (
 	"os/exec"
 	"strings"
 	"sync"
+
+	"github.com/countrymanprime/narration-utils/shell/internal/runlog"
 )
 
 // streamStderrTail bounds how much of a streamed child's stderr is kept for
@@ -41,17 +43,24 @@ func (c *StreamChild) StderrTail() string {
 	return string(c.stderr)
 }
 
-func (c *StreamChild) captureStderr(reader io.Reader) {
+// captureStderr keeps the in-memory tail (for an error message) and, when sink is not nil, also copies every byte to
+// the run's own stderr file (docs/prds/tool-run-logging.prd.md phase 2): the tail alone is not "kept", only the last
+// 16 KiB of it.
+func (c *StreamChild) captureStderr(reader io.Reader, sink io.Writer) {
 	buffer := make([]byte, 4096)
 	for {
 		count, err := reader.Read(buffer)
 		if count > 0 {
+			chunk := buffer[:count]
 			c.stderrMu.Lock()
-			c.stderr = append(c.stderr, buffer[:count]...)
+			c.stderr = append(c.stderr, chunk...)
 			if extra := len(c.stderr) - streamStderrTail; extra > 0 {
 				c.stderr = append([]byte(nil), c.stderr[extra:]...)
 			}
 			c.stderrMu.Unlock()
+			if sink != nil {
+				_, _ = sink.Write(chunk)
+			}
 		}
 		if err != nil {
 			return
@@ -82,6 +91,7 @@ func deliverLines(reader io.Reader, onLine func(string)) {
 func (s *Supervisor) StartStream(ctx context.Context, onLine func(string), program string, args ...string) (*StreamChild, error) {
 	command := exec.CommandContext(ctx, program, args...)
 	configure(command)
+	command.Env = runEnv(ctx)
 	stdout, err := command.StdoutPipe()
 	if err != nil {
 		return nil, err
@@ -99,13 +109,15 @@ func (s *Supervisor) StartStream(ctx context.Context, onLine func(string), progr
 	}
 
 	child := &StreamChild{Child: &Child{}, command: command, done: make(chan struct{})}
+	stderrSink := runlog.FromContext(ctx).StderrWriter()
 	var readers sync.WaitGroup
 	readers.Add(2)
 	go func() { defer readers.Done(); deliverLines(stdout, onLine) }()
-	go func() { defer readers.Done(); child.captureStderr(stderr) }()
+	go func() { defer readers.Done(); child.captureStderr(stderr, stderrSink) }()
 	go func() {
 		// Wait must not run before the pipes are fully read.
 		readers.Wait()
+		_ = stderrSink.Close()
 		waitErr := command.Wait()
 		code := 0
 		if waitErr != nil {
