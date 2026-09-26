@@ -4,8 +4,10 @@ import { App } from './App';
 import { ApiProvider } from './api/ApiContext';
 import { wailsClient } from './api/wailsClient';
 import { createMockApi } from './api/mockApi';
-import { WIRE_CHAPTERS, WIRE_FINDINGS, WIRE_TRACKS_PROJECT, takeReviewPickupFor } from './api/mockFixtures';
+import { WIRE_CHAPTERS, WIRE_FINDINGS, WIRE_TRACKS_PROJECT, editingCandidateFor, takeReviewPickupFor } from './api/mockFixtures';
 import { COVERAGE_REFUSAL_REASONS } from './api/schemas/coverage';
+import { EDITING_REFUSAL_REASONS } from './api/schemas/editing';
+import type { StageUnknownCause } from './api/contracts/stages';
 import { MOCK_RESUME_SEEDS } from './api/resumeMockSeed';
 import { MOCK_REAPER_INPUT_SEEDS, MOCK_REAPER_SEEDS } from './api/teleprompterMock';
 import { ThemeProvider } from './theme/ThemeContext';
@@ -174,6 +176,29 @@ const mockCoverageRefusal = COVERAGE_REFUSAL_REASONS.find((reason) => reason ===
 // Chapter 6 as the fixture has it (not ready), Chapter 7 confirmed into Editing and since found short (evidence changed), Chapter 8
 // confirmed into Editing on evidence that still holds.
 const mockStages = (['mixed', 'error'] as const).find((seed) => seed === mockParams.get('mockStages'));
+// `?mockEditing=hold` holds a started editing check at its first item (editing-readiness-analysis.prd.md Phase 7), so the
+// running progress and Cancel (and the `partial` result a cancel leaves) can be seen. `?mockEditingRefusal=<reason>` answers
+// every start with that refusal (apps/desktop/internal/editing/service.go). `?mockEditingCandidates=1` seeds Chapter 7 with
+// two open empty-space candidates (in the shared findings store, same as any other finding) instead of the default clean
+// pass, so the panel's candidate rows (Hear, Accept, Dismiss, Defer, Go to in REAPER) can be seen without a scan.
+const mockEditing = (['hold'] as const).find((seed) => seed === mockParams.get('mockEditing'));
+const mockEditingCandidates = mockParams.has('mockEditingCandidates');
+const mockEditingRefusal = EDITING_REFUSAL_REASONS.find((reason) => reason === mockParams.get('mockEditingRefusal'));
+// `?mockEditingSignal=never|stale|unsupported|settings-unset|met|not-met` seeds Chapter 7's (already in Editing status)
+// empty-space signal directly, so a signal state that needs no scan click - shown at once in SR's evidence popover
+// and the editing check panel alike - can be seen without a host. Click and breath are never seeded: Phase 4 has not
+// shipped, so this mock, like the real engine, always reports them `unknown` (stagesMock.ts).
+const mockEditingSignal = (['never', 'stale', 'unsupported', 'settings-unset', 'met', 'not-met'] as const).find(
+  (seed) => seed === mockParams.get('mockEditingSignal'),
+);
+const MOCK_EDITING_SIGNAL_SEED: Record<NonNullable<typeof mockEditingSignal>, { unknown: StageUnknownCause; reason?: string } | 'met' | 'not_met'> = {
+  never: { unknown: 'never_analyzed' },
+  stale: { unknown: 'stale' },
+  unsupported: { unknown: 'measurement_unavailable', reason: 'An item on this chapter’s track is not a WAV file the check can analyze.' },
+  'settings-unset': { unknown: 'measurement_unavailable', reason: 'No maximum gap is set for empty space. Set it in Settings > Editing, then check again.' },
+  met: 'met',
+  'not-met': 'not_met',
+};
 const MOCK_STAGES_MEASURED = { [WIRE_CHAPTERS[3].id]: 1 };
 const MOCK_STAGES_SEEDS = {
   mixed: {
@@ -315,6 +340,26 @@ const mockInitial = {
   ...(mockCoverage === 'pickups' ? { findings: [...WIRE_FINDINGS, takeReviewPickupFor(WIRE_CHAPTERS[3].id, WIRE_CHAPTERS[3].title)] } : {}),
   ...(mockChapterSuggestion ? { armedTracks: MOCK_ARMED_TRACKS[mockChapterSuggestion] } : {}),
   ...(mockStages ? { stages: MOCK_STAGES_SEEDS[mockStages] } : {}),
+  ...(mockEditing || mockEditingRefusal
+    ? {
+        editing: {
+          ...(mockEditingRefusal ? { refusal: mockEditingRefusal } : {}),
+          ...(mockEditing === 'hold' ? { hold: true } : {}),
+        },
+      }
+    : {}),
+  ...(mockEditingCandidates
+    ? {
+        findings: [
+          ...WIRE_FINDINGS,
+          editingCandidateFor(WIRE_CHAPTERS[6].id, WIRE_CHAPTERS[6].title, 0),
+          editingCandidateFor(WIRE_CHAPTERS[6].id, WIRE_CHAPTERS[6].title, 1),
+        ],
+      }
+    : {}),
+  ...(mockEditingSignal
+    ? { stages: { ...(mockStages ? MOCK_STAGES_SEEDS[mockStages] : {}), editing: { [WIRE_CHAPTERS[6].id]: MOCK_EDITING_SIGNAL_SEED[mockEditingSignal] } } }
+    : {}),
 };
 const api = import.meta.env.VITE_USE_MOCK_API === '1' ? createMockApi(window.__NARRATION_MOCK_OVERRIDES__, mockInitial) : wailsClient;
 

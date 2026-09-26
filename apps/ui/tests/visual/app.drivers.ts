@@ -443,6 +443,34 @@ async function openStageEvidence(page: Page, chapter: string) {
   return view;
 }
 
+// Opens Chapter 7's editing check panel from its evidence popover's "Open editing check" (editing-readiness-analysis.prd.md
+// Phase 7), booted with a mock seed (`?mockEditingSignal=`/`?mockEditing=`/`?mockEditingCandidates=1`, main.tsx). Unlike
+// openStageEvidence this never uses the `mixed` seed: Chapter 7 is `mixed`'s own "evidence changed" demo, whose evidence
+// view shows the recording contradiction's signals, not editing's - a query-string seed instead gives Chapter 7 (already
+// in Editing status in the fixture) a plain, uncontested editing signal. Returns the panel.
+async function openEditingCheckFromHome(page: Page, query: string) {
+  await page.goto(`/?${query}`);
+  await settlePage(page);
+  await homeLoaded(page);
+  await clickVisible(page, 'button', /Show per-chapter breakdown/);
+  await clickVisible(page, 'button', /^Why: Chapter 7/);
+  await clickVisible(page, 'button', 'Open editing check');
+  const panel = page.getByRole('dialog', { name: /^Editing check: Chapter 7\b/ });
+  await panel.getByRole('button', { name: /^Check editing|Check again$/ }).waitFor();
+  return panel;
+}
+
+// Opens Chapter 1's editing check panel from the Tracks page's Chapter links list (the second entry point Phase 7
+// names), booted with a mock seed. Returns the panel.
+async function openEditingCheckFromTracks(page: Page, query: string) {
+  await page.goto(`/tracks?${query}`);
+  await settlePage(page);
+  await clickVisible(page, 'button', 'Editing check…');
+  const panel = page.getByRole('dialog', { name: /^Editing check: Chapter 1\b/ });
+  await panel.getByRole('button', { name: /^Check editing|Check again$/ }).waitFor();
+  return panel;
+}
+
 // Settings' own category rail (.settings-nav, a tab list) reuses the same labels as the
 // primary app nav ("Proofing", "Story Bible") - an unscoped role/name query
 // matches both and .first() can silently click the wrong one (navigating
@@ -869,6 +897,41 @@ export const APP_DRIVERS: Record<string, Record<string, Driver>> = {
     'stage-evidence-changed': async (page) => {
       const view = await openStageEvidence(page, 'Chapter 7');
       await view.getByRole('button', { name: 'Revert to Recording' }).waitFor();
+    },
+    'editing-check-never-checked': async (page) => {
+      await openEditingCheckFromHome(page, 'mockEditingSignal=never');
+    },
+    'editing-check-running': async (page) => {
+      const panel = await openEditingCheckFromHome(page, 'mockEditing=hold&mockEditingSignal=not-met&mockEditingCandidates=1');
+      await clickVisible(page, 'button', 'Check editing');
+      await panel.getByRole('progressbar', { name: 'Editing check progress' }).waitFor();
+    },
+    'editing-check-partial': async (page) => {
+      const panel = await openEditingCheckFromHome(page, 'mockEditing=hold&mockEditingSignal=not-met&mockEditingCandidates=1');
+      await clickVisible(page, 'button', 'Check editing');
+      await panel.getByRole('progressbar', { name: 'Editing check progress' }).waitFor();
+      await clickVisible(page, 'button', 'Cancel');
+      await panel.getByRole('button', { name: 'Check again' }).waitFor();
+    },
+    'editing-check-complete-candidates': async (page) => {
+      const panel = await openEditingCheckFromHome(page, 'mockEditingCandidates=1&mockEditingSignal=not-met');
+      await panel.getByText('1 empty-space candidate').waitFor();
+    },
+    'editing-check-complete-clean': async (page) => {
+      const panel = await openEditingCheckFromHome(page, 'mockEditingSignal=met');
+      await panel.getByText('Met.').waitFor();
+    },
+    'editing-check-stale': async (page) => {
+      const panel = await openEditingCheckFromHome(page, 'mockEditingSignal=stale');
+      await panel.getByText(/Check editing again: since the last check/).waitFor();
+    },
+    'editing-check-settings-unset': async (page) => {
+      const panel = await openEditingCheckFromHome(page, 'mockEditingSignal=settings-unset');
+      await panel.getByText(/No maximum gap is set/).waitFor();
+    },
+    'editing-check-unsupported': async (page) => {
+      const panel = await openEditingCheckFromHome(page, 'mockEditingSignal=unsupported');
+      await panel.getByText(/is not a WAV file/).waitFor();
     },
     'import-review-subtitles-off': async (page) => {
       const review = await openImportReview(page);
@@ -1598,6 +1661,11 @@ export const APP_DRIVERS: Record<string, Record<string, Driver>> = {
       const table = page.getByRole('table', { name: 'Chapter links' });
       await table.scrollIntoViewIfNeeded();
       await page.getByText('Track missing').waitFor();
+    },
+    'editing-check-unmapped': async (page) => {
+      const panel = await openEditingCheckFromTracks(page, 'mockEditingRefusal=unmapped');
+      await clickVisible(page, 'button', 'Check editing');
+      await panel.getByText('This chapter can’t be checked yet').waitFor();
     },
     'link-chapters-preview': async (page) => {
       await goToPage(page, 'Tracks');

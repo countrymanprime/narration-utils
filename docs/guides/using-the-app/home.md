@@ -112,11 +112,14 @@ Transcript Compare tool points to [Settings](settings.md).
 ### Stage suggestions
 
 Home suggests when a chapter looks ready for its next stage, from evidence the app already has,
-and never changes a status on its own. For now the only rule is the recording one: a chapter in
-Recording is suggested for Editing when its current recording check finds every paragraph of its
-text in the recording, in order (misreads allowed). Editing and Proofing have no check yet, so
-chapters there get no suggestion. Missing evidence never counts as done: a chapter nobody has
-checked reads "Can't tell yet", not ready.
+and never changes a status on its own. A chapter in Recording is suggested for Editing when its
+current recording check finds every paragraph of its text in the recording, in order (misreads
+allowed). A chapter in Editing is checked against its [editing check](tracks.md#editing-check):
+empty space, clicks and breaths still to trim. Every one of a stage's checks must be met before a
+suggestion appears — until clicks and breaths are validated on a labeled corpus, an Editing
+chapter reads "Can't tell yet" rather than suggested, even with no empty space left to trim.
+Proofing has no check yet, so chapters there get no suggestion. Missing evidence never counts as
+done: a chapter nobody has checked reads "Can't tell yet", not ready.
 
 While the breakdown is collapsed, chips under the estimate's title say how many chapters have a
 suggestion and how many have evidence that changed since you confirmed them; either chip opens
@@ -139,9 +142,10 @@ the breakdown. There, under each chapter's status:
 **Why** opens the evidence at the side of the page: the verdict in a sentence, each check with
 its state and reason, the facts behind it (the text present, each missing region with **Go to
 paragraph**), and the saved REAPER project it was read from with how old that file is. For a
-check that cannot tell, it says what to do and offers the way there, usually **Open recording
-check**, where you can run the check or link the chapter's track. Confirm, Dismiss and Revert are
-there too.
+check that cannot tell, it says what to do and offers the way there: **Open recording check** for
+the recording stage, or **Open editing check** for the [editing check](tracks.md#editing-check),
+where you can run the check or link the chapter's track. Confirm, Dismiss and Revert are there
+too.
 
 ![Home - the evidence behind a suggestion](../../images/ui/home-stage-evidence.webp)
 

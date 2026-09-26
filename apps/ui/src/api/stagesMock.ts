@@ -22,9 +22,20 @@ import type {
 /** What the recording check of a chapter says: `met`, `not_met`, or `unknown` with its cause. */
 type StageRecordingScenario = 'met' | 'not_met' | { unknown: StageUnknownCause };
 
+/** What the editing check's empty-space signal says for a chapter (editing-readiness-analysis.prd.md Phase 6):
+ * `met`/`not_met`/`unknown` as `StageRecordingScenario`, plus an optional `reason` override for a cause worded more
+ * than one way in real life (`measurement_unavailable` covers both "settings unset" and "unsupported items"). Click
+ * and breath are not seeded per chapter: Phase 4 (the corpus validation of those two detectors) has not shipped, so
+ * this mock, like the real engine, always reports them `unknown` with `measurement_unavailable` - a class this build
+ * cannot vouch for is never `met`, seeded or not. */
+type StageEditingScenario = 'met' | 'not_met' | { unknown: StageUnknownCause; reason?: string };
+
 export type StagesSeed = {
   /** The recording signal of these chapters, instead of the one their recordedFraction gives. */
   recording?: Record<string, StageRecordingScenario>;
+  /** The editing check's empty-space signal of these chapters (only chapters already in Editing status are
+   * evaluated at all, matching the real engine's D3 gate); a chapter left out reads `never_analyzed`. */
+  editing?: Record<string, StageEditingScenario>;
   /** Chapters in editing that the narrator confirmed from recording on an all-read check (a live confirmation). */
   confirmed?: string[];
   /** Chapters whose all-read recording check the narrator dismissed. */
@@ -68,6 +79,63 @@ const UNKNOWN_REASONS: Record<StageUnknownCause, string> = {
   project_unreadable: 'Choose the saved REAPER project file on the Tracks page.',
   provider_error: 'could not check: the recording check results could not be read',
 };
+
+/** The editing empty-space signal's reason for each cause (apps/desktop/internal/editing/signals.go), in short. */
+const EDITING_UNKNOWN_REASONS: Partial<Record<StageUnknownCause, string>> = {
+  never_analyzed: 'This chapter’s editing has not been checked yet.',
+  stale: 'Check editing again: since the last check an item on this chapter’s track changed.',
+  incomplete_run: 'The last editing check was cancelled before it finished. Check again.',
+  analysis_running: 'An editing check of this chapter is running.',
+  unmapped_track: 'Link this chapter to the REAPER track it is edited on.',
+  unconfirmed_mapping: 'A track’s name matches this chapter. Confirm the link to check its editing.',
+  multiple_tracks: 'This chapter is linked to more than one REAPER track. Keep one link.',
+  measurement_unavailable: 'Empty space cannot be checked here yet.',
+  project_unreadable: 'Choose the saved REAPER project file on the Tracks page.',
+  provider_error: 'could not check: the editing check results could not be read',
+};
+
+/** Click and breath are never seeded (Phase 4's corpus validation has not shipped): every build, mock included,
+ * reports them `unknown` so a narrator is never told a class it cannot vouch for is done. */
+function unvalidatedSignal(id: 'editing.clicks' | 'editing.breaths'): StageSignal {
+  return {
+    id,
+    stage: 'editing',
+    state: 'unknown',
+    cause: 'measurement_unavailable',
+    reason: 'Not yet validated on the corpus: this build never reports it met (editing-readiness-analysis.prd.md Phase 4).',
+    evidence: [],
+    basis: { ledgerRecordIds: [], fingerprint: '', projectFileModTime: MOCK_TIME },
+    computedAt: MOCK_TIME,
+  };
+}
+
+function emptySpaceSignal(chapter: ManuscriptChapter, scenario: StageEditingScenario): StageSignal {
+  const base = { id: 'editing.empty_space', stage: 'editing' as const, computedAt: MOCK_TIME };
+  const caveat = { kind: 'caveat', label: 'Caveat', value: 'Analysis of source audio; take FX, item gain and fades are not applied.' };
+  const basis = {
+    ledgerRecordIds: [`mock-editing-record-${chapter.id}`],
+    fingerprint: `mock-editing-fingerprint-${chapter.id}`,
+    projectFileModTime: MOCK_TIME,
+  };
+  if (typeof scenario !== 'string') {
+    return {
+      ...base,
+      state: 'unknown',
+      cause: scenario.unknown,
+      reason: scenario.reason ?? EDITING_UNKNOWN_REASONS[scenario.unknown] ?? 'Cannot check editing here yet.',
+      evidence: [caveat],
+      basis,
+    };
+  }
+  if (scenario === 'met') return { ...base, state: 'met', reason: 'Checked; no open empty-space candidate remains.', evidence: [caveat], basis };
+  return {
+    ...base,
+    state: 'not_met',
+    reason: '1 empty-space candidate: 1.80 s between two phrases, above the maximum gap.',
+    evidence: [caveat, { kind: 'candidate', label: 'Candidate', value: 'above the maximum gap', range: { start: 12.4, end: 14.2 } }],
+    basis,
+  };
+}
 
 const narration = (chapter: ManuscriptChapter) => chapter.contentKind === undefined || chapter.contentKind === 'narration';
 
@@ -113,6 +181,7 @@ function recordingSignal(chapter: ManuscriptChapter, scenario: StageRecordingSce
 
 export function createStagesMock(deps: Deps): StagesApi {
   const recording = new Map(Object.entries(deps.seed?.recording ?? {}));
+  const editing = new Map(Object.entries(deps.seed?.editing ?? {}));
   const confirmations = new Map<string, Omit<StageConfirmation, 'evidenceChanged'>>(
     (deps.seed?.confirmed ?? []).map((id) => [id, { from: 'recording', target: 'editing', basisKey: keyFor(id, 'editing', 'met'), at: MOCK_TIME }]),
   );
@@ -125,6 +194,26 @@ export function createStagesMock(deps: Deps): StagesApi {
   const evaluate = (chapter: ManuscriptChapter, status: ChapterStatus): Evaluation => {
     const target = NEXT_STAGE[status];
     if (!target) return { verdict: 'none', noneReason: 'stage_not_evaluated', signals: [] };
+    // Only a chapter with an explicit `editing` seed gets the real editing signals: every other editing-stage
+    // chapter keeps the pre-existing `no_required_signals` shape (verdict `none`, no signals), so a test or demo that
+    // does not care about editing is unaffected by this mock knowing how to answer it (a confirmed-from-recording
+    // chapter's own "Confirmed from Recording" / Revert display, StageSuggestion.tsx, depends on that `none` verdict
+    // when nothing else is asked of it).
+    if (status === 'editing' && editing.has(chapter.id)) {
+      // Click and breath are always `unknown` (Phase 4 is not shipped), so every required signal being met - the
+      // only way to `recommended` - is not reachable yet; only empty space can move the verdict between `unknown`
+      // and `not_ready`, matching the real engine (D2: all three signals required by default, Q5).
+      const scenario = editing.get(chapter.id)!;
+      const state = scenarioState(scenario);
+      const basisKey = keyFor(chapter.id, target, scenario);
+      const verdict = state === 'not_met' ? 'not_ready' : 'unknown';
+      return {
+        target,
+        verdict,
+        basisKey,
+        signals: [emptySpaceSignal(chapter, scenario), unvalidatedSignal('editing.clicks'), unvalidatedSignal('editing.breaths')],
+      };
+    }
     if (status !== 'recording') return { target, verdict: 'none', noneReason: 'no_required_signals', signals: [] };
     const scenario = scenarioOf(chapter);
     const state = scenarioState(scenario);
