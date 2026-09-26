@@ -1,0 +1,39 @@
+{
+  "basis": {
+    "label": "saved project, file modified 2026-09-21T10:00:00Z",
+    "modifiedAt": "2026-09-21T10:00:00Z",
+    "stale": false
+  },
+  "chapterId": "c-0001",
+  "extras": [],
+  "items": [
+    {
+      "index": 0,
+      "itemGuid": "{ITEM-A}",
+      "length": 10,
+      "live": true,
+      "playRate": 1,
+      "sourceStart": 5,
+      "takeGuid": "{ITEM-A-take"
+    },
+    {
+      "index": 1,
+      "itemGuid": "{ITEM-B}",
+      "length": 6,
+      "live": true,
+      "playRate": 1,
+      "position": 10,
+      "takeGuid": "{ITEM-B-take"
+    }
+  ],
+  "needsAlignAgain": true,
+  "paragraphs": [
+    {
+      "id": "p-000001",
+      "text": "Alice was beginning to get very tired."
+    }
+  ],
+  "reasons": [],
+  "state": "current",
+  "tokens": []
+}
