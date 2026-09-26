@@ -75,18 +75,22 @@ local function resolve_retake(line_id, guid)
   return item, track, nil
 end
 
-local function pick_retake_lane(session_dir, run_id, line_id, raw_guid)
+local function pick_retake_lane(session_dir, run_id, line_id, raw_guid, host_run, level)
+  core.debug_log(session_dir, host_run, level, 'pick_retake_lane.received', { { 'line_id', line_id } })
   if not has_lane_api() then
+    core.debug_log(session_dir, host_run, level, 'pick_retake_lane.refused', { { 'reason', 'lanes_unavailable' } })
     event(session_dir, 'ERROR', run_id, 'This REAPER version has no fixed item lanes. They need REAPER 7 or later.')
     return
   end
   local guid = normalize_guid(raw_guid)
   if line_id == '' or guid == '' then
+    core.debug_log(session_dir, host_run, level, 'pick_retake_lane.refused', { { 'reason', 'missing_choice' } })
     event(session_dir, 'ERROR', run_id, 'Choose a retake to play.')
     return
   end
   local item, track, problem = resolve_retake(line_id, guid)
   if not item then
+    core.debug_log(session_dir, host_run, level, 'pick_retake_lane.refused', { { 'reason', 'retake_not_found' } })
     event(session_dir, 'ERROR', run_id, problem)
     return
   end
@@ -98,11 +102,12 @@ local function pick_retake_lane(session_dir, run_id, line_id, raw_guid)
   if reaper.APIExists('UpdateTimeline') then
     reaper.UpdateTimeline()
   end
+  core.debug_log(session_dir, host_run, level, 'pick_retake_lane.picked', { { 'lane', tostring(lane) } })
   event(session_dir, 'RETAKE_LANE_PICKED', run_id, line_id, guid, tostring(lane))
 end
 
 return function(registry)
   registry.register('pick_retake_lane', function(ctx, args)
-    pick_retake_lane(ctx.session_dir, args[1] or '', args[2] or '', args[3] or '')
+    pick_retake_lane(ctx.session_dir, args[1] or '', args[2] or '', args[3] or '', args[4] or '', args[5] or '')
   end)
 end

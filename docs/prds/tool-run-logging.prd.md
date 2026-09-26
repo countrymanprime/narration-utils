@@ -126,7 +126,7 @@ Phases 1 to 3: the run log, start and end records for every run, sidecar stderr 
 | 3 | Start and end for every run | Every host job and sidecar launch goes through `runlog.Begin`/`End`; guard test | complete | with 2 | 1 | - |
 | 4 | Go tool decision records | Debug records at the decision points of each Go tool, one checklist row per package; content sentinel test | complete | with 5, 6 | 3 | - |
 | 5 | Sidecar decision records | Debug records in `compare.py`, `coverage_mode.py`, `manuscript_guide.py`, `live_asr.py`, `locate.py` | complete | with 4, 6 | 2 | - |
-| 6 | REAPER bridge records | Run id on commands; Lua `bridge.jsonl` at debug level; harness tests; threat model 5a | pending | with 4, 5 | 1 | - |
+| 6 | REAPER bridge records | Run id on commands; Lua `bridge.jsonl` at debug level; harness tests; threat model 5a | complete | with 4, 5 | 1 | - |
 | 7 | Diagnostics export and docs | "Open log folder" and "Copy diagnostics" (saves a `.jsonl`) in Settings; `tools/runlog` timeline script (Could); fold `host.log` into the run log; docs and threat model | complete | - | 3, 6 | - |
 
 ### Phase details

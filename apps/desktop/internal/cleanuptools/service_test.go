@@ -71,7 +71,7 @@ func TestLaunchSendsTheExactBridgeCommand(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	want := []string{"1", "launch_cleanup_tool", runID, "repair_pops_clicks"}
+	want := []string{"1", "launch_cleanup_tool", runID, "repair_pops_clicks", "", "info"}
 	if strings.Join(decoded, "|") != strings.Join(want, "|") {
 		t.Fatalf("decoded = %#v, want %#v", decoded, want)
 	}
