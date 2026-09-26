@@ -219,9 +219,10 @@ func ComposeEmptySpace(items []ItemAudible, policy Policy) (candidates []EmptySp
 			class = ClassTail
 		}
 		threshold := policy.MaxGapSeconds
-		if class == ClassHead {
+		switch class {
+		case ClassHead:
 			threshold = policy.HeadMaxSeconds
-		} else if class == ClassTail {
+		case ClassTail:
 			threshold = policy.TailMaxSeconds
 		}
 		if threshold == nil || complement.length() <= *threshold {
