@@ -15,11 +15,11 @@ Two clients on one session directory would break the bridge: each starts its com
 
 ## Decision
 
-- `dawport.Factory` is `func(dawport.Env) (dawport.Adapter, error)`. `dawport.Env` holds `SessionDir`, `Experimental` (the old `DAW.experimental_reaper_actions` switch, until Phase 3 moves the gating into the resolver) and `Log`. It holds no transport.
+- `dawport.Factory` is `func(dawport.Env) (dawport.Adapter, error)`. `dawport.Env` holds `SessionDir`, `Experimental` (the old `DAW.experimental_reaper_actions` switch, until Phase 3 moves the gating into the resolver; Phase 3 replaced it with `Allowed`, the resolver's answer, [ADR 0304](0304-bridge-actions-asks-a-per-command-gate-and-the-daw-ports-resolver-answers-it-from-the-per-capability-settings.md)) and `Log`. It holds no transport.
 - `dawport.Register`, `Lookup` and `Registered` work on one package-level `dawport.Registry`. Each adapter package registers from `init`. Registering `KindNone`, a nil factory or a kind twice panics, because each is a programming error. Tests build their own registry with `NewRegistry`.
 - The REAPER factory (`dawport/reaper.Factory`) opens `Env.SessionDir`'s bridge and wraps it. With no session directory it returns `reaper.ErrNoSession`, and the composition root runs with no adapter, which the resolver already reports as `standalone`.
 - The Audacity factory (`dawport/audacity.Factory`) opens nothing, even when a session directory is passed. This matches today's rule that an Audacity launch never writes REAPER bridge commands.
-- While the Phase 5 migrations run, `app.go` still makes the client for the consumers not yet moved. During that time it builds the adapter with `reaper.New(client, experimental)` over that same client, not through the registry. Phase 6 switches the composition root to `dawport.Lookup(kind)` once `app.go` no longer holds a client.
+- While the Phase 5 migrations run, `app.go` still makes the client for the consumers not yet moved. During that time it builds the adapter with `reaper.New(client, allowed)` over that same client, not through the registry. Phase 6 switches the composition root to `dawport.Lookup(kind)` once `app.go` no longer holds a client.
 - One adapter per client. `reaper.New` subscribes each wrapped consumer (`bridge.Navigator`, `bridge.Actions`, `bridge.CleanupClient`, `bridge.LevelMatchClient`, `daw.Reachability`) once.
 
 ## Consequences
