@@ -4,12 +4,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { App } from './App';
 import { ApiProvider } from './api/ApiContext';
 import { createMockApi } from './api/mockApi';
+import { CommandRouter } from './input/router';
 import { ThemeProvider } from './theme/ThemeContext';
 import { parseWire } from './api/wire/parseWire';
 import { bootstrapSchema } from './api/schemas/system';
 import type { GuideBuildResult, WorkJob } from './types';
 import type { JobEnded } from './api/contracts/system';
-import { CommandRouter } from './input/router';
 
 // BrowserRouter reads/writes the real window.location via history.pushState,
 // which jsdom keeps alive across tests in this file - reset it so each test
