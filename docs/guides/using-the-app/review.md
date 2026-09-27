@@ -49,7 +49,7 @@ Select a finding to see it in full beside the list (under it on a narrower windo
   finding, why the entry needs a look;
 - its confidence, and the check's reason for it.
 
-**Show in manuscript** opens the [Manuscript](manuscript.md) at the finding's line (it needs an
+**Show in manuscript** opens the [Script](script.md) at the finding's line (it needs an
 imported manuscript), and a Story Bible finding also has **Open in Story Bible**. A delivery check has
 **Open in Delivery** instead (see [Delivery checks](#delivery-checks)).
 

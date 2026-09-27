@@ -12,7 +12,7 @@
     - /children: equal
     - button "Home"
     - button "Production"
-    - button "Manuscript"
+    - button "Script"
     - button "Proofing"
     - button "Story Bible"
     - button "Teleprompter"

@@ -2,7 +2,7 @@
 
 # Proofing
 
-Proofing transcribes a recorded chapter and compares it against the [manuscript](manuscript.md). The Setup
+Proofing transcribes a recorded chapter and compares it against the [manuscript](script.md). The Setup
 step picks the transcription model, chunk length, and any vocabulary hints before starting
 a comparison.
 
@@ -58,4 +58,4 @@ a misread word, a skipped one, or words heard that weren't written at all (EXTRA
 
 ---
 
-[← Manuscript](manuscript.md) · [Index](README.md) · [Story Bible →](story-bible.md)
+[← Script](script.md) · [Index](README.md) · [Story Bible →](story-bible.md)

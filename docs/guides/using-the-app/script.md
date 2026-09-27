@@ -1,16 +1,41 @@
-[Using the app](README.md) › Manuscript
+[Using the app](README.md) › Script
 
-# Manuscript
+# Script
 
-The manuscript reader shows the imported chapter text with characters, places, and other
-entities highlighted inline, with alternating row shading and any italics, bold or underline
-from the original document. Clicking a highlighted name or note opens its details in a side
-panel. "Go to line" from the [Story Bible](story-bible.md) keeps the destination line highlighted for 30 seconds.
-Text size is adjustable independently of the rest of the app.
+The Script page is where you prep the book before recording, under **Prep** in the navigation. It has three parts
+side by side on a wide window:
 
-![Manuscript reader at the medium text size](../../images/ui/manuscript-reader.webp)
+- **Chapters · Prep** on the left: every narration chapter, the one you are reading marked. Under a chapter, a count
+  such as **3 to confirm** says how many names first heard in it still have a pronunciation the author has not
+  confirmed (see [Queries](#pronunciations-characters-and-queries) below). Press a chapter to open it in the reader.
+  Below the list, **Marks** is the key to the colours in the text.
+- **The reader** in the middle: the imported chapter text with characters, places and other entities highlighted
+  inline, with alternating row shading and any italics, bold or underline from the original document. Clicking a
+  highlighted name or note opens its details in a side panel. "Go to line" from the [Story Bible](story-bible.md)
+  keeps the destination line highlighted for 30 seconds. Text size is adjustable independently of the rest of the app.
+- **The rail** on the right, with three tabs: **Pronunciations**, **Characters** and **Queries**.
 
-![Manuscript reader at the large text size](../../images/ui/manuscript-reader-large.webp)
+On a narrower window the chapter list is in the **Chapters & Search** panel, and the rail opens as a panel from the
+**Prep rail** button in the band above the text.
+
+An old link to the Manuscript page (`/manuscript`, with a line or chapter after `#`) still works: it opens the Script
+page at the same place.
+
+![Script reader at the medium text size](../../images/ui/script-reader.webp)
+
+## Pronunciations, characters and queries
+
+- **Pronunciations** lists every Story Bible name that has a pronunciation: the word, how to say it, and its status
+  (**Researched**, **Query sent** or **Author confirmed**). Press a name to open its summary, the same one a
+  highlighted name in the text opens; **Open in Story Bible** from there is where you change a pronunciation.
+- **Characters** lists the Story Bible's characters with the first line of each description. Press one to open it.
+- **Queries** lists every name the author has not confirmed yet, in reading order, with the chapter it is first heard
+  in and its status. **Manage queries** opens the Story Bible's queries panel, where you export them as CSV for the
+  author and mark each one sent or answered; the list and the chapter counts follow.
+
+![Script - the rail's Queries tab and the chapter list counting the names still to confirm](../../images/ui/script-prep-rail-queries.webp)
+
+![Script reader at the large text size](../../images/ui/script-reader-large.webp)
 
 Importing keeps the storytelling formatting from a Word, Markdown, plain-text or EPUB manuscript —
 italics, bold and underline — and line breaks inside a paragraph (verse, addresses), so the reader
@@ -22,21 +47,21 @@ plain-text file with no chapter markings, or an EPUB with no table of contents o
 still imports as one narration chapter rather than failing or importing nothing narratable — the
 import log says so. Re-import a manuscript (Replace manuscript on [Home](home.md)) to pick this up in an older project.
 
-![Manuscript - italic, bold and underline from the source document, and a preserved line break inside a paragraph](../../images/ui/manuscript-formatting.webp)
+![Script - italic, bold and underline from the source document, and a preserved line break inside a paragraph](../../images/ui/script-formatting.webp)
 
 Bookmark a chapter with the icon at the left of its header; bookmarks show in blue. Chapter
 headers stay opaque as you scroll so the text never shows through them.
 
-![Manuscript - a chapter bookmarked, shown with a blue bookmark icon](../../images/ui/manuscript-bookmark.webp)
+![Script - a chapter bookmarked, shown with a blue bookmark icon](../../images/ui/script-bookmark.webp)
 
 The reader follows the Light, Dark or System theme, with readable controls in both.
 
-![Manuscript reader in the Dark theme - readable controls and an opaque sticky chapter header](../../images/ui/manuscript-reader-dark.webp)
+![Script reader in the Dark theme - readable controls and an opaque sticky chapter header](../../images/ui/script-reader-dark.webp)
 
 Chapters default to fully expanded inline; collapsing them switches to a compact list for
-jumping between chapters without scrolling through the full text.
+jumping between chapters without scrolling through the full text (the chapter list on the left does the same on a wide window).
 
-![Manuscript, collapsed chapter list](../../images/ui/manuscript-chapter-list.webp)
+![Script, collapsed chapter list](../../images/ui/script-chapter-list.webp)
 
 **Opening credits** sits before the first chapter and **Closing credits** after the last, when the
 credit template library (Settings, This Project, [Credits](settings.md#credits)) has an opening or a
@@ -65,7 +90,7 @@ as one) is removed from recording from its track panel on [Home](home.md), not f
 list without recording it. Either way its text is untouched and **Restore** on Home brings it back as a
 narration chapter.
 
-![Manuscript, the retail sample marked on lines 1 to 3 of Chapter 3](../../images/ui/manuscript-retail-sample.webp)
+![Script, the retail sample marked on lines 1 to 3 of Chapter 3](../../images/ui/script-retail-sample.webp)
 
 Each narration chapter's header has a **Read aloud** button. It opens the [Teleprompter](teleprompter.md)
 read-along for that chapter in a full-screen dialog titled "Read aloud: " and the chapter's name - its
@@ -132,22 +157,22 @@ about the credits is written to the project's findings, so re-reading them raise
 Selecting a stretch of text offers actions for it — adding a reader note or sending it to the
 Story Bible as a new entry. When the selection is one word, it also offers **Look up**.
 
-![Manuscript - text-selection action popup on one word (+ Note, + Story Bible, Look up)](../../images/ui/manuscript-selection-popup.webp)
+![Script - text-selection action popup on one word (+ Note, + Story Bible, Look up)](../../images/ui/script-selection-popup.webp)
 
 Choosing "+ Note" opens a dialog to write the note against that selection.
 
-![Manuscript - Add Note dialog open after selecting text](../../images/ui/manuscript-add-note.webp)
+![Script - Add Note dialog open after selecting text](../../images/ui/script-add-note.webp)
 
 Clicking an existing note or a highlighted entity opens a detail sidebar on the right —
 the note's anchored text and content for a note, or pronunciation, description, and evidence
 for an entity.
 
-![Manuscript - detail sidebar open on a reader note](../../images/ui/manuscript-note-sidebar.webp)
+![Script - detail sidebar open on a reader note](../../images/ui/script-note-sidebar.webp)
 
-Choosing "Go to line" on a [Story Bible](story-bible.md) entry's evidence opens the Manuscript at that line and
+Choosing "Go to line" on a [Story Bible](story-bible.md) entry's evidence opens the Script page at that line and
 keeps it highlighted for 30 seconds, so you can see where you landed after the scroll.
 
-![Manuscript - the line reached from the Story Bible stays highlighted so it is easy to find](../../images/ui/manuscript-go-to-line.webp)
+![Script - the line reached from the Story Bible stays highlighted so it is easy to find](../../images/ui/script-go-to-line.webp)
 
 The Chapters & Search icon opens a panel with the chapter list and a search box. Typing filters
 matching chapter titles and subtitles right away; matching lines appear about two seconds after you
@@ -190,7 +215,7 @@ synonyms and antonyms it lists. A word with an ending, such as "curiouser" or "r
 under the word it comes from, and the panel names that word. Punctuation and quotes around the
 word are ignored.
 
-![Manuscript - the Look up panel for "bank": definitions, examples and synonyms by part of speech, with the dictionary's credit](../../images/ui/manuscript-word-lookup.webp)
+![Script - the Look up panel for "bank": definitions, examples and synonyms by part of speech, with the dictionary's credit](../../images/ui/script-word-lookup.webp)
 
 The dictionary is the [Open English WordNet](https://en-word.net/) 2025 Edition, used under
 CC BY 4.0; its credit is at the foot of every answer. It is kept on your own computer and every
@@ -198,7 +223,7 @@ lookup works without an internet connection: nothing you select is sent anywhere
 English words (US English), not phrases, and most names and invented words are not in it; the
 panel says so plainly when a word is not there.
 
-![Manuscript - Look up for a word the dictionary does not have](../../images/ui/manuscript-word-lookup-not-found.webp)
+![Script - Look up for a word the dictionary does not have](../../images/ui/script-word-lookup-not-found.webp)
 
 The dictionary is not bundled with the app. The first time you look a word up, the app asks
 before downloading it (about 10 MB, 16 MB on disk once installed), and shows its version,
@@ -208,7 +233,7 @@ computer is ever damaged, Look up asks to download it again ("Repair the diction
 showing a garbled answer. You can check, repair or remove the dictionary any time in
 [Settings, Local assets](settings.md#local-assets).
 
-![Manuscript - the first Look up asks before downloading the dictionary](../../images/ui/manuscript-word-lookup-download.webp)
+![Script - the first Look up asks before downloading the dictionary](../../images/ui/script-word-lookup-download.webp)
 
 ---
 
