@@ -429,6 +429,18 @@
       "value": ""
     }
   ],
+  "Keymap": [
+    {
+      "choices": null,
+      "effectiveSource": "repo_default",
+      "effectiveValue": "{\"version\":1,\"bindings\":{}}",
+      "isSet": false,
+      "key": "overrides",
+      "kind": "text",
+      "label": "Keyboard shortcut overrides",
+      "value": ""
+    }
+  ],
   "Manuscript": [
     {
       "choices": null,

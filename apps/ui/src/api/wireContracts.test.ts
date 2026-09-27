@@ -31,6 +31,7 @@ import {
 import { chapterSyncPreviewSchema, chapterSyncStateSchema } from './schemas/chapterSync';
 import { assetCatalogSchema, assetInstallJobSchema, assetVerifyResultSchema } from './schemas/assets';
 import { settingsForScopeSchema } from './schemas/settings';
+import { keymapOverridesSchema } from './schemas/keymap';
 import {
   takeComparisonEvidenceSchema,
   takeComparisonJobSchema,
@@ -95,7 +96,7 @@ import { chapterTagsEmbedResultSchema, chapterTagsPreviewSchema } from './schema
 import { dictionaryLookupResultSchema } from './schemas/dictionary';
 import { unknownKeys } from './schemas/strictness';
 import { GOLDEN } from './contractGoldens';
-import { parseWire, type WireContext } from './wire/parseWire';
+import { parseWire, parseWireJson, type WireContext } from './wire/parseWire';
 import { WireError } from './wire/WireError';
 import { creditsRows } from '../components/teleprompter/readerModel';
 
@@ -243,6 +244,16 @@ describe('golden payloads written by the Go host and the Python sidecars', () =>
     const state = parseWire(transcriptStateSchema, readGolden('transcript-success.json'), ctx('transcript'));
     expect(state.rows.map((row) => row.markerState)).toEqual(['pending', 'existing']);
     expect(state.runId).toBe('1789000000000000');
+  });
+
+  // The Keymap.overrides row (docs/prds/input-commands-and-pedals.prd.md Phase 5, Q2) carries a JSON document as its
+  // text value; parseWireJson and keymapOverridesSchema are the one way to read it (never a bare JSON.parse).
+  it('the golden Keymap.overrides default has no bindings yet, read with parseWireJson and its own schema', () => {
+    const settings = parseWire(settingsForScopeSchema, readGolden('settings-global.json'), ctx('settings global'));
+    const overrides = settings.Keymap?.find((field) => field.key === 'overrides');
+    expect(overrides?.kind).toBe('text');
+    const document = parseWireJson(keymapOverridesSchema, overrides?.effectiveValue ?? '', ctx('keymap overrides'));
+    expect(document).toEqual({ version: 1, bindings: {} });
   });
 });
 

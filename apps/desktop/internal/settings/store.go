@@ -129,6 +129,12 @@ var builtinDefaults = map[string]Values{
 		"preset":                  "sample",
 		"exclude_ending_fraction": "0",
 	},
+	// Keymap.overrides (docs/prds/input-commands-and-pedals.prd.md Phase 5, Open Question Q2): the narrator's remap
+	// changes from the input registry's default keymap, as a versioned JSON document of only the gestures that
+	// differ from the defaults. Empty bindings is the fresh-install default: every command keeps its shipped
+	// gesture until the narrator remaps it (Phase 6). Global scope only (Q3: a narrator's pedal belongs to the
+	// booth, not the book), enforced in apps/desktop/app.go's saveSettings.
+	"Keymap": {"overrides": `{"version":1,"bindings":{}}`},
 }
 
 // Defaults returns the repo file's values for tool, with any key the file does

@@ -722,6 +722,21 @@ export const wireSettings = (): Record<string, ScopedSettingField[]> => ({
     choice('preset', 'Preset', ['sample', 'spot_check'], 'sample'),
     recordingCheck('exclude_ending_fraction', 'Exclude the ending (fraction of chapters)', '0', { min: 0, max: 0.5, step: 0.01, unit: '' }),
   ],
+  // Keymap.overrides (docs/prds/input-commands-and-pedals.prd.md Phase 5, Q2): the narrator's remap changes, as a
+  // versioned JSON document parsed with keymapOverridesSchema. No Settings category renders it yet (Phase 6 adds
+  // the "Keyboard & pedals" screen), so it stays a plain "text" field here too, mirroring the host's fieldSchemas.
+  Keymap: [
+    {
+      key: 'overrides',
+      label: 'Keyboard shortcut overrides',
+      kind: 'text',
+      choices: [],
+      value: '',
+      isSet: false,
+      effectiveValue: '{"version":1,"bindings":{}}',
+      effectiveSource: 'repo default',
+    },
+  ],
 });
 export const WIRE_TRACKS_PROJECT: TracksProject = {
   path: 'C:/Projects/Alice-in-Wonderland/Alice.rpp',

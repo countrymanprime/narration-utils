@@ -1323,6 +1323,13 @@ var fieldSchemas = map[string][]fieldSchema{
 		{"preset", "Preset", "choice", []string{"sample", "spot_check"}},
 		{"exclude_ending_fraction", "Exclude the ending (fraction of chapters)", "number", nil},
 	},
+	// Keymap.overrides (docs/prds/input-commands-and-pedals.prd.md Phase 5, Open Question Q2): one row of kind
+	// "text", global scope, holding a versioned JSON document `{"version":1,"bindings":{"<command id>":["<gesture>",
+	// ...]}}` of the narrator's changes from the input registry's default keymap. It is a generic field like any
+	// other, but no Settings category names its tool yet, so it stays off the generic Settings page - Phase 6 adds
+	// the dedicated "Keyboard & pedals" screen with its own remap-by-pressing UI. saveSettings caps its size and
+	// keeps it global-only (Q3).
+	"Keymap": {{"overrides", "Keyboard shortcut overrides", "text", nil}},
 }
 
 // capabilityFieldSchemas is one choice field (auto/on/off) per DAW port capability (dawport.Capabilities(), DAW port PRD
@@ -1336,6 +1343,11 @@ func capabilityFieldSchemas() []fieldSchema {
 	}
 	return fields
 }
+
+// keymapOverridesMaxBytes bounds Keymap.overrides (docs/prds/input-commands-and-pedals.prd.md Phase 5): a
+// generous cap for a document holding one short gesture list per command, well short of anything that would
+// slow down loading or saving settings.
+const keymapOverridesMaxBytes = 64 * 1024
 
 // settingsSchemas is the settings the app offers with each choice that comes from an approved catalog filled in from it: the spaCy model
 // choice is the catalog's models, whether or not they are installed, so a narrator can select a model before downloading it; the live
@@ -1406,6 +1418,9 @@ func (h *Host) saveSettings(tool, scope string, values map[string]*string) error
 	if tool == "Teleprompter" && scope != "global" {
 		return fmt.Errorf("teleprompter settings are global: the microphone is wired to this computer, not this project")
 	}
+	if tool == "Keymap" && scope != "global" {
+		return fmt.Errorf("keymap overrides are global: a narrator's pedal belongs to the booth, not the project")
+	}
 	if tool == "General" && scope != "global" {
 		if _, ok := values["debug_logging"]; ok {
 			return fmt.Errorf("debug logging is global: it is a switch for this machine, not this project")
@@ -1455,6 +1470,9 @@ func validateSettingValue(tool string, schema fieldSchema, value string) error {
 		}
 		return validateNumberSetting(schema.key, spec, value)
 	case "text":
+		if tool == "Keymap" && schema.key == "overrides" && len(value) > keymapOverridesMaxBytes {
+			return fmt.Errorf("setting %s must be %d bytes or smaller", schema.key, keymapOverridesMaxBytes)
+		}
 		return nil
 	case "color":
 		if len(value) != 6 || !isHex(value) {

@@ -17,19 +17,25 @@ import wave
 from collections import Counter, defaultdict
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, NamedTuple
+from typing import Any, NamedTuple
 
 _SHARED_PYTHON = Path(__file__).resolve().parents[3] / "libs" / "python"
 if str(_SHARED_PYTHON) not in sys.path:
     sys.path.insert(0, str(_SHARED_PYTHON))
+# providers.py is this sidecar's own sibling module; a test that spec-loads this file does not have core/ on sys.path
+# the way running the script directly does, so this mirrors the _SHARED_PYTHON insertion above.
+_CORE_DIR = Path(__file__).resolve().parent
+if str(_CORE_DIR) not in sys.path:
+    sys.path.insert(0, str(_CORE_DIR))
 
 from narration_common import manuscript as canonical_manuscript
 from narration_common.config import get_default
 from narration_common.logging_utils import log, set_log_file
+from narration_common.ports.pronunciation import SOURCES
 from narration_common.progress import write_progress
 
-if TYPE_CHECKING:
-    from piper.voice import PiperVoice
+# Importing this also registers Piper into ENGINES and CMU/eSpeak into SOURCES (ADR 0301, provider-ports P8).
+from providers import load_voice, synthesize_to_file
 
 SCHEMA_VERSION = 2
 CAPITALIZED = re.compile(r"\b[A-Z][A-Za-z'’-]*(?:\s+(?:(?:of|the|and)\s+)?[A-Z][A-Za-z'’-]*){0,3}\b")
@@ -156,47 +162,6 @@ TRAITS = {
     "warm",
     "wise",
     "wary",
-}
-ARPABET_TO_IPA = {
-    "AA": "ɑ",
-    "AE": "æ",
-    "AH": "ʌ",
-    "AO": "ɔ",
-    "AW": "aʊ",
-    "AY": "aɪ",
-    "B": "b",
-    "CH": "tʃ",
-    "D": "d",
-    "DH": "ð",
-    "EH": "ɛ",
-    "ER": "ɝ",
-    "EY": "eɪ",
-    "F": "f",
-    "G": "ɡ",
-    "HH": "h",
-    "IH": "ɪ",
-    "IY": "i",
-    "JH": "dʒ",
-    "K": "k",
-    "L": "l",
-    "M": "m",
-    "N": "n",
-    "NG": "ŋ",
-    "OW": "oʊ",
-    "OY": "ɔɪ",
-    "P": "p",
-    "R": "r",
-    "S": "s",
-    "SH": "ʃ",
-    "T": "t",
-    "TH": "θ",
-    "UH": "ʊ",
-    "UW": "u",
-    "V": "v",
-    "W": "w",
-    "Y": "j",
-    "Z": "z",
-    "ZH": "ʒ",
 }
 
 
@@ -439,43 +404,20 @@ def classify(candidate: dict[str, str]) -> str:
     return "Needs Review"
 
 
-def arpabet_to_ipa(phones: str) -> str:
-    output: list[str] = []
-    for phone in phones.split():
-        output.append(ARPABET_TO_IPA.get(re.sub(r"\d", "", phone), phone.lower()))
-    return " ".join(output)
-
-
-PRONUNCIATION_SOURCES = {"cmu", "espeak"}
+# The narrator's choices for --source, now the pronunciation source registry's own names (ADR 0301, provider-ports P8).
+PRONUNCIATION_SOURCES = SOURCES.names()
 
 
 def pronounce_source(name: str, espeak_library: str | None, source: str) -> dict[str, str]:
-    """Gets a pronunciation from exactly one named engine, raising when that engine has nothing for ``name``.
+    """Gets a pronunciation from exactly one named source, raising when that source has nothing for ``name``.
 
     Unlike ``pronunciation()`` (the automatic CMU-then-eSpeak fallback used at build time, which never raises), this
-    is what the narrator's explicit Generate/Replace control uses (B10): the narrator chose the engine, so a miss is
+    is what the narrator's explicit Generate/Replace control uses (B10): the narrator chose the source, so a miss is
     reported, not silently swallowed into "not generated".
     """
-    if source == "cmu":
-        import pronouncing
-
-        words = re.findall(r"[A-Za-z]+", name)
-        phones = [pronouncing.phones_for_word(word.lower())[0] for word in words if pronouncing.phones_for_word(word.lower())]
-        if not (words and len(phones) == len(words)):
-            raise ValueError(f'The CMU dictionary has no entry for "{name}".')
-        return {"ipa": " ".join(arpabet_to_ipa(phone) for phone in phones), "source": "CMU dictionary", "confidence": "medium"}
-    if source == "espeak":
-        from phonemizer import phonemize
-
-        if espeak_library:
-            from phonemizer.backend.espeak.wrapper import EspeakWrapper
-
-            EspeakWrapper.set_library(espeak_library)
-        ipa = phonemize(name, language="en-us", backend="espeak", strip=True, with_stress=True)
-        if not ipa:
-            raise ValueError(f'eSpeak produced no pronunciation for "{name}".')
-        return {"ipa": ipa, "source": "eSpeak NG", "confidence": "low"}
-    raise ValueError(f"Unknown pronunciation source: {source!r}.")
+    engine = SOURCES.lookup(source)
+    engine.espeak_library = espeak_library
+    return engine.pronounce(name)
 
 
 PRONUNCIATION_UNAVAILABLE_LOG = {"cmu": "CMU pronunciation unavailable", "espeak": "eSpeak phonetic fallback unavailable"}
@@ -485,7 +427,7 @@ def pronunciation(name: str, espeak_library: str | None) -> dict[str, str]:
     # CMU is quick and high-quality for familiar names. It cannot cover most fantasy names.
     # Read-only/generated-only: there is no user-editable "say it as" respelling
     # any more, so this never needs to round-trip anything but the IPA itself.
-    for source in ("cmu", "espeak"):
+    for source in SOURCES.fallback_order():
         try:
             return pronounce_source(name, espeak_library, source)
         except Exception as exc:  # noqa: BLE001
@@ -1194,14 +1136,6 @@ def unrelate(args: argparse.Namespace) -> None:
     print("UNRELATED|" + args.entity_id)
 
 
-def load_voice(model_path: str) -> PiperVoice:
-    """Loads a Piper voice. Piper is imported here, not at the top of the module: only ``render-audio`` needs it,
-    and importing it costs about a quarter of a second, which every other command (each Save, lock, rescan) would pay."""
-    from piper.voice import PiperVoice
-
-    return PiperVoice.load(model_path)
-
-
 def render_audio(args: argparse.Namespace) -> None:
     guide = load_json(args.guide)
     if not guide:
@@ -1230,52 +1164,6 @@ def render_audio(args: argparse.Namespace) -> None:
         raise ValueError(f"The preview voice could not be loaded ({exc}). If its files are damaged, remove it in Settings and install it again.") from exc
     synthesize_to_file(voice, spoken, destination)
     print("AUDIO|" + str(destination))
-
-
-def synthesize_to_file(voice: PiperVoice, spoken: str, destination: Path) -> None:
-    """Synthesizes ``spoken`` and moves the WAV to ``destination`` only once it is complete.
-
-    The host trusts any file at ``destination`` as a cached preview, so a failed run must
-    leave nothing there.  Piper initialises espeak lazily inside ``synthesize_wav``, before
-    it sets the WAV format; closing a wave writer in that state raises "# channels not
-    specified", which would replace the real error.  So the writer is closed by hand and the
-    original failure is what gets reported.
-    """
-    temporary = destination.with_name(f"{destination.name}.{os.getpid()}.part")
-    remove_stale_partials(destination, keep=temporary)
-    wav_file = wave.open(str(temporary), "wb")  # noqa: SIM115 - a with block would close it mid-error and mask the failure
-    try:
-        try:
-            voice.synthesize_wav(spoken, wav_file)
-            frames = wav_file.getnframes()
-        except Exception as exc:
-            raise ValueError(f'"{spoken}" could not be spoken: {str(exc) or type(exc).__name__}') from exc
-        if frames == 0:
-            raise ValueError(f'"{spoken}" could not be spoken: the voice produced no audio for it.')
-        try:
-            wav_file.close()
-            os.replace(temporary, destination)
-        except OSError as exc:
-            raise ValueError(f"The preview could not be saved ({exc}). Close anything that has the file open and try again.") from exc
-    except BaseException:
-        try:
-            wav_file.close()
-        except (wave.Error, OSError):
-            pass
-        temporary.unlink(missing_ok=True)
-        raise
-
-
-def remove_stale_partials(destination: Path, keep: Path) -> None:
-    """Deletes ``<name>.<pid>.part`` files that earlier runs left for this output.
-
-    A run the host stopped at its timeout is killed without running any cleanup, and the
-    pid in the name means no later run would overwrite its file.  The host serializes
-    renders of one output, so no live run owns these.
-    """
-    for entry in destination.parent.iterdir():
-        if entry != keep and entry.name.startswith(destination.name + ".") and entry.name.endswith(".part"):
-            entry.unlink(missing_ok=True)
 
 
 SELF_CHECK_WORD = "hello"
