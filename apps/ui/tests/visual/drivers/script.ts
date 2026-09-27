@@ -400,7 +400,7 @@ export const scriptDrivers: Record<string, Driver> = {
     await clickNav(page, 'Script');
     await page.getByRole('heading', { level: 1, name: PAGE_HEADING.Script, exact: true }).waitFor();
     await clickVisible(page, 'button', 'Collapse all chapters');
-    await page.getByRole('button', { name: 'Front Matter' }).waitFor();
+    await page.locator('.reader-chapters').getByRole('button', { name: 'Front Matter' }).waitFor();
     await page
       .getByRole('button', { name: /^Read .* aloud$/ })
       .first()
