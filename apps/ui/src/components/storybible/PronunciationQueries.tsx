@@ -3,7 +3,9 @@ import { describeApiError } from '../../api/errorMessage';
 import { useApi } from '../../api/ApiContext';
 import { usePendingAction } from '../../hooks/usePendingAction';
 import type { GuidePronunciationStatus, PronunciationQuery } from '../../types';
+import { onlineBatchWords } from '../../pronunciationOnlineWords';
 import { Button } from '../primitives/Button';
+import { ConfirmDialog } from '../primitives/ConfirmDialog';
 import { Select } from '../primitives/Select';
 import { SlideOver } from '../primitives/SlideOver';
 import { StatusBadge } from '../primitives/StatusBadge';
@@ -41,6 +43,7 @@ export function PronunciationQueries({ open, onClose, onChanged, notify }: { ope
   const [rows, setRows] = useState<PronunciationQuery[]>();
   const [loadError, setLoadError] = useState<string>();
   const [filter, setFilter] = useState<Filter>('open');
+  const [confirmOnline, setConfirmOnline] = useState(false);
 
   const load = useCallback(async () => {
     try {
@@ -76,6 +79,23 @@ export function PronunciationQueries({ open, onClose, onChanged, notify }: { ope
       }
     });
 
+  // Q11: a batch online lookup is opt-in with a notice naming how many words it sends; the host refuses a batch whose confirmed count
+  // is not that number, so the notice and the request are counted by the same rule (pronunciationOnlineWords.ts).
+  const online = onlineBatchWords((rows ?? []).map((row) => row.name));
+  const lookUpOnline = () =>
+    mutation.run('online', async () => {
+      try {
+        const result = await api.pronunciationOnlineLookupBatch(online.words, online.words.length);
+        const counts = `${result.fetched} looked up, ${result.fromCache} already on this computer, ${result.notFound} not in the dictionary`;
+        if (result.stopped) notify(`Stopped after ${result.fetched + result.fromCache} of ${result.words}: ${result.stopReason}`, 'error');
+        else notify(`Merriam-Webster: ${counts}. Open a name's pronunciation details to use an answer.`);
+      } catch (error) {
+        notify(describeApiError(error), 'error');
+      } finally {
+        setConfirmOnline(false);
+      }
+    });
+
   const shown = (rows ?? []).filter((row) => filter === 'open' || row.status === filter);
   const sent = (rows ?? []).filter((row) => row.status === 'query_sent').length;
 
@@ -105,6 +125,9 @@ export function PronunciationQueries({ open, onClose, onChanged, notify }: { ope
               <span role="status" className="text-sm" style={{ color: 'var(--text-muted)' }}>
                 {rows.length} open · {sent} sent
               </span>
+              <Button variant="ghost" disabled={online.words.length === 0 || mutation.isBusy} onClick={() => setConfirmOnline(true)}>
+                Look up online…
+              </Button>
               <Button disabled={rows.length === 0 || mutation.isBusy} pending={mutation.isPending('export')} onClick={() => void exportCsv()}>
                 Export CSV
               </Button>
@@ -167,6 +190,23 @@ export function PronunciationQueries({ open, onClose, onChanged, notify }: { ope
           </ul>
         )}
       </div>
+      {confirmOnline && (
+        <ConfirmDialog
+          title={`Look up ${online.words.length} ${online.words.length === 1 ? 'name' : 'names'} online?`}
+          body={
+            <>
+              Merriam-Webster is sent each of these {online.words.length} {online.words.length === 1 ? 'name' : 'names'} on its own, on your own key, and
+              nothing else from your book. Answers are kept on this computer; a name looked up before is not sent again.
+              {online.leftOut > 0 &&
+                ` ${online.leftOut} ${online.leftOut === 1 ? 'name is' : 'names are'} longer than three words or has symbols, and is left out.`}
+            </>
+          }
+          confirmLabel={`Look up ${online.words.length}`}
+          confirm={() => void lookUpOnline()}
+          cancel={() => setConfirmOnline(false)}
+          pending={mutation.isPending('online')}
+        />
+      )}
     </SlideOver>
   );
 }

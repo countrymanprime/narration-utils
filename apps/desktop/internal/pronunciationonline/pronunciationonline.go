@@ -67,7 +67,7 @@ var (
 
 // The errors the service answers with before any request is made.
 var (
-	ErrNoKey             = errors.New("add your own free Merriam-Webster key in Settings > Online dictionary first")
+	ErrNoKey             = errors.New("add your own free Merriam-Webster key in Settings > Story Bible first")
 	ErrBadKey            = errors.New("that does not look like a Merriam-Webster key: paste the key shown on your dictionaryapi.com account page")
 	ErrNotAWord          = errors.New("an online lookup sends one word or name only: letters, digits, spaces, apostrophes, hyphens and periods, at most 3 words and 64 characters")
 	ErrBatchNotConfirmed = errors.New("a batch lookup needs your confirmation of how many words it sends")

@@ -3,6 +3,7 @@
 // against it meets the same refusals the host gives, and never reaches the network (D67).
 import type { NarrationApi, PronunciationOnlineKeyStatus, PronunciationOnlineResult, PronunciationOnlineSpelling } from '../../types';
 import { PRONUNCIATION_ONLINE_MAX_BATCH } from '../contracts/pronunciationOnline';
+import { onlineBatchWords, onlineWord } from '../../pronunciationOnlineWords';
 
 const NOT_A_WORD = 'an online lookup sends one word or name only: letters, digits, spaces, apostrophes, hyphens and periods, at most 3 words and 64 characters';
 
@@ -16,28 +17,10 @@ const ANSWERS: Record<string, { pronunciations: PronunciationOnlineSpelling[]; s
   caterpillar: { pronunciations: [{ headword: 'cat·er·pil·lar', spelling: 'ˈka-tə(r)-ˌpi-lər' }] },
 };
 
-/** The Go host's CheckWord: the one word (or short name) a lookup may send, tidied, or an error. */
-export function checkOnlineWord(raw: string): string {
-  const trimmed = raw.replace(/^ +| +$/g, '');
-  if (/[^\S ]/u.test(trimmed)) throw new Error(NOT_A_WORD);
-  const parts = trimmed.split(/ +/).filter(Boolean);
-  const word = parts.join(' ');
-  if (parts.length === 0 || parts.length > 3 || [...word].length > 64) throw new Error(NOT_A_WORD);
-  if (!/^[\p{L}\p{M}\p{Nd} '’.-]+$/u.test(word) || !/\p{L}/u.test(word)) throw new Error(NOT_A_WORD);
+function checkOnlineWord(raw: string): string {
+  const word = onlineWord(raw);
+  if (word === undefined) throw new Error(NOT_A_WORD);
   return word;
-}
-
-/** The distinct words a batch sends, as the host counts them (case-insensitive, first seen first). */
-export function onlineBatchWords(raw: readonly string[]): string[] {
-  const seen = new Set<string>();
-  const words: string[] = [];
-  for (const entry of raw) {
-    const word = checkOnlineWord(entry);
-    if (seen.has(word.toLowerCase())) continue;
-    seen.add(word.toLowerCase());
-    words.push(word);
-  }
-  return words;
 }
 
 export function createPronunciationOnlineMock(options: { keySaved?: boolean } = {}) {
@@ -49,7 +32,7 @@ export function createPronunciationOnlineMock(options: { keySaved?: boolean } = 
     const word = checkOnlineWord(raw);
     const hit = cache.get(word.toLowerCase());
     if (hit) return { result: { ...hit, cached: true }, fetched: false };
-    if (!keySaved) throw new Error('add your own free Merriam-Webster key in Settings > Online dictionary first');
+    if (!keySaved) throw new Error('add your own free Merriam-Webster key in Settings > Story Bible first');
     const known = ANSWERS[word.toLowerCase()];
     const answer: Omit<PronunciationOnlineResult, 'cached'> = {
       word,
@@ -81,8 +64,8 @@ export function createPronunciationOnlineMock(options: { keySaved?: boolean } = 
     pronunciationOnlineSignUpOpen: async () => {},
     pronunciationOnlineLookup: async (word) => lookup(word).result,
     pronunciationOnlineLookupBatch: async (raw, confirmedCount) => {
-      const words = onlineBatchWords(raw);
-      if (words.length === 0) throw new Error(NOT_A_WORD);
+      const { words, leftOut } = onlineBatchWords(raw);
+      if (words.length === 0 || leftOut > 0) throw new Error(NOT_A_WORD);
       if (words.length > PRONUNCIATION_ONLINE_MAX_BATCH) throw new Error('a batch lookup sends at most 200 words at a time');
       if (confirmedCount !== words.length) throw new Error('a batch lookup needs your confirmation of how many words it sends');
       const result = { words: words.length, fetched: 0, fromCache: 0, notFound: 0, failed: 0, stopped: false, stopReason: '' };
