@@ -67,6 +67,7 @@
         "src/components/settings/DawCatalogPanel.tsx",
         "src/components/settings/DeliveryProfileEditor.tsx",
         "src/components/settings/DeliveryProfilesPanel.tsx",
+        "src/components/settings/KeyboardPanel.tsx",
         "src/components/settings/RetailSamplePanel.tsx",
         "src/components/settings/Settings.tsx",
         "src/components/settings/UpdatesPanel.tsx",
@@ -445,7 +446,8 @@
         "Spoken Label Overrides The Glyph Name"
       ],
       "consumers": [
-        "src/components/help/ShortcutSheet.tsx"
+        "src/components/help/ShortcutSheet.tsx",
+        "src/components/settings/KeyboardPanel.tsx"
       ],
       "a11yDebt": false
     },
@@ -965,6 +967,7 @@
         "src/components/settings/CreditsPanel.tsx",
         "src/components/settings/DawCatalogPanel.tsx",
         "src/components/settings/DeliveryProfilesPanel.tsx",
+        "src/components/settings/KeyboardPanel.tsx",
         "src/components/settings/RetailSamplePanel.tsx",
         "src/components/settings/Settings.tsx",
         "src/components/stages/useStageRecommendations.ts",

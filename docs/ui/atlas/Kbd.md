@@ -19,3 +19,4 @@ Storybook title: `Primitives/Kbd`. Source: `src/components/primitives/Kbd.tsx`.
 ## Used by
 
 - `src/components/help/ShortcutSheet.tsx`
+- `src/components/settings/KeyboardPanel.tsx`
