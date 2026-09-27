@@ -91,7 +91,7 @@ func score(candidate Candidate, settings Settings) float64 {
 	f := candidate.features
 	dialogueScore := 1 - dialogueBandDistance(f.dialogueShare)
 	entityScore := 1 - 1/(1+float64(f.distinctEntities))
-	return w.dialogue*dialogueScore + w.entities*entityScore + w.hardWords*f.hardWordDensity
+	return w.dialogue*dialogueScore + w.entities*entityScore + w.hardWords*f.hardWordDensity - candidate.findingsPenalty
 }
 
 // dialogueBandDistance is 0 inside the preferred band and grows toward 1 the further outside it dialogueShare sits.

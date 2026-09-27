@@ -172,7 +172,7 @@ Every phase follows the `CLAUDE.md` workflow: plan (find or open the tracking is
 | 2 | Binding, contract and mock | Read binding for candidates, TypeScript contract with Zod schema, mock fixtures for every state, host API bump, `stressReaders` row | complete | - | 1 | - |
 | 3 | Proofing page Preview panel | Panel, candidate rows, reasons and warnings, open in reader, copy range, named states; catalog rows and drivers, docs, screenshots | complete | 4 | 2 | - |
 | 4 | Preview settings | Target length, tolerance, preset, ending exclusion in Settings; defaults; validation | complete | 3 | 1, DX-2 (numeric settings kind) | - |
-| 5 | Findings overlay | Exclude or rank down windows overlapping open findings by paragraph; open-finding evidence; dismissed ignored | pending | 6 | 2, RD-1, TR-4 | - |
+| 5 | Findings overlay | Exclude or rank down windows overlapping open findings by paragraph; open-finding evidence; dismissed ignored | complete | 6 | 2, RD-1, TR-4 | - |
 | 6 | Audio position mapper (spike, then build) | Paragraph-to-time mapping for a confirmed, recorded chapter, or the decision to ship pace-only; REAPER-saved fixtures | pending | 5 | EL-5, RC, TR-3 or the stamp reader | - |
 | 7 | Audio quality and performance signals | Windowed clipping, silence, noise and level evidence per candidate; pace evidence; "audio-checked" label rule; matrix tests | pending | - | 5, 6, DX-4, EL-6 | - |
 | 8 | Pin, adjust and close-out | Narrator pin and edge adjustment, stale detection, `resetDerived` entry, docs, ADR, cleanup | pending | - | 3 (7 optional) | - |
