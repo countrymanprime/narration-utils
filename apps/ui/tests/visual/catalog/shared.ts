@@ -1,9 +1,12 @@
 // The row metadata (extra viewports, reloadPerViewport reasons) the page files under catalog/ share.
-import { REFLOW_VIEWPORT } from '../viewports';
+import { COMPANION_VIEWPORT, REFLOW_VIEWPORT } from '../viewports';
 
 // The Settings row stacks below `md`, so every Settings state is also captured at the reflow width (ADR 0061) and the
 // collapsed-control check runs there.
 export const REFLOW = { extraViewports: [REFLOW_VIEWPORT] };
+
+// Companion mode's rows are also captured at the width the host narrows the window to (COMPANION_VIEWPORT).
+export const COMPANION = { extraViewports: [COMPANION_VIEWPORT] };
 
 // `reloadPerViewport` (lib/types.ts), with the reason as the constant's name: these rows' pictures at a smaller width
 // differ from a fresh load at that width when the suite drives the page once at desktop width and resizes (found by
