@@ -11,6 +11,7 @@ import (
 	"github.com/countrymanprime/narration-utils/shell/internal/lineidentity"
 	"github.com/countrymanprime/narration-utils/shell/internal/manuscript"
 	"github.com/countrymanprime/narration-utils/shell/internal/pickups"
+	"github.com/countrymanprime/narration-utils/shell/internal/production"
 	"github.com/countrymanprime/narration-utils/shell/internal/projectstate"
 	"github.com/countrymanprime/narration-utils/shell/internal/renderconfig"
 	"github.com/countrymanprime/narration-utils/shell/internal/retakelanes"
@@ -42,6 +43,7 @@ type hostServices struct {
 	transcript   *transcript.Service
 	coverage     *coverage.Service
 	stages       *stages.Service
+	production   *production.Service
 	editing      *editing.Service
 	// reachability tracks the current bridge client's PROJECT_STATUS heartbeat (ADR 0092, Phase 7, W10), behind the
 	// DAW port's Heartbeat role (DAW port PRD P5c). Never a true nil interface: with no bridge client configureLocked
@@ -103,6 +105,7 @@ func (h *Host) services() hostServices {
 		transcript:      h.transcript,
 		coverage:        h.coverage,
 		stages:          h.stages,
+		production:      h.production,
 		editing:         h.editing,
 		reachability:    h.reachability,
 		bridge:          h.bridge,

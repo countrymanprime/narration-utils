@@ -32,6 +32,7 @@ import (
 	"github.com/countrymanprime/narration-utils/shell/internal/persist"
 	"github.com/countrymanprime/narration-utils/shell/internal/pickups"
 	"github.com/countrymanprime/narration-utils/shell/internal/process"
+	"github.com/countrymanprime/narration-utils/shell/internal/production"
 	"github.com/countrymanprime/narration-utils/shell/internal/project"
 	"github.com/countrymanprime/narration-utils/shell/internal/projectstate"
 	"github.com/countrymanprime/narration-utils/shell/internal/proofing"
@@ -55,7 +56,7 @@ import (
 // Keep this in lockstep with apps/ui/src/hostApi.ts.  The frontend rejects
 // an older host before bootstrapping so a partial update cannot run against a
 // binding contract it does not understand.
-const hostAPIVersion = 66
+const hostAPIVersion = 68
 
 // Host is the Wails binding boundary. The frontend invokes only this bound
 // object; it never receives a loopback port or an HTTP capability.
@@ -117,6 +118,9 @@ type Host struct {
 	// the recording signal over coverage, the decision store and the manuscript's status path. Swapped with coverage on every
 	// project switch; it computes on read and stores no recommendation (D1).
 	stages *stages.Service
+	// production is the project's stage timer and time log (production-tracking.prd.md, bindings_production.go). Swapped
+	// on every project switch; nil with no project folder, so nothing is ever logged outside a project.
+	production *production.Service
 	// editing is the editing-readiness scan service (docs/prds/editing-readiness-analysis.prd.md Phase 5,
 	// bindings_editing.go): played-range empty-space analysis over the chapter's confirmed track, cache-first, with its
 	// own ledger records and silence_cleanup findings. Swapped on every project switch like coverage; it starts only on
@@ -507,6 +511,10 @@ func (h *Host) configureLocked(next config) {
 	// stages are evaluated (h.proofingProfile reads it then, never under this lock).
 	h.stages = stagesService(h.config.projectFolder, h.manuscript, h.coverage, h.editing, settingsStore, h.coverageUnavailable(h.config.comparePython, settingsStore), h.persist,
 		proofingProvider(h.findings, proofingSources{project: h.config.projectFolder, profile: h.proofingProfile, lengthTolerance: renderLengthTolerance(settingsStore)}))
+	h.production = nil
+	if h.config.projectFolder != "" {
+		h.production = production.New(production.Config{Project: h.config.projectFolder, Reporter: h.persist, Recorded: productionRecorded(h.manuscript)})
+	}
 	// The S28 commands (internal/bridge/actions.go) are one more consumer of the same client. Whether each may be sent
 	// is the DAW port resolver's answer, asked before anything is written (DAW port PRD P3, ADR 0300): the narrator's
 	// DAW.capability.<name> toggles, with DAW.experimental_reaper_actions still turning on every Experimental one left
