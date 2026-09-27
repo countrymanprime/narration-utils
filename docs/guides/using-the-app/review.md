@@ -4,8 +4,9 @@
 
 Review gathers what the app's checks found into one list, so you can work through them in one place:
 the differences a [Proofing](proofing.md) comparison heard between the script and the recording, the
-[Story Bible](story-bible.md) entries and pronunciations that need a look, and the lines you recorded
-more than once ([pickups and duplicates](#pickups-and-duplicates)). Each finding waits in
+[Story Bible](story-bible.md) entries and pronunciations that need a look, the lines you recorded
+more than once ([pickups and duplicates](#pickups-and-duplicates)), and the delivery rules your
+measured files did not meet ([delivery checks](#delivery-checks)). Each finding waits in
 the list until you accept, dismiss or defer it, and your decision is kept with the project. Running a
 check again keeps your decision on a finding whose evidence did not change.
 
@@ -49,7 +50,8 @@ Select a finding to see it in full beside the list (under it on a narrower windo
 - its confidence, and the check's reason for it.
 
 **Show in manuscript** opens the [Manuscript](manuscript.md) at the finding's line (it needs an
-imported manuscript), and a Story Bible finding also has **Open in Story Bible**.
+imported manuscript), and a Story Bible finding also has **Open in Story Bible**. A delivery check has
+**Open in Delivery** instead (see [Delivery checks](#delivery-checks)).
 
 ![A transcript difference selected, with its evidence and the decision controls](../../images/ui/review-detail.webp)
 
@@ -190,3 +192,23 @@ again replaces it, and keeps your decision only if the measurements did not chan
 ---
 
 [← Chapter workspace](workspace.md) · [Index](README.md) · [Delivery →](delivery.md)
+
+## Delivery checks
+
+When you measure rendered files on the [Delivery](delivery.md) page, each rule a file did not meet, and
+each value the app could not measure, becomes a **Delivery check** here: one per rule per file, found by
+**Delivery measurement**. The list names the file where other findings name a chapter, and says the
+rule, the value and how it missed ("RMS −24.1 dBFS, below the minimum of −23"). Selected, it shows the
+rule, what the profile requires, what was measured and which profile judged it. A rule's advice (a true
+peak above ACX's advice, for example) stays on the Delivery page.
+
+A delivery check has no line in the manuscript and no item in REAPER, so **Open in Delivery** takes its
+place: it opens the Delivery page on that file, rule by rule. If the file is not in the last measurement
+(the app keeps the last measurement until it closes), the page says so; measure it again to see it.
+
+Accept, Dismiss and Defer work as for every other finding, and change nothing but your decision: not
+the profile and not the measurement. Your decision holds while the same audio is judged against the same
+rule. After a new render, or if you change that rule's numbers in a custom profile, the check comes back
+to review with your note kept. When a file meets the rule again, its check is no longer in the latest
+run. Choosing another delivery profile judges the last measurement again, and the list follows it.
+
