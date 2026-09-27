@@ -178,7 +178,9 @@ export type TeleprompterLocated = {
  * or confident track (the narrator picks one from `match`); `no_recording` has nothing audible on the track; `source_missing`
  * and `source_unsupported` cannot read the last item's source file.
  */
-export type TeleprompterLocateStatus = 'found' | 'low_confidence' | 'not_found' | 'no_track' | 'no_recording' | 'source_missing' | 'source_unsupported';
+/** `recording`: REAPER is recording onto the chapter's track now, so nothing is located (read-aloud-resume-from-daw PRD Phase 4). */
+export type TeleprompterLocateStatus =
+  'found' | 'low_confidence' | 'not_found' | 'no_track' | 'no_recording' | 'source_missing' | 'source_unsupported' | 'recording';
 
 export type TeleprompterStartResult =
   | { status: 'started' }
@@ -209,8 +211,17 @@ export type TeleprompterLocateResult =
       lastReading: TeleprompterReading | null;
       /** The host's reconciliation of `located` with `lastReading` (read-aloud-resume-from-daw PRD Phase 3): render it, never recompute it. */
       verdict: TeleprompterResumeVerdict;
+      /**
+       * Where `recordedEnd` came from (read-aloud-resume-from-daw PRD Phase 4, ADR 0349): `live` is REAPER's answer ("in REAPER
+       * now"), `saved` the saved project ("as of the project's last save"). Absent when no track was read.
+       */
+      dawSource?: TeleprompterDawSource;
+      /** Which point of the track `recordedEnd` is (RD2): REAPER's edit cursor on its audio, or the end of that audio. */
+      dawAt?: 'cursor' | 'end';
     }
   | TeleprompterModelRequired;
+
+export type TeleprompterDawSource = 'saved' | 'live';
 
 /**
  * What the resume prompt shows (read-aloud-resume-from-daw PRD Phase 3, `teleprompter.Reconcile`):
@@ -226,14 +237,14 @@ export type TeleprompterResumeVerdictKind = 'agree' | 'disagree' | 'complete' | 
 /**
  * One source's place: `word` is the zero-based next word to read (what `startWord` takes), `number` the same word one-based
  * for display, and `sentence` the sentence holding the last word read before it (token range `[start, end)`). `source` is
- * set on the DAW place: `saved` is the saved project ("as of the project's last save"); Phase 4 adds a live source.
+ * set on the DAW place: `saved` is the saved project ("as of the project's last save"), `live` REAPER's answer ("in REAPER now", Phase 4).
  */
 export type TeleprompterResumePlace = {
   word: number;
   number: number;
   sentence: { start: number; end: number; text: string } | null;
   confident: boolean;
-  source?: 'saved';
+  source?: TeleprompterDawSource;
 };
 
 export type TeleprompterResumeVerdict = {
@@ -348,6 +359,19 @@ export type TeleprompterPunchResult = {
   message?: string;
 };
 
+/**
+ * `TeleprompterResumeFollow` / `TeleprompterResumeUnfollow` (read-aloud-resume-from-daw PRD Phase 5, ADR 0350): whether the
+ * host now follows REAPER for the resume prompt; not with no track to follow (`no_track`) or no way to ask REAPER
+ * (`unavailable`: no DAW, REAPER not reachable, or track state switched off).
+ */
+export type TeleprompterResumeFollow = { following: boolean; reason?: 'unavailable' | 'no_track' };
+
+/**
+ * `teleprompter_resume_follow`: REAPER started playing or recording (the prompt goes away, RD7), or its edit cursor settled on
+ * the chapter's recorded audio at `editCursor` project seconds (the prompt looks again, RD6).
+ */
+export type TeleprompterResumeFollowEvent = { chapterId: string; reason: 'playing' | 'recording' | 'cursor_moved'; editCursor?: number };
+
 export interface TeleprompterApi {
   teleprompterStart(options: TeleprompterStartOptions): Promise<TeleprompterStartResult>;
   teleprompterStop(): Promise<void>;
@@ -383,4 +407,12 @@ export interface TeleprompterApi {
   teleprompterLocate(chapterId: string, options?: TeleprompterLocateOptions): Promise<TeleprompterLocateResult>;
   subscribeTeleprompterEvent(onEvent: (event: TeleprompterEvent) => void): () => void;
   subscribeTeleprompterState(onState: (state: TeleprompterState) => void): () => void;
+  /**
+   * Follow REAPER while `chapterId`'s resume prompt shows: about once a second, never during a session, bounded by the host.
+   * `trackGuid` is the track the prompt's locate read (omit for the chapter's own). Replaces any follow already running.
+   */
+  teleprompterResumeFollow(chapterId: string, trackGuid?: string): Promise<TeleprompterResumeFollow>;
+  /** Stop following REAPER (the prompt went away or the dialog closed); safe with nothing followed. */
+  teleprompterResumeUnfollow(): Promise<TeleprompterResumeFollow>;
+  subscribeTeleprompterResumeFollow(onEvent: (event: TeleprompterResumeFollowEvent) => void): () => void;
 }
