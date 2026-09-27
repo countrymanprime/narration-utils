@@ -189,10 +189,6 @@ the group. When you have chosen, make that take active in REAPER yourself; the a
 take plays. Accept, dismiss or defer the comparison like any other finding; comparing the same group
 again replaces it, and keeps your decision only if the measurements did not change.
 
----
-
-[← Chapter workspace](workspace.md) · [Index](README.md) · [Delivery →](delivery.md)
-
 ## Delivery checks
 
 When you measure rendered files on the [Delivery](delivery.md) page, each rule a file did not meet, and
@@ -212,3 +208,6 @@ rule. After a new render, or if you change that rule's numbers in a custom profi
 to review with your note kept. When a file meets the rule again, its check is no longer in the latest
 run. Choosing another delivery profile judges the last measurement again, and the list follows it.
 
+---
+
+[← Chapter workspace](workspace.md) · [Index](README.md) · [Delivery →](delivery.md)
