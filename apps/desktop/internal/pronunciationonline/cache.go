@@ -49,14 +49,6 @@ func (c *Cache) Get(word string) (CacheEntry, bool) {
 	return entry, ok
 }
 
-// Len is how many answers are cached.
-func (c *Cache) Len() int {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-	current, _ := c.read()
-	return len(current.Entries)
-}
-
 // Put caches answer for word, fetched at at.
 func (c *Cache) Put(word string, answer Answer, at time.Time) error {
 	c.mu.Lock()
