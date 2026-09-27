@@ -8,6 +8,7 @@ import { Panel } from '../primitives/Panel';
 import { ProgressBar } from '../primitives/ProgressBar';
 import { Tab, TabList, TabPanel, Tabs } from '../primitives/Tabs';
 import { BookChecklistPanel } from './BookChecklistPanel';
+import { BookSpreadPanel } from './BookSpreadPanel';
 import { deliveryProfileKey, deliveryProfileTitle } from './deliveryProfile';
 import { DeliveryProfilePanel, type ProfileState } from './DeliveryProfilePanel';
 import { DiagnosticsTab } from './DiagnosticsTab';
@@ -282,6 +283,7 @@ export function DeliveryPage({ openSettings, focus }: { openSettings: () => void
               )
             )}
           </Panel>
+          {judgedBy && <BookSpreadPanel profile={judgedBy} files={files} />}
           {judgedBy && job && job.bookRules.length > 0 && <BookChecklistPanel profile={judgedBy} bookRules={job.bookRules} />}
           <div ref={detailRef} className="flex scroll-mt-4 flex-col gap-2 empty:hidden">
             {detail && judgedBy && focusNote?.found && (

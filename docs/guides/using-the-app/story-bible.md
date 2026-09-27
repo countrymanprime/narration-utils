@@ -77,6 +77,31 @@ fallback needs a system component many machines don't have) - the message says w
 try the other source or try again. A pronunciation you set this way is kept the next time you
 rebuild the Story Bible; an automatically generated one can still change on a rebuild.
 
+## Your own pronunciation, and what the author said
+
+Under each pronunciation is its status: **Researched** (looked up, the default), **Query sent** (you
+asked the author) or **Author confirmed**, with your note beside it if you wrote one.
+
+In edit mode you can type **Your pronunciation** and press **Use mine**. The dictionary's answer is
+not thrown away: it shows as "Also kept", and **Use ... instead** switches back to it (and keeps
+yours, so you can switch again). Neither step looks anything up. Set the **Status** and a
+**Pronunciation note** (who you asked, and when) and press **Save status**. If you change a
+pronunciation the author confirmed, it goes back to Researched, because the author has not heard the
+new one. A rebuild keeps all of this.
+
+## Pronunciation queries for the author
+
+The **Pronunciation queries** button at the top of the Story Bible opens a panel that lists every
+name the author has not confirmed yet, in the order the book first uses them, with the pronunciation,
+its status, your note and the sentence it first appears in. **Show** narrows it to the ones you have
+sent or the ones you have only looked up.
+
+**Export CSV** saves `pronunciation-queries.csv`, one row per name, for you to email or share with
+the author however you usually do. It opens in any spreadsheet. The last two columns (`entry_id`,
+`alias_index`) tell the app which entry each row is about, so ask the author to leave them as they
+are. **Mark sent** records that you asked. **Mark answered** records that the author confirmed it,
+and the name leaves the list.
+
 | Message | What it means | What to do |
 | --- | --- | --- |
 | "... could not be spoken: the voice produced no audio for it" | The name is only punctuation or symbols, so the voice has nothing to say. | Preview an alias that has letters in it, or ignore the preview for this name. |

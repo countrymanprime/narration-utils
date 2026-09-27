@@ -34,5 +34,7 @@ export const workspaceDrivers: Record<string, Driver> = {
     await settlePage(page);
     await openWorkspaceFor(page, 'Chapter 1');
     await page.getByText('Check current').waitFor();
+    // Phase 3: Go to/Loop are disabled once useReaperStatus's first poll answers 'standalone'.
+    await page.getByRole('button', { name: 'Go to in REAPER' }).waitFor();
   },
 };

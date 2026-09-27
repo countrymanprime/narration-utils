@@ -32,7 +32,14 @@ import { dawCatalogListSchema } from './schemas/dawCatalog';
 import { dawCapabilitiesSchema, dawTransportSchema } from './schemas/daw';
 import { providerCapabilitiesSchema } from './schemas/providers';
 import { chapterSyncPreviewSchema, chapterSyncStateSchema } from './schemas/chapterSync';
-import { guideBuildResultSchema, guideCreatedSchema, guideEntitiesSchema, guidePreviewSchema } from './schemas/storyBible';
+import {
+  guideBuildResultSchema,
+  guideCreatedSchema,
+  guideEntitiesSchema,
+  guidePreviewSchema,
+  pronunciationQueriesCsvSchema,
+  pronunciationQueriesSchema,
+} from './schemas/storyBible';
 import { settingsForScopeSchema } from './schemas/settings';
 import { tracksDiscoverySchema, tracksProjectSchema } from './schemas/tracks';
 import {
@@ -55,6 +62,7 @@ import { coverageResultSchema, coverageStartResultSchema, coverageStateSchema } 
 import { editingCandidatesSchema, editingStartResultSchema, editingStateSchema } from './schemas/editing';
 import { workspaceAlignmentResultSchema } from './schemas/workspace';
 import { previewResultSchema } from './schemas/preview';
+import { productionPlanSchema } from './schemas/production';
 import { stageDecisionResultSchema, stageRecommendationsSchema } from './schemas/stages';
 import { findingMarkerSchema, findingNavigationSchema, findingSchema, findingsPageSchema, findingsSummarySchema, reaperStatusSchema } from './schemas/findings';
 import { assetCatalogSchema, assetInstallJobSchema, assetVerifyResultSchema } from './schemas/assets';
@@ -82,6 +90,7 @@ import { pickupsImportResultSchema, pickupsPunchResultSchema, pickupsStartResult
 import { renderConfigStartResultSchema, renderConfigStateSchema, renderConfigSuggestedFolderSchema } from './schemas/renderconfig';
 import { chapterTagsEmbedResultSchema, chapterTagsPreviewSchema } from './schemas/chaptertags';
 import { cleanupToolsStartResultSchema, cleanupToolsStateSchema } from './schemas/cleanuptools';
+import { prepMarkupChapterSchema, prepMarkupSpanSchema } from './schemas/prepMarkup';
 import { cleanupApplyResultSchema, cleanupPreviewResultSchema, levelMatchApplyResultSchema, levelMatchPreviewResultSchema } from './schemas/cleanup';
 import { projectStateChangedSchema, projectStateStartResultSchema, projectStateStateSchema } from './schemas/projectstate';
 import { dictionaryLookupResultSchema } from './schemas/dictionary';
@@ -249,6 +258,13 @@ export const wailsClient: NarrationApi = {
   guideUnrelate: (id, otherId, label) => decode(voidResult, 'GuideUnrelate', host.GuideUnrelate(id, otherId, label)),
   guidePreview: (id, aliasIndex) => decode(guidePreviewSchema, 'GuidePreview', host.GuidePreview(id, aliasIndex ?? null)),
   guidePronounce: (id, source, aliasIndex) => decode(voidResult, 'GuidePronounce', host.GuidePronounce(id, aliasIndex ?? null, source)),
+  guidePronounceUser: (id, ipa, aliasIndex) => decode(voidResult, 'GuidePronounceUser', host.GuidePronounceUser(id, aliasIndex ?? null, ipa)),
+  guidePronunciationUseAlternate: (id, aliasIndex) =>
+    decode(voidResult, 'GuidePronunciationUseAlternate', host.GuidePronunciationUseAlternate(id, aliasIndex ?? null)),
+  guidePronunciationQueries: () => decode(pronunciationQueriesSchema, 'GuidePronunciationQueries', host.GuidePronunciationQueries()),
+  guidePronunciationQueriesCsv: () => decode(pronunciationQueriesCsvSchema, 'GuidePronunciationQueriesCSV', host.GuidePronunciationQueriesCSV()),
+  guidePronunciationSetStatus: (id, status, note, aliasIndex) =>
+    decode(voidResult, 'GuidePronunciationSetStatus', host.GuidePronunciationSetStatus(id, aliasIndex ?? null, status, note ?? null)),
   ttsCatalog: () => decode(ttsCatalogSchema, 'TtsCatalog', host.TtsCatalog()),
   ttsInstall: (voiceId) => decode(ttsInstallJobSchema, 'TtsInstall', host.TtsInstall(voiceId)),
   ttsInstallState: (jobId) => decode(ttsInstallJobSchema, 'TtsInstallState', host.TtsInstallState(jobId)),
@@ -324,6 +340,10 @@ export const wailsClient: NarrationApi = {
       host.ManuscriptCreateNote(chapterId, paragraphId, text, anchorText ?? '', anchorStart ?? null, anchorEnd ?? null),
     ),
   noteDelete: (id) => decode(voidResult, 'ManuscriptDeleteNote', host.ManuscriptDeleteNote(id)),
+  prepMarkupList: (chapterId) => decode(prepMarkupChapterSchema, 'PrepMarkupList', host.PrepMarkupList(chapterId)),
+  prepMarkupSave: (chapterId, paragraphId, start, end, kind, value) =>
+    decode(prepMarkupSpanSchema, 'PrepMarkupSave', host.PrepMarkupSave(chapterId, paragraphId, start, end, kind, value)),
+  prepMarkupDelete: (chapterId, id) => decode(voidResult, 'PrepMarkupDelete', host.PrepMarkupDelete(chapterId, id)),
   subscribeTranscript: (onUpdate) => subscribeChecked('transcript:state', transcriptStateSchema, onUpdate),
   coverageStart: (chapterId) => decode(coverageStartResultSchema, 'CoverageStart', host.CoverageStart(chapterId)),
   coverageState: () => decode(coverageStateSchema, 'CoverageState', host.CoverageState()),
@@ -346,7 +366,13 @@ export const wailsClient: NarrationApi = {
   levelMatchApply: (chapterId, metric, targetValueDb, toleranceDb) =>
     decode(levelMatchApplyResultSchema, 'LevelMatchApply', host.LevelMatchApply(chapterId, metric, targetValueDb, toleranceDb)),
   workspaceAlignment: (chapterId) => decode(workspaceAlignmentResultSchema, 'WorkspaceAlignment', host.WorkspaceAlignment(chapterId)),
+  workspaceGoTo: (chapterId, tokenIndex) => decode(findingNavigationSchema, 'WorkspaceGoTo', host.WorkspaceGoTo(chapterId, tokenIndex)),
+  workspaceLoop: (chapterId, firstToken, lastToken) => decode(findingNavigationSchema, 'WorkspaceLoop', host.WorkspaceLoop(chapterId, firstToken, lastToken)),
   previewCandidates: () => decode(previewResultSchema, 'PreviewCandidates', host.PreviewCandidates()),
+  productionPlan: () => decode(productionPlanSchema, 'ProductionPlan', host.ProductionPlan()),
+  setProductionDeadline: (deadline, contractedAmount) =>
+    decode(productionPlanSchema, 'ProductionSetDeadline', host.ProductionSetDeadline(deadline, contractedAmount)),
+  saveProductionMilestones: (milestones) => decode(productionPlanSchema, 'ProductionSaveMilestones', host.ProductionSaveMilestones(milestones)),
   lineIdentityStamp: (rows, overwrite) => decode(lineIdentityStartResultSchema, 'LineIdentityStamp', host.LineIdentityStamp(rows, overwrite)),
   lineIdentityRead: () => decode(lineIdentityStartResultSchema, 'LineIdentityRead', host.LineIdentityRead()),
   lineIdentityState: () => decode(lineIdentityStateSchema, 'LineIdentityState', host.LineIdentityState()),

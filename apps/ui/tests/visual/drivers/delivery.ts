@@ -40,6 +40,13 @@ export const deliveryDrivers: Record<string, Driver> = {
     await detail.waitFor();
     await detail.scrollIntoViewIfNeeded();
   },
+  'book-spread': async (page) => {
+    await openDelivery(page, '?mockMeasure=spread');
+    await page.getByRole('table', { name: 'Measurements' }).waitFor();
+    const heading = page.getByRole('heading', { name: 'Book-wide spread' });
+    await heading.waitFor();
+    await heading.scrollIntoViewIfNeeded();
+  },
   'custom-profile': async (page) => {
     await measureOnDelivery(page, '?mockDeliveryProfile=custom');
     await measurementEnded(page, /^Measured 2 of 3 files; 1 could not be measured\./);

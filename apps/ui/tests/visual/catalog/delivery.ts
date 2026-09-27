@@ -37,6 +37,13 @@ export const deliveryStates: StateEntry[] = [
   },
   {
     page: 'delivery',
+    state: 'book-spread',
+    description:
+      'Delivery, six chapters already measured against ACX (?mockMeasure=spread, mockup 11 "Book consistency", delivery-platform-profiles.prd.md Phase 10) - the book-wide spread below the per-file table: RMS, peak and noise floor each as their own min-to-max band with a median tick and one tick per chapter, all within ACX and read the same in light and dark',
+    ...KEEPS_DESKTOP_SCROLL,
+  },
+  {
+    page: 'delivery',
     state: 'custom-profile',
     description:
       'Delivery judged by a custom profile (?mockDeliveryProfile=custom, mockup 07) - "My ACX, tighter peak", custom and based on ACX, two rules off, and every rule the app checks met',

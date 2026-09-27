@@ -43,8 +43,6 @@ func main() {
 		// Wails finds index.html inside the embedded folder, as v2 did; /media is the host's own route (media.go).
 		Assets:         application.AssetOptions{Handler: application.AssetFileServerFS(frontendAssets), Middleware: host.mediaMiddleware},
 		SingleInstance: &application.SingleInstanceOptions{UniqueID: "b742fa00-67d8-4a0c-a290-b70b193cc785", OnSecondInstanceLaunch: host.onSecondInstance},
-		// Closing the window quits on every platform, as it did on v2 (a macOS app stays running by default under v3).
-		Mac: application.MacOptions{ApplicationShouldTerminateAfterLastWindowClosed: true},
 	})
 	app.Window.NewWithOptions(mainWindowOptions())
 	if err := app.Run(); err != nil {

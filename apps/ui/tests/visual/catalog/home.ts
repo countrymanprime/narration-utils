@@ -209,7 +209,7 @@ export const homeStates: StateEntry[] = [
     state: 'recording-check-model-required',
     description: 'Home, a recording check that needs the Whisper model first (?mockAssets=missing): the first-use download question, never a silent download',
   },
-  // Stage suggestions (docs/prds/chapter-stage-recommendations.prd.md Phase 5, ADR 0160 and 0161), on `?mockStages=mixed`: Chapter 4 read in
+  // Stage suggestions (chapter-stage-recommendations.prd.md Phase 5, deleted, ADR 0160 and 0161), on `?mockStages=mixed`: Chapter 4 read in
   // full (suggested), Chapter 5 with no track linked (can't tell), Chapter 6 short (not ready), Chapter 7 confirmed into Editing and since
   // found short (evidence changed), Chapter 8 confirmed on evidence that still holds.
   {

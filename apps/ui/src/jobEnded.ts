@@ -54,3 +54,13 @@ export function notificationForJobEnd(event: JobEnded): { title: string; body: s
   if (event.outcome === 'error') return { title: 'Task failed', body: event.message || 'A background task failed.' };
   return { title: 'Task finished', body: event.message || 'A background task finished.' };
 }
+
+/**
+ * Whether a job-end toast must wait rather than show immediately (booth-mode-and-companion-panel.prd.md Phase 5's
+ * no-sound, no-notification rule): only while the booth is recording (`useBoothRecording`), and only a success/info
+ * announcement - an error is never held back (Risks table: silence is a comfort rule, not a safety one). The
+ * caller (App.tsx) queues it and shows it once `boothRecording` clears, so nothing is lost, only delayed.
+ */
+export function shouldQueueJobEndAnnouncement(announcement: { tone: ToastTone }, boothRecording: boolean): boolean {
+  return boothRecording && announcement.tone !== 'error';
+}
