@@ -55,7 +55,7 @@ import (
 // Keep this in lockstep with apps/ui/src/hostApi.ts.  The frontend rejects
 // an older host before bootstrapping so a partial update cannot run against a
 // binding contract it does not understand.
-const hostAPIVersion = 61
+const hostAPIVersion = 62
 
 // Host is the Wails binding boundary. The frontend invokes only this bound
 // object; it never receives a loopback port or an HTTP capability.
@@ -68,9 +68,14 @@ type Host struct {
 	diagnostic string
 	version    string
 	config     config
-	manuscript *manuscript.Service
-	sidecars   *process.Supervisor
-	settings   *settings.Store
+	// dawCapabilitiesSnapshot is the last DawCapabilities payload pollDawCapabilities emitted (bindings_daw.go, DAW
+	// port PRD P4): a marshalled JSON comparison, so daw_capabilities_changed goes out only when the resolver's
+	// answer actually changed, never on every transcriptLoop tick.
+	// +checklocks:mu
+	dawCapabilitiesSnapshot string
+	manuscript              *manuscript.Service
+	sidecars                *process.Supervisor
+	settings                *settings.Store
 	// assets is the registry of everything that can be downloaded (assetregistry.go). It is set once, in Startup, and never replaced: a project
 	// switch does not touch it, so it is read with registry() and needs no snapshot.
 	// +checklocks:mu
@@ -791,12 +796,16 @@ func (h *Host) transcriptLoop(ctx context.Context) {
 }
 
 // pollTranscript is one tick of transcriptLoop: drain and poll the current
-// project's transcript service, if it has one.
+// project's transcript service, if it has one, and check whether the DAW
+// capabilities payload changed (bindings_daw.go's pollDawCapabilities): this is
+// the tick that notices a heartbeat's reachability flip or a project switch,
+// since neither has a callback of its own to emit from directly.
 func (h *Host) pollTranscript() {
 	if service := h.services().transcript; service != nil {
 		_ = service.Drain()
 		service.Poll()
 	}
+	h.pollDawCapabilities()
 }
 
 // ServiceShutdown is Wails v3's stop hook for the Host service: the window is closing or the app was asked to quit.
@@ -1233,7 +1242,14 @@ var fieldSchemas = map[string][]fieldSchema{
 	// verification pass (docs/operations/reaper-verification-pass.md) are refused by the host while it is off, unless the
 	// narrator turns their capability on with its DAW.capability.<name> row (dawport's resolver decides, DAW port PRD P3),
 	// and it defaults off (bridge.ExperimentalSettingTool/Key, internal/bridge/actions.go).
-	"DAW": {{"reaper_path", "REAPER executable (override)", "text", nil}, {"auto_start_launcher", "Start the launcher script automatically", "bool", nil}, {"experimental_reaper_actions", "Experimental REAPER actions", "bool", nil}},
+	// The per-capability toggles (DAW port PRD P4) come after the three above, from capabilityFieldSchemas: one
+	// choice field per dawport.Capability, labeled with the port's own narrator-facing label, so Settings lists and
+	// saves every DAW.capability.<name> row through this same generic mechanism.
+	"DAW": append([]fieldSchema{
+		{"reaper_path", "REAPER executable (override)", "text", nil},
+		{"auto_start_launcher", "Start the launcher script automatically", "bool", nil},
+		{"experimental_reaper_actions", "Experimental REAPER actions", "bool", nil},
+	}, capabilityFieldSchemas()...),
 	// RecordingCoverage is the recording check's four settings (docs/utilities/recording-coverage.md Q3, ADR 0131),
 	// read by coverage.ResolveSettings. The two thresholds judge a stored result on read; the two alignment settings are
 	// in a result's parameter hash, so changing one makes older results stale (Q13 B). Their defaults are Proposed and
@@ -1307,6 +1323,18 @@ var fieldSchemas = map[string][]fieldSchema{
 		{"preset", "Preset", "choice", []string{"sample", "spot_check"}},
 		{"exclude_ending_fraction", "Exclude the ending (fraction of chapters)", "number", nil},
 	},
+}
+
+// capabilityFieldSchemas is one choice field (auto/on/off) per DAW port capability (dawport.Capabilities(), DAW port PRD
+// P4), labeled with the port's own narrator-facing label so it never drifts from the resolver's own catalog. The resolver
+// already reads DAW.capability.<name> (P3); this only exposes the row Settings needs to list and save it.
+func capabilityFieldSchemas() []fieldSchema {
+	specs := dawport.Capabilities()
+	fields := make([]fieldSchema, 0, len(specs))
+	for _, spec := range specs {
+		fields = append(fields, fieldSchema{dawport.ToggleKey(spec.Capability), spec.Label, "choice", []string{"auto", "on", "off"}})
+	}
+	return fields
 }
 
 // settingsSchemas is the settings the app offers with each choice that comes from an approved catalog filled in from it: the spaCy model
@@ -1406,6 +1434,11 @@ func (h *Host) saveSettings(tool, scope string, values map[string]*string) error
 		if value, ok := values["debug_logging"]; ok && value != nil {
 			h.runLog.SetDebug(*value == "true")
 		}
+	}
+	if tool == "DAW" {
+		// A capability toggle (or the old experimental switch) takes effect on the wire now, rather than waiting for
+		// transcriptLoop's next tick (DAW port PRD P4).
+		h.pollDawCapabilities()
 	}
 	return nil
 }

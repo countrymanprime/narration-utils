@@ -25,6 +25,7 @@ import type {
   TracksProject,
   TranscriptState,
 } from '../types';
+import { DAW_CAPABILITIES } from '../types';
 
 export const aliceChapterSeeds = [
   {
@@ -661,6 +662,28 @@ export const wireSettings = (): Record<string, ScopedSettingField[]> => ({
       effectiveValue: 'false',
       effectiveSource: 'repo default',
     },
+    {
+      key: 'experimental_reaper_actions',
+      label: 'Experimental REAPER actions',
+      kind: 'bool',
+      choices: [],
+      value: '',
+      isSet: false,
+      effectiveValue: 'false',
+      effectiveSource: 'repo default',
+    },
+    // One choice field (auto/on/off) per DAW port capability (DAW port PRD Phase 4), mirroring apps/desktop/app.go's
+    // capabilityFieldSchemas: every row starts unset, its repo default "auto", like auto_start_launcher above.
+    ...DAW_CAPABILITIES.map(({ key, label }): ScopedSettingField => ({
+      key: `capability.${key}`,
+      label,
+      kind: 'choice',
+      choices: ['auto', 'on', 'off'],
+      value: '',
+      isSet: false,
+      effectiveValue: 'auto',
+      effectiveSource: 'repo default',
+    })),
   ],
   // The narrator's own delivery limits (docs/prds/diagnostics-delivery-and-cleanup-tools.prd.md Phase 2), mirroring the host's
   // fieldSchemas and numberSpecs.

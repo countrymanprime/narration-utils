@@ -21,6 +21,7 @@ import { workspaceGoldens } from './workspace';
 import { previewGoldens } from './preview';
 import { stagesGoldens } from './stages';
 import { deliveryGoldens } from './delivery';
+import { dawGoldens } from './daw';
 
 const FEATURE_AREAS: Array<Record<string, z.ZodType>> = [
   systemGoldens,
@@ -42,6 +43,7 @@ const FEATURE_AREAS: Array<Record<string, z.ZodType>> = [
   previewGoldens,
   stagesGoldens,
   deliveryGoldens,
+  dawGoldens,
 ];
 
 /** Which schema owns each golden file, over every feature area. */
