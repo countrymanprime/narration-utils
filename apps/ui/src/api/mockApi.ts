@@ -22,6 +22,7 @@ import { createDeliveryProfilesMock } from './deliveryProfilesMock';
 import { createDiagnosticsMock } from './diagnosticsMock';
 import { createEditingMock } from './editingMock';
 import { createCleanupActionMock } from './cleanupActionMock';
+import { createPrepMarkupMock } from './prepMarkupMock';
 import { createMockState, type MockApiSeed } from './mockHost/state';
 import { createUpdateMock } from './mockHost/update';
 import { createProjectMock } from './mockHost/project';
@@ -123,6 +124,12 @@ export function createMockApi(
     async (chapterId) => (await findings.findingsList({ analyzer: 'editing', chapterId })).findings,
     initial.cleanupAction,
   );
+  const prepMarkup = createPrepMarkupMock(
+    manuscriptReady,
+    () => s.chapters,
+    () => s.paragraphs,
+    initial.prepMarkup,
+  );
   const measurement = createMeasureMock(endJob, initial.measure, measurePicked, deliveryProfile, peekDiagnostics);
   const system = createSystemMock(s, initial, {
     version: update.version,
@@ -152,6 +159,7 @@ export function createMockApi(
     // editingCandidateFor in mockFixtures.ts), so Accept/Dismiss/Defer on it go through the real review binding.
     editingCandidates: async (chapterId) => (await findings.findingsList({ analyzer: 'editing', chapterId })).findings,
     ...cleanupAction,
+    ...prepMarkup,
     takeReviewCreateTake: async (request) => ({
       targetItemGuid: request.targetItemGuid,
       newTakeGuid: '{99999999-0000-4000-8000-000000000099}',

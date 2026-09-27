@@ -6,6 +6,7 @@ import { DESKTOP_HOST_API_VERSION } from '../hostApi';
 import { createMockApi } from './mockApi';
 import type { ProjectStateState } from './contracts/projectstate';
 import { WIRE_TAKE_REVIEW_FINDINGS, WIRE_TRACKS_PROJECT, WIRE_TRANSCRIPT, editingCandidateFor } from './mockFixtures';
+import { prepMarkupChapterSchema, prepMarkupSpanSchema } from './schemas/prepMarkup';
 import { cleanupApplyResultSchema, cleanupPreviewResultSchema, levelMatchApplyResultSchema, levelMatchPreviewResultSchema } from './schemas/cleanup';
 import { WIRE_TAKE_COMPARISON_FINDING } from './takeComparisonMock';
 import { MOCK_MEASURE_PATHS } from './measureMock';
@@ -589,6 +590,23 @@ describe('answers of the mock client for the manuscript, Story Bible and project
     expect(restored.chapter.removedFromRecording).toBeUndefined();
     expect(restored.clearedLinks).toEqual([]);
     await expect(api.manuscriptSetChapterKind('no-such-chapter', 'reference')).rejects.toThrow('unknown manuscript chapter');
+  });
+
+  it('the PrepMarkupList, PrepMarkupSave and PrepMarkupDelete answers, fresh and stale', async () => {
+    const api = createMockApi({}, { prepMarkup: [{ chapter: 0, line: 0, words: 'Alice', kind: 'stress', stale: { reason: 'text_changed', was: 'Queen' } }] });
+    const chapter = (await api.manuscriptChapters())[0];
+    const paragraph = (await api.manuscriptParagraphs(chapter?.id ?? ''))[1];
+    const saved = await api.prepMarkupSave(chapter?.id ?? '', paragraph?.id ?? '', 0, 5, 'character_tag', ' Alice ');
+    expectMatches(prepMarkupSpanSchema, saved, 'mock markup span');
+    expect(saved).toMatchObject({ stale: false, value: 'Alice', paragraph: paragraph?.index });
+    const listed = await api.prepMarkupList(chapter?.id ?? '');
+    expectMatches(prepMarkupChapterSchema, listed, 'mock markup list');
+    expect(listed.spans.map((span) => span.stale)).toEqual([true, false]);
+    expect(listed.spans[0]).toMatchObject({ staleReason: 'text_changed', anchorText: 'Queen' });
+    await api.prepMarkupDelete(chapter?.id ?? '', listed.spans[0].id);
+    expect((await api.prepMarkupList(chapter?.id ?? '')).spans).toHaveLength(1);
+    await expect(api.prepMarkupSave(chapter?.id ?? '', 'no-such-line', 0, 1, 'stress', '')).rejects.toThrow('no longer in this chapter');
+    await expect(api.prepMarkupSave(chapter?.id ?? '', paragraph?.id ?? '', 0, 5, 'pause', '')).rejects.toThrow('short or long');
   });
 
   it('a created note and bookmark', async () => {
@@ -1773,6 +1791,8 @@ describe('answers of the mock client for the settings, voice, model, transcript 
       'manuscriptSetChapterKind',
       'noteList',
       'noteCreate',
+      'prepMarkupList',
+      'prepMarkupSave',
       'manuscriptReader',
       'readerState',
       'readerStateSave',
@@ -1933,6 +1953,7 @@ describe('answers of the mock client for the settings, voice, model, transcript 
       'clearProjectData',
       'readerBookmarkDelete',
       'noteDelete',
+      'prepMarkupDelete',
       'guideEdit',
       'guideSetLocked',
       'guideRescan',

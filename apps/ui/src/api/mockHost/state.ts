@@ -23,6 +23,7 @@ import type { MockDeliveryProfileSeed } from '../deliveryProfilesMock';
 import type { MockDiagnosticsSeed } from '../diagnosticsMock';
 import type { EditingSeed } from '../editingMock';
 import type { CleanupActionSeed } from '../cleanupActionMock';
+import type { PrepMarkupSeed } from '../prepMarkupMock';
 import type { MockAssetSeed } from '../assetInstallMock';
 import type { MockUpdateSeed } from './update';
 import type { DawMockSeed } from '../dawMock';
@@ -161,6 +162,8 @@ export type MockApiSeed = {
   /** Seeds the editing-readiness check mock (a refusal, a held-running state, or seeded candidates), see `EditingSeed`. */
   editing?: EditingSeed;
   cleanupAction?: CleanupActionSeed;
+  /** Script markup spans already placed on the manuscript (prep-depth PRD Phase 5), including stale ones, see `PrepMarkupSeed`. */
+  prepMarkup?: PrepMarkupSeed;
   /** Seeds the preview-candidates mock (an outcome or seeded candidates), see `PreviewSeed`. */
   preview?: PreviewSeed;
   /** The project's Delivery limits, by key (`true_peak_dbtp_max: '-3'`), set as if saved in Settings (diagnostics PRD Phase 5). */
