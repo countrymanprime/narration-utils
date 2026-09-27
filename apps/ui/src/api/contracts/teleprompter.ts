@@ -360,7 +360,7 @@ export type TeleprompterPunchResult = {
 };
 
 /**
- * `TeleprompterResumeFollow` / `TeleprompterResumeUnfollow` (read-aloud-resume-from-daw PRD Phase 5, ADR 0350): whether the
+ * `TeleprompterResumeFollow` / `TeleprompterResumeUnfollow` (read-aloud-resume-from-daw PRD Phase 5, ADR 0352): whether the
  * host now follows REAPER for the resume prompt; not with no track to follow (`no_track`) or no way to ask REAPER
  * (`unavailable`: no DAW, REAPER not reachable, or track state switched off).
  */
