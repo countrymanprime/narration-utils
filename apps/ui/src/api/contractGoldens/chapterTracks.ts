@@ -1,5 +1,5 @@
 // The golden payloads for the DAW project's tracks, chapter links, chapter sync and chapter regions: which schema owns each file in tests/fixtures/contracts/ (see index.ts).
-import type { z } from 'zod';
+import { z } from 'zod';
 import { chapterSyncPreviewSchema, chapterSyncStateSchema } from '../schemas/chapterSync';
 import {
   chapterRegionPlanSchema,
@@ -11,6 +11,7 @@ import {
   chapterTrackMatchSchema,
   chapterTrackSetSchema,
   trackMappingSchema,
+  trackSelectResultSchema,
 } from '../schemas/chapterTrackMap';
 import { tracksDiscoverySchema, tracksProjectSchema } from '../schemas/tracks';
 
@@ -42,4 +43,5 @@ export const chapterTracksGoldens: Record<string, z.ZodType> = {
   'chapter-suggestion-ambiguous.json': chapterSuggestionSchema,
   'chapter-suggestion-none.json': chapterSuggestionSchema,
   'chapters-for-tracks.json': chaptersForTracksSchema,
+  'track-select-results.json': z.record(z.string(), trackSelectResultSchema),
 };
