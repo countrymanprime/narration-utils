@@ -8,6 +8,8 @@ export type GuidePronunciation = { ipa: string; source: string; confidence: stri
 export type GuideNote = { text: string; evidence: { chapter?: string; excerpt?: string } };
 /** One labelled fact of an entry ("Codename": "Wren"). The list is ordered and a key is unique whatever its case; a value may be empty. */
 export type GuideProperty = { key: string; value: string };
+/** One (chapter, scene) pair an entry's evidence touches. A scene restarts at 0 for each new chapter; a scene-break paragraph (e.g. "* * *") starts the next one. */
+export type GuideAppearance = { chapterId: string; chapter: string; sceneIndex: number };
 export type GuideAlias = { text: string; pronunciation: GuidePronunciation; occurrences: GuideEvidence[] };
 export type GuideEntity = {
   id: string;
@@ -25,6 +27,8 @@ export type GuideEntity = {
   locked: boolean;
   review_state: string;
   context?: string;
+  /** Which chapters and scenes this entry's evidence touches (character-continuity-review PRD, phase 2). Absent on a file written before it existed. */
+  appearances?: GuideAppearance[];
 };
 
 export type GuidePreview =

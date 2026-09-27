@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import type {
   GuideAlias,
+  GuideAppearance,
   GuideBuildResult,
   GuideEntity,
   GuideEvidence,
@@ -55,6 +56,8 @@ const relationshipSchema = z.object({ id: z.string(), name: z.string(), label: z
 
 const propertySchema = z.object({ key: z.string(), value: z.string() }) satisfies z.ZodType<GuideProperty>;
 
+const appearanceSchema = z.object({ chapterId: z.string(), chapter: z.string(), sceneIndex: z.number() }) satisfies z.ZodType<GuideAppearance>;
+
 /** The `properties` value of an edit or a create, which the host carries as JSON text; the mock parses it with this. */
 export const guidePropertiesSchema = listFromNull(propertySchema);
 
@@ -76,6 +79,8 @@ const guideEntitySchema = z.object({
   context: optionalFromNull(z.string()),
   /** Set by the sidecar on an entry the narrator wrote by hand; the page does not read it. */
   manual: z.boolean().optional(),
+  /** Additive (character-continuity-review PRD, phase 2); a file written before it existed reads as an empty list. Not yet read by this page. */
+  appearances: listFromNull(appearanceSchema),
 }) satisfies z.ZodType<GuideEntity>;
 
 /** The entity list: the host sends an empty list for no Story Bible yet, and an older host null. */

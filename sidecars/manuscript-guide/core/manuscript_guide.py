@@ -129,6 +129,45 @@ TITLE_WORDS = {
     "saint",
     "sir",
 }
+# A paragraph made only of this punctuation (***, - - -, # # #, a bullet or dash) is a scene break: it starts a
+# new scene and is not itself part of any scene. Character Continuity Review phase 2 (CC-2).
+SCENE_BREAK = re.compile(r"^[*#\-–—•·\s]+$")
+# Verbs that mark a name next to a quotation as its speaker. Deliberately narrower than PERSON_WORDS above
+# (which also accepts "smiled"/"walked"/"looked"/"thought" as a proximity signal for classifying an entity's
+# category) - a cue's attribution is precision-first (ADR 0020, Q4): only an unambiguous speech verb counts.
+SPEECH_VERBS = {
+    "said",
+    "asked",
+    "replied",
+    "cried",
+    "whispered",
+    "murmured",
+    "shouted",
+    "answered",
+    "exclaimed",
+    "muttered",
+    "called",
+    "continued",
+    "added",
+    "interrupted",
+    "announced",
+    "demanded",
+    "gasped",
+    "laughed",
+    "stated",
+    "remarked",
+    "snapped",
+    "yelled",
+}
+# A double-quoted span (straight or curly quotes; either character may open or close, so this doesn't try to
+# track directional pairing). Bounded length avoids a runaway match across an unrelated later quote mark.
+QUOTE_PATTERN = re.compile(r'[“"]([^”"]{1,400}?)[”"]')
+# Up to three capitalized words, for the name beside a speech verb.
+NAME_TOKEN = r"[A-Z][A-Za-z'’\-]*(?:\s+[A-Z][A-Za-z'’\-]*){0,2}"
+AFTER_QUOTE_TAG = re.compile(r"^[,.\s]*(" + NAME_TOKEN + r")\s+([A-Za-z]+)")
+BEFORE_QUOTE_TAG = re.compile(r"(" + NAME_TOKEN + r")\s+([A-Za-z]+)[,:]?\s*$")
+TAG_WINDOW = 60
+
 TRAITS = {
     "angry",
     "anxious",
@@ -475,6 +514,63 @@ def direct_description(name: str, occurrences: list[dict[str, str]]) -> dict[str
     return {"text": "", "evidence": {}}
 
 
+def assign_scene_indices(paragraphs: list[dict[str, str]]) -> list[int | None]:
+    """One scene index per paragraph position, restarting at 0 for each chapter. A scene-break paragraph
+    (SCENE_BREAK) gets `None` - it is a separator, not part of either scene it sits between - and starts the
+    next scene."""
+    indices: list[int | None] = []
+    scene = 0
+    current_chapter: object = object()
+    for paragraph in paragraphs:
+        chapter_id = paragraph.get("chapterId")
+        if chapter_id != current_chapter:
+            current_chapter = chapter_id
+            scene = 0
+        if SCENE_BREAK.match(paragraph.get("text", "").strip()):
+            indices.append(None)
+            scene += 1
+        else:
+            indices.append(scene)
+    return indices
+
+
+def scene_by_paragraph_id(paragraphs: list[dict[str, str]]) -> dict[str, int | None]:
+    """Maps each paragraph's id (the same legacy-id fallback `make_candidate` uses) to its scene index."""
+    return {
+        paragraph.get("paragraphId", f"legacy-paragraph-{index}"): scene
+        for index, (paragraph, scene) in enumerate(zip(paragraphs, assign_scene_indices(paragraphs), strict=True))
+    }
+
+
+def appearance_map(occurrences: list[dict[str, Any]], scenes: dict[str, int | None]) -> list[dict[str, Any]]:
+    """Which (chapter, scene) pairs an entity's evidence touches - one row per pair, in reading order."""
+    seen: set[tuple[str, int]] = set()
+    appearances: list[dict[str, Any]] = []
+    for item in occurrences:
+        scene = scenes.get(item.get("paragraphId"))
+        if scene is None:
+            continue
+        key = (item.get("chapterId", ""), scene)
+        if key in seen:
+            continue
+        seen.add(key)
+        appearances.append({"chapterId": item.get("chapterId", ""), "chapter": item.get("chapter", ""), "sceneIndex": scene})
+    return sorted(appearances, key=lambda item: (item["chapterId"], item["sceneIndex"]))
+
+
+def merge_appearances(*groups: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    seen: set[tuple[str, int]] = set()
+    merged: list[dict[str, Any]] = []
+    for group in groups:
+        for item in group:
+            key = (item["chapterId"], item["sceneIndex"])
+            if key in seen:
+                continue
+            seen.add(key)
+            merged.append(item)
+    return sorted(merged, key=lambda item: (item["chapterId"], item["sceneIndex"]))
+
+
 def evidence_entries(items: list[dict[str, str]]) -> list[dict[str, Any]]:
     return [
         {
@@ -489,6 +585,7 @@ def evidence_entries(items: list[dict[str, str]]) -> list[dict[str, Any]]:
 
 
 def build_entities(paragraphs: list[dict[str, str]], model_name: str, espeak_library: str | None) -> list[dict[str, Any]]:
+    scenes = scene_by_paragraph_id(paragraphs)
     spacy = spacy_candidates(paragraphs, model_name)
     candidates = rule_candidates(paragraphs) if spacy is None else spacy
     grouped: dict[str, list[dict[str, str]]] = defaultdict(list)
@@ -545,6 +642,7 @@ def build_entities(paragraphs: list[dict[str, str]], model_name: str, espeak_lib
             }
             for name in alias_names
         ]
+        all_evidence = canonical_evidence + [item for alias in aliases for item in alias["occurrences"]]
 
         entities.append(
             {
@@ -563,6 +661,7 @@ def build_entities(paragraphs: list[dict[str, str]], model_name: str, espeak_lib
                 "locked": False,
                 "manual": False,
                 "review_state": "needs review" if category == "Needs Review" else "generated",
+                "appearances": appearance_map(all_evidence, scenes),
             }
         )
     found_counts = Counter(entity["category"] for entity in entities)
@@ -622,11 +721,31 @@ def load_json(path: str) -> dict[str, Any] | None:
     return data
 
 
+def entity_name_keys(entity: dict[str, Any]) -> set[str]:
+    """Every normalized spelling (canonical name plus aliases) this entity currently answers to."""
+    keys = {normalize_name(entity.get("canonical_name", ""))}
+    keys.update(normalize_name(alias.get("text", "")) for alias in entity.get("aliases", []) or [])
+    keys.discard("")
+    return keys
+
+
 def merge_locked(generated: list[dict[str, Any]], old: dict[str, Any] | None) -> list[dict[str, Any]]:
     if not old:
         return generated
     previous = {entity["id"]: entity for entity in old.get("entities", [])}
     absorbed_names: dict[str, str] = old.get("absorbed_names", {})
+
+    # CC-2 (character-continuity-review.prd.md phase 2): an entity's id is a hash of whichever spelling gets
+    # picked as canonical_name (entity_id()), and that pick can shift between builds - e.g. a title-prefixed
+    # mention ("Captain Arelian") joining a group that previously only had the short form ("Arelian") makes the
+    # long form win as canonical_name, hashing to a different id. Reconcile by name overlap, not only by exact
+    # id, so a freshly generated entity that shares ANY spelling with a previous one (locked/manual or not)
+    # reclaims that previous entity's id and its reviewed history, instead of silently orphaning both.
+    previous_id_by_name_key: dict[str, str] = {}
+    for previous_id, previous_entity in previous.items():
+        for key in entity_name_keys(previous_entity):
+            previous_id_by_name_key.setdefault(key, previous_id)
+    claimed_prior_ids: set[str] = set()
 
     # A name a previous `merge` absorbed into another entity would otherwise
     # come back as its own standalone entity on the very next rebuild, since
@@ -648,6 +767,16 @@ def merge_locked(generated: list[dict[str, Any]], old: dict[str, Any] | None) ->
     seen_ids: set[str] = set()
     for entity in generated:
         prior = previous.get(entity["id"])
+        if prior is not None:
+            claimed_prior_ids.add(prior["id"])
+        else:
+            for key in entity_name_keys(entity):
+                candidate_id = previous_id_by_name_key.get(key)
+                if candidate_id is not None and candidate_id not in claimed_prior_ids:
+                    prior = previous[candidate_id]
+                    claimed_prior_ids.add(candidate_id)
+                    entity["id"] = candidate_id  # reclaim the stable identity even though the spelling shifted
+                    break
         if prior and (prior.get("locked") or prior.get("manual")):
             # A fully locked entry is untouched by rebuilds, including its
             # occurrence list - rescan is the only way to refresh it. A manually
@@ -741,11 +870,14 @@ def build(args: argparse.Namespace) -> None:
     write_progress(args.progress, "MERGE", 85, "Preserving locked edits...")
     log("Merging generated entries with locked and manual edits")
     entities = merge_locked(entities, previous)
+    fresh_cues = extract_dialogue_cues(paragraphs, character_name_index(entities))
+    dialogue_cues = merge_dialogue_cues(fresh_cues, (previous or {}).get("dialogue_cues", []))
     guide = {
         "schema_version": SCHEMA_VERSION,
         "source": {"path": str(Path(args.manuscript).resolve()), "sha256": source_hash},
         "generated_at": datetime.now(UTC).isoformat(),
         "entities": entities,
+        "dialogue_cues": dialogue_cues,
         "vocabulary_candidates": vocabulary_candidates(entities),
         "absorbed_names": (previous or {}).get("absorbed_names", {}),
     }
@@ -990,6 +1122,7 @@ def create(args: argparse.Namespace) -> None:
         "locked": False,
         "manual": True,
         "review_state": "reviewed",
+        "appearances": [],
     }
     description = getattr(args, "description", "")
     if description:
@@ -999,6 +1132,180 @@ def create(args: argparse.Namespace) -> None:
     guide["entities"].append(entity)
     write_json(args.guide, guide)
     print(f"CREATED|{new_id}|{entity['occurrence_count']}")
+
+
+def split(args: argparse.Namespace) -> None:
+    """The inverse of `merge`: gives one of an entity's aliases its own standalone identity back.
+
+    Clears any `absorbed_names` entry for that spelling, or the very next `build` would fold the freshly
+    generated entity straight back into the parent through `merge_locked`'s redirect step."""
+    guide = load_json(args.guide)
+    if not guide:
+        raise ValueError("Guide file does not exist; build it first.")
+    entity = find_entity(guide, args.entity_id)
+    if entity.get("locked"):
+        raise ValueError("This entity is locked. Unlock it before editing.")
+    alias_text = args.alias_text.strip()
+    aliases = entity.get("aliases", [])
+    match_index = next((index for index, alias in enumerate(aliases) if alias["text"].lower() == alias_text.lower()), None)
+    if match_index is None:
+        raise ValueError("Alias not found.")
+    alias = aliases.pop(match_index)
+    new_id = entity_id(alias["text"])
+    if any(value["id"] == new_id for value in guide["entities"]):
+        raise ValueError("An entity with this name already exists.")
+    new_entity = {
+        "id": new_id,
+        "canonical_name": alias["text"],
+        "aliases": [],
+        "category": entity.get("category", "Needs Review"),
+        "occurrences": alias.get("occurrences", []),
+        "pronunciation": alias.get("pronunciation", {}),
+        "description": {"text": "", "evidence": {}},
+        "personality_notes": [],
+        "context": "",
+        "relationships": [],
+        "properties": [],
+        "locked": False,
+        "manual": False,
+        "review_state": "reviewed",
+        "appearances": [],
+    }
+    new_entity["occurrence_count"] = entity_occurrence_count(new_entity)
+    entity["occurrence_count"] = entity_occurrence_count(entity)
+    guide["entities"].append(new_entity)
+    absorbed_names = guide.setdefault("absorbed_names", {})
+    absorbed_names.pop(normalize_name(alias["text"]), None)
+    write_json(args.guide, guide)
+    print(f"SPLIT|{new_id}")
+
+
+def cue_id(paragraph_id: str, start: int, quote_text: str) -> str:
+    digest = hashlib.sha1(f"{paragraph_id}:{start}:{quote_text}".encode()).hexdigest()[:12]
+    return "cue-" + digest
+
+
+def character_name_index(entities: list[dict[str, Any]]) -> dict[str, str]:
+    """Maps every normalized Character name and alias to its entity id - only Character (never Place,
+    Organization, or an unresolved Needs Review candidate), since only a character speaks."""
+    index: dict[str, str] = {}
+    for entity in entities:
+        if entity.get("category") != "Character":
+            continue
+        for key in entity_name_keys(entity):
+            index.setdefault(key, entity["id"])
+    return index
+
+
+def find_speech_tag(text: str, quote_start: int, quote_end: int, character_index: dict[str, str]) -> tuple[str | None, str, str]:
+    """Looks for a speech-verb tag naming a known character right after or right before the quote
+    ('"..." Ada said.' / 'Ada said, "..."'). Anything else, including a tag naming someone who never became
+    a real Character entity, is left `unknown` rather than guessed at (ADR 0020)."""
+    after = text[quote_end : quote_end + TAG_WINDOW]
+    match = AFTER_QUOTE_TAG.match(after)
+    if match and match.group(2).lower() in SPEECH_VERBS:
+        entity_id_value = character_index.get(normalize_name(match.group(1)))
+        if entity_id_value:
+            return entity_id_value, "tag", (text[quote_start:quote_end] + " " + match.group(0)).strip()
+    before = text[max(0, quote_start - TAG_WINDOW) : quote_start]
+    match = BEFORE_QUOTE_TAG.search(before)
+    if match and match.group(2).lower() in SPEECH_VERBS:
+        entity_id_value = character_index.get(normalize_name(match.group(1)))
+        if entity_id_value:
+            return entity_id_value, "tag", (match.group(0) + " " + text[quote_start:quote_end]).strip()
+    return None, "unknown", ""
+
+
+def extract_cues_from_text(text: str, character_index: dict[str, str], chapter_id: str = "", paragraph_id: str = "") -> list[dict[str, Any]]:
+    """One dialogue cue per double-quoted span in `text`, each with its own tag lookup and evidence.
+    Per-scene continuation (an untagged quote alternating between exactly two known speakers) is
+    `extract_dialogue_cues`'s job, since it needs the paragraphs around this one."""
+    cues: list[dict[str, Any]] = []
+    for match in QUOTE_PATTERN.finditer(text):
+        start, end = match.start(), match.end()
+        quote_text = match.group(1)
+        speaker_entity_id, source, tag_evidence = find_speech_tag(text, start, end, character_index)
+        cues.append(
+            {
+                "id": cue_id(paragraph_id, start, quote_text),
+                "chapterId": chapter_id,
+                "paragraphId": paragraph_id,
+                "quote_start": start,
+                "quote_end": end,
+                "quote_text": quote_text,
+                "speaker_entity_id": speaker_entity_id,
+                "speaker_source": source,
+                "evidence": {"chapterId": chapter_id, "paragraphId": paragraph_id, "excerpt": excerpt(text, start, end), "tag": tag_evidence},
+                "corrected": False,
+            }
+        )
+    return cues
+
+
+def extract_dialogue_cues(paragraphs: list[dict[str, str]], character_index: dict[str, str]) -> list[dict[str, Any]]:
+    """Rules-based cue extraction (CC-2, Q4 option A): quote spans, adjacent speech-verb tags resolved
+    against known Character names/aliases, and per-scene continuation for exactly two active speakers.
+    A scene-break paragraph resets who is "active" - continuation never crosses one. Three or more active
+    speakers in a scene, or only one so far, leaves an untagged quote `unknown` rather than guessing which
+    of several people it might be (ADR 0020)."""
+    cues: list[dict[str, Any]] = []
+    scene_speakers: dict[tuple[str, int], list[str]] = defaultdict(list)
+    last_speaker: dict[tuple[str, int], str] = {}
+    for paragraph, scene in zip(paragraphs, assign_scene_indices(paragraphs), strict=True):
+        if scene is None:
+            continue
+        chapter_id = paragraph.get("chapterId", "")
+        paragraph_id = paragraph.get("paragraphId", "")
+        scene_key = (chapter_id, scene)
+        for cue in extract_cues_from_text(paragraph.get("text", ""), character_index, chapter_id, paragraph_id):
+            if cue["speaker_entity_id"] is None:
+                active = scene_speakers[scene_key]
+                if len(active) == 2 and scene_key in last_speaker:
+                    other = next((speaker_id for speaker_id in active if speaker_id != last_speaker[scene_key]), None)
+                    if other:
+                        cue["speaker_entity_id"] = other
+                        cue["speaker_source"] = "continuation"
+            speaker_id = cue["speaker_entity_id"]
+            if speaker_id:
+                if speaker_id not in scene_speakers[scene_key]:
+                    scene_speakers[scene_key].append(speaker_id)
+                last_speaker[scene_key] = speaker_id
+            cues.append(cue)
+    return cues
+
+
+def merge_dialogue_cues(fresh: list[dict[str, Any]], previous_cues: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """A narrator's correction (`correct_cue`) survives a rebuild the same way a locked entity does (ADR 0007):
+    matched by `cue_id`, which is itself a hash of the paragraph, the quote's position and its text, so a cue
+    whose underlying text is unchanged always gets the same id back and reclaims its correction; a cue whose
+    paragraph text changed gets a new id and simply does not carry a stale correction onto unrelated content."""
+    previous_by_id = {cue["id"]: cue for cue in previous_cues}
+    merged = []
+    for cue in fresh:
+        prior = previous_by_id.get(cue["id"])
+        if prior and prior.get("corrected"):
+            cue = {**cue, "speaker_entity_id": prior.get("speaker_entity_id"), "speaker_source": prior.get("speaker_source", "correction"), "corrected": True}
+        merged.append(cue)
+    return merged
+
+
+def correct_cue(args: argparse.Namespace) -> None:
+    """Records the narrator's own attribution for one cue (or clears it back to `unknown`), so the next
+    rebuild's `merge_dialogue_cues` keeps it instead of overwriting it with fresh, possibly-`unknown`,
+    extraction - the same durability `merge_locked` already gives a locked entity (ADR 0007)."""
+    guide = load_json(args.guide)
+    if not guide:
+        raise ValueError("Guide file does not exist; build it first.")
+    cues = guide.get("dialogue_cues", [])
+    cue = next((value for value in cues if value["id"] == args.cue_id), None)
+    if cue is None:
+        raise ValueError("Cue not found.")
+    value = args.speaker_entity_id.strip()
+    cue["speaker_entity_id"] = None if value.lower() in {"", "unknown"} else value
+    cue["speaker_source"] = "correction"
+    cue["corrected"] = True
+    write_json(args.guide, guide)
+    print(f"CORRECTED|{args.cue_id}")
 
 
 def merge(args: argparse.Namespace) -> None:
@@ -1043,6 +1350,7 @@ def merge(args: argparse.Namespace) -> None:
             existing_by_text[key] = new_alias
 
     target["occurrence_count"] = entity_occurrence_count(target)
+    target["appearances"] = merge_appearances(target.get("appearances", []), source.get("appearances", []))
 
     seen_relationships: set[tuple[str, str]] = set()
     merged_relationships = []
@@ -1317,6 +1625,14 @@ def main() -> None:
     merge_parser.add_argument("--guide", required=True)
     merge_parser.add_argument("--source-id", required=True)
     merge_parser.add_argument("--target-id", required=True)
+    split_parser = command.add_parser("split", help="give one of an entity's aliases its own standalone identity back (the inverse of merge)")
+    split_parser.add_argument("--guide", required=True)
+    split_parser.add_argument("--entity-id", required=True)
+    split_parser.add_argument("--alias-text", required=True)
+    correct_cue_parser = command.add_parser("correct-cue", help="record the narrator's own attribution for a dialogue cue; a rebuild never overwrites it")
+    correct_cue_parser.add_argument("--guide", required=True)
+    correct_cue_parser.add_argument("--cue-id", required=True)
+    correct_cue_parser.add_argument("--speaker-entity-id", required=True, help='an entity id, or "unknown" to clear the attribution')
     delete_parser = command.add_parser("delete")
     delete_parser.add_argument("--guide", required=True)
     delete_parser.add_argument("--entity-id", required=True)
@@ -1360,6 +1676,8 @@ def main() -> None:
             "pronounce": pronounce,
             "create": create,
             "merge": merge,
+            "split": split,
+            "correct-cue": correct_cue,
             "delete": delete,
             "relate": relate,
             "unrelate": unrelate,

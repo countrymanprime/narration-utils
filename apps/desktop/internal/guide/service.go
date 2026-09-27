@@ -168,7 +168,8 @@ func normalizeEntity(entity map[string]any) error {
 	}
 	// properties is the narrator's ordered list of {key, value} facts. It is additive (a file written before it has none), so it reads as
 	// an empty list, and it stays a list: the host re-marshals this map, and an object would come back with its keys sorted.
-	for _, key := range []string{"aliases", "occurrences", "personality_notes", "relationships", "properties"} {
+	// appearances (character-continuity-review PRD, phase 2) is additive the same way; nothing reads it yet.
+	for _, key := range []string{"aliases", "occurrences", "personality_notes", "relationships", "properties", "appearances"} {
 		if entity[key] == nil {
 			entity[key] = []any{}
 			continue
