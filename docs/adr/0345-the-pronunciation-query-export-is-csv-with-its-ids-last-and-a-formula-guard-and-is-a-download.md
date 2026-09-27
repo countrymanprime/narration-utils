@@ -22,4 +22,4 @@ Phase 3 turns the pronunciation statuses into a list of questions for the author
 - A narrator can send the whole open list or re-send it after each answer. The file always reflects the Story Bible at the moment of export.
 - A spreadsheet user sees an apostrophe in front of an IPA that starts with `-`. That is the price of the guard, and it is stripped again on read-back.
 - The list includes every entry the build found that has not been confirmed, including Needs Review candidates. The panel's filter (all / query sent / researched) keeps it usable; if a narrator wants rejected candidates left out, that is a later filter, not a change to what "open" means.
-- Two new read bindings, `GuidePronunciationQueries` and `GuidePronunciationQueriesCSV`. `hostAPIVersion` goes from 67 to 68.
+- Two new read bindings, `GuidePronunciationQueries` and `GuidePronunciationQueriesCSV`. `hostAPIVersion` goes from 68 to 69.

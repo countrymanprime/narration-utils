@@ -46,7 +46,7 @@ The host derives the **pronunciation query list** from those statuses on every r
 once, in reading order (first paragraph that uses it; never used last), with that first use's chapter and excerpt.
 `guide.QueriesCSV` writes it as CSV (`word, entry, category, chapter, excerpt, pronunciation, source, status, note, entry_id,
 alias_index`) with a formula guard, and `guide.ParseQueriesCSV` reads an exported or hand-edited file back, reporting every row
-it cannot use. The bindings are `GuidePronunciationQueries` and `GuidePronunciationQueriesCSV` (`hostAPIVersion` 68); the Story
+it cannot use. The bindings are `GuidePronunciationQueries` and `GuidePronunciationQueriesCSV` (`hostAPIVersion` 69); the Story
 Bible's Pronunciation queries panel saves the CSV as a download and marks a row sent or answered through
 `GuidePronunciationSetStatus`.
 
