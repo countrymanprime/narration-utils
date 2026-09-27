@@ -188,6 +188,26 @@ provenance record.
 | Install location | `<cache>/assets/dictionary/oewn/oewn-2025/2025/` (index at `wordnet/index.bin`) |
 | Feature | The manuscript reader's Look up (definitions, synonyms, antonyms; Phase 8 is the panel) |
 
+### FFmpeg encoder (render-encode-master: WAV to MP3, later M4B)
+
+Recorded in [render-encode-master](../prds/render-encode-master.prd.md) Phase 0 ([build verification](ffmpeg-encoder-build.md),
+[ADR 0342](../adr/0342-the-mp3-encoder-is-a-pinned-gpl-ffmpeg-build-run-as-a-separate-process-and-writes-no-tag-frame.md), Proposed);
+catalogued in Phase 1. The wheel is downloaded, checked against the pinned hash and unpacked, and only the executable is kept.
+
+| Field | Record |
+| --- | --- |
+| Asset | FFmpeg 7.1 essentials build (gyan.dev), Windows x86-64 |
+| Publisher, version | FFmpeg developers; build by gyan.dev (`7.1-essentials_build-www.gyan.dev`); republished by the imageio project in `imageio-ffmpeg` 0.6.0 |
+| URL | `https://files.pythonhosted.org/packages/2c/c6/fa760e12a2483469e2bf5058c5faff664acf66cadb4df2ad6205b016a73d/imageio_ffmpeg-0.6.0-py3-none-win_amd64.whl` |
+| SHA-256, size | Download `02fa47c83703c37df6bfe4896aab339013f62bf02c5ebf2dce6da56af04ffc0a`, 31,246,824 bytes (PyPI's published digest); kept `ffmpeg.exe` `2ce797a0f88d7f067180338fb227f7b1928ea727bd9a4d7a1d022f7c52af71a3`, 87,638,016 bytes |
+| Licence | GPL-3.0-or-later build configuration (`--enable-gpl --enable-version3`, no `nonfree`); code used is LGPL (`libmp3lame`, the WAV reader, the MP3 and MP4 muxers). The wrapper wheel is BSD-2-Clause and is not used. [FFmpeg legal](https://ffmpeg.org/legal.html) |
+| Provenance | `https://www.gyan.dev/ffmpeg/builds/` (the build); `https://github.com/imageio/imageio-ffmpeg` (the wheel) |
+| How it runs | A separate process the Go host starts; never linked, never in the release |
+| Runtime dependencies downloaded | None: a static build |
+| Removal, update | Settings > Local assets; no automatic update, a new build is a reviewed catalog change |
+| Test result | Linux build of the same family: MP3 at 192/256/320 kbps CBR passes `acx.format` and `acx.sample_rate`, and both MP3 readers agree on its length ([results](ffmpeg-encoder-build.md#results)); the Windows binary on Windows is pending the owner |
+| Feature | Encoding rendered WAV to MP3 (Phase 1) and M4B (Phase 2) |
+
 ### Not assets
 
 The code the release itself carries (the frozen Story Bible, Transcript Compare and Teleprompter
@@ -377,6 +397,19 @@ placement.
 
 ### 5. Resemblyzer — approved-reference voice continuity, not character ID
 
+**Status (2026-09-27, provisional): reject for the character-continuity workflow.** The Phase 1
+trial (`character-continuity-review.prd.md`, [full record](character-continuity-acoustic-trial.md))
+confirms this entry's own risk note in the worst possible direction for cost: Resemblyzer needed
+the repository's first PyTorch dependency (`torch>=1.0.1`, confirmed in its own `requires_dist`)
+plus `scipy`, `librosa` and `scikit-learn`, and its hard dependency `webrtcvad` publishes no
+Windows wheel at all (sdist only, needs a C toolchain at install time) - a first-use blocker this
+app's download-a-pinned-binary provisioning model cannot satisfy. Against that cost, it separated
+characters the *least* well of the three engines trialed (2.83x same/different-character distance
+ratio, versus 3.81x for the dependency-free baseline and 6.86x for Praat) on a synthetic corpus
+built to be maximally differentiated - a real narrator's character work is likely to separate less
+well still, which is exactly this entry's own pre-registered risk. Provisional pending a re-run on
+a real corpus; see the trial record for the exact re-run command.
+
 **What it contributes.** Resemblyzer produces a 256-value speaker embedding
 and a similarity score between clips. It is designed to compare vocal identity
 or timbre, not to understand dialogue, fictional roles, or acting intention.
@@ -413,6 +446,20 @@ are unsuitable for identifying people, deanonymizing audio, or supporting
 voice-cloning functionality.
 
 ### 6. Praat — objective speech measurement and inspection
+
+**Status (2026-09-27, provisional): defer, recorded as the strongest fallback if the MVP's
+dependency-free features prove insufficient.** The Phase 1 trial
+([full record](character-continuity-acoustic-trial.md)) ran `praat-parselmouth` 0.4.7 against
+the same synthetic corpus as the dependency-free baseline: it separated same- from
+different-character clips more cleanly (6.86x median-distance ratio, 0% false-accept at the
+trial's conservative threshold, versus 3.81x/28.7% for the baseline), installed from PyPI in
+about 4 seconds with only a `numpy` dependency, and has prebuilt wheels for this repository's
+exact Windows/CPython 3.12 target - no PyTorch, no compiler. Its GPL-3.0-or-later license still
+argues for a separate-process integration rather than the in-process binding used in the trial
+(the trial script is throwaway research code, never packaged). Phase 8 is conditional on the
+Go dependency-free baseline (Q1 option A, adopted for the MVP) proving insufficient in practice;
+this trial does not show that it is, but records Praat as the credible next step if it does.
+Provisional pending a re-run on a real corpus.
 
 **What it contributes.** Praat is an established speech-analysis application
 and scripting environment. It can inspect/export pitch, intensity, formants,

@@ -448,6 +448,7 @@ function AppRoutes() {
                       goHome={() => guardedNavigate('/')}
                       goToManuscript={goToManuscript}
                       dawFileLinked={data.dawFileLinked}
+                      refreshKey={data.manuscript ? `${data.manuscript.id}:${data.manuscript.importedAt}` : 'no-manuscript'}
                     />
                   ) : (
                     <Navigate to="/" replace />

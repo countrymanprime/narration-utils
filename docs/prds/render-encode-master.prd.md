@@ -147,10 +147,10 @@ Phases 0 to 5: a narrator can encode rendered WAVs to MP3/M4B, optionally master
 
 | # | Phase | Description | Status | Parallel | Depends | Ports used | PRP Plan |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| 0 | Encoder verification | Pick and verify the encoder build (Q1), record its license class, confirm it produces MP3/M4B this app's own MP3 checks accept | pending | - | - | none | - |
+| 0 | Encoder verification | Pick and verify the encoder build (Q1), record its license class, confirm it produces MP3/M4B this app's own MP3 checks accept | complete ([research note](../research/ffmpeg-encoder-build.md), [ADR 0342](../adr/0342-the-mp3-encoder-is-a-pinned-gpl-ffmpeg-build-run-as-a-separate-process-and-writes-no-tag-frame.md), Proposed; the Windows binary run on Windows and the distributor choice are pending the owner on #510) | - | - | none | - |
 | 1 | `Encoder` port: MP3 | `internal/encodeport`, WAV to MP3 (CBR), progress, cancellation, catalog asset row | pending | 2 | 0 | `Encoder` (`provider-ports.prd.md`) | - |
 | 2 | `Encoder` port: M4B/AAC | M4B chapters (reusing the chapter-timeline shape from `chaptertags`), AAC encode | pending | 1 | 0 | `Encoder` (`provider-ports.prd.md`) | - |
-| 3 | Mastering chain (Should) | `internal/mastering`: EQ, limiter, gain into the profile's RMS window; narrator-triggered, writes new files | pending | 4 | - | none (reads `internal/measure`); `fx_chains` (Q3, Could, gated on that capability reaching Supported) | - |
+| 3 | Mastering chain (Should) | `internal/mastering`: EQ, limiter, gain into the profile's RMS window; narrator-triggered, writes new files | complete | 4 | - | none (reads `internal/measure`); `fx_chains` (Q3, Could, gated on that capability reaching Supported) | - |
 | 4 | `Packager` port | `internal/packager`, reads the selected delivery profile's book checklist, assembles and names a complete package (Q5) | pending | 3 | 1, 2; [Delivery Platform Profiles](delivery-platform-profiles.prd.md) Phase 7 | `render_config` (reads confirmed render targets); `Packager` (`provider-ports.prd.md`) | - |
 | 5 | Master & QC export flow | Bindings, UI export flow, checklist report, visual suite | pending | - | 3, 4 | UI primitives `StatusBadge`, `Toolbar` (`studio-ui-primitives.prd.md`, if landed) | - |
 | 6 | Multi-platform export (Could) | One mastered/encoded source produces packages for several selected profiles in one action | pending | - | 5 | none | - |
