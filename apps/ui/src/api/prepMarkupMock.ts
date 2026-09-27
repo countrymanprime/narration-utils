@@ -7,7 +7,7 @@ import type { ManuscriptChapter, ManuscriptParagraph, PrepMarkupApi, PrepMarkupK
 import { wireClone } from './mockFixtures';
 
 /** One seeded span, placed by the words it covers in a line of a listable chapter, the way a narrator would place it. */
-export type PrepMarkupSeedSpan = {
+type PrepMarkupSeedSpan = {
   /** Which narration chapter, counting from 0 in reading order. */
   chapter: number;
   /** Which line of that chapter, counting from 0. */
