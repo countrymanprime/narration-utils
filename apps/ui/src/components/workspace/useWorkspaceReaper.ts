@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { useApi } from '../../api/ApiContext';
 import { apiErrorMessage } from '../../api/errorMessage';
 import { usePendingAction } from '../../hooks/usePendingAction';
@@ -34,16 +34,20 @@ export type WorkspaceReaperControls = {
  * token index - the host resolves it to an item, take and source time from the chapter's stored alignment checked
  * against the saved project, never the page (`docs/architecture/reaper-navigation.md`, "From the workspace").
  * Connection status is shared with the Review page (`useReaperStatus`, `findingsReaperStatus`): the same heartbeat,
- * the same poll. Stop loop calls `findingsStopLoop`, which stops whichever app loop is held, workspace or finding;
- * `looping` is this hook's own memory of whether that loop is this transport's, since the host does not name a
- * workspace loop's chapter or tokens back to the page the way it names a finding's id.
+ * the same poll. Stop loop calls `findingsStopLoop`, which stops whichever app loop is held, workspace or finding.
+ * `looping` reads `status.loopingFindingId` (set to `workspace:<chapterId>:<first>-<last>` by `WorkspaceLoop`,
+ * bindings_workspace.go) rather than local state, so it survives a poll after the narrator leaves the page and
+ * comes back, exactly as the Review page's own looping finding does.
  */
 export function useWorkspaceReaper(chapterId: string, currentToken: number | undefined, tokens: WorkspaceToken[]): WorkspaceReaperControls {
   const api = useApi();
   const action = usePendingAction();
   const reaper = useReaperStatus();
-  const [looping, setLooping] = useState(false);
   const [message, setMessage] = useState<string>();
+  const looping = useMemo(
+    () => reaper.status?.connection === 'connected' && (reaper.status.loopingFindingId?.startsWith(`workspace:${chapterId}:`) ?? false),
+    [reaper.status, chapterId],
+  );
 
   const token = currentToken === undefined ? undefined : tokens.find((candidate) => candidate.i === currentToken);
   const connected = reaper.status?.connection === 'connected';
@@ -60,8 +64,6 @@ export function useWorkspaceReaper(chapterId: string, currentToken: number | und
         try {
           const result = await request();
           if (result.outcome === 'refused') setMessage(result.message);
-          else if (result.outcome === 'looping') setLooping(true);
-          else if (result.outcome === 'stopped') setLooping(false);
         } catch (error) {
           setMessage(`REAPER was not asked: ${apiErrorMessage(error)}`);
         }

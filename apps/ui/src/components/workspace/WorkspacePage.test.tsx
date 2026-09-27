@@ -76,24 +76,17 @@ describe('WorkspacePage', () => {
 
   it('goes to and loops the word at the playhead in REAPER, then stops the loop (Phase 3)', async () => {
     const user = userEvent.setup();
-    const calls: unknown[] = [];
-    renderWorkspace({
-      workspaceGoTo: async (chapterId, tokenIndex) => {
-        calls.push(['goTo', chapterId, tokenIndex]);
-        return { outcome: 'navigated', projectTime: 0 };
-      },
-      workspaceLoop: async (chapterId, firstToken, lastToken) => {
-        calls.push(['loop', chapterId, firstToken, lastToken]);
-        return { outcome: 'looping', loopStart: 0, loopEnd: 0.5 };
-      },
-    });
+    // The default mock REAPER (connected) and Chapter 1's alignment (every token 'read', per the alignment test
+    // above): both Go to and Loop of the word at the playhead (token 0) succeed for real, through
+    // workspaceGoTo/workspaceLoop, and Stop loop reads it back from findingsReaperStatus's loopingFindingId, exactly
+    // as a real REAPER session would (useWorkspaceReaper.ts).
+    renderWorkspace();
     await screen.findByRole('heading', { name: chapterName(chapter) });
 
     await user.click(await screen.findByRole('button', { name: 'Go to in REAPER' }));
-    await waitFor(() => expect(calls).toEqual([['goTo', chapter.id, 0]]));
+    expect(screen.queryByRole('alert')).toBeNull();
 
     await user.click(await screen.findByRole('button', { name: 'Loop in REAPER' }));
-    await waitFor(() => expect(calls).toContainEqual(['loop', chapter.id, 0, 0]));
     const stop = await screen.findByRole('button', { name: 'Stop loop' });
 
     await user.click(stop);

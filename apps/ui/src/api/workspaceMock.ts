@@ -31,6 +31,10 @@ type Deps = {
   /** What the mock's REAPER does for Go to and Loop (edit-and-proof-workspace PRD Phase 3), shared with the Review
    * page's own mock REAPER (`initial.reaper`, mockApi.ts); `connected` when not given. */
   reaper?: MockReaper;
+  /** Mirrors `findingNavigation.loopingID` (bindings_navigation.go): mockApi.ts reads this after a successful
+   * workspaceLoop to answer `findingsReaperStatus`'s `loopingFindingId` and to let `findingsStopLoop` clear it, so
+   * the workspace's own loop is remembered the same way a finding's is (across a poll, a leave and a return). */
+  looping?: { current: string | undefined };
 };
 
 const refused = (reason: FindingNavigationRefusal, message: string): FindingNavigation => ({ outcome: 'refused', reason, message });
@@ -202,6 +206,7 @@ export function createWorkspaceMock(deps: Deps): WorkspaceApi {
       if (last.end === undefined) return refused('no_source_time', WORKSPACE_MESSAGES.noSourceTime);
       const refusal = reaperRefusal(mode);
       if (refusal) return refusal;
+      if (deps.looping) deps.looping.current = `workspace:${chapterId}:${firstToken}-${lastToken}`;
       const start = first.start ?? 0;
       return { outcome: 'looping', loopStart: Math.max(start - LOOP_PADDING_SECONDS, 0), loopEnd: last.end + LOOP_PADDING_SECONDS };
     },
