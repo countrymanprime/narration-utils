@@ -1,4 +1,4 @@
-# 0345. Character-continuity acoustic features are a dependency-free Go package with a percentile voicing gate
+# 0348. Character-continuity acoustic features are a dependency-free Go package with a percentile voicing gate
 
 **Status:** Accepted
 **Date:** 2026-09-27

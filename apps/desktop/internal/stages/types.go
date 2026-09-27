@@ -1,5 +1,5 @@
 // Package stages is the chapter stage recommendations core (Phase 1 of
-// docs/prds/chapter-stage-recommendations.prd.md): the signal contract the
+// chapter-stage-recommendations.prd.md, delivered and deleted; see docs/architecture/stage-recommendations.md): the signal contract the
 // recording, editing and proofing signal owners implement, the Provider
 // interface they plug in through, and a pure engine that turns a chapter's
 // required signals into a verdict. It only suggests: nothing here writes a
