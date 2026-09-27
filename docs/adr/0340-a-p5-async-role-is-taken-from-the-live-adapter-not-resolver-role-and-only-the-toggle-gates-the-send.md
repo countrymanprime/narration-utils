@@ -1,6 +1,6 @@
 # 0340. A P5 async role is taken from the live adapter, not `Resolver.Role`, and only the toggle gates the send
 
-**Status:** Proposed
+**Status:** Accepted
 **Date:** 2026-09-27
 **Supersedes:** none. It fills in a gap [ADR 0302](0302-dawport-roles-exchange-the-bridges-own-types-through-aliases-and-an-asynchronous-role-is-one-method-per-command.md) left open for the DAW port PRD (PRD deleted, delivered)'s Phase 5 migrations, worked out while building Phase 5c (`internal/retakelanes`, `internal/projectstate`, `internal/takereview`, and `internal/daw`'s reachability behind `Heartbeat`).
 
