@@ -115,6 +115,20 @@ describe('recording check on Home', () => {
     expect(await within(dialog).findByText('Repeated reads (Review): none waiting')).toBeTruthy();
   });
 
+  it("shows the proofer's project-wide open pickup count, the same figure PickupsDialog shows (recording-check-summary.prd.md RS5 B)", async () => {
+    await openBreakdown({ pickups: 'next-success' });
+    const dialog = await openCheck('Chapter 1');
+    expect(await within(dialog).findByText('Pickup list: 2 open (project-wide)')).toBeTruthy();
+    expect(within(dialog).getByRole('link', { name: 'Open pickups' }).getAttribute('href')).toBe('/tracks');
+  });
+
+  it('reads "open REAPER to count" for the pickup list when REAPER is not connected (RS5 B)', async () => {
+    await openBreakdown({ pickups: 'next-success', daw: { connected: false } });
+    const dialog = await openCheck('Chapter 1');
+    expect(await within(dialog).findByText('Pickup list: open REAPER to count')).toBeTruthy();
+    expect(within(dialog).queryByRole('link', { name: 'Open pickups' })).toBeNull();
+  });
+
   it('reads a complete chapter as all recorded, with no pickups and its paragraph detail folded', async () => {
     await openBreakdown();
     const dialog = await openCheck('Chapter 1');

@@ -201,6 +201,16 @@ def storybook_section(site_url: str, storybook_path: str) -> str:
     )
 
 
+def demo_section(site_url: str, demo_path: str) -> str:
+    """The paragraph appended beside the Live Storybook section: a link to the running app demo (docs/prds/public-app-demo.prd.md), sample data only, nothing saved."""
+    url = site_url.rstrip("/") + "/" + demo_path.lstrip("/")
+    return (
+        "\n\n## Live demo\n\n"
+        f"The real application, not just its components, with a sample project already loaded: [open the demo]({url}). "
+        "Nothing you do there is saved.\n"
+    )
+
+
 # ---------------------------------------------------------------------------------------------------------------------
 # Navigation
 # ---------------------------------------------------------------------------------------------------------------------
@@ -262,6 +272,7 @@ def on_page_markdown(markdown, page, config, files):
     settings = _settings(config)
     if page.file.src_uri == settings["storybook_page"]:
         text += storybook_section(config.site_url, settings["storybook_path"])
+        text += demo_section(config.site_url, settings["demo_path"])
     return text
 
 

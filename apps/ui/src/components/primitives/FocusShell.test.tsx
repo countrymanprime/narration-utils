@@ -70,4 +70,26 @@ describe('FocusShell', () => {
     expect(screen.getAllByRole('region', { name: 'Commands' })).toHaveLength(1);
     expect(screen.getAllByRole('main')).toHaveLength(1);
   });
+
+  it('renders the script region as main by default, for a standalone route with no other main on the page', () => {
+    render(
+      <FocusShell status="s" commands="c">
+        The script text
+      </FocusShell>,
+    );
+    expect(within(screen.getByRole('main')).getByText('The script text')).toBeTruthy();
+  });
+
+  it('renders no main landmark when asMain is false, for a host page that already has its own (a full-size Dialog), while every other landmark stays', () => {
+    render(
+      <FocusShell status="s" rail="r" commands="c" asMain={false}>
+        The script text
+      </FocusShell>,
+    );
+    expect(screen.queryByRole('main')).toBeNull();
+    expect(screen.getByText('The script text')).toBeTruthy();
+    expect(screen.getByRole('region', { name: 'Status' })).toBeTruthy();
+    expect(screen.getByRole('complementary', { name: 'Rail' })).toBeTruthy();
+    expect(screen.getByRole('region', { name: 'Commands' })).toBeTruthy();
+  });
 });

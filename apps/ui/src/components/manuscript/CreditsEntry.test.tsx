@@ -94,4 +94,18 @@ describe('CreditsEntry (Manuscript pseudo-entry for opening/closing credits, PRD
     render(<CreditsEntry kind="opening" preview={preview} expanded onToggle={vi.fn()} textClass="text-sm" onFillIn={vi.fn()} />);
     expect(screen.queryByRole('button', { name: 'Fill in' })).toBeNull();
   });
+
+  it('shows a Booth button beside Read aloud, gated the same way (booth-mode-and-companion-panel.prd.md Phase 1): a row with one and not the other misaligns the header column', () => {
+    const preview: CreditsRenderResult = { text: 'Alice, written by Lewis Carroll.', words: 5, unresolved: [] };
+    const onBooth = vi.fn();
+    render(<CreditsEntry kind="opening" preview={preview} expanded onToggle={vi.fn()} textClass="text-sm" onBooth={onBooth} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Open booth for Opening credits' }));
+    expect(onBooth).toHaveBeenCalledTimes(1);
+  });
+
+  it('shows no Booth button on a credits card with nothing to read (preview.words === 0), matching Read aloud', () => {
+    const preview: CreditsRenderResult = { text: '', words: 0, unresolved: [] };
+    render(<CreditsEntry kind="opening" preview={preview} expanded onToggle={vi.fn()} textClass="text-sm" onBooth={vi.fn()} />);
+    expect(screen.queryByRole('button', { name: /Open booth/ })).toBeNull();
+  });
 });
