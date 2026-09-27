@@ -92,10 +92,6 @@ export const SILENT_CATCHES: Record<string, string> = {
     'Only guards the REAPER preselection against a running session; useTeleprompterSession reads the state again and reports its failure.',
   'src/components/teleprompter/CompanionShell.tsx#1':
     "Companion mode's exit on unmount: nothing is left mounted to tell, and the host's exit is a no-op when companion mode was never entered, so there is no state it could leave wrong that a retry would fix.",
-  'src/components/teleprompter/ResumePrompt.tsx#1':
-    'TeleprompterResumeFollow is a convenience (read-aloud-resume-from-daw Phase 5): when it cannot start, the prompt still waits for a choice, the transport push still dismisses it, and nothing the narrator did is lost.',
-  'src/components/teleprompter/ResumePrompt.tsx#2':
-    'TeleprompterResumeUnfollow runs as the prompt goes away or unmounts, with nothing left to tell; the host ends the poll itself on play, record, a replacing follow or its 30-minute bound.',
   'src/components/teleprompter/useInputLevel.ts#1':
     'Best-effort release of the meter-only child (popover close, session start, device change or unmount); nothing is left mounted to show a failure, and the meter simply starts fresh the next time the popover opens.',
   'src/components/teleprompter/useTeleprompterSession.ts#1':
@@ -145,7 +141,7 @@ export const SILENT_CATCHES: Record<string, string> = {
   'src/input/HidSource.ts#3':
     "requestHidDevice()'s chooser promise rejecting (the narrator cancelled it, or - Phase 8's spike found this plausible on WebView2 - no chooser ever appeared): not a narrator action to retry automatically, and the only outcome either way is that no new device got paired this time.",
   'src/components/teleprompter/ResumePrompt.tsx#1':
-    "Starts the bounded REAPER follow for the matched track while the prompt shows (read-aloud-resume-from-daw.prd.md Phase 5, ADR 0350); a failure to start just means that poll never begins, and the DAW-transport subscription and the narrator's own choices still settle the prompt.",
+    "Starts the bounded REAPER follow for the matched track while the prompt shows (read-aloud-resume-from-daw.prd.md Phase 5, ADR 0353); a failure to start just means that poll never begins, and the DAW-transport subscription and the narrator's own choices still settle the prompt.",
   'src/components/teleprompter/ResumePrompt.tsx#2':
     'Stops the follow on cleanup (the prompt settles, a session starts, or the dialog closes); a failure here is unobservable and harmless, since the poll it would have stopped already lost its listener.',
   'src/components/workspace/WorkspacePage.tsx#1':
