@@ -730,5 +730,11 @@
     "file": "narration_punch.lua",
     "find": "    seconds(reaper.GetPlayPosition2()),",
     "replace": "    seconds(reaper.GetPlayPosition()),"
+  },
+  {
+    "name": "select_track selects the first track when the GUID is stale",
+    "file": "narration_track_select.lua",
+    "find": "local track = find_track(wanted)\n  if not track then",
+    "replace": "local track = find_track(wanted) or reaper.GetTrack(0, 0)\n  if false then"
   }
 ]
