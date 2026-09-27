@@ -1,0 +1,126 @@
+{
+  "capabilities": {
+    "cleanup_tools": {
+      "available": false,
+      "level": "unsupported",
+      "message": "No DAW is connected to this app. Open this app from your DAW to use it.",
+      "reason": "standalone"
+    },
+    "fx_chains": {
+      "available": false,
+      "level": "unsupported",
+      "message": "No DAW is connected to this app. Open this app from your DAW to use it.",
+      "reason": "standalone"
+    },
+    "heartbeat": {
+      "available": false,
+      "level": "unsupported",
+      "message": "No DAW is connected to this app. Open this app from your DAW to use it.",
+      "reason": "standalone"
+    },
+    "item_gain": {
+      "available": false,
+      "level": "unsupported",
+      "message": "No DAW is connected to this app. Open this app from your DAW to use it.",
+      "reason": "standalone"
+    },
+    "line_identity": {
+      "available": false,
+      "level": "unsupported",
+      "message": "No DAW is connected to this app. Open this app from your DAW to use it.",
+      "reason": "standalone"
+    },
+    "markers": {
+      "available": false,
+      "level": "unsupported",
+      "message": "No DAW is connected to this app. Open this app from your DAW to use it.",
+      "reason": "standalone"
+    },
+    "navigate": {
+      "available": false,
+      "level": "unsupported",
+      "message": "No DAW is connected to this app. Open this app from your DAW to use it.",
+      "reason": "standalone"
+    },
+    "pickups": {
+      "available": false,
+      "level": "unsupported",
+      "message": "No DAW is connected to this app. Open this app from your DAW to use it.",
+      "reason": "standalone"
+    },
+    "project_read": {
+      "available": false,
+      "level": "unsupported",
+      "message": "No DAW is connected to this app. Open this app from your DAW to use it.",
+      "reason": "standalone"
+    },
+    "project_state": {
+      "available": false,
+      "level": "unsupported",
+      "message": "No DAW is connected to this app. Open this app from your DAW to use it.",
+      "reason": "standalone"
+    },
+    "punch": {
+      "available": false,
+      "level": "unsupported",
+      "message": "No DAW is connected to this app. Open this app from your DAW to use it.",
+      "reason": "standalone"
+    },
+    "record": {
+      "available": false,
+      "level": "unsupported",
+      "message": "No DAW is connected to this app. Open this app from your DAW to use it.",
+      "reason": "standalone"
+    },
+    "regions": {
+      "available": false,
+      "level": "unsupported",
+      "message": "No DAW is connected to this app. Open this app from your DAW to use it.",
+      "reason": "standalone"
+    },
+    "render_config": {
+      "available": false,
+      "level": "unsupported",
+      "message": "No DAW is connected to this app. Open this app from your DAW to use it.",
+      "reason": "standalone"
+    },
+    "retake_lanes": {
+      "available": false,
+      "level": "unsupported",
+      "message": "No DAW is connected to this app. Open this app from your DAW to use it.",
+      "reason": "standalone"
+    },
+    "review": {
+      "available": false,
+      "level": "unsupported",
+      "message": "No DAW is connected to this app. Open this app from your DAW to use it.",
+      "reason": "standalone"
+    },
+    "silence_trim": {
+      "available": false,
+      "level": "unsupported",
+      "message": "No DAW is connected to this app. Open this app from your DAW to use it.",
+      "reason": "standalone"
+    },
+    "take_create": {
+      "available": false,
+      "level": "unsupported",
+      "message": "No DAW is connected to this app. Open this app from your DAW to use it.",
+      "reason": "standalone"
+    },
+    "takes": {
+      "available": false,
+      "level": "unsupported",
+      "message": "No DAW is connected to this app. Open this app from your DAW to use it.",
+      "reason": "standalone"
+    },
+    "track_state": {
+      "available": false,
+      "level": "unsupported",
+      "message": "No DAW is connected to this app. Open this app from your DAW to use it.",
+      "reason": "standalone"
+    }
+  },
+  "daw": "none",
+  "reachable": false
+}

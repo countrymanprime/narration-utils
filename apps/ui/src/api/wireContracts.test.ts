@@ -89,6 +89,7 @@ import { lineIdentityStartResultSchema, lineIdentityStateSchema } from './schema
 import { pickupsImportResultSchema, pickupsStartResultSchema, pickupsStateSchema } from './schemas/pickups';
 import { renderConfigStartResultSchema, renderConfigStateSchema, renderConfigSuggestedFolderSchema } from './schemas/renderconfig';
 import { cleanupToolsStartResultSchema, cleanupToolsStateSchema } from './schemas/cleanuptools';
+import { dawCapabilitiesSchema } from './schemas/daw';
 import { projectStateChangedSchema, projectStateStartResultSchema, projectStateStateSchema } from './schemas/projectstate';
 import { retakeLanesListSchema, retakeLanesStartResultSchema, retakeLanesStateSchema } from './schemas/retakelanes';
 import { chapterTagsEmbedResultSchema, chapterTagsPreviewSchema } from './schemas/chaptertags';
@@ -1146,6 +1147,48 @@ describe('answers of the mock client for the settings, voice, model, transcript 
     await expect(createMockApi().cleanupToolsLaunch('40209' as never)).rejects.toThrow(/unknown cleanup tool/);
   });
 
+  it('dawCapabilities and its subscribe emit the same picture, and match the host goldens for every launch kind (DAW port PRD Phase 4)', async () => {
+    const api = createMockApi();
+    expectMatches(dawCapabilitiesSchema, await api.dawCapabilities(), 'mock daw capabilities (default REAPER seed)');
+    const seen: unknown[] = [];
+    const unsubscribe = api.subscribeDawCapabilities((state) => seen.push(structuredClone(state)));
+    expect(seen).toHaveLength(1);
+    expectMatches(dawCapabilitiesSchema, seen[0], 'mock daw_capabilities_changed');
+    unsubscribe();
+
+    const standalone = await createMockApi({}, { daw: { daw: 'none' } }).dawCapabilities();
+    expectMatches(dawCapabilitiesSchema, standalone, 'mock daw capabilities (standalone)');
+    expect(standalone).toEqual(readGolden('daw-capabilities-standalone.json'));
+
+    const audacity = await createMockApi({}, { daw: { daw: 'Audacity' } }).dawCapabilities();
+    expectMatches(dawCapabilitiesSchema, audacity, 'mock daw capabilities (Audacity)');
+    expect(audacity).toEqual(readGolden('daw-capabilities-audacity.json'));
+
+    // The host's own "daw-capabilities-reaper" golden is a REAPER launch with no live bridge at all (Bridge: false); the
+    // mock's disconnected seed is the same shape.
+    const disconnectedReaper = await createMockApi({}, { daw: { daw: 'REAPER', connected: false } }).dawCapabilities();
+    expectMatches(dawCapabilitiesSchema, disconnectedReaper, 'mock daw capabilities (REAPER, not connected)');
+    expect(disconnectedReaper).toEqual(readGolden('daw-capabilities-reaper.json'));
+  });
+
+  it('dawCapabilities reports a connected-but-unreachable REAPER as not_running, except the heartbeat capability itself', async () => {
+    const state = await createMockApi({}, { daw: { daw: 'REAPER', connected: true, reachable: false } }).dawCapabilities();
+    expect(state.reachable).toBe(false);
+    expect(state.capabilities.navigate).toMatchObject({ available: false, reason: 'not_running' });
+    expect(state.capabilities.heartbeat).toMatchObject({ available: true });
+  });
+
+  it('dawCapabilities turns an experimental capability on only when its own toggle, or the master switch, is on', async () => {
+    const off = await createMockApi({}, { daw: {} }).dawCapabilities();
+    expect(off.capabilities.punch).toMatchObject({ available: false, reason: 'experimental_off' });
+    const toggledOn = await createMockApi({}, { daw: { toggles: { punch: 'on' } } }).dawCapabilities();
+    expect(toggledOn.capabilities.punch).toMatchObject({ available: true });
+    const masterOn = await createMockApi({}, { daw: { experimentalOn: true } }).dawCapabilities();
+    expect(masterOn.capabilities.punch).toMatchObject({ available: true });
+    const turnedOff = await createMockApi({}, { daw: { experimentalOn: true, toggles: { punch: 'off' } } }).dawCapabilities();
+    expect(turnedOff.capabilities.punch).toMatchObject({ available: false, reason: 'turned_off' });
+  });
+
   it('chapterTagsPreview and its seeded states', async () => {
     expectMatches(chapterTagsPreviewSchema, await createMockApi().chapterTagsPreview(), 'mock chapter-tags preview idle');
     for (const seed of ['ready', 'not-rendered'] as const) {
@@ -1651,6 +1694,7 @@ describe('answers of the mock client for the settings, voice, model, transcript 
       'removeRecentProject',
       'linkDawFile',
       'launchDaw',
+      'dawCapabilities',
       'dawCatalogList',
       'tracksDiscover',
       'tracksSelect',
@@ -1817,6 +1861,7 @@ describe('answers of the mock client for the settings, voice, model, transcript 
       'subscribeCleanupTools',
       'subscribeProjectState',
       'subscribeRetakeLanes',
+      'subscribeDawCapabilities',
     ];
     expect([...CHECKED, ...VOID, ...NOT_A_REQUEST].sort()).toEqual(Object.keys(createMockApi()).sort());
   });
