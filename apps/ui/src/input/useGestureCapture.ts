@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { gestureFromKeyboardEvent, type Gesture } from './gestures';
+import { hidSource } from './HidSource';
 import type { InputSource } from './InputSource';
 import { midiSource } from './MidiSource';
 
@@ -32,6 +33,10 @@ const isBareEscape = (event: KeyboardEvent) => event.code === 'Escape' && !event
  * race: this subscription starts only while the recorder is open, later than the router's, so it is offered a press
  * first and its `preventDefault()` below stops the router from also running whatever command that gesture already
  * happens to be bound to.
+ *
+ * Phase 11: the same for `hidSource`. A device must already be paired (`requestHidDevice`, from a future "Connect a
+ * pedal" button) before the recorder can learn a press from it - opening the recorder itself grants no new device
+ * access, since WebHID's `requestDevice()` needs its own user gesture, not this one.
  */
 export function useGestureCapture(
   active: boolean,
@@ -39,6 +44,7 @@ export function useGestureCapture(
   onCancel: () => void,
   target: Pick<Document, 'addEventListener' | 'removeEventListener'> = document,
   midi: InputSource = midiSource,
+  hid: InputSource = hidSource,
 ): void {
   useEffect(() => {
     if (!active) return undefined;
@@ -54,13 +60,16 @@ export function useGestureCapture(
       onCapture(gestureFromKeyboardEvent(keyboardEvent));
     };
     target.addEventListener('keydown', onKeyDown, true);
-    const unsubscribeMidi = midi.subscribe((event) => {
+    const learn = (event: { gesture: Gesture; preventDefault: () => void }) => {
       event.preventDefault();
       onCapture(event.gesture);
-    });
+    };
+    const unsubscribeMidi = midi.subscribe(learn);
+    const unsubscribeHid = hid.subscribe(learn);
     return () => {
       target.removeEventListener('keydown', onKeyDown, true);
       unsubscribeMidi();
+      unsubscribeHid();
     };
-  }, [active, onCapture, onCancel, target, midi]);
+  }, [active, onCapture, onCancel, target, midi, hid]);
 }

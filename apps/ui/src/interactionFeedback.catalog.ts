@@ -126,4 +126,10 @@ export const SILENT_CATCHES: Record<string, string> = {
     "keymapFromBindings (input-commands-and-pedals.prd.md Phase 6): one stored gesture this build cannot parse (a hand-edited settings file, or an older/newer app's own bug) falls back to that one command's catalog default; not a narrator action, and not swallowed silently since the Keyboard & pedals panel still shows every other override normally.",
   'src/input/MidiSource.ts#1':
     "requestMIDIAccess() rejecting (denied, unsupported, or blocked by the webview host - Phase 8's spike, input-commands-and-pedals.prd.md): not a narrator action to retry, and not swallowed silently since KeyboardSource keeps every keyboard-type pedal working; MidiSource just contributes nothing rather than surfacing an error nobody in the booth can act on.",
+  'src/input/HidSource.ts#1':
+    'device.open() rejecting for an already-granted device (OS denial, or unplugged mid-open, Phase 11): retried on the next attach, and not swallowed silently since KeyboardSource and MidiSource keep every other pedal working; this device just contributes nothing until it opens.',
+  'src/input/HidSource.ts#2':
+    'navigator.hid.getDevices() rejecting (an unsupported or torn-down navigator.hid, Phase 11): leaves this source with no devices; KeyboardSource and MidiSource still cover the booth, so it just contributes nothing rather than surfacing an error nobody can act on.',
+  'src/input/HidSource.ts#3':
+    "requestHidDevice()'s chooser promise rejecting (the narrator cancelled it, or - Phase 8's spike found this plausible on WebView2 - no chooser ever appeared): not a narrator action to retry automatically, and the only outcome either way is that no new device got paired this time.",
 };
