@@ -233,6 +233,22 @@ export function CleanupToolsState(): $CancellablePromise<string> {
 }
 
 /**
+ * CompanionModeEnter narrows the app's one window to the companion width and pins it always-on-top, saving its prior
+ * size and position so CompanionModeExit can restore them. It never opens a second window (ADR 0401).
+ */
+export function CompanionModeEnter(): $CancellablePromise<void> {
+    return $Call.ByID(3310293519);
+}
+
+/**
+ * CompanionModeExit restores the window's size, position and always-on-top state to what they were before
+ * CompanionModeEnter: the "Full app" action and the double-Escape rule (Open Question 5) both call this.
+ */
+export function CompanionModeExit(): $CancellablePromise<void> {
+    return $Call.ByID(3684763819);
+}
+
+/**
  * CoverageCancel asks a running check to stop; the items it finished stay cached. With nothing running it does nothing.
  */
 export function CoverageCancel(): $CancellablePromise<string> {

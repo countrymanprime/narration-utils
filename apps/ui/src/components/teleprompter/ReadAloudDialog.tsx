@@ -6,6 +6,7 @@ import { CommandScope } from '../../input/router';
 import { ConfirmDialog } from '../primitives/ConfirmDialog';
 import { Dialog } from '../primitives/Dialog';
 import { BoothView } from './BoothView';
+import { CompanionShell } from './CompanionShell';
 import { ReadAlongView } from './ReadAlongView';
 import { ReadingControlBar } from './ReadingControlBar';
 import { RecordInReaperConfirm } from './RecordInReaperConfirm';
@@ -52,8 +53,12 @@ type Props = {
    * rail and Escape-confirm-while-listening behaviour, but `BoothView`'s `FocusShell` layout in place of `ReadAlongView`'s
    * own aside grid and the non-scrolling `ReadingControlBar` footer - a second entry point into the same session, not a
    * second session. Defaults to the normal dialog.
+   *
+   * `'companion'` (Phase 7): the same session again, in `CompanionShell`'s narrow, pinned layout in place of the `Dialog`
+   * (the window itself is narrowed to fit it). Its "Full app" (or a double Escape) switches this same dialog to `'read'`,
+   * so a reading in progress carries on in the full-size dialog instead of stopping.
    */
-  mode?: 'read' | 'booth';
+  mode?: 'read' | 'booth' | 'companion';
 };
 
 /** The entities the marks point at, once each, in the order they first appear in the chapter. */
@@ -86,7 +91,9 @@ const byReadingOrder = (a: ManuscriptNote, b: ManuscriptNote): number => a.parag
  * first rather than silently stopping or silently leaving it running. "Fill them in Settings" (credits mode) takes the
  * same confirm before leaving.
  */
-export function ReadAloudDialog({ source, entities = NO_ENTITIES, notes = NO_NOTES, onClose, onFixCredits, mode = 'read' }: Props) {
+export function ReadAloudDialog({ source, entities = NO_ENTITIES, notes = NO_NOTES, onClose, onFixCredits, mode: openedAs = 'read' }: Props) {
+  // Where the dialog opened; only companion mode's "Full app" changes it afterwards (to the normal dialog).
+  const [mode, setMode] = useState(openedAs);
   const isCredits = source.kind === 'credits';
   const chapter = source.kind === 'chapter' ? source.chapter : undefined;
   const session = useTeleprompterSession({
@@ -247,42 +254,54 @@ export function ReadAloudDialog({ source, entities = NO_ENTITIES, notes = NO_NOT
     // (Space, `ReadingControlBar` or, in booth mode, `BoothView`) resolves here ahead of `page` and `global`, matching
     // ADR 0196 unchanged.
     <CommandScope kind="booth">
-      <Dialog
-        title={title}
-        size="full"
-        onClose={requestClose}
-        actions={null}
-        // Booth mode's commands live inside BoothView's own FocusShell `commands` region, not this non-scrolling
-        // footer (booth-mode-and-companion-panel.prd.md Phase 2): the normal dialog keeps ReadingControlBar here.
-        footer={
-          mode === 'read' ? (
-            <ReadingControlBar
+      {mode === 'companion' ? (
+        <CompanionShell
+          session={session}
+          follow={follow}
+          chapterTitle={chapterTitle}
+          recording={recording}
+          marks={marks}
+          header={header}
+          onFullApp={() => setMode('read')}
+        />
+      ) : (
+        <Dialog
+          title={title}
+          size="full"
+          onClose={requestClose}
+          actions={null}
+          // Booth mode's commands live inside BoothView's own FocusShell `commands` region, not this non-scrolling
+          // footer (booth-mode-and-companion-panel.prd.md Phase 2): the normal dialog keeps ReadingControlBar here.
+          footer={
+            mode === 'read' ? (
+              <ReadingControlBar
+                session={session}
+                follow={follow}
+                startPoint={session.startWord !== null ? { label: startLabel ?? 'a chosen word', onClear: () => setStartWord(null) } : undefined}
+                chapterId={source.kind === 'chapter' ? source.chapter.id : undefined}
+                chapterTitle={chapterTitle}
+                recording={recording}
+              />
+            ) : undefined
+          }
+        >
+          {mode === 'booth' ? (
+            <BoothView
               session={session}
               follow={follow}
-              startPoint={session.startWord !== null ? { label: startLabel ?? 'a chosen word', onClear: () => setStartWord(null) } : undefined}
               chapterId={source.kind === 'chapter' ? source.chapter.id : undefined}
               chapterTitle={chapterTitle}
               recording={recording}
+              marks={marks}
+              onOpenMark={openMark}
+              header={header}
+              rail={railElement}
             />
-          ) : undefined
-        }
-      >
-        {mode === 'booth' ? (
-          <BoothView
-            session={session}
-            follow={follow}
-            chapterId={source.kind === 'chapter' ? source.chapter.id : undefined}
-            chapterTitle={chapterTitle}
-            recording={recording}
-            marks={marks}
-            onOpenMark={openMark}
-            header={header}
-            rail={railElement}
-          />
-        ) : (
-          <ReadAlongView session={session} follow={follow} header={header} marks={marks} onOpenMark={openMark} aside={railElement} />
-        )}
-      </Dialog>
+          ) : (
+            <ReadAlongView session={session} follow={follow} header={header} marks={marks} onOpenMark={openMark} aside={railElement} />
+          )}
+        </Dialog>
+      )}
       {confirmStop && (
         <ConfirmDialog
           title="Stop reading?"

@@ -1963,6 +1963,8 @@ describe('answers of the mock client for the settings, voice, model, transcript 
       'updateOpenNotes',
       'updateShowDownload',
       'deleteCreditsTemplate',
+      'companionModeEnter',
+      'companionModeExit',
     ];
     const NOT_A_REQUEST = [
       'mediaUrl',
