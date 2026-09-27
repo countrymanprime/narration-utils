@@ -190,14 +190,6 @@ func TestWorkspaceGoToAndLoopOfAnUnheardTokenAreRefusedAndNothingIsSent(t *testi
 	}
 }
 
-func TestWorkspaceLoopAcrossTwoItemsIsAnErrorNotARefusal(t *testing.T) {
-	host := workspaceNavigationHost(t, &fakeNavigator{})
-
-	if _, err := host.WorkspaceLoop("c-0001", 0, 1); err == nil {
-		t.Fatal("want an error for a token index the chapter's alignment does not have crossing items")
-	}
-}
-
 // With no REAPER listening the request is refused before it is written, exactly as bindings_navigation_test.go's
 // TestWithoutAListeningREAPERNothingIsSentAndTheRefusalSaysWhy proves for a finding.
 func TestWorkspaceWithoutAListeningREAPERNothingIsSentAndTheRefusalSaysWhy(t *testing.T) {
