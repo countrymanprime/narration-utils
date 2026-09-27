@@ -37,6 +37,18 @@
     }
   },
   "capture": {
+    "coreaudio": {
+      "default": true,
+      "label": "Core Audio",
+      "modes": [],
+      "platforms": [
+        "darwin"
+      ],
+      "support": {
+        "available": true,
+        "level": "supported"
+      }
+    },
     "dshow": {
       "default": false,
       "label": "DirectShow",

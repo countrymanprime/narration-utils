@@ -20,6 +20,9 @@ import (
 // DShow is the DirectShow backend (FFmpeg's dshow through PyAV), as the sidecar's registry names it.
 const DShow = "dshow"
 
+// CoreAudio is the Core Audio backend (FFmpeg's avfoundation through PyAV), as the sidecar's registry names it.
+const CoreAudio = "coreaudio"
+
 // Backend is what the host knows about one capture backend.
 type Backend interface {
 	// Name is the registry row's name.
@@ -37,6 +40,11 @@ func NewRegistry() *port.Registry[Backend] {
 		Name:       DShow,
 		Descriptor: port.Descriptor{Label: "DirectShow", Platforms: []string{"windows"}},
 		New:        func() Backend { return backend{DShow} },
+	})
+	r.Register(port.Entry[Backend]{
+		Name:       CoreAudio,
+		Descriptor: port.Descriptor{Label: "Core Audio", Platforms: []string{"darwin"}},
+		New:        func() Backend { return backend{CoreAudio} },
 	})
 	return r
 }

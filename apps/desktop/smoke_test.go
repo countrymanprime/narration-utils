@@ -26,6 +26,8 @@ const healthySelfCheck = `{"ok": true, "checks": [{"name": "cmudict", "ok": true
 
 const healthyMoonshineCheck = `{"type": "engine_check", "engine": "moonshine", "ok": true, "detail": "moonshine-voice 0.1.5: native library loaded, 10 language(s)"}`
 
+const healthyCapabilities = `{"type": "capabilities", "asr": {"whisper": {"label": "Whisper", "platforms": [], "modes": ["live"], "asset": "whisper", "loadable": null}, "moonshine": {"label": "Moonshine", "platforms": ["windows"], "modes": ["live"], "asset": "moonshine", "loadable": null}}, "capture": {"dshow": {"label": "DirectShow", "platforms": ["windows"], "modes": [], "loadable": null}}}`
+
 func sidecarFile(name string) string {
 	if os.PathSeparator == '\\' {
 		return name + ".exe"
@@ -63,6 +65,8 @@ type fakeRun struct {
 	stderrFor map[string]string // sidecar name -> what it says on stderr
 	moonshine string            // what `--check-moonshine` prints; healthyMoonshineCheck when empty
 	moonExit  int               // its exit code
+	caps      string            // what `--capabilities` prints; healthyCapabilities when empty
+	capsExit  int               // its exit code
 }
 
 func (f *fakeRun) run(_ context.Context, program string, args ...string) (int, string, string, error) {
@@ -84,6 +88,13 @@ func (f *fakeRun) run(_ context.Context, program string, args ...string) (int, s
 			out = healthyMoonshineCheck
 		}
 		return f.moonExit, out, f.stderrFor[name], nil
+	}
+	if len(args) > 0 && args[0] == "--capabilities" {
+		out := f.caps
+		if out == "" {
+			out = healthyCapabilities
+		}
+		return f.capsExit, out, f.stderrFor[name], nil
 	}
 	return f.failHelp[name], "usage: " + name, f.stderrFor[name], nil
 }
@@ -113,7 +124,7 @@ func TestSmokePassesOnAHealthyPackage(t *testing.T) {
 	for _, check := range report.Checks {
 		names = append(names, check.Name)
 	}
-	for _, want := range []string{"resources", "asset-cache", "sidecar:manuscript-guide", "sidecar:transcript-compare", "sidecar:manuscript-teleprompter", "guide:cmudict", "guide:espeak", "teleprompter:moonshine", "catalogs", "reaper"} {
+	for _, want := range []string{"resources", "asset-cache", "sidecar:manuscript-guide", "sidecar:transcript-compare", "sidecar:manuscript-teleprompter", "guide:cmudict", "guide:espeak", "teleprompter:moonshine", "teleprompter:capabilities", "catalogs", "reaper"} {
 		if !slices.Contains(names, want) {
 			t.Errorf("the report has no %q check: %v", want, names)
 		}
@@ -134,12 +145,14 @@ func TestSmokeFailsWhenABundledSidecarIsMissing(t *testing.T) {
 			if report.OK || !strings.Contains(failed["sidecar:"+missing], "missing") {
 				t.Fatalf("a package without %s passed or did not say so: ok=%v failed=%v", missing, report.OK, failed)
 			}
-			// The guide and the teleprompter each have a second check that runs them, which fails with them; nothing else may fail.
-			dependent := map[string]string{"manuscript-guide": "guide:self-check", "manuscript-teleprompter": "teleprompter:moonshine"}[missing]
-			if _, ok := failed[dependent]; ok {
-				delete(failed, dependent)
-			} else if dependent != "" {
-				t.Errorf("the check that runs %s (%s) did not fail with it: %v", missing, dependent, failed)
+			// The guide and the teleprompter each have further checks that run them, which fail with them; nothing else may fail.
+			dependents := map[string][]string{"manuscript-guide": {"guide:self-check"}, "manuscript-teleprompter": {"teleprompter:moonshine", "teleprompter:capabilities"}}[missing]
+			for _, dependent := range dependents {
+				if _, ok := failed[dependent]; ok {
+					delete(failed, dependent)
+				} else {
+					t.Errorf("the check that runs %s (%s) did not fail with it: %v", missing, dependent, failed)
+				}
 			}
 			if len(failed) != 1 {
 				t.Errorf("only the missing sidecar should fail, got %v", failed)
@@ -255,6 +268,93 @@ func TestSmokeFailsWhenTheFrozenTeleprompterCannotRunMoonshine(t *testing.T) {
 				t.Fatalf("the smoke test passed or did not say why (want %q): ok=%v detail=%q", tc.detail, report.OK, detail)
 			}
 		})
+	}
+}
+
+func TestSmokeReportsTheFrozenTeleprompterCapabilities(t *testing.T) {
+	run := &fakeRun{}
+	report := smoke(context.Background(), smokeOptionsFor(t, healthyTree(t), run))
+	if !report.OK {
+		t.Fatalf("a healthy capabilities check failed: %+v", report.Checks)
+	}
+	asked := false
+	for _, call := range run.calls {
+		asked = asked || (strings.Contains(filepath.Base(call[0]), "manuscript-teleprompter") && slices.Contains(call, "--capabilities"))
+	}
+	if !asked {
+		t.Fatalf("the frozen teleprompter was never asked for its capabilities: %v", run.calls)
+	}
+}
+
+// The fault-detection case (PRD Success Metrics): a row Go's own registries declare for the platform, but the
+// sidecar's own report never lists, is exactly the class of freeze-silently-loses-a-dependency bug --check-moonshine
+// exists to catch, generalized past Moonshine.
+func TestSmokeFailsWhenTheFrozenTeleprompterDidNotRegisterARowGoDeclaresForThePlatform(t *testing.T) {
+	missingWhisper := `{"type": "capabilities", "asr": {"moonshine": {"label": "Moonshine", "platforms": ["windows"], "modes": ["live"], "asset": "moonshine", "loadable": null}}, "capture": {"dshow": {"label": "DirectShow", "platforms": ["windows"], "modes": [], "loadable": null}}}`
+	missingMoonshineAndDshow := `{"type": "capabilities", "asr": {"whisper": {"label": "Whisper", "platforms": [], "modes": ["live"], "asset": "whisper", "loadable": null}}, "capture": {}}`
+	for name, tc := range map[string]struct {
+		run      *fakeRun
+		platform string
+		wants    []string
+	}{
+		"whisper missing, every platform":              {&fakeRun{caps: missingWhisper}, "linux", []string{"asr:whisper"}},
+		"windows-only rows missing, forced to windows": {&fakeRun{caps: missingMoonshineAndDshow}, "windows", []string{"asr:moonshine", "capture:dshow"}},
+	} {
+		t.Run(name, func(t *testing.T) {
+			options := smokeOptionsFor(t, healthyTree(t), tc.run)
+			options.Platform = tc.platform
+			report := smoke(context.Background(), options)
+			detail := failedChecks(report)["teleprompter:capabilities"]
+			if report.OK || detail == "" {
+				t.Fatalf("a report missing a declared row passed: %+v", report.Checks)
+			}
+			for _, want := range tc.wants {
+				if !strings.Contains(detail, want) {
+					t.Errorf("detail %q does not name the missing row %q", detail, want)
+				}
+			}
+		})
+	}
+}
+
+func TestSmokeFailsWhenTheCapabilitiesCheckPrintsNoReport(t *testing.T) {
+	for name, tc := range map[string]struct {
+		run    *fakeRun
+		detail string
+	}{
+		"crashed with no report": {&fakeRun{caps: "Traceback (most recent call last)", capsExit: 1}, "printed no report"},
+		"an older sidecar without the flag": {
+			&fakeRun{caps: " ", capsExit: 2, stderrFor: map[string]string{"manuscript-teleprompter": "error: unrecognized arguments: --capabilities"}},
+			"unrecognized arguments",
+		},
+		"an exit code no report explains": {&fakeRun{capsExit: 1}, "exit code 1"},
+	} {
+		t.Run(name, func(t *testing.T) {
+			report := smoke(context.Background(), smokeOptionsFor(t, healthyTree(t), tc.run))
+			detail := failedChecks(report)["teleprompter:capabilities"]
+			if report.OK || !strings.Contains(detail, tc.detail) {
+				t.Fatalf("the smoke test passed or did not say why (want %q): ok=%v detail=%q", tc.detail, report.OK, detail)
+			}
+		})
+	}
+}
+
+func TestSmokeFailsWhenTheTeleprompterIsMissingSoItsCapabilitiesCannotBeChecked(t *testing.T) {
+	tree := healthyTree(t)
+	delete(tree, resourcesRoot+"/runtime/manuscript-teleprompter/"+sidecarFile("manuscript-teleprompter"))
+	report := smoke(context.Background(), smokeOptionsFor(t, tree, &fakeRun{}))
+	if detail := failedChecks(report)["teleprompter:capabilities"]; report.OK || !strings.Contains(detail, "missing") {
+		t.Fatalf("a package without the teleprompter passed or did not say so: ok=%v %q", report.OK, detail)
+	}
+}
+
+func TestSmokeCapabilitiesCheckRunsRegardlessOfTheMoonshineWheel(t *testing.T) {
+	run := &fakeRun{}
+	options := smokeOptionsFor(t, healthyTree(t), run)
+	options.Moonshine = false
+	report := smoke(context.Background(), options)
+	if !report.OK || failedChecks(report)["teleprompter:capabilities"] != "" {
+		t.Fatalf("the capabilities check did not run without Moonshine: %+v", report.Checks)
 	}
 }
 
