@@ -727,6 +727,15 @@ export function GuidePronounceUser(id: string, aliasIndex: number | null, ipa: s
 }
 
 /**
+ * GuidePronunciationImportQueriesCSV applies an author's answered file back onto the Story Bible (prep-depth P6): the UI
+ * reads whatever file the narrator picks in their own file input and sends its text; the host never opens a file of its
+ * own. Every row it could not read, match to a still-existing entry or apply is reported with its line, never dropped.
+ */
+export function GuidePronunciationImportQueriesCSV(csvText: string): $CancellablePromise<string> {
+    return $Call.ByID(385033758, csvText);
+}
+
+/**
  * GuidePronunciationQueries lists every name whose pronunciation the author has not confirmed, in reading order (prep-depth P3).
  */
 export function GuidePronunciationQueries(): $CancellablePromise<string> {
@@ -1442,7 +1451,7 @@ export function TeleprompterReaperInput(): $CancellablePromise<string> {
 
 /**
  * TeleprompterResumeFollow starts following REAPER for chapterID's resume prompt (read-aloud-resume-from-daw PRD Phase 5,
- * ADR 0352), replacing any follow already running. trackGUID is the track the prompt's locate read ("" for the chapter's
+ * ADR 0353), replacing any follow already running. trackGUID is the track the prompt's locate read ("" for the chapter's
  * matched track); like TeleprompterLocate, a picked track must be one of the selected project's. It answers whether it
  * follows: not with no track to follow or no way to ask REAPER, which is an answer, not an error.
  */
