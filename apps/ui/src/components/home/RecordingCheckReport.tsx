@@ -3,6 +3,7 @@ import { useApi } from '../../api/ApiContext';
 import type { CoverageJudgement, CoverageReport, CoverageRegionKind, ManuscriptChapter } from '../../types';
 import { Button } from '../primitives/Button';
 import { Disclosure } from '../primitives/Disclosure';
+import { StatTile } from '../primitives/StatTile';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../primitives/Table';
 import { REGION_LABEL, describePosition, describeRegion, formatAudioTime, paragraphRefs, plural, recordedTo, verdict } from './recordingCheckText';
 import { TakeReviewPickups } from './TakeReviewPickups';
@@ -14,20 +15,6 @@ const EYEBROW = "font-['Barlow_Condensed',sans-serif] text-[0.72rem] font-semibo
 // on its own. An unread start or end is unfinished recording, not a pickup (RS2 A) - recordedTo() states it in the
 // summary instead, so a chapter that is a third unread reads as "not finished", not as "3 pickups".
 const PICKUP_KINDS: ReadonlySet<CoverageRegionKind> = new Set(['skip', 'short_read', 'different_text']);
-
-function StatTile({ label, value, hint }: { label: string; value: string; hint?: string }) {
-  return (
-    <div>
-      <div className={EYEBROW}>{label}</div>
-      <div className={`mt-0.5 text-xl font-semibold ${MONO}`}>{value}</div>
-      {hint && (
-        <div className="text-xs" style={{ color: 'var(--text-muted)' }}>
-          {hint}
-        </div>
-      )}
-    </div>
-  );
-}
 
 /**
  * A stored recording check read out as a chapter summary first (recording-check-summary.prd.md Phase 1): the headline

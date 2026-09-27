@@ -11,10 +11,6 @@ const FOLLOW_BAND = { top: 0.25, bottom: 0.7 } as const;
 export const SCROLL_SETTLE_MS = 150;
 
 const SCROLL_KEYS = new Set(['PageUp', 'PageDown', 'Home', 'End', 'ArrowUp', 'ArrowDown', ' ']);
-// Moved to `src/input/targets.ts` (ADR 0361 decision 4, input-commands-and-pedals.prd.md Phase 1): the command
-// router's target guard reuses the same three constants. Re-exported here so `isScrollKey` below, `ReadingControlBar`'s
-// Space shortcut and their tests keep working unchanged.
-export { EDITABLE, SPACE_ACTIVATES, KEY_WIDGET_ROLES };
 
 const prefersReducedMotion = (): boolean => typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
