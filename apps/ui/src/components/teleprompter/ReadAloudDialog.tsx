@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { chapterName, context } from '../../chapterName';
 import { useApi } from '../../api/ApiContext';
+import { CommandScope } from '../../input/router';
 import { ConfirmDialog } from '../primitives/ConfirmDialog';
 import { Dialog } from '../primitives/Dialog';
 import { ReadAlongView } from './ReadAlongView';
@@ -179,7 +180,9 @@ export function ReadAloudDialog({ source, entities = NO_ENTITIES, notes = NO_NOT
   const title = chapterName(source.kind === 'chapter' ? source.chapter : { title: CREDITS_LABEL[source.credits] }, context('Read aloud'));
 
   return (
-    <>
+    // Booth scope (Phase 4, input-commands-and-pedals.prd.md): active while this dialog is open, so `reading.toggle`
+    // (Space, `ReadingControlBar`) resolves here ahead of `page` and `global`, matching ADR 0196 unchanged.
+    <CommandScope kind="booth">
       <Dialog
         title={title}
         size="full"
@@ -250,7 +253,7 @@ export function ReadAloudDialog({ source, entities = NO_ENTITIES, notes = NO_NOT
           cancel={() => setConfirmStop(null)}
         />
       )}
-    </>
+    </CommandScope>
   );
 }
 
