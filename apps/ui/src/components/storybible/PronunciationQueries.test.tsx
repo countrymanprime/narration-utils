@@ -31,6 +31,10 @@ const ROWS = [
   query({ aliasIndex: 0, name: 'the Sparrow', status: 'query_sent', note: 'Asked by email.', source: 'CMU dictionary', chapter: '', excerpt: '' }),
 ];
 
+function csvFile(text: string): File {
+  return new File([text], 'answers.csv', { type: 'text/csv' });
+}
+
 function renderPanel(rows = ROWS) {
   const api = createMockApi();
   let current = rows;
@@ -39,6 +43,10 @@ function renderPanel(rows = ROWS) {
     if (status === 'author_confirmed') current = current.filter((row) => !(row.entityId === id && (row.aliasIndex ?? undefined) === aliasIndex));
   });
   const csv = vi.spyOn(api, 'guidePronunciationQueriesCsv').mockResolvedValue({ csv: 'word\nWren\n', count: 1 });
+  const importCsv = vi.spyOn(api, 'guidePronunciationImportQueriesCsv').mockImplementation(async () => {
+    current = current.filter((row) => row.entityId !== 'entity-wren' || row.aliasIndex !== null);
+    return { applied: 1, issues: [] };
+  });
   const batch = vi.spyOn(api, 'pronunciationOnlineLookupBatch');
   void api.pronunciationOnlineKeySet('0b5c1a3e-7d2f-4e6a-9c8b-2f1e0d9c8b7a');
   const notify = vi.fn();
@@ -48,7 +56,7 @@ function renderPanel(rows = ROWS) {
       <PronunciationQueries open onClose={vi.fn()} onChanged={onChanged} notify={notify} />
     </ApiProvider>,
   );
-  return { list, setStatus, csv, batch, notify, onChanged };
+  return { list, setStatus, csv, batch, importCsv, notify, onChanged };
 }
 
 beforeEach(() => {
@@ -107,6 +115,34 @@ describe('the pronunciation queries panel', () => {
     await waitFor(() => expect(csv).toHaveBeenCalled());
     expect(URL.createObjectURL).toHaveBeenCalled();
     expect(notify).toHaveBeenCalledWith('1 query exported.');
+  });
+
+  it('imports an answered file, applies a row, reloads the list and says how many were used', async () => {
+    const user = userEvent.setup();
+    const { importCsv, notify, onChanged } = renderPanel();
+    await screen.findByRole('list', { name: 'Pronunciation queries' });
+    const input = document.querySelector('input[type="file"]') as HTMLInputElement;
+    await user.upload(input, csvFile('word,entry_id,status\nWren,entity-wren,author_confirmed\n'));
+    await waitFor(() => expect(importCsv).toHaveBeenCalledWith('word,entry_id,status\nWren,entity-wren,author_confirmed\n'));
+    expect(notify).toHaveBeenCalledWith('1 query applied.');
+    await waitFor(() => expect(screen.queryByText('Wren')).toBeNull());
+    expect(onChanged).toHaveBeenCalled();
+  });
+
+  it('lists a row the import could not use', async () => {
+    const user = userEvent.setup();
+    const api = createMockApi();
+    vi.spyOn(api, 'guidePronunciationQueries').mockResolvedValue(ROWS);
+    vi.spyOn(api, 'guidePronunciationImportQueriesCsv').mockResolvedValue({ applied: 0, issues: ['line 2: "Ghost" is no longer in the Story Bible'] });
+    render(
+      <ApiProvider api={api}>
+        <PronunciationQueries open onClose={vi.fn()} onChanged={vi.fn()} notify={vi.fn()} />
+      </ApiProvider>,
+    );
+    await screen.findByRole('list', { name: 'Pronunciation queries' });
+    const input = document.querySelector('input[type="file"]') as HTMLInputElement;
+    await user.upload(input, csvFile('word,entry_id\nGhost,gone\n'));
+    expect(await screen.findByText('line 2: "Ghost" is no longer in the Story Bible')).toBeTruthy();
   });
 
   it('says there is nothing to ask when every pronunciation is confirmed, and Export is off', async () => {

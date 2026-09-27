@@ -1,6 +1,6 @@
 # Merriam-Webster Dictionary API: endpoint, key and answer shape (Phase 0)
 
-**Date:** 2026-09-27. **Stream:** N-B33, [Prep Depth](../prds/prep-depth.prd.md) Phase 9. **Answers:** what the online pronunciation adapter (`apps/desktop/internal/pronunciationonline/merriamwebster`) sends and reads, for [ADR 0405](../adr/0405-pronunciation-stays-local-first-behind-cmu-wiktextract-and-espeak-with-merriam-webster-as-the-one-narrator-keyed-online-source.md) point 2 and [ADR 0350](../adr/0350-the-merriam-webster-key-is-sealed-in-its-own-per-user-file-and-the-online-lookup-is-a-go-only-port-with-a-single-word-rule.md).
+**Date:** 2026-09-27. **Stream:** N-B33, [Prep Depth](../prds/prep-depth.prd.md) Phase 9. **Answers:** what the online pronunciation adapter (`apps/desktop/internal/pronunciationonline/merriamwebster`) sends and reads, for [ADR 0405](../adr/0405-pronunciation-stays-local-first-behind-cmu-wiktextract-and-espeak-with-merriam-webster-as-the-one-narrator-keyed-online-source.md) point 2 and [ADR 0353](../adr/0353-the-merriam-webster-key-is-sealed-in-its-own-per-user-file-and-the-online-lookup-is-a-go-only-port-with-a-single-word-rule.md).
 
 **Verdict: per upstream docs, not verified here; owner check pending.** This session's egress proxy refused both `dictionaryapi.com` and `www.dictionaryapi.com` (`curl`, 2026-09-27: `CONNECT tunnel failed, response 403`, the proxy's `connect_rejected`, not an answer from the site), as the PRD's own session found on the same date. The shapes below are Merriam-Webster's developer documentation as this session knows it, not re-read live. CI and the tests never call the API: every test runs against a local `httptest` server or the fake dictionary (D67).
 
@@ -21,5 +21,5 @@ Per the documentation, a free key is for non-commercial use and is limited to 1,
 ## For #510 (owner)
 
 1. Confirm the sign-up URL, the endpoint and the answer shape above against the live service.
-2. Read Merriam-Webster's current API terms for (a) keeping answers in a local cache on the narrator's computer (ADR 0350 point 6; D72 asks for a cache) and (b) the attribution they require beside an answer. The UI names "Merriam-Webster" and "Merriam-Webster respelling" beside every answer today; a logo or link requirement would be a small UI change.
+2. Read Merriam-Webster's current API terms for (a) keeping answers in a local cache on the narrator's computer (ADR 0353 point 6; D72 asks for a cache) and (b) the attribution they require beside an answer. The UI names "Merriam-Webster" and "Merriam-Webster respelling" beside every answer today; a logo or link requirement would be a small UI change.
 3. With a real key, on Windows: save the key, look up one name, confirm the answer, restart the app, confirm the key is still saved (DPAPI round trip across a restart) and the second lookup says "from this computer's copy".

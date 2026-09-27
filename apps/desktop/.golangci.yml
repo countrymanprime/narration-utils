@@ -33,7 +33,7 @@ linters:
           # This is a fence on the Go host's imports, not proof that analysis is local: it does not see a sidecar's
           # own network use (the ephemeral uv environment of ADR 0021 point 5 downloads packages), os/exec, or a
           # third-party client added under another name. `net` also covers its subpackages such as net/url and net/http.
-          # The fourth allow row is the Merriam-Webster adapter alone (ADR 0405 point 2, ADR 0350, prep-depth P9): one narrator-
+          # The fourth allow row is the Merriam-Webster adapter alone (ADR 0405 point 2, ADR 0353, prep-depth P9): one narrator-
           # initiated word at a time, on the narrator's own key, to www.dictionaryapi.com only. Its parent package
           # (internal/pronunciationonline: the port, the cache, the key) stays denied.
           files: ["$all", "!$test", "!**/internal/assets/**", "!**/internal/update/**", "!**/apps/desktop/media.go", "!**/internal/pronunciationonline/merriamwebster/**"]

@@ -722,7 +722,7 @@ export function createTeleprompterMock(deps: Deps): TeleprompterApi {
       stateSubscribers.add(onState);
       return () => stateSubscribers.delete(onState);
     },
-    // The mock has no live REAPER to follow (resumefollow.go, ADR 0352): it answers as the host does with track state off,
+    // The mock has no live REAPER to follow (resumefollow.go, ADR 0350): it answers as the host does with track state off,
     // or with no track for the chapter, and never pushes teleprompter_resume_follow. The prompt still goes away on the DAW
     // mock's transport (subscribeDawTransport), which it also listens to.
     teleprompterResumeFollow: async (chapterId, trackGuid) => {

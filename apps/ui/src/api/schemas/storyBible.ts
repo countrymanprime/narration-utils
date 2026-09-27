@@ -14,6 +14,7 @@ import type {
   GuideRelationship,
   PronunciationQueriesCsv,
   PronunciationQuery,
+  QueryImportResult,
 } from '../contracts/storyBible';
 import { listFromNull, optionalFromNull } from './base';
 import { assetInstallStateSchema } from './assets';
@@ -121,6 +122,11 @@ const pronunciationQuerySchema = z.object({
 export const pronunciationQueriesSchema = listFromNull(pronunciationQuerySchema);
 
 export const pronunciationQueriesCsvSchema = z.object({ csv: z.string(), count: z.number().int().nonnegative() }) satisfies z.ZodType<PronunciationQueriesCsv>;
+
+export const queryImportResultSchema = z.object({
+  applied: z.number().int().nonnegative(),
+  issues: listFromNull(z.string()),
+}) satisfies z.ZodType<QueryImportResult>;
 
 export const guidePreviewSchema = z.discriminatedUnion('status', [
   z.object({ status: z.literal('ready'), audioBase64: z.string(), mimeType: z.string() }),
