@@ -166,12 +166,23 @@ export function ReaderCard({
                 </Button>
               </TooltipTarget>
             )}
-            {showWorkspace && (
+            {showWorkspace ? (
               <TooltipTarget className="relative z-[1]" text="Open the chapter workspace: listen, follow the script and see flags">
                 <Button variant="ghost" className="text-xs" aria-label={`Open workspace for ${title}`} onClick={onWorkspace}>
                   <FontAwesomeIcon icon={faWaveSquare} />
                 </Button>
               </TooltipTarget>
+            ) : (
+              showReadAloud && (
+                // A credits card has Read aloud/Booth but no chapter to open a workspace for (showWorkspace is only
+                // ever set for a real chapter, manuscript-chapter-header-alignment.prd.md's caller-agreement rule
+                // doesn't cover this third button): an invisible same-size placeholder keeps every Read-aloud row's
+                // button cluster the same width, so Read aloud still left-aligns down the column instead of sitting
+                // one button-width further right on a credits card than on a chapter.
+                <Button variant="ghost" className="invisible text-xs" aria-hidden="true" tabIndex={-1}>
+                  <FontAwesomeIcon icon={faWaveSquare} />
+                </Button>
+              )
             )}
           </div>
           <FontAwesomeIcon icon={expanded ? faChevronUp : faChevronDown} className="flex-none" style={{ color: 'var(--text-muted)' }} />
