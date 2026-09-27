@@ -12,7 +12,7 @@ import { ChapterSyncConsentDialog } from './components/tracks/ChapterSyncConsent
 import type { ChapterSyncPreview } from './api/contracts/chapterSync';
 import { useAppHistory } from './hooks/useAppHistory';
 import { notificationForJobEnd, shouldNotifyForJobEnd, shouldQueueJobEndAnnouncement, toastForJobEnd } from './jobEnded';
-import { useBoothRecording } from './components/teleprompter/useBoothRecording';
+import { useBoothRecording } from './components/booth/useBoothRecording';
 import { ConfirmDialog } from './components/primitives/ConfirmDialog';
 import { ShortcutSheet } from './components/help/ShortcutSheet';
 import { Home } from './components/home/Home';
@@ -21,7 +21,8 @@ import { ProjectPicker } from './components/project/ProjectPicker';
 import { Guide } from './components/storybible/Guide';
 import { Transcript } from './components/proofing/Transcript';
 import { Settings } from './components/settings/Settings';
-import { TeleprompterPage } from './components/teleprompter/TeleprompterPage';
+import { BoothPage, boothQuery } from './components/booth/BoothPage';
+import type { CreditsKind } from './components/booth/readerModel';
 import { TracksPage } from './components/tracks/TracksPage';
 import { WorkspacePage } from './components/workspace/WorkspacePage';
 import { ReviewPage } from './components/review/ReviewPage';
@@ -36,7 +37,15 @@ import { describeApiError } from './api/errorMessage';
 import { useCommand } from './input/useCommand';
 
 // The Settings categories another page can open Settings at, by URL anchor.
-const SETTINGS_ANCHORS: Record<string, string> = { '#credits': 'Credits', '#delivery': 'Delivery', '#teleprompter': 'Teleprompter' };
+// `#teleprompter` is kept as an alias of `#booth` so links from before the Booth replaced the Teleprompter page still land
+// (stage-navigation-and-page-replacement.prd.md Q11); the category's key stays its settings tool's name.
+const SETTINGS_ANCHORS: Record<string, string> = { '#credits': 'Credits', '#delivery': 'Delivery', '#booth': 'Teleprompter', '#teleprompter': 'Teleprompter' };
+
+/** A retired route's redirect (ADR 0407): the same query and hash on the page that replaced it, replacing the entry so Back never lands on it. */
+function RedirectKeepingLocation({ to }: { to: string }) {
+  const { search, hash } = useLocation();
+  return <Navigate to={`${to}${search}${hash}`} replace />;
+}
 
 const LIVE_UPDATES_DEGRADED = 'Some live updates from the desktop host could not be read, so what you see may be out of date. Reopen the page to refresh it.';
 
@@ -217,7 +226,7 @@ function AppRoutes() {
   // booth is recording queues here instead - `queuedAnnouncements` - and is shown once `boothRecording` clears
   // (below), rather than interrupting a take. The OS notification above is untouched: silencing it is out of scope
   // (the PRD's "What We're NOT Building" table) and it only ever fires while the window is unfocused anyway (N1).
-  const boothRecording = useBoothRecording();
+  const boothRecording = useBoothRecording(location.pathname === '/booth');
   const boothRecordingRef = useRef(boothRecording);
   boothRecordingRef.current = boothRecording;
   const queuedAnnouncements = useRef<{ text: string; tone: ToastTone }[]>([]);
@@ -382,13 +391,15 @@ function AppRoutes() {
   const goToStoryBible = (entityId: string) => guardedNavigate(`/story-bible#${encodeURIComponent(entityId)}`);
   // A delivery finding opens the Delivery page on its file and rule: "#file=<path>&rule=<id>" (deliveryLink.ts).
   const goToDelivery = (file: string, rule?: string) => guardedNavigate(`/delivery${deliveryHash({ file, ...(rule ? { rule } : {}) })}`);
+  // A Manuscript card's "Record in Booth" (stage-navigation-and-page-replacement.prd.md Q9): the Booth on that chapter or credits.
+  const goToBooth = (target: { chapter: string } | { credits: CreditsKind }) => guardedNavigate(`/booth${boothQuery(target)}`);
 
   const guardedNavigate = (next: string) => {
-    const nextPath = next.split('#')[0] || '/';
+    const nextPath = next.split(/[?#]/)[0] || '/';
     // The chapter workspace reads the chapter's paragraphs and alignment, both manuscript-scoped, same as the fixed
     // routes below (edit-and-proof-workspace.prd.md Phase 2's route is the app's first parameterised path, so it
     // needs its own startsWith check rather than joining the exact-match list).
-    if (!data.manuscript && (['/manuscript', '/proofing', '/story-bible', '/teleprompter'].includes(nextPath) || nextPath.startsWith('/tracks/chapter/'))) {
+    if (!data.manuscript && (['/manuscript', '/proofing', '/story-bible', '/booth'].includes(nextPath) || nextPath.startsWith('/tracks/chapter/'))) {
       navigate('/', { replace: true });
       return;
     }
@@ -447,7 +458,7 @@ function AppRoutes() {
                 path="/manuscript"
                 element={
                   data.manuscript ? (
-                    <Manuscript notify={setNotice} focusStoryBibleEntity={goToStoryBible} projectFolder={data.projectFolder} />
+                    <Manuscript notify={setNotice} focusStoryBibleEntity={goToStoryBible} projectFolder={data.projectFolder} goToBooth={goToBooth} />
                   ) : (
                     <Navigate to="/" replace />
                   )
@@ -475,9 +486,19 @@ function AppRoutes() {
                 }
               />
               <Route
-                path="/teleprompter"
-                element={data.manuscript ? <TeleprompterPage onFixCredits={() => guardedNavigate('/settings#credits')} /> : <Navigate to="/" replace />}
+                path="/booth"
+                element={
+                  data.manuscript ? (
+                    <BoothPage
+                      onFixCredits={() => guardedNavigate('/settings#credits')}
+                      onExit={() => (history.canGoBack ? guardedBack() : guardedNavigate('/manuscript'))}
+                    />
+                  ) : (
+                    <Navigate to="/" replace />
+                  )
+                }
               />
+              <Route path="/teleprompter" element={<RedirectKeepingLocation to="/booth" />} />
               <Route path="/tracks" element={<TracksPage dawFileLinked={data.dawFileLinked} onLinkDawFile={() => void linkDawFile()} notify={setNotice} />} />
               <Route path="/tracks/chapter/:chapterId" element={data.manuscript ? <WorkspacePage notify={setNotice} /> : <Navigate to="/" replace />} />
               <Route

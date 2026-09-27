@@ -1,14 +1,11 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { chapterName, context } from '../../chapterName';
+import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboardEvent, type ReactNode } from 'react';
+import { chapterName } from '../../chapterName';
 import { useApi } from '../../api/ApiContext';
 import { useCapability } from '../../useCapability';
 import { CommandScope } from '../../input/router';
 import { ConfirmDialog } from '../primitives/ConfirmDialog';
-import { Dialog } from '../primitives/Dialog';
 import { BoothView } from './BoothView';
 import { CompanionShell } from './CompanionShell';
-import { ReadAlongView } from './ReadAlongView';
-import { ReadingControlBar } from './ReadingControlBar';
 import { RecordInReaperConfirm } from './RecordInReaperConfirm';
 import { useRecordInReaper } from './useRecordInReaper';
 import { ResumePrompt } from './ResumePrompt';
@@ -31,35 +28,29 @@ const NO_DISMISSED: ReadonlySet<number> = new Set();
 type Dismissal = { script: TeleprompterScript | null; ids: ReadonlySet<number> };
 
 /**
- * What the dialog reads: a manuscript chapter, or the opening/closing credits
- * (manuscript-credits-card-parity.prd.md, Phase 2 - the read-aloud dialog reads the credits too, superseding the clause
- * of ADR 0150 that kept them out of it). `preview` is the same `CreditsRenderResult` the credits card already has, so
- * the dialog renders nothing it has to fetch again.
+ * What the Booth reads: a manuscript chapter, or the opening/closing credits (manuscript-credits-card-parity.prd.md
+ * Phase 2, superseding the clause of ADR 0150 that kept them out of the read-aloud dialog). `preview` is the credits'
+ * `CreditsRenderResult`, so the Booth renders nothing it has to fetch again.
  */
-export type ReadAloudSource =
+export type BoothSource =
   { kind: 'chapter'; chapter: Pick<ManuscriptChapter, 'id' | 'title' | 'subtitle'> } | { kind: 'credits'; credits: CreditsKind; preview: CreditsRenderResult };
 
 type Props = {
-  source: ReadAloudSource;
-  /** The Story Bible entries the Manuscript page has loaded; the ones this chapter mentions are marked in the text. Chapter mode only. */
+  source: BoothSource;
+  /** The Story Bible entries; the ones this chapter mentions are marked in the text. Chapter mode only. */
   entities?: GuideEntity[];
-  /** This chapter's notes (the Manuscript page filters them to the chapter, as it does for its own reader). Chapter mode only. */
+  /** This chapter's notes. Chapter mode only. */
   notes?: ManuscriptNote[];
-  onClose: () => void;
-  /** The credits' C6 warning's "Fill them in Settings" (Phase 2, MC2): only ever shown, and only ever called, in credits mode. */
+  /** The pre-session setup `BoothPage` builds (the chapter picker), shown above the text while no session runs. */
+  setup?: ReactNode;
+  /** Leaves the Booth (Exit booth, or Escape), once a live session has been stopped with the narrator's consent. */
+  onExit: () => void;
+  /** The credits' C6 warning's "Fill them in Settings": only ever shown, and only ever called, in credits mode. */
   onFixCredits?: () => void;
-  /**
-   * `'booth'` (booth-mode-and-companion-panel.prd.md Phase 1, Open Question 2): the same `Dialog size="full"`, session,
-   * rail and Escape-confirm-while-listening behaviour, but `BoothView`'s `FocusShell` layout in place of `ReadAlongView`'s
-   * own aside grid and the non-scrolling `ReadingControlBar` footer - a second entry point into the same session, not a
-   * second session. Defaults to the normal dialog.
-   *
-   * `'companion'` (Phase 7): the same session again, in `CompanionShell`'s narrow, pinned layout in place of the `Dialog`
-   * (the window itself is narrowed to fit it). Its "Full app" (or a double Escape) switches this same dialog to `'read'`,
-   * so a reading in progress carries on in the full-size dialog instead of stopping.
-   */
-  mode?: 'read' | 'booth' | 'companion';
 };
+
+/** Whether a dialog, alert dialog or popover is open: Escape is theirs to close first, never the Booth's exit. */
+const overlayOpen = () => Boolean(document.querySelector('[role="dialog"], [role="alertdialog"]'));
 
 /** The entities the marks point at, once each, in the order they first appear in the chapter. */
 function markedEntities(marks: Map<string, ReaderMark[]>): GuideEntity[] {
@@ -72,58 +63,45 @@ function markedEntities(marks: Map<string, ReaderMark[]>): GuideEntity[] {
 const byReadingOrder = (a: ManuscriptNote, b: ManuscriptNote): number => a.paragraph - b.paragraph || (a.anchorStart ?? 0) - (b.anchorStart ?? 0);
 
 /**
- * Reading mode as a Manuscript chapter action (teleprompter-manuscript-integration.prd.md Phase 2): a full-size
- * `Dialog` around the same session core and reader view the standalone Teleprompter page uses (`useTeleprompterSession`,
- * `ReadAlongView`), opened already pointed at one chapter, so there is no chapter picker here. The resume prompt in the
- * text column's header slot is `ResumePrompt` (read-aloud-resume-from-daw.prd.md Phase 1).
+ * One reading session in the Booth (stage-navigation-and-page-replacement.prd.md Phase 4, replacing the Read aloud
+ * dialog, its booth layout and the Teleprompter page): the one `useTeleprompterSession` mount (booth mode's risk: never
+ * two subscriptions), the rail and its marks, the suspected flags and keeping them as findings (`useKeptFlags`, ADR
+ * 0117), the resume prompt (read-aloud-resume-from-daw.prd.md) and Record in REAPER (read-aloud-control-bar.prd.md Phase
+ * 7). `BoothPage` mounts it keyed by what it reads, so a new chapter starts a clean session state.
  *
- * Phase 5 adds the story bible and note marks and the side rail (Key, Notes, Story bible) they open in; Phase 7 adds the
- * suspected flags, their Flags tab and keeping them as findings (`useKeptFlags`, ADR 0117). Opening a mark only changes the rail: it never seeks the tracker, moves the highlight or scrolls the text. The rail's open state and
- * tab are per-viewer preferences in browser storage (the PRD's Decisions Log); the selection is not kept.
+ * It is laid out by `BoothView` (mock 03) or, in companion mode (entered from the Booth's header, ADR 0401), by
+ * `CompanionShell`, whose "Full app" (or a double Escape) comes back here with the same session still running.
  *
- * `source` (manuscript-credits-card-parity.prd.md Phase 2) also opens on the opening or closing credits: the same
- * session core through `useTeleprompterSession`'s existing `credits` option, no resume prompt (MC9 - there is no
- * chapter to look up a track for), the C6 unresolved-token warning in its place, and flags shown but never kept
- * (MC8 a - a credits reading has no chapter id to keep a finding against).
- *
- * Closing while a session is active stops it first (the PRD's Open Questions, "Closing the modal during a live
- * session", recommendation (a)): an orphaned live microphone capture is a privacy and CPU surprise, so a confirm asks
- * first rather than silently stopping or silently leaving it running. "Fill them in Settings" (credits mode) takes the
- * same confirm before leaving.
+ * Leaving while a session is active stops it first, after a confirm (the read-aloud dialog's rule, kept: an orphaned live
+ * microphone capture is a privacy and CPU surprise). Escape is Exit booth, the same confirm while listening. The flags are
+ * kept when a session ends, when the Booth is left and when a flag is dismissed after the session.
  */
-export function ReadAloudDialog({ source, entities = NO_ENTITIES, notes = NO_NOTES, onClose, onFixCredits, mode: openedAs = 'read' }: Props) {
-  // Where the dialog opened; only companion mode's "Full app" changes it afterwards (to the normal dialog).
-  const [mode, setMode] = useState(openedAs);
+export function BoothSession({ source, entities = NO_ENTITIES, notes = NO_NOTES, setup, onExit, onFixCredits }: Props) {
+  const [mode, setMode] = useState<'booth' | 'companion'>('booth');
   const isCredits = source.kind === 'credits';
   const chapter = source.kind === 'chapter' ? source.chapter : undefined;
   const session = useTeleprompterSession({
     chapterId: chapter?.id ?? '',
     chapter,
     credits: source.kind === 'credits' ? { kind: source.credits, text: source.preview.text } : undefined,
-    migrateLegacyDevice: false,
   });
   // Scrolling by hand pauses following until the current word is back in the band or Follow is pressed (engines PRD
-  // Phase 10); computed here, not inside `ReadAlongView`, so `ReadingControlBar`'s Follow button (in the dialog's
-  // non-scrolling footer, read-aloud-control-bar.prd.md Phase 3) shares the same state.
+  // Phase 10); shared by the text and the command bar's Follow button.
   const follow = useFollowCursor({ active: session.active, cursor: session.cursor });
-  // Read once here, not inside ReadingControlBar, so the toggle and "Arm only" (both inside it) and this dialog's own
-  // "Stop reading?" confirm (which also needs to stop a recording this app started) share one capability subscription
-  // and one Play/Stop orchestrator (read-aloud-control-bar.prd.md Phase 7, booth-actions-enablement.prd.md Phase 2).
-  // Absent in credits mode (no chapter track, Q7-Q9's own scope): `chapter?.id` is undefined, so `recording.enabled`
-  // can still be true from another chapter's session, but every method that would touch REAPER checks for a chapter
-  // id first and no-ops without one.
+  // One capability subscription and one Play/Stop orchestrator for the command bar's toggle and this Booth's own "Stop
+  // reading?" confirm (read-aloud-control-bar.prd.md Phase 7, booth-actions-enablement.prd.md Phase 2). Credits have no
+  // chapter track: every method that would touch REAPER checks for a chapter id first and no-ops without one.
   const record = useCapability('record');
   const recording = useRecordInReaper(chapter?.id, record.available);
-  const chapterTitle = chapter ? chapterName(chapter, 'full') : undefined;
-  // What Stop-and-continue does once the live session has actually stopped: just close, or close and then leave for
-  // Settings (credits' "Fill them in Settings" takes the same "Stop reading?" confirm as the header Close button).
-  const [confirmStop, setConfirmStop] = useState<'close' | 'settings' | null>(null);
+  const chapterTitle = source.kind === 'chapter' ? chapterName(source.chapter, 'full') : CREDITS_LABEL[source.credits];
+  // What Stop-and-continue does once the live session has stopped: leave the Booth, or leave for Settings (credits'
+  // "Fill them in Settings" takes the same "Stop reading?" confirm as Exit booth).
+  const [confirmStop, setConfirmStop] = useState<'exit' | 'settings' | null>(null);
   const [rail, setRail] = useState<RailState>(loadRailState);
   const [selected, setSelected] = useState<ReaderMarkTarget>();
   // The resume prompt's chosen quote (read-aloud-control-bar.prd.md Phase 3's start-point chip), alongside the session's
-  // own `startWord`; cleared together with it (see the active/inactive effect below). Chapter mode only: credits never sets it.
+  // own `startWord`; cleared together with it (see the active/inactive effect below). Chapter mode only.
   const [startLabel, setStartLabel] = useState<string>();
-
   const { paragraphs, rows } = session;
   const { script, flags } = session.session;
   const [visibility, setVisibility] = useState<FlagVisibility>(loadFlagVisibility);
@@ -150,7 +128,7 @@ export function ReadAloudDialog({ source, entities = NO_ENTITIES, notes = NO_NOT
     setRail({ open: true, tab: mark.value.kind === 'note' ? 'notes' : mark.value.kind === 'flag' ? 'flags' : 'bible' });
   }, []);
 
-  // A session that ends while the dialog is open (Stop, the sidecar stopping, auto-stop at Done) keeps its flags then: by the
+  // A session that ends while the Booth is open (Stop, the sidecar stopping, auto-stop at Done) keeps its flags then: by the
   // time the host reports it stopped, the sidecar's last flags have arrived. It also resets the start word to the top
   // (read-aloud-resume-from-daw.prd.md Phase 1, ADR 0112): the resume prompt does not come back to ask again, so the next
   // Start must not silently reuse a stale choice from the session that just ended.
@@ -174,15 +152,14 @@ export function ReadAloudDialog({ source, entities = NO_ENTITIES, notes = NO_NOT
     if (!session.active) keepFlags.keep(ids);
   };
 
-  // Closes, keeping any flags first (a no-op for credits), then leaves for Settings if that is why we closed.
+  // Leaves for Settings if that is why, else wherever Exit booth goes; the flags are kept as the Booth unmounts (below).
   const finish = (thenFixCredits: boolean) => {
-    keepFlags.keep();
-    onClose();
     if (thenFixCredits) onFixCredits?.();
+    else onExit();
   };
-  const requestClose = () => {
+  const requestExit = () => {
     if (session.active) {
-      setConfirmStop('close');
+      setConfirmStop('exit');
       return;
     }
     finish(false);
@@ -202,20 +179,31 @@ export function ReadAloudDialog({ source, entities = NO_ENTITIES, notes = NO_NOT
     finish(thenFixCredits);
   };
 
-  // "Read aloud: " is a context prefix (chapter-title-display-consistency.prd.md Q4), so the em dash inside
-  // chapterName's own full name (a subtitle, when there is one) is the only em dash in the title - never two meanings
-  // for the same character. Credits have no subtitle, so this is just "Read aloud: Opening credits" for them.
-  const title = chapterName(source.kind === 'chapter' ? source.chapter : { title: CREDITS_LABEL[source.credits] }, context('Read aloud'));
+  // Leaving the Booth, whichever way (Exit booth, the nav, Back, a new chapter), keeps what this session flagged, as
+  // closing the read-aloud dialog did (a no-op for credits).
+  const keepOnLeave = useRef(keep);
+  useEffect(() => {
+    keepOnLeave.current = keep;
+  });
+  useEffect(() => () => keepOnLeave.current(), []);
 
-  // Built once and handed to whichever layout renders it (booth-mode-and-companion-panel.prd.md Phase 1): the normal
-  // dialog's own `aside` grid, or `FocusShell`'s `rail` landmark in booth mode. Same rail, same state, either way.
+  // Escape is Exit booth (mock 03), unless something on top of the Booth - a confirm, a popover - is open to take it. A
+  // React handler on the Booth's own root, like CompanionShell's double Escape, rather than a command: the router's target
+  // guard would swallow it whenever focus is on a button (Play, just pressed), where the dialog's Escape always worked.
+  const onKeyDown = (event: ReactKeyboardEvent) => {
+    if (event.key !== 'Escape' || event.defaultPrevented || overlayOpen()) return;
+    event.preventDefault();
+    requestExit();
+  };
+
+  // Built once and handed to whichever layout renders it: `FocusShell`'s `rail` landmark in the Booth.
   const railElement = (
     <ReaderRail
       state={rail}
       onTab={(tab) => setRail((current) => ({ ...current, tab }))}
       onToggle={() => setRail((current) => ({ ...current, open: !current.open }))}
       seekable={session.active}
-      fill={mode === 'booth'}
+      fill
       entities={chapterEntities}
       notes={chapterNotes}
       selected={current}
@@ -231,9 +219,8 @@ export function ReadAloudDialog({ source, entities = NO_ENTITIES, notes = NO_NOT
       }}
     />
   );
-  // The resume prompt (read-aloud-resume-from-daw.prd.md Phase 1) sits in the text column's header slot, on the
-  // text's own axis (read-aloud-control-bar.prd.md Phase 1): mounted for the dialog's whole life, not remounted
-  // between sessions, so it settles once (on a choice or a session starting) and stays gone. Credits (MC9) has no
+  // The resume prompt (read-aloud-resume-from-daw.prd.md Phase 1) sits in the text column's header slot, mounted for this
+  // session's whole life so it settles once (on a choice or a session starting) and stays gone. Credits (MC9) have no
   // chapter to look up a track for, so the C6 warning takes this slot instead - and only while a token is unresolved.
   const header =
     source.kind === 'chapter' ? (
@@ -251,9 +238,7 @@ export function ReadAloudDialog({ source, entities = NO_ENTITIES, notes = NO_NOT
     ) : undefined;
 
   return (
-    // Booth scope (Phase 4, input-commands-and-pedals.prd.md): active while this dialog is open, so `reading.toggle`
-    // (Space, `ReadingControlBar` or, in booth mode, `BoothView`) resolves here ahead of `page` and `global`, matching
-    // ADR 0196 unchanged.
+    // Booth scope (input-commands-and-pedals.prd.md Phase 4): `reading.toggle` (Space) resolves here ahead of `global`.
     <CommandScope kind="booth">
       {mode === 'companion' ? (
         <CompanionShell
@@ -263,65 +248,46 @@ export function ReadAloudDialog({ source, entities = NO_ENTITIES, notes = NO_NOT
           recording={recording}
           marks={marks}
           header={header}
-          onFullApp={() => setMode('read')}
+          onFullApp={() => setMode('booth')}
         />
       ) : (
-        <Dialog
-          title={title}
-          size="full"
-          onClose={requestClose}
-          actions={null}
-          // Booth mode's commands live inside BoothView's own FocusShell `commands` region, not this non-scrolling
-          // footer (booth-mode-and-companion-panel.prd.md Phase 2): the normal dialog keeps ReadingControlBar here.
-          footer={
-            mode === 'read' ? (
-              <ReadingControlBar
-                session={session}
-                follow={follow}
-                startPoint={session.startWord !== null ? { label: startLabel ?? 'a chosen word', onClear: () => setStartWord(null) } : undefined}
-                chapterId={source.kind === 'chapter' ? source.chapter.id : undefined}
-                chapterTitle={chapterTitle}
-                recording={recording}
-              />
-            ) : undefined
-          }
-        >
-          {mode === 'booth' ? (
-            <BoothView
-              session={session}
-              follow={follow}
-              chapterId={source.kind === 'chapter' ? source.chapter.id : undefined}
-              chapterTitle={chapterTitle}
-              recording={recording}
-              marks={marks}
-              onOpenMark={openMark}
-              header={header}
-              rail={railElement}
-              speakers={isCredits ? undefined : chapterEntities}
-              onOpenSpeaker={(entity) => {
-                setSelected({ kind: 'entity', entity });
-                setRail({ open: true, tab: 'bible' });
-              }}
-            />
-          ) : (
-            <ReadAlongView session={session} follow={follow} header={header} marks={marks} onOpenMark={openMark} aside={railElement} />
-          )}
-        </Dialog>
+        <div className="size-full" onKeyDown={onKeyDown}>
+          <BoothView
+            session={session}
+            follow={follow}
+            chapterId={chapter?.id}
+            chapterTitle={chapterTitle}
+            recording={recording}
+            startPoint={session.startWord !== null ? { label: startLabel ?? 'a chosen word', onClear: () => setStartWord(null) } : undefined}
+            marks={marks}
+            onOpenMark={openMark}
+            header={header}
+            setup={setup}
+            rail={railElement}
+            speakers={isCredits ? undefined : chapterEntities}
+            onOpenSpeaker={(entity) => {
+              setSelected({ kind: 'entity', entity });
+              setRail({ open: true, tab: 'bible' });
+            }}
+            onCompanion={() => setMode('companion')}
+            onExit={requestExit}
+          />
+        </div>
       )}
       {confirmStop && (
         <ConfirmDialog
           title="Stop reading?"
           body={
             recording.recording
-              ? "Reading is still listening. Closing stops it and stops REAPER's recording."
-              : 'Reading is still listening. Closing stops it; nothing recorded in REAPER is affected.'
+              ? "Reading is still listening. Leaving the booth stops it and stops REAPER's recording."
+              : 'Reading is still listening. Leaving the booth stops it; nothing recorded in REAPER is affected.'
           }
-          confirmLabel="Stop and close"
+          confirmLabel="Stop and leave"
           confirm={stopAndProceed}
           cancel={() => setConfirmStop(null)}
         />
       )}
-      {recording.confirmPending && chapterTitle && (
+      {recording.confirmPending && chapter && (
         <RecordInReaperConfirm chapterTitle={chapterTitle} confirm={recording.confirm} cancel={recording.cancelConfirm} />
       )}
     </CommandScope>
@@ -330,11 +296,11 @@ export function ReadAloudDialog({ source, entities = NO_ENTITIES, notes = NO_NOT
 
 /**
  * Keeps the session's flags as suspected, unreviewed findings (`TeleprompterSaveFlags`, ADR 0117): when a session ends
- * (Stop, the sidecar stopping on its own, or auto-stop at Done), when the dialog closes, and when a flag is dismissed after the
+ * (Stop, the sidecar stopping on its own, or auto-stop at Done), when the Booth is left, and when a flag is dismissed after the
  * session ended. Saving is idempotent on the host (a repeat is one finding, a dismissal is recorded once), so saving again is
  * safe. A flag an earlier session already dismissed with the same heard text comes back dismissed and is hidden here too.
  *
- * `chapterId: null` is the credits mode of the dialog (manuscript-credits-card-parity.prd.md, Phase 2, MC8 a): there is no
+ * `chapterId: null` is the credits mode of the Booth (manuscript-credits-card-parity.prd.md, Phase 2, MC8 a): there is no
  * chapter id to keep a finding against, so `keep` never calls the host and the state starts (and stays) `not-kept`.
  */
 function useKeptFlags(

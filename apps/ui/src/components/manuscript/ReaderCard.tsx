@@ -1,11 +1,10 @@
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faBookmark as faBookmarkSolid, faChevronDown, faChevronUp, faExpand, faMicrophone, faTableColumns } from '@fortawesome/free-solid-svg-icons';
+import { faBookmark as faBookmarkSolid, faChevronDown, faChevronUp, faMicrophone } from '@fortawesome/free-solid-svg-icons';
 import { faBookmark as faBookmarkRegular } from '@fortawesome/free-regular-svg-icons';
 import { useId, type ReactNode } from 'react';
 import { readTimeLabel } from '../../state';
 import { Button } from '../primitives/Button';
 import { TitleSubtitle } from '../primitives/TitleSubtitle';
-import { IconButton } from '../primitives/IconButton';
 import { TooltipTarget } from '../primitives/Tooltip';
 
 // The stat block's minimum width (manuscript-chapter-header-alignment.prd.md, Q2 A): fits "99,999 words" at the mono
@@ -15,10 +14,9 @@ const STAT_BLOCK_CLASS = 'min-w-[6.5rem] tabular-nums';
 // The action slot (manuscript-chapter-header-alignment.prd.md, Q1 A / Technical Approach): a fixed-width box rendered
 // on every row, empty when the chapter has no actions, so the stat block still lines up beside it. Its content is
 // right-aligned (not left-aligned), so both edges - the cluster's start and end - stay put whether or not a Retail
-// sample tag widens the cluster to its left. Widened from its original 8rem (booth-mode-and-companion-panel.prd.md
-// Phase 1, Open Question 1 A) to fit "Booth" beside "Read aloud" without either wrapping, and again by an icon button's
-// width (Phase 7) for "Companion".
-const ACTION_SLOT_CLASS = 'flex w-64 flex-none justify-end gap-1';
+// sample tag widens the cluster to its left. Sized for the one "Record in Booth" action (stage-navigation-and-page-
+// replacement.prd.md Phase 4, Q9), which replaced the Read aloud, Booth and Companion buttons.
+const ACTION_SLOT_CLASS = 'flex w-40 flex-none justify-end gap-1';
 
 // A Manuscript card's frame: a chapter card or a credits card (manuscript-credits-card-parity.prd.md, Phase 1),
 // sharing one header and one whole-header disclosure. The header's right side is one fixed order - [Retail sample
@@ -29,7 +27,7 @@ const ACTION_SLOT_CLASS = 'flex w-64 flex-none justify-end gap-1';
 // primitives/Disclosure.tsx): the title button's `::after` pseudo-element is stretched over the whole header
 // (`after:absolute after:inset-0`), so a press anywhere in the header - the padding, the stat block, the chevron -
 // toggles the card, while the header's own `sticky` positioning gives that overlay its containing block. The
-// bookmark and Read aloud sit `relative z-[1]` above the overlay so they keep their own presses and focus. The
+// bookmark and Record in Booth sit `relative z-[1]` above the overlay so they keep their own presses and focus. The
 // header keeps one tab stop for the toggle, and its accessible name stays the title (eyebrow is aria-hidden), so an
 // exact-name lookup ("Opening credits", "Chapter 2 — The Pool of Tears") keeps working.
 export function ReaderCard({
@@ -43,12 +41,7 @@ export function ReaderCard({
   bookmarked,
   onToggleBookmark,
   showRetailSample = false,
-  showReadAloud = false,
-  onReadAloud,
-  showBooth = false,
-  onBooth,
-  showCompanion = false,
-  onCompanion,
+  onRecordInBooth,
   wordCount,
   children,
 }: {
@@ -66,18 +59,9 @@ export function ReaderCard({
   bookmarked?: boolean;
   onToggleBookmark?: () => void;
   showRetailSample?: boolean;
-  showReadAloud?: boolean;
-  onReadAloud?: () => void;
-  /** The chapter-header "Booth" entry point (booth-mode-and-companion-panel.prd.md Phase 1, Open Question 1 A): gated
-   * the same as `showReadAloud` on every caller (a narration chapter, or a credits card with something to read) - the
-   * fixed-width action slot below assumes the two always agree, so a row with one and not the other misaligns it
-   * from every other row in the column (manuscript-chapter-header-alignment.prd.md). */
-  showBooth?: boolean;
-  onBooth?: () => void;
-  /** The chapter-header "Companion" entry point (booth-mode-and-companion-panel.prd.md Phase 7): the same session again,
-   * in the narrow panel pinned beside the DAW. Gated the same as `showReadAloud`, for the same alignment reason as Booth. */
-  showCompanion?: boolean;
-  onCompanion?: () => void;
+  /** "Record in Booth" (stage-navigation-and-page-replacement.prd.md Phase 4, Q9): the Booth page on this chapter or
+   * credits. Omitted where there is nothing to read aloud (a reference chapter, empty credits); the slot stays either way. */
+  onRecordInBooth?: () => void;
   wordCount: number;
   children: ReactNode;
 }) {
@@ -152,25 +136,11 @@ export function ReaderCard({
             </div>
           </div>
           <div className={ACTION_SLOT_CLASS}>
-            {showReadAloud && (
-              <TooltipTarget className="relative z-[1]" text="Read this chapter aloud and follow along">
-                <Button variant="ghost" className="text-xs" aria-label={`Read ${title} aloud`} onClick={onReadAloud}>
-                  <FontAwesomeIcon icon={faMicrophone} /> Read aloud
+            {onRecordInBooth && (
+              <TooltipTarget className="relative z-[1]" text="Read this aloud in the Booth, following your voice">
+                <Button variant="ghost" className="text-xs" aria-label={`Record ${title} in Booth`} onClick={onRecordInBooth}>
+                  <FontAwesomeIcon icon={faMicrophone} /> Record in Booth
                 </Button>
-              </TooltipTarget>
-            )}
-            {showBooth && (
-              <TooltipTarget className="relative z-[1]" text="Open the full-screen booth for this chapter">
-                <Button variant="ghost" className="text-xs" aria-label={`Open booth for ${title}`} onClick={onBooth}>
-                  <FontAwesomeIcon icon={faExpand} /> Booth
-                </Button>
-              </TooltipTarget>
-            )}
-            {showCompanion && (
-              <TooltipTarget className="relative z-[1]" text="Pin a narrow companion panel beside your DAW">
-                <IconButton label={`Open companion for ${title}`} onClick={onCompanion}>
-                  <FontAwesomeIcon icon={faTableColumns} />
-                </IconButton>
               </TooltipTarget>
             )}
           </div>

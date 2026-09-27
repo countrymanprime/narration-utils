@@ -1,8 +1,10 @@
 // @vitest-environment jsdom
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import type { ReactNode } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { ReadAloudDialog, type ReadAloudSource } from './ReadAloudDialog';
+import { MemoryRouter } from 'react-router-dom';
+import { BoothSession, type BoothSource } from './BoothSession';
 import { ApiProvider } from '../../api/ApiContext';
 import { createMockApi } from '../../api/mockApi';
 import type { DawMockSeed } from '../../api/dawMock';
@@ -31,9 +33,9 @@ function renderDialog(
   content: {
     entities?: GuideEntity[];
     notes?: ManuscriptNote[];
-    source?: ReadAloudSource;
+    source?: BoothSource;
     onFixCredits?: () => void;
-    mode?: 'read' | 'booth' | 'companion';
+    setup?: ReactNode;
   } = {},
   daw?: DawMockSeed,
 ) {
@@ -53,22 +55,25 @@ function renderDialog(
     },
     { daw },
   );
-  render(
-    <ApiProvider api={api}>
-      <CommandRouter>
-        <ReadAloudDialog
-          source={content.source ?? { kind: 'chapter', chapter: CHAPTER }}
-          entities={content.entities}
-          notes={content.notes}
-          onClose={onClose}
-          onFixCredits={content.onFixCredits}
-          mode={content.mode}
-        />
-      </CommandRouter>
-    </ApiProvider>,
+  const { unmount } = render(
+    <MemoryRouter>
+      <ApiProvider api={api}>
+        <CommandRouter>
+          <BoothSession
+            source={content.source ?? { kind: 'chapter', chapter: CHAPTER }}
+            entities={content.entities}
+            notes={content.notes}
+            onExit={onClose}
+            onFixCredits={content.onFixCredits}
+            setup={content.setup}
+          />
+        </CommandRouter>
+      </ApiProvider>
+    </MemoryRouter>,
   );
   return {
     api,
+    unmount,
     onClose,
     emit: (event: TeleprompterEvent) => act(() => eventListeners.forEach((listener) => listener(event))),
     setState: (state: Partial<TeleprompterState>) =>
@@ -86,13 +91,14 @@ async function openMicPopover(user: ReturnType<typeof userEvent.setup>) {
   await user.click(await screen.findByRole('button', { name: /^Microphone:/ }));
 }
 
-describe('ReadAloudDialog', () => {
-  it('opens as a full-size dialog titled with the chapter, with no chapter picker (the chapter is fixed)', async () => {
+describe('BoothSession', () => {
+  it('shows the chapter in its status line, with no dialog and no chapter picker of its own (the page passes one as setup)', async () => {
     const user = userEvent.setup();
     renderDialog();
 
-    const dialog = await screen.findByRole('dialog', { name: /Read aloud.*Chapter 1/ });
-    expect(dialog).toBeTruthy();
+    const status = await screen.findByRole('region', { name: 'Status' });
+    expect(within(status).getByText('Chapter 1 — Down the Rabbit-Hole')).toBeTruthy();
+    expect(screen.queryByRole('dialog')).toBeNull();
     expect(screen.queryByLabelText('Chapter')).toBeNull();
     await openMicPopover(user);
     // { selector: 'select' } disambiguates from the popover popup itself, which shares the same accessible name "Microphone".
@@ -112,76 +118,77 @@ describe('ReadAloudDialog', () => {
     expect(teleprompterStart).toHaveBeenCalledWith({ chapter: 'chapter-1', device: DEVICE_NAME, engine: 'whisper', model: 'tiny' });
   });
 
-  it('closes without a confirm when no session is running', async () => {
+  it('exits without a confirm when no session is running', async () => {
     const user = userEvent.setup();
     const { onClose } = renderDialog();
 
     await screen.findByRole('button', { name: /^Microphone:/ });
-    await user.click(screen.getByRole('button', { name: 'Close' }));
+    await user.click(screen.getByRole('button', { name: /Exit booth/ }));
 
     expect(onClose).toHaveBeenCalled();
     expect(screen.queryByRole('alertdialog')).toBeNull();
   });
 
-  it('asks for confirmation before closing a live session, and stops it on confirm', async () => {
+  it('asks for confirmation before leaving a live session, and stops it on confirm', async () => {
     const user = userEvent.setup();
     const teleprompterStop = vi.fn().mockResolvedValue(undefined);
     const { onClose, setState } = renderDialog({ teleprompterStop });
     setState({ phase: 'running', message: 'Listening…', chapter: 'chapter-1' });
     await waitFor(() => expect(screen.getByRole('button', { name: 'Stop reading' })).toBeTruthy());
 
-    await user.click(screen.getByRole('button', { name: 'Close' }));
+    await user.click(screen.getByRole('button', { name: /Exit booth/ }));
 
     const confirm = await screen.findByRole('alertdialog', { name: 'Stop reading?' });
     expect(onClose).not.toHaveBeenCalled();
 
-    await user.click(within(confirm).getByRole('button', { name: 'Stop and close' }));
+    await user.click(within(confirm).getByRole('button', { name: 'Stop and leave' }));
 
     expect(teleprompterStop).toHaveBeenCalled();
     expect(onClose).toHaveBeenCalled();
   });
 
-  // The PRD's Open Questions, "Closing the modal during a live session": Escape must not silently stop a live
-  // session. `Dialog` routes Escape through the same `onClose` the header Close button uses (`dismiss = escapeCloses ?
-  // (onClose ?? onEscape) : undefined`, primitives/Dialog.tsx), and `ReadAloudDialog` passes `requestClose` (which
-  // confirms first when active) as that `onClose` - so Escape and the Close button are one code path, not two.
-  it('Escape asks for confirmation before closing a live session too, the same as the Close button', async () => {
+  // Escape is Exit booth (mock 03) and must not silently stop a live session: it takes the same `requestExit` path as
+  // the header's Exit booth button, which confirms first while a session is active.
+  it('Escape asks for confirmation before leaving a live session too, the same as Exit booth', async () => {
     const user = userEvent.setup();
     const teleprompterStop = vi.fn().mockResolvedValue(undefined);
     const { onClose, setState } = renderDialog({ teleprompterStop });
     setState({ phase: 'running', message: 'Listening…', chapter: 'chapter-1' });
     await waitFor(() => expect(screen.getByRole('button', { name: 'Stop reading' })).toBeTruthy());
 
+    // Focus in the Booth (Escape is its own root's key, like the dialog's was the dialog's).
+    screen.getByRole('button', { name: 'Stop reading' }).focus();
     await user.keyboard('{Escape}');
 
     const confirm = await screen.findByRole('alertdialog', { name: 'Stop reading?' });
     expect(onClose).not.toHaveBeenCalled();
 
-    await user.click(within(confirm).getByRole('button', { name: 'Stop and close' }));
+    await user.click(within(confirm).getByRole('button', { name: 'Stop and leave' }));
 
     expect(teleprompterStop).toHaveBeenCalled();
     expect(onClose).toHaveBeenCalled();
   });
 
-  it('Escape closes without a confirm when no session is running', async () => {
+  it('Escape exits without a confirm when no session is running', async () => {
     const user = userEvent.setup();
     const { onClose } = renderDialog();
 
     await screen.findByRole('button', { name: /^Microphone:/ });
+    document.querySelector<HTMLElement>('div[tabindex="0"]')!.focus();
     await user.keyboard('{Escape}');
 
     expect(onClose).toHaveBeenCalled();
     expect(screen.queryByRole('alertdialog')).toBeNull();
   });
 
-  it('cancelling the close confirm leaves the session running and the dialog open', async () => {
+  it('cancelling the exit confirm leaves the session running and the Booth open', async () => {
     const user = userEvent.setup();
     const teleprompterStop = vi.fn().mockResolvedValue(undefined);
     const { onClose, setState } = renderDialog({ teleprompterStop });
     setState({ phase: 'running', message: 'Listening…', chapter: 'chapter-1' });
     await waitFor(() => expect(screen.getByRole('button', { name: 'Stop reading' })).toBeTruthy());
 
-    await user.click(screen.getByRole('button', { name: 'Close' }));
+    await user.click(screen.getByRole('button', { name: /Exit booth/ }));
     const confirm = await screen.findByRole('alertdialog', { name: 'Stop reading?' });
     await user.click(within(confirm).getByRole('button', { name: 'Cancel' }));
 
@@ -240,7 +247,7 @@ const findMark = async (kind: string) => {
   return document.querySelector<HTMLElement>(`[data-highlight="${kind}"][role="button"]`)!;
 };
 
-describe('ReadAloudDialog story bible and note marks (teleprompter-manuscript-integration.prd.md Phase 5)', () => {
+describe('BoothSession story bible and note marks (teleprompter-manuscript-integration.prd.md Phase 5)', () => {
   it('marks story bible mentions and note anchors in the text before a session starts, with the key open in the rail', async () => {
     renderMarked();
 
@@ -289,7 +296,7 @@ describe('ReadAloudDialog story bible and note marks (teleprompter-manuscript-in
     // The follow scroll for word 8 runs in an effect after the highlight renders; wait for it, or on a slow runner it lands
     // after mockClear below and is counted against the mark clicks.
     await waitFor(() => expect(scrollIntoView).toHaveBeenCalled());
-    const body = screen.getByRole('dialog').querySelector<HTMLElement>('[tabindex="0"]')!;
+    const body = document.querySelector<HTMLElement>('div[tabindex="0"]')!;
     body.scrollTop = 120;
     scrollIntoView.mockClear();
 
@@ -382,7 +389,7 @@ async function renderListening(overrides: Partial<NarrationApi> = {}) {
   return view;
 }
 
-describe('ReadAloudDialog flags (teleprompter-manuscript-integration.prd.md Phase 7)', () => {
+describe('BoothSession flags (teleprompter-manuscript-integration.prd.md Phase 7)', () => {
   it('shows skipped and restart flags by default, and misreads once the narrator turns them on', async () => {
     const user = userEvent.setup();
     await renderListening();
@@ -441,10 +448,10 @@ describe('ReadAloudDialog flags (teleprompter-manuscript-integration.prd.md Phas
     expect(await screen.findByText('2 flags are kept for review as suspected, unreviewed findings.')).toBeTruthy();
   });
 
-  it('keeps the flags when the dialog is closed and when a flag is dismissed after the session', async () => {
+  it('keeps the flags when the Booth is left and when a flag is dismissed after the session', async () => {
     const user = userEvent.setup();
     const teleprompterSaveFlags = vi.fn().mockResolvedValue([]);
-    const { setState, onClose } = await renderListening({ teleprompterSaveFlags });
+    const { setState, onClose, unmount } = await renderListening({ teleprompterSaveFlags });
     setState({ phase: 'stopped', chapter: 'chapter-1' });
     await waitFor(() => expect(teleprompterSaveFlags).toHaveBeenCalledTimes(1));
 
@@ -453,9 +460,11 @@ describe('ReadAloudDialog flags (teleprompter-manuscript-integration.prd.md Phas
     await waitFor(() => expect(teleprompterSaveFlags).toHaveBeenCalledTimes(2));
     expect(teleprompterSaveFlags.mock.calls[1][1][0]).toMatchObject({ kind: 'skipped', dismissed: true });
 
-    await user.click(screen.getByRole('button', { name: 'Close' }));
-    expect(teleprompterSaveFlags).toHaveBeenCalledTimes(3);
+    await user.click(screen.getByRole('button', { name: /Exit booth/ }));
     expect(onClose).toHaveBeenCalled();
+    // Leaving unmounts the Booth (App navigates away), which keeps what this session flagged.
+    unmount();
+    expect(teleprompterSaveFlags).toHaveBeenCalledTimes(3);
   });
 
   it('hides a flag an earlier session already dismissed once the host says so', async () => {
@@ -479,10 +488,10 @@ describe('ReadAloudDialog flags (teleprompter-manuscript-integration.prd.md Phas
   });
 });
 
-describe('ReadAloudDialog credits mode (manuscript-credits-card-parity.prd.md, Phase 2)', () => {
-  it('titles itself for the credits kind, with no chapter picker and no resume prompt (MC9)', async () => {
+describe('BoothSession credits mode (manuscript-credits-card-parity.prd.md, Phase 2)', () => {
+  it('names the credits kind in its status line, with no resume prompt (MC9)', async () => {
     renderCredits();
-    expect(await screen.findByRole('dialog', { name: 'Read aloud: Opening credits' })).toBeTruthy();
+    expect(within(await screen.findByRole('region', { name: 'Status' })).getByText('Opening credits')).toBeTruthy();
     expect(screen.queryByRole('region', { name: 'Where you stopped' })).toBeNull();
   });
 
@@ -547,10 +556,10 @@ describe('ReadAloudDialog credits mode (manuscript-credits-card-parity.prd.md, P
     expect(teleprompterSaveFlags).not.toHaveBeenCalled();
   });
 
-  it('closes without keeping any flag, even after dismissing one', async () => {
+  it('exits without keeping any flag, even after dismissing one', async () => {
     const user = userEvent.setup();
     const teleprompterSaveFlags = vi.fn();
-    const { onClose, emit, setState } = renderCredits({ teleprompterSaveFlags });
+    const { onClose, emit, setState, unmount } = renderCredits({ teleprompterSaveFlags });
     await screen.findByRole('button', { name: /^Microphone:/ });
     setState({ phase: 'running', chapter: 'credits-opening' });
     emit({
@@ -564,8 +573,9 @@ describe('ReadAloudDialog credits mode (manuscript-credits-card-parity.prd.md, P
     await waitFor(() => expect(document.querySelector('[data-highlight="Skipped"][role="button"]')).toBeTruthy());
     setState({ phase: 'stopped', chapter: 'credits-opening' });
 
-    await user.click(screen.getByRole('button', { name: 'Close' }));
+    await user.click(screen.getByRole('button', { name: /Exit booth/ }));
     expect(onClose).toHaveBeenCalled();
+    unmount();
     expect(teleprompterSaveFlags).not.toHaveBeenCalled();
   });
 
@@ -582,10 +592,11 @@ describe('ReadAloudDialog credits mode (manuscript-credits-card-parity.prd.md, P
 
     const confirm = await screen.findByRole('alertdialog', { name: 'Stop reading?' });
     expect(onFixCredits).not.toHaveBeenCalled();
-    await user.click(within(confirm).getByRole('button', { name: 'Stop and close' }));
+    await user.click(within(confirm).getByRole('button', { name: 'Stop and leave' }));
 
     expect(teleprompterStop).toHaveBeenCalled();
-    expect(onClose).toHaveBeenCalled();
+    // Settings is where it goes instead of Exit booth's destination.
+    expect(onClose).not.toHaveBeenCalled();
     expect(onFixCredits).toHaveBeenCalledTimes(1);
   });
 
@@ -598,7 +609,7 @@ describe('ReadAloudDialog credits mode (manuscript-credits-card-parity.prd.md, P
     await user.click(within(warning).getByRole('button', { name: 'Fill them in Settings' }));
 
     expect(screen.queryByRole('alertdialog')).toBeNull();
-    expect(onClose).toHaveBeenCalledTimes(1);
+    expect(onClose).not.toHaveBeenCalled();
     expect(onFixCredits).toHaveBeenCalledTimes(1);
   });
 });
@@ -694,69 +705,67 @@ describe('Record in REAPER (Phase 7)', () => {
     setState({ phase: 'running', chapter: 'chapter-1' });
     await waitFor(() => expect(screen.getByRole('button', { name: 'Stop reading' })).toBeTruthy());
 
-    await user.click(screen.getByRole('button', { name: 'Close' }));
+    await user.click(screen.getByRole('button', { name: /Exit booth/ }));
 
     const confirm = await screen.findByRole('alertdialog', { name: 'Stop reading?' });
     expect(within(confirm).getByText(/stops REAPER's recording/)).toBeTruthy();
-    await user.click(within(confirm).getByRole('button', { name: 'Stop and close' }));
+    await user.click(within(confirm).getByRole('button', { name: 'Stop and leave' }));
     expect(teleprompterStop).toHaveBeenCalled();
     await waitFor(() => expect(readAloudRecordStop).toHaveBeenCalled());
   });
 });
 
-describe('ReadAloudDialog, mode="booth" (booth-mode-and-companion-panel.prd.md Phase 1)', () => {
-  it("renders BoothView's FocusShell layout in place of the normal control bar, on the same session", async () => {
-    renderDialog({}, vi.fn(), { mode: 'booth' });
-    expect(await screen.findByRole('toolbar', { name: 'Booth commands' })).toBeTruthy();
-    expect(screen.queryByRole('toolbar', { name: 'Reading controls' })).toBeNull();
-    // The rail (Key, Notes, Story bible) is the same content, now FocusShell's own landmark rather than the dialog's aside grid.
+describe('BoothSession layout (stage-navigation-and-page-replacement.prd.md Phase 4, mock 03)', () => {
+  it("lays the session out on FocusShell, with the reading controls as the Booth's command bar and the rail in its own landmark", async () => {
+    renderDialog();
+    const commands = await screen.findByRole('region', { name: 'Booth commands' });
+    expect(within(commands).getByRole('toolbar', { name: 'Reading controls' })).toBeTruthy();
     expect(screen.getByRole('complementary', { name: 'Rail' })).toBeTruthy();
   });
 
-  it("keeps the dialog's own header Close button and Escape-confirms-while-listening behaviour", async () => {
-    const user = userEvent.setup();
-    const teleprompterStart = vi.fn().mockResolvedValue({ status: 'started' });
-    const onClose = vi.fn();
-    const { setState } = renderDialog({ teleprompterStart }, onClose, { mode: 'booth' });
-    await user.click(await screen.findByRole('button', { name: 'Microphone: not chosen' }));
-    await user.selectOptions(await screen.findByRole('combobox', { name: 'Microphone' }), DEVICE_NAME);
-    await user.click(screen.getByRole('button', { name: 'Play' }));
-    await waitFor(() => expect(teleprompterStart).toHaveBeenCalled());
+  it('shows the setup the page passes only until a session starts', async () => {
+    const { setState } = renderDialog({}, vi.fn(), { setup: <p>Pick a chapter</p> });
+    expect(await screen.findByText('Pick a chapter')).toBeTruthy();
     setState({ phase: 'running', chapter: CHAPTER.id });
-    await waitFor(() => expect(screen.getByRole('button', { name: 'Stop reading' }).hasAttribute('disabled')).toBe(false));
+    await waitFor(() => expect(screen.queryByText('Pick a chapter')).toBeNull());
+  });
 
-    await user.click(screen.getByRole('button', { name: 'Close' }));
-    expect(await screen.findByRole('alertdialog', { name: 'Stop reading?' })).toBeTruthy();
+  it('leaves Escape to an open popover rather than exiting the Booth', async () => {
+    const user = userEvent.setup();
+    const { onClose } = renderDialog();
+    await openMicPopover(user);
+    await screen.findByRole('combobox', { name: 'Microphone' });
+    await user.keyboard('{Escape}');
     expect(onClose).not.toHaveBeenCalled();
   });
 });
 
-describe('ReadAloudDialog, mode="companion" (booth-mode-and-companion-panel.prd.md Phase 7)', () => {
-  it('shows CompanionShell in place of the dialog and narrows the window; Full app keeps the running session and restores it', async () => {
+describe('BoothSession companion mode (booth-mode-and-companion-panel.prd.md Phase 7; entered from the Booth header)', () => {
+  it('Companion shows CompanionShell and narrows the window; Full app keeps the running session and brings the Booth back', async () => {
     const user = userEvent.setup();
-    const teleprompterStart = vi.fn().mockResolvedValue({ status: 'started' });
     const teleprompterStop = vi.fn().mockResolvedValue(undefined);
     const companionModeEnter = vi.fn(async () => {});
     const companionModeExit = vi.fn(async () => {});
-    const { setState } = renderDialog({ teleprompterStart, teleprompterStop, companionModeEnter, companionModeExit }, vi.fn(), { mode: 'companion' });
+    const { setState } = renderDialog({ teleprompterStop, companionModeEnter, companionModeExit });
+    setState({ phase: 'running', chapter: CHAPTER.id });
+    await user.click(await screen.findByRole('button', { name: 'Companion' }));
+
     expect(await screen.findByRole('heading', { level: 1, name: 'Companion' })).toBeTruthy();
-    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(screen.queryByRole('region', { name: 'Booth commands' })).toBeNull();
     await waitFor(() => expect(companionModeEnter).toHaveBeenCalledTimes(1));
 
-    setState({ phase: 'running', chapter: CHAPTER.id });
     await user.click(screen.getByRole('button', { name: 'Full app' }));
 
-    const dialog = await screen.findByRole('dialog', { name: /Read aloud/ });
-    expect(within(dialog).getByRole('toolbar', { name: 'Reading controls' })).toBeTruthy();
+    expect(await screen.findByRole('region', { name: 'Booth commands' })).toBeTruthy();
     expect(companionModeExit).toHaveBeenCalledTimes(1);
     expect(teleprompterStop).not.toHaveBeenCalled();
   });
 });
 
-describe('ReadAloudDialog, mode="booth", speaker rail (booth-mode-and-companion-panel.prd.md Phase 3)', () => {
+describe('BoothSession speaker rail (booth-mode-and-companion-panel.prd.md Phase 3)', () => {
   it("lists the chapter's characters in the booth rail and opens one in the Story bible tab", async () => {
     const user = userEvent.setup();
-    renderDialog({ manuscriptParagraphs: async () => PARAGRAPHS }, vi.fn(), { entities: [HALE], notes: [NOTE], mode: 'booth' });
+    renderDialog({ manuscriptParagraphs: async () => PARAGRAPHS }, vi.fn(), { entities: [HALE], notes: [NOTE] });
     const voices = await screen.findByRole('region', { name: 'Voices in scene' });
     await user.click(await within(voices).findByRole('button', { name: 'Mr. Hale: open in the Story bible' }));
     const panel = screen.getByRole('complementary', { name: 'Reading panel' });
@@ -765,14 +774,8 @@ describe('ReadAloudDialog, mode="booth", speaker rail (booth-mode-and-companion-
   });
 
   it("lets the reading panel fill the booth rail's own column instead of its normal fixed width, which overflowed it", async () => {
-    renderDialog({}, vi.fn(), { mode: 'booth' });
-    const panel = await screen.findByRole('complementary', { name: 'Reading panel' });
-    expect(panel.className).not.toContain('md:w-[19rem]');
-  });
-
-  it('keeps the fixed-width reading panel in the normal dialog', async () => {
     renderDialog();
     const panel = await screen.findByRole('complementary', { name: 'Reading panel' });
-    expect(panel.className).toContain('md:w-[19rem]');
+    expect(panel.className).not.toContain('md:w-[19rem]');
   });
 });

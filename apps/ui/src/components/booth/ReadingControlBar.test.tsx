@@ -276,7 +276,7 @@ describe('ReadingControlBar', () => {
     const popup = await screen.findByRole('dialog', { name: 'Settings' });
     expect(within(popup).getByRole('group', { name: 'Engine' })).toBeTruthy();
     expect(within(popup).getByRole('group', { name: 'Model' })).toBeTruthy();
-    expect(within(popup).getByRole('link', { name: 'More in Settings' }).getAttribute('href')).toBe('/settings#teleprompter');
+    expect(within(popup).getByRole('link', { name: 'More in Settings' }).getAttribute('href')).toBe('/settings#booth');
   });
 
   it('omits the Engine group where the host offers only one engine', async () => {

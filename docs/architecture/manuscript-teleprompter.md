@@ -496,7 +496,7 @@ nothing; a failure at any layer (bad exit code, unparseable output, a timeout)
 comes back as an empty list plus a message, never a rejected call, so the UI
 always gets a result to react to. Phase 1 stops at the binding: no UI calls it
 yet, and the existing typed microphone field is unchanged behavior, only
-relocated to `apps/ui/src/components/teleprompter/MicrophoneField.tsx` as the
+relocated to `apps/ui/src/components/booth/MicrophoneField.tsx` as the
 shared seam this PRD and `teleprompter-manuscript-integration.prd.md` agreed
 on. The device picker itself (consuming `TeleprompterDevices`, replacing the
 typed field entirely with a dropdown-only picker, the "not found" state, and a
@@ -529,7 +529,7 @@ and no auto-stop is armed; flags are kept only when the session ends
 
 ## UI: what shipped and what is still open
 
-**Shipped (Teleprompter page, `apps/ui/src/components/teleprompter/`).** Pick a
+**Shipped (Teleprompter page, `apps/ui/src/components/booth/`).** Pick a
 narration chapter, type the microphone's name, choose Tiny or Small, and Start.
 The setup fields collapse to a sticky status bar (Listening, Waiting for you to
 return to the script, Done) with Stop, and the chapter text below highlights the
@@ -557,7 +557,7 @@ specified in
 ## Resume: where REAPER is and where the prompter was
 
 The Read aloud dialog opens with a compact **Where you stopped** prompt above the
-text (`apps/ui/src/components/teleprompter/ResumePrompt.tsx`). It reconciles two
+text (`apps/ui/src/components/booth/ResumePrompt.tsx`). It reconciles two
 sources and asks only when they disagree (owner report of 2026-09-24: "find where
 the track was, and find out where you were in the script, and if they match, you
 keep going").

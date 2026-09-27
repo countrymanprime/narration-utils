@@ -6,7 +6,7 @@
 import recordedStream from './teleprompterRecording.json';
 import { recordedStreamSchema } from './schemas/teleprompter';
 import { parseWire } from './wire/parseWire';
-import { CREDITS_LABEL, creditsParagraphs, tokenize, wordOffsets, type CreditsKind } from '../components/teleprompter/readerModel';
+import { CREDITS_LABEL, creditsParagraphs, tokenize, wordOffsets, type CreditsKind } from '../components/booth/readerModel';
 import { mockRecordedEnd } from './chapterTrackMatchMock';
 import { seedLastReading, seedLocateResult, seedTrackMatch, type LocateDraft, type MockResumeSeed } from './resumeMockSeed';
 import type {

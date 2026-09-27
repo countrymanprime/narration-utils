@@ -261,7 +261,7 @@ export function ReadingControlBar({ session: t, follow, startPoint, chapterId, c
             </div>
             <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
               Used everywhere the app listens.{' '}
-              <Link to="/settings#teleprompter" className="underline">
+              <Link to="/settings#booth" className="underline">
                 More in Settings
               </Link>
             </p>

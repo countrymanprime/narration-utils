@@ -36,7 +36,7 @@ const NAV = [
   { name: 'Manuscript', path: '/manuscript', icon: faFileLines, requiresManuscript: true, requiresDaw: false },
   { name: 'Proofing', path: '/proofing', icon: faWaveSquare, requiresManuscript: true, requiresDaw: true },
   { name: 'Story Bible', path: '/story-bible', icon: faBookOpen, requiresManuscript: true, requiresDaw: false },
-  { name: 'Teleprompter', path: '/teleprompter', icon: faScroll, requiresManuscript: true, requiresDaw: false },
+  { name: 'Booth', path: '/booth', icon: faScroll, requiresManuscript: true, requiresDaw: false },
   { name: 'Tracks', path: '/tracks', icon: faLayerGroup, requiresManuscript: false, requiresDaw: false },
   // Every check's findings in one queue (review-dashboard-and-findings-adoption.prd.md Phase 5). Not gated: take-review findings need
   // no manuscript, and the page says itself when there is nothing to review yet.

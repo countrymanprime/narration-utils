@@ -39,15 +39,15 @@ const CEILING: Record<NativeTag, Record<string, number>> = {
     // one word among hundreds inside running prose, so it needs `Button`'s bare click/keyboard semantics without its
     // padded, uppercase button chrome, which would break the text flow and read as a real action button rather than a
     // word. One JSX `<button>` in the source (it is written once, inside the words `.map()`, not once per word).
-    'src/components/teleprompter/ReaderText.tsx': 1,
+    'src/components/booth/ReaderText.tsx': 1,
     // The read-aloud rail's Story bible entries (teleprompter-manuscript-integration.prd.md Phase 5): a list row with a
     // category dot and a current state, the same shape as ChapterNav's rows, which Button's padded, uppercase chrome does
     // not fit. One JSX `<button>`, written once inside the entries `.map()`.
-    'src/components/teleprompter/ReaderRail.tsx': 1,
+    'src/components/booth/ReaderRail.tsx': 1,
     // The read-aloud rail's Flags list (teleprompter-manuscript-integration.prd.md Phase 7): the same list row as the Story
     // bible entries above (two lines of text and a current state), which Button's padded, uppercase chrome does not fit. One
     // JSX `<button>`, written once inside the flags `.map()`.
-    'src/components/teleprompter/ReaderFlagsPanel.tsx': 1,
+    'src/components/booth/ReaderFlagsPanel.tsx': 1,
     'src/components/storybible/GuideDetail.tsx': 1,
     'src/components/tracks/TracksPage.tsx': 2,
     // The chapter workspace's clickable script words (edit-and-proof-workspace.prd.md Phase 2, EP5): the same case as
@@ -65,7 +65,7 @@ const CEILING: Record<NativeTag, Record<string, number>> = {
     // choice's own card ("a card that is a button" - two places, REAPER and Last reading - written once as `card()`,
     // called twice): `Button`'s padded, uppercase chrome fits neither a plain link nor a card naming a source, a time and
     // a quoted sentence.
-    'src/components/teleprompter/ResumePrompt.tsx': 2,
+    'src/components/booth/ResumePrompt.tsx': 2,
   },
   select: {},
   // Reaper-automation-follow-through PRD Phase 9: `PickupsDialog`'s CSV picker is a hidden native `<input type="file">`

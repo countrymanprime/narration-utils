@@ -83,29 +83,33 @@ export const SILENT_CATCHES: Record<string, string> = {
   'src/components/proofing/Transcript.tsx#2': 'Only offers to review the last run; without it the offer is absent.',
   // Phase 2 (teleprompter-manuscript-integration.prd.md) moved the device/settings catches into `useTeleprompterSession.ts`;
   // `TeleprompterPage.tsx` keeps only the chapter-selection catch it never shared with the modal.
-  'src/components/teleprompter/TeleprompterPage.tsx#1':
+  'src/components/booth/BoothPage.tsx#1':
     'Only renders the opening or closing credits for the picker (credits PRD Phase 4); a failed render leaves those credits out of the picker, as the Manuscript page leaves its entry empty, and the chapters are unaffected.',
-  'src/components/teleprompter/TeleprompterPage.tsx#2': 'Only picks the chapter the narrator last read; the first chapter is used without it.',
-  'src/components/teleprompter/TeleprompterPage.tsx#3':
+  'src/components/booth/BoothPage.tsx#2': 'Only picks the chapter the narrator last read; the first chapter is used without it.',
+  'src/components/booth/BoothPage.tsx#3':
     'The REAPER chapter suggestion (ADR 0113) is a hint: no .rpp, or none chosen, is normal for a narrator not using REAPER, so it means no hint.',
-  'src/components/teleprompter/TeleprompterPage.tsx#4':
+  'src/components/booth/BoothPage.tsx#4':
     'Only guards the REAPER preselection against a running session; useTeleprompterSession reads the state again and reports its failure.',
-  'src/components/teleprompter/CompanionShell.tsx#1':
+  'src/components/booth/CompanionShell.tsx#1':
     "Companion mode's exit on unmount: nothing is left mounted to tell, and the host's exit is a no-op when companion mode was never entered, so there is no state it could leave wrong that a retry would fix.",
-  'src/components/teleprompter/useInputLevel.ts#1':
+  'src/components/booth/ResumePrompt.tsx#1':
+    'TeleprompterResumeFollow is a convenience (read-aloud-resume-from-daw Phase 5): when it cannot start, the prompt still waits for a choice, the transport push still dismisses it, and nothing the narrator did is lost.',
+  'src/components/booth/ResumePrompt.tsx#2':
+    'TeleprompterResumeUnfollow runs as the prompt goes away or unmounts, with nothing left to tell; the host ends the poll itself on play, record, a replacing follow or its 30-minute bound.',
+  'src/components/booth/useInputLevel.ts#1':
     'Best-effort release of the meter-only child (popover close, session start, device change or unmount); nothing is left mounted to show a failure, and the meter simply starts fresh the next time the popover opens.',
-  'src/components/teleprompter/useTeleprompterSession.ts#1':
+  'src/components/booth/useTeleprompterSession.ts#1':
     'Clearing the migrated browser-storage device once it is written to settings; if storage cannot be reached the stale value is simply left behind and never read again (the settings value now wins).',
-  'src/components/teleprompter/useTeleprompterSession.ts#2': 'Hydrates a session that was already running; the state event follows anyway.',
-  'src/components/teleprompter/useTeleprompterSession.ts#3':
+  'src/components/booth/useTeleprompterSession.ts#2': 'Hydrates a session that was already running; the state event follows anyway.',
+  'src/components/booth/useTeleprompterSession.ts#3':
     'Loads the persisted device and runs the one-time migration; if it fails the field just starts empty, exactly as it did before Phase 2.',
-  'src/components/teleprompter/useTeleprompterSession.ts#4':
+  'src/components/booth/useTeleprompterSession.ts#4':
     'The one-time browser-storage-to-settings migration write; a failure leaves the device in local state for this visit and the migration is retried next load since the settings value never got marked set.',
   'src/components/manuscript/creditsExpandedStorage.ts#1':
     "Remembering a credits card's open state per project in localStorage (MC5 b); the choice lasts for this visit only when storage is disabled.",
-  'src/components/teleprompter/readerPreferences.ts#1':
+  'src/components/booth/readerPreferences.ts#1':
     'Remembering the read-aloud rail (open, tab) in localStorage; the choice lasts for this dialog only when storage is disabled.',
-  'src/components/teleprompter/readerPreferences.ts#2':
+  'src/components/booth/readerPreferences.ts#2':
     'Remembering which flag kinds the read-aloud dialog shows in localStorage (Phase 7); the choice lasts for this dialog only when storage is disabled.',
   'src/theme/ThemeContext.tsx#1': 'Remembering the theme in localStorage; the preference just does not persist when storage is disabled.',
   'src/components/tracks/TracksPage.tsx#1':

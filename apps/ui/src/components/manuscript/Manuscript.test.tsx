@@ -21,6 +21,7 @@ function renderManuscript(
   focusStoryBibleEntity = vi.fn(),
   initialEntries = ['/manuscript'],
   initial: Parameters<typeof createMockApi>[1] = {},
+  goToBooth = vi.fn(),
 ) {
   const api = createMockApi(overrides, initial);
   const notify = vi.fn();
@@ -29,13 +30,13 @@ function renderManuscript(
       <MemoryRouter initialEntries={initialEntries}>
         <ApiProvider api={api}>
           <CommandRouter>
-            <Manuscript notify={notify} focusStoryBibleEntity={focusStoryBibleEntity} projectFolder="/projects/alice" />
+            <Manuscript notify={notify} focusStoryBibleEntity={focusStoryBibleEntity} projectFolder="/projects/alice" goToBooth={goToBooth} />
           </CommandRouter>
         </ApiProvider>
       </MemoryRouter>
     </div>,
   );
-  return { api, focusStoryBibleEntity, notify };
+  return { api, focusStoryBibleEntity, notify, goToBooth };
 }
 
 // A reference chapter (Contents) placed before the narration chapters, the shape Phase 5 hides
@@ -735,138 +736,39 @@ describe('Manuscript page (integration, driven through the mock NarrationApi)', 
     });
   });
 
-  describe('Read aloud (teleprompter-manuscript-integration.prd.md Phase 2)', () => {
-    it('opens the read-aloud modal for a narration chapter, with no separate chapter picker', async () => {
-      renderManuscript();
+  // stage-navigation-and-page-replacement.prd.md Phase 4 (Q9): the cards' Read aloud, Booth and Companion buttons became one
+  // "Record in Booth" link to the Booth page; the Read aloud dialog is gone (ADR 0407).
+  describe('Record in Booth', () => {
+    it('opens the Booth on a narration chapter, with no dialog of its own', async () => {
+      const { goToBooth } = renderManuscript();
       await waitFor(() => expect(screen.getByRole('heading', { name: 'Chapter 1 — Down the Rabbit-Hole' })).toBeTruthy());
 
-      fireEvent.click(screen.getByRole('button', { name: 'Read Chapter 1 aloud' }));
+      fireEvent.click(screen.getByRole('button', { name: 'Record Chapter 1 in Booth' }));
 
-      expect(await screen.findByRole('dialog', { name: /Read aloud.*Chapter 1/ })).toBeTruthy();
+      expect(goToBooth).toHaveBeenCalledWith({ chapter: 'chapter-1' });
+      expect(screen.queryByRole('dialog')).toBeNull();
+      expect(screen.queryByRole('button', { name: /aloud|Open booth|Open companion/ })).toBeNull();
     });
 
-    it('closing the modal returns to the Manuscript reader', async () => {
-      renderManuscript();
-      await waitFor(() => expect(screen.getByRole('heading', { name: 'Chapter 1 — Down the Rabbit-Hole' })).toBeTruthy());
-      fireEvent.click(screen.getByRole('button', { name: 'Read Chapter 1 aloud' }));
-      await screen.findByRole('dialog', { name: /Read aloud/ });
-
-      fireEvent.click(screen.getByRole('button', { name: 'Close' }));
-
-      await waitFor(() => expect(screen.queryByRole('dialog', { name: /Read aloud/ })).toBeNull());
-    });
-  });
-
-  describe('Companion (booth-mode-and-companion-panel.prd.md Phase 7)', () => {
-    it('opens the same read-aloud session in the companion panel, and Full app brings back the normal dialog', async () => {
-      renderManuscript();
-      await waitFor(() => expect(screen.getByRole('heading', { name: 'Chapter 1 — Down the Rabbit-Hole' })).toBeTruthy());
-
-      fireEvent.click(screen.getByRole('button', { name: 'Open companion for Chapter 1' }));
-
-      expect(await screen.findByRole('heading', { level: 1, name: 'Companion' })).toBeTruthy();
-      expect(screen.queryByRole('dialog', { name: /Read aloud/ })).toBeNull();
-      fireEvent.click(screen.getByRole('button', { name: 'Full app' }));
-      const dialog = await screen.findByRole('dialog', { name: /Read aloud.*Chapter 1/ });
-      expect(within(dialog).getByRole('toolbar', { name: 'Reading controls' })).toBeTruthy();
-      expect(screen.queryByRole('heading', { level: 1, name: 'Companion' })).toBeNull();
-    });
-  });
-
-  describe('Booth (booth-mode-and-companion-panel.prd.md Phase 1)', () => {
-    it('opens the same read-aloud modal in the booth layout, beside Read aloud, for a narration chapter', async () => {
-      renderManuscript();
-      await waitFor(() => expect(screen.getByRole('heading', { name: 'Chapter 1 — Down the Rabbit-Hole' })).toBeTruthy());
-
-      fireEvent.click(screen.getByRole('button', { name: 'Open booth for Chapter 1' }));
-
-      const dialog = await screen.findByRole('dialog', { name: /Read aloud.*Chapter 1/ });
-      expect(within(dialog).getByRole('toolbar', { name: 'Booth commands' })).toBeTruthy();
-      expect(within(dialog).queryByRole('toolbar', { name: 'Reading controls' })).toBeNull();
+    it('opens the Booth on the opening and the closing credits', async () => {
+      const { goToBooth } = renderManuscript();
+      for (const [kind, name] of [
+        ['opening', 'Opening credits'],
+        ['closing', 'Closing credits'],
+      ] as const) {
+        const heading = await screen.findByRole('heading', { name });
+        const card = heading.closest('[data-credits-entry]') as HTMLElement;
+        fireEvent.click(await within(card).findByRole('button', { name: `Record ${name} in Booth` }));
+        expect(goToBooth).toHaveBeenLastCalledWith({ credits: kind });
+      }
     });
 
-    it('opening Read aloud after Booth (or the reverse) shows the layout that was last pressed', async () => {
-      renderManuscript();
-      await waitFor(() => expect(screen.getByRole('heading', { name: 'Chapter 1 — Down the Rabbit-Hole' })).toBeTruthy());
-
-      fireEvent.click(screen.getByRole('button', { name: 'Open booth for Chapter 1' }));
-      await screen.findByRole('toolbar', { name: 'Booth commands' });
-      fireEvent.click(screen.getByRole('button', { name: 'Close' }));
-      await waitFor(() => expect(screen.queryByRole('dialog', { name: /Read aloud/ })).toBeNull());
-
-      fireEvent.click(screen.getByRole('button', { name: 'Read Chapter 1 aloud' }));
-      const dialog = await screen.findByRole('dialog', { name: /Read aloud.*Chapter 1/ });
-      expect(within(dialog).getByRole('toolbar', { name: 'Reading controls' })).toBeTruthy();
-    });
-
-    it("also opens the booth layout from the opening credits card, beside Read aloud (the header column's two buttons stay gated together, manuscript-chapter-header-alignment.prd.md)", async () => {
-      renderManuscript();
-      const openingHeading = await screen.findByRole('heading', { name: 'Opening credits' });
-      const opening = openingHeading.closest('[data-credits-entry]') as HTMLElement;
-      await within(opening).findByRole('button', { name: 'Open booth for Opening credits' });
-
-      fireEvent.click(within(opening).getByRole('button', { name: 'Open booth for Opening credits' }));
-
-      const dialog = await screen.findByRole('dialog', { name: 'Read aloud: Opening credits' });
-      expect(within(dialog).getByRole('toolbar', { name: 'Booth commands' })).toBeTruthy();
-    });
-  });
-
-  describe('Read aloud on the credits cards (manuscript-credits-card-parity.prd.md, Phase 2)', () => {
-    it('opens the read-aloud modal on the opening credits, titled for the credits kind', async () => {
-      renderManuscript();
-      const openingHeading = await screen.findByRole('heading', { name: 'Opening credits' });
-      const opening = openingHeading.closest('[data-credits-entry]') as HTMLElement;
-      await within(opening).findByRole('button', { name: 'Read Opening credits aloud' });
-
-      fireEvent.click(within(opening).getByRole('button', { name: 'Read Opening credits aloud' }));
-
-      expect(await screen.findByRole('dialog', { name: 'Read aloud: Opening credits' })).toBeTruthy();
-    });
-
-    it('opens the read-aloud modal on the closing credits, titled for that kind', async () => {
-      renderManuscript();
-      const closingHeading = await screen.findByRole('heading', { name: 'Closing credits' });
-      const closing = closingHeading.closest('[data-credits-entry]') as HTMLElement;
-      await within(closing).findByRole('button', { name: 'Read Closing credits aloud' });
-
-      fireEvent.click(within(closing).getByRole('button', { name: 'Read Closing credits aloud' }));
-
-      expect(await screen.findByRole('dialog', { name: 'Read aloud: Closing credits' })).toBeTruthy();
-    });
-
-    it('shows no Read aloud button on a credits card with nothing to read (preview.words === 0)', async () => {
+    it('shows no Record in Booth on a credits card with nothing to read (preview.words === 0)', async () => {
       renderManuscript({ creditsPreview: async () => ({ text: '', words: 0, unresolved: [] }) });
       const openingHeading = await screen.findByRole('heading', { name: 'Opening credits' });
       const opening = openingHeading.closest('[data-credits-entry]') as HTMLElement;
       await within(opening).findByText('Nothing to preview yet.');
-      expect(within(opening).queryByRole('button', { name: /Read .* aloud/ })).toBeNull();
-    });
-
-    it('closing the credits read-aloud modal returns to the Manuscript reader', async () => {
-      renderManuscript();
-      const openingHeading = await screen.findByRole('heading', { name: 'Opening credits' });
-      const opening = openingHeading.closest('[data-credits-entry]') as HTMLElement;
-      await within(opening).findByRole('button', { name: 'Read Opening credits aloud' });
-      fireEvent.click(within(opening).getByRole('button', { name: 'Read Opening credits aloud' }));
-      await screen.findByRole('dialog', { name: 'Read aloud: Opening credits' });
-
-      fireEvent.click(screen.getByRole('button', { name: 'Close' }));
-
-      await waitFor(() => expect(screen.queryByRole('dialog', { name: /Read aloud/ })).toBeNull());
-    });
-
-    it('"Fill them in Settings" in the credits dialog closes it (Manuscript wires onFixCredits to navigate away)', async () => {
-      renderManuscript();
-      const openingHeading = await screen.findByRole('heading', { name: 'Opening credits' });
-      const opening = openingHeading.closest('[data-credits-entry]') as HTMLElement;
-      await within(opening).findByRole('button', { name: 'Read Opening credits aloud' });
-      fireEvent.click(within(opening).getByRole('button', { name: 'Read Opening credits aloud' }));
-      const dialog = await screen.findByRole('dialog', { name: 'Read aloud: Opening credits' });
-
-      fireEvent.click(within(dialog).getByRole('button', { name: 'Fill them in Settings' }));
-
-      await waitFor(() => expect(screen.queryByRole('dialog', { name: /Read aloud/ })).toBeNull());
+      expect(within(opening).queryByRole('button', { name: /in Booth/ })).toBeNull();
     });
   });
 });

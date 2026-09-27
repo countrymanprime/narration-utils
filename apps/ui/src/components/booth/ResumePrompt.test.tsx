@@ -3,7 +3,7 @@ import { act, cleanup, render, screen, waitFor, within } from '@testing-library/
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { ReadAloudDialog } from './ReadAloudDialog';
+import { BoothSession } from './BoothSession';
 import { ApiProvider } from '../../api/ApiContext';
 import { createMockApi } from '../../api/mockApi';
 import { CommandRouter } from '../../input/router';
@@ -44,7 +44,7 @@ function renderDialog(overrides: Partial<NarrationApi> = {}, initial: Initial = 
     <MemoryRouter>
       <ApiProvider api={api}>
         <CommandRouter>
-          <ReadAloudDialog source={{ kind: 'chapter', chapter: CHAPTER }} onClose={vi.fn()} />
+          <BoothSession source={{ kind: 'chapter', chapter: CHAPTER }} onExit={vi.fn()} />
         </CommandRouter>
       </ApiProvider>
     </MemoryRouter>,

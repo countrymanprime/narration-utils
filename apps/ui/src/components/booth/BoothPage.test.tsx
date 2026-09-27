@@ -2,9 +2,9 @@
 import type { ComponentProps } from 'react';
 import { act, cleanup, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter, useLocation } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { TeleprompterPage } from './TeleprompterPage';
+import { BoothPage } from './BoothPage';
 import { ApiProvider } from '../../api/ApiContext';
 import { createMockApi } from '../../api/mockApi';
 import { CommandRouter } from '../../input/router';
@@ -41,7 +41,8 @@ function renderPage(
   overrides: Partial<NarrationApi> = {},
   initial: Parameters<typeof createMockApi>[1] = {},
   existingApi?: NarrationApi,
-  props: ComponentProps<typeof TeleprompterPage> = {},
+  props: Partial<ComponentProps<typeof BoothPage>> = {},
+  initialEntry = '/booth',
 ) {
   const eventListeners = new Set<(event: TeleprompterEvent) => void>();
   const stateListeners = new Set<(state: TeleprompterState) => void>();
@@ -62,10 +63,11 @@ function renderPage(
       initial,
     );
   render(
-    <MemoryRouter>
+    <MemoryRouter initialEntries={[initialEntry]}>
       <ApiProvider api={api}>
         <CommandRouter>
-          <TeleprompterPage {...props} />
+          <BoothPage onExit={vi.fn()} {...props} />
+          <LocationProbe />
         </CommandRouter>
       </ApiProvider>
     </MemoryRouter>,
@@ -95,9 +97,16 @@ async function startReading(user: ReturnType<typeof userEvent.setup>) {
   await user.click(screen.getByRole('button', { name: 'Play' }));
 }
 
+/** The router's current address, for the tests of what the Booth writes into it. */
+function LocationProbe() {
+  const location = useLocation();
+  return <div data-testid="location">{`${location.pathname}${location.search}`}</div>;
+}
+const currentLocation = () => screen.getByTestId('location').textContent;
+
 const currentWord = () => document.querySelector('[data-highlight="Cursor"]')?.textContent;
 
-describe('TeleprompterPage', () => {
+describe('BoothPage', () => {
   it('needs a chapter and a microphone before it can start', async () => {
     const user = userEvent.setup();
     renderPage();
@@ -473,7 +482,7 @@ describe('TeleprompterPage', () => {
 });
 
 // Chapter from REAPER track name (teleprompter-engines-and-input-devices PRD Phase 11, ADR 0113).
-describe('TeleprompterPage chapter suggestion from REAPER', () => {
+describe('BoothPage chapter suggestion from REAPER', () => {
   const [chapter1Track, chapter2Track] = WIRE_TRACKS_PROJECT.tracks;
   const chapterPicker = () => screen.getByLabelText('Chapter') as HTMLSelectElement;
   const suggestion = (overrides: Partial<ChapterSuggestion>): ChapterSuggestion => ({
@@ -570,7 +579,7 @@ describe('TeleprompterPage chapter suggestion from REAPER', () => {
 });
 
 // The credits on the teleprompter (audiobook-credits-templates.prd.md Phase 4, ADR 0150; C6: warn, never block).
-describe('TeleprompterPage credits', () => {
+describe('BoothPage credits', () => {
   const FILLED = { title: 'Alice’s Adventures in Wonderland', author: 'Lewis Carroll', narrator: 'Ada Finch' };
   const optionLabels = async () => Array.from(((await screen.findByLabelText('Chapter')) as HTMLSelectElement).options, (option) => option.textContent);
 
@@ -585,8 +594,7 @@ describe('TeleprompterPage credits', () => {
 
   it('leaves out credits of a kind the library has no template for', async () => {
     renderPage({ creditsTemplates: async () => [] });
-
-    await screen.findByText('Alice was beginning', { exact: false });
+    await waitFor(async () => expect(await optionLabels()).toContain('Chapter 12 — Alice’s Evidence'));
     expect(await optionLabels()).not.toContain('Opening credits');
     expect(await optionLabels()).not.toContain('Closing credits');
   });
@@ -639,5 +647,49 @@ describe('TeleprompterPage credits', () => {
     emit(position(6));
 
     await waitFor(() => expect(currentWord()).toBe('Lewis'));
+  });
+});
+
+// stage-navigation-and-page-replacement.prd.md Phase 4: what the Booth reads is in its address, so a Script card's
+// "Record in Booth", a bookmark and Back all land on the same chapter or credits.
+describe('BoothPage address', () => {
+  const chapterPicker = () => screen.getByLabelText('Chapter') as HTMLSelectElement;
+
+  it('opens on the chapter the address names, over the last chapter read', async () => {
+    renderPage({}, {}, undefined, {}, '/booth?chapter=chapter-3');
+    await waitFor(() => expect(chapterPicker().value).toBe('chapter-3'));
+    expect(within(screen.getByRole('region', { name: 'Status' })).getByText(/Chapter 3/)).toBeTruthy();
+  });
+
+  it('opens on the credits the address names', async () => {
+    renderPage({}, {}, undefined, {}, '/booth?credits=closing');
+    await waitFor(() => expect(chapterPicker().value).toBe('credits:closing'));
+    expect(within(screen.getByRole('region', { name: 'Status' })).getByText('Closing credits')).toBeTruthy();
+  });
+
+  it('writes a chosen chapter or credits into the address', async () => {
+    const user = userEvent.setup();
+    renderPage();
+    await waitFor(() => expect(chapterPicker().value).toBe('chapter-1'));
+    await user.selectOptions(chapterPicker(), 'chapter-2');
+    expect(currentLocation()).toBe('/booth?chapter=chapter-2');
+    await waitFor(async () => expect(Array.from(chapterPicker().options, (option) => option.textContent)).toContain('Opening credits'));
+    await user.selectOptions(chapterPicker(), 'Opening credits');
+    expect(currentLocation()).toBe('/booth?credits=opening');
+  });
+
+  it('hides the chapter picker while a session runs', async () => {
+    const { setState } = renderPage();
+    await screen.findByLabelText('Chapter');
+    setState({ phase: 'running', chapter: 'chapter-1' });
+    await waitFor(() => expect(screen.queryByLabelText('Chapter')).toBeNull());
+  });
+
+  it("Exit booth leaves through the page's onExit", async () => {
+    const user = userEvent.setup();
+    const onExit = vi.fn();
+    renderPage({}, {}, undefined, { onExit });
+    await user.click(await screen.findByRole('button', { name: /Exit booth/ }));
+    expect(onExit).toHaveBeenCalledTimes(1);
   });
 });

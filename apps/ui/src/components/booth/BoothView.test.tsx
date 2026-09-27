@@ -6,7 +6,6 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { ApiProvider } from '../../api/ApiContext';
 import { createMockApi } from '../../api/mockApi';
 import { CommandRouter, CommandScope } from '../../input/router';
-import { boothIsActive } from './boothActive';
 import { BoothView } from './BoothView';
 import { initialSession } from './readerModel';
 import type { GuideEntity } from '../../types';
@@ -75,77 +74,61 @@ function fakeRecording(overrides: Partial<RecordInReaperState> = {}): RecordInRe
   };
 }
 
-function renderBooth(overrides: Partial<Parameters<typeof BoothView>[0]> = {}) {
-  const api = createMockApi();
-  return render(
+function boothElement(overrides: Partial<Parameters<typeof BoothView>[0]> = {}) {
+  return (
     <MemoryRouter>
-      <ApiProvider api={api}>
+      <ApiProvider api={createMockApi()}>
         <CommandRouter>
           <CommandScope kind="booth">
-            <BoothView session={baseSession()} follow={followCursor()} recording={fakeRecording()} rail={<div>Reading panel</div>} {...overrides} />
+            <BoothView
+              session={baseSession()}
+              follow={followCursor()}
+              recording={fakeRecording()}
+              rail={<div>Reading panel</div>}
+              onExit={vi.fn()}
+              {...overrides}
+            />
           </CommandScope>
         </CommandRouter>
       </ApiProvider>
-    </MemoryRouter>,
+    </MemoryRouter>
   );
 }
 
-describe('BoothView (booth-mode-and-companion-panel.prd.md Phase 1, Phase 2)', () => {
-  it('lays out a named status region, the given rail as a complementary landmark, the script with no main landmark of its own, and a named Booth commands toolbar', () => {
+function renderBooth(overrides: Partial<Parameters<typeof BoothView>[0]> = {}) {
+  return render(boothElement(overrides));
+}
+
+describe('BoothView (booth-mode-and-companion-panel.prd.md Phases 1-2; stage-navigation-and-page-replacement.prd.md Phase 4)', () => {
+  it('lays out a named status region, the given rail as a complementary landmark, the script with no main landmark of its own, and a Booth commands region holding the reading controls', () => {
     renderBooth({ chapterTitle: 'Chapter 3' });
     expect(screen.getByRole('region', { name: 'Status' })).toBeTruthy();
     const rail = screen.getByRole('complementary', { name: 'Rail' });
     expect(within(rail).getByText('Reading panel')).toBeTruthy();
-    // Always mounted inside ReadAloudDialog's Dialog, whose page behind it keeps its own <main> in the accessibility
-    // tree (a live region there stays announced): FocusShell's `asMain={false}` here avoids a second one.
+    // A route inside AppShell, whose own <main> holds the page: FocusShell's `asMain={false}` avoids a second one.
     expect(screen.queryByRole('main')).toBeNull();
-    expect(screen.getByRole('toolbar', { name: 'Booth commands' })).toBeTruthy();
+    const commands = screen.getByRole('region', { name: 'Booth commands' });
+    // The same command bar the read-aloud dialog had, so nothing it offered is lost: Play, Stop, the microphone and Settings.
+    const bar = within(commands).getByRole('toolbar', { name: 'Reading controls' });
+    for (const name of ['Play', 'Stop reading', 'Microphone: not chosen', 'Settings']) expect(within(bar).getByRole('button', { name })).toBeTruthy();
   });
 
   it('shows Ready while idle, Reading while listening, and REC · P&R while this app is recording', () => {
     const { rerender } = renderBooth({ session: baseSession({ active: false }) });
-    expect(screen.getByText('Ready')).toBeTruthy();
-
-    rerender(
-      <MemoryRouter>
-        <ApiProvider api={createMockApi()}>
-          <CommandRouter>
-            <CommandScope kind="booth">
-              <BoothView session={baseSession({ active: true, paused: false })} follow={followCursor()} recording={fakeRecording()} rail={<div />} />
-            </CommandScope>
-          </CommandRouter>
-        </ApiProvider>
-      </MemoryRouter>,
-    );
-    expect(screen.getByText('Reading')).toBeTruthy();
-
-    rerender(
-      <MemoryRouter>
-        <ApiProvider api={createMockApi()}>
-          <CommandRouter>
-            <CommandScope kind="booth">
-              <BoothView
-                session={baseSession({ active: true, paused: false })}
-                follow={followCursor()}
-                recording={fakeRecording({ recording: true })}
-                rail={<div />}
-              />
-            </CommandScope>
-          </CommandRouter>
-        </ApiProvider>
-      </MemoryRouter>,
-    );
-    expect(screen.getByText('REC · P&R')).toBeTruthy();
+    const status = () => within(screen.getByRole('region', { name: 'Status' }));
+    expect(status().getByText('Ready')).toBeTruthy();
+    rerender(boothElement({ session: baseSession({ active: true, paused: false }) }));
+    expect(status().getByText('Reading')).toBeTruthy();
+    rerender(boothElement({ session: baseSession({ active: true, paused: false }), recording: fakeRecording({ recording: true }) }));
+    expect(status().getByText('REC · P&R')).toBeTruthy();
   });
 
-  it('shows a decorative room level meter in the status region, fed by the same mic-level channel as the microphone popover (Phase 4)', () => {
+  it("shows a decorative input level meter in the status region, fed by the session's own level events", () => {
     renderBooth({ chapterTitle: 'Chapter 3' });
     const status = screen.getByRole('region', { name: 'Status' });
-    const meters = within(status).queryAllByRole('meter');
-    // Decorative: no accessible `meter` role of its own, unlike the microphone popover's own labelled meter (which is
-    // not mounted here since the popover starts closed).
-    expect(meters).toHaveLength(0);
-    expect(within(status).getByText('Room')).toBeTruthy();
+    // Decorative: no accessible `meter` role of its own, unlike the microphone popover's labelled meter.
+    expect(within(status).queryAllByRole('meter')).toHaveLength(0);
+    expect(within(status).getByText('Input')).toBeTruthy();
   });
 
   it('shows the chapter title and word progress in the status region', () => {
@@ -155,62 +138,47 @@ describe('BoothView (booth-mode-and-companion-panel.prd.md Phase 1, Phase 2)', (
         session: { ...initialSession, script: { type: 'script', chapter: { id: 'c1', title: 'Chapter 3' }, tokens: 120, spans: [] }, cursor: 40 },
       }),
     });
-    expect(screen.getByText('Chapter 3')).toBeTruthy();
-    expect(screen.getByRole('region', { name: 'Status' }).textContent).toContain('40 of 120 words');
+    const status = screen.getByRole('region', { name: 'Status' });
+    expect(within(status).getByText('Chapter 3')).toBeTruthy();
+    expect(status.textContent).toContain('40 of 120 words');
   });
 
-  it('the Toolbar Play/Pause button is Kbd-labelled Space and calls the same handler reading.toggle would', async () => {
+  it('offers Companion and Exit booth (Esc) in the header', async () => {
+    const user = userEvent.setup();
+    const onCompanion = vi.fn();
+    const onExit = vi.fn();
+    renderBooth({ onCompanion, onExit });
+    const status = screen.getByRole('region', { name: 'Status' });
+    await user.click(within(status).getByRole('button', { name: 'Companion' }));
+    expect(onCompanion).toHaveBeenCalledTimes(1);
+    const exit = within(status).getByRole('button', { name: /Exit booth/ });
+    expect(within(exit).getByRole('img', { name: 'Esc' })).toBeTruthy();
+    await user.click(exit);
+    expect(onExit).toHaveBeenCalledTimes(1);
+  });
+
+  it('shows the pre-session setup above the text only while no session runs', () => {
+    const { rerender } = renderBooth({ setup: <p>Choose a chapter</p> });
+    expect(screen.getByText('Choose a chapter')).toBeTruthy();
+    rerender(boothElement({ setup: <p>Choose a chapter</p>, session: baseSession({ active: true }) }));
+    expect(screen.queryByText('Choose a chapter')).toBeNull();
+  });
+
+  it("the command bar's Play arms REAPER first, then starts, and Stop stops both", async () => {
     const user = userEvent.setup();
     const start = vi.fn();
     const beforeStart = vi.fn(async () => true);
-    renderBooth({ session: baseSession({ canStart: true, start }), recording: fakeRecording({ beforeStart }) });
-    const toolbar = screen.getByRole('toolbar', { name: 'Booth commands' });
-    const play = within(toolbar).getByRole('button', { name: 'Play' });
-    expect(within(play).getByRole('img', { name: 'Space' })).toBeTruthy();
-    await user.click(play);
+    const { rerender } = renderBooth({ session: baseSession({ canStart: true, start }), recording: fakeRecording({ beforeStart }) });
+    await user.click(screen.getByRole('button', { name: 'Play' }));
     expect(beforeStart).toHaveBeenCalled();
     expect(start).toHaveBeenCalled();
-  });
 
-  it('Stop reading is disabled while idle and calls stop and afterStop once active', async () => {
-    const user = userEvent.setup();
     const stop = vi.fn();
     const afterStop = vi.fn();
-    const { rerender } = renderBooth({ session: baseSession({ active: false }) });
-    expect(screen.getByRole('button', { name: 'Stop reading' }).hasAttribute('disabled')).toBe(true);
-
-    rerender(
-      <MemoryRouter>
-        <ApiProvider api={createMockApi()}>
-          <CommandRouter>
-            <CommandScope kind="booth">
-              <BoothView session={baseSession({ active: true, stop })} follow={followCursor()} recording={fakeRecording({ afterStop })} rail={<div />} />
-            </CommandScope>
-          </CommandRouter>
-        </ApiProvider>
-      </MemoryRouter>,
-    );
+    rerender(boothElement({ session: baseSession({ active: true, stop }), recording: fakeRecording({ afterStop }) }));
     await user.click(screen.getByRole('button', { name: 'Stop reading' }));
     expect(stop).toHaveBeenCalled();
     expect(afterStop).toHaveBeenCalled();
-  });
-
-  it('shows Follow only during a session, disabled while following', () => {
-    const { rerender } = renderBooth({ session: baseSession({ active: false }) });
-    expect(screen.queryByRole('button', { name: 'Follow' })).toBeNull();
-
-    rerender(
-      <MemoryRouter>
-        <ApiProvider api={createMockApi()}>
-          <CommandRouter>
-            <CommandScope kind="booth">
-              <BoothView session={baseSession({ active: true })} follow={followCursor({ following: true })} recording={fakeRecording()} rail={<div />} />
-            </CommandScope>
-          </CommandRouter>
-        </ApiProvider>
-      </MemoryRouter>,
-    );
-    expect(screen.getByRole('button', { name: 'Follow' }).hasAttribute('disabled')).toBe(true);
   });
 });
 
@@ -274,15 +242,5 @@ describe('BoothView speaker rail (booth-mode-and-companion-panel.prd.md Phase 3)
   it('has no speaker section in credits mode (no chapter, so no Story Bible marks)', () => {
     renderBooth({ speakers: undefined });
     expect(screen.queryByRole('region', { name: 'Voices in scene' })).toBeNull();
-  });
-});
-
-describe('BoothView marks itself active for useBoothRecording (booth-mode-and-companion-panel.prd.md Phase 5)', () => {
-  it('is active only while mounted', () => {
-    expect(boothIsActive()).toBe(false);
-    const { unmount } = renderBooth();
-    expect(boothIsActive()).toBe(true);
-    unmount();
-    expect(boothIsActive()).toBe(false);
   });
 });
