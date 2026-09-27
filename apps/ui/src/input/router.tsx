@@ -151,8 +151,28 @@ export function CommandRouter({ children, source, catalog = COMMAND_CATALOG, key
     <ScopeStackContext.Provider value={push}>
       <RegistryContext.Provider value={registry}>{children}</RegistryContext.Provider>
       {/* No role="status": the app already has one status region (Toast.tsx's ToastRegion), and a second would make
-          getByRole('status') ambiguous everywhere. Plain aria-live is enough to be announced (Phase 10, PRD Q5). */}
-      <div aria-live="polite" className="sr-only">
+          getByRole('status') ambiguous everywhere. Plain aria-live is enough to be announced (Phase 10, PRD Q5).
+          Not the `sr-only` class: it is `position: absolute`, and this router sits outside the app shell's own
+          positioned containers (it wraps <App> as a sibling, not a descendant), so an absolutely positioned child
+          here has no ancestor to be absolute against but <body> - exactly the escaped-containing-block problem the
+          visual suite's findEscapedAbsolutes check exists to catch (app-shell-vertical-overflow.prd.md). `fixed`
+          hides it the same way (clipped to nothing, off in a corner) without being `absolute`. */}
+      <div
+        aria-live="polite"
+        style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          width: 1,
+          height: 1,
+          margin: -1,
+          padding: 0,
+          overflow: 'hidden',
+          clip: 'rect(0,0,0,0)',
+          whiteSpace: 'nowrap',
+          border: 0,
+        }}
+      >
         {announcement}
       </div>
     </ScopeStackContext.Provider>
