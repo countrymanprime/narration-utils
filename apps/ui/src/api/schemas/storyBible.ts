@@ -7,6 +7,8 @@ import type {
   GuideNote,
   GuidePreview,
   GuidePronunciation,
+  GuidePronunciationStatus,
+  GuidePronunciationValue,
   GuideProperty,
   GuideRelationship,
 } from '../contracts/storyBible';
@@ -27,6 +29,14 @@ const evidenceSchema = z.object({
 // The guide file is written by a Python sidecar across several schema generations, and the host fills a missing pronunciation with
 // an empty object and a missing description with an empty one (guide/service.go). The schema reads all of those as the complete
 // shape, which replaces the hand-written normalizeGuideEntity and fixes the empty-object case it never handled.
+export const pronunciationStatusSchema = z.enum(['researched', 'query_sent', 'author_confirmed']) satisfies z.ZodType<GuidePronunciationStatus>;
+
+const pronunciationValueSchema = z.object({
+  ipa: z.string().default(''),
+  source: z.string().default(''),
+  confidence: z.string().default(''),
+}) satisfies z.ZodType<GuidePronunciationValue>;
+
 const pronunciationSchema = z
   .object({
     ipa: z.string().default(''),
@@ -34,9 +44,13 @@ const pronunciationSchema = z
     confidence: z.string().default(''),
     /** Set by `pronounce()` when the narrator explicitly chose this value; a rebuild's `merge_locked` keeps it (B11). Absent on an auto-generated value. */
     chosen: z.boolean().optional(),
+    /** Absent on an entry written before status existed (prep-depth P1), which reads as researched. */
+    status: pronunciationStatusSchema.default('researched'),
+    note: z.string().optional(),
+    alternate: pronunciationValueSchema.optional(),
   })
   .nullish()
-  .transform((value): GuidePronunciation => value ?? { ipa: '', source: '', confidence: '' });
+  .transform((value): GuidePronunciation => value ?? { ipa: '', source: '', confidence: '', status: 'researched' });
 
 const noteEvidenceSchema = z
   .object({ chapter: z.string().optional(), excerpt: z.string().optional() })

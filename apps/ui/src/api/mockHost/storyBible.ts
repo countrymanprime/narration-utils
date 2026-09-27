@@ -25,6 +25,17 @@ function parseMockProperties(text: string): GuideProperty[] {
 const MOCK_PREVIEW_WAV_BASE64 =
   'UklGRuwAAABXQVZFZm10IBAAAAABAAEAIlYAAESsAAACABAAZGF0YcgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==';
 
+const isUser = (value: { source?: string }) => value.source === 'user';
+
+function setPronunciation(prior: GuidePronunciation, next: GuidePronunciation): GuidePronunciation {
+  const value: GuidePronunciation = { ipa: next.ipa, source: next.source, confidence: next.confidence, chosen: next.chosen };
+  if (prior.status) value.status = prior.status === 'author_confirmed' && prior.ipa !== next.ipa ? 'researched' : prior.status;
+  if (prior.note) value.note = prior.note;
+  if (prior.ipa && isUser(prior) !== isUser(next)) value.alternate = { ipa: prior.ipa, source: prior.source, confidence: prior.confidence };
+  else if (prior.alternate) value.alternate = prior.alternate;
+  return value;
+}
+
 /** The Story Bible bindings: the build, the entities and their edits, and the pronunciation preview. */
 export function createStoryBibleMock(
   s: MockState,
@@ -49,6 +60,21 @@ export function createStoryBibleMock(
         elapsed: 12,
       }
     : { id: null, kind: 'story_bible', phase: 'idle', message: 'Ready to build.', percent: 0, logs: [], elapsed: 0 };
+  // The sidecar's rules (manuscript_guide.py set_pronunciation, prep-depth P1): the narrator's own and a dictionary's pronunciation sit
+  // side by side, the one not in use kept as the alternate; an author confirmation is withdrawn when the IPA in use changes.
+  const changePronunciation = (id: string, aliasIndex: number | undefined, change: (prior: GuidePronunciation) => GuidePronunciation) => {
+    const entity = s.entities.find((row) => row.id === id);
+    if (!entity) throw new Error('Entity not found.');
+    if (entity.locked) throw new Error('This entity is locked. Unlock it before editing.');
+    if (aliasIndex !== undefined && !entity.aliases[aliasIndex]) throw new Error('Alias index out of range.');
+    const prior = aliasIndex === undefined ? entity.pronunciation : entity.aliases[aliasIndex].pronunciation;
+    const value = change(prior);
+    updateEntity(id, (row) =>
+      aliasIndex === undefined
+        ? { ...row, pronunciation: value }
+        : { ...row, aliases: row.aliases.map((alias, index) => (index === aliasIndex ? { ...alias, pronunciation: value } : alias)) },
+    );
+  };
   const updateEntity = (id: string, change: (entity: GuideEntity) => GuideEntity) => {
     s.entities = s.entities.map((entity) => (entity.id === id ? change(entity) : entity));
   };
@@ -238,11 +264,29 @@ export function createStoryBibleMock(
         source === 'cmu'
           ? { ipa: '/mɒk kjuː ɛm juː/', source: 'CMU dictionary', confidence: 'medium', chosen: true }
           : { ipa: '/mɒk iː spiːk/', source: 'eSpeak NG', confidence: 'low', chosen: true };
-      updateEntity(id, (row) =>
-        aliasIndex === undefined
-          ? { ...row, pronunciation: value }
-          : { ...row, aliases: row.aliases.map((alias, index) => (index === aliasIndex ? { ...alias, pronunciation: value } : alias)) },
-      );
+      changePronunciation(id, aliasIndex, (prior) => setPronunciation(prior, value));
+    },
+    guidePronounceUser: async (id, ipa, aliasIndex) => {
+      const text = ipa.trim();
+      if (!text) throw new Error('type a pronunciation first');
+      changePronunciation(id, aliasIndex, (prior) => setPronunciation(prior, { ipa: text, source: 'user', confidence: 'narrator', chosen: true }));
+    },
+    guidePronunciationUseAlternate: async (id, aliasIndex) => {
+      changePronunciation(id, aliasIndex, (prior) => {
+        if (!prior.alternate) throw new Error('There is no other pronunciation to switch to.');
+        return setPronunciation(prior, { ...prior.alternate, chosen: true });
+      });
+    },
+    guidePronunciationSetStatus: async (id, status, note, aliasIndex) => {
+      changePronunciation(id, aliasIndex, (prior) => {
+        const next: GuidePronunciation = { ...prior, status };
+        if (note !== undefined) {
+          const text = note.trim();
+          if (text) next.note = text;
+          else delete next.note;
+        }
+        return next;
+      });
     },
   } satisfies Partial<NarrationApi>;
   return { bindings };
