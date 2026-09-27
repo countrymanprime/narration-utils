@@ -21,6 +21,7 @@ function renderManuscript(
   focusStoryBibleEntity = vi.fn(),
   initialEntries = ['/manuscript'],
   initial: Parameters<typeof createMockApi>[1] = {},
+  goToWorkspace?: (chapterId: string) => void,
 ) {
   const api = createMockApi(overrides, initial);
   const notify = vi.fn();
@@ -29,7 +30,7 @@ function renderManuscript(
       <MemoryRouter initialEntries={initialEntries}>
         <ApiProvider api={api}>
           <CommandRouter>
-            <Manuscript notify={notify} focusStoryBibleEntity={focusStoryBibleEntity} projectFolder="/projects/alice" />
+            <Manuscript notify={notify} focusStoryBibleEntity={focusStoryBibleEntity} goToWorkspace={goToWorkspace} projectFolder="/projects/alice" />
           </CommandRouter>
         </ApiProvider>
       </MemoryRouter>
@@ -754,6 +755,24 @@ describe('Manuscript page (integration, driven through the mock NarrationApi)', 
       fireEvent.click(screen.getByRole('button', { name: 'Close' }));
 
       await waitFor(() => expect(screen.queryByRole('dialog', { name: /Read aloud/ })).toBeNull());
+    });
+  });
+
+  describe('Open workspace (edit-and-proof-workspace.prd.md Phase 4)', () => {
+    it('opens the chapter workspace for a narration chapter', async () => {
+      const goToWorkspace = vi.fn();
+      renderManuscript({}, vi.fn(), ['/manuscript'], {}, goToWorkspace);
+      await waitFor(() => expect(screen.getByRole('heading', { name: 'Chapter 1 — Down the Rabbit-Hole' })).toBeTruthy());
+
+      fireEvent.click(screen.getByRole('button', { name: 'Open workspace for Chapter 1' }));
+
+      expect(goToWorkspace).toHaveBeenCalledWith('chapter-1');
+    });
+
+    it('renders no Workspace entry when the caller has none to open', async () => {
+      renderManuscript();
+      await waitFor(() => expect(screen.getByRole('heading', { name: 'Chapter 1 — Down the Rabbit-Hole' })).toBeTruthy());
+      expect(screen.queryByRole('button', { name: /Open workspace for/ })).toBeNull();
     });
   });
 

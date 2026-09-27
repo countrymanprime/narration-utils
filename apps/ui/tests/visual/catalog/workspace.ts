@@ -34,6 +34,18 @@ export const workspaceStates: StateEntry[] = [
   },
   {
     page: 'workspace',
+    state: 'flag-finding-open',
+    description:
+      'Chapter workspace, a finding-backed flag selected (edit-and-proof-workspace.prd.md Phase 4): "From <analyzer>", Go to/Loop in REAPER for that word, and the Decision section (Accept/Dismiss/Defer, a note field) - mockups/edit-and-proof-workspace/02-flag-detail-open.webp',
+  },
+  {
+    page: 'workspace',
+    state: 'flag-decided',
+    description:
+      'Chapter workspace, the finding-backed flag just accepted in place - "Saved as accepted." and the decision reflected, without leaving the page',
+  },
+  {
+    page: 'workspace',
     state: 'standalone',
     description:
       'Chapter workspace with REAPER not running (edit-and-proof-workspace PRD Phase 3) - Go to in REAPER and Loop in REAPER on the transport bar are disabled, with the reason under a tooltip; everything else still works',

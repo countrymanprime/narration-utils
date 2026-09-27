@@ -6,7 +6,7 @@
 
 ## Context
 
-The model cascade ([PRD](../prds/recording-check-model-cascade.prd.md), Phase 3) re-checks only the
+The model cascade (the recording-check-model-cascade PRD, deleted and delivered; Phase 3) re-checks only the
 windows of audio a first pass called missing, with a stronger model, and splices the result into
 the affected items' words files without touching the timeline or the manifest. Two questions came
 with the new `--coverage --recheck <windows.json>` mode:

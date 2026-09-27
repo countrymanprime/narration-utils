@@ -1765,6 +1765,34 @@ describe('answers of the mock client for the settings, voice, model, transcript 
     expect(gated.status).toBe('asset_required');
   });
 
+  it('the model cascade names both models, gates on the re-check model, and "Check with tiny only" skips it (Phase 5)', async () => {
+    const api = createMockApi();
+    const chapters = await api.manuscriptChapters();
+    const measured = chapters.find((chapter) => chapter.recordedFraction !== undefined);
+    if (!measured) throw new Error('the mock chapters carry a measured recordedFraction');
+
+    const cascadeApi = createMockApi({}, { coverage: { cascade: [measured.id] } });
+    const result = await cascadeApi.coverageResult(measured.id);
+    expectMatches(coverageResultSchema, result, 'mock coverage result, cascade');
+    expect(result.result?.recheck).toMatchObject({ model: 'large-v3-turbo', wholeChapter: false, windows: 1 });
+
+    const gate = await createMockApi({}, { coverage: { recheckAssetRequired: true } }).coverageStart(measured.id);
+    expectMatches(coverageStartResultSchema, gate, 'mock coverage start, re-check model not installed');
+    expect(gate).toMatchObject({ status: 'recheck_asset_required', model: { id: 'large-v3-turbo' } });
+
+    vi.useFakeTimers();
+    try {
+      const skipApi = createMockApi({}, { coverage: { recheckAssetRequired: true } });
+      const started = await skipApi.coverageStart(measured.id, { skipRecheck: true });
+      expectMatches(coverageStartResultSchema, started, 'mock coverage start, tiny only');
+      expect(started.status).toBe('started');
+      await vi.runAllTimersAsync();
+      expect(await skipApi.coverageState()).toMatchObject({ phase: 'complete' });
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('the workspace alignment shares the coverage result state and reads the chapter as tokens', async () => {
     const api = createMockApi();
     const chapters = await api.manuscriptChapters();
