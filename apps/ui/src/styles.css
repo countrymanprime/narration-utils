@@ -164,11 +164,14 @@
 }
 /* FocusShell's booth surface (studio-ui-primitives.prd.md Phase 1, ADR 0360 Q1): scoped to the element that carries
    `data-surface="booth"`, not a third app theme, so it applies regardless of the narrator's light/dark preference - the
-   booth is a place, not a preference. Custom properties cascade to the subtree, so only the tokens booth mode actually
-   changes are listed here; everything else (the kind colours, --danger/--warn/--info/--ok, --accent, the meter zones and
-   badge fills above, which are all derived from these) falls through from the dark theme (src/tokenContrast.ts layers
-   this block over dark, as a third map `paletteContrast.test.ts` checks every pair over). Darker and higher-contrast
-   than plain dark, for a room with the lights down; --font-size-booth-script is for the script view a later phase reads. */
+   booth is a place, not a preference. Custom properties cascade to the subtree; most tokens fall through from whichever
+   theme is active (light or dark) unchanged, since they don't depend on the surface being dark. The kind colours -
+   --danger/--warn/--info/--ok/--experimental and their -text companions - do depend on it (light's versions are tuned
+   for a light --surface, not this block's very dark one), so this block repeats dark's values for them explicitly rather
+   than letting light's fall through; the derived meter zones and badge fills above inherit that through var(). Darker and
+   higher-contrast than plain dark, for a room with the lights down; --font-size-booth-script is for the script view a
+   later phase reads. src/tokenContrast.ts models this block as dark's tokens plus these overrides, which `paletteContrast.
+   test.ts` checks every pair over - keep this list in sync with :root[data-theme='dark'] for the tokens it lists. */
 [data-surface='booth'] {
   --bg: #0a0806;
   --surface: #14110c;
@@ -178,6 +181,16 @@
   --text: #fbf7ee;
   --text-muted: #c9bea0;
   --non-text: #8a8370;
+  --danger: #db7a6e;
+  --warn: #e0b255;
+  --info: #6e9fdb;
+  --ok: #74c28a;
+  --danger-text: var(--danger);
+  --warn-text: var(--warn);
+  --info-text: var(--info);
+  --ok-text: var(--ok);
+  --experimental: #4fbdbd;
+  --experimental-text: var(--experimental);
   --font-size-booth-script: 1.1rem;
 }
 @layer base {
