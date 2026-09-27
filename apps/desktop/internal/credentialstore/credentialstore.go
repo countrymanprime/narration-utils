@@ -55,7 +55,7 @@ func (s Secret) LogValue() slog.Value { return slog.StringValue(Redacted) }
 
 // ErrOtherProtection is a saved value sealed a way this build cannot open (saved on another platform, or by a build
 // with another protection): the narrator enters it again.
-var ErrOtherProtection = errors.New("credentialstore: the saved key was protected on another system; enter it again")
+var ErrOtherProtection = errors.New("credentialstore: the saved key was protected on another system; enter it again") // +checklocksignore: an error value, returned under the lock by chance
 
 // name is a secret's row name: lower-case letters, digits and underscores.
 var name = regexp.MustCompile(`^[a-z][a-z0-9_]{0,63}$`)

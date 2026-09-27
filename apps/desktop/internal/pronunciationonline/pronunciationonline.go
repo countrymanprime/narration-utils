@@ -59,15 +59,15 @@ type Dictionary interface {
 
 // The errors a Dictionary answers with. None carries the word or the key.
 var (
-	ErrKeyRefused  = errors.New("Merriam-Webster refused the key: check it on your dictionaryapi.com account page and paste it again")
-	ErrRateLimited = errors.New("Merriam-Webster is limiting lookups on this key for now: try again later")
-	ErrUnreachable = errors.New("Merriam-Webster could not be reached: check the internet connection and try again")
+	ErrKeyRefused  = errors.New("Merriam-Webster refused the key: check it on your dictionaryapi.com account page and paste it again") // +checklocksignore: an error value, returned under the lock by chance
+	ErrRateLimited = errors.New("Merriam-Webster is limiting lookups on this key for now: try again later")                            // +checklocksignore: an error value, returned under the lock by chance
+	ErrUnreachable = errors.New("Merriam-Webster could not be reached: check the internet connection and try again")                   // +checklocksignore: an error value, returned under the lock by chance
 	ErrUnavailable = errors.New("Merriam-Webster did not answer the lookup: try again later")
 )
 
 // The errors the service answers with before any request is made.
 var (
-	ErrNoKey             = errors.New("add your own free Merriam-Webster key in Settings > Story Bible first")
+	ErrNoKey             = errors.New("add your own free Merriam-Webster key in Settings > Story Bible first") // +checklocksignore: an error value, returned under the lock by chance
 	ErrBadKey            = errors.New("that does not look like a Merriam-Webster key: paste the key shown on your dictionaryapi.com account page")
 	ErrNotAWord          = errors.New("an online lookup sends one word or name only: letters, digits, spaces, apostrophes, hyphens and periods, at most 3 words and 64 characters")
 	ErrBatchNotConfirmed = errors.New("a batch lookup needs your confirmation of how many words it sends")

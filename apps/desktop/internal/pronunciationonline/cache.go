@@ -99,10 +99,16 @@ func (c *Cache) write(current cacheFile) error {
 	if err != nil {
 		return err
 	}
-	if err := os.MkdirAll(filepath.Dir(c.path), 0o755); err != nil {
+	return writeWhole(c.path, bytes)
+}
+
+// writeWhole replaces the file at path with bytes: a temporary file beside it, renamed over it, so a crash never leaves
+// half a file.
+func writeWhole(path string, bytes []byte) error {
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
 		return fmt.Errorf("pronunciationonline: the cache folder could not be created: %w", err)
 	}
-	temp, err := os.CreateTemp(filepath.Dir(c.path), ".cache-*.tmp")
+	temp, err := os.CreateTemp(filepath.Dir(path), ".cache-*.tmp")
 	if err != nil {
 		return fmt.Errorf("pronunciationonline: the cache could not be written: %w", err)
 	}
@@ -115,7 +121,7 @@ func (c *Cache) write(current cacheFile) error {
 	if err := temp.Close(); err != nil {
 		return fmt.Errorf("pronunciationonline: the cache could not be written: %w", err)
 	}
-	if err := os.Rename(tempPath, c.path); err != nil {
+	if err := os.Rename(tempPath, path); err != nil {
 		return fmt.Errorf("pronunciationonline: the cache could not be written: %w", err)
 	}
 	return nil
