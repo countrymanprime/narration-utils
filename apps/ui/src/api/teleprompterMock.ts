@@ -14,6 +14,7 @@ import type {
   ManuscriptChapter,
   ManuscriptParagraph,
   ReadAloudReaperState,
+  ReadAloudRecording,
   TeleprompterApi,
   TeleprompterReaperInput,
   TeleprompterDevice,
@@ -191,6 +192,64 @@ function mockReaperState(seed: MockReaperSeed, title: string): ReadAloudReaperSt
         recording: false,
       };
   }
+}
+
+// `?mockReaper=` doubles as ReadAloudArmOnly/ReadAloudRecordStart/ReadAloudRecordStop's mock (read-aloud-control-bar PRD Phase 7,
+// booth-actions-enablement PRD Phase 2), so a story or test that sets up a chapter as `not_armed` sees arming and starting agree with
+// the read-only state `readAloudReaperState` answers for the same chapter.
+function mockReadAloudRecording(seed: MockReaperSeed, kind: 'arm' | 'start' | 'stop', title: string): ReadAloudRecording {
+  if (seed === 'unavailable')
+    return {
+      outcome: 'refused',
+      reason: 'standalone',
+      message: 'REAPER is not connected to this app. To record with reading, open this app from the Narration Utils action in REAPER.',
+    };
+  if (seed === 'experimental_off')
+    return {
+      outcome: 'refused',
+      reason: 'experimental_off',
+      message: "Reading REAPER's tracks is an experimental action. Turn on Experimental REAPER actions in Settings to use it.",
+    };
+  // ReadAloudRecordStop takes no chapter id (it stops whatever this app is recording), so no_link only refuses arm and start.
+  if (kind !== 'stop' && seed === 'no_link')
+    return { outcome: 'refused', reason: 'unlinked', message: `"${title}" has no linked track. Link it to its REAPER track on the Tracks page.` };
+  // arm_only refuses only while REAPER is recording (narration_transport.lua); an arm count that is not the chapter's alone is
+  // exactly what arming fixes, so every other seed succeeds.
+  if (kind === 'arm') {
+    if (seed === 'recording_elsewhere') return { outcome: 'refused', reason: 'already_recording', message: 'REAPER is already recording.' };
+    return {
+      outcome: 'armed',
+      trackGuid: MOCK_REAPER_TRACK,
+      disarmed: seed === 'several_armed' ? 3 : seed === 'other_armed' ? 1 : 0,
+      changed: seed !== 'ready',
+    };
+  }
+  if (kind === 'stop') return { outcome: 'stopped', restored: 0, kept: 0 };
+  switch (seed) {
+    case 'ready':
+      return { outcome: 'started', trackGuid: MOCK_REAPER_TRACK, position: 0 };
+    case 'not_armed':
+      return { outcome: 'refused', reason: 'not_armed', message: 'No track is armed in REAPER.' };
+    case 'other_armed':
+      return { outcome: 'refused', reason: 'other_armed', message: "Another track than this chapter's is armed in REAPER." };
+    case 'several_armed':
+      return { outcome: 'refused', reason: 'several_armed', message: 'More than one track is armed in REAPER.' };
+    case 'recording_elsewhere':
+      return { outcome: 'refused', reason: 'already_recording', message: 'REAPER is already recording.' };
+    default:
+      // Unreachable: 'unavailable', 'experimental_off' and (for start) 'no_link' all returned above.
+      return { outcome: 'refused', reason: 'unlinked', message: `"${title}" has no linked track. Link it to its REAPER track on the Tracks page.` };
+  }
+}
+
+// The chapter title as the host's displayTitle joins it (readaloudreaper.go), reused by the read-only state and the record mocks so
+// a refusal names the chapter the same way in both.
+function chapterDisplayTitle(chapter: ManuscriptChapter): string {
+  return chapter.title
+    .split('\n')
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .join(': ');
 }
 
 // A level as `levels.py` sends it: the peak sits about 9 dB over the RMS (a sine is 3 dB; speech is peakier), both in [-100, 0].
@@ -599,14 +658,23 @@ export function createTeleprompterMock(deps: Deps): TeleprompterApi {
       await deps.ready;
       const chapter = findChapter(chapterId);
       if (!chapter) throw new Error('that chapter is not part of the current manuscript');
-      return mockReaperState(
-        deps.reaper ?? 'ready',
-        chapter.title
-          .split('\n')
-          .map((line) => line.trim())
-          .filter(Boolean)
-          .join(': '),
-      );
+      return mockReaperState(deps.reaper ?? 'ready', chapterDisplayTitle(chapter));
+    },
+    readAloudArmOnly: async (chapterId) => {
+      await deps.ready;
+      const chapter = findChapter(chapterId);
+      if (!chapter) throw new Error('that chapter is not part of the current manuscript');
+      return mockReadAloudRecording(deps.reaper ?? 'ready', 'arm', chapterDisplayTitle(chapter));
+    },
+    readAloudRecordStart: async (chapterId) => {
+      await deps.ready;
+      const chapter = findChapter(chapterId);
+      if (!chapter) throw new Error('that chapter is not part of the current manuscript');
+      return mockReadAloudRecording(deps.reaper ?? 'ready', 'start', chapterDisplayTitle(chapter));
+    },
+    readAloudRecordStop: async () => {
+      await deps.ready;
+      return mockReadAloudRecording(deps.reaper ?? 'ready', 'stop', '');
     },
     teleprompterLocate: async (chapterId, options) => {
       await deps.ready;

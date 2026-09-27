@@ -241,7 +241,7 @@ export const manuscriptStates: StateEntry[] = [
     page: 'manuscript',
     state: 'read-aloud-reaper-ready',
     description:
-      "Manuscript, the \"Read aloud\" dialog with the control bar's read-only REAPER state showing the chapter's linked track armed and ready (read-aloud-control-bar.prd.md Phase 6, ADR 0249, ?mockReaperState=ready) - gated on the DAW port's record capability (DAW port PRD Phase 7), experimental and off by default, since its toggle (arm, start, stop) is not built",
+      'Manuscript, the "Read aloud" dialog with the control bar\'s REAPER state showing the chapter\'s linked track armed and ready (read-aloud-control-bar.prd.md Phase 6, ADR 0249, ?mockReaperState=ready) - the Record in REAPER toggle beneath it (Phase 7, booth-actions-enablement.prd.md Phase 2) is gated on the DAW port\'s record capability (DAW port PRD Phase 7), experimental and off (not pressed) by default, so this state does not yet show "Arm only" (only offered once the toggle is on and the track is not the one armed)',
     ...REFLOW,
   },
   {

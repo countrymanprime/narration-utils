@@ -1,11 +1,14 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { chapterName, context } from '../../chapterName';
 import { useApi } from '../../api/ApiContext';
+import { useCapability } from '../../useCapability';
 import { CommandScope } from '../../input/router';
 import { ConfirmDialog } from '../primitives/ConfirmDialog';
 import { Dialog } from '../primitives/Dialog';
 import { ReadAlongView } from './ReadAlongView';
 import { ReadingControlBar } from './ReadingControlBar';
+import { RecordInReaperConfirm } from './RecordInReaperConfirm';
+import { useRecordInReaper } from './useRecordInReaper';
 import { ResumePrompt } from './ResumePrompt';
 import { ReaderRail } from './ReaderRail';
 import type { FlagSaveState } from './ReaderFlagsPanel';
@@ -88,6 +91,15 @@ export function ReadAloudDialog({ source, entities = NO_ENTITIES, notes = NO_NOT
   // Phase 10); computed here, not inside `ReadAlongView`, so `ReadingControlBar`'s Follow button (in the dialog's
   // non-scrolling footer, read-aloud-control-bar.prd.md Phase 3) shares the same state.
   const follow = useFollowCursor({ active: session.active, cursor: session.cursor });
+  // Read once here, not inside ReadingControlBar, so the toggle and "Arm only" (both inside it) and this dialog's own
+  // "Stop reading?" confirm (which also needs to stop a recording this app started) share one capability subscription
+  // and one Play/Stop orchestrator (read-aloud-control-bar.prd.md Phase 7, booth-actions-enablement.prd.md Phase 2).
+  // Absent in credits mode (no chapter track, Q7-Q9's own scope): `chapter?.id` is undefined, so `recording.enabled`
+  // can still be true from another chapter's session, but every method that would touch REAPER checks for a chapter
+  // id first and no-ops without one.
+  const record = useCapability('record');
+  const recording = useRecordInReaper(chapter?.id, record.available);
+  const chapterTitle = chapter ? chapterName(chapter, 'full') : undefined;
   // What Stop-and-continue does once the live session has actually stopped: just close, or close and then leave for
   // Settings (credits' "Fill them in Settings" takes the same "Stop reading?" confirm as the header Close button).
   const [confirmStop, setConfirmStop] = useState<'close' | 'settings' | null>(null);
@@ -169,6 +181,7 @@ export function ReadAloudDialog({ source, entities = NO_ENTITIES, notes = NO_NOT
   };
   const stopAndProceed = () => {
     session.stop();
+    recording.afterStop();
     const thenFixCredits = confirmStop === 'settings';
     setConfirmStop(null);
     finish(thenFixCredits);
@@ -194,6 +207,8 @@ export function ReadAloudDialog({ source, entities = NO_ENTITIES, notes = NO_NOT
             follow={follow}
             startPoint={session.startWord !== null ? { label: startLabel ?? 'a chosen word', onClear: () => setStartWord(null) } : undefined}
             chapterId={source.kind === 'chapter' ? source.chapter.id : undefined}
+            chapterTitle={chapterTitle}
+            recording={recording}
           />
         }
       >
@@ -247,11 +262,18 @@ export function ReadAloudDialog({ source, entities = NO_ENTITIES, notes = NO_NOT
       {confirmStop && (
         <ConfirmDialog
           title="Stop reading?"
-          body="Reading is still listening. Closing stops it; nothing recorded in REAPER is affected."
+          body={
+            recording.recording
+              ? "Reading is still listening. Closing stops it and stops REAPER's recording."
+              : 'Reading is still listening. Closing stops it; nothing recorded in REAPER is affected.'
+          }
           confirmLabel="Stop and close"
           confirm={stopAndProceed}
           cancel={() => setConfirmStop(null)}
         />
+      )}
+      {recording.confirmPending && chapterTitle && (
+        <RecordInReaperConfirm chapterTitle={chapterTitle} confirm={recording.confirm} cancel={recording.cancelConfirm} />
       )}
     </CommandScope>
   );

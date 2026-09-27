@@ -64,6 +64,7 @@ import { bootstrapSchema, copyDiagnosticsResultSchema, jobEndedSchema, noticeSch
 import {
   TELEPROMPTER_EVENT_TYPES,
   readAloudReaperStateSchema,
+  readAloudRecordingSchema,
   teleprompterReaperInputSchema,
   teleprompterDevicesResultSchema,
   teleprompterEventSchema,
@@ -487,6 +488,9 @@ export const wailsClient: NarrationApi = {
   teleprompterMeterStop: () => decode(voidResult, 'TeleprompterMeterStop', host.TeleprompterMeterStop()),
   teleprompterPause: (paused) => decode(voidResult, 'TeleprompterPause', host.TeleprompterPause(paused)),
   readAloudReaperState: (chapterId) => decode(readAloudReaperStateSchema, 'ReadAloudReaperState', host.ReadAloudReaperState(chapterId)),
+  readAloudArmOnly: (chapterId) => decode(readAloudRecordingSchema, 'ReadAloudArmOnly', host.ReadAloudArmOnly(chapterId)),
+  readAloudRecordStart: (chapterId) => decode(readAloudRecordingSchema, 'ReadAloudRecordStart', host.ReadAloudRecordStart(chapterId)),
+  readAloudRecordStop: () => decode(readAloudRecordingSchema, 'ReadAloudRecordStop', host.ReadAloudRecordStop()),
   teleprompterReaperInput: () => decode(teleprompterReaperInputSchema, 'TeleprompterReaperInput', host.TeleprompterReaperInput()),
   teleprompterLocate: (chapterId, options) =>
     decode(teleprompterLocateResultSchema, 'TeleprompterLocate', host.TeleprompterLocate(chapterId, options?.trackGuid ?? '', options?.model ?? '')),

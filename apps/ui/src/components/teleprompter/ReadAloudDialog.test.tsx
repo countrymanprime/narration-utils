@@ -5,6 +5,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { ReadAloudDialog, type ReadAloudSource } from './ReadAloudDialog';
 import { ApiProvider } from '../../api/ApiContext';
 import { createMockApi } from '../../api/mockApi';
+import type { DawMockSeed } from '../../api/dawMock';
 import { CommandRouter } from '../../input/router';
 import { WIRE_TELEPROMPTER_DEVICES } from '../../api/mockFixtures';
 import type { CreditsRenderResult, GuideEntity, ManuscriptNote, ManuscriptParagraph, NarrationApi, TeleprompterEvent, TeleprompterState } from '../../types';
@@ -28,20 +29,24 @@ function renderDialog(
   overrides: Partial<NarrationApi> = {},
   onClose = vi.fn(),
   content: { entities?: GuideEntity[]; notes?: ManuscriptNote[]; source?: ReadAloudSource; onFixCredits?: () => void } = {},
+  daw?: DawMockSeed,
 ) {
   const eventListeners = new Set<(event: TeleprompterEvent) => void>();
   const stateListeners = new Set<(state: TeleprompterState) => void>();
-  const api = createMockApi({
-    subscribeTeleprompterEvent: (listener) => {
-      eventListeners.add(listener);
-      return () => eventListeners.delete(listener);
+  const api = createMockApi(
+    {
+      subscribeTeleprompterEvent: (listener) => {
+        eventListeners.add(listener);
+        return () => eventListeners.delete(listener);
+      },
+      subscribeTeleprompterState: (listener) => {
+        stateListeners.add(listener);
+        return () => stateListeners.delete(listener);
+      },
+      ...overrides,
     },
-    subscribeTeleprompterState: (listener) => {
-      stateListeners.add(listener);
-      return () => stateListeners.delete(listener);
-    },
-    ...overrides,
-  });
+    { daw },
+  );
   render(
     <ApiProvider api={api}>
       <CommandRouter>
@@ -588,5 +593,106 @@ describe('ReadAloudDialog credits mode (manuscript-credits-card-parity.prd.md, P
     expect(screen.queryByRole('alertdialog')).toBeNull();
     expect(onClose).toHaveBeenCalledTimes(1);
     expect(onFixCredits).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('Record in REAPER (Phase 7)', () => {
+  const daw: DawMockSeed = { toggles: { record: 'on' } };
+
+  it('turning the toggle on for the first time in this project opens a confirm naming the chapter', async () => {
+    const user = userEvent.setup();
+    renderDialog({}, vi.fn(), {}, daw);
+
+    const toggle = await screen.findByRole('button', { name: 'Record in REAPER: Chapter armed' });
+    await user.click(toggle);
+
+    const confirm = await screen.findByRole('alertdialog', { name: 'Record in REAPER?' });
+    expect(within(confirm).getByText(/Chapter 1.*Down the Rabbit-Hole/)).toBeTruthy();
+  });
+
+  it('confirming saves the project setting and turns the toggle on; a later toggle-on in the same project does not ask again', async () => {
+    const user = userEvent.setup();
+    const saveSettings = vi.fn(async () => ({}) as never);
+    renderDialog({ saveSettings }, vi.fn(), {}, daw);
+    const toggle = await screen.findByRole('button', { name: 'Record in REAPER: Chapter armed' });
+    await user.click(toggle);
+    await user.click(await screen.findByRole('button', { name: 'Turn on' }));
+
+    expect(saveSettings).toHaveBeenCalledWith('ReadAloud', 'project', { record_in_reaper: 'true', record_confirmed: 'true' });
+    await waitFor(() => expect(toggle.getAttribute('aria-pressed')).toBe('true'));
+    expect(screen.queryByRole('alertdialog', { name: 'Record in REAPER?' })).toBeNull();
+  });
+
+  it('cancelling the confirm leaves the toggle off', async () => {
+    const user = userEvent.setup();
+    renderDialog({}, vi.fn(), {}, daw);
+    const toggle = await screen.findByRole('button', { name: 'Record in REAPER: Chapter armed' });
+    await user.click(toggle);
+
+    await user.click(await screen.findByRole('button', { name: 'Cancel' }));
+
+    expect(screen.queryByRole('alertdialog', { name: 'Record in REAPER?' })).toBeNull();
+    expect(toggle.getAttribute('aria-pressed')).toBe('false');
+  });
+
+  it('Play arms REAPER before listening starts, once the toggle is confirmed on', async () => {
+    const user = userEvent.setup();
+    const readAloudRecordStart = vi.fn(async () => ({ outcome: 'started' as const, trackGuid: '{1}', position: 0 }));
+    const teleprompterStart = vi.fn().mockResolvedValue({ status: 'started' });
+    renderDialog({ readAloudRecordStart, teleprompterStart }, vi.fn(), {}, daw);
+    const toggle = await screen.findByRole('button', { name: 'Record in REAPER: Chapter armed' });
+    await user.click(toggle);
+    await user.click(await screen.findByRole('button', { name: 'Turn on' }));
+    await openMicPopover(user);
+    await user.selectOptions(await screen.findByRole('combobox', { name: 'Microphone' }), DEVICE_NAME);
+
+    await user.click(screen.getByRole('button', { name: 'Play' }));
+
+    await waitFor(() => expect(readAloudRecordStart).toHaveBeenCalledWith('chapter-1'));
+    expect(teleprompterStart).toHaveBeenCalled();
+  });
+
+  it('Play never starts listening when REAPER refuses to start recording, and shows why', async () => {
+    const user = userEvent.setup();
+    const readAloudRecordStart = vi.fn(async () => ({ outcome: 'refused' as const, reason: 'not_armed' as const, message: 'No track is armed in REAPER.' }));
+    const teleprompterStart = vi.fn().mockResolvedValue({ status: 'started' });
+    renderDialog({ readAloudRecordStart, teleprompterStart }, vi.fn(), {}, daw);
+    const toggle = await screen.findByRole('button', { name: 'Record in REAPER: Chapter armed' });
+    await user.click(toggle);
+    await user.click(await screen.findByRole('button', { name: 'Turn on' }));
+    await openMicPopover(user);
+    await user.selectOptions(await screen.findByRole('combobox', { name: 'Microphone' }), DEVICE_NAME);
+
+    await user.click(screen.getByRole('button', { name: 'Play' }));
+
+    await waitFor(() => expect(readAloudRecordStart).toHaveBeenCalled());
+    expect(teleprompterStart).not.toHaveBeenCalled();
+    expect(await screen.findByText('No track is armed in REAPER.')).toBeTruthy();
+  });
+
+  it('the "Stop reading?" confirm says REAPER also stops once this app started recording', async () => {
+    const user = userEvent.setup();
+    const readAloudRecordStart = vi.fn(async () => ({ outcome: 'started' as const, trackGuid: '{1}', position: 0 }));
+    const readAloudRecordStop = vi.fn(async () => ({ outcome: 'stopped' as const, restored: 1, kept: 0 }));
+    const teleprompterStart = vi.fn().mockResolvedValue({ status: 'started' });
+    const teleprompterStop = vi.fn().mockResolvedValue(undefined);
+    const { setState } = renderDialog({ readAloudRecordStart, readAloudRecordStop, teleprompterStart, teleprompterStop }, vi.fn(), {}, daw);
+    const toggle = await screen.findByRole('button', { name: 'Record in REAPER: Chapter armed' });
+    await user.click(toggle);
+    await user.click(await screen.findByRole('button', { name: 'Turn on' }));
+    await openMicPopover(user);
+    await user.selectOptions(await screen.findByRole('combobox', { name: 'Microphone' }), DEVICE_NAME);
+    await user.click(screen.getByRole('button', { name: 'Play' }));
+    await waitFor(() => expect(readAloudRecordStart).toHaveBeenCalled());
+    setState({ phase: 'running', chapter: 'chapter-1' });
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Stop reading' })).toBeTruthy());
+
+    await user.click(screen.getByRole('button', { name: 'Close' }));
+
+    const confirm = await screen.findByRole('alertdialog', { name: 'Stop reading?' });
+    expect(within(confirm).getByText(/stops REAPER's recording/)).toBeTruthy();
+    await user.click(within(confirm).getByRole('button', { name: 'Stop and close' }));
+    expect(teleprompterStop).toHaveBeenCalled();
+    await waitFor(() => expect(readAloudRecordStop).toHaveBeenCalled());
   });
 });

@@ -2,6 +2,7 @@
 import { z } from 'zod';
 import {
   readAloudReaperStateSchema,
+  readAloudRecordingSchema,
   teleprompterDevicesResultSchema,
   teleprompterEventSchema,
   teleprompterFlagFindingsSchema,
@@ -37,5 +38,6 @@ export const teleprompterGoldens: Record<string, z.ZodType> = {
   'teleprompter-level.json': teleprompterEventSchema.array(),
   'teleprompter-meter-stopped.json': teleprompterEventSchema.array(),
   'read-aloud-reaper-states.json': z.record(z.string(), readAloudReaperStateSchema),
+  'read-aloud-recordings.json': z.record(z.string(), readAloudRecordingSchema),
   'teleprompter-reaper-inputs.json': z.record(z.string(), teleprompterReaperInputSchema),
 };
