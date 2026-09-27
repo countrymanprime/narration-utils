@@ -594,7 +594,7 @@ keep going").
   about once a second, never during a session, for at most 30 minutes, and pushes
   `teleprompter_resume_follow`. A `cursor_moved` event, sent once the edit cursor
   settles on the recording, makes the prompt look again (`resumefollow.go`,
-  [ADR 0350](../adr/0350-the-resume-prompt-goes-away-when-reaper-plays-and-a-bounded-host-poll-follows-the-cursor-only-while-it-shows.md)).
+  [ADR 0352](../adr/0352-the-resume-prompt-goes-away-when-reaper-plays-and-a-bounded-host-poll-follows-the-cursor-only-while-it-shows.md)).
 
 Nothing here writes to REAPER; moving REAPER's cursor to a word is punch-and-roll
 ([ADR 0246](../adr/0246-punch-and-roll-moves-only-the-edit-cursor-and-anchors-words-by-a-polled-play-position.md)).

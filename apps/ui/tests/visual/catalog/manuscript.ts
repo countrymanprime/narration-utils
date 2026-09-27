@@ -199,7 +199,7 @@ export const manuscriptStates: StateEntry[] = [
     page: 'manuscript',
     state: 'read-aloud-resume-after-reaper-plays',
     description:
-      'Manuscript, the "Read aloud" dialog opened while REAPER plays (read-aloud-resume-from-daw.prd.md Phase 5, RD7, ADR 0350, ?mockDawPlayhead=12) - the resume prompt has gone away by itself and nothing was preset: the text starts at the top of the dialog body and Play begins at the top, as in the approved 04-after-play-prompt-gone mockup',
+      'Manuscript, the "Read aloud" dialog opened while REAPER plays (read-aloud-resume-from-daw.prd.md Phase 5, RD7, ADR 0352, ?mockDawPlayhead=12) - the resume prompt has gone away by itself and nothing was preset: the text starts at the top of the dialog body and Play begins at the top, as in the approved 04-after-play-prompt-gone mockup',
   },
   {
     page: 'manuscript',

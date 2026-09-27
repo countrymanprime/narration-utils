@@ -493,7 +493,7 @@ export function ResumePrompt({ chapterId, model, active, onStartWord }: Props) {
   const shown = !settled && !active;
   const preset = useRef(false);
 
-  // REAPER starting to play or record makes the prompt go away (read-aloud-resume-from-daw.prd.md Phase 5, RD7, ADR 0350):
+  // REAPER starting to play or record makes the prompt go away (read-aloud-resume-from-daw.prd.md Phase 5, RD7, ADR 0352):
   // the narrator is working in REAPER. The heartbeat's transport push (ADR 0305) says so within a tick, with no request;
   // the host's follow below says so too when that push is not there (an older bridge script). Nothing is chosen, so Start
   // reading keeps whatever it had.

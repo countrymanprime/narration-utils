@@ -1,4 +1,4 @@
-# 0350. The resume prompt goes away when REAPER plays, and a bounded host poll follows the cursor only while it shows
+# 0352. The resume prompt goes away when REAPER plays, and a bounded host poll follows the cursor only while it shows
 
 **Status:** Proposed (REAPER's own behaviour is an owner check on #510, D65)
 **Date:** 2026-09-27
