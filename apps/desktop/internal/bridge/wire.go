@@ -119,7 +119,10 @@ var eventSpecs = map[string]eventSpec{
 	// no input open. One TRACK_ITEM per item on the track follows, then TRACK_STATE_END (listed, and the track's total).
 	"TRACK_STATE": {required: []fieldSpec{text("run"), text("guid"), count("playState"), number("editCursor"), number("playPosition"), text("rpp"), count("unsaved"),
 		count("changeCount"), count("thisArmed"), count("armedCount")}, optional: []fieldSpec{count("recInput"), text("inputDevice")}},
-	"TRACK_ITEM":      {required: []fieldSpec{text("run"), text("itemGuid"), text("takeGuid"), number("position"), number("length"), number("sourceOffset"), number("playrate"), text("sourceFile")}},
+	// TRACK_ITEM's muted (B_MUTE, 1 or 0) is appended for the resume locate (read-aloud-resume P4, ADR 0349); an older
+	// script leaves it off.
+	"TRACK_ITEM": {required: []fieldSpec{text("run"), text("itemGuid"), text("takeGuid"), number("position"), number("length"), number("sourceOffset"), number("playrate"), text("sourceFile")},
+		optional: []fieldSpec{count("muted")}},
 	"TRACK_STATE_END": {required: []fieldSpec{text("run"), count("listed"), count("total")}},
 	"TRACK_STALE":     {required: []fieldSpec{text("run"), text("guid")}},
 	// select_track (narration_track_select.lua; chapter-track-link-control PRD Phase 4): "Select in REAPER" deselected
