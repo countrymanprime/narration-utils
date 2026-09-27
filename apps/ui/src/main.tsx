@@ -188,9 +188,10 @@ const mockRegionsCapabilityOn = mockParams.has('mockRegionsCapabilityOn');
 const mockPunchCapabilityOn = mockParams.has('mockPunchCapabilityOn');
 // `?mockCoverage=hold|stale|pickups` holds a started recording check at its last transcribing step (so the running
 // dialog can be seen), makes Chapter 4's stored check read stale (an item was trimmed since), or gives Chapter 4 two
-// interior pickups (a skip and a short read) plus a small tail instead of its default tail-only split, so the
-// recording check summary's headline, "Recorded to" line and Pickups list can all be seen together
-// (recording-check-summary.prd.md Phase 1). `?mockCoverageRefusal=<reason>` answers every start with that refusal
+// interior pickups (a skip and a short read) plus a small tail instead of its default tail-only split, and seeds a
+// take-review pickup and two open project-wide pickups for the same chapter, so the recording check summary's
+// headline, "Recorded to" line and all three Pickups lines can be seen together (recording-check-summary.prd.md
+// Phases 1 and 3). `?mockCoverageRefusal=<reason>` answers every start with that refusal
 // (docs/utilities/recording-coverage.md, ADR 0130).
 const mockCoverage = (['hold', 'stale', 'pickups'] as const).find((seed) => seed === mockParams.get('mockCoverage'));
 const mockCoverageRefusal = COVERAGE_REFUSAL_REASONS.find((reason) => reason === mockParams.get('mockCoverageRefusal'));
@@ -364,6 +365,9 @@ const mockInitial = {
   // for the same chapter `?mockCoverage=pickups` gives interior gaps, so the summary's own gaps and its "Take
   // review" count and Open Review link can be seen together, as the mockup does.
   ...(mockCoverage === 'pickups' ? { findings: [...WIRE_FINDINGS, takeReviewPickupFor(WIRE_CHAPTERS[3].id, WIRE_CHAPTERS[3].title)] } : {}),
+  // The proofer's project-wide pickup list (recording-check-summary.prd.md Phase 3, RS5 B): two still open, so the
+  // summary's "Pickup list" line reads a real count alongside the check's own gaps and take review's, as the mockup does.
+  ...(mockCoverage === 'pickups' ? { pickups: 'next-success' as const } : {}),
   ...(mockChapterSuggestion ? { armedTracks: MOCK_ARMED_TRACKS[mockChapterSuggestion] } : {}),
   ...(mockStages ? { stages: MOCK_STAGES_SEEDS[mockStages] } : {}),
   ...(mockEditing || mockEditingRefusal

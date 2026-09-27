@@ -100,10 +100,14 @@ end is unfinished recording, not a pickup, so it never appears in that list. Bel
 gaps, **Repeated reads (Review)** always shows the chapter's unreviewed take-review pickups —
 repeated reads already recorded, waiting to be compared and kept or discarded — as a count with
 **Open Review**, or "none waiting" when there are none: a different kind of pickup from the gaps
-above it. **Paragraph detail** stays folded by default; open it to see how many words of each
-short paragraph were recorded. Misreads, false starts, retakes and a spoken chapter title never
-count against you. The check changes nothing: it never edits the project or moves a chapter's
-status.
+above it. Under that, **Pickup list** always shows the proofer's REAPER pickup markers as one
+project-wide open count with **Open pickups** — the same figure the Tracks page's Pickups list
+shows, not scoped to this chapter, since attributing markers to one chapter's track span is
+ambiguous when chapter tracks share the timeline. It reads "open REAPER to count" instead of a
+number when REAPER is not running. **Paragraph detail** stays folded by default; open it to see
+how many words of each short paragraph were recorded. Misreads, false starts, retakes and a spoken
+chapter title never count against you. The check changes nothing: it never edits the project or
+moves a chapter's status.
 
 A result goes **out of date** when the saved project changes under it (an item added, removed,
 trimmed, moved, muted or switched to another take, an audio file changed) or the chapter's text

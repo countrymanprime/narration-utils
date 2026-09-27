@@ -58,7 +58,7 @@ We believe a public, no-signup demo of the real UI (not just isolated components
 - [x] **D3. Base path mechanism.** Resolved by [ADR 0096](../adr/0096-the-public-demo-builds-under-its-own-vite-mode-and-the-router-carries-a-basename.md): a `demo` Vite mode (`apps/ui/.env.demo`), not a CLI flag, so `VITE_DEMO` can gate the banner without leaking into the `mock` build the visual suite, Storybook and the atlas already rely on. `import.meta.env.BASE_URL` also had to be wired into `<BrowserRouter basename>` — the router, not just assets, assumed `base: '/'`.
 - [ ] **D4. Banner placement and wording.** A persistent top bar (risks colliding with existing page chrome) vs. a dismissible one-time overlay on first load. Needs a look at `apps/ui/src/components/layout/` for what already exists to reuse.
 - [x] **D5. Does anything in the Alice seed read as sensitive or too "real"?** No — `aliceManuscript.ts` fetches the public-domain Project Gutenberg/GITenberg text at runtime and carries no private notes, real names, or internal-only content; no trimming needed.
-- [ ] **D6. Should the demo be linked from the docs site nav / README**, and where? Affects Phase 2 scope only (a link, not new infrastructure).
+- [x] **D6. Should the demo be linked from the docs site nav / README**, and where? Affects Phase 2 scope only (a link, not new infrastructure). **Answered 2026-09-27: yes, at minimum from README** (the docs-site's own home page, since `include.txt` publishes `README.md` as-is) **— and, per the existing "obvious existing place" pattern, also from the component atlas index page's generated "Live Storybook" section** (`tools/docs-site/hooks.py`'s `on_page_markdown`, driven by `mkdocs.yml`'s `extra.storybook_path`/`storybook_page`), which now appends a "Live demo" paragraph right after it. No new nav entry or landing page was added.
 
 ## Users & Context
 
@@ -110,10 +110,10 @@ We believe a public, no-signup demo of the real UI (not just isolated components
 | # | Phase | Description | Status | Parallel | Depends | PRP Plan |
 | --- | --- | --- | --- | --- | --- | --- |
 | 1 | Publish the demo | Base-path fix, `pages.yml` build+deploy step, `check_site.py` requirement, demo banner, native-affordance audit, Alice seed read-through | complete | - | D3, D5 | - |
-| 2 | Docs-site link | README and docs-site link to the demo (D6); no landing page — D1 ruled that out in favor of the single curated default state Phase 1 already ships | pending | - | 1, D6 | - |
+| 2 | Docs-site link | README and docs-site link to the demo (D6); no landing page — D1 ruled that out in favor of the single curated default state Phase 1 already ships | complete | - | 1, D6 | - |
 
 **Phase 1.** Goal: a real, safe, linkable demo exists at `/narration-utils/demo/`. Success: deployed site loads with no console errors or 404s, every page's controls either work via the mock or are visibly disabled, banner is present everywhere.
-**Phase 2.** Goal: the demo is discoverable. Success: README/docs link to the demo. (Originally also planned a curated-states landing page; D1 answered 2026-09-27 in favor of the simpler fixed-tour approach, which also makes D2 not applicable.)
+**Phase 2.** Goal: the demo is discoverable. Success: README/docs link to the demo. (Originally also planned a curated-states landing page; D1 answered 2026-09-27 in favor of the simpler fixed-tour approach, which also makes D2 not applicable.) **Delivered:** README links the demo beside its existing Storybook mention; the component atlas index page's generated "Live Storybook" section (`tools/docs-site/hooks.py`) now also links the demo, with no new nav entry.
 
 **Parallelism Notes**: sequential; Phase 2 depends on Phase 1's banner/shell and base-path work being settled.
 
@@ -138,6 +138,7 @@ Cross-cutting: no `hostAPIVersion` bump (no binding change; the demo consumes th
 | AGPL source availability (`implementation-plan.md` D17) | The demo banner links to the repository (`https://github.com/countrymanprime/narration-utils`) on every page | No link; rely on a visitor finding the repo another way | Not addressed in this PRD's own text; AGPL-3.0-or-later §13 (ADR 0039) asks a modified copy interacted with over a network to offer its source — the demo is unmodified code, but the link keeps that offer visible rather than assumed |
 | D7 (Windows-only unsigned first stable) | No conflict — the demo is a static site build, not a release asset or an installer | — | Out of scope for D7, which governs signing of the desktop app's Windows binary |
 | Demo exploration scope (D1) | Curated default only — no landing page of additional `?mock...=` links | A landing page with 4-6 curated links (this PRD's stated recommendation) | Owner chose the simpler fixed-tour approach over the recommended hybrid; this also makes D2 (which states to curate for that page) not applicable |
+| Docs-site link placement (D6) | README (the docs-site's own home page) plus the component atlas index page's existing generated "Live Storybook" section, now also carrying a "Live demo" paragraph | A new top-level nav entry; a dedicated demo landing page | Owner confirmed linking from README as a minimum; the atlas page already has an "obvious existing place" beside Storybook, so no new nav structure was needed |
 
 ## Research Summary
 
@@ -147,4 +148,4 @@ Cross-cutting: no `hostAPIVersion` bump (no binding change; the demo consumes th
 ---
 
 *Generated: 2026-09-22*
-*Status: IN DELIVERY - Phase 1 complete (D3, D5 answered above); Phase 2 pending (D1 answered 2026-09-27: curated default only, no landing page; D2 resolved as not applicable; D4, D6 still open, adopt each PRD-stated recommendation per D22 when Phase 2 starts)*
+*Status: IN DELIVERY - Phase 1 complete (D3, D5 answered above); Phase 2 complete (D1 answered 2026-09-27: curated default only, no landing page; D2 resolved as not applicable; D6 answered 2026-09-27: README plus the atlas page's existing Storybook-link section). D4 (banner wording) remains open — it does not gate either phase's `Depends` and the banner Phase 1 shipped stands as-is until it is answered.*

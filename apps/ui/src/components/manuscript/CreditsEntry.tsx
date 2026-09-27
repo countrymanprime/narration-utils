@@ -22,6 +22,7 @@ export function CreditsEntry({
   textClass,
   onFillIn,
   onReadAloud,
+  onBooth,
 }: {
   kind: 'opening' | 'closing';
   preview?: CreditsRenderResult;
@@ -36,9 +37,15 @@ export function CreditsEntry({
   /** Read aloud (manuscript-credits-card-parity.prd.md, Phase 2): the same header action a narration chapter has,
    * shown only once there is something to read (`preview.words > 0`, matching the standalone Teleprompter picker). */
   onReadAloud?: () => void;
+  /** Booth (booth-mode-and-companion-panel.prd.md Phase 1): the same header action a narration chapter has, gated the
+   * same as `onReadAloud` (`preview.words > 0`) - a credits card with a Read aloud button and no Booth button beside
+   * it left the header's fixed-width action slot (manuscript-chapter-header-alignment.prd.md) narrower than a
+   * chapter's own, breaking the alignment every row in the column shares. */
+  onBooth?: () => void;
 }) {
   const label = KIND_LABEL[kind];
   const lines = preview ? creditsParagraphs(kind, preview.text) : [];
+  const hasWords = Boolean(preview && preview.words > 0);
   return (
     <ReaderCard
       creditsKind={kind}
@@ -47,8 +54,10 @@ export function CreditsEntry({
       expanded={expanded}
       onToggleExpand={onToggle}
       wordCount={preview?.words ?? 0}
-      showReadAloud={Boolean(preview && preview.words > 0)}
+      showReadAloud={hasWords}
       onReadAloud={onReadAloud}
+      showBooth={hasWords}
+      onBooth={onBooth}
     >
       {preview ? (
         <div className="relative bg-[var(--surface)]">

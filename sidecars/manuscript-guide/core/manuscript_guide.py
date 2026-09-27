@@ -32,6 +32,7 @@ from narration_common import manuscript as canonical_manuscript
 from narration_common.config import get_default
 from narration_common.logging_utils import log, set_log_file
 from narration_common.ports.pronunciation import SOURCES
+from narration_common.ports.tts import ENGINES as TTS_ENGINES
 from narration_common.progress import write_progress
 
 # Importing this also registers Piper into ENGINES and CMU/eSpeak into SOURCES (ADR 0301, provider-ports P8).
@@ -1231,6 +1232,33 @@ def self_check(args: argparse.Namespace) -> None:
         sys.exit(1)
 
 
+def _capability_row(descriptor) -> dict:
+    """One row of a `capabilities` report: a Descriptor's label, platforms and modes, plus its asset kind when it
+    has one (TtsDescriptor only). "loadable" is always null: this reports registration only, never whether the row
+    actually loads (sidecar-capabilities-flag PRD Q2, ADR 0403) - the same shape live_asr.py's --capabilities uses."""
+    row = {"label": descriptor.label, "platforms": list(descriptor.platforms), "modes": list(descriptor.modes), "loadable": None}
+    asset_kind = getattr(descriptor, "asset_kind", "")
+    if asset_kind:
+        row["asset"] = asset_kind
+    return row
+
+
+def capabilities_report(engines=TTS_ENGINES, sources=SOURCES) -> dict:
+    """`capabilities`: every row this sidecar process has actually registered in ENGINES (voice engines) and SOURCES
+    (pronunciation) by the time this runs - after `providers` module-level registration, before any voice or source is
+    touched. `engines`/`sources` are overridable so a test can stand in a reduced registry for "an adapter failed to
+    register" without needing a real broken import."""
+    return {
+        "type": "capabilities",
+        "tts": {engine.descriptor.name: _capability_row(engine.descriptor) for engine in engines},
+        "pronunciation": {source.descriptor.name: _capability_row(source.descriptor) for source in sources},
+    }
+
+
+def capabilities(args: argparse.Namespace) -> None:
+    print(json.dumps(capabilities_report()))
+
+
 def use_utf8_stdio() -> None:
     """Writes UTF-8 to the pipes the host reads.
 
@@ -1311,6 +1339,11 @@ def main() -> None:
     audio_parser.add_argument("--output-name", default="")
     check_parser = command.add_parser("self-check", help="prove the dictionary and the espeak-ng data this program carries load (the packaged smoke test)")
     check_parser.add_argument("--piper-model", default="", help="also load this voice and speak one word")
+    command.add_parser(
+        "capabilities",
+        help="print every row this process has registered in ENGINES (voice engines) and SOURCES (pronunciation), by "
+        "port then name (one JSON object: {type: capabilities, tts, pronunciation}; registration only, not verified)",
+    )
     args = parser.parse_args()
     log_handle = None
     if getattr(args, "log", None):
@@ -1332,6 +1365,7 @@ def main() -> None:
             "unrelate": unrelate,
             "render-audio": render_audio,
             "self-check": self_check,
+            "capabilities": capabilities,
         }[args.command](args)
     except Exception as exc:  # noqa: BLE001
         log(f"ERROR: {exc}")
