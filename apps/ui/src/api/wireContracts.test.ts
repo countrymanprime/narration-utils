@@ -94,6 +94,7 @@ import {
   teleprompterFlagFindingsSchema,
   teleprompterReadingSchema,
   teleprompterLocateResultSchema,
+  teleprompterResumeFollowSchema,
   teleprompterPunchResultSchema,
   teleprompterStartResultSchema,
   teleprompterStateSchema,
@@ -428,6 +429,20 @@ describe('answers of the mock client (it must pass the schemas the real host ans
     expect(picked.status).toBe('found');
     await expect(api.teleprompterLocate(last, { trackGuid: '{00000000-0000-4000-8000-000000000000}' })).rejects.toThrow(/not in the selected/);
     await expect(api.teleprompterLocate('not-a-real-chapter')).rejects.toThrow();
+  });
+
+  it('the TeleprompterResumeFollow and Unfollow answers (read-aloud-resume-from-daw PRD Phase 5)', async () => {
+    const api = createMockApi();
+    const chapters = await api.manuscriptChapters();
+    const tracked = await api.teleprompterResumeFollow(chapters[0].id);
+    expectMatches(teleprompterResumeFollowSchema, tracked, 'mock resume follow, a tracked chapter');
+    expect(tracked).toEqual({ following: false, reason: 'unavailable' });
+    const untracked = await api.teleprompterResumeFollow(chapters[chapters.length - 1].id);
+    expectMatches(teleprompterResumeFollowSchema, untracked, 'mock resume follow, no track');
+    expect(untracked).toEqual({ following: false, reason: 'no_track' });
+    expectMatches(teleprompterResumeFollowSchema, await api.teleprompterResumeUnfollow(), 'mock resume unfollow');
+    await expect(api.teleprompterResumeFollow(chapters[0].id, '{00000000-0000-4000-8000-000000000000}')).rejects.toThrow(/not in the selected/);
+    await expect(api.teleprompterResumeFollow('not-a-real-chapter')).rejects.toThrow();
   });
 
   // `?mockResume=` (main.tsx) reaches every resume card state on the first chapter (teleprompter-manuscript-integration.prd.md
@@ -2072,6 +2087,8 @@ describe('answers of the mock client for the settings, voice, model, transcript 
       'teleprompterState',
       'teleprompterDevices',
       'teleprompterLocate',
+      'teleprompterResumeFollow',
+      'teleprompterResumeUnfollow',
       'teleprompterSaveFlags',
       'readAloudReaperState',
       'readAloudArmOnly',
@@ -2152,6 +2169,7 @@ describe('answers of the mock client for the settings, voice, model, transcript 
       'subscribeCoverage',
       'subscribeTeleprompterEvent',
       'subscribeTeleprompterState',
+      'subscribeTeleprompterResumeFollow',
       'subscribeUpdate',
       'subscribeLineIdentity',
       'subscribePickups',

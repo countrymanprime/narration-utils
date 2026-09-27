@@ -138,4 +138,8 @@ export const SILENT_CATCHES: Record<string, string> = {
     'navigator.hid.getDevices() rejecting (an unsupported or torn-down navigator.hid, Phase 11): leaves this source with no devices; KeyboardSource and MidiSource still cover the booth, so it just contributes nothing rather than surfacing an error nobody can act on.',
   'src/input/HidSource.ts#3':
     "requestHidDevice()'s chooser promise rejecting (the narrator cancelled it, or - Phase 8's spike found this plausible on WebView2 - no chooser ever appeared): not a narrator action to retry automatically, and the only outcome either way is that no new device got paired this time.",
+  'src/components/teleprompter/ResumePrompt.tsx#1':
+    "Starts the bounded REAPER follow for the matched track while the prompt shows (read-aloud-resume-from-daw.prd.md Phase 5, ADR 0350); a failure to start just means that poll never begins, and the DAW-transport subscription and the narrator's own choices still settle the prompt.",
+  'src/components/teleprompter/ResumePrompt.tsx#2':
+    'Stops the follow on cleanup (the prompt settles, a session starts, or the dialog closes); a failure here is unobservable and harmless, since the poll it would have stopped already lost its listener.',
 };
