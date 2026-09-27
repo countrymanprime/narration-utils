@@ -31,6 +31,18 @@ def test_cmu_stays_the_default_the_build_time_fallback_tries_first():
     assert SOURCES.fallback_order() == ["cmu", "espeak"]
 
 
+def test_the_build_time_fallback_logs_each_failed_source_in_its_own_words(monkeypatch):
+    # The texts were a name-keyed dict in manuscript_guide.py until the provider guard (provider-ports P15) moved them here.
+    import manuscript_guide
+
+    messages: list[str] = []
+    monkeypatch.setattr(manuscript_guide, "log", messages.append)
+    monkeypatch.setattr(manuscript_guide, "pronounce_source", lambda name, library, source: (_ for _ in ()).throw(ValueError("no entry")))
+
+    assert manuscript_guide.pronunciation("Zzyzxqq", None) == {"ipa": "", "source": "not generated", "confidence": "unknown"}
+    assert messages == ["CMU pronunciation unavailable (no entry).", "eSpeak phonetic fallback unavailable (no entry)."]
+
+
 # --- CmuSource --------------------------------------------------------------------------------------------------------------------
 
 

@@ -34,10 +34,21 @@ type Engine interface {
 	AssetKind() string
 }
 
-type engine struct{ name, assetKind string }
+// InstalledModelOnly is implemented by an engine that loads its model only from a verified catalog install, never by name
+// (Moonshine, ADR 0107). The host refuses a session of such an engine that has no install directory before it starts the
+// sidecar. An engine that does not implement it may load a model by name.
+type InstalledModelOnly interface {
+	InstalledModelOnly() bool
+}
 
-func (e engine) Name() string      { return e.name }
-func (e engine) AssetKind() string { return e.assetKind }
+type engine struct {
+	name, assetKind string
+	installedOnly   bool
+}
+
+func (e engine) Name() string             { return e.name }
+func (e engine) AssetKind() string        { return e.assetKind }
+func (e engine) InstalledModelOnly() bool { return e.installedOnly }
 
 // NewRegistry is a registry holding the built-in rows, Whisper first as the default. A test registers a fake on its own copy.
 func NewRegistry() *port.Registry[Engine] {
@@ -45,13 +56,13 @@ func NewRegistry() *port.Registry[Engine] {
 	r.Register(port.Entry[Engine]{
 		Name:       Whisper,
 		Descriptor: port.Descriptor{Label: "Whisper", Modes: []string{ModeLive, ModeBatch}},
-		New:        func() Engine { return engine{Whisper, "whisper"} },
+		New:        func() Engine { return engine{name: Whisper, assetKind: "whisper"} },
 	})
-	// Moonshine ships only in the Windows sidecar (ADR 0107), and only the live sidecar loads it.
+	// Moonshine ships only in the Windows sidecar (ADR 0107), only the live sidecar loads it, and only from a verified install.
 	r.Register(port.Entry[Engine]{
 		Name:       Moonshine,
 		Descriptor: port.Descriptor{Label: "Moonshine", Platforms: []string{"windows"}, Modes: []string{ModeLive}},
-		New:        func() Engine { return engine{Moonshine, "moonshine"} },
+		New:        func() Engine { return engine{name: Moonshine, assetKind: "moonshine", installedOnly: true} },
 	})
 	return r
 }
@@ -76,4 +87,27 @@ func NamesIn(r *port.Registry[Engine], platform, mode string) []string {
 // Supports reports whether engine is one of Names(platform, mode).
 func Supports(platform, mode, engine string) bool {
 	return slices.Contains(Names(platform, mode), engine)
+}
+
+// AssetKind is the asset catalog kind engine's models install from, or "" when no row has that name. The host picks the
+// catalog by it, so it never compares engine names.
+func AssetKind(engine string) string {
+	entry, err := Engines.Lookup(engine)
+	if err != nil {
+		return ""
+	}
+	return entry.New().AssetKind()
+}
+
+// NeedsInstalledModel reports whether engine loads its model only from a verified catalog install (InstalledModelOnly).
+func NeedsInstalledModel(engine string) bool { return NeedsInstalledModelIn(Engines, engine) }
+
+// NeedsInstalledModelIn is NeedsInstalledModel over registry r; an unknown engine needs nothing (its lookup refuses it).
+func NeedsInstalledModelIn(r *port.Registry[Engine], engine string) bool {
+	entry, err := r.Lookup(engine)
+	if err != nil {
+		return false
+	}
+	installed, ok := entry.New().(InstalledModelOnly)
+	return ok && installed.InstalledModelOnly()
 }

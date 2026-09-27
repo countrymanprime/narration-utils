@@ -64,7 +64,8 @@ Every folder above except `docs/` is an Nx project with a `project.json`; `pnpm 
   `integrations/reaper/tests/` is the Lua bridge harness (see [the REAPER bridge](reaper-bridge.md)).
 - `libs/python/narration_common/` contains only cross-tool contracts such
   as canonical manuscript access, settings, logging, progress, and bridge
-  encoding. Feature-specific analysis stays with its tool.
+  encoding, and `narration_common/ports`, the provider ports' Protocols, registries and conformance suites
+  (see [provider ports](provider-ports.md)). Feature-specific analysis stays with its tool.
 
 ## How the parts connect
 
@@ -161,6 +162,7 @@ Every binding reads the project-scoped services (manuscript, Story Bible, settin
   `deliveryreport` builds the Delivery page's exported report (diagnostics PRD Phase 7) from the last measurement and check, the limits, the review store and the installed assets: one model rendered as JSON and as a self-contained HTML page with the same finding IDs, deterministic apart from `generated_at`, with local paths left out unless the narrator includes them. The host writes it into `<project>/narration-utils/delivery/` (`DeliveryExportReport`, `apps/desktop/delivery_report.go`).
 - `takecompare` compares the takes of one take-review group: it re-resolves each read in the saved project, runs `compare.py --take-divergence` over the group's span, measures each read with `measure.MeasureTake` and saves one `take_comparison` finding, evidence side by side and never ranked ([ADR 0165](../adr/0165-a-take-comparison-is-one-finding-per-group-over-its-one-span-built-from-the-saved-project-and-never-ranked.md)). The host runs it as a job (`apps/desktop/takecompare_job.go`, `TakeComparisonStart/State/Cancel`); the Review page's `TakeComparisonView` shows it.
 
+- The provider ports ([ADR 0301](../adr/0301-providers-sit-behind-small-ports-with-a-registry-and-a-capability-descriptor.md), [provider ports](provider-ports.md)) are one package each: `asrport` (speech engines, live and batch), `ttsport` (voice engines), `pronunciationport` (pronunciation sources), `captureport` (capture backends) and `encodeport` (encoders and packagers, declared with no rows), each a registry of `port.Registry[P]` rows with a conformance suite in its `<name>porttest` subpackage. `internal/port` is the vocabulary they share with `dawport` (`Level`, `Support`, `NotSupportedError`, `Registry[P]`). Host code asks a registry by the setting's name and never compares provider names; `providerguard_test.go` fails `go test` otherwise. `bindings_providers.go` serves them read-only as `ProviderCapabilities`.
 - `teleprompter` owns one live listening session: it runs the `manuscript-teleprompter` sidecar, relays its events as `teleprompter:event`, publishes phase changes as `teleprompter:state`, and keeps the last `script` and `position` so a page opened mid-session can catch up (see [ADR 0022](../adr/0022-live-sidecar-events-over-wails-and-stop-file.md)). The Teleprompter page lives in `apps/ui/src/components/teleprompter/` (see [ADR 0024](../adr/0024-teleprompter-highlight-follows-the-sidecars-spans.md)).
 
 `apps/desktop/internal/` holds domain services and infrastructure. The Wails binding
@@ -188,3 +190,8 @@ rendering remain in `GuideDetail.tsx`.
 The Python sidecars retain their stable `core` CLI contracts and are frozen
 as immutable packaged sidecars. Go supervises them; feature code must not add
 a Python server or a browser transport.
+
+A sidecar reaches an engine (Whisper, Moonshine, Piper, CMU, eSpeak, dshow capture) only through an adapter module in its
+`core/` (`asr_adapters.py`, `capture_dshow.py`, `asr_batch.py`, `providers.py`) registered in the `narration_common.ports`
+registries, and selects it by name through the registry; `libs/python/tests/test_provider_guard.py` fails on a provider name
+compared or listed anywhere else ([provider ports](provider-ports.md)).
