@@ -19,8 +19,10 @@ import (
 	"github.com/countrymanprime/narration-utils/shell/internal/dictionary"
 	"github.com/countrymanprime/narration-utils/shell/internal/moonshine"
 	"github.com/countrymanprime/narration-utils/shell/internal/process"
+	"github.com/countrymanprime/narration-utils/shell/internal/pronunciationport"
 	"github.com/countrymanprime/narration-utils/shell/internal/spacy"
 	"github.com/countrymanprime/narration-utils/shell/internal/tts"
+	"github.com/countrymanprime/narration-utils/shell/internal/ttsport"
 	"github.com/countrymanprime/narration-utils/shell/internal/whisper"
 )
 
@@ -38,6 +40,9 @@ import (
 //     see it needs; no model is loaded and nothing is downloaded;
 //   - the frozen Teleprompter sidecar's own `--capabilities` report names every ASR and capture row Go's own registries declare for
 //     this platform (sidecar-capabilities-flag PRD Phase 1: registration only, not the Moonshine check's native-library load);
+//   - the frozen Story Bible sidecar's own `capabilities` report names every TTS and pronunciation row Go's own registries declare
+//     for this platform, and the frozen Transcript Compare sidecar's own `--capabilities` report names every batch ASR row (Phase 2:
+//     same registration-only comparison, extended to the other two sidecars);
 //   - the four approved asset catalogs load and name assets;
 //   - the asset cache folder can be found and written;
 //   - the REAPER launcher and its scripts are there, with the pointer to this executable.
@@ -173,6 +178,12 @@ func smoke(ctx context.Context, options smokeOptions) smokeReport {
 	started = time.Now()
 	capsDetail, capsErr := checkCapabilities(ctx, options, root)
 	add("teleprompter:capabilities", started, capsErr, capsDetail)
+	started = time.Now()
+	guideCapsDetail, guideCapsErr := checkGuideCapabilities(ctx, options, root)
+	add("guide:capabilities", started, guideCapsErr, guideCapsDetail)
+	started = time.Now()
+	compareCapsDetail, compareCapsErr := checkCompareCapabilities(ctx, options, root)
+	add("compare:capabilities", started, compareCapsErr, compareCapsDetail)
 	started = time.Now()
 	detail, err := checkCatalogs(root)
 	add("catalogs", started, err, detail)
@@ -400,6 +411,98 @@ func checkCapabilities(ctx context.Context, options smokeOptions, root string) (
 		return "", fmt.Errorf("the frozen teleprompter never registered %s, which this build declares for %s", strings.Join(missing, ", "), options.Platform)
 	}
 	return fmt.Sprintf("%d ASR row(s), %d capture row(s)", len(parsed.Asr), len(parsed.Capture)), nil
+}
+
+// guideCapabilitiesReport is what `manuscript-guide capabilities` prints (sidecars/manuscript-guide/core/manuscript_guide.py's
+// capabilities_report): every row it has actually registered, by port then name. Only the keys matter here, as in capabilitiesReport.
+type guideCapabilitiesReport struct {
+	Type          string                     `json:"type"`
+	Tts           map[string]json.RawMessage `json:"tts"`
+	Pronunciation map[string]json.RawMessage `json:"pronunciation"`
+}
+
+// checkGuideCapabilities runs the frozen Story Bible sidecar's own `capabilities` report and requires every TTS and pronunciation
+// row Go's own registries declare for options.Platform to be one this process actually registered (sidecar-capabilities-flag PRD
+// Phase 2, the same comparison checkCapabilities makes for the Teleprompter sidecar). It proves only that the row registered, not
+// that it loads (Q2/ADR 0403).
+func checkGuideCapabilities(ctx context.Context, options smokeOptions, root string) (string, error) {
+	executable := sidecarPath(root, "manuscript-guide")
+	if executable == "" {
+		return "", errors.New("the manuscript-guide sidecar is missing, so its capabilities could not be checked")
+	}
+	code, stdout, stderr, err := runBounded(ctx, options, executable, "capabilities")
+	if err != nil {
+		return "", fmt.Errorf("the guide capabilities check did not run: %w", err)
+	}
+	var parsed guideCapabilitiesReport
+	if jsonErr := json.Unmarshal([]byte(strings.TrimSpace(stdout)), &parsed); jsonErr != nil || parsed.Type != "capabilities" {
+		return "", fmt.Errorf("the guide capabilities check (exit code %d) printed no report: %s", code, firstLine(stderr+" "+stdout))
+	}
+	if code != 0 {
+		return "", fmt.Errorf("the guide capabilities check passed but exited with exit code %d: %s", code, firstLine(stderr))
+	}
+	var missing []string
+	for _, e := range ttsport.Engines.Entries() {
+		if e.Descriptor.RunsOn(options.Platform) {
+			if _, ok := parsed.Tts[e.Name]; !ok {
+				missing = append(missing, "tts:"+e.Name)
+			}
+		}
+	}
+	for _, e := range pronunciationport.Sources.Entries() {
+		if e.Descriptor.RunsOn(options.Platform) {
+			if _, ok := parsed.Pronunciation[e.Name]; !ok {
+				missing = append(missing, "pronunciation:"+e.Name)
+			}
+		}
+	}
+	if len(missing) > 0 {
+		return "", fmt.Errorf("the frozen guide never registered %s, which this build declares for %s", strings.Join(missing, ", "), options.Platform)
+	}
+	return fmt.Sprintf("%d TTS row(s), %d pronunciation row(s)", len(parsed.Tts), len(parsed.Pronunciation)), nil
+}
+
+// compareCapabilitiesReport is what `transcript-compare --capabilities` prints (sidecars/transcript-compare/core/compare.py's
+// capabilities_report): every row it has actually registered, by name. Only the keys matter here, as in capabilitiesReport.
+type compareCapabilitiesReport struct {
+	Type string                     `json:"type"`
+	Asr  map[string]json.RawMessage `json:"asr"`
+}
+
+// checkCompareCapabilities runs the frozen Transcript Compare sidecar's own --capabilities report and requires every batch-mode ASR
+// row Go's own registries declare for options.Platform to be one this process actually registered (sidecar-capabilities-flag PRD
+// Phase 2). Unlike checkCapabilities (the live/Teleprompter sidecar), this filters to rows that declare the batch mode: Transcript
+// Compare only ever imports asr_batch, so a live-only, platform-applicable row (Moonshine) would never appear in its report even on
+// a platform it ships for, and that must not be mistaken for a missing registration. --manuscript is passed only because compare.py's
+// argument parser requires it for every invocation (see compare.py's module docstring); --capabilities ignores its value.
+func checkCompareCapabilities(ctx context.Context, options smokeOptions, root string) (string, error) {
+	executable := sidecarPath(root, "transcript-compare")
+	if executable == "" {
+		return "", errors.New("the transcript-compare sidecar is missing, so its capabilities could not be checked")
+	}
+	code, stdout, stderr, err := runBounded(ctx, options, executable, "--capabilities", "--manuscript", "smoke-test-unused.json")
+	if err != nil {
+		return "", fmt.Errorf("the compare capabilities check did not run: %w", err)
+	}
+	var parsed compareCapabilitiesReport
+	if jsonErr := json.Unmarshal([]byte(strings.TrimSpace(stdout)), &parsed); jsonErr != nil || parsed.Type != "capabilities" {
+		return "", fmt.Errorf("the compare capabilities check (exit code %d) printed no report: %s", code, firstLine(stderr+" "+stdout))
+	}
+	if code != 0 {
+		return "", fmt.Errorf("the compare capabilities check passed but exited with exit code %d: %s", code, firstLine(stderr))
+	}
+	var missing []string
+	for _, e := range asrport.Engines.Entries() {
+		if e.Descriptor.RunsOn(options.Platform) && e.Descriptor.Supports(asrport.ModeBatch) {
+			if _, ok := parsed.Asr[e.Name]; !ok {
+				missing = append(missing, "asr:"+e.Name)
+			}
+		}
+	}
+	if len(missing) > 0 {
+		return "", fmt.Errorf("the frozen transcript-compare never registered %s, which this build declares for %s", strings.Join(missing, ", "), options.Platform)
+	}
+	return fmt.Sprintf("%d ASR row(s)", len(parsed.Asr)), nil
 }
 
 // checkCatalogs loads the five approved asset catalogs the release carries (config/*-assets.json in the unpacked resources) and requires

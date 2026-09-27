@@ -100,7 +100,7 @@ We believe one generic `--capabilities` report, generalizing `--check-moonshine`
 | # | Phase | Description | Status | Parallel | Depends | Ports used | PRP Plan |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | 1 | Teleprompter `--capabilities` + smoke-test comparison | `--capabilities` flag on `manuscript-teleprompter`, reporting ASR and capture rows; `checkCapabilities` in `smoke.go` generalizing the Moonshine comparison to every reported row for this sidecar | complete | - | Q1, Q2 answered | ASR port (`asrport.Engines`), Capture port (`captureport.Backends`) | - |
-| 2 | Guide and Compare capabilities | `manuscript-guide capabilities` subcommand (TTS, pronunciation rows); `transcript-compare`'s equivalent (batch ASR); `smoke.go` extended to call both | pending | 2a (guide) / 2b (compare) can run in parallel — disjoint sidecars | 1 | TTS port, Pronunciation port, ASR port (batch) | - |
+| 2 | Guide and Compare capabilities | `manuscript-guide capabilities` subcommand (TTS, pronunciation rows); `transcript-compare`'s equivalent (batch ASR); `smoke.go` extended to call both | complete | 2a (guide) / 2b (compare) can run in parallel — disjoint sidecars | 1 | TTS port, Pronunciation port, ASR port (batch) | - |
 | 3 | Fold Moonshine's native-library check into the generic flag | `--capabilities --verify` (or equivalent) for at least the `moonshine` row; retire the bespoke `--check-moonshine` path once parity is proven | pending | - | Q2, Q3 answered with the owner's confirmation that verify-mode scope is worth it | ASR port | - |
 
 **Phase 1.** Goal: prove the pattern on one sidecar with the most precedent (`--check-moonshine` already lives here). Success: `--capabilities` reports every `ENGINES`/`BACKENDS` row; `checkCapabilities` fails a fixture where a row is deliberately absent from the report; `--check-moonshine` keeps working unchanged alongside it.
@@ -130,9 +130,9 @@ We believe one generic `--capabilities` report, generalizing `--check-moonshine`
 ## Research Summary
 
 **Technical Context**: verified in code — the existing `--check-moonshine`/`checkFrozenMoonshine` pattern end to end (`live_asr.py`, `moonshine_engine.py`, `smoke.go`), the `ProviderCapabilities` binding's payload shape and its own stated "no screen reads it yet" status (`bindings_providers.go`), the provider guard's registry-driven (not hardcoded) name reading (`providerguard_test.go`, `test_provider_guard.py`), and each of the three sidecars' current CLI entry-point shape (`live_asr.py`'s flag style, `manuscript_guide.py`'s subcommand style; `transcript-compare`'s entry noted but not fully read line-by-line for this PRD).
-**Not verified**: `transcript-compare`'s exact CLI wiring detail (its entry files were located but not read in the same depth as the other two — Phase 2's implementation should confirm its shape before choosing flag vs. subcommand for it); real behavior of a deliberately-broken adapter import in a frozen (PyInstaller) build, as opposed to a source checkout — the fault-injection test this PRD's Success Metrics table proposes should be written and run before claiming the detection mechanism works end to end on a real freeze.
+**Not verified**: real behavior of a deliberately-broken adapter import in a frozen (PyInstaller) build, as opposed to a source checkout — the fault-injection test this PRD's Success Metrics table proposes should be written and run before claiming the detection mechanism works end to end on a real freeze. (Phase 2 confirmed `transcript-compare`'s CLI shape: flag-style like the Teleprompter, with its ASR batch-role registration lazy rather than eager at module load — `--capabilities` imports `asr_batch` itself before reading `ENGINES`, and `--manuscript` is required by argparse for every invocation, unused on this path.)
 
 ---
 
 *Generated: 2026-09-27*
-*Status: DRAFT — open questions unanswered; no phase started*
+*Status: IN DELIVERY — Phase 1 complete; Phase 2 complete; Phase 3 pending Q2/Q3 and the owner's confirmation that verify-mode scope is worth building (see the Decisions Log)*
