@@ -59,6 +59,11 @@
       "commercialUse": "Pending (per upstream docs, not verified in this session: CC BY-SA 4.0 and GFDL dual licence, share-alike, attribution required; ADR 0405 accepts the class, scoped to displayed IPA only)",
       "status": "In the catalog as a Pending row (prep-depth Phase 8, ADR 0405); its URL and SHA-256 are not yet filled in because the egress proxy blocks kaikki.org, en.wiktionary.org and every candidate mirror this session could try (docs/research/wiktextract-pronunciation-source.md, #510); Install/Repair refuse the row until a future session verifies it",
       "note": "Wiktionary's IPA data, extracted and republished as structured JSON Lines by the Wiktextract project (kaikki.org). Licence terms restated from Wiktionary's and Wiktextract's own public documentation, not re-read live this session (docs/research/wiktextract-pronunciation-source.md). Once installed, the derived index keeps only a word -> {ipa, audio} lookup file, never the raw multi-gigabyte release; every displayed answer carries a CC BY-SA attribution label and the full notice is printed in the third-party notices."
+    },
+    "ffmpeg/ffmpeg-7.1-essentials-win64": {
+      "commercialUse": "Yes (GPL-3.0-or-later build of FFmpeg; encoding an audiobook with it does not put the audiobook under the GPL)",
+      "status": "In the catalog (render-encode-master.prd.md Phase 1, ADR 0342, Proposed); the MP3 encoder runs it as a separate process",
+      "note": "FFmpeg 7.1 essentials build by gyan.dev, from the imageio-ffmpeg 0.6.0 win_amd64 wheel on PyPI (a content-addressed URL; the SHA-256 is PyPI's published digest, checked 2026-09-27). The install keeps only ffmpeg.exe, and only when its own SHA-256 is the pinned one. Build configuration read from the binary: --enable-gpl --enable-version3, no nonfree; the paths the app uses (libmp3lame, the WAV reader, the MP3 muxer) are LGPL code. Windows only. The project does not convey it (PyPI does); the notices name the licence and where the source is (docs/research/ffmpeg-encoder-build.md)."
     }
   },
   "uncatalogued": [

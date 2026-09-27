@@ -10,7 +10,7 @@ import { PRONUNCIATION_STATUSES, pronunciationSourceLabel, pronunciationStatusIn
 const MAX_USER_PRONUNCIATION = 200;
 const MAX_NOTE = 1000;
 
-// The narrator's work on one name's pronunciation (prep-depth P1, ADR 0344): its status and note, their own pronunciation typed beside
+// The narrator's work on one name's pronunciation (prep-depth P1, ADR 0346): its status and note, their own pronunciation typed beside
 // the dictionary's, and a switch to whichever of the two is kept as the alternate. The read view shows the status, the note and what is
 // kept; edit mode adds the controls. The calls are the parent's (GuideDetail), so this only holds the fields being typed.
 export function PronunciationWork({

@@ -261,8 +261,12 @@ function TrackProblem({ match, trackName }: { match: ChapterTrackMatch; trackNam
 function Actions({ children, buttons }: { children: ReactNode; buttons: ReactNode }) {
   return (
     <>
-      <div className="min-w-0 flex-1 space-y-1.5">{children}</div>
-      <div className="flex flex-none flex-wrap items-center gap-2">{buttons}</div>
+      {/* A floor on the text's width, so a column too narrow for text and buttons side by side puts the buttons below the
+          text rather than squeezing the text to a word per line. */}
+      <div className="min-w-[min(100%,16rem)] flex-1 space-y-1.5">{children}</div>
+      {/* Shrinks to its line (never wider than it) so the buttons wrap inside a narrow column - the companion panel's 380 px
+          (booth-mode-and-companion-panel.prd.md Phase 7) - instead of running off its edge. */}
+      <div className="flex max-w-full min-w-0 flex-wrap items-center gap-2">{buttons}</div>
     </>
   );
 }

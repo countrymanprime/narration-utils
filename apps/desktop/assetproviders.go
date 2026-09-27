@@ -5,6 +5,7 @@ import (
 
 	"github.com/countrymanprime/narration-utils/shell/internal/assets"
 	"github.com/countrymanprime/narration-utils/shell/internal/dictionary"
+	"github.com/countrymanprime/narration-utils/shell/internal/ffmpeg"
 	"github.com/countrymanprime/narration-utils/shell/internal/moonshine"
 	"github.com/countrymanprime/narration-utils/shell/internal/spacy"
 	"github.com/countrymanprime/narration-utils/shell/internal/tts"
@@ -255,3 +256,54 @@ func (p dictionaryProvider) install(ctx context.Context, id string, options asse
 
 func (p dictionaryProvider) verify(id string) (string, error) { return p.manager.Verify(id) }
 func (p dictionaryProvider) remove(id string) error           { return p.manager.Remove(id) }
+
+// encoderProvider serves the FFmpeg build the MP3 encoder runs (render-encode-master Phase 1, ADR 0342). Its install unpacks the
+// pinned wheel and keeps only the executable (internal/ffmpeg), so what it takes on disk is ffmpeg.exe, not the download. It is
+// offered on Windows only: the catalog has no build for another platform.
+type encoderProvider struct{ manager *ffmpeg.Manager }
+
+func (encoderProvider) kind() string      { return installKindEncoder }
+func (encoderProvider) label() string     { return "Encoder" }
+func (encoderProvider) noun() string      { return "encoder" }
+func (encoderProvider) endedKind() string { return jobKindEncoderInstall }
+
+func (p encoderProvider) items() []assetItem {
+	builds := p.manager.Builds()
+	items := make([]assetItem, 0, len(builds))
+	for _, build := range builds {
+		items = append(items, p.itemFor(build))
+	}
+	return items
+}
+
+func (p encoderProvider) itemFor(build ffmpeg.Build) assetItem {
+	return assetItem{kind: installKindEncoder, id: build.ID, displayName: build.DisplayName, version: build.Version, publisher: build.Publisher, license: build.License,
+		licenseURL: build.LicenseURL, modelCardURL: build.ModelCardURL, provenanceURL: build.ProvenanceURL, attribution: build.Attribution, files: build.Files,
+		dir: p.manager.InstallDir(build.ID), diskSize: build.DiskSize()}
+}
+
+func (p encoderProvider) item(id string) (assetItem, bool) {
+	build, ok := p.manager.Build(id)
+	if !ok {
+		return assetItem{}, false
+	}
+	return p.itemFor(build), true
+}
+
+func (p encoderProvider) state(id string) string {
+	build, ok := p.manager.Build(id)
+	if !ok {
+		return "not_installed"
+	}
+	return p.manager.State(build)
+}
+
+func (p encoderProvider) install(ctx context.Context, id string, options assets.Options) error {
+	if p.state(id) == "installed" {
+		return nil
+	}
+	return p.manager.Repair(ctx, id, options)
+}
+
+func (p encoderProvider) verify(id string) (string, error) { return p.manager.Verify(id) }
+func (p encoderProvider) remove(id string) error           { return p.manager.Remove(id) }

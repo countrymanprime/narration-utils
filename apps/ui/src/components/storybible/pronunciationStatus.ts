@@ -1,7 +1,7 @@
 import type { GuidePronunciation, GuidePronunciationStatus, GuidePronunciationValue } from '../../types';
 import type { StatusTone } from '../primitives/StatusBadge';
 
-// How a pronunciation's status reads (prep-depth P1, ADR 0344). The tone is a meaning, not a colour per status: a question still out
+// How a pronunciation's status reads (prep-depth P1, ADR 0346). The tone is a meaning, not a colour per status: a question still out
 // is a warning, a confirmation is a success, and a plain lookup is neutral.
 export const PRONUNCIATION_STATUSES: { value: GuidePronunciationStatus; label: string; tone: StatusTone }[] = [
   { value: 'researched', label: 'Researched', tone: 'neutral' },
