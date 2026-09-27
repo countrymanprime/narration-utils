@@ -6,7 +6,8 @@
 ## Context
 
 The narrator asked for the app to suggest when a chapter is done recording, editing or proofing, always as a suggestion
-they confirm ([chapter stage recommendations PRD](../prds/chapter-stage-recommendations.prd.md)). The evidence comes
+they confirm (the chapter stage recommendations PRD, `docs/prds/chapter-stage-recommendations.prd.md`, delivered and
+deleted; see [stage recommendations](../architecture/stage-recommendations.md)). The evidence comes
 from three other PRDs (recording coverage, editing readiness, proofing readiness) written in parallel, so they need one
 contract to code against before any of them builds a signal. Two constraints were already recorded: a recommendation
 is computed on read and never stored as truth (D1), and a signal is tri-state, with `unknown` for anything never run,
