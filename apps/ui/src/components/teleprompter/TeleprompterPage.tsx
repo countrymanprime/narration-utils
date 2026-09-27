@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { chapterName } from '../../chapterName';
+import { CommandScope } from '../../input/router';
 import { Heading } from '../primitives/Heading';
 import { Panel } from '../primitives/Panel';
 import { Select } from '../primitives/Select';
@@ -108,41 +109,45 @@ export function TeleprompterPage({ onFixCredits }: Props = {}) {
   const options = [...creditsOption('opening'), ...(chapters ?? []).map((item) => ({ value: item.id, label: chapterName(item) })), ...creditsOption('closing')];
 
   return (
-    <div className="mx-auto max-w-3xl space-y-4">
-      <Heading title="Teleprompter">Read a chapter aloud and follow along - the highlight moves with your voice.</Heading>
-      {chapters?.length === 0 && (
-        <Panel title="This manuscript has no chapters to read">
-          <p className="mt-1 text-sm" style={{ color: 'var(--text-muted)' }}>
-            The teleprompter reads narration chapters. Import a manuscript with at least one narration chapter first.
-          </p>
-        </Panel>
-      )}
-      {creditsKind && creditsPreview && creditsPreview.unresolved.length > 0 && (
-        <UnresolvedCreditsWarning kind={creditsKind} tokens={creditsPreview.unresolved} onFix={onFixCredits} />
-      )}
-      {chapters && chapters.length > 0 && (
-        <>
-          <Panel>
-            <label className={LABEL_CLASS} htmlFor="teleprompter-chapter">
-              Chapter
-            </label>
-            <Select id="teleprompter-chapter" className="mt-1" fullWidth value={chosen} onChange={select} options={options} />
-            <ChapterSuggestionHint suggestion={suggestion} chapters={chapters} value={chapterId} onChoose={select} />
+    // Booth scope (Phase 4, input-commands-and-pedals.prd.md): a full page, not a dialog, so `activeScopes` gives it
+    // {booth, global} - `reading.toggle` (Space, `ReadingControlBar`) resolves here the same as in the dialog.
+    <CommandScope kind="booth">
+      <div className="mx-auto max-w-3xl space-y-4">
+        <Heading title="Teleprompter">Read a chapter aloud and follow along - the highlight moves with your voice.</Heading>
+        {chapters?.length === 0 && (
+          <Panel title="This manuscript has no chapters to read">
+            <p className="mt-1 text-sm" style={{ color: 'var(--text-muted)' }}>
+              The teleprompter reads narration chapters. Import a manuscript with at least one narration chapter first.
+            </p>
           </Panel>
-          <ReadAlongView session={t} follow={follow} />
-        </>
-      )}
-      {error && (
-        <p role="alert" className="text-sm" style={{ color: 'var(--danger-text)' }}>
-          {error}
-        </p>
-      )}
-      {chapters && chapters.length > 0 && (
-        // Sticky, not a `Dialog` footer (Q11 A): the standalone page has no dialog shell of its own.
-        <div className="sticky bottom-0 rounded-[0.55rem] border bg-[var(--surface)]" style={{ borderColor: 'var(--border)' }}>
-          <ReadingControlBar session={t} follow={follow} />
-        </div>
-      )}
-    </div>
+        )}
+        {creditsKind && creditsPreview && creditsPreview.unresolved.length > 0 && (
+          <UnresolvedCreditsWarning kind={creditsKind} tokens={creditsPreview.unresolved} onFix={onFixCredits} />
+        )}
+        {chapters && chapters.length > 0 && (
+          <>
+            <Panel>
+              <label className={LABEL_CLASS} htmlFor="teleprompter-chapter">
+                Chapter
+              </label>
+              <Select id="teleprompter-chapter" className="mt-1" fullWidth value={chosen} onChange={select} options={options} />
+              <ChapterSuggestionHint suggestion={suggestion} chapters={chapters} value={chapterId} onChoose={select} />
+            </Panel>
+            <ReadAlongView session={t} follow={follow} />
+          </>
+        )}
+        {error && (
+          <p role="alert" className="text-sm" style={{ color: 'var(--danger-text)' }}>
+            {error}
+          </p>
+        )}
+        {chapters && chapters.length > 0 && (
+          // Sticky, not a `Dialog` footer (Q11 A): the standalone page has no dialog shell of its own.
+          <div className="sticky bottom-0 rounded-[0.55rem] border bg-[var(--surface)]" style={{ borderColor: 'var(--border)' }}>
+            <ReadingControlBar session={t} follow={follow} />
+          </div>
+        )}
+      </div>
+    </CommandScope>
   );
 }
