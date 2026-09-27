@@ -672,6 +672,10 @@ func fakeFFmpeg(args []string) int {
 		}
 		return fallback
 	}
+	if option("-c:a", "") == "pcm_s16le" {
+		// The decode direction (decode_test.go): src is an MP3, not a WAV.
+		return fakeFFmpegDecode(args, option)
+	}
 	out := strings.TrimPrefix(args[len(args)-1], "file:")
 	in, err := os.Open(strings.TrimPrefix(option("-i", ""), "file:"))
 	if err != nil {

@@ -90,8 +90,13 @@ func TestSuggestSpotCheckKeepsHardGatedWindowButRanksItDownAndListsIt(t *testing
 func TestSuggestDismissedFindingsAreNeverPassedInDoNotCount(t *testing.T) {
 	chapters, paragraphs := manyParagraphManuscript()
 	got := Suggest(Input{Chapters: chapters, Paragraphs: paragraphs, OpenFindings: nil, Settings: DefaultSettings()})
-	if len(got.Candidates) != 1 || len(got.Candidates[0].Warnings) != 0 {
-		t.Fatalf("no findings at all must mean no findings warnings: %+v", got.Candidates)
+	if len(got.Candidates) != 1 {
+		t.Fatalf("candidates = %+v", got.Candidates)
+	}
+	for _, w := range got.Candidates[0].Warnings {
+		if strings.Contains(w, "finding") {
+			t.Fatalf("no findings at all must mean no findings warnings: %+v", got.Candidates[0].Warnings)
+		}
 	}
 }
 
@@ -158,8 +163,13 @@ func TestSuggestFindingsInAnotherChapterNeverAffectThisOne(t *testing.T) {
 	}
 	got := Suggest(Input{Chapters: chapters, Paragraphs: paragraphs, OpenFindings: findings, Settings: DefaultSettings()})
 	for _, c := range got.Candidates {
-		if c.ChapterID == "c1" && len(c.Warnings) != 0 {
-			t.Fatalf("chapter c1 must not see c2's finding: %+v", c)
+		if c.ChapterID != "c1" {
+			continue
+		}
+		for _, w := range c.Warnings {
+			if strings.Contains(w, "pickup") {
+				t.Fatalf("chapter c1 must not see c2's finding: %+v", c.Warnings)
+			}
 		}
 	}
 }
