@@ -24,6 +24,7 @@ import type { MockDiagnosticsSeed } from '../diagnosticsMock';
 import type { EditingSeed } from '../editingMock';
 import type { MockAssetSeed } from '../assetInstallMock';
 import type { MockUpdateSeed } from './update';
+import type { DawMockSeed } from '../dawMock';
 
 // What createMockApi boots from (the seeds), and the host state more than one domain reads or writes.
 // manuscriptCandidate boots a project with no imported manuscript but a
@@ -170,6 +171,8 @@ export type MockApiSeed = {
   mockManuscript?: 'mixed';
   /** Boots with a custom delivery profile chosen for the project (delivery-platform-profiles.prd.md); ACX judges otherwise. */
   deliveryProfile?: MockDeliveryProfileSeed;
+  /** Seeds the DAW capabilities mock (which DAW, reachability, per-capability toggles), see `DawMockSeed` (DAW port PRD Phase 4). */
+  daw?: DawMockSeed;
 };
 
 export const wireContext = (payload: string) => ({ boundary: 'host.binding', payload });

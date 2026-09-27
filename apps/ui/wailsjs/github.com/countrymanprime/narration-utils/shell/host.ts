@@ -379,6 +379,14 @@ export function CreditsTemplates(): $CancellablePromise<string> {
 }
 
 /**
+ * DawCapabilities answers the launch's DAW, whether it is reachable, and every capability's level, availability and (when
+ * unavailable) reason and message.
+ */
+export function DawCapabilities(): $CancellablePromise<string> {
+    return $Call.ByID(3838871320);
+}
+
+/**
  * DawCatalogList answers today's DAW catalog (REAPER only) with each entry's
  * detection state, so a narrator with nothing installed can see what to get
  * and a narrator who already has REAPER sees it confirmed. Detection runs

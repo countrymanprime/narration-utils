@@ -1,0 +1,124 @@
+{
+  "capabilities": {
+    "cleanup_tools": {
+      "available": false,
+      "level": "supported",
+      "message": "REAPER is not connected to this app. Open this app from the Narration Utils action in REAPER.",
+      "reason": "standalone"
+    },
+    "fx_chains": {
+      "available": false,
+      "level": "experimental",
+      "message": "Experimental: switched off in Settings.",
+      "reason": "experimental_off"
+    },
+    "heartbeat": {
+      "available": false,
+      "level": "supported",
+      "message": "REAPER is not connected to this app. Open this app from the Narration Utils action in REAPER.",
+      "reason": "standalone"
+    },
+    "item_gain": {
+      "available": false,
+      "level": "experimental",
+      "message": "Experimental: switched off in Settings.",
+      "reason": "experimental_off"
+    },
+    "line_identity": {
+      "available": false,
+      "level": "supported",
+      "message": "REAPER is not connected to this app. Open this app from the Narration Utils action in REAPER.",
+      "reason": "standalone"
+    },
+    "markers": {
+      "available": false,
+      "level": "supported",
+      "message": "REAPER is not connected to this app. Open this app from the Narration Utils action in REAPER.",
+      "reason": "standalone"
+    },
+    "navigate": {
+      "available": false,
+      "level": "supported",
+      "message": "REAPER is not connected to this app. Open this app from the Narration Utils action in REAPER.",
+      "reason": "standalone"
+    },
+    "pickups": {
+      "available": false,
+      "level": "supported",
+      "message": "REAPER is not connected to this app. Open this app from the Narration Utils action in REAPER.",
+      "reason": "standalone"
+    },
+    "project_read": {
+      "available": true,
+      "level": "supported"
+    },
+    "project_state": {
+      "available": false,
+      "level": "supported",
+      "message": "REAPER is not connected to this app. Open this app from the Narration Utils action in REAPER.",
+      "reason": "standalone"
+    },
+    "punch": {
+      "available": false,
+      "level": "experimental",
+      "message": "Experimental: switched off in Settings.",
+      "reason": "experimental_off"
+    },
+    "record": {
+      "available": false,
+      "level": "experimental",
+      "message": "Experimental: switched off in Settings.",
+      "reason": "experimental_off"
+    },
+    "regions": {
+      "available": false,
+      "level": "experimental",
+      "message": "Experimental: switched off in Settings.",
+      "reason": "experimental_off"
+    },
+    "render_config": {
+      "available": false,
+      "level": "supported",
+      "message": "REAPER is not connected to this app. Open this app from the Narration Utils action in REAPER.",
+      "reason": "standalone"
+    },
+    "retake_lanes": {
+      "available": false,
+      "level": "supported",
+      "message": "REAPER is not connected to this app. Open this app from the Narration Utils action in REAPER.",
+      "reason": "standalone"
+    },
+    "review": {
+      "available": false,
+      "level": "supported",
+      "message": "REAPER is not connected to this app. Open this app from the Narration Utils action in REAPER.",
+      "reason": "standalone"
+    },
+    "silence_trim": {
+      "available": false,
+      "level": "experimental",
+      "message": "Experimental: switched off in Settings.",
+      "reason": "experimental_off"
+    },
+    "take_create": {
+      "available": false,
+      "level": "supported",
+      "message": "REAPER is not connected to this app. Open this app from the Narration Utils action in REAPER.",
+      "reason": "standalone"
+    },
+    "takes": {
+      "available": false,
+      "level": "experimental",
+      "message": "Experimental: switched off in Settings.",
+      "reason": "experimental_off"
+    },
+    "track_state": {
+      "available": false,
+      "level": "experimental",
+      "message": "Experimental: switched off in Settings.",
+      "reason": "experimental_off"
+    }
+  },
+  "daw": "REAPER",
+  "reachable": false
+}
