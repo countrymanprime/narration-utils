@@ -252,3 +252,70 @@ func TestRoleOfTheWrongInterfaceIsARoleError(t *testing.T) {
 		t.Fatalf("Role[Recorder](punch) err = %v, want *RoleError", err)
 	}
 }
+
+// Allowed is the declaration and settings half of Support: what the narrator's settings permit, whatever the engine's runtime state.
+// bridge.Actions' gate asks it, so a command still goes out (and fails on its own terms) while REAPER is not answering, as before P3.
+func TestAllowedIsTheDeclarationAndSettingsHalfOfSupport(t *testing.T) {
+	cases := []struct {
+		name         string
+		level        Level
+		toggle       Toggle
+		experimental bool
+		reason       Reason // "" when allowed
+	}{
+		{"supported on auto", Supported, ToggleAuto, false, ""},
+		{"supported switched off", Supported, ToggleOff, false, ReasonTurnedOff},
+		{"experimental on auto, old switch off", Experimental, ToggleAuto, false, ReasonExperimentalOff},
+		{"experimental on auto, old switch on", Experimental, ToggleAuto, true, ""},
+		{"experimental switched on", Experimental, ToggleOn, false, ""},
+		{"experimental switched off, old switch on", Experimental, ToggleOff, true, ReasonTurnedOff},
+		{"not yet available", NotYetAvailable, ToggleOn, true, ReasonNotYet},
+		{"unsupported", Unsupported, ToggleOn, true, ReasonUnsupported},
+	}
+	for _, tc := range cases {
+		for _, rt := range []Runtime{{}, {Bridge: true}, {Bridge: true, Reachable: true}} {
+			r := NewResolver(ResolverConfig{
+				Adapter:      plainAdapter{stubAdapter{kind: KindREAPER, declares: map[Capability]Level{CapPunch: tc.level}}},
+				Runtime:      func() Runtime { return rt },
+				Toggle:       togglesOf(map[Capability]Toggle{CapPunch: tc.toggle}),
+				Experimental: func() bool { return tc.experimental },
+			})
+			err := r.Allowed(CapPunch)
+			if tc.reason == "" {
+				if err != nil {
+					t.Errorf("%s, runtime %+v: Allowed = %v, want nil", tc.name, rt, err)
+				}
+				continue
+			}
+			var refusal *NotSupportedError
+			if !errors.As(err, &refusal) || refusal.Support.Reason != tc.reason || refusal.Support.Level != tc.level || refusal.Support.Message == "" {
+				t.Errorf("%s, runtime %+v: Allowed = %#v, want a %q refusal at %v with a message", tc.name, rt, err, tc.reason, tc.level)
+				continue
+			}
+			// Support agrees with Allowed on every refusal Allowed makes.
+			if got := r.Support(CapPunch); got != refusal.Support {
+				t.Errorf("%s, runtime %+v: Support = %+v, but Allowed refused with %+v", tc.name, rt, got, refusal.Support)
+			}
+		}
+	}
+}
+
+func TestAllowedMatchesErrExperimentalOffOnlyForThatReason(t *testing.T) {
+	r := NewResolver(ResolverConfig{
+		Adapter: plainAdapter{stubAdapter{kind: KindREAPER, declares: map[Capability]Level{CapPunch: Experimental, CapFXChains: Experimental}}},
+		Toggle:  togglesOf(map[Capability]Toggle{CapFXChains: ToggleOff}),
+	})
+	if err := r.Allowed(CapPunch); !errors.Is(err, bridge.ErrExperimentalOff) {
+		t.Errorf("Allowed(punch) = %v, want a match for bridge.ErrExperimentalOff", err)
+	}
+	if err := r.Allowed(CapFXChains); errors.Is(err, bridge.ErrExperimentalOff) || !errors.Is(err, ErrNotSupported) {
+		t.Errorf("Allowed(fx_chains, turned off) = %v, want ErrNotSupported and not ErrExperimentalOff", err)
+	}
+}
+
+func TestAllowedWithNoAdapterIsStandalone(t *testing.T) {
+	var refusal *NotSupportedError
+	if err := NewResolver(ResolverConfig{}).Allowed(CapReview); !errors.As(err, &refusal) || refusal.Support.Reason != ReasonStandalone {
+		t.Fatalf("Allowed with no adapter = %v, want a standalone refusal", err)
+	}
+}
