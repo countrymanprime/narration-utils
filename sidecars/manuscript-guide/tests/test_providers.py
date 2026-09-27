@@ -1,7 +1,10 @@
-"""Piper, CMU and eSpeak as provider-ports adapters (ADR 0301, provider-ports P8): each row passes its port's conformance
-suite, exercised with the same fakes test_pronounce.py and test_manuscript_guide.py already patch phonemizer and Piper with.
+"""Piper, CMU, Wiktextract and eSpeak as provider-ports adapters (ADR 0301, provider-ports P8; the wiktextract row is
+prep-depth Phase 8, ADR 0405): each row passes its port's conformance suite, exercised with the same fakes
+test_pronounce.py and test_manuscript_guide.py already patch phonemizer and Piper with, and (for Wiktextract) a tiny
+hand-built index file standing in for the Go asset manager's derived one (docs/research/wiktextract-pronunciation-source.md).
 """
 
+import json
 import sys
 from pathlib import Path
 from unittest.mock import MagicMock, patch
@@ -22,13 +25,14 @@ from narration_common.ports.pronunciation import SOURCES
 from narration_common.ports.tts import ENGINES
 
 
-def test_importing_the_module_registers_piper_cmu_and_espeak_once_each():
+def test_importing_the_module_registers_piper_cmu_wiktextract_and_espeak_once_each():
     assert [descriptor.name for descriptor in ENGINES.descriptors()] == ["piper"]
-    assert [descriptor.name for descriptor in SOURCES.descriptors()] == ["cmu", "espeak"]
+    assert [descriptor.name for descriptor in SOURCES.descriptors()] == ["cmu", "wiktextract", "espeak"]
 
 
-def test_cmu_stays_the_default_the_build_time_fallback_tries_first():
-    assert SOURCES.fallback_order() == ["cmu", "espeak"]
+def test_the_build_time_fallback_tries_cmu_then_wiktextract_then_espeak(monkeypatch):
+    # D72/Q7: a better dictionary (wiktextract) is tried before the letter-to-sound guess (espeak), CMU staying the default.
+    assert SOURCES.fallback_order() == ["cmu", "wiktextract", "espeak"]
 
 
 def test_the_build_time_fallback_logs_each_failed_source_in_its_own_words(monkeypatch):
@@ -40,7 +44,11 @@ def test_the_build_time_fallback_logs_each_failed_source_in_its_own_words(monkey
     monkeypatch.setattr(manuscript_guide, "pronounce_source", lambda name, library, source: (_ for _ in ()).throw(ValueError("no entry")))
 
     assert manuscript_guide.pronunciation("Zzyzxqq", None) == {"ipa": "", "source": "not generated", "confidence": "unknown"}
-    assert messages == ["CMU pronunciation unavailable (no entry).", "eSpeak phonetic fallback unavailable (no entry)."]
+    assert messages == [
+        "CMU pronunciation unavailable (no entry).",
+        "Wiktionary pronunciation unavailable (no entry).",
+        "eSpeak phonetic fallback unavailable (no entry).",
+    ]
 
 
 # --- CmuSource --------------------------------------------------------------------------------------------------------------------
@@ -53,6 +61,56 @@ def test_cmu_source_passes_its_conformance_suite():
 def test_cmu_source_refuses_an_entry_the_dictionary_does_not_have():
     with pytest.raises(ValueError, match="CMU dictionary has no entry"):
         providers.CmuSource().pronounce("Zzyzxqq")
+
+
+# --- WiktextractSource -------------------------------------------------------------------------------------------------------------
+
+
+def _write_index(tmp_path, words: dict, name: str = "wiktextract-index.json") -> str:
+    path = tmp_path / name
+    path.write_text(json.dumps({"catalogFormat": 1, "words": words}), encoding="utf-8")
+    return str(path)
+
+
+def test_wiktextract_source_passes_its_conformance_suite(tmp_path):
+    source = providers.WiktextractSource()
+    source.index_path = _write_index(tmp_path, {"hello": {"ipa": "həˈloʊ", "audio": ""}})
+    pronunciation_conformance.run(source, known="hello", unknown="Zzyzxqq")
+
+
+def test_wiktextract_source_refuses_an_entry_the_index_does_not_have(tmp_path):
+    source = providers.WiktextractSource()
+    source.index_path = _write_index(tmp_path, {"hello": {"ipa": "həˈloʊ", "audio": ""}})
+    with pytest.raises(ValueError, match='Wiktionary has no entry for "Zzyzxqq"'):
+        source.pronounce("Zzyzxqq")
+
+
+def test_wiktextract_source_raises_a_clear_error_when_not_installed_yet():
+    with pytest.raises(ValueError, match="not installed yet"):
+        providers.WiktextractSource().pronounce("hello")
+
+
+def test_wiktextract_source_looks_words_up_case_insensitively(tmp_path):
+    source = providers.WiktextractSource()
+    source.index_path = _write_index(tmp_path, {"hello": {"ipa": "həˈloʊ", "audio": ""}})
+    assert source.pronounce("Hello") == {"ipa": "həˈloʊ", "source": "Wiktionary (CC BY-SA)", "confidence": "medium"}
+
+
+def test_wiktextract_source_carries_its_cc_by_sa_attribution_on_every_answer(tmp_path):
+    source = providers.WiktextractSource()
+    source.index_path = _write_index(tmp_path, {"hello": {"ipa": "həˈloʊ", "audio": ""}})
+    assert source.pronounce("hello")["source"] == "Wiktionary (CC BY-SA)"
+
+
+def test_wiktextract_source_re_reads_the_index_only_when_the_path_changes(tmp_path):
+    source = providers.WiktextractSource()
+    source.index_path = _write_index(tmp_path, {"hello": {"ipa": "həˈloʊ", "audio": ""}})
+    first = source._index()
+    second = source._index()
+    assert first is second  # cached, not re-read, while the path is unchanged
+
+    source.index_path = _write_index(tmp_path, {"hello": {"ipa": "different", "audio": ""}}, name="wiktextract-index-2.json")
+    assert source._index() is not first
 
 
 # --- EspeakSource -----------------------------------------------------------------------------------------------------------------

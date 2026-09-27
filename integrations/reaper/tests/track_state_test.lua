@@ -95,8 +95,8 @@ H.test('chapter_track_state lists every item on the named track with its active 
   s:send('chapter_track_state', 't1', chapter.guid)
   H.eq(s:events(), {
     { 'TRACK_STATE', 't1', CH1, '0', '0.000000', '0.000000', s.fake.project_path, '0', '0', '0', '0', '0', '' },
-    { 'TRACK_ITEM', 't1', first.guid, first.takes[1].guid, '0.000000', '4.000000', '0.000000', '1.000000', 'C:\\Audio\\ch1|take 1.wav' },
-    { 'TRACK_ITEM', 't1', trimmed.guid, trimmed.takes[1].guid, '10.000000', '3.000000', '1.500000', '1.250000', 'ch1-b.wav' },
+    { 'TRACK_ITEM', 't1', first.guid, first.takes[1].guid, '0.000000', '4.000000', '0.000000', '1.000000', 'C:\\Audio\\ch1|take 1.wav', '0' },
+    { 'TRACK_ITEM', 't1', trimmed.guid, trimmed.takes[1].guid, '10.000000', '3.000000', '1.500000', '1.250000', 'ch1-b.wav', '0' },
     { 'TRACK_STATE_END', 't1', '2', '2' },
   })
 end)
@@ -116,7 +116,19 @@ H.test('chapter_track_state reports an item without a take with an empty take an
   local s, chapter = new_session()
   local item = s.fake:add_item(chapter, { position = 3, length = 1 })
   s:send('chapter_track_state', 't1', chapter.guid)
-  H.eq(s:events()[2], { 'TRACK_ITEM', 't1', item.guid, '', '3.000000', '1.000000', '0.000000', '1.000000', '' })
+  H.eq(s:events()[2], { 'TRACK_ITEM', 't1', item.guid, '', '3.000000', '1.000000', '0.000000', '1.000000', '', '0' })
+end)
+
+H.test('chapter_track_state reports a muted item as muted, so a muted take is never read as the recording', function()
+  -- The resume locate (read-aloud-resume-from-daw PRD Phase 4) skips muted items as the saved .rpp's reading does; a take
+  -- muted live and not saved yet is only known from this answer. The field is appended, so an older reader ignores it.
+  local s, chapter = new_session()
+  local kept = s.fake:add_item(chapter, { position = 0, length = 2, source = 'kept.wav' })
+  local flubbed = s.fake:add_item(chapter, { position = 2, length = 2, source = 'flubbed.wav', muted = true })
+  s:send('chapter_track_state', 't1', chapter.guid)
+  local events = s:events()
+  H.eq({ events[2][3], events[2][10] }, { kept.guid, '0' })
+  H.eq({ events[3][3], events[3][10] }, { flubbed.guid, '1' })
 end)
 
 H.test('chapter_track_state stops listing items at its limit and says how many there were', function()

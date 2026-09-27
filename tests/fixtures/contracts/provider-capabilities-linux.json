@@ -1,0 +1,109 @@
+{
+  "asr": {
+    "moonshine": {
+      "asset": {
+        "kind": "moonshine"
+      },
+      "default": false,
+      "label": "Moonshine",
+      "modes": [
+        "live"
+      ],
+      "platforms": [
+        "windows"
+      ],
+      "support": {
+        "available": false,
+        "level": "unsupported",
+        "message": "Moonshine is not available on Linux.",
+        "reason": "unsupported"
+      }
+    },
+    "whisper": {
+      "asset": {
+        "kind": "whisper"
+      },
+      "default": true,
+      "label": "Whisper",
+      "modes": [
+        "live",
+        "batch"
+      ],
+      "platforms": [],
+      "support": {
+        "available": true,
+        "level": "supported"
+      }
+    }
+  },
+  "capture": {
+    "dshow": {
+      "default": false,
+      "label": "DirectShow",
+      "modes": [],
+      "platforms": [
+        "windows"
+      ],
+      "support": {
+        "available": false,
+        "level": "unsupported",
+        "message": "DirectShow is not available on Linux.",
+        "reason": "unsupported"
+      }
+    }
+  },
+  "platform": "linux",
+  "pronunciation": {
+    "cmu": {
+      "default": true,
+      "label": "CMU dictionary",
+      "modes": [
+        "pronounce"
+      ],
+      "platforms": [],
+      "support": {
+        "available": true,
+        "level": "supported"
+      }
+    },
+    "espeak": {
+      "default": false,
+      "label": "eSpeak NG",
+      "modes": [
+        "pronounce"
+      ],
+      "platforms": [],
+      "support": {
+        "available": true,
+        "level": "supported"
+      }
+    },
+    "wiktextract": {
+      "default": false,
+      "label": "Wiktionary (via Wiktextract)",
+      "modes": [
+        "pronounce"
+      ],
+      "platforms": [],
+      "support": {
+        "available": true,
+        "level": "supported"
+      }
+    }
+  },
+  "tts": {
+    "piper": {
+      "asset": {
+        "kind": "tts"
+      },
+      "default": true,
+      "label": "Piper",
+      "modes": [],
+      "platforms": [],
+      "support": {
+        "available": true,
+        "level": "supported"
+      }
+    }
+  }
+}

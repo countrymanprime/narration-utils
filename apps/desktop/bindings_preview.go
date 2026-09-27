@@ -1,9 +1,12 @@
 package main
 
 import (
+	"fmt"
 	"math"
 	"strconv"
 
+	"github.com/countrymanprime/narration-utils/shell/internal/coverage"
+	"github.com/countrymanprime/narration-utils/shell/internal/findings"
 	"github.com/countrymanprime/narration-utils/shell/internal/manuscript"
 	"github.com/countrymanprime/narration-utils/shell/internal/preview"
 	"github.com/countrymanprime/narration-utils/shell/internal/settings"
@@ -130,7 +133,150 @@ func (h *Host) PreviewCandidates() (string, error) {
 	if err != nil {
 		return encodeBinding(previewNoManuscript, nil)
 	}
+	input.OpenFindings = previewOpenFindings(svc.findings)
+	input.AudioEvidence = previewAudioEvidence(svc, input.Chapters, service)
 	return encodeBinding(previewView(preview.Suggest(input)), nil)
+}
+
+// previewAudioEvidence is Phase 7's own adapter: one preview.ChapterAudioEvidence per chapter, composing RC's
+// coverage.Service (which already applies EL-6's staleness rule for its own analyzer scope, so one read serves
+// both "recorded" and "mapping current" - Architecture Notes) and Phase 6's MapParagraphsToTime. It never runs
+// anything (Q14, the same rule CoverageResult already follows): a chapter whose recording has not been checked
+// yet, or whose coverage service is unavailable, reads as AudioUnknown, never as met or not_met. DX-4's own
+// windowed findings are never given here (ADR 0327: they carry no chapter anchor and are not persisted, so
+// there is nothing this binding could read without starting a new measurement, which Q14 forbids).
+func previewAudioEvidence(svc hostServices, chapters []preview.Chapter, manuscriptService *manuscript.Service) map[string]preview.ChapterAudioEvidence {
+	if svc.coverage == nil || len(chapters) == 0 {
+		return nil
+	}
+	sourceHash := previewManuscriptSourceHash(manuscriptService)
+	settings := coverageSettings(svc.settings)
+	result := make(map[string]preview.ChapterAudioEvidence, len(chapters))
+	for _, chapter := range chapters {
+		coverageResult, _ := svc.coverage.Result(chapter.ID, settings.Alignment)
+		paragraphIDs := previewParagraphIDsForChapter(manuscriptService, chapter.ID)
+		result[chapter.ID] = preview.ChapterAudioEvidence{
+			Coverage:       previewCoverageSignal(coverageResult, settings),
+			ParagraphTimes: preview.MapParagraphsToTime(nil, sourceHash, paragraphIDs),
+			Pace:           previewPaceSignal(coverageResult),
+		}
+	}
+	return result
+}
+
+// previewCoverageSignal answers AudioMet only when chapterID's newest complete recording check
+// (previewAudioEvidence's one read, never run here) is current and text-complete (coverage.Report.TextComplete)
+// - the same threshold the recording stage signal (internal/coverage/signal.go) already judges by.
+func previewCoverageSignal(result coverage.ChapterResult, settings coverage.Settings) preview.AudioSignal {
+	if !result.Current() {
+		return preview.AudioSignal{State: preview.AudioUnknown, Reason: "this chapter's recording coverage is not current."}
+	}
+	if !result.Result.Report.TextComplete(settings.Thresholds) {
+		return preview.AudioSignal{State: preview.AudioNotMet, Reason: "this chapter is not fully recorded yet."}
+	}
+	return preview.AudioSignal{State: preview.AudioMet, Reason: "this chapter's recording coverage is current and complete."}
+}
+
+// previewPaceSignal is Q8 option C's own fallback evidence: the chapter's real recorded seconds (RC's own
+// Summary.Items.PlayedSeconds) over its word count (Summary.BodyTokens, the sidecar's own count for the same
+// chapter), read only from the same current, complete result previewCoverageSignal already checked - never a
+// rate computed from a stale or partial one.
+func previewPaceSignal(result coverage.ChapterResult) preview.AudioSignal {
+	if !result.Current() {
+		return preview.AudioSignal{}
+	}
+	summary := result.Result.Report.Summary
+	rate, ok := preview.ChapterPace(summary.BodyTokens, summary.Items.PlayedSeconds)
+	if !ok {
+		return preview.AudioSignal{}
+	}
+	errorFraction := preview.EstimateErrorFraction(summary.BodyTokens, summary.Items.PlayedSeconds)
+	return preview.AudioSignal{
+		State:  preview.AudioMet,
+		Reason: previewPaceReason(rate, errorFraction),
+	}
+}
+
+func previewPaceReason(secondsPerWord, errorFraction float64) string {
+	direction := "runs slower than"
+	if errorFraction < 0 {
+		direction = "runs faster than"
+	}
+	return fmt.Sprintf("recorded at %.2fs per word (this chapter %s the fixed estimate by %.0f%%; provisional, calibrated on synthetic and LibriVox data only - see #510 for a re-run on real recordings).",
+		secondsPerWord, direction, math.Abs(errorFraction)*100)
+}
+
+// previewParagraphIDsForChapter reads chapterID's paragraph ids in order, the same reader Paragraphs() already
+// gives previewInput above.
+func previewParagraphIDsForChapter(service *manuscript.Service, chapterID string) []string {
+	payloads, err := service.Paragraphs(chapterID)
+	if err != nil {
+		return nil
+	}
+	ids := make([]string, 0, len(payloads))
+	for _, payload := range payloads {
+		ids = append(ids, previewString(payload, "id"))
+	}
+	return ids
+}
+
+// previewManuscriptSourceHash reads the manuscript's own recorded source checksum, the same field
+// internal/lineidentity's own sourceSHA256 reads (that package's own helper is unexported, so this is the
+// binding's own small copy of the same three-line lookup, not a second scheme).
+func previewManuscriptSourceHash(service *manuscript.Service) string {
+	data, err := service.Load()
+	if err != nil {
+		return ""
+	}
+	source, ok := data["source"].(map[string]any)
+	if !ok {
+		return ""
+	}
+	sha, _ := source["sha256"].(string)
+	return sha
+}
+
+// previewOpenFindings is Phase 5's own adapter over the RD-1 findings store: every finding this project has
+// recorded, filtered to open (PS Q2: unreviewed, accepted or deferred - a dismissed one is never built into an
+// OpenFinding at all, so the engine cannot un-dismiss what it never receives) and not held back as
+// NotInLatestRun (Store.List's own default, findings.Query{}'s zero value). store is nil when no project is
+// open; that reads as "no findings known", the same as an empty result, never an error PreviewCandidates has to
+// handle specially.
+func previewOpenFindings(store *findings.Store) []preview.OpenFinding {
+	if store == nil {
+		return nil
+	}
+	all, err := store.List(findings.Query{})
+	if err != nil {
+		return nil
+	}
+	var open []preview.OpenFinding
+	for _, f := range all {
+		if f.Review.Status == findings.StatusDismissed {
+			continue
+		}
+		open = append(open, previewOpenFinding(f))
+	}
+	return open
+}
+
+// previewOpenFinding narrows one findings.Finding to the plain fields Phase 5's engine reads (Architecture
+// Notes: "small read-only interfaces" - the engine itself never imports the findings package). ParagraphID is
+// "" when the finding carries no Manuscript.Span (TR-4's pickup and duplicate-read findings never set one
+// today), which the engine already treats as a chapter-level warning rather than a silent pass.
+func previewOpenFinding(f findings.Finding) preview.OpenFinding {
+	open := preview.OpenFinding{
+		ID:       f.ID,
+		Category: preview.FindingCategory(f.Category),
+		Severity: preview.FindingSeverity(f.Severity),
+	}
+	if f.Manuscript != nil {
+		open.ChapterID = f.Manuscript.ChapterID
+		if f.Manuscript.Span != nil {
+			open.ParagraphID = f.Manuscript.Span.ParagraphID
+		}
+	}
+	return open
 }
 
 // previewInput builds preview.Input from the manuscript service's loosely-typed reader payloads (Chapters,

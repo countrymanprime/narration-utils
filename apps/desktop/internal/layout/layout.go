@@ -21,6 +21,8 @@ const (
 	SpacyCatalogFile         = ConfigDir + "/spacy-assets.json"
 	MoonshineCatalogFile     = ConfigDir + "/moonshine-assets.json"
 	DictionaryCatalogFile    = ConfigDir + "/dictionary-assets.json"
+	WiktextractCatalogFile   = ConfigDir + "/wiktextract-assets.json"
+	EncoderCatalogFile       = ConfigDir + "/encoder-assets.json"
 	ReaperDir                = "integrations/reaper"
 	LauncherFile             = ReaperDir + "/NarrationUtils_Launcher.lua"
 	FixturesDir              = "tests/fixtures"

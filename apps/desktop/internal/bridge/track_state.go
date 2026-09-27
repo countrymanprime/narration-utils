@@ -25,11 +25,13 @@ type TrackState struct {
 	ItemsTotal                 int         // how many items the track holds, listed or not
 }
 
-// TrackItem is one item on the track with its active take ("" TakeGUID and SourceFile when it has none).
+// TrackItem is one item on the track with its active take ("" TakeGUID and SourceFile when it has none). Muted is nil
+// when the bridge script is older than the field (read-aloud-resume PRD Phase 4, ADR 0349).
 type TrackItem struct {
 	ItemGUID, TakeGUID                       string
 	Position, Length, SourceOffset, PlayRate float64
 	SourceFile                               string
+	Muted                                    *bool
 }
 
 // TrackStaleError reports a track GUID REAPER could not find; nothing was read for another track.
@@ -99,6 +101,11 @@ func readTrackState(fields []string) TrackState {
 }
 
 func readTrackItem(fields []string) TrackItem {
+	var muted *bool
+	if len(fields) > 9 && fields[9] != "" {
+		value := fields[9] != "0"
+		muted = &value
+	}
 	return TrackItem{
 		ItemGUID:     fields[2],
 		TakeGUID:     fields[3],
@@ -107,5 +114,6 @@ func readTrackItem(fields []string) TrackItem {
 		SourceOffset: numberAt(fields, 6),
 		PlayRate:     numberAt(fields, 7),
 		SourceFile:   fields[8],
+		Muted:        muted,
 	}
 }

@@ -115,6 +115,51 @@ describe('Manuscript page (integration, driven through the mock NarrationApi)', 
     );
   });
 
+  describe('script markup (prep-depth PRD Phase 5)', () => {
+    it('marks up a selection: the mark is saved on that line and drawn on it', async () => {
+      const { api, notify } = renderManuscript();
+      await waitFor(() => screen.getByRole('heading', { name: 'Chapter 1 — Down the Rabbit-Hole' }));
+      await waitFor(() => expect(paragraph(0)).toBeTruthy());
+
+      selectPhrase('very tired');
+      fireEvent.click(await screen.findByRole('button', { name: 'Mark up' }));
+      expect(await screen.findByText('Mark up: “very tired”')).toBeTruthy();
+      fireEvent.click(screen.getByRole('radio', { name: /Pause/ }));
+      fireEvent.click(screen.getByRole('button', { name: 'Add mark' }));
+
+      const chapterId = (await api.manuscriptChapters())[0].id;
+      await waitFor(async () =>
+        expect((await api.prepMarkupList(chapterId)).spans).toMatchObject([{ anchorText: 'very tired', kind: 'pause', value: 'long' }]),
+      );
+      await waitFor(() => expect(document.querySelector('[data-markup="pause"]')?.textContent).toBe('very tired'));
+      expect(notify).toHaveBeenCalledWith('Mark added.');
+    });
+
+    it('shows the marks already placed, says where the text changed, and removes a stale one', async () => {
+      const { api, notify } = renderManuscript({}, vi.fn(), ['/manuscript'], {
+        prepMarkup: [
+          { chapter: 0, line: 0, words: 'Alice', kind: 'stress' },
+          { chapter: 0, line: 0, words: 'tired', kind: 'stress', stale: { reason: 'text_changed', was: 'weary' } },
+        ],
+      });
+      await waitFor(() => expect(document.querySelector('[data-markup="stress"]')?.textContent).toBe('Alice'));
+      const notice = await screen.findByRole('note');
+      expect(notice.textContent).toContain('“weary”');
+
+      fireEvent.click(within(notice).getByRole('button', { name: 'Remove the stress mark on “weary”' }));
+      const chapterId = (await api.manuscriptChapters())[0].id;
+      await waitFor(async () => expect((await api.prepMarkupList(chapterId)).spans).toHaveLength(1));
+      await waitFor(() => expect(screen.queryByRole('note')).toBeNull());
+      expect(notify).toHaveBeenCalledWith('Mark removed.');
+    });
+
+    it('a reader with no markup file still reads (the list failing is said once, not a load error)', async () => {
+      const { notify } = renderManuscript({ prepMarkupList: async () => Promise.reject(new Error('your script markup file could not be read')) });
+      await waitFor(() => expect(paragraph(0)).toBeTruthy());
+      await waitFor(() => expect(notify).toHaveBeenCalledWith(expect.stringContaining('script markup'), 'error'));
+    });
+  });
+
   it('sending a selection to the Story Bible creates a draft entity and hands off to the Story Bible page', async () => {
     const { focusStoryBibleEntity } = renderManuscript({ guideCreate: async () => 'new-halcyon' });
     await waitFor(() => screen.getByRole('heading', { name: 'Chapter 1 — Down the Rabbit-Hole' }));
@@ -709,6 +754,22 @@ describe('Manuscript page (integration, driven through the mock NarrationApi)', 
       fireEvent.click(screen.getByRole('button', { name: 'Close' }));
 
       await waitFor(() => expect(screen.queryByRole('dialog', { name: /Read aloud/ })).toBeNull());
+    });
+  });
+
+  describe('Companion (booth-mode-and-companion-panel.prd.md Phase 7)', () => {
+    it('opens the same read-aloud session in the companion panel, and Full app brings back the normal dialog', async () => {
+      renderManuscript();
+      await waitFor(() => expect(screen.getByRole('heading', { name: 'Chapter 1 — Down the Rabbit-Hole' })).toBeTruthy());
+
+      fireEvent.click(screen.getByRole('button', { name: 'Open companion for Chapter 1' }));
+
+      expect(await screen.findByRole('heading', { level: 1, name: 'Companion' })).toBeTruthy();
+      expect(screen.queryByRole('dialog', { name: /Read aloud/ })).toBeNull();
+      fireEvent.click(screen.getByRole('button', { name: 'Full app' }));
+      const dialog = await screen.findByRole('dialog', { name: /Read aloud.*Chapter 1/ });
+      expect(within(dialog).getByRole('toolbar', { name: 'Reading controls' })).toBeTruthy();
+      expect(screen.queryByRole('heading', { level: 1, name: 'Companion' })).toBeNull();
     });
   });
 

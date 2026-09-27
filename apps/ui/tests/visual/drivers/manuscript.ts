@@ -1,4 +1,5 @@
 // How to reach each `manuscript` state in STATE_CATALOG (see app.drivers.ts).
+import type { Page } from '@playwright/test';
 import { settlePage } from '../helpers/settle';
 import {
   type Driver,
@@ -55,6 +56,15 @@ export const manuscriptDrivers: Record<string, Driver> = {
     await openResumePrompt(page, '?mockResume=prompter_only');
     await page.getByText(/Your last reading stopped at/).waitFor();
   },
+  // Live DAW state (read-aloud-resume-from-daw.prd.md Phase 4): the REAPER place read from REAPER now, and a recording.
+  'read-aloud-resume-disagree-live': async (page) => {
+    await openResumePrompt(page, '?mockResume=disagree_live');
+    await page.getByText(/in REAPER now/).waitFor();
+  },
+  'read-aloud-resume-recording': async (page) => {
+    await openResumePrompt(page, '?mockResume=recording');
+    await page.getByText(/REAPER is recording on this track now/).waitFor();
+  },
   'read-aloud-resume-not-found': async (page) => {
     await openResumePrompt(page, '?mockResume=not_found');
     await page.getByText(/did not match this chapter/).waitFor();
@@ -76,6 +86,21 @@ export const manuscriptDrivers: Record<string, Driver> = {
     await openResumePrompt(page);
     await page.getByRole('button', { name: 'Resume from here' }).click();
     await page.getByRole('region', { name: 'Where you stopped' }).waitFor({ state: 'detached' });
+  },
+  // REAPER playing makes the prompt go away by itself (read-aloud-resume-from-daw.prd.md Phase 5, RD7): the DAW mock pushes
+  // its seeded transport (playing) on subscribe, as the host's heartbeat push would when REAPER starts.
+  'read-aloud-resume-after-reaper-plays': async (page) => {
+    await page.goto('/?mockDawPlayhead=12');
+    await settlePage(page);
+    await goToPage(page, 'Manuscript');
+    await clickVisible(page, 'button', 'Read Chapter 1 aloud');
+    const dialog = page.getByRole('dialog', { name: /Read aloud/ });
+    await dialog.getByRole('button', { name: 'Play' }).waitFor();
+    await dialog
+      .getByRole('heading', { name: /Chapter 1/ })
+      .first()
+      .waitFor();
+    await dialog.getByRole('region', { name: 'Where you stopped' }).waitFor({ state: 'detached' });
   },
   // A full session (start, then stop) inside the same dialog open, then a wait for the dialog to settle back to idle:
   // the prompt must not return for the rest of this open, so the next Start begins at the top with nothing to clear.
@@ -261,12 +286,39 @@ export const manuscriptDrivers: Record<string, Driver> = {
     await clickVisible(page, 'button', 'Open booth for Chapter 1');
     await page.getByRole('toolbar', { name: 'Booth commands' }).waitFor();
   },
+  // The booth in the Dark theme, chosen the way a narrator chooses it (Settings > Appearance). The booth follows the app
+  // theme (ADR 0365): if it ever forced one palette again, this would render the same as 'booth-default' and the suite's
+  // identical-states check would fail the run.
+  'booth-dark': async (page) => {
+    await goToPage(page, 'Settings');
+    await clickVisible(page, 'tab', 'Global');
+    await clickSettingsCategory(page, 'Appearance');
+    await clickVisible(page, 'button', 'Dark');
+    await goToPage(page, 'Manuscript');
+    await clickVisible(page, 'button', 'Open booth for Chapter 1');
+    await page.getByRole('toolbar', { name: 'Booth commands' }).waitFor();
+  },
   // Same mock seam and word as 'read-aloud-listening', reached through Booth instead (Phase 2's toolbar row).
   'booth-listening': async (page) => {
     await page.goto('/?mockTeleprompter=listening');
     await settlePage(page);
     await goToPage(page, 'Manuscript');
     await clickVisible(page, 'button', 'Open booth for Chapter 1');
+    await page.locator('[data-word="32"] [data-highlight="Cursor"]').waitFor();
+  },
+  // Companion mode (booth-mode-and-companion-panel.prd.md Phase 7): the header's icon button opens the same session in
+  // CompanionShell, which covers the whole window.
+  'companion-default': async (page) => {
+    await goToPage(page, 'Manuscript');
+    await clickVisible(page, 'button', 'Open companion for Chapter 1');
+    await page.getByRole('heading', { level: 1, name: 'Companion' }).waitFor();
+  },
+  'companion-listening': async (page) => {
+    await page.goto('/?mockTeleprompter=listening&mockDawPlayhead=134.6');
+    await settlePage(page);
+    await goToPage(page, 'Manuscript');
+    await clickVisible(page, 'button', 'Open companion for Chapter 1');
+    await page.getByText('Playhead 2:14.6').waitFor();
     await page.locator('[data-word="32"] [data-highlight="Cursor"]').waitFor();
   },
   'reader-text-small': async (page) => {
@@ -380,6 +432,21 @@ export const manuscriptDrivers: Record<string, Driver> = {
     await lookUpInReader(page, 'bank', '/?mockDictionary=damaged');
     await page.getByRole('alertdialog', { name: 'Repair the dictionary?' }).waitFor();
   },
+  // prep-depth.prd.md Phase 5: the `?mockMarkup=1` seed (main.tsx) on Chapter 3's dialogue - every way a mark shows,
+  // including both stale kinds. The other chapters are collapsed, like 'retail-sample': Chapter 1's overlapping
+  // highlights are the tracked nested-interactive debt (#155, axe-debt.ts), which this state would otherwise inherit.
+  'script-markup': async (page) => {
+    await openMarkedUpChapter(page);
+    await page.locator('[data-stale-markup]').nth(1).waitFor();
+  },
+  'markup-dialog': async (page) => {
+    await openMarkedUpChapter(page);
+    await selectReaderWord(page, 'driest thing');
+    await clickVisible(page, 'button', 'Mark up');
+    await page.getByText('Already on these words').waitFor();
+    await page.getByRole('radio', { name: 'Speaker' }).click();
+    await page.getByLabel('Speaker name').waitFor();
+  },
   'add-note-dialog': async (page) => {
     await goToPage(page, 'Manuscript');
     await selectFirstParagraphText(page);
@@ -482,3 +549,12 @@ export const manuscriptDrivers: Record<string, Driver> = {
     await row.waitFor();
   },
 };
+
+async function openMarkedUpChapter(page: Page): Promise<void> {
+  await page.goto('/?mockMarkup=1');
+  await settlePage(page);
+  await goToPage(page, 'Manuscript');
+  await clickVisible(page, 'button', 'Collapse all chapters');
+  await page.getByRole('heading', { name: /^Chapter 3 / }).click();
+  await page.locator('[data-markup="character_tag"][data-speaker]').first().waitFor();
+}

@@ -11,6 +11,7 @@ import { tracksDrivers } from './drivers/tracks';
 import { workspaceDrivers } from './drivers/workspace';
 import { reviewDrivers } from './drivers/review';
 import { deliveryDrivers } from './drivers/delivery';
+import { productionDrivers } from './drivers/production';
 import { teleprompterDrivers } from './drivers/teleprompter';
 import { settingsDrivers } from './drivers/settings';
 import { globalDrivers } from './drivers/global';
@@ -43,8 +44,8 @@ export const documentScroll = 'locked';
 // of once in a while on CI.
 //
 // UI_THEME=dark (or light) starts every capture in that theme, so the whole suite can be looked at in dark: the app reads the
-// same localStorage key the theme picker writes (theme/theme.ts). The suite still fails at its end on `theme-dark` and
-// `reader-dark` matching their default states: that check is for the default run, so copy `screenshots/app` aside and use the PNGs.
+// same localStorage key the theme picker writes (theme/theme.ts). The suite still fails at its end on `theme-dark`,
+// `reader-dark` and `booth-dark` matching their default states: that check is for the default run, so copy `screenshots/app` aside and use the PNGs.
 /** @public */
 export async function beforeCapture(page: Page): Promise<void> {
   await startInRequestedTheme(page);
@@ -82,6 +83,7 @@ export const APP_DRIVERS: Record<string, Record<string, Driver>> = {
   workspace: workspaceDrivers,
   review: reviewDrivers,
   delivery: deliveryDrivers,
+  production: productionDrivers,
   teleprompter: teleprompterDrivers,
   settings: settingsDrivers,
   global: globalDrivers,

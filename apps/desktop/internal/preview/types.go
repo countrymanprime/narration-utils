@@ -87,12 +87,22 @@ func DefaultSettings() Settings {
 // Input is everything Suggest reads. HardWords is optional (nil is "none
 // known"): the lower-cased words a caller (a later phase, from the guide's
 // vocabulary candidates) considers hard; every occurrence in a window's text
-// counts toward its hard-word density feature.
+// counts toward its hard-word density feature. OpenFindings is optional (nil
+// or empty is "none known", read the same as "no evidence either way", never
+// as "this chapter is clean"): Phase 5's open findings from the RD-1 store,
+// already resolved to plain values by the caller (the host binding), so the
+// engine itself still does no I/O of its own reading them.
 type Input struct {
-	Chapters   []Chapter
-	Paragraphs []Paragraph
-	HardWords  map[string]bool
-	Settings   Settings
+	Chapters     []Chapter
+	Paragraphs   []Paragraph
+	HardWords    map[string]bool
+	OpenFindings []OpenFinding
+	// AudioEvidence is optional (nil is "no chapter has audio evidence yet", read the same tri-state way as a
+	// missing key inside it): Phase 7's per-chapter audio-checked inputs, keyed by chapter id, already resolved
+	// to plain values by the caller (the host binding, composing RC, Phase 6's mapper and, per ADR 0327, DX-4
+	// once it has a chapter to give).
+	AudioEvidence map[string]ChapterAudioEvidence
+	Settings      Settings
 }
 
 // Outcome names a manuscript-wide state with no ranked candidates to show,
@@ -132,6 +142,15 @@ type Candidate struct {
 	// number (SR's own "no single readiness score" stance, apps/desktop/internal/stages - a candidate's Reasons are
 	// the explanation; this field is ranking machinery only).
 	features candidateFeatures
+	// findingsPenalty is Phase 5's Q7 rank-down term (attachFindings), folded into score() so a chapter whose only
+	// candidate carries open findings ranks below a clean one both when Suggest picks one window per chapter and
+	// when it picks the top three chapters overall - the same "rank down" rule applied consistently, not just at
+	// window-selection time.
+	findingsPenalty float64
+	// audioChecked is Phase 7's own label (attachAudioChecked), kept private like features and findingsPenalty:
+	// the wire-facing evidence is the Reasons/Warnings text this package already appends, and this field lets
+	// this package's own tests assert the label directly (Success Metrics: "0 false audio-checked").
+	audioChecked bool
 }
 
 // candidateFeatures are one candidate's named, explainable text features (Phase 1's own scope: "explainable text

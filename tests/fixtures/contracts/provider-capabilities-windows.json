@@ -35,20 +35,6 @@
     }
   },
   "capture": {
-    "coreaudio": {
-      "default": false,
-      "label": "Core Audio",
-      "modes": [],
-      "platforms": [
-        "darwin"
-      ],
-      "support": {
-        "available": false,
-        "level": "unsupported",
-        "message": "Core Audio is not available on Windows.",
-        "reason": "unsupported"
-      }
-    },
     "dshow": {
       "default": true,
       "label": "DirectShow",
@@ -79,6 +65,18 @@
     "espeak": {
       "default": false,
       "label": "eSpeak NG",
+      "modes": [
+        "pronounce"
+      ],
+      "platforms": [],
+      "support": {
+        "available": true,
+        "level": "supported"
+      }
+    },
+    "wiktextract": {
+      "default": false,
+      "label": "Wiktionary (via Wiktextract)",
       "modes": [
         "pronounce"
       ],

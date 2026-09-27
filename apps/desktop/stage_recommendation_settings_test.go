@@ -7,7 +7,7 @@ import (
 	"github.com/countrymanprime/narration-utils/shell/internal/stages"
 )
 
-// Phase 6 of docs/prds/chapter-stage-recommendations.prd.md (Q8): the narrator's StageRecommendations settings choose
+// Phase 6 of chapter-stage-recommendations.prd.md (Q8, deleted; see docs/architecture/stage-recommendations.md): the narrator's StageRecommendations settings choose
 // which declared signals are required, and an optional master switch. These tests exercise that wiring end to end
 // through the host, over the one signal wired so far (the recording signal, coverage.RecordingSignalID).
 

@@ -3,7 +3,7 @@ import { describeApiError } from '../../api/errorMessage';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faLock, faPlus, faRotate } from '@fortawesome/free-solid-svg-icons';
+import { faClipboardQuestion, faLock, faPlus, faRotate } from '@fortawesome/free-solid-svg-icons';
 import type { GuideBuildResult, GuideEntity } from '../../types';
 import { categoryCssName, categoryLabel, sortEntities, STORY_BIBLE_TABS } from '../../state';
 import { useApi } from '../../api/ApiContext';
@@ -16,6 +16,7 @@ import { Heading } from '../primitives/Heading';
 import { TooltipTarget } from '../primitives/Tooltip';
 import { CAT_DOT_BG, CAT_DOT_CLASS } from '../manuscript/EntitySummary';
 import { GuideDetail } from './GuideDetail';
+import { PronunciationQueries } from './PronunciationQueries';
 import { WorkDialog } from '../primitives/WorkDialog';
 import { IconButton } from '../primitives/IconButton';
 import { SearchField } from '../primitives/SearchField';
@@ -66,6 +67,7 @@ export function Guide({ notify, goToManuscript }: { notify: Notify; goToManuscri
   const [selectedId, setSelectedId] = useState<string>();
   const [query, setQuery] = useState('');
   const [tab, setTab] = useState('All');
+  const [queriesOpen, setQueriesOpen] = useState(false);
   const [sort, setSort] = useState<EntitySort>({ key: 'name', dir: 'asc' });
   // The start call is quick, but the button says it was heard and a second press cannot start a second rebuild (ADR 0075).
   const starting = usePendingAction();
@@ -188,6 +190,11 @@ export function Guide({ notify, goToManuscript }: { notify: Notify; goToManuscri
         <div className="flex flex-wrap items-end justify-between gap-3">
           <Heading title="Story Bible" />
           <div className="flex gap-2">
+            <TooltipTarget text="Pronunciation queries for the author">
+              <IconButton label="Pronunciation queries" onClick={() => setQueriesOpen(true)}>
+                <FontAwesomeIcon icon={faClipboardQuestion} />
+              </IconButton>
+            </TooltipTarget>
             <TooltipTarget text="Add entity">
               <IconButton label="Add entity" onClick={addEntity}>
                 <FontAwesomeIcon icon={faPlus} />
@@ -303,6 +310,7 @@ export function Guide({ notify, goToManuscript }: { notify: Notify; goToManuscri
         </AssetInstallPrompt>
       )}
       {buildJob && <WorkDialog title="Rebuild Story Bible" job={buildJob} close={() => setBuildJob(undefined)} background={() => setBuildJob(undefined)} />}
+      <PronunciationQueries open={queriesOpen} onClose={() => setQueriesOpen(false)} onChanged={() => void load()} notify={notify} />
     </Tabs>
   );
 }

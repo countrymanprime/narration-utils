@@ -82,7 +82,7 @@ flow, per the required record below.
 
 Each row below is the record the [required dependency record](#required-dependency-record) asks
 for, taken from the catalogs the release carries (`config/tts-assets.json`,
-`config/whisper-assets.json`, `config/spacy-assets.json`, `config/moonshine-assets.json`, `config/dictionary-assets.json`) and, for spaCy, from the
+`config/whisper-assets.json`, `config/spacy-assets.json`, `config/moonshine-assets.json`, `config/dictionary-assets.json`, `config/encoder-assets.json`) and, for spaCy, from the
 [provisioning spike](spacy-model-provisioning-spike.md). Every asset is installed by the one
 lifecycle in `apps/desktop/internal/assets` (stage, check size and SHA-256, rename into place,
 manifest), under the per-user cache `<user cache>/narration-utils/assets/<kind>/<provider>/<id>/<version>/`
@@ -192,7 +192,8 @@ provenance record.
 
 Recorded in [render-encode-master](../prds/render-encode-master.prd.md) Phase 0 ([build verification](ffmpeg-encoder-build.md),
 [ADR 0342](../adr/0342-the-mp3-encoder-is-a-pinned-gpl-ffmpeg-build-run-as-a-separate-process-and-writes-no-tag-frame.md), Proposed);
-catalogued in Phase 1. The wheel is downloaded, checked against the pinned hash and unpacked, and only the executable is kept.
+catalogued in Phase 1 (`config/encoder-assets.json`, kind `encoder`, provider `ffmpeg`, id `ffmpeg-7.1-essentials-win64`). The wheel is downloaded, checked
+against the pinned hash and unpacked, and only the executable is kept, and only when its own hash is the pinned one.
 
 | Field | Record |
 | --- | --- |
@@ -204,6 +205,7 @@ catalogued in Phase 1. The wheel is downloaded, checked against the pinned hash 
 | Provenance | `https://www.gyan.dev/ffmpeg/builds/` (the build); `https://github.com/imageio/imageio-ffmpeg` (the wheel) |
 | How it runs | A separate process the Go host starts; never linked, never in the release |
 | Runtime dependencies downloaded | None: a static build |
+| Install location | `<cache>/assets/encoder/ffmpeg/ffmpeg-7.1-essentials-win64/7.1-essentials/` (executable at `ffmpeg/ffmpeg.exe`) |
 | Removal, update | Settings > Local assets; no automatic update, a new build is a reviewed catalog change |
 | Test result | Linux build of the same family: MP3 at 192/256/320 kbps CBR passes `acx.format` and `acx.sample_rate`, and both MP3 readers agree on its length ([results](ffmpeg-encoder-build.md#results)); the Windows binary on Windows is pending the owner |
 | Feature | Encoding rendered WAV to MP3 (Phase 1) and M4B (Phase 2) |
@@ -397,6 +399,19 @@ placement.
 
 ### 5. Resemblyzer — approved-reference voice continuity, not character ID
 
+**Status (2026-09-27, provisional): reject for the character-continuity workflow.** The Phase 1
+trial (`character-continuity-review.prd.md`, [full record](character-continuity-acoustic-trial.md))
+confirms this entry's own risk note in the worst possible direction for cost: Resemblyzer needed
+the repository's first PyTorch dependency (`torch>=1.0.1`, confirmed in its own `requires_dist`)
+plus `scipy`, `librosa` and `scikit-learn`, and its hard dependency `webrtcvad` publishes no
+Windows wheel at all (sdist only, needs a C toolchain at install time) - a first-use blocker this
+app's download-a-pinned-binary provisioning model cannot satisfy. Against that cost, it separated
+characters the *least* well of the three engines trialed (2.83x same/different-character distance
+ratio, versus 3.81x for the dependency-free baseline and 6.86x for Praat) on a synthetic corpus
+built to be maximally differentiated - a real narrator's character work is likely to separate less
+well still, which is exactly this entry's own pre-registered risk. Provisional pending a re-run on
+a real corpus; see the trial record for the exact re-run command.
+
 **What it contributes.** Resemblyzer produces a 256-value speaker embedding
 and a similarity score between clips. It is designed to compare vocal identity
 or timbre, not to understand dialogue, fictional roles, or acting intention.
@@ -433,6 +448,20 @@ are unsuitable for identifying people, deanonymizing audio, or supporting
 voice-cloning functionality.
 
 ### 6. Praat — objective speech measurement and inspection
+
+**Status (2026-09-27, provisional): defer, recorded as the strongest fallback if the MVP's
+dependency-free features prove insufficient.** The Phase 1 trial
+([full record](character-continuity-acoustic-trial.md)) ran `praat-parselmouth` 0.4.7 against
+the same synthetic corpus as the dependency-free baseline: it separated same- from
+different-character clips more cleanly (6.86x median-distance ratio, 0% false-accept at the
+trial's conservative threshold, versus 3.81x/28.7% for the baseline), installed from PyPI in
+about 4 seconds with only a `numpy` dependency, and has prebuilt wheels for this repository's
+exact Windows/CPython 3.12 target - no PyTorch, no compiler. Its GPL-3.0-or-later license still
+argues for a separate-process integration rather than the in-process binding used in the trial
+(the trial script is throwaway research code, never packaged). Phase 8 is conditional on the
+Go dependency-free baseline (Q1 option A, adopted for the MVP) proving insufficient in practice;
+this trial does not show that it is, but records Praat as the credible next step if it does.
+Provisional pending a re-run on a real corpus.
 
 **What it contributes.** Praat is an established speech-analysis application
 and scripting environment. It can inspect/export pitch, intensity, formants,
@@ -695,7 +724,7 @@ Phase 7 and the UI Phase 8, both delivered).
 | --- | --- | --- | --- |
 | Princeton WordNet 3.1 | A custom, permissive "WordNet License" (BSD-like; commercial use allowed with the copyright notice retained) | Last major release 2011; effectively unmaintained | Rejected: same licence class as OEWN but stale data (11+ years of missing senses and corrections) |
 | **Open English WordNet (OEWN)** | **CC BY 4.0** ([globalwordnet/english-wordnet](https://github.com/globalwordnet/english-wordnet)) | Actively maintained, annual editions (2025 Edition, December 2025) | **Adopted**: an actively-maintained fork of Princeton WordNet's data with the same synset/definition/antonym structure, distributed under an unambiguous attribution licence |
-| Wiktionary-derived extracts | Share-alike terms (CC BY-SA), not one of the four classes in [License classes](#license-classes) | Actively maintained upstream, but no single reviewed extract artifact | Deferred: share-alike is not yet a reviewed class in this policy; would need its own policy decision before adoption, not folded into this one |
+| Wiktionary-derived extracts | Share-alike terms (CC BY-SA), not one of the four classes in [License classes](#license-classes) | Actively maintained upstream, but no single reviewed extract artifact | Deferred for this feature (the reader's word lookup): share-alike is not yet a reviewed class in this policy; would need its own policy decision before adoption, not folded into this one. **Update (2026-09-27):** that policy decision was made, scoped narrowly to a different feature's displayed IPA data only — [ADR 0405](../adr/0405-pronunciation-stays-local-first-behind-cmu-wiktextract-and-espeak-with-merriam-webster-as-the-one-narrator-keyed-online-source.md), prep-depth Phase 8. It does not reopen this row: the reader's word lookup still has no Wiktionary/Wiktextract source, and would need its own ADR to add one |
 
 **Licence check against this project's policy.** CC BY 4.0 is the **Attribution** class in [License classes](#license-classes):
 "Allowed. Display and retain the exact required attribution and model card." AGPL-3.0-or-later (this project's own licence,

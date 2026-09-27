@@ -198,6 +198,7 @@ func (h *Host) selectDeliveryProfile(scope, id, version string) (DeliveryProfile
 	default:
 		return DeliveryProfilesState{}, fmt.Errorf("unsupported scope %q: choose global or project", scope)
 	}
+	h.resaveDeliveryFindings()
 	return h.deliveryProfilesState()
 }
 
@@ -233,5 +234,10 @@ func (h *Host) saveDeliveryProfile(edit string) (deliveryprofile.Profile, error)
 	for i, rule := range decoded.Rules {
 		profile.Rules[i] = deliveryprofile.Rule{ID: rule.ID, Off: rule.Off, Min: rule.Min, Max: rule.Max}
 	}
-	return h.profileStore().Save(profile)
+	saved, err := h.profileStore().Save(profile)
+	if err != nil {
+		return deliveryprofile.Profile{}, err
+	}
+	h.resaveDeliveryFindings()
+	return saved, nil
 }

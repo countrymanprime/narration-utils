@@ -28,7 +28,7 @@ const healthyMoonshineCheck = `{"type": "engine_check", "engine": "moonshine", "
 
 const healthyCapabilities = `{"type": "capabilities", "asr": {"whisper": {"label": "Whisper", "platforms": [], "modes": ["live"], "asset": "whisper", "loadable": null}, "moonshine": {"label": "Moonshine", "platforms": ["windows"], "modes": ["live"], "asset": "moonshine", "loadable": null}}, "capture": {"dshow": {"label": "DirectShow", "platforms": ["windows"], "modes": [], "loadable": null}}}`
 
-const healthyGuideCapabilities = `{"type": "capabilities", "tts": {"piper": {"label": "Piper", "platforms": [], "modes": [], "asset": "tts", "loadable": null}}, "pronunciation": {"cmu": {"label": "CMU dictionary", "platforms": [], "modes": ["pronounce"], "loadable": null}, "espeak": {"label": "eSpeak NG", "platforms": [], "modes": ["pronounce"], "loadable": null}}}`
+const healthyGuideCapabilities = `{"type": "capabilities", "tts": {"piper": {"label": "Piper", "platforms": [], "modes": [], "asset": "tts", "loadable": null}}, "pronunciation": {"cmu": {"label": "CMU dictionary", "platforms": [], "modes": ["pronounce"], "loadable": null}, "wiktextract": {"label": "Wiktionary (via Wiktextract)", "platforms": [], "modes": ["pronounce"], "loadable": null}, "espeak": {"label": "eSpeak NG", "platforms": [], "modes": ["pronounce"], "loadable": null}}}`
 
 const healthyCompareCapabilities = `{"type": "capabilities", "asr": {"whisper": {"label": "Whisper (faster-whisper)", "platforms": [], "modes": ["batch"], "asset": "whisper", "loadable": null}}}`
 
@@ -39,14 +39,16 @@ func sidecarFile(name string) string {
 	return name
 }
 
-// healthyTree is what a good build embeds: the three sidecars, the five approved catalogs and the REAPER scripts.
+// healthyTree is what a good build embeds: the three sidecars, the seven approved catalogs and the REAPER scripts.
 func healthyTree(t *testing.T) fstest.MapFS {
 	t.Helper()
 	tree := fstest.MapFS{}
 	for _, name := range smokeSidecars {
 		tree[resourcesRoot+"/runtime/"+name+"/"+sidecarFile(name)] = &fstest.MapFile{Data: []byte("frozen " + name)}
 	}
-	for _, catalog := range []string{"tts-assets.json", "whisper-assets.json", "spacy-assets.json", "moonshine-assets.json", "dictionary-assets.json"} {
+	for _, catalog := range []string{
+		"tts-assets.json", "whisper-assets.json", "spacy-assets.json", "moonshine-assets.json", "dictionary-assets.json", "wiktextract-assets.json", "encoder-assets.json",
+	} {
 		body, err := os.ReadFile(layout.RepoFile("config/" + catalog))
 		if err != nil {
 			t.Fatal(err)

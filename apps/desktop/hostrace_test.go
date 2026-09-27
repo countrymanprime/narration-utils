@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/countrymanprime/narration-utils/shell/internal/liveflags"
+	"github.com/countrymanprime/narration-utils/shell/internal/project"
 	"github.com/countrymanprime/narration-utils/shell/internal/recents"
 )
 
@@ -53,6 +54,8 @@ var stressReaders = []stressReader{
 	{"GuideBuildState", func(h *Host) { _, _ = h.GuideBuildState() }},
 	{"GuideEntities", func(h *Host) { _, _ = h.GuideEntities() }},
 	{"GuidePreview", func(h *Host) { _, _ = h.GuidePreview("missing", nil) }},
+	{"GuidePronunciationQueries", func(h *Host) { _, _ = h.GuidePronunciationQueries() }},
+	{"GuidePronunciationQueriesCSV", func(h *Host) { _, _ = h.GuidePronunciationQueriesCSV() }},
 	{"ManuscriptChapters", func(h *Host) { _, _ = h.ManuscriptChapters() }},
 	{"ManuscriptImportState", func(h *Host) { _, _ = h.ManuscriptImportState("missing") }},
 	{"ManuscriptNotes", func(h *Host) { _, _ = h.ManuscriptNotes("missing") }},
@@ -61,6 +64,9 @@ var stressReaders = []stressReader{
 	{"ManuscriptReader", func(h *Host) { _, _ = h.ManuscriptReader() }},
 	{"ManuscriptReaderState", func(h *Host) { _, _ = h.ManuscriptReaderState() }},
 	{"ManuscriptSearch", func(h *Host) { _, _ = h.ManuscriptSearch("word") }},
+	{"PrepMarkupList", func(h *Host) { _, _ = h.PrepMarkupList("missing") }},
+	{"PrepMarkupSave (unknown line)", func(h *Host) { _, _ = h.PrepMarkupSave("missing", "missing", 0, 1, "stress", "") }},
+	{"PrepMarkupDelete (unknown span)", func(h *Host) { _, _ = h.PrepMarkupDelete("missing", "missing") }},
 	{"ProjectRecents", func(h *Host) { _, _ = h.ProjectRecents() }},
 	{"SystemSettingsForScope global", func(h *Host) { _, _ = h.SystemSettingsForScope("global") }},
 	{"SystemSettingsForScope project", func(h *Host) { _, _ = h.SystemSettingsForScope("project") }},
@@ -92,6 +98,9 @@ var stressReaders = []stressReader{
 	{"CreditsSetupState", func(h *Host) { _, _ = h.CreditsSetupState() }},
 	{"CreditsSetupDismiss (unknown scope)", func(h *Host) { _, _ = h.CreditsSetupDismiss("forever") }},
 	{"CreditsSetStatus (unknown kind)", func(h *Host) { _, _ = h.CreditsSetStatus("missing", "finalized") }},
+	{"ProductionPlan", func(h *Host) { _, _ = h.ProductionPlan() }},
+	{"ProductionSetDeadline (bad date)", func(h *Host) { _, _ = h.ProductionSetDeadline("not-a-date", nil) }},
+	{"ProductionSaveMilestones (no name)", func(h *Host) { _, _ = h.ProductionSaveMilestones([]project.Milestone{{DueDate: "2026-12-01"}}) }},
 	{"TeleprompterLocate", func(h *Host) { _, _ = h.TeleprompterLocate("c-0001", "", "") }},
 	{"TeleprompterSaveFlags", func(h *Host) {
 		_, _ = h.TeleprompterSaveFlags("ch-1", []liveflags.Flag{{Kind: "misread", ParagraphID: "p-1", WordStart: 0, WordEnd: 1}})
@@ -135,6 +144,8 @@ var stressReaders = []stressReader{
 	{"FindingsStopLoop (no bridge)", func(h *Host) { _, _ = h.FindingsStopLoop() }},
 	{"FindingsGoToRead (unknown finding)", func(h *Host) { _, _ = h.FindingsGoToRead("missing", 0) }},
 	{"FindingsLoopRead (unknown finding)", func(h *Host) { _, _ = h.FindingsLoopRead("missing", 0) }},
+	{"WorkspaceGoTo (no project)", func(h *Host) { _, _ = h.WorkspaceGoTo("missing", 0) }},
+	{"WorkspaceLoop (no project)", func(h *Host) { _, _ = h.WorkspaceLoop("missing", 0, 0) }},
 	{"TakeReviewScanState", func(h *Host) { _, _ = h.TakeReviewScanState() }},
 	{"TakeReviewScanCancel (nothing running)", func(h *Host) { _, _ = h.TakeReviewScanCancel() }},
 	{"TakeComparisonState", func(h *Host) { _, _ = h.TakeComparisonState() }},
@@ -158,6 +169,9 @@ var stressReaders = []stressReader{
 	{"StageConfirm (refused)", func(h *Host) { _, _ = h.StageConfirm("c-0001", "editing", "key") }},
 	{"StageDismiss (refused)", func(h *Host) { _, _ = h.StageDismiss("c-0001", "editing", "key") }},
 	{"StageRevert (refused)", func(h *Host) { _, _ = h.StageRevert("c-0001") }},
+	{"ProductionOverview", func(h *Host) { _, _ = h.ProductionOverview() }},
+	{"ProductionStartTimer (unknown chapter)", func(h *Host) { _, _ = h.ProductionStartTimer("missing", "recording") }},
+	{"ProductionStopTimer", func(h *Host) { _, _ = h.ProductionStopTimer() }},
 	{"emit callbacks", func(h *Host) {
 		h.emitTranscript(emptyTranscript())
 		h.emitTeleprompterState(map[string]any{"phase": "idle"})

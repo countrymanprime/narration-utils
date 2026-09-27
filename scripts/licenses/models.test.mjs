@@ -82,6 +82,8 @@ test('checkDocument reports a table that no longer matches the catalogs', () => 
   writeFileSync(join(dir, 'config', 'spacy-assets.json'), JSON.stringify({ models: [] }));
   writeFileSync(join(dir, 'config', 'moonshine-assets.json'), JSON.stringify({ models: [] }));
   writeFileSync(join(dir, 'config', 'dictionary-assets.json'), JSON.stringify({ dictionaries: [] }));
+  writeFileSync(join(dir, 'config', 'wiktextract-assets.json'), JSON.stringify({ sources: [] }));
+  writeFileSync(join(dir, 'config', 'encoder-assets.json'), JSON.stringify({ encoders: [] }));
   const generated = generateDocument(`${BEGIN}\n${END}\n`, loadCatalogs(join(dir, 'config')), review);
 
   assert.equal(checkDocument(generated, loadCatalogs(join(dir, 'config')), review), true);
@@ -94,7 +96,19 @@ test('the dictionary catalog is read with the model catalogs, under its own key'
   assert.ok(items.some((item) => item.kind === 'dictionary' && `${item.provider}/${item.id}` === 'oewn/oewn-2025'));
 });
 
-test('the committed provenance document matches the five catalogs (run `node scripts/licenses/models.mjs` to rewrite it)', async () => {
+test('the wiktextract catalog is read with the model catalogs, under its own key', () => {
+  const items = loadCatalogs(join(REPO_ROOT, 'config'));
+
+  assert.ok(items.some((item) => item.kind === 'wiktextract' && `${item.provider}/${item.id}` === 'wiktextract/wiktextract-en-pronunciation'));
+});
+
+test('the encoder catalog is read with the model catalogs, under its own key', () => {
+  const items = loadCatalogs(join(REPO_ROOT, 'config'));
+
+  assert.ok(items.some((item) => item.kind === 'encoder' && `${item.provider}/${item.id}` === 'ffmpeg/ffmpeg-7.1-essentials-win64'));
+});
+
+test('the committed provenance document matches the seven catalogs (run `node scripts/licenses/models.mjs` to rewrite it)', async () => {
   const { readFileSync } = await import('node:fs');
   const document = readFileSync(join(REPO_ROOT, 'docs/architecture/model-provenance.md'), 'utf8');
   const reviewFile = JSON.parse(readFileSync(join(REPO_ROOT, 'scripts/licenses/model-review.json'), 'utf8'));

@@ -10,7 +10,7 @@
 
 ## Evidence
 
-**The desktop shell (Windows is the release gate, [ADR 0027](../adr/0027-windows-gates-and-creates-the-release.md); macOS and Linux are optional builds).**
+**The desktop shell (Windows is the release gate, [ADR 0027](../adr/0027-windows-gates-and-creates-the-release.md); Windows is the only supported platform since D74, [ADR 0412](../adr/0412-windows-is-the-only-supported-platform-for-now.md)).**
 
 - The window is created by `wails.Run` with no `Windows` options and no `Menu` (`apps/desktop/main.go:41-52`): only title, size, `MinWidth: 960` (`:45`), `MinHeight`, the asset server, the host binding and the single-instance lock. So no native menu bar exists, and every WebView2 setting is Wails' default. (That is Wails v2 at `f49e241`; on Wails v3, `main.go` opens one window named `main` from `mainWindowOptions()`, still with no menu, and sets back the v2 defaults v3 changed: Ctrl+wheel on, the browser menu off.)
 - **Wails turns WebView2's browser shortcuts off.** Wails' Windows frontend calls `settings.PutAreBrowserAcceleratorKeysEnabled(false)` unconditionally (`internal/frontend/desktop/windows/frontend.go:596`). WebView2 documents that this disables the browser's own accelerator keys: find (Ctrl+F, F3), print (Ctrl+P), reload (Ctrl+R, F5), keyboard zoom (Ctrl+Plus, Ctrl+Minus and, by the same rule, Ctrl+0), DevTools, and the browser keys for Back, Forward and Search. So **Ctrl+0 does not reset zoom today, and Ctrl+=/Ctrl+- do not zoom** (to confirm in Phase 0). The keys are delivered to the page as ordinary `keydown` events instead, so the page can handle them itself.
@@ -161,9 +161,9 @@ The narrator at a desktop or laptop, usually with REAPER beside the app on one s
 | --- | --- | --- | --- | --- | --- | --- |
 | 0 | Verify today on Wails v3 | Scripted Windows run of the v3 build: which zoom gestures work, whether zoom persists, whether mouse buttons 4/5 and Alt+Left navigate; record the result (the zoom mechanism is D29's `Window.SetZoom`) | pending | 1 | - | - |
 | 1 | Back and Forward | `useAppHistory`, header buttons, guarded back/forward, Alt+Left/Right, mouse buttons, project floor; tests, visual rows (with reflow), aria header snapshot, catalog rows, guide, threat-model note | complete | 0 | Q1, Q5, Q8 | - |
-| 2 | Zoom controls | The zoom binding on `Window.SetZoom`/`GetZoom` (D29), header group, Ctrl shortcuts, clamping (Q6, ADR 0201), announcements, wire contracts, visual rows, aria, catalog, guide | pending | - | 0, 1, Q1, Q6, Q9, Q10, Wails v3 migration | - |
+| 2 | Zoom controls | The zoom binding on `Window.SetZoom`/`GetZoom` (D29), header group (D79: before the engine chip that replaces the REAPER pill in [stage navigation](stage-navigation-and-page-replacement.prd.md) Phase 1, and after a running timer chip; the header is one design, ADR 0407), Ctrl shortcuts, clamping (Q6, ADR 0201), announcements, wire contracts, visual rows, aria, catalog, guide | pending | - | 0, 1, Q1, Q6, Q9, Q10, Wails v3 migration | - |
 | 3 | Remember zoom | Global-only setting written on change, read before the window is created and passed as its startup `Zoom`; optional Settings > Appearance row (Q4 C) | pending | - | 2, Q4 | - |
-| 4 | macOS app menu (only if Q7 B) | Wails `Menu` with View (Zoom In, Zoom Out, Actual Size) and History (Back, Forward), calling the same UI actions through an event | pending | - | 2, Q7 | - |
+| 4 | macOS app menu (only if Q7 B) | Wails `Menu` with View (Zoom In, Zoom Out, Actual Size) and History (Back, Forward), calling the same UI actions through an event | deferred by D74 (no macOS build, [ADR 0412](../adr/0412-windows-is-the-only-supported-platform-for-now.md)) | - | 2, Q7 | - |
 
 ### Phase Details
 

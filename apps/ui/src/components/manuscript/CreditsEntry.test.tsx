@@ -108,4 +108,18 @@ describe('CreditsEntry (Manuscript pseudo-entry for opening/closing credits, PRD
     render(<CreditsEntry kind="opening" preview={preview} expanded onToggle={vi.fn()} textClass="text-sm" onBooth={vi.fn()} />);
     expect(screen.queryByRole('button', { name: /Open booth/ })).toBeNull();
   });
+
+  it('shows a Companion button beside Booth, gated the same way (booth-mode-and-companion-panel.prd.md Phase 7)', () => {
+    const preview: CreditsRenderResult = { text: 'Alice, written by Lewis Carroll.', words: 5, unresolved: [] };
+    const onCompanion = vi.fn();
+    render(<CreditsEntry kind="opening" preview={preview} expanded onToggle={vi.fn()} textClass="text-sm" onCompanion={onCompanion} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Open companion for Opening credits' }));
+    expect(onCompanion).toHaveBeenCalledTimes(1);
+  });
+
+  it('shows no Companion button on a credits card with nothing to read', () => {
+    const preview: CreditsRenderResult = { text: '', words: 0, unresolved: [] };
+    render(<CreditsEntry kind="opening" preview={preview} expanded onToggle={vi.fn()} textClass="text-sm" onCompanion={vi.fn()} />);
+    expect(screen.queryByRole('button', { name: /Open companion/ })).toBeNull();
+  });
 });

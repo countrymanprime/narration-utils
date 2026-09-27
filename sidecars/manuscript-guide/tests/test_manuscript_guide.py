@@ -970,7 +970,7 @@ class CapabilitiesTests(unittest.TestCase):
         report = guide.capabilities_report()
 
         self.assertEqual(set(report["tts"]), {"piper"})
-        self.assertEqual(set(report["pronunciation"]), {"cmu", "espeak"})
+        self.assertEqual(set(report["pronunciation"]), {"cmu", "wiktextract", "espeak"})
 
     def test_the_command_prints_one_json_report_and_exits_zero(self):
         out = io.StringIO()
