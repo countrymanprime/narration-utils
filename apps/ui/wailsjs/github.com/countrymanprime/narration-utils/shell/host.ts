@@ -1416,6 +1416,13 @@ export function TeleprompterStop(): $CancellablePromise<string> {
     return $Call.ByID(1610168667);
 }
 
+/**
+ * TrackSelectInReaper is the slide-over's "Select in REAPER" binding.
+ */
+export function TrackSelectInReaper(trackGUID: string): $CancellablePromise<string> {
+    return $Call.ByID(3045535341, trackGUID);
+}
+
 export function TracksDiscover(): $CancellablePromise<string> {
     return $Call.ByID(1450079861);
 }
