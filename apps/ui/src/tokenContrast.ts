@@ -60,7 +60,7 @@ export function countRootRules(css: string): number {
   return (stripComments(css).match(/:root[^{}]*\{/g) ?? []).length;
 }
 
-// The theme is one app-wide setting (ADR 0363, which superseded ADR 0360 Q1's forced-dark booth block): no page or surface
+// The theme is one app-wide setting (ADR 0365, which superseded ADR 0360 Q1's forced-dark booth block): no page or surface
 // may force light or dark. This names every rule, other than the two theme blocks, that pins a `color-scheme` or redeclares
 // a colour token the dark theme sets - a scoped palette like that is drawn whatever the narrator's theme is, and the pairs
 // in paletteContrast.test.ts never measure it. A token neither theme varies (a size, a derived alias) may still be scoped.

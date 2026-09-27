@@ -1,6 +1,6 @@
 # 0362. The studio token batch aliases meter and badge colours, and the booth block overrides only what it must
 
-**Status:** Proposed (its booth block decision, and checking that block as a third theme map, are superseded by [ADR 0363](0363-the-theme-is-one-global-setting-and-the-booth-and-companion-follow-it.md); the meter aliases, badge fills and `experimental` tone stand)
+**Status:** Proposed (its booth block decision, and checking that block as a third theme map, are superseded by [ADR 0365](0365-the-theme-is-one-global-setting-and-the-booth-and-companion-follow-it.md); the meter aliases, badge fills and `experimental` tone stand)
 **Date:** 2026-09-26
 **Supersedes:**
 

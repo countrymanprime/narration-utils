@@ -40,7 +40,7 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-// The booth mock (mock 03): status, script, rail and commands together, in whichever theme the atlas captures (ADR 0363).
+// The booth mock (mock 03): status, script, rail and commands together, in whichever theme the atlas captures (ADR 0365).
 export const Booth: Story = {
   args: {
     rail: (

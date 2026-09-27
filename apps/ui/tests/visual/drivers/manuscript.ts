@@ -262,7 +262,7 @@ export const manuscriptDrivers: Record<string, Driver> = {
     await page.getByRole('toolbar', { name: 'Booth commands' }).waitFor();
   },
   // The booth in the Dark theme, chosen the way a narrator chooses it (Settings > Appearance). The booth follows the app
-  // theme (ADR 0363): if it ever forced one palette again, this would render the same as 'booth-default' and the suite's
+  // theme (ADR 0365): if it ever forced one palette again, this would render the same as 'booth-default' and the suite's
   // identical-states check would fail the run.
   'booth-dark': async (page) => {
     await goToPage(page, 'Settings');

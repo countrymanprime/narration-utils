@@ -1,4 +1,4 @@
-# 0363. The theme is one global setting, and the booth and the companion follow it
+# 0365. The theme is one global setting, and the booth and the companion follow it
 
 **Status:** Accepted
 **Date:** 2026-09-27

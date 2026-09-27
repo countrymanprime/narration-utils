@@ -16,7 +16,7 @@ import { countRootRules, forcedThemeRules, parseThemes, resolveContrast, rootRul
 
 const CSS = readFileSync(join(__dirname, 'styles.css'), 'utf8');
 const THEMES = parseThemes(CSS);
-// The app has exactly two themes, and every surface draws with the active one (ADR 0363, which superseded the booth's own
+// The app has exactly two themes, and every surface draws with the active one (ADR 0365, which superseded the booth's own
 // forced-dark block of ADR 0360 Q1): the booth and the companion are checked by the same pairs, in both themes.
 const THEME_NAMES: Theme[] = ['light', 'dark'];
 
@@ -192,7 +192,7 @@ describe('the token parser sees every :root rule of styles.css', () => {
     expect(THEMES.dark.surface).not.toBe(THEMES.light.surface);
   });
 
-  it('finds no rule outside the two theme blocks that forces a colour scheme or repaints a theme colour (ADR 0363)', () => {
+  it('finds no rule outside the two theme blocks that forces a colour scheme or repaints a theme colour (ADR 0365)', () => {
     // A scoped palette (the booth's old `[data-surface='booth']` block) would be drawn whatever the narrator's theme is,
     // and no pair below would measure it.
     expect(forcedThemeRules(CSS)).toEqual([]);

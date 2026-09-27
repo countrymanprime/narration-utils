@@ -100,7 +100,7 @@ describe('parseThemes', () => {
   });
 });
 
-describe('forcedThemeRules (ADR 0363: the theme is global, no surface forces light or dark)', () => {
+describe('forcedThemeRules (ADR 0365: the theme is global, no surface forces light or dark)', () => {
   const css = `
     :root { --a: #111111; --size: 1rem; color-scheme: light; }
     :root[data-theme='dark'] { --a: #eeeeee; color-scheme: dark; }

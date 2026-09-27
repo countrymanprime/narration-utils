@@ -29,7 +29,7 @@ describe('FocusShell', () => {
     expect(screen.getByRole('region', { name: 'Booth commands' })).toBeTruthy();
   });
 
-  it('follows the app theme: it sets no surface, theme or colour-scheme of its own (ADR 0363)', () => {
+  it('follows the app theme: it sets no surface, theme or colour-scheme of its own (ADR 0365)', () => {
     const { container } = render(
       <FocusShell status="s" rail="r" commands="c">
         m

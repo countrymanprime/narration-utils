@@ -112,7 +112,7 @@
   --font-size-sm: 0.82rem;
   --font-size-base: 0.88rem;
   /* The booth's script size (booth-mode-and-companion-panel.prd.md). The booth follows the app theme like every other
-     surface (ADR 0363, superseding ADR 0360 Q1's forced-dark booth block), so this is its only booth-only token: a size,
+     surface (ADR 0365, superseding ADR 0360 Q1's forced-dark booth block), so this is its only booth-only token: a size,
      declared once here, the same in light and dark. */
   --font-size-booth-script: 1.1rem;
   color-scheme: light;
