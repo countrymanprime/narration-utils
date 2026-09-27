@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"math"
+	"strings"
 	"time"
 
 	"github.com/countrymanprime/narration-utils/shell/internal/chaptermatch"
@@ -28,6 +29,9 @@ const (
 	locateNoRecording       = "no_recording"
 	locateSourceMissing     = "source_missing"
 	locateSourceUnsupported = "source_unsupported"
+	// locateRecording is REAPER recording onto the chapter's track right now (read-aloud-resume-from-daw PRD Phase 4): its
+	// take's file is still growing, so nothing is located and nothing is offered.
+	locateRecording = "recording"
 )
 
 // tailRange is the stretch of the source file the locate transcribed, in seconds of that file.
@@ -41,7 +45,8 @@ type tailRange struct {
 // which is the narrator's pick when they made one; Tail and Located are set once the sidecar ran. LastReading is
 // where the prompter last stopped in the chapter (ADR 0205), and Verdict reconciles it with Located
 // (read-aloud-resume-from-daw PRD Phase 3): it is set on every status, so a chapter with no track still offers its
-// last reading.
+// last reading. DAWSource says where RecordedEnd came from, REAPER's live answer or the saved .rpp, and DAWAt which point
+// of the track it is, the edit cursor or the end of the audio (PRD Phase 4, RD2); both are empty when no track was read.
 type teleprompterLocate struct {
 	Status      string                     `json:"status"`
 	Match       chapterTrackMatch          `json:"match"`
@@ -51,12 +56,16 @@ type teleprompterLocate struct {
 	Located     *teleprompter.Located      `json:"located"`
 	LastReading *teleprompter.Reading      `json:"lastReading"`
 	Verdict     teleprompter.ResumeVerdict `json:"verdict"`
+	DAWSource   string                     `json:"dawSource,omitempty"`
+	DAWAt       string                     `json:"dawAt,omitempty"`
 }
 
 // TeleprompterLocate finds where to resume reading chapterID from what is already recorded (teleprompter-manuscript-
 // integration PRD Phase 9, ADR 0111): the chapter's track (the matcher's confident track, or trackGUID when the
-// narrator picked one), where its audio ends as of the .rpp's last save (Phase 8), and the last
-// teleprompter.DefaultTailSeconds before that end transcribed and placed in the chapter by the sidecar. model is the
+// narrator picked one), where on it REAPER is now (the edit cursor on its recorded audio, else the end of that audio,
+// read-aloud-resume-from-daw PRD Phase 4, ADR 0349) or, when REAPER cannot say, where its audio ends as of the .rpp's
+// last save (Phase 8), and the last teleprompter.DefaultTailSeconds before that time transcribed and placed in the
+// chapter by the sidecar. While REAPER records onto the track it answers recording and locates nothing. model is the
 // Whisper model id ("" for the teleprompter's default); like TeleprompterStart it answers asset_required instead of
 // downloading one, but only once there is audio to read. Every other answer carries the prompter's last reading and the
 // reconciled verdict (PRD Phase 3). It only reads: nothing is recorded, moved or linked.
@@ -66,6 +75,11 @@ func (h *Host) TeleprompterLocate(chapterID, trackGUID, model string) (string, e
 
 func (h *Host) teleprompterLocate(chapterID, trackGUID, model string) (any, error) {
 	svc := h.services()
+	return h.teleprompterLocateWith(svc, trackStateReaderFrom(svc), chapterID, trackGUID, model)
+}
+
+// teleprompterLocateWith is TeleprompterLocate with the Track state role given (nil when REAPER cannot be asked).
+func (h *Host) teleprompterLocateWith(svc hostServices, live trackStateReader, chapterID, trackGUID, model string) (any, error) {
 	if svc.teleprompter == nil {
 		return nil, fmt.Errorf("the teleprompter service is unavailable")
 	}
@@ -73,7 +87,7 @@ func (h *Host) teleprompterLocate(chapterID, trackGUID, model string) (any, erro
 	if err != nil {
 		return nil, err
 	}
-	result, err := h.locateTail(svc, chapterID, trackGUID, model, match, project)
+	result, err := h.locateTail(svc, live, chapterID, trackGUID, model, match, project)
 	if err != nil {
 		return nil, err
 	}
@@ -96,13 +110,21 @@ func withResumeVerdict(projectFolder, chapterID string, result teleprompterLocat
 		reading = nil
 	}
 	result.LastReading = reading
+	if result.Status == locateRecording {
+		// The narrator is recording this chapter now: nothing to offer, not even the last reading.
+		result.Verdict = teleprompter.ResumeVerdict{Kind: teleprompter.VerdictNone, Tokens: len(script.Tokens)}
+		return result
+	}
 	result.Verdict = teleprompter.Reconcile(result.Located, reading, script, teleprompter.ResumeTolerance)
+	if result.DAWSource == dawSourceLive && result.Verdict.DAW != nil {
+		result.Verdict.DAW.Source = teleprompter.DAWSourceLive
+	}
 	return result
 }
 
-// locateTail reads the chapter's track and places its recorded tail: a teleprompterLocate, or the model gate's
-// asset_required answer.
-func (h *Host) locateTail(svc hostServices, chapterID, trackGUID, model string, match chapterTrackMatch, project tracks.Project) (any, error) {
+// locateTail reads the chapter's track, live when REAPER can say and from the saved project otherwise, and places its
+// recorded tail: a teleprompterLocate, or the model gate's asset_required answer.
+func (h *Host) locateTail(svc hostServices, live trackStateReader, chapterID, trackGUID, model string, match chapterTrackMatch, project tracks.Project) (any, error) {
 	result := teleprompterLocate{Match: match}
 	candidate, err := locateTrack(match, project, trackGUID)
 	if err != nil {
@@ -113,7 +135,16 @@ func (h *Host) locateTail(svc hostServices, chapterID, trackGUID, model string, 
 		return result, nil
 	}
 	result.Track = &trackOption{GUID: candidate.TrackGUID, Name: candidate.TrackName, Index: candidate.TrackIndex}
+	result.DAWSource, result.DAWAt = dawSourceSaved, liveAtEnd
 	end, ok := chaptermatch.RecordedEnd(project, *candidate)
+	if state, reachable := readLiveTrack(context.Background(), live, project.Path, candidate.TrackGUID); reachable {
+		result.DAWSource = dawSourceLive
+		if recordingOn(state) {
+			result.Status, result.DAWAt = locateRecording, ""
+			return result, nil
+		}
+		end, result.DAWAt, ok = liveRecordedEnd(state, savedTrack(project, candidate.TrackGUID), candidateSpan(*candidate), svc.config.projectFolder)
+	}
 	if !ok {
 		result.Status = locateNoRecording
 		return result, nil
@@ -171,6 +202,25 @@ func locateTrack(match chapterTrackMatch, project tracks.Project, trackGUID stri
 		}
 	}
 	return nil, fmt.Errorf("that track is not in the selected REAPER project")
+}
+
+// savedTrack is the saved project's track guid names, or nil when the .rpp does not have it.
+func savedTrack(project tracks.Project, guid string) *tracks.Track {
+	for i := range project.Tracks {
+		if strings.EqualFold(project.Tracks[i].GUID, guid) {
+			return &project.Tracks[i]
+		}
+	}
+	return nil
+}
+
+// candidateSpan is the chapter region's span for a candidate found through a region (a track holding several chapters),
+// as chaptermatch.RecordedEnd reads it, and nil for a whole track.
+func candidateSpan(candidate chaptermatch.Candidate) *tracks.Span {
+	if candidate.Region == nil {
+		return nil
+	}
+	return &tracks.Span{Start: candidate.Region.Start, End: candidate.Region.End}
 }
 
 func locatedStatus(located teleprompter.Located) string {

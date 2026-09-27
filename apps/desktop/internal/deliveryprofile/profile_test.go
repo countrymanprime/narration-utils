@@ -384,6 +384,43 @@ func TestAnMP3BelowTheBitrateOrNotCBRMissesTheFormatRule(t *testing.T) {
 	}
 }
 
+func TestADecodedMP3sLevelsAreJudgedLikeAWAVs(t *testing.T) {
+	report := mp3Report(true, 192, 192)
+	report.MP3LevelsDecoded = true
+	report.RMSdBFS, report.SamplePeakdBFS, report.NoiseFloordBFS = v(-20), v(-4), v(-65)
+	got := resultsByRule(EvaluateFile(report, ACX()).Results)
+	for _, id := range []string{"acx.rms", "acx.peak", "acx.noise_floor"} {
+		if got[id].Status != StatusMet {
+			t.Errorf("%s on a decoded MP3 = %+v, want met from its decoded samples", id, got[id])
+		}
+	}
+	// The container rules still read from the frame headers, unaffected by the decode.
+	if got["acx.format"].Status != StatusMet {
+		t.Errorf("acx.format on a decoded MP3 = %+v, want still met from its headers", got["acx.format"])
+	}
+}
+
+func TestADecodedMP3WithAnOutOfRangeLevelMissesTheRule(t *testing.T) {
+	report := mp3Report(true, 192, 192)
+	report.MP3LevelsDecoded = true
+	report.RMSdBFS = v(-30) // below ACX's -23 dB minimum
+	got := resultsByRule(EvaluateFile(report, ACX()).Results)["acx.rms"]
+	if got.Status != StatusNotMet || got.Violation != ViolationBelowMin {
+		t.Errorf("acx.rms at -30 dB on a decoded MP3 = %+v, want not met below the minimum", got)
+	}
+}
+
+func TestADecodedMP3WithNoUsableLevelIsNotMeasurableNotNotChecked(t *testing.T) {
+	report := mp3Report(true, 192, 192)
+	report.MP3LevelsDecoded = true // a decode was attempted (and found only silence, or failed outright)
+	got := resultsByRule(EvaluateFile(report, ACX()).Results)
+	for _, id := range []string{"acx.rms", "acx.peak", "acx.noise_floor"} {
+		if got[id].Status != StatusNotMeasurable {
+			t.Errorf("%s after an attempted decode with no usable value = %+v, want not measurable, not not checked", id, got[id])
+		}
+	}
+}
+
 func TestTheBookJudgesChannelsAcrossWAVAndMP3Files(t *testing.T) {
 	stereoMP3 := mp3Report(true, 192, 192)
 	stereoMP3.Channels = 2

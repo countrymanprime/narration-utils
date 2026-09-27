@@ -56,6 +56,15 @@ export const manuscriptDrivers: Record<string, Driver> = {
     await openResumePrompt(page, '?mockResume=prompter_only');
     await page.getByText(/Your last reading stopped at/).waitFor();
   },
+  // Live DAW state (read-aloud-resume-from-daw.prd.md Phase 4): the REAPER place read from REAPER now, and a recording.
+  'read-aloud-resume-disagree-live': async (page) => {
+    await openResumePrompt(page, '?mockResume=disagree_live');
+    await page.getByText(/in REAPER now/).waitFor();
+  },
+  'read-aloud-resume-recording': async (page) => {
+    await openResumePrompt(page, '?mockResume=recording');
+    await page.getByText(/REAPER is recording on this track now/).waitFor();
+  },
   'read-aloud-resume-not-found': async (page) => {
     await openResumePrompt(page, '?mockResume=not_found');
     await page.getByText(/did not match this chapter/).waitFor();
@@ -77,6 +86,21 @@ export const manuscriptDrivers: Record<string, Driver> = {
     await openResumePrompt(page);
     await page.getByRole('button', { name: 'Resume from here' }).click();
     await page.getByRole('region', { name: 'Where you stopped' }).waitFor({ state: 'detached' });
+  },
+  // REAPER playing makes the prompt go away by itself (read-aloud-resume-from-daw.prd.md Phase 5, RD7): the DAW mock pushes
+  // its seeded transport (playing) on subscribe, as the host's heartbeat push would when REAPER starts.
+  'read-aloud-resume-after-reaper-plays': async (page) => {
+    await page.goto('/?mockDawPlayhead=12');
+    await settlePage(page);
+    await goToPage(page, 'Manuscript');
+    await clickVisible(page, 'button', 'Read Chapter 1 aloud');
+    const dialog = page.getByRole('dialog', { name: /Read aloud/ });
+    await dialog.getByRole('button', { name: 'Play' }).waitFor();
+    await dialog
+      .getByRole('heading', { name: /Chapter 1/ })
+      .first()
+      .waitFor();
+    await dialog.getByRole('region', { name: 'Where you stopped' }).waitFor({ state: 'detached' });
   },
   // A full session (start, then stop) inside the same dialog open, then a wait for the dialog to settle back to idle:
   // the prompt must not return for the rest of this open, so the next Start begins at the top with nothing to clear.

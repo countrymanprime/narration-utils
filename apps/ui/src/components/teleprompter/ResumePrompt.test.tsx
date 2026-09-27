@@ -8,7 +8,7 @@ import { ApiProvider } from '../../api/ApiContext';
 import { createMockApi } from '../../api/mockApi';
 import { CommandRouter } from '../../input/router';
 import { WIRE_TELEPROMPTER_DEVICES } from '../../api/mockFixtures';
-import type { NarrationApi, TeleprompterLocateResult, TeleprompterState } from '../../types';
+import type { DawTransport, NarrationApi, TeleprompterLocateResult, TeleprompterResumeFollowEvent, TeleprompterState } from '../../types';
 
 // The read-aloud dialog's resume prompt (read-aloud-resume-from-daw.prd.md Phase 1): a compact notice or choice for where
 // the chapter's recording ends (TeleprompterLocate, ADR 0111). It never starts anything by itself, and it settles - and
@@ -320,6 +320,186 @@ describe('ResumePrompt', () => {
       await userEvent.setup().click(within(region).getByRole('button', { name: 'Continue there' }));
       await startReading(userEvent.setup());
       expect(teleprompterStart).toHaveBeenCalledWith(expect.objectContaining({ startWord: located.verdict.prompter.word }));
+    });
+  });
+
+  describe('live DAW state (Phase 4)', () => {
+    // A found answer read from REAPER's live state rather than the saved project (ADR 0349).
+    const readLive = (at: 'cursor' | 'end'): Partial<NarrationApi> => {
+      const base = createMockApi();
+      return {
+        teleprompterLocate: async (chapterId, options) => {
+          const result = await base.teleprompterLocate(chapterId, options);
+          if (result.status === 'asset_required') return result;
+          return {
+            ...result,
+            dawSource: 'live',
+            dawAt: at,
+            verdict: { ...result.verdict, daw: result.verdict.daw && { ...result.verdict.daw, source: 'live' } },
+          };
+        },
+      };
+    };
+
+    it('labels a place read from REAPER "in REAPER now", never "as of the last save"', async () => {
+      renderDialog({}, { resume: 'disagree_live' });
+
+      const region = await prompt();
+      const reaper = await within(region).findByRole('button', { name: /REAPER/ });
+      expect(within(reaper).getByText(/in REAPER now/)).toBeTruthy();
+      expect(within(region).queryByText(/last save/)).toBeNull();
+    });
+
+    it("says the resume point is REAPER's edit cursor when the cursor sits on the recording", async () => {
+      renderDialog(readLive('cursor'));
+
+      const region = await prompt();
+      expect(await within(region).findByText(/Chapter 1 track · in REAPER now/)).toBeTruthy();
+      expect(within(region).getByText(/Continuing at REAPER's edit cursor/)).toBeTruthy();
+      expect(within(region).queryByText(/last save/)).toBeNull();
+    });
+
+    it('says the resume point is where the recording ends in REAPER when the cursor is parked elsewhere', async () => {
+      renderDialog(readLive('end'));
+
+      const region = await prompt();
+      expect(await within(region).findByText(/Chapter 1 track · in REAPER now/)).toBeTruthy();
+      expect(within(region).getByText(/Continuing where your recording ends/)).toBeTruthy();
+    });
+
+    it('offers nothing while REAPER records the chapter, and says reading starts from the top', async () => {
+      const { teleprompterStart } = renderDialog({}, { resume: 'recording' });
+
+      const region = await prompt();
+      expect(await within(region).findByText(/REAPER is recording on this track now/)).toBeTruthy();
+      expect(within(region).queryByRole('button', { name: /Resume|Continue/ })).toBeNull();
+      expect(teleprompterStart).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('following REAPER while shown (Phase 5)', () => {
+    // A host that follows: records follow and unfollow calls, and lets a test push the transport and follow events.
+    function followingHost() {
+      const transport = new Set<(state: DawTransport) => void>();
+      const follow = new Set<(event: TeleprompterResumeFollowEvent) => void>();
+      const overrides: Partial<NarrationApi> = {
+        subscribeDawTransport: (listener) => {
+          transport.add(listener);
+          return () => transport.delete(listener);
+        },
+        subscribeTeleprompterResumeFollow: (listener) => {
+          follow.add(listener);
+          return () => follow.delete(listener);
+        },
+        teleprompterResumeFollow: vi.fn(async () => ({ following: true })),
+        teleprompterResumeUnfollow: vi.fn(async () => ({ following: false })),
+      };
+      return {
+        overrides,
+        pushTransport: (state: DawTransport) => act(() => transport.forEach((listener) => listener(state))),
+        pushFollow: (event: TeleprompterResumeFollowEvent) => act(() => follow.forEach((listener) => listener(event))),
+        listening: () => follow.size,
+      };
+    }
+
+    it.each([
+      ['plays', { playing: true, recording: false, position: 12 }],
+      ['records', { playing: true, recording: true, position: 12 }],
+    ])('goes away when REAPER %s, and presets nothing', async (_, transport) => {
+      const host = followingHost();
+      const { teleprompterStart } = renderDialog(host.overrides);
+      await within(await prompt()).findByRole('button', { name: 'Resume from here' });
+
+      host.pushTransport(transport);
+
+      expect(screen.queryByRole('region', { name: 'Where you stopped' })).toBeNull();
+      await startReading(userEvent.setup());
+      expect(teleprompterStart).toHaveBeenCalledWith(expect.not.objectContaining({ startWord: expect.anything() }));
+    });
+
+    it('stays while REAPER reports it stopped', async () => {
+      const host = followingHost();
+      renderDialog(host.overrides);
+      await within(await prompt()).findByRole('button', { name: 'Resume from here' });
+      host.pushTransport({ playing: false, recording: false });
+      expect(screen.getByRole('region', { name: 'Where you stopped' })).toBeTruthy();
+    });
+
+    it.each(['playing', 'recording'] as const)('goes away when the host follow says REAPER is %s', async (reason) => {
+      const host = followingHost();
+      renderDialog(host.overrides);
+      await within(await prompt()).findByRole('button', { name: 'Resume from here' });
+      await waitFor(() => expect(host.listening()).toBe(1));
+
+      host.pushFollow({ chapterId: 'chapter-1', reason });
+
+      expect(screen.queryByRole('region', { name: 'Where you stopped' })).toBeNull();
+    });
+
+    it('ignores a follow event for another chapter', async () => {
+      const host = followingHost();
+      renderDialog(host.overrides);
+      await within(await prompt()).findByRole('button', { name: 'Resume from here' });
+      await waitFor(() => expect(host.listening()).toBe(1));
+      host.pushFollow({ chapterId: 'chapter-2', reason: 'playing' });
+      expect(screen.getByRole('region', { name: 'Where you stopped' })).toBeTruthy();
+    });
+
+    it('follows the track the lookup read once it answers, and stops following on a choice', async () => {
+      const user = userEvent.setup();
+      const host = followingHost();
+      const { api } = renderDialog(host.overrides);
+      const located = await api.teleprompterLocate('chapter-1');
+      if (located.status === 'asset_required' || !located.track) throw new Error('the mock chapter must have a track');
+
+      const region = await prompt();
+      await within(region).findByRole('button', { name: 'Resume from here' });
+      await waitFor(() => expect(api.teleprompterResumeFollow).toHaveBeenCalledWith('chapter-1', located.track?.guid));
+
+      await user.click(within(region).getByRole('button', { name: 'Start from the top' }));
+      await waitFor(() => expect(api.teleprompterResumeUnfollow).toHaveBeenCalled());
+      expect(host.listening()).toBe(0);
+    });
+
+    it('stops following when a session starts, and does not follow again after it ends', async () => {
+      const host = followingHost();
+      const { api, setState } = renderDialog(host.overrides);
+      await within(await prompt()).findByRole('button', { name: 'Resume from here' });
+      await waitFor(() => expect(api.teleprompterResumeFollow).toHaveBeenCalledTimes(1));
+
+      setState({ phase: 'running' });
+      await waitFor(() => expect(api.teleprompterResumeUnfollow).toHaveBeenCalled());
+      setState({ phase: 'idle' });
+      expect(api.teleprompterResumeFollow).toHaveBeenCalledTimes(1);
+    });
+
+    it('does not follow a chapter with no track', async () => {
+      const host = followingHost();
+      const { api } = renderDialog(host.overrides, { resume: 'none' });
+      await within(await prompt()).findByText(/No track in/);
+      expect(api.teleprompterResumeFollow).not.toHaveBeenCalled();
+    });
+
+    it("looks again when REAPER's edit cursor settles on the recording", async () => {
+      const host = followingHost();
+      const { teleprompterLocate } = renderDialog(host.overrides);
+      await within(await prompt()).findByRole('button', { name: 'Resume from here' });
+      await waitFor(() => expect(host.listening()).toBe(1));
+      expect(teleprompterLocate).toHaveBeenCalledTimes(1);
+
+      host.pushFollow({ chapterId: 'chapter-1', reason: 'cursor_moved', editCursor: 4.5 });
+
+      await waitFor(() => expect(teleprompterLocate).toHaveBeenCalledTimes(2));
+      expect(await within(await prompt()).findByRole('button', { name: 'Resume from here' })).toBeTruthy();
+    });
+
+    it('unfollows when the dialog closes', async () => {
+      const host = followingHost();
+      const { api } = renderDialog(host.overrides);
+      await within(await prompt()).findByRole('button', { name: 'Resume from here' });
+      await waitFor(() => expect(api.teleprompterResumeFollow).toHaveBeenCalled());
+      cleanup();
+      expect(api.teleprompterResumeUnfollow).toHaveBeenCalled();
     });
   });
 });

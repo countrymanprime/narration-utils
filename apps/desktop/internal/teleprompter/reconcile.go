@@ -28,9 +28,12 @@ const (
 // agreed with it: the prompter settles the ambiguity the confidence reports.
 const ConfirmedByPrompter = "prompter"
 
-// DAWSourceSaved is a DAW place read from the saved .rpp ("as of the project's last save"). Phase 4 adds the live
-// source ("in REAPER now").
-const DAWSourceSaved = "saved"
+// DAWSourceSaved is a DAW place read from the saved .rpp ("as of the project's last save"); DAWSourceLive is one read from
+// REAPER's live answer ("in REAPER now", PRD Phase 4, ADR 0349), which the host sets on the place Reconcile returns.
+const (
+	DAWSourceSaved = "saved"
+	DAWSourceLive  = "live"
+)
 
 // ResumePlace is one source's place in the chapter. Word is the next script word to read, zero-based (the index
 // Start reading takes); Number is the same word one-based, for display; Sentence is the sentence holding the last

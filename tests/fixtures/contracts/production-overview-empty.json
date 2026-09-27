@@ -1,0 +1,18 @@
+{
+  "chapters": [],
+  "deadline": null,
+  "nextUp": [],
+  "running": null,
+  "totals": {
+    "bookPfh": null,
+    "chapters": 0,
+    "contractedAmount": null,
+    "effectiveRate": null,
+    "finalizedChapters": 0,
+    "hoursByStage": {},
+    "hoursLogged": 0,
+    "measuredChapters": 0,
+    "recordedSeconds": 0,
+    "wordCount": 0
+  }
+}

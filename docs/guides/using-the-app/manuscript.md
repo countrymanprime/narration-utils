@@ -79,12 +79,18 @@ session, and nothing recorded in REAPER is affected.
 
 Above the text, a compact **Where you stopped** notice looks for the chapter's track in the project's
 REAPER file and listens to the last 30 seconds recorded on it (with the same local Whisper model, which it
-asks to download first if it is missing). It shows the track, that this is as of the project's last save,
-and the sentence it matched. **Resume from here** makes Play begin at that word - shown as a clearable chip
+asks to download first if it is missing). When REAPER is open on that project and **Read track arm state**
+is on in Settings (an experimental REAPER action), it asks REAPER where the track is now: the edit cursor
+when it sits on the track's recording, otherwise the end of the recording, including a take you have not
+saved yet, and labels it "in REAPER now". Otherwise it reads the saved project and says it is as of the
+project's last save. While REAPER is recording on the chapter's track it offers nothing and reading starts
+from the top. It shows the track, where it read it, and the sentence it matched. **Resume from here** makes Play begin at that word - shown as a clearable chip
 in the control bar ("Starts at '…'") until you start or clear it; **Start from the top** and **Pick a word**
 (start reading, then click the word you want) are the other choices, and nothing starts until you press
 Play. Choosing any of the three clears the notice at once for the rest of this dialog's open: it does not
-ask again after a session ends, so the next Play begins at the top with nothing to clear. A chapter already
+ask again after a session ends, so the next Play begins at the top with nothing to clear. Starting playback
+or recording in REAPER clears it too, without choosing anything. With **Read track arm state** on, moving
+REAPER's edit cursor onto the recording while the notice shows makes it look again from there. A chapter already
 recorded to its last word says so instead of offering to resume past the end. When the match is uncertain or
 a confirmed track has a problem (renamed, missing, or linked to more than one chapter), the notice says so
 with a link to the Tracks page instead of asking you to pick a track here; when the recording cannot be read
@@ -206,4 +212,4 @@ showing a garbled answer. You can check, repair or remove the dictionary any tim
 
 ---
 
-[← Home](home.md) · [Index](README.md) · [Proofing →](proofing.md)
+[← Production](production.md) · [Index](README.md) · [Proofing →](proofing.md)

@@ -215,7 +215,7 @@ Every phase follows the `CLAUDE.md` workflow: plan (find or open the tracking is
 | 3 | Proofer marker source | Static `PICKUP:` project-marker read from the saved `.rpp`, chapter attribution, remaining count per RF convention (conditional) | complete | 1, 2, 4 | 1, EL-1, EL-5, RF-8 (convention only) | - |
 | 4 | Render association and measurement record | Sidecar for chapter-to-render association with fingerprints and attestation; measurement stored as a ledger record; `resetDerived` | complete | 1, 2, 3 | DX-1, EL-3, EL-5 | - |
 | 5 | Delivery-check signals | Per-check signals from stored `Report` and the narrator's `Profile`; analyzer-backed checks as findings appear; required-check validation | complete | 3 | 4, DX-2, SR-1 (DX-4 for analyzer checks) | - |
-| 6 | Proofing page readiness detail | Bindings, contract, mock, readiness section, render association UI, Check now, Measure, Open in Review; states, docs, screenshots | pending | - | 1, 2, 5, SR-5, RD-5 | - |
+| 6 | Proofing page readiness detail | Bindings, contract, mock, readiness section, render association UI, Check now, Measure, Open in Review; states, docs, screenshots. **D79:** the Proofing page is retired by [stage navigation](stage-navigation-and-page-replacement.prd.md) Phase 5; build the readiness section in the Proof chapter view (`/proof/:chapterId`), not in `Transcript.tsx`, and depend on that phase. | pending | - | 1, 2, 5, SR-5, RD-5 | - |
 | 7 | Mark proofing done and close-out | Confirm affordance through SR, evaluable-when-confirmed signals, docs, ADR, cleanup | pending | - | 6, SR-2 | - |
 
 ### Phase Details

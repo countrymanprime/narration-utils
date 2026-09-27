@@ -169,6 +169,9 @@ var stressReaders = []stressReader{
 	{"StageConfirm (refused)", func(h *Host) { _, _ = h.StageConfirm("c-0001", "editing", "key") }},
 	{"StageDismiss (refused)", func(h *Host) { _, _ = h.StageDismiss("c-0001", "editing", "key") }},
 	{"StageRevert (refused)", func(h *Host) { _, _ = h.StageRevert("c-0001") }},
+	{"ProductionOverview", func(h *Host) { _, _ = h.ProductionOverview() }},
+	{"ProductionStartTimer (unknown chapter)", func(h *Host) { _, _ = h.ProductionStartTimer("missing", "recording") }},
+	{"ProductionStopTimer", func(h *Host) { _, _ = h.ProductionStopTimer() }},
 	{"emit callbacks", func(h *Host) {
 		h.emitTranscript(emptyTranscript())
 		h.emitTeleprompterState(map[string]any{"phase": "idle"})

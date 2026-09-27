@@ -4,6 +4,7 @@ import { App } from './App';
 import { ApiProvider } from './api/ApiContext';
 import { wailsClient } from './api/wailsClient';
 import { createMockApi } from './api/mockApi';
+import { PRODUCTION_SCENARIOS } from './api/productionMock';
 import { WIRE_CHAPTERS, WIRE_FINDINGS, WIRE_TRACKS_PROJECT, editingCandidateFor, takeReviewPickupFor } from './api/mockFixtures';
 import { COVERAGE_REFUSAL_REASONS } from './api/schemas/coverage';
 import { EDITING_REFUSAL_REASONS } from './api/schemas/editing';
@@ -317,6 +318,10 @@ const mockMeasure = (['running', 'fails', 'spread'] as const).find((seed) => see
 // `?mockDiagnostics=running|fails` does the same for the Delivery page's Diagnostics tab (diagnostics PRD Phase 6).
 const mockDiagnostics = (['running', 'fails'] as const).find((seed) => seed === mockParams.get('mockDiagnostics'));
 const mockDeliveryProfile = mockParams.get('mockDeliveryProfile') === 'custom' ? ('custom' as const) : undefined;
+// `?mockProduction=on-pace|at-risk` seeds the Production page with a time log, a running timer (on-pace only), a deadline and a
+// contracted amount (production-tracking.prd.md Phase 4); with none, nothing is logged or set yet.
+const mockProduction = (['on-pace', 'at-risk'] as const).find((seed) => seed === mockParams.get('mockProduction'));
+
 const MOCK_MARKUP_SEED: PrepMarkupSeed = [
   { chapter: 2, line: 1, words: 'how to get dry again', kind: 'stress', stale: { reason: 'text_changed', was: 'how to get warm again' } },
   { chapter: 2, line: 2, words: 'Sit down, all of you, and listen to me!', kind: 'character_tag', value: 'Mouse' },
@@ -335,6 +340,7 @@ const mockInitial = {
   ...(mockMeasure ? { measure: mockMeasure === 'running' ? ('hold' as const) : mockMeasure === 'spread' ? ('spread' as const) : ('fails' as const) } : {}),
   ...(mockDiagnostics ? { diagnostics: mockDiagnostics === 'running' ? ('hold' as const) : ('fails' as const) } : {}),
   ...(mockDeliveryProfile ? { deliveryProfile: mockDeliveryProfile } : {}),
+  ...(mockProduction ? { production: PRODUCTION_SCENARIOS[mockProduction] } : {}),
   ...(mockTakeReviewScanHold ? { takeReviewScanHold: true } : {}),
   ...(mockTakeComparisonHold ? { takeComparisonHold: true } : {}),
   ...(mockReaper ? { reaper: mockReaper } : {}),
