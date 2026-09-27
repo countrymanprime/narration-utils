@@ -6,6 +6,14 @@ Proofing transcribes a recorded chapter and compares it against the [manuscript]
 step picks the transcription model, chunk length, and any vocabulary hints before starting
 a comparison.
 
+At the top of the page, above the Preview panel, the stage recommendations panel lists every chapter currently
+in the Proofing stage with its suggestion for Finalized: a badge if the evidence says it's ready, "Not ready"
+if a pickup is still open, or "Can't tell yet" with what to check next. Confirm, Dismiss, and Revert work the
+same way they do on [Home](home.md#stage-suggestions); Why opens the same evidence view, listing what was
+checked (pickups from every tracked analyzer, and any delivery check the narrator turned on) and linking a
+pickup straight to the [Review page](review.md) or an unmapped chapter to the [Tracks page](tracks.md). A
+chapter with nothing to report ("No chapter is in Proofing right now") shows that instead of an empty table.
+
 Above Setup, the Preview panel suggests up to three five-minute excerpts from the manuscript — one per
 chapter — so you don't have to scan the whole book to find a stretch worth listening to or sharing. Each
 candidate lists its chapter, paragraph range, estimated length and word count, alongside the reasons it
