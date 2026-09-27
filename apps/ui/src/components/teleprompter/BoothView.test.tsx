@@ -8,6 +8,7 @@ import { createMockApi } from '../../api/mockApi';
 import { CommandRouter, CommandScope } from '../../input/router';
 import { BoothView } from './BoothView';
 import { initialSession } from './readerModel';
+import type { GuideEntity } from '../../types';
 import type { FollowCursor } from './useFollowCursor';
 import type { RecordInReaperState } from './useRecordInReaper';
 import type { TeleprompterSession } from './useTeleprompterSession';
@@ -199,5 +200,68 @@ describe('BoothView (booth-mode-and-companion-panel.prd.md Phase 1, Phase 2)', (
       </MemoryRouter>,
     );
     expect(screen.getByRole('button', { name: 'Follow' }).hasAttribute('disabled')).toBe(true);
+  });
+});
+
+function speaker(id: string, canonical_name: string, category = 'Character'): GuideEntity {
+  return {
+    id,
+    canonical_name,
+    aliases: [],
+    category,
+    occurrences: [],
+    occurrence_count: 1,
+    pronunciation: { ipa: '', source: 'manual', confidence: 'high' },
+    description: { text: '', evidence: {} },
+    personality_notes: [],
+    relationships: [],
+    properties: [],
+    locked: false,
+    review_state: 'approved',
+  };
+}
+
+describe('BoothView speaker rail (booth-mode-and-companion-panel.prd.md Phase 3)', () => {
+  it('lists the characters in this chapter as Highlight speaker tags, above the reading panel, skipping other categories', () => {
+    renderBooth({ chapterId: 'chapter-1', speakers: [speaker('e1', 'Alice'), speaker('e2', 'Wonderland', 'Place'), speaker('e3', 'The Caterpillar')] });
+    const rail = screen.getByRole('complementary', { name: 'Rail' });
+    const section = within(rail).getByRole('region', { name: 'Voices in scene' });
+    const tags = within(section)
+      .getAllByRole('listitem')
+      .map((item) => item.textContent);
+    expect(tags).toEqual(['Alice', 'The Caterpillar']);
+    // The existing Story Bible character colour, not a new one.
+    expect(section.querySelectorAll('[data-highlight="Character"]')).toHaveLength(2);
+    expect(section.querySelector('[data-highlight="Place"]')).toBeNull();
+    // Above the reading panel, so it reads first in the rail.
+    expect(section.compareDocumentPosition(within(rail).getByText('Reading panel')) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it('opens a speaker in the Story bible when its tag is activated', async () => {
+    const user = userEvent.setup();
+    const onOpenSpeaker = vi.fn();
+    const alice = speaker('e1', 'Alice');
+    renderBooth({ chapterId: 'chapter-1', speakers: [alice], onOpenSpeaker });
+    await user.click(screen.getByRole('button', { name: 'Alice: open in the Story bible' }));
+    expect(onOpenSpeaker).toHaveBeenCalledWith(alice);
+  });
+
+  it('shows an honest "Reference clips coming soon" placeholder rather than a clip player', () => {
+    renderBooth({ chapterId: 'chapter-1', speakers: [speaker('e1', 'Alice')] });
+    const section = screen.getByRole('region', { name: 'Voices in scene' });
+    expect(within(section).getByText('Reference clips coming soon')).toBeTruthy();
+    expect(within(section).queryByRole('button', { name: /play/i })).toBeNull();
+  });
+
+  it('says so when no character is tagged in this chapter', () => {
+    renderBooth({ chapterId: 'chapter-1', speakers: [speaker('e2', 'Wonderland', 'Place')] });
+    const section = screen.getByRole('region', { name: 'Voices in scene' });
+    expect(within(section).getByText('No Story Bible characters are mentioned in this chapter.')).toBeTruthy();
+    expect(within(section).queryByRole('list')).toBeNull();
+  });
+
+  it('has no speaker section in credits mode (no chapter, so no Story Bible marks)', () => {
+    renderBooth({ speakers: undefined });
+    expect(screen.queryByRole('region', { name: 'Voices in scene' })).toBeNull();
   });
 });
