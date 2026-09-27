@@ -2,6 +2,7 @@ import { readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, test } from 'vitest';
 import { A11Y_DEBT } from '../tests/atlas/a11y-debt';
+import { RELOAD_DEBT } from '../tests/atlas/reload-debt';
 
 // Every primitive is part of the component library and must show up in the
 // atlas (Storybook + tests/atlas). A primitive that genuinely should not - a
@@ -47,6 +48,23 @@ describe('atlas accessibility debt', () => {
 
   test('every entry names a component that has stories', () => {
     for (const debt of A11Y_DEBT) {
+      const name = debt.title.replace('Primitives/', '');
+      expect(files, debt.title).toContain(`${name}.stories.tsx`);
+    }
+  });
+});
+
+describe('atlas reload debt', () => {
+  // A story here opted back into a fresh page load per variant (ADR 0267) after the side-by-side diff found a real
+  // difference from switching in place. Starts empty; grows only when that diff finds one.
+  test('every entry says why', () => {
+    for (const debt of RELOAD_DEBT) {
+      expect(debt.reason.trim().length, `${debt.title} needs a reason`).toBeGreaterThan(20);
+    }
+  });
+
+  test('every entry names a component that has stories', () => {
+    for (const debt of RELOAD_DEBT) {
       const name = debt.title.replace('Primitives/', '');
       expect(files, debt.title).toContain(`${name}.stories.tsx`);
     }

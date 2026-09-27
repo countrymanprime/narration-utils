@@ -2,7 +2,7 @@
 import { expect, test, type Page } from '@playwright/test';
 import { mkdirSync, readFileSync } from 'node:fs';
 import { allowedRules } from './a11y-debt';
-import { RELOAD_DEBT } from './reload-debt';
+import { needsFreshLoad } from './reload-debt';
 
 interface IndexEntry {
   id: string;
@@ -223,10 +223,10 @@ test.describe.configure({ mode: 'parallel' });
 // of reloading, since a story with no play() renders the same way from a re-render as it would from a fresh load. A
 // story tagged play-fn (Storybook tags any story with a play() function automatically) reloads for every variant
 // instead: play() mutates the story, so a page already mutated by a previous variant cannot be reused for the next.
-// RELOAD_DEBT names any story found (by the side-by-side diff this phase's PR ran) to also need a fresh page per
+// reload-debt.ts names any story found (by the side-by-side diff this phase's PR ran) to also need a fresh page per
 // variant despite having no play(), same spirit as a11y-debt.ts.
 for (const entry of stories) {
-  const reloadEveryVariant = (entry.tags ?? []).includes('play-fn') || RELOAD_DEBT.includes(entry.title);
+  const reloadEveryVariant = (entry.tags ?? []).includes('play-fn') || needsFreshLoad(entry.title);
 
   test(`${entry.title} / ${entry.name}`, async ({ page }) => {
     test.setTimeout(test.info().timeout * VARIANTS.length);
