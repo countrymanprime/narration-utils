@@ -421,7 +421,7 @@ def pronounce_source(name: str, espeak_library: str | None, source: str) -> dict
     return engine.pronounce(name)
 
 
-# The narrator's own pronunciation (prep-depth P1, ADR 0344). It is a provenance label, not a registered source: it is never looked
+# The narrator's own pronunciation (prep-depth P1, ADR 0346). It is a provenance label, not a registered source: it is never looked
 # up, so it is not in SOURCES and the pronounce command does not offer it.
 USER_SOURCE = "user"
 # Where the narrator is with a pronunciation: looked up (the default, and what an entry written before status existed reads as),
