@@ -30,6 +30,16 @@ The Go host exposes it as `GuidePronounce(id, aliasIndex *int, source string)` /
 spelled and ignores the IPA, so this is a UI policy, not a technical limit) and offers Generate (missing) or Replace
 (present) in edit mode only, each choosing explicitly between the CMU dictionary and eSpeak NG.
 
+A narrator can also keep their own pronunciation and track where each one stands (prep depth Phase 1,
+[ADR 0342](../adr/0342-a-pronunciation-carries-a-status-and-note-and-the-narrators-own-sits-beside-the-dictionarys-as-the-alternate.md)):
+`pronounce-user --ipa=<text>` sets one with source `user` that never asks a dictionary, and keeps the dictionary's answer beside
+it as `alternate`; `pronunciation-use-alternate` swaps the two back, losslessly and without a lookup; `pronunciation-status
+--status researched|query_sent|author_confirmed [--note=<text>]` records whether the author was asked or has confirmed it. An
+entry with no `status` reads as `researched`. `author_confirmed` is withdrawn to `researched` when the pronunciation in use
+changes. A rebuild keeps all of it. The host bindings are `GuidePronounceUser`, `GuidePronunciationUseAlternate` and
+`GuidePronunciationSetStatus` (`hostAPIVersion` 67); the Story Bible shows the status and note, and in edit mode offers "Your
+pronunciation", the switch to the kept one, and the status with its note.
+
 ## Target workflow
 
 Run the guide after manuscript selection; review uncertain candidates; lock narrator-authored pronunciation and notes; export approved vocabulary for transcription; consult chapter/scene and dialogue information during recording.

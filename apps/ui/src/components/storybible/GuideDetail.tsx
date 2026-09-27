@@ -16,7 +16,7 @@ import {
   faWaveSquare,
   faXmark,
 } from '@fortawesome/free-solid-svg-icons';
-import type { GuideEntity, GuidePreview, TtsInstallJob } from '../../types';
+import type { GuideEntity, GuidePreview, GuidePronunciationStatus, TtsInstallJob } from '../../types';
 import { allEvidence, categoryCssName, categoryLabel, categoryValue, CREATABLE_CATEGORIES, findAliasMatches, highlightTerms } from '../../state';
 import { useApi } from '../../api/ApiContext';
 import { useAssetInstall } from '../../hooks/useAssetInstall';
@@ -33,6 +33,8 @@ import { Menu } from '../primitives/Menu';
 import { Tooltip, TooltipTarget } from '../primitives/Tooltip';
 import { CANONICAL_PREVIEW, previewKey, usePreviewAudio } from './usePreviewAudio';
 import { PropertiesSection } from './PropertiesSection';
+import { PronunciationWork } from './PronunciationWork';
+import { pronunciationSourceLabel } from './pronunciationStatus';
 import { draftFrom, propertiesFrom, propertyProblem, sameProperties, type DraftProperty } from './propertyDraft';
 import { IconButton } from '../primitives/IconButton';
 import { Select } from '../primitives/Select';
@@ -237,6 +239,38 @@ export function GuideDetail({
       try {
         await api.guidePronounce(entity.id, source);
         notify('Pronunciation generated.');
+        await reloadFor(entity.id);
+      } catch (error) {
+        notify(describeApiError(error), 'error');
+      }
+    });
+  const pronounceUser = async (ipa: string): Promise<boolean> =>
+    (await mutation.run('pronunciation-user', async () => {
+      try {
+        await api.guidePronounceUser(entity.id, ipa);
+        notify('Your pronunciation is in use.');
+        await reloadFor(entity.id);
+        return true;
+      } catch (error) {
+        notify(describeApiError(error), 'error');
+        return false;
+      }
+    })) ?? false;
+  const switchToAlternatePronunciation = () =>
+    mutation.run('pronunciation-alternate', async () => {
+      try {
+        await api.guidePronunciationUseAlternate(entity.id);
+        notify('Pronunciation switched.');
+        await reloadFor(entity.id);
+      } catch (error) {
+        notify(describeApiError(error), 'error');
+      }
+    });
+  const setPronunciationStatus = (status: GuidePronunciationStatus, note: string) =>
+    mutation.run('pronunciation-status', async () => {
+      try {
+        await api.guidePronunciationSetStatus(entity.id, status, note);
+        notify('Pronunciation status saved.');
         await reloadFor(entity.id);
       } catch (error) {
         notify(describeApiError(error), 'error');
@@ -470,8 +504,19 @@ export function GuideDetail({
               </div>
             </div>
             <p className="mt-1 text-xs" style={{ color: 'var(--text-muted)' }}>
-              Source: {entity.pronunciation.source} · Confidence: {entity.pronunciation.confidence}
+              Source: {pronunciationSourceLabel(entity.pronunciation)} · Confidence: {entity.pronunciation.confidence}
             </p>
+            <PronunciationWork
+              key={`${entity.id}:${entity.pronunciation.source}:${entity.pronunciation.ipa}:${entity.pronunciation.status ?? ''}:${entity.pronunciation.note ?? ''}`}
+              name={entity.canonical_name}
+              value={entity.pronunciation}
+              editing={canEdit && editing}
+              disabled={mutation.isBusy}
+              pending={(key) => mutation.isPending(`pronunciation-${key}`)}
+              onSaveUser={pronounceUser}
+              onUseAlternate={() => void switchToAlternatePronunciation()}
+              onSaveStatus={(status, note) => void setPronunciationStatus(status, note)}
+            />
           </div>
         </div>
 
