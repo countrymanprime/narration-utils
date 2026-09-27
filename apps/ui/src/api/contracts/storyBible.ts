@@ -40,6 +40,26 @@ export type GuideEntity = {
   context?: string;
 };
 
+/**
+ * One name whose pronunciation the author has not confirmed (prep-depth P3): the entity's own (`aliasIndex` null) or one alias, with
+ * the chapter and excerpt of its first occurrence (empty when it never occurs). Derived from the Story Bible on every read.
+ */
+export type PronunciationQuery = {
+  entityId: string;
+  aliasIndex: number | null;
+  name: string;
+  entry: string;
+  category: string;
+  ipa: string;
+  source: string;
+  status: GuidePronunciationStatus;
+  note: string;
+  chapter: string;
+  excerpt: string;
+};
+/** The query list as CSV text (header plus one row per query) and how many rows it has. */
+export type PronunciationQueriesCsv = { csv: string; count: number };
+
 export type GuidePreview =
   | { status: 'ready'; audioBase64: string; mimeType: string }
   | {
@@ -100,4 +120,8 @@ export interface StoryBibleApi {
   guidePronunciationUseAlternate(id: string, aliasIndex?: number): Promise<void>;
   /** Sets a pronunciation's status and, when `note` is given, its note (an empty one clears it). */
   guidePronunciationSetStatus(id: string, status: GuidePronunciationStatus, note?: string, aliasIndex?: number): Promise<void>;
+  /** Every name not yet author confirmed, once each, in reading order (prep-depth P3). */
+  guidePronunciationQueries(): Promise<PronunciationQuery[]>;
+  /** The same list as CSV text, for the narrator to save and send to the author. */
+  guidePronunciationQueriesCsv(): Promise<PronunciationQueriesCsv>;
 }

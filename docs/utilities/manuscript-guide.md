@@ -40,6 +40,16 @@ changes. A rebuild keeps all of it. The host bindings are `GuidePronounceUser`, 
 `GuidePronunciationSetStatus` (`hostAPIVersion` 69); the Story Bible shows the status and note, and in edit mode offers "Your
 pronunciation", the switch to the kept one, and the status with its note.
 
+The host derives the **pronunciation query list** from those statuses on every read (prep depth Phase 3,
+[ADR 0347](../adr/0347-the-pronunciation-query-export-is-csv-with-its-ids-last-and-a-formula-guard-and-is-a-download.md)):
+`guide.Service.PronunciationQueries` returns every name, the entity's own and each alias, that is not `author_confirmed`, each
+once, in reading order (first paragraph that uses it; never used last), with that first use's chapter and excerpt.
+`guide.QueriesCSV` writes it as CSV (`word, entry, category, chapter, excerpt, pronunciation, source, status, note, entry_id,
+alias_index`) with a formula guard, and `guide.ParseQueriesCSV` reads an exported or hand-edited file back, reporting every row
+it cannot use. The bindings are `GuidePronunciationQueries` and `GuidePronunciationQueriesCSV` (`hostAPIVersion` 70); the Story
+Bible's Pronunciation queries panel saves the CSV as a download and marks a row sent or answered through
+`GuidePronunciationSetStatus`.
+
 ## Target workflow
 
 Run the guide after manuscript selection; review uncertain candidates; lock narrator-authored pronunciation and notes; export approved vocabulary for transcription; consult chapter/scene and dialogue information during recording.

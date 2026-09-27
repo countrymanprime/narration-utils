@@ -186,6 +186,29 @@ func (h *Host) GuidePronunciationSetStatus(id string, aliasIndex *int, status st
 	}
 	return encodeBinding(nil, service.SetPronunciationStatus(id, aliasIndex, status, note))
 }
+
+// GuidePronunciationQueries lists every name whose pronunciation the author has not confirmed, in reading order (prep-depth P3).
+func (h *Host) GuidePronunciationQueries() (string, error) {
+	service := h.services().guide
+	if service == nil {
+		return "", fmt.Errorf("the Story Bible is unavailable")
+	}
+	queries, err := service.PronunciationQueries()
+	return encodeBinding(queries, err)
+}
+
+// GuidePronunciationQueriesCSV is the same list as CSV text for the narrator to send to the author; the UI saves it as a file.
+func (h *Host) GuidePronunciationQueriesCSV() (string, error) {
+	service := h.services().guide
+	if service == nil {
+		return "", fmt.Errorf("the Story Bible is unavailable")
+	}
+	queries, err := service.PronunciationQueries()
+	if err != nil {
+		return encodeBinding(nil, err)
+	}
+	return encodeBinding(map[string]any{"csv": guide.QueriesCSV(queries), "count": len(queries)}, nil)
+}
 func (h *Host) GuideCreate(name, category string, aliases []string) (string, error) {
 	service := h.services().guide
 	if service == nil {

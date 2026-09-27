@@ -11,6 +11,8 @@ import type {
   GuidePronunciationValue,
   GuideProperty,
   GuideRelationship,
+  PronunciationQueriesCsv,
+  PronunciationQuery,
 } from '../contracts/storyBible';
 import { listFromNull, optionalFromNull } from './base';
 import { assetInstallStateSchema } from './assets';
@@ -96,6 +98,24 @@ const guideEntitySchema = z.object({
 export const guideEntitiesSchema = listFromNull(guideEntitySchema);
 
 export const guideCreatedSchema = z.object({ id: z.string() });
+
+const pronunciationQuerySchema = z.object({
+  entityId: z.string(),
+  aliasIndex: z.number().int().nonnegative().nullable(),
+  name: z.string(),
+  entry: z.string(),
+  category: z.string(),
+  ipa: z.string(),
+  source: z.string(),
+  status: pronunciationStatusSchema,
+  note: z.string(),
+  chapter: z.string(),
+  excerpt: z.string(),
+}) satisfies z.ZodType<PronunciationQuery>;
+
+export const pronunciationQueriesSchema = listFromNull(pronunciationQuerySchema);
+
+export const pronunciationQueriesCsvSchema = z.object({ csv: z.string(), count: z.number().int().nonnegative() }) satisfies z.ZodType<PronunciationQueriesCsv>;
 
 export const guidePreviewSchema = z.discriminatedUnion('status', [
   z.object({ status: z.literal('ready'), audioBase64: z.string(), mimeType: z.string() }),

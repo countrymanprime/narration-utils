@@ -1,7 +1,13 @@
 // The golden payloads for the Story Bible: which schema owns each file in tests/fixtures/contracts/ (see index.ts).
 import type { z } from 'zod';
 import { workJobSchema } from '../schemas/manuscript';
-import { guideBuildResultSchema, guideEntitiesSchema, guidePreviewSchema } from '../schemas/storyBible';
+import {
+  guideBuildResultSchema,
+  guideEntitiesSchema,
+  guidePreviewSchema,
+  pronunciationQueriesCsvSchema,
+  pronunciationQueriesSchema,
+} from '../schemas/storyBible';
 
 export const storyBibleGoldens: Record<string, z.ZodType> = {
   'guide-entities-sidecar.json': guideEntitiesSchema,
@@ -10,6 +16,9 @@ export const storyBibleGoldens: Record<string, z.ZodType> = {
   'guide-entities-empty.json': guideEntitiesSchema,
   'guide-entities-pronunciation-sidecar.json': guideEntitiesSchema,
   'guide-entities-pronunciation.json': guideEntitiesSchema,
+  'guide-pronunciation-queries.json': pronunciationQueriesSchema,
+  'guide-pronunciation-queries-empty.json': pronunciationQueriesSchema,
+  'guide-pronunciation-queries-csv.json': pronunciationQueriesCsvSchema,
   'guide-build-idle.json': workJobSchema,
   'guide-build-starting.json': workJobSchema,
   'guide-build-failed.json': workJobSchema,

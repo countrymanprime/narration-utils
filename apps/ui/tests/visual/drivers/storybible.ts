@@ -117,6 +117,17 @@ export const storybibleDrivers: Record<string, Driver> = {
     await page.getByText('Asked the author by email.', { exact: true }).first().waitFor();
     await page.getByRole('button', { name: 'Save status' }).scrollIntoViewIfNeeded();
   },
+  'pronunciation-queries': async (page) => {
+    await goToPage(page, 'Story Bible');
+    await clickVisible(page, 'button', 'Pronunciation queries');
+    const list = page.getByRole('list', { name: 'Pronunciation queries' });
+    await list.waitFor();
+    await list
+      .getByRole('button', { name: /^Mark .+ as sent$/ })
+      .first()
+      .click();
+    await page.getByRole('status').filter({ hasText: '1 sent' }).waitFor();
+  },
   'delete-confirm': async (page) => {
     await goToPage(page, 'Story Bible');
     await page.locator('tr[data-row]').first().click();

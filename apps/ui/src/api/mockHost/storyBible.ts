@@ -1,7 +1,7 @@
 // The mock host (mockApi.ts): the Story Bible.
 import { parseWireJson } from '../wire/parseWire';
 import { guidePropertiesSchema } from '../schemas/storyBible';
-import type { GuideEntity, GuidePronunciation, GuideProperty, NarrationApi, WorkJob } from '../../types';
+import type { GuideEntity, GuidePronunciation, GuideProperty, NarrationApi, PronunciationQuery, WorkJob } from '../../types';
 import { wireClone } from '../mockFixtures';
 import { type MockApiSeed, type MockState, wireContext } from './state';
 import { type AssetsMock, MOCK_ASSET_ROOT } from './assets';
@@ -34,6 +34,66 @@ function setPronunciation(prior: GuidePronunciation, next: GuidePronunciation): 
   if (prior.ipa && isUser(prior) !== isUser(next)) value.alternate = { ipa: prior.ipa, source: prior.source, confidence: prior.confidence };
   else if (prior.alternate) value.alternate = prior.alternate;
   return value;
+}
+
+// The host's query list (guide/queries.go): every name not author confirmed, once each, by the first paragraph that uses it, a
+// name never used last.
+function pronunciationQueriesOf(entities: GuideEntity[]): PronunciationQuery[] {
+  const rows: (PronunciationQuery & { position: number })[] = [];
+  for (const entity of entities) {
+    const names = [
+      { name: entity.canonical_name, aliasIndex: null, pronunciation: entity.pronunciation, occurrences: entity.occurrences },
+      ...entity.aliases.map((alias, index) => ({ name: alias.text, aliasIndex: index, pronunciation: alias.pronunciation, occurrences: alias.occurrences })),
+    ];
+    for (const { name, aliasIndex, pronunciation, occurrences } of names) {
+      const status = pronunciation.status ?? 'researched';
+      if (status === 'author_confirmed') continue;
+      const first = [...occurrences].sort((a, b) => a.paragraph - b.paragraph)[0];
+      rows.push({
+        entityId: entity.id,
+        aliasIndex,
+        name,
+        entry: entity.canonical_name,
+        category: entity.category,
+        ipa: pronunciation.ipa,
+        source: pronunciation.source,
+        status,
+        note: pronunciation.note ?? '',
+        chapter: first?.chapter ?? '',
+        excerpt: first?.excerpt ?? '',
+        position: first ? first.paragraph : Number.POSITIVE_INFINITY,
+      });
+    }
+  }
+  rows.sort((a, b) => a.position - b.position || a.name.toLowerCase().localeCompare(b.name.toLowerCase()));
+  return rows.map(({ position: _position, ...row }) => row);
+}
+
+const csvCell = (text: string) => {
+  const guarded = /^[=+\-@\t\r]/.test(text) ? `'${text}` : text;
+  return /[",\r\n]/.test(guarded) ? `"${guarded.replaceAll('"', '""')}"` : guarded;
+};
+
+function pronunciationQueriesCsv(queries: PronunciationQuery[]): string {
+  const header = ['word', 'entry', 'category', 'chapter', 'excerpt', 'pronunciation', 'source', 'status', 'note', 'entry_id', 'alias_index'];
+  const lines = queries.map((row) =>
+    [
+      row.name,
+      row.entry,
+      row.category,
+      row.chapter,
+      row.excerpt,
+      row.ipa,
+      row.source === 'user' ? 'Yours' : row.source,
+      row.status,
+      row.note,
+      row.entityId,
+      row.aliasIndex === null ? '' : String(row.aliasIndex),
+    ]
+      .map(csvCell)
+      .join(','),
+  );
+  return [header.join(','), ...lines].join('\n') + '\n';
 }
 
 /** The Story Bible bindings: the build, the entities and their edits, and the pronunciation preview. */
@@ -265,6 +325,11 @@ export function createStoryBibleMock(
           ? { ipa: '/mɒk kjuː ɛm juː/', source: 'CMU dictionary', confidence: 'medium', chosen: true }
           : { ipa: '/mɒk iː spiːk/', source: 'eSpeak NG', confidence: 'low', chosen: true };
       changePronunciation(id, aliasIndex, (prior) => setPronunciation(prior, value));
+    },
+    guidePronunciationQueries: async () => pronunciationQueriesOf(s.entities),
+    guidePronunciationQueriesCsv: async () => {
+      const queries = pronunciationQueriesOf(s.entities);
+      return { csv: pronunciationQueriesCsv(queries), count: queries.length };
     },
     guidePronounceUser: async (id, ipa, aliasIndex) => {
       const text = ipa.trim();
