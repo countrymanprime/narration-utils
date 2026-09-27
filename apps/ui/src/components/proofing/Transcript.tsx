@@ -11,6 +11,7 @@ import { AssetFacts } from '../assets/AssetFacts';
 import { AssetInstallPrompt } from '../assets/AssetInstallPrompt';
 import { Button } from '../primitives/Button';
 import { Heading } from '../primitives/Heading';
+import { IconButton } from '../primitives/IconButton';
 import { Panel } from '../primitives/Panel';
 import { ToggleGroup } from '../primitives/ToggleGroup';
 import { TagInput } from '../primitives/TagInput';
@@ -342,10 +343,11 @@ export function Transcript({
                 onRemove={removeHint}
                 onAcceptSuggestion={acceptHint}
                 actions={
-                  <Button variant="ghost" onClick={() => void suggestHints()}>
-                    <FontAwesomeIcon icon={faWandMagicSparkles} />
-                    Suggest from manuscript
-                  </Button>
+                  <TooltipTarget text="Suggest from manuscript">
+                    <IconButton label="Suggest from manuscript" onClick={() => void suggestHints()}>
+                      <FontAwesomeIcon icon={faWandMagicSparkles} />
+                    </IconButton>
+                  </TooltipTarget>
                 }
               />
             </div>

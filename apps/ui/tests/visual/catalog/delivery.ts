@@ -102,4 +102,12 @@ export const deliveryStates: StateEntry[] = [
     state: 'report-refused',
     description: 'Delivery, Export report before anything was measured - the host’s refusal as an alert, and nothing written',
   },
+  // Delivery findings on the Review page (delivery-platform-profiles.prd.md Phase 9, P12): "Open in Delivery" lands here
+  {
+    page: 'delivery',
+    state: 'from-review',
+    description:
+      'Delivery, opened from a delivery finding on the Review page - scrolled to that file opened rule by rule, under "Opened from the Review page: sample rate in Chapter 01.wav."',
+    ...KEEPS_DESKTOP_SCROLL,
+  },
 ];
