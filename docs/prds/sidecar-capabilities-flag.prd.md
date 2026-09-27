@@ -2,6 +2,8 @@
 
 **Source:** [Provider Ports](../architecture/provider-ports.md#not-built-here-and-where-it-went) P15/#696's "Not built here" table ("a `--capabilities` flag on each sidecar so the host learns an engine's runtime capability instead of from a static descriptor and the existing probes... No PRD yet"); the owner has since said the un-PRD'd Coulds are wanted work (#509, 2026-09-27). This PRD fills that row.
 
+**Tracking:** [#712](https://github.com/countrymanprime/narration-utils/issues/712).
+
 ## Problem Statement
 
 `ProviderCapabilities()` (`apps/desktop/bindings_providers.go:24-26`) tells the UI what a sidecar's registries declare — but it reads that from **Go's own static registry rows** (`asrport.Engines`, `ttsport.Engines`, `pronunciationport.Sources`, `captureport.Backends`), never from the sidecar process itself. The Decisions Log says so directly: "Go learns a Python engine's capability from a static descriptor plus the probes that exist, not from asking the sidecar" (`docs/architecture/provider-ports.md:83`). That is accurate for what ships today — Windows-only, one frozen build per platform — but it means the Go-side answer and the Python-side reality can silently diverge: a row can be declared in `asrport.Engines` (compiled into every build, unconditionally) while the adapter that fills the matching Python row fails to import in a given process (a missing native library, a frozen build that lost a DLL — the exact class of failure `--check-moonshine` exists to catch, one engine at a time, one platform at a time, one sidecar at a time). There is no generic, sidecar-reported "here is what I actually have registered right now" answer; each such answer today is a bespoke, single-purpose flag.

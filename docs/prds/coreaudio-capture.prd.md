@@ -2,6 +2,8 @@
 
 **Source:** [Provider Ports](../architecture/provider-ports.md#not-built-here-and-where-it-went) P15/#696's "Not built here" table ("No PRD yet: the app is Windows first"); the owner has since said the un-PRD'd Coulds are wanted work, not backlog (#509, 2026-09-27: "I want to do everything it proposed... if nothing else is going on, then we pick up the nice to haves as well"). This PRD fills that row.
 
+**Tracking:** [#711](https://github.com/countrymanprime/narration-utils/issues/711).
+
 ## Problem Statement
 
 The capture port (`docs/architecture/provider-ports.md#the-ports`, ADR 0301) has exactly one registered backend, `dshow`, and it declares `platforms: ("windows",)` (`libs/python/narration_common/ports/capture.py:40-45`, `sidecars/manuscript-teleprompter/core/capture_dshow.py:40`). `apps/desktop/internal/captureport/captureport.go:51-65`'s `ForIn` returns a `*port.NotSupportedError` ("There is no capture backend for %s.") for every other `GOOS`, macOS included. The app is Windows-first by roadmap decision (ADR 0030), but nothing about the capture port, the teleprompter's microphone path, or the registry pattern is Windows-specific by design — only the one row that exists is. A narrator on macOS who opens the Manuscript Teleprompter's live session gets no microphone at all, not a degraded one: `live_asr.py`'s `iter_microphone_chunks` looks the backend up through the registry (PR #696's own description: "the microphone reader... takes its chunks from the `dshow` row of `BACKENDS`") and there is no row to find.
