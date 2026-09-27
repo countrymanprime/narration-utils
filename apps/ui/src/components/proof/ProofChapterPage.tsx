@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { useApi } from '../../api/ApiContext';
-import { apiErrorMessage } from '../../api/errorMessage';
+import { apiErrorMessage, describeApiError } from '../../api/errorMessage';
 import { chapterName } from '../../chapterName';
 import { formatWhen } from '../home/recordingCheckText';
 import { RecordingCheck } from '../home/RecordingCheck';
@@ -9,7 +9,7 @@ import { Button } from '../primitives/Button';
 import { Heading } from '../primitives/Heading';
 import { Panel } from '../primitives/Panel';
 import type { Notify } from '../primitives/Toast';
-import type { CoverageState, Finding, FindingReviewStatus, ManuscriptChapter, TrackItem } from '../../types';
+import type { CoverageState, Discrepancy, Finding, FindingReviewStatus, ManuscriptChapter, TrackItem, TranscriptState } from '../../types';
 import type { WorkspaceAlignmentResult, WorkspaceToken } from '../../api/contracts/workspace';
 import { CommandScope } from '../../input/router';
 import { useCommand } from '../../input/useCommand';
@@ -21,7 +21,11 @@ import { useChapterPlayback } from './useChapterPlayback';
 import { useWorkspaceReaper } from './useWorkspaceReaper';
 import { TransportBar } from './TransportBar';
 import { ScriptView } from './ScriptView';
-import { FlagsPanel, type FlagDecisionResult } from './FlagsPanel';
+import { FlagsPanel, type CompareFlagActions, type FlagDecisionResult } from './FlagsPanel';
+import { CompareRun } from './CompareRun';
+import { overlayDiscrepancies } from './compareFlags';
+import { PreviewPanel } from './PreviewPanel';
+import { ProofingStagePanel } from './ProofingStagePanel';
 
 /** How long before a clicked word's start the app player starts, so the narrator hears it in context (EP5). */
 const PRE_ROLL_SECONDS = 1;
@@ -32,19 +36,35 @@ const CHECK_STATE_LABEL: Record<WorkspaceAlignmentResult['state'], string> = {
   never: 'Not checked yet',
 };
 
+type ChapterViewProps = {
+  notify: Notify;
+  /** The app-wide Transcript Compare state (App's bootstrap plus the host's transcript event). */
+  transcript: TranscriptState;
+  /** PRD project-workspace-and-daw-link.prd.md, W16: the compare run and its REAPER actions need a linked project file. */
+  dawFileLinked: boolean;
+  goToManuscript: (chapter: string, paragraph: number) => void;
+  /** Changes after a manuscript import or replacement, so the stage panel reads again (chapter-stage-recommendations.prd.md Phase 8). */
+  refreshKey: string;
+};
+
 /**
- * The chapter workspace (edit-and-proof-workspace.prd.md, Phase 2 MVP): a chapter route under Tracks
- * (`/tracks/chapter/:chapterId`, EP1 A) that plays the chapter's recorded audio in the app, honouring each item's
- * played range, follows the script with a karaoke highlight and auto-scroll, shows the check's flags inline, and
- * seeks on a click (EP5), and Go to/Loop in REAPER for the word at the playhead (Phase 3, `useWorkspaceReaper`).
- * The chapter's stored findings are overlaid on the same flags (Phase 4, `overlayFindings`) and reviewed in place -
- * accept, dismiss, defer, note - through the same `findingsReview` binding the Review page uses, and `?finding=<id>`
- * (the deep link "Open in workspace" sends) selects the flag that finding backs. The waveform, takes and effects are
- * later phases (5 to 9) - their controls are not shown here rather than shown disabled with nothing behind them.
+ * Proof's chapter view, `/proof/:chapterId` (stage-navigation-and-page-replacement.prd.md Phase 5): the chapter
+ * workspace of edit-and-proof-workspace.prd.md at its new address, with the retired Proofing page folded in. It plays
+ * the chapter's recorded audio in the app, honouring each item's played range, follows the script with a karaoke
+ * highlight and auto-scroll, shows the check's flags inline, and seeks on a click (EP5), with Go to/Loop in REAPER
+ * for the word at the playhead (Phase 3, `useWorkspaceReaper`). The chapter's stored findings are overlaid on the same
+ * flags (Phase 4, `overlayFindings`) and reviewed in place through the same `findingsReview` binding the book's notes
+ * use, and `?finding=<id>` selects the flag that finding backs. Transcript Compare runs from here against this chapter
+ * (CompareRun) and its discrepancies become flags too (`overlayDiscrepancies`), with the Preview and stage panels
+ * beside it. One component per chapter (keyed by the id), so nothing selected on one chapter carries to the next.
  */
-export function WorkspacePage({ notify }: { notify: Notify }) {
-  const api = useApi();
+export function ProofChapterPage(props: ChapterViewProps) {
   const { chapterId = '' } = useParams<{ chapterId: string }>();
+  return <ChapterView key={chapterId} chapterId={chapterId} {...props} />;
+}
+
+function ChapterView({ chapterId, notify, transcript, dawFileLinked, goToManuscript, refreshKey }: ChapterViewProps & { chapterId: string }) {
+  const api = useApi();
   const [searchParams] = useSearchParams();
 
   const [chapter, setChapter] = useState<ManuscriptChapter>();
@@ -56,6 +76,16 @@ export function WorkspacePage({ notify }: { notify: Notify }) {
   const [checking, setChecking] = useState(false);
   const [selectedFlagIndex, setSelectedFlagIndex] = useState<number>();
   const [findings, setFindings] = useState<Finding[]>([]);
+  const [lastCompleted, setLastCompleted] = useState<TranscriptState>();
+  const [reviewingLast, setReviewingLast] = useState(false);
+
+  // The last completed comparison, offered for review without running again (PRD W16: it needs no linked project file).
+  useEffect(() => {
+    void api
+      .transcriptLastCompleted()
+      .then(setLastCompleted)
+      .catch(() => {});
+  }, [api]);
 
   useEffect(() => api.subscribeCoverage(setCoverage), [api]);
 
@@ -103,10 +133,33 @@ export function WorkspacePage({ notify }: { notify: Notify }) {
   const tokenIndexByItem = useMemo(() => buildTokenIndex(alignment?.tokens ?? []), [alignment?.tokens]);
   const currentToken = currentTokenIndex(tokenIndexByItem, alignment?.items ?? [], player.currentItemGuid, player.currentSourceTime);
   const checkFlags = useMemo(() => buildFlags(alignment?.tokens ?? [], alignment?.extras ?? []), [alignment?.tokens, alignment?.extras]);
-  const flags = useMemo(
-    () => overlayFindings(checkFlags, findings, alignment?.items ?? [], alignment?.tokens ?? []),
-    [checkFlags, findings, alignment?.items, alignment?.tokens],
+  // The compare run's results for this chapter: the live run's once it succeeds, or the last completed one while the
+  // narrator reviews it. A run covers the selected REAPER audio, so rows for other chapters are left out here.
+  const compareResults = reviewingLast ? lastCompleted : transcript.phase === 'success' ? transcript : undefined;
+  const compareRows = useMemo<Discrepancy[]>(
+    () => (chapter ? (compareResults?.rows ?? []).filter((row) => row.chapter === chapter.title) : []),
+    [compareResults?.rows, chapter],
   );
+  const flags = useMemo(
+    () =>
+      overlayDiscrepancies(
+        overlayFindings(checkFlags, findings, alignment?.items ?? [], alignment?.tokens ?? []),
+        compareRows,
+        alignment?.tokens ?? [],
+        chapter?.paragraphIds ?? [],
+      ),
+    [checkFlags, findings, alignment?.items, alignment?.tokens, compareRows, chapter?.paragraphIds],
+  );
+  const compareActions: CompareFlagActions = {
+    canJump: dawFileLinked,
+    jump: (row) => void api.transcriptJump(row.id).catch((error) => notify(describeApiError(error), 'error')),
+    addEquivalence: (row) =>
+      void api.transcriptAddEquivalence(row.id).then(
+        (message) => notify(message),
+        (error) => notify(describeApiError(error), 'error'),
+      ),
+    showInManuscript: (row) => goToManuscript(row.chapter || '', row.paragraph || 0),
+  };
   const reaper = useWorkspaceReaper(chapterId, currentToken, alignment?.tokens ?? []);
 
   const seekToken = useCallback(
@@ -229,12 +282,12 @@ export function WorkspacePage({ notify }: { notify: Notify }) {
     content = null; // still loading, or the id doesn't resolve to a chapter
   } else {
     content = (
-      <div className="mx-auto max-w-4xl space-y-4">
-        <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
-          <Link to="/tracks">Tracks</Link> <span aria-hidden="true">&rsaquo;</span> Chapter workspace
-        </p>
+      <div className="mx-auto max-w-5xl space-y-4">
+        <nav aria-label="Breadcrumb" className="text-sm" style={{ color: 'var(--text-muted)' }}>
+          <Link to="/proof">Proof</Link> <span aria-hidden="true">&rsaquo;</span> {chapterName(chapter)}
+        </nav>
         <div className="flex flex-wrap items-start justify-between gap-2">
-          <Heading title={chapterName(chapter)} />
+          <Heading title={`Proof · ${chapterName(chapter)}`} />
           <div className="flex flex-wrap items-center gap-2 text-sm" style={{ color: 'var(--text-muted)' }}>
             {alignment && <span className="section-label">{CHECK_STATE_LABEL[alignment.state]}</span>}
             {alignment?.basis && <span>as of last save {formatWhen(alignment.basis.modifiedAt)}</span>}
@@ -245,13 +298,13 @@ export function WorkspacePage({ notify }: { notify: Notify }) {
         </div>
         {alignment?.needsAlignAgain && (
           <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
-            This chapter was last checked before the workspace could read its word alignment. Run Check again to see flags and word-by-word playback.
+            This chapter was last checked before the app could read its word alignment. Run Check again to see flags and word-by-word playback.
           </p>
         )}
         {!linkedTrackGuid && (
           <Panel title="No linked track">
             <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
-              This chapter isn&rsquo;t linked to a REAPER track yet. Link one from the Chapter links table on Tracks, then reopen this workspace.
+              This chapter isn&rsquo;t linked to a REAPER track yet. Link one from the Chapter links table on Tracks, then open this chapter again.
             </p>
           </Panel>
         )}
@@ -262,10 +315,10 @@ export function WorkspacePage({ notify }: { notify: Notify }) {
             </p>
           </Panel>
         )}
-        {alignment && alignment.state !== 'never' && (
-          <>
-            <TransportBar player={player} reaper={reaper} />
-            <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_18rem]">
+        {alignment && alignment.state !== 'never' && <TransportBar player={player} reaper={reaper} />}
+        {alignment && (alignment.state !== 'never' || flags.length > 0) && (
+          <div className={alignment.state !== 'never' ? 'grid gap-4 lg:grid-cols-[minmax(0,1fr)_18rem]' : 'max-w-md'}>
+            {alignment.state !== 'never' && (
               <ScriptView
                 paragraphs={alignment.paragraphs}
                 tokens={alignment.tokens}
@@ -274,18 +327,38 @@ export function WorkspacePage({ notify }: { notify: Notify }) {
                 isPlaying={player.isPlaying}
                 onSeekToken={seekToken}
               />
-              <FlagsPanel
-                flags={flags}
-                tokens={alignment.tokens}
-                selectedIndex={selectedFlagIndex}
-                onSelect={selectFlag}
-                onPlayFromFlag={(flag: Flag) => flag.seekTokenIndex !== undefined && seekToken(alignment.tokens[flag.seekTokenIndex])}
-                reaper={reaper}
-                onDecide={decideFlag}
-              />
-            </div>
-          </>
+            )}
+            <FlagsPanel
+              flags={flags}
+              tokens={alignment.tokens}
+              selectedIndex={selectedFlagIndex}
+              onSelect={selectFlag}
+              onPlayFromFlag={(flag: Flag) => flag.seekTokenIndex !== undefined && seekToken(alignment.tokens[flag.seekTokenIndex])}
+              reaper={reaper}
+              onDecide={decideFlag}
+              compare={compareRows.length > 0 ? compareActions : undefined}
+            />
+          </div>
         )}
+        <CompareRun
+          chapterTitle={chapter.title}
+          state={transcript}
+          notify={notify}
+          dawFileLinked={dawFileLinked}
+          lastCompleted={lastCompleted}
+          reviewingLast={reviewingLast}
+          onReviewLast={() => {
+            setSelectedFlagIndex(undefined);
+            setReviewingLast(true);
+          }}
+          onCloseLast={() => {
+            setSelectedFlagIndex(undefined);
+            setReviewingLast(false);
+          }}
+          foundHere={compareRows.length}
+        />
+        <PreviewPanel notify={notify} goToManuscript={goToManuscript} />
+        <ProofingStagePanel notify={notify} goToManuscript={goToManuscript} refreshKey={refreshKey} />
         {checking && (
           <RecordingCheck
             chapter={chapter}

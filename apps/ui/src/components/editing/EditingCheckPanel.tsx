@@ -10,7 +10,7 @@ import { ProgressBar } from '../primitives/ProgressBar';
 import { SlideOver } from '../primitives/SlideOver';
 import type { Notify } from '../primitives/Toast';
 import { MappingConfirm } from '../mapping/MappingConfirm';
-import { useReaperStatus } from '../review/useReaperStatus';
+import { useReaperStatus } from '../proof/useReaperStatus';
 import { formatWhen } from '../home/recordingCheckText';
 import { formatAge, SIGNAL_STATE_LABEL } from '../stages/stageText';
 import { CleanupAction } from './CleanupAction';

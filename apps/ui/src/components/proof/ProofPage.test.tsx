@@ -7,7 +7,7 @@ import { createMockApi } from '../../api/mockApi';
 import { WIRE_FINDINGS } from '../../api/mockFixtures';
 import { TooltipProvider } from '../primitives/Tooltip';
 import type { Finding, NarrationApi } from '../../types';
-import { ReviewPage } from './ReviewPage';
+import { ProofPage } from './ProofPage';
 
 afterEach(cleanup);
 
@@ -27,13 +27,14 @@ function renderPage({
   render(
     <ApiProvider api={api}>
       <TooltipProvider>
-        <ReviewPage
+        <ProofPage
           notify={notify}
           hasManuscript={hasManuscript}
           goToManuscript={goToManuscript}
           goToStoryBible={goToStoryBible}
           goToWorkspace={goToWorkspace}
           goToDelivery={goToDelivery}
+          openChapter={vi.fn()}
         />
       </TooltipProvider>
     </ApiProvider>,
@@ -42,7 +43,7 @@ function renderPage({
 }
 
 const rows = async () => {
-  const table = await screen.findByRole('table', { name: 'Findings' });
+  const table = await screen.findByRole('table', { name: 'Notes' });
   await waitFor(() => expect(within(table).queryAllByRole('row').length).toBeGreaterThan(1));
   return within(table).getAllByRole('row').slice(1);
 };
@@ -53,12 +54,12 @@ const openFinding = async (user: ReturnType<typeof userEvent.setup>, text: RegEx
   await user.click(row);
 };
 
-describe('ReviewPage', () => {
+describe('ProofPage', () => {
   it('lists the latest run with the counts by status, and asks the narrator to pick a finding', async () => {
     renderPage();
     expect(await rows()).toHaveLength(4);
     expect(await screen.findByText('3 to review · 0 accepted · 1 dismissed · 0 deferred')).toBeTruthy();
-    expect(screen.getByText(/Select a finding to see its evidence/)).toBeTruthy();
+    expect(screen.getByText(/Select a note to see its evidence/)).toBeTruthy();
     const first = (await rows())[0];
     expect(first.textContent).toContain('“a White Rabbit with pink eyes” read as “a white rabbit with pale eyes”');
     expect(first.textContent).toContain('90%');
@@ -66,7 +67,7 @@ describe('ReviewPage', () => {
 
   it('says there is nothing to review yet, with no filters, when the project has no findings', async () => {
     renderPage({ initial: { findings: [] } });
-    expect(await screen.findByRole('heading', { name: 'Nothing to review yet' })).toBeTruthy();
+    expect(await screen.findByRole('heading', { name: 'No notes yet' })).toBeTruthy();
     expect(screen.queryByRole('group', { name: 'Filter findings' })).toBeNull();
     expect(screen.queryByRole('table')).toBeNull();
   });
@@ -98,7 +99,7 @@ describe('ReviewPage', () => {
     await rows();
     await user.selectOptions(screen.getByRole('combobox', { name: 'Status' }), 'deferred');
     expect(await screen.findByText('No findings match these filters.')).toBeTruthy();
-    const table = screen.getByRole('table', { name: 'Findings' });
+    const table = screen.getByRole('table', { name: 'Notes' });
     await user.click(within(table).getByRole('button', { name: 'Clear filters' }));
     await waitFor(async () => expect(await rows()).toHaveLength(4));
     expect((screen.getByRole('combobox', { name: 'Status' }) as HTMLSelectElement).value).toBe('');
@@ -189,7 +190,7 @@ describe('ReviewPage', () => {
     await openFinding(user, /pink eyes/);
     await user.click(screen.getByRole('button', { name: 'Show in manuscript' }));
     await waitFor(() => expect(goToManuscript).toHaveBeenCalledWith('chapter-1', 1));
-    await openFinding(user, /^.White Rabbit./);
+    await openFinding(user, /.White Rabbit.Story Bible/);
     await user.click(screen.getByRole('button', { name: 'Open in Story Bible' }));
     expect(goToStoryBible).toHaveBeenCalledWith('white-rabbit');
   });
@@ -200,7 +201,7 @@ describe('ReviewPage', () => {
     const goToWorkspace = vi.fn();
     renderPage({ goToWorkspace });
     await openFinding(user, /pink eyes/);
-    await user.click(screen.getByRole('button', { name: 'Open in workspace' }));
+    await user.click(screen.getByRole('button', { name: 'Open chapter view' }));
     expect(goToWorkspace).toHaveBeenCalledWith('chapter-1', '1a2b3c4d5e6f708192a3b4c5');
   });
 
@@ -208,7 +209,7 @@ describe('ReviewPage', () => {
     const user = userEvent.setup();
     renderPage();
     await openFinding(user, /pink eyes/);
-    expect(screen.queryByRole('button', { name: 'Open in workspace' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Open chapter view' })).toBeNull();
   });
 
   it('keeps Show in manuscript off, with the reason, when there is no manuscript', async () => {
@@ -258,12 +259,12 @@ describe('ReviewPage', () => {
     expect(await screen.findByText('This page could not be loaded')).toBeTruthy();
     fail = false;
     await user.click(screen.getByRole('button', { name: 'Retry' }));
-    expect(await screen.findByRole('heading', { name: 'Nothing to review yet' })).toBeTruthy();
+    expect(await screen.findByRole('heading', { name: 'No notes yet' })).toBeTruthy();
   });
 });
 
 // Go to, Loop and Stop in REAPER (review dashboard Phase 7), against the mock's REAPER.
-describe('ReviewPage in REAPER', () => {
+describe('ProofPage in REAPER', () => {
   const inReaper = () => within(screen.getByRole('region', { name: 'In REAPER' }));
   const button = (name: string) => inReaper().getByRole('button', { name }) as HTMLButtonElement;
 
@@ -367,7 +368,7 @@ describe('ReviewPage in REAPER', () => {
 });
 
 // The approved marker (review dashboard Phase 8, ADR 0123): one take marker for an accepted finding, after a confirm.
-describe('ReviewPage adds an approved marker in REAPER', () => {
+describe('ProofPage adds an approved marker in REAPER', () => {
   const inReaper = () => within(screen.getByRole('region', { name: 'In REAPER' }));
   const addMarker = () => inReaper().getByRole('button', { name: 'Add marker in REAPER' }) as HTMLButtonElement;
   const MARKER = "MISREAD: 'a White Rabbit with pink eyes' as 'a white rabbit with pale eyes'";

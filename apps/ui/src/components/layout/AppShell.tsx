@@ -11,7 +11,6 @@ import {
   faGear,
   faHouse,
   faLayerGroup,
-  faListCheck,
   faMicrophone,
   faScroll,
   faStopwatch,
@@ -22,25 +21,25 @@ import { NavDrawer } from '../primitives/NavDrawer';
 import { IconButton } from '../primitives/IconButton';
 import { TooltipTarget } from '../primitives/Tooltip';
 import { dawCapabilityGate } from '../../dawAvailability';
-import { useCapability } from '../../useCapability';
 import { DemoBanner } from './DemoBanner';
 
 // requiresManuscript/requiresDaw name what each nav item is gated on (PRD project-workspace-and-daw-link.prd.md, Open
-// Question W16): only Proofing needs a linked DAW project file today - Tracks reads the project's REAPER file
-// directly through its own discovery flow and is not gated here.
+// Question W16): no item needs a linked DAW project file since Proof replaced Proofing (stage-navigation-and-page-replacement.prd.md
+// Phase 5: its compare run gates itself inside the chapter view) - Tracks reads the project's REAPER file directly through its own
+// discovery flow and is not gated here. The requiresDaw field stays for the next item that needs one.
 const NAV = [
   { name: 'Home', path: '/', icon: faHouse, requiresManuscript: false, requiresDaw: false },
   // Time, pace and the delivery date by chapter and stage (production-tracking.prd.md Phase 4). Gated on a manuscript: the board and
   // the timer are per chapter.
   { name: 'Production', path: '/production', icon: faStopwatch, requiresManuscript: true, requiresDaw: false },
   { name: 'Manuscript', path: '/manuscript', icon: faFileLines, requiresManuscript: true, requiresDaw: false },
-  { name: 'Proofing', path: '/proofing', icon: faWaveSquare, requiresManuscript: true, requiresDaw: true },
   { name: 'Story Bible', path: '/story-bible', icon: faBookOpen, requiresManuscript: true, requiresDaw: false },
   { name: 'Teleprompter', path: '/teleprompter', icon: faScroll, requiresManuscript: true, requiresDaw: false },
   { name: 'Tracks', path: '/tracks', icon: faLayerGroup, requiresManuscript: false, requiresDaw: false },
-  // Every check's findings in one queue (review-dashboard-and-findings-adoption.prd.md Phase 5). Not gated: take-review findings need
-  // no manuscript, and the page says itself when there is nothing to review yet.
-  { name: 'Review', path: '/review', icon: faListCheck, requiresManuscript: false, requiresDaw: false },
+  // Proof (stage-navigation-and-page-replacement.prd.md Phase 5): the book's notes at /proof and a chapter's view at /proof/:chapterId,
+  // replacing Review and Proofing. Not gated: take-review notes need no manuscript, the page says itself when there is nothing to
+  // proof yet, and the compare run inside a chapter view gates itself on the DAW (CapabilityGate).
+  { name: 'Proof', path: '/proof', icon: faWaveSquare, requiresManuscript: false, requiresDaw: false },
   // Measuring rendered chapter files (diagnostics-delivery-and-cleanup-tools.prd.md Phase 5). Not gated: it reads files the narrator
   // picks, so it needs neither a manuscript nor a REAPER project.
   { name: 'Delivery', path: '/delivery', icon: faGaugeHigh, requiresManuscript: false, requiresDaw: false },
@@ -82,14 +81,12 @@ export function AppShell({
     navigate(next);
   };
   const settingsActive = isActivePath(pathname, '/settings');
-  // Proofing is the one requiresDaw item, and review is the capability it actually needs (dawport.ReviewSession's role,
-  // ADR 0300): once a manuscript and a file are linked, whether the page is usable now comes from the DAW port
-  // instead of a fixed message (DAW port PRD Phase 7, ADR 0360).
-  const reviewCapability = useCapability('review');
+  // A requiresDaw item needs a linked file only: the one that also read the DAW port's `review` capability was Proofing, whose
+  // compare run now gates itself in the Proof chapter view (stage-navigation-and-page-replacement.prd.md Phase 5, CapabilityGate).
   const gateFor = (item: (typeof NAV)[number]) =>
     dawCapabilityGate(
       { manuscript: item.requiresManuscript && !hasManuscript, dawFile: item.requiresDaw && !dawFileLinked },
-      item.requiresDaw ? reviewCapability : { level: 'supported', available: true },
+      { level: 'supported', available: true },
     );
   const isDisabled = (item: (typeof NAV)[number]) => gateFor(item).disabled;
   const requiredReason = (item: (typeof NAV)[number]) => gateFor(item).reason;

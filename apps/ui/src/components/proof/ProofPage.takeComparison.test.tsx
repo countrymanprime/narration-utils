@@ -9,7 +9,7 @@ import { WIRE_TAKE_COMPARISON_FINDING } from '../../api/takeComparisonMock';
 import { takeComparisonEvidenceSchema } from '../../api/schemas/takeReview';
 import { TooltipProvider } from '../primitives/Tooltip';
 import type { Finding, NarrationApi } from '../../types';
-import { ReviewPage } from './ReviewPage';
+import { ProofPage } from './ProofPage';
 import { divergenceLabel, metricValue, scriptSummary } from './takeComparisonFormat';
 
 // The audition dialog owns real <audio> elements; jsdom has no HTMLMediaElement.play().
@@ -34,7 +34,7 @@ function renderPage({ overrides = {}, initial = {} }: { overrides?: Partial<Narr
   render(
     <ApiProvider api={api}>
       <TooltipProvider>
-        <ReviewPage notify={vi.fn()} hasManuscript goToManuscript={vi.fn()} goToStoryBible={vi.fn()} goToDelivery={vi.fn()} />
+        <ProofPage notify={vi.fn()} hasManuscript goToManuscript={vi.fn()} goToStoryBible={vi.fn()} goToDelivery={vi.fn()} openChapter={vi.fn()} />
       </TooltipProvider>
     </ApiProvider>,
   );
@@ -42,7 +42,7 @@ function renderPage({ overrides = {}, initial = {} }: { overrides?: Partial<Narr
 }
 
 const rows = async () => {
-  const table = await screen.findByRole('table', { name: 'Findings' });
+  const table = await screen.findByRole('table', { name: 'Notes' });
   await waitFor(() => expect(within(table).queryAllByRole('row').length).toBeGreaterThan(1));
   return within(table).getAllByRole('row').slice(1);
 };

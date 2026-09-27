@@ -9,13 +9,11 @@ import { appFeedback } from './interactionFeedback/app';
 import { homeFeedback } from './interactionFeedback/home';
 import { manuscriptFeedback } from './interactionFeedback/manuscript';
 import { projectFeedback } from './interactionFeedback/project';
-import { proofingFeedback } from './interactionFeedback/proofing';
 import { settingsFeedback } from './interactionFeedback/settings';
 import { storyBibleFeedback } from './interactionFeedback/storyBible';
 import { teleprompterFeedback } from './interactionFeedback/teleprompter';
 import { tracksFeedback } from './interactionFeedback/tracks';
-import { workspaceFeedback } from './interactionFeedback/workspace';
-import { reviewFeedback } from './interactionFeedback/review';
+import { proofFeedback } from './interactionFeedback/proof';
 import { editingFeedback } from './interactionFeedback/editing';
 import { deliveryFeedback } from './interactionFeedback/delivery';
 import { productionFeedback } from './interactionFeedback/production';
@@ -30,13 +28,11 @@ const AREAS: Array<Record<string, FeedbackRow>> = [
   homeFeedback,
   manuscriptFeedback,
   projectFeedback,
-  proofingFeedback,
   settingsFeedback,
   storyBibleFeedback,
   teleprompterFeedback,
   tracksFeedback,
-  workspaceFeedback,
-  reviewFeedback,
+  proofFeedback,
   editingFeedback,
   deliveryFeedback,
   productionFeedback,
@@ -71,16 +67,16 @@ export const SILENT_CATCHES: Record<string, string> = {
   // Phase 1 (app-navigation-and-zoom-controls.prd.md) added two more bare catches in this file (Back/Forward's own guard,
   // and the nav's original one, now #6), renumbering what follows.
   'src/App.tsx#5': 'Best effort recovery for a popstate the app did not start: a reset that fails leaves the finished results in place, which is harmless.',
-  'src/App.tsx#6': 'Best effort when leaving Proofing through the nav: a reset that fails leaves the finished results in place, which is harmless.',
-  'src/App.tsx#7': 'Best effort when leaving Proofing through guarded Back/Forward: same as the nav, harmless either way.',
+  'src/App.tsx#6':
+    'Best effort when leaving a Proof chapter view with a compare run through the nav: a reset that fails leaves the finished results in place, which is harmless.',
+  'src/App.tsx#7': 'Best effort when leaving a Proof chapter view with a compare run through guarded Back/Forward: same as the nav, harmless either way.',
   'src/components/home/Home.tsx#1': 'Only decides whether the "entries need review" nudge shows; without it the nudge is absent.',
   'src/components/home/Home.tsx#2':
     'Only pre-fills the "Build the Story Bible after import" checkbox from Settings; it keeps its on-by-default (D8) local state without it, and the narrator can still change it per import.',
   'src/components/manuscript/Manuscript.tsx#1':
     'Renders the Opening credits pseudo-entry preview; a failed render just leaves that entry showing "Nothing to preview yet." rather than a toast over the manuscript itself.',
   'src/components/manuscript/Manuscript.tsx#2': 'Renders the Closing credits pseudo-entry preview; same fallback as the opening one above.',
-  'src/components/proofing/Transcript.tsx#1': 'Reads the last model and chunk choice; the defaults stay usable and Settings reports a real error.',
-  'src/components/proofing/Transcript.tsx#2': 'Only offers to review the last run; without it the offer is absent.',
+  'src/components/proof/CompareRun.tsx#1': 'Reads the last model and chunk choice; the defaults stay usable and Settings reports a real error.',
   // Phase 2 (teleprompter-manuscript-integration.prd.md) moved the device/settings catches into `useTeleprompterSession.ts`;
   // `TeleprompterPage.tsx` keeps only the chapter-selection catch it never shared with the modal.
   'src/components/teleprompter/TeleprompterPage.tsx#1':
@@ -114,7 +110,7 @@ export const SILENT_CATCHES: Record<string, string> = {
     'Hydrates whatever stamp or read was already in flight when the dialog reopened; the live event follows anyway.',
   'src/components/tracks/PickupsDialog.tsx#1':
     'Hydrates whatever run was already in flight, then refreshes the count; a failure here leaves the count at its last known value, and every narrator-triggered action still shows its own failure inline.',
-  'src/components/review/FindingDetail.tsx#1':
+  'src/components/proof/FindingDetail.tsx#1':
     'Re-reads a finding after the host refused a decision, only to tell changed evidence apart; when the re-read fails too, the inline alert still shows the host reason for the refusal, so nothing is hidden.',
   'src/components/editing/EditingCandidateRow.tsx#1':
     'Re-reads a candidate after the host refused a decision, only to tell changed evidence apart; when the re-read fails too, the inline alert still shows the host reason for the refusal, so nothing is hidden (mirrors FindingDetail.tsx#1).',
@@ -140,6 +136,8 @@ export const SILENT_CATCHES: Record<string, string> = {
     'navigator.hid.getDevices() rejecting (an unsupported or torn-down navigator.hid, Phase 11): leaves this source with no devices; KeyboardSource and MidiSource still cover the booth, so it just contributes nothing rather than surfacing an error nobody can act on.',
   'src/input/HidSource.ts#3':
     "requestHidDevice()'s chooser promise rejecting (the narrator cancelled it, or - Phase 8's spike found this plausible on WebView2 - no chooser ever appeared): not a narrator action to retry automatically, and the only outcome either way is that no new device got paired this time.",
-  'src/components/workspace/WorkspacePage.tsx#1':
-    "The chapter's findings for the text overlay (edit-and-proof-workspace.prd.md Phase 4): not a narrator action to retry, and not swallowed silently since the check-derived flags (Phase 2) still show with nothing lost - a failure here just leaves the overlay's extra flags and review-in-place off this load, and the Review page (which reads the same store) still works.",
+  'src/components/proof/ProofChapterPage.tsx#1':
+    'Only offers to review the last compare run; without it the offer is absent (moved from the Proofing page, stage-navigation Phase 5).',
+  'src/components/proof/ProofChapterPage.tsx#2':
+    "The chapter's findings for the text overlay (edit-and-proof-workspace.prd.md Phase 4): not a narrator action to retry, and not swallowed silently since the check-derived flags (Phase 2) still show with nothing lost - a failure here just leaves the overlay's extra flags and review-in-place off this load, and the book's notes on Proof (which read the same store) still work.",
 };

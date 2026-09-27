@@ -2,7 +2,7 @@ import { useCallback, useMemo, useState } from 'react';
 import { useApi } from '../../api/ApiContext';
 import { apiErrorMessage } from '../../api/errorMessage';
 import { usePendingAction } from '../../hooks/usePendingAction';
-import { useReaperStatus } from '../review/useReaperStatus';
+import { useReaperStatus } from './useReaperStatus';
 import type { WorkspaceToken } from '../../api/contracts/workspace';
 
 // Why a control is off when the current word cannot be placed - the host refuses the same words in the same words

@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { Transcript } from './Transcript';
+import { CompareRun } from './CompareRun';
 import { ApiProvider } from '../../api/ApiContext';
 import { createMockApi } from '../../api/mockApi';
 import { WIRE_TRANSCRIPT } from '../../api/mockFixtures';
@@ -9,19 +9,21 @@ import { WIRE_DISCREPANCIES } from '../../api/mockFixtures';
 
 afterEach(cleanup);
 
-describe('Transcript actions that answer late or fail (ADR 0075)', () => {
+describe('CompareRun actions that answer late or fail (ADR 0075)', () => {
   it('Cancel says it was heard, ignores a second press, and reports a cancel the host refuses', async () => {
     const hang = vi.fn(() => new Promise<void>(() => {}));
     const notify = vi.fn();
     const { unmount } = render(
       <ApiProvider api={createMockApi({ transcriptCancel: hang })}>
-        <Transcript
+        <CompareRun
+          chapterTitle="Chapter 1"
           state={{ ...WIRE_TRANSCRIPT, phase: 'running' }}
           notify={notify}
-          goHome={vi.fn()}
-          goToManuscript={vi.fn()}
           dawFileLinked
-          refreshKey="test"
+          reviewingLast={false}
+          onReviewLast={vi.fn()}
+          onCloseLast={vi.fn()}
+          foundHere={0}
         />
       </ApiProvider>,
     );
@@ -34,103 +36,156 @@ describe('Transcript actions that answer late or fail (ADR 0075)', () => {
 
     render(
       <ApiProvider api={createMockApi({ transcriptCancel: () => Promise.reject(new Error('the comparison already ended')) })}>
-        <Transcript
+        <CompareRun
+          chapterTitle="Chapter 1"
           state={{ ...WIRE_TRANSCRIPT, phase: 'running' }}
           notify={notify}
-          goHome={vi.fn()}
-          goToManuscript={vi.fn()}
           dawFileLinked
-          refreshKey="test"
+          reviewingLast={false}
+          onReviewLast={vi.fn()}
+          onCloseLast={vi.fn()}
+          foundHere={0}
         />
       </ApiProvider>,
     );
     fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
     await waitFor(() => expect(notify).toHaveBeenCalledWith(expect.stringContaining('the comparison already ended'), 'error'));
   });
-
-  it('a jump to the recorded audio that fails is reported, not an unhandled rejection', async () => {
-    const notify = vi.fn();
-    render(
-      <ApiProvider api={createMockApi({ transcriptJump: () => Promise.reject(new Error('REAPER is not running')) })}>
-        <Transcript
-          state={{ ...WIRE_TRANSCRIPT, phase: 'success', rows: WIRE_DISCREPANCIES }}
-          notify={notify}
-          goHome={vi.fn()}
-          goToManuscript={vi.fn()}
-          dawFileLinked
-          refreshKey="test"
-        />
-      </ApiProvider>,
-    );
-    fireEvent.click((await screen.findAllByRole('button', { name: 'Play recorded audio' })).find((button) => !(button as HTMLButtonElement).disabled)!);
-    await waitFor(() => expect(notify).toHaveBeenCalledWith(expect.stringContaining('REAPER is not running'), 'error'));
-  });
 });
 
-describe('Transcript DAW-link gating (PRD project-workspace-and-daw-link.prd.md, W16)', () => {
-  it('disables Start comparison without a linked DAW file, and enables it once linked', () => {
+describe('CompareRun DAW-link gating (PRD project-workspace-and-daw-link.prd.md, W16)', () => {
+  it('gates Start comparison without a linked DAW file, and lets it run once linked', async () => {
+    const transcriptStart = vi.fn().mockResolvedValue({ status: 'started' });
+    const props = {
+      chapterTitle: 'Chapter 1',
+      state: WIRE_TRANSCRIPT,
+      notify: vi.fn(),
+      reviewingLast: false,
+      onReviewLast: vi.fn(),
+      onCloseLast: vi.fn(),
+      foundHere: 0,
+    };
     const { rerender } = render(
-      <ApiProvider api={createMockApi()}>
-        <Transcript state={WIRE_TRANSCRIPT} notify={vi.fn()} goHome={vi.fn()} goToManuscript={vi.fn()} dawFileLinked={false} refreshKey="test" />
+      <ApiProvider api={createMockApi({ transcriptStart })}>
+        <CompareRun {...props} dawFileLinked={false} />
       </ApiProvider>,
     );
-    expect((screen.getByRole('button', { name: /Start comparison/ }) as HTMLButtonElement).disabled).toBe(true);
+    const gated = screen.getByRole('button', { name: /Start comparison/ });
+    expect(gated.getAttribute('aria-disabled')).toBe('true');
+    expect(screen.getByText('Link a REAPER project (.rpp) file to start a comparison.')).toBeTruthy();
+    fireEvent.click(gated);
+    expect(transcriptStart).not.toHaveBeenCalled();
 
     rerender(
-      <ApiProvider api={createMockApi()}>
-        <Transcript state={WIRE_TRANSCRIPT} notify={vi.fn()} goHome={vi.fn()} goToManuscript={vi.fn()} dawFileLinked refreshKey="test" />
+      <ApiProvider api={createMockApi({ transcriptStart })}>
+        <CompareRun {...props} dawFileLinked />
       </ApiProvider>,
     );
-    expect((screen.getByRole('button', { name: /Start comparison/ }) as HTMLButtonElement).disabled).toBe(false);
+    fireEvent.click(screen.getByRole('button', { name: /Start comparison/ }));
+    // The chapter view names its own chapter, so the host never guesses it from the track name.
+    await waitFor(() => expect(transcriptStart).toHaveBeenCalledWith(expect.objectContaining({ chapterTitle: 'Chapter 1' })));
   });
 
-  it('disables Play recorded audio and marker export without a linked DAW file, but keeps them for review after linking', () => {
+  // DAW port PRD Phase 7 (ADR 0360), moved from the retired Proofing nav item (stage-navigation Phase 5): once a file is linked,
+  // whether a comparison can start comes from the `review` capability, so a REAPER that is not connected says so.
+  it('gates Start comparison on the review capability when REAPER is not connected', async () => {
     render(
-      <ApiProvider api={createMockApi()}>
-        <Transcript
-          state={{ ...WIRE_TRANSCRIPT, phase: 'success', rows: WIRE_DISCREPANCIES, markerExport: { phase: 'idle', message: '', added: 0, skipped: 0 } }}
+      <ApiProvider api={createMockApi({}, { daw: { connected: false } })}>
+        <CompareRun
+          chapterTitle="Chapter 1"
+          state={WIRE_TRANSCRIPT}
           notify={vi.fn()}
-          goHome={vi.fn()}
-          goToManuscript={vi.fn()}
-          dawFileLinked={false}
-          refreshKey="test"
+          dawFileLinked
+          reviewingLast={false}
+          onReviewLast={vi.fn()}
+          onCloseLast={vi.fn()}
+          foundHere={0}
         />
       </ApiProvider>,
     );
-    for (const button of screen.getAllByRole('button', { name: 'Play recorded audio' })) {
-      expect((button as HTMLButtonElement).disabled).toBe(true);
-    }
+    await waitFor(() => expect(screen.getByRole('button', { name: /Start comparison/ }).getAttribute('aria-disabled')).toBe('true'));
+    expect(screen.getByText(/REAPER is not connected to this app/)).toBeTruthy();
+  });
+
+  it('disables marker export without a linked DAW file, and for the last comparison under review', () => {
+    const results = {
+      ...WIRE_TRANSCRIPT,
+      phase: 'success' as const,
+      rows: WIRE_DISCREPANCIES,
+      markerExport: { phase: 'idle' as const, message: '', added: 0, skipped: 0 },
+    };
+    const { rerender } = render(
+      <ApiProvider api={createMockApi()}>
+        <CompareRun
+          chapterTitle="Chapter 1"
+          state={results}
+          notify={vi.fn()}
+          dawFileLinked={false}
+          reviewingLast={false}
+          onReviewLast={vi.fn()}
+          onCloseLast={vi.fn()}
+          foundHere={2}
+        />
+      </ApiProvider>,
+    );
+    expect((screen.getByRole('button', { name: /Export/ }) as HTMLButtonElement).disabled).toBe(true);
+    rerender(
+      <ApiProvider api={createMockApi()}>
+        <CompareRun
+          chapterTitle="Chapter 1"
+          state={WIRE_TRANSCRIPT}
+          lastCompleted={results}
+          notify={vi.fn()}
+          dawFileLinked
+          reviewingLast
+          onReviewLast={vi.fn()}
+          onCloseLast={vi.fn()}
+          foundHere={2}
+        />
+      </ApiProvider>,
+    );
     expect((screen.getByRole('button', { name: /Export/ }) as HTMLButtonElement).disabled).toBe(true);
   });
 });
 
-describe('Transcript chapter choice', () => {
-  it('asks which chapter the track belongs to in a named region under the page heading', () => {
+describe('CompareRun chapter choice', () => {
+  it('asks which chapter the track belongs to in a named region inside the run', () => {
     render(
       <ApiProvider api={createMockApi()}>
-        <Transcript
+        <CompareRun
+          chapterTitle="Chapter 1"
           state={{ ...WIRE_TRANSCRIPT, phase: 'need_chapter', chapters: ['Chapter 1', 'Chapter 2'] }}
           notify={vi.fn()}
-          goHome={vi.fn()}
-          goToManuscript={vi.fn()}
           dawFileLinked
-          refreshKey="test"
+          reviewingLast={false}
+          onReviewLast={vi.fn()}
+          onCloseLast={vi.fn()}
+          foundHere={0}
         />
       </ApiProvider>,
     );
-    expect(screen.getByRole('heading', { level: 1, name: 'Proofing' })).toBeTruthy();
+    expect(screen.getByRole('region', { name: 'Compare the recording with the script' })).toBeTruthy();
     const region = screen.getByRole('region', { name: 'Choose manuscript chapter' });
     expect(within(region).getByRole('heading', { level: 2 })).toBeTruthy();
     expect(within(region).getByRole('button', { name: 'Chapter 2' })).toBeTruthy();
   });
 });
 
-describe('Transcript vocabulary suggestions', () => {
+describe('CompareRun vocabulary suggestions', () => {
   it('does not show candidates until requested, then accepts manifest candidates once', async () => {
     const api = createMockApi();
     render(
       <ApiProvider api={api}>
-        <Transcript state={WIRE_TRANSCRIPT} notify={vi.fn()} goHome={vi.fn()} goToManuscript={vi.fn()} dawFileLinked refreshKey="test" />
+        <CompareRun
+          chapterTitle="Chapter 1"
+          state={WIRE_TRANSCRIPT}
+          notify={vi.fn()}
+          dawFileLinked
+          reviewingLast={false}
+          onReviewLast={vi.fn()}
+          onCloseLast={vi.fn()}
+          foundHere={0}
+        />
       </ApiProvider>,
     );
     await screen.findByText('Vocabulary hints');
@@ -145,31 +200,68 @@ describe('Transcript vocabulary suggestions', () => {
     await waitFor(() => expect(screen.queryByRole('button', { name: /\+ Alice/ })).toBeNull());
   });
 
-  it('shows duplicate marker status and exports only pending markers on explicit request', async () => {
+  it('says how many discrepancies this chapter has and exports only pending markers on explicit request', async () => {
     const exportMarkers = vi.fn().mockResolvedValue(undefined);
     const api = createMockApi({ transcriptExportMarkers: exportMarkers });
     render(
       <ApiProvider api={api}>
-        <Transcript
-          state={{
-            ...WIRE_TRANSCRIPT,
-            phase: 'success',
-            rows: WIRE_DISCREPANCIES,
-            markerExport: { phase: 'idle', message: '', added: 0, skipped: 0 },
-          }}
+        <CompareRun
+          chapterTitle="Chapter 1"
+          state={{ ...WIRE_TRANSCRIPT, phase: 'success', rows: WIRE_DISCREPANCIES, markerExport: { phase: 'idle', message: '', added: 0, skipped: 0 } }}
           notify={vi.fn()}
-          goHome={vi.fn()}
-          goToManuscript={vi.fn()}
           dawFileLinked
-          refreshKey="test"
+          reviewingLast={false}
+          onReviewLast={vi.fn()}
+          onCloseLast={vi.fn()}
+          foundHere={2}
         />
       </ApiProvider>,
     );
 
-    expect(screen.getByText('Ready to export')).toBeTruthy();
-    expect(screen.getByText('Already marked')).toBeTruthy();
+    expect(screen.getByText(/2 discrepancies in Chapter 1, each one a flag in the Flags panel \(1 more in other chapters\)/)).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: 'Export 1 marker' }));
     await waitFor(() => expect(exportMarkers).toHaveBeenCalledOnce());
+  });
+
+  it('New comparison resets a live run, and only closes the last comparison under review', async () => {
+    const transcriptReset = vi.fn().mockResolvedValue(undefined);
+    const onCloseLast = vi.fn();
+    const results = { ...WIRE_TRANSCRIPT, phase: 'success' as const, rows: WIRE_DISCREPANCIES };
+    const { rerender } = render(
+      <ApiProvider api={createMockApi({ transcriptReset })}>
+        <CompareRun
+          chapterTitle="Chapter 1"
+          state={results}
+          notify={vi.fn()}
+          dawFileLinked
+          reviewingLast={false}
+          onReviewLast={vi.fn()}
+          onCloseLast={onCloseLast}
+          foundHere={2}
+        />
+      </ApiProvider>,
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'New comparison' }));
+    await waitFor(() => expect(transcriptReset).toHaveBeenCalledOnce());
+
+    rerender(
+      <ApiProvider api={createMockApi({ transcriptReset })}>
+        <CompareRun
+          chapterTitle="Chapter 1"
+          state={WIRE_TRANSCRIPT}
+          lastCompleted={results}
+          notify={vi.fn()}
+          dawFileLinked
+          reviewingLast
+          onReviewLast={vi.fn()}
+          onCloseLast={onCloseLast}
+          foundHere={2}
+        />
+      </ApiProvider>,
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'New comparison' }));
+    expect(onCloseLast).toHaveBeenCalledOnce();
+    expect(transcriptReset).toHaveBeenCalledOnce();
   });
 
   it('gates on the approved Whisper model, installs it, then starts the comparison', async () => {
@@ -206,7 +298,16 @@ describe('Transcript vocabulary suggestions', () => {
     const api = createMockApi({ transcriptStart, whisperInstall });
     render(
       <ApiProvider api={api}>
-        <Transcript state={WIRE_TRANSCRIPT} notify={vi.fn()} goHome={vi.fn()} goToManuscript={vi.fn()} dawFileLinked refreshKey="test" />
+        <CompareRun
+          chapterTitle="Chapter 1"
+          state={WIRE_TRANSCRIPT}
+          notify={vi.fn()}
+          dawFileLinked
+          reviewingLast={false}
+          onReviewLast={vi.fn()}
+          onCloseLast={vi.fn()}
+          foundHere={0}
+        />
       </ApiProvider>,
     );
 
@@ -218,34 +319,24 @@ describe('Transcript vocabulary suggestions', () => {
     await waitFor(() => expect(transcriptStart).toHaveBeenCalledTimes(2));
     await waitFor(() => expect(screen.queryByText('Download local Whisper model?')).toBeNull());
   });
-
-  it('extends an expanded discrepancy background across every results column', () => {
-    const api = createMockApi();
-    render(
-      <ApiProvider api={api}>
-        <Transcript
-          state={{ ...WIRE_TRANSCRIPT, phase: 'success', rows: WIRE_DISCREPANCIES, markerExport: { phase: 'idle', message: '', added: 0, skipped: 0 } }}
-          notify={vi.fn()}
-          goHome={vi.fn()}
-          goToManuscript={vi.fn()}
-          dawFileLinked
-          refreshKey="test"
-        />
-      </ApiProvider>,
-    );
-
-    fireEvent.click(screen.getByText('White Rabbit'));
-    expect(document.querySelector('td[colspan="6"]')).toBeTruthy();
-  });
 });
 
-describe('Transcript vocabulary hints feedback', () => {
+describe('CompareRun vocabulary hints feedback', () => {
   function renderHints(overrides: Parameters<typeof createMockApi>[0] = {}) {
     const notify = vi.fn();
     const api = createMockApi(overrides);
     render(
       <ApiProvider api={api}>
-        <Transcript state={WIRE_TRANSCRIPT} notify={notify} goHome={vi.fn()} goToManuscript={vi.fn()} dawFileLinked refreshKey="test" />
+        <CompareRun
+          chapterTitle="Chapter 1"
+          state={WIRE_TRANSCRIPT}
+          notify={notify}
+          dawFileLinked
+          reviewingLast={false}
+          onReviewLast={vi.fn()}
+          onCloseLast={vi.fn()}
+          foundHere={0}
+        />
       </ApiProvider>,
     );
     return notify;

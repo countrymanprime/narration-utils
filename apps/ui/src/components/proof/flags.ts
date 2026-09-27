@@ -1,5 +1,6 @@
 import type { WorkspaceExtra, WorkspaceToken } from '../../api/contracts/workspace';
 import type { FindingReviewStatus } from '../../api/contracts/findings';
+import type { Discrepancy } from '../../api/contracts/transcript';
 
 /** The flaggable kinds a token's status groups into (edit-and-proof-workspace.prd.md Evidence, "Flags the app can
  * already place on the text"): a run of consecutive skipped words, a run read short or with different text, a run
@@ -20,6 +21,13 @@ export type Flag = {
    * was ever heard (a pure skip has no audio position of its own). */
   seekTokenIndex?: number;
   heard?: string;
+  /** What the script says, for a flag that has no tokens of its own to read it from (a Transcript Compare discrepancy
+   * whose paragraph is not in the chapter's alignment, compareFlags.ts). */
+  script?: string;
+  /** The Transcript Compare discrepancy behind (or attached to) this flag, from a run on the Proof chapter view
+   * (stage-navigation-and-page-replacement.prd.md Phase 5): the flag detail shows its inline diff and the run's own
+   * actions (Play recorded audio, Add pronunciation equivalence). */
+  discrepancy?: Discrepancy;
   /** Set when a stored Finding backs this flag (Phase 4, `overlayFindings`): the flag can be reviewed in place
    * (accept, dismiss, defer, note) through the same `findingsReview` binding the Review page uses, and the decision
    * shows there too. A flag with no findingId is read-only, straight from the check's own alignment (Phase 2). */

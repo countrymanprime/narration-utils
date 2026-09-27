@@ -6,9 +6,13 @@ import { MAX_REVIEW_NOTE_LENGTH, type FindingReviewStatus } from '../../api/cont
 import { Button } from '../primitives/Button';
 import { Field } from '../primitives/Field';
 import { Panel } from '../primitives/Panel';
+import { StatusBadge } from '../primitives/StatusBadge';
 import { TooltipTarget } from '../primitives/Tooltip';
-import { analyzerLabel, STATUS_LABELS } from '../review/findingFormat';
+import { analyzerLabel, STATUS_LABELS } from './findingFormat';
 import type { WorkspaceToken } from '../../api/contracts/workspace';
+import type { Discrepancy } from '../../api/contracts/transcript';
+import { canAddEquivalence } from '../../state';
+import { InlineDiff } from './InlineDiff';
 import type { Flag, FlagKind } from './flags';
 import { formatElapsed } from './format';
 import type { WorkspaceReaperControls } from './useWorkspaceReaper';
@@ -25,6 +29,15 @@ const DECISIONS: Array<{ status: FindingReviewStatus; label: string; variant: 'p
 ];
 
 export type FlagDecisionResult = { ok: true } | { ok: false; message: string };
+
+/** A Transcript Compare discrepancy's own actions, from the Proofing page's results row (stage-navigation Phase 5). */
+export type CompareFlagActions = {
+  /** Whether Play recorded audio may call the live REAPER bridge (a linked project file, PRD W16). */
+  canJump: boolean;
+  jump: (row: Discrepancy) => void;
+  addEquivalence: (row: Discrepancy) => void;
+  showInManuscript: (row: Discrepancy) => void;
+};
 
 function countByKind(flags: readonly Flag[]): Array<{ kind: FlagKind; label: string; count: number }> {
   const counts = new Map<FlagKind, { label: string; count: number }>();
@@ -94,9 +107,51 @@ function FlagDecision({ flag, onDecide }: { flag: Flag; onDecide: (status: Findi
         {saved}
       </p>
       <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
-        Accept keeps it as a fix to make. Decisions show on the Review page too.
+        Accept keeps it as a fix to make. Decisions show in the book's notes on Proof too.
       </p>
     </div>
+  );
+}
+
+/** The Proofing page's per-row actions for a compare discrepancy, now under its flag's diff. */
+function CompareActions({ row, actions }: { row: Discrepancy; actions: CompareFlagActions }) {
+  const eligible = canAddEquivalence(row);
+  const marker = row.markerState ?? 'pending';
+  return (
+    <>
+      <div>
+        <span className="section-label">Marker</span> {marker === 'pending' && <StatusBadge tone="progress" label="Ready to export" />}
+        {marker === 'exported' && <StatusBadge tone="success" label="Exported" />}
+        {marker === 'existing' && (
+          <TooltipTarget text={row.existingMarkerName ? `Existing marker: ${row.existingMarkerName}` : 'A matching marker already exists'}>
+            <span>
+              <StatusBadge tone="warning" label="Already marked" />
+            </span>
+          </TooltipTarget>
+        )}
+      </div>
+      <div className="flex flex-wrap gap-2">
+        <TooltipTarget text={row.chapter ? 'Open this line in the Manuscript' : 'No manuscript source is available'}>
+          <Button variant="ghost" disabled={!row.chapter} onClick={() => actions.showInManuscript(row)}>
+            Show in manuscript
+          </Button>
+        </TooltipTarget>
+        <TooltipTarget
+          text={
+            actions.canJump ? `Play the heard audio at ${formatElapsed(row.projectTime)} in REAPER` : 'Link a REAPER project (.rpp) file to play recorded audio'
+          }
+        >
+          <Button variant="ghost" disabled={!row.projectTime || !actions.canJump} onClick={() => actions.jump(row)}>
+            Play recorded audio
+          </Button>
+        </TooltipTarget>
+        <TooltipTarget text={eligible ? 'Add pronunciation equivalence' : 'Only available for single-word misreads'}>
+          <Button variant="ghost" disabled={!eligible} onClick={() => actions.addEquivalence(row)}>
+            Add pronunciation equivalence
+          </Button>
+        </TooltipTarget>
+      </div>
+    </>
   );
 }
 
@@ -116,6 +171,7 @@ export function FlagsPanel({
   onPlayFromFlag,
   reaper,
   onDecide,
+  compare,
 }: {
   flags: readonly Flag[];
   tokens: readonly WorkspaceToken[];
@@ -126,6 +182,8 @@ export function FlagsPanel({
   reaper: Pick<WorkspaceReaperControls, 'goToTokenBlocked' | 'loopTokenBlocked' | 'tokenPending' | 'goToToken' | 'loopToken'>;
   /** Records a decision on the selected flag's finding; undefined flags never call this (no findingId to decide on). */
   onDecide: (flag: Flag, status: FindingReviewStatus, note: string) => Promise<FlagDecisionResult>;
+  /** The actions of a flag that carries a compare run's discrepancy; absent when no run's results are shown. */
+  compare?: CompareFlagActions;
 }) {
   const selected = selectedIndex !== undefined ? flags[selectedIndex] : undefined;
   const scriptWords = selected ? tokens.slice(selected.tokenStart, selected.tokenEnd + 1).map((token) => token.text) : [];
@@ -171,13 +229,19 @@ export function FlagsPanel({
       {selected && (
         <div className="mt-4 space-y-2 border-t pt-3 text-sm" style={{ borderColor: 'var(--border)' }}>
           <div className="font-semibold">{selected.label}</div>
-          <div>
-            <span className="section-label">Script</span> &ldquo;{scriptWords.join(' ')}&rdquo;
-          </div>
-          {selected.heard && (
-            <div>
-              <span className="section-label">Heard</span> &ldquo;{selected.heard}&rdquo;
-            </div>
+          {selected.discrepancy ? (
+            <InlineDiff row={selected.discrepancy} />
+          ) : (
+            <>
+              <div>
+                <span className="section-label">Script</span> &ldquo;{scriptWords.length > 0 ? scriptWords.join(' ') : (selected.script ?? '')}&rdquo;
+              </div>
+              {selected.heard && (
+                <div>
+                  <span className="section-label">Heard</span> &ldquo;{selected.heard}&rdquo;
+                </div>
+              )}
+            </>
           )}
           {selected.analyzer && (
             <div style={{ color: 'var(--text-muted)' }}>
@@ -214,6 +278,7 @@ export function FlagsPanel({
               </>
             )}
           </div>
+          {selected.discrepancy && compare && <CompareActions row={selected.discrepancy} actions={compare} />}
           {selected.findingId && <FlagDecision key={selected.findingId} flag={selected} onDecide={(status, note) => onDecide(selected, status, note)} />}
         </div>
       )}

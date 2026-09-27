@@ -1,11 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useApi } from '../../api/ApiContext';
 import { describeApiError } from '../../api/errorMessage';
-import type { Finding, FindingsPage, FindingsSummary, TakeComparisonJob, TakeReviewScanJob } from '../../types';
+import type { Finding, FindingsPage, FindingsSummary, ManuscriptChapter, TakeComparisonJob, TakeReviewScanJob } from '../../types';
+import { chapterName } from '../../chapterName';
 import { LoadError } from '../layout/LoadError';
 import { Button } from '../primitives/Button';
 import { Heading } from '../primitives/Heading';
 import { Panel } from '../primitives/Panel';
+import { Select } from '../primitives/Select';
 import type { Notify } from '../primitives/Toast';
 import { FindingDetail } from './FindingDetail';
 import { FindingsList } from './FindingsList';
@@ -19,18 +21,21 @@ const countsLine = (summary: FindingsSummary): string =>
   (['unreviewed', 'accepted', 'dismissed', 'deferred'] as const).map((status) => `${summary[status]} ${STATUS_LABELS[status].toLowerCase()}`).join(' · ');
 
 /**
- * The Review page (review-dashboard-and-findings-adoption.prd.md Phase 5, Q1: a page in the app, not a REAPER panel): every
- * analyzer's findings in one queue, filtered and sorted by the host, with a finding's evidence and the narrator's decision beside
- * the list. Find pickups and duplicates (take review Phase 5) starts that analyzer's scan here, and its groups are reviewed here
- * like every other finding.
+ * Proof, the book level (stage-navigation-and-page-replacement.prd.md Phase 5, mock 04; the Review page of
+ * review-dashboard-and-findings-adoption.prd.md at its new address): every analyzer's notes in one queue, filtered
+ * and sorted by the host, drawn as mock 04's notes table, with a note's evidence and the narrator's decision beside
+ * it. A chapter opens its chapter view (`/proof/:chapterId`), where the recording plays against the script and
+ * Transcript Compare runs. Find pickups and duplicates (take review Phase 5) starts that analyzer's scan here, and its
+ * groups are reviewed here like every other note.
  */
-export function ReviewPage({
+export function ProofPage({
   notify,
   hasManuscript,
   goToManuscript,
   goToStoryBible,
   goToWorkspace,
   goToDelivery,
+  openChapter,
 }: {
   notify: Notify;
   hasManuscript: boolean;
@@ -40,6 +45,8 @@ export function ReviewPage({
   goToWorkspace?: (chapterId: string, findingId: string) => void;
   /** Opens the Delivery page on a measured file and rule, for a delivery finding (delivery-platform-profiles.prd.md P12). */
   goToDelivery: (file: string, rule?: string) => void;
+  /** Opens a chapter's view, `/proof/:chapterId`. */
+  openChapter: (chapterId: string) => void;
 }) {
   const api = useApi();
   const [summary, setSummary] = useState<FindingsSummary>();
@@ -52,6 +59,21 @@ export function ReviewPage({
   const loadedOnce = useRef(false);
   const reaper = useReaperStatus();
   const [scanning, setScanning] = useState(false);
+  const [chapters, setChapters] = useState<ManuscriptChapter[]>([]);
+  const [chapterChoice, setChapterChoice] = useState('');
+
+  // The chapter picker's list: the narration chapters, the ones with a recording to proof (front and back matter have none).
+  useEffect(() => {
+    if (!hasManuscript) return;
+    let active = true;
+    api
+      .manuscriptChapters()
+      .then((all) => active && setChapters(all.filter((chapter) => (chapter.contentKind ?? 'narration') === 'narration')))
+      .catch((error) => active && notify(describeApiError(error), 'error'));
+    return () => {
+      active = false;
+    };
+  }, [api, hasManuscript, notify]);
 
   // A pickup and duplicate scan or a take comparison left running in the background saves its findings when it ends: the list is
   // read again then.
@@ -122,31 +144,46 @@ export function ReviewPage({
     setReloadKey((key) => key + 1);
   };
 
-  if (loadError) return <LoadError title="Review" message={loadError} retry={retry} />;
+  if (loadError) return <LoadError title="Proof" message={loadError} retry={retry} />;
 
   const nothingYet = summary !== undefined && summary.total === 0 && summary.notInLatestRun === 0;
 
   return (
-    <div className="mx-auto flex max-w-6xl flex-col gap-4">
+    <div className="mx-auto flex max-w-7xl flex-col gap-4">
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div className="min-w-0">
-          <Heading title="Review">{summary && !nothingYet ? countsLine(summary) : undefined}</Heading>
+          <Heading title="Proof">{summary && !nothingYet ? countsLine(summary) : undefined}</Heading>
         </div>
-        <Button variant="ghost" onClick={() => setScanning(true)}>
-          Find pickups and duplicates…
-        </Button>
+        <div className="flex flex-wrap items-center gap-2">
+          {chapters.length > 0 && (
+            <>
+              <Select
+                label="Chapter to open"
+                value={chapterChoice}
+                onChange={setChapterChoice}
+                options={[{ value: '', label: 'Choose a chapter…' }, ...chapters.map((chapter) => ({ value: chapter.id, label: chapterName(chapter) }))]}
+              />
+              <Button variant="ghost" disabled={!chapterChoice} onClick={() => openChapter(chapterChoice)}>
+                Open chapter
+              </Button>
+            </>
+          )}
+          <Button variant="ghost" onClick={() => setScanning(true)}>
+            Find pickups and duplicates…
+          </Button>
+        </div>
       </div>
       {nothingYet ? (
-        <Panel title="Nothing to review yet">
+        <Panel title="No notes yet">
           <p className="mt-2 text-sm" style={{ color: 'var(--text-muted)' }}>
-            Findings appear here when a check has something for you to look at: run a comparison on the Proofing page, build the Story Bible, or find pickups
-            and duplicates on a track. Each one waits here until you accept, dismiss or defer it.
+            Notes appear here when a check has something for you to look at: open a chapter and compare its recording with the script, build the Story Bible, or
+            find pickups and duplicates on a track. Each one waits here until you accept, dismiss or defer it.
           </p>
         </Panel>
       ) : (
         <>
           <ReviewFilters summary={summary} values={filters} onChange={changeFilters} />
-          <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+          <div className="grid gap-4 lg:grid-cols-[minmax(0,1.7fr)_minmax(0,1fr)]">
             <FindingsList
               page={page}
               selectedId={selected?.id}
@@ -174,7 +211,7 @@ export function ReviewPage({
               ) : (
                 <Panel>
                   <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
-                    Select a finding to see its evidence and decide what to do with it.
+                    Select a note to see its evidence and decide what to do with it.
                   </p>
                 </Panel>
               )}

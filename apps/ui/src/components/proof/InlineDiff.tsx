@@ -1,7 +1,6 @@
 import type { Discrepancy } from '../../types';
-import { TableCell, TableRow } from '../primitives/Table';
 
-export const KIND_STYLES: Record<string, { color: string; soft: string }> = {
+const KIND_STYLES: Record<string, { color: string; soft: string }> = {
   MISREAD: { color: 'var(--danger-text)', soft: 'var(--review-soft)' },
   SKIPPED: { color: 'var(--warn-text)', soft: 'var(--accent-soft)' },
   EXTRA: { color: 'var(--info-text)', soft: 'var(--place-soft)' },
@@ -18,7 +17,12 @@ function diffWords(script: string, heard: string) {
   };
 }
 
-export function InlineDiffRow({ row }: { row: Discrepancy }) {
+/**
+ * A Transcript Compare discrepancy's script and heard text side by side, the words that differ marked in the
+ * discrepancy's colour (the Proofing page's expanded results row, moved into the Proof chapter view's flag detail by
+ * stage-navigation-and-page-replacement.prd.md Phase 5). Uses the wider context when the host sent it.
+ */
+export function InlineDiff({ row }: { row: Discrepancy }) {
   const style = KIND_STYLES[row.kind] ?? KIND_STYLES.MISREAD;
   const diff = diffWords(row.scriptContext || row.docText || '', row.audioContext || row.audioText || '');
   const render = (parts: { word: string; mismatch: boolean }[]) =>
@@ -36,23 +40,15 @@ export function InlineDiffRow({ row }: { row: Discrepancy }) {
       <span style={{ color: 'var(--text-muted)' }}>—</span>
     );
   return (
-    <TableRow style={{ borderTop: '1px solid var(--border)', background: 'var(--surface-2)' }}>
-      <TableCell colSpan={6} className="text-sm">
-        <div className="space-y-1.5">
-          <div>
-            <span className="text-xs tracking-wide uppercase" style={{ color: 'var(--text-muted)' }}>
-              Script
-            </span>
-            <div className="mt-0.5">{render(diff.script)}</div>
-          </div>
-          <div>
-            <span className="text-xs tracking-wide uppercase" style={{ color: 'var(--text-muted)' }}>
-              Heard
-            </span>
-            <div className="mt-0.5">{render(diff.heard)}</div>
-          </div>
-        </div>
-      </TableCell>
-    </TableRow>
+    <div className="space-y-1.5 rounded p-2" style={{ background: 'var(--surface-2)' }}>
+      <div>
+        <span className="section-label">Script</span>
+        <div className="mt-0.5">{render(diff.script)}</div>
+      </div>
+      <div>
+        <span className="section-label">Heard</span>
+        <div className="mt-0.5">{render(diff.heard)}</div>
+      </div>
+    </div>
   );
 }

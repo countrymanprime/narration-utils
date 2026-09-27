@@ -198,9 +198,9 @@ export function FindingDetail({
           </Button>
         )}
         {goToWorkspace && (
-          <TooltipTarget text={chapterId ? 'Open this finding in the chapter workspace' : 'This finding has no chapter to open a workspace for.'}>
+          <TooltipTarget text={chapterId ? "Open this note in its chapter's view, to listen against the script" : 'This note has no chapter to open.'}>
             <Button variant="ghost" onClick={() => chapterId && goToWorkspace(chapterId, finding.id)} disabled={!chapterId}>
-              Open in workspace
+              Open chapter view
             </Button>
           </TooltipTarget>
         )}
