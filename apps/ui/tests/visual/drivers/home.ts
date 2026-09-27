@@ -321,7 +321,7 @@ export const homeDrivers: Record<string, Driver> = {
     await page.getByRole('alertdialog', { name: 'Trim silence' }).waitFor();
   },
   'editing-check-gain-match-confirm': async (page) => {
-    const panel = await openEditingCheckFromHome(page, 'mockDawExperimentalOn=1');
+    const panel = await openEditingCheckFromHome(page, 'mockEditingSignal=met&mockDawExperimentalOn=1');
     const match = panel.getByRole('button', { name: 'Match levels…' }).and(page.locator(':not([aria-disabled="true"])'));
     await match.waitFor();
     await match.click();

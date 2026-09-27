@@ -303,7 +303,7 @@ export const homeStates: StateEntry[] = [
     page: 'home',
     state: 'editing-check-gain-match-confirm',
     description:
-      "Home, editing check panel: \"Match levels…\" (CapabilityGate('item_gain')) opened, its ConfirmDialog previewing the linked track's one gain candidate (?mockDawExperimentalOn=1)",
+      "Home, editing check panel: \"Match levels…\" (CapabilityGate('item_gain')) opened, its ConfirmDialog previewing the linked track's one gain candidate (?mockEditingSignal=met&mockDawExperimentalOn=1)",
   },
   {
     page: 'home',
