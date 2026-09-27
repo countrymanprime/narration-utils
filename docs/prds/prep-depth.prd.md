@@ -169,9 +169,9 @@ Phases 1 to 5: pronunciation depth, web lookups, the query export, and speaker a
 
 | # | Phase | Description | Status | Parallel | Depends | Ports used | PRP Plan |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| 1 | Pronunciation status and user source | `user` pronunciation source, `status`/`note` fields, bindings, ADR | pending | 2 | - | none | - |
+| 1 | Pronunciation status and user source | `user` pronunciation source, `status`/`note` fields, bindings, ADR | complete: ADR 0346; `status`/`note`/`alternate` on each pronunciation, `pronounce-user`/`pronunciation-use-alternate`/`pronunciation-status`, three bindings (`hostAPIVersion` 69), the Story Bible controls and `storybible/entry-pronunciation-work` | 2 | - | none | - |
 | 2 | Web lookups (Phase 0 + implementation) | URL verification note, `BrowserLookup` adapters for the four sites, "open externally" binding | complete | 1 | - | `PronunciationSource.BrowserLookup` (`provider-ports.prd.md` Q5) | - |
-| 3 | Query export | Derived query list, CSV export (Q3), "mark answered" action | pending | - | 1 | none | - |
+| 3 | Query export | Derived query list, CSV export (Q3), "mark answered" action | complete: ADR 0347; `guide.Service.PronunciationQueries` (derived, reading order), `QueriesCSV` with a formula guard and `ParseQueriesCSV` (read-back proven, applying it is Phase 6), `GuidePronunciationQueries`/`GuidePronunciationQueriesCSV` (`hostAPIVersion` 70), the Story Bible's Pronunciation queries slide-over (Export CSV, Mark sent, Mark answered), `storybible/pronunciation-queries` and its aria snapshot | - | 1 | none | - |
 | 4 | Speaker attribution (reader) | Reader UI against a fixture cue shape (Q1), swapped to the real extractor once available | pending | 5 | Character Continuity Review Phase 2 (soft — fixture until then) | none | - |
 | 5 | Markup layer | Data model, sidecar store, placement UI, staleness detection (Q6) | pending | 4 | - | UI primitive `Highlight` (ADR 0016, per docs) | - |
 | 6 | Query re-import (Should) | Match a re-imported answered-queries file back onto entries | pending | - | 3 | none | - |
