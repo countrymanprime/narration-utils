@@ -56,6 +56,12 @@ MP3 encoding.
 
 ![One file against ACX, rule by rule](../../images/ui/delivery-file-rules.webp)
 
+Below the table, **Book-wide spread** shows RMS, peak and noise floor each as their own strip: the
+book's minimum, median and maximum, with a tick for every measured file between them. A rule reads
+only the files it has actually judged, so a file whose level cannot be checked yet (an MP3 before its
+levels are decoded) never counts, and a rule with nothing to show yet says **No measurements yet**
+rather than a zero.
+
 ## Custom profiles
 
 To judge against other numbers, duplicate ACX in [Settings, Delivery](settings.md) and change

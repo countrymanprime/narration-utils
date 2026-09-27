@@ -86,9 +86,75 @@ function measuredResult(file: MeasureFileResult, index: number): MeasureFileResu
   };
 }
 
-export type MockMeasureSeed = 'hold' | 'fails';
+export type MockMeasureSeed = 'hold' | 'fails' | 'spread';
 
 const BROKE = 'runtime error: index out of range [4] with length 4';
+
+/** Six already-measured chapters with varied levels (delivery-platform-profiles.prd.md Phase 10, mockup 11 "Book
+ * consistency"), all within ACX's bounds, so the book-wide spread has more than the single file `report()` above
+ * gives every other mock scenario. `?mockMeasure=spread` seeds the job with these already ended, so the state can
+ * be captured without measuring six files by hand. */
+const SPREAD_LEVELS: readonly { rms: number; peak: number; noiseFloor: number; lufs: number; duration: number }[] = [
+  { rms: -22.6, peak: -4.2, noiseFloor: -68.1, lufs: -20.8, duration: 1512.3 },
+  { rms: -21.9, peak: -3.9, noiseFloor: -66.4, lufs: -20.1, duration: 1843.5 },
+  { rms: -21.4, peak: -3.7, noiseFloor: -64.6, lufs: -19.7, duration: 1690.8 },
+  { rms: -20.8, peak: -3.4, noiseFloor: -63.2, lufs: -19.2, duration: 1975.2 },
+  { rms: -20.1, peak: -3.2, noiseFloor: -61.5, lufs: -18.6, duration: 1420.6 },
+  { rms: -19.4, peak: -3.0, noiseFloor: -60.4, lufs: -18.0, duration: 1780.9 },
+];
+
+function spreadReport(path: string, index: number): MeasureReport {
+  const level = SPREAD_LEVELS[index % SPREAD_LEVELS.length];
+  return {
+    file: path,
+    sample_rate: 44100,
+    channels: 2,
+    duration_seconds: level.duration,
+    integrated_lufs: level.lufs,
+    rms_dbfs: level.rms,
+    sample_peak_dbfs: level.peak,
+    true_peak_dbtp: level.peak + 0.4,
+    noise_floor_dbfs: level.noiseFloor,
+    digital_silent_windows: 0,
+    head_room_tone_seconds: 1.2,
+    tail_room_tone_seconds: 2.1,
+    head_digital_silence_seconds: 0,
+    tail_digital_silence_seconds: 0,
+    full_scale_samples: 0,
+    clip_run_count: 0,
+    clip_runs: [],
+  };
+}
+
+function spreadPaths(): string[] {
+  return SPREAD_LEVELS.map((_, index) => `C:/Users/Narrator/Renders/Alice/Chapter ${String(index + 1).padStart(2, '0')}.wav`);
+}
+
+/** The already-ended job `?mockMeasure=spread` boots with: every chapter measured, none picked through the picker. */
+function spreadJob(): MeasureJob {
+  const paths = spreadPaths();
+  const files: MeasureFileResult[] = paths.map((path, index) => ({
+    path,
+    name: baseName(path),
+    status: 'measured',
+    report: spreadReport(path, index),
+    fingerprint: { size_bytes: 480_000_000 + index, modified_at: '2026-09-23T14:02:11.5Z', sha256: (index + 1).toString(16).padStart(2, '0').repeat(32) },
+    findings: [],
+    rules: [],
+  }));
+  return {
+    id: 'measure-spread',
+    kind: 'measurement',
+    phase: 'success',
+    message: measuredMessage(files.length, 0),
+    percent: 100,
+    logs: [measuredMessage(files.length, 0)],
+    elapsed: files.length * 8,
+    files,
+    profile: null,
+    bookRules: [],
+  };
+}
 
 /**
  * `picked` is the picker's allowlist, shared with the diagnostics mock the way the host shares it (ADR 0156); `profile` reads
@@ -103,18 +169,22 @@ export function createMeasureMock(
   checked: () => DiagnosticsJob | undefined = () => undefined,
 ): MeasureApi {
   const hold = seed === 'hold';
-  let job: MeasureJob = {
-    id: null,
-    kind: 'measurement',
-    phase: 'idle',
-    message: 'Choose the files to measure.',
-    percent: 0,
-    logs: [],
-    elapsed: 0,
-    files: [],
-    profile: null,
-    bookRules: [],
-  };
+  if (seed === 'spread') spreadPaths().forEach((path) => picked.add(path));
+  let job: MeasureJob =
+    seed === 'spread'
+      ? spreadJob()
+      : {
+          id: null,
+          kind: 'measurement',
+          phase: 'idle',
+          message: 'Choose the files to measure.',
+          percent: 0,
+          logs: [],
+          elapsed: 0,
+          files: [],
+          profile: null,
+          bookRules: [],
+        };
   let quarters = 0;
   let exports = 0;
   // The host judges on every read (judgeMeasureJob), so a profile chosen in Settings re-judges what was measured.
