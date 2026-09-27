@@ -322,4 +322,58 @@ describe('ResumePrompt', () => {
       expect(teleprompterStart).toHaveBeenCalledWith(expect.objectContaining({ startWord: located.verdict.prompter.word }));
     });
   });
+
+  describe('live DAW state (Phase 4)', () => {
+    // A found answer read from REAPER's live state rather than the saved project (ADR 0349).
+    const readLive = (at: 'cursor' | 'end'): Partial<NarrationApi> => {
+      const base = createMockApi();
+      return {
+        teleprompterLocate: async (chapterId, options) => {
+          const result = await base.teleprompterLocate(chapterId, options);
+          if (result.status === 'asset_required') return result;
+          return {
+            ...result,
+            dawSource: 'live',
+            dawAt: at,
+            verdict: { ...result.verdict, daw: result.verdict.daw && { ...result.verdict.daw, source: 'live' } },
+          };
+        },
+      };
+    };
+
+    it('labels a place read from REAPER "in REAPER now", never "as of the last save"', async () => {
+      renderDialog({}, { resume: 'disagree_live' });
+
+      const region = await prompt();
+      const reaper = await within(region).findByRole('button', { name: /REAPER/ });
+      expect(within(reaper).getByText(/in REAPER now/)).toBeTruthy();
+      expect(within(region).queryByText(/last save/)).toBeNull();
+    });
+
+    it("says the resume point is REAPER's edit cursor when the cursor sits on the recording", async () => {
+      renderDialog(readLive('cursor'));
+
+      const region = await prompt();
+      expect(await within(region).findByText(/Chapter 1 track · in REAPER now/)).toBeTruthy();
+      expect(within(region).getByText(/Continuing at REAPER's edit cursor/)).toBeTruthy();
+      expect(within(region).queryByText(/last save/)).toBeNull();
+    });
+
+    it('says the resume point is where the recording ends in REAPER when the cursor is parked elsewhere', async () => {
+      renderDialog(readLive('end'));
+
+      const region = await prompt();
+      expect(await within(region).findByText(/Chapter 1 track · in REAPER now/)).toBeTruthy();
+      expect(within(region).getByText(/Continuing where your recording ends/)).toBeTruthy();
+    });
+
+    it('offers nothing while REAPER records the chapter, and says reading starts from the top', async () => {
+      const { teleprompterStart } = renderDialog({}, { resume: 'recording' });
+
+      const region = await prompt();
+      expect(await within(region).findByText(/REAPER is recording on this track now/)).toBeTruthy();
+      expect(within(region).queryByRole('button', { name: /Resume|Continue/ })).toBeNull();
+      expect(teleprompterStart).not.toHaveBeenCalled();
+    });
+  });
 });

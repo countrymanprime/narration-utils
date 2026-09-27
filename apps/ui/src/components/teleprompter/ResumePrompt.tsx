@@ -93,6 +93,13 @@ function savedLabel(savedAt: string): string {
   return when ? `as of the project's last save, ${when}` : "as of the project's last save";
 }
 
+const LIVE_LABEL = 'in REAPER now';
+
+/** When the track was read (read-aloud-resume-from-daw.prd.md Phase 4, ADR 0349): REAPER's live answer, or the saved project. */
+function dawLabel(result: Located): string {
+  return result.dawSource === 'live' ? LIVE_LABEL : savedLabel(result.match.savedAt);
+}
+
 /** One source's quote (read-aloud-resume-from-daw.prd.md Phase 3): the full sentence holding its word, with that word in
  * bold, matching `ResumeSentence`'s emphasis but inline rather than in a blockquote (the agreement notice, the disagree
  * choice and the prompter-only notice all quote inline). */
@@ -179,7 +186,7 @@ function DisagreeChoice({
   lastReading: TeleprompterReading | null;
   onChoose: (word: number | null, label?: string) => void;
 }) {
-  const dawWhen = daw.source === 'saved' ? savedLabel(match.savedAt) : 'in REAPER now';
+  const dawWhen = daw.source === 'live' ? LIVE_LABEL : savedLabel(match.savedAt);
   const prompterWhen = (lastReading && formatWhen(lastReading.endedAt)) || '';
   const pick = (place: TeleprompterResumePlace) => onChoose(place.word, place.sentence ? chipLabel(place.sentence, place.word) : undefined);
   const card = (label: string, when: string, place: TeleprompterResumePlace) => (
@@ -410,12 +417,14 @@ function LocatedBody({ result, onChoose }: { result: Located; onChoose: (word: n
         }
       >
         <p style={MUTED}>
-          {trackName} track · {savedLabel(match.savedAt)}
+          {trackName} track · {dawLabel(result)}
         </p>
         <TrackProblem match={match} trackName={trackName} />
         <p>
           {located.confident
-            ? 'Continuing where your recording ends:'
+            ? result.dawAt === 'cursor'
+              ? "Continuing at REAPER's edit cursor:"
+              : 'Continuing where your recording ends:'
             : `This is a guess: the end of your recording could also fit elsewhere in the chapter (${Math.round(located.confidence * 100)}% sure). Check the sentence before resuming:`}
         </p>
         {point.sentence && <ResumeSentence sentence={point.sentence} word={point.word} />}
@@ -433,7 +442,7 @@ function LocatedBody({ result, onChoose }: { result: Located; onChoose: (word: n
       }
     >
       <p style={MUTED}>
-        {trackName} track · {savedLabel(match.savedAt)}
+        {trackName} track · {dawLabel(result)}
       </p>
       <TrackProblem match={match} trackName={trackName} />
       <p>{unreadableText(result)}</p>
@@ -451,6 +460,8 @@ function unreadableText(result: Located): string {
     }
     case 'no_recording':
       return `This track has no recorded audio yet, so ${FROM_THE_TOP}`;
+    case 'recording':
+      return `REAPER is recording on this track now, so ${FROM_THE_TOP}`;
     case 'source_missing':
       return `The last item's audio file is missing (${file}), so where you stopped cannot be found and ${FROM_THE_TOP}`;
     case 'source_unsupported':

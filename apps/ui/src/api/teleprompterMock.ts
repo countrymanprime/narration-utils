@@ -28,6 +28,7 @@ import type {
   TeleprompterModelRequired,
   TeleprompterPosition,
   TeleprompterReading,
+  TeleprompterDawSource,
   TeleprompterResumePlace,
   TeleprompterResumeVerdict,
   TeleprompterScript,
@@ -311,10 +312,12 @@ function mockLocate(
   if (picked !== undefined && !track) throw new Error('that track is not in the selected REAPER project');
   const base = { match, track: track ? { guid: track.guid, name: track.name, index: track.index } : null, recordedEnd: null, tail: null, located: null };
   if (!track) return { ...base, status: 'no_track' };
+  // The mock has no live REAPER: every track it reads is the saved project's, at the end of its audio (ADR 0349).
+  const read = { ...base, dawSource: 'saved' as const, dawAt: 'end' as const };
   const recordedEnd = mockRecordedEnd(track);
-  if (!recordedEnd) return { ...base, status: 'no_recording' };
-  if (!recordedEnd.sourceAvailable) return { ...base, recordedEnd, status: 'source_missing' };
-  if (!recordedEnd.supported) return { ...base, recordedEnd, status: 'source_unsupported' };
+  if (!recordedEnd) return { ...read, status: 'no_recording' };
+  if (!recordedEnd.sourceAvailable) return { ...read, recordedEnd, status: 'source_missing' };
+  if (!recordedEnd.supported) return { ...read, recordedEnd, status: 'source_unsupported' };
   if (modelRequired) return modelRequired;
   const word = Math.max(1, Math.round(words.length * MOCK_RESUME_FRACTION));
   const heard = words.slice(Math.max(0, word - MOCK_HEARD_WORDS), word);
@@ -347,6 +350,7 @@ function mockReconcile(
   reading: TeleprompterReading | null,
   words: string[],
   breaks: Set<number>,
+  source: TeleprompterDawSource = 'saved',
 ): TeleprompterResumeVerdict {
   const tokens = words.length;
   const wordsLeft = (from: number) => words.slice(Math.max(0, from)).some((word) => WORD_CHAR.test(word));
@@ -357,7 +361,7 @@ function mockReconcile(
     sentence: tokens > 0 ? sentenceAround(words, Math.min(Math.max(word - 1, 0), tokens - 1), breaks) : null,
     confident,
   });
-  const daw = located?.word != null && located.tokens === tokens ? { ...place(located.word, located.confident), source: 'saved' as const } : null;
+  const daw = located?.word != null && located.tokens === tokens ? { ...place(located.word, located.confident), source } : null;
   const prompter = reading && reading.tokens === tokens && reading.read > 0 ? place(reading.read, true) : null;
   const verdict: TeleprompterResumeVerdict = { kind: 'none', start: null, daw, prompter, tokens };
   if (!daw && !prompter) return verdict;
@@ -381,8 +385,10 @@ function withMockVerdict(
 ): TeleprompterLocateResult {
   if (draft.status === 'asset_required') return draft;
   const lastReading = seedLastReading(seed, chapterId, draft.located?.word ?? null, words.length);
+  // REAPER recording onto the track: nothing is offered, not even the last reading (the host's withResumeVerdict).
+  if (draft.status === 'recording') return { ...draft, lastReading, verdict: { kind: 'none', start: null, daw: null, prompter: null, tokens: words.length } };
   const breaks = new Set(script.spans.map((span) => span.start));
-  return { ...draft, lastReading, verdict: mockReconcile(draft.located, lastReading, words, breaks) };
+  return { ...draft, lastReading, verdict: mockReconcile(draft.located, lastReading, words, breaks, draft.dawSource) };
 }
 
 /** The mock of the sidecar's `text_script` for the credits (ADR 0150): one paragraph span per line with words, no title span. */
