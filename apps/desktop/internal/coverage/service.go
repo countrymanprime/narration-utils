@@ -11,6 +11,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/countrymanprime/narration-utils/shell/internal/dawport"
 	"github.com/countrymanprime/narration-utils/shell/internal/evidence"
 	"github.com/countrymanprime/narration-utils/shell/internal/persist"
 	"github.com/countrymanprime/narration-utils/shell/internal/process"
@@ -36,6 +37,9 @@ type Config struct {
 	LoadManuscript func() (map[string]any, error)
 	// Reporter logs a stored file that cannot be read (ADR 0069); may be nil.
 	Reporter *persist.Reporter
+	// ProjectReader reads the saved .rpp ProjectFile resolves (DAW port PRD Phase 5d); nil falls back to tracks.Parse
+	// directly, so a Config literal built before this field existed keeps reading exactly as it did before.
+	ProjectReader dawport.ProjectReader
 }
 
 // Child is a started sidecar: *process.Child satisfies it.
@@ -234,11 +238,20 @@ func (s *Service) savedProject() (tracks.Project, evidence.LedgerProjectFile, er
 	if err != nil {
 		return tracks.Project{}, evidence.LedgerProjectFile{}, unknownf(ReasonProjectUnreadable, "could not read %s: %v", filepath.Base(path), err)
 	}
-	project, err := tracks.Parse(path)
+	project, err := s.readProject(path)
 	if err != nil {
 		return tracks.Project{}, evidence.LedgerProjectFile{}, unknownf(ReasonProjectUnreadable, "could not read %s: %v", filepath.Base(path), err)
 	}
 	return project, projectFileFact(path, info.ModTime()), nil
+}
+
+// readProject is the dawport.ProjectReader role over path (DAW port PRD Phase 5d): nil falls back to tracks.Parse
+// directly.
+func (s *Service) readProject(path string) (tracks.Project, error) {
+	if s.config.ProjectReader == nil {
+		return tracks.Parse(path)
+	}
+	return s.config.ProjectReader.ReadProject(path)
 }
 
 func (s *Service) chapter(chapterID string) (ChapterBasis, error) {

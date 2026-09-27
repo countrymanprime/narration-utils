@@ -74,6 +74,8 @@ class CmuSource:
     """The CMU Pronouncing Dictionary: quick and high-quality for names it already knows, medium confidence (D13)."""
 
     descriptor = PronunciationDescriptor("cmu", "CMU dictionary", modes=(PRONOUNCE,))
+    # What the build-time fallback logs when this source fails on a name, before it tries the next one.
+    unavailable_log = "CMU pronunciation unavailable"
 
     def pronounce(self, name: str) -> dict[str, str]:
         import pronouncing
@@ -92,6 +94,7 @@ class EspeakSource:
     """eSpeak NG: low confidence, but it can attempt a name the CMU dictionary has never heard of."""
 
     descriptor = PronunciationDescriptor("espeak", "eSpeak NG", modes=(PRONOUNCE,))
+    unavailable_log = "eSpeak phonetic fallback unavailable"
 
     def __init__(self) -> None:
         # Set by pronounce_source() from the sidecar's --espeak-library flag before each call; None uses phonemizer's own.

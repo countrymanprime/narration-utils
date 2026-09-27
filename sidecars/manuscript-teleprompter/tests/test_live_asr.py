@@ -729,7 +729,7 @@ def test_a_session_reports_the_level_of_what_it_hears(capsys):
 def test_meter_mode_prints_only_levels_and_loads_no_model(monkeypatch, capsys):
     monkeypatch.syspath_prepend(str(LIVE_ASR_PATH.parent))
     monkeypatch.setattr(live_asr, "iter_microphone_chunks", lambda name: _loud_chunks(2))
-    monkeypatch.setattr(live_asr, "_load_whisper_engine", lambda args: pytest.fail("the meter must not load a model"))
+    monkeypatch.setattr(live_asr, "_load_engine", lambda args: pytest.fail("the meter must not load a model"))
     monkeypatch.setattr(sys, "argv", ["live_asr.py", "--meter", "--mic", "Mic"])
 
     live_asr.main()
@@ -841,3 +841,18 @@ def test_a_paused_session_hears_nothing_keeps_its_levels_and_does_not_wait(tmp_p
     assert heard_chunks == [0, 1, 12, 13]
     assert len([event for event in printed if event["type"] == "level"]) == 14 * 5
     assert all(event["status"] != "waiting" for event in printed if event["type"] == "position")
+
+
+@pytest.mark.parametrize("engine", ["whisper", "moonshine"])
+def test_main_loads_the_engine_the_flag_names_with_the_chapter_as_default_context(monkeypatch, engine):
+    # One lookup by --engine, no per-engine branch (provider-ports P15); Moonshine reads the chapter as its context and
+    # Whisper, which takes none, ignores the key.
+    loaded = []
+    monkeypatch.setattr(live_asr, "_load_script", lambda ap, args: (None, None, "Call me Ishmael."))
+    monkeypatch.setattr(live_asr, "_load_engine", lambda args: loaded.append((args.engine, args.context_text)) or (lambda chunks: iter(())))
+    monkeypatch.setattr(live_asr, "iter_wav_chunks", lambda path: iter(()))
+    monkeypatch.setattr(sys, "argv", ["live_asr.py", "--engine", engine, "--model", "tiny", "--wav", "r.wav"])
+
+    live_asr.main()
+
+    assert loaded == [(engine, "Call me Ishmael.")]

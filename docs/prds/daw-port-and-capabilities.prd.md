@@ -66,7 +66,7 @@ We will know it holds when:
 - The built-in recorder or renderer (native recording suite and render-encode-master PRDs). They will be adapters on this port later.
 - New REAPER commands or Lua changes. The bridge and its harness are untouched, and the adapter wraps what exists.
 - Promoting any experimental command to supported. That is the booth actions enablement PRD's work (queued as wave 0b in the [agent train](../operations/agent-train.md)) after the owner's verification pass. This PRD makes promotion a one-line declaration change.
-- Other providers (ASR, TTS, pronunciation, capture, encoders): see [provider ports](provider-ports.prd.md), which shares this PRD's `internal/port` vocabulary.
+- Other providers (ASR, TTS, pronunciation, capture, encoders): see [provider ports](../architecture/provider-ports.md), which shares this PRD's `internal/port` vocabulary.
 - UI primitives. `CapabilityGate` and `useCapability` are in [studio UI primitives](studio-ui-primitives.prd.md). This PRD provides the binding and moves the existing gating callers onto it.
 
 ## Success Metrics
@@ -213,7 +213,7 @@ func Role[T any](r *Resolver, c Capability) (T, error) // *port.NotSupportedErro
 | 5a | Migrate navigation and transport consumers | `bindings_navigation.go`, `readaloudreaper.go`, `teleprompterinput.go`, `chapterregions.go` take roles | pending | with 5b, 5c, 5d | 4 | |
 | 5b | Migrate marker and pickup services | `internal/pickups`, `internal/lineidentity`, `internal/renderconfig`, `internal/cleanuptools` (plus wiring `SilenceTrimmer`/`GainAdjuster`) take roles | pending | with 5a, 5c, 5d | 4 | |
 | 5c | Migrate take and state services | `internal/retakelanes`, `internal/projectstate`, `internal/takereview`, `internal/daw` reachability behind `Heartbeat` | pending | with 5a, 5b, 5d | 4 | |
-| 5d | Review and offline reading | `internal/transcript` onto `ReviewSession`; `ProjectReader` over `internal/tracks` for its callers (`tracks.go`, `chapterlinks.go`, `recordedlengths.go`, `internal/{editing,coverage,character}`) | pending | with 5a, 5b, 5c | 4 | |
+| 5d | Review and offline reading | `internal/transcript` onto `ReviewSession`; `ProjectReader` over `internal/tracks` for its callers (`tracks.go`, `chapterlinks.go`, `recordedlengths.go`, `internal/{editing,coverage,character}`) | complete: `internal/transcript` now depends on `dawport.ReviewSession`/`Event`/`Subscription`/`MarkerColors` (aliases of `dawadapter`'s, so no behaviour change) instead of `internal/dawadapter` directly; `tracks.go`, `chapterlinks.go` and `recordedlengths.go` share one `readProject` helper that asks a resolver for the `dawport.ProjectReader` role (`project_read` is `NeedsNothing`, so it works with no bridge at all - REAPER closed or never launched); `internal/{editing,coverage,character}` take an optional `Config.ProjectReader`, nil falling back to `tracks.Parse` so every existing caller and test is unchanged; `dawport/reaper.ProjectReader` is now exported so every caller uses the same value `New`'s live adapter wires in (`feat/dawport-p5d-review-and-offline-reading`) | with 5a, 5b, 5c | 4 | |
 | 6 | Boundary test | `dawport_boundary_test.go`: no `*bridge.Client` / `*bridge.Actions` outside `bridge` and `dawport/reaper`; no `Kind` or `"REAPER"` branching outside `dawport` and launch code; remove `app.go`'s `KindREAPER` check and `dawfacts.go`'s label compare | pending | no | 5a–5d | |
 | 7 | UI callers on capabilities | Nav `requiresDaw`, "Punch from here", "Record in REAPER" and Settings' REAPER wording read `useCapability`; `dawAvailability.ts` reduced to a capability adapter | pending | no | 4, studio-ui-primitives CapabilityGate phase | |
 | 8 | Steady state | Update `docs/architecture/daw-integration.md` (the seam table becomes the capability table), the threat model row for `--daw` and the new toggles, `SECURITY.md` if needed; retire `internal/dawadapter`; accept ADR 0300; delete this PRD | pending | no | 6, 7 | |
@@ -225,7 +225,7 @@ func Role[T any](r *Resolver, c Capability) (T, error) // *port.NotSupportedErro
   - Types only, plus the resolver and the conformance suite, all test-first:
     - table tests for the resolver: declaration × runtime × toggle gives an expected `Support`;
     - the suite run against the fake.
-  - `internal/port` is created here and is the only shared file with [provider ports](provider-ports.prd.md).
+  - `internal/port` is created here and is the only shared file with [provider ports](../architecture/provider-ports.md).
   - Validate: `go test ./internal/port/... ./internal/dawport/...`, `go vet`, checklocks.
 - **P2 (lane K, Opus).**
   - Adapters wrap; they don't rewrite. Declarations copy `experimentalCommands` exactly.
