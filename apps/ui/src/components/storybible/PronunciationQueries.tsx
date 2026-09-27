@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { describeApiError } from '../../api/errorMessage';
 import { useApi } from '../../api/ApiContext';
 import { usePendingAction } from '../../hooks/usePendingAction';
@@ -41,6 +41,8 @@ export function PronunciationQueries({ open, onClose, onChanged, notify }: { ope
   const [rows, setRows] = useState<PronunciationQuery[]>();
   const [loadError, setLoadError] = useState<string>();
   const [filter, setFilter] = useState<Filter>('open');
+  const [importIssues, setImportIssues] = useState<string[]>([]);
+  const fileInput = useRef<HTMLInputElement>(null);
 
   const load = useCallback(async () => {
     try {
@@ -75,6 +77,23 @@ export function PronunciationQueries({ open, onClose, onChanged, notify }: { ope
         notify(describeApiError(error), 'error');
       }
     });
+  const pickImportFile = () => fileInput.current?.click();
+  const importAnswers = (file: File) =>
+    mutation.run('import', async () => {
+      setImportIssues([]);
+      try {
+        const text = await file.text();
+        const result = await api.guidePronunciationImportQueriesCsv(text);
+        setImportIssues(result.issues);
+        notify(
+          `${result.applied} ${result.applied === 1 ? 'query' : 'queries'} applied${result.issues.length > 0 ? `, ${result.issues.length} not used` : ''}.`,
+        );
+        await load();
+        onChanged();
+      } catch (error) {
+        notify(describeApiError(error), 'error');
+      }
+    });
 
   const shown = (rows ?? []).filter((row) => filter === 'open' || row.status === filter);
   const sent = (rows ?? []).filter((row) => row.status === 'query_sent').length;
@@ -83,8 +102,32 @@ export function PronunciationQueries({ open, onClose, onChanged, notify }: { ope
     <SlideOver open={open} title="Pronunciation queries" onClose={onClose}>
       <div className="space-y-4">
         <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
-          Every name the author has not confirmed yet. Export them to send to the author, then mark each one answered when you hear back.
+          Every name the author has not confirmed yet. Export them to send to the author, then mark each one answered when you hear back, or import the file
+          once the author has filled it in.
         </p>
+        <input
+          ref={fileInput}
+          type="file"
+          accept=".csv,text/csv"
+          className="hidden"
+          onChange={(event) => {
+            const file = event.target.files?.[0];
+            event.target.value = '';
+            if (file) void importAnswers(file);
+          }}
+        />
+        {importIssues.length > 0 && (
+          <div className="text-sm" style={{ color: 'var(--warn-text)' }}>
+            <p>
+              {importIssues.length} row{importIssues.length === 1 ? '' : 's'} could not be used:
+            </p>
+            <ul className="list-inside list-disc">
+              {importIssues.map((issue) => (
+                <li key={issue}>{issue}</li>
+              ))}
+            </ul>
+          </div>
+        )}
         {loadError && (
           <p role="alert" className="text-sm text-[var(--danger-text)]">
             {loadError}
@@ -105,6 +148,9 @@ export function PronunciationQueries({ open, onClose, onChanged, notify }: { ope
               <span role="status" className="text-sm" style={{ color: 'var(--text-muted)' }}>
                 {rows.length} open · {sent} sent
               </span>
+              <Button variant="ghost" disabled={mutation.isBusy} pending={mutation.isPending('import')} onClick={pickImportFile}>
+                Import answers…
+              </Button>
               <Button disabled={rows.length === 0 || mutation.isBusy} pending={mutation.isPending('export')} onClick={() => void exportCsv()}>
                 Export CSV
               </Button>
