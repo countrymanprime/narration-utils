@@ -172,7 +172,7 @@ ENGINES: Registry[AsrEngine]        # filled by each sidecar's adapters at impor
 | 11 | dshow capture adapter | `devices.py` and `iter_microphone_chunks` behind a dshow adapter | pending | with 6, 8 | 5, 10 | - |
 | 12 | Capture registry (Go) | `internal/captureport` with the dshow row (Windows) | complete | with 3, 4, 7, 9, 10 | 2 | - |
 | 13 | Encoder and Packager ports (Could) | `internal/encodeport`: interfaces, empty registry, suite | complete | with any | 2 | - |
-| 14 | Provider capabilities on the wire (Should) | `ProviderCapabilities` binding; schema, golden, `wireContracts` row, mock; `hostAPIVersion` + 1 | pending | no | 4, 9, 12, daw-port P4 | - |
+| 14 | Provider capabilities on the wire (Should) | `ProviderCapabilities` binding; schema, golden, `wireContracts` row, mock; `hostAPIVersion` + 1 | complete | no | 4, 9, 12, daw-port P4 | - |
 | 15 | Guards and steady state | Go and Python guard tests; `docs/architecture/provider-ports.md`; codebase map; threat-model row 4a re-read; accept ADR 0301; delete this PRD | pending | no | 5, 6, 8, 11 (and 13, 14 if taken) | - |
 
 ### Phase details

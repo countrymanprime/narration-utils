@@ -14,7 +14,7 @@ const DAW_CAPABILITY_REASONS = [
   'unsupported',
 ] as const satisfies readonly DawCapabilityReason[];
 
-const dawCapabilitySupportSchema = z.object({
+export const dawCapabilitySupportSchema = z.object({
   level: z.enum(DAW_CAPABILITY_LEVELS),
   available: z.boolean(),
   reason: optionalFromNull(z.enum(DAW_CAPABILITY_REASONS)),

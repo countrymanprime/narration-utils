@@ -90,6 +90,7 @@ import { pickupsImportResultSchema, pickupsStartResultSchema, pickupsStateSchema
 import { renderConfigStartResultSchema, renderConfigStateSchema, renderConfigSuggestedFolderSchema } from './schemas/renderconfig';
 import { cleanupToolsStartResultSchema, cleanupToolsStateSchema } from './schemas/cleanuptools';
 import { dawCapabilitiesSchema } from './schemas/daw';
+import { providerCapabilitiesSchema } from './schemas/providers';
 import { projectStateChangedSchema, projectStateStartResultSchema, projectStateStateSchema } from './schemas/projectstate';
 import { retakeLanesListSchema, retakeLanesStartResultSchema, retakeLanesStateSchema } from './schemas/retakelanes';
 import { chapterTagsEmbedResultSchema, chapterTagsPreviewSchema } from './schemas/chaptertags';
@@ -1189,6 +1190,27 @@ describe('answers of the mock client for the settings, voice, model, transcript 
     expect(turnedOff.capabilities.punch).toMatchObject({ available: false, reason: 'turned_off' });
   });
 
+  it('providerCapabilities matches the host goldens on Windows and macOS (provider-ports PRD Phase 14)', async () => {
+    const windows = await createMockApi().providerCapabilities();
+    expectMatches(providerCapabilitiesSchema, windows, 'mock provider capabilities (default Windows seed)');
+    expect(windows).toEqual(readGolden('provider-capabilities-windows.json'));
+
+    const darwin = await createMockApi({}, { providers: { platform: 'darwin' } }).providerCapabilities();
+    expectMatches(providerCapabilitiesSchema, darwin, 'mock provider capabilities (macOS)');
+    expect(darwin).toEqual(readGolden('provider-capabilities-darwin.json'));
+    expect(darwin.asr.moonshine?.support).toMatchObject({ available: false, reason: 'unsupported' });
+    expect(darwin.capture.dshow?.default).toBe(false);
+  });
+
+  it('providerCapabilities reports an installed count only for an asset kind with a catalog', async () => {
+    const state = await createMockApi({}, { providers: { installed: { whisper: 2, tts: 0 } } }).providerCapabilities();
+    expectMatches(providerCapabilitiesSchema, state, 'mock provider capabilities (seeded installs)');
+    expect(state.asr.whisper?.asset).toEqual({ kind: 'whisper', installed: 2 });
+    expect(state.tts.piper?.asset).toEqual({ kind: 'tts', installed: 0 });
+    expect(state.asr.moonshine?.asset).toEqual({ kind: 'moonshine' });
+    expect(state.pronunciation.cmu?.asset).toBeUndefined();
+  });
+
   it('chapterTagsPreview and its seeded states', async () => {
     expectMatches(chapterTagsPreviewSchema, await createMockApi().chapterTagsPreview(), 'mock chapter-tags preview idle');
     for (const seed of ['ready', 'not-rendered'] as const) {
@@ -1695,6 +1717,7 @@ describe('answers of the mock client for the settings, voice, model, transcript 
       'linkDawFile',
       'launchDaw',
       'dawCapabilities',
+      'providerCapabilities',
       'dawCatalogList',
       'tracksDiscover',
       'tracksSelect',

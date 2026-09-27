@@ -952,6 +952,14 @@ export function ProjectSwitch(path: string, name: string): $CancellablePromise<s
 }
 
 /**
+ * ProviderCapabilities answers, for each provider port, every registered provider's label, platforms, modes, asset kind (with
+ * the installed count when its catalog is present) and whether it is supported on this platform.
+ */
+export function ProviderCapabilities(): $CancellablePromise<string> {
+    return $Call.ByID(74377393);
+}
+
+/**
  * ReadAloudReaperState answers whether REAPER is ready to record chapterID with reading
  * (read-aloud-control-bar.prd.md Phase 6): its linked track the one track armed, and REAPER not already recording. A
  * chapter with no link, a REAPER that is not there and the experimental switch being off are answers, not errors; only
