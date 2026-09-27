@@ -64,7 +64,11 @@ export function CreateChapterRegionsDialog({ tracks, onClose }: { tracks: Track[
       .then((result) => {
         setCreated(result);
         // A second preview shows the rows this run just wrote as "exists" - the same idempotence create_regions itself guarantees.
-        return api.chapterRegionsPreview(openingTrackGuid, closingTrackGuid).then(setPlan);
+        // A failed refresh only leaves the pre-create preview in place; the created counts above already answer whether the write worked.
+        api
+          .chapterRegionsPreview(openingTrackGuid, closingTrackGuid)
+          .then(setPlan)
+          .catch(() => {});
       })
       .catch((reason: unknown) => setCreateError(String(reason)))
       .finally(() => setCreating(false));

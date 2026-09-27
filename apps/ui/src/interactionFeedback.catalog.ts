@@ -124,6 +124,8 @@ export const SILENT_CATCHES: Record<string, string> = {
     "A background count of the chapter's other pickups (take review, RS4 A); a failure just leaves that line out of the Pickups list, with the check's own gaps unaffected.",
   'src/input/keymap.ts#1':
     "keymapFromBindings (input-commands-and-pedals.prd.md Phase 6): one stored gesture this build cannot parse (a hand-edited settings file, or an older/newer app's own bug) falls back to that one command's catalog default; not a narrator action, and not swallowed silently since the Keyboard & pedals panel still shows every other override normally.",
+  'src/components/tracks/CreateChapterRegionsDialog.tsx#1':
+    'Refreshes the preview right after a successful create, so the table shows the just-written rows as "exists"; the created counts already shown answer whether the write worked, so a failed refresh only leaves the pre-create preview in place.',
   'src/input/MidiSource.ts#1':
     "requestMIDIAccess() rejecting (denied, unsupported, or blocked by the webview host - Phase 8's spike, input-commands-and-pedals.prd.md): not a narrator action to retry, and not swallowed silently since KeyboardSource keeps every keyboard-type pedal working; MidiSource just contributes nothing rather than surfacing an error nobody in the booth can act on.",
 };
