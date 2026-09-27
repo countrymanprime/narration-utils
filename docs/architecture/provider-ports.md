@@ -25,6 +25,8 @@ The Python adapters that fill the registries live beside the code that used to c
 
 Each sidecar is its own process, so the teleprompter's live `whisper` row and transcript compare's batch `whisper` row never share a registry.
 
+The one pronunciation source that fetches is not a row in either registry ([ADR 0405](../adr/0405-pronunciation-stays-local-first-behind-cmu-wiktextract-and-espeak-with-merriam-webster-as-the-one-narrator-keyed-online-source.md) point 2, [ADR 0350](../adr/0350-the-merriam-webster-key-is-sealed-in-its-own-per-user-file-and-the-online-lookup-is-a-go-only-port-with-a-single-word-rule.md)): Merriam-Webster runs in the Go host, on the narrator's own key, behind its own Go-only port (`internal/pronunciationonline`: `Dictionary`, adapter `merriamwebster`, fake `pronunciationonlinetest`), so `FallbackOrder` and the sidecar's `capabilities` report never include it and the offline chain cannot reach the network. The `browse` role above still never fetches.
+
 ## The shared vocabulary
 
 - **Go:** `apps/desktop/internal/port` holds `Level` (unsupported, not yet available, experimental, supported), `Support`, `NotSupportedError` and the generic `Registry[P]` with `Entry[P]` (name, `Descriptor`, constructor). `Register` panics on a duplicate name or a missing label; `Lookup` returns a `*port.NotSupportedError` with a sentence for the narrator ("There is no speech engine called …"); `Names(platform)` lists the rows declared for a platform, default first. The DAW port uses the same `Level` and `Support`.

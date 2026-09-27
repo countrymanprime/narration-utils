@@ -89,6 +89,26 @@ yours, so you can switch again). Neither step looks anything up. Set the **Statu
 pronunciation the author confirmed, it goes back to Researched, because the author has not heard the
 new one. A rebuild keeps all of this.
 
+## Looking a name up online (Merriam-Webster)
+
+When no dictionary on your computer knows a name, you can ask Merriam-Webster's online dictionary,
+on your own free key. Get one from **Settings > Story Bible > Get a free key** (it opens
+Merriam-Webster's sign-up page in your browser), paste it into **Your key** and press **Save key**.
+On Windows the key is kept encrypted for your Windows account; **Remove key** deletes it.
+
+Then, in an entry's **Pronunciation details**, **Look up online** sends that one name, and nothing
+else from your book, to Merriam-Webster, and shows its answer in Merriam-Webster's own respelling
+(for example \krō-ˈkā\). **Use this** copies it into **Your pronunciation**; press **Use mine** to
+keep it. Every answer is kept on your computer, so looking the same name up again sends nothing and
+works offline ("from this computer's copy"). In **Pronunciation queries**, **Look up online…** asks
+about every name on the list at once, after telling you how many names it will send.
+
+| Message | What it means | What to do |
+| --- | --- | --- |
+| "Add your own free Merriam-Webster key in Settings > Story Bible first." | No key is saved. | Save your key in Settings > Story Bible. |
+| "Merriam-Webster refused the key ..." | The key was mistyped, or is not for the Collegiate Dictionary. | Copy it again from your dictionaryapi.com account page and save it. |
+| "An online lookup sends one word or name only ..." | The name is longer than three words or has symbols. | Look up a shorter alias, or one word of the name. |
+
 ## Pronunciation queries for the author
 
 The **Pronunciation queries** button at the top of the Story Bible opens a panel that lists every
