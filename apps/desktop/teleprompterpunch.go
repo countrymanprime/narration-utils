@@ -23,6 +23,11 @@ const defaultPunchPreRoll = 3.0
 // place word at all (fewer than two anchors, teleprompter.ResolveWordTime): nothing was moved.
 var ErrNoPunchAnchor = errors.New("there's no punch anchor near this word yet: read a little further, then try again")
 
+// ErrNoLiveChapter is the refusal when there is no live (or just-ending) session reading a manuscript chapter to
+// punch against (teleprompter.Service.CurrentChapter): "Punch from here" only makes sense while the chapter that
+// raised the flag is the one REAPER's anchors were recorded against.
+var ErrNoLiveChapter = errors.New("there's no chapter being read right now to punch against")
+
 // errNoDawConnection is TeleprompterPunch's refusal with no bridge at all (a standalone launch): the same wording the
 // DAW port's own resolver gives a capability with no adapter (dawport.Resolver.message's ReasonStandalone case).
 var errNoDawConnection = errors.New("no DAW is connected to this app. Open this app from your DAW to use it.")
@@ -58,30 +63,37 @@ func punchPreRoll(svc hostServices) float64 {
 	return preRoll
 }
 
-// resolvePunch is what preview and punch share: word's project time and source from the chapter's anchors, and the
-// pre-roll to use. It never touches REAPER.
-func resolvePunch(svc hostServices, chapterID string, word int) (position float64, source string, preRoll float64, err error) {
+// resolvePunch is what preview and punch share: the live chapter, word's project time and source from its anchors,
+// and the pre-roll to use. It never touches REAPER.
+func resolvePunch(svc hostServices, word int) (chapterID string, position float64, source string, preRoll float64, err error) {
 	project := svc.config.projectFolder
 	if project == "" {
-		return 0, "", 0, errNoProject
+		return "", 0, "", 0, errNoProject
+	}
+	if svc.teleprompter == nil {
+		return "", 0, "", 0, ErrNoLiveChapter
+	}
+	chapterID, ok := svc.teleprompter.CurrentChapter()
+	if !ok {
+		return "", 0, "", 0, ErrNoLiveChapter
 	}
 	anchors, err := teleprompter.LoadAnchors(project, chapterID)
 	if err != nil {
-		return 0, "", 0, err
+		return "", 0, "", 0, err
 	}
-	position, source, ok := teleprompter.ResolveWordTime(anchors, word)
+	position, source, ok = teleprompter.ResolveWordTime(anchors, word)
 	if !ok {
-		return 0, "", 0, ErrNoPunchAnchor
+		return "", 0, "", 0, ErrNoPunchAnchor
 	}
-	return position, source, punchPreRoll(svc), nil
+	return chapterID, position, source, punchPreRoll(svc), nil
 }
 
 // TeleprompterPunchPreview resolves word's punch time and pre-roll without moving anything in REAPER: what the
 // narrator sees before confirming "Punch from here" (Phase 12's "UI showing resolved time, its source... and pre-roll
-// before moving").
-func (h *Host) TeleprompterPunchPreview(chapterID string, word int) (string, error) {
+// before moving"). word is the flag's own script word index; the chapter is whichever one is live right now.
+func (h *Host) TeleprompterPunchPreview(word int) (string, error) {
 	svc := h.services()
-	position, source, preRoll, err := resolvePunch(svc, chapterID, word)
+	_, position, source, preRoll, err := resolvePunch(svc, word)
 	if err != nil {
 		return encodeBinding(refusedPunch(err), nil)
 	}
@@ -93,9 +105,9 @@ func (h *Host) TeleprompterPunchPreview(chapterID string, word int) (string, err
 // every anchor at or after word is dropped (the narrator is about to re-record from here, so an anchor from the take
 // being replaced would misplace the next punch, teleprompter.DropAnchorsFrom); that failing is logged, never
 // surfaced, since the punch itself already succeeded.
-func (h *Host) TeleprompterPunch(chapterID string, word int) (string, error) {
+func (h *Host) TeleprompterPunch(word int) (string, error) {
 	svc := h.services()
-	position, source, preRoll, err := resolvePunch(svc, chapterID, word)
+	chapterID, position, source, preRoll, err := resolvePunch(svc, word)
 	if err != nil {
 		return encodeBinding(refusedPunch(err), nil)
 	}

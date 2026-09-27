@@ -61,3 +61,61 @@ func TestCurrentWordAfterTheSessionStopsIsNothing(t *testing.T) {
 		t.Fatal("resolved a word after the session stopped")
 	}
 }
+
+// CurrentChapter feeds "Punch from here" (Phase 12): unlike CurrentWord it is not gated on "running" specifically or
+// on being unpaused, since a narrator reviewing a flag may have paused.
+
+func TestCurrentChapterWhileListening(t *testing.T) {
+	f := newFixture(t, "stream")
+	if err := f.service.Start(validOptions()); err != nil {
+		t.Fatal(err)
+	}
+	if chapter, ok := f.service.CurrentChapter(); !ok || chapter != "c1" {
+		t.Fatalf("CurrentChapter = %q, %v", chapter, ok)
+	}
+}
+
+func TestCurrentChapterWhilePaused(t *testing.T) {
+	f := newFixture(t, "stream")
+	if err := f.service.Start(validOptions()); err != nil {
+		t.Fatal(err)
+	}
+	waitFor(t, "a position event", func() bool { return f.recorder.firstEvent("position") != nil })
+	if err := f.service.Pause(true); err != nil {
+		t.Fatal(err)
+	}
+	if chapter, ok := f.service.CurrentChapter(); !ok || chapter != "c1" {
+		t.Fatalf("CurrentChapter while paused = %q, %v", chapter, ok)
+	}
+}
+
+func TestCurrentChapterBeforeAnySessionStarts(t *testing.T) {
+	f := newFixture(t, "stream")
+	if _, ok := f.service.CurrentChapter(); ok {
+		t.Fatal("resolved a chapter with no session running")
+	}
+}
+
+func TestCurrentChapterExcludesAScriptCreditsSession(t *testing.T) {
+	f := newFixture(t, "stream")
+	script := Script{ID: "credits-open", Title: "Opening credits", Text: "Read by someone."}
+	if err := f.service.StartScript(script, map[string]string{"device": "Microphone Array"}); err != nil {
+		t.Fatal(err)
+	}
+	if _, ok := f.service.CurrentChapter(); ok {
+		t.Fatal("resolved a chapter for a script/credits session")
+	}
+}
+
+func TestCurrentChapterAfterTheSessionStopsIsNothing(t *testing.T) {
+	f := newFixture(t, "stream")
+	if err := f.service.Start(validOptions()); err != nil {
+		t.Fatal(err)
+	}
+	waitFor(t, "a position event", func() bool { return f.recorder.firstEvent("position") != nil })
+	f.service.Stop()
+	waitFor(t, "stopped", func() bool { return phase(f.service) == "stopped" })
+	if _, ok := f.service.CurrentChapter(); ok {
+		t.Fatal("resolved a chapter after the session stopped")
+	}
+}

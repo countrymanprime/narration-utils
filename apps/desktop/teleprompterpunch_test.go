@@ -3,20 +3,39 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"os"
 	"path/filepath"
 	"testing"
 
 	"github.com/countrymanprime/narration-utils/shell/internal/dawport"
-	"github.com/countrymanprime/narration-utils/shell/internal/settings"
 	"github.com/countrymanprime/narration-utils/shell/internal/teleprompter"
 )
 
-func punchTestServices(t *testing.T, project string) hostServices {
+// newHostForPunchTest is newHostWithARunningTeleprompter (teleprompter_test.go) plus host.config.projectFolder, which
+// resolvePunch needs to find the chapter's anchors file: the two name the same REAPER project folder in real use, but
+// the shared fixture only ever set the teleprompter service's own Config.Project.
+func newHostForPunchTest(t *testing.T) (*Host, string) {
 	t.Helper()
-	t.Setenv("APPDATA", filepath.Join(t.TempDir(), "appdata"))
-	svc := hostServices{settings: settings.New("", "")}
-	svc.config.projectFolder = project
-	return svc
+	t.Setenv(fakeTeleprompterEnv, "1")
+	project := t.TempDir()
+	manuscriptPath := filepath.Join(project, "narration-utils", "manuscript", "manuscript.json")
+	if err := os.MkdirAll(filepath.Dir(manuscriptPath), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(manuscriptPath, []byte(`{}`), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	host := NewHost()
+	host.config.projectFolder = project
+	host.teleprompter = teleprompter.New(teleprompter.Config{Project: project, SessionDir: t.TempDir(), Python: os.Args[0]}, host.sidecars, host.emitTeleprompterEvent, host.emitTeleprompterState)
+	t.Cleanup(func() {
+		_ = host.teleprompter.Close(context.Background())
+		_ = host.sidecars.Close()
+	})
+	if err := host.teleprompter.Start(map[string]string{"chapter": "c1", "device": "Mic", "model": "tiny"}); err != nil {
+		t.Fatal(err)
+	}
+	return host, project
 }
 
 func TestPunchPreRollFallsBackToDefaultWhenNoStoreIsConfigured(t *testing.T) {
@@ -26,61 +45,68 @@ func TestPunchPreRollFallsBackToDefaultWhenNoStoreIsConfigured(t *testing.T) {
 }
 
 func TestPunchPreRollReadsTheRepoDefault(t *testing.T) {
-	svc := punchTestServices(t, t.TempDir())
-	if got := punchPreRoll(svc); got != 3 {
+	host, _ := newHostForPunchTest(t)
+	if got := punchPreRoll(host.services()); got != 3 {
 		t.Fatalf("punchPreRoll = %v, want 3 (the repo default)", got)
 	}
 }
 
 func TestPunchPreRollReadsANarratorOverride(t *testing.T) {
-	svc := punchTestServices(t, t.TempDir())
+	host, _ := newHostForPunchTest(t)
 	value := "5.5"
-	if err := svc.settings.Save("Teleprompter", "global", map[string]*string{"punch_preroll_seconds": &value}); err != nil {
+	if err := host.services().settings.Save("Teleprompter", "global", map[string]*string{"punch_preroll_seconds": &value}); err != nil {
 		t.Fatal(err)
 	}
-	if got := punchPreRoll(svc); got != 5.5 {
+	if got := punchPreRoll(host.services()); got != 5.5 {
 		t.Fatalf("punchPreRoll = %v, want 5.5", got)
 	}
 }
 
 func TestPunchPreRollFallsBackOnAnUnparseableStoredValue(t *testing.T) {
-	svc := punchTestServices(t, t.TempDir())
+	host, _ := newHostForPunchTest(t)
 	value := "not-a-number"
-	if err := svc.settings.Save("Teleprompter", "global", map[string]*string{"punch_preroll_seconds": &value}); err != nil {
+	if err := host.services().settings.Save("Teleprompter", "global", map[string]*string{"punch_preroll_seconds": &value}); err != nil {
 		t.Fatal(err)
 	}
-	if got := punchPreRoll(svc); got != defaultPunchPreRoll {
+	if got := punchPreRoll(host.services()); got != defaultPunchPreRoll {
 		t.Fatalf("punchPreRoll = %v, want the default %v on a corrupt value", got, defaultPunchPreRoll)
 	}
 }
 
 func TestResolvePunchWithNoProjectIsRefused(t *testing.T) {
-	if _, _, _, err := resolvePunch(hostServices{}, "c1", 5); err != errNoProject {
+	if _, _, _, _, err := resolvePunch(hostServices{}, 5); err != errNoProject {
 		t.Fatalf("resolvePunch error = %v, want errNoProject", err)
 	}
 }
 
+func TestResolvePunchWithNoLiveChapterIsRefused(t *testing.T) {
+	svc := hostServices{}
+	svc.config.projectFolder = t.TempDir()
+	if _, _, _, _, err := resolvePunch(svc, 5); err != ErrNoLiveChapter {
+		t.Fatalf("resolvePunch error = %v, want ErrNoLiveChapter", err)
+	}
+}
+
 func TestResolvePunchWithNoAnchorsIsRefused(t *testing.T) {
-	svc := punchTestServices(t, t.TempDir())
-	if _, _, _, err := resolvePunch(svc, "c1", 5); err != ErrNoPunchAnchor {
+	host, _ := newHostForPunchTest(t)
+	if _, _, _, _, err := resolvePunch(host.services(), 5); err != ErrNoPunchAnchor {
 		t.Fatalf("resolvePunch error = %v, want ErrNoPunchAnchor", err)
 	}
 }
 
-func TestResolvePunchInterpolatesFromRecordedAnchors(t *testing.T) {
-	project := t.TempDir()
-	svc := punchTestServices(t, project)
+func TestResolvePunchInterpolatesFromRecordedAnchorsOfTheLiveChapter(t *testing.T) {
+	host, project := newHostForPunchTest(t)
 	for _, anchor := range []teleprompter.Anchor{{Word: 0, Position: 0}, {Word: 10, Position: 5}} {
 		if err := teleprompter.AppendAnchor(project, "c1", anchor); err != nil {
 			t.Fatal(err)
 		}
 	}
-	position, source, preRoll, err := resolvePunch(svc, "c1", 4)
+	chapterID, position, source, preRoll, err := resolvePunch(host.services(), 4)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if position != 2 || source != teleprompter.SourceAnchor || preRoll != 3 {
-		t.Fatalf("resolvePunch = %v, %q, %v", position, source, preRoll)
+	if chapterID != "c1" || position != 2 || source != teleprompter.SourceAnchor || preRoll != 3 {
+		t.Fatalf("resolvePunch = %q, %v, %q, %v", chapterID, position, source, preRoll)
 	}
 }
 
@@ -100,17 +126,13 @@ func (f fakePuncherAdapter) Role(c dawport.Capability) any {
 }
 
 func TestTeleprompterPunchPreviewNeverMovesAnything(t *testing.T) {
-	project := t.TempDir()
+	host, project := newHostForPunchTest(t)
 	if err := teleprompter.AppendAnchor(project, "c1", teleprompter.Anchor{Word: 3, Position: 1.5}); err != nil {
 		t.Fatal(err)
 	}
-	host := &Host{}
-	host.settings = settings.New("", "")
-	host.config.projectFolder = project
-	t.Setenv("APPDATA", filepath.Join(t.TempDir(), "appdata"))
 	// dawPortResolver is deliberately left nil: a preview must never need REAPER at all.
 
-	raw, err := host.TeleprompterPunchPreview("c1", 3)
+	raw, err := host.TeleprompterPunchPreview(3)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -127,20 +149,16 @@ func TestTeleprompterPunchPreviewNeverMovesAnything(t *testing.T) {
 }
 
 func TestTeleprompterPunchMovesTheCursorAndDropsAnchorsAtOrAfterTheWord(t *testing.T) {
-	project := t.TempDir()
+	host, project := newHostForPunchTest(t)
 	for _, anchor := range []teleprompter.Anchor{{Word: 1, Position: 0.5}, {Word: 3, Position: 1.5}, {Word: 9, Position: 4.5}} {
 		if err := teleprompter.AppendAnchor(project, "c1", anchor); err != nil {
 			t.Fatal(err)
 		}
 	}
 	puncher := &fakePuncherStub{cursor: 1.5 - defaultPunchPreRoll}
-	host := &Host{}
-	host.settings = settings.New("", "")
-	host.config.projectFolder = project
 	host.dawPortResolver = dawport.NewResolver(dawport.ResolverConfig{Adapter: fakePuncherAdapter{puncher: puncher}})
-	t.Setenv("APPDATA", filepath.Join(t.TempDir(), "appdata"))
 
-	raw, err := host.TeleprompterPunch("c1", 3)
+	raw, err := host.TeleprompterPunch(3)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -171,17 +189,13 @@ func TestTeleprompterPunchMovesTheCursorAndDropsAnchorsAtOrAfterTheWord(t *testi
 }
 
 func TestTeleprompterPunchIsRefusedWithNoDawConnection(t *testing.T) {
-	project := t.TempDir()
+	host, project := newHostForPunchTest(t)
 	if err := teleprompter.AppendAnchor(project, "c1", teleprompter.Anchor{Word: 3, Position: 1.5}); err != nil {
 		t.Fatal(err)
 	}
-	host := &Host{}
-	host.settings = settings.New("", "")
-	host.config.projectFolder = project
-	t.Setenv("APPDATA", filepath.Join(t.TempDir(), "appdata"))
 	// dawPortResolver stays nil: no bridge at all.
 
-	raw, err := host.TeleprompterPunch("c1", 3)
+	raw, err := host.TeleprompterPunch(3)
 	if err != nil {
 		t.Fatal(err)
 	}

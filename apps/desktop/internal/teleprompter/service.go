@@ -175,6 +175,26 @@ func (s *Service) CurrentWord() (chapterID string, word int, ok bool) {
 	return chapter, *positionEvent.Read, true
 }
 
+// CurrentChapter is the manuscript chapter a live session is reading, or was reading while it stops, for "Punch from
+// here" (teleprompter-manuscript-integration.prd.md Phase 12): a flag's own word index is punched against whichever
+// chapter is live, so a caller never needs to name it. false for a Script/credits session (no manuscript chapter to
+// anchor against, CurrentWord's own exclusion) or with no session running at all. Unlike CurrentWord, this does not
+// require "running" specifically or the session to be unpaused: a narrator reviewing a flag and confirming a punch
+// may have paused, or the session may already be winding down.
+func (s *Service) CurrentChapter() (chapterID string, ok bool) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	phase, _ := s.state["phase"].(string)
+	if !active(phase) || s.scriptFile != "" {
+		return "", false
+	}
+	chapter, _ := s.state["chapter"].(string)
+	if chapter == "" {
+		return "", false
+	}
+	return chapter, true
+}
+
 func (s *Service) notify() {
 	if s.changed != nil {
 		s.changed(s.Snapshot())
