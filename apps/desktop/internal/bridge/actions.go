@@ -49,6 +49,7 @@ const (
 // port's REAPER adapter moves to Supported with it (dawport/reaper's tests parse this map to hold the two together).
 var experimentalCommands = map[string]bool{
 	"chapter_track_state": true,
+	"select_track":        true,
 	"arm_only":            true,
 	"record_start":        true,
 	"record_stop":         true,
@@ -63,7 +64,7 @@ var experimentalCommands = map[string]bool{
 }
 
 // actionTags are the events Actions consumes: every answer of every command it sends, and ERROR.
-var actionTags = []string{"TRACK_STATE", "TRACK_ITEM", "TRACK_STATE_END", "TRACK_STALE", "ARMED", "RECORD_STARTED", "RECORD_STOPPED", "RECORD_ENDED", "RECORD_NOT_OURS",
+var actionTags = []string{"TRACK_STATE", "TRACK_ITEM", "TRACK_STATE_END", "TRACK_STALE", "TRACK_SELECTED", "ARMED", "RECORD_STARTED", "RECORD_STOPPED", "RECORD_ENDED", "RECORD_NOT_OURS",
 	"ACTIVE_TAKE_SET", "ITEM_STALE", "FX_CHAIN", "FX_CHAINS_LISTED", "FX_CHAIN_APPLIED",
 	"FX_PLUGIN", "FX_PLUGINS_LISTED", "TAKE_FX_ADDED", "REGIONS_CREATED", "PLAY_POSITION", "PUNCHED", "ERROR"}
 

@@ -42,14 +42,15 @@ var declares = map[dawport.Capability]dawport.Level{
 	dawport.CapTakeCreate:   dawport.Supported,
 	dawport.CapHeartbeat:    dawport.Supported,
 	dawport.CapProjectRead:  dawport.Supported,
-	// bridge's experimentalCommands: chapter_track_state; arm_only, record_start, record_stop; punch_to, play_position;
-	// create_regions; set_active_take; list_fx_chains, apply_fx_chain, list_fx, add_take_fx.
-	dawport.CapTrackState: dawport.Experimental,
-	dawport.CapRecord:     dawport.Experimental,
-	dawport.CapPunch:      dawport.Experimental,
-	dawport.CapRegions:    dawport.Experimental,
-	dawport.CapTakes:      dawport.Experimental,
-	dawport.CapFXChains:   dawport.Experimental,
+	// bridge's experimentalCommands: chapter_track_state, select_track; arm_only, record_start, record_stop; punch_to,
+	// play_position; create_regions; set_active_take; list_fx_chains, apply_fx_chain, list_fx, add_take_fx.
+	dawport.CapTrackState:  dawport.Experimental,
+	dawport.CapTrackSelect: dawport.Experimental,
+	dawport.CapRecord:      dawport.Experimental,
+	dawport.CapPunch:       dawport.Experimental,
+	dawport.CapRegions:     dawport.Experimental,
+	dawport.CapTakes:       dawport.Experimental,
+	dawport.CapFXChains:    dawport.Experimental,
 	// Built, never wired to a binding, so never gated: Experimental keeps them off until they are verified.
 	dawport.CapSilenceTrim: dawport.Experimental,
 	dawport.CapItemGain:    dawport.Experimental,
@@ -60,6 +61,7 @@ var declares = map[dawport.Capability]dawport.Level{
 // sends has a row, whether or not it is still Experimental: promoting one is a declaration change above, not a change here.
 var commandCapability = map[string]dawport.Capability{
 	"chapter_track_state": dawport.CapTrackState,
+	"select_track":        dawport.CapTrackSelect,
 	"arm_only":            dawport.CapRecord,
 	"record_start":        dawport.CapRecord,
 	"record_stop":         dawport.CapRecord,
@@ -165,6 +167,7 @@ func New(client *bridge.Client, allowed func(dawport.Capability) error) (*Adapte
 			dawport.CapHeartbeat:    heartbeat,
 			dawport.CapProjectRead:  ProjectReader{},
 			dawport.CapTrackState:   actions,
+			dawport.CapTrackSelect:  actions,
 			dawport.CapRecord:       actions,
 			dawport.CapPunch:        actions,
 			dawport.CapRegions:      actions,
