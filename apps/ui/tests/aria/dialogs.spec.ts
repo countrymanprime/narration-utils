@@ -79,6 +79,11 @@ const MODALS: { name: string; state: [string, string]; snapshot: string }[] = [
     state: ['home', 'credits-setup-dialog'],
     snapshot: 'dialog-credits-setup.aria.yml',
   },
+  {
+    name: 'the "?" shortcut sheet is a modal dialog with every command grouped under a scope heading, and Show all shortcuts',
+    state: ['global', 'shortcut-sheet'],
+    snapshot: 'dialog-shortcut-sheet.aria.yml',
+  },
 ];
 
 for (const modal of MODALS) {
