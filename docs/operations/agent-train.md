@@ -112,6 +112,23 @@ A lane-X stream runs with no other stream that touches the same files. A lane th
   - any lane-X refactor.
 - **Hot UI files,** until lane X splits them: `api/mockApi.ts`, `wailsClient.ts`, `wireContracts.test.ts`, `tests/visual/state-catalog.ts`, `tests/visual/app.drivers.ts`, `interactionFeedback.catalog.ts`, `App.tsx`. Two streams may both touch one only when each adds rows in a separate place, and the coordinator merges `main` into the second before it merges.
 
+## Mockup gates
+
+Some PRDs gate a phase on **owner-approved mockups** in prose (its Phase Details or its Visual Spec section), not just in the `Depends` column. That gate never shows up in the phase table, so before adding a phase to the ready list, check its Phase Details paragraph and the PRD's Visual Spec section, not only `Depends`.
+
+When a phase is otherwise ready (`Depends` complete, no file collision) but blocked solely on mockups that don't exist yet or haven't been approved (D61, owner-directed):
+
+- **Don't launch it as a normal worker,** and don't guess at a design to route around the gate.
+- **Launch a mockup-drafting session instead**, as its own lane entry, not a phase worker: `create_session` with `tags: ["agent-train", "mockup-design"]`, a model picked like any other lane (Opus for a screen with real interaction states — a recorder, conflict or error messaging, anything with more than static layout; Sonnet for a mostly-static screen), and a prompt that:
+  - names the exact states the PRD's Phase Details and Visual Spec section describe;
+  - points it at `docs/design/design-system.md` and the real tokens/primitives, never a generic style;
+  - points it at two or three existing mockup sets under `docs/prds/mockups/` for tone and format precedent, and away from unrelated concept art (for example the audiobook studio benchmark set covers different screens entirely);
+  - says explicitly: **drafts only**, no product code for the gated phase, and the PRD's Visual Spec section is updated to list the new files as drafts pending the owner's approval — the session never marks its own work owner-approved;
+  - tells it to open its own tracking issue and a normal PR, same as any worker, and never merge itself.
+- **Record it on #509** as its own lane entry. It counts toward `TARGET` like any running session, but is tracked separately from the phase queue until the owner approves it.
+- **Subscribe to its PR** (`subscribe_pr_activity`). The owner may leave review comments to iterate on the design directly with that session (or a follow-up fixer) before approving — treat that like any other reviewer round: implement the requested visual changes and push, rather than closing the PR out after one draft.
+- The gated phase itself joins the normal ready list only once the owner approves the mockups (a comment or review saying so, or the PRD's Visual Spec section no longer reads "pending"). Approval is the owner's call, never the coordinator's.
+
 ## The coordinator's pass
 
 The Routine fires every 30 minutes (two hourly Routines, 30 minutes apart; D50). Each firing is one pass. Be brief and cheap: don't read the codebase, and don't run builds or tests yourself. Use the `mcp__github__*` tools for GitHub and `mcp__Claude_Code_Remote__*` for sessions (load them with ToolSearch). There is no `gh` CLI.
@@ -137,10 +154,12 @@ The Routine fires every 30 minutes (two hourly Routines, 30 minutes apart; D50).
    Merge with `squash` and `expectedHeadSha`. Delete the branch, then update the other bottom PRs' branches.
    - **A conflict:** start one **fixer**. Use Sonnet for mechanical files (`hostAPIVersion`, ADR or PRD index rows, status cells, regenerated `Host.*`) and Opus otherwise.
    - **A merge turns `main` red:** tick `HOLD`, start an Opus fixer aimed at `main`, and log it.
+   - **A merge just unblocked other phases (D62, owner-directed):** don't wait for the next scheduled Routine firing to act on it. The moment a merge lands, re-check every PRD whose `Depends` named the phase that just completed, and if step 5 below would now add something to the ready list, run step 5 immediately, in the same pass. A phase sitting ready while nothing launches until the next tick is exactly the latency this rule removes.
 5. **Launch.** Skip this step on `HOLD`, `HOLD-UNTIL-RESET`, AMBER-5H before its `resetsAt`, or when running ≥ `TARGET`.
    1. **Build the ready list.** A PRD phase is ready when:
       - its `Status` is `pending`;
       - every phase in its `Depends` is `complete` on `main`;
+      - its Phase Details paragraph and the PRD's Visual Spec section carry no unmet owner-approval gate (see [Mockup gates](#mockup-gates) — if one exists and isn't met, the phase isn't ready, but its mockup drafting is its own lane entry);
       - its Parallel-session row collides with no running stream's files;
       - its PRD is in the [queue](#queue) at or above the current wave.
    2. **Group phases into streams** of 1–3 consecutive phases of one PRD in one lane. Phases that each need their own worker (marked parallel in the PRD) become separate streams.
@@ -181,6 +200,7 @@ A worker is one cloud session for one stream. It opens one PR per phase, stacked
   - Answer every red-circle thread.
   - Comment `<ID>: PRs #… green` on #509, then end.
   - After three failed CI rounds on one PR: mark it draft, paste the failure into it, comment on #509, and end.
+- **No resume-in-place:** there is no tool to send a follow-up task into a session that has already finished and gone idle. A stream's next PRD phase (D62) is always a **new** session, branched fresh off the current `main` tip — never a message into the old one. The gain from D62 is launching that new session the moment the phase is ready, not batching it to the next tick; it is not session reuse.
 - **Owner steps:** anything needing the owner, REAPER, audio hardware or owner input goes on #510 as a comment and is marked pending in the PR. Never wait for a human.
 - **Tooling:** the repo's `SessionStart` hook (`scripts/cloud/session-start.sh`, registered in `.claude/settings.json`) installs the pinned toolchain. `.claude/settings.json` allows the build, test and git commands and denies force-pushes and rebases. Workers never edit `.claude/settings.json`; auto mode refuses that as self-modification, so any change to it goes on #510 for the owner.
 
