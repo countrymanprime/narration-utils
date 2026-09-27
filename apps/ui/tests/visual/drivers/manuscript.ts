@@ -281,6 +281,21 @@ export const manuscriptDrivers: Record<string, Driver> = {
     await clickVisible(page, 'button', 'Open booth for Chapter 1');
     await page.locator('[data-word="32"] [data-highlight="Cursor"]').waitFor();
   },
+  // Companion mode (booth-mode-and-companion-panel.prd.md Phase 7): the header's icon button opens the same session in
+  // CompanionShell, which covers the whole window.
+  'companion-default': async (page) => {
+    await goToPage(page, 'Manuscript');
+    await clickVisible(page, 'button', 'Open companion for Chapter 1');
+    await page.getByRole('heading', { level: 1, name: 'Companion' }).waitFor();
+  },
+  'companion-listening': async (page) => {
+    await page.goto('/?mockTeleprompter=listening&mockDawPlayhead=134.6');
+    await settlePage(page);
+    await goToPage(page, 'Manuscript');
+    await clickVisible(page, 'button', 'Open companion for Chapter 1');
+    await page.getByText('Playhead 2:14.6').waitFor();
+    await page.locator('[data-word="32"] [data-highlight="Cursor"]').waitFor();
+  },
   'reader-text-small': async (page) => {
     await goToPage(page, 'Manuscript');
     await clickVisible(page, 'button', 'small');

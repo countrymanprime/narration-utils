@@ -1,13 +1,12 @@
 #!/usr/bin/env node
 
-// Names, packages and verifies what each platform releases:
-// narration-utils-<version>-<platform>.<ext> plus a .sha256 beside it, and on Windows also the setup program
+// Names, packages and verifies what a release carries. Windows x64 is the only platform (docs/adr/0412):
+// narration-utils-<version>-<platform>.<ext> plus a .sha256 beside it, and also the setup program
 // narration-utils-<version>-windows-x64-setup.exe and the notices narration-utils-<version>-THIRD-PARTY-NOTICES.txt, each with its own
 // .sha256 (docs/adr/0082, docs/adr/0197). The version is in every name so that downloads of different releases can be told apart at a
 // glance. The archive is what the in-app updater downloads (apps/desktop/internal/update/manifest.go builds the same name); the setup
 // program is for a first install.
-// Every platform builds and uploads its own asset at a different time, so checksums are per
-// asset rather than one SHA256SUMS.txt that would need every platform to have finished.
+// Checksums are per asset rather than one SHA256SUMS.txt, so a narrator checks the one file they downloaded.
 
 import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
@@ -16,7 +15,6 @@ import { basename, join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
 const APP_BINARY = 'narration-utils';
-const MAC_APP_BUNDLE = 'Narration Utils.app';
 
 // The setup program NSIS builds (apps/desktop/build/windows/installer/project.nsi names its OutFile the same, and a test keeps the
 // two equal). This is its name in the build folder, which carries no version; packaging gives it the released name (installerName).
@@ -27,11 +25,8 @@ export const WINDOWS_INSTALLER = 'narration-utils-windows-x64-setup.exe';
 // anything but narration-utils.exe (docs/adr/0074), and a client that predates a two-file zip would refuse every update to it.
 export const NOTICES_FILE = 'THIRD-PARTY-NOTICES.txt';
 
-// The workflows that build and attest an asset (docs/adr/0071). Windows is built and attested by the release job of
-// prerelease.yml; the others by the reusable _attach-platform.yml, which is the signer named in the certificate even
-// though build-macos.yml or build-linux.yml calls it. Releases are built from main only.
+// The workflow that builds and attests an asset (docs/adr/0071): the release job of prerelease.yml. Releases are built from main only.
 const PRERELEASE_WORKFLOW = '.github/workflows/prerelease.yml';
-const ATTACH_WORKFLOW = '.github/workflows/_attach-platform.yml';
 const SOURCE_REF = 'refs/heads/main';
 
 function requireInBin(binDir, name) {
@@ -52,10 +47,9 @@ export function requireInstaller(binDir, name = WINDOWS_INSTALLER) {
   }
 }
 
-// `archive` turns Wails' output in binDir into the asset at `target` (an absolute path in `outDir`).
-// `required` platforms must be on a release before it can be promoted; the others ship when their
-// (separate, re-runnable) build succeeds and are simply absent when it did not. `installer` is a second file of the platform, copied
-// from the Wails output as it is: it is as required as the archive, so a build that lost it cannot be promoted.
+// `archive` turns Wails' output in binDir into the asset at `target` (an absolute path in `outDir`). Every file of every platform must be
+// on a release before it can be promoted. `installer` is a second file of the platform, copied from the Wails output as it is: it is as
+// required as the archive, so a build that lost it cannot be promoted. macOS and Linux rows were removed by D74 (docs/adr/0412).
 export const PLATFORMS = {
   // The self-contained exe is zipped (about 400 MB otherwise) and keeps the name the REAPER launcher looks for (narration-utils.exe);
   // that zip is what the in-app updater downloads. The setup program is what a narrator runs first.
@@ -63,7 +57,6 @@ export const PLATFORMS = {
     extension: '.zip',
     installer: WINDOWS_INSTALLER,
     notices: NOTICES_FILE,
-    required: true,
     signerWorkflow: PRERELEASE_WORKFLOW,
     archive({ binDir, outDir, target }) {
       requireInBin(binDir, `${APP_BINARY}.exe`);
@@ -71,27 +64,6 @@ export const PLATFORMS = {
       // first on PATH there and cannot, so call the system one by path.
       const tar = join(process.env.SystemRoot ?? 'C:\\Windows', 'System32', 'tar.exe');
       execFileSync(tar, ['-a', '-cf', basename(target), '-C', binDir, `${APP_BINARY}.exe`], { cwd: outDir, stdio: 'inherit' });
-    },
-  },
-  // A .app is a directory, so it has to be archived. -y keeps symlinks inside the bundle.
-  'macos-arm64': {
-    extension: '.zip',
-    required: false,
-    signerWorkflow: ATTACH_WORKFLOW,
-    archive({ binDir, target }) {
-      requireInBin(binDir, MAC_APP_BUNDLE);
-      execFileSync('zip', ['-r', '-y', target, MAC_APP_BUNDLE], { cwd: binDir, stdio: 'inherit' });
-    },
-  },
-  // tar keeps the executable bit, which a bare release download would lose.
-  'linux-x64': {
-    extension: '.tar.gz',
-    required: false,
-    signerWorkflow: ATTACH_WORKFLOW,
-    archive({ binDir, outDir, target }) {
-      requireInBin(binDir, APP_BINARY);
-      // A relative archive name plus -C keeps a Windows drive letter out of tar's archive argument.
-      execFileSync('tar', ['-czf', basename(target), '-C', binDir, APP_BINARY], { cwd: outDir, stdio: 'inherit' });
     },
   },
 };
@@ -155,23 +127,15 @@ export function packageAsset({ platform, binDir, outDir, version }) {
   return target;
 }
 
-// Returns human-readable problems; an empty array means the release of this version is safe to promote: every
-// required platform is present and intact, and any optional platform that is present is intact.
+// Returns human-readable problems; an empty array means the release of this version is safe to promote: every file of every
+// platform is present and intact.
 export function verifyAssets(dir, version) {
   requireVersion(version);
   const problems = [];
-  for (const [platform, { required }] of Object.entries(PLATFORMS)) {
-    const files = releaseFiles(platform, version);
-    const present = files.filter((file) => existsSync(join(dir, file)));
-    if (present.length === 0 && !required) continue;
-    const absent = files.filter((file) => !present.includes(file));
-    if (absent.length && required) {
-      problems.push(...absent.map((file) => `Missing ${file}`));
-      continue;
-    }
+  for (const platform of Object.keys(PLATFORMS)) {
+    const absent = releaseFiles(platform, version).filter((file) => !existsSync(join(dir, file)));
     if (absent.length) {
-      // An optional upload was interrupted between an asset and its checksum.
-      problems.push(`Incomplete upload: ${present[0]} has no ${absent[0]}`);
+      problems.push(...absent.map((file) => `Missing ${file}`));
       continue;
     }
     for (const name of platformAssets(platform, version)) {
