@@ -18,6 +18,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/countrymanprime/narration-utils/shell/internal/dawport"
 	"github.com/countrymanprime/narration-utils/shell/internal/evidence"
 	"github.com/countrymanprime/narration-utils/shell/internal/findings"
 	"github.com/countrymanprime/narration-utils/shell/internal/persist"
@@ -119,6 +120,10 @@ type Config struct {
 	Policy      func() Policy
 	ScanOptions func() ScanOptions
 	Reporter    *persist.Reporter
+	// ProjectReader reads the saved .rpp ProjectFile resolves (DAW port PRD Phase 5d); nil falls back to tracks.Parse
+	// directly, so a Config literal built before this field existed - every caller and test but the one proving this
+	// field is honoured - keeps reading exactly as it did before.
+	ProjectReader dawport.ProjectReader
 }
 
 // Service runs one editing check at a time over one project.
@@ -297,7 +302,7 @@ func (s *Service) savedProject() (tracks.Project, evidence.LedgerProjectFile, er
 	if err != nil {
 		return tracks.Project{}, evidence.LedgerProjectFile{}, unknownf(ReasonNoProjectFile, "choose the saved REAPER project file first (%v)", err)
 	}
-	project, err := tracks.Parse(path)
+	project, err := s.readProject(path)
 	if err != nil {
 		return tracks.Project{}, evidence.LedgerProjectFile{}, unknownf(ReasonProjectUnreadable, "could not read the saved project: %v", err)
 	}
@@ -306,6 +311,15 @@ func (s *Service) savedProject() (tracks.Project, evidence.LedgerProjectFile, er
 		return tracks.Project{}, evidence.LedgerProjectFile{}, unknownf(ReasonProjectUnreadable, "could not read the saved project: %v", statErr)
 	}
 	return project, evidence.LedgerProjectFile{Path: path, ModTime: modTime}, nil
+}
+
+// readProject is the dawport.ProjectReader role over path (DAW port PRD Phase 5d): nil falls back to tracks.Parse
+// directly.
+func (s *Service) readProject(path string) (tracks.Project, error) {
+	if s.config.ProjectReader == nil {
+		return tracks.Parse(path)
+	}
+	return s.config.ProjectReader.ReadProject(path)
 }
 
 func (s *Service) notify(state State) {

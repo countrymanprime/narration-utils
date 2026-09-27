@@ -1,6 +1,7 @@
 // Package transcript owns the asynchronous Transcript Compare state machine.
-// It reaches the DAW only through dawadapter.Review (today the versioned file
-// bridge); browser polling and SSE are deliberately absent.
+// It reaches the DAW only through dawport.ReviewSession (today the versioned
+// file bridge, DAW port PRD Phase 5d; ADR 0143's dawadapter.Review before
+// it); browser polling and SSE are deliberately absent.
 package transcript
 
 import (
@@ -20,6 +21,7 @@ import (
 
 	"github.com/countrymanprime/narration-utils/shell/internal/bridge"
 	"github.com/countrymanprime/narration-utils/shell/internal/dawadapter"
+	"github.com/countrymanprime/narration-utils/shell/internal/dawport"
 	"github.com/countrymanprime/narration-utils/shell/internal/findings"
 	"github.com/countrymanprime/narration-utils/shell/internal/persist"
 	"github.com/countrymanprime/narration-utils/shell/internal/process"
@@ -30,7 +32,7 @@ type Config struct{ Project, SessionDir, Python, Backend string }
 type Service struct {
 	mu       sync.RWMutex
 	config   Config
-	bridge   dawadapter.Review // the DAW, the REAPER bridge today (nil with no DAW session); see NewWithReview
+	bridge   dawport.ReviewSession // the DAW, the REAPER bridge today (nil with no DAW session); see NewWithReview
 	settings *settings.Store
 	sidecars *process.Supervisor
 	changed  func(map[string]any)
@@ -67,13 +69,13 @@ func New(config Config, client *bridge.Client, store *settings.Store, sidecars *
 // NewWithReview builds the service over any DAW adapter. When there is one it subscribes to the events Transcript Compare
 // owns: the COMPARE_* family, and ERROR events for its own run (or with no run, a session-level problem). Other consumers
 // of the same bridge subscribe for their own events; nobody reads the log directly.
-func NewWithReview(config Config, review dawadapter.Review, store *settings.Store, sidecars *process.Supervisor, changed func(map[string]any)) *Service {
+func NewWithReview(config Config, review dawport.ReviewSession, store *settings.Store, sidecars *process.Supervisor, changed func(map[string]any)) *Service {
 	s := &Service{config: config, bridge: review, settings: store, sidecars: sidecars, changed: changed, state: empty()}
 	if review != nil {
-		review.Subscribe(dawadapter.Subscription{
+		review.Subscribe(dawport.Subscription{
 			Tags:   []string{"COMPARE_*", "ERROR"},
 			Owns:   s.ownsRun,
-			Handle: func(event dawadapter.Event) { s.Handle(event.Fields) },
+			Handle: func(event dawport.Event) { s.Handle(event.Fields) },
 			// An event of this run that fails its table (bridge/wire.go) is REAPER's script and this app disagreeing about the protocol:
 			// the run says so instead of carrying on with a row of zeros.
 			Invalid: s.handleInvalid,
@@ -99,7 +101,7 @@ func (s *Service) SetFindings(store *findings.Store, lookup ManuscriptLookup) {
 
 // handleInvalid ends the run in progress with a message that names the event and the field that could not be read (never a value).
 // The advice is the fix for the usual cause: the REAPER script the narrator imported is older or newer than this app.
-func (s *Service) handleInvalid(event dawadapter.Event, reason error) {
+func (s *Service) handleInvalid(event dawport.Event, reason error) {
 	message := fmt.Sprintf("The Narration Utils script in REAPER sent a message this app could not read (%v). Import the script from this app's REAPER folder again, then start a new comparison.", reason)
 	s.mu.Lock()
 	if !runInProgress(s.state) {
@@ -399,7 +401,7 @@ func (s *Service) Export() error {
 	misread, _ := s.settings.Effective("TranscriptCompare", "color_misread", "FF4040")
 	skipped, _ := s.settings.Effective("TranscriptCompare", "color_skipped", "FFC000")
 	extra, _ := s.settings.Effective("TranscriptCompare", "color_extra", "40A0FF")
-	if err := s.bridge.ExportFindings(runID, output, dawadapter.MarkerColors{Misread: misread, Skipped: skipped, Extra: extra}); err != nil {
+	if err := s.bridge.ExportFindings(runID, output, dawport.MarkerColors{Misread: misread, Skipped: skipped, Extra: extra}); err != nil {
 		s.fail(err.Error())
 		return err
 	}

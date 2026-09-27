@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"path/filepath"
 
+	"github.com/countrymanprime/narration-utils/shell/internal/dawport"
+	"github.com/countrymanprime/narration-utils/shell/internal/dawport/reaper"
 	"github.com/countrymanprime/narration-utils/shell/internal/settings"
 	"github.com/countrymanprime/narration-utils/shell/internal/tracks"
 )
@@ -100,9 +102,46 @@ func selectedProject(svc hostServices) (tracks.Project, error) {
 	if err != nil {
 		return tracks.Project{}, err
 	}
-	project, err := tracks.Parse(selected)
+	project, err := readProject(selected)
 	if err != nil {
 		return tracks.Project{}, fmt.Errorf("could not read %s: %w", filepath.Base(selected), err)
 	}
 	return project, nil
+}
+
+// offlineProjectReader is the DAW port's declaration for reading a saved .rpp with no live session (DAW port PRD Phase
+// 5d): project_read is NeedsNothing (dawport's capability.go), so a resolver built over it reports the capability
+// available with no bridge at all - the "offline reading" this phase's name refers to, and the reason this app can browse
+// a project's tracks before REAPER has ever been launched from it. Every other capability answers unsupported: this
+// adapter is never handed to bridge.Actions or the review workflow.
+type offlineProjectReader struct{}
+
+var _ dawport.Adapter = offlineProjectReader{}
+
+func (offlineProjectReader) Kind() dawport.Kind { return dawport.KindREAPER }
+func (offlineProjectReader) Declares() map[dawport.Capability]dawport.Level {
+	return map[dawport.Capability]dawport.Level{dawport.CapProjectRead: dawport.Supported}
+}
+func (offlineProjectReader) Role(c dawport.Capability) any {
+	if c == dawport.CapProjectRead {
+		return reaper.ProjectReader{}
+	}
+	return nil
+}
+
+// projectReaderRole is dawport.Role[dawport.ProjectReader] over offlineProjectReader: a package var so a test can
+// substitute a fake reader or force a resolver failure without touching a real file.
+var projectReaderRole = func() (dawport.ProjectReader, error) {
+	resolver := dawport.NewResolver(dawport.ResolverConfig{Adapter: offlineProjectReader{}})
+	return dawport.Role[dawport.ProjectReader](resolver, dawport.CapProjectRead)
+}
+
+// readProject is tracks.go's, chapterlinks.go's and recordedlengths.go's shared way to parse a saved .rpp (DAW port PRD
+// Phase 5d): each asks the resolver for the dawport.ProjectReader role instead of calling tracks.Parse directly.
+func readProject(path string) (tracks.Project, error) {
+	reader, err := projectReaderRole()
+	if err != nil {
+		return tracks.Project{}, err
+	}
+	return reader.ReadProject(path)
 }
