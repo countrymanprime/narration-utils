@@ -11,6 +11,7 @@ function renderCard(overrides: Partial<Parameters<typeof ReaderCard>[0]> = {}) {
   const onToggleBookmark = vi.fn();
   const onReadAloud = vi.fn();
   const onBooth = vi.fn();
+  const onCompanion = vi.fn();
   render(
     <ReaderCard
       chapterId="c1"
@@ -24,13 +25,15 @@ function renderCard(overrides: Partial<Parameters<typeof ReaderCard>[0]> = {}) {
       onReadAloud={onReadAloud}
       showBooth
       onBooth={onBooth}
+      showCompanion
+      onCompanion={onCompanion}
       wordCount={3182}
       {...overrides}
     >
       <p>Body</p>
     </ReaderCard>,
   );
-  return { onToggleExpand, onToggleBookmark, onReadAloud, onBooth };
+  return { onToggleExpand, onToggleBookmark, onReadAloud, onBooth, onCompanion };
 }
 
 describe('ReaderCard (manuscript-credits-card-parity.prd.md, manuscript-chapter-header-alignment.prd.md)', () => {
@@ -101,12 +104,21 @@ describe('ReaderCard (manuscript-credits-card-parity.prd.md, manuscript-chapter-
     expect(chevronIndex).toBeGreaterThan(actionIndex);
   });
 
-  it('renders an empty, same-width action slot when there is no Read aloud or Booth (a row with no action still lines up)', () => {
-    renderCard({ showReadAloud: false, onReadAloud: undefined, showBooth: false, onBooth: undefined });
+  it('renders an empty, same-width action slot when there is no Read aloud, Booth or Companion (a row with no action still lines up)', () => {
+    renderCard({ showReadAloud: false, onReadAloud: undefined, showBooth: false, onBooth: undefined, showCompanion: false, onCompanion: undefined });
     expect(screen.queryByRole('button', { name: /Read .* aloud/ })).toBeNull();
     expect(screen.queryByRole('button', { name: /Open booth for/ })).toBeNull();
-    const slots = document.querySelectorAll('.w-64');
+    expect(screen.queryByRole('button', { name: /Open companion for/ })).toBeNull();
+    const slots = document.querySelectorAll('.w-80');
     expect(slots.length).toBe(1);
+  });
+
+  it('pressing Companion (booth-mode-and-companion-panel.prd.md Phase 7) opens the companion, not the card', async () => {
+    const user = userEvent.setup();
+    const { onCompanion, onToggleExpand } = renderCard();
+    await user.click(screen.getByRole('button', { name: 'Open companion for Chapter 2' }));
+    expect(onCompanion).toHaveBeenCalledTimes(1);
+    expect(onToggleExpand).not.toHaveBeenCalled();
   });
 
   it('pressing Booth opens the booth, not the card', async () => {

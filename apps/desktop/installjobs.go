@@ -20,6 +20,7 @@ const (
 	installKindSpacy      = "spacy"
 	installKindMoonshine  = "moonshine"
 	installKindDictionary = "dictionary"
+	installKindEncoder    = "encoder"
 )
 
 // The phases of an asset install, the words the UI polls for (apps/ui/src/api/contracts/assets.ts). Whisper used to say "running"; every

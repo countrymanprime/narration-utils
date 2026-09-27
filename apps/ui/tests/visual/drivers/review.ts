@@ -5,6 +5,7 @@ import {
   compareTakes,
   confirmApprovedMarker,
   goToPage,
+  openDeliveryFindingOnReview,
   openFindingRow,
   openPickupGroup,
   openReaperControls,
@@ -149,5 +150,8 @@ export const reviewDrivers: Record<string, Driver> = {
     await dialog.getByRole('button', { name: 'Add marker', exact: true }).click();
     await dialog.waitFor({ state: 'detached' });
     await showReaperControls(page, page.getByText(/^Marker added in REAPER: MISREAD:/));
+  },
+  'delivery-finding': async (page) => {
+    await openDeliveryFindingOnReview(page);
   },
 };

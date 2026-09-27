@@ -83,6 +83,7 @@ func (p *SignalProvider) Signals(ctx context.Context, chapter stages.ChapterCont
 	if err != nil {
 		return nil, err
 	}
+	sources = append(sources, markerSource(chapter, view))
 	profile, tolerance := p.profile(), p.tolerance()
 	pickups := PickupsSignal(PickupsInput{
 		Sources: sources, Mapping: mappingProblem(chapter, view),
@@ -156,13 +157,9 @@ func chapterSpan(chapter stages.ChapterContext, view stages.EvidenceView) *float
 	if problem != nil {
 		return nil
 	}
-	played := playedItems(track)
-	if len(played) == 0 {
+	start, end, ok := chapterRange(track)
+	if !ok {
 		return nil
-	}
-	start, end := played[0].Position, played[0].Position+played[0].Length
-	for _, item := range played[1:] {
-		start, end = min(start, item.Position), max(end, item.Position+item.Length)
 	}
 	span := end - start
 	return &span

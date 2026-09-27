@@ -1,6 +1,5 @@
 import type { Decorator, Meta, StoryObj } from '@storybook/react-vite';
 import { expect, within } from 'storybook/test';
-import { applyResolvedTheme } from '../../theme/theme';
 import { StatusBadge, type StatusTone } from './StatusBadge';
 
 // A badge's fill is a tint of its tone (paletteContrast.test.ts checks it against surface, ADR 0362), the same
@@ -57,25 +56,6 @@ export const AllTonesAsDots: Story = {
     }
   },
 };
-
-// FocusShell's booth surface (Q1): "the booth is a place, not a preference", regardless of the narrator's light/dark
-// choice - but everything the booth block does not itself override (the tone colours a badge draws) falls through
-// from dark specifically (tokenContrast.ts layers the block over dark, never light; ADR 0362). A real FocusShell will
-// have to pin dark itself to honour that "regardless of preference" promise, so this story does the same rather than
-// trusting whichever theme the atlas's global toolbar happens to be on for this capture - the booth attribute only
-// repaints what renders inside its own element, so that element also needs its own background fill.
-function BoothDemo() {
-  applyResolvedTheme('dark');
-  return (
-    <div data-surface="booth" className="flex flex-col items-start gap-2 bg-[var(--bg)] p-4">
-      {(['neutral', 'info', 'progress', 'success', 'warning', 'danger', 'experimental'] as StatusTone[]).map((tone) => (
-        <StatusBadge key={tone} tone={tone} label={tone} />
-      ))}
-    </div>
-  );
-}
-
-export const Booth: Story = { render: () => <BoothDemo /> };
 
 export const AnnouncesItsLabel: Story = {
   args: { tone: 'progress', label: 'Delivery check 7 / 12' },

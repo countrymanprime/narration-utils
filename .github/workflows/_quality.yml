@@ -9,9 +9,9 @@ permissions: { contents: read }
 # job is the one check that sums them up (no ruleset requires any check yet, #544). Checkouts fetch full history so Nx
 # can diff against the base branch.
 #
-# The shape trades job slots against the critical path (docs/prds/ci-pipeline-speed.prd.md: the free plan runs 20 jobs
-# at a time and queueing is the slow case). The two Playwright suites are most of a UI pull request's wait, so they are
-# sharded; the jobs under a minute share a runner per OS instead of each paying for its own toolchain setup.
+# The shape trades job slots against the critical path (docs/operations/ci-and-releases.md#ci-performance: the free plan
+# runs 20 jobs at a time and queueing is the slow case). The two Playwright suites are most of a UI pull request's wait,
+# so they are sharded; the jobs under a minute share a runner per OS instead of each paying for its own toolchain setup.
 jobs:
   js:
     timeout-minutes: 15
@@ -223,8 +223,8 @@ jobs:
     #   - reaper: the bridge harness again, because the bridge builds paths from package.config and REAPER's own Lua
     #     writes CRLF on Windows.
     #   - go lint: gofmt, go vet, golangci-lint and checklocks (the `ci` configuration of the lint target). Windows, like
-    #     go-test: it is the supported platform, and Linux's native libraries are installed only by the optional Linux
-    #     build (build-linux.yml). Here rather than in go-test so the tests do not wait behind it.
+    #     go-test: it is the only supported platform (docs/adr/0412), and Linux's native libraries are not installed
+    #     on the Linux runners. Here rather than in go-test so the tests do not wait behind it.
     timeout-minutes: 15
     runs-on: windows-latest
     steps:

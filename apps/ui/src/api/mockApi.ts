@@ -11,6 +11,7 @@ import { createTeleprompterMock } from './teleprompterMock';
 import { createCoverageMock } from './coverageMock';
 import { createWorkspaceMock, mockMisreadFindingSource } from './workspaceMock';
 import { createPreviewMock } from './previewMock';
+import { createProductionMock } from './productionMock';
 import { createStagesMock } from './stagesMock';
 import { createDawMock } from './dawMock';
 import { createProvidersMock } from './providersMock';
@@ -18,10 +19,12 @@ import { createFindingsMock } from './findingsMock';
 import { createTakeReviewScanMock } from './takeReviewMock';
 import { createTakeComparisonMock } from './takeComparisonMock';
 import { createMeasureMock } from './measureMock';
+import { DELIVERY_REVIEW_ANALYZER, mockDeliveryReviewFindings, resavingAfterProfileChange } from './deliveryReviewMock';
 import { createDeliveryProfilesMock } from './deliveryProfilesMock';
 import { createDiagnosticsMock } from './diagnosticsMock';
 import { createEditingMock } from './editingMock';
 import { createCleanupActionMock } from './cleanupActionMock';
+import { createPrepMarkupMock } from './prepMarkupMock';
 import { createMockState, type MockApiSeed } from './mockHost/state';
 import { createUpdateMock } from './mockHost/update';
 import { createProjectMock } from './mockHost/project';
@@ -34,6 +37,7 @@ import { createReaperActionsMock } from './mockHost/reaperActions';
 import { createChapterTracksMock } from './mockHost/chapterTracks';
 import { createStoryBibleMock } from './mockHost/storyBible';
 import { createSystemMock, invalidPayloadOverrides } from './mockHost/system';
+import { createPronunciationLookupMock } from './mockHost/pronunciationLookup';
 
 export { applyMixedManuscriptMock } from './mockHost/manuscript';
 export type { MockUpdateSeed } from './mockHost/update';
@@ -108,6 +112,7 @@ export function createMockApi(
   const preview = createPreviewMock({ chapters: () => s.chapters, paragraphs: () => s.paragraphs }, initial.preview);
   const daw = createDawMock(initial.daw);
   const providers = createProvidersMock(initial.providers);
+  const production = createProductionMock(initial.production);
   const stages = createStagesMock({
     ready: manuscriptReady,
     chapters: () => s.chapters.map(withMeasurement),
@@ -144,7 +149,7 @@ export function createMockApi(
       },
     ];
   };
-  const { saveAnalyzerFindings, saveFinding, ...findings } = createFindingsMock(initial.findings ?? WIRE_FINDINGS, {
+  const { saveAnalyzerFindings, saveFinding, saveFileFindings, ...findings } = createFindingsMock(initial.findings ?? WIRE_FINDINGS, {
     rerunAfterFirstList: initial.findingsRerun,
     reaper: initial.reaper,
     // Only the default seed demonstrates the overlay; a caller supplying its own findings (most tests) opts out, as
@@ -161,7 +166,16 @@ export function createMockApi(
     async (chapterId) => (await findings.findingsList({ analyzer: 'editing', chapterId })).findings,
     initial.cleanupAction,
   );
-  const measurement = createMeasureMock(endJob, initial.measure, measurePicked, deliveryProfile, peekDiagnostics);
+  const prepMarkup = createPrepMarkupMock(
+    manuscriptReady,
+    () => s.chapters,
+    () => s.paragraphs,
+    initial.prepMarkup,
+  );
+  const { resaveReview, ...measurement } = createMeasureMock(endJob, initial.measure, measurePicked, deliveryProfile, peekDiagnostics, (job) => {
+    const review = mockDeliveryReviewFindings(job);
+    saveFileFindings(DELIVERY_REVIEW_ANALYZER, review.files, review.findings);
+  });
   const system = createSystemMock(s, initial, {
     version: update.version,
     project,
@@ -182,7 +196,7 @@ export function createMockApi(
     ...takeReviewScan,
     ...takeComparison,
     ...measurement,
-    ...deliveryProfiles,
+    ...resavingAfterProfileChange(deliveryProfiles, resaveReview),
     ...diagnostics,
     ...editing,
     // Reads the same findings store FindingsReview decides against (apps/desktop/internal/editing/scan.go's
@@ -190,6 +204,7 @@ export function createMockApi(
     // editingCandidateFor in mockFixtures.ts), so Accept/Dismiss/Defer on it go through the real review binding.
     editingCandidates: async (chapterId) => (await findings.findingsList({ analyzer: 'editing', chapterId })).findings,
     ...cleanupAction,
+    ...prepMarkup,
     takeReviewCreateTake: async (request) => ({
       targetItemGuid: request.targetItemGuid,
       newTakeGuid: '{99999999-0000-4000-8000-000000000099}',
@@ -214,6 +229,8 @@ export function createMockApi(
     },
     ...daw,
     ...providers,
+    ...production,
+    ...createPronunciationLookupMock(),
   };
   const api = initial.invalidPayload ? { ...base, ...invalidPayloadOverrides(initial.invalidPayload, base) } : base;
   return { ...api, ...overrides };

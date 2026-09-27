@@ -55,7 +55,7 @@ import (
 // Keep this in lockstep with apps/ui/src/hostApi.ts.  The frontend rejects
 // an older host before bootstrapping so a partial update cannot run against a
 // binding contract it does not understand.
-const hostAPIVersion = 68
+const hostAPIVersion = 73
 
 // Host is the Wails binding boundary. The frontend invokes only this bound
 // object; it never receives a loopback port or an HTTP capability.
@@ -85,6 +85,10 @@ type Host struct {
 	manuscript                *manuscript.Service
 	sidecars                  *process.Supervisor
 	settings                  *settings.Store
+	// resumeFollowCancel stops the resume prompt's REAPER poll (resumefollow.go, read-aloud-resume-from-daw.prd.md Phase 5):
+	// nil when none runs.
+	// +checklocks:mu
+	resumeFollowCancel context.CancelFunc
 	// assets is the registry of everything that can be downloaded (assetregistry.go). It is set once, in Startup, and never replaced: a project
 	// switch does not touch it, so it is read with registry() and needs no snapshot.
 	// +checklocks:mu
@@ -170,7 +174,10 @@ type Host struct {
 	// deliveryProfiles is the narrator's custom delivery profiles and their Global default (delivery-platform-profiles.prd.md,
 	// ADR 0179): user-level like creditTemplates, set once in NewHost and never swapped by a project switch.
 	deliveryProfiles *deliveryprofile.Store
-	log              *hostlog.Log
+	// deliveryFindingsMu keeps one save of the delivery review findings at a time (delivery_findings.go), so a profile
+	// change and a measurement ending together cannot leave the findings of the profile that lost the race.
+	deliveryFindingsMu sync.Mutex
+	log                *hostlog.Log
 	// runLog is the structured, leveled run log (docs/prds/tool-run-logging.prd.md, ADR 0251): every host job and
 	// sidecar launch wraps itself in runLog.Begin/Run.End (phase 3); set once in NewHost and never swapped.
 	runLog *runlog.Logger
@@ -609,7 +616,9 @@ func (h *Host) configureLocked(next config) {
 	if teleprompterDir == "" {
 		teleprompterDir = filepath.Join(os.TempDir(), "narration-utils")
 	}
-	h.teleprompter = teleprompter.New(teleprompter.Config{Project: h.config.projectFolder, SessionDir: teleprompterDir, Python: h.config.teleprompterPython, Backend: h.config.teleprompterBackend, Platform: h.platform}, h.sidecars, h.emitTeleprompterEvent, h.emitTeleprompterState)
+	// NARRATION_TELEPROMPTER_EVAL=1 is the Phase 8 evaluation aid (teleprompter-engines-and-input-devices PRD):
+	// a developer/evaluation-only opt-in, same pattern as NARRATION_DEBUG (runlog), never a Settings toggle.
+	h.teleprompter = teleprompter.New(teleprompter.Config{Project: h.config.projectFolder, SessionDir: teleprompterDir, Python: h.config.teleprompterPython, Backend: h.config.teleprompterBackend, Platform: h.platform, EvalTiming: os.Getenv("NARRATION_TELEPROMPTER_EVAL") == "1"}, h.sidecars, h.emitTeleprompterEvent, h.emitTeleprompterState)
 	h.teleprompter.SetLog(func(kind, message string) { _ = h.log.Report(kind, message) })
 }
 
@@ -1359,7 +1368,7 @@ var fieldSchemas = map[string][]fieldSchema{
 		{"min_anchor_run", "Shortest match that counts as read", "number", nil},
 		{"background_checks", "Check changed chapters in the background", "bool", nil},
 	},
-	// StageRecommendations (docs/prds/chapter-stage-recommendations.prd.md Phase 6, Q8) chooses which signals must be
+	// StageRecommendations (chapter-stage-recommendations.prd.md Phase 6, Q8, deleted; see docs/architecture/stage-recommendations.md) chooses which signals must be
 	// met for a stage suggestion: one choice field per signal id a provider declares (apps/desktop/bindings_stages.go's
 	// requiredStageSignals reads it), "required" or "ignored", plus the optional master switch. Only the recording
 	// signal exists today (coverage.RecordingSignalID); the editing and proofing signal PRDs add their own keys here

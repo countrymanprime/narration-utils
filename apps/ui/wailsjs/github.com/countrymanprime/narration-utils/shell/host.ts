@@ -14,6 +14,9 @@ import { Call as $Call, CancellablePromise as $CancellablePromise, Create as $Cr
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
 import * as liveflags$0 from "./internal/liveflags/models.js";
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore: Unused imports
+import * as project$0 from "./internal/project/models.js";
 
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
@@ -715,6 +718,32 @@ export function GuidePronounce(id: string, aliasIndex: number | null, source: st
     return $Call.ByID(1577834145, id, aliasIndex, source);
 }
 
+export function GuidePronounceUser(id: string, aliasIndex: number | null, ipa: string): $CancellablePromise<string> {
+    return $Call.ByID(867110926, id, aliasIndex, ipa);
+}
+
+/**
+ * GuidePronunciationQueries lists every name whose pronunciation the author has not confirmed, in reading order (prep-depth P3).
+ */
+export function GuidePronunciationQueries(): $CancellablePromise<string> {
+    return $Call.ByID(2256334941);
+}
+
+/**
+ * GuidePronunciationQueriesCSV is the same list as CSV text for the narrator to send to the author; the UI saves it as a file.
+ */
+export function GuidePronunciationQueriesCSV(): $CancellablePromise<string> {
+    return $Call.ByID(2380759975);
+}
+
+export function GuidePronunciationSetStatus(id: string, aliasIndex: number | null, status: string, note: string | null): $CancellablePromise<string> {
+    return $Call.ByID(3849731891, id, aliasIndex, status, note);
+}
+
+export function GuidePronunciationUseAlternate(id: string, aliasIndex: number | null): $CancellablePromise<string> {
+    return $Call.ByID(661717092, id, aliasIndex);
+}
+
 export function GuideRelate(id: string, otherID: string, label: string): $CancellablePromise<string> {
     return $Call.ByID(761657167, id, otherID, label);
 }
@@ -924,12 +953,60 @@ export function PickupsState(): $CancellablePromise<string> {
 }
 
 /**
+ * PrepMarkupDelete removes one span by its id; a stale span needs nothing else.
+ */
+export function PrepMarkupDelete(chapterID: string, id: string): $CancellablePromise<string> {
+    return $Call.ByID(636931274, chapterID, id);
+}
+
+/**
+ * PrepMarkupList returns a chapter's markup spans, each resolved against the chapter's current text.
+ */
+export function PrepMarkupList(chapterID: string): $CancellablePromise<string> {
+    return $Call.ByID(1627753729, chapterID);
+}
+
+/**
+ * PrepMarkupSave places one span on a line of a chapter: start and end are UTF-16 offsets into the line's text (the
+ * reader's own selection), kind is stress, pause or character_tag, and value is the pause length or the character's name.
+ */
+export function PrepMarkupSave(chapterID: string, paragraphID: string, start: number, end: number, kind: string, value: string): $CancellablePromise<string> {
+    return $Call.ByID(554283720, chapterID, paragraphID, start, end, kind, value);
+}
+
+/**
  * PreviewCandidates reads up to three ranked five-minute preview candidates from the imported manuscript
  * (proofing-preview-suggestion.prd.md Phase 1's preview.Suggest over this file's own adapter). It never runs
  * anything and stores nothing.
  */
 export function PreviewCandidates(): $CancellablePromise<string> {
     return $Call.ByID(2923797608);
+}
+
+/**
+ * ProductionPlan reads this project's deadline, contracted amount and milestones. A project that has set none answers
+ * an empty plan: no deadline, no amount, no milestones.
+ */
+export function ProductionPlan(): $CancellablePromise<string> {
+    return $Call.ByID(564382146);
+}
+
+/**
+ * ProductionSaveMilestones replaces the book's milestones with milestones, in the narrator's order. Each needs a name
+ * and a real date ("YYYY-MM-DD"); a note is optional. A list with any invalid milestone is refused whole and nothing
+ * is written.
+ */
+export function ProductionSaveMilestones(milestones: project$0.Milestone[]): $CancellablePromise<string> {
+    return $Call.ByID(669610547, milestones);
+}
+
+/**
+ * ProductionSetDeadline sets the book's delivery date ("YYYY-MM-DD"; empty clears it) and contracted amount (a number
+ * of zero or more in the narrator's own currency; nil clears it). An invalid date or amount is refused and nothing is
+ * written.
+ */
+export function ProductionSetDeadline(deadline: string, contractedAmount: number | null): $CancellablePromise<string> {
+    return $Call.ByID(3757504551, deadline, contractedAmount);
 }
 
 /**
@@ -1007,6 +1084,18 @@ export function ProjectStateState(): $CancellablePromise<string> {
  */
 export function ProjectSwitch(path: string, name: string): $CancellablePromise<string> {
     return $Call.ByID(633630375, path, name);
+}
+
+/**
+ * PronunciationLookupOpen opens source's fixed lookup-page template for word in the narrator's default browser
+ * (prep-depth.prd.md Phase 2; provider-ports.prd.md Open Question Q5's BrowserLookup role), and nothing else: it
+ * never fetches, scrapes or caches the site itself. source and word cross the Wails boundary, never a URL - the
+ * destination is always built server-side by pronunciationlookup.URL from one of four hardcoded templates, so
+ * nothing UI-supplied can pick an arbitrary destination (mirrors DawCatalogOpenDownloadPage's same trusted-URL
+ * discipline, for the same reason).
+ */
+export function PronunciationLookupOpen(source: string, word: string): $CancellablePromise<string> {
+    return $Call.ByID(1993502409, source, word);
 }
 
 /**
@@ -1255,8 +1344,10 @@ export function TeleprompterDevices(): $CancellablePromise<string> {
 /**
  * TeleprompterLocate finds where to resume reading chapterID from what is already recorded (teleprompter-manuscript-
  * integration PRD Phase 9, ADR 0111): the chapter's track (the matcher's confident track, or trackGUID when the
- * narrator picked one), where its audio ends as of the .rpp's last save (Phase 8), and the last
- * teleprompter.DefaultTailSeconds before that end transcribed and placed in the chapter by the sidecar. model is the
+ * narrator picked one), where on it REAPER is now (the edit cursor on its recorded audio, else the end of that audio,
+ * read-aloud-resume-from-daw PRD Phase 4, ADR 0349) or, when REAPER cannot say, where its audio ends as of the .rpp's
+ * last save (Phase 8), and the last teleprompter.DefaultTailSeconds before that time transcribed and placed in the
+ * chapter by the sidecar. While REAPER records onto the track it answers recording and locates nothing. model is the
  * Whisper model id ("" for the teleprompter's default); like TeleprompterStart it answers asset_required instead of
  * downloading one, but only once there is audio to read. Every other answer carries the prompter's last reading and the
  * reconciled verdict (PRD Phase 3). It only reads: nothing is recorded, moved or linked.
@@ -1319,6 +1410,24 @@ export function TeleprompterPunchPreview(word: number): $CancellablePromise<stri
  */
 export function TeleprompterReaperInput(): $CancellablePromise<string> {
     return $Call.ByID(3054312412);
+}
+
+/**
+ * TeleprompterResumeFollow starts following REAPER for chapterID's resume prompt (read-aloud-resume-from-daw PRD Phase 5,
+ * ADR 0350), replacing any follow already running. trackGUID is the track the prompt's locate read ("" for the chapter's
+ * matched track); like TeleprompterLocate, a picked track must be one of the selected project's. It answers whether it
+ * follows: not with no track to follow or no way to ask REAPER, which is an answer, not an error.
+ */
+export function TeleprompterResumeFollow(chapterID: string, trackGUID: string): $CancellablePromise<string> {
+    return $Call.ByID(1754048677, chapterID, trackGUID);
+}
+
+/**
+ * TeleprompterResumeUnfollow stops following REAPER (the prompt went away, or the dialog closed). It is safe to call
+ * with nothing followed.
+ */
+export function TeleprompterResumeUnfollow(): $CancellablePromise<string> {
+    return $Call.ByID(3143603774);
 }
 
 /**

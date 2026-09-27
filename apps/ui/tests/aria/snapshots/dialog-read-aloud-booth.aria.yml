@@ -5,7 +5,11 @@
 # text", same as dialog-read-aloud-resume.aria.yml, and with no main landmark of its own: the page behind this dialog keeps
 # its own main in the tree - a live region there stays announced while the dialog is open - so FocusShell does not add a
 # second one here), the Rail (the same reading panel, now its own landmark instead of the dialog's aside grid) and Commands
-# (the Booth commands toolbar, Play/Pause Kbd-labelled Space).
+# (the Booth commands toolbar, Play/Pause Kbd-labelled Space). Phase 3 adds the Rail's "Voices in scene" region above the
+# reading panel: the chapter's Story Bible characters as buttons that open their entry, and the "Reference clips coming
+# soon" placeholder. Phase 4 adds a "Room" text label before the chapter title, for a decorative (aria-hidden) room
+# level meter fed by the same mic-level channel as the microphone button's own meter - the label is real text, the
+# meter bar itself carries no role.
 # Not `children: equal` at the root the way the shorter dialogs above are: the chapter text inside is too long to list in
 # full, so this is a partial match - the isolation itself is already covered by the shorter dialogs' own root check.
 - main:
@@ -15,7 +19,7 @@
   - 'heading "Read aloud: Chapter 1 — Down the Rabbit-Hole" [level=2]'
   - button "Close"
   - region "Status":
-    - text: Ready Chapter 1 — Down the Rabbit-Hole
+    - text: Ready Room Chapter 1 — Down the Rabbit-Hole
     - 'button "Microphone: not chosen"': Choose a microphone…
     - text: REAPER · Chapter armed Exit booth
     - img "Esc"
@@ -29,6 +33,14 @@
       - button "Alice"
       - text: /was beginning to get very tired/
   - complementary "Rail":
+    - region "Voices in scene":
+      - heading "Voices in scene" [level=2]
+      - list:
+        - listitem:
+          - 'button "Alice: open in the Story bible"'
+        - listitem:
+          - 'button "White Rabbit: open in the Story bible"'
+      - text: Reference clips coming soon
     - complementary "Reading panel":
       - button "Hide reading panel"
       - tablist "Panel sections":

@@ -31,8 +31,7 @@ repository (read with `gh api repos/countrymanprime/narration-utils/rulesets`, a
   reads only the repository, so it does not flake ([The docs link check](#the-docs-link-check)).
 - **Two settings the workflows rely on are the owner's to change:** "Require actions to be pinned to a full-length commit
   SHA" (off now; `zizmor` already enforces the same rule, and the setting is a backstop to enable after the pinning
-  change has run once with Dependabot) and immutable releases (off, and they stay off: they would break the late macOS
-  and Linux upload and the release-candidate prune, see [#186](https://github.com/countrymanprime/narration-utils/issues/186)).
+  change has run once with Dependabot) and immutable releases (off, and they stay off: they would break the release-candidate prune, see [#186](https://github.com/countrymanprime/narration-utils/issues/186)).
   The owner checklist is in [Tracking work on GitHub](github-workflow.md#owner-checklist-for-the-release-supply-chain-work).
 - **Nothing in CI checks a pull request title.** Conventional Commit messages are enforced by the local commitlint hook (Husky
   `commit-msg`) on the commits you make, but the title of a pull request becomes the squash commit and decides the next version, and
@@ -45,9 +44,9 @@ repository (read with `gh api repos/countrymanprime/narration-utils/rulesets`, a
   with `cancel-in-progress`, so a newer push cancels the run before it, and `cancel-closed-pr.yml` cancels whatever is
   still queued or running when the pull request is merged or closed (a merge starts its own runs on `main`). Runs on
   `main` and the release workflows are never cancelled.
-- macOS and Linux are deliberately
-  not built on pull requests (see [ADR-0027](../adr/0027-windows-gates-and-creates-the-release.md)), so `Build (Windows)`
-  is the only native build a pull request runs.
+- **Windows is the only platform the app is built for** (owner decision D74, [ADR 0412](../adr/0412-windows-is-the-only-supported-platform-for-now.md)). `Build (Windows)` is the only native
+  build, on pull requests and in releases. The Linux runners that run the docs, Lua, UI, Python and lint checks host those
+  checks; they build no Linux app.
 
 The checks a pull request shows, by the name GitHub displays (`ci.yml` calls `_quality.yml` as `quality` and
 `_ui-dist.yml` as `ui-dist`):
@@ -86,7 +85,6 @@ Each file in `.github/workflows`, what starts it, and the checks it shows on a p
 | `ci.yml` (`CI`) | pull request that is not docs- or Markdown-only; manual | `quality / *` and `ui-dist / build` (the reusable `_quality.yml` and `_ui-dist.yml`), `Build (Windows)`, `CI passed` | no ruleset requires it |
 | `prerelease.yml` (`Prerelease`) | push to `main` that is not docs- or Markdown-only; manual | `ui-dist / build`, `version`, `Windows build` (needs `ui-dist` and `version`) and `Windows release` (needs the build); no quality jobs, the pull request's `CI` run is the quality gate ([#544](https://github.com/countrymanprime/narration-utils/issues/544) tracks making it a required one); both run only when `version` found a releasable change. A manual run can tick `cold-freeze` to freeze the sidecars without the [freeze cache](#the-sidecar-freeze-cache) | not a pull request check |
 | `promote-release.yml` | manual, with an RC tag; behind the `production` environment | `promote` | not a pull request check |
-| `build-macos.yml`, `build-linux.yml` | manual, or started by the `Windows release` job | one reusable `_attach-platform.yml` run: `Check the release`, `ui-dist / build`, `Build and attach <platform>` | not a pull request check |
 | `docs.yml` (`Docs`) | every pull request (no path filter), weekly (Monday 07:17 UTC), manual | `Links (offline)` (pull requests and manual) and `Links (online, advisory)` (weekly and manual) ([below](#the-docs-link-check)) | the offline job **fails the run** on a dead repository link; no ruleset requires it (owner-only setting) |
 | `zizmor.yml` | every pull request, push to `main`, manual | `zizmor` | advisory in GitHub terms (not required); a finding at the `regular` persona fails the run |
 | `security.yml` (`Security scan`) | every pull request, push to `main`, weekly (Tuesday 06:41 UTC), manual | `govulncheck`, `osv-scanner (pull request)` (only for a same-repository pull request that is not Dependabot's) or `osv-scanner` (every other trigger) | advisory: neither fails on a finding |
@@ -94,7 +92,7 @@ Each file in `.github/workflows`, what starts it, and the checks it shows on a p
 | `dependency-review.yml` | pull request to `main` | `review` (fails on a high-severity advisory, or on a licence outside the allow-list, that a pull request adds to a **runtime** dependency; needs the dependency graph; [the licence policy](github-workflow.md#the-dependency-licence-allow-list)) | advisory |
 | `labeler.yml` | `pull_request_target` (opened, synchronize, reopened, ready for review) | `label` | not a check that gates anything |
 | `cancel-closed-pr.yml` | `pull_request_target` (closed: merged or closed without merging) | `cancel`: cancels every unfinished run of the pull request's head commit | not a check that gates anything |
-| `pages.yml` (`Pages`) | push to `main` (any change, docs included); a pull request that changes `docs/`, `tools/docs-site/`, the Storybook config, `pyproject.toml`, `uv.lock` or the workflow (`build` only); manual | `build`, `deploy` ([below](#the-pages-workflow)); `deploy` never runs for a pull request | the `build` job is the docs link check for a documentation-only pull request; advisory like the rest |
+| `pages.yml` (`Pages`) | paused (D75): no push trigger; a pull request that changes `docs/`, `tools/docs-site/`, the Storybook config, `pyproject.toml`, `uv.lock` or the workflow (`build` only); manual | `build`, `deploy` ([below](#the-pages-workflow)); `deploy` runs only on a manual start on `main` with `publish` ticked | the `build` job is the docs link check for a documentation-only pull request; advisory like the rest |
 | `sync-labels.yml`, `sync-milestones.yml` | push to `main` that changes `.github/labels.json`, `config/roadmap.json` or `scripts/github/**`, and the workflow file; manual | `sync` | run after a merge, never on a pull request |
 
 The tests of `scripts/github/*.test.mjs` (the label and milestone sync) run in the `repo-scripts` step of `quality / quick-ubuntu`. Nothing runs on a schedule except
@@ -136,12 +134,8 @@ would include them. That is a configuration change with its own review, so it is
 The permission model, so a change can be judged against it:
 
 - Every workflow declares `permissions` at the top, and a job that needs more raises it for that job only. The
-  top-level default is `contents: read` (`zizmor.yml`, `promote-release.yml` and `pages.yml` use `{}`). The one exception is
-  `build-macos.yml` and `build-linux.yml`, whose `contents: write`, `id-token: write`, `attestations: write` and
-  `artifact-metadata: write` are a workflow-level grant because a caller must grant everything the reusable
-  `_attach-platform.yml` holds; only its `attach` job uses them.
-- The `publish` job (`Windows release`) of `prerelease.yml` holds `contents: write` (create the release), `actions: write` (start the
-  optional macOS and Linux builds) and the three attestation permissions (`id-token`, `attestations`,
+  top-level default is `contents: read` (`zizmor.yml`, `promote-release.yml` and `pages.yml` use `{}`).
+- The `publish` job (`Windows release`) of `prerelease.yml` holds `contents: write` (create the release) and the three attestation permissions (`id-token`, `attestations`,
   `artifact-metadata`: write). The `windows-build` job, which runs the third-party build tooling (PyInstaller, Wails, NSIS, pnpm),
   holds only the workflow's `contents: read`; `promote-release.yml`'s one job holds `contents: write` (create the stable tag and
   release) and `attestations: read`, behind the `production` environment.
@@ -201,26 +195,18 @@ uses the squash commit title to calculate the synchronized application version:
 `chore`, and `revert` are patch. Pre-1.0 breaking changes are handled as the
 next minor release. The workflow tags `v<version>-rc`, builds the Windows
 package, and its `publish` job creates the GitHub pre-release with the Windows
-zip and the Windows setup program ([The Windows setup program](#the-windows-setup-program)). The last step starts the optional **Build macOS** and **Build Linux**
-workflows, which build the release tag and attach their asset
-([ADR-0027](../adr/0027-windows-gates-and-creates-the-release.md)). They are
-separate runs, so a failed non-Windows build never delays or reddens the Windows
-release. To retry one, re-run its workflow run, or start **Build macOS** /
-**Build Linux** from the Actions tab with the release tag (for example
-`v0.2.1-rc`); the upload overwrites, and it works for a promoted release too.
-Other workflows can call them with `uses:` and a `tag` input.
+zip and the Windows setup program ([The Windows setup program](#the-windows-setup-program)). No other platform is built or
+attached: the macOS and Linux preview builds were removed by D74 ([ADR 0412](../adr/0412-windows-is-the-only-supported-platform-for-now.md)).
 
-Each platform ships one asset named `narration-utils-<version>-<platform>.<ext>`, with a
-`.sha256` beside it; Windows also ships its setup program and its third-party notices, named and checksummed the same way. Only Windows is required
-(and for Windows all three files are: a build that lost its setup program or its notices is not promotable):
+The one platform, `windows-x64`, ships an asset named `narration-utils-<version>-<platform>.<ext>`, with a
+`.sha256` beside it, and its setup program and its third-party notices, named and checksummed the same way. All three files are
+required: a build that lost its setup program or its notices is not promotable:
 
 | Platform | Asset | Contents |
 | --- | --- | --- |
 | `windows-x64` | `narration-utils-<version>-windows-x64.zip` | `narration-utils.exe` (what the in-app updater downloads) |
 | `windows-x64` | `narration-utils-<version>-windows-x64-setup.exe` | the NSIS setup program (what a narrator runs first; [below](#the-windows-setup-program)) |
 | `windows-x64` | `narration-utils-<version>-THIRD-PARTY-NOTICES.txt` | the licences of everything the program contains, the AGPL text and the source offer ([Third-party notices](#third-party-notices)); **not** inside the zip |
-| `macos-arm64` | `narration-utils-<version>-macos-arm64.zip` | `Narration Utils.app` |
-| `linux-x64` | `narration-utils-<version>-linux-x64.tar.gz` | `narration-utils` binary |
 
 `<version>` is the bare version (`0.2.7`), the same on a candidate (`v0.2.7-rc`) and its promotion (`v0.2.7`), so promote
 re-publishes the files without renaming them, and downloads of different releases can be told apart by name
@@ -237,9 +223,8 @@ named for another version is refused as an unexpected file.
 
 Use **Promote pre-release** with the RC tag when it is ready. Approval on the
 `production` environment gates the job, which then validates main ancestry and
-refuses to continue unless the Windows asset is attached, matches its
-checksum and has build provenance (see [Build provenance](#build-provenance)). A macOS or Linux asset that is missing
-is ignored (that release is Windows-only); one that is attached must be complete, match and be attested. It creates the
+refuses to continue unless every Windows file is attached, matches its
+checksum and has build provenance (see [Build provenance](#build-provenance)). A file that is not one of them stops it. It creates the
 stable tag and GitHub release from the exact same downloaded assets and never
 rebuilds an approved candidate. Release candidates
 published before per-asset checksums (they carry `SHA256SUMS.txt`), ones published before attestations, and ones published before the
@@ -328,7 +313,7 @@ and exits: `0` when every check passed, `1` when one failed, `2` for a bad comma
 
 CI runs it in the `Smoke test the packaged app` step of `.github/actions/build-native`, on `windows-x64` only, after the Wails
 build and before the release asset is packaged, so both `Build (Windows)` in `ci.yml` and the Windows release build of
-`prerelease.yml` fail on a build that cannot start. The macOS and Linux previews are not smoked. There is no path filter to
+`prerelease.yml` fail on a build that cannot start. There is no path filter to
 restrict it to package changes: the build itself runs on every non-docs change, and the check adds a few seconds. The step points
 `LocalAppData` at an empty folder, writes the report to a file (a GUI-subsystem program's standard output can be lost) and shows it
 in the log and the job summary. To run it locally, build as in `README.md`, then
@@ -365,16 +350,12 @@ level 3). The subjects are identified by digest:
 | Platform | Signed by (the workflow the certificate names) | Subjects |
 | --- | --- | --- |
 | Windows | `.github/workflows/prerelease.yml`, the `publish` job | `narration-utils-<version>-windows-x64.zip`, `narration-utils-<version>-windows-x64-setup.exe`, the notices, their `.sha256` files, and `narration-utils.exe` (so the executable can be checked after the zip is extracted, which an in-app update can do) |
-| macOS | `.github/workflows/_attach-platform.yml` (the reusable workflow, not `build-macos.yml`) | the zip and its `.sha256` |
-| Linux | `.github/workflows/_attach-platform.yml` | the archive, its `.sha256`, and `narration-utils` |
 
 - The step runs before anything is published. Windows builds in `windows-build`, which records the SHA-256 of every file
   as a job output; `publish` downloads the files, refuses any that do not match those digests (or that the build did not
-  record), and attests before the prune and `gh release create`, so it attests the bytes that were built; macOS and Linux attest before `gh release upload`. If it fails the job fails and nothing
+  record), and attests before the prune and `gh release create`, so it attests the bytes that were built. If it fails the job fails and nothing
   unattested is published; re-run the workflow to retry.
-- The jobs that attest hold `id-token: write`, `attestations: write` and `artifact-metadata: write`. A workflow that
-  calls `build-macos.yml` or `build-linux.yml` has to grant the same, because a caller must grant what the reusable
-  workflow's job holds.
+- The job that attests holds `id-token: write`, `attestations: write` and `artifact-metadata: write`.
 - Promote does not attest again: it re-publishes the same bytes, and an attestation belongs to a digest, not to a release.
 - Attestations prove which workflow, commit and run produced a file. They do not prove the source is benign, and they do
   not change how Windows SmartScreen or antivirus software treats an unsigned executable. The first stable release is
@@ -406,8 +387,8 @@ gh attestation verify narration-utils-0.2.7-windows-x64-setup.exe --repo country
 ```
 
 Success prints the workflow, commit and run that built the file; a modified or unattested file fails. To insist on the
-release workflow and `main`, add `--signer-workflow countrymanprime/narration-utils/.github/workflows/prerelease.yml --source-ref refs/heads/main`
-(macOS and Linux: `_attach-platform.yml`). `gh attestation download <file> --repo ...` saves the attestation as a
+release workflow and `main`, add `--signer-workflow countrymanprime/narration-utils/.github/workflows/prerelease.yml --source-ref refs/heads/main`.
+`gh attestation download <file> --repo ...` saves the attestation as a
 `.jsonl` bundle that `--bundle <file>` then verifies without asking GitHub for it. The same works for the executable
 inside the zip after extracting it, which is what an in-app update can check. The release notes say the same in one line.
 The `.sha256` beside a file only detects a damaged download: it is not evidence of where the file came from.
@@ -449,7 +430,13 @@ The run **fails, and writes nothing**, rather than guess: when a licence cannot 
 
 ## The Pages workflow
 
-`pages.yml` publishes the public site to GitHub Pages, at `https://countrymanprime.github.io/narration-utils/`, on every push to `main` and on
+**Paused (owner decision D75, 2026-09-27).** The site isn't how the owner wants it yet, so nothing is published until the main
+app's development is done and the site is reworked. `pages.yml` no longer runs on a push to `main`. A pull request still runs `build`
+(the docs link check below), and a manual start builds, and deploys only when its `publish` input is ticked on `main`. Unpublishing
+the site that is already live is an owner-only setting (Settings > Pages); to resume, restore the `push: branches: [main]` trigger and
+the unconditional `deploy`. The rest of this section describes the workflow as it runs when publishing.
+
+`pages.yml` publishes the public site to GitHub Pages, at `https://countrymanprime.github.io/narration-utils/`, on
 demand: the docs at the root ([below](#the-public-docs-site)) and the Storybook component atlas of `apps/ui` under `/storybook/` (PRD phases 9 and 11).
 
 - **Two jobs.** `build` (read-only token) checks out with `persist-credentials: false`, runs the `setup-toolchain` action (pnpm, and
@@ -655,8 +642,8 @@ removed, fails the run.
 
 Pull requests run the quality jobs and the UI bundle build in parallel. The
 Windows native build needs only the UI bundle, so it starts as soon as that
-finishes instead of waiting for lint and tests. macOS and Linux are not built on
-pull requests, and the Go quality job runs on Windows only. pnpm's
+finishes instead of waiting for lint and tests. No other platform is built
+([ADR 0412](../adr/0412-windows-is-the-only-supported-platform-for-now.md)), and the Go quality job runs on Windows only. pnpm's
 content-addressable store, uv's package cache, Go's module/build caches, the
 compiled `wails3` and golangci-lint binaries (keyed on `scripts/toolchain.json`), and
 Playwright's Chromium download (keyed on the Playwright version) are restored by
@@ -664,7 +651,8 @@ the workflows; they never cache `node_modules`, `.venv`, test results or release
 cached is the [sidecar freeze](#the-sidecar-freeze-cache).
 `setup-node`, `setup-python`, and `setup-go` provision the exact pinned Node,
 Python, and Go versions. The Wails v3 CLI, `wails3` v3.0.0-beta.25 (built with `CGO_ENABLED=0`, [ADR 0200](../adr/0200-the-desktop-shell-runs-on-wails-v3-beta-pinned-at-v3-0-0-beta-25.md)), is installed only in jobs that run a
-native build, and on Linux `setup-toolchain` installs GTK 4 and WebKitGTK 6.0, which Wails v3 links through cgo, golangci-lint v2.13.2 (built with the pinned Go, config in `apps/desktop/.golangci.yml`) only in the Go quality job, and the standalone
+native build, and on Linux `setup-toolchain` installs GTK 4 and WebKitGTK 6.0, which Wails v3 links through cgo, only for CodeQL's Go
+compile (a Linux host for analysis, not a Linux build; [ADR 0413](../adr/0413-what-stays-of-the-other-platforms-when-windows-is-the-only-one.md)), golangci-lint v2.13.2 (built with the pinned Go, config in `apps/desktop/.golangci.yml`) only in the Go quality job, and the standalone
 StyLua v2.1.0 binary where needed, as declared in `scripts/toolchain.json`; none
 of them use Cargo. Lua 5.4 for the REAPER harness is the `lupa` wheel in the `lua` dependency group of `pyproject.toml` (hashed in `uv.lock`); the Lua job installs only that group. Platform-specific sidecars must be built on their target OS,
 so the built UI bundle is shared between jobs as a one-day artifact rather than
@@ -695,6 +683,50 @@ of the tool cache would hold the link, not Go.
 was created, how long it ran and on which runner, as a Markdown table (with `--steps`, every step too). It reads the
 Actions API through `gh`. Queueing shows up as a large "Started after": the repository is public on the free plan, 20
 hosted jobs at once across the account.
+
+### Success Metrics: measured (2026-09-27)
+
+The CI pipeline speed PRD's Phases 1-6 shipped Split 1 (build beside quality, later superseded by the Prerelease
+dropping quality entirely), the sidecar freeze cache (Phase 2), one load per state in the visual suite and per story in
+the atlas (Phases 3, 4), and sharding plus the folded quick jobs ([ADR 0244](../adr/0244-the-playwright-suites-are-sharded-in-ci-the-quick-checks-share-a-runner-per-os-and-one-check-sums-up-the-run.md)).
+This is what a sample taken against the PRD's Success Metrics table shows once that work was steady state, and why the
+sample is not the "median of 5 idle runs" the PRD asked for:
+
+| Metric | Original baseline | Target | Measured (2026-09-27) | Met? |
+| --- | --- | --- | --- | --- |
+| Prerelease push to release published | 13 m 33 s | ≤ 8 min | median 6 m 20 s, p90 8 m 35 s (n=30 successful runs) | Met |
+| CI pull request to all green (UI affected) | ~9 min | ≤ 5 min | median 7 min, p90 10 m 40 s (n=4 successful runs) | Missed, low confidence (see below) |
+| `quality / ui-visual` job | 7 m 17 s | ≤ 4 min | pooled across 3 shards: median 4 m 50 s, p90 5 m 55 s (n=12 shard-jobs) | Not comparable: ADR 0244 sharded this job after the PRD's own Phase 3 left the unsharded job at 9.4 min (D5), which is why sharding exists |
+| `quality / ui-atlas` job | 6 m 45 s | ≤ 4 min | pooled across 2 shards: median 3 m 45 s, p90 5 m 15 s (n=8 shard-jobs) | Not comparable, same reason (2 shards vs. the PRD's 1-job baseline) |
+| Windows `build-native` with sidecar cache hit | 5 m 29 s | ≤ 3 min | CI `Build (Windows)`: median 4 m 30 s, p90 5 m 10 s; Prerelease `Windows build`: median 4 m 35 s, p90 4 m 45 s (n=8 each) | Missed. Job-level data cannot distinguish a cache hit from a cold freeze; the PRD's own Phase 2 status was "cold vs. hit comparison pending" |
+| Job slots per CI run / Prerelease run | 13 / 14 | 9 / 10 | CI: 12-13 (ADR 0244 accepted this trade-off deliberately: sharding costs slots to cut wall clock). Prerelease: 4 (`version`, `ui-dist`, `Windows build`, `Windows release` - quality jobs were dropped entirely, past what Phase 6 targeted) | CI: missed by design; Prerelease: exceeded |
+| Checks run | all | all, none dropped | not independently re-verified in this pass | Not measured |
+
+Run ids: CI wall-clock (n=4) 36327001255, 36132192971, 36130938887, 36126949380; Prerelease wall-clock (n=30, newest
+first) 36336010157, 36334152008, 36333183333, 36332358483, 36330499985, 36329512557, 36327664731, 36327340259,
+36325122026, 36320611880, 36319891903, 36319888903, 36317914542, 36315647197, 36314204342, 36311712319, 36310145678,
+36308505709, 36306958367, 36303030660, 36300804779, 36300012458, 36297884195, 36297169767, 36296453169, 36295715739,
+36295710848, 36294992123, 36294240949, 36293526312; job-level CI sample 36330505268, 36328472614, 36324046880,
+36312832842, 36135758643, 36130938887, 36126937410, 36126466740; job-level Prerelease sample 36336010157, 36329512557,
+36319891903, 36311712319, 36300804779, 36295715739, 36292800723, 36286847724.
+
+**This sample is congested, not idle.** Issue [#509](https://github.com/countrymanprime/narration-utils/issues/509)
+(train control) shows 10 of 10 agent-train lanes running throughout the sampled window (2026-09-25 to 2026-09-27), so
+roughly ten parallel agent-authored pull requests were contending for the free plan's 20 concurrent hosted job slots,
+and each CI run alone now costs 12 to 13 of them. Pooled job start offset (a job's `started_at` minus its run's
+`created_at`) across the sampled runs has a median of 78 s and a p90 of 546 s (max 24 min), against the PRD's own idle
+baseline of about 3 s; the p90 sits inside the PRD's own "congested" band (138 s to 1966 s). Of the 40 most recent
+`ci.yml` pull-request runs, only 4 (10%) completed successfully - 24 failed and 12 were cancelled, which is why the "CI
+pull request to all green" row above is a 4-run sample: the same churn that inflates queueing also means most runs
+never finish, from a mix of rapid pushes cancelling their own prior runs and real flakiness under contention. None of
+this is evidence the Phase 1-6 work regressed; it is evidence that today is a poor day to take an idle-runner sample.
+A repeat of this measurement once the agent train's lane count drops (or `HOLD`s) would be a truer read.
+
+**What is still open:** the Windows build and the two Playwright suites (compared on their own pre-sharding baselines)
+remain above their per-job targets. The PRD's Open Question 3 ("is a paid 8-core runner acceptable if Phases 3-5 miss
+the target") applies, and Open Question 2 (a GitHub merge queue) is unanswered; neither carried a stated
+recommendation, so both are left for the owner rather than decided here (see
+[#510](https://github.com/countrymanprime/narration-utils/issues/510)).
 
 ## Runtime provenance
 

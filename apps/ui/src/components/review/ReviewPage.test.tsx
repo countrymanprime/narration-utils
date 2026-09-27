@@ -22,6 +22,7 @@ function renderPage({
   const api = createMockApi(overrides, initial);
   const goToManuscript = vi.fn();
   const goToStoryBible = vi.fn();
+  const goToDelivery = vi.fn();
   const notify = vi.fn();
   render(
     <ApiProvider api={api}>
@@ -32,11 +33,12 @@ function renderPage({
           goToManuscript={goToManuscript}
           goToStoryBible={goToStoryBible}
           goToWorkspace={goToWorkspace}
+          goToDelivery={goToDelivery}
         />
       </TooltipProvider>
     </ApiProvider>,
   );
-  return { api, goToManuscript, goToStoryBible, notify };
+  return { api, goToManuscript, goToStoryBible, goToDelivery, notify };
 }
 
 const rows = async () => {
@@ -424,5 +426,53 @@ describe('ReviewPage adds an approved marker in REAPER', () => {
     await user.click(addMarker());
     await user.click(within(await screen.findByRole('alertdialog')).getByRole('button', { name: 'Add marker' }));
     expect((await inReaper().findByRole('alert')).textContent).toContain('so no marker was added');
+  });
+
+  it('lists a delivery finding by its file and rule, and opens the Delivery page on them instead of the manuscript', async () => {
+    const user = userEvent.setup();
+    const delivery: Finding = {
+      schema_version: 1,
+      id: 'delivery-rms',
+      analyzer: 'measure',
+      project: { path: 'C:/Projects/Alice' },
+      source: { file: 'C:/Projects/Alice/renders/Chapter 01.wav' },
+      category: 'delivery_qc',
+      severity: 'error',
+      confidence: 1,
+      confidence_reason: 'deterministic measurement of the decoded samples',
+      evidence: {
+        rule: 'acx.rms',
+        rule_label: 'RMS',
+        metric: 'rms_dbfs',
+        unit: 'dBFS',
+        profile: 'acx@2026-09',
+        profile_name: 'ACX (September 2026)',
+        value: -24.1,
+        violation: 'below_min',
+        limit_min: -23,
+        limit_max: -18,
+        requirement: 'Each file measures between -23 dB and -18 dB RMS.',
+      },
+      evidence_version: 'sha256:1',
+      review: { status: 'unreviewed' },
+    };
+    const { api, goToDelivery, goToManuscript } = renderPage({ initial: { findings: [...WIRE_FINDINGS, delivery] } });
+    const row = (await rows()).find((candidate) => candidate.textContent?.includes('RMS −24.1 dBFS, below the minimum of −23'));
+    expect(row?.textContent).toContain('Chapter 01.wav');
+    expect(row?.textContent).toContain('Delivery check');
+    await openFinding(user, /RMS −24\.1 dBFS/);
+
+    const detail = await screen.findByRole('region', { name: 'Delivery check' });
+    expect(within(detail).getByText('File')).toBeTruthy();
+    expect(within(detail).getByText('Each file measures between -23 dB and -18 dB RMS.')).toBeTruthy();
+    expect(within(detail).queryByRole('button', { name: 'Show in manuscript' })).toBeNull();
+    await user.click(within(detail).getByRole('button', { name: 'Open in Delivery' }));
+    expect(goToDelivery).toHaveBeenCalledWith('C:/Projects/Alice/renders/Chapter 01.wav', 'acx.rms');
+    expect(goToManuscript).not.toHaveBeenCalled();
+
+    // Dismissed like any other finding, against the evidence version it was shown with.
+    await user.click(within(detail).getByRole('button', { name: 'Dismiss' }));
+    expect(await within(detail).findByText('Saved as dismissed.')).toBeTruthy();
+    expect((await api.findingsGet('delivery-rms')).review.status).toBe('dismissed');
   });
 });

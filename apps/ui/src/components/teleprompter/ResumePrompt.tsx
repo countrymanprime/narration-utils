@@ -3,6 +3,7 @@ import type { IconDefinition } from '@fortawesome/fontawesome-svg-core';
 import { faArrowRightArrowLeft, faCircleCheck, faCircleNotch, faClockRotateLeft, faLocationCrosshairs } from '@fortawesome/free-solid-svg-icons';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
+import { useApi } from '../../api/ApiContext';
 import { Button } from '../primitives/Button';
 import { useResumeLocate, type LocateState } from './useResumeLocate';
 import { WhisperModelPrompt } from './WhisperModelPrompt';
@@ -93,6 +94,13 @@ function savedLabel(savedAt: string): string {
   return when ? `as of the project's last save, ${when}` : "as of the project's last save";
 }
 
+const LIVE_LABEL = 'in REAPER now';
+
+/** When the track was read (read-aloud-resume-from-daw.prd.md Phase 4, ADR 0349): REAPER's live answer, or the saved project. */
+function dawLabel(result: Located): string {
+  return result.dawSource === 'live' ? LIVE_LABEL : savedLabel(result.match.savedAt);
+}
+
 /** One source's quote (read-aloud-resume-from-daw.prd.md Phase 3): the full sentence holding its word, with that word in
  * bold, matching `ResumeSentence`'s emphasis but inline rather than in a blockquote (the agreement notice, the disagree
  * choice and the prompter-only notice all quote inline). */
@@ -179,7 +187,7 @@ function DisagreeChoice({
   lastReading: TeleprompterReading | null;
   onChoose: (word: number | null, label?: string) => void;
 }) {
-  const dawWhen = daw.source === 'saved' ? savedLabel(match.savedAt) : 'in REAPER now';
+  const dawWhen = daw.source === 'live' ? LIVE_LABEL : savedLabel(match.savedAt);
   const prompterWhen = (lastReading && formatWhen(lastReading.endedAt)) || '';
   const pick = (place: TeleprompterResumePlace) => onChoose(place.word, place.sentence ? chipLabel(place.sentence, place.word) : undefined);
   const card = (label: string, when: string, place: TeleprompterResumePlace) => (
@@ -261,8 +269,12 @@ function TrackProblem({ match, trackName }: { match: ChapterTrackMatch; trackNam
 function Actions({ children, buttons }: { children: ReactNode; buttons: ReactNode }) {
   return (
     <>
-      <div className="min-w-0 flex-1 space-y-1.5">{children}</div>
-      <div className="flex flex-none flex-wrap items-center gap-2">{buttons}</div>
+      {/* A floor on the text's width, so a column too narrow for text and buttons side by side puts the buttons below the
+          text rather than squeezing the text to a word per line. */}
+      <div className="min-w-[min(100%,16rem)] flex-1 space-y-1.5">{children}</div>
+      {/* Shrinks to its line (never wider than it) so the buttons wrap inside a narrow column - the companion panel's 380 px
+          (booth-mode-and-companion-panel.prd.md Phase 7) - instead of running off its edge. */}
+      <div className="flex max-w-full min-w-0 flex-wrap items-center gap-2">{buttons}</div>
     </>
   );
 }
@@ -406,12 +418,14 @@ function LocatedBody({ result, onChoose }: { result: Located; onChoose: (word: n
         }
       >
         <p style={MUTED}>
-          {trackName} track · {savedLabel(match.savedAt)}
+          {trackName} track · {dawLabel(result)}
         </p>
         <TrackProblem match={match} trackName={trackName} />
         <p>
           {located.confident
-            ? 'Continuing where your recording ends:'
+            ? result.dawAt === 'cursor'
+              ? "Continuing at REAPER's edit cursor:"
+              : 'Continuing where your recording ends:'
             : `This is a guess: the end of your recording could also fit elsewhere in the chapter (${Math.round(located.confidence * 100)}% sure). Check the sentence before resuming:`}
         </p>
         {point.sentence && <ResumeSentence sentence={point.sentence} word={point.word} />}
@@ -429,7 +443,7 @@ function LocatedBody({ result, onChoose }: { result: Located; onChoose: (word: n
       }
     >
       <p style={MUTED}>
-        {trackName} track · {savedLabel(match.savedAt)}
+        {trackName} track · {dawLabel(result)}
       </p>
       <TrackProblem match={match} trackName={trackName} />
       <p>{unreadableText(result)}</p>
@@ -447,6 +461,8 @@ function unreadableText(result: Located): string {
     }
     case 'no_recording':
       return `This track has no recorded audio yet, so ${FROM_THE_TOP}`;
+    case 'recording':
+      return `REAPER is recording on this track now, so ${FROM_THE_TOP}`;
     case 'source_missing':
       return `The last item's audio file is missing (${file}), so where you stopped cannot be found and ${FROM_THE_TOP}`;
     case 'source_unsupported':
@@ -468,16 +484,52 @@ function unreadableText(result: Located): string {
  * remounts this component and asks again.
  */
 export function ResumePrompt({ chapterId, model, active, onStartWord }: Props) {
+  const api = useApi();
   const lookup = useResumeLocate(chapterId, model);
   const [settled, setSettled] = useState(false);
   useEffect(() => {
     if (active) setSettled(true);
   }, [active]);
+  const shown = !settled && !active;
+  const preset = useRef(false);
+
+  // REAPER starting to play or record makes the prompt go away (read-aloud-resume-from-daw.prd.md Phase 5, RD7, ADR 0350):
+  // the narrator is working in REAPER. The heartbeat's transport push (ADR 0305) says so within a tick, with no request;
+  // the host's follow below says so too when that push is not there (an older bridge script). Nothing is chosen, so Start
+  // reading keeps whatever it had.
+  useEffect(() => {
+    if (!shown) return;
+    return api.subscribeDawTransport((transport) => {
+      if (transport.playing || transport.recording) setSettled(true);
+    });
+  }, [api, shown]);
+
+  // While the prompt shows for a track, the host follows REAPER (a bounded poll, never during a session) and says when it
+  // plays or records, or when its edit cursor settles on the recording (RD6): then the prompt looks again, and may preset
+  // Start again. Unfollowed the moment the prompt goes away, a session starts, or the dialog closes.
+  const followTrack = lookup.state.kind === 'answered' && lookup.state.result.status !== 'asset_required' ? (lookup.state.result.track?.guid ?? null) : null;
+  const { retry } = lookup;
+  useEffect(() => {
+    if (!shown || !followTrack) return;
+    const unsubscribe = api.subscribeTeleprompterResumeFollow((event) => {
+      if (event.chapterId !== chapterId) return;
+      if (event.reason !== 'cursor_moved') {
+        setSettled(true);
+        return;
+      }
+      preset.current = false;
+      retry();
+    });
+    void api.teleprompterResumeFollow(chapterId, followTrack).catch(() => undefined);
+    return () => {
+      unsubscribe();
+      void api.teleprompterResumeUnfollow().catch(() => undefined);
+    };
+  }, [api, chapterId, followTrack, retry, shown]);
 
   // Agreement presets Start without settling the notice (RD3, RD4): the narrator sees why and can still Change or Start
   // from the top. Only once per dialog open (this component's own lifetime), so it never fights a later Change or a
-  // narrator's own pick with a repeat preset.
-  const preset = useRef(false);
+  // narrator's own pick with a repeat preset. A cursor move REAPER reports re-opens it (Phase 5).
   useEffect(() => {
     if (lookup.state.kind !== 'answered') return;
     const { result } = lookup.state;

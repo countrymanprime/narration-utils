@@ -58,6 +58,7 @@ export const measureReportSchema = z.object({
   clip_run_count: z.number(),
   clip_runs: listFromNull(measureClipRunSchema),
   mp3: measureMP3Schema.optional(),
+  mp3_levels_decoded: z.boolean().optional(),
   range: measureRangeSchema.optional(),
 }) satisfies z.ZodType<MeasureReport>;
 
@@ -97,7 +98,7 @@ export const measurePickResultSchema = z.object({ paths: listFromNull(z.string()
 
 /**
  * The evidence of the host's delivery_qc finding (deliveryprofile.EvaluateFile, ADR 0179): the rule and profile, the metric,
- * and how and against which bound it missed.
+ * and how and against which bound it missed; on the Review page also what the rule is (below).
  */
 export const deliveryQcEvidenceSchema = z.object({
   metric: z.string(),
@@ -110,6 +111,12 @@ export const deliveryQcEvidenceSchema = z.object({
   allowed: z.array(z.number()).optional(),
   available: z.boolean().optional(),
   advice: z.string().optional(),
+  // Added when the finding is saved for the Review page (deliveryprofile.ReviewFindings, delivery-platform-profiles.prd.md
+  // Phase 9), which has no profile to look the rule up in: its label, the requirement it enforces, the profile's title, the unit.
+  rule_label: z.string().optional(),
+  requirement: z.string().optional(),
+  profile_name: z.string().optional(),
+  unit: z.string().optional(),
 });
 
 export const deliveryReportExportSchema = z.object({
