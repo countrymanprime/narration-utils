@@ -44,6 +44,7 @@ import { COVERAGE_EVALUATOR_REASONS, COVERAGE_REFUSAL_REASONS, coverageResultSch
 import { workspaceAlignmentResultSchema } from './schemas/workspace';
 import { previewResultSchema } from './schemas/preview';
 import { STAGE_REFUSAL_REASONS, STAGE_UNKNOWN_CAUSES, stageDecisionResultSchema, stageRecommendationsSchema } from './schemas/stages';
+import { productionOverviewSchema, productionStartResultSchema, productionStopResultSchema } from './schemas/production';
 import { findingMarkerSchema, findingNavigationSchema, findingSchema, findingsPageSchema, findingsSummarySchema, reaperStatusSchema } from './schemas/findings';
 import { tracksDiscoverySchema, tracksProjectSchema } from './schemas/tracks';
 import {
@@ -1863,6 +1864,9 @@ describe('answers of the mock client for the settings, voice, model, transcript 
       'stageConfirm',
       'stageDismiss',
       'stageRevert',
+      'productionOverview',
+      'productionStartTimer',
+      'productionStopTimer',
       'takeComparisonStart',
       'takeComparisonState',
       'takeComparisonCancel',
@@ -2034,5 +2038,39 @@ describe('the credits script the sidecar sends', () => {
     const rows = creditsRows('closing', text, script);
 
     expect(rows.map((row) => [row.key, row.start, row.words?.length])).toEqual(script.spans.map((span) => [span.id, span.start, span.count]));
+  });
+});
+
+describe('the production tracking mock', () => {
+  it('answers every production binding with a payload its schema accepts, with nothing logged before a seed', async () => {
+    const api = createMockApi();
+    const empty = await api.productionOverview();
+    expectMatches(productionOverviewSchema, empty, 'mock production overview, nothing logged');
+    expect(empty.totals).toMatchObject({ hoursLogged: 0, bookPfh: null, effectiveRate: null, contractedAmount: null });
+    expect([empty.deadline, empty.running]).toEqual([null, null]);
+
+    const started = await api.productionStartTimer('chapter-4', 'recording');
+    expectMatches(productionStartResultSchema, started, 'mock production timer started');
+    expect(started.status).toBe('started');
+    const refused = await api.productionStartTimer('chapter-5', 'recording');
+    expectMatches(productionStartResultSchema, refused, 'mock production timer refused');
+    expect(refused).toMatchObject({ status: 'refused', reason: 'timer_running' });
+    expect((await api.productionOverview()).running?.chapterId).toBe('chapter-4');
+    expectMatches(productionStopResultSchema, await api.productionStopTimer(), 'mock production timer stopped');
+    expectMatches(productionStopResultSchema, await api.productionStopTimer(), 'mock production timer, nothing to stop');
+    await expect(api.productionStartTimer('chapter-99', 'recording')).rejects.toThrow(/no chapter/);
+  });
+
+  it.each(['on-pace', 'at-risk'] as const)('seeds a %s book whose figures come from its log and measured audio only', async (seed) => {
+    const overview = await createMockApi({}, { production: seed }).productionOverview();
+    expectMatches(productionOverviewSchema, overview, `mock production overview, ${seed}`);
+    expect(overview.deadline).not.toBeNull();
+    const { totals } = overview;
+    expect(totals.bookPfh).toBeCloseTo(totals.hoursLogged / (totals.recordedSeconds / 3600));
+    expect(totals.effectiveRate).toBeCloseTo((totals.contractedAmount ?? 0) / totals.hoursLogged);
+    // An unmeasured chapter has no PFH, whatever was logged on it.
+    for (const chapter of overview.chapters.filter((row) => row.recordedSeconds === null)) expect(chapter.pfh).toBeNull();
+    expect(overview.nextUp.length).toBeGreaterThan(0);
+    expect(overview.nextUp.every((item) => item.stage !== 'finalized')).toBe(true);
   });
 });

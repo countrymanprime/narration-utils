@@ -32,7 +32,9 @@ func nextUpIDs(overview Overview) []string {
 // ready to move on, then the ones not started in book order. Finalized chapters and non-narration content never show.
 func TestNextUpOrdersChaptersByTheRiskTheyPutOnTheDeadline(t *testing.T) {
 	credits := chapter("credits", stages.StageRecording, stages.VerdictNotReady)
-	credits.ContentKind = "front_matter"
+	credits.ContentKind = "opening"
+	legacy := chapter("legacy", stages.StageRecording, stages.VerdictNotReady)
+	legacy.ContentKind = ""
 	chapters := []ChapterInput{
 		chapter("c1", stages.StageFinalized, stages.VerdictNone),
 		chapter("c2", stages.StageProofing, stages.VerdictRecommended),
@@ -43,9 +45,10 @@ func TestNextUpOrdersChaptersByTheRiskTheyPutOnTheDeadline(t *testing.T) {
 		chapter("c7", stages.StageNotStarted, ""),
 		chapter("c8", stages.StageNotStarted, ""),
 		credits,
+		legacy,
 	}
 	got := nextUpIDs(BuildOverview(OverviewInput{Chapters: chapters, Now: nineAM}))
-	want := []string{"c6", "c3", "c5", "c4", "c2"}
+	want := []string{"c6", "legacy", "c3", "c5", "c4"}
 	if !slices.Equal(got, want) {
 		t.Fatalf("next up = %v, want %v", got, want)
 	}

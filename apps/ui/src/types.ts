@@ -63,6 +63,7 @@ import type { RetakeLanesApi } from './api/contracts/retakelanes';
 import type { ChapterTagsApi } from './api/contracts/chaptertags';
 import type { CoverageApi } from './api/contracts/coverage';
 import type { StagesApi } from './api/contracts/stages';
+import type { ProductionApi } from './api/contracts/production';
 import type { DictionaryApi } from './api/contracts/dictionary';
 import type { MeasureApi } from './api/contracts/measure';
 import type { DeliveryProfilesApi } from './api/contracts/deliveryProfiles';
@@ -102,6 +103,7 @@ export interface NarrationApi
     TakeReviewApi,
     CoverageApi,
     StagesApi,
+    ProductionApi,
     DictionaryApi,
     FindingsApi,
     MeasureApi,

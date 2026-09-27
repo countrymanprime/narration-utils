@@ -173,7 +173,9 @@ func nextUp(chapters []ChapterInput) []NextUpItem {
 	}
 	var candidates []ranked
 	for order, chapter := range chapters {
-		if chapter.ContentKind != "narration" || chapter.Status == stages.StageFinalized {
+		// A manuscript imported before structural classification has no kind: every chapter of it is narration, as
+		// the manuscript package reads it.
+		if (chapter.ContentKind != "" && chapter.ContentKind != "narration") || chapter.Status == stages.StageFinalized {
 			continue
 		}
 		stage, known := stageOrder[chapter.Status]

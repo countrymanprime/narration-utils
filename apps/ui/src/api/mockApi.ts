@@ -12,6 +12,7 @@ import { createCoverageMock } from './coverageMock';
 import { createWorkspaceMock } from './workspaceMock';
 import { createPreviewMock } from './previewMock';
 import { createStagesMock } from './stagesMock';
+import { createProductionMock } from './productionMock';
 import { createDawMock } from './dawMock';
 import { createProvidersMock } from './providersMock';
 import { createFindingsMock } from './findingsMock';
@@ -109,6 +110,11 @@ export function createMockApi(
     },
     seed: initial.stages,
   });
+  const production = createProductionMock({
+    chapters: manuscript.bindings.manuscriptChapters,
+    recommendations: stages.stageRecommendations,
+    seed: initial.production,
+  });
   const { saveAnalyzerFindings, saveFinding, ...findings } = createFindingsMock(initial.findings ?? WIRE_FINDINGS, {
     rerunAfterFirstList: initial.findingsRerun,
     reaper: initial.reaper,
@@ -162,6 +168,7 @@ export function createMockApi(
     ...workspace,
     ...preview,
     ...stages,
+    ...production,
     ...findings,
     ...daw,
     ...providers,

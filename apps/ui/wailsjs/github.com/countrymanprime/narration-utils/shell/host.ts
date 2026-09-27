@@ -233,6 +233,22 @@ export function CleanupToolsState(): $CancellablePromise<string> {
 }
 
 /**
+ * CompanionModeEnter narrows the app's one window to the companion width and pins it always-on-top, saving its prior
+ * size and position so CompanionModeExit can restore them. It never opens a second window (ADR 0401).
+ */
+export function CompanionModeEnter(): $CancellablePromise<void> {
+    return $Call.ByID(3310293519);
+}
+
+/**
+ * CompanionModeExit restores the window's size, position and always-on-top state to what they were before
+ * CompanionModeEnter: the "Full app" action and the double-Escape rule (Open Question 5) both call this.
+ */
+export function CompanionModeExit(): $CancellablePromise<void> {
+    return $Call.ByID(3684763819);
+}
+
+/**
  * CoverageCancel asks a running check to stop; the items it finished stay cached. With nothing running it does nothing.
  */
 export function CoverageCancel(): $CancellablePromise<string> {
@@ -917,6 +933,30 @@ export function PreviewCandidates(): $CancellablePromise<string> {
 }
 
 /**
+ * ProductionOverview is the Production page's board, KPI figures and "Next up" list.
+ */
+export function ProductionOverview(): $CancellablePromise<string> {
+    return $Call.ByID(1544329002);
+}
+
+/**
+ * ProductionStartTimer starts a timer on chapterID's stage. It answers {status: "started", session}, or
+ * {status: "refused", reason: "timer_running", message} while another timer runs; any other failure is a rejected
+ * promise.
+ */
+export function ProductionStartTimer(chapterID: string, stage: string): $CancellablePromise<string> {
+    return $Call.ByID(4160847620, chapterID, stage);
+}
+
+/**
+ * ProductionStopTimer stops the running timer. It answers {stopped: true, session} with the session it logged, or
+ * {stopped: false, session: null} when no timer was running.
+ */
+export function ProductionStopTimer(): $CancellablePromise<string> {
+    return $Call.ByID(2890834866);
+}
+
+/**
  * ProjectCreateIn makes a new project.json-manifested folder named name under
  * parent (the PRD's "Visual Studio model": a name plus a location) and
  * attaches it, replacing the old full-path ProjectCreate (PRD W9). An empty
@@ -1001,10 +1041,6 @@ export function ProviderCapabilities(): $CancellablePromise<string> {
     return $Call.ByID(74377393);
 }
 
-/**
- * ReadAloudArmOnly arms chapterID's linked track and disarms every other one (Q7 A's "Arm Chapter N only"), refusing
- * while REAPER records. It changes nothing in the reading session.
- */
 export function ReadAloudArmOnly(chapterID: string): $CancellablePromise<string> {
     return $Call.ByID(4236043623, chapterID);
 }
@@ -1019,20 +1055,10 @@ export function ReadAloudReaperState(chapterID: string): $CancellablePromise<str
     return $Call.ByID(1177651655, chapterID);
 }
 
-/**
- * ReadAloudRecordStart asks REAPER to record on chapterID's linked track, which must already be the one armed track
- * (arm it first with ReadAloudArmOnly), and waits up to readAloudRecordStartTimeout for REAPER to confirm. Sent only
- * from Play with the Record in REAPER toggle on (ReadingControlBar.tsx); TeleprompterStart follows only once this
- * answers "started".
- */
 export function ReadAloudRecordStart(chapterID: string): $CancellablePromise<string> {
     return $Call.ByID(1614763488, chapterID);
 }
 
-/**
- * ReadAloudRecordStop stops the recording this app started (Stop, or the dialog closing while reading and recording),
- * and puts the narrator's own arms back. A recording this app did not start is left alone (ErrNotOurRecording).
- */
 export function ReadAloudRecordStop(): $CancellablePromise<string> {
     return $Call.ByID(3415830820);
 }
@@ -1304,7 +1330,7 @@ export function TeleprompterPunch(word: number): $CancellablePromise<string> {
 /**
  * TeleprompterPunchPreview resolves word's punch time and pre-roll without moving anything in REAPER: what the
  * narrator sees before confirming "Punch from here" (Phase 12's "UI showing resolved time, its source... and pre-roll
- * before moving").
+ * before moving"). word is the flag's own script word index; the chapter is whichever one is live right now.
  */
 export function TeleprompterPunchPreview(word: number): $CancellablePromise<string> {
     return $Call.ByID(3160914767, word);
