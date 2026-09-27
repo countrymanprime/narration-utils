@@ -313,7 +313,7 @@ func (s *Service) Pronounce(id string, aliasIndex *int, source string) error {
 	return err
 }
 
-// The narrator's own pronunciation and a pronunciation's note are free text (prep-depth P1, ADR 0344). The sidecar checks the same
+// The narrator's own pronunciation and a pronunciation's note are free text (prep-depth P1, ADR 0346). The sidecar checks the same
 // limits; the host checks them first so a bad value never starts a process.
 const (
 	maxUserPronunciation = 200
