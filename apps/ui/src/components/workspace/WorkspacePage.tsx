@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { useApi } from '../../api/ApiContext';
+import { apiErrorMessage } from '../../api/errorMessage';
 import { chapterName } from '../../chapterName';
 import { formatWhen } from '../home/recordingCheckText';
 import { RecordingCheck } from '../home/RecordingCheck';
@@ -8,18 +9,19 @@ import { Button } from '../primitives/Button';
 import { Heading } from '../primitives/Heading';
 import { Panel } from '../primitives/Panel';
 import type { Notify } from '../primitives/Toast';
-import type { CoverageState, ManuscriptChapter, TrackItem } from '../../types';
+import type { CoverageState, Finding, FindingReviewStatus, ManuscriptChapter, TrackItem } from '../../types';
 import type { WorkspaceAlignmentResult, WorkspaceToken } from '../../api/contracts/workspace';
 import { CommandScope } from '../../input/router';
 import { useCommand } from '../../input/useCommand';
 import { buildFlags, type Flag } from './flags';
+import { overlayFindings } from './findingFlags';
 import { buildPlaylist } from './playlist';
 import { buildTokenIndex, currentTokenIndex, seekTargetForToken } from './tokenAtTime';
 import { useChapterPlayback } from './useChapterPlayback';
 import { useWorkspaceReaper } from './useWorkspaceReaper';
 import { TransportBar } from './TransportBar';
 import { ScriptView } from './ScriptView';
-import { FlagsPanel } from './FlagsPanel';
+import { FlagsPanel, type FlagDecisionResult } from './FlagsPanel';
 
 /** How long before a clicked word's start the app player starts, so the narrator hears it in context (EP5). */
 const PRE_ROLL_SECONDS = 1;
@@ -35,8 +37,10 @@ const CHECK_STATE_LABEL: Record<WorkspaceAlignmentResult['state'], string> = {
  * (`/tracks/chapter/:chapterId`, EP1 A) that plays the chapter's recorded audio in the app, honouring each item's
  * played range, follows the script with a karaoke highlight and auto-scroll, shows the check's flags inline, and
  * seeks on a click (EP5), and Go to/Loop in REAPER for the word at the playhead (Phase 3, `useWorkspaceReaper`).
- * Reviewing a flag in place, the waveform, takes and effects are later phases (4 to 9) - their controls are not
- * shown here rather than shown disabled with nothing behind them.
+ * The chapter's stored findings are overlaid on the same flags (Phase 4, `overlayFindings`) and reviewed in place -
+ * accept, dismiss, defer, note - through the same `findingsReview` binding the Review page uses, and `?finding=<id>`
+ * (the deep link "Open in workspace" sends) selects the flag that finding backs. The waveform, takes and effects are
+ * later phases (5 to 9) - their controls are not shown here rather than shown disabled with nothing behind them.
  */
 export function WorkspacePage({ notify }: { notify: Notify }) {
   const api = useApi();
@@ -51,6 +55,7 @@ export function WorkspacePage({ notify }: { notify: Notify }) {
   const [coverage, setCoverage] = useState<CoverageState>({ phase: 'idle', percent: 0, message: '' });
   const [checking, setChecking] = useState(false);
   const [selectedFlagIndex, setSelectedFlagIndex] = useState<number>();
+  const [findings, setFindings] = useState<Finding[]>([]);
 
   useEffect(() => api.subscribeCoverage(setCoverage), [api]);
 
@@ -60,6 +65,17 @@ export function WorkspacePage({ notify }: { notify: Notify }) {
       .then(setAlignment)
       .catch((reason: unknown) => setLoadError(String(reason)));
   }, [api, chapterId]);
+
+  // Chapter findings for the text overlay (edit-and-proof-workspace.prd.md Phase 4): read fresh whenever the chapter
+  // changes, or after a decision made here (below) so the flag it backs shows its new status straight away. A
+  // failure here never blocks the page - the check-derived flags (Phase 2) still show with nothing lost.
+  const loadFindings = useCallback(() => {
+    api
+      .findingsList({ chapterId })
+      .then((page) => setFindings(page.findings))
+      .catch(() => undefined);
+  }, [api, chapterId]);
+  useEffect(loadFindings, [loadFindings]);
 
   useEffect(() => {
     let active = true;
@@ -86,7 +102,11 @@ export function WorkspacePage({ notify }: { notify: Notify }) {
 
   const tokenIndexByItem = useMemo(() => buildTokenIndex(alignment?.tokens ?? []), [alignment?.tokens]);
   const currentToken = currentTokenIndex(tokenIndexByItem, alignment?.items ?? [], player.currentItemGuid, player.currentSourceTime);
-  const flags = useMemo(() => buildFlags(alignment?.tokens ?? [], alignment?.extras ?? []), [alignment?.tokens, alignment?.extras]);
+  const checkFlags = useMemo(() => buildFlags(alignment?.tokens ?? [], alignment?.extras ?? []), [alignment?.tokens, alignment?.extras]);
+  const flags = useMemo(
+    () => overlayFindings(checkFlags, findings, alignment?.items ?? [], alignment?.tokens ?? []),
+    [checkFlags, findings, alignment?.items, alignment?.tokens],
+  );
   const reaper = useWorkspaceReaper(chapterId, currentToken, alignment?.tokens ?? []);
 
   const seekToken = useCallback(
@@ -121,6 +141,24 @@ export function WorkspacePage({ notify }: { notify: Notify }) {
     [flags, alignment, seekToken],
   );
 
+  // ?finding=<id> (Navigation and deep links; "Open in workspace" from Review, Home and the Manuscript, Phase 4):
+  // selects the flag that finding backs and seeks the app player to it, once its flag exists - a finding whose
+  // overlay flag isn't ready yet on the first render (findings and the alignment load separately) is retried on
+  // every render until it is, then forgotten so a later selection by hand is never fought.
+  const appliedFindingLinkRef = useRef(false);
+  useEffect(() => {
+    if (appliedFindingLinkRef.current) return;
+    const findingId = searchParams.get('finding');
+    if (!findingId) {
+      appliedFindingLinkRef.current = true;
+      return;
+    }
+    const index = flags.findIndex((flag) => flag.findingId === findingId);
+    if (index === -1) return;
+    appliedFindingLinkRef.current = true;
+    selectFlag(index);
+  }, [flags, searchParams, selectFlag]);
+
   const stepWord = useCallback(
     (direction: -1 | 1) => {
       const tokens = alignment?.tokens ?? [];
@@ -148,6 +186,24 @@ export function WorkspacePage({ notify }: { notify: Notify }) {
       if (firstTimedToken) seekToken(firstTimedToken);
     },
     [alignment?.paragraphs, alignment?.tokens, currentToken, seekToken],
+  );
+
+  // A flag's decision (Phase 4): the same findingsReview binding the Review page uses, so a decision made here shows
+  // there too (and the other way round - loadFindings re-reads the store, picking up a decision made elsewhere since
+  // this page was opened). The evidence version and finding id come from the flag itself (set by overlayFindings from
+  // the finding it was built from), never guessed.
+  const decideFlag = useCallback(
+    async (flag: Flag, status: FindingReviewStatus, note: string): Promise<FlagDecisionResult> => {
+      if (!flag.findingId) return { ok: false, message: 'This flag has no finding to decide on.' };
+      try {
+        await api.findingsReview({ id: flag.findingId, evidenceVersion: flag.evidenceVersion ?? '', status, note });
+        loadFindings();
+        return { ok: true };
+      } catch (error) {
+        return { ok: false, message: apiErrorMessage(error) };
+      }
+    },
+    [api, loadFindings],
   );
 
   // workspace.* page commands (input-commands-and-pedals.prd.md Phase 3), replacing the old window `keydown`
@@ -224,6 +280,8 @@ export function WorkspacePage({ notify }: { notify: Notify }) {
                 selectedIndex={selectedFlagIndex}
                 onSelect={selectFlag}
                 onPlayFromFlag={(flag: Flag) => flag.seekTokenIndex !== undefined && seekToken(alignment.tokens[flag.seekTokenIndex])}
+                reaper={reaper}
+                onDecide={decideFlag}
               />
             </div>
           </>
