@@ -1369,12 +1369,20 @@ var fieldSchemas = map[string][]fieldSchema{
 	// in a result's parameter hash, so changing one makes older results stale (Q13 B). Their defaults are Proposed and
 	// uncalibrated (Q15) until Phase 8. background_checks lets the host re-check a changed chapter on its own while REAPER
 	// is idle, not recording and the computer is on mains power (DAW chapter-track auto-sync Phase 7, D27, ADR 0211).
+	// cascade_enabled, cascade_first_pass_model and cascade_recheck_model are the model cascade's own three settings
+	// (recording-check-model-cascade PRD Phase 5, MC1, MC2), read by coverage.ResolveSettings into Settings.Cascade.
+	// The cascade defaults off; while it is off, CoverageStart keeps reading TranscriptCompare.model_size exactly as
+	// it did before this phase. The two model choices are independent of TranscriptCompare's own model_size, from
+	// the same approved Whisper catalog.
 	"RecordingCoverage": {
 		{"min_paragraph_present", "Share of each paragraph that must be read", "number", nil},
 		{"max_missing_run", "Longest run of missing words allowed", "number", nil},
 		{"max_misread_run", "Longest misread still counted as read", "number", nil},
 		{"min_anchor_run", "Shortest match that counts as read", "number", nil},
 		{"background_checks", "Check changed chapters in the background", "bool", nil},
+		{"cascade_enabled", "Two-pass check (fast first pass, then re-check what's missing)", "bool", nil},
+		{"cascade_first_pass_model", "First-pass Whisper model", "choice", []string{"tiny", "small", "medium", "large-v3-turbo", "large-v3"}},
+		{"cascade_recheck_model", "Re-check Whisper model", "choice", []string{"tiny", "small", "medium", "large-v3-turbo", "large-v3"}},
 	},
 	// StageRecommendations (chapter-stage-recommendations.prd.md Phase 6, Q8, deleted; see docs/architecture/stage-recommendations.md) chooses which signals must be
 	// met for a stage suggestion: one choice field per signal id a provider declares (apps/desktop/bindings_stages.go's
