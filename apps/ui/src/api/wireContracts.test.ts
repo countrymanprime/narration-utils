@@ -6,7 +6,9 @@ import { DESKTOP_HOST_API_VERSION } from '../hostApi';
 import { createMockApi } from './mockApi';
 import type { ProjectStateState } from './contracts/projectstate';
 import { WIRE_TAKE_REVIEW_FINDINGS, WIRE_TRACKS_PROJECT, WIRE_TRANSCRIPT, editingCandidateFor } from './mockFixtures';
+import { prepMarkupChapterSchema, prepMarkupSpanSchema } from './schemas/prepMarkup';
 import { cleanupApplyResultSchema, cleanupPreviewResultSchema, levelMatchApplyResultSchema, levelMatchPreviewResultSchema } from './schemas/cleanup';
+import { productionPlanSchema } from './schemas/production';
 import { WIRE_TAKE_COMPARISON_FINDING } from './takeComparisonMock';
 import { MOCK_MEASURE_PATHS } from './measureMock';
 import { judgeMock } from './coverageMock';
@@ -56,6 +58,7 @@ import {
   chapterTrackMatchSchema,
   chapterTrackSetSchema,
   trackMappingSchema,
+  trackSelectResultSchema,
 } from './schemas/chapterTrackMap';
 import { ttsCatalogSchema, ttsInstallJobSchema } from './schemas/tts';
 import { updateJobSchema, updateStatusSchema } from './schemas/update';
@@ -72,7 +75,14 @@ import {
   retailSampleAnswerSchema,
 } from './schemas/credits';
 import { dawCatalogListSchema } from './schemas/dawCatalog';
-import { guideBuildResultSchema, guideCreatedSchema, guideEntitiesSchema, guidePreviewSchema } from './schemas/storyBible';
+import {
+  guideBuildResultSchema,
+  guideCreatedSchema,
+  guideEntitiesSchema,
+  guidePreviewSchema,
+  pronunciationQueriesCsvSchema,
+  pronunciationQueriesSchema,
+} from './schemas/storyBible';
 import { bootstrapSchema, copyDiagnosticsResultSchema, projectAttachStateSchema, readySchema } from './schemas/system';
 import {
   readAloudReaperStateSchema,
@@ -591,6 +601,23 @@ describe('answers of the mock client for the manuscript, Story Bible and project
     await expect(api.manuscriptSetChapterKind('no-such-chapter', 'reference')).rejects.toThrow('unknown manuscript chapter');
   });
 
+  it('the PrepMarkupList, PrepMarkupSave and PrepMarkupDelete answers, fresh and stale', async () => {
+    const api = createMockApi({}, { prepMarkup: [{ chapter: 0, line: 0, words: 'Alice', kind: 'stress', stale: { reason: 'text_changed', was: 'Queen' } }] });
+    const chapter = (await api.manuscriptChapters())[0];
+    const paragraph = (await api.manuscriptParagraphs(chapter?.id ?? ''))[1];
+    const saved = await api.prepMarkupSave(chapter?.id ?? '', paragraph?.id ?? '', 0, 5, 'character_tag', ' Alice ');
+    expectMatches(prepMarkupSpanSchema, saved, 'mock markup span');
+    expect(saved).toMatchObject({ stale: false, value: 'Alice', paragraph: paragraph?.index });
+    const listed = await api.prepMarkupList(chapter?.id ?? '');
+    expectMatches(prepMarkupChapterSchema, listed, 'mock markup list');
+    expect(listed.spans.map((span) => span.stale)).toEqual([true, false]);
+    expect(listed.spans[0]).toMatchObject({ staleReason: 'text_changed', anchorText: 'Queen' });
+    await api.prepMarkupDelete(chapter?.id ?? '', listed.spans[0].id);
+    expect((await api.prepMarkupList(chapter?.id ?? '')).spans).toHaveLength(1);
+    await expect(api.prepMarkupSave(chapter?.id ?? '', 'no-such-line', 0, 1, 'stress', '')).rejects.toThrow('no longer in this chapter');
+    await expect(api.prepMarkupSave(chapter?.id ?? '', paragraph?.id ?? '', 0, 5, 'pause', '')).rejects.toThrow('short or long');
+  });
+
   it('a created note and bookmark', async () => {
     const api = createMockApi();
     const chapter = (await api.manuscriptChapters())[0];
@@ -652,6 +679,13 @@ describe('answers of the mock client for the manuscript, Story Bible and project
     expectMatches(guideCreatedSchema, { id: await api.guideCreate('New', 'Character', []) }, 'mock guide create');
     const entity = (await api.guideEntities())[0];
     expectMatches(guidePreviewSchema, await api.guidePreview(entity?.id ?? ''), 'mock preview');
+    const queries = await api.guidePronunciationQueries();
+    expectMatches(pronunciationQueriesSchema, queries, 'mock pronunciation queries');
+    expect(queries.length).toBeGreaterThan(0);
+    expect(queries.every((row) => row.status !== 'author_confirmed')).toBe(true);
+    const csv = await api.guidePronunciationQueriesCsv();
+    expectMatches(pronunciationQueriesCsvSchema, csv, 'mock pronunciation queries CSV');
+    expect(csv.count).toBe(queries.length);
   });
 
   it('the dictionary lookup answers: a word it has, one it does not, and the first-use gate', async () => {
@@ -780,6 +814,16 @@ describe('answers of the mock client for the manuscript, Story Bible and project
     expect(notDetected[0]?.path).toBeUndefined();
     await expect(createMockApi().dawCatalogOpenDownloadPage('reaper')).resolves.toBeUndefined();
     await expect(createMockApi().dawCatalogOpenDownloadPage('not-a-real-daw')).rejects.toThrow(/Unknown DAW catalog entry/);
+  });
+
+  it('pronunciation lookup opens for a known source and refuses an unknown one (prep-depth Phase 2)', async () => {
+    const api = createMockApi();
+    await expect(api.pronunciationLookupOpen('forvo', 'Mock Turtle')).resolves.toBeUndefined();
+    await expect(api.pronunciationLookupOpen('youglish', 'café')).resolves.toBeUndefined();
+    await expect(api.pronunciationLookupOpen('merriam_webster', 'croquet')).resolves.toBeUndefined();
+    await expect(api.pronunciationLookupOpen('howjsay', 'croquet')).resolves.toBeUndefined();
+    // @ts-expect-error an unknown source is a build-time error too; the mock also rejects it at runtime.
+    await expect(api.pronunciationLookupOpen('wiktionary', 'croquet')).rejects.toThrow(/Unknown pronunciation lookup source/);
   });
 });
 
@@ -948,6 +992,25 @@ describe('answers of the mock client for the settings, voice, model, transcript 
     expectMatches(chapterTrackLinksSchema, noProject, 'mock chapter track links, no project');
     expect(noProject.project).toBe('none');
     expect(noProject.tracks).toHaveLength(0);
+  });
+
+  it("TrackSelectInReaper selects the track, and agrees with the host's golden for standalone and experimental_off", async () => {
+    const golden = z.record(z.string(), trackSelectResultSchema).parse(readGolden('track-select-results.json'));
+    const [first] = WIRE_TRACKS_PROJECT.tracks;
+
+    const selected = await createMockApi().trackSelectInReaper(first.guid);
+    expectMatches(trackSelectResultSchema, selected, 'mock track select');
+    expect(selected).toEqual({ outcome: 'selected', trackGuid: first.guid });
+
+    const standalone = await createMockApi({}, { reaperState: 'unavailable' }).trackSelectInReaper(first.guid);
+    expectMatches(trackSelectResultSchema, standalone, 'mock track select, standalone');
+    expect([standalone.outcome, standalone.reason]).toEqual([golden.standalone.outcome, golden.standalone.reason]);
+
+    const experimentalOff = await createMockApi({}, { reaperState: 'experimental_off' }).trackSelectInReaper(first.guid);
+    expectMatches(trackSelectResultSchema, experimentalOff, 'mock track select, experimental off');
+    expect([experimentalOff.outcome, experimentalOff.reason]).toEqual([golden.experimental_off.outcome, golden.experimental_off.reason]);
+
+    await expect(createMockApi().trackSelectInReaper('')).rejects.toThrow();
   });
 
   it('the ChapterRegionsPreview and ChapterRegionsCreate answers', async () => {
@@ -1232,16 +1295,16 @@ describe('answers of the mock client for the settings, voice, model, transcript 
     expect(turnedOff.capabilities.punch).toMatchObject({ available: false, reason: 'turned_off' });
   });
 
-  it('providerCapabilities matches the host goldens on Windows and macOS (provider-ports PRD Phase 14)', async () => {
+  it('providerCapabilities matches the host goldens on Windows and on the Linux development host (provider-ports PRD Phase 14)', async () => {
     const windows = await createMockApi().providerCapabilities();
     expectMatches(providerCapabilitiesSchema, windows, 'mock provider capabilities (default Windows seed)');
     expect(windows).toEqual(readGolden('provider-capabilities-windows.json'));
 
-    const darwin = await createMockApi({}, { providers: { platform: 'darwin' } }).providerCapabilities();
-    expectMatches(providerCapabilitiesSchema, darwin, 'mock provider capabilities (macOS)');
-    expect(darwin).toEqual(readGolden('provider-capabilities-darwin.json'));
-    expect(darwin.asr.moonshine?.support).toMatchObject({ available: false, reason: 'unsupported' });
-    expect(darwin.capture.dshow?.default).toBe(false);
+    const linux = await createMockApi({}, { providers: { platform: 'linux' } }).providerCapabilities();
+    expectMatches(providerCapabilitiesSchema, linux, 'mock provider capabilities (Linux development host)');
+    expect(linux).toEqual(readGolden('provider-capabilities-linux.json'));
+    expect(linux.asr.moonshine?.support).toMatchObject({ available: false, reason: 'unsupported' });
+    expect(linux.capture.dshow?.default).toBe(false);
   });
 
   it('providerCapabilities reports an installed count only for an asset kind with a catalog', async () => {
@@ -1407,6 +1470,30 @@ describe('answers of the mock client for the settings, voice, model, transcript 
     const copy = await api.deliveryDuplicateProfile('acx', '2026-09');
     await api.deliverySelectProfile('project', copy.id, '');
     expect((await api.measureState()).profile?.id).toBe(copy.id);
+  });
+
+  it('the delivery findings the Review page lists carry their rule, as the host pins them and the mock saves them', async () => {
+    const pinned = findingsPageSchema.parse(readGolden('findings-list-delivery-qc.json'));
+    const api = createMockApi();
+    let job = await api.measureAnalyze((await api.measurePickFiles()).paths);
+    while (job.phase === 'running') job = await api.measureState();
+    const saved = await api.findingsList({ category: 'delivery_qc' });
+    expectMatches(findingsPageSchema, saved, 'mock delivery findings on the Review page');
+    expect(saved.total).toBeGreaterThan(0);
+    // The same ids the Delivery page gives them, so a decision on either page is one decision.
+    const judged = new Set(job.files.flatMap((file) => file.findings.map((finding) => finding.id)));
+    expect(saved.findings.every((finding) => judged.has(finding.id))).toBe(true);
+    const shape = (finding: (typeof saved.findings)[number]) => {
+      const evidence = deliveryQcEvidenceSchema.parse(finding.evidence);
+      return [
+        finding.analyzer,
+        finding.category,
+        Boolean(finding.evidence_version),
+        Boolean(evidence.rule_label && evidence.requirement && evidence.profile_name),
+        Boolean(finding.source.file),
+      ];
+    };
+    for (const finding of [...pinned.findings, ...saved.findings]) expect(shape(finding)).toEqual(['measure', 'delivery_qc', true, true, true]);
   });
 
   it('the delivery profiles answer as the host pins them, and refuse the way the host does', async () => {
@@ -1652,6 +1739,25 @@ describe('answers of the mock client for the settings, voice, model, transcript 
     expect(unknown).toMatchObject({ state: 'never', paragraphs: [], tokens: [] });
   });
 
+  it('the workspace REAPER bindings answers, every outcome and refusal (edit-and-proof-workspace PRD Phase 3)', async () => {
+    const api = createMockApi();
+    const chapters = await api.manuscriptChapters();
+    const measured = chapters.find((chapter) => chapter.recordedFraction !== undefined);
+    if (!measured) throw new Error('the mock chapters carry a measured recordedFraction');
+    const alignment = await api.workspaceAlignment(measured.id);
+    if (alignment.tokens.length < 2) throw new Error('the mock chapter needs at least two heard tokens');
+
+    const answers: Array<[string, Promise<unknown>]> = [
+      ['go to', api.workspaceGoTo(measured.id, 0)],
+      ['loop', api.workspaceLoop(measured.id, 0, 1)],
+    ];
+    for (const reaper of ['standalone', 'not-running', 'stale', 'recording', 'outdated'] as const) {
+      const refusing = createMockApi({}, { reaper });
+      answers.push([`${reaper} go to`, refusing.workspaceGoTo(measured.id, 0)], [`${reaper} loop`, refusing.workspaceLoop(measured.id, 0, 1)]);
+    }
+    for (const [name, answer] of answers) expectMatches(findingNavigationSchema, await answer, `mock workspace ${name}`);
+  });
+
   it('the preview candidates: ok with candidates, no manuscript, and nothing eligible', async () => {
     const withCandidates = await createMockApi().previewCandidates();
     expectMatches(previewResultSchema, withCandidates, 'mock preview candidates, ok');
@@ -1687,7 +1793,11 @@ describe('answers of the mock client for the settings, voice, model, transcript 
     const byId = new Map(answer.chapters.map((chapter) => [chapter.chapterId, chapter]));
     expect(new Set(answer.chapters.map((chapter) => chapter.verdict))).toEqual(new Set(['recommended', 'not_ready', 'unknown', 'dismissed', 'none']));
     expect(byId.get('chapter-1')).toMatchObject({ verdict: 'none', noneReason: 'stage_not_evaluated' });
-    expect(byId.get('chapter-9')).toMatchObject({ verdict: 'none', noneReason: 'no_required_signals' });
+    // chapter-7 is in Editing, unseeded in `editing`: the mock keeps its pre-existing no-required-signal shape (stagesMock.ts).
+    expect(byId.get('chapter-7')).toMatchObject({ verdict: 'none', noneReason: 'no_required_signals' });
+    // chapter-9 is in Proofing, unseeded in `proofing`: unlike editing, the mock always evaluates the real pickups
+    // signal for a proofing chapter (chapter-stage-recommendations.prd.md Phase 8), so it reads unknown, not none.
+    expect(byId.get('chapter-9')).toMatchObject({ verdict: 'unknown', causes: ['never_analyzed'] });
     expect(byId.get('chapter-6')).toMatchObject({ verdict: 'not_ready' });
     expect(byId.get('chapter-11')).toMatchObject({ verdict: 'unknown', causes: ['never_analyzed'] });
     for (const cause of STAGE_UNKNOWN_CAUSES) {
@@ -1749,6 +1859,36 @@ describe('answers of the mock client for the settings, voice, model, transcript 
     await expect(api.levelMatchPreview(chapterId, 'rms_dbfs', -6, 1)).rejects.toThrow();
   });
 
+  it('the production plan: empty, a deadline and amount set and cleared, milestones saved, and every refusal', async () => {
+    const api = createMockApi();
+    const empty = await api.productionPlan();
+    expectMatches(productionPlanSchema, empty, 'mock production plan, empty');
+    expect(empty).toEqual({ deadline: null, contractedAmount: null, milestones: [] });
+
+    const set = await api.setProductionDeadline(' 2026-12-01 ', 2400);
+    expectMatches(productionPlanSchema, set, 'mock production plan, deadline set');
+    expect(set).toMatchObject({ deadline: '2026-12-01', contractedAmount: 2400 });
+
+    const withMilestones = await api.saveProductionMilestones([
+      { name: ' ACX 15-minute checkpoint ', dueDate: '2026-10-15', note: 'The rights holder approves the first 15 minutes.' },
+      { name: 'Final delivery', dueDate: '2026-12-01', note: ' ' },
+    ]);
+    expectMatches(productionPlanSchema, withMilestones, 'mock production plan, milestones');
+    expect(withMilestones.milestones).toEqual([
+      { name: 'ACX 15-minute checkpoint', dueDate: '2026-10-15', note: 'The rights holder approves the first 15 minutes.' },
+      { name: 'Final delivery', dueDate: '2026-12-01' },
+    ]);
+
+    await expect(api.setProductionDeadline('2026-02-30', null)).rejects.toThrow('YYYY-MM-DD');
+    await expect(api.setProductionDeadline('2026-12-01', -1)).rejects.toThrow('zero or more');
+    await expect(api.saveProductionMilestones([{ name: '', dueDate: '2026-10-15' }])).rejects.toThrow('needs a name');
+    expect(await api.productionPlan()).toEqual(withMilestones);
+
+    const cleared = await api.setProductionDeadline('', null);
+    expectMatches(productionPlanSchema, cleared, 'mock production plan, cleared');
+    expect(cleared).toMatchObject({ deadline: null, contractedAmount: null });
+  });
+
   it('every method of the API is either checked in this file, void, or not a request', () => {
     // A new binding fails this until it has a schema and a row above (ADR 0069). The list of what is checked is kept by hand.
     const CHECKED = [
@@ -1773,6 +1913,8 @@ describe('answers of the mock client for the settings, voice, model, transcript 
       'manuscriptSetChapterKind',
       'noteList',
       'noteCreate',
+      'prepMarkupList',
+      'prepMarkupSave',
       'manuscriptReader',
       'readerState',
       'readerStateSave',
@@ -1782,6 +1924,8 @@ describe('answers of the mock client for the settings, voice, model, transcript 
       'guideEntities',
       'guideCreate',
       'guidePreview',
+      'guidePronunciationQueries',
+      'guidePronunciationQueriesCsv',
       'assetsList',
       'assetsInstall',
       'assetsInstallState',
@@ -1823,6 +1967,7 @@ describe('answers of the mock client for the settings, voice, model, transcript 
       'chapterSyncSetEnabled',
       'chapterSyncUndo',
       'chapterTrackLinks',
+      'trackSelectInReaper',
       'chapterRegionsPreview',
       'chapterRegionsCreate',
       'chapterTrackMatch',
@@ -1858,7 +2003,12 @@ describe('answers of the mock client for the settings, voice, model, transcript 
       'coverageState',
       'coverageResult',
       'workspaceAlignment',
+      'workspaceGoTo',
+      'workspaceLoop',
       'previewCandidates',
+      'productionPlan',
+      'setProductionDeadline',
+      'saveProductionMilestones',
       'stageRecommendations',
       'stageConfirm',
       'stageDismiss',
@@ -1933,10 +2083,14 @@ describe('answers of the mock client for the settings, voice, model, transcript 
       'clearProjectData',
       'readerBookmarkDelete',
       'noteDelete',
+      'prepMarkupDelete',
       'guideEdit',
       'guideSetLocked',
       'guideRescan',
       'guidePronounce',
+      'guidePronounceUser',
+      'guidePronunciationUseAlternate',
+      'guidePronunciationSetStatus',
       'guideMerge',
       'guideDelete',
       'guideRelate',
@@ -1956,6 +2110,7 @@ describe('answers of the mock client for the settings, voice, model, transcript 
       'teleprompterMeterStop',
       'teleprompterPause',
       'dawCatalogOpenDownloadPage',
+      'pronunciationLookupOpen',
       'teleprompterSeek',
       'reportClientDiagnostic',
       'systemNotify',
@@ -1963,6 +2118,8 @@ describe('answers of the mock client for the settings, voice, model, transcript 
       'updateOpenNotes',
       'updateShowDownload',
       'deleteCreditsTemplate',
+      'companionModeEnter',
+      'companionModeExit',
     ];
     const NOT_A_REQUEST = [
       'mediaUrl',

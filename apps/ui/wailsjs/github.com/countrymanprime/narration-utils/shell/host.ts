@@ -14,6 +14,9 @@ import { Call as $Call, CancellablePromise as $CancellablePromise, Create as $Cr
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
 import * as liveflags$0 from "./internal/liveflags/models.js";
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore: Unused imports
+import * as project$0 from "./internal/project/models.js";
 
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
@@ -230,6 +233,22 @@ export function CleanupToolsLaunch(tool: string): $CancellablePromise<string> {
  */
 export function CleanupToolsState(): $CancellablePromise<string> {
     return $Call.ByID(1749389626);
+}
+
+/**
+ * CompanionModeEnter narrows the app's one window to the companion width and pins it always-on-top, saving its prior
+ * size and position so CompanionModeExit can restore them. It never opens a second window (ADR 0401).
+ */
+export function CompanionModeEnter(): $CancellablePromise<void> {
+    return $Call.ByID(3310293519);
+}
+
+/**
+ * CompanionModeExit restores the window's size, position and always-on-top state to what they were before
+ * CompanionModeEnter: the "Full app" action and the double-Escape rule (Open Question 5) both call this.
+ */
+export function CompanionModeExit(): $CancellablePromise<void> {
+    return $Call.ByID(3684763819);
 }
 
 /**
@@ -699,6 +718,32 @@ export function GuidePronounce(id: string, aliasIndex: number | null, source: st
     return $Call.ByID(1577834145, id, aliasIndex, source);
 }
 
+export function GuidePronounceUser(id: string, aliasIndex: number | null, ipa: string): $CancellablePromise<string> {
+    return $Call.ByID(867110926, id, aliasIndex, ipa);
+}
+
+/**
+ * GuidePronunciationQueries lists every name whose pronunciation the author has not confirmed, in reading order (prep-depth P3).
+ */
+export function GuidePronunciationQueries(): $CancellablePromise<string> {
+    return $Call.ByID(2256334941);
+}
+
+/**
+ * GuidePronunciationQueriesCSV is the same list as CSV text for the narrator to send to the author; the UI saves it as a file.
+ */
+export function GuidePronunciationQueriesCSV(): $CancellablePromise<string> {
+    return $Call.ByID(2380759975);
+}
+
+export function GuidePronunciationSetStatus(id: string, aliasIndex: number | null, status: string, note: string | null): $CancellablePromise<string> {
+    return $Call.ByID(3849731891, id, aliasIndex, status, note);
+}
+
+export function GuidePronunciationUseAlternate(id: string, aliasIndex: number | null): $CancellablePromise<string> {
+    return $Call.ByID(661717092, id, aliasIndex);
+}
+
 export function GuideRelate(id: string, otherID: string, label: string): $CancellablePromise<string> {
     return $Call.ByID(761657167, id, otherID, label);
 }
@@ -908,12 +953,60 @@ export function PickupsState(): $CancellablePromise<string> {
 }
 
 /**
+ * PrepMarkupDelete removes one span by its id; a stale span needs nothing else.
+ */
+export function PrepMarkupDelete(chapterID: string, id: string): $CancellablePromise<string> {
+    return $Call.ByID(636931274, chapterID, id);
+}
+
+/**
+ * PrepMarkupList returns a chapter's markup spans, each resolved against the chapter's current text.
+ */
+export function PrepMarkupList(chapterID: string): $CancellablePromise<string> {
+    return $Call.ByID(1627753729, chapterID);
+}
+
+/**
+ * PrepMarkupSave places one span on a line of a chapter: start and end are UTF-16 offsets into the line's text (the
+ * reader's own selection), kind is stress, pause or character_tag, and value is the pause length or the character's name.
+ */
+export function PrepMarkupSave(chapterID: string, paragraphID: string, start: number, end: number, kind: string, value: string): $CancellablePromise<string> {
+    return $Call.ByID(554283720, chapterID, paragraphID, start, end, kind, value);
+}
+
+/**
  * PreviewCandidates reads up to three ranked five-minute preview candidates from the imported manuscript
  * (proofing-preview-suggestion.prd.md Phase 1's preview.Suggest over this file's own adapter). It never runs
  * anything and stores nothing.
  */
 export function PreviewCandidates(): $CancellablePromise<string> {
     return $Call.ByID(2923797608);
+}
+
+/**
+ * ProductionPlan reads this project's deadline, contracted amount and milestones. A project that has set none answers
+ * an empty plan: no deadline, no amount, no milestones.
+ */
+export function ProductionPlan(): $CancellablePromise<string> {
+    return $Call.ByID(564382146);
+}
+
+/**
+ * ProductionSaveMilestones replaces the book's milestones with milestones, in the narrator's order. Each needs a name
+ * and a real date ("YYYY-MM-DD"); a note is optional. A list with any invalid milestone is refused whole and nothing
+ * is written.
+ */
+export function ProductionSaveMilestones(milestones: project$0.Milestone[]): $CancellablePromise<string> {
+    return $Call.ByID(669610547, milestones);
+}
+
+/**
+ * ProductionSetDeadline sets the book's delivery date ("YYYY-MM-DD"; empty clears it) and contracted amount (a number
+ * of zero or more in the narrator's own currency; nil clears it). An invalid date or amount is refused and nothing is
+ * written.
+ */
+export function ProductionSetDeadline(deadline: string, contractedAmount: number | null): $CancellablePromise<string> {
+    return $Call.ByID(3757504551, deadline, contractedAmount);
 }
 
 /**
@@ -994,6 +1087,18 @@ export function ProjectSwitch(path: string, name: string): $CancellablePromise<s
 }
 
 /**
+ * PronunciationLookupOpen opens source's fixed lookup-page template for word in the narrator's default browser
+ * (prep-depth.prd.md Phase 2; provider-ports.prd.md Open Question Q5's BrowserLookup role), and nothing else: it
+ * never fetches, scrapes or caches the site itself. source and word cross the Wails boundary, never a URL - the
+ * destination is always built server-side by pronunciationlookup.URL from one of four hardcoded templates, so
+ * nothing UI-supplied can pick an arbitrary destination (mirrors DawCatalogOpenDownloadPage's same trusted-URL
+ * discipline, for the same reason).
+ */
+export function PronunciationLookupOpen(source: string, word: string): $CancellablePromise<string> {
+    return $Call.ByID(1993502409, source, word);
+}
+
+/**
  * ProviderCapabilities answers, for each provider port, every registered provider's label, platforms, modes, asset kind (with
  * the installed count when its catalog is present) and whether it is supported on this platform.
  */
@@ -1001,10 +1106,6 @@ export function ProviderCapabilities(): $CancellablePromise<string> {
     return $Call.ByID(74377393);
 }
 
-/**
- * ReadAloudArmOnly arms chapterID's linked track and disarms every other one (Q7 A's "Arm Chapter N only"), refusing
- * while REAPER records. It changes nothing in the reading session.
- */
 export function ReadAloudArmOnly(chapterID: string): $CancellablePromise<string> {
     return $Call.ByID(4236043623, chapterID);
 }
@@ -1019,20 +1120,10 @@ export function ReadAloudReaperState(chapterID: string): $CancellablePromise<str
     return $Call.ByID(1177651655, chapterID);
 }
 
-/**
- * ReadAloudRecordStart asks REAPER to record on chapterID's linked track, which must already be the one armed track
- * (arm it first with ReadAloudArmOnly), and waits up to readAloudRecordStartTimeout for REAPER to confirm. Sent only
- * from Play with the Record in REAPER toggle on (ReadingControlBar.tsx); TeleprompterStart follows only once this
- * answers "started".
- */
 export function ReadAloudRecordStart(chapterID: string): $CancellablePromise<string> {
     return $Call.ByID(1614763488, chapterID);
 }
 
-/**
- * ReadAloudRecordStop stops the recording this app started (Stop, or the dialog closing while reading and recording),
- * and puts the narrator's own arms back. A recording this app did not start is left alone (ErrNotOurRecording).
- */
 export function ReadAloudRecordStop(): $CancellablePromise<string> {
     return $Call.ByID(3415830820);
 }
@@ -1304,7 +1395,7 @@ export function TeleprompterPunch(word: number): $CancellablePromise<string> {
 /**
  * TeleprompterPunchPreview resolves word's punch time and pre-roll without moving anything in REAPER: what the
  * narrator sees before confirming "Punch from here" (Phase 12's "UI showing resolved time, its source... and pre-roll
- * before moving").
+ * before moving"). word is the flag's own script word index; the chapter is whichever one is live right now.
  */
 export function TeleprompterPunchPreview(word: number): $CancellablePromise<string> {
     return $Call.ByID(3160914767, word);
@@ -1359,6 +1450,13 @@ export function TeleprompterState(): $CancellablePromise<string> {
 
 export function TeleprompterStop(): $CancellablePromise<string> {
     return $Call.ByID(1610168667);
+}
+
+/**
+ * TrackSelectInReaper is the slide-over's "Select in REAPER" binding.
+ */
+export function TrackSelectInReaper(trackGUID: string): $CancellablePromise<string> {
+    return $Call.ByID(3045535341, trackGUID);
 }
 
 export function TracksDiscover(): $CancellablePromise<string> {
@@ -1523,6 +1621,25 @@ export function WhisperRemove(modelID: string): $CancellablePromise<string> {
  */
 export function WorkspaceAlignment(chapterID: string): $CancellablePromise<string> {
     return $Call.ByID(2240146208, chapterID);
+}
+
+/**
+ * WorkspaceGoTo selects tokenIndex's item in REAPER and puts the edit cursor on the spot it was heard, exactly as
+ * FindingsGoTo does for a finding: navigate_item, sent only once the token resolves to an item REAPER can be asked
+ * about and REAPER is listening.
+ */
+export function WorkspaceGoTo(chapterID: string, tokenIndex: number): $CancellablePromise<string> {
+    return $Call.ByID(3177963740, chapterID, tokenIndex);
+}
+
+/**
+ * WorkspaceLoop loops the chapter passage from firstToken to lastToken (inclusive, both heard on the same item) in
+ * REAPER: the time selection and loop points around it, repeat on, and Play, exactly as FindingsLoop does.
+ * FindingsStopLoop stops it - the workspace holds no loop state of its own, sharing the one app loop
+ * findingNavigation already tracks.
+ */
+export function WorkspaceLoop(chapterID: string, firstToken: number, lastToken: number): $CancellablePromise<string> {
+    return $Call.ByID(465077885, chapterID, firstToken, lastToken);
 }
 
 // Private type creation functions

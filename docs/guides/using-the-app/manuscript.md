@@ -151,10 +151,29 @@ highlighted; choosing one clears the search box, closes the panel, and jumps to 
 clear (×) icon empties the box and returns focus to it; Escape clears the box first, then closes
 the panel on a second press.
 
+A chapter with a live "Suggested: Editing/Proofing/Finalized" recommendation ([Home](home.md)'s
+per-chapter stage suggestions) shows that same wording under its title here too, so it is visible
+while browsing chapters without opening the estimate breakdown. It is read-only in this list -
+Confirm, Dismiss and the evidence view stay on Home and, for a chapter in Proofing, on the
+[Proofing](proofing.md) panel.
+
 The reader shows only the manuscript's narratable chapters. A table of contents or a Characters
 section the importer recognized stays in the project's data (the Story Bible has the readable form
 of Characters) but is never a page you page through in the reader, and a saved or shared link into
 one tells you so instead of landing there.
+
+## Mark up the script
+
+While prepping, select words on one line and choose **Mark up** to note how to read them: **Stress** (a dotted
+underline), **Breath** (one slash after them), **Pause** (two slashes) or **Speaker** (a name chip before them; the
+Story Bible's characters are one press away, or type any name). The marks are kept in the project's
+`narration-utils/prep/markup.json`, separate from the manuscript, so a re-import keeps them. To take a mark off,
+select the same words and choose **Mark up** again: the dialog lists the marks already there, each with **Remove**.
+
+The marks never change the text you select or search. When the words under a mark change (an edited manuscript
+re-imported, say), the mark is not moved to a guess: the line says **Text changed here** and names the mark and the
+words it was on, with a **Remove**; a mark whose line is gone is listed above the chapter. Extra spaces or line breaks
+alone never count as a change.
 
 ## Look up a word
 

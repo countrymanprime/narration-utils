@@ -37,7 +37,7 @@ func Parse(path string) (Project, error) {
 	for index, trackNode := range reaperProject.childrenTagged("TRACK") {
 		trackList = append(trackList, parseTrack(trackNode, index, projectFolder))
 	}
-	return Project{Path: path, Tracks: trackList, Regions: parseRegions(reaperProject)}, nil
+	return Project{Path: path, Tracks: trackList, Regions: parseRegions(reaperProject), Markers: parseMarkers(reaperProject)}, nil
 }
 
 // regionFlag is the MARKER line's flags bit that marks a region rather than
@@ -76,6 +76,27 @@ func parseRegions(project *node) []Region {
 		}
 	}
 	return closed
+}
+
+// parseMarkers reads the project chunk's plain markers: MARKER lines with the
+// region flag clear (parseRegions reads the paired region form; a region's
+// own two lines both carry the flag set, so they never appear here).
+func parseMarkers(project *node) []Marker {
+	var markers []Marker
+	for _, entry := range project.sequence {
+		if entry.key != "MARKER" || len(entry.values) < 4 {
+			continue
+		}
+		number, err := strconv.Atoi(entry.values[0])
+		flags, flagErr := strconv.Atoi(entry.values[3])
+		if err != nil || flagErr != nil || flags&regionFlag != 0 {
+			continue
+		}
+		markers = append(markers, Marker{
+			Index: number, Position: parseFloat(entry.values[1]), Name: entry.values[2], GUID: markerGUID(entry.values[4:]),
+		})
+	}
+	return markers
 }
 
 func markerGUID(values []string) string {

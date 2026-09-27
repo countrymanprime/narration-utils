@@ -20,6 +20,7 @@ const (
 	CapHeartbeat    Capability = "heartbeat"
 	CapProjectRead  Capability = "project_read"
 	CapTrackState   Capability = "track_state"
+	CapTrackSelect  Capability = "track_select"
 	CapRecord       Capability = "record"
 	CapPunch        Capability = "punch"
 	CapRegions      Capability = "regions"
@@ -66,6 +67,7 @@ var specs = []Spec{
 	{CapHeartbeat, "Connection status", NeedsBridge, reflect.TypeFor[Heartbeat]()},
 	{CapProjectRead, "Read the saved project", NeedsNothing, reflect.TypeFor[ProjectReader]()},
 	{CapTrackState, "Read track arm state", NeedsRunning, reflect.TypeFor[TrackStateReader]()},
+	{CapTrackSelect, "Select a track in REAPER", NeedsRunning, reflect.TypeFor[TrackSelector]()},
 	{CapRecord, "Record", NeedsRunning, reflect.TypeFor[Recorder]()},
 	{CapPunch, "Punch and roll", NeedsRunning, reflect.TypeFor[Puncher]()},
 	{CapRegions, "Chapter regions", NeedsRunning, reflect.TypeFor[RegionWriter]()},

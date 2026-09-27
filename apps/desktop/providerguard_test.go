@@ -264,7 +264,7 @@ func providerViolations(t *testing.T) map[string][]providerComparison {
 
 func TestTheProviderGuardKnowsEveryRegisteredName(t *testing.T) {
 	names := providerNames()
-	for _, want := range []string{asrport.Whisper, asrport.Moonshine, ttsport.Piper, pronunciationport.CMU, pronunciationport.Espeak, captureport.DShow, captureport.CoreAudio} {
+	for _, want := range []string{asrport.Whisper, asrport.Moonshine, ttsport.Piper, pronunciationport.CMU, pronunciationport.Espeak, captureport.DShow} {
 		if !names[want] {
 			t.Errorf("providerNames() is missing %q; the guard would let it be compared", want)
 		}

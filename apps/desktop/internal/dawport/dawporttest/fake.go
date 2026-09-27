@@ -61,6 +61,7 @@ func NewFake(kind dawport.Kind, levels map[dawport.Capability]dawport.Level) *Fa
 		dawport.CapHeartbeat:    heartbeatRole{r(dawport.CapHeartbeat)},
 		dawport.CapProjectRead:  projectReadRole{r(dawport.CapProjectRead)},
 		dawport.CapTrackState:   trackStateRole{r(dawport.CapTrackState)},
+		dawport.CapTrackSelect:  trackSelectRole{r(dawport.CapTrackSelect)},
 		dawport.CapRecord:       recordRole{r(dawport.CapRecord)},
 		dawport.CapPunch:        punchRole{r(dawport.CapPunch)},
 		dawport.CapRegions:      regionsRole{r(dawport.CapRegions)},
@@ -226,6 +227,12 @@ type trackStateRole struct{ role }
 
 func (r trackStateRole) ChapterTrackState(context.Context, string) (dawport.TrackState, error) {
 	return dawport.TrackState{}, r.do("ChapterTrackState")
+}
+
+type trackSelectRole struct{ role }
+
+func (r trackSelectRole) SelectTrack(context.Context, string) (dawport.SelectedTrack, error) {
+	return dawport.SelectedTrack{}, r.do("SelectTrack")
 }
 
 type recordRole struct{ role }

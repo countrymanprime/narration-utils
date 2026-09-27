@@ -221,6 +221,20 @@
       "effectiveSource": "repo_default",
       "effectiveValue": "auto",
       "isSet": false,
+      "key": "capability.track_select",
+      "kind": "choice",
+      "label": "Select a track in REAPER",
+      "value": ""
+    },
+    {
+      "choices": [
+        "auto",
+        "on",
+        "off"
+      ],
+      "effectiveSource": "repo_default",
+      "effectiveValue": "auto",
+      "isSet": false,
       "key": "capability.record",
       "kind": "choice",
       "label": "Record",

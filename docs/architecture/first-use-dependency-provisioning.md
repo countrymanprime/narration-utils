@@ -23,8 +23,8 @@ What is delivered, and what is deliberately not:
 - **Not bundled.** No model, voice or dictionary is inside the release; a narrator downloads each one, once, after confirming.
 - **No automatic updates of assets.** The catalog is pinned per release and there is no "update available" state; an asset is
   replaced only by the narrator's own Remove and Download, or Repair.
-- **Windows first.** The setup program and the in-app update are Windows features ([CI and releases](../operations/ci-and-releases.md#the-windows-setup-program));
-  macOS and Linux builds are previews without an installer, and their first-use behaviour is the same code but is not smoke-tested.
+- **Windows only.** The setup program and the in-app update are Windows features ([CI and releases](../operations/ci-and-releases.md#the-windows-setup-program)),
+  and Windows is the only platform the app ships on ([ADR 0412](../adr/0412-windows-is-the-only-supported-platform-for-now.md)).
   The setup program is built in CI and has not yet been run on a clean machine by the owner (release-readiness phase 14 and the first
   stable rehearsal). Work still open is tracked in [release-readiness-provisioning-and-docs-site.prd.md](../prds/release-readiness-provisioning-and-docs-site.prd.md).
 

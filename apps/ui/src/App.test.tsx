@@ -10,6 +10,8 @@ import { parseWire } from './api/wire/parseWire';
 import { bootstrapSchema } from './api/schemas/system';
 import type { GuideBuildResult, WorkJob } from './types';
 import type { JobEnded } from './api/contracts/system';
+import type { DawTransport } from './api/contracts/daw';
+import { setBoothActive } from './components/teleprompter/boothActive';
 
 // BrowserRouter reads/writes the real window.location via history.pushState,
 // which jsdom keeps alive across tests in this file - reset it so each test
@@ -248,6 +250,43 @@ describe('App (integration, driven through the mock NarrationApi)', () => {
     // The import has its own modal dialog, so it is not announced a second time.
     act(() => announce({ id: 'import-1', kind: 'manuscript_import', outcome: 'success', message: 'Manuscript imported.', durationMs: 1200 }));
     expect(screen.queryByText('Manuscript imported.')).toBeNull();
+  });
+
+  it('queues a job-end toast while the booth is recording, and shows it once recording stops (booth-mode-and-companion-panel.prd.md Phase 5)', async () => {
+    let announce: ((event: JobEnded) => void) | undefined;
+    let emitTransport: ((transport: DawTransport) => void) | undefined;
+    renderApp({
+      subscribeJobEnded: (listener) => {
+        announce = listener;
+        return () => {};
+      },
+      subscribeDawTransport: (listener) => {
+        emitTransport = listener;
+        listener({ playing: false, recording: false });
+        return () => {};
+      },
+    });
+    await screen.findByRole('heading', { name: 'Welcome back' });
+    await waitFor(() => expect(announce).toBeDefined());
+    await waitFor(() => expect(emitTransport).toBeDefined());
+
+    act(() => setBoothActive(true));
+    act(() => emitTransport?.({ playing: true, recording: true }));
+
+    act(() => announce?.({ id: 'guide-1', kind: 'story_bible', outcome: 'success', message: 'Story Bible rebuild complete.', durationMs: 4200 }));
+    expect(screen.queryByText('Story Bible rebuild complete.')).toBeNull();
+
+    // An error is never held back, even while recording (Risks table: silence is a comfort rule, not a safety one).
+    act(() =>
+      announce?.({ id: 'run-1', kind: 'transcript_compare', outcome: 'error', message: 'The comparison could not read the REAPER audio.', durationMs: 900 }),
+    );
+    expect(within(screen.getByRole('alert')).getByText('The comparison could not read the REAPER audio.')).toBeTruthy();
+
+    // Recording stops: the queued success toast now appears.
+    act(() => emitTransport?.({ playing: false, recording: false }));
+    expect(within(screen.getByRole('status')).getByText('Story Bible rebuild complete.')).toBeTruthy();
+
+    setBoothActive(false);
   });
 
   it('raises an OS notification for a slow job finishing while the window is unfocused, and not otherwise (N1-N4)', async () => {

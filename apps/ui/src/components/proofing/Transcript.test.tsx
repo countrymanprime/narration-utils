@@ -15,7 +15,14 @@ describe('Transcript actions that answer late or fail (ADR 0075)', () => {
     const notify = vi.fn();
     const { unmount } = render(
       <ApiProvider api={createMockApi({ transcriptCancel: hang })}>
-        <Transcript state={{ ...WIRE_TRANSCRIPT, phase: 'running' }} notify={notify} goHome={vi.fn()} goToManuscript={vi.fn()} dawFileLinked />
+        <Transcript
+          state={{ ...WIRE_TRANSCRIPT, phase: 'running' }}
+          notify={notify}
+          goHome={vi.fn()}
+          goToManuscript={vi.fn()}
+          dawFileLinked
+          refreshKey="test"
+        />
       </ApiProvider>,
     );
     const cancel = screen.getByRole('button', { name: 'Cancel' });
@@ -27,7 +34,14 @@ describe('Transcript actions that answer late or fail (ADR 0075)', () => {
 
     render(
       <ApiProvider api={createMockApi({ transcriptCancel: () => Promise.reject(new Error('the comparison already ended')) })}>
-        <Transcript state={{ ...WIRE_TRANSCRIPT, phase: 'running' }} notify={notify} goHome={vi.fn()} goToManuscript={vi.fn()} dawFileLinked />
+        <Transcript
+          state={{ ...WIRE_TRANSCRIPT, phase: 'running' }}
+          notify={notify}
+          goHome={vi.fn()}
+          goToManuscript={vi.fn()}
+          dawFileLinked
+          refreshKey="test"
+        />
       </ApiProvider>,
     );
     fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
@@ -44,6 +58,7 @@ describe('Transcript actions that answer late or fail (ADR 0075)', () => {
           goHome={vi.fn()}
           goToManuscript={vi.fn()}
           dawFileLinked
+          refreshKey="test"
         />
       </ApiProvider>,
     );
@@ -56,14 +71,14 @@ describe('Transcript DAW-link gating (PRD project-workspace-and-daw-link.prd.md,
   it('disables Start comparison without a linked DAW file, and enables it once linked', () => {
     const { rerender } = render(
       <ApiProvider api={createMockApi()}>
-        <Transcript state={WIRE_TRANSCRIPT} notify={vi.fn()} goHome={vi.fn()} goToManuscript={vi.fn()} dawFileLinked={false} />
+        <Transcript state={WIRE_TRANSCRIPT} notify={vi.fn()} goHome={vi.fn()} goToManuscript={vi.fn()} dawFileLinked={false} refreshKey="test" />
       </ApiProvider>,
     );
     expect((screen.getByRole('button', { name: /Start comparison/ }) as HTMLButtonElement).disabled).toBe(true);
 
     rerender(
       <ApiProvider api={createMockApi()}>
-        <Transcript state={WIRE_TRANSCRIPT} notify={vi.fn()} goHome={vi.fn()} goToManuscript={vi.fn()} dawFileLinked />
+        <Transcript state={WIRE_TRANSCRIPT} notify={vi.fn()} goHome={vi.fn()} goToManuscript={vi.fn()} dawFileLinked refreshKey="test" />
       </ApiProvider>,
     );
     expect((screen.getByRole('button', { name: /Start comparison/ }) as HTMLButtonElement).disabled).toBe(false);
@@ -78,6 +93,7 @@ describe('Transcript DAW-link gating (PRD project-workspace-and-daw-link.prd.md,
           goHome={vi.fn()}
           goToManuscript={vi.fn()}
           dawFileLinked={false}
+          refreshKey="test"
         />
       </ApiProvider>,
     );
@@ -98,6 +114,7 @@ describe('Transcript chapter choice', () => {
           goHome={vi.fn()}
           goToManuscript={vi.fn()}
           dawFileLinked
+          refreshKey="test"
         />
       </ApiProvider>,
     );
@@ -113,7 +130,7 @@ describe('Transcript vocabulary suggestions', () => {
     const api = createMockApi();
     render(
       <ApiProvider api={api}>
-        <Transcript state={WIRE_TRANSCRIPT} notify={vi.fn()} goHome={vi.fn()} goToManuscript={vi.fn()} dawFileLinked />
+        <Transcript state={WIRE_TRANSCRIPT} notify={vi.fn()} goHome={vi.fn()} goToManuscript={vi.fn()} dawFileLinked refreshKey="test" />
       </ApiProvider>,
     );
     await screen.findByText('Vocabulary hints');
@@ -144,6 +161,7 @@ describe('Transcript vocabulary suggestions', () => {
           goHome={vi.fn()}
           goToManuscript={vi.fn()}
           dawFileLinked
+          refreshKey="test"
         />
       </ApiProvider>,
     );
@@ -188,7 +206,7 @@ describe('Transcript vocabulary suggestions', () => {
     const api = createMockApi({ transcriptStart, whisperInstall });
     render(
       <ApiProvider api={api}>
-        <Transcript state={WIRE_TRANSCRIPT} notify={vi.fn()} goHome={vi.fn()} goToManuscript={vi.fn()} dawFileLinked />
+        <Transcript state={WIRE_TRANSCRIPT} notify={vi.fn()} goHome={vi.fn()} goToManuscript={vi.fn()} dawFileLinked refreshKey="test" />
       </ApiProvider>,
     );
 
@@ -211,6 +229,7 @@ describe('Transcript vocabulary suggestions', () => {
           goHome={vi.fn()}
           goToManuscript={vi.fn()}
           dawFileLinked
+          refreshKey="test"
         />
       </ApiProvider>,
     );
@@ -226,7 +245,7 @@ describe('Transcript vocabulary hints feedback', () => {
     const api = createMockApi(overrides);
     render(
       <ApiProvider api={api}>
-        <Transcript state={WIRE_TRANSCRIPT} notify={notify} goHome={vi.fn()} goToManuscript={vi.fn()} dawFileLinked />
+        <Transcript state={WIRE_TRANSCRIPT} notify={notify} goHome={vi.fn()} goToManuscript={vi.fn()} dawFileLinked refreshKey="test" />
       </ApiProvider>,
     );
     return notify;

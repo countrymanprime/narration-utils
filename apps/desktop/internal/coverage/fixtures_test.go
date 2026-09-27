@@ -187,6 +187,16 @@ type fakeSidecar struct {
 	pauseAfter int
 	paused     chan struct{}
 	resume     chan struct{}
+
+	// The model cascade PRD Phase 4's own stages, driven off which flags a launch carries.
+	rechecked           []string // words file names named by every --recheck windows file seen
+	recheckExitCode     int      // non-zero: --recheck fails with this code after writing an ERROR line
+	recheckErrorMessage string
+	afterRecheckPresent int // present tokens (of 10) --align-only reports once a --recheck has run; 0 keeps f.present
+	wholeChapterPresent int // present tokens (of 10) a pass under a model other than the first launch's reports; 0 keeps f.present
+
+	realignExitCode     int // non-zero: an --align-only stage fails with this code after writing an ERROR line
+	realignErrorMessage string
 }
 
 type fakeChild struct {
@@ -230,6 +240,12 @@ func (f *fakeSidecar) transcriptions() []string {
 	return append([]string(nil), f.transcribed...)
 }
 
+func (f *fakeSidecar) rechecks() []string {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	return append([]string(nil), f.rechecked...)
+}
+
 func (f *fakeSidecar) lastArgs() map[string]string {
 	f.mu.Lock()
 	defer f.mu.Unlock()
@@ -259,6 +275,9 @@ func progressLine(path, stage string, pct int, message string) {
 func (f *fakeSidecar) run(args []string) int {
 	values := flags(args)
 	progress := values["--progress"]
+	if windowsPath := values["--recheck"]; windowsPath != "" {
+		return f.runRecheck(progress, windowsPath)
+	}
 	progressLine(progress, "START", 0, "Starting...")
 	raw, err := os.ReadFile(values["--manifest"])
 	if err != nil {
@@ -310,6 +329,10 @@ func (f *fakeSidecar) run(args []string) int {
 		progressLine(progress, "ERROR", 0, f.errorMessage)
 		return f.exitCode
 	}
+	if values["--align-only"] == "true" && f.realignExitCode != 0 {
+		progressLine(progress, "ERROR", 0, f.realignErrorMessage)
+		return f.realignExitCode
+	}
 	results := "COVERAGE|not json\n"
 	if len(f.results) > 0 {
 		results = strings.Join(f.results, "\n") + "\n"
@@ -317,6 +340,15 @@ func (f *fakeSidecar) run(args []string) int {
 		present := f.present
 		if present == 0 {
 			present = 10
+		}
+		f.mu.Lock()
+		firstModel := flags(f.launches[0])["--model"]
+		f.mu.Unlock()
+		switch {
+		case values["--align-only"] == "true" && f.afterRecheckPresent != 0:
+			present = f.afterRecheckPresent
+		case values["--model"] != firstModel && f.wholeChapterPresent != 0:
+			present = f.wholeChapterPresent
 		}
 		results = fmt.Sprintf(`COVERAGE|{"schemaVersion":1,"chapterId":%q,"bodyTokens":10,"presentTokens":%d,"missingTokens":%d,"extraTokens":0,"longestMissingRun":%d,"alignment":{"maxMisreadRun":%s,"minAnchorRun":%s},"items":{"analyzed":0,"muted":0,"playedSeconds":0,"transcribed":0,"reused":0},"analysis":{"model":%q,"language":null,"equivalencesHash":null}}`+"\n",
 			values["--chapter-id"], present, 10-present, 10-present, values["--max-misread-run"], values["--min-anchor-run"], values["--model"])
@@ -335,6 +367,36 @@ func (f *fakeSidecar) run(args []string) int {
 	if err := writeAtomically(values["--out"], []byte(results)); err != nil {
 		return 1
 	}
+	progressLine(progress, "DONE", 100, "Finished")
+	return 0
+}
+
+// runRecheck stands in for `compare.py --coverage --recheck <windows.json>`: it never touches a
+// manifest, chapter or --out (coverage_mode.run_recheck's own contract), just records which words
+// files the windows file named, so a test can assert the planner's own windows reached the sidecar.
+func (f *fakeSidecar) runRecheck(progress, windowsPath string) int {
+	progressLine(progress, "START", 0, "Starting...")
+	if _, err := os.Stat(progress + ".cancel"); err == nil {
+		progressLine(progress, "CANCELLED", 0, "Cancelled by user")
+		return exitCancelled
+	}
+	if f.recheckExitCode != 0 {
+		progressLine(progress, "ERROR", 0, f.recheckErrorMessage)
+		return f.recheckExitCode
+	}
+	raw, err := os.ReadFile(windowsPath)
+	if err != nil {
+		return 1
+	}
+	var decoded windowsFile
+	if err := json.Unmarshal(raw, &decoded); err != nil {
+		return 1
+	}
+	f.mu.Lock()
+	for _, w := range decoded.Windows {
+		f.rechecked = append(f.rechecked, w.WordsFile)
+	}
+	f.mu.Unlock()
 	progressLine(progress, "DONE", 100, "Finished")
 	return 0
 }

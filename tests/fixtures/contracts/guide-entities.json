@@ -19,6 +19,18 @@
         "text": "Arelian"
       }
     ],
+    "appearances": [
+      {
+        "chapter": "Chapter 1",
+        "chapterId": "legacy-chapter-0",
+        "sceneIndex": 0
+      },
+      {
+        "chapter": "Chapter 1",
+        "chapterId": "legacy-chapter-1",
+        "sceneIndex": 0
+      }
+    ],
     "canonical_name": "Captain Arelian",
     "category": "Character",
     "context": "",
@@ -69,6 +81,23 @@
   },
   {
     "aliases": [],
+    "appearances": [
+      {
+        "chapter": "Chapter 1",
+        "chapterId": "legacy-chapter-0",
+        "sceneIndex": 0
+      },
+      {
+        "chapter": "Chapter 1",
+        "chapterId": "legacy-chapter-2",
+        "sceneIndex": 0
+      },
+      {
+        "chapter": "Chapter 1",
+        "chapterId": "legacy-chapter-3",
+        "sceneIndex": 0
+      }
+    ],
     "canonical_name": "Dawnspire",
     "category": "Needs Review",
     "context": "",
@@ -122,6 +151,13 @@
   },
   {
     "aliases": [],
+    "appearances": [
+      {
+        "chapter": "Chapter 1",
+        "chapterId": "legacy-chapter-0",
+        "sceneIndex": 0
+      }
+    ],
     "canonical_name": "Council of Ash",
     "category": "Organization",
     "context": "",
