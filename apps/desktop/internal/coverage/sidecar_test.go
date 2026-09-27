@@ -53,7 +53,7 @@ func seedWords(t *testing.T, service *Service, p *testProject, source string, st
 	file := fmt.Sprintf(`{"schemaVersion":1,"sourceStart":%g,"sourceEnd":%g,"words":[%s],"transcription":{"model":"small","language":"en","hotwordsHash":null,"vadFilter":true}}`,
 		start, end, strings.Join(words, ","))
 	blob, _ := json.Marshal(wordsBlob{SchemaVersion: wordsBlobVersion, Segments: []json.RawMessage{json.RawMessage(file)}})
-	cache := wordsCache{store: service.cache, paramHash: wordsParamHash(Transcription{Model: "small"}, readProjectInputs(p.dir))}
+	cache := wordsCache{store: service.cache, paramHash: wordsParamHash(Transcription{Model: "small"}, "", readProjectInputs(p.dir))}
 	if err := cache.store.Write(cache.key(identity), blob); err != nil {
 		t.Fatal(err)
 	}

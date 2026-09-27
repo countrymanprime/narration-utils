@@ -114,6 +114,12 @@
       "message": "No DAW is connected to this app. Open this app from your DAW to use it.",
       "reason": "standalone"
     },
+    "track_select": {
+      "available": false,
+      "level": "unsupported",
+      "message": "No DAW is connected to this app. Open this app from your DAW to use it.",
+      "reason": "standalone"
+    },
     "track_state": {
       "available": false,
       "level": "unsupported",
