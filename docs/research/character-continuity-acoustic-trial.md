@@ -59,13 +59,13 @@ again, exactly as the PRD's protocol describes.
 
 ## What ran
 
-Three feature engines, one shared corpus, one shared evaluation ([`run_trial.py`](character-continuity-acoustic-trial/run_trial.py)):
+Three feature engines, one shared corpus, one shared evaluation ([`run_trial.py`](../../scripts/research/character-continuity-acoustic-trial/run_trial.py)):
 
 | Engine | Module | Installed? |
 | --- | --- | --- |
-| Dependency-free baseline (Q1 option A) | [`features_baseline.py`](character-continuity-acoustic-trial/features_baseline.py) | Always (numpy only, already a repository dependency) |
-| Praat via `praat-parselmouth` (candidate 6) | [`features_praat.py`](character-continuity-acoustic-trial/features_praat.py) | Yes, in an isolated venv outside the repo - `pip install praat-parselmouth` took 4s, no compiler needed |
-| Resemblyzer (candidate 5) | [`features_resemblyzer.py`](character-continuity-acoustic-trial/features_resemblyzer.py) | Yes, in the same isolated venv, after two install-friction fixes (below) |
+| Dependency-free baseline (Q1 option A) | [`features_baseline.py`](../../scripts/research/character-continuity-acoustic-trial/features_baseline.py) | Always (numpy only, already a repository dependency) |
+| Praat via `praat-parselmouth` (candidate 6) | [`features_praat.py`](../../scripts/research/character-continuity-acoustic-trial/features_praat.py) | Yes, in an isolated venv outside the repo - `pip install praat-parselmouth` took 4s, no compiler needed |
+| Resemblyzer (candidate 5) | [`features_resemblyzer.py`](../../scripts/research/character-continuity-acoustic-trial/features_resemblyzer.py) | Yes, in the same isolated venv, after two install-friction fixes (below) |
 
 **Baseline features** (hand-written, numpy only, no scipy/librosa/torch, matching Q1 option A
 and ADR 0008's "no PyTorch" constraint): per 40 ms frame at 10 ms hop, an autocorrelation pitch
@@ -197,7 +197,7 @@ Provisional, pending the real-corpus re-run:
 On the owner's own recordings, or once the sandbox can reach `librivox.org`/`archive.org`:
 
 ```bash
-cd docs/research/character-continuity-acoustic-trial
+cd scripts/research/character-continuity-acoustic-trial
 python3 synthetic_corpus.py <scratch_dir_outside_the_repo>/corpus   # or substitute a real corpus with the same manifest.json shape
 python3 run_trial.py <scratch_dir_outside_the_repo>/corpus
 ```
@@ -221,5 +221,5 @@ and hand-check each line's timestamps against the source text as the PRD's proto
 `run_trial.py` does not care whether the corpus was synthesized or recorded.
 
 Posted to [#510](https://github.com/countrymanprime/narration-utils/issues/510) for the owner
-per the worker instructions; see [Sources](character-continuity-acoustic-trial/SOURCES.md) for
+per the worker instructions; see [Sources](../../scripts/research/character-continuity-acoustic-trial/SOURCES.md) for
 full provenance.

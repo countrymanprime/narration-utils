@@ -22,12 +22,10 @@ verifies and removes the voices and models the app has downloaded (Settings > Lo
 [Using the app](docs/guides/using-the-app/README.md) for a full screenshot walkthrough. The UI's component library is a
 Storybook atlas (`pnpm --dir apps/ui run storybook`, checked in CI by the `ui-atlas` job); its generated reference is in
 [`docs/ui/atlas/`](docs/ui/atlas/index.md) and the design rules in the [design system reference](docs/design/design-system.md).
-The guide, the roadmap, the atlas and selected architecture and decision records are also published as a website,
-[countrymanprime.github.io/narration-utils](https://countrymanprime.github.io/narration-utils/) (generated from `docs/` by
-[`tools/docs-site`](docs/operations/ci-and-releases.md#the-public-docs-site)), with the live Storybook under `/storybook/` and a
-[live demo of the app](https://countrymanprime.github.io/narration-utils/demo/) (sample project, nothing saved) under `/demo/`. The `Pages`
-workflow rebuilds all three from `main`; the address answers 404 until the repository owner sets Settings > Pages > Source to GitHub Actions (see
-[Tracking work on GitHub](docs/operations/github-workflow.md#repository-settings-that-only-the-owner-can-change)).
+The public website (docs, live Storybook and a browser demo of the app, built by
+[`tools/docs-site`](docs/operations/ci-and-releases.md#the-public-docs-site)) is **paused** until the main app's development is
+done and the site is reworked (owner decision D75, [the Pages workflow](docs/operations/ci-and-releases.md#the-pages-workflow));
+read the docs here in `docs/` meanwhile.
 
 ![Home, manuscript found](docs/images/ui/home-default.webp)
 
