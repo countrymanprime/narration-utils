@@ -30,12 +30,20 @@ type StageRecordingScenario = 'met' | 'not_met' | { unknown: StageUnknownCause }
  * cannot vouch for is never `met`, seeded or not. */
 type StageEditingScenario = 'met' | 'not_met' | { unknown: StageUnknownCause; reason?: string };
 
+/** The proofing pickups roll-up (proofing-readiness-signals.prd.md Phase 1), the only signal this mock seeds for the
+ * proofing stage: the delivery checks (Phase 5) are never required by the default delivery profile, so they are left
+ * out of every chapter's required set the same way the real engine's `FilterRequired` drops them (bindings_stages.go). */
+type StageProofingScenario = 'met' | 'not_met' | { unknown: StageUnknownCause; reason?: string };
+
 export type StagesSeed = {
   /** The recording signal of these chapters, instead of the one their recordedFraction gives. */
   recording?: Record<string, StageRecordingScenario>;
   /** The editing check's empty-space signal of these chapters (only chapters already in Editing status are
    * evaluated at all, matching the real engine's D3 gate); a chapter left out reads `never_analyzed`. */
   editing?: Record<string, StageEditingScenario>;
+  /** The proofing pickups signal of these chapters (only chapters already in Proofing status are evaluated); a
+   * chapter left out reads `never_analyzed`, matching a project with no current comparison. */
+  proofing?: Record<string, StageProofingScenario>;
   /** Chapters in editing that the narrator confirmed from recording on an all-read check (a live confirmation). */
   confirmed?: string[];
   /** Chapters whose all-read recording check the narrator dismissed. */
@@ -94,6 +102,19 @@ const EDITING_UNKNOWN_REASONS: Partial<Record<StageUnknownCause, string>> = {
   provider_error: 'could not check: the editing check results could not be read',
 };
 
+/** The proofing pickups roll-up's reason for each cause it can report (apps/desktop/internal/proofing/pickups.go). */
+const PROOFING_UNKNOWN_REASONS: Partial<Record<StageUnknownCause, string>> = {
+  never_analyzed: 'No pickup check is current for this chapter. Run Transcript Compare on every item of the chapter’s track, then save the project in REAPER.',
+  stale: 'Re-run Transcript Compare: an item on this chapter’s track changed since the last comparison.',
+  incomplete_run: 'The last comparison did not cover every item. Compare every item on the chapter’s track.',
+  analysis_running: 'A comparison of this chapter is running.',
+  unmapped_track: 'Link this chapter to its REAPER track.',
+  unconfirmed_mapping: 'A track’s name matches this chapter. Confirm the link on the Tracks page.',
+  multiple_tracks: 'This chapter is linked to more than one REAPER track. Keep one link.',
+  project_unreadable: 'The saved REAPER project could not be read.',
+  provider_error: 'could not check: the pickup results could not be read',
+};
+
 /** Click and breath are never seeded (Phase 4's corpus validation has not shipped): every build, mock included,
  * reports them `unknown` so a narrator is never told a class it cannot vouch for is done. */
 function unvalidatedSignal(id: 'editing.clicks' | 'editing.breaths'): StageSignal {
@@ -133,6 +154,51 @@ function emptySpaceSignal(chapter: ManuscriptChapter, scenario: StageEditingScen
     state: 'not_met',
     reason: '1 empty-space candidate: 1.80 s between two phrases, above the maximum gap.',
     evidence: [caveat, { kind: 'candidate', label: 'Candidate', value: 'above the maximum gap', range: { start: 12.4, end: 14.2 } }],
+    basis,
+  };
+}
+
+/** The proofing pickups roll-up (proofing-readiness-signals.prd.md Phase 1, apps/desktop/internal/proofing/pickups.go):
+ * one "source" evidence line summarizing Transcript Compare's open, dismissed and resolved counts, plus one "pickup"
+ * evidence entry per open item on `not_met`. The delivery checks (Phase 5) are not in this signal: they are simply
+ * left out of the chapter's required set (see `StagesSeed.proofing`'s comment), the same shape the real engine gives
+ * a chapter whose delivery profile requires none of them. */
+function pickupsSignal(chapter: ManuscriptChapter, scenario: StageProofingScenario): StageSignal {
+  const base = { id: 'proofing.pickups', stage: 'proofing' as const, computedAt: MOCK_TIME };
+  const basis = {
+    ledgerRecordIds: [`mock-proofing-record-${chapter.id}`],
+    fingerprint: `mock-proofing-fingerprint-${chapter.id}`,
+    projectFileModTime: MOCK_TIME,
+  };
+  if (typeof scenario !== 'string') {
+    return {
+      ...base,
+      state: 'unknown',
+      cause: scenario.unknown,
+      reason: scenario.reason ?? PROOFING_UNKNOWN_REASONS[scenario.unknown] ?? 'Cannot check pickups here yet.',
+      evidence: [],
+      basis,
+    };
+  }
+  const source = { kind: 'source', label: 'Transcript Compare' };
+  if (scenario === 'met') {
+    return {
+      ...base,
+      state: 'met',
+      reason: 'No open pickups, and a current comparison covers every played item.',
+      evidence: [{ ...source, value: '0 open, 0 dismissed; current' }],
+      basis,
+    };
+  }
+  return {
+    ...base,
+    state: 'not_met',
+    reason:
+      '1 open pickup(s) to clear up (1 Transcript Compare). Decide each on the Review page; a dismissal is the only way to close one without re-recording.',
+    evidence: [
+      { ...source, value: '1 open, 0 dismissed; current' },
+      { kind: 'pickup', label: 'Transcript Compare: discrepancy', value: '“form” heard as “from”', findingId: `mock-proofing-finding-${chapter.id}` },
+    ],
     basis,
   };
 }
@@ -182,6 +248,7 @@ function recordingSignal(chapter: ManuscriptChapter, scenario: StageRecordingSce
 export function createStagesMock(deps: Deps): StagesApi {
   const recording = new Map(Object.entries(deps.seed?.recording ?? {}));
   const editing = new Map(Object.entries(deps.seed?.editing ?? {}));
+  const proofing = new Map(Object.entries(deps.seed?.proofing ?? {}));
   const confirmations = new Map<string, Omit<StageConfirmation, 'evidenceChanged'>>(
     (deps.seed?.confirmed ?? []).map((id) => [id, { from: 'recording', target: 'editing', basisKey: keyFor(id, 'editing', 'met'), at: MOCK_TIME }]),
   );
@@ -213,6 +280,15 @@ export function createStagesMock(deps: Deps): StagesApi {
         basisKey,
         signals: [emptySpaceSignal(chapter, scenario), unvalidatedSignal('editing.clicks'), unvalidatedSignal('editing.breaths')],
       };
+    }
+    if (status === 'proofing') {
+      // Unlike editing, an unseeded proofing chapter still gets a real signal (`never_analyzed`, matching a project
+      // with no current comparison) rather than `none`: this stage has no other build depending on the bare shape.
+      const scenario = proofing.get(chapter.id) ?? { unknown: 'never_analyzed' as const };
+      const state = scenarioState(scenario);
+      const basisKey = keyFor(chapter.id, target, scenario);
+      const verdict = state === 'met' ? (dismissed.has(basisKey) ? 'dismissed' : 'recommended') : state === 'not_met' ? 'not_ready' : 'unknown';
+      return { target, verdict, basisKey, signals: [pickupsSignal(chapter, scenario)] };
     }
     if (status !== 'recording') return { target, verdict: 'none', noneReason: 'no_required_signals', signals: [] };
     const scenario = scenarioOf(chapter);

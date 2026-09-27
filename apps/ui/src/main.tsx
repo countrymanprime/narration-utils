@@ -220,6 +220,9 @@ const mockRegionsCapabilityOn = mockParams.has('mockRegionsCapabilityOn');
 // so "Punch from here"'s enabled state - the confirm dialog in the read-aloud rail, the pickup list's own button - can
 // be captured without also exercising the Settings toggle.
 const mockPunchCapabilityOn = mockParams.has('mockPunchCapabilityOn');
+// `?mockDawPlayhead=134.6` seeds the DAW port's live transport (daw_transport_changed) as playing at that project time, for
+// the companion panel's playhead badge (booth-mode-and-companion-panel.prd.md Phase 7). Without it, the transport is stopped.
+const mockDawPlayhead = Number.parseFloat(mockParams.get('mockDawPlayhead') ?? '');
 // `?mockCoverage=hold|stale|pickups` holds a started recording check at its last transcribing step (so the running
 // dialog can be seen), makes Chapter 4's stored check read stale (an item was trimmed since), or gives Chapter 4 two
 // interior pickups (a skip and a short read) plus a small tail instead of its default tail-only split, and seeds a
@@ -257,6 +260,14 @@ const MOCK_EDITING_SIGNAL_SEED: Record<NonNullable<typeof mockEditingSignal>, { 
   met: 'met',
   'not-met': 'not_met',
 };
+// `?mockProofingStages=mixed` seeds the Proofing page panel's two default proofing-stage chapters (chapter-stage-recommendations.prd.md
+// Phase 8, proofing-readiness-signals.prd.md Phase 1): Chapter 9's pickups read clear (Suggested: Finalized), Chapter 10 has one open
+// (Not ready), so the panel's summary and its evidence view can be seen without a host.
+const mockProofingStages = mockParams.get('mockProofingStages') === 'mixed';
+// `?mockProofingSignal=unmapped-track` seeds Chapter 9's pickups signal directly with an unknown cause that needs a track link, so
+// the evidence view's cause action ("Open Tracks", never "Open recording check" - stageText.ts's `PROOFING_CAUSE_TEXT`) can be seen
+// without a host.
+const mockProofingSignal = mockParams.get('mockProofingSignal') === 'unmapped-track';
 const MOCK_STAGES_MEASURED = { [WIRE_CHAPTERS[3].id]: 1 };
 const MOCK_STAGES_SEEDS = {
   mixed: {
@@ -429,7 +440,10 @@ const mockInitial = {
   ...(mockEditingSignal
     ? { stages: { ...(mockStages ? MOCK_STAGES_SEEDS[mockStages] : {}), editing: { [WIRE_CHAPTERS[6].id]: MOCK_EDITING_SIGNAL_SEED[mockEditingSignal] } } }
     : {}),
+  ...(mockProofingStages ? { stages: { proofing: { [WIRE_CHAPTERS[8].id]: 'met' as const, [WIRE_CHAPTERS[9].id]: 'not_met' as const } } } : {}),
+  ...(mockProofingSignal ? { stages: { proofing: { [WIRE_CHAPTERS[8].id]: { unknown: 'unmapped_track' as StageUnknownCause } } } } : {}),
   ...(mockDawExperimentalOn ? { daw: { experimentalOn: true } } : {}),
+  ...(Number.isFinite(mockDawPlayhead) ? { daw: { transport: { playing: true, recording: false, position: mockDawPlayhead } } } : {}),
 };
 const api = import.meta.env.VITE_USE_MOCK_API === '1' ? createMockApi(window.__NARRATION_MOCK_OVERRIDES__, mockInitial) : wailsClient;
 

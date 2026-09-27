@@ -287,6 +287,14 @@ export const wailsClient: NarrationApi = {
   systemNotify: (kind, title, body) => decode(voidResult, 'SystemNotify', host.SystemNotify(kind, title, body)),
   systemLookup: (word) => decode(dictionaryLookupResultSchema, 'SystemLookup', host.SystemLookup(word)),
   systemOpenLogFolder: () => decode(voidResult, 'SystemOpenLogFolder', host.SystemOpenLogFolder()),
+  // Error-only Go bindings (apps/desktop/bindings_companion.go): Wails resolves them with no payload, so there is nothing to
+  // check beyond the error `hostResult` already turns into text.
+  companionModeEnter: async () => {
+    await hostResult(host.CompanionModeEnter());
+  },
+  companionModeExit: async () => {
+    await hostResult(host.CompanionModeExit());
+  },
   systemCopyDiagnostics: (scope) => decode(copyDiagnosticsResultSchema, 'SystemCopyDiagnostics', host.SystemCopyDiagnostics(scope)),
   subscribeProjectAttach: (onUpdate) => subscribeChecked('system:attached', projectAttachStateSchema, onUpdate),
   subscribeLiveUpdateHealth: (onDegraded) => liveHealth.subscribe(onDegraded),
@@ -415,6 +423,7 @@ export const wailsClient: NarrationApi = {
   setCreditsStatus: (kind, status) => decode(creditsStatusesSchema, 'CreditsSetStatus', host.CreditsSetStatus(kind, status)),
   dawCatalogList: () => decode(dawCatalogListSchema, 'DawCatalogList', host.DawCatalogList()),
   dawCatalogOpenDownloadPage: (id) => decode(voidResult, 'DawCatalogOpenDownloadPage', host.DawCatalogOpenDownloadPage(id)),
+  pronunciationLookupOpen: (source, word) => decode(voidResult, 'PronunciationLookupOpen', host.PronunciationLookupOpen(source, word)),
   dawCapabilities: () => decode(dawCapabilitiesSchema, 'DawCapabilities', host.DawCapabilities()),
   subscribeDawCapabilities: (onUpdate) => subscribeChecked('daw_capabilities_changed', dawCapabilitiesSchema, onUpdate),
   providerCapabilities: () => decode(providerCapabilitiesSchema, 'ProviderCapabilities', host.ProviderCapabilities()),
