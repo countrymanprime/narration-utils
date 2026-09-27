@@ -15,6 +15,7 @@ import { RenderConfigDialog } from './RenderConfigDialog';
 import { CleanupToolsDialog } from './CleanupToolsDialog';
 import { RetakeLanesDialog } from './RetakeLanesDialog';
 import { ChapterTagsDialog } from './ChapterTagsDialog';
+import { CreateChapterRegionsDialog } from './CreateChapterRegionsDialog';
 import type { ManuscriptChapter, Track, TracksDiscovery, TracksProject } from '../../types';
 
 function basename(path: string): string {
@@ -149,6 +150,7 @@ export function TracksPage({ dawFileLinked, onLinkDawFile, notify }: { dawFileLi
   const [cleanupToolsOpen, setCleanupToolsOpen] = useState(false);
   const [retakeLanesOpen, setRetakeLanesOpen] = useState(false);
   const [chapterTagsOpen, setChapterTagsOpen] = useState(false);
+  const [createRegionsOpen, setCreateRegionsOpen] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -228,6 +230,9 @@ export function TracksPage({ dawFileLinked, onLinkDawFile, notify }: { dawFileLi
             <Button variant="ghost" onClick={() => setRenderConfigOpen(true)}>
               Prepare chapter render…
             </Button>
+            <Button variant="ghost" onClick={() => setCreateRegionsOpen(true)}>
+              Create chapter regions…
+            </Button>
             <Button variant="ghost" onClick={() => setChapterTagsOpen(true)}>
               Embed chapter tags…
             </Button>
@@ -245,6 +250,7 @@ export function TracksPage({ dawFileLinked, onLinkDawFile, notify }: { dawFileLi
       {linkChaptersOpen && project && <LinkChaptersDialog chapters={chapters} tracks={project.tracks} onClose={() => setLinkChaptersOpen(false)} />}
       {pickupsOpen && <PickupsDialog onClose={() => setPickupsOpen(false)} />}
       {renderConfigOpen && <RenderConfigDialog onClose={() => setRenderConfigOpen(false)} />}
+      {createRegionsOpen && project && <CreateChapterRegionsDialog tracks={project.tracks} onClose={() => setCreateRegionsOpen(false)} />}
       {chapterTagsOpen && <ChapterTagsDialog onClose={() => setChapterTagsOpen(false)} />}
       {cleanupToolsOpen && <CleanupToolsDialog onClose={() => setCleanupToolsOpen(false)} />}
       {retakeLanesOpen && <RetakeLanesDialog onClose={() => setRetakeLanesOpen(false)} />}

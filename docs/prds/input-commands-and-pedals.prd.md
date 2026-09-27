@@ -176,7 +176,7 @@ Lanes: **U** = primitives and input (Sonnet), **A** = host (Go settings). ADRs c
 | 8 | Spike: Web MIDI and WebHID (U) | Availability and permission in WebView2, WKWebView and WebKitGTK 6.0. A research note | complete | with 2 to 7 | - | - |
 | 9 | MidiSource (U, A if needed) | Web MIDI note-on and CC presses, learned in the Phase 6 recorder. Threat model | complete | with 10 | 6, 8 | - |
 | 10 | Silent while recording (U) | `noisy` commands suppressed while the DAW port reports recording | complete: `useDawRecording` subscribes to `daw_transport_changed` and `<LiveCommandRouter>` wires it into the router's `isRecording` seam from Phase 1 (mounted in `main.tsx` in place of a bare `<CommandRouter>`, now passed Phase 9's combined keyboard+MIDI `source`); a suppressed press still posts "Not while recording." to its own `aria-live` region (PRD Q5) | with 9 | 1, DAW port P9 | - |
-| 11 | HidSource (U, Could) | WebHID buttons as gestures, if Phase 8 finds it usable | pending | - | 8, 9 | - |
+| 11 | HidSource (U, Could) | WebHID buttons as gestures, if Phase 8 finds it usable | complete: implemented on the owner's authorization despite Phase 8's spike being unable to confirm WebView2's device chooser actually renders (its recommendation was to wait for a real-build check, [#510](https://github.com/countrymanprime/narration-utils/issues/510), still open) | - | 8, 9 | - |
 | 12 | Global hotkeys spike (A, Could) | Host-level hotkeys while REAPER has focus, for the companion panel. Not MVP | complete | any | 5 | - |
 
 ### Phase details
@@ -233,6 +233,9 @@ Lanes: **U** = primitives and input (Sonnet), **A** = host (Go settings). ADRs c
 - **Tests.** Unit tests use a fake state.
 
 **Phase 11.** HidSource maps button reports to `hid:<vid>:<pid>/<button>`, only if Phase 8 finds WebHID usable. Otherwise the phase closes as won't-do with the spike's reason.
+- **Built despite an unconfirmed spike.** Phase 8's spike (`docs/research/web-midi-hid-webview-spike.md`) could not confirm `navigator.hid.requestDevice()` actually renders a device chooser inside WebView2 - the only evidence found (a community bug report, not a vendor statement) suggests it might not - and its own recommendation was to wait for a real Wails v3 build check before starting this phase. The owner authorized building it anyway, accepting the risk that the source may end up with no way to ever pair a device on the shipped app; see threat-model.md row 11d and the PRD's own contingency ("otherwise the phase closes as won't-do") if a real check later confirms the chooser does not work.
+- **No pairing UI yet.** `HidSource.ts` only reads devices already granted (`navigator.hid.getDevices()`); `requestDevice()` needs a user gesture, so it exports `requestHidDevice()` for a future Settings "Connect a pedal" button (`KeyboardPanel.tsx`, not built in this phase) to call from a click handler. Until that button exists, a HID device can only be tested from a `navigator.hid.requestDevice()` call outside the app (e.g. a DevTools console pointed at the same origin) - a real gap, tracked here rather than guessed around.
+- **Button encoding.** No HID report has a fixed shape the way a MIDI message does, so `HidSource` does not parse any device's report descriptor; it watches every byte of a report for a bit rising from 0 to 1 against that device's and report id's last-seen bytes, and encodes the press as `<reportId>.<byteIndex>.<bit>` (the report id disambiguates two reports that reuse the same byte and bit for unrelated buttons), giving gestures of the form `hid:<vid>:<pid>/<reportId>.<byteIndex>.<bit>` (vid/pid as 4-digit lowercase hex).
 
 **Phase 12.** Spike, lane A. Can Wails v3 or the OS register a hotkey that fires while REAPER has focus, and at what cost (a Windows `RegisterHotKey` hook, macOS accessibility permission)? The keymap row is the source of truth either way.
 
@@ -276,6 +279,7 @@ Lanes: **U** = primitives and input (Sonnet), **A** = host (Go settings). ADRs c
 | Persistence | Host settings store, one global row (Q2) | `localStorage` | Survives a webview profile reset. The host can reuse it for global hotkeys |
 | Conflicts | Pure `findConflicts` over overlapping scopes, zero in defaults, a remap conflict asks | Last binding wins silently | A silent shadow is the bug class this PRD removes |
 | Existing ADRs | ADR 0196 behaviour and ADR 0119 `isScrollKey` kept. The registry's `preventDefault` is the same hand-off ADR 0196 uses | Rewrite scroll detection as a command | Scroll intent is detection, not a command |
+| Phase 11 (HidSource) despite an unconfirmed spike | Built anyway, on the owner's explicit authorization, 2026-09-27 | Wait for the real-build check Phase 8's spike recommends ([#510](https://github.com/countrymanprime/narration-utils/issues/510)); close the phase as won't-do now | The owner accepted the risk that `navigator.hid.requestDevice()`'s chooser may never render inside WebView2 (Phase 8 could not confirm either way); shipping the code costs nothing if it turns out unusable - the feature-detected source just contributes nothing, same as MIDI would on an unsupported platform - and it is ready the moment a real check (or a future pairing UI) proves it out |
 
 ## Research Summary
 
