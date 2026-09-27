@@ -2,7 +2,7 @@
 
 **Status:** Proposed (REAPER's own behaviour of the calls below is an owner check on #510, D65)
 **Date:** 2026-09-27
-**Supersedes:** none. It delivers [Read Aloud Resume from the DAW](../prds/read-aloud-resume-from-daw.prd.md) Phase 4 on top of [ADR 0231](0231-chapter-track-state-is-one-read-only-answer-of-the-transport-the-arms-the-input-device-and-one-tracks-items.md) (`chapter_track_state`), [ADR 0111](0111-the-resume-point-comes-from-transcribing-the-recorded-tail-and-placing-it-with-the-tracker.md) (the tail locate) and [ADR 0206](0206-resume-reconciles-the-recording-with-the-prompters-last-word-in-the-host-and-asks-only-when-they-disagree.md) (the reconciled verdict). It adds a second source for ADR 0111's "where the recording ends" and changes nothing in how the tail is placed.
+**Supersedes:** none. It delivers Read Aloud Resume from the DAW (PRD deleted, delivered; steady state in [the teleprompter architecture](../architecture/manuscript-teleprompter.md#resume-where-reaper-is-and-where-the-prompter-was)) Phase 4 on top of [ADR 0231](0231-chapter-track-state-is-one-read-only-answer-of-the-transport-the-arms-the-input-device-and-one-tracks-items.md) (`chapter_track_state`), [ADR 0111](0111-the-resume-point-comes-from-transcribing-the-recorded-tail-and-placing-it-with-the-tracker.md) (the tail locate) and [ADR 0206](0206-resume-reconciles-the-recording-with-the-prompters-last-word-in-the-host-and-asks-only-when-they-disagree.md) (the reconciled verdict). It adds a second source for ADR 0111's "where the recording ends" and changes nothing in how the tail is placed.
 
 ## Context
 

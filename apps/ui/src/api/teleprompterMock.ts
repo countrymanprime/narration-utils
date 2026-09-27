@@ -722,6 +722,19 @@ export function createTeleprompterMock(deps: Deps): TeleprompterApi {
       stateSubscribers.add(onState);
       return () => stateSubscribers.delete(onState);
     },
+    // The mock has no live REAPER to follow (resumefollow.go, ADR 0350): it answers as the host does with track state off,
+    // or with no track for the chapter, and never pushes teleprompter_resume_follow. The prompt still goes away on the DAW
+    // mock's transport (subscribeDawTransport), which it also listens to.
+    teleprompterResumeFollow: async (chapterId, trackGuid) => {
+      await deps.ready;
+      if (!findChapter(chapterId)) throw new Error('that chapter is not part of the current manuscript');
+      const match = seedTrackMatch(deps.trackMatch(chapterId), deps.resume);
+      const tracked = trackGuid ? deps.tracksProject.tracks.some((track) => track.guid === trackGuid) : match.track !== null;
+      if (trackGuid && !tracked) throw new Error('that track is not in the selected REAPER project');
+      return { following: false, reason: tracked ? 'unavailable' : 'no_track' };
+    },
+    teleprompterResumeUnfollow: async () => ({ following: false }),
+    subscribeTeleprompterResumeFollow: () => () => undefined,
   };
 }
 

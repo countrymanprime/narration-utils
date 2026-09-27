@@ -359,6 +359,19 @@ export type TeleprompterPunchResult = {
   message?: string;
 };
 
+/**
+ * `TeleprompterResumeFollow` / `TeleprompterResumeUnfollow` (read-aloud-resume-from-daw PRD Phase 5, ADR 0350): whether the
+ * host now follows REAPER for the resume prompt; not with no track to follow (`no_track`) or no way to ask REAPER
+ * (`unavailable`: no DAW, REAPER not reachable, or track state switched off).
+ */
+export type TeleprompterResumeFollow = { following: boolean; reason?: 'unavailable' | 'no_track' };
+
+/**
+ * `teleprompter_resume_follow`: REAPER started playing or recording (the prompt goes away, RD7), or its edit cursor settled on
+ * the chapter's recorded audio at `editCursor` project seconds (the prompt looks again, RD6).
+ */
+export type TeleprompterResumeFollowEvent = { chapterId: string; reason: 'playing' | 'recording' | 'cursor_moved'; editCursor?: number };
+
 export interface TeleprompterApi {
   teleprompterStart(options: TeleprompterStartOptions): Promise<TeleprompterStartResult>;
   teleprompterStop(): Promise<void>;
@@ -394,4 +407,12 @@ export interface TeleprompterApi {
   teleprompterLocate(chapterId: string, options?: TeleprompterLocateOptions): Promise<TeleprompterLocateResult>;
   subscribeTeleprompterEvent(onEvent: (event: TeleprompterEvent) => void): () => void;
   subscribeTeleprompterState(onState: (state: TeleprompterState) => void): () => void;
+  /**
+   * Follow REAPER while `chapterId`'s resume prompt shows: about once a second, never during a session, bounded by the host.
+   * `trackGuid` is the track the prompt's locate read (omit for the chapter's own). Replaces any follow already running.
+   */
+  teleprompterResumeFollow(chapterId: string, trackGuid?: string): Promise<TeleprompterResumeFollow>;
+  /** Stop following REAPER (the prompt went away or the dialog closed); safe with nothing followed. */
+  teleprompterResumeUnfollow(): Promise<TeleprompterResumeFollow>;
+  subscribeTeleprompterResumeFollow(onEvent: (event: TeleprompterResumeFollowEvent) => void): () => void;
 }

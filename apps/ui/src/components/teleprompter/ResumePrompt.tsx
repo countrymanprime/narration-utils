@@ -3,6 +3,7 @@ import type { IconDefinition } from '@fortawesome/fontawesome-svg-core';
 import { faArrowRightArrowLeft, faCircleCheck, faCircleNotch, faClockRotateLeft, faLocationCrosshairs } from '@fortawesome/free-solid-svg-icons';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
+import { useApi } from '../../api/ApiContext';
 import { Button } from '../primitives/Button';
 import { useResumeLocate, type LocateState } from './useResumeLocate';
 import { WhisperModelPrompt } from './WhisperModelPrompt';
@@ -483,16 +484,52 @@ function unreadableText(result: Located): string {
  * remounts this component and asks again.
  */
 export function ResumePrompt({ chapterId, model, active, onStartWord }: Props) {
+  const api = useApi();
   const lookup = useResumeLocate(chapterId, model);
   const [settled, setSettled] = useState(false);
   useEffect(() => {
     if (active) setSettled(true);
   }, [active]);
+  const shown = !settled && !active;
+  const preset = useRef(false);
+
+  // REAPER starting to play or record makes the prompt go away (read-aloud-resume-from-daw.prd.md Phase 5, RD7, ADR 0350):
+  // the narrator is working in REAPER. The heartbeat's transport push (ADR 0305) says so within a tick, with no request;
+  // the host's follow below says so too when that push is not there (an older bridge script). Nothing is chosen, so Start
+  // reading keeps whatever it had.
+  useEffect(() => {
+    if (!shown) return;
+    return api.subscribeDawTransport((transport) => {
+      if (transport.playing || transport.recording) setSettled(true);
+    });
+  }, [api, shown]);
+
+  // While the prompt shows for a track, the host follows REAPER (a bounded poll, never during a session) and says when it
+  // plays or records, or when its edit cursor settles on the recording (RD6): then the prompt looks again, and may preset
+  // Start again. Unfollowed the moment the prompt goes away, a session starts, or the dialog closes.
+  const followTrack = lookup.state.kind === 'answered' && lookup.state.result.status !== 'asset_required' ? (lookup.state.result.track?.guid ?? null) : null;
+  const { retry } = lookup;
+  useEffect(() => {
+    if (!shown || !followTrack) return;
+    const unsubscribe = api.subscribeTeleprompterResumeFollow((event) => {
+      if (event.chapterId !== chapterId) return;
+      if (event.reason !== 'cursor_moved') {
+        setSettled(true);
+        return;
+      }
+      preset.current = false;
+      retry();
+    });
+    void api.teleprompterResumeFollow(chapterId, followTrack).catch(() => undefined);
+    return () => {
+      unsubscribe();
+      void api.teleprompterResumeUnfollow().catch(() => undefined);
+    };
+  }, [api, chapterId, followTrack, retry, shown]);
 
   // Agreement presets Start without settling the notice (RD3, RD4): the narrator sees why and can still Change or Start
   // from the top. Only once per dialog open (this component's own lifetime), so it never fights a later Change or a
-  // narrator's own pick with a repeat preset.
-  const preset = useRef(false);
+  // narrator's own pick with a repeat preset. A cursor move REAPER reports re-opens it (Phase 5).
   useEffect(() => {
     if (lookup.state.kind !== 'answered') return;
     const { result } = lookup.state;
