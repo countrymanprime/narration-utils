@@ -15,14 +15,14 @@ type Initial = Parameters<typeof createMockApi>[1];
 // The recording check on Home (docs/utilities/recording-coverage.md, ADR 0130), driven through the panel against the coverage mock, which
 // answers the same states the host does: chapters 1-3 have a current check with every word, 4-6 a current check with a third missing,
 // the rest were never checked.
-async function openBreakdown(initial: Initial = {}, overrides: Partial<NarrationApi> = {}) {
+async function openBreakdown(initial: Initial = {}, overrides: Partial<NarrationApi> = {}, goToWorkspace?: (chapterId: string) => void) {
   const api = createMockApi(overrides, initial);
   const goToManuscript = vi.fn();
   const notify = vi.fn();
   render(
     <MemoryRouter>
       <ApiProvider api={api}>
-        <AudiobookEstimatePanel notify={notify} goToManuscript={goToManuscript} />
+        <AudiobookEstimatePanel notify={notify} goToManuscript={goToManuscript} goToWorkspace={goToWorkspace} />
       </ApiProvider>
     </MemoryRouter>,
   );
@@ -40,6 +40,25 @@ const openCheck = async (title: string) => {
   // this helper working whether or not the mock chapter also carries a subtitle after the title.
   return screen.findByRole('dialog', { name: new RegExp(`^Recording check: ${title}\\b`) });
 };
+
+// edit-and-proof-workspace.prd.md Phase 4, page inventory "Home › recording check dialog": the dialog gets "Open workspace".
+describe('Open workspace from the recording check dialog (edit-and-proof-workspace.prd.md Phase 4)', () => {
+  it('opens the chapter workspace for the dialog’s own chapter', async () => {
+    const goToWorkspace = vi.fn();
+    await openBreakdown({}, {}, goToWorkspace);
+    const dialog = await openCheck('Chapter 1'); // a current, fully-recorded check, so the report (and its button) render
+
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Open workspace' }));
+
+    expect(goToWorkspace).toHaveBeenCalledWith(WIRE_CHAPTERS[0].id);
+  });
+
+  it('renders no Open workspace button when the caller has none', async () => {
+    await openBreakdown();
+    const dialog = await openCheck('Chapter 1');
+    expect(within(dialog).queryByRole('button', { name: 'Open workspace' })).toBeNull();
+  });
+});
 
 describe('recording check on Home', () => {
   it('never shows a status- or check-derived recorded length', async () => {

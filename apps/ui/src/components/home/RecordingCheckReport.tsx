@@ -30,6 +30,7 @@ export function RecordingCheckReport({
   judgement,
   goToParagraph,
   actionsSlot,
+  openWorkspace,
 }: {
   chapter: ManuscriptChapter;
   report: CoverageReport;
@@ -40,6 +41,10 @@ export function RecordingCheckReport({
   /** Check again, placed after the chapter figures and before Pickups (recording-check-summary.prd.md Phase 4
    * mockups, `01-slideover-not-complete.webp`): the one action the panel has, kept close to the figures it refreshes. */
   actionsSlot?: ReactNode;
+  /** "Open workspace" (edit-and-proof-workspace.prd.md Phase 4, page inventory "Home › recording check dialog: the
+   * summary component is shared; the dialog gets 'Open workspace'"). Undefined when there is none to open (the same
+   * summary rendered inside the workspace's own Check again). */
+  openWorkspace?: () => void;
 }) {
   const { complete, headline, detail } = verdict(report, judgement);
   const refs = paragraphRefs(
@@ -126,7 +131,14 @@ export function RecordingCheckReport({
           {plural(report.extraTokens, 'extra word')} heard (retakes, asides, a spoken title); extra words never count against the reading.
         </p>
       )}
-      {actionsSlot}
+      <div className="flex flex-wrap gap-2">
+        {actionsSlot}
+        {openWorkspace && (
+          <Button variant="ghost" onClick={openWorkspace}>
+            Open workspace
+          </Button>
+        )}
+      </div>
       <section aria-labelledby="recording-check-pickups">
         <h3 id="recording-check-pickups" className={EYEBROW}>
           Pickups ({pickups.length})

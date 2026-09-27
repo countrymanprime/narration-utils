@@ -1,10 +1,13 @@
 import type { WorkspaceExtra, WorkspaceToken } from '../../api/contracts/workspace';
+import type { FindingReviewStatus } from '../../api/contracts/findings';
 
 /** The flaggable kinds a token's status groups into (edit-and-proof-workspace.prd.md Evidence, "Flags the app can
  * already place on the text"): a run of consecutive skipped words, a run read short or with different text, a run
  * at the chapter's start or end never recorded, one misread word, or (from `extras`, not a token status) a run of
- * audio the alignment didn't match to any script word. `read`/`heading` never flag. */
-export type FlagKind = 'skip' | 'partial' | 'not_recorded' | 'misread' | 'extra';
+ * audio the alignment didn't match to any script word. `read`/`heading` never flag. `pickup` and `cleanup` never come
+ * from a token status - they exist only when a Finding maps onto the text with no check-derived flag to attach to
+ * (Phase 4, `overlayFindings`): a proofer's pickup note, or an editing-readiness cleanup candidate (silence, clicks). */
+export type FlagKind = 'skip' | 'partial' | 'not_recorded' | 'misread' | 'extra' | 'pickup' | 'cleanup';
 
 export type Flag = {
   id: string;
@@ -17,14 +20,29 @@ export type Flag = {
    * was ever heard (a pure skip has no audio position of its own). */
   seekTokenIndex?: number;
   heard?: string;
+  /** Set when a stored Finding backs this flag (Phase 4, `overlayFindings`): the flag can be reviewed in place
+   * (accept, dismiss, defer, note) through the same `findingsReview` binding the Review page uses, and the decision
+   * shows there too. A flag with no findingId is read-only, straight from the check's own alignment (Phase 2). */
+  findingId?: string;
+  /** The finding's analyzer, for the flag detail's "From <analyzer>" line (mockups/edit-and-proof-workspace/02-flag-detail-open.webp). */
+  analyzer?: string;
+  /** The finding's confidence, null when the analyzer has none; undefined when the flag has no finding. */
+  confidence?: number | null;
+  /** The finding's evidence version, sent back unchanged with a decision (ADR 0120): the host refuses a decision made
+   * against evidence that has since changed. Present exactly when findingId is. */
+  evidenceVersion?: string;
+  /** The finding's current decision, so the flag detail can show it without a second read of the finding. */
+  reviewStatus?: FindingReviewStatus;
 };
 
-const FLAG_LABEL: Record<FlagKind, string> = {
+export const FLAG_LABEL: Record<FlagKind, string> = {
   skip: 'Skipped',
   partial: 'Read short',
   not_recorded: 'Not recorded yet',
   misread: 'Misread',
   extra: 'Extra words',
+  pickup: 'Pickup note',
+  cleanup: 'Cleanup candidate',
 };
 
 function flagKind(status: WorkspaceToken['status']): FlagKind | undefined {
