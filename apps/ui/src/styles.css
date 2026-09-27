@@ -200,24 +200,6 @@
      which is unreadable against this block's own very dark background. Re-declared here, over booth's own `--text`, the
      same way the badge colours above already are.
   */
-  /* The Story Bible entity colours and their soft tints, for the same reason: they are theme values, not booth ones, so
-     under the light theme this block would otherwise pair the light theme's pastel tints (a Story bible entry's category
-     badge, `EntitySummary`'s BADGE_STYLE) with booth's near-white text - a real contrast failure the speaker rail's
-     `booth-speaker-open` state first captured (booth-mode-and-companion-panel.prd.md Phase 3). Pinned to the dark
-     values, which is what `paletteContrast.test.ts` already models the booth block as (dark plus these overrides). */
-  --character: #5fae85;
-  --character-soft: #1d2e24;
-  --place: #6e9fdb;
-  --place-soft: #1c2a3b;
-  --org: #ad8de0;
-  --org-soft: #2a2138;
-  --review: #db7a6e;
-  --review-soft: #3a2320;
-  --lore: #c49056;
-  --item: #6ea5bc;
-  --event: #d37e9b;
-  --note: #d4865a;
-  --search: #e2c53c;
   --character-text: color-mix(in srgb, var(--character) 45%, var(--text));
   --place-text: color-mix(in srgb, var(--place) 45%, var(--text));
   --org-text: color-mix(in srgb, var(--org) 45%, var(--text));

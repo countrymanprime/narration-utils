@@ -304,10 +304,4 @@ export const manuscriptStates: StateEntry[] = [
     description:
       'Manuscript, the booth mid-session and listening (booth-mode-and-companion-panel.prd.md Phase 2, same mock seam as read-aloud-listening) - the status badge reads "Reading", the Booth commands toolbar shows Pause (Kbd Space), Stop reading and Follow all enabled, the current word highlighted in the booth\'s high-contrast surface',
   },
-  {
-    page: 'manuscript',
-    state: 'booth-speaker-open',
-    description:
-      'Manuscript, the booth after activating a speaker tag in the rail\'s "Voices in scene" section (booth-mode-and-companion-panel.prd.md Phase 3) - the chapter\'s Story Bible characters as tags in the existing Highlight character colour above the reading panel, an honest neutral "Reference clips coming soon" badge where Character Continuity Review\'s clips will go, and the reading panel switched to its Story bible tab on that character',
-  },
 ];
