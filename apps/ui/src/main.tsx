@@ -178,6 +178,10 @@ const mockRegionsCreateError = mockParams.has('mockRegionsCreateError');
 // gate, DAW.experimental_reaper_actions), so "Create chapter regions…"'s enabled Create button can be captured
 // without also exercising the Settings toggle.
 const mockRegionsCapabilityOn = mockParams.has('mockRegionsCapabilityOn');
+// `?mockPunchCapabilityOn=1` turns the 'punch' DAW capability on directly (the same bypass as mockRegionsCapabilityOn),
+// so "Punch from here"'s enabled state - the confirm dialog in the read-aloud rail, the pickup list's own button - can
+// be captured without also exercising the Settings toggle.
+const mockPunchCapabilityOn = mockParams.has('mockPunchCapabilityOn');
 // `?mockCoverage=hold|stale|pickups` holds a started recording check at its last transcribing step (so the running
 // dialog can be seen), makes Chapter 4's stored check read stale (an item was trimmed since), or gives Chapter 4 two
 // interior pickups (a skip and a short read) plus a small tail instead of its default tail-only split, so the
@@ -340,6 +344,7 @@ const mockInitial = {
   ...(mockChapterTagsEmbedError ? { chapterTagsEmbedAlwaysErrors: true } : {}),
   ...(mockRegionsCreateError ? { regionsCreateAlwaysErrors: true } : {}),
   ...(mockRegionsCapabilityOn ? { daw: { toggles: { regions: 'on' as const } } } : {}),
+  ...(mockPunchCapabilityOn ? { daw: { toggles: { punch: 'on' as const } } } : {}),
   ...(mockCoverage || mockCoverageRefusal || mockStages === 'mixed'
     ? {
         coverage: {

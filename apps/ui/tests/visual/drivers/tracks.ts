@@ -163,6 +163,18 @@ export const tracksDrivers: Record<string, Driver> = {
     await clickVisible(page, 'button', 'Next pickup');
     await page.getByRole('button', { name: 'Mark this pickup done' }).waitFor();
   },
+  // "Punch from here" wired to dawport.Puncher (booth-actions-enablement PRD Phase 3): the punch capability is turned
+  // on directly (?mockPunchCapabilityOn=1), the same bypass mockRegionsCapabilityOn uses.
+  'pickups-next-punch-enabled': async (page) => {
+    await page.goto('/?mockPickups=import-success&mockPunchCapabilityOn=1');
+    await settlePage(page);
+    await goToPage(page, 'Tracks');
+    await clickVisible(page, 'button', 'Pickups…');
+    await clickVisible(page, 'button', 'Next pickup');
+    const button = page.getByRole('button', { name: 'Punch from here' });
+    await button.waitFor();
+    if (await button.getAttribute('aria-disabled')) throw new Error('Punch from here is still gated with the capability on');
+  },
   'pickups-error': async (page) => {
     await page.goto('/?mockPickups=error');
     await settlePage(page);
