@@ -29,7 +29,8 @@ especially welcome:
   recorded audio a REAPER project names (the teleprompter reads the last seconds of a chapter's recording to find where to resume,
   [ADR 0111](docs/adr/0111-the-resume-point-comes-from-transcribing-the-recorded-tail-and-placing-it-with-the-tracker.md)), or when a
   sidecar reads the audio and writes the per-item cache files an analysis names (for example the recording-coverage manifest,
-  which the host builds from the saved REAPER project; the app's only input to a check is a chapter id), or the audio
+  which the host builds from the saved REAPER project; the app's only input to a check is a chapter id and, since the
+  model cascade, an options flag that only ever narrows what runs), or the audio
   an analysis manifest names (for example the per-take divergence manifest the take comparison writes, which the app
   builds only from the saved REAPER project, never from what the page sends), or the rendered audio files the narrator
   measures or checks for diagnostics, including an MP3, whose container is always read for its frame headers only, and whose levels are additionally decoded through the same downloaded FFmpeg build the encoder uses (delivery-platform-profiles Phase 8) when it is installed, writing only to a temporary WAV that is never kept (the app reads only files chosen in its own file picker in that session, and never writes to them,

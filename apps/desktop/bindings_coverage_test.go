@@ -10,6 +10,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 	"sync"
 	"testing"
@@ -101,10 +102,17 @@ func fakeCoverageSidecar(present int) coverage.Launcher {
 // coverageHost attaches a coverage project (coverage_test.go) with a Whisper catalog and a fake sidecar.
 func coverageHost(t *testing.T, project string, installed bool, launcher coverage.Launcher) *Host {
 	t.Helper()
+	return coverageHostWithModels(t, project, whisperWithSmall(t, installed), launcher)
+}
+
+// coverageHostWithModels is coverageHost with a caller-built Whisper catalog, for the model cascade's own tests
+// (Phase 5), which need more than the one model coverageHost's whisperWithSmall installs.
+func coverageHostWithModels(t *testing.T, project string, models *whisper.Manager, launcher coverage.Launcher) *Host {
+	t.Helper()
 	t.Setenv("APPDATA", t.TempDir())
 	host := NewHost()
 	host.coverageLauncher = launcher
-	host.assets = newAssetRegistry(t.TempDir(), nil, whisperWithSmall(t, installed), nil, nil)
+	host.assets = newAssetRegistry(t.TempDir(), nil, models, nil, nil)
 	next := host.config
 	next.projectFolder = project
 	next.comparePython, next.compareBackend = "python-sidecar", "compare.py"
@@ -112,6 +120,48 @@ func coverageHost(t *testing.T, project string, installed bool, launcher coverag
 		t.Fatalf("attach failed: %s", reason)
 	}
 	return host
+}
+
+// whisperCatalog is whisperWithSmall generalized to any set of models, each installed or not (the model cascade's
+// own tests, Phase 5, need tiny and large-v3-turbo beside small).
+func whisperCatalog(t *testing.T, installed map[string]bool) *whisper.Manager {
+	t.Helper()
+	body := []byte("model-bytes")
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { _, _ = w.Write(body) }))
+	t.Cleanup(server.Close)
+	sum := sha256.Sum256(body)
+	ids := make([]string, 0, len(installed))
+	for id := range installed {
+		ids = append(ids, id)
+	}
+	sort.Strings(ids)
+	models := make([]map[string]any, 0, len(ids))
+	for _, id := range ids {
+		models = append(models, map[string]any{
+			"id": id, "provider": "faster-whisper", "displayName": id, "version": "1", "publisher": "Systran", "license": "MIT",
+			"files": []map[string]any{{"name": "model.bin", "url": server.URL, "sha256": hex.EncodeToString(sum[:]), "size": len(body)}},
+		})
+	}
+	catalog, err := json.Marshal(map[string]any{"catalogVersion": 1, "models": models})
+	if err != nil {
+		t.Fatal(err)
+	}
+	catalogPath := filepath.Join(t.TempDir(), "whisper-assets.json")
+	if err := os.WriteFile(catalogPath, catalog, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	manager, err := whisper.New(catalogPath, t.TempDir())
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, id := range ids {
+		if installed[id] {
+			if err := manager.Install(context.Background(), id); err != nil {
+				t.Fatal(err)
+			}
+		}
+	}
+	return manager
 }
 
 // decodeAnswer decodes a binding's answer: decodeAnswer(t)(host.CoverageState()).
@@ -136,10 +186,95 @@ func TestCoverageStartStopsAtTheModelGateWhenTheModelIsNotInstalled(t *testing.T
 		return nil, fmt.Errorf("must not launch")
 	})
 
-	answer := decodeAnswer(t)(host.CoverageStart("c-0001"))
+	answer := decodeAnswer(t)(host.CoverageStart("c-0001", nil))
 
 	if answer["status"] != "asset_required" || launched {
 		t.Fatalf("answer = %v, launched = %v", answer, launched)
+	}
+}
+
+// enableCascade turns the model cascade on (MC1) with its shipped default models (MC2): tiny for the first pass,
+// large-v3-turbo for the re-check.
+func enableCascade(t *testing.T, host *Host) {
+	t.Helper()
+	if err := host.saveSettings(coverage.SettingsTool, "global", map[string]*string{coverage.SettingCascadeEnabled: ptr("true")}); err != nil {
+		t.Fatal(err)
+	}
+}
+
+// TestCoverageStartCascadeUsesItsOwnModels is the model cascade PRD Phase 5's own binding test: with the cascade on,
+// the first pass runs with cascade_first_pass_model, not TranscriptCompare's model_size (small, whisperWithSmall's
+// only installed model plays no part here).
+func TestCoverageStartCascadeUsesItsOwnModels(t *testing.T) {
+	var mu sync.Mutex
+	var launches [][]string
+	recording := func(ctx context.Context, program string, args ...string) (coverage.Child, error) {
+		mu.Lock()
+		launches = append(launches, args)
+		mu.Unlock()
+		return fakeCoverageSidecar(10)(ctx, program, args...) // present 10: no region is missing, so no re-check runs
+	}
+	models := whisperCatalog(t, map[string]bool{"tiny": true, "large-v3-turbo": true})
+	host := coverageHostWithModels(t, coverageProject(t), models, recording)
+	enableCascade(t, host)
+
+	started := decodeAnswer(t)(host.CoverageStart("c-0001", nil))
+	if started["status"] != "started" {
+		t.Fatalf("answer = %v", started)
+	}
+	host.services().coverage.Wait()
+
+	mu.Lock()
+	args := launches[0]
+	mu.Unlock()
+	if !hasFlag(args, "--model", "tiny") {
+		t.Fatalf("the first pass must use the cascade's own first-pass model: %v", args)
+	}
+}
+
+// TestCoverageStartCascadeAsksForTheRecheckModelWhenMissing is MC4: the re-check model not installed answers
+// recheck_asset_required (not the plain asset_required a missing first-pass model answers), and starts nothing.
+func TestCoverageStartCascadeAsksForTheRecheckModelWhenMissing(t *testing.T) {
+	launched := false
+	models := whisperCatalog(t, map[string]bool{"tiny": true, "large-v3-turbo": false})
+	host := coverageHostWithModels(t, coverageProject(t), models, func(context.Context, string, ...string) (coverage.Child, error) {
+		launched = true
+		return nil, fmt.Errorf("must not launch")
+	})
+	enableCascade(t, host)
+
+	answer := decodeAnswer(t)(host.CoverageStart("c-0001", nil))
+
+	if answer["status"] != "recheck_asset_required" || launched {
+		t.Fatalf("answer = %v, launched = %v", answer, launched)
+	}
+	model, ok := answer["model"].(map[string]any)
+	if !ok || model["id"] != "large-v3-turbo" {
+		t.Fatalf("answer's model = %v, want the re-check model named", answer["model"])
+	}
+}
+
+// TestCoverageStartCascadeSkipRecheckStartsTinyOnly is MC4's other choice: "Check with tiny only" starts the check
+// with the first pass alone even though the re-check model is missing, and even though the first pass finds
+// something missing (the case that would otherwise plan a re-check).
+func TestCoverageStartCascadeSkipRecheckStartsTinyOnly(t *testing.T) {
+	models := whisperCatalog(t, map[string]bool{"tiny": true, "large-v3-turbo": false})
+	host := coverageHostWithModels(t, coverageProject(t), models, fakeCoverageSidecar(8)) // present 8: a region is missing
+	enableCascade(t, host)
+
+	started := decodeAnswer(t)(host.CoverageStart("c-0001", map[string]string{"skipRecheck": "true"}))
+
+	if started["status"] != "started" {
+		t.Fatalf("answer = %v, want a tiny-only start despite the missing re-check model", started)
+	}
+	host.services().coverage.Wait()
+	result := decodeAnswer(t)(host.CoverageResult("c-0001"))
+	if result["state"] != "current" {
+		t.Fatalf("result = %v", result)
+	}
+	report, ok := result["result"].(map[string]any)
+	if !ok || report["model"] != "tiny" || report["recheck"] != nil {
+		t.Fatalf("result.result = %v, want the tiny-only model named and no recheck", report)
 	}
 }
 
@@ -151,7 +286,7 @@ func TestCoverageStartAnswersATypedRefusalAndRunsNothing(t *testing.T) {
 	host := coverageHost(t, project, true, fakeCoverageSidecar(10))
 	events := collectJobEnds(host)
 
-	answer := decodeAnswer(t)(host.CoverageStart("c-0001"))
+	answer := decodeAnswer(t)(host.CoverageStart("c-0001", nil))
 
 	if answer["status"] != "refused" || answer["reason"] != string(coverage.ReasonUnmapped) || answer["message"] == "" {
 		t.Fatalf("answer = %v", answer)
@@ -168,7 +303,7 @@ func TestACoverageCheckEndsWithOneJobEventAndFillsRecordedFraction(t *testing.T)
 		t.Fatalf("a chapter never checked has no recordedFraction: %v", chapters[0])
 	}
 
-	started := decodeAnswer(t)(host.CoverageStart("c-0001"))
+	started := decodeAnswer(t)(host.CoverageStart("c-0001", nil))
 	if started["status"] != "started" {
 		t.Fatalf("answer = %v", started)
 	}
@@ -239,7 +374,7 @@ func TestCoverageBindingsWithNoProjectAreIdleAndNever(t *testing.T) {
 	if _, err := host.CoverageCancel(); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := host.CoverageStart("c-0001"); err == nil {
+	if _, err := host.CoverageStart("c-0001", nil); err == nil {
 		t.Fatal("a start with no project must fail")
 	}
 

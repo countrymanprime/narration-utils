@@ -14,10 +14,13 @@ import { SlideOver } from '../primitives/SlideOver';
 import type { Notify } from '../primitives/Toast';
 import { WorkDialog } from '../primitives/WorkDialog';
 import { RecordingCheckReport } from './RecordingCheckReport';
-import { COVERAGE_REASON_TEXT, LINK_REASONS, REASON_PAGE, formatWhen } from './recordingCheckText';
+import { COVERAGE_REASON_TEXT, LINK_REASONS, REASON_PAGE, formatWhen, passLabel, recheckLabel } from './recordingCheckText';
 
 type Refusal = Extract<CoverageStartResult, { status: 'refused' }>;
 type ModelRequired = Extract<CoverageStartResult, { status: 'asset_required' }>;
+/** The model cascade's own re-check gate (Phase 5, MC4): the same shape as ModelRequired, kept apart so the dialog
+ * can offer "Check with tiny only" beside the download. */
+type RecheckRequired = Extract<CoverageStartResult, { status: 'recheck_asset_required' }>;
 
 const WORK_PHASE: Record<CoverageState['phase'], WorkJob['phase']> = {
   idle: 'preparing',
@@ -31,11 +34,14 @@ const WORK_PHASE: Record<CoverageState['phase'], WorkJob['phase']> = {
 function coverageWorkJob(state: CoverageState, logs: string[], now: number): WorkJob {
   const started = state.startedAt ? Date.parse(state.startedAt) : NaN;
   const ended = state.completedAt ? Date.parse(state.completedAt) : now;
+  // The model cascade's own pass, ahead of the sidecar's own message (Phase 5's "First pass (tiny)", then
+  // "Re-checking 3 passages (large-v3-turbo)"): absent for a plain, single-model check.
+  const pass = passLabel(state);
   return {
     id: state.runId ?? null,
     kind: 'recording_coverage',
     phase: WORK_PHASE[state.phase],
-    message: state.message,
+    message: pass ? `${pass} — ${state.message}` : state.message,
     percent: state.percent,
     logs,
     elapsed: Number.isNaN(started) ? 0 : Math.max(0, (ended - started) / 1000),
@@ -76,6 +82,7 @@ export function RecordingCheck({
   const [loadError, setLoadError] = useState('');
   const [refusal, setRefusal] = useState<Refusal>();
   const [modelRequired, setModelRequired] = useState<ModelRequired>();
+  const [recheckRequired, setRecheckRequired] = useState<RecheckRequired>();
   // The run this dialog shows progress for: one it started, or the chapter's own run already going when it opened.
   const [watching, setWatching] = useState(coverage.phase === 'running' && coverage.chapterId === chapter.id ? coverage.runId : undefined);
   // The state the start answered with, until the first live event of that run arrives.
@@ -128,16 +135,31 @@ export function RecordingCheck({
       await start();
     },
   });
+  // The model cascade's own re-check model (Phase 5, MC4): the same asset-install flow as whisperInstall, for the
+  // gate's "Download model" choice; "Check with tiny only" instead skips straight to start({skipRecheck: true}).
+  const recheckInstall = useAssetInstall<WhisperInstallJob>({
+    start: () => (recheckRequired ? api.whisperInstall(recheckRequired.model.id) : Promise.reject(new Error('Check a recording first.'))),
+    state: (jobId) => api.whisperInstallState(jobId),
+    cancel: (jobId) => api.whisperInstallCancel(jobId),
+    onSuccess: async () => {
+      setRecheckRequired(undefined);
+      notify('Whisper model installed.');
+      await start();
+    },
+  });
 
-  const start = () =>
+  const start = (options?: { skipRecheck?: boolean }) =>
     actions.run('check', async () => {
       setRefusal(undefined);
       try {
-        const answer = await api.coverageStart(chapter.id);
+        const answer = await api.coverageStart(chapter.id, options);
         if (answer.status === 'refused') setRefusal(answer);
         else if (answer.status === 'asset_required') {
           whisperInstall.reset();
           setModelRequired(answer);
+        } else if (answer.status === 'recheck_asset_required') {
+          recheckInstall.reset();
+          setRecheckRequired(answer);
         } else {
           setLogs([]);
           setStartedState(answer.state);
@@ -184,6 +206,47 @@ export function RecordingCheck({
           downloadSize={modelRequired.downloadSize}
           diskSize={modelRequired.diskSize}
           installPath={modelRequired.installPath}
+        />
+      </AssetInstallPrompt>
+    );
+  }
+
+  if (recheckRequired) {
+    // MC4: the re-check model is not installed. "Check with tiny only" (the alternative) starts the check with the
+    // first pass alone, its result labelled as such by naming just the one model (recordingCheckText.recheckLabel).
+    return (
+      <AssetInstallPrompt
+        ask={{
+          title: 'Download the re-check model?',
+          body: `The ${recheckRequired.model.displayName} Whisper model re-checks anything the fast first pass reports missing. It is not bundled with Narration Utils and will be stored in your per-user asset cache.`,
+          confirmLabel: 'Download model',
+          alternative: {
+            label: 'Check with tiny only',
+            action: () => {
+              setRecheckRequired(undefined);
+              void start({ skipRecheck: true });
+            },
+          },
+        }}
+        workTitle="Downloading Whisper model"
+        install={recheckInstall}
+        dismiss={() => {
+          setRecheckRequired(undefined);
+          recheckInstall.reset();
+        }}
+      >
+        <AssetFacts
+          label="Model"
+          name={recheckRequired.model.displayName}
+          version={recheckRequired.model.version}
+          publisher={recheckRequired.model.publisher}
+          license={recheckRequired.model.license}
+          licenseUrl={recheckRequired.model.licenseUrl}
+          modelCardUrl={recheckRequired.model.modelCardUrl}
+          provenanceUrl={recheckRequired.model.provenanceUrl}
+          downloadSize={recheckRequired.downloadSize}
+          diskSize={recheckRequired.diskSize}
+          installPath={recheckRequired.installPath}
         />
       </AssetInstallPrompt>
     );
@@ -310,7 +373,8 @@ function ResultBody({
       {result.state === 'current' && result.record && (
         <p style={{ color: 'var(--text-muted)' }}>
           Checked {formatWhen(result.record.completedAt)}
-          {result.result ? ` with the ${result.result.model} Whisper model` : ''}.
+          {result.result ? ` with the ${result.result.model} Whisper model` : ''}
+          {result.result && recheckLabel(result.result) ? `; ${recheckLabel(result.result)}` : ''}.
         </p>
       )}
       {result.result && (

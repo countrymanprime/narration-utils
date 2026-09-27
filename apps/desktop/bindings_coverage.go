@@ -8,6 +8,7 @@ import (
 	"github.com/countrymanprime/narration-utils/shell/internal/coverage"
 	"github.com/countrymanprime/narration-utils/shell/internal/evidence"
 	"github.com/countrymanprime/narration-utils/shell/internal/settings"
+	"github.com/countrymanprime/narration-utils/shell/internal/whisper"
 )
 
 // The recording coverage bindings (docs/utilities/recording-coverage.md, ADR 0129). A check runs only when the narrator
@@ -31,16 +32,20 @@ func coverageSettings(store *settings.Store) coverage.Settings {
 // coverageIdle is the state reported when no project (so no coverage service) is open.
 var coverageIdle = coverage.State{Phase: coverage.PhaseIdle, Message: "Open a project, save it in REAPER, then check a chapter's recording."}
 
-// CoverageStart starts a recording check of one chapter with the narrator's Transcript Compare model (Q7 A). It
-// answers {status: "started", state}; {status: "refused", reason, message} when the chapter cannot be measured as the
-// saved project stands (nothing was run or written); or {status: "asset_required", ...} when the model is not
-// installed yet (the first-use gate TranscriptStart has). Anything else (a file that could not be written, a sidecar
-// that did not start) is a rejected promise.
-func (h *Host) CoverageStart(chapterID string) (string, error) {
-	return encodeBinding(h.coverageStart(chapterID))
+// CoverageStart starts a recording check of one chapter. With the model cascade off (Q7 A, the default, MC1) it uses
+// the narrator's Transcript Compare model; with it on, the two cascade settings (MC2). options["skipRecheck"] ==
+// "true" starts a cascade-enabled chapter with the first pass alone - the narrator's "Check with tiny only" choice
+// (MC4) when the re-check model is not installed; nil or without that key is the ordinary start. It answers
+// {status: "started", state}; {status: "refused", reason, message} when the chapter cannot be measured as the saved
+// project stands (nothing was run or written); {status: "asset_required", ...} when the first-pass model is not
+// installed yet (the first-use gate TranscriptStart has); or {status: "recheck_asset_required", ...} when the
+// cascade is on and its re-check model is not installed (MC4). Anything else (a file that could not be written, a
+// sidecar that did not start) is a rejected promise.
+func (h *Host) CoverageStart(chapterID string, options map[string]string) (string, error) {
+	return encodeBinding(h.coverageStart(chapterID, options))
 }
 
-func (h *Host) coverageStart(chapterID string) (any, error) {
+func (h *Host) coverageStart(chapterID string, options map[string]string) (any, error) {
 	svc := h.services()
 	if svc.coverage == nil {
 		return nil, fmt.Errorf("open a project before checking a recording")
@@ -49,14 +54,33 @@ func (h *Host) coverageStart(chapterID string) (any, error) {
 	if models == nil {
 		return nil, h.registry().catalogUnavailable("Whisper")
 	}
-	modelID := resolveWhisperModelID(svc.settings, nil)
-	model, knownModel := models.Model(modelID)
+	cascade := coverageSettings(svc.settings).Cascade
+	firstPassModelID := resolveWhisperModelID(svc.settings, nil)
+	if cascade.Enabled {
+		firstPassModelID = cascade.FirstPassModel
+	}
+	model, knownModel := models.Model(firstPassModelID)
 	if !knownModel {
 		return nil, fmt.Errorf("the selected Whisper model is not in the approved catalog")
 	}
-	modelDir, err := models.Dir(modelID)
+	modelDir, err := models.Dir(firstPassModelID)
 	if err != nil {
 		return modelAssetRequired(model, models.State(model), models.InstallDir(model.ID)), nil
+	}
+	request := coverage.Request{
+		ChapterID:     chapterID,
+		Transcription: coverage.Transcription{Model: firstPassModelID, ModelDir: modelDir},
+		Alignment:     coverageSettings(svc.settings).Alignment,
+	}
+	if cascade.Enabled && options["skipRecheck"] != "true" {
+		recheck, required, err := resolveCoverageRecheck(models, cascade.RecheckModel)
+		if err != nil {
+			return nil, err
+		}
+		if required != nil {
+			return required, nil
+		}
+		request.Recheck = recheck
 	}
 	// A background check gives way to the narrator's own (ADR 0211): it is cancelled, keeping the items it finished, and
 	// this one starts once it has stopped.
@@ -64,11 +88,7 @@ func (h *Host) coverageStart(chapterID string) (any, error) {
 		svc.coverage.Cancel()
 		svc.coverage.Wait()
 	}
-	state, err := svc.coverage.Start(coverage.Request{
-		ChapterID:     chapterID,
-		Transcription: coverage.Transcription{Model: modelID, ModelDir: modelDir},
-		Alignment:     coverageSettings(svc.settings).Alignment,
-	})
+	state, err := svc.coverage.Start(request)
 	if reason, refused := coverage.ReasonOf(err); refused {
 		return coverageRefusal(reason, err.Error()), nil
 	}
@@ -80,6 +100,29 @@ func (h *Host) coverageStart(chapterID string) (any, error) {
 	// waits on a context (or run) parameter threaded into internal/coverage.Service.Start itself.
 	h.jobRuns.begin(h.runLog, state.RunID, jobKindCoverage, "chapter_id", chapterID)
 	return map[string]any{"status": "started", "state": state}, nil
+}
+
+// resolveCoverageRecheck resolves the model cascade's re-check model (MC2) into a Transcription ready to run, or, when
+// it is not installed, the recheck_asset_required answer (MC4) instead - the UI's "Download model" / "Check with
+// tiny only" choice, kept apart from the first pass's own asset_required so the narrator is never blocked on it.
+func resolveCoverageRecheck(models *whisper.Manager, modelID string) (transcription coverage.Transcription, required map[string]any, err error) {
+	model, knownModel := models.Model(modelID)
+	if !knownModel {
+		return coverage.Transcription{}, nil, fmt.Errorf("the selected re-check Whisper model is not in the approved catalog")
+	}
+	modelDir, err := models.Dir(modelID)
+	if err != nil {
+		return coverage.Transcription{}, recheckAssetRequired(model, models.State(model), models.InstallDir(model.ID)), nil
+	}
+	return coverage.Transcription{Model: modelID, ModelDir: modelDir}, nil, nil
+}
+
+// recheckAssetRequired is the answer to a cascade start whose re-check model (MC2) is not installed yet: the same
+// shape as modelAssetRequired, under its own status so the UI can offer "Check with tiny only" (MC4) alongside the
+// download, instead of blocking the whole check on it the way a missing first-pass model does.
+func recheckAssetRequired(model whisper.Model, installState, installPath string) map[string]any {
+	size := modelDownloadSize(model)
+	return map[string]any{"status": "recheck_asset_required", "model": previewModel(model), "installState": installState, "downloadSize": size, "diskSize": size, "installPath": installPath}
 }
 
 // coverageRefusal is the answer to a start that was refused with a typed reason (coverage.RefusalReasons).

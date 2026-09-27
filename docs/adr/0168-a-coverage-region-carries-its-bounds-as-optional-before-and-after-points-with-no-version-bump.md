@@ -6,7 +6,7 @@
 
 ## Context
 
-The model cascade ([PRD](../prds/recording-check-model-cascade.prd.md), Phase 2) re-checks each missing region with a stronger model over a window of audio. The window has to be bounded by the words the first pass did match on either side of the gap, because the missing text can only be between them. [ADR 0127](0127-the-coverage-sidecar-mode-reads-a-json-manifest-keeps-one-words-file-per-item-and-writes-tagged-json-lines.md) gives a region one point in the audio, `position`: the start of the transcript word at the region's audio index, or the end of the last word for a tail. One point cannot say where a gap starts and ends, and it is not always a matched word: for a region of different text it is the first word of the speech said in its place. The alignment knows the matched words on either side, but the sidecar did not write them.
+The model cascade (the recording-check-model-cascade PRD, deleted and delivered; Phase 2) re-checks each missing region with a stronger model over a window of audio. The window has to be bounded by the words the first pass did match on either side of the gap, because the missing text can only be between them. [ADR 0127](0127-the-coverage-sidecar-mode-reads-a-json-manifest-keeps-one-words-file-per-item-and-writes-tagged-json-lines.md) gives a region one point in the audio, `position`: the start of the transcript word at the region's audio index, or the end of the last word for a tail. One point cannot say where a gap starts and ends, and it is not always a matched word: for a region of different text it is the first word of the speech said in its place. The alignment knows the matched words on either side, but the sidecar did not write them.
 
 Three questions came with the new fields:
 
