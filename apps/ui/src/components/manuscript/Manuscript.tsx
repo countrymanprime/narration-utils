@@ -12,6 +12,8 @@ import type {
   ManuscriptChapter,
   ManuscriptNote,
   ManuscriptParagraph,
+  PrepMarkupKind,
+  PrepMarkupSpan,
   ReaderState,
   RetailSample,
   SearchHit,
@@ -37,6 +39,7 @@ import { SearchBar } from './SearchBar';
 import { ParagraphView } from './ParagraphView';
 import { SelectionMenu } from './SelectionMenu';
 import { AddNoteDialog } from './AddNoteDialog';
+import { MarkupDialog } from './MarkupDialog';
 import { DictionaryInstallPrompt, isSingleWord, WordLookupAnswer } from './WordLookup';
 import { LOOKUP_ACTION, useWordLookup } from './useWordLookup';
 import { CAT_DOT_BG, CAT_DOT_CLASS, EntitySummary } from './EntitySummary';
@@ -97,6 +100,10 @@ export function Manuscript({
   const [textSize, setTextSize] = useState<(typeof TEXT_SIZES)[number]>('medium');
   const [detail, setDetail] = useState<{ entity?: GuideEntity; note?: ManuscriptNote }>();
   const [pendingNote, setPendingNote] = useState<{ paragraphIndex: number; anchorStart: number; anchorEnd: number; anchorText: string }>();
+  // Script markup (prep-depth.prd.md Phase 5), by chapter id: loaded with each chapter's lines, and the selection being
+  // marked up while the Mark up dialog is open.
+  const [markup, setMarkup] = useState<Record<string, PrepMarkupSpan[]>>({});
+  const [pendingMarkup, setPendingMarkup] = useState<{ paragraphIndex: number; anchorStart: number; anchorEnd: number; anchorText: string }>();
   const [jumpTarget, setJumpTarget] = useState<number>();
   const [readAloud, setReadAloud] = useState<ReadAloudSource>();
   // Booth mode's own entry point (booth-mode-and-companion-panel.prd.md Phase 1, Open Question 1 A): the same
@@ -292,6 +299,12 @@ export function Manuscript({
       if (requestedChapters.current.has(chapterId)) continue;
       requestedChapters.current.add(chapterId);
       setLoadingChapters((current) => new Set(current).add(chapterId));
+      // The chapter's script markup is a second, independent read: a markup file that cannot be read is said once and
+      // leaves the chapter readable, unmarked.
+      void api
+        .prepMarkupList(chapterId)
+        .then((next) => setMarkup((current) => ({ ...current, [chapterId]: next.spans })))
+        .catch((error) => notify(describeApiError(error), 'error'));
       void api
         .manuscriptParagraphs(chapterId)
         .then((next) => setParagraphs((current) => [...current.filter((paragraph) => paragraph.chapterId !== chapterId), ...next]))
@@ -479,6 +492,45 @@ export function Manuscript({
       notify(describeApiError(error), 'error');
     }
   };
+  const markUp = () => {
+    if (!selection || selection.paragraphIndex === undefined || selection.anchorStart === undefined || selection.anchorEnd === undefined) {
+      notify('Select text within a single line to mark it up.');
+      return;
+    }
+    setPendingMarkup({
+      paragraphIndex: selection.paragraphIndex,
+      anchorStart: selection.anchorStart,
+      anchorEnd: selection.anchorEnd,
+      anchorText: selection.text,
+    });
+    clearSelection();
+  };
+  const pendingMarkupParagraph = pendingMarkup ? paragraphs.find((item) => item.index === pendingMarkup.paragraphIndex) : undefined;
+  const confirmMarkup = async (kind: PrepMarkupKind, value: string) => {
+    const target = pendingMarkup;
+    const paragraph = pendingMarkupParagraph;
+    setPendingMarkup(undefined);
+    if (!target || !paragraph) return;
+    try {
+      const saved = await api.prepMarkupSave(paragraph.chapterId, paragraph.id, target.anchorStart, target.anchorEnd, kind, value);
+      setMarkup((current) => {
+        const spans = current[paragraph.chapterId] ?? [];
+        return { ...current, [paragraph.chapterId]: spans.some((span) => span.id === saved.id) ? spans : [...spans, saved] };
+      });
+      notify('Mark added.');
+    } catch (error) {
+      notify(describeApiError(error), 'error');
+    }
+  };
+  const removeMarkup = async (span: PrepMarkupSpan) => {
+    try {
+      await api.prepMarkupDelete(span.chapterId, span.id);
+      setMarkup((current) => ({ ...current, [span.chapterId]: (current[span.chapterId] ?? []).filter((item) => item.id !== span.id) }));
+      notify('Mark removed.');
+    } catch (error) {
+      notify(describeApiError(error), 'error');
+    }
+  };
   const deleteNote = async (id: string) => {
     try {
       await api.noteDelete(id);
@@ -627,6 +679,8 @@ export function Manuscript({
                   paragraphs={paragraphs.filter((item) => item.chapterId === chapter.id)}
                   entities={entities}
                   notes={notes.filter((item) => item.chapterId === chapter.id || (!item.chapterId && item.chapter === chapter.title))}
+                  markup={markup[chapter.id]}
+                  removeMarkup={(span) => void removeMarkup(span)}
                   textClass={READER_TEXT_CLASSES[textSize]}
                   lineNumberPadding={LINE_NUMBER_PADDING_CLASSES[textSize]}
                   jumpTarget={jumpTarget}
@@ -674,10 +728,11 @@ export function Manuscript({
           onMoreFields={() => routerNavigate('/settings#credits')}
         />
       )}
-      {selection && !pendingNote && (
+      {selection && !pendingNote && !pendingMarkup && (
         <SelectionMenu
           selection={selection}
           addNote={addNote}
+          markUp={markUp}
           addingToStoryBible={selectionActions.isPending('add')}
           addToStoryBible={() =>
             void selectionActions.run('add', async () => {
@@ -706,6 +761,19 @@ export function Manuscript({
         {wordLookup.answer && <WordLookupAnswer answer={wordLookup.answer} />}
       </SlideOver>
       {wordLookup.gate && <DictionaryInstallPrompt gate={wordLookup.gate} install={wordLookup.install} dismiss={wordLookup.closeGate} />}
+      {pendingMarkup && (
+        <MarkupDialog
+          anchorText={pendingMarkup.anchorText}
+          characters={entities.filter((entity) => entity.category === 'Character').map((entity) => entity.canonical_name)}
+          existing={(markup[pendingMarkupParagraph?.chapterId ?? ''] ?? []).filter(
+            (span) =>
+              !span.stale && span.paragraphId === pendingMarkupParagraph?.id && span.start < pendingMarkup.anchorEnd && span.end > pendingMarkup.anchorStart,
+          )}
+          confirm={(kind, value) => void confirmMarkup(kind, value)}
+          remove={(span) => void removeMarkup(span)}
+          cancel={() => setPendingMarkup(undefined)}
+        />
+      )}
       {pendingNote && <AddNoteDialog anchorText={pendingNote.anchorText} confirm={(text) => void confirmNote(text)} cancel={() => setPendingNote(undefined)} />}
       <SlideOver
         open={Boolean(sheet)}
