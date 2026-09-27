@@ -1,5 +1,14 @@
 // How to reach each `delivery` state in STATE_CATALOG (see app.drivers.ts).
-import { type Driver, checkOnDiagnostics, diagnosticsEnded, measurementEnded, measureOnDelivery, openDelivery, openDiagnostics } from './shared';
+import {
+  type Driver,
+  checkOnDiagnostics,
+  diagnosticsEnded,
+  measurementEnded,
+  measureOnDelivery,
+  openDelivery,
+  openDeliveryFindingOnReview,
+  openDiagnostics,
+} from './shared';
 
 export const deliveryDrivers: Record<string, Driver> = {
   empty: async (page) => {
@@ -83,5 +92,14 @@ export const deliveryDrivers: Record<string, Driver> = {
       .getByRole('alert')
       .getByText(/^The report was not written: nothing has been measured or checked/)
       .waitFor();
+  },
+  'from-review': async (page) => {
+    await openDeliveryFindingOnReview(page);
+    await page.getByRole('button', { name: 'Open in Delivery' }).click();
+    await page.getByRole('table', { name: 'Chapter 01.wav, rule by rule' }).waitFor();
+    // The page scrolls the note and the file's rules into view itself; wait for it to settle there.
+    const note = page.getByText('Opened from the Review page: sample rate in Chapter 01.wav.');
+    await note.waitFor();
+    await note.scrollIntoViewIfNeeded();
   },
 };

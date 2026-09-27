@@ -52,6 +52,31 @@ export const proofingDrivers: Record<string, Driver> = {
     await clickVisible(page, 'button', 'Suggest from manuscript');
     await page.locator('[data-tone]').first().waitFor();
   },
+  // The vocabulary hints box (proofing-vocabulary-hints.prd.md Phase 2): the pills box is the input, so a half-typed
+  // draft sits inline after the last pill, not in a separate row.
+  'hints-typing': async (page) => {
+    await goToPage(page, 'Proofing');
+    const box = page.getByRole('textbox', { name: 'Add a vocabulary term' });
+    await box.click();
+    await box.pressSequentially('Dawnspire');
+    await page.waitForFunction(() => (document.activeElement as HTMLInputElement | null)?.value === 'Dawnspire');
+  },
+  // Many accepted terms wrap across lines of the same box. Each typed comma commits the term before it (V5), so this
+  // types the whole list at once and the last, comma-less term is committed by the trailing Enter.
+  'hints-many-pills': async (page) => {
+    await goToPage(page, 'Proofing');
+    const box = page.getByRole('textbox', { name: 'Add a vocabulary term' });
+    await box.click();
+    await box.pressSequentially('Arelian, Captain Arelian, Council of Ash, Juno, Kestrel, Zephyra, Dawnspire, Zeph');
+    await box.press('Enter');
+    await page.getByRole('button', { name: 'Remove Zeph', exact: true }).waitFor();
+  },
+  // Suggested names from the Story Bible sit inside the same box as dashed pills until one is clicked (V6).
+  'hints-pending-suggestions': async (page) => {
+    await goToPage(page, 'Proofing');
+    await clickVisible(page, 'button', 'Suggest from manuscript');
+    await page.getByRole('button', { name: /^\+ / }).first().waitFor();
+  },
   'no-daw': async (page) => {
     // Reload with the mock's no-linked-DAW seam (see main.tsx). The Proofing nav item is disabled outright with no
     // linked DAW file, so reach the page through Home's own "Open Proofing" card instead of the nav (it stays
@@ -102,5 +127,34 @@ export const proofingDrivers: Record<string, Driver> = {
     await page.goto('/proofing?mockPreviewCandidates=warnings');
     await settlePage(page);
     await page.getByText(/imported before chapters were classified/).waitFor();
+  },
+  'stage-panel-suggestions': async (page) => {
+    await page.goto('/proofing?mockProofingStages=mixed');
+    await settlePage(page);
+    await page.getByText('Suggested: Finalized').waitFor();
+  },
+  'stage-panel-evidence-recommended': async (page) => {
+    await page.goto('/proofing?mockProofingStages=mixed');
+    await settlePage(page);
+    await page.getByText('Suggested: Finalized').waitFor();
+    await clickVisible(page, 'button', /^Why: /);
+    await page.getByRole('dialog').waitFor();
+  },
+  'stage-panel-evidence-not-ready': async (page) => {
+    await page.goto('/proofing?mockProofingStages=mixed');
+    await settlePage(page);
+    await page.getByText('Not ready for Finalized').waitFor();
+    await page
+      .locator('tr', { hasText: 'Not ready for Finalized' })
+      .getByRole('button', { name: /^Why: / })
+      .click();
+    await page.getByRole('dialog').waitFor();
+  },
+  'stage-panel-evidence-unknown': async (page) => {
+    await page.goto('/proofing?mockProofingSignal=unmapped-track');
+    await settlePage(page);
+    await page.getByText(/no track linked/).waitFor();
+    await clickVisible(page, 'button', /^Why: /);
+    await page.getByRole('link', { name: 'Open Tracks' }).waitFor();
   },
 };
