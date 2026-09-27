@@ -14,6 +14,7 @@ import {
   faListCheck,
   faMicrophone,
   faScroll,
+  faStopwatch,
   faWaveSquare,
 } from '@fortawesome/free-solid-svg-icons';
 import { NavButton } from '../primitives/NavButton';
@@ -29,6 +30,9 @@ import { DemoBanner } from './DemoBanner';
 // directly through its own discovery flow and is not gated here.
 const NAV = [
   { name: 'Home', path: '/', icon: faHouse, requiresManuscript: false, requiresDaw: false },
+  // Time, pace and the delivery date by chapter and stage (production-tracking.prd.md Phase 4). Gated on a manuscript: the board and
+  // the timer are per chapter.
+  { name: 'Production', path: '/production', icon: faStopwatch, requiresManuscript: true, requiresDaw: false },
   { name: 'Manuscript', path: '/manuscript', icon: faFileLines, requiresManuscript: true, requiresDaw: false },
   { name: 'Proofing', path: '/proofing', icon: faWaveSquare, requiresManuscript: true, requiresDaw: true },
   { name: 'Story Bible', path: '/story-bible', icon: faBookOpen, requiresManuscript: true, requiresDaw: false },
