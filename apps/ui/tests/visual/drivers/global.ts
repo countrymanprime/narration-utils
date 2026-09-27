@@ -1,5 +1,5 @@
 // How to reach each `global` state in STATE_CATALOG (see app.drivers.ts).
-import { type Driver, clickSettingsCategory, clickVisible, confirmDialog, freezeClock, goToPage } from './shared';
+import { type Driver, clickSettingsCategory, clickVisible, compareRun, confirmDialog, freezeClock, goToPage, openProofChapter } from './shared';
 
 export const globalDrivers: Record<string, Driver> = {
   tooltip: async (page) => {
@@ -22,7 +22,8 @@ export const globalDrivers: Record<string, Driver> = {
     }
   },
   toast: async (page) => {
-    await goToPage(page, 'Proofing');
+    await openProofChapter(page);
+    await compareRun(page).scrollIntoViewIfNeeded();
     // Suggesting hints from the manuscript answers with a toast (adding a term answers with none), and an information toast
     // fades on a real 5 s timer: freeze timers so it cannot race the screenshot.
     await freezeClock(page);

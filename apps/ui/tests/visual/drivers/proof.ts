@@ -1,15 +1,15 @@
-// How to reach each `review` state in STATE_CATALOG (see app.drivers.ts).
+// How to reach each `proof` state (Proof's book level) in STATE_CATALOG (see app.drivers.ts).
 import { settlePage } from '../helpers/settle';
 import {
   type Driver,
   compareTakes,
   confirmApprovedMarker,
   goToPage,
-  openDeliveryFindingOnReview,
+  openDeliveryFindingOnProof,
   openFindingRow,
   openPickupGroup,
   openReaperControls,
-  openReview,
+  openProof,
   openScanDialog,
   pressInReaper,
   scanChapterOne,
@@ -17,33 +17,33 @@ import {
   waitForFindingRows,
 } from './shared';
 
-export const reviewDrivers: Record<string, Driver> = {
+export const proofDrivers: Record<string, Driver> = {
   default: async (page) => {
-    await openReview(page);
+    await openProof(page);
   },
   empty: async (page) => {
     await page.goto('/?mockFindings=empty');
     await settlePage(page);
-    await goToPage(page, 'Review');
-    await page.getByRole('heading', { name: 'Nothing to review yet' }).waitFor();
+    await goToPage(page, 'Proof');
+    await page.getByRole('heading', { name: 'No notes yet' }).waitFor();
   },
   filtered: async (page) => {
-    await openReview(page);
+    await openProof(page);
     await page.getByRole('combobox', { name: 'Check' }).selectOption({ label: 'Proofing comparison' });
     await page.getByRole('switch', { name: 'Only findings scored 50% or more' }).click();
     await waitForFindingRows(page, 1);
   },
   'filtered-empty': async (page) => {
-    await openReview(page);
+    await openProof(page);
     await page.getByRole('combobox', { name: 'Status' }).selectOption({ label: 'Deferred' });
     await page.getByText('No findings match these filters.').waitFor();
   },
   'detail-open': async (page) => {
-    await openReview(page);
+    await openProof(page);
     await openFindingRow(page, /pink eyes/, 'Transcript difference');
   },
   'decision-saved': async (page) => {
-    await openReview(page);
+    await openProof(page);
     await openFindingRow(page, /pink eyes/, 'Transcript difference');
     await page.getByRole('textbox', { name: 'Note (optional)' }).fill('Re-record this line in the pickup session.');
     await page.getByRole('button', { name: 'Accept' }).click();
@@ -54,7 +54,7 @@ export const reviewDrivers: Record<string, Driver> = {
   'evidence-changed': async (page) => {
     await page.goto('/?mockFindings=changed');
     await settlePage(page);
-    await openReview(page);
+    await openProof(page);
     await openFindingRow(page, /pink eyes/, 'Transcript difference');
     await page.getByRole('textbox', { name: 'Note (optional)' }).fill('Pale is close enough.');
     await page.getByRole('button', { name: 'Dismiss' }).click();
@@ -63,7 +63,7 @@ export const reviewDrivers: Record<string, Driver> = {
     await refused.scrollIntoViewIfNeeded();
   },
   'not-in-latest-run': async (page) => {
-    await openReview(page);
+    await openProof(page);
     await page.getByRole('switch', { name: 'Include findings the latest run did not repeat' }).click();
     await waitForFindingRows(page, 5);
     await openFindingRow(page, /Antipathies/, 'Pronunciation');
@@ -152,6 +152,6 @@ export const reviewDrivers: Record<string, Driver> = {
     await showReaperControls(page, page.getByText(/^Marker added in REAPER: MISREAD:/));
   },
   'delivery-finding': async (page) => {
-    await openDeliveryFindingOnReview(page);
+    await openDeliveryFindingOnProof(page);
   },
 };
