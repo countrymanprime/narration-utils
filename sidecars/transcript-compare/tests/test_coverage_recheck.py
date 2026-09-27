@@ -95,6 +95,14 @@ def test_a_missing_windows_file_is_refused(tmp_path):
         mode.read_windows(tmp_path / "absent.json")
 
 
+def test_a_windows_entry_that_is_not_an_object_is_refused(tmp_path):
+    path = tmp_path / "w.json"
+    path.write_text(json.dumps({"schemaVersion": 1, "windows": [3]}), encoding="utf-8")
+
+    with pytest.raises(mode.WindowsError, match="is not an object"):
+        mode.read_windows(path)
+
+
 # ---------------------------------------------------------------------------
 # splicing a window into a words file
 
@@ -161,6 +169,30 @@ def test_a_plain_words_file_never_gains_a_spans_key(tmp_path):
     assert "spans" not in raw
     assert mode.read_words_file(path).spans == ()
     assert mode.read_words_file(path).spans_or_default() == (mode.Span(0.0, 5.0, "small"),)
+
+
+@pytest.mark.parametrize(
+    "spans",
+    [
+        "not a list",
+        [{"start": 0.0, "model": "small"}],  # missing end
+        [{"start": 0.0, "end": 1.0, "model": 3}],  # model not a string
+        [{"start": "0", "end": 1.0, "model": "small"}],  # start not a number
+    ],
+)
+def test_a_words_file_with_a_malformed_spans_list_is_a_miss_not_an_error(tmp_path, spans):
+    path = tmp_path / "item.json"
+    payload = {
+        "schemaVersion": 1,
+        "sourceStart": 0.0,
+        "sourceEnd": 5.0,
+        "words": [],
+        "transcription": {"model": "small"},
+        "spans": spans,
+    }
+    path.write_text(json.dumps(payload), encoding="utf-8")
+
+    assert mode.read_words_file(path) is None
 
 
 def test_a_spliced_words_file_round_trips_its_spans(tmp_path):
