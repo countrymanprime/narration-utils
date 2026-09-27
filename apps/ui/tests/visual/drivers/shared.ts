@@ -67,11 +67,12 @@ export async function clickVisible(page: Page, role: Parameters<Page['getByRole'
     .click();
 }
 
-type AppPage = 'Home' | 'Manuscript' | 'Proofing' | 'Story Bible' | 'Teleprompter' | 'Tracks' | 'Review' | 'Delivery' | 'Settings';
+type AppPage = 'Home' | 'Production' | 'Manuscript' | 'Proofing' | 'Story Bible' | 'Teleprompter' | 'Tracks' | 'Review' | 'Delivery' | 'Settings';
 
 // Every page opens with the shared `Heading` primitive, an <h1>: it is what proves the page has arrived. Home's is "Welcome back".
 export const PAGE_HEADING: Record<AppPage, string> = {
   Home: 'Welcome back',
+  Production: 'Production',
   Manuscript: 'Manuscript',
   Proofing: 'Proofing',
   'Story Bible': 'Story Bible',

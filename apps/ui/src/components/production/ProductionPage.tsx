@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useApi } from '../../api/ApiContext';
 import { apiErrorMessage } from '../../api/errorMessage';
-import type { ChapterStatus } from '../../api/contracts/manuscript';
 import type { ProductionNextUpItem, ProductionOverview, ProductionTotals } from '../../api/contracts/production';
 import { chapterName } from '../../chapterName';
 import { STATUS_LABELS } from '../../chapterStatus';
@@ -240,7 +239,7 @@ export function ProductionPage() {
         >
           <p className="min-w-0 text-sm [overflow-wrap:anywhere]">
             <span className="font-semibold">Timer running</span> on {runningChapter ? chapterName(runningChapter) : running.chapterId} ·{' '}
-            {STATUS_LABELS[running.stage as ChapterStatus]}
+            {STATUS_LABELS[running.stage]}
           </p>
           <Button variant="primary" pending={stopping} onClick={() => void stop()}>
             Stop timer
