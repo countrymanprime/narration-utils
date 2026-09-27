@@ -2,7 +2,7 @@
 
 ## Supported versions
 
-Narration Utils is pre-1.0. Only the latest release (including the latest pre-release candidate) receives fixes.
+Narration Utils is pre-1.0. Only the latest release (including the latest pre-release candidate) receives fixes. Windows x64 is the only supported platform ([ADR 0412](docs/adr/0412-windows-is-the-only-supported-platform-for-now.md)): a report that applies only to a macOS or Linux build is out of scope, because no such build is released.
 
 ## Reporting a vulnerability
 

@@ -70,6 +70,11 @@ The layout and its test rule are recorded in
   store) is different enough from Reaper's that it needs its own driver design rather than a
   port of the Reaper one. Placeholder notes live under `integrations/audacity/`.
 
+## Supported platforms
+
+Windows x64 only, for now. macOS and Linux builds were removed until the app is steadier or someone uses those systems
+([ADR 0412](docs/adr/0412-windows-is-the-only-supported-platform-for-now.md)).
+
 ## Install on Windows
 
 The supported way to get the app is a GitHub release. From the [releases page](https://github.com/countrymanprime/narration-utils/releases):
@@ -98,7 +103,7 @@ cannot find the new names: install the next release by hand once, and it updates
 **Uninstall** from Settings > Apps > Installed apps. That removes the program and its shortcuts and **leaves your settings**
 (`%APPDATA%\narration-utils`), **the voices and models you downloaded** (`%LOCALAPPDATA%\narration-utils`, also where the
 update staging lives) **and everything in your project folders** alone; the uninstall page says so. Delete those folders by hand
-if you want them gone. macOS and Linux builds are previews without an installer.
+if you want them gone.
 
 ## Developer bootstrap
 
@@ -116,9 +121,11 @@ creates the checkout-local `.venv`; installs locked Python, Node, and quality
 tool dependencies; builds the UI; and builds the native workspace binary. It
 uses the pinned Wails CLI and Go tooling declared by the repository, never
 Cargo or a Rust toolchain.
-Windows needs Visual Studio's Desktop development with C++ workload; macOS
-needs Xcode Command Line Tools; Linux needs the WebKit/GTK development packages
-listed in CI. The bootstrap does not install operating-system prerequisites.
+Windows needs Visual Studio's Desktop development with C++ workload. A Linux
+machine can be a development host (Go vet and tests, the UI, the sidecars; the
+native build needs the WebKit/GTK development packages listed in
+`.github/actions/setup-toolchain`), but it builds no supported app. The bootstrap
+does not install operating-system prerequisites.
 
 On Windows the command uses the Python Launcher (`py -3.12`) by default. Use
 `pnpm run bootstrap -- --python /path/to/python` to select Python explicitly,

@@ -31,8 +31,7 @@ repository (read with `gh api repos/countrymanprime/narration-utils/rulesets`, a
   reads only the repository, so it does not flake ([The docs link check](#the-docs-link-check)).
 - **Two settings the workflows rely on are the owner's to change:** "Require actions to be pinned to a full-length commit
   SHA" (off now; `zizmor` already enforces the same rule, and the setting is a backstop to enable after the pinning
-  change has run once with Dependabot) and immutable releases (off, and they stay off: they would break the late macOS
-  and Linux upload and the release-candidate prune, see [#186](https://github.com/countrymanprime/narration-utils/issues/186)).
+  change has run once with Dependabot) and immutable releases (off, and they stay off: they would break the release-candidate prune, see [#186](https://github.com/countrymanprime/narration-utils/issues/186)).
   The owner checklist is in [Tracking work on GitHub](github-workflow.md#owner-checklist-for-the-release-supply-chain-work).
 - **Nothing in CI checks a pull request title.** Conventional Commit messages are enforced by the local commitlint hook (Husky
   `commit-msg`) on the commits you make, but the title of a pull request becomes the squash commit and decides the next version, and
@@ -45,9 +44,9 @@ repository (read with `gh api repos/countrymanprime/narration-utils/rulesets`, a
   with `cancel-in-progress`, so a newer push cancels the run before it, and `cancel-closed-pr.yml` cancels whatever is
   still queued or running when the pull request is merged or closed (a merge starts its own runs on `main`). Runs on
   `main` and the release workflows are never cancelled.
-- macOS and Linux are deliberately
-  not built on pull requests (see [ADR-0027](../adr/0027-windows-gates-and-creates-the-release.md)), so `Build (Windows)`
-  is the only native build a pull request runs.
+- **Windows is the only platform the app is built for** (owner decision D74, [ADR 0412](../adr/0412-windows-is-the-only-supported-platform-for-now.md)). `Build (Windows)` is the only native
+  build, on pull requests and in releases. The Linux runners that run the docs, Lua, UI, Python and lint checks host those
+  checks; they build no Linux app.
 
 The checks a pull request shows, by the name GitHub displays (`ci.yml` calls `_quality.yml` as `quality` and
 `_ui-dist.yml` as `ui-dist`):
@@ -86,7 +85,6 @@ Each file in `.github/workflows`, what starts it, and the checks it shows on a p
 | `ci.yml` (`CI`) | pull request that is not docs- or Markdown-only; manual | `quality / *` and `ui-dist / build` (the reusable `_quality.yml` and `_ui-dist.yml`), `Build (Windows)`, `CI passed` | no ruleset requires it |
 | `prerelease.yml` (`Prerelease`) | push to `main` that is not docs- or Markdown-only; manual | `ui-dist / build`, `version`, `Windows build` (needs `ui-dist` and `version`) and `Windows release` (needs the build); no quality jobs, the pull request's `CI` run is the quality gate ([#544](https://github.com/countrymanprime/narration-utils/issues/544) tracks making it a required one); both run only when `version` found a releasable change. A manual run can tick `cold-freeze` to freeze the sidecars without the [freeze cache](#the-sidecar-freeze-cache) | not a pull request check |
 | `promote-release.yml` | manual, with an RC tag; behind the `production` environment | `promote` | not a pull request check |
-| `build-macos.yml`, `build-linux.yml` | manual, or started by the `Windows release` job | one reusable `_attach-platform.yml` run: `Check the release`, `ui-dist / build`, `Build and attach <platform>` | not a pull request check |
 | `docs.yml` (`Docs`) | every pull request (no path filter), weekly (Monday 07:17 UTC), manual | `Links (offline)` (pull requests and manual) and `Links (online, advisory)` (weekly and manual) ([below](#the-docs-link-check)) | the offline job **fails the run** on a dead repository link; no ruleset requires it (owner-only setting) |
 | `zizmor.yml` | every pull request, push to `main`, manual | `zizmor` | advisory in GitHub terms (not required); a finding at the `regular` persona fails the run |
 | `security.yml` (`Security scan`) | every pull request, push to `main`, weekly (Tuesday 06:41 UTC), manual | `govulncheck`, `osv-scanner (pull request)` (only for a same-repository pull request that is not Dependabot's) or `osv-scanner` (every other trigger) | advisory: neither fails on a finding |
@@ -136,12 +134,8 @@ would include them. That is a configuration change with its own review, so it is
 The permission model, so a change can be judged against it:
 
 - Every workflow declares `permissions` at the top, and a job that needs more raises it for that job only. The
-  top-level default is `contents: read` (`zizmor.yml`, `promote-release.yml` and `pages.yml` use `{}`). The one exception is
-  `build-macos.yml` and `build-linux.yml`, whose `contents: write`, `id-token: write`, `attestations: write` and
-  `artifact-metadata: write` are a workflow-level grant because a caller must grant everything the reusable
-  `_attach-platform.yml` holds; only its `attach` job uses them.
-- The `publish` job (`Windows release`) of `prerelease.yml` holds `contents: write` (create the release), `actions: write` (start the
-  optional macOS and Linux builds) and the three attestation permissions (`id-token`, `attestations`,
+  top-level default is `contents: read` (`zizmor.yml`, `promote-release.yml` and `pages.yml` use `{}`).
+- The `publish` job (`Windows release`) of `prerelease.yml` holds `contents: write` (create the release) and the three attestation permissions (`id-token`, `attestations`,
   `artifact-metadata`: write). The `windows-build` job, which runs the third-party build tooling (PyInstaller, Wails, NSIS, pnpm),
   holds only the workflow's `contents: read`; `promote-release.yml`'s one job holds `contents: write` (create the stable tag and
   release) and `attestations: read`, behind the `production` environment.
@@ -201,26 +195,18 @@ uses the squash commit title to calculate the synchronized application version:
 `chore`, and `revert` are patch. Pre-1.0 breaking changes are handled as the
 next minor release. The workflow tags `v<version>-rc`, builds the Windows
 package, and its `publish` job creates the GitHub pre-release with the Windows
-zip and the Windows setup program ([The Windows setup program](#the-windows-setup-program)). The last step starts the optional **Build macOS** and **Build Linux**
-workflows, which build the release tag and attach their asset
-([ADR-0027](../adr/0027-windows-gates-and-creates-the-release.md)). They are
-separate runs, so a failed non-Windows build never delays or reddens the Windows
-release. To retry one, re-run its workflow run, or start **Build macOS** /
-**Build Linux** from the Actions tab with the release tag (for example
-`v0.2.1-rc`); the upload overwrites, and it works for a promoted release too.
-Other workflows can call them with `uses:` and a `tag` input.
+zip and the Windows setup program ([The Windows setup program](#the-windows-setup-program)). No other platform is built or
+attached: the macOS and Linux preview builds were removed by D74 ([ADR 0412](../adr/0412-windows-is-the-only-supported-platform-for-now.md)).
 
-Each platform ships one asset named `narration-utils-<version>-<platform>.<ext>`, with a
-`.sha256` beside it; Windows also ships its setup program and its third-party notices, named and checksummed the same way. Only Windows is required
-(and for Windows all three files are: a build that lost its setup program or its notices is not promotable):
+The one platform, `windows-x64`, ships an asset named `narration-utils-<version>-<platform>.<ext>`, with a
+`.sha256` beside it, and its setup program and its third-party notices, named and checksummed the same way. All three files are
+required: a build that lost its setup program or its notices is not promotable:
 
 | Platform | Asset | Contents |
 | --- | --- | --- |
 | `windows-x64` | `narration-utils-<version>-windows-x64.zip` | `narration-utils.exe` (what the in-app updater downloads) |
 | `windows-x64` | `narration-utils-<version>-windows-x64-setup.exe` | the NSIS setup program (what a narrator runs first; [below](#the-windows-setup-program)) |
 | `windows-x64` | `narration-utils-<version>-THIRD-PARTY-NOTICES.txt` | the licences of everything the program contains, the AGPL text and the source offer ([Third-party notices](#third-party-notices)); **not** inside the zip |
-| `macos-arm64` | `narration-utils-<version>-macos-arm64.zip` | `Narration Utils.app` |
-| `linux-x64` | `narration-utils-<version>-linux-x64.tar.gz` | `narration-utils` binary |
 
 `<version>` is the bare version (`0.2.7`), the same on a candidate (`v0.2.7-rc`) and its promotion (`v0.2.7`), so promote
 re-publishes the files without renaming them, and downloads of different releases can be told apart by name
@@ -237,9 +223,8 @@ named for another version is refused as an unexpected file.
 
 Use **Promote pre-release** with the RC tag when it is ready. Approval on the
 `production` environment gates the job, which then validates main ancestry and
-refuses to continue unless the Windows asset is attached, matches its
-checksum and has build provenance (see [Build provenance](#build-provenance)). A macOS or Linux asset that is missing
-is ignored (that release is Windows-only); one that is attached must be complete, match and be attested. It creates the
+refuses to continue unless every Windows file is attached, matches its
+checksum and has build provenance (see [Build provenance](#build-provenance)). A file that is not one of them stops it. It creates the
 stable tag and GitHub release from the exact same downloaded assets and never
 rebuilds an approved candidate. Release candidates
 published before per-asset checksums (they carry `SHA256SUMS.txt`), ones published before attestations, and ones published before the
@@ -328,7 +313,7 @@ and exits: `0` when every check passed, `1` when one failed, `2` for a bad comma
 
 CI runs it in the `Smoke test the packaged app` step of `.github/actions/build-native`, on `windows-x64` only, after the Wails
 build and before the release asset is packaged, so both `Build (Windows)` in `ci.yml` and the Windows release build of
-`prerelease.yml` fail on a build that cannot start. The macOS and Linux previews are not smoked. There is no path filter to
+`prerelease.yml` fail on a build that cannot start. There is no path filter to
 restrict it to package changes: the build itself runs on every non-docs change, and the check adds a few seconds. The step points
 `LocalAppData` at an empty folder, writes the report to a file (a GUI-subsystem program's standard output can be lost) and shows it
 in the log and the job summary. To run it locally, build as in `README.md`, then
@@ -365,16 +350,12 @@ level 3). The subjects are identified by digest:
 | Platform | Signed by (the workflow the certificate names) | Subjects |
 | --- | --- | --- |
 | Windows | `.github/workflows/prerelease.yml`, the `publish` job | `narration-utils-<version>-windows-x64.zip`, `narration-utils-<version>-windows-x64-setup.exe`, the notices, their `.sha256` files, and `narration-utils.exe` (so the executable can be checked after the zip is extracted, which an in-app update can do) |
-| macOS | `.github/workflows/_attach-platform.yml` (the reusable workflow, not `build-macos.yml`) | the zip and its `.sha256` |
-| Linux | `.github/workflows/_attach-platform.yml` | the archive, its `.sha256`, and `narration-utils` |
 
 - The step runs before anything is published. Windows builds in `windows-build`, which records the SHA-256 of every file
   as a job output; `publish` downloads the files, refuses any that do not match those digests (or that the build did not
-  record), and attests before the prune and `gh release create`, so it attests the bytes that were built; macOS and Linux attest before `gh release upload`. If it fails the job fails and nothing
+  record), and attests before the prune and `gh release create`, so it attests the bytes that were built. If it fails the job fails and nothing
   unattested is published; re-run the workflow to retry.
-- The jobs that attest hold `id-token: write`, `attestations: write` and `artifact-metadata: write`. A workflow that
-  calls `build-macos.yml` or `build-linux.yml` has to grant the same, because a caller must grant what the reusable
-  workflow's job holds.
+- The job that attests holds `id-token: write`, `attestations: write` and `artifact-metadata: write`.
 - Promote does not attest again: it re-publishes the same bytes, and an attestation belongs to a digest, not to a release.
 - Attestations prove which workflow, commit and run produced a file. They do not prove the source is benign, and they do
   not change how Windows SmartScreen or antivirus software treats an unsigned executable. The first stable release is
@@ -406,8 +387,8 @@ gh attestation verify narration-utils-0.2.7-windows-x64-setup.exe --repo country
 ```
 
 Success prints the workflow, commit and run that built the file; a modified or unattested file fails. To insist on the
-release workflow and `main`, add `--signer-workflow countrymanprime/narration-utils/.github/workflows/prerelease.yml --source-ref refs/heads/main`
-(macOS and Linux: `_attach-platform.yml`). `gh attestation download <file> --repo ...` saves the attestation as a
+release workflow and `main`, add `--signer-workflow countrymanprime/narration-utils/.github/workflows/prerelease.yml --source-ref refs/heads/main`.
+`gh attestation download <file> --repo ...` saves the attestation as a
 `.jsonl` bundle that `--bundle <file>` then verifies without asking GitHub for it. The same works for the executable
 inside the zip after extracting it, which is what an in-app update can check. The release notes say the same in one line.
 The `.sha256` beside a file only detects a damaged download: it is not evidence of where the file came from.
@@ -661,8 +642,8 @@ removed, fails the run.
 
 Pull requests run the quality jobs and the UI bundle build in parallel. The
 Windows native build needs only the UI bundle, so it starts as soon as that
-finishes instead of waiting for lint and tests. macOS and Linux are not built on
-pull requests, and the Go quality job runs on Windows only. pnpm's
+finishes instead of waiting for lint and tests. No other platform is built
+([ADR 0412](../adr/0412-windows-is-the-only-supported-platform-for-now.md)), and the Go quality job runs on Windows only. pnpm's
 content-addressable store, uv's package cache, Go's module/build caches, the
 compiled `wails3` and golangci-lint binaries (keyed on `scripts/toolchain.json`), and
 Playwright's Chromium download (keyed on the Playwright version) are restored by
@@ -670,7 +651,8 @@ the workflows; they never cache `node_modules`, `.venv`, test results or release
 cached is the [sidecar freeze](#the-sidecar-freeze-cache).
 `setup-node`, `setup-python`, and `setup-go` provision the exact pinned Node,
 Python, and Go versions. The Wails v3 CLI, `wails3` v3.0.0-beta.25 (built with `CGO_ENABLED=0`, [ADR 0200](../adr/0200-the-desktop-shell-runs-on-wails-v3-beta-pinned-at-v3-0-0-beta-25.md)), is installed only in jobs that run a
-native build, and on Linux `setup-toolchain` installs GTK 4 and WebKitGTK 6.0, which Wails v3 links through cgo, golangci-lint v2.13.2 (built with the pinned Go, config in `apps/desktop/.golangci.yml`) only in the Go quality job, and the standalone
+native build, and on Linux `setup-toolchain` installs GTK 4 and WebKitGTK 6.0, which Wails v3 links through cgo, only for CodeQL's Go
+compile (a Linux host for analysis, not a Linux build; [ADR 0413](../adr/0413-what-stays-of-the-other-platforms-when-windows-is-the-only-one.md)), golangci-lint v2.13.2 (built with the pinned Go, config in `apps/desktop/.golangci.yml`) only in the Go quality job, and the standalone
 StyLua v2.1.0 binary where needed, as declared in `scripts/toolchain.json`; none
 of them use Cargo. Lua 5.4 for the REAPER harness is the `lupa` wheel in the `lua` dependency group of `pyproject.toml` (hashed in `uv.lock`); the Lua job installs only that group. Platform-specific sidecars must be built on their target OS,
 so the built UI bundle is shared between jobs as a one-day artifact rather than
