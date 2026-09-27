@@ -31,7 +31,9 @@ type cacheFile struct {
 // Cache is the local copy of every online answer (D72: results are cached locally), one per-user file keyed by the
 // lower-cased word. It holds answers only, never the key. Its methods are safe for concurrent use.
 type Cache struct {
-	path   string
+	// +checklocks:mu
+	path string
+	// +checklocks:mu
 	source string
 	mu     sync.Mutex
 }
@@ -74,6 +76,7 @@ func (c *Cache) Put(word string, answer Answer, at time.Time) error {
 	return c.write(current)
 }
 
+// +checklocks:c.mu
 func (c *Cache) read() (cacheFile, error) {
 	empty := cacheFile{Version: cacheVersion, Source: c.source, Entries: map[string]CacheEntry{}}
 	bytes, err := os.ReadFile(c.path)
@@ -90,6 +93,7 @@ func (c *Cache) read() (cacheFile, error) {
 	return parsed, nil
 }
 
+// +checklocks:c.mu
 func (c *Cache) write(current cacheFile) error {
 	bytes, err := json.Marshal(current)
 	if err != nil {

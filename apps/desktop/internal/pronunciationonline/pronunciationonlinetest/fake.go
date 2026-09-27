@@ -20,10 +20,13 @@ type Call struct {
 // Fake answers from Answers (keyed by the lower-cased word); a word it does not have is not found, with no suggestions.
 // Errs, when it has the word, answers with that error instead.
 type Fake struct {
+	// +checklocks:mu
 	Answers map[string]pronunciationonline.Answer
-	Errs    map[string]error
-	mu      sync.Mutex
-	calls   []Call
+	// +checklocks:mu
+	Errs map[string]error
+	mu   sync.Mutex
+	// +checklocks:mu
+	calls []Call
 }
 
 var _ pronunciationonline.Dictionary = (*Fake)(nil)

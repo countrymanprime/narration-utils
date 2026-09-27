@@ -52,11 +52,13 @@ type BatchResult struct {
 // Service is the online lookup: the port's one Dictionary, the narrator's key in the credential store, and the cache.
 // Lookups run one at a time, so a batch and a single press never race to send the same word twice.
 type Service struct {
-	dict  Dictionary
-	keys  *credentialstore.Store
+	dict Dictionary
+	keys *credentialstore.Store
+	// +checklocks:mu
 	cache *Cache
-	now   func() time.Time
-	mu    sync.Mutex
+	// +checklocks:mu
+	now func() time.Time
+	mu  sync.Mutex
 }
 
 // NewService is the lookup for dict, keeping the key in the credentials file at credentialsPath and answers in the
@@ -115,6 +117,7 @@ func (s *Service) Lookup(ctx context.Context, raw string) (Result, error) {
 }
 
 // secretIfNeeded reads the key only when word is not cached, so a cached lookup never unseals it.
+// +checklocks:s.mu
 func (s *Service) secretIfNeeded(word string) (credentialstore.Secret, error) {
 	if _, ok := s.cache.Get(word); ok {
 		return credentialstore.Secret{}, nil
@@ -131,6 +134,7 @@ func (s *Service) secretIfNeeded(word string) (credentialstore.Secret, error) {
 
 // lookup answers word from the cache or, on a miss, the dictionary; fetched reports whether a request was made.
 // The caller holds s.mu.
+// +checklocks:s.mu
 func (s *Service) lookup(ctx context.Context, word string, secret credentialstore.Secret) (result Result, fetched bool, err error) {
 	if entry, ok := s.cache.Get(word); ok {
 		return s.result(word, entry, true), false, nil
