@@ -132,6 +132,8 @@ export type MockApiSeed = {
   chapterTags?: 'idle' | 'ready' | 'not-rendered';
   /** Makes chapterTagsEmbed always reject, to review the error state. */
   chapterTagsEmbedAlwaysErrors?: boolean;
+  /** Makes chapterRegionsCreate always reject, to review "Create chapter regions…"'s error state. */
+  regionsCreateAlwaysErrors?: boolean;
   /** Seeds the recording coverage mock (a refusal for every start, or stale chapters), see `CoverageSeed`. */
   coverage?: CoverageSeed;
   /** Seeds the stage recommendations mock (a chapter's recording evidence, a live confirmation, a dismissal), see `StagesSeed`. */
