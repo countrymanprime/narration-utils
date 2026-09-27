@@ -18,6 +18,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/countrymanprime/narration-utils/shell/internal/dawport"
 	"github.com/countrymanprime/narration-utils/shell/internal/findings"
 	"github.com/countrymanprime/narration-utils/shell/internal/persist"
 	"github.com/countrymanprime/narration-utils/shell/internal/tracks"
@@ -105,6 +106,9 @@ type referencesFile struct {
 type Config struct {
 	Project     string
 	ProjectFile func() (string, error)
+	// ProjectReader reads the saved .rpp ProjectFile resolves (DAW port PRD Phase 5d); nil falls back to tracks.Parse
+	// directly, so a Config literal built before this field existed keeps reading exactly as it did before.
+	ProjectReader dawport.ProjectReader
 }
 
 // Service lists a project's regions and manages its reference approvals.
@@ -143,11 +147,20 @@ func (s *Service) savedProject() (tracks.Project, error) {
 	if err != nil {
 		return tracks.Project{}, fmt.Errorf("choose the saved REAPER project file on the Tracks page first (%w)", err)
 	}
-	project, err := tracks.Parse(path)
+	project, err := s.readProject(path)
 	if err != nil {
 		return tracks.Project{}, fmt.Errorf("could not read %s: %w", filepath.Base(path), err)
 	}
 	return project, nil
+}
+
+// readProject is the dawport.ProjectReader role over path (DAW port PRD Phase 5d): nil falls back to tracks.Parse
+// directly.
+func (s *Service) readProject(path string) (tracks.Project, error) {
+	if s.config.ProjectReader == nil {
+		return tracks.Parse(path)
+	}
+	return s.config.ProjectReader.ReadProject(path)
 }
 
 func findRegion(regions []tracks.Region, guid string) (tracks.Region, bool) {

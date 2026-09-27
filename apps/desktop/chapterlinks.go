@@ -223,7 +223,7 @@ func readLinksProject(svc hostServices) (tracks.Project, linksProjectState, stri
 		}
 		return tracks.Project{}, linksProjectChoose, "Choose which REAPER project file to use on the Tracks page."
 	}
-	project, err := tracks.Parse(selected)
+	project, err := readProject(selected)
 	if err != nil {
 		return tracks.Project{}, linksProjectError, fmt.Sprintf("Could not read %s: %v", filepath.Base(selected), err)
 	}
