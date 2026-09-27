@@ -218,7 +218,7 @@ Every phase follows the `CLAUDE.md` workflow: plan (find or open the tracking is
 | 5 | Home surface (MVP) | `StageSuggestion`, evidence `SlideOver`, breakdown-table integration, summary chip, Check now, states, docs and screenshots | partial (UI, states, docs and screenshots done against the mock; the run in the desktop app on an RC corpus chapter is pending) | - | 4 | - |
 | 6 | Required-check settings | `StageRecommendations` settings tool, defaults, Settings UI, engine wiring, optional master switch | complete | 7, 8 | 1, 5 | - |
 | 7 | Editing signal | ER provider adapter, remaining-candidates evidence with time ranges and classes, Home rendering | complete | 6, 8 | 5, ER-6 | - |
-| 8 | Proofing signal and Proofing panel | PS provider adapter, open-pickup and delivery-check evidence, Proofing page panel | pending | 6, 7 | 5, PS-1, PS-5 | - |
+| 8 | Proofing signal and Proofing panel | PS provider adapter, open-pickup and delivery-check evidence, Proofing page panel | complete | 6, 7 | 5, PS-1, PS-5 | - |
 | 9 | Secondary surfaces and close-out | ChapterNav marker, Tracks hint, end-to-end corpus validation, ADR, docs, cleanup (no roadmap edit: implementation plan D9) | pending | - | 5, 7, 8; EL-7 | - |
 
 ### Phase Details

@@ -24,6 +24,7 @@ type (
 	MarkerResult = bridge.MarkerResult
 
 	TrackState    = bridge.TrackState
+	SelectedTrack = bridge.SelectedTrack
 	Armed         = bridge.Armed
 	RecordStarted = bridge.RecordStarted
 	RecordStopped = bridge.RecordStopped
@@ -171,6 +172,12 @@ type ProjectReader interface {
 // TrackStateReader reads one track's arm and record state.
 type TrackStateReader interface {
 	ChapterTrackState(ctx context.Context, trackGUID string) (TrackState, error)
+}
+
+// TrackSelector selects one track in REAPER ("Select in REAPER", chapter-track-link-control PRD Phase 4), deselecting
+// every other one. It changes nothing else.
+type TrackSelector interface {
+	SelectTrack(ctx context.Context, trackGUID string) (SelectedTrack, error)
 }
 
 // Recorder arms a track, starts and stops recording, and reports a recording the narrator stopped in the engine.

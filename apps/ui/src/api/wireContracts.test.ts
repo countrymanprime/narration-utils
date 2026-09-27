@@ -56,6 +56,7 @@ import {
   chapterTrackMatchSchema,
   chapterTrackSetSchema,
   trackMappingSchema,
+  trackSelectResultSchema,
 } from './schemas/chapterTrackMap';
 import { ttsCatalogSchema, ttsInstallJobSchema } from './schemas/tts';
 import { updateJobSchema, updateStatusSchema } from './schemas/update';
@@ -950,6 +951,25 @@ describe('answers of the mock client for the settings, voice, model, transcript 
     expect(noProject.tracks).toHaveLength(0);
   });
 
+  it("TrackSelectInReaper selects the track, and agrees with the host's golden for standalone and experimental_off", async () => {
+    const golden = z.record(z.string(), trackSelectResultSchema).parse(readGolden('track-select-results.json'));
+    const [first] = WIRE_TRACKS_PROJECT.tracks;
+
+    const selected = await createMockApi().trackSelectInReaper(first.guid);
+    expectMatches(trackSelectResultSchema, selected, 'mock track select');
+    expect(selected).toEqual({ outcome: 'selected', trackGuid: first.guid });
+
+    const standalone = await createMockApi({}, { reaperState: 'unavailable' }).trackSelectInReaper(first.guid);
+    expectMatches(trackSelectResultSchema, standalone, 'mock track select, standalone');
+    expect([standalone.outcome, standalone.reason]).toEqual([golden.standalone.outcome, golden.standalone.reason]);
+
+    const experimentalOff = await createMockApi({}, { reaperState: 'experimental_off' }).trackSelectInReaper(first.guid);
+    expectMatches(trackSelectResultSchema, experimentalOff, 'mock track select, experimental off');
+    expect([experimentalOff.outcome, experimentalOff.reason]).toEqual([golden.experimental_off.outcome, golden.experimental_off.reason]);
+
+    await expect(createMockApi().trackSelectInReaper('')).rejects.toThrow();
+  });
+
   it('the ChapterRegionsPreview and ChapterRegionsCreate answers', async () => {
     const api = createMockApi();
     const chapters = await api.manuscriptChapters();
@@ -1687,7 +1707,11 @@ describe('answers of the mock client for the settings, voice, model, transcript 
     const byId = new Map(answer.chapters.map((chapter) => [chapter.chapterId, chapter]));
     expect(new Set(answer.chapters.map((chapter) => chapter.verdict))).toEqual(new Set(['recommended', 'not_ready', 'unknown', 'dismissed', 'none']));
     expect(byId.get('chapter-1')).toMatchObject({ verdict: 'none', noneReason: 'stage_not_evaluated' });
-    expect(byId.get('chapter-9')).toMatchObject({ verdict: 'none', noneReason: 'no_required_signals' });
+    // chapter-7 is in Editing, unseeded in `editing`: the mock keeps its pre-existing no-required-signal shape (stagesMock.ts).
+    expect(byId.get('chapter-7')).toMatchObject({ verdict: 'none', noneReason: 'no_required_signals' });
+    // chapter-9 is in Proofing, unseeded in `proofing`: unlike editing, the mock always evaluates the real pickups
+    // signal for a proofing chapter (chapter-stage-recommendations.prd.md Phase 8), so it reads unknown, not none.
+    expect(byId.get('chapter-9')).toMatchObject({ verdict: 'unknown', causes: ['never_analyzed'] });
     expect(byId.get('chapter-6')).toMatchObject({ verdict: 'not_ready' });
     expect(byId.get('chapter-11')).toMatchObject({ verdict: 'unknown', causes: ['never_analyzed'] });
     for (const cause of STAGE_UNKNOWN_CAUSES) {
@@ -1823,6 +1847,7 @@ describe('answers of the mock client for the settings, voice, model, transcript 
       'chapterSyncSetEnabled',
       'chapterSyncUndo',
       'chapterTrackLinks',
+      'trackSelectInReaper',
       'chapterRegionsPreview',
       'chapterRegionsCreate',
       'chapterTrackMatch',

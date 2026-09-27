@@ -94,10 +94,14 @@ func paramHash(params AlignmentParams, inputs projectInputs) string {
 		inputs.EquivalencesHash, inputs.HotwordsHash, wordsVersion, vadFilter)
 }
 
-// wordsParamHash is the words cache entry's parameter hash: everything that
-// shapes a transcript of the same audio, the model and language included.
-func wordsParamHash(transcription Transcription, inputs projectInputs) string {
-	return hashParts("coverage-words", wordsVersion, transcription.Model, transcription.Language, inputs.HotwordsHash, vadFilter)
+// wordsParamHash is the words cache entry's parameter hash: everything that shapes a transcript of
+// the same audio, the model and language included. recheckModel is the model cascade's second-pass
+// model (model cascade PRD Phase 4), "" when a run never recheck's ("" here is the same cache
+// entry a plain single-model run of transcription.Model already uses): a cascade's spliced words
+// carry the re-check model in their own key, so they never seed a later plain check of the same
+// first-pass model with words a stronger model has already touched (the PRD's Architecture notes).
+func wordsParamHash(transcription Transcription, recheckModel string, inputs projectInputs) string {
+	return hashParts("coverage-words", wordsVersion, transcription.Model, transcription.Language, recheckModel, inputs.HotwordsHash, vadFilter)
 }
 
 func digest(text string) string {
