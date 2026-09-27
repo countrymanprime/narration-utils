@@ -28,7 +28,13 @@ afterEach(() => {
 function renderDialog(
   overrides: Partial<NarrationApi> = {},
   onClose = vi.fn(),
-  content: { entities?: GuideEntity[]; notes?: ManuscriptNote[]; source?: ReadAloudSource; onFixCredits?: () => void; mode?: 'read' | 'booth' } = {},
+  content: {
+    entities?: GuideEntity[];
+    notes?: ManuscriptNote[];
+    source?: ReadAloudSource;
+    onFixCredits?: () => void;
+    mode?: 'read' | 'booth' | 'companion';
+  } = {},
   daw?: DawMockSeed,
 ) {
   const eventListeners = new Set<(event: TeleprompterEvent) => void>();
@@ -722,6 +728,28 @@ describe('ReadAloudDialog, mode="booth" (booth-mode-and-companion-panel.prd.md P
     await user.click(screen.getByRole('button', { name: 'Close' }));
     expect(await screen.findByRole('alertdialog', { name: 'Stop reading?' })).toBeTruthy();
     expect(onClose).not.toHaveBeenCalled();
+  });
+});
+
+describe('ReadAloudDialog, mode="companion" (booth-mode-and-companion-panel.prd.md Phase 7)', () => {
+  it('shows CompanionShell in place of the dialog and narrows the window; Full app keeps the running session and restores it', async () => {
+    const user = userEvent.setup();
+    const teleprompterStart = vi.fn().mockResolvedValue({ status: 'started' });
+    const teleprompterStop = vi.fn().mockResolvedValue(undefined);
+    const companionModeEnter = vi.fn(async () => {});
+    const companionModeExit = vi.fn(async () => {});
+    const { setState } = renderDialog({ teleprompterStart, teleprompterStop, companionModeEnter, companionModeExit }, vi.fn(), { mode: 'companion' });
+    expect(await screen.findByRole('heading', { level: 1, name: 'Companion' })).toBeTruthy();
+    expect(screen.queryByRole('dialog')).toBeNull();
+    await waitFor(() => expect(companionModeEnter).toHaveBeenCalledTimes(1));
+
+    setState({ phase: 'running', chapter: CHAPTER.id });
+    await user.click(screen.getByRole('button', { name: 'Full app' }));
+
+    const dialog = await screen.findByRole('dialog', { name: /Read aloud/ });
+    expect(within(dialog).getByRole('toolbar', { name: 'Reading controls' })).toBeTruthy();
+    expect(companionModeExit).toHaveBeenCalledTimes(1);
+    expect(teleprompterStop).not.toHaveBeenCalled();
   });
 });
 

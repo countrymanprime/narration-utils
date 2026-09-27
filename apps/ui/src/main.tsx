@@ -220,6 +220,9 @@ const mockRegionsCapabilityOn = mockParams.has('mockRegionsCapabilityOn');
 // so "Punch from here"'s enabled state - the confirm dialog in the read-aloud rail, the pickup list's own button - can
 // be captured without also exercising the Settings toggle.
 const mockPunchCapabilityOn = mockParams.has('mockPunchCapabilityOn');
+// `?mockDawPlayhead=134.6` seeds the DAW port's live transport (daw_transport_changed) as playing at that project time, for
+// the companion panel's playhead badge (booth-mode-and-companion-panel.prd.md Phase 7). Without it, the transport is stopped.
+const mockDawPlayhead = Number.parseFloat(mockParams.get('mockDawPlayhead') ?? '');
 // `?mockCoverage=hold|stale|pickups|cascade|recheck-required` holds a started recording check at its last
 // transcribing step (so the running dialog can be seen), makes Chapter 4's stored check read stale (an item was
 // trimmed since), or gives Chapter 4 two interior pickups (a skip and a short read) plus a small tail instead of its
@@ -445,6 +448,7 @@ const mockInitial = {
   ...(mockProofingStages ? { stages: { proofing: { [WIRE_CHAPTERS[8].id]: 'met' as const, [WIRE_CHAPTERS[9].id]: 'not_met' as const } } } : {}),
   ...(mockProofingSignal ? { stages: { proofing: { [WIRE_CHAPTERS[8].id]: { unknown: 'unmapped_track' as StageUnknownCause } } } } : {}),
   ...(mockDawExperimentalOn ? { daw: { experimentalOn: true } } : {}),
+  ...(Number.isFinite(mockDawPlayhead) ? { daw: { transport: { playing: true, recording: false, position: mockDawPlayhead } } } : {}),
 };
 const api = import.meta.env.VITE_USE_MOCK_API === '1' ? createMockApi(window.__NARRATION_MOCK_OVERRIDES__, mockInitial) : wailsClient;
 
