@@ -294,6 +294,60 @@ func TestContractProductionTimer(t *testing.T) {
 	pin("production-timer-stopped", encoded, err)
 }
 
+// ProductionBurndown (Phase 6, Could): a time series of the book's logged hours, one point per day from the first
+// stopped session to the last, running cumulatively. Data only; no chart primitive reads it yet.
+func TestProductionBurndownRequiresAnOpenProject(t *testing.T) {
+	host := NewHost()
+	if _, err := host.ProductionBurndown(); err == nil {
+		t.Fatal("want an error with no project open")
+	}
+}
+
+func TestProductionBurndownIsEmptyWithNothingLoggedAndCumulativeOnceItIs(t *testing.T) {
+	host := productionHost(t)
+	empty := decodeAnswerList(t)(host.ProductionBurndown())
+	if len(empty) != 0 {
+		t.Fatalf("want no points with nothing logged, got %v", empty)
+	}
+	if _, err := host.ProductionStartTimer("c-0001", "recording"); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := host.ProductionStopTimer(); err != nil {
+		t.Fatal(err)
+	}
+	points := decodeAnswerList(t)(host.ProductionBurndown())
+	if len(points) != 1 {
+		t.Fatalf("want one point for today, got %v", points)
+	}
+	point := points[0].(map[string]any)
+	if point["hoursLogged"].(float64) <= 0 {
+		t.Fatalf("want some hours logged, got %v", point)
+	}
+}
+
+func TestContractProductionBurndown(t *testing.T) {
+	host := productionHost(t)
+	if _, err := host.ProductionStartTimer("c-0001", "recording"); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := host.ProductionStopTimer(); err != nil {
+		t.Fatal(err)
+	}
+	points := decodeAnswerList(t)(host.ProductionBurndown())
+	for _, point := range points {
+		row := point.(map[string]any)
+		row["date"] = "2026-09-21"
+		// hoursLogged is the real time between two time.Now() calls a moment apart: not a fixed 32-hex id or an
+		// RFC 3339 timestamp Stabilize normalizes, so it is fixed here like the date.
+		row["hoursLogged"] = 0.5
+	}
+	stable, err := contractfile.Stabilize(points)
+	if err != nil {
+		t.Fatal(err)
+	}
+	contractfile.Check(t, "production-burndown", stable)
+}
+
 // The overview reads the deadline and contracted amount Phase 3 stores on the manifest: the rate becomes defined once an
 // amount and some logged time exist, and the deadline appears with the days left.
 func TestProductionOverviewReadsThePlanSetOnTheManifest(t *testing.T) {

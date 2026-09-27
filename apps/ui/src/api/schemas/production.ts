@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import type {
+  ProductionBurndownPoint,
   ProductionChapter,
   ProductionMilestone,
   ProductionNextUpItem,
@@ -104,3 +105,5 @@ export const productionReportExportSchema = z.object({
   jsonFile: z.string(),
   contractedAmountIncluded: z.boolean(),
 }) satisfies z.ZodType<ProductionReportExport>;
+
+export const productionBurndownSchema = z.array(z.object({ date: calendarDate, hoursLogged: z.number() })) satisfies z.ZodType<ProductionBurndownPoint[]>;

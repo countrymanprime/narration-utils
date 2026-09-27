@@ -166,6 +166,7 @@ var stressReaders = []stressReader{
 	{"ProductionStartTimer (unknown chapter)", func(h *Host) { _, _ = h.ProductionStartTimer("missing", "recording") }},
 	{"ProductionStopTimer", func(h *Host) { _, _ = h.ProductionStopTimer() }},
 	{"ProductionStatusReport", func(h *Host) { _, _ = h.ProductionStatusReport(false) }},
+	{"ProductionBurndown", func(h *Host) { _, _ = h.ProductionBurndown() }},
 	{"emit callbacks", func(h *Host) {
 		h.emitTranscript(emptyTranscript())
 		h.emitTeleprompterState(map[string]any{"phase": "idle"})

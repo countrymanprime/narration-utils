@@ -184,6 +184,20 @@ func (h *Host) ProductionStopTimer() (string, error) {
 	return encodeBinding(map[string]any{"stopped": true, "session": session}, nil)
 }
 
+// ProductionBurndown is the book's logged hours by day (Phase 6, Could): data only, for a future chart primitive to
+// plot. It reads the same time log as ProductionOverview and adds nothing to it.
+func (h *Host) ProductionBurndown() (string, error) {
+	svc := h.services()
+	if svc.production == nil {
+		return "", errProductionNoProject
+	}
+	sessions, err := svc.production.Sessions()
+	if err != nil {
+		return "", err
+	}
+	return encodeBinding(production.Burndown(sessions), nil)
+}
+
 // productionRecorded is the production service's Recorded port over the manuscript's chapter list: each chapter's
 // measured recorded seconds (recordedlengths.go, the confirmed track's RecordedSeconds), and nothing for a chapter
 // whose length is unavailable.
