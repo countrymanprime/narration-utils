@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/countrymanprime/narration-utils/shell/internal/asrport"
 	"github.com/countrymanprime/narration-utils/shell/internal/dawadapter"
 	"github.com/countrymanprime/narration-utils/shell/internal/guide"
 	"github.com/countrymanprime/narration-utils/shell/internal/importer"
@@ -581,7 +582,7 @@ func (h *Host) TeleprompterStart(options map[string]string) (string, error) {
 // liveModelDir is the verified install directory of a live engine's model, or the first-use gate's answer when it is
 // not installed (a non-nil asset_required result), or an error for a model outside the engine's approved catalog.
 func (h *Host) liveModelDir(engine, modelID string) (string, map[string]any, error) {
-	if engine == teleprompter.EngineMoonshine {
+	if asrport.AssetKind(engine) == installKindMoonshine {
 		models := h.registry().moonshine
 		if models == nil {
 			return "", nil, h.registry().catalogUnavailable("Moonshine")

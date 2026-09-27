@@ -573,17 +573,20 @@ def _engine_events(entry, request: LiveRequest) -> EventStream:
     return stream
 
 
-def _load_whisper_engine(args) -> EventStream:
-    """The Whisper row of ENGINES (asr_adapters.WhisperEngine), loaded for this session."""
+def _load_engine(args) -> EventStream:
+    """The --engine row of ENGINES (asr_adapters.py), loaded for this session. `options` carries every engine-specific
+    setting and each adapter reads its own keys: Whisper takes decode_interval and timing; Moonshine takes decode_interval
+    and context_text (which model files it loads, and its refusal to download from the frozen sidecar, live in
+    moonshine_engine.py)."""
     request = LiveRequest(
         model=args.model,
         model_dir=args.model_dir,
         language=args.language,
         hotwords=args.hotwords,
         device=args.device,
-        options={"decode_interval": args.decode_interval, "timing": args.timing},
+        options={"decode_interval": args.decode_interval, "timing": args.timing, "context_text": args.context_text},
     )
-    return _engine_events(ENGINES.lookup("whisper"), request)
+    return _engine_events(ENGINES.lookup(args.engine), request)
 
 
 def _run_locate(ap: argparse.ArgumentParser, args) -> None:
@@ -602,20 +605,6 @@ def _run_locate(ap: argparse.ArgumentParser, args) -> None:
     decode = _load_whisper_decoder(args, vad_filter=True)
     log(f"Locating seconds {args.tail_start:g} to {args.tail_end:g} of {args.wav}...")
     _emit(locate.run(args.wav, args.tail_start, args.tail_end, tokens, breaks, decode))
-
-
-def _load_moonshine_engine(args) -> EventStream:
-    # Which model files are loaded, and the refusal to download from the frozen sidecar, live in moonshine_engine.py
-    # (asr_adapters.MoonshineEngine, the "moonshine" row of ENGINES).
-    request = LiveRequest(
-        model=args.model,
-        model_dir=args.model_dir,
-        language=args.language,
-        hotwords=args.hotwords,
-        device=args.device,
-        options={"decode_interval": args.decode_interval, "context_text": args.context_text},
-    )
-    return _engine_events(ENGINES.lookup("moonshine"), request)
 
 
 def _check_engine_args(ap: argparse.ArgumentParser, args) -> None:
@@ -869,10 +858,11 @@ def main() -> None:
     _check_engine_args(ap, args)
 
     tracker, script_message, chapter_text = _load_script(ap, args)
-    args.context_text = Path(args.context).read_text(encoding="utf-8") if args.context else (chapter_text if args.engine == "moonshine" else None)
+    # --context, else the chapter itself; an engine that takes no context (Whisper refuses --context) ignores it.
+    args.context_text = Path(args.context).read_text(encoding="utf-8") if args.context else chapter_text
     if script_message:
         _emit(script_message)
-    stream = (_load_moonshine_engine if args.engine == "moonshine" else _load_whisper_engine)(args)
+    stream = _load_engine(args)
     chunks = iter_wav_chunks(args.wav) if args.wav else iter_microphone_chunks(args.mic)
     log("Listening..." if args.mic else f"Replaying {args.wav}...")
     _run(args, stream, chunks, tracker)

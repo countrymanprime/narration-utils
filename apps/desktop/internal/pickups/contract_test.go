@@ -31,7 +31,7 @@ func TestContractPickupsImportSuccess(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	service := New(Config{SessionDir: session}, client, nil)
+	service := New(Config{SessionDir: session}, pickupListRole(t, client), nil)
 	if err := service.Import([]Row{{Start: 1.5, Tag: "narrator", Note: "Mispronounced"}, {Start: 9.25, Note: "Second pickup"}}); err != nil {
 		t.Fatal(err)
 	}

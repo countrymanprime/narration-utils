@@ -469,6 +469,8 @@ func (h *Host) configureLocked(next config) {
 		ProjectFile:    func() (string, error) { return selectedProjectFile(projectFolder, settingsStore) },
 		LoadManuscript: h.manuscript.Load,
 		Reporter:       h.persist,
+		// DAW port PRD Phase 5d: reads the saved .rpp through the port's offline role instead of tracks.Parse directly.
+		ProjectReader: reaper.ProjectReader{},
 	}, h.coverageLauncherLocked(), h.emitCoverage)
 	// A chapter's recordedFraction is the measured share of its words from a current, complete check, and absent otherwise (D11,
 	// Q12 A); reading it never starts a check (Q14).
@@ -481,6 +483,8 @@ func (h *Host) configureLocked(next config) {
 		ProjectFile: func() (string, error) { return selectedProjectFile(projectFolder, settingsStore) },
 		Policy:      func() editing.Policy { return editingPolicy(settingsStore) },
 		Reporter:    h.persist,
+		// DAW port PRD Phase 5d: reads the saved .rpp through the port's offline role instead of tracks.Parse directly.
+		ProjectReader: reaper.ProjectReader{},
 	}, nil)
 	// Every finished comparison is recorded for the proofing pickups signal (proofing-readiness-signals PRD Phase 2).
 	h.transcript.SetRunRecorder(comparisonRecorder(h.config.projectFolder, h.manuscript, settingsStore, h.persist))
@@ -519,23 +523,47 @@ func (h *Host) configureLocked(next config) {
 		Experimental: dawport.SettingsExperimental(settingsStore.Effective),
 	})
 	h.navigation = newFindingNavigation(h.dawPortResolver, client)
+	// The pickup, line-identity, render-config and cleanup-tool services take the DAW port's roles instead of the
+	// raw bridge client (DAW port PRD Phase 5b): each now depends on dawport.PickupList, LineStamper,
+	// RenderConfigurer or CleanupLauncher, never a concrete adapter, so a second engine can serve them unchanged.
+	// reaper.New wraps the same client the actions gate above already shares (dawport.Adapter.Role never opens a
+	// new one), so this adds no new consumer of the session's bridge; a nil client (a standalone or Audacity
+	// launch) leaves every role nil, which each service already treats as "the REAPER bridge is unavailable".
+	// Silence trim and level matching (built in P2, never wired to anything) take their SilenceTrimmer and
+	// GainAdjuster roles the same way, so internal/cleanuptools can call them once a narrator-facing trigger
+	// exists (diagnostics-delivery-and-cleanup-tools PRD Phases 10-11 left that for later work). P5a's shared
+	// resolver replaces this per-consumer adapter once every P5 migration has landed.
+	var pickupsRole dawport.PickupList
+	var lineStamperRole dawport.LineStamper
+	var renderConfigurerRole dawport.RenderConfigurer
+	var cleanupLauncherRole dawport.CleanupLauncher
+	var silenceTrimmerRole dawport.SilenceTrimmer
+	var gainAdjusterRole dawport.GainAdjuster
+	if reaperAdapter, err := reaper.New(client, nil); err == nil {
+		pickupsRole, _ = reaperAdapter.Role(dawport.CapPickups).(dawport.PickupList)
+		lineStamperRole, _ = reaperAdapter.Role(dawport.CapLineIdentity).(dawport.LineStamper)
+		renderConfigurerRole, _ = reaperAdapter.Role(dawport.CapRenderConfig).(dawport.RenderConfigurer)
+		cleanupLauncherRole, _ = reaperAdapter.Role(dawport.CapCleanupTools).(dawport.CleanupLauncher)
+		silenceTrimmerRole, _ = reaperAdapter.Role(dawport.CapSilenceTrim).(dawport.SilenceTrimmer)
+		gainAdjusterRole, _ = reaperAdapter.Role(dawport.CapItemGain).(dawport.GainAdjuster)
+	}
 	// The line-identity service is the second consumer of the same bridge client (bridge.Client fans events
 	// out by tag and run, ADR 0068), so pollTranscript's Drain call already pumps its events too. Phase 7
 	// (reaper-automation-follow-through PRD) is the UI trigger, so it now emits h.emitLineIdentity the way
 	// h.transcript emits h.emitTranscript.
-	h.lineIdentity = lineidentity.New(lineidentity.Config{Project: h.config.projectFolder, SessionDir: h.config.sessionDir}, client, h.manuscript, h.emitLineIdentity)
+	h.lineIdentity = lineidentity.New(lineidentity.Config{Project: h.config.projectFolder, SessionDir: h.config.sessionDir}, lineStamperRole, h.manuscript, h.emitLineIdentity)
 	// The pickup-list service (reaper-automation-follow-through PRD Phase 9) is the bridge's third real
 	// consumer: pollTranscript's Drain call already pumps its events too, the same way it does for line
 	// identity above.
-	h.pickups = pickups.New(pickups.Config{SessionDir: h.config.sessionDir}, client, h.emitPickups)
+	h.pickups = pickups.New(pickups.Config{SessionDir: h.config.sessionDir}, pickupsRole, h.emitPickups)
 	// The render-config service (reaper-automation-follow-through PRD Phase 11) is the bridge's fourth real
 	// consumer: pollTranscript's Drain call already pumps its events too, the same way it does for line identity
 	// and pickups above.
-	h.renderConfig = renderconfig.New(renderconfig.Config{SessionDir: h.config.sessionDir}, client, h.emitRenderConfig)
+	h.renderConfig = renderconfig.New(renderconfig.Config{SessionDir: h.config.sessionDir}, renderConfigurerRole, h.emitRenderConfig)
 	// The cleanup-launcher service (reaper-automation-follow-through PRD Phase 23, ADR 0146) is one more consumer of
 	// the same bridge client: pollTranscript's Drain call pumps its events too. It only ever sends an allow-listed
 	// tool key, and the dialog it opens in REAPER is the narrator's to drive.
-	h.cleanupTools = cleanuptools.New(cleanuptools.Config{SessionDir: h.config.sessionDir}, client, h.emitCleanupTools)
+	h.cleanupTools = cleanuptools.New(cleanuptools.Config{SessionDir: h.config.sessionDir}, cleanupLauncherRole, silenceTrimmerRole, gainAdjusterRole, h.emitCleanupTools)
 	// The retake-lane service (reaper-automation-follow-through PRD Phase 25, ADR 0147) is one more consumer of the
 	// same bridge client. It only ever asks REAPER to make one listed retake's lane the only one playing.
 	h.retakeLanes = retakelanes.New(retakelanes.Config{SessionDir: h.config.sessionDir}, client, h.emitRetakeLanes)
