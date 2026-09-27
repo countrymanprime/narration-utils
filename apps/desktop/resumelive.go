@@ -36,12 +36,12 @@ var liveSourceExtensions = map[string]bool{
 // readLiveTrack asks REAPER for trackGUID's live state. It reports false, and the caller reads the saved project, when
 // there is no reader (no DAW, REAPER not reachable, the capability switched off), when REAPER does not answer in time or
 // refuses (a track that is gone, the experimental switch), or when REAPER has another project open than projectPath: a
-// live answer about a different project must never place a resume point in this one.
-func readLiveTrack(reader trackStateReader, projectPath, trackGUID string) (dawport.TrackState, bool) {
+// live answer about a different project must never place a resume point in this one. Ending ctx ends the wait.
+func readLiveTrack(ctx context.Context, reader trackStateReader, projectPath, trackGUID string) (dawport.TrackState, bool) {
 	if reader == nil || projectPath == "" || trackGUID == "" {
 		return dawport.TrackState{}, false
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), liveTrackStateTimeout)
+	ctx, cancel := context.WithTimeout(ctx, liveTrackStateTimeout)
 	defer cancel()
 	state, err := reader.ChapterTrackState(ctx, trackGUID)
 	if err != nil || state.Unsaved || state.ProjectPath == "" {

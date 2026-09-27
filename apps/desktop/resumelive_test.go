@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -142,11 +143,14 @@ type fakeTrackState struct {
 	state dawport.TrackState
 	err   error
 	delay time.Duration
+	mu    sync.Mutex
 	asked []string
 }
 
 func (f *fakeTrackState) ChapterTrackState(ctx context.Context, trackGUID string) (dawport.TrackState, error) {
+	f.mu.Lock()
 	f.asked = append(f.asked, trackGUID)
+	f.mu.Unlock()
 	if f.delay > 0 {
 		select {
 		case <-time.After(f.delay):
@@ -160,6 +164,18 @@ func (f *fakeTrackState) ChapterTrackState(ctx context.Context, trackGUID string
 	state := f.state
 	state.TrackGUID = trackGUID
 	return state, nil
+}
+
+func (f *fakeTrackState) askedCount() int {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	return len(f.asked)
+}
+
+func (f *fakeTrackState) askedAt(i int) string {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	return f.asked[i]
 }
 
 const chapterOneTrack = "{11111111-1111-4111-8111-111111111111}"
