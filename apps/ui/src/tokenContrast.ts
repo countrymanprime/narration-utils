@@ -3,7 +3,7 @@
 // contrast ratio is computed from the CSS that ships and not from a copy of its values. Anything else throws: a pair the
 // guard cannot evaluate must not pass by being skipped.
 
-export type Theme = 'light' | 'dark' | 'booth';
+export type Theme = 'light' | 'dark';
 export type TokenMap = Record<string, string>;
 export interface Rgba {
   r: number;
@@ -50,8 +50,7 @@ export function parseThemes(css: string): Record<Theme, TokenMap> {
   const darkOverrides: TokenMap = {};
   for (const rule of rootRules(css)) Object.assign(rule.dark ? darkOverrides : light, rule.tokens);
   const dark = { ...light, ...darkOverrides };
-  const booth = { ...dark, ...boothTokens(css) };
-  return { light, dark, booth };
+  return { light, dark };
 }
 
 // The number of rules in the file whose selector mentions `:root`, whatever the rest of it says, so a rule the parser above
@@ -61,18 +60,21 @@ export function countRootRules(css: string): number {
   return (stripComments(css).match(/:root[^{}]*\{/g) ?? []).length;
 }
 
-// The `[data-surface='booth']` block (studio-ui-primitives.prd.md Phase 1, ADR 0360 Q1): FocusShell's own high-contrast
-// palette, scoped to a data attribute rather than a third app theme. It lists only the tokens booth mode changes; every
-// other token falls through to dark (see `parseThemes`), the way `:root[data-theme='dark']` falls through to light.
-export function boothTokens(css: string): TokenMap {
-  const match = /(?<=^|\})\s*\[data-surface=(['"])booth\1\]\s*\{([^}]*)\}/.exec(stripComments(css));
-  return match ? declarations(match[2]) : {};
-}
-
-// The number of rules whose selector mentions the booth surface, whatever the rest of it says, so a selector the parser
-// above cannot see fails a test instead of silently returning an empty map.
-export function countBoothBlocks(css: string): number {
-  return (stripComments(css).match(/\[data-surface=['"]booth['"]\][^{}]*\{/g) ?? []).length;
+// The theme is one app-wide setting (ADR 0365, which superseded ADR 0360 Q1's forced-dark booth block): no page or surface
+// may force light or dark. This names every rule, other than the two theme blocks, that pins a `color-scheme` or redeclares
+// a colour token the dark theme sets - a scoped palette like that is drawn whatever the narrator's theme is, and the pairs
+// in paletteContrast.test.ts never measure it. A token neither theme varies (a size, a derived alias) may still be scoped.
+// `themeCss` is the file the theme blocks live in, for checking a second stylesheet against styles.css's tokens.
+export function forcedThemeRules(css: string, themeCss: string = css): string[] {
+  const themed = new Set(rootRules(themeCss).flatMap((rule) => (rule.dark ? Object.keys(rule.tokens) : [])));
+  const forced: string[] = [];
+  for (const match of stripComments(css).matchAll(/([^{}]*)\{([^{}]*)\}/g)) {
+    const selector = match[1].trim();
+    if (/^:root(?:\[data-theme=['"]dark['"]\])?$/.test(selector)) continue;
+    const pinsScheme = /(?:^|[;\s])color-scheme\s*:/.test(match[2]);
+    if (pinsScheme || Object.keys(declarations(match[2])).some((name) => themed.has(name))) forced.push(selector);
+  }
+  return forced;
 }
 
 function splitTopLevel(text: string): string[] {

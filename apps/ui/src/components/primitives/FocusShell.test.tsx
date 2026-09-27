@@ -29,15 +29,14 @@ describe('FocusShell', () => {
     expect(screen.getByRole('region', { name: 'Booth commands' })).toBeTruthy();
   });
 
-  it('sets data-surface="booth" on its own root, and nowhere else, so the booth tokens apply only inside it', () => {
+  it('follows the app theme: it sets no surface, theme or colour-scheme of its own (ADR 0365)', () => {
     const { container } = render(
-      <FocusShell status="s" commands="c">
+      <FocusShell status="s" rail="r" commands="c">
         m
       </FocusShell>,
     );
-    const boothScoped = container.querySelectorAll('[data-surface="booth"]');
-    expect(boothScoped).toHaveLength(1);
-    expect(boothScoped[0]).toBe(container.firstElementChild);
+    expect(container.querySelector('[data-surface], [data-theme]')).toBeNull();
+    for (const element of container.querySelectorAll<HTMLElement>('*')) expect(element.style.colorScheme).toBe('');
   });
 
   it('renders no rail landmark when rail is omitted', () => {

@@ -262,6 +262,18 @@ export const manuscriptDrivers: Record<string, Driver> = {
     await clickVisible(page, 'button', 'Open booth for Chapter 1');
     await page.getByRole('toolbar', { name: 'Booth commands' }).waitFor();
   },
+  // The booth in the Dark theme, chosen the way a narrator chooses it (Settings > Appearance). The booth follows the app
+  // theme (ADR 0365): if it ever forced one palette again, this would render the same as 'booth-default' and the suite's
+  // identical-states check would fail the run.
+  'booth-dark': async (page) => {
+    await goToPage(page, 'Settings');
+    await clickVisible(page, 'tab', 'Global');
+    await clickSettingsCategory(page, 'Appearance');
+    await clickVisible(page, 'button', 'Dark');
+    await goToPage(page, 'Manuscript');
+    await clickVisible(page, 'button', 'Open booth for Chapter 1');
+    await page.getByRole('toolbar', { name: 'Booth commands' }).waitFor();
+  },
   // Same mock seam and word as 'read-aloud-listening', reached through Booth instead (Phase 2's toolbar row).
   'booth-listening': async (page) => {
     await page.goto('/?mockTeleprompter=listening');
