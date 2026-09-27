@@ -420,9 +420,6 @@ def pronounce_source(name: str, espeak_library: str | None, source: str) -> dict
     return engine.pronounce(name)
 
 
-PRONUNCIATION_UNAVAILABLE_LOG = {"cmu": "CMU pronunciation unavailable", "espeak": "eSpeak phonetic fallback unavailable"}
-
-
 def pronunciation(name: str, espeak_library: str | None) -> dict[str, str]:
     # CMU is quick and high-quality for familiar names. It cannot cover most fantasy names.
     # Read-only/generated-only: there is no user-editable "say it as" respelling
@@ -431,7 +428,8 @@ def pronunciation(name: str, espeak_library: str | None) -> dict[str, str]:
         try:
             return pronounce_source(name, espeak_library, source)
         except Exception as exc:  # noqa: BLE001
-            log(f"{PRONUNCIATION_UNAVAILABLE_LOG[source]} ({exc}).")
+            adapter = SOURCES.lookup(source)
+            log(f"{getattr(adapter, 'unavailable_log', adapter.descriptor.label + ' unavailable')} ({exc}).")
     return {"ipa": "", "source": "not generated", "confidence": "unknown"}
 
 
