@@ -21,7 +21,7 @@ const HOME = 'src/components/primitives/Highlight.tsx';
 // 0063, Proposed). The entry goes when that is settled.
 // The count is pinned too, so a second `<mark>` with another meaning cannot ride on the entry.
 const ALLOWED: Record<string, { marks: number; reason: string }> = {
-  'src/components/proofing/InlineDiffRow.tsx': { marks: 1, reason: 'marks differing words in the discrepancy colour, not an entry category (ADR 0063)' },
+  'src/components/proof/InlineDiff.tsx': { marks: 1, reason: 'marks differing words in the discrepancy colour, not an entry category (ADR 0063)' },
 };
 
 function scriptKind(fileName: string): ts.ScriptKind {
