@@ -107,6 +107,7 @@ export const storybibleDrivers: Record<string, Driver> = {
     const unlock = page.getByRole('button', { name: 'Unlock entry' });
     if (await unlock.count()) await unlock.click();
     await clickVisible(page, 'button', 'Edit this entry');
+    await clickVisible(page, 'button', 'Pronunciation details');
     await page.getByRole('textbox', { name: 'Your pronunciation' }).fill('ˈæ.lɪs');
     await clickVisible(page, 'button', 'Use mine');
     await page.getByText('Also kept:').waitFor();

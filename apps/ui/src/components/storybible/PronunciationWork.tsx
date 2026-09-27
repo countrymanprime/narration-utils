@@ -17,6 +17,8 @@ export function PronunciationWork({
   name,
   value,
   editing,
+  expanded,
+  onExpandedChange,
   disabled,
   pending,
   onSaveUser,
@@ -26,6 +28,9 @@ export function PronunciationWork({
   name: string;
   value: GuidePronunciation;
   editing: boolean;
+  /** Whether the edit-mode controls are open. The parent holds it, so it stays open when a save reloads the entry. */
+  expanded: boolean;
+  onExpandedChange: (expanded: boolean) => void;
   disabled: boolean;
   pending: (key: 'user' | 'alternate' | 'status') => boolean;
   onSaveUser: (ipa: string) => Promise<boolean>;
@@ -54,6 +59,11 @@ export function PronunciationWork({
         </p>
       )}
       {editing && (
+        <Button variant="ghost" aria-expanded={expanded} onClick={() => onExpandedChange(!expanded)}>
+          Pronunciation details
+        </Button>
+      )}
+      {editing && expanded && (
         <div className="space-y-3 rounded-[var(--control-radius)] border p-3" style={{ borderColor: 'var(--border)' }}>
           <div className="flex flex-wrap items-end gap-2">
             <div className="min-w-[12rem] flex-1">

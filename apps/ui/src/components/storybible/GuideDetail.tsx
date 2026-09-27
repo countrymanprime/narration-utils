@@ -111,6 +111,8 @@ export function GuideDetail({
   // Every action that changes the Story Bible goes through this (ADR 0075): one at a time, the control that started it says so, and the others
   // wait. Each is a Python process that rewrites the same file, so two at once could lose an update.
   const mutation = usePendingAction();
+  // The pronunciation controls in edit mode start closed, so edit mode stays compact, and stay open across a save's reload.
+  const [pronunciationOpen, setPronunciationOpen] = useState(false);
   // An action that outlives a switch to another entry must not pull the selection back to the one it started on when it reloads.
   const currentId = useRef(entity?.id);
   currentId.current = entity?.id;
@@ -511,6 +513,8 @@ export function GuideDetail({
               name={entity.canonical_name}
               value={entity.pronunciation}
               editing={canEdit && editing}
+              expanded={pronunciationOpen}
+              onExpandedChange={setPronunciationOpen}
               disabled={mutation.isBusy}
               pending={(key) => mutation.isPending(`pronunciation-${key}`)}
               onSaveUser={pronounceUser}
