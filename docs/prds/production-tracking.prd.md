@@ -139,7 +139,7 @@ Phases 1 to 4: a narrator can log time, see a real PFH and rate, set a deadline 
 
 | # | Phase | Description | Status | Parallel | Depends | Ports used | PRP Plan |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| 1 | Session timer core | `internal/production` package: `Session`, store, `Start`/`Stop`, tests | pending | 2 (types only) | - | none | - |
+| 1 | Session timer core | `internal/production` package: `Session`, store, `Start`/`Stop`, tests | complete | 2 (types only) | - | none | - |
 | 2 | PFH and rate | `PFH`/`BookPFH`/rate arithmetic over `tracks.RecordedSeconds` and logged sessions; ADR | pending | - | 1 | `project_read` (reads `tracks.RecordedSeconds` via the existing coverage/manifest path) | - |
 | 3 | Deadlines and milestones | Manifest fields, bindings, migration-free (additive) | pending | 1, 2 | - | none | - |
 | 4 | Production page | Bindings for the board and KPIs, `Production.tsx`, nav entry, wire contracts, visual suite | pending | - | 1, 2, 3; readiness signal contracts from sibling PRDs (per docs) | `heartbeat` (Q1 idle-prompt assist, optional); UI primitives `StageGrid`, `StatTile`, `Toolbar`, `StatusBadge` (`studio-ui-primitives.prd.md`) | - |
