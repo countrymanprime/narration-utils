@@ -175,7 +175,7 @@ Every phase follows the `CLAUDE.md` workflow: plan (find or open the tracking is
 | 5 | Findings overlay | Exclude or rank down windows overlapping open findings by paragraph; open-finding evidence; dismissed ignored | complete | 6 | 2, RD-1, TR-4 | - |
 | 6 | Audio position mapper (spike, then build) | Paragraph-to-time mapping for a confirmed, recorded chapter, or the decision to ship pace-only; REAPER-saved fixtures | complete | 5 | EL-5, RC, TR-3 or the stamp reader | - |
 | 7 | Audio quality and performance signals | Windowed clipping, silence, noise and level evidence per candidate; pace evidence; "audio-checked" label rule; matrix tests | pending | - | 5, 6, DX-4, EL-6 | - |
-| 8 | Pin, adjust and close-out | Narrator pin and edge adjustment, stale detection, `resetDerived` entry, docs, ADR, cleanup | pending | - | 3 (7 optional) | - |
+| 8 | Pin, adjust and close-out | Narrator pin and edge adjustment, stale detection, `resetDerived` entry, docs, ADR, cleanup. **D79:** the Preview panel moves with the Proofing results into the Proof chapter view ([stage navigation](stage-navigation-and-page-replacement.prd.md) Phase 5); pin and adjust there. | pending | - | 3 (7 optional) | - |
 
 ### Phase Details
 

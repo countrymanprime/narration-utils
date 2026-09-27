@@ -180,6 +180,8 @@ Phases 1 to 5: pronunciation depth, web lookups, the query export, and speaker a
 | 9 | Merriam-Webster online source (D72, Should) | Sign-up-page prompt, pasted-key capture, key storage (Q10), single-word fetch binding, local cache, privacy-rule tests (Q11) | pending | 8, 10 | 1 | `PronunciationSource` (new narrator-keyed online role) | - |
 | 10 | Commons audio links (D72, Could) | Read Wiktextract's own Commons audio filename/URL per word (fixture until Phase 8 lands, D67 mock-first); "open externally" binding (Q12) | pending | 8, 9 | 1 | Reads Phase 8's data; the same "open externally" host path as `PronunciationSource.BrowserLookup` | - |
 
+**D79 (2026-09-27).** The reader these phases build on becomes the Prep group's **Script** page (`/script`, replacing `/manuscript`) in [stage navigation](stage-navigation-and-page-replacement.prd.md) Phase 3, and the Story Bible moves into the Prep group unchanged in its Phase 1. Work already on the reader (Phases 4 and 10 and the markup of Phase 5) moves with the files; no phase here adds a page or a nav item. Phase 7's rollup feeds the Production home's Prep column.
+
 ### Phase details
 
 - **Phase 1.** Tests: a `user` override never triggers a CMU/eSpeak call; switching `chosen` back to the dictionary entry is lossless (the user entry is kept, not deleted); status defaults to `researched` for every existing entry (migration-free, additive).
