@@ -61,6 +61,7 @@ describe('edit mode', () => {
     const user = userEvent.setup();
     const spies = renderDetail(base);
     fireEvent.click(screen.getByRole('button', { name: 'Edit this entry' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Pronunciation details' }));
     const mine = screen.getByRole('button', { name: 'Use mine' });
     expect(mine.hasAttribute('disabled')).toBe(true);
     await user.type(screen.getByRole('textbox', { name: 'Your pronunciation' }), '  wɹɛn ');
@@ -71,6 +72,7 @@ describe('edit mode', () => {
   it('refuses an overlong pronunciation before calling the host', async () => {
     const spies = renderDetail(base);
     fireEvent.click(screen.getByRole('button', { name: 'Edit this entry' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Pronunciation details' }));
     fireEvent.change(screen.getByRole('textbox', { name: 'Your pronunciation' }), { target: { value: 'x'.repeat(201) } });
     expect(screen.getByText('At most 200 characters.')).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Use mine' }).hasAttribute('disabled')).toBe(true);
@@ -84,6 +86,7 @@ describe('edit mode', () => {
       pronunciation: { ipa: 'wɹɛn', source: 'user', confidence: 'narrator', alternate: { ipa: 'ɹɛn', source: 'CMU dictionary', confidence: 'medium' } },
     });
     fireEvent.click(screen.getByRole('button', { name: 'Edit this entry' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Pronunciation details' }));
     await user.click(screen.getByRole('button', { name: `Use ɹɛn for ${base.canonical_name}` }));
     await waitFor(() => expect(spies.alternate).toHaveBeenCalledWith(base.id));
   });
@@ -91,6 +94,7 @@ describe('edit mode', () => {
   it('offers no switch without an alternate', () => {
     renderDetail(base);
     fireEvent.click(screen.getByRole('button', { name: 'Edit this entry' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Pronunciation details' }));
     expect(screen.queryByRole('button', { name: /instead/ })).toBeNull();
   });
 
@@ -98,12 +102,21 @@ describe('edit mode', () => {
     const user = userEvent.setup();
     const spies = renderDetail(base);
     fireEvent.click(screen.getByRole('button', { name: 'Edit this entry' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Pronunciation details' }));
     const save = screen.getByRole('button', { name: 'Save status' });
     expect(save.hasAttribute('disabled')).toBe(true);
     await user.selectOptions(screen.getByRole('combobox', { name: `Pronunciation status for ${base.canonical_name}` }), 'query_sent');
     await user.type(screen.getByRole('textbox', { name: 'Pronunciation note' }), 'Asked on the call.');
     await user.click(save);
     await waitFor(() => expect(spies.status).toHaveBeenCalledWith(base.id, 'query_sent', 'Asked on the call.'));
+  });
+
+  it('keeps the controls closed until Pronunciation details is pressed', () => {
+    renderDetail(base);
+    fireEvent.click(screen.getByRole('button', { name: 'Edit this entry' }));
+    const details = screen.getByRole('button', { name: 'Pronunciation details' });
+    expect(details.getAttribute('aria-expanded')).toBe('false');
+    expect(screen.queryByRole('textbox', { name: 'Your pronunciation' })).toBeNull();
   });
 
   it('is not reachable on a locked entry', () => {
