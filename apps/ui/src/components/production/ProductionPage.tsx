@@ -12,6 +12,7 @@ import { StageGrid } from '../primitives/StageGrid';
 import { StatTile } from '../primitives/StatTile';
 import { Toolbar, ToolbarButton } from '../primitives/Toolbar';
 import { PlanPanel } from './PlanPanel';
+import { StatusReportPanel } from './StatusReportPanel';
 import { BOARD_COLUMNS, boardCell, deadlineFigure, formatClock, formatPfh, formatRate, nextUpLine, stageHoursHint } from './productionFormat';
 
 const MUTED = { color: 'var(--text-muted)' };
@@ -280,6 +281,7 @@ export function ProductionPage() {
             </Panel>
           </div>
           <PlanPanel onSaved={() => void read()} />
+          <StatusReportPanel />
         </>
       )}
     </div>

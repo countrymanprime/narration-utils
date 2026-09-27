@@ -60,6 +60,18 @@ the ACX 15-minute checkpoint** adds ACX's checkpoint as an ordinary milestone fo
 remove. The app names the checkpoint but does not check ACX's approval process. **Save milestones** saves
 the whole list; one with no name or no real date is refused, and nothing is saved.
 
+## Status report
+
+**Status report**, below Delivery plan, writes an HTML page anyone can open and a JSON file with the same
+figures shown above: hours by stage, hours per finished hour, the delivery date and milestone status, and
+how many chapters fall into each readiness. Both files go into this project's
+`narration-utils/production/reports` folder, under a name built from when you exported it, and an export
+never overwrites an earlier one.
+
+The contracted amount and effective rate are left out unless you tick **Include the contracted amount and
+effective rate**: a status report is often the one thing you hand to someone else — a publisher, a
+collaborator, a rights holder checking on progress — who has no need to know what the book pays.
+
 ---
 
 [← Home](home.md) · [Index](README.md) · [Manuscript →](manuscript.md)

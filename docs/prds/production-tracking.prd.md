@@ -143,7 +143,7 @@ Phases 1 to 4: a narrator can log time, see a real PFH and rate, set a deadline 
 | 2 | PFH and rate | `PFH`/`BookPFH`/rate arithmetic over `tracks.RecordedSeconds` and logged sessions; ADR | complete | - | 1 | `project_read` (reads `tracks.RecordedSeconds` via the existing coverage/manifest path) | - |
 | 3 | Deadlines and milestones | Manifest fields, bindings, migration-free (additive) | complete | 1, 2 | - | none | - |
 | 4 | Production page | Bindings for the board and KPIs, `Production.tsx`, nav entry, wire contracts, visual suite | complete | - | 1, 2, 3; readiness signal contracts from sibling PRDs (per docs) | `heartbeat` (Q1 idle-prompt assist, optional); UI primitives `StageGrid`, `StatTile`, `Toolbar`, `StatusBadge` (`studio-ui-primitives.prd.md`) | - |
-| 5 | Status report export | `internal/productionreport`, HTML/JSON, goldens | pending | 6 | 4 | none | - |
+| 5 | Status report export | `internal/productionreport`, HTML/JSON, goldens | complete | 6 | 4 | none | - |
 | 6 | Burndown data (Could) | Time-series of logged hours vs. target, no chart rendering | pending | 5 | 2 | none | - |
 
 ### Phase details
