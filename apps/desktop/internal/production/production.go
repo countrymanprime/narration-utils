@@ -132,7 +132,7 @@ func (s *Service) Start(chapterID string, stage stages.Stage) (Session, error) {
 		return Session{}, err
 	}
 	if running, ok := runningIn(file.Sessions); ok {
-		return Session{}, fmt.Errorf("%w on %s (%s); stop it first", ErrTimerRunning, file.Sessions[running].ChapterID, file.Sessions[running].Stage)
+		return Session{}, timerRunning(file.Sessions[running])
 	}
 	id, err := newID()
 	if err != nil {
@@ -213,6 +213,15 @@ func timeable(stage stages.Stage) bool {
 	return false
 }
 
+// timerRunning is Start's refusal while session runs, naming what runs.
+func timerRunning(session Session) error {
+	return fmt.Errorf("%w on %s (%s); stop it first", ErrTimerRunning, session.ChapterID, session.Stage)
+}
+
+// path and reporter read the Service's config, which New sets once and nothing changes, so it needs no lock.
+func (s *Service) path() string                { return sessionsPath(s.config.Project) }
+func (s *Service) reporter() *persist.Reporter { return s.config.Reporter }
+
 func runningIn(sessions []Session) (int, bool) {
 	for index, session := range sessions {
 		if session.Running() {
@@ -250,10 +259,12 @@ func validate(file sessionsFile) error {
 }
 
 // readLocked reads sessions.json; s.mu must be held.
+//
+// +checklocks:s.mu
 func (s *Service) readLocked() (sessionsFile, error) {
 	var decoded sessionsFile
 	newer := 0
-	outcome := s.config.Reporter.ReadJSON(sessionsPath(s.config.Project), what, persist.NarratorData, func(raw []byte) error {
+	outcome := s.reporter().ReadJSON(s.path(), what, persist.NarratorData, func(raw []byte) error {
 		var candidate sessionsFile
 		if err := json.Unmarshal(raw, &candidate); err != nil {
 			return err
@@ -287,9 +298,11 @@ func (s *Service) readLocked() (sessionsFile, error) {
 
 // writeLocked replaces sessions.json through a temporary file and a rename;
 // s.mu must be held.
+//
+// +checklocks:s.mu
 func (s *Service) writeLocked(file sessionsFile) error {
 	file.SchemaVersion = sessionsSchemaVersion
-	path := sessionsPath(s.config.Project)
+	path := s.path()
 	if err := persist.CanOverwrite(path, what); err != nil {
 		return err
 	}
