@@ -10,15 +10,28 @@ import pytest
 from narration_common.ports import asr_conformance
 from narration_common.ports.asr import LiveRequest
 
-# A plain `import`, not the spec-loaded fresh copy other sidecar tests use: asr_adapters.py registers its rows into
-# the shared ENGINES singleton as a side effect of being imported, and that must happen at most once per process (a
-# second registration of the same name raises), so this needs Python's own module cache to dedupe it.
 CORE = Path(__file__).resolve().parents[1] / "core"
-if str(CORE) not in sys.path:
-    sys.path.insert(0, str(CORE))
 
-import asr_adapters
-import moonshine_engine
+
+@pytest.fixture(scope="module", autouse=True)
+def _asr_adapters_module():
+    """Imports `asr_adapters`/`moonshine_engine` as this module's own globals, on first use here rather than at
+    collection time: doing it in a fixture defers `core`'s one-time addition to `sys.path` until every test file's
+    own module-level code (collected before any fixture runs) has already executed - `replay.py`'s identical
+    `sys.path` self-insertion guard included, whose own coverage this would otherwise steal by beating it there
+    first. A plain `import`, not the spec-loaded fresh copy other sidecar tests use: asr_adapters.py registers its
+    rows into the shared ENGINES singleton as a side effect of being imported, and that must happen at most once per
+    process (a second registration of the same name raises), so this needs Python's own module cache to dedupe it.
+    """
+    if str(CORE) not in sys.path:
+        sys.path.insert(0, str(CORE))
+    global asr_adapters, moonshine_engine
+    import asr_adapters as _asr_adapters
+    import moonshine_engine as _moonshine_engine
+
+    asr_adapters = _asr_adapters
+    moonshine_engine = _moonshine_engine
+
 
 HALF_SECOND = 8000  # live_asr.SAMPLE_RATE // 2
 
