@@ -17,7 +17,7 @@ func newActionsSession(t *testing.T, enabled bool) (*Actions, *Client, string) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	actions := NewActions(client, func() bool { return enabled })
+	actions := NewActions(client, switchGate(enabled))
 	actions.SetTimeout(2 * time.Second)
 	return actions, client, dir
 }
@@ -47,7 +47,7 @@ func TestChapterTrackStateIsRefusedWhileTheExperimentalSettingIsOff(t *testing.T
 	}
 }
 
-func TestChapterTrackStateWithANilSwitchIsOff(t *testing.T) {
+func TestChapterTrackStateWithANilGateIsOff(t *testing.T) {
 	actions := NewActions(nil, nil)
 	if _, err := actions.ChapterTrackState(context.Background(), testTrack); !errors.Is(err, ErrExperimentalOff) {
 		t.Fatalf("err = %v, want ErrExperimentalOff", err)
@@ -55,7 +55,7 @@ func TestChapterTrackStateWithANilSwitchIsOff(t *testing.T) {
 }
 
 func TestChapterTrackStateWithNoBridgeIsUnavailable(t *testing.T) {
-	actions := NewActions(nil, func() bool { return true })
+	actions := NewActions(nil, switchGate(true))
 	if _, err := actions.ChapterTrackState(context.Background(), testTrack); !errors.Is(err, ErrUnavailable) {
 		t.Fatalf("err = %v, want ErrUnavailable", err)
 	}

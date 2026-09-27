@@ -19,6 +19,8 @@ import (
 	"github.com/countrymanprime/narration-utils/shell/internal/daw"
 	"github.com/countrymanprime/narration-utils/shell/internal/dawadapter"
 	"github.com/countrymanprime/narration-utils/shell/internal/dawcatalog"
+	"github.com/countrymanprime/narration-utils/shell/internal/dawport"
+	"github.com/countrymanprime/narration-utils/shell/internal/dawport/reaper"
 	"github.com/countrymanprime/narration-utils/shell/internal/deliveryprofile"
 	"github.com/countrymanprime/narration-utils/shell/internal/editing"
 	"github.com/countrymanprime/narration-utils/shell/internal/findings"
@@ -44,6 +46,7 @@ import (
 	"github.com/countrymanprime/narration-utils/shell/internal/teleprompter"
 	"github.com/countrymanprime/narration-utils/shell/internal/transcript"
 	"github.com/countrymanprime/narration-utils/shell/internal/tts"
+	"github.com/countrymanprime/narration-utils/shell/internal/ttsport"
 	"github.com/countrymanprime/narration-utils/shell/internal/update"
 	"github.com/countrymanprime/narration-utils/shell/internal/whisper"
 	"github.com/wailsapp/wails/v3/pkg/application"
@@ -475,12 +478,16 @@ func (h *Host) configureLocked(next config) {
 	// The Review page's Go to, Loop and Stop (review dashboard PRD Phase 7, bindings_navigation.go) are one more
 	// consumer of the same client: the navigator's answers arrive through the same Drain the transcript loop pumps.
 	h.navigation = newFindingNavigation(client)
-	// The S28 commands (internal/bridge/actions.go) are one more consumer of the same client. Each is refused before
-	// anything is written while DAW.experimental_reaper_actions is off (owner decision D38, ADR 0230).
-	h.actions = bridge.NewActions(client, func() bool {
-		value, _ := settingsStore.Effective(bridge.ExperimentalSettingTool, bridge.ExperimentalSettingKey, "false")
-		return value == "true"
-	})
+	// The S28 commands (internal/bridge/actions.go) are one more consumer of the same client. Whether each may be sent
+	// is the DAW port resolver's answer, asked before anything is written (DAW port PRD P3, ADR 0300): the narrator's
+	// DAW.capability.<name> toggles, with DAW.experimental_reaper_actions still turning on every Experimental one left
+	// on auto (owner decision D38, ADR 0230). The resolver is over REAPER's declaration alone until P5a moves these
+	// consumers onto the adapter's roles.
+	h.actions = bridge.NewActions(client, reaper.Gate(dawport.NewResolver(dawport.ResolverConfig{
+		Adapter:      reaper.Declaration(),
+		Toggle:       dawport.SettingsToggles(settingsStore.Effective),
+		Experimental: dawport.SettingsExperimental(settingsStore.Effective),
+	}).Allowed))
 	// The line-identity service is the second consumer of the same bridge client (bridge.Client fans events
 	// out by tag and run, ADR 0068), so pollTranscript's Drain call already pumps its events too. Phase 7
 	// (reaper-automation-follow-through PRD) is the UI trigger, so it now emits h.emitLineIdentity the way
@@ -1201,7 +1208,7 @@ var fieldSchemas = map[string][]fieldSchema{
 	"General":           {{"log_verbosity", "Log verbosity", "choice", []string{"quiet", "normal", "verbose"}}, {"notifications", "Notify me when a long task finishes while I'm away", "bool", nil}, {"narrator_name", "Narrator name (default for credits)", "text", nil}, {"credits_room_tone_seconds", "Room tone per credits file (seconds)", "choice", []string{"0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10"}}, {"debug_logging", "Debug logging (writes decision records to the run log)", "bool", nil}},
 	"Manuscript":        {{"color_note", "Note color", "color", nil}},
 	"ManuscriptGuide":   {{"spacy_model", "spaCy model", "choice", []string{"en_core_web_sm", "en_core_web_lg"}}, {"build_after_import", "Build the Story Bible after import", "bool", nil}},
-	"Piper":             {{"tts_provider", "TTS provider", "choice", []string{"piper"}}, {"tts_voice_id", "Preview voice", "choice", []string{"en_US-ljspeech-high"}}},
+	"Piper":             {{"tts_provider", "TTS provider", "choice", []string{ttsport.Piper}}, {"tts_voice_id", "Preview voice", "choice", []string{"en_US-ljspeech-high"}}},
 	"Updates":           {{"check_on_startup", "Check for updates on startup", "bool", nil}, {"channel", "Update channel", "choice", []string{"candidates", "stable"}}},
 	"TranscriptCompare": {{"model_size", "Default Whisper model", "choice", []string{"tiny", "small", "medium", "large-v3-turbo", "large-v3"}}, {"chunk_seconds", "Default chunk length", "choice", []string{"30", "60", "300", "600"}}, {"color_misread", "Misread marker color", "color", nil}, {"color_skipped", "Skipped marker color", "color", nil}, {"color_extra", "Extra marker color", "color", nil}},
 	// Global scope only (docs/prds/teleprompter-engines-and-input-devices.prd.md, "Where the device, engine and model
@@ -1223,8 +1230,9 @@ var fieldSchemas = map[string][]fieldSchema{
 	// W12), so the bridge is live without the narrator running the action by hand - but only when this is on, and
 	// it defaults off.
 	// DAW.experimental_reaper_actions is owner decision D38: the REAPER bridge commands built before the owner's
-	// verification pass (docs/operations/reaper-verification-pass.md) are refused by the host while it is off, and it
-	// defaults off (bridge.ExperimentalSettingTool/Key, internal/bridge/actions.go).
+	// verification pass (docs/operations/reaper-verification-pass.md) are refused by the host while it is off, unless the
+	// narrator turns their capability on with its DAW.capability.<name> row (dawport's resolver decides, DAW port PRD P3),
+	// and it defaults off (bridge.ExperimentalSettingTool/Key, internal/bridge/actions.go).
 	"DAW": {{"reaper_path", "REAPER executable (override)", "text", nil}, {"auto_start_launcher", "Start the launcher script automatically", "bool", nil}, {"experimental_reaper_actions", "Experimental REAPER actions", "bool", nil}},
 	// RecordingCoverage is the recording check's four settings (docs/utilities/recording-coverage.md Q3, ADR 0131),
 	// read by coverage.ResolveSettings. The two thresholds judge a stored result on read; the two alignment settings are
@@ -1303,7 +1311,7 @@ var fieldSchemas = map[string][]fieldSchema{
 
 // settingsSchemas is the settings the app offers with each choice that comes from an approved catalog filled in from it: the spaCy model
 // choice is the catalog's models, whether or not they are installed, so a narrator can select a model before downloading it; the live
-// engine choice is the engines this platform can launch.
+// engine choice is the engines this platform can launch; the TTS provider choice is the TTS port's voice engines.
 func (h *Host) settingsSchemas() map[string][]fieldSchema {
 	schemas := make(map[string][]fieldSchema, len(fieldSchemas))
 	for tool, fields := range fieldSchemas {
@@ -1316,6 +1324,9 @@ func (h *Host) settingsSchemas() map[string][]fieldSchema {
 		schemas["ManuscriptGuide"] = withChoices(schemas["ManuscriptGuide"], "spacy_model", models.IDs())
 	}
 	schemas["Teleprompter"] = withChoices(schemas["Teleprompter"], "engine", teleprompter.Engines(teleprompter.PlatformOrCurrent(h.platform)))
+	// The TTS provider choices are the voice engines the TTS port declares for this platform (provider-ports P9); the Piper row in
+	// fieldSchemas is only a placeholder.
+	schemas["Piper"] = withChoices(schemas["Piper"], "tts_provider", ttsport.Names(teleprompter.PlatformOrCurrent(h.platform)))
 	return schemas
 }
 

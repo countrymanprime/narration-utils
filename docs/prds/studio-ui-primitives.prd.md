@@ -144,9 +144,9 @@ Phases 1, 2, 3, 5, 6, 9, 11 and 12: the tokens, `Kbd`, `StatusBadge`, `LevelMete
 | 5 | LevelMeter | Peak/RMS meter with zones (Q2); `src/levelMeter.ts`; replaces `InputLevelMeter` | complete | with 2-4, 6-10 | 1 | - |
 | 6 | Toolbar | Roving-tabindex toolbar | complete | with 2-5, 7-10 | 1 | - |
 | 7 | Timeline | `Timeline` + `TimelineLane`, keyboard-navigable markers (Q5) | complete | with 2-6, 8-10 | 1 | - |
-| 8 | StageGrid | Chapter × stage grid with grid keyboard navigation | pending | with 2, 4-7, 9, 10 | 1, 3 | - |
+| 8 | StageGrid | Chapter × stage grid with grid keyboard navigation | complete | with 2, 4-7, 9, 10 | 1, 3 | - |
 | 9 | FocusShell | Full-screen booth layout on the booth surface | complete | with 2-8, 10 | 1 | - |
-| 10 | CompactShell | Narrow companion panel layout | pending | with 2-9 | 1 | - |
+| 10 | CompactShell | Narrow companion panel layout | complete | with 2-9 | 1 | - |
 | 11 | CapabilityGate | Presentational gate over a capability entry (Q3, Q4); no API | complete | with 4-10 | 3 | - |
 | 12 | useCapability | Hook in `src/` over DAW port P4's binding, event and mock; feedback-catalog rows | pending | with 2-11 | DAW port P4 | - |
 | 13 | Close-out | Regenerate `docs/ui`, design-system prose, bundle measure, ADR 0360 accepted, steady-state docs, delete this PRD | pending | - | 2-12 | - |
