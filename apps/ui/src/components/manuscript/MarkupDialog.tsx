@@ -18,6 +18,8 @@ const CHOICES = [
   { value: 'speaker', label: 'Speaker', description: 'Who speaks these words (a name chip before them).' },
 ] as const;
 
+const capitalize = (text: string) => text.charAt(0).toUpperCase() + text.slice(1);
+
 // Enough Story Bible characters to be one press away without turning the dialog into a list.
 const MAX_CHARACTER_CHOICES = 8;
 
@@ -95,7 +97,7 @@ export function MarkupDialog({
             {existing.map((span) => (
               <li key={span.id} className="flex items-center justify-between gap-2">
                 <span>
-                  {markName(span)} on “{span.anchorText}”
+                  {capitalize(markName(span))} on “{span.anchorText}”
                 </span>
                 <Button variant="ghost" className="px-1.5 py-0 text-xs" aria-label={removeMarkLabel(span)} onClick={() => remove(span)}>
                   Remove

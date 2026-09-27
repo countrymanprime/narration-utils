@@ -65,6 +65,18 @@ export const manuscriptStates: StateEntry[] = [
       'Manuscript, mixed chapter rows (?mockManuscript=mixed): a Front Matter row with no Read aloud and 3-, 4- and 5-digit word counts - the stats and the buttons in two aligned columns, a chevron last (manuscript-chapter-header-alignment.prd.md, manuscript-credits-card-parity.prd.md)',
   },
   { page: 'manuscript', state: 'add-note-dialog', description: 'Manuscript, Add Note dialog open after selecting text' },
+  {
+    page: 'manuscript',
+    state: 'script-markup',
+    description:
+      'Manuscript, script markup on Chapter 3 (prep-depth PRD Phase 5): stress underlines, a breath and a pause after words, Mouse and Lory speaker chips, a "Text changed here" notice beside a line whose marked words changed, and a mark whose line is gone listed above the chapter',
+  },
+  {
+    page: 'manuscript',
+    state: 'markup-dialog',
+    description:
+      'Manuscript, the Mark up dialog for a selection that already carries a stress mark: Speaker chosen, the Story Bible characters one press away, and the mark already there with its Remove',
+  },
   { page: 'manuscript', state: 'formatted-text-and-line-breaks', description: 'Manuscript, paragraphs with preserved bold/italic/underline and a line break' },
   { page: 'manuscript', state: 'chapter-bookmarked', description: 'Manuscript, a chapter bookmarked (blue bookmark icon)' },
   { page: 'manuscript', state: 'go-to-line-highlight', description: 'Manuscript, arrived via Story Bible "Go to line" with the target line highlighted' },
