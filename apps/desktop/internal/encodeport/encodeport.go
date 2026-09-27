@@ -23,6 +23,10 @@ type Spec struct {
 	BitrateKbps  int
 	SampleRateHz int
 	Channels     int
+	// Chapters, for a format with a chapter track of its own (m4b), are embedded as the file is written. Empty asks for none
+	// (a plain, chapterless file); a format with no chapter track of its own (mp3) ignores it - ID3 chapter tags are a
+	// Packager's job (chaptertags.Embed), not an Encoder's.
+	Chapters []Chapter
 	// Progress, when set, hears how much of the source's audio is encoded so far out of its length, from the encoder's own
 	// goroutine; nil asks for no reports.
 	Progress func(done, total time.Duration)
