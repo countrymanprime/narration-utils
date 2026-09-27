@@ -468,9 +468,60 @@ that already stopped itself at the end of the chapter).
 scroll by hand without being pulled back are specified in
 [teleprompter-engines-and-input-devices.prd.md](../prds/teleprompter-engines-and-input-devices.prd.md).
 Flagged words and turning this page into a reading mode of the Manuscript (modal,
-story bible and notes, misread marks, seek to a word, DAW resume and
-punch-and-roll) are specified in
+story bible and notes, misread marks, seek to a word and punch-and-roll) are
+specified in
 [teleprompter-manuscript-integration.prd.md](../prds/teleprompter-manuscript-integration.prd.md).
+
+## Resume: where REAPER is and where the prompter was
+
+The Read aloud dialog opens with a compact **Where you stopped** prompt above the
+text (`apps/ui/src/components/teleprompter/ResumePrompt.tsx`). It reconciles two
+sources and asks only when they disagree (owner report of 2026-09-24: "find where
+the track was, and find out where you were in the script, and if they match, you
+keep going").
+
+- **Where REAPER is.** `TeleprompterLocate` (`apps/desktop/teleprompterlocate.go`)
+  finds the chapter's track and a time on it. With REAPER reachable, track state
+  on and REAPER on the selected project, that is the live edit cursor when it sits
+  on the track's playing items, otherwise the live end of those items, unsaved
+  takes included (`resumelive.go`,
+  [ADR 0349](../adr/0349-the-resume-locate-reads-reapers-live-cursor-and-items-first-and-falls-back-to-the-saved-project-never-to-a-guess.md)).
+  Otherwise it is the end of the recorded audio in the saved `.rpp`. The 30 s
+  before that time are transcribed and placed in the chapter by the sidecar
+  ([ADR 0111](../adr/0111-the-resume-point-comes-from-transcribing-the-recorded-tail-and-placing-it-with-the-tracker.md)).
+  While REAPER records onto the track, nothing is located (`recording`).
+- **Where the prompter was.** The last word the tracker read, kept per chapter in
+  `<project>/narration-utils/teleprompter/<chapter>.reading.json` when a session
+  ends, and dropped when the chapter's text changes
+  ([ADR 0205](../adr/0205-the-prompter-remembers-its-last-word-per-chapter-in-a-host-named-file-dropped-when-the-text-changes.md)).
+- **The verdict.** `teleprompter.Reconcile` gives one of `agree` (within 10 words
+  or the same sentence: Start is preset to REAPER's word with a one-line notice),
+  `disagree` (a two-way choice), `complete` (recorded to the end: no resume),
+  `daw_only`, `prompter_only` (offered, never taken silently) or `none`. The
+  host decides and the UI only renders
+  ([ADR 0206](../adr/0206-resume-reconciles-the-recording-with-the-prompters-last-word-in-the-host-and-asks-only-when-they-disagree.md)).
+  A REAPER place reads "in REAPER now" when live and "as of the project's last
+  save" otherwise.
+- **It never sits there.** The prompt settles for the rest of the dialog's open
+  on any choice or when a session starts, and does not come back after a session
+  ends
+  ([ADR 0187](../adr/0187-the-resume-prompt-is-a-compact-notice-that-settles-once-per-dialog-open.md)).
+  It also goes away when REAPER starts playing or recording
+  (`daw_transport_changed`, and the host follow below). While it shows for a
+  track, the host follows REAPER: `TeleprompterResumeFollow` polls track state
+  about once a second, never during a session, for at most 30 minutes, and pushes
+  `teleprompter_resume_follow`. A `cursor_moved` event, sent once the edit cursor
+  settles on the recording, makes the prompt look again (`resumefollow.go`,
+  [ADR 0350](../adr/0350-the-resume-prompt-goes-away-when-reaper-plays-and-a-bounded-host-poll-follows-the-cursor-only-while-it-shows.md)).
+
+Nothing here writes to REAPER; moving REAPER's cursor to a word is punch-and-roll
+([ADR 0246](../adr/0246-punch-and-roll-moves-only-the-edit-cursor-and-anchors-words-by-a-polled-play-position.md)).
+The owner-approved mockups the prompt was built to are in
+[`docs/prds/mockups/read-aloud-resume-from-daw/`](../prds/mockups/read-aloud-resume-from-daw/01-agree.webp)
+(agree, disagree, recorded to the end, gone after play, checking, last reading
+only). REAPER's own behaviour of the live read (an unsaved take's file, a
+`SECTION` source's file name, a take still recording) is checked by the owner in
+REAPER (#510).
 
 ## Third-party license note
 
