@@ -1,7 +1,7 @@
 // The mock host (mockApi.ts): the Story Bible.
 import { parseWireJson } from '../wire/parseWire';
 import { guidePropertiesSchema } from '../schemas/storyBible';
-import type { GuideEntity, GuidePronunciation, GuideProperty, NarrationApi, WorkJob } from '../../types';
+import type { GuideEntity, GuidePronunciation, GuideProperty, NarrationApi, PronunciationQuery, WorkJob } from '../../types';
 import { wireClone } from '../mockFixtures';
 import { type MockApiSeed, type MockState, wireContext } from './state';
 import { type AssetsMock, MOCK_ASSET_ROOT } from './assets';
@@ -24,6 +24,77 @@ function parseMockProperties(text: string): GuideProperty[] {
  */
 const MOCK_PREVIEW_WAV_BASE64 =
   'UklGRuwAAABXQVZFZm10IBAAAAABAAEAIlYAAESsAAACABAAZGF0YcgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==';
+
+const isUser = (value: { source?: string }) => value.source === 'user';
+
+function setPronunciation(prior: GuidePronunciation, next: GuidePronunciation): GuidePronunciation {
+  const value: GuidePronunciation = { ipa: next.ipa, source: next.source, confidence: next.confidence, chosen: next.chosen };
+  if (prior.status) value.status = prior.status === 'author_confirmed' && prior.ipa !== next.ipa ? 'researched' : prior.status;
+  if (prior.note) value.note = prior.note;
+  if (prior.ipa && isUser(prior) !== isUser(next)) value.alternate = { ipa: prior.ipa, source: prior.source, confidence: prior.confidence };
+  else if (prior.alternate) value.alternate = prior.alternate;
+  return value;
+}
+
+// The host's query list (guide/queries.go): every name not author confirmed, once each, by the first paragraph that uses it, a
+// name never used last.
+function pronunciationQueriesOf(entities: GuideEntity[]): PronunciationQuery[] {
+  const rows: (PronunciationQuery & { position: number })[] = [];
+  for (const entity of entities) {
+    const names = [
+      { name: entity.canonical_name, aliasIndex: null, pronunciation: entity.pronunciation, occurrences: entity.occurrences },
+      ...entity.aliases.map((alias, index) => ({ name: alias.text, aliasIndex: index, pronunciation: alias.pronunciation, occurrences: alias.occurrences })),
+    ];
+    for (const { name, aliasIndex, pronunciation, occurrences } of names) {
+      const status = pronunciation.status ?? 'researched';
+      if (status === 'author_confirmed') continue;
+      const first = [...occurrences].sort((a, b) => a.paragraph - b.paragraph)[0];
+      rows.push({
+        entityId: entity.id,
+        aliasIndex,
+        name,
+        entry: entity.canonical_name,
+        category: entity.category,
+        ipa: pronunciation.ipa,
+        source: pronunciation.source,
+        status,
+        note: pronunciation.note ?? '',
+        chapter: first?.chapter ?? '',
+        excerpt: first?.excerpt ?? '',
+        position: first ? first.paragraph : Number.POSITIVE_INFINITY,
+      });
+    }
+  }
+  rows.sort((a, b) => a.position - b.position || a.name.toLowerCase().localeCompare(b.name.toLowerCase()));
+  return rows.map(({ position: _position, ...row }) => row);
+}
+
+const csvCell = (text: string) => {
+  const guarded = /^[=+\-@\t\r]/.test(text) ? `'${text}` : text;
+  return /[",\r\n]/.test(guarded) ? `"${guarded.replaceAll('"', '""')}"` : guarded;
+};
+
+function pronunciationQueriesCsv(queries: PronunciationQuery[]): string {
+  const header = ['word', 'entry', 'category', 'chapter', 'excerpt', 'pronunciation', 'source', 'status', 'note', 'entry_id', 'alias_index'];
+  const lines = queries.map((row) =>
+    [
+      row.name,
+      row.entry,
+      row.category,
+      row.chapter,
+      row.excerpt,
+      row.ipa,
+      row.source === 'user' ? 'Yours' : row.source,
+      row.status,
+      row.note,
+      row.entityId,
+      row.aliasIndex === null ? '' : String(row.aliasIndex),
+    ]
+      .map(csvCell)
+      .join(','),
+  );
+  return [header.join(','), ...lines].join('\n') + '\n';
+}
 
 /** The Story Bible bindings: the build, the entities and their edits, and the pronunciation preview. */
 export function createStoryBibleMock(
@@ -49,6 +120,21 @@ export function createStoryBibleMock(
         elapsed: 12,
       }
     : { id: null, kind: 'story_bible', phase: 'idle', message: 'Ready to build.', percent: 0, logs: [], elapsed: 0 };
+  // The sidecar's rules (manuscript_guide.py set_pronunciation, prep-depth P1): the narrator's own and a dictionary's pronunciation sit
+  // side by side, the one not in use kept as the alternate; an author confirmation is withdrawn when the IPA in use changes.
+  const changePronunciation = (id: string, aliasIndex: number | undefined, change: (prior: GuidePronunciation) => GuidePronunciation) => {
+    const entity = s.entities.find((row) => row.id === id);
+    if (!entity) throw new Error('Entity not found.');
+    if (entity.locked) throw new Error('This entity is locked. Unlock it before editing.');
+    if (aliasIndex !== undefined && !entity.aliases[aliasIndex]) throw new Error('Alias index out of range.');
+    const prior = aliasIndex === undefined ? entity.pronunciation : entity.aliases[aliasIndex].pronunciation;
+    const value = change(prior);
+    updateEntity(id, (row) =>
+      aliasIndex === undefined
+        ? { ...row, pronunciation: value }
+        : { ...row, aliases: row.aliases.map((alias, index) => (index === aliasIndex ? { ...alias, pronunciation: value } : alias)) },
+    );
+  };
   const updateEntity = (id: string, change: (entity: GuideEntity) => GuideEntity) => {
     s.entities = s.entities.map((entity) => (entity.id === id ? change(entity) : entity));
   };
@@ -238,11 +324,34 @@ export function createStoryBibleMock(
         source === 'cmu'
           ? { ipa: '/mɒk kjuː ɛm juː/', source: 'CMU dictionary', confidence: 'medium', chosen: true }
           : { ipa: '/mɒk iː spiːk/', source: 'eSpeak NG', confidence: 'low', chosen: true };
-      updateEntity(id, (row) =>
-        aliasIndex === undefined
-          ? { ...row, pronunciation: value }
-          : { ...row, aliases: row.aliases.map((alias, index) => (index === aliasIndex ? { ...alias, pronunciation: value } : alias)) },
-      );
+      changePronunciation(id, aliasIndex, (prior) => setPronunciation(prior, value));
+    },
+    guidePronunciationQueries: async () => pronunciationQueriesOf(s.entities),
+    guidePronunciationQueriesCsv: async () => {
+      const queries = pronunciationQueriesOf(s.entities);
+      return { csv: pronunciationQueriesCsv(queries), count: queries.length };
+    },
+    guidePronounceUser: async (id, ipa, aliasIndex) => {
+      const text = ipa.trim();
+      if (!text) throw new Error('type a pronunciation first');
+      changePronunciation(id, aliasIndex, (prior) => setPronunciation(prior, { ipa: text, source: 'user', confidence: 'narrator', chosen: true }));
+    },
+    guidePronunciationUseAlternate: async (id, aliasIndex) => {
+      changePronunciation(id, aliasIndex, (prior) => {
+        if (!prior.alternate) throw new Error('There is no other pronunciation to switch to.');
+        return setPronunciation(prior, { ...prior.alternate, chosen: true });
+      });
+    },
+    guidePronunciationSetStatus: async (id, status, note, aliasIndex) => {
+      changePronunciation(id, aliasIndex, (prior) => {
+        const next: GuidePronunciation = { ...prior, status };
+        if (note !== undefined) {
+          const text = note.trim();
+          if (text) next.note = text;
+          else delete next.note;
+        }
+        return next;
+      });
     },
   } satisfies Partial<NarrationApi>;
   return { bindings };

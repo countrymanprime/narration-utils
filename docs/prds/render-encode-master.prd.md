@@ -212,8 +212,8 @@ Phase 0 gates Phases 1 and 2 but not Phase 3 (mastering has no encoder dependenc
 
 ## Visual Spec
 
-Concept mock copied from [the audiobook studio benchmark](../research/audiobook-studio-benchmark.md#3-what-the-ideal-looks-like-concept-mocks), **not yet owner-approved as a build spec** — kept under `mockups/render-encode-master/` marked **concept** until the owner approves it on [#510](https://github.com/countrymanprime/narration-utils/issues/510), per the agent-train wave-0 rule. Names and numbers are placeholders.
+Concept mock copied from [the audiobook studio benchmark](../research/audiobook-studio-benchmark.md#3-what-the-ideal-looks-like-concept-mocks), **owner-approved as the build spec (D69, 2026-09-27)** — kept under `mockups/render-encode-master/` marked **concept**. Dark mode is a single app-wide theme (D69): a dark mock shows the dark theme, not a per-page look. Names and numbers are placeholders.
 
 ![Master & QC: per-file checks by platform, mastering chain, delivery package](mockups/render-encode-master/05-master-delivery-concept.webp)
 
-*Master, QC and delivery (concept)* (`05-master-delivery-concept.webp`) — the one mastering chain and "outputs for each platform" this PRD's Encoder and Packager ports build toward; the per-platform QC checks themselves are [Delivery Platform Profiles](delivery-platform-profiles.prd.md)' own page, which this PRD's export flow extends. A Mockup check table will be added once the owner approves it and building against it begins.
+*Master, QC and delivery (concept)* (`05-master-delivery-concept.webp`) — the one mastering chain and "outputs for each platform" this PRD's Encoder and Packager ports build toward; the per-platform QC checks themselves are [Delivery Platform Profiles](delivery-platform-profiles.prd.md)' own page, which this PRD's export flow extends. This phase's PR carries the Mockup check table against it.

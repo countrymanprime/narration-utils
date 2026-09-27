@@ -75,7 +75,7 @@ Every registered row passes its port's suite, and each registry's own test runs 
 | A `Packager` (chapters and tags into a delivery file) | [Render, Encode and Master](../prds/render-encode-master.prd.md), phase 4 (Phases 1 and 2 delivered the MP3 and M4B `Encoder` rows); `internal/chaptertags` is the likely first `Packager` |
 | `BrowserLookup` rows (web pronunciation lookups the narrator's browser opens) | [Prep Depth](../prds/prep-depth.prd.md), phase 2 |
 | WASAPI capture | [Native Recording Suite](../prds/native-recording-suite.prd.md) (its capture engine spike, Q3); if the engine stays in a Python sidecar it is a `CaptureBackend` row |
-| CoreAudio (macOS) capture | [CoreAudio Capture](../prds/coreaudio-capture.prd.md); a `CaptureBackend` row (`coreaudio`), a PyAV `avfoundation` sidecar adapter mirroring `dshow`'s shape (ADR 0402, Proposed) |
+| CoreAudio (macOS) capture | [CoreAudio Capture](../prds/coreaudio-capture.prd.md), deferred by D74: Windows is the only supported platform ([ADR 0412](../adr/0412-windows-is-the-only-supported-platform-for-now.md), which supersedes ADR 0402). Its Phase 1 row was built and removed; restore from commit `bf9f0093` |
 | A `--capabilities` flag on each sidecar so the host learns an engine's runtime capability instead of from a static descriptor and the existing probes | [Sidecar Capabilities Flag](../prds/sidecar-capabilities-flag.prd.md); reports what a sidecar process actually registered, consumed by `smoke.go` (ADR 0403, Proposed) |
 
 ## Decisions taken while building it

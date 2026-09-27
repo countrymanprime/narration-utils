@@ -1,0 +1,43 @@
+[
+  {
+    "aliases": [
+      {
+        "occurrences": [],
+        "pronunciation": {
+          "confidence": "medium",
+          "ipa": "ðə ˈspæɹoʊ",
+          "source": "CMU dictionary",
+          "status": "author_confirmed"
+        },
+        "text": "the Sparrow"
+      }
+    ],
+    "canonical_name": "Wren",
+    "category": "Character",
+    "description": {
+      "evidence": {},
+      "text": ""
+    },
+    "id": "entity-wren",
+    "locked": false,
+    "occurrence_count": 0,
+    "occurrences": [],
+    "personality_notes": [],
+    "pronunciation": {
+      "alternate": {
+        "confidence": "medium",
+        "ipa": "ɹɛn",
+        "source": "CMU dictionary"
+      },
+      "chosen": true,
+      "confidence": "narrator",
+      "ipa": "wɹɛn",
+      "note": "Asked the author by email.",
+      "source": "user",
+      "status": "query_sent"
+    },
+    "properties": [],
+    "relationships": [],
+    "review_state": "reviewed"
+  }
+]

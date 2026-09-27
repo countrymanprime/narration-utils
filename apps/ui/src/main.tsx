@@ -220,6 +220,9 @@ const mockRegionsCapabilityOn = mockParams.has('mockRegionsCapabilityOn');
 // so "Punch from here"'s enabled state - the confirm dialog in the read-aloud rail, the pickup list's own button - can
 // be captured without also exercising the Settings toggle.
 const mockPunchCapabilityOn = mockParams.has('mockPunchCapabilityOn');
+// `?mockDawPlayhead=134.6` seeds the DAW port's live transport (daw_transport_changed) as playing at that project time, for
+// the companion panel's playhead badge (booth-mode-and-companion-panel.prd.md Phase 7). Without it, the transport is stopped.
+const mockDawPlayhead = Number.parseFloat(mockParams.get('mockDawPlayhead') ?? '');
 // `?mockCoverage=hold|stale|pickups` holds a started recording check at its last transcribing step (so the running
 // dialog can be seen), makes Chapter 4's stored check read stale (an item was trimmed since), or gives Chapter 4 two
 // interior pickups (a skip and a short read) plus a small tail instead of its default tail-only split, and seeds a
@@ -297,15 +300,17 @@ const mockTakeReviewScanHold = mockParams.get('mockTakeReviewScan') === 'running
 // `?mockTakeComparison=running` does the same for a take comparison (take review Phase 10).
 const mockTakeComparisonHold = mockParams.get('mockTakeComparison') === 'running';
 // `?mockMeasure=running|fails` holds a started measurement part way through (so the Delivery page's progress and Cancel can be seen),
-// or breaks it at its first poll (diagnostics-delivery-and-cleanup-tools.prd.md Phases 1 and 5). `?mockDeliveryProfile=custom` boots
-// the project judged against a custom delivery profile (delivery-platform-profiles.prd.md), so the page judged by it can be seen
-// without making one in Settings first; ACX judges otherwise.
-const mockMeasure = (['running', 'fails'] as const).find((seed) => seed === mockParams.get('mockMeasure'));
+// or breaks it at its first poll (diagnostics-delivery-and-cleanup-tools.prd.md Phases 1 and 5). `?mockMeasure=spread` boots the
+// page with several already-measured chapters whose levels vary (delivery-platform-profiles.prd.md Phase 10's book-wide spread),
+// so it can be seen without measuring several files by hand. `?mockDeliveryProfile=custom` boots the project judged against a
+// custom delivery profile (delivery-platform-profiles.prd.md), so the page judged by it can be seen without making one in
+// Settings first; ACX judges otherwise.
+const mockMeasure = (['running', 'fails', 'spread'] as const).find((seed) => seed === mockParams.get('mockMeasure'));
 // `?mockDiagnostics=running|fails` does the same for the Delivery page's Diagnostics tab (diagnostics PRD Phase 6).
 const mockDiagnostics = (['running', 'fails'] as const).find((seed) => seed === mockParams.get('mockDiagnostics'));
 const mockDeliveryProfile = mockParams.get('mockDeliveryProfile') === 'custom' ? ('custom' as const) : undefined;
 const mockInitial = {
-  ...(mockMeasure ? { measure: mockMeasure === 'running' ? ('hold' as const) : ('fails' as const) } : {}),
+  ...(mockMeasure ? { measure: mockMeasure === 'running' ? ('hold' as const) : mockMeasure === 'spread' ? ('spread' as const) : ('fails' as const) } : {}),
   ...(mockDiagnostics ? { diagnostics: mockDiagnostics === 'running' ? ('hold' as const) : ('fails' as const) } : {}),
   ...(mockDeliveryProfile ? { deliveryProfile: mockDeliveryProfile } : {}),
   ...(mockTakeReviewScanHold ? { takeReviewScanHold: true } : {}),
@@ -440,6 +445,7 @@ const mockInitial = {
   ...(mockProofingStages ? { stages: { proofing: { [WIRE_CHAPTERS[8].id]: 'met' as const, [WIRE_CHAPTERS[9].id]: 'not_met' as const } } } : {}),
   ...(mockProofingSignal ? { stages: { proofing: { [WIRE_CHAPTERS[8].id]: { unknown: 'unmapped_track' as StageUnknownCause } } } } : {}),
   ...(mockDawExperimentalOn ? { daw: { experimentalOn: true } } : {}),
+  ...(Number.isFinite(mockDawPlayhead) ? { daw: { transport: { playing: true, recording: false, position: mockDawPlayhead } } } : {}),
 };
 const api = import.meta.env.VITE_USE_MOCK_API === '1' ? createMockApi(window.__NARRATION_MOCK_OVERRIDES__, mockInitial) : wailsClient;
 

@@ -303,8 +303,8 @@ Phases 1, 2 and 3 are independent. Phase 4 needs the phase 1 decision but can st
 
 ## Visual Spec (extension)
 
-Concept mock copied from [the audiobook studio benchmark](../research/audiobook-studio-benchmark.md#3-what-the-ideal-looks-like-concept-mocks) for Phase 11, **not yet owner-approved as a build spec** — kept under `mockups/character-continuity-review/` marked **concept** until the owner approves it on [#510](https://github.com/countrymanprime/narration-utils/issues/510), per the agent-train wave-0 rule. This PRD had no prior Visual Spec section (no UI phase had reached owner approval yet); this section is new, for the extension only.
+Concept mock copied from [the audiobook studio benchmark](../research/audiobook-studio-benchmark.md#3-what-the-ideal-looks-like-concept-mocks) for Phase 11, **owner-approved as the build spec (D69, 2026-09-27)** — kept under `mockups/character-continuity-review/` marked **concept**. Dark mode is a single app-wide theme (D69): a dark mock shows the dark theme, not a per-page look. This PRD had no prior Visual Spec section (no UI phase had reached owner approval yet); this section is new, for the extension only.
 
 ![Series voice bible: approved reference clips, voice notes, measured drift evidence against the anchor](mockups/character-continuity-review/06-series-voice-bible-concept.webp)
 
-*Series voice bible (concept)* (`06-series-voice-bible-concept.webp`) — the cross-book reference sharing and per-book drift evidence Phase 11 builds toward. A Mockup check table will be added to Phase 11's own PR once the owner approves it and building against it begins.
+*Series voice bible (concept)* (`06-series-voice-bible-concept.webp`) — the cross-book reference sharing and per-book drift evidence Phase 11 builds toward. Phase 11's PR carries the Mockup check table against it.
