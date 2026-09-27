@@ -36,7 +36,7 @@ function Figures({ overview }: { overview: ProductionOverview }) {
       label: 'Finished audio',
       value: formatClock(totals.recordedSeconds, 'seconds'),
       unit: target > 0 ? `/ ~${formatClock(target, 'hours')}` : undefined,
-      hint: `Measured in ${totals.measuredChapters} of ${totals.chapters} chapters; the target is estimated from the word count`,
+      hint: `${totals.measuredChapters} of ${totals.chapters} chapters measured; target estimated from words`,
       progress: target > 0 ? Math.min(1, totals.recordedSeconds / 3600 / target) : undefined,
     },
     {
@@ -59,7 +59,7 @@ function Figures({ overview }: { overview: ProductionOverview }) {
     },
   ];
   return (
-    <ul aria-label="Production figures" className="grid grid-cols-2 gap-3 min-[1400px]:grid-cols-6 md:grid-cols-3">
+    <ul aria-label="Production figures" className="grid grid-cols-2 gap-3 min-[768px]:grid-cols-3 min-[1400px]:grid-cols-6">
       {tiles.map(({ label, ...tile }) => (
         <li key={label} className="min-w-0 rounded-lg border border-[var(--border)] bg-[var(--surface)] p-3 shadow-[var(--shadow)]">
           <StatTile label={label} {...tile} />
@@ -90,12 +90,12 @@ function NextUp({
           Every chapter is finalized.
         </p>
       ) : (
-        <ol aria-label="Next up" className="mt-2 flex flex-col">
+        <ol aria-label="Next up" className="mt-2 grid gap-x-6 min-[768px]:grid-cols-2 min-[1200px]:grid-cols-3 min-[1600px]:grid-cols-1">
           {items.map((item) => {
             const name = chapterName(item);
             const { action, reason } = nextUpLine(item);
             return (
-              <li key={item.chapterId} className="flex flex-col gap-1 border-t border-[var(--border)] py-2.5 first:border-t-0">
+              <li key={item.chapterId} className="flex min-w-0 flex-col gap-1 border-t border-[var(--border)] py-2.5">
                 <span className="font-semibold [overflow-wrap:anywhere]">{name}</span>
                 <span className="text-sm">{action}</span>
                 <span className="text-xs [overflow-wrap:anywhere]" style={MUTED}>
@@ -250,7 +250,10 @@ export function ProductionPage() {
       {overview && (
         <>
           <Figures overview={overview} />
-          <div className="grid gap-4 min-[1100px]:grid-cols-[minmax(0,1fr)_20rem]">
+          {/* Next up leads when stacked (it is where a timer starts); side by side only once the board fits beside it. minmax(0, 1fr)
+              lets the board's panel shrink to the window, its table scrolling inside it. */}
+          <div className="grid grid-cols-[minmax(0,1fr)] gap-4 min-[1600px]:grid-cols-[20rem_minmax(0,1fr)]">
+            <NextUp items={overview.nextUp} timerRunning={running !== null} starting={starting} onStart={(item) => void start(item)} />
             <Panel title="Chapter pipeline">
               <p className="mt-1 text-xs" style={MUTED}>
                 Each stage&apos;s readiness is the stage suggestion shown on Home. Prep and Delivery are not available yet: no check reports them per chapter.
@@ -267,7 +270,7 @@ export function ProductionPage() {
                 >
                   <StageGrid
                     label="Chapter pipeline"
-                    className="w-full"
+                    className="w-full [&_td]:whitespace-nowrap"
                     rows={chapters.map((chapter) => chapterName(chapter))}
                     columns={BOARD_COLUMNS.map((column) => column.name)}
                     cell={(row, col) => boardCell(chapters[row], BOARD_COLUMNS[col])}
@@ -275,7 +278,6 @@ export function ProductionPage() {
                 </div>
               )}
             </Panel>
-            <NextUp items={overview.nextUp} timerRunning={running !== null} starting={starting} onStart={(item) => void start(item)} />
           </div>
         </>
       )}

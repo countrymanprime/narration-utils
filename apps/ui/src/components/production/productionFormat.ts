@@ -59,10 +59,11 @@ type BoardColumn = { name: string; kind: 'recorded' } | { name: string; kind: 's
  */
 export const BOARD_COLUMNS: readonly BoardColumn[] = [
   { name: 'Recorded', kind: 'recorded' },
-  { name: 'Prep', kind: 'unavailable' },
   { name: 'Record', kind: 'stage', stage: 'recording' },
   { name: 'Edit', kind: 'stage', stage: 'editing' },
   { name: 'Proof', kind: 'stage', stage: 'proofing' },
+  // Last, so a narrow window shows the columns with real answers before it scrolls.
+  { name: 'Prep', kind: 'unavailable' },
   { name: 'Delivery', kind: 'unavailable' },
 ];
 

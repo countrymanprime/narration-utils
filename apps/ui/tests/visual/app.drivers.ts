@@ -11,6 +11,7 @@ import { tracksDrivers } from './drivers/tracks';
 import { workspaceDrivers } from './drivers/workspace';
 import { reviewDrivers } from './drivers/review';
 import { deliveryDrivers } from './drivers/delivery';
+import { productionDrivers } from './drivers/production';
 import { teleprompterDrivers } from './drivers/teleprompter';
 import { settingsDrivers } from './drivers/settings';
 import { globalDrivers } from './drivers/global';
@@ -82,6 +83,7 @@ export const APP_DRIVERS: Record<string, Record<string, Driver>> = {
   workspace: workspaceDrivers,
   review: reviewDrivers,
   delivery: deliveryDrivers,
+  production: productionDrivers,
   teleprompter: teleprompterDrivers,
   settings: settingsDrivers,
   global: globalDrivers,

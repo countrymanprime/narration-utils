@@ -207,6 +207,16 @@ export async function openDelivery(page: Page, query = ''): Promise<void> {
   await page.getByRole('button', { name: /^Rules and their sources/ }).waitFor();
 }
 
+// Opens Production, with a `?mockProduction=` seed when given, once its board is drawn.
+export async function openProduction(page: Page, query = ''): Promise<void> {
+  if (query) {
+    await page.goto(`/${query}`);
+    await settlePage(page);
+  }
+  await goToPage(page, 'Production');
+  await page.getByRole('grid', { name: 'Chapter pipeline' }).waitFor();
+}
+
 // Opens Delivery and measures the mock picker's three files (two WAVs, one of them silent, and an MP3). The mock reads a quarter of
 // a file per poll, so a measurement that is not held runs to its end in a few seconds.
 export async function measureOnDelivery(page: Page, query = ''): Promise<void> {
