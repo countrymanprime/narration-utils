@@ -11,6 +11,7 @@ import { CommandRouter, CommandScope } from '../../input/router';
 import { ReadingControlBar } from './ReadingControlBar';
 import { initialSession } from './readerModel';
 import type { FollowCursor } from './useFollowCursor';
+import type { RecordInReaperState } from './useRecordInReaper';
 import type { TeleprompterSession } from './useTeleprompterSession';
 import type { NarrationApi, ReadAloudReaperState } from '../../types';
 
@@ -67,6 +68,8 @@ function renderBar(
   options: {
     startPoint?: { label: string; onClear: () => void };
     chapterId?: string;
+    chapterTitle?: string;
+    recording?: RecordInReaperState;
     apiOverrides?: Partial<NarrationApi>;
     daw?: DawMockSeed;
   } = {},
@@ -79,7 +82,14 @@ function renderBar(
             resolves here the same as it does mounted there. */}
         <CommandRouter>
           <CommandScope kind="booth">
-            <ReadingControlBar session={session} follow={follow} startPoint={options.startPoint} chapterId={options.chapterId} />
+            <ReadingControlBar
+              session={session}
+              follow={follow}
+              startPoint={options.startPoint}
+              chapterId={options.chapterId}
+              chapterTitle={options.chapterTitle}
+              recording={options.recording}
+            />
           </CommandScope>
         </CommandRouter>
       </ApiProvider>
@@ -116,6 +126,23 @@ const reaperState = (overrides: Partial<ReadAloudReaperState> = {}): ReadAloudRe
   recording: false,
   ...overrides,
 });
+
+function fakeRecording(overrides: Partial<RecordInReaperState> = {}): RecordInReaperState {
+  return {
+    loaded: true,
+    enabled: false,
+    recording: false,
+    armPending: false,
+    confirmPending: false,
+    toggle: vi.fn(),
+    confirm: vi.fn(),
+    cancelConfirm: vi.fn(),
+    armOnly: vi.fn(async () => {}),
+    beforeStart: vi.fn(async () => true),
+    afterStop: vi.fn(),
+    ...overrides,
+  };
+}
 
 describe('ReadingControlBar', () => {
   it('is a named toolbar with Play enabled once a microphone is chosen and Stop reading disabled while idle', () => {
@@ -315,6 +342,140 @@ describe('ReadingControlBar', () => {
       const button = await screen.findByRole('button', { name: 'Record in REAPER: Chapter armed' });
       await waitFor(() => expect(button.getAttribute('aria-disabled')).toBeNull());
       expect(screen.getByText('Experimental')).toBeTruthy();
+    });
+  });
+
+  describe('Record in REAPER (Phase 7)', () => {
+    const daw: DawMockSeed = { toggles: { record: 'on' } };
+
+    it('clicking the toggle calls recording.toggle', async () => {
+      const user = userEvent.setup();
+      const readAloudReaperState = vi.fn(async () => reaperState({ status: 'ready' }));
+      const recording = fakeRecording();
+      renderBar(baseSession(), followCursor(), { chapterId: 'chapter-3', apiOverrides: { readAloudReaperState }, daw, recording });
+
+      const button = await screen.findByRole('button', { name: 'Record in REAPER: Chapter armed' });
+      expect(button.getAttribute('aria-pressed')).toBe('false');
+      await user.click(button);
+
+      expect(recording.toggle).toHaveBeenCalled();
+    });
+
+    it('shows the toggle pressed once the setting is on', async () => {
+      const readAloudReaperState = vi.fn(async () => reaperState({ status: 'ready' }));
+      renderBar(baseSession(), followCursor(), {
+        chapterId: 'chapter-3',
+        apiOverrides: { readAloudReaperState },
+        daw,
+        recording: fakeRecording({ enabled: true }),
+      });
+
+      const button = await screen.findByRole('button', { name: 'Record in REAPER: Chapter armed' });
+      expect(button.getAttribute('aria-pressed')).toBe('true');
+    });
+
+    it('offers "Arm only" while the toggle is on and the chapter\'s track is not the one armed, and it calls recording.armOnly', async () => {
+      const user = userEvent.setup();
+      const readAloudReaperState = vi.fn(async () => reaperState({ status: 'not_armed' }));
+      const recording = fakeRecording({ enabled: true });
+      renderBar(baseSession(), followCursor(), {
+        chapterId: 'chapter-3',
+        chapterTitle: 'Chapter 3',
+        apiOverrides: { readAloudReaperState },
+        daw,
+        recording,
+      });
+
+      const arm = await screen.findByRole('button', { name: 'Arm "Chapter 3" only' });
+      await user.click(arm);
+
+      expect(recording.armOnly).toHaveBeenCalled();
+    });
+
+    it('offers no "Arm only" once the chapter\'s track is already the one armed', async () => {
+      const readAloudReaperState = vi.fn(async () => reaperState({ status: 'ready' }));
+      renderBar(baseSession(), followCursor(), {
+        chapterId: 'chapter-3',
+        apiOverrides: { readAloudReaperState },
+        daw,
+        recording: fakeRecording({ enabled: true }),
+      });
+
+      await screen.findByRole('button', { name: 'Record in REAPER: Chapter armed' });
+      expect(screen.queryByRole('button', { name: /Arm .* only/ })).toBeNull();
+    });
+
+    it('offers no "Arm only" while the toggle is off, even with the wrong track armed', async () => {
+      const readAloudReaperState = vi.fn(async () => reaperState({ status: 'not_armed' }));
+      renderBar(baseSession(), followCursor(), {
+        chapterId: 'chapter-3',
+        apiOverrides: { readAloudReaperState },
+        daw,
+        recording: fakeRecording({ enabled: false }),
+      });
+
+      await screen.findByRole('button', { name: 'Record in REAPER: Not armed' });
+      expect(screen.queryByRole('button', { name: /Arm .* only/ })).toBeNull();
+    });
+
+    it('clicking Play asks recording.beforeStart, and starts the session only once it resolves true', async () => {
+      const user = userEvent.setup();
+      const start = vi.fn();
+      const recording = fakeRecording({ beforeStart: vi.fn(async () => true) });
+      const session = baseSession({ device: 'Shure MV7', canStart: true, active: false, start });
+      renderBar(session, followCursor(), { chapterId: 'chapter-3', recording });
+
+      await user.click(screen.getByRole('button', { name: 'Play' }));
+
+      expect(recording.beforeStart).toHaveBeenCalled();
+      await waitFor(() => expect(start).toHaveBeenCalled());
+    });
+
+    it('clicking Play never starts the session when recording.beforeStart resolves false (a refusal or timeout)', async () => {
+      const user = userEvent.setup();
+      const start = vi.fn();
+      const recording = fakeRecording({ beforeStart: vi.fn(async () => false), error: 'No track is armed in REAPER.' });
+      const session = baseSession({ device: 'Shure MV7', canStart: true, active: false, start });
+      renderBar(session, followCursor(), { chapterId: 'chapter-3', recording });
+
+      await user.click(screen.getByRole('button', { name: 'Play' }));
+
+      await waitFor(() => expect(recording.beforeStart).toHaveBeenCalled());
+      expect(start).not.toHaveBeenCalled();
+    });
+
+    it('shows recording.error in the status line instead of the session status', () => {
+      const session = baseSession({ status: 'Listening' });
+      renderBar(session, followCursor(), {
+        chapterId: 'chapter-3',
+        recording: fakeRecording({ error: 'REAPER did not confirm within 3 seconds. Nothing started.' }),
+      });
+
+      expect(screen.getByRole('status').textContent).toBe('REAPER did not confirm within 3 seconds. Nothing started.');
+    });
+
+    it('clicking Stop stops the session and calls recording.afterStop', async () => {
+      const user = userEvent.setup();
+      const stop = vi.fn();
+      const recording = fakeRecording();
+      const session = baseSession({ device: 'Shure MV7', active: true, stop });
+      renderBar(session, followCursor(), { chapterId: 'chapter-3', recording });
+
+      await user.click(screen.getByRole('button', { name: 'Stop reading' }));
+
+      expect(stop).toHaveBeenCalled();
+      expect(recording.afterStop).toHaveBeenCalled();
+    });
+
+    it('Play and Stop orchestrate nothing on the standalone page, where no `recording` prop is passed (Q11 A)', async () => {
+      const user = userEvent.setup();
+      const start = vi.fn();
+      const session = baseSession({ device: 'Shure MV7', canStart: true, active: false, start });
+      renderBar(session, followCursor());
+
+      await user.click(screen.getByRole('button', { name: 'Play' }));
+
+      await waitFor(() => expect(start).toHaveBeenCalled());
     });
   });
 

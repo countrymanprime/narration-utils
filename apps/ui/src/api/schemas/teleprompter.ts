@@ -2,6 +2,7 @@ import { z } from 'zod';
 import type {
   HeardWord,
   ReadAloudReaperState,
+  ReadAloudRecording,
   TeleprompterReaperInput,
   TeleprompterDevice,
   TeleprompterDevicesResult,
@@ -285,6 +286,40 @@ export const readAloudReaperStateSchema = z.object({
   playing: z.boolean(),
   recording: z.boolean(),
 }) satisfies z.ZodType<ReadAloudReaperState>;
+
+/**
+ * `ReadAloudArmOnly`/`ReadAloudRecordStart`/`ReadAloudRecordStop` (`apps/desktop/bindings_readaloud_record.go`, read-aloud-control-bar
+ * PRD Phase 7): what arming, starting or stopping a REAPER recording did.
+ */
+export const readAloudRecordingSchema = z.object({
+  outcome: z.enum(['armed', 'started', 'stopped', 'refused']),
+  reason: z
+    .enum([
+      'unlinked',
+      'several_links',
+      'track_missing',
+      'standalone',
+      'not_running',
+      'experimental_off',
+      'failed',
+      'not_armed',
+      'several_armed',
+      'other_armed',
+      'playing',
+      'already_recording',
+      'did_not_start',
+      'not_our_recording',
+      'timeout',
+    ])
+    .optional(),
+  message: z.string().optional(),
+  trackGuid: z.string().optional(),
+  disarmed: z.number().int().nonnegative().optional(),
+  changed: z.boolean().optional(),
+  position: z.number().optional(),
+  restored: z.number().int().nonnegative().optional(),
+  kept: z.number().int().nonnegative().optional(),
+}) satisfies z.ZodType<ReadAloudRecording>;
 
 /** `TeleprompterReaperInput` (`apps/desktop/teleprompterinput.go`, ADR 0250): a device to preselect only when `matched`. */
 export const teleprompterReaperInputSchema = z

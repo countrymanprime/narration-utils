@@ -76,6 +76,7 @@ import { guideBuildResultSchema, guideCreatedSchema, guideEntitiesSchema, guideP
 import { bootstrapSchema, copyDiagnosticsResultSchema, projectAttachStateSchema, readySchema } from './schemas/system';
 import {
   readAloudReaperStateSchema,
+  readAloudRecordingSchema,
   teleprompterReaperInputSchema,
   teleprompterDevicesResultSchema,
   teleprompterEventSchema,
@@ -229,6 +230,26 @@ describe('golden payloads written by the Go host and the Python sidecars', () =>
     const pickupsPunched = await api.pickupsPunch(10);
     expectMatches(pickupsPunchResultSchema, pickupsPunched, 'mock pickups punch');
     expect(pickupsPunched.outcome).toBe('punched');
+  });
+
+  it("every mock arm, record start and record stop passes the schema and agrees with the host's golden for the same REAPER state", async () => {
+    const golden = z.record(z.string(), readAloudRecordingSchema).parse(readGolden('read-aloud-recordings.json'));
+    for (const seed of MOCK_REAPER_SEEDS) {
+      const api = createMockApi({}, { reaperState: seed });
+      const [chapter] = await api.manuscriptChapters();
+      const armed = await api.readAloudArmOnly(chapter.id);
+      const started = await api.readAloudRecordStart(chapter.id);
+      const stopped = await api.readAloudRecordStop();
+      expectMatches(readAloudRecordingSchema, armed, `mock arm ${seed}`);
+      expectMatches(readAloudRecordingSchema, started, `mock record start ${seed}`);
+      expectMatches(readAloudRecordingSchema, stopped, `mock record stop ${seed}`);
+      // "unavailable" is its own reason (standalone) in the mock, unlike "experimental_off"'s golden key - the same
+      // case the read-aloud-reaper-states check above skips for the same reason.
+      if (seed === 'unavailable') continue;
+      expect([armed.outcome, armed.reason]).toEqual([golden[`${seed}.arm`].outcome, golden[`${seed}.arm`].reason]);
+      expect([started.outcome, started.reason]).toEqual([golden[`${seed}.start`].outcome, golden[`${seed}.start`].reason]);
+      expect([stopped.outcome, stopped.reason]).toEqual([golden[`${seed}.stop`].outcome, golden[`${seed}.stop`].reason]);
+    }
   });
 
   it("every mock REAPER input answer passes the schema, preselects only a listed microphone, and matches the host's golden", async () => {
@@ -1882,6 +1903,9 @@ describe('answers of the mock client for the settings, voice, model, transcript 
       'teleprompterLocate',
       'teleprompterSaveFlags',
       'readAloudReaperState',
+      'readAloudArmOnly',
+      'readAloudRecordStart',
+      'readAloudRecordStop',
       'teleprompterReaperInput',
       'updateStatus',
       'updateCheck',

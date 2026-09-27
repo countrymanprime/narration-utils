@@ -585,6 +585,28 @@
       "value": ""
     }
   ],
+  "ReadAloud": [
+    {
+      "choices": null,
+      "effectiveSource": "hardcoded",
+      "effectiveValue": "",
+      "isSet": false,
+      "key": "record_in_reaper",
+      "kind": "bool",
+      "label": "Record in REAPER",
+      "value": ""
+    },
+    {
+      "choices": null,
+      "effectiveSource": "hardcoded",
+      "effectiveValue": "",
+      "isSet": false,
+      "key": "record_confirmed",
+      "kind": "bool",
+      "label": "Seen the Record in REAPER confirm",
+      "value": ""
+    }
+  ],
   "RecordingCoverage": [
     {
       "choices": null,

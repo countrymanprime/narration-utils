@@ -1002,6 +1002,14 @@ export function ProviderCapabilities(): $CancellablePromise<string> {
 }
 
 /**
+ * ReadAloudArmOnly arms chapterID's linked track and disarms every other one (Q7 A's "Arm Chapter N only"), refusing
+ * while REAPER records. It changes nothing in the reading session.
+ */
+export function ReadAloudArmOnly(chapterID: string): $CancellablePromise<string> {
+    return $Call.ByID(4236043623, chapterID);
+}
+
+/**
  * ReadAloudReaperState answers whether REAPER is ready to record chapterID with reading
  * (read-aloud-control-bar.prd.md Phase 6): its linked track the one track armed, and REAPER not already recording. A
  * chapter with no link, a REAPER that is not there and the experimental switch being off are answers, not errors; only
@@ -1009,6 +1017,24 @@ export function ProviderCapabilities(): $CancellablePromise<string> {
  */
 export function ReadAloudReaperState(chapterID: string): $CancellablePromise<string> {
     return $Call.ByID(1177651655, chapterID);
+}
+
+/**
+ * ReadAloudRecordStart asks REAPER to record on chapterID's linked track, which must already be the one armed track
+ * (arm it first with ReadAloudArmOnly), and waits up to readAloudRecordStartTimeout for REAPER to confirm. Sent only
+ * from Play with the Record in REAPER toggle on (ReadingControlBar.tsx); TeleprompterStart follows only once this
+ * answers "started".
+ */
+export function ReadAloudRecordStart(chapterID: string): $CancellablePromise<string> {
+    return $Call.ByID(1614763488, chapterID);
+}
+
+/**
+ * ReadAloudRecordStop stops the recording this app started (Stop, or the dialog closing while reading and recording),
+ * and puts the narrator's own arms back. A recording this app did not start is left alone (ErrNotOurRecording).
+ */
+export function ReadAloudRecordStop(): $CancellablePromise<string> {
+    return $Call.ByID(3415830820);
 }
 
 export function Ready(): $CancellablePromise<{ [_ in string]?: any }> {

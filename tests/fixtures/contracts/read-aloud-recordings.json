@@ -1,0 +1,126 @@
+{
+  "experimental_off.arm": {
+    "outcome": "refused",
+    "reason": "experimental_off",
+    "message": "Reading REAPER's tracks is an experimental action. Turn on Experimental REAPER actions in Settings to use it."
+  },
+  "experimental_off.start": {
+    "outcome": "refused",
+    "reason": "experimental_off",
+    "message": "Reading REAPER's tracks is an experimental action. Turn on Experimental REAPER actions in Settings to use it."
+  },
+  "experimental_off.stop": {
+    "outcome": "refused",
+    "reason": "experimental_off",
+    "message": "Reading REAPER's tracks is an experimental action. Turn on Experimental REAPER actions in Settings to use it."
+  },
+  "no_link.arm": {
+    "outcome": "refused",
+    "reason": "unlinked",
+    "message": "\"Chapter II: The Pool of Tears\" has no linked track. Link it to its REAPER track on the Tracks page."
+  },
+  "no_link.start": {
+    "outcome": "refused",
+    "reason": "unlinked",
+    "message": "\"Chapter II: The Pool of Tears\" has no linked track. Link it to its REAPER track on the Tracks page."
+  },
+  "no_link.stop": {
+    "outcome": "stopped",
+    "restored": 0,
+    "kept": 0
+  },
+  "not_armed.arm": {
+    "outcome": "armed",
+    "trackGuid": "{11111111-1111-4111-8111-111111111111}",
+    "disarmed": 0,
+    "changed": false
+  },
+  "not_armed.start": {
+    "outcome": "refused",
+    "reason": "not_armed",
+    "message": "No track is armed in REAPER."
+  },
+  "not_armed.stop": {
+    "outcome": "stopped",
+    "restored": 0,
+    "kept": 0
+  },
+  "other_armed.arm": {
+    "outcome": "armed",
+    "trackGuid": "{11111111-1111-4111-8111-111111111111}",
+    "disarmed": 1,
+    "changed": true
+  },
+  "other_armed.start": {
+    "outcome": "refused",
+    "reason": "other_armed",
+    "message": "Another track than this chapter's is armed in REAPER."
+  },
+  "other_armed.stop": {
+    "outcome": "stopped",
+    "restored": 0,
+    "kept": 0
+  },
+  "ready.arm": {
+    "outcome": "armed",
+    "trackGuid": "{11111111-1111-4111-8111-111111111111}",
+    "disarmed": 0,
+    "changed": false
+  },
+  "ready.start": {
+    "outcome": "started",
+    "trackGuid": "{11111111-1111-4111-8111-111111111111}",
+    "position": 0
+  },
+  "ready.stop": {
+    "outcome": "stopped",
+    "restored": 0,
+    "kept": 0
+  },
+  "recording_elsewhere.arm": {
+    "outcome": "refused",
+    "reason": "already_recording",
+    "message": "REAPER is already recording."
+  },
+  "recording_elsewhere.start": {
+    "outcome": "refused",
+    "reason": "already_recording",
+    "message": "REAPER is already recording."
+  },
+  "recording_elsewhere.stop": {
+    "outcome": "stopped",
+    "restored": 0,
+    "kept": 0
+  },
+  "several_armed.arm": {
+    "outcome": "armed",
+    "trackGuid": "{11111111-1111-4111-8111-111111111111}",
+    "disarmed": 3,
+    "changed": true
+  },
+  "several_armed.start": {
+    "outcome": "refused",
+    "reason": "several_armed",
+    "message": "More than one track is armed in REAPER."
+  },
+  "several_armed.stop": {
+    "outcome": "stopped",
+    "restored": 0,
+    "kept": 0
+  },
+  "track_missing.arm": {
+    "outcome": "refused",
+    "reason": "track_missing",
+    "message": "The track linked to this chapter is no longer in the REAPER project. Link it again on the Tracks page."
+  },
+  "track_missing.start": {
+    "outcome": "refused",
+    "reason": "track_missing",
+    "message": "The track linked to this chapter is no longer in the REAPER project. Link it again on the Tracks page."
+  },
+  "track_missing.stop": {
+    "outcome": "stopped",
+    "restored": 0,
+    "kept": 0
+  }
+}

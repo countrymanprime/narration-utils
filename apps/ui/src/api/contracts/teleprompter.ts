@@ -296,6 +296,28 @@ export type ReadAloudReaperState = {
 };
 
 /**
+ * What arming a track, starting or stopping a REAPER recording did (`ReadAloudArmOnly`/`ReadAloudRecordStart`/`ReadAloudRecordStop`,
+ * read-aloud-control-bar PRD Phase 7, booth-actions-enablement PRD Phase 2): `armed` (the track REAPER armed, how many others it
+ * disarmed, and whether anything changed), `started` (the track REAPER records on and the position, in project seconds, where it
+ * began), `stopped` (how many arms came back and how many stayed changed) or `refused` (`reason` and `message` say why; nothing in
+ * REAPER changed). `reason` carries `ReadAloudReaperReason`'s cases plus the ones only a record command refuses with.
+ */
+export type ReadAloudRecordOutcome = 'armed' | 'started' | 'stopped' | 'refused';
+export type ReadAloudRecordReason =
+  ReadAloudReaperReason | 'not_armed' | 'several_armed' | 'other_armed' | 'playing' | 'already_recording' | 'did_not_start' | 'not_our_recording' | 'timeout';
+export type ReadAloudRecording = {
+  outcome: ReadAloudRecordOutcome;
+  reason?: ReadAloudRecordReason;
+  message?: string;
+  trackGuid?: string;
+  disarmed?: number;
+  changed?: boolean;
+  position?: number;
+  restored?: number;
+  kept?: number;
+};
+
+/**
  * Which microphone REAPER records from (`TeleprompterReaperInput`, teleprompter-manuscript-integration PRD Phase 11, ADR 0250). The
  * picker preselects `device` only when `status` is `matched`, and shows `message` as the reason; `uncertain` names the `candidates`
  * that fit equally well; `no_match` and `unavailable` (with a `reason`) leave the list and the narrator's choice alone.
@@ -349,6 +371,12 @@ export interface TeleprompterApi {
   teleprompterPause(paused: boolean): Promise<void>;
   /** Ask REAPER, once, whether it is ready to record `chapterId` with reading; read-only. Ask on open, toggle, Play and Refresh, never on a timer. */
   readAloudReaperState(chapterId: string): Promise<ReadAloudReaperState>;
+  /** Arm `chapterId`'s linked track and disarm every other one ("Arm Chapter N only", Q7 A); refused while REAPER records. */
+  readAloudArmOnly(chapterId: string): Promise<ReadAloudRecording>;
+  /** Start REAPER recording on `chapterId`'s linked track, which must already be the one armed track; refuses or times out otherwise. */
+  readAloudRecordStart(chapterId: string): Promise<ReadAloudRecording>;
+  /** Stop a recording this app started, putting the narrator's own arms back; a recording it did not start is left alone. */
+  readAloudRecordStop(): Promise<ReadAloudRecording>;
   /** Ask REAPER, once, which of the microphones it records from, to preselect it only when sure; read-only. */
   teleprompterReaperInput(): Promise<TeleprompterReaperInput>;
   /** Where to resume `chapterId` from its recorded audio (the last seconds of its track, placed in the chapter); read-only. */
