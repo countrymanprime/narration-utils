@@ -1,7 +1,8 @@
 import { useId } from 'react';
 import { Button } from '../primitives/Button';
+import { CapabilityGate } from '../primitives/CapabilityGate';
 import { Checkbox } from '../primitives/Checkbox';
-import { TooltipTarget } from '../primitives/Tooltip';
+import { useCapability } from '../../useCapability';
 import { FLAG_KINDS, FLAG_NAMES, type FlagVisibility } from './readerFlags';
 import type { TeleprompterFlag, TeleprompterFlagKind } from '../../types';
 
@@ -15,9 +16,6 @@ const SHOW_LABELS: Record<TeleprompterFlagKind, string> = {
   misread: 'Misreads',
   extra: 'Extra words',
 };
-
-// Punch and roll moves the REAPER edit cursor to a flag (Phase 12); until then the action is shown, disabled, with the reason.
-const PUNCH_PENDING = 'Punch and roll needs REAPER support that is not built yet.';
 
 /**
  * Where keeping the session's flags as findings stands (ADR 0117); shown so a failed save is never silent.
@@ -70,6 +68,10 @@ function SaveStatus({ save }: { save: FlagSaveState }) {
  */
 export function ReaderFlagsPanel({ flags, visibility, onVisibility, dismissed, onDismiss, selected, onSelect, textOf, save }: Props) {
   const headingId = useId();
+  // Punch and roll moves the REAPER edit cursor to a flag (teleprompter-manuscript-integration.prd.md Phase 12, still
+  // unwired here); until its host anchors land, the DAW port's own capability entry explains why the button is off
+  // (DAW port PRD Phase 7, ADR 0360) instead of the fixed message this used to hard-code.
+  const punchCapability = useCapability('punch');
   const shown = flags.filter((flag) => visibility[flag.kind]);
   const hidden = flags.length - shown.length;
   return (
@@ -106,11 +108,9 @@ export function ReaderFlagsPanel({ flags, visibility, onVisibility, dismissed, o
                 Dismiss
               </Button>
             )}
-            <TooltipTarget text={PUNCH_PENDING}>
-              <Button variant="ghost" disabled>
-                Punch from here
-              </Button>
-            </TooltipTarget>
+            <CapabilityGate capability={punchCapability}>
+              <Button variant="ghost">Punch from here</Button>
+            </CapabilityGate>
           </div>
         </section>
       )}
