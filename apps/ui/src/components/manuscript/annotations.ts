@@ -1,7 +1,7 @@
-import type { GuideEntity, ManuscriptNote, ManuscriptParagraph, TextSpan } from '../../types';
+import type { GuideEntity, ManuscriptNote, ManuscriptParagraph, PrepMarkupSpan, TextSpan } from '../../types';
 
-// The character-offset annotations a paragraph carries: Story Bible entity mentions, note anchors and text formatting.
-// The Manuscript reader (`ParagraphView`) composes all three; the read-aloud reader
+// The character-offset annotations a paragraph carries: Story Bible entity mentions, note anchors, text formatting and the
+// narrator's script markup (prep-depth.prd.md Phase 5). The Manuscript reader (`ParagraphView`) composes all four; the read-aloud reader
 // (teleprompter-manuscript-integration.prd.md Phase 5) maps the entity and note ones onto its words
 // (`readerModel.marksOnWords`), so both readers find the same mentions and anchor a note the same way.
 export type Annotation = {
@@ -9,17 +9,18 @@ export type Annotation = {
   start: number;
   end: number;
   length: number;
-  kind: 'entity' | 'note' | 'format';
+  kind: 'entity' | 'note' | 'format' | 'markup';
   entity?: GuideEntity;
   note?: ManuscriptNote;
   style?: TextSpan['style'];
+  markup?: PrepMarkupSpan;
 };
 export type Piece = { text: string; annotations: Annotation[] };
 const escapeRegExp = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
-// Text formatting is always the innermost layer so interactive highlights
-// (which own the click target) wrap it rather than the other way round.
-const layerRank = (item: Annotation) => (item.kind === 'format' ? 1 : 0);
+// Text formatting and script markup are always the innermost layers so interactive highlights
+// (which own the click target) wrap them rather than the other way round.
+const layerRank = (item: Annotation) => (item.kind === 'format' || item.kind === 'markup' ? 1 : 0);
 
 // One deterministic interval compositor powers every overlapping annotation:
 // boundaries preserve all layers and shorter annotations become the inner,
@@ -98,4 +99,12 @@ export function noteAnnotations(paragraph: Pick<ManuscriptParagraph, 'text' | 'i
     const anchor = resolveNoteAnchor(note, paragraph.text);
     return anchor ? [{ id: `note-${note.id}`, ...anchor, length: anchor.end - anchor.start, kind: 'note' as const, note }] : [];
   });
+}
+
+/** The narrator's script markup on this paragraph (matched by `paragraphId`). A stale span is never drawn on the text: its
+ * offsets may no longer fit the words (prep-depth.prd.md Q6), so the reader says the text changed there instead. */
+export function markupAnnotations(paragraph: Pick<ManuscriptParagraph, 'id' | 'text'>, spans: PrepMarkupSpan[]): Annotation[] {
+  return spans
+    .filter((span) => !span.stale && span.paragraphId === paragraph.id && span.start < span.end && span.end <= paragraph.text.length)
+    .map((span) => ({ id: `markup-${span.id}`, start: span.start, end: span.end, length: span.end - span.start, kind: 'markup' as const, markup: span }));
 }

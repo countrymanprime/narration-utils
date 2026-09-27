@@ -36,11 +36,6 @@ export const workspaceStates: StateEntry[] = [
     page: 'workspace',
     state: 'standalone',
     description:
-      'Chapter workspace with REAPER not running - everything here still works (Phase 2 has no REAPER-driven control yet: Go to/Loop are Phase 3), so this is the same page as "current"',
-    sameAs: {
-      of: 'workspace/current',
-      reason:
-        'Phase 2 adds no REAPER-driven control (Go to, Loop are Phase 3), so nothing on this page changes whether or not REAPER is running; the header’s REAPER pill is AppShell’s own, shown on every page.',
-    },
+      'Chapter workspace with REAPER not running (edit-and-proof-workspace PRD Phase 3) - Go to in REAPER and Loop in REAPER on the transport bar are disabled, with the reason under a tooltip; everything else still works',
   },
 ];

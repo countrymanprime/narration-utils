@@ -1,7 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faBook, faBookOpen, faNoteSticky } from '@fortawesome/free-solid-svg-icons';
+import { faBook, faBookOpen, faHighlighter, faNoteSticky } from '@fortawesome/free-solid-svg-icons';
 import type { ManuscriptSelection } from '../../hooks/useTextSelection';
 import { Button } from '../primitives/Button';
 
@@ -10,6 +10,7 @@ import { Button } from '../primitives/Button';
 export function SelectionMenu({
   selection,
   addNote,
+  markUp,
   addToStoryBible,
   addingToStoryBible = false,
   lookUp,
@@ -18,6 +19,8 @@ export function SelectionMenu({
 }: {
   selection: ManuscriptSelection;
   addNote: () => void;
+  // Opens the Mark up dialog for the selection (prep-depth.prd.md Phase 5); left out, the action is not offered.
+  markUp?: () => void;
   addToStoryBible: () => void;
   // The entry is being created (a Python process, about half a second): the button says so and ignores a second press (ADR 0075).
   addingToStoryBible?: boolean;
@@ -61,6 +64,11 @@ export function SelectionMenu({
       <Button variant="primary" className="rounded-none border-0 text-xs" aria-label="+ Note" disabled={busy} onClick={addNote}>
         <FontAwesomeIcon icon={faNoteSticky} /> Note
       </Button>
+      {markUp && (
+        <Button variant="ghost" className="rounded-none border-0 border-l border-l-[var(--border)] text-xs" disabled={busy} onClick={markUp}>
+          <FontAwesomeIcon icon={faHighlighter} /> Mark up
+        </Button>
+      )}
       <Button
         variant="ghost"
         className="rounded-none border-0 border-l border-l-[var(--border)] text-xs"

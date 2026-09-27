@@ -953,6 +953,28 @@ export function PickupsState(): $CancellablePromise<string> {
 }
 
 /**
+ * PrepMarkupDelete removes one span by its id; a stale span needs nothing else.
+ */
+export function PrepMarkupDelete(chapterID: string, id: string): $CancellablePromise<string> {
+    return $Call.ByID(636931274, chapterID, id);
+}
+
+/**
+ * PrepMarkupList returns a chapter's markup spans, each resolved against the chapter's current text.
+ */
+export function PrepMarkupList(chapterID: string): $CancellablePromise<string> {
+    return $Call.ByID(1627753729, chapterID);
+}
+
+/**
+ * PrepMarkupSave places one span on a line of a chapter: start and end are UTF-16 offsets into the line's text (the
+ * reader's own selection), kind is stress, pause or character_tag, and value is the pause length or the character's name.
+ */
+export function PrepMarkupSave(chapterID: string, paragraphID: string, start: number, end: number, kind: string, value: string): $CancellablePromise<string> {
+    return $Call.ByID(554283720, chapterID, paragraphID, start, end, kind, value);
+}
+
+/**
  * PreviewCandidates reads up to three ranked five-minute preview candidates from the imported manuscript
  * (proofing-preview-suggestion.prd.md Phase 1's preview.Suggest over this file's own adapter). It never runs
  * anything and stores nothing.
@@ -1619,6 +1641,25 @@ export function WhisperRemove(modelID: string): $CancellablePromise<string> {
  */
 export function WorkspaceAlignment(chapterID: string): $CancellablePromise<string> {
     return $Call.ByID(2240146208, chapterID);
+}
+
+/**
+ * WorkspaceGoTo selects tokenIndex's item in REAPER and puts the edit cursor on the spot it was heard, exactly as
+ * FindingsGoTo does for a finding: navigate_item, sent only once the token resolves to an item REAPER can be asked
+ * about and REAPER is listening.
+ */
+export function WorkspaceGoTo(chapterID: string, tokenIndex: number): $CancellablePromise<string> {
+    return $Call.ByID(3177963740, chapterID, tokenIndex);
+}
+
+/**
+ * WorkspaceLoop loops the chapter passage from firstToken to lastToken (inclusive, both heard on the same item) in
+ * REAPER: the time selection and loop points around it, repeat on, and Play, exactly as FindingsLoop does.
+ * FindingsStopLoop stops it - the workspace holds no loop state of its own, sharing the one app loop
+ * findingNavigation already tracks.
+ */
+export function WorkspaceLoop(chapterID: string, firstToken: number, lastToken: number): $CancellablePromise<string> {
+    return $Call.ByID(465077885, chapterID, firstToken, lastToken);
 }
 
 // Private type creation functions

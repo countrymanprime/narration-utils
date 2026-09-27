@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/countrymanprime/narration-utils/shell/internal/assets"
+	"github.com/countrymanprime/narration-utils/shell/internal/update"
 	"github.com/wailsapp/wails/v3/pkg/application"
 )
 
@@ -82,6 +83,9 @@ func launchHost(t *testing.T, guard *networkGuard, how launch) *Host {
 	t.Helper()
 	host := NewHost()
 	host.stager.Client = &http.Client{Transport: guard}
+	// The host acts as the Windows build, the only one with a release (docs/adr/0412), so a Linux development host checks too.
+	windows, _ := update.PlatformFor("windows", "amd64")
+	host.updates.Platform, host.stager.Platform = windows, windows
 	if !how.keepDefaultDelay {
 		host.updateDelay = autoCheckDelay
 	}

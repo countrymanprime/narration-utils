@@ -1,0 +1,48 @@
+{
+  "chapterId": "c-0001",
+  "spans": [
+    {
+      "anchorText": "Off with her head!",
+      "chapterId": "c-0001",
+      "createdAt": "2026-09-21T10:00:00Z",
+      "end": 19,
+      "id": "id-1",
+      "kind": "character_tag",
+      "nonSpaceStart": 1,
+      "paragraph": 0,
+      "paragraphId": "p-000001",
+      "stale": false,
+      "start": 1,
+      "value": "Queen"
+    },
+    {
+      "anchorText": "soldiers",
+      "chapterId": "c-0001",
+      "createdAt": "2026-09-21T10:00:00Z",
+      "end": 12,
+      "id": "id-2",
+      "kind": "stress",
+      "nonSpaceStart": 3,
+      "paragraph": 1,
+      "paragraphId": "p-000002",
+      "stale": true,
+      "staleReason": "text_changed",
+      "start": 4,
+      "value": ""
+    },
+    {
+      "anchorText": "silent",
+      "chapterId": "c-0001",
+      "createdAt": "2026-09-21T10:00:00Z",
+      "end": 24,
+      "id": "id-3",
+      "kind": "pause",
+      "nonSpaceStart": 15,
+      "paragraph": 1,
+      "paragraphId": "p-000002",
+      "stale": false,
+      "start": 18,
+      "value": "long"
+    }
+  ]
+}
