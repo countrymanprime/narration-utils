@@ -1,0 +1,66 @@
+{
+  "findings": [
+    {
+      "analyzer": "measure",
+      "category": "delivery_qc",
+      "confidence": 1,
+      "confidence_reason": "the measurement could not be made (silence, or audio shorter than the measurement window)",
+      "evidence": {
+        "available": false,
+        "metric": "noise_floor_dbfs",
+        "profile": "acx@2026-09",
+        "profile_name": "ACX (September 2026)",
+        "requirement": "Each file has a noise floor no higher than -60 dB RMS.",
+        "rule": "acx.noise_floor",
+        "rule_label": "Noise floor",
+        "unit": "dBFS"
+      },
+      "evidence_version": "sha256:30c5cbd32ff1b7e53bcc719011b0e06c0ccb1b26adb90cde594d29264a2b1a11",
+      "id": "5086265a0a73041a05d774a8",
+      "project": {
+        "path": "C:/Projects/Alice"
+      },
+      "review": {
+        "status": "unreviewed"
+      },
+      "schema_version": 1,
+      "severity": "info",
+      "source": {
+        "file": "C:/Projects/Alice/renders/Chapter 01.wav"
+      }
+    },
+    {
+      "analyzer": "measure",
+      "category": "delivery_qc",
+      "confidence": 1,
+      "confidence_reason": "deterministic measurement of the decoded samples",
+      "evidence": {
+        "limit_max": -18,
+        "limit_min": -23,
+        "metric": "rms_dbfs",
+        "profile": "acx@2026-09",
+        "profile_name": "ACX (September 2026)",
+        "requirement": "Each file measures between -23 dB and -18 dB RMS.",
+        "rule": "acx.rms",
+        "rule_label": "RMS",
+        "unit": "dBFS",
+        "value": -24.1,
+        "violation": "below_min"
+      },
+      "evidence_version": "sha256:669b6c08e316a7d7c6585ae5b70b9bc06083f952da1131f73043a4e3e52e9dc1",
+      "id": "94314182dc3fb0a41a9379aa",
+      "project": {
+        "path": "C:/Projects/Alice"
+      },
+      "review": {
+        "status": "unreviewed"
+      },
+      "schema_version": 1,
+      "severity": "error",
+      "source": {
+        "file": "C:/Projects/Alice/renders/Chapter 01.wav"
+      }
+    }
+  ],
+  "total": 2
+}

@@ -7,6 +7,7 @@ import { createMockApi } from './mockApi';
 import type { ProjectStateState } from './contracts/projectstate';
 import { WIRE_TAKE_REVIEW_FINDINGS, WIRE_TRACKS_PROJECT, WIRE_TRANSCRIPT, editingCandidateFor } from './mockFixtures';
 import { cleanupApplyResultSchema, cleanupPreviewResultSchema, levelMatchApplyResultSchema, levelMatchPreviewResultSchema } from './schemas/cleanup';
+import { productionPlanSchema } from './schemas/production';
 import { WIRE_TAKE_COMPARISON_FINDING } from './takeComparisonMock';
 import { MOCK_MEASURE_PATHS } from './measureMock';
 import { judgeMock } from './coverageMock';
@@ -73,7 +74,14 @@ import {
   retailSampleAnswerSchema,
 } from './schemas/credits';
 import { dawCatalogListSchema } from './schemas/dawCatalog';
-import { guideBuildResultSchema, guideCreatedSchema, guideEntitiesSchema, guidePreviewSchema } from './schemas/storyBible';
+import {
+  guideBuildResultSchema,
+  guideCreatedSchema,
+  guideEntitiesSchema,
+  guidePreviewSchema,
+  pronunciationQueriesCsvSchema,
+  pronunciationQueriesSchema,
+} from './schemas/storyBible';
 import { bootstrapSchema, copyDiagnosticsResultSchema, projectAttachStateSchema, readySchema } from './schemas/system';
 import {
   readAloudReaperStateSchema,
@@ -653,6 +661,13 @@ describe('answers of the mock client for the manuscript, Story Bible and project
     expectMatches(guideCreatedSchema, { id: await api.guideCreate('New', 'Character', []) }, 'mock guide create');
     const entity = (await api.guideEntities())[0];
     expectMatches(guidePreviewSchema, await api.guidePreview(entity?.id ?? ''), 'mock preview');
+    const queries = await api.guidePronunciationQueries();
+    expectMatches(pronunciationQueriesSchema, queries, 'mock pronunciation queries');
+    expect(queries.length).toBeGreaterThan(0);
+    expect(queries.every((row) => row.status !== 'author_confirmed')).toBe(true);
+    const csv = await api.guidePronunciationQueriesCsv();
+    expectMatches(pronunciationQueriesCsvSchema, csv, 'mock pronunciation queries CSV');
+    expect(csv.count).toBe(queries.length);
   });
 
   it('the dictionary lookup answers: a word it has, one it does not, and the first-use gate', async () => {
@@ -1439,6 +1454,30 @@ describe('answers of the mock client for the settings, voice, model, transcript 
     expect((await api.measureState()).profile?.id).toBe(copy.id);
   });
 
+  it('the delivery findings the Review page lists carry their rule, as the host pins them and the mock saves them', async () => {
+    const pinned = findingsPageSchema.parse(readGolden('findings-list-delivery-qc.json'));
+    const api = createMockApi();
+    let job = await api.measureAnalyze((await api.measurePickFiles()).paths);
+    while (job.phase === 'running') job = await api.measureState();
+    const saved = await api.findingsList({ category: 'delivery_qc' });
+    expectMatches(findingsPageSchema, saved, 'mock delivery findings on the Review page');
+    expect(saved.total).toBeGreaterThan(0);
+    // The same ids the Delivery page gives them, so a decision on either page is one decision.
+    const judged = new Set(job.files.flatMap((file) => file.findings.map((finding) => finding.id)));
+    expect(saved.findings.every((finding) => judged.has(finding.id))).toBe(true);
+    const shape = (finding: (typeof saved.findings)[number]) => {
+      const evidence = deliveryQcEvidenceSchema.parse(finding.evidence);
+      return [
+        finding.analyzer,
+        finding.category,
+        Boolean(finding.evidence_version),
+        Boolean(evidence.rule_label && evidence.requirement && evidence.profile_name),
+        Boolean(finding.source.file),
+      ];
+    };
+    for (const finding of [...pinned.findings, ...saved.findings]) expect(shape(finding)).toEqual(['measure', 'delivery_qc', true, true, true]);
+  });
+
   it('the delivery profiles answer as the host pins them, and refuse the way the host does', async () => {
     const pinned = deliveryProfilesStateSchema.parse(readGolden('delivery-profiles.json'));
     expect(pinned.profiles[0]).toEqual(MOCK_ACX);
@@ -1783,6 +1822,36 @@ describe('answers of the mock client for the settings, voice, model, transcript 
     await expect(api.levelMatchPreview(chapterId, 'rms_dbfs', -6, 1)).rejects.toThrow();
   });
 
+  it('the production plan: empty, a deadline and amount set and cleared, milestones saved, and every refusal', async () => {
+    const api = createMockApi();
+    const empty = await api.productionPlan();
+    expectMatches(productionPlanSchema, empty, 'mock production plan, empty');
+    expect(empty).toEqual({ deadline: null, contractedAmount: null, milestones: [] });
+
+    const set = await api.setProductionDeadline(' 2026-12-01 ', 2400);
+    expectMatches(productionPlanSchema, set, 'mock production plan, deadline set');
+    expect(set).toMatchObject({ deadline: '2026-12-01', contractedAmount: 2400 });
+
+    const withMilestones = await api.saveProductionMilestones([
+      { name: ' ACX 15-minute checkpoint ', dueDate: '2026-10-15', note: 'The rights holder approves the first 15 minutes.' },
+      { name: 'Final delivery', dueDate: '2026-12-01', note: ' ' },
+    ]);
+    expectMatches(productionPlanSchema, withMilestones, 'mock production plan, milestones');
+    expect(withMilestones.milestones).toEqual([
+      { name: 'ACX 15-minute checkpoint', dueDate: '2026-10-15', note: 'The rights holder approves the first 15 minutes.' },
+      { name: 'Final delivery', dueDate: '2026-12-01' },
+    ]);
+
+    await expect(api.setProductionDeadline('2026-02-30', null)).rejects.toThrow('YYYY-MM-DD');
+    await expect(api.setProductionDeadline('2026-12-01', -1)).rejects.toThrow('zero or more');
+    await expect(api.saveProductionMilestones([{ name: '', dueDate: '2026-10-15' }])).rejects.toThrow('needs a name');
+    expect(await api.productionPlan()).toEqual(withMilestones);
+
+    const cleared = await api.setProductionDeadline('', null);
+    expectMatches(productionPlanSchema, cleared, 'mock production plan, cleared');
+    expect(cleared).toMatchObject({ deadline: null, contractedAmount: null });
+  });
+
   it('every method of the API is either checked in this file, void, or not a request', () => {
     // A new binding fails this until it has a schema and a row above (ADR 0069). The list of what is checked is kept by hand.
     const CHECKED = [
@@ -1816,6 +1885,8 @@ describe('answers of the mock client for the settings, voice, model, transcript 
       'guideEntities',
       'guideCreate',
       'guidePreview',
+      'guidePronunciationQueries',
+      'guidePronunciationQueriesCsv',
       'assetsList',
       'assetsInstall',
       'assetsInstallState',
@@ -1894,6 +1965,9 @@ describe('answers of the mock client for the settings, voice, model, transcript 
       'coverageResult',
       'workspaceAlignment',
       'previewCandidates',
+      'productionPlan',
+      'setProductionDeadline',
+      'saveProductionMilestones',
       'stageRecommendations',
       'stageConfirm',
       'stageDismiss',
@@ -1972,6 +2046,9 @@ describe('answers of the mock client for the settings, voice, model, transcript 
       'guideSetLocked',
       'guideRescan',
       'guidePronounce',
+      'guidePronounceUser',
+      'guidePronunciationUseAlternate',
+      'guidePronunciationSetStatus',
       'guideMerge',
       'guideDelete',
       'guideRelate',
@@ -1999,6 +2076,8 @@ describe('answers of the mock client for the settings, voice, model, transcript 
       'updateOpenNotes',
       'updateShowDownload',
       'deleteCreditsTemplate',
+      'companionModeEnter',
+      'companionModeExit',
     ];
     const NOT_A_REQUEST = [
       'mediaUrl',

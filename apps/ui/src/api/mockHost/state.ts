@@ -23,6 +23,7 @@ import type { MockDeliveryProfileSeed } from '../deliveryProfilesMock';
 import type { MockDiagnosticsSeed } from '../diagnosticsMock';
 import type { EditingSeed } from '../editingMock';
 import type { CleanupActionSeed } from '../cleanupActionMock';
+import type { ProductionSeed } from '../productionMock';
 import type { MockAssetSeed } from '../assetInstallMock';
 import type { MockUpdateSeed } from './update';
 import type { DawMockSeed } from '../dawMock';
@@ -163,6 +164,8 @@ export type MockApiSeed = {
   cleanupAction?: CleanupActionSeed;
   /** Seeds the preview-candidates mock (an outcome or seeded candidates), see `PreviewSeed`. */
   preview?: PreviewSeed;
+  /** Seeds the production plan mock (deadline, contracted amount, milestones), see `ProductionSeed`. */
+  production?: ProductionSeed;
   /** The project's Delivery limits, by key (`true_peak_dbtp_max: '-3'`), set as if saved in Settings (diagnostics PRD Phase 5). */
   deliveryLimits?: Record<string, string>;
   /**

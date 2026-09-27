@@ -1,4 +1,8 @@
 name: Pages
+# PAUSED (owner decision D75, 2026-09-27): nothing is published until the main app's development is done and the site is
+# reworked. A push to main no longer runs this workflow; a pull request still runs the build job as the docs link check, and a
+# manual start builds, and deploys only when its `publish` input is ticked on main. To resume, restore the `push` trigger.
+#
 # Publishes the public site to GitHub Pages after every push to main, and by hand: the docs (tools/docs-site, ADR 0083,
 # built from docs/ by MkDocs) at the root, the Storybook component atlas (apps/ui) under /storybook/, and a browser-runnable
 # demo of the app (apps/ui built with VITE_USE_MOCK_API=1, docs/prds/public-app-demo.prd.md) under /demo/. It is served at
@@ -13,8 +17,6 @@ name: Pages
 # rule. The token is read-only everywhere except the deploy job, which alone holds `pages: write` (create the deployment)
 # and `id-token: write` (prove to Pages that the artifact came from this workflow run).
 on:
-  push:
-    branches: [main]
   pull_request:
     paths:
       - docs/**
@@ -26,7 +28,12 @@ on:
       - pyproject.toml
       - uv.lock
       - .github/workflows/pages.yml
-  workflow_dispatch: {}
+  workflow_dispatch:
+    inputs:
+      publish:
+        description: Deploy the built site to GitHub Pages (paused by D75; only on main)
+        type: boolean
+        default: false
 permissions: {}
 # One deployment at a time, and a running one finishes: cancelling a deploy half way leaves the site stale. A pull
 # request run has its own group and is replaced by the next push to that pull request.
@@ -71,13 +78,13 @@ jobs:
           .venv/bin/python tools/docs-site/check_site.py tools/docs-site/build/site --base /narration-utils/ \
             --site-url https://countrymanprime.github.io/narration-utils/ --require storybook/index.html --require index.html \
             --require demo/index.html
-      - if: github.event_name != 'pull_request'
+      - if: github.event_name == 'workflow_dispatch' && inputs.publish
         uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
         with:
           path: tools/docs-site/build/site
   deploy:
     needs: build
-    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    if: github.ref == 'refs/heads/main' && github.event_name == 'workflow_dispatch' && inputs.publish
     timeout-minutes: 10
     runs-on: ubuntu-latest
     permissions:
