@@ -19,7 +19,7 @@ Narration Utils runs locally and processes your manuscripts and audio on your ma
 especially welcome:
 
 - Anything that sends manuscript, audio, or project content off the machine without an explicit action.
-- Downloads of models, voices, the reader's offline dictionary or binaries (the MP3 encoder's FFmpeg build,
+- Downloads of models, voices, the reader's offline dictionary or binaries (the MP3/M4B encoder's FFmpeg build,
   [ADR 0342](docs/adr/0342-the-mp3-encoder-is-a-pinned-gpl-ffmpeg-build-run-as-a-separate-process-and-writes-no-tag-frame.md)) that skip the integrity checks described in
   [first-use dependency provisioning](docs/architecture/first-use-dependency-provisioning.md), a downloaded executable that runs without matching its pinned hash, and a downloaded dataset or the lookup index
   the app builds from it (the dictionary, [ADR 0097](docs/adr/0097-the-manuscript-reader-word-lookup-uses-the-open-english-wordnet-as-a-downloadable-asset.md))
