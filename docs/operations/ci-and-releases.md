@@ -94,7 +94,7 @@ Each file in `.github/workflows`, what starts it, and the checks it shows on a p
 | `dependency-review.yml` | pull request to `main` | `review` (fails on a high-severity advisory, or on a licence outside the allow-list, that a pull request adds to a **runtime** dependency; needs the dependency graph; [the licence policy](github-workflow.md#the-dependency-licence-allow-list)) | advisory |
 | `labeler.yml` | `pull_request_target` (opened, synchronize, reopened, ready for review) | `label` | not a check that gates anything |
 | `cancel-closed-pr.yml` | `pull_request_target` (closed: merged or closed without merging) | `cancel`: cancels every unfinished run of the pull request's head commit | not a check that gates anything |
-| `pages.yml` (`Pages`) | push to `main` (any change, docs included); a pull request that changes `docs/`, `tools/docs-site/`, the Storybook config, `pyproject.toml`, `uv.lock` or the workflow (`build` only); manual | `build`, `deploy` ([below](#the-pages-workflow)); `deploy` never runs for a pull request | the `build` job is the docs link check for a documentation-only pull request; advisory like the rest |
+| `pages.yml` (`Pages`) | paused (D75): no push trigger; a pull request that changes `docs/`, `tools/docs-site/`, the Storybook config, `pyproject.toml`, `uv.lock` or the workflow (`build` only); manual | `build`, `deploy` ([below](#the-pages-workflow)); `deploy` runs only on a manual start on `main` with `publish` ticked | the `build` job is the docs link check for a documentation-only pull request; advisory like the rest |
 | `sync-labels.yml`, `sync-milestones.yml` | push to `main` that changes `.github/labels.json`, `config/roadmap.json` or `scripts/github/**`, and the workflow file; manual | `sync` | run after a merge, never on a pull request |
 
 The tests of `scripts/github/*.test.mjs` (the label and milestone sync) run in the `repo-scripts` step of `quality / quick-ubuntu`. Nothing runs on a schedule except
@@ -449,7 +449,13 @@ The run **fails, and writes nothing**, rather than guess: when a licence cannot 
 
 ## The Pages workflow
 
-`pages.yml` publishes the public site to GitHub Pages, at `https://countrymanprime.github.io/narration-utils/`, on every push to `main` and on
+**Paused (owner decision D75, 2026-09-27).** The site isn't how the owner wants it yet, so nothing is published until the main
+app's development is done and the site is reworked. `pages.yml` no longer runs on a push to `main`. A pull request still runs `build`
+(the docs link check below), and a manual start builds, and deploys only when its `publish` input is ticked on `main`. Unpublishing
+the site that is already live is an owner-only setting (Settings > Pages); to resume, restore the `push: branches: [main]` trigger and
+the unconditional `deploy`. The rest of this section describes the workflow as it runs when publishing.
+
+`pages.yml` publishes the public site to GitHub Pages, at `https://countrymanprime.github.io/narration-utils/`, on
 demand: the docs at the root ([below](#the-public-docs-site)) and the Storybook component atlas of `apps/ui` under `/storybook/` (PRD phases 9 and 11).
 
 - **Two jobs.** `build` (read-only token) checks out with `persist-credentials: false`, runs the `setup-toolchain` action (pnpm, and
@@ -695,6 +701,50 @@ of the tool cache would hold the link, not Go.
 was created, how long it ran and on which runner, as a Markdown table (with `--steps`, every step too). It reads the
 Actions API through `gh`. Queueing shows up as a large "Started after": the repository is public on the free plan, 20
 hosted jobs at once across the account.
+
+### Success Metrics: measured (2026-09-27)
+
+The CI pipeline speed PRD's Phases 1-6 shipped Split 1 (build beside quality, later superseded by the Prerelease
+dropping quality entirely), the sidecar freeze cache (Phase 2), one load per state in the visual suite and per story in
+the atlas (Phases 3, 4), and sharding plus the folded quick jobs ([ADR 0244](../adr/0244-the-playwright-suites-are-sharded-in-ci-the-quick-checks-share-a-runner-per-os-and-one-check-sums-up-the-run.md)).
+This is what a sample taken against the PRD's Success Metrics table shows once that work was steady state, and why the
+sample is not the "median of 5 idle runs" the PRD asked for:
+
+| Metric | Original baseline | Target | Measured (2026-09-27) | Met? |
+| --- | --- | --- | --- | --- |
+| Prerelease push to release published | 13 m 33 s | ≤ 8 min | median 6 m 20 s, p90 8 m 35 s (n=30 successful runs) | Met |
+| CI pull request to all green (UI affected) | ~9 min | ≤ 5 min | median 7 min, p90 10 m 40 s (n=4 successful runs) | Missed, low confidence (see below) |
+| `quality / ui-visual` job | 7 m 17 s | ≤ 4 min | pooled across 3 shards: median 4 m 50 s, p90 5 m 55 s (n=12 shard-jobs) | Not comparable: ADR 0244 sharded this job after the PRD's own Phase 3 left the unsharded job at 9.4 min (D5), which is why sharding exists |
+| `quality / ui-atlas` job | 6 m 45 s | ≤ 4 min | pooled across 2 shards: median 3 m 45 s, p90 5 m 15 s (n=8 shard-jobs) | Not comparable, same reason (2 shards vs. the PRD's 1-job baseline) |
+| Windows `build-native` with sidecar cache hit | 5 m 29 s | ≤ 3 min | CI `Build (Windows)`: median 4 m 30 s, p90 5 m 10 s; Prerelease `Windows build`: median 4 m 35 s, p90 4 m 45 s (n=8 each) | Missed. Job-level data cannot distinguish a cache hit from a cold freeze; the PRD's own Phase 2 status was "cold vs. hit comparison pending" |
+| Job slots per CI run / Prerelease run | 13 / 14 | 9 / 10 | CI: 12-13 (ADR 0244 accepted this trade-off deliberately: sharding costs slots to cut wall clock). Prerelease: 4 (`version`, `ui-dist`, `Windows build`, `Windows release` - quality jobs were dropped entirely, past what Phase 6 targeted) | CI: missed by design; Prerelease: exceeded |
+| Checks run | all | all, none dropped | not independently re-verified in this pass | Not measured |
+
+Run ids: CI wall-clock (n=4) 36327001255, 36132192971, 36130938887, 36126949380; Prerelease wall-clock (n=30, newest
+first) 36336010157, 36334152008, 36333183333, 36332358483, 36330499985, 36329512557, 36327664731, 36327340259,
+36325122026, 36320611880, 36319891903, 36319888903, 36317914542, 36315647197, 36314204342, 36311712319, 36310145678,
+36308505709, 36306958367, 36303030660, 36300804779, 36300012458, 36297884195, 36297169767, 36296453169, 36295715739,
+36295710848, 36294992123, 36294240949, 36293526312; job-level CI sample 36330505268, 36328472614, 36324046880,
+36312832842, 36135758643, 36130938887, 36126937410, 36126466740; job-level Prerelease sample 36336010157, 36329512557,
+36319891903, 36311712319, 36300804779, 36295715739, 36292800723, 36286847724.
+
+**This sample is congested, not idle.** Issue [#509](https://github.com/countrymanprime/narration-utils/issues/509)
+(train control) shows 10 of 10 agent-train lanes running throughout the sampled window (2026-09-25 to 2026-09-27), so
+roughly ten parallel agent-authored pull requests were contending for the free plan's 20 concurrent hosted job slots,
+and each CI run alone now costs 12 to 13 of them. Pooled job start offset (a job's `started_at` minus its run's
+`created_at`) across the sampled runs has a median of 78 s and a p90 of 546 s (max 24 min), against the PRD's own idle
+baseline of about 3 s; the p90 sits inside the PRD's own "congested" band (138 s to 1966 s). Of the 40 most recent
+`ci.yml` pull-request runs, only 4 (10%) completed successfully - 24 failed and 12 were cancelled, which is why the "CI
+pull request to all green" row above is a 4-run sample: the same churn that inflates queueing also means most runs
+never finish, from a mix of rapid pushes cancelling their own prior runs and real flakiness under contention. None of
+this is evidence the Phase 1-6 work regressed; it is evidence that today is a poor day to take an idle-runner sample.
+A repeat of this measurement once the agent train's lane count drops (or `HOLD`s) would be a truer read.
+
+**What is still open:** the Windows build and the two Playwright suites (compared on their own pre-sharding baselines)
+remain above their per-job targets. The PRD's Open Question 3 ("is a paid 8-core runner acceptable if Phases 3-5 miss
+the target") applies, and Open Question 2 (a GitHub merge queue) is unanswered; neither carried a stated
+recommendation, so both are left for the owner rather than decided here (see
+[#510](https://github.com/countrymanprime/narration-utils/issues/510)).
 
 ## Runtime provenance
 

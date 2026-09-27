@@ -65,6 +65,7 @@ Every DAW action reaches an engine through `apps/desktop/internal/dawport` ([ADR
 | `heartbeat` | `Heartbeat` | Supported |
 | `project_read` | `ProjectReader` | Supported (works offline, REAPER closed) |
 | `track_state` | `TrackStateReader` | Experimental |
+| `track_select` | `TrackSelector` | Experimental |
 | `record` | `Recorder` | Experimental |
 | `punch` | `Puncher` | Experimental |
 | `regions` | `RegionWriter` | Experimental |
