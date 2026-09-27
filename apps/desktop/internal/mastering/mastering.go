@@ -3,7 +3,7 @@
 // asks (a caller's action, never on its own), and it writes a NEW WAV file: the source is opened read-only and never
 // written, and a destination that is the source, or that already exists, is refused.
 //
-// The chain masters to the numbers internal/measure reports and internal/deliveryprofile judges (ADR 0320): RMS over
+// The chain masters to the numbers internal/measure reports and internal/deliveryprofile judges (ADR 0321): RMS over
 // every sample of every channel, silences included, and the sample peak over every channel. The written file is
 // re-measured with internal/measure and judged against the profile, so the result says what the checker will say.
 package mastering

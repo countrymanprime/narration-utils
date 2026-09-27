@@ -10,7 +10,7 @@ type Stage interface {
 	Flush() [][]float64
 }
 
-// The EQ is fixed (ADR 0320): a high-pass filter that takes out rumble and DC offset below the voice, and nothing
+// The EQ is fixed (ADR 0321): a high-pass filter that takes out rumble and DC offset below the voice, and nothing
 // else, so it never colours the narrator's own sound. A second-order Butterworth is 12 dB an octave below its corner.
 const (
 	HighPassHz = 80

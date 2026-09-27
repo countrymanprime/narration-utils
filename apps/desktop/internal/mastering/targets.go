@@ -17,7 +17,7 @@ const (
 
 const (
 	// CeilingMargin is how far under the profile's peak limit the limiter holds the sample peak, in dB: room for the
-	// rounding of the written samples and for an MP3 encoder's overshoot (ADR 0320).
+	// rounding of the written samples and for an MP3 encoder's overshoot (ADR 0321).
 	CeilingMargin = 0.5
 	// OneSidedMargin is how far inside a one-sided RMS bound the chain aims, in dB, when the profile gives no window.
 	OneSidedMargin = 2.0
