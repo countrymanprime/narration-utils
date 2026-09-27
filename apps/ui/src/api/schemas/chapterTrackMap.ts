@@ -15,6 +15,7 @@ import type {
   ChapterTrackMatch,
   RecordedEnd,
   TrackMapping,
+  TrackSelectResult,
 } from '../contracts/chapterTrackMap';
 import { listFromNull } from './base';
 
@@ -110,6 +111,13 @@ export const chapterTrackMatchSchema = z.object({
   tracks: z.array(z.object({ guid: z.string(), name: z.string(), index: z.number().int() })),
   recordedEnd: recordedEndSchema.nullable(),
 }) satisfies z.ZodType<ChapterTrackMatch>;
+
+export const trackSelectResultSchema = z.object({
+  outcome: z.enum(['selected', 'refused']),
+  reason: z.enum(['track_missing', 'standalone', 'not_running', 'experimental_off', 'failed']).optional(),
+  message: z.string().optional(),
+  trackGuid: z.string().optional(),
+}) satisfies z.ZodType<TrackSelectResult>;
 
 export const chapterTrackSetSchema = z.object({
   documentId: z.string(),
