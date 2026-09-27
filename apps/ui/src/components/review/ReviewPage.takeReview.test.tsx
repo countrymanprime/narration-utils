@@ -165,7 +165,7 @@ describe('A take-review group on the Review page', () => {
     expect(items[1].textContent).toContain('Part of the span (70%)');
     expect(reads.textContent).not.toMatch(/best|rank(ed|ing)? (read|take)|score/i);
     // The finding-level REAPER controls are replaced by each read's own.
-    expect(screen.queryByRole('region', { name: 'In REAPER' })).toBeNull();
+    expect(screen.queryByRole('heading', { name: 'In REAPER' })).toBeNull();
   });
 
   it('goes to and loops one read in REAPER by its place in the finding', async () => {
