@@ -1,5 +1,5 @@
 // The production tracking mock (production-tracking.prd.md Phase 4): the same arithmetic and "Next up" order as the host
-// (apps/desktop/internal/production/overview.go, ADR 0400) over the mock's own chapters and stage recommendations, so the
+// (apps/desktop/internal/production/overview.go, ADR 0404) over the mock's own chapters and stage recommendations, so the
 // Production page's board agrees with Home and the stage suggestions. `?mockProduction=on-pace|at-risk` seeds a time log, a
 // deadline and a contracted amount (the Phase 3 fields the host does not fill yet); with no seed nothing is logged or set,
 // which is what a narrator sees first.

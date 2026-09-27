@@ -39,7 +39,7 @@ export function stageHoursHint(hoursByStage: Partial<Record<ChapterStatus, numbe
 
 const plural = (count: number, one: string, many: string) => `${count} ${count === 1 ? one : many}`;
 
-/** How close the deadline is (ADR 0400): overdue is danger, a week or less with chapters still unfinished is a warning. */
+/** How close the deadline is (ADR 0404): overdue is danger, a week or less with chapters still unfinished is a warning. */
 export function deadlineFigure(deadline: ProductionDeadline | null, unfinished: number): { value: string; hint: string; tone: StatTileTone } {
   if (deadline === null) return { value: DASH, hint: 'No delivery date set yet', tone: 'neutral' };
   const due = new Date(`${deadline.date}T00:00:00Z`).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' });

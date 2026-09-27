@@ -161,7 +161,7 @@ func BuildOverview(in OverviewInput) Overview {
 	return overview
 }
 
-// nextUp ranks the narration chapters not yet finalized by the risk each puts on the deadline (ADR 0400). The book
+// nextUp ranks the narration chapters not yet finalized by the risk each puts on the deadline (ADR 0404). The book
 // has one deadline and no chapter has its own, so a chapter's risk is how far it is from done and whether something
 // is known to hold it back: first the chapters in progress whose stage is held back (not_ready), then the rest in
 // progress whose readiness cannot be told, then those in progress that look ready to move on, then the chapters not

@@ -227,4 +227,4 @@ card — with **Fill in** to reopen the same dialog for as long as a token stays
 
 ---
 
-[← Navigation](navigation.md) · [Index](README.md) · [Manuscript →](manuscript.md)
+[← Navigation](navigation.md) · [Index](README.md) · [Production →](production.md)

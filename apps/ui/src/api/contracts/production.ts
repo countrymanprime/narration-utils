@@ -62,7 +62,7 @@ export type ProductionTotals = {
 /** The book's due date (`YYYY-MM-DD`) and the whole days left until it, negative once passed. */
 export type ProductionDeadline = { date: string; daysLeft: number };
 
-/** One chapter "Next up" lists, in the host's order (ADR 0400). */
+/** One chapter "Next up" lists, in the host's order (ADR 0404). */
 export type ProductionNextUpItem = {
   chapterId: string;
   title: string;

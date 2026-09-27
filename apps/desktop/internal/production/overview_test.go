@@ -27,7 +27,7 @@ func nextUpIDs(overview Overview) []string {
 	return ids
 }
 
-// The expected order of "Next up" on a fixture book (PRD success metric "Milestone risk", ADR 0400): a chapter held
+// The expected order of "Next up" on a fixture book (PRD success metric "Milestone risk", ADR 0404): a chapter held
 // back by a known problem first, then the other chapters in progress with the least advanced first, then the ones
 // ready to move on, then the ones not started in book order. Finalized chapters and non-narration content never show.
 func TestNextUpOrdersChaptersByTheRiskTheyPutOnTheDeadline(t *testing.T) {
