@@ -6,15 +6,21 @@
 /** Hints are one spelling per name, compared without regard to case: the host keeps the first spelling it sees. */
 export const hasHint = (hints: readonly string[], term: string) => hints.some((hint) => hint.toLowerCase() === term.toLowerCase());
 
+// A term this long already reads as a mistake, not a vocabulary hint (Phase 2, V5). TagInput's own `maxLength` caps a
+// single typed term at the DOM level; this catches the other route a term can arrive by - a multi-term paste, which
+// TagInput commits as one blob for this function to split.
+const MAX_TERM_LENGTH = 64;
+
 /**
  * Splits typed or pasted text into terms. The recognizer takes the hints as one
  * comma-joined string, so a term can never hold a comma; a list is split on commas
- * and line breaks, blanks are dropped, and a repeated name (in any case) counts once.
+ * and line breaks, blanks are dropped, each term is capped at 64 characters, and a
+ * repeated name (in any case) counts once.
  */
 export function splitHintTerms(text: string): string[] {
   return text
     .split(/[,\r\n]+/)
-    .map((term) => term.trim())
+    .map((term) => term.trim().slice(0, MAX_TERM_LENGTH))
     .filter(Boolean)
     .reduce<string[]>((terms, term) => (hasHint(terms, term) ? terms : [...terms, term]), []);
 }

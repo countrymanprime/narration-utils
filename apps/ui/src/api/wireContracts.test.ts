@@ -782,6 +782,16 @@ describe('answers of the mock client for the manuscript, Story Bible and project
     await expect(createMockApi().dawCatalogOpenDownloadPage('reaper')).resolves.toBeUndefined();
     await expect(createMockApi().dawCatalogOpenDownloadPage('not-a-real-daw')).rejects.toThrow(/Unknown DAW catalog entry/);
   });
+
+  it('pronunciation lookup opens for a known source and refuses an unknown one (prep-depth Phase 2)', async () => {
+    const api = createMockApi();
+    await expect(api.pronunciationLookupOpen('forvo', 'Mock Turtle')).resolves.toBeUndefined();
+    await expect(api.pronunciationLookupOpen('youglish', 'café')).resolves.toBeUndefined();
+    await expect(api.pronunciationLookupOpen('merriam_webster', 'croquet')).resolves.toBeUndefined();
+    await expect(api.pronunciationLookupOpen('howjsay', 'croquet')).resolves.toBeUndefined();
+    // @ts-expect-error an unknown source is a build-time error too; the mock also rejects it at runtime.
+    await expect(api.pronunciationLookupOpen('wiktionary', 'croquet')).rejects.toThrow(/Unknown pronunciation lookup source/);
+  });
 });
 
 describe('answers of the mock client for the settings, voice, model, transcript and tracks bindings', () => {
@@ -1429,6 +1439,30 @@ describe('answers of the mock client for the settings, voice, model, transcript 
     expect((await api.measureState()).profile?.id).toBe(copy.id);
   });
 
+  it('the delivery findings the Review page lists carry their rule, as the host pins them and the mock saves them', async () => {
+    const pinned = findingsPageSchema.parse(readGolden('findings-list-delivery-qc.json'));
+    const api = createMockApi();
+    let job = await api.measureAnalyze((await api.measurePickFiles()).paths);
+    while (job.phase === 'running') job = await api.measureState();
+    const saved = await api.findingsList({ category: 'delivery_qc' });
+    expectMatches(findingsPageSchema, saved, 'mock delivery findings on the Review page');
+    expect(saved.total).toBeGreaterThan(0);
+    // The same ids the Delivery page gives them, so a decision on either page is one decision.
+    const judged = new Set(job.files.flatMap((file) => file.findings.map((finding) => finding.id)));
+    expect(saved.findings.every((finding) => judged.has(finding.id))).toBe(true);
+    const shape = (finding: (typeof saved.findings)[number]) => {
+      const evidence = deliveryQcEvidenceSchema.parse(finding.evidence);
+      return [
+        finding.analyzer,
+        finding.category,
+        Boolean(finding.evidence_version),
+        Boolean(evidence.rule_label && evidence.requirement && evidence.profile_name),
+        Boolean(finding.source.file),
+      ];
+    };
+    for (const finding of [...pinned.findings, ...saved.findings]) expect(shape(finding)).toEqual(['measure', 'delivery_qc', true, true, true]);
+  });
+
   it('the delivery profiles answer as the host pins them, and refuse the way the host does', async () => {
     const pinned = deliveryProfilesStateSchema.parse(readGolden('delivery-profiles.json'));
     expect(pinned.profiles[0]).toEqual(MOCK_ACX);
@@ -1981,6 +2015,7 @@ describe('answers of the mock client for the settings, voice, model, transcript 
       'teleprompterMeterStop',
       'teleprompterPause',
       'dawCatalogOpenDownloadPage',
+      'pronunciationLookupOpen',
       'teleprompterSeek',
       'reportClientDiagnostic',
       'systemNotify',

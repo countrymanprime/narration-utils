@@ -208,6 +208,7 @@ export function ReadAloudDialog({ source, entities = NO_ENTITIES, notes = NO_NOT
       onTab={(tab) => setRail((current) => ({ ...current, tab }))}
       onToggle={() => setRail((current) => ({ ...current, open: !current.open }))}
       seekable={session.active}
+      fill={mode === 'booth'}
       entities={chapterEntities}
       notes={chapterNotes}
       selected={current}
@@ -278,6 +279,11 @@ export function ReadAloudDialog({ source, entities = NO_ENTITIES, notes = NO_NOT
             onOpenMark={openMark}
             header={header}
             rail={railElement}
+            speakers={isCredits ? undefined : chapterEntities}
+            onOpenSpeaker={(entity) => {
+              setSelected({ kind: 'entity', entity });
+              setRail({ open: true, tab: 'bible' });
+            }}
           />
         ) : (
           <ReadAlongView session={session} follow={follow} header={header} marks={marks} onOpenMark={openMark} aside={railElement} />

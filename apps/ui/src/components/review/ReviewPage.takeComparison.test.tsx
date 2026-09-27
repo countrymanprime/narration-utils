@@ -34,7 +34,7 @@ function renderPage({ overrides = {}, initial = {} }: { overrides?: Partial<Narr
   render(
     <ApiProvider api={api}>
       <TooltipProvider>
-        <ReviewPage notify={vi.fn()} hasManuscript goToManuscript={vi.fn()} goToStoryBible={vi.fn()} />
+        <ReviewPage notify={vi.fn()} hasManuscript goToManuscript={vi.fn()} goToStoryBible={vi.fn()} goToDelivery={vi.fn()} />
       </TooltipProvider>
     </ApiProvider>,
   );

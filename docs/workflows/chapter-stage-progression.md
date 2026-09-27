@@ -53,4 +53,4 @@ Delivered by the chapter stage recommendations PRD (`docs/prds/chapter-stage-rec
 see [the signal contract](../architecture/stage-recommendations.md), [ADR 0160](../adr/0160-stage-recommendations-are-computed-from-tri-state-signals-by-a-pure-engine.md) and
 [ADR 0161](../adr/0161-stage-decisions-live-in-their-own-sidecar-and-confirm-writes-the-record-before-the-status.md)).
 The end-to-end verdict is validated against synthetic and public-domain material only so far; see
-[ADR 0363](../adr/0363-the-end-to-end-corpus-validation-is-synthetic-and-provisional-until-a-permissioned-project-re-runs-it.md).
+[ADR 0364](../adr/0364-the-end-to-end-corpus-validation-is-synthetic-and-provisional-until-a-permissioned-project-re-runs-it.md).
