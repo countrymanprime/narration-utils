@@ -25,12 +25,14 @@ Storybook title: `Primitives/Tooltip`. Source: `src/components/primitives/Toolti
 - `.storybook/preview.tsx`
 - `src/App.tsx`
 - `src/components/home/AudiobookEstimatePanel.tsx`
+- `src/components/home/ChapterTrackButton.tsx`
 - `src/components/home/Home.tsx`
 - `src/components/home/ImportReview.tsx`
 - `src/components/layout/AppShell.tsx`
 - `src/components/manuscript/EntitySummary.tsx`
 - `src/components/manuscript/Manuscript.tsx`
 - `src/components/manuscript/ReaderCard.tsx`
+- `src/components/primitives/CapabilityGate.tsx`
 - `src/components/primitives/MeterBar.tsx`
 - `src/components/primitives/NavButton.tsx`
 - `src/components/primitives/Pill.tsx`

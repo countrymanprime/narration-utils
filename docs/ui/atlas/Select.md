@@ -29,4 +29,6 @@ Storybook title: `Primitives/Select`. Source: `src/components/primitives/Select.
 - `src/components/storybible/GuideDetail.tsx`
 - `src/components/teleprompter/MicrophoneField.tsx`
 - `src/components/teleprompter/TeleprompterPage.tsx`
+- `src/components/tracks/ChapterSyncPanel.tsx`
 - `src/components/tracks/LinkChaptersDialog.tsx`
+- `src/components/workspace/TransportBar.tsx`

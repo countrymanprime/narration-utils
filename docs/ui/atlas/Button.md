@@ -23,18 +23,26 @@ Storybook title: `Primitives/Button`. Source: `src/components/primitives/Button.
 
 - `src/components/assets/LocalAssetRow.tsx`
 - `src/components/assets/LocalAssets.tsx`
+- `src/components/credits/CreditsSetupBanner.tsx`
+- `src/components/credits/CreditsSetupDialog.tsx`
 - `src/components/delivery/DeliveryPage.tsx`
 - `src/components/delivery/DeliveryProfilePanel.tsx`
 - `src/components/delivery/DiagnosticsTab.tsx`
 - `src/components/delivery/FileRulesPanel.tsx`
 - `src/components/delivery/ReportExportPanel.tsx`
+- `src/components/editing/EditingCandidateRow.tsx`
+- `src/components/editing/EditingCheckPanel.tsx`
+- `src/components/help/ShortcutSheet.tsx`
 - `src/components/home/AudiobookEstimatePanel.tsx`
+- `src/components/home/ChapterTrackPanel.tsx`
 - `src/components/home/ImportReview.tsx`
 - `src/components/home/RecordingCheck.tsx`
 - `src/components/home/RecordingCheckReport.tsx`
+- `src/components/home/RemovedFromRecordingList.tsx`
 - `src/components/layout/LoadError.tsx`
 - `src/components/layout/StartupScreen.tsx`
 - `src/components/manuscript/AddNoteDialog.tsx`
+- `src/components/manuscript/CreditsEntry.tsx`
 - `src/components/manuscript/Manuscript.tsx`
 - `src/components/manuscript/ReaderCard.tsx`
 - `src/components/manuscript/SelectionMenu.tsx`
@@ -60,6 +68,7 @@ Storybook title: `Primitives/Button`. Source: `src/components/primitives/Button.
 - `src/components/settings/DawCatalogPanel.tsx`
 - `src/components/settings/DeliveryProfileEditor.tsx`
 - `src/components/settings/DeliveryProfilesPanel.tsx`
+- `src/components/settings/KeyboardPanel.tsx`
 - `src/components/settings/RetailSamplePanel.tsx`
 - `src/components/settings/Settings.tsx`
 - `src/components/settings/UpdatesPanel.tsx`
@@ -72,7 +81,10 @@ Storybook title: `Primitives/Button`. Source: `src/components/primitives/Button.
 - `src/components/teleprompter/ReaderFlagsPanel.tsx`
 - `src/components/teleprompter/ReadingControlBar.tsx`
 - `src/components/teleprompter/ResumePrompt.tsx`
-- `src/components/teleprompter/TeleprompterPage.tsx`
+- `src/components/teleprompter/UnresolvedCreditsWarning.tsx`
+- `src/components/tracks/ChapterLinksTable.tsx`
+- `src/components/tracks/ChapterSyncConsentDialog.tsx`
+- `src/components/tracks/ChapterSyncPanel.tsx`
 - `src/components/tracks/ChapterTagsDialog.tsx`
 - `src/components/tracks/CleanupToolsDialog.tsx`
 - `src/components/tracks/LinkChaptersDialog.tsx`
@@ -80,3 +92,7 @@ Storybook title: `Primitives/Button`. Source: `src/components/primitives/Button.
 - `src/components/tracks/RenderConfigDialog.tsx`
 - `src/components/tracks/RetakeLanesDialog.tsx`
 - `src/components/tracks/TracksPage.tsx`
+- `src/components/workspace/FlagsPanel.tsx`
+- `src/components/workspace/ScriptView.tsx`
+- `src/components/workspace/TransportBar.tsx`
+- `src/components/workspace/WorkspacePage.tsx`

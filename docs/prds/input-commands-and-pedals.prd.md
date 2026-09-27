@@ -207,7 +207,7 @@ Lanes: **U** = primitives and input (Sonnet), **A** = host (Go settings). ADRs c
 - **Version.** No new binding, so `hostAPIVersion` (61, `app.go:55`) does not change unless Q2 picks a new kind.
 
 **Phase 6.**
-- **Screen.** A `Keyboard` category (label "Keyboard & pedals", global, no `tool`, its own panel). Groups by scope. Uses the `Kbd` primitive from [Studio UI Primitives](studio-ui-primitives.prd.md). Nothing is shown before that primitive lands.
+- **Screen.** A `Keyboard` category (label "Keyboard & pedals", global, no `tool`, its own panel). Groups by scope. Uses the `Kbd` primitive from Studio UI Primitives (PRD deleted, delivered).
 - **Recorder.** A recorder with a live region that announces the captured gesture. Conflict messages come from `findConflicts`. Includes Replace, Unbind, and Reset to defaults.
 - **Host calls.** Save calls get `interactionFeedback.catalog.ts` rows.
 - **Visual rows.** `state-catalog.ts` and `app.drivers.ts` rows: `settings / global-keyboard`, `global-keyboard-recording` and `global-keyboard-conflict`, captured at the reflow width like every Settings state (ADR 0061).
@@ -256,7 +256,7 @@ Lanes: **U** = primitives and input (Sonnet), **A** = host (Go settings). ADRs c
 | 3 | `components/workspace/WorkspacePage.tsx`, `WorkspacePage.test.tsx`, the allowlist | [Edit and Proof Workspace](edit-and-proof-workspace.prd.md) |
 | 4 | `components/teleprompter/ReadingControlBar.tsx`, `ReadAloudDialog.tsx`, `TeleprompterPage` wrapper, the allowlist | [Read Aloud Control Bar](read-aloud-control-bar.prd.md) Phase 7, [Read Aloud Resume from the DAW](read-aloud-resume-from-daw.prd.md), the booth mode PRD |
 | 5 | `config/defaults.json`, `apps/desktop/internal/settings/store.go`, `apps/desktop/app.go`, `tests/fixtures/contracts/settings-*.json`, `apps/ui/src/api/schemas/`, mock settings | Any PRD adding a setting (append-only rows, `fieldSchemas`) |
-| 6 | `components/settings/Settings.tsx`, a new `components/settings/KeyboardPanel.tsx`, `interactionFeedback.catalog.ts`, `tests/visual/state-catalog.ts`, `app.drivers.ts` | Any new Settings category. [Studio UI Primitives](studio-ui-primitives.prd.md) (`Kbd`) |
+| 6 | `components/settings/Settings.tsx`, a new `components/settings/KeyboardPanel.tsx`, `interactionFeedback.catalog.ts`, `tests/visual/state-catalog.ts`, `app.drivers.ts` | Any new Settings category. Studio UI Primitives (PRD deleted, delivered; `Kbd`) |
 | 7 | `App.tsx` (mount), a new `components/help/ShortcutSheet.tsx`, `tests/aria/dialogs.spec.ts` and snapshots, `state-catalog.ts` | Phase 2 and every `App.tsx` stream. Any dialog aria snapshot change |
 | 8 | `docs/research/` (new note) | None |
 | 9 | `apps/ui/src/input/midi*`, `docs/architecture/threat-model.md`, `SECURITY.md`, possibly a host permission handler | Any PRD editing the threat model's webview rows |

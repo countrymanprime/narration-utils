@@ -18,6 +18,9 @@ Storybook title: `Primitives/SlideOver`. Source: `src/components/primitives/Slid
 
 ## Used by
 
+- `src/components/editing/EditingCheckPanel.tsx`
+- `src/components/home/ChapterTrackPanel.tsx`
+- `src/components/home/RecordingCheck.tsx`
 - `src/components/manuscript/Manuscript.tsx`
 - `src/components/stages/StageEvidence.tsx`
 - `src/components/storybible/GuideDetail.tsx`
