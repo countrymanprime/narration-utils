@@ -87,3 +87,26 @@ func TestANewEngineIsOneRowAndPassesTheSuiteWithNoOtherEdit(t *testing.T) {
 		t.Errorf("registering on a new registry changed the program's: %v", got)
 	}
 }
+
+func TestAssetKindNamesTheCatalogOfARowAndNothingForAnUnknownOne(t *testing.T) {
+	for name, want := range map[string]string{asrport.Whisper: "whisper", asrport.Moonshine: "moonshine", "vosk": ""} {
+		if got := asrport.AssetKind(name); got != want {
+			t.Errorf("AssetKind(%q) = %q, want %q", name, got, want)
+		}
+	}
+}
+
+func TestOnlyMoonshineNeedsAnInstalledModel(t *testing.T) {
+	// Moonshine loads only from a verified catalog install (ADR 0107); Whisper may load a model by name.
+	for name, want := range map[string]bool{asrport.Whisper: false, asrport.Moonshine: true, "vosk": false} {
+		if got := asrport.NeedsInstalledModel(name); got != want {
+			t.Errorf("NeedsInstalledModel(%q) = %v, want %v", name, got, want)
+		}
+	}
+	// A row whose engine does not say (a fake, or a new engine) may load by name.
+	engines := asrport.NewRegistry()
+	engines.Register(port.Entry[asrport.Engine]{Name: "parakeet", Descriptor: port.Descriptor{Label: "Parakeet"}, New: func() asrport.Engine { return asrporttest.NewFake("parakeet", "parakeet") }})
+	if asrport.NeedsInstalledModelIn(engines, "parakeet") {
+		t.Error("an engine that does not implement InstalledModelOnly must not need an installed model")
+	}
+}
