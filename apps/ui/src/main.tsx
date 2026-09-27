@@ -11,7 +11,7 @@ import type { StageUnknownCause } from './api/contracts/stages';
 import { MOCK_RESUME_SEEDS } from './api/resumeMockSeed';
 import { MOCK_REAPER_INPUT_SEEDS, MOCK_REAPER_SEEDS } from './api/teleprompterMock';
 import { ThemeProvider } from './theme/ThemeContext';
-import { CommandRouter } from './input/router';
+import { LiveCommandRouter } from './input/LiveCommandRouter';
 import './fonts';
 import './styles.css';
 
@@ -368,11 +368,11 @@ createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <ThemeProvider>
       <ApiProvider api={api}>
-        {/* Registry core only (input-commands-and-pedals.prd.md Phase 1): mounted so it is live for later phases to
-            build on, but nothing calls useCommand or CommandScope yet, so this changes no behaviour today. */}
-        <CommandRouter>
+        {/* Wired to the DAW port's live transport state (input-commands-and-pedals.prd.md Phase 10), so a `noisy`
+            command (workspace.play) goes silent while REAPER reports recording (PRD Q5). */}
+        <LiveCommandRouter>
           <App />
-        </CommandRouter>
+        </LiveCommandRouter>
       </ApiProvider>
     </ThemeProvider>
   </React.StrictMode>,

@@ -53,4 +53,10 @@ export const appFeedback: Record<string, FeedbackRow> = {
   'src/useCapability.ts::dawCapabilities#1': row('mount', 'file-io', 'na', 'na', 'event', 'silent', 'na', 'exempt', 'Seeds the entry useCapability exposes before the very next daw_capabilities_changed event takes over; a failed seed just leaves the capability unsupported/unavailable a moment longer, the same as an unknown capability.'),
   'src/useCapability.ts::subscribeDawCapabilities#1': subscription("The DAW port's capability report (DAW port PRD Phase 4): every caller of useCapability for the same or a different capability reads this one subscription."),
 
+  // useDawRecording.ts (input-commands-and-pedals.prd.md Phase 10): the DAW port's live transport state, read only
+  // by LiveCommandRouter to silence `noisy` commands while REAPER records (PRD Q5). Not narrator-facing on its own -
+  // the router's own status region, not a toast, is how a failed press is explained - so this is a background feed,
+  // exempt like every other subscribe-based hook.
+  'src/input/useDawRecording.ts::subscribeDawTransport#1': subscription('The DAW port\'s live transport state (DAW port PRD Phase 9, daw_transport_changed): every gesture the router resolves reads this one subscription\'s current value.'),
+
 };
