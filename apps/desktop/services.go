@@ -5,6 +5,7 @@ import (
 	"github.com/countrymanprime/narration-utils/shell/internal/cleanuptools"
 	"github.com/countrymanprime/narration-utils/shell/internal/coverage"
 	"github.com/countrymanprime/narration-utils/shell/internal/daw"
+	"github.com/countrymanprime/narration-utils/shell/internal/dawport"
 	"github.com/countrymanprime/narration-utils/shell/internal/editing"
 	"github.com/countrymanprime/narration-utils/shell/internal/findings"
 	"github.com/countrymanprime/narration-utils/shell/internal/guide"
@@ -52,6 +53,9 @@ type hostServices struct {
 	actions *bridge.Actions
 	// navigation is the Review page's REAPER navigator (bindings_navigation.go); standalone when there is no bridge.
 	navigation *findingNavigation
+	// dawPortResolver is the DAW port's resolver for the roles bindings_navigation.go, readaloudreaper.go,
+	// teleprompterinput.go and chapterregions.go ask for (DAW port PRD P5a, ADR 0300); nil with no bridge client.
+	dawPortResolver *dawport.Resolver
 }
 
 // services returns a snapshot of the swappable services. It is the only way a
@@ -81,25 +85,26 @@ func (h *Host) services() hostServices {
 	h.mu.RLock()
 	defer h.mu.RUnlock()
 	return hostServices{
-		config:       h.config,
-		findings:     h.findings,
-		guide:        h.guide,
-		lineIdentity: h.lineIdentity,
-		manuscript:   h.manuscript,
-		pickups:      h.pickups,
-		projectState: h.projectState,
-		renderConfig: h.renderConfig,
-		cleanupTools: h.cleanupTools,
-		retakeLanes:  h.retakeLanes,
-		settings:     h.settings,
-		teleprompter: h.teleprompter,
-		transcript:   h.transcript,
-		coverage:     h.coverage,
-		stages:       h.stages,
-		editing:      h.editing,
-		reachability: h.reachability,
-		bridge:       h.bridge,
-		actions:      h.actions,
-		navigation:   h.navigation,
+		config:          h.config,
+		findings:        h.findings,
+		guide:           h.guide,
+		lineIdentity:    h.lineIdentity,
+		manuscript:      h.manuscript,
+		pickups:         h.pickups,
+		projectState:    h.projectState,
+		renderConfig:    h.renderConfig,
+		cleanupTools:    h.cleanupTools,
+		retakeLanes:     h.retakeLanes,
+		settings:        h.settings,
+		teleprompter:    h.teleprompter,
+		transcript:      h.transcript,
+		coverage:        h.coverage,
+		stages:          h.stages,
+		editing:         h.editing,
+		reachability:    h.reachability,
+		bridge:          h.bridge,
+		actions:         h.actions,
+		navigation:      h.navigation,
+		dawPortResolver: h.dawPortResolver,
 	}
 }

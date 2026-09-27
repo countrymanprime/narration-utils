@@ -9,6 +9,7 @@ import (
 
 	"github.com/countrymanprime/narration-utils/shell/internal/bridge"
 	"github.com/countrymanprime/narration-utils/shell/internal/daw"
+	"github.com/countrymanprime/narration-utils/shell/internal/dawport"
 	"github.com/countrymanprime/narration-utils/shell/internal/findings"
 )
 
@@ -269,14 +270,19 @@ func TestNavigatingAFindingTheProjectDoesNotHaveIsAnError(t *testing.T) {
 
 // configureLocked builds the navigator on the session's bridge client, next to the Transcript service, and a launch
 // with no session directory (the app opened on its own) is standalone.
+// TestConfigureBuildsTheNavigatorOnTheSessionsBridge is the "role comes from the resolver" test the DAW port PRD's
+// migration risk table calls for (P5a, ADR 0300): findingNavigation.navigator is now navigatorRole, resolved through
+// h.dawPortResolver rather than wrapping the session's bridge client itself, and that resolver's adapter is REAPER's
+// only for a real session (p5aAdapter, over the same client configureLocked opened).
 func TestConfigureBuildsTheNavigatorOnTheSessionsBridge(t *testing.T) {
 	for _, check := range []struct {
 		name       string
 		sessionDir string
 		standalone bool
+		wantKind   dawport.Kind
 	}{
-		{"REAPER launch", t.TempDir(), false},
-		{"standalone launch", "", true},
+		{"REAPER launch", t.TempDir(), false, dawport.KindREAPER},
+		{"standalone launch", "", true, dawport.KindNone},
 	} {
 		host := newStressHost(t)
 		next := host.config
@@ -285,12 +291,20 @@ func TestConfigureBuildsTheNavigatorOnTheSessionsBridge(t *testing.T) {
 		host.configureLocked(next)
 		host.mu.Unlock()
 
-		navigation := host.services().navigation
+		svc := host.services()
+		navigation := svc.navigation
 		if navigation == nil {
 			t.Fatalf("%s: no navigation", check.name)
 		}
-		if _, ok := navigation.navigator.(*bridge.Navigator); !ok || navigation.standalone != check.standalone {
+		role, ok := navigation.navigator.(navigatorRole)
+		if !ok || navigation.standalone != check.standalone {
 			t.Fatalf("%s: navigator %T, standalone %v", check.name, navigation.navigator, navigation.standalone)
+		}
+		if role.resolver != svc.dawPortResolver {
+			t.Fatalf("%s: navigator's role does not come from svc.dawPortResolver", check.name)
+		}
+		if got := role.resolver.Kind(); got != check.wantKind {
+			t.Fatalf("%s: resolver kind %v, want %v", check.name, got, check.wantKind)
 		}
 	}
 }

@@ -9,6 +9,8 @@ import (
 
 	"github.com/countrymanprime/narration-utils/shell/internal/bridge"
 	"github.com/countrymanprime/narration-utils/shell/internal/contractfile"
+	"github.com/countrymanprime/narration-utils/shell/internal/dawport"
+	"github.com/countrymanprime/narration-utils/shell/internal/dawport/dawporttest"
 )
 
 // fakeTrackStates stands in for bridge.Actions.ChapterTrackState (whose own tests drive a fake REAPER through the file
@@ -194,4 +196,33 @@ func TestContractReadAloudReaperStates(t *testing.T) {
 	}
 	answers["no_link"] = readState(t, host, &fakeTrackStates{}, ids[1])
 	contractfile.Check(t, "read-aloud-reaper-states", answers)
+}
+
+// TestTrackStateReaderFromComesFromTheResolver is the "role comes from the resolver" test the DAW port PRD's migration
+// risk table calls for (P5a, ADR 0300): ReadAloudReaperState and TeleprompterReaperInput both source their reader
+// through trackStateReaderFrom, which asks svc.dawPortResolver for the Track state role instead of holding
+// svc.actions directly.
+func TestTrackStateReaderFromComesFromTheResolver(t *testing.T) {
+	fake := dawporttest.NewFake(dawport.KindREAPER, dawporttest.Levels(dawport.Supported))
+	resolver := dawport.NewResolver(dawport.ResolverConfig{
+		Adapter: fake,
+		Runtime: func() dawport.Runtime { return dawport.Runtime{Bridge: true, Reachable: true} },
+	})
+
+	reader := trackStateReaderFrom(hostServices{dawPortResolver: resolver})
+	if reader == nil {
+		t.Fatal("no reader from a resolver with a live adapter")
+	}
+	if _, err := reader.ChapterTrackState(context.Background(), "guid"); err != nil {
+		t.Fatalf("ChapterTrackState: %v", err)
+	}
+	if calls := fake.Calls(); len(calls) != 1 || calls[0] != "track_state.ChapterTrackState" {
+		t.Fatalf("the reader did not come from the resolver: calls = %v", calls)
+	}
+}
+
+func TestTrackStateReaderFromIsNilWithoutAResolver(t *testing.T) {
+	if reader := trackStateReaderFrom(hostServices{}); reader != nil {
+		t.Fatalf("reader = %v, want nil with no resolver", reader)
+	}
 }
