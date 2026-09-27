@@ -1,10 +1,12 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { useApi } from '../../api/ApiContext';
+import { useCapability } from '../../useCapability';
 import type { CoverageJudgement, CoverageReport, CoverageRegionKind, ManuscriptChapter } from '../../types';
 import { Button } from '../primitives/Button';
 import { Disclosure } from '../primitives/Disclosure';
 import { StatTile } from '../primitives/StatTile';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../primitives/Table';
+import { PickupListCount } from './PickupListCount';
 import { REGION_LABEL, describePosition, describeRegion, formatAudioTime, paragraphRefs, plural, recordedTo, verdict } from './recordingCheckText';
 import { TakeReviewPickups } from './TakeReviewPickups';
 
@@ -71,6 +73,21 @@ export function RecordingCheckReport({
       current = false;
     };
   }, [api, chapter.id]);
+  // RS5 B (recording-check-summary.prd.md Phase 3): the proofer's pickup list, project-wide - the same figure
+  // PickupsDialog shows, kept current for as long as the panel is open. It needs REAPER running (the `pickups`
+  // capability), so a background count is only started once the capability report says it is available; failing
+  // silently otherwise, like otherPickups above (SILENT_CATCHES).
+  const pickupsCapability = useCapability('pickups');
+  const [pickupsRemaining, setPickupsRemaining] = useState<number>();
+  useEffect(() => {
+    if (!pickupsCapability.available) {
+      setPickupsRemaining(undefined);
+      return;
+    }
+    const unsubscribe = api.subscribePickups((state) => setPickupsRemaining(state.remaining));
+    void api.pickupsCount().catch(() => undefined);
+    return unsubscribe;
+  }, [api, pickupsCapability.available]);
   const to = recordedTo(report, chapter);
   const presentPercent = report.bodyTokens > 0 ? Math.round((report.presentTokens / report.bodyTokens) * 100) : 100;
   const pace = report.playedSeconds > 0 ? Math.round((report.presentTokens / report.playedSeconds) * 60) : undefined;
@@ -150,6 +167,7 @@ export function RecordingCheckReport({
           </ul>
         )}
         <TakeReviewPickups count={otherPickups ?? 0} />
+        <PickupListCount available={pickupsCapability.available} remaining={pickupsRemaining} />
       </section>
       {report.paragraphs.length > 0 && (
         <Disclosure

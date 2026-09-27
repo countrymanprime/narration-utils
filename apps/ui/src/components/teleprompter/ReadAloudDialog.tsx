@@ -5,6 +5,7 @@ import { useCapability } from '../../useCapability';
 import { CommandScope } from '../../input/router';
 import { ConfirmDialog } from '../primitives/ConfirmDialog';
 import { Dialog } from '../primitives/Dialog';
+import { BoothView } from './BoothView';
 import { ReadAlongView } from './ReadAlongView';
 import { ReadingControlBar } from './ReadingControlBar';
 import { RecordInReaperConfirm } from './RecordInReaperConfirm';
@@ -46,6 +47,13 @@ type Props = {
   onClose: () => void;
   /** The credits' C6 warning's "Fill them in Settings" (Phase 2, MC2): only ever shown, and only ever called, in credits mode. */
   onFixCredits?: () => void;
+  /**
+   * `'booth'` (booth-mode-and-companion-panel.prd.md Phase 1, Open Question 2): the same `Dialog size="full"`, session,
+   * rail and Escape-confirm-while-listening behaviour, but `BoothView`'s `FocusShell` layout in place of `ReadAlongView`'s
+   * own aside grid and the non-scrolling `ReadingControlBar` footer - a second entry point into the same session, not a
+   * second session. Defaults to the normal dialog.
+   */
+  mode?: 'read' | 'booth';
 };
 
 /** The entities the marks point at, once each, in the order they first appear in the chapter. */
@@ -78,7 +86,7 @@ const byReadingOrder = (a: ManuscriptNote, b: ManuscriptNote): number => a.parag
  * first rather than silently stopping or silently leaving it running. "Fill them in Settings" (credits mode) takes the
  * same confirm before leaving.
  */
-export function ReadAloudDialog({ source, entities = NO_ENTITIES, notes = NO_NOTES, onClose, onFixCredits }: Props) {
+export function ReadAloudDialog({ source, entities = NO_ENTITIES, notes = NO_NOTES, onClose, onFixCredits, mode = 'read' }: Props) {
   const isCredits = source.kind === 'credits';
   const chapter = source.kind === 'chapter' ? source.chapter : undefined;
   const session = useTeleprompterSession({
@@ -192,72 +200,88 @@ export function ReadAloudDialog({ source, entities = NO_ENTITIES, notes = NO_NOT
   // for the same character. Credits have no subtitle, so this is just "Read aloud: Opening credits" for them.
   const title = chapterName(source.kind === 'chapter' ? source.chapter : { title: CREDITS_LABEL[source.credits] }, context('Read aloud'));
 
+  // Built once and handed to whichever layout renders it (booth-mode-and-companion-panel.prd.md Phase 1): the normal
+  // dialog's own `aside` grid, or `FocusShell`'s `rail` landmark in booth mode. Same rail, same state, either way.
+  const railElement = (
+    <ReaderRail
+      state={rail}
+      onTab={(tab) => setRail((current) => ({ ...current, tab }))}
+      onToggle={() => setRail((current) => ({ ...current, open: !current.open }))}
+      seekable={session.active}
+      entities={chapterEntities}
+      notes={chapterNotes}
+      selected={current}
+      onSelect={setSelected}
+      flagPanel={{
+        flags,
+        visibility,
+        onVisibility: (kind, shown) => setVisibility((current) => ({ ...current, [kind]: shown })),
+        dismissed,
+        onDismiss: dismiss,
+        textOf: (flag) => flagText(rows, flag),
+        save: keepFlags.state,
+      }}
+    />
+  );
+  // The resume prompt (read-aloud-resume-from-daw.prd.md Phase 1) sits in the text column's header slot, on the
+  // text's own axis (read-aloud-control-bar.prd.md Phase 1): mounted for the dialog's whole life, not remounted
+  // between sessions, so it settles once (on a choice or a session starting) and stays gone. Credits (MC9) has no
+  // chapter to look up a track for, so the C6 warning takes this slot instead - and only while a token is unresolved.
+  const header =
+    source.kind === 'chapter' ? (
+      <ResumePrompt
+        chapterId={source.chapter.id}
+        model={session.model}
+        active={session.active}
+        onStartWord={(word, label) => {
+          session.setStartWord(word);
+          setStartLabel(label);
+        }}
+      />
+    ) : source.preview.unresolved.length > 0 ? (
+      <UnresolvedCreditsWarning kind={source.credits} tokens={source.preview.unresolved} onFix={onFixCredits && requestFixCredits} />
+    ) : undefined;
+
   return (
     // Booth scope (Phase 4, input-commands-and-pedals.prd.md): active while this dialog is open, so `reading.toggle`
-    // (Space, `ReadingControlBar`) resolves here ahead of `page` and `global`, matching ADR 0196 unchanged.
+    // (Space, `ReadingControlBar` or, in booth mode, `BoothView`) resolves here ahead of `page` and `global`, matching
+    // ADR 0196 unchanged.
     <CommandScope kind="booth">
       <Dialog
         title={title}
         size="full"
         onClose={requestClose}
         actions={null}
+        // Booth mode's commands live inside BoothView's own FocusShell `commands` region, not this non-scrolling
+        // footer (booth-mode-and-companion-panel.prd.md Phase 2): the normal dialog keeps ReadingControlBar here.
         footer={
-          <ReadingControlBar
+          mode === 'read' ? (
+            <ReadingControlBar
+              session={session}
+              follow={follow}
+              startPoint={session.startWord !== null ? { label: startLabel ?? 'a chosen word', onClear: () => setStartWord(null) } : undefined}
+              chapterId={source.kind === 'chapter' ? source.chapter.id : undefined}
+              chapterTitle={chapterTitle}
+              recording={recording}
+            />
+          ) : undefined
+        }
+      >
+        {mode === 'booth' ? (
+          <BoothView
             session={session}
             follow={follow}
-            startPoint={session.startWord !== null ? { label: startLabel ?? 'a chosen word', onClear: () => setStartWord(null) } : undefined}
             chapterId={source.kind === 'chapter' ? source.chapter.id : undefined}
             chapterTitle={chapterTitle}
             recording={recording}
+            marks={marks}
+            onOpenMark={openMark}
+            header={header}
+            rail={railElement}
           />
-        }
-      >
-        <ReadAlongView
-          session={session}
-          follow={follow}
-          // The resume prompt (read-aloud-resume-from-daw.prd.md Phase 1) sits in the text column's header slot, on the
-          // text's own axis (read-aloud-control-bar.prd.md Phase 1): mounted for the dialog's whole life, not remounted
-          // between sessions, so it settles once (on a choice or a session starting) and stays gone. Credits (MC9) has no
-          // chapter to look up a track for, so the C6 warning takes this slot instead - and only while a token is unresolved.
-          header={
-            source.kind === 'chapter' ? (
-              <ResumePrompt
-                chapterId={source.chapter.id}
-                model={session.model}
-                active={session.active}
-                onStartWord={(word, label) => {
-                  session.setStartWord(word);
-                  setStartLabel(label);
-                }}
-              />
-            ) : source.preview.unresolved.length > 0 ? (
-              <UnresolvedCreditsWarning kind={source.credits} tokens={source.preview.unresolved} onFix={onFixCredits && requestFixCredits} />
-            ) : undefined
-          }
-          marks={marks}
-          onOpenMark={openMark}
-          aside={
-            <ReaderRail
-              state={rail}
-              onTab={(tab) => setRail((current) => ({ ...current, tab }))}
-              onToggle={() => setRail((current) => ({ ...current, open: !current.open }))}
-              seekable={session.active}
-              entities={chapterEntities}
-              notes={chapterNotes}
-              selected={current}
-              onSelect={setSelected}
-              flagPanel={{
-                flags,
-                visibility,
-                onVisibility: (kind, shown) => setVisibility((current) => ({ ...current, [kind]: shown })),
-                dismissed,
-                onDismiss: dismiss,
-                textOf: (flag) => flagText(rows, flag),
-                save: keepFlags.state,
-              }}
-            />
-          }
-        />
+        ) : (
+          <ReadAlongView session={session} follow={follow} header={header} marks={marks} onOpenMark={openMark} aside={railElement} />
+        )}
       </Dialog>
       {confirmStop && (
         <ConfirmDialog

@@ -29,6 +29,12 @@ type Props = {
    * key then lives in the rail instead of above the text. Absent (the standalone page): the layout is as before.
    */
   aside?: ReactNode;
+  /**
+   * Booth mode (booth-mode-and-companion-panel.prd.md Phase 1): the rail lives in `FocusShell`'s own landmark instead
+   * of this view's grid (so `aside` stays unset, keeping this view to its bare `main` column), but the inline `ReaderKey`
+   * above the text must still give way to the rail's own Key tab, the same as it does when `aside` is set.
+   */
+  hideKey?: boolean;
 };
 
 /**
@@ -38,7 +44,7 @@ type Props = {
  * since read-aloud-control-bar.prd.md Phase 3 - is Start/Stop, the microphone or the engine/model choice: those moved
  * into `ReadingControlBar`, which the caller renders outside this view (a `Dialog` footer, or the page's own sticky bar).
  */
-export function ReadAlongView({ session: t, follow, header, marks, onOpenMark, aside }: Props) {
+export function ReadAlongView({ session: t, follow, header, marks, onOpenMark, aside, hideKey = false }: Props) {
   const main = (
     <div className="mx-auto w-full max-w-3xl min-w-0 space-y-4">
       {header}
@@ -49,7 +55,7 @@ export function ReadAlongView({ session: t, follow, header, marks, onOpenMark, a
       )}
       {t.rows.length > 0 && (
         <Panel>
-          {!aside && <ReaderKey seekable={t.active} />}
+          {!aside && !hideKey && <ReaderKey seekable={t.active} />}
           <div className={aside ? '' : 'mt-3'}>
             <ReaderText
               rows={t.rows}

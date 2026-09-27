@@ -28,7 +28,7 @@ afterEach(() => {
 function renderDialog(
   overrides: Partial<NarrationApi> = {},
   onClose = vi.fn(),
-  content: { entities?: GuideEntity[]; notes?: ManuscriptNote[]; source?: ReadAloudSource; onFixCredits?: () => void } = {},
+  content: { entities?: GuideEntity[]; notes?: ManuscriptNote[]; source?: ReadAloudSource; onFixCredits?: () => void; mode?: 'read' | 'booth' } = {},
   daw?: DawMockSeed,
 ) {
   const eventListeners = new Set<(event: TeleprompterEvent) => void>();
@@ -56,6 +56,7 @@ function renderDialog(
           notes={content.notes}
           onClose={onClose}
           onFixCredits={content.onFixCredits}
+          mode={content.mode}
         />
       </CommandRouter>
     </ApiProvider>,
@@ -694,5 +695,32 @@ describe('Record in REAPER (Phase 7)', () => {
     await user.click(within(confirm).getByRole('button', { name: 'Stop and close' }));
     expect(teleprompterStop).toHaveBeenCalled();
     await waitFor(() => expect(readAloudRecordStop).toHaveBeenCalled());
+  });
+});
+
+describe('ReadAloudDialog, mode="booth" (booth-mode-and-companion-panel.prd.md Phase 1)', () => {
+  it("renders BoothView's FocusShell layout in place of the normal control bar, on the same session", async () => {
+    renderDialog({}, vi.fn(), { mode: 'booth' });
+    expect(await screen.findByRole('toolbar', { name: 'Booth commands' })).toBeTruthy();
+    expect(screen.queryByRole('toolbar', { name: 'Reading controls' })).toBeNull();
+    // The rail (Key, Notes, Story bible) is the same content, now FocusShell's own landmark rather than the dialog's aside grid.
+    expect(screen.getByRole('complementary', { name: 'Rail' })).toBeTruthy();
+  });
+
+  it("keeps the dialog's own header Close button and Escape-confirms-while-listening behaviour", async () => {
+    const user = userEvent.setup();
+    const teleprompterStart = vi.fn().mockResolvedValue({ status: 'started' });
+    const onClose = vi.fn();
+    const { setState } = renderDialog({ teleprompterStart }, onClose, { mode: 'booth' });
+    await user.click(await screen.findByRole('button', { name: 'Microphone: not chosen' }));
+    await user.selectOptions(await screen.findByRole('combobox', { name: 'Microphone' }), DEVICE_NAME);
+    await user.click(screen.getByRole('button', { name: 'Play' }));
+    await waitFor(() => expect(teleprompterStart).toHaveBeenCalled());
+    setState({ phase: 'running', chapter: CHAPTER.id });
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Stop reading' }).hasAttribute('disabled')).toBe(false));
+
+    await user.click(screen.getByRole('button', { name: 'Close' }));
+    expect(await screen.findByRole('alertdialog', { name: 'Stop reading?' })).toBeTruthy();
+    expect(onClose).not.toHaveBeenCalled();
   });
 });
