@@ -35,6 +35,7 @@ import { createReaperActionsMock } from './mockHost/reaperActions';
 import { createChapterTracksMock } from './mockHost/chapterTracks';
 import { createStoryBibleMock } from './mockHost/storyBible';
 import { createSystemMock, invalidPayloadOverrides } from './mockHost/system';
+import { createPronunciationLookupMock } from './mockHost/pronunciationLookup';
 
 export { applyMixedManuscriptMock } from './mockHost/manuscript';
 export type { MockUpdateSeed } from './mockHost/update';
@@ -173,6 +174,7 @@ export function createMockApi(
     ...findings,
     ...daw,
     ...providers,
+    ...createPronunciationLookupMock(),
   };
   const api = initial.invalidPayload ? { ...base, ...invalidPayloadOverrides(initial.invalidPayload, base) } : base;
   return { ...api, ...overrides };
