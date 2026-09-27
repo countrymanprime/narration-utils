@@ -13,6 +13,7 @@ import { MappingConfirm } from '../mapping/MappingConfirm';
 import { useReaperStatus } from '../review/useReaperStatus';
 import { formatWhen } from '../home/recordingCheckText';
 import { formatAge, SIGNAL_STATE_LABEL } from '../stages/stageText';
+import { CleanupAction } from './CleanupAction';
 import { EditingCandidateRow } from './EditingCandidateRow';
 import { EDITING_CLASSES, EDITING_CLASS_LABEL, EDITING_SIGNAL_ID, PROCESSED_AUDIO_CAVEAT, candidateClass, sortCandidates } from './editingCheckText';
 
@@ -325,6 +326,10 @@ export function EditingCheckPanel({ chapter, notify, close }: { chapter: Manuscr
             />
           ))}
         </div>
+
+        {/* Silence trim and item gain (booth-actions-enablement PRD Phase 5): its own row, appended per that PRD's
+         * Parallel-session table ("shares the Editing view; append its own row, do not restructure it"). */}
+        <CleanupAction chapterId={chapter.id} notify={notify} />
       </div>
     </SlideOver>
   );
