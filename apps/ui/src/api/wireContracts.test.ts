@@ -6,6 +6,7 @@ import { DESKTOP_HOST_API_VERSION } from '../hostApi';
 import { createMockApi } from './mockApi';
 import type { ProjectStateState } from './contracts/projectstate';
 import { WIRE_TAKE_REVIEW_FINDINGS, WIRE_TRACKS_PROJECT, WIRE_TRANSCRIPT, editingCandidateFor } from './mockFixtures';
+import { prepMarkupChapterSchema, prepMarkupSpanSchema } from './schemas/prepMarkup';
 import { cleanupApplyResultSchema, cleanupPreviewResultSchema, levelMatchApplyResultSchema, levelMatchPreviewResultSchema } from './schemas/cleanup';
 import { productionPlanSchema } from './schemas/production';
 import { WIRE_TAKE_COMPARISON_FINDING } from './takeComparisonMock';
@@ -92,6 +93,7 @@ import {
   teleprompterFlagFindingsSchema,
   teleprompterReadingSchema,
   teleprompterLocateResultSchema,
+  teleprompterResumeFollowSchema,
   teleprompterPunchResultSchema,
   teleprompterStartResultSchema,
   teleprompterStateSchema,
@@ -428,6 +430,20 @@ describe('answers of the mock client (it must pass the schemas the real host ans
     await expect(api.teleprompterLocate('not-a-real-chapter')).rejects.toThrow();
   });
 
+  it('the TeleprompterResumeFollow and Unfollow answers (read-aloud-resume-from-daw PRD Phase 5)', async () => {
+    const api = createMockApi();
+    const chapters = await api.manuscriptChapters();
+    const tracked = await api.teleprompterResumeFollow(chapters[0].id);
+    expectMatches(teleprompterResumeFollowSchema, tracked, 'mock resume follow, a tracked chapter');
+    expect(tracked).toEqual({ following: false, reason: 'unavailable' });
+    const untracked = await api.teleprompterResumeFollow(chapters[chapters.length - 1].id);
+    expectMatches(teleprompterResumeFollowSchema, untracked, 'mock resume follow, no track');
+    expect(untracked).toEqual({ following: false, reason: 'no_track' });
+    expectMatches(teleprompterResumeFollowSchema, await api.teleprompterResumeUnfollow(), 'mock resume unfollow');
+    await expect(api.teleprompterResumeFollow(chapters[0].id, '{00000000-0000-4000-8000-000000000000}')).rejects.toThrow(/not in the selected/);
+    await expect(api.teleprompterResumeFollow('not-a-real-chapter')).rejects.toThrow();
+  });
+
   // `?mockResume=` (main.tsx) reaches every resume card state on the first chapter (teleprompter-manuscript-integration.prd.md
   // Phase 10); each answer is still one the real host could send.
   it.each([
@@ -598,6 +614,23 @@ describe('answers of the mock client for the manuscript, Story Bible and project
     expect(restored.chapter.removedFromRecording).toBeUndefined();
     expect(restored.clearedLinks).toEqual([]);
     await expect(api.manuscriptSetChapterKind('no-such-chapter', 'reference')).rejects.toThrow('unknown manuscript chapter');
+  });
+
+  it('the PrepMarkupList, PrepMarkupSave and PrepMarkupDelete answers, fresh and stale', async () => {
+    const api = createMockApi({}, { prepMarkup: [{ chapter: 0, line: 0, words: 'Alice', kind: 'stress', stale: { reason: 'text_changed', was: 'Queen' } }] });
+    const chapter = (await api.manuscriptChapters())[0];
+    const paragraph = (await api.manuscriptParagraphs(chapter?.id ?? ''))[1];
+    const saved = await api.prepMarkupSave(chapter?.id ?? '', paragraph?.id ?? '', 0, 5, 'character_tag', ' Alice ');
+    expectMatches(prepMarkupSpanSchema, saved, 'mock markup span');
+    expect(saved).toMatchObject({ stale: false, value: 'Alice', paragraph: paragraph?.index });
+    const listed = await api.prepMarkupList(chapter?.id ?? '');
+    expectMatches(prepMarkupChapterSchema, listed, 'mock markup list');
+    expect(listed.spans.map((span) => span.stale)).toEqual([true, false]);
+    expect(listed.spans[0]).toMatchObject({ staleReason: 'text_changed', anchorText: 'Queen' });
+    await api.prepMarkupDelete(chapter?.id ?? '', listed.spans[0].id);
+    expect((await api.prepMarkupList(chapter?.id ?? '')).spans).toHaveLength(1);
+    await expect(api.prepMarkupSave(chapter?.id ?? '', 'no-such-line', 0, 1, 'stress', '')).rejects.toThrow('no longer in this chapter');
+    await expect(api.prepMarkupSave(chapter?.id ?? '', paragraph?.id ?? '', 0, 5, 'pause', '')).rejects.toThrow('short or long');
   });
 
   it('a created note and bookmark', async () => {
@@ -1277,16 +1310,16 @@ describe('answers of the mock client for the settings, voice, model, transcript 
     expect(turnedOff.capabilities.punch).toMatchObject({ available: false, reason: 'turned_off' });
   });
 
-  it('providerCapabilities matches the host goldens on Windows and macOS (provider-ports PRD Phase 14)', async () => {
+  it('providerCapabilities matches the host goldens on Windows and on the Linux development host (provider-ports PRD Phase 14)', async () => {
     const windows = await createMockApi().providerCapabilities();
     expectMatches(providerCapabilitiesSchema, windows, 'mock provider capabilities (default Windows seed)');
     expect(windows).toEqual(readGolden('provider-capabilities-windows.json'));
 
-    const darwin = await createMockApi({}, { providers: { platform: 'darwin' } }).providerCapabilities();
-    expectMatches(providerCapabilitiesSchema, darwin, 'mock provider capabilities (macOS)');
-    expect(darwin).toEqual(readGolden('provider-capabilities-darwin.json'));
-    expect(darwin.asr.moonshine?.support).toMatchObject({ available: false, reason: 'unsupported' });
-    expect(darwin.capture.dshow?.default).toBe(false);
+    const linux = await createMockApi({}, { providers: { platform: 'linux' } }).providerCapabilities();
+    expectMatches(providerCapabilitiesSchema, linux, 'mock provider capabilities (Linux development host)');
+    expect(linux).toEqual(readGolden('provider-capabilities-linux.json'));
+    expect(linux.asr.moonshine?.support).toMatchObject({ available: false, reason: 'unsupported' });
+    expect(linux.capture.dshow?.default).toBe(false);
   });
 
   it('providerCapabilities reports an installed count only for an asset kind with a catalog', async () => {
@@ -1895,6 +1928,8 @@ describe('answers of the mock client for the settings, voice, model, transcript 
       'manuscriptSetChapterKind',
       'noteList',
       'noteCreate',
+      'prepMarkupList',
+      'prepMarkupSave',
       'manuscriptReader',
       'readerState',
       'readerStateSave',
@@ -2031,6 +2066,8 @@ describe('answers of the mock client for the settings, voice, model, transcript 
       'teleprompterState',
       'teleprompterDevices',
       'teleprompterLocate',
+      'teleprompterResumeFollow',
+      'teleprompterResumeUnfollow',
       'teleprompterSaveFlags',
       'readAloudReaperState',
       'readAloudArmOnly',
@@ -2063,6 +2100,7 @@ describe('answers of the mock client for the settings, voice, model, transcript 
       'clearProjectData',
       'readerBookmarkDelete',
       'noteDelete',
+      'prepMarkupDelete',
       'guideEdit',
       'guideSetLocked',
       'guideRescan',
@@ -2110,6 +2148,7 @@ describe('answers of the mock client for the settings, voice, model, transcript 
       'subscribeCoverage',
       'subscribeTeleprompterEvent',
       'subscribeTeleprompterState',
+      'subscribeTeleprompterResumeFollow',
       'subscribeUpdate',
       'subscribeLineIdentity',
       'subscribePickups',

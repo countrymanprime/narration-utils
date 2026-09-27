@@ -65,6 +65,18 @@ export const manuscriptStates: StateEntry[] = [
       'Manuscript, mixed chapter rows (?mockManuscript=mixed): a Front Matter row with no Read aloud and 3-, 4- and 5-digit word counts - the stats and the buttons in two aligned columns, a chevron last (manuscript-chapter-header-alignment.prd.md, manuscript-credits-card-parity.prd.md)',
   },
   { page: 'manuscript', state: 'add-note-dialog', description: 'Manuscript, Add Note dialog open after selecting text' },
+  {
+    page: 'manuscript',
+    state: 'script-markup',
+    description:
+      'Manuscript, script markup on Chapter 3 (prep-depth PRD Phase 5): stress underlines, a breath and a pause after words, Mouse and Lory speaker chips, a "Text changed here" notice beside a line whose marked words changed, and a mark whose line is gone listed above the chapter',
+  },
+  {
+    page: 'manuscript',
+    state: 'markup-dialog',
+    description:
+      'Manuscript, the Mark up dialog for a selection that already carries a stress mark: Speaker chosen, the Story Bible characters one press away, and the mark already there with its Remove',
+  },
   { page: 'manuscript', state: 'formatted-text-and-line-breaks', description: 'Manuscript, paragraphs with preserved bold/italic/underline and a line break' },
   { page: 'manuscript', state: 'chapter-bookmarked', description: 'Manuscript, a chapter bookmarked (blue bookmark icon)' },
   { page: 'manuscript', state: 'go-to-line-highlight', description: 'Manuscript, arrived via Story Bible "Go to line" with the target line highlighted' },
@@ -136,6 +148,20 @@ export const manuscriptStates: StateEntry[] = [
   },
   {
     page: 'manuscript',
+    state: 'read-aloud-resume-disagree-live',
+    description:
+      'Manuscript, the resume prompt disagreeing when the REAPER place comes from REAPER\'s live edit cursor, not the saved project (read-aloud-resume-from-daw.prd.md Phase 4, RD2, ADR 0349, ?mockResume=disagree_live) - the REAPER card reads "in REAPER now" instead of "as of the project\'s last save", as in the approved 02-disagree mockup',
+    ...REFLOW,
+  },
+  {
+    page: 'manuscript',
+    state: 'read-aloud-resume-recording',
+    description:
+      'Manuscript, the resume prompt while REAPER records onto the chapter\'s track (Phase 4, ?mockResume=recording) - "in REAPER now", nothing located because the take is still being written, reading starts from the top; no resume button',
+    ...REFLOW,
+  },
+  {
+    page: 'manuscript',
     state: 'read-aloud-resume-not-found',
     description:
       "Manuscript, the resume prompt when the recording's tail did not match the chapter (?mockResume=not_found) - no resume word; says reading starts from the top, shows what was heard, offers Pick a word",
@@ -168,6 +194,12 @@ export const manuscriptStates: StateEntry[] = [
     state: 'read-aloud-resume-after-session',
     description:
       'Manuscript, the "Read aloud" dialog after a session has started and ended once - the resume prompt does not come back for the rest of this dialog\'s open, so the next Play begins at the top with nothing to clear',
+  },
+  {
+    page: 'manuscript',
+    state: 'read-aloud-resume-after-reaper-plays',
+    description:
+      'Manuscript, the "Read aloud" dialog opened while REAPER plays (read-aloud-resume-from-daw.prd.md Phase 5, RD7, ADR 0350, ?mockDawPlayhead=12) - the resume prompt has gone away by itself and nothing was preset: the text starts at the top of the dialog body and Play begins at the top, as in the approved 04-after-play-prompt-gone mockup',
   },
   {
     page: 'manuscript',
@@ -300,9 +332,15 @@ export const manuscriptStates: StateEntry[] = [
   },
   {
     page: 'manuscript',
+    state: 'booth-dark',
+    description:
+      'Manuscript, the booth (as booth-default) with Dark selected in Settings > Appearance - the booth follows the app theme and forces neither light nor dark (ADR 0365, superseding ADR 0360 Q1), so this differs from booth-default only in the palette',
+  },
+  {
+    page: 'manuscript',
     state: 'booth-listening',
     description:
-      'Manuscript, the booth mid-session and listening (booth-mode-and-companion-panel.prd.md Phase 2, same mock seam as read-aloud-listening) - the status badge reads "Reading", the "Room" level meter (Phase 4) moving with the same mock level as the microphone button\'s own meter, the Booth commands toolbar shows Pause (Kbd Space), Stop reading and Follow all enabled, the current word highlighted in the booth\'s high-contrast surface',
+      'Manuscript, the booth mid-session and listening (booth-mode-and-companion-panel.prd.md Phase 2, same mock seam as read-aloud-listening) - the status badge reads "Reading", the "Room" level meter (Phase 4) moving with the same mock level as the microphone button\'s own meter, the Booth commands toolbar shows Pause (Kbd Space), Stop reading and Follow all enabled, the current word highlighted in the active app theme (the booth follows it, ADR 0365)',
   },
   {
     page: 'manuscript',

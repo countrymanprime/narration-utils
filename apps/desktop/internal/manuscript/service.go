@@ -21,6 +21,7 @@ import (
 	"github.com/countrymanprime/narration-utils/shell/internal/findings"
 	"github.com/countrymanprime/narration-utils/shell/internal/importer"
 	"github.com/countrymanprime/narration-utils/shell/internal/persist"
+	"github.com/countrymanprime/narration-utils/shell/internal/prepmarkup"
 	"github.com/countrymanprime/narration-utils/shell/internal/proofing"
 	"github.com/countrymanprime/narration-utils/shell/internal/stages"
 )
@@ -625,6 +626,11 @@ func (s *Service) Clear() error {
 	}
 	if err := resetDerived(project); err != nil {
 		return err
+	}
+	// Script markup (prep-depth PRD Phase 5) is kept through a re-import, where an unchanged line keeps its marks and a
+	// changed one shows them as stale; only this explicit clear removes it.
+	if err := os.RemoveAll(prepmarkup.File(project)); err != nil {
+		return fmt.Errorf("could not clear project data: %w", err)
 	}
 	return os.RemoveAll(filepath.Join(project, "narration-utils", "manuscript"))
 }

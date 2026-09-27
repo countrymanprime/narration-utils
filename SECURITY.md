@@ -19,7 +19,7 @@ Narration Utils runs locally and processes your manuscripts and audio on your ma
 especially welcome:
 
 - Anything that sends manuscript, audio, or project content off the machine without an explicit action.
-- Downloads of models, voices, the reader's offline dictionary or binaries (the MP3 encoder's FFmpeg build,
+- Downloads of models, voices, the reader's offline dictionary or binaries (the MP3/M4B encoder's FFmpeg build,
   [ADR 0342](docs/adr/0342-the-mp3-encoder-is-a-pinned-gpl-ffmpeg-build-run-as-a-separate-process-and-writes-no-tag-frame.md)) that skip the integrity checks described in
   [first-use dependency provisioning](docs/architecture/first-use-dependency-provisioning.md), a downloaded executable that runs without matching its pinned hash, and a downloaded dataset or the lookup index
   the app builds from it (the dictionary, [ADR 0097](docs/adr/0097-the-manuscript-reader-word-lookup-uses-the-open-english-wordnet-as-a-downloadable-asset.md))
@@ -32,7 +32,7 @@ especially welcome:
   which the host builds from the saved REAPER project; the app's only input to a check is a chapter id), or the audio
   an analysis manifest names (for example the per-take divergence manifest the take comparison writes, which the app
   builds only from the saved REAPER project, never from what the page sends), or the rendered audio files the narrator
-  measures or checks for diagnostics, including an MP3 read for its frame headers only, never decoded (the app reads only files chosen in its own file picker in that session, and never writes to them,
+  measures or checks for diagnostics, including an MP3, whose container is always read for its frame headers only, and whose levels are additionally decoded through the same downloaded FFmpeg build the encoder uses (delivery-platform-profiles Phase 8) when it is installed, writing only to a temporary WAV that is never kept (the app reads only files chosen in its own file picker in that session, and never writes to them,
   [ADR 0156](docs/adr/0156-measurement-reads-only-files-picked-this-session-as-one-job-and-fingerprints-the-bytes-it-read.md)),
   and the Delivery report it writes (only into the project's `narration-utils/delivery` folder, never over an earlier report, and without
   any local path, audio or manuscript text unless the narrator chooses to include file locations); a report that leaks a path the narrator
@@ -40,6 +40,11 @@ especially welcome:
   author ([ADR 0347](docs/adr/0347-the-pronunciation-query-export-is-csv-with-its-ids-last-and-a-formula-guard-and-is-a-download.md)): a
   cell that runs as a formula when the file is opened in a spreadsheet, or a row that carries more than the columns it names, is in scope.
 - The run log every tool run writes (`logs/run.jsonl`, `logs/runs/*.stderr.jsonl`; [ADR 0251](docs/adr/0251-tool-runs-are-logged-as-json-lines-through-slog-with-a-run-id-and-content-is-never-logged.md)) and the diagnostics bundle Settings can save from it (`SystemCopyDiagnostics`) or the folder it can open (`SystemOpenLogFolder`): manuscript, audio or transcript text reaching either is in scope, as is the export landing anywhere but the folder the narrator picked in that session's file picker.
+- The script markup the narrator places in the reader (`narration-utils/prep/markup.json` in the project,
+  [ADR 0382](docs/adr/0382-script-markup-is-a-chapter-keyed-sidecar-of-line-offsets-checked-on-read-and-drawn-without-changing-the-text.md)):
+  a file that makes the app run, open, fetch or write anything else, that puts markup into the page, or that is drawn without
+  being checked against the current text is in scope; one that only changes which prep marks the narrator sees is the
+  documented residual risk (threat model row 6p).
 - The delivery profiles the app reads back to judge the rendered files (the user-level `delivery-profiles.json` beside
   `credit-templates.json`, and the project's choice in `project.json`,
   [ADR 0180](docs/adr/0180-custom-delivery-profiles-are-copies-of-a-built-in-kept-in-a-user-level-file.md)): a file that makes the app
@@ -63,4 +68,4 @@ Problems in a third-party dependency belong upstream, but tell us if we ship a v
 
 ## What the app does on the network
 
-There is no telemetry, no account and no listening port. The only requests the shipped program makes are the once-a-day release check above (off with one setting), the downloads of models, voices, the offline dictionary, the MP3 encoder and an update that you confirm with a click. Encoding to MP3 runs the downloaded FFmpeg on your computer, on files only: it is given no network protocol. Looking a word up in the manuscript reader reads that dictionary on your computer: it sends nothing. The interface's fonts ship with the program, so opening it contacts no font host ([#238](https://github.com/countrymanprime/narration-utils/issues/238)). The Teleprompter's Moonshine engine (Windows) comes with a library that has a downloader of its own; the shipped program never uses it and runs Moonshine only from a model installed and hash-checked through Settings > Local assets ([ADR 0107](docs/adr/0107-moonshine-ships-inside-the-windows-teleprompter-sidecar-and-runs-only-from-a-verified-catalog-install.md)), so a request from it to Moonshine's servers is a vulnerability. The [threat model](docs/architecture/threat-model.md) lists every boundary, what protects it in the code and what risk is left with its owner; a report about a risk it already lists is still welcome, but it is a known limit, not a new vulnerability.
+There is no telemetry, no account and no listening port. The only requests the shipped program makes are the once-a-day release check above (off with one setting), the downloads of models, voices, the offline dictionary, the MP3 encoder and an update that you confirm with a click. Encoding to MP3, and measuring an MP3's levels, both run the downloaded FFmpeg on your computer, on files only: it is given no network protocol. Looking a word up in the manuscript reader reads that dictionary on your computer: it sends nothing. The interface's fonts ship with the program, so opening it contacts no font host ([#238](https://github.com/countrymanprime/narration-utils/issues/238)). The Teleprompter's Moonshine engine (Windows) comes with a library that has a downloader of its own; the shipped program never uses it and runs Moonshine only from a model installed and hash-checked through Settings > Local assets ([ADR 0107](docs/adr/0107-moonshine-ships-inside-the-windows-teleprompter-sidecar-and-runs-only-from-a-verified-catalog-install.md)), so a request from it to Moonshine's servers is a vulnerability. The [threat model](docs/architecture/threat-model.md) lists every boundary, what protects it in the code and what risk is left with its owner; a report about a risk it already lists is still welcome, but it is a known limit, not a new vulnerability.

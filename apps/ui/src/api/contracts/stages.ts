@@ -1,6 +1,6 @@
 import type { ChapterStatus } from './manuscript';
 
-// Chapter stage recommendations (docs/prds/chapter-stage-recommendations.prd.md, docs/architecture/stage-recommendations.md,
+// Chapter stage recommendations (chapter-stage-recommendations.prd.md, delivered and deleted; see docs/architecture/stage-recommendations.md,
 // ADR 0160 and ADR 0161): every narration chapter's suggestion to advance one stage, computed on read from the evidence as it
 // stands and never stored (D1). Only Confirm and Revert change a chapter status, and only when the narrator clicks. The host
 // shapes are apps/desktop/internal/stages (types.go, engine.go, service.go) and apps/desktop/bindings_stages.go.
