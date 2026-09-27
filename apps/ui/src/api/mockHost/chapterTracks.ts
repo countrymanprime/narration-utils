@@ -203,6 +203,7 @@ export function createChapterTracksMock(
     },
     chapterRegionsCreate: async (openingTrackGuid, closingTrackGuid, update) => {
       await manuscriptReady;
+      if (initial.regionsCreateAlwaysErrors) throw new Error('REAPER refused to write the regions: the Narration Utils script is not responding');
       const state = s.tracksDiscovery.candidates.length === 0 ? 'none' : s.tracksDiscovery.selected ? 'ready' : 'choose';
       const plan = mockChapterRegionPlan(
         mockChapterTrackLinks(s.chapters, WIRE_TRACKS_PROJECT, s.chapterTrackMappings, state),
