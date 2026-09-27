@@ -19,7 +19,7 @@ import (
 	"github.com/countrymanprime/narration-utils/shell/internal/stages"
 )
 
-// The chapter stage recommendation bindings (docs/prds/chapter-stage-recommendations.prd.md Phase 4,
+// The chapter stage recommendation bindings (chapter-stage-recommendations.prd.md Phase 4, delivered and deleted; see
 // docs/architecture/stage-recommendations.md). StageRecommendations only reads: it computes every narration chapter's
 // verdict from the evidence as it stands and never stores it or starts an analysis (D1, Q5, Q12). Only StageConfirm and
 // StageRevert change a chapter status, and only when the narrator clicks.

@@ -8,8 +8,8 @@
 [ADR 0160](0160-stage-recommendations-are-computed-from-tri-state-signals-by-a-pure-engine.md) settled how a chapter's
 stage suggestion is computed and left open where the narrator's answers to it are kept and how Confirm changes the
 status. The narrator can confirm a suggestion, dismiss it, or revert a confirmation, and the app must remember each of
-those without ever changing a status by itself
-([chapter stage recommendations PRD](../prds/chapter-stage-recommendations.prd.md), D1, D4).
+those without ever changing a status by itself (the chapter stage recommendations PRD,
+`docs/prds/chapter-stage-recommendations.prd.md`, delivered and deleted; D1, D4).
 
 Three facts in the code limit the choice. The chapter status sidecar, `manuscript-notes.json`, keeps only `notes`,
 `chapterStatus` and `readerState` (`normalizeNotes`), so a new key there is dropped on the next save, and it reads a

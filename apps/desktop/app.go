@@ -1362,7 +1362,7 @@ var fieldSchemas = map[string][]fieldSchema{
 		{"min_anchor_run", "Shortest match that counts as read", "number", nil},
 		{"background_checks", "Check changed chapters in the background", "bool", nil},
 	},
-	// StageRecommendations (docs/prds/chapter-stage-recommendations.prd.md Phase 6, Q8) chooses which signals must be
+	// StageRecommendations (chapter-stage-recommendations.prd.md Phase 6, Q8, deleted; see docs/architecture/stage-recommendations.md) chooses which signals must be
 	// met for a stage suggestion: one choice field per signal id a provider declares (apps/desktop/bindings_stages.go's
 	// requiredStageSignals reads it), "required" or "ignored", plus the optional master switch. Only the recording
 	// signal exists today (coverage.RecordingSignalID); the editing and proofing signal PRDs add their own keys here

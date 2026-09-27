@@ -13,7 +13,8 @@ import type { Notify } from '../primitives/Toast';
 const narration = (chapter: ManuscriptChapter) => chapter.contentKind === undefined || chapter.contentKind === 'narration';
 
 /**
- * The Proofing page's own stage-recommendations surface (docs/prds/chapter-stage-recommendations.prd.md Phase 8):
+ * The Proofing page's own stage-recommendations surface (chapter-stage-recommendations.prd.md Phase 8, deleted; see
+ * docs/architecture/stage-recommendations.md):
  * every narration chapter currently in Proofing, with the same `StageSuggestion` row and `StageEvidence` slide-over
  * Home's breakdown table uses (Phase 5) - no new pattern. Unlike Home, this panel is chapter-based rather than tied
  * to the last Transcript Compare run's identity (the transcript state carries no chapter id), so it reads the
