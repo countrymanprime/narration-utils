@@ -14,12 +14,13 @@ import { ThemeProvider } from './theme/ThemeContext';
 import { LiveCommandRouter } from './input/LiveCommandRouter';
 import { createKeyboardSource } from './input/KeyboardSource';
 import { combineSources, midiSource } from './input/MidiSource';
+import { hidSource } from './input/HidSource';
 import './fonts';
 import './styles.css';
 
-// Phase 9 (input-commands-and-pedals.prd.md): the router's one `source` slot carries both KeyboardSource and
-// MidiSource. Built once, here, so `router.tsx` (Phase 10's file) never needs to know MIDI exists.
-const commandInputSource = combineSources(createKeyboardSource(), midiSource);
+// Phase 9 (input-commands-and-pedals.prd.md): the router's one `source` slot carries KeyboardSource, MidiSource and
+// (Phase 11) HidSource. Built once, here, so `router.tsx` (Phase 10's file) never needs to know MIDI or HID exist.
+const commandInputSource = combineSources(createKeyboardSource(), midiSource, hidSource);
 
 // Mock mode runs the complete UI in a browser without the desktop host.
 //
@@ -374,10 +375,9 @@ createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <ThemeProvider>
       <ApiProvider api={api}>
-        {/* input-commands-and-pedals.prd.md: the registry (Phase 1) with keyboard and MIDI (Phase 9) as its input
-            sources; HidSource (Phase 11) joins the same `combineSources` call above if it ships. Wired to the DAW
-            port's live transport state (Phase 10), so a `noisy` command (workspace.play) goes silent while REAPER
-            reports recording (PRD Q5). */}
+        {/* input-commands-and-pedals.prd.md: the registry (Phase 1) with keyboard, MIDI (Phase 9) and HID
+            (Phase 11) as its input sources. Wired to the DAW port's live transport state (Phase 10), so a `noisy`
+            command (workspace.play) goes silent while REAPER reports recording (PRD Q5). */}
         <LiveCommandRouter source={commandInputSource}>
           <App />
         </LiveCommandRouter>
