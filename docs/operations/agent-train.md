@@ -154,6 +154,7 @@ The Routine fires every 30 minutes (two hourly Routines, 30 minutes apart; D50).
    Merge with `squash` and `expectedHeadSha`. Delete the branch, then update the other bottom PRs' branches.
    - **A conflict:** start one **fixer**. Use Sonnet for mechanical files (`hostAPIVersion`, ADR or PRD index rows, status cells, regenerated `Host.*`) and Opus otherwise.
    - **A merge turns `main` red:** tick `HOLD`, start an Opus fixer aimed at `main`, and log it.
+   - **A merge just unblocked other phases (D62, owner-directed):** don't wait for the next scheduled Routine firing to act on it. The moment a merge lands, re-check every PRD whose `Depends` named the phase that just completed, and if step 5 below would now add something to the ready list, run step 5 immediately, in the same pass. A phase sitting ready while nothing launches until the next tick is exactly the latency this rule removes.
 5. **Launch.** Skip this step on `HOLD`, `HOLD-UNTIL-RESET`, AMBER-5H before its `resetsAt`, or when running ≥ `TARGET`.
    1. **Build the ready list.** A PRD phase is ready when:
       - its `Status` is `pending`;
@@ -199,6 +200,7 @@ A worker is one cloud session for one stream. It opens one PR per phase, stacked
   - Answer every red-circle thread.
   - Comment `<ID>: PRs #… green` on #509, then end.
   - After three failed CI rounds on one PR: mark it draft, paste the failure into it, comment on #509, and end.
+- **No resume-in-place:** there is no tool to send a follow-up task into a session that has already finished and gone idle. A stream's next PRD phase (D62) is always a **new** session, branched fresh off the current `main` tip — never a message into the old one. The gain from D62 is launching that new session the moment the phase is ready, not batching it to the next tick; it is not session reuse.
 - **Owner steps:** anything needing the owner, REAPER, audio hardware or owner input goes on #510 as a comment and is marked pending in the PR. Never wait for a human.
 - **Tooling:** the repo's `SessionStart` hook (`scripts/cloud/session-start.sh`, registered in `.claude/settings.json`) installs the pinned toolchain. `.claude/settings.json` allows the build, test and git commands and denies force-pushes and rebases. Workers never edit `.claude/settings.json`; auto mode refuses that as self-modification, so any change to it goes on #510 for the owner.
 
