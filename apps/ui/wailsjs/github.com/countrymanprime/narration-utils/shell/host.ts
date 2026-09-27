@@ -718,6 +718,32 @@ export function GuidePronounce(id: string, aliasIndex: number | null, source: st
     return $Call.ByID(1577834145, id, aliasIndex, source);
 }
 
+export function GuidePronounceUser(id: string, aliasIndex: number | null, ipa: string): $CancellablePromise<string> {
+    return $Call.ByID(867110926, id, aliasIndex, ipa);
+}
+
+/**
+ * GuidePronunciationQueries lists every name whose pronunciation the author has not confirmed, in reading order (prep-depth P3).
+ */
+export function GuidePronunciationQueries(): $CancellablePromise<string> {
+    return $Call.ByID(2256334941);
+}
+
+/**
+ * GuidePronunciationQueriesCSV is the same list as CSV text for the narrator to send to the author; the UI saves it as a file.
+ */
+export function GuidePronunciationQueriesCSV(): $CancellablePromise<string> {
+    return $Call.ByID(2380759975);
+}
+
+export function GuidePronunciationSetStatus(id: string, aliasIndex: number | null, status: string, note: string | null): $CancellablePromise<string> {
+    return $Call.ByID(3849731891, id, aliasIndex, status, note);
+}
+
+export function GuidePronunciationUseAlternate(id: string, aliasIndex: number | null): $CancellablePromise<string> {
+    return $Call.ByID(661717092, id, aliasIndex);
+}
+
 export function GuideRelate(id: string, otherID: string, label: string): $CancellablePromise<string> {
     return $Call.ByID(761657167, id, otherID, label);
 }
