@@ -174,8 +174,8 @@ Lanes: **U** = primitives and input (Sonnet), **A** = host (Go settings). ADRs c
 | 6 | Keyboard & pedals settings (U) | Settings category: list, remap by pressing, conflict message, reset. Visual rows | complete | with 7 | 1, 5, Kbd | - |
 | 7 | Shortcut sheet (U) | "?" opens a dialog of the active commands by scope. Aria snapshot, visual row | complete | with 6 | 2, Kbd | - |
 | 8 | Spike: Web MIDI and WebHID (U) | Availability and permission in WebView2, WKWebView and WebKitGTK 6.0. A research note | complete | with 2 to 7 | - | - |
-| 9 | MidiSource (U, A if needed) | Web MIDI note-on and CC presses, learned in the Phase 6 recorder. Threat model | pending | with 10 | 6, 8 | - |
-| 10 | Silent while recording (U) | `noisy` commands suppressed while the DAW port reports recording | complete: `useDawRecording` subscribes to `daw_transport_changed` and `<LiveCommandRouter>` wires it into the router's `isRecording` seam from Phase 1 (mounted in `main.tsx` in place of a bare `<CommandRouter>`); a suppressed press still posts "Not while recording." to its own `aria-live` region (PRD Q5) | with 9 | 1, DAW port P9 | - |
+| 9 | MidiSource (U, A if needed) | Web MIDI note-on and CC presses, learned in the Phase 6 recorder. Threat model | complete | with 10 | 6, 8 | - |
+| 10 | Silent while recording (U) | `noisy` commands suppressed while the DAW port reports recording | complete: `useDawRecording` subscribes to `daw_transport_changed` and `<LiveCommandRouter>` wires it into the router's `isRecording` seam from Phase 1 (mounted in `main.tsx` in place of a bare `<CommandRouter>`, now passed Phase 9's combined keyboard+MIDI `source`); a suppressed press still posts "Not while recording." to its own `aria-live` region (PRD Q5) | with 9 | 1, DAW port P9 | - |
 | 11 | HidSource (U, Could) | WebHID buttons as gestures, if Phase 8 finds it usable | pending | - | 8, 9 | - |
 | 12 | Global hotkeys spike (A, Could) | Host-level hotkeys while REAPER has focus, for the companion panel. Not MVP | pending | any | 5 | - |
 
