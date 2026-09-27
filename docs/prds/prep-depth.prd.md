@@ -248,7 +248,7 @@ Phases 1, 2 and 3 are independent of every other benchmark stream and of each ot
 
 ## Visual Spec
 
-Concept mock copied from [the audiobook studio benchmark](../research/audiobook-studio-benchmark.md#3-what-the-ideal-looks-like-concept-mocks) — kept under `mockups/prep-depth/` marked **concept**, approved per D69 (#754) once that PR lands; until then a UI PR's Mockup check compares against it as a concept, per the agent-train wave-0 rule. Names and numbers are placeholders.
+Concept mock copied from [the audiobook studio benchmark](../research/audiobook-studio-benchmark.md#3-what-the-ideal-looks-like-concept-mocks), **owner-approved as the build spec (D69, 2026-09-27)** — kept under `mockups/prep-depth/` marked **concept**. Dark mode is a single app-wide theme (D69): a dark mock shows the dark theme, not a per-page look. Names and numbers are placeholders.
 
 ![Prep: speaker-attributed script, markup, pronunciation list with sources and author queries](mockups/prep-depth/02-prep-script-concept.webp)
 

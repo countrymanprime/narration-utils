@@ -199,8 +199,8 @@ Phases 1 to 3 touch only the new `internal/production` package and the manifest,
 
 ## Visual Spec
 
-Concept mock copied from [the audiobook studio benchmark](../research/audiobook-studio-benchmark.md#3-what-the-ideal-looks-like-concept-mocks), **not yet owner-approved as a build spec** — it illustrates the recommendation the benchmark itself made, kept under `mockups/production-tracking/` marked **concept** until the owner approves it on [#510](https://github.com/countrymanprime/narration-utils/issues/510), per the agent-train wave-0 rule. Names and numbers are placeholders.
+Concept mock copied from [the audiobook studio benchmark](../research/audiobook-studio-benchmark.md#3-what-the-ideal-looks-like-concept-mocks), **owner-approved as the build spec (D69, 2026-09-27)** — it illustrates the recommendation the benchmark itself made and is kept under `mockups/production-tracking/` marked **concept**. Dark mode is a single app-wide theme (D69): a dark mock shows the dark theme, not a per-page look. Names and numbers are placeholders.
 
 ![Production home concept: KPIs, chapter pipeline by stage, next actions](mockups/production-tracking/01-production-home-concept.webp)
 
-*Production home (concept)* (`01-production-home-concept.webp`) — the KPI row (finished runtime vs. target, logged hours, PFH, effective rate, open pickups, files passing delivery), the extended chapter × stage board, and the "Next up" list this PRD's Phase 4 builds toward. A Mockup check table will be added once the owner approves it and building against it begins.
+*Production home (concept)* (`01-production-home-concept.webp`) — the KPI row (finished runtime vs. target, logged hours, PFH, effective rate, open pickups, files passing delivery), the extended chapter × stage board, and the "Next up" list this PRD's Phase 4 builds toward. This phase's PR carries the Mockup check table against it.
