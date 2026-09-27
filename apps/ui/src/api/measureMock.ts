@@ -5,7 +5,8 @@
 // render of digital silence whose levels are all unavailable (null, never a number), and a file that is not a WAV.
 // `hold` keeps a started measurement part way through; `fails` breaks it at its first poll the way
 // tests/fixtures/contracts/measure-error.json pins (the file being read fails, the rest are cancelled). Every answer is
-// judged against the project's delivery profile as it is when it is read, rule by rule (ADR 0179).
+// judged against the project's delivery profile as it is when it is read, rule by rule (ADR 0179), and `onJudged` is given
+// the judged job when it ends, for the Review page's delivery findings (deliveryReviewMock.ts).
 import type { DeliveryProfile, DiagnosticsJob, JobEnded, MeasureApi, MeasureFileResult, MeasureJob, MeasureReport } from '../types';
 import { evaluateMockBook, evaluateMockFile, MOCK_ACX } from './deliveryProfilesMock';
 import { wireClone } from './mockFixtures';
@@ -101,7 +102,8 @@ export function createMeasureMock(
   picked = new Set<string>(),
   profile: () => DeliveryProfile = () => MOCK_ACX,
   checked: () => DiagnosticsJob | undefined = () => undefined,
-): MeasureApi {
+  onJudged: (job: MeasureJob) => void = () => {},
+): MeasureApi & { resaveReview: () => void } {
   const hold = seed === 'hold';
   let job: MeasureJob = {
     id: null,
@@ -129,6 +131,8 @@ export function createMeasureMock(
 
   const end = (phase: 'success' | 'cancelled' | 'error', message: string) => {
     job = { ...job, phase, message, logs: [...job.logs, message], percent: phase === 'success' ? 100 : job.percent };
+    // The host saves the ended measurement's delivery findings for the Review page before it says the job ended.
+    onJudged(judged());
     publish({ id: job.id ?? '', kind: 'measurement', outcome: phase, message, durationMs: Math.round(job.elapsed * 1000) });
   };
 
@@ -176,6 +180,10 @@ export function createMeasureMock(
   };
 
   return {
+    // A change of profile re-judges what was last measured for the Review page (delivery_findings.go).
+    resaveReview: () => {
+      if (job.phase !== 'idle' && job.phase !== 'running') onJudged(judged());
+    },
     measurePickFiles: async () => {
       MOCK_MEASURE_PATHS.forEach((path) => picked.add(path));
       return { paths: [...MOCK_MEASURE_PATHS] };

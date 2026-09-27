@@ -23,6 +23,7 @@ export function CreditsEntry({
   onFillIn,
   onReadAloud,
   onBooth,
+  onCompanion,
 }: {
   kind: 'opening' | 'closing';
   preview?: CreditsRenderResult;
@@ -42,6 +43,8 @@ export function CreditsEntry({
    * it left the header's fixed-width action slot (manuscript-chapter-header-alignment.prd.md) narrower than a
    * chapter's own, breaking the alignment every row in the column shares. */
   onBooth?: () => void;
+  /** Companion (booth-mode-and-companion-panel.prd.md Phase 7): gated the same as Read aloud and Booth, for the same reason. */
+  onCompanion?: () => void;
 }) {
   const label = KIND_LABEL[kind];
   const lines = preview ? creditsParagraphs(kind, preview.text) : [];
@@ -58,6 +61,8 @@ export function CreditsEntry({
       onReadAloud={onReadAloud}
       showBooth={hasWords}
       onBooth={onBooth}
+      showCompanion={hasWords}
+      onCompanion={onCompanion}
     >
       {preview ? (
         <div className="relative bg-[var(--surface)]">
