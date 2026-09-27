@@ -1,4 +1,4 @@
-# 0345. The cascade's settings are independent, and the re-check gate is its own status
+# 0351. The cascade's settings are independent, and the re-check gate is its own status
 
 **Status:** Proposed
 **Date:** 2026-09-27
