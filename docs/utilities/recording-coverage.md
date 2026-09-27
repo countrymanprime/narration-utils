@@ -3,6 +3,9 @@
 **Status: Implemented.** The Home check, the stored result, the measured recorded length and the `recording` stage
 signal all work. The four settings ship with values chosen on synthetic fixtures and are labelled uncalibrated on real
 narration ([ADR 0132](../adr/0132-the-recording-check-ships-0-8-3-8-3-chosen-on-synthetic-fixtures-and-labelled-uncalibrated.md)).
+The model cascade (a fast first pass, then a stronger re-check of only what it reports missing) also ships, opt-in
+and off by default until a real corpus confirms the first pass never gives a false "met" (see
+[The model cascade](#the-model-cascade)).
 
 ## User problem
 
@@ -144,6 +147,9 @@ The `RecordingCoverage` settings tool, layered project over global over the buil
 | `max_missing_run` | 3 | threshold, applied on read | The longest run of missing words allowed. This is the check's resolution: a skipped phrase of 4 or more words always fails |
 | `max_misread_run` | 8 | alignment, stale on change | The largest gap of words that still counts as a misread. More than this said as other text is `different_text` |
 | `min_anchor_run` | 3 | alignment, stale on change | The shortest match that counts as read on its own. At 2, common word pairs inside unrelated speech count |
+| `cascade_enabled` | off | switch | Turns the model cascade on (MC1). Off, `CoverageStart` reads `TranscriptCompare.model_size` exactly as it always has |
+| `cascade_first_pass_model` | `tiny` | Whisper model, cascade only | The fast first pass's own model (MC2), independent of `TranscriptCompare.model_size` |
+| `cascade_recheck_model` | `large-v3-turbo` | Whisper model, cascade only | The model that re-checks anything the first pass reports missing (MC2) |
 
 The Settings page labels them **Proposed values, not yet calibrated**. They were chosen by the Phase 8 calibration:
 the synthetic fixtures run through the shipped path, 600 candidates, and five levels of simulated transcriber error.
@@ -156,10 +162,63 @@ repeated passage, and `large-v3-turbo` got all 16 right at about twice the time.
 budget (about 10 s of CPU per audio minute with `small` and about 20 s with `large-v3-turbo` on the machine measured) are in
 [the calibration note](../research/recording-coverage-calibration.md).
 
+## The model cascade
+
+**Status: Implemented, opt-in and off by default.** `RecordingCoverage.cascade_enabled` (MC1). Until a real,
+permissioned corpus confirms the first pass never gives a false "met" ([#425](https://github.com/countrymanprime/narration-utils/issues/425)),
+this stays a narrator's own choice, not the shipped default.
+
+Checking a chapter with the cascade off is unchanged: one pass, `TranscriptCompare.model_size`. With it on, the
+check runs in up to three sidecar stages under one job, one cancel and one `job:ended`, exactly as a plain check
+(ADR 0344):
+
+```mermaid
+flowchart LR
+  first["First pass: cascade_first_pass_model"] -->|regions?| plan{"planRecheck"}
+  plan -->|nothing missing| done1["stored, no Recheck"]
+  plan -->|windows| recheck["--recheck: cascade_recheck_model"]
+  plan -->|over 60% of the chapter| whole["whole-chapter pass: cascade_recheck_model"]
+  recheck --> realign["--align-only: cascade_first_pass_model"]
+  realign --> done2["stored, Recheck{model, windows, seconds}"]
+  whole --> done2
+```
+
+- **The first pass** runs `cascade_first_pass_model` (default `tiny`) over the whole chapter, exactly like a plain
+  check. A chapter it calls complete is stored as-is: no second pass ever runs over a chapter with nothing missing.
+- **The window planner** (`internal/coverage/plan.go`, pure, no I/O) turns every reported region into a window
+  bounded by ADR 0168's `before`/`after` points, padded past each bound and up to a minimum size, merged when two
+  windows of the same item are close together, and replaced by one whole-chapter pass when the windows would cover
+  most of the chapter's played audio (MC3's constants: pad 3 s, minimum 25 s, merge under 20 s apart, whole-chapter
+  past 60%, chosen from the PRD's Evidence benchmark - Whisper's cost is per roughly-30-second block, so a shorter
+  window costs about the same as a 25-second one).
+- **The re-check** runs `cascade_recheck_model` (default `large-v3-turbo`) either as `compare.py --recheck` over
+  the planned windows only, splicing the result into the same words files with per-span model provenance (ADR
+  0341), or as one more whole-chapter pass. A windowed re-check is followed by `--align-only`, re-reading the
+  now-spliced words with no further transcription; either way the chapter is judged by the same rules and
+  thresholds as a plain check, over merged words.
+- **The stored result names both models.** `StoredResult.Model`/`ReportView.model` keep naming the first pass only,
+  for compatibility (ADR 0344's "stays the first-pass model for compatibility", Q13); a `recheck` field
+  (`{model, wholeChapter, windows, seconds}`, ADR 0345) carries the rest, absent for a plain check or a cascade run
+  that found nothing missing. The dialog reads "Checked ... with the tiny Whisper model; 1 passage re-checked with
+  the large-v3-turbo Whisper model", and every pickup still listed - windowed or whole-chapter, every one of them
+  was seen by both models - reads "Confirmed missing by the large-v3-turbo Whisper model."
+- **The missing-model choice (MC4).** The first-pass model keeps the existing first-use gate
+  (`asset_required`, shared with Transcript Compare and the teleprompter): not installed, the check cannot run.
+  A missing re-check model instead answers `recheck_asset_required`, and the dialog offers "Check with tiny only"
+  beside the download - a one-run choice (`CoverageStart`'s `options.skipRecheck`), never a settings change.
+- **Live progress** (`coverage:state`'s `pass`, `firstPassModel`, `recheckModel`, `recheckWindows`) names which of
+  the up to four stages is running, ahead of the sidecar's own message: "First pass (tiny)", "Re-checking 3
+  passages (large-v3-turbo)", "Re-checking the whole chapter (large-v3-turbo)" or "Combining the two passes".
+- **Staleness and caching are unchanged in kind.** A cascade result is judged, evaluated for staleness and read
+  back exactly like a plain one (Q13); the words cache key gains the re-check model (empty for a plain check), so
+  a cascade's spliced words are never silently reused by, or reused from, a plain check of the same first-pass
+  model (ADR 0344).
+
 ## Decisions
 
 The code comments name these decisions by their labels from the delivered PRD (`git log --diff-filter=D --
-docs/prds/recording-coverage-analysis.prd.md` finds it).
+docs/prds/recording-coverage-analysis.prd.md` finds it); MC1-MC7 are the model cascade's own, from its delivered PRD
+(`git log --diff-filter=D -- docs/prds/recording-check-model-cascade.prd.md` finds it).
 
 | Label | Decision |
 | --- | --- |
@@ -182,6 +241,13 @@ docs/prds/recording-coverage-analysis.prd.md` finds it).
 | Q13 | Another model or language keeps a result current (labelled). Another alignment setting makes it stale |
 | Q14 | On demand only: Home reads stored results and never starts a check. Superseded in part by [ADR 0211](../adr/0211-a-changed-chapter-is-rechecked-in-the-background-only-on-mains-power-with-reaper-quiet-and-not-recording.md): the host re-checks a changed chapter on its own, only on mains power with REAPER quiet and not recording (`RecordingCoverage.background_checks`, on by default); reading a status still never starts one |
 | Q15 | Synthetic fixtures now, with `NARRATION_COVERAGE_CORPUS` for a real permissioned corpus later ([ADR 0125](../adr/0125-recording-coverage-ground-truth-is-scripted-recordings-with-paragraph-labels-and-a-corpus-directory-variable.md)) |
+| MC1 | The cascade is opt-in, off by default, until a real corpus confirms the first pass never gives a false "met" |
+| MC2 | Two independent settings: `cascade_first_pass_model` (default `tiny`) and `cascade_recheck_model` (default `large-v3-turbo`), from the approved catalog |
+| MC3 | Window rules are constants, not settings: pad 3 s past each bound and up to a 25 s minimum, merge windows under 20 s apart, whole-chapter fallback past 60% of the chapter's played audio |
+| MC4 | A missing re-check model offers the download or "Check with tiny only" (`recheck_asset_required`, `options.skipRecheck`), never blocking the check the way a missing first-pass model does |
+| MC5 | The result names both models and how many windows were re-checked (`Recheck`); every pickup still listed on a cascade result was confirmed by the re-check model |
+| MC6 | Spot-checking "met" paragraphs is not in this delivery; revisit with a real corpus |
+| MC7 | The model cascade keeps Q13 (model and language outside the parameter hash): the label says which models made a result |
 
 ## Tests and tooling
 
@@ -194,10 +260,16 @@ docs/prds/recording-coverage-analysis.prd.md` finds it).
   the real sidecar over cached words when the checkout has a Python environment. `corpus_test.go` stores the
   sidecar's pinned output for every fixture case (`fixtures/coverage/results.golden.json`, written by
   `test_coverage_results_golden.py`) as a complete check and runs `stages.Service` over it: `editing` is suggested
-  for exactly the cases labelled complete.
-- UI: `RecordingCheck.test.tsx`, the wire contracts for `coverage:state` and the four bindings
-  ([wire contracts](../architecture/wire-contracts.md)), the visual states `home/recording-check-*` and
-  `settings/*-recording-check`, and the aria snapshot of the dialog.
+  for exactly the cases labelled complete. `plan_test.go` (the window planner: bounds, merging, the whole-chapter
+  fallback, muted items) and `recheck_test.go` (the cascade end to end with a fake sidecar: no second pass when
+  nothing is missing, a windowed re-check and realign, the whole-chapter fallback, cancel and failure in each
+  stage, the words-cache-key separation, `Recheck`'s own fields and `State`'s pass/model/window fields).
+- UI: `RecordingCheck.test.tsx` (including the re-check gate and "Check with tiny only"),
+  `recordingCheckText.test.ts` (`passLabel`, `recheckLabel`), `RecordingCheckSummary.test.tsx`, the wire contracts
+  for `coverage:state`, `CoverageStartResult` and `CoverageReport.recheck`
+  ([wire contracts](../architecture/wire-contracts.md)), the visual states `home/recording-check-*` (including
+  `recording-check-cascade` and `recording-check-recheck-model-required`) and `settings/*-recording-check`, and the
+  aria snapshot of the dialog.
 
 ## Non-goals and review boundary
 
@@ -214,5 +286,9 @@ Tracked in [#425](https://github.com/countrymanprime/narration-utils/issues/425)
 
 - **A cross-check against REAPER.** An optional, owner-run check that the standalone manifest matches the Lua
   `manifest_<run>.txt` for one chapter. It is read-only, but it needs REAPER open.
-- **A real, permissioned corpus.** It would replace the synthetic calibration and drop the "uncalibrated" label.
+- **A real, permissioned corpus.** It would replace the synthetic calibration and drop the "uncalibrated" label,
+  and is also what turns the model cascade on by default (MC1): the first pass has never given a false "met" on the
+  synthetic corpus, but that has not been checked against real narration (noise, breaths, pace).
 - **Play from a region** over `/media`, a Could in the PRD.
+- **Spot checks of "met" paragraphs** (MC6, a Could in the model cascade PRD): re-checking a small sample of
+  paragraphs the first pass calls complete, so a false "met" would show up in use even before a real corpus exists.
