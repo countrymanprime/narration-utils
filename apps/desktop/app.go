@@ -616,7 +616,9 @@ func (h *Host) configureLocked(next config) {
 	if teleprompterDir == "" {
 		teleprompterDir = filepath.Join(os.TempDir(), "narration-utils")
 	}
-	h.teleprompter = teleprompter.New(teleprompter.Config{Project: h.config.projectFolder, SessionDir: teleprompterDir, Python: h.config.teleprompterPython, Backend: h.config.teleprompterBackend, Platform: h.platform}, h.sidecars, h.emitTeleprompterEvent, h.emitTeleprompterState)
+	// NARRATION_TELEPROMPTER_EVAL=1 is the Phase 8 evaluation aid (teleprompter-engines-and-input-devices PRD):
+	// a developer/evaluation-only opt-in, same pattern as NARRATION_DEBUG (runlog), never a Settings toggle.
+	h.teleprompter = teleprompter.New(teleprompter.Config{Project: h.config.projectFolder, SessionDir: teleprompterDir, Python: h.config.teleprompterPython, Backend: h.config.teleprompterBackend, Platform: h.platform, EvalTiming: os.Getenv("NARRATION_TELEPROMPTER_EVAL") == "1"}, h.sidecars, h.emitTeleprompterEvent, h.emitTeleprompterState)
 	h.teleprompter.SetLog(func(kind, message string) { _ = h.log.Report(kind, message) })
 }
 
