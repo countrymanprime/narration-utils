@@ -5,6 +5,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { ReadAloudDialog, type ReadAloudSource } from './ReadAloudDialog';
 import { ApiProvider } from '../../api/ApiContext';
 import { createMockApi } from '../../api/mockApi';
+import { CommandRouter } from '../../input/router';
 import { WIRE_TELEPROMPTER_DEVICES } from '../../api/mockFixtures';
 import type { CreditsRenderResult, GuideEntity, ManuscriptNote, ManuscriptParagraph, NarrationApi, TeleprompterEvent, TeleprompterState } from '../../types';
 import { RAIL_STORAGE_KEY } from './readerPreferences';
@@ -43,13 +44,15 @@ function renderDialog(
   });
   render(
     <ApiProvider api={api}>
-      <ReadAloudDialog
-        source={content.source ?? { kind: 'chapter', chapter: CHAPTER }}
-        entities={content.entities}
-        notes={content.notes}
-        onClose={onClose}
-        onFixCredits={content.onFixCredits}
-      />
+      <CommandRouter>
+        <ReadAloudDialog
+          source={content.source ?? { kind: 'chapter', chapter: CHAPTER }}
+          entities={content.entities}
+          notes={content.notes}
+          onClose={onClose}
+          onFixCredits={content.onFixCredits}
+        />
+      </CommandRouter>
     </ApiProvider>,
   );
   return {

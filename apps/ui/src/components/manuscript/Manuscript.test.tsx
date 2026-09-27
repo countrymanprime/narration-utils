@@ -8,6 +8,7 @@ import { ApiProvider } from '../../api/ApiContext';
 import { createMockApi } from '../../api/mockApi';
 import { WireError } from '../../api/wire/WireError';
 import { SEARCH_DEBOUNCE_MS } from '../../hooks/useDebouncedValue';
+import { CommandRouter } from '../../input/router';
 
 afterEach(() => {
   vi.useRealTimers();
@@ -27,7 +28,9 @@ function renderManuscript(
     <div className="shell-content">
       <MemoryRouter initialEntries={initialEntries}>
         <ApiProvider api={api}>
-          <Manuscript notify={notify} focusStoryBibleEntity={focusStoryBibleEntity} projectFolder="/projects/alice" />
+          <CommandRouter>
+            <Manuscript notify={notify} focusStoryBibleEntity={focusStoryBibleEntity} projectFolder="/projects/alice" />
+          </CommandRouter>
         </ApiProvider>
       </MemoryRouter>
     </div>,
