@@ -1,6 +1,5 @@
 {
-  "dawAt": "end",
-  "dawSource": "saved",
+  "dawSource": "live",
   "lastReading": null,
   "located": null,
   "match": {
@@ -21,7 +20,7 @@
       "approximate": false,
       "itemGuid": "{22222222-1111-4111-8111-111111111111}",
       "projectTime": 17,
-      "sourceAvailable": false,
+      "sourceAvailable": true,
       "sourceFile": "C:/Projects/Alice/media/ch1.wav",
       "sourceStart": 2,
       "sourceTime": 9.5,
@@ -57,18 +56,8 @@
     ],
     "warnings": []
   },
-  "recordedEnd": {
-    "approximate": false,
-    "itemGuid": "{22222222-1111-4111-8111-111111111111}",
-    "projectTime": 17,
-    "sourceAvailable": false,
-    "sourceFile": "C:/Projects/Alice/media/ch1.wav",
-    "sourceStart": 2,
-    "sourceTime": 9.5,
-    "supported": true,
-    "takeGuid": "{32222222-1111-4111-8111-111111111111}"
-  },
-  "status": "source_missing",
+  "recordedEnd": null,
+  "status": "recording",
   "tail": null,
   "track": {
     "guid": "{11111111-1111-4111-8111-111111111111}",

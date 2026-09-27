@@ -56,6 +56,15 @@ export const manuscriptDrivers: Record<string, Driver> = {
     await openResumePrompt(page, '?mockResume=prompter_only');
     await page.getByText(/Your last reading stopped at/).waitFor();
   },
+  // Live DAW state (read-aloud-resume-from-daw.prd.md Phase 4): the REAPER place read from REAPER now, and a recording.
+  'read-aloud-resume-disagree-live': async (page) => {
+    await openResumePrompt(page, '?mockResume=disagree_live');
+    await page.getByText(/in REAPER now/).waitFor();
+  },
+  'read-aloud-resume-recording': async (page) => {
+    await openResumePrompt(page, '?mockResume=recording');
+    await page.getByText(/REAPER is recording on this track now/).waitFor();
+  },
   'read-aloud-resume-not-found': async (page) => {
     await openResumePrompt(page, '?mockResume=not_found');
     await page.getByText(/did not match this chapter/).waitFor();
