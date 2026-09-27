@@ -225,7 +225,7 @@ type windowsEntry struct {
 func writeWindowsFile(path string, windows []window) error {
 	entries := make([]windowsEntry, len(windows))
 	for i, w := range windows {
-		entries[i] = windowsEntry{ItemIndex: w.ItemIndex, ItemGUID: w.ItemGUID, SourceFile: w.SourceFile, WordsFile: w.WordsFile, Start: w.Start, End: w.End}
+		entries[i] = windowsEntry(w)
 	}
 	encoded, err := json.MarshalIndent(windowsFile{SchemaVersion: windowsSchemaVersion, Windows: entries}, "", "  ")
 	if err != nil {
