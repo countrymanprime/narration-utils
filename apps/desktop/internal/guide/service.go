@@ -18,6 +18,7 @@ import (
 	"github.com/countrymanprime/narration-utils/shell/internal/findings"
 	"github.com/countrymanprime/narration-utils/shell/internal/persist"
 	"github.com/countrymanprime/narration-utils/shell/internal/process"
+	"github.com/countrymanprime/narration-utils/shell/internal/pronunciationport"
 	"github.com/countrymanprime/narration-utils/shell/internal/settings"
 )
 
@@ -296,7 +297,12 @@ func (s *Service) editArgs(id string, values map[string]string) []string {
 // Pronounce sets the pronunciation of an entity's own name (aliasIndex nil) or one of its aliases from exactly the
 // named engine ("cmu" or "espeak"), and marks it as the narrator's explicit choice so a rebuild keeps it (D13, B9-B11).
 // It is refused on a locked entity (ADR 0007, enforced by the sidecar) and when the chosen engine has nothing for the name.
+// Pronounce asks the named pronunciation source for the entity's (or one alias's) pronunciation. A source the pronunciation port
+// cannot ask for one is refused with its *port.NotSupportedError before the sidecar starts.
 func (s *Service) Pronounce(id string, aliasIndex *int, source string) error {
+	if err := pronunciationport.CheckPronounce(source); err != nil {
+		return err
+	}
 	args := []string{"pronounce", "--guide", s.guidePath(), "--entity-id", id, "--source", source}
 	if aliasIndex != nil {
 		args = append(args, "--alias-index", fmt.Sprint(*aliasIndex))
