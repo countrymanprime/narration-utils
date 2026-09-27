@@ -38,6 +38,7 @@ import { ReaderCard } from './ReaderCard';
 import { retailSampleRange } from './retailSampleRange';
 import { SearchBar } from './SearchBar';
 import { ParagraphView } from './ParagraphView';
+import { recordedDemoDialogueCues } from './dialogueCues';
 import { SelectionMenu } from './SelectionMenu';
 import { AddNoteDialog } from './AddNoteDialog';
 import { MarkupDialog } from './MarkupDialog';
@@ -72,10 +73,15 @@ const escapeSelector = (value: string) =>
 export function Manuscript({
   notify,
   focusStoryBibleEntity,
+  goToWorkspace,
   projectFolder,
 }: {
   notify: Notify;
   focusStoryBibleEntity: (id: string) => void;
+  /** "Open workspace" from a narration chapter's header (edit-and-proof-workspace.prd.md Phase 4, page inventory
+   * "Manuscript: Keep. Share the paragraph renderer; the chapter header gets 'Open workspace'"). Optional so a caller
+   * with no workspace to open (none today) still type-checks. */
+  goToWorkspace?: (chapterId: string) => void;
   /** Keys the credits cards' remembered open state (MC5 b): a project's own choice, not the viewer's in general. */
   projectFolder: string;
 }) {
@@ -158,6 +164,10 @@ export function Manuscript({
   const recordedChapters = useMemo(() => chapters.filter(isListableChapter), [chapters]);
   const active = readerState.activeChapter || recordedChapters[0]?.id;
   const lineNumbers = useMemo(() => chapterLineNumbers(paragraphs), [paragraphs]);
+  // Speaker attribution (prep-depth.prd.md Phase 4): a recorded fixture, not a live extractor (dialogueCues.ts) -
+  // it only ever matches the built-in Alice in Wonderland demo text, so a narrator's own manuscript shows no tags
+  // until Character Continuity Review's own extractor is exposed through a binding (that PRD's Phase 6).
+  const dialogueCues = useMemo(() => recordedDemoDialogueCues(paragraphs), [paragraphs]);
   const titleMatches = useMemo(() => chapterTextMatches(chapters, searchQuery), [chapters, searchQuery]);
   // True once there is a query the panel has not shown results for yet - the debounce wait, or
   // (briefly) the request itself - so "No matches" never flashes before a settled answer exists (R1).
@@ -675,6 +685,8 @@ export function Manuscript({
                 setReadAloudMode('booth');
                 setReadAloud({ kind: 'chapter', chapter });
               }}
+              showWorkspace={goToWorkspace !== undefined && isNarrationChapter(chapter)}
+              onWorkspace={() => goToWorkspace?.(chapter.id)}
               showCompanion={isNarrationChapter(chapter)}
               onCompanion={() => {
                 setReadAloudMode('companion');
@@ -699,6 +711,7 @@ export function Manuscript({
                   lineNumberPadding={LINE_NUMBER_PADDING_CLASSES[textSize]}
                   jumpTarget={jumpTarget}
                   retailSample={sampleRange}
+                  dialogueCues={dialogueCues}
                   openEntity={(entity) => {
                     setDetail({ entity });
                     setSheet('detail');

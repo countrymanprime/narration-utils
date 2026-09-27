@@ -86,7 +86,12 @@ var builtinDefaults = map[string]Values{
 	// and still Proposed and uncalibrated on real narration (docs/utilities/recording-coverage.md, ADR 0132, Q15).
 	// background_checks defaults on (S7 B, D27): it only ever runs with the model installed, on mains power and while
 	// REAPER is idle (coverage.NextBackground, ADR 0211).
-	"RecordingCoverage": {"min_paragraph_present": "0.8", "max_missing_run": "3", "max_misread_run": "8", "min_anchor_run": "3", "background_checks": "true"},
+	// cascade_enabled defaults off (recording-check-model-cascade PRD Phase 5, MC1); the two model settings default
+	// to tiny (first pass) and large-v3-turbo (re-check), MC2.
+	"RecordingCoverage": {
+		"min_paragraph_present": "0.8", "max_missing_run": "3", "max_misread_run": "8", "min_anchor_run": "3", "background_checks": "true",
+		"cascade_enabled": "false", "cascade_first_pass_model": "tiny", "cascade_recheck_model": "large-v3-turbo",
+	},
 	// StageRecommendations defaults every signal to required and suggestions on (chapter-stage-recommendations.prd.md
 	// Phase 6, Q8, deleted; see docs/architecture/stage-recommendations.md): a narrator who never opens this settings page keeps the behaviour Phase 1 shipped with (every declared
 	// signal id required).

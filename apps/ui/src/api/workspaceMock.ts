@@ -147,6 +147,22 @@ function tokensFor(deps: Deps, chapterId: string): { tokens: WorkspaceToken[]; l
   return { tokens: mockTokens(chapterParagraphs, result.result, liveItem?.index).tokens, liveItem };
 }
 
+/** The one deterministic misread token's real position for chapterId (mockTokens's single seeded misread, above): the
+ * live item's real GUID and the misread word's source time range, for a Phase 4 `transcript_discrepancy` mock finding
+ * to carry - so the mock Review-page finding and the mock workspace's own check-derived misread flag are the same
+ * event, merged by `overlayFindings` in the workspace exactly as mockups/edit-and-proof-workspace/02-flag-detail-open.webp
+ * shows, rather than two mock fixtures whose numbers happen to agree. Undefined when the chapter has no confirmed
+ * live item or its check placed no misread (mockTokens never times a token without one). */
+export function mockMisreadFindingSource(deps: Deps, chapterId: string): { itemGuid: string; start: number; end: number; heard: string } | undefined {
+  const { tokens, liveItem } = tokensFor(deps, chapterId);
+  const misread = tokens.find(
+    (token): token is WorkspaceToken & { start: number; end: number; heard: string } =>
+      token.status === 'misread' && token.start !== undefined && token.end !== undefined && token.heard !== undefined,
+  );
+  if (!liveItem || !misread) return undefined;
+  return { itemGuid: liveItem.itemGuid, start: misread.start, end: misread.end, heard: misread.heard };
+}
+
 // reaperRefusal is the connection- and REAPER-level part of workspaceRefusal (bindings_workspace.go): standalone, not
 // running, stale, recording, an old script. It never sees the token itself - workspaceGoTo/workspaceLoop check that first.
 function reaperRefusal(mode: MockReaper): FindingNavigation | undefined {

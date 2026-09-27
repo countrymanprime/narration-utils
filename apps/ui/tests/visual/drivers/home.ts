@@ -247,6 +247,21 @@ export const homeDrivers: Record<string, Driver> = {
     await dialog.getByRole('button', { name: 'Check recording' }).click();
     await confirmDialog(page, 'Download local Whisper model?').waitFor();
   },
+  // The model cascade's own result (recording-check-model-cascade PRD Phase 5, MC5): both models named, and the
+  // pickups it confirmed still missing.
+  'recording-check-cascade': async (page) => {
+    const dialog = await openRecordingCheck(page, 'Chapter 4', 'mockCoverage=cascade');
+    await dialog.getByText(/passage.*re-checked with the large-v3-turbo Whisper model/).waitFor();
+    await dialog.getByText('Confirmed missing by the large-v3-turbo Whisper model.').first().waitFor();
+  },
+  // The re-check model's own missing-model gate (Phase 5, MC4): "Check with tiny only" beside the download.
+  'recording-check-recheck-model-required': async (page) => {
+    const dialog = await openRecordingCheck(page, 'Chapter 7', 'mockCoverage=recheck-required');
+    await dialog.getByRole('button', { name: 'Check recording' }).click();
+    const ask = confirmDialog(page, 'Download the re-check model?');
+    await ask.waitFor();
+    await ask.getByRole('button', { name: 'Check with tiny only' }).waitFor();
+  },
   'stage-summary-chips': async (page) => {
     await openStageSuggestions(page, 'mixed', false);
   },

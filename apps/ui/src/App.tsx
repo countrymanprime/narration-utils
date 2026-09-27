@@ -380,6 +380,10 @@ function AppRoutes() {
   const goToManuscript = (chapter: string, paragraph?: number) =>
     guardedNavigate(`/manuscript#${paragraph !== undefined ? `p${paragraph}` : `c${encodeURIComponent(chapter)}`}`);
   const goToStoryBible = (entityId: string) => guardedNavigate(`/story-bible#${encodeURIComponent(entityId)}`);
+  // "Open in workspace" (edit-and-proof-workspace.prd.md Phase 4): from Review, Home and the Manuscript. findingId is
+  // the deep link's ?finding=, so the workspace lands on the flag that finding backs (Navigation and deep links).
+  const goToWorkspace = (chapterId: string, findingId?: string) =>
+    guardedNavigate(`/tracks/chapter/${encodeURIComponent(chapterId)}${findingId ? `?finding=${encodeURIComponent(findingId)}` : ''}`);
   // A delivery finding opens the Delivery page on its file and rule: "#file=<path>&rule=<id>" (deliveryLink.ts).
   const goToDelivery = (file: string, rule?: string) => guardedNavigate(`/delivery${deliveryHash({ file, ...(rule ? { rule } : {}) })}`);
 
@@ -441,13 +445,22 @@ function AppRoutes() {
             <Routes>
               <Route
                 path="/"
-                element={<Home data={data} go={guardedNavigate} notify={setNotice} goToManuscript={goToManuscript} refreshBootstrap={refreshBootstrap} />}
+                element={
+                  <Home
+                    data={data}
+                    go={guardedNavigate}
+                    notify={setNotice}
+                    goToManuscript={goToManuscript}
+                    goToWorkspace={goToWorkspace}
+                    refreshBootstrap={refreshBootstrap}
+                  />
+                }
               />
               <Route
                 path="/manuscript"
                 element={
                   data.manuscript ? (
-                    <Manuscript notify={setNotice} focusStoryBibleEntity={goToStoryBible} projectFolder={data.projectFolder} />
+                    <Manuscript notify={setNotice} focusStoryBibleEntity={goToStoryBible} goToWorkspace={goToWorkspace} projectFolder={data.projectFolder} />
                   ) : (
                     <Navigate to="/" replace />
                   )
@@ -488,6 +501,7 @@ function AppRoutes() {
                     hasManuscript={Boolean(data.manuscript)}
                     goToManuscript={goToManuscript}
                     goToStoryBible={goToStoryBible}
+                    goToWorkspace={(chapterId, findingId) => goToWorkspace(chapterId, findingId)}
                     goToDelivery={goToDelivery}
                   />
                 }

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { COVERAGE_EVALUATOR_REASONS, COVERAGE_REFUSAL_REASONS } from '../../api/schemas/coverage';
-import type { CoverageJudgement, CoverageRegion, CoverageReport, ManuscriptChapter } from '../../types';
+import type { CoverageJudgement, CoverageRegion, CoverageReport, CoverageState, ManuscriptChapter } from '../../types';
 import {
   COVERAGE_REASON_TEXT,
   describeParagraphs,
@@ -8,6 +8,8 @@ import {
   describeRegion,
   formatAudioTime,
   paragraphRefs,
+  passLabel,
+  recheckLabel,
   recordedTo,
   verdict,
 } from './recordingCheckText';
@@ -121,5 +123,28 @@ describe('recording check text', () => {
     expect(recordedTo(withHead, chapter)).toEqual({ kind: 'head', paragraph: 2, total: 3, wordsLeft: 14 });
 
     expect(recordedTo({ ...report(100, 100), paragraphs }, chapter)).toBeUndefined();
+  });
+
+  // The model cascade's own labels (recording-check-model-cascade PRD Phase 5, MC5).
+  it('names the re-check model and how much it covered, or nothing for a plain check', () => {
+    expect(recheckLabel(report(90, 100))).toBeUndefined();
+    expect(recheckLabel({ ...report(90, 100), recheck: { model: 'large-v3-turbo', wholeChapter: false, windows: 1, seconds: 30 } })).toBe(
+      '1 passage re-checked with the large-v3-turbo Whisper model',
+    );
+    expect(recheckLabel({ ...report(90, 100), recheck: { model: 'large-v3-turbo', wholeChapter: false, windows: 3, seconds: 90 } })).toBe(
+      '3 passages re-checked with the large-v3-turbo Whisper model',
+    );
+    expect(recheckLabel({ ...report(90, 100), recheck: { model: 'large-v3-turbo', wholeChapter: true, windows: 0, seconds: 600 } })).toBe(
+      'the whole chapter re-checked with the large-v3-turbo Whisper model',
+    );
+  });
+
+  it('names the live pass and its model(s), or nothing for a plain check', () => {
+    const base: CoverageState = { phase: 'running', percent: 10, message: '' };
+    expect(passLabel(base)).toBeUndefined();
+    expect(passLabel({ ...base, pass: 'first_pass', firstPassModel: 'tiny', recheckModel: 'large-v3-turbo' })).toBe('First pass (tiny)');
+    expect(passLabel({ ...base, pass: 'recheck_windows', recheckWindows: 3, recheckModel: 'large-v3-turbo' })).toBe('Re-checking 3 passages (large-v3-turbo)');
+    expect(passLabel({ ...base, pass: 'recheck_whole', recheckModel: 'large-v3-turbo' })).toBe('Re-checking the whole chapter (large-v3-turbo)');
+    expect(passLabel({ ...base, pass: 'realign' })).toBe('Combining the two passes');
   });
 });

@@ -90,6 +90,14 @@ type State struct {
 	// Background is true for a run the host started on its own (Phase 7 of the auto-sync PRD, ADR 0211), not the
 	// narrator: the UI labels it, and a narrator's own start pre-empts it.
 	Background bool `json:"background"`
+	// Pass, FirstPassModel, RecheckModel and RecheckWindows are the model cascade's own live progress (Phase 5):
+	// set only for a run that asked for a re-check (Request.Recheck.Model non-empty), so the dialog can name which
+	// pass is running and how many passages the plan found without waiting for the stored result. Pass is one of
+	// "first_pass", "recheck_windows", "recheck_whole" or "realign" (stage.label()).
+	Pass           string `json:"pass,omitempty"`
+	FirstPassModel string `json:"firstPassModel,omitempty"`
+	RecheckModel   string `json:"recheckModel,omitempty"`
+	RecheckWindows int    `json:"recheckWindows,omitempty"`
 }
 
 // Request is one coverage run.

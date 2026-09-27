@@ -122,7 +122,7 @@ func fakeAlignedCoverageSidecarWithSkip() coverage.Launcher {
 func workspaceNavigationHost(t *testing.T, fake *fakeNavigator) *Host {
 	t.Helper()
 	host := coverageHost(t, coverageProject(t), true, fakeAlignedCoverageSidecarWithSkip())
-	if _, err := host.CoverageStart("c-0001"); err != nil {
+	if _, err := host.CoverageStart("c-0001", nil); err != nil {
 		t.Fatal(err)
 	}
 	host.services().coverage.Wait()
