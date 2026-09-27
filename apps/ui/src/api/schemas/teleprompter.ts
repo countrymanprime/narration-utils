@@ -17,6 +17,8 @@ import type {
   TeleprompterPosition,
   TeleprompterReading,
   TeleprompterResumePlace,
+  TeleprompterResumeFollow,
+  TeleprompterResumeFollowEvent,
   TeleprompterResumeVerdict,
   TeleprompterPunchResult,
   TeleprompterScript,
@@ -174,7 +176,7 @@ const teleprompterResumePlaceSchema = z.object({
   number: z.number().int().positive(),
   sentence: sentenceSchema.nullable(),
   confident: z.boolean(),
-  source: z.literal('saved').optional(),
+  source: z.enum(['saved', 'live']).optional(),
 }) satisfies z.ZodType<TeleprompterResumePlace>;
 
 /** `teleprompter.Reconcile`'s verdict on the locate result (read-aloud-resume-from-daw PRD Phase 3). */
@@ -197,7 +199,7 @@ const teleprompterResumeVerdictSchema = z
 export const teleprompterLocateResultSchema = z.union([
   modelAssetRequiredSchema,
   z.object({
-    status: z.enum(['found', 'low_confidence', 'not_found', 'no_track', 'no_recording', 'source_missing', 'source_unsupported']),
+    status: z.enum(['found', 'low_confidence', 'not_found', 'no_track', 'no_recording', 'source_missing', 'source_unsupported', 'recording']),
     match: chapterTrackMatchSchema,
     track: z.object({ guid: z.string(), name: z.string(), index: z.number().int() }).nullable(),
     recordedEnd: recordedEndSchema.nullable(),
@@ -205,8 +207,26 @@ export const teleprompterLocateResultSchema = z.union([
     located: teleprompterLocatedSchema.nullable(),
     lastReading: teleprompterReadingSchema.nullable(),
     verdict: teleprompterResumeVerdictSchema,
+    dawSource: z.enum(['saved', 'live']).optional(),
+    dawAt: z.enum(['cursor', 'end']).optional(),
   }),
 ]) satisfies z.ZodType<TeleprompterLocateResult>;
+
+/** `TeleprompterResumeFollow` and `TeleprompterResumeUnfollow` (`apps/desktop/resumefollow.go`, ADR 0350). */
+export const teleprompterResumeFollowSchema = z
+  .object({ following: z.boolean(), reason: z.enum(['unavailable', 'no_track']).optional() })
+  .refine((answer) => !(answer.following && answer.reason), {
+    message: 'a follow that runs has no reason',
+    path: ['reason'],
+  }) satisfies z.ZodType<TeleprompterResumeFollow>;
+
+/** `teleprompter_resume_follow`: editCursor comes only with cursor_moved. */
+export const teleprompterResumeFollowEventSchema = z
+  .object({ chapterId: z.string().min(1), reason: z.enum(['playing', 'recording', 'cursor_moved']), editCursor: z.number().nonnegative().optional() })
+  .refine((event) => (event.reason === 'cursor_moved') === (event.editCursor !== undefined), {
+    message: 'only a cursor move carries the cursor',
+    path: ['editCursor'],
+  }) satisfies z.ZodType<TeleprompterResumeFollowEvent>;
 
 const flagKindSchema = z.enum(['misread', 'extra', 'skipped', 'restart']);
 
