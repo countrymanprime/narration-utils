@@ -14,6 +14,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/countrymanprime/narration-utils/shell/internal/asrport"
 	"github.com/countrymanprime/narration-utils/shell/internal/contractfile"
 	"github.com/countrymanprime/narration-utils/shell/internal/layout"
 	"github.com/countrymanprime/narration-utils/shell/internal/moonshine"
@@ -461,5 +462,19 @@ func TestAttachingAProjectBuildsTheTeleprompterService(t *testing.T) {
 
 	if host.teleprompter == nil {
 		t.Fatal("attaching a project should build the teleprompter service")
+	}
+}
+
+// liveModelDir picks a live engine's catalog by the asset kind its asrport row names, so a live engine whose models come
+// from a kind it has no branch for would silently be served from the Whisper catalog. A new kind must fail here first.
+func TestEveryLiveEngineInstallsFromACatalogLiveModelDirServes(t *testing.T) {
+	served := map[string]bool{installKindWhisper: true, installKindMoonshine: true}
+	for _, entry := range asrport.Engines.Entries() {
+		if !entry.Descriptor.Supports(asrport.ModeLive) {
+			continue
+		}
+		if kind := entry.New().AssetKind(); !served[kind] {
+			t.Errorf("live engine %q installs from asset kind %q, which liveModelDir has no catalog for", entry.Name, kind)
+		}
 	}
 }

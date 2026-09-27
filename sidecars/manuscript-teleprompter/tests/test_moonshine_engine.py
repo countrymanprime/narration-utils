@@ -207,7 +207,7 @@ def test_live_asr_hands_the_model_directory_and_architecture_to_this_module(monk
     args = live_asr.build_parser().parse_args(["--engine", "moonshine", "--model", "tiny", "--model-dir", "D:/assets/moonshine/tiny", "--wav", "r.wav"])
     args.context_text = "Call me Ishmael."
 
-    live_asr._load_moonshine_engine(args)
+    live_asr._load_engine(args)
 
     assert calls == [("TINY_STREAMING", "D:/assets/moonshine/tiny", live_asr.DECODE_INTERVAL_SECONDS, None, "Call me Ishmael.")]
 

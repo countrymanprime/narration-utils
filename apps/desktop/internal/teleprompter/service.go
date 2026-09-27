@@ -215,10 +215,11 @@ func (s *Service) planSession(options map[string]string, src source) (launch, er
 	if !SupportsEngine(PlatformOrCurrent(s.config.Platform), engine) {
 		return launch{}, fmt.Errorf("the %s engine is not available on this computer", engine)
 	}
-	// Moonshine runs only from a verified catalog install (ADR 0107): without a directory the frozen sidecar would
-	// refuse anyway, so refuse here before launching anything.
-	if engine == EngineMoonshine && option(options, "modelDir", "") == "" {
-		return launch{}, errors.New("the Moonshine model is not installed")
+	// An engine that runs only from a verified catalog install (Moonshine, ADR 0107) would be refused by the frozen
+	// sidecar without its directory anyway, so refuse here before launching anything.
+	if asrport.NeedsInstalledModel(engine) && option(options, "modelDir", "") == "" {
+		entry, _ := asrport.Engines.Lookup(engine)
+		return launch{}, fmt.Errorf("the %s model is not installed", entry.Descriptor.Label)
 	}
 	device, wav := option(options, "device", ""), option(options, "wav", "")
 	if device == "" && wav == "" {
