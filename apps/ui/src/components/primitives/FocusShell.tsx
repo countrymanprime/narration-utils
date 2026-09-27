@@ -43,7 +43,9 @@ export function FocusShell({
         {status}
       </div>
       <div className="flex min-h-0 flex-1">
-        <main className="min-w-0 flex-1 overflow-y-auto p-4">{children}</main>
+        <main tabIndex={0} className="min-w-0 flex-1 overflow-y-auto p-4">
+          {children}
+        </main>
         {showRail && (
           <aside role="complementary" aria-label={railLabel} className="w-72 flex-none overflow-y-auto border-l border-[var(--border)] bg-[var(--surface)] p-4">
             {rail}
