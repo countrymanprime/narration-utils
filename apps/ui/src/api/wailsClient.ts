@@ -349,7 +349,8 @@ export const wailsClient: NarrationApi = {
     decode(prepMarkupSpanSchema, 'PrepMarkupSave', host.PrepMarkupSave(chapterId, paragraphId, start, end, kind, value)),
   prepMarkupDelete: (chapterId, id) => decode(voidResult, 'PrepMarkupDelete', host.PrepMarkupDelete(chapterId, id)),
   subscribeTranscript: (onUpdate) => subscribeChecked('transcript:state', transcriptStateSchema, onUpdate),
-  coverageStart: (chapterId) => decode(coverageStartResultSchema, 'CoverageStart', host.CoverageStart(chapterId)),
+  coverageStart: (chapterId, options) =>
+    decode(coverageStartResultSchema, 'CoverageStart', host.CoverageStart(chapterId, options?.skipRecheck ? { skipRecheck: 'true' } : {})),
   coverageState: () => decode(coverageStateSchema, 'CoverageState', host.CoverageState()),
   coverageCancel: () => decode(voidResult, 'CoverageCancel', host.CoverageCancel()),
   coverageResult: (chapterId) => decode(coverageResultSchema, 'CoverageResult', host.CoverageResult(chapterId)),

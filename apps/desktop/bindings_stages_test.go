@@ -31,7 +31,7 @@ func stagesHost(t *testing.T, present int) *Host {
 // checkRecording runs one recording check of the chapter to its end.
 func checkRecording(t *testing.T, host *Host) {
 	t.Helper()
-	if started := decodeAnswer(t)(host.CoverageStart("c-0001")); started["status"] != "started" {
+	if started := decodeAnswer(t)(host.CoverageStart("c-0001", nil)); started["status"] != "started" {
 		t.Fatalf("start = %v", started)
 	}
 	host.services().coverage.Wait()

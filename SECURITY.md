@@ -29,7 +29,8 @@ especially welcome:
   recorded audio a REAPER project names (the teleprompter reads the last seconds of a chapter's recording to find where to resume,
   [ADR 0111](docs/adr/0111-the-resume-point-comes-from-transcribing-the-recorded-tail-and-placing-it-with-the-tracker.md)), or when a
   sidecar reads the audio and writes the per-item cache files an analysis names (for example the recording-coverage manifest,
-  which the host builds from the saved REAPER project; the app's only input to a check is a chapter id), or the audio
+  which the host builds from the saved REAPER project; the app's only input to a check is a chapter id and, since the
+  model cascade, an options flag that only ever narrows what runs), or the audio
   an analysis manifest names (for example the per-take divergence manifest the take comparison writes, which the app
   builds only from the saved REAPER project, never from what the page sends), or the rendered audio files the narrator
   measures or checks for diagnostics, including an MP3, whose container is always read for its frame headers only, and whose levels are additionally decoded through the same downloaded FFmpeg build the encoder uses (delivery-platform-profiles Phase 8) when it is installed, writing only to a temporary WAV that is never kept (the app reads only files chosen in its own file picker in that session, and never writes to them,
@@ -40,7 +41,7 @@ especially welcome:
   author ([ADR 0347](docs/adr/0347-the-pronunciation-query-export-is-csv-with-its-ids-last-and-a-formula-guard-and-is-a-download.md)): a
   cell that runs as a formula when the file is opened in a spreadsheet, or a row that carries more than the columns it names, is in scope.
   Reading that file back once the author has answered it (`GuidePronunciationImportQueriesCSV`,
-  [ADR 0351](docs/adr/0351-a-re-imported-query-answer-is-matched-by-entry-id-and-alias-index-and-a-blank-note-column-leaves-the-note-alone.md))
+  [ADR 0352](docs/adr/0352-a-re-imported-query-answer-is-matched-by-entry-id-and-alias-index-and-a-blank-note-column-leaves-the-note-alone.md))
   is also in scope: a row matching the wrong entry or alias, a status or note applying beyond the single name its own id and alias number
   name, an import starting anything beyond the existing status-and-note sidecar call, or a blank note column clearing a note it should
   leave alone, is a vulnerability.
@@ -64,6 +65,9 @@ especially welcome:
 - The arguments and session files the app hands its local sidecars and the FFmpeg encoder, for example a value from the interface becoming a
   sidecar option, a file path FFmpeg reads as an option or a URL, an encode that writes over its source or an existing file, or the teleprompter's stop, control and credits-text files in the session folder
   ([ADR 0150](docs/adr/0150-the-teleprompter-reads-credits-as-a-host-rendered-script-file-not-a-chapter.md)).
+- The delivery package the app assembles into a folder the narrator chooses (`internal/packager`, render-encode-master PRD Phase 4): a file
+  name it builds from a chapter's title using a character a file system cannot hold, or a package that overwrites an existing file or its own
+  source, is in scope; every file it writes is a new copy of an already-encoded file, and the source is never changed.
 - The file protocol between the app and REAPER (the session folder under REAPER's resource path, the command files the Lua bridge reads, the paths it opens from a command, the commands that move REAPER's selection, cursor, time selection and transport, which the Review page sends only when the narrator presses Go to, Loop or Stop, on a finding or on one read of a pickup or duplicate group, and only while REAPER is answering, the one that adds an approved take marker, which it sends only for an accepted finding after the narrator confirms, the one allow-listed REAPER action launcher, and the retake-lane pick, which changes which lane of a track plays, and the experimental commands that ship switched off until they are verified in a real REAPER, behind the Experimental REAPER actions setting or each one's own per-capability DAW setting, starting with the read-only transport and track state, the one that selects a track, and the commands that arm tracks and start and stop a recording the app started, make a take active, add one of the narrator's own FX chains to a track or one installed plug-in to a passage, and create or move regions), the arguments a DAW or a shortcut starts the app with (`--daw REAPER` from the REAPER launcher, `--daw Audacity` from the installer's "Narration Utils for Audacity" Start Menu entry, `--project-folder`, `--session-dir`), and the local `/media` route that plays a project's audio.
 - The desktop shell itself: it runs on the Wails v3 beta, pinned at v3.0.0-beta.25 ([ADR 0200](docs/adr/0200-the-desktop-shell-runs-on-wails-v3-beta-pinned-at-v3-0-0-beta-25.md)). A way for the page, or anything else, to call the app beyond its own bindings, or to reach the app's Wails runtime endpoint from anything but its own window, is in scope.
 - Device input the webview reads directly: a MIDI footswitch or controller through the Web MIDI API, or a HID pedal or button device through the WebHID API, feature-detected and read only where a webview exposes them ([the Web MIDI/WebHID spike](docs/research/web-midi-hid-webview-spike.md); [ADR 0361](docs/adr/0361-app-commands-go-through-one-registry-and-keyboard-midi-and-hid-are-input-sources-bound-by-a-remappable-keymap.md)). What either produces is a command already reachable from the keyboard; a malformed, oversized or out-of-range device message crashing the app or reaching further than a normalised press instead of being dropped is in scope.

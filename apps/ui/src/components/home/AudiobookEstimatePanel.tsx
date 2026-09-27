@@ -92,11 +92,14 @@ export function rollupChapterStatuses(chapters: ManuscriptChapter[]): Record<Cha
 export function AudiobookEstimatePanel({
   notify,
   goToManuscript,
+  goToWorkspace,
   refreshKey,
 }: {
   notify: Notify;
   /** Opens the manuscript at a chapter, or at a paragraph (its index in the whole manuscript) when one is given. */
   goToManuscript: (chapter: string, paragraph?: number) => void;
+  /** Opens the chapter workspace (edit-and-proof-workspace.prd.md Phase 4), from the recording check slide-over. */
+  goToWorkspace?: (chapterId: string) => void;
   // The owning Home page changes this after a manuscript import/replacement.
   // Chapter estimates are derived from a separate request, so they cannot
   // rely on the Bootstrap payload alone to invalidate their cached rows.
@@ -576,6 +579,7 @@ export function AudiobookEstimatePanel({
             void stages.refresh();
           }}
           goToParagraph={(paragraph) => goToManuscript(checking.id, paragraph)}
+          openWorkspace={goToWorkspace ? () => goToWorkspace(checking.id) : undefined}
         />
       )}
       {why && (

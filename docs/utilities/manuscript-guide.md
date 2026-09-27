@@ -51,7 +51,7 @@ Bible's Pronunciation queries panel saves the CSV as a download and marks a row 
 `GuidePronunciationSetStatus`.
 
 Once the author replies, the narrator can **re-import** the answered file instead of marking each row by hand (prep depth
-Phase 6, [ADR 0351](../adr/0351-a-re-imported-query-answer-is-matched-by-entry-id-and-alias-index-and-a-blank-note-column-leaves-the-note-alone.md)):
+Phase 6, [ADR 0352](../adr/0352-a-re-imported-query-answer-is-matched-by-entry-id-and-alias-index-and-a-blank-note-column-leaves-the-note-alone.md)):
 `guide.MatchQueryAnswers` matches each of `ParseQueriesCSV`'s rows to a still-existing entity or alias by `entry_id` and
 `alias_index`, never by the free-text word, and reports a row whose entry or alias is gone the same way a row it could not
 parse is reported. `guide.Service.ImportQueriesCSV` then applies every matched row through the existing

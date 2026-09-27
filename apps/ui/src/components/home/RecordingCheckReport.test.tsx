@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
-import { cleanup, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { ApiProvider } from '../../api/ApiContext';
 import { createMockApi } from '../../api/mockApi';
 import type { CoverageReport, ManuscriptChapter } from '../../types';
@@ -40,12 +40,12 @@ const report: CoverageReport = {
   regions: [],
 };
 
-function renderReport() {
+function renderReport(openWorkspace?: () => void) {
   const api = createMockApi();
   render(
     <MemoryRouter>
       <ApiProvider api={api}>
-        <RecordingCheckReport chapter={chapter} report={report} goToParagraph={() => undefined} />
+        <RecordingCheckReport chapter={chapter} report={report} goToParagraph={() => undefined} openWorkspace={openWorkspace} />
       </ApiProvider>
     </MemoryRouter>,
   );
@@ -88,5 +88,18 @@ describe('RecordingCheckReport', () => {
       </MemoryRouter>,
     );
     expect(screen.queryByText('Pace')).toBeNull();
+  });
+
+  // edit-and-proof-workspace.prd.md Phase 4, page inventory "Home › recording check dialog": the dialog gets "Open workspace".
+  it('shows an Open workspace button when the caller has one, and calls it', () => {
+    const openWorkspace = vi.fn();
+    renderReport(openWorkspace);
+    fireEvent.click(screen.getByRole('button', { name: 'Open workspace' }));
+    expect(openWorkspace).toHaveBeenCalledTimes(1);
+  });
+
+  it('renders no Open workspace button when the caller has none', () => {
+    renderReport();
+    expect(screen.queryByRole('button', { name: 'Open workspace' })).toBeNull();
   });
 });

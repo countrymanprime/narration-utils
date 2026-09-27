@@ -144,4 +144,6 @@ export const SILENT_CATCHES: Record<string, string> = {
     "Starts the bounded REAPER follow for the matched track while the prompt shows (read-aloud-resume-from-daw.prd.md Phase 5, ADR 0350); a failure to start just means that poll never begins, and the DAW-transport subscription and the narrator's own choices still settle the prompt.",
   'src/components/teleprompter/ResumePrompt.tsx#2':
     'Stops the follow on cleanup (the prompt settles, a session starts, or the dialog closes); a failure here is unobservable and harmless, since the poll it would have stopped already lost its listener.',
+  'src/components/workspace/WorkspacePage.tsx#1':
+    "The chapter's findings for the text overlay (edit-and-proof-workspace.prd.md Phase 4): not a narrator action to retry, and not swallowed silently since the check-derived flags (Phase 2) still show with nothing lost - a failure here just leaves the overlay's extra flags and review-in-place off this load, and the Review page (which reads the same store) still works.",
 };
