@@ -19,7 +19,7 @@ func blob(b []byte) *windows.DataBlob {
 	if len(b) == 0 {
 		return &windows.DataBlob{}
 	}
-	return &windows.DataBlob{Size: uint32(len(b)), Data: &b[0]}
+	return &windows.DataBlob{Size: uint32(len(b)), Data: &b[0]} //nolint:gosec // G115: a key or its sealed blob is a few hundred bytes, never 4 GiB
 }
 
 func protect(plain []byte) ([]byte, error) {
@@ -43,8 +43,8 @@ func takeBlob(out windows.DataBlob) []byte {
 	if out.Data == nil {
 		return nil
 	}
-	defer func() { _, _ = windows.LocalFree(windows.Handle(unsafe.Pointer(out.Data))) }()
-	view := unsafe.Slice(out.Data, out.Size)
+	defer func() { _, _ = windows.LocalFree(windows.Handle(unsafe.Pointer(out.Data))) }() //nolint:gosec // G103: DPAPI hands back a LocalAlloc buffer that only LocalFree releases
+	view := unsafe.Slice(out.Data, out.Size)                                              //nolint:gosec // G103: the buffer DPAPI filled, read once and copied out before it is freed
 	copied := make([]byte, len(view))
 	copy(copied, view)
 	clear(view)
