@@ -4,7 +4,7 @@ import type { StageVerdict } from './stages';
 /**
  * Production tracking (docs/prds/production-tracking.prd.md). Phase 3: the book's deadline, contracted amount and
  * milestones, stored on the project manifest (apps/desktop/bindings_production.go) so they survive Replace manuscript.
- * Dates are calendar dates written "YYYY-MM-DD" (ADR 0321), never a time of day.
+ * Dates are calendar dates written "YYYY-MM-DD" (ADR 0323), never a time of day.
  */
 
 /** One dated checkpoint (Q5 A): the ACX 15-minute checkpoint is a milestone like any other. */

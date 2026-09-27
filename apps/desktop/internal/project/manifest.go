@@ -58,7 +58,7 @@ type Manifest struct {
 	// ADR 0179), additive like Credits. Nil: the Global default.
 	DeliveryProfile *DeliveryProfileRef `json:"deliveryProfile,omitempty"`
 	// Deadline is the book's delivery date, a calendar date "YYYY-MM-DD" (production-tracking.prd.md Phase 3, Q3,
-	// ADR 0321), additive like Credits so it survives Replace manuscript: it is a business fact about the book, not the
+	// ADR 0323), additive like Credits so it survives Replace manuscript: it is a business fact about the book, not the
 	// imported text. Empty: none set.
 	Deadline string `json:"deadline,omitempty"`
 	// ContractedAmount is what the book pays, a bare number in the narrator's own currency (production-tracking Q3,

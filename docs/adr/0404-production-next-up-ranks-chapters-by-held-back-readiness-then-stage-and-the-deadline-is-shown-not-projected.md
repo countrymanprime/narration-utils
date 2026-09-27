@@ -9,7 +9,7 @@
 
 Two facts limit what can honestly be computed:
 
-- The book has **one** deadline and no chapter has its own. Phase 3 (deadlines and milestones on the manifest, [ADR 0321](0321-production-deadlines-and-milestones-are-calendar-dates-on-the-project-manifest.md)) adds a book deadline and a generic milestone list (Q5 A). No per-chapter due date exists or is planned, so "nearest deadline first" cannot tell two chapters apart.
+- The book has **one** deadline and no chapter has its own. Phase 3 (deadlines and milestones on the manifest, [ADR 0323](0323-production-deadlines-and-milestones-are-calendar-dates-on-the-project-manifest.md)) adds a book deadline and a generic milestone list (Q5 A). No per-chapter due date exists or is planned, so "nearest deadline first" cannot tell two chapters apart.
 - A pace projection needs a rate of progress over time. Nothing records when progress happened: the time log records hours worked per chapter and stage (ADR 0320), and a chapter's status records where it is now, not when it got there. Projecting a finish date from those would mix hours worked with an estimated amount of work left, which is the "estimate presented as a fact" that ADR 0015 and ADR 0320 rule out. The PRD itself leaves burndown data to its Phase 6 (Could).
 
 ## Decision
