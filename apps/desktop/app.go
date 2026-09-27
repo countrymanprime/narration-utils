@@ -73,9 +73,13 @@ type Host struct {
 	// answer actually changed, never on every transcriptLoop tick.
 	// +checklocks:mu
 	dawCapabilitiesSnapshot string
-	manuscript              *manuscript.Service
-	sidecars                *process.Supervisor
-	settings                *settings.Store
+	// dawTransportSnapshot is the last daw_transport_changed payload (bindings_daw_transport.go, DAW port PRD P9), compared
+	// the same way.
+	// +checklocks:mu
+	dawTransportSnapshot string
+	manuscript           *manuscript.Service
+	sidecars             *process.Supervisor
+	settings             *settings.Store
 	// assets is the registry of everything that can be downloaded (assetregistry.go). It is set once, in Startup, and never replaced: a project
 	// switch does not touch it, so it is read with registry() and needs no snapshot.
 	// +checklocks:mu
@@ -797,8 +801,9 @@ func (h *Host) transcriptLoop(ctx context.Context) {
 
 // pollTranscript is one tick of transcriptLoop: drain and poll the current
 // project's transcript service, if it has one, and check whether the DAW
-// capabilities payload changed (bindings_daw.go's pollDawCapabilities): this is
-// the tick that notices a heartbeat's reachability flip or a project switch,
+// capabilities payload or the transport changed (bindings_daw.go's pollDawCapabilities,
+// bindings_daw_transport.go's pollDawTransport): this is the tick that notices a
+// heartbeat's reachability or transport change, or a project switch,
 // since neither has a callback of its own to emit from directly.
 func (h *Host) pollTranscript() {
 	if service := h.services().transcript; service != nil {
@@ -806,6 +811,7 @@ func (h *Host) pollTranscript() {
 		service.Poll()
 	}
 	h.pollDawCapabilities()
+	h.pollDawTransport()
 }
 
 // ServiceShutdown is Wails v3's stop hook for the Host service: the window is closing or the app was asked to quit.
