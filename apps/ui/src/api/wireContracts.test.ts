@@ -1721,6 +1721,25 @@ describe('answers of the mock client for the settings, voice, model, transcript 
     expect(unknown).toMatchObject({ state: 'never', paragraphs: [], tokens: [] });
   });
 
+  it('the workspace REAPER bindings answers, every outcome and refusal (edit-and-proof-workspace PRD Phase 3)', async () => {
+    const api = createMockApi();
+    const chapters = await api.manuscriptChapters();
+    const measured = chapters.find((chapter) => chapter.recordedFraction !== undefined);
+    if (!measured) throw new Error('the mock chapters carry a measured recordedFraction');
+    const alignment = await api.workspaceAlignment(measured.id);
+    if (alignment.tokens.length < 2) throw new Error('the mock chapter needs at least two heard tokens');
+
+    const answers: Array<[string, Promise<unknown>]> = [
+      ['go to', api.workspaceGoTo(measured.id, 0)],
+      ['loop', api.workspaceLoop(measured.id, 0, 1)],
+    ];
+    for (const reaper of ['standalone', 'not-running', 'stale', 'recording', 'outdated'] as const) {
+      const refusing = createMockApi({}, { reaper });
+      answers.push([`${reaper} go to`, refusing.workspaceGoTo(measured.id, 0)], [`${reaper} loop`, refusing.workspaceLoop(measured.id, 0, 1)]);
+    }
+    for (const [name, answer] of answers) expectMatches(findingNavigationSchema, await answer, `mock workspace ${name}`);
+  });
+
   it('the preview candidates: ok with candidates, no manuscript, and nothing eligible', async () => {
     const withCandidates = await createMockApi().previewCandidates();
     expectMatches(previewResultSchema, withCandidates, 'mock preview candidates, ok');
@@ -1964,6 +1983,8 @@ describe('answers of the mock client for the settings, voice, model, transcript 
       'coverageState',
       'coverageResult',
       'workspaceAlignment',
+      'workspaceGoTo',
+      'workspaceLoop',
       'previewCandidates',
       'productionPlan',
       'setProductionDeadline',

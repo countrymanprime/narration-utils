@@ -360,6 +360,8 @@ export const wailsClient: NarrationApi = {
   levelMatchApply: (chapterId, metric, targetValueDb, toleranceDb) =>
     decode(levelMatchApplyResultSchema, 'LevelMatchApply', host.LevelMatchApply(chapterId, metric, targetValueDb, toleranceDb)),
   workspaceAlignment: (chapterId) => decode(workspaceAlignmentResultSchema, 'WorkspaceAlignment', host.WorkspaceAlignment(chapterId)),
+  workspaceGoTo: (chapterId, tokenIndex) => decode(findingNavigationSchema, 'WorkspaceGoTo', host.WorkspaceGoTo(chapterId, tokenIndex)),
+  workspaceLoop: (chapterId, firstToken, lastToken) => decode(findingNavigationSchema, 'WorkspaceLoop', host.WorkspaceLoop(chapterId, firstToken, lastToken)),
   previewCandidates: () => decode(previewResultSchema, 'PreviewCandidates', host.PreviewCandidates()),
   productionPlan: () => decode(productionPlanSchema, 'ProductionPlan', host.ProductionPlan()),
   setProductionDeadline: (deadline, contractedAmount) =>
