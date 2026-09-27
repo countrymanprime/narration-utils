@@ -1025,3 +1025,49 @@ describe('App Back and Forward (Phase 1)', () => {
     await screen.findByRole('heading', { name: 'Welcome back' });
   });
 });
+
+// input-commands-and-pedals.prd.md Phase 7: the "?" (Shift+Slash) shortcut sheet, mounted from App.tsx alongside the
+// other app-level commands.
+describe('App shortcut sheet (Phase 7)', () => {
+  it('"?" opens the shortcut sheet from any page', async () => {
+    renderApp();
+    await screen.findByRole('heading', { name: 'Welcome back' });
+    fireEvent.keyDown(document, { key: '?', code: 'Slash', shiftKey: true });
+    expect(screen.getByRole('dialog', { name: 'Keyboard shortcuts' })).toBeTruthy();
+  });
+
+  it('closing it and pressing "?" again reopens it (the command stays registered)', async () => {
+    renderApp();
+    await screen.findByRole('heading', { name: 'Welcome back' });
+    fireEvent.keyDown(document, { key: '?', code: 'Slash', shiftKey: true });
+    fireEvent.click(screen.getByRole('button', { name: 'Close' }));
+    expect(screen.queryByRole('dialog', { name: 'Keyboard shortcuts' })).toBeNull();
+
+    fireEvent.keyDown(document, { key: '?', code: 'Slash', shiftKey: true });
+    expect(screen.getByRole('dialog', { name: 'Keyboard shortcuts' })).toBeTruthy();
+  });
+
+  it('"Show all shortcuts" closes the sheet and navigates to Settings', async () => {
+    renderApp();
+    await screen.findByRole('heading', { name: 'Welcome back' });
+    fireEvent.keyDown(document, { key: '?', code: 'Slash', shiftKey: true });
+    fireEvent.click(screen.getByRole('button', { name: 'Show all shortcuts' }));
+    expect(screen.queryByRole('dialog', { name: 'Keyboard shortcuts' })).toBeNull();
+    await screen.findByRole('heading', { name: 'Settings' });
+  });
+
+  it('while the sheet is open, Alt+Left no longer goes Back', async () => {
+    renderApp();
+    await screen.findByRole('heading', { name: 'Welcome back' });
+    fireEvent.click(screen.getAllByRole('button', { name: 'Manuscript' })[0]);
+    await screen.findByRole('heading', { name: 'Manuscript' });
+
+    fireEvent.keyDown(document, { key: '?', code: 'Slash', shiftKey: true });
+    fireEvent.keyDown(document, { key: 'ArrowLeft', code: 'ArrowLeft', altKey: true });
+    // The page behind an open dialog is `aria-hidden` (ADR 0047/0048, `dialogs.spec.ts`'s isolation check), so
+    // `hidden: true` is needed to still see Manuscript's own heading underneath - it never left, only the sheet
+    // covers it, which is what "Alt+Left did nothing" means here.
+    expect(screen.getByRole('heading', { name: 'Manuscript', hidden: true })).toBeTruthy();
+    expect(screen.getByRole('dialog', { name: 'Keyboard shortcuts' })).toBeTruthy();
+  });
+});

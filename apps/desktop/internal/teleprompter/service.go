@@ -18,6 +18,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/countrymanprime/narration-utils/shell/internal/asrport"
 	"github.com/countrymanprime/narration-utils/shell/internal/process"
 )
 
@@ -27,31 +28,21 @@ const defaultGrace = 8 * time.Second
 
 // Engine names, as the sidecar's --engine flag and the Teleprompter.engine setting spell them.
 const (
-	EngineWhisper   = "whisper"
-	EngineMoonshine = "moonshine"
+	EngineWhisper   = asrport.Whisper
+	EngineMoonshine = asrport.Moonshine
 )
 
 // DefaultModel is the live model a request that names none gets: tiny is the one model with measured live lag
 // (docs/prds/teleprompter-engines-and-input-devices.prd.md), and both engines' catalogs have it.
 const DefaultModel = "tiny"
 
-// Engines are the live engines the desktop host can launch on platform (a GOOS value), default first. Whisper runs
-// everywhere the sidecar does; Moonshine ships only in the Windows sidecar (ADR 0107), so it is offered only there.
-func Engines(platform string) []string {
-	if platform == "windows" {
-		return []string{EngineWhisper, EngineMoonshine}
-	}
-	return []string{EngineWhisper}
-}
+// Engines are the live engines the desktop host can launch on platform (a GOOS value), default first, as the ASR registry
+// declares them: Whisper runs everywhere the sidecar does; Moonshine ships only in the Windows sidecar (ADR 0107).
+func Engines(platform string) []string { return asrport.Names(platform, asrport.ModeLive) }
 
 // SupportsEngine reports whether engine is one of Engines(platform).
 func SupportsEngine(platform, engine string) bool {
-	for _, candidate := range Engines(platform) {
-		if candidate == engine {
-			return true
-		}
-	}
-	return false
+	return asrport.Supports(platform, asrport.ModeLive, engine)
 }
 
 // Config is what a Service is built with. Platform is the GOOS the host runs on (empty means this process's own); it

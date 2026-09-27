@@ -162,7 +162,7 @@ ENGINES: Registry[AsrEngine]        # filled by each sidecar's adapters at impor
 | 1 | Python port kit | `narration_common/ports`: `Level`, `NotSupportedError`, `Registry`, `Descriptor`, conformance runner; level golden check | complete | with 2, daw-port P1 | - | - |
 | 2 | Go port registry | `port.Registry[P]` in `internal/port/registry.go` with its tests | complete | with 1 | daw-port P1 | - |
 | 3 | ASR contract (Python) | `ports/asr.py`: `AsrEngine`, `LiveTranscriber`, `BatchTranscriber`; `Word`, `Hypothesis` moved; `asr_conformance` | complete | with 4, 7, 9, 10, 12 | 1 | - |
-| 4 | ASR registry (Go) | `internal/asrport` + `asrporttest`; `teleprompter.Engines`/`SupportsEngine` delegate to it | pending | with 3, 7, 9, 10, 12 | 2 | - |
+| 4 | ASR registry (Go) | `internal/asrport` + `asrporttest`; `teleprompter.Engines`/`SupportsEngine` delegate to it | complete | with 3, 7, 9, 10, 12 | 2 | - |
 | 5 | Live ASR adapters | Whisper and Moonshine adapters; `live_asr.py` selects through the registry | pending | with 6, 8 | 3 | - |
 | 6 | Batch ASR adapter | faster-whisper adapter; `compare.py`'s `transcribe()` goes through it | pending | with 5, 8 | 3 | - |
 | 7 | TTS and pronunciation contracts (Python) | `ports/tts.py`, `ports/pronunciation.py` (with the `BrowserLookup` role, Should) and their suites | complete | with 3, 4, 9, 10, 12 | 1 | - |
@@ -170,7 +170,7 @@ ENGINES: Registry[AsrEngine]        # filled by each sidecar's adapters at impor
 | 9 | TTS and pronunciation registries (Go) | `internal/ttsport`, `internal/pronunciationport`; setting choices and the catalog payload from them; `Pronounce` checks the source | pending | with 3, 4, 7, 10, 12 | 2 | - |
 | 10 | Capture contract (Python) | `ports/capture.py`: `CaptureBackend` (`list_devices`, `chunks`) and its suite | complete | with 3, 4, 7, 9, 12 | 1 | - |
 | 11 | dshow capture adapter | `devices.py` and `iter_microphone_chunks` behind a dshow adapter | pending | with 6, 8 | 5, 10 | - |
-| 12 | Capture registry (Go) | `internal/captureport` with the dshow row (Windows) | pending | with 3, 4, 7, 9, 10 | 2 | - |
+| 12 | Capture registry (Go) | `internal/captureport` with the dshow row (Windows) | complete | with 3, 4, 7, 9, 10 | 2 | - |
 | 13 | Encoder and Packager ports (Could) | `internal/encodeport`: interfaces, empty registry, suite | pending | with any | 2 | - |
 | 14 | Provider capabilities on the wire (Should) | `ProviderCapabilities` binding; schema, golden, `wireContracts` row, mock; `hostAPIVersion` + 1 | pending | no | 4, 9, 12, daw-port P4 | - |
 | 15 | Guards and steady state | Go and Python guard tests; `docs/architecture/provider-ports.md`; codebase map; threat-model row 4a re-read; accept ADR 0301; delete this PRD | pending | no | 5, 6, 8, 11 (and 13, 14 if taken) | - |
