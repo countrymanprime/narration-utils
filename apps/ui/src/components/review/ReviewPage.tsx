@@ -29,11 +29,14 @@ export function ReviewPage({
   hasManuscript,
   goToManuscript,
   goToStoryBible,
+  goToDelivery,
 }: {
   notify: Notify;
   hasManuscript: boolean;
   goToManuscript: (chapter: string, paragraph?: number) => void;
   goToStoryBible: (entityId: string) => void;
+  /** Opens the Delivery page on a measured file and rule, for a delivery finding (delivery-platform-profiles.prd.md P12). */
+  goToDelivery: (file: string, rule?: string) => void;
 }) {
   const api = useApi();
   const [summary, setSummary] = useState<FindingsSummary>();
@@ -159,6 +162,7 @@ export function ReviewPage({
                   onChanged={changed}
                   goToManuscript={goToManuscript}
                   goToStoryBible={goToStoryBible}
+                  goToDelivery={goToDelivery}
                   reaperStatus={reaper.status}
                   onReaperStatusChange={reaper.refresh}
                   onCompared={compared}

@@ -21,3 +21,8 @@ export const VIEWPORTS: Viewport[] = [
 // changes there (the Settings rows, ADR 0061). The desktop shell's minimum window is 960px, so this is reached by zoom, not
 // by resizing.
 export const REFLOW_VIEWPORT: Viewport = { name: 'reflow', width: 390, height: 844 };
+
+// Companion mode's window (booth-mode-and-companion-panel.prd.md Phase 7, ADR 0401): the host narrows the app's one window
+// to 380 px (apps/desktop/bindings_companion.go's companionModeWidth) and pins it beside the DAW, so the companion rows are
+// judged at that width too, the way the narrator actually sees them. Not part of the matrix: rows opt in with `COMPANION`.
+export const COMPANION_VIEWPORT: Viewport = { name: 'companion', width: 380, height: 900 };
