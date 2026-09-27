@@ -254,6 +254,21 @@ export const manuscriptDrivers: Record<string, Driver> = {
     const dialog = page.getByRole('dialog', { name: 'Read aloud: Opening credits' });
     await dialog.getByRole('status', { name: /have no value/ }).waitFor();
   },
+  // The chapter header's "Booth" button (booth-mode-and-companion-panel.prd.md Phase 1): the same dialog, in
+  // BoothView's FocusShell layout instead of the normal control bar.
+  'booth-default': async (page) => {
+    await goToPage(page, 'Manuscript');
+    await clickVisible(page, 'button', 'Open booth for Chapter 1');
+    await page.getByRole('toolbar', { name: 'Booth commands' }).waitFor();
+  },
+  // Same mock seam and word as 'read-aloud-listening', reached through Booth instead (Phase 2's toolbar row).
+  'booth-listening': async (page) => {
+    await page.goto('/?mockTeleprompter=listening');
+    await settlePage(page);
+    await goToPage(page, 'Manuscript');
+    await clickVisible(page, 'button', 'Open booth for Chapter 1');
+    await page.locator('[data-word="32"] [data-highlight="Cursor"]').waitFor();
+  },
   'reader-text-small': async (page) => {
     await goToPage(page, 'Manuscript');
     await clickVisible(page, 'button', 'small');

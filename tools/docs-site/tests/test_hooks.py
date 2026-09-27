@@ -159,6 +159,12 @@ class TestStorybookLink:
         assert "(https://example.github.io/project/storybook/)" in text
 
 
+class TestDemoLink:
+    def test_the_atlas_index_gets_an_absolute_link_to_the_demo_beside_the_site(self):
+        text = hooks.demo_section("https://example.github.io/project/", "demo/")
+        assert "(https://example.github.io/project/demo/)" in text
+
+
 class TestNavigationOrder:
     def test_named_sections_come_first_in_the_given_order_and_the_rest_keep_their_place(self):
         keys = ["adr", "design", "roadmap", "guides", "zzz", "ui"]

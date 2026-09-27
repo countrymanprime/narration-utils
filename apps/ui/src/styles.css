@@ -191,6 +191,23 @@
   --ok-text: var(--ok);
   --experimental: #4fbdbd;
   --experimental-text: var(--experimental);
+  /* The Story Bible entity/note highlight text colours (Highlight.tsx): each is a `color-mix` formula declared once, in
+     `:root`, that resolves against whichever `--text` is in scope where THAT declaration's own `var()` is substituted -
+     which is `:root` itself, not a descendant's override (custom-property inheritance computes the formula once, at the
+     nearest rule that declares it, not again at every element that merely inherits it). Falling through from dark (like
+     the badge/kind colours above) is therefore not enough for these: without a booth-scoped redeclaration they keep
+     resolving against the light theme's near-black `--text` regardless of which theme is active elsewhere on the page,
+     which is unreadable against this block's own very dark background. Re-declared here, over booth's own `--text`, the
+     same way the badge colours above already are.
+  */
+  --character-text: color-mix(in srgb, var(--character) 45%, var(--text));
+  --place-text: color-mix(in srgb, var(--place) 45%, var(--text));
+  --org-text: color-mix(in srgb, var(--org) 45%, var(--text));
+  --review-text: color-mix(in srgb, var(--review) 45%, var(--text));
+  --lore-text: color-mix(in srgb, var(--lore) 45%, var(--text));
+  --item-text: color-mix(in srgb, var(--item) 45%, var(--text));
+  --event-text: color-mix(in srgb, var(--event) 45%, var(--text));
+  --search-text: color-mix(in srgb, var(--search) 45%, var(--text));
   --font-size-booth-script: 1.1rem;
 }
 @layer base {
