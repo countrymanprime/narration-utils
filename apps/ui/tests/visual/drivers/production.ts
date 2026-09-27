@@ -14,4 +14,11 @@ export const productionDrivers: Record<string, Driver> = {
     await openProduction(page, '?mockProduction=at-risk');
     await page.getByText(/^Due 29 Sep/).waitFor();
   },
+  plan: async (page) => {
+    await openProduction(page, '?mockProduction=on-pace');
+    const panel = page.getByRole('region', { name: 'Delivery plan' });
+    await panel.getByRole('button', { name: 'Add the ACX 15-minute checkpoint' }).click();
+    await panel.getByRole('list', { name: 'Milestones' }).waitFor();
+    await panel.scrollIntoViewIfNeeded();
+  },
 };

@@ -24,8 +24,7 @@ shows a dash (—) and says why, rather than 0.
   chapters are unfinished, and to red once the date has passed. It stays a dash until a date is set.
 - **Chapters finalized**: how many chapters are marked Finalized.
 
-Setting the delivery date and the contracted amount is not in the app yet: both arrive with deadlines and
-milestones in a later release.
+Set the delivery date and the contracted amount under [Delivery plan](#delivery-plan).
 
 ## The stage timer
 
@@ -48,6 +47,18 @@ say **Done** for a stage the chapter has passed, **Not yet** for one ahead of it
 what the [stage suggestion on Home](home.md) says: **Ready**, **Not ready**, **Not checked** or **In
 progress**. **Prep** and **Delivery** say **Not available**: no check reports them per chapter yet. The
 board scrolls sideways in a narrow window; use the arrow keys to move from cell to cell.
+
+## Delivery plan
+
+**Delivery plan**, at the bottom of the page, holds the book's delivery date (written `YYYY-MM-DD`) and the
+contracted amount (a number in your own currency). Leave either empty for none. **Save date and amount**
+saves both and updates the figures above; an impossible date or an amount that is not a number is refused
+and nothing is saved.
+
+**Milestones** are dated checkpoints with an optional note. **Add milestone** adds an empty one, and **Add
+the ACX 15-minute checkpoint** adds ACX's checkpoint as an ordinary milestone for you to date, edit or
+remove. The app names the checkpoint but does not check ACX's approval process. **Save milestones** saves
+the whole list; one with no name or no real date is refused, and nothing is saved.
 
 ---
 

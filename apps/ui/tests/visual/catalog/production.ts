@@ -1,5 +1,6 @@
 // The `production` rows of STATE_CATALOG (see state-catalog.ts), in the order they are captured.
 import type { StateEntry } from '../lib/types';
+import { KEEPS_DESKTOP_SCROLL } from './shared';
 
 export const productionStates: StateEntry[] = [
   // Production (production-tracking.prd.md Phase 4, concept mock 01)
@@ -20,5 +21,12 @@ export const productionStates: StateEntry[] = [
     state: 'at-risk',
     description:
       'Production 3 days from its delivery date with chapters unfinished (?mockProduction=at-risk) - the delivery date as a warning, a higher PFH from more hours logged, and Next up led by the chapters whose stage is held back',
+  },
+  {
+    page: 'production',
+    state: 'plan',
+    description:
+      "Production's Delivery plan panel (?mockProduction=on-pace) with the ACX 15-minute checkpoint added from its template and not saved yet - the delivery date and contracted amount the figures use, each milestone's name, due date and note with Remove, and the template button off once the checkpoint is listed",
+    ...KEEPS_DESKTOP_SCROLL,
   },
 ];
