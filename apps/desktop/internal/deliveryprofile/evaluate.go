@@ -48,7 +48,10 @@ var fromSamples = map[string]bool{
 // otherKindWhy says why a rule cannot be checked on this kind of file, or "" when it can.
 func otherKindWhy(report measure.Report, metric string) string {
 	switch {
-	case report.MP3 != nil && fromSamples[metric]:
+	case report.MP3 != nil && fromSamples[metric] && !report.MP3LevelsDecoded:
+		// No Decoder measured this MP3's samples (Phase 8, P11): its levels stay exactly as unchecked as Phase 6
+		// left them. Once report.MP3LevelsDecoded is true, a decode was attempted; a value that came of it is
+		// judged normally below, and one that did not (nil) falls through to "not measurable", never here.
 		return whyNotDecoded
 	case report.MP3 == nil && metric == "mp3_format":
 		return whyNotAnMP3
