@@ -1,7 +1,7 @@
 // Package encodeport declares the Encoder and Packager ports on the Go side (ADR 0301): turning a rendered WAV into a delivery
-// format, and writing chapters and tags into a delivery file. Render goes through REAPER today and nothing encodes, so both
-// registries are empty; the render-encode-master PRD adds the first rows (internal/chaptertags is the likely first Packager). The
-// encodeporttest suites run over every row, so that first row cannot skip them.
+// format, and writing chapters and tags into a delivery file. The render-encode-master PRD adds the rows: the first Encoder is
+// FFmpeg writing MP3 (ffmpeg.go, Phase 1, ADR 0342); the Packager registry is still empty (internal/chaptertags is the likely first
+// Packager). The encodeporttest suites run over every row, so no row can skip them.
 //
 // A row's Descriptor.Modes are the formats it handles, as lower-case file extensions without the dot ("mp3", "m4b"): the formats an
 // Encoder writes, or the formats of file a Packager packages. Asked for any other, an implementation refuses with
@@ -23,6 +23,9 @@ type Spec struct {
 	BitrateKbps  int
 	SampleRateHz int
 	Channels     int
+	// Progress, when set, hears how much of the source's audio is encoded so far out of its length, from the encoder's own
+	// goroutine; nil asks for no reports.
+	Progress func(done, total time.Duration)
 }
 
 // Chapter is one chapter's place on the delivery file's timeline, as chaptertags.TimedChapter lays it out.
@@ -60,7 +63,7 @@ func NewEncoders() *port.Registry[Encoder] { return &port.Registry[Encoder]{Kind
 // NewPackagers is an empty packager registry. A test registers a fake on its own copy.
 func NewPackagers() *port.Registry[Packager] { return &port.Registry[Packager]{Kind: "packager"} }
 
-// Encoders and Packagers are the program's registries, empty until an implementation lands.
+// Encoders and Packagers are the program's registries. The FFmpeg row registers itself (ffmpeg.go); Packagers is empty.
 var (
 	Encoders  = NewEncoders()
 	Packagers = NewPackagers()

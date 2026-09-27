@@ -1,0 +1,18 @@
+{
+  "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+  "name": "character-continuity-acoustic-trial",
+  "projectType": "library",
+  "tags": ["toolchain:python"],
+  "targets": {
+    "lint": {
+      "executor": "nx:run-commands",
+      "options": {
+        "commands": [
+          "node scripts/quality.mjs python -m ruff format --check docs/research/character-continuity-acoustic-trial",
+          "node scripts/quality.mjs python -m ruff check docs/research/character-continuity-acoustic-trial"
+        ],
+        "parallel": false
+      }
+    }
+  }
+}
