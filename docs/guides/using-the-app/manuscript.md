@@ -151,6 +151,12 @@ highlighted; choosing one clears the search box, closes the panel, and jumps to 
 clear (×) icon empties the box and returns focus to it; Escape clears the box first, then closes
 the panel on a second press.
 
+A chapter with a live "Suggested: Editing/Proofing/Finalized" recommendation ([Home](home.md)'s
+per-chapter stage suggestions) shows that same wording under its title here too, so it is visible
+while browsing chapters without opening the estimate breakdown. It is read-only in this list -
+Confirm, Dismiss and the evidence view stay on Home and, for a chapter in Proofing, on the
+[Proofing](proofing.md) panel.
+
 The reader shows only the manuscript's narratable chapters. A table of contents or a Characters
 section the importer recognized stays in the project's data (the Story Bible has the readable form
 of Characters) but is never a page you page through in the reader, and a saved or shared link into

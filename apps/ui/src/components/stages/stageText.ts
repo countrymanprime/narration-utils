@@ -1,4 +1,4 @@
-// The words of a chapter's stage suggestion (docs/prds/chapter-stage-recommendations.prd.md Phase 5, ADR 0160 and 0161): what each
+// The words of a chapter's stage suggestion (chapter-stage-recommendations.prd.md Phase 5, deleted, ADR 0160 and 0161): what each
 // verdict says in the breakdown row, what each unknown cause means and what resolves it, and the summary the estimate card shows.
 // Pure functions, so StageSuggestion, StageEvidence and StageSummary only lay them out.
 import { STATUS_LABELS } from '../../chapterStatus';

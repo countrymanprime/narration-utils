@@ -11,6 +11,7 @@ import { createTeleprompterMock } from './teleprompterMock';
 import { createCoverageMock } from './coverageMock';
 import { createWorkspaceMock } from './workspaceMock';
 import { createPreviewMock } from './previewMock';
+import { createProductionMock } from './productionMock';
 import { createStagesMock } from './stagesMock';
 import { createDawMock } from './dawMock';
 import { createProvidersMock } from './providersMock';
@@ -94,16 +95,23 @@ export function createMockApi(
     },
     seed: initial.coverage,
   });
+  // workspaceLooping mirrors findingNavigation.loopingID for a workspace loop (bindings_workspace.go): set by
+  // workspaceLoop, read by findingsReaperStatus and cleared by findingsStopLoop below, so the workspace's own loop
+  // is remembered the same way a finding's is (one app loop at a time, whichever page started it).
+  const workspaceLooping: { current: string | undefined } = { current: undefined };
   const workspace = createWorkspaceMock({
     chapters: () => s.chapters,
     paragraphs: () => s.paragraphs,
     coverageResult: peekCoverage,
     project: WIRE_TRACKS_PROJECT,
     mappings: () => s.chapterTrackMappings,
+    reaper: initial.reaper,
+    looping: workspaceLooping,
   });
   const preview = createPreviewMock({ chapters: () => s.chapters, paragraphs: () => s.paragraphs }, initial.preview);
   const daw = createDawMock(initial.daw);
   const providers = createProvidersMock(initial.providers);
+  const production = createProductionMock(initial.production);
   const stages = createStagesMock({
     ready: manuscriptReady,
     chapters: () => s.chapters.map(withMeasurement),
@@ -176,8 +184,20 @@ export function createMockApi(
     ...preview,
     ...stages,
     ...findings,
+    // Merge the workspace's own loop into the shared REAPER status/stop, after ...findings so these win: one app
+    // loop at a time, whichever page started it, exactly as the real host's findingNavigation does.
+    findingsReaperStatus: async () => {
+      const status = await findings.findingsReaperStatus();
+      return workspaceLooping.current && status.connection === 'connected' ? { ...status, loopingFindingId: workspaceLooping.current } : status;
+    },
+    findingsStopLoop: async () => {
+      if (workspaceLooping.current === undefined) return findings.findingsStopLoop();
+      workspaceLooping.current = undefined;
+      return { outcome: 'stopped', restored: 1, kept: 0 };
+    },
     ...daw,
     ...providers,
+    ...production,
     ...createPronunciationLookupMock(),
   };
   const api = initial.invalidPayload ? { ...base, ...invalidPayloadOverrides(initial.invalidPayload, base) } : base;

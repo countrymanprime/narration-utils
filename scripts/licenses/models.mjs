@@ -1,9 +1,9 @@
-// Writes the generated tables of docs/architecture/model-provenance.md from the five asset catalogs, and checks that they are current.
+// Writes the generated tables of docs/architecture/model-provenance.md from the six asset catalogs, and checks that they are current.
 //
 //   node scripts/licenses/models.mjs           rewrite the tables between the markers
 //   node scripts/licenses/models.mjs --check   exit 1 when they are out of date (the repo-scripts test runs this in `pnpm check`)
 //
-// The catalogs (`config/whisper-assets.json`, `tts-assets.json`, `spacy-assets.json`, `moonshine-assets.json`, `dictionary-assets.json`) are
+// The catalogs (`config/whisper-assets.json`, `tts-assets.json`, `spacy-assets.json`, `moonshine-assets.json`, `dictionary-assets.json`, `encoder-assets.json`) are
 // what the app downloads, so the table cannot disagree with them. What no catalog says (is it fine for a commercial audiobook, and what did
 // a person decide) is written by hand in `scripts/licenses/model-review.json`; a catalog artifact with no review row, or a row for an
 // artifact that is gone, is an error.
@@ -22,6 +22,7 @@ const CATALOGS = [
   ['spacy', 'spacy-assets.json', 'models'],
   ['moonshine', 'moonshine-assets.json', 'models'],
   ['dictionary', 'dictionary-assets.json', 'dictionaries'],
+  ['encoder', 'encoder-assets.json', 'encoders'],
 ];
 
 export function loadCatalogs(configDir) {

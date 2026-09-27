@@ -74,6 +74,18 @@ export const storybibleStates: StateEntry[] = [
     state: 'entry-pronunciation-missing',
     description: 'Story Bible, an entry with no pronunciation in edit mode: Play disabled with a reason, and Generate offered',
   },
+  {
+    page: 'storybible',
+    state: 'entry-pronunciation-work',
+    description:
+      "Story Bible, an entry in edit mode after the narrator used their own pronunciation and marked it Query sent with a note: the status badge, the note, the dictionary's answer kept beside it and the switch back (prep-depth P1)",
+  },
+  {
+    page: 'storybible',
+    state: 'pronunciation-queries',
+    description:
+      'Story Bible, the Pronunciation queries slide-over: every name not yet author confirmed in reading order, the first marked sent, with the filter, the open/sent count, Export CSV and Mark sent / Mark answered (prep-depth P3)',
+  },
 
   {
     page: 'storybible',

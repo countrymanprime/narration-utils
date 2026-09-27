@@ -305,10 +305,12 @@ const mockTakeReviewScanHold = mockParams.get('mockTakeReviewScan') === 'running
 // `?mockTakeComparison=running` does the same for a take comparison (take review Phase 10).
 const mockTakeComparisonHold = mockParams.get('mockTakeComparison') === 'running';
 // `?mockMeasure=running|fails` holds a started measurement part way through (so the Delivery page's progress and Cancel can be seen),
-// or breaks it at its first poll (diagnostics-delivery-and-cleanup-tools.prd.md Phases 1 and 5). `?mockDeliveryProfile=custom` boots
-// the project judged against a custom delivery profile (delivery-platform-profiles.prd.md), so the page judged by it can be seen
-// without making one in Settings first; ACX judges otherwise.
-const mockMeasure = (['running', 'fails'] as const).find((seed) => seed === mockParams.get('mockMeasure'));
+// or breaks it at its first poll (diagnostics-delivery-and-cleanup-tools.prd.md Phases 1 and 5). `?mockMeasure=spread` boots the
+// page with several already-measured chapters whose levels vary (delivery-platform-profiles.prd.md Phase 10's book-wide spread),
+// so it can be seen without measuring several files by hand. `?mockDeliveryProfile=custom` boots the project judged against a
+// custom delivery profile (delivery-platform-profiles.prd.md), so the page judged by it can be seen without making one in
+// Settings first; ACX judges otherwise.
+const mockMeasure = (['running', 'fails', 'spread'] as const).find((seed) => seed === mockParams.get('mockMeasure'));
 // `?mockDiagnostics=running|fails` does the same for the Delivery page's Diagnostics tab (diagnostics PRD Phase 6).
 const mockDiagnostics = (['running', 'fails'] as const).find((seed) => seed === mockParams.get('mockDiagnostics'));
 const mockDeliveryProfile = mockParams.get('mockDeliveryProfile') === 'custom' ? ('custom' as const) : undefined;
@@ -327,7 +329,7 @@ const MOCK_MARKUP_SEED: PrepMarkupSeed = [
 ];
 const mockInitial = {
   ...(mockMarkup ? { prepMarkup: MOCK_MARKUP_SEED } : {}),
-  ...(mockMeasure ? { measure: mockMeasure === 'running' ? ('hold' as const) : ('fails' as const) } : {}),
+  ...(mockMeasure ? { measure: mockMeasure === 'running' ? ('hold' as const) : mockMeasure === 'spread' ? ('spread' as const) : ('fails' as const) } : {}),
   ...(mockDiagnostics ? { diagnostics: mockDiagnostics === 'running' ? ('hold' as const) : ('fails' as const) } : {}),
   ...(mockDeliveryProfile ? { deliveryProfile: mockDeliveryProfile } : {}),
   ...(mockTakeReviewScanHold ? { takeReviewScanHold: true } : {}),

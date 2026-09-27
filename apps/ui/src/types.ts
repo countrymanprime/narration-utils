@@ -37,6 +37,7 @@ export * from './api/contracts/workspace';
 export * from './api/contracts/preview';
 export * from './api/contracts/daw';
 export * from './api/contracts/providers';
+export * from './api/contracts/production';
 export * from './api/contracts/pronunciationLookup';
 
 import type { ChapterTrackMapApi } from './api/contracts/chapterTrackMap';
@@ -76,6 +77,7 @@ import type { WorkspaceApi } from './api/contracts/workspace';
 import type { PreviewApi } from './api/contracts/preview';
 import type { DawCapabilitiesApi } from './api/contracts/daw';
 import type { ProviderCapabilitiesApi } from './api/contracts/providers';
+import type { ProductionApi } from './api/contracts/production';
 import type { PronunciationLookupApi } from './api/contracts/pronunciationLookup';
 
 /** The app compatibility facade; domain interfaces remain independently testable. */
@@ -118,4 +120,5 @@ export interface NarrationApi
     PreviewApi,
     DawCapabilitiesApi,
     ProviderCapabilitiesApi,
+    ProductionApi,
     PronunciationLookupApi {}

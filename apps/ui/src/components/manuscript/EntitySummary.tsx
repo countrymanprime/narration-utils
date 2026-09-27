@@ -6,6 +6,7 @@ import { allEvidence, categoryLabel, highlightTerms } from '../../state';
 import { Highlight, highlightKind } from '../primitives/Highlight';
 import { TooltipTarget } from '../primitives/Tooltip';
 import { IconButton } from '../primitives/IconButton';
+import { pronunciationSourceLabel } from '../storybible/pronunciationStatus';
 
 export const BADGE_STYLE: Record<string, CSSProperties> = {
   Character: { background: 'var(--character-soft)', color: 'var(--character-text)' },
@@ -63,7 +64,7 @@ export function EntitySummary({ entity, jumpToLine }: { entity: GuideEntity; jum
         <div className="mb-1 text-[0.82rem] font-medium text-[var(--text-muted)]">Pronunciation</div>
         <p className="font-['IBM_Plex_Mono',ui-monospace,monospace] text-sm">{entity.pronunciation.ipa || 'Not generated'}</p>
         <p className="mt-0.5 text-xs" style={{ color: 'var(--text-muted)' }}>
-          Source: {entity.pronunciation.source} · Confidence: {entity.pronunciation.confidence}
+          Source: {pronunciationSourceLabel(entity.pronunciation)} · Confidence: {entity.pronunciation.confidence}
         </p>
       </div>
       {entity.description.text && (
@@ -97,7 +98,7 @@ export function EntitySummary({ entity, jumpToLine }: { entity: GuideEntity; jum
               <div key={alias.text} className="rounded border px-2 py-1.5" style={{ borderColor: 'var(--border)', background: 'var(--surface-2)' }}>
                 <div className="font-['IBM_Plex_Mono',ui-monospace,monospace] text-sm">{alias.text}</div>
                 <div className="mt-0.5 text-xs" style={{ color: 'var(--text-muted)' }}>
-                  {alias.pronunciation.ipa || 'Not generated'} · {alias.pronunciation.source} · {alias.occurrences.length} occurrence
+                  {alias.pronunciation.ipa || 'Not generated'} · {pronunciationSourceLabel(alias.pronunciation)} · {alias.occurrences.length} occurrence
                   {alias.occurrences.length === 1 ? '' : 's'}
                 </div>
               </div>

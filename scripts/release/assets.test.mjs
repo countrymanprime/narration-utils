@@ -26,7 +26,6 @@ import {
 const V = '0.2.7';
 
 const scratch = (prefix) => mkdtempSync(join(tmpdir(), `${prefix}-`));
-const hasTool = (name) => !spawnSync(name, ['--version'], { stdio: 'ignore' }).error;
 
 function stageWailsOutput(files) {
   const bin = scratch('bin');
@@ -40,14 +39,15 @@ function stageWailsOutput(files) {
 
 test('every platform asset is narration-utils-<version>-<platform>.<ext>', () => {
   assert.equal(assetName('windows-x64', V), 'narration-utils-0.2.7-windows-x64.zip');
-  assert.equal(assetName('macos-arm64', V), 'narration-utils-0.2.7-macos-arm64.zip');
-  assert.equal(assetName('linux-x64', V), 'narration-utils-0.2.7-linux-x64.tar.gz');
-  assert.equal(checksumName('linux-x64', V), 'narration-utils-0.2.7-linux-x64.tar.gz.sha256');
-  assert.deepEqual(Object.keys(PLATFORMS), ['windows-x64', 'macos-arm64', 'linux-x64']);
+  assert.equal(checksumName('windows-x64', V), 'narration-utils-0.2.7-windows-x64.zip.sha256');
+  // Windows only (D74, docs/adr/0412).
+  assert.deepEqual(Object.keys(PLATFORMS), ['windows-x64']);
 });
 
 test('assetName rejects a platform the release does not ship', () => {
   assert.throws(() => assetName('freebsd-x64', V), /Unknown platform/);
+  assert.throws(() => assetName('macos-arm64', V), /Unknown platform/);
+  assert.throws(() => assetName('linux-x64', V), /Unknown platform/);
 });
 
 // Windows ships two files (docs/adr/0082): the zip the in-app updater downloads (a 400 MB download otherwise, and it keeps the
@@ -55,8 +55,6 @@ test('assetName rejects a platform the release does not ship', () => {
 test('windows ships a zip for the updater and a setup program for a first install, both named for the version', () => {
   assert.equal(WINDOWS_INSTALLER, 'narration-utils-windows-x64-setup.exe');
   assert.equal(installerName('windows-x64', V), 'narration-utils-0.2.7-windows-x64-setup.exe');
-  assert.equal(installerName('macos-arm64', V), undefined);
-  assert.equal(installerName('linux-x64', V), undefined);
   assert.deepEqual(releaseFiles('windows-x64', V), [
     'narration-utils-0.2.7-windows-x64.zip',
     'narration-utils-0.2.7-windows-x64.zip.sha256',
@@ -65,14 +63,11 @@ test('windows ships a zip for the updater and a setup program for a first instal
     'narration-utils-0.2.7-THIRD-PARTY-NOTICES.txt',
     'narration-utils-0.2.7-THIRD-PARTY-NOTICES.txt.sha256',
   ]);
-  assert.deepEqual(releaseFiles('linux-x64', V), ['narration-utils-0.2.7-linux-x64.tar.gz', 'narration-utils-0.2.7-linux-x64.tar.gz.sha256']);
 });
 
 test('the third-party notices are a Windows release asset of their own, never a second file in the update zip', () => {
   assert.equal(NOTICES_FILE, 'THIRD-PARTY-NOTICES.txt');
   assert.equal(noticesName('windows-x64', V), 'narration-utils-0.2.7-THIRD-PARTY-NOTICES.txt');
-  assert.equal(noticesName('macos-arm64', V), undefined);
-  assert.equal(noticesName('linux-x64', V), undefined);
 });
 
 test('the updater still finds its zip: the setup program does not change what assetName returns', () => {
@@ -142,45 +137,6 @@ test('windows packaging zips the exe under its own name', { skip: process.platfo
   assert.equal(listing.stdout.trim(), 'narration-utils.exe');
 });
 
-test('packaging writes a sha256sum-format checksum next to the asset', { skip: !hasTool('tar') }, () => {
-  const bin = stageWailsOutput({ 'narration-utils': 'elf' });
-  const out = scratch('out');
-
-  const asset = packageAsset({ platform: 'linux-x64', binDir: bin, outDir: out, version: V });
-
-  const line = readFileSync(join(out, 'narration-utils-0.2.7-linux-x64.tar.gz.sha256'), 'utf8');
-  assert.equal(line, `${sha256File(asset)}  narration-utils-0.2.7-linux-x64.tar.gz\n`);
-});
-
-test('linux packaging tars the binary', { skip: !hasTool('tar') }, () => {
-  const bin = stageWailsOutput({ 'narration-utils': 'elf' });
-  const out = scratch('out');
-
-  const asset = packageAsset({ platform: 'linux-x64', binDir: bin, outDir: out, version: V });
-
-  // Relative name: GNU tar reads a Windows drive letter in the archive argument as a remote host.
-  const listing = spawnSync('tar', ['-tzf', basename(asset)], { cwd: out, encoding: 'utf8' });
-  assert.equal(listing.stdout.trim(), 'narration-utils');
-});
-
-test('linux packaging fails when the binary is missing', () => {
-  assert.throws(() => packageAsset({ platform: 'linux-x64', binDir: scratch('bin'), outDir: scratch('out'), version: V }), /narration-utils/);
-});
-
-test('macos packaging fails when the app bundle is missing', () => {
-  assert.throws(() => packageAsset({ platform: 'macos-arm64', binDir: scratch('bin'), outDir: scratch('out'), version: V }), /Narration Utils\.app/);
-});
-
-test('macos packaging zips the app bundle', { skip: !hasTool('zip') || !hasTool('unzip') }, () => {
-  const bin = stageWailsOutput({ 'Narration Utils.app/Contents/MacOS/narration-utils': 'mach-o' });
-  const out = scratch('out');
-
-  const asset = packageAsset({ platform: 'macos-arm64', binDir: bin, outDir: out, version: V });
-
-  const listing = spawnSync('unzip', ['-Z1', asset], { encoding: 'utf8' });
-  assert.match(listing.stdout, /Narration Utils\.app\/Contents\/MacOS\/narration-utils/);
-});
-
 function stageRelease(platforms) {
   const dir = scratch('release');
   for (const platform of platforms) {
@@ -193,27 +149,12 @@ function stageRelease(platforms) {
   return dir;
 }
 
-test('only Windows is required; macOS and Linux are optional', () => {
-  assert.deepEqual(
-    Object.entries(PLATFORMS).map(([platform, { required }]) => [platform, required]),
-    [
-      ['windows-x64', true],
-      ['macos-arm64', false],
-      ['linux-x64', false],
-    ],
-  );
-});
-
 test('verifyAssets accepts a Windows-only release', () => {
   assert.deepEqual(verifyAssets(stageRelease(['windows-x64']), V), []);
 });
 
-test('verifyAssets accepts a release with every platform whose checksums match', () => {
-  assert.deepEqual(verifyAssets(stageRelease(Object.keys(PLATFORMS)), V), []);
-});
-
 test('verifyAssets reports a missing Windows asset and checksum', () => {
-  assert.deepEqual(verifyAssets(stageRelease(['linux-x64']), V), [
+  assert.deepEqual(verifyAssets(stageRelease([]), V), [
     'Missing narration-utils-0.2.7-windows-x64.zip',
     'Missing narration-utils-0.2.7-windows-x64.zip.sha256',
     'Missing narration-utils-0.2.7-windows-x64-setup.exe',
@@ -280,13 +221,13 @@ test('verifyAssets reports a setup program whose checksum is missing', () => {
 });
 
 test('verifyAssets reports an empty checksum file', () => {
-  const dir = stageRelease(['windows-x64', 'macos-arm64']);
-  writeFileSync(join(dir, checksumName('macos-arm64', V)), '');
+  const dir = stageRelease(['windows-x64']);
+  writeFileSync(join(dir, checksumName('windows-x64', V)), '');
 
   const problems = verifyAssets(dir, V);
 
   assert.equal(problems.length, 1);
-  assert.match(problems[0], /narration-utils-0\.2\.7-macos-arm64\.zip\.sha256/);
+  assert.match(problems[0], /narration-utils-0\.2\.7-windows-x64\.zip\.sha256/);
 });
 
 test('verifyAssets reports an asset that no longer matches its checksum', () => {
@@ -297,20 +238,6 @@ test('verifyAssets reports an asset that no longer matches its checksum', () => 
 
   assert.equal(problems.length, 1);
   assert.match(problems[0], /narration-utils-0\.2\.7-windows-x64\.zip.*checksum/);
-});
-
-test('verifyAssets reports an optional asset that is only half uploaded', () => {
-  const dir = stageRelease(['windows-x64', 'linux-x64']);
-  rmSync(join(dir, checksumName('linux-x64', V)));
-
-  assert.deepEqual(verifyAssets(dir, V), ['Incomplete upload: narration-utils-0.2.7-linux-x64.tar.gz has no narration-utils-0.2.7-linux-x64.tar.gz.sha256']);
-});
-
-test('verifyAssets reports an optional checksum whose asset is missing', () => {
-  const dir = stageRelease(['windows-x64', 'macos-arm64']);
-  rmSync(join(dir, assetName('macos-arm64', V)));
-
-  assert.deepEqual(verifyAssets(dir, V), ['Incomplete upload: narration-utils-0.2.7-macos-arm64.zip.sha256 has no narration-utils-0.2.7-macos-arm64.zip']);
 });
 
 // `assets.mjs verify --attestations` asks `gh attestation verify` who built each downloaded file. The tests use a
@@ -344,15 +271,8 @@ test('attestationArgs pins the repository, the signer workflow, the main branch 
   ]);
 });
 
-test('macOS and Linux are signed by the reusable attach workflow, not by the workflow that calls it', () => {
-  for (const platform of ['macos-arm64', 'linux-x64']) {
-    const args = attestationArgs({ file: 'x', repository: REPOSITORY, platform });
-    assert.equal(args[args.indexOf('--signer-workflow') + 1], `${REPOSITORY}/.github/workflows/_attach-platform.yml`);
-  }
-});
-
-test('verifyAttestations checks every file of every platform that is present, the setup program and the notices included', () => {
-  const dir = stageRelease(['windows-x64', 'linux-x64']);
+test('verifyAttestations checks every file of the release, the setup program and the notices included', () => {
+  const dir = stageRelease(['windows-x64']);
   const { calls, run } = fakeGh();
 
   assert.deepEqual(verifyAttestations(dir, { repository: REPOSITORY, version: V, run }), []);
@@ -366,18 +286,19 @@ test('verifyAttestations checks every file of every platform that is present, th
       'narration-utils-0.2.7-windows-x64-setup.exe.sha256',
       'narration-utils-0.2.7-THIRD-PARTY-NOTICES.txt',
       'narration-utils-0.2.7-THIRD-PARTY-NOTICES.txt.sha256',
-      'narration-utils-0.2.7-linux-x64.tar.gz',
-      'narration-utils-0.2.7-linux-x64.tar.gz.sha256',
     ],
   );
 });
 
-test('verifyAttestations does not ask about a platform that was never shipped', () => {
+test('verifyAttestations does not ask about a file that is not there', () => {
   const { calls, run } = fakeGh();
 
-  verifyAttestations(stageRelease(['windows-x64']), { repository: REPOSITORY, version: V, run });
+  const dir = stageRelease(['windows-x64']);
+  rmSync(join(dir, `${noticesName('windows-x64', V)}.sha256`));
 
-  assert.equal(calls.length, 6);
+  verifyAttestations(dir, { repository: REPOSITORY, version: V, run });
+
+  assert.equal(calls.length, 5);
 });
 
 test('verifyAttestations names every file that has no valid attestation and why', () => {
@@ -453,14 +374,14 @@ test('verifyAttestations keeps the end of a long gh error, where the reason is',
   assert.match(verifyAttestations(dir, { repository: REPOSITORY, version: V, run })[0], /the signer workflow does not match/);
 });
 
-test('verifyAttestations passes each platform its own signer and the repository it was given', () => {
-  const dir = stageRelease(['macos-arm64']);
+test('verifyAttestations passes the release signer and the repository it was given', () => {
+  const dir = stageRelease(['windows-x64']);
   const { calls, run } = fakeGh();
 
   verifyAttestations(dir, { repository: 'someone/else', version: V, run });
 
-  assert.deepEqual(calls[0], attestationArgs({ file: join(dir, 'narration-utils-0.2.7-macos-arm64.zip'), repository: 'someone/else', platform: 'macos-arm64' }));
-  assert.ok(calls[0].includes('someone/else/.github/workflows/_attach-platform.yml'));
+  assert.deepEqual(calls[0], attestationArgs({ file: join(dir, 'narration-utils-0.2.7-windows-x64.zip'), repository: 'someone/else', platform: 'windows-x64' }));
+  assert.ok(calls[0].includes('someone/else/.github/workflows/prerelease.yml'));
 });
 
 test('the verify command rejects a flag it does not know instead of skipping the check', () => {

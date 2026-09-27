@@ -36,9 +36,10 @@ export function versionFlag(version) {
   return `-X main.version=${version}`;
 }
 
-// The Go target of the machine the build runs on: each platform is built on its own runner (docs/operations/ci-and-releases.md).
+// The Go target of the machine the build runs on. Windows is the only platform that ships (docs/adr/0412); Linux builds only as a
+// development host, for local checks, and is never released (docs/adr/0413).
 export function goosOf(platform = process.platform) {
-  const goos = { win32: 'windows', darwin: 'darwin', linux: 'linux' }[platform];
+  const goos = { win32: 'windows', linux: 'linux' }[platform];
   if (!goos) throw new Error(`The desktop app is not built on ${platform}`);
   return goos;
 }
@@ -113,17 +114,6 @@ function run(command, args, options = {}) {
   if (result.status !== 0) throw new Error(`${command} ${args.join(' ')} failed with exit code ${result.status}`);
 }
 
-// A macOS program has to be a bundle to open as an app: Contents/MacOS holds the program, Contents/Info.plist names it and its icon.
-function bundleMacApp(product, assets, program) {
-  const bundle = join(BIN_DIR, `${product.info.productName}.app`);
-  rmSync(bundle, { recursive: true, force: true });
-  mkdirSync(join(bundle, 'Contents', 'MacOS'), { recursive: true });
-  mkdirSync(join(bundle, 'Contents', 'Resources'), { recursive: true });
-  copyFileSync(program, join(bundle, 'Contents', 'MacOS', product.outputfilename));
-  copyFileSync(join(assets, 'darwin', 'Info.plist'), join(bundle, 'Contents', 'Info.plist'));
-  run('wails3', ['generate', 'icons', '-input', resolve('build', 'appicon.png'), '-macfilename', join(bundle, 'Contents', 'Resources', 'icons.icns')]);
-}
-
 function build(extra) {
   const version = readRootVersion(ROOT_PACKAGE);
   const product = JSON.parse(readFileSync(PRODUCT_FILE, 'utf8'));
@@ -143,10 +133,9 @@ function build(extra) {
       const icon = resolve('build', 'windows', 'icon.ico');
       run('wails3', ['generate', 'syso', '-arch', 'amd64', '-icon', icon, '-manifest', manifest, '-info', join(assets, 'windows', 'info.json'), '-out', syso]);
     }
-    // Windows needs no C compiler for Wails v3; macOS and Linux link the system webview through cgo.
+    // Windows needs no C compiler for Wails v3; a Linux development build links the system webview through cgo.
     const env = { ...process.env, CGO_ENABLED: goos === 'windows' ? '0' : '1' };
     run('go', goBuildArguments(version, goos, program), { env });
-    if (goos === 'darwin') bundleMacApp(product, assets, program);
     if (installerRequested(extra)) {
       // wails_tools.nsh is rendered for this version on every build and never checked in, as under v2 (project.nsi, docs/adr/0082).
       copyFileSync(join(assets, 'windows', 'nsis', 'wails_tools.nsh'), join(INSTALLER_DIR, 'wails_tools.nsh'));
