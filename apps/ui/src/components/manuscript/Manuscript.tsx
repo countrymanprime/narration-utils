@@ -35,6 +35,7 @@ import { ReaderCard } from './ReaderCard';
 import { retailSampleRange } from './retailSampleRange';
 import { SearchBar } from './SearchBar';
 import { ParagraphView } from './ParagraphView';
+import { recordedDemoDialogueCues } from './dialogueCues';
 import { SelectionMenu } from './SelectionMenu';
 import { AddNoteDialog } from './AddNoteDialog';
 import { DictionaryInstallPrompt, isSingleWord, WordLookupAnswer } from './WordLookup';
@@ -150,6 +151,10 @@ export function Manuscript({
   const recordedChapters = useMemo(() => chapters.filter(isListableChapter), [chapters]);
   const active = readerState.activeChapter || recordedChapters[0]?.id;
   const lineNumbers = useMemo(() => chapterLineNumbers(paragraphs), [paragraphs]);
+  // Speaker attribution (prep-depth.prd.md Phase 4): a recorded fixture, not a live extractor (dialogueCues.ts) -
+  // it only ever matches the built-in Alice in Wonderland demo text, so a narrator's own manuscript shows no tags
+  // until Character Continuity Review's own extractor is exposed through a binding (that PRD's Phase 6).
+  const dialogueCues = useMemo(() => recordedDemoDialogueCues(paragraphs), [paragraphs]);
   const titleMatches = useMemo(() => chapterTextMatches(chapters, searchQuery), [chapters, searchQuery]);
   // True once there is a query the panel has not shown results for yet - the debounce wait, or
   // (briefly) the request itself - so "No matches" never flashes before a settled answer exists (R1).
@@ -631,6 +636,7 @@ export function Manuscript({
                   lineNumberPadding={LINE_NUMBER_PADDING_CLASSES[textSize]}
                   jumpTarget={jumpTarget}
                   retailSample={sampleRange}
+                  dialogueCues={dialogueCues}
                   openEntity={(entity) => {
                     setDetail({ entity });
                     setSheet('detail');
