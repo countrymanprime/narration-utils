@@ -1534,5 +1534,24 @@ export function WorkspaceAlignment(chapterID: string): $CancellablePromise<strin
     return $Call.ByID(2240146208, chapterID);
 }
 
+/**
+ * WorkspaceGoTo selects tokenIndex's item in REAPER and puts the edit cursor on the spot it was heard, exactly as
+ * FindingsGoTo does for a finding: navigate_item, sent only once the token resolves to an item REAPER can be asked
+ * about and REAPER is listening.
+ */
+export function WorkspaceGoTo(chapterID: string, tokenIndex: number): $CancellablePromise<string> {
+    return $Call.ByID(3177963740, chapterID, tokenIndex);
+}
+
+/**
+ * WorkspaceLoop loops the chapter passage from firstToken to lastToken (inclusive, both heard on the same item) in
+ * REAPER: the time selection and loop points around it, repeat on, and Play, exactly as FindingsLoop does.
+ * FindingsStopLoop stops it - the workspace holds no loop state of its own, sharing the one app loop
+ * findingNavigation already tracks.
+ */
+export function WorkspaceLoop(chapterID: string, firstToken: number, lastToken: number): $CancellablePromise<string> {
+    return $Call.ByID(465077885, chapterID, firstToken, lastToken);
+}
+
 // Private type creation functions
 const $$createType0 = $Create.Map($Create.Any, $Create.Any);

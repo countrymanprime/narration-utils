@@ -97,6 +97,7 @@ export function createMockApi(
     coverageResult: peekCoverage,
     project: WIRE_TRACKS_PROJECT,
     mappings: () => s.chapterTrackMappings,
+    reaper: initial.reaper,
   });
   const preview = createPreviewMock({ chapters: () => s.chapters, paragraphs: () => s.paragraphs }, initial.preview);
   const daw = createDawMock(initial.daw);

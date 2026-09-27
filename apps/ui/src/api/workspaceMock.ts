@@ -8,6 +8,8 @@
 import type {
   CoverageReport,
   CoverageResult,
+  FindingNavigation,
+  FindingNavigationRefusal,
   ManuscriptChapter,
   ManuscriptParagraph,
   TrackMapping,
@@ -18,6 +20,7 @@ import type {
   WorkspaceItem,
   WorkspaceToken,
 } from '../types';
+import { LOOP_PADDING_SECONDS, REAPER_MESSAGES, type MockReaper } from './findingsMock';
 
 type Deps = {
   chapters: () => ManuscriptChapter[];
@@ -25,6 +28,19 @@ type Deps = {
   coverageResult: (chapterId: string) => CoverageResult;
   project: TracksProject;
   mappings: () => TrackMapping[];
+  /** What the mock's REAPER does for Go to and Loop (edit-and-proof-workspace PRD Phase 3), shared with the Review
+   * page's own mock REAPER (`initial.reaper`, mockApi.ts); `connected` when not given. */
+  reaper?: MockReaper;
+};
+
+const refused = (reason: FindingNavigationRefusal, message: string): FindingNavigation => ({ outcome: 'refused', reason, message });
+
+// The workspace's own words for a token that cannot be placed (apps/desktop/bindings_workspace.go): a word, never
+// "this finding" - REAPER_MESSAGES.standalone/notRunning/stale/recording/outdated are connection- and REAPER-level,
+// so they read the same for any caller and are reused as-is.
+const WORKSPACE_MESSAGES = {
+  noItem: "This word wasn't heard in the recording, so there's nothing to go to. Run the check again if the chapter has changed.",
+  noSourceTime: 'This word has no time in its audio to loop. Go to it instead.',
 };
 
 /** A narration pace, for the mock's token times only (matches coverageMock.ts's own). */
@@ -116,7 +132,32 @@ function mockTokens(
   return { tokens, extras };
 }
 
+// tokensFor is workspaceAlignment's own tokens and live item for a chapter, reused by workspaceGoTo/workspaceLoop so
+// a token index they are sent resolves to the same item and source time workspaceAlignment showed for it.
+function tokensFor(deps: Deps, chapterId: string): { tokens: WorkspaceToken[]; liveItem: WorkspaceItem | undefined } {
+  const result = deps.coverageResult(chapterId);
+  const chapter = deps.chapters().find((candidate) => candidate.id === chapterId);
+  if (!chapter || result.state === 'never') return { tokens: [], liveItem: undefined };
+  const chapterParagraphs = deps.paragraphs().filter((paragraph) => paragraph.chapterId === chapterId);
+  const liveItem = mockLiveItem(deps, chapterId);
+  return { tokens: mockTokens(chapterParagraphs, result.result, liveItem?.index).tokens, liveItem };
+}
+
+// reaperRefusal is the connection- and REAPER-level part of workspaceRefusal (bindings_workspace.go): standalone, not
+// running, stale, recording, an old script. It never sees the token itself - workspaceGoTo/workspaceLoop check that first.
+function reaperRefusal(mode: MockReaper): FindingNavigation | undefined {
+  if (mode === 'standalone') return refused('standalone', REAPER_MESSAGES.standalone);
+  if (mode === 'not-running') return refused('not_running', REAPER_MESSAGES.notRunning);
+  if (mode === 'stale') return refused('stale', REAPER_MESSAGES.stale);
+  if (mode === 'recording') return refused('recording', REAPER_MESSAGES.recording);
+  if (mode === 'outdated') return refused('script_outdated', REAPER_MESSAGES.outdated);
+  return undefined;
+}
+
 export function createWorkspaceMock(deps: Deps): WorkspaceApi {
+  const mode = deps.reaper ?? 'connected';
+  const target = (chapterId: string, tokenIndex: number): WorkspaceToken | undefined => tokensFor(deps, chapterId).tokens[tokenIndex];
+
   return {
     workspaceAlignment: async (chapterId) => {
       const result = deps.coverageResult(chapterId);
@@ -148,6 +189,21 @@ export function createWorkspaceMock(deps: Deps): WorkspaceApi {
         extras: resolvedExtras,
         items: liveItem ? [liveItem] : [],
       };
+    },
+    workspaceGoTo: async (chapterId, tokenIndex) => {
+      const token = target(chapterId, tokenIndex);
+      if (token?.item === undefined) return refused('no_item', WORKSPACE_MESSAGES.noItem);
+      return reaperRefusal(mode) ?? { outcome: 'navigated', projectTime: token.start ?? 0 };
+    },
+    workspaceLoop: async (chapterId, firstToken, lastToken) => {
+      const first = target(chapterId, firstToken);
+      const last = target(chapterId, lastToken);
+      if (first?.item === undefined || last?.item === undefined) return refused('no_item', WORKSPACE_MESSAGES.noItem);
+      if (last.end === undefined) return refused('no_source_time', WORKSPACE_MESSAGES.noSourceTime);
+      const refusal = reaperRefusal(mode);
+      if (refusal) return refusal;
+      const start = first.start ?? 0;
+      return { outcome: 'looping', loopStart: Math.max(start - LOOP_PADDING_SECONDS, 0), loopEnd: last.end + LOOP_PADDING_SECONDS };
     },
   };
 }

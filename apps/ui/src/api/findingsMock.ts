@@ -151,8 +151,9 @@ export function approvedMarkerName(finding: Finding): string {
   return `${kind.toUpperCase()}: ${body}`;
 }
 
-/** ContextPaddingSeconds (apps/desktop/internal/bridge/navigation.go): the audio a loop plays either side of a finding. */
-const LOOP_PADDING_SECONDS = 2;
+/** ContextPaddingSeconds (apps/desktop/internal/bridge/navigation.go): the audio a loop plays either side of a finding
+ * or, reused for the same bridge.Navigator.Loop, a workspace passage (workspaceMock.ts). */
+export const LOOP_PADDING_SECONDS = 2;
 
 type FindingsMockOptions = {
   /** After the first list the page gets, the analyzer runs again, so a decision on what that list showed is refused as stale. */
