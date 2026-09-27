@@ -1,6 +1,6 @@
 # 0305. The DAW heartbeat carries the transport and is sent at once when it changes
 
-**Status:** Proposed
+**Status:** Accepted
 **Date:** 2026-09-27
 **Supersedes:** none. It extends the `PROJECT_STATUS` heartbeat of [ADR 0092](0092-reaper-executable-discovery-heartbeat-mechanism-and-script-plus-project-launch-are-resolved.md) and the `Heartbeat` role of [ADR 0300](0300-every-daw-is-reached-through-one-port-of-small-role-interfaces-and-callers-ask-a-resolver-what-it-supports.md), for Phase 9 of the DAW port PRD (PRD deleted, delivered).
 
