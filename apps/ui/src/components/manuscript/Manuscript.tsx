@@ -27,6 +27,7 @@ import { ToggleGroup } from '../primitives/ToggleGroup';
 import { SlideOver } from '../primitives/SlideOver';
 import { Tooltip, TooltipTarget } from '../primitives/Tooltip';
 import { ChapterNav } from './ChapterNav';
+import { useStageRecommendations } from '../stages/useStageRecommendations';
 import { CreditsSetupBanner } from '../credits/CreditsSetupBanner';
 import { CreditsSetupDialog } from '../credits/CreditsSetupDialog';
 import { CreditsEntry } from './CreditsEntry';
@@ -204,6 +205,10 @@ export function Manuscript({
 
   const [loadError, setLoadError] = useState<string>();
   const [loadAttempt, setLoadAttempt] = useState(0);
+  // The nav's "Suggested: <stage>" marker (chapter-stage-recommendations.prd.md Phase 9, Q6): read-only here, so
+  // onStatus is a no-op - the marker never confirms, dismisses or reverts. Refreshed whenever chapters reload
+  // (loadAttempt), the same trigger the page's own chapter list already uses.
+  const stages = useStageRecommendations({ refreshKey: String(loadAttempt), notify, onStatus: () => {} });
   useEffect(() => {
     void (async () => {
       try {
@@ -770,6 +775,7 @@ export function Manuscript({
                 titleMatches={titleMatches}
                 pending={searchPending}
                 lineNumbers={lineNumbers}
+                stageSuggestions={stages.state.byChapter}
                 select={(id, paragraph) => {
                   const chapter = chapters.find((item) => item.id === id);
                   if (chapter) {
