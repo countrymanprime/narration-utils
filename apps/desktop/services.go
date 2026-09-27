@@ -56,6 +56,9 @@ type hostServices struct {
 	// takeCreator is the DAW port's take_create role over the same bridge client (DAW port PRD P5c); nil (a true nil
 	// interface) with no bridge client or no such role.
 	takeCreator dawport.TakeCreator
+	// dawPortResolver is the DAW port's resolver for the roles bindings_navigation.go, readaloudreaper.go,
+	// teleprompterinput.go and chapterregions.go ask for (DAW port PRD P5a, ADR 0300); nil with no bridge client.
+	dawPortResolver *dawport.Resolver
 }
 
 // services returns a snapshot of the swappable services. It is the only way a
@@ -85,26 +88,27 @@ func (h *Host) services() hostServices {
 	h.mu.RLock()
 	defer h.mu.RUnlock()
 	return hostServices{
-		config:       h.config,
-		findings:     h.findings,
-		guide:        h.guide,
-		lineIdentity: h.lineIdentity,
-		manuscript:   h.manuscript,
-		pickups:      h.pickups,
-		projectState: h.projectState,
-		renderConfig: h.renderConfig,
-		cleanupTools: h.cleanupTools,
-		retakeLanes:  h.retakeLanes,
-		settings:     h.settings,
-		teleprompter: h.teleprompter,
-		transcript:   h.transcript,
-		coverage:     h.coverage,
-		stages:       h.stages,
-		editing:      h.editing,
-		reachability: h.reachability,
-		bridge:       h.bridge,
-		actions:      h.actions,
-		navigation:   h.navigation,
-		takeCreator:  h.takeCreator,
+		config:          h.config,
+		findings:        h.findings,
+		guide:           h.guide,
+		lineIdentity:    h.lineIdentity,
+		manuscript:      h.manuscript,
+		pickups:         h.pickups,
+		projectState:    h.projectState,
+		renderConfig:    h.renderConfig,
+		cleanupTools:    h.cleanupTools,
+		retakeLanes:     h.retakeLanes,
+		settings:        h.settings,
+		teleprompter:    h.teleprompter,
+		transcript:      h.transcript,
+		coverage:        h.coverage,
+		stages:          h.stages,
+		editing:         h.editing,
+		reachability:    h.reachability,
+		bridge:          h.bridge,
+		actions:         h.actions,
+		navigation:      h.navigation,
+		takeCreator:     h.takeCreator,
+		dawPortResolver: h.dawPortResolver,
 	}
 }

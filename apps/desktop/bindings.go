@@ -844,11 +844,7 @@ func (h *Host) ChapterRegionsPreview(openingTrackGUID, closingTrackGUID string) 
 }
 func (h *Host) ChapterRegionsCreate(openingTrackGUID, closingTrackGUID string, update bool) (string, error) {
 	svc := h.services()
-	var creator regionCreator
-	if svc.actions != nil {
-		creator = svc.actions
-	}
-	return encodeBinding(createChapterRegions(context.Background(), svc, creator, openingTrackGUID, closingTrackGUID, update))
+	return encodeBinding(createChapterRegions(context.Background(), svc, regionCreatorFrom(svc), openingTrackGUID, closingTrackGUID, update))
 }
 
 func (h *Host) TracksDiscover() (string, error) { return encodeBinding(h.tracksDiscover()) }
