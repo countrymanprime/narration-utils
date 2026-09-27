@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import type { DawCapabilities, DawCapabilityLevel, DawCapabilityReason, DawCapabilitySupport, DawKind } from '../contracts/daw';
+import type { DawCapabilities, DawCapabilityLevel, DawCapabilityReason, DawCapabilitySupport, DawKind, DawTransport } from '../contracts/daw';
 import { optionalFromNull } from './base';
 
 const DAW_KINDS = ['REAPER', 'Audacity', 'none'] as const satisfies readonly DawKind[];
@@ -26,3 +26,10 @@ export const dawCapabilitiesSchema = z.object({
   reachable: z.boolean(),
   capabilities: z.record(z.string(), dawCapabilitySupportSchema),
 }) satisfies z.ZodType<DawCapabilities>;
+
+/** daw_transport_changed (DAW port PRD Phase 9): position is absent while stopped. */
+export const dawTransportSchema = z.object({
+  playing: z.boolean(),
+  recording: z.boolean(),
+  position: optionalFromNull(z.number()),
+}) satisfies z.ZodType<DawTransport>;

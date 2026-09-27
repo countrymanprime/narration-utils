@@ -80,7 +80,20 @@ export const DAW_CAPABILITIES: ReadonlyArray<{ key: DawCapabilityKey; label: str
   { key: 'item_gain', label: 'Level matching' },
 ];
 
+/** The DAW's transport as of its last heartbeat (daw_transport_changed, DAW port PRD Phase 9, ADR 0305;
+ * apps/desktop/bindings_daw_transport.go). `recording` counts a paused recording too; `playing` is REAPER's play bit, so it
+ * is also true while recording. `position` (project seconds, moving on about every 1.5 s) is sent only while playing or
+ * recording. With no DAW, a DAW not answering, or a bridge script too old to report it, both are false. */
+export type DawTransport = {
+  playing: boolean;
+  recording: boolean;
+  position?: number;
+};
+
 export interface DawCapabilitiesApi {
   dawCapabilities(): Promise<DawCapabilities>;
   subscribeDawCapabilities(onUpdate: (state: DawCapabilities) => void): () => void;
+  /** Pushed only: there is no request for it. The host pushes the current transport on its first tick after launch and
+   * then only on a change, so a subscriber that joins later hears nothing until the next change. */
+  subscribeDawTransport(onUpdate: (state: DawTransport) => void): () => void;
 }
