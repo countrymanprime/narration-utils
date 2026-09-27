@@ -6,6 +6,7 @@ import (
 
 	"github.com/countrymanprime/narration-utils/shell/internal/assets"
 	"github.com/countrymanprime/narration-utils/shell/internal/dictionary"
+	"github.com/countrymanprime/narration-utils/shell/internal/ffmpeg"
 	"github.com/countrymanprime/narration-utils/shell/internal/moonshine"
 	"github.com/countrymanprime/narration-utils/shell/internal/spacy"
 	"github.com/countrymanprime/narration-utils/shell/internal/tts"
@@ -76,6 +77,8 @@ type assetRegistry struct {
 	moonshine *moonshine.Manager
 	// dictionary is the offline dictionary catalog the reader's Look up reads (SystemLookup, ADR 0097); nil when its catalog is unreadable.
 	dictionary *dictionary.Manager
+	// encoder is the FFmpeg build catalog the MP3 encoder runs (ADR 0342); nil when its catalog is unreadable.
+	encoder *ffmpeg.Manager
 }
 
 // registerDictionaries adds the dictionary provider, when its catalog could be read. It is separate from newAssetRegistry so the callers
@@ -86,6 +89,16 @@ func (r *assetRegistry) registerDictionaries(dictionaries *dictionary.Manager) {
 	}
 	r.dictionary = dictionaries
 	r.providers = append(r.providers, dictionaryProvider{manager: dictionaries})
+}
+
+// registerEncoders adds the encoder provider, when its catalog could be read; like registerDictionaries, it leaves newAssetRegistry's
+// callers alone.
+func (r *assetRegistry) registerEncoders(builds *ffmpeg.Manager) {
+	if builds == nil {
+		return
+	}
+	r.encoder = builds
+	r.providers = append(r.providers, encoderProvider{manager: builds})
 }
 
 // newAssetRegistry registers a provider for each manager that exists.
