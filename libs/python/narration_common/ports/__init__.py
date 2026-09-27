@@ -5,7 +5,7 @@ Each provider kind (speech recognition, text to speech, pronunciation, capture) 
 Nothing here imports an engine: adapters keep their heavy imports lazy.
 """
 
-from . import conformance, registry
+from . import asr, asr_conformance, conformance, registry
 from .registry import PLATFORMS, Described, Descriptor, Level, NotSupportedError, Registry, current_platform
 from .vocabulary import levels_in_golden
 
@@ -16,6 +16,8 @@ __all__ = [
     "Level",
     "NotSupportedError",
     "Registry",
+    "asr",
+    "asr_conformance",
     "conformance",
     "current_platform",
     "levels_in_golden",

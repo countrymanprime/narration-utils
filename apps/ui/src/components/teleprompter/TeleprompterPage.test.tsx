@@ -7,6 +7,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { TeleprompterPage } from './TeleprompterPage';
 import { ApiProvider } from '../../api/ApiContext';
 import { createMockApi } from '../../api/mockApi';
+import { CommandRouter } from '../../input/router';
 import { WIRE_CHAPTERS, WIRE_TELEPROMPTER_DEVICES, WIRE_TRACKS_PROJECT } from '../../api/mockFixtures';
 import type { ChapterSuggestion, NarrationApi, TeleprompterEvent, TeleprompterPosition, TeleprompterScript, TeleprompterState } from '../../types';
 
@@ -63,7 +64,9 @@ function renderPage(
   render(
     <MemoryRouter>
       <ApiProvider api={api}>
-        <TeleprompterPage {...props} />
+        <CommandRouter>
+          <TeleprompterPage {...props} />
+        </CommandRouter>
       </ApiProvider>
     </MemoryRouter>,
   );
