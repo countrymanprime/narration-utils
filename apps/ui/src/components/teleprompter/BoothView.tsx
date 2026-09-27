@@ -62,6 +62,14 @@ function BoothStatus({ session: t, chapterId, chapterTitle, recording }: Pick<Pr
   return (
     <>
       <StatusBadge tone={tone} label={label} />
+      {/* The room meter (booth-mode-and-companion-panel.prd.md Phase 4): a second, decorative `LevelMeter` fed by the
+       * same mic-level channel `useInputLevel` already subscribes above, not a separate room-mic measurement (none
+       * exists) - it lets the narrator glance at level without opening the microphone popover. Room-tone-matches-last-
+       * session (Open Question 4) is deferred; this is the meter alone. */}
+      <span className="flex items-center gap-1 text-xs" style={{ color: 'var(--text-muted)' }}>
+        Room
+        <LevelMeter label="Room level" peak={level?.peak ?? null} rms={level?.rms ?? null} decorative size="compact" className="w-10" />
+      </span>
       {chapterTitle && <span className="font-semibold">{chapterTitle}</span>}
       {t.session.script && (
         <span className="font-['IBM_Plex_Mono',ui-monospace,monospace] text-xs whitespace-nowrap" style={{ color: 'var(--text-muted)' }}>

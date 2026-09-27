@@ -137,6 +137,16 @@ describe('BoothView (booth-mode-and-companion-panel.prd.md Phase 1, Phase 2)', (
     expect(screen.getByText('REC · P&R')).toBeTruthy();
   });
 
+  it('shows a decorative room level meter in the status region, fed by the same mic-level channel as the microphone popover (Phase 4)', () => {
+    renderBooth({ chapterTitle: 'Chapter 3' });
+    const status = screen.getByRole('region', { name: 'Status' });
+    const meters = within(status).queryAllByRole('meter');
+    // Decorative: no accessible `meter` role of its own, unlike the microphone popover's own labelled meter (which is
+    // not mounted here since the popover starts closed).
+    expect(meters).toHaveLength(0);
+    expect(within(status).getByText('Room')).toBeTruthy();
+  });
+
   it('shows the chapter title and word progress in the status region', () => {
     renderBooth({
       chapterTitle: 'Chapter 3',

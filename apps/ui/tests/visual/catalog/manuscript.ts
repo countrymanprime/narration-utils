@@ -296,12 +296,12 @@ export const manuscriptStates: StateEntry[] = [
     page: 'manuscript',
     state: 'booth-default',
     description:
-      'Manuscript, the chapter header\'s "Booth" button opens the same "Read aloud" dialog in `FocusShell`\'s full-screen layout (booth-mode-and-companion-panel.prd.md Phase 1) instead of the normal control bar - a status line (Ready, the chapter title, word progress, the microphone button and its level meter) across the top, the rail on the right (Phase 3\'s "Voices in scene" speaker tags and "Reference clips coming soon" placeholder above the reading panel), the script filling the centre, and a Booth commands `Toolbar` (Play, Stop reading) along the bottom, Play Kbd-labelled Space',
+      'Manuscript, the chapter header\'s "Booth" button opens the same "Read aloud" dialog in `FocusShell`\'s full-screen layout (booth-mode-and-companion-panel.prd.md Phase 1) instead of the normal control bar - a status line (Ready, a decorative "Room" level meter fed by the same mic-level channel [Phase 4], the chapter title, word progress, the microphone button and its own level meter) across the top, the rail on the right (Phase 3\'s "Voices in scene" speaker tags and "Reference clips coming soon" placeholder above the reading panel), the script filling the centre, and a Booth commands `Toolbar` (Play, Stop reading) along the bottom, Play Kbd-labelled Space',
   },
   {
     page: 'manuscript',
     state: 'booth-listening',
     description:
-      'Manuscript, the booth mid-session and listening (booth-mode-and-companion-panel.prd.md Phase 2, same mock seam as read-aloud-listening) - the status badge reads "Reading", the Booth commands toolbar shows Pause (Kbd Space), Stop reading and Follow all enabled, the current word highlighted in the booth\'s high-contrast surface',
+      'Manuscript, the booth mid-session and listening (booth-mode-and-companion-panel.prd.md Phase 2, same mock seam as read-aloud-listening) - the status badge reads "Reading", the "Room" level meter (Phase 4) moving with the same mock level as the microphone button\'s own meter, the Booth commands toolbar shows Pause (Kbd Space), Stop reading and Follow all enabled, the current word highlighted in the booth\'s high-contrast surface',
   },
 ];
