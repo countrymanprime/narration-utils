@@ -1,6 +1,6 @@
 # 0070. Workflow actions are pinned to a commit, and zizmor gates the workflows
 
-**Status:** Accepted
+**Status:** Accepted (its `build-macos.yml` and `build-linux.yml` exception is removed with those workflows by [ADR 0412](0412-windows-is-the-only-supported-platform-for-now.md))
 **Date:** 2026-09-21
 **Supersedes:**
 

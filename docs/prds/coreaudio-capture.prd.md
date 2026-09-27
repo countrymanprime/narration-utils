@@ -4,6 +4,8 @@
 
 **Tracking:** [#711](https://github.com/countrymanprime/narration-utils/issues/711).
 
+**Status:** Deferred by owner decision D74 (2026-09-27, Windows only for now; [ADR 0412](../adr/0412-windows-is-the-only-supported-platform-for-now.md)). Phase 1 was built (#720, commit `bf9f0093`) and then removed with the other macOS support; Phase 2 will not start. Restore Phase 1 from that commit and [ADR 0402](../adr/0402-coreaudio-capture-is-a-pyav-avfoundation-sidecar-backend-addressed-by-device-name.md) if the owner brings macOS back. The text below is kept as it was.
+
 ## Problem Statement
 
 The capture port (`docs/architecture/provider-ports.md#the-ports`, ADR 0301) has exactly one registered backend, `dshow`, and it declares `platforms: ("windows",)` (`libs/python/narration_common/ports/capture.py:40-45`, `sidecars/manuscript-teleprompter/core/capture_dshow.py:40`). `apps/desktop/internal/captureport/captureport.go:51-65`'s `ForIn` returns a `*port.NotSupportedError` ("There is no capture backend for %s.") for every other `GOOS`, macOS included. The app is Windows-first by roadmap decision (ADR 0030), but nothing about the capture port, the teleprompter's microphone path, or the registry pattern is Windows-specific by design — only the one row that exists is. A narrator on macOS who opens the Manuscript Teleprompter's live session gets no microphone at all, not a degraded one: `live_asr.py`'s `iter_microphone_chunks` looks the backend up through the registry (PR #696's own description: "the microphone reader... takes its chunks from the `dshow` row of `BACKENDS`") and there is no row to find.
@@ -121,8 +123,8 @@ Three shapes were considered, framed by [Native Recording Suite](native-recordin
 
 | # | Phase | Description | Status | Parallel | Depends | Ports used | PRP Plan |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| 1 | Adapter and registry row | `capture_avfoundation.py` (list + chunks), the Go `coreaudio` row, device-listing parser, conformance suite extension, fake-device tests | complete | - | Q1 answered (this PRD's recommendation stands unless the owner overrides) | Capture port (`CaptureBackend`, `captureport.Backends`) | - |
-| 2 | Real-hardware verification and hardening | Verify device listing and streaming on real Apple hardware; soak test; threat-model row 4a re-read and update | pending (owner or macOS-capable session, Q2) | - | 1 | Capture port | - |
+| 1 | Adapter and registry row | `capture_avfoundation.py` (list + chunks), the Go `coreaudio` row, device-listing parser, conformance suite extension, fake-device tests | complete, then removed by D74 ([ADR 0412](../adr/0412-windows-is-the-only-supported-platform-for-now.md)); restore from `bf9f0093` | - | Q1 answered (this PRD's recommendation stands unless the owner overrides) | Capture port (`CaptureBackend`, `captureport.Backends`) | - |
+| 2 | Real-hardware verification and hardening | Verify device listing and streaming on real Apple hardware; soak test; threat-model row 4a re-read and update | deferred (D74) | - | 1 | Capture port | - |
 
 **Phase 1.** Goal: a `coreaudio` row that behaves identically to `dshow` under the conformance suite and a fake device, with no caller or binding change needed to reach it. Success: `captureporttest.Run`/`capture_conformance.run` pass for the new row; the provider guard stays green with no new exception; `ProviderCapabilities`'s golden payload gains a `coreaudio` key with no other diff.
 

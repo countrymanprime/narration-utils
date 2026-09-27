@@ -114,6 +114,7 @@ export const teleprompterFeedback: Record<string, FeedbackRow> = {
     'Pause/resume on the control channel (read-aloud-control-bar.prd.md Phase 5, ADR 0248); the state event\'s `paused` flag moves the bar\'s toggle and status ("Paused"/"Listening"), an inline error otherwise.',
   ),
   'src/components/teleprompter/useInputLevel.ts::subscribeTeleprompterEvent#1': subscription('The bar and microphone-popover meter (Phase 4, ADR 0247): its own subscription, apart from the session model, so a burst of level events never re-renders the reader\'s rows.'),
+  'src/components/teleprompter/useBoothRecording.ts::subscribeDawTransport#1': subscription('booth-mode-and-companion-panel.prd.md Phase 5: the no-sound, no-notification rule\'s own reactive read of the DAW\'s live transport, apart from useDawRecording\'s ref-based gesture-time check (input-commands-and-pedals.prd.md Phase 10).'),
   'src/components/teleprompter/useInputLevel.ts::teleprompterMeterStart#1': row(
     'effect',
     'python',
@@ -165,5 +166,9 @@ export const teleprompterFeedback: Record<string, FeedbackRow> = {
     'ok',
     "The chosen microphone (global settings, docs/prds/teleprompter-engines-and-input-devices.prd.md Phase 2) is saved as it is picked or typed; a save failure shows as the inline error (the page's or the ReadAloudDialog modal's), and the value picked stays selected in the field either way.",
   ),
-
+  // Companion mode (booth-mode-and-companion-panel.prd.md Phase 7, ADR 0401): CompanionShell narrows and pins the one window
+  // while it is mounted and gives it back on unmount, and shows REAPER's playhead from the DAW port's live transport.
+  'src/components/teleprompter/CompanionShell.tsx::companionModeEnter#1': row('mount', 'instant', 'na', 'na', 'ui', 'inline', 'na', 'ok', 'Narrows and pins the window as the companion panel mounts; the panel itself is the acknowledgment, and a failure is an inline alert above its sections, with the panel still fully usable (Full app still works).'),
+  'src/components/teleprompter/CompanionShell.tsx::companionModeExit#1': row('mount', 'instant', 'na', 'na', 'ui', 'silent', 'na', 'exempt', 'Gives the window its size, position and stacking back as the companion panel unmounts (Full app, the double Escape, the dialog closing). Nothing is left mounted to tell, and the host\'s exit is a no-op when nothing was entered (SILENT_CATCHES).'),
+  'src/components/teleprompter/CompanionShell.tsx::subscribeDawTransport#1': subscription('The DAW port\'s live transport state (DAW port PRD Phase 9, daw_transport_changed) for the companion header\'s playhead badge; until the first push it reads "Playhead stopped".'),
 };

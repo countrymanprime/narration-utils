@@ -99,6 +99,11 @@ const MODALS: { name: string; state: [string, string]; snapshot: string }[] = [
     state: ['manuscript', 'booth-default'],
     snapshot: 'dialog-read-aloud-booth.aria.yml',
   },
+  {
+    name: "the companion panel is the whole window: CompactShell's banner and main, the full app behind it hidden, with the Script, Note at playhead, Pickups and Hotkeys regions",
+    state: ['manuscript', 'companion-default'],
+    snapshot: 'companion-panel.aria.yml',
+  },
 ];
 
 for (const modal of MODALS) {

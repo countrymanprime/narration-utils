@@ -23,4 +23,4 @@ Whether a blank `note` cell means "the author had nothing to add" or "clear what
 
 - Re-running an import (the same file, or a fresh export re-sent and re-answered) is safe: matching is by id, and applying a row already at the target status is a no-op the sidecar call already handles.
 - A heavily reshuffled Story Bible (many entries merged or deleted since export) turns into many unmatched-row issues rather than mis-filed answers; the narrator sees exactly which rows to re-ask.
-- One new binding, `GuidePronunciationImportQueriesCSV`. `hostAPIVersion` goes from 70 to 71 (Phase 3's own PR took 70 first; a serial-point collision, resolved per `docs/operations/agent-train.md` by taking the higher value plus one).
+- One new binding, `GuidePronunciationImportQueriesCSV`. `hostAPIVersion` goes to main + 1 (75 when this merged main at 74; a serial point, resolved per `docs/operations/agent-train.md` by taking the higher value plus one).

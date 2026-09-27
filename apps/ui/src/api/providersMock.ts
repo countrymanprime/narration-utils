@@ -20,10 +20,7 @@ const ROWS: Record<MockPort, MockRow[]> = {
     { name: 'cmu', label: 'CMU dictionary', platforms: [], modes: ['pronounce'] },
     { name: 'espeak', label: 'eSpeak NG', platforms: [], modes: ['pronounce'] },
   ],
-  capture: [
-    { name: 'dshow', label: 'DirectShow', platforms: ['windows'], modes: [] },
-    { name: 'coreaudio', label: 'Core Audio', platforms: ['darwin'], modes: [] },
-  ],
+  capture: [{ name: 'dshow', label: 'DirectShow', platforms: ['windows'], modes: [] }],
 };
 
 const PLATFORM_LABELS: Record<string, string> = { windows: 'Windows', darwin: 'macOS', linux: 'Linux' };

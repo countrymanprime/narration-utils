@@ -1,6 +1,6 @@
 # 0402. CoreAudio capture is a PyAV `avfoundation` sidecar backend, addressed by device name
 
-**Status:** Accepted
+**Status:** Superseded by ADR-0412 (Windows only for now, D74; the backend can be restored from commit `bf9f0093`)
 **Date:** 2026-09-27
 
 ## Context

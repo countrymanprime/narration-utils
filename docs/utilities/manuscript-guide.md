@@ -56,7 +56,7 @@ Phase 6, [ADR 0348](../adr/0348-a-re-imported-query-answer-is-matched-by-entry-i
 `alias_index`, never by the free-text word, and reports a row whose entry or alias is gone the same way a row it could not
 parse is reported. `guide.Service.ImportQueriesCSV` then applies every matched row through the existing
 `SetPronunciationStatus` call, one sidecar call per row; a blank note column is sent as no note (leaving an existing one
-alone), never as a note that clears it. The binding is `GuidePronunciationImportQueriesCSV` (`hostAPIVersion` 71), which
+alone), never as a note that clears it. The binding is `GuidePronunciationImportQueriesCSV` (`hostAPIVersion` 75), which
 takes the file's text (the UI reads whatever file the narrator picks) and answers `{applied, issues}`; the panel's Import
 answers button shows the count and lists any row it could not use.
 

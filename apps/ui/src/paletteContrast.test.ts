@@ -2,7 +2,7 @@
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, relative, sep } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { countBoothBlocks, countRootRules, parseThemes, resolveContrast, rootRules, type Theme, type TokenMap } from './tokenContrast';
+import { countRootRules, forcedThemeRules, parseThemes, resolveContrast, rootRules, type Theme, type TokenMap } from './tokenContrast';
 
 // The palette guard (ADR 0059). It reads the tokens out of styles.css, in both themes, and asserts that every colour pair
 // the app draws meets WCAG 2.x: 4.5:1 for text (SC 1.4.3) and 3:1 for the marks that carry meaning without being text
@@ -16,9 +16,9 @@ import { countBoothBlocks, countRootRules, parseThemes, resolveContrast, rootRul
 
 const CSS = readFileSync(join(__dirname, 'styles.css'), 'utf8');
 const THEMES = parseThemes(CSS);
-// 'booth' is FocusShell's high-contrast surface (studio-ui-primitives.prd.md Phase 1, ADR 0360 Q1), layered over dark
-// (tokenContrast.ts): every pair below is checked over it too, not only light and dark.
-const THEME_NAMES: Theme[] = ['light', 'dark', 'booth'];
+// The app has exactly two themes, and every surface draws with the active one (ADR 0365, which superseded the booth's own
+// forced-dark block of ADR 0360 Q1): the booth and the companion are checked by the same pairs, in both themes.
+const THEME_NAMES: Theme[] = ['light', 'dark'];
 
 const SURFACES = ['bg', 'surface', 'surface-2', 'surface-3', 'row-alt'] as const;
 const PAGE_SURFACES = ['bg', 'surface', 'surface-2'] as const;
@@ -192,11 +192,11 @@ describe('the token parser sees every :root rule of styles.css', () => {
     expect(THEMES.dark.surface).not.toBe(THEMES.light.surface);
   });
 
-  it('finds exactly one booth block, layered over dark', () => {
-    expect(countBoothBlocks(CSS)).toBe(1);
-    expect(THEMES.booth.surface).not.toBe(THEMES.dark.surface);
-    // Only the tokens the booth block lists are overridden; everything else falls through from dark.
-    expect(THEMES.booth.danger).toBe(THEMES.dark.danger);
+  it('finds no rule outside the two theme blocks that forces a colour scheme or repaints a theme colour (ADR 0365)', () => {
+    // A scoped palette (the booth's old `[data-surface='booth']` block) would be drawn whatever the narrator's theme is,
+    // and no pair below would measure it.
+    expect(forcedThemeRules(CSS)).toEqual([]);
+    expect(forcedThemeRules(readFileSync(join(__dirname, 'components.css'), 'utf8'), CSS)).toEqual([]);
   });
 });
 
