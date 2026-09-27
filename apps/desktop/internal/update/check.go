@@ -335,7 +335,8 @@ type Available struct {
 	NotesURL    string `json:"notesUrl"`
 	Size        int64  `json:"size"`
 	PublishedAt string `json:"publishedAt"`
-	// Replaces is whether this platform can replace itself with it; where it cannot (macOS, Linux) the narrator is told and linked.
+	// Replaces is whether this platform can replace itself with it; where it cannot, the narrator is told and linked. Windows, the
+	// only platform with a release (docs/adr/0412), always can; the field stays because it is part of the wire contract.
 	Replaces bool `json:"replaces"`
 }
 

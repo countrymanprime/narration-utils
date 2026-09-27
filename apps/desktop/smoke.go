@@ -17,6 +17,7 @@ import (
 	"github.com/countrymanprime/narration-utils/shell/internal/assets"
 	"github.com/countrymanprime/narration-utils/shell/internal/captureport"
 	"github.com/countrymanprime/narration-utils/shell/internal/dictionary"
+	"github.com/countrymanprime/narration-utils/shell/internal/ffmpeg"
 	"github.com/countrymanprime/narration-utils/shell/internal/moonshine"
 	"github.com/countrymanprime/narration-utils/shell/internal/process"
 	"github.com/countrymanprime/narration-utils/shell/internal/pronunciationport"
@@ -47,7 +48,7 @@ import (
 //   - the asset cache folder can be found and written;
 //   - the REAPER launcher and its scripts are there, with the pointer to this executable.
 //
-// It downloads nothing and opens no window. Do not run it while the app is open: both use the same per-user cache. Point LocalAppData (Windows), XDG_CACHE_HOME (Linux) or HOME (macOS) at an empty folder to
+// It downloads nothing and opens no window. Do not run it while the app is open: both use the same per-user cache. Point LocalAppData (Windows; XDG_CACHE_HOME on a Linux development host) at an empty folder to
 // keep it out of the real per-user cache.
 const smokeFlag = "--smoke"
 
@@ -506,7 +507,7 @@ func checkCompareCapabilities(ctx context.Context, options smokeOptions, root st
 	return fmt.Sprintf("%d ASR row(s)", len(parsed.Asr)), nil
 }
 
-// checkCatalogs loads the five approved asset catalogs the release carries (config/*-assets.json in the unpacked resources) and requires
+// checkCatalogs loads the six approved asset catalogs the release carries (config/*-assets.json in the unpacked resources) and requires
 // each to name at least one asset: an empty or unreadable catalog would leave the narrator nothing to download. The frozen sidecar's own
 // Moonshine support is checked apart from its catalog, by checkFrozenMoonshine.
 func checkCatalogs(root string) (string, error) {
@@ -531,15 +532,21 @@ func checkCatalogs(root string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("the dictionary catalog could not be loaded: %w", err)
 	}
+	// The encoder catalog is read for Windows whatever the machine: its one build is a Windows executable (ADR 0342), and the release
+	// the smoke test checks is the Windows one.
+	encoders, err := ffmpeg.NewFor(filepath.Join(configDir, "encoder-assets.json"), "", "windows")
+	if err != nil {
+		return "", fmt.Errorf("the encoder catalog could not be loaded: %w", err)
+	}
 	counts := map[string]int{"voices": len(voices.Voices()), "Whisper models": len(models.Models()), "spaCy models": len(languageModels.Models()), "Moonshine models": len(liveModels.Models()),
-		"dictionaries": len(dictionaries.Dictionaries())}
-	for _, kind := range []string{"voices", "Whisper models", "spaCy models", "Moonshine models", "dictionaries"} {
+		"dictionaries": len(dictionaries.Dictionaries()), "encoders": len(encoders.Builds())}
+	for _, kind := range []string{"voices", "Whisper models", "spaCy models", "Moonshine models", "dictionaries", "encoders"} {
 		if counts[kind] == 0 {
 			return "", fmt.Errorf("the catalog of %s names no assets", kind)
 		}
 	}
-	return fmt.Sprintf("%d voice(s), %d Whisper model(s), %d spaCy model(s), %d Moonshine model(s), %d dictionary(ies)", counts["voices"], counts["Whisper models"], counts["spaCy models"],
-		counts["Moonshine models"], counts["dictionaries"]), nil
+	return fmt.Sprintf("%d voice(s), %d Whisper model(s), %d spaCy model(s), %d Moonshine model(s), %d dictionary(ies), %d encoder(s)", counts["voices"], counts["Whisper models"],
+		counts["spaCy models"], counts["Moonshine models"], counts["dictionaries"], counts["encoders"]), nil
 }
 
 // checkReaper requires the REAPER launcher and every script it loads in the unpacked resources, and the pointer file that tells the

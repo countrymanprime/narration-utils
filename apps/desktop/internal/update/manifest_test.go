@@ -250,21 +250,17 @@ func TestParseChannelFallsBackToCandidates(t *testing.T) {
 	}
 }
 
-func TestPlatformForKnowsTheThreeReleasePlatformsAndOnlyWindowsReplacesItself(t *testing.T) {
-	for _, test := range []struct {
-		goos, goarch, key string
-		replaces          bool
-	}{{"windows", "amd64", "windows-x64", true}, {"darwin", "arm64", "macos-arm64", false}, {"linux", "amd64", "linux-x64", false}} {
-		platform, ok := PlatformFor(test.goos, test.goarch)
-		if !ok || platform.Key != test.key || platform.SelfReplace != test.replaces {
-			t.Errorf("PlatformFor(%s, %s) = %+v, %v", test.goos, test.goarch, platform, ok)
-		}
-		asset := platform.AssetName(Version{0, 2, 7})
-		if asset != "narration-utils-0.2.7-"+test.key+platform.Extension || platform.ChecksumName(Version{0, 2, 7}) != asset+".sha256" {
-			t.Errorf("asset names %+v", platform)
-		}
+func TestPlatformForKnowsOnlyWindowsWhichReplacesItself(t *testing.T) {
+	platform, ok := PlatformFor("windows", "amd64")
+	if !ok || platform.Key != "windows-x64" || platform.Extension != ".zip" || !platform.SelfReplace {
+		t.Errorf("PlatformFor(windows, amd64) = %+v, %v", platform, ok)
 	}
-	for _, pair := range [][2]string{{"windows", "arm64"}, {"darwin", "amd64"}, {"freebsd", "amd64"}, {"", ""}} {
+	asset := platform.AssetName(Version{0, 2, 7})
+	if asset != "narration-utils-0.2.7-windows-x64.zip" || platform.ChecksumName(Version{0, 2, 7}) != asset+".sha256" {
+		t.Errorf("asset names %+v", platform)
+	}
+	// macOS and Linux have no release since D74 (docs/adr/0412).
+	for _, pair := range [][2]string{{"darwin", "arm64"}, {"linux", "amd64"}, {"windows", "arm64"}, {"darwin", "amd64"}, {"freebsd", "amd64"}, {"", ""}} {
 		if _, ok := PlatformFor(pair[0], pair[1]); ok {
 			t.Errorf("PlatformFor(%s, %s) is not a release platform", pair[0], pair[1])
 		}

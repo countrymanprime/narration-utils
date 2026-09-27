@@ -165,7 +165,7 @@ after updates.
   offers **Show the downloaded file**, so you can replace the program yourself.
 - **Release notes** opens the release page in your browser.
 
-Updates apply to Windows. On macOS and Linux (preview builds) the app tells you a newer version exists and links to it.
+Narration Utils runs on Windows only, for now, so updates are for Windows.
 Releases are not yet signed, so Windows SmartScreen or your antivirus may ask about a new version the first time.
 
 If Narration Utils will not start after an update and the program file is missing from its folder, rename

@@ -12,6 +12,8 @@ import type {
   ManuscriptChapter,
   ManuscriptNote,
   ManuscriptParagraph,
+  PrepMarkupKind,
+  PrepMarkupSpan,
   ReaderState,
   RetailSample,
   SearchHit,
@@ -27,6 +29,7 @@ import { ToggleGroup } from '../primitives/ToggleGroup';
 import { SlideOver } from '../primitives/SlideOver';
 import { Tooltip, TooltipTarget } from '../primitives/Tooltip';
 import { ChapterNav } from './ChapterNav';
+import { useStageRecommendations } from '../stages/useStageRecommendations';
 import { CreditsSetupBanner } from '../credits/CreditsSetupBanner';
 import { CreditsSetupDialog } from '../credits/CreditsSetupDialog';
 import { CreditsEntry } from './CreditsEntry';
@@ -37,6 +40,7 @@ import { SearchBar } from './SearchBar';
 import { ParagraphView } from './ParagraphView';
 import { SelectionMenu } from './SelectionMenu';
 import { AddNoteDialog } from './AddNoteDialog';
+import { MarkupDialog } from './MarkupDialog';
 import { DictionaryInstallPrompt, isSingleWord, WordLookupAnswer } from './WordLookup';
 import { LOOKUP_ACTION, useWordLookup } from './useWordLookup';
 import { CAT_DOT_BG, CAT_DOT_CLASS, EntitySummary } from './EntitySummary';
@@ -97,12 +101,16 @@ export function Manuscript({
   const [textSize, setTextSize] = useState<(typeof TEXT_SIZES)[number]>('medium');
   const [detail, setDetail] = useState<{ entity?: GuideEntity; note?: ManuscriptNote }>();
   const [pendingNote, setPendingNote] = useState<{ paragraphIndex: number; anchorStart: number; anchorEnd: number; anchorText: string }>();
+  // Script markup (prep-depth.prd.md Phase 5), by chapter id: loaded with each chapter's lines, and the selection being
+  // marked up while the Mark up dialog is open.
+  const [markup, setMarkup] = useState<Record<string, PrepMarkupSpan[]>>({});
+  const [pendingMarkup, setPendingMarkup] = useState<{ paragraphIndex: number; anchorStart: number; anchorEnd: number; anchorText: string }>();
   const [jumpTarget, setJumpTarget] = useState<number>();
   const [readAloud, setReadAloud] = useState<ReadAloudSource>();
   // Booth mode's own entry point (booth-mode-and-companion-panel.prd.md Phase 1, Open Question 1 A): the same
   // `readAloud` source, opened in `BoothView`'s layout instead of the normal control bar. Reset by each opener, not by
   // closing, so a stale value from the last open never leaks into the next.
-  const [readAloudMode, setReadAloudMode] = useState<'read' | 'booth'>('read');
+  const [readAloudMode, setReadAloudMode] = useState<'read' | 'booth' | 'companion'>('read');
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<SearchHit[]>([]);
   // The query text a result was actually fetched for - not the debounce hook's own state, so an
@@ -204,6 +212,10 @@ export function Manuscript({
 
   const [loadError, setLoadError] = useState<string>();
   const [loadAttempt, setLoadAttempt] = useState(0);
+  // The nav's "Suggested: <stage>" marker (chapter-stage-recommendations.prd.md Phase 9, Q6): read-only here, so
+  // onStatus is a no-op - the marker never confirms, dismisses or reverts. Refreshed whenever chapters reload
+  // (loadAttempt), the same trigger the page's own chapter list already uses.
+  const stages = useStageRecommendations({ refreshKey: String(loadAttempt), notify, onStatus: () => {} });
   useEffect(() => {
     void (async () => {
       try {
@@ -292,6 +304,12 @@ export function Manuscript({
       if (requestedChapters.current.has(chapterId)) continue;
       requestedChapters.current.add(chapterId);
       setLoadingChapters((current) => new Set(current).add(chapterId));
+      // The chapter's script markup is a second, independent read: a markup file that cannot be read is said once and
+      // leaves the chapter readable, unmarked.
+      void api
+        .prepMarkupList(chapterId)
+        .then((next) => setMarkup((current) => ({ ...current, [chapterId]: next.spans })))
+        .catch((error) => notify(describeApiError(error), 'error'));
       void api
         .manuscriptParagraphs(chapterId)
         .then((next) => setParagraphs((current) => [...current.filter((paragraph) => paragraph.chapterId !== chapterId), ...next]))
@@ -479,6 +497,45 @@ export function Manuscript({
       notify(describeApiError(error), 'error');
     }
   };
+  const markUp = () => {
+    if (!selection || selection.paragraphIndex === undefined || selection.anchorStart === undefined || selection.anchorEnd === undefined) {
+      notify('Select text within a single line to mark it up.');
+      return;
+    }
+    setPendingMarkup({
+      paragraphIndex: selection.paragraphIndex,
+      anchorStart: selection.anchorStart,
+      anchorEnd: selection.anchorEnd,
+      anchorText: selection.text,
+    });
+    clearSelection();
+  };
+  const pendingMarkupParagraph = pendingMarkup ? paragraphs.find((item) => item.index === pendingMarkup.paragraphIndex) : undefined;
+  const confirmMarkup = async (kind: PrepMarkupKind, value: string) => {
+    const target = pendingMarkup;
+    const paragraph = pendingMarkupParagraph;
+    setPendingMarkup(undefined);
+    if (!target || !paragraph) return;
+    try {
+      const saved = await api.prepMarkupSave(paragraph.chapterId, paragraph.id, target.anchorStart, target.anchorEnd, kind, value);
+      setMarkup((current) => {
+        const spans = current[paragraph.chapterId] ?? [];
+        return { ...current, [paragraph.chapterId]: spans.some((span) => span.id === saved.id) ? spans : [...spans, saved] };
+      });
+      notify('Mark added.');
+    } catch (error) {
+      notify(describeApiError(error), 'error');
+    }
+  };
+  const removeMarkup = async (span: PrepMarkupSpan) => {
+    try {
+      await api.prepMarkupDelete(span.chapterId, span.id);
+      setMarkup((current) => ({ ...current, [span.chapterId]: (current[span.chapterId] ?? []).filter((item) => item.id !== span.id) }));
+      notify('Mark removed.');
+    } catch (error) {
+      notify(describeApiError(error), 'error');
+    }
+  };
   const deleteNote = async (id: string) => {
     try {
       await api.noteDelete(id);
@@ -588,6 +645,10 @@ export function Manuscript({
               setReadAloudMode('booth');
               setReadAloud({ kind: 'credits', credits: 'opening', preview: creditsPreviews.opening! });
             }}
+            onCompanion={() => {
+              setReadAloudMode('companion');
+              setReadAloud({ kind: 'credits', credits: 'opening', preview: creditsPreviews.opening! });
+            }}
           />
         )}
         {recordedChapters.map((chapter) => {
@@ -614,6 +675,11 @@ export function Manuscript({
                 setReadAloudMode('booth');
                 setReadAloud({ kind: 'chapter', chapter });
               }}
+              showCompanion={isNarrationChapter(chapter)}
+              onCompanion={() => {
+                setReadAloudMode('companion');
+                setReadAloud({ kind: 'chapter', chapter });
+              }}
               wordCount={chapter.wordCount}
             >
               {loadingChapters.has(chapter.id) ? (
@@ -627,6 +693,8 @@ export function Manuscript({
                   paragraphs={paragraphs.filter((item) => item.chapterId === chapter.id)}
                   entities={entities}
                   notes={notes.filter((item) => item.chapterId === chapter.id || (!item.chapterId && item.chapter === chapter.title))}
+                  markup={markup[chapter.id]}
+                  removeMarkup={(span) => void removeMarkup(span)}
                   textClass={READER_TEXT_CLASSES[textSize]}
                   lineNumberPadding={LINE_NUMBER_PADDING_CLASSES[textSize]}
                   jumpTarget={jumpTarget}
@@ -660,6 +728,10 @@ export function Manuscript({
               setReadAloudMode('booth');
               setReadAloud({ kind: 'credits', credits: 'closing', preview: creditsPreviews.closing! });
             }}
+            onCompanion={() => {
+              setReadAloudMode('companion');
+              setReadAloud({ kind: 'credits', credits: 'closing', preview: creditsPreviews.closing! });
+            }}
           />
         )}
       </div>
@@ -674,10 +746,11 @@ export function Manuscript({
           onMoreFields={() => routerNavigate('/settings#credits')}
         />
       )}
-      {selection && !pendingNote && (
+      {selection && !pendingNote && !pendingMarkup && (
         <SelectionMenu
           selection={selection}
           addNote={addNote}
+          markUp={markUp}
           addingToStoryBible={selectionActions.isPending('add')}
           addToStoryBible={() =>
             void selectionActions.run('add', async () => {
@@ -706,6 +779,19 @@ export function Manuscript({
         {wordLookup.answer && <WordLookupAnswer answer={wordLookup.answer} />}
       </SlideOver>
       {wordLookup.gate && <DictionaryInstallPrompt gate={wordLookup.gate} install={wordLookup.install} dismiss={wordLookup.closeGate} />}
+      {pendingMarkup && (
+        <MarkupDialog
+          anchorText={pendingMarkup.anchorText}
+          characters={entities.filter((entity) => entity.category === 'Character').map((entity) => entity.canonical_name)}
+          existing={(markup[pendingMarkupParagraph?.chapterId ?? ''] ?? []).filter(
+            (span) =>
+              !span.stale && span.paragraphId === pendingMarkupParagraph?.id && span.start < pendingMarkup.anchorEnd && span.end > pendingMarkup.anchorStart,
+          )}
+          confirm={(kind, value) => void confirmMarkup(kind, value)}
+          remove={(span) => void removeMarkup(span)}
+          cancel={() => setPendingMarkup(undefined)}
+        />
+      )}
       {pendingNote && <AddNoteDialog anchorText={pendingNote.anchorText} confirm={(text) => void confirmNote(text)} cancel={() => setPendingNote(undefined)} />}
       <SlideOver
         open={Boolean(sheet)}
@@ -770,6 +856,7 @@ export function Manuscript({
                 titleMatches={titleMatches}
                 pending={searchPending}
                 lineNumbers={lineNumbers}
+                stageSuggestions={stages.state.byChapter}
                 select={(id, paragraph) => {
                   const chapter = chapters.find((item) => item.id === id);
                   if (chapter) {

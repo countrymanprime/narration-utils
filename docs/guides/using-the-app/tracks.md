@@ -117,6 +117,12 @@ change the REAPER project.
 A linked chapter's row also has **Open workspace**, into the [chapter workspace](workspace.md): one
 screen to listen to the chapter against its script and see where the recording check found a problem.
 
+When one or more chapters have a [Home](home.md#stage-suggestions) stage suggestion that can't be
+computed because its track link is missing or not yet confirmed, a line above Chapter links says so
+("N chapters can't get a stage suggestion until their track links are confirmed below") and points
+at this same list - link or confirm the chapter there to let its suggestion be computed on the next
+read.
+
 ## Editing check
 
 Each chapter's row also has **Editing check…**, opening a panel over the same list: whether

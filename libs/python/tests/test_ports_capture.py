@@ -148,7 +148,7 @@ def test_capture_descriptor_keeps_the_kits_checks():
 def test_the_registry_answers_by_platform():
     backends = Registry("capture backend")
     backends.register(FakeBackend(CaptureDescriptor("dshow", "DirectShow", platforms=("windows",))))
-    backends.register(FakeBackend(CaptureDescriptor("coreaudio", "Core Audio", platforms=("darwin",))))
+    backends.register(FakeBackend(CaptureDescriptor("fake-darwin", "Fake", platforms=("darwin",))))
 
     assert backends.names("windows") == ["dshow"]
     assert backends.default("linux") is None

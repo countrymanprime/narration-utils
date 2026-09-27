@@ -21,6 +21,7 @@ const (
 	jobKindSpacyInstall      = "spacy_install"
 	jobKindMoonshineInstall  = "moonshine_install"
 	jobKindDictionaryInstall = "dictionary_install"
+	jobKindEncoderInstall    = "encoder_install"
 	jobKindAppUpdate         = "app_update"
 	jobKindTranscript        = "transcript_compare"
 	jobKindCoverage          = "recording_coverage"
