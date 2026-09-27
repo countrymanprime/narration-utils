@@ -1,4 +1,4 @@
-# 0343. A Story Bible entity keeps its id by name overlap across a rebuild, and dialogue cues are precision-first rules
+# 0345. A Story Bible entity keeps its id by name overlap across a rebuild, and dialogue cues are precision-first rules
 
 **Status:** Accepted
 **Date:** 2026-09-27
