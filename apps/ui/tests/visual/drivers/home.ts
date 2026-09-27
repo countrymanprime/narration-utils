@@ -316,14 +316,16 @@ export const homeDrivers: Record<string, Driver> = {
     const trim = panel.getByRole('button', { name: 'Trim silence…' }).and(page.locator(':not([aria-disabled="true"])'));
     await trim.waitFor();
     await trim.click();
-    await panel.getByRole('alertdialog', { name: 'Trim silence' }).waitFor();
+    // ConfirmDialog renders as its own top-level dialog (a sibling of the editing check panel, not nested inside
+    // it), so the alertdialog is found on the page, not scoped to `panel`.
+    await page.getByRole('alertdialog', { name: 'Trim silence' }).waitFor();
   },
   'editing-check-gain-match-confirm': async (page) => {
     const panel = await openEditingCheckFromHome(page, 'mockDawExperimentalOn=1');
     const match = panel.getByRole('button', { name: 'Match levels…' }).and(page.locator(':not([aria-disabled="true"])'));
     await match.waitFor();
     await match.click();
-    await panel.getByRole('alertdialog', { name: 'Match levels' }).waitFor();
+    await page.getByRole('alertdialog', { name: 'Match levels' }).waitFor();
   },
   'editing-check-stale': async (page) => {
     const panel = await openEditingCheckFromHome(page, 'mockEditingSignal=stale');
