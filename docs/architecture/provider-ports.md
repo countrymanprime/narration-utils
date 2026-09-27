@@ -12,7 +12,7 @@ Nothing about ports is visible to the narrator: setting keys, values and choice 
 | Text to speech, `TtsEngine` | none | `internal/ttsport`: `ttsport.Engines` | `narration_common.ports.tts`: `TtsEngine`, `Voice`; `ENGINES` | `piper` (asset kind `tts`) | `ttsporttest.Run`; `tts_conformance.run` |
 | Pronunciation, `PronunciationSource` | `pronounce`; `browse` (the `BrowserLookup` role: a URL the narrator's browser opens, never fetched by the app) | `internal/pronunciationport`: `pronunciationport.Sources` | `narration_common.ports.pronunciation`: `PronunciationSource`, `BrowserLookup`; `SOURCES` (its `fallback_order()` is the build-time order) | `cmu`, `espeak` (both `pronounce`; no `browse` row yet) | `pronunciationporttest.Run`; `pronunciation_conformance.run` |
 | Capture, `CaptureBackend` | none (one backend per platform) | `internal/captureport`: `captureport.Backends`, `captureport.For(platform)` | `narration_common.ports.capture`: `CaptureBackend`, `InputDevice`; `BACKENDS` | `dshow` (Windows) | `captureporttest.Run`; `capture_conformance.run` |
-| Encoding, `Encoder` and `Packager` | the formats a row handles (`mp3`, `m4b`) | `internal/encodeport`: `NewEncoders()`, `NewPackagers()` | none (the host would run them) | none: declared only | `encodeporttest.RunEncoder`, `RunPackager` |
+| Encoding, `Encoder` and `Packager` | the formats a row handles (`mp3`, `m4b`) | `internal/encodeport`: `encodeport.Encoders`, `encodeport.Packagers` | none (the host runs them) | `ffmpeg` (`Encoder`, `mp3` and `m4b`, Windows, runs the catalogued FFmpeg build from a verified install, asset kind `encoder`: [ADR 0342](../adr/0342-the-mp3-encoder-is-a-pinned-gpl-ffmpeg-build-run-as-a-separate-process-and-writes-no-tag-frame.md), [ADR 0343](../adr/0343-an-encode-writes-a-partial-file-beside-its-destination-checks-it-with-the-apps-own-mp3-reader-and-never-replaces-a-file.md); `m4b`'s own chapters are embedded as a QuickTime/MP4 chapter track, read back by `encodeport.ReadM4BChapters`, render-encode-master Phase 2); no `Packager` yet | `encodeporttest.RunEncoder` (over the `ffmpeg` row against a fake FFmpeg), `RunPackager` |
 
 The Python adapters that fill the registries live beside the code that used to call the engine directly, and register themselves when their sidecar imports them:
 
@@ -72,7 +72,7 @@ Every registered row passes its port's suite, and each registry's own test runs 
 
 | Item | Home |
 | --- | --- |
-| An `Encoder` and a `Packager` (MP3, M4B, chapters) | [Render, Encode and Master](../prds/render-encode-master.prd.md), phases 1, 2 and 4; `internal/chaptertags` is the likely first `Packager` |
+| A `Packager` (chapters and tags into a delivery file) | [Render, Encode and Master](../prds/render-encode-master.prd.md), phase 4 (Phases 1 and 2 delivered the MP3 and M4B `Encoder` rows); `internal/chaptertags` is the likely first `Packager` |
 | `BrowserLookup` rows (web pronunciation lookups the narrator's browser opens) | [Prep Depth](../prds/prep-depth.prd.md), phase 2 |
 | WASAPI capture | [Native Recording Suite](../prds/native-recording-suite.prd.md) (its capture engine spike, Q3); if the engine stays in a Python sidecar it is a `CaptureBackend` row |
 | CoreAudio (macOS) capture | [CoreAudio Capture](../prds/coreaudio-capture.prd.md), deferred by D74: Windows is the only supported platform ([ADR 0412](../adr/0412-windows-is-the-only-supported-platform-for-now.md), which supersedes ADR 0402). Its Phase 1 row was built and removed; restore from commit `bf9f0093` |

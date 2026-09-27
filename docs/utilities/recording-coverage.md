@@ -198,7 +198,7 @@ flowchart LR
   thresholds as a plain check, over merged words.
 - **The stored result names both models.** `StoredResult.Model`/`ReportView.model` keep naming the first pass only,
   for compatibility (ADR 0344's "stays the first-pass model for compatibility", Q13); a `recheck` field
-  (`{model, wholeChapter, windows, seconds}`, ADR 0345) carries the rest, absent for a plain check or a cascade run
+  (`{model, wholeChapter, windows, seconds}`, ADR 0351) carries the rest, absent for a plain check or a cascade run
   that found nothing missing. The dialog reads "Checked ... with the tiny Whisper model; 1 passage re-checked with
   the large-v3-turbo Whisper model", and every pickup still listed - windowed or whole-chapter, every one of them
   was seen by both models - reads "Confirmed missing by the large-v3-turbo Whisper model."

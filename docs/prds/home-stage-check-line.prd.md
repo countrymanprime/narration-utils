@@ -1,6 +1,8 @@
 # Home Stage Check Line: Remove the Explainer and Rethink Check Now
 
-**Source:** owner report of 2026-09-24 on the Home per-chapter breakdown (the table under the Not Started / Recording / Editing / Proofing / Finalized legend): "I don't really like this message. We should probably remove it. Especially since the 'Check now' button next to it doesn't seem to do anything." The message is "Stage suggestions come from the saved REAPER project and the last recording checks. Nothing changes until you confirm." Citations are `file:line` at `7a20a9e`. The line was added by Phase 5 of [Chapter Stage Recommendations](chapter-stage-recommendations.prd.md) (the Home surface, still `partial` there); this PRD amends that phase's "Check now" line and nothing else of it. Nothing here is built yet.
+**Source:** owner report of 2026-09-24 on the Home per-chapter breakdown (the table under the Not Started / Recording / Editing / Proofing / Finalized legend): "I don't really like this message. We should probably remove it. Especially since the 'Check now' button next to it doesn't seem to do anything." The message is "Stage suggestions come from the saved REAPER project and the last recording checks. Nothing changes until you confirm." Citations are `file:line` at `7a20a9e`. The line was added by Phase 5 of the chapter stage recommendations PRD (`chapter-stage-recommendations.prd.md`,
+delivered and deleted; see [stage recommendations](../architecture/stage-recommendations.md)); this PRD amends that
+phase's "Check now" line and nothing else of it. Nothing here is built yet.
 
 ## Problem Statement
 
@@ -106,7 +108,7 @@ The phases touch different lines of `AudiobookEstimatePanel.tsx` and can run in 
 
 | Phase | Files and areas touched | Collision risk |
 | --- | --- | --- |
-| 1 | `apps/ui/src/components/stages/StageSummary.tsx`, `StagePanel.test.tsx`, `apps/ui/src/components/home/AudiobookEstimatePanel.tsx` (one line), `apps/ui/src/interactionFeedback.catalog.ts`, `apps/ui/tests/visual/state-catalog.ts`, `docs/guides/using-the-app/home.md`, `docs/architecture/stage-recommendations.md`, the `home-stage-suggestions` doc screenshot | [Chapter Stage Recommendations](chapter-stage-recommendations.prd.md) phases 6 to 9 (the same `stages/` components, `home.md` and `stage-recommendations.md`); any PRD re-capturing Home screenshots or editing `AudiobookEstimatePanel.tsx` (the recording check, credits and estimate work) |
+| 1 | `apps/ui/src/components/stages/StageSummary.tsx`, `StagePanel.test.tsx`, `apps/ui/src/components/home/AudiobookEstimatePanel.tsx` (one line), `apps/ui/src/interactionFeedback.catalog.ts`, `apps/ui/tests/visual/state-catalog.ts`, `docs/guides/using-the-app/home.md`, `docs/architecture/stage-recommendations.md`, the `home-stage-suggestions` doc screenshot | The chapter stage recommendations PRD (`chapter-stage-recommendations.prd.md`, delivered and deleted) phases 6 to 9 (the same `stages/` components, `home.md` and `stage-recommendations.md`); any PRD re-capturing Home screenshots or editing `AudiobookEstimatePanel.tsx` (the recording check, credits and estimate work) |
 | 2 | `AudiobookEstimatePanel.tsx`, a new hook in `apps/ui/src/components/stages/` (or `apps/ui/src/hooks/`) and its test, `interactionFeedback.catalog.ts`, `home.md`, `stage-recommendations.md` | The same as phase 1, plus Recording Check Model Cascade (PRD deleted, delivered) if it changes when the panel re-reads chapters |
 
 Cross-cutting: each phase follows `CLAUDE.md`: plan with an issue and `Closes #<n>`, `change-impact-scan` (the consumers of `StageSummary.tsx` and `useStageRecommendations`), TDD, `full-verification-gate` with the visual suite and PNG review at every viewport, `feature-cleanup`. `hostAPIVersion` unchanged.

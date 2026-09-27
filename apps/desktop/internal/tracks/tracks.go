@@ -197,6 +197,23 @@ type Project struct {
 	// create_regions makes. Not on the TracksList wire contract
 	// (json:"-"): no UI shows them yet.
 	Regions []Region `json:"-"`
+
+	// Markers are the project's plain markers (a MARKER line with the region
+	// flag clear; Region is the paired form), in file order. The proofing
+	// readiness signals PRD's Phase 3 reads these for the RF convention's
+	// `PICKUP:`/`PICKUP_DONE:` project markers; not on the TracksList wire
+	// contract (json:"-"): no UI shows them yet.
+	Markers []Marker `json:"-"`
+}
+
+// Marker is one plain REAPER project marker. Index is REAPER's own marker
+// number (markers and regions are numbered in separate sequences, so a
+// marker and a region can share one).
+type Marker struct {
+	Index    int
+	Name     string
+	Position float64
+	GUID     string
 }
 
 // Region is one REAPER region: two MARKER lines in the project chunk that

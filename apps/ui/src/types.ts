@@ -32,10 +32,12 @@ export * from './api/contracts/deliveryProfiles';
 export * from './api/contracts/diagnostics';
 export * from './api/contracts/editing';
 export * from './api/contracts/cleanup';
+export * from './api/contracts/prepMarkup';
 export * from './api/contracts/workspace';
 export * from './api/contracts/preview';
 export * from './api/contracts/daw';
 export * from './api/contracts/providers';
+export * from './api/contracts/production';
 export * from './api/contracts/pronunciationLookup';
 
 import type { ChapterTrackMapApi } from './api/contracts/chapterTrackMap';
@@ -70,10 +72,12 @@ import type { DeliveryProfilesApi } from './api/contracts/deliveryProfiles';
 import type { DiagnosticsApi } from './api/contracts/diagnostics';
 import type { EditingApi } from './api/contracts/editing';
 import type { CleanupActionApi } from './api/contracts/cleanup';
+import type { PrepMarkupApi } from './api/contracts/prepMarkup';
 import type { WorkspaceApi } from './api/contracts/workspace';
 import type { PreviewApi } from './api/contracts/preview';
 import type { DawCapabilitiesApi } from './api/contracts/daw';
 import type { ProviderCapabilitiesApi } from './api/contracts/providers';
+import type { ProductionApi } from './api/contracts/production';
 import type { PronunciationLookupApi } from './api/contracts/pronunciationLookup';
 
 /** The app compatibility facade; domain interfaces remain independently testable. */
@@ -111,8 +115,10 @@ export interface NarrationApi
     DiagnosticsApi,
     EditingApi,
     CleanupActionApi,
+    PrepMarkupApi,
     WorkspaceApi,
     PreviewApi,
     DawCapabilitiesApi,
     ProviderCapabilitiesApi,
+    ProductionApi,
     PronunciationLookupApi {}
