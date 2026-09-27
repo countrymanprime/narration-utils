@@ -1,6 +1,6 @@
 # 0072. The app updates itself from this repository's releases and never installs without a click
 
-**Status:** Accepted
+**Status:** Accepted (amended by [ADR 0412](0412-windows-is-the-only-supported-platform-for-now.md): Windows is the only platform, so no other platform is notified of an update)
 **Date:** 2026-09-21
 **Supersedes:**
 
