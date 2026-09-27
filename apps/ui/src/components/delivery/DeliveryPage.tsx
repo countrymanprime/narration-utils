@@ -155,7 +155,7 @@ export function DeliveryPage({ openSettings, focus }: { openSettings: () => void
     const rule = focus.rule ? job.profile?.rules.find((candidate) => candidate.id === focus.rule)?.label : undefined;
     setSelected(file.path);
     setTab('measurements');
-    setFocusNote({ found: true, text: `From the Review page: ${rule ? `${lowerFirst(rule)} in ` : ''}${file.name}, rule by rule below.` });
+    setFocusNote({ found: true, text: `Opened from the Review page: ${rule ? `${lowerFirst(rule)} in ` : ''}${file.name}.` });
   }, [focus, job]);
 
   useEffect(() => {
@@ -218,8 +218,8 @@ export function DeliveryPage({ openSettings, focus }: { openSettings: () => void
                 {problem}
               </p>
             )}
-            {focusNote && (
-              <p role="status" className="mt-2 text-sm" style={focusNote.found ? MUTED : { color: 'var(--warn-text)' }}>
+            {focusNote && !focusNote.found && (
+              <p role="status" className="mt-2 text-sm" style={{ color: 'var(--warn-text)' }}>
                 {focusNote.text}
               </p>
             )}
@@ -281,8 +281,22 @@ export function DeliveryPage({ openSettings, focus }: { openSettings: () => void
             )}
           </Panel>
           {judgedBy && job && job.bookRules.length > 0 && <BookChecklistPanel profile={judgedBy} bookRules={job.bookRules} />}
-          <div ref={detailRef} className="scroll-mt-4 empty:hidden">
-            {detail && judgedBy && <FileRulesPanel file={detail} profile={judgedBy} onClose={() => setSelected(undefined)} />}
+          <div ref={detailRef} className="flex scroll-mt-4 flex-col gap-2 empty:hidden">
+            {detail && judgedBy && focusNote?.found && (
+              <p role="status" className="text-sm" style={MUTED}>
+                {focusNote.text}
+              </p>
+            )}
+            {detail && judgedBy && (
+              <FileRulesPanel
+                file={detail}
+                profile={judgedBy}
+                onClose={() => {
+                  setSelected(undefined);
+                  setFocusNote(undefined);
+                }}
+              />
+            )}
           </div>
         </TabPanel>
         <TabPanel value="diagnostics">

@@ -29,6 +29,7 @@ const ANALYZER_LABELS: Record<string, string> = {
   'story-bible': 'Story Bible',
   'take-review': 'Take review',
   'take-comparison': 'Take comparison',
+  measure: 'Delivery measurement',
 };
 
 export const STATUS_LABELS: Record<FindingReviewStatus, string> = {

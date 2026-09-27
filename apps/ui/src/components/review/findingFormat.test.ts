@@ -25,6 +25,7 @@ describe('findingFormat', () => {
     for (const category of FINDING_CATEGORIES) expect(categoryLabel(category)).not.toContain('_');
     expect(categoryLabel('breath_noise')).toBe('Breath noise');
     expect(analyzerLabel('room-tone-check')).toBe('Room tone check');
+    expect(analyzerLabel('measure')).toBe('Delivery measurement');
   });
 
   it('shows a score as a percentage and no score as no score', () => {
