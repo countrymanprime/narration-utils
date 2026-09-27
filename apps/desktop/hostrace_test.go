@@ -103,6 +103,7 @@ var stressReaders = []stressReader{
 		_, _ = h.TeleprompterSaveFlags("ch-1", []liveflags.Flag{{Kind: "misread", ParagraphID: "p-1", WordStart: 0, WordEnd: 1}})
 	}},
 	{"DawCapabilities", func(h *Host) { _, _ = h.DawCapabilities() }},
+	{"PronunciationOnlineKeyStatus", func(h *Host) { _, _ = h.PronunciationOnlineKeyStatus() }},
 	{"ProviderCapabilities", func(h *Host) { _, _ = h.ProviderCapabilities() }},
 	{"TracksDiscover", func(h *Host) { _, _ = h.TracksDiscover() }},
 	{"TracksList", func(h *Host) { _, _ = h.TracksList() }},
