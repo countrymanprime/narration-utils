@@ -1,4 +1,3 @@
-import { z } from 'zod';
 import type { GuideEntity, ManuscriptParagraph } from '../../types';
 
 // The shape Character Continuity Review's own dialogue-cue extractor writes
@@ -22,23 +21,6 @@ export type DialogueCue = {
   evidence: { chapterId: string; paragraphId: string; excerpt: string; tag: string };
   corrected: boolean;
 };
-
-// Not a wire contract (CLAUDE.md): nothing here crosses a Wails binding or a host-written file yet, since no
-// binding exists (above). This schema exists so a fixture cue and the eventual real sidecar output can both be
-// checked against the exact same shape (prep-depth.prd.md Phase 4's own contract-test requirement), the same
-// discipline a real wire contract gets, applied one phase early.
-export const dialogueCueSchema = z.object({
-  id: z.string(),
-  chapterId: z.string(),
-  paragraphId: z.string(),
-  quote_start: z.number(),
-  quote_end: z.number(),
-  quote_text: z.string(),
-  speaker_entity_id: z.string().nullable(),
-  speaker_source: z.enum(['tag', 'continuation', 'unknown', 'correction']),
-  evidence: z.object({ chapterId: z.string(), paragraphId: z.string(), excerpt: z.string(), tag: z.string() }),
-  corrected: z.boolean(),
-}) satisfies z.ZodType<DialogueCue>;
 
 /** The speaker chip's label for one paragraph: the first cue on it whose speaker resolves to a known entity,
  * or `undefined` for no cue, an `unknown` cue, or one naming an entity id this reader does not have - never a

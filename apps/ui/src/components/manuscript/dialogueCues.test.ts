@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
+import { dialogueCueSchema } from '../../api/schemas/dialogueCue';
 import type { GuideEntity, ManuscriptParagraph } from '../../types';
-import { dialogueCueSchema, recordedDemoDialogueCues, speakerLabelForParagraph, type DialogueCue } from './dialogueCues';
+import { recordedDemoDialogueCues, speakerLabelForParagraph, type DialogueCue } from './dialogueCues';
 
 const entity = (id: string, canonical_name: string): GuideEntity => ({ id, canonical_name, aliases: [], category: 'Character' }) as unknown as GuideEntity;
 const entitiesById = new Map([
