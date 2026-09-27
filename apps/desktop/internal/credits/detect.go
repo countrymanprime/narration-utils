@@ -53,6 +53,9 @@ func Detect(projectFolder string) []Candidate {
 	for _, candidate := range ParseFrontMatter(openingChapterLines(doc)) {
 		byToken[candidate.Token] = candidate
 	}
+	if doc.SourceMetadata != nil {
+		mergeSourceMetadata(byToken, *doc.SourceMetadata)
+	}
 
 	sourcePath, hasSource := storedSourcePath(projectFolder, doc.Source.StoredPath)
 	switch strings.ToLower(doc.Importer.Format) {
@@ -116,6 +119,25 @@ func mergeDocxProperties(byToken map[string]Candidate, title, author, sourceFile
 	if _, exists := byToken[TokenAuthor]; !exists && !looksLikeMachineDefault(author, sourceFileName) {
 		byToken[TokenAuthor] = Candidate{Token: TokenAuthor, Value: author, Source: "the document's own properties", Confidence: ConfidenceLow}
 	}
+}
+
+// mergeSourceMetadata overwrites byToken with structure the importer captured directly from the source's own markup
+// at import time (Markdown YAML front matter, DOCX Title/Subtitle styles - Phase 4). It is an explicit marker the
+// narrator can see on the page, so it beats the front matter parser's plain-text guess the same way an explicit
+// "Title:" prefix or a byline's "by" does (CS6, confidence table), and - unlike DOCX's docProps/core.xml - it is
+// never a machine default, so it always outranks that source too (mergeDocxProperties below only fills a token this
+// leaves absent).
+func mergeSourceMetadata(byToken map[string]Candidate, metadata sourceMetadataDoc) {
+	set := func(token, value string) {
+		if value == "" {
+			return
+		}
+		byToken[token] = Candidate{Token: token, Value: value, Source: "the document's own front matter", Confidence: ConfidenceHigh}
+	}
+	set(TokenTitle, metadata.Title)
+	set(TokenSubtitle, metadata.Subtitle)
+	set(TokenAuthor, metadata.Author)
+	set(TokenSeries, metadata.Series)
 }
 
 func sortCandidates(candidates []Candidate) {

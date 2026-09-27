@@ -575,7 +575,34 @@ func canonicalize(draft importer.Draft, name, storedPath, sha string, kinds map[
 		}
 		paragraphs = append(paragraphs, paragraph)
 	}
-	return map[string]any{"schemaVersion": 1, "documentId": newID(), "importedAt": time.Now().UTC().Format(time.RFC3339Nano), "importer": map[string]any{"format": draft.Format, "version": 1}, "source": map[string]any{"fileName": name, "sha256": sha, "storedPath": storedPath}, "chapters": chapters, "paragraphs": paragraphs}, nil
+	canonical := map[string]any{"schemaVersion": 1, "documentId": newID(), "importedAt": time.Now().UTC().Format(time.RFC3339Nano), "importer": map[string]any{"format": draft.Format, "version": 1}, "source": map[string]any{"fileName": name, "sha256": sha, "storedPath": storedPath}, "chapters": chapters, "paragraphs": paragraphs}
+	if metadata := sourceMetadataFields(draft.SourceMetadata); metadata != nil {
+		canonical["sourceMetadata"] = metadata
+	}
+	return canonical, nil
+}
+
+// sourceMetadataFields renders draft.SourceMetadata (credits-token-setup-and-front-matter-detection.prd.md, Phase 4)
+// as a map holding only its non-empty fields, so manuscript.json stays additive: an import with nothing detected, or
+// one written before this phase, carries no "sourceMetadata" key at all rather than one full of empty strings.
+func sourceMetadataFields(metadata *importer.SourceMetadata) map[string]any {
+	if metadata == nil {
+		return nil
+	}
+	fields := map[string]any{}
+	set := func(key, value string) {
+		if value != "" {
+			fields[key] = value
+		}
+	}
+	set("title", metadata.Title)
+	set("subtitle", metadata.Subtitle)
+	set("author", metadata.Author)
+	set("series", metadata.Series)
+	if len(fields) == 0 {
+		return nil
+	}
+	return fields
 }
 
 func resetDerived(project string) error {
