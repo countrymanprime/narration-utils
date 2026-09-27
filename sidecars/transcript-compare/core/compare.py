@@ -2018,7 +2018,10 @@ def main():
     if args.capabilities:
         import asr_batch  # noqa: F401 - a sibling module: registers "whisper" (batch) into ENGINES before this reads it
 
-        print(json.dumps(capabilities_report()))
+        # flush=True: os._exit() below skips the normal interpreter shutdown that would otherwise flush stdout, and
+        # a non-tty stdout (piped, as the host's Supervisor always runs this) is fully buffered, not line-buffered -
+        # without it, this print is silently lost on a real build (caught live: PYTHONUNBUFFERED=1 in dev masks it).
+        print(json.dumps(capabilities_report()), flush=True)
         os._exit(0)
 
     if args.take_divergence:

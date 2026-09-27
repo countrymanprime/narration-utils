@@ -1,6 +1,7 @@
 import importlib.util
 import io
 import json
+import os
 import subprocess
 import sys
 from contextlib import redirect_stderr
@@ -184,15 +185,21 @@ def test_an_invented_name_spelled_another_way_is_a_misread_until_it_has_an_equiv
 
 # --- the command line (compare.py --capabilities), sidecar-capabilities-flag PRD Phase 2 -------------------------------------
 # --manuscript is required by argparse for every invocation (see compare.py's module docstring) but unused here.
+# PYTHONUNBUFFERED is stripped from the subprocess's environment: dev shells often set it, which forces line-by-line
+# flushing and would mask a real bug this test exists to catch - a real (frozen or plain `python`) process's stdout is
+# a pipe, not a tty, so it is fully buffered by default, and os._exit() (used below main()'s exit) skips the normal
+# interpreter shutdown that would otherwise flush it.
 
 
 def test_the_cli_prints_the_capabilities_report_and_exits_0(tmp_path):
+    env = {key: value for key, value in os.environ.items() if key != "PYTHONUNBUFFERED"}
     completed = subprocess.run(
         [sys.executable, str(COMPARE_PATH), "--capabilities", "--manuscript", str(tmp_path / "unused.json")],
         capture_output=True,
         text=True,
         timeout=60,
         check=False,
+        env=env,
     )
 
     assert completed.returncode == 0, completed.stderr
