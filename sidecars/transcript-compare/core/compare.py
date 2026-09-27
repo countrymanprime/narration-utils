@@ -2007,6 +2007,13 @@ def main():
         action="store_true",
         help="With --coverage: re-align from the cached words files only; never transcribe, and fail when an item's words are not cached",
     )
+    ap.add_argument(
+        "--recheck",
+        default=None,
+        help="With --coverage, instead of a full check (model cascade Phase 3): transcribe only the windows named in this JSON "
+        "file with --model, one model load for the run, and splice the new words into each affected words file in --words-dir; "
+        "writes no --out report",
+    )
     args = ap.parse_args()
 
     if args.log:
@@ -2048,6 +2055,8 @@ def main():
         return
     if args.align_only:
         ap.error("--align-only can only be used with --coverage")
+    if args.recheck:
+        ap.error("--recheck can only be used with --coverage")
 
     required = [("--manifest", args.manifest), ("--track-name", args.track_name), ("--out", args.out)]
     if not args.find_repeats:
@@ -2060,14 +2069,31 @@ def main():
 
 
 def _main_coverage(ap, args):
-    """--coverage: check its own arguments, then run core/coverage_mode.py."""
+    """--coverage: check its own arguments, then run core/coverage_mode.py. --recheck (model
+    cascade Phase 3) is a separate, windows-only mode: it takes only --words-dir and --model,
+    never a manifest, chapter or --out, and is mutually exclusive with --align-only."""
+    for flag, given in [("--find-repeats", args.find_repeats), ("--chunk-seconds", args.chunk_seconds)]:
+        if given:
+            ap.error(f"{flag} cannot be used with --coverage")
+
+    if args.recheck:
+        if args.align_only:
+            ap.error("--align-only cannot be used with --recheck")
+        if not args.words_dir:
+            ap.error("--words-dir required with --coverage --recheck")
+
+        def recheck(run_args):
+            import coverage_mode  # a sibling module: compare.py's own directory is on sys.path, frozen or not
+
+            coverage_mode.run_recheck(run_args, sys.modules[__name__])
+
+        _run_and_exit(args, recheck)
+        return
+
     required = [("--manifest", args.manifest), ("--chapter-id", args.chapter_id), ("--words-dir", args.words_dir), ("--out", args.out)]
     missing = [name for name, val in required if not val]
     if missing:
         ap.error(", ".join(missing) + " required with --coverage")
-    for flag, given in [("--find-repeats", args.find_repeats), ("--chunk-seconds", args.chunk_seconds)]:
-        if given:
-            ap.error(f"{flag} cannot be used with --coverage")
 
     def coverage(run_args):
         import coverage_mode  # a sibling module: compare.py's own directory is on sys.path, frozen or not

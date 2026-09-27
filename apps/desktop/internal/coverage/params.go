@@ -18,8 +18,12 @@ const (
 	AnalyzerVersion = "1"
 	// wordsAnalyzerID and wordsVersion name the per-source words entries in the
 	// analysis evidence cache. The version is the sidecar's words file schema.
+	// Raised once, to 2, for the model cascade's `spans` field (Phase 3, PRD
+	// Architecture notes, coverage_mode.splice_window): a words file the sidecar
+	// still reads without them, so this is a clean one-time invalidation, not a
+	// correctness fix.
 	wordsAnalyzerID = "recording-coverage-words"
-	wordsVersion    = "1"
+	wordsVersion    = "2"
 	// vadFilter records that the sidecar always transcribes with Whisper's voice
 	// activity filter (coverage_mode.WhisperTranscriber); it shapes the words.
 	vadFilter = "vad=1"

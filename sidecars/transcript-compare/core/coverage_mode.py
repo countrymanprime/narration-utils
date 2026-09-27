@@ -19,14 +19,24 @@ skipped, Q5 and Q10), this mode:
    the run finished.
 
 With `--align-only` the mode never transcribes: it re-aligns from the words files alone and fails
-before decoding anything when an item's words do not cover its played range (EP3 C).
+before decoding anything when an item's words do not cover its played range (EP3 C). A plain check,
+`--align-only` included, refuses to reuse a words file another model made (`covers`), so a model
+change is a re-transcription, never a silent stale reuse.
+
+`--recheck <windows.json>` is a separate, windows-only mode (`run_recheck`, model cascade Phase 3):
+instead of the manifest and chapter above, it takes a checked list of windows, each bounded audio
+in one item's source and the words file to update, transcribes each with `--model` (one model load
+for the run) and splices the result into that words file (`splice_window`), reattributing the
+range's model provenance in a new, additive `spans` list. It touches no manifest, chapter or
+timeline, and writes no results file.
 
 Progress is `stage|pct|message` in the usual file (START, DECODE, LOAD, TRANSCRIBE, ALIGN, WRITE,
-DONE), and TRANSCRIBE moves with the seconds transcribed over the seconds that need transcribing
-(ADR 0015). Exit codes, set by `compare.main`: 0 the results file is complete; 1 failed (an
-`ERROR|0|<message>` progress line, no results file); 2 cancelled through `<progress>.cancel`
-(a `CANCELLED` progress line, no results file, finished words files kept). Python's `argparse`
-also exits with 2 on a usage error, with no progress line.
+DONE; `--recheck` never reaches ALIGN or WRITE), and TRANSCRIBE moves with the seconds transcribed
+over the seconds that need transcribing (ADR 0015). Exit codes, set by `compare.main`: 0 the results
+file is complete (or, for `--recheck`, every window spliced); 1 failed (an `ERROR|0|<message>`
+progress line, no results file); 2 cancelled through `<progress>.cancel` (a `CANCELLED` progress
+line, no results file, finished words files kept). Python's `argparse` also exits with 2 on a usage
+error, with no progress line.
 
 This module does not import `compare.py`: `run` is handed the loaded module as `engine`, so the
 mode uses exactly the tokenizing, decoding and alignment of the process it runs in.
@@ -40,7 +50,7 @@ import math
 import os
 import re
 from collections.abc import Callable, Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from pathlib import Path
 from types import ModuleType
 
@@ -48,6 +58,7 @@ import recording_coverage as coverage_model
 
 MANIFEST_SCHEMA_VERSION = 1
 WORDS_SCHEMA_VERSION = 1
+WINDOWS_SCHEMA_VERSION = 1
 RESULT_SCHEMA_VERSION = 1
 
 TRANSCRIBE_START_PCT = 2
@@ -62,6 +73,7 @@ WORDS_FILE_NAME = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]{0,199}")
 """A words file is named by the host's cache key: a plain file name, never a path."""
 
 _MANIFEST_ITEM_KEYS = frozenset({"index", "itemGuid", "sourceFile", "startOffset", "length", "wordsFile", "muted"})
+_WINDOW_KEYS = frozenset({"itemIndex", "itemGuid", "sourceFile", "wordsFile", "start", "end"})
 
 Word = tuple[str, float, float]
 
@@ -72,6 +84,11 @@ class ManifestError(ValueError):
 
 class AlignOnlyError(ValueError):
     """Align-only was asked for, but an item's words are not cached for its played range."""
+
+
+class WindowsError(ValueError):
+    """The windows file (`--recheck`) is not the shape this mode reads, or names a words file
+    with nothing cached to splice into; nothing has been read or written yet."""
 
 
 @dataclass(frozen=True)
@@ -92,9 +109,22 @@ class ManifestItem:
 
 
 @dataclass(frozen=True)
+class Span:
+    """One range of a words file attributed to one model (model cascade Phase 3): `[start, end]`
+    in the file's own source seconds. A plain file (never spliced by `--recheck`) carries none;
+    `spans_or_default` gives it one span, the whole file under its `model`."""
+
+    start: float
+    end: float
+    model: str
+
+
+@dataclass(frozen=True)
 class ItemWords:
     """A words file: the words said in `[source_start, source_end]` of a source, in source seconds,
-    and what shaped them (Q7, Q13: model and language label a result, they do not invalidate it)."""
+    and what shaped them (Q7, Q13: model and language label a result, they do not invalidate it).
+    `model` stays the file's original transcription for compatibility; `spans` is empty unless a
+    `--recheck` splice has given ranges of the file to another model."""
 
     words: tuple[Word, ...]
     source_start: float
@@ -102,6 +132,10 @@ class ItemWords:
     model: str
     language: str | None
     hotwords_hash: str | None
+    spans: tuple[Span, ...] = ()
+
+    def spans_or_default(self) -> tuple[Span, ...]:
+        return self.spans or (Span(self.source_start, self.source_end, self.model),)
 
 
 Transcriber = Callable[[ManifestItem, Callable[[float], None]], ItemWords]
@@ -187,6 +221,11 @@ def _parse_words(data: object) -> ItemWords | None:
         return None
     if not all(isinstance(word, list) and len(word) == 3 and isinstance(word[0], str) and _number(word[1]) and _number(word[2]) for word in words):
         return None
+    spans_raw = data.get("spans", [])
+    if not isinstance(spans_raw, list) or not all(
+        isinstance(s, dict) and _number(s.get("start")) and _number(s.get("end")) and isinstance(s.get("model"), str) for s in spans_raw
+    ):
+        return None
     language = transcription.get("language")
     hotwords = transcription.get("hotwordsHash")
     return ItemWords(
@@ -196,6 +235,7 @@ def _parse_words(data: object) -> ItemWords | None:
         transcription["model"],
         language if isinstance(language, str) else None,
         hotwords if isinstance(hotwords, str) else None,
+        tuple(Span(float(s["start"]), float(s["end"]), s["model"]) for s in spans_raw),
     )
 
 
@@ -223,13 +263,18 @@ def write_words_file(path: str | os.PathLike, words: ItemWords) -> None:
         "words": [list(word) for word in words.words],
         "transcription": {"model": words.model, "language": words.language, "hotwordsHash": words.hotwords_hash, "vadFilter": True},
     }
+    if words.spans:
+        payload["spans"] = [{"start": span.start, "end": span.end, "model": span.model} for span in words.spans]
     _write_atomically(Path(path), json.dumps(payload, ensure_ascii=False) + "\n")
 
 
-def covers(words: ItemWords, item: ManifestItem) -> bool:
+def covers(words: ItemWords, item: ManifestItem, model: str | None = None) -> bool:
     """Whether a words file transcribed all of the item's played range. A trim that narrows the
-    range keeps it; a trim that widens it needs a new transcription."""
-    return words.source_start <= item.start_offset + RANGE_TOLERANCE_SECONDS and words.source_end >= item.end - RANGE_TOLERANCE_SECONDS
+    range keeps it; a trim that widens it needs a new transcription. With `model` given, a plain
+    re-check also refuses to reuse a words file another model made (the windows-only `--recheck`
+    path never calls this with a model: it splices unconditionally, model mismatch or not)."""
+    in_range = words.source_start <= item.start_offset + RANGE_TOLERANCE_SECONDS and words.source_end >= item.end - RANGE_TOLERANCE_SECONDS
+    return in_range and (model is None or words.model == model)
 
 
 def played_words(words: ItemWords, item: ManifestItem) -> list[Word]:
@@ -323,9 +368,10 @@ def _chapter(engine: ModuleType, manuscript: str, chapter_id: str) -> dict:
 
 
 def _words_for(item: ManifestItem, path: Path, transcriber: Transcriber, progress: _Progress, engine: ModuleType, args, label: str) -> _ItemResult:
-    """Reuse the item's words file if it covers the item, otherwise transcribe and write it."""
+    """Reuse the item's words file if it covers the item with this run's model, otherwise
+    transcribe and write it."""
     cached = read_words_file(path)
-    if cached is not None and covers(cached, item):
+    if cached is not None and covers(cached, item, args.model):
         return _ItemResult(item, "reused", cached, tuple(played_words(cached, item)))
     engine.check_cancelled(args.progress)
     progress.report("DECODE", progress.pct, f"Decoding item {label}...")
@@ -347,7 +393,7 @@ def _collect_words(items: Sequence[ManifestItem], words_dir: Path, transcriber: 
     playing = [item for item in items if not item.muted]
     pending = []
     for item in playing:
-        hit = _is_covered(words_dir, item)
+        hit = _is_covered(words_dir, item, args.model)
         engine.log("checked the item's cached words", level="debug", event="coverage.cache", item_index=item.index, item_guid=item.item_guid, hit=hit)
         if not hit:
             pending.append(item)
@@ -366,9 +412,9 @@ def _collect_words(items: Sequence[ManifestItem], words_dir: Path, transcriber: 
     return [results[item.index] for item in items]
 
 
-def _is_covered(words_dir: Path, item: ManifestItem) -> bool:
+def _is_covered(words_dir: Path, item: ManifestItem, model: str) -> bool:
     cached = read_words_file(words_dir / item.words_file)
-    return cached is not None and covers(cached, item)
+    return cached is not None and covers(cached, item, model)
 
 
 @dataclass(frozen=True)
@@ -549,8 +595,8 @@ def _alignment_lines(aligned: coverage_model.AlignedChapter, alignment: dict, ti
     return lines
 
 
-def _require_cached(items: Sequence[ManifestItem], words_dir: Path) -> None:
-    missing = [item for item in items if not item.muted and not _is_covered(words_dir, item)]
+def _require_cached(items: Sequence[ManifestItem], words_dir: Path, model: str) -> None:
+    missing = [item for item in items if not item.muted and not _is_covered(words_dir, item, model)]
     if missing:
         raise AlignOnlyError(
             f"Align again needs every item's words, but item {missing[0].index} has none cached for the part it plays. Run the recording check to transcribe it."
@@ -584,7 +630,7 @@ def run(args, engine: ModuleType, transcriber: Transcriber | None = None) -> Non
     equivalences = engine.register_project_equivalences(args.manuscript)
     chapter = _chapter(engine, args.manuscript, args.chapter_id)
     if getattr(args, "align_only", False):
-        _require_cached(items, Path(args.words_dir))
+        _require_cached(items, Path(args.words_dir), args.model)
         transcriber = _refuse_transcription
 
     results = _collect_words(items, Path(args.words_dir), transcriber or _default_transcriber(engine, args), engine, args)
@@ -605,4 +651,148 @@ def run(args, engine: ModuleType, transcriber: Transcriber | None = None) -> Non
     report = _report(chapter, coverage, results, alignment, timeline, analysis) + "".join(_alignment_lines(aligned, alignment, timeline, words, params))
     _write_atomically(out, report)
     engine.log(f"Wrote the coverage of chapter {chapter['id']} to {out}")
+    engine.write_progress(args.progress, "DONE", 100, "Finished")
+
+
+# ---------------------------------------------------------------------------
+# the windows-only recheck mode (model cascade Phase 3)
+
+
+@dataclass(frozen=True)
+class Window:
+    """One window of audio to re-check with a stronger model, bounded by the words the first pass
+    matched on either side of a missing region (planned by the host, model cascade Phase 4)."""
+
+    item_index: int
+    item_guid: str
+    source_file: str
+    words_file: str
+    start: float
+    end: float
+
+    @property
+    def length(self) -> float:
+        return self.end - self.start
+
+
+def _window(raw: object, position: int) -> Window:
+    where = f"window {position}"
+    if not isinstance(raw, dict):
+        raise WindowsError(f"{where} is not an object")
+    missing = sorted(_WINDOW_KEYS - raw.keys())
+    unknown = sorted(raw.keys() - _WINDOW_KEYS)
+    if missing or unknown:
+        raise WindowsError(f"{where}: missing {missing}, unknown {unknown}")
+    index = raw["itemIndex"]
+    if not isinstance(index, int) or isinstance(index, bool) or index < 0:
+        raise WindowsError(f"{where}: itemIndex must be a whole number, 0 or more")
+    for key in ("itemGuid", "sourceFile"):
+        if not isinstance(raw[key], str) or not raw[key]:
+            raise WindowsError(f"{where}: {key} must be a non-empty string")
+    if not isinstance(raw["wordsFile"], str) or not WORDS_FILE_NAME.fullmatch(raw["wordsFile"]):
+        raise WindowsError(f"{where}: wordsFile must be a plain file name (letters, digits, '.', '_', '-')")
+    if not _number(raw["start"]) or raw["start"] < 0:
+        raise WindowsError(f"{where}: start must be a finite number of seconds, 0 or more")
+    if not _number(raw["end"]) or raw["end"] <= raw["start"]:
+        raise WindowsError(f"{where}: end must be a finite number of seconds after start")
+    return Window(index, raw["itemGuid"], raw["sourceFile"], raw["wordsFile"], float(raw["start"]), float(raw["end"]))
+
+
+def read_windows(path: str | os.PathLike) -> tuple[Window, ...]:
+    """The `--recheck` windows file: what to re-transcribe and where to splice it, checked field by
+    field before anything is opened, the same trust boundary as the manifest (threat-model row 4e)."""
+    try:
+        data = json.loads(Path(path).read_text(encoding="utf-8"))
+    except (OSError, ValueError, RecursionError) as exc:
+        raise WindowsError(f"The coverage windows file could not be read: {exc}") from exc
+    if not isinstance(data, dict) or data.get("schemaVersion") != WINDOWS_SCHEMA_VERSION:
+        raise WindowsError(f"The coverage windows file is not schema version {WINDOWS_SCHEMA_VERSION}")
+    raw_windows = data.get("windows")
+    if not isinstance(raw_windows, list):
+        raise WindowsError("The coverage windows file's windows must be a list")
+    if not raw_windows:
+        raise WindowsError("The coverage windows file has no windows")
+    return tuple(_window(raw, position) for position, raw in enumerate(raw_windows))
+
+
+def _drop_edge_words(words: Sequence[Word], start: float, end: float) -> list[Word]:
+    """A window's own newly transcribed words, dropping any whose start or end touches the
+    window's edge: the window's own decode may have cut such a word short, so it is never trusted
+    over what was already there (a risk noted in the PRD's Architecture notes)."""
+    return [word for word in words if word[1] > start and word[2] < end]
+
+
+def _drop_replaced_words(words: Sequence[Word], start: float, end: float) -> list[Word]:
+    """A words file's existing words, dropping those a window replaces: whichever midpoint falls
+    inside `[start, end]`, the same membership rule `played_words` uses for an item's range."""
+    return [word for word in words if not (start <= (word[1] + word[2]) / 2 <= end)]
+
+
+def _overwrite_spans(spans: Sequence[Span], start: float, end: float, model: str) -> tuple[Span, ...]:
+    """`spans`, a file's existing per-range model attribution, with `[start, end]` reassigned to
+    `model`: a span the window covers wholly is dropped, one it straddles is split at the window's
+    edge and the part outside the window keeps its own model."""
+    kept: list[Span] = []
+    for span in spans:
+        if span.end <= start or span.start >= end:
+            kept.append(span)
+            continue
+        if span.start < start:
+            kept.append(Span(span.start, start, span.model))
+        if span.end > end:
+            kept.append(Span(end, span.end, span.model))
+    kept.append(Span(start, end, model))
+    return tuple(sorted(kept, key=lambda span: span.start))
+
+
+def splice_window(existing: ItemWords, window: Window, new_words: Sequence[Word], model: str) -> ItemWords:
+    """`existing` with `window`'s range re-checked: the words it replaced are gone, the window's
+    own new words stand in for them (edge words dropped), and the range is reattributed to `model`
+    in `spans` (model cascade Phase 3). `existing.model` is left as it was, for compatibility."""
+    kept = _drop_replaced_words(existing.words, window.start, window.end)
+    added = _drop_edge_words(new_words, window.start, window.end)
+    words = tuple(sorted(kept + added, key=lambda word: word[1]))
+    spans = _overwrite_spans(existing.spans_or_default(), window.start, window.end, model)
+    return replace(existing, words=words, spans=spans)
+
+
+def run_recheck(args, engine: ModuleType, transcriber: Transcriber | None = None) -> None:
+    """The windows-only recheck mode (`--coverage --recheck`, model cascade Phase 3): transcribes
+    only the given windows with `--model`, one model load for the run, and splices the new words
+    into each affected words file. Touches no manifest, chapter or timeline, and writes no results
+    file. Raises `engine.Cancelled` on cancel; any other exception is a failure."""
+    engine.write_progress(args.progress, "START", 0, "Starting...")
+    engine.check_cancelled(args.progress)
+    windows = read_windows(args.recheck)
+    words_dir = Path(args.words_dir)
+    by_file: dict[str, list[Window]] = {}
+    for window in windows:
+        by_file.setdefault(window.words_file, []).append(window)
+    for words_file in by_file:
+        if read_words_file(words_dir / words_file) is None:
+            raise WindowsError(f"The coverage windows file names {words_file!r}, which has no words cached to splice into.")
+
+    transcribe = transcriber or _default_transcriber(engine, args)
+    progress = _Progress(engine, args.progress, sum(window.length for window in windows))
+    for words_file, file_windows in by_file.items():
+        path = words_dir / words_file
+        existing = read_words_file(path)
+        for window in file_windows:
+            engine.check_cancelled(args.progress)
+            label = f"item {window.item_index}"
+            progress.report("DECODE", progress.pct, f"Decoding the re-check window of {label}...")
+            start = progress.done
+            item = ManifestItem(window.item_index, window.item_guid, window.source_file, window.start, window.length, words_file, False)
+
+            def on_seconds(seconds: float, _start=start, _length=window.length, _label=label) -> None:
+                engine.check_cancelled(args.progress)
+                done = min(max(seconds, 0.0), _length)
+                progress.transcribed(_start + done, f"Re-checking {_label}... {engine.format_time(done)} / {engine.format_time(_length)}")
+
+            result = transcribe(item, on_seconds)
+            existing = splice_window(existing, window, result.words, args.model)
+            progress.done = start + window.length
+            progress.transcribed(progress.done, f"Re-checked {label}")
+        write_words_file(path, existing)
+    engine.check_cancelled(args.progress)
     engine.write_progress(args.progress, "DONE", 100, "Finished")
