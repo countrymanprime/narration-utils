@@ -2,8 +2,8 @@
 
 # Script
 
-The Script page is where you prep the book before recording, under **Prep** in the navigation. It has three parts
-side by side on a wide window:
+The Script page is where you prep the book before recording, under **Prep** in the navigation. On a wide window it has
+three parts side by side:
 
 - **Chapters · Prep** on the left: every narration chapter, the one you are reading marked. Under a chapter, a count
   such as **3 to confirm** says how many names first heard in it still have a pronunciation the author has not
@@ -15,8 +15,8 @@ side by side on a wide window:
   keeps the destination line highlighted for 30 seconds. Text size is adjustable independently of the rest of the app.
 - **The rail** on the right, with three tabs: **Pronunciations**, **Characters** and **Queries**.
 
-On a narrower window the chapter list is in the **Chapters & Search** panel, and the rail opens as a panel from the
-**Prep rail** button in the band above the text.
+The rail needs the widest windows (1536 px and up): below that it opens as a panel from the **Prep rail** button in the
+band above the text, and below 1280 px the chapter list, with the same counts, is in the **Chapters & Search** panel.
 
 An old link to the Manuscript page (`/manuscript`, with a line or chapter after `#`) still works: it opens the Script
 page at the same place.
