@@ -1262,16 +1262,16 @@ describe('answers of the mock client for the settings, voice, model, transcript 
     expect(turnedOff.capabilities.punch).toMatchObject({ available: false, reason: 'turned_off' });
   });
 
-  it('providerCapabilities matches the host goldens on Windows and macOS (provider-ports PRD Phase 14)', async () => {
+  it('providerCapabilities matches the host goldens on Windows and on the Linux development host (provider-ports PRD Phase 14)', async () => {
     const windows = await createMockApi().providerCapabilities();
     expectMatches(providerCapabilitiesSchema, windows, 'mock provider capabilities (default Windows seed)');
     expect(windows).toEqual(readGolden('provider-capabilities-windows.json'));
 
-    const darwin = await createMockApi({}, { providers: { platform: 'darwin' } }).providerCapabilities();
-    expectMatches(providerCapabilitiesSchema, darwin, 'mock provider capabilities (macOS)');
-    expect(darwin).toEqual(readGolden('provider-capabilities-darwin.json'));
-    expect(darwin.asr.moonshine?.support).toMatchObject({ available: false, reason: 'unsupported' });
-    expect(darwin.capture.dshow?.default).toBe(false);
+    const linux = await createMockApi({}, { providers: { platform: 'linux' } }).providerCapabilities();
+    expectMatches(providerCapabilitiesSchema, linux, 'mock provider capabilities (Linux development host)');
+    expect(linux).toEqual(readGolden('provider-capabilities-linux.json'));
+    expect(linux.asr.moonshine?.support).toMatchObject({ available: false, reason: 'unsupported' });
+    expect(linux.capture.dshow?.default).toBe(false);
   });
 
   it('providerCapabilities reports an installed count only for an asset kind with a catalog', async () => {
