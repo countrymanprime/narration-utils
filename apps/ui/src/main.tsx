@@ -51,6 +51,9 @@ const mockNoRpp = mockParams.has('mockNoRpp');
 // Tracks/Settings show their unlinked DAW-link controls. The mock otherwise defaults `dawFileLinked` to true so every
 // other capture (and App.test.tsx's default click into Proofing) keeps working without this param.
 const mockNoDaw = mockParams.has('mockNoDaw');
+// `?mockDawMismatch=1` simulates a live REAPER heartbeat whose open project disagrees with the linked file (Phase 7,
+// ADR 0092): the engine chip reads "Wrong REAPER project open" (stage-navigation-and-page-replacement.prd.md Phase 1).
+const mockDawMismatch = mockParams.has('mockDawMismatch');
 // `?mockDawNotDetected=1` makes the DAW catalog panel (Settings > DAW Integration, docs/architecture/
 // daw-integration.md) report REAPER as not detected, so its "Get REAPER" button can be seen without a host.
 const mockDawNotDetected = mockParams.has('mockDawNotDetected');
@@ -354,6 +357,7 @@ const mockInitial = {
   ...(mockInvalidPayload ? { invalidPayload: mockInvalidPayload } : {}),
   ...(mockNoManuscript ? { noManuscript: true } : {}),
   ...(mockNoDaw ? { dawFileLinked: false } : {}),
+  ...(mockDawMismatch ? { dawEngineMismatch: true } : {}),
   ...(mockDawNotDetected ? { dawCatalogInstalled: false } : {}),
   ...(mockCreditsMissing ? { creditsMissingClosing: true } : {}),
   ...(mockCreditsDetected ? { creditsDetected: true } : {}),

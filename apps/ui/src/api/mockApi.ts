@@ -42,6 +42,13 @@ import { createPronunciationLookupMock } from './mockHost/pronunciationLookup';
 export { applyMixedManuscriptMock } from './mockHost/manuscript';
 export type { MockUpdateSeed } from './mockHost/update';
 
+// The engine chip's 'builtin' state (stage-navigation-and-page-replacement.prd.md Phase 1, Q7) has no host field yet
+// - nothing selects it until native recording builds a recorder - so it is a URL flag read directly rather than a
+// NarrationApi binding, the same way `?mockEngine=builtin` reaches App.tsx in both the mock and the real client.
+export function mockEngineFromLocation(): 'daw' | 'builtin' {
+  return new URLSearchParams(window.location.search).get('mockEngine') === 'builtin' ? 'builtin' : 'daw';
+}
+
 export function createMockApi(
   overrides: Partial<NarrationApi> = {},
   // manuscriptCandidate boots a project with no imported manuscript but a
