@@ -171,6 +171,13 @@ const mockRetakeLanes = (['picked', 'error', 'none'] as const).find((seed) => se
 // `?mockChapterTagsEmbedError=1` makes the embed action always fail, so the error state can be seen too.
 const mockChapterTags = (['ready', 'not-rendered'] as const).find((seed) => seed === mockParams.get('mockChapterTags'));
 const mockChapterTagsEmbedError = mockParams.has('mockChapterTagsEmbedError');
+// `?mockRegionsCreateError=1` makes the Tracks page's "Create chapter regions…" dialog always fail to create, so its
+// error state can be seen without a real REAPER round trip.
+const mockRegionsCreateError = mockParams.has('mockRegionsCreateError');
+// `?mockRegionsCapabilityOn=1` turns the 'regions' DAW capability on directly (bypassing the default Experimental-off
+// gate, DAW.experimental_reaper_actions), so "Create chapter regions…"'s enabled Create button can be captured
+// without also exercising the Settings toggle.
+const mockRegionsCapabilityOn = mockParams.has('mockRegionsCapabilityOn');
 // `?mockCoverage=hold|stale|pickups` holds a started recording check at its last transcribing step (so the running
 // dialog can be seen), makes Chapter 4's stored check read stale (an item was trimmed since), or gives Chapter 4 two
 // interior pickups (a skip and a short read) plus a small tail instead of its default tail-only split, so the
@@ -331,6 +338,8 @@ const mockInitial = {
   ...(mockRetakeLanes ? { retakeLanes: mockRetakeLanes } : {}),
   ...(mockChapterTags ? { chapterTags: mockChapterTags } : {}),
   ...(mockChapterTagsEmbedError ? { chapterTagsEmbedAlwaysErrors: true } : {}),
+  ...(mockRegionsCreateError ? { regionsCreateAlwaysErrors: true } : {}),
+  ...(mockRegionsCapabilityOn ? { daw: { toggles: { regions: 'on' as const } } } : {}),
   ...(mockCoverage || mockCoverageRefusal || mockStages === 'mixed'
     ? {
         coverage: {
