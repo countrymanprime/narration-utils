@@ -57,6 +57,7 @@ import {
   chapterTrackMatchSchema,
   chapterTrackSetSchema,
   trackMappingSchema,
+  trackSelectResultSchema,
 } from './schemas/chapterTrackMap';
 import { ttsCatalogSchema, ttsInstallJobSchema } from './schemas/tts';
 import { updateJobSchema, updateStatusSchema } from './schemas/update';
@@ -968,6 +969,25 @@ describe('answers of the mock client for the settings, voice, model, transcript 
     expect(noProject.tracks).toHaveLength(0);
   });
 
+  it("TrackSelectInReaper selects the track, and agrees with the host's golden for standalone and experimental_off", async () => {
+    const golden = z.record(z.string(), trackSelectResultSchema).parse(readGolden('track-select-results.json'));
+    const [first] = WIRE_TRACKS_PROJECT.tracks;
+
+    const selected = await createMockApi().trackSelectInReaper(first.guid);
+    expectMatches(trackSelectResultSchema, selected, 'mock track select');
+    expect(selected).toEqual({ outcome: 'selected', trackGuid: first.guid });
+
+    const standalone = await createMockApi({}, { reaperState: 'unavailable' }).trackSelectInReaper(first.guid);
+    expectMatches(trackSelectResultSchema, standalone, 'mock track select, standalone');
+    expect([standalone.outcome, standalone.reason]).toEqual([golden.standalone.outcome, golden.standalone.reason]);
+
+    const experimentalOff = await createMockApi({}, { reaperState: 'experimental_off' }).trackSelectInReaper(first.guid);
+    expectMatches(trackSelectResultSchema, experimentalOff, 'mock track select, experimental off');
+    expect([experimentalOff.outcome, experimentalOff.reason]).toEqual([golden.experimental_off.outcome, golden.experimental_off.reason]);
+
+    await expect(createMockApi().trackSelectInReaper('')).rejects.toThrow();
+  });
+
   it('the ChapterRegionsPreview and ChapterRegionsCreate answers', async () => {
     const api = createMockApi();
     const chapters = await api.manuscriptChapters();
@@ -1843,6 +1863,7 @@ describe('answers of the mock client for the settings, voice, model, transcript 
       'chapterSyncSetEnabled',
       'chapterSyncUndo',
       'chapterTrackLinks',
+      'trackSelectInReaper',
       'chapterRegionsPreview',
       'chapterRegionsCreate',
       'chapterTrackMatch',

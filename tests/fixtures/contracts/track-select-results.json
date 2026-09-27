@@ -1,0 +1,26 @@
+{
+  "experimental_off": {
+    "outcome": "refused",
+    "reason": "experimental_off",
+    "message": "Selecting a track in REAPER is an experimental action. Turn on Experimental REAPER actions in Settings to use it."
+  },
+  "failed": {
+    "outcome": "refused",
+    "reason": "failed",
+    "message": "REAPER could not do that: boom."
+  },
+  "selected": {
+    "outcome": "selected",
+    "trackGuid": "{00000009-0000-4000-8000-000000000009}"
+  },
+  "standalone": {
+    "outcome": "refused",
+    "reason": "standalone",
+    "message": "REAPER is not connected to this app. To select a track in REAPER, open this app from the Narration Utils action in REAPER."
+  },
+  "track_missing": {
+    "outcome": "refused",
+    "reason": "track_missing",
+    "message": "This track is no longer in the REAPER project. Link it again on the Tracks page."
+  }
+}
