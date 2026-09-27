@@ -34,9 +34,14 @@ import { DESKTOP_HOST_API_VERSION } from './hostApi';
 import { isWireError } from './api/wire/WireError';
 import { describeApiError } from './api/errorMessage';
 import { useCommand } from './input/useCommand';
+import { mockEngineFromLocation } from './api/mockApi';
 
 // The Settings categories another page can open Settings at, by URL anchor.
 const SETTINGS_ANCHORS: Record<string, string> = { '#credits': 'Credits', '#delivery': 'Delivery', '#teleprompter': 'Teleprompter' };
+
+// The engine chip's state (stage-navigation-and-page-replacement.prd.md Phase 1, Q7): read once at load, since
+// nothing on the host selects it yet and the URL does not change without a reload.
+const ENGINE = mockEngineFromLocation();
 
 /** A retired route's redirect (ADR 0407): the same query and hash on the page that replaced it, replacing the entry so Back never lands on it. */
 function RedirectKeepingLocation({ to }: { to: string }) {
@@ -446,6 +451,7 @@ function AppRoutes() {
           dawProjectMatches={data.dawProjectMatches}
           onLinkDawFile={() => void linkDawFile()}
           linkingDawFile={dawLink.isBusy}
+          engine={ENGINE}
           history={{ canGoBack: history.canGoBack, canGoForward: history.canGoForward, back: guardedBack, forward: guardedForward }}
         >
           <ErrorBoundary key={location.pathname.split('/')[1] || 'home'}>
