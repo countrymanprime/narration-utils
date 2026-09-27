@@ -41,7 +41,7 @@ func fakeAlignedCoverageSidecar() coverage.Launcher {
 
 func TestWorkspaceAlignmentJoinsParagraphsAndPlayedRanges(t *testing.T) {
 	host := coverageHost(t, coverageProject(t), true, fakeAlignedCoverageSidecar())
-	if _, err := host.CoverageStart("c-0001"); err != nil {
+	if _, err := host.CoverageStart("c-0001", nil); err != nil {
 		t.Fatal(err)
 	}
 	host.services().coverage.Wait()
@@ -71,7 +71,7 @@ func TestWorkspaceAlignmentOfAnOlderReportNeedsAlignAgain(t *testing.T) {
 	// fakeCoverageSidecar (bindings_coverage_test.go) writes a results file with no COVERAGE_TOKEN lines, as a report
 	// stored before ADR 0242 shipped alignment output would read.
 	host := coverageHost(t, coverageProject(t), true, fakeCoverageSidecar(8))
-	if _, err := host.CoverageStart("c-0001"); err != nil {
+	if _, err := host.CoverageStart("c-0001", nil); err != nil {
 		t.Fatal(err)
 	}
 	host.services().coverage.Wait()

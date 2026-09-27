@@ -144,4 +144,6 @@ export const SILENT_CATCHES: Record<string, string> = {
     'navigator.hid.getDevices() rejecting (an unsupported or torn-down navigator.hid, Phase 11): leaves this source with no devices; KeyboardSource and MidiSource still cover the booth, so it just contributes nothing rather than surfacing an error nobody can act on.',
   'src/input/HidSource.ts#3':
     "requestHidDevice()'s chooser promise rejecting (the narrator cancelled it, or - Phase 8's spike found this plausible on WebView2 - no chooser ever appeared): not a narrator action to retry automatically, and the only outcome either way is that no new device got paired this time.",
+  'src/components/workspace/WorkspacePage.tsx#1':
+    "The chapter's findings for the text overlay (edit-and-proof-workspace.prd.md Phase 4): not a narrator action to retry, and not swallowed silently since the check-derived flags (Phase 2) still show with nothing lost - a failure here just leaves the overlay's extra flags and review-in-place off this load, and the Review page (which reads the same store) still works.",
 };
