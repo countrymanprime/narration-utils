@@ -95,4 +95,28 @@ export const deliveryStates: StateEntry[] = [
     state: 'report-refused',
     description: 'Delivery, Export report before anything was measured - the host’s refusal as an alert, and nothing written',
   },
+  // Delivery, Master & QC tab (render-encode-master.prd.md Phase 5, concept mock 05)
+  {
+    page: 'delivery',
+    state: 'master-qc-empty',
+    description: 'Delivery / Master & QC, nothing picked yet - Choose files… and the prompt to pick rendered chapter, credits and retail-sample WAVs',
+  },
+  {
+    page: 'delivery',
+    state: 'master-qc-picked',
+    description:
+      'Delivery / Master & QC, five files picked and given a role - two chapters (their titles editable), opening and closing credits, a retail sample, the Master before encoding checkbox, and Master & encode',
+  },
+  {
+    page: 'delivery',
+    state: 'master-qc-running',
+    description:
+      'Delivery / Master & QC, mastering and encoding part way through (?mockRenderExport=running) - real progress, Cancel, and each file waiting, mastering or encoding',
+  },
+  {
+    page: 'delivery',
+    state: 'master-qc-package',
+    description:
+      'Delivery / Master & QC, an ACX package built from the five encoded files - the book checklist with every rule included, the files written and their folder',
+  },
 ];

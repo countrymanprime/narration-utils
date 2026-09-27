@@ -582,6 +582,38 @@ export function EditingState(): $CancellablePromise<string> {
 }
 
 /**
+ * ExportCancel stops a running export; files already prepared keep their results. With none running it changes
+ * nothing.
+ */
+export function ExportCancel(): $CancellablePromise<string> {
+    return $Call.ByID(2787515454);
+}
+
+/**
+ * ExportPickFiles opens the operating system's picker for the rendered chapter, credits and retail-sample files to
+ * master and encode, and answers the chosen paths (none when the narrator closes it). Only paths chosen here can be
+ * exported.
+ */
+export function ExportPickFiles(): $CancellablePromise<string> {
+    return $Call.ByID(3772614912);
+}
+
+/**
+ * ExportStart masters (when req.master is true) and encodes the picked files as a job and answers it; it refuses a
+ * path that was not picked, a request with no items, or a second export while one runs.
+ */
+export function ExportStart(req: $models.ExportRequest): $CancellablePromise<string> {
+    return $Call.ByID(2735024176, req);
+}
+
+/**
+ * ExportState answers the export job: idle, running with real progress, or how it ended with every file's result.
+ */
+export function ExportState(): $CancellablePromise<string> {
+    return $Call.ByID(3355501889);
+}
+
+/**
  * FindingsAddMarker adds one take marker in REAPER at an accepted finding's spot, on its take, named like the marker
  * Transcript Compare's export adds (approvedMarker). A finding not accepted, one with no item or no time in its audio,
  * and a REAPER that is not listening are refused before anything is sent.
@@ -885,6 +917,30 @@ export function MeasurePickFiles(): $CancellablePromise<string> {
  */
 export function MeasureState(): $CancellablePromise<string> {
     return $Call.ByID(2552163807);
+}
+
+/**
+ * PackageCancel stops a running package build. With none running it changes nothing.
+ */
+export function PackageCancel(): $CancellablePromise<string> {
+    return $Call.ByID(1117202284);
+}
+
+/**
+ * PackageStart opens the operating system's folder picker, then assembles the chosen profile's package from an
+ * export's own encoded files as a job, and answers it. It refuses a path that was not encoded in this session, no
+ * items, an unknown profile, or a second package build while one runs. Closing the picker without choosing a folder
+ * answers the current (unstarted) state rather than an error.
+ */
+export function PackageStart(req: $models.PackageRequest): $CancellablePromise<string> {
+    return $Call.ByID(2842461846, req);
+}
+
+/**
+ * PackageState answers the package job: idle, running, or how it ended with the manifest and checklist it built.
+ */
+export function PackageState(): $CancellablePromise<string> {
+    return $Call.ByID(2792423179);
 }
 
 export function PickupsCount(): $CancellablePromise<string> {

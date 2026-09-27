@@ -222,6 +222,23 @@ export async function openDiagnostics(page: Page, query = ''): Promise<void> {
   await page.getByRole('region', { name: 'Thresholds' }).getByText('Room-tone change').waitFor();
 }
 
+// Opens Delivery's Master & QC tab (render-encode-master.prd.md Phase 5), after a reload with mock seams when given.
+export async function openMasterQc(page: Page, query = ''): Promise<void> {
+  await openDelivery(page, query);
+  await page.getByRole('tab', { name: 'Master & QC' }).click();
+  await page.getByRole('button', { name: 'Choose files…' }).waitFor();
+}
+
+// Picks the mock's five files (opening/closing credits, two chapters, a retail sample) on Master & QC and assigns the
+// three non-chapter roles the mock picker cannot infer on its own.
+export async function pickMasterQcFiles(page: Page): Promise<void> {
+  await page.getByRole('button', { name: 'Choose files…' }).click();
+  await page.getByRole('table', { name: 'Files to export' }).waitFor();
+  await page.getByLabel('Role for 00 Opening credits.wav').selectOption('credits_opening');
+  await page.getByLabel('Role for 00 Closing credits.wav').selectOption('credits_closing');
+  await page.getByLabel('Role for Retail sample.wav').selectOption('retail_sample');
+}
+
 // Opens the Diagnostics tab and checks the mock picker's three files (the unheld mock reads a quarter of a file per poll).
 export async function checkOnDiagnostics(page: Page, query = ''): Promise<void> {
   await openDiagnostics(page, query);

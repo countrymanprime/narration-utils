@@ -19,6 +19,7 @@ import type { StagesSeed } from '../stagesMock';
 import type { MockResumeSeed } from '../resumeMockSeed';
 import type { MockReaper } from '../findingsMock';
 import type { MockMeasureSeed } from '../measureMock';
+import type { MockExportSeed } from '../renderEncodeMasterMock';
 import type { MockDeliveryProfileSeed } from '../deliveryProfilesMock';
 import type { MockDiagnosticsSeed } from '../diagnosticsMock';
 import type { EditingSeed } from '../editingMock';
@@ -156,6 +157,8 @@ export type MockApiSeed = {
   takeComparisonHold?: boolean;
   /** Holds a started measurement part way through, so its real progress can be looked at, or breaks it (diagnostics PRD Phases 1 and 5). */
   measure?: MockMeasureSeed;
+  /** Holds a started export part way through, so its real progress can be looked at (render-encode-master PRD Phase 5). */
+  renderExport?: MockExportSeed;
   /** Holds a started diagnostics check part way through, or breaks it (diagnostics PRD Phase 6). */
   diagnostics?: MockDiagnosticsSeed;
   /** Seeds the editing-readiness check mock (a refusal, a held-running state, or seeded candidates), see `EditingSeed`. */

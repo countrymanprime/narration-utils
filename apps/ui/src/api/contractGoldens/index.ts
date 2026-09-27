@@ -24,6 +24,7 @@ import { stagesGoldens } from './stages';
 import { deliveryGoldens } from './delivery';
 import { dawGoldens } from './daw';
 import { providerGoldens } from './providers';
+import { renderEncodeMasterGoldens } from './renderEncodeMaster';
 
 const FEATURE_AREAS: Array<Record<string, z.ZodType>> = [
   systemGoldens,
@@ -48,6 +49,7 @@ const FEATURE_AREAS: Array<Record<string, z.ZodType>> = [
   deliveryGoldens,
   dawGoldens,
   providerGoldens,
+  renderEncodeMasterGoldens,
 ];
 
 /** Which schema owns each golden file, over every feature area. */

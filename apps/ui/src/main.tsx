@@ -303,10 +303,13 @@ const mockTakeComparisonHold = mockParams.get('mockTakeComparison') === 'running
 const mockMeasure = (['running', 'fails'] as const).find((seed) => seed === mockParams.get('mockMeasure'));
 // `?mockDiagnostics=running|fails` does the same for the Delivery page's Diagnostics tab (diagnostics PRD Phase 6).
 const mockDiagnostics = (['running', 'fails'] as const).find((seed) => seed === mockParams.get('mockDiagnostics'));
+// `?mockRenderExport=running` does the same for the Delivery page's Master & QC tab's export job (render-encode-master.prd.md Phase 5).
+const mockRenderExportHold = mockParams.get('mockRenderExport') === 'running';
 const mockDeliveryProfile = mockParams.get('mockDeliveryProfile') === 'custom' ? ('custom' as const) : undefined;
 const mockInitial = {
   ...(mockMeasure ? { measure: mockMeasure === 'running' ? ('hold' as const) : ('fails' as const) } : {}),
   ...(mockDiagnostics ? { diagnostics: mockDiagnostics === 'running' ? ('hold' as const) : ('fails' as const) } : {}),
+  ...(mockRenderExportHold ? { renderExport: 'hold' as const } : {}),
   ...(mockDeliveryProfile ? { deliveryProfile: mockDeliveryProfile } : {}),
   ...(mockTakeReviewScanHold ? { takeReviewScanHold: true } : {}),
   ...(mockTakeComparisonHold ? { takeComparisonHold: true } : {}),

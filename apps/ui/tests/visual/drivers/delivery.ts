@@ -1,5 +1,15 @@
 // How to reach each `delivery` state in STATE_CATALOG (see app.drivers.ts).
-import { type Driver, checkOnDiagnostics, diagnosticsEnded, measurementEnded, measureOnDelivery, openDelivery, openDiagnostics } from './shared';
+import {
+  type Driver,
+  checkOnDiagnostics,
+  diagnosticsEnded,
+  measurementEnded,
+  measureOnDelivery,
+  openDelivery,
+  openDiagnostics,
+  openMasterQc,
+  pickMasterQcFiles,
+} from './shared';
 
 export const deliveryDrivers: Record<string, Driver> = {
   empty: async (page) => {
@@ -82,6 +92,36 @@ export const deliveryDrivers: Record<string, Driver> = {
     await page
       .getByRole('alert')
       .getByText(/^The report was not written: nothing has been measured or checked/)
+      .waitFor();
+  },
+  'master-qc-empty': async (page) => {
+    await openMasterQc(page);
+    await page.getByText(/^Choose rendered chapter/).waitFor();
+  },
+  'master-qc-picked': async (page) => {
+    await openMasterQc(page);
+    await pickMasterQcFiles(page);
+    await page.getByRole('button', { name: /Master & encode/ }).waitFor();
+  },
+  'master-qc-running': async (page) => {
+    await openMasterQc(page, '?mockRenderExport=running');
+    await pickMasterQcFiles(page);
+    await page.getByRole('checkbox', { name: /Master before encoding/ }).click();
+    await page.getByRole('button', { name: /Master & encode/ }).click();
+    await page.getByRole('progressbar', { name: 'Preparing files' }).waitFor();
+  },
+  'master-qc-package': async (page) => {
+    await openMasterQc(page);
+    await pickMasterQcFiles(page);
+    await page.getByRole('button', { name: /Master & encode/ }).click();
+    await page
+      .getByRole('tabpanel', { name: 'Master & QC' })
+      .getByText(/^Prepared 5 files\./)
+      .waitFor({ timeout: 15_000 });
+    await page.getByRole('button', { name: 'Build package' }).click();
+    await page
+      .getByRole('tabpanel', { name: 'Master & QC' })
+      .getByText(/^Built the acx package/)
       .waitFor();
   },
 };

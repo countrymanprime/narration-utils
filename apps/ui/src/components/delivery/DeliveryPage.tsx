@@ -12,6 +12,7 @@ import { deliveryProfileKey, deliveryProfileTitle } from './deliveryProfile';
 import { DeliveryProfilePanel, type ProfileState } from './DeliveryProfilePanel';
 import { DiagnosticsTab } from './DiagnosticsTab';
 import { FileRulesPanel } from './FileRulesPanel';
+import { MasterQcPanel } from './MasterQcPanel';
 import { countResults, MeasurementsTable, ruleColumns } from './MeasurementsTable';
 import { ReportExportPanel } from './ReportExportPanel';
 
@@ -171,6 +172,7 @@ export function DeliveryPage({ openSettings }: { openSettings: () => void }) {
         <TabList label="Delivery views" activation="automatic">
           <Tab value="measurements">Measurements</Tab>
           <Tab value="diagnostics">Diagnostics</Tab>
+          <Tab value="master-qc">Master &amp; QC</Tab>
         </TabList>
         <TabPanel value="measurements" className="flex flex-col gap-4">
           <DeliveryProfilePanel state={profile} openSettings={openSettings} />
@@ -254,6 +256,9 @@ export function DeliveryPage({ openSettings }: { openSettings: () => void }) {
         </TabPanel>
         <TabPanel value="diagnostics">
           <DiagnosticsTab measuredPaths={measuredPaths} />
+        </TabPanel>
+        <TabPanel value="master-qc">
+          <MasterQcPanel />
         </TabPanel>
       </Tabs>
       <ReportExportPanel busy={running} />
