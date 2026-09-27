@@ -1,4 +1,4 @@
-# 0343. The cascade's second pass is a relaunch in the same job, and its words key on the model pair
+# 0344. The cascade's second pass is a relaunch in the same job, and its words key on the model pair
 
 **Status:** Proposed
 **Date:** 2026-09-27
