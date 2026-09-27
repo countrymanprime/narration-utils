@@ -16,6 +16,7 @@ import { ToggleGroup } from '../primitives/ToggleGroup';
 import { TagInput } from '../primitives/TagInput';
 import { Tooltip, TooltipTarget } from '../primitives/Tooltip';
 import { PreviewPanel } from './PreviewPanel';
+import { ProofingStagePanel } from './ProofingStagePanel';
 import { Results } from './Results';
 import { hasHint, splitHintTerms, suggestionMessage } from './hints';
 import { PROOFING_CHUNK_OPTIONS } from './options';
@@ -63,6 +64,7 @@ export function Transcript({
   goToManuscript,
   goHome,
   dawFileLinked,
+  refreshKey,
 }: {
   state: TranscriptState;
   notify: Notify;
@@ -71,6 +73,8 @@ export function Transcript({
   /** PRD project-workspace-and-daw-link.prd.md, W16: starting a comparison, jumping to recorded audio and exporting
    * markers all need a linked DAW project file; reviewing an already-completed comparison does not. */
   dawFileLinked: boolean;
+  /** Changes after a manuscript import/replacement, like Home's own (chapter-stage-recommendations.prd.md Phase 8). */
+  refreshKey: string;
 }) {
   const api = useApi();
   const [model, setModel] = useState('small');
@@ -242,6 +246,7 @@ export function Transcript({
           </span>
         </div>
       </div>
+      <ProofingStagePanel notify={notify} goToManuscript={goToManuscript} refreshKey={refreshKey} />
       <PreviewPanel notify={notify} goToManuscript={goToManuscript} />
       {phase === 'setup' && (
         <section className="rounded-lg border border-[var(--border)] bg-[var(--surface)] shadow-[var(--shadow)]">

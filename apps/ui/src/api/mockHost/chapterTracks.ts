@@ -218,6 +218,28 @@ export function createChapterTracksMock(
       const existing = plan.rows.filter((row) => row.state === 'exists').length;
       return { sent: plan.rows.length, created, existing, invalid: 0, updated, ambiguous, failed: 0 };
     },
+    // "Select in REAPER" (chapter-track-link-control PRD Phase 4, Could): follows the same `?mockReaperState=` seed
+    // readAloudArmOnly/readAloudRecordStart already use for "REAPER is not there" and "the experimental switch is
+    // off", so the two REAPER-connection concepts stay consistent in mock mode without a second seed dimension.
+    trackSelectInReaper: async (trackGuid) => {
+      await manuscriptReady;
+      if (!trackGuid) throw new Error('choose a track before selecting it in REAPER');
+      if (initial.reaperState === 'unavailable') {
+        return {
+          outcome: 'refused',
+          reason: 'standalone',
+          message: 'REAPER is not connected to this app. To select a track in REAPER, open this app from the Narration Utils action in REAPER.',
+        };
+      }
+      if (initial.reaperState === 'experimental_off') {
+        return {
+          outcome: 'refused',
+          reason: 'experimental_off',
+          message: 'Selecting a track in REAPER is an experimental action. Turn on Experimental REAPER actions in Settings to use it.',
+        };
+      }
+      return { outcome: 'selected', trackGuid };
+    },
     chapterTrackMatch: async (chapterId) => {
       await manuscriptReady;
       return wireClone(mockChapterTrackMatch(chapterId, s.chapters, WIRE_TRACKS_PROJECT, s.chapterTrackMappings));
