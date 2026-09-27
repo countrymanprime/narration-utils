@@ -2,7 +2,18 @@
 import { cleanup, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { ChapterNav } from './ChapterNav';
-import type { ManuscriptChapter, ReaderBookmark, SearchHit } from '../../types';
+import type { ManuscriptChapter, ReaderBookmark, SearchHit, StageChapterRecommendation } from '../../types';
+
+const recommendation = (overrides: Partial<StageChapterRecommendation>): StageChapterRecommendation => ({
+  chapterId: overrides.chapterId ?? 'c1',
+  title: overrides.title ?? 'Chapter',
+  from: overrides.from ?? 'recording',
+  target: overrides.target ?? 'editing',
+  verdict: overrides.verdict ?? 'recommended',
+  signals: overrides.signals ?? [],
+  causes: overrides.causes ?? [],
+  ...overrides,
+});
 
 afterEach(cleanup);
 
@@ -157,5 +168,46 @@ describe('ChapterNav', () => {
       <ChapterNav chapters={chapters} bookmarks={[]} searchQuery="" searchResults={[]} lineNumbers={new Map()} select={vi.fn()} removeBookmark={vi.fn()} />,
     );
     expect(screen.getByRole('button', { name: /^Chapter One — Down the Rabbit-Hole/ })).toBeTruthy();
+  });
+
+  // chapter-stage-recommendations.prd.md Phase 9, Q6: a non-interactive marker beside a chapter with a live
+  // suggestion, reusing stageText.ts's verdictLine so the wording matches Home's own row exactly.
+  it('shows a non-interactive "Suggested: <stage>" marker for a chapter with a recommended verdict', () => {
+    const chapters = [chapter({ id: 'c1', title: 'Chapter One', status: 'recording' })];
+    const stageSuggestions = new Map([['c1', recommendation({ chapterId: 'c1', from: 'recording', target: 'editing', verdict: 'recommended' })]]);
+    render(
+      <ChapterNav
+        chapters={chapters}
+        bookmarks={[]}
+        searchQuery=""
+        searchResults={[]}
+        lineNumbers={new Map()}
+        select={vi.fn()}
+        removeBookmark={vi.fn()}
+        stageSuggestions={stageSuggestions}
+      />,
+    );
+    const marker = screen.getByText('Suggested: Editing');
+    expect(marker.closest('button')).toBeTruthy();
+    // Non-interactive: the marker is plain text inside the row's own select button, not a button or link of its own.
+    expect(marker.tagName).toBe('SPAN');
+  });
+
+  it('shows no marker for a chapter with no suggestion, or one that is not recommended', () => {
+    const chapters = [chapter({ id: 'c1', title: 'Chapter One', status: 'recording' }), chapter({ id: 'c2', title: 'Chapter Two', status: 'editing' })];
+    const stageSuggestions = new Map([['c2', recommendation({ chapterId: 'c2', from: 'editing', target: 'proofing', verdict: 'not_ready' })]]);
+    render(
+      <ChapterNav
+        chapters={chapters}
+        bookmarks={[]}
+        searchQuery=""
+        searchResults={[]}
+        lineNumbers={new Map()}
+        select={vi.fn()}
+        removeBookmark={vi.fn()}
+        stageSuggestions={stageSuggestions}
+      />,
+    );
+    expect(screen.queryByText(/^Suggested:/)).toBeNull();
   });
 });

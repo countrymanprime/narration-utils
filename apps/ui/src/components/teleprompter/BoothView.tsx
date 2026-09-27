@@ -1,6 +1,6 @@
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faMicrophone } from '@fortawesome/free-solid-svg-icons';
-import { useId, useState, type ReactNode } from 'react';
+import { useEffect, useId, useState, type ReactNode } from 'react';
 import type { GuideEntity } from '../../types';
 import { Button } from '../primitives/Button';
 import { FocusShell } from '../primitives/FocusShell';
@@ -11,6 +11,7 @@ import { Popover } from '../primitives/Popover';
 import { StatusBadge, type StatusTone } from '../primitives/StatusBadge';
 import { Toolbar, ToolbarButton } from '../primitives/Toolbar';
 import { useCommand } from '../../input/useCommand';
+import { setBoothActive } from './boothActive';
 import { MicrophoneField } from './MicrophoneField';
 import { REAPER_STATUS_TEXT } from './ReadingControlBar';
 import { ReadAlongView } from './ReadAlongView';
@@ -62,6 +63,14 @@ function BoothStatus({ session: t, chapterId, chapterTitle, recording }: Pick<Pr
   return (
     <>
       <StatusBadge tone={tone} label={label} />
+      {/* The room meter (booth-mode-and-companion-panel.prd.md Phase 4): a second, decorative `LevelMeter` fed by the
+       * same mic-level channel `useInputLevel` already subscribes above, not a separate room-mic measurement (none
+       * exists) - it lets the narrator glance at level without opening the microphone popover. Room-tone-matches-last-
+       * session (Open Question 4) is deferred; this is the meter alone. */}
+      <span className="flex items-center gap-1 text-xs" style={{ color: 'var(--text-muted)' }}>
+        Room
+        <LevelMeter label="Room level" peak={level?.peak ?? null} rms={level?.rms ?? null} decorative size="compact" className="w-10" />
+      </span>
       {chapterTitle && <span className="font-semibold">{chapterTitle}</span>}
       {t.session.script && (
         <span className="font-['IBM_Plex_Mono',ui-monospace,monospace] text-xs whitespace-nowrap" style={{ color: 'var(--text-muted)' }}>
@@ -161,6 +170,12 @@ const TOOLBAR_BUTTON_CLASS = 'flex-col gap-1 px-3 py-1.5 text-[0.7rem] normal-ca
  * surface to keep stable.
  */
 export function BoothView({ session: t, follow, chapterId, chapterTitle, recording, marks, onOpenMark, header, rail, speakers, onOpenSpeaker }: Props) {
+  // Marks the booth mounted for `useBoothRecording` (Phase 5's no-sound, no-notification rule): App.tsx's toast
+  // dispatcher sits outside this component tree and has no other way to know the booth is showing.
+  useEffect(() => {
+    setBoothActive(true);
+    return () => setBoothActive(false);
+  }, []);
   const listening = t.active && !t.paused;
   const playPauseLabel = listening ? 'Pause' : 'Play';
   const playPauseDisabled = t.host.phase === 'starting' || t.host.phase === 'stopping' || (!t.active && !t.canStart);
