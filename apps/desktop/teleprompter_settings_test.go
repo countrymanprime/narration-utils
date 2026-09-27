@@ -149,8 +149,8 @@ func TestSettingsForScopeReportsTheTeleprompterInputDeviceField(t *testing.T) {
 		t.Fatal(err)
 	}
 	fields, _ := scoped["Teleprompter"].([]map[string]any)
-	if len(fields) != 3 {
-		t.Fatalf("Teleprompter fields = %v, want exactly input_device, engine and model", scoped["Teleprompter"])
+	if len(fields) != 4 {
+		t.Fatalf("Teleprompter fields = %v, want exactly input_device, engine, model and punch_preroll_seconds", scoped["Teleprompter"])
 	}
 	byKey := map[string]map[string]any{}
 	for _, field := range fields {

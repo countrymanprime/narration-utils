@@ -126,7 +126,14 @@ export const tracksStates: StateEntry[] = [
   {
     page: 'tracks',
     state: 'pickups-next',
-    description: 'Tracks, "Pickups" dialog after "Next pickup" - the pickup\'s tag and note shown with "Mark this pickup done"',
+    description:
+      'Tracks, "Pickups" dialog after "Next pickup" - the pickup\'s tag and note shown with "Punch from here" (gated on the DAW port\'s punch capability, booth-actions-enablement PRD Phase 3 - experimental and off by default, shown disabled here) and "Mark this pickup done"',
+  },
+  {
+    page: 'tracks',
+    state: 'pickups-next-punch-enabled',
+    description:
+      'Tracks, "Pickups" dialog after "Next pickup" with the punch capability turned on directly (booth-actions-enablement PRD Phase 3, ?mockPunchCapabilityOn=1) - "Punch from here" enabled, moving REAPER\'s edit cursor straight to the pickup\'s own position with no preview step',
   },
   {
     page: 'tracks',

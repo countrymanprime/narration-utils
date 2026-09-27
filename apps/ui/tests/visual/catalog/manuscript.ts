@@ -266,7 +266,13 @@ export const manuscriptStates: StateEntry[] = [
     page: 'manuscript',
     state: 'read-aloud-flag-open',
     description:
-      'Manuscript, the "Read aloud" dialog after clicking a restart flag (Phase 7) - the rail switches to its Flags tab: what the script says and what was heard, Dismiss, the "Punch from here" placeholder gated on the DAW port\'s punch capability (DAW port PRD Phase 7) - experimental and off by default - and the session’s flags',
+      'Manuscript, the "Read aloud" dialog after clicking a restart flag (Phase 7) - the rail switches to its Flags tab: what the script says and what was heard, Dismiss, "Punch from here" gated on the DAW port\'s punch capability (DAW port PRD Phase 7; wired to dawport.Puncher by booth-actions-enablement PRD Phase 3) - experimental and off by default, so shown disabled here - and the session’s flags',
+  },
+  {
+    page: 'manuscript',
+    state: 'read-aloud-flag-punch-confirm',
+    description:
+      'Manuscript, the "Read aloud" dialog after clicking "Punch from here" on an open restart flag with the punch capability turned on (booth-actions-enablement PRD Phase 3, ?mockPunchCapabilityOn=1) - a confirm dialog names the resolved time, its source and the pre-roll before anything moves in REAPER',
   },
   {
     page: 'manuscript',

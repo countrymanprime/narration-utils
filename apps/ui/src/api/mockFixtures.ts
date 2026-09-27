@@ -625,6 +625,9 @@ export const wireSettings = (): Record<string, ScopedSettingField[]> => ({
       effectiveValue: 'tiny',
       effectiveSource: 'repo default',
     },
+    // Punch and roll's pre-roll (teleprompter-manuscript-integration.prd.md Phase 12, booth-actions-enablement PRD
+    // Phase 3), mirroring the host's fieldSchemas and numberSpecs: 0-10 s, default 3 s.
+    recordingCheck('punch_preroll_seconds', 'Punch pre-roll (seconds)', '3', { min: 0, max: 10, step: 0.5, unit: 's' }),
   ],
   Updates: [
     {

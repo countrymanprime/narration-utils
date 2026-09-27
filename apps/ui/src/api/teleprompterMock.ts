@@ -44,6 +44,11 @@ const MAX_REPLAY_SECONDS = 90;
 const REPLAY_SECONDS_PER_WORD = 0.45;
 const HEARD_WORDS = 6;
 const SEED_WORDS_INTO_TEXT = 30;
+// Punch and roll (teleprompter-manuscript-integration.prd.md Phase 12): a plausible reading pace and the repo default
+// pre-roll (apps/desktop/settings_number.go), so "Punch from here" resolves a deterministic time and cursor without a
+// real anchors file.
+const MOCK_PUNCH_SECONDS_PER_WORD = 0.4;
+const MOCK_PUNCH_PREROLL = 3;
 // Where the mock's tail-audio locate says a recorded chapter stopped (a fraction of its words), how many words before
 // that it "heard", and how much it "transcribed" (the host's teleprompter.DefaultTailSeconds).
 const MOCK_RESUME_FRACTION = 0.6;
@@ -630,6 +635,18 @@ export function createTeleprompterMock(deps: Deps): TeleprompterApi {
     teleprompterSeek: async (word) => {
       if (state.phase !== 'running') throw new Error('no teleprompter session is running');
       emit({ type: 'position', read: word, committed: word, status: 'listening', jump: 'restart', skipped: null });
+    },
+    // Punch and roll's preview: a deterministic time and pre-roll from `word` (no real anchors file in the mock), never
+    // moving anything.
+    teleprompterPunchPreview: async (word) => ({
+      outcome: 'resolved',
+      resolvedTime: Math.round(word * MOCK_PUNCH_SECONDS_PER_WORD * 100) / 100,
+      source: 'anchor',
+      preRoll: MOCK_PUNCH_PREROLL,
+    }),
+    teleprompterPunch: async (word) => {
+      const resolvedTime = Math.round(word * MOCK_PUNCH_SECONDS_PER_WORD * 100) / 100;
+      return { outcome: 'punched', cursor: Math.max(0, resolvedTime - MOCK_PUNCH_PREROLL), resolvedTime, source: 'anchor', preRoll: MOCK_PUNCH_PREROLL };
     },
     teleprompterSaveFlags: createFlagStore(deps),
     teleprompterState: async () => {

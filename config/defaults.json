@@ -29,7 +29,8 @@
   },
   "Teleprompter": {
     "engine": "whisper",
-    "model": "tiny"
+    "model": "tiny",
+    "punch_preroll_seconds": "3"
   },
   "DAW": {
     "auto_start_launcher": "false",

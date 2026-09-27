@@ -55,7 +55,7 @@ import (
 // Keep this in lockstep with apps/ui/src/hostApi.ts.  The frontend rejects
 // an older host before bootstrapping so a partial update cannot run against a
 // binding contract it does not understand.
-const hostAPIVersion = 64
+const hostAPIVersion = 65
 
 // Host is the Wails binding boundary. The frontend invokes only this bound
 // object; it never receives a loopback port or an HTTP capability.
@@ -399,6 +399,7 @@ func (h *Host) ServiceStartup(ctx context.Context, _ application.ServiceOptions)
 	go h.transcriptLoop(runtimeContext)
 	go h.chapterSyncWatchLoop(runtimeContext)
 	go h.backgroundCheckLoop(runtimeContext)
+	go h.punchAnchorLoop(runtimeContext)
 	go h.startupUpdateCheck(runtimeContext, delay)
 	go h.cleanStaleDownloads()
 	return nil
@@ -1323,6 +1324,11 @@ var fieldSchemas = map[string][]fieldSchema{
 		{"input_device", "Microphone", "text", nil},
 		{"engine", "Live engine", "choice", []string{teleprompter.EngineWhisper}},
 		{"model", "Model", "choice", []string{"tiny", "small"}},
+		// punch_preroll_seconds is the punch-and-roll fallback (teleprompter-manuscript-integration.prd.md Phase 12,
+		// booth-actions-enablement PRD Phase 3): "Punch from here" moves REAPER's edit cursor to the word's resolved
+		// time minus this many seconds. Reading REAPER's own pre-roll preference first is the owner-gated spike this
+		// phase does not run; until it does, every punch uses this setting.
+		{"punch_preroll_seconds", "Punch pre-roll (seconds)", "number", nil},
 	},
 	// DAW.reaper_path is a global override for daw.Resolve (empty means auto-detect, apps/desktop/internal/daw).
 	// DAW.auto_start_launcher is owner decision D10 (docs/prds/implementation-plan.md section 1): the app may pass

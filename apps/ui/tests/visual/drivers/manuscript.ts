@@ -215,6 +215,16 @@ export const manuscriptDrivers: Record<string, Driver> = {
     await dialog.getByRole('tab', { name: 'Flags', selected: true }).waitFor();
     await dialog.getByRole('region', { name: 'Suspected restart' }).waitFor();
   },
+  // "Punch from here" wired to the real dawport.Puncher (booth-actions-enablement PRD Phase 3): the punch capability is
+  // turned on directly (?mockPunchCapabilityOn=1, the same bypass mockRegionsCapabilityOn uses) so the button is
+  // enabled without also exercising the Settings toggle; the resolved time, its source and the pre-roll show before
+  // anything would move.
+  'read-aloud-flag-punch-confirm': async (page) => {
+    const dialog = await openFlaggedReadAloud(page, '&mockPunchCapabilityOn=1');
+    await dialog.locator('[data-highlight="Restart"][role="button"]').first().click();
+    await dialog.getByRole('button', { name: 'Punch from here' }).click();
+    await page.getByRole('alertdialog', { name: 'Punch from here' }).waitFor();
+  },
   'read-aloud-flags-all-kinds': async (page) => {
     const dialog = await openFlaggedReadAloud(page);
     await dialog.getByRole('tab', { name: 'Flags' }).click();

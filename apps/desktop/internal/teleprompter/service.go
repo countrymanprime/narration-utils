@@ -149,6 +149,52 @@ func (s *Service) Busy() bool {
 	return active(phase)
 }
 
+// CurrentWord is the manuscript chapter a live session is reading and the last word index it reported (a position
+// event's `read`), for the host's punch-anchor poll (teleprompter-manuscript-integration.prd.md Phase 12): nothing to
+// anchor while the session is not actively listening (not "running", or paused), for a Script/credits session (no
+// manuscript chapter to anchor against, the same exclusion recordReading makes for a Reading), or before the first
+// position event arrives.
+func (s *Service) CurrentWord() (chapterID string, word int, ok bool) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	phase, _ := s.state["phase"].(string)
+	paused, _ := s.state["paused"].(bool)
+	if phase != "running" || paused || s.scriptFile != "" {
+		return "", 0, false
+	}
+	chapter, _ := s.state["chapter"].(string)
+	if chapter == "" || len(s.position) == 0 {
+		return "", 0, false
+	}
+	var positionEvent struct {
+		Read *int `json:"read"`
+	}
+	if json.Unmarshal(s.position, &positionEvent) != nil || positionEvent.Read == nil {
+		return "", 0, false
+	}
+	return chapter, *positionEvent.Read, true
+}
+
+// CurrentChapter is the manuscript chapter a live session is reading, or was reading while it stops, for "Punch from
+// here" (teleprompter-manuscript-integration.prd.md Phase 12): a flag's own word index is punched against whichever
+// chapter is live, so a caller never needs to name it. false for a Script/credits session (no manuscript chapter to
+// anchor against, CurrentWord's own exclusion) or with no session running at all. Unlike CurrentWord, this does not
+// require "running" specifically or the session to be unpaused: a narrator reviewing a flag and confirming a punch
+// may have paused, or the session may already be winding down.
+func (s *Service) CurrentChapter() (chapterID string, ok bool) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	phase, _ := s.state["phase"].(string)
+	if !active(phase) || s.scriptFile != "" {
+		return "", false
+	}
+	chapter, _ := s.state["chapter"].(string)
+	if chapter == "" {
+		return "", false
+	}
+	return chapter, true
+}
+
 func (s *Service) notify() {
 	if s.changed != nil {
 		s.changed(s.Snapshot())

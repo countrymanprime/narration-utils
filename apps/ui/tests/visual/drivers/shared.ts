@@ -441,9 +441,10 @@ export async function openLocalAssets(page: Page, seed?: string): Promise<void> 
 }
 
 // The read-aloud dialog on the `flagged` mock session (teleprompter-manuscript-integration.prd.md Phase 7), once its first
-// default-visible flag (a skip) is drawn as a control in the text.
-export async function openFlaggedReadAloud(page: Page) {
-  await page.goto('/?mockTeleprompter=flagged');
+// default-visible flag (a skip) is drawn as a control in the text. extraQuery adds more mock params (for example
+// `&mockPunchCapabilityOn=1`, booth-actions-enablement PRD Phase 3) to the same navigation.
+export async function openFlaggedReadAloud(page: Page, extraQuery = '') {
+  await page.goto(`/?mockTeleprompter=flagged${extraQuery}`);
   await settlePage(page);
   await goToPage(page, 'Manuscript');
   await clickVisible(page, 'button', 'Read Chapter 1 aloud');

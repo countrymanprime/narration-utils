@@ -18,6 +18,7 @@ import type {
   TeleprompterReading,
   TeleprompterResumePlace,
   TeleprompterResumeVerdict,
+  TeleprompterPunchResult,
   TeleprompterScript,
   TeleprompterStartResult,
   TeleprompterState,
@@ -255,6 +256,25 @@ const teleprompterFlagFindingSchema = z.object({
 
 /** `TeleprompterSaveFlags`: one finding per flag sent, in order. */
 export const teleprompterFlagFindingsSchema = z.array(teleprompterFlagFindingSchema);
+
+/**
+ * `TeleprompterPunchPreview`/`TeleprompterPunch` (`apps/desktop/teleprompterpunch.go`, teleprompter-manuscript-
+ * integration PRD Phase 12, booth-actions-enablement PRD Phase 3): a preview never carries `cursor`, and only a
+ * successful punch does.
+ */
+export const teleprompterPunchResultSchema = z
+  .object({
+    outcome: z.enum(['resolved', 'punched', 'refused']),
+    cursor: z.number().optional(),
+    resolvedTime: z.number().optional(),
+    source: z.enum(['anchor', 'alignment']).optional(),
+    preRoll: z.number().optional(),
+    message: z.string().optional(),
+  })
+  .refine((result) => (result.outcome === 'punched') === (result.cursor !== undefined), {
+    message: 'a punch cursor comes with outcome "punched", and only with it',
+    path: ['cursor'],
+  }) satisfies z.ZodType<TeleprompterPunchResult>;
 
 /** `ReadAloudReaperState` (`apps/desktop/readaloudreaper.go`, ADR 0249): REAPER's arms against the chapter's linked track. */
 export const readAloudReaperStateSchema = z.object({

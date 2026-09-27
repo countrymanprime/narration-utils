@@ -1,10 +1,13 @@
-import { useId } from 'react';
+import { useId, useState } from 'react';
+import { useApi } from '../../api/ApiContext';
 import { Button } from '../primitives/Button';
 import { CapabilityGate } from '../primitives/CapabilityGate';
 import { Checkbox } from '../primitives/Checkbox';
+import { ConfirmDialog } from '../primitives/ConfirmDialog';
+import { formatTime } from '../review/findingFormat';
 import { useCapability } from '../../useCapability';
 import { FLAG_KINDS, FLAG_NAMES, type FlagVisibility } from './readerFlags';
-import type { TeleprompterFlag, TeleprompterFlagKind } from '../../types';
+import type { TeleprompterFlag, TeleprompterFlagKind, TeleprompterPunchResult } from '../../types';
 
 const SECTION_LABEL = "font-['Barlow_Condensed',sans-serif] text-[0.72rem] font-semibold tracking-[0.08em] text-[var(--text-muted)] uppercase";
 const LIST_BUTTON =
@@ -43,6 +46,57 @@ function quoted(text: string): string {
   return text ? `“${text}”` : 'nothing';
 }
 
+/**
+ * Punch and roll's confirm step (teleprompter-manuscript-integration.prd.md Phase 12, "UI showing resolved time, its
+ * source... and pre-roll before moving"): a preview is fetched before the dialog opens, so nothing in REAPER moves
+ * until the narrator presses Punch.
+ */
+type PunchState =
+  | { phase: 'idle' }
+  | { phase: 'previewing' }
+  | { phase: 'confirm'; preview: TeleprompterPunchResult; pending: boolean; error?: string }
+  | { phase: 'refused'; message: string };
+
+const PUNCH_SOURCE_LABEL: Record<NonNullable<TeleprompterPunchResult['source']>, string> = {
+  anchor: 'Timed from your reading just now.',
+  alignment: 'Estimated from your reading pace (no exact timing recorded this close to the word).',
+};
+
+function PunchConfirmDialog({ state, onConfirm, onCancel }: { state: PunchState & { phase: 'confirm' }; onConfirm: () => void; onCancel: () => void }) {
+  const { preview, pending, error } = state;
+  return (
+    <ConfirmDialog
+      title="Punch from here"
+      confirmLabel="Punch"
+      confirm={onConfirm}
+      cancel={onCancel}
+      pending={pending}
+      escapeCancels={!pending}
+      body={
+        <>
+          <p>
+            Moves REAPER's edit cursor to <strong>{formatTime(preview.resolvedTime ?? 0)}</strong>
+            {typeof preview.preRoll === 'number' && preview.preRoll > 0 ? (
+              <>
+                {' '}
+                ({preview.preRoll}s pre-roll, so it lands at <strong>{formatTime(Math.max(0, (preview.resolvedTime ?? 0) - preview.preRoll))}</strong>)
+              </>
+            ) : null}
+            . Nothing else changes.
+          </p>
+          <p style={{ color: 'var(--text-muted)' }}>{preview.source ? PUNCH_SOURCE_LABEL[preview.source] : null}</p>
+        </>
+      }
+    >
+      {error && (
+        <p role="alert" className="text-sm" style={{ color: 'var(--danger-text)' }}>
+          {error}
+        </p>
+      )}
+    </ConfirmDialog>
+  );
+}
+
 function SaveStatus({ save }: { save: FlagSaveState }) {
   const text =
     save.status === 'saving'
@@ -68,10 +122,35 @@ function SaveStatus({ save }: { save: FlagSaveState }) {
  */
 export function ReaderFlagsPanel({ flags, visibility, onVisibility, dismissed, onDismiss, selected, onSelect, textOf, save }: Props) {
   const headingId = useId();
-  // Punch and roll moves the REAPER edit cursor to a flag (teleprompter-manuscript-integration.prd.md Phase 12, still
-  // unwired here); until its host anchors land, the DAW port's own capability entry explains why the button is off
-  // (DAW port PRD Phase 7, ADR 0360) instead of the fixed message this used to hard-code.
+  const api = useApi();
+  // Punch and roll moves the REAPER edit cursor to a flag (teleprompter-manuscript-integration.prd.md Phase 12): the
+  // DAW port's own capability entry explains why the button is off when `punch` is not available (DAW port PRD Phase
+  // 7, ADR 0360); once it is, the click resolves the flagged word's time (a preview, nothing moves yet) before
+  // confirming.
   const punchCapability = useCapability('punch');
+  const [punch, setPunch] = useState<PunchState>({ phase: 'idle' });
+  const startPunch = async (flag: TeleprompterFlag) => {
+    setPunch({ phase: 'previewing' });
+    try {
+      const preview = await api.teleprompterPunchPreview(flag.start);
+      if (preview.outcome === 'refused') setPunch({ phase: 'refused', message: preview.message ?? 'Punch from here could not be resolved.' });
+      else setPunch({ phase: 'confirm', preview, pending: false });
+    } catch (reason: unknown) {
+      setPunch({ phase: 'refused', message: String(reason) });
+    }
+  };
+  const confirmPunch = async (flag: TeleprompterFlag) => {
+    if (punch.phase !== 'confirm') return;
+    setPunch({ ...punch, pending: true, error: undefined });
+    try {
+      const result = await api.teleprompterPunch(flag.start);
+      if (result.outcome === 'refused')
+        setPunch({ phase: 'confirm', preview: punch.preview, pending: false, error: result.message ?? 'Punch from here failed.' });
+      else setPunch({ phase: 'idle' });
+    } catch (reason: unknown) {
+      setPunch({ phase: 'confirm', preview: punch.preview, pending: false, error: String(reason) });
+    }
+  };
   const shown = flags.filter((flag) => visibility[flag.kind]);
   const hidden = flags.length - shown.length;
   return (
@@ -109,10 +188,20 @@ export function ReaderFlagsPanel({ flags, visibility, onVisibility, dismissed, o
               </Button>
             )}
             <CapabilityGate capability={punchCapability}>
-              <Button variant="ghost">Punch from here</Button>
+              <Button variant="ghost" pending={punch.phase === 'previewing'} onClick={() => startPunch(selected)}>
+                Punch from here
+              </Button>
             </CapabilityGate>
           </div>
+          {punch.phase === 'refused' && (
+            <p role="alert" className="mt-2 text-sm" style={{ color: 'var(--danger-text)' }}>
+              {punch.message}
+            </p>
+          )}
         </section>
+      )}
+      {punch.phase === 'confirm' && selected && (
+        <PunchConfirmDialog state={punch} onConfirm={() => confirmPunch(selected)} onCancel={() => setPunch({ phase: 'idle' })} />
       )}
       <div>
         <div className={`mb-1.5 ${SECTION_LABEL}`}>This session</div>

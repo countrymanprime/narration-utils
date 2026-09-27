@@ -66,7 +66,7 @@ var builtinDefaults = map[string]Values{
 	"Updates":           {"check_on_startup": "true", "channel": "candidates"},
 	"Manuscript":        {"color_note": "B85C1E"},
 	"TranscriptCompare": {"chunk_seconds": "60", "model_size": "small", "color_misread": "FF4040", "color_skipped": "FFC000", "color_extra": "40A0FF"},
-	"Teleprompter":      {"engine": "whisper", "model": "tiny"},
+	"Teleprompter":      {"engine": "whisper", "model": "tiny", "punch_preroll_seconds": "3"},
 	// auto_start_launcher defaults off (owner decision D10): the spike that proved REAPER auto-runs a script
 	// argument (ADR 0092, W12) does not by itself decide whether the app should always do it.
 	// experimental_reaper_actions defaults off (owner decision D38): the bridge commands not yet verified in a real

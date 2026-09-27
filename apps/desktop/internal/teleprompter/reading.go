@@ -42,6 +42,13 @@ func ReadingDir(project string) string {
 
 var plainID = regexp.MustCompile(`^[A-Za-z0-9_-]{1,64}$`)
 
+// hashedChapterID is a short, stable stand-in for a chapter id that is not already a plain file name, shared by
+// readingFileName and anchorsFileName so neither ever lets an id's own characters name a path.
+func hashedChapterID(chapterID string) string {
+	sum := sha256.Sum256([]byte(chapterID))
+	return hex.EncodeToString(sum[:16])
+}
+
 // readingFileName is the host's name for chapterID's reading. A chapter id
 // that is not already a short, plain file name is hashed, so no id, whatever
 // its characters, ever names a path.
@@ -49,8 +56,7 @@ func readingFileName(chapterID string) string {
 	if plainID.MatchString(chapterID) {
 		return chapterID + ".reading.json"
 	}
-	sum := sha256.Sum256([]byte(chapterID))
-	return "id-" + hex.EncodeToString(sum[:16]) + ".reading.json"
+	return "id-" + hashedChapterID(chapterID) + ".reading.json"
 }
 
 // chapterScriptHash hashes the manuscript's document id and chapterID's

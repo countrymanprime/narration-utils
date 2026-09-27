@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import type { PickupsImportReport, PickupsImportResult, PickupsMoment, PickupsStartResult, PickupsState } from '../contracts/pickups';
+import type { PickupsImportReport, PickupsImportResult, PickupsMoment, PickupsPunchResult, PickupsStartResult, PickupsState } from '../contracts/pickups';
 import { optionalFromNull } from './base';
 
 const pickupsMomentSchema = z.object({
@@ -35,3 +35,15 @@ export const pickupsImportResultSchema = z.object({
     .nullish()
     .transform((value) => value ?? []),
 }) satisfies z.ZodType<PickupsImportResult>;
+
+/** `PickupsPunch` (`apps/desktop/pickupspunch.go`, booth-actions-enablement PRD Phase 3). */
+export const pickupsPunchResultSchema = z
+  .object({
+    outcome: z.enum(['punched', 'refused']),
+    cursor: z.number().optional(),
+    message: z.string().optional(),
+  })
+  .refine((result) => (result.outcome === 'punched') === (result.cursor !== undefined), {
+    message: 'a punch cursor comes with outcome "punched", and only with it',
+    path: ['cursor'],
+  }) satisfies z.ZodType<PickupsPunchResult>;

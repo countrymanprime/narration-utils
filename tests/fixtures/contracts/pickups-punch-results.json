@@ -1,0 +1,10 @@
+{
+  "punched": {
+    "outcome": "punched",
+    "cursor": 7
+  },
+  "refused_no_daw": {
+    "outcome": "refused",
+    "message": "no DAW is connected to this app. Open this app from your DAW to use it"
+  }
+}

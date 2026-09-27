@@ -80,6 +80,45 @@ describe('PickupsDialog', () => {
     expect(await screen.findByText(/Marked done/)).toBeTruthy();
   });
 
+  it('punches to the pickup that was jumped to', async () => {
+    const user = userEvent.setup();
+    const { api } = renderDialog({}, { pickups: 'import-success', daw: { toggles: { punch: 'on' } } });
+    const punchSpy = vi.spyOn(api, 'pickupsPunch');
+
+    await user.click(await screen.findByRole('button', { name: 'Next pickup' }));
+    await screen.findByRole('button', { name: 'Punch from here' });
+    await user.click(screen.getByRole('button', { name: 'Punch from here' }));
+
+    await waitFor(() => expect(punchSpy).toHaveBeenCalledWith(9.25));
+  });
+
+  it('reports a punch refusal inline without touching the pickup list', async () => {
+    const user = userEvent.setup();
+    renderDialog(
+      { pickupsPunch: async () => ({ outcome: 'refused', message: 'REAPER is not answering. Check that REAPER is open, then try again.' }) },
+      {
+        pickups: 'import-success',
+        daw: { toggles: { punch: 'on' } },
+      },
+    );
+
+    await user.click(await screen.findByRole('button', { name: 'Next pickup' }));
+    await screen.findByRole('button', { name: 'Punch from here' });
+    await user.click(screen.getByRole('button', { name: 'Punch from here' }));
+
+    expect(await screen.findByText('REAPER is not answering. Check that REAPER is open, then try again.')).toBeTruthy();
+  });
+
+  it('hides "Punch from here" while the punch capability is off (the default)', async () => {
+    const user = userEvent.setup();
+    renderDialog({}, { pickups: 'import-success' });
+
+    await user.click(await screen.findByRole('button', { name: 'Next pickup' }));
+
+    const button = await screen.findByRole('button', { name: 'Punch from here' });
+    expect(button.getAttribute('aria-disabled')).toBe('true');
+  });
+
   it('shows a REAPER error state', async () => {
     renderDialog({}, { pickups: 'error' });
     const alerts = await screen.findAllByRole('alert');
