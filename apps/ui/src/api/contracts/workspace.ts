@@ -1,4 +1,5 @@
 import type { CoverageReason } from './coverage';
+import type { FindingNavigation } from './findings';
 
 // The edit-and-proof workspace's stored word alignment (edit-and-proof-workspace.prd.md Phase 1, ADR 0242): the
 // recording check's per-token alignment (COVERAGE_TOKEN/COVERAGE_EXTRA, sidecars/transcript-compare) read back and
@@ -72,4 +73,11 @@ export interface WorkspaceApi {
   /** Reads a chapter's stored word alignment joined with its paragraphs and items' current played ranges. Never
    * runs anything. */
   workspaceAlignment(chapterId: string): Promise<WorkspaceAlignmentResult>;
+  /** Selects tokenIndex's item in REAPER and puts the edit cursor on the spot it was heard (edit-and-proof-workspace
+   * PRD Phase 3): navigate_item, resolved from the token's item, take and source time in the host, exactly as
+   * findingsGoTo does for a finding. Connection status is shared with the Review page (findingsReaperStatus). */
+  workspaceGoTo(chapterId: string, tokenIndex: number): Promise<FindingNavigation>;
+  /** Loops the chapter passage from firstToken to lastToken (inclusive, both heard on the same item) in REAPER, as
+   * findingsLoop does for a finding. findingsStopLoop stops it: the workspace holds no loop state of its own. */
+  workspaceLoop(chapterId: string, firstToken: number, lastToken: number): Promise<FindingNavigation>;
 }

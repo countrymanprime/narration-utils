@@ -14,6 +14,9 @@ import { Call as $Call, CancellablePromise as $CancellablePromise, Create as $Cr
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
 import * as liveflags$0 from "./internal/liveflags/models.js";
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore: Unused imports
+import * as project$0 from "./internal/project/models.js";
 
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
@@ -715,6 +718,32 @@ export function GuidePronounce(id: string, aliasIndex: number | null, source: st
     return $Call.ByID(1577834145, id, aliasIndex, source);
 }
 
+export function GuidePronounceUser(id: string, aliasIndex: number | null, ipa: string): $CancellablePromise<string> {
+    return $Call.ByID(867110926, id, aliasIndex, ipa);
+}
+
+/**
+ * GuidePronunciationQueries lists every name whose pronunciation the author has not confirmed, in reading order (prep-depth P3).
+ */
+export function GuidePronunciationQueries(): $CancellablePromise<string> {
+    return $Call.ByID(2256334941);
+}
+
+/**
+ * GuidePronunciationQueriesCSV is the same list as CSV text for the narrator to send to the author; the UI saves it as a file.
+ */
+export function GuidePronunciationQueriesCSV(): $CancellablePromise<string> {
+    return $Call.ByID(2380759975);
+}
+
+export function GuidePronunciationSetStatus(id: string, aliasIndex: number | null, status: string, note: string | null): $CancellablePromise<string> {
+    return $Call.ByID(3849731891, id, aliasIndex, status, note);
+}
+
+export function GuidePronunciationUseAlternate(id: string, aliasIndex: number | null): $CancellablePromise<string> {
+    return $Call.ByID(661717092, id, aliasIndex);
+}
+
 export function GuideRelate(id: string, otherID: string, label: string): $CancellablePromise<string> {
     return $Call.ByID(761657167, id, otherID, label);
 }
@@ -930,6 +959,32 @@ export function PickupsState(): $CancellablePromise<string> {
  */
 export function PreviewCandidates(): $CancellablePromise<string> {
     return $Call.ByID(2923797608);
+}
+
+/**
+ * ProductionPlan reads this project's deadline, contracted amount and milestones. A project that has set none answers
+ * an empty plan: no deadline, no amount, no milestones.
+ */
+export function ProductionPlan(): $CancellablePromise<string> {
+    return $Call.ByID(564382146);
+}
+
+/**
+ * ProductionSaveMilestones replaces the book's milestones with milestones, in the narrator's order. Each needs a name
+ * and a real date ("YYYY-MM-DD"); a note is optional. A list with any invalid milestone is refused whole and nothing
+ * is written.
+ */
+export function ProductionSaveMilestones(milestones: project$0.Milestone[]): $CancellablePromise<string> {
+    return $Call.ByID(669610547, milestones);
+}
+
+/**
+ * ProductionSetDeadline sets the book's delivery date ("YYYY-MM-DD"; empty clears it) and contracted amount (a number
+ * of zero or more in the narrator's own currency; nil clears it). An invalid date or amount is refused and nothing is
+ * written.
+ */
+export function ProductionSetDeadline(deadline: string, contractedAmount: number | null): $CancellablePromise<string> {
+    return $Call.ByID(3757504551, deadline, contractedAmount);
 }
 
 /**
@@ -1544,6 +1599,25 @@ export function WhisperRemove(modelID: string): $CancellablePromise<string> {
  */
 export function WorkspaceAlignment(chapterID: string): $CancellablePromise<string> {
     return $Call.ByID(2240146208, chapterID);
+}
+
+/**
+ * WorkspaceGoTo selects tokenIndex's item in REAPER and puts the edit cursor on the spot it was heard, exactly as
+ * FindingsGoTo does for a finding: navigate_item, sent only once the token resolves to an item REAPER can be asked
+ * about and REAPER is listening.
+ */
+export function WorkspaceGoTo(chapterID: string, tokenIndex: number): $CancellablePromise<string> {
+    return $Call.ByID(3177963740, chapterID, tokenIndex);
+}
+
+/**
+ * WorkspaceLoop loops the chapter passage from firstToken to lastToken (inclusive, both heard on the same item) in
+ * REAPER: the time selection and loop points around it, repeat on, and Play, exactly as FindingsLoop does.
+ * FindingsStopLoop stops it - the workspace holds no loop state of its own, sharing the one app loop
+ * findingNavigation already tracks.
+ */
+export function WorkspaceLoop(chapterID: string, firstToken: number, lastToken: number): $CancellablePromise<string> {
+    return $Call.ByID(465077885, chapterID, firstToken, lastToken);
 }
 
 // Private type creation functions
