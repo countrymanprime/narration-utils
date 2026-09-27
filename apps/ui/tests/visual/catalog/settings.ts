@@ -8,6 +8,29 @@ export const settingsStates: StateEntry[] = [
   { page: 'settings', state: 'global-appearance', description: 'Settings, Global scope / Appearance category (theme switcher)', ...REFLOW },
   {
     page: 'settings',
+    state: 'global-keyboard',
+    description:
+      'Settings, Global scope / Keyboard & pedals category (input-commands-and-pedals.prd.md Phase 6, mockup 01): every command grouped by scope (Global, Page, Booth), gestures as Kbd chips, and Reset all to defaults',
+    ...REFLOW,
+  },
+  {
+    page: 'settings',
+    state: 'global-keyboard-recording',
+    description:
+      'Settings, Keyboard & pedals: the recorder open inline under "Play or pause reading" after a captured Page Down (mockup 02, user flow step 2), its live region announcing the capture, Replace / Add as another key / Unbind / Reset to default / Cancel',
+    ...REFLOW,
+    ...KEEPS_DESKTOP_SCROLL,
+  },
+  {
+    page: 'settings',
+    state: 'global-keyboard-conflict',
+    description:
+      'Settings, Keyboard & pedals: the recorder over "Next paragraph", → captured and already bound to "Next word" (mockup 03, a real findConflicts page/page collision), the conflict alert, Replace / Try another key / Cancel',
+    ...REFLOW,
+    ...KEEPS_DESKTOP_SCROLL,
+  },
+  {
+    page: 'settings',
     state: 'global-recording-check',
     description:
       'Settings, Global scope / Recording check category (ADR 0131): the four number settings at their defaults (0.8, 3, 8, 3 words; ADR 0132), under a summary that labels them uncalibrated and states the rule they make',

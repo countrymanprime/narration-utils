@@ -171,11 +171,11 @@ Lanes: **U** = primitives and input (Sonnet), **A** = host (Go settings). ADRs c
 | 3 | Migrate workspace keys (U) | `WorkspacePage.tsx` Space, arrows, `[ ]` become `page` commands, with tests first | complete | with 2, 4, 5 | 1 | - |
 | 4 | Migrate the reading Space (U) | `ReadingControlBar.tsx` Space becomes the `booth` command `reading.toggle`. ADR 0196 behaviour is kept | complete | with 2, 3, 5 | 1 | - |
 | 5 | Keymap settings row (A) | `Keymap.overrides` in defaults, store, `fieldSchemas`, contracts, mock | complete | with 1 to 4 | Q2 | - |
-| 6 | Keyboard & pedals settings (U) | Settings category: list, remap by pressing, conflict message, reset. Visual rows | pending | with 7 | 1, 5, Kbd | - |
+| 6 | Keyboard & pedals settings (U) | Settings category: list, remap by pressing, conflict message, reset. Visual rows | complete | with 7 | 1, 5, Kbd | - |
 | 7 | Shortcut sheet (U) | "?" opens a dialog of the active commands by scope. Aria snapshot, visual row | complete | with 6 | 2, Kbd | - |
 | 8 | Spike: Web MIDI and WebHID (U) | Availability and permission in WebView2, WKWebView and WebKitGTK 6.0. A research note | complete | with 2 to 7 | - | - |
 | 9 | MidiSource (U, A if needed) | Web MIDI note-on and CC presses, learned in the Phase 6 recorder. Threat model | pending | with 10 | 6, 8 | - |
-| 10 | Silent while recording (U) | `noisy` commands suppressed while the DAW port reports recording | pending | with 9 | 1, DAW port P9 | - |
+| 10 | Silent while recording (U) | `noisy` commands suppressed while the DAW port reports recording | complete: `useDawRecording` subscribes to `daw_transport_changed` and `<LiveCommandRouter>` wires it into the router's `isRecording` seam from Phase 1 (mounted in `main.tsx` in place of a bare `<CommandRouter>`); a suppressed press still posts "Not while recording." to its own `aria-live` region (PRD Q5) | with 9 | 1, DAW port P9 | - |
 | 11 | HidSource (U, Could) | WebHID buttons as gestures, if Phase 8 finds it usable | pending | - | 8, 9 | - |
 | 12 | Global hotkeys spike (A, Could) | Host-level hotkeys while REAPER has focus, for the companion panel. Not MVP | pending | any | 5 | - |
 
@@ -260,7 +260,7 @@ Lanes: **U** = primitives and input (Sonnet), **A** = host (Go settings). ADRs c
 | 7 | `App.tsx` (mount), a new `components/help/ShortcutSheet.tsx`, `tests/aria/dialogs.spec.ts` and snapshots, `state-catalog.ts` | Phase 2 and every `App.tsx` stream. Any dialog aria snapshot change |
 | 8 | `docs/research/` (new note) | None |
 | 9 | `apps/ui/src/input/midi*`, `docs/architecture/threat-model.md`, `SECURITY.md`, possibly a host permission handler | Any PRD editing the threat model's webview rows |
-| 10 | `apps/ui/src/input/router*` | [DAW Port and Capabilities](daw-port-and-capabilities.prd.md) (consumer only) |
+| 10 | `apps/ui/src/input/router*`, a new `apps/ui/src/input/useDawRecording.ts` and `LiveCommandRouter.tsx`, `apps/ui/src/main.tsx` (mount swap) | [DAW Port and Capabilities](daw-port-and-capabilities.prd.md) (consumer only). Anything editing `main.tsx` mock wiring |
 | 11 | `apps/ui/src/input/hid*`, threat model | Same as 9 |
 | 12 | `apps/desktop` (spike branch only), `docs/research/` | [Wails v3 Migration](wails-v3-migration.prd.md) follow-ups |
 

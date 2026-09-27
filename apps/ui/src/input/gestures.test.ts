@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { gesture, gestureFromKeyboardEvent, resolveGesture, serializeGesture } from './gestures';
+import { deserializeGesture, gesture, gestureFromKeyboardEvent, resolveGesture, serializeGesture } from './gestures';
 
 describe('gesture', () => {
   it('dedupes and sorts modifiers into a stable order regardless of input order', () => {
@@ -51,5 +51,33 @@ describe('gestureFromKeyboardEvent', () => {
 
   it('reads a bare key with no modifiers', () => {
     expect(gestureFromKeyboardEvent({ code: 'Space', altKey: false, ctrlKey: false, metaKey: false, shiftKey: false })).toEqual(gesture('keyboard', 'Space'));
+  });
+});
+
+describe('deserializeGesture', () => {
+  it('is the inverse of serializeGesture for a bare key', () => {
+    expect(deserializeGesture('Space')).toEqual(gesture('keyboard', 'Space'));
+  });
+
+  it('is the inverse of serializeGesture for a modified key, in any modifier order', () => {
+    expect(deserializeGesture('Alt+Ctrl+ArrowLeft')).toEqual(gesture('keyboard', 'ArrowLeft', ['Alt', 'Ctrl']));
+  });
+
+  it('is the inverse of serializeGesture for a non-keyboard source', () => {
+    expect(deserializeGesture('midi:cc/1/64')).toEqual(gesture('midi', 'cc/1/64'));
+    expect(deserializeGesture('hid:<vid>:<pid>/<button>')).toEqual(gesture('hid', '<vid>:<pid>/<button>'));
+  });
+
+  it('round-trips every default gesture through serializeGesture', () => {
+    const g = gesture('keyboard', 'BracketLeft', ['Meta', 'Shift']);
+    expect(deserializeGesture(serializeGesture(g))).toEqual(g);
+  });
+
+  it('throws on an unknown modifier name', () => {
+    expect(() => deserializeGesture('Fn+KeyA')).toThrow(/unknown modifier/);
+  });
+
+  it('throws on an empty string', () => {
+    expect(() => deserializeGesture('')).toThrow(/no key code/);
   });
 });

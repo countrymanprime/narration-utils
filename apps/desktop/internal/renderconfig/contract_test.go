@@ -32,7 +32,7 @@ func TestContractRenderConfigSuccess(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	service := New(Config{SessionDir: session}, client, nil)
+	service := New(Config{SessionDir: session}, renderConfigurerRole(t, client), nil)
 	if err := service.Configure(`C:\Books\Alice\renders`); err != nil {
 		t.Fatal(err)
 	}

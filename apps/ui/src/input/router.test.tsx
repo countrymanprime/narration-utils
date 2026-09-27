@@ -241,6 +241,40 @@ describe('CommandRouter', () => {
     expect(preventDefault).toHaveBeenCalledTimes(1);
   });
 
+  it('posts "Not while recording." to its status region on a suppressed press, and announces a repeat press too (PRD Q5)', () => {
+    const source = fakeSource();
+    const { container } = render(
+      <CommandRouter source={source} catalog={[BOOTH_COMMAND]} keymap={keymapFor(BOOTH_COMMAND)} isRecording={() => true}>
+        <CommandScope kind="booth">
+          <Registrar id="test.booth" onFire={vi.fn()} />
+        </CommandScope>
+      </CommandRouter>,
+    );
+
+    act(() => source.emit({ gesture: gesture('keyboard', 'KeyP') }));
+    const status = container.querySelector('[aria-live="polite"]');
+    const firstText = status?.textContent;
+    expect(firstText?.startsWith('Not while recording.')).toBe(true);
+
+    act(() => source.emit({ gesture: gesture('keyboard', 'KeyP') }));
+    // Same words, but the live region's own text changed, so a second suppressed press is announced too.
+    expect(status?.textContent?.startsWith('Not while recording.')).toBe(true);
+    expect(status?.textContent).not.toBe(firstText);
+  });
+
+  it('never posts to the status region for a press that is not suppressed', () => {
+    const source = fakeSource();
+    const { container } = render(
+      <CommandRouter source={source} catalog={[GLOBAL_COMMAND]} keymap={keymapFor(GLOBAL_COMMAND)}>
+        <Registrar id="test.global" onFire={vi.fn()} />
+      </CommandRouter>,
+    );
+
+    act(() => source.emit({ gesture: gesture('keyboard', 'KeyP') }));
+
+    expect(container.querySelector('[aria-live="polite"]')?.textContent).toBe('');
+  });
+
   it('un-registers a command handler on unmount, so the gesture then passes through', () => {
     const source = fakeSource();
     const onFire = vi.fn();

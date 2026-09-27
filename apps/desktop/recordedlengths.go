@@ -109,7 +109,7 @@ func (c *projectParseCache) read(folder string, store *settings.Store) (tracks.P
 	if c.path == path && c.modTime.Equal(info.ModTime()) && c.size == info.Size() {
 		return c.project, true
 	}
-	project, err := tracks.Parse(path)
+	project, err := readProject(path)
 	if err != nil {
 		c.path = ""
 		return tracks.Project{}, false

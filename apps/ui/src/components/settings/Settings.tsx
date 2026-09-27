@@ -16,6 +16,7 @@ import { AboutPanel } from './AboutPanel';
 import { CreditsPanel } from './CreditsPanel';
 import { DawCatalogPanel } from './DawCatalogPanel';
 import { DeliveryProfilesPanel } from './DeliveryProfilesPanel';
+import { KeyboardPanel } from './KeyboardPanel';
 import { RecordingCheckSummary } from './RecordingCheckSummary';
 import { ScopedSetting } from './ScopedSetting';
 import { UpdatesPanel } from './UpdatesPanel';
@@ -25,6 +26,10 @@ type SettingsCategory = { key: string; label: string; tool?: string; scopes: Sco
 const SETTINGS_CATEGORIES: SettingsCategory[] = [
   { key: 'General', label: 'General', tool: 'General', scopes: ['global'] },
   { key: 'Appearance', label: 'Appearance', scopes: ['global'] },
+  // The Keyboard & pedals category (input-commands-and-pedals.prd.md Phase 6): its own panel, not the generic
+  // fields form, since `Keymap.overrides` (Phase 5) is one JSON document KeyboardPanel reads and writes itself
+  // (PRD Q2: "hidden from the generic rows" - achieved for free here by giving the category no `tool`).
+  { key: 'Keyboard', label: 'Keyboard & pedals', scopes: ['global'] },
   { key: 'Manuscript', label: 'Manuscript', tool: 'Manuscript', scopes: ['global', 'project'] },
   // The recording check's thresholds and alignment (docs/utilities/recording-coverage.md, ADR 0131), Proposed and uncalibrated.
   { key: 'RecordingCoverage', label: 'Recording check', tool: 'RecordingCoverage', scopes: ['global', 'project'] },
@@ -373,6 +378,8 @@ export function Settings({
                     options={THEME_OPTIONS}
                   />
                 </div>
+              ) : category === 'Keyboard' ? (
+                <KeyboardPanel overridesField={settings.Keymap?.find((field) => field.key === 'overrides')} notify={notify} reload={load} />
               ) : category === 'LocalAssets' ? (
                 <LocalAssets notify={notify} />
               ) : category === 'Credits' ? (
