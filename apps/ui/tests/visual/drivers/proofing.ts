@@ -103,4 +103,33 @@ export const proofingDrivers: Record<string, Driver> = {
     await settlePage(page);
     await page.getByText(/imported before chapters were classified/).waitFor();
   },
+  'stage-panel-suggestions': async (page) => {
+    await page.goto('/proofing?mockProofingStages=mixed');
+    await settlePage(page);
+    await page.getByText('Suggested: Finalized').waitFor();
+  },
+  'stage-panel-evidence-recommended': async (page) => {
+    await page.goto('/proofing?mockProofingStages=mixed');
+    await settlePage(page);
+    await page.getByText('Suggested: Finalized').waitFor();
+    await clickVisible(page, 'button', /^Why: /);
+    await page.getByRole('dialog').waitFor();
+  },
+  'stage-panel-evidence-not-ready': async (page) => {
+    await page.goto('/proofing?mockProofingStages=mixed');
+    await settlePage(page);
+    await page.getByText('Not ready for Finalized').waitFor();
+    await page
+      .locator('tr', { hasText: 'Not ready for Finalized' })
+      .getByRole('button', { name: /^Why: / })
+      .click();
+    await page.getByRole('dialog').waitFor();
+  },
+  'stage-panel-evidence-unknown': async (page) => {
+    await page.goto('/proofing?mockProofingSignal=unmapped-track');
+    await settlePage(page);
+    await page.getByText(/no track linked/).waitFor();
+    await clickVisible(page, 'button', /^Why: /);
+    await page.getByRole('link', { name: 'Open Tracks' }).waitFor();
+  },
 };

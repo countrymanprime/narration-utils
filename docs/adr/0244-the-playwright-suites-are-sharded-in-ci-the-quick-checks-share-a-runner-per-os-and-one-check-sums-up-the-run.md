@@ -16,7 +16,8 @@ After [ADR 0105](0105-the-visual-suite-drives-each-state-once-and-resizes-throug
 | `js` | 4 m 29 s | Vitest 213 s; lint, format and the import rules 24 s together |
 | six more | under 1 m 20 s each | `setup-toolchain` about half of each |
 
-The [CI pipeline speed PRD](../prds/ci-pipeline-speed.prd.md) put per-test fixes before sharding (D3: a shard costs a job
+The CI pipeline speed PRD (`docs/prds/ci-pipeline-speed.prd.md`, deleted once its phases were delivered — see
+[CI and releases](../operations/ci-and-releases.md#ci-performance)) put per-test fixes before sharding (D3: a shard costs a job
 slot, and the free plan's 20 concurrent jobs are what a burst of pushes queues on) and made sharding its Phase 5 "if
 Phase 3 or 4 misses 4 minutes". Phase 3 missed it by more than half. The owner asked for the suites to be sharded, the
 jobs reorganised for parallelism, and one summary check (2026-09-25).

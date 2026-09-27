@@ -1,6 +1,7 @@
 package coverage
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -13,6 +14,25 @@ import (
 
 // exitCancelled is the sidecar's cancel exit code (ADR 0127).
 const exitCancelled = 2
+
+// stage is which sidecar invocation a job is running now (recording-check-model-cascade PRD
+// Phase 4). Only a first pass that reports regions, with a re-check model asked for, ever leaves
+// stageFirstPass; every other run stays a single-stage job exactly as before this phase.
+type stage int
+
+const (
+	// stageFirstPass is every run's own first sidecar launch: today's single-pass check.
+	stageFirstPass stage = iota
+	// stageRecheckWindows re-checks the planned windows and splices them into the same words
+	// (coverage_mode.run_recheck, ADR 0341); it writes no results file.
+	stageRecheckWindows
+	// stageRecheckWhole replaces the windows with one whole-chapter pass under the re-check model,
+	// when the windows would have covered too much of the chapter (MC3) to be worth splicing.
+	stageRecheckWhole
+	// stageRealign re-aligns from the now-spliced words with the first pass's own model
+	// (--align-only never transcribes) once stageRecheckWindows has finished.
+	stageRealign
+)
 
 // job is one run: what it was built from and where its files are.
 type job struct {
@@ -32,32 +52,98 @@ type job struct {
 
 	// lastError is the message of an ERROR progress line, for the failure text.
 	lastError string
+
+	// stage, firstReport and recheck are the model cascade's own state (Phase 4): stage starts at
+	// its zero value, stageFirstPass, for every job.
+	stage       stage
+	firstReport Report
+	recheck     recheckPlan
+	// stageErr is a Go-side failure between two stages (planning, or writing the windows file):
+	// never a sidecar exit code, so finish reads it ahead of running.child's own exit code.
+	stageErr error
 }
 
 func (j *job) manifestPath() string { return filepath.Join(j.dir, "manifest.json") }
 func (j *job) wordsDir() string     { return filepath.Join(j.dir, "words") }
 func (j *job) resultsPath() string  { return filepath.Join(j.dir, "coverage.txt") }
+func (j *job) windowsPath() string  { return filepath.Join(j.dir, "windows.json") }
 
 func (j *job) initialState() State {
 	started := j.startedAt
 	return State{RunID: j.runID, ChapterID: j.basis.ChapterID, Phase: PhaseRunning, Stage: "START", Message: "Starting the recording check...", StartedAt: &started, Background: j.request.Background}
 }
 
-// watch follows a run's progress file until the sidecar exits, then finishes
-// the run.
+// watch follows a run's progress file until its sidecar process exits, then either advances the
+// job to its next stage (the model cascade's second pass, PRD Phase 4) and keeps watching, or
+// finishes the run.
 func (s *Service) watch(running *job) {
 	defer close(running.done)
 	ticker := time.NewTicker(s.pollInterval)
 	defer ticker.Stop()
 	for {
 		s.readProgress(running)
-		if running.child.HasExited() {
-			s.readProgress(running)
-			s.finish(running)
-			return
+		if !running.child.HasExited() {
+			<-ticker.C
+			continue
 		}
-		<-ticker.C
+		s.readProgress(running)
+		if s.advance(running) {
+			continue
+		}
+		s.finish(running)
+		return
 	}
+}
+
+// advance is called once the current stage's sidecar process has exited. Only a clean exit (code
+// 0) can move the job into a next stage; a cancel or a failure ends it on this stage's own
+// outcome, exactly as finish already reads it. It returns whether a next stage was started.
+func (s *Service) advance(running *job) bool {
+	if code, _ := running.child.ExitCode(); code != 0 {
+		return false
+	}
+	switch running.stage {
+	case stageFirstPass:
+		report, err := readReport(running.resultsPath(), running.basis.ChapterID)
+		if err != nil {
+			return false // finish re-reads the same results file and reports the same error
+		}
+		running.firstReport = report
+		running.recheck = planRecheck(report, running.plan.items, running.request.Recheck.Model)
+		if !running.recheck.needed() {
+			return false
+		}
+		if running.recheck.WholeChapter {
+			return s.launchStage(running, stageRecheckWhole)
+		}
+		if err := writeWindowsFile(running.windowsPath(), running.recheck.Windows); err != nil {
+			running.stageErr = err
+			return false
+		}
+		return s.launchStage(running, stageRecheckWindows)
+	case stageRecheckWindows:
+		return s.launchStage(running, stageRealign)
+	default: // stageRecheckWhole, stageRealign: this stage's own exit and results are final
+		return false
+	}
+}
+
+// launchStage starts the next stage's sidecar process, replacing running.child, and resets the
+// reported state's own stage and percent: a new sidecar process starting its own progress from
+// scratch is a new phase of the job, not a continuation of the one that just finished.
+func (s *Service) launchStage(running *job, next stage) bool {
+	child, err := s.launch(context.Background(), s.config.Python, s.stageArgs(running, next)...)
+	if err != nil {
+		running.stageErr = fmt.Errorf("could not start the recording check's re-check pass: %w", err)
+		return false
+	}
+	running.stage, running.child = next, child
+	s.mu.Lock()
+	s.state.Stage, s.state.Percent = "", 0
+	state := s.state
+	s.mu.Unlock()
+	s.notify(state)
+	return true
 }
 
 // readProgress applies the progress file's last line. Percent never moves
@@ -110,8 +196,10 @@ func (s *Service) finish(running *job) {
 
 	outcome, phase, message := evidence.LedgerFailed, PhaseFailed, ""
 	var report Report
-	switch code {
-	case 0:
+	switch {
+	case running.stageErr != nil:
+		message = running.stageErr.Error()
+	case code == 0:
 		parsed, err := readReport(running.resultsPath(), running.basis.ChapterID)
 		if err == nil {
 			err = s.inputsUnchanged(running)
@@ -122,7 +210,7 @@ func (s *Service) finish(running *job) {
 			report, outcome, phase = parsed, evidence.LedgerComplete, PhaseComplete
 			message = fmt.Sprintf("Text present: %d of %d words.", parsed.Summary.PresentTokens, parsed.Summary.BodyTokens)
 		}
-	case exitCancelled:
+	case code == exitCancelled:
 		outcome, phase, message = evidence.LedgerPartial, PhaseCancelled, "Cancelled. The items already transcribed are kept for the next check."
 	default:
 		s.mu.Lock()
