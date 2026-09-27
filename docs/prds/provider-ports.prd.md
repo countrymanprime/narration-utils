@@ -163,7 +163,7 @@ ENGINES: Registry[AsrEngine]        # filled by each sidecar's adapters at impor
 | 2 | Go port registry | `port.Registry[P]` in `internal/port/registry.go` with its tests | complete | with 1 | daw-port P1 | - |
 | 3 | ASR contract (Python) | `ports/asr.py`: `AsrEngine`, `LiveTranscriber`, `BatchTranscriber`; `Word`, `Hypothesis` moved; `asr_conformance` | complete | with 4, 7, 9, 10, 12 | 1 | - |
 | 4 | ASR registry (Go) | `internal/asrport` + `asrporttest`; `teleprompter.Engines`/`SupportsEngine` delegate to it | complete | with 3, 7, 9, 10, 12 | 2 | - |
-| 5 | Live ASR adapters | Whisper and Moonshine adapters; `live_asr.py` selects through the registry | pending | with 6, 8 | 3 | - |
+| 5 | Live ASR adapters | Whisper and Moonshine adapters; `live_asr.py` selects through the registry | complete | with 6, 8 | 3 | - |
 | 6 | Batch ASR adapter | faster-whisper adapter; `compare.py`'s `transcribe()` goes through it | complete | with 5, 8 | 3 | - |
 | 7 | TTS and pronunciation contracts (Python) | `ports/tts.py`, `ports/pronunciation.py` (with the `BrowserLookup` role, Should) and their suites | complete | with 3, 4, 9, 10, 12 | 1 | - |
 | 8 | Piper and pronunciation adapters | Piper, CMU and eSpeak adapters; `manuscript_guide.py` selects through the registries | complete | with 5, 6 | 7 | - |

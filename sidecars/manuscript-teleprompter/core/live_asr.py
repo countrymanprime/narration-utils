@@ -106,11 +106,20 @@ _SHARED_PYTHON = Path(__file__).resolve().parents[3] / "libs" / "python"
 if str(_SHARED_PYTHON) not in sys.path:
     sys.path.insert(0, str(_SHARED_PYTHON))
 
+# So a spec-loaded copy of this module (as the tests use) can still `import asr_adapters`, the same way `locate.py`
+# adds itself for its own sibling imports.
+_CORE_DIR = Path(__file__).resolve().parent
+if str(_CORE_DIR) not in sys.path:
+    sys.path.insert(0, str(_CORE_DIR))
+
+# Registers the "whisper" and "moonshine" rows into ENGINES (provider-ports P5); --engine's choices and the argument
+# checks below go through this registry rather than comparing engine names themselves.
+import asr_adapters  # noqa: F401
 from narration_common.logging_utils import log, set_log_file
 
 # Word and Hypothesis are the speech engine port's types (provider-ports P3); they are re-exported here so `live_asr.Hypothesis`
 # and every other existing import keep working.
-from narration_common.ports.asr import Hypothesis, Word
+from narration_common.ports.asr import ENGINES, Hypothesis, LiveRequest, Word
 
 SAMPLE_RATE = 16000
 
@@ -128,10 +137,6 @@ SPEECH_PAD_MS = 200
 # the whole open segment). With two decodes needed to confirm a word, output
 # trails speech by about two of these plus decode time.
 DECODE_INTERVAL_SECONDS = 0.5
-
-# Moonshine streaming model sizes selectable with --engine moonshine
-# (English only for now).
-MOONSHINE_ARCHS = {"tiny": "TINY_STREAMING", "small": "SMALL_STREAMING", "medium": "MEDIUM_STREAMING"}
 
 # Upper bound on how long unbroken speech can accumulate before it is
 # force-closed even without a detected pause, bounding both memory and the
@@ -571,11 +576,31 @@ def _load_whisper_decoder(args, vad_filter: bool = False) -> Decoder:
     return with_decode_timing(decode) if args.timing else decode
 
 
+def _engine_events(entry, request: LiveRequest) -> EventStream:
+    """Loads `entry` (an ENGINES row) for live transcription now, and returns a function that turns a chunk source
+    into the shared partial/word/segment_end events (so loading never overlaps with live capture)."""
+    transcriber = entry.live(request)
+
+    def stream(chunks: Iterable[np.ndarray]) -> Iterator[dict]:
+        try:
+            yield from confirmed_events(transcriber.hypotheses(chunks))
+        finally:
+            transcriber.close()
+
+    return stream
+
+
 def _load_whisper_engine(args) -> EventStream:
-    """Load the model now; return a function that streams events for a chunk
-    source (so loading never overlaps with live capture)."""
-    decode = _load_whisper_decoder(args)
-    return lambda chunks: whisper_events(chunks, decode, decode_interval_seconds=args.decode_interval)
+    """The Whisper row of ENGINES (asr_adapters.WhisperEngine), loaded for this session."""
+    request = LiveRequest(
+        model=args.model,
+        model_dir=args.model_dir,
+        language=args.language,
+        hotwords=args.hotwords,
+        device=args.device,
+        options={"decode_interval": args.decode_interval, "timing": args.timing},
+    )
+    return _engine_events(ENGINES.lookup("whisper"), request)
 
 
 def _run_locate(ap: argparse.ArgumentParser, args) -> None:
@@ -597,28 +622,21 @@ def _run_locate(ap: argparse.ArgumentParser, args) -> None:
 
 
 def _load_moonshine_engine(args) -> EventStream:
-    # Which model files are loaded, and the refusal to download from the frozen sidecar, live in moonshine_engine.py.
-    from moonshine_engine import load_transcriber
-
-    transcriber = load_transcriber(MOONSHINE_ARCHS[args.model], args.model_dir, args.decode_interval, args.hotwords, args.context_text)
-
-    def stream(chunks: Iterable[np.ndarray]) -> Iterator[dict]:
-        try:
-            yield from confirmed_events(moonshine_hypotheses(chunks, transcriber))
-        finally:
-            transcriber.close()
-
-    return stream
+    # Which model files are loaded, and the refusal to download from the frozen sidecar, live in moonshine_engine.py
+    # (asr_adapters.MoonshineEngine, the "moonshine" row of ENGINES).
+    request = LiveRequest(
+        model=args.model,
+        model_dir=args.model_dir,
+        language=args.language,
+        hotwords=args.hotwords,
+        device=args.device,
+        options={"decode_interval": args.decode_interval, "context_text": args.context_text},
+    )
+    return _engine_events(ENGINES.lookup("moonshine"), request)
 
 
 def _check_engine_args(ap: argparse.ArgumentParser, args) -> None:
-    if args.engine == "moonshine":
-        if args.model not in MOONSHINE_ARCHS:
-            ap.error(f"--engine moonshine supports --model {'/'.join(MOONSHINE_ARCHS)}, not {args.model!r}")
-        if args.language not in (None, "en"):
-            ap.error("--engine moonshine is English only for now")
-    elif args.context:
-        ap.error("--context is only supported with --engine moonshine")
+    ENGINES.lookup(args.engine).check(ap, args)
     if bool(args.manuscript) != bool(args.chapter):
         ap.error("--manuscript and --chapter go together")
     has_tracker = bool(args.manuscript or args.script)
@@ -780,7 +798,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
     ap.add_argument("--wav", default=None, help="Replay this audio file as if it were live mic input (fixture testing)")
     ap.add_argument("--mic", default=None, help="Capture from this input device name instead of --wav (Windows dshow device name)")
-    ap.add_argument("--engine", default="whisper", choices=["whisper", "moonshine"], help="Live ASR engine (default: whisper); both emit the same events")
+    ap.add_argument("--engine", default="whisper", choices=ENGINES.names(), help="Live ASR engine (default: whisper); both emit the same events")
     ap.add_argument(
         "--model",
         default="small",
