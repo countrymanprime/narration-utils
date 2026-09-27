@@ -14,6 +14,7 @@ Storybook title: `Primitives/Checkbox`. Source: `src/components/primitives/Check
 
 ## Used by
 
+- `src/components/credits/CreditsSetupDialog.tsx`
 - `src/components/delivery/ReportExportPanel.tsx`
 - `src/components/home/ImportReview.tsx`
 - `src/components/review/AuditionDialog.tsx`

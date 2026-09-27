@@ -273,7 +273,7 @@ Waves order the work, and the coordinator doesn't start a wave until everything 
 | Wave | Streams |
 | --- | --- |
 | **0** | See the table below |
-| **1: contracts** | [DAW port](../prds/daw-port-and-capabilities.prd.md) P1–P4 in lane K, one after another: N-K1 = P1 + P2, N-K2 = P3 + P4. [Provider ports](../architecture/provider-ports.md) phases after N-K1 (lane K, then B). [Studio UI primitives](../prds/studio-ui-primitives.prd.md) token batch (alone), then `CapabilityGate` (lane U). [Input commands and pedals](../prds/input-commands-and-pedals.prd.md) registry core (lane U) |
+| **1: contracts** | [DAW port](../prds/daw-port-and-capabilities.prd.md) P1–P4 in lane K, one after another: N-K1 = P1 + P2, N-K2 = P3 + P4. [Provider ports](../architecture/provider-ports.md) phases after N-K1 (lane K, then B). Studio UI primitives (PRD deleted, delivered) token batch (alone), then `CapabilityGate` (lane U). [Input commands and pedals](../prds/input-commands-and-pedals.prd.md) registry core (lane U) |
 | **2: fan out** | DAW port P5a–P5d at the same time (lane B, four workers); the remaining primitives, file-disjoint (lane U, two workers); provider-port migrations (lane B); input sources and migrations (lane U); DAW port P6 and P7 |
 | **3: features** | The wave-0 PRDs, in benchmark order: booth actions enablement, booth mode and companion panel, closed-loop proofing, delivery profiles (extended), production tracking |
 | **4** | Prep depth, series voice bible, render, encode and master, native recording on the DAW port, Audacity 4. Then the final sweep (D43, D44, D46): the full `pnpm check`, visual suite, atlas, aria, a mockup pass, doc screenshots regenerated once |

@@ -67,7 +67,7 @@ We will know it holds when:
 - New REAPER commands or Lua changes. The bridge and its harness are untouched, and the adapter wraps what exists.
 - Promoting any experimental command to supported. That is the booth actions enablement PRD's work (queued as wave 0b in the [agent train](../operations/agent-train.md)) after the owner's verification pass. This PRD makes promotion a one-line declaration change.
 - Other providers (ASR, TTS, pronunciation, capture, encoders): see [provider ports](../architecture/provider-ports.md), which shares this PRD's `internal/port` vocabulary.
-- UI primitives. `CapabilityGate` and `useCapability` are in [studio UI primitives](studio-ui-primitives.prd.md). This PRD provides the binding and moves the existing gating callers onto it.
+- UI primitives. `CapabilityGate` and `useCapability` are in studio UI primitives (a PRD deleted, delivered; [design-system.md](../design/design-system.md#primitive-components)). This PRD provides the binding and moves the existing gating callers onto it.
 
 ## Success Metrics
 
@@ -245,7 +245,7 @@ func Role[T any](r *Resolver, c Capability) (T, error) // *port.NotSupportedErro
   - Validate: the package's existing tests unchanged, plus `go test` of the host package.
 - **P6 (lane K).** Deleting the two label branches is the only behaviour-visible code removal, and it is covered by the existing standalone and Audacity launch tests.
 - **P7 (lane C, Sonnet).**
-  - It uses the primitive from [studio UI primitives](studio-ui-primitives.prd.md).
+  - It uses the primitive from studio UI primitives (a PRD deleted, delivered).
   - Visual suite states for the gated pages at every viewport; aria snapshots if the navigation's role tree changes.
 - **P8 (lane D, Haiku or Sonnet).** Documentation and bookkeeping.
 

@@ -1,12 +1,12 @@
 # 0360. Studio primitives land as flat leaf files after one token batch, and capability gating is a primitive
 
-**Status:** Proposed
+**Status:** Accepted
 **Date:** 2026-09-26
 **Supersedes:**
 
 ## Context
 
-The [audiobook studio benchmark](../research/audiobook-studio-benchmark.md) (section 3, recommendations 2 to 5) asks for a booth mode, a compact DAW companion, a proof timeline, a QC page and a production board. [Studio UI Primitives](../prds/studio-ui-primitives.prd.md) found that none of them can be drawn from the 33 primitives in `apps/ui/src/components/primitives/` today. There is no key cap, no audio level meter with zones, no status badge, no KPI tile, no toolbar, no timeline, no cell-navigable grid, no full-screen or narrow layout, and no single way to show a control the DAW cannot do yet. The local copies that exist show what happens without them:
+The [audiobook studio benchmark](../research/audiobook-studio-benchmark.md) (section 3, recommendations 2 to 5) asks for a booth mode, a compact DAW companion, a proof timeline, a QC page and a production board. Studio UI Primitives (a PRD deleted, delivered; see [design-system.md](../design/design-system.md#primitive-components)) found that none of them can be drawn from the 33 primitives in `apps/ui/src/components/primitives/` today. There is no key cap, no audio level meter with zones, no status badge, no KPI tile, no toolbar, no timeline, no cell-navigable grid, no full-screen or narrow layout, and no single way to show a control the DAW cannot do yet. The local copies that exist show what happens without them:
 
 - `InputLevelMeter.tsx` in `teleprompter/`;
 - `StatTile` inside `home/RecordingCheckReport.tsx`;
