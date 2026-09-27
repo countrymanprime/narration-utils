@@ -28,6 +28,7 @@ Storybook title: `Primitives/ConfirmDialog`. Source: `src/components/primitives/
 - `src/components/assets/AssetInstallPrompt.tsx`
 - `src/components/assets/LocalAssetRow.tsx`
 - `src/components/home/Home.tsx`
+- `src/components/home/RemoveFromRecordingDialog.tsx`
 - `src/components/review/ReaperControls.tsx`
 - `src/components/review/TakeReviewReads.tsx`
 - `src/components/settings/DeliveryProfilesPanel.tsx`

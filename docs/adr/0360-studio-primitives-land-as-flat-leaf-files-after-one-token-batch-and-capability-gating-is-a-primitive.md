@@ -1,6 +1,6 @@
 # 0360. Studio primitives land as flat leaf files after one token batch, and capability gating is a primitive
 
-**Status:** Proposed
+**Status:** Accepted
 **Date:** 2026-09-26
 **Supersedes:**
 

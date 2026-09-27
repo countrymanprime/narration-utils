@@ -22,18 +22,26 @@
       "consumers": [
         "src/components/assets/LocalAssetRow.tsx",
         "src/components/assets/LocalAssets.tsx",
+        "src/components/credits/CreditsSetupBanner.tsx",
+        "src/components/credits/CreditsSetupDialog.tsx",
         "src/components/delivery/DeliveryPage.tsx",
         "src/components/delivery/DeliveryProfilePanel.tsx",
         "src/components/delivery/DiagnosticsTab.tsx",
         "src/components/delivery/FileRulesPanel.tsx",
         "src/components/delivery/ReportExportPanel.tsx",
+        "src/components/editing/EditingCandidateRow.tsx",
+        "src/components/editing/EditingCheckPanel.tsx",
+        "src/components/help/ShortcutSheet.tsx",
         "src/components/home/AudiobookEstimatePanel.tsx",
+        "src/components/home/ChapterTrackPanel.tsx",
         "src/components/home/ImportReview.tsx",
         "src/components/home/RecordingCheck.tsx",
         "src/components/home/RecordingCheckReport.tsx",
+        "src/components/home/RemovedFromRecordingList.tsx",
         "src/components/layout/LoadError.tsx",
         "src/components/layout/StartupScreen.tsx",
         "src/components/manuscript/AddNoteDialog.tsx",
+        "src/components/manuscript/CreditsEntry.tsx",
         "src/components/manuscript/Manuscript.tsx",
         "src/components/manuscript/ReaderCard.tsx",
         "src/components/manuscript/SelectionMenu.tsx",
@@ -71,14 +79,38 @@
         "src/components/teleprompter/ReaderFlagsPanel.tsx",
         "src/components/teleprompter/ReadingControlBar.tsx",
         "src/components/teleprompter/ResumePrompt.tsx",
-        "src/components/teleprompter/TeleprompterPage.tsx",
+        "src/components/teleprompter/UnresolvedCreditsWarning.tsx",
+        "src/components/tracks/ChapterLinksTable.tsx",
+        "src/components/tracks/ChapterSyncConsentDialog.tsx",
+        "src/components/tracks/ChapterSyncPanel.tsx",
         "src/components/tracks/ChapterTagsDialog.tsx",
         "src/components/tracks/CleanupToolsDialog.tsx",
         "src/components/tracks/LinkChaptersDialog.tsx",
         "src/components/tracks/PickupsDialog.tsx",
         "src/components/tracks/RenderConfigDialog.tsx",
         "src/components/tracks/RetakeLanesDialog.tsx",
-        "src/components/tracks/TracksPage.tsx"
+        "src/components/tracks/TracksPage.tsx",
+        "src/components/workspace/FlagsPanel.tsx",
+        "src/components/workspace/ScriptView.tsx",
+        "src/components/workspace/TransportBar.tsx",
+        "src/components/workspace/WorkspacePage.tsx"
+      ],
+      "a11yDebt": false
+    },
+    {
+      "title": "Primitives/CapabilityGate",
+      "name": "CapabilityGate",
+      "source": "src/components/primitives/CapabilityGate.tsx",
+      "stories": [
+        "Supported Is Unchanged",
+        "Experimental Is Enabled With A Badge",
+        "Not Yet Available Is Disabled With The Message",
+        "Unsupported Falls Back To The Controls Own Name",
+        "Unsupported Can Be Hidden Instead",
+        "Press Never Reaches The Handler"
+      ],
+      "consumers": [
+        "src/useCapability.ts"
       ],
       "a11yDebt": false
     },
@@ -94,6 +126,7 @@
         "Space Toggles"
       ],
       "consumers": [
+        "src/components/credits/CreditsSetupDialog.tsx",
         "src/components/delivery/ReportExportPanel.tsx",
         "src/components/home/ImportReview.tsx",
         "src/components/review/AuditionDialog.tsx",
@@ -115,6 +148,19 @@
       "consumers": [
         "src/components/home/AudiobookEstimatePanel.tsx"
       ],
+      "a11yDebt": false
+    },
+    {
+      "title": "Primitives/CompactShell",
+      "name": "CompactShell",
+      "source": "src/components/primitives/CompactShell.tsx",
+      "stories": [
+        "Title Only",
+        "With Status And Action",
+        "Long Title Wraps",
+        "Full App Action Is Clickable"
+      ],
+      "consumers": [],
       "a11yDebt": false
     },
     {
@@ -143,6 +189,7 @@
         "src/components/assets/AssetInstallPrompt.tsx",
         "src/components/assets/LocalAssetRow.tsx",
         "src/components/home/Home.tsx",
+        "src/components/home/RemoveFromRecordingDialog.tsx",
         "src/components/review/ReaperControls.tsx",
         "src/components/review/TakeReviewReads.tsx",
         "src/components/settings/DeliveryProfilesPanel.tsx",
@@ -177,7 +224,8 @@
         "With Footer"
       ],
       "consumers": [
-        "src/components/home/RecordingCheck.tsx",
+        "src/components/credits/CreditsSetupDialog.tsx",
+        "src/components/help/ShortcutSheet.tsx",
         "src/components/manuscript/AddNoteDialog.tsx",
         "src/components/primitives/ConfirmDialog.tsx",
         "src/components/primitives/WorkDialog.tsx",
@@ -187,6 +235,7 @@
         "src/components/review/TakeReviewScanDialog.tsx",
         "src/components/settings/DeliveryProfileEditor.tsx",
         "src/components/teleprompter/ReadAloudDialog.tsx",
+        "src/components/tracks/ChapterSyncConsentDialog.tsx",
         "src/components/tracks/ChapterTagsDialog.tsx",
         "src/components/tracks/CleanupToolsDialog.tsx",
         "src/components/tracks/LinkChaptersDialog.tsx",
@@ -253,6 +302,7 @@
         "Focused On Mount"
       ],
       "consumers": [
+        "src/components/credits/CreditsSetupDialog.tsx",
         "src/components/manuscript/AddNoteDialog.tsx",
         "src/components/project/NewProjectDialog.tsx",
         "src/components/review/FindingDetail.tsx",
@@ -263,6 +313,18 @@
         "src/components/tracks/ChapterTagsDialog.tsx",
         "src/components/tracks/RenderConfigDialog.tsx"
       ],
+      "a11yDebt": false
+    },
+    {
+      "title": "Primitives/FocusShell",
+      "name": "FocusShell",
+      "source": "src/components/primitives/FocusShell.tsx",
+      "stories": [
+        "Booth",
+        "Without Rail",
+        "Rail Collapsed"
+      ],
+      "consumers": [],
       "a11yDebt": false
     },
     {
@@ -290,7 +352,8 @@
         "src/components/settings/Settings.tsx",
         "src/components/storybible/Guide.tsx",
         "src/components/teleprompter/TeleprompterPage.tsx",
-        "src/components/tracks/TracksPage.tsx"
+        "src/components/tracks/TracksPage.tsx",
+        "src/components/workspace/WorkspacePage.tsx"
       ],
       "a11yDebt": false
     },
@@ -347,6 +410,7 @@
         "Disabled With Reason"
       ],
       "consumers": [
+        "src/components/home/ChapterTrackButton.tsx",
         "src/components/home/Home.tsx",
         "src/components/layout/AppShell.tsx",
         "src/components/manuscript/EntitySummary.tsx",
@@ -361,6 +425,48 @@
         "src/components/storybible/GuideDetail.tsx",
         "src/components/storybible/PropertiesSection.tsx",
         "src/components/teleprompter/ReaderRail.tsx",
+        "src/components/teleprompter/ReadingControlBar.tsx"
+      ],
+      "a11yDebt": false
+    },
+    {
+      "title": "Primitives/Kbd",
+      "name": "Kbd",
+      "source": "src/components/primitives/Kbd.tsx",
+      "stories": [
+        "Single Key",
+        "Chord",
+        "Three Key Chord",
+        "Symbol With Spoken Label",
+        "Chord With Symbol And Spoken Label",
+        "Booth Toolbar Row",
+        "Is Named By Its Keys",
+        "Chord Is Named By Every Key",
+        "Spoken Label Overrides The Glyph Name"
+      ],
+      "consumers": [
+        "src/components/help/ShortcutSheet.tsx"
+      ],
+      "a11yDebt": false
+    },
+    {
+      "title": "Primitives/LevelMeter",
+      "name": "LevelMeter",
+      "source": "src/components/primitives/LevelMeter.tsx",
+      "stories": [
+        "Silence",
+        "Speech",
+        "Hot",
+        "Clipped",
+        "No Reading Yet",
+        "Decorative",
+        "Booth Size",
+        "Compact Size",
+        "Custom Floor And Ceiling",
+        "Is Named And Reads Its Value",
+        "Silent Reads As Silent"
+      ],
+      "consumers": [
         "src/components/teleprompter/ReadingControlBar.tsx"
       ],
       "a11yDebt": false
@@ -458,12 +564,14 @@
         "Long Content"
       ],
       "consumers": [
+        "src/components/delivery/BookChecklistPanel.tsx",
         "src/components/delivery/DeliveryPage.tsx",
         "src/components/delivery/DeliveryProfilePanel.tsx",
         "src/components/delivery/DiagnosticsTab.tsx",
         "src/components/delivery/FileRulesPanel.tsx",
         "src/components/delivery/ReportExportPanel.tsx",
         "src/components/home/AudiobookEstimatePanel.tsx",
+        "src/components/home/RemovedFromRecordingList.tsx",
         "src/components/layout/LoadError.tsx",
         "src/components/proofing/Transcript.tsx",
         "src/components/review/FindingDetail.tsx",
@@ -471,7 +579,11 @@
         "src/components/teleprompter/ReadAlongView.tsx",
         "src/components/teleprompter/TeleprompterPage.tsx",
         "src/components/tracks/ChapterLinksTable.tsx",
-        "src/components/tracks/TracksPage.tsx"
+        "src/components/tracks/ChapterSyncPanel.tsx",
+        "src/components/tracks/TracksPage.tsx",
+        "src/components/workspace/FlagsPanel.tsx",
+        "src/components/workspace/TransportBar.tsx",
+        "src/components/workspace/WorkspacePage.tsx"
       ],
       "a11yDebt": false
     },
@@ -523,7 +635,23 @@
         "src/components/assets/LocalAssetRow.tsx",
         "src/components/delivery/DeliveryPage.tsx",
         "src/components/delivery/DiagnosticsTab.tsx",
+        "src/components/editing/EditingCheckPanel.tsx",
+        "src/components/primitives/StatTile.tsx",
         "src/components/primitives/WorkDialog.tsx"
+      ],
+      "a11yDebt": false
+    },
+    {
+      "title": "Primitives/RadioGroup",
+      "name": "RadioGroup",
+      "source": "src/components/primitives/RadioGroup.stories.tsx",
+      "stories": [
+        "Default",
+        "Click Selects",
+        "Arrow Keys Move"
+      ],
+      "consumers": [
+        "src/components/home/RemoveFromRecordingDialog.tsx"
       ],
       "a11yDebt": false
     },
@@ -569,7 +697,9 @@
         "src/components/storybible/GuideDetail.tsx",
         "src/components/teleprompter/MicrophoneField.tsx",
         "src/components/teleprompter/TeleprompterPage.tsx",
-        "src/components/tracks/LinkChaptersDialog.tsx"
+        "src/components/tracks/ChapterSyncPanel.tsx",
+        "src/components/tracks/LinkChaptersDialog.tsx",
+        "src/components/workspace/TransportBar.tsx"
       ],
       "a11yDebt": false
     },
@@ -589,9 +719,71 @@
         "Returns Focus To The Opener"
       ],
       "consumers": [
+        "src/components/editing/EditingCheckPanel.tsx",
+        "src/components/home/ChapterTrackPanel.tsx",
+        "src/components/home/RecordingCheck.tsx",
         "src/components/manuscript/Manuscript.tsx",
         "src/components/stages/StageEvidence.tsx",
         "src/components/storybible/GuideDetail.tsx"
+      ],
+      "a11yDebt": false
+    },
+    {
+      "title": "Primitives/StageGrid",
+      "name": "StageGrid",
+      "source": "src/components/primitives/StageGrid.tsx",
+      "stories": [
+        "Production Home",
+        "Small",
+        "Keyboard Navigation",
+        "Names Rows And Columns"
+      ],
+      "consumers": [],
+      "a11yDebt": false
+    },
+    {
+      "title": "Primitives/StatTile",
+      "name": "StatTile",
+      "source": "src/components/primitives/StatTile.tsx",
+      "stories": [
+        "Default",
+        "No Hint",
+        "With Unit",
+        "With Progress",
+        "Success",
+        "Warning",
+        "Danger",
+        "Info",
+        "Experimental",
+        "Long Label Wraps"
+      ],
+      "consumers": [
+        "src/components/home/RecordingCheckReport.tsx"
+      ],
+      "a11yDebt": false
+    },
+    {
+      "title": "Primitives/StatusBadge",
+      "name": "StatusBadge",
+      "source": "src/components/primitives/StatusBadge.tsx",
+      "stories": [
+        "Neutral",
+        "Info",
+        "Progress",
+        "Success",
+        "Warning",
+        "Danger",
+        "Experimental",
+        "With Icon",
+        "Dot",
+        "All Tones As Dots",
+        "Booth",
+        "Announces Its Label"
+      ],
+      "consumers": [
+        "src/chapterStatus.ts",
+        "src/components/primitives/CapabilityGate.tsx",
+        "src/components/primitives/StageGrid.tsx"
       ],
       "a11yDebt": false
     },
@@ -624,6 +816,7 @@
         "Rows Activate From The Keyboard"
       ],
       "consumers": [
+        "src/components/delivery/BookChecklistPanel.tsx",
         "src/components/delivery/DeliveryProfilePanel.tsx",
         "src/components/delivery/DiagnosticsTables.tsx",
         "src/components/delivery/FileRulesPanel.tsx",
@@ -706,6 +899,19 @@
       "a11yDebt": false
     },
     {
+      "title": "Primitives/Timeline",
+      "name": "Timeline",
+      "source": "src/components/primitives/Timeline.tsx",
+      "stories": [
+        "Proof Pass",
+        "No Backdrop Or Playhead",
+        "Keyboard Steps And Activates Markers",
+        "Each Lane Is Its Own Group"
+      ],
+      "consumers": [],
+      "a11yDebt": false
+    },
+    {
       "title": "Primitives/TitleSubtitle",
       "name": "TitleSubtitle",
       "source": "src/components/primitives/TitleSubtitle.tsx",
@@ -720,6 +926,7 @@
         "Renders Both Parts"
       ],
       "consumers": [
+        "src/components/home/AudiobookEstimatePanel.tsx",
         "src/components/home/ImportReview.tsx",
         "src/components/manuscript/ChapterNav.tsx",
         "src/components/manuscript/ReaderCard.tsx"
@@ -734,6 +941,7 @@
         "Information",
         "Error Message",
         "Queue",
+        "With Action",
         "Long Message",
         "Live Regions",
         "Dismiss Removes One"
@@ -742,7 +950,11 @@
         "src/App.tsx",
         "src/components/assets/LocalAssetRow.tsx",
         "src/components/assets/LocalAssets.tsx",
+        "src/components/credits/CreditsSetupBanner.tsx",
+        "src/components/credits/CreditsSetupDialog.tsx",
+        "src/components/editing/EditingCheckPanel.tsx",
         "src/components/home/AudiobookEstimatePanel.tsx",
+        "src/components/home/ChapterTrackPanel.tsx",
         "src/components/home/Home.tsx",
         "src/components/home/RecordingCheck.tsx",
         "src/components/manuscript/Manuscript.tsx",
@@ -759,6 +971,10 @@
         "src/components/storybible/Guide.tsx",
         "src/components/storybible/GuideDetail.tsx",
         "src/components/storybible/usePreviewAudio.ts",
+        "src/components/tracks/ChapterLinksTable.tsx",
+        "src/components/tracks/ChapterSyncPanel.tsx",
+        "src/components/tracks/TracksPage.tsx",
+        "src/components/workspace/WorkspacePage.tsx",
         "src/hooks/useToasts.ts",
         "src/jobEnded.ts"
       ],
@@ -784,6 +1000,21 @@
       "a11yDebt": false
     },
     {
+      "title": "Primitives/Toolbar",
+      "name": "Toolbar",
+      "source": "src/components/primitives/Toolbar.tsx",
+      "stories": [
+        "Booth Command Bar",
+        "With An Icon Only Button",
+        "Vertical Rail",
+        "With A Disabled Command",
+        "Arrows Home And End Move Focus",
+        "Is Named As A Toolbar"
+      ],
+      "consumers": [],
+      "a11yDebt": false
+    },
+    {
       "title": "Primitives/Tooltip",
       "name": "Tooltip",
       "source": "src/components/primitives/Tooltip.tsx",
@@ -806,12 +1037,14 @@
         ".storybook/preview.tsx",
         "src/App.tsx",
         "src/components/home/AudiobookEstimatePanel.tsx",
+        "src/components/home/ChapterTrackButton.tsx",
         "src/components/home/Home.tsx",
         "src/components/home/ImportReview.tsx",
         "src/components/layout/AppShell.tsx",
         "src/components/manuscript/EntitySummary.tsx",
         "src/components/manuscript/Manuscript.tsx",
         "src/components/manuscript/ReaderCard.tsx",
+        "src/components/primitives/CapabilityGate.tsx",
         "src/components/primitives/MeterBar.tsx",
         "src/components/primitives/NavButton.tsx",
         "src/components/primitives/Pill.tsx",

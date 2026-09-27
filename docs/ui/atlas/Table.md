@@ -13,6 +13,7 @@ Storybook title: `Primitives/Table`. Source: `src/components/primitives/Table.ts
 
 ## Used by
 
+- `src/components/delivery/BookChecklistPanel.tsx`
 - `src/components/delivery/DeliveryProfilePanel.tsx`
 - `src/components/delivery/DiagnosticsTables.tsx`
 - `src/components/delivery/FileRulesPanel.tsx`

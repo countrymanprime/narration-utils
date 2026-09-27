@@ -19,6 +19,7 @@ Storybook title: `Primitives/IconButton`. Source: `src/components/primitives/Ico
 
 ## Used by
 
+- `src/components/home/ChapterTrackButton.tsx`
 - `src/components/home/Home.tsx`
 - `src/components/layout/AppShell.tsx`
 - `src/components/manuscript/EntitySummary.tsx`
