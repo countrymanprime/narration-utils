@@ -1,12 +1,15 @@
 import importlib.util
 import io
 import json
+import subprocess
+import sys
 from contextlib import redirect_stderr
 from pathlib import Path
 
 import pytest
 
-COMPARE_PATH = Path(__file__).resolve().parents[1] / "core" / "compare.py"
+CORE = Path(__file__).resolve().parents[1] / "core"
+COMPARE_PATH = CORE / "compare.py"
 SPEC = importlib.util.spec_from_file_location("transcript_compare", COMPARE_PATH)
 compare = importlib.util.module_from_spec(SPEC)
 assert SPEC and SPEC.loader
@@ -177,3 +180,23 @@ def test_an_invented_name_spelled_another_way_is_a_misread_until_it_has_an_equiv
 
     assert before == [("MISREAD", "maelis", "maylis")]
     assert after == []
+
+
+# --- the command line (compare.py --capabilities), sidecar-capabilities-flag PRD Phase 2 -------------------------------------
+# --manuscript is required by argparse for every invocation (see compare.py's module docstring) but unused here.
+
+
+def test_the_cli_prints_the_capabilities_report_and_exits_0(tmp_path):
+    completed = subprocess.run(
+        [sys.executable, str(COMPARE_PATH), "--capabilities", "--manuscript", str(tmp_path / "unused.json")],
+        capture_output=True,
+        text=True,
+        timeout=60,
+        check=False,
+    )
+
+    assert completed.returncode == 0, completed.stderr
+    report = json.loads(completed.stdout)
+    assert report["type"] == "capabilities"
+    assert "whisper" in report["asr"]
+    assert report["asr"]["whisper"]["modes"] == ["batch"]

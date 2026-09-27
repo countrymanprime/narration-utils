@@ -905,5 +905,82 @@ class SelfCheckTests(unittest.TestCase):
         self.assertIn("broken", json.dumps(report))
 
 
+class CapabilitiesTests(unittest.TestCase):
+    """`capabilities` (sidecar-capabilities-flag PRD Phase 2) mirrors live_asr.py's --capabilities: every row this
+    process has actually registered in ENGINES (voice engines) and SOURCES (pronunciation), by port then name,
+    registration only - never whether the row actually loads."""
+
+    @staticmethod
+    def _fake_registry(rows):
+        """A registry-shaped stand-in: iterating it gives objects with a `.descriptor`, the only thing
+        capabilities_report() reads from ENGINES/SOURCES."""
+        return [SimpleNamespace(descriptor=row) for row in rows]
+
+    def test_capabilities_report_lists_every_registered_row_by_port_and_name(self):
+        from narration_common.ports.pronunciation import PronunciationDescriptor
+        from narration_common.ports.tts import TtsDescriptor
+
+        engines = self._fake_registry([TtsDescriptor(name="piper", label="Piper", asset_kind="tts")])
+        sources = self._fake_registry(
+            [
+                PronunciationDescriptor("cmu", "CMU dictionary", modes=("pronounce",)),
+                PronunciationDescriptor("espeak", "eSpeak NG", modes=("pronounce",)),
+            ]
+        )
+
+        report = guide.capabilities_report(engines, sources)
+
+        self.assertEqual(
+            report,
+            {
+                "type": "capabilities",
+                "tts": {"piper": {"label": "Piper", "platforms": [], "modes": [], "asset": "tts", "loadable": None}},
+                "pronunciation": {
+                    "cmu": {"label": "CMU dictionary", "platforms": [], "modes": ["pronounce"], "loadable": None},
+                    "espeak": {"label": "eSpeak NG", "platforms": [], "modes": ["pronounce"], "loadable": None},
+                },
+            },
+        )
+
+    def test_capabilities_report_omits_asset_for_a_row_with_no_asset_kind(self):
+        from narration_common.ports.pronunciation import PronunciationDescriptor
+
+        report = guide.capabilities_report([], self._fake_registry([PronunciationDescriptor("cmu", "CMU dictionary", modes=("pronounce",))]))
+
+        self.assertNotIn("asset", report["pronunciation"]["cmu"])
+
+    def test_capabilities_report_never_verifies_loading(self):
+        from narration_common.ports.tts import TtsDescriptor
+
+        report = guide.capabilities_report(self._fake_registry([TtsDescriptor(name="piper", label="Piper")]), [])
+
+        self.assertIsNone(report["tts"]["piper"]["loadable"])
+
+    def test_capabilities_report_only_lists_what_actually_registered(self):
+        # The fault-detection case (PRD Success Metrics): a row an adapter failed to register never reaches ENGINES/
+        # SOURCES, so it is simply absent here too - reading the registry as it stands is the whole mechanism.
+        from narration_common.ports.tts import TtsDescriptor
+
+        report = guide.capabilities_report(self._fake_registry([TtsDescriptor(name="piper", label="Piper")]), [])
+
+        self.assertEqual(set(report["tts"]), {"piper"})
+        self.assertEqual(report["pronunciation"], {})
+
+    def test_capabilities_reflects_the_real_engines_and_sources_registries(self):
+        report = guide.capabilities_report()
+
+        self.assertEqual(set(report["tts"]), {"piper"})
+        self.assertEqual(set(report["pronunciation"]), {"cmu", "espeak"})
+
+    def test_the_command_prints_one_json_report_and_exits_zero(self):
+        out = io.StringIO()
+        with patch.object(sys, "argv", ["manuscript_guide.py", "capabilities"]), patch("sys.stdout", out):
+            guide.main()
+        report = json.loads(out.getvalue())
+        self.assertEqual(report["type"], "capabilities")
+        self.assertIn("piper", report["tts"])
+        self.assertIn("cmu", report["pronunciation"])
+
+
 if __name__ == "__main__":
     unittest.main()

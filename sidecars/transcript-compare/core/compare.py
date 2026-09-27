@@ -36,6 +36,16 @@ Two additive modes write their own tagged lines instead: --find-repeats
 in, COVERAGE/COVERAGE_ITEM/COVERAGE_PARAGRAPH/COVERAGE_REGION lines with JSON
 payloads out; see core/coverage_mode.py for its manifest, words files, output
 and exit codes).
+
+--capabilities prints one JSON object instead of any of the above: every row
+this process has actually registered in ENGINES (batch ASR), e.g.
+{"type": "capabilities", "asr": {"whisper": {"label": "Whisper (faster-whisper)",
+"platforms": [], "modes": ["batch"], "asset": "whisper", "loadable": null}}} -
+registration only, never verified (sidecar-capabilities-flag PRD, ADR 0403).
+--manuscript is still required by argparse (as it is for --coverage and
+--take-divergence too) but unused here; the packaged app's smoke test
+(checkCompareCapabilities) reads this to catch a batch ASR row Go declares
+for this platform that this process never registered.
 """
 
 import argparse
@@ -60,6 +70,7 @@ from narration_common import manuscript as canonical_manuscript
 from narration_common.chapter_names import chapter_display_name
 from narration_common.config import get_default
 from narration_common.logging_utils import log, set_log_file
+from narration_common.ports.asr import ENGINES
 from narration_common.progress import write_progress
 from narration_common.spoken_forms import (
     FILLER_WORDS,
@@ -1902,6 +1913,25 @@ def run(args):
     write_progress(progress_path, "DONE", 100, "Finished")
 
 
+def _capability_row(descriptor) -> dict:
+    """One row of a --capabilities report: a Descriptor's label, platforms and modes, plus its asset kind when it
+    has one (AsrDescriptor only). "loadable" is always null: this reports registration only, never whether the row
+    actually loads (sidecar-capabilities-flag PRD Q2, ADR 0403) - the same shape live_asr.py's --capabilities uses."""
+    row = {"label": descriptor.label, "platforms": list(descriptor.platforms), "modes": list(descriptor.modes), "loadable": None}
+    asset_kind = getattr(descriptor, "asset_kind", "")
+    if asset_kind:
+        row["asset"] = asset_kind
+    return row
+
+
+def capabilities_report(engines=ENGINES) -> dict:
+    """--capabilities: every row this sidecar process has actually registered in ENGINES (batch ASR) by the time this
+    runs. Unlike the Teleprompter and Story Bible sidecars, asr_batch's registration is lazy (only transcribe()
+    imports it), so the --capabilities dispatch branch below imports it itself first. `engines` is overridable so a
+    test can stand in a reduced registry for "an adapter failed to register" without needing a real broken import."""
+    return {"type": "capabilities", "asr": {engine.descriptor.name: _capability_row(engine.descriptor) for engine in engines}}
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--manifest", required=False, help="Path to the pipe-delimited segment manifest")
@@ -1931,6 +1961,12 @@ def main():
         help="Transcribe in fixed-length chunks of this many seconds instead of the whole file at once (0 = whole file, default)",
     )
     ap.add_argument("--parallel-workers", type=int, default=0, help="Max chunk workers to run at once when chunked (0 = auto, based on model size)")
+    ap.add_argument(
+        "--capabilities",
+        action="store_true",
+        help="Print every row this process has registered in ENGINES (batch ASR), by name (one JSON object: "
+        "{type: capabilities, asr}; registration only, not verified), then exit 0",
+    )
     ap.add_argument(
         "--extract-hints",
         action="store_true",
@@ -1978,6 +2014,12 @@ def main():
             set_log_file(open(args.log, "w", encoding="utf-8"))  # noqa: SIM115
         except OSError:
             pass
+
+    if args.capabilities:
+        import asr_batch  # noqa: F401 - a sibling module: registers "whisper" (batch) into ENGINES before this reads it
+
+        print(json.dumps(capabilities_report()))
+        os._exit(0)
 
     if args.take_divergence:
         import take_divergence_mode  # a sibling module: compare.py's own directory is on sys.path, frozen or not
