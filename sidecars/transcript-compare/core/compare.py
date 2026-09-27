@@ -414,9 +414,14 @@ def locate_in_segments(concat_time, segments):
 
 
 def transcribe(audio_array, model_size, language, device="cpu", progress_path=None, hotwords=None, return_info=False, model_dir=None):
-    from faster_whisper import WhisperModel
+    """Transcribes ``audio_array`` with the ASR port's Whisper engine (provider-ports P6: ``asr_batch.FasterWhisperEngine``).
 
-    total_duration = len(audio_array) / SAMPLE_RATE
+    A thin wrapper: it only translates this call's arguments to and from ``BatchRequest``/``BatchResult`` and turns
+    ``progress_path``'s file-based reporting and cancellation into the request's ``progress`` callback. The engine itself
+    (model loading, the transcribe loop) lives in ``asr_batch.py``.
+    """
+    import asr_batch  # a sibling module: compare.py's own directory is on sys.path, frozen or not
+    from narration_common.ports.asr import BatchRequest
 
     # model_dir is a Narration Utils asset-cache directory whose contents were
     # already hash-verified before this process was started (see
@@ -426,39 +431,24 @@ def transcribe(audio_array, model_size, language, device="cpu", progress_path=No
     # path, kept for direct/manual CLI use outside the desktop host.
     if model_dir:
         write_progress(progress_path, "LOAD", 15, f"Loading Whisper model '{model_size}'...")
-        log(f"Loading Whisper model '{model_size}' from the locally verified asset cache...")
     else:
         write_progress(progress_path, "LOAD", 15, f"Loading Whisper model '{model_size}' (first use may download it)...")
-        log(f"Loading Whisper model '{model_size}' on {device} (first run downloads it once)...")
-    compute_type = "int8" if device == "cpu" else "float16"
-    model = WhisperModel(model_dir or model_size, device=device, compute_type=compute_type, local_files_only=bool(model_dir))
 
-    write_progress(progress_path, "TRANSCRIBE", 18, f"Transcribing... 00:00 / {format_time(total_duration)}")
-    if hotwords:
-        log(f"Using vocabulary hints: {hotwords}")
-    log("Transcribing audio (this can take a while for long tracks)...")
-    segments, info = model.transcribe(
-        audio_array,
-        language=language,
-        word_timestamps=True,
-        vad_filter=True,
-        hotwords=hotwords or None,
-    )
-
-    words = []  # list of (word_text, start_seconds, end_seconds)
-    for seg in segments:
+    def on_progress(done_seconds, total_seconds):
         check_cancelled(progress_path)
+        frac = min(1.0, done_seconds / total_seconds) if total_seconds > 0 else 1.0
+        write_progress(progress_path, "TRANSCRIBE", 18 + int(72 * frac), f"Transcribing... {format_time(done_seconds)} / {format_time(total_seconds)}")
 
-        if seg.words:
-            for w in seg.words:
-                words.append((w.word.strip(), w.start, w.end))
+    request = BatchRequest(model=model_size, model_dir=model_dir, language=language, hotwords=hotwords, device=device, progress=on_progress)
+    transcriber = asr_batch.ENGINE.batch(request)
+    try:
+        result = transcriber.transcribe(audio_array, request)
+    finally:
+        transcriber.close()
 
-        frac = min(1.0, seg.end / total_duration) if total_duration > 0 else 1.0
-        write_progress(progress_path, "TRANSCRIBE", 18 + int(72 * frac), f"Transcribing... {format_time(seg.end)} / {format_time(total_duration)}")
-
-    log(f"Detected language: {info.language} (p={info.language_probability:.2f})")
+    words = list(result.words)  # list of (word_text, start_seconds, end_seconds)
     if return_info:
-        return words, info
+        return words, result
     return words
 
 
