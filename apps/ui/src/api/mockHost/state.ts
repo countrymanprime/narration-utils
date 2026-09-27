@@ -167,7 +167,7 @@ export type MockApiSeed = {
   prepMarkup?: PrepMarkupSeed;
   /** Seeds the preview-candidates mock (an outcome or seeded candidates), see `PreviewSeed`. */
   preview?: PreviewSeed;
-  /** Seeds the production plan mock (deadline, contracted amount, milestones), see `ProductionSeed`. */
+  /** Seeds the production mock: a plan (deadline, contracted amount, milestones) and optionally a time log, see `ProductionSeed`. */
   production?: ProductionSeed;
   /** The project's Delivery limits, by key (`true_peak_dbtp_max: '-3'`), set as if saved in Settings (diagnostics PRD Phase 5). */
   deliveryLimits?: Record<string, string>;

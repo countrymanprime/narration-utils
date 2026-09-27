@@ -538,6 +538,7 @@ def read_catalogs(config_dir: Path) -> list[dict]:
         ("spacy-assets.json", "models"),
         ("moonshine-assets.json", "models"),
         ("dictionary-assets.json", "dictionaries"),
+        ("wiktextract-assets.json", "sources"),
         ("encoder-assets.json", "encoders"),
     ):
         path = config_dir / name
