@@ -11,6 +11,7 @@
   - navigation:
     - /children: equal
     - button "Home"
+    - button "Production"
     - button "Manuscript"
     - button "Proofing"
     - button "Story Bible"
