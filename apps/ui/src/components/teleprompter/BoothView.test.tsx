@@ -6,6 +6,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { ApiProvider } from '../../api/ApiContext';
 import { createMockApi } from '../../api/mockApi';
 import { CommandRouter, CommandScope } from '../../input/router';
+import { boothIsActive } from './boothActive';
 import { BoothView } from './BoothView';
 import { initialSession } from './readerModel';
 import type { GuideEntity } from '../../types';
@@ -273,5 +274,15 @@ describe('BoothView speaker rail (booth-mode-and-companion-panel.prd.md Phase 3)
   it('has no speaker section in credits mode (no chapter, so no Story Bible marks)', () => {
     renderBooth({ speakers: undefined });
     expect(screen.queryByRole('region', { name: 'Voices in scene' })).toBeNull();
+  });
+});
+
+describe('BoothView marks itself active for useBoothRecording (booth-mode-and-companion-panel.prd.md Phase 5)', () => {
+  it('is active only while mounted', () => {
+    expect(boothIsActive()).toBe(false);
+    const { unmount } = renderBooth();
+    expect(boothIsActive()).toBe(true);
+    unmount();
+    expect(boothIsActive()).toBe(false);
   });
 });
