@@ -22,6 +22,7 @@ import type { MockMeasureSeed } from '../measureMock';
 import type { MockDeliveryProfileSeed } from '../deliveryProfilesMock';
 import type { MockDiagnosticsSeed } from '../diagnosticsMock';
 import type { EditingSeed } from '../editingMock';
+import type { CleanupActionSeed } from '../cleanupActionMock';
 import type { MockAssetSeed } from '../assetInstallMock';
 import type { MockUpdateSeed } from './update';
 import type { DawMockSeed } from '../dawMock';
@@ -157,6 +158,7 @@ export type MockApiSeed = {
   diagnostics?: MockDiagnosticsSeed;
   /** Seeds the editing-readiness check mock (a refusal, a held-running state, or seeded candidates), see `EditingSeed`. */
   editing?: EditingSeed;
+  cleanupAction?: CleanupActionSeed;
   /** Seeds the preview-candidates mock (an outcome or seeded candidates), see `PreviewSeed`. */
   preview?: PreviewSeed;
   /** The project's Delivery limits, by key (`true_peak_dbtp_max: '-3'`), set as if saved in Settings (diagnostics PRD Phase 5). */

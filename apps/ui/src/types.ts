@@ -31,6 +31,7 @@ export * from './api/contracts/measure';
 export * from './api/contracts/deliveryProfiles';
 export * from './api/contracts/diagnostics';
 export * from './api/contracts/editing';
+export * from './api/contracts/cleanup';
 export * from './api/contracts/workspace';
 export * from './api/contracts/preview';
 export * from './api/contracts/daw';
@@ -67,6 +68,7 @@ import type { MeasureApi } from './api/contracts/measure';
 import type { DeliveryProfilesApi } from './api/contracts/deliveryProfiles';
 import type { DiagnosticsApi } from './api/contracts/diagnostics';
 import type { EditingApi } from './api/contracts/editing';
+import type { CleanupActionApi } from './api/contracts/cleanup';
 import type { WorkspaceApi } from './api/contracts/workspace';
 import type { PreviewApi } from './api/contracts/preview';
 import type { DawCapabilitiesApi } from './api/contracts/daw';
@@ -106,6 +108,7 @@ export interface NarrationApi
     DeliveryProfilesApi,
     DiagnosticsApi,
     EditingApi,
+    CleanupActionApi,
     WorkspaceApi,
     PreviewApi,
     DawCapabilitiesApi,

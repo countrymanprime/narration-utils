@@ -295,6 +295,18 @@ export const homeStates: StateEntry[] = [
   },
   {
     page: 'home',
+    state: 'editing-check-cleanup-confirm',
+    description:
+      'Home, editing check panel: "Trim silence…" (booth-actions-enablement PRD Phase 5, CapabilityGate(\'silence_trim\')) opened over the same two candidates, its ConfirmDialog previewing the trim (?mockEditingCandidates=1&mockEditingSignal=not-met&mockDawExperimentalOn=1)',
+  },
+  {
+    page: 'home',
+    state: 'editing-check-gain-match-confirm',
+    description:
+      "Home, editing check panel: \"Match levels…\" (CapabilityGate('item_gain')) opened, its ConfirmDialog previewing the linked track's one gain candidate (?mockDawExperimentalOn=1)",
+  },
+  {
+    page: 'home',
     state: 'editing-check-stale',
     description:
       'Home, editing check panel: empty space "Can’t tell yet: Check editing again: since the last check an item on this chapter’s track changed." (?mockEditingSignal=stale)',

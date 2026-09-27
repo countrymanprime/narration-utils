@@ -14,6 +14,7 @@ import { settingsGoldens } from './settings';
 import { updateGoldens } from './update';
 import { chapterTracksGoldens } from './chapterTracks';
 import { reaperActionsGoldens } from './reaperActions';
+import { cleanupGoldens } from './cleanup';
 import { reviewGoldens } from './review';
 import { coverageGoldens } from './coverage';
 import { editingGoldens } from './editing';
@@ -37,6 +38,7 @@ const FEATURE_AREAS: Array<Record<string, z.ZodType>> = [
   updateGoldens,
   chapterTracksGoldens,
   reaperActionsGoldens,
+  cleanupGoldens,
   reviewGoldens,
   coverageGoldens,
   editingGoldens,
