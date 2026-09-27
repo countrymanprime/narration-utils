@@ -9,6 +9,8 @@ import (
 
 	"github.com/countrymanprime/narration-utils/shell/internal/bridge"
 	"github.com/countrymanprime/narration-utils/shell/internal/contractfile"
+	"github.com/countrymanprime/narration-utils/shell/internal/dawport"
+	"github.com/countrymanprime/narration-utils/shell/internal/dawport/reaper"
 	"github.com/countrymanprime/narration-utils/shell/internal/renderconfig"
 )
 
@@ -45,7 +47,15 @@ func newTestHostWithRenderConfig(t *testing.T) (*Host, string) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	service := renderconfig.New(renderconfig.Config{SessionDir: session}, client, nil)
+	reaperAdapter, err := reaper.New(client, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	role, ok := reaperAdapter.Role(dawport.CapRenderConfig).(dawport.RenderConfigurer)
+	if !ok {
+		t.Fatal("the REAPER adapter did not return a RenderConfigurer role")
+	}
+	service := renderconfig.New(renderconfig.Config{SessionDir: session}, role, nil)
 	if err := service.Configure(dir); err != nil {
 		t.Fatal(err)
 	}

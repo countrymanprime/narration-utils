@@ -7,7 +7,25 @@ import (
 	"testing"
 
 	"github.com/countrymanprime/narration-utils/shell/internal/bridge"
+	"github.com/countrymanprime/narration-utils/shell/internal/dawport"
+	"github.com/countrymanprime/narration-utils/shell/internal/dawport/reaper"
 )
+
+// renderConfigurerRole wraps client in the REAPER adapter (DAW port PRD P2) and takes its RenderConfigurer
+// role, the way the composition root does (apps/desktop/app.go), so these tests exercise the real bridge round
+// trip through the same port the service now depends on.
+func renderConfigurerRole(t *testing.T, client *bridge.Client) dawport.RenderConfigurer {
+	t.Helper()
+	adapter, err := reaper.New(client, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	role, ok := adapter.Role(dawport.CapRenderConfig).(dawport.RenderConfigurer)
+	if !ok {
+		t.Fatal("the REAPER adapter did not return a RenderConfigurer role")
+	}
+	return role
+}
 
 func testService(t *testing.T) (*Service, string) {
 	t.Helper()
@@ -16,7 +34,7 @@ func testService(t *testing.T) (*Service, string) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	return New(Config{SessionDir: session}, client, nil), session
+	return New(Config{SessionDir: session}, renderConfigurerRole(t, client), nil), session
 }
 
 func firstCommand(t *testing.T, session string) string {
@@ -176,7 +194,7 @@ func TestDrainSharesTheBridgeWithAnotherConsumerWithoutLosingOrStealingEvents(t 
 	}
 	runID := service.Snapshot()["runId"].(string)
 	var others []string
-	service.bridge.Subscribe(bridge.Subscription{
+	service.role.Subscribe(bridge.Subscription{
 		Tags:   []string{"COMPARE_*"},
 		Owns:   func(id string) bool { return id == "compare-1" },
 		Handle: func(event bridge.Event) { others = append(others, event.Tag+"|"+event.RunID) },
