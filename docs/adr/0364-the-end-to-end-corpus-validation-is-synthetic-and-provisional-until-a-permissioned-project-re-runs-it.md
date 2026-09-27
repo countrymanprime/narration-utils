@@ -1,4 +1,4 @@
-# 0363. The end-to-end stage-recommendation corpus validation is synthetic, and provisional until a permissioned project re-runs it
+# 0364. The end-to-end stage-recommendation corpus validation is synthetic, and provisional until a permissioned project re-runs it
 
 **Status:** Proposed
 **Date:** 2026-09-27
