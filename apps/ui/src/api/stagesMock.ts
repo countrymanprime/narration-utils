@@ -1,4 +1,5 @@
-// The browser mock's chapter stage recommendations (docs/prds/chapter-stage-recommendations.prd.md Phase 4). It answers what
+// The browser mock's chapter stage recommendations (chapter-stage-recommendations.prd.md Phase 4, deleted; see
+// docs/architecture/stage-recommendations.md). It answers what
 // the host answers with only the recording signal wired: a chapter in recording is judged by its recording check (from its
 // recordedFraction unless seeded: all read is met, part read is not met, never checked is unknown), a chapter in editing or
 // proofing has no required signal yet, and a chapter not started or finalized is not evaluated. Confirm, Dismiss and Revert act

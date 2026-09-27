@@ -85,7 +85,7 @@ func init() {
 	Encoders.Register(port.Entry[Encoder]{
 		Name: FFmpegName,
 		// Windows only: the catalogued build is a Windows executable (ADR 0342); the PRD is Windows-first.
-		Descriptor: port.Descriptor{Label: "FFmpeg (LAME MP3)", Platforms: []string{"windows"}, Modes: []string{"mp3"}},
+		Descriptor: port.Descriptor{Label: "FFmpeg (LAME MP3, AAC/M4B)", Platforms: []string{"windows"}, Modes: []string{"mp3", "m4b"}},
 		New: func() Encoder {
 			ffmpegRow.mu.RLock()
 			defer ffmpegRow.mu.RUnlock()
@@ -98,13 +98,23 @@ func init() {
 	})
 }
 
-// Encode writes wav as a CBR MP3 at dst. It refuses a format other than mp3, a dst that is the WAV itself, a dst where a file
-// already is, and a spec no MPEG-1 Layer III file can have. A spec that leaves the sample rate open keeps the WAV's when an MP3 can
-// have it (32, 44.1, 48 kHz) and resamples to 44.1 kHz otherwise. Spec.Progress, when set, hears how much of the audio is encoded.
+// Encode writes wav to dst in spec.Format ("mp3", ADR 0342; or "m4b", render-encode-master Phase 2), refusing a dst that is the
+// WAV itself, a dst where a file already is, and a format neither row can write.
 func (f *FFmpeg) Encode(ctx context.Context, wav, dst string, spec Spec) error {
-	if spec.Format != "mp3" {
+	switch spec.Format {
+	case "mp3":
+		return f.encodeMP3(ctx, wav, dst, spec)
+	case "m4b":
+		return f.encodeM4B(ctx, wav, dst, spec)
+	default:
 		return FormatNotSupported("encoder", FFmpegName, spec.Format)
 	}
+}
+
+// encodeMP3 writes wav as a CBR MP3 at dst: a spec no MPEG-1 Layer III file can have is refused before FFmpeg runs, and a spec
+// that leaves the sample rate open keeps the WAV's when an MP3 can have it (32, 44.1, 48 kHz) and resamples to 44.1 kHz
+// otherwise. Spec.Progress, when set, hears how much of the audio is encoded.
+func (f *FFmpeg) encodeMP3(ctx context.Context, wav, dst string, spec Spec) error {
 	if err := ctx.Err(); err != nil {
 		return err
 	}
@@ -163,6 +173,87 @@ func (f *FFmpeg) Encode(ctx context.Context, wav, dst string, spec Spec) error {
 		return fmt.Errorf("FFmpeg stopped with exit code %d: %s", code, strings.TrimSpace(child.StderrTail()))
 	}
 	if err := checkMP3(ctx, partial, bitrate, spec); err != nil {
+		return err
+	}
+	if _, err := os.Lstat(dst); err == nil {
+		return ErrDestinationExists
+	}
+	if err := os.Rename(partial, dst); err != nil {
+		return err
+	}
+	keep = true
+	if spec.Progress != nil {
+		spec.Progress(length, length)
+	}
+	return nil
+}
+
+// encodeM4B writes wav as AAC in an M4B (an "ipod"-muxed MP4) at dst, embedding spec.Chapters (m4b.go) when any are given. It
+// follows encodeMP3's own chain of custody: FFmpeg writes a dot-named partial beside dst, checkM4B reads its chapters back
+// before it is kept, and a failure, timeout or cancel leaves nothing at dst.
+func (f *FFmpeg) encodeM4B(ctx context.Context, wav, dst string, spec Spec) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+	bitrate, err := m4bSpec(&spec)
+	if err != nil {
+		return err
+	}
+	if err := distinct(wav, dst); err != nil {
+		return err
+	}
+	if wav, err = filepath.Abs(wav); err != nil {
+		return err
+	}
+	if dst, err = filepath.Abs(dst); err != nil {
+		return err
+	}
+	length, _, err := readWAV(wav)
+	if err != nil {
+		return err
+	}
+	executable, err := f.locate()
+	if err != nil {
+		return err
+	}
+
+	var metadata string
+	if len(spec.Chapters) > 0 {
+		if metadata, err = writeMetadataFile(dst, spec.Chapters); err != nil {
+			return err
+		}
+		defer func() { _ = os.Remove(metadata) }()
+	}
+
+	partial, err := reservePartial(dst)
+	if err != nil {
+		return err
+	}
+	keep := false
+	defer func() {
+		if !keep {
+			_ = os.Remove(partial)
+		}
+	}()
+
+	encodeCtx, cancel := context.WithTimeout(ctx, encodeTimeout(length))
+	defer cancel()
+	progress := progressReader(spec.Progress, length)
+	child, err := f.supervise().StartStream(encodeCtx, progress, executable, m4bArgs(wav, metadata, partial, bitrate, spec)...)
+	if err != nil {
+		return fmt.Errorf("could not start FFmpeg: %w", err)
+	}
+	<-child.Done()
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+	if err := encodeCtx.Err(); err != nil {
+		return fmt.Errorf("FFmpeg did not finish within %s: %w", encodeTimeout(length), err)
+	}
+	if code, _ := child.ExitCode(); code != 0 {
+		return fmt.Errorf("FFmpeg stopped with exit code %d: %s", code, strings.TrimSpace(child.StderrTail()))
+	}
+	if err := checkM4B(partial, spec.Chapters); err != nil {
 		return err
 	}
 	if _, err := os.Lstat(dst); err == nil {

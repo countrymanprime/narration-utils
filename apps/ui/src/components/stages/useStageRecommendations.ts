@@ -9,7 +9,8 @@ import { stageLabel } from './stageText';
 export type StageDecision = 'confirm' | 'dismiss' | 'revert';
 
 /**
- * The chapters' stage suggestions as last read (docs/prds/chapter-stage-recommendations.prd.md Phase 5). `loading` keeps the rows of the
+ * The chapters' stage suggestions as last read (chapter-stage-recommendations.prd.md Phase 5, deleted; see
+ * docs/architecture/stage-recommendations.md). `loading` keeps the rows of the
  * previous read on screen while a new one runs; `error` has none, so every row says it could not check rather than going quiet.
  */
 export type StagesState = {

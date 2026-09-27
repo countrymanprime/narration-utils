@@ -15,7 +15,7 @@
       "support": {
         "available": false,
         "level": "unsupported",
-        "message": "Moonshine is not available on macOS.",
+        "message": "Moonshine is not available on Linux.",
         "reason": "unsupported"
       }
     },
@@ -37,18 +37,6 @@
     }
   },
   "capture": {
-    "coreaudio": {
-      "default": true,
-      "label": "Core Audio",
-      "modes": [],
-      "platforms": [
-        "darwin"
-      ],
-      "support": {
-        "available": true,
-        "level": "supported"
-      }
-    },
     "dshow": {
       "default": false,
       "label": "DirectShow",
@@ -59,12 +47,12 @@
       "support": {
         "available": false,
         "level": "unsupported",
-        "message": "DirectShow is not available on macOS.",
+        "message": "DirectShow is not available on Linux.",
         "reason": "unsupported"
       }
     }
   },
-  "platform": "darwin",
+  "platform": "linux",
   "pronunciation": {
     "cmu": {
       "default": true,

@@ -48,7 +48,7 @@ import (
 //   - the asset cache folder can be found and written;
 //   - the REAPER launcher and its scripts are there, with the pointer to this executable.
 //
-// It downloads nothing and opens no window. Do not run it while the app is open: both use the same per-user cache. Point LocalAppData (Windows), XDG_CACHE_HOME (Linux) or HOME (macOS) at an empty folder to
+// It downloads nothing and opens no window. Do not run it while the app is open: both use the same per-user cache. Point LocalAppData (Windows; XDG_CACHE_HOME on a Linux development host) at an empty folder to
 // keep it out of the real per-user cache.
 const smokeFlag = "--smoke"
 

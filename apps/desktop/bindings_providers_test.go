@@ -10,13 +10,13 @@ import (
 )
 
 // TestProviderCapabilitiesGoldenIsCurrent pins providerCapabilitiesPayload for the two platforms that answer differently today:
-// Windows, where every registered provider runs (Moonshine and the dshow capture backend included), and macOS, where Moonshine and
-// dshow are refused. The registry is empty here (a Host built without Startup), so no row reports an installed count.
+// Windows, the only supported platform (docs/adr/0412), where every registered provider runs (Moonshine and the dshow capture backend
+// included), and Linux, the development host, where Moonshine and dshow are refused. The registry is empty here (a Host built without Startup), so no row reports an installed count.
 // UPDATE_CONTRACTS=1 rewrites tests/fixtures/contracts/provider-capabilities-*.json.
 func TestProviderCapabilitiesGoldenIsCurrent(t *testing.T) {
 	for _, c := range []struct{ name, platform string }{
 		{"provider-capabilities-windows", "windows"},
-		{"provider-capabilities-darwin", "darwin"},
+		{"provider-capabilities-linux", "linux"},
 	} {
 		t.Run(c.name, func(t *testing.T) {
 			raw, err := encodeBinding(providerCapabilitiesPayload(c.platform, &assetRegistry{}), nil)
@@ -82,14 +82,14 @@ func TestProviderCapabilitiesBindingReportsThisPlatform(t *testing.T) {
 }
 
 // TestProviderCapabilitiesRefusesAProviderOffItsPlatform: Moonshine and dshow declare Windows only (ADR 0107, captureport), so on
-// macOS each answers unsupported with a whole sentence, while Whisper, Piper and both pronunciation sources run everywhere.
+// Linux each answers unsupported with a whole sentence, while Whisper, Piper and both pronunciation sources run everywhere.
 func TestProviderCapabilitiesRefusesAProviderOffItsPlatform(t *testing.T) {
-	raw, _ := encodeBinding(providerCapabilitiesPayload("darwin", &assetRegistry{}), nil)
+	raw, _ := encodeBinding(providerCapabilitiesPayload("linux", &assetRegistry{}), nil)
 	decoded := decodeProviderCapabilities(t, raw)
 	for name, entry := range map[string]providerEntryWire{"moonshine": decoded.Asr["moonshine"], "dshow": decoded.Capture["dshow"]} {
 		s := entry.Support
 		if s.Available || s.Level != "unsupported" || s.Reason != "unsupported" || s.Message == "" {
-			t.Errorf("%s on darwin = %+v, want unavailable/unsupported with a message", name, s)
+			t.Errorf("%s on linux = %+v, want unavailable/unsupported with a message", name, s)
 		}
 	}
 	for name, entry := range map[string]providerEntryWire{
@@ -97,7 +97,7 @@ func TestProviderCapabilitiesRefusesAProviderOffItsPlatform(t *testing.T) {
 	} {
 		s := entry.Support
 		if !s.Available || s.Level != "supported" || s.Reason != "" || s.Message != "" {
-			t.Errorf("%s on darwin = %+v, want available/supported with no reason", name, s)
+			t.Errorf("%s on linux = %+v, want available/supported with no reason", name, s)
 		}
 	}
 }
