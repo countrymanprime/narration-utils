@@ -13,7 +13,7 @@ import (
 // This file is Phase 3 of docs/prds/production-tracking.prd.md: the book's
 // deadline, contracted amount and milestones (Q3 A, Q5 A), kept on the
 // project manifest so they survive a manuscript replace, and checked here
-// before they are saved. Dates are calendar dates, "YYYY-MM-DD" (ADR 0321).
+// before they are saved. Dates are calendar dates, "YYYY-MM-DD" (ADR 0323).
 
 const (
 	dateLayout = "2006-01-02"
