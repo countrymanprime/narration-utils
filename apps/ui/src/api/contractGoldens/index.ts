@@ -25,6 +25,7 @@ import { deliveryGoldens } from './delivery';
 import { dawGoldens } from './daw';
 import { providerGoldens } from './providers';
 import { productionGoldens } from './production';
+import { pronunciationOnlineGoldens } from './pronunciationOnline';
 
 const FEATURE_AREAS: Array<Record<string, z.ZodType>> = [
   systemGoldens,
@@ -50,6 +51,7 @@ const FEATURE_AREAS: Array<Record<string, z.ZodType>> = [
   dawGoldens,
   providerGoldens,
   productionGoldens,
+  pronunciationOnlineGoldens,
 ];
 
 /** Which schema owns each golden file, over every feature area. */
