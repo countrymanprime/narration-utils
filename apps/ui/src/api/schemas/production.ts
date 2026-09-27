@@ -31,7 +31,7 @@ export const productionPlanSchema = z.object({
 
 const stageSchema = z.enum(['not_started', 'recording', 'editing', 'proofing', 'finalized']);
 
-export const productionSessionSchema = z.object({
+const productionSessionSchema = z.object({
   id: z.string(),
   chapterId: z.string(),
   stage: stageSchema,
