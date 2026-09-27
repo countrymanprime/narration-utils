@@ -4,7 +4,7 @@
 
 **Not covered here (sibling PRDs drafted the same day):** what the Actual recorded column shows (`actual-recorded-column.prd.md`); linking the chapters to tracks automatically, the consent prompt when REAPER is linked, normalised title matching and retiring the manual per-row Check (`daw-chapter-track-auto-sync.prd.md`); the recording check as a whole-chapter summary (`recording-check-summary.prd.md`); credits rows ([Credits in the Chapter Table](credits-in-chapter-table.prd.md)); the stage check line above the table ([Home Stage Check Line](home-stage-check-line.prd.md)). The sibling file names may differ slightly; check `docs/prds/` before planning a phase.
 
-**Status (2026-09-25):** in delivery (lane train, [implementation plan](implementation-plan.md) section 8). The open questions take the owner's answers (D31, D32) and otherwise the recommendations (D39; Decisions Log). Phases 1 and 2 are built; Phase 3's host half is built and its UI (the confirm and the Removed list) is lane C's stream C3.
+**Status (2026-09-25):** in delivery (lane train, [implementation plan](implementation-plan.md) section 8). The open questions take the owner's answers (D31, D32) and otherwise the recommendations (D39; Decisions Log). Phases 1, 2 and 4 are built; Phase 3's host half is built and its UI (the confirm and the Removed list) is lane C's stream C3.
 
 ## Problem Statement
 
@@ -261,7 +261,7 @@ Next, they notice "PART TWO" (212 words) listed as a chapter. They open its slid
 | 1 | Host: atomic relink and the links read | `SetChapter`/`ClearChapter`, `ChapterTrackSet`/`ChapterTrackUnlink`/`ChapterTrackLinks`, schemas, goldens, wireContracts rows, mock, `hostAPIVersion` bump; Tracks page Change and Clear moved onto them | complete | - | TL3 | - |
 | 2 | Track button and slide-over | Per-row `ChapterTrackButton` with the seven states, `ChapterTrackPanel` with facts, candidates, link, relink, unlink and the displaced-chapter warning; visual states, aria snapshot, guide | complete (#534) | 3 (after 1) | 1; TL1, TL4, TL7, TL8, TL10 | - |
 | 3 | Remove from recording and restore | `ManuscriptSetChapterKind`, links cleared, Removed list with Restore, confirm dialog; consumer tests; ADR | host complete: `ManuscriptSetChapterKind` (`manuscript.Service.SetChapterKind`, links cleared by `ClearChapter`), `removedFromRecording`/`kindChangedAt` on the chapter list, golden `manuscript-chapter-kind-removed.json`, `chapterKindResultSchema`, the mock and `?mockRemoved=1`, `hostAPIVersion` 51 ([ADR 0207](../adr/0207-a-chapters-kind-can-change-after-import-and-removing-it-from-recording-is-a-reclassification-never-a-delete.md)). UI pending: the confirm, the Removed list, visual and aria states, guides (lane C, C3) | 2 (host part) | 1 for the link clear; TL2, TL5, TL6 | - |
-| 4 | Play and select in REAPER (Could) | Playback in the slide-over; optional "Select in REAPER" bridge command with harness tests first | pending | - | 2 | - |
+| 4 | Play and select in REAPER (Could) | Playback in the slide-over; optional "Select in REAPER" bridge command with harness tests first | complete (REAPER verification pending, D38) | - | 2 | - |
 
 ### Phase Details
 
@@ -302,6 +302,14 @@ Next, they notice "PART TWO" (212 words) listed as a chapter. They open its slid
 
 **Phase 4 - Play and select in REAPER (Could).**
 - **Scope:** playback reuses `useTrackPlayback`. "Select in REAPER" follows the bridge rules in the README's Lua dispatcher note. Owner-only REAPER steps are marked pending.
+- **Delivered:**
+  - Playback: `ChapterTrackPanel` plays the linked track's recorded audio (`useTrackPlayback`, ADR 0012's `/media` route) once it resolves in the panel's own `tracksList()` read - Play/Pause and skip 30s back/forward, with the current position and duration. No new host binding; UI-only, the same player the Tracks page uses.
+  - "Select in REAPER": a new bridge command, `select_track` (`integrations/reaper/narration_track_select.lua`), harness tests first (`integrations/reaper/tests/track_select_test.lua`, one mutation check) per ADR 0066/0067. It deselects every other track and selects the named one (`SetOnlyTrackSelected`), opens no undo block, and reports `TRACK_STALE` for a GUID that no longer resolves.
+  - Host: `bridge.Actions.SelectTrack`, a new DAW port capability (`track_select`/`TrackSelector`, `dawport/reaper` and the `p5aAdapter`), the `TrackSelectInReaper(trackGuid)` binding (`apps/desktop/chaptertrackselect.go`), `hostAPIVersion` 67. Experimental until the owner's REAPER verification pass (D38): refused unless "Experimental REAPER actions" is on.
+  - Wire contract: `TrackSelectResult` (`apps/ui/src/api/{contracts,schemas}/chapterTrackMap.ts`), the golden `tests/fixtures/contracts/track-select-results.json`, a `wireContracts.test.ts` row, and a mock (`?mockReaperState=`) that reuses the same seed the read-aloud actions already use for "REAPER not there"/"experimental switch off", so the two connection concepts stay consistent in mock mode.
+  - `docs/architecture/{daw-integration,reaper-bridge,threat-model}.md` and `SECURITY.md` updated (a new capability row, the command's own subsection, threat-model row 5n).
+- **Not verified (D38, owner + Claude on a copy of a test project with an isolated `-cfgfile`):** whether `SetOnlyTrackSelected` behaves in a real REAPER as the fake models it (the fake is new for this command); the harness proves the bridge's logic, not REAPER's own behaviour. Tracked with the rest of the S28-style experimental commands until the verification pass runs.
+- **Success signal:** the harness (`pnpm exec nx run reaper:test`, mutations included), `pnpm check`'s wire-contract and Vitest suites, and the visual states of the existing `home/chapter-track-panel-*` rows (re-captured; no new row needed, since Phase 4 adds controls to the panel Phase 2 already covers, not a new state).
 
 ### Parallelism Notes
 

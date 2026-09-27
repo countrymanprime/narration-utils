@@ -38,6 +38,7 @@ export type DawCapabilityKey =
   | 'heartbeat'
   | 'project_read'
   | 'track_state'
+  | 'track_select'
   | 'record'
   | 'punch'
   | 'regions'
@@ -71,6 +72,7 @@ export const DAW_CAPABILITIES: ReadonlyArray<{ key: DawCapabilityKey; label: str
   { key: 'heartbeat', label: 'Connection status' },
   { key: 'project_read', label: 'Read the saved project' },
   { key: 'track_state', label: 'Read track arm state' },
+  { key: 'track_select', label: 'Select a track in REAPER' },
   { key: 'record', label: 'Record' },
   { key: 'punch', label: 'Punch and roll' },
   { key: 'regions', label: 'Chapter regions' },

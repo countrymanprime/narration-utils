@@ -32,6 +32,12 @@ Selecting it opens the chapter's track panel, with what the saved project knows 
 column, and every chapter's Track button, is absent when no REAPER project is linked yet; the table
 says so in its place, with a link to [Tracks](tracks.md) if more than one project file was found.
 
+When the panel knows the chapter's track, it can play that track's recorded audio right there -
+Play/Pause and skip 30 seconds back or forward, the same player the [Tracks](tracks.md) page uses -
+and **Select in REAPER** brings the track into view in REAPER itself. Selecting is an experimental
+REAPER action ([Settings](settings.md)) and changes nothing else: no undo point, and REAPER's own
+selection is all it touches.
+
 The track panel's **Remove from recording…** takes a mis-imported heading (a part title, an
 epigraph, or front matter that was read in as a chapter) out of the table, the totals, the reader
 and the teleprompter. Choose **Not a chapter** to hide it from navigation too, or **Front matter**
