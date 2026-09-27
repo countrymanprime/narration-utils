@@ -18,6 +18,7 @@ const ROWS: Record<MockPort, MockRow[]> = {
   tts: [{ name: 'piper', label: 'Piper', platforms: [], modes: [], assetKind: 'tts' }],
   pronunciation: [
     { name: 'cmu', label: 'CMU dictionary', platforms: [], modes: ['pronounce'] },
+    { name: 'wiktextract', label: 'Wiktionary (via Wiktextract)', platforms: [], modes: ['pronounce'] },
     { name: 'espeak', label: 'eSpeak NG', platforms: [], modes: ['pronounce'] },
   ],
   capture: [{ name: 'dshow', label: 'DirectShow', platforms: ['windows'], modes: [] }],
