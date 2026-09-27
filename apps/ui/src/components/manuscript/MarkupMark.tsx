@@ -5,7 +5,7 @@ import type { PrepMarkupSpan } from '../../types';
 import { Button } from '../primitives/Button';
 import { describeMark, markName, removeMarkLabel } from './markup';
 
-// A script mark on the reader's text (prep-depth.prd.md Phase 5, ADR 0381). Stress is a dotted accent underline under the
+// A script mark on the reader's text (prep-depth.prd.md Phase 5, ADR 0382). Stress is a dotted accent underline under the
 // words, a pause is one slash (a breath) or two (a pause) after them, and a character tag is a small name chip before
 // them, after the concept mock (docs/prds/mockups/prep-depth/02-prep-script-concept.webp). The slash and the chip are CSS
 // generated content, never text in the DOM: the selection offsets (useTextSelection) and every reader of the line's words

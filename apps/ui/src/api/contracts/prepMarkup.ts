@@ -1,4 +1,4 @@
-// The script markup layer (prep-depth.prd.md Phase 5, ADR 0381): stress, pause and character-tag spans the narrator places
+// The script markup layer (prep-depth.prd.md Phase 5, ADR 0382): stress, pause and character-tag spans the narrator places
 // on the reader's text, kept in the project's narration-utils/prep/markup.json (apps/desktop/internal/prepmarkup) and
 // checked against the chapter's current text on every read, so a span over words that changed comes back stale rather
 // than drawn on the wrong ones.

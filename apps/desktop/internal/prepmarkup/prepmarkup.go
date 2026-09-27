@@ -5,7 +5,7 @@
 //
 // The file is narrator data (ADR 0069): it is never cleared by a re-import (a line whose text did not change keeps its
 // marks, and one that did shows them as stale), only by the explicit Clear project data. It is a plain, versioned,
-// chapter-keyed document so a later reader (the booth view) can read it without this package (ADR 0381).
+// chapter-keyed document so a later reader (the booth view) can read it without this package (ADR 0382).
 package prepmarkup
 
 import (

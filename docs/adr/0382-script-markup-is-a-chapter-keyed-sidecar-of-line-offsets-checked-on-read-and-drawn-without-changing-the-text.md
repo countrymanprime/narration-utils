@@ -1,4 +1,4 @@
-# 0381. Script markup is a chapter-keyed sidecar of line offsets, checked on read and drawn without changing the text
+# 0382. Script markup is a chapter-keyed sidecar of line offsets, checked on read and drawn without changing the text
 
 **Status:** Proposed
 **Date:** 2026-09-27

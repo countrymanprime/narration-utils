@@ -38,7 +38,7 @@ especially welcome:
   did not include is in scope.
 - The run log every tool run writes (`logs/run.jsonl`, `logs/runs/*.stderr.jsonl`; [ADR 0251](docs/adr/0251-tool-runs-are-logged-as-json-lines-through-slog-with-a-run-id-and-content-is-never-logged.md)) and the diagnostics bundle Settings can save from it (`SystemCopyDiagnostics`) or the folder it can open (`SystemOpenLogFolder`): manuscript, audio or transcript text reaching either is in scope, as is the export landing anywhere but the folder the narrator picked in that session's file picker.
 - The script markup the narrator places in the reader (`narration-utils/prep/markup.json` in the project,
-  [ADR 0381](docs/adr/0381-script-markup-is-a-chapter-keyed-sidecar-of-line-offsets-checked-on-read-and-drawn-without-changing-the-text.md)):
+  [ADR 0382](docs/adr/0382-script-markup-is-a-chapter-keyed-sidecar-of-line-offsets-checked-on-read-and-drawn-without-changing-the-text.md)):
   a file that makes the app run, open, fetch or write anything else, that puts markup into the page, or that is drawn without
   being checked against the current text is in scope; one that only changes which prep marks the narrator sees is the
   documented residual risk (threat model row 6n).

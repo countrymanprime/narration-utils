@@ -5,7 +5,7 @@ import (
 	"github.com/countrymanprime/narration-utils/shell/internal/prepmarkup"
 )
 
-// The script markup layer (docs/prds/prep-depth.prd.md Phase 5, ADR 0381): stress, pause and character-tag spans the
+// The script markup layer (docs/prds/prep-depth.prd.md Phase 5, ADR 0382): stress, pause and character-tag spans the
 // narrator places on the reader's text, kept in <project>/narration-utils/prep/markup.json and checked against the
 // current text on every read, so a span over words that changed is reported stale rather than drawn on the wrong ones.
 
