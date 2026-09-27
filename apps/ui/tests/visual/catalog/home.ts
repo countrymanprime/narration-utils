@@ -209,6 +209,18 @@ export const homeStates: StateEntry[] = [
     state: 'recording-check-model-required',
     description: 'Home, a recording check that needs the Whisper model first (?mockAssets=missing): the first-use download question, never a silent download',
   },
+  {
+    page: 'home',
+    state: 'recording-check-cascade',
+    description:
+      'Home, a recording check result from the model cascade (?mockCoverage=cascade, recording-check-model-cascade PRD Phase 5): the summary names both models and the re-checked passage, and each pickup it confirmed missing says so (MC5)',
+  },
+  {
+    page: 'home',
+    state: 'recording-check-recheck-model-required',
+    description:
+      'Home, a recording check whose re-check model needs downloading first (?mockCoverage=recheck-required, Phase 5, MC4): the same first-use question as the first-pass model, with "Check with tiny only" beside the download',
+  },
   // Stage suggestions (docs/prds/chapter-stage-recommendations.prd.md Phase 5, ADR 0160 and 0161), on `?mockStages=mixed`: Chapter 4 read in
   // full (suggested), Chapter 5 with no track linked (can't tell), Chapter 6 short (not ready), Chapter 7 confirmed into Editing and since
   // found short (evidence changed), Chapter 8 confirmed on evidence that still holds.

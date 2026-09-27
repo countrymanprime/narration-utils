@@ -220,14 +220,17 @@ const mockRegionsCapabilityOn = mockParams.has('mockRegionsCapabilityOn');
 // so "Punch from here"'s enabled state - the confirm dialog in the read-aloud rail, the pickup list's own button - can
 // be captured without also exercising the Settings toggle.
 const mockPunchCapabilityOn = mockParams.has('mockPunchCapabilityOn');
-// `?mockCoverage=hold|stale|pickups` holds a started recording check at its last transcribing step (so the running
-// dialog can be seen), makes Chapter 4's stored check read stale (an item was trimmed since), or gives Chapter 4 two
-// interior pickups (a skip and a short read) plus a small tail instead of its default tail-only split, and seeds a
-// take-review pickup and two open project-wide pickups for the same chapter, so the recording check summary's
-// headline, "Recorded to" line and all three Pickups lines can be seen together (recording-check-summary.prd.md
-// Phases 1 and 3). `?mockCoverageRefusal=<reason>` answers every start with that refusal
-// (docs/utilities/recording-coverage.md, ADR 0130).
-const mockCoverage = (['hold', 'stale', 'pickups'] as const).find((seed) => seed === mockParams.get('mockCoverage'));
+// `?mockCoverage=hold|stale|pickups|cascade|recheck-required` holds a started recording check at its last
+// transcribing step (so the running dialog can be seen), makes Chapter 4's stored check read stale (an item was
+// trimmed since), or gives Chapter 4 two interior pickups (a skip and a short read) plus a small tail instead of its
+// default tail-only split, and seeds a take-review pickup and two open project-wide pickups for the same chapter, so
+// the recording check summary's headline, "Recorded to" line and all three Pickups lines can be seen together
+// (recording-check-summary.prd.md Phases 1 and 3). `cascade` gives Chapter 4's result the model cascade's own
+// pickups and recheck label (recording-check-model-cascade PRD Phase 5, MC5); `recheck-required` answers the next
+// start with the re-check model's own missing-model gate, offering "Check with tiny only" beside the download (MC4).
+// `?mockCoverageRefusal=<reason>` answers every start with that refusal (docs/utilities/recording-coverage.md, ADR
+// 0130).
+const mockCoverage = (['hold', 'stale', 'pickups', 'cascade', 'recheck-required'] as const).find((seed) => seed === mockParams.get('mockCoverage'));
 const mockCoverageRefusal = COVERAGE_REFUSAL_REASONS.find((reason) => reason === mockParams.get('mockCoverageRefusal'));
 // `?mockStages=mixed|error` puts the Home breakdown's stage suggestions (chapter-stage-recommendations.prd.md Phase 5) in every state at
 // once, or makes reading them fail. `mixed`: Chapter 4 read in full (suggested: Editing), Chapter 5 with no track linked (can't tell),
@@ -395,7 +398,9 @@ const mockInitial = {
           ...(mockStages === 'mixed' ? { measured: MOCK_STAGES_MEASURED } : {}),
           ...(mockCoverage === 'hold' ? { hold: true } : {}),
           ...(mockCoverage === 'stale' ? { stale: [WIRE_CHAPTERS[3].id] } : {}),
-          ...(mockCoverage === 'pickups' ? { pickups: [WIRE_CHAPTERS[3].id] } : {}),
+          ...(mockCoverage === 'pickups' || mockCoverage === 'cascade' ? { pickups: [WIRE_CHAPTERS[3].id] } : {}),
+          ...(mockCoverage === 'cascade' ? { cascade: [WIRE_CHAPTERS[3].id] } : {}),
+          ...(mockCoverage === 'recheck-required' ? { recheckAssetRequired: true } : {}),
           ...(mockCoverageRefusal ? { refusal: mockCoverageRefusal } : {}),
         },
       }
