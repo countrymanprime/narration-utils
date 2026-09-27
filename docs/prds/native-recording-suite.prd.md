@@ -115,7 +115,7 @@ We believe a narrator who currently must install and learn REAPER (or plans to a
 | # | Phase | Description | Status | Parallel | Depends | PRP Plan |
 | --- | --- | --- | --- | --- | --- | --- |
 | 1 | Capture engine spike | Answer Q3/Q7: prototype WASAPI capture (CGo/sidecar), measure round-trip latency, soak-test for dropouts; no shipped UI | pending (owner answers Q1-Q3 first) | - | Owner answers to Q1-Q3 | - |
-| 2 | Minimum recorder | Device selection, live metering, record-to-file, playback; project-folder storage | pending | - | 1 | - |
+| 2 | Minimum recorder | Device selection, live metering, record-to-file, playback; project-folder storage. **D79:** no recording page of its own: the recorder is the Booth (Record) with the engine chip on "Built-in recorder" ([stage navigation](stage-navigation-and-page-replacement.prd.md)), so it adds no nav item. | pending | - | 1 | - |
 | 3 | Take contract and identity | DAW-agnostic take/recording-session contract; line-identity scheme for native takes; downstream analyzers verified against both sources | pending | - | 2 | - |
 | 4 | Take review integration | Native takes appear in the same take-review UI as REAPER takes; keeper marking, undo | pending | - | 3 | - |
 | 5 | Threat model and hardening | New row(s) in `threat-model.md` for mic access and audio-file writing; security review before wider use | pending | Can start once Phase 2's architecture is fixed | 2 | - |

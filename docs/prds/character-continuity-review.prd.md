@@ -174,12 +174,12 @@ Every phase follows the `CLAUDE.md` workflow: plan (find or open the tracking is
 | 3 | Region listing and reference approvals | Go: list project regions with identity, approve and revoke per character, sidecar with snapshot and metadata, no analysis | complete | 1, 2, 4 | RD-1 | none | - |
 | 4 | Feature extraction engine | Range-limited pitch, rate, energy and spectral features with analytic-signal tests, per Q1 outcome | pending | 2, 3 | 1, TR-8 (soft) | none | - |
 | 5 | Baselines, outliers and findings | Baseline from approved references, candidate location via cues and aligned words, outlier rule, chain-difference check, `character_continuity` findings | pending | - | 2, 3, 4, TR-3, RD-1 | none | - |
-| 6 | Character review UI | Bindings, character bible view, region approval, attribution correction, Review character filter, reference-versus-candidate audition, host API bump | pending | - | 5, RD-5, TR-7 (soft) | UI: existing primitives only (predates `studio-ui-primitives.prd.md`) | - |
+| 6 | Character review UI | Bindings, character bible view (in Prep › Story Bible), region approval, attribution correction, a character filter on Review › Proof (the Review page becomes Proof in [stage navigation](stage-navigation-and-page-replacement.prd.md) Phase 5, D79), reference-versus-candidate audition, host API bump | pending | - | 5, RD-5, TR-7 (soft) | UI: existing primitives only (predates `studio-ui-primitives.prd.md`) | - |
 | 7 | Intentional-change handling, privacy controls and close-out | End-to-end dismiss-with-note semantics, remove voice data action, docs, `roadmap.md` and `roadmap.json` together | pending | - | 6 | none | - |
 | 8 | Optional acoustic backend (conditional) | Only if phase 1 adopts Praat or Resemblyzer: catalog entry, license record, first-use gate, packaging, ADR | pending | - | 1, 4 | none | - |
 | 9 | Series storage and cross-project reads (Q10, Q11) | New user-level `series.json` (name, member project paths); reading another project's `references.json` and calibrated baseline read-only; a project's own reference data is never written by another project's session | pending | - | 3, 5 | none | - |
 | 10 | Series-anchored findings (Q12, Q13) | `character_continuity` findings whose baseline reference names its source book and chapter; no new category, severity or wording | pending | 11 | 5, 9 | none | - |
-| 11 | Series voice bible UI | A Series view: characters shared across a series, each with its approved reference clips and which book they came from; per-book drift evidence shown against the series anchor, framed as evidence, never a verdict | pending | 10 | 6, 9, 10 | UI: existing primitives; reuses the reference-versus-candidate audition component from Phase 6 | - |
+| 11 | Series voice bible UI | **D79:** a Series tab of Prep › Story Bible, as mock 06 draws it (Story Bible selected), with no nav entry of its own ([stage navigation](stage-navigation-and-page-replacement.prd.md)). A Series view: characters shared across a series, each with its approved reference clips and which book they came from; per-book drift evidence shown against the series anchor, framed as evidence, never a verdict | pending | 10 | 6, 9, 10 | UI: existing primitives; reuses the reference-versus-candidate audition component from Phase 6 | - |
 
 ### Phase Details
 
@@ -239,7 +239,7 @@ Every phase follows the `CLAUDE.md` workflow: plan (find or open the tracking is
 
 **Phase 11 - Series voice bible UI (extension)**
 - **Goal**: A narrator can see a character's references across every book of a series and audition drift against the series anchor.
-- **Scope**: A Series view listing characters shared across member projects with their approved clips and source book; reuses Phase 6's reference-versus-candidate audition component; per-book drift shown as evidence, mirroring mock 06's own framing ("shown as evidence for the narrator to judge, not as a verdict").
+- **Scope**: A Series tab of the Story Bible (D79: no nav entry; mock 06 shows it under Story Bible) listing characters shared across member projects with their approved clips and source book; reuses Phase 6's reference-versus-candidate audition component; per-book drift shown as evidence, mirroring mock 06's own framing ("shown as evidence for the narrator to judge, not as a verdict").
 - **Success signal**: Visual suite and atlas green with four-viewport PNG review; a series with one member project (the common case before a second book exists) shows an empty, honest "no other books in this series yet" state rather than an error.
 
 ### Parallelism Notes
@@ -260,7 +260,7 @@ Phases 1, 2 and 3 are independent. Phase 4 needs the phase 1 decision but can st
 | 8 | `config/*` catalog, `apps/desktop/internal/assets`, packaging scripts, `pyproject.toml` and `uv.lock` if Python | Release and provisioning work; lockfile churn |
 | 9 | new `apps/desktop/internal/series/*` (or similar), a new `%APPDATA%` file alongside `recent-projects.json`/`credit-templates.json` | Any other PRD adding a per-user `%APPDATA%` file (naming, not code, collision) |
 | 10 | `apps/desktop/internal/character/*` (or wherever Phase 5's findings adapter lives) | Phase 5's own findings adapter (additive field, not a rewrite) |
-| 11 | new `apps/ui/src/components/series/*`, nav entry (land alone per the cross-PRD nav-item rule), visual catalog, docs images | Production Tracking PRD's own "cross-project rollup" Open Question Q6 (that PRD explicitly defers to this one, no code collision expected) |
+| 11 | new `apps/ui/src/components/series/*`, a tab in `components/storybible/Guide.tsx` (no nav entry, D79), visual catalog, docs images | Production Tracking PRD's own "cross-project rollup" Open Question Q6 (that PRD explicitly defers to this one, no code collision expected) |
 
 ## Decisions Log
 
