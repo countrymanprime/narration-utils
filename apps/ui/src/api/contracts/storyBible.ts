@@ -59,6 +59,12 @@ export type PronunciationQuery = {
 };
 /** The query list as CSV text (header plus one row per query) and how many rows it has. */
 export type PronunciationQueriesCsv = { csv: string; count: number };
+/**
+ * What re-importing an answered query file did (prep-depth P6): how many rows it applied, and every row it could not
+ * use, each a plain sentence naming the row's line, whether ParseQueriesCSV could not read it or it named an entry or
+ * alias no longer in the Story Bible.
+ */
+export type QueryImportResult = { applied: number; issues: string[] };
 
 export type GuidePreview =
   | { status: 'ready'; audioBase64: string; mimeType: string }
@@ -124,4 +130,11 @@ export interface StoryBibleApi {
   guidePronunciationQueries(): Promise<PronunciationQuery[]>;
   /** The same list as CSV text, for the narrator to save and send to the author. */
   guidePronunciationQueriesCsv(): Promise<PronunciationQueriesCsv>;
+  /**
+   * Applies an author's answered file back onto the Story Bible (prep-depth P6): the one the queries CSV export wrote,
+   * sent out and back, or a hand-edited one. The UI reads whatever file the narrator picks and passes its text; the host
+   * never opens a file of its own. A row it could not read, match to a still-existing entry, or apply is reported by its
+   * line, never dropped.
+   */
+  guidePronunciationImportQueriesCsv(csvText: string): Promise<QueryImportResult>;
 }
