@@ -1,6 +1,7 @@
-// Package production implements Phase 1 of
+// Package production implements Phases 1 and 2 of
 // docs/prds/production-tracking.prd.md: a stage timer the narrator starts and
-// stops by hand, and the project-scoped log of the sessions it records (Q2).
+// stops by hand, the project-scoped log of the sessions it records (Q2), and
+// PFH and the effective rate over that log (pfh.go, ADR 0320).
 // A session exists only because the narrator started and stopped a timer:
 // nothing here starts one from REAPER activity or any other signal (Q1), and
 // nothing here reads or writes a chapter's status - the stage a session is
@@ -96,6 +97,9 @@ type Config struct {
 	// Reporter logs and tells the narrator about a time log that could not be
 	// read; nil only reads and keeps.
 	Reporter *persist.Reporter
+	// Recorded hands PFH each chapter's measured recorded seconds; nil means
+	// nothing is measured, so every PFH is undefined.
+	Recorded Recorded
 }
 
 // Service starts and stops a project's stage timer and reads its log.
