@@ -68,7 +68,7 @@ const MESSAGE_EXPERIMENTAL_OFF = 'Experimental: switched off in Settings.';
 const MESSAGE_AUDACITY_NOT_YET =
   "Audacity support is not available yet. This version can't read audio from Audacity or add labels to it, so open the project from REAPER to compare it.";
 
-export type DawToggle = 'auto' | 'on' | 'off';
+type DawToggle = 'auto' | 'on' | 'off';
 
 export type DawMockSeed = {
   /** Which DAW the launch is talking to; defaults to 'REAPER'. */

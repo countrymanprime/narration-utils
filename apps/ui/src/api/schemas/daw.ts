@@ -2,9 +2,9 @@ import { z } from 'zod';
 import type { DawCapabilities, DawCapabilityLevel, DawCapabilityReason, DawCapabilitySupport, DawKind } from '../contracts/daw';
 import { optionalFromNull } from './base';
 
-export const DAW_KINDS = ['REAPER', 'Audacity', 'none'] as const satisfies readonly DawKind[];
-export const DAW_CAPABILITY_LEVELS = ['unsupported', 'not_yet_available', 'experimental', 'supported'] as const satisfies readonly DawCapabilityLevel[];
-export const DAW_CAPABILITY_REASONS = [
+const DAW_KINDS = ['REAPER', 'Audacity', 'none'] as const satisfies readonly DawKind[];
+const DAW_CAPABILITY_LEVELS = ['unsupported', 'not_yet_available', 'experimental', 'supported'] as const satisfies readonly DawCapabilityLevel[];
+const DAW_CAPABILITY_REASONS = [
   'standalone',
   'not_running',
   'experimental_off',
