@@ -48,4 +48,9 @@ export const appFeedback: Record<string, FeedbackRow> = {
     'The one shared binding behind the pill, Tracks and Settings\' DAW category (PRD project-workspace-and-daw-link.prd.md, W19): a single usePendingAction ref guards all three call sites, not just the one whose button visibly disables. A folder mismatch is its own toast, not an unhandled rejection (W15); the linked file persists in the project manifest, so it survives navigation.',
   ),
 
+  // useCapability.ts (studio-ui-primitives.prd.md Phase 12): one capability's live entry from the DAW port's capability report, for any
+  // caller wrapping a control in CapabilityGate.
+  'src/useCapability.ts::dawCapabilities#1': row('mount', 'file-io', 'na', 'na', 'event', 'silent', 'na', 'exempt', 'Seeds the entry useCapability exposes before the very next daw_capabilities_changed event takes over; a failed seed just leaves the capability unsupported/unavailable a moment longer, the same as an unknown capability.'),
+  'src/useCapability.ts::subscribeDawCapabilities#1': subscription("The DAW port's capability report (DAW port PRD Phase 4): every caller of useCapability for the same or a different capability reads this one subscription."),
+
 };

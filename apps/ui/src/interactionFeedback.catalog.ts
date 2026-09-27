@@ -64,6 +64,8 @@ export const SILENT_CATCHES: Record<string, string> = {
   'src/App.tsx#4': "Cosmetic: the narrator's entity colours. The built-in colours stay if the settings cannot be read, and Settings reports the real error.",
   'src/hooks/useChapterSync.ts#1':
     "Seeds useChapterSync's state before the next chaptersync:state event; a failed seed just leaves the state undefined a moment longer.",
+  'src/useCapability.ts#1':
+    "Seeds useCapability's entry before the next daw_capabilities_changed event; a failed seed just leaves the capability unsupported/unavailable a moment longer, same as an unknown capability key.",
   // Phase 1 (app-navigation-and-zoom-controls.prd.md) added two more bare catches in this file (Back/Forward's own guard,
   // and the nav's original one, now #6), renumbering what follows.
   'src/App.tsx#5': 'Best effort recovery for a popstate the app did not start: a reset that fails leaves the finished results in place, which is harmless.',
