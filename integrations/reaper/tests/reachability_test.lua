@@ -15,13 +15,13 @@ end
 H.test('the first tick sends a heartbeat naming the saved project, unsaved flag 0', function()
   local s = H.session({ project_path = 'C:\\Projects\\Book\\Book.rpp' })
   s:tick()
-  H.eq(only_event(s), { 'PROJECT_STATUS', '', 'C:\\Projects\\Book\\Book.rpp', '0', '0' })
+  H.eq(only_event(s), { 'PROJECT_STATUS', '', 'C:\\Projects\\Book\\Book.rpp', '0', '0', '0', '0.000000' })
 end)
 
 H.test('an unsaved project heartbeats with an empty path and unsaved flag 1', function()
   local s = H.session({ project_path = '' })
   s:tick()
-  H.eq(only_event(s), { 'PROJECT_STATUS', '', '', '1', '0' })
+  H.eq(only_event(s), { 'PROJECT_STATUS', '', '', '1', '0', '0', '0.000000' })
 end)
 
 H.test('the heartbeat run field is always empty, the broadcast shape events.go delivers to every subscriber', function()
@@ -75,5 +75,46 @@ H.test('the heartbeat sends an empty edit counter on a REAPER without the call, 
   local s = H.session({ project_path = 'C:\\Projects\\Book\\Book.rpp' })
   s.fake:remove_api('GetProjectStateChangeCount')
   s:tick()
-  H.eq(only_event(s), { 'PROJECT_STATUS', '', 'C:\\Projects\\Book\\Book.rpp', '0', '' })
+  H.eq(only_event(s), { 'PROJECT_STATUS', '', 'C:\\Projects\\Book\\Book.rpp', '0', '', '0', '0.000000' })
+end)
+
+-- DAW port PRD Phase 9 (ADR 0305): the heartbeat also carries the transport, so the host knows REAPER is playing or recording
+-- without asking (the Heartbeat role reads; ReadAloudReaperState.recording was a click-refreshed read, ADR 0249).
+
+H.test('the heartbeat carries GetPlayState and the play position as its fifth and sixth fields', function()
+  local s = H.session({ project_path = 'C:\\Projects\\Book\\Book.rpp' })
+  s.fake.play_state = 5
+  s.fake.play_position = 12.5
+  s:tick()
+  local event = only_event(s)
+  H.eq(event[6], '5', "playState is GetPlayState's bit field: 1 playing, 2 paused, 4 recording")
+  H.eq(event[7], '12.500000', 'playPosition is GetPlayPosition, in seconds')
+end)
+
+H.test('a transport change sends a heartbeat at once, without waiting out the interval', function()
+  local s = H.session({ project_path = 'C:\\Projects\\Book\\Book.rpp' })
+  s:tick() -- fires (first heartbeat)
+  s:all_events()
+  s.fake.play_state = 5
+  s:tick() -- elapsed 1 < 1.5, but the transport changed
+  local events = s:all_events()
+  H.eq(#events, 1, 'a record start must not wait for the next interval')
+  H.eq(events[1][6], '5')
+  s:tick() -- elapsed 1 since the last one, nothing changed: throttled again
+  H.eq(#s:all_events(), 0, 'an unchanged transport is still throttled')
+  s.fake.play_state = 0
+  s:tick()
+  local stopped = s:all_events()
+  H.eq(#stopped, 1, 'a stop is sent at once too')
+  H.eq(stopped[1][6], '0')
+end)
+
+H.test('a moving play position alone does not break the throttle', function()
+  local s = H.session({ project_path = 'C:\\Projects\\Book\\Book.rpp' })
+  s.fake.play_state = 1
+  s:tick()
+  s:all_events()
+  s.fake.play_position = 3
+  s:tick() -- elapsed 1 < 1.5, the state is unchanged
+  H.eq(#s:all_events(), 0, 'only a change of state, not the moving position, sends early')
 end)
