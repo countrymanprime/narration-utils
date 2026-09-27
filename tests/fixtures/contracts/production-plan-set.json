@@ -1,0 +1,15 @@
+{
+  "contractedAmount": 2400,
+  "deadline": "2026-12-01",
+  "milestones": [
+    {
+      "dueDate": "2026-10-15",
+      "name": "ACX 15-minute checkpoint",
+      "note": "The rights holder approves the first 15 minutes."
+    },
+    {
+      "dueDate": "2026-12-01",
+      "name": "Final delivery"
+    }
+  ]
+}

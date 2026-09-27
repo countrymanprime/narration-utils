@@ -16,6 +16,7 @@ import { buildFlags, type Flag } from './flags';
 import { buildPlaylist } from './playlist';
 import { buildTokenIndex, currentTokenIndex, seekTargetForToken } from './tokenAtTime';
 import { useChapterPlayback } from './useChapterPlayback';
+import { useWorkspaceReaper } from './useWorkspaceReaper';
 import { TransportBar } from './TransportBar';
 import { ScriptView } from './ScriptView';
 import { FlagsPanel } from './FlagsPanel';
@@ -33,8 +34,9 @@ const CHECK_STATE_LABEL: Record<WorkspaceAlignmentResult['state'], string> = {
  * The chapter workspace (edit-and-proof-workspace.prd.md, Phase 2 MVP): a chapter route under Tracks
  * (`/tracks/chapter/:chapterId`, EP1 A) that plays the chapter's recorded audio in the app, honouring each item's
  * played range, follows the script with a karaoke highlight and auto-scroll, shows the check's flags inline, and
- * seeks on a click (EP5). Reviewing a flag, "Go to"/"Loop" in REAPER, the waveform, takes and effects are later
- * phases (3 to 9) - their controls are not shown here rather than shown disabled with nothing behind them.
+ * seeks on a click (EP5), and Go to/Loop in REAPER for the word at the playhead (Phase 3, `useWorkspaceReaper`).
+ * Reviewing a flag in place, the waveform, takes and effects are later phases (4 to 9) - their controls are not
+ * shown here rather than shown disabled with nothing behind them.
  */
 export function WorkspacePage({ notify }: { notify: Notify }) {
   const api = useApi();
@@ -85,6 +87,7 @@ export function WorkspacePage({ notify }: { notify: Notify }) {
   const tokenIndexByItem = useMemo(() => buildTokenIndex(alignment?.tokens ?? []), [alignment?.tokens]);
   const currentToken = currentTokenIndex(tokenIndexByItem, alignment?.items ?? [], player.currentItemGuid, player.currentSourceTime);
   const flags = useMemo(() => buildFlags(alignment?.tokens ?? [], alignment?.extras ?? []), [alignment?.tokens, alignment?.extras]);
+  const reaper = useWorkspaceReaper(chapterId, currentToken, alignment?.tokens ?? []);
 
   const seekToken = useCallback(
     (token: WorkspaceToken) => {
@@ -205,7 +208,7 @@ export function WorkspacePage({ notify }: { notify: Notify }) {
         )}
         {alignment && alignment.state !== 'never' && (
           <>
-            <TransportBar player={player} />
+            <TransportBar player={player} reaper={reaper} />
             <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_18rem]">
               <ScriptView
                 paragraphs={alignment.paragraphs}

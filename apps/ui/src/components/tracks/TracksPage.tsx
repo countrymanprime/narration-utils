@@ -8,6 +8,7 @@ import { Button } from '../primitives/Button';
 import type { Notify } from '../primitives/Toast';
 import { ChapterLinksTable } from './ChapterLinksTable';
 import { ChapterSyncPanel } from './ChapterSyncPanel';
+import { useStageRecommendations } from '../stages/useStageRecommendations';
 import { useTrackPlayback } from './useTrackPlayback';
 import { LinkChaptersDialog } from './LinkChaptersDialog';
 import { PickupsDialog } from './PickupsDialog';
@@ -151,6 +152,13 @@ export function TracksPage({ dawFileLinked, onLinkDawFile, notify }: { dawFileLi
   const [retakeLanesOpen, setRetakeLanesOpen] = useState(false);
   const [chapterTagsOpen, setChapterTagsOpen] = useState(false);
   const [createRegionsOpen, setCreateRegionsOpen] = useState(false);
+  // The hint below (chapter-stage-recommendations.prd.md Phase 9, D5): read-only, so onStatus is a no-op. Shares
+  // chapterSyncRefresh with the Chapter links table below, since a Link or a Change there is exactly what would
+  // resolve an unmapped_track/unconfirmed_mapping cause.
+  const stages = useStageRecommendations({ refreshKey: String(chapterSyncRefresh), notify, onStatus: () => {} });
+  const unmappedCount = Array.from(stages.state.byChapter.values()).filter(
+    (chapter) => chapter.causes.includes('unmapped_track') || chapter.causes.includes('unconfirmed_mapping'),
+  ).length;
 
   useEffect(() => {
     let active = true;
@@ -281,6 +289,13 @@ export function TracksPage({ dawFileLinked, onLinkDawFile, notify }: { dawFileLi
             ))}
           </ul>
         </>
+      )}
+      {project && unmappedCount > 0 && (
+        <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
+          {unmappedCount === 1
+            ? 'One chapter can’t get a stage suggestion until its track link is confirmed below.'
+            : `${unmappedCount} chapters can’t get a stage suggestion until their track links are confirmed below.`}
+        </p>
       )}
       {project && <ChapterLinksTable tracks={project.tracks} refreshKey={chapterSyncRefresh} notify={notify} />}
     </div>

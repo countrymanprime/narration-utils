@@ -6,6 +6,8 @@ import (
 
 	"github.com/countrymanprime/narration-utils/shell/internal/assets"
 	"github.com/countrymanprime/narration-utils/shell/internal/dictionary"
+	"github.com/countrymanprime/narration-utils/shell/internal/encodeport"
+	"github.com/countrymanprime/narration-utils/shell/internal/ffmpeg"
 	"github.com/countrymanprime/narration-utils/shell/internal/layout"
 	"github.com/countrymanprime/narration-utils/shell/internal/moonshine"
 	"github.com/countrymanprime/narration-utils/shell/internal/spacy"
@@ -20,6 +22,7 @@ const (
 	spacyCacheDir      = assets.SpacyDir
 	moonshineCacheDir  = assets.MoonshineDir
 	dictionaryCacheDir = assets.DictionaryDir
+	encoderCacheDir    = assets.EncoderDir
 )
 
 // assetCacheBase is where downloaded assets live: the per-user cache folder, never the temporary one (assets.CacheBase).
@@ -29,7 +32,7 @@ func assetCacheBase() (string, error) { return assets.CacheBase() }
 // It returns what it removed.
 func cleanAssetCaches(base string) []string {
 	var removed []string
-	for _, dir := range []string{ttsCacheDir, whisperCacheDir, spacyCacheDir, moonshineCacheDir, dictionaryCacheDir} {
+	for _, dir := range []string{ttsCacheDir, whisperCacheDir, spacyCacheDir, moonshineCacheDir, dictionaryCacheDir, encoderCacheDir} {
 		removed = append(removed, assets.CleanStale(filepath.Join(base, dir))...)
 	}
 	return removed
@@ -46,7 +49,7 @@ func (h *Host) buildAssetRegistry() *assetRegistry {
 	}
 	// The packaged release resources are only unpacked when a checkout does not have every catalog.
 	packaged := ""
-	for _, catalog := range []string{layout.TTSCatalogFile, layout.WhisperCatalogFile, layout.SpacyCatalogFile, layout.MoonshineCatalogFile, layout.DictionaryCatalogFile} {
+	for _, catalog := range []string{layout.TTSCatalogFile, layout.WhisperCatalogFile, layout.SpacyCatalogFile, layout.MoonshineCatalogFile, layout.DictionaryCatalogFile, layout.EncoderCatalogFile} {
 		if _, statErr := os.Stat(layout.Path(h.config.repoRoot, catalog)); statErr != nil {
 			packaged = h.packagedResources()
 			break
@@ -58,6 +61,11 @@ func (h *Host) buildAssetRegistry() *assetRegistry {
 	liveModels := buildMoonshineManager(h.config, packaged, filepath.Join(base, moonshineCacheDir))
 	registry := newAssetRegistry(base, voices, models, languageModels, liveModels)
 	registry.registerDictionaries(buildDictionaryManager(h.config, packaged, filepath.Join(base, dictionaryCacheDir)))
+	registry.registerEncoders(buildEncoderManager(h.config, packaged, filepath.Join(base, encoderCacheDir)))
+	if registry.encoder != nil {
+		// The registered FFmpeg row finds its executable here and runs under the host's supervisor, so closing the app ends an encode.
+		encodeport.UseFFmpeg(registry.encoder.Path, h.sidecars)
+	}
 	return registry
 }
 
@@ -121,6 +129,19 @@ func buildDictionaryManager(cfg config, packagedRoot, root string) *dictionary.M
 		catalog = filepath.Join(packagedRoot, "config", "dictionary-assets.json")
 	}
 	manager, err := dictionary.New(catalog, root)
+	if err != nil {
+		return nil
+	}
+	return manager
+}
+
+// buildEncoderManager is buildTtsManager for the FFmpeg build catalog the MP3 encoder runs (ADR 0342).
+func buildEncoderManager(cfg config, packagedRoot, root string) *ffmpeg.Manager {
+	catalog := layout.Path(cfg.repoRoot, layout.EncoderCatalogFile)
+	if _, err := os.Stat(catalog); err != nil && packagedRoot != "" {
+		catalog = filepath.Join(packagedRoot, "config", "encoder-assets.json")
+	}
+	manager, err := ffmpeg.New(catalog, root)
 	if err != nil {
 		return nil
 	}

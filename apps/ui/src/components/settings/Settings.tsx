@@ -37,7 +37,8 @@ const SETTINGS_CATEGORIES: SettingsCategory[] = [
   // The preview suggestion's target, tolerance, preset and ending exclusion (docs/prds/proofing-preview-suggestion.prd.md
   // Phase 4): the engine (PreviewCandidates) reads these on every call, layered project over global like every other tool.
   { key: 'Preview', label: 'Preview', tool: 'Preview', scopes: ['global', 'project'] },
-  // Which signals must be met for a stage suggestion (docs/prds/chapter-stage-recommendations.prd.md Phase 6, Q8):
+  // Which signals must be met for a stage suggestion (chapter-stage-recommendations.prd.md Phase 6, Q8, deleted; see
+  // docs/architecture/stage-recommendations.md):
   // one choice field per signal id a provider declares, plus the master switch.
   { key: 'StageRecommendations', label: 'Stage suggestions', tool: 'StageRecommendations', scopes: ['global', 'project'] },
   { key: 'ManuscriptGuide', label: 'Story Bible', tool: 'ManuscriptGuide', scopes: ['global', 'project'] },
