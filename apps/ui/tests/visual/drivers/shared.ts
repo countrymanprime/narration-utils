@@ -576,3 +576,12 @@ export async function openWorkspaceFor(page: Page, chapterTitle: string): Promis
 // Some states have no known/safe driver yet (e.g. alias-typeahead, forcing
 // the manuscript-not-found banner without a mock-data override seam). Those
 // are left out here on purpose - the catalog entry is simply skipped.
+
+// Measures the mock's three files on Delivery, then opens the 48 kHz render's sample-rate finding on the Review page, where the
+// measurement saved it (delivery-platform-profiles.prd.md Phase 9).
+export async function openDeliveryFindingOnReview(page: Page): Promise<void> {
+  await measureOnDelivery(page);
+  await measurementEnded(page, /^Measured 2 of 3 files; 1 could not be measured\./);
+  await goToPage(page, 'Review');
+  await openFindingRow(page, /^Sample rate 48 kHz, not 44\.1 kHz/, 'Delivery check');
+}

@@ -1497,6 +1497,30 @@ describe('answers of the mock client for the settings, voice, model, transcript 
     expect((await api.measureState()).profile?.id).toBe(copy.id);
   });
 
+  it('the delivery findings the Review page lists carry their rule, as the host pins them and the mock saves them', async () => {
+    const pinned = findingsPageSchema.parse(readGolden('findings-list-delivery-qc.json'));
+    const api = createMockApi();
+    let job = await api.measureAnalyze((await api.measurePickFiles()).paths);
+    while (job.phase === 'running') job = await api.measureState();
+    const saved = await api.findingsList({ category: 'delivery_qc' });
+    expectMatches(findingsPageSchema, saved, 'mock delivery findings on the Review page');
+    expect(saved.total).toBeGreaterThan(0);
+    // The same ids the Delivery page gives them, so a decision on either page is one decision.
+    const judged = new Set(job.files.flatMap((file) => file.findings.map((finding) => finding.id)));
+    expect(saved.findings.every((finding) => judged.has(finding.id))).toBe(true);
+    const shape = (finding: (typeof saved.findings)[number]) => {
+      const evidence = deliveryQcEvidenceSchema.parse(finding.evidence);
+      return [
+        finding.analyzer,
+        finding.category,
+        Boolean(finding.evidence_version),
+        Boolean(evidence.rule_label && evidence.requirement && evidence.profile_name),
+        Boolean(finding.source.file),
+      ];
+    };
+    for (const finding of [...pinned.findings, ...saved.findings]) expect(shape(finding)).toEqual(['measure', 'delivery_qc', true, true, true]);
+  });
+
   it('the delivery profiles answer as the host pins them, and refuse the way the host does', async () => {
     const pinned = deliveryProfilesStateSchema.parse(readGolden('delivery-profiles.json'));
     expect(pinned.profiles[0]).toEqual(MOCK_ACX);
@@ -2064,6 +2088,8 @@ describe('answers of the mock client for the settings, voice, model, transcript 
       'updateOpenNotes',
       'updateShowDownload',
       'deleteCreditsTemplate',
+      'companionModeEnter',
+      'companionModeExit',
     ];
     const NOT_A_REQUEST = [
       'mediaUrl',

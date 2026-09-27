@@ -1,4 +1,4 @@
-# 0363. The export job combines mastering and encoding, and intermediates live in the project's sidecar tree
+# 0364. The export job combines mastering and encoding, and intermediates live in the project's sidecar tree
 
 **Status:** Proposed
 **Date:** 2026-09-27

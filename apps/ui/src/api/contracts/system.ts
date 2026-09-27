@@ -80,4 +80,10 @@ export interface SystemApi {
    * narrator chooses, and answers its path so the UI can copy it to the clipboard. Throws for "last_run" when
    * nothing has run yet this session. */
   systemCopyDiagnostics(scope: 'last_run' | 'last_30_minutes'): Promise<CopyDiagnosticsResult>;
+  /** Narrows the app's one window to the companion width and pins it always-on-top, remembering its size and position
+   * (booth-mode-and-companion-panel.prd.md Phase 6, ADR 0401: never a second window). Entering twice keeps the first
+   * saved bounds. */
+  companionModeEnter(): Promise<void>;
+  /** Puts the window back where `companionModeEnter` found it and un-pins it; a no-op when companion mode is not on. */
+  companionModeExit(): Promise<void>;
 }

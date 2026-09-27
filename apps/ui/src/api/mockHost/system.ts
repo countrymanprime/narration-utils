@@ -103,6 +103,9 @@ export function createSystemMock(
     systemNotify: async () => {},
     systemLookup: async (word) => mockDictionaryLookup(word, dictionaryState()),
     systemOpenLogFolder: async () => {},
+    // The mock has no window to resize or pin (the browser's own is the whole viewport): both succeed and do nothing.
+    companionModeEnter: async () => {},
+    companionModeExit: async () => {},
     systemCopyDiagnostics: async () => ({ path: 'C:/Users/narrator/Documents/diagnostics-20260926T120000.jsonl' }),
     subscribeNotices: (onNotice) => {
       const text = initial.notice;

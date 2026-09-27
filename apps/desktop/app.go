@@ -178,7 +178,10 @@ type Host struct {
 	// deliveryProfiles is the narrator's custom delivery profiles and their Global default (delivery-platform-profiles.prd.md,
 	// ADR 0179): user-level like creditTemplates, set once in NewHost and never swapped by a project switch.
 	deliveryProfiles *deliveryprofile.Store
-	log              *hostlog.Log
+	// deliveryFindingsMu keeps one save of the delivery review findings at a time (delivery_findings.go), so a profile
+	// change and a measurement ending together cannot leave the findings of the profile that lost the race.
+	deliveryFindingsMu sync.Mutex
+	log                *hostlog.Log
 	// runLog is the structured, leveled run log (docs/prds/tool-run-logging.prd.md, ADR 0251): every host job and
 	// sidecar launch wraps itself in runLog.Begin/Run.End (phase 3); set once in NewHost and never swapped.
 	runLog *runlog.Logger
