@@ -264,14 +264,18 @@ export function CoverageResult(chapterID: string): $CancellablePromise<string> {
 }
 
 /**
- * CoverageStart starts a recording check of one chapter with the narrator's Transcript Compare model (Q7 A). It
- * answers {status: "started", state}; {status: "refused", reason, message} when the chapter cannot be measured as the
- * saved project stands (nothing was run or written); or {status: "asset_required", ...} when the model is not
- * installed yet (the first-use gate TranscriptStart has). Anything else (a file that could not be written, a sidecar
- * that did not start) is a rejected promise.
+ * CoverageStart starts a recording check of one chapter. With the model cascade off (Q7 A, the default, MC1) it uses
+ * the narrator's Transcript Compare model; with it on, the two cascade settings (MC2). options["skipRecheck"] ==
+ * "true" starts a cascade-enabled chapter with the first pass alone - the narrator's "Check with tiny only" choice
+ * (MC4) when the re-check model is not installed; nil or without that key is the ordinary start. It answers
+ * {status: "started", state}; {status: "refused", reason, message} when the chapter cannot be measured as the saved
+ * project stands (nothing was run or written); {status: "asset_required", ...} when the first-pass model is not
+ * installed yet (the first-use gate TranscriptStart has); or {status: "recheck_asset_required", ...} when the
+ * cascade is on and its re-check model is not installed (MC4). Anything else (a file that could not be written, a
+ * sidecar that did not start) is a rejected promise.
  */
-export function CoverageStart(chapterID: string): $CancellablePromise<string> {
-    return $Call.ByID(2486826976, chapterID);
+export function CoverageStart(chapterID: string, options: { [_ in string]?: string }): $CancellablePromise<string> {
+    return $Call.ByID(2486826976, chapterID, options);
 }
 
 /**

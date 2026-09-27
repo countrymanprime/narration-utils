@@ -46,6 +46,20 @@ type StoredResult struct {
 	EquivalencesHash string          `json:"equivalencesHash,omitempty"`
 	Alignment        AlignmentParams `json:"alignment"`
 	Report           Report          `json:"report"`
+	// Recheck is the model cascade's second pass over this report (recording-check-model-cascade PRD Phase 5, MC5):
+	// set only when the run asked for one (Request.Recheck.Model) and the first pass reported at least one region,
+	// so Report's remaining regions are exactly what the stronger model still could not hear. Nil for a plain,
+	// single-model check, keeping an older stored result reading exactly as it always did.
+	Recheck *Recheck `json:"recheck,omitempty"`
+}
+
+// Recheck names the model cascade's second pass (MC5's "the result names both models and how many windows were
+// re-checked"): Model stays the first pass's own model (Q13 compatibility), so this is the other one.
+type Recheck struct {
+	Model        string  `json:"model"`
+	WholeChapter bool    `json:"wholeChapter"`
+	Windows      int     `json:"windows"`
+	Seconds      float64 `json:"seconds"`
 }
 
 // resultStore keeps one StoredResult per complete ledger record.
