@@ -1,4 +1,5 @@
 // How to reach each `settings` state in STATE_CATALOG (see app.drivers.ts).
+import type { Page } from '@playwright/test';
 import { settlePage } from '../helpers/settle';
 import { type Driver, clickNav, clickSettingsCategory, clickVisible, confirmDialog, goToPage, openLocalAssets } from './shared';
 
@@ -230,6 +231,29 @@ export const settingsDrivers: Record<string, Driver> = {
     await clickVisible(page, 'tab', 'Global');
     await clickSettingsCategory(page, 'Appearance');
   },
+  'global-keyboard': async (page) => {
+    await goToPage(page, 'Settings');
+    await clickVisible(page, 'tab', 'Global');
+    await clickSettingsCategory(page, 'Keyboard & pedals');
+    await page.getByText('Keys and pedals').waitFor();
+  },
+  'global-keyboard-recording': async (page) => {
+    await goToPage(page, 'Settings');
+    await clickVisible(page, 'tab', 'Global');
+    await clickSettingsCategory(page, 'Keyboard & pedals');
+    await openKeyboardRecorder(page, 'Play or pause reading');
+    await page.keyboard.press('PageDown');
+    await page.getByText('Page Down captured. No other command uses it where reading happens.').waitFor();
+  },
+  'global-keyboard-conflict': async (page) => {
+    await goToPage(page, 'Settings');
+    await clickVisible(page, 'tab', 'Global');
+    await clickSettingsCategory(page, 'Keyboard & pedals');
+    await openKeyboardRecorder(page, 'Next paragraph');
+    // ArrowRight is already "Next word"'s default, both `page` scope: a real findConflicts collision (mockup 03).
+    await page.keyboard.press('ArrowRight');
+    await page.getByText('→ already runs "Next word".').waitFor();
+  },
   'project-recording-check': async (page) => {
     await goToPage(page, 'Settings');
     await clickVisible(page, 'tab', 'This Project');
@@ -368,3 +392,12 @@ export const settingsDrivers: Record<string, Driver> = {
     await reset.hover();
   },
 };
+
+// Opens a command's recorder on the Keyboard & pedals category (input-commands-and-pedals.prd.md Phase 6): the label
+// span is its row's own header row's only direct text-node child (KeyboardPanel.tsx), so one level up from it is the
+// row scoped to exactly this command's own Change button, never another row's.
+async function openKeyboardRecorder(page: Page, label: string): Promise<void> {
+  const headerRow = page.getByText(label, { exact: true }).locator('..');
+  await headerRow.getByRole('button', { name: 'Change' }).click();
+  await page.getByRole('group', { name: `Change "${label}"` }).scrollIntoViewIfNeeded();
+}

@@ -171,7 +171,7 @@ Lanes: **U** = primitives and input (Sonnet), **A** = host (Go settings). ADRs c
 | 3 | Migrate workspace keys (U) | `WorkspacePage.tsx` Space, arrows, `[ ]` become `page` commands, with tests first | complete | with 2, 4, 5 | 1 | - |
 | 4 | Migrate the reading Space (U) | `ReadingControlBar.tsx` Space becomes the `booth` command `reading.toggle`. ADR 0196 behaviour is kept | complete | with 2, 3, 5 | 1 | - |
 | 5 | Keymap settings row (A) | `Keymap.overrides` in defaults, store, `fieldSchemas`, contracts, mock | complete | with 1 to 4 | Q2 | - |
-| 6 | Keyboard & pedals settings (U) | Settings category: list, remap by pressing, conflict message, reset. Visual rows | pending | with 7 | 1, 5, Kbd | - |
+| 6 | Keyboard & pedals settings (U) | Settings category: list, remap by pressing, conflict message, reset. Visual rows | complete | with 7 | 1, 5, Kbd | - |
 | 7 | Shortcut sheet (U) | "?" opens a dialog of the active commands by scope. Aria snapshot, visual row | complete | with 6 | 2, Kbd | - |
 | 8 | Spike: Web MIDI and WebHID (U) | Availability and permission in WebView2, WKWebView and WebKitGTK 6.0. A research note | complete | with 2 to 7 | - | - |
 | 9 | MidiSource (U, A if needed) | Web MIDI note-on and CC presses, learned in the Phase 6 recorder. Threat model | pending | with 10 | 6, 8 | - |
