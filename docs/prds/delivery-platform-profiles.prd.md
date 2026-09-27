@@ -359,8 +359,8 @@ Mockups approved by the owner on 2026-09-24. They were rendered from the real ap
 
 ### Extension (recommendation 4): book-wide spread
 
-Concept mock copied from [the audiobook studio benchmark](../research/audiobook-studio-benchmark.md#3-what-the-ideal-looks-like-concept-mocks) for Phase 10, **approved (D69)** — the owner confirmed on [#509](https://github.com/countrymanprime/narration-utils/issues/509) that the benchmark concept mocks, this one included, are the build spec. It differs from the images above (2026-09-24, owner-approved): those cover Phases 1-7 as built; this one is new, for the extension only. It is dark because it shows the app's dark theme (D69: dark mode is a global setting, never forced by a page), so Phase 10's build reads correctly in light too.
+Concept mock copied from [the audiobook studio benchmark](../research/audiobook-studio-benchmark.md#3-what-the-ideal-looks-like-concept-mocks) for Phase 10, **owner-approved as the build spec (D69, 2026-09-27)** — kept marked **concept**. It differs from the images above (2026-09-24, owner-approved): those cover Phases 1-7 as built; this one is new, for the extension only. Dark mode is a single app-wide theme (D69): a dark mock shows the dark theme, not a per-page look.
 
 ![Master & QC: book-wide spread of loudness across measured files](mockups/delivery-platform-profiles/11-book-wide-spread-concept.webp)
 
-*Book-wide spread* (`11-book-wide-spread-concept.webp`) — the per-rule min/max/median spread Phase 10 adds below the per-file table. Its own PR's Mockup check table compares the built capture against it.
+*Book-wide spread (concept)* (`11-book-wide-spread-concept.webp`) — the per-rule min/max/median spread Phase 10 adds below the per-file table. Phase 10's PR carries the Mockup check table against it.

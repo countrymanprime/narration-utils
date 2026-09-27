@@ -782,6 +782,16 @@ describe('answers of the mock client for the manuscript, Story Bible and project
     await expect(createMockApi().dawCatalogOpenDownloadPage('reaper')).resolves.toBeUndefined();
     await expect(createMockApi().dawCatalogOpenDownloadPage('not-a-real-daw')).rejects.toThrow(/Unknown DAW catalog entry/);
   });
+
+  it('pronunciation lookup opens for a known source and refuses an unknown one (prep-depth Phase 2)', async () => {
+    const api = createMockApi();
+    await expect(api.pronunciationLookupOpen('forvo', 'Mock Turtle')).resolves.toBeUndefined();
+    await expect(api.pronunciationLookupOpen('youglish', 'café')).resolves.toBeUndefined();
+    await expect(api.pronunciationLookupOpen('merriam_webster', 'croquet')).resolves.toBeUndefined();
+    await expect(api.pronunciationLookupOpen('howjsay', 'croquet')).resolves.toBeUndefined();
+    // @ts-expect-error an unknown source is a build-time error too; the mock also rejects it at runtime.
+    await expect(api.pronunciationLookupOpen('wiktionary', 'croquet')).rejects.toThrow(/Unknown pronunciation lookup source/);
+  });
 });
 
 describe('answers of the mock client for the settings, voice, model, transcript and tracks bindings', () => {
@@ -1707,7 +1717,11 @@ describe('answers of the mock client for the settings, voice, model, transcript 
     const byId = new Map(answer.chapters.map((chapter) => [chapter.chapterId, chapter]));
     expect(new Set(answer.chapters.map((chapter) => chapter.verdict))).toEqual(new Set(['recommended', 'not_ready', 'unknown', 'dismissed', 'none']));
     expect(byId.get('chapter-1')).toMatchObject({ verdict: 'none', noneReason: 'stage_not_evaluated' });
-    expect(byId.get('chapter-9')).toMatchObject({ verdict: 'none', noneReason: 'no_required_signals' });
+    // chapter-7 is in Editing, unseeded in `editing`: the mock keeps its pre-existing no-required-signal shape (stagesMock.ts).
+    expect(byId.get('chapter-7')).toMatchObject({ verdict: 'none', noneReason: 'no_required_signals' });
+    // chapter-9 is in Proofing, unseeded in `proofing`: unlike editing, the mock always evaluates the real pickups
+    // signal for a proofing chapter (chapter-stage-recommendations.prd.md Phase 8), so it reads unknown, not none.
+    expect(byId.get('chapter-9')).toMatchObject({ verdict: 'unknown', causes: ['never_analyzed'] });
     expect(byId.get('chapter-6')).toMatchObject({ verdict: 'not_ready' });
     expect(byId.get('chapter-11')).toMatchObject({ verdict: 'unknown', causes: ['never_analyzed'] });
     for (const cause of STAGE_UNKNOWN_CAUSES) {
@@ -1977,6 +1991,7 @@ describe('answers of the mock client for the settings, voice, model, transcript 
       'teleprompterMeterStop',
       'teleprompterPause',
       'dawCatalogOpenDownloadPage',
+      'pronunciationLookupOpen',
       'teleprompterSeek',
       'reportClientDiagnostic',
       'systemNotify',
