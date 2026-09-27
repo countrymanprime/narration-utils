@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import { useApi } from '../../api/ApiContext';
 import { Button } from '../primitives/Button';
+import { CapabilityGate } from '../primitives/CapabilityGate';
 import { Dialog } from '../primitives/Dialog';
+import { useCapability } from '../../useCapability';
 import type { PickupsMoment, PickupsState } from '../../types';
 
 const IDLE: PickupsState = { phase: 'idle', message: '', remaining: 0, total: 0, csv: '' };
@@ -41,9 +43,13 @@ function ImportRowErrors({ rowErrors }: { rowErrors: string[] }) {
  * chapters…" (Phase 7), not a new nav item. */
 export function PickupsDialog({ onClose }: { onClose: () => void }) {
   const api = useApi();
+  const punchCapability = useCapability('punch');
   const [state, setState] = useState<PickupsState>(IDLE);
   const [rowErrors, setRowErrors] = useState<string[]>([]);
   const [requestError, setRequestError] = useState('');
+  // "Punch from here" (booth-actions-enablement PRD Phase 3): the pickup's own position is already a project time, so
+  // there is nothing to preview - the button moves REAPER's edit cursor straight away, like Next pickup and Mark done.
+  const [punching, setPunching] = useState(false);
   // A run that starts (Go's begin(), mirrored by the mock) clears `next`/`resolved` from state, so this survives
   // across the Resolve run that follows a Next: without it, "Mark this pickup done" and its pending state would
   // disappear the instant Resolve starts, before it has anything to show for itself.
@@ -100,6 +106,19 @@ export function PickupsDialog({ onClose }: { onClose: () => void }) {
     if (!activeNext) return;
     setRequestError('');
     api.pickupsResolve(activeNext.position).catch((reason: unknown) => setRequestError(String(reason)));
+  };
+  const punchCurrent = async () => {
+    if (!activeNext) return;
+    setRequestError('');
+    setPunching(true);
+    try {
+      const result = await api.pickupsPunch(activeNext.position);
+      if (result.outcome === 'refused') setRequestError(result.message ?? 'Punch from here failed.');
+    } catch (reason: unknown) {
+      setRequestError(String(reason));
+    } finally {
+      setPunching(false);
+    }
   };
   const exportList = () => {
     setRequestError('');
@@ -163,9 +182,16 @@ export function PickupsDialog({ onClose }: { onClose: () => void }) {
               {activeNext.tag && <span className="section-label mr-1.5">{activeNext.tag}</span>}
               {activeNext.note}
             </p>
-            <Button variant="ghost" onClick={resolveCurrent} pending={state.phase === 'resolving'}>
-              Mark this pickup done
-            </Button>
+            <div className="flex flex-wrap gap-2">
+              <CapabilityGate capability={punchCapability}>
+                <Button variant="ghost" onClick={punchCurrent} pending={punching}>
+                  Punch from here
+                </Button>
+              </CapabilityGate>
+              <Button variant="ghost" onClick={resolveCurrent} pending={state.phase === 'resolving'}>
+                Mark this pickup done
+              </Button>
+            </div>
           </div>
         )}
         {state.phase === 'success' && state.resolved && (
