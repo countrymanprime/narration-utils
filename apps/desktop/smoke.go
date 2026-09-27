@@ -24,6 +24,7 @@ import (
 	"github.com/countrymanprime/narration-utils/shell/internal/tts"
 	"github.com/countrymanprime/narration-utils/shell/internal/ttsport"
 	"github.com/countrymanprime/narration-utils/shell/internal/whisper"
+	"github.com/countrymanprime/narration-utils/shell/internal/wiktextract"
 )
 
 // The packaged-app smoke test: `narration-utils --smoke`. Wails is a GUI program, so a CI job cannot start it and look at a window; this
@@ -506,9 +507,10 @@ func checkCompareCapabilities(ctx context.Context, options smokeOptions, root st
 	return fmt.Sprintf("%d ASR row(s)", len(parsed.Asr)), nil
 }
 
-// checkCatalogs loads the five approved asset catalogs the release carries (config/*-assets.json in the unpacked resources) and requires
-// each to name at least one asset: an empty or unreadable catalog would leave the narrator nothing to download. The frozen sidecar's own
-// Moonshine support is checked apart from its catalog, by checkFrozenMoonshine.
+// checkCatalogs loads the six approved asset catalogs the release carries (config/*-assets.json in the unpacked resources) and requires
+// each to name at least one asset: an empty or unreadable catalog would leave the narrator nothing to download. A Pending row (the
+// wiktextract catalog, prep-depth Phase 8, until a future session verifies its download) still counts: this check is "the catalog lists
+// something," not "it can be installed." The frozen sidecar's own Moonshine support is checked apart from its catalog, by checkFrozenMoonshine.
 func checkCatalogs(root string) (string, error) {
 	configDir := filepath.Join(root, "config")
 	voices, err := tts.New(filepath.Join(configDir, "tts-assets.json"), "")
@@ -531,15 +533,19 @@ func checkCatalogs(root string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("the dictionary catalog could not be loaded: %w", err)
 	}
+	pronunciationSources, err := wiktextract.New(filepath.Join(configDir, "wiktextract-assets.json"), "")
+	if err != nil {
+		return "", fmt.Errorf("the wiktextract catalog could not be loaded: %w", err)
+	}
 	counts := map[string]int{"voices": len(voices.Voices()), "Whisper models": len(models.Models()), "spaCy models": len(languageModels.Models()), "Moonshine models": len(liveModels.Models()),
-		"dictionaries": len(dictionaries.Dictionaries())}
-	for _, kind := range []string{"voices", "Whisper models", "spaCy models", "Moonshine models", "dictionaries"} {
+		"dictionaries": len(dictionaries.Dictionaries()), "wiktextract sources": len(pronunciationSources.Sources())}
+	for _, kind := range []string{"voices", "Whisper models", "spaCy models", "Moonshine models", "dictionaries", "wiktextract sources"} {
 		if counts[kind] == 0 {
 			return "", fmt.Errorf("the catalog of %s names no assets", kind)
 		}
 	}
-	return fmt.Sprintf("%d voice(s), %d Whisper model(s), %d spaCy model(s), %d Moonshine model(s), %d dictionary(ies)", counts["voices"], counts["Whisper models"], counts["spaCy models"],
-		counts["Moonshine models"], counts["dictionaries"]), nil
+	return fmt.Sprintf("%d voice(s), %d Whisper model(s), %d spaCy model(s), %d Moonshine model(s), %d dictionary(ies), %d wiktextract source(s)", counts["voices"], counts["Whisper models"],
+		counts["spaCy models"], counts["Moonshine models"], counts["dictionaries"], counts["wiktextract sources"]), nil
 }
 
 // checkReaper requires the REAPER launcher and every script it loads in the unpacked resources, and the pointer file that tells the

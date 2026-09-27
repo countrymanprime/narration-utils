@@ -1427,6 +1427,7 @@ def main() -> None:
     build_parser.add_argument("--log")
     build_parser.add_argument("--spacy-model", default=get_default("ManuscriptGuide", "spacy_model", "en_core_web_sm"))
     build_parser.add_argument("--espeak-library", default="")
+    build_parser.add_argument("--wiktextract-index", default="")
     status_parser = command.add_parser("status")
     status_parser.add_argument("--manuscript", required=True)
     status_parser.add_argument("--guide", required=True)
@@ -1438,6 +1439,7 @@ def main() -> None:
     edit_parser.add_argument("--value", required=True, action="append")
     edit_parser.add_argument("--manuscript", default="")
     edit_parser.add_argument("--espeak-library", default="")
+    edit_parser.add_argument("--wiktextract-index", default="")
     rescan_parser = command.add_parser("rescan")
     rescan_parser.add_argument("--guide", required=True)
     rescan_parser.add_argument("--manuscript", required=True)
@@ -1448,6 +1450,7 @@ def main() -> None:
     pronounce_parser.add_argument("--alias-index", type=int, default=None)
     pronounce_parser.add_argument("--source", required=True, choices=sorted(PRONUNCIATION_SOURCES))
     pronounce_parser.add_argument("--espeak-library", default="")
+    pronounce_parser.add_argument("--wiktextract-index", default="")
     # The narrator's own pronunciation and the note are free text: pass them as --ipa=VALUE / --note=VALUE so one that starts with
     # "-" is still a value, not another option (the host always does).
     user_parser = command.add_parser("pronounce-user")
@@ -1474,6 +1477,7 @@ def main() -> None:
     create_parser.add_argument("--description", default="")
     create_parser.add_argument("--properties", default="", help='the properties as one JSON list, e.g. [{"key": "Codename", "value": "Wren"}]')
     create_parser.add_argument("--espeak-library", default="")
+    create_parser.add_argument("--wiktextract-index", default="")
     merge_parser = command.add_parser("merge")
     merge_parser.add_argument("--guide", required=True)
     merge_parser.add_argument("--source-id", required=True)
@@ -1506,6 +1510,12 @@ def main() -> None:
         "port then name (one JSON object: {type: capabilities, tts, pronunciation}; registration only, not verified)",
     )
     args = parser.parse_args()
+    wiktextract_index = getattr(args, "wiktextract_index", "") or None
+    if wiktextract_index:
+        # Set once per process on the registered singleton (D72, Q7-Q8): the path never changes between calls within one
+        # invocation, so there is nothing to gain from threading it through pronunciation()/pronounce_source() the way
+        # --espeak-library is, and every call site that already builds a pronunciation keeps working unchanged.
+        SOURCES.lookup("wiktextract").index_path = wiktextract_index
     log_handle = None
     if getattr(args, "log", None):
         path = Path(args.log)

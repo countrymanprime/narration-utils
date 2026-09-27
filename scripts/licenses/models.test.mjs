@@ -82,6 +82,7 @@ test('checkDocument reports a table that no longer matches the catalogs', () => 
   writeFileSync(join(dir, 'config', 'spacy-assets.json'), JSON.stringify({ models: [] }));
   writeFileSync(join(dir, 'config', 'moonshine-assets.json'), JSON.stringify({ models: [] }));
   writeFileSync(join(dir, 'config', 'dictionary-assets.json'), JSON.stringify({ dictionaries: [] }));
+  writeFileSync(join(dir, 'config', 'wiktextract-assets.json'), JSON.stringify({ sources: [] }));
   const generated = generateDocument(`${BEGIN}\n${END}\n`, loadCatalogs(join(dir, 'config')), review);
 
   assert.equal(checkDocument(generated, loadCatalogs(join(dir, 'config')), review), true);
@@ -94,7 +95,7 @@ test('the dictionary catalog is read with the model catalogs, under its own key'
   assert.ok(items.some((item) => item.kind === 'dictionary' && `${item.provider}/${item.id}` === 'oewn/oewn-2025'));
 });
 
-test('the committed provenance document matches the five catalogs (run `node scripts/licenses/models.mjs` to rewrite it)', async () => {
+test('the committed provenance document matches the six catalogs (run `node scripts/licenses/models.mjs` to rewrite it)', async () => {
   const { readFileSync } = await import('node:fs');
   const document = readFileSync(join(REPO_ROOT, 'docs/architecture/model-provenance.md'), 'utf8');
   const reviewFile = JSON.parse(readFileSync(join(REPO_ROOT, 'scripts/licenses/model-review.json'), 'utf8'));
