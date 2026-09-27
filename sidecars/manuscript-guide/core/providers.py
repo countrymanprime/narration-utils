@@ -1,14 +1,19 @@
-"""Adapters for the guide sidecar's providers (ADR 0301, provider-ports P8): Piper as the ``TtsEngine`` row, CMU and eSpeak
-as the ``PronunciationSource`` rows. Each adapter wraps exactly the code ``manuscript_guide.py`` called directly before this
-phase; importing this module (which ``manuscript_guide.py`` does at load time) registers all three, CMU before eSpeak so it
-stays the default the build-time fallback tries first (D13).
+"""Adapters for the guide sidecar's providers (ADR 0301, provider-ports P8; wiktextract row added by prep-depth Phase 8, ADR
+0405): Piper as the ``TtsEngine`` row, CMU, Wiktextract and eSpeak as the ``PronunciationSource`` rows. Each adapter wraps
+exactly the code ``manuscript_guide.py`` called directly before this phase; importing this module (which
+``manuscript_guide.py`` does at load time) registers all four, in the offline precedence order D72/Q7 recommends: CMU (D13's
+existing default), then Wiktextract (broader dictionary coverage than CMU alone), then eSpeak (a letter-to-sound guess for
+anything neither dictionary has).
 
 Nothing here imports piper, pronouncing or phonemizer at module level: each adapter's import stays lazy inside the call that
-needs it, so loading the sidecar for any other command does not pay their cost.
+needs it, so loading the sidecar for any other command does not pay their cost. ``WiktextractSource`` never imports anything
+beyond the standard library: its data is a plain JSON file the Go asset manager derives at install time (Q8), never a
+Python package.
 """
 
 from __future__ import annotations
 
+import json
 import os
 import re
 import wave
@@ -90,11 +95,62 @@ class CmuSource:
         raise self.descriptor.refuse(BROWSE)
 
 
+class WiktextractSource:
+    """Wiktionary's IPA data, through the Wiktextract project's structured extracts (D72, ADR 0405): broader headword and
+    variant coverage than the CMU dictionary, still a real dictionary hit rather than eSpeak's letter-to-sound guess, so it
+    sits between the two in the offline precedence chain (Q7).
+
+    Reads a small derived ``word -> {ipa, audio}`` index the Go asset manager builds at install time from the Wiktextract
+    release and keeps in place of the raw multi-gigabyte dump (Q8, docs/research/wiktextract-pronunciation-source.md). The
+    ``audio`` field (a Wikimedia Commons file name, or an empty string) is read here for prep-depth Phase 10 to use later;
+    this phase's own ``pronounce`` never touches it.
+    """
+
+    descriptor = PronunciationDescriptor("wiktextract", "Wiktionary (via Wiktextract)", modes=(PRONOUNCE,))
+    unavailable_log = "Wiktionary pronunciation unavailable"
+    # Every displayed answer carries this per the CC BY-SA terms (Q9's attribution requirement); the full notice is in
+    # THIRD-PARTY-NOTICES.txt.
+    attribution_label = "Wiktionary (CC BY-SA)"
+
+    def __init__(self) -> None:
+        # Set once per process from the sidecar's --wiktextract-index flag; None until the asset is installed.
+        self.index_path: str | None = None
+        self._cache: dict[str, dict[str, str]] | None = None
+        self._cache_path: str | None = None
+
+    def _index(self) -> dict[str, dict[str, str]]:
+        if not self.index_path:
+            raise ValueError("Wiktionary pronunciations are not installed yet.")
+        if self._cache is None or self._cache_path != self.index_path:
+            with open(self.index_path, encoding="utf-8") as handle:
+                document = json.load(handle)
+            self._cache = document.get("words", {})
+            self._cache_path = self.index_path
+        return self._cache
+
+    def pronounce(self, name: str) -> dict[str, str]:
+        index = self._index()
+        words = re.findall(r"[A-Za-z']+", name)
+        entries = [index[word.lower()] for word in words if word.lower() in index]
+        if not (words and len(entries) == len(words)):
+            raise ValueError(f'Wiktionary has no entry for "{name}".')
+        ipa = " ".join(entry["ipa"] for entry in entries)
+        return {"ipa": ipa, "source": self.attribution_label, "confidence": "medium"}
+
+    def browser(self) -> NoReturn:
+        raise self.descriptor.refuse(BROWSE)
+
+
 class EspeakSource:
-    """eSpeak NG: low confidence, but it can attempt a name the CMU dictionary has never heard of."""
+    """eSpeak NG: a letter-to-sound guess (Q9), not a dictionary hit, for a name neither CMU nor Wiktextract has heard of.
+    Low confidence, but it can attempt anything."""
 
     descriptor = PronunciationDescriptor("espeak", "eSpeak NG", modes=(PRONOUNCE,))
     unavailable_log = "eSpeak phonetic fallback unavailable"
+    # D72's own words: "a clearly labelled letter-to-sound guess", so a narrator never mistakes this for a dictionary hit
+    # (Q9). The descriptor's label stays "eSpeak NG" for the explicit source picker; only the generated answer's own label
+    # changes.
+    guess_label = "Letter-to-sound guess (eSpeak NG)"
 
     def __init__(self) -> None:
         # Set by pronounce_source() from the sidecar's --espeak-library flag before each call; None uses phonemizer's own.
@@ -110,13 +166,14 @@ class EspeakSource:
         ipa = phonemize(name, language="en-us", backend="espeak", strip=True, with_stress=True)
         if not ipa:
             raise ValueError(f'eSpeak produced no pronunciation for "{name}".')
-        return {"ipa": ipa, "source": "eSpeak NG", "confidence": "low"}
+        return {"ipa": ipa, "source": self.guess_label, "confidence": "low"}
 
     def browser(self) -> NoReturn:
         raise self.descriptor.refuse(BROWSE)
 
 
 SOURCES.register(CmuSource())
+SOURCES.register(WiktextractSource())
 SOURCES.register(EspeakSource())
 
 

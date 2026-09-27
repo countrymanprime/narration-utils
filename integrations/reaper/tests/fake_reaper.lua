@@ -121,6 +121,7 @@ function Fake:add_item(track, opts)
     notes = opts.notes or '',
     takes = {},
     lane = opts.lane or 0,
+    muted = opts.muted or false,
   }
   if opts.source or opts.midi then
     item.takes[1] = {
@@ -608,6 +609,8 @@ function Fake:add_item_api(api)
       return fake:lane_plays(item.track, item.lane)
     elseif key == 'D_VOL' then
       return item.vol or 1
+    elseif key == 'B_MUTE' then
+      return item.muted and 1 or 0
     end
     error('fake reaper: unmodelled item value ' .. tostring(key))
   end

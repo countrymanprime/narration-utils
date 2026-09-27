@@ -14,8 +14,9 @@ import (
 
 // Source names, as the sidecar's --source flag spells them.
 const (
-	CMU    = "cmu"
-	Espeak = "espeak"
+	CMU         = "cmu"
+	Wiktextract = "wiktextract"
+	Espeak      = "espeak"
 )
 
 // Roles a source declares in its Descriptor's Modes, as the Python port names them: pronounce gives a name's pronunciation; browse
@@ -42,15 +43,21 @@ type source struct{ name string }
 func (s source) Name() string        { return s.name }
 func (s source) BrowserHost() string { return "" }
 
-// NewRegistry is a registry holding the built-in rows in the build-time fallback's order, CMU first as the default. A test registers
-// a fake on its own copy.
+// NewRegistry is a registry holding the built-in rows in the build-time fallback's order, CMU first as the default (D72/Q7:
+// prep-depth Phase 8, ADR 0405, adds Wiktextract between CMU and eSpeak). A test registers a fake on its own copy.
 func NewRegistry() *port.Registry[Source] {
 	r := &port.Registry[Source]{Kind: "pronunciation source"}
-	// CMU is quick and good for familiar names; eSpeak covers the names CMU has no entry for.
+	// CMU is quick and good for familiar names; Wiktextract covers more headwords with a real dictionary hit; eSpeak is
+	// the letter-to-sound guess for names neither dictionary has.
 	r.Register(port.Entry[Source]{
 		Name:       CMU,
 		Descriptor: port.Descriptor{Label: "CMU dictionary", Modes: []string{ModePronounce}},
 		New:        func() Source { return source{CMU} },
+	})
+	r.Register(port.Entry[Source]{
+		Name:       Wiktextract,
+		Descriptor: port.Descriptor{Label: "Wiktionary (via Wiktextract)", Modes: []string{ModePronounce}},
+		New:        func() Source { return source{Wiktextract} },
 	})
 	r.Register(port.Entry[Source]{
 		Name:       Espeak,

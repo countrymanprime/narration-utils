@@ -46,8 +46,14 @@ func SupportsEngine(platform, engine string) bool {
 }
 
 // Config is what a Service is built with. Platform is the GOOS the host runs on (empty means this process's own); it
-// decides which engines can launch.
-type Config struct{ Project, SessionDir, Python, Backend, Platform string }
+// decides which engines can launch. EvalTiming is the Phase 8 evaluation aid (teleprompter-engines-and-input-devices
+// PRD): opting in (NARRATION_TELEPROMPTER_EVAL=1) launches every session with --timing and a --log file inside
+// SessionDir, so the A/B protocol's lag numbers come from a real host-launched session, live mic or --wav replay
+// alike. It is developer/evaluation-only and off by default; nothing in Settings or the UI turns it on.
+type Config struct {
+	Project, SessionDir, Python, Backend, Platform string
+	EvalTiming                                     bool
+}
 
 // PlatformOrCurrent is platform, or this process's GOOS when it is empty.
 func PlatformOrCurrent(platform string) string {
@@ -301,6 +307,9 @@ func (s *Service) planSession(options map[string]string, src source) (launch, er
 		args = append(args, "--wav", wav)
 	} else {
 		args = append(args, "--mic", device)
+	}
+	if s.config.EvalTiming {
+		args = append(args, "--timing", "--log", filepath.Join(s.config.SessionDir, fmt.Sprintf("teleprompter_%d.log", stamp)))
 	}
 	if s.config.Backend != "" {
 		args = append([]string{s.config.Backend}, args...)

@@ -19,7 +19,7 @@
 
 ## `chapter_track_state` (read-only)
 
-Serves [Read Aloud Resume from the DAW](../prds/read-aloud-resume-from-daw.prd.md) Phase 4, [Read Aloud Control Bar](../prds/read-aloud-control-bar.prd.md) Phase 6 and the command half of [Teleprompter Manuscript Integration](../prds/teleprompter-manuscript-integration.prd.md) Phase 11 (TMI-11). One read of the transport and of one track.
+Serves Read Aloud Resume from the DAW (PRD deleted, delivered) Phase 4, [Read Aloud Control Bar](../prds/read-aloud-control-bar.prd.md) Phase 6 and the command half of [Teleprompter Manuscript Integration](../prds/teleprompter-manuscript-integration.prd.md) Phase 11 (TMI-11). One read of the transport and of one track.
 
 | Call | Reference | What the command reports |
 | --- | --- | --- |

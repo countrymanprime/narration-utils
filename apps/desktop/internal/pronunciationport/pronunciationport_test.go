@@ -20,10 +20,11 @@ func TestEveryRegisteredSourcePassesTheSuite(t *testing.T) {
 	}
 }
 
-func TestTheFallbackOrderIsTodaysCmuThenEspeak(t *testing.T) {
-	// The sidecar's build-time fallback (manuscript_guide.py's pronunciation()) tries CMU, then eSpeak, on every platform.
+func TestTheFallbackOrderIsCmuThenWiktextractThenEspeak(t *testing.T) {
+	// The sidecar's build-time fallback (manuscript_guide.py's pronunciation()) tries CMU, then Wiktextract, then eSpeak,
+	// on every platform (D72/Q7, prep-depth Phase 8).
 	for _, platform := range port.Platforms {
-		if got, want := pronunciationport.FallbackOrder(platform), []string{"cmu", "espeak"}; !reflect.DeepEqual(got, want) {
+		if got, want := pronunciationport.FallbackOrder(platform), []string{"cmu", "wiktextract", "espeak"}; !reflect.DeepEqual(got, want) {
 			t.Errorf("FallbackOrder(%q) = %v, want %v", platform, got, want)
 		}
 	}
@@ -39,7 +40,7 @@ func TestNoSourceTakesTheBrowserRoleYet(t *testing.T) {
 }
 
 func TestCheckPronounceAcceptsEachSourceTheNarratorCanChoose(t *testing.T) {
-	for _, name := range []string{pronunciationport.CMU, pronunciationport.Espeak} {
+	for _, name := range []string{pronunciationport.CMU, pronunciationport.Wiktextract, pronunciationport.Espeak} {
 		if err := pronunciationport.CheckPronounce(name); err != nil {
 			t.Errorf("CheckPronounce(%q) = %v", name, err)
 		}
@@ -86,16 +87,16 @@ func TestANewSourceIsOneRowAndPassesTheSuiteWithNoOtherEdit(t *testing.T) {
 	for _, entry := range sources.Entries() {
 		t.Run(entry.Name, func(t *testing.T) { pronunciationporttest.Run(t, entry) })
 	}
-	if got := pronunciationport.NamesIn(sources, "linux", pronunciationport.ModePronounce); !reflect.DeepEqual(got, []string{"cmu", "espeak", "festival"}) {
+	if got := pronunciationport.NamesIn(sources, "linux", pronunciationport.ModePronounce); !reflect.DeepEqual(got, []string{"cmu", "wiktextract", "espeak", "festival"}) {
 		t.Errorf("pronounce names on linux = %v", got)
 	}
-	if got := pronunciationport.NamesIn(sources, "windows", pronunciationport.ModePronounce); !reflect.DeepEqual(got, []string{"cmu", "espeak"}) {
+	if got := pronunciationport.NamesIn(sources, "windows", pronunciationport.ModePronounce); !reflect.DeepEqual(got, []string{"cmu", "wiktextract", "espeak"}) {
 		t.Errorf("a linux-only row must not be a source on windows: %v", got)
 	}
 	if err := pronunciationport.CheckPronounceIn(sources, "festival"); err != nil {
 		t.Errorf("CheckPronounceIn(festival) = %v", err)
 	}
-	if got := pronunciationport.Sources.Names("linux"); !reflect.DeepEqual(got, []string{"cmu", "espeak"}) {
+	if got := pronunciationport.Sources.Names("linux"); !reflect.DeepEqual(got, []string{"cmu", "wiktextract", "espeak"}) {
 		t.Errorf("registering on a new registry changed the program's: %v", got)
 	}
 }

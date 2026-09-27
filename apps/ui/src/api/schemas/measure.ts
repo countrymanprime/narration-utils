@@ -58,6 +58,7 @@ export const measureReportSchema = z.object({
   clip_run_count: z.number(),
   clip_runs: listFromNull(measureClipRunSchema),
   mp3: measureMP3Schema.optional(),
+  mp3_levels_decoded: z.boolean().optional(),
   range: measureRangeSchema.optional(),
 }) satisfies z.ZodType<MeasureReport>;
 

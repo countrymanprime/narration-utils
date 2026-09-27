@@ -676,6 +676,49 @@ func TestADeveloperCanReplayARecordingInsteadOfUsingAMicrophone(t *testing.T) {
 	}
 }
 
+// The Phase 8 evaluation aid (teleprompter-engines-and-input-devices PRD): opting in launches the sidecar with
+// --timing and --log <session dir>/teleprompter_<stamp>.log, so a host-launched session (live mic or --wav replay)
+// yields the lag numbers the A/B protocol needs. It never turns on by itself.
+func TestEvalTimingOptInAddsTimingAndLogFlags(t *testing.T) {
+	f := newFixture(t, "stream")
+	f.service.config.EvalTiming = true
+
+	if err := f.service.Start(validOptions()); err != nil {
+		t.Fatal(err)
+	}
+
+	args := echoedArgs(t, f)
+	if !containsFlag(args, "--timing") {
+		t.Fatalf("args = %v, want --timing", args)
+	}
+	logPath := flagValue(args, "--log")
+	if logPath == "" || !strings.HasPrefix(logPath, f.session) {
+		t.Fatalf("--log = %q, want a path inside the session dir (args %v)", logPath, args)
+	}
+}
+
+func TestEvalTimingOffByDefaultOmitsTimingAndLogFlags(t *testing.T) {
+	f := newFixture(t, "stream")
+
+	if err := f.service.Start(validOptions()); err != nil {
+		t.Fatal(err)
+	}
+
+	args := echoedArgs(t, f)
+	if containsFlag(args, "--timing") || flagValue(args, "--log") != "" {
+		t.Fatalf("args = %v, want no --timing/--log without opting in", args)
+	}
+}
+
+func containsFlag(args []string, name string) bool {
+	for _, arg := range args {
+		if arg == name {
+			return true
+		}
+	}
+	return false
+}
+
 func TestADeveloperSidecarRunsItsBackendScriptAsTheFirstArgument(t *testing.T) {
 	f := newFixture(t, "stream")
 	f.service.config.Backend = "C:/repo/sidecars/manuscript-teleprompter/core/live_asr.py"
