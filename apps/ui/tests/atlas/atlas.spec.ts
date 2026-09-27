@@ -2,12 +2,14 @@
 import { expect, test, type Page } from '@playwright/test';
 import { mkdirSync, readFileSync } from 'node:fs';
 import { allowedRules } from './a11y-debt';
+import { needsFreshLoad } from './reload-debt';
 
 interface IndexEntry {
   id: string;
   type: 'story' | 'docs';
   title: string;
   name: string;
+  tags?: string[];
 }
 interface Violation {
   id: string;
@@ -18,6 +20,11 @@ interface Finished {
   storyId: string;
   status: 'success' | 'error';
   reporters: Array<{ type: string; result?: { violations?: Violation[]; incomplete?: Array<{ id: string; nodes: unknown[] }> } }>;
+}
+interface StoryState {
+  finished: Finished;
+  playError: string | undefined;
+  errorDisplay: boolean;
 }
 
 // Small canvases on purpose: a component is judged on its own, once at a width
@@ -30,17 +37,19 @@ const VIEWPORTS = [
 const THEMES = (process.env.UI_ATLAS_THEMES ?? 'light,dark').split(',').map((theme) => theme.trim()) as Array<'light' | 'dark'>;
 const READY_TIMEOUT_MS = 15_000;
 
+interface Variant {
+  theme: 'light' | 'dark';
+  viewport: (typeof VIEWPORTS)[number];
+}
+// theme outer, viewport inner - keeps screenshot filenames and their order the same as before this grouping.
+const VARIANTS: Variant[] = THEMES.flatMap((theme) => VIEWPORTS.map((viewport) => ({ theme, viewport })));
+
 const index = JSON.parse(readFileSync('storybook-static/index.json', 'utf8')) as { entries: Record<string, IndexEntry> };
 const stories = Object.values(index.entries).filter((entry) => entry.type === 'story');
 
-// `storyFinished` fires after render + play() + afterEach (where addon-a11y runs
-// axe). The channel remembers the last payload of each event, so polling last()
-// cannot miss an event that fired before we looked.
-async function finishedStory(page: Page, id: string) {
-  await page.waitForFunction((storyId) => (window as any).__STORYBOOK_ADDONS_CHANNEL__?.last('storyFinished')?.[0]?.storyId === storyId, id, {
-    timeout: READY_TIMEOUT_MS,
-    polling: 20,
-  });
+// Reads the channel's last-known state for this page's current story. Storybook's channel remembers the last payload of
+// each event, so this is safe to call right after a wait that confirms a (re)render has finished.
+function readStoryState(page: Page): Promise<StoryState> {
   return page.evaluate(() => {
     const channel = (window as any).__STORYBOOK_ADDONS_CHANNEL__;
     return {
@@ -50,6 +59,39 @@ async function finishedStory(page: Page, id: string) {
       errorDisplay: document.body.classList.contains('sb-show-errordisplay'),
     };
   });
+}
+
+// Loads a story fresh: a new navigation, so play() (if any) runs from scratch and any state from a previous
+// variant is gone. Used for the first variant of every story, and every variant of a story whose play() would
+// otherwise mutate a page reused across variants.
+async function loadStory(page: Page, entry: IndexEntry, variant: Variant): Promise<StoryState> {
+  await page.setViewportSize({ width: variant.viewport.width, height: variant.viewport.height });
+  // Apps that theme with prefers-color-scheme (Tailwind's default dark: variant) flip only if the media query does.
+  await page.emulateMedia({ colorScheme: variant.theme });
+  await page.goto(`/iframe.html?id=${entry.id}&viewMode=story&globals=theme:${variant.theme}`, { waitUntil: 'commit' });
+  await page.waitForFunction((storyId) => (window as any).__STORYBOOK_ADDONS_CHANNEL__?.last('storyFinished')?.[0]?.storyId === storyId, entry.id, {
+    timeout: READY_TIMEOUT_MS,
+    polling: 20,
+  });
+  return readStoryState(page);
+}
+
+// Switches theme and viewport on the page already showing this story, instead of a fresh navigation. `updateGlobals`
+// re-renders the story unconditionally (Storybook's preview re-renders every current story render on any globals
+// update, whether or not a value actually changed), which re-applies the theme decorator and reruns addon-a11y's
+// afterEach at the new size - the same checks a fresh load would make, without paying for a new page load. Only safe
+// for a story with no play(): a mutated story cannot be trusted to reach the same state again from a re-render.
+async function switchVariant(page: Page, variant: Variant): Promise<StoryState> {
+  await page.setViewportSize({ width: variant.viewport.width, height: variant.viewport.height });
+  await page.emulateMedia({ colorScheme: variant.theme });
+  await page.evaluate(async (theme) => {
+    const channel = (window as any).__STORYBOOK_ADDONS_CHANNEL__;
+    await new Promise<void>((resolve) => {
+      channel.once('storyFinished', () => resolve());
+      channel.emit('updateGlobals', { globals: { theme } });
+    });
+  }, variant.theme);
+  return readStoryState(page);
 }
 
 function describeViolation(violation: Violation): string {
@@ -118,63 +160,89 @@ const slug = (text: string) =>
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-|-$/g, '');
 
+// Renders the story exactly as it stood right after `loadStory`/`switchVariant` returned: crops and screenshots it,
+// then checks it the same way a fresh page's story always has. Appends to `failures` instead of asserting inline, so a
+// bad variant does not stop the remaining variants of this story from being captured and checked (each variant used to
+// be its own independent test; grouping them into one test must not change that). Mirrors the hard-then-soft order the
+// ungrouped version asserted in: a play() throw or Storybook's own error display stops this variant's remaining
+// checks, same as `expect()` throwing did before; the rest are soft, same as `expect.soft()` was.
+async function checkVariant(page: Page, entry: IndexEntry, variant: Variant, state: StoryState, problems: string[], failures: string[]): Promise<void> {
+  const label = `${variant.theme}/${variant.viewport.name}`;
+  const { finished, playError, errorDisplay } = state;
+
+  await page.evaluate(() => document.fonts.ready);
+  await fitViewportToContent(page, variant.viewport.width, variant.viewport.height);
+  const overflowPx = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+  // Storybook's static server answers a missing file with a fallback page and status 200, so a broken image
+  // shows up only as an <img> that finished loading with no pixels.
+  const brokenImages = await page.evaluate(() =>
+    [...document.images].filter((img) => img.complete && img.naturalWidth === 0 && !img.currentSrc.endsWith('.svg')).map((img) => img.currentSrc || img.src),
+  );
+  const dir = `screenshots/atlas/${slug(entry.title)}`;
+  mkdirSync(dir, { recursive: true });
+  await page.screenshot({
+    path: `${dir}/${slug(entry.name)}--${variant.theme}-${variant.viewport.name}.png`,
+    animations: 'disabled',
+    caret: 'hide',
+    clip: await contentClip(page),
+  });
+
+  for (const reporter of finished.reporters.filter((r) => r.type === 'a11y')) {
+    const undecided = (reporter.result?.incomplete ?? []).map((item) => `${item.id} (${item.nodes.length})`);
+    if (undecided.length) test.info().annotations.push({ type: 'axe-incomplete', description: `${label}: ${undecided.join(', ')}` });
+  }
+  const allowed = allowedRules(entry.title);
+  const violations = finished.reporters
+    .filter((reporter) => reporter.type === 'a11y')
+    .flatMap((reporter) => reporter.result?.violations ?? [])
+    .filter((violation) => !allowed.includes(violation.id))
+    .map(describeViolation);
+  // Problems logged since the last capture (this variant's boot or switch, and its checks) belong to this variant only.
+  const ownProblems = problems.splice(0);
+
+  if (playError !== undefined) {
+    failures.push(`${label}: play() threw: ${playError}`);
+    return;
+  }
+  if (errorDisplay) {
+    failures.push(`${label}: Storybook is showing its error display`);
+    return;
+  }
+  failures.push(...violations.map((violation) => `${label}: ${violation}`));
+  // The addon marks a story 'error' for ANY axe result, including rules recorded as debt above.
+  if (allowed.length === 0 && finished.status !== 'success') failures.push(`${label}: story reported status ${finished.status}`);
+  if (overflowPx > 1) failures.push(`${label}: story scrolls sideways by ${overflowPx}px`);
+  if (brokenImages.length) failures.push(`${label}: images that failed to load: ${brokenImages.join(', ')}`);
+  failures.push(...ownProblems.map((problem) => `${label}: ${problem}`));
+}
+
 test.describe.configure({ mode: 'parallel' });
 
+// Every Storybook story x theme x viewport, captured and checked (a11y, play(), overflow, console errors). One test
+// per story: it loads the first variant fresh, then for the rest switches theme and resizes on the same page instead
+// of reloading, since a story with no play() renders the same way from a re-render as it would from a fresh load. A
+// story tagged play-fn (Storybook tags any story with a play() function automatically) reloads for every variant
+// instead: play() mutates the story, so a page already mutated by a previous variant cannot be reused for the next.
+// reload-debt.ts names any story found (by the side-by-side diff this phase's PR ran) to also need a fresh page per
+// variant despite having no play(), same spirit as a11y-debt.ts.
 for (const entry of stories) {
-  for (const theme of THEMES) {
-    for (const viewport of VIEWPORTS) {
-      test(`${entry.title} / ${entry.name} / ${theme} / ${viewport.name}`, async ({ page }) => {
-        const problems: string[] = [];
-        page.on('pageerror', (error) => problems.push(`uncaught error: ${error.message}`));
-        page.on('console', (message) => {
-          if (message.type() === 'error') problems.push(`console.error: ${message.text()}`);
-        });
+  const reloadEveryVariant = (entry.tags ?? []).includes('play-fn') || needsFreshLoad(entry.title);
 
-        await page.setViewportSize({ width: viewport.width, height: viewport.height });
-        // Apps that theme with prefers-color-scheme (Tailwind's default dark: variant) flip only if the media query does.
-        await page.emulateMedia({ colorScheme: theme });
-        await page.goto(`/iframe.html?id=${entry.id}&viewMode=story&globals=theme:${theme}`, { waitUntil: 'commit' });
-        const { finished, playError, errorDisplay } = await finishedStory(page, entry.id);
+  test(`${entry.title} / ${entry.name}`, async ({ page }) => {
+    test.setTimeout(test.info().timeout * VARIANTS.length);
+    const problems: string[] = [];
+    page.on('pageerror', (error) => problems.push(`uncaught error: ${error.message}`));
+    page.on('console', (message) => {
+      if (message.type() === 'error') problems.push(`console.error: ${message.text()}`);
+    });
 
-        await page.evaluate(() => document.fonts.ready);
-        await fitViewportToContent(page, viewport.width, viewport.height);
-        const overflowPx = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
-        // Storybook's static server answers a missing file with a fallback page and status 200, so a broken image
-        // shows up only as an <img> that finished loading with no pixels.
-        const brokenImages = await page.evaluate(() =>
-          [...document.images]
-            .filter((img) => img.complete && img.naturalWidth === 0 && !img.currentSrc.endsWith('.svg'))
-            .map((img) => img.currentSrc || img.src),
-        );
-        const dir = `screenshots/atlas/${slug(entry.title)}`;
-        mkdirSync(dir, { recursive: true });
-        await page.screenshot({
-          path: `${dir}/${slug(entry.name)}--${theme}-${viewport.name}.png`,
-          animations: 'disabled',
-          caret: 'hide',
-          clip: await contentClip(page),
-        });
-
-        for (const reporter of finished.reporters.filter((r) => r.type === 'a11y')) {
-          const undecided = (reporter.result?.incomplete ?? []).map((item) => `${item.id} (${item.nodes.length})`);
-          if (undecided.length) test.info().annotations.push({ type: 'axe-incomplete', description: undecided.join(', ') });
-        }
-        const allowed = allowedRules(entry.title);
-        const violations = finished.reporters
-          .filter((reporter) => reporter.type === 'a11y')
-          .flatMap((reporter) => reporter.result?.violations ?? [])
-          .filter((violation) => !allowed.includes(violation.id))
-          .map(describeViolation);
-
-        expect(playError, 'play() threw').toBeUndefined();
-        expect(errorDisplay, 'Storybook is showing its error display').toBe(false);
-        expect.soft(violations, 'accessibility violations').toEqual([]);
-        // The addon marks a story 'error' for ANY axe result, including rules recorded as debt above.
-        if (allowed.length === 0) expect.soft(finished.status).toBe('success');
-        expect.soft(overflowPx, `story scrolls sideways by ${overflowPx}px`).toBeLessThanOrEqual(1);
-        expect.soft(brokenImages, 'images that failed to load').toEqual([]);
-        expect.soft(problems, 'the story logged errors').toEqual([]);
+    const failures: string[] = [];
+    for (const [index, variant] of VARIANTS.entries()) {
+      await test.step(`${variant.theme}/${variant.viewport.name}`, async () => {
+        const state = index === 0 || reloadEveryVariant ? await loadStory(page, entry, variant) : await switchVariant(page, variant);
+        await checkVariant(page, entry, variant, state, problems, failures);
       });
     }
-  }
+    expect(failures, 'the story reported problems').toEqual([]);
+  });
 }
