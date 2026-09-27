@@ -10,6 +10,7 @@ import { workspaceStates } from './catalog/workspace';
 import { teleprompterStates } from './catalog/teleprompter';
 import { reviewStates } from './catalog/review';
 import { deliveryStates } from './catalog/delivery';
+import { productionStates } from './catalog/production';
 import { settingsStates } from './catalog/settings';
 import { globalStates } from './catalog/global';
 import { shellStates } from './catalog/shell';
@@ -35,6 +36,7 @@ export const STATE_CATALOG: StateEntry[] = [
   ...teleprompterStates,
   ...reviewStates,
   ...deliveryStates,
+  ...productionStates,
   ...settingsStates,
   ...globalStates,
   ...shellStates,

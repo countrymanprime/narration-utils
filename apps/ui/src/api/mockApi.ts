@@ -112,7 +112,6 @@ export function createMockApi(
   const preview = createPreviewMock({ chapters: () => s.chapters, paragraphs: () => s.paragraphs }, initial.preview);
   const daw = createDawMock(initial.daw);
   const providers = createProvidersMock(initial.providers);
-  const production = createProductionMock(initial.production);
   const stages = createStagesMock({
     ready: manuscriptReady,
     chapters: () => s.chapters.map(withMeasurement),
@@ -149,6 +148,11 @@ export function createMockApi(
       },
     ];
   };
+  const production = createProductionMock({
+    chapters: manuscript.bindings.manuscriptChapters,
+    recommendations: stages.stageRecommendations,
+    seed: initial.production,
+  });
   const { saveAnalyzerFindings, saveFinding, saveFileFindings, ...findings } = createFindingsMock(initial.findings ?? WIRE_FINDINGS, {
     rerunAfterFirstList: initial.findingsRerun,
     reaper: initial.reaper,
@@ -215,6 +219,7 @@ export function createMockApi(
     ...workspace,
     ...preview,
     ...stages,
+    ...production,
     ...findings,
     // Merge the workspace's own loop into the shared REAPER status/stop, after ...findings so these win: one app
     // loop at a time, whichever page started it, exactly as the real host's findingNavigation does.
@@ -229,7 +234,6 @@ export function createMockApi(
     },
     ...daw,
     ...providers,
-    ...production,
     ...createPronunciationLookupMock(),
   };
   const api = initial.invalidPayload ? { ...base, ...invalidPayloadOverrides(initial.invalidPayload, base) } : base;
