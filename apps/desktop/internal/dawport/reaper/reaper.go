@@ -162,7 +162,7 @@ func New(client *bridge.Client, allowed func(dawport.Capability) error) (*Adapte
 			dawport.CapProjectState: projectStateReader{commands},
 			dawport.CapTakeCreate:   takeCreator{commands},
 			dawport.CapHeartbeat:    heartbeat,
-			dawport.CapProjectRead:  projectReader{},
+			dawport.CapProjectRead:  ProjectReader{},
 			dawport.CapTrackState:   actions,
 			dawport.CapRecord:       actions,
 			dawport.CapPunch:        actions,
@@ -206,7 +206,9 @@ func (a *Adapter) Explain(_ dawport.Capability, r dawport.Reason) string {
 	}
 }
 
-// projectReader reads a saved .rpp with REAPER closed.
-type projectReader struct{}
+// ProjectReader reads a saved .rpp with REAPER closed. It needs no live session (project_read's Needs is NeedsNothing,
+// capability.go), so it is exported: a caller that only wants the offline read (DAW port PRD Phase 5d - tracks.go and its
+// neighbours) may use it directly, the same value New wires in as the resolver's role for CapProjectRead.
+type ProjectReader struct{}
 
-func (projectReader) ReadProject(path string) (dawport.Project, error) { return tracks.Parse(path) }
+func (ProjectReader) ReadProject(path string) (dawport.Project, error) { return tracks.Parse(path) }

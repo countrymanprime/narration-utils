@@ -471,6 +471,8 @@ func (h *Host) configureLocked(next config) {
 		ProjectFile:    func() (string, error) { return selectedProjectFile(projectFolder, settingsStore) },
 		LoadManuscript: h.manuscript.Load,
 		Reporter:       h.persist,
+		// DAW port PRD Phase 5d: reads the saved .rpp through the port's offline role instead of tracks.Parse directly.
+		ProjectReader: reaper.ProjectReader{},
 	}, h.coverageLauncherLocked(), h.emitCoverage)
 	// A chapter's recordedFraction is the measured share of its words from a current, complete check, and absent otherwise (D11,
 	// Q12 A); reading it never starts a check (Q14).
@@ -483,6 +485,8 @@ func (h *Host) configureLocked(next config) {
 		ProjectFile: func() (string, error) { return selectedProjectFile(projectFolder, settingsStore) },
 		Policy:      func() editing.Policy { return editingPolicy(settingsStore) },
 		Reporter:    h.persist,
+		// DAW port PRD Phase 5d: reads the saved .rpp through the port's offline role instead of tracks.Parse directly.
+		ProjectReader: reaper.ProjectReader{},
 	}, nil)
 	// Every finished comparison is recorded for the proofing pickups signal (proofing-readiness-signals PRD Phase 2).
 	h.transcript.SetRunRecorder(comparisonRecorder(h.config.projectFolder, h.manuscript, settingsStore, h.persist))
