@@ -99,6 +99,13 @@ type Request struct {
 	Alignment     AlignmentParams
 	// Background marks a run the host started on its own (NextBackground), not the narrator.
 	Background bool
+	// Recheck is the model cascade's second pass (recording-check-model-cascade PRD Phase 4): when
+	// its Model is set, a first pass with Transcription's model is followed, for every region the
+	// first pass reports missing, by a re-check with Recheck's model, spliced into the same words
+	// and re-aligned - or, when the windows would cover most of the chapter (MC3), one
+	// whole-chapter pass with Recheck's model in its place. The zero value keeps today's
+	// single-pass behaviour; Phase 5 resolves it from settings (MC1, MC2, off by default).
+	Recheck Transcription
 }
 
 // Service runs one coverage analysis at a time and reads results back.
@@ -299,7 +306,7 @@ func (s *Service) prepareAndLaunch(request Request) (*job, error) {
 	running := &job{
 		runID: strconv.FormatInt(started.UnixNano(), 10), request: request, basis: basis, plan: planned,
 		projectFile: projectFile, inputs: inputs, startedAt: started, done: make(chan struct{}),
-		words: wordsCache{store: s.cache, paramHash: wordsParamHash(request.Transcription, inputs)},
+		words: wordsCache{store: s.cache, paramHash: wordsParamHash(request.Transcription, request.Recheck.Model, inputs)},
 	}
 	running.dir = filepath.Join(runsDir(s.config.Project), running.runID)
 	running.progressPath = filepath.Join(running.dir, "progress.txt")
@@ -307,7 +314,7 @@ func (s *Service) prepareAndLaunch(request Request) (*job, error) {
 		_ = os.RemoveAll(running.dir)
 		return nil, err
 	}
-	child, err := s.launch(context.Background(), s.config.Python, s.sidecarArgs(running)...)
+	child, err := s.launch(context.Background(), s.config.Python, s.sidecarArgs(running, request.Transcription)...)
 	if err != nil {
 		_ = os.RemoveAll(running.dir)
 		return nil, fmt.Errorf("could not start the recording check: %w", err)
@@ -316,10 +323,13 @@ func (s *Service) prepareAndLaunch(request Request) (*job, error) {
 	return running, nil
 }
 
-// sidecarArgs builds the sidecar's arguments. Every path is under the run's
-// folder or is the project's own manuscript; the audio paths are in the
+// sidecarArgs builds one stage's --coverage arguments over the run's manifest and chapter, with
+// the given transcription: the first pass's own model, the whole-chapter fallback's re-check model
+// (model cascade PRD Phase 4), or, for the align-only re-run after a windowed re-check, the first
+// pass's model again (the words files still carry it, ADR 0341's compatibility field). Every path
+// is under the run's folder or is the project's own manuscript; the audio paths are in the
 // manifest and come from the saved project (threat-model row 4e).
-func (s *Service) sidecarArgs(running *job) []string {
+func (s *Service) sidecarArgs(running *job, transcription Transcription) []string {
 	args := []string{
 		"--coverage",
 		"--manifest", running.manifestPath(),
@@ -328,20 +338,58 @@ func (s *Service) sidecarArgs(running *job) []string {
 		"--words-dir", running.wordsDir(),
 		"--out", running.resultsPath(),
 		"--progress", running.progressPath,
-		"--model", running.request.Transcription.Model,
+		"--model", transcription.Model,
 		"--max-misread-run", strconv.Itoa(running.request.Alignment.MaxMisreadRun),
 		"--min-anchor-run", strconv.Itoa(running.request.Alignment.MinAnchorRun),
 	}
-	if dir := running.request.Transcription.ModelDir; dir != "" {
-		args = append(args, "--model-dir", dir)
+	if transcription.ModelDir != "" {
+		args = append(args, "--model-dir", transcription.ModelDir)
 	}
-	if language := running.request.Transcription.Language; language != "" {
-		args = append(args, "--language", language)
+	if transcription.Language != "" {
+		args = append(args, "--language", transcription.Language)
 	}
 	if s.config.Backend != "" {
 		args = append([]string{s.config.Backend}, args...)
 	}
 	return args
+}
+
+// recheckArgs builds the windows-only --recheck stage's arguments (model cascade PRD Phase 4):
+// unlike sidecarArgs, no manifest, chapter or --out - coverage_mode.run_recheck touches none of
+// them - but --manuscript is required by the sidecar's argument parser regardless of mode.
+func (s *Service) recheckArgs(running *job) []string {
+	transcription := running.request.Recheck
+	args := []string{
+		"--coverage",
+		"--recheck", running.windowsPath(),
+		"--manuscript", filepath.Join(s.config.Project, "narration-utils", "manuscript", "manuscript.json"),
+		"--words-dir", running.wordsDir(),
+		"--progress", running.progressPath,
+		"--model", transcription.Model,
+	}
+	if transcription.ModelDir != "" {
+		args = append(args, "--model-dir", transcription.ModelDir)
+	}
+	if transcription.Language != "" {
+		args = append(args, "--language", transcription.Language)
+	}
+	if s.config.Backend != "" {
+		args = append([]string{s.config.Backend}, args...)
+	}
+	return args
+}
+
+// stageArgs builds the sidecar arguments for the stage advance is moving the job into (model
+// cascade PRD Phase 4).
+func (s *Service) stageArgs(running *job, next stage) []string {
+	switch next {
+	case stageRecheckWhole:
+		return s.sidecarArgs(running, running.request.Recheck)
+	case stageRealign:
+		return append(s.sidecarArgs(running, running.request.Transcription), "--align-only")
+	default: // stageRecheckWindows
+		return s.recheckArgs(running)
+	}
 }
 
 // writeInputs creates the run's folder, writes the manifest and seeds the
