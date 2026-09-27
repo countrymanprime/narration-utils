@@ -169,7 +169,7 @@ ENGINES: Registry[AsrEngine]        # filled by each sidecar's adapters at impor
 | 8 | Piper and pronunciation adapters | Piper, CMU and eSpeak adapters; `manuscript_guide.py` selects through the registries | complete | with 5, 6 | 7 | - |
 | 9 | TTS and pronunciation registries (Go) | `internal/ttsport`, `internal/pronunciationport`; setting choices and the catalog payload from them; `Pronounce` checks the source | complete | with 3, 4, 7, 10, 12 | 2 | - |
 | 10 | Capture contract (Python) | `ports/capture.py`: `CaptureBackend` (`list_devices`, `chunks`) and its suite | complete | with 3, 4, 7, 9, 12 | 1 | - |
-| 11 | dshow capture adapter | `devices.py` and `iter_microphone_chunks` behind a dshow adapter | pending | with 6, 8 | 5, 10 | - |
+| 11 | dshow capture adapter | `devices.py` and `iter_microphone_chunks` behind a dshow adapter | complete | with 6, 8 | 5, 10 | - |
 | 12 | Capture registry (Go) | `internal/captureport` with the dshow row (Windows) | complete | with 3, 4, 7, 9, 10 | 2 | - |
 | 13 | Encoder and Packager ports (Could) | `internal/encodeport`: interfaces, empty registry, suite | complete | with any | 2 | - |
 | 14 | Provider capabilities on the wire (Should) | `ProviderCapabilities` binding; schema, golden, `wireContracts` row, mock; `hostAPIVersion` + 1 | pending | no | 4, 9, 12, daw-port P4 | - |

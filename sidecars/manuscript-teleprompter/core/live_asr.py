@@ -115,11 +115,16 @@ if str(_CORE_DIR) not in sys.path:
 # Registers the "whisper" and "moonshine" rows into ENGINES (provider-ports P5); --engine's choices and the argument
 # checks below go through this registry rather than comparing engine names themselves.
 import asr_adapters  # noqa: F401
+
+# Registers the "dshow" row into BACKENDS (provider-ports P11); iter_microphone_chunks below looks it up rather than
+# calling devices.py/PyAV itself.
+import capture_dshow  # noqa: F401
 from narration_common.logging_utils import log, set_log_file
 
 # Word and Hypothesis are the speech engine port's types (provider-ports P3); they are re-exported here so `live_asr.Hypothesis`
 # and every other existing import keep working.
 from narration_common.ports.asr import ENGINES, Hypothesis, LiveRequest, Word
+from narration_common.ports.capture import BACKENDS
 
 SAMPLE_RATE = 16000
 
@@ -444,33 +449,11 @@ def iter_wav_chunks(path: str, chunk_seconds: float = CHUNK_SECONDS) -> Iterator
 
 
 def iter_microphone_chunks(device_name: str, chunk_seconds: float = CHUNK_SECONDS) -> Iterator[np.ndarray]:
-    """Capture live mic audio via PyAV's Windows dshow input, resampled the
-    same way as iter_wav_chunks. Manual-testing path only (device
-    enumeration/selection UX is planned in
-    docs/prds/teleprompter-engines-and-input-devices.prd.md, not resolved
-    here) - not exercised by the automated test suite.
-    Ctrl+C ends the stream so buffered audio is still decoded."""
-    import av
-
-    container = av.open(file=f"audio={device_name}", format="dshow")
-    stream = container.streams.audio[0]
-    resampler = av.AudioResampler(format="fltp", layout="mono", rate=SAMPLE_RATE)
-    chunk_samples = max(1, int(chunk_seconds * SAMPLE_RATE))
-
-    pending = np.zeros(0, dtype=np.float32)
-    try:
-        for frame in container.decode(stream):
-            for rframe in resampler.resample(frame):
-                pending = np.concatenate([pending, rframe.to_ndarray()[0].astype(np.float32)])
-                while len(pending) >= chunk_samples:
-                    yield pending[:chunk_samples]
-                    pending = pending[chunk_samples:]
-    except KeyboardInterrupt:
-        log("Stopping...")
-    finally:
-        container.close()
-    if len(pending) > 0:
-        yield pending
+    """Capture live mic audio through this platform's capture backend (provider-ports P11: on Windows, PyAV's dshow
+    input, capture_dshow.py). The lookup does not check platform, the same as ENGINES.lookup does not (P5) - the
+    registry has only this one row - so running this off Windows still fails exactly where it always did, opening
+    "dshow" through PyAV, not at the lookup with some new message of its own."""
+    return BACKENDS.lookup("dshow").chunks(device_name, chunk_seconds)
 
 
 def _anchor_capture_clock(chunks: Iterator[np.ndarray]) -> tuple[Iterator[np.ndarray], float]:
