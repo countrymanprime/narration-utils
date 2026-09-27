@@ -7,7 +7,7 @@ import type { GuideEntity, ManuscriptParagraph } from '../../types';
 // against a recorded fixture of this same shape instead of a second extractor (prep-depth.prd.md Phase 4,
 // Q1 option C, "What We're NOT Building"). Swapping to the real output later is only a change to where the
 // `DialogueCue[]` comes from, never to `speakerLabelForParagraph` or the components that call it.
-export type DialogueCueSpeakerSource = 'tag' | 'continuation' | 'unknown' | 'correction';
+type DialogueCueSpeakerSource = 'tag' | 'continuation' | 'unknown' | 'correction';
 
 export type DialogueCue = {
   id: string;
