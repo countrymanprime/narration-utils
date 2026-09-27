@@ -168,6 +168,13 @@
     "caption": "Proofing - an EXTRA (words heard but not written) discrepancy row expanded"
   },
   {
+    "page": "proofing",
+    "state": "preview-default",
+    "viewport": "desktop",
+    "docName": "proofing-preview",
+    "caption": "Proofing - the Preview panel suggesting three candidate excerpts from the manuscript"
+  },
+  {
     "page": "storybible",
     "state": "category-character",
     "viewport": "desktop",
