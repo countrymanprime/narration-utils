@@ -1,0 +1,18 @@
+{
+  "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+  "name": "character-continuity-cue-eval",
+  "projectType": "application",
+  "tags": ["toolchain:python"],
+  "targets": {
+    "lint": {
+      "executor": "nx:run-commands",
+      "options": {
+        "commands": [
+          "node scripts/quality.mjs python -m ruff format --check docs/research/character-continuity-cue-extraction-eval",
+          "node scripts/quality.mjs python -m ruff check docs/research/character-continuity-cue-extraction-eval"
+        ],
+        "parallel": false
+      }
+    }
+  }
+}
