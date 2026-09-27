@@ -300,8 +300,14 @@ export const manuscriptStates: StateEntry[] = [
   },
   {
     page: 'manuscript',
+    state: 'booth-dark',
+    description:
+      'Manuscript, the booth (as booth-default) with Dark selected in Settings > Appearance - the booth follows the app theme and forces neither light nor dark (ADR 0363, superseding ADR 0360 Q1), so this differs from booth-default only in the palette',
+  },
+  {
+    page: 'manuscript',
     state: 'booth-listening',
     description:
-      'Manuscript, the booth mid-session and listening (booth-mode-and-companion-panel.prd.md Phase 2, same mock seam as read-aloud-listening) - the status badge reads "Reading", the Booth commands toolbar shows Pause (Kbd Space), Stop reading and Follow all enabled, the current word highlighted in the booth\'s high-contrast surface',
+      'Manuscript, the booth mid-session and listening (booth-mode-and-companion-panel.prd.md Phase 2, same mock seam as read-aloud-listening) - the status badge reads "Reading", the Booth commands toolbar shows Pause (Kbd Space), Stop reading and Follow all enabled, the current word highlighted in the active app theme (the booth follows it, ADR 0363)',
   },
 ];

@@ -25,9 +25,9 @@ export type FocusShellProps = {
 };
 
 // The full-screen booth layout (studio-ui-primitives.prd.md Phase 9): a status bar, an optional side rail, the main
-// region and a command bar, each a named landmark so a screen reader can jump straight to any of them. It sets
-// `data-surface="booth"` on its own root so the Phase 1 booth token block (`styles.css`) applies to everything drawn
-// inside it, regardless of the narrator's light/dark preference - the booth is a place, not a preference (ADR 0360 Q1).
+// region and a command bar, each a named landmark so a screen reader can jump straight to any of them. It draws with the
+// active app theme, light or dark, like every other surface: the theme is one global setting and no surface forces it
+// (ADR 0363, superseding ADR 0360 Q1's forced-dark booth block).
 // A slots-only API: it composes whatever `ReactNode`s it is given and imports no other primitive, so it needs no change
 // as `Kbd`, `StatusBadge`, `LevelMeter` and `Toolbar` land inside it. It is a route or sits in `Dialog size="full"` at
 // the feature's choice (ADR 0094) - this shell has no opinion on that, and no Escape handling of its own.
@@ -46,7 +46,7 @@ export function FocusShell({
   const showRail = rail !== undefined && !railCollapsed;
   const Content = asMain ? 'main' : 'div';
   return (
-    <div data-surface="booth" className={`flex size-full flex-col overflow-hidden bg-[var(--bg)] text-[var(--text)] ${className}`}>
+    <div className={`flex size-full flex-col overflow-hidden bg-[var(--bg)] text-[var(--text)] ${className}`}>
       <div role="region" aria-label={statusLabel} className="flex flex-none items-center gap-3 border-b border-[var(--border)] bg-[var(--surface)] px-4 py-2">
         {status}
       </div>

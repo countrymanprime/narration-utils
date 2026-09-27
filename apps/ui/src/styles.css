@@ -78,14 +78,14 @@
   /* Alternating reader rows: a touch darker than --surface, like banded table rows. */
   --row-alt: color-mix(in srgb, var(--surface) 94%, var(--text));
   /* LevelMeter's zones (studio-ui-primitives.prd.md Phase 1): named for their role rather than duplicating the status
-     hues, but the same colours. A derived alias, like --row-alt above: it needs no dark or booth override of its own,
+     hues, but the same colours. A derived alias, like --row-alt above: it needs no dark override of its own,
      since it resolves through whichever theme's --non-text/--ok/--warn/--danger are active. */
   --meter-floor: var(--non-text);
   --meter-body: var(--ok);
   --meter-hot: var(--warn);
   --meter-over: var(--danger);
   /* StatusBadge's chip fills (Phase 1): a 14% tint of the tone colour, the one percentage that holds 4.5:1 against every
-     tone's own -text colour in every theme, including booth. The entity badges' 18% (ADR 0059) does not: --danger-text
+     tone's own -text colour in both themes. The entity badges' 18% (ADR 0059) does not: --danger-text
      on an 18% --danger tint falls to 4.29:1 in the dark theme. Derived the same way as the meter zones above. */
   --badge-ok-fill: color-mix(in srgb, var(--ok) 14%, transparent);
   --badge-warn-fill: color-mix(in srgb, var(--warn) 14%, transparent);
@@ -111,6 +111,10 @@
   --font-size-xs: 0.72rem;
   --font-size-sm: 0.82rem;
   --font-size-base: 0.88rem;
+  /* The booth's script size (booth-mode-and-companion-panel.prd.md). The booth follows the app theme like every other
+     surface (ADR 0363, superseding ADR 0360 Q1's forced-dark booth block), so this is its only booth-only token: a size,
+     declared once here, the same in light and dark. */
+  --font-size-booth-script: 1.1rem;
   color-scheme: light;
 }
 /* Single source of truth for dark values - set via ThemeProvider
@@ -161,54 +165,6 @@
   --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 2px 8px rgba(0, 0, 0, 0.25);
   --shadow-lg: 0 8px 28px rgba(0, 0, 0, 0.5), 0 3px 10px rgba(0, 0, 0, 0.3);
   color-scheme: dark;
-}
-/* FocusShell's booth surface (studio-ui-primitives.prd.md Phase 1, ADR 0360 Q1): scoped to the element that carries
-   `data-surface="booth"`, not a third app theme, so it applies regardless of the narrator's light/dark preference - the
-   booth is a place, not a preference. Custom properties cascade to the subtree; most tokens fall through from whichever
-   theme is active (light or dark) unchanged, since they don't depend on the surface being dark. The kind colours -
-   --danger/--warn/--info/--ok/--experimental and their -text companions - do depend on it (light's versions are tuned
-   for a light --surface, not this block's very dark one), so this block repeats dark's values for them explicitly rather
-   than letting light's fall through; the derived meter zones and badge fills above inherit that through var(). Darker and
-   higher-contrast than plain dark, for a room with the lights down; --font-size-booth-script is for the script view a
-   later phase reads. src/tokenContrast.ts models this block as dark's tokens plus these overrides, which `paletteContrast.
-   test.ts` checks every pair over - keep this list in sync with :root[data-theme='dark'] for the tokens it lists. */
-[data-surface='booth'] {
-  --bg: #0a0806;
-  --surface: #14110c;
-  --surface-2: #1d1811;
-  --surface-3: #292216;
-  --border: #3d3524;
-  --text: #fbf7ee;
-  --text-muted: #c9bea0;
-  --non-text: #8a8370;
-  --danger: #db7a6e;
-  --warn: #e0b255;
-  --info: #6e9fdb;
-  --ok: #74c28a;
-  --danger-text: var(--danger);
-  --warn-text: var(--warn);
-  --info-text: var(--info);
-  --ok-text: var(--ok);
-  --experimental: #4fbdbd;
-  --experimental-text: var(--experimental);
-  /* The Story Bible entity/note highlight text colours (Highlight.tsx): each is a `color-mix` formula declared once, in
-     `:root`, that resolves against whichever `--text` is in scope where THAT declaration's own `var()` is substituted -
-     which is `:root` itself, not a descendant's override (custom-property inheritance computes the formula once, at the
-     nearest rule that declares it, not again at every element that merely inherits it). Falling through from dark (like
-     the badge/kind colours above) is therefore not enough for these: without a booth-scoped redeclaration they keep
-     resolving against the light theme's near-black `--text` regardless of which theme is active elsewhere on the page,
-     which is unreadable against this block's own very dark background. Re-declared here, over booth's own `--text`, the
-     same way the badge colours above already are.
-  */
-  --character-text: color-mix(in srgb, var(--character) 45%, var(--text));
-  --place-text: color-mix(in srgb, var(--place) 45%, var(--text));
-  --org-text: color-mix(in srgb, var(--org) 45%, var(--text));
-  --review-text: color-mix(in srgb, var(--review) 45%, var(--text));
-  --lore-text: color-mix(in srgb, var(--lore) 45%, var(--text));
-  --item-text: color-mix(in srgb, var(--item) 45%, var(--text));
-  --event-text: color-mix(in srgb, var(--event) 45%, var(--text));
-  --search-text: color-mix(in srgb, var(--search) 45%, var(--text));
-  --font-size-booth-script: 1.1rem;
 }
 @layer base {
   /* A height:100% chain, not 100vh/100dvh: exact under both WebView2 zoom and CSS zoom

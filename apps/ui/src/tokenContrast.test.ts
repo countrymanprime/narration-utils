@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest';
-import { boothTokens, contrastRatio, countBoothBlocks, countRootRules, parseColor, parseThemes, resolveContrast, rootRules } from './tokenContrast';
+import { contrastRatio, countRootRules, forcedThemeRules, parseColor, parseThemes, resolveContrast, rootRules } from './tokenContrast';
 
 // The palette guard (paletteContrast.test.ts) is only as good as its arithmetic, so the arithmetic is checked against
 // values that can be verified by hand or against a browser: the WCAG extremes, CSS's own colour-mix rules, and the
@@ -100,31 +100,28 @@ describe('parseThemes', () => {
   });
 });
 
-describe('the booth block (studio-ui-primitives.prd.md Phase 1)', () => {
+describe('forcedThemeRules (ADR 0363: the theme is global, no surface forces light or dark)', () => {
   const css = `
-    :root { --a: #111111; --b: #222222; }
-    :root[data-theme='dark'] { --a: #eeeeee; }
-    [data-surface='booth'] { --a: #000000; }
+    :root { --a: #111111; --size: 1rem; color-scheme: light; }
+    :root[data-theme='dark'] { --a: #eeeeee; color-scheme: dark; }
+    @layer base { body { color: var(--a); } }
+    @theme { --text-xs--line-height: 1rem; }
   `;
 
-  it("reads the declarations of [data-surface='booth'], with either quote", () => {
-    expect(boothTokens(css)).toEqual({ a: '#000000' });
-    expect(boothTokens(':root { --a: #111; } [data-surface="booth"] { --a: #000; }')).toEqual({ a: '#000' });
+  it('finds nothing when only the two theme blocks set colours and the colour scheme', () => {
+    expect(forcedThemeRules(css)).toEqual([]);
   });
 
-  it('returns an empty map when the file has no booth block', () => {
-    expect(boothTokens(':root { --a: #111111; }')).toEqual({});
+  it('names a scoped rule that redeclares a colour token the dark theme sets, however it is written', () => {
+    expect(forcedThemeRules(`${css} [data-surface='booth'] { --a: #000000; }`)).toEqual(["[data-surface='booth']"]);
+    expect(forcedThemeRules(`${css} @layer base { .booth { --a: #000; } }`)).toEqual(['.booth']);
   });
 
-  it('counts a booth-surface rule the parser cannot read, so the guard fails instead of measuring a stale booth map', () => {
-    expect(countBoothBlocks(css)).toBe(1);
-    const two = `${css} [data-surface='booth'] { --c: #333; }`;
-    expect(countBoothBlocks(two)).toBe(2);
+  it('names a rule that pins a colour scheme outside the two theme blocks', () => {
+    expect(forcedThemeRules(`${css} .companion { color-scheme: dark; }`)).toEqual(['.companion']);
   });
 
-  it('layers the booth block over dark, as a third theme: unlisted tokens fall through to dark, listed ones override', () => {
-    const { dark, booth } = parseThemes(css);
-    expect(booth).toEqual({ ...dark, a: '#000000' });
-    expect(booth.b).toBe(dark.b);
+  it('allows a scoped rule that sets only a token neither theme varies, like a size', () => {
+    expect(forcedThemeRules(`${css} .booth { --size: 1.1rem; color: var(--a); }`)).toEqual([]);
   });
 });
