@@ -1,7 +1,24 @@
 import { describe, expect, it } from 'vitest';
 import { WIRE_FINDINGS, WIRE_TAKE_REVIEW_FINDINGS } from '../../api/mockFixtures';
 import { FINDING_CATEGORIES } from '../../api/contracts/findings';
-import { analyzerLabel, categoryLabel, confidenceLabel, evidenceRows, findingSummary, formatDecidedAt, formatTime } from './findingFormat';
+import type { Finding } from '../../types';
+import { analyzerLabel, categoryLabel, chapterLabel, confidenceLabel, evidenceRows, findingSummary, formatDecidedAt, formatTime } from './findingFormat';
+
+/** A delivery finding as the host saves it for the Review page (tests/fixtures/contracts/findings-list-delivery-qc.json). */
+const deliveryFinding = (evidence: Record<string, unknown>): Finding => ({
+  schema_version: 1,
+  id: 'delivery-1',
+  analyzer: 'measure',
+  project: { path: 'C:/Projects/Alice' },
+  source: { file: 'C:/Projects/Alice/renders/Chapter 01.wav' },
+  category: 'delivery_qc',
+  severity: 'error',
+  confidence: 1,
+  confidence_reason: 'deterministic measurement of the decoded samples',
+  evidence: { profile: 'acx@2026-09', profile_name: 'ACX (September 2026)', ...evidence },
+  evidence_version: 'sha256:1',
+  review: { status: 'unreviewed' },
+});
 
 describe('findingFormat', () => {
   it('words every documented category, and a newer one as words rather than an identifier', () => {
@@ -66,5 +83,64 @@ describe('findingFormat', () => {
     expect(formatDecidedAt(undefined)).toBeUndefined();
     expect(formatDecidedAt('yesterday')).toBe('yesterday');
     expect(formatDecidedAt('2026-09-21T10:00:00Z')).toMatch(/2026/);
+  });
+
+  it('words a delivery finding by its rule, its value and how it missed, in the file it is about', () => {
+    const rms = deliveryFinding({
+      rule: 'acx.rms',
+      rule_label: 'RMS',
+      metric: 'rms_dbfs',
+      unit: 'dBFS',
+      value: -24.1,
+      violation: 'below_min',
+      limit_min: -23,
+      limit_max: -18,
+      requirement: 'Each file measures between -23 dB and -18 dB RMS.',
+    });
+    expect(findingSummary(rms)).toBe('RMS −24.1 dBFS, below the minimum of −23');
+    expect(chapterLabel(rms)).toBe('Chapter 01.wav');
+    expect(evidenceRows(rms)).toEqual([
+      { label: 'Rule', value: 'RMS' },
+      { label: 'Requirement', value: 'Each file measures between -23 dB and -18 dB RMS.' },
+      { label: 'Measured', value: '−24.1 dBFS' },
+      { label: 'Judged against', value: 'ACX (September 2026)' },
+    ]);
+    const peak = deliveryFinding({
+      rule: 'acx.peak',
+      rule_label: 'Peak',
+      metric: 'sample_peak_dbfs',
+      unit: 'dBFS',
+      value: -2.4,
+      violation: 'above_max',
+      limit_max: -3,
+    });
+    expect(findingSummary(peak)).toBe('Peak −2.4 dBFS, above the maximum of −3');
+    const rate = deliveryFinding({
+      rule: 'acx.sample_rate',
+      rule_label: 'Sample rate',
+      metric: 'sample_rate',
+      unit: 'Hz',
+      value: 48000,
+      violation: 'not_one_of',
+      allowed: [44100],
+    });
+    expect(findingSummary(rate)).toBe('Sample rate 48 kHz, not 44.1 kHz');
+    const floor = deliveryFinding({ rule: 'acx.noise_floor', rule_label: 'Noise floor', metric: 'noise_floor_dbfs', unit: 'dBFS', available: false });
+    expect(findingSummary(floor)).toBe('Noise floor could not be measured');
+    expect(evidenceRows(floor)).toContainEqual({ label: 'Measured', value: 'Could not be measured' });
+    const format = deliveryFinding({
+      rule: 'acx.format',
+      rule_label: 'MP3 format',
+      metric: 'mp3_format',
+      unit: 'kbps',
+      value: 176,
+      violation: 'not_cbr',
+      limit_min: 192,
+    });
+    expect(findingSummary(format)).toBe('MP3 format 176 kbps, not a constant bit rate');
+    // A delivery finding saved before its rule was named on it still reads as its rule id, never as nothing.
+    expect(findingSummary(deliveryFinding({ rule: 'acx.rms', metric: 'rms_dbfs', value: -24.1, violation: 'below_min', limit_min: -23 }))).toBe(
+      'acx.rms −24.1, below the minimum of −23',
+    );
   });
 });

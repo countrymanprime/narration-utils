@@ -3,6 +3,7 @@
 // failing.
 import type { Finding, FindingReviewStatus, FindingSeverity, TakeComparisonEvidence } from '../../types';
 import { readKindLabel, spanLabel, takeComparisonEvidence, takeReviewEvidence } from './takeReviewFormat';
+import { deliveryEvidence, deliveryEvidenceRows, deliveryFileName, deliverySummary } from './deliveryFindingFormat';
 
 /** The script sentences a comparison covers, counted from 1 as the narrator does. */
 const comparedSpanLabel = (evidence: TakeComparisonEvidence): string =>
@@ -69,7 +70,9 @@ export function formatTime(seconds: number): string {
   return `${minutes}:${rest < 10 ? '0' : ''}${rest.toFixed(1)}`;
 }
 
-export const chapterLabel = (finding: Finding): string => finding.manuscript?.chapter_title || finding.manuscript?.chapter_id || 'No chapter';
+/** The chapter a finding is in; a delivery finding is about a file, not a chapter, so it names its file. */
+export const chapterLabel = (finding: Finding): string =>
+  finding.manuscript?.chapter_title || finding.manuscript?.chapter_id || (deliveryEvidence(finding) ? deliveryFileName(finding) : undefined) || 'No chapter';
 
 /** One line that says what the finding is about, for the list: what was expected and what was heard, or the entry it names. */
 export function findingSummary(finding: Finding): string {
@@ -77,6 +80,8 @@ export function findingSummary(finding: Finding): string {
   if (reads) return `${readKindLabel(reads.kind)}: ${reads.members.length} reads of ${spanLabel(reads).toLowerCase()}`;
   const comparison = takeComparisonEvidence(finding);
   if (comparison) return `${comparison.members.length} reads of ${comparedSpanLabel(comparison).toLowerCase()}, side by side`;
+  const delivery = deliveryEvidence(finding);
+  if (delivery) return deliverySummary(delivery);
   const expected = finding.manuscript?.expected;
   const recorded = finding.manuscript?.recorded;
   if (expected && recorded) return `“${expected}” read as “${recorded}”`;
@@ -109,6 +114,8 @@ export function evidenceRows(finding: Finding): Array<{ label: string; value: st
       { label: 'Transcribed with', value: `Whisper ${comparison.model}` },
     ];
   }
+  const delivery = deliveryEvidence(finding);
+  if (delivery) return deliveryEvidenceRows(delivery);
   const evidence = finding.evidence ?? {};
   const rows: Array<{ label: string; value: string }> = [];
   const add = (label: string, value: string | undefined) => value && rows.push({ label, value });

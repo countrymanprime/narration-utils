@@ -25,6 +25,7 @@ import { TracksPage } from './components/tracks/TracksPage';
 import { WorkspacePage } from './components/workspace/WorkspacePage';
 import { ReviewPage } from './components/review/ReviewPage';
 import { DeliveryPage } from './components/delivery/DeliveryPage';
+import { deliveryHash, parseDeliveryHash } from './components/delivery/deliveryLink';
 import { TooltipProvider } from './components/primitives/Tooltip';
 import { ErrorBoundary } from './components/primitives/ErrorBoundary';
 import { DESKTOP_HOST_API_VERSION } from './hostApi';
@@ -360,6 +361,8 @@ function AppRoutes() {
   const goToManuscript = (chapter: string, paragraph?: number) =>
     guardedNavigate(`/manuscript#${paragraph !== undefined ? `p${paragraph}` : `c${encodeURIComponent(chapter)}`}`);
   const goToStoryBible = (entityId: string) => guardedNavigate(`/story-bible#${encodeURIComponent(entityId)}`);
+  // A delivery finding opens the Delivery page on its file and rule: "#file=<path>&rule=<id>" (deliveryLink.ts).
+  const goToDelivery = (file: string, rule?: string) => guardedNavigate(`/delivery${deliveryHash({ file, ...(rule ? { rule } : {}) })}`);
 
   const guardedNavigate = (next: string) => {
     const nextPath = next.split('#')[0] || '/';
@@ -460,10 +463,19 @@ function AppRoutes() {
               <Route
                 path="/review"
                 element={
-                  <ReviewPage notify={setNotice} hasManuscript={Boolean(data.manuscript)} goToManuscript={goToManuscript} goToStoryBible={goToStoryBible} />
+                  <ReviewPage
+                    notify={setNotice}
+                    hasManuscript={Boolean(data.manuscript)}
+                    goToManuscript={goToManuscript}
+                    goToStoryBible={goToStoryBible}
+                    goToDelivery={goToDelivery}
+                  />
                 }
               />
-              <Route path="/delivery" element={<DeliveryPage openSettings={() => guardedNavigate('/settings#delivery')} />} />
+              <Route
+                path="/delivery"
+                element={<DeliveryPage openSettings={() => guardedNavigate('/settings#delivery')} focus={parseDeliveryHash(location.hash)} />}
+              />
               <Route
                 path="/settings"
                 element={

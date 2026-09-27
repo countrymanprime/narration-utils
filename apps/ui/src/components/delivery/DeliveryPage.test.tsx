@@ -9,6 +9,7 @@ import { createMockApi } from '../../api/mockApi';
 import { deliveryReportExportSchema, measureJobSchema } from '../../api/schemas/measure';
 import type { MeasureJob, NarrationApi } from '../../types';
 import { DeliveryPage } from './DeliveryPage';
+import type { DeliveryFocus } from './deliveryLink';
 
 afterEach(cleanup);
 
@@ -18,12 +19,12 @@ type Initial = Parameters<typeof createMockApi>[1];
 const contract = (name: string): MeasureJob =>
   measureJobSchema.parse(JSON.parse(readFileSync(join(__dirname, '..', '..', '..', '..', '..', 'tests', 'fixtures', 'contracts', name), 'utf8')));
 
-function renderPage({ overrides = {}, initial = {} }: { overrides?: Partial<NarrationApi>; initial?: Initial } = {}) {
+function renderPage({ overrides = {}, initial = {}, focus }: { overrides?: Partial<NarrationApi>; initial?: Initial; focus?: DeliveryFocus } = {}) {
   const api = createMockApi(overrides, initial);
   const openSettings = vi.fn();
   render(
     <ApiProvider api={api}>
-      <DeliveryPage openSettings={openSettings} />
+      <DeliveryPage openSettings={openSettings} focus={focus} />
     </ApiProvider>,
   );
   return { api, openSettings };
@@ -239,5 +240,19 @@ describe('DeliveryPage', () => {
     const { openSettings } = renderPage();
     await user.click(await screen.findByRole('button', { name: 'Change profile' }));
     expect(openSettings).toHaveBeenCalledTimes(1);
+  });
+
+  // Delivery findings on the Review page (delivery-platform-profiles.prd.md Phase 9): "Open in Delivery" lands here on the file.
+  it('opens on the file and rule a Review page finding names, rule by rule', async () => {
+    const measured = contract('measure-success.json');
+    renderPage({ overrides: { measureState: async () => measured }, focus: { file: 'C:/Renders/Chapter 01.wav', rule: 'acx.sample_rate' } });
+    expect(await screen.findByRole('table', { name: 'Chapter 01.wav, rule by rule' })).toBeTruthy();
+    expect(screen.getByText('From the Review page: sample rate in Chapter 01.wav, rule by rule below.')).toBeTruthy();
+  });
+
+  it('says so when the file a Review page finding names is not in the last measurement', async () => {
+    renderPage({ focus: { file: 'C:/Renders/Chapter 09.wav', rule: 'acx.rms' } });
+    expect(await screen.findByText('Chapter 09.wav is not in the last measurement. Choose it again to measure it and see its rules.')).toBeTruthy();
+    expect(screen.queryByRole('table', { name: /rule by rule/ })).toBeNull();
   });
 });
