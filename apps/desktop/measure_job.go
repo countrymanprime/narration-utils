@@ -349,7 +349,10 @@ func (h *Host) runMeasure(ctx context.Context, job *measureJob, paths []string, 
 		}
 		job.begin(index)
 		began := time.Now().UTC()
-		measured, err := measureFile(ctx, path, measure.Options{Progress: func(done, total int64) { job.progress(index, done, total) }})
+		measured, err := measureFile(ctx, path, measure.Options{
+			Progress: func(done, total int64) { job.progress(index, done, total) },
+			Decoder:  mp3LevelDecoder(),
+		})
 		if ctx.Err() != nil {
 			return
 		}
