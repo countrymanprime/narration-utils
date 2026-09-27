@@ -1,6 +1,6 @@
 // The `manuscript` rows of STATE_CATALOG (see state-catalog.ts), in the order they are captured.
 import type { StateEntry } from '../lib/types';
-import { REFLOW, KEEPS_DESKTOP_SCROLL, POPUP_ANCHORED_AT_FIRST_WIDTH } from './shared';
+import { COMPANION, REFLOW, KEEPS_DESKTOP_SCROLL, POPUP_ANCHORED_AT_FIRST_WIDTH } from './shared';
 
 export const manuscriptStates: StateEntry[] = [
   // Manuscript
@@ -303,5 +303,19 @@ export const manuscriptStates: StateEntry[] = [
     state: 'booth-listening',
     description:
       'Manuscript, the booth mid-session and listening (booth-mode-and-companion-panel.prd.md Phase 2, same mock seam as read-aloud-listening) - the status badge reads "Reading", the "Room" level meter (Phase 4) moving with the same mock level as the microphone button\'s own meter, the Booth commands toolbar shows Pause (Kbd Space), Stop reading and Follow all enabled, the current word highlighted in the booth\'s high-contrast surface',
+  },
+  {
+    page: 'manuscript',
+    state: 'companion-default',
+    description:
+      'Manuscript, the chapter header\'s "Companion" button (booth-mode-and-companion-panel.prd.md Phase 7): the same read-aloud session in `CompactShell`, the whole window (the host narrows it to 380 px and pins it beside the DAW, ADR 0401; also captured at that `companion` width) - the "Companion" heading with REAPER\'s playhead badge ("Playhead stopped") and "Full app", then the Script (chapter title, Play Kbd-labelled Space, Stop reading, the resume prompt and the text in its own scroll box), the reserved Note at playhead and Pickups sections ("Coming soon"), and the Hotkeys that work while this window has focus',
+    ...COMPANION,
+  },
+  {
+    page: 'manuscript',
+    state: 'companion-listening',
+    description:
+      'Manuscript, the companion panel mid-session (same mock seam and word as read-aloud-listening) with REAPER playing (?mockDawPlayhead=134.6) - the header badge reads "Playhead 2:14.6", the Script shows Pause (Kbd Space), Stop reading and Follow, and the current word highlighted in its scroll box',
+    ...COMPANION,
   },
 ];

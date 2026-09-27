@@ -249,6 +249,7 @@ The table is generated from each ADR's heading and Status line ([ADR 0410](0410-
 | [0362](0362-studio-token-batch-aliases-meter-and-badge-colours-and-a-minimal-booth-override.md) | The studio token batch aliases meter and badge colours, and the booth block overrides only what it must | Proposed |
 | [0363](0363-backspace-on-an-empty-tag-input-removes-the-last-chip.md) | Backspace on an empty tag input removes the last chip | Proposed |
 | [0380](0380-record-in-reaper-is-a-project-scope-setting-and-arming-is-a-separate-click-from-play.md) | Record in REAPER is a project-scope setting, and arming is a separate click from Play | Accepted |
+| [0381](0381-the-companion-panel-is-the-read-aloud-session-in-the-whole-window-and-follows-the-voice-not-the-daw-playhead.md) | The companion panel is the read-aloud session in the whole window, and its script follows the voice, not the DAW playhead | Proposed |
 | [0400](0400-promoting-a-reaper-command-from-experimental-to-supported-is-a-one-line-daw-port-declaration-change.md) | Promoting a REAPER command from Experimental to Supported is a one-line DAW port declaration change | Proposed |
 | [0401](0401-companion-mode-resizes-and-pins-the-one-existing-window-and-never-opens-a-second-one.md) | Companion mode resizes and pins the one existing window, and never opens a second one | Proposed |
 | [0402](0402-coreaudio-capture-is-a-pyav-avfoundation-sidecar-backend-addressed-by-device-name.md) | CoreAudio capture is a PyAV `avfoundation` sidecar backend, addressed by device name | Accepted |
