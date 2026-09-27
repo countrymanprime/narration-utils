@@ -984,6 +984,13 @@ export function PreviewCandidates(): $CancellablePromise<string> {
 }
 
 /**
+ * ProductionOverview is the Production page's board, KPI figures and "Next up" list.
+ */
+export function ProductionOverview(): $CancellablePromise<string> {
+    return $Call.ByID(1544329002);
+}
+
+/**
  * ProductionPlan reads this project's deadline, contracted amount and milestones. A project that has set none answers
  * an empty plan: no deadline, no amount, no milestones.
  */
@@ -1007,6 +1014,23 @@ export function ProductionSaveMilestones(milestones: project$0.Milestone[]): $Ca
  */
 export function ProductionSetDeadline(deadline: string, contractedAmount: number | null): $CancellablePromise<string> {
     return $Call.ByID(3757504551, deadline, contractedAmount);
+}
+
+/**
+ * ProductionStartTimer starts a timer on chapterID's stage. It answers {status: "started", session}, or
+ * {status: "refused", reason: "timer_running", message} while another timer runs; any other failure is a rejected
+ * promise.
+ */
+export function ProductionStartTimer(chapterID: string, stage: string): $CancellablePromise<string> {
+    return $Call.ByID(4160847620, chapterID, stage);
+}
+
+/**
+ * ProductionStopTimer stops the running timer. It answers {stopped: true, session} with the session it logged, or
+ * {stopped: false, session: null} when no timer was running.
+ */
+export function ProductionStopTimer(): $CancellablePromise<string> {
+    return $Call.ByID(2890834866);
 }
 
 /**
