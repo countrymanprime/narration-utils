@@ -45,9 +45,10 @@ especially welcome:
   [ADR 0180](docs/adr/0180-custom-delivery-profiles-are-copies-of-a-built-in-kept-in-a-user-level-file.md)): a file that makes the app
   run, open, fetch or write anything, or that is used without being validated, is in scope; one that only changes a verdict is the
   documented residual risk (threat model row 6i).
-- The stage-timer log the app keeps in a project (`narration-utils/production/sessions.json`): a file that makes the app run,
-  open, fetch or write anything, or that is read as something it is not instead of being kept aside and reported, is in scope;
-  one that only changes the narrator's own logged hours is the documented residual risk (threat model row 6n).
+- The stage-timer log the app keeps in a project (`narration-utils/production/sessions.json`) and the deadline, contracted amount
+  and milestones it keeps in `project.json`: a file that makes the app run, open, fetch or write anything, or that is read as
+  something it is not instead of being kept aside and reported or refused, is in scope; one that only changes the narrator's own
+  logged hours, dates or amount is the documented residual risk (threat model rows 6n and 6o).
 - Weaknesses in the release pipeline (for example an installer or checksum that does not match the reviewed build, or a release asset without valid build provenance). What the pipeline promises, and what it does not: every release asset has a SHA-256 file (it detects a damaged download, not a tampered one) and a build-provenance attestation you can check with `gh attestation verify` ([Build provenance](docs/operations/ci-and-releases.md#build-provenance)); the releases are **unsigned** by decision, so Windows SmartScreen warns and that warning alone is not a vulnerability; and the owner-only settings that back the pipeline (rulesets, the `production` environment, immutable releases, action pinning) are listed in [Tracking work on GitHub](docs/operations/github-workflow.md#repository-settings-that-only-the-owner-can-change).
 
 - The arguments and session files the app hands its local sidecars and the FFmpeg encoder, for example a value from the interface becoming a

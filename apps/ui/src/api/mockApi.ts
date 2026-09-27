@@ -11,6 +11,7 @@ import { createTeleprompterMock } from './teleprompterMock';
 import { createCoverageMock } from './coverageMock';
 import { createWorkspaceMock } from './workspaceMock';
 import { createPreviewMock } from './previewMock';
+import { createProductionMock } from './productionMock';
 import { createStagesMock } from './stagesMock';
 import { createDawMock } from './dawMock';
 import { createProvidersMock } from './providersMock';
@@ -103,6 +104,7 @@ export function createMockApi(
   const preview = createPreviewMock({ chapters: () => s.chapters, paragraphs: () => s.paragraphs }, initial.preview);
   const daw = createDawMock(initial.daw);
   const providers = createProvidersMock(initial.providers);
+  const production = createProductionMock(initial.production);
   const stages = createStagesMock({
     ready: manuscriptReady,
     chapters: () => s.chapters.map(withMeasurement),
@@ -170,6 +172,7 @@ export function createMockApi(
     ...findings,
     ...daw,
     ...providers,
+    ...production,
     ...createPronunciationLookupMock(),
   };
   const api = initial.invalidPayload ? { ...base, ...invalidPayloadOverrides(initial.invalidPayload, base) } : base;
