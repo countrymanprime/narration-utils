@@ -39,8 +39,15 @@ export type MeasureReport = {
   full_scale_samples: number;
   clip_run_count: number;
   clip_runs: MeasureClipRun[];
-  /** Set only for an MP3, read for its container; its levels and edges are then null, since it is not decoded. */
+  /** Set only for an MP3, read for its container. */
   mp3?: MeasureMP3;
+  /**
+   * True once an MP3's audio was actually decoded and its levels measured from the decoded samples (delivery-platform-
+   * profiles Phase 8). Distinguishes "not checked" (no decoder was available, so the level fields above are still null
+   * exactly as before this phase) from "not measurable" (a decode was attempted and found nothing usable): both leave
+   * every level field null, so this is the only way to tell them apart. Always false, or absent, for a WAV.
+   */
+  mp3_levels_decoded?: boolean;
   range?: MeasureRange;
 };
 
