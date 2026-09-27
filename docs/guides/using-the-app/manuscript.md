@@ -79,8 +79,12 @@ session, and nothing recorded in REAPER is affected.
 
 Above the text, a compact **Where you stopped** notice looks for the chapter's track in the project's
 REAPER file and listens to the last 30 seconds recorded on it (with the same local Whisper model, which it
-asks to download first if it is missing). It shows the track, that this is as of the project's last save,
-and the sentence it matched. **Resume from here** makes Play begin at that word - shown as a clearable chip
+asks to download first if it is missing). When REAPER is open on that project and **Read track arm state**
+is on in Settings (an experimental REAPER action), it asks REAPER where the track is now: the edit cursor
+when it sits on the track's recording, otherwise the end of the recording, including a take you have not
+saved yet, and labels it "in REAPER now". Otherwise it reads the saved project and says it is as of the
+project's last save. While REAPER is recording on the chapter's track it offers nothing and reading starts
+from the top. It shows the track, where it read it, and the sentence it matched. **Resume from here** makes Play begin at that word - shown as a clearable chip
 in the control bar ("Starts at '…'") until you start or clear it; **Start from the top** and **Pick a word**
 (start reading, then click the word you want) are the other choices, and nothing starts until you press
 Play. Choosing any of the three clears the notice at once for the rest of this dialog's open: it does not
