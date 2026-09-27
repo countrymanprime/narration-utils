@@ -12,4 +12,10 @@ export const workspaceFeedback: Record<string, FeedbackRow> = {
   'src/components/workspace/WorkspacePage.tsx::workspaceAlignment#1': row('mount', 'file-io', 'na', 'na', 'ui', 'inline', 'na', 'ok', 'Reads the chapter\'s stored word alignment on open and again after a check completes (never runs one, Q14); a failure is the page\'s own inline error.'),
   'src/components/workspace/WorkspacePage.tsx::subscribeCoverage#1': subscription('The recording check state, same subscription and job dialog (RecordingCheck) Home\'s own row uses.'),
 
+  // Go to and Loop in REAPER for the word at the playhead (edit-and-proof-workspace.prd.md Phase 3, useWorkspaceReaper.ts):
+  // the same round trip through the REAPER file bridge as the Review page's ReaperControls.tsx rows, over WorkspaceGoTo/
+  // WorkspaceLoop/FindingsStopLoop instead of a finding's own bindings.
+  'src/components/workspace/useWorkspaceReaper.ts::workspaceGoTo#1': row('click', 'file-io', 'pending', 'pending', 'ui', 'inline', 'no', 'ok', 'A round trip through the REAPER file bridge (under 3 s): Go to is busy and Loop meanwhile off (usePendingAction); where REAPER put the cursor is announced, and a refusal (the word was not heard, recording, an older script, REAPER gone) is an inline alert in plain words. The move itself stays in REAPER.'),
+  'src/components/workspace/useWorkspaceReaper.ts::workspaceLoop#1': row('click', 'file-io', 'pending', 'pending', 'ui', 'inline', 'yes', 'ok', 'Loop is busy while REAPER sets the loop and plays; the window is announced and Stop loop appears, reading status.loopingFindingId (workspace:<chapterId>:...) rather than local state, so it is shown again after the narrator leaves and comes back. A refusal is an inline alert in plain words.'),
+  'src/components/workspace/useWorkspaceReaper.ts::findingsStopLoop#1': row('click', 'file-io', 'pending', 'pending', 'ui', 'inline', 'no', 'ok', 'Stop loop is busy until REAPER has put back the time selection, loop points and repeat (shared with the Review page: one app loop at a time); a refusal is an inline alert and Stop stays offered.'),
 };

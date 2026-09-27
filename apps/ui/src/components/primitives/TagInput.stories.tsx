@@ -1,8 +1,11 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
+import { faWandMagicSparkles } from '@fortawesome/free-solid-svg-icons';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { useState, type ComponentProps } from 'react';
 import { expect, fn, userEvent, within } from 'storybook/test';
-import { Button } from './Button';
+import { IconButton } from './IconButton';
 import { TagInput } from './TagInput';
+import { TooltipTarget } from './Tooltip';
 
 // The caller owns the lists (as the Proofing page does): the component only reports what the user did.
 function Hints(props: ComponentProps<typeof TagInput>) {
@@ -45,7 +48,13 @@ const meta = {
     onAdd: fn(),
     onRemove: fn(),
     onAcceptSuggestion: fn(),
-    actions: <Button variant="ghost">Suggest from manuscript</Button>,
+    actions: (
+      <TooltipTarget text="Suggest from manuscript">
+        <IconButton label="Suggest from manuscript">
+          <FontAwesomeIcon icon={faWandMagicSparkles} />
+        </IconButton>
+      </TooltipTarget>
+    ),
   },
   render: (args) => <Hints {...args} />,
 } satisfies Meta<typeof TagInput>;
@@ -57,7 +66,8 @@ export const Default: Story = {};
 export const Empty: Story = { args: { tags: [], suggestions: [] } };
 export const OnlySuggestions: Story = { args: { tags: [], suggestions: ['Wonderland', 'Cheshire'] } };
 
-// Typing a term and pressing Enter (or Add) reports it once, empties the box and the chip appears.
+// Typing a term and pressing Enter reports it once, empties the box and the chip appears - the pill box is the whole
+// input, so there is no separate Add row to press instead.
 export const EnterAddsATerm: Story = {
   play: async ({ args, canvasElement }) => {
     const canvas = within(canvasElement);
@@ -70,12 +80,38 @@ export const EnterAddsATerm: Story = {
   },
 };
 
-export const AddButtonAddsATerm: Story = {
+// A typed comma commits the draft immediately, the same as Enter (V5): a term never holds a comma.
+export const CommaAddsATerm: Story = {
   play: async ({ args, canvasElement }) => {
     const canvas = within(canvasElement);
-    await userEvent.type(canvas.getByRole('textbox', { name: 'Add a vocabulary term' }), 'Dormouse');
-    await userEvent.click(canvas.getByRole('button', { name: 'Add' }));
+    const box = canvas.getByRole('textbox', { name: 'Add a vocabulary term' });
+    await userEvent.type(box, 'Dormouse,');
     await expect(args.onAdd).toHaveBeenLastCalledWith('Dormouse');
+    await expect(box).toHaveValue('');
+  },
+};
+
+// Clicking away from a half-typed draft commits it too (ADR 0055's blur-commit), so a click on Remove, Suggest or a
+// page's own submit button never silently drops what was just typed.
+export const BlurCommitsTheDraft: Story = {
+  play: async ({ args, canvasElement }) => {
+    const canvas = within(canvasElement);
+    const box = canvas.getByRole('textbox', { name: 'Add a vocabulary term' });
+    await userEvent.type(box, 'Dormouse');
+    await userEvent.click(canvas.getByRole('button', { name: 'Suggest from manuscript' }));
+    await expect(args.onAdd).toHaveBeenLastCalledWith('Dormouse');
+  },
+};
+
+// Backspace on an empty draft removes the most recently added tag (ADR 0363).
+export const BackspaceRemovesTheLastTag: Story = {
+  play: async ({ args, canvasElement }) => {
+    const canvas = within(canvasElement);
+    const box = canvas.getByRole('textbox', { name: 'Add a vocabulary term' });
+    await userEvent.click(box);
+    await userEvent.keyboard('{Backspace}');
+    await expect(args.onRemove).toHaveBeenLastCalledWith('Cheshire');
+    await expect(canvas.queryByRole('button', { name: 'Remove Cheshire' })).toBeNull();
   },
 };
 

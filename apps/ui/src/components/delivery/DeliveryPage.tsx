@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useApi } from '../../api/ApiContext';
 import { apiErrorMessage } from '../../api/errorMessage';
 import type { DeliveryProfile, DeliveryProfilesState, MeasureFileResult, MeasureJob } from '../../types';
@@ -8,12 +8,14 @@ import { Panel } from '../primitives/Panel';
 import { ProgressBar } from '../primitives/ProgressBar';
 import { Tab, TabList, TabPanel, Tabs } from '../primitives/Tabs';
 import { BookChecklistPanel } from './BookChecklistPanel';
+import { BookSpreadPanel } from './BookSpreadPanel';
 import { deliveryProfileKey, deliveryProfileTitle } from './deliveryProfile';
 import { DeliveryProfilePanel, type ProfileState } from './DeliveryProfilePanel';
 import { DiagnosticsTab } from './DiagnosticsTab';
 import { FileRulesPanel } from './FileRulesPanel';
 import { countResults, MeasurementsTable, ruleColumns } from './MeasurementsTable';
 import { ReportExportPanel } from './ReportExportPanel';
+import type { DeliveryFocus } from './deliveryLink';
 
 /** How often a running measurement is read. */
 const POLL_MS = 500;
@@ -94,7 +96,7 @@ function JudgementSummary({ files, profile }: { files: readonly MeasureFileResul
  * running is picked up where it is. The Diagnostics tab (Phase 6) checks the same files with the windowed analyzers, and the Report
  * panel (Phase 7) exports both. Nothing here changes an audio file.
  */
-export function DeliveryPage({ openSettings }: { openSettings: () => void }) {
+export function DeliveryPage({ openSettings, focus }: { openSettings: () => void; focus?: DeliveryFocus }) {
   const api = useApi();
   const [job, setJob] = useState<MeasureJob>();
   const [jobError, setJobError] = useState<string>();
@@ -103,6 +105,11 @@ export function DeliveryPage({ openSettings }: { openSettings: () => void }) {
   const [problem, setProblem] = useState<string>();
   const [picking, setPicking] = useState(false);
   const [tab, setTab] = useState('measurements');
+  // A Review page finding opened here (delivery-platform-profiles.prd.md Phase 9, P12): its file is opened rule by rule once the
+  // measurement is read, or the page says the file is not in it. Applied once per file and rule, so the narrator can close it.
+  const [focusNote, setFocusNote] = useState<{ found: boolean; text: string }>();
+  const appliedFocus = useRef<string | undefined>(undefined);
+  const detailRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     let active = true;
@@ -135,6 +142,26 @@ export function DeliveryPage({ openSettings }: { openSettings: () => void }) {
       clearTimeout(timer);
     };
   }, [api, running, job]);
+
+  useEffect(() => {
+    const key = focus ? `${focus.file}\n${focus.rule ?? ''}` : undefined;
+    if (!focus || !key || appliedFocus.current === key || !job || job.phase === 'running') return;
+    appliedFocus.current = key;
+    const file = job.files.find((candidate) => candidate.path === focus.file && candidate.status === 'measured');
+    const name = focus.file.split(/[\\/]/).pop() ?? focus.file;
+    if (!file) {
+      setFocusNote({ found: false, text: `${name} is not in the last measurement. Choose it again to measure it and see its rules.` });
+      return;
+    }
+    const rule = focus.rule ? job.profile?.rules.find((candidate) => candidate.id === focus.rule)?.label : undefined;
+    setSelected(file.path);
+    setTab('measurements');
+    setFocusNote({ found: true, text: `Opened from the Review page: ${rule ? `${lowerFirst(rule)} in ` : ''}${file.name}.` });
+  }, [focus, job]);
+
+  useEffect(() => {
+    if (focusNote?.found) detailRef.current?.scrollIntoView?.({ block: 'start' });
+  }, [focusNote]);
 
   const choose = async () => {
     setPicking(true);
@@ -190,6 +217,11 @@ export function DeliveryPage({ openSettings }: { openSettings: () => void }) {
             {problem && (
               <p role="alert" className="mt-2 text-sm" style={DANGER}>
                 {problem}
+              </p>
+            )}
+            {focusNote && !focusNote.found && (
+              <p role="status" className="mt-2 text-sm" style={{ color: 'var(--warn-text)' }}>
+                {focusNote.text}
               </p>
             )}
             {job?.profileNotice && files.length > 0 && (
@@ -249,8 +281,25 @@ export function DeliveryPage({ openSettings }: { openSettings: () => void }) {
               )
             )}
           </Panel>
+          {judgedBy && <BookSpreadPanel profile={judgedBy} files={files} />}
           {judgedBy && job && job.bookRules.length > 0 && <BookChecklistPanel profile={judgedBy} bookRules={job.bookRules} />}
-          {detail && judgedBy && <FileRulesPanel file={detail} profile={judgedBy} onClose={() => setSelected(undefined)} />}
+          <div ref={detailRef} className="flex scroll-mt-4 flex-col gap-2 empty:hidden">
+            {detail && judgedBy && focusNote?.found && (
+              <p role="status" className="text-sm" style={MUTED}>
+                {focusNote.text}
+              </p>
+            )}
+            {detail && judgedBy && (
+              <FileRulesPanel
+                file={detail}
+                profile={judgedBy}
+                onClose={() => {
+                  setSelected(undefined);
+                  setFocusNote(undefined);
+                }}
+              />
+            )}
+          </div>
         </TabPanel>
         <TabPanel value="diagnostics">
           <DiagnosticsTab measuredPaths={measuredPaths} />

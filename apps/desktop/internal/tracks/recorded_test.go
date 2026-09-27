@@ -28,23 +28,34 @@ func trackNamed(t *testing.T, project Project, name string) Track {
 
 func near(a, b float64) bool { return math.Abs(a-b) < 1e-9 }
 
-func TestParseReadsRegionsAndSkipsPlainMarkers(t *testing.T) {
+func TestParseReadsRegionsAndPlainMarkersSeparately(t *testing.T) {
 	project := parseChapterTracks(t)
-	want := []Region{
+	wantRegions := []Region{
 		{Index: 1, Name: "Chapter Two", Start: 28, End: 40, GUID: "{5A1B8E53-2B0D-4E1C-9A55-3E4C1B1D0A02}"},
 		{Index: 2, Name: "Epilogue", Start: 60, End: 70, GUID: "{5A1B8E53-2B0D-4E1C-9A55-3E4C1B1D0A03}"},
 	}
-	if len(project.Regions) != len(want) {
-		t.Fatalf("regions = %#v, want %#v", project.Regions, want)
+	if len(project.Regions) != len(wantRegions) {
+		t.Fatalf("regions = %#v, want %#v", project.Regions, wantRegions)
 	}
 	for i, region := range project.Regions {
-		if region != want[i] {
-			t.Fatalf("regions[%d] = %#v, want %#v", i, region, want[i])
+		if region != wantRegions[i] {
+			t.Fatalf("regions[%d] = %#v, want %#v", i, region, wantRegions[i])
+		}
+	}
+	wantMarkers := []Marker{
+		{Index: 1, Name: "PICKUP: a plain marker, not a region", Position: 5, GUID: "{5A1B8E53-2B0D-4E1C-9A55-3E4C1B1D0A01}"},
+	}
+	if len(project.Markers) != len(wantMarkers) {
+		t.Fatalf("markers = %#v, want %#v", project.Markers, wantMarkers)
+	}
+	for i, marker := range project.Markers {
+		if marker != wantMarkers[i] {
+			t.Fatalf("markers[%d] = %#v, want %#v", i, marker, wantMarkers[i])
 		}
 	}
 }
 
-func TestParseReadsTheChapterRegionsREAPERSaved(t *testing.T) {
+func TestParseReadsTheChapterRegionsAndPickupMarkersREAPERSaved(t *testing.T) {
 	// saved-cases.rpp: three chapter regions interleaved with PICKUP markers
 	// that share their numbers (markers and regions are numbered separately).
 	project, err := Parse(filepath.Join("testdata", "reaper", "saved-cases.rpp"))
@@ -61,6 +72,22 @@ func TestParseReadsTheChapterRegionsREAPERSaved(t *testing.T) {
 	for i, region := range project.Regions {
 		if region.Name != want[i].name || !near(region.Start, want[i].start) || !near(region.End, want[i].end) {
 			t.Fatalf("regions[%d] = %#v, want %+v", i, region, want[i])
+		}
+	}
+	wantMarkers := []struct {
+		name     string
+		position float64
+	}{
+		{`PICKUP: re-record "the wind" (mispronounced)`, 6.5},
+		{"PICKUP: breath at 12.25", 12.25},
+		{"PICKUP_DONE: line 1 re-recorded", 21},
+	}
+	if len(project.Markers) != len(wantMarkers) {
+		t.Fatalf("markers = %#v, want %d markers", project.Markers, len(wantMarkers))
+	}
+	for i, marker := range project.Markers {
+		if marker.Name != wantMarkers[i].name || !near(marker.Position, wantMarkers[i].position) || marker.GUID == "" {
+			t.Fatalf("markers[%d] = %#v, want %+v with a GUID", i, marker, wantMarkers[i])
 		}
 	}
 }

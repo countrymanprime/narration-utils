@@ -1,6 +1,6 @@
 // The `manuscript` rows of STATE_CATALOG (see state-catalog.ts), in the order they are captured.
 import type { StateEntry } from '../lib/types';
-import { REFLOW, KEEPS_DESKTOP_SCROLL, POPUP_ANCHORED_AT_FIRST_WIDTH } from './shared';
+import { COMPANION, REFLOW, KEEPS_DESKTOP_SCROLL, POPUP_ANCHORED_AT_FIRST_WIDTH } from './shared';
 
 export const manuscriptStates: StateEntry[] = [
   // Manuscript
@@ -65,6 +65,18 @@ export const manuscriptStates: StateEntry[] = [
       'Manuscript, mixed chapter rows (?mockManuscript=mixed): a Front Matter row with no Read aloud and 3-, 4- and 5-digit word counts - the stats and the buttons in two aligned columns, a chevron last (manuscript-chapter-header-alignment.prd.md, manuscript-credits-card-parity.prd.md)',
   },
   { page: 'manuscript', state: 'add-note-dialog', description: 'Manuscript, Add Note dialog open after selecting text' },
+  {
+    page: 'manuscript',
+    state: 'script-markup',
+    description:
+      'Manuscript, script markup on Chapter 3 (prep-depth PRD Phase 5): stress underlines, a breath and a pause after words, Mouse and Lory speaker chips, a "Text changed here" notice beside a line whose marked words changed, and a mark whose line is gone listed above the chapter',
+  },
+  {
+    page: 'manuscript',
+    state: 'markup-dialog',
+    description:
+      'Manuscript, the Mark up dialog for a selection that already carries a stress mark: Speaker chosen, the Story Bible characters one press away, and the mark already there with its Remove',
+  },
   { page: 'manuscript', state: 'formatted-text-and-line-breaks', description: 'Manuscript, paragraphs with preserved bold/italic/underline and a line break' },
   { page: 'manuscript', state: 'chapter-bookmarked', description: 'Manuscript, a chapter bookmarked (blue bookmark icon)' },
   { page: 'manuscript', state: 'go-to-line-highlight', description: 'Manuscript, arrived via Story Bible "Go to line" with the target line highlighted' },
@@ -296,12 +308,32 @@ export const manuscriptStates: StateEntry[] = [
     page: 'manuscript',
     state: 'booth-default',
     description:
-      'Manuscript, the chapter header\'s "Booth" button opens the same "Read aloud" dialog in `FocusShell`\'s full-screen layout (booth-mode-and-companion-panel.prd.md Phase 1) instead of the normal control bar - a status line (Ready, the chapter title, word progress, the microphone button and its level meter) across the top, the rail on the right (Phase 3\'s "Voices in scene" speaker tags and "Reference clips coming soon" placeholder above the reading panel), the script filling the centre, and a Booth commands `Toolbar` (Play, Stop reading) along the bottom, Play Kbd-labelled Space',
+      'Manuscript, the chapter header\'s "Booth" button opens the same "Read aloud" dialog in `FocusShell`\'s full-screen layout (booth-mode-and-companion-panel.prd.md Phase 1) instead of the normal control bar - a status line (Ready, a decorative "Room" level meter fed by the same mic-level channel [Phase 4], the chapter title, word progress, the microphone button and its own level meter) across the top, the rail on the right (Phase 3\'s "Voices in scene" speaker tags and "Reference clips coming soon" placeholder above the reading panel), the script filling the centre, and a Booth commands `Toolbar` (Play, Stop reading) along the bottom, Play Kbd-labelled Space',
+  },
+  {
+    page: 'manuscript',
+    state: 'booth-dark',
+    description:
+      'Manuscript, the booth (as booth-default) with Dark selected in Settings > Appearance - the booth follows the app theme and forces neither light nor dark (ADR 0365, superseding ADR 0360 Q1), so this differs from booth-default only in the palette',
   },
   {
     page: 'manuscript',
     state: 'booth-listening',
     description:
-      'Manuscript, the booth mid-session and listening (booth-mode-and-companion-panel.prd.md Phase 2, same mock seam as read-aloud-listening) - the status badge reads "Reading", the Booth commands toolbar shows Pause (Kbd Space), Stop reading and Follow all enabled, the current word highlighted in the booth\'s high-contrast surface',
+      'Manuscript, the booth mid-session and listening (booth-mode-and-companion-panel.prd.md Phase 2, same mock seam as read-aloud-listening) - the status badge reads "Reading", the "Room" level meter (Phase 4) moving with the same mock level as the microphone button\'s own meter, the Booth commands toolbar shows Pause (Kbd Space), Stop reading and Follow all enabled, the current word highlighted in the active app theme (the booth follows it, ADR 0365)',
+  },
+  {
+    page: 'manuscript',
+    state: 'companion-default',
+    description:
+      'Manuscript, the chapter header\'s "Companion" button (booth-mode-and-companion-panel.prd.md Phase 7): the same read-aloud session in `CompactShell`, the whole window (the host narrows it to 380 px and pins it beside the DAW, ADR 0401; also captured at that `companion` width) - the "Companion" heading with REAPER\'s playhead badge ("Playhead stopped") and "Full app", then the Script (chapter title, Play Kbd-labelled Space, Stop reading, the resume prompt and the text in its own scroll box), the reserved Note at playhead and Pickups sections ("Coming soon"), and the Hotkeys that work while this window has focus',
+    ...COMPANION,
+  },
+  {
+    page: 'manuscript',
+    state: 'companion-listening',
+    description:
+      'Manuscript, the companion panel mid-session (same mock seam and word as read-aloud-listening) with REAPER playing (?mockDawPlayhead=134.6) - the header badge reads "Playhead 2:14.6", the Script shows Pause (Kbd Space), Stop reading and Follow, and the current word highlighted in its scroll box',
+    ...COMPANION,
   },
 ];

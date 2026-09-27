@@ -39,7 +39,8 @@ type Props = {
 };
 
 /**
- * Why a chapter has the suggestion it has (docs/prds/chapter-stage-recommendations.prd.md Phase 5, Q11): the verdict in a sentence, each
+ * Why a chapter has the suggestion it has (chapter-stage-recommendations.prd.md Phase 5, Q11, deleted; see
+ * docs/architecture/stage-recommendations.md): the verdict in a sentence, each
  * required check with its state and reason, the evidence behind it (linked to the paragraphs it names), the saved project it was read from
  * and how old that is, and, for a check that cannot tell, what resolves it. Confirm, Dismiss and Revert are here too, and Check now reads
  * the evidence again; nothing here starts an analysis (Q12).

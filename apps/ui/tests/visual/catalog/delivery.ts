@@ -37,6 +37,13 @@ export const deliveryStates: StateEntry[] = [
   },
   {
     page: 'delivery',
+    state: 'book-spread',
+    description:
+      'Delivery, six chapters already measured against ACX (?mockMeasure=spread, mockup 11 "Book consistency", delivery-platform-profiles.prd.md Phase 10) - the book-wide spread below the per-file table: RMS, peak and noise floor each as their own min-to-max band with a median tick and one tick per chapter, all within ACX and read the same in light and dark',
+    ...KEEPS_DESKTOP_SCROLL,
+  },
+  {
+    page: 'delivery',
     state: 'custom-profile',
     description:
       'Delivery judged by a custom profile (?mockDeliveryProfile=custom, mockup 07) - "My ACX, tighter peak", custom and based on ACX, two rules off, and every rule the app checks met',
@@ -94,5 +101,13 @@ export const deliveryStates: StateEntry[] = [
     page: 'delivery',
     state: 'report-refused',
     description: 'Delivery, Export report before anything was measured - the host’s refusal as an alert, and nothing written',
+  },
+  // Delivery findings on the Review page (delivery-platform-profiles.prd.md Phase 9, P12): "Open in Delivery" lands here
+  {
+    page: 'delivery',
+    state: 'from-review',
+    description:
+      'Delivery, opened from a delivery finding on the Review page - scrolled to that file opened rule by rule, under "Opened from the Review page: sample rate in Chapter 01.wav."',
+    ...KEEPS_DESKTOP_SCROLL,
   },
 ];

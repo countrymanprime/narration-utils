@@ -2,7 +2,7 @@
 
 ## Supported versions
 
-Narration Utils is pre-1.0. Only the latest release (including the latest pre-release candidate) receives fixes.
+Narration Utils is pre-1.0. Only the latest release (including the latest pre-release candidate) receives fixes. Windows x64 is the only supported platform ([ADR 0412](docs/adr/0412-windows-is-the-only-supported-platform-for-now.md)): a report that applies only to a macOS or Linux build is out of scope, because no such build is released.
 
 ## Reporting a vulnerability
 
@@ -36,13 +36,24 @@ especially welcome:
   [ADR 0156](docs/adr/0156-measurement-reads-only-files-picked-this-session-as-one-job-and-fingerprints-the-bytes-it-read.md)),
   and the Delivery report it writes (only into the project's `narration-utils/delivery` folder, never over an earlier report, and without
   any local path, audio or manuscript text unless the narrator chooses to include file locations); a report that leaks a path the narrator
-  did not include is in scope.
+  did not include is in scope. The same holds for the pronunciation query CSV the Story Bible exports for the narrator to send to an
+  author ([ADR 0347](docs/adr/0347-the-pronunciation-query-export-is-csv-with-its-ids-last-and-a-formula-guard-and-is-a-download.md)): a
+  cell that runs as a formula when the file is opened in a spreadsheet, or a row that carries more than the columns it names, is in scope.
 - The run log every tool run writes (`logs/run.jsonl`, `logs/runs/*.stderr.jsonl`; [ADR 0251](docs/adr/0251-tool-runs-are-logged-as-json-lines-through-slog-with-a-run-id-and-content-is-never-logged.md)) and the diagnostics bundle Settings can save from it (`SystemCopyDiagnostics`) or the folder it can open (`SystemOpenLogFolder`): manuscript, audio or transcript text reaching either is in scope, as is the export landing anywhere but the folder the narrator picked in that session's file picker.
+- The script markup the narrator places in the reader (`narration-utils/prep/markup.json` in the project,
+  [ADR 0382](docs/adr/0382-script-markup-is-a-chapter-keyed-sidecar-of-line-offsets-checked-on-read-and-drawn-without-changing-the-text.md)):
+  a file that makes the app run, open, fetch or write anything else, that puts markup into the page, or that is drawn without
+  being checked against the current text is in scope; one that only changes which prep marks the narrator sees is the
+  documented residual risk (threat model row 6p).
 - The delivery profiles the app reads back to judge the rendered files (the user-level `delivery-profiles.json` beside
   `credit-templates.json`, and the project's choice in `project.json`,
   [ADR 0180](docs/adr/0180-custom-delivery-profiles-are-copies-of-a-built-in-kept-in-a-user-level-file.md)): a file that makes the app
   run, open, fetch or write anything, or that is used without being validated, is in scope; one that only changes a verdict is the
   documented residual risk (threat model row 6i).
+- The stage-timer log the app keeps in a project (`narration-utils/production/sessions.json`) and the deadline, contracted amount
+  and milestones it keeps in `project.json`: a file that makes the app run, open, fetch or write anything, or that is read as
+  something it is not instead of being kept aside and reported or refused, is in scope; one that only changes the narrator's own
+  logged hours, dates or amount is the documented residual risk (threat model rows 6n and 6o).
 - Weaknesses in the release pipeline (for example an installer or checksum that does not match the reviewed build, or a release asset without valid build provenance). What the pipeline promises, and what it does not: every release asset has a SHA-256 file (it detects a damaged download, not a tampered one) and a build-provenance attestation you can check with `gh attestation verify` ([Build provenance](docs/operations/ci-and-releases.md#build-provenance)); the releases are **unsigned** by decision, so Windows SmartScreen warns and that warning alone is not a vulnerability; and the owner-only settings that back the pipeline (rulesets, the `production` environment, immutable releases, action pinning) are listed in [Tracking work on GitHub](docs/operations/github-workflow.md#repository-settings-that-only-the-owner-can-change).
 
 - The arguments and session files the app hands its local sidecars and the FFmpeg encoder, for example a value from the interface becoming a
@@ -54,6 +65,7 @@ especially welcome:
 - The file protocol between the app and REAPER (the session folder under REAPER's resource path, the command files the Lua bridge reads, the paths it opens from a command, the commands that move REAPER's selection, cursor, time selection and transport, which the Review page sends only when the narrator presses Go to, Loop or Stop, on a finding or on one read of a pickup or duplicate group, and only while REAPER is answering, the one that adds an approved take marker, which it sends only for an accepted finding after the narrator confirms, the one allow-listed REAPER action launcher, and the retake-lane pick, which changes which lane of a track plays, and the experimental commands that ship switched off until they are verified in a real REAPER, behind the Experimental REAPER actions setting or each one's own per-capability DAW setting, starting with the read-only transport and track state, the one that selects a track, and the commands that arm tracks and start and stop a recording the app started, make a take active, add one of the narrator's own FX chains to a track or one installed plug-in to a passage, and create or move regions), the arguments a DAW or a shortcut starts the app with (`--daw REAPER` from the REAPER launcher, `--daw Audacity` from the installer's "Narration Utils for Audacity" Start Menu entry, `--project-folder`, `--session-dir`), and the local `/media` route that plays a project's audio.
 - The desktop shell itself: it runs on the Wails v3 beta, pinned at v3.0.0-beta.25 ([ADR 0200](docs/adr/0200-the-desktop-shell-runs-on-wails-v3-beta-pinned-at-v3-0-0-beta-25.md)). A way for the page, or anything else, to call the app beyond its own bindings, or to reach the app's Wails runtime endpoint from anything but its own window, is in scope.
 - Device input the webview reads directly: a MIDI footswitch or controller through the Web MIDI API, or a HID pedal or button device through the WebHID API, feature-detected and read only where a webview exposes them ([the Web MIDI/WebHID spike](docs/research/web-midi-hid-webview-spike.md); [ADR 0361](docs/adr/0361-app-commands-go-through-one-registry-and-keyboard-midi-and-hid-are-input-sources-bound-by-a-remappable-keymap.md)). What either produces is a command already reachable from the keyboard; a malformed, oversized or out-of-range device message crashing the app or reaching further than a normalised press instead of being dropped is in scope.
+- A one-click web pronunciation lookup (Forvo, YouGlish, Merriam-Webster, Howjsay; [prep-depth PRD](docs/prds/prep-depth.prd.md) Phase 2, `PronunciationLookupOpen`) opens the narrator's default browser to one of four fixed URL templates with the manuscript's own word path-escaped into it; the app never fetches, scrapes or caches any of the four sites and sends no request of its own. A lookup that reaches a host other than that site's own, or that is usable to run or replace something outside the browser, is in scope.
 
 Problems in a third-party dependency belong upstream, but tell us if we ship a version that is affected. The desktop shell's Wails is a pre-release; a Wails advisory that affects the pinned beta counts.
 

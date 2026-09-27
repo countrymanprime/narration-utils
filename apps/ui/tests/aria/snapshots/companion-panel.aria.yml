@@ -1,0 +1,43 @@
+# Companion mode (booth-mode-and-companion-panel.prd.md Phase 7): the same read-aloud session in CompactShell, which is the
+# whole window - the full app behind it is aria-hidden and inert, so CompactShell's own banner and main are the only
+# landmarks in the tree (no duplicate main beside the app's). The banner names the panel, REAPER's playhead and Full app;
+# main holds the Script (the chapter, the Companion commands toolbar with Play Kbd-labelled Space, the resume prompt and the
+# chapter text, whose marks are not buttons here - there is no rail to open them in), the reserved Note at playhead and
+# Pickups sections ("Coming soon"), and the Hotkeys that work while this window has focus.
+# `children: equal` at the root, like the short dialogs (not the booth, whose dialog shares the page's live regions): the
+# banner and main are all there is, so anything of the full app left exposed behind the panel fails this. Inside them the
+# match is partial - the chapter text is too long to list in full.
+- /children: equal
+- banner:
+  - heading "Companion" [level=1]
+  - text: Playhead stopped
+  - button "Full app"
+- main:
+  - region "Script":
+    - heading "Script" [level=2]
+    - paragraph: Chapter 1 — Down the Rabbit-Hole
+    - toolbar "Companion commands":
+      - button "Play" [disabled]:
+        - img "Space"
+      - button "Stop reading" [disabled]
+    - region "Where you stopped":
+      - button "Resume from here"
+      - button "Start from the top"
+      - button "Pick a word"
+    - region "Chapter text":
+      - heading "Chapter 1 — Down the Rabbit-Hole" [level=2]
+  - region "Note at playhead":
+    - heading "Note at playhead" [level=2]
+    - text: Coming soon
+  - region "Pickups":
+    - heading "Pickups" [level=2]
+    - text: Coming soon
+  - region "Hotkeys":
+    - heading "Hotkeys" [level=2]
+    - term:
+      - img "Space"
+    - definition: Play or pause reading
+    - term:
+      - img "Esc"
+      - img "Esc"
+    - definition: Back to the full app

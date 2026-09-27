@@ -5,5 +5,5 @@ import { providerCapabilitiesSchema } from '../schemas/providers';
 
 export const providerGoldens: Record<string, z.ZodType> = {
   'provider-capabilities-windows.json': providerCapabilitiesSchema,
-  'provider-capabilities-darwin.json': providerCapabilitiesSchema,
+  'provider-capabilities-linux.json': providerCapabilitiesSchema,
 };

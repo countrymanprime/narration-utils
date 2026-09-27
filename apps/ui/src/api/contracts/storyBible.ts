@@ -4,10 +4,25 @@ import type { WorkJob } from './manuscript';
 
 export type GuideEvidence = { chapter: string; chapterId?: string; paragraph: number; paragraphId?: string; excerpt: string; sourceLine?: number };
 export type GuideRelationship = { id: string; name: string; label: string };
-export type GuidePronunciation = { ipa: string; source: string; confidence: string; chosen?: boolean };
+/** Where the narrator is with a pronunciation (prep-depth P1, ADR 0346): looked up, asked of the author, or confirmed by the author. */
+export type GuidePronunciationStatus = 'researched' | 'query_sent' | 'author_confirmed';
+/** The pronunciation itself, without the narrator's bookkeeping about it. */
+export type GuidePronunciationValue = { ipa: string; source: string; confidence: string };
+/**
+ * A name's pronunciation. `source` is `user` for one the narrator typed. `alternate` is the one of the other kind (the narrator's own
+ * or a dictionary's) kept beside it, so switching back is lossless. The schema fills `status` (`researched` on an entry written before it).
+ */
+export type GuidePronunciation = GuidePronunciationValue & {
+  chosen?: boolean;
+  status?: GuidePronunciationStatus;
+  note?: string;
+  alternate?: GuidePronunciationValue;
+};
 export type GuideNote = { text: string; evidence: { chapter?: string; excerpt?: string } };
 /** One labelled fact of an entry ("Codename": "Wren"). The list is ordered and a key is unique whatever its case; a value may be empty. */
 export type GuideProperty = { key: string; value: string };
+/** One (chapter, scene) pair an entry's evidence touches. A scene restarts at 0 for each new chapter; a scene-break paragraph (e.g. "* * *") starts the next one. */
+export type GuideAppearance = { chapterId: string; chapter: string; sceneIndex: number };
 export type GuideAlias = { text: string; pronunciation: GuidePronunciation; occurrences: GuideEvidence[] };
 export type GuideEntity = {
   id: string;
@@ -25,7 +40,29 @@ export type GuideEntity = {
   locked: boolean;
   review_state: string;
   context?: string;
+  /** Which chapters and scenes this entry's evidence touches (character-continuity-review PRD, phase 2). Absent on a file written before it existed. */
+  appearances?: GuideAppearance[];
 };
+
+/**
+ * One name whose pronunciation the author has not confirmed (prep-depth P3): the entity's own (`aliasIndex` null) or one alias, with
+ * the chapter and excerpt of its first occurrence (empty when it never occurs). Derived from the Story Bible on every read.
+ */
+export type PronunciationQuery = {
+  entityId: string;
+  aliasIndex: number | null;
+  name: string;
+  entry: string;
+  category: string;
+  ipa: string;
+  source: string;
+  status: GuidePronunciationStatus;
+  note: string;
+  chapter: string;
+  excerpt: string;
+};
+/** The query list as CSV text (header plus one row per query) and how many rows it has. */
+export type PronunciationQueriesCsv = { csv: string; count: number };
 
 export type GuidePreview =
   | { status: 'ready'; audioBase64: string; mimeType: string }
@@ -81,4 +118,14 @@ export interface StoryBibleApi {
    * on a locked entity, and when the chosen engine has nothing for the name.
    */
   guidePronounce(id: string, source: 'cmu' | 'espeak', aliasIndex?: number): Promise<void>;
+  /** Sets the narrator's own pronunciation (source `user`); the one it replaces is kept as the alternate. Never asks a dictionary. */
+  guidePronounceUser(id: string, ipa: string, aliasIndex?: number): Promise<void>;
+  /** Puts the kept alternate back in use, keeping the one it replaces: lossless both ways. */
+  guidePronunciationUseAlternate(id: string, aliasIndex?: number): Promise<void>;
+  /** Sets a pronunciation's status and, when `note` is given, its note (an empty one clears it). */
+  guidePronunciationSetStatus(id: string, status: GuidePronunciationStatus, note?: string, aliasIndex?: number): Promise<void>;
+  /** Every name not yet author confirmed, once each, in reading order (prep-depth P3). */
+  guidePronunciationQueries(): Promise<PronunciationQuery[]>;
+  /** The same list as CSV text, for the narrator to save and send to the author. */
+  guidePronunciationQueriesCsv(): Promise<PronunciationQueriesCsv>;
 }
