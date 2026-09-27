@@ -151,6 +151,18 @@ describe('ReaderText story bible and note marks (teleprompter-manuscript-integra
     expect((container.querySelector('[data-word="0"]') as HTMLElement).style.color).toBe('var(--text-muted)');
   });
 
+  // Two marks' tints stacked ("White Rabbit" around its alias "Rabbit") are dark enough that the muted colour of a read word
+  // falls below 4.5:1 on them (axe, found in the Booth's done state): there a read word keeps the marks' own text colour.
+  it('does not dim a read word under two stacked marks, which would fail contrast on their doubled tint', () => {
+    const whole = entityMark(0, 2);
+    const alias = { ...entityMark(1, 2), id: 'alias' };
+    const { container } = render(<ReaderText rows={[row()]} cursor={3} skipped={[]} follow={false} marks={new Map([['p1', [whole, alias]]])} />);
+
+    expect((container.querySelector('[data-word="0"]') as HTMLElement).style.color).toBe('var(--text-muted)');
+    expect((container.querySelector('[data-word="1"]') as HTMLElement).style.color).toBe('');
+    expect((container.querySelector('[data-word="2"]') as HTMLElement).style.color).toBe('var(--text-muted)');
+  });
+
   it('marks a row the tracker does not follow too, without word numbers or a cursor', () => {
     const marks = new Map([['p1', [entityMark(0, 1)]]]);
     const { container } = render(<ReaderText rows={[row({ words: null, gaps: null })]} cursor={0} skipped={[]} follow={false} marks={marks} />);

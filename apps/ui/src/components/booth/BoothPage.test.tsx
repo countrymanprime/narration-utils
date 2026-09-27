@@ -559,14 +559,19 @@ describe('BoothPage chapter suggestion from REAPER', () => {
   it('keeps the usual default and shows no hint when nothing is armed, or the project has no .rpp', async () => {
     renderPage({ chapterSuggestion: async () => Promise.reject(new Error('no REAPER project (.rpp) file was found in this project folder')) });
 
+    // The hint only: the Booth's command bar and resume prompt name REAPER too.
+    const noHint = () => {
+      expect(screen.queryByText(/Chosen from REAPER|REAPER's (armed|selected) track/)).toBeNull();
+      expect(screen.queryByRole('group', { name: 'Chapters suggested by REAPER' })).toBeNull();
+    };
     await waitFor(() => expect(chapterPicker().value).toBe(WIRE_CHAPTERS[0].id));
-    expect(screen.queryByText(/REAPER/)).toBeNull();
-    expect(screen.queryByRole('alert')).toBeNull();
+    noHint();
+    expect(screen.queryByText(/no REAPER project/)).toBeNull();
     cleanup();
 
     renderPage();
     await waitFor(() => expect(chapterPicker().value).toBe(WIRE_CHAPTERS[0].id));
-    expect(screen.queryByText(/REAPER/)).toBeNull();
+    noHint();
   });
 
   it('does not move a session the host kept running to the suggested chapter', async () => {

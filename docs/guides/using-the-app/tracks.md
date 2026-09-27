@@ -174,4 +174,4 @@ changes, and a chapter you link yourself is never overwritten.
 
 ---
 
-[← Teleprompter](teleprompter.md) · [Index](README.md) · [Chapter workspace →](workspace.md)
+[← Booth](booth.md) · [Index](README.md) · [Chapter workspace →](workspace.md)

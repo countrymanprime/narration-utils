@@ -2,6 +2,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faDownLeftAndUpRightToCenter } from '@fortawesome/free-solid-svg-icons';
 import { useId, type ReactNode } from 'react';
 import type { GuideEntity } from '../../types';
+import { useMediaQuery } from '../../hooks/useMediaQuery';
 import { Button } from '../primitives/Button';
 import { FocusShell } from '../primitives/FocusShell';
 import { Highlight, highlightKind } from '../primitives/Highlight';
@@ -68,25 +69,26 @@ function BoothStatus({
       <StatusBadge tone={tone} label={label} />
       {chapterTitle && <span className="min-w-0 truncate font-semibold">{chapterTitle}</span>}
       {t.session.script && (
-        <span className="font-['IBM_Plex_Mono',ui-monospace,monospace] text-xs whitespace-nowrap" style={{ color: 'var(--text-muted)' }}>
+        <span className="hidden font-['IBM_Plex_Mono',ui-monospace,monospace] text-xs whitespace-nowrap sm:inline" style={{ color: 'var(--text-muted)' }}>
           {t.session.cursor.toLocaleString()} of {t.session.script.tokens.toLocaleString()} words
         </span>
       )}
       {/* Decorative: the command bar's microphone popover has the labelled meter. */}
-      <span className="hidden items-center gap-1 text-xs sm:flex" style={{ color: 'var(--text-muted)' }}>
-        Input
-        <LevelMeter label="Input level" peak={level?.peak ?? null} rms={level?.rms ?? null} decorative size="compact" className="w-16" />
+      <span className="flex flex-none items-center gap-1 text-xs" style={{ color: 'var(--text-muted)' }}>
+        <span className="max-sm:sr-only">Input</span>
+        <LevelMeter label="Input level" peak={level?.peak ?? null} rms={level?.rms ?? null} decorative size="compact" className="w-8 sm:w-16" />
       </span>
       <div className="ml-auto flex flex-none items-center gap-2">
         {onCompanion && (
           <TooltipTarget text="Pin a narrow companion panel beside your DAW">
-            <Button variant="ghost" className="px-2.5 py-1 text-xs" onClick={onCompanion}>
-              <FontAwesomeIcon icon={faDownLeftAndUpRightToCenter} /> Companion
+            <Button variant="ghost" aria-label="Companion" className="px-2.5 py-1 text-xs" onClick={onCompanion}>
+              <FontAwesomeIcon icon={faDownLeftAndUpRightToCenter} />
+              <span className="max-sm:hidden">Companion</span>
             </Button>
           </TooltipTarget>
         )}
-        <Button variant="ghost" className="px-2.5 py-1 text-xs" onClick={onExit}>
-          Exit booth <Kbd keys={['Esc']} />
+        <Button variant="ghost" aria-label="Exit booth" className="px-2.5 py-1 text-xs" onClick={onExit}>
+          <span className="max-sm:hidden">Exit booth</span> <Kbd keys={['Esc']} />
         </Button>
       </div>
     </>
@@ -158,19 +160,21 @@ export function BoothView({
   onCompanion,
   onExit,
 }: Props) {
+  // From `md` the rail is FocusShell's own column (mock 03); below it an 18rem column would crush the text, so the same
+  // rail follows the text instead, in the one scrolling region (WCAG 1.4.10 reflow, ADR 0061).
+  const railBeside = useMediaQuery('(min-width: 48rem)', true);
+  const railContent = speakers ? (
+    <>
+      <BoothSpeakers speakers={speakers} onOpenSpeaker={onOpenSpeaker} />
+      {rail}
+    </>
+  ) : (
+    rail
+  );
   return (
     <FocusShell
       status={<BoothStatus session={t} chapterTitle={chapterTitle} recording={recording} onCompanion={onCompanion} onExit={onExit} />}
-      rail={
-        speakers ? (
-          <>
-            <BoothSpeakers speakers={speakers} onOpenSpeaker={onOpenSpeaker} />
-            {rail}
-          </>
-        ) : (
-          rail
-        )
-      }
+      rail={railBeside ? railContent : undefined}
       // A route inside AppShell, whose own `<main>` holds this page: a second one would duplicate the landmark.
       asMain={false}
       commandsLabel="Booth commands"
@@ -180,6 +184,11 @@ export function BoothView({
     >
       {!t.active && setup}
       <ReadAlongView session={t} follow={follow} header={header} marks={marks} onOpenMark={onOpenMark} hideKey />
+      {!railBeside && (
+        <aside aria-label="Rail" className="mx-auto mt-4 w-full max-w-3xl">
+          {railContent}
+        </aside>
+      )}
     </FocusShell>
   );
 }

@@ -67,67 +67,10 @@ narration chapter.
 
 ![Manuscript, the retail sample marked on lines 1 to 3 of Chapter 3](../../images/ui/manuscript-retail-sample.webp)
 
-Each narration chapter's header has a **Read aloud** button. It opens the [Teleprompter](teleprompter.md)
-read-along for that chapter in a full-screen dialog titled "Read aloud: " and the chapter's name - its
-title, and its subtitle after an em dash when it has one, the same as everywhere else the app shows a
-chapter's name. A compact control bar at the bottom stays in view while you scroll: **Play**, **Stop reading**, the
-microphone (a popover with its device list and Refresh) and **Settings** (a popover with the engine and
-model). Closing the dialog while it is still listening asks first ("Stop reading?"); Stop and close ends the
-session, and nothing recorded in REAPER is affected.
-
-![Manuscript - the Read aloud dialog before reading, with the Where you stopped notice above the text, the reading panel beside it and the control bar below](../../images/ui/manuscript-read-aloud-resume.webp)
-
-Above the text, a compact **Where you stopped** notice looks for the chapter's track in the project's
-REAPER file and listens to the last 30 seconds recorded on it (with the same local Whisper model, which it
-asks to download first if it is missing). When REAPER is open on that project and **Read track arm state**
-is on in Settings (an experimental REAPER action), it asks REAPER where the track is now: the edit cursor
-when it sits on the track's recording, otherwise the end of the recording, including a take you have not
-saved yet, and labels it "in REAPER now". Otherwise it reads the saved project and says it is as of the
-project's last save. While REAPER is recording on the chapter's track it offers nothing and reading starts
-from the top. It shows the track, where it read it, and the sentence it matched. **Resume from here** makes Play begin at that word - shown as a clearable chip
-in the control bar ("Starts at '…'") until you start or clear it; **Start from the top** and **Pick a word**
-(start reading, then click the word you want) are the other choices, and nothing starts until you press
-Play. Choosing any of the three clears the notice at once for the rest of this dialog's open: it does not
-ask again after a session ends, so the next Play begins at the top with nothing to clear. Starting playback
-or recording in REAPER clears it too, without choosing anything. With **Read track arm state** on, moving
-REAPER's edit cursor onto the recording while the notice shows makes it look again from there. A chapter already
-recorded to its last word says so instead of offering to resume past the end. When the match is uncertain or
-a confirmed track has a problem (renamed, missing, or linked to more than one chapter), the notice says so
-with a link to the Tracks page instead of asking you to pick a track here; when the recording cannot be read
-or does not match the chapter it says why and reading starts from the top.
-
-The dialog marks Story Bible names and your notes in the text, in the same colours as the reader here. A
-reading panel beside the text has four tabs: **Key** (what each mark means), **Flags** (see below),
-**Notes** (the chapter's notes) and **Story bible** (the entries the chapter mentions). Clicking a marked
-name, note or flag opens it in the panel, read-only; it never moves the highlight, the listening position
-or the scroll. The panel's arrow button hides it to widen the text, and the dialog remembers on this
-computer whether the panel is shown and which tab was last open.
-
-![Manuscript - Read aloud listening, with read words dimmed, the current word highlighted and Story Bible names marked](../../images/ui/manuscript-read-aloud-listening.webp)
-
-While you read, the dialog marks places where listening suspects something went differently from the
-script: skipped words (a dotted underline) and a restart, where you went back and read again (a dashed
-underline on the word you went back to). Misreads (a wavy underline) and extra words (a bar before the word
-they came before) can also be shown; they are off at first because live listening mishears correct reads
-too often to trust them yet. Turn each kind on or off in the **Flags** tab; the dialog remembers your
-choice on this computer. Hovering or focusing a flag says what was heard. Clicking it opens it in the Flags
-tab with the script's words and what was heard, and **Dismiss** removes it from the text. **Punch from
-here** is not available yet. Every flag is only suspected: Transcript Compare over the recording is the
-authority. When reading stops, or you close the dialog, the session's flags are kept in the project as
-unreviewed findings (a dismissed flag is kept as dismissed), so they can be reviewed later; reading the
-chapter again does not add the same flag twice.
-
-![Manuscript - a suspected restart opened in the Flags tab, with the script's words and what was heard](../../images/ui/manuscript-read-aloud-flag.webp)
-
-Reading the opening or closing credits opens the same dialog and control bar, titled "Read aloud:
-Opening credits" or "Read aloud: Closing credits", but a few things are different: there is no **Where
-you stopped** notice (the credits are not on a REAPER track), and a warning naming any token still
-without a value takes its place when one is unresolved, with **Fill them in Settings** — the same
-warning and action the [Teleprompter](teleprompter.md) page shows for the credits. Flags are still shown
-as you read, but the Flags tab says "Flags on the credits are not kept" instead of a save state: nothing
-about the credits is written to the project's findings, so re-reading them raises the same flags again.
-
-![Manuscript - the Read aloud dialog on the opening credits, with the unresolved-token warning in place of the resume notice](../../images/ui/manuscript-read-aloud-credits.webp)
+Each narration chapter's header, and the Opening credits and Closing credits cards once they have
+something to read, has a **Record in Booth** button. It opens the [Booth](booth.md) on that chapter or those
+credits: the read-along that listens as you narrate, with the Where you stopped notice, the Story Bible and
+note marks, suspected flags and companion mode beside your DAW.
 
 Selecting a stretch of text offers actions for it — adding a reader note or sending it to the
 Story Bible as a new entry. When the selection is one word, it also offers **Look up**.

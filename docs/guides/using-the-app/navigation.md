@@ -3,7 +3,7 @@
 # Navigation
 
 [Home](home.md), [Production](production.md), [Manuscript](manuscript.md), [Proofing](proofing.md), [Story Bible](story-bible.md),
-[Teleprompter](teleprompter.md), [Tracks](tracks.md), [Review](review.md), and [Delivery](delivery.md) are
+[Booth](booth.md), [Tracks](tracks.md), [Review](review.md), and [Delivery](delivery.md) are
 reachable from a sidebar on the left. At
 desktop widths it stays open with labels; narrower windows switch it to icon-only, then hide
 it behind a hamburger menu that opens it as a slide-in drawer. [Settings](settings.md) lives at the

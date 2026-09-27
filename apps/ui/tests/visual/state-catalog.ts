@@ -7,7 +7,7 @@ import { proofingStates } from './catalog/proofing';
 import { storybibleStates } from './catalog/storybible';
 import { tracksStates } from './catalog/tracks';
 import { workspaceStates } from './catalog/workspace';
-import { teleprompterStates } from './catalog/teleprompter';
+import { boothStates } from './catalog/booth';
 import { reviewStates } from './catalog/review';
 import { deliveryStates } from './catalog/delivery';
 import { productionStates } from './catalog/production';
@@ -33,7 +33,7 @@ export const STATE_CATALOG: StateEntry[] = [
   ...storybibleStates,
   ...tracksStates,
   ...workspaceStates,
-  ...teleprompterStates,
+  ...boothStates,
   ...reviewStates,
   ...deliveryStates,
   ...productionStates,

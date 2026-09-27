@@ -45,11 +45,11 @@ type RowWordsProps = {
   onOpenMark?: (mark: ReaderMark) => void;
 };
 
-// One word, dimmed once read, underlined when skipped, filled when current. `seekable` is false inside a mark: a mark is
+// One word, dimmed once read (unless `dim` is false: see renderMarkedSegment), underlined when skipped, filled when current. `seekable` is false inside a mark: a mark is
 // one button that opens the rail (Phase 5), so the words under it are never also seek buttons (no nested controls, and a
 // mark click can never move the tracker). `withGap` keeps the gap after the word inside its span, as before marks existed;
 // the last word of a marked segment leaves its gap to `renderMarkedSegment`.
-function renderWord(row: RowWordsProps, index: number, seekable: boolean, withGap: boolean): ReactNode {
+function renderWord(row: RowWordsProps, index: number, seekable: boolean, withGap: boolean, dim = true): ReactNode {
   const { words, gaps, start, local, skipped, onSeek } = row;
   const word = words[index];
   const position = start === null ? null : start + index;
@@ -69,7 +69,7 @@ function renderWord(row: RowWordsProps, index: number, seekable: boolean, withGa
       data-word={position ?? undefined}
       data-skipped={missed || undefined}
       style={{
-        color: spoken && !missed ? 'var(--text-muted)' : undefined,
+        color: spoken && !missed && dim ? 'var(--text-muted)' : undefined,
         textDecoration: missed ? 'underline dotted var(--warn)' : undefined,
         textUnderlineOffset: missed ? '0.25em' : undefined,
       }}
@@ -123,7 +123,10 @@ function renderMarkedSegment(
       </TooltipTarget>
     );
   };
-  const words = Array.from({ length: to - from }, (_, offset) => renderWord(row, from + offset, false, from + offset < to - 1));
+  // Under two or more marks the tints stack, and the muted colour of a read word falls below 4.5:1 on them: there it keeps
+  // the marks' own text colour (a single mark's tint passes, so it still dims).
+  const dim = layers.length < 2;
+  const words = Array.from({ length: to - from }, (_, offset) => renderWord(row, from + offset, false, from + offset < to - 1, dim));
   const gap = separator(gaps[to - 1]);
   const ending = layers.slice(carried).reduceRight<ReactNode>((child, mark, offset) => wrap(child, mark, carried + offset), words);
   const whole =

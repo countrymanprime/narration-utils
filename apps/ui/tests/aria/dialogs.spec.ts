@@ -20,21 +20,6 @@ const MODALS: { name: string; state: [string, string]; snapshot: string }[] = [
   },
   { name: 'the add-note form is a modal dialog with a labelled field', state: ['manuscript', 'add-note-dialog'], snapshot: 'dialog-add-note.aria.yml' },
   {
-    name: "the read-aloud dialog's resume card is a named region with the resume point and its three choices",
-    state: ['manuscript', 'read-aloud-setup'],
-    snapshot: 'dialog-read-aloud-resume.aria.yml',
-  },
-  {
-    name: "the read-aloud dialog's control bar is a named toolbar with Play/Stop reading, status, Follow, the microphone and Settings",
-    state: ['manuscript', 'read-aloud-listening'],
-    snapshot: 'dialog-read-aloud-controls.aria.yml',
-  },
-  {
-    name: 'the read-aloud dialog on the credits has no resume region; the unresolved-token warning is a status in its place',
-    state: ['manuscript', 'read-aloud-credits-unresolved'],
-    snapshot: 'dialog-read-aloud-credits.aria.yml',
-  },
-  {
     name: 'the pronunciation queries are a modal slide-over with the filter, the count, Export CSV and a list of queries each with its marks',
     state: ['storybible', 'pronunciation-queries'],
     snapshot: 'slide-over-pronunciation-queries.aria.yml',
@@ -95,14 +80,14 @@ const MODALS: { name: string; state: [string, string]; snapshot: string }[] = [
     snapshot: 'dialog-create-chapter-regions.aria.yml',
   },
   {
-    name: 'the booth is the same dialog with a named status region, a Rail landmark and a Booth commands toolbar in place of the control bar',
-    state: ['manuscript', 'booth-default'],
-    snapshot: 'dialog-read-aloud-booth.aria.yml',
+    name: "the companion panel is the whole window: CompactShell's banner and main, the full app behind it hidden, with the Script, Note at playhead, Pickups and Hotkeys regions",
+    state: ['booth', 'companion-default'],
+    snapshot: 'companion-panel.aria.yml',
   },
   {
-    name: "the companion panel is the whole window: CompactShell's banner and main, the full app behind it hidden, with the Script, Note at playhead, Pickups and Hotkeys regions",
-    state: ['manuscript', 'companion-default'],
-    snapshot: 'companion-panel.aria.yml',
+    name: 'leaving the Booth while it listens asks first: an alert dialog with Stop reading? and both actions',
+    state: ['booth', 'exit-confirm'],
+    snapshot: 'confirm-stop-reading.aria.yml',
   },
 ];
 

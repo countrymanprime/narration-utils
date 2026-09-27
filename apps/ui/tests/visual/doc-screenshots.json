@@ -196,25 +196,39 @@
     "caption": "Story Bible - alias typeahead dropdown matching existing entries"
   },
   {
-    "page": "teleprompter",
-    "state": "setup-default",
+    "page": "booth",
+    "state": "setup",
     "viewport": "desktop",
-    "docName": "teleprompter-setup",
-    "caption": "Teleprompter - before a session: the chapter picker above the text, and the control bar with Play, the microphone and the engine settings at the bottom"
+    "docName": "booth-setup",
+    "caption": "Booth - before a session: the chapter picker and the Where you stopped notice above the text, the rail with Voices in scene and the reading panel, and the reading controls along the bottom"
   },
   {
-    "page": "teleprompter",
+    "page": "booth",
     "state": "listening",
     "viewport": "desktop",
-    "docName": "teleprompter-listening",
-    "caption": "Teleprompter - listening, with read words dimmed and the current word highlighted"
+    "docName": "booth-listening",
+    "caption": "Booth - listening, with read words dimmed, the current word highlighted and Story Bible names marked"
   },
   {
-    "page": "teleprompter",
+    "page": "booth",
     "state": "waiting",
     "viewport": "desktop",
-    "docName": "teleprompter-waiting",
-    "caption": "Teleprompter - waiting after the narrator paused"
+    "docName": "booth-waiting",
+    "caption": "Booth - waiting after the narrator paused"
+  },
+  {
+    "page": "booth",
+    "state": "flag-open",
+    "viewport": "desktop",
+    "docName": "booth-flag",
+    "caption": "Booth - a suspected restart opened in the Flags tab, with the script's words and what was heard"
+  },
+  {
+    "page": "booth",
+    "state": "credits-unresolved",
+    "viewport": "desktop",
+    "docName": "booth-credits",
+    "caption": "Booth - the closing credits chosen, with the unresolved-token warning above the text"
   },
   {
     "page": "tracks",
@@ -411,34 +425,6 @@
     "viewport": "desktop",
     "docName": "manuscript-retail-sample",
     "caption": "Manuscript - the retail sample marked on lines 1 to 3 of Chapter 3"
-  },
-  {
-    "page": "manuscript",
-    "state": "read-aloud-setup",
-    "viewport": "desktop",
-    "docName": "manuscript-read-aloud-resume",
-    "caption": "Manuscript - the Read aloud dialog before reading, with the Where you stopped notice above the text, the reading panel beside it and the control bar below"
-  },
-  {
-    "page": "manuscript",
-    "state": "read-aloud-listening",
-    "viewport": "desktop",
-    "docName": "manuscript-read-aloud-listening",
-    "caption": "Manuscript - Read aloud listening, with read words dimmed, the current word highlighted and Story Bible names marked"
-  },
-  {
-    "page": "manuscript",
-    "state": "read-aloud-flag-open",
-    "viewport": "desktop",
-    "docName": "manuscript-read-aloud-flag",
-    "caption": "Manuscript - a suspected restart opened in the Flags tab, with the script's words and what was heard"
-  },
-  {
-    "page": "manuscript",
-    "state": "read-aloud-credits-unresolved",
-    "viewport": "desktop",
-    "docName": "manuscript-read-aloud-credits",
-    "caption": "Manuscript - the Read aloud dialog on the opening credits, with the unresolved-token warning in place of the resume notice"
   },
   {
     "page": "review",

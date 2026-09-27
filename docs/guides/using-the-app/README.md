@@ -18,7 +18,7 @@ Read them in order the first time, or jump straight to the page you need.
 | [Manuscript](manuscript.md) | The reader: highlights, notes, bookmarks, formatting, and themes. |
 | [Proofing](proofing.md) | Transcribing a recorded chapter and comparing it to the manuscript. |
 | [Story Bible](story-bible.md) | Characters, places, and organizations with pronunciation and notes. |
-| [Teleprompter](teleprompter.md) | A live read-along that follows you as you narrate a chapter. |
+| [Booth](booth.md) | Where you record: a live read-along that follows you as you narrate a chapter, with companion mode beside your DAW. |
 | [Tracks](tracks.md) | Listing and playing the project's REAPER tracks, scanning for pickups and duplicates, and the REAPER tools: chapter stamps, pickup lists, chapter render setup and chapter tags. |
 | [Chapter workspace](workspace.md) | Listening to a chapter against its script, seeing the recording check's flags in place, and clicking a word to hear it again. Opened from Tracks or Home, not the nav. |
 | [Review](review.md) | One list of everything the app's checks found, with the evidence, and your accept, dismiss or defer decision on each. |
