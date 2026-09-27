@@ -7,11 +7,14 @@ import type { TeleprompterLocateResult, TeleprompterModelRequired, TeleprompterR
  * the first chapter without a real REAPER project, recording or Whisper run. Unset, the mock project's own tracks decide
  * (Chapter 1 found, Chapter 2's source missing, the last chapter no track) and no last reading is stored, so the verdict is
  * `daw_only`. `agree` and `disagree` add a last reading near to or far from the recording; `prompter_only` has no track and
- * a last reading.
+ * a last reading. `disagree_live` is `disagree` read from REAPER's live edit cursor ("in REAPER now"), and `recording` is
+ * REAPER recording onto the chapter's track (read-aloud-resume-from-daw.prd.md Phase 4).
  */
 export type MockResumeSeed =
   | 'agree'
   | 'disagree'
+  | 'disagree_live'
+  | 'recording'
   | 'prompter_only'
   | 'low_confidence'
   | 'complete'
@@ -26,6 +29,8 @@ export type MockResumeSeed =
 export const MOCK_RESUME_SEEDS: readonly MockResumeSeed[] = [
   'agree',
   'disagree',
+  'disagree_live',
+  'recording',
   'prompter_only',
   'low_confidence',
   'complete',
@@ -52,7 +57,7 @@ const READING_ENDED_AT = '2026-09-24T21:04:00Z';
 export function seedLastReading(seed: MockResumeSeed | undefined, chapterId: string, dawWord: number | null, tokens: number): TeleprompterReading | null {
   let read: number | null = null;
   if (seed === 'agree' && dawWord !== null) read = Math.min(tokens, dawWord + 3);
-  if (seed === 'disagree' && dawWord !== null) read = dawWord > tokens / 2 ? Math.round(tokens * 0.2) : Math.round(tokens * 0.9);
+  if ((seed === 'disagree' || seed === 'disagree_live') && dawWord !== null) read = dawWord > tokens / 2 ? Math.round(tokens * 0.2) : Math.round(tokens * 0.9);
   if (seed === 'prompter_only') read = Math.round(tokens * 0.3);
   if (read === null || read < 1 || tokens < 1) return null;
   return { version: 1, chapterId, read, tokens, scriptHash: '0'.repeat(64), status: 'listening', endedAt: READING_ENDED_AT };
@@ -89,6 +94,11 @@ export function seedLocateResult(result: LocateDraft, seed: MockResumeSeed | und
   if (result.status === 'asset_required' || !result.recordedEnd) return result;
   const unread = { ...result, tail: null, located: null };
   switch (seed) {
+    case 'disagree_live':
+      return { ...result, dawSource: 'live', dawAt: 'cursor' };
+    // REAPER is recording onto the track: the host locates nothing, and says no point of the track (dawAt).
+    case 'recording':
+      return { ...unread, status: 'recording', dawSource: 'live', dawAt: undefined };
     case 'no_recording':
       return { ...unread, recordedEnd: null, status: 'no_recording' };
     case 'source_missing':

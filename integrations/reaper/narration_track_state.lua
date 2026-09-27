@@ -9,8 +9,8 @@
 -- ever answered in its place. With no GUID it answers the transport and the arms only.
 --
 -- Events: TRACK_STATE|run|guid|playState|editCursor|playPosition|rpp|unsaved|changeCount|thisArmed|armedCount|recInput|
--- inputDevice, then TRACK_ITEM|run|itemGuid|takeGuid|position|length|sourceOffset|playrate|sourceFile per item (at most
--- ITEM_LIMIT), then TRACK_STATE_END|run|listed|total.
+-- inputDevice, then TRACK_ITEM|run|itemGuid|takeGuid|position|length|sourceOffset|playrate|sourceFile|muted per item (at
+-- most ITEM_LIMIT; muted is appended, read-aloud-resume PRD Phase 4), then TRACK_STATE_END|run|listed|total.
 
 local core = ...
 local event = core.event
@@ -79,7 +79,8 @@ local function item_row(item)
     seconds(reaper.GetMediaItemInfo_Value(item, 'D_LENGTH')),
     seconds(offset),
     seconds(rate),
-    file or ''
+    file or '',
+    reaper.GetMediaItemInfo_Value(item, 'B_MUTE') ~= 0 and 1 or 0
 end
 
 local function chapter_track_state(session_dir, run_id, guid_text)

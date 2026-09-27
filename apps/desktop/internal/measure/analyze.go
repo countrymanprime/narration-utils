@@ -21,6 +21,10 @@ type Progress func(done, total int64)
 type Options struct {
 	Range    *Range
 	Progress Progress
+	// Decoder, when set, is used to decode an MP3's audio so its levels can be measured too (decode.go, Phase 8,
+	// P11). A WAV never uses it, and a range is never requested together with it (MeasureFile refuses a range on
+	// an MP3 regardless, as it always has).
+	Decoder Decoder
 }
 
 // AnalyzeContext measures WAV audio read from r, or only opts.Range of it, reporting progress as it reads and

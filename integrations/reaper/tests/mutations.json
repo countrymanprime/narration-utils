@@ -432,6 +432,12 @@
     "replace": "if true then"
   },
   {
+    "name": "a muted item is reported as playing",
+    "file": "narration_track_state.lua",
+    "find": "reaper.GetMediaItemInfo_Value(item, 'B_MUTE') ~= 0 and 1 or 0",
+    "replace": "0"
+  },
+  {
     "name": "the first take is reported instead of the active one",
     "file": "narration_track_state.lua",
     "find": "local take = reaper.GetActiveTake(item)",
