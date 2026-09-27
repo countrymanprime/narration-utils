@@ -19,7 +19,7 @@ import (
 )
 
 // The FFmpeg row (render-encode-master Phase 1, ADR 0342): WAV to constant-bit-rate MP3 with libmp3lame, run as a separate
-// process from the catalogued FFmpeg build (config/encoder-assets.json, internal/ffmpeg). The encode writes a temporary file beside
+// process from the catalogued FFmpeg build (config/encoder-assets.json, internal/ffmpeg). The encode writes a dot-named temporary file beside
 // dst, checks it with the app's own MP3 reader (measure.ReadMP3) and only then renames it to dst, so a failure, a timeout or a
 // cancel leaves nothing at dst; the WAV is only ever read.
 
@@ -258,7 +258,7 @@ func readWAV(wav string) (time.Duration, measure.Format, error) {
 // only reached by a process that hangs.
 func encodeTimeout(length time.Duration) time.Duration { return 2*length + 5*time.Minute }
 
-// reservePartial creates the temporary file FFmpeg writes into: hidden, beside dst (so the rename stays on one disk), and unique.
+// reservePartial creates the temporary file FFmpeg writes into: dot-named, beside dst (so the rename stays on one disk), and unique.
 func reservePartial(dst string) (string, error) {
 	file, err := os.CreateTemp(filepath.Dir(dst), "."+filepath.Base(dst)+".*.encoding")
 	if err != nil {
