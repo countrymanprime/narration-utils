@@ -14,8 +14,7 @@ jobs:
     uses: ./.github/workflows/_quality.yml
   ui-dist:
     uses: ./.github/workflows/_ui-dist.yml
-  # Windows is the supported platform, so it is the only native build a pull request waits on.
-  # macOS and Linux build after the Windows release is published (see prerelease.yml).
+  # Windows is the only supported platform (docs/adr/0412), so it is the only native build.
   # This job needs only the UI bundle, so it runs alongside the quality jobs rather than after them.
   build-windows:
     name: Build (Windows)

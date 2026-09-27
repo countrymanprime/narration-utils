@@ -1,6 +1,6 @@
 // The `manuscript` rows of STATE_CATALOG (see state-catalog.ts), in the order they are captured.
 import type { StateEntry } from '../lib/types';
-import { REFLOW, KEEPS_DESKTOP_SCROLL, POPUP_ANCHORED_AT_FIRST_WIDTH } from './shared';
+import { COMPANION, REFLOW, KEEPS_DESKTOP_SCROLL, POPUP_ANCHORED_AT_FIRST_WIDTH } from './shared';
 
 export const manuscriptStates: StateEntry[] = [
   // Manuscript
@@ -296,12 +296,26 @@ export const manuscriptStates: StateEntry[] = [
     page: 'manuscript',
     state: 'booth-default',
     description:
-      'Manuscript, the chapter header\'s "Booth" button opens the same "Read aloud" dialog in `FocusShell`\'s full-screen layout (booth-mode-and-companion-panel.prd.md Phase 1) instead of the normal control bar - a status line (Ready, the chapter title, word progress, the microphone button and its level meter) across the top, the reading panel as its own landmark on the right, the script filling the centre, and a Booth commands `Toolbar` (Play, Stop reading) along the bottom, Play Kbd-labelled Space',
+      'Manuscript, the chapter header\'s "Booth" button opens the same "Read aloud" dialog in `FocusShell`\'s full-screen layout (booth-mode-and-companion-panel.prd.md Phase 1) instead of the normal control bar - a status line (Ready, the chapter title, word progress, the microphone button and its level meter) across the top, the rail on the right (Phase 3\'s "Voices in scene" speaker tags and "Reference clips coming soon" placeholder above the reading panel), the script filling the centre, and a Booth commands `Toolbar` (Play, Stop reading) along the bottom, Play Kbd-labelled Space',
   },
   {
     page: 'manuscript',
     state: 'booth-listening',
     description:
       'Manuscript, the booth mid-session and listening (booth-mode-and-companion-panel.prd.md Phase 2, same mock seam as read-aloud-listening) - the status badge reads "Reading", the Booth commands toolbar shows Pause (Kbd Space), Stop reading and Follow all enabled, the current word highlighted in the booth\'s high-contrast surface',
+  },
+  {
+    page: 'manuscript',
+    state: 'companion-default',
+    description:
+      'Manuscript, the chapter header\'s "Companion" button (booth-mode-and-companion-panel.prd.md Phase 7): the same read-aloud session in `CompactShell`, the whole window (the host narrows it to 380 px and pins it beside the DAW, ADR 0401; also captured at that `companion` width) - the "Companion" heading with REAPER\'s playhead badge ("Playhead stopped") and "Full app", then the Script (chapter title, Play Kbd-labelled Space, Stop reading, the resume prompt and the text in its own scroll box), the reserved Note at playhead and Pickups sections ("Coming soon"), and the Hotkeys that work while this window has focus',
+    ...COMPANION,
+  },
+  {
+    page: 'manuscript',
+    state: 'companion-listening',
+    description:
+      'Manuscript, the companion panel mid-session (same mock seam and word as read-aloud-listening) with REAPER playing (?mockDawPlayhead=134.6) - the header badge reads "Playhead 2:14.6", the Script shows Pause (Kbd Space), Stop reading and Follow, and the current word highlighted in its scroll box',
+    ...COMPANION,
   },
 ];

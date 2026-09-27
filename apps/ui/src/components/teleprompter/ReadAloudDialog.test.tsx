@@ -28,7 +28,13 @@ afterEach(() => {
 function renderDialog(
   overrides: Partial<NarrationApi> = {},
   onClose = vi.fn(),
-  content: { entities?: GuideEntity[]; notes?: ManuscriptNote[]; source?: ReadAloudSource; onFixCredits?: () => void; mode?: 'read' | 'booth' } = {},
+  content: {
+    entities?: GuideEntity[];
+    notes?: ManuscriptNote[];
+    source?: ReadAloudSource;
+    onFixCredits?: () => void;
+    mode?: 'read' | 'booth' | 'companion';
+  } = {},
   daw?: DawMockSeed,
 ) {
   const eventListeners = new Set<(event: TeleprompterEvent) => void>();
@@ -722,5 +728,51 @@ describe('ReadAloudDialog, mode="booth" (booth-mode-and-companion-panel.prd.md P
     await user.click(screen.getByRole('button', { name: 'Close' }));
     expect(await screen.findByRole('alertdialog', { name: 'Stop reading?' })).toBeTruthy();
     expect(onClose).not.toHaveBeenCalled();
+  });
+});
+
+describe('ReadAloudDialog, mode="companion" (booth-mode-and-companion-panel.prd.md Phase 7)', () => {
+  it('shows CompanionShell in place of the dialog and narrows the window; Full app keeps the running session and restores it', async () => {
+    const user = userEvent.setup();
+    const teleprompterStart = vi.fn().mockResolvedValue({ status: 'started' });
+    const teleprompterStop = vi.fn().mockResolvedValue(undefined);
+    const companionModeEnter = vi.fn(async () => {});
+    const companionModeExit = vi.fn(async () => {});
+    const { setState } = renderDialog({ teleprompterStart, teleprompterStop, companionModeEnter, companionModeExit }, vi.fn(), { mode: 'companion' });
+    expect(await screen.findByRole('heading', { level: 1, name: 'Companion' })).toBeTruthy();
+    expect(screen.queryByRole('dialog')).toBeNull();
+    await waitFor(() => expect(companionModeEnter).toHaveBeenCalledTimes(1));
+
+    setState({ phase: 'running', chapter: CHAPTER.id });
+    await user.click(screen.getByRole('button', { name: 'Full app' }));
+
+    const dialog = await screen.findByRole('dialog', { name: /Read aloud/ });
+    expect(within(dialog).getByRole('toolbar', { name: 'Reading controls' })).toBeTruthy();
+    expect(companionModeExit).toHaveBeenCalledTimes(1);
+    expect(teleprompterStop).not.toHaveBeenCalled();
+  });
+});
+
+describe('ReadAloudDialog, mode="booth", speaker rail (booth-mode-and-companion-panel.prd.md Phase 3)', () => {
+  it("lists the chapter's characters in the booth rail and opens one in the Story bible tab", async () => {
+    const user = userEvent.setup();
+    renderDialog({ manuscriptParagraphs: async () => PARAGRAPHS }, vi.fn(), { entities: [HALE], notes: [NOTE], mode: 'booth' });
+    const voices = await screen.findByRole('region', { name: 'Voices in scene' });
+    await user.click(await within(voices).findByRole('button', { name: 'Mr. Hale: open in the Story bible' }));
+    const panel = screen.getByRole('complementary', { name: 'Reading panel' });
+    expect(within(panel).getByRole('tab', { name: 'Story bible', selected: true })).toBeTruthy();
+    expect(within(panel).getByRole('heading', { name: 'Mr. Hale' })).toBeTruthy();
+  });
+
+  it("lets the reading panel fill the booth rail's own column instead of its normal fixed width, which overflowed it", async () => {
+    renderDialog({}, vi.fn(), { mode: 'booth' });
+    const panel = await screen.findByRole('complementary', { name: 'Reading panel' });
+    expect(panel.className).not.toContain('md:w-[19rem]');
+  });
+
+  it('keeps the fixed-width reading panel in the normal dialog', async () => {
+    renderDialog();
+    const panel = await screen.findByRole('complementary', { name: 'Reading panel' });
+    expect(panel.className).toContain('md:w-[19rem]');
   });
 });
