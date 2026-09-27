@@ -28,6 +28,7 @@ Storybook title: `Primitives/Field`. Source: `src/components/primitives/Field.ts
 
 ## Used by
 
+- `src/components/credits/CreditsSetupDialog.tsx`
 - `src/components/manuscript/AddNoteDialog.tsx`
 - `src/components/project/NewProjectDialog.tsx`
 - `src/components/review/FindingDetail.tsx`

@@ -16,12 +16,14 @@ Storybook title: `Primitives/Panel`. Source: `src/components/primitives/Panel.ts
 
 ## Used by
 
+- `src/components/delivery/BookChecklistPanel.tsx`
 - `src/components/delivery/DeliveryPage.tsx`
 - `src/components/delivery/DeliveryProfilePanel.tsx`
 - `src/components/delivery/DiagnosticsTab.tsx`
 - `src/components/delivery/FileRulesPanel.tsx`
 - `src/components/delivery/ReportExportPanel.tsx`
 - `src/components/home/AudiobookEstimatePanel.tsx`
+- `src/components/home/RemovedFromRecordingList.tsx`
 - `src/components/layout/LoadError.tsx`
 - `src/components/proofing/Transcript.tsx`
 - `src/components/review/FindingDetail.tsx`
@@ -29,4 +31,8 @@ Storybook title: `Primitives/Panel`. Source: `src/components/primitives/Panel.ts
 - `src/components/teleprompter/ReadAlongView.tsx`
 - `src/components/teleprompter/TeleprompterPage.tsx`
 - `src/components/tracks/ChapterLinksTable.tsx`
+- `src/components/tracks/ChapterSyncPanel.tsx`
 - `src/components/tracks/TracksPage.tsx`
+- `src/components/workspace/FlagsPanel.tsx`
+- `src/components/workspace/TransportBar.tsx`
+- `src/components/workspace/WorkspacePage.tsx`

@@ -2,10 +2,29 @@
 import { renderHook } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { gesture } from './gestures';
+import type { GestureEvent, InputSource } from './InputSource';
 import { useGestureCapture } from './useGestureCapture';
 
 function keydown(init: Partial<KeyboardEventInit> & { code: string }): KeyboardEvent {
   return new KeyboardEvent('keydown', { bubbles: true, cancelable: true, ...init });
+}
+
+function fakeMidiSource(): { source: InputSource; emit: (event: GestureEvent) => void; subscribed: () => boolean } {
+  let onGesture: ((event: GestureEvent) => void) | undefined;
+  let subscribed = false;
+  return {
+    source: {
+      subscribe: (handler) => {
+        onGesture = handler;
+        subscribed = true;
+        return () => {
+          subscribed = false;
+        };
+      },
+    },
+    emit: (event) => onGesture?.(event),
+    subscribed: () => subscribed,
+  };
 }
 
 describe('useGestureCapture', () => {
@@ -89,5 +108,40 @@ describe('useGestureCapture', () => {
     rerender({ active: false });
     document.dispatchEvent(keydown({ code: 'Space' }));
     expect(onCapture).toHaveBeenCalledTimes(1);
+  });
+
+  it('captures a press from the MIDI source while active (Phase 9)', () => {
+    const midi = fakeMidiSource();
+    const onCapture = vi.fn();
+    renderHook(() => useGestureCapture(true, onCapture, vi.fn(), document, midi.source));
+
+    midi.emit({ gesture: gesture('midi', 'note/1/60'), target: null, preventDefault: vi.fn() });
+
+    expect(onCapture).toHaveBeenCalledTimes(1);
+    expect(onCapture).toHaveBeenCalledWith(gesture('midi', 'note/1/60'));
+  });
+
+  it('consumes the MIDI event so it does not also reach the router', () => {
+    const midi = fakeMidiSource();
+    const preventDefault = vi.fn();
+    renderHook(() => useGestureCapture(true, vi.fn(), vi.fn(), document, midi.source));
+
+    midi.emit({ gesture: gesture('midi', 'cc/1/64'), target: null, preventDefault });
+
+    expect(preventDefault).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not subscribe to MIDI while inactive, and unsubscribes once no longer active', () => {
+    const midi = fakeMidiSource();
+    const { rerender } = renderHook(({ active }) => useGestureCapture(active, vi.fn(), vi.fn(), document, midi.source), {
+      initialProps: { active: false },
+    });
+    expect(midi.subscribed()).toBe(false);
+
+    rerender({ active: true });
+    expect(midi.subscribed()).toBe(true);
+
+    rerender({ active: false });
+    expect(midi.subscribed()).toBe(false);
   });
 });

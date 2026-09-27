@@ -28,3 +28,4 @@ Storybook title: `Primitives/Heading`. Source: `src/components/primitives/Headin
 - `src/components/storybible/Guide.tsx`
 - `src/components/teleprompter/TeleprompterPage.tsx`
 - `src/components/tracks/TracksPage.tsx`
+- `src/components/workspace/WorkspacePage.tsx`

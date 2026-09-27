@@ -26,7 +26,8 @@ Storybook title: `Primitives/Dialog`. Source: `src/components/primitives/Dialog.
 
 ## Used by
 
-- `src/components/home/RecordingCheck.tsx`
+- `src/components/credits/CreditsSetupDialog.tsx`
+- `src/components/help/ShortcutSheet.tsx`
 - `src/components/manuscript/AddNoteDialog.tsx`
 - `src/components/primitives/ConfirmDialog.tsx`
 - `src/components/primitives/WorkDialog.tsx`
@@ -36,6 +37,7 @@ Storybook title: `Primitives/Dialog`. Source: `src/components/primitives/Dialog.
 - `src/components/review/TakeReviewScanDialog.tsx`
 - `src/components/settings/DeliveryProfileEditor.tsx`
 - `src/components/teleprompter/ReadAloudDialog.tsx`
+- `src/components/tracks/ChapterSyncConsentDialog.tsx`
 - `src/components/tracks/ChapterTagsDialog.tsx`
 - `src/components/tracks/CleanupToolsDialog.tsx`
 - `src/components/tracks/LinkChaptersDialog.tsx`
