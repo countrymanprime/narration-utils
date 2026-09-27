@@ -292,4 +292,16 @@ export const manuscriptStates: StateEntry[] = [
     description:
       'Manuscript, the "Read aloud" dialog on the Opening credits with no project credits values set (Phase 2, MC2) - the C6 warning names the unresolved tokens with "Fill them in Settings" in the resume prompt\'s slot, Play still enabled',
   },
+  {
+    page: 'manuscript',
+    state: 'booth-default',
+    description:
+      'Manuscript, the chapter header\'s "Booth" button opens the same "Read aloud" dialog in `FocusShell`\'s full-screen layout (booth-mode-and-companion-panel.prd.md Phase 1) instead of the normal control bar - a status line (Ready, the chapter title, word progress, the microphone button and its level meter) across the top, the reading panel as its own landmark on the right, the script filling the centre, and a Booth commands `Toolbar` (Play, Stop reading) along the bottom, Play Kbd-labelled Space',
+  },
+  {
+    page: 'manuscript',
+    state: 'booth-listening',
+    description:
+      'Manuscript, the booth mid-session and listening (booth-mode-and-companion-panel.prd.md Phase 2, same mock seam as read-aloud-listening) - the status badge reads "Reading", the Booth commands toolbar shows Pause (Kbd Space), Stop reading and Follow all enabled, the current word highlighted in the booth\'s high-contrast surface',
+  },
 ];

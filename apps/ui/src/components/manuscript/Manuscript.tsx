@@ -99,6 +99,10 @@ export function Manuscript({
   const [pendingNote, setPendingNote] = useState<{ paragraphIndex: number; anchorStart: number; anchorEnd: number; anchorText: string }>();
   const [jumpTarget, setJumpTarget] = useState<number>();
   const [readAloud, setReadAloud] = useState<ReadAloudSource>();
+  // Booth mode's own entry point (booth-mode-and-companion-panel.prd.md Phase 1, Open Question 1 A): the same
+  // `readAloud` source, opened in `BoothView`'s layout instead of the normal control bar. Reset by each opener, not by
+  // closing, so a stale value from the last open never leaks into the next.
+  const [readAloudMode, setReadAloudMode] = useState<'read' | 'booth'>('read');
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<SearchHit[]>([]);
   // The query text a result was actually fetched for - not the debounce hook's own state, so an
@@ -576,7 +580,14 @@ export function Manuscript({
             onToggle={() => setCreditsExpanded((current) => ({ ...current, opening: !current.opening }))}
             textClass={READER_TEXT_CLASSES[textSize]}
             onFillIn={creditsSetup ? () => setFillingInCredits(true) : undefined}
-            onReadAloud={() => setReadAloud({ kind: 'credits', credits: 'opening', preview: creditsPreviews.opening! })}
+            onReadAloud={() => {
+              setReadAloudMode('read');
+              setReadAloud({ kind: 'credits', credits: 'opening', preview: creditsPreviews.opening! });
+            }}
+            onBooth={() => {
+              setReadAloudMode('booth');
+              setReadAloud({ kind: 'credits', credits: 'opening', preview: creditsPreviews.opening! });
+            }}
           />
         )}
         {recordedChapters.map((chapter) => {
@@ -594,7 +605,15 @@ export function Manuscript({
               onToggleBookmark={() => void toggleChapterBookmark(chapter.id)}
               showRetailSample={Boolean(sampleRange?.chapterIds.has(chapter.id))}
               showReadAloud={isNarrationChapter(chapter)}
-              onReadAloud={() => setReadAloud({ kind: 'chapter', chapter })}
+              onReadAloud={() => {
+                setReadAloudMode('read');
+                setReadAloud({ kind: 'chapter', chapter });
+              }}
+              showBooth={isNarrationChapter(chapter)}
+              onBooth={() => {
+                setReadAloudMode('booth');
+                setReadAloud({ kind: 'chapter', chapter });
+              }}
               wordCount={chapter.wordCount}
             >
               {loadingChapters.has(chapter.id) ? (
@@ -633,7 +652,14 @@ export function Manuscript({
             onToggle={() => setCreditsExpanded((current) => ({ ...current, closing: !current.closing }))}
             textClass={READER_TEXT_CLASSES[textSize]}
             onFillIn={creditsSetup ? () => setFillingInCredits(true) : undefined}
-            onReadAloud={() => setReadAloud({ kind: 'credits', credits: 'closing', preview: creditsPreviews.closing! })}
+            onReadAloud={() => {
+              setReadAloudMode('read');
+              setReadAloud({ kind: 'credits', credits: 'closing', preview: creditsPreviews.closing! });
+            }}
+            onBooth={() => {
+              setReadAloudMode('booth');
+              setReadAloud({ kind: 'credits', credits: 'closing', preview: creditsPreviews.closing! });
+            }}
           />
         )}
       </div>
@@ -770,6 +796,7 @@ export function Manuscript({
           notes={readAloud.kind === 'chapter' ? readAloudNotes : undefined}
           onClose={() => setReadAloud(undefined)}
           onFixCredits={() => routerNavigate('/settings#credits')}
+          mode={readAloudMode}
         />
       )}
     </div>
