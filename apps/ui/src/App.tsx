@@ -25,6 +25,7 @@ import { TracksPage } from './components/tracks/TracksPage';
 import { WorkspacePage } from './components/workspace/WorkspacePage';
 import { ReviewPage } from './components/review/ReviewPage';
 import { DeliveryPage } from './components/delivery/DeliveryPage';
+import { ProductionPage } from './components/production/ProductionPage';
 import { TooltipProvider } from './components/primitives/Tooltip';
 import { ErrorBoundary } from './components/primitives/ErrorBoundary';
 import { DESKTOP_HOST_API_VERSION } from './hostApi';
@@ -463,6 +464,7 @@ function AppRoutes() {
                   <ReviewPage notify={setNotice} hasManuscript={Boolean(data.manuscript)} goToManuscript={goToManuscript} goToStoryBible={goToStoryBible} />
                 }
               />
+              <Route path="/production" element={data.manuscript ? <ProductionPage /> : <Navigate to="/" replace />} />
               <Route path="/delivery" element={<DeliveryPage openSettings={() => guardedNavigate('/settings#delivery')} />} />
               <Route
                 path="/settings"
