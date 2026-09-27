@@ -6,6 +6,7 @@ import { MemoryRouter } from 'react-router-dom';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { ApiProvider } from '../../api/ApiContext';
 import { createMockApi } from '../../api/mockApi';
+import type { DawMockSeed } from '../../api/dawMock';
 import { CommandRouter, CommandScope } from '../../input/router';
 import { ReadingControlBar } from './ReadingControlBar';
 import { initialSession } from './readerModel';
@@ -63,9 +64,14 @@ function followCursor(overrides: Partial<FollowCursor> = {}): FollowCursor {
 function renderBar(
   session: TeleprompterSession,
   follow: FollowCursor,
-  options: { startPoint?: { label: string; onClear: () => void }; chapterId?: string; apiOverrides?: Partial<NarrationApi> } = {},
+  options: {
+    startPoint?: { label: string; onClear: () => void };
+    chapterId?: string;
+    apiOverrides?: Partial<NarrationApi>;
+    daw?: DawMockSeed;
+  } = {},
 ) {
-  const api = createMockApi(options.apiOverrides ?? {});
+  const api = createMockApi(options.apiOverrides ?? {}, { daw: options.daw });
   return render(
     <MemoryRouter>
       <ApiProvider api={api}>
@@ -278,12 +284,14 @@ describe('ReadingControlBar', () => {
       expect(screen.queryByRole('button', { name: /Record in REAPER/ })).toBeNull();
     });
 
-    it("shows the chapter's armed state once asked, always disabled - Phase 7's toggle is not built", async () => {
+    it("shows the chapter's armed state once asked, gated on the record capability (experimental and off by default, DAW port PRD Phase 7)", async () => {
       const readAloudReaperState = vi.fn(async () => reaperState({ status: 'ready' }));
       renderBar(baseSession(), followCursor(), { chapterId: 'chapter-3', apiOverrides: { readAloudReaperState } });
 
       const button = await screen.findByRole('button', { name: 'Record in REAPER: Chapter armed' });
-      expect(button.hasAttribute('disabled')).toBe(true);
+      // Gated by CapabilityGate, never the native `disabled`: the gate itself, not the browser, stops the press.
+      await waitFor(() => expect(button.getAttribute('aria-disabled')).toBe('true'));
+      expect(button.hasAttribute('disabled')).toBe(false);
       expect(readAloudReaperState).toHaveBeenCalledWith('chapter-3');
     });
 
@@ -297,6 +305,16 @@ describe('ReadingControlBar', () => {
 
       await user.click(screen.getByRole('button', { name: 'Refresh REAPER state' }));
       await waitFor(() => expect(readAloudReaperState).toHaveBeenCalledTimes(2));
+    });
+
+    it('is enabled and shows the chapter armed state once the record capability is turned on (DAW port PRD Phase 7)', async () => {
+      const readAloudReaperState = vi.fn(async () => reaperState({ status: 'ready' }));
+      const daw: DawMockSeed = { toggles: { record: 'on' } };
+      renderBar(baseSession(), followCursor(), { chapterId: 'chapter-3', apiOverrides: { readAloudReaperState }, daw });
+
+      const button = await screen.findByRole('button', { name: 'Record in REAPER: Chapter armed' });
+      await waitFor(() => expect(button.getAttribute('aria-disabled')).toBeNull());
+      expect(screen.getByText('Experimental')).toBeTruthy();
     });
   });
 
