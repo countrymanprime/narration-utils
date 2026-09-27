@@ -116,6 +116,8 @@ A lane-X stream runs with no other stream that touches the same files. A lane th
 
 Some PRDs gate a phase on **owner-approved mockups** in prose (its Phase Details or its Visual Spec section), not just in the `Depends` column. That gate never shows up in the phase table, so before adding a phase to the ready list, check its Phase Details paragraph and the PRD's Visual Spec section, not only `Depends`.
 
+Since D68 and D69 (see [Owner standing rules](#owner-standing-rules)), an existing concept mock no longer gates a phase: build against it and add the Mockup check table. The rules below still apply when a phase has **no** mockup at all.
+
 When a phase is otherwise ready (`Depends` complete, no file collision) but blocked solely on mockups that don't exist yet or haven't been approved (D61, owner-directed):
 
 - **Don't launch it as a normal worker,** and don't guess at a design to route around the gate.
@@ -128,6 +130,23 @@ When a phase is otherwise ready (`Depends` complete, no file collision) but bloc
 - **Record it on #509** as its own lane entry. It counts toward `TARGET` like any running session, but is tracked separately from the phase queue until the owner approves it.
 - **Subscribe to its PR** (`subscribe_pr_activity`). The owner may leave review comments to iterate on the design directly with that session (or a follow-up fixer) before approving — treat that like any other reviewer round: implement the requested visual changes and push, rather than closing the PR out after one draft.
 - The gated phase itself joins the normal ready list only once the owner approves the mockups (a comment or review saying so, or the PRD's Visual Spec section no longer reads "pending"). Approval is the owner's call, never the coordinator's.
+
+## Owner standing rules
+
+Decisions the owner made while the train ran (logged on #509). They bind the coordinator and every worker, and the worker template repeats the ones a worker needs.
+
+| Rule | What it says |
+| --- | --- |
+| **D63** | `WARNING_POLICY: ignore`. A weekly warning counts as GREEN. On 2026-09-27 the owner restated it: ignore the weekly warning until the band is RED |
+| **D64** | The coordinator resolves mechanical items itself (branch updates, index rows, status cells, bookkeeping) instead of queueing them for the owner |
+| **D65** | Owner-only, hardware and REAPER checks are flagged on #510 and marked pending. They never block a merge or a launch |
+| **D66** | Check the lane count on every pass, including passes spent mostly on merges or fixers, and launch before babysitting in-flight PRs |
+| **D67** | Mock-first behind every port. A feature builds against a mock that passes the schema; going to production is a swap behind the port; the mocks stay for the demo build and the tests. A UI phase blocked only by an unbuilt backend phase is ready once that contract is pinned. Serial points, nav entries among them, still land one at a time |
+| **D68** | A concept mock never blocks. Build against the PRD's recommended concept and pivot later if the owner asks. This settles the conflict between the wave-0 writer rule and D61 |
+| **D69** | The audiobook studio benchmark's concept mocks are owner-approved as the build spec. **Dark mode is one app-wide theme,** on or off: no page or surface forces light or dark, and a dark mock shows the dark theme, not a per-page look. This supersedes ADR 0360 Q1's forced-dark booth surface |
+| **D70** | Features still in development use public-domain or synthetic data instead of waiting for the owner's recordings. Results calibrated on it are **provisional**, and a re-run on the owner's own material goes on #510 as a QA item before it ships to users |
+| **D71** | **LibriVox** is the default source for real speech audio: public domain, many readers, and solo readings where one reader voices several characters. Record the source URL, reader, book and the public-domain statement; keep the audio out of git as ignored local data. Synthetic audio is the fallback |
+| **D72** | The privacy line is outbound user data, not inbound reference data. The app may call external APIs to **fetch** dictionary or pronunciation data (local first, online optional), but never sends the narrator's or authors' data out. An online lookup sends a single word, never passages, file names or project identifiers; it is narrator-initiated, or opt-in with a notice for a batch; results are cached locally; there is no telemetry and no project-run proxy. A service that needs a key uses the narrator's own key, stored locally and never logged |
 
 ## The coordinator's pass
 
@@ -193,7 +212,7 @@ A worker is one cloud session for one stream. It opens one PR per phase, stacked
        - Failing: any failing check, with its output
        - Checks run: the local checks already passed
      - Comment `<ID>: PAUSED at <step>, PR #<n>` on #509, then end the session.
-  3. On AMBER in your own reading (`allowed_warning`): **yield.** Finish the current PR to green, don't start the next phase, comment `<ID>: yielded after p<N>` on #509, and end.
+  3. On AMBER in your own reading (`allowed_warning`), **unless #509's `WARNING_POLICY` is `ignore`** (then a warning counts as GREEN, D63): **yield.** Finish the current PR to green, don't start the next phase, comment `<ID>: yielded after p<N>` on #509, and end.
   4. Otherwise, continue.
 - **Finishing:**
   - Subscribe to your PRs, and drive `Build (Windows)` and `ui-dist` to green.
@@ -238,6 +257,9 @@ regenerate docs/images/ui or docs/ui.
 WIRE CONTRACTS: a new binding or event gets a Zod schema, a golden (UPDATE_CONTRACTS=1), a wireContracts row and a mock
 that passes it, plus a hostAPIVersion bump to main + 1. New REAPER commands: harness tests first, wire.go row,
 threat-model and SECURITY.md rows, declared as Experimental capabilities.
+OWNER RULES ("Owner standing rules" in this file): D67 mock-first behind every port; D69 one app-wide theme, never force
+light or dark on a page; D70/D71 development audio from LibriVox (provenance recorded, audio kept out of git) or
+synthetic, results provisional; D72 fetch reference data freely, but never send the narrator's or authors' data out.
 USAGE: follow "The worker protocol" exactly: push after every green step, check #509 and your rate_limit_info at every
 checkpoint, pause or yield as it says.
 FINISH: subscribe to your PRs; drive Build (Windows) and ui-dist green; answer every red-circle thread; comment
