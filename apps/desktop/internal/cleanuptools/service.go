@@ -9,13 +9,14 @@
 package cleanuptools
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"os"
 	"sync"
 	"time"
 
-	"github.com/countrymanprime/narration-utils/shell/internal/bridge"
+	"github.com/countrymanprime/narration-utils/shell/internal/dawport"
 	"github.com/countrymanprime/narration-utils/shell/internal/runlog"
 )
 
@@ -43,25 +44,34 @@ func lookup(key string) (Tool, bool) {
 // Config is the session path the service needs to talk to REAPER over the file bridge.
 type Config struct{ SessionDir string }
 
-// Service is the state machine for one launch at a time.
+// Service is the state machine for one launch at a time. Silence trim and level matching (DAW port PRD Phase
+// 5b) are a second, synchronous pair of roles on the same service: built in P2 and never wired to anything
+// (diagnostics-delivery-and-cleanup-tools PRD Phases 10 and 11 built the Lua and Go client but left "a
+// narrator-facing trigger" for later work), they take their SilenceTrimmer and GainAdjuster roles here so a
+// binding can call PreviewSilenceTrim, ApplySilenceTrim and ApplyGain once one exists.
 type Service struct {
-	mu      sync.RWMutex
-	config  Config
-	bridge  *bridge.Client
-	changed func(map[string]any)
+	mu             sync.RWMutex
+	config         Config
+	launcher       dawport.CleanupLauncher
+	silenceTrimmer dawport.SilenceTrimmer
+	gainAdjuster   dawport.GainAdjuster
+	changed        func(map[string]any)
 	// +checklocks:mu
 	state map[string]any
 }
 
-// New builds the service and, when there is a bridge, subscribes to CLEANUP_LAUNCHED and ERROR events for its own
-// run (or, with no run, a session-level problem while a launch is in flight).
-func New(config Config, client *bridge.Client, changed func(map[string]any)) *Service {
-	s := &Service{config: config, bridge: client, changed: changed, state: Idle()}
-	if client != nil {
-		client.Subscribe(bridge.Subscription{
+// New builds the service over launcher, silenceTrimmer and gainAdjuster (DAW port PRD Phase 5b: cleanup tools
+// depend on the roles they use, never a concrete bridge client). When there is a launcher it subscribes to
+// CLEANUP_LAUNCHED and ERROR events for its own run (or, with no run, a session-level problem while a launch is
+// in flight); silenceTrimmer and gainAdjuster are synchronous roles (roles.go) and need no subscription of
+// their own.
+func New(config Config, launcher dawport.CleanupLauncher, silenceTrimmer dawport.SilenceTrimmer, gainAdjuster dawport.GainAdjuster, changed func(map[string]any)) *Service {
+	s := &Service{config: config, launcher: launcher, silenceTrimmer: silenceTrimmer, gainAdjuster: gainAdjuster, changed: changed, state: Idle()}
+	if launcher != nil {
+		launcher.Subscribe(dawport.Subscription{
 			Tags:    []string{"CLEANUP_LAUNCHED", "ERROR"},
 			Owns:    s.ownsRun,
-			Handle:  func(event bridge.Event) { s.Handle(event.Fields) },
+			Handle:  func(event dawport.Event) { s.Handle(event.Fields) },
 			Invalid: s.handleInvalid,
 		})
 	}
@@ -81,7 +91,7 @@ func (s *Service) Launch(key string, run *runlog.Run) error {
 		return fmt.Errorf("unknown cleanup tool %q", key)
 	}
 	run.Decision("tool.matched", "matched an allow-listed cleanup tool", "tool_key", tool.Key)
-	if s.bridge == nil {
+	if s.launcher == nil {
 		return fmt.Errorf("the REAPER bridge is unavailable")
 	}
 	if err := os.MkdirAll(s.config.SessionDir, 0o755); err != nil {
@@ -93,7 +103,7 @@ func (s *Service) Launch(key string, run *runlog.Run) error {
 	s.state["runId"], s.state["phase"], s.state["tool"] = runID, "launching", tool.Key
 	s.state["message"] = fmt.Sprintf("Opening %s in REAPER…", tool.Label)
 	s.mu.Unlock()
-	if _, err := s.bridge.Send("launch_cleanup_tool", []string{runID, tool.Key, run.ID(), run.Level()}); err != nil {
+	if err := s.launcher.LaunchCleanupTool(runID, tool.Key, dawport.Trace{RunID: run.ID(), Level: run.Level()}); err != nil {
 		s.fail(err.Error())
 		return err
 	}
@@ -101,12 +111,38 @@ func (s *Service) Launch(key string, run *runlog.Run) error {
 	return nil
 }
 
+// PreviewSilenceTrim previews the candidates' silence trims (dawport.SilenceTrimmer.Preview) without changing
+// anything: which take markers preview_cleanup_markers would add, and which candidates are stale.
+func (s *Service) PreviewSilenceTrim(ctx context.Context, candidates []dawport.CleanupCandidate) (dawport.PreviewResult, error) {
+	if s.silenceTrimmer == nil {
+		return dawport.PreviewResult{}, fmt.Errorf("the REAPER bridge is unavailable")
+	}
+	return s.silenceTrimmer.Preview(ctx, candidates)
+}
+
+// ApplySilenceTrim applies the candidates' silence trims (dawport.SilenceTrimmer.Apply): a split at each end of
+// the cut, the middle piece removed, all in one undo block.
+func (s *Service) ApplySilenceTrim(ctx context.Context, candidates []dawport.CleanupCandidate) (dawport.ApplyResult, error) {
+	if s.silenceTrimmer == nil {
+		return dawport.ApplyResult{}, fmt.Errorf("the REAPER bridge is unavailable")
+	}
+	return s.silenceTrimmer.Apply(ctx, candidates)
+}
+
+// ApplyGain applies per-item gain to match levels (dawport.GainAdjuster.Apply).
+func (s *Service) ApplyGain(ctx context.Context, candidates []dawport.GainCandidate) (dawport.ApplyGainResult, error) {
+	if s.gainAdjuster == nil {
+		return dawport.ApplyGainResult{}, fmt.Errorf("the REAPER bridge is unavailable")
+	}
+	return s.gainAdjuster.Apply(ctx, candidates)
+}
+
 // Drain delivers the events REAPER has appended since the last call, to this service and every other consumer.
 func (s *Service) Drain() error {
-	if s.bridge == nil {
+	if s.launcher == nil {
 		return nil
 	}
-	return s.bridge.Dispatch()
+	return s.launcher.Dispatch()
 }
 
 func (s *Service) Snapshot() map[string]any {
@@ -135,7 +171,7 @@ func (s *Service) ownsRun(runID string) bool {
 	return runID != "" && runID == current
 }
 
-func (s *Service) handleInvalid(_ bridge.Event, reason error) {
+func (s *Service) handleInvalid(_ dawport.Event, reason error) {
 	message := fmt.Sprintf("The Narration Utils script in REAPER sent a message this app could not read (%v). Import the script from this app's REAPER folder again, then try again.", reason)
 	s.mu.Lock()
 	if s.state["phase"] != "launching" {

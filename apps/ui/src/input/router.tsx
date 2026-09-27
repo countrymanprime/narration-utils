@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useRef, type ReactNode } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { COMMAND_CATALOG, type CommandDescriptor, type CommandId } from './commands.catalog';
 import { serializeGesture, type Gesture } from './gestures';
 import type { GestureEvent, InputSource } from './InputSource';
@@ -82,7 +82,8 @@ export type CommandRouterProps = {
  * 3. Looks up the keymap in scope-priority order (`SCOPE_PRIORITY`) and takes the first command bound to the
  *    gesture in an active scope.
  * 4. If a `noisy` command is found while `isRecording()` is true, the gesture is still consumed (so nothing else
- *    reacts to it) but the handler does not run.
+ *    reacts to it) but the handler does not run. A suppressed press posts "Not while recording." to a status
+ *    region instead (Phase 10, PRD Q5), so a narrator who cannot see the screen still gets feedback.
  * 5. A gesture no command takes, and a command whose catalog row has nothing registered yet, are left untouched.
  */
 export function CommandRouter({ children, source, catalog = COMMAND_CATALOG, keymap, isRecording = () => false }: CommandRouterProps) {
@@ -96,6 +97,16 @@ export function CommandRouter({ children, source, catalog = COMMAND_CATALOG, key
 
   const handlers = useRef(new Map<CommandId, CommandHandler>());
   const scopeStack = useRef<Scope[]>([]);
+
+  // A screen reader does not re-announce a live region whose text is unchanged, so two suppressed presses in a row
+  // need two different strings to both be heard. Toggling a trailing zero-width space keeps the announced words the
+  // same while still changing the DOM text each time (Phase 10, PRD Q5).
+  const [announcement, setAnnouncement] = useState('');
+  const announcementParity = useRef(false);
+  const announceSuppressed = useCallback(() => {
+    announcementParity.current = !announcementParity.current;
+    setAnnouncement(`Not while recording.${announcementParity.current ? '​' : ''}`);
+  }, []);
 
   const register = useCallback<Registry['register']>((id, handler) => {
     handlers.current.set(id, handler);
@@ -125,16 +136,45 @@ export function CommandRouter({ children, source, catalog = COMMAND_CATALOG, key
         const handler = handlers.current.get(command.id);
         if (!handler) return; // catalogued, but nothing registered yet (not migrated this phase, or its page isn't mounted): leave it alone
         event.preventDefault();
-        if (!(command.noisy && isRecordingRef.current())) handler({ target: event.target });
+        if (command.noisy && isRecordingRef.current()) {
+          announceSuppressed();
+        } else {
+          handler({ target: event.target });
+        }
         return;
       }
     });
-  }, [source]);
+  }, [source, announceSuppressed]);
 
   const registry = useMemo<Registry>(() => ({ register, catalog }), [register, catalog]);
   return (
     <ScopeStackContext.Provider value={push}>
       <RegistryContext.Provider value={registry}>{children}</RegistryContext.Provider>
+      {/* No role="status": the app already has one status region (Toast.tsx's ToastRegion), and a second would make
+          getByRole('status') ambiguous everywhere. Plain aria-live is enough to be announced (Phase 10, PRD Q5).
+          Not the `sr-only` class: it is `position: absolute`, and this router sits outside the app shell's own
+          positioned containers (it wraps <App> as a sibling, not a descendant), so an absolutely positioned child
+          here has no ancestor to be absolute against but <body> - exactly the escaped-containing-block problem the
+          visual suite's findEscapedAbsolutes check exists to catch (app-shell-vertical-overflow.prd.md). `fixed`
+          hides it the same way (clipped to nothing, off in a corner) without being `absolute`. */}
+      <div
+        aria-live="polite"
+        style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          width: 1,
+          height: 1,
+          margin: -1,
+          padding: 0,
+          overflow: 'hidden',
+          clip: 'rect(0,0,0,0)',
+          whiteSpace: 'nowrap',
+          border: 0,
+        }}
+      >
+        {announcement}
+      </div>
     </ScopeStackContext.Provider>
   );
 }
