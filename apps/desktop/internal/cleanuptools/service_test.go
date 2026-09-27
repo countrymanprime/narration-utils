@@ -7,7 +7,25 @@ import (
 	"testing"
 
 	"github.com/countrymanprime/narration-utils/shell/internal/bridge"
+	"github.com/countrymanprime/narration-utils/shell/internal/dawport"
+	"github.com/countrymanprime/narration-utils/shell/internal/dawport/reaper"
 )
+
+// cleanupLauncherRole wraps client in the REAPER adapter (DAW port PRD P2) and takes its CleanupLauncher role,
+// the way the composition root does (apps/desktop/app.go), so these tests exercise the real bridge round trip
+// through the same port the service now depends on.
+func cleanupLauncherRole(t *testing.T, client *bridge.Client) dawport.CleanupLauncher {
+	t.Helper()
+	adapter, err := reaper.New(client, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	role, ok := adapter.Role(dawport.CapCleanupTools).(dawport.CleanupLauncher)
+	if !ok {
+		t.Fatal("the REAPER adapter did not return a CleanupLauncher role")
+	}
+	return role
+}
 
 func testService(t *testing.T) (*Service, string) {
 	t.Helper()
@@ -16,7 +34,7 @@ func testService(t *testing.T) (*Service, string) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	return New(Config{SessionDir: session}, client, nil), session
+	return New(Config{SessionDir: session}, cleanupLauncherRole(t, client), nil, nil, nil), session
 }
 
 func commandFiles(t *testing.T, session string) []string {
@@ -105,7 +123,7 @@ func TestEveryAllowListedToolIsLaunchable(t *testing.T) {
 }
 
 func TestLaunchWithoutABridgeFails(t *testing.T) {
-	service := New(Config{SessionDir: t.TempDir()}, nil, nil)
+	service := New(Config{SessionDir: t.TempDir()}, nil, nil, nil, nil)
 	if err := service.Launch("repair_pops_clicks", nil); err == nil || !strings.Contains(err.Error(), "REAPER bridge is unavailable") {
 		t.Fatalf("err = %v", err)
 	}
@@ -171,7 +189,7 @@ func TestChangedIsCalledOnLaunchAndOnTheResult(t *testing.T) {
 		t.Fatal(err)
 	}
 	var phases []string
-	service := New(Config{SessionDir: session}, client, func(state map[string]any) { phases = append(phases, state["phase"].(string)) })
+	service := New(Config{SessionDir: session}, cleanupLauncherRole(t, client), nil, nil, func(state map[string]any) { phases = append(phases, state["phase"].(string)) })
 	runID := launch(t, service, "repair_pops_clicks")
 	appendEvents(t, session, "CLEANUP_LAUNCHED|"+runID+"|repair_pops_clicks|Repair pops/clicks...")
 	if err := service.Drain(); err != nil {
@@ -202,7 +220,7 @@ func TestARunlessErrorFailsTheLaunchInFlightOnly(t *testing.T) {
 }
 
 func TestDrainWithoutABridgeIsANoOp(t *testing.T) {
-	service := New(Config{SessionDir: t.TempDir()}, nil, nil)
+	service := New(Config{SessionDir: t.TempDir()}, nil, nil, nil, nil)
 	if err := service.Drain(); err != nil {
 		t.Fatal(err)
 	}

@@ -11,7 +11,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/countrymanprime/narration-utils/shell/internal/bridge"
+	"github.com/countrymanprime/narration-utils/shell/internal/dawport"
 )
 
 // Config is the session path the service needs to talk to REAPER over the file bridge.
@@ -22,22 +22,24 @@ type Config struct{ SessionDir string }
 type Service struct {
 	mu      sync.RWMutex
 	config  Config
-	bridge  *bridge.Client
+	role    dawport.PickupList
 	changed func(map[string]any)
 	// +checklocks:mu
 	state map[string]any
 }
 
-// New builds the service and, when there is a bridge, subscribes to the events pickups owns: every PICKUPS_*
-// and PICKUP_* tag, and ERROR events for its own run (or with no run, a session-level problem). The transcript
-// and line-identity services subscribe independently on the same client; Dispatch fans events to all three.
-func New(config Config, client *bridge.Client, changed func(map[string]any)) *Service {
-	s := &Service{config: config, bridge: client, changed: changed, state: empty()}
-	if client != nil {
-		client.Subscribe(bridge.Subscription{
+// New builds the service over role (DAW port PRD Phase 5b: pickups depends on the PickupList role, never a
+// concrete bridge client, so a second engine's adapter can serve it unchanged). When there is a role it
+// subscribes to the events pickups owns: every PICKUPS_* and PICKUP_* tag, and ERROR events for its own run (or
+// with no run, a session-level problem). The transcript and line-identity services subscribe independently on
+// the same underlying client; Dispatch fans events to all three.
+func New(config Config, role dawport.PickupList, changed func(map[string]any)) *Service {
+	s := &Service{config: config, role: role, changed: changed, state: empty()}
+	if role != nil {
+		role.Subscribe(dawport.Subscription{
 			Tags:    []string{"PICKUPS_IMPORTED", "PICKUPS_EXPORTED", "PICKUPS_COUNTED", "PICKUP_NEXT", "PICKUP_RESOLVED", "ERROR"},
 			Owns:    s.ownsRun,
-			Handle:  func(event bridge.Event) { s.Handle(event.Fields) },
+			Handle:  func(event dawport.Event) { s.Handle(event.Fields) },
 			Invalid: s.handleInvalid,
 		})
 	}
@@ -61,7 +63,7 @@ func (s *Service) Import(rows []Row) error {
 	if len(rows) == 0 {
 		return fmt.Errorf("select at least one pickup to import")
 	}
-	if s.bridge == nil {
+	if s.role == nil {
 		return fmt.Errorf("the REAPER bridge is unavailable")
 	}
 	if err := os.MkdirAll(s.config.SessionDir, 0o755); err != nil {
@@ -82,7 +84,7 @@ func (s *Service) Import(rows []Row) error {
 		return fmt.Errorf("could not write the pickup list: %w", err)
 	}
 	s.begin(runID, "importing", "Importing pickups into REAPER…")
-	if _, err := s.bridge.Send("import_pickups", []string{runID, path}); err != nil {
+	if err := s.role.ImportPickups(runID, path); err != nil {
 		s.fail(err.Error())
 		return err
 	}
@@ -94,7 +96,7 @@ func (s *Service) Import(rows []Row) error {
 // arrives, reads the payload file it wrote and re-encodes it as CSV text (Handle -> readExportedCSV) so the UI
 // can offer it as a download with no second round trip.
 func (s *Service) Export() error {
-	if s.bridge == nil {
+	if s.role == nil {
 		return fmt.Errorf("the REAPER bridge is unavailable")
 	}
 	if err := os.MkdirAll(s.config.SessionDir, 0o755); err != nil {
@@ -103,7 +105,7 @@ func (s *Service) Export() error {
 	runID := newRunID()
 	path := filepath.Join(s.config.SessionDir, "pickups_export_"+runID+".txt")
 	s.begin(runID, "exporting", "Exporting pickups from REAPER…")
-	if _, err := s.bridge.Send("export_pickups", []string{runID, path}); err != nil {
+	if err := s.role.ExportPickups(runID, path); err != nil {
 		s.fail(err.Error())
 		return err
 	}
@@ -114,12 +116,12 @@ func (s *Service) Export() error {
 // Next asks REAPER to move the edit cursor to the next open pickup after the cursor (wrapping to the earliest
 // one), read-only otherwise.
 func (s *Service) Next() error {
-	if s.bridge == nil {
+	if s.role == nil {
 		return fmt.Errorf("the REAPER bridge is unavailable")
 	}
 	runID := newRunID()
 	s.begin(runID, "jumping", "Jumping to the next pickup…")
-	if _, err := s.bridge.Send("next_pickup", []string{runID}); err != nil {
+	if err := s.role.NextPickup(runID); err != nil {
 		s.fail(err.Error())
 		return err
 	}
@@ -129,12 +131,12 @@ func (s *Service) Next() error {
 
 // Resolve marks the open pickup nearest position as done (PICKUP_DONE:), keeping its body, in one undo step.
 func (s *Service) Resolve(position float64) error {
-	if s.bridge == nil {
+	if s.role == nil {
 		return fmt.Errorf("the REAPER bridge is unavailable")
 	}
 	runID := newRunID()
 	s.begin(runID, "resolving", "Resolving this pickup…")
-	if _, err := s.bridge.Send("resolve_pickup", []string{runID, strconv.FormatFloat(position, 'f', 6, 64)}); err != nil {
+	if err := s.role.ResolvePickup(runID, position); err != nil {
 		s.fail(err.Error())
 		return err
 	}
@@ -144,12 +146,12 @@ func (s *Service) Resolve(position float64) error {
 
 // Count asks REAPER how many pickups remain versus the total (open plus resolved); read-only.
 func (s *Service) Count() error {
-	if s.bridge == nil {
+	if s.role == nil {
 		return fmt.Errorf("the REAPER bridge is unavailable")
 	}
 	runID := newRunID()
 	s.begin(runID, "counting", "Counting pickups…")
-	if _, err := s.bridge.Send("count_pickups", []string{runID}); err != nil {
+	if err := s.role.CountPickups(runID); err != nil {
 		s.fail(err.Error())
 		return err
 	}
@@ -160,10 +162,10 @@ func (s *Service) Count() error {
 // Drain delivers the events REAPER has appended since the last call, to this service and to every other
 // consumer subscribed to the same bridge.
 func (s *Service) Drain() error {
-	if s.bridge == nil {
+	if s.role == nil {
 		return nil
 	}
-	return s.bridge.Dispatch()
+	return s.role.Dispatch()
 }
 
 func (s *Service) Snapshot() map[string]any {
@@ -203,7 +205,7 @@ func (s *Service) ownsRun(runID string) bool {
 	return runID != "" && runID == current
 }
 
-func (s *Service) handleInvalid(event bridge.Event, reason error) {
+func (s *Service) handleInvalid(event dawport.Event, reason error) {
 	message := fmt.Sprintf("The Narration Utils script in REAPER sent a message this app could not read (%v). Import the script from this app's REAPER folder again, then try again.", reason)
 	s.mu.Lock()
 	if !runInProgress(s.state) {

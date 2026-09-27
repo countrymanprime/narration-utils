@@ -9,8 +9,26 @@ import (
 	"testing"
 
 	"github.com/countrymanprime/narration-utils/shell/internal/bridge"
+	"github.com/countrymanprime/narration-utils/shell/internal/dawport"
+	"github.com/countrymanprime/narration-utils/shell/internal/dawport/reaper"
 	"github.com/countrymanprime/narration-utils/shell/internal/manuscript"
 )
+
+// lineStamperRole wraps client in the REAPER adapter (DAW port PRD P2) and takes its LineStamper role, the way
+// the composition root does (apps/desktop/app.go), so these tests exercise the real bridge round trip through
+// the same port the service now depends on.
+func lineStamperRole(t *testing.T, client *bridge.Client) dawport.LineStamper {
+	t.Helper()
+	adapter, err := reaper.New(client, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	role, ok := adapter.Role(dawport.CapLineIdentity).(dawport.LineStamper)
+	if !ok {
+		t.Fatal("the REAPER adapter did not return a LineStamper role")
+	}
+	return role
+}
 
 // writeManuscript writes a minimal, schema-valid manuscript.json a manuscript.Service can Load. sha is the
 // recorded source checksum; pass "" to omit the source object entirely (an old or corrupt manuscript).
@@ -53,7 +71,7 @@ func testService(t *testing.T, sha string) (*Service, string) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	return New(Config{Project: project, SessionDir: session}, client, manuscript.New(project), nil), session
+	return New(Config{Project: project, SessionDir: session}, lineStamperRole(t, client), manuscript.New(project), nil), session
 }
 
 func firstCommand(t *testing.T, session string) string {
@@ -271,7 +289,7 @@ func TestDrainSharesTheBridgeWithAnotherConsumerWithoutLosingOrStealingEvents(t 
 	service.state = empty()
 	service.state["runId"], service.state["phase"] = "run-1", "stamping"
 	var others []string
-	service.bridge.Subscribe(bridge.Subscription{
+	service.role.Subscribe(bridge.Subscription{
 		Tags:   []string{"COMPARE_*"},
 		Owns:   func(runID string) bool { return runID == "compare-1" },
 		Handle: func(event bridge.Event) { others = append(others, event.Tag+"|"+event.RunID) },
