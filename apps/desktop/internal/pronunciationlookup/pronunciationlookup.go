@@ -10,7 +10,6 @@ package pronunciationlookup
 
 import (
 	"fmt"
-	"net/url"
 	"strings"
 )
 
@@ -28,7 +27,7 @@ const (
 func Sources() []Source { return []Source{Forvo, YouGlish, MerriamWebster, Howjsay} }
 
 // URL builds the address source's own fixed template gives for word: the page PronunciationLookupOpen opens in the
-// narrator's default browser. word is escaped as one path segment (net/url.PathEscape), never a query string - none
+// narrator's default browser. word is escaped as one path segment (pathSegmentEscape), never a query string - none
 // of the four templates take one - so a space, an accent or punctuation in a manuscript's name never breaks the URL
 // or reaches the site unescaped.
 func URL(source Source, word string) (string, error) {
@@ -37,17 +36,51 @@ func URL(source Source, word string) (string, error) {
 	}
 	switch source {
 	case Forvo:
-		return "https://forvo.com/word/" + url.PathEscape(word) + "/", nil
+		return "https://forvo.com/word/" + pathSegmentEscape(word) + "/", nil
 	case YouGlish:
-		return "https://youglish.com/pronounce/" + url.PathEscape(word) + "/english", nil
+		return "https://youglish.com/pronounce/" + pathSegmentEscape(word) + "/english", nil
 	case MerriamWebster:
-		return "https://www.merriam-webster.com/dictionary/" + url.PathEscape(word), nil
+		return "https://www.merriam-webster.com/dictionary/" + pathSegmentEscape(word), nil
 	case Howjsay:
 		// Assumption (Phase 0, unverified - docs/research/): Howjsay's "how-to-pronounce-<word>" slug reads as a
 		// hyphenated phrase, not a query-escaped one, so a space becomes a hyphen before the rest is path-escaped.
 		hyphenated := strings.Join(strings.Fields(word), "-")
-		return "https://howjsay.com/how-to-pronounce-" + url.PathEscape(hyphenated), nil
+		return "https://howjsay.com/how-to-pronounce-" + pathSegmentEscape(hyphenated), nil
 	default:
 		return "", fmt.Errorf("pronunciationlookup: unknown source %q", source)
 	}
+}
+
+// pathSegmentEscape percent-encodes s for use as one URL path segment, byte for byte the same as the standard
+// library's net/url.PathEscape - reimplemented locally because the Go host's depguard rule denies net's subpackages,
+// net/url included, everywhere outside the download flow (ADR 0032 point 4, ADR 0012; .golangci.yml
+// no-network-outside-the-download-flow), even though net/url itself never makes a network call. Unreserved:
+// letters, digits, and "-_.~$&+:=@"; everything else becomes an uppercase %XX per byte, so a multi-byte UTF-8
+// character (an accent) becomes one %XX triplet per byte.
+func pathSegmentEscape(s string) string {
+	const hex = "0123456789ABCDEF"
+	var b strings.Builder
+	for i := 0; i < len(s); i++ {
+		c := s[i]
+		if isPathSegmentUnreserved(c) {
+			b.WriteByte(c)
+			continue
+		}
+		b.WriteByte('%')
+		b.WriteByte(hex[c>>4])
+		b.WriteByte(hex[c&0xF])
+	}
+	return b.String()
+}
+
+func isPathSegmentUnreserved(c byte) bool {
+	switch {
+	case 'A' <= c && c <= 'Z', 'a' <= c && c <= 'z', '0' <= c && c <= '9':
+		return true
+	}
+	switch c {
+	case '-', '_', '.', '~', '$', '&', '+', ':', '=', '@':
+		return true
+	}
+	return false
 }
