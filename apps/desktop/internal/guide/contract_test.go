@@ -69,6 +69,36 @@ func TestContractNoGuideFileYetIsAnEmptyList(t *testing.T) {
 	contractfile.Check(t, "guide-entities-empty", got)
 }
 
+// The pronunciation query list and its CSV, as the host sends them to the UI (prep-depth P3), from the same sidecar-written file.
+func TestContractPronunciationQueriesFromTheSidecarsOwnFile(t *testing.T) {
+	dir, err := contractfile.Dir()
+	if err != nil {
+		t.Fatal(err)
+	}
+	bytes, err := os.ReadFile(filepath.Join(dir, "guide-entities-pronunciation-sidecar.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var entities []any
+	if err := json.Unmarshal(bytes, &entities); err != nil {
+		t.Fatal(err)
+	}
+	queries, err := serviceWithGuideFile(t, entities).PronunciationQueries()
+	if err != nil {
+		t.Fatal(err)
+	}
+	contractfile.Check(t, "guide-pronunciation-queries", queries)
+	contractfile.Check(t, "guide-pronunciation-queries-csv", map[string]any{"csv": QueriesCSV(queries), "count": len(queries)})
+}
+
+func TestContractNoGuideFileYetHasNoPronunciationQueries(t *testing.T) {
+	queries, err := New(t.TempDir(), "", "", nil, nil).PronunciationQueries()
+	if err != nil {
+		t.Fatal(err)
+	}
+	contractfile.Check(t, "guide-pronunciation-queries-empty", queries)
+}
+
 // The narrator's own pronunciation, its alternate, a status and a note (prep-depth P1), from the file the sidecar's own test writes.
 func TestContractEntitiesWithPronunciationWorkFromTheSidecarsOwnFile(t *testing.T) {
 	dir, err := contractfile.Dir()
