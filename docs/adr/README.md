@@ -253,4 +253,5 @@ The table is generated from each ADR's heading and Status line ([ADR 0410](0410-
 | [0403](0403-the-capabilities-flag-reports-what-registered-not-what-loads.md) | The `--capabilities` flag reports what registered, not what loads, by default | Proposed |
 | [0405](0405-pronunciation-stays-local-first-behind-cmu-wiktextract-and-espeak-with-merriam-webster-as-the-one-narrator-keyed-online-source.md) | Pronunciation stays local-first behind CMU, Wiktextract and eSpeak, with Merriam-Webster as the one narrator-keyed online source | Proposed |
 | [0410](0410-the-adr-index-is-generated-from-each-adrs-heading-and-status-line-and-a-stale-index-fails-the-gate.md) | The ADR index is generated from each ADR's heading and Status line, and a stale index fails the gate | Proposed |
+| [0411](0411-the-release-pipeline-splits-build-from-publish-and-caches-only-pure-function-build-outputs-never-test-verdicts.md) | The release pipeline splits build from publish, and caches only pure-function build outputs, never test verdicts | Accepted |
 <!-- adr-index:end -->
