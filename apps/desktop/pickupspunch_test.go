@@ -15,7 +15,10 @@ func TestPickupsPunchMovesTheCursorToThePickupsPositionMinusPreRoll(t *testing.T
 	puncher := &fakePuncherStub{cursor: 10 - defaultPunchPreRoll}
 	host := &Host{}
 	host.settings = settings.New("", "")
-	host.dawPortResolver = dawport.NewResolver(dawport.ResolverConfig{Adapter: fakePuncherAdapter{puncher: puncher}})
+	host.dawPortResolver = dawport.NewResolver(dawport.ResolverConfig{
+		Adapter: fakePuncherAdapter{puncher: puncher},
+		Runtime: func() dawport.Runtime { return dawport.Runtime{Bridge: true, Reachable: true} },
+	})
 
 	raw, err := host.PickupsPunch(10)
 	if err != nil {
@@ -70,7 +73,10 @@ func TestContractPickupsPunchResults(t *testing.T) {
 
 	punched := &Host{}
 	punched.settings = settings.New("", "")
-	punched.dawPortResolver = dawport.NewResolver(dawport.ResolverConfig{Adapter: fakePuncherAdapter{puncher: &fakePuncherStub{cursor: 7}}})
+	punched.dawPortResolver = dawport.NewResolver(dawport.ResolverConfig{
+		Adapter: fakePuncherAdapter{puncher: &fakePuncherStub{cursor: 7}},
+		Runtime: func() dawport.Runtime { return dawport.Runtime{Bridge: true, Reachable: true} },
+	})
 	punchedRaw, punchedErr := punched.PickupsPunch(10)
 	answers["punched"] = decodedPickupsPunch(t, punchedRaw, punchedErr)
 

@@ -16,7 +16,7 @@
   },
   "refused_no_daw": {
     "outcome": "refused",
-    "message": "no DAW is connected to this app. Open this app from your DAW to use it."
+    "message": "no DAW is connected to this app. Open this app from your DAW to use it"
   },
   "resolved_alignment": {
     "outcome": "resolved",

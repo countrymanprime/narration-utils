@@ -30,7 +30,7 @@ var ErrNoLiveChapter = errors.New("there's no chapter being read right now to pu
 
 // errNoDawConnection is TeleprompterPunch's refusal with no bridge at all (a standalone launch): the same wording the
 // DAW port's own resolver gives a capability with no adapter (dawport.Resolver.message's ReasonStandalone case).
-var errNoDawConnection = errors.New("no DAW is connected to this app. Open this app from your DAW to use it.")
+var errNoDawConnection = errors.New("no DAW is connected to this app. Open this app from your DAW to use it")
 
 // TeleprompterPunchResult is TeleprompterPunchPreview's or TeleprompterPunch's answer: Outcome "resolved" (a preview:
 // nothing moved) or "punched" (Cursor is where REAPER's edit cursor landed), each with ResolvedTime, Source

@@ -158,7 +158,10 @@ func TestTeleprompterPunchMovesTheCursorAndDropsAnchorsAtOrAfterTheWord(t *testi
 		}
 	}
 	puncher := &fakePuncherStub{cursor: 1.5 - defaultPunchPreRoll}
-	host.dawPortResolver = dawport.NewResolver(dawport.ResolverConfig{Adapter: fakePuncherAdapter{puncher: puncher}})
+	host.dawPortResolver = dawport.NewResolver(dawport.ResolverConfig{
+		Adapter: fakePuncherAdapter{puncher: puncher},
+		Runtime: func() dawport.Runtime { return dawport.Runtime{Bridge: true, Reachable: true} },
+	})
 
 	raw, err := host.TeleprompterPunch(3)
 	if err != nil {
@@ -251,7 +254,10 @@ func TestContractTeleprompterPunchResults(t *testing.T) {
 	if err := teleprompter.AppendAnchor(puncherProject, "c1", teleprompter.Anchor{Word: 3, Position: 1.5}); err != nil {
 		t.Fatal(err)
 	}
-	puncherHost.dawPortResolver = dawport.NewResolver(dawport.ResolverConfig{Adapter: fakePuncherAdapter{puncher: &fakePuncherStub{cursor: -1.5}}})
+	puncherHost.dawPortResolver = dawport.NewResolver(dawport.ResolverConfig{
+		Adapter: fakePuncherAdapter{puncher: &fakePuncherStub{cursor: -1.5}},
+		Runtime: func() dawport.Runtime { return dawport.Runtime{Bridge: true, Reachable: true} },
+	})
 	punchedRaw, punchedErr := puncherHost.TeleprompterPunch(3)
 	answers["punched"] = decodedPunch(t, punchedRaw, punchedErr)
 
