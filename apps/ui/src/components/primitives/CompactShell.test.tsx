@@ -64,4 +64,14 @@ describe('CompactShell', () => {
     expect(screen.getAllByRole('main')).toHaveLength(1);
     expect(screen.getAllByRole('heading', { level: 1 })).toHaveLength(1);
   });
+
+  it('follows the app theme: it sets no surface, theme or colour-scheme of its own (ADR 0363)', () => {
+    const { container } = render(
+      <CompactShell title="Companion" status="Armed" action={<button type="button">Pin</button>}>
+        <p>Section body</p>
+      </CompactShell>,
+    );
+    expect(container.querySelector('[data-surface], [data-theme]')).toBeNull();
+    for (const element of container.querySelectorAll<HTMLElement>('*')) expect(element.style.colorScheme).toBe('');
+  });
 });
