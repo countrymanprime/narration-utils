@@ -1,0 +1,14 @@
+// The interaction feedback rows for the production tracking call sites (see interactionFeedback.catalog.ts for what a row says).
+import { type FeedbackRow, row } from './row';
+
+// prettier-ignore
+export const productionFeedback: Record<string, FeedbackRow> = {
+  // Production (production-tracking.prd.md Phase 4)
+  'src/components/production/ProductionPage.tsx::productionOverview#1': row('mount', 'file-io', 'na', 'na', 'ui', 'inline', 'na', 'ok', 'On opening Production: the figures, the board and Next up; while it reads the page says so, and a failed read is an inline alert in place of the page.'),
+  'src/components/production/ProductionPage.tsx::productionOverview#2': row('click', 'file-io', 'none', 'none', 'ui', 'inline', 'na', 'ok', 'Refresh, and the re-read after starting or stopping a timer: the page is redrawn from the new overview; a failed read replaces it with an inline alert.'),
+  'src/components/production/ProductionPage.tsx::productionStartTimer#1': row('click', 'file-io', 'pending', 'disabled', 'ui', 'inline', 'yes', 'ok', 'Start timer is busy on its chapter and the other chapters\' buttons are off until it answers; the running-timer bar then names the chapter and stage and every Start timer goes away. A refusal (a timer already running) or a failure is an inline alert in the host words, and nothing is logged.'),
+  'src/components/production/ProductionPage.tsx::productionStopTimer#1': row('click', 'file-io', 'pending', 'pending', 'ui', 'inline', 'yes', 'ok', 'Stop timer is busy until the session is logged, then the bar goes away and a status line names the chapter whose session was logged. A failure is an inline alert and the timer keeps running.'),
+  'src/components/production/PlanPanel.tsx::productionPlan#1': row('mount', 'file-io', 'na', 'na', 'ui', 'inline', 'na', 'ok', 'Reads the delivery date, contracted amount and milestones into the Delivery plan panel; its fields stay off until it answers, and a failed read is an inline alert in the panel.'),
+  'src/components/production/PlanPanel.tsx::setProductionDeadline#1': row('click', 'file-io', 'pending', 'disabled', 'ui', 'inline', 'yes', 'ok', 'Save date and amount is busy and Save milestones is off until it answers; a status line then says it saved and the figures are read again. An amount that is not a number is refused under its field before anything is sent; the host refusing an impossible date is an inline alert, and nothing is saved.'),
+  'src/components/production/PlanPanel.tsx::saveProductionMilestones#1': row('click', 'file-io', 'pending', 'disabled', 'ui', 'inline', 'yes', 'ok', 'Save milestones is busy and Save date and amount is off until it answers; a status line then says it saved. A milestone with no name or no real date refuses the whole list as an inline alert in the host words, and nothing is saved.'),
+};

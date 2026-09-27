@@ -2,7 +2,7 @@
 
 # Navigation
 
-[Home](home.md), [Manuscript](manuscript.md), [Proofing](proofing.md), [Story Bible](story-bible.md),
+[Home](home.md), [Production](production.md), [Manuscript](manuscript.md), [Proofing](proofing.md), [Story Bible](story-bible.md),
 [Teleprompter](teleprompter.md), [Tracks](tracks.md), [Review](review.md), and [Delivery](delivery.md) are
 reachable from a sidebar on the left. At
 desktop widths it stays open with labels; narrower windows switch it to icon-only, then hide
@@ -15,7 +15,7 @@ In the icon-only layout, hover an icon (or tab to it) to see the page's name.
 
 ![Icon-only navigation rail with a page name shown on hover](../../images/ui/nav-rail-tooltip.webp)
 
-Manuscript, Proofing, Story Bible, and Teleprompter stay locked until a manuscript has been
+Production, Manuscript, Proofing, Story Bible, and Teleprompter stay locked until a manuscript has been
 [imported on Home](home.md), and Proofing also stays locked until a REAPER project (`.rpp`) is linked to the
 project. Hovering a locked entry says what is missing. Home, Tracks, Review, and Delivery are always available.
 
