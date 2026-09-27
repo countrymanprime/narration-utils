@@ -13,6 +13,11 @@ describe('splitHintTerms', () => {
     expect(splitHintTerms(' Juno,  Zeph , ,juno\nHatter\r\nMarch Hare ')).toEqual(['Juno', 'Zeph', 'Hatter', 'March Hare']);
     expect(splitHintTerms(' , ')).toEqual([]);
   });
+
+  it('caps each term at 64 characters (Phase 2, V5), independently of the others in the same paste', () => {
+    const long = 'x'.repeat(80);
+    expect(splitHintTerms(`${long},short`)).toEqual([long.slice(0, 64), 'short']);
+  });
 });
 
 describe('suggestionMessage', () => {
