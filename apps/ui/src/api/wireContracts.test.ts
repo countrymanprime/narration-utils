@@ -90,6 +90,7 @@ import {
   guidePreviewSchema,
   pronunciationQueriesCsvSchema,
   pronunciationQueriesSchema,
+  queryImportResultSchema,
 } from './schemas/storyBible';
 import { bootstrapSchema, copyDiagnosticsResultSchema, projectAttachStateSchema, readySchema } from './schemas/system';
 import {
@@ -709,6 +710,25 @@ describe('answers of the mock client for the manuscript, Story Bible and project
     const csv = await api.guidePronunciationQueriesCsv();
     expectMatches(pronunciationQueriesCsvSchema, csv, 'mock pronunciation queries CSV');
     expect(csv.count).toBe(queries.length);
+  });
+
+  it('re-importing an answered pronunciation query file applies a matched row and reports an unmatched one', async () => {
+    const api = createMockApi();
+    const queries = await api.guidePronunciationQueries();
+    const row = queries[0];
+    const aliasCell = row.aliasIndex === null ? '' : String(row.aliasIndex);
+    const csvText =
+      'word,entry_id,alias_index,status,note\n' +
+      `${row.name},${row.entityId},${aliasCell},author_confirmed,Confirmed by the author\n` +
+      'Ghost,not-a-real-entity,,researched,\n';
+    const result = await api.guidePronunciationImportQueriesCsv(csvText);
+    expectMatches(queryImportResultSchema, result, 'mock pronunciation query import');
+    expect(result.applied).toBe(1);
+    expect(result.issues).toHaveLength(1);
+    expect(result.issues[0]).toContain('line 3:');
+    expect(result.issues[0]).toContain('Ghost');
+    const after = await api.guidePronunciationQueries();
+    expect(after.some((query) => query.entityId === row.entityId && query.aliasIndex === row.aliasIndex)).toBe(false);
   });
 
   it('the dictionary lookup answers: a word it has, one it does not, and the first-use gate', async () => {
@@ -1977,6 +1997,7 @@ describe('answers of the mock client for the settings, voice, model, transcript 
       'guidePreview',
       'guidePronunciationQueries',
       'guidePronunciationQueriesCsv',
+      'guidePronunciationImportQueriesCsv',
       'assetsList',
       'assetsInstall',
       'assetsInstallState',

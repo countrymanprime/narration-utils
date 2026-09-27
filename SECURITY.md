@@ -40,6 +40,11 @@ especially welcome:
   did not include is in scope. The same holds for the pronunciation query CSV the Story Bible exports for the narrator to send to an
   author ([ADR 0347](docs/adr/0347-the-pronunciation-query-export-is-csv-with-its-ids-last-and-a-formula-guard-and-is-a-download.md)): a
   cell that runs as a formula when the file is opened in a spreadsheet, or a row that carries more than the columns it names, is in scope.
+  Reading that file back once the author has answered it (`GuidePronunciationImportQueriesCSV`,
+  [ADR 0352](docs/adr/0352-a-re-imported-query-answer-is-matched-by-entry-id-and-alias-index-and-a-blank-note-column-leaves-the-note-alone.md))
+  is also in scope: a row matching the wrong entry or alias, a status or note applying beyond the single name its own id and alias number
+  name, an import starting anything beyond the existing status-and-note sidecar call, or a blank note column clearing a note it should
+  leave alone, is a vulnerability.
 - The run log every tool run writes (`logs/run.jsonl`, `logs/runs/*.stderr.jsonl`; [ADR 0251](docs/adr/0251-tool-runs-are-logged-as-json-lines-through-slog-with-a-run-id-and-content-is-never-logged.md)) and the diagnostics bundle Settings can save from it (`SystemCopyDiagnostics`) or the folder it can open (`SystemOpenLogFolder`): manuscript, audio or transcript text reaching either is in scope, as is the export landing anywhere but the folder the narrator picked in that session's file picker.
 - The script markup the narrator places in the reader (`narration-utils/prep/markup.json` in the project,
   [ADR 0382](docs/adr/0382-script-markup-is-a-chapter-keyed-sidecar-of-line-offsets-checked-on-read-and-drawn-without-changing-the-text.md)):

@@ -82,7 +82,11 @@ export function createSystemMock(
       // Its own mutable state, not derived from `daw` (PRD W13): the real host computes this from the project's
       // manifest link, independent of the DAW label. reachable/matches stay false/unknown until Phase 6 (W14).
       dawFileLinked: project.dawFileLinked(),
-      dawReachable: false,
+      // Its own mutable state, not derived from `daw` (PRD W13): the real host computes this from a live
+      // heartbeat (Phase 7, ADR 0092). The mock never grows one on its own; `dawEngineMismatch` (Phase 1 of
+      // stage-navigation-and-page-replacement.prd.md) simulates the one case anything reads today - the engine chip's
+      // mismatch state - without pretending to a full heartbeat.
+      dawReachable: initial.dawEngineMismatch ?? false,
       dawProjectMatches: false,
       manuscript:
         initial.noManuscript || initial.manuscriptCandidate
