@@ -1,6 +1,6 @@
 # 0197. Every release asset name carries the bare version
 
-**Status:** Accepted
+**Status:** Accepted (its macOS and Linux asset names are removed by [ADR 0412](0412-windows-is-the-only-supported-platform-for-now.md))
 **Date:** 2026-09-24
 **Supersedes:** the asset names of [ADR 0027](0027-windows-gates-and-creates-the-release.md) ("one asset per platform, named `narration-utils-<platform>.<ext>`"), of [ADR 0082](0082-windows-installs-per-user-from-an-nsis-setup-program-that-wails-builds-and-the-release-carries-beside-the-update-zip.md) decision 3 and of [ADR 0085](0085-the-third-party-notices-are-generated-from-the-release-and-ship-as-their-own-asset-and-not-inside-the-update-zip.md); the "asset names stay unversioned" part of owner decision D14 (`docs/prds/implementation-plan.md`)
 

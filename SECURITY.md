@@ -2,7 +2,7 @@
 
 ## Supported versions
 
-Narration Utils is pre-1.0. Only the latest release (including the latest pre-release candidate) receives fixes.
+Narration Utils is pre-1.0. Only the latest release (including the latest pre-release candidate) receives fixes. Windows x64 is the only supported platform ([ADR 0412](docs/adr/0412-windows-is-the-only-supported-platform-for-now.md)): a report that applies only to a macOS or Linux build is out of scope, because no such build is released.
 
 ## Reporting a vulnerability
 
@@ -36,7 +36,9 @@ especially welcome:
   [ADR 0156](docs/adr/0156-measurement-reads-only-files-picked-this-session-as-one-job-and-fingerprints-the-bytes-it-read.md)),
   and the Delivery report it writes (only into the project's `narration-utils/delivery` folder, never over an earlier report, and without
   any local path, audio or manuscript text unless the narrator chooses to include file locations); a report that leaks a path the narrator
-  did not include is in scope.
+  did not include is in scope. The same holds for the pronunciation query CSV the Story Bible exports for the narrator to send to an
+  author ([ADR 0347](docs/adr/0347-the-pronunciation-query-export-is-csv-with-its-ids-last-and-a-formula-guard-and-is-a-download.md)): a
+  cell that runs as a formula when the file is opened in a spreadsheet, or a row that carries more than the columns it names, is in scope.
 - The run log every tool run writes (`logs/run.jsonl`, `logs/runs/*.stderr.jsonl`; [ADR 0251](docs/adr/0251-tool-runs-are-logged-as-json-lines-through-slog-with-a-run-id-and-content-is-never-logged.md)) and the diagnostics bundle Settings can save from it (`SystemCopyDiagnostics`) or the folder it can open (`SystemOpenLogFolder`): manuscript, audio or transcript text reaching either is in scope, as is the export landing anywhere but the folder the narrator picked in that session's file picker.
 - The delivery profiles the app reads back to judge the rendered files (the user-level `delivery-profiles.json` beside
   `credit-templates.json`, and the project's choice in `project.json`,

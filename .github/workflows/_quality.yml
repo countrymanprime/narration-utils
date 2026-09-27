@@ -223,8 +223,8 @@ jobs:
     #   - reaper: the bridge harness again, because the bridge builds paths from package.config and REAPER's own Lua
     #     writes CRLF on Windows.
     #   - go lint: gofmt, go vet, golangci-lint and checklocks (the `ci` configuration of the lint target). Windows, like
-    #     go-test: it is the supported platform, and Linux's native libraries are installed only by the optional Linux
-    #     build (build-linux.yml). Here rather than in go-test so the tests do not wait behind it.
+    #     go-test: it is the only supported platform (docs/adr/0412), and Linux's native libraries are not installed
+    #     on the Linux runners. Here rather than in go-test so the tests do not wait behind it.
     timeout-minutes: 15
     runs-on: windows-latest
     steps:
