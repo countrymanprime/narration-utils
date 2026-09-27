@@ -221,7 +221,7 @@ export const homeStates: StateEntry[] = [
     description:
       'Home, a recording check whose re-check model needs downloading first (?mockCoverage=recheck-required, Phase 5, MC4): the same first-use question as the first-pass model, with "Check with tiny only" beside the download',
   },
-  // Stage suggestions (docs/prds/chapter-stage-recommendations.prd.md Phase 5, ADR 0160 and 0161), on `?mockStages=mixed`: Chapter 4 read in
+  // Stage suggestions (chapter-stage-recommendations.prd.md Phase 5, deleted, ADR 0160 and 0161), on `?mockStages=mixed`: Chapter 4 read in
   // full (suggested), Chapter 5 with no track linked (can't tell), Chapter 6 short (not ready), Chapter 7 confirmed into Editing and since
   // found short (evidence changed), Chapter 8 confirmed on evidence that still holds.
   {

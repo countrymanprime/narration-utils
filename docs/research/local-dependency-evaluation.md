@@ -82,7 +82,7 @@ flow, per the required record below.
 
 Each row below is the record the [required dependency record](#required-dependency-record) asks
 for, taken from the catalogs the release carries (`config/tts-assets.json`,
-`config/whisper-assets.json`, `config/spacy-assets.json`, `config/moonshine-assets.json`, `config/dictionary-assets.json`) and, for spaCy, from the
+`config/whisper-assets.json`, `config/spacy-assets.json`, `config/moonshine-assets.json`, `config/dictionary-assets.json`, `config/encoder-assets.json`) and, for spaCy, from the
 [provisioning spike](spacy-model-provisioning-spike.md). Every asset is installed by the one
 lifecycle in `apps/desktop/internal/assets` (stage, check size and SHA-256, rename into place,
 manifest), under the per-user cache `<user cache>/narration-utils/assets/<kind>/<provider>/<id>/<version>/`
@@ -192,7 +192,8 @@ provenance record.
 
 Recorded in [render-encode-master](../prds/render-encode-master.prd.md) Phase 0 ([build verification](ffmpeg-encoder-build.md),
 [ADR 0342](../adr/0342-the-mp3-encoder-is-a-pinned-gpl-ffmpeg-build-run-as-a-separate-process-and-writes-no-tag-frame.md), Proposed);
-catalogued in Phase 1. The wheel is downloaded, checked against the pinned hash and unpacked, and only the executable is kept.
+catalogued in Phase 1 (`config/encoder-assets.json`, kind `encoder`, provider `ffmpeg`, id `ffmpeg-7.1-essentials-win64`). The wheel is downloaded, checked
+against the pinned hash and unpacked, and only the executable is kept, and only when its own hash is the pinned one.
 
 | Field | Record |
 | --- | --- |
@@ -204,6 +205,7 @@ catalogued in Phase 1. The wheel is downloaded, checked against the pinned hash 
 | Provenance | `https://www.gyan.dev/ffmpeg/builds/` (the build); `https://github.com/imageio/imageio-ffmpeg` (the wheel) |
 | How it runs | A separate process the Go host starts; never linked, never in the release |
 | Runtime dependencies downloaded | None: a static build |
+| Install location | `<cache>/assets/encoder/ffmpeg/ffmpeg-7.1-essentials-win64/7.1-essentials/` (executable at `ffmpeg/ffmpeg.exe`) |
 | Removal, update | Settings > Local assets; no automatic update, a new build is a reviewed catalog change |
 | Test result | Linux build of the same family: MP3 at 192/256/320 kbps CBR passes `acx.format` and `acx.sample_rate`, and both MP3 readers agree on its length ([results](ffmpeg-encoder-build.md#results)); the Windows binary on Windows is pending the owner |
 | Feature | Encoding rendered WAV to MP3 (Phase 1) and M4B (Phase 2) |

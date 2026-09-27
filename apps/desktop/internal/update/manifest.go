@@ -61,21 +61,13 @@ func (p Platform) AssetName(version Version) string {
 // ChecksumName is the .sha256 beside AssetName.
 func (p Platform) ChecksumName(version Version) string { return p.AssetName(version) + ".sha256" }
 
-// PlatformFor is the release platform of a Go OS and architecture, if there is one. Only Windows is a supported platform and
-// replaces itself; macOS and Linux are preview assets and are told about a newer release only (owner decision D7).
+// PlatformFor is the release platform of a Go OS and architecture, if there is one. Windows x64 is the only one, and it replaces
+// itself (docs/adr/0412; the macOS and Linux preview assets were removed by D74). Anywhere else Check answers ErrNoPlatform.
 func PlatformFor(goos, goarch string) (Platform, bool) {
-	var key, extension string
-	switch {
-	case goos == "windows" && goarch == "amd64":
-		key, extension = "windows-x64", ".zip"
-	case goos == "darwin" && goarch == "arm64":
-		key, extension = "macos-arm64", ".zip"
-	case goos == "linux" && goarch == "amd64":
-		key, extension = "linux-x64", ".tar.gz"
-	default:
+	if goos != "windows" || goarch != "amd64" {
 		return Platform{}, false
 	}
-	return Platform{Key: key, Extension: extension, SelfReplace: goos == "windows"}, true
+	return Platform{Key: "windows-x64", Extension: ".zip", SelfReplace: true}, true
 }
 
 // CurrentPlatform is the release platform this program runs on.

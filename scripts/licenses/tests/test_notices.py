@@ -319,6 +319,12 @@ class TestReport:
         dictionary = [item for item in catalogs if item.get("provider") == "oewn"]
         assert dictionary and "Princeton WordNet" in dictionary[0]["attribution"]
 
+    def test_the_encoder_catalog_is_read_with_the_model_catalogs_and_names_its_source(self):
+        catalogs = notices.read_catalogs(REPO_ROOT / "config")
+
+        encoder = [item for item in catalogs if item.get("provider") == "ffmpeg"]
+        assert encoder and encoder[0]["license"] == "GPL-3.0-or-later" and "Source:" in encoder[0]["attribution"]
+
     def test_missing_direct_dependencies_are_reported_by_name(self):
         components = self.sample()
 

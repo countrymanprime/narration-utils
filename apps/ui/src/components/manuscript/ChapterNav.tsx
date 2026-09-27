@@ -2,9 +2,10 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faBookmark, faParagraph } from '@fortawesome/free-solid-svg-icons';
 import { STATUS_COLOR } from '../../chapterStatus';
 import { chapterLineNumber, isListableChapter, windowExcerpt } from '../../state';
-import type { ManuscriptChapter, ReaderBookmark, SearchHit } from '../../types';
+import type { ManuscriptChapter, ReaderBookmark, SearchHit, StageChapterRecommendation } from '../../types';
 import { Highlight } from '../primitives/Highlight';
 import { TitleSubtitle } from '../primitives/TitleSubtitle';
+import { verdictLine } from '../stages/stageText';
 
 // Renders a hit's excerpt windowed to the row's width (R3), with the matched term highlighted at
 // its real position - not re-found by text search, since the excerpt can repeat the query term.
@@ -34,6 +35,7 @@ export function ChapterNav({
   lineNumbers,
   select,
   removeBookmark,
+  stageSuggestions,
 }: {
   chapters: ManuscriptChapter[];
   selectedId?: string;
@@ -48,6 +50,10 @@ export function ChapterNav({
   lineNumbers: Map<number, number>;
   select: (id: string, paragraph?: number) => void;
   removeBookmark: (id: string) => void;
+  // Chapter stage recommendations (chapter-stage-recommendations.prd.md Phase 9, Q6): read-only, keyed by
+  // chapter id. Absent chapters and every verdict but `recommended` render no marker - the nav row stays
+  // dense, and Confirm/Dismiss/evidence stay on Home and the Proofing panel (Q6 option B).
+  stageSuggestions?: ReadonlyMap<string, StageChapterRecommendation>;
 }) {
   const searching = Boolean(searchQuery.trim());
   const matchesFor = (chapter: ManuscriptChapter) =>
@@ -73,6 +79,8 @@ export function ChapterNav({
       {visibleChapters.map((chapter) => {
         const chapterBookmarks = bookmarks.filter((item) => item.chapterId === chapter.id);
         const chapterBookmark = chapterBookmarks.find((item) => item.kind === 'chapter');
+        const suggestion = stageSuggestions?.get(chapter.id);
+        const suggested = suggestion?.verdict === 'recommended' ? verdictLine(suggestion) : undefined;
         return (
           <div key={chapter.id} className="rounded-[0.4rem]">
             <button
@@ -82,6 +90,11 @@ export function ChapterNav({
               <span className="mt-[0.4rem] size-2 flex-none rounded-full" style={{ background: STATUS_COLOR[chapter.status] }} />
               <span className="min-w-0 flex-1">
                 <TitleSubtitle title={chapter.title} subtitle={chapter.subtitle} layout="stacked" truncate className="text-sm" />
+                {suggested && (
+                  <span className="mt-[0.1rem] block truncate text-[0.7rem]" style={{ color: 'var(--text-muted)' }}>
+                    {suggested}
+                  </span>
+                )}
               </span>
               {chapterBookmark && <FontAwesomeIcon className="mt-[0.15rem] flex-none text-[var(--bookmark)]" icon={faBookmark} />}
               <span className="mt-[0.15rem] flex-none font-['IBM_Plex_Mono',ui-monospace,monospace] text-xs" style={{ color: 'var(--text-muted)' }}>
