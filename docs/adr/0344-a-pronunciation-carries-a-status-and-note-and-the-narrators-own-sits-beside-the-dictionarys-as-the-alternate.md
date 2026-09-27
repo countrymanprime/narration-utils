@@ -17,7 +17,7 @@ The PRD's Q2 asks whether a narrator's own pronunciation replaces the dictionary
 - **`status` is one of `researched`, `query_sent`, `author_confirmed`, with an optional `note` (at most 1000 characters).** It is about the name, not the source, so it travels with the pronunciation when the one in use changes, with one exception: `author_confirmed` confirmed a particular IPA, so it is withdrawn to `researched` whenever the IPA in use changes (a narrator override, a switch, a Replace from a dictionary, or a rebuild that regenerates an unchosen value). `query_sent` stays, because the question is still out. The note stays.
 - **Migration-free.** An entry written before status existed has none and reads as `researched` (the UI's Zod schema defaults it; the sidecar's `pronunciation_status_of`). Nothing rewrites existing files; the fields appear only once the narrator uses them.
 - **A rebuild keeps the narrator's work.** A `chosen` pronunciation (including every `user` one) is kept whole, as before, and now for a rediscovered alias as well as the entity's own name; an unchosen one is replaced by the fresh value but keeps its status (subject to the withdrawal rule), note and alternate.
-- **Three bindings, void results:** `GuidePronounceUser(id, aliasIndex, ipa)`, `GuidePronunciationUseAlternate(id, aliasIndex)`, `GuidePronunciationSetStatus(id, aliasIndex, status, note)` (a `null` note leaves it alone, an empty one clears it). `hostAPIVersion` 66 to 67.
+- **Three bindings, void results:** `GuidePronounceUser(id, aliasIndex, ipa)`, `GuidePronunciationUseAlternate(id, aliasIndex)`, `GuidePronunciationSetStatus(id, aliasIndex, status, note)` (a `null` note leaves it alone, an empty one clears it). `hostAPIVersion` 67 to 68.
 
 ## Consequences
 

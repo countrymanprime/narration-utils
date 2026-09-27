@@ -52,6 +52,7 @@ import {
   chapterTrackMatchSchema,
   chapterTrackSetSchema,
   trackMappingSchema,
+  trackSelectResultSchema,
 } from './schemas/chapterTrackMap';
 import { takeComparisonJobSchema, takeReviewCreateTakeResultSchema, takeReviewScanJobSchema } from './schemas/takeReview';
 import { deliveryReportExportSchema, measureJobSchema, measurePickResultSchema } from './schemas/measure';
@@ -444,6 +445,7 @@ export const wailsClient: NarrationApi = {
   chapterSyncUndo: (trackGuid) => decode(chapterSyncStateSchema, 'ChapterSyncUndo', host.ChapterSyncUndo(trackGuid)),
   subscribeChapterSync: (onUpdate) => subscribeChecked('chaptersync:state', chapterSyncStateSchema, onUpdate),
   chapterTrackLinks: () => decode(chapterTrackLinksSchema, 'ChapterTrackLinks', host.ChapterTrackLinks()),
+  trackSelectInReaper: (trackGuid) => decode(trackSelectResultSchema, 'TrackSelectInReaper', host.TrackSelectInReaper(trackGuid)),
   chapterRegionsPreview: (openingTrackGuid, closingTrackGuid) =>
     decode(chapterRegionPlanSchema, 'ChapterRegionsPreview', host.ChapterRegionsPreview(openingTrackGuid, closingTrackGuid)),
   chapterRegionsCreate: (openingTrackGuid, closingTrackGuid, update) =>

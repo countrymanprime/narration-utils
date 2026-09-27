@@ -37,7 +37,7 @@ it as `alternate`; `pronunciation-use-alternate` swaps the two back, losslessly 
 --status researched|query_sent|author_confirmed [--note=<text>]` records whether the author was asked or has confirmed it. An
 entry with no `status` reads as `researched`. `author_confirmed` is withdrawn to `researched` when the pronunciation in use
 changes. A rebuild keeps all of it. The host bindings are `GuidePronounceUser`, `GuidePronunciationUseAlternate` and
-`GuidePronunciationSetStatus` (`hostAPIVersion` 67); the Story Bible shows the status and note, and in edit mode offers "Your
+`GuidePronunciationSetStatus` (`hostAPIVersion` 68); the Story Bible shows the status and note, and in edit mode offers "Your
 pronunciation", the switch to the kept one, and the status with its note.
 
 The host derives the **pronunciation query list** from those statuses on every read (prep depth Phase 3,
