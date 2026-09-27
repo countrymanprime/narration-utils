@@ -9,9 +9,9 @@ permissions: { contents: read }
 # job is the one check that sums them up (no ruleset requires any check yet, #544). Checkouts fetch full history so Nx
 # can diff against the base branch.
 #
-# The shape trades job slots against the critical path (docs/prds/ci-pipeline-speed.prd.md: the free plan runs 20 jobs
-# at a time and queueing is the slow case). The two Playwright suites are most of a UI pull request's wait, so they are
-# sharded; the jobs under a minute share a runner per OS instead of each paying for its own toolchain setup.
+# The shape trades job slots against the critical path (docs/operations/ci-and-releases.md#ci-performance: the free plan
+# runs 20 jobs at a time and queueing is the slow case). The two Playwright suites are most of a UI pull request's wait,
+# so they are sharded; the jobs under a minute share a runner per OS instead of each paying for its own toolchain setup.
 jobs:
   js:
     timeout-minutes: 15

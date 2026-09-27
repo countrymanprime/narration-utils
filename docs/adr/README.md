@@ -250,4 +250,5 @@ The table is generated from each ADR's heading and Status line ([ADR 0410](0410-
 | [0402](0402-coreaudio-capture-is-a-pyav-avfoundation-sidecar-backend-addressed-by-device-name.md) | CoreAudio capture is a PyAV `avfoundation` sidecar backend, addressed by device name | Accepted |
 | [0403](0403-the-capabilities-flag-reports-what-registered-not-what-loads.md) | The `--capabilities` flag reports what registered, not what loads, by default | Proposed |
 | [0410](0410-the-adr-index-is-generated-from-each-adrs-heading-and-status-line-and-a-stale-index-fails-the-gate.md) | The ADR index is generated from each ADR's heading and Status line, and a stale index fails the gate | Proposed |
+| [0411](0411-the-release-pipeline-splits-build-from-publish-and-caches-only-pure-function-build-outputs-never-test-verdicts.md) | The release pipeline splits build from publish, and caches only pure-function build outputs, never test verdicts | Accepted |
 <!-- adr-index:end -->
