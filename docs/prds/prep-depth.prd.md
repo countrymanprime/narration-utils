@@ -205,8 +205,8 @@ Phases 1, 2 and 3 are independent of every other benchmark stream and of each ot
 
 ## Visual Spec
 
-Concept mock copied from [the audiobook studio benchmark](../research/audiobook-studio-benchmark.md#3-what-the-ideal-looks-like-concept-mocks), **not yet owner-approved as a build spec** — kept under `mockups/prep-depth/` marked **concept** until the owner approves it on [#510](https://github.com/countrymanprime/narration-utils/issues/510), per the agent-train wave-0 rule. Names and numbers are placeholders.
+Concept mock copied from [the audiobook studio benchmark](../research/audiobook-studio-benchmark.md#3-what-the-ideal-looks-like-concept-mocks), **owner-approved as the build spec (D69, 2026-09-27)** — kept under `mockups/prep-depth/` marked **concept**. Dark mode is a single app-wide theme (D69): a dark mock shows the dark theme, not a per-page look. Names and numbers are placeholders.
 
 ![Prep: speaker-attributed script, markup, pronunciation list with sources and author queries](mockups/prep-depth/02-prep-script-concept.webp)
 
-*Prep: script, speakers and pronunciations (concept)* (`02-prep-script-concept.webp`) — the speaker-attributed dialogue, the stress/pause/character-tag markup layer, and the pronunciation list with source, status and one-click lookups this PRD's Phases 1 to 5 build toward. A Mockup check table will be added once the owner approves it and building against it begins.
+*Prep: script, speakers and pronunciations (concept)* (`02-prep-script-concept.webp`) — the speaker-attributed dialogue, the stress/pause/character-tag markup layer, and the pronunciation list with source, status and one-click lookups this PRD's Phases 1 to 5 build toward. This phase's PR carries the Mockup check table against it.
