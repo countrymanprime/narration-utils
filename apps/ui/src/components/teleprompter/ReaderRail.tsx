@@ -32,6 +32,9 @@ type Props = {
   onSelect: (target: ReaderMarkTarget) => void;
   /** The Flags tab (Phase 7): the session's suspected flags, which kinds show, dismissal and the save status. */
   flagPanel: Omit<ComponentProps<typeof ReaderFlagsPanel>, 'selected' | 'onSelect'>;
+  /** Fill the column it is given instead of sizing itself: booth mode's `FocusShell` rail already has its own width, which
+   * the normal dialog's fixed 19-20rem would overflow (booth-mode-and-companion-panel.prd.md Phase 3). */
+  fill?: boolean;
 };
 
 /**
@@ -40,7 +43,7 @@ type Props = {
  * text being read. It is sticky and scrolls on its own. Whether it is open and which tab shows are per-viewer
  * preferences kept in browser storage (`readerPreferences.ts`); the owner of that state is `ReadAloudDialog`.
  */
-export function ReaderRail({ state, onTab, onToggle, seekable, entities, notes, selected, onSelect, flagPanel }: Props) {
+export function ReaderRail({ state, onTab, onToggle, seekable, entities, notes, selected, onSelect, flagPanel, fill = false }: Props) {
   const entityHeadingId = useId();
   const railHeadingId = useId();
   if (!state.open)
@@ -60,7 +63,7 @@ export function ReaderRail({ state, onTab, onToggle, seekable, entities, notes, 
   return (
     <aside
       aria-labelledby={railHeadingId}
-      className="w-full rounded-lg border border-[var(--border)] bg-[var(--surface)] p-3 shadow-[var(--shadow)] md:sticky md:top-0 md:h-full md:w-[19rem] md:overflow-y-auto lg:w-[20rem]"
+      className={`w-full rounded-lg border border-[var(--border)] bg-[var(--surface)] p-3 shadow-[var(--shadow)] md:sticky md:top-0 md:h-full md:overflow-y-auto ${fill ? '' : 'md:w-[19rem] lg:w-[20rem]'}`}
     >
       <div className="mb-1 flex items-center justify-between gap-2">
         <span id={railHeadingId} className={SECTION_LABEL}>
@@ -73,7 +76,8 @@ export function ReaderRail({ state, onTab, onToggle, seekable, entities, notes, 
         </TooltipTarget>
       </div>
       <Tabs value={state.tab} onChange={(tab) => onTab(tab as RailTab)}>
-        <TabList label="Panel sections" activation="automatic">
+        {/* A filled (booth) rail is narrower than the four tabs: wrap them rather than scroll one out of sight. */}
+        <TabList label="Panel sections" activation="automatic" className={fill ? 'flex-wrap' : ''}>
           <Tab value="key">Key</Tab>
           <Tab value="flags">Flags</Tab>
           <Tab value="notes">Notes</Tab>

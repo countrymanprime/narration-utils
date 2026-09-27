@@ -1707,7 +1707,11 @@ describe('answers of the mock client for the settings, voice, model, transcript 
     const byId = new Map(answer.chapters.map((chapter) => [chapter.chapterId, chapter]));
     expect(new Set(answer.chapters.map((chapter) => chapter.verdict))).toEqual(new Set(['recommended', 'not_ready', 'unknown', 'dismissed', 'none']));
     expect(byId.get('chapter-1')).toMatchObject({ verdict: 'none', noneReason: 'stage_not_evaluated' });
-    expect(byId.get('chapter-9')).toMatchObject({ verdict: 'none', noneReason: 'no_required_signals' });
+    // chapter-7 is in Editing, unseeded in `editing`: the mock keeps its pre-existing no-required-signal shape (stagesMock.ts).
+    expect(byId.get('chapter-7')).toMatchObject({ verdict: 'none', noneReason: 'no_required_signals' });
+    // chapter-9 is in Proofing, unseeded in `proofing`: unlike editing, the mock always evaluates the real pickups
+    // signal for a proofing chapter (chapter-stage-recommendations.prd.md Phase 8), so it reads unknown, not none.
+    expect(byId.get('chapter-9')).toMatchObject({ verdict: 'unknown', causes: ['never_analyzed'] });
     expect(byId.get('chapter-6')).toMatchObject({ verdict: 'not_ready' });
     expect(byId.get('chapter-11')).toMatchObject({ verdict: 'unknown', causes: ['never_analyzed'] });
     for (const cause of STAGE_UNKNOWN_CAUSES) {
