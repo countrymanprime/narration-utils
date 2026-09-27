@@ -67,11 +67,12 @@ export async function clickVisible(page: Page, role: Parameters<Page['getByRole'
     .click();
 }
 
-type AppPage = 'Home' | 'Manuscript' | 'Proofing' | 'Story Bible' | 'Teleprompter' | 'Tracks' | 'Review' | 'Delivery' | 'Settings';
+type AppPage = 'Home' | 'Production' | 'Manuscript' | 'Proofing' | 'Story Bible' | 'Teleprompter' | 'Tracks' | 'Review' | 'Delivery' | 'Settings';
 
 // Every page opens with the shared `Heading` primitive, an <h1>: it is what proves the page has arrived. Home's is "Welcome back".
 export const PAGE_HEADING: Record<AppPage, string> = {
   Home: 'Welcome back',
+  Production: 'Production',
   Manuscript: 'Manuscript',
   Proofing: 'Proofing',
   'Story Bible': 'Story Bible',
@@ -205,6 +206,16 @@ export async function openDelivery(page: Page, query = ''): Promise<void> {
   }
   await goToPage(page, 'Delivery');
   await page.getByRole('button', { name: /^Rules and their sources/ }).waitFor();
+}
+
+// Opens Production, with a `?mockProduction=` seed when given, once its board is drawn. By direct navigation, not
+// through the nav (stage-navigation-and-page-replacement.prd.md Phase 1, D79): PR #760's `/production` nav entry is
+// dropped in this phase, so the route is reachable but unlisted until Phase 2 makes it the Production home at `/`.
+export async function openProduction(page: Page, query = ''): Promise<void> {
+  await page.goto(`/production${query}`);
+  await settlePage(page);
+  await page.getByRole('heading', { level: 1, name: PAGE_HEADING.Production, exact: true }).waitFor();
+  await page.getByRole('grid', { name: 'Chapter pipeline' }).waitFor();
 }
 
 // Opens Delivery and measures the mock picker's three files (two WAVs, one of them silent, and an MP3). The mock reads a quarter of

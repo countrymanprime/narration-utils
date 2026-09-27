@@ -149,6 +149,83 @@ describe('WorkspacePage', () => {
   });
 });
 
+// Findings in the text (edit-and-proof-workspace.prd.md Phase 4): the mock seeds one transcript_discrepancy finding
+// at chapter-1's own deterministic misread token (mockApi.ts's workspaceOverlayFinding, built from the same position
+// workspaceMock.ts times it at), so it merges into that check-derived "Misread" flag rather than adding a second one.
+describe('WorkspacePage findings in the text (Phase 4)', () => {
+  it('merges the chapter’s finding into the misread flag rather than duplicating it, with where it came from', async () => {
+    const user = userEvent.setup();
+    renderWorkspace();
+    await screen.findByRole('heading', { name: chapterName(chapter) });
+    await screen.findByText('Misread');
+
+    // The mock's only flag on this chapter is the misread; "Next flag" selects it (same as the ]/[ keyboard tests).
+    await user.click(await screen.findByRole('button', { name: 'Next flag' }));
+    expect(await screen.findByText('From')).toBeTruthy();
+    expect(await screen.findByText(/Proofing comparison/)).toBeTruthy();
+    expect(screen.getAllByText('Misread')).toHaveLength(2); // the legend row, and the selected flag's own heading - never a second flag row
+  });
+
+  it('accepts a finding-backed flag in place, and the decision shows without leaving the page', async () => {
+    const user = userEvent.setup();
+    const api = renderWorkspace();
+    await screen.findByRole('heading', { name: chapterName(chapter) });
+    await user.click(await screen.findByRole('button', { name: 'Next flag' }));
+
+    await user.click(await screen.findByRole('button', { name: 'Accept' }));
+    expect(await screen.findByText('Saved as accepted.')).toBeTruthy();
+
+    const decided = await api.findingsGet('workspace-overlay-chapter-1');
+    expect(decided.review.status).toBe('accepted');
+  });
+
+  it('shows a note field and rejects one over the limit', async () => {
+    const user = userEvent.setup();
+    renderWorkspace();
+    await screen.findByRole('heading', { name: chapterName(chapter) });
+    await user.click(await screen.findByRole('button', { name: 'Next flag' }));
+
+    const note = await screen.findByLabelText('Note (optional)');
+    await user.type(note, 'a'.repeat(2001));
+    expect(await screen.findByText(/at most 2000 characters/)).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Accept' }).hasAttribute('disabled')).toBe(true);
+  });
+
+  it('does not offer a decision on a flag with no backing finding', async () => {
+    const user = userEvent.setup();
+    // No findings at all here (overriding the mock's default overlay finding away): every flag comes straight from
+    // the check's own alignment, so whichever one "Next flag" lands on first must show no decision controls.
+    renderWorkspace({}, { coverage: { pickups: [chapter.id] }, findings: [] });
+    await screen.findByRole('heading', { name: chapterName(chapter) });
+    await user.click(await screen.findByRole('button', { name: 'Next flag' }));
+
+    expect(screen.queryByText('Decision')).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Accept' })).toBeNull();
+  });
+
+  it('selects the flag a ?finding= deep link names ("Open in workspace" from Review, Home or the Manuscript)', async () => {
+    render(
+      <ApiProvider
+        api={createMockApi(
+          {},
+          { chapterTrackMappings: [{ trackGuid: linkedTrackGuid, chapterId: chapter.id, chapterTitle: chapter.title, confirmedAt: '2026-01-01T00:00:00Z' }] },
+        )}
+      >
+        <CommandRouter>
+          <MemoryRouter initialEntries={[`/tracks/chapter/${chapter.id}?finding=workspace-overlay-chapter-1`]}>
+            <Routes>
+              <Route path="/tracks/chapter/:chapterId" element={<WorkspacePage notify={() => {}} />} />
+            </Routes>
+          </MemoryRouter>
+        </CommandRouter>
+      </ApiProvider>,
+    );
+    await screen.findByRole('heading', { name: chapterName(chapter) });
+    expect(await screen.findByText('From')).toBeTruthy();
+    expect(await screen.findByText(/Proofing comparison/)).toBeTruthy();
+  });
+});
+
 // Phase 3 (input-commands-and-pedals.prd.md): the workspace's shortcuts moved off a hand-written `window` `keydown`
 // listener onto `workspace.*` page-scope commands, registered through `useCommand`. This page had zero keyboard
 // coverage before this phase (the PRD's Evidence), so every one of the old listener's keys gets a test here for the

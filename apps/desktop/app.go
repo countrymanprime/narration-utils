@@ -32,6 +32,7 @@ import (
 	"github.com/countrymanprime/narration-utils/shell/internal/persist"
 	"github.com/countrymanprime/narration-utils/shell/internal/pickups"
 	"github.com/countrymanprime/narration-utils/shell/internal/process"
+	"github.com/countrymanprime/narration-utils/shell/internal/production"
 	"github.com/countrymanprime/narration-utils/shell/internal/project"
 	"github.com/countrymanprime/narration-utils/shell/internal/projectstate"
 	"github.com/countrymanprime/narration-utils/shell/internal/proofing"
@@ -55,7 +56,7 @@ import (
 // Keep this in lockstep with apps/ui/src/hostApi.ts.  The frontend rejects
 // an older host before bootstrapping so a partial update cannot run against a
 // binding contract it does not understand.
-const hostAPIVersion = 74
+const hostAPIVersion = 77
 
 // Host is the Wails binding boundary. The frontend invokes only this bound
 // object; it never receives a loopback port or an HTTP capability.
@@ -129,6 +130,9 @@ type Host struct {
 	// the recording signal over coverage, the decision store and the manuscript's status path. Swapped with coverage on every
 	// project switch; it computes on read and stores no recommendation (D1).
 	stages *stages.Service
+	// production is the project's stage timer and time log (production-tracking.prd.md, bindings_production.go). Swapped
+	// on every project switch; nil with no project folder, so nothing is ever logged outside a project.
+	production *production.Service
 	// editing is the editing-readiness scan service (docs/prds/editing-readiness-analysis.prd.md Phase 5,
 	// bindings_editing.go): played-range empty-space analysis over the chapter's confirmed track, cache-first, with its
 	// own ledger records and silence_cleanup findings. Swapped on every project switch like coverage; it starts only on
@@ -529,6 +533,10 @@ func (h *Host) configureLocked(next config) {
 	// stages are evaluated (h.proofingProfile reads it then, never under this lock).
 	h.stages = stagesService(h.config.projectFolder, h.manuscript, h.coverage, h.editing, settingsStore, h.coverageUnavailable(h.config.comparePython, settingsStore), h.persist,
 		proofingProvider(h.findings, proofingSources{project: h.config.projectFolder, profile: h.proofingProfile, lengthTolerance: renderLengthTolerance(settingsStore)}))
+	h.production = nil
+	if h.config.projectFolder != "" {
+		h.production = production.New(production.Config{Project: h.config.projectFolder, Reporter: h.persist, Recorded: productionRecorded(h.manuscript)})
+	}
 	// The S28 commands (internal/bridge/actions.go) are one more consumer of the same client. Whether each may be sent
 	// is the DAW port resolver's answer, asked before anything is written (DAW port PRD P3, ADR 0300): the narrator's
 	// DAW.capability.<name> toggles, with DAW.experimental_reaper_actions still turning on every Experimental one left
@@ -631,7 +639,9 @@ func (h *Host) configureLocked(next config) {
 	if teleprompterDir == "" {
 		teleprompterDir = filepath.Join(os.TempDir(), "narration-utils")
 	}
-	h.teleprompter = teleprompter.New(teleprompter.Config{Project: h.config.projectFolder, SessionDir: teleprompterDir, Python: h.config.teleprompterPython, Backend: h.config.teleprompterBackend, Platform: h.platform}, h.sidecars, h.emitTeleprompterEvent, h.emitTeleprompterState)
+	// NARRATION_TELEPROMPTER_EVAL=1 is the Phase 8 evaluation aid (teleprompter-engines-and-input-devices PRD):
+	// a developer/evaluation-only opt-in, same pattern as NARRATION_DEBUG (runlog), never a Settings toggle.
+	h.teleprompter = teleprompter.New(teleprompter.Config{Project: h.config.projectFolder, SessionDir: teleprompterDir, Python: h.config.teleprompterPython, Backend: h.config.teleprompterBackend, Platform: h.platform, EvalTiming: os.Getenv("NARRATION_TELEPROMPTER_EVAL") == "1"}, h.sidecars, h.emitTeleprompterEvent, h.emitTeleprompterState)
 	h.teleprompter.SetLog(func(kind, message string) { _ = h.log.Report(kind, message) })
 }
 
@@ -1374,12 +1384,20 @@ var fieldSchemas = map[string][]fieldSchema{
 	// in a result's parameter hash, so changing one makes older results stale (Q13 B). Their defaults are Proposed and
 	// uncalibrated (Q15) until Phase 8. background_checks lets the host re-check a changed chapter on its own while REAPER
 	// is idle, not recording and the computer is on mains power (DAW chapter-track auto-sync Phase 7, D27, ADR 0211).
+	// cascade_enabled, cascade_first_pass_model and cascade_recheck_model are the model cascade's own three settings
+	// (recording-check-model-cascade PRD Phase 5, MC1, MC2), read by coverage.ResolveSettings into Settings.Cascade.
+	// The cascade defaults off; while it is off, CoverageStart keeps reading TranscriptCompare.model_size exactly as
+	// it did before this phase. The two model choices are independent of TranscriptCompare's own model_size, from
+	// the same approved Whisper catalog.
 	"RecordingCoverage": {
 		{"min_paragraph_present", "Share of each paragraph that must be read", "number", nil},
 		{"max_missing_run", "Longest run of missing words allowed", "number", nil},
 		{"max_misread_run", "Longest misread still counted as read", "number", nil},
 		{"min_anchor_run", "Shortest match that counts as read", "number", nil},
 		{"background_checks", "Check changed chapters in the background", "bool", nil},
+		{"cascade_enabled", "Two-pass check (fast first pass, then re-check what's missing)", "bool", nil},
+		{"cascade_first_pass_model", "First-pass Whisper model", "choice", []string{"tiny", "small", "medium", "large-v3-turbo", "large-v3"}},
+		{"cascade_recheck_model", "Re-check Whisper model", "choice", []string{"tiny", "small", "medium", "large-v3-turbo", "large-v3"}},
 	},
 	// StageRecommendations (chapter-stage-recommendations.prd.md Phase 6, Q8, deleted; see docs/architecture/stage-recommendations.md) chooses which signals must be
 	// met for a stage suggestion: one choice field per signal id a provider declares (apps/desktop/bindings_stages.go's

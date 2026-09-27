@@ -10,7 +10,10 @@ func TestResolveSettingsReadsEveryKey(t *testing.T) {
 	got := ResolveSettings(lookupFrom(map[string]string{
 		SettingMinParagraphPresent: "0.9", SettingMaxMissingRun: "5", SettingMaxMisreadRun: "4", SettingMinAnchorRun: "2",
 	}))
-	want := Settings{Alignment: AlignmentParams{MaxMisreadRun: 4, MinAnchorRun: 2}, Thresholds: Thresholds{MinParagraphPresent: 0.9, MaxMissingRun: 5}}
+	want := Settings{
+		Alignment: AlignmentParams{MaxMisreadRun: 4, MinAnchorRun: 2}, Thresholds: Thresholds{MinParagraphPresent: 0.9, MaxMissingRun: 5},
+		Cascade: DefaultSettings.Cascade,
+	}
 	if got != want {
 		t.Fatalf("ResolveSettings = %+v, want %+v", got, want)
 	}
@@ -18,9 +21,28 @@ func TestResolveSettingsReadsEveryKey(t *testing.T) {
 
 func TestResolveSettingsWithNothingSetIsTheShippedDefaults(t *testing.T) {
 	got := ResolveSettings(lookupFrom(nil))
-	want := Settings{Alignment: AlignmentParams{MaxMisreadRun: 8, MinAnchorRun: 3}, Thresholds: Thresholds{MinParagraphPresent: 0.8, MaxMissingRun: 3}}
+	want := Settings{
+		Alignment: AlignmentParams{MaxMisreadRun: 8, MinAnchorRun: 3}, Thresholds: Thresholds{MinParagraphPresent: 0.8, MaxMissingRun: 3},
+		Cascade: CascadeSettings{Enabled: false, FirstPassModel: "tiny", RecheckModel: "large-v3-turbo"},
+	}
 	if got != want || got != DefaultSettings {
-		t.Fatalf("ResolveSettings = %+v, want the shipped defaults (ADR 0132) %+v", got, want)
+		t.Fatalf("ResolveSettings = %+v, want the shipped defaults (ADR 0132, MC1, MC2) %+v", got, want)
+	}
+}
+
+func TestResolveSettingsReadsTheCascade(t *testing.T) {
+	got := ResolveSettings(lookupFrom(map[string]string{
+		SettingCascadeEnabled: "true", SettingCascadeFirstPassModel: "small", SettingCascadeRecheckModel: "large-v3",
+	}))
+	if got.Cascade != (CascadeSettings{Enabled: true, FirstPassModel: "small", RecheckModel: "large-v3"}) {
+		t.Fatalf("Cascade = %+v", got.Cascade)
+	}
+}
+
+func TestResolveSettingsCascadeFallsBackPerKeyOnABadValue(t *testing.T) {
+	got := ResolveSettings(lookupFrom(map[string]string{SettingCascadeEnabled: "yes", SettingCascadeFirstPassModel: "", SettingCascadeRecheckModel: ""}))
+	if got.Cascade != DefaultSettings.Cascade {
+		t.Fatalf("Cascade = %+v, want every bad or unset key at its default", got.Cascade)
 	}
 }
 

@@ -109,6 +109,12 @@ export type MockApiSeed = {
   /** Makes the next `linkDawFile()` call behave like a chosen file outside the project folder (PRD W15): refused, not linked. */
   dawLinkMismatch?: boolean;
   /**
+   * Simulates a live REAPER heartbeat whose open project disagrees with the linked file (Phase 7, ADR 0092): the
+   * mock otherwise never grows a heartbeat, so `dawReachable`/`dawProjectMatches` stay false. Used by the engine
+   * chip's "Wrong REAPER project open" state (stage-navigation-and-page-replacement.prd.md Phase 1).
+   */
+  dawEngineMismatch?: boolean;
+  /**
    * Whether `dawCatalogList()`'s REAPER entry reports installed (docs/architecture/daw-integration.md).
    * Defaults to true; false shows the not-detected state and its "Get REAPER" button.
    */
@@ -170,7 +176,7 @@ export type MockApiSeed = {
   prepMarkup?: PrepMarkupSeed;
   /** Seeds the preview-candidates mock (an outcome or seeded candidates), see `PreviewSeed`. */
   preview?: PreviewSeed;
-  /** Seeds the production plan mock (deadline, contracted amount, milestones), see `ProductionSeed`. */
+  /** Seeds the production mock: a plan (deadline, contracted amount, milestones) and optionally a time log, see `ProductionSeed`. */
   production?: ProductionSeed;
   /** The project's Delivery limits, by key (`true_peak_dbtp_max: '-3'`), set as if saved in Settings (diagnostics PRD Phase 5). */
   deliveryLimits?: Record<string, string>;

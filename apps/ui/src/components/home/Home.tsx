@@ -40,12 +40,15 @@ export function Home({
   go,
   notify,
   goToManuscript,
+  goToWorkspace,
   refreshBootstrap,
 }: {
   data: Bootstrap;
   go: (page: string) => void;
   notify: Notify;
   goToManuscript: (chapter: string, paragraph?: number) => void;
+  /** "Open workspace" from the recording check slide-over (edit-and-proof-workspace.prd.md Phase 4). */
+  goToWorkspace?: (chapterId: string) => void;
   refreshBootstrap: () => Promise<void>;
 }) {
   const api = useApi();
@@ -334,6 +337,7 @@ export function Home({
       <AudiobookEstimatePanel
         notify={notify}
         goToManuscript={goToManuscript}
+        goToWorkspace={goToWorkspace}
         refreshKey={data.manuscript ? `${data.manuscript.id}:${data.manuscript.importedAt}` : 'no-manuscript'}
       />
       {(() => {

@@ -26,6 +26,7 @@ import { TracksPage } from './components/tracks/TracksPage';
 import { WorkspacePage } from './components/workspace/WorkspacePage';
 import { ReviewPage } from './components/review/ReviewPage';
 import { DeliveryPage } from './components/delivery/DeliveryPage';
+import { ProductionPage } from './components/production/ProductionPage';
 import { deliveryHash, parseDeliveryHash } from './components/delivery/deliveryLink';
 import { TooltipProvider } from './components/primitives/Tooltip';
 import { ErrorBoundary } from './components/primitives/ErrorBoundary';
@@ -33,9 +34,14 @@ import { DESKTOP_HOST_API_VERSION } from './hostApi';
 import { isWireError } from './api/wire/WireError';
 import { describeApiError } from './api/errorMessage';
 import { useCommand } from './input/useCommand';
+import { mockEngineFromLocation } from './api/mockApi';
 
 // The Settings categories another page can open Settings at, by URL anchor.
 const SETTINGS_ANCHORS: Record<string, string> = { '#credits': 'Credits', '#delivery': 'Delivery', '#teleprompter': 'Teleprompter' };
+
+// The engine chip's state (stage-navigation-and-page-replacement.prd.md Phase 1, Q7): read once at load, since
+// nothing on the host selects it yet and the URL does not change without a reload.
+const ENGINE = mockEngineFromLocation();
 
 const LIVE_UPDATES_DEGRADED = 'Some live updates from the desktop host could not be read, so what you see may be out of date. Reopen the page to refresh it.';
 
@@ -379,6 +385,10 @@ function AppRoutes() {
   const goToManuscript = (chapter: string, paragraph?: number) =>
     guardedNavigate(`/manuscript#${paragraph !== undefined ? `p${paragraph}` : `c${encodeURIComponent(chapter)}`}`);
   const goToStoryBible = (entityId: string) => guardedNavigate(`/story-bible#${encodeURIComponent(entityId)}`);
+  // "Open in workspace" (edit-and-proof-workspace.prd.md Phase 4): from Review, Home and the Manuscript. findingId is
+  // the deep link's ?finding=, so the workspace lands on the flag that finding backs (Navigation and deep links).
+  const goToWorkspace = (chapterId: string, findingId?: string) =>
+    guardedNavigate(`/tracks/chapter/${encodeURIComponent(chapterId)}${findingId ? `?finding=${encodeURIComponent(findingId)}` : ''}`);
   // A delivery finding opens the Delivery page on its file and rule: "#file=<path>&rule=<id>" (deliveryLink.ts).
   const goToDelivery = (file: string, rule?: string) => guardedNavigate(`/delivery${deliveryHash({ file, ...(rule ? { rule } : {}) })}`);
 
@@ -434,19 +444,29 @@ function AppRoutes() {
           dawProjectMatches={data.dawProjectMatches}
           onLinkDawFile={() => void linkDawFile()}
           linkingDawFile={dawLink.isBusy}
+          engine={ENGINE}
           history={{ canGoBack: history.canGoBack, canGoForward: history.canGoForward, back: guardedBack, forward: guardedForward }}
         >
           <ErrorBoundary key={location.pathname.split('/')[1] || 'home'}>
             <Routes>
               <Route
                 path="/"
-                element={<Home data={data} go={guardedNavigate} notify={setNotice} goToManuscript={goToManuscript} refreshBootstrap={refreshBootstrap} />}
+                element={
+                  <Home
+                    data={data}
+                    go={guardedNavigate}
+                    notify={setNotice}
+                    goToManuscript={goToManuscript}
+                    goToWorkspace={goToWorkspace}
+                    refreshBootstrap={refreshBootstrap}
+                  />
+                }
               />
               <Route
                 path="/manuscript"
                 element={
                   data.manuscript ? (
-                    <Manuscript notify={setNotice} focusStoryBibleEntity={goToStoryBible} projectFolder={data.projectFolder} />
+                    <Manuscript notify={setNotice} focusStoryBibleEntity={goToStoryBible} goToWorkspace={goToWorkspace} projectFolder={data.projectFolder} />
                   ) : (
                     <Navigate to="/" replace />
                   )
@@ -487,10 +507,12 @@ function AppRoutes() {
                     hasManuscript={Boolean(data.manuscript)}
                     goToManuscript={goToManuscript}
                     goToStoryBible={goToStoryBible}
+                    goToWorkspace={(chapterId, findingId) => goToWorkspace(chapterId, findingId)}
                     goToDelivery={goToDelivery}
                   />
                 }
               />
+              <Route path="/production" element={data.manuscript ? <ProductionPage /> : <Navigate to="/" replace />} />
               <Route
                 path="/delivery"
                 element={<DeliveryPage openSettings={() => guardedNavigate('/settings#delivery')} focus={parseDeliveryHash(location.hash)} />}

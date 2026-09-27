@@ -87,6 +87,14 @@ as Proofing does. A changed chapter can also be re-checked on its own, in the ba
 REAPER has been quiet for a few minutes and the app is not otherwise busy (Settings' **Check
 changed chapters in the background**); pressing **Check recording** yourself always pre-empts it.
 
+With Settings' **Two-pass check** turned on ([Settings](settings.md)), a check instead runs a fast
+first pass, then re-checks only whatever it reports missing with a stronger model: the progress
+names each pass ("First pass (tiny)", then "Re-checking 3 passages (large-v3-turbo)"), and the
+finished result reads "Checked ... with the tiny Whisper model; 3 passages re-checked with the
+large-v3-turbo Whisper model", with each re-checked pickup marked "Confirmed missing by ...". If
+the re-check model is not installed yet, the app offers the download or **Check with tiny only**,
+which finishes the check with the fast pass alone rather than blocking on the download.
+
 ![Home - a chapter's recording check with text still to record](../../images/ui/home-recording-check.webp)
 
 The result reads as a **chapter summary first**: "Passes the check", or "Not complete" naming the
@@ -233,4 +241,4 @@ card — with **Fill in** to reopen the same dialog for as long as a token stays
 
 ---
 
-[← Navigation](navigation.md) · [Index](README.md) · [Manuscript →](manuscript.md)
+[← Navigation](navigation.md) · [Index](README.md) · [Production →](production.md)

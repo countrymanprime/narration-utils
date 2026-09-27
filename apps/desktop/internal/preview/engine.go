@@ -57,7 +57,7 @@ func Suggest(in Input) Result {
 		if len(paragraphs) == 0 {
 			continue
 		}
-		if best, ok := bestWindow(chapter, paragraphs, lowWords, highWords, in.HardWords, findingsByChap[chapter.ID], settings); ok {
+		if best, ok := bestWindow(chapter, paragraphs, lowWords, highWords, in.HardWords, findingsByChap[chapter.ID], settings, in.AudioEvidence[chapter.ID]); ok {
 			candidates = append(candidates, best)
 		}
 	}
@@ -131,7 +131,7 @@ func excludeEnding(chapters []Chapter, excludeFraction float64) []Chapter {
 // SpotCheck window is never excluded, only ranked down - Q7's "C for Sample... B for the rest"). Every candidate
 // this function returns already carries its findings evidence and penalty (attachFindings), whichever preset chose
 // it and whether or not any window came back clean.
-func bestWindow(chapter Chapter, paragraphs []Paragraph, lowWords, highWords float64, hardWords map[string]bool, findings []OpenFinding, settings Settings) (Candidate, bool) {
+func bestWindow(chapter Chapter, paragraphs []Paragraph, lowWords, highWords float64, hardWords map[string]bool, findings []OpenFinding, settings Settings, audio ChapterAudioEvidence) (Candidate, bool) {
 	counts := make([]int, len(paragraphs))
 	total := 0
 	for i, p := range paragraphs {
@@ -139,7 +139,7 @@ func bestWindow(chapter Chapter, paragraphs []Paragraph, lowWords, highWords flo
 		total += counts[i]
 	}
 	if float64(total) < lowWords {
-		return wholeChapterCandidate(chapter, paragraphs, total, hardWords, findings), true
+		return wholeChapterCandidate(chapter, paragraphs, total, hardWords, findings, audio), true
 	}
 
 	var best Candidate
@@ -168,6 +168,7 @@ func bestWindow(chapter Chapter, paragraphs []Paragraph, lowWords, highWords flo
 			sum -= counts[start]
 			continue
 		}
+		candidate = attachAudioChecked(candidate, audio)
 		s := score(candidate, settings)
 		if s > bestScore {
 			best, bestScore, bestFound = candidate, s, true
@@ -190,14 +191,16 @@ func bestWindow(chapter Chapter, paragraphs []Paragraph, lowWords, highWords flo
 	}
 	candidate := windowCandidate(chapter, paragraphs[:end], sum, hardWords)
 	candidate, _ = attachFindings(candidate, findings)
+	candidate = attachAudioChecked(candidate, audio)
 	return candidate, true
 }
 
-func wholeChapterCandidate(chapter Chapter, paragraphs []Paragraph, total int, hardWords map[string]bool, findings []OpenFinding) Candidate {
+func wholeChapterCandidate(chapter Chapter, paragraphs []Paragraph, total int, hardWords map[string]bool, findings []OpenFinding, audio ChapterAudioEvidence) Candidate {
 	c := windowCandidate(chapter, paragraphs, total, hardWords)
 	c.Shorter = true
 	c.Warnings = append(c.Warnings, "This chapter is shorter than the target length even in full.")
 	c, _ = attachFindings(c, findings)
+	c = attachAudioChecked(c, audio)
 	return c
 }
 

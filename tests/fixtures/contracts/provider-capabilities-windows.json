@@ -73,6 +73,18 @@
         "available": true,
         "level": "supported"
       }
+    },
+    "wiktextract": {
+      "default": false,
+      "label": "Wiktionary (via Wiktextract)",
+      "modes": [
+        "pronounce"
+      ],
+      "platforms": [],
+      "support": {
+        "available": true,
+        "level": "supported"
+      }
     }
   },
   "tts": {

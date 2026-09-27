@@ -1,11 +1,30 @@
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faChevronLeft, faChevronRight } from '@fortawesome/free-solid-svg-icons';
+import { useState } from 'react';
+import { usePendingAction } from '../../hooks/usePendingAction';
+import { MAX_REVIEW_NOTE_LENGTH, type FindingReviewStatus } from '../../api/contracts/findings';
 import { Button } from '../primitives/Button';
+import { Field } from '../primitives/Field';
 import { Panel } from '../primitives/Panel';
+import { TooltipTarget } from '../primitives/Tooltip';
+import { analyzerLabel, STATUS_LABELS } from '../review/findingFormat';
 import type { WorkspaceToken } from '../../api/contracts/workspace';
 import type { Flag, FlagKind } from './flags';
+import { formatElapsed } from './format';
+import type { WorkspaceReaperControls } from './useWorkspaceReaper';
 
-const KIND_ORDER: FlagKind[] = ['skip', 'partial', 'not_recorded', 'misread', 'extra'];
+const KIND_ORDER: FlagKind[] = ['skip', 'partial', 'not_recorded', 'misread', 'extra', 'pickup', 'cleanup'];
+
+// The decisions a narrator can make on a flag backed by a Finding, in the order the buttons show them (mirrors
+// review/FindingDetail.tsx's own DECISIONS - kept as its own small array rather than a shared import, since the two
+// panels' surrounding markup differs enough that sharing the array alone would buy little).
+const DECISIONS: Array<{ status: FindingReviewStatus; label: string; variant: 'primary' | 'ghost' }> = [
+  { status: 'accepted', label: 'Accept', variant: 'primary' },
+  { status: 'dismissed', label: 'Dismiss', variant: 'ghost' },
+  { status: 'deferred', label: 'Defer', variant: 'ghost' },
+];
+
+export type FlagDecisionResult = { ok: true } | { ok: false; message: string };
 
 function countByKind(flags: readonly Flag[]): Array<{ kind: FlagKind; label: string; count: number }> {
   const counts = new Map<FlagKind, { label: string; count: number }>();
@@ -18,11 +37,76 @@ function countByKind(flags: readonly Flag[]): Array<{ kind: FlagKind; label: str
 }
 
 /**
- * The workspace's flag legend and detail (edit-and-proof-workspace.prd.md Phase 2, EP4): counts by kind, next and
- * previous navigation over every flag in the chapter, and the selected flag's script/heard text. Reviewing a flag
- * (accept, dismiss, defer, note) is Phase 4's job, once a flag is backed by an actual Finding the app can act on -
- * this Phase's flags come straight from the stored alignment, read-only. Likewise "Go to in REAPER" and "Loop" for
- * a flag are Phase 3 (new bindings that don't exist yet): only "Play from here" (the app's own player) is offered.
+ * A finding-backed flag's decision (edit-and-proof-workspace.prd.md Phase 4, mockups/edit-and-proof-workspace/02-flag-detail-open.webp
+ * "DECISION"): accept, dismiss, defer and an optional note, sent through the same `findingsReview` binding the Review page uses - a
+ * decision made here shows there too, and the other way round. Its own component (not inlined in FlagsPanel) so the parent can key it by
+ * the flag's id and get a fresh note field on every selection, the same trick FindingDetail's caller uses.
+ */
+function FlagDecision({ flag, onDecide }: { flag: Flag; onDecide: (status: FindingReviewStatus, note: string) => Promise<FlagDecisionResult> }) {
+  const [note, setNote] = useState('');
+  const [problem, setProblem] = useState<string>();
+  const [saved, setSaved] = useState<string>();
+  const action = usePendingAction();
+  const noteTooLong = [...note].length > MAX_REVIEW_NOTE_LENGTH;
+
+  const decide = (status: FindingReviewStatus) =>
+    action.run(status, async () => {
+      setProblem(undefined);
+      setSaved(undefined);
+      const result = await onDecide(status, note.trim());
+      if (result.ok) setSaved(`Saved as ${STATUS_LABELS[status].toLowerCase()}.`);
+      else setProblem(`Not saved: ${result.message}`);
+    });
+
+  const decided = flag.reviewStatus !== undefined && flag.reviewStatus !== 'unreviewed';
+
+  return (
+    <div className="mt-3 space-y-2 border-t pt-3 text-sm" style={{ borderColor: 'var(--border)' }}>
+      <div className="section-label">Decision</div>
+      {decided && <p style={{ color: 'var(--text-muted)' }}>{STATUS_LABELS[flag.reviewStatus!]}.</p>}
+      <Field
+        label="Note (optional)"
+        textarea
+        value={note}
+        onChange={setNote}
+        error={noteTooLong ? `A note can be at most ${MAX_REVIEW_NOTE_LENGTH} characters.` : undefined}
+      />
+      <div className="flex flex-wrap gap-2">
+        {DECISIONS.map((decision) => (
+          <Button
+            key={decision.status}
+            variant={decision.variant}
+            className="px-3 py-1"
+            onClick={() => void decide(decision.status)}
+            pending={action.isPending(decision.status)}
+            disabled={noteTooLong || action.isBlockedFor(decision.status)}
+          >
+            {decision.label}
+          </Button>
+        ))}
+      </div>
+      {problem && (
+        <p role="alert" style={{ color: 'var(--danger-text)' }}>
+          {problem}
+        </p>
+      )}
+      <p role="status" className="empty:hidden">
+        {saved}
+      </p>
+      <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
+        Accept keeps it as a fix to make. Decisions show on the Review page too.
+      </p>
+    </div>
+  );
+}
+
+/**
+ * The workspace's flag legend and detail (edit-and-proof-workspace.prd.md Phase 2, EP4; Phase 4 review-in-place):
+ * counts by kind, next and previous navigation over every flag in the chapter, and the selected flag's script/heard
+ * text. A flag backed by a stored Finding (Phase 4, `overlayFindings`) also shows where it came from ("From <analyzer>,
+ * <time>") and its own Go to/Loop in REAPER for that word (mockups/edit-and-proof-workspace/02-flag-detail-open.webp),
+ * plus the decision controls above (FlagDecision). A flag with no finding - straight from the check's own alignment -
+ * stays read-only, with only "Play from here" (the app's own player).
  */
 export function FlagsPanel({
   flags,
@@ -30,15 +114,22 @@ export function FlagsPanel({
   selectedIndex,
   onSelect,
   onPlayFromFlag,
+  reaper,
+  onDecide,
 }: {
   flags: readonly Flag[];
   tokens: readonly WorkspaceToken[];
   selectedIndex: number | undefined;
   onSelect: (index: number) => void;
   onPlayFromFlag: (flag: Flag) => void;
+  /** Go to/Loop in REAPER for the selected flag's word, shared with the transport bar's own (Phase 3). */
+  reaper: Pick<WorkspaceReaperControls, 'goToTokenBlocked' | 'loopTokenBlocked' | 'tokenPending' | 'goToToken' | 'loopToken'>;
+  /** Records a decision on the selected flag's finding; undefined flags never call this (no findingId to decide on). */
+  onDecide: (flag: Flag, status: FindingReviewStatus, note: string) => Promise<FlagDecisionResult>;
 }) {
   const selected = selectedIndex !== undefined ? flags[selectedIndex] : undefined;
   const scriptWords = selected ? tokens.slice(selected.tokenStart, selected.tokenEnd + 1).map((token) => token.text) : [];
+  const selectedTime = selected?.seekTokenIndex !== undefined ? tokens[selected.seekTokenIndex]?.start : undefined;
 
   return (
     <Panel title={`Flags · ${flags.length}`}>
@@ -88,9 +179,42 @@ export function FlagsPanel({
               <span className="section-label">Heard</span> &ldquo;{selected.heard}&rdquo;
             </div>
           )}
-          <Button variant="ghost" disabled={selected.seekTokenIndex === undefined} onClick={() => onPlayFromFlag(selected)}>
-            Play from here
-          </Button>
+          {selected.analyzer && (
+            <div style={{ color: 'var(--text-muted)' }}>
+              <span className="section-label">From</span> {analyzerLabel(selected.analyzer)}
+              {selectedTime !== undefined && `, ${formatElapsed(selectedTime)}`}
+            </div>
+          )}
+          <div className="flex flex-wrap gap-2">
+            <Button variant="ghost" disabled={selected.seekTokenIndex === undefined} onClick={() => onPlayFromFlag(selected)}>
+              Play from here
+            </Button>
+            {selected.seekTokenIndex !== undefined && (
+              <>
+                <TooltipTarget text={reaper.goToTokenBlocked(selected.seekTokenIndex) ?? "Select this word's item in REAPER and put the edit cursor on it"}>
+                  <Button
+                    variant="ghost"
+                    disabled={Boolean(reaper.goToTokenBlocked(selected.seekTokenIndex)) || reaper.tokenPending !== undefined}
+                    pending={reaper.tokenPending === 'goTo'}
+                    onClick={() => void reaper.goToToken(selected.seekTokenIndex!)}
+                  >
+                    Go to in REAPER
+                  </Button>
+                </TooltipTarget>
+                <TooltipTarget text={reaper.loopTokenBlocked(selected.seekTokenIndex) ?? 'Play this word over and over in REAPER'}>
+                  <Button
+                    variant="ghost"
+                    disabled={Boolean(reaper.loopTokenBlocked(selected.seekTokenIndex)) || reaper.tokenPending !== undefined}
+                    pending={reaper.tokenPending === 'loop'}
+                    onClick={() => void reaper.loopToken(selected.seekTokenIndex!)}
+                  >
+                    Loop in REAPER
+                  </Button>
+                </TooltipTarget>
+              </>
+            )}
+          </div>
+          {selected.findingId && <FlagDecision key={selected.findingId} flag={selected} onDecide={(status, note) => onDecide(selected, status, note)} />}
         </div>
       )}
     </Panel>
