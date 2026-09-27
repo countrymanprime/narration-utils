@@ -13,6 +13,7 @@ import { createWorkspaceMock } from './workspaceMock';
 import { createPreviewMock } from './previewMock';
 import { createStagesMock } from './stagesMock';
 import { createDawMock } from './dawMock';
+import { createProvidersMock } from './providersMock';
 import { createFindingsMock } from './findingsMock';
 import { createTakeReviewScanMock } from './takeReviewMock';
 import { createTakeComparisonMock } from './takeComparisonMock';
@@ -98,6 +99,7 @@ export function createMockApi(
   });
   const preview = createPreviewMock({ chapters: () => s.chapters, paragraphs: () => s.paragraphs }, initial.preview);
   const daw = createDawMock(initial.daw);
+  const providers = createProvidersMock(initial.providers);
   const stages = createStagesMock({
     ready: manuscriptReady,
     chapters: () => s.chapters.map(withMeasurement),
@@ -156,6 +158,7 @@ export function createMockApi(
     ...stages,
     ...findings,
     ...daw,
+    ...providers,
   };
   const api = initial.invalidPayload ? { ...base, ...invalidPayloadOverrides(initial.invalidPayload, base) } : base;
   return { ...api, ...overrides };
