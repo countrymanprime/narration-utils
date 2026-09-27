@@ -397,6 +397,19 @@ placement.
 
 ### 5. Resemblyzer — approved-reference voice continuity, not character ID
 
+**Status (2026-09-27, provisional): reject for the character-continuity workflow.** The Phase 1
+trial (`character-continuity-review.prd.md`, [full record](character-continuity-acoustic-trial.md))
+confirms this entry's own risk note in the worst possible direction for cost: Resemblyzer needed
+the repository's first PyTorch dependency (`torch>=1.0.1`, confirmed in its own `requires_dist`)
+plus `scipy`, `librosa` and `scikit-learn`, and its hard dependency `webrtcvad` publishes no
+Windows wheel at all (sdist only, needs a C toolchain at install time) - a first-use blocker this
+app's download-a-pinned-binary provisioning model cannot satisfy. Against that cost, it separated
+characters the *least* well of the three engines trialed (2.83x same/different-character distance
+ratio, versus 3.81x for the dependency-free baseline and 6.86x for Praat) on a synthetic corpus
+built to be maximally differentiated - a real narrator's character work is likely to separate less
+well still, which is exactly this entry's own pre-registered risk. Provisional pending a re-run on
+a real corpus; see the trial record for the exact re-run command.
+
 **What it contributes.** Resemblyzer produces a 256-value speaker embedding
 and a similarity score between clips. It is designed to compare vocal identity
 or timbre, not to understand dialogue, fictional roles, or acting intention.
@@ -433,6 +446,20 @@ are unsuitable for identifying people, deanonymizing audio, or supporting
 voice-cloning functionality.
 
 ### 6. Praat — objective speech measurement and inspection
+
+**Status (2026-09-27, provisional): defer, recorded as the strongest fallback if the MVP's
+dependency-free features prove insufficient.** The Phase 1 trial
+([full record](character-continuity-acoustic-trial.md)) ran `praat-parselmouth` 0.4.7 against
+the same synthetic corpus as the dependency-free baseline: it separated same- from
+different-character clips more cleanly (6.86x median-distance ratio, 0% false-accept at the
+trial's conservative threshold, versus 3.81x/28.7% for the baseline), installed from PyPI in
+about 4 seconds with only a `numpy` dependency, and has prebuilt wheels for this repository's
+exact Windows/CPython 3.12 target - no PyTorch, no compiler. Its GPL-3.0-or-later license still
+argues for a separate-process integration rather than the in-process binding used in the trial
+(the trial script is throwaway research code, never packaged). Phase 8 is conditional on the
+Go dependency-free baseline (Q1 option A, adopted for the MVP) proving insufficient in practice;
+this trial does not show that it is, but records Praat as the credible next step if it does.
+Provisional pending a re-run on a real corpus.
 
 **What it contributes.** Praat is an established speech-analysis application
 and scripting environment. It can inspect/export pitch, intensity, formants,
