@@ -98,7 +98,6 @@ import re
 import sys
 import time
 from collections.abc import Callable, Iterable, Iterator
-from dataclasses import dataclass
 from pathlib import Path
 
 import numpy as np
@@ -109,10 +108,12 @@ if str(_SHARED_PYTHON) not in sys.path:
 
 from narration_common.logging_utils import log, set_log_file
 
+# Word and Hypothesis are the speech engine port's types (provider-ports P3); they are re-exported here so `live_asr.Hypothesis`
+# and every other existing import keep working.
+from narration_common.ports.asr import Hypothesis, Word
+
 SAMPLE_RATE = 16000
 
-# (word, start_seconds, end_seconds)
-Word = tuple[str, float, float]
 Decoder = Callable[[np.ndarray], list[Word]]
 
 # Mirrors compare.py's PAUSE_GAP_SECONDS (0.6s) - the same "how long a pause
@@ -185,18 +186,6 @@ def _confirm_agreed_words(previous: list[Word], current: list[Word], committed: 
     if agreed <= committed:
         return [], committed
     return current[committed:agreed], agreed
-
-
-@dataclass(frozen=True)
-class Hypothesis:
-    """An engine's current best reading of one speech segment, in absolute
-    stream time. `final` marks the segment's last hypothesis (pause, size cap,
-    or end of stream). Every engine produces these; nothing downstream knows
-    which engine it was."""
-
-    segment: int
-    words: tuple[Word, ...]
-    final: bool
 
 
 def _word_json(word: Word) -> dict:
