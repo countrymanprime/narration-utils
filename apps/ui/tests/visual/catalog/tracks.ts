@@ -157,6 +157,34 @@ export const tracksStates: StateEntry[] = [
   },
   {
     page: 'tracks',
+    state: 'create-regions-empty',
+    description:
+      'Tracks, "Create chapter regions" dialog open before any chapter is linked or a credits track chosen - every chapter listed as skipped ("No track is linked to this chapter."), Create 0 regions disabled, the "regions" capability at its Experimental-off-by-default state',
+    ...KEEPS_DESKTOP_SCROLL,
+  },
+  {
+    page: 'tracks',
+    state: 'create-regions-preview',
+    description:
+      'Tracks, "Create chapter regions" dialog with Chapter 1 already linked (?mockChapterLink=confirmed) and an opening credits track chosen - one planned region shown as "New region", Create 2 regions enabled (?mockRegionsCapabilityOn=1 turns the Experimental gate on so the button is not just previewed disabled)',
+    ...KEEPS_DESKTOP_SCROLL,
+  },
+  {
+    page: 'tracks',
+    state: 'create-regions-success',
+    description:
+      'Tracks, "Create chapter regions" dialog after Create pressed - the sent/created/existing/updated/ambiguous/failed counts shown, Close replaces Cancel',
+    ...KEEPS_DESKTOP_SCROLL,
+  },
+  {
+    page: 'tracks',
+    state: 'create-regions-error',
+    description:
+      'Tracks, "Create chapter regions" dialog when REAPER refuses to write the regions - inline error message, nothing created (reached via the ?mockRegionsCreateError=1 mock seam)',
+    ...KEEPS_DESKTOP_SCROLL,
+  },
+  {
+    page: 'tracks',
     state: 'chapter-tags-idle',
     description: 'Tracks, "Embed chapter tags" dialog open before any chapter render is configured - "Prepare chapter render first" message, Embed disabled',
     ...KEEPS_DESKTOP_SCROLL,

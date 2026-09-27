@@ -84,6 +84,11 @@ const MODALS: { name: string; state: [string, string]; snapshot: string }[] = [
     state: ['global', 'shortcut-sheet'],
     snapshot: 'dialog-shortcut-sheet.aria.yml',
   },
+  {
+    name: 'the create-chapter-regions dialog is a modal dialog with the credits selects, the plan table, the not-planned list and Create N regions',
+    state: ['tracks', 'create-regions-preview'],
+    snapshot: 'dialog-create-chapter-regions.aria.yml',
+  },
 ];
 
 for (const modal of MODALS) {

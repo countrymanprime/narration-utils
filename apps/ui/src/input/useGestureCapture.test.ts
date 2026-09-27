@@ -9,7 +9,7 @@ function keydown(init: Partial<KeyboardEventInit> & { code: string }): KeyboardE
   return new KeyboardEvent('keydown', { bubbles: true, cancelable: true, ...init });
 }
 
-function fakeMidiSource(): { source: InputSource; emit: (event: GestureEvent) => void; subscribed: () => boolean } {
+function fakeGestureSource(): { source: InputSource; emit: (event: GestureEvent) => void; subscribed: () => boolean } {
   let onGesture: ((event: GestureEvent) => void) | undefined;
   let subscribed = false;
   return {
@@ -26,6 +26,9 @@ function fakeMidiSource(): { source: InputSource; emit: (event: GestureEvent) =>
     subscribed: () => subscribed,
   };
 }
+
+const fakeMidiSource = fakeGestureSource;
+const fakeHidSource = fakeGestureSource;
 
 describe('useGestureCapture', () => {
   it('captures a plain key while active', () => {
@@ -143,5 +146,40 @@ describe('useGestureCapture', () => {
 
     rerender({ active: false });
     expect(midi.subscribed()).toBe(false);
+  });
+
+  it('captures a press from the HID source while active (Phase 11)', () => {
+    const hid = fakeHidSource();
+    const onCapture = vi.fn();
+    renderHook(() => useGestureCapture(true, onCapture, vi.fn(), document, undefined, hid.source));
+
+    hid.emit({ gesture: gesture('hid', '046d:c52b/0.0.3'), target: null, preventDefault: vi.fn() });
+
+    expect(onCapture).toHaveBeenCalledTimes(1);
+    expect(onCapture).toHaveBeenCalledWith(gesture('hid', '046d:c52b/0.0.3'));
+  });
+
+  it('consumes the HID event so it does not also reach the router', () => {
+    const hid = fakeHidSource();
+    const preventDefault = vi.fn();
+    renderHook(() => useGestureCapture(true, vi.fn(), vi.fn(), document, undefined, hid.source));
+
+    hid.emit({ gesture: gesture('hid', '046d:c52b/0.0.3'), target: null, preventDefault });
+
+    expect(preventDefault).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not subscribe to HID while inactive, and unsubscribes once no longer active', () => {
+    const hid = fakeHidSource();
+    const { rerender } = renderHook(({ active }) => useGestureCapture(active, vi.fn(), vi.fn(), document, undefined, hid.source), {
+      initialProps: { active: false },
+    });
+    expect(hid.subscribed()).toBe(false);
+
+    rerender({ active: true });
+    expect(hid.subscribed()).toBe(true);
+
+    rerender({ active: false });
+    expect(hid.subscribed()).toBe(false);
   });
 });

@@ -204,6 +204,43 @@ export const tracksDrivers: Record<string, Driver> = {
     await message.waitFor();
     await message.scrollIntoViewIfNeeded();
   },
+  'create-regions-empty': async (page) => {
+    await goToPage(page, 'Tracks');
+    await clickVisible(page, 'button', 'Create chapter regions…');
+    await page
+      .getByText(/No track is linked to this chapter\./)
+      .first()
+      .waitFor();
+  },
+  'create-regions-preview': async (page) => {
+    await page.goto('/?mockChapterLink=confirmed&mockRegionsCapabilityOn=1');
+    await settlePage(page);
+    await goToPage(page, 'Tracks');
+    await clickVisible(page, 'button', 'Create chapter regions…');
+    await page.getByRole('combobox', { name: 'Opening credits track' }).selectOption({ label: 'Chapter 2' });
+    await page.getByRole('button', { name: 'Create 2 regions' }).waitFor();
+  },
+  'create-regions-success': async (page) => {
+    await page.goto('/?mockChapterLink=confirmed&mockRegionsCapabilityOn=1');
+    await settlePage(page);
+    await goToPage(page, 'Tracks');
+    await clickVisible(page, 'button', 'Create chapter regions…');
+    await page.getByRole('combobox', { name: 'Opening credits track' }).selectOption({ label: 'Chapter 2' });
+    await clickVisible(page, 'button', 'Create 2 regions');
+    const message = page.getByText(/^Sent 2:/);
+    await message.waitFor();
+    await message.scrollIntoViewIfNeeded();
+  },
+  'create-regions-error': async (page) => {
+    await page.goto('/?mockChapterLink=confirmed&mockRegionsCapabilityOn=1&mockRegionsCreateError=1');
+    await settlePage(page);
+    await goToPage(page, 'Tracks');
+    await clickVisible(page, 'button', 'Create chapter regions…');
+    await clickVisible(page, 'button', 'Create 1 region');
+    const message = page.getByText(/REAPER refused to write the regions/).first();
+    await message.waitFor();
+    await message.scrollIntoViewIfNeeded();
+  },
   'chapter-tags-idle': async (page) => {
     await goToPage(page, 'Tracks');
     await clickVisible(page, 'button', 'Embed chapter tags…');
