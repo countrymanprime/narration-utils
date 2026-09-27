@@ -286,11 +286,9 @@ Lanes: **U** = primitives and input (Sonnet), **A** = host (Go settings). ADRs c
 
 ## Visual Spec
 
-No owner-approved mockups yet. Before Phase 6 starts, owner-approved mockups of the Keyboard & pedals category (list, recording, conflict) and of the "?" sheet go under `mockups/input-commands-and-pedals/`.
+The images below are the **owner-approved mockups** of the Keyboard & pedals category (list, recording, conflict) and of the "?" sheet: the owner approved them as drawn on 2026-09-27 ([#687](https://github.com/countrymanprime/narration-utils/issues/687)), which met the gate that Phase 6 waited on. A UI pull request for Phases 6 and 7 compares its capture against them in its Mockup check table. Each is the mock build's real shell, Settings page and `Dialog` in the dark theme, at 1440×900 unless named otherwise; only the Keyboard & pedals panel content and the sheet's body are drawn in, with the shipped `Kbd` markup and the app's tokens. File names follow the visual rows Phases 6 and 7 add.
 
-The images below are **draft mockups, not owner-approved specs**, waiting for the owner's review on [#687](https://github.com/countrymanprime/narration-utils/issues/687). They do not unblock Phase 6: it waits until the owner approves them or asks for changes. Each is the mock build's real shell, Settings page and `Dialog` in the dark theme, at 1440×900 unless named otherwise; only the Keyboard & pedals panel content and the sheet's body are drawn in, with the shipped `Kbd` markup and the app's tokens. File names follow the visual rows Phases 6 and 7 add.
-
-| File | State | What it proposes |
+| File | State | What it shows |
 | --- | --- | --- |
 | [`01-settings-global-keyboard.webp`](mockups/input-commands-and-pedals/01-settings-global-keyboard.webp) | `settings / global-keyboard` | The category after Appearance. Commands grouped by scope with where each scope applies, gestures as `Kbd` chips, one Change button per command, a Changed badge and a Reset on an overridden command (`Next flag` + `F14`), and Reset all to defaults |
 | [`02-settings-global-keyboard-recording.webp`](mockups/input-commands-and-pedals/02-settings-global-keyboard-recording.webp) | `settings / global-keyboard-recording` | The recorder opened inline under its row, after a footswitch sent Page Down for "Play or pause reading" (user flow step 2). A status live region announces the capture. Replace, Add as another key, Unbind, Reset to default, Cancel |
@@ -299,9 +297,9 @@ The images below are **draft mockups, not owner-approved specs**, waiting for th
 | [`04a-shortcut-sheet-as-built.webp`](mockups/input-commands-and-pedals/04a-shortcut-sheet-as-built.webp) | `shortcut-sheet` (as shipped) | The shipped Phase 7 sheet, for comparison: it lists every catalog command by scope, and "Show all shortcuts" is its primary button |
 | [`05-settings-global-keyboard-reflow-390.webp`](mockups/input-commands-and-pedals/05-settings-global-keyboard-reflow-390.webp) | `settings / global-keyboard` at 390 px | The list at the reflow width (ADR 0061): each row wraps its chips and Change under the label |
 
-Questions for the owner's review, raised by drawing the states:
+Approving them as drawn settled the questions drawing them raised:
 
-- **The sheet as shipped vs. the phase text.** Phase 7 says the sheet lists "the commands active at that moment"; the shipped sheet lists every command (`ShortcutSheet.tsx`, citing the Success Metrics row). Draft 04 shows the active-only reading; 04a is what shipped.
-- **Add as another key.** The phase names Replace, Unbind and Reset to defaults. A narrator binding a pedal usually wants to keep the key as well, so the recorder drafts a fourth action that adds the capture beside the current binding.
-- **The PRD's own conflict example no longer conflicts.** User flow step 3 has Page Down for reading conflict with "Next paragraph"; under the shipped `scopesOverlap`, `booth` and `page` never overlap, and "Next paragraph" is on ↓, not Page Down. Draft 02 shows that capture with no conflict, and draft 03 uses a real `page` + `page` conflict instead.
-- **"Plays audio".** Draft 01 marks the `noisy` command. What a suppressed press does while recording is still Q5 and Phase 10.
+- **The sheet lists what is active, not every command.** Phase 7's text ("the commands active at that moment") wins over the shipped sheet, which lists every command (`ShortcutSheet.tsx`). Draft 04 is the spec, and 04a is kept as the before image. Every command stays discoverable in the Settings category, which the sheet links to.
+- **Add as another key.** The recorder has a fourth action beside Replace, Unbind and Reset to default. It keeps the current binding and adds the capture, so a pedal can join a key.
+- **The conflict example.** Under the shipped `scopesOverlap`, `booth` and `page` never overlap, so a Page Down pedal for reading has no conflict (draft 02). The conflict state is a `page` + `page` collision (draft 03). User flow step 3 predates `scopesOverlap` and is read that way.
+- **"Plays audio".** The list marks a `noisy` command. What a suppressed press does while recording stays Q5 and Phase 10.
