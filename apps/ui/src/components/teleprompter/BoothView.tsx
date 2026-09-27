@@ -1,8 +1,10 @@
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faMicrophone } from '@fortawesome/free-solid-svg-icons';
-import { useState, type ReactNode } from 'react';
+import { useId, useState, type ReactNode } from 'react';
+import type { GuideEntity } from '../../types';
 import { Button } from '../primitives/Button';
 import { FocusShell } from '../primitives/FocusShell';
+import { Highlight, highlightKind } from '../primitives/Highlight';
 import { Kbd } from '../primitives/Kbd';
 import { LevelMeter } from '../primitives/LevelMeter';
 import { Popover } from '../primitives/Popover';
@@ -37,6 +39,12 @@ type Props = {
   /** The same `ReaderRail` element the normal dialog builds for its `aside` (booth-mode-and-companion-panel.prd.md
    * Phase 1): `FocusShell` gives it its own landmark instead of `ReadAlongView`'s grid. */
   rail: ReactNode;
+  /** The Story Bible entries this chapter mentions, in the order they first appear (the same list the rail's Story
+   * bible tab shows); the characters among them are the "Voices in scene" section (Phase 3). Absent in credits mode,
+   * which has no chapter text to mark and so no section. */
+  speakers?: GuideEntity[];
+  /** Opens a speaker's Story Bible entry in the rail, the same as activating its mark in the text. */
+  onOpenSpeaker?: (entity: GuideEntity) => void;
 };
 
 /** The booth's status line (Phase 1): recording/reading state, the chapter, word progress, the microphone (device
@@ -98,6 +106,47 @@ function BoothStatus({ session: t, chapterId, chapterTitle, recording }: Pick<Pr
   );
 }
 
+const SECTION_LABEL = "font-['Barlow_Condensed',sans-serif] text-[0.72rem] font-semibold tracking-[0.08em] text-[var(--text-muted)] uppercase";
+
+/**
+ * The rail's "Voices in scene" section (booth-mode-and-companion-panel.prd.md Phase 3): the chapter's Story Bible
+ * characters as speaker tags in the existing `Highlight` character colour (no new primitive or colour), each opening
+ * its entry in the rail's Story bible tab. The per-character voice reference clip the booth mock plays here is
+ * Character Continuity Review's work (PRD D3): until it lands, the section says so honestly (Open Question 6) instead
+ * of leaving a gap, so the layout does not shift when real clips arrive in this same slot.
+ */
+function BoothSpeakers({ speakers, onOpenSpeaker }: { speakers: GuideEntity[]; onOpenSpeaker?: (entity: GuideEntity) => void }) {
+  const headingId = useId();
+  const characters = speakers.filter((entity) => highlightKind(entity.category) === 'Character');
+  return (
+    <section aria-labelledby={headingId} className="mb-4 space-y-2">
+      <h2 id={headingId} className={SECTION_LABEL}>
+        Voices in scene
+      </h2>
+      {characters.length > 0 ? (
+        <ul className="flex flex-wrap gap-x-2 gap-y-1.5 text-sm">
+          {characters.map((entity) => (
+            <li key={entity.id}>
+              <Highlight
+                kind="Character"
+                label={onOpenSpeaker ? `${entity.canonical_name}: open in the Story bible` : undefined}
+                onActivate={onOpenSpeaker && (() => onOpenSpeaker(entity))}
+              >
+                {entity.canonical_name}
+              </Highlight>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
+          No Story Bible characters are mentioned in this chapter.
+        </p>
+      )}
+      <StatusBadge tone="neutral" label="Reference clips coming soon" />
+    </section>
+  );
+}
+
 const TOOLBAR_BUTTON_CLASS = 'flex-col gap-1 px-3 py-1.5 text-[0.7rem] normal-case';
 
 /**
@@ -111,7 +160,7 @@ const TOOLBAR_BUTTON_CLASS = 'flex-col gap-1 px-3 py-1.5 text-[0.7rem] normal-ca
  * file other in-flight PRDs also read from (the PRD's own Phase details note on Phase 5) and this is the smaller
  * surface to keep stable.
  */
-export function BoothView({ session: t, follow, chapterId, chapterTitle, recording, marks, onOpenMark, header, rail }: Props) {
+export function BoothView({ session: t, follow, chapterId, chapterTitle, recording, marks, onOpenMark, header, rail, speakers, onOpenSpeaker }: Props) {
   const listening = t.active && !t.paused;
   const playPauseLabel = listening ? 'Pause' : 'Play';
   const playPauseDisabled = t.host.phase === 'starting' || t.host.phase === 'stopping' || (!t.active && !t.canStart);
@@ -135,7 +184,16 @@ export function BoothView({ session: t, follow, chapterId, chapterTitle, recordi
   return (
     <FocusShell
       status={<BoothStatus session={t} chapterId={chapterId} chapterTitle={chapterTitle} recording={recording} />}
-      rail={rail}
+      rail={
+        speakers ? (
+          <>
+            <BoothSpeakers speakers={speakers} onOpenSpeaker={onOpenSpeaker} />
+            {rail}
+          </>
+        ) : (
+          rail
+        )
+      }
       // Always mounted inside `ReadAloudDialog`'s `Dialog size="full"` (never yet the standalone route ADR 0094 also
       // allows): AppShell's own page `<main>` stays in the accessibility tree behind it (booth-mode-and-companion-panel.prd.md
       // Phase 1's real, first-encountered `landmark-no-duplicate-main`/`landmark-unique` axe finding), so this shell must
