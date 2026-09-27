@@ -205,7 +205,7 @@ func TestTheDeclarationMatchesTodaysGating(t *testing.T) {
 func TestTheSynchronousRolesAreTodaysTypes(t *testing.T) {
 	adapter, _ := newAdapter(t, nil)
 	for c, want := range map[dawport.Capability]string{
-		dawport.CapReview:      "*dawadapter.Reaper",
+		dawport.CapReview:      "reaper.review",
 		dawport.CapNavigate:    "*bridge.Navigator",
 		dawport.CapMarkers:     "*bridge.Navigator",
 		dawport.CapHeartbeat:   "*daw.Reachability",

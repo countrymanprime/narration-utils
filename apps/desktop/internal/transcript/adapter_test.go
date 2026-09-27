@@ -7,24 +7,24 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/countrymanprime/narration-utils/shell/internal/dawadapter"
+	"github.com/countrymanprime/narration-utils/shell/internal/dawport"
 	"github.com/countrymanprime/narration-utils/shell/internal/settings"
 )
 
 // fakeReview is a DAW that is not REAPER: it records what the review workflow asked of it and delivers the events a test queues,
-// so these tests prove the service drives the review loop through dawadapter.Review alone (audacity-integration PRD, Phase 3).
+// so these tests prove the service drives the review loop through dawport.ReviewSession alone (audacity-integration PRD, Phase 3).
 type fakeReview struct {
 	calls         []string
-	colors        dawadapter.MarkerColors
-	subscriptions []dawadapter.Subscription
-	queued        []dawadapter.Event
+	colors        dawport.MarkerColors
+	subscriptions []dawport.Subscription
+	queued        []dawport.Event
 	failWith      error
 	projectFolder string
 }
 
-var _ dawadapter.Review = (*fakeReview)(nil)
+var _ dawport.ReviewSession = (*fakeReview)(nil)
 
-func (f *fakeReview) Subscribe(sub dawadapter.Subscription) func() {
+func (f *fakeReview) Subscribe(sub dawport.Subscription) func() {
 	f.subscriptions = append(f.subscriptions, sub)
 	return func() {}
 }
@@ -59,14 +59,14 @@ func (f *fakeReview) NavigateToFinding(runID, findingID string) error {
 	return f.failWith
 }
 
-func (f *fakeReview) ExportFindings(runID, findingsPath string, colors dawadapter.MarkerColors) error {
+func (f *fakeReview) ExportFindings(runID, findingsPath string, colors dawport.MarkerColors) error {
 	f.calls = append(f.calls, "export "+runID+" "+filepath.Base(findingsPath))
 	f.colors = colors
 	return f.failWith
 }
 
 func (f *fakeReview) queue(fields ...string) {
-	event := dawadapter.Event{Tag: fields[0], Fields: fields}
+	event := dawport.Event{Tag: fields[0], Fields: fields}
 	if len(fields) > 1 {
 		event.RunID = fields[1]
 	}
@@ -131,7 +131,7 @@ func TestTheReviewLoopRunsAgainstAnAdapterThatIsNotReaper(t *testing.T) {
 	if !reflect.DeepEqual(fake.calls, want) {
 		t.Fatalf("calls = %v, want %v", fake.calls, want)
 	}
-	if want := (dawadapter.MarkerColors{Misread: "FF4040", Skipped: "FFC000", Extra: "40A0FF"}); fake.colors != want {
+	if want := (dawport.MarkerColors{Misread: "FF4040", Skipped: "FFC000", Extra: "40A0FF"}); fake.colors != want {
 		t.Fatalf("export colours = %+v, want the resolved settings %+v", fake.colors, want)
 	}
 }

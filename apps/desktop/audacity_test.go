@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/countrymanprime/narration-utils/shell/internal/dawadapter"
+	"github.com/countrymanprime/narration-utils/shell/internal/dawport/audacity"
 )
 
 // The audacity-integration PRD's Phase 5: `--daw Audacity` reaches the host the way the REAPER launcher's `--daw REAPER` does,
@@ -86,7 +86,7 @@ func TestAnAudacityLaunchOpensNoReaperBridgeAndItsReviewFailsClearly(t *testing.
 		t.Fatal("an Audacity launch must not open the REAPER bridge")
 	}
 	err := host.transcript.Start(map[string]string{})
-	if !errors.Is(err, dawadapter.ErrAudacityNotAvailable) {
+	if !errors.Is(err, audacity.ErrNotAvailable) {
 		t.Fatalf("Start() = %v, want ErrAudacityNotAvailable", err)
 	}
 	if state := host.transcript.Snapshot(); state["phase"] != "error" || !strings.HasPrefix(state["message"].(string), "Audacity support is not available yet.") {
@@ -149,7 +149,7 @@ func TestAnAudacityLaunchPickedInTheAppStillRefusesReviewClearly(t *testing.T) {
 	if host.bridge != nil {
 		t.Fatal("an Audacity launch must not open the REAPER bridge after a picker switch")
 	}
-	if err := host.transcript.Start(map[string]string{}); !errors.Is(err, dawadapter.ErrAudacityNotAvailable) {
+	if err := host.transcript.Start(map[string]string{}); !errors.Is(err, audacity.ErrNotAvailable) {
 		t.Fatalf("Start() = %v, want ErrAudacityNotAvailable", err)
 	}
 }

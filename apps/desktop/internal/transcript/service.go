@@ -1,7 +1,7 @@
 // Package transcript owns the asynchronous Transcript Compare state machine.
 // It reaches the DAW only through dawport.ReviewSession (today the versioned
 // file bridge, DAW port PRD Phase 5d; ADR 0143's dawadapter.Review before
-// it); browser polling and SSE are deliberately absent.
+// it, retired at Phase 8); browser polling and SSE are deliberately absent.
 package transcript
 
 import (
@@ -19,8 +19,6 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/countrymanprime/narration-utils/shell/internal/bridge"
-	"github.com/countrymanprime/narration-utils/shell/internal/dawadapter"
 	"github.com/countrymanprime/narration-utils/shell/internal/dawport"
 	"github.com/countrymanprime/narration-utils/shell/internal/findings"
 	"github.com/countrymanprime/narration-utils/shell/internal/persist"
@@ -59,11 +57,6 @@ type Service struct {
 	// app.go opts in with SetRunRecorder.
 	// +checklocks:mu
 	runRecorder func(CompletedRun)
-}
-
-// New builds the service over the REAPER bridge client (nil when there is no REAPER session); see NewWithReview.
-func New(config Config, client *bridge.Client, store *settings.Store, sidecars *process.Supervisor, changed func(map[string]any)) *Service {
-	return NewWithReview(config, dawadapter.ReviewFor(client), store, sidecars, changed)
 }
 
 // NewWithReview builds the service over any DAW adapter. When there is one it subscribes to the events Transcript Compare

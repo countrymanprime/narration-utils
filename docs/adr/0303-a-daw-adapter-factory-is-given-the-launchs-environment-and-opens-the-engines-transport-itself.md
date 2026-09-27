@@ -2,7 +2,7 @@
 
 **Status:** Proposed
 **Date:** 2026-09-26
-**Supersedes:** none. It fills in the registry that [ADR 0300](0300-every-daw-is-reached-through-one-port-of-small-role-interfaces-and-callers-ask-a-resolver-what-it-supports.md) names (`dawport.Register(kind, factory)`) and the [DAW port PRD](../prds/daw-port-and-capabilities.prd.md) builds in Phase 2.
+**Supersedes:** none. It fills in the registry that [ADR 0300](0300-every-daw-is-reached-through-one-port-of-small-role-interfaces-and-callers-ask-a-resolver-what-it-supports.md) names (`dawport.Register(kind, factory)`) and the DAW port PRD (PRD deleted, delivered) builds in Phase 2.
 
 ## Context
 

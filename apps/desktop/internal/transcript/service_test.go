@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/countrymanprime/narration-utils/shell/internal/bridge"
+	"github.com/countrymanprime/narration-utils/shell/internal/dawport/reaper"
 	"github.com/countrymanprime/narration-utils/shell/internal/settings"
 )
 
@@ -24,7 +25,7 @@ func testService(t *testing.T) (*Service, string) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	return New(Config{Project: project, SessionDir: session}, client, settings.New(t.TempDir(), project), nil, nil), session
+	return NewWithReview(Config{Project: project, SessionDir: session}, reaper.ReviewFor(client), settings.New(t.TempDir(), project), nil, nil), session
 }
 
 func TestStartWritesHintsAndUsesExactBridgeContract(t *testing.T) {
@@ -149,7 +150,7 @@ func TestSaveHintsKeepsAnUnreadableFileAsCorruptBeforeReplacingIt(t *testing.T) 
 }
 
 func TestLoadHintsWithNoProjectIsEmptyNotACwdRead(t *testing.T) {
-	service := New(Config{}, nil, nil, nil, nil)
+	service := NewWithReview(Config{}, nil, nil, nil, nil)
 	if hints, err := service.LoadHints(); err != nil || len(hints) != 0 {
 		t.Fatalf("hints = %#v, err = %v", hints, err)
 	}
@@ -269,7 +270,7 @@ func TestAnUnattributedBridgeErrorFailsARunInProgressAndIsIgnoredWhenIdle(t *tes
 }
 
 func TestDrainWithoutABridgeIsANoOp(t *testing.T) {
-	service := New(Config{Project: t.TempDir()}, nil, settings.New(t.TempDir(), t.TempDir()), nil, nil)
+	service := NewWithReview(Config{Project: t.TempDir()}, nil, settings.New(t.TempDir(), t.TempDir()), nil, nil)
 	if err := service.Drain(); err != nil {
 		t.Fatal(err)
 	}

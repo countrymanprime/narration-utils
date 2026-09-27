@@ -41,7 +41,7 @@ func newSuggestHost(t *testing.T, guideJSON, savedHints string) *Host {
 			t.Fatal(err)
 		}
 	}
-	return &Host{settings: store, guide: guideService, transcript: transcript.New(transcript.Config{Project: project}, nil, store, sidecars, nil)}
+	return &Host{settings: store, guide: guideService, transcript: transcript.NewWithReview(transcript.Config{Project: project}, nil, store, sidecars, nil)}
 }
 
 type suggestion struct {

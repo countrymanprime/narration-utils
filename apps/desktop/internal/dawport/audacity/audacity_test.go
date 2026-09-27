@@ -4,7 +4,6 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/countrymanprime/narration-utils/shell/internal/dawadapter"
 	"github.com/countrymanprime/narration-utils/shell/internal/dawport"
 	"github.com/countrymanprime/narration-utils/shell/internal/dawport/dawporttest"
 )
@@ -40,12 +39,12 @@ func TestEveryRefusalIsADR0144sSentence(t *testing.T) {
 			Toggle:  func(dawport.Capability) dawport.Toggle { return dawport.ToggleOn },
 		})
 		for c, s := range resolver.All() {
-			if s.Available || s.Reason != dawport.ReasonNotYet || s.Message != string(dawadapter.ErrAudacityNotAvailable) {
+			if s.Available || s.Reason != dawport.ReasonNotYet || s.Message != string(ErrNotAvailable) {
 				t.Errorf("%+v: %s = %+v, want not_yet with ADR 0144's sentence", rt, c, s)
 			}
 		}
 		_, err := dawport.Role[dawport.ReviewSession](resolver, dawport.CapReview)
-		if !errors.Is(err, dawport.ErrNotSupported) || err.Error() != string(dawadapter.ErrAudacityNotAvailable) {
+		if !errors.Is(err, dawport.ErrNotSupported) || err.Error() != string(ErrNotAvailable) {
 			t.Errorf("Role(review) = %v, want the not-yet refusal", err)
 		}
 	}
@@ -63,5 +62,34 @@ func TestTheFactoryIsRegisteredForAudacity(t *testing.T) {
 	}
 	if adapter.Kind() != dawport.KindAudacity {
 		t.Errorf("Kind() = %v, want Audacity", adapter.Kind())
+	}
+}
+
+// Until the Audacity pipe client exists (audacity-integration PRD Phase 4, gated on spike S-A1), an Audacity launch's review
+// workflow still gets a session, one that refuses every request with a sentence the narrator can read, so it fails the run with
+// that sentence instead of taking the "no DAW" path or writing REAPER bridge commands.
+func TestUnavailableReviewRefusesEveryRequest(t *testing.T) {
+	review := UnavailableReview()
+	if review == nil {
+		t.Fatal("an Audacity launch must get a review session, not the standalone nil")
+	}
+	requests := map[string]error{
+		"PrepareReview":     review.PrepareReview("run-1", ""),
+		"InspectFindings":   review.InspectFindings("run-1", "findings.json"),
+		"NavigateToFinding": review.NavigateToFinding("run-1", "row-1"),
+		"ExportFindings":    review.ExportFindings("run-1", "findings.json", dawport.MarkerColors{}),
+	}
+	for name, err := range requests {
+		if !errors.Is(err, ErrNotAvailable) {
+			t.Errorf("%s error = %v, want ErrNotAvailable", name, err)
+		}
+	}
+	unsubscribe := review.Subscribe(dawport.Subscription{Tags: []string{"COMPARE_PREPARED"}, Handle: func(dawport.Event) { t.Fatal("no events") }})
+	if unsubscribe == nil {
+		t.Fatal("Subscribe must return a callable unsubscribe")
+	}
+	unsubscribe()
+	if err := review.Dispatch(); err != nil {
+		t.Fatalf("Dispatch() = %v, want nil: there is nothing to deliver", err)
 	}
 }

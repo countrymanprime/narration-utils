@@ -43,7 +43,7 @@ func newTestHostForTranscriptStart(t *testing.T, body []byte, server *httptest.S
 		t.Fatal(err)
 	}
 	store := settings.New(repoRoot, "")
-	transcriptService := transcript.New(transcript.Config{}, nil, store, process.NewSupervisor(), nil)
+	transcriptService := transcript.NewWithReview(transcript.Config{}, nil, store, process.NewSupervisor(), nil)
 	return &Host{settings: store, assets: newAssetRegistry(cacheRoot, nil, whisperManager, nil, nil), transcript: transcriptService, installJobs: map[string]*installJob{}}
 }
 

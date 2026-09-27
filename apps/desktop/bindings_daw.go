@@ -3,7 +3,6 @@ package main
 import (
 	"encoding/json"
 
-	"github.com/countrymanprime/narration-utils/shell/internal/dawadapter"
 	"github.com/countrymanprime/narration-utils/shell/internal/dawport"
 	"github.com/countrymanprime/narration-utils/shell/internal/dawport/audacity"
 	"github.com/countrymanprime/narration-utils/shell/internal/dawport/reaper"
@@ -38,7 +37,7 @@ func (h *Host) dawResolver() (*dawport.Resolver, dawport.Runtime) {
 // dawResolverFor is dawResolver over a snapshot the caller already holds, so a caller that also reads another service
 // (bindings_daw_transport.go reads the heartbeat) sees the same project's state in both.
 func dawResolverFor(svc hostServices) (*dawport.Resolver, dawport.Runtime) {
-	kind := dawadapter.Classify(svc.config.daw)
+	kind := dawport.Classify(svc.config.daw)
 	client, reach, store := svc.bridge, svc.reachability, svc.settings
 	runtime := dawport.Runtime{Bridge: client != nil, Reachable: reach != nil && reach.Reachable()}
 	resolver := dawport.NewResolver(dawport.ResolverConfig{
@@ -53,11 +52,11 @@ func dawResolverFor(svc hostServices) (*dawport.Resolver, dawport.Runtime) {
 // dawDeclarationFor is the launch's adapter, declaration only: reaper.Declaration() and audacity.New() hold no transport of
 // their own (the registry's live adapters do, DAW port PRD P2), and a standalone launch (KindNone) has no adapter at all,
 // which the resolver reports as every capability unsupported.
-func dawDeclarationFor(kind dawadapter.Kind) dawport.Adapter {
+func dawDeclarationFor(kind dawport.Kind) dawport.Adapter {
 	switch kind {
-	case dawadapter.KindREAPER:
+	case dawport.KindREAPER:
 		return reaper.Declaration()
-	case dawadapter.KindAudacity:
+	case dawport.KindAudacity:
 		return audacity.New()
 	default:
 		return nil

@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"github.com/countrymanprime/narration-utils/shell/internal/asrport"
-	"github.com/countrymanprime/narration-utils/shell/internal/dawadapter"
+	"github.com/countrymanprime/narration-utils/shell/internal/dawport"
 	"github.com/countrymanprime/narration-utils/shell/internal/guide"
 	"github.com/countrymanprime/narration-utils/shell/internal/importer"
 	"github.com/countrymanprime/narration-utils/shell/internal/manuscript"
@@ -265,7 +265,7 @@ func (h *Host) ProjectSwitch(path, name string) (string, error) {
 // still Audacity whichever folder they pick, and no bridge is tied to a project. Any other launch becomes "Standalone", a REAPER
 // one included, because the picked project is not the one REAPER has open.
 func pickerSwitchDAW(launched string) string {
-	if dawadapter.Classify(launched) == dawadapter.KindAudacity {
+	if dawport.Classify(launched) == dawport.KindAudacity {
 		return launched
 	}
 	return "Standalone"
