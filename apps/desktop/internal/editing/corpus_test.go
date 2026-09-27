@@ -1,4 +1,5 @@
-// This file is Phase 9 of docs/prds/chapter-stage-recommendations.prd.md
+// This file is Phase 9 of chapter-stage-recommendations.prd.md (delivered and deleted; see
+// docs/architecture/stage-recommendations.md)
 // ("Secondary surfaces and close-out"): an end-to-end validation of the SR
 // verdict for editing->proofing, mirroring
 // apps/desktop/internal/coverage/corpus_test.go's architecture (a small
