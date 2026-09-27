@@ -3,7 +3,7 @@ description: Build the Wails app on the current runner and package it as release
 
 inputs:
   platform:
-    description: windows-x64, macos-arm64, or linux-x64 (the table lives in scripts/release/assets.mjs)
+    description: windows-x64, the only platform the app ships on (docs/adr/0412; the table lives in scripts/release/assets.mjs)
     required: true
   version:
     description: Release version to stamp into the build; empty keeps the checked-in version
@@ -111,7 +111,7 @@ runs:
     # The packaged app proves it can start: `--smoke` unpacks the embedded resources, starts every frozen sidecar, checks that the frozen
     # Story Bible sidecar can load its dictionary and espeak-ng data and the Teleprompter its Moonshine library, loads the four asset catalogs, writes the asset cache and checks the
     # REAPER package, then exits (no window, no download; apps/desktop/smoke.go). It runs before packaging, so a build that cannot start
-    # is never published. Windows is the supported platform; the macOS and Linux previews are not smoked yet. LocalAppData points at an
+    # is never published. LocalAppData points at an
     # empty folder so the run leaves the runner's real cache alone. (A composite step has no timeout-minutes; the smoke test bounds every
     # sidecar command itself, at 90 seconds, and the calling job has its own limit.)
     - name: Smoke test the packaged app
