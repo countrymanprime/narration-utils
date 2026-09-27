@@ -4,7 +4,7 @@ import type { WorkJob } from './manuscript';
 
 export type GuideEvidence = { chapter: string; chapterId?: string; paragraph: number; paragraphId?: string; excerpt: string; sourceLine?: number };
 export type GuideRelationship = { id: string; name: string; label: string };
-/** Where the narrator is with a pronunciation (prep-depth P1, ADR 0342): looked up, asked of the author, or confirmed by the author. */
+/** Where the narrator is with a pronunciation (prep-depth P1, ADR 0344): looked up, asked of the author, or confirmed by the author. */
 export type GuidePronunciationStatus = 'researched' | 'query_sent' | 'author_confirmed';
 /** The pronunciation itself, without the narrator's bookkeeping about it. */
 export type GuidePronunciationValue = { ipa: string; source: string; confidence: string };

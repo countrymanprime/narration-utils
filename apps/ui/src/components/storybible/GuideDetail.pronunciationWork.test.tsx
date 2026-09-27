@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-// The narrator's pronunciation work (prep-depth P1, ADR 0342): the status and note in the read view, their own pronunciation typed
+// The narrator's pronunciation work (prep-depth P1, ADR 0344): the status and note in the read view, their own pronunciation typed
 // beside the dictionary's, a switch to the kept alternate, and a status saved with its note. The controls live in edit mode only.
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
