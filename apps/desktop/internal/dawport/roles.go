@@ -24,6 +24,7 @@ type (
 	MarkerResult = bridge.MarkerResult
 
 	TrackState    = bridge.TrackState
+	TrackItem     = bridge.TrackItem
 	SelectedTrack = bridge.SelectedTrack
 	Armed         = bridge.Armed
 	RecordStarted = bridge.RecordStarted
