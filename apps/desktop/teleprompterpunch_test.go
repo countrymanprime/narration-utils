@@ -7,7 +7,9 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/countrymanprime/narration-utils/shell/internal/contractfile"
 	"github.com/countrymanprime/narration-utils/shell/internal/dawport"
+	"github.com/countrymanprime/narration-utils/shell/internal/settings"
 	"github.com/countrymanprime/narration-utils/shell/internal/teleprompter"
 )
 
@@ -206,6 +208,61 @@ func TestTeleprompterPunchIsRefusedWithNoDawConnection(t *testing.T) {
 	if result.Outcome != "refused" || result.Cursor != nil {
 		t.Fatalf("TeleprompterPunch = %+v, want a refusal that moved nothing", result)
 	}
+}
+
+func decodedPunch(t *testing.T, raw string, err error) TeleprompterPunchResult {
+	t.Helper()
+	if err != nil {
+		t.Fatal(err)
+	}
+	var result TeleprompterPunchResult
+	if err := json.Unmarshal([]byte(raw), &result); err != nil {
+		t.Fatal(err)
+	}
+	return result
+}
+
+// The bindings' answers, pinned for the UI's schema (ADR 0069): one of each outcome.
+func TestContractTeleprompterPunchResults(t *testing.T) {
+	answers := map[string]TeleprompterPunchResult{}
+
+	withAnchors, project := newHostForPunchTest(t)
+	for _, anchor := range []teleprompter.Anchor{{Word: 0, Position: 0}, {Word: 10, Position: 5}} {
+		if err := teleprompter.AppendAnchor(project, "c1", anchor); err != nil {
+			t.Fatal(err)
+		}
+	}
+	resolvedAnchorRaw, resolvedAnchorErr := withAnchors.TeleprompterPunchPreview(4)
+	answers["resolved_anchor"] = decodedPunch(t, resolvedAnchorRaw, resolvedAnchorErr)
+	resolvedAlignmentRaw, resolvedAlignmentErr := withAnchors.TeleprompterPunchPreview(14)
+	answers["resolved_alignment"] = decodedPunch(t, resolvedAlignmentRaw, resolvedAlignmentErr)
+
+	noAnchors, _ := newHostForPunchTest(t)
+	noAnchorRaw, noAnchorErr := noAnchors.TeleprompterPunchPreview(5)
+	answers["refused_no_anchor"] = decodedPunch(t, noAnchorRaw, noAnchorErr)
+
+	noChapter := &Host{}
+	noChapter.settings = settings.New("", "")
+	noChapter.config.projectFolder = project
+	noChapterRaw, noChapterErr := noChapter.TeleprompterPunchPreview(4)
+	answers["refused_no_chapter"] = decodedPunch(t, noChapterRaw, noChapterErr)
+
+	puncherHost, puncherProject := newHostForPunchTest(t)
+	if err := teleprompter.AppendAnchor(puncherProject, "c1", teleprompter.Anchor{Word: 3, Position: 1.5}); err != nil {
+		t.Fatal(err)
+	}
+	puncherHost.dawPortResolver = dawport.NewResolver(dawport.ResolverConfig{Adapter: fakePuncherAdapter{puncher: &fakePuncherStub{cursor: -1.5}}})
+	punchedRaw, punchedErr := puncherHost.TeleprompterPunch(3)
+	answers["punched"] = decodedPunch(t, punchedRaw, punchedErr)
+
+	noDawHost, noDawProject := newHostForPunchTest(t)
+	if err := teleprompter.AppendAnchor(noDawProject, "c1", teleprompter.Anchor{Word: 3, Position: 1.5}); err != nil {
+		t.Fatal(err)
+	}
+	noDawRaw, noDawErr := noDawHost.TeleprompterPunch(3)
+	answers["refused_no_daw"] = decodedPunch(t, noDawRaw, noDawErr)
+
+	contractfile.Check(t, "teleprompter-punch-results", answers)
 }
 
 type fakePuncherStub struct {

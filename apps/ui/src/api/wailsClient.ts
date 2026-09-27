@@ -69,13 +69,14 @@ import {
   teleprompterEventSchema,
   teleprompterFlagFindingsSchema,
   teleprompterLocateResultSchema,
+  teleprompterPunchResultSchema,
   teleprompterStartResultSchema,
   teleprompterStateSchema,
 } from './schemas/teleprompter';
 import type { TeleprompterStartOptions } from './contracts/teleprompter';
 import { equivalenceSchema, hintSuggestionsSchema, hintsSchema, lastCompletedSchema, transcriptStateSchema } from './schemas/transcript';
 import { lineIdentityStartResultSchema, lineIdentityStateSchema } from './schemas/lineidentity';
-import { pickupsImportResultSchema, pickupsStartResultSchema, pickupsStateSchema } from './schemas/pickups';
+import { pickupsImportResultSchema, pickupsPunchResultSchema, pickupsStartResultSchema, pickupsStateSchema } from './schemas/pickups';
 import { renderConfigStartResultSchema, renderConfigStateSchema, renderConfigSuggestedFolderSchema } from './schemas/renderconfig';
 import { chapterTagsEmbedResultSchema, chapterTagsPreviewSchema } from './schemas/chaptertags';
 import { cleanupToolsStartResultSchema, cleanupToolsStateSchema } from './schemas/cleanuptools';
@@ -337,6 +338,7 @@ export const wailsClient: NarrationApi = {
   pickupsNext: () => decode(pickupsStartResultSchema, 'PickupsNext', host.PickupsNext()),
   pickupsResolve: (position) => decode(pickupsStartResultSchema, 'PickupsResolve', host.PickupsResolve(position)),
   pickupsCount: () => decode(pickupsStartResultSchema, 'PickupsCount', host.PickupsCount()),
+  pickupsPunch: (position) => decode(pickupsPunchResultSchema, 'PickupsPunch', host.PickupsPunch(position)),
   pickupsState: () => decode(pickupsStateSchema, 'PickupsState', host.PickupsState()),
   subscribePickups: (onUpdate) => subscribeChecked('pickups:state', pickupsStateSchema, onUpdate),
   renderConfigConfigure: (outputFolder) => decode(renderConfigStartResultSchema, 'RenderConfigConfigure', host.RenderConfigConfigure(outputFolder)),
@@ -479,6 +481,8 @@ export const wailsClient: NarrationApi = {
   teleprompterMeterStart: (device) => decode(voidResult, 'TeleprompterMeterStart', host.TeleprompterMeterStart(device)),
   teleprompterMeterStop: () => decode(voidResult, 'TeleprompterMeterStop', host.TeleprompterMeterStop()),
   teleprompterPause: (paused) => decode(voidResult, 'TeleprompterPause', host.TeleprompterPause(paused)),
+  teleprompterPunchPreview: (word) => decode(teleprompterPunchResultSchema, 'TeleprompterPunchPreview', host.TeleprompterPunchPreview(word)),
+  teleprompterPunch: (word) => decode(teleprompterPunchResultSchema, 'TeleprompterPunch', host.TeleprompterPunch(word)),
   readAloudReaperState: (chapterId) => decode(readAloudReaperStateSchema, 'ReadAloudReaperState', host.ReadAloudReaperState(chapterId)),
   teleprompterReaperInput: () => decode(teleprompterReaperInputSchema, 'TeleprompterReaperInput', host.TeleprompterReaperInput()),
   teleprompterLocate: (chapterId, options) =>

@@ -309,11 +309,32 @@ export type TeleprompterReaperInput = {
   candidates: string[];
 };
 
+/**
+ * Punch and roll's "Punch from here" answer (`TeleprompterPunchPreview`/`TeleprompterPunch`, teleprompter-manuscript-
+ * integration PRD Phase 12, booth-actions-enablement PRD Phase 3): `resolved` (a preview only, nothing moved) or
+ * `punched` (`cursor` is where REAPER's edit cursor landed), each with `resolvedTime`, `source` (an exact or
+ * interpolated anchor, or an estimate past every anchor's range) and `preRoll` so the UI can show them before and
+ * after moving; or `refused` (`message` says why, nothing moved: no live chapter, no anchor near this word yet, or no
+ * DAW connected).
+ */
+export type TeleprompterPunchResult = {
+  outcome: 'resolved' | 'punched' | 'refused';
+  cursor?: number;
+  resolvedTime?: number;
+  source?: 'anchor' | 'alignment';
+  preRoll?: number;
+  message?: string;
+};
+
 export interface TeleprompterApi {
   teleprompterStart(options: TeleprompterStartOptions): Promise<TeleprompterStartResult>;
   teleprompterStop(): Promise<void>;
   /** Move a running session's tracker straight to script word `word` ("Start here" / "Go back to here"). */
   teleprompterSeek(word: number): Promise<void>;
+  /** Resolve `word`'s punch time, source and pre-roll with no REAPER mutation: what "Punch from here" shows before confirming. */
+  teleprompterPunchPreview(word: number): Promise<TeleprompterPunchResult>;
+  /** Move REAPER's edit cursor to `word`'s resolved time minus the pre-roll. */
+  teleprompterPunch(word: number): Promise<TeleprompterPunchResult>;
   /** Keep a session's flags as suspected, unreviewed findings; answers one finding per flag, in order (ADR 0117). */
   teleprompterSaveFlags(chapterId: string, flags: TeleprompterFlagSave[]): Promise<TeleprompterFlagFinding[]>;
   teleprompterState(): Promise<TeleprompterState>;

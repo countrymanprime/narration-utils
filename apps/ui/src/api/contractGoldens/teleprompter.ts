@@ -7,6 +7,7 @@ import {
   teleprompterFlagFindingsSchema,
   teleprompterLocatedSchema,
   teleprompterLocateResultSchema,
+  teleprompterPunchResultSchema,
   teleprompterReadingSchema,
   teleprompterReaperInputSchema,
   teleprompterStartResultSchema,
@@ -38,4 +39,5 @@ export const teleprompterGoldens: Record<string, z.ZodType> = {
   'teleprompter-meter-stopped.json': teleprompterEventSchema.array(),
   'read-aloud-reaper-states.json': z.record(z.string(), readAloudReaperStateSchema),
   'teleprompter-reaper-inputs.json': z.record(z.string(), teleprompterReaperInputSchema),
+  'teleprompter-punch-results.json': z.record(z.string(), teleprompterPunchResultSchema),
 };

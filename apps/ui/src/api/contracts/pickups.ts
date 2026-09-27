@@ -49,6 +49,17 @@ export type PickupsImportResult = {
 
 export type PickupsStartResult = { status: 'started' };
 
+/**
+ * "Punch from here" on a pickup (`PickupsPunch`, booth-actions-enablement PRD Phase 3): a pickup marker's own project
+ * time is already known, so unlike the teleprompter's punch this needs no word-to-time resolution. `punched` carries
+ * `cursor`, where REAPER's edit cursor landed; `refused` carries `message`, and nothing moved.
+ */
+export type PickupsPunchResult = {
+  outcome: 'punched' | 'refused';
+  cursor?: number;
+  message?: string;
+};
+
 export interface PickupsApi {
   /** Parses and validates csvText (columns start,note,tag; an optional header row) in Go and, if any row is
    * usable, writes the payload and asks REAPER to import it. Throws when every row is unusable. */
@@ -63,4 +74,6 @@ export interface PickupsApi {
   pickupsCount(): Promise<PickupsStartResult>;
   pickupsState(): Promise<PickupsState>;
   subscribePickups(onUpdate: (state: PickupsState) => void): () => void;
+  /** Move REAPER's edit cursor to `position` (a pickup's own project time) minus the punch pre-roll setting. */
+  pickupsPunch(position: number): Promise<PickupsPunchResult>;
 }

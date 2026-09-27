@@ -857,6 +857,13 @@ export function PickupsNext(): $CancellablePromise<string> {
     return $Call.ByID(1607807066);
 }
 
+/**
+ * PickupsPunch moves REAPER's edit cursor to position minus the Teleprompter.punch_preroll_seconds setting.
+ */
+export function PickupsPunch(position: number): $CancellablePromise<string> {
+    return $Call.ByID(3486630797, position);
+}
+
 export function PickupsResolve(position: number): $CancellablePromise<string> {
     return $Call.ByID(695766573, position);
 }
@@ -1220,6 +1227,26 @@ export function TeleprompterMeterStop(): $CancellablePromise<string> {
  */
 export function TeleprompterPause(paused: boolean): $CancellablePromise<string> {
     return $Call.ByID(3709351835, paused);
+}
+
+/**
+ * TeleprompterPunch resolves word's punch time again (the narrator may have kept reading since the preview) and
+ * moves REAPER's edit cursor there minus the pre-roll, through the DAW port's Puncher role. On a successful punch,
+ * every anchor at or after word is dropped (the narrator is about to re-record from here, so an anchor from the take
+ * being replaced would misplace the next punch, teleprompter.DropAnchorsFrom); that failing is logged, never
+ * surfaced, since the punch itself already succeeded.
+ */
+export function TeleprompterPunch(word: number): $CancellablePromise<string> {
+    return $Call.ByID(1321624509, word);
+}
+
+/**
+ * TeleprompterPunchPreview resolves word's punch time and pre-roll without moving anything in REAPER: what the
+ * narrator sees before confirming "Punch from here" (Phase 12's "UI showing resolved time, its source... and pre-roll
+ * before moving").
+ */
+export function TeleprompterPunchPreview(word: number): $CancellablePromise<string> {
+    return $Call.ByID(3160914767, word);
 }
 
 /**

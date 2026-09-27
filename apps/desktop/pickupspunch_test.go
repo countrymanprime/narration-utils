@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/countrymanprime/narration-utils/shell/internal/contractfile"
 	"github.com/countrymanprime/narration-utils/shell/internal/dawport"
 	"github.com/countrymanprime/narration-utils/shell/internal/settings"
 )
@@ -48,4 +49,35 @@ func TestPickupsPunchIsRefusedWithNoDawConnection(t *testing.T) {
 	if result.Outcome != "refused" || result.Cursor != nil {
 		t.Fatalf("PickupsPunch = %+v, want a refusal that moved nothing", result)
 	}
+}
+
+func decodedPickupsPunch(t *testing.T, raw string, err error) PickupsPunchResult {
+	t.Helper()
+	if err != nil {
+		t.Fatal(err)
+	}
+	var result PickupsPunchResult
+	if err := json.Unmarshal([]byte(raw), &result); err != nil {
+		t.Fatal(err)
+	}
+	return result
+}
+
+// The binding's answers, pinned for the UI's schema (ADR 0069): one of each outcome.
+func TestContractPickupsPunchResults(t *testing.T) {
+	t.Setenv("APPDATA", filepath.Join(t.TempDir(), "appdata"))
+	answers := map[string]PickupsPunchResult{}
+
+	punched := &Host{}
+	punched.settings = settings.New("", "")
+	punched.dawPortResolver = dawport.NewResolver(dawport.ResolverConfig{Adapter: fakePuncherAdapter{puncher: &fakePuncherStub{cursor: 7}}})
+	punchedRaw, punchedErr := punched.PickupsPunch(10)
+	answers["punched"] = decodedPickupsPunch(t, punchedRaw, punchedErr)
+
+	refused := &Host{}
+	refused.settings = settings.New("", "")
+	refusedRaw, refusedErr := refused.PickupsPunch(10)
+	answers["refused_no_daw"] = decodedPickupsPunch(t, refusedRaw, refusedErr)
+
+	contractfile.Check(t, "pickups-punch-results", answers)
 }

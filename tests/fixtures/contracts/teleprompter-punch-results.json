@@ -1,0 +1,33 @@
+{
+  "punched": {
+    "outcome": "punched",
+    "cursor": -1.5,
+    "resolvedTime": 1.5,
+    "source": "anchor",
+    "preRoll": 3
+  },
+  "refused_no_anchor": {
+    "outcome": "refused",
+    "message": "there's no punch anchor near this word yet: read a little further, then try again"
+  },
+  "refused_no_chapter": {
+    "outcome": "refused",
+    "message": "there's no chapter being read right now to punch against"
+  },
+  "refused_no_daw": {
+    "outcome": "refused",
+    "message": "no DAW is connected to this app. Open this app from your DAW to use it."
+  },
+  "resolved_alignment": {
+    "outcome": "resolved",
+    "resolvedTime": 7,
+    "source": "alignment",
+    "preRoll": 3
+  },
+  "resolved_anchor": {
+    "outcome": "resolved",
+    "resolvedTime": 2,
+    "source": "anchor",
+    "preRoll": 3
+  }
+}

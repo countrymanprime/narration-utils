@@ -1,9 +1,9 @@
 // The golden payloads for the REAPER actions on the Tracks page: which schema owns each file in tests/fixtures/contracts/ (see index.ts).
-import type { z } from 'zod';
+import { z } from 'zod';
 import { chapterTagsEmbedResultSchema, chapterTagsPreviewSchema } from '../schemas/chaptertags';
 import { cleanupToolsStateSchema } from '../schemas/cleanuptools';
 import { lineIdentityStateSchema } from '../schemas/lineidentity';
-import { pickupsStateSchema } from '../schemas/pickups';
+import { pickupsPunchResultSchema, pickupsStateSchema } from '../schemas/pickups';
 import { projectStateChangedSchema, projectStateStateSchema } from '../schemas/projectstate';
 import { renderConfigStateSchema } from '../schemas/renderconfig';
 import { retakeLanesListSchema, retakeLanesStateSchema } from '../schemas/retakelanes';
@@ -13,6 +13,7 @@ export const reaperActionsGoldens: Record<string, z.ZodType> = {
   'line-identity-read-success.json': lineIdentityStateSchema,
   'pickups-idle.json': pickupsStateSchema,
   'pickups-import-success.json': pickupsStateSchema,
+  'pickups-punch-results.json': z.record(z.string(), pickupsPunchResultSchema),
   'render-config-idle.json': renderConfigStateSchema,
   'render-config-success.json': renderConfigStateSchema,
   'cleanup-tools-idle.json': cleanupToolsStateSchema,
