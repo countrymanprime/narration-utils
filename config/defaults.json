@@ -92,5 +92,8 @@
     "tolerance_fraction": "0.1",
     "preset": "sample",
     "exclude_ending_fraction": "0"
+  },
+  "Keymap": {
+    "overrides": "{\"version\":1,\"bindings\":{}}"
   }
 }
