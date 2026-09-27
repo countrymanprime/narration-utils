@@ -241,7 +241,7 @@ export const manuscriptStates: StateEntry[] = [
     page: 'manuscript',
     state: 'read-aloud-reaper-ready',
     description:
-      'Manuscript, the "Read aloud" dialog with the control bar\'s read-only REAPER state showing the chapter\'s linked track armed and ready (read-aloud-control-bar.prd.md Phase 6, ADR 0249, ?mockReaperState=ready) - always disabled, since Phase 7\'s "Record in REAPER" toggle is not built',
+      "Manuscript, the \"Read aloud\" dialog with the control bar's read-only REAPER state showing the chapter's linked track armed and ready (read-aloud-control-bar.prd.md Phase 6, ADR 0249, ?mockReaperState=ready) - gated on the DAW port's record capability (DAW port PRD Phase 7), experimental and off by default, since its toggle (arm, start, stop) is not built",
     ...REFLOW,
   },
   {
@@ -266,7 +266,7 @@ export const manuscriptStates: StateEntry[] = [
     page: 'manuscript',
     state: 'read-aloud-flag-open',
     description:
-      'Manuscript, the "Read aloud" dialog after clicking a restart flag (Phase 7) - the rail switches to its Flags tab: what the script says and what was heard, Dismiss, the disabled "Punch from here" placeholder, and the session’s flags',
+      'Manuscript, the "Read aloud" dialog after clicking a restart flag (Phase 7) - the rail switches to its Flags tab: what the script says and what was heard, Dismiss, the "Punch from here" placeholder gated on the DAW port\'s punch capability (DAW port PRD Phase 7) - experimental and off by default - and the session’s flags',
   },
   {
     page: 'manuscript',

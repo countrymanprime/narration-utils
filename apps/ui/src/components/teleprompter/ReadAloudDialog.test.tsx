@@ -397,7 +397,12 @@ describe('ReadAloudDialog flags (teleprompter-manuscript-integration.prd.md Phas
     expect(within(rail).getByRole('tab', { name: 'Flags', selected: true })).toBeTruthy();
     const detail = within(rail).getByRole('region', { name: 'Suspected skipped words' });
     expect(within(detail).getByText('“door”')).toBeTruthy();
-    expect(within(detail).getByRole('button', { name: 'Punch from here' }).hasAttribute('disabled')).toBe(true);
+    // Gated by the DAW port's `punch` capability (DAW port PRD Phase 7): experimental and off by default, so it stays
+    // aria-disabled - never the native `disabled`, since the gate itself, not the browser, has to stop the press.
+    const punch = within(detail).getByRole('button', { name: 'Punch from here' });
+    await waitFor(() => expect(punch.getAttribute('aria-disabled')).toBe('true'));
+    expect(punch.hasAttribute('disabled')).toBe(false);
+    await user.click(punch);
     expect(teleprompterSeek).not.toHaveBeenCalled();
 
     await user.click(within(detail).getByRole('button', { name: 'Dismiss' }));

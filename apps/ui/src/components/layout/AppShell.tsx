@@ -20,7 +20,8 @@ import { NavButton } from '../primitives/NavButton';
 import { NavDrawer } from '../primitives/NavDrawer';
 import { IconButton } from '../primitives/IconButton';
 import { TooltipTarget } from '../primitives/Tooltip';
-import { combinedRequiredReason } from '../../dawAvailability';
+import { dawCapabilityGate } from '../../dawAvailability';
+import { useCapability } from '../../useCapability';
 import { DemoBanner } from './DemoBanner';
 
 // requiresManuscript/requiresDaw name what each nav item is gated on (PRD project-workspace-and-daw-link.prd.md, Open
@@ -77,9 +78,17 @@ export function AppShell({
     navigate(next);
   };
   const settingsActive = isActivePath(pathname, '/settings');
-  const isDisabled = (item: (typeof NAV)[number]) => (item.requiresManuscript && !hasManuscript) || (item.requiresDaw && !dawFileLinked);
-  const requiredReason = (item: (typeof NAV)[number]) =>
-    combinedRequiredReason({ manuscript: item.requiresManuscript && !hasManuscript, dawFile: item.requiresDaw && !dawFileLinked });
+  // Proofing is the one requiresDaw item, and review is the capability it actually needs (dawadapter.Review's role,
+  // ADR 0300): once a manuscript and a file are linked, whether the page is usable now comes from the DAW port
+  // instead of a fixed message (DAW port PRD Phase 7, ADR 0360).
+  const reviewCapability = useCapability('review');
+  const gateFor = (item: (typeof NAV)[number]) =>
+    dawCapabilityGate(
+      { manuscript: item.requiresManuscript && !hasManuscript, dawFile: item.requiresDaw && !dawFileLinked },
+      item.requiresDaw ? reviewCapability : { level: 'supported', available: true },
+    );
+  const isDisabled = (item: (typeof NAV)[number]) => gateFor(item).disabled;
+  const requiredReason = (item: (typeof NAV)[number]) => gateFor(item).reason;
   // Phase 7 (ADR 0092, W10): dawReachable/dawProjectMatches are now real facts (a live PROJECT_STATUS heartbeat),
   // not the permanently-unknown placeholders Phase 4 shipped. The mismatch state only fires when REAPER is
   // confirmed reachable and disagrees with the linked file - a stale or absent heartbeat still reads as the plain

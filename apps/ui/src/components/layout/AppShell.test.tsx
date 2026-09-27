@@ -1,20 +1,28 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { AppShell } from './AppShell';
 import { TooltipProvider } from '../primitives/Tooltip';
+import { ApiProvider } from '../../api/ApiContext';
+import { createMockApi } from '../../api/mockApi';
+import type { DawMockSeed } from '../../api/dawMock';
 
 afterEach(cleanup);
 
 const noHistory = { canGoBack: false, canGoForward: false, back: () => {}, forward: () => {} };
 
-function renderShell(props: Partial<Parameters<typeof AppShell>[0]> = {}) {
+// A connected, reachable REAPER by default (DAW port PRD Phase 7): `review` is Supported and needs the bridge, so
+// with no toggle set this reproduces today's behaviour, where Proofing's gating comes only from `dawFileLinked`.
+function renderShell(props: Partial<Parameters<typeof AppShell>[0]> = {}, daw: DawMockSeed = {}) {
+  const api = createMockApi({}, { daw });
   return render(
-    <TooltipProvider>
-      <AppShell pathname="/" navigate={() => {}} projectName="Alice" hasManuscript dawFileLinked onLinkDawFile={() => {}} history={noHistory} {...props}>
-        <div>page content</div>
-      </AppShell>
-    </TooltipProvider>,
+    <ApiProvider api={api}>
+      <TooltipProvider>
+        <AppShell pathname="/" navigate={() => {}} projectName="Alice" hasManuscript dawFileLinked onLinkDawFile={() => {}} history={noHistory} {...props}>
+          <div>page content</div>
+        </AppShell>
+      </TooltipProvider>
+    </ApiProvider>,
   );
 }
 
@@ -35,9 +43,26 @@ describe('AppShell nav gating (PRD project-workspace-and-daw-link.prd.md, W16/W1
     expect(screen.getAllByRole('group', { name: /Import a manuscript and link a REAPER project/ }).length).toBeGreaterThan(0);
   });
 
-  it('enables Proofing once both a manuscript and a DAW file are present', () => {
+  it('enables Proofing once both a manuscript and a DAW file are present', async () => {
     renderShell({ hasManuscript: true, dawFileLinked: true });
-    expect(screen.getAllByRole('button', { name: 'Proofing' }).every((button) => !(button as HTMLButtonElement).disabled)).toBe(true);
+    await waitFor(() => expect(screen.getAllByRole('button', { name: 'Proofing' }).every((button) => !(button as HTMLButtonElement).disabled)).toBe(true));
+  });
+});
+
+// DAW port PRD Phase 7 (ADR 0360): once the setup facts are met, Proofing's gating comes from the `review`
+// capability (`useCapability`) instead of stopping at "a file is linked" - the same way a hard REAPER refusal
+// (unreachable, turned off in Settings) is surfaced everywhere else CapabilityGate is used.
+describe('AppShell nav gating reads the review capability (DAW port PRD Phase 7)', () => {
+  it('disables Proofing with the capability message when REAPER is not connected, even with a manuscript and a linked file', async () => {
+    renderShell({ hasManuscript: true, dawFileLinked: true }, { connected: false });
+    const proofing = (await screen.findAllByRole('button', { name: 'Proofing' }))[0] as HTMLButtonElement;
+    await waitFor(() => expect(proofing.disabled).toBe(true));
+    expect(screen.getAllByRole('group', { name: /REAPER is not connected to this app/ }).length).toBeGreaterThan(0);
+  });
+
+  it('still reports the missing setup facts, not the capability, when both are unmet', async () => {
+    renderShell({ hasManuscript: false, dawFileLinked: false }, { connected: false });
+    await waitFor(() => expect(screen.getAllByRole('group', { name: /Import a manuscript and link a REAPER project/ }).length).toBeGreaterThan(0));
   });
 });
 

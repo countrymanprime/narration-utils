@@ -3,7 +3,9 @@ import { faCircleDot, faCrosshairs, faGear, faMicrophone, faPause, faPlay, faRot
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useCommand } from '../../input/useCommand';
+import { useCapability } from '../../useCapability';
 import { Button } from '../primitives/Button';
+import { CapabilityGate, type CapabilityEntry } from '../primitives/CapabilityGate';
 import { IconButton } from '../primitives/IconButton';
 import { LevelMeter } from '../primitives/LevelMeter';
 import { Popover } from '../primitives/Popover';
@@ -45,22 +47,26 @@ const REAPER_STATUS_TEXT: Record<ReadAloudReaperState['status'], string> = {
 
 /**
  * The read-only REAPER state the bar shows (read-aloud-control-bar.prd.md Phase 6, ADR 0249): whether the chapter's
- * linked track is the one track armed in REAPER, and whether it is recording. It is always disabled - Phase 7's
- * "Record in REAPER" toggle (arming, recording start and stop) is a later phase, not built here - so this is
- * information only, refreshed on mount and by its own Refresh button, never on a timer (ADR 0122).
+ * linked track is the one track armed in REAPER, and whether it is recording. Phase 7's "Record in REAPER" toggle
+ * (arming, recording start and stop) is a later phase, not built here, so this stays information only, refreshed on
+ * mount and by its own Refresh button, never on a timer (ADR 0122). It is gated on the DAW port's `record`
+ * capability (DAW port PRD Phase 7, ADR 0360) rather than hard-coded disabled: experimental and off by default (no
+ * behaviour change), that reason explains it; once on, the chapter's own armed/recording state is the more useful
+ * one to show.
  */
 function ReaperStateIndicator({ chapterId }: { chapterId: string }) {
   const { state, error, refresh } = useReadAloudReaperState(chapterId);
-  const message = state?.message ?? error ?? 'Checking REAPER…';
+  const record = useCapability('record');
   const label = state ? `Record in REAPER: ${REAPER_STATUS_TEXT[state.status]}` : 'Record in REAPER';
+  const capability: CapabilityEntry = record.available ? { ...record, message: state?.message ?? error ?? 'Checking REAPER…' } : record;
   return (
     <div className="flex items-center gap-1">
-      <TooltipTarget text={message}>
-        <Button aria-label={label} variant="ghost" disabled className="max-w-[9rem] lg:max-w-[13rem]">
+      <CapabilityGate capability={capability}>
+        <Button aria-label={label} variant="ghost" className="max-w-[9rem] lg:max-w-[13rem]">
           <FontAwesomeIcon icon={faCircleDot} className={state?.recording ? 'text-[var(--danger-text)]' : undefined} />
           <span className="hidden truncate lg:inline">{state ? REAPER_STATUS_TEXT[state.status] : 'Record in REAPER'}</span>
         </Button>
-      </TooltipTarget>
+      </CapabilityGate>
       <IconButton label="Refresh REAPER state" onClick={refresh}>
         <FontAwesomeIcon icon={faRotate} className="text-[0.7rem]" />
       </IconButton>
