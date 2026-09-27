@@ -1,6 +1,6 @@
 // How to reach each `storybible` state in STATE_CATALOG (see app.drivers.ts).
 import { settlePage } from '../helpers/settle';
-import { type Driver, askForTheLanguageModel, askForThePreviewVoice, clickNav, clickVisible, confirmDialog, goToPage } from './shared';
+import { type Driver, askForTheLanguageModel, askForThePreviewVoice, clickNav, clickVisible, confirmDialog, goToPage, saveOnlineDictionaryKey } from './shared';
 
 export const storybibleDrivers: Record<string, Driver> = {
   'entry-saving': async (page) => {
@@ -116,6 +116,28 @@ export const storybibleDrivers: Record<string, Driver> = {
     await clickVisible(page, 'button', 'Save status');
     await page.getByText('Asked the author by email.', { exact: true }).first().waitFor();
     await page.getByRole('button', { name: 'Save status' }).scrollIntoViewIfNeeded();
+  },
+  'entry-pronunciation-online': async (page) => {
+    await saveOnlineDictionaryKey(page);
+    // The "key saved" toast belongs to Settings; dismissed so it does not cover the answer this state is about.
+    await page.getByRole('button', { name: 'Dismiss message' }).click();
+    await goToPage(page, 'Story Bible');
+    await page.locator('tr[data-row]').first().click();
+    const unlock = page.getByRole('button', { name: 'Unlock entry' });
+    if (await unlock.count()) await unlock.click();
+    await clickVisible(page, 'button', 'Edit this entry');
+    await clickVisible(page, 'button', 'Pronunciation details');
+    await page.getByRole('button', { name: /^Look up .+ online in Merriam-Webster$/ }).click();
+    const answer = page.getByRole('button', { name: /^Use .+ as your pronunciation of / }).first();
+    await answer.waitFor();
+    await answer.evaluate((element) => element.scrollIntoView({ block: 'center' }));
+  },
+  'pronunciation-queries-online-confirm': async (page) => {
+    await goToPage(page, 'Story Bible');
+    await clickVisible(page, 'button', 'Pronunciation queries');
+    await page.getByRole('list', { name: 'Pronunciation queries' }).waitFor();
+    await clickVisible(page, 'button', 'Look up online…');
+    await page.getByRole('alertdialog', { name: /^Look up \d+ names? online\?$/ }).waitFor();
   },
   'pronunciation-queries': async (page) => {
     await goToPage(page, 'Story Bible');

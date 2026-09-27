@@ -125,13 +125,18 @@ export function PronunciationQueries({ open, onClose, onChanged, notify }: { ope
               <span role="status" className="text-sm" style={{ color: 'var(--text-muted)' }}>
                 {rows.length} open · {sent} sent
               </span>
-              <Button variant="ghost" disabled={online.words.length === 0 || mutation.isBusy} onClick={() => setConfirmOnline(true)}>
-                Look up online…
-              </Button>
               <Button disabled={rows.length === 0 || mutation.isBusy} pending={mutation.isPending('export')} onClick={() => void exportCsv()}>
                 Export CSV
               </Button>
             </div>
+          </div>
+        )}
+        {rows && rows.length > 0 && (
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+            <Button variant="ghost" disabled={online.words.length === 0 || mutation.isBusy} onClick={() => setConfirmOnline(true)}>
+              Look up online…
+            </Button>
+            <span className="text-xs text-[var(--text-muted)]">Asks Merriam-Webster about each name, on your own key.</span>
           </div>
         )}
         {rows && rows.length === 0 && <p className="text-sm">Every pronunciation is confirmed by the author. Nothing to ask.</p>}

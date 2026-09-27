@@ -39,7 +39,7 @@ describe('OnlinePronunciationLookup', () => {
     await setup('Alice');
     const button = screen.getByRole('button', { name: 'Look up Alice online in Merriam-Webster' });
     await userEvent.click(button);
-    expect(await screen.findByText(/Merriam-Webster respelling\):$/)).toBeTruthy();
+    expect(await screen.findByText('Merriam-Webster respelling:')).toBeTruthy();
     await userEvent.click(button);
     expect(await screen.findByText(/from this computer’s copy/)).toBeTruthy();
   });

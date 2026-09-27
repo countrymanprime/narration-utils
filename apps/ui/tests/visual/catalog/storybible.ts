@@ -82,9 +82,22 @@ export const storybibleStates: StateEntry[] = [
   },
   {
     page: 'storybible',
+    state: 'entry-pronunciation-online',
+    description:
+      "Story Bible, an entry's pronunciation details after Look up online: Merriam-Webster's respelling with Use this, on the narrator's own key (prep-depth P9)",
+    ...KEEPS_DESKTOP_SCROLL,
+  },
+  {
+    page: 'storybible',
     state: 'pronunciation-queries',
     description:
       'Story Bible, the Pronunciation queries slide-over: every name not yet author confirmed in reading order, the first marked sent, with the filter, the open/sent count, Export CSV and Mark sent / Mark answered (prep-depth P3)',
+  },
+  {
+    page: 'storybible',
+    state: 'pronunciation-queries-online-confirm',
+    description:
+      'Story Bible, the notice before a batch online lookup: how many names it sends to Merriam-Webster, one at a time, and that nothing else leaves (prep-depth P9, Q11)',
   },
 
   {

@@ -71,7 +71,7 @@ export function OnlineDictionaryPanel({ notify }: { notify: Notify }) {
 
   const present = status?.present ?? false;
   return (
-    <section aria-labelledby="online-dictionary-heading" className="mb-4 space-y-3 rounded-md p-3 text-sm" style={{ background: 'var(--surface-2)' }}>
+    <section aria-labelledby="online-dictionary-heading" className="mb-4 space-y-3 rounded-md border p-3 text-sm" style={{ borderColor: 'var(--border)' }}>
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h3 id="online-dictionary-heading" className="font-medium">
           Online dictionary (Merriam-Webster)
@@ -94,7 +94,7 @@ export function OnlineDictionaryPanel({ notify }: { notify: Notify }) {
             value={draft}
             onChange={setDraft}
             secret
-            placeholder="Paste the key from your dictionaryapi.com account"
+            placeholder="Paste your key here"
             error={error}
             disabled={busy !== undefined}
           />

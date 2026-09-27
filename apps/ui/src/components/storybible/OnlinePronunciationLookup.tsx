@@ -41,7 +41,8 @@ export function OnlinePronunciationLookup({ name, disabled, onUse }: { name: str
         {result && result.found && (
           <div className="space-y-1">
             <p className="text-[var(--text-muted)]">
-              {result.label} ({result.notation}){result.cached ? ', from this computer’s copy' : ''}:
+              {result.notation}
+              {result.cached ? ', from this computer’s copy' : ''}:
             </p>
             <ul className="space-y-1">
               {result.pronunciations.map((row) => (

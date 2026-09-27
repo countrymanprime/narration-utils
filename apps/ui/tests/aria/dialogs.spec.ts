@@ -35,9 +35,14 @@ const MODALS: { name: string; state: [string, string]; snapshot: string }[] = [
     snapshot: 'dialog-read-aloud-credits.aria.yml',
   },
   {
-    name: 'the pronunciation queries are a modal slide-over with the filter, the count, Export CSV and a list of queries each with its marks',
+    name: 'the pronunciation queries are a modal slide-over with the filter, the count, Export CSV, Look up online and a list of queries each with its marks',
     state: ['storybible', 'pronunciation-queries'],
     snapshot: 'slide-over-pronunciation-queries.aria.yml',
+  },
+  {
+    name: 'the notice before a batch online lookup is an alert dialog naming how many names it sends, with Cancel and the lookup',
+    state: ['storybible', 'pronunciation-queries-online-confirm'],
+    snapshot: 'confirm-pronunciation-online-batch.aria.yml',
   },
   {
     name: 'the chapters overlay is a modal slide-over named for what it holds',
