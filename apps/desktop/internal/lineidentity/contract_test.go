@@ -36,7 +36,7 @@ func TestContractLineIdentityReadSuccess(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	service := New(Config{Project: project, SessionDir: session}, client, manuscript.New(project), nil)
+	service := New(Config{Project: project, SessionDir: session}, lineStamperRole(t, client), manuscript.New(project), nil)
 	if err := service.Read(); err != nil {
 		t.Fatal(err)
 	}
