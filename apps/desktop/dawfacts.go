@@ -46,5 +46,5 @@ func dawLinkFacts(reporter *persist.Reporter, projectFolder, daw_ string, reach 
 		reachable = reach.Reachable()
 		matches = resolved && reach.Matches(resolvedPath)
 	}
-	return resolved || daw_ == "REAPER", reachable, matches
+	return resolved || dawport.IsREAPERLaunch(daw_), reachable, matches
 }

@@ -1049,7 +1049,7 @@ func (h *Host) resolveProjectFileLocked(next config) config {
 // them (W5): an unsaved rpp (next.projectFile empty) or a saved one no project has linked yet. Any other launch without a
 // folder, an Audacity one included, lands on the picker silently: both reasons are about a REAPER project it does not have.
 func unresolvedLaunchReason(next config) (string, bool) {
-	if next.projectFolder != "" || dawadapter.Classify(next.daw) != dawadapter.KindREAPER {
+	if next.projectFolder != "" || !dawport.IsREAPERLaunch(next.daw) {
 		return "", false
 	}
 	return startupProjectFileReason(next.projectFile), true

@@ -15,6 +15,14 @@ const (
 	KindAudacity = dawadapter.KindAudacity
 )
 
+// IsREAPERLaunch reports whether daw (the launch's own `daw` fact) names a live REAPER launch. It is the one place outside this
+// package allowed to ask "is this REAPER" at all (DAW port PRD P6's boundary test): a caller with a narrower question asks the
+// resolver for a capability instead, but the launch's own identity (dawfacts.go's W18 case, app.go's unresolved-project-file
+// wording) is still dawadapter's Kind until P8 retires it.
+func IsREAPERLaunch(daw string) bool {
+	return dawadapter.Classify(daw) == dawadapter.KindREAPER
+}
+
 // Adapter is one engine. It only declares and implements: whether a capability can be used now is the Resolver's answer, never the
 // adapter's.
 type Adapter interface {
