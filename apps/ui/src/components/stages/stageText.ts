@@ -1,4 +1,4 @@
-// The words of a chapter's stage suggestion (docs/prds/chapter-stage-recommendations.prd.md Phase 5, ADR 0160 and 0161): what each
+// The words of a chapter's stage suggestion (chapter-stage-recommendations.prd.md Phase 5, deleted, ADR 0160 and 0161): what each
 // verdict says in the breakdown row, what each unknown cause means and what resolves it, and the summary the estimate card shows.
 // Pure functions, so StageSuggestion, StageEvidence and StageSummary only lay them out.
 import { STATUS_LABELS } from '../../chapterStatus';
@@ -44,19 +44,56 @@ const EDITING_CAUSE_TEXT: Partial<Record<StageUnknownCause, { short: string; act
   provider_error: { short: 'the evidence could not be read', action: 'Check now to read it again.', resolve: 'check-now' },
 };
 
+/** The same causes, worded for the proofing signals instead (proofing-readiness-signals.prd.md Phases 1 and 5): there
+ * is no per-chapter "proofing check" dialog to open (unlike recording and editing), so every resolvable cause routes
+ * to the Tracks page, a wait, or Check now - never `resolve: 'check'`, which `StageEvidence` would otherwise wire to
+ * the wrong dialog. Each cause's `reason` (from the signal itself) already names the real action - run Transcript
+ * Compare, measure on the Delivery page, decide on the Review page - so this table's `action` only adds where to look
+ * next, not what the signal already said. */
+const PROOFING_CAUSE_TEXT: Partial<Record<StageUnknownCause, { short: string; action: string; resolve: StageCauseAction }>> = {
+  never_analyzed: { short: 'not checked yet', action: 'Check now once you have run the check the reason above names.', resolve: 'check-now' },
+  stale: { short: 'changed since the last check', action: 'Check now once you have run it again.', resolve: 'check-now' },
+  incomplete_run: { short: 'the last check did not finish', action: 'Check now once it has run to the end.', resolve: 'check-now' },
+  analysis_running: { short: 'a check is running', action: 'Wait for the check to end; the suggestion is read again then.', resolve: 'wait' },
+  unmapped_track: { short: 'no track linked', action: 'Link the track on the Tracks page.', resolve: 'tracks' },
+  unconfirmed_mapping: { short: 'track link not confirmed', action: 'Confirm the matching track on the Tracks page.', resolve: 'tracks' },
+  multiple_tracks: { short: 'more than one track linked', action: 'Keep one track link on the Tracks page.', resolve: 'tracks' },
+  measurement_unavailable: { short: 'cannot be checked here', action: 'Check now once the reason above is resolved.', resolve: 'check-now' },
+  project_unreadable: { short: 'project file not readable', action: 'Choose or save the REAPER project file, then check now.', resolve: 'tracks' },
+  provider_error: { short: 'the evidence could not be read', action: 'Check now to read it again.', resolve: 'check-now' },
+};
+
 /** True for the three signal ids the editing-readiness PRD's Phase 6 registers (apps/desktop/internal/editing/signals.go). */
 export const isEditingSignal = (signalId: string): boolean => signalId.startsWith('editing.');
 
+/** True for a proofing stage signal (apps/desktop/internal/proofing): the pickups roll-up and every delivery check.
+ * Unlike `isEditingSignal`, nothing outside this file needs it: every `PROOFING_CAUSE_TEXT` cause resolves to
+ * `tracks`, `wait` or `check-now`, never `check`, so `StageEvidence` never needs to pick a proofing-specific dialog. */
+const isProofingSignal = (signalId: string): boolean => signalId.startsWith('proofing.');
+
 /** A signal's cause, worded for whichever check produced it: `stageText.ts`'s `CAUSE_TEXT` is shared by every
- * provider, but "Open recording check" is the wrong sentence, and the wrong dialog, for an editing signal. */
+ * provider, but "Open recording check" is the wrong sentence, and the wrong dialog, for an editing or proofing signal. */
 export function causeText(signal: Pick<StageSignal, 'id' | 'cause'>): { short: string; action: string; resolve: StageCauseAction } | undefined {
   if (!signal.cause) return undefined;
-  return (isEditingSignal(signal.id) ? EDITING_CAUSE_TEXT[signal.cause] : undefined) ?? CAUSE_TEXT[signal.cause];
+  if (isEditingSignal(signal.id)) return EDITING_CAUSE_TEXT[signal.cause] ?? CAUSE_TEXT[signal.cause];
+  if (isProofingSignal(signal.id)) return PROOFING_CAUSE_TEXT[signal.cause] ?? CAUSE_TEXT[signal.cause];
+  return CAUSE_TEXT[signal.cause];
 }
 
 /** A signal's id as a sentence of what was checked; an id this build does not know is shown as it is. */
 const SIGNAL_NAMES: Record<string, string> = {
   'recording.text_present': 'Every paragraph of the chapter’s text is in the recording, in order',
+  'proofing.pickups': 'No pickups are left to clear up',
+  'proofing.delivery.integrated_lufs': 'Integrated loudness is within the delivery profile’s limit',
+  'proofing.delivery.rms_dbfs': 'RMS is within the delivery profile’s limit',
+  'proofing.delivery.sample_peak_dbfs': 'Sample peak is within the delivery profile’s limit',
+  'proofing.delivery.true_peak_dbtp': 'True peak is within the delivery profile’s limit',
+  'proofing.delivery.noise_floor_dbfs': 'Noise floor is within the delivery profile’s limit',
+  'proofing.delivery.sample_rate': 'Sample rate matches the delivery profile',
+  'proofing.delivery.duration_seconds': 'File length is within the delivery profile’s limit',
+  'proofing.delivery.head_room_tone_seconds': 'Head room tone is within the delivery profile’s limit',
+  'proofing.delivery.tail_room_tone_seconds': 'Tail room tone is within the delivery profile’s limit',
+  'proofing.delivery.render_length': 'The render’s length matches the chapter’s audio',
 };
 
 export const signalName = (signal: StageSignal) => SIGNAL_NAMES[signal.id] ?? signal.id;

@@ -1,4 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faBackward, faForward, faPause, faPlay } from '@fortawesome/free-solid-svg-icons';
 import { useApi } from '../../api/ApiContext';
 import { describeApiError } from '../../api/errorMessage';
 import type { ManuscriptContentKind } from '../../api/contracts/manuscript';
@@ -10,6 +12,9 @@ import { SlideOver } from '../primitives/SlideOver';
 import type { Notify } from '../primitives/Toast';
 import { chapterTrackButtonState } from './chapterTrackButtonState';
 import { RemoveFromRecordingDialog } from './RemoveFromRecordingDialog';
+import { useTrackPlayback } from '../tracks/useTrackPlayback';
+
+const noop = () => {};
 
 const EYEBROW = "font-['Barlow_Condensed',sans-serif] text-[0.72rem] font-semibold tracking-[0.08em] text-[var(--text-muted)] uppercase";
 
@@ -54,6 +59,7 @@ export function ChapterTrackPanel({
   const [tracksError, setTracksError] = useState('');
   const [busy, setBusy] = useState(false);
   const [removeOpen, setRemoveOpen] = useState(false);
+  const [selecting, setSelecting] = useState(false);
 
   useEffect(() => {
     if (!open) return;
@@ -66,6 +72,30 @@ export function ChapterTrackPanel({
       active = false;
     };
   }, [api, open]);
+
+  // Playback (Phase 4, Could): the track the slide-over already knows from `link.track`, played through the same
+  // useTrackPlayback the Tracks page uses (ADR 0012's /media route). trackIndex stays -1 until `tracks` (this panel's
+  // own read, above) resolves and the linked track's GUID is found in it; the hook is still called on every render
+  // (rules of hooks) with a safe fallback index, but nothing is shown until trackIndex resolves, so playing track 0
+  // by mistake is never possible - the caller can't reach the button.
+  const linkedTrackGuid = link?.track?.trackGuid;
+  const trackIndex = useMemo(() => (tracks ?? []).findIndex((track) => track.guid === linkedTrackGuid), [tracks, linkedTrackGuid]);
+  const player = useTrackPlayback(tracks ?? [], trackIndex < 0 ? 0 : trackIndex, noop, api.mediaUrl);
+  const canPlay = trackIndex >= 0 && player.canPlay;
+
+  const selectInReaper = async () => {
+    if (!linkedTrackGuid) return;
+    setSelecting(true);
+    try {
+      const result = await api.trackSelectInReaper(linkedTrackGuid);
+      if (result.outcome === 'selected') notify('Selected in REAPER.');
+      else notify(result.message || 'REAPER could not select that track.', 'error');
+    } catch (error) {
+      notify(describeApiError(error), 'error');
+    } finally {
+      setSelecting(false);
+    }
+  };
 
   const link_ = async (trackGuid: string) => {
     setBusy(true);
@@ -133,6 +163,37 @@ export function ChapterTrackPanel({
                 />
               )}
               {link.links[0] && <Fact label="Linked" value={formatWhen(link.links[0].confirmedAt)} />}
+            </section>
+          )}
+          {trackIndex >= 0 && (
+            <section aria-labelledby="chapter-track-play" className="space-y-2">
+              <h3 id="chapter-track-play" className="sr-only">
+                Play
+              </h3>
+              {player.loadError && (
+                <p role="alert" style={{ color: 'var(--danger-text)' }}>
+                  This track&rsquo;s audio couldn&rsquo;t be played. Check that its source files are still where the project expects them.
+                </p>
+              )}
+              <div className="flex flex-wrap items-center gap-2">
+                <Button variant="ghost" onClick={player.skipBackward} disabled={!canPlay} aria-label="Skip back 30 seconds">
+                  <FontAwesomeIcon icon={faBackward} /> 30s
+                </Button>
+                <Button onClick={player.togglePlay} disabled={!canPlay} aria-label={player.isPlaying ? 'Pause' : 'Play'}>
+                  <FontAwesomeIcon icon={player.isPlaying ? faPause : faPlay} />
+                </Button>
+                <Button variant="ghost" onClick={player.skipForward} disabled={!canPlay} aria-label="Skip forward 30 seconds">
+                  30s <FontAwesomeIcon icon={faForward} />
+                </Button>
+                {canPlay && (
+                  <span className="font-['IBM_Plex_Mono',ui-monospace,monospace] text-xs" style={{ color: 'var(--text-muted)' }}>
+                    {formatAudioTime(player.currentTime)} / {formatAudioTime(player.duration)}
+                  </span>
+                )}
+              </div>
+              <Button variant="ghost" className="w-full" disabled={selecting} pending={selecting} onClick={() => void selectInReaper()}>
+                Select in REAPER
+              </Button>
             </section>
           )}
           {link.status === 'ambiguous' && link.links.length > 1 && (

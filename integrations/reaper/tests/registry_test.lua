@@ -67,6 +67,7 @@ H.test('the bridge registers exactly the commands the host and the docs know abo
     'record_start',
     'record_stop',
     'resolve_pickup',
+    'select_track',
     'set_active_take',
     'stamp_item_lines',
     'stop_loop',

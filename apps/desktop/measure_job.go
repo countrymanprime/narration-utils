@@ -103,6 +103,9 @@ type measureJob struct {
 	// measured is told each file's result as it finishes (not a cancelled one), for the proofing signals' render
 	// measurement record (proofing_host.go). Set once before the job's goroutine starts; nil records nothing.
 	measured measuredFileFunc
+	// project is the project folder the measurement was started in, set once before the job's goroutine starts: its
+	// review findings are saved only into that project's store (delivery_findings.go).
+	project string
 }
 
 // measuredFileFunc is told one finished file's result and when its measurement began.
@@ -300,6 +303,7 @@ func (h *Host) startMeasure(requested []string) (MeasureJob, error) {
 		id: id, phase: "running", started: time.Now(), cancel: cancel,
 		message:  fmt.Sprintf("Measuring %s.", countFiles(len(paths))),
 		measured: renderMeasurementRecorder(svc.config.projectFolder, svc.manuscript, h.persist),
+		project:  svc.config.projectFolder,
 	}
 	job.logs = []string{job.message}
 	for _, path := range paths {
@@ -341,6 +345,7 @@ func (h *Host) runMeasure(ctx context.Context, job *measureJob, paths []string, 
 			broken = fmt.Errorf("%v", recovered)
 		}
 		job.finish(ctx.Err() != nil && broken == nil, broken)
+		h.saveDeliveryFindings(job)
 		h.publishMeasureEnd(job)
 	}()
 	for index, path := range paths {

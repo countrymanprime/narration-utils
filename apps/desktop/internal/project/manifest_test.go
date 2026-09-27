@@ -108,3 +108,42 @@ func TestSaveOverwritesAnExistingManifestInPlace(t *testing.T) {
 		t.Fatalf("Name = %q, want %q", loaded.Name, "Final Title")
 	}
 }
+
+func TestTheProductionPlanFieldsRoundTripAndAreOmittedWhenUnset(t *testing.T) {
+	folder := t.TempDir()
+	manifest := New("Alice", time.Date(2026, 9, 21, 12, 0, 0, 0, time.UTC))
+	if err := manifest.Save(folder); err != nil {
+		t.Fatal(err)
+	}
+	raw, err := os.ReadFile(Path(folder))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var fields map[string]any
+	if err := json.Unmarshal(raw, &fields); err != nil {
+		t.Fatal(err)
+	}
+	for _, key := range []string{"deadline", "contractedAmount", "milestones"} {
+		if _, present := fields[key]; present {
+			t.Fatalf("%s must be omitted while unset: %s", key, raw)
+		}
+	}
+
+	amount := 1250.5
+	manifest.Deadline = "2026-12-01"
+	manifest.ContractedAmount = &amount
+	manifest.Milestones = []Milestone{{Name: "ACX 15-minute checkpoint", DueDate: "2026-10-15", Note: "send to the rights holder"}}
+	if err := manifest.Save(folder); err != nil {
+		t.Fatal(err)
+	}
+	loaded, ok, err := Load(nil, folder)
+	if err != nil || !ok {
+		t.Fatalf("Load: ok=%v err=%v", ok, err)
+	}
+	if loaded.Deadline != "2026-12-01" || loaded.ContractedAmount == nil || *loaded.ContractedAmount != amount {
+		t.Fatalf("unexpected plan fields: %+v", loaded)
+	}
+	if len(loaded.Milestones) != 1 || loaded.Milestones[0] != manifest.Milestones[0] {
+		t.Fatalf("unexpected milestones: %+v", loaded.Milestones)
+	}
+}

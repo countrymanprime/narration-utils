@@ -1,8 +1,8 @@
 # Chapter stage recommendations: the signal contract
 
 **Status: contract, engine, decision store and host bindings delivered, one signal.** The Go types, the `Provider` interface and the pure engine
-are in [`apps/desktop/internal/stages`](../../apps/desktop/internal/stages) (Phase 1 of
-[the chapter stage recommendations PRD](../prds/chapter-stage-recommendations.prd.md)). The recording signal,
+are in [`apps/desktop/internal/stages`](../../apps/desktop/internal/stages) (Phase 1 of the chapter stage
+recommendations PRD, `docs/prds/chapter-stage-recommendations.prd.md`, delivered and deleted). The recording signal,
 `recording.text_present`, and its provider are in
 [`apps/desktop/internal/coverage`](../../apps/desktop/internal/coverage) (`signal.go`, `provider.go`;
 [ADR 0131](../adr/0131-the-recording-signal-is-read-from-stored-checks-with-thresholds-applied-on-read-and-alignment-from-settings.md)).
@@ -223,3 +223,19 @@ succeeds and only the reason and a Try again retry when it fails (`home-stage-ch
 click, reversible by Revert (Q13). A refusal is shown as an error toast and the recommendations are read again; a failed
 read shows "Couldn't check" in every row. The mock's `?mockStages=mixed|error` seeds (`apps/ui/src/main.tsx`) drive the
 visual states `home/stage-*`.
+
+## Elsewhere
+
+Phase 8 added `apps/ui/src/components/proofing/ProofingStagePanel.tsx` on the Proofing page: every narration chapter
+currently in `proofing`, with the same `StageSuggestion`/`StageEvidence` pair Home uses (Confirm, Dismiss, Revert, Why),
+self-fetching since the Transcript state carries no chapter id.
+
+Phase 9 added two read-only consumers, both through `useStageRecommendations` like every other reader here - neither
+confirms, dismisses or reverts:
+
+- `ChapterNav.tsx` (the Manuscript page's Chapters & Search panel) shows a non-interactive "Suggested: `<stage>`" line
+  under a chapter's title for a live `recommended` verdict only (`stageText.ts`'s `verdictLine`, Q6 option B) - the nav
+  row stays dense, and every action stays on Home or the Proofing panel.
+- `TracksPage.tsx` shows a line above the Chapter links table counting chapters whose recommendation carries the
+  `unmapped_track` or `unconfirmed_mapping` cause, pointing at that table (the analysis evidence ledger's own mapping
+  UI) since linking or confirming the chapter's track there is exactly what resolves the cause.

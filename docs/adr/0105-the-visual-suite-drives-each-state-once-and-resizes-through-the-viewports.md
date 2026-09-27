@@ -6,7 +6,8 @@
 ## Context
 
 `quality / ui-visual` is the longest job on the critical path of a pull request and of a release (7 m 17 s in Prerelease
-run 35796438255, 8 m 53 s on the pull request that started this; [CI pipeline speed](../prds/ci-pipeline-speed.prd.md)).
+run 35796438255, 8 m 53 s on the pull request that started this; `docs/prds/ci-pipeline-speed.prd.md`, deleted once its
+phases were delivered — see [CI and releases](../operations/ci-and-releases.md#ci-performance)).
 ADR 0023 made every `{page, state, viewport}` its own test, so each state was loaded and driven three times (four with the
 Settings reflow width), once per viewport. Timing the capture on 138 of them (Home and Tracks) showed where a capture's own
 time goes: loading the app 0.77 s, driving to the state 0.64 s, axe 0.45 s, settling, measuring, the screenshot and the

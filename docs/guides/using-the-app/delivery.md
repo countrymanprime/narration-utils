@@ -56,6 +56,12 @@ MP3 encoding.
 
 ![One file against ACX, rule by rule](../../images/ui/delivery-file-rules.webp)
 
+Below the table, **Book-wide spread** shows RMS, peak and noise floor each as their own strip: the
+book's minimum, median and maximum, with a tick for every measured file between them. A rule reads
+only the files it has actually judged, so a file whose level cannot be checked yet (an MP3 before its
+levels are decoded) never counts, and a rule with nothing to show yet says **No measurements yet**
+rather than a zero.
+
 ## Custom profiles
 
 To judge against other numbers, duplicate ACX in [Settings, Delivery](settings.md) and change
@@ -102,8 +108,8 @@ are measured. The report names the profile and its version, and lists every rule
 requires, how the app checked it, how it was verified and how many files met it. Each finding has an ID, its
 file, its time in the file, what was measured against which threshold, and its review state. The HTML
 and the JSON use the same IDs, and the Measurements tab's rules not met are those same findings. A finding is **open** unless it has been dismissed, and every open finding is listed. The
-review state comes from the project's review decisions; Delivery's findings are not on the Review page
-yet, so for now they are all open and unreviewed. The report also names the app's and the analyzers' versions, and each
+review state comes from the project's review decisions, and Delivery's findings are on the
+[Review](review.md#delivery-checks) page too, so a decision you make there is the report's decision. The report also names the app's and the analyzers' versions, and each
 installed voice and model with its version. It is a measurement, not a distributor's approval.
 
 Files are named only by their file name unless you tick **Include each file's full location**: no

@@ -1,6 +1,6 @@
 # 0200. The desktop shell runs on Wails v3 beta, pinned at v3.0.0-beta.25
 
-**Status:** Accepted
+**Status:** Accepted (its macOS `Info.plist` and bundle are removed from the build by [ADR 0412](0412-windows-is-the-only-supported-platform-for-now.md))
 **Date:** 2026-09-25
 **Supersedes:** none. It changes how [ADR 0082](0082-windows-installs-per-user-from-an-nsis-setup-program-that-wails-builds-and-the-release-carries-beside-the-update-zip.md)'s setup program is built (by `scripts/release/wails-build.mjs` instead of `wails build -nsis`), not what it installs.
 

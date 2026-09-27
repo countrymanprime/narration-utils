@@ -80,14 +80,15 @@ var builtinDefaults = map[string]Values{
 		"capability.retake_lanes": "auto", "capability.project_state": "auto", "capability.take_create": "auto",
 		"capability.heartbeat": "auto", "capability.project_read": "auto", "capability.track_state": "auto",
 		"capability.record": "auto", "capability.punch": "auto", "capability.regions": "auto", "capability.takes": "auto",
-		"capability.fx_chains": "auto", "capability.silence_trim": "auto", "capability.item_gain": "auto"},
+		"capability.fx_chains": "auto", "capability.silence_trim": "auto", "capability.item_gain": "auto",
+		"capability.track_select": "auto"},
 	// RecordingCoverage mirrors coverage.DefaultSettings: the recording check's shipped values, chosen on synthetic fixtures
 	// and still Proposed and uncalibrated on real narration (docs/utilities/recording-coverage.md, ADR 0132, Q15).
 	// background_checks defaults on (S7 B, D27): it only ever runs with the model installed, on mains power and while
 	// REAPER is idle (coverage.NextBackground, ADR 0211).
 	"RecordingCoverage": {"min_paragraph_present": "0.8", "max_missing_run": "3", "max_misread_run": "8", "min_anchor_run": "3", "background_checks": "true"},
-	// StageRecommendations defaults every signal to required and suggestions on (docs/prds/chapter-stage-recommendations.prd.md
-	// Phase 6, Q8): a narrator who never opens this settings page keeps the behaviour Phase 1 shipped with (every declared
+	// StageRecommendations defaults every signal to required and suggestions on (chapter-stage-recommendations.prd.md
+	// Phase 6, Q8, deleted; see docs/architecture/stage-recommendations.md): a narrator who never opens this settings page keeps the behaviour Phase 1 shipped with (every declared
 	// signal id required).
 	// editing.empty_space/clicks/breaths default to required (Q5 option A: "it matches the product definition").
 	// Clicks and breaths can never actually be met while their detector is unvalidated (Phase 4 has not run), so

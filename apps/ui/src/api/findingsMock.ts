@@ -151,8 +151,9 @@ export function approvedMarkerName(finding: Finding): string {
   return `${kind.toUpperCase()}: ${body}`;
 }
 
-/** ContextPaddingSeconds (apps/desktop/internal/bridge/navigation.go): the audio a loop plays either side of a finding. */
-const LOOP_PADDING_SECONDS = 2;
+/** ContextPaddingSeconds (apps/desktop/internal/bridge/navigation.go): the audio a loop plays either side of a finding
+ * or, reused for the same bridge.Navigator.Loop, a workspace passage (workspaceMock.ts). */
+export const LOOP_PADDING_SECONDS = 2;
 
 type FindingsMockOptions = {
   /** After the first list the page gets, the analyzer runs again, so a decision on what that list showed is refused as stale. */
@@ -251,7 +252,11 @@ function createReaperMock(mode: MockReaper, find: (id: string) => Finding) {
 export function createFindingsMock(
   seed: Finding[],
   options: FindingsMockOptions = {},
-): FindingsApi & { saveAnalyzerFindings: (analyzer: string, chapterId: string, fresh: Finding[]) => void; saveFinding: (fresh: Finding) => void } {
+): FindingsApi & {
+  saveAnalyzerFindings: (analyzer: string, chapterId: string, fresh: Finding[]) => void;
+  saveFinding: (fresh: Finding) => void;
+  saveFileFindings: (analyzer: string, files: readonly string[], fresh: Finding[]) => void;
+} {
   let store = wireClone(seed);
   let pendingRerun = options.rerunAfterFirstList === true;
   const find = (id: string): Finding => {
@@ -300,6 +305,24 @@ export function createFindingsMock(
       const previous = store.find((finding) => finding.id === fresh.id);
       const review = previous && previous.evidence_version === fresh.evidence_version ? previous.review : fresh.review;
       store = [...store.filter((finding) => finding.id !== fresh.id), { ...wireClone(fresh), review }];
+    },
+    // Each file its own scope, as the host saves delivery findings (deliveryprofile.ReviewScope): a file's fresh set replaces
+    // its stored one with the store's merge (a decision kept on the same evidence version, else back to unreviewed with its
+    // note), and a stored finding the fresh set did not repeat is kept, not in the latest run. Other files are left alone.
+    saveFileFindings: (analyzer, files, fresh) => {
+      const scoped = (finding: Finding) => finding.analyzer === analyzer && files.includes(finding.source.file ?? '');
+      const previous = new Map(store.filter(scoped).map((finding) => [finding.id, finding]));
+      const merged = wireClone(fresh).map((finding): Finding => {
+        const prior = previous.get(finding.id);
+        if (!prior || prior.review.status === 'unreviewed') return { ...finding, review: prior?.review ?? finding.review };
+        return prior.evidence_version === finding.evidence_version
+          ? { ...finding, review: prior.review }
+          : { ...finding, review: { status: 'unreviewed', ...(prior.review.note ? { note: prior.review.note } : {}) } };
+      });
+      const carried = [...previous.values()]
+        .filter((prior) => !merged.some((finding) => finding.id === prior.id))
+        .map((prior) => ({ ...prior, not_in_latest_run: true }));
+      store = [...store.filter((finding) => !scoped(finding)), ...merged, ...carried];
     },
   };
 }
