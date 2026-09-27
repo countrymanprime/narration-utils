@@ -62,6 +62,7 @@ export function FindingDetail({
   onChanged,
   goToManuscript,
   goToStoryBible,
+  goToWorkspace,
   reaperStatus,
   onReaperStatusChange,
   onCompared,
@@ -75,6 +76,9 @@ export function FindingDetail({
   onChanged: (finding: Finding, decided: boolean) => void;
   goToManuscript: (chapter: string, paragraph?: number) => void;
   goToStoryBible: (entityId: string) => void;
+  /** Opens the chapter workspace on this finding (edit-and-proof-workspace.prd.md Phase 4, "Open in workspace"); undefined
+   * where the caller has no workspace to open (there is none outside the app - every caller passes it). */
+  goToWorkspace?: (chapterId: string, findingId: string) => void;
   /** A comparison of this take-review group finished: the page shows it. */
   onCompared: (ended: TakeComparisonJob) => void;
 }) {
@@ -177,6 +181,13 @@ export function FindingDetail({
           <Button variant="ghost" onClick={() => goToStoryBible(entityId)}>
             Open in Story Bible
           </Button>
+        )}
+        {goToWorkspace && (
+          <TooltipTarget text={chapterId ? 'Open this finding in the chapter workspace' : 'This finding has no chapter to open a workspace for.'}>
+            <Button variant="ghost" onClick={() => chapterId && goToWorkspace(chapterId, finding.id)} disabled={!chapterId}>
+              Open in workspace
+            </Button>
+          </TooltipTarget>
         )}
       </div>
       {reads ? (

@@ -1,5 +1,5 @@
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faBookmark as faBookmarkSolid, faChevronDown, faChevronUp, faExpand, faMicrophone } from '@fortawesome/free-solid-svg-icons';
+import { faBookmark as faBookmarkSolid, faChevronDown, faChevronUp, faExpand, faMicrophone, faWaveSquare } from '@fortawesome/free-solid-svg-icons';
 import { faBookmark as faBookmarkRegular } from '@fortawesome/free-regular-svg-icons';
 import { useId, type ReactNode } from 'react';
 import { readTimeLabel } from '../../state';
@@ -15,8 +15,9 @@ const STAT_BLOCK_CLASS = 'min-w-[6.5rem] tabular-nums';
 // on every row, empty when the chapter has no actions, so the stat block still lines up beside it. Its content is
 // right-aligned (not left-aligned), so both edges - the cluster's start and end - stay put whether or not a Retail
 // sample tag widens the cluster to its left. Widened from its original 8rem (booth-mode-and-companion-panel.prd.md
-// Phase 1, Open Question 1 A) to fit "Booth" beside "Read aloud" without either wrapping.
-const ACTION_SLOT_CLASS = 'flex w-56 flex-none justify-end gap-1';
+// Phase 1, Open Question 1 A) to fit "Booth" beside "Read aloud" without either wrapping, and again
+// (edit-and-proof-workspace.prd.md Phase 4) for the icon-only Workspace entry beside both.
+const ACTION_SLOT_CLASS = 'flex w-64 flex-none justify-end gap-1';
 
 // A Manuscript card's frame: a chapter card or a credits card (manuscript-credits-card-parity.prd.md, Phase 1),
 // sharing one header and one whole-header disclosure. The header's right side is one fixed order - [Retail sample
@@ -45,6 +46,8 @@ export function ReaderCard({
   onReadAloud,
   showBooth = false,
   onBooth,
+  showWorkspace = false,
+  onWorkspace,
   wordCount,
   children,
 }: {
@@ -70,6 +73,11 @@ export function ReaderCard({
    * from every other row in the column (manuscript-chapter-header-alignment.prd.md). */
   showBooth?: boolean;
   onBooth?: () => void;
+  /** The chapter-header "Open workspace" entry point (edit-and-proof-workspace.prd.md Phase 4, page inventory
+   * "Manuscript"): icon-only (a text label would overflow the fixed-width action slot beside Read aloud and Booth),
+   * gated the same way on every caller - a narration chapter, never a credits card. */
+  showWorkspace?: boolean;
+  onWorkspace?: () => void;
   wordCount: number;
   children: ReactNode;
 }) {
@@ -155,6 +163,13 @@ export function ReaderCard({
               <TooltipTarget className="relative z-[1]" text="Open the full-screen booth for this chapter">
                 <Button variant="ghost" className="text-xs" aria-label={`Open booth for ${title}`} onClick={onBooth}>
                   <FontAwesomeIcon icon={faExpand} /> Booth
+                </Button>
+              </TooltipTarget>
+            )}
+            {showWorkspace && (
+              <TooltipTarget className="relative z-[1]" text="Open the chapter workspace: listen, follow the script and see flags">
+                <Button variant="ghost" className="text-xs" aria-label={`Open workspace for ${title}`} onClick={onWorkspace}>
+                  <FontAwesomeIcon icon={faWaveSquare} />
                 </Button>
               </TooltipTarget>
             )}

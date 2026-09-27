@@ -68,10 +68,15 @@ const escapeSelector = (value: string) =>
 export function Manuscript({
   notify,
   focusStoryBibleEntity,
+  goToWorkspace,
   projectFolder,
 }: {
   notify: Notify;
   focusStoryBibleEntity: (id: string) => void;
+  /** "Open workspace" from a narration chapter's header (edit-and-proof-workspace.prd.md Phase 4, page inventory
+   * "Manuscript: Keep. Share the paragraph renderer; the chapter header gets 'Open workspace'"). Optional so a caller
+   * with no workspace to open (none today) still type-checks. */
+  goToWorkspace?: (chapterId: string) => void;
   /** Keys the credits cards' remembered open state (MC5 b): a project's own choice, not the viewer's in general. */
   projectFolder: string;
 }) {
@@ -614,6 +619,8 @@ export function Manuscript({
                 setReadAloudMode('booth');
                 setReadAloud({ kind: 'chapter', chapter });
               }}
+              showWorkspace={goToWorkspace !== undefined && isNarrationChapter(chapter)}
+              onWorkspace={() => goToWorkspace?.(chapter.id)}
               wordCount={chapter.wordCount}
             >
               {loadingChapters.has(chapter.id) ? (

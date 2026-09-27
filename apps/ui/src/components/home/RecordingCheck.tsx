@@ -64,12 +64,17 @@ export function RecordingCheck({
   notify,
   close,
   goToParagraph,
+  openWorkspace,
 }: {
   chapter: ManuscriptChapter;
   coverage: CoverageState;
   notify: Notify;
   close: () => void;
   goToParagraph: (index: number) => void;
+  /** "Open workspace" (edit-and-proof-workspace.prd.md Phase 4, page inventory "Home › recording check dialog"):
+   * undefined when this dialog is itself opened from the workspace (WorkspacePage.tsx's own Check again), where
+   * there is nothing to open. */
+  openWorkspace?: () => void;
 }) {
   const api = useApi();
   const [result, setResult] = useState<CoverageResult>();
@@ -241,6 +246,7 @@ export function RecordingCheck({
           goToParagraph={goToParagraph}
           showReasons={!refusal}
           checkButton={checkButton}
+          openWorkspace={openWorkspace}
         />
       </div>
     </SlideOver>
@@ -255,6 +261,7 @@ function ResultBody({
   goToParagraph,
   showReasons,
   checkButton,
+  openWorkspace,
 }: {
   chapter: ManuscriptChapter;
   result?: CoverageResult;
@@ -265,6 +272,7 @@ function ResultBody({
   /** Check recording / Check again (recording-check-summary.prd.md Phase 4): the slide-over has no dialog action bar,
    * so it sits with the report's own figures when there is a report, and right here otherwise. */
   checkButton: ReactNode;
+  openWorkspace?: () => void;
 }) {
   if (loadError) {
     return (
@@ -314,7 +322,14 @@ function ResultBody({
         </p>
       )}
       {result.result && (
-        <RecordingCheckReport chapter={chapter} report={result.result} judgement={result.judgement} goToParagraph={goToParagraph} actionsSlot={checkButton} />
+        <RecordingCheckReport
+          chapter={chapter}
+          report={result.result}
+          judgement={result.judgement}
+          goToParagraph={goToParagraph}
+          actionsSlot={checkButton}
+          openWorkspace={openWorkspace}
+        />
       )}
     </>
   );

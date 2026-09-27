@@ -17,7 +17,8 @@ function renderPage({
   overrides = {},
   initial = {},
   hasManuscript = true,
-}: { overrides?: Partial<NarrationApi>; initial?: Initial; hasManuscript?: boolean } = {}) {
+  goToWorkspace,
+}: { overrides?: Partial<NarrationApi>; initial?: Initial; hasManuscript?: boolean; goToWorkspace?: (chapterId: string, findingId: string) => void } = {}) {
   const api = createMockApi(overrides, initial);
   const goToManuscript = vi.fn();
   const goToStoryBible = vi.fn();
@@ -25,7 +26,13 @@ function renderPage({
   render(
     <ApiProvider api={api}>
       <TooltipProvider>
-        <ReviewPage notify={notify} hasManuscript={hasManuscript} goToManuscript={goToManuscript} goToStoryBible={goToStoryBible} />
+        <ReviewPage
+          notify={notify}
+          hasManuscript={hasManuscript}
+          goToManuscript={goToManuscript}
+          goToStoryBible={goToStoryBible}
+          goToWorkspace={goToWorkspace}
+        />
       </TooltipProvider>
     </ApiProvider>,
   );
@@ -183,6 +190,23 @@ describe('ReviewPage', () => {
     await openFinding(user, /^.White Rabbit./);
     await user.click(screen.getByRole('button', { name: 'Open in Story Bible' }));
     expect(goToStoryBible).toHaveBeenCalledWith('white-rabbit');
+  });
+
+  // edit-and-proof-workspace.prd.md Phase 4: "Open in workspace" from a finding, deep-linking to it (?finding=<id>).
+  it('opens the chapter workspace on the finding when the caller has one', async () => {
+    const user = userEvent.setup();
+    const goToWorkspace = vi.fn();
+    renderPage({ goToWorkspace });
+    await openFinding(user, /pink eyes/);
+    await user.click(screen.getByRole('button', { name: 'Open in workspace' }));
+    expect(goToWorkspace).toHaveBeenCalledWith('chapter-1', '1a2b3c4d5e6f708192a3b4c5');
+  });
+
+  it('renders no Open in workspace button when the caller has none', async () => {
+    const user = userEvent.setup();
+    renderPage();
+    await openFinding(user, /pink eyes/);
+    expect(screen.queryByRole('button', { name: 'Open in workspace' })).toBeNull();
   });
 
   it('keeps Show in manuscript off, with the reason, when there is no manuscript', async () => {

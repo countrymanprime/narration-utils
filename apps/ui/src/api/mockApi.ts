@@ -4,12 +4,12 @@
 //
 // Each feature area's bindings live in their own file under mockHost/ (the state they share is mockHost/state.ts);
 // this file only puts them together, with the per-feature mocks beside it (teleprompterMock.ts, coverageMock.ts, ...).
-import type { NarrationApi } from '../types';
+import type { Finding, NarrationApi } from '../types';
 import { WIRE_FINDINGS, WIRE_TELEPROMPTER_DEVICES, WIRE_TRACKS_PROJECT } from './mockFixtures';
 import { mockChapterTrackMatch } from './chapterTrackMatchMock';
 import { createTeleprompterMock } from './teleprompterMock';
 import { createCoverageMock } from './coverageMock';
-import { createWorkspaceMock } from './workspaceMock';
+import { createWorkspaceMock, mockMisreadFindingSource } from './workspaceMock';
 import { createPreviewMock } from './previewMock';
 import { createStagesMock } from './stagesMock';
 import { createDawMock } from './dawMock';
@@ -95,7 +95,7 @@ export function createMockApi(
   // workspaceLoop, read by findingsReaperStatus and cleared by findingsStopLoop below, so the workspace's own loop
   // is remembered the same way a finding's is (one app loop at a time, whichever page started it).
   const workspaceLooping: { current: string | undefined } = { current: undefined };
-  const workspace = createWorkspaceMock({
+  const workspaceDeps = {
     chapters: () => s.chapters,
     paragraphs: () => s.paragraphs,
     coverageResult: peekCoverage,
@@ -103,7 +103,8 @@ export function createMockApi(
     mappings: () => s.chapterTrackMappings,
     reaper: initial.reaper,
     looping: workspaceLooping,
-  });
+  };
+  const workspace = createWorkspaceMock(workspaceDeps);
   const preview = createPreviewMock({ chapters: () => s.chapters, paragraphs: () => s.paragraphs }, initial.preview);
   const daw = createDawMock(initial.daw);
   const providers = createProvidersMock(initial.providers);
@@ -115,9 +116,40 @@ export function createMockApi(
     },
     seed: initial.stages,
   });
+  // A transcript_discrepancy finding for chapter-1's own deterministic mock misread (edit-and-proof-workspace.prd.md
+  // Phase 4): built from the same position workspaceMock.ts already timed it at, so this finding and the workspace's
+  // check-derived misread flag are the same event, merged by overlayFindings into one reviewable flag, exactly as
+  // mockups/edit-and-proof-workspace/02-flag-detail-open.webp shows. Computed fresh on every findings read
+  // (FindingsMockOptions.lazySeed), not once at boot: chapter-1 usually has no track link yet when this mock is
+  // built (the narrator, or the visual suite's own driver, confirms one on Tracks after the app has already
+  // started), so a one-off boot-time computation would see no live item and never find this finding a home.
+  const workspaceOverlayFinding = (): Finding[] => {
+    const source = mockMisreadFindingSource(workspaceDeps, 'chapter-1');
+    if (!source) return [];
+    return [
+      {
+        schema_version: 1,
+        id: 'workspace-overlay-chapter-1',
+        analyzer: 'transcript-compare',
+        project: { path: WIRE_TRACKS_PROJECT.path },
+        source: { file: WIRE_TRACKS_PROJECT.tracks[0]?.items[0]?.sourceFile, item_guid: source.itemGuid },
+        time_range: { start: source.start, end: source.end, source_start: source.start, source_end: source.end },
+        manuscript: { chapter_id: 'chapter-1', chapter_title: s.chapters.find((candidate) => candidate.id === 'chapter-1')?.title, recorded: source.heard },
+        category: 'transcript_discrepancy',
+        severity: 'warning',
+        confidence: 0.82,
+        confidence_reason: 'compare.py measured a clear pause at this discrepancy’s audio boundary — stronger secondary evidence, not proof of a misread.',
+        evidence_version: 'sha256:workspace-overlay-chapter-1',
+        review: { status: 'unreviewed' },
+      },
+    ];
+  };
   const { saveAnalyzerFindings, saveFinding, ...findings } = createFindingsMock(initial.findings ?? WIRE_FINDINGS, {
     rerunAfterFirstList: initial.findingsRerun,
     reaper: initial.reaper,
+    // Only the default seed demonstrates the overlay; a caller supplying its own findings (most tests) opts out, as
+    // it already does for WIRE_FINDINGS itself.
+    ...(initial.findings ? {} : { lazySeed: workspaceOverlayFinding }),
   });
   const takeReviewScan = createTakeReviewScanMock(saveAnalyzerFindings, endJob, initial.takeReviewScanHold);
   const takeComparison = createTakeComparisonMock({ get: findings.findingsGet, save: saveFinding }, endJob, initial.takeComparisonHold);

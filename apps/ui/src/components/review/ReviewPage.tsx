@@ -29,11 +29,14 @@ export function ReviewPage({
   hasManuscript,
   goToManuscript,
   goToStoryBible,
+  goToWorkspace,
 }: {
   notify: Notify;
   hasManuscript: boolean;
   goToManuscript: (chapter: string, paragraph?: number) => void;
   goToStoryBible: (entityId: string) => void;
+  /** "Open in workspace" (edit-and-proof-workspace.prd.md Phase 4): threaded straight through to FindingDetail. */
+  goToWorkspace?: (chapterId: string, findingId: string) => void;
 }) {
   const api = useApi();
   const [summary, setSummary] = useState<FindingsSummary>();
@@ -159,6 +162,7 @@ export function ReviewPage({
                   onChanged={changed}
                   goToManuscript={goToManuscript}
                   goToStoryBible={goToStoryBible}
+                  goToWorkspace={goToWorkspace}
                   reaperStatus={reaper.status}
                   onReaperStatusChange={reaper.refresh}
                   onCompared={compared}

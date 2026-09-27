@@ -360,6 +360,10 @@ function AppRoutes() {
   const goToManuscript = (chapter: string, paragraph?: number) =>
     guardedNavigate(`/manuscript#${paragraph !== undefined ? `p${paragraph}` : `c${encodeURIComponent(chapter)}`}`);
   const goToStoryBible = (entityId: string) => guardedNavigate(`/story-bible#${encodeURIComponent(entityId)}`);
+  // "Open in workspace" (edit-and-proof-workspace.prd.md Phase 4): from Review, Home and the Manuscript. findingId is
+  // the deep link's ?finding=, so the workspace lands on the flag that finding backs (Navigation and deep links).
+  const goToWorkspace = (chapterId: string, findingId?: string) =>
+    guardedNavigate(`/tracks/chapter/${encodeURIComponent(chapterId)}${findingId ? `?finding=${encodeURIComponent(findingId)}` : ''}`);
 
   const guardedNavigate = (next: string) => {
     const nextPath = next.split('#')[0] || '/';
@@ -419,13 +423,22 @@ function AppRoutes() {
             <Routes>
               <Route
                 path="/"
-                element={<Home data={data} go={guardedNavigate} notify={setNotice} goToManuscript={goToManuscript} refreshBootstrap={refreshBootstrap} />}
+                element={
+                  <Home
+                    data={data}
+                    go={guardedNavigate}
+                    notify={setNotice}
+                    goToManuscript={goToManuscript}
+                    goToWorkspace={goToWorkspace}
+                    refreshBootstrap={refreshBootstrap}
+                  />
+                }
               />
               <Route
                 path="/manuscript"
                 element={
                   data.manuscript ? (
-                    <Manuscript notify={setNotice} focusStoryBibleEntity={goToStoryBible} projectFolder={data.projectFolder} />
+                    <Manuscript notify={setNotice} focusStoryBibleEntity={goToStoryBible} goToWorkspace={goToWorkspace} projectFolder={data.projectFolder} />
                   ) : (
                     <Navigate to="/" replace />
                   )
@@ -460,7 +473,13 @@ function AppRoutes() {
               <Route
                 path="/review"
                 element={
-                  <ReviewPage notify={setNotice} hasManuscript={Boolean(data.manuscript)} goToManuscript={goToManuscript} goToStoryBible={goToStoryBible} />
+                  <ReviewPage
+                    notify={setNotice}
+                    hasManuscript={Boolean(data.manuscript)}
+                    goToManuscript={goToManuscript}
+                    goToStoryBible={goToStoryBible}
+                    goToWorkspace={(chapterId, findingId) => goToWorkspace(chapterId, findingId)}
+                  />
                 }
               />
               <Route path="/delivery" element={<DeliveryPage openSettings={() => guardedNavigate('/settings#delivery')} />} />
