@@ -111,4 +111,4 @@ and the name leaves the list.
 
 ---
 
-[← Proofing](proofing.md) · [Index](README.md) · [Teleprompter →](teleprompter.md)
+[← Manuscript](manuscript.md) · [Index](README.md) · [Teleprompter →](teleprompter.md)

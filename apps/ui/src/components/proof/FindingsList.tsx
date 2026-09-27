@@ -22,6 +22,16 @@ const STATUS_TONE: Record<FindingReviewStatus, StatusTone> = {
   deferred: 'info',
 };
 
+// A chip on its own `--surface` backing: StatusBadge's tints are contrast-checked over `--surface` (paletteContrast.test.ts), and a
+// selected or hovered row is `--surface-2`, so the backing keeps each chip on the pair it was checked against.
+function NoteChip({ tone, label }: { tone: StatusTone; label: string }) {
+  return (
+    <span className="inline-flex rounded-full bg-[var(--surface)] whitespace-nowrap">
+      <StatusBadge tone={tone} label={label} />
+    </span>
+  );
+}
+
 /** Proof's notes table (mock 04): the findings the host answered for the current filters, one row per note - chapter, time, type, script
  * against what was heard, where it came from and its resolution; a row opens its detail. */
 export function FindingsList({
@@ -66,7 +76,7 @@ export function FindingsList({
                 {finding.time_range ? formatTime(finding.time_range.start) : '—'}
               </TableCell>
               <TableCell>
-                <StatusBadge tone={CATEGORY_TONE[finding.category] ?? 'neutral'} label={categoryLabel(finding.category)} />
+                <NoteChip tone={CATEGORY_TONE[finding.category] ?? 'neutral'} label={categoryLabel(finding.category)} />
                 {finding.not_in_latest_run && (
                   <div className="mt-0.5 text-xs" style={{ color: 'var(--text-muted)' }}>
                     not in the latest run
@@ -79,7 +89,7 @@ export function FindingsList({
                 {finding.confidence !== null && ` · ${confidenceLabel(finding.confidence)}`}
               </TableCell>
               <TableCell className="whitespace-nowrap">
-                <StatusBadge tone={STATUS_TONE[finding.review.status]} label={STATUS_LABELS[finding.review.status]} />
+                <NoteChip tone={STATUS_TONE[finding.review.status]} label={STATUS_LABELS[finding.review.status]} />
               </TableCell>
             </TableRow>
           ))}

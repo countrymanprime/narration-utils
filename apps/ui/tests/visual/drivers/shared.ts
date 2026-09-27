@@ -166,7 +166,7 @@ export async function waitForFindingRows(page: Page, count: number): Promise<voi
 }
 
 // Selects a finding by its row text and waits for its detail, a region named by the finding's kind. On the stacked layout (below
-// `lg`) the detail sits under the list, so its title is scrolled into view for the picture.
+// `xl`) the detail sits under the list, so its title is scrolled into view for the picture.
 export async function openFindingRow(page: Page, text: RegExp, kind: string): Promise<void> {
   await page.getByRole('table', { name: 'Notes' }).locator('tbody tr[data-row]').filter({ hasText: text }).click();
   await page.getByRole('region', { name: kind }).waitFor();
@@ -584,5 +584,5 @@ export async function openDeliveryFindingOnProof(page: Page): Promise<void> {
   await measureOnDelivery(page);
   await measurementEnded(page, /^Measured 2 of 3 files; 1 could not be measured\./);
   await goToPage(page, 'Proof');
-  await openFindingRow(page, /^Sample rate 48 kHz, not 44\.1 kHz/, 'Delivery check');
+  await openFindingRow(page, /Sample rate 48 kHz, not 44\.1 kHz/, 'Delivery check');
 }

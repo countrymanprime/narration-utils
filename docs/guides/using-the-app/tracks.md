@@ -41,12 +41,12 @@ project folder and reopen the page.
 
 Under the page title, **Link a REAPER project file** (or **Link a different REAPER project file**
 once one is linked) is the same link as the pill in the [header](navigation.md). Tracks finds its
-`.rpp` on its own either way; the link is what [Proofing](proofing.md) needs.
+`.rpp` on its own either way; the link is what a chapter's [Proof view](proof.md#comparing-the-recording-with-the-script) needs.
 
 ## Pickups & duplicates
 
 Finding lines you recorded more than once (restarts, pickups and near-duplicate takes) moved to the
-[Review](review.md#pickups-and-duplicates) page: **Find pickups and duplicates…** there scans a track,
+[Proof](proof.md#pickups-and-duplicates) page: **Find pickups and duplicates…** there scans a track,
 and each group it finds is reviewed with the rest of your findings.
 
 ## REAPER tools
@@ -114,7 +114,7 @@ change the REAPER project.
 
 ![Tracks page chapter links list with one chapter confirmed to a track](../../images/ui/tracks-chapter-links.webp)
 
-A linked chapter's row also has **Open workspace**, into the [chapter workspace](workspace.md): one
+A linked chapter's row also has **Open workspace**, into the chapter's [Proof view](proof.md#the-chapter-view): one
 screen to listen to the chapter against its script and see where the recording check found a problem.
 
 When one or more chapters have a [Home](home.md#stage-suggestions) stage suggestion that can't be
@@ -145,7 +145,7 @@ corpus — a class this build cannot vouch for is never shown as done.
 
 An open candidate lists its time range, class, confidence and reason, with **Hear** to play its
 own source audio (a short lead-in included) without touching REAPER, and **Accept**, **Dismiss**
-or **Defer** to record your decision — the same review the [Review](review.md) page uses, so a
+or **Defer** to record your decision — the same review [Proof](proof.md) uses, so a
 decision here also shows up there. **Go to in REAPER** and **Loop in REAPER** move REAPER's
 cursor or loop the candidate's spot when REAPER is connected; without a connection the buttons
 are off and say why, and the rest of the panel works the same either way.
@@ -174,4 +174,4 @@ changes, and a chapter you link yourself is never overwritten.
 
 ---
 
-[← Teleprompter](teleprompter.md) · [Index](README.md) · [Chapter workspace →](workspace.md)
+[← Teleprompter](teleprompter.md) · [Index](README.md) · [Proof →](proof.md)

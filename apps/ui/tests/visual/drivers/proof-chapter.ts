@@ -118,6 +118,9 @@ export const proofChapterDrivers: Record<string, Driver> = {
     await openCompare(page);
     await clickVisible(page, 'button', 'Suggest from manuscript');
     await page.getByRole('button', { name: /^\+ / }).first().waitFor();
+    // Suggest also answers with a toast, which is compare-toast's picture: dismiss it so this one shows the pills alone.
+    await page.getByRole('button', { name: 'Dismiss message' }).click();
+    await page.locator('[data-tone]').waitFor({ state: 'detached' });
   },
   // Accepted and pending hints together: one candidate accepted (a solid pill), the rest still pending (dashed "+ Term").
   'compare-hints-chips': async (page) => {

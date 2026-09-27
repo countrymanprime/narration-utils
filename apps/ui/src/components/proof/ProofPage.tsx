@@ -183,7 +183,7 @@ export function ProofPage({
       ) : (
         <>
           <ReviewFilters summary={summary} values={filters} onChange={changeFilters} />
-          <div className="grid gap-4 lg:grid-cols-[minmax(0,1.7fr)_minmax(0,1fr)]">
+          <div className="grid gap-4 xl:grid-cols-[minmax(0,1.7fr)_minmax(0,1fr)]">
             <FindingsList
               page={page}
               selectedId={selected?.id}

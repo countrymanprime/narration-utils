@@ -2,8 +2,8 @@
 
 # Navigation
 
-[Home](home.md), [Production](production.md), [Manuscript](manuscript.md), [Proofing](proofing.md), [Story Bible](story-bible.md),
-[Teleprompter](teleprompter.md), [Tracks](tracks.md), [Review](review.md), and [Delivery](delivery.md) are
+[Home](home.md), [Production](production.md), [Manuscript](manuscript.md), [Story Bible](story-bible.md),
+[Teleprompter](teleprompter.md), [Tracks](tracks.md), [Proof](proof.md), and [Delivery](delivery.md) are
 reachable from a sidebar on the left. At
 desktop widths it stays open with labels; narrower windows switch it to icon-only, then hide
 it behind a hamburger menu that opens it as a slide-in drawer. [Settings](settings.md) lives at the
@@ -15,9 +15,9 @@ In the icon-only layout, hover an icon (or tab to it) to see the page's name.
 
 ![Icon-only navigation rail with a page name shown on hover](../../images/ui/nav-rail-tooltip.webp)
 
-Production, Manuscript, Proofing, Story Bible, and Teleprompter stay locked until a manuscript has been
-[imported on Home](home.md), and Proofing also stays locked until a REAPER project (`.rpp`) is linked to the
-project. Hovering a locked entry says what is missing. Home, Tracks, Review, and Delivery are always available.
+Production, Manuscript, Story Bible, and Teleprompter stay locked until a manuscript has been
+[imported on Home](home.md). Hovering a locked entry says what is missing. Home, Tracks, Proof, and Delivery
+are always available.
 
 The pill at the right of the header shows the REAPER link, and clicking it opens a file picker to link (or
 change) the project's `.rpp` file:
@@ -40,8 +40,9 @@ have gone Back at least once. Switching to a different project starts a fresh hi
 the project you left.
 
 Back and Forward respect the same checks the nav does: leaving unsaved changes in [Settings](settings.md) asks
-first, and leaving [Proofing](proofing.md) resets its run the same way. They only move between pages — closing a
-slide-over, the previous chapter, or the previous Story Bible entry are not Back steps.
+first, and leaving a chapter's [Proof view](proof.md#the-chapter-view) while a comparison is under way or
+showing results resets it the same way. They only move between pages — closing a slide-over, the previous
+chapter, or the previous Story Bible entry are not Back steps.
 
 ---
 

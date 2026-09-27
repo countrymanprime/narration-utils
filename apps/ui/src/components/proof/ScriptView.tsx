@@ -151,9 +151,14 @@ export function ScriptView({
           )}
         </span>
       </div>
+      {/* The script scrolls on its own, so it takes focus and a name (WCAG 2.1.1, axe scrollable-region-focusable): the arrow keys
+          scroll it even while its words are skipped off-screen by content-visibility and nothing inside can take focus. */}
       <div
         ref={containerRef}
-        className="mt-3 max-h-[28rem] space-y-3 overflow-y-auto leading-relaxed"
+        role="region"
+        aria-label="Script text"
+        tabIndex={0}
+        className="mt-3 max-h-[28rem] space-y-3 overflow-y-auto leading-relaxed focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)]"
         onScroll={() => {
           if (suppressScrollRef.current) return;
           setAutoFollow(false);
