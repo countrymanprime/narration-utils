@@ -446,8 +446,26 @@
   {
     "name": "the heartbeat drops the edit counter",
     "file": "narration_ui_bridge.lua",
-    "find": "ctx.event('PROJECT_STATUS', '', rpp, rpp == '' and '1' or '0', change_count)",
-    "replace": "ctx.event('PROJECT_STATUS', '', rpp, rpp == '' and '1' or '0')"
+    "find": "ctx.event('PROJECT_STATUS', '', rpp, rpp == '' and '1' or '0', change_count, play_state, play_position)",
+    "replace": "ctx.event('PROJECT_STATUS', '', rpp, rpp == '' and '1' or '0', '', play_state, play_position)"
+  },
+  {
+    "name": "the heartbeat drops the transport",
+    "file": "narration_ui_bridge.lua",
+    "find": "ctx.event('PROJECT_STATUS', '', rpp, rpp == '' and '1' or '0', change_count, play_state, play_position)",
+    "replace": "ctx.event('PROJECT_STATUS', '', rpp, rpp == '' and '1' or '0', change_count)"
+  },
+  {
+    "name": "a transport change waits out the heartbeat interval",
+    "file": "narration_ui_bridge.lua",
+    "find": " and play_state == last_play_state then",
+    "replace": " then"
+  },
+  {
+    "name": "a moving play position breaks the heartbeat throttle",
+    "file": "narration_ui_bridge.lua",
+    "find": "local play_state = reaper.GetPlayState()\n",
+    "replace": "local play_state = reaper.GetPlayState() + reaper.GetPlayPosition()\n"
   },
   {
     "name": "record_stop stops a recording the app did not start",
