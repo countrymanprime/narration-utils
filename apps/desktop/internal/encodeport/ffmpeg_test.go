@@ -20,7 +20,6 @@ import (
 	"github.com/countrymanprime/narration-utils/shell/internal/deliveryprofile"
 	"github.com/countrymanprime/narration-utils/shell/internal/encodeport"
 	"github.com/countrymanprime/narration-utils/shell/internal/measure"
-	"github.com/countrymanprime/narration-utils/shell/internal/port"
 )
 
 // The test binary stands in for FFmpeg: re-run with fakeFFmpegEnv set, it reads the command line the encoder passes and writes
@@ -57,13 +56,13 @@ func fakeExecutable(t *testing.T) encodeport.Locator {
 	return func() (string, error) { return exe, nil }
 }
 
-func TestTheFFmpegRowIsRegisteredForMP3OnWindows(t *testing.T) {
+func TestTheFFmpegRowIsRegisteredForMP3AndM4BOnWindows(t *testing.T) {
 	entry, err := encodeport.Encoders.Lookup(encodeport.FFmpegName)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !slices.Equal(entry.Descriptor.Modes, []string{"mp3"}) || !slices.Equal(entry.Descriptor.Platforms, []string{"windows"}) {
-		t.Errorf("descriptor = %+v, want mp3 on windows", entry.Descriptor)
+	if !slices.Equal(entry.Descriptor.Modes, []string{"mp3", "m4b"}) || !slices.Equal(entry.Descriptor.Platforms, []string{"windows"}) {
+		t.Errorf("descriptor = %+v, want mp3 and m4b on windows", entry.Descriptor)
 	}
 	if got := encodeport.Encoders.Names("windows"); !slices.Equal(got, []string{"ffmpeg"}) {
 		t.Errorf("Encoders.Names(windows) = %v, want [ffmpeg]", got)
@@ -278,20 +277,170 @@ func TestASpecNoMP3CanHaveIsRefusedBeforeFFmpegRuns(t *testing.T) {
 	wav := writeWAV(t, dir, "chapter.wav", 44100, 1, time.Second)
 	never := func() (string, error) { t.Error("FFmpeg was located for a spec it cannot write"); return "", nil }
 	for name, spec := range map[string]encodeport.Spec{
-		"a bitrate MP3 lacks":  {Format: "mp3", BitrateKbps: 190},
-		"a sample rate":        {Format: "mp3", SampleRateHz: 96000},
-		"three channels":       {Format: "mp3", Channels: 3},
-		"a format it does not": {Format: "m4b"},
+		"a bitrate MP3 lacks": {Format: "mp3", BitrateKbps: 190},
+		"a sample rate":       {Format: "mp3", SampleRateHz: 96000},
+		"three channels":      {Format: "mp3", Channels: 3},
 	} {
 		if err := encodeport.NewFFmpeg(never, nil).Encode(context.Background(), wav, filepath.Join(dir, "out.mp3"), spec); err == nil {
 			t.Errorf("%s: Encode accepted %+v", name, spec)
 		}
 	}
-	var refusal *port.NotSupportedError
-	if err := encodeport.NewFFmpeg(never, nil).Encode(context.Background(), wav, filepath.Join(dir, "out.m4b"), encodeport.Spec{Format: "m4b"}); !errors.As(err, &refusal) {
-		t.Errorf("m4b: Encode = %v, want a *port.NotSupportedError (Phase 2 adds M4B)", err)
-	}
 	assertOnly(t, dir, "chapter.wav")
+}
+
+// The M4B/AAC tests below are render-encode-master Phase 2: fakeFFmpeg's m4b branch (further down this file) stands in for
+// FFmpeg's own "ipod" muxer, writing a minimal but structurally real chapter track (the same tref/chap-and-text-track shape a
+// real FFmpeg writes, verified against imageio-ffmpeg's Linux build of the pinned wheel family) so encodeport.ReadM4BChapters
+// reads it back the same way it would a real encode's output.
+
+func TestEncodingWithNoChaptersWritesAPlainM4BWithNoChapterTrack(t *testing.T) {
+	dir := t.TempDir()
+	wav := writeWAV(t, dir, "book.wav", 44100, 1, time.Second)
+	dst := filepath.Join(dir, "book.m4b")
+	if err := encodeport.NewFFmpeg(fakeExecutable(t), nil).Encode(context.Background(), wav, dst, encodeport.Spec{Format: "m4b"}); err != nil {
+		t.Fatal(err)
+	}
+	chapters, err := encodeport.ReadM4BChapters(dst)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(chapters) != 0 {
+		t.Errorf("ReadM4BChapters = %v, want none: no chapters were asked for", chapters)
+	}
+}
+
+func TestM4BChapterBoundariesMatchTheSamePerFileDurationsChaptertagsComputes(t *testing.T) {
+	// Phase 2's own test (the PRD's phase table): the fixture set is chaptertags' own testdata, and its timeline is
+	// chaptertags.BuildTimeline's real output, cross-checked against ReadM4BChapters rather than re-derived here.
+	fixtures := []chaptertags.Chapter{
+		{Title: "Chapter 1", Path: filepath.Join("..", "chaptertags", "testdata", "chapter1.mp3")},
+		{Title: "Chapter 2", Path: filepath.Join("..", "chaptertags", "testdata", "chapter2.mp3")},
+	}
+	timeline, err := chaptertags.BuildTimeline(fixtures)
+	if err != nil {
+		t.Fatal(err)
+	}
+	chapters := make([]encodeport.Chapter, len(timeline))
+	for i, c := range timeline {
+		chapters[i] = encodeport.Chapter{Title: c.Title, Start: c.Start, End: c.End}
+	}
+
+	dir := t.TempDir()
+	wav := writeWAV(t, dir, "book.wav", 44100, 1, timeline[len(timeline)-1].End)
+	dst := filepath.Join(dir, "book.m4b")
+	spec := encodeport.Spec{Format: "m4b", Chapters: chapters}
+	if err := encodeport.NewFFmpeg(fakeExecutable(t), nil).Encode(context.Background(), wav, dst, spec); err != nil {
+		t.Fatal(err)
+	}
+
+	got, err := encodeport.ReadM4BChapters(dst)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(got) != len(timeline) {
+		t.Fatalf("ReadM4BChapters read back %d chapter(s), want %d", len(got), len(timeline))
+	}
+	for i, want := range timeline {
+		if d := absDuration(got[i].Start - want.Start); d > time.Millisecond {
+			t.Errorf("chapter %d starts at %v, chaptertags computes %v", i+1, got[i].Start, want.Start)
+		}
+		if d := absDuration(got[i].End - want.End); d > time.Millisecond {
+			t.Errorf("chapter %d ends at %v, chaptertags computes %v", i+1, got[i].End, want.End)
+		}
+	}
+}
+
+func TestTheEncoderAsksFFmpegForNativeAACAndTheIpodMuxerWithChaptersFromASecondFFMETADATAInput(t *testing.T) {
+	dir := t.TempDir()
+	wav := writeWAV(t, dir, "book.wav", 48000, 2, time.Second)
+	record := filepath.Join(dir, "args.txt")
+	t.Setenv(fakeArgsEnv, record)
+	spec := encodeport.Spec{
+		Format: "m4b", BitrateKbps: 96, Channels: 1,
+		Chapters: []encodeport.Chapter{{Title: "Chapter One", Start: 0, End: time.Second}},
+	}
+	if err := encodeport.NewFFmpeg(fakeExecutable(t), nil).Encode(context.Background(), wav, filepath.Join(dir, "out.m4b"), spec); err != nil {
+		t.Fatal(err)
+	}
+	body, err := os.ReadFile(record)
+	if err != nil {
+		t.Fatal(err)
+	}
+	args := strings.Join(strings.Split(strings.TrimSpace(string(body)), "\n"), " ")
+	for _, want := range []string{
+		"-nostdin", "-protocol_whitelist file", "-i file:" + wav, "-f ffmetadata", "-map_metadata 1",
+		"-map 0:a:0", "-c:a aac", "-b:a 96k", "-ac 1", "-f ipod", "-progress pipe:1",
+	} {
+		if !strings.Contains(args, want) {
+			t.Errorf("the command line %q lacks %q", args, want)
+		}
+	}
+	if strings.Contains(args, "-c:a libmp3lame") || strings.Contains(args, "-write_xing") {
+		t.Errorf("the command line %q asks for MP3, not AAC", args)
+	}
+}
+
+func TestAnM4BWithAMalformedChapterIsRefusedBeforeFFmpegRuns(t *testing.T) {
+	dir := t.TempDir()
+	wav := writeWAV(t, dir, "book.wav", 44100, 1, time.Second)
+	never := func() (string, error) {
+		t.Error("FFmpeg was located for a chapter list it cannot write")
+		return "", nil
+	}
+	for name, chapters := range map[string][]encodeport.Chapter{
+		"an empty title":          {{Title: "  ", Start: 0, End: time.Second}},
+		"an end before its start": {{Title: "Chapter One", Start: time.Second, End: 0}},
+		"a negative start":        {{Title: "Chapter One", Start: -time.Second, End: 0}},
+	} {
+		spec := encodeport.Spec{Format: "m4b", Chapters: chapters}
+		if err := encodeport.NewFFmpeg(never, nil).Encode(context.Background(), wav, filepath.Join(dir, "out.m4b"), spec); err == nil {
+			t.Errorf("%s: Encode accepted %+v", name, chapters)
+		}
+	}
+	assertOnly(t, dir, "book.wav")
+}
+
+func TestCancellingMidM4BEncodeLeavesNoFileAtTheDestinationAndNoPartialBesideIt(t *testing.T) {
+	dir := t.TempDir()
+	wav := writeWAV(t, dir, "book.wav", 44100, 1, time.Second)
+	dst := filepath.Join(dir, "book.m4b")
+	t.Setenv(fakeModeEnv, "hang")
+	ctx, cancel := context.WithCancel(context.Background())
+	started := make(chan struct{})
+	var once sync.Once
+	spec := encodeport.Spec{
+		Format: "m4b", Chapters: []encodeport.Chapter{{Title: "Chapter One", Start: 0, End: time.Second}},
+		Progress: func(time.Duration, time.Duration) { once.Do(func() { close(started) }) },
+	}
+	done := make(chan error, 1)
+	go func() { done <- encodeport.NewFFmpeg(fakeExecutable(t), nil).Encode(ctx, wav, dst, spec) }()
+	select {
+	case <-started:
+	case <-time.After(10 * time.Second):
+		t.Fatal("the fake FFmpeg never reported progress")
+	}
+	cancel()
+	select {
+	case err := <-done:
+		if !errors.Is(err, context.Canceled) {
+			t.Errorf("Encode after cancel = %v, want context.Canceled", err)
+		}
+	case <-time.After(10 * time.Second):
+		t.Fatal("Encode did not return after its context was cancelled")
+	}
+	assertOnly(t, dir, "book.wav")
+}
+
+func TestAnM4BWhoseChaptersDoNotMatchWhatWasAskedIsRefusedAndRemoved(t *testing.T) {
+	dir := t.TempDir()
+	wav := writeWAV(t, dir, "book.wav", 44100, 1, time.Second)
+	t.Setenv(fakeModeEnv, "wrongchapters")
+	spec := encodeport.Spec{Format: "m4b", Chapters: []encodeport.Chapter{{Title: "Chapter One", Start: 0, End: time.Second}}}
+	err := encodeport.NewFFmpeg(fakeExecutable(t), nil).Encode(context.Background(), wav, filepath.Join(dir, "book.m4b"), spec)
+	if err == nil {
+		t.Fatal("Encode accepted an M4B whose written chapters do not match its Spec")
+	}
+	assertOnly(t, dir, "book.wav")
 }
 
 func TestAFileThatIsNotAWAVIsRefused(t *testing.T) {
@@ -351,6 +500,63 @@ func TestTheRealFFmpegWritesMP3sTheACXChecksAccept(t *testing.T) {
 			t.Fatal(err)
 		}
 		assertACXAccepts(t, dst, encodeport.DefaultMP3BitrateKbps)
+	})
+}
+
+// TestTheRealFFmpegWritesM4BsWhoseChaptersReadMBack is Phase 2's own verification as a test, alongside Phase 0's: run it with
+// NARRATION_UTILS_FFMPEG set to the catalogued ffmpeg.exe (or any FFmpeg with a native AAC encoder and an "ipod" muxer) to
+// prove the real binary's chapters, not just fakeM4B's stand-in for them, read back through ReadM4BChapters.
+func TestTheRealFFmpegWritesM4BsWhoseChaptersReadMBack(t *testing.T) {
+	executable := os.Getenv(realFFmpegEnv)
+	if executable == "" {
+		t.Skipf("set %s to an FFmpeg executable to run the real encode", realFFmpegEnv)
+	}
+	t.Setenv(fakeFFmpegEnv, "")
+	locate := func() (string, error) { return executable, nil }
+
+	t.Run("no chapters", func(t *testing.T) {
+		dir := t.TempDir()
+		wav := writeTone(t, dir, 44100, 1, time.Second)
+		dst := filepath.Join(dir, "book.m4b")
+		if err := encodeport.NewFFmpeg(locate, nil).Encode(context.Background(), wav, dst, encodeport.Spec{Format: "m4b"}); err != nil {
+			t.Fatal(err)
+		}
+		got, err := encodeport.ReadM4BChapters(dst)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if len(got) != 0 {
+			t.Errorf("ReadM4BChapters = %v, want none", got)
+		}
+	})
+
+	t.Run("chapters", func(t *testing.T) {
+		want := []encodeport.Chapter{
+			{Title: "Opening Credits", Start: 0, End: time.Second},
+			{Title: "Chapter One: A Test; #Two \\ Three", Start: time.Second, End: 3 * time.Second},
+		}
+		dir := t.TempDir()
+		wav := writeTone(t, dir, 48000, 2, 3*time.Second)
+		dst := filepath.Join(dir, "book.m4b")
+		spec := encodeport.Spec{Format: "m4b", BitrateKbps: 96, Chapters: want}
+		if err := encodeport.NewFFmpeg(locate, nil).Encode(context.Background(), wav, dst, spec); err != nil {
+			t.Fatal(err)
+		}
+		got, err := encodeport.ReadM4BChapters(dst)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if len(got) != len(want) {
+			t.Fatalf("ReadM4BChapters read back %d chapter(s), want %d", len(got), len(want))
+		}
+		for i, w := range want {
+			if d := absDuration(got[i].Start - w.Start); d > time.Millisecond {
+				t.Errorf("chapter %d starts at %v, want %v", i+1, got[i].Start, w.Start)
+			}
+			if d := absDuration(got[i].End - w.End); d > time.Millisecond {
+				t.Errorf("chapter %d ends at %v, want %v", i+1, got[i].End, w.End)
+			}
+		}
 	})
 }
 
@@ -481,6 +687,9 @@ func fakeFFmpeg(args []string) int {
 	_ = in.Close()
 	format := reader.Format()
 	seconds := float64(info.Size()) / float64(format.SampleRate*format.Channels*format.BitsPerSample/8)
+	if option("-c:a", "libmp3lame") == "aac" {
+		return fakeM4B(args, out, seconds)
+	}
 	bitrate, _ := strconv.Atoi(strings.TrimSuffix(option("-b:a", "192k"), "k"))
 	rate, _ := strconv.Atoi(option("-ar", strconv.Itoa(format.SampleRate)))
 	channels, _ := strconv.Atoi(option("-ac", strconv.Itoa(format.Channels)))
@@ -527,4 +736,154 @@ func frames(bitrate, rate, channels, count int) []byte {
 	frame := make([]byte, 144*bitrate*1000/rate)
 	binary.BigEndian.PutUint32(frame, header)
 	return bytes.Repeat(frame, count)
+}
+
+func absDuration(d time.Duration) time.Duration {
+	if d < 0 {
+		return -d
+	}
+	return d
+}
+
+// fakeChapter is one [CHAPTER] section fakeM4B read from the FFMETADATA input m4bArgs gives it (encodeport/m4b.go), in the
+// same milliseconds ffmetadata() writes (TIMEBASE=1/1000).
+type fakeChapter struct{ startMs, endMs int64 }
+
+// fakeM4B stands in for FFmpeg's "ipod" muxer: it writes a minimal MP4 with an audio (soun) track and, when args named an
+// FFMETADATA input with any chapters, a QuickTime "chapters" text track in the tref/chap-and-stts shape
+// encodeport.ReadM4BChapters reads back - the same shape a real FFmpeg 7.0.2 encode of the imageio-ffmpeg wheel family (the
+// catalogued Windows build's own family, ADR 0342) was found to write, checked by hand against this reader while this phase
+// was written.
+func fakeM4B(args []string, out string, seconds float64) int {
+	chapters := fakeM4BChaptersFromArgs(args)
+	switch os.Getenv(fakeModeEnv) {
+	case "fail":
+		_ = os.WriteFile(out, []byte("half an m4b"), 0o600)
+		fmt.Fprintln(os.Stderr, "the fake encoder broke")
+		return 3
+	case "hang":
+		_ = os.WriteFile(out, []byte("partial m4b"), 0o600)
+		fmt.Printf("out_time_us=%d\nprogress=continue\n", 100000)
+		time.Sleep(time.Minute)
+		return 0
+	case "wrongchapters":
+		// Extends every chapter's own duration, so the file's cumulative boundaries no longer match what was asked - proving
+		// checkM4B reads what FFmpeg actually wrote rather than trusting the request.
+		for i := range chapters {
+			chapters[i].endMs += 500
+		}
+	}
+	for step := 1; step <= 4; step++ {
+		fmt.Printf("out_time_us=%d\nprogress=continue\n", int64(seconds*1e6)*int64(step)/4)
+	}
+	fmt.Print("progress=end\n")
+	if err := os.WriteFile(out, fakeM4BBytes(chapters), 0o600); err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		return 1
+	}
+	return 0
+}
+
+// fakeM4BChaptersFromArgs reads the chapters from the FFMETADATA file m4bArgs passed as a second input (the argument after
+// the "-i" that follows "ffmetadata"), the same file a real FFmpeg would read them from. No such input (an m4b encode with no
+// chapters) answers nil.
+func fakeM4BChaptersFromArgs(args []string) []fakeChapter {
+	idx := slices.Index(args, "ffmetadata")
+	if idx < 0 {
+		return nil
+	}
+	for i := idx; i < len(args)-1; i++ {
+		if args[i] == "-i" {
+			return parseFFMetadataChapters(strings.TrimPrefix(args[i+1], "file:"))
+		}
+	}
+	return nil
+}
+
+// parseFFMetadataChapters reads an FFMETADATA1 file's [CHAPTER] sections (encodeport.ffmetadata's own format) for their
+// START and END fields; a title is not needed to build the stts entries fakeM4BBytes writes.
+func parseFFMetadataChapters(path string) []fakeChapter {
+	body, err := os.ReadFile(path)
+	if err != nil {
+		return nil
+	}
+	var chapters []fakeChapter
+	var cur fakeChapter
+	open := false
+	for _, line := range strings.Split(string(body), "\n") {
+		line = strings.TrimSpace(line)
+		switch {
+		case line == "[CHAPTER]":
+			if open {
+				chapters = append(chapters, cur)
+			}
+			cur, open = fakeChapter{}, true
+		case strings.HasPrefix(line, "START="):
+			cur.startMs, _ = strconv.ParseInt(strings.TrimPrefix(line, "START="), 10, 64)
+		case strings.HasPrefix(line, "END="):
+			cur.endMs, _ = strconv.ParseInt(strings.TrimPrefix(line, "END="), 10, 64)
+		}
+	}
+	if open {
+		chapters = append(chapters, cur)
+	}
+	return chapters
+}
+
+// fakeM4BBytes is a minimal MP4: an ftyp, then a moov with one audio (soun) trak and, when chapters is not empty, a second,
+// chapter (text) trak the audio track's tref/chap names, its mdia/mdhd timescale 1000 (milliseconds) and one stts entry per
+// chapter holding that chapter's duration - what encodeport.ReadM4BChapters walks back into Start/End boundaries.
+func fakeM4BBytes(chapters []fakeChapter) []byte {
+	tkhdAudio := make([]byte, 84) // version 0 (byte 0); track_ID at offset 12
+	binary.BigEndian.PutUint32(tkhdAudio[12:16], 1)
+	hdlrAudio := make([]byte, 12) // version/flags(4) + predefined(4) + handler_type(4)
+	copy(hdlrAudio[8:12], "soun")
+
+	audioChildren := [][]byte{mp4box("tkhd", tkhdAudio)}
+	if len(chapters) > 0 {
+		chapterTrackID := make([]byte, 4)
+		binary.BigEndian.PutUint32(chapterTrackID, 2)
+		audioChildren = append(audioChildren, mp4box("tref", mp4box("chap", chapterTrackID)))
+	}
+	audioChildren = append(audioChildren, mp4box("mdia", mp4box("hdlr", hdlrAudio)))
+	trakAudio := mp4box("trak", audioChildren...)
+
+	moovChildren := [][]byte{trakAudio}
+	if len(chapters) > 0 {
+		tkhdChap := make([]byte, 84)
+		binary.BigEndian.PutUint32(tkhdChap[12:16], 2)
+		mdhdChap := make([]byte, 24) // version/flags(4) creation(4) modification(4) timescale(4) duration(4) lang(2) pad(2)
+		binary.BigEndian.PutUint32(mdhdChap[12:16], 1000)
+		hdlrChap := make([]byte, 12)
+		copy(hdlrChap[8:12], "text")
+
+		var stts bytes.Buffer
+		stts.Write(make([]byte, 4)) // version/flags
+		entryCount := make([]byte, 4)
+		binary.BigEndian.PutUint32(entryCount, uint32(len(chapters)))
+		stts.Write(entryCount)
+		for _, c := range chapters {
+			entry := make([]byte, 8)
+			binary.BigEndian.PutUint32(entry[0:4], 1) // sample_count=1: one sample (this chapter) per stts entry
+			binary.BigEndian.PutUint32(entry[4:8], uint32(c.endMs-c.startMs))
+			stts.Write(entry)
+		}
+
+		trakChap := mp4box("trak", mp4box("tkhd", tkhdChap), mp4box("mdia",
+			mp4box("mdhd", mdhdChap), mp4box("hdlr", hdlrChap), mp4box("minf", mp4box("stbl", mp4box("stts", stts.Bytes())))))
+		moovChildren = append(moovChildren, trakChap)
+	}
+	return append(mp4box("ftyp", []byte("M4A \x00\x00\x02\x00M4A isomiso2")), mp4box("moov", moovChildren...)...)
+}
+
+// mp4box wraps the concatenation of parts (raw bytes, or other boxes built the same way) in a box named typ.
+func mp4box(typ string, parts ...[]byte) []byte {
+	var payload []byte
+	for _, p := range parts {
+		payload = append(payload, p...)
+	}
+	b := make([]byte, 8, 8+len(payload))
+	binary.BigEndian.PutUint32(b[0:4], uint32(8+len(payload)))
+	copy(b[4:8], typ)
+	return append(b, payload...)
 }

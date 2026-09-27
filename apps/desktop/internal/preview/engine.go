@@ -46,6 +46,7 @@ func Suggest(in Input) Result {
 
 	chapters := excludeEnding(in.Chapters, settings.ExcludeEndingFraction)
 	byChapter := chapterParagraphs(in.Paragraphs)
+	findingsByChap := findingsByChapter(in.OpenFindings)
 
 	var candidates []Candidate
 	for _, chapter := range chapters {
@@ -56,7 +57,7 @@ func Suggest(in Input) Result {
 		if len(paragraphs) == 0 {
 			continue
 		}
-		if best, ok := bestWindow(chapter, paragraphs, lowWords, highWords, in.HardWords); ok {
+		if best, ok := bestWindow(chapter, paragraphs, lowWords, highWords, in.HardWords, findingsByChap[chapter.ID], settings); ok {
 			candidates = append(candidates, best)
 		}
 	}
@@ -124,7 +125,13 @@ func excludeEnding(chapters []Chapter, excludeFraction float64) []Chapter {
 // a two-pointer scan over cumulative word counts (linear in the chapter's own paragraph count: as the window's start
 // advances, its required end never moves backward). When no window reaches lowWords even using every paragraph, it
 // answers the whole chapter, honestly marked Shorter.
-func bestWindow(chapter Chapter, paragraphs []Paragraph, lowWords, highWords float64, hardWords map[string]bool) (Candidate, bool) {
+//
+// findings is this chapter's open findings (Phase 5, Q7): for the Sample preset, a window whose anchored findings
+// include a hard-gate category at warning or above is excluded from scoring outright, not merely ranked down (a
+// SpotCheck window is never excluded, only ranked down - Q7's "C for Sample... B for the rest"). Every candidate
+// this function returns already carries its findings evidence and penalty (attachFindings), whichever preset chose
+// it and whether or not any window came back clean.
+func bestWindow(chapter Chapter, paragraphs []Paragraph, lowWords, highWords float64, hardWords map[string]bool, findings []OpenFinding, settings Settings) (Candidate, bool) {
 	counts := make([]int, len(paragraphs))
 	total := 0
 	for i, p := range paragraphs {
@@ -132,7 +139,7 @@ func bestWindow(chapter Chapter, paragraphs []Paragraph, lowWords, highWords flo
 		total += counts[i]
 	}
 	if float64(total) < lowWords {
-		return wholeChapterCandidate(chapter, paragraphs, total, hardWords), true
+		return wholeChapterCandidate(chapter, paragraphs, total, hardWords, findings), true
 	}
 
 	var best Candidate
@@ -156,7 +163,12 @@ func bestWindow(chapter Chapter, paragraphs []Paragraph, lowWords, highWords flo
 			continue
 		}
 		candidate := windowCandidate(chapter, paragraphs[start:end], sum, hardWords)
-		s := score(candidate, Settings{Preset: PresetSample})
+		candidate, wf := attachFindings(candidate, findings)
+		if settings.Preset == PresetSample && wf.hasHard() {
+			sum -= counts[start]
+			continue
+		}
+		s := score(candidate, settings)
 		if s > bestScore {
 			best, bestScore, bestFound = candidate, s, true
 		}
@@ -165,22 +177,27 @@ func bestWindow(chapter Chapter, paragraphs []Paragraph, lowWords, highWords flo
 	if bestFound {
 		return best, true
 	}
-	// Every window that reached lowWords overshot highWords (a chapter of very long paragraphs): the shortest
-	// in-tolerance-or-better window available is still the most honest answer, so widen the tolerance's high side
-	// to the first window that reaches lowWords at all, rather than reporting no candidate for a chapter that does
-	// have enough text.
+	// Every window that reached lowWords overshot highWords (a chapter of very long paragraphs), or every one that
+	// fit was hard-gated for Sample: the shortest in-tolerance-or-better window available is still the most honest
+	// answer, so widen the tolerance's high side to the first window that reaches lowWords at all, rather than
+	// reporting no candidate for a chapter that does have enough eligible text. Its own findings evidence still
+	// names whatever it carries (never a silent pass), even when that means a Sample candidate is not, in fact,
+	// clean - Q12 gives this chapter only one candidate, so there is no other window left to offer instead.
 	end, sum = 0, 0
 	for end < len(paragraphs) && float64(sum) < lowWords {
 		sum += counts[end]
 		end++
 	}
-	return windowCandidate(chapter, paragraphs[:end], sum, hardWords), true
+	candidate := windowCandidate(chapter, paragraphs[:end], sum, hardWords)
+	candidate, _ = attachFindings(candidate, findings)
+	return candidate, true
 }
 
-func wholeChapterCandidate(chapter Chapter, paragraphs []Paragraph, total int, hardWords map[string]bool) Candidate {
+func wholeChapterCandidate(chapter Chapter, paragraphs []Paragraph, total int, hardWords map[string]bool, findings []OpenFinding) Candidate {
 	c := windowCandidate(chapter, paragraphs, total, hardWords)
 	c.Shorter = true
 	c.Warnings = append(c.Warnings, "This chapter is shorter than the target length even in full.")
+	c, _ = attachFindings(c, findings)
 	return c
 }
 

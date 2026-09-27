@@ -130,6 +130,11 @@
               "value": "no findings for this chapter (its runs are not recorded, so it cannot vouch for the chapter)"
             },
             {
+              "kind": "source",
+              "label": "Proofer markers",
+              "value": "not run for this chapter"
+            },
+            {
               "file": "chapter-one.wav",
               "findingId": "pickup-1",
               "kind": "pickup",

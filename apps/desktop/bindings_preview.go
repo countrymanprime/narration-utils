@@ -4,6 +4,7 @@ import (
 	"math"
 	"strconv"
 
+	"github.com/countrymanprime/narration-utils/shell/internal/findings"
 	"github.com/countrymanprime/narration-utils/shell/internal/manuscript"
 	"github.com/countrymanprime/narration-utils/shell/internal/preview"
 	"github.com/countrymanprime/narration-utils/shell/internal/settings"
@@ -130,7 +131,51 @@ func (h *Host) PreviewCandidates() (string, error) {
 	if err != nil {
 		return encodeBinding(previewNoManuscript, nil)
 	}
+	input.OpenFindings = previewOpenFindings(svc.findings)
 	return encodeBinding(previewView(preview.Suggest(input)), nil)
+}
+
+// previewOpenFindings is Phase 5's own adapter over the RD-1 findings store: every finding this project has
+// recorded, filtered to open (PS Q2: unreviewed, accepted or deferred - a dismissed one is never built into an
+// OpenFinding at all, so the engine cannot un-dismiss what it never receives) and not held back as
+// NotInLatestRun (Store.List's own default, findings.Query{}'s zero value). store is nil when no project is
+// open; that reads as "no findings known", the same as an empty result, never an error PreviewCandidates has to
+// handle specially.
+func previewOpenFindings(store *findings.Store) []preview.OpenFinding {
+	if store == nil {
+		return nil
+	}
+	all, err := store.List(findings.Query{})
+	if err != nil {
+		return nil
+	}
+	var open []preview.OpenFinding
+	for _, f := range all {
+		if f.Review.Status == findings.StatusDismissed {
+			continue
+		}
+		open = append(open, previewOpenFinding(f))
+	}
+	return open
+}
+
+// previewOpenFinding narrows one findings.Finding to the plain fields Phase 5's engine reads (Architecture
+// Notes: "small read-only interfaces" - the engine itself never imports the findings package). ParagraphID is
+// "" when the finding carries no Manuscript.Span (TR-4's pickup and duplicate-read findings never set one
+// today), which the engine already treats as a chapter-level warning rather than a silent pass.
+func previewOpenFinding(f findings.Finding) preview.OpenFinding {
+	open := preview.OpenFinding{
+		ID:       f.ID,
+		Category: preview.FindingCategory(f.Category),
+		Severity: preview.FindingSeverity(f.Severity),
+	}
+	if f.Manuscript != nil {
+		open.ChapterID = f.Manuscript.ChapterID
+		if f.Manuscript.Span != nil {
+			open.ParagraphID = f.Manuscript.Span.ParagraphID
+		}
+	}
+	return open
 }
 
 // previewInput builds preview.Input from the manuscript service's loosely-typed reader payloads (Chapters,
