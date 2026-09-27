@@ -56,7 +56,7 @@ class PronounceSourceTests(unittest.TestCase):
     def test_espeak_returns_its_pronunciation_when_it_has_one(self):
         with patch("phonemizer.phonemize", return_value="n eɪ m"):
             value = guide.pronounce_source("Name", None, "espeak")
-        self.assertEqual({"ipa": "n eɪ m", "source": "eSpeak NG", "confidence": "low"}, value)
+        self.assertEqual({"ipa": "n eɪ m", "source": "Letter-to-sound guess (eSpeak NG)", "confidence": "low"}, value)
 
     def test_an_unknown_source_is_refused(self):
         with self.assertRaises(ValueError):

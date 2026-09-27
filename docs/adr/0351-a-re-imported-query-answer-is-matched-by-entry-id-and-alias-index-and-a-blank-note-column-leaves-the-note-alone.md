@@ -1,4 +1,4 @@
-# 0348. A re-imported query answer is matched by entry id and alias index, and a blank note column leaves the note alone
+# 0351. A re-imported query answer is matched by entry id and alias index, and a blank note column leaves the note alone
 
 **Status:** Accepted
 **Date:** 2026-09-27
