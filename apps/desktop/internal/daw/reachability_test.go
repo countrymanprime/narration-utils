@@ -143,3 +143,59 @@ func TestReachabilityChangeCountIsUnknownOnceTheHeartbeatIsStale(t *testing.T) {
 		t.Fatal("ChangeCount() is known from a stale heartbeat")
 	}
 }
+
+// DAW port PRD Phase 9 (ADR 0305): the heartbeat's fifth and sixth fields are the transport, GetPlayState's bit field and
+// GetPlayPosition, so the host knows REAPER is playing or recording without asking it.
+func TestReachabilityTransportFollowsTheHeartbeat(t *testing.T) {
+	cases := []struct {
+		name      string
+		playState string
+		want      Transport
+	}{
+		{"stopped", "0", Transport{Position: 12.5}},
+		{"playing", "1", Transport{Playing: true, Position: 12.5}},
+		{"paused", "2", Transport{Position: 12.5}},
+		{"recording", "5", Transport{Playing: true, Recording: true, Position: 12.5}},
+		// A paused recording still has its take open: the booth keeps quiet until it is stopped.
+		{"recording paused", "6", Transport{Recording: true, Position: 12.5}},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			reach := NewReachability(nil)
+			reach.Record(bridge.Event{Fields: []string{"PROJECT_STATUS", "", "C:/p/Book.rpp", "0", "3", c.playState, "12.500000"}})
+			got, ok := reach.Transport()
+			if !ok || got != c.want {
+				t.Fatalf("Transport() = (%+v, %v), want (%+v, true)", got, ok, c.want)
+			}
+		})
+	}
+}
+
+func TestReachabilityTransportIsUnknownWithoutTheFields(t *testing.T) {
+	reach := NewReachability(nil)
+	if _, ok := reach.Transport(); ok {
+		t.Fatal("Transport() ok with no heartbeat at all")
+	}
+	// An older bridge script's heartbeat, with no transport fields.
+	reach.Record(bridge.Event{Fields: []string{"PROJECT_STATUS", "", "C:/p/Book.rpp", "0", "3"}})
+	if _, ok := reach.Transport(); ok {
+		t.Fatal("Transport() ok from a heartbeat that carried no transport")
+	}
+	// A later heartbeat that carries one, then an older-shaped one again: the stale transport is not kept.
+	reach.Record(bridge.Event{Fields: []string{"PROJECT_STATUS", "", "C:/p/Book.rpp", "0", "3", "5", "1.000000"}})
+	reach.Record(bridge.Event{Fields: []string{"PROJECT_STATUS", "", "C:/p/Book.rpp", "0", "3"}})
+	if _, ok := reach.Transport(); ok {
+		t.Fatal("Transport() kept a transport the last heartbeat did not carry")
+	}
+}
+
+func TestReachabilityTransportIsUnknownOnceTheHeartbeatIsStale(t *testing.T) {
+	reach := NewReachability(nil)
+	clock := time.Now()
+	reach.now = func() time.Time { return clock }
+	reach.Record(bridge.Event{Fields: []string{"PROJECT_STATUS", "", "C:/p/Book.rpp", "0", "3", "5", "1.000000"}})
+	clock = clock.Add(heartbeatTimeout + time.Second)
+	if got, ok := reach.Transport(); ok {
+		t.Fatalf("Transport() = (%+v, true) after the heartbeat timed out: a closed REAPER is not still recording", got)
+	}
+}

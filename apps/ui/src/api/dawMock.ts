@@ -3,7 +3,7 @@
 // refusal order (declaration, then toggle, then runtime) as apps/desktop/internal/dawport/resolver.go. It has no
 // action of its own to trigger a live update from - it always answers the seeded picture - so subscribeDawCapabilities
 // only emits once, on subscribe, like every other subscribe-based mock that has nothing pending.
-import type { DawCapabilities, DawCapabilityKey, DawCapabilityLevel, DawCapabilitySupport, DawCapabilitiesApi, DawKind } from './contracts/daw';
+import type { DawCapabilities, DawCapabilityKey, DawCapabilityLevel, DawCapabilitySupport, DawCapabilitiesApi, DawKind, DawTransport } from './contracts/daw';
 import { DAW_CAPABILITIES } from './contracts/daw';
 import { wireClone } from './mockFixtures';
 
@@ -86,6 +86,9 @@ export type DawMockSeed = {
   toggles?: Partial<Record<DawCapabilityKey, DawToggle>>;
   /** The old DAW.experimental_reaper_actions switch: while true, every Experimental capability left on 'auto' is on. */
   experimentalOn?: boolean;
+  /** The transport daw_transport_changed reports (DAW port PRD Phase 9); defaults to stopped. Only a connected, reachable
+   * REAPER reports one: every other seed is stopped whatever this says, as the host's is with no heartbeat to read. */
+  transport?: DawTransport;
 };
 
 function declarationFor(daw: DawKind): Record<string, DawCapabilityLevel> {
@@ -138,12 +141,24 @@ function currentCapabilities(seed: DawMockSeed): DawCapabilities {
   return { daw, reachable, capabilities };
 }
 
+function currentTransport(seed: DawMockSeed, capabilities: DawCapabilities): DawTransport {
+  if (!capabilities.reachable || !capabilities.capabilities.heartbeat?.available || !seed.transport) return { playing: false, recording: false };
+  const { playing, recording, position } = seed.transport;
+  return playing || recording ? { playing, recording, ...(position === undefined ? {} : { position }) } : { playing, recording };
+}
+
 export function createDawMock(seed: DawMockSeed = {}): DawCapabilitiesApi {
   const current = currentCapabilities(seed);
+  const transport = currentTransport(seed, current);
   return {
     dawCapabilities: async () => wireClone(current),
     subscribeDawCapabilities: (onUpdate) => {
       onUpdate(wireClone(current));
+      return () => {};
+    },
+    // Like the host's first tick after launch: the seeded transport once, on subscribe.
+    subscribeDawTransport: (onUpdate) => {
+      onUpdate(wireClone(transport));
       return () => {};
     },
   };

@@ -89,7 +89,7 @@ import { lineIdentityStartResultSchema, lineIdentityStateSchema } from './schema
 import { pickupsImportResultSchema, pickupsStartResultSchema, pickupsStateSchema } from './schemas/pickups';
 import { renderConfigStartResultSchema, renderConfigStateSchema, renderConfigSuggestedFolderSchema } from './schemas/renderconfig';
 import { cleanupToolsStartResultSchema, cleanupToolsStateSchema } from './schemas/cleanuptools';
-import { dawCapabilitiesSchema } from './schemas/daw';
+import { dawCapabilitiesSchema, dawTransportSchema } from './schemas/daw';
 import { projectStateChangedSchema, projectStateStartResultSchema, projectStateStateSchema } from './schemas/projectstate';
 import { retakeLanesListSchema, retakeLanesStartResultSchema, retakeLanesStateSchema } from './schemas/retakelanes';
 import { chapterTagsEmbedResultSchema, chapterTagsPreviewSchema } from './schemas/chaptertags';
@@ -1189,6 +1189,25 @@ describe('answers of the mock client for the settings, voice, model, transcript 
     expect(turnedOff.capabilities.punch).toMatchObject({ available: false, reason: 'turned_off' });
   });
 
+  it('subscribeDawTransport pushes the seeded transport once, and matches the host goldens (DAW port PRD Phase 9)', () => {
+    const seen = (seed: Parameters<typeof createMockApi>[1]): unknown[] => {
+      const events: unknown[] = [];
+      createMockApi({}, seed).subscribeDawTransport((state) => events.push(structuredClone(state)))();
+      expect(events).toHaveLength(1);
+      expectMatches(dawTransportSchema, events[0], 'mock daw_transport_changed');
+      return events;
+    };
+    expect(seen({})[0]).toEqual(readGolden('daw-transport-stopped.json'));
+    expect(seen({ daw: { transport: { playing: true, recording: false, position: 12.5 } } })[0]).toEqual(readGolden('daw-transport-playing.json'));
+    expect(seen({ daw: { transport: { playing: true, recording: true, position: 12.5 } } })[0]).toEqual(readGolden('daw-transport-recording.json'));
+    // With no heartbeat to read, the host reports neither, whatever REAPER was last doing.
+    const quiet = { playing: false, recording: false };
+    const recording = { playing: true, recording: true, position: 1 };
+    expect(seen({ daw: { daw: 'none', transport: recording } })[0]).toEqual(quiet);
+    expect(seen({ daw: { connected: true, reachable: false, transport: recording } })[0]).toEqual(quiet);
+    expect(seen({ daw: { toggles: { heartbeat: 'off' }, transport: recording } })[0]).toEqual(quiet);
+  });
+
   it('chapterTagsPreview and its seeded states', async () => {
     expectMatches(chapterTagsPreviewSchema, await createMockApi().chapterTagsPreview(), 'mock chapter-tags preview idle');
     for (const seed of ['ready', 'not-rendered'] as const) {
@@ -1862,6 +1881,7 @@ describe('answers of the mock client for the settings, voice, model, transcript 
       'subscribeProjectState',
       'subscribeRetakeLanes',
       'subscribeDawCapabilities',
+      'subscribeDawTransport',
     ];
     expect([...CHECKED, ...VOID, ...NOT_A_REQUEST].sort()).toEqual(Object.keys(createMockApi()).sort());
   });

@@ -35,7 +35,22 @@ type Reachability struct {
 	changeCount int
 	// +checklocks:mu
 	hasChangeCount bool
-	now            func() time.Time
+	// transport is the heartbeat's optional fifth and sixth fields (DAW port PRD Phase 9, ADR 0305); hasTransport is false
+	// when the last heartbeat did not carry them (an older script).
+	// +checklocks:mu
+	transport Transport
+	// +checklocks:mu
+	hasTransport bool
+	now          func() time.Time
+}
+
+// Transport is REAPER's transport as of the last heartbeat: GetPlayState's play and record bits and GetPlayPosition.
+// Recording counts a paused recording too, since its take is still open; Playing is the play bit alone, so it is also
+// true while recording. Position is in project seconds, and moves on only with each heartbeat (about 1.5s apart).
+type Transport struct {
+	Playing   bool
+	Recording bool
+	Position  float64
 }
 
 // NewReachability subscribes to client's PROJECT_STATUS broadcasts. client may be nil (no live bridge for this
@@ -54,7 +69,7 @@ func NewReachability(client *bridge.Client) *Reachability {
 // Record is the Subscription.Handle callback (exported so a test can deliver an event directly, without a real
 // bridge.Client): event.Fields is [tag, run, rpp, unsaved] once it has passed wire.go's table (CheckEvent), so
 // both trailing fields are always present, and a
-// fifth, the edit counter, may follow.
+// fifth, the edit counter, may follow, then the transport's play state and play position (DAW port PRD Phase 9).
 func (r *Reachability) Record(event bridge.Event) {
 	rpp, unsaved := "", false
 	if len(event.Fields) > 2 {
@@ -69,12 +84,32 @@ func (r *Reachability) Record(event bridge.Event) {
 		changeCount, _ = strconv.Atoi(event.Fields[4])
 		hasChangeCount = true
 	}
+	transport, hasTransport := Transport{}, false
+	if len(event.Fields) > 6 && event.Fields[5] != "" {
+		// wire.go has already checked both are numbers.
+		playState, _ := strconv.Atoi(event.Fields[5])
+		position, _ := strconv.ParseFloat(event.Fields[6], 64)
+		transport = Transport{Playing: playState&1 != 0, Recording: playState&4 != 0, Position: position}
+		hasTransport = true
+	}
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	r.lastSeen = r.now()
 	r.rpp = rpp
 	r.unsaved = unsaved
 	r.changeCount, r.hasChangeCount = changeCount, hasChangeCount
+	r.transport, r.hasTransport = transport, hasTransport
+}
+
+// Transport returns REAPER's transport from the last heartbeat, and whether it is known: the heartbeat must be fresh and
+// must have carried it (DAW port PRD Phase 9). A REAPER that stopped answering is not reported as still recording.
+func (r *Reachability) Transport() (Transport, bool) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	if !r.reachableLocked() || !r.hasTransport {
+		return Transport{}, false
+	}
+	return r.transport, true
 }
 
 // ChangeCount returns REAPER's edit counter (GetProjectStateChangeCount) from the last heartbeat, and whether it is

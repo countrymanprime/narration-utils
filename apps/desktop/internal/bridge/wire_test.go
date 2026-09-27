@@ -218,3 +218,21 @@ func TestAProjectStatusHeartbeatNeedsItsUnsavedFlagToBeANumber(t *testing.T) {
 		t.Fatalf("an empty required unsaved flag must be an error naming the field: %v", err)
 	}
 }
+
+// DAW port PRD Phase 9 (ADR 0305): the heartbeat's transport fields are optional (an older script sends none) and numbers.
+func TestAProjectStatusHeartbeatCarriesAnOptionalTransport(t *testing.T) {
+	if err := CheckEvent([]string{"PROJECT_STATUS", "", "C:/p/Book.rpp", "0", "3", "5", "12.500000"}); err != nil {
+		t.Fatalf("a heartbeat with the transport must be valid: %v", err)
+	}
+	if err := CheckEvent([]string{"PROJECT_STATUS", "", "C:/p/Book.rpp", "0", "", "5", "12.500000"}); err != nil {
+		t.Fatalf("a heartbeat with no edit counter but a transport must be valid: %v", err)
+	}
+	for _, bad := range [][]string{
+		{"PROJECT_STATUS", "", "C:/p/Book.rpp", "0", "3", "playing", "12.5"},
+		{"PROJECT_STATUS", "", "C:/p/Book.rpp", "0", "3", "5", "later"},
+	} {
+		if err := CheckEvent(bad); err == nil {
+			t.Fatalf("CheckEvent(%v) = nil, want an error for a transport field that is not a number", bad)
+		}
+	}
+}
