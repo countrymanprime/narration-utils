@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/countrymanprime/narration-utils/shell/internal/bridge"
+	"github.com/countrymanprime/narration-utils/shell/internal/dawport/reaper"
 	"github.com/countrymanprime/narration-utils/shell/internal/manuscript"
 	"github.com/countrymanprime/narration-utils/shell/internal/project"
 	"github.com/countrymanprime/narration-utils/shell/internal/recents"
@@ -311,7 +312,7 @@ func TestCanAttachRejectsPreparedImportAndActiveTranscript(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	host.transcript = transcript.New(transcript.Config{Project: project}, client, host.settings, host.sidecars, nil)
+	host.transcript = transcript.NewWithReview(transcript.Config{Project: project}, reaper.ReviewFor(client), host.settings, host.sidecars, nil)
 	if err := host.transcript.Start(map[string]string{}); err != nil {
 		t.Fatal(err)
 	}

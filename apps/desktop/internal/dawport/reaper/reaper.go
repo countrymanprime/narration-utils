@@ -1,9 +1,11 @@
 // Package reaper is the DAW port's REAPER adapter (ADR 0300, DAW port PRD P2). It wraps what exists and rewrites nothing: the
-// synchronous roles are today's bridge.Navigator, bridge.Actions, bridge.CleanupClient, bridge.LevelMatchClient, daw.Reachability
-// and dawadapter.Reaper as they are, the offline reader is tracks.Parse, and each asynchronous role writes exactly the bridge
-// command its service writes today. Its declaration is today's behaviour: a capability is Experimental when bridge.Actions gates
-// its commands behind the "Experimental REAPER actions" switch (bridge's experimentalCommands), and Supported otherwise, except
-// silence trim and level matching, which were built but never wired and so start Experimental.
+// synchronous roles are today's bridge.Navigator, bridge.Actions, bridge.CleanupClient, bridge.LevelMatchClient and
+// daw.Reachability as they are, the review session (review.go, ADR 0143's dawadapter.Review before P8 retired that package)
+// sends exactly the bridge commands transcript.Service used to send by hand, the offline reader is tracks.Parse, and each
+// asynchronous role writes exactly the bridge command its service writes today. Its declaration is today's behaviour: a
+// capability is Experimental when bridge.Actions gates its commands behind the "Experimental REAPER actions" switch (bridge's
+// experimentalCommands), and Supported otherwise, except silence trim and level matching, which were built but never wired and
+// so start Experimental.
 //
 // Importing the package registers its factory for dawport.KindREAPER.
 package reaper
@@ -15,7 +17,6 @@ import (
 
 	"github.com/countrymanprime/narration-utils/shell/internal/bridge"
 	"github.com/countrymanprime/narration-utils/shell/internal/daw"
-	"github.com/countrymanprime/narration-utils/shell/internal/dawadapter"
 	"github.com/countrymanprime/narration-utils/shell/internal/dawport"
 	"github.com/countrymanprime/narration-utils/shell/internal/tracks"
 )
@@ -151,7 +152,7 @@ func New(client *bridge.Client, allowed func(dawport.Capability) error) (*Adapte
 	return &Adapter{
 		heartbeat: heartbeat,
 		roles: map[dawport.Capability]any{
-			dawport.CapReview:       dawadapter.NewReaper(client),
+			dawport.CapReview:       review{client: client},
 			dawport.CapNavigate:     navigator,
 			dawport.CapMarkers:      navigator,
 			dawport.CapPickups:      pickupList{commands},

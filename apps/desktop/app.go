@@ -17,9 +17,9 @@ import (
 	"github.com/countrymanprime/narration-utils/shell/internal/coverage"
 	"github.com/countrymanprime/narration-utils/shell/internal/credits"
 	"github.com/countrymanprime/narration-utils/shell/internal/daw"
-	"github.com/countrymanprime/narration-utils/shell/internal/dawadapter"
 	"github.com/countrymanprime/narration-utils/shell/internal/dawcatalog"
 	"github.com/countrymanprime/narration-utils/shell/internal/dawport"
+	"github.com/countrymanprime/narration-utils/shell/internal/dawport/audacity"
 	"github.com/countrymanprime/narration-utils/shell/internal/dawport/reaper"
 	"github.com/countrymanprime/narration-utils/shell/internal/deliveryprofile"
 	"github.com/countrymanprime/narration-utils/shell/internal/editing"
@@ -453,7 +453,7 @@ func (h *Host) configureLocked(next config) {
 	// The session directory is REAPER's file bridge (NarrationUtils_Launcher.lua makes it). An Audacity launch never opens it,
 	// even when one is passed, so nothing on that launch writes REAPER bridge commands (audacity-integration PRD Phase 5).
 	var client *bridge.Client
-	if h.config.sessionDir != "" && dawadapter.Classify(h.config.daw) != dawadapter.KindAudacity {
+	if h.config.sessionDir != "" && dawport.Classify(h.config.daw) != dawport.KindAudacity {
 		client, _ = bridge.New(h.config.sessionDir)
 		if client != nil {
 			client.SetLog(func(kind, message string) { _ = h.log.Report(kind, message) })
@@ -463,9 +463,12 @@ func (h *Host) configureLocked(next config) {
 	// consumers of bridge.Client's fan-out (events.go), so neither steals the other's events (ADR 0068).
 	h.reachability = daw.NewReachability(client)
 	h.bridge = client
-	// The review workflow's adapter follows the launch's --daw: REAPER's bridge (or none), or on an Audacity launch one that answers
-	// "not available yet" until the Audacity pipe client exists (dawadapter.ReviewForDAW).
-	review := dawadapter.ReviewForDAW(h.config.daw, client)
+	// The review workflow's session follows the launch's --daw: REAPER's bridge (or none), or on an Audacity launch one that
+	// answers "not available yet" until the Audacity pipe client exists (ADR 0144).
+	review := reaper.ReviewFor(client)
+	if dawport.Classify(h.config.daw) == dawport.KindAudacity {
+		review = audacity.UnavailableReview()
+	}
 	h.transcript = transcript.NewWithReview(transcript.Config{Project: h.config.projectFolder, SessionDir: h.config.sessionDir, Python: h.config.comparePython, Backend: h.config.compareBackend}, review, h.settings, h.sidecars, h.emitTranscript)
 	h.transcript.SetPersist(h.persist)
 	h.transcript.SetFindings(h.findings, h.manuscript)

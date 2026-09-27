@@ -4,23 +4,52 @@
 // Role[T] and never hold an adapter. Every adapter passes the conformance suite in dawporttest.
 package dawport
 
-import "github.com/countrymanprime/narration-utils/shell/internal/dawadapter"
+import "strings"
 
-// Kind is which engine an adapter drives. It is dawadapter's until that package is retired (DAW port PRD P8).
-type Kind = dawadapter.Kind
+// Kind is which engine an adapter drives.
+type Kind int
 
 const (
-	KindNone     = dawadapter.KindNone
-	KindREAPER   = dawadapter.KindREAPER
-	KindAudacity = dawadapter.KindAudacity
+	// KindNone is a launch with no DAW the suite drives: a standalone launch, a picker switch ("Standalone"), a developer
+	// launch without --daw, or a label it does not know.
+	KindNone Kind = iota
+	// KindREAPER is `--daw REAPER`, which NarrationUtils_Launcher.lua always passes.
+	KindREAPER
+	// KindAudacity is `--daw Audacity` (audacity-integration PRD, Phase 5).
+	KindAudacity
 )
+
+func (k Kind) String() string {
+	switch k {
+	case KindREAPER:
+		return "REAPER"
+	case KindAudacity:
+		return "Audacity"
+	default:
+		return "none"
+	}
+}
+
+// Classify maps a `--daw` label to the DAW it names, ignoring case and surrounding spaces. The host keeps the label itself as
+// the free-form display fact; Classify is the one thing it branches on, so an unknown label can never select behaviour
+// (docs/architecture/threat-model.md, row 6f).
+func Classify(label string) Kind {
+	switch strings.ToLower(strings.TrimSpace(label)) {
+	case "reaper":
+		return KindREAPER
+	case "audacity":
+		return KindAudacity
+	default:
+		return KindNone
+	}
+}
 
 // IsREAPERLaunch reports whether daw (the launch's own `daw` fact) names a live REAPER launch. It is the one place outside this
 // package allowed to ask "is this REAPER" at all (DAW port PRD P6's boundary test): a caller with a narrower question asks the
 // resolver for a capability instead, but the launch's own identity (dawfacts.go's W18 case, app.go's unresolved-project-file
-// wording) is still dawadapter's Kind until P8 retires it.
+// wording) is still Kind.
 func IsREAPERLaunch(daw string) bool {
-	return dawadapter.Classify(daw) == dawadapter.KindREAPER
+	return Classify(daw) == KindREAPER
 }
 
 // Adapter is one engine. It only declares and implements: whether a capability can be used now is the Resolver's answer, never the

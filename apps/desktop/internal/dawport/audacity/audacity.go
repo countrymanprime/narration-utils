@@ -9,11 +9,37 @@ package audacity
 import (
 	"maps"
 
-	"github.com/countrymanprime/narration-utils/shell/internal/dawadapter"
 	"github.com/countrymanprime/narration-utils/shell/internal/dawport"
 )
 
 func init() { dawport.Register(dawport.KindAudacity, Factory) }
+
+// NotAvailableError is a DAW the suite recognises but cannot drive yet. Its text is a whole sentence for the narrator (the review
+// workflow shows it as the run's message), which is why it is a type rather than an errors.New lower-case fragment.
+type NotAvailableError string
+
+func (e NotAvailableError) Error() string { return string(e) }
+
+// ErrNotAvailable is what every request answers on an Audacity launch until the Audacity pipe client exists (audacity-integration
+// PRD Phase 4, gated on the owner's mod-script-pipe spike S-A1). ADR 0144.
+const ErrNotAvailable = NotAvailableError("Audacity support is not available yet. This version can't read audio from Audacity or add labels to it, so open the project from REAPER to compare it.")
+
+// UnavailableReview is the review workflow's role on an Audacity launch until the pipe client exists: every request refuses with
+// ErrNotAvailable, and it never has an event to deliver.
+func UnavailableReview() dawport.ReviewSession { return unavailableReview{} }
+
+type unavailableReview struct{}
+
+var _ dawport.ReviewSession = unavailableReview{}
+
+func (unavailableReview) Subscribe(dawport.Subscription) (unsubscribe func()) { return func() {} }
+func (unavailableReview) Dispatch() error                                     { return nil }
+func (unavailableReview) PrepareReview(string, string) error                  { return ErrNotAvailable }
+func (unavailableReview) InspectFindings(string, string) error                { return ErrNotAvailable }
+func (unavailableReview) NavigateToFinding(string, string) error              { return ErrNotAvailable }
+func (unavailableReview) ExportFindings(string, string, dawport.MarkerColors) error {
+	return ErrNotAvailable
+}
 
 // Adapter is Audacity, which this app cannot drive yet.
 type Adapter struct {
@@ -51,5 +77,5 @@ func (a *Adapter) Role(dawport.Capability) any { return nil }
 // Explain words every refusal as ADR 0144 does, the sentence an Audacity launch's review workflow already shows. The resolver
 // refuses on the declaration first, so not_yet is the only reason it asks about.
 func (a *Adapter) Explain(dawport.Capability, dawport.Reason) string {
-	return string(dawadapter.ErrAudacityNotAvailable)
+	return string(ErrNotAvailable)
 }

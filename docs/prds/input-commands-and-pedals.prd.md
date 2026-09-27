@@ -228,7 +228,7 @@ Lanes: **U** = primitives and input (Sonnet), **A** = host (Go settings). ADRs c
 - **Security.** Updates the threat-model row and `SECURITY.md` (feature-cleanup trust-boundary check).
 
 **Phase 10.**
-- **Source of the recording state.** The router reads it through [DAW Port and Capabilities](daw-port-and-capabilities.prd.md). That PRD puts capabilities on the wire (its P4, `DawCapabilities` and `daw_capabilities_changed`) and its P9 adds the live transport state (`daw_transport_changed`, `{playing, recording}`) this phase reads. Today's only recording flag is the click-refreshed `ReadAloudReaperState.recording` (ADR 0249), which is not live.
+- **Source of the recording state.** The router reads it through DAW Port and Capabilities (PRD deleted, delivered). That PRD puts capabilities on the wire (its P4, `DawCapabilities` and `daw_capabilities_changed`) and its P9 adds the live transport state (`daw_transport_changed`, `{playing, recording}`) this phase reads. Today's only recording flag is the click-refreshed `ReadAloudReaperState.recording` (ADR 0249), which is not live.
 - **Suppressed press.** Follows Q5.
 - **Tests.** Unit tests use a fake state.
 
@@ -260,7 +260,7 @@ Lanes: **U** = primitives and input (Sonnet), **A** = host (Go settings). ADRs c
 | 7 | `App.tsx` (mount), a new `components/help/ShortcutSheet.tsx`, `tests/aria/dialogs.spec.ts` and snapshots, `state-catalog.ts` | Phase 2 and every `App.tsx` stream. Any dialog aria snapshot change |
 | 8 | `docs/research/` (new note) | None |
 | 9 | `apps/ui/src/input/midi*`, `docs/architecture/threat-model.md`, `SECURITY.md`, possibly a host permission handler | Any PRD editing the threat model's webview rows |
-| 10 | `apps/ui/src/input/router*`, a new `apps/ui/src/input/useDawRecording.ts` and `LiveCommandRouter.tsx`, `apps/ui/src/main.tsx` (mount swap) | [DAW Port and Capabilities](daw-port-and-capabilities.prd.md) (consumer only). Anything editing `main.tsx` mock wiring |
+| 10 | `apps/ui/src/input/router*`, a new `apps/ui/src/input/useDawRecording.ts` and `LiveCommandRouter.tsx`, `apps/ui/src/main.tsx` (mount swap) | DAW Port and Capabilities (PRD deleted, delivered; consumer only). Anything editing `main.tsx` mock wiring |
 | 11 | `apps/ui/src/input/hid*`, threat model | Same as 9 |
 | 12 | `apps/desktop` (spike branch only), `docs/research/` | [Wails v3 Migration](wails-v3-migration.prd.md) follow-ups |
 

@@ -5,7 +5,6 @@ import (
 
 	"github.com/countrymanprime/narration-utils/shell/internal/bridge"
 	"github.com/countrymanprime/narration-utils/shell/internal/daw"
-	"github.com/countrymanprime/narration-utils/shell/internal/dawadapter"
 	"github.com/countrymanprime/narration-utils/shell/internal/tracks"
 )
 
@@ -14,9 +13,8 @@ import (
 // constructors, not bodies). A caller names them through this package; when a second engine needs a neutral shape, the alias
 // becomes a type here and no caller changes.
 type (
-	Event        = dawadapter.Event
-	Subscription = dawadapter.Subscription
-	MarkerColors = dawadapter.MarkerColors
+	Event        = bridge.Event
+	Subscription = bridge.Subscription
 
 	Target       = bridge.Target
 	Navigated    = bridge.Navigated
@@ -59,13 +57,38 @@ type Trace struct{ RunID, Level string }
 // Events is how a role that answers later reports back: consumers subscribe for the tags they own, and Dispatch delivers what the
 // engine has reported since the last call, in order, once. The event vocabulary is part of the contract (ADR 0143): another engine
 // reports the same tags and fields.
-type Events = dawadapter.Events
+type Events interface {
+	Subscribe(sub Subscription) (unsubscribe func())
+	Dispatch() error
+}
+
+// MarkerColors are the colours, as RRGGBB hex, the host resolves from the layered settings and passes with an export, so the DAW
+// never reads the settings files itself.
+type MarkerColors struct{ Misread, Skipped, Extra string }
 
 // Asynchronous roles: each request method only asks, returns an error only when the request could not be handed to the engine, and
 // the answer arrives through Events tagged with runID. They mirror the commands their services send today, one method per command.
 
-// ReviewSession is the review workflow's role (ADR 0143's dawadapter.Review): prepare, inspect, navigate to and export findings.
-type ReviewSession = dawadapter.Review
+// ReviewSession is the review workflow's role (ADR 0143's original dawadapter.Review): prepare, inspect, navigate to and export
+// findings.
+//
+// Take management (take creation, pickups, line identity, render setup) is deliberately not here: it has no Audacity equivalent
+// (docs/architecture/daw-integration.md, "Audacity boundary"), so those services take their own roles instead.
+type ReviewSession interface {
+	Events
+	// PrepareReview asks the engine for the audio the narrator selected, to compare against the manuscript (COMPARE_PREPARED).
+	// projectFolder is the app's project folder, where the manuscript is read and the diffs are written, which need not be the
+	// engine's own project file's folder (project-workspace PRD Phase 5, W4); empty means the engine project file's folder.
+	PrepareReview(runID, projectFolder string) error
+	// InspectFindings asks the engine which of the findings in findingsPath it already carries as a marker or label, which is how
+	// a finding that was reviewed earlier is recognised (COMPARE_MARKER per finding, then COMPARE_INSPECTED).
+	InspectFindings(runID, findingsPath string) error
+	// NavigateToFinding moves the engine's cursor or selection to one finding of the run.
+	NavigateToFinding(runID, findingID string) error
+	// ExportFindings writes the run's pending findings into the engine as markers or labels, skipping any it already has
+	// (COMPARE_EXPORT_MARKER per finding, then COMPARE_EXPORTED).
+	ExportFindings(runID, findingsPath string, colors MarkerColors) error
+}
 
 // PickupList imports, exports, walks and resolves the pickup list (PICKUPS_* and PICKUP_* events).
 type PickupList interface {

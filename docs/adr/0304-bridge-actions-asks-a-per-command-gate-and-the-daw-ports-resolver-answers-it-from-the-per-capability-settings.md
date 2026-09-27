@@ -2,7 +2,7 @@
 
 **Status:** Proposed
 **Date:** 2026-09-26
-**Supersedes:** none. It amends how [ADR 0230](0230-reaper-commands-built-before-the-verification-pass-are-refused-by-the-host-while-the-experimental-switch-is-off.md) is enforced (the experimental commands are still refused by the host before anything is written) and fills in the per-capability toggles of [ADR 0300](0300-every-daw-is-reached-through-one-port-of-small-role-interfaces-and-callers-ask-a-resolver-what-it-supports.md), built in Phase 3 of the [DAW port PRD](../prds/daw-port-and-capabilities.prd.md).
+**Supersedes:** none. It amends how [ADR 0230](0230-reaper-commands-built-before-the-verification-pass-are-refused-by-the-host-while-the-experimental-switch-is-off.md) is enforced (the experimental commands are still refused by the host before anything is written) and fills in the per-capability toggles of [ADR 0300](0300-every-daw-is-reached-through-one-port-of-small-role-interfaces-and-callers-ask-a-resolver-what-it-supports.md), built in Phase 3 of the DAW port PRD (PRD deleted, delivered).
 
 ## Context
 

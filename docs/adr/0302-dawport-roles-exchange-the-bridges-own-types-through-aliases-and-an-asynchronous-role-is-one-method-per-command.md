@@ -2,7 +2,7 @@
 
 **Status:** Proposed
 **Date:** 2026-09-26
-**Supersedes:** none. It fills in the shapes [ADR 0300](0300-every-daw-is-reached-through-one-port-of-small-role-interfaces-and-callers-ask-a-resolver-what-it-supports.md) left open. The [DAW port PRD](../prds/daw-port-and-capabilities.prd.md) asks Phase 1 to check its capability table against the code before freezing it.
+**Supersedes:** none. It fills in the shapes [ADR 0300](0300-every-daw-is-reached-through-one-port-of-small-role-interfaces-and-callers-ask-a-resolver-what-it-supports.md) left open. The DAW port PRD (PRD deleted, delivered) asks Phase 1 to check its capability table against the code before freezing it.
 
 ## Context
 

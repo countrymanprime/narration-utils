@@ -1,6 +1,6 @@
 # 0300. Every DAW is reached through one port of small role interfaces, and callers ask a resolver what it supports
 
-**Status:** Proposed
+**Status:** Accepted
 **Date:** 2026-09-26
 **Supersedes:** none. It extends [ADR 0143](0143-the-review-workflow-calls-a-daw-through-dawadapter-and-the-event-vocabulary-is-part-of-the-contract.md), whose `Review` interface becomes one role of the port.
 
@@ -13,7 +13,7 @@ ADR 0143 put the review workflow behind `dawadapter.Review`. Every other DAW act
 
 Nothing tells a caller which of these a given DAW can do. The UI works it out from `dawFileLinked`/`dawReachable` and from hard-coded disabled buttons. One setting, `DAW.experimental_reaper_actions`, gates all twelve experimental commands at once.
 
-The [audiobook studio benchmark](../research/audiobook-studio-benchmark.md) recommends two things. First, switch on the built REAPER commands one at a time as each is verified. Second, keep the audio engine behind a seam, so REAPER, Audacity and a later built-in recorder serve the same screens. The owner asked for a DAW interface that any DAW can implement, with configuration and toggles that tell callers what the chosen DAW supports ([DAW port PRD](../prds/daw-port-and-capabilities.prd.md)).
+The [audiobook studio benchmark](../research/audiobook-studio-benchmark.md) recommends two things. First, switch on the built REAPER commands one at a time as each is verified. Second, keep the audio engine behind a seam, so REAPER, Audacity and a later built-in recorder serve the same screens. The owner asked for a DAW interface that any DAW can implement, with configuration and toggles that tell callers what the chosen DAW supports (the DAW port PRD, deleted and delivered).
 
 ## Decision
 

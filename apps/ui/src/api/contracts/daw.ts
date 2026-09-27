@@ -3,7 +3,7 @@
 // DAW.capability.<name> settings. apps/desktop/bindings_daw.go is the binding and the daw_capabilities_changed event;
 // apps/desktop/internal/dawport/capability.go is the capability catalog this file's DAW_CAPABILITIES mirrors.
 
-/** Which DAW the launch is talking to, or 'none' for a standalone launch (dawadapter.Kind.String() in Go). */
+/** Which DAW the launch is talking to, or 'none' for a standalone launch (dawport.Kind.String() in Go). */
 export type DawKind = 'REAPER' | 'Audacity' | 'none';
 
 /** How far the launch's DAW supports a capability (port.Level.String() in Go). */

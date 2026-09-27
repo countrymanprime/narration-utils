@@ -78,7 +78,7 @@ export function AppShell({
     navigate(next);
   };
   const settingsActive = isActivePath(pathname, '/settings');
-  // Proofing is the one requiresDaw item, and review is the capability it actually needs (dawadapter.Review's role,
+  // Proofing is the one requiresDaw item, and review is the capability it actually needs (dawport.ReviewSession's role,
   // ADR 0300): once a manuscript and a file are linked, whether the page is usable now comes from the DAW port
   // instead of a fixed message (DAW port PRD Phase 7, ADR 0360).
   const reviewCapability = useCapability('review');

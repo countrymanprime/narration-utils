@@ -80,7 +80,7 @@ flowchart LR
     assets["internal/assets"]
     update["internal/update"]
     supervisor["internal/process<br/>Supervisor"]
-    bridgeclient["internal/bridge<br/>(review calls it through<br/>internal/dawadapter)"]
+    bridgeclient["internal/bridge<br/>(every DAW action goes<br/>through internal/dawport)"]
     media["media.go<br/>/media route"]
   end
   subgraph sidecars["sidecars/ (frozen Python)"]

@@ -2,7 +2,7 @@
 
 **Status:** Proposed
 **Date:** 2026-09-27
-**Supersedes:** none. It fills in a gap [ADR 0302](0302-dawport-roles-exchange-the-bridges-own-types-through-aliases-and-an-asynchronous-role-is-one-method-per-command.md) left open for the [DAW port PRD](../prds/daw-port-and-capabilities.prd.md)'s Phase 5 migrations, worked out while building Phase 5c (`internal/retakelanes`, `internal/projectstate`, `internal/takereview`, and `internal/daw`'s reachability behind `Heartbeat`).
+**Supersedes:** none. It fills in a gap [ADR 0302](0302-dawport-roles-exchange-the-bridges-own-types-through-aliases-and-an-asynchronous-role-is-one-method-per-command.md) left open for the DAW port PRD (PRD deleted, delivered)'s Phase 5 migrations, worked out while building Phase 5c (`internal/retakelanes`, `internal/projectstate`, `internal/takereview`, and `internal/daw`'s reachability behind `Heartbeat`).
 
 ## Context
 
