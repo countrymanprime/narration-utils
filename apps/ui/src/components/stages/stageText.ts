@@ -66,8 +66,10 @@ const PROOFING_CAUSE_TEXT: Partial<Record<StageUnknownCause, { short: string; ac
 /** True for the three signal ids the editing-readiness PRD's Phase 6 registers (apps/desktop/internal/editing/signals.go). */
 export const isEditingSignal = (signalId: string): boolean => signalId.startsWith('editing.');
 
-/** True for a proofing stage signal (apps/desktop/internal/proofing): the pickups roll-up and every delivery check. */
-export const isProofingSignal = (signalId: string): boolean => signalId.startsWith('proofing.');
+/** True for a proofing stage signal (apps/desktop/internal/proofing): the pickups roll-up and every delivery check.
+ * Unlike `isEditingSignal`, nothing outside this file needs it: every `PROOFING_CAUSE_TEXT` cause resolves to
+ * `tracks`, `wait` or `check-now`, never `check`, so `StageEvidence` never needs to pick a proofing-specific dialog. */
+const isProofingSignal = (signalId: string): boolean => signalId.startsWith('proofing.');
 
 /** A signal's cause, worded for whichever check produced it: `stageText.ts`'s `CAUSE_TEXT` is shared by every
  * provider, but "Open recording check" is the wrong sentence, and the wrong dialog, for an editing or proofing signal. */
