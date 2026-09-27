@@ -155,6 +155,11 @@ export function RecordingCheckReport({
                         {position}
                       </div>
                     )}
+                    {report.recheck && (
+                      <div className="mt-0.5 text-xs" style={{ color: 'var(--text-muted)' }}>
+                        Confirmed missing by the {report.recheck.model} Whisper model.
+                      </div>
+                    )}
                   </div>
                   {first?.index !== undefined && (
                     <Button variant="ghost" className="px-3 py-1" onClick={() => goToParagraph(first.index!)}>

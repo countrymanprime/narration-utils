@@ -11,15 +11,24 @@ import (
 	"github.com/countrymanprime/narration-utils/shell/internal/coverage"
 )
 
-// The recording check's four settings (docs/utilities/recording-coverage.md Q3, ADR 0131) are exactly the keys
+// nonNumberRecordingCoverageFields are the RecordingCoverage fields coverage.ResolveSettings reads that are not one
+// of the four numbers: background checks (auto-sync Phase 7, ADR 0211) and the model cascade's own three
+// (recording-check-model-cascade PRD Phase 5, MC1, MC2).
+var nonNumberRecordingCoverageFields = map[string]string{
+	settingBackgroundChecks:               "bool",
+	coverage.SettingCascadeEnabled:        "bool",
+	coverage.SettingCascadeFirstPassModel: "choice",
+	coverage.SettingCascadeRecheckModel:   "choice",
+}
+
+// The recording check's settings (docs/utilities/recording-coverage.md Q3, ADR 0131; MC1, MC2) are exactly the keys
 // coverage.ResolveSettings reads: a field it did not read would change nothing.
 func TestTheRecordingCoverageFieldsAreTheCoverageSettings(t *testing.T) {
 	var fields []string
 	for _, schema := range fieldSchemas[coverage.SettingsTool] {
-		// The one switch beside the four numbers: background checks (auto-sync Phase 7, ADR 0211).
-		if schema.key == settingBackgroundChecks {
-			if schema.kind != "bool" {
-				t.Errorf("%s is %q, want a bool", schema.key, schema.kind)
+		if wantKind, special := nonNumberRecordingCoverageFields[schema.key]; special {
+			if schema.kind != wantKind {
+				t.Errorf("%s is %q, want %q", schema.key, schema.kind, wantKind)
 			}
 			continue
 		}
@@ -47,6 +56,16 @@ func TestTheRecordingCoverageDefaultsAreTheShippedValues(t *testing.T) {
 		if key == settingBackgroundChecks {
 			if value != "true" {
 				t.Errorf("background checks default to %q, want on (S7 B)", value)
+			}
+			continue
+		}
+		if _, special := nonNumberRecordingCoverageFields[key]; special {
+			index := slices.IndexFunc(fieldSchemas[coverage.SettingsTool], func(schema fieldSchema) bool { return schema.key == key })
+			if index < 0 {
+				t.Fatalf("%s has no field schema", key)
+			}
+			if err := validateSettingValue(coverage.SettingsTool, fieldSchemas[coverage.SettingsTool][index], value); err != nil {
+				t.Errorf("the default %s = %q fails its own kind: %v", key, value, err)
 			}
 			continue
 		}
@@ -93,7 +112,7 @@ func TestAChecksStartAndItsReadBothUseTheAlignmentSettings(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if started := decodeAnswer(t)(host.CoverageStart("c-0001")); started["status"] != "started" {
+	if started := decodeAnswer(t)(host.CoverageStart("c-0001", nil)); started["status"] != "started" {
 		t.Fatalf("answer = %v", started)
 	}
 	host.services().coverage.Wait()
