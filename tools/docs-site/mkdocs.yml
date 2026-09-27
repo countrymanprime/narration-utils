@@ -82,4 +82,7 @@ extra:
   # Where the Storybook build is published beside this site (pages.yml copies it to <site>/storybook/).
   storybook_path: storybook/
   storybook_page: ui/atlas/index.md
+  # Where the app demo is published beside this site (pages.yml copies it to <site>/demo/; docs/prds/public-app-demo.prd.md).
+  # Linked from the same page as Storybook (storybook_page) rather than a new nav entry.
+  demo_path: demo/
 
