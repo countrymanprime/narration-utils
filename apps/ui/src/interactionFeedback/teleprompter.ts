@@ -114,6 +114,7 @@ export const teleprompterFeedback: Record<string, FeedbackRow> = {
     'Pause/resume on the control channel (read-aloud-control-bar.prd.md Phase 5, ADR 0248); the state event\'s `paused` flag moves the bar\'s toggle and status ("Paused"/"Listening"), an inline error otherwise.',
   ),
   'src/components/teleprompter/useInputLevel.ts::subscribeTeleprompterEvent#1': subscription('The bar and microphone-popover meter (Phase 4, ADR 0247): its own subscription, apart from the session model, so a burst of level events never re-renders the reader\'s rows.'),
+  'src/components/teleprompter/useBoothRecording.ts::subscribeDawTransport#1': subscription('booth-mode-and-companion-panel.prd.md Phase 5: the no-sound, no-notification rule\'s own reactive read of the DAW\'s live transport, apart from useDawRecording\'s ref-based gesture-time check (input-commands-and-pedals.prd.md Phase 10).'),
   'src/components/teleprompter/useInputLevel.ts::teleprompterMeterStart#1': row(
     'effect',
     'python',

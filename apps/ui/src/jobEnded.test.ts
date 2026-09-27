@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { JobEnded } from './api/contracts/system';
-import { notificationForJobEnd, shouldNotifyForJobEnd, toastForJobEnd } from './jobEnded';
+import { notificationForJobEnd, shouldNotifyForJobEnd, shouldQueueJobEndAnnouncement, toastForJobEnd } from './jobEnded';
 
 const ended = (patch: Partial<JobEnded>): JobEnded => ({
   id: 'job-1',
@@ -74,6 +74,23 @@ describe('shouldNotifyForJobEnd (N1-N4)', () => {
 
   it('stays quiet for a kind not in the notifiable set, because a newer host may add jobs this PRD did not review', () => {
     expect(shouldNotifyForJobEnd(ended({ kind: 'future_job', durationMs: 60_000 }), false)).toBe(false);
+  });
+});
+
+describe('shouldQueueJobEndAnnouncement (booth-mode-and-companion-panel.prd.md Phase 5)', () => {
+  it('queues a success/info announcement while the booth is recording', () => {
+    const announcement = toastForJobEnd(ended({}));
+    expect(announcement && shouldQueueJobEndAnnouncement(announcement, true)).toBe(true);
+  });
+
+  it('never queues while the booth is not recording', () => {
+    const announcement = toastForJobEnd(ended({}));
+    expect(announcement && shouldQueueJobEndAnnouncement(announcement, false)).toBe(false);
+  });
+
+  it('never queues an error announcement, even while recording (Risks table: silence is a comfort rule, not a safety one)', () => {
+    const announcement = toastForJobEnd(ended({ outcome: 'error', message: 'The build failed.' }));
+    expect(announcement && shouldQueueJobEndAnnouncement(announcement, true)).toBe(false);
   });
 });
 
