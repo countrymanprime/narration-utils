@@ -26,6 +26,16 @@ export type WorkspaceReaperControls = {
   goTo: () => Promise<void>;
   loop: () => Promise<void>;
   stopLoop: () => Promise<void>;
+  /** Why Go to/Loop is disabled for an arbitrary token (a selected flag, not necessarily the playhead's word),
+   * mockups/edit-and-proof-workspace/02-flag-detail-open.webp's flag detail "GO TO"/"LOOP": the same reasons as
+   * `goToBlocked`/`loopBlocked`, computed for `tokenIndex` instead of the current one. */
+  goToTokenBlocked: (tokenIndex: number) => string | undefined;
+  loopTokenBlocked: (tokenIndex: number) => string | undefined;
+  /** Which of these sends a flag's Go to/Loop, kept apart from `pending` so a flag's own buttons don't read as busy
+   * while the transport bar sends the playhead's, or the other way round. */
+  tokenPending: 'goTo' | 'loop' | undefined;
+  goToToken: (tokenIndex: number) => Promise<void>;
+  loopToken: (tokenIndex: number) => Promise<void>;
 };
 
 /**
@@ -42,6 +52,7 @@ export type WorkspaceReaperControls = {
 export function useWorkspaceReaper(chapterId: string, currentToken: number | undefined, tokens: WorkspaceToken[]): WorkspaceReaperControls {
   const api = useApi();
   const action = usePendingAction();
+  const tokenAction = usePendingAction();
   const reaper = useReaperStatus();
   const [message, setMessage] = useState<string>();
   const looping = useMemo(
@@ -57,9 +68,9 @@ export function useWorkspaceReaper(chapterId: string, currentToken: number | und
   const loopBlocked =
     (currentToken === undefined ? NO_TOKEN : undefined) ?? noItem ?? (token?.end === undefined ? NO_SOURCE_TIME : undefined) ?? connectionReason;
 
-  const send = useCallback(
-    (key: 'goTo' | 'loop' | 'stop', request: () => Promise<{ outcome: string; message?: string }>) =>
-      action.run(key, async () => {
+  const sendVia = useCallback(
+    (runner: typeof action, key: string, request: () => Promise<{ outcome: string; message?: string }>) =>
+      runner.run(key, async () => {
         setMessage(undefined);
         try {
           const result = await request();
@@ -69,7 +80,20 @@ export function useWorkspaceReaper(chapterId: string, currentToken: number | und
         }
         await reaper.refresh();
       }),
-    [action, reaper],
+    [reaper],
+  );
+  const send = useCallback(
+    (key: 'goTo' | 'loop' | 'stop', request: () => Promise<{ outcome: string; message?: string }>) => sendVia(action, key, request),
+    [action, sendVia],
+  );
+
+  const blockedFor = useCallback(
+    (tokenIndex: number, needsSourceTime: boolean): string | undefined => {
+      const candidate = tokens.find((entry) => entry.i === tokenIndex);
+      const itemMissing = candidate !== undefined && candidate.item === undefined ? NO_ITEM : undefined;
+      return itemMissing ?? (needsSourceTime && candidate?.end === undefined ? NO_SOURCE_TIME : undefined) ?? connectionReason;
+    },
+    [tokens, connectionReason],
   );
 
   return {
@@ -88,6 +112,15 @@ export function useWorkspaceReaper(chapterId: string, currentToken: number | und
     },
     stopLoop: async () => {
       await send('stop', () => api.findingsStopLoop());
+    },
+    goToTokenBlocked: (tokenIndex) => blockedFor(tokenIndex, false),
+    loopTokenBlocked: (tokenIndex) => blockedFor(tokenIndex, true),
+    tokenPending: tokenAction.isPending('goTo') ? 'goTo' : tokenAction.isPending('loop') ? 'loop' : undefined,
+    goToToken: async (tokenIndex) => {
+      await sendVia(tokenAction, 'goTo', () => api.workspaceGoTo(chapterId, tokenIndex));
+    },
+    loopToken: async (tokenIndex) => {
+      await sendVia(tokenAction, 'loop', () => api.workspaceLoop(chapterId, tokenIndex, tokenIndex));
     },
   };
 }

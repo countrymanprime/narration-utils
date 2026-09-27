@@ -1,5 +1,5 @@
-"""Tests for the sidecar's windows-only recheck mode (model cascade Phase 3, PRD
-docs/prds/recording-check-model-cascade.prd.md): `compare.py --coverage --recheck <windows.json>`
+"""Tests for the sidecar's windows-only recheck mode (model cascade Phase 3; PRD deleted, delivered -
+docs/utilities/recording-coverage.md#the-model-cascade is the steady state): `compare.py --coverage --recheck <windows.json>`
 transcribes only the given windows with `--model`, one model load for the run, and splices the new
 words into each affected words file, recording per-range model provenance in a new `spans` list.
 It touches no manifest, chapter or timeline, and writes no results file. A plain check (not the

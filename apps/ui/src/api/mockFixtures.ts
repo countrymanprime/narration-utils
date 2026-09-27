@@ -708,6 +708,11 @@ export const wireSettings = (): Record<string, ScopedSettingField[]> => ({
     recordingCheck('min_anchor_run', 'Shortest match that counts as read', '3', { min: 1, max: 50, step: 1, unit: 'words' }),
     // Background checks of changed chapters (daw-chapter-track-auto-sync PRD Phase 7, ADR 0211), on by default.
     bool('background_checks', 'Check changed chapters in the background', 'true'),
+    // The model cascade's own three settings (recording-check-model-cascade PRD Phase 5, MC1/MC2): off by default,
+    // tiny for the first pass, large-v3-turbo for the re-check.
+    bool('cascade_enabled', "Two-pass check (fast first pass, then re-check what's missing)", 'false'),
+    choice('cascade_first_pass_model', 'First-pass Whisper model', ['tiny', 'small', 'medium', 'large-v3-turbo', 'large-v3'], 'tiny'),
+    choice('cascade_recheck_model', 'Re-check Whisper model', ['tiny', 'small', 'medium', 'large-v3-turbo', 'large-v3'], 'large-v3-turbo'),
   ],
   // Which signals must be met for a stage suggestion (chapter-stage-recommendations PRD Phase 6, Q8), mirroring the
   // host's fieldSchemas: the master switch, then one choice per signal a provider declares. Only the recording
