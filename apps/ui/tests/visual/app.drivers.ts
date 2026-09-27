@@ -4,7 +4,7 @@ import type { Driver } from './drivers/shared';
 import { projectDrivers } from './drivers/project';
 import { startupDrivers } from './drivers/startup';
 import { homeDrivers } from './drivers/home';
-import { manuscriptDrivers } from './drivers/manuscript';
+import { scriptDrivers } from './drivers/script';
 import { proofingDrivers } from './drivers/proofing';
 import { storybibleDrivers } from './drivers/storybible';
 import { tracksDrivers } from './drivers/tracks';
@@ -76,7 +76,7 @@ export const APP_DRIVERS: Record<string, Record<string, Driver>> = {
   project: projectDrivers,
   startup: startupDrivers,
   home: homeDrivers,
-  manuscript: manuscriptDrivers,
+  script: scriptDrivers,
   proofing: proofingDrivers,
   storybible: storybibleDrivers,
   tracks: tracksDrivers,

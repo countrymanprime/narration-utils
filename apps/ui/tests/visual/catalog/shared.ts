@@ -20,3 +20,6 @@ export const POPUP_ANCHORED_AT_FIRST_WIDTH = { reloadPerViewport: true } as cons
 export const LIVE_PROGRESS_MOVES_ON = { reloadPerViewport: true } as const;
 export const TOAST_FADES_OUT = { reloadPerViewport: true } as const;
 export const FREEZES_THE_CLOCK = { reloadPerViewport: true } as const;
+// The Script page's rail is a column from `xl` and a panel below it (stage navigation Phase 3), so its driver opens it the way
+// the width shows it: resizing a desktop load would keep the column's tab and never open the panel.
+export const RAIL_DEPENDS_ON_WIDTH = { reloadPerViewport: true } as const;

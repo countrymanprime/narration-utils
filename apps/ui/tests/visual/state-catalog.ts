@@ -2,7 +2,7 @@ import type { StateEntry } from './lib/types';
 import { projectStates } from './catalog/project';
 import { startupStates } from './catalog/startup';
 import { homeStates } from './catalog/home';
-import { manuscriptStates } from './catalog/manuscript';
+import { scriptStates } from './catalog/script';
 import { proofingStates } from './catalog/proofing';
 import { storybibleStates } from './catalog/storybible';
 import { tracksStates } from './catalog/tracks';
@@ -28,7 +28,7 @@ export const STATE_CATALOG: StateEntry[] = [
   ...projectStates,
   ...startupStates,
   ...homeStates,
-  ...manuscriptStates,
+  ...scriptStates,
   ...proofingStates,
   ...storybibleStates,
   ...tracksStates,
