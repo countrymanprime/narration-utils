@@ -11,7 +11,7 @@ import (
 	"github.com/countrymanprime/narration-utils/shell/internal/dawport"
 )
 
-// Following REAPER while the resume prompt shows (read-aloud-resume-from-daw PRD Phase 5, ADR 0350): REAPER playing or
+// Following REAPER while the resume prompt shows (read-aloud-resume-from-daw PRD Phase 5, ADR 0352): REAPER playing or
 // recording dismisses the prompt (RD7), and the edit cursor settling on the chapter's recorded audio re-runs the locate
 // (RD6). The poll is bounded: it runs only while followed, never during a session, and stops by itself.
 
