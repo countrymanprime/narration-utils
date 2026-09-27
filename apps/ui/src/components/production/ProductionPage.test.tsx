@@ -6,6 +6,7 @@ import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { ApiProvider } from '../../api/ApiContext';
 import { createMockApi } from '../../api/mockApi';
+import { PRODUCTION_SCENARIOS } from '../../api/productionMock';
 import { productionOverviewSchema } from '../../api/schemas/production';
 import type { NarrationApi } from '../../types';
 import { ProductionPage } from './ProductionPage';
@@ -49,7 +50,7 @@ describe('ProductionPage', () => {
   });
 
   it('shows an on-pace book: its figures, the running timer and its board', async () => {
-    renderPage({ initial: { production: 'on-pace' } });
+    renderPage({ initial: { production: PRODUCTION_SCENARIOS['on-pace'] } });
     expect((await tile('Delivery date')).textContent).toContain('18 days');
     expect((await tile('Delivery date')).textContent).toContain('Due 14 Oct 2026');
     expect((await tile('Effective rate')).textContent).not.toContain('—');
@@ -66,7 +67,7 @@ describe('ProductionPage', () => {
   });
 
   it('marks an at-risk deadline and lists the chapters that threaten it first', async () => {
-    renderPage({ initial: { production: 'at-risk' } });
+    renderPage({ initial: { production: PRODUCTION_SCENARIOS['at-risk'] } });
     expect((await tile('Delivery date')).textContent).toContain('3 days');
     const nextUp = screen.getByRole('list', { name: 'Next up' });
     const items = within(nextUp).getAllByRole('listitem');

@@ -4,6 +4,7 @@ import { App } from './App';
 import { ApiProvider } from './api/ApiContext';
 import { wailsClient } from './api/wailsClient';
 import { createMockApi } from './api/mockApi';
+import { PRODUCTION_SCENARIOS } from './api/productionMock';
 import { WIRE_CHAPTERS, WIRE_FINDINGS, WIRE_TRACKS_PROJECT, editingCandidateFor, takeReviewPickupFor } from './api/mockFixtures';
 import { COVERAGE_REFUSAL_REASONS } from './api/schemas/coverage';
 import { EDITING_REFUSAL_REASONS } from './api/schemas/editing';
@@ -303,7 +304,7 @@ const mockInitial = {
   ...(mockMeasure ? { measure: mockMeasure === 'running' ? ('hold' as const) : ('fails' as const) } : {}),
   ...(mockDiagnostics ? { diagnostics: mockDiagnostics === 'running' ? ('hold' as const) : ('fails' as const) } : {}),
   ...(mockDeliveryProfile ? { deliveryProfile: mockDeliveryProfile } : {}),
-  ...(mockProduction ? { production: mockProduction } : {}),
+  ...(mockProduction ? { production: PRODUCTION_SCENARIOS[mockProduction] } : {}),
   ...(mockTakeReviewScanHold ? { takeReviewScanHold: true } : {}),
   ...(mockTakeComparisonHold ? { takeComparisonHold: true } : {}),
   ...(mockReaper ? { reaper: mockReaper } : {}),

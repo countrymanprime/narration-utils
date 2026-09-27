@@ -57,6 +57,24 @@ type Manifest struct {
 	// DeliveryProfile is the delivery profile this project is judged against (delivery-platform-profiles.prd.md P1,
 	// ADR 0179), additive like Credits. Nil: the Global default.
 	DeliveryProfile *DeliveryProfileRef `json:"deliveryProfile,omitempty"`
+	// Deadline is the book's delivery date, a calendar date "YYYY-MM-DD" (production-tracking.prd.md Phase 3, Q3,
+	// ADR 0321), additive like Credits so it survives Replace manuscript: it is a business fact about the book, not the
+	// imported text. Empty: none set.
+	Deadline string `json:"deadline,omitempty"`
+	// ContractedAmount is what the book pays, a bare number in the narrator's own currency (production-tracking Q3,
+	// ADR 0320): the effective rate divides it by the hours logged. Nil: none set, so the rate is undefined.
+	ContractedAmount *float64 `json:"contractedAmount,omitempty"`
+	// Milestones are the narrator's own dated checkpoints (production-tracking Q5 A): a generic list, the ACX
+	// 15-minute checkpoint being one the narrator adds like any other. Additive like Credits.
+	Milestones []Milestone `json:"milestones,omitempty"`
+}
+
+// Milestone is one dated checkpoint: a name, a calendar date "YYYY-MM-DD" and an optional note. Nothing beyond the
+// shape is validated here; internal/production checks a milestone before it is saved.
+type Milestone struct {
+	Name    string `json:"name"`
+	DueDate string `json:"dueDate"`
+	Note    string `json:"note,omitempty"`
 }
 
 // CreditsSetup is the stored "Don't ask for this project": the manuscript document id it was said for, and when.

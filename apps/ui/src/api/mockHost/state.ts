@@ -23,11 +23,11 @@ import type { MockDeliveryProfileSeed } from '../deliveryProfilesMock';
 import type { MockDiagnosticsSeed } from '../diagnosticsMock';
 import type { EditingSeed } from '../editingMock';
 import type { CleanupActionSeed } from '../cleanupActionMock';
+import type { ProductionSeed } from '../productionMock';
 import type { MockAssetSeed } from '../assetInstallMock';
 import type { MockUpdateSeed } from './update';
 import type { DawMockSeed } from '../dawMock';
 import type { ProvidersMockSeed } from '../providersMock';
-import type { ProductionSeed } from '../productionMock';
 
 // What createMockApi boots from (the seeds), and the host state more than one domain reads or writes.
 // manuscriptCandidate boots a project with no imported manuscript but a
@@ -164,6 +164,8 @@ export type MockApiSeed = {
   cleanupAction?: CleanupActionSeed;
   /** Seeds the preview-candidates mock (an outcome or seeded candidates), see `PreviewSeed`. */
   preview?: PreviewSeed;
+  /** Seeds the production mock: a plan (deadline, contracted amount, milestones) and optionally a time log, see `ProductionSeed`. */
+  production?: ProductionSeed;
   /** The project's Delivery limits, by key (`true_peak_dbtp_max: '-3'`), set as if saved in Settings (diagnostics PRD Phase 5). */
   deliveryLimits?: Record<string, string>;
   /**
@@ -177,8 +179,6 @@ export type MockApiSeed = {
   mockManuscript?: 'mixed';
   /** Boots with a custom delivery profile chosen for the project (delivery-platform-profiles.prd.md); ACX judges otherwise. */
   deliveryProfile?: MockDeliveryProfileSeed;
-  /** Seeds the production tracking mock with a time log, a deadline and a contracted amount (production-tracking.prd.md Phase 4). */
-  production?: ProductionSeed;
   /** Seeds the DAW capabilities mock (which DAW, reachability, per-capability toggles), see `DawMockSeed` (DAW port PRD Phase 4). */
   daw?: DawMockSeed;
   /** Seeds the provider capabilities mock (platform, installed asset counts), see `ProvidersMockSeed` (provider-ports PRD Phase 14). */

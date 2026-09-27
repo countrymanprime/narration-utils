@@ -12,6 +12,6 @@ export const productionDrivers: Record<string, Driver> = {
   },
   'at-risk': async (page) => {
     await openProduction(page, '?mockProduction=at-risk');
-    await page.getByText(/^Due 30 Sep/).waitFor();
+    await page.getByText(/^Due 29 Sep/).waitFor();
   },
 };

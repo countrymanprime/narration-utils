@@ -135,7 +135,7 @@ func TestTheRateUsesTheContractedAmountFromThePlan(t *testing.T) {
 // Days left count whole calendar days from today to the due date, so the figure does not change during the day; an
 // overdue deadline is negative, never hidden.
 func TestTheDeadlineSaysHowManyDaysAreLeft(t *testing.T) {
-	due := time.Date(2026, 10, 14, 0, 0, 0, 0, time.UTC)
+	due := "2026-10-14"
 	for _, test := range []struct {
 		now  time.Time
 		want int
@@ -151,6 +151,10 @@ func TestTheDeadlineSaysHowManyDaysAreLeft(t *testing.T) {
 	}
 	if overview := BuildOverview(OverviewInput{Now: nineAM}); overview.Deadline != nil {
 		t.Fatalf("deadline = %+v, want none before one is set (Phase 3)", overview.Deadline)
+	}
+	broken := "2026-02-30"
+	if overview := BuildOverview(OverviewInput{Plan: Plan{Deadline: &broken}, Now: nineAM}); overview.Deadline != nil {
+		t.Fatalf("deadline = %+v, want none for a date that is not a real one", overview.Deadline)
 	}
 }
 
@@ -169,7 +173,7 @@ func TestTheOverviewKeepsEachChaptersStatusAndReadinessAsGiven(t *testing.T) {
 // ProductionOverview's payload on a small fixture book (ADR 0069): the UI's schema and mock are checked against it.
 func TestContractProductionOverview(t *testing.T) {
 	amount := 2400.0
-	due := time.Date(2026, 10, 14, 0, 0, 0, 0, time.UTC)
+	due := "2026-10-14"
 	first := chapter("c-0001", stages.StageEditing, stages.VerdictNotReady)
 	first.Title = "Chapter 1"
 	first.Subtitle = "Down the Rabbit-Hole"

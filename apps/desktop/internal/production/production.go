@@ -1,7 +1,8 @@
-// Package production implements Phases 1 and 2 of
+// Package production implements Phases 1 to 3 of
 // docs/prds/production-tracking.prd.md: a stage timer the narrator starts and
-// stops by hand, the project-scoped log of the sessions it records (Q2), and
-// PFH and the effective rate over that log (pfh.go, ADR 0320).
+// stops by hand, the project-scoped log of the sessions it records (Q2),
+// PFH and the effective rate over that log (pfh.go, ADR 0320), and the checks
+// on the deadline, amount and milestones kept on the manifest (plan.go).
 // A session exists only because the narrator started and stopped a timer:
 // nothing here starts one from REAPER activity or any other signal (Q1), and
 // nothing here reads or writes a chapter's status - the stage a session is

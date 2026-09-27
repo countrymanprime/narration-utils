@@ -14,6 +14,9 @@ import { Call as $Call, CancellablePromise as $CancellablePromise, Create as $Cr
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
 import * as liveflags$0 from "./internal/liveflags/models.js";
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore: Unused imports
+import * as project$0 from "./internal/project/models.js";
 
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
@@ -937,6 +940,32 @@ export function PreviewCandidates(): $CancellablePromise<string> {
  */
 export function ProductionOverview(): $CancellablePromise<string> {
     return $Call.ByID(1544329002);
+}
+
+/**
+ * ProductionPlan reads this project's deadline, contracted amount and milestones. A project that has set none answers
+ * an empty plan: no deadline, no amount, no milestones.
+ */
+export function ProductionPlan(): $CancellablePromise<string> {
+    return $Call.ByID(564382146);
+}
+
+/**
+ * ProductionSaveMilestones replaces the book's milestones with milestones, in the narrator's order. Each needs a name
+ * and a real date ("YYYY-MM-DD"); a note is optional. A list with any invalid milestone is refused whole and nothing
+ * is written.
+ */
+export function ProductionSaveMilestones(milestones: project$0.Milestone[]): $CancellablePromise<string> {
+    return $Call.ByID(669610547, milestones);
+}
+
+/**
+ * ProductionSetDeadline sets the book's delivery date ("YYYY-MM-DD"; empty clears it) and contracted amount (a number
+ * of zero or more in the narrator's own currency; nil clears it). An invalid date or amount is refused and nothing is
+ * written.
+ */
+export function ProductionSetDeadline(deadline: string, contractedAmount: number | null): $CancellablePromise<string> {
+    return $Call.ByID(3757504551, deadline, contractedAmount);
 }
 
 /**

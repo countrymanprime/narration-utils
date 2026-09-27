@@ -36,6 +36,7 @@ export * from './api/contracts/workspace';
 export * from './api/contracts/preview';
 export * from './api/contracts/daw';
 export * from './api/contracts/providers';
+export * from './api/contracts/production';
 
 import type { ChapterTrackMapApi } from './api/contracts/chapterTrackMap';
 import type { ChapterSyncApi } from './api/contracts/chapterSync';
@@ -103,7 +104,6 @@ export interface NarrationApi
     TakeReviewApi,
     CoverageApi,
     StagesApi,
-    ProductionApi,
     DictionaryApi,
     FindingsApi,
     MeasureApi,
@@ -114,4 +114,5 @@ export interface NarrationApi
     WorkspaceApi,
     PreviewApi,
     DawCapabilitiesApi,
-    ProviderCapabilitiesApi {}
+    ProviderCapabilitiesApi,
+    ProductionApi {}

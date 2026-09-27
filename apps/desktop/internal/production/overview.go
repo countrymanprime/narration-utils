@@ -40,14 +40,9 @@ type ChapterInput struct {
 	Readiness           *Readiness
 }
 
-// Plan is the book's deadline and contracted amount. Both are narrator-entered on the project manifest (Phase 3);
-// until they are set, each is nil and the figures they feed are undefined.
-type Plan struct {
-	Deadline         *time.Time
-	ContractedAmount *float64
-}
-
-// OverviewInput is everything BuildOverview reads. Now is the local time the deadline's days are counted from.
+// OverviewInput is everything BuildOverview reads. Plan is the book's deadline and contracted amount as Phase 3 keeps
+// them on the project manifest (plan.go): an unset one is nil, and the figures it feeds are undefined. Now is the local
+// time the deadline's days are counted from.
 type OverviewInput struct {
 	Chapters []ChapterInput
 	Sessions []Session
@@ -150,8 +145,12 @@ func BuildOverview(in OverviewInput) Overview {
 		overview.Totals.ContractedAmount = &value
 	}
 	overview.Totals.EffectiveRate = optional(EffectiveRate(in.Plan.ContractedAmount, in.Sessions))
-	if due := in.Plan.Deadline; due != nil {
-		overview.Deadline = &Deadline{Date: due.Format(time.DateOnly), DaysLeft: daysBetween(in.Now, *due)}
+	// The manifest only ever holds a date CheckDate accepted; one that does not parse is shown as no deadline, never
+	// guessed at.
+	if in.Plan.Deadline != nil {
+		if due, err := time.Parse(time.DateOnly, *in.Plan.Deadline); err == nil {
+			overview.Deadline = &Deadline{Date: *in.Plan.Deadline, DaysLeft: daysBetween(in.Now, due)}
+		}
 	}
 	if index, ok := runningIn(in.Sessions); ok {
 		session := in.Sessions[index].clone()

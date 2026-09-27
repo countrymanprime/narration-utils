@@ -1,8 +1,10 @@
 import { z } from 'zod';
 import type {
   ProductionChapter,
+  ProductionMilestone,
   ProductionNextUpItem,
   ProductionOverview,
+  ProductionPlan,
   ProductionReadiness,
   ProductionSession,
   ProductionStartResult,
@@ -10,8 +12,22 @@ import type {
 } from '../contracts/production';
 import { listFromNull, optionalFromNull } from './base';
 
-// The production tracking payloads (apps/desktop/bindings_production.go, apps/desktop/internal/production), pinned against the host by
-// tests/fixtures/contracts/production-*.json, which Go tests write.
+// The production tracking payloads (apps/desktop/bindings_production.go, apps/desktop/internal/production: plan.go's Plan and
+// overview.go's Overview), pinned against the host by tests/fixtures/contracts/production-*.json, which Go tests write.
+
+const calendarDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
+
+const productionMilestoneSchema = z.object({
+  name: z.string(),
+  dueDate: calendarDate,
+  note: z.string().optional(),
+}) satisfies z.ZodType<ProductionMilestone>;
+
+export const productionPlanSchema = z.object({
+  deadline: calendarDate.nullable(),
+  contractedAmount: z.number().nonnegative().nullable(),
+  milestones: listFromNull(productionMilestoneSchema),
+}) satisfies z.ZodType<ProductionPlan>;
 
 const stageSchema = z.enum(['not_started', 'recording', 'editing', 'proofing', 'finalized']);
 
@@ -66,7 +82,7 @@ export const productionOverviewSchema = z.object({
     contractedAmount: z.number().nullable(),
     effectiveRate: z.number().nullable(),
   }),
-  deadline: z.object({ date: z.string(), daysLeft: z.number() }).nullable(),
+  deadline: z.object({ date: calendarDate, daysLeft: z.number() }).nullable(),
   running: productionSessionSchema.nullable(),
   nextUp: listFromNull(nextUpSchema),
 }) satisfies z.ZodType<ProductionOverview>;
