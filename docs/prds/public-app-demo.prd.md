@@ -53,8 +53,8 @@ We believe a public, no-signup demo of the real UI (not just isolated components
 
 ## Open Questions
 
-- [ ] **D1. Fixed tour vs. free exploration.** Ship one curated default state, or also surface the `?mock...=` params as clickable links from a small demo landing page? Recommendation: both — default state for the cold link, a landing page with 4-6 curated links for people who want to see edge states, since the params already exist at no extra cost.
-- [ ] **D2. Which `?mock...=` states to surface publicly.** Not every internal state (e.g. `?mockInvalidPayload=...`, built to see an error screen) is worth putting in front of a stranger. Needs a short curated list.
+- [x] **D1. Fixed tour vs. free exploration.** Ship one curated default state, or also surface the `?mock...=` params as clickable links from a small demo landing page? Recommendation: both — default state for the cold link, a landing page with 4-6 curated links for people who want to see edge states, since the params already exist at no extra cost. **Answered 2026-09-27: curated default only — no landing page of additional `?mock...=` links.**
+- [x] **D2. Which `?mock...=` states to surface publicly.** Not every internal state (e.g. `?mockInvalidPayload=...`, built to see an error screen) is worth putting in front of a stranger. Needs a short curated list. **Answered 2026-09-27: not applicable — D1 ruled out the landing page this list would have populated.**
 - [x] **D3. Base path mechanism.** Resolved by [ADR 0096](../adr/0096-the-public-demo-builds-under-its-own-vite-mode-and-the-router-carries-a-basename.md): a `demo` Vite mode (`apps/ui/.env.demo`), not a CLI flag, so `VITE_DEMO` can gate the banner without leaking into the `mock` build the visual suite, Storybook and the atlas already rely on. `import.meta.env.BASE_URL` also had to be wired into `<BrowserRouter basename>` — the router, not just assets, assumed `base: '/'`.
 - [ ] **D4. Banner placement and wording.** A persistent top bar (risks colliding with existing page chrome) vs. a dismissible one-time overlay on first load. Needs a look at `apps/ui/src/components/layout/` for what already exists to reuse.
 - [x] **D5. Does anything in the Alice seed read as sensitive or too "real"?** No — `aliceManuscript.ts` fetches the public-domain Project Gutenberg/GITenberg text at runtime and carries no private notes, real names, or internal-only content; no trimming needed.
@@ -77,10 +77,10 @@ We believe a public, no-signup demo of the real UI (not just isolated components
 | Must | `check_site.py` requires `demo/index.html`; existing docs/Storybook requirements unchanged | 1 |
 | Must | Demo banner on every page stating it's a demo and nothing is saved | 1 |
 | Must | Native-only affordance audit: every button in the demo either does something via the mock or is hidden/disabled with a reason | 1 |
-| Should | Curated demo landing page linking a handful of `?mock...=` states (D1, D2) | 2 |
 | Should | README and docs-site link to the demo | 2 |
 | Could | Alice seed reviewed and, if needed, trimmed for anything that reads as too "real" for a public audience (D5) | 1 |
 | Won't | Backend, persistence, accounts, free-form import (see What We're NOT Building) | - |
+| Won't | Curated demo landing page linking a handful of `?mock...=` states — superseded by D1 (curated default only, no exploration landing page) | - |
 
 **User flow**: visitor opens `countrymanprime.github.io/narration-utils/demo/`, sees a banner ("Demo — sample project, nothing is saved") and the Alice project already loaded on Home; navigates to Story Bible, Proofing, Teleprompter and Tracks via the normal app nav, all backed by fixture data; optionally follows a link from a small "try these" list to see the teleprompter mid-session or an asset-download state.
 
@@ -110,10 +110,10 @@ We believe a public, no-signup demo of the real UI (not just isolated components
 | # | Phase | Description | Status | Parallel | Depends | PRP Plan |
 | --- | --- | --- | --- | --- | --- | --- |
 | 1 | Publish the demo | Base-path fix, `pages.yml` build+deploy step, `check_site.py` requirement, demo banner, native-affordance audit, Alice seed read-through | complete | - | D3, D5 | - |
-| 2 | Curated states and links | Demo landing/links page for select `?mock...=` states, README and docs-site links | pending | - | 1, D1, D2 | - |
+| 2 | Docs-site link | README and docs-site link to the demo (D6); no landing page — D1 ruled that out in favor of the single curated default state Phase 1 already ships | pending | - | 1, D6 | - |
 
 **Phase 1.** Goal: a real, safe, linkable demo exists at `/narration-utils/demo/`. Success: deployed site loads with no console errors or 404s, every page's controls either work via the mock or are visibly disabled, banner is present everywhere.
-**Phase 2.** Goal: visitors can see more than the default happy path. Success: landing page links resolve to the intended mock states; README/docs link to the demo.
+**Phase 2.** Goal: the demo is discoverable. Success: README/docs link to the demo. (Originally also planned a curated-states landing page; D1 answered 2026-09-27 in favor of the simpler fixed-tour approach, which also makes D2 not applicable.)
 
 **Parallelism Notes**: sequential; Phase 2 depends on Phase 1's banner/shell and base-path work being settled.
 
@@ -137,6 +137,7 @@ Cross-cutting: no `hostAPIVersion` bump (no binding change; the demo consumes th
 | Base path mechanism (D3) | A `demo` Vite mode, not a `--base` CLI flag ([ADR 0096](../adr/0096-the-public-demo-builds-under-its-own-vite-mode-and-the-router-carries-a-basename.md)) | CLI flag on the existing `mock` mode | Keeps the demo banner's gate (`VITE_DEMO`) out of the `mock` build the visual suite, Storybook and the atlas already depend on for stable captures |
 | AGPL source availability (`implementation-plan.md` D17) | The demo banner links to the repository (`https://github.com/countrymanprime/narration-utils`) on every page | No link; rely on a visitor finding the repo another way | Not addressed in this PRD's own text; AGPL-3.0-or-later §13 (ADR 0039) asks a modified copy interacted with over a network to offer its source — the demo is unmodified code, but the link keeps that offer visible rather than assumed |
 | D7 (Windows-only unsigned first stable) | No conflict — the demo is a static site build, not a release asset or an installer | — | Out of scope for D7, which governs signing of the desktop app's Windows binary |
+| Demo exploration scope (D1) | Curated default only — no landing page of additional `?mock...=` links | A landing page with 4-6 curated links (this PRD's stated recommendation) | Owner chose the simpler fixed-tour approach over the recommended hybrid; this also makes D2 (which states to curate for that page) not applicable |
 
 ## Research Summary
 
@@ -146,4 +147,4 @@ Cross-cutting: no `hostAPIVersion` bump (no binding change; the demo consumes th
 ---
 
 *Generated: 2026-09-22*
-*Status: IN DELIVERY - Phase 1 complete (D3, D5 answered above); Phase 2 pending (D1, D2, D4, D6 still open, adopt each PRD-stated recommendation per D22 when Phase 2 starts)*
+*Status: IN DELIVERY - Phase 1 complete (D3, D5 answered above); Phase 2 pending (D1 answered 2026-09-27: curated default only, no landing page; D2 resolved as not applicable; D4, D6 still open, adopt each PRD-stated recommendation per D22 when Phase 2 starts)*
