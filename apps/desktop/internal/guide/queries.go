@@ -143,13 +143,16 @@ func unguardFormula(cell string) string {
 	return cell
 }
 
-// QueryAnswer is one row of a query file read back: which name it is about, and the status and note it now carries.
+// QueryAnswer is one row of a query file read back: which name it is about, and the status and note it now carries. Line
+// is the row's 1-based line in the file it came from, kept for MatchQueryAnswers and ImportQueriesCSV to report by, the
+// same way a ParseQueriesCSV issue already is.
 type QueryAnswer struct {
 	EntityID   string
 	AliasIndex *int
 	Name       string
 	Status     string
 	Note       string
+	Line       int
 }
 
 // QueryIssue is one row ParseQueriesCSV could not use, with its 1-based line and why.
@@ -196,7 +199,7 @@ func ParseQueriesCSV(text string) ([]QueryAnswer, []QueryIssue) {
 		if strings.TrimSpace(strings.Join(record, "")) == "" {
 			continue
 		}
-		answer := QueryAnswer{EntityID: cell(record, "entry_id"), Name: cell(record, "word"), Note: cell(record, "note")}
+		answer := QueryAnswer{EntityID: cell(record, "entry_id"), Name: cell(record, "word"), Note: cell(record, "note"), Line: line}
 		if answer.EntityID == "" || answer.Name == "" {
 			issues = append(issues, QueryIssue{Line: line, Message: "this row has no word or no entry_id, so it cannot be matched to an entry"})
 			continue
@@ -227,4 +230,67 @@ func parseQueryStatus(text string) (string, bool) {
 		return PronunciationStatuses[0], true
 	}
 	return key, slices.Contains(PronunciationStatuses, key)
+}
+
+// MatchQueryAnswers matches every answer ParseQueriesCSV read against the Story Bible's current entities (Entities()'s own
+// map shape): an answer's entry_id must still name an entity, and its alias_index, when it has one, must still be inside
+// that entity's aliases. The file may be old, or from another project; a row whose entry or alias is gone is reported by
+// its own line, never guessed at or applied to the wrong name (prep-depth P6).
+func MatchQueryAnswers(entities []map[string]any, answers []QueryAnswer) (matched []QueryAnswer, issues []QueryIssue) {
+	byID := make(map[string]map[string]any, len(entities))
+	for _, entity := range entities {
+		if id, ok := entity["id"].(string); ok {
+			byID[id] = entity
+		}
+	}
+	for _, answer := range answers {
+		entity, ok := byID[answer.EntityID]
+		if !ok {
+			issues = append(issues, QueryIssue{Line: answer.Line, Message: fmt.Sprintf("%q is no longer in the Story Bible; the file may be from another project or the entry was deleted", answer.Name)})
+			continue
+		}
+		if answer.AliasIndex != nil {
+			aliases, _ := entity["aliases"].([]any)
+			if *answer.AliasIndex < 0 || *answer.AliasIndex >= len(aliases) {
+				issues = append(issues, QueryIssue{Line: answer.Line, Message: fmt.Sprintf("%q no longer has that alias", answer.Name)})
+				continue
+			}
+		}
+		matched = append(matched, answer)
+	}
+	return matched, issues
+}
+
+// ImportQueriesCSV applies an author's answered file back onto the Story Bible (prep-depth P6): the one QueriesCSV wrote,
+// sent out and back unchanged, or a hand-edited one. Each matched row's status, and its note when the row carries one, go
+// through the same SetPronunciationStatus call the narrator's own "Mark answered" uses; a blank note column leaves an
+// existing note alone, the same "nil means leave it" rule that call already follows for a direct edit, so a file that
+// only ever fills in status does not wipe every note in the Story Bible. Every row that could not be read, matched or
+// applied is reported with its line and never silently dropped, sorted the way the file itself reads.
+func (s *Service) ImportQueriesCSV(text string) (applied int, issues []string, err error) {
+	answers, rowIssues := ParseQueriesCSV(text)
+	entities, err := s.Entities()
+	if err != nil {
+		return 0, nil, err
+	}
+	matched, matchIssues := MatchQueryAnswers(entities, answers)
+	rowIssues = append(rowIssues, matchIssues...)
+	for _, answer := range matched {
+		var note *string
+		if answer.Note != "" {
+			value := answer.Note
+			note = &value
+		}
+		if err := s.SetPronunciationStatus(answer.EntityID, answer.AliasIndex, answer.Status, note); err != nil {
+			rowIssues = append(rowIssues, QueryIssue{Line: answer.Line, Message: err.Error()})
+			continue
+		}
+		applied++
+	}
+	sort.SliceStable(rowIssues, func(left, right int) bool { return rowIssues[left].Line < rowIssues[right].Line })
+	issues = []string{}
+	for _, issue := range rowIssues {
+		issues = append(issues, fmt.Sprintf("line %d: %s", issue.Line, issue.Message))
+	}
+	return applied, issues, nil
 }

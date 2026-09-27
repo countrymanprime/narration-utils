@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react';
+import { Fragment, useState, type ReactNode } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
   faArrowLeft,
@@ -13,7 +13,6 @@ import {
   faLayerGroup,
   faMicrophone,
   faScroll,
-  faStopwatch,
   faWaveSquare,
 } from '@fortawesome/free-solid-svg-icons';
 import { NavButton } from '../primitives/NavButton';
@@ -22,27 +21,37 @@ import { IconButton } from '../primitives/IconButton';
 import { TooltipTarget } from '../primitives/Tooltip';
 import { dawCapabilityGate } from '../../dawAvailability';
 import { DemoBanner } from './DemoBanner';
+import { EngineChip, type EngineState } from './EngineChip';
 
 // requiresManuscript/requiresDaw name what each nav item is gated on (PRD project-workspace-and-daw-link.prd.md, Open
 // Question W16): no item needs a linked DAW project file since Proof replaced Proofing (stage-navigation-and-page-replacement.prd.md
 // Phase 5: its compare run gates itself inside the chapter view) - Tracks reads the project's REAPER file directly through its own
 // discovery flow and is not gated here. The requiresDaw field stays for the next item that needs one.
-const NAV = [
-  { name: 'Home', path: '/', icon: faHouse, requiresManuscript: false, requiresDaw: false },
-  // Time, pace and the delivery date by chapter and stage (production-tracking.prd.md Phase 4). Gated on a manuscript: the board and
-  // the timer are per chapter.
-  { name: 'Production', path: '/production', icon: faStopwatch, requiresManuscript: true, requiresDaw: false },
-  { name: 'Manuscript', path: '/manuscript', icon: faFileLines, requiresManuscript: true, requiresDaw: false },
-  { name: 'Story Bible', path: '/story-bible', icon: faBookOpen, requiresManuscript: true, requiresDaw: false },
-  { name: 'Teleprompter', path: '/teleprompter', icon: faScroll, requiresManuscript: true, requiresDaw: false },
-  { name: 'Tracks', path: '/tracks', icon: faLayerGroup, requiresManuscript: false, requiresDaw: false },
-  // Proof (stage-navigation-and-page-replacement.prd.md Phase 5): the book's notes at /proof and a chapter's view at /proof/:chapterId,
-  // replacing Review and Proofing. Not gated: take-review notes need no manuscript, the page says itself when there is nothing to
-  // proof yet, and the compare run inside a chapter view gates itself on the DAW (CapabilityGate).
-  { name: 'Proof', path: '/proof', icon: faWaveSquare, requiresManuscript: false, requiresDaw: false },
-  // Measuring rendered chapter files (diagnostics-delivery-and-cleanup-tools.prd.md Phase 5). Not gated: it reads files the narrator
-  // picks, so it needs neither a manuscript nor a REAPER project.
-  { name: 'Delivery', path: '/delivery', icon: faGaugeHigh, requiresManuscript: false, requiresDaw: false },
+const HOME = { name: 'Home', path: '/', icon: faHouse, requiresManuscript: false, requiresDaw: false };
+const MANUSCRIPT = { name: 'Manuscript', path: '/manuscript', icon: faFileLines, requiresManuscript: true, requiresDaw: false };
+const STORY_BIBLE = { name: 'Story Bible', path: '/story-bible', icon: faBookOpen, requiresManuscript: true, requiresDaw: false };
+const TELEPROMPTER = { name: 'Teleprompter', path: '/teleprompter', icon: faScroll, requiresManuscript: true, requiresDaw: false };
+const TRACKS = { name: 'Tracks', path: '/tracks', icon: faLayerGroup, requiresManuscript: false, requiresDaw: false };
+// Proof (stage-navigation-and-page-replacement.prd.md Phase 5): the book's notes at /proof and a chapter's view at /proof/:chapterId,
+// replacing Review and Proofing. Not gated: take-review notes need no manuscript, the page says itself when there is nothing to
+// proof yet, and the compare run inside a chapter view gates itself on the DAW (CapabilityGate).
+const PROOF = { name: 'Proof', path: '/proof', icon: faWaveSquare, requiresManuscript: false, requiresDaw: false };
+// Measuring rendered chapter files (diagnostics-delivery-and-cleanup-tools.prd.md Phase 5). Not gated: it reads files the narrator
+// picks, so it needs neither a manuscript nor a REAPER project.
+const DELIVERY = { name: 'Delivery', path: '/delivery', icon: faGaugeHigh, requiresManuscript: false, requiresDaw: false };
+
+// Grouped by production stage (stage-navigation-and-page-replacement.prd.md Phase 1, ADR 0407 item 3): Production,
+// Prep, Record, Review, Finish, with Settings pinned at the foot (below, not a group). Phase 1 holds each existing
+// page under its current name in the group its job belongs to (D3/Q5): a page is renamed only in the phase that
+// ships its replacement. `/production` (PR #760) drops its nav entry here - the page and route stay reachable
+// directly, unlisted, until Phase 2 makes it the Production home at `/` (D79: never keep two versions of a nav).
+type NavItem = typeof HOME;
+const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
+  { label: 'Production', items: [HOME] },
+  { label: 'Prep', items: [MANUSCRIPT, STORY_BIBLE] },
+  { label: 'Record', items: [TELEPROMPTER] },
+  { label: 'Review', items: [PROOF, TRACKS] },
+  { label: 'Finish', items: [DELIVERY] },
 ];
 const isActivePath = (pathname: string, path: string) => (path === '/' ? pathname === '/' : pathname === path || pathname.startsWith(`${path}/`));
 
@@ -56,6 +65,7 @@ export function AppShell({
   dawProjectMatches = false,
   onLinkDawFile,
   linkingDawFile = false,
+  engine = 'daw',
   history,
   children,
 }: {
@@ -71,6 +81,8 @@ export function AppShell({
   onLinkDawFile: () => void;
   /** True while the shared DAW-link binding is running for any of its three call sites (ADR 0075's ref guard). */
   linkingDawFile?: boolean;
+  /** Which engine the header's chip shows (stage-navigation-and-page-replacement.prd.md Phase 1, Q7); UI-only until native recording picks 'builtin'. */
+  engine?: EngineState;
   /** Page-level Back/Forward (app-navigation-and-zoom-controls.prd.md Phase 1): already guarded and gated by App.tsx. */
   history: { canGoBack: boolean; canGoForward: boolean; back: () => void; forward: () => void };
   children: ReactNode;
@@ -83,31 +95,18 @@ export function AppShell({
   const settingsActive = isActivePath(pathname, '/settings');
   // A requiresDaw item needs a linked file only: the one that also read the DAW port's `review` capability was Proofing, whose
   // compare run now gates itself in the Proof chapter view (stage-navigation-and-page-replacement.prd.md Phase 5, CapabilityGate).
-  const gateFor = (item: (typeof NAV)[number]) =>
+  const gateFor = (item: NavItem) =>
     dawCapabilityGate(
       { manuscript: item.requiresManuscript && !hasManuscript, dawFile: item.requiresDaw && !dawFileLinked },
       { level: 'supported', available: true },
     );
-  const isDisabled = (item: (typeof NAV)[number]) => gateFor(item).disabled;
-  const requiredReason = (item: (typeof NAV)[number]) => gateFor(item).reason;
-  // Phase 7 (ADR 0092, W10): dawReachable/dawProjectMatches are now real facts (a live PROJECT_STATUS heartbeat),
-  // not the permanently-unknown placeholders Phase 4 shipped. The mismatch state only fires when REAPER is
-  // confirmed reachable and disagrees with the linked file - a stale or absent heartbeat still reads as the plain
-  // "linked" state (PRD W15: "No DAW detected" over-promises when only the absence of a session dir is knowable).
-  const dawMismatch = dawFileLinked && dawReachable && !dawProjectMatches;
-  const pillLabel = dawMismatch ? 'Wrong REAPER project open' : dawFileLinked ? 'REAPER project linked' : 'No REAPER project linked';
-  const pillTooltip = dawMismatch
-    ? 'REAPER has a different project open than the one linked here. Click to link the open project, or switch REAPER to the linked file.'
-    : dawFileLinked
-      ? 'Change the linked REAPER project (.rpp) file'
-      : 'Link a REAPER project (.rpp) file';
+  const isDisabled = (item: NavItem) => gateFor(item).disabled;
+  const requiredReason = (item: NavItem) => gateFor(item).reason;
   const backTooltip = history.canGoBack ? 'Back (Alt+Left)' : 'Back (Alt+Left): no earlier page in this project';
   const forwardTooltip = history.canGoForward ? 'Forward (Alt+Right)' : 'Forward (Alt+Right): no later page yet';
-  const pillDotStyle = dawMismatch
-    ? { backgroundColor: 'var(--warn)', boxShadow: '0 0 5px var(--warn)' }
-    : dawFileLinked
-      ? { backgroundColor: 'var(--character)', boxShadow: '0 0 5px var(--character)' }
-      : { backgroundColor: 'var(--non-text)' };
+  // The wide rail's group heading (Q6): a visible `section-label`, referenced by the group's `aria-labelledby` so a
+  // screen reader hears the stage name once, not twice. Shared by the sidebar and the drawer, which render the same markup.
+  const groupHeadingId = (label: string) => `nav-group-${label.toLowerCase().replace(/\s+/g, '-')}`;
   const navigation = (
     <>
       <div className="flex items-center gap-2 border-b border-[var(--border)] p-4">
@@ -120,17 +119,24 @@ export function AppShell({
         </span>
       </div>
       <nav className="flex-1 p-2">
-        {NAV.map((item) => (
-          <NavButton
-            key={item.name}
-            active={isActivePath(pathname, item.path)}
-            icon={item.icon}
-            onClick={() => go(item.path)}
-            disabled={isDisabled(item)}
-            disabledReason={requiredReason(item)}
-          >
-            {item.name}
-          </NavButton>
+        {NAV_GROUPS.map((group) => (
+          <div key={group.label} role="group" aria-labelledby={groupHeadingId(group.label)}>
+            <div id={groupHeadingId(group.label)} className="section-label px-[0.8rem] pt-3 pb-1 first:pt-1">
+              {group.label}
+            </div>
+            {group.items.map((item) => (
+              <NavButton
+                key={item.name}
+                active={isActivePath(pathname, item.path)}
+                icon={item.icon}
+                onClick={() => go(item.path)}
+                disabled={isDisabled(item)}
+                disabledReason={requiredReason(item)}
+              >
+                {item.name}
+              </NavButton>
+            ))}
+          </div>
         ))}
       </nav>
       <div className="border-t border-[var(--border)] p-2">
@@ -149,18 +155,27 @@ export function AppShell({
           className="medium-rail hidden w-14 flex-none flex-col gap-1 border-r border-[var(--border)] bg-[var(--surface)] p-2 md:max-[1399px]:flex"
           aria-label="Primary navigation"
         >
-          {NAV.map((item) => (
-            <NavButton
-              key={item.name}
-              active={isActivePath(pathname, item.path)}
-              icon={item.icon}
-              onClick={() => go(item.path)}
-              iconOnly
-              disabled={isDisabled(item)}
-              disabledReason={requiredReason(item)}
-            >
-              {item.name}
-            </NavButton>
+          {NAV_GROUPS.map((group, index) => (
+            <Fragment key={group.label}>
+              {/* Icon-only rail (Q6): a thin divider between groups, not a text heading; the group keeps its accessible
+                  name via aria-label so a screen reader still hears the stage. The divider is decorative only. */}
+              {index > 0 && <div aria-hidden="true" className="m-1 border-t border-[var(--border)]" />}
+              <div role="group" aria-label={group.label} className="flex flex-col gap-1">
+                {group.items.map((item) => (
+                  <NavButton
+                    key={item.name}
+                    active={isActivePath(pathname, item.path)}
+                    icon={item.icon}
+                    onClick={() => go(item.path)}
+                    iconOnly
+                    disabled={isDisabled(item)}
+                    disabledReason={requiredReason(item)}
+                  >
+                    {item.name}
+                  </NavButton>
+                ))}
+              </div>
+            </Fragment>
           ))}
           <div className="mt-auto">
             <NavButton active={settingsActive} icon={faGear} onClick={() => go('/settings')} iconOnly>
@@ -197,20 +212,14 @@ export function AppShell({
               <FontAwesomeIcon icon={faFolder} style={{ color: 'var(--non-text)' }} className="max-md:hidden" />
               <span className="truncate font-medium">{projectName}</span>
             </div>
-            <TooltipTarget text={pillTooltip}>
-              <button
-                type="button"
-                onClick={onLinkDawFile}
-                disabled={linkingDawFile}
-                aria-busy={linkingDawFile || undefined}
-                aria-label={`${pillLabel} — ${pillTooltip}`}
-                className="inline-flex items-center gap-[0.4rem] rounded-full border border-[var(--border)] bg-[var(--surface-2)] px-[0.6rem] py-[0.2rem] font-['Barlow_Condensed',sans-serif] text-[0.8rem] font-semibold tracking-[0.03em] hover:border-[var(--accent)] disabled:pointer-events-none disabled:opacity-60 max-md:px-[0.35rem]"
-              >
-                <span className="size-[7px] flex-none rounded-full" style={pillDotStyle} />
-                {/* Q10 A: below `md` the pill shortens to its dot; the full text stays in the accessible name above. */}
-                <span className="max-md:hidden">{pillLabel}</span>
-              </button>
-            </TooltipTarget>
+            <EngineChip
+              engine={engine}
+              dawFileLinked={dawFileLinked}
+              dawReachable={dawReachable}
+              dawProjectMatches={dawProjectMatches}
+              onLinkDawFile={onLinkDawFile}
+              linkingDawFile={linkingDawFile}
+            />
           </header>
           <div className={`scroll-chrome-hidden relative flex-1 overflow-y-auto ${isActivePath(pathname, '/manuscript') ? 'p-0' : 'p-4 md:p-6'}`}>
             {children}

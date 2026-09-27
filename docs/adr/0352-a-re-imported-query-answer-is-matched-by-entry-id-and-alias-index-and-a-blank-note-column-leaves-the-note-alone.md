@@ -1,0 +1,26 @@
+# 0352. A re-imported query answer is matched by entry id and alias index, and a blank note column leaves the note alone
+
+**Status:** Accepted
+**Date:** 2026-09-27
+**Supersedes:** none. Builds on [ADR 0346](0346-a-pronunciation-carries-a-status-and-note-and-the-narrators-own-sits-beside-the-dictionarys-as-the-alternate.md) (status and note) and [ADR 0347](0347-the-pronunciation-query-export-is-csv-with-its-ids-last-and-a-formula-guard-and-is-a-download.md) (the CSV shape and `ParseQueriesCSV`). Prep depth PRD ([`docs/prds/prep-depth.prd.md`](../prds/prep-depth.prd.md)) Phase 6 (Should).
+
+## Context
+
+Phase 3 built the query export and proved a file reads back (`ParseQueriesCSV`), but left applying it for Phase 6: "Matching rows to entries and applying them is Phase 6's; no binding reads a file yet." The file the narrator gets back has been outside the app - emailed, opened in a spreadsheet, maybe re-saved with reordered columns or an extra blank row. It can also simply be stale: the Story Bible can have changed (an entry merged, deleted, or an alias removed) between the export and the reply. The row still names the word in plain text (`word`), which reads naturally to the author, but that column is not a safe key: two entries can share a display name after an edit, and a hand-edited file can misspell it. `entry_id` and `alias_index` were placed last in the export specifically so Phase 6 would have something stable to match on (ADR 0347).
+
+Whether a blank `note` cell means "the author had nothing to add" or "clear whatever note is there" is not spelled out by the export shape, and the two readings disagree: an author who only fills in `status` for most rows and a note for one would, on the "note wipes" reading, silently erase every other row's existing note (for example the narrator's own "asked by email" reminder) on the very next import.
+
+## Decision
+
+- **Matching is by `entry_id` and `alias_index`, never by `word`.** `MatchQueryAnswers` (`internal/guide/queries.go`) looks up the entity by `entry_id`; when the row has an `alias_index`, it must still be inside that entity's current aliases. `word` is carried through for the row's own error messages, never used to find the entity. A `word` that no longer matches the entry's current name (a rename since export) is not treated as an error: the ids are the identity, the display name is not.
+- **A row that cannot be matched is reported, never applied to the wrong entry.** An `entry_id` no longer in the Story Bible, or an `alias_index` no longer in range, becomes an issue naming the row's word and its line, the same shape `ParseQueriesCSV`'s own issues already use. This is deliberately the same discipline as a row `ParseQueriesCSV` cannot read at all (Q6's "report stale, never guess" principle from the PRD's markup phase, applied here to a row's identity instead of a text offset).
+- **A blank `note` column leaves the existing note alone.** `Service.ImportQueriesCSV` passes `nil` (not an empty string) to `SetPronunciationStatus` when the row's note is empty, which that call already treats as "leave it" (ADR 0346) as opposed to an empty string, which clears it. A file that only ever fills in `status` therefore cannot wipe a note the narrator or an earlier import already recorded. An author who wants a note cleared has to write something the narrator then clears by hand; that trade favors never losing data over supporting an edge case the export's own columns do not make easy to express.
+- **One sidecar call per matched row, through the existing status call.** `ImportQueriesCSV` applies each matched row with the same `SetPronunciationStatus` the panel's own Mark sent / Mark answered buttons use (ADR 0346). No new sidecar command. A call that fails (an over-long note, a locked entity) is reported as an issue for that row; the rest of the file still applies.
+- **The result is a count and a list of sentences, not the rows.** `GuidePronunciationImportQueriesCSV` returns `{applied, issues}`. The caller re-reads `PronunciationQueries` for the fresh list rather than being handed back what changed; issues are plain strings (`line N: ...`), the same shape the pickup list's own import report already uses (`PickupsImportResult.rowErrors`), not a new structured error type.
+- **The file never touches disk on the host.** The UI reads whatever file the narrator picks with a browser file input and sends its text; `GuidePronunciationImportQueriesCSV` takes a string and opens nothing itself, the same "the app reads back a file it never opened" shape as the query export's own download.
+
+## Consequences
+
+- Re-running an import (the same file, or a fresh export re-sent and re-answered) is safe: matching is by id, and applying a row already at the target status is a no-op the sidecar call already handles.
+- A heavily reshuffled Story Bible (many entries merged or deleted since export) turns into many unmatched-row issues rather than mis-filed answers; the narrator sees exactly which rows to re-ask.
+- One new binding, `GuidePronunciationImportQueriesCSV`. `hostAPIVersion` goes from 70 to 71 (Phase 3's own PR took 70 first; a serial-point collision, resolved per `docs/operations/agent-train.md` by taking the higher value plus one).

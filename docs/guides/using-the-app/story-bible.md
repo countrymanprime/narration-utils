@@ -102,6 +102,14 @@ the author however you usually do. It opens in any spreadsheet. The last two col
 are. **Mark sent** records that you asked. **Mark answered** records that the author confirmed it,
 and the name leaves the list.
 
+Once the author sends the file back with a `status` filled in for each row (`researched`, `query
+sent` or `author confirmed`, spelled either way), press **Import answers…** and pick that file
+instead of marking every row by hand. The panel says how many rows it applied; a row it could not
+use (the entry or alias it named is no longer there, or its status column is not one of the three)
+is listed underneath with the reason, and nothing else in the Story Bible is touched by that row. A
+row whose `note` column is left blank does not erase a note you already had for that name - only
+fill in a note if you want it changed.
+
 | Message | What it means | What to do |
 | --- | --- | --- |
 | "... could not be spoken: the voice produced no audio for it" | The name is only punctuation or symbols, so the voice has nothing to say. | Preview an alias that has letters in it, or ignore the preview for this name. |

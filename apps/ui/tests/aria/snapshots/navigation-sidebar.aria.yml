@@ -1,13 +1,31 @@
 # The page list is pinned exactly and in order (`children: equal`): a page added, removed or moved fails here. Settings sits after it.
+# Grouped by production stage (stage-navigation-and-page-replacement.prd.md Phase 1, ADR 0407 item 3): each group is
+# a named `group`, so a group added, removed, renamed or reordered fails here too. Its visible heading text is also
+# its accessible name (aria-labelledby), so the heading text itself is listed as the group's first child.
+# `/production` (PR #760) has no nav entry in Phase 1 (D79); it joins Production in Phase 2.
 - complementary:
   - navigation:
     - /children: equal
-    - button "Home"
-    - button "Production"
-    - button "Manuscript"
-    - button "Story Bible"
-    - button "Teleprompter"
-    - button "Tracks"
-    - button "Proof"
-    - button "Delivery"
+    - group "Production":
+      - /children: equal
+      - text: Production
+      - button "Home"
+    - group "Prep":
+      - /children: equal
+      - text: Prep
+      - button "Manuscript"
+      - button "Story Bible"
+    - group "Record":
+      - /children: equal
+      - text: Record
+      - button "Teleprompter"
+    - group "Review":
+      - /children: equal
+      - text: Review
+      - button "Proof"
+      - button "Tracks"
+    - group "Finish":
+      - /children: equal
+      - text: Finish
+      - button "Delivery"
   - button "Settings"
