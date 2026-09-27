@@ -34,6 +34,46 @@ describe('TracksPage', () => {
     expect(screen.getByRole('button', { name: /Click Track/ })).toBeTruthy();
   });
 
+  // chapter-stage-recommendations.prd.md Phase 9, D5: a chapter whose stage suggestion is stuck on unmapped_track or
+  // unconfirmed_mapping gets a page-level hint above the Chapter links table, which is where the narrator resolves it.
+  it('hints when a chapter’s stage suggestion is waiting on its track link', async () => {
+    renderTracksPage({
+      stageRecommendations: async () => ({
+        chapters: [{ chapterId: 'c1', title: 'Chapter 1', from: 'recording', target: 'editing', verdict: 'unknown', signals: [], causes: ['unmapped_track'] }],
+      }),
+    });
+
+    expect(await screen.findByText('One chapter can’t get a stage suggestion until its track link is confirmed below.')).toBeTruthy();
+  });
+
+  it('pluralizes the hint for more than one blocked chapter', async () => {
+    renderTracksPage({
+      stageRecommendations: async () => ({
+        chapters: [
+          { chapterId: 'c1', title: 'Chapter 1', from: 'recording', target: 'editing', verdict: 'unknown', signals: [], causes: ['unmapped_track'] },
+          {
+            chapterId: 'c2',
+            title: 'Chapter 2',
+            from: 'recording',
+            target: 'editing',
+            verdict: 'unknown',
+            signals: [],
+            causes: ['unconfirmed_mapping'],
+          },
+        ],
+      }),
+    });
+
+    expect(await screen.findByText('2 chapters can’t get a stage suggestion until their track links are confirmed below.')).toBeTruthy();
+  });
+
+  it('shows no hint when no chapter is blocked on a track link', async () => {
+    renderTracksPage({ stageRecommendations: async () => ({ chapters: [] }) });
+
+    await screen.findByRole('button', { name: /Chapter 1/ });
+    expect(screen.queryByText(/can.t get a stage suggestion/)).toBeNull();
+  });
+
   it('flags every track that has a missing or unsupported item', async () => {
     renderTracksPage();
     await screen.findByRole('button', { name: /Chapter 2/ });
