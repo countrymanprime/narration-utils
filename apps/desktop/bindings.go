@@ -209,6 +209,21 @@ func (h *Host) GuidePronunciationQueriesCSV() (string, error) {
 	}
 	return encodeBinding(map[string]any{"csv": guide.QueriesCSV(queries), "count": len(queries)}, nil)
 }
+
+// GuidePronunciationImportQueriesCSV applies an author's answered file back onto the Story Bible (prep-depth P6): the UI
+// reads whatever file the narrator picks in their own file input and sends its text; the host never opens a file of its
+// own. Every row it could not read, match to a still-existing entry or apply is reported with its line, never dropped.
+func (h *Host) GuidePronunciationImportQueriesCSV(csvText string) (string, error) {
+	service := h.services().guide
+	if service == nil {
+		return "", fmt.Errorf("the Story Bible is unavailable")
+	}
+	applied, issues, err := service.ImportQueriesCSV(csvText)
+	if err != nil {
+		return encodeBinding(nil, err)
+	}
+	return encodeBinding(map[string]any{"applied": applied, "issues": issues}, nil)
+}
 func (h *Host) GuideCreate(name, category string, aliases []string) (string, error) {
 	service := h.services().guide
 	if service == nil {

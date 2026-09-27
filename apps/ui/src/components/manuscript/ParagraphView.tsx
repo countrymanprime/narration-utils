@@ -2,8 +2,11 @@ import { useMemo, type ReactNode } from 'react';
 import type { GuideEntity, ManuscriptNote, ManuscriptParagraph, PrepMarkupSpan } from '../../types';
 import { Highlight, highlightKind } from '../primitives/Highlight';
 import { composeAnnotationPieces, entityAnnotations, markupAnnotations, noteAnnotations, type Annotation, type Piece } from './annotations';
+import type { DialogueCue } from './dialogueCues';
+import { speakerLabelForParagraph } from './dialogueCues';
 import { MarkupMark, StaleMarkupNotice } from './MarkupMark';
 import type { RetailSampleRange } from './retailSampleRange';
+import { SpeakerTag } from './SpeakerTag';
 
 const FORMAT_TAG = { bold: 'strong', italic: 'em', underline: 'u' } as const;
 const NO_MARKUP: PrepMarkupSpan[] = [];
@@ -19,6 +22,7 @@ export function ParagraphView({
   lineNumberPadding,
   jumpTarget,
   retailSample,
+  dialogueCues,
   openEntity,
   openNote,
 }: {
@@ -34,6 +38,9 @@ export function ParagraphView({
   jumpTarget?: number;
   /** The retail sample's paragraphs (Phase 5, C10): their rows are marked, with a label where it starts and ends. */
   retailSample?: RetailSampleRange;
+  /** Speaker attribution (prep-depth.prd.md Phase 4): a dialogue line whose cue resolves to a known entity gets a
+   * speaker chip; `unknown` and no-cue paragraphs render exactly as before. */
+  dialogueCues?: DialogueCue[];
   openEntity: (entity: GuideEntity) => void;
   openNote: (note: ManuscriptNote) => void;
 }) {
@@ -66,6 +73,7 @@ export function ParagraphView({
           lineNumberPadding={lineNumberPadding}
           isJumpTarget={jumpTarget === paragraph.index}
           retailSample={retailSample}
+          dialogueCues={dialogueCues}
           openEntity={openEntity}
           openNote={openNote}
         />
@@ -85,6 +93,7 @@ function ParagraphRow({
   lineNumberPadding,
   isJumpTarget,
   retailSample,
+  dialogueCues,
   openEntity,
   openNote,
 }: {
@@ -98,10 +107,15 @@ function ParagraphRow({
   lineNumberPadding: string;
   isJumpTarget: boolean;
   retailSample?: RetailSampleRange;
+  dialogueCues?: DialogueCue[];
   openEntity: (entity: GuideEntity) => void;
   openNote: (note: ManuscriptNote) => void;
 }) {
   const paragraphNotes = useMemo(() => notes.filter((note) => note.paragraph === paragraph.index), [notes, paragraph.index]);
+  const speakerLabel = useMemo(
+    () => (dialogueCues?.length ? speakerLabelForParagraph(paragraph, dialogueCues, entitiesById) : undefined),
+    [paragraph, dialogueCues, entitiesById],
+  );
   const lineMarkup = useMemo(() => markup.filter((span) => span.paragraphId === paragraph.id), [markup, paragraph.id]);
   const staleMarkup = useMemo(() => lineMarkup.filter((span) => span.stale), [lineMarkup]);
   const annotations = useMemo(() => {
@@ -188,6 +202,11 @@ function ParagraphRow({
         {sampleLabel && (
           <div className="text-xs font-medium" style={{ color: 'var(--info-text)' }}>
             {sampleLabel}
+          </div>
+        )}
+        {speakerLabel && (
+          <div className="mb-0.5">
+            <SpeakerTag label={speakerLabel} />
           </div>
         )}
         <p data-paragraph-text className={`${textClass} whitespace-pre-line`}>
