@@ -75,8 +75,9 @@ const escapeSelector = (value: string) =>
   typeof CSS !== 'undefined' && typeof CSS.escape === 'function' ? CSS.escape(value) : value.replace(/(["\\])/g, '\\$1');
 
 // The Script page (stage-navigation-and-page-replacement.prd.md Phase 3, mock 02), which replaced the Manuscript page: the
-// chapter list with each chapter's prep status, the reader, and a rail of Pronunciations, Characters and Queries. The list and
-// the rail are columns from `xl`; below it the list is the Chapters & Search panel and the rail opens as a panel from the band.
+// chapter list with each chapter's prep status, the reader, and a rail of Pronunciations, Characters and Queries. The list is a
+// column from `xl` and the rail from `2xl` (the reader card's fixed header columns, ADR 0190, need about 800 px, ADR 0392);
+// below those widths the list is the Chapters & Search panel and the rail opens as a panel from the band.
 export function ScriptPage({
   notify,
   focusStoryBibleEntity,
@@ -611,7 +612,7 @@ export function ScriptPage({
 
   return (
     <div
-      className="reader-page min-h-full [--reader-inline:1.5rem] max-md:[--reader-inline:1rem] xl:grid xl:grid-cols-[12rem_minmax(0,1fr)_21.5rem]"
+      className="reader-page min-h-full [--reader-inline:1.5rem] max-md:[--reader-inline:1rem] xl:grid xl:grid-cols-[12rem_minmax(0,1fr)] 2xl:grid-cols-[12rem_minmax(0,1fr)_21.5rem]"
       style={{ '--band-h': `${bandHeight}px` } as CSSProperties}
     >
       {/* Mock 02's left column: the chapters with their prep status, and the key to the marks in the text. The page scrolls
@@ -655,7 +656,7 @@ export function ScriptPage({
                 />
               </div>
               <div className="ml-auto flex items-center gap-2">
-                <div className="xl:hidden">
+                <div className="2xl:hidden">
                   <TooltipTarget text="Pronunciations, characters and queries">
                     <IconButton
                       label="Prep rail"
@@ -823,7 +824,7 @@ export function ScriptPage({
       </div>
       <aside
         aria-label="Prep"
-        className="sticky top-0 hidden h-[calc(100dvh-3.5rem)] flex-col self-start overflow-hidden border-l border-[var(--border)] bg-[var(--surface)] xl:flex"
+        className="sticky top-0 hidden h-[calc(100dvh-3.5rem)] flex-col self-start overflow-hidden border-l border-[var(--border)] bg-[var(--surface)] 2xl:flex"
       >
         {rail}
       </aside>
@@ -951,6 +952,7 @@ export function ScriptPage({
                 pending={searchPending}
                 lineNumbers={lineNumbers}
                 stageSuggestions={stages.state.byChapter}
+                toConfirm={toConfirm}
                 select={(id, paragraph) => {
                   const chapter = chapters.find((item) => item.id === id);
                   if (chapter) {

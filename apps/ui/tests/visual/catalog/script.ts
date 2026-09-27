@@ -118,13 +118,13 @@ export const scriptStates: StateEntry[] = [
     description:
       'Script, Chapter 3, a dialogue line spoken by a character with no Story Bible entry (the Mouse) - the recorded demo cue has no resolved speaker, so no chip and no placeholder name (Success Metrics: "unknown renders as unattributed, never a fabricated name")',
   },
-  // Mock 02's rail (stage-navigation-and-page-replacement.prd.md Phase 3): a column from `xl` (the desktop width), a panel opened
-  // from the band's Prep rail button below it. The driver picks by what the width shows, so each width loads afresh.
+  // Mock 02's rail (stage-navigation-and-page-replacement.prd.md Phase 3, ADR 0392): a column from `2xl` (the wide width), a panel
+  // opened from the band's Prep rail button below it. The driver picks by what the width shows, so each width loads afresh.
   {
     page: 'script',
     state: 'prep-rail-characters',
     description:
-      "Script, the rail's Characters tab (mock 02): the Story Bible's characters with their first description line; a name opens its summary. A column beside the reader at the desktop width, the Prep panel below it",
+      "Script, the rail's Characters tab (mock 02): the Story Bible's characters with their first description line; a name opens its summary. A column beside the reader at the wide width, the Prep panel below it",
     ...RAIL_DEPENDS_ON_WIDTH,
   },
   {
