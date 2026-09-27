@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/countrymanprime/narration-utils/shell/internal/liveflags"
+	"github.com/countrymanprime/narration-utils/shell/internal/project"
 	"github.com/countrymanprime/narration-utils/shell/internal/recents"
 )
 
@@ -53,6 +54,8 @@ var stressReaders = []stressReader{
 	{"GuideBuildState", func(h *Host) { _, _ = h.GuideBuildState() }},
 	{"GuideEntities", func(h *Host) { _, _ = h.GuideEntities() }},
 	{"GuidePreview", func(h *Host) { _, _ = h.GuidePreview("missing", nil) }},
+	{"GuidePronunciationQueries", func(h *Host) { _, _ = h.GuidePronunciationQueries() }},
+	{"GuidePronunciationQueriesCSV", func(h *Host) { _, _ = h.GuidePronunciationQueriesCSV() }},
 	{"ManuscriptChapters", func(h *Host) { _, _ = h.ManuscriptChapters() }},
 	{"ManuscriptImportState", func(h *Host) { _, _ = h.ManuscriptImportState("missing") }},
 	{"ManuscriptNotes", func(h *Host) { _, _ = h.ManuscriptNotes("missing") }},
@@ -92,6 +95,9 @@ var stressReaders = []stressReader{
 	{"CreditsSetupState", func(h *Host) { _, _ = h.CreditsSetupState() }},
 	{"CreditsSetupDismiss (unknown scope)", func(h *Host) { _, _ = h.CreditsSetupDismiss("forever") }},
 	{"CreditsSetStatus (unknown kind)", func(h *Host) { _, _ = h.CreditsSetStatus("missing", "finalized") }},
+	{"ProductionPlan", func(h *Host) { _, _ = h.ProductionPlan() }},
+	{"ProductionSetDeadline (bad date)", func(h *Host) { _, _ = h.ProductionSetDeadline("not-a-date", nil) }},
+	{"ProductionSaveMilestones (no name)", func(h *Host) { _, _ = h.ProductionSaveMilestones([]project.Milestone{{DueDate: "2026-12-01"}}) }},
 	{"TeleprompterLocate", func(h *Host) { _, _ = h.TeleprompterLocate("c-0001", "", "") }},
 	{"TeleprompterSaveFlags", func(h *Host) {
 		_, _ = h.TeleprompterSaveFlags("ch-1", []liveflags.Flag{{Kind: "misread", ParagraphID: "p-1", WordStart: 0, WordEnd: 1}})

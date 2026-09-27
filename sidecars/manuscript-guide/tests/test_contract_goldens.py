@@ -36,3 +36,38 @@ class ContractGoldenTests(unittest.TestCase):
 
         self.assertEqual({"Captain Arelian", "Council of Ash", "Dawnspire"}, {entity["canonical_name"] for entity in entities})
         contract_files.check("guide-entities-sidecar", entities)
+
+
+class PronunciationDepthContractGoldenTests(unittest.TestCase):
+    """The narrator's own pronunciation, its alternate, a status and a note, as the sidecar writes them (prep-depth P1)."""
+
+    def test_an_entity_with_the_narrators_pronunciation_work_matches_the_committed_contract_file(self):
+        import argparse
+        import json
+        import tempfile
+
+        entity = {
+            "id": "entity-wren",
+            "canonical_name": "Wren",
+            "category": "Character",
+            "aliases": [{"text": "the Sparrow", "pronunciation": {"ipa": "ðə ˈspæɹoʊ", "source": "CMU dictionary", "confidence": "medium"}, "occurrences": []}],
+            "occurrences": [],
+            "occurrence_count": 0,
+            "pronunciation": {"ipa": "ɹɛn", "source": "CMU dictionary", "confidence": "medium"},
+            "description": {"text": "", "evidence": {}},
+            "personality_notes": [],
+            "relationships": [],
+            "properties": [],
+            "locked": False,
+            "review_state": "reviewed",
+        }
+        with tempfile.TemporaryDirectory() as temporary:
+            path = str(Path(temporary) / "manuscript_guide.json")
+            guide.write_json(path, {"schema_version": 2, "entities": [entity]})
+            target = {"guide": path, "entity_id": "entity-wren"}
+            guide.pronounce_user(argparse.Namespace(**target, alias_index=None, ipa="wɹɛn"))
+            guide.pronunciation_status(argparse.Namespace(**target, alias_index=None, status="query_sent", note="Asked the author by email."))
+            guide.pronunciation_status(argparse.Namespace(**target, alias_index=0, status="author_confirmed", note=None))
+            with open(path, encoding="utf-8") as handle:
+                entities = json.load(handle)["entities"]
+        contract_files.check("guide-entities-pronunciation-sidecar", entities)
