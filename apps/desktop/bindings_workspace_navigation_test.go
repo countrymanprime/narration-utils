@@ -126,8 +126,13 @@ func workspaceNavigationHost(t *testing.T, fake *fakeNavigator) *Host {
 		t.Fatal(err)
 	}
 	host.services().coverage.Wait()
+	// coverageHost attaches a real project, whose background chapter-sync watcher reads host.services() (h.mu.RLock)
+	// as soon as it is attached: swapping navigation/reachability must go under h.mu.Lock too, unlike
+	// newNavigationHost (bindings_navigation_test.go), whose bare *Host{...} has no such goroutine racing it yet.
+	host.mu.Lock()
 	host.navigation = &findingNavigation{navigator: fake}
 	host.reachability = liveReachability()
+	host.mu.Unlock()
 	return host
 }
 
@@ -196,9 +201,12 @@ func TestWorkspaceLoopAcrossTwoItemsIsAnErrorNotARefusal(t *testing.T) {
 // With no REAPER listening the request is refused before it is written, exactly as bindings_navigation_test.go's
 // TestWithoutAListeningREAPERNothingIsSentAndTheRefusalSaysWhy proves for a finding.
 func TestWorkspaceWithoutAListeningREAPERNothingIsSentAndTheRefusalSaysWhy(t *testing.T) {
-	host := workspaceNavigationHost(t, &fakeNavigator{})
-	host.navigation.standalone = true
+	fake := &fakeNavigator{}
+	host := workspaceNavigationHost(t, fake)
+	host.mu.Lock()
+	host.navigation = &findingNavigation{navigator: fake, standalone: true}
 	host.reachability = nil
+	host.mu.Unlock()
 
 	got := bindingAnswer[FindingNavigation](t)(host.WorkspaceGoTo("c-0001", 0))
 	if got.Outcome != "refused" || got.Reason != "standalone" {
