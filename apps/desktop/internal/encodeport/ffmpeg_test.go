@@ -102,7 +102,7 @@ func TestTheEncoderAsksFFmpegForCBRLAMEWithNoTagFrameAndNoMetadata(t *testing.T)
 	}
 	args := strings.Join(strings.Split(strings.TrimSpace(string(body)), "\n"), " ")
 	for _, want := range []string{
-		"-nostdin", "-i " + wav, "-map 0:a:0", "-map_metadata -1", "-c:a libmp3lame", "-b:a 256k", "-ar 44100", "-ac 1",
+		"-nostdin", "-protocol_whitelist file", "-i file:" + wav, "-map 0:a:0", "-map_metadata -1", "-c:a libmp3lame", "-b:a 256k", "-ar 44100", "-ac 1",
 		"-write_xing 0", "-id3v2_version 0", "-f mp3", "-progress pipe:1",
 	} {
 		if !strings.Contains(args, want) {
@@ -224,6 +224,37 @@ func TestTheSourceIsNeverTheDestination(t *testing.T) {
 		t.Error("the WAV changed")
 	}
 	assertOnly(t, dir, "chapter.wav", "link.wav")
+}
+
+func TestPathsThatLookLikeOptionsOrURLsReachFFmpegAsAbsoluteFiles(t *testing.T) {
+	dir := t.TempDir()
+	t.Chdir(dir)
+	if err := os.Mkdir("-y", 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Mkdir("http:", 0o755); err != nil {
+		t.Skip("this file system has no folder called http:")
+	}
+	writeWAV(t, "http:", "-chapter.wav", 44100, 1, time.Second)
+	record := filepath.Join(dir, "args.txt")
+	t.Setenv(fakeArgsEnv, record)
+	if err := encodeport.NewFFmpeg(fakeExecutable(t), nil).Encode(context.Background(), "http:/-chapter.wav", "-y/-out.mp3", encodeport.Spec{Format: "mp3"}); err != nil {
+		t.Fatal(err)
+	}
+	body, err := os.ReadFile(record)
+	if err != nil {
+		t.Fatal(err)
+	}
+	args := strings.Split(strings.TrimSpace(string(body)), "\n")
+	input, output := args[slices.Index(args, "-i")+1], args[len(args)-1]
+	for _, path := range []string{input, output} {
+		if !strings.HasPrefix(path, "file:") || !filepath.IsAbs(strings.TrimPrefix(path, "file:")) {
+			t.Errorf("FFmpeg was given %q, want an absolute path through the file protocol", path)
+		}
+	}
+	if _, err := os.Stat(filepath.Join(dir, "-y", "-out.mp3")); err != nil {
+		t.Errorf("the MP3 is not where it was asked for: %v", err)
+	}
 }
 
 func TestAnEncodeNeverReplacesAFileAlreadyAtTheDestination(t *testing.T) {
@@ -435,8 +466,8 @@ func fakeFFmpeg(args []string) int {
 		}
 		return fallback
 	}
-	out := args[len(args)-1]
-	in, err := os.Open(option("-i", ""))
+	out := strings.TrimPrefix(args[len(args)-1], "file:")
+	in, err := os.Open(strings.TrimPrefix(option("-i", ""), "file:"))
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		return 1

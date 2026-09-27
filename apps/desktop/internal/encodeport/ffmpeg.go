@@ -113,6 +113,12 @@ func (f *FFmpeg) Encode(ctx context.Context, wav, dst string, spec Spec) error {
 	if err := distinct(wav, dst); err != nil {
 		return err
 	}
+	if wav, err = filepath.Abs(wav); err != nil {
+		return err
+	}
+	if dst, err = filepath.Abs(dst); err != nil {
+		return err
+	}
 	length, format, err := readWAV(wav)
 	if err != nil {
 		return err
@@ -267,11 +273,13 @@ func reservePartial(dst string) (string, error) {
 }
 
 // mp3Args is the command line of one encode: the first audio stream of wav, no metadata, LAME at a constant bitrate, and an MP3
-// holding audio frames only (no Info frame, no ID3v2 tag: ADR 0342), with machine-readable progress on stdout.
+// holding audio frames only (no Info frame, no ID3v2 tag: ADR 0342), with machine-readable progress on stdout. Both paths are
+// absolute and named through FFmpeg's file protocol, with every other input protocol refused, so neither can be read as an option
+// ("-...") or as a URL FFmpeg would fetch or expand ("http:", "concat:", ...).
 func mp3Args(wav, out string, bitrate int, spec Spec) []string {
 	args := []string{
 		"-hide_banner", "-nostdin", "-nostats", "-loglevel", "error", "-progress", "pipe:1",
-		"-i", wav, "-map", "0:a:0", "-map_metadata", "-1",
+		"-protocol_whitelist", "file", "-i", fileURL(wav), "-map", "0:a:0", "-map_metadata", "-1",
 		"-c:a", "libmp3lame", "-b:a", strconv.Itoa(bitrate) + "k",
 	}
 	if spec.SampleRateHz != 0 {
@@ -280,8 +288,11 @@ func mp3Args(wav, out string, bitrate int, spec Spec) []string {
 	if spec.Channels != 0 {
 		args = append(args, "-ac", strconv.Itoa(spec.Channels))
 	}
-	return append(args, "-write_xing", "0", "-id3v2_version", "0", "-f", "mp3", "-y", out)
+	return append(args, "-write_xing", "0", "-id3v2_version", "0", "-f", "mp3", "-y", fileURL(out))
 }
+
+// fileURL names path through FFmpeg's file protocol. The caller has made it absolute (Encode), so it starts with "/" or a drive.
+func fileURL(path string) string { return "file:" + path }
 
 // progressReader turns FFmpeg's -progress lines into Spec.Progress calls: out_time_us is how much audio is written, never
 // reported beyond the WAV's length.
