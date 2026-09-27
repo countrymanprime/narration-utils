@@ -665,6 +665,89 @@ def test_list_devices_reports_a_listing_failure_instead_of_pretending_there_are_
     assert emitted == {"type": "devices", "devices": [], "error": "Could not list input devices: no dshow backend"}
 
 
+# --capabilities is a one-shot mode like --list-devices: every row this process has registered in ENGINES and
+# BACKENDS by the time it runs, registration only (Q2, ADR 0403) - "loadable" is always null. capabilities_report()
+# is tested directly against fake registries below, so the fault-detection case (PRD Success Metrics: a row an
+# adapter failed to register is absent from the report) needs no real broken import to prove; the CLI wiring test
+# only checks --capabilities is short-circuited before a session, the same as --list-devices.
+def _fake_registry(rows):
+    """A registry-shaped stand-in: iterating it gives objects with a `.descriptor`, the only thing
+    capabilities_report() reads from ENGINES/BACKENDS."""
+    return [SimpleNamespace(descriptor=row) for row in rows]
+
+
+def test_capabilities_report_lists_every_registered_row_by_port_and_name():
+    from narration_common.ports.asr import AsrDescriptor
+    from narration_common.ports.capture import CaptureDescriptor
+
+    engines = _fake_registry(
+        [
+            AsrDescriptor(name="whisper", label="Whisper", modes=("live",), asset_kind="whisper"),
+            AsrDescriptor(name="moonshine", label="Moonshine", platforms=("windows",), modes=("live",), languages=("en",), asset_kind="moonshine"),
+        ]
+    )
+    backends = _fake_registry([CaptureDescriptor(name="dshow", label="DirectShow", platforms=("windows",))])
+
+    report = live_asr.capabilities_report(engines, backends)
+
+    assert report == {
+        "type": "capabilities",
+        "asr": {
+            "whisper": {"label": "Whisper", "platforms": [], "modes": ["live"], "asset": "whisper", "loadable": None},
+            "moonshine": {"label": "Moonshine", "platforms": ["windows"], "modes": ["live"], "asset": "moonshine", "loadable": None},
+        },
+        "capture": {
+            "dshow": {"label": "DirectShow", "platforms": ["windows"], "modes": [], "loadable": None},
+        },
+    }
+
+
+def test_capabilities_report_omits_asset_for_a_row_with_no_asset_kind():
+    from narration_common.ports.capture import CaptureDescriptor
+
+    report = live_asr.capabilities_report([], _fake_registry([CaptureDescriptor(name="dshow", label="DirectShow", platforms=("windows",))]))
+
+    assert "asset" not in report["capture"]["dshow"]
+
+
+def test_capabilities_report_never_verifies_loading():
+    from narration_common.ports.asr import AsrDescriptor
+
+    report = live_asr.capabilities_report(_fake_registry([AsrDescriptor(name="whisper", label="Whisper", modes=("live",))]), [])
+
+    assert report["asr"]["whisper"]["loadable"] is None
+
+
+def test_capabilities_report_only_lists_what_actually_registered():
+    # The fault-detection case (PRD Success Metrics): a row an adapter failed to register never reaches ENGINES/
+    # BACKENDS, so it is simply absent here too - reading the registry as it stands is the whole mechanism.
+    from narration_common.ports.asr import AsrDescriptor
+
+    report = live_asr.capabilities_report(_fake_registry([AsrDescriptor(name="whisper", label="Whisper", modes=("live",))]), [])
+
+    assert set(report["asr"]) == {"whisper"}
+
+
+def test_capabilities_reflects_the_real_engines_and_backends_registries():
+    report = live_asr.capabilities_report()
+
+    assert set(report["asr"]) == {"whisper", "moonshine"}
+    assert set(report["capture"]) == {"dshow"}
+
+
+def test_capabilities_emits_one_json_line_and_never_requires_wav_or_mic(monkeypatch, capsys):
+    monkeypatch.setattr(sys, "argv", ["live_asr.py", "--capabilities"])
+
+    live_asr.main()
+
+    lines = capsys.readouterr().out.strip().splitlines()
+    assert len(lines) == 1
+    emitted = json.loads(lines[0])
+    assert emitted["type"] == "capabilities"
+    assert "whisper" in emitted["asr"]
+    assert "dshow" in emitted["capture"]
+
+
 def test_script_id_and_title_go_together_and_need_a_script(capsys):
     ap = live_asr.build_parser()
     for argv, message in [
@@ -759,7 +842,15 @@ def test_meter_mode_ends_on_the_stop_file(monkeypatch, capsys, tmp_path):
 
 @pytest.mark.parametrize(
     "extra",
-    [[], ["--manuscript", "m.json", "--chapter", "c1"], ["--script", "s.txt"], ["--control-file", "c.ctl"], ["--locate"], ["--list-devices"]],
+    [
+        [],
+        ["--manuscript", "m.json", "--chapter", "c1"],
+        ["--script", "s.txt"],
+        ["--control-file", "c.ctl"],
+        ["--locate"],
+        ["--list-devices"],
+        ["--capabilities"],
+    ],
 )
 def test_meter_mode_needs_a_microphone_and_takes_no_session_options(extra, monkeypatch, capsys):
     argv = ["live_asr.py", "--meter", *(extra if extra == [] else ["--mic", "Mic", *extra])]

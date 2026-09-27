@@ -73,6 +73,14 @@ turns them into these three event types:
         only with --check-moonshine: whether this build can run Moonshine (see
         moonshine_engine.py); prints once and exits, 1 if not. The packaged
         app's smoke test reads it.
+    {"type": "capabilities", "asr": {"whisper": {"label": "Whisper", "platforms": [], "modes": ["live"], "asset": "whisper", "loadable": null}, ...}, "capture": {...}}
+        only with --capabilities: every row this process has actually
+        registered in ENGINES and BACKENDS (see capabilities_report, below),
+        keyed by port then name; registration only, never verified, so
+        "loadable" is always null (sidecar-capabilities-flag PRD, ADR 0403).
+        Prints once and exits 0. The packaged app's smoke test
+        (checkCapabilities) reads it to catch a row Go declares for this
+        platform that this process never registered.
     {"type": "locate", "word": 812, "sentence": {...}, "confidence": 0.84, "confident": true, ...}
         only with --locate --wav FILE --tail-start S --tail-end E: seconds S
         to E of a recording, placed in the script; prints once and exits,
@@ -589,6 +597,29 @@ def _load_engine(args) -> EventStream:
     return _engine_events(ENGINES.lookup(args.engine), request)
 
 
+def _capability_row(descriptor) -> dict:
+    """One row of a --capabilities report: a Descriptor's label, platforms and modes, plus its asset kind when it
+    has one (AsrDescriptor only) - the same "include only when non-empty" rule bindings_providers.go's providerEntry
+    uses. "loadable" is always null: this reports registration only, never whether the row actually loads (Q2)."""
+    row = {"label": descriptor.label, "platforms": list(descriptor.platforms), "modes": list(descriptor.modes), "loadable": None}
+    asset_kind = getattr(descriptor, "asset_kind", "")
+    if asset_kind:
+        row["asset"] = asset_kind
+    return row
+
+
+def capabilities_report(engines=ENGINES, backends=BACKENDS) -> dict:
+    """--capabilities: every row this sidecar process has actually registered in ENGINES (live ASR) and BACKENDS
+    (capture) by the time this runs - after asr_adapters and capture_dshow's module-level registration, before any
+    engine, model or device is touched. `engines`/`backends` are overridable so a test can stand in a reduced
+    registry for "an adapter failed to register" without needing a real broken import."""
+    return {
+        "type": "capabilities",
+        "asr": {engine.descriptor.name: _capability_row(engine.descriptor) for engine in engines},
+        "capture": {backend.descriptor.name: _capability_row(backend.descriptor) for backend in backends},
+    }
+
+
 def _run_locate(ap: argparse.ArgumentParser, args) -> None:
     """--locate: place a recording's tail in the chapter and print one `locate` line (locate.py). The chapter is
     checked before the model loads, so a wrong chapter fails fast."""
@@ -730,7 +761,7 @@ def _run(args, stream: EventStream, chunks: Iterator[np.ndarray], tracker) -> No
 
 
 # What --meter cannot be combined with: it opens a microphone and reports its level, nothing else.
-_SESSION_ONLY_OPTIONS = ("wav", "manuscript", "script", "control_file", "start_word", "locate", "list_devices", "check_moonshine")
+_SESSION_ONLY_OPTIONS = ("wav", "manuscript", "script", "control_file", "start_word", "locate", "list_devices", "check_moonshine", "capabilities")
 
 
 def _run_meter(ap: argparse.ArgumentParser, args) -> None:
@@ -762,6 +793,12 @@ def build_parser() -> argparse.ArgumentParser:
         "--check-moonshine",
         action="store_true",
         help="Print whether this build can run --engine moonshine (one JSON object: {type: engine_check, engine, ok, detail}), then exit (1 if not)",
+    )
+    ap.add_argument(
+        "--capabilities",
+        action="store_true",
+        help="Print every row this process has registered in ENGINES and BACKENDS, by port then name (one JSON object: "
+        "{type: capabilities, asr, capture}; registration only, not verified), then exit 0",
     )
     ap.add_argument(
         "--meter",
@@ -849,6 +886,9 @@ def main() -> None:
         _emit(report)
         if not report["ok"]:
             sys.exit(1)
+        return
+    if args.capabilities:
+        _emit(capabilities_report())
         return
     if args.locate:
         _run_locate(ap, args)

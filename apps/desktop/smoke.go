@@ -13,7 +13,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/countrymanprime/narration-utils/shell/internal/asrport"
 	"github.com/countrymanprime/narration-utils/shell/internal/assets"
+	"github.com/countrymanprime/narration-utils/shell/internal/captureport"
 	"github.com/countrymanprime/narration-utils/shell/internal/dictionary"
 	"github.com/countrymanprime/narration-utils/shell/internal/moonshine"
 	"github.com/countrymanprime/narration-utils/shell/internal/process"
@@ -34,6 +36,8 @@ import (
 //     silently loses; with --piper-model it also speaks one word;
 //   - on Windows, the frozen Teleprompter sidecar can load Moonshine's native library (`--check-moonshine`), which PyInstaller cannot
 //     see it needs; no model is loaded and nothing is downloaded;
+//   - the frozen Teleprompter sidecar's own `--capabilities` report names every ASR and capture row Go's own registries declare for
+//     this platform (sidecar-capabilities-flag PRD Phase 1: registration only, not the Moonshine check's native-library load);
 //   - the four approved asset catalogs load and name assets;
 //   - the asset cache folder can be found and written;
 //   - the REAPER launcher and its scripts are there, with the pointer to this executable.
@@ -116,6 +120,9 @@ type smokeOptions struct {
 	Run       smokeRun
 	// CommandTimeout bounds each sidecar command; smokeCommandTimeout when zero.
 	CommandTimeout time.Duration
+	// Platform is the GOOS value checkCapabilities takes the platform-applicable rows for; runtime.GOOS when empty (a test sets it
+	// to check a platform other than the one running the test).
+	Platform string
 }
 
 // smoke runs every check and returns the report. A check that cannot run because an earlier one failed says so, so the report never
@@ -124,6 +131,9 @@ func smoke(ctx context.Context, options smokeOptions) smokeReport {
 	report := smokeReport{Version: options.Version, Executable: options.Executable}
 	if options.CommandTimeout == 0 {
 		options.CommandTimeout = smokeCommandTimeout
+	}
+	if options.Platform == "" {
+		options.Platform = runtime.GOOS
 	}
 	add := func(name string, started time.Time, err error, detail string) bool {
 		check := smokeCheck{Name: name, OK: err == nil, Detail: detail, Millis: time.Since(started).Milliseconds()}
@@ -160,6 +170,9 @@ func smoke(ctx context.Context, options smokeOptions) smokeReport {
 		detail, err := checkFrozenMoonshine(ctx, options, root)
 		add("teleprompter:moonshine", started, err, detail)
 	}
+	started = time.Now()
+	capsDetail, capsErr := checkCapabilities(ctx, options, root)
+	add("teleprompter:capabilities", started, capsErr, capsDetail)
 	started = time.Now()
 	detail, err := checkCatalogs(root)
 	add("catalogs", started, err, detail)
@@ -336,6 +349,57 @@ func checkFrozenMoonshine(ctx context.Context, options smokeOptions, root string
 		return "", fmt.Errorf("the Moonshine check passed but exited with exit code %d: %s", code, firstLine(stderr))
 	}
 	return parsed.Detail, nil
+}
+
+// capabilitiesReport is what `manuscript-teleprompter --capabilities` prints (sidecars/manuscript-teleprompter/core/live_asr.py's
+// capabilities_report): every row it has actually registered, by port then name. Only the keys matter here - checkCapabilities
+// compares row names against the Go-side registries, never their fields, so each row is left as raw JSON.
+type capabilitiesReport struct {
+	Type    string                     `json:"type"`
+	Asr     map[string]json.RawMessage `json:"asr"`
+	Capture map[string]json.RawMessage `json:"capture"`
+}
+
+// checkCapabilities runs the frozen Teleprompter sidecar's own --capabilities report and requires every ASR and capture row Go's
+// own registries declare for options.Platform to be one this process actually registered (sidecar-capabilities-flag PRD, generalizing
+// checkFrozenMoonshine's single hardcoded engine comparison into a loop over every registered provider row instead). It proves only
+// that the row registered, not that it loads (Q2/ADR 0403) - that remains checkFrozenMoonshine's job for Moonshine alone until a
+// later phase, if any, extends this into a verify mode.
+func checkCapabilities(ctx context.Context, options smokeOptions, root string) (string, error) {
+	executable := sidecarPath(root, "manuscript-teleprompter")
+	if executable == "" {
+		return "", errors.New("the manuscript-teleprompter sidecar is missing, so its capabilities could not be checked")
+	}
+	code, stdout, stderr, err := runBounded(ctx, options, executable, "--capabilities")
+	if err != nil {
+		return "", fmt.Errorf("the capabilities check did not run: %w", err)
+	}
+	var parsed capabilitiesReport
+	if jsonErr := json.Unmarshal([]byte(strings.TrimSpace(stdout)), &parsed); jsonErr != nil || parsed.Type != "capabilities" {
+		return "", fmt.Errorf("the capabilities check (exit code %d) printed no report: %s", code, firstLine(stderr+" "+stdout))
+	}
+	if code != 0 {
+		return "", fmt.Errorf("the capabilities check passed but exited with exit code %d: %s", code, firstLine(stderr))
+	}
+	var missing []string
+	for _, e := range asrport.Engines.Entries() {
+		if e.Descriptor.RunsOn(options.Platform) {
+			if _, ok := parsed.Asr[e.Name]; !ok {
+				missing = append(missing, "asr:"+e.Name)
+			}
+		}
+	}
+	for _, e := range captureport.Backends.Entries() {
+		if e.Descriptor.RunsOn(options.Platform) {
+			if _, ok := parsed.Capture[e.Name]; !ok {
+				missing = append(missing, "capture:"+e.Name)
+			}
+		}
+	}
+	if len(missing) > 0 {
+		return "", fmt.Errorf("the frozen teleprompter never registered %s, which this build declares for %s", strings.Join(missing, ", "), options.Platform)
+	}
+	return fmt.Sprintf("%d ASR row(s), %d capture row(s)", len(parsed.Asr), len(parsed.Capture)), nil
 }
 
 // checkCatalogs loads the five approved asset catalogs the release carries (config/*-assets.json in the unpacked resources) and requires

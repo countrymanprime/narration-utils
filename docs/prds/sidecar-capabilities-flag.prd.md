@@ -99,7 +99,7 @@ We believe one generic `--capabilities` report, generalizing `--check-moonshine`
 
 | # | Phase | Description | Status | Parallel | Depends | Ports used | PRP Plan |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| 1 | Teleprompter `--capabilities` + smoke-test comparison | `--capabilities` flag on `manuscript-teleprompter`, reporting ASR and capture rows; `checkCapabilities` in `smoke.go` generalizing the Moonshine comparison to every reported row for this sidecar | pending | - | Q1, Q2 answered | ASR port (`asrport.Engines`), Capture port (`captureport.Backends`) | - |
+| 1 | Teleprompter `--capabilities` + smoke-test comparison | `--capabilities` flag on `manuscript-teleprompter`, reporting ASR and capture rows; `checkCapabilities` in `smoke.go` generalizing the Moonshine comparison to every reported row for this sidecar | complete | - | Q1, Q2 answered | ASR port (`asrport.Engines`), Capture port (`captureport.Backends`) | - |
 | 2 | Guide and Compare capabilities | `manuscript-guide capabilities` subcommand (TTS, pronunciation rows); `transcript-compare`'s equivalent (batch ASR); `smoke.go` extended to call both | pending | 2a (guide) / 2b (compare) can run in parallel — disjoint sidecars | 1 | TTS port, Pronunciation port, ASR port (batch) | - |
 | 3 | Fold Moonshine's native-library check into the generic flag | `--capabilities --verify` (or equivalent) for at least the `moonshine` row; retire the bespoke `--check-moonshine` path once parity is proven | pending | - | Q2, Q3 answered with the owner's confirmation that verify-mode scope is worth it | ASR port | - |
 
