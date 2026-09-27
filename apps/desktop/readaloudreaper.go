@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/countrymanprime/narration-utils/shell/internal/bridge"
+	"github.com/countrymanprime/narration-utils/shell/internal/dawport"
 )
 
 // Whether REAPER is ready to record a chapter with reading (read-aloud-control-bar PRD Phase 6, ADR 0249): one read-only
@@ -50,10 +51,10 @@ const (
 	messageExperimentalOff = "Reading REAPER's tracks is an experimental action. Turn on Experimental REAPER actions in Settings to use it."
 )
 
-// trackStateReader is bridge.Actions' read of chapter_track_state, as the binding needs it (a fake in tests).
-type trackStateReader interface {
-	ChapterTrackState(ctx context.Context, trackGUID string) (bridge.TrackState, error)
-}
+// trackStateReader is the Track state role's read of chapter_track_state, as the binding needs it (a fake in tests):
+// an alias of dawport.TrackStateReader (DAW port PRD P5a, ADR 0300), the role interface this file and
+// teleprompterinput.go promote their identical local seam onto.
+type trackStateReader = dawport.TrackStateReader
 
 // ReadAloudReaperState answers whether REAPER is ready to record chapterID with reading
 // (read-aloud-control-bar.prd.md Phase 6): its linked track the one track armed, and REAPER not already recording. A
@@ -61,11 +62,22 @@ type trackStateReader interface {
 // a chapter the manuscript does not have is an error. It reads, and changes nothing in REAPER.
 func (h *Host) ReadAloudReaperState(chapterID string) (string, error) {
 	svc := h.services()
-	var reader trackStateReader
-	if svc.actions != nil {
-		reader = svc.actions
+	return encodeBinding(readAloudReaperStateIn(context.Background(), svc, trackStateReaderFrom(svc), chapterID))
+}
+
+// trackStateReaderFrom asks svc's DAW port resolver for the Track state role (DAW port PRD P5a): nil, exactly as
+// svc.actions being nil once was, when there is no resolver, no adapter, the capability is toggled off, or REAPER is
+// not reachable right now. readAloudReaperStateIn and teleprompterReaperInputIn already turn that into "unavailable"
+// or a specific reason.
+func trackStateReaderFrom(svc hostServices) trackStateReader {
+	if svc.dawPortResolver == nil {
+		return nil
 	}
-	return encodeBinding(readAloudReaperStateIn(context.Background(), svc, reader, chapterID))
+	reader, err := dawport.Role[dawport.TrackStateReader](svc.dawPortResolver, dawport.CapTrackState)
+	if err != nil {
+		return nil
+	}
+	return reader
 }
 
 func readAloudReaperStateIn(ctx context.Context, svc hostServices, reader trackStateReader, chapterID string) (readAloudReaperState, error) {

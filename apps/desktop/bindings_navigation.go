@@ -8,6 +8,7 @@ import (
 	"sync"
 
 	"github.com/countrymanprime/narration-utils/shell/internal/bridge"
+	"github.com/countrymanprime/narration-utils/shell/internal/dawport"
 	"github.com/countrymanprime/narration-utils/shell/internal/findings"
 )
 
@@ -17,6 +18,39 @@ import (
 // audio, never by a project time. Each is sent only on the narrator's click (the PRD's boundary: no bridge command
 // without an explicit action), and only when REAPER is listening, so a command never waits in the session folder for
 // a REAPER that starts later. A refusal is an answer, not an error, so the page can say in plain words what to do.
+
+// p5aAdapter is dawport.Adapter over the objects configureLocked already builds for the Review page's navigator and
+// the S28 commands (DAW port PRD P5a, ADR 0300): it hands the same *bridge.Navigator and *bridge.Actions out as the
+// Navigate, Markers, Track state and Regions roles rather than opening a second dawport/reaper.Adapter over the same
+// client, which would race its own run IDs against h.actions' (bridge/actions.go). Its declaration mirrors
+// dawport/reaper's for exactly these four capabilities; the other REAPER capabilities stay off dawPortResolver's map
+// until a later phase moves their own consumers onto it.
+type p5aAdapter struct {
+	navigator *bridge.Navigator
+	actions   *bridge.Actions
+}
+
+func (p5aAdapter) Kind() dawport.Kind { return dawport.KindREAPER }
+
+func (p5aAdapter) Declares() map[dawport.Capability]dawport.Level {
+	return map[dawport.Capability]dawport.Level{
+		dawport.CapNavigate:   dawport.Supported,
+		dawport.CapMarkers:    dawport.Supported,
+		dawport.CapTrackState: dawport.Experimental,
+		dawport.CapRegions:    dawport.Experimental,
+	}
+}
+
+func (a p5aAdapter) Role(c dawport.Capability) any {
+	switch c {
+	case dawport.CapNavigate, dawport.CapMarkers:
+		return a.navigator
+	case dawport.CapTrackState, dawport.CapRegions:
+		return a.actions
+	default:
+		return nil
+	}
+}
 
 // reaperNavigator is what these bindings need of bridge.Navigator; a test substitutes a fake.
 type reaperNavigator interface {
@@ -38,8 +72,74 @@ type findingNavigation struct {
 	loopingID string
 }
 
-func newFindingNavigation(client *bridge.Client) *findingNavigation {
-	return &findingNavigation{navigator: bridge.NewNavigator(client), standalone: client == nil}
+// newFindingNavigation takes its navigator from resolver (DAW port PRD P5a, ADR 0300) rather than wrapping client
+// itself: navigatorRole asks the resolver for the Navigate and Markers roles on every call, so a toggle the narrator
+// changes in Settings, or REAPER going quiet and coming back, is reflected the next time a finding is navigated, not
+// only at the project's next attach. standalone still comes from client directly, exactly as before, since a resolver
+// with no adapter already refuses every call the same way.
+func newFindingNavigation(resolver *dawport.Resolver, client *bridge.Client) *findingNavigation {
+	return &findingNavigation{navigator: navigatorRole{resolver}, standalone: client == nil}
+}
+
+// navigatorRole is reaperNavigator resolved through the DAW port's resolver: it asks for the Navigate role
+// (bindings_navigation.go's own Go to, Loop and Stop) or the Markers role (bindings_marker.go's approved marker) fresh
+// on every method call, rather than caching the object bridge.NewNavigator(client) once returned. The two capabilities
+// share one REAPER object (dawport/reaper.New), but a resolver over another adapter, or one where only one of the two
+// capabilities is toggled on, could give each method a different role.
+type navigatorRole struct{ resolver *dawport.Resolver }
+
+func (n navigatorRole) Navigate(ctx context.Context, target bridge.Target) (bridge.Navigated, error) {
+	role, err := dawport.Role[dawport.Navigator](n.resolver, dawport.CapNavigate)
+	if err != nil {
+		return bridge.Navigated{}, roleRefusal(err)
+	}
+	return role.Navigate(ctx, target)
+}
+
+func (n navigatorRole) Loop(ctx context.Context, target bridge.Target) (bridge.LoopStarted, error) {
+	role, err := dawport.Role[dawport.Navigator](n.resolver, dawport.CapNavigate)
+	if err != nil {
+		return bridge.LoopStarted{}, roleRefusal(err)
+	}
+	return role.Loop(ctx, target)
+}
+
+func (n navigatorRole) StopLoop(ctx context.Context) (bridge.LoopStopped, error) {
+	role, err := dawport.Role[dawport.Navigator](n.resolver, dawport.CapNavigate)
+	if err != nil {
+		return bridge.LoopStopped{}, roleRefusal(err)
+	}
+	return role.StopLoop(ctx)
+}
+
+func (n navigatorRole) AddMarker(ctx context.Context, target bridge.Target, marker bridge.Marker) (bridge.MarkerResult, error) {
+	role, err := dawport.Role[dawport.MarkerWriter](n.resolver, dawport.CapMarkers)
+	if err != nil {
+		return bridge.MarkerResult{}, roleRefusal(err)
+	}
+	return role.AddMarker(ctx, target, marker)
+}
+
+// roleRefusal turns a *dawport.NotSupportedError into the bridge sentinel error refusal (below) and markerRefusal
+// (bindings_marker.go) already know how to word, so a capability the resolver refuses reads exactly like REAPER
+// refusing the command itself. Any other error (a *dawport.RoleError: the adapter broke its own declaration) passes
+// through unchanged, since neither refusal function has a case for it and it falls into their default, "REAPER could
+// not do that" branch.
+func roleRefusal(err error) error {
+	var notSupported *dawport.NotSupportedError
+	if !errors.As(err, &notSupported) {
+		return err
+	}
+	switch notSupported.Support.Reason {
+	case dawport.ReasonStandalone:
+		return bridge.ErrUnavailable
+	case dawport.ReasonNotRunning:
+		return bridge.ErrNoAnswer
+	case dawport.ReasonTurnedOff, dawport.ReasonExperimentalOff:
+		return bridge.ErrExperimentalOff
+	default:
+		return err
+	}
 }
 
 func (n *findingNavigation) looping() string {

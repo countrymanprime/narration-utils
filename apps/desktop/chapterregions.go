@@ -7,6 +7,7 @@ import (
 	"math"
 
 	"github.com/countrymanprime/narration-utils/shell/internal/bridge"
+	"github.com/countrymanprime/narration-utils/shell/internal/dawport"
 	"github.com/countrymanprime/narration-utils/shell/internal/tracks"
 )
 
@@ -83,9 +84,22 @@ type chapterRegionsCreated struct {
 	Failed    int `json:"failed"`
 }
 
-// regionCreator is the one bridge.Actions method the create step needs; a seam for tests.
-type regionCreator interface {
-	CreateRegions(ctx context.Context, rows []bridge.Region, colour string, update bool) (bridge.RegionsCreated, error)
+// regionCreator is the one method the create step needs of the Regions role; a seam for tests. It is an alias of
+// dawport.RegionWriter (DAW port PRD P5a, ADR 0300): the role interface this file's local seam is promoted onto.
+type regionCreator = dawport.RegionWriter
+
+// regionCreatorFrom asks svc's DAW port resolver for the Regions role (DAW port PRD P5a): nil, exactly as svc.actions
+// being nil once was, when there is no resolver, no adapter, the capability is toggled off, or REAPER is not
+// reachable right now. createChapterRegions already turns a nil creator into bridge.ErrUnavailable.
+func regionCreatorFrom(svc hostServices) regionCreator {
+	if svc.dawPortResolver == nil {
+		return nil
+	}
+	creator, err := dawport.Role[dawport.RegionWriter](svc.dawPortResolver, dawport.CapRegions)
+	if err != nil {
+		return nil
+	}
+	return creator
 }
 
 // errNoRegionsToCreate: the plan holds no row, so nothing was sent.

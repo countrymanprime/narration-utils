@@ -12,6 +12,8 @@ import (
 
 	"github.com/countrymanprime/narration-utils/shell/internal/bridge"
 	"github.com/countrymanprime/narration-utils/shell/internal/contractfile"
+	"github.com/countrymanprime/narration-utils/shell/internal/dawport"
+	"github.com/countrymanprime/narration-utils/shell/internal/dawport/dawporttest"
 )
 
 // chapterRegionsCreditsTrack holds the credits recording in the regions project: one item from 20 s to 25 s.
@@ -278,4 +280,32 @@ func TestContractChapterRegions(t *testing.T) {
 		t.Fatal(err)
 	}
 	pin(t, "chapter-regions-created", host.config.projectFolder, created)
+}
+
+// TestRegionCreatorFromComesFromTheResolver is the "role comes from the resolver" test the DAW port PRD's migration
+// risk table calls for (P5a, ADR 0300): ChapterRegionsCreate sources its creator through regionCreatorFrom, which
+// asks svc.dawPortResolver for the Regions role instead of holding svc.actions directly.
+func TestRegionCreatorFromComesFromTheResolver(t *testing.T) {
+	fake := dawporttest.NewFake(dawport.KindREAPER, dawporttest.Levels(dawport.Supported))
+	resolver := dawport.NewResolver(dawport.ResolverConfig{
+		Adapter: fake,
+		Runtime: func() dawport.Runtime { return dawport.Runtime{Bridge: true, Reachable: true} },
+	})
+
+	creator := regionCreatorFrom(hostServices{dawPortResolver: resolver})
+	if creator == nil {
+		t.Fatal("no creator from a resolver with a live adapter")
+	}
+	if _, err := creator.CreateRegions(context.Background(), nil, "", false); err != nil {
+		t.Fatalf("CreateRegions: %v", err)
+	}
+	if calls := fake.Calls(); len(calls) != 1 || calls[0] != "regions.CreateRegions" {
+		t.Fatalf("the creator did not come from the resolver: calls = %v", calls)
+	}
+}
+
+func TestRegionCreatorFromIsNilWithoutAResolver(t *testing.T) {
+	if creator := regionCreatorFrom(hostServices{}); creator != nil {
+		t.Fatalf("creator = %v, want nil with no resolver", creator)
+	}
 }

@@ -42,15 +42,11 @@ type deviceLister interface {
 // and never on a timer; a REAPER that is not there or cannot say is an answer, and the picker then keeps its list.
 func (h *Host) TeleprompterReaperInput() (string, error) {
 	svc := h.services()
-	var reader trackStateReader
-	if svc.actions != nil {
-		reader = svc.actions
-	}
 	var lister deviceLister
 	if svc.teleprompter != nil {
 		lister = svc.teleprompter
 	}
-	return encodeBinding(teleprompterReaperInputIn(context.Background(), svc, reader, lister), nil)
+	return encodeBinding(teleprompterReaperInputIn(context.Background(), svc, trackStateReaderFrom(svc), lister), nil)
 }
 
 func teleprompterReaperInputIn(ctx context.Context, svc hostServices, reader trackStateReader, lister deviceLister) teleprompterReaperInput {

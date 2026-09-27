@@ -130,14 +130,18 @@ type Host struct {
 	reachability *daw.Reachability
 	// navigation is the Review page's REAPER navigator on the same bridge client (bindings_navigation.go); swappable
 	// like transcript. Never nil once configured: with no bridge client it is standalone and refuses every request.
-	navigation   *findingNavigation
-	lineIdentity *lineidentity.Service
-	pickups      *pickups.Service
-	projectState *projectstate.Service
-	renderConfig *renderconfig.Service
-	cleanupTools *cleanuptools.Service
-	retakeLanes  *retakelanes.Service
-	teleprompter *teleprompter.Service
+	navigation *findingNavigation
+	// dawPortResolver is the DAW port's resolver over p5aAdapter (DAW port PRD P5a, ADR 0300): bindings_navigation.go,
+	// readaloudreaper.go, teleprompterinput.go and chapterregions.go ask it for their roles instead of holding
+	// *bridge.Client or *bridge.Actions themselves. Swappable like navigation and actions; nil with no bridge client.
+	dawPortResolver *dawport.Resolver
+	lineIdentity    *lineidentity.Service
+	pickups         *pickups.Service
+	projectState    *projectstate.Service
+	renderConfig    *renderconfig.Service
+	cleanupTools    *cleanuptools.Service
+	retakeLanes     *retakelanes.Service
+	teleprompter    *teleprompter.Service
 	// bridge is the REAPER session's file-based IPC client (nil when launched
 	// without a REAPER session directory); take-review's create-take action
 	// (takereview.go) is its first direct consumer outside transcript.Service,
@@ -484,19 +488,37 @@ func (h *Host) configureLocked(next config) {
 	// stages are evaluated (h.proofingProfile reads it then, never under this lock).
 	h.stages = stagesService(h.config.projectFolder, h.manuscript, h.coverage, h.editing, settingsStore, h.coverageUnavailable(h.config.comparePython, settingsStore), h.persist,
 		proofingProvider(h.findings, proofingSources{project: h.config.projectFolder, profile: h.proofingProfile, lengthTolerance: renderLengthTolerance(settingsStore)}))
-	// The Review page's Go to, Loop and Stop (review dashboard PRD Phase 7, bindings_navigation.go) are one more
-	// consumer of the same client: the navigator's answers arrive through the same Drain the transcript loop pumps.
-	h.navigation = newFindingNavigation(client)
 	// The S28 commands (internal/bridge/actions.go) are one more consumer of the same client. Whether each may be sent
 	// is the DAW port resolver's answer, asked before anything is written (DAW port PRD P3, ADR 0300): the narrator's
 	// DAW.capability.<name> toggles, with DAW.experimental_reaper_actions still turning on every Experimental one left
-	// on auto (owner decision D38, ADR 0230). The resolver is over REAPER's declaration alone until P5a moves these
-	// consumers onto the adapter's roles.
+	// on auto (owner decision D38, ADR 0230).
 	h.actions = bridge.NewActions(client, reaper.Gate(dawport.NewResolver(dawport.ResolverConfig{
 		Adapter:      reaper.Declaration(),
 		Toggle:       dawport.SettingsToggles(settingsStore.Effective),
 		Experimental: dawport.SettingsExperimental(settingsStore.Effective),
 	}).Allowed))
+	// The Review page's Go to, Loop and Stop (review dashboard PRD Phase 7, bindings_navigation.go), the read-aloud and
+	// teleprompter track-state reads and the chapter-regions create step (readaloudreaper.go, teleprompterinput.go,
+	// chapterregions.go) now take their roles from h.dawPortResolver instead of holding the bridge navigator or h.actions
+	// directly (DAW port PRD P5a, ADR 0300). p5aAdapter wraps the same navigator and h.actions this project already
+	// built, rather than a second dawport/reaper.Adapter over the client: two *bridge.Actions on one client would race
+	// each other's run IDs (bridge/actions.go). A standalone or Audacity launch (client nil, exactly when the bridge
+	// client above was never built) has no adapter, which the resolver reports as every capability unsupported.
+	var dawPortAdapter dawport.Adapter
+	if client != nil {
+		dawPortAdapter = p5aAdapter{navigator: bridge.NewNavigator(client), actions: h.actions}
+	}
+	// reach is this project's reachability tracker, captured here rather than read as h.reachability from inside the
+	// closure below: the closure outlives configureLocked's lock and a later project switch reassigns h.reachability,
+	// so reading the field itself from the closure would race that reassignment.
+	reach := h.reachability
+	h.dawPortResolver = dawport.NewResolver(dawport.ResolverConfig{
+		Adapter:      dawPortAdapter,
+		Runtime:      func() dawport.Runtime { return dawport.Runtime{Bridge: client != nil, Reachable: reach.Reachable()} },
+		Toggle:       dawport.SettingsToggles(settingsStore.Effective),
+		Experimental: dawport.SettingsExperimental(settingsStore.Effective),
+	})
+	h.navigation = newFindingNavigation(h.dawPortResolver, client)
 	// The line-identity service is the second consumer of the same bridge client (bridge.Client fans events
 	// out by tag and run, ADR 0068), so pollTranscript's Drain call already pumps its events too. Phase 7
 	// (reaper-automation-follow-through PRD) is the UI trigger, so it now emits h.emitLineIdentity the way
