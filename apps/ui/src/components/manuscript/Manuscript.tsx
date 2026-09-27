@@ -109,7 +109,7 @@ export function Manuscript({
   // Booth mode's own entry point (booth-mode-and-companion-panel.prd.md Phase 1, Open Question 1 A): the same
   // `readAloud` source, opened in `BoothView`'s layout instead of the normal control bar. Reset by each opener, not by
   // closing, so a stale value from the last open never leaks into the next.
-  const [readAloudMode, setReadAloudMode] = useState<'read' | 'booth'>('read');
+  const [readAloudMode, setReadAloudMode] = useState<'read' | 'booth' | 'companion'>('read');
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<SearchHit[]>([]);
   // The query text a result was actually fetched for - not the debounce hook's own state, so an
@@ -640,6 +640,10 @@ export function Manuscript({
               setReadAloudMode('booth');
               setReadAloud({ kind: 'credits', credits: 'opening', preview: creditsPreviews.opening! });
             }}
+            onCompanion={() => {
+              setReadAloudMode('companion');
+              setReadAloud({ kind: 'credits', credits: 'opening', preview: creditsPreviews.opening! });
+            }}
           />
         )}
         {recordedChapters.map((chapter) => {
@@ -664,6 +668,11 @@ export function Manuscript({
               showBooth={isNarrationChapter(chapter)}
               onBooth={() => {
                 setReadAloudMode('booth');
+                setReadAloud({ kind: 'chapter', chapter });
+              }}
+              showCompanion={isNarrationChapter(chapter)}
+              onCompanion={() => {
+                setReadAloudMode('companion');
                 setReadAloud({ kind: 'chapter', chapter });
               }}
               wordCount={chapter.wordCount}
@@ -712,6 +721,10 @@ export function Manuscript({
             }}
             onBooth={() => {
               setReadAloudMode('booth');
+              setReadAloud({ kind: 'credits', credits: 'closing', preview: creditsPreviews.closing! });
+            }}
+            onCompanion={() => {
+              setReadAloudMode('companion');
               setReadAloud({ kind: 'credits', credits: 'closing', preview: creditsPreviews.closing! });
             }}
           />

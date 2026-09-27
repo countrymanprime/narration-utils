@@ -18,6 +18,7 @@ import { createFindingsMock } from './findingsMock';
 import { createTakeReviewScanMock } from './takeReviewMock';
 import { createTakeComparisonMock } from './takeComparisonMock';
 import { createMeasureMock } from './measureMock';
+import { DELIVERY_REVIEW_ANALYZER, mockDeliveryReviewFindings, resavingAfterProfileChange } from './deliveryReviewMock';
 import { createDeliveryProfilesMock } from './deliveryProfilesMock';
 import { createDiagnosticsMock } from './diagnosticsMock';
 import { createEditingMock } from './editingMock';
@@ -111,7 +112,7 @@ export function createMockApi(
     },
     seed: initial.stages,
   });
-  const { saveAnalyzerFindings, saveFinding, ...findings } = createFindingsMock(initial.findings ?? WIRE_FINDINGS, {
+  const { saveAnalyzerFindings, saveFinding, saveFileFindings, ...findings } = createFindingsMock(initial.findings ?? WIRE_FINDINGS, {
     rerunAfterFirstList: initial.findingsRerun,
     reaper: initial.reaper,
   });
@@ -131,7 +132,10 @@ export function createMockApi(
     () => s.paragraphs,
     initial.prepMarkup,
   );
-  const measurement = createMeasureMock(endJob, initial.measure, measurePicked, deliveryProfile, peekDiagnostics);
+  const { resaveReview, ...measurement } = createMeasureMock(endJob, initial.measure, measurePicked, deliveryProfile, peekDiagnostics, (job) => {
+    const review = mockDeliveryReviewFindings(job);
+    saveFileFindings(DELIVERY_REVIEW_ANALYZER, review.files, review.findings);
+  });
   const system = createSystemMock(s, initial, {
     version: update.version,
     project,
@@ -152,7 +156,7 @@ export function createMockApi(
     ...takeReviewScan,
     ...takeComparison,
     ...measurement,
-    ...deliveryProfiles,
+    ...resavingAfterProfileChange(deliveryProfiles, resaveReview),
     ...diagnostics,
     ...editing,
     // Reads the same findings store FindingsReview decides against (apps/desktop/internal/editing/scan.go's

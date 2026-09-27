@@ -757,6 +757,22 @@ describe('Manuscript page (integration, driven through the mock NarrationApi)', 
     });
   });
 
+  describe('Companion (booth-mode-and-companion-panel.prd.md Phase 7)', () => {
+    it('opens the same read-aloud session in the companion panel, and Full app brings back the normal dialog', async () => {
+      renderManuscript();
+      await waitFor(() => expect(screen.getByRole('heading', { name: 'Chapter 1 — Down the Rabbit-Hole' })).toBeTruthy());
+
+      fireEvent.click(screen.getByRole('button', { name: 'Open companion for Chapter 1' }));
+
+      expect(await screen.findByRole('heading', { level: 1, name: 'Companion' })).toBeTruthy();
+      expect(screen.queryByRole('dialog', { name: /Read aloud/ })).toBeNull();
+      fireEvent.click(screen.getByRole('button', { name: 'Full app' }));
+      const dialog = await screen.findByRole('dialog', { name: /Read aloud.*Chapter 1/ });
+      expect(within(dialog).getByRole('toolbar', { name: 'Reading controls' })).toBeTruthy();
+      expect(screen.queryByRole('heading', { level: 1, name: 'Companion' })).toBeNull();
+    });
+  });
+
   describe('Booth (booth-mode-and-companion-panel.prd.md Phase 1)', () => {
     it('opens the same read-aloud modal in the booth layout, beside Read aloud, for a narration chapter', async () => {
       renderManuscript();

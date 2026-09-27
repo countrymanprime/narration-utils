@@ -8,10 +8,12 @@ import type { DeliveryRuleStatus, DeliveryVerification } from '../../types';
 
 type Tone = 'ok' | 'danger' | 'info' | 'warn' | 'muted';
 
+// A tinted mark mixes its tone into the panel's own surface, not into transparency: over a selected or hovered table row
+// (--surface-2) a see-through tint darkens and its text falls below the contrast the words need.
 const TONE: Record<Tone, { color: string; border: string; background: string }> = {
-  ok: { color: 'var(--ok-text)', border: 'var(--ok)', background: 'color-mix(in srgb, var(--ok) 12%, transparent)' },
-  danger: { color: 'var(--danger-text)', border: 'var(--danger)', background: 'color-mix(in srgb, var(--danger) 12%, transparent)' },
-  info: { color: 'var(--info-text)', border: 'var(--info)', background: 'color-mix(in srgb, var(--info) 12%, transparent)' },
+  ok: { color: 'var(--ok-text)', border: 'var(--ok)', background: 'color-mix(in srgb, var(--ok) 12%, var(--surface))' },
+  danger: { color: 'var(--danger-text)', border: 'var(--danger)', background: 'color-mix(in srgb, var(--danger) 12%, var(--surface))' },
+  info: { color: 'var(--info-text)', border: 'var(--info)', background: 'color-mix(in srgb, var(--info) 12%, var(--surface))' },
   warn: { color: 'var(--warn-text)', border: 'var(--warn)', background: 'transparent' },
   muted: { color: 'var(--text-muted)', border: 'var(--border)', background: 'transparent' },
 };
