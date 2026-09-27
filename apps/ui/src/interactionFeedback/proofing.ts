@@ -19,5 +19,7 @@ export const proofingFeedback: Record<string, FeedbackRow> = {
   'src/components/proofing/Transcript.tsx::transcriptReset#1': row('click', 'instant', 'none', 'none', 'ui', 'toast', 'na', 'exempt', 'A demo-only button, rendered in the mock build (`import.meta.env.MODE === "mock"`).'),
   'src/components/proofing/Transcript.tsx::transcriptCancel#1': row('click', 'instant', 'pending', 'pending', 'ui', 'toast', 'na', 'ok', 'Cancel is busy until the host answers and a refused cancel is a toast (phase 6).'),
   'src/components/proofing/Transcript.tsx::transcriptReset#2': row('click', 'instant', 'none', 'none', 'ui', 'toast', 'na', 'ok', 'Leaving the results resets the run; a refusal is a toast (phase 6).'),
+  'src/components/proofing/PreviewPanel.tsx::previewCandidates#1': row('mount', 'file-io', 'na', 'na', 'ui', 'inline', 'na', 'ok', 'Read alongside manuscriptChapters (Promise.all); a failed read shows an inline alert with the reason instead of an empty or stale panel (proofing-preview-suggestion.prd.md Phase 3).'),
+  'src/components/proofing/PreviewPanel.tsx::manuscriptChapters#1': row('mount', 'file-io', 'na', 'na', 'ui', 'inline', 'na', 'ok', 'Read alongside previewCandidates, only to resolve a candidate\'s paragraph ids to a global index for "open in reader" and "copy range"; a failed read shares the same inline alert as previewCandidates above.'),
 
 };

@@ -8,6 +8,7 @@ import { WIRE_CHAPTERS, WIRE_FINDINGS, WIRE_TRACKS_PROJECT, editingCandidateFor,
 import { COVERAGE_REFUSAL_REASONS } from './api/schemas/coverage';
 import { EDITING_REFUSAL_REASONS } from './api/schemas/editing';
 import type { StageUnknownCause } from './api/contracts/stages';
+import type { PreviewCandidate } from './api/contracts/preview';
 import { MOCK_RESUME_SEEDS } from './api/resumeMockSeed';
 import { MOCK_REAPER_INPUT_SEEDS, MOCK_REAPER_SEEDS } from './api/teleprompterMock';
 import { ThemeProvider } from './theme/ThemeContext';
@@ -116,6 +117,39 @@ const mockCreditsSetupNarratorDefault = mockParams.get('mockCredits') === 'setup
 // `?mockPreviewError=<text>` makes the Story Bible preview fail with that text once the
 // preview voice is installed, so the failure toast can be seen without a real host.
 const mockPreviewError = mockParams.get('mockPreviewError');
+// `?mockPreviewCandidates=no-manuscript|nothing-eligible|computing|shorter|warnings` forces the Proofing page's
+// Preview panel (proofing-preview-suggestion.prd.md Phase 3) into a named state the unseeded demo book (the full
+// Alice's Adventures in Wonderland text, aliceManuscript.ts) wouldn't otherwise reach on its own - every chapter there
+// is long enough to hit the target length cleanly, so the plain default state has no warnings at all:
+// `no-manuscript`/`nothing-eligible` force PreviewApi's outcome directly (the route itself already redirects away
+// with no manuscript at all, so this is the only way to see that defensive state on the real page); `computing`
+// never resolves the read; `shorter` and `warnings` each seed one hand-built candidate (the engine's two warning
+// texts, `preview.reasonsFor` and `wholeChapterCandidate`) rather than a real short or unclassified chapter, so
+// their paragraph ids are illustrative only - opening one in the reader or copying its range lands on the chapter's
+// first paragraph rather than the exact seeded range.
+const mockPreviewCandidatesParam = (['no-manuscript', 'nothing-eligible', 'computing', 'shorter', 'warnings'] as const).find(
+  (seed) => seed === mockParams.get('mockPreviewCandidates'),
+);
+const MOCK_PREVIEW_SHORTER_CANDIDATE: PreviewCandidate = {
+  chapterId: WIRE_CHAPTERS[10].id,
+  chapterTitle: WIRE_CHAPTERS[10].title,
+  paragraphIds: (WIRE_CHAPTERS[10].paragraphIds ?? []).map((paragraph) => paragraph.id),
+  wordCount: 210,
+  estimatedSeconds: 81,
+  shorter: true,
+  reasons: ['Mostly narration, little or no dialogue.', 'No Story Bible entities mentioned in this range.', 'Starts and ends on paragraph boundaries.'],
+  warnings: ['This chapter is shorter than the target length even in full.'],
+};
+const MOCK_PREVIEW_WARNING_CANDIDATE: PreviewCandidate = {
+  chapterId: WIRE_CHAPTERS[1].id,
+  chapterTitle: WIRE_CHAPTERS[1].title,
+  paragraphIds: (WIRE_CHAPTERS[1].paragraphIds ?? []).map((paragraph) => paragraph.id),
+  wordCount: 780,
+  estimatedSeconds: 305,
+  shorter: false,
+  reasons: ['Mixes narration and dialogue (50% of paragraphs have dialogue).', 'One Story Bible entity present.', 'Starts and ends on paragraph boundaries.'],
+  warnings: ['This manuscript was imported before chapters were classified narration, opening or reference; treated as narration.'],
+};
 // `?mockInvalidPayload=bootstrap|manuscript|storybible` makes that payload arrive in the wrong shape (through the real `parseWire`),
 // so the startup error screen and the inline page errors for a payload the app could not read can be seen without a host.
 const mockInvalidPayload = (['bootstrap', 'manuscript', 'storybible'] as const).find((which) => which === mockParams.get('mockInvalidPayload'));
@@ -188,9 +222,10 @@ const mockRegionsCapabilityOn = mockParams.has('mockRegionsCapabilityOn');
 const mockPunchCapabilityOn = mockParams.has('mockPunchCapabilityOn');
 // `?mockCoverage=hold|stale|pickups` holds a started recording check at its last transcribing step (so the running
 // dialog can be seen), makes Chapter 4's stored check read stale (an item was trimmed since), or gives Chapter 4 two
-// interior pickups (a skip and a short read) plus a small tail instead of its default tail-only split, so the
-// recording check summary's headline, "Recorded to" line and Pickups list can all be seen together
-// (recording-check-summary.prd.md Phase 1). `?mockCoverageRefusal=<reason>` answers every start with that refusal
+// interior pickups (a skip and a short read) plus a small tail instead of its default tail-only split, and seeds a
+// take-review pickup and two open project-wide pickups for the same chapter, so the recording check summary's
+// headline, "Recorded to" line and all three Pickups lines can be seen together (recording-check-summary.prd.md
+// Phases 1 and 3). `?mockCoverageRefusal=<reason>` answers every start with that refusal
 // (docs/utilities/recording-coverage.md, ADR 0130).
 const mockCoverage = (['hold', 'stale', 'pickups'] as const).find((seed) => seed === mockParams.get('mockCoverage'));
 const mockCoverageRefusal = COVERAGE_REFUSAL_REASONS.find((reason) => reason === mockParams.get('mockCoverageRefusal'));
@@ -286,6 +321,11 @@ const mockInitial = {
   ...(mockCreditsDetected ? { creditsDetected: true } : {}),
   ...(mockCreditsSetup ? { creditsSetup: true } : {}),
   ...(mockPreviewError ? { previewError: mockPreviewError } : {}),
+  ...(mockPreviewCandidatesParam === 'no-manuscript' ? { preview: { outcome: 'no_manuscript' as const } } : {}),
+  ...(mockPreviewCandidatesParam === 'nothing-eligible' ? { preview: { outcome: 'nothing_eligible' as const } } : {}),
+  ...(mockPreviewCandidatesParam === 'computing' ? { preview: { hold: true } } : {}),
+  ...(mockPreviewCandidatesParam === 'shorter' ? { preview: { outcome: 'ok' as const, candidates: [MOCK_PREVIEW_SHORTER_CANDIDATE] } } : {}),
+  ...(mockPreviewCandidatesParam === 'warnings' ? { preview: { outcome: 'ok' as const, candidates: [MOCK_PREVIEW_WARNING_CANDIDATE] } } : {}),
   ...(mockTeleprompter ? { teleprompter: mockTeleprompter } : {}),
   ...(mockNoDevices ? { teleprompterDevices: [] } : {}),
   ...(mockLevel === undefined ? {} : { teleprompterLevel: mockLevel }),
@@ -364,6 +404,9 @@ const mockInitial = {
   // for the same chapter `?mockCoverage=pickups` gives interior gaps, so the summary's own gaps and its "Take
   // review" count and Open Review link can be seen together, as the mockup does.
   ...(mockCoverage === 'pickups' ? { findings: [...WIRE_FINDINGS, takeReviewPickupFor(WIRE_CHAPTERS[3].id, WIRE_CHAPTERS[3].title)] } : {}),
+  // The proofer's project-wide pickup list (recording-check-summary.prd.md Phase 3, RS5 B): two still open, so the
+  // summary's "Pickup list" line reads a real count alongside the check's own gaps and take review's, as the mockup does.
+  ...(mockCoverage === 'pickups' ? { pickups: 'next-success' as const } : {}),
   ...(mockChapterSuggestion ? { armedTracks: MOCK_ARMED_TRACKS[mockChapterSuggestion] } : {}),
   ...(mockStages ? { stages: MOCK_STAGES_SEEDS[mockStages] } : {}),
   ...(mockEditing || mockEditingRefusal
