@@ -28,6 +28,10 @@ const healthyMoonshineCheck = `{"type": "engine_check", "engine": "moonshine", "
 
 const healthyCapabilities = `{"type": "capabilities", "asr": {"whisper": {"label": "Whisper", "platforms": [], "modes": ["live"], "asset": "whisper", "loadable": null}, "moonshine": {"label": "Moonshine", "platforms": ["windows"], "modes": ["live"], "asset": "moonshine", "loadable": null}}, "capture": {"dshow": {"label": "DirectShow", "platforms": ["windows"], "modes": [], "loadable": null}}}`
 
+const healthyGuideCapabilities = `{"type": "capabilities", "tts": {"piper": {"label": "Piper", "platforms": [], "modes": [], "asset": "tts", "loadable": null}}, "pronunciation": {"cmu": {"label": "CMU dictionary", "platforms": [], "modes": ["pronounce"], "loadable": null}, "espeak": {"label": "eSpeak NG", "platforms": [], "modes": ["pronounce"], "loadable": null}}}`
+
+const healthyCompareCapabilities = `{"type": "capabilities", "asr": {"whisper": {"label": "Whisper (faster-whisper)", "platforms": [], "modes": ["batch"], "asset": "whisper", "loadable": null}}}`
+
 func sidecarFile(name string) string {
 	if os.PathSeparator == '\\' {
 		return name + ".exe"
@@ -65,8 +69,13 @@ type fakeRun struct {
 	stderrFor map[string]string // sidecar name -> what it says on stderr
 	moonshine string            // what `--check-moonshine` prints; healthyMoonshineCheck when empty
 	moonExit  int               // its exit code
-	caps      string            // what `--capabilities` prints; healthyCapabilities when empty
+	caps      string            // what the teleprompter's `--capabilities` prints; healthyCapabilities when empty
 	capsExit  int               // its exit code
+
+	guideCaps       string // what the guide's `capabilities` prints; healthyGuideCapabilities when empty
+	guideCapsExit   int    // its exit code
+	compareCaps     string // what the compare's `--capabilities` prints; healthyCompareCapabilities when empty
+	compareCapsExit int    // its exit code
 }
 
 func (f *fakeRun) run(_ context.Context, program string, args ...string) (int, string, string, error) {
@@ -82,12 +91,26 @@ func (f *fakeRun) run(_ context.Context, program string, args ...string) (int, s
 		}
 		return f.selfExit, out, "", nil
 	}
+	if len(args) > 0 && args[0] == "capabilities" {
+		out := f.guideCaps
+		if out == "" {
+			out = healthyGuideCapabilities
+		}
+		return f.guideCapsExit, out, f.stderrFor[name], nil
+	}
 	if len(args) > 0 && args[0] == "--check-moonshine" {
 		out := f.moonshine
 		if out == "" {
 			out = healthyMoonshineCheck
 		}
 		return f.moonExit, out, f.stderrFor[name], nil
+	}
+	if len(args) > 0 && args[0] == "--capabilities" && name == "transcript-compare" {
+		out := f.compareCaps
+		if out == "" {
+			out = healthyCompareCapabilities
+		}
+		return f.compareCapsExit, out, f.stderrFor[name], nil
 	}
 	if len(args) > 0 && args[0] == "--capabilities" {
 		out := f.caps
@@ -124,7 +147,11 @@ func TestSmokePassesOnAHealthyPackage(t *testing.T) {
 	for _, check := range report.Checks {
 		names = append(names, check.Name)
 	}
-	for _, want := range []string{"resources", "asset-cache", "sidecar:manuscript-guide", "sidecar:transcript-compare", "sidecar:manuscript-teleprompter", "guide:cmudict", "guide:espeak", "teleprompter:moonshine", "teleprompter:capabilities", "catalogs", "reaper"} {
+	for _, want := range []string{
+		"resources", "asset-cache", "sidecar:manuscript-guide", "sidecar:transcript-compare", "sidecar:manuscript-teleprompter",
+		"guide:cmudict", "guide:espeak", "teleprompter:moonshine", "teleprompter:capabilities", "guide:capabilities",
+		"compare:capabilities", "catalogs", "reaper",
+	} {
 		if !slices.Contains(names, want) {
 			t.Errorf("the report has no %q check: %v", want, names)
 		}
@@ -145,8 +172,12 @@ func TestSmokeFailsWhenABundledSidecarIsMissing(t *testing.T) {
 			if report.OK || !strings.Contains(failed["sidecar:"+missing], "missing") {
 				t.Fatalf("a package without %s passed or did not say so: ok=%v failed=%v", missing, report.OK, failed)
 			}
-			// The guide and the teleprompter each have further checks that run them, which fail with them; nothing else may fail.
-			dependents := map[string][]string{"manuscript-guide": {"guide:self-check"}, "manuscript-teleprompter": {"teleprompter:moonshine", "teleprompter:capabilities"}}[missing]
+			// The guide, compare and the teleprompter each have further checks that run them, which fail with them; nothing else may fail.
+			dependents := map[string][]string{
+				"manuscript-guide":        {"guide:self-check", "guide:capabilities"},
+				"transcript-compare":      {"compare:capabilities"},
+				"manuscript-teleprompter": {"teleprompter:moonshine", "teleprompter:capabilities"},
+			}[missing]
 			for _, dependent := range dependents {
 				if _, ok := failed[dependent]; ok {
 					delete(failed, dependent)
@@ -345,6 +376,148 @@ func TestSmokeFailsWhenTheTeleprompterIsMissingSoItsCapabilitiesCannotBeChecked(
 	report := smoke(context.Background(), smokeOptionsFor(t, tree, &fakeRun{}))
 	if detail := failedChecks(report)["teleprompter:capabilities"]; report.OK || !strings.Contains(detail, "missing") {
 		t.Fatalf("a package without the teleprompter passed or did not say so: ok=%v %q", report.OK, detail)
+	}
+}
+
+// --- Phase 2: manuscript-guide's and transcript-compare's own --capabilities checks (sidecar-capabilities-flag PRD) ---
+
+func TestSmokeReportsTheFrozenGuideCapabilities(t *testing.T) {
+	run := &fakeRun{}
+	report := smoke(context.Background(), smokeOptionsFor(t, healthyTree(t), run))
+	if !report.OK {
+		t.Fatalf("a healthy guide capabilities check failed: %+v", report.Checks)
+	}
+	asked := false
+	for _, call := range run.calls {
+		asked = asked || (strings.Contains(filepath.Base(call[0]), "manuscript-guide") && slices.Contains(call, "capabilities"))
+	}
+	if !asked {
+		t.Fatalf("the frozen guide was never asked for its capabilities: %v", run.calls)
+	}
+}
+
+func TestSmokeReportsTheFrozenCompareCapabilities(t *testing.T) {
+	run := &fakeRun{}
+	report := smoke(context.Background(), smokeOptionsFor(t, healthyTree(t), run))
+	if !report.OK {
+		t.Fatalf("a healthy compare capabilities check failed: %+v", report.Checks)
+	}
+	asked := false
+	for _, call := range run.calls {
+		asked = asked || (strings.Contains(filepath.Base(call[0]), "transcript-compare") && slices.Contains(call, "--capabilities") && slices.Contains(call, "--manuscript"))
+	}
+	if !asked {
+		t.Fatalf("the frozen compare sidecar was never asked for its capabilities (with --manuscript): %v", run.calls)
+	}
+}
+
+// The fault-detection case (PRD Success Metrics), generalized past the Teleprompter to the other two sidecars.
+func TestSmokeFailsWhenTheFrozenGuideDidNotRegisterARowGoDeclaresForThePlatform(t *testing.T) {
+	missingPiper := `{"type": "capabilities", "tts": {}, "pronunciation": {"cmu": {"label": "CMU dictionary", "platforms": [], "modes": ["pronounce"], "loadable": null}, "espeak": {"label": "eSpeak NG", "platforms": [], "modes": ["pronounce"], "loadable": null}}}`
+	missingEspeak := `{"type": "capabilities", "tts": {"piper": {"label": "Piper", "platforms": [], "modes": [], "asset": "tts", "loadable": null}}, "pronunciation": {"cmu": {"label": "CMU dictionary", "platforms": [], "modes": ["pronounce"], "loadable": null}}}`
+	for name, tc := range map[string]struct {
+		run   *fakeRun
+		wants []string
+	}{
+		"piper missing":  {&fakeRun{guideCaps: missingPiper}, []string{"tts:piper"}},
+		"espeak missing": {&fakeRun{guideCaps: missingEspeak}, []string{"pronunciation:espeak"}},
+	} {
+		t.Run(name, func(t *testing.T) {
+			report := smoke(context.Background(), smokeOptionsFor(t, healthyTree(t), tc.run))
+			detail := failedChecks(report)["guide:capabilities"]
+			if report.OK || detail == "" {
+				t.Fatalf("a report missing a declared row passed: %+v", report.Checks)
+			}
+			for _, want := range tc.wants {
+				if !strings.Contains(detail, want) {
+					t.Errorf("detail %q does not name the missing row %q", detail, want)
+				}
+			}
+		})
+	}
+}
+
+func TestSmokeFailsWhenTheFrozenCompareDidNotRegisterARowGoDeclaresForThePlatform(t *testing.T) {
+	run := &fakeRun{compareCaps: `{"type": "capabilities", "asr": {}}`}
+	report := smoke(context.Background(), smokeOptionsFor(t, healthyTree(t), run))
+	detail := failedChecks(report)["compare:capabilities"]
+	if report.OK || !strings.Contains(detail, "asr:whisper") {
+		t.Fatalf("a report missing whisper passed or did not say so: ok=%v %q", report.OK, detail)
+	}
+}
+
+// Whisper declares both live and batch for the Teleprompter's sake, and Moonshine is live-only but ships on Windows; neither may be
+// demanded of Transcript Compare, which only ever registers whisper's batch role - the mode filter must keep the check from asking
+// this sidecar for a row it can never have.
+func TestSmokeCompareCapabilitiesNeverDemandsALiveOnlyRowEvenOnItsPlatform(t *testing.T) {
+	run := &fakeRun{}
+	options := smokeOptionsFor(t, healthyTree(t), run)
+	options.Platform = "windows"
+	report := smoke(context.Background(), options)
+	if detail := failedChecks(report)["compare:capabilities"]; !report.OK && detail != "" {
+		t.Fatalf("compare:capabilities demanded a live-only row on windows: %q", detail)
+	}
+}
+
+func TestSmokeFailsWhenTheGuideCapabilitiesCheckPrintsNoReport(t *testing.T) {
+	for name, tc := range map[string]struct {
+		run    *fakeRun
+		detail string
+	}{
+		"crashed with no report": {&fakeRun{guideCaps: "Traceback (most recent call last)", guideCapsExit: 1}, "printed no report"},
+		"an older sidecar without the subcommand": {
+			&fakeRun{guideCaps: " ", guideCapsExit: 2, stderrFor: map[string]string{"manuscript-guide": "error: argument command: invalid choice: 'capabilities'"}},
+			"invalid choice",
+		},
+		"an exit code no report explains": {&fakeRun{guideCapsExit: 1}, "exit code 1"},
+	} {
+		t.Run(name, func(t *testing.T) {
+			report := smoke(context.Background(), smokeOptionsFor(t, healthyTree(t), tc.run))
+			detail := failedChecks(report)["guide:capabilities"]
+			if report.OK || !strings.Contains(detail, tc.detail) {
+				t.Fatalf("the smoke test passed or did not say why (want %q): ok=%v detail=%q", tc.detail, report.OK, detail)
+			}
+		})
+	}
+}
+
+func TestSmokeFailsWhenTheCompareCapabilitiesCheckPrintsNoReport(t *testing.T) {
+	for name, tc := range map[string]struct {
+		run    *fakeRun
+		detail string
+	}{
+		"crashed with no report": {&fakeRun{compareCaps: "Traceback (most recent call last)", compareCapsExit: 1}, "printed no report"},
+		"an older sidecar without the flag": {
+			&fakeRun{compareCaps: " ", compareCapsExit: 2, stderrFor: map[string]string{"transcript-compare": "error: unrecognized arguments: --capabilities"}},
+			"unrecognized arguments",
+		},
+		"an exit code no report explains": {&fakeRun{compareCapsExit: 1}, "exit code 1"},
+	} {
+		t.Run(name, func(t *testing.T) {
+			report := smoke(context.Background(), smokeOptionsFor(t, healthyTree(t), tc.run))
+			detail := failedChecks(report)["compare:capabilities"]
+			if report.OK || !strings.Contains(detail, tc.detail) {
+				t.Fatalf("the smoke test passed or did not say why (want %q): ok=%v detail=%q", tc.detail, report.OK, detail)
+			}
+		})
+	}
+}
+
+func TestSmokeFailsWhenTheGuideIsMissingSoItsCapabilitiesCannotBeChecked(t *testing.T) {
+	tree := healthyTree(t)
+	delete(tree, resourcesRoot+"/runtime/manuscript-guide/"+sidecarFile("manuscript-guide"))
+	report := smoke(context.Background(), smokeOptionsFor(t, tree, &fakeRun{}))
+	if detail := failedChecks(report)["guide:capabilities"]; report.OK || !strings.Contains(detail, "missing") {
+		t.Fatalf("a package without the guide passed or did not say so: ok=%v %q", report.OK, detail)
+	}
+}
+
+func TestSmokeFailsWhenCompareIsMissingSoItsCapabilitiesCannotBeChecked(t *testing.T) {
+	tree := healthyTree(t)
+	delete(tree, resourcesRoot+"/runtime/transcript-compare/"+sidecarFile("transcript-compare"))
+	report := smoke(context.Background(), smokeOptionsFor(t, tree, &fakeRun{}))
+	if detail := failedChecks(report)["compare:capabilities"]; report.OK || !strings.Contains(detail, "missing") {
+		t.Fatalf("a package without transcript-compare passed or did not say so: ok=%v %q", report.OK, detail)
 	}
 }
 
