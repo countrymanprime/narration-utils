@@ -92,7 +92,7 @@ func (h *Host) saveProductionPlan(what string, change func(*project.Manifest)) (
 	return encodeBinding(production.PlanOf(manifest), nil)
 }
 
-// The Production page's bindings (docs/prds/production-tracking.prd.md Phase 4). ProductionOverview only reads: the
+// The Production page's bindings (production tracking PRD Phase 4, delivered and deleted; ADR 0028). ProductionOverview only reads: the
 // chapters and their measured recorded time from the manuscript, each chapter's readiness from the stage
 // recommendations (read live, Q8 A), and the time log. ProductionStartTimer and ProductionStopTimer are the only two
 // paths that write a session (PRD success metric "Timer honesty"), and only when the narrator clicks. None of them

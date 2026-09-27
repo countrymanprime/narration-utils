@@ -5,7 +5,7 @@ import (
 	"time"
 )
 
-// This file is Phase 6 of docs/prds/production-tracking.prd.md (Could): a time series of the book's logged hours
+// This file is Phase 6 of the production tracking PRD (delivered and deleted; ADR 0028) (Could): a time series of the book's logged hours
 // over time, data only - no chart rendering here, for a future chart primitive to plot. It reads the same time log
 // as everything else in this package (Q2) and adds nothing to it.
 
