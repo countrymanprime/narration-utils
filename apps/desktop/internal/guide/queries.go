@@ -9,7 +9,7 @@ import (
 	"strings"
 )
 
-// PronunciationQuery is one name whose pronunciation the author has not confirmed yet (prep-depth P3, ADR 0342): the entity's own
+// PronunciationQuery is one name whose pronunciation the author has not confirmed yet (prep-depth P3, ADR 0344): the entity's own
 // name (AliasIndex nil) or one alias, with where the book first uses it. The list is derived from the Story Bible on every read, the
 // way VocabularyCandidates is; nothing else stores it.
 type PronunciationQuery struct {

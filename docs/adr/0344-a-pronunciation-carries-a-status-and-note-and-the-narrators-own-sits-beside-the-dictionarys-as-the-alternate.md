@@ -1,4 +1,4 @@
-# 0342. A pronunciation carries a status and a note, and the narrator's own sits beside the dictionary's as the alternate
+# 0344. A pronunciation carries a status and a note, and the narrator's own sits beside the dictionary's as the alternate
 
 **Status:** Accepted
 **Date:** 2026-09-27

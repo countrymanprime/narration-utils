@@ -31,7 +31,7 @@ spelled and ignores the IPA, so this is a UI policy, not a technical limit) and 
 (present) in edit mode only, each choosing explicitly between the CMU dictionary and eSpeak NG.
 
 A narrator can also keep their own pronunciation and track where each one stands (prep depth Phase 1,
-[ADR 0342](../adr/0342-a-pronunciation-carries-a-status-and-note-and-the-narrators-own-sits-beside-the-dictionarys-as-the-alternate.md)):
+[ADR 0344](../adr/0344-a-pronunciation-carries-a-status-and-note-and-the-narrators-own-sits-beside-the-dictionarys-as-the-alternate.md)):
 `pronounce-user --ipa=<text>` sets one with source `user` that never asks a dictionary, and keeps the dictionary's answer beside
 it as `alternate`; `pronunciation-use-alternate` swaps the two back, losslessly and without a lookup; `pronunciation-status
 --status researched|query_sent|author_confirmed [--note=<text>]` records whether the author was asked or has confirmed it. An
@@ -41,7 +41,7 @@ changes. A rebuild keeps all of it. The host bindings are `GuidePronounceUser`, 
 pronunciation", the switch to the kept one, and the status with its note.
 
 The host derives the **pronunciation query list** from those statuses on every read (prep depth Phase 3,
-[ADR 0343](../adr/0343-the-pronunciation-query-export-is-csv-with-its-ids-last-and-a-formula-guard-and-is-a-download.md)):
+[ADR 0345](../adr/0345-the-pronunciation-query-export-is-csv-with-its-ids-last-and-a-formula-guard-and-is-a-download.md)):
 `guide.Service.PronunciationQueries` returns every name, the entity's own and each alias, that is not `author_confirmed`, each
 once, in reading order (first paragraph that uses it; never used last), with that first use's chapter and excerpt.
 `guide.QueriesCSV` writes it as CSV (`word, entry, category, chapter, excerpt, pronunciation, source, status, note, entry_id,
