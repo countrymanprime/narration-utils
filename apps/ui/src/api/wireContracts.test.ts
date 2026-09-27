@@ -5,7 +5,8 @@ import { z } from 'zod';
 import { DESKTOP_HOST_API_VERSION } from '../hostApi';
 import { createMockApi } from './mockApi';
 import type { ProjectStateState } from './contracts/projectstate';
-import { WIRE_TAKE_REVIEW_FINDINGS, WIRE_TRACKS_PROJECT, WIRE_TRANSCRIPT } from './mockFixtures';
+import { WIRE_TAKE_REVIEW_FINDINGS, WIRE_TRACKS_PROJECT, WIRE_TRANSCRIPT, editingCandidateFor } from './mockFixtures';
+import { cleanupApplyResultSchema, cleanupPreviewResultSchema, levelMatchApplyResultSchema, levelMatchPreviewResultSchema } from './schemas/cleanup';
 import { WIRE_TAKE_COMPARISON_FINDING } from './takeComparisonMock';
 import { MOCK_MEASURE_PATHS } from './measureMock';
 import { judgeMock } from './coverageMock';
@@ -1700,6 +1701,33 @@ describe('answers of the mock client for the settings, voice, model, transcript 
     await expect(api.stageRevert('no-such-chapter')).rejects.toThrow('not a narration chapter');
   });
 
+  it('the CleanupPreview, CleanupApply, LevelMatchPreview and LevelMatchApply answers', async () => {
+    const chapterId = 'chapter-1';
+    const api = createMockApi({}, { findings: [editingCandidateFor(chapterId, 'Chapter One')] });
+
+    const preview = await api.cleanupPreview(chapterId);
+    expectMatches(cleanupPreviewResultSchema, preview, 'mock cleanup preview');
+    expect(preview).toMatchObject({ candidates: 1, added: 1, existing: 0, stale: [] });
+
+    const applied = await api.cleanupApply(chapterId);
+    expectMatches(cleanupApplyResultSchema, applied, 'mock cleanup apply');
+    expect(applied).toMatchObject({ candidates: 1, applied: 1, stale: [] });
+
+    const noCandidates = createMockApi({}, { findings: [] });
+    await expect(noCandidates.cleanupPreview(chapterId)).rejects.toThrow();
+    await expect(noCandidates.cleanupApply(chapterId)).rejects.toThrow();
+
+    const levelPreview = await api.levelMatchPreview(chapterId, 'rms_dbfs', -6, 1);
+    expectMatches(levelMatchPreviewResultSchema, levelPreview, 'mock level match preview');
+    expect(levelPreview.candidates.length).toBeGreaterThan(0);
+
+    const levelApplied = await api.levelMatchApply(chapterId, 'rms_dbfs', -6, 1);
+    expectMatches(levelMatchApplyResultSchema, levelApplied, 'mock level match apply');
+    expect(levelApplied.changed.length).toBe(levelPreview.candidates.length);
+
+    await expect(api.levelMatchPreview(chapterId, 'rms_dbfs', -6, 1)).rejects.toThrow();
+  });
+
   it('every method of the API is either checked in this file, void, or not a request', () => {
     // A new binding fails this until it has a schema and a row above (ADR 0069). The list of what is checked is kept by hand.
     const CHECKED = [
@@ -1833,6 +1861,10 @@ describe('answers of the mock client for the settings, voice, model, transcript 
       'editingStart',
       'editingState',
       'editingCandidates',
+      'cleanupPreview',
+      'cleanupApply',
+      'levelMatchPreview',
+      'levelMatchApply',
       'findingsList',
       'findingsGet',
       'findingsReview',

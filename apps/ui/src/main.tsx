@@ -51,6 +51,10 @@ const mockNoDaw = mockParams.has('mockNoDaw');
 // `?mockDawNotDetected=1` makes the DAW catalog panel (Settings > DAW Integration, docs/architecture/
 // daw-integration.md) report REAPER as not detected, so its "Get REAPER" button can be seen without a host.
 const mockDawNotDetected = mockParams.has('mockDawNotDetected');
+// `?mockDawExperimentalOn=1` turns every Experimental DAW capability on (the old `DAW.experimental_reaper_actions`
+// setting's own effect, DAW port PRD D3), so a `CapabilityGate('silence_trim')`/`('item_gain')` control's live,
+// clickable state can be seen without a host - it still carries the "Experimental" badge (studio-ui-primitives Q4).
+const mockDawExperimentalOn = mockParams.has('mockDawExperimentalOn');
 // `?mockCreditsMissing=1` drops the closing credit templates (credits-in-chapter-table.prd.md Phase 2, CT5): Home's
 // chapter table shows the Closing credits row as "Not set up" with a link to Settings > Credits.
 const mockCreditsMissing = mockParams.has('mockCreditsMissing');
@@ -382,6 +386,7 @@ const mockInitial = {
   ...(mockEditingSignal
     ? { stages: { ...(mockStages ? MOCK_STAGES_SEEDS[mockStages] : {}), editing: { [WIRE_CHAPTERS[6].id]: MOCK_EDITING_SIGNAL_SEED[mockEditingSignal] } } }
     : {}),
+  ...(mockDawExperimentalOn ? { daw: { experimentalOn: true } } : {}),
 };
 const api = import.meta.env.VITE_USE_MOCK_API === '1' ? createMockApi(window.__NARRATION_MOCK_OVERRIDES__, mockInitial) : wailsClient;
 

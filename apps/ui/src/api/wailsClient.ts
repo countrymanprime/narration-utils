@@ -80,6 +80,7 @@ import { pickupsImportResultSchema, pickupsPunchResultSchema, pickupsStartResult
 import { renderConfigStartResultSchema, renderConfigStateSchema, renderConfigSuggestedFolderSchema } from './schemas/renderconfig';
 import { chapterTagsEmbedResultSchema, chapterTagsPreviewSchema } from './schemas/chaptertags';
 import { cleanupToolsStartResultSchema, cleanupToolsStateSchema } from './schemas/cleanuptools';
+import { cleanupApplyResultSchema, cleanupPreviewResultSchema, levelMatchApplyResultSchema, levelMatchPreviewResultSchema } from './schemas/cleanup';
 import { projectStateChangedSchema, projectStateStartResultSchema, projectStateStateSchema } from './schemas/projectstate';
 import { dictionaryLookupResultSchema } from './schemas/dictionary';
 import { retakeLanesListSchema, retakeLanesStartResultSchema, retakeLanesStateSchema } from './schemas/retakelanes';
@@ -327,6 +328,12 @@ export const wailsClient: NarrationApi = {
   editingState: () => decode(editingStateSchema, 'EditingState', host.EditingState()),
   editingCancel: () => decode(voidResult, 'EditingCancel', host.EditingCancel()),
   editingCandidates: (chapterId) => decode(editingCandidatesSchema, 'EditingCandidates', host.EditingCandidates(chapterId)),
+  cleanupPreview: (chapterId) => decode(cleanupPreviewResultSchema, 'CleanupPreview', host.CleanupPreview(chapterId)),
+  cleanupApply: (chapterId) => decode(cleanupApplyResultSchema, 'CleanupApply', host.CleanupApply(chapterId)),
+  levelMatchPreview: (chapterId, metric, targetValueDb, toleranceDb) =>
+    decode(levelMatchPreviewResultSchema, 'LevelMatchPreview', host.LevelMatchPreview(chapterId, metric, targetValueDb, toleranceDb)),
+  levelMatchApply: (chapterId, metric, targetValueDb, toleranceDb) =>
+    decode(levelMatchApplyResultSchema, 'LevelMatchApply', host.LevelMatchApply(chapterId, metric, targetValueDb, toleranceDb)),
   workspaceAlignment: (chapterId) => decode(workspaceAlignmentResultSchema, 'WorkspaceAlignment', host.WorkspaceAlignment(chapterId)),
   previewCandidates: () => decode(previewResultSchema, 'PreviewCandidates', host.PreviewCandidates()),
   lineIdentityStamp: (rows, overwrite) => decode(lineIdentityStartResultSchema, 'LineIdentityStamp', host.LineIdentityStamp(rows, overwrite)),

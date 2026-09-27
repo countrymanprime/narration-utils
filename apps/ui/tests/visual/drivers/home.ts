@@ -307,6 +307,26 @@ export const homeDrivers: Record<string, Driver> = {
     const panel = await openEditingCheckFromHome(page, 'mockEditingSignal=met');
     await panel.getByText('Met.').waitFor();
   },
+  'editing-check-cleanup-confirm': async (page) => {
+    const panel = await openEditingCheckFromHome(page, 'mockEditingCandidates=1&mockEditingSignal=not-met&mockDawExperimentalOn=1');
+    // useCapability's own read of the mock's DAW capabilities is async, so the "Trim silence…" control starts
+    // CapabilityGate-disabled (aria-disabled, not the DOM disabled attribute Playwright's actionability waits for)
+    // until it resolves: wait for the gate to lift before clicking, or the click lands on CapabilityGate's swallow
+    // handler instead of the button's own.
+    const trim = panel.getByRole('button', { name: 'Trim silence…' }).and(page.locator(':not([aria-disabled="true"])'));
+    await trim.waitFor();
+    await trim.click();
+    // ConfirmDialog renders as its own top-level dialog (a sibling of the editing check panel, not nested inside
+    // it), so the alertdialog is found on the page, not scoped to `panel`.
+    await page.getByRole('alertdialog', { name: 'Trim silence' }).waitFor();
+  },
+  'editing-check-gain-match-confirm': async (page) => {
+    const panel = await openEditingCheckFromHome(page, 'mockEditingSignal=met&mockDawExperimentalOn=1');
+    const match = panel.getByRole('button', { name: 'Match levels…' }).and(page.locator(':not([aria-disabled="true"])'));
+    await match.waitFor();
+    await match.click();
+    await page.getByRole('alertdialog', { name: 'Match levels' }).waitFor();
+  },
   'editing-check-stale': async (page) => {
     const panel = await openEditingCheckFromHome(page, 'mockEditingSignal=stale');
     await panel.getByText(/Check editing again: since the last check/).waitFor();

@@ -21,6 +21,7 @@ import { createMeasureMock } from './measureMock';
 import { createDeliveryProfilesMock } from './deliveryProfilesMock';
 import { createDiagnosticsMock } from './diagnosticsMock';
 import { createEditingMock } from './editingMock';
+import { createCleanupActionMock } from './cleanupActionMock';
 import { createMockState, type MockApiSeed } from './mockHost/state';
 import { createUpdateMock } from './mockHost/update';
 import { createProjectMock } from './mockHost/project';
@@ -118,6 +119,10 @@ export function createMockApi(
   const { current: deliveryProfile, ...deliveryProfiles } = createDeliveryProfilesMock(initial.deliveryProfile);
   const { peekDiagnostics, ...diagnostics } = createDiagnosticsMock(endJob, measurePicked, initial.diagnostics);
   const editing = createEditingMock(initial.editing);
+  const cleanupAction = createCleanupActionMock(
+    async (chapterId) => (await findings.findingsList({ analyzer: 'editing', chapterId })).findings,
+    initial.cleanupAction,
+  );
   const measurement = createMeasureMock(endJob, initial.measure, measurePicked, deliveryProfile, peekDiagnostics);
   const system = createSystemMock(s, initial, {
     version: update.version,
@@ -146,6 +151,7 @@ export function createMockApi(
     // Candidates), not editingMock's own state: a candidate is seeded like any other finding (`initial.findings`,
     // editingCandidateFor in mockFixtures.ts), so Accept/Dismiss/Defer on it go through the real review binding.
     editingCandidates: async (chapterId) => (await findings.findingsList({ analyzer: 'editing', chapterId })).findings,
+    ...cleanupAction,
     takeReviewCreateTake: async (request) => ({
       targetItemGuid: request.targetItemGuid,
       newTakeGuid: '{99999999-0000-4000-8000-000000000099}',
