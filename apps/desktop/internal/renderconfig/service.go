@@ -21,7 +21,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/countrymanprime/narration-utils/shell/internal/bridge"
+	"github.com/countrymanprime/narration-utils/shell/internal/dawport"
 )
 
 // Config is the session path the service needs to talk to REAPER over the file bridge.
@@ -31,22 +31,23 @@ type Config struct{ SessionDir string }
 type Service struct {
 	mu      sync.RWMutex
 	config  Config
-	bridge  *bridge.Client
+	role    dawport.RenderConfigurer
 	changed func(map[string]any)
 	// +checklocks:mu
 	state map[string]any
 }
 
-// New builds the service and, when there is a bridge, subscribes to RENDER_CONFIGURED and ERROR events for its
-// own run (or, with no run, a session-level problem). The transcript, line-identity and pickups services
-// subscribe independently on the same client; Dispatch fans events out to all four.
-func New(config Config, client *bridge.Client, changed func(map[string]any)) *Service {
-	s := &Service{config: config, bridge: client, changed: changed, state: empty()}
-	if client != nil {
-		client.Subscribe(bridge.Subscription{
+// New builds the service over role (DAW port PRD Phase 5b: render config depends on the RenderConfigurer role,
+// never a concrete bridge client). When there is a role it subscribes to RENDER_CONFIGURED and ERROR events for
+// its own run (or, with no run, a session-level problem). The transcript, line-identity and pickups services
+// subscribe independently on the same underlying client; Dispatch fans events out to all four.
+func New(config Config, role dawport.RenderConfigurer, changed func(map[string]any)) *Service {
+	s := &Service{config: config, role: role, changed: changed, state: empty()}
+	if role != nil {
+		role.Subscribe(dawport.Subscription{
 			Tags:    []string{"RENDER_CONFIGURED", "ERROR"},
 			Owns:    s.ownsRun,
-			Handle:  func(event bridge.Event) { s.Handle(event.Fields) },
+			Handle:  func(event dawport.Event) { s.Handle(event.Fields) },
 			Invalid: s.handleInvalid,
 		})
 	}
@@ -68,7 +69,7 @@ func (s *Service) Configure(outputFolder string) error {
 	if outputFolder == "" {
 		return fmt.Errorf("an output folder is required")
 	}
-	if s.bridge == nil {
+	if s.role == nil {
 		return fmt.Errorf("the REAPER bridge is unavailable")
 	}
 	if err := os.MkdirAll(s.config.SessionDir, 0o755); err != nil {
@@ -76,7 +77,7 @@ func (s *Service) Configure(outputFolder string) error {
 	}
 	runID := newRunID()
 	s.begin(runID, "configuring", "Configuring the chapter render…")
-	if _, err := s.bridge.Send("configure_chapter_render", []string{runID, outputFolder}); err != nil {
+	if err := s.role.ConfigureChapterRender(runID, outputFolder); err != nil {
 		s.fail(err.Error())
 		return err
 	}
@@ -87,10 +88,10 @@ func (s *Service) Configure(outputFolder string) error {
 // Drain delivers the events REAPER has appended since the last call, to this service and to every other
 // consumer subscribed to the same bridge.
 func (s *Service) Drain() error {
-	if s.bridge == nil {
+	if s.role == nil {
 		return nil
 	}
-	return s.bridge.Dispatch()
+	return s.role.Dispatch()
 }
 
 func (s *Service) Snapshot() map[string]any {
@@ -126,7 +127,7 @@ func (s *Service) ownsRun(runID string) bool {
 	return runID != "" && runID == current
 }
 
-func (s *Service) handleInvalid(event bridge.Event, reason error) {
+func (s *Service) handleInvalid(event dawport.Event, reason error) {
 	message := fmt.Sprintf("The Narration Utils script in REAPER sent a message this app could not read (%v). Import the script from this app's REAPER folder again, then try again.", reason)
 	s.mu.Lock()
 	if s.state["phase"] != "configuring" {

@@ -11,7 +11,7 @@ import type { StageUnknownCause } from './api/contracts/stages';
 import { MOCK_RESUME_SEEDS } from './api/resumeMockSeed';
 import { MOCK_REAPER_INPUT_SEEDS, MOCK_REAPER_SEEDS } from './api/teleprompterMock';
 import { ThemeProvider } from './theme/ThemeContext';
-import { CommandRouter } from './input/router';
+import { LiveCommandRouter } from './input/LiveCommandRouter';
 import { createKeyboardSource } from './input/KeyboardSource';
 import { combineSources, midiSource } from './input/MidiSource';
 import './fonts';
@@ -375,10 +375,12 @@ createRoot(document.getElementById('root')!).render(
     <ThemeProvider>
       <ApiProvider api={api}>
         {/* input-commands-and-pedals.prd.md: the registry (Phase 1) with keyboard and MIDI (Phase 9) as its input
-            sources; HidSource (Phase 11) joins the same `combineSources` call above if it ships. */}
-        <CommandRouter source={commandInputSource}>
+            sources; HidSource (Phase 11) joins the same `combineSources` call above if it ships. Wired to the DAW
+            port's live transport state (Phase 10), so a `noisy` command (workspace.play) goes silent while REAPER
+            reports recording (PRD Q5). */}
+        <LiveCommandRouter source={commandInputSource}>
           <App />
-        </CommandRouter>
+        </LiveCommandRouter>
       </ApiProvider>
     </ThemeProvider>
   </React.StrictMode>,

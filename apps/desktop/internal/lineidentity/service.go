@@ -22,7 +22,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/countrymanprime/narration-utils/shell/internal/bridge"
+	"github.com/countrymanprime/narration-utils/shell/internal/dawport"
 	"github.com/countrymanprime/narration-utils/shell/internal/manuscript"
 )
 
@@ -38,23 +38,24 @@ type Row struct{ ItemGUID, LineID, Text string }
 type Service struct {
 	mu         sync.RWMutex
 	config     Config
-	bridge     *bridge.Client
+	role       dawport.LineStamper
 	manuscript *manuscript.Service
 	changed    func(map[string]any)
 	// +checklocks:mu
 	state map[string]any
 }
 
-// New builds the service. When there is a bridge it subscribes to the events line identity owns: the
-// LINES_* family, and ERROR events for its own run (or with no run, a session-level problem). The
-// transcript service subscribes independently on the same client; Dispatch fans events to both.
-func New(config Config, client *bridge.Client, manuscriptService *manuscript.Service, changed func(map[string]any)) *Service {
-	s := &Service{config: config, bridge: client, manuscript: manuscriptService, changed: changed, state: empty()}
-	if client != nil {
-		client.Subscribe(bridge.Subscription{
+// New builds the service over role (DAW port PRD Phase 5b: line identity depends on the LineStamper role, never
+// a concrete bridge client). When there is a role it subscribes to the events line identity owns: the LINES_*
+// family, and ERROR events for its own run (or with no run, a session-level problem). The transcript service
+// subscribes independently on the same underlying client; Dispatch fans events to both.
+func New(config Config, role dawport.LineStamper, manuscriptService *manuscript.Service, changed func(map[string]any)) *Service {
+	s := &Service{config: config, role: role, manuscript: manuscriptService, changed: changed, state: empty()}
+	if role != nil {
+		role.Subscribe(dawport.Subscription{
 			Tags:    []string{"LINES_*", "ERROR"},
 			Owns:    s.ownsRun,
-			Handle:  func(event bridge.Event) { s.Handle(event.Fields) },
+			Handle:  func(event dawport.Event) { s.Handle(event.Fields) },
 			Invalid: s.handleInvalid,
 		})
 	}
@@ -77,7 +78,7 @@ func (s *Service) Stamp(rows []Row, overwrite bool) error {
 	if len(rows) == 0 {
 		return fmt.Errorf("select at least one item to stamp")
 	}
-	if s.bridge == nil {
+	if s.role == nil {
 		return fmt.Errorf("the REAPER bridge is unavailable")
 	}
 	data, err := s.manuscriptData()
@@ -112,11 +113,7 @@ func (s *Service) Stamp(rows []Row, overwrite bool) error {
 	s.state = empty()
 	s.state["runId"], s.state["phase"], s.state["message"] = runID, "stamping", "Stamping manuscript line identity in REAPER…"
 	s.mu.Unlock()
-	overwriteFlag := "0"
-	if overwrite {
-		overwriteFlag = "1"
-	}
-	if _, err := s.bridge.Send("stamp_item_lines", []string{runID, path, overwriteFlag}); err != nil {
+	if err := s.role.StampLines(runID, path, overwrite); err != nil {
 		s.fail(err.Error())
 		return err
 	}
@@ -127,7 +124,7 @@ func (s *Service) Stamp(rows []Row, overwrite bool) error {
 // Read asks REAPER for every stamped item (read_line_ids is read-only) and, once LINES_READ arrives,
 // parses the report and annotates each row against the current manuscript (Handle -> parseAndAnnotate).
 func (s *Service) Read() error {
-	if s.bridge == nil {
+	if s.role == nil {
 		return fmt.Errorf("the REAPER bridge is unavailable")
 	}
 	if err := os.MkdirAll(s.config.SessionDir, 0o755); err != nil {
@@ -139,7 +136,7 @@ func (s *Service) Read() error {
 	s.state = empty()
 	s.state["runId"], s.state["phase"], s.state["message"] = runID, "reading", "Reading manuscript line identity from REAPER…"
 	s.mu.Unlock()
-	if _, err := s.bridge.Send("read_line_ids", []string{runID, path}); err != nil {
+	if err := s.role.ReadLineIDs(runID, path); err != nil {
 		s.fail(err.Error())
 		return err
 	}
@@ -150,10 +147,10 @@ func (s *Service) Read() error {
 // Drain delivers the events REAPER has appended since the last call, to this service and to every other
 // consumer subscribed to the same bridge (transcript.Service.Drain does the same on its client).
 func (s *Service) Drain() error {
-	if s.bridge == nil {
+	if s.role == nil {
 		return nil
 	}
-	return s.bridge.Dispatch()
+	return s.role.Dispatch()
 }
 
 func (s *Service) Snapshot() map[string]any {
@@ -186,7 +183,7 @@ func (s *Service) ownsRun(runID string) bool {
 
 // handleInvalid ends the run in progress with a message naming the event and the field that could not be
 // read (never a value, since a field can hold the narrator's words): the same shape as transcript.Service.
-func (s *Service) handleInvalid(event bridge.Event, reason error) {
+func (s *Service) handleInvalid(event dawport.Event, reason error) {
 	message := fmt.Sprintf("The Narration Utils script in REAPER sent a message this app could not read (%v). Import the script from this app's REAPER folder again, then try again.", reason)
 	s.mu.Lock()
 	if !runInProgress(s.state) {
