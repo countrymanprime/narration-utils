@@ -65,7 +65,9 @@ export function ReaderCard({
   showReadAloud?: boolean;
   onReadAloud?: () => void;
   /** The chapter-header "Booth" entry point (booth-mode-and-companion-panel.prd.md Phase 1, Open Question 1 A): gated
-   * the same as `showReadAloud` (narration chapters only) - credits have neither. */
+   * the same as `showReadAloud` on every caller (a narration chapter, or a credits card with something to read) - the
+   * fixed-width action slot below assumes the two always agree, so a row with one and not the other misaligns it
+   * from every other row in the column (manuscript-chapter-header-alignment.prd.md). */
   showBooth?: boolean;
   onBooth?: () => void;
   wordCount: number;

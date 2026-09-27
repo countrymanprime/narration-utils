@@ -136,6 +136,11 @@ export function BoothView({ session: t, follow, chapterId, chapterTitle, recordi
     <FocusShell
       status={<BoothStatus session={t} chapterId={chapterId} chapterTitle={chapterTitle} recording={recording} />}
       rail={rail}
+      // Always mounted inside `ReadAloudDialog`'s `Dialog size="full"` (never yet the standalone route ADR 0094 also
+      // allows): AppShell's own page `<main>` stays in the accessibility tree behind it (booth-mode-and-companion-panel.prd.md
+      // Phase 1's real, first-encountered `landmark-no-duplicate-main`/`landmark-unique` axe finding), so this shell must
+      // not add a second one.
+      asMain={false}
       commands={
         <Toolbar label="Booth commands">
           <ToolbarButton

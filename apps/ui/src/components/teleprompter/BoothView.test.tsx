@@ -89,12 +89,14 @@ function renderBooth(overrides: Partial<Parameters<typeof BoothView>[0]> = {}) {
 }
 
 describe('BoothView (booth-mode-and-companion-panel.prd.md Phase 1, Phase 2)', () => {
-  it('lays out a named status region, the given rail as a complementary landmark, the script as main, and a named Booth commands toolbar', () => {
+  it('lays out a named status region, the given rail as a complementary landmark, the script with no main landmark of its own, and a named Booth commands toolbar', () => {
     renderBooth({ chapterTitle: 'Chapter 3' });
     expect(screen.getByRole('region', { name: 'Status' })).toBeTruthy();
     const rail = screen.getByRole('complementary', { name: 'Rail' });
     expect(within(rail).getByText('Reading panel')).toBeTruthy();
-    expect(screen.getByRole('main')).toBeTruthy();
+    // Always mounted inside ReadAloudDialog's Dialog, whose page behind it keeps its own <main> in the accessibility
+    // tree (a live region there stays announced): FocusShell's `asMain={false}` here avoids a second one.
+    expect(screen.queryByRole('main')).toBeNull();
     expect(screen.getByRole('toolbar', { name: 'Booth commands' })).toBeTruthy();
   });
 

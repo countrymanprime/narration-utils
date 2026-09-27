@@ -737,6 +737,18 @@ describe('Manuscript page (integration, driven through the mock NarrationApi)', 
       const dialog = await screen.findByRole('dialog', { name: /Read aloud.*Chapter 1/ });
       expect(within(dialog).getByRole('toolbar', { name: 'Reading controls' })).toBeTruthy();
     });
+
+    it("also opens the booth layout from the opening credits card, beside Read aloud (the header column's two buttons stay gated together, manuscript-chapter-header-alignment.prd.md)", async () => {
+      renderManuscript();
+      const openingHeading = await screen.findByRole('heading', { name: 'Opening credits' });
+      const opening = openingHeading.closest('[data-credits-entry]') as HTMLElement;
+      await within(opening).findByRole('button', { name: 'Open booth for Opening credits' });
+
+      fireEvent.click(within(opening).getByRole('button', { name: 'Open booth for Opening credits' }));
+
+      const dialog = await screen.findByRole('dialog', { name: 'Read aloud: Opening credits' });
+      expect(within(dialog).getByRole('toolbar', { name: 'Booth commands' })).toBeTruthy();
+    });
   });
 
   describe('Read aloud on the credits cards (manuscript-credits-card-parity.prd.md, Phase 2)', () => {

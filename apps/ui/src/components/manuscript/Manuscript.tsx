@@ -580,7 +580,14 @@ export function Manuscript({
             onToggle={() => setCreditsExpanded((current) => ({ ...current, opening: !current.opening }))}
             textClass={READER_TEXT_CLASSES[textSize]}
             onFillIn={creditsSetup ? () => setFillingInCredits(true) : undefined}
-            onReadAloud={() => setReadAloud({ kind: 'credits', credits: 'opening', preview: creditsPreviews.opening! })}
+            onReadAloud={() => {
+              setReadAloudMode('read');
+              setReadAloud({ kind: 'credits', credits: 'opening', preview: creditsPreviews.opening! });
+            }}
+            onBooth={() => {
+              setReadAloudMode('booth');
+              setReadAloud({ kind: 'credits', credits: 'opening', preview: creditsPreviews.opening! });
+            }}
           />
         )}
         {recordedChapters.map((chapter) => {
@@ -645,7 +652,14 @@ export function Manuscript({
             onToggle={() => setCreditsExpanded((current) => ({ ...current, closing: !current.closing }))}
             textClass={READER_TEXT_CLASSES[textSize]}
             onFillIn={creditsSetup ? () => setFillingInCredits(true) : undefined}
-            onReadAloud={() => setReadAloud({ kind: 'credits', credits: 'closing', preview: creditsPreviews.closing! })}
+            onReadAloud={() => {
+              setReadAloudMode('read');
+              setReadAloud({ kind: 'credits', credits: 'closing', preview: creditsPreviews.closing! });
+            }}
+            onBooth={() => {
+              setReadAloudMode('booth');
+              setReadAloud({ kind: 'credits', credits: 'closing', preview: creditsPreviews.closing! });
+            }}
           />
         )}
       </div>
