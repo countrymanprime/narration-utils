@@ -201,6 +201,23 @@ export function ChaptersForTracks(guids: string[]): $CancellablePromise<string> 
 }
 
 /**
+ * CleanupApply asks REAPER to remove every silence-trim candidate's cut range (apply_cleanup_trims), in one undo
+ * block; a candidate the saved project has made stale is left untouched.
+ */
+export function CleanupApply(chapterID: string): $CancellablePromise<string> {
+    return $Call.ByID(2485590750, chapterID);
+}
+
+/**
+ * CleanupPreview asks REAPER to mark every silence-trim candidate's cut range (preview_cleanup_markers) without
+ * changing anything else: which take markers were newly added, and which candidates the saved project has since made
+ * stale.
+ */
+export function CleanupPreview(chapterID: string): $CancellablePromise<string> {
+    return $Call.ByID(2152353530, chapterID);
+}
+
+/**
  * CleanupToolsLaunch asks REAPER to open an allow-listed cleanup tool (cleanuptools.Tools: "repair_pops_clicks" or
  * "magnolius_declick") on the selected items. It changes nothing itself; the dialog it opens is the narrator's.
  */
@@ -696,6 +713,24 @@ export function GuideSetLocked(id: string, locked: boolean): $CancellablePromise
 
 export function GuideUnrelate(id: string, otherID: string, label: string): $CancellablePromise<string> {
     return $Call.ByID(171684836, id, otherID, label);
+}
+
+/**
+ * LevelMatchApply re-measures the same items LevelMatchPreview would (never the narrator's last-seen answer) and
+ * sends every item that still needs a change to REAPER's apply_item_gain, in one undo block.
+ */
+export function LevelMatchApply(chapterID: string, metric: string, targetValueDB: number, toleranceDB: number): $CancellablePromise<string> {
+    return $Call.ByID(3552837571, chapterID, metric, targetValueDB, toleranceDB);
+}
+
+/**
+ * LevelMatchPreview measures every analyzable item on chapterID's linked track and proposes the gain change that
+ * would bring each one within toleranceDB of targetValueDB on metric ("integrated_lufs" or "rms_dbfs",
+ * levelnormalize.Metric's own values). It changes nothing: REAPER's item volumes are read only when LevelMatchApply
+ * is called.
+ */
+export function LevelMatchPreview(chapterID: string, metric: string, targetValueDB: number, toleranceDB: number): $CancellablePromise<string> {
+    return $Call.ByID(1028701999, chapterID, metric, targetValueDB, toleranceDB);
 }
 
 export function LineIdentityRead(): $CancellablePromise<string> {
