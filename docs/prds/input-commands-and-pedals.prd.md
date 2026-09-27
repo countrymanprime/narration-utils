@@ -177,7 +177,7 @@ Lanes: **U** = primitives and input (Sonnet), **A** = host (Go settings). ADRs c
 | 9 | MidiSource (U, A if needed) | Web MIDI note-on and CC presses, learned in the Phase 6 recorder. Threat model | complete | with 10 | 6, 8 | - |
 | 10 | Silent while recording (U) | `noisy` commands suppressed while the DAW port reports recording | complete: `useDawRecording` subscribes to `daw_transport_changed` and `<LiveCommandRouter>` wires it into the router's `isRecording` seam from Phase 1 (mounted in `main.tsx` in place of a bare `<CommandRouter>`, now passed Phase 9's combined keyboard+MIDI `source`); a suppressed press still posts "Not while recording." to its own `aria-live` region (PRD Q5) | with 9 | 1, DAW port P9 | - |
 | 11 | HidSource (U, Could) | WebHID buttons as gestures, if Phase 8 finds it usable | pending | - | 8, 9 | - |
-| 12 | Global hotkeys spike (A, Could) | Host-level hotkeys while REAPER has focus, for the companion panel. Not MVP | pending | any | 5 | - |
+| 12 | Global hotkeys spike (A, Could) | Host-level hotkeys while REAPER has focus, for the companion panel. Not MVP | complete | any | 5 | - |
 
 ### Phase details
 
