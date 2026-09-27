@@ -1,0 +1,32 @@
+{
+  "catalogVersion": 1,
+  "encoders": [
+    {
+      "id": "ffmpeg-7.1-essentials-win64",
+      "provider": "ffmpeg",
+      "displayName": "FFmpeg 7.1 (MP3 encoder)",
+      "description": "Encodes rendered chapters to MP3 on your own computer. Windows only.",
+      "version": "7.1-essentials",
+      "publisher": "The FFmpeg developers (build by gyan.dev, published on PyPI by imageio)",
+      "license": "GPL-3.0-or-later",
+      "licenseUrl": "https://ffmpeg.org/legal.html",
+      "modelCardUrl": "https://www.gyan.dev/ffmpeg/builds/",
+      "provenanceUrl": "https://pypi.org/project/imageio-ffmpeg/0.6.0/",
+      "attribution": "FFmpeg 7.1 essentials build by gyan.dev (GPL-3.0-or-later build of the FFmpeg project, https://ffmpeg.org), with the LAME MP3 encoder (LGPL). Downloaded from the imageio-ffmpeg 0.6.0 wheel on PyPI; only ffmpeg.exe is kept. Source: https://ffmpeg.org/download.html and https://www.gyan.dev/ffmpeg/builds/.",
+      "platforms": ["windows"],
+      "binary": "imageio_ffmpeg/binaries/ffmpeg-win-x86_64-v7.1.exe",
+      "binarySha256": "2ce797a0f88d7f067180338fb227f7b1928ea727bd9a4d7a1d022f7c52af71a3",
+      "installedSize": 87638016,
+      "files": [
+        {
+          "name": "imageio_ffmpeg-0.6.0-py3-none-win_amd64.whl",
+          "url": "https://files.pythonhosted.org/packages/2c/c6/fa760e12a2483469e2bf5058c5faff664acf66cadb4df2ad6205b016a73d/imageio_ffmpeg-0.6.0-py3-none-win_amd64.whl",
+          "sha256": "02fa47c83703c37df6bfe4896aab339013f62bf02c5ebf2dce6da56af04ffc0a",
+          "size": 31246824,
+          "extract": "ffmpeg",
+          "expand": 87682173
+        }
+      ]
+    }
+  ]
+}
