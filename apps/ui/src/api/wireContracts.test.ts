@@ -72,7 +72,14 @@ import {
   retailSampleAnswerSchema,
 } from './schemas/credits';
 import { dawCatalogListSchema } from './schemas/dawCatalog';
-import { guideBuildResultSchema, guideCreatedSchema, guideEntitiesSchema, guidePreviewSchema } from './schemas/storyBible';
+import {
+  guideBuildResultSchema,
+  guideCreatedSchema,
+  guideEntitiesSchema,
+  guidePreviewSchema,
+  pronunciationQueriesCsvSchema,
+  pronunciationQueriesSchema,
+} from './schemas/storyBible';
 import { bootstrapSchema, copyDiagnosticsResultSchema, projectAttachStateSchema, readySchema } from './schemas/system';
 import {
   readAloudReaperStateSchema,
@@ -652,6 +659,13 @@ describe('answers of the mock client for the manuscript, Story Bible and project
     expectMatches(guideCreatedSchema, { id: await api.guideCreate('New', 'Character', []) }, 'mock guide create');
     const entity = (await api.guideEntities())[0];
     expectMatches(guidePreviewSchema, await api.guidePreview(entity?.id ?? ''), 'mock preview');
+    const queries = await api.guidePronunciationQueries();
+    expectMatches(pronunciationQueriesSchema, queries, 'mock pronunciation queries');
+    expect(queries.length).toBeGreaterThan(0);
+    expect(queries.every((row) => row.status !== 'author_confirmed')).toBe(true);
+    const csv = await api.guidePronunciationQueriesCsv();
+    expectMatches(pronunciationQueriesCsvSchema, csv, 'mock pronunciation queries CSV');
+    expect(csv.count).toBe(queries.length);
   });
 
   it('the dictionary lookup answers: a word it has, one it does not, and the first-use gate', async () => {
@@ -1782,6 +1796,8 @@ describe('answers of the mock client for the settings, voice, model, transcript 
       'guideEntities',
       'guideCreate',
       'guidePreview',
+      'guidePronunciationQueries',
+      'guidePronunciationQueriesCsv',
       'assetsList',
       'assetsInstall',
       'assetsInstallState',

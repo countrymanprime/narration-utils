@@ -32,7 +32,14 @@ import { dawCatalogListSchema } from './schemas/dawCatalog';
 import { dawCapabilitiesSchema, dawTransportSchema } from './schemas/daw';
 import { providerCapabilitiesSchema } from './schemas/providers';
 import { chapterSyncPreviewSchema, chapterSyncStateSchema } from './schemas/chapterSync';
-import { guideBuildResultSchema, guideCreatedSchema, guideEntitiesSchema, guidePreviewSchema } from './schemas/storyBible';
+import {
+  guideBuildResultSchema,
+  guideCreatedSchema,
+  guideEntitiesSchema,
+  guidePreviewSchema,
+  pronunciationQueriesCsvSchema,
+  pronunciationQueriesSchema,
+} from './schemas/storyBible';
 import { settingsForScopeSchema } from './schemas/settings';
 import { tracksDiscoverySchema, tracksProjectSchema } from './schemas/tracks';
 import {
@@ -250,6 +257,8 @@ export const wailsClient: NarrationApi = {
   guidePronounceUser: (id, ipa, aliasIndex) => decode(voidResult, 'GuidePronounceUser', host.GuidePronounceUser(id, aliasIndex ?? null, ipa)),
   guidePronunciationUseAlternate: (id, aliasIndex) =>
     decode(voidResult, 'GuidePronunciationUseAlternate', host.GuidePronunciationUseAlternate(id, aliasIndex ?? null)),
+  guidePronunciationQueries: () => decode(pronunciationQueriesSchema, 'GuidePronunciationQueries', host.GuidePronunciationQueries()),
+  guidePronunciationQueriesCsv: () => decode(pronunciationQueriesCsvSchema, 'GuidePronunciationQueriesCSV', host.GuidePronunciationQueriesCSV()),
   guidePronunciationSetStatus: (id, status, note, aliasIndex) =>
     decode(voidResult, 'GuidePronunciationSetStatus', host.GuidePronunciationSetStatus(id, aliasIndex ?? null, status, note ?? null)),
   ttsCatalog: () => decode(ttsCatalogSchema, 'TtsCatalog', host.TtsCatalog()),
