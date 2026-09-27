@@ -56,6 +56,12 @@ var numberSpecs = map[string]map[string]numberSpec{
 		"tolerance_fraction":      {min: bound(0.01), max: bound(0.5), step: bound(0.01)},
 		"exclude_ending_fraction": {min: bound(0), max: bound(0.5), step: bound(0.01)},
 	},
+	// Punch and roll's pre-roll (teleprompter-manuscript-integration.prd.md Phase 12, decided range and default: "0-10
+	// s, default 3 s"), on a 0.5 s step (fine enough for a pre-roll, which is a few seconds of runway before the
+	// punched word, not a precision edit point).
+	"Teleprompter": {
+		"punch_preroll_seconds": {min: bound(0), max: bound(10), step: bound(0.5), unit: "s"},
+	},
 }
 
 // wire is the range as the Settings page receives it (the `number` object of a ScopedSettingField).
