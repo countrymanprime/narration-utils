@@ -782,6 +782,16 @@ describe('answers of the mock client for the manuscript, Story Bible and project
     await expect(createMockApi().dawCatalogOpenDownloadPage('reaper')).resolves.toBeUndefined();
     await expect(createMockApi().dawCatalogOpenDownloadPage('not-a-real-daw')).rejects.toThrow(/Unknown DAW catalog entry/);
   });
+
+  it('pronunciation lookup opens for a known source and refuses an unknown one (prep-depth Phase 2)', async () => {
+    const api = createMockApi();
+    await expect(api.pronunciationLookupOpen('forvo', 'Mock Turtle')).resolves.toBeUndefined();
+    await expect(api.pronunciationLookupOpen('youglish', 'café')).resolves.toBeUndefined();
+    await expect(api.pronunciationLookupOpen('merriam_webster', 'croquet')).resolves.toBeUndefined();
+    await expect(api.pronunciationLookupOpen('howjsay', 'croquet')).resolves.toBeUndefined();
+    // @ts-expect-error an unknown source is a build-time error too; the mock also rejects it at runtime.
+    await expect(api.pronunciationLookupOpen('wiktionary', 'croquet')).rejects.toThrow(/Unknown pronunciation lookup source/);
+  });
 });
 
 describe('answers of the mock client for the settings, voice, model, transcript and tracks bindings', () => {
@@ -1981,6 +1991,7 @@ describe('answers of the mock client for the settings, voice, model, transcript 
       'teleprompterMeterStop',
       'teleprompterPause',
       'dawCatalogOpenDownloadPage',
+      'pronunciationLookupOpen',
       'teleprompterSeek',
       'reportClientDiagnostic',
       'systemNotify',
