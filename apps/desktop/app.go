@@ -55,7 +55,7 @@ import (
 // Keep this in lockstep with apps/ui/src/hostApi.ts.  The frontend rejects
 // an older host before bootstrapping so a partial update cannot run against a
 // binding contract it does not understand.
-const hostAPIVersion = 63
+const hostAPIVersion = 64
 
 // Host is the Wails binding boundary. The frontend invokes only this bound
 // object; it never receives a loopback port or an HTTP capability.
@@ -77,9 +77,14 @@ type Host struct {
 	// the same way.
 	// +checklocks:mu
 	dawTransportSnapshot string
-	manuscript           *manuscript.Service
-	sidecars             *process.Supervisor
-	settings             *settings.Store
+	// readAloudRecordingChapter is the chapter id of a REAPER recording this app started with ReadAloudRecordStart and
+	// has not yet stopped (bindings_readaloud_record.go, read-aloud-control-bar.prd.md Phase 7): empty when none, so
+	// ServiceShutdown knows whether to stop one before the app quits.
+	// +checklocks:mu
+	readAloudRecordingChapter string
+	manuscript                *manuscript.Service
+	sidecars                  *process.Supervisor
+	settings                  *settings.Store
 	// assets is the registry of everything that can be downloaded (assetregistry.go). It is set once, in Startup, and never replaced: a project
 	// switch does not touch it, so it is read with registry() and needs no snapshot.
 	// +checklocks:mu
@@ -900,6 +905,9 @@ func (h *Host) ServiceShutdown() error {
 		_ = live.Close(stopContext)
 		cancelStop()
 	}
+	// A REAPER recording this app started is stopped before the app quits (threat-model row 5j): otherwise REAPER
+	// keeps recording with nothing left open to stop it.
+	h.stopReadAloudRecordingOnShutdown()
 	// A recording check in progress is asked to stop through its .cancel file; closing the supervisor below kills it if it does not,
 	// and the words files it finished are already on disk.
 	if check := h.services().coverage; check != nil {
@@ -1413,6 +1421,16 @@ var fieldSchemas = map[string][]fieldSchema{
 	// the dedicated "Keyboard & pedals" screen with its own remap-by-pressing UI. saveSettings caps its size and
 	// keeps it global-only (Q3).
 	"Keymap": {{"overrides", "Keyboard shortcut overrides", "text", nil}},
+	// ReadAloud.record_in_reaper and record_confirmed are the Record-in-REAPER toggle's own memory (read-aloud-
+	// control-bar.prd.md Phase 7, Q9; booth-actions-enablement.prd.md Phase 2): whether the narrator turned recording
+	// on for this project, and whether they have already seen the first-time confirm naming the track and what Play
+	// and Stop do. Project scope only (saveSettings below) - Q9's recommendation A rejected a global memory, since it
+	// would carry the choice into a project with no REAPER link. Like Keymap, no Settings category names this tool,
+	// so it stays off the generic Settings page; the read-aloud control bar's own toggle is where a narrator sets it.
+	"ReadAloud": {
+		{"record_in_reaper", "Record in REAPER", "bool", nil},
+		{"record_confirmed", "Seen the Record in REAPER confirm", "bool", nil},
+	},
 }
 
 // capabilityFieldSchemas is one choice field (auto/on/off) per DAW port capability (dawport.Capabilities(), DAW port PRD
@@ -1503,6 +1521,9 @@ func (h *Host) saveSettings(tool, scope string, values map[string]*string) error
 	}
 	if tool == "Keymap" && scope != "global" {
 		return fmt.Errorf("keymap overrides are global: a narrator's pedal belongs to the booth, not the project")
+	}
+	if tool == "ReadAloud" && scope != "project" {
+		return fmt.Errorf("record in REAPER is a per-project choice: open a project to change it")
 	}
 	if tool == "General" && scope != "global" {
 		if _, ok := values["debug_logging"]; ok {
