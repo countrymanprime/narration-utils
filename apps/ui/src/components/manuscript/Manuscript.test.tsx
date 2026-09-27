@@ -712,6 +712,33 @@ describe('Manuscript page (integration, driven through the mock NarrationApi)', 
     });
   });
 
+  describe('Booth (booth-mode-and-companion-panel.prd.md Phase 1)', () => {
+    it('opens the same read-aloud modal in the booth layout, beside Read aloud, for a narration chapter', async () => {
+      renderManuscript();
+      await waitFor(() => expect(screen.getByRole('heading', { name: 'Chapter 1 — Down the Rabbit-Hole' })).toBeTruthy());
+
+      fireEvent.click(screen.getByRole('button', { name: 'Open booth for Chapter 1' }));
+
+      const dialog = await screen.findByRole('dialog', { name: /Read aloud.*Chapter 1/ });
+      expect(within(dialog).getByRole('toolbar', { name: 'Booth commands' })).toBeTruthy();
+      expect(within(dialog).queryByRole('toolbar', { name: 'Reading controls' })).toBeNull();
+    });
+
+    it('opening Read aloud after Booth (or the reverse) shows the layout that was last pressed', async () => {
+      renderManuscript();
+      await waitFor(() => expect(screen.getByRole('heading', { name: 'Chapter 1 — Down the Rabbit-Hole' })).toBeTruthy());
+
+      fireEvent.click(screen.getByRole('button', { name: 'Open booth for Chapter 1' }));
+      await screen.findByRole('toolbar', { name: 'Booth commands' });
+      fireEvent.click(screen.getByRole('button', { name: 'Close' }));
+      await waitFor(() => expect(screen.queryByRole('dialog', { name: /Read aloud/ })).toBeNull());
+
+      fireEvent.click(screen.getByRole('button', { name: 'Read Chapter 1 aloud' }));
+      const dialog = await screen.findByRole('dialog', { name: /Read aloud.*Chapter 1/ });
+      expect(within(dialog).getByRole('toolbar', { name: 'Reading controls' })).toBeTruthy();
+    });
+  });
+
   describe('Read aloud on the credits cards (manuscript-credits-card-parity.prd.md, Phase 2)', () => {
     it('opens the read-aloud modal on the opening credits, titled for the credits kind', async () => {
       renderManuscript();

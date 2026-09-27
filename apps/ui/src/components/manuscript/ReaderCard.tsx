@@ -1,5 +1,5 @@
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faBookmark as faBookmarkSolid, faChevronDown, faChevronUp, faMicrophone } from '@fortawesome/free-solid-svg-icons';
+import { faBookmark as faBookmarkSolid, faChevronDown, faChevronUp, faExpand, faMicrophone } from '@fortawesome/free-solid-svg-icons';
 import { faBookmark as faBookmarkRegular } from '@fortawesome/free-regular-svg-icons';
 import { useId, type ReactNode } from 'react';
 import { readTimeLabel } from '../../state';
@@ -12,10 +12,11 @@ import { TooltipTarget } from '../primitives/Tooltip';
 // count wider than that (Q2's accepted risk) grows just that row's block instead of overflowing.
 const STAT_BLOCK_CLASS = 'min-w-[6.5rem] tabular-nums';
 // The action slot (manuscript-chapter-header-alignment.prd.md, Q1 A / Technical Approach): a fixed-width box rendered
-// on every row, empty when the chapter has no Read aloud button, so the stat block still lines up beside it. The
-// button is right-aligned inside it (not left-aligned), so both edges - button start and button end - stay put
-// whether or not a Retail sample tag widens the cluster to its left.
-const ACTION_SLOT_CLASS = 'flex w-32 flex-none justify-end';
+// on every row, empty when the chapter has no actions, so the stat block still lines up beside it. Its content is
+// right-aligned (not left-aligned), so both edges - the cluster's start and end - stay put whether or not a Retail
+// sample tag widens the cluster to its left. Widened from its original 8rem (booth-mode-and-companion-panel.prd.md
+// Phase 1, Open Question 1 A) to fit "Booth" beside "Read aloud" without either wrapping.
+const ACTION_SLOT_CLASS = 'flex w-56 flex-none justify-end gap-1';
 
 // A Manuscript card's frame: a chapter card or a credits card (manuscript-credits-card-parity.prd.md, Phase 1),
 // sharing one header and one whole-header disclosure. The header's right side is one fixed order - [Retail sample
@@ -42,6 +43,8 @@ export function ReaderCard({
   showRetailSample = false,
   showReadAloud = false,
   onReadAloud,
+  showBooth = false,
+  onBooth,
   wordCount,
   children,
 }: {
@@ -61,6 +64,10 @@ export function ReaderCard({
   showRetailSample?: boolean;
   showReadAloud?: boolean;
   onReadAloud?: () => void;
+  /** The chapter-header "Booth" entry point (booth-mode-and-companion-panel.prd.md Phase 1, Open Question 1 A): gated
+   * the same as `showReadAloud` (narration chapters only) - credits have neither. */
+  showBooth?: boolean;
+  onBooth?: () => void;
   wordCount: number;
   children: ReactNode;
 }) {
@@ -139,6 +146,13 @@ export function ReaderCard({
               <TooltipTarget className="relative z-[1]" text="Read this chapter aloud and follow along">
                 <Button variant="ghost" className="text-xs" aria-label={`Read ${title} aloud`} onClick={onReadAloud}>
                   <FontAwesomeIcon icon={faMicrophone} /> Read aloud
+                </Button>
+              </TooltipTarget>
+            )}
+            {showBooth && (
+              <TooltipTarget className="relative z-[1]" text="Open the full-screen booth for this chapter">
+                <Button variant="ghost" className="text-xs" aria-label={`Open booth for ${title}`} onClick={onBooth}>
+                  <FontAwesomeIcon icon={faExpand} /> Booth
                 </Button>
               </TooltipTarget>
             )}

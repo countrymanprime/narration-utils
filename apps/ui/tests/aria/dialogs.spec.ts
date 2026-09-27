@@ -89,6 +89,11 @@ const MODALS: { name: string; state: [string, string]; snapshot: string }[] = [
     state: ['tracks', 'create-regions-preview'],
     snapshot: 'dialog-create-chapter-regions.aria.yml',
   },
+  {
+    name: 'the booth is the same dialog with a named status region, a Rail landmark and a Booth commands toolbar in place of the control bar',
+    state: ['manuscript', 'booth-default'],
+    snapshot: 'dialog-read-aloud-booth.aria.yml',
+  },
 ];
 
 for (const modal of MODALS) {

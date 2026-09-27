@@ -1,0 +1,42 @@
+# Booth mode (booth-mode-and-companion-panel.prd.md Phase 1, Phase 2): the same dialog as dialog-read-aloud-controls.aria.yml
+# (same title, same Close button, same resume prompt and rail), with FocusShell's four named regions in place of the
+# scrolling body and its non-scrolling control-bar footer - Status (the read/record state, the chapter, word progress, the
+# microphone and, chapter mode only, the read-only REAPER wording), the script as a plain main region (still "Where you
+# stopped" then "Chapter text", same as dialog-read-aloud-resume.aria.yml), the Rail (the same reading panel, now its own
+# landmark instead of the dialog's aside grid) and Commands (the Booth commands toolbar, Play/Pause Kbd-labelled Space).
+# Not `children: equal` at the root the way the shorter dialogs above are: the chapter text inside is too long to list in
+# full, so this is a partial match - the isolation itself is already covered by the shorter dialogs' own root check.
+- main:
+  - alert
+  - status
+- 'dialog "Read aloud: Chapter 1 — Down the Rabbit-Hole"':
+  - 'heading "Read aloud: Chapter 1 — Down the Rabbit-Hole" [level=2]'
+  - button "Close"
+  - region "Status":
+    - text: Ready Chapter 1 — Down the Rabbit-Hole
+    - 'button "Microphone: not chosen"': Choose a microphone…
+    - text: REAPER · Chapter armed Exit booth
+    - img "Esc"
+  - main:
+    - region "Where you stopped":
+      - button "Resume from here"
+      - button "Start from the top"
+      - button "Pick a word"
+    - region "Chapter text":
+      - heading "Chapter 1 — Down the Rabbit-Hole" [level=2]
+      - paragraph:
+        - button "Alice"
+        - text: /was beginning to get very tired/
+  - complementary "Rail":
+    - complementary "Reading panel":
+      - button "Hide reading panel"
+      - tablist "Panel sections":
+        - tab "Key" [selected]
+        - tab "Flags"
+        - tab "Notes"
+        - tab "Story bible"
+  - region "Commands":
+    - toolbar "Booth commands":
+      - button "Play" [disabled]:
+        - img "Space"
+      - button "Stop reading" [disabled]
