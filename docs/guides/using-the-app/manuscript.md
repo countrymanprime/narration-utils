@@ -162,6 +162,19 @@ section the importer recognized stays in the project's data (the Story Bible has
 of Characters) but is never a page you page through in the reader, and a saved or shared link into
 one tells you so instead of landing there.
 
+## Mark up the script
+
+While prepping, select words on one line and choose **Mark up** to note how to read them: **Stress** (a dotted
+underline), **Breath** (one slash after them), **Pause** (two slashes) or **Speaker** (a name chip before them; the
+Story Bible's characters are one press away, or type any name). The marks are kept in the project's
+`narration-utils/prep/markup.json`, separate from the manuscript, so a re-import keeps them. To take a mark off,
+select the same words and choose **Mark up** again: the dialog lists the marks already there, each with **Remove**.
+
+The marks never change the text you select or search. When the words under a mark change (an edited manuscript
+re-imported, say), the mark is not moved to a guess: the line says **Text changed here** and names the mark and the
+words it was on, with a **Remove**; a mark whose line is gone is listed above the chapter. Extra spaces or line breaks
+alone never count as a change.
+
 ## Look up a word
 
 Select one word (a double-click does it) and choose **Look up**. A panel opens on the right with

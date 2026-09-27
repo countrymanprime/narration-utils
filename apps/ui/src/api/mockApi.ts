@@ -24,6 +24,7 @@ import { createDeliveryProfilesMock } from './deliveryProfilesMock';
 import { createDiagnosticsMock } from './diagnosticsMock';
 import { createEditingMock } from './editingMock';
 import { createCleanupActionMock } from './cleanupActionMock';
+import { createPrepMarkupMock } from './prepMarkupMock';
 import { createMockState, type MockApiSeed } from './mockHost/state';
 import { createUpdateMock } from './mockHost/update';
 import { createProjectMock } from './mockHost/project';
@@ -133,6 +134,12 @@ export function createMockApi(
     async (chapterId) => (await findings.findingsList({ analyzer: 'editing', chapterId })).findings,
     initial.cleanupAction,
   );
+  const prepMarkup = createPrepMarkupMock(
+    manuscriptReady,
+    () => s.chapters,
+    () => s.paragraphs,
+    initial.prepMarkup,
+  );
   const { resaveReview, ...measurement } = createMeasureMock(endJob, initial.measure, measurePicked, deliveryProfile, peekDiagnostics, (job) => {
     const review = mockDeliveryReviewFindings(job);
     saveFileFindings(DELIVERY_REVIEW_ANALYZER, review.files, review.findings);
@@ -165,6 +172,7 @@ export function createMockApi(
     // editingCandidateFor in mockFixtures.ts), so Accept/Dismiss/Defer on it go through the real review binding.
     editingCandidates: async (chapterId) => (await findings.findingsList({ analyzer: 'editing', chapterId })).findings,
     ...cleanupAction,
+    ...prepMarkup,
     takeReviewCreateTake: async (request) => ({
       targetItemGuid: request.targetItemGuid,
       newTakeGuid: '{99999999-0000-4000-8000-000000000099}',

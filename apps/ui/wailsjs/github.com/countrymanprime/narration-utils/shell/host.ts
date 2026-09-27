@@ -953,6 +953,28 @@ export function PickupsState(): $CancellablePromise<string> {
 }
 
 /**
+ * PrepMarkupDelete removes one span by its id; a stale span needs nothing else.
+ */
+export function PrepMarkupDelete(chapterID: string, id: string): $CancellablePromise<string> {
+    return $Call.ByID(636931274, chapterID, id);
+}
+
+/**
+ * PrepMarkupList returns a chapter's markup spans, each resolved against the chapter's current text.
+ */
+export function PrepMarkupList(chapterID: string): $CancellablePromise<string> {
+    return $Call.ByID(1627753729, chapterID);
+}
+
+/**
+ * PrepMarkupSave places one span on a line of a chapter: start and end are UTF-16 offsets into the line's text (the
+ * reader's own selection), kind is stress, pause or character_tag, and value is the pause length or the character's name.
+ */
+export function PrepMarkupSave(chapterID: string, paragraphID: string, start: number, end: number, kind: string, value: string): $CancellablePromise<string> {
+    return $Call.ByID(554283720, chapterID, paragraphID, start, end, kind, value);
+}
+
+/**
  * PreviewCandidates reads up to three ranked five-minute preview candidates from the imported manuscript
  * (proofing-preview-suggestion.prd.md Phase 1's preview.Suggest over this file's own adapter). It never runs
  * anything and stores nothing.
