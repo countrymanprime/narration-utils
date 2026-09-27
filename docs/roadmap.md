@@ -60,7 +60,7 @@ catalog, integrity, UX, migration, and acceptance criteria and the
 
 ### Deferred work
 
-- macOS/Linux installers and adapters.
+- macOS and Linux support: removed for now by owner decision D74 ([ADR 0412](adr/0412-windows-is-the-only-supported-platform-for-now.md)), until the app is steadier or someone uses those systems.
 - Languages beyond US English.
 - Team collaboration, cloud analysis, or shared project services.
 - Manuscript Teleprompter beyond what has shipped (listening on a chosen microphone with a local Whisper model, or Moonshine on Windows, word highlighting, and reviewable suspected misreads, skips, extra words and restarts in the read-aloud dialog): a default engine chosen by evaluating both, following live REAPER state, and punch-in from a word; it never edits text or audio automatically. See the [Manuscript Teleprompter brief](architecture/manuscript-teleprompter.md) for the resolved design questions.

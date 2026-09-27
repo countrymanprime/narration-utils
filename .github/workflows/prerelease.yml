@@ -58,8 +58,8 @@ jobs:
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
           echo "tag=v${VERSION}-rc" >> "$GITHUB_OUTPUT"
 
-  # Windows is the supported platform: its build creates the GitHub prerelease, and that is the only
-  # build a release needs. macOS and Linux are optional extras started at the end of the publish job.
+  # Windows is the only supported platform (docs/adr/0412): its build creates the GitHub prerelease, and it is the only
+  # build a release has.
   #
   # The build needs only the UI bundle and the version. It holds no write permission: the job that runs the third-party
   # build tooling (PyInstaller, Wails, NSIS, pnpm) cannot create a release, a tag or an attestation.
@@ -117,7 +117,6 @@ jobs:
     timeout-minutes: 15
     permissions:
       contents: write
-      actions: write # to dispatch the optional macOS and Linux builds
       id-token: write # to sign the build provenance (actions/attest)
       attestations: write # to store it
       artifact-metadata: write # to record the artifact storage record (per the action README)
@@ -176,10 +175,3 @@ jobs:
           node scripts/release/generate-notes.mjs "$TAG"
       - name: Create the prerelease with the Windows zip and setup program
         run: gh release create "$TAG" release-assets/* --target "$GITHUB_SHA" --prerelease --title "$TAG" --notes-file release-notes.md
-      # Each starts its own run, so a failed macOS or Linux build neither turns this run red nor
-      # blocks promotion. Retry one by re-running its workflow, or dispatching it with the tag.
-      - name: Start the optional macOS and Linux builds
-        continue-on-error: true
-        run: |
-          gh workflow run build-macos.yml --ref "$GITHUB_REF_NAME" -f tag="$TAG"
-          gh workflow run build-linux.yml --ref "$GITHUB_REF_NAME" -f tag="$TAG"
