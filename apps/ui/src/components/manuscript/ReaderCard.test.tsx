@@ -10,6 +10,7 @@ function renderCard(overrides: Partial<Parameters<typeof ReaderCard>[0]> = {}) {
   const onToggleExpand = vi.fn();
   const onToggleBookmark = vi.fn();
   const onReadAloud = vi.fn();
+  const onBooth = vi.fn();
   render(
     <ReaderCard
       chapterId="c1"
@@ -21,13 +22,15 @@ function renderCard(overrides: Partial<Parameters<typeof ReaderCard>[0]> = {}) {
       onToggleBookmark={onToggleBookmark}
       showReadAloud
       onReadAloud={onReadAloud}
+      showBooth
+      onBooth={onBooth}
       wordCount={3182}
       {...overrides}
     >
       <p>Body</p>
     </ReaderCard>,
   );
-  return { onToggleExpand, onToggleBookmark, onReadAloud };
+  return { onToggleExpand, onToggleBookmark, onReadAloud, onBooth };
 }
 
 describe('ReaderCard (manuscript-credits-card-parity.prd.md, manuscript-chapter-header-alignment.prd.md)', () => {
@@ -98,11 +101,26 @@ describe('ReaderCard (manuscript-credits-card-parity.prd.md, manuscript-chapter-
     expect(chevronIndex).toBeGreaterThan(actionIndex);
   });
 
-  it('renders an empty, same-width action slot when there is no Read aloud (a row with no action still lines up)', () => {
-    renderCard({ showReadAloud: false, onReadAloud: undefined });
+  it('renders an empty, same-width action slot when there is no Read aloud or Booth (a row with no action still lines up)', () => {
+    renderCard({ showReadAloud: false, onReadAloud: undefined, showBooth: false, onBooth: undefined });
     expect(screen.queryByRole('button', { name: /Read .* aloud/ })).toBeNull();
-    const slots = document.querySelectorAll('.w-32');
+    expect(screen.queryByRole('button', { name: /Open booth for/ })).toBeNull();
+    const slots = document.querySelectorAll('.w-56');
     expect(slots.length).toBe(1);
+  });
+
+  it('pressing Booth opens the booth, not the card', async () => {
+    const user = userEvent.setup();
+    const { onBooth, onToggleExpand } = renderCard();
+    await user.click(screen.getByRole('button', { name: 'Open booth for Chapter 2' }));
+    expect(onBooth).toHaveBeenCalledTimes(1);
+    expect(onToggleExpand).not.toHaveBeenCalled();
+  });
+
+  it('renders no Booth button when showBooth is false, even with Read aloud shown', () => {
+    renderCard({ showBooth: false, onBooth: undefined });
+    expect(screen.getByRole('button', { name: 'Read Chapter 2 aloud' })).toBeTruthy();
+    expect(screen.queryByRole('button', { name: /Open booth for/ })).toBeNull();
   });
 
   it('shows a chevron that flips with expanded state', () => {
