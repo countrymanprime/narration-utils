@@ -20,11 +20,11 @@ func TestEveryRegisteredBackendPassesTheSuite(t *testing.T) {
 	}
 }
 
-func TestOnlyWindowsHasABackendToday(t *testing.T) {
-	// The teleprompter sidecar lists and opens microphones through FFmpeg's dshow (devices.py); off Windows it has none.
+func TestWindowsAndDarwinEachHaveTheirOwnBackendTodayAndLinuxHasNone(t *testing.T) {
+	// The teleprompter sidecar lists and opens microphones through FFmpeg's dshow on Windows and avfoundation on macOS; Linux has none.
 	for platform, want := range map[string][]string{
 		"windows": {"dshow"},
-		"darwin":  {},
+		"darwin":  {"coreaudio"},
 		"linux":   {},
 	} {
 		if got := captureport.Backends.Names(platform); !reflect.DeepEqual(got, want) {
@@ -43,8 +43,18 @@ func TestForWindowsIsDshow(t *testing.T) {
 	}
 }
 
+func TestForDarwinIsCoreAudio(t *testing.T) {
+	entry, err := captureport.For("darwin")
+	if err != nil {
+		t.Fatalf("For(darwin): %v", err)
+	}
+	if entry.Name != captureport.CoreAudio || entry.New().Name() != "coreaudio" {
+		t.Fatalf("For(darwin) = %q, want coreaudio", entry.Name)
+	}
+}
+
 func TestAPlatformWithoutABackendIsRefusedWithANotSupportedError(t *testing.T) {
-	for _, platform := range []string{"darwin", "linux"} {
+	for _, platform := range []string{"linux"} {
 		_, err := captureport.For(platform)
 		var refusal *port.NotSupportedError
 		if !errors.As(err, &refusal) || !errors.Is(err, port.ErrNotSupported) {
@@ -72,7 +82,7 @@ func TestAnUnknownBackendIsRefusedWithANotSupportedError(t *testing.T) {
 func TestANewBackendIsOneRowAndPassesTheSuiteWithNoOtherEdit(t *testing.T) {
 	backends := captureport.NewRegistry()
 	for _, row := range []struct{ name, label, platform string }{
-		{"coreaudio", "Core Audio", "darwin"},
+		{"pulse", "PulseAudio", "linux"},
 		{"wasapi", "WASAPI", "windows"},
 	} {
 		name := row.name
@@ -85,13 +95,13 @@ func TestANewBackendIsOneRowAndPassesTheSuiteWithNoOtherEdit(t *testing.T) {
 	for _, entry := range backends.Entries() {
 		t.Run(entry.Name, func(t *testing.T) { captureporttest.Run(t, entry) })
 	}
-	if entry, err := captureport.ForIn(backends, "darwin"); err != nil || entry.Name != "coreaudio" {
-		t.Errorf("ForIn(darwin) = %q, %v; want coreaudio", entry.Name, err)
+	if entry, err := captureport.ForIn(backends, "linux"); err != nil || entry.Name != "pulse" {
+		t.Errorf("ForIn(linux) = %q, %v; want pulse", entry.Name, err)
 	}
 	if entry, err := captureport.ForIn(backends, "windows"); err != nil || entry.Name != "dshow" {
 		t.Errorf("a later row must not displace the default: ForIn(windows) = %q, %v; want dshow", entry.Name, err)
 	}
-	if _, err := captureport.For("darwin"); err == nil {
+	if _, err := captureport.For("linux"); err == nil {
 		t.Error("registering on a new registry changed the program's")
 	}
 }

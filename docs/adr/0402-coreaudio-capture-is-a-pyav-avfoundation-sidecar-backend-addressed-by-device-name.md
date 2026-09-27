@@ -1,6 +1,6 @@
 # 0402. CoreAudio capture is a PyAV `avfoundation` sidecar backend, addressed by device name
 
-**Status:** Proposed
+**Status:** Accepted
 **Date:** 2026-09-27
 
 ## Context
