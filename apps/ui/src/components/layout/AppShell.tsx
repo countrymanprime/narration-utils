@@ -33,7 +33,7 @@ const NAV = [
   // Time, pace and the delivery date by chapter and stage (production-tracking.prd.md Phase 4). Gated on a manuscript: the board and
   // the timer are per chapter.
   { name: 'Production', path: '/production', icon: faStopwatch, requiresManuscript: true, requiresDaw: false },
-  { name: 'Manuscript', path: '/manuscript', icon: faFileLines, requiresManuscript: true, requiresDaw: false },
+  { name: 'Script', path: '/script', icon: faFileLines, requiresManuscript: true, requiresDaw: false },
   { name: 'Proofing', path: '/proofing', icon: faWaveSquare, requiresManuscript: true, requiresDaw: true },
   { name: 'Story Bible', path: '/story-bible', icon: faBookOpen, requiresManuscript: true, requiresDaw: false },
   { name: 'Teleprompter', path: '/teleprompter', icon: faScroll, requiresManuscript: true, requiresDaw: false },
@@ -215,9 +215,7 @@ export function AppShell({
               </button>
             </TooltipTarget>
           </header>
-          <div className={`scroll-chrome-hidden relative flex-1 overflow-y-auto ${isActivePath(pathname, '/manuscript') ? 'p-0' : 'p-4 md:p-6'}`}>
-            {children}
-          </div>
+          <div className={`scroll-chrome-hidden relative flex-1 overflow-y-auto ${isActivePath(pathname, '/script') ? 'p-0' : 'p-4 md:p-6'}`}>{children}</div>
         </main>
       </div>
     </div>

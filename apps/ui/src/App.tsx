@@ -16,7 +16,7 @@ import { useBoothRecording } from './components/teleprompter/useBoothRecording';
 import { ConfirmDialog } from './components/primitives/ConfirmDialog';
 import { ShortcutSheet } from './components/help/ShortcutSheet';
 import { Home } from './components/home/Home';
-import { Manuscript } from './components/manuscript/Manuscript';
+import { ScriptPage } from './components/script/ScriptPage';
 import { ProjectPicker } from './components/project/ProjectPicker';
 import { Guide } from './components/storybible/Guide';
 import { Transcript } from './components/proofing/Transcript';
@@ -37,6 +37,12 @@ import { useCommand } from './input/useCommand';
 
 // The Settings categories another page can open Settings at, by URL anchor.
 const SETTINGS_ANCHORS: Record<string, string> = { '#credits': 'Credits', '#delivery': 'Delivery', '#teleprompter': 'Teleprompter' };
+
+/** A retired route's redirect (ADR 0407): the same query and hash on the page that replaced it, replacing the entry so Back never lands on it. */
+function RedirectKeepingLocation({ to }: { to: string }) {
+  const { search, hash } = useLocation();
+  return <Navigate to={`${to}${search}${hash}`} replace />;
+}
 
 const LIVE_UPDATES_DEGRADED = 'Some live updates from the desktop host could not be read, so what you see may be out of date. Reopen the page to refresh it.';
 
@@ -376,9 +382,10 @@ function AppRoutes() {
   // path params - "#p123" points at paragraph 123 (its globally unique
   // index, assigned when the manuscript is imported), "#c<chapter-id>" at a
   // chapter with no specific line, and "#<entityId>" at a Story Bible entry.
-  // See Manuscript.tsx/Guide.tsx for where these are consumed.
-  const goToManuscript = (chapter: string, paragraph?: number) =>
-    guardedNavigate(`/manuscript#${paragraph !== undefined ? `p${paragraph}` : `c${encodeURIComponent(chapter)}`}`);
+  // See script/ScriptPage.tsx and Guide.tsx for where these are consumed. The pages that call it still name the prop
+  // `goToManuscript` (it opens the manuscript's text, now on the Script page).
+  const goToScript = (chapter: string, paragraph?: number) =>
+    guardedNavigate(`/script#${paragraph !== undefined ? `p${paragraph}` : `c${encodeURIComponent(chapter)}`}`);
   const goToStoryBible = (entityId: string) => guardedNavigate(`/story-bible#${encodeURIComponent(entityId)}`);
   // "Open in workspace" (edit-and-proof-workspace.prd.md Phase 4): from Review, Home and the Manuscript. findingId is
   // the deep link's ?finding=, so the workspace lands on the flag that finding backs (Navigation and deep links).
@@ -392,7 +399,7 @@ function AppRoutes() {
     // The chapter workspace reads the chapter's paragraphs and alignment, both manuscript-scoped, same as the fixed
     // routes below (edit-and-proof-workspace.prd.md Phase 2's route is the app's first parameterised path, so it
     // needs its own startsWith check rather than joining the exact-match list).
-    if (!data.manuscript && (['/manuscript', '/proofing', '/story-bible', '/teleprompter'].includes(nextPath) || nextPath.startsWith('/tracks/chapter/'))) {
+    if (!data.manuscript && (['/script', '/proofing', '/story-bible', '/teleprompter'].includes(nextPath) || nextPath.startsWith('/tracks/chapter/'))) {
       navigate('/', { replace: true });
       return;
     }
@@ -450,26 +457,24 @@ function AppRoutes() {
                     data={data}
                     go={guardedNavigate}
                     notify={setNotice}
-                    goToManuscript={goToManuscript}
+                    goToManuscript={goToScript}
                     goToWorkspace={goToWorkspace}
                     refreshBootstrap={refreshBootstrap}
                   />
                 }
               />
               <Route
-                path="/manuscript"
+                path="/script"
                 element={
                   data.manuscript ? (
-                    <Manuscript notify={setNotice} focusStoryBibleEntity={goToStoryBible} goToWorkspace={goToWorkspace} projectFolder={data.projectFolder} />
+                    <ScriptPage notify={setNotice} focusStoryBibleEntity={goToStoryBible} goToWorkspace={goToWorkspace} projectFolder={data.projectFolder} />
                   ) : (
                     <Navigate to="/" replace />
                   )
                 }
               />
-              <Route
-                path="/story-bible"
-                element={data.manuscript ? <Guide notify={setNotice} goToManuscript={goToManuscript} /> : <Navigate to="/" replace />}
-              />
+              <Route path="/manuscript" element={<RedirectKeepingLocation to="/script" />} />
+              <Route path="/story-bible" element={data.manuscript ? <Guide notify={setNotice} goToManuscript={goToScript} /> : <Navigate to="/" replace />} />
               <Route
                 path="/proofing"
                 element={
@@ -478,7 +483,7 @@ function AppRoutes() {
                       state={data.transcript}
                       notify={setNotice}
                       goHome={() => guardedNavigate('/')}
-                      goToManuscript={goToManuscript}
+                      goToManuscript={goToScript}
                       dawFileLinked={data.dawFileLinked}
                       refreshKey={data.manuscript ? `${data.manuscript.id}:${data.manuscript.importedAt}` : 'no-manuscript'}
                     />
@@ -499,7 +504,7 @@ function AppRoutes() {
                   <ReviewPage
                     notify={setNotice}
                     hasManuscript={Boolean(data.manuscript)}
-                    goToManuscript={goToManuscript}
+                    goToManuscript={goToScript}
                     goToStoryBible={goToStoryBible}
                     goToWorkspace={(chapterId, findingId) => goToWorkspace(chapterId, findingId)}
                     goToDelivery={goToDelivery}

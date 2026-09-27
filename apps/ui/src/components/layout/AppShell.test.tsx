@@ -30,7 +30,7 @@ describe('AppShell nav gating (PRD project-workspace-and-daw-link.prd.md, W16/W1
   it('disables only Proofing among the DAW-independent pages when there is a manuscript but no linked DAW file', () => {
     renderShell({ hasManuscript: true, dawFileLinked: false });
     expect(screen.getAllByRole('button', { name: 'Proofing' }).every((button) => (button as HTMLButtonElement).disabled)).toBe(true);
-    for (const name of ['Manuscript', 'Story Bible', 'Teleprompter', 'Tracks', 'Home']) {
+    for (const name of ['Script', 'Story Bible', 'Teleprompter', 'Tracks', 'Home']) {
       expect(screen.getAllByRole('button', { name }).every((button) => (button as HTMLButtonElement).disabled)).toBe(false);
     }
   });
