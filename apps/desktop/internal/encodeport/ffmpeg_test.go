@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"math"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"slices"
 	"strconv"
@@ -56,13 +57,13 @@ func fakeExecutable(t *testing.T) encodeport.Locator {
 	return func() (string, error) { return exe, nil }
 }
 
-func TestTheFFmpegRowIsRegisteredForMP3AndM4BOnWindows(t *testing.T) {
+func TestTheFFmpegRowIsRegisteredForMP3M4BAndFlacOnWindows(t *testing.T) {
 	entry, err := encodeport.Encoders.Lookup(encodeport.FFmpegName)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !slices.Equal(entry.Descriptor.Modes, []string{"mp3", "m4b"}) || !slices.Equal(entry.Descriptor.Platforms, []string{"windows"}) {
-		t.Errorf("descriptor = %+v, want mp3 and m4b on windows", entry.Descriptor)
+	if !slices.Equal(entry.Descriptor.Modes, []string{"mp3", "m4b", "flac"}) || !slices.Equal(entry.Descriptor.Platforms, []string{"windows"}) {
+		t.Errorf("descriptor = %+v, want mp3, m4b and flac on windows", entry.Descriptor)
 	}
 	if got := encodeport.Encoders.Names("windows"); !slices.Equal(got, []string{"ffmpeg"}) {
 		t.Errorf("Encoders.Names(windows) = %v, want [ffmpeg]", got)
@@ -443,6 +444,231 @@ func TestAnM4BWhoseChaptersDoNotMatchWhatWasAskedIsRefusedAndRemoved(t *testing.
 	assertOnly(t, dir, "book.wav")
 }
 
+// The FLAC tests below are render-encode-master Phase 7 (Could, Q7): fakeFFmpeg's flac branch (further down this file) stands
+// in for FFmpeg's own native "flac" encoder, writing a well-formed STREAMINFO block from the source WAV's own exact frame
+// count (via WAVReader.Skip, not an estimate) so checkFLAC reads it back the same way it would a real encode's output.
+
+func TestEncodingAFixtureWAVWritesAFLACAtTheSourcesSampleRateAndChannels(t *testing.T) {
+	dir := t.TempDir()
+	wav := writeWAV(t, dir, "book.wav", 48000, 2, 3*time.Second)
+	dst := filepath.Join(dir, "book.flac")
+	if err := encodeport.NewFFmpeg(fakeExecutable(t), nil).Encode(context.Background(), wav, dst, encodeport.Spec{Format: "flac"}); err != nil {
+		t.Fatal(err)
+	}
+	if info, err := os.Stat(dst); err != nil || info.Size() == 0 {
+		t.Fatalf("Stat(%s) = %v, %v, want a non-empty file", dst, info, err)
+	}
+}
+
+func TestTheEncoderAsksFFmpegForNativeFLACWithNoBitrate(t *testing.T) {
+	dir := t.TempDir()
+	wav := writeWAV(t, dir, "book.wav", 48000, 2, time.Second)
+	record := filepath.Join(dir, "args.txt")
+	t.Setenv(fakeArgsEnv, record)
+	spec := encodeport.Spec{Format: "flac", SampleRateHz: 44100, Channels: 1}
+	if err := encodeport.NewFFmpeg(fakeExecutable(t), nil).Encode(context.Background(), wav, filepath.Join(dir, "out.flac"), spec); err != nil {
+		t.Fatal(err)
+	}
+	body, err := os.ReadFile(record)
+	if err != nil {
+		t.Fatal(err)
+	}
+	args := strings.Join(strings.Split(strings.TrimSpace(string(body)), "\n"), " ")
+	for _, want := range []string{
+		"-nostdin", "-protocol_whitelist file", "-i file:" + wav, "-map 0:a:0", "-map_metadata -1",
+		"-c:a flac", "-ar 44100", "-ac 1", "-f flac", "-progress pipe:1",
+	} {
+		if !strings.Contains(args, want) {
+			t.Errorf("the command line %q lacks %q", args, want)
+		}
+	}
+	if strings.Contains(args, "-b:a") {
+		t.Errorf("the command line %q asks for a bitrate, which has no meaning for lossless FLAC", args)
+	}
+}
+
+func TestEncodingAFLACWithNoSampleRateOrChannelsAskedKeepsTheWAVsOwn(t *testing.T) {
+	dir := t.TempDir()
+	wav := writeWAV(t, dir, "book.wav", 48000, 2, time.Second)
+	record := filepath.Join(dir, "args.txt")
+	t.Setenv(fakeArgsEnv, record)
+	dst := filepath.Join(dir, "out.flac")
+	if err := encodeport.NewFFmpeg(fakeExecutable(t), nil).Encode(context.Background(), wav, dst, encodeport.Spec{Format: "flac"}); err != nil {
+		t.Fatal(err)
+	}
+	body, err := os.ReadFile(record)
+	if err != nil {
+		t.Fatal(err)
+	}
+	args := string(body)
+	if strings.Contains(args, "-ar") || strings.Contains(args, "-ac") {
+		t.Errorf("the command line %q forces a rate or channel count the spec left open", args)
+	}
+}
+
+func TestProgressRisesToTheWAVsLengthForFLAC(t *testing.T) {
+	dir := t.TempDir()
+	wav := writeWAV(t, dir, "book.wav", 44100, 1, 2*time.Second)
+	var mu sync.Mutex
+	var reports [][2]time.Duration
+	spec := encodeport.Spec{Format: "flac", Progress: func(done, total time.Duration) {
+		mu.Lock()
+		defer mu.Unlock()
+		reports = append(reports, [2]time.Duration{done, total})
+	}}
+	if err := encodeport.NewFFmpeg(fakeExecutable(t), nil).Encode(context.Background(), wav, filepath.Join(dir, "out.flac"), spec); err != nil {
+		t.Fatal(err)
+	}
+	mu.Lock()
+	defer mu.Unlock()
+	if len(reports) < 2 {
+		t.Fatalf("progress was reported %d time(s), want a report per FFmpeg progress block and a last one", len(reports))
+	}
+	last := reports[len(reports)-1]
+	if last[0] != last[1] || last[1] < 1900*time.Millisecond || last[1] > 2100*time.Millisecond {
+		t.Errorf("the last report = %v, want done == total == about 2 s", last)
+	}
+}
+
+func TestCancellingMidFLACEncodeLeavesNoFileAtTheDestinationAndNoPartialBesideIt(t *testing.T) {
+	dir := t.TempDir()
+	wav := writeWAV(t, dir, "book.wav", 44100, 1, time.Second)
+	dst := filepath.Join(dir, "book.flac")
+	t.Setenv(fakeModeEnv, "hang")
+	ctx, cancel := context.WithCancel(context.Background())
+	started := make(chan struct{})
+	var once sync.Once
+	spec := encodeport.Spec{Format: "flac", Progress: func(time.Duration, time.Duration) { once.Do(func() { close(started) }) }}
+	done := make(chan error, 1)
+	go func() { done <- encodeport.NewFFmpeg(fakeExecutable(t), nil).Encode(ctx, wav, dst, spec) }()
+	select {
+	case <-started:
+	case <-time.After(10 * time.Second):
+		t.Fatal("the fake FFmpeg never reported progress")
+	}
+	cancel()
+	select {
+	case err := <-done:
+		if !errors.Is(err, context.Canceled) {
+			t.Errorf("Encode after cancel = %v, want context.Canceled", err)
+		}
+	case <-time.After(10 * time.Second):
+		t.Fatal("Encode did not return after its context was cancelled")
+	}
+	assertOnly(t, dir, "book.wav")
+}
+
+func TestAFLACWhoseStreamInfoDoesNotMatchWhatWasAskedIsRefusedAndRemoved(t *testing.T) {
+	dir := t.TempDir()
+	wav := writeWAV(t, dir, "book.wav", 44100, 1, time.Second)
+	t.Setenv(fakeModeEnv, "wrongflac")
+	spec := encodeport.Spec{Format: "flac", Channels: 1}
+	err := encodeport.NewFFmpeg(fakeExecutable(t), nil).Encode(context.Background(), wav, filepath.Join(dir, "book.flac"), spec)
+	if err == nil {
+		t.Fatal("Encode accepted a FLAC whose written STREAMINFO does not match its Spec")
+	}
+	assertOnly(t, dir, "book.wav")
+}
+
+func TestAFileThatIsNotFLACIsRefusedAndRemoved(t *testing.T) {
+	dir := t.TempDir()
+	wav := writeWAV(t, dir, "book.wav", 44100, 1, time.Second)
+	t.Setenv(fakeModeEnv, "garbage")
+	err := encodeport.NewFFmpeg(fakeExecutable(t), nil).Encode(context.Background(), wav, filepath.Join(dir, "book.flac"), encodeport.Spec{Format: "flac"})
+	if err == nil {
+		t.Fatal("Encode accepted a file with no FLAC marker")
+	}
+	assertOnly(t, dir, "book.wav")
+}
+
+func TestASpecNoFLACCanHaveIsRefusedBeforeFFmpegRuns(t *testing.T) {
+	dir := t.TempDir()
+	wav := writeWAV(t, dir, "book.wav", 44100, 1, time.Second)
+	never := func() (string, error) { t.Error("FFmpeg was located for a spec it cannot write"); return "", nil }
+	for name, spec := range map[string]encodeport.Spec{
+		"a bitrate, which is meaningless for lossless FLAC": {Format: "flac", BitrateKbps: 192},
+		"three channels":  {Format: "flac", Channels: 3},
+		"a negative rate": {Format: "flac", SampleRateHz: -1},
+	} {
+		if err := encodeport.NewFFmpeg(never, nil).Encode(context.Background(), wav, filepath.Join(dir, "out.flac"), spec); err == nil {
+			t.Errorf("%s: Encode accepted %+v", name, spec)
+		}
+	}
+	assertOnly(t, dir, "book.wav")
+}
+
+// TestTheRealFFmpegRoundTripsFLACLosslessly is Phase 7's own verification as a test, alongside Phase 0's and Phase 2's: run it
+// with NARRATION_UTILS_FFMPEG set to the catalogued ffmpeg.exe (or any FFmpeg with a native "flac" encoder) to prove the real
+// binary's FLAC output decodes back to the exact PCM samples it was given - the PRD's own "FLAC round-trips" test, run against
+// this encoder's own fixture rather than a platform profile that does not exist yet (Q7's recommendation is v1 has none).
+func TestTheRealFFmpegRoundTripsFLACLosslessly(t *testing.T) {
+	executable := os.Getenv(realFFmpegEnv)
+	if executable == "" {
+		t.Skipf("set %s to an FFmpeg executable to run the real encode", realFFmpegEnv)
+	}
+	t.Setenv(fakeFFmpegEnv, "")
+	locate := func() (string, error) { return executable, nil }
+
+	dir := t.TempDir()
+	wav := writeTone(t, dir, 48000, 2, 3*time.Second)
+	flacPath := filepath.Join(dir, "book.flac")
+	if err := encodeport.NewFFmpeg(locate, nil).Encode(context.Background(), wav, flacPath, encodeport.Spec{Format: "flac"}); err != nil {
+		t.Fatal(err)
+	}
+
+	decoded := filepath.Join(dir, "decoded.wav")
+	cmd := exec.Command(executable, "-hide_banner", "-nostdin", "-nostats", "-loglevel", "error", "-y",
+		"-i", flacPath, "-c:a", "pcm_s16le", "-f", "wav", decoded)
+	if out, err := cmd.CombinedOutput(); err != nil {
+		t.Fatalf("decoding the FLAC back with FFmpeg: %v: %s", err, out)
+	}
+
+	source := readAllSamples(t, wav)
+	roundTripped := readAllSamples(t, decoded)
+	if len(source) != len(roundTripped) {
+		t.Fatalf("the round trip has %d frame(s), the source %d", len(roundTripped), len(source))
+	}
+	for i := range source {
+		for c := range source[i] {
+			if source[i][c] != roundTripped[i][c] {
+				t.Fatalf("frame %d channel %d = %v after the round trip, source was %v: FLAC did not encode losslessly", i, c, roundTripped[i][c], source[i][c])
+			}
+		}
+	}
+}
+
+// readAllSamples decodes path (a 16-bit PCM WAV) in full, for TestTheRealFFmpegRoundTripsFLACLosslessly's exact comparison.
+func readAllSamples(t *testing.T, path string) [][]float64 {
+	t.Helper()
+	file, err := os.Open(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = file.Close() }()
+	reader, err := measure.NewWAVReader(file)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var frames [][]float64
+	for {
+		block, err := reader.Read(4096)
+		if len(block) > 0 {
+			channels := len(block)
+			for i := range block[0] {
+				frame := make([]float64, channels)
+				for c := range block {
+					frame[c] = block[c][i]
+				}
+				frames = append(frames, frame)
+			}
+		}
+		if err != nil {
+			break
+		}
+	}
+	return frames
+}
+
 func TestAFileThatIsNotAWAVIsRefused(t *testing.T) {
 	dir := t.TempDir()
 	notWAV := filepath.Join(dir, "chapter.wav")
@@ -684,11 +910,17 @@ func fakeFFmpeg(args []string) int {
 		return 1
 	}
 	info, _ := in.Stat()
-	_ = in.Close()
 	format := reader.Format()
+	// totalFrames is the source's own exact frame count (Skip discards without decoding), for fakeFLAC's STREAMINFO - unlike
+	// seconds below, not an estimate from the file's byte size.
+	totalFrames, _ := reader.Skip(math.MaxInt64)
+	_ = in.Close()
 	seconds := float64(info.Size()) / float64(format.SampleRate*format.Channels*format.BitsPerSample/8)
-	if option("-c:a", "libmp3lame") == "aac" {
+	switch option("-c:a", "libmp3lame") {
+	case "aac":
 		return fakeM4B(args, out, seconds)
+	case "flac":
+		return fakeFLAC(args, out, format, totalFrames, seconds)
 	}
 	bitrate, _ := strconv.Atoi(strings.TrimSuffix(option("-b:a", "192k"), "k"))
 	rate, _ := strconv.Atoi(option("-ar", strconv.Itoa(format.SampleRate)))
@@ -886,4 +1118,64 @@ func mp4box(typ string, parts ...[]byte) []byte {
 	binary.BigEndian.PutUint32(b[0:4], uint32(8+len(payload)))
 	copy(b[4:8], typ)
 	return append(b, payload...)
+}
+
+// fakeFLAC stands in for FFmpeg's native "flac" encoder (render-encode-master Phase 7): it writes a minimal but well-formed
+// FLAC file (the "fLaC" marker plus a single STREAMINFO metadata block) whose sample rate, channel count and total sample
+// count encodeport.checkFLAC reads back, mirroring fakeM4B's own stand-in for the "ipod" muxer. format is the source WAV's
+// own (measure.Format), used when args left -ar/-ac open (matching checkFLAC's own fallback), and totalFrames is the source's
+// exact frame count (from WAVReader.Skip in fakeFFmpeg, not an estimate).
+func fakeFLAC(args []string, out string, format measure.Format, totalFrames int64, seconds float64) int {
+	option := func(name, fallback string) string {
+		if i := slices.Index(args, name); i >= 0 && i+1 < len(args) {
+			return args[i+1]
+		}
+		return fallback
+	}
+	rate, _ := strconv.Atoi(option("-ar", strconv.Itoa(format.SampleRate)))
+	channels, _ := strconv.Atoi(option("-ac", strconv.Itoa(format.Channels)))
+
+	switch os.Getenv(fakeModeEnv) {
+	case "fail":
+		_ = os.WriteFile(out, []byte("half a flac"), 0o600)
+		fmt.Fprintln(os.Stderr, "the fake encoder broke")
+		return 3
+	case "hang":
+		_ = os.WriteFile(out, []byte("partial flac"), 0o600)
+		fmt.Printf("out_time_us=%d\nprogress=continue\n", 100000)
+		time.Sleep(time.Minute)
+		return 0
+	case "garbage":
+		_ = os.WriteFile(out, bytes.Repeat([]byte("not audio "), 100), 0o600)
+		return 0
+	case "wrongflac":
+		// Writes a channel count other than what was asked, so checkFLAC's read-back disagrees with the Spec - proving it
+		// reads what FFmpeg actually wrote rather than trusting the request.
+		channels = 3 - channels // 1 <-> 2
+	}
+	for step := 1; step <= 4; step++ {
+		fmt.Printf("out_time_us=%d\nprogress=continue\n", int64(seconds*1e6)*int64(step)/4)
+	}
+	fmt.Print("progress=end\n")
+	if err := os.WriteFile(out, fakeFLACBytes(rate, channels, format.BitsPerSample, totalFrames), 0o600); err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		return 1
+	}
+	return 0
+}
+
+// fakeFLACBytes is a minimal FLAC stream: the "fLaC" marker, then one (last) STREAMINFO metadata block (RFC 9639 §8.1-8.2)
+// with no block size/frame size bounds (left zero, meaning unknown) and the given sample rate, channel count, bit depth and
+// total sample count packed the way readFLACStreamInfo (encodeport/flac.go) reads them back, followed by a few placeholder
+// bytes standing in for frame data no test here reads.
+func fakeFLACBytes(sampleRate, channels, bitsPerSample int, totalSamples int64) []byte {
+	var b bytes.Buffer
+	b.WriteString("fLaC")
+	b.Write([]byte{0x80, 0x00, 0x00, 34}) // last-metadata-block flag set, block type 0 (STREAMINFO), length 34
+	body := make([]byte, 34)
+	packed := uint64(sampleRate)<<44 | uint64(channels-1)<<41 | uint64(bitsPerSample-1)<<36 | (uint64(totalSamples) & 0xFFFFFFFFF)
+	binary.BigEndian.PutUint64(body[10:18], packed)
+	b.Write(body)
+	b.Write(bytes.Repeat([]byte{0x00}, 8))
+	return b.Bytes()
 }
