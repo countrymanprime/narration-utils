@@ -64,16 +64,18 @@ func (f *FFmpeg) Name() string { return FFmpegName }
 
 // ffmpegRow is what the registered row's New builds from: set once by the host at start (UseFFmpeg), read on each New.
 var ffmpegRow struct {
-	sync.RWMutex
-	locate     Locator
+	mu sync.RWMutex
+	// +checklocks:mu
+	locate Locator
+	// +checklocks:mu
 	supervisor *process.Supervisor
 }
 
 // UseFFmpeg tells the registered FFmpeg row where to find the executable and which supervisor runs it. The host calls it once at
 // start, when the asset registry is built; until then the row answers ErrEncoderNotInstalled.
 func UseFFmpeg(locate Locator, supervisor *process.Supervisor) {
-	ffmpegRow.Lock()
-	defer ffmpegRow.Unlock()
+	ffmpegRow.mu.Lock()
+	defer ffmpegRow.mu.Unlock()
 	ffmpegRow.locate, ffmpegRow.supervisor = locate, supervisor
 }
 
@@ -85,8 +87,8 @@ func init() {
 		// Windows only: the catalogued build is a Windows executable (ADR 0342); the PRD is Windows-first.
 		Descriptor: port.Descriptor{Label: "FFmpeg (LAME MP3)", Platforms: []string{"windows"}, Modes: []string{"mp3"}},
 		New: func() Encoder {
-			ffmpegRow.RLock()
-			defer ffmpegRow.RUnlock()
+			ffmpegRow.mu.RLock()
+			defer ffmpegRow.mu.RUnlock()
 			locate, supervisor := ffmpegRow.locate, ffmpegRow.supervisor
 			if locate == nil {
 				locate = notInstalled
