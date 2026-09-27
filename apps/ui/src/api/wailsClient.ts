@@ -87,6 +87,8 @@ import {
   teleprompterFlagFindingsSchema,
   teleprompterLocateResultSchema,
   teleprompterPunchResultSchema,
+  teleprompterResumeFollowEventSchema,
+  teleprompterResumeFollowSchema,
   teleprompterStartResultSchema,
   teleprompterStateSchema,
 } from './schemas/teleprompter';
@@ -550,5 +552,9 @@ export const wailsClient: NarrationApi = {
     decode(teleprompterLocateResultSchema, 'TeleprompterLocate', host.TeleprompterLocate(chapterId, options?.trackGuid ?? '', options?.model ?? '')),
   subscribeTeleprompterEvent: subscribeTeleprompterEvents,
   subscribeTeleprompterState: (onState) => subscribeChecked('teleprompter:state', teleprompterStateSchema, onState),
+  teleprompterResumeFollow: (chapterId, trackGuid) =>
+    decode(teleprompterResumeFollowSchema, 'TeleprompterResumeFollow', host.TeleprompterResumeFollow(chapterId, trackGuid ?? '')),
+  teleprompterResumeUnfollow: () => decode(teleprompterResumeFollowSchema, 'TeleprompterResumeUnfollow', host.TeleprompterResumeUnfollow()),
+  subscribeTeleprompterResumeFollow: (onEvent) => subscribeChecked('teleprompter_resume_follow', teleprompterResumeFollowEventSchema, onEvent),
   mediaUrl: (sourceFile) => `${mediaRoute}?path=${encodeURIComponent(sourceFile)}`,
 };

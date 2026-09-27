@@ -16,7 +16,9 @@
       ],
       "shorter": true,
       "warnings": [
-        "This chapter is shorter than the target length even in full."
+        "This chapter is shorter than the target length even in full.",
+        "Text only: this chapter's recording coverage is not current.",
+        "Text only: this chapter's audio is not mapped to paragraphs."
       ],
       "wordCount": 30
     },
@@ -35,7 +37,9 @@
       ],
       "shorter": true,
       "warnings": [
-        "This chapter is shorter than the target length even in full."
+        "This chapter is shorter than the target length even in full.",
+        "Text only: this chapter's recording coverage is not current.",
+        "Text only: this chapter's audio is not mapped to paragraphs."
       ],
       "wordCount": 22
     }

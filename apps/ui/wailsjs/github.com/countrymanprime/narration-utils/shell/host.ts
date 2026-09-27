@@ -1386,8 +1386,10 @@ export function TeleprompterDevices(): $CancellablePromise<string> {
 /**
  * TeleprompterLocate finds where to resume reading chapterID from what is already recorded (teleprompter-manuscript-
  * integration PRD Phase 9, ADR 0111): the chapter's track (the matcher's confident track, or trackGUID when the
- * narrator picked one), where its audio ends as of the .rpp's last save (Phase 8), and the last
- * teleprompter.DefaultTailSeconds before that end transcribed and placed in the chapter by the sidecar. model is the
+ * narrator picked one), where on it REAPER is now (the edit cursor on its recorded audio, else the end of that audio,
+ * read-aloud-resume-from-daw PRD Phase 4, ADR 0349) or, when REAPER cannot say, where its audio ends as of the .rpp's
+ * last save (Phase 8), and the last teleprompter.DefaultTailSeconds before that time transcribed and placed in the
+ * chapter by the sidecar. While REAPER records onto the track it answers recording and locates nothing. model is the
  * Whisper model id ("" for the teleprompter's default); like TeleprompterStart it answers asset_required instead of
  * downloading one, but only once there is audio to read. Every other answer carries the prompter's last reading and the
  * reconciled verdict (PRD Phase 3). It only reads: nothing is recorded, moved or linked.
@@ -1450,6 +1452,24 @@ export function TeleprompterPunchPreview(word: number): $CancellablePromise<stri
  */
 export function TeleprompterReaperInput(): $CancellablePromise<string> {
     return $Call.ByID(3054312412);
+}
+
+/**
+ * TeleprompterResumeFollow starts following REAPER for chapterID's resume prompt (read-aloud-resume-from-daw PRD Phase 5,
+ * ADR 0350), replacing any follow already running. trackGUID is the track the prompt's locate read ("" for the chapter's
+ * matched track); like TeleprompterLocate, a picked track must be one of the selected project's. It answers whether it
+ * follows: not with no track to follow or no way to ask REAPER, which is an answer, not an error.
+ */
+export function TeleprompterResumeFollow(chapterID: string, trackGUID: string): $CancellablePromise<string> {
+    return $Call.ByID(1754048677, chapterID, trackGUID);
+}
+
+/**
+ * TeleprompterResumeUnfollow stops following REAPER (the prompt went away, or the dialog closed). It is safe to call
+ * with nothing followed.
+ */
+export function TeleprompterResumeUnfollow(): $CancellablePromise<string> {
+    return $Call.ByID(3143603774);
 }
 
 /**

@@ -11,6 +11,8 @@ import {
   teleprompterPunchResultSchema,
   teleprompterReadingSchema,
   teleprompterReaperInputSchema,
+  teleprompterResumeFollowEventSchema,
+  teleprompterResumeFollowSchema,
   teleprompterStartResultSchema,
   teleprompterStateSchema,
 } from '../schemas/teleprompter';
@@ -33,6 +35,12 @@ export const teleprompterGoldens: Record<string, z.ZodType> = {
   'teleprompter-locate-disagree.json': teleprompterLocateResultSchema,
   'teleprompter-locate-complete.json': teleprompterLocateResultSchema,
   'teleprompter-locate-prompter-only.json': teleprompterLocateResultSchema,
+  'teleprompter-locate-live.json': teleprompterLocateResultSchema,
+  'teleprompter-locate-recording.json': teleprompterLocateResultSchema,
+  'teleprompter-resume-follow-started.json': teleprompterResumeFollowSchema,
+  'teleprompter-resume-follow-unavailable.json': teleprompterResumeFollowSchema,
+  'teleprompter-resume-follow-playing.json': teleprompterResumeFollowEventSchema,
+  'teleprompter-resume-follow-cursor.json': teleprompterResumeFollowEventSchema,
   'teleprompter-save-flags.json': teleprompterFlagFindingsSchema,
   // The per-chapter reading file the host writes at session end and reads back (ADR 0205).
   'teleprompter-reading.json': teleprompterReadingSchema,

@@ -75,9 +75,15 @@ type Report struct {
 	ClipRuns         []ClipRun `json:"clip_runs"`
 
 	// MP3 is what the frame headers of an MP3 say (mp3header.go), set
-	// only for an MP3; its levels, clipping and edges are then null or
-	// zero because the audio is not decoded. Nil for a WAV.
+	// only for an MP3. Nil for a WAV.
 	MP3 *MP3Info `json:"mp3,omitempty"`
+
+	// MP3LevelsDecoded is true once an MP3's audio was actually decoded and its levels measured from the decoded
+	// samples (decode.go, delivery-platform-profiles Phase 8, P11). Distinguishes "not checked" (no Decoder was
+	// available for this file, so its levels are still null exactly as Phase 6 left them) from "not measurable"
+	// (a decode was attempted and either failed or found nothing to measure): both leave the level fields above
+	// null, so this flag is the only way to tell them apart. Always false for a WAV, where it is meaningless.
+	MP3LevelsDecoded bool `json:"mp3_levels_decoded,omitempty"`
 
 	// Range is the requested range when the report measures part of a
 	// file (AnalyzeRange); DurationSeconds is then how much of that range

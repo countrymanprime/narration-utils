@@ -75,6 +75,11 @@ func MeasureFile(ctx context.Context, path string, opts Options) (FileMeasuremen
 	if err != nil {
 		return FileMeasurement{}, err
 	}
+	if report.MP3 != nil && opts.Decoder != nil {
+		if report, err = decodeAndMeasureLevels(ctx, opts.Decoder, path, report); err != nil {
+			return FileMeasurement{}, err
+		}
+	}
 	if err := drain(ctx, counted); err != nil {
 		return FileMeasurement{}, err
 	}
