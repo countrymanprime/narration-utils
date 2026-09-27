@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/countrymanprime/narration-utils/shell/internal/daw"
+	"github.com/countrymanprime/narration-utils/shell/internal/dawport"
 	"github.com/countrymanprime/narration-utils/shell/internal/persist"
 	"github.com/countrymanprime/narration-utils/shell/internal/project"
 )
@@ -34,7 +34,7 @@ import (
 // live and the launcher knows the exact rpp - so a live `--daw REAPER` launch
 // counts as linked too, until Phase 5's --project-file matching (resolveProjectFile) is
 // wired all the way through the picker rather than just second-instance/startup attach.
-func dawLinkFacts(reporter *persist.Reporter, projectFolder, daw_ string, reach *daw.Reachability) (linked, reachable, matches bool) {
+func dawLinkFacts(reporter *persist.Reporter, projectFolder, daw_ string, reach dawport.Heartbeat) (linked, reachable, matches bool) {
 	if projectFolder == "" {
 		return false, false, false
 	}

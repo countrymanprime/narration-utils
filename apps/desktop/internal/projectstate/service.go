@@ -20,7 +20,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/countrymanprime/narration-utils/shell/internal/bridge"
+	"github.com/countrymanprime/narration-utils/shell/internal/dawport"
 )
 
 // Config is the session path the service needs to talk to REAPER over the file bridge.
@@ -30,22 +30,24 @@ type Config struct{ SessionDir string }
 type Service struct {
 	mu      sync.RWMutex
 	config  Config
-	bridge  *bridge.Client
+	reader  dawport.ProjectStateReader
 	changed func(map[string]any)
 	// +checklocks:mu
 	state map[string]any
 }
 
-// New builds the service and, when there is a bridge, subscribes to PROJECT_STATE and ERROR events for its own
+// New builds the service and, when there is a reader, subscribes to PROJECT_STATE and ERROR events for its own
 // run (or, with no run, a session-level problem). The transcript, line-identity, pickups and render-config
-// services subscribe independently on the same client; Dispatch fans events out to all of them.
-func New(config Config, client *bridge.Client, changed func(map[string]any)) *Service {
-	s := &Service{config: config, bridge: client, changed: changed, state: empty()}
-	if client != nil {
-		client.Subscribe(bridge.Subscription{
+// services subscribe independently on the same client; Dispatch fans events out to all of them. reader is the DAW
+// port's project_state role (DAW port PRD P5c); nil is a standalone launch or a DAW with no such role, and every
+// Check then fails.
+func New(config Config, reader dawport.ProjectStateReader, changed func(map[string]any)) *Service {
+	s := &Service{config: config, reader: reader, changed: changed, state: empty()}
+	if reader != nil {
+		reader.Subscribe(dawport.Subscription{
 			Tags:    []string{"PROJECT_STATE", "ERROR"},
 			Owns:    s.ownsRun,
-			Handle:  func(event bridge.Event) { s.Handle(event.Fields) },
+			Handle:  func(event dawport.Event) { s.Handle(event.Fields) },
 			Invalid: s.handleInvalid,
 		})
 	}
@@ -63,12 +65,12 @@ func empty() map[string]any {
 // projectFile and savedModifiedAt update once REAPER answers (Handle); until then phase stays "checking". With
 // no bridge (a standalone launch, or REAPER not opened from this app) it fails immediately.
 func (s *Service) Check() error {
-	if s.bridge == nil {
+	if s.reader == nil {
 		return fmt.Errorf("the REAPER bridge is unavailable")
 	}
 	runID := newRunID()
 	s.begin(runID)
-	if _, err := s.bridge.Send("project_state", []string{runID}); err != nil {
+	if err := s.reader.RequestProjectState(runID); err != nil {
 		s.fail(err.Error())
 		return err
 	}
@@ -87,10 +89,10 @@ func ChangedSince(current, baseline int) bool {
 // Drain delivers the events REAPER has appended since the last call, to this service and to every other
 // consumer subscribed to the same bridge.
 func (s *Service) Drain() error {
-	if s.bridge == nil {
+	if s.reader == nil {
 		return nil
 	}
-	return s.bridge.Dispatch()
+	return s.reader.Dispatch()
 }
 
 func (s *Service) Snapshot() map[string]any {
@@ -126,7 +128,7 @@ func (s *Service) ownsRun(runID string) bool {
 	return runID != "" && runID == current
 }
 
-func (s *Service) handleInvalid(event bridge.Event, reason error) {
+func (s *Service) handleInvalid(event dawport.Event, reason error) {
 	message := fmt.Sprintf("The Narration Utils script in REAPER sent a message this app could not read (%v). Import the script from this app's REAPER folder again, then try again.", reason)
 	s.mu.Lock()
 	if s.state["phase"] != "checking" {

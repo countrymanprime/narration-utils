@@ -10,7 +10,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/countrymanprime/narration-utils/shell/internal/bridge"
+	"github.com/countrymanprime/narration-utils/shell/internal/dawport"
 	"github.com/countrymanprime/narration-utils/shell/internal/runlog"
 	"github.com/countrymanprime/narration-utils/shell/internal/tracks"
 )
@@ -25,20 +25,21 @@ type Config struct{ SessionDir string }
 type Service struct {
 	mu      sync.RWMutex
 	config  Config
-	bridge  *bridge.Client
+	picker  dawport.RetakeLanePicker
 	changed func(map[string]any)
 	state   map[string]any
 }
 
-// New builds the service and, when there is a bridge, subscribes to RETAKE_LANE_PICKED and ERROR events for its own
-// run (or, with no run, a session-level problem while a pick is in flight).
-func New(config Config, client *bridge.Client, changed func(map[string]any)) *Service {
-	s := &Service{config: config, bridge: client, changed: changed, state: Idle()}
-	if client != nil {
-		client.Subscribe(bridge.Subscription{
+// New builds the service and, when there is a picker, subscribes to RETAKE_LANE_PICKED and ERROR events for its own
+// run (or, with no run, a session-level problem while a pick is in flight). picker is the DAW port's retake_lanes
+// role (DAW port PRD P5c); nil is a standalone launch or a DAW with no such role, and every Pick then fails.
+func New(config Config, picker dawport.RetakeLanePicker, changed func(map[string]any)) *Service {
+	s := &Service{config: config, picker: picker, changed: changed, state: Idle()}
+	if picker != nil {
+		picker.Subscribe(dawport.Subscription{
 			Tags:    []string{"RETAKE_LANE_PICKED", "ERROR"},
 			Owns:    s.ownsRun,
-			Handle:  func(event bridge.Event) { s.Handle(event.Fields) },
+			Handle:  func(event dawport.Event) { s.Handle(event.Fields) },
 			Invalid: s.handleInvalid,
 		})
 	}
@@ -62,7 +63,7 @@ func (s *Service) Pick(project tracks.Project, lineID, itemGUID string, run *run
 		return fmt.Errorf("that retake is not on a fixed-lane track in the saved project; save the project in REAPER and open the list again")
 	}
 	run.Decision("lane.chosen", "chose the retake's lane to play", "track_name", line.TrackName, "candidate_count", len(line.Retakes), "item_guid", itemGUID)
-	if s.bridge == nil {
+	if s.picker == nil {
 		return fmt.Errorf("the REAPER bridge is unavailable")
 	}
 	if err := os.MkdirAll(s.config.SessionDir, 0o755); err != nil {
@@ -75,7 +76,7 @@ func (s *Service) Pick(project tracks.Project, lineID, itemGUID string, run *run
 	s.state["lineId"], s.state["itemGuid"], s.state["trackName"] = lineID, itemGUID, line.TrackName
 	s.state["message"] = fmt.Sprintf("Asking REAPER to play this retake on %s…", line.TrackName)
 	s.mu.Unlock()
-	if _, err := s.bridge.Send("pick_retake_lane", []string{runID, lineID, itemGUID, run.ID(), run.Level()}); err != nil {
+	if err := s.picker.PickRetakeLane(runID, lineID, itemGUID, dawport.Trace{RunID: run.ID(), Level: run.Level()}); err != nil {
 		s.fail(err.Error())
 		return err
 	}
@@ -85,10 +86,10 @@ func (s *Service) Pick(project tracks.Project, lineID, itemGUID string, run *run
 
 // Drain delivers the events REAPER has appended since the last call, to this service and every other consumer.
 func (s *Service) Drain() error {
-	if s.bridge == nil {
+	if s.picker == nil {
 		return nil
 	}
-	return s.bridge.Dispatch()
+	return s.picker.Dispatch()
 }
 
 func (s *Service) Snapshot() map[string]any {
@@ -117,7 +118,7 @@ func (s *Service) ownsRun(runID string) bool {
 	return runID != "" && runID == current
 }
 
-func (s *Service) handleInvalid(_ bridge.Event, reason error) {
+func (s *Service) handleInvalid(_ dawport.Event, reason error) {
 	message := fmt.Sprintf("The Narration Utils script in REAPER sent a message this app could not read (%v). Import the script from this app's REAPER folder again, then try again.", reason)
 	s.mu.Lock()
 	if s.state["phase"] != "picking" {

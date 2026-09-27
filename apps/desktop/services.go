@@ -4,7 +4,6 @@ import (
 	"github.com/countrymanprime/narration-utils/shell/internal/bridge"
 	"github.com/countrymanprime/narration-utils/shell/internal/cleanuptools"
 	"github.com/countrymanprime/narration-utils/shell/internal/coverage"
-	"github.com/countrymanprime/narration-utils/shell/internal/daw"
 	"github.com/countrymanprime/narration-utils/shell/internal/dawport"
 	"github.com/countrymanprime/narration-utils/shell/internal/editing"
 	"github.com/countrymanprime/narration-utils/shell/internal/findings"
@@ -44,15 +43,19 @@ type hostServices struct {
 	coverage     *coverage.Service
 	stages       *stages.Service
 	editing      *editing.Service
-	// reachability tracks the current bridge client's PROJECT_STATUS heartbeat (ADR 0092, Phase 7, W10). Nil when
-	// configureLocked built no bridge client (no session directory).
-	reachability *daw.Reachability
+	// reachability tracks the current bridge client's PROJECT_STATUS heartbeat (ADR 0092, Phase 7, W10), behind the
+	// DAW port's Heartbeat role (DAW port PRD P5c). Never a true nil interface: with no bridge client configureLocked
+	// still sets it to an always-unreachable stand-in.
+	reachability dawport.Heartbeat
 	bridge       *bridge.Client
 	// actions sends the S28 bridge commands (internal/bridge/actions.go), create_regions among them, on the same
 	// client; never nil once configured (with no client every request is bridge.ErrUnavailable).
 	actions *bridge.Actions
 	// navigation is the Review page's REAPER navigator (bindings_navigation.go); standalone when there is no bridge.
 	navigation *findingNavigation
+	// takeCreator is the DAW port's take_create role over the same bridge client (DAW port PRD P5c); nil (a true nil
+	// interface) with no bridge client or no such role.
+	takeCreator dawport.TakeCreator
 	// dawPortResolver is the DAW port's resolver for the roles bindings_navigation.go, readaloudreaper.go,
 	// teleprompterinput.go and chapterregions.go ask for (DAW port PRD P5a, ADR 0300); nil with no bridge client.
 	dawPortResolver *dawport.Resolver
@@ -105,6 +108,7 @@ func (h *Host) services() hostServices {
 		bridge:          h.bridge,
 		actions:         h.actions,
 		navigation:      h.navigation,
+		takeCreator:     h.takeCreator,
 		dawPortResolver: h.dawPortResolver,
 	}
 }

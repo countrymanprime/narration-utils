@@ -45,7 +45,7 @@ func TestContractProjectStateChecked(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	service := New(Config{SessionDir: session}, client, nil)
+	service := New(Config{SessionDir: session}, reader(t, client), nil)
 	if err := service.Check(); err != nil {
 		t.Fatal(err)
 	}

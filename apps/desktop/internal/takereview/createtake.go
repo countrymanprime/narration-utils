@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/countrymanprime/narration-utils/shell/internal/bridge"
+	"github.com/countrymanprime/narration-utils/shell/internal/dawport"
 )
 
 // CreateTakeRequest is what the Lua create_take command (integrations/reaper/narration_take_review.lua) needs to
@@ -45,20 +46,14 @@ var createTakeTimeout = 10 * time.Second
 // waits; nothing else in this process polls the same client for this run, so a short interval costs little.
 var createTakePollInterval = 50 * time.Millisecond
 
-// bridgeClient is the subset of *bridge.Client CreateTake needs, so it can be exercised with a fake in tests
-// without a real REAPER session directory or event log.
-type bridgeClient interface {
-	Send(action string, fields []string) (string, error)
-	Subscribe(sub bridge.Subscription) (unsubscribe func())
-	Dispatch() error
-}
-
 // CreateTake sends one create_take command to the REAPER bridge and waits for it to succeed, go stale, or fail.
-// sessionDir is where the request payload file is written (the same session directory the bridge client itself
-// uses); the wire protocol caps a command at a handful of positional fields (narration_bridge_core.lua's split),
-// so - like stamp_item_lines and create_chapter_regions before it - the request's fields travel in a one-row
-// payload file and the command itself carries only a run id and that file's path.
-func CreateTake(ctx context.Context, client bridgeClient, sessionDir string, req CreateTakeRequest) (CreateTakeResult, error) {
+// client is the DAW port's take_create role (dawport.TakeCreator, DAW port PRD P5c); nil is a standalone launch or
+// a DAW with no such role. sessionDir is where the request payload file is written (the same session directory the
+// bridge client itself uses); the wire protocol caps a command at a handful of positional fields
+// (narration_bridge_core.lua's split), so - like stamp_item_lines and create_chapter_regions before it - the
+// request's fields travel in a one-row payload file and the command itself carries only a run id and that file's
+// path.
+func CreateTake(ctx context.Context, client dawport.TakeCreator, sessionDir string, req CreateTakeRequest) (CreateTakeResult, error) {
 	if client == nil {
 		return CreateTakeResult{}, fmt.Errorf("REAPER is not connected; open the project from REAPER to create a take")
 	}
@@ -84,7 +79,7 @@ func CreateTake(ctx context.Context, client bridgeClient, sessionDir string, req
 	})
 	defer unsubscribe()
 
-	if _, err := client.Send("create_take", []string{runID, payloadPath}); err != nil {
+	if err := client.CreateTake(runID, payloadPath); err != nil {
 		return CreateTakeResult{}, fmt.Errorf("could not send the take-creation request to REAPER: %w", err)
 	}
 

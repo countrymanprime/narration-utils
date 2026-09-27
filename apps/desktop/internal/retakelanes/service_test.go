@@ -7,8 +7,26 @@ import (
 	"testing"
 
 	"github.com/countrymanprime/narration-utils/shell/internal/bridge"
+	"github.com/countrymanprime/narration-utils/shell/internal/dawport"
+	"github.com/countrymanprime/narration-utils/shell/internal/dawport/reaper"
 	"github.com/countrymanprime/narration-utils/shell/internal/tracks"
 )
+
+// picker builds the retake_lanes role a live REAPER adapter over client hands out (DAW port PRD P5c): the same
+// wrapper configureLocked uses, so a test exercises the wiring the resolver hands the service, not a hand-rolled
+// fake.
+func picker(t *testing.T, client *bridge.Client) dawport.RetakeLanePicker {
+	t.Helper()
+	adapter, err := reaper.New(client, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	role, ok := adapter.Role(dawport.CapRetakeLanes).(dawport.RetakeLanePicker)
+	if !ok {
+		t.Fatal("the REAPER adapter's retake_lanes role is not a dawport.RetakeLanePicker")
+	}
+	return role
+}
 
 func testService(t *testing.T) (*Service, string) {
 	t.Helper()
@@ -17,7 +35,7 @@ func testService(t *testing.T) (*Service, string) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	return New(Config{SessionDir: session}, client, nil), session
+	return New(Config{SessionDir: session}, picker(t, client), nil), session
 }
 
 func commandFiles(t *testing.T, session string) []string {
@@ -209,7 +227,7 @@ func TestChangedIsCalledOnPickAndOnTheResult(t *testing.T) {
 		t.Fatal(err)
 	}
 	var phases []string
-	service := New(Config{SessionDir: session}, client, func(state map[string]any) { phases = append(phases, state["phase"].(string)) })
+	service := New(Config{SessionDir: session}, picker(t, client), func(state map[string]any) { phases = append(phases, state["phase"].(string)) })
 	project := fixture(t, "fixed-lanes.rpp")
 	retake := retakeB(t, project)
 	runID := pick(t, service, project, retake.ItemGUID)
