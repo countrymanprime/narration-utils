@@ -278,6 +278,11 @@ export function ReadAloudDialog({ source, entities = NO_ENTITIES, notes = NO_NOT
             onOpenMark={openMark}
             header={header}
             rail={railElement}
+            speakers={isCredits ? undefined : chapterEntities}
+            onOpenSpeaker={(entity) => {
+              setSelected({ kind: 'entity', entity });
+              setRail({ open: true, tab: 'bible' });
+            }}
           />
         ) : (
           <ReadAlongView session={session} follow={follow} header={header} marks={marks} onOpenMark={openMark} aside={railElement} />

@@ -724,3 +724,15 @@ describe('ReadAloudDialog, mode="booth" (booth-mode-and-companion-panel.prd.md P
     expect(onClose).not.toHaveBeenCalled();
   });
 });
+
+describe('ReadAloudDialog, mode="booth", speaker rail (booth-mode-and-companion-panel.prd.md Phase 3)', () => {
+  it("lists the chapter's characters in the booth rail and opens one in the Story bible tab", async () => {
+    const user = userEvent.setup();
+    renderDialog({ manuscriptParagraphs: async () => PARAGRAPHS }, vi.fn(), { entities: [HALE], notes: [NOTE], mode: 'booth' });
+    const voices = await screen.findByRole('region', { name: 'Voices in scene' });
+    await user.click(await within(voices).findByRole('button', { name: 'Mr. Hale: open in the Story bible' }));
+    const panel = screen.getByRole('complementary', { name: 'Reading panel' });
+    expect(within(panel).getByRole('tab', { name: 'Story bible', selected: true })).toBeTruthy();
+    expect(within(panel).getByRole('heading', { name: 'Mr. Hale' })).toBeTruthy();
+  });
+});
