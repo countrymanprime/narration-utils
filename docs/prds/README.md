@@ -107,6 +107,8 @@ Phase counts are the rows of each PRD's phase table.
 | [Production Tracking](production-tracking.prd.md) | Feature | 6 | None; [audiobook studio benchmark](../research/audiobook-studio-benchmark.md) recommendation 5 |
 | [Prep Depth](prep-depth.prd.md) | Feature | 7 | None; [audiobook studio benchmark](../research/audiobook-studio-benchmark.md) recommendation 6 |
 | [Render, Encode and Master](render-encode-master.prd.md) | Feature | 8 (0-7) | None; [audiobook studio benchmark](../research/audiobook-studio-benchmark.md) recommendation 7; implements the `Encoder`/`Packager` ports [provider ports](../architecture/provider-ports.md) declares |
+| [CoreAudio Capture](coreaudio-capture.prd.md) | Feature (Could) | 2 | None; fills the CoreAudio capture row of [provider ports](../architecture/provider-ports.md)' "Not built here" table left open by provider ports P15/#696 |
+| [Sidecar Capabilities Flag](sidecar-capabilities-flag.prd.md) | Feature (Could) | 3 | None; fills the `--capabilities` flag row of [provider ports](../architecture/provider-ports.md)' "Not built here" table left open by provider ports P15/#696 |
 
 ## Replaced briefs
 

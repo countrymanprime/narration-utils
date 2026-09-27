@@ -162,7 +162,9 @@ func experimentalCommandsInSource(t *testing.T) []string {
 }
 
 // The declaration is today's behaviour exactly (DAW port PRD P2): a capability is Experimental when bridge.Actions gates its
-// commands behind the old switch, plus the two clients that were built but never wired; everything else is Supported.
+// commands behind the old switch, plus the two clients that were built but never wired; everything else is Supported. This is
+// also the guard booth actions enablement PRD P1 asks for: record, punch, regions, silence_trim and item_gain (plus
+// track_state, takes and fx_chains) cannot silently drift from bridge.Experimental before that PRD starts promoting them.
 func TestTheDeclarationMatchesTodaysGating(t *testing.T) {
 	inSource := experimentalCommandsInSource(t)
 	if mapped := slices.Sorted(maps.Keys(experimentalCapability)); !slices.Equal(inSource, mapped) {
