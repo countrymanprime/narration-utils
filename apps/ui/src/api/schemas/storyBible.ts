@@ -29,7 +29,7 @@ const evidenceSchema = z.object({
 // The guide file is written by a Python sidecar across several schema generations, and the host fills a missing pronunciation with
 // an empty object and a missing description with an empty one (guide/service.go). The schema reads all of those as the complete
 // shape, which replaces the hand-written normalizeGuideEntity and fixes the empty-object case it never handled.
-export const pronunciationStatusSchema = z.enum(['researched', 'query_sent', 'author_confirmed']) satisfies z.ZodType<GuidePronunciationStatus>;
+const pronunciationStatusSchema = z.enum(['researched', 'query_sent', 'author_confirmed']) satisfies z.ZodType<GuidePronunciationStatus>;
 
 const pronunciationValueSchema = z.object({
   ipa: z.string().default(''),
