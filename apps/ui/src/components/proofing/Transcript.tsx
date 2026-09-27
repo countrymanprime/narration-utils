@@ -15,6 +15,7 @@ import { Panel } from '../primitives/Panel';
 import { ToggleGroup } from '../primitives/ToggleGroup';
 import { TagInput } from '../primitives/TagInput';
 import { Tooltip, TooltipTarget } from '../primitives/Tooltip';
+import { PreviewPanel } from './PreviewPanel';
 import { Results } from './Results';
 import { hasHint, splitHintTerms, suggestionMessage } from './hints';
 import { PROOFING_CHUNK_OPTIONS } from './options';
@@ -241,6 +242,7 @@ export function Transcript({
           </span>
         </div>
       </div>
+      <PreviewPanel notify={notify} goToManuscript={goToManuscript} />
       {phase === 'setup' && (
         <section className="rounded-lg border border-[var(--border)] bg-[var(--surface)] shadow-[var(--shadow)]">
           <div className="flex items-center justify-between gap-3 border-b border-[var(--border)] px-[1.1rem] py-[0.85rem]">

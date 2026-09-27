@@ -6,6 +6,17 @@ Proofing transcribes a recorded chapter and compares it against the [manuscript]
 step picks the transcription model, chunk length, and any vocabulary hints before starting
 a comparison.
 
+Above Setup, the Preview panel suggests up to three five-minute excerpts from the manuscript — one per
+chapter — so you don't have to scan the whole book to find a stretch worth listening to or sharing. Each
+candidate lists its chapter, paragraph range, estimated length and word count, alongside the reasons it
+was chosen (a mix of narration and dialogue, the Story Bible characters it touches, hard words, starting and
+ending on a paragraph boundary). A candidate that falls short of the target length even using the whole
+chapter says so, in words and an icon rather than colour alone. Open a candidate in the manuscript reader,
+or copy its range and length to paste elsewhere; neither changes anything — a suggestion is recomputed fresh
+every time you visit the page, never applied, exported or stored.
+
+![Proofing - the Preview panel suggesting three candidate excerpts from the manuscript](../../images/ui/proofing-preview.webp)
+
 ![Proofing setup panel before starting a comparison](../../images/ui/proofing-setup.webp)
 
 Model, chunk length, and worker count are independent selections — picking a slower, more

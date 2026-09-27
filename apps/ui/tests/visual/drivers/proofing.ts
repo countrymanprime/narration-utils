@@ -74,4 +74,33 @@ export const proofingDrivers: Record<string, Driver> = {
     await clickVisible(page, 'button', /Last narrated take/);
     await page.locator('tr[data-row]').first().waitFor();
   },
+  'preview-default': async (page) => {
+    await goToPage(page, 'Proofing');
+    await page.getByRole('table', { name: 'Preview candidates' }).waitFor();
+  },
+  'preview-computing': async (page) => {
+    await page.goto('/proofing?mockPreviewCandidates=computing');
+    await settlePage(page);
+    await page.getByRole('status').getByText('Computing suggestions…').waitFor();
+  },
+  'preview-no-manuscript': async (page) => {
+    await page.goto('/proofing?mockPreviewCandidates=no-manuscript');
+    await settlePage(page);
+    await page.getByText('Import a manuscript to see preview suggestions.').waitFor();
+  },
+  'preview-nothing-eligible': async (page) => {
+    await page.goto('/proofing?mockPreviewCandidates=nothing-eligible');
+    await settlePage(page);
+    await page.getByText(/No eligible text was found/).waitFor();
+  },
+  'preview-shorter': async (page) => {
+    await page.goto('/proofing?mockPreviewCandidates=shorter');
+    await settlePage(page);
+    await page.getByText(/shorter than the target length/).waitFor();
+  },
+  'preview-warnings': async (page) => {
+    await page.goto('/proofing?mockPreviewCandidates=warnings');
+    await settlePage(page);
+    await page.getByText(/imported before chapters were classified/).waitFor();
+  },
 };

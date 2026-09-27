@@ -12,6 +12,8 @@ export type PreviewSeed = {
   /** Candidates to answer with instead of the default ones built from the mock manuscript's own chapters and
    * paragraphs (still requires `outcome` to be `'ok'`, or omitted with eligible chapters present). */
   candidates?: PreviewCandidate[];
+  /** Never resolves, so the panel's "Computing suggestions…" state can be captured (Phase 3's visual suite). */
+  hold?: boolean;
 };
 
 type Deps = {
@@ -58,14 +60,16 @@ function defaultCandidates(chapters: ManuscriptChapter[], paragraphs: Manuscript
 
 export function createPreviewMock(deps: Deps, seed?: PreviewSeed): PreviewApi {
   return {
-    previewCandidates: async () => {
-      if (seed?.outcome === 'no_manuscript') return wireClone<PreviewResult>({ outcome: 'no_manuscript', candidates: [] });
-      if (seed?.outcome === 'nothing_eligible') return wireClone<PreviewResult>({ outcome: 'nothing_eligible', candidates: [] });
+    previewCandidates: (): Promise<PreviewResult> => {
+      // Never resolves: the panel's "Computing suggestions…" state has nothing else to hold on (no job to poll).
+      if (seed?.hold) return new Promise<PreviewResult>(() => {});
+      if (seed?.outcome === 'no_manuscript') return Promise.resolve(wireClone<PreviewResult>({ outcome: 'no_manuscript', candidates: [] }));
+      if (seed?.outcome === 'nothing_eligible') return Promise.resolve(wireClone<PreviewResult>({ outcome: 'nothing_eligible', candidates: [] }));
       const chapters = deps.chapters();
-      if (chapters.length === 0) return wireClone<PreviewResult>({ outcome: 'no_manuscript', candidates: [] });
+      if (chapters.length === 0) return Promise.resolve(wireClone<PreviewResult>({ outcome: 'no_manuscript', candidates: [] }));
       const candidates = seed?.candidates ?? defaultCandidates(chapters, deps.paragraphs());
-      if (candidates.length === 0) return wireClone<PreviewResult>({ outcome: 'nothing_eligible', candidates: [] });
-      return wireClone<PreviewResult>({ outcome: 'ok', candidates });
+      if (candidates.length === 0) return Promise.resolve(wireClone<PreviewResult>({ outcome: 'nothing_eligible', candidates: [] }));
+      return Promise.resolve(wireClone<PreviewResult>({ outcome: 'ok', candidates }));
     },
   };
 }

@@ -8,6 +8,7 @@ import { WIRE_CHAPTERS, WIRE_FINDINGS, WIRE_TRACKS_PROJECT, editingCandidateFor,
 import { COVERAGE_REFUSAL_REASONS } from './api/schemas/coverage';
 import { EDITING_REFUSAL_REASONS } from './api/schemas/editing';
 import type { StageUnknownCause } from './api/contracts/stages';
+import type { PreviewCandidate } from './api/contracts/preview';
 import { MOCK_RESUME_SEEDS } from './api/resumeMockSeed';
 import { MOCK_REAPER_INPUT_SEEDS, MOCK_REAPER_SEEDS } from './api/teleprompterMock';
 import { ThemeProvider } from './theme/ThemeContext';
@@ -116,6 +117,39 @@ const mockCreditsSetupNarratorDefault = mockParams.get('mockCredits') === 'setup
 // `?mockPreviewError=<text>` makes the Story Bible preview fail with that text once the
 // preview voice is installed, so the failure toast can be seen without a real host.
 const mockPreviewError = mockParams.get('mockPreviewError');
+// `?mockPreviewCandidates=no-manuscript|nothing-eligible|computing|shorter|warnings` forces the Proofing page's
+// Preview panel (proofing-preview-suggestion.prd.md Phase 3) into a named state the unseeded demo book (the full
+// Alice's Adventures in Wonderland text, aliceManuscript.ts) wouldn't otherwise reach on its own - every chapter there
+// is long enough to hit the target length cleanly, so the plain default state has no warnings at all:
+// `no-manuscript`/`nothing-eligible` force PreviewApi's outcome directly (the route itself already redirects away
+// with no manuscript at all, so this is the only way to see that defensive state on the real page); `computing`
+// never resolves the read; `shorter` and `warnings` each seed one hand-built candidate (the engine's two warning
+// texts, `preview.reasonsFor` and `wholeChapterCandidate`) rather than a real short or unclassified chapter, so
+// their paragraph ids are illustrative only - opening one in the reader or copying its range lands on the chapter's
+// first paragraph rather than the exact seeded range.
+const mockPreviewCandidatesParam = (['no-manuscript', 'nothing-eligible', 'computing', 'shorter', 'warnings'] as const).find(
+  (seed) => seed === mockParams.get('mockPreviewCandidates'),
+);
+const MOCK_PREVIEW_SHORTER_CANDIDATE: PreviewCandidate = {
+  chapterId: WIRE_CHAPTERS[10].id,
+  chapterTitle: WIRE_CHAPTERS[10].title,
+  paragraphIds: (WIRE_CHAPTERS[10].paragraphIds ?? []).map((paragraph) => paragraph.id),
+  wordCount: 210,
+  estimatedSeconds: 81,
+  shorter: true,
+  reasons: ['Mostly narration, little or no dialogue.', 'No Story Bible entities mentioned in this range.', 'Starts and ends on paragraph boundaries.'],
+  warnings: ['This chapter is shorter than the target length even in full.'],
+};
+const MOCK_PREVIEW_WARNING_CANDIDATE: PreviewCandidate = {
+  chapterId: WIRE_CHAPTERS[1].id,
+  chapterTitle: WIRE_CHAPTERS[1].title,
+  paragraphIds: (WIRE_CHAPTERS[1].paragraphIds ?? []).map((paragraph) => paragraph.id),
+  wordCount: 780,
+  estimatedSeconds: 305,
+  shorter: false,
+  reasons: ['Mixes narration and dialogue (50% of paragraphs have dialogue).', 'One Story Bible entity present.', 'Starts and ends on paragraph boundaries.'],
+  warnings: ['This manuscript was imported before chapters were classified narration, opening or reference; treated as narration.'],
+};
 // `?mockInvalidPayload=bootstrap|manuscript|storybible` makes that payload arrive in the wrong shape (through the real `parseWire`),
 // so the startup error screen and the inline page errors for a payload the app could not read can be seen without a host.
 const mockInvalidPayload = (['bootstrap', 'manuscript', 'storybible'] as const).find((which) => which === mockParams.get('mockInvalidPayload'));
@@ -286,6 +320,11 @@ const mockInitial = {
   ...(mockCreditsDetected ? { creditsDetected: true } : {}),
   ...(mockCreditsSetup ? { creditsSetup: true } : {}),
   ...(mockPreviewError ? { previewError: mockPreviewError } : {}),
+  ...(mockPreviewCandidatesParam === 'no-manuscript' ? { preview: { outcome: 'no_manuscript' as const } } : {}),
+  ...(mockPreviewCandidatesParam === 'nothing-eligible' ? { preview: { outcome: 'nothing_eligible' as const } } : {}),
+  ...(mockPreviewCandidatesParam === 'computing' ? { preview: { hold: true } } : {}),
+  ...(mockPreviewCandidatesParam === 'shorter' ? { preview: { outcome: 'ok' as const, candidates: [MOCK_PREVIEW_SHORTER_CANDIDATE] } } : {}),
+  ...(mockPreviewCandidatesParam === 'warnings' ? { preview: { outcome: 'ok' as const, candidates: [MOCK_PREVIEW_WARNING_CANDIDATE] } } : {}),
   ...(mockTeleprompter ? { teleprompter: mockTeleprompter } : {}),
   ...(mockNoDevices ? { teleprompterDevices: [] } : {}),
   ...(mockLevel === undefined ? {} : { teleprompterLevel: mockLevel }),
