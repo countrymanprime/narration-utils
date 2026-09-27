@@ -25,6 +25,16 @@ export function recordingRule(fields: readonly ScopedSettingField[]): string {
   return `A chapter counts as recorded when each paragraph has at least ${present} of its words read and no more than ${run} in a row are missing.`;
 }
 
+/** The model cascade's own sentence (recording-check-model-cascade PRD Phase 5, MC1/MC2): what the three cascade
+ * fields amount to, on or off. */
+export function cascadeRule(fields: readonly ScopedSettingField[]): string {
+  const on = effective(fields, 'cascade_enabled') === 'true';
+  if (!on) return 'The two-pass check is off: every check runs the Proofing model above alone.';
+  const first = effective(fields, 'cascade_first_pass_model') || 'tiny';
+  const recheck = effective(fields, 'cascade_recheck_model') || 'large-v3-turbo';
+  return `The two-pass check is on: a fast first pass with ${first}, then anything it reports missing is re-checked with ${recheck}.`;
+}
+
 export function RecordingCheckSummary({ fields, scope }: { fields: readonly ScopedSettingField[]; scope: Scope }) {
   return (
     <div className="mb-4 space-y-1 rounded-md p-3 text-sm" style={{ background: 'var(--surface-2)' }}>
@@ -34,6 +44,9 @@ export function RecordingCheckSummary({ fields, scope }: { fields: readonly Scop
         These values were chosen on synthetic test recordings and have not been checked against real recordings yet. Changing the first two only changes how a
         stored check is judged; changing either of the last two makes earlier checks out of date, so check those chapters again.{' '}
         {scope === 'project' ? 'A value left blank here uses the Global one.' : ''}
+      </div>
+      <div className="mt-2 border-t pt-2" style={{ borderColor: 'var(--border)' }}>
+        {cascadeRule(fields)}
       </div>
     </div>
   );

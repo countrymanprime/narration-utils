@@ -202,4 +202,29 @@ describe('recording check on Home', () => {
     expect(within(ask).getByRole('button', { name: 'Download model' })).toBeTruthy();
     expect(whisperInstall).not.toHaveBeenCalled();
   });
+
+  // The model cascade's own missing-model gate (recording-check-model-cascade PRD Phase 5, MC4): the re-check model
+  // not installed offers "Check with tiny only" beside the download, never blocking the check on it.
+  it('offers "Check with tiny only" when the re-check model is not installed, and starts without it', async () => {
+    const { api } = await openBreakdown({ coverage: { recheckAssetRequired: true } });
+    const coverageStart = vi.spyOn(api, 'coverageStart');
+    const dialog = await openCheck('Chapter 7');
+    fireEvent.click(await within(dialog).findByRole('button', { name: 'Check recording' }));
+    const ask = await screen.findByRole('alertdialog', { name: 'Download the re-check model?' });
+    expect(within(ask).getByRole('button', { name: 'Download model' })).toBeTruthy();
+
+    fireEvent.click(within(ask).getByRole('button', { name: 'Check with tiny only' }));
+
+    await waitFor(() => expect(screen.getByRole('dialog', { name: 'Checking Chapter 7' })).toBeTruthy());
+    expect(coverageStart).toHaveBeenLastCalledWith(WIRE_CHAPTERS[6].id, { skipRecheck: true });
+  });
+
+  // MC5: the result names both models and the re-checked passages, and marks the pickup they confirmed. Seeded with
+  // pickups too (interior gaps, not just the tail reportFor alone would give) so there is a pickup row to mark.
+  it('names both models and the re-checked passages on a cascade result', async () => {
+    await openBreakdown({ coverage: { pickups: [WIRE_CHAPTERS[3].id], cascade: [WIRE_CHAPTERS[3].id] } });
+    const dialog = await openCheck('Chapter 4');
+    expect(await within(dialog).findByText(/passage.*re-checked with the large-v3-turbo Whisper model/)).toBeTruthy();
+    expect(within(dialog).getAllByText(/Confirmed missing by the large-v3-turbo Whisper model\./).length).toBeGreaterThan(0);
+  });
 });
