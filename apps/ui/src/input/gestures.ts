@@ -66,3 +66,26 @@ export function gestureFromKeyboardEvent(event: KeyboardModifierState & { code: 
   if (event.shiftKey) modifiers.push('Shift');
   return gesture('keyboard', event.code, modifiers);
 }
+
+const MODIFIER_KEYS: ReadonlySet<string> = new Set(['Alt', 'Ctrl', 'Meta', 'Shift']);
+
+/**
+ * The inverse of `serializeGesture` (Phase 6, the Keyboard & pedals recorder): turns a stored `Keymap.overrides`
+ * binding back into a `Gesture`. Throws on a string this app never produced (a hand-edited settings file, a future
+ * app's gesture this version does not understand) - `keymapFromBindings` catches that per binding, so one bad entry
+ * falls back to that command's default instead of failing every other override.
+ */
+export function deserializeGesture(text: string): Gesture {
+  const colon = text.indexOf(':');
+  if (colon !== -1 && (text.startsWith('midi:') || text.startsWith('hid:'))) {
+    return gesture(text.slice(0, colon) as GestureSource, text.slice(colon + 1));
+  }
+  const parts = text.split('+');
+  const code = parts.pop();
+  if (!code) throw new Error(`deserializeGesture: "${text}" has no key code`);
+  const modifiers = parts.map((part) => {
+    if (!MODIFIER_KEYS.has(part)) throw new Error(`deserializeGesture: "${text}" has an unknown modifier "${part}"`);
+    return part as ModifierKey;
+  });
+  return gesture('keyboard', code, modifiers);
+}
