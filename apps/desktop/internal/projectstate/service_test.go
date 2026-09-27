@@ -8,7 +8,25 @@ import (
 	"testing"
 
 	"github.com/countrymanprime/narration-utils/shell/internal/bridge"
+	"github.com/countrymanprime/narration-utils/shell/internal/dawport"
+	"github.com/countrymanprime/narration-utils/shell/internal/dawport/reaper"
 )
+
+// reader builds the project_state role a live REAPER adapter over client hands out (DAW port PRD P5c): the same
+// wrapper configureLocked uses, so a test exercises the wiring the resolver hands the service, not a hand-rolled
+// fake.
+func reader(t *testing.T, client *bridge.Client) dawport.ProjectStateReader {
+	t.Helper()
+	adapter, err := reaper.New(client, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	role, ok := adapter.Role(dawport.CapProjectState).(dawport.ProjectStateReader)
+	if !ok {
+		t.Fatal("the REAPER adapter's project_state role is not a dawport.ProjectStateReader")
+	}
+	return role
+}
 
 func testService(t *testing.T) (*Service, string) {
 	t.Helper()
@@ -17,7 +35,7 @@ func testService(t *testing.T) (*Service, string) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	return New(Config{SessionDir: session}, client, nil), session
+	return New(Config{SessionDir: session}, reader(t, client), nil), session
 }
 
 func firstCommand(t *testing.T, session string) string {
@@ -195,7 +213,7 @@ func TestDrainSharesTheBridgeWithAnotherConsumerWithoutLosingOrStealingEvents(t 
 	}
 	runID := service.Snapshot()["runId"].(string)
 	var others []string
-	service.bridge.Subscribe(bridge.Subscription{
+	service.reader.Subscribe(bridge.Subscription{
 		Tags:   []string{"COMPARE_*"},
 		Owns:   func(id string) bool { return id == "compare-1" },
 		Handle: func(event bridge.Event) { others = append(others, event.Tag+"|"+event.RunID) },
@@ -259,7 +277,7 @@ func TestCheckReportsAndNotifiesWhenSendFails(t *testing.T) {
 		t.Fatal(err)
 	}
 	var notified []map[string]any
-	service := New(Config{SessionDir: session}, client, func(state map[string]any) { notified = append(notified, state) })
+	service := New(Config{SessionDir: session}, reader(t, client), func(state map[string]any) { notified = append(notified, state) })
 	if err := service.Check(); err == nil {
 		t.Fatal("Check() = nil, want an error once the session directory is gone")
 	}

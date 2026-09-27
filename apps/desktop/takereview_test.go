@@ -9,6 +9,8 @@ import (
 	"time"
 
 	"github.com/countrymanprime/narration-utils/shell/internal/bridge"
+	"github.com/countrymanprime/narration-utils/shell/internal/dawport"
+	"github.com/countrymanprime/narration-utils/shell/internal/dawport/reaper"
 	"github.com/countrymanprime/narration-utils/shell/internal/findings"
 	"github.com/countrymanprime/narration-utils/shell/internal/settings"
 	"github.com/countrymanprime/narration-utils/shell/internal/takereview"
@@ -112,7 +114,15 @@ func TestTakeReviewCreateTakeBindingRoundTripsThroughARealBridgeClient(t *testin
 	if err != nil {
 		t.Fatal(err)
 	}
-	host := &Host{bridge: client}
+	adapter, err := reaper.New(client, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	taker, ok := adapter.Role(dawport.CapTakeCreate).(dawport.TakeCreator)
+	if !ok {
+		t.Fatal("the REAPER adapter's take_create role is not a dawport.TakeCreator")
+	}
+	host := &Host{bridge: client, takeCreator: taker}
 	host.config.sessionDir = sessionDir
 
 	req := takereview.CreateTakeRequest{

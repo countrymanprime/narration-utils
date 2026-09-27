@@ -12,7 +12,9 @@ import (
 
 // newTestHostWithHeartbeat is a REAPER launch with a live bridge whose last heartbeat is fields (after the tag and the
 // empty run: rpp, unsaved, changeCount, then the transport), or no heartbeat at all when fields is nil.
-func newTestHostWithHeartbeat(t *testing.T, fields ...string) *Host {
+// newTestHostWithHeartbeat also returns the concrete *daw.Reachability behind host.reachability's Heartbeat role, so
+// a test can deliver another heartbeat later (Record is not part of the role, which only reads it).
+func newTestHostWithHeartbeat(t *testing.T, fields ...string) (*Host, *daw.Reachability) {
 	t.Helper()
 	host := newTestHostForDawCapabilities(t, "REAPER")
 	client, err := bridge.New(t.TempDir())
@@ -24,7 +26,7 @@ func newTestHostWithHeartbeat(t *testing.T, fields ...string) *Host {
 		reach.Record(bridge.Event{Tag: "PROJECT_STATUS", Fields: append([]string{"PROJECT_STATUS", ""}, fields...)})
 	}
 	host.bridge, host.reachability = client, reach
-	return host
+	return host, reach
 }
 
 func decodeTransport(t *testing.T, payload map[string]any) map[string]any {
@@ -50,7 +52,7 @@ func TestDawTransportGoldenIsCurrent(t *testing.T) {
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			host := newTestHostWithHeartbeat(t, "C:/Projects/Alice/Alice.rpp", "0", "7", c.playState, "12.500000")
+			host, _ := newTestHostWithHeartbeat(t, "C:/Projects/Alice/Alice.rpp", "0", "7", c.playState, "12.500000")
 			contractfile.Check(t, c.name, decodeTransport(t, host.dawTransport()))
 		})
 	}
@@ -59,12 +61,14 @@ func TestDawTransportGoldenIsCurrent(t *testing.T) {
 // TestDawTransportIsQuietWithoutAKnownTransport: with no heartbeat to read (standalone, Audacity, a REAPER not answering,
 // or an older bridge script that does not send the transport), the payload says neither playing nor recording.
 func TestDawTransportIsQuietWithoutAKnownTransport(t *testing.T) {
+	noHeartbeat, _ := newTestHostWithHeartbeat(t)
+	olderScript, _ := newTestHostWithHeartbeat(t, "C:/Projects/Alice/Alice.rpp", "0", "7")
 	cases := map[string]*Host{
 		"standalone":        newTestHostForDawCapabilities(t, ""),
 		"audacity":          newTestHostForDawCapabilities(t, "Audacity"),
 		"reaper, no bridge": newTestHostForDawCapabilities(t, "REAPER"),
-		"no heartbeat":      newTestHostWithHeartbeat(t),
-		"older script":      newTestHostWithHeartbeat(t, "C:/Projects/Alice/Alice.rpp", "0", "7"),
+		"no heartbeat":      noHeartbeat,
+		"older script":      olderScript,
 	}
 	for name, host := range cases {
 		got := decodeTransport(t, host.dawTransport())
@@ -80,7 +84,7 @@ func TestDawTransportIsQuietWithoutAKnownTransport(t *testing.T) {
 // TestDawTransportHeartbeatTurnedOffIsQuiet: the transport is read through the heartbeat capability, so a narrator who
 // turned that capability off gets no transport, the same as any other role the resolver refuses.
 func TestDawTransportHeartbeatTurnedOffIsQuiet(t *testing.T) {
-	host := newTestHostWithHeartbeat(t, "C:/Projects/Alice/Alice.rpp", "0", "7", "5", "12.500000")
+	host, _ := newTestHostWithHeartbeat(t, "C:/Projects/Alice/Alice.rpp", "0", "7", "5", "12.500000")
 	off := "off"
 	if err := host.saveSettings("DAW", "global", map[string]*string{dawport.ToggleKey(dawport.CapHeartbeat): &off}); err != nil {
 		t.Fatal(err)
@@ -93,20 +97,20 @@ func TestDawTransportHeartbeatTurnedOffIsQuiet(t *testing.T) {
 // TestDawTransportChangedOnlyWhenThePayloadChanges is the dedupe pollDawTransport relies on: the first read after launch
 // and every real change report a change, and the same transport on the next tick does not.
 func TestDawTransportChangedOnlyWhenThePayloadChanges(t *testing.T) {
-	host := newTestHostWithHeartbeat(t, "C:/Projects/Alice/Alice.rpp", "0", "7", "0", "1.000000")
+	host, reach := newTestHostWithHeartbeat(t, "C:/Projects/Alice/Alice.rpp", "0", "7", "0", "1.000000")
 	if _, changed := host.dawTransportChanged(); !changed {
 		t.Fatal("the first read must count as a change, so the UI hears the transport once")
 	}
 	if _, changed := host.dawTransportChanged(); changed {
 		t.Fatal("an unchanged transport must not be pushed again on the next tick")
 	}
-	host.reachability.Record(bridge.Event{Fields: []string{"PROJECT_STATUS", "", "C:/Projects/Alice/Alice.rpp", "0", "8", "5", "2.000000"}})
+	reach.Record(bridge.Event{Fields: []string{"PROJECT_STATUS", "", "C:/Projects/Alice/Alice.rpp", "0", "8", "5", "2.000000"}})
 	payload, changed := host.dawTransportChanged()
 	if !changed || decodeTransport(t, payload)["recording"] != true {
 		t.Fatalf("a record start must be pushed: changed = %v, payload = %v", changed, payload)
 	}
 	// Only the edit counter moved: the transport payload is the same, so nothing is pushed.
-	host.reachability.Record(bridge.Event{Fields: []string{"PROJECT_STATUS", "", "C:/Projects/Alice/Alice.rpp", "0", "9", "5", "2.000000"}})
+	reach.Record(bridge.Event{Fields: []string{"PROJECT_STATUS", "", "C:/Projects/Alice/Alice.rpp", "0", "9", "5", "2.000000"}})
 	if _, changed := host.dawTransportChanged(); changed {
 		t.Fatal("a heartbeat whose transport did not change must not be pushed")
 	}

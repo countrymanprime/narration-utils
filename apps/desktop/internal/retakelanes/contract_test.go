@@ -35,7 +35,7 @@ func TestContractRetakeLanesPicked(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	service := New(Config{SessionDir: session}, client, nil)
+	service := New(Config{SessionDir: session}, picker(t, client), nil)
 	project := fixture(t, "fixed-lanes.rpp")
 	retake := retakeB(t, project)
 	if err := service.Pick(project, "line-000004", retake.ItemGUID, nil); err != nil {

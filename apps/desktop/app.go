@@ -124,10 +124,12 @@ type Host struct {
 	// all through the same swap-on-project-switch pattern as
 	// guide/manuscript/transcript.
 	findings *findings.Store
-	// reachability tracks the current project's bridge client PROJECT_STATUS heartbeat (ADR 0092, Phase 7).
-	// Swappable like transcript: configureLocked rebuilds it on every project switch. Nil when there is no bridge
-	// client (no session directory).
-	reachability *daw.Reachability
+	// reachability tracks the current project's bridge client PROJECT_STATUS heartbeat (ADR 0092, Phase 7), behind the
+	// DAW port's Heartbeat role (dawport.Heartbeat, DAW port PRD P5c) rather than the concrete *daw.Reachability, so a
+	// caller depends on the role, not the REAPER-only type. Swappable like transcript: configureLocked rebuilds it on
+	// every project switch. Never a true nil interface: with no bridge client it is daw.NewReachability(nil), which
+	// always reports unreachable.
+	reachability dawport.Heartbeat
 	// navigation is the Review page's REAPER navigator on the same bridge client (bindings_navigation.go); swappable
 	// like transcript. Never nil once configured: with no bridge client it is standalone and refuses every request.
 	navigation   *findingNavigation
@@ -143,6 +145,10 @@ type Host struct {
 	// (takereview.go) is its first direct consumer outside transcript.Service,
 	// which is handed the same client rather than building its own.
 	bridge *bridge.Client
+	// takeCreator is the DAW port's take_create role over the same bridge client (DAW port PRD P5c); takereview.go's
+	// take-creation binding asks for it instead of holding bridge directly. Nil (a true nil interface) with no bridge
+	// client or no such role.
+	takeCreator dawport.TakeCreator
 	// actions is the S28 commands' client on the same bridge (chapter regions, chapterregions.go); swappable like
 	// transcript, and it reads the experimental switch on every request.
 	actions *bridge.Actions
@@ -492,11 +498,26 @@ func (h *Host) configureLocked(next config) {
 	// DAW.capability.<name> toggles, with DAW.experimental_reaper_actions still turning on every Experimental one left
 	// on auto (owner decision D38, ADR 0230). The resolver is over REAPER's declaration alone until P5a moves these
 	// consumers onto the adapter's roles.
-	h.actions = bridge.NewActions(client, reaper.Gate(dawport.NewResolver(dawport.ResolverConfig{
+	dawResolver := dawport.NewResolver(dawport.ResolverConfig{
 		Adapter:      reaper.Declaration(),
 		Toggle:       dawport.SettingsToggles(settingsStore.Effective),
 		Experimental: dawport.SettingsExperimental(settingsStore.Effective),
-	}).Allowed))
+	})
+	h.actions = bridge.NewActions(client, reaper.Gate(dawResolver.Allowed))
+	// The retake-lane, project-state and take-creation roles below come from a live REAPER adapter over the same
+	// client (DAW port PRD P5c), gated by the same resolver.Allowed as h.actions: a nil client (no session) or a
+	// capability the adapter does not declare leaves the role nil, which each service already treats as "no bridge".
+	// P5a's registry adapter will later give every P5 consumer one shared adapter; until then this is this phase's
+	// own, over the same client (bindings_daw.go's dawResolverFor makes the same tradeoff for DawCapabilities).
+	var retakePicker dawport.RetakeLanePicker
+	var projectStateReader dawport.ProjectStateReader
+	if dawAdapter, err := reaper.New(client, dawResolver.Allowed); err == nil {
+		retakePicker, _ = dawAdapter.Role(dawport.CapRetakeLanes).(dawport.RetakeLanePicker)
+		projectStateReader, _ = dawAdapter.Role(dawport.CapProjectState).(dawport.ProjectStateReader)
+		h.takeCreator, _ = dawAdapter.Role(dawport.CapTakeCreate).(dawport.TakeCreator)
+	} else {
+		h.takeCreator = nil
+	}
 	// The line-identity service is the second consumer of the same bridge client (bridge.Client fans events
 	// out by tag and run, ADR 0068), so pollTranscript's Drain call already pumps its events too. Phase 7
 	// (reaper-automation-follow-through PRD) is the UI trigger, so it now emits h.emitLineIdentity the way
@@ -515,13 +536,15 @@ func (h *Host) configureLocked(next config) {
 	// tool key, and the dialog it opens in REAPER is the narrator's to drive.
 	h.cleanupTools = cleanuptools.New(cleanuptools.Config{SessionDir: h.config.sessionDir}, client, h.emitCleanupTools)
 	// The retake-lane service (reaper-automation-follow-through PRD Phase 25, ADR 0147) is one more consumer of the
-	// same bridge client. It only ever asks REAPER to make one listed retake's lane the only one playing.
-	h.retakeLanes = retakelanes.New(retakelanes.Config{SessionDir: h.config.sessionDir}, client, h.emitRetakeLanes)
+	// same bridge client, over its retake_lanes role (DAW port PRD P5c). It only ever asks REAPER to make one listed
+	// retake's lane the only one playing.
+	h.retakeLanes = retakelanes.New(retakelanes.Config{SessionDir: h.config.sessionDir}, retakePicker, h.emitRetakeLanes)
 	// The project-state service (reaper-automation-follow-through PRD Phase 13, "Change-driven re-compare
 	// indicator"; analysis-evidence-ledger PRD Open Question 12, answered (B)) is the bridge's fifth real
-	// consumer: pollTranscript's Drain call already pumps its events too, the same way it does above. It is a
-	// Could-tier, on-demand check (Check/ProjectStateCheck), not a poll of its own.
-	h.projectState = projectstate.New(projectstate.Config{SessionDir: h.config.sessionDir}, client, h.emitProjectState)
+	// consumer, over its project_state role (DAW port PRD P5c): pollTranscript's Drain call already pumps its events
+	// too, the same way it does above. It is a Could-tier, on-demand check (Check/ProjectStateCheck), not a poll of
+	// its own.
+	h.projectState = projectstate.New(projectstate.Config{SessionDir: h.config.sessionDir}, projectStateReader, h.emitProjectState)
 	teleprompterDir := h.config.sessionDir
 	if teleprompterDir == "" {
 		teleprompterDir = filepath.Join(os.TempDir(), "narration-utils")

@@ -8,6 +8,8 @@ import (
 	"testing"
 
 	"github.com/countrymanprime/narration-utils/shell/internal/bridge"
+	"github.com/countrymanprime/narration-utils/shell/internal/dawport"
+	"github.com/countrymanprime/narration-utils/shell/internal/dawport/reaper"
 	"github.com/countrymanprime/narration-utils/shell/internal/retakelanes"
 )
 
@@ -23,7 +25,15 @@ func newTestHostForRetakeLanes(t *testing.T) (*Host, string) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	host.retakeLanes = retakelanes.New(retakelanes.Config{SessionDir: session}, client, nil)
+	adapter, err := reaper.New(client, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	picker, ok := adapter.Role(dawport.CapRetakeLanes).(dawport.RetakeLanePicker)
+	if !ok {
+		t.Fatal("the REAPER adapter's retake_lanes role is not a dawport.RetakeLanePicker")
+	}
+	host.retakeLanes = retakelanes.New(retakelanes.Config{SessionDir: session}, picker, nil)
 	return host, session
 }
 

@@ -11,9 +11,9 @@ import (
 	"github.com/countrymanprime/narration-utils/shell/internal/bridge"
 )
 
-// fakeBridgeClient is bridgeClient without a real REAPER session directory or event log: Send hands the run id and
-// payload path it was given to respond, which decides what events (if any) Dispatch later delivers - the same
-// two-step shape a real bridge.Client's file-based command-then-poll round trip has.
+// fakeBridgeClient is dawport.TakeCreator without a real REAPER session directory or event log: CreateTake hands the
+// run id and payload path it was given to respond, which decides what events (if any) Dispatch later delivers - the
+// same two-step shape a real bridge.Client's file-based command-then-poll round trip has.
 type fakeBridgeClient struct {
 	sendErr    error
 	respond    func(runID, payloadPath string) []bridge.Event
@@ -25,18 +25,16 @@ type fakeBridgeClient struct {
 	dispatched int
 }
 
-func (f *fakeBridgeClient) Send(action string, fields []string) (string, error) {
+func (f *fakeBridgeClient) CreateTake(runID, payloadPath string) error {
 	f.sends++
 	if f.sendErr != nil {
-		return "", f.sendErr
+		return f.sendErr
 	}
-	if len(fields) >= 2 {
-		f.lastRunID, f.lastPath = fields[0], fields[1]
+	f.lastRunID, f.lastPath = runID, payloadPath
+	if f.respond != nil {
+		f.pending = append(f.pending, f.respond(runID, payloadPath)...)
 	}
-	if f.respond != nil && len(fields) >= 2 {
-		f.pending = append(f.pending, f.respond(fields[0], fields[1])...)
-	}
-	return "", nil
+	return nil
 }
 
 func (f *fakeBridgeClient) Subscribe(sub bridge.Subscription) func() {

@@ -80,10 +80,10 @@ func (h *Host) takeReviewRunnerFor(svc hostServices) takereview.SidecarRunner {
 // action only for a finding they accepted (phase 5).
 func (h *Host) takeReviewCreateTake(req takereview.CreateTakeRequest) (takereview.CreateTakeResult, error) {
 	svc := h.services()
-	if svc.bridge == nil {
+	if svc.takeCreator == nil {
 		return takereview.CreateTakeResult{}, fmt.Errorf("open the project from REAPER before creating a take")
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), takeReviewCreateTakeTimeout)
 	defer cancel()
-	return takereview.CreateTake(ctx, svc.bridge, takeReviewSessionDir(svc.config.sessionDir), req)
+	return takereview.CreateTake(ctx, svc.takeCreator, takeReviewSessionDir(svc.config.sessionDir), req)
 }
