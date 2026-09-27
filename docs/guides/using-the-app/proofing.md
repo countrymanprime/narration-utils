@@ -25,15 +25,18 @@ Large model doesn't support Auto).
 
 ![Proofing setup panel with a different model, chunk length, and worker count selected](../../images/ui/proofing-setup-alt.webp)
 
-Vocabulary hints teach the transcription model unusual names it's likely to mis-hear.
-"Suggest from manuscript" proposes candidates from the [Story Bible](story-bible.md); accepted hints render as
-solid pills, suggested-but-not-yet-accepted candidates as dashed outlines you click to accept.
-Names you locked or added by hand are always offered; names the build was unsure about (Needs Review)
-are not, so review or lock one to make it suggestible. The message after each click says what happened:
-no names found (build the Story Bible or add entries), everything found is already accepted, the
-suggestions are already shown, or how many new ones were found. Typing a list with commas adds one
-hint per name, and a name already there in any case is not added twice. If the saved hints cannot be
-loaded, a message says so and the page stays usable.
+Vocabulary hints teach the transcription model unusual names it's likely to mis-hear. The pills box is
+the input: type a name and press Enter or a comma to add it, click elsewhere to commit whatever you were
+typing, or press Backspace in an empty box to remove the most recently added term. Pasting a list with
+commas or line breaks adds every name in it at once. A name already there in any case is not added twice,
+and a term over 64 characters is capped. The sparkle icon inside the box, "Suggest from manuscript",
+proposes candidates from the [Story Bible](story-bible.md); accepted hints render as solid pills,
+suggested-but-not-yet-accepted candidates as dashed outlines you click to accept. Names you locked or
+added by hand are always offered; names the build was unsure about (Needs Review) are not, so review or
+lock one to make it suggestible. The message after each click says what happened: no names found (build
+the Story Bible or add entries), everything found is already accepted, the suggestions are already shown,
+or how many new ones were found. If the saved hints cannot be loaded, a message says so and the page
+stays usable.
 
 ![Proofing - vocabulary hint chips: an accepted term alongside suggested (pending) candidates](../../images/ui/proofing-hint-chips.webp)
 

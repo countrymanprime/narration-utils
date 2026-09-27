@@ -21,6 +21,15 @@ export const proofingStates: StateEntry[] = [
     ...TOOLTIP_CLOSES_ON_RESIZE,
   },
   { page: 'proofing', state: 'toast', description: 'Proofing, a toast visible', ...FREEZES_THE_CLOCK },
+  // The vocabulary hints tag-input box (proofing-vocabulary-hints.prd.md Phase 2): the pills box is the input, no
+  // separate Add row.
+  { page: 'proofing', state: 'hints-typing', description: 'Proofing, the vocabulary hints box mid-typed, the draft inline after the last pill' },
+  { page: 'proofing', state: 'hints-many-pills', description: 'Proofing, the vocabulary hints box with many accepted terms wrapping across lines' },
+  {
+    page: 'proofing',
+    state: 'hints-pending-suggestions',
+    description: 'Proofing, the vocabulary hints box with dashed suggested-term pills from Suggest from manuscript',
+  },
   {
     page: 'proofing',
     state: 'no-daw',
