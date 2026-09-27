@@ -32,7 +32,12 @@ func (h *Host) DawCapabilities() (string, error) {
 // dawport.Resolver holds no state of its own, so building one per call is cheap; runtime is returned alongside it so a caller
 // can report the same "reachable" fact the resolver used, without a second read of the (possibly swapped) services.
 func (h *Host) dawResolver() (*dawport.Resolver, dawport.Runtime) {
-	svc := h.services()
+	return dawResolverFor(h.services())
+}
+
+// dawResolverFor is dawResolver over a snapshot the caller already holds, so a caller that also reads another service
+// (bindings_daw_transport.go reads the heartbeat) sees the same project's state in both.
+func dawResolverFor(svc hostServices) (*dawport.Resolver, dawport.Runtime) {
 	kind := dawadapter.Classify(svc.config.daw)
 	client, reach, store := svc.bridge, svc.reachability, svc.settings
 	runtime := dawport.Runtime{Bridge: client != nil, Reachable: reach != nil && reach.Reachable()}

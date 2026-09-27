@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/countrymanprime/narration-utils/shell/internal/bridge"
+	"github.com/countrymanprime/narration-utils/shell/internal/daw"
 	"github.com/countrymanprime/narration-utils/shell/internal/dawadapter"
 	"github.com/countrymanprime/narration-utils/shell/internal/tracks"
 )
@@ -48,6 +49,8 @@ type (
 	ApplyGainResult  = bridge.ApplyGainResult
 
 	Project = tracks.Project
+
+	Transport = daw.Transport
 )
 
 // Trace ties a request to the host's run log (runlog.Run's ID and Level), for the commands whose script logs under the host's run.
@@ -126,13 +129,15 @@ type MarkerWriter interface {
 	AddMarker(ctx context.Context, target Target, marker Marker) (MarkerResult, error)
 }
 
-// Heartbeat is what the host knows of the engine without asking it: whether it is answering, which project it has open, and that
-// project's change count. It reads; a request that waits for an answer is ProjectStateReader.
+// Heartbeat is what the host knows of the engine without asking it: whether it is answering, which project it has open, that
+// project's change count, and whether the engine is playing or recording (DAW port PRD Phase 9, ADR 0305). It reads; a request that
+// waits for an answer is ProjectStateReader. Transport's ok is false when the engine is not answering or does not report it.
 type Heartbeat interface {
 	Reachable() bool
 	CurrentProject() (path string, unsaved bool)
 	Matches(linkedPath string) bool
 	ChangeCount() (count int, ok bool)
+	Transport() (transport Transport, ok bool)
 }
 
 // ProjectReader reads a saved project file offline, with the engine closed.

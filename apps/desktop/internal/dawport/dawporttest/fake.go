@@ -211,6 +211,10 @@ func (r heartbeatRole) ChangeCount() (int, bool) {
 	_ = r.do("ChangeCount")
 	return 0, false
 }
+func (r heartbeatRole) Transport() (dawport.Transport, bool) {
+	_ = r.do("Transport")
+	return dawport.Transport{}, false
+}
 
 type projectReadRole struct{ role }
 

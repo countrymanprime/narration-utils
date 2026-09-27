@@ -75,8 +75,10 @@ var eventSpecs = map[string]eventSpec{
 	// EnumProjects(-1, '')'s second return value verbatim (the empty string for an unsaved project, never omitted -
 	// spike S6 confirmed REAPER never returns nil there), and unsaved is "1" exactly when rpp is empty.
 	// changeCount (GetProjectStateChangeCount(0)) was appended for DAW chapter-track auto-sync Phase 4: optional, so an
-	// older script's three-field heartbeat still passes, and empty on a REAPER without the call.
-	"PROJECT_STATUS": {required: []fieldSpec{text("run"), text("rpp"), count("unsaved")}, optional: []fieldSpec{count("changeCount")}},
+	// older script's three-field heartbeat still passes, and empty on a REAPER without the call. playState (GetPlayState's
+	// bit field: 1 playing, 2 paused, 4 recording) and playPosition (GetPlayPosition, seconds) were appended for DAW port
+	// PRD Phase 9 (ADR 0305), optional for the same reason; the script also sends a heartbeat at once when playState changes.
+	"PROJECT_STATUS": {required: []fieldSpec{text("run"), text("rpp"), count("unsaved")}, optional: []fieldSpec{count("changeCount"), count("playState"), number("playPosition")}},
 	// Phase 23 (reaper-automation-follow-through PRD, ADR 0146): a cleanup launcher opened its dialog. tool is the
 	// allow-listed key the host sent; action is the action-list name REAPER matched (so the narrator sees what opened).
 	"CLEANUP_LAUNCHED": {required: []fieldSpec{text("run"), text("tool"), text("action")}},
