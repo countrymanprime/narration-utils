@@ -208,6 +208,7 @@ export function ReadAloudDialog({ source, entities = NO_ENTITIES, notes = NO_NOT
       onTab={(tab) => setRail((current) => ({ ...current, tab }))}
       onToggle={() => setRail((current) => ({ ...current, open: !current.open }))}
       seekable={session.active}
+      fill={mode === 'booth'}
       entities={chapterEntities}
       notes={chapterNotes}
       selected={current}

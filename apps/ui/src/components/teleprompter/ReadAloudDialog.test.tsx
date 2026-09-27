@@ -735,4 +735,16 @@ describe('ReadAloudDialog, mode="booth", speaker rail (booth-mode-and-companion-
     expect(within(panel).getByRole('tab', { name: 'Story bible', selected: true })).toBeTruthy();
     expect(within(panel).getByRole('heading', { name: 'Mr. Hale' })).toBeTruthy();
   });
+
+  it("lets the reading panel fill the booth rail's own column instead of its normal fixed width, which overflowed it", async () => {
+    renderDialog({}, vi.fn(), { mode: 'booth' });
+    const panel = await screen.findByRole('complementary', { name: 'Reading panel' });
+    expect(panel.className).not.toContain('md:w-[19rem]');
+  });
+
+  it('keeps the fixed-width reading panel in the normal dialog', async () => {
+    renderDialog();
+    const panel = await screen.findByRole('complementary', { name: 'Reading panel' });
+    expect(panel.className).toContain('md:w-[19rem]');
+  });
 });

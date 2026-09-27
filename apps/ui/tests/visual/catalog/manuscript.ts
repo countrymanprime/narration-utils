@@ -296,12 +296,18 @@ export const manuscriptStates: StateEntry[] = [
     page: 'manuscript',
     state: 'booth-default',
     description:
-      'Manuscript, the chapter header\'s "Booth" button opens the same "Read aloud" dialog in `FocusShell`\'s full-screen layout (booth-mode-and-companion-panel.prd.md Phase 1) instead of the normal control bar - a status line (Ready, the chapter title, word progress, the microphone button and its level meter) across the top, the reading panel as its own landmark on the right, the script filling the centre, and a Booth commands `Toolbar` (Play, Stop reading) along the bottom, Play Kbd-labelled Space',
+      'Manuscript, the chapter header\'s "Booth" button opens the same "Read aloud" dialog in `FocusShell`\'s full-screen layout (booth-mode-and-companion-panel.prd.md Phase 1) instead of the normal control bar - a status line (Ready, the chapter title, word progress, the microphone button and its level meter) across the top, the rail on the right (Phase 3\'s "Voices in scene" speaker tags and "Reference clips coming soon" placeholder above the reading panel), the script filling the centre, and a Booth commands `Toolbar` (Play, Stop reading) along the bottom, Play Kbd-labelled Space',
   },
   {
     page: 'manuscript',
     state: 'booth-listening',
     description:
       'Manuscript, the booth mid-session and listening (booth-mode-and-companion-panel.prd.md Phase 2, same mock seam as read-aloud-listening) - the status badge reads "Reading", the Booth commands toolbar shows Pause (Kbd Space), Stop reading and Follow all enabled, the current word highlighted in the booth\'s high-contrast surface',
+  },
+  {
+    page: 'manuscript',
+    state: 'booth-speaker-open',
+    description:
+      'Manuscript, the booth after activating a speaker tag in the rail\'s "Voices in scene" section (booth-mode-and-companion-panel.prd.md Phase 3) - the chapter\'s Story Bible characters as tags in the existing Highlight character colour above the reading panel, an honest neutral "Reference clips coming soon" badge where Character Continuity Review\'s clips will go, and the reading panel switched to its Story bible tab on that character',
   },
 ];

@@ -269,6 +269,14 @@ export const manuscriptDrivers: Record<string, Driver> = {
     await clickVisible(page, 'button', 'Open booth for Chapter 1');
     await page.locator('[data-word="32"] [data-highlight="Cursor"]').waitFor();
   },
+  // Phase 3's speaker rail: a character tag opens its Story Bible entry in the reading panel, as its mark in the text does.
+  'booth-speaker-open': async (page) => {
+    await goToPage(page, 'Manuscript');
+    await clickVisible(page, 'button', 'Open booth for Chapter 1');
+    const voices = page.getByRole('region', { name: 'Voices in scene' });
+    await voices.getByRole('button').first().click();
+    await page.getByRole('tab', { name: 'Story bible', selected: true }).waitFor();
+  },
   'reader-text-small': async (page) => {
     await goToPage(page, 'Manuscript');
     await clickVisible(page, 'button', 'small');
