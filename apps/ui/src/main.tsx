@@ -10,6 +10,7 @@ import { COVERAGE_REFUSAL_REASONS } from './api/schemas/coverage';
 import { EDITING_REFUSAL_REASONS } from './api/schemas/editing';
 import type { StageUnknownCause } from './api/contracts/stages';
 import type { PreviewCandidate } from './api/contracts/preview';
+import type { PrepMarkupSeed } from './api/prepMarkupMock';
 import { MOCK_RESUME_SEEDS } from './api/resumeMockSeed';
 import { MOCK_REAPER_INPUT_SEEDS, MOCK_REAPER_SEEDS } from './api/teleprompterMock';
 import { ThemeProvider } from './theme/ThemeContext';
@@ -57,6 +58,10 @@ const mockDawNotDetected = mockParams.has('mockDawNotDetected');
 // setting's own effect, DAW port PRD D3), so a `CapabilityGate('silence_trim')`/`('item_gain')` control's live,
 // clickable state can be seen without a host - it still carries the "Experimental" badge (studio-ui-primitives Q4).
 const mockDawExperimentalOn = mockParams.has('mockDawExperimentalOn');
+// `?mockMarkup=1` seeds script markup on Chapter 3's dialogue (prep-depth.prd.md Phase 5): stresses, a breath, a pause
+// and speaker tags drawn on their lines, a mark whose words changed (said beside its line) and one whose line is gone
+// (listed above the chapter), so every way a mark shows can be seen without a host.
+const mockMarkup = mockParams.has('mockMarkup');
 // `?mockCreditsMissing=1` drops the closing credit templates (credits-in-chapter-table.prd.md Phase 2, CT5): Home's
 // chapter table shows the Closing credits row as "Not set up" with a link to Settings > Credits.
 const mockCreditsMissing = mockParams.has('mockCreditsMissing');
@@ -301,18 +306,35 @@ const mockTakeReviewScanHold = mockParams.get('mockTakeReviewScan') === 'running
 // `?mockTakeComparison=running` does the same for a take comparison (take review Phase 10).
 const mockTakeComparisonHold = mockParams.get('mockTakeComparison') === 'running';
 // `?mockMeasure=running|fails` holds a started measurement part way through (so the Delivery page's progress and Cancel can be seen),
-// or breaks it at its first poll (diagnostics-delivery-and-cleanup-tools.prd.md Phases 1 and 5). `?mockDeliveryProfile=custom` boots
-// the project judged against a custom delivery profile (delivery-platform-profiles.prd.md), so the page judged by it can be seen
-// without making one in Settings first; ACX judges otherwise.
-const mockMeasure = (['running', 'fails'] as const).find((seed) => seed === mockParams.get('mockMeasure'));
+// or breaks it at its first poll (diagnostics-delivery-and-cleanup-tools.prd.md Phases 1 and 5). `?mockMeasure=spread` boots the
+// page with several already-measured chapters whose levels vary (delivery-platform-profiles.prd.md Phase 10's book-wide spread),
+// so it can be seen without measuring several files by hand. `?mockDeliveryProfile=custom` boots the project judged against a
+// custom delivery profile (delivery-platform-profiles.prd.md), so the page judged by it can be seen without making one in
+// Settings first; ACX judges otherwise.
+const mockMeasure = (['running', 'fails', 'spread'] as const).find((seed) => seed === mockParams.get('mockMeasure'));
 // `?mockDiagnostics=running|fails` does the same for the Delivery page's Diagnostics tab (diagnostics PRD Phase 6).
 const mockDiagnostics = (['running', 'fails'] as const).find((seed) => seed === mockParams.get('mockDiagnostics'));
 const mockDeliveryProfile = mockParams.get('mockDeliveryProfile') === 'custom' ? ('custom' as const) : undefined;
 // `?mockProduction=on-pace|at-risk` seeds the Production page with a time log, a running timer (on-pace only), a deadline and a
 // contracted amount (production-tracking.prd.md Phase 4); with none, nothing is logged or set yet.
 const mockProduction = (['on-pace', 'at-risk'] as const).find((seed) => seed === mockParams.get('mockProduction'));
+
+const MOCK_MARKUP_SEED: PrepMarkupSeed = [
+  { chapter: 2, line: 1, words: 'how to get dry again', kind: 'stress', stale: { reason: 'text_changed', was: 'how to get warm again' } },
+  { chapter: 2, line: 2, words: 'Sit down, all of you, and listen to me!', kind: 'character_tag', value: 'Mouse' },
+  { chapter: 2, line: 2, words: 'Sit down, all of you, and listen to me!', kind: 'pause', value: 'short' },
+  { chapter: 2, line: 3, words: 'Ahem!', kind: 'character_tag', value: 'Mouse' },
+  { chapter: 2, line: 3, words: 'driest thing', kind: 'stress' },
+  { chapter: 2, line: 3, words: 'if you please!', kind: 'pause', value: 'long' },
+  { chapter: 2, line: 4, words: 'Ugh!', kind: 'character_tag', value: 'Lory' },
+  { chapter: 2, line: 4, words: 'Ugh!', kind: 'pause', value: 'short' },
+  { chapter: 2, line: 5, words: 'very politely', kind: 'stress' },
+  { chapter: 2, line: 6, words: 'Not I!', kind: 'character_tag', value: 'Lory' },
+  { chapter: 2, line: 7, words: 'I thought you did', kind: 'character_tag', value: 'Mouse', stale: { reason: 'paragraph_missing' } },
+];
 const mockInitial = {
-  ...(mockMeasure ? { measure: mockMeasure === 'running' ? ('hold' as const) : ('fails' as const) } : {}),
+  ...(mockMarkup ? { prepMarkup: MOCK_MARKUP_SEED } : {}),
+  ...(mockMeasure ? { measure: mockMeasure === 'running' ? ('hold' as const) : mockMeasure === 'spread' ? ('spread' as const) : ('fails' as const) } : {}),
   ...(mockDiagnostics ? { diagnostics: mockDiagnostics === 'running' ? ('hold' as const) : ('fails' as const) } : {}),
   ...(mockDeliveryProfile ? { deliveryProfile: mockDeliveryProfile } : {}),
   ...(mockProduction ? { production: PRODUCTION_SCENARIOS[mockProduction] } : {}),

@@ -120,7 +120,7 @@ type PickupsInput struct {
 
 // sourceOrder puts the pickup sources in a fixed reading order; others follow
 // by analyzer name.
-var sourceOrder = []string{AnalyzerTranscriptCompare, AnalyzerTakeReview, AnalyzerTeleprompter}
+var sourceOrder = []string{AnalyzerTranscriptCompare, AnalyzerTakeReview, AnalyzerTeleprompter, AnalyzerProoferMarkers}
 
 // causePriority orders the unknown causes by which action unblocks the others
 // first: a readable project, then the track mapping, then a finished and

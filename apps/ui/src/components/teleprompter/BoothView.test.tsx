@@ -6,6 +6,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { ApiProvider } from '../../api/ApiContext';
 import { createMockApi } from '../../api/mockApi';
 import { CommandRouter, CommandScope } from '../../input/router';
+import { boothIsActive } from './boothActive';
 import { BoothView } from './BoothView';
 import { initialSession } from './readerModel';
 import type { GuideEntity } from '../../types';
@@ -137,6 +138,16 @@ describe('BoothView (booth-mode-and-companion-panel.prd.md Phase 1, Phase 2)', (
     expect(screen.getByText('REC · P&R')).toBeTruthy();
   });
 
+  it('shows a decorative room level meter in the status region, fed by the same mic-level channel as the microphone popover (Phase 4)', () => {
+    renderBooth({ chapterTitle: 'Chapter 3' });
+    const status = screen.getByRole('region', { name: 'Status' });
+    const meters = within(status).queryAllByRole('meter');
+    // Decorative: no accessible `meter` role of its own, unlike the microphone popover's own labelled meter (which is
+    // not mounted here since the popover starts closed).
+    expect(meters).toHaveLength(0);
+    expect(within(status).getByText('Room')).toBeTruthy();
+  });
+
   it('shows the chapter title and word progress in the status region', () => {
     renderBooth({
       chapterTitle: 'Chapter 3',
@@ -263,5 +274,15 @@ describe('BoothView speaker rail (booth-mode-and-companion-panel.prd.md Phase 3)
   it('has no speaker section in credits mode (no chapter, so no Story Bible marks)', () => {
     renderBooth({ speakers: undefined });
     expect(screen.queryByRole('region', { name: 'Voices in scene' })).toBeNull();
+  });
+});
+
+describe('BoothView marks itself active for useBoothRecording (booth-mode-and-companion-panel.prd.md Phase 5)', () => {
+  it('is active only while mounted', () => {
+    expect(boothIsActive()).toBe(false);
+    const { unmount } = renderBooth();
+    expect(boothIsActive()).toBe(true);
+    unmount();
+    expect(boothIsActive()).toBe(false);
   });
 });

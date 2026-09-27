@@ -6,7 +6,8 @@ import { plural, summarize } from './stageText';
 const CHIP = 'px-2.5 py-1 text-[0.78rem]';
 
 /**
- * The estimate card's summary of the stage suggestions (docs/prds/chapter-stage-recommendations.prd.md Phase 5), seen while the breakdown is
+ * The estimate card's summary of the stage suggestions (chapter-stage-recommendations.prd.md Phase 5, deleted; see
+ * docs/architecture/stage-recommendations.md), seen while the breakdown is
  * still collapsed: how many chapters have a suggestion, how many have evidence that changed since they were confirmed, or that they could
  * not be checked. Each chip opens the breakdown, where the rows are. Nothing shows while the first read runs or when there is nothing to say.
  */

@@ -74,6 +74,45 @@ describe('WorkspacePage', () => {
     expect(await screen.findByRole('button', { name: 'Pause' })).toBeTruthy();
   });
 
+  it('goes to and loops the word at the playhead in REAPER, then stops the loop (Phase 3)', async () => {
+    const user = userEvent.setup();
+    // The default mock REAPER (connected) and Chapter 1's alignment (every token 'read', per the alignment test
+    // above): both Go to and Loop of the word at the playhead (token 0) succeed for real, through
+    // workspaceGoTo/workspaceLoop, and Stop loop reads it back from findingsReaperStatus's loopingFindingId, exactly
+    // as a real REAPER session would (useWorkspaceReaper.ts).
+    renderWorkspace();
+    await screen.findByRole('heading', { name: chapterName(chapter) });
+
+    await user.click(await screen.findByRole('button', { name: 'Go to in REAPER' }));
+    expect(screen.queryByRole('alert')).toBeNull();
+
+    await user.click(await screen.findByRole('button', { name: 'Loop in REAPER' }));
+    const stop = await screen.findByRole('button', { name: 'Stop loop' });
+
+    await user.click(stop);
+    await waitFor(() => expect(screen.queryByRole('button', { name: 'Stop loop' })).toBeNull());
+    expect(await screen.findByRole('button', { name: 'Loop in REAPER' })).toBeTruthy();
+  });
+
+  it('disables Go to and Loop in REAPER, with the reason, when REAPER is not connected', async () => {
+    renderWorkspace({}, { reaper: 'standalone' });
+    await screen.findByRole('heading', { name: chapterName(chapter) });
+
+    const goTo = await screen.findByRole('button', { name: 'Go to in REAPER' });
+    const loop = await screen.findByRole('button', { name: 'Loop in REAPER' });
+    await waitFor(() => expect(goTo.hasAttribute('disabled')).toBe(true));
+    expect(loop.hasAttribute('disabled')).toBe(true);
+  });
+
+  it('shows REAPER’s refusal as an alert and changes nothing', async () => {
+    const user = userEvent.setup();
+    renderWorkspace({}, { reaper: 'recording' });
+    await screen.findByRole('heading', { name: chapterName(chapter) });
+
+    await user.click(await screen.findByRole('button', { name: 'Go to in REAPER' }));
+    expect((await screen.findByRole('alert')).textContent).toContain('REAPER is recording');
+  });
+
   it('shows the "not checked yet" state, with no player, for a chapter never checked', async () => {
     const neverChecked = WIRE_CHAPTERS[9]; // status 'proofing'/'not_started' tier, no recordedFraction seeded
     render(

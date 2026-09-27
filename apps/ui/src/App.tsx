@@ -4,14 +4,15 @@ import type { Bootstrap } from './types';
 import { useApi } from './api/ApiContext';
 import { AppShell } from './components/layout/AppShell';
 import { StartupScreen, type StartupState } from './components/layout/StartupScreen';
-import { ToastRegion } from './components/primitives/Toast';
+import { ToastRegion, type ToastTone } from './components/primitives/Toast';
 import { useToasts } from './hooks/useToasts';
 import { useChapterSync } from './hooks/useChapterSync';
 import { usePendingAction } from './hooks/usePendingAction';
 import { ChapterSyncConsentDialog } from './components/tracks/ChapterSyncConsentDialog';
 import type { ChapterSyncPreview } from './api/contracts/chapterSync';
 import { useAppHistory } from './hooks/useAppHistory';
-import { notificationForJobEnd, shouldNotifyForJobEnd, toastForJobEnd } from './jobEnded';
+import { notificationForJobEnd, shouldNotifyForJobEnd, shouldQueueJobEndAnnouncement, toastForJobEnd } from './jobEnded';
+import { useBoothRecording } from './components/teleprompter/useBoothRecording';
 import { ConfirmDialog } from './components/primitives/ConfirmDialog';
 import { ShortcutSheet } from './components/help/ShortcutSheet';
 import { Home } from './components/home/Home';
@@ -212,17 +213,34 @@ function AppRoutes() {
   // A host job that ends is announced from here, so leaving the page that started it loses nothing (ADR 0076). The same
   // event decides whether it is also worth an OS notification (N1-N4): document.hasFocus() is read fresh for each job,
   // here, because it is the webview's to know, not the host's.
+  // booth-mode-and-companion-panel.prd.md Phase 5 (no-sound, no-notification rule): a toast that would fire while the
+  // booth is recording queues here instead - `queuedAnnouncements` - and is shown once `boothRecording` clears
+  // (below), rather than interrupting a take. The OS notification above is untouched: silencing it is out of scope
+  // (the PRD's "What We're NOT Building" table) and it only ever fires while the window is unfocused anyway (N1).
+  const boothRecording = useBoothRecording();
+  const boothRecordingRef = useRef(boothRecording);
+  boothRecordingRef.current = boothRecording;
+  const queuedAnnouncements = useRef<{ text: string; tone: ToastTone }[]>([]);
   useEffect(() => {
     if (!hasBootstrap) return;
     return api.subscribeJobEnded((event) => {
       const announcement = toastForJobEnd(event);
-      if (announcement) setNotice(announcement.text, announcement.tone);
+      if (announcement) {
+        if (shouldQueueJobEndAnnouncement(announcement, boothRecordingRef.current)) queuedAnnouncements.current.push(announcement);
+        else setNotice(announcement.text, announcement.tone);
+      }
       if (shouldNotifyForJobEnd(event, document.hasFocus())) {
         const { title, body } = notificationForJobEnd(event);
         void api.systemNotify(event.kind, title, body);
       }
     });
   }, [api, hasBootstrap, setNotice]);
+  useEffect(() => {
+    if (boothRecording || queuedAnnouncements.current.length === 0) return;
+    const queued = queuedAnnouncements.current;
+    queuedAnnouncements.current = [];
+    for (const announcement of queued) setNotice(announcement.text, announcement.tone);
+  }, [boothRecording, setNotice]);
 
   // A check the app makes on its own found a release newer than this build (ADR 0072): the narrator is told once, and Settings > About
   // and updates says the rest. Nothing is downloaded until they ask.

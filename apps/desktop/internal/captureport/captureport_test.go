@@ -20,11 +20,12 @@ func TestEveryRegisteredBackendPassesTheSuite(t *testing.T) {
 	}
 }
 
-func TestWindowsAndDarwinEachHaveTheirOwnBackendTodayAndLinuxHasNone(t *testing.T) {
-	// The teleprompter sidecar lists and opens microphones through FFmpeg's dshow on Windows and avfoundation on macOS; Linux has none.
+func TestOnlyWindowsHasABackend(t *testing.T) {
+	// The teleprompter sidecar lists and opens microphones through FFmpeg's dshow on Windows, the only supported platform
+	// (docs/adr/0412; the macOS coreaudio row was removed by D74).
 	for platform, want := range map[string][]string{
 		"windows": {"dshow"},
-		"darwin":  {"coreaudio"},
+		"darwin":  {},
 		"linux":   {},
 	} {
 		if got := captureport.Backends.Names(platform); !reflect.DeepEqual(got, want) {
@@ -43,18 +44,8 @@ func TestForWindowsIsDshow(t *testing.T) {
 	}
 }
 
-func TestForDarwinIsCoreAudio(t *testing.T) {
-	entry, err := captureport.For("darwin")
-	if err != nil {
-		t.Fatalf("For(darwin): %v", err)
-	}
-	if entry.Name != captureport.CoreAudio || entry.New().Name() != "coreaudio" {
-		t.Fatalf("For(darwin) = %q, want coreaudio", entry.Name)
-	}
-}
-
 func TestAPlatformWithoutABackendIsRefusedWithANotSupportedError(t *testing.T) {
-	for _, platform := range []string{"linux"} {
+	for _, platform := range []string{"darwin", "linux"} {
 		_, err := captureport.For(platform)
 		var refusal *port.NotSupportedError
 		if !errors.As(err, &refusal) || !errors.Is(err, port.ErrNotSupported) {

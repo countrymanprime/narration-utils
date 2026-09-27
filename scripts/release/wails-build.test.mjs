@@ -59,13 +59,13 @@ test('a version with a suffix never reaches the Go build', () => {
 test('the program is narration-utils, with .exe on Windows only', () => {
   assert.equal(programName(product, 'windows'), 'narration-utils.exe');
   assert.equal(programName(product, 'linux'), 'narration-utils');
-  assert.equal(programName(product, 'darwin'), 'narration-utils');
 });
 
-test('each platform builds for itself', () => {
+// Windows is the only shipped platform; Linux builds only as a development host (docs/adr/0412, docs/adr/0413).
+test('each platform builds for itself, and macOS is not built', () => {
   assert.equal(goosOf('win32'), 'windows');
-  assert.equal(goosOf('darwin'), 'darwin');
   assert.equal(goosOf('linux'), 'linux');
+  assert.throws(() => goosOf('darwin'), /not built on darwin/);
   assert.throws(() => goosOf('freebsd'), /not built on freebsd/);
 });
 

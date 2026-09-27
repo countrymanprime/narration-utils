@@ -1,6 +1,6 @@
 # 0027. Windows gates pull requests and creates the release; macOS and Linux are optional, separate builds
 
-**Status:** Accepted (its asset names are superseded by [ADR 0197](0197-every-release-asset-name-carries-the-bare-version.md))
+**Status:** Accepted (its asset names are superseded by [ADR 0197](0197-every-release-asset-name-carries-the-bare-version.md); its optional macOS and Linux builds are removed by [ADR 0412](0412-windows-is-the-only-supported-platform-for-now.md))
 **Date:** 2026-09-19
 **Supersedes:**
 

@@ -87,8 +87,8 @@ var builtinDefaults = map[string]Values{
 	// background_checks defaults on (S7 B, D27): it only ever runs with the model installed, on mains power and while
 	// REAPER is idle (coverage.NextBackground, ADR 0211).
 	"RecordingCoverage": {"min_paragraph_present": "0.8", "max_missing_run": "3", "max_misread_run": "8", "min_anchor_run": "3", "background_checks": "true"},
-	// StageRecommendations defaults every signal to required and suggestions on (docs/prds/chapter-stage-recommendations.prd.md
-	// Phase 6, Q8): a narrator who never opens this settings page keeps the behaviour Phase 1 shipped with (every declared
+	// StageRecommendations defaults every signal to required and suggestions on (chapter-stage-recommendations.prd.md
+	// Phase 6, Q8, deleted; see docs/architecture/stage-recommendations.md): a narrator who never opens this settings page keeps the behaviour Phase 1 shipped with (every declared
 	// signal id required).
 	// editing.empty_space/clicks/breaths default to required (Q5 option A: "it matches the product definition").
 	// Clicks and breaths can never actually be met while their detector is unvalidated (Phase 4 has not run), so
