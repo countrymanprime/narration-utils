@@ -18,6 +18,7 @@ import { workspaceFeedback } from './interactionFeedback/workspace';
 import { reviewFeedback } from './interactionFeedback/review';
 import { editingFeedback } from './interactionFeedback/editing';
 import { deliveryFeedback } from './interactionFeedback/delivery';
+import { productionFeedback } from './interactionFeedback/production';
 import { creditsFeedback } from './interactionFeedback/credits';
 
 export type { FeedbackRow } from './interactionFeedback/row';
@@ -38,6 +39,7 @@ const AREAS: Array<Record<string, FeedbackRow>> = [
   reviewFeedback,
   editingFeedback,
   deliveryFeedback,
+  productionFeedback,
   creditsFeedback,
 ];
 

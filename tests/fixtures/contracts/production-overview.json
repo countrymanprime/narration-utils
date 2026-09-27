@@ -1,0 +1,108 @@
+{
+  "chapters": [
+    {
+      "contentKind": "narration",
+      "hoursLogged": 2.25,
+      "id": "c-0001",
+      "pfh": 11.440677966101696,
+      "readiness": {
+        "reason": "3 clicks are still in the take",
+        "target": "proofing",
+        "verdict": "not_ready"
+      },
+      "recordedSeconds": 708,
+      "status": "editing",
+      "subtitle": "Down the Rabbit-Hole",
+      "title": "Chapter 1",
+      "wordCount": 3000
+    },
+    {
+      "contentKind": "narration",
+      "hoursLogged": 0,
+      "id": "c-0002",
+      "pfh": null,
+      "readiness": {
+        "reason": "No recording check has run yet",
+        "target": "editing",
+        "verdict": "unknown"
+      },
+      "recordedSeconds": null,
+      "recordedUnavailable": "unlinked",
+      "status": "recording",
+      "title": "The Pool of Tears",
+      "wordCount": 3000
+    },
+    {
+      "contentKind": "narration",
+      "hoursLogged": 0,
+      "id": "c-0003",
+      "pfh": null,
+      "readiness": {
+        "reason": "",
+        "verdict": "none"
+      },
+      "recordedSeconds": null,
+      "status": "not_started",
+      "title": "A Caucus-Race and a Long Tale",
+      "wordCount": 3000
+    }
+  ],
+  "deadline": {
+    "date": "2026-10-14",
+    "daysLeft": 18
+  },
+  "nextUp": [
+    {
+      "chapterId": "c-0001",
+      "readiness": {
+        "reason": "3 clicks are still in the take",
+        "target": "proofing",
+        "verdict": "not_ready"
+      },
+      "stage": "editing",
+      "subtitle": "Down the Rabbit-Hole",
+      "title": "Chapter 1"
+    },
+    {
+      "chapterId": "c-0002",
+      "readiness": {
+        "reason": "No recording check has run yet",
+        "target": "editing",
+        "verdict": "unknown"
+      },
+      "stage": "recording",
+      "title": "The Pool of Tears"
+    },
+    {
+      "chapterId": "c-0003",
+      "readiness": {
+        "reason": "",
+        "verdict": "none"
+      },
+      "stage": "not_started",
+      "title": "A Caucus-Race and a Long Tale"
+    }
+  ],
+  "running": {
+    "chapterId": "c-0002",
+    "id": "running",
+    "source": "manual",
+    "stage": "recording",
+    "startedAt": "2026-09-21T10:00:00Z"
+  },
+  "totals": {
+    "bookPfh": 11.440677966101696,
+    "chapters": 3,
+    "contractedAmount": 2400,
+    "effectiveRate": 1066.6666666666667,
+    "finalizedChapters": 0,
+    "hoursByStage": {
+      "editing": 0.75,
+      "recording": 1.5
+    },
+    "hoursLogged": 2.25,
+    "measuredChapters": 1,
+    "recordedSeconds": 708,
+    "wordCount": 9000
+  }
+}
