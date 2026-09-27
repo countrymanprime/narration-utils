@@ -720,6 +720,15 @@ export function GuidePronounceUser(id: string, aliasIndex: number | null, ipa: s
 }
 
 /**
+ * GuidePronunciationImportQueriesCSV applies an author's answered file back onto the Story Bible (prep-depth P6): the UI
+ * reads whatever file the narrator picks in their own file input and sends its text; the host never opens a file of its
+ * own. Every row it could not read, match to a still-existing entry or apply is reported with its line, never dropped.
+ */
+export function GuidePronunciationImportQueriesCSV(csvText: string): $CancellablePromise<string> {
+    return $Call.ByID(385033758, csvText);
+}
+
+/**
  * GuidePronunciationQueries lists every name whose pronunciation the author has not confirmed, in reading order (prep-depth P3).
  */
 export function GuidePronunciationQueries(): $CancellablePromise<string> {
