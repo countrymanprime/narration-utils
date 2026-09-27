@@ -37,12 +37,12 @@ type Props = {
   /** The chapter's plain display name (no "Read aloud:" prefix), named in the arm button and the first-time confirm. */
   chapterTitle?: string;
   /** The Record-in-REAPER toggle's state and Play/Stop orchestration (Phase 7, `useRecordInReaper`), owned by
-   * ReadAloudDialog since its own "Stop reading?" confirm also needs to stop a recording this app started. */
+   * BoothSession since its own "Stop reading?" confirm also needs to stop a recording this app started. */
   recording?: RecordInReaperState;
 };
 
-// A do-nothing RecordInReaperState for the standalone page (Q11 A: no REAPER toggle there, TeleprompterPage.tsx never
-// passes `recording`), so Play and Stop orchestrate nothing rather than needing a null check at every call site.
+// A do-nothing RecordInReaperState for a caller that passes no `recording` (the Booth always passes one; this keeps the
+// bar usable on its own, as in its tests), so Play and Stop orchestrate nothing rather than needing a null check at every call site.
 const NO_RECORDING: RecordInReaperState = {
   loaded: true,
   enabled: false,

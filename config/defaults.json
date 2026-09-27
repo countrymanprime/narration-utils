@@ -62,7 +62,10 @@
     "max_missing_run": "3",
     "max_misread_run": "8",
     "min_anchor_run": "3",
-    "background_checks": "true"
+    "background_checks": "true",
+    "cascade_enabled": "false",
+    "cascade_first_pass_model": "tiny",
+    "cascade_recheck_model": "large-v3-turbo"
   },
   "StageRecommendations": {
     "suggestions_enabled": "true",

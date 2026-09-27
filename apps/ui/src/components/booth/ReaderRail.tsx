@@ -41,7 +41,7 @@ type Props = {
  * The read-aloud dialog's side rail (teleprompter-manuscript-integration.prd.md Phase 5): the key, the session's suspected
  * flags (Phase 7), the chapter's notes and its story bible entries, beside the text rather than over it, so opening one never covers, moves or scrolls the
  * text being read. It is sticky and scrolls on its own. Whether it is open and which tab shows are per-viewer
- * preferences kept in browser storage (`readerPreferences.ts`); the owner of that state is `ReadAloudDialog`.
+ * preferences kept in browser storage (`readerPreferences.ts`); the owner of that state is `BoothSession`.
  */
 export function ReaderRail({ state, onTab, onToggle, seekable, entities, notes, selected, onSelect, flagPanel, fill = false }: Props) {
   const entityHeadingId = useId();

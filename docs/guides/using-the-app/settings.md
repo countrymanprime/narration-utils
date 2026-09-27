@@ -29,6 +29,12 @@ and tail together (ACX asks for 1 to 5 seconds at each end of every file). In bo
   words or fewer can pass, because a transcriber drops single words too. Changing either of the first two only changes
   how a stored check is judged. Changing either of the last two makes earlier checks out of date, so
   those chapters need checking again. In This Project, a blank box uses the Global value.
+  The category also has its own switch, **Two-pass check (fast first pass, then re-check what's
+  missing)**, off by default. On, a **First-pass Whisper model** and a **Re-check Whisper model**
+  pick which model runs each pass ([how it works](../../utilities/recording-coverage.md#the-model-cascade)):
+  a fast pass (`tiny` by default) transcribes the whole chapter, and a stronger one (`large-v3-turbo`
+  by default) re-checks only what it reports missing. Turning it on does not change the model
+  **Proofing** below uses.
 - **Proofing** picks the default Whisper model and chunk length for a comparison and the marker colors
   for misread, skipped and extra words. It shows whether the chosen model is installed, with
   **Remove local model…** once it is.

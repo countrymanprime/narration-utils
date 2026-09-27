@@ -4,7 +4,7 @@ import { Button } from '../primitives/Button';
 import { Select } from '../primitives/Select';
 import type { TeleprompterDevice } from '../../types';
 
-// The label styling every Teleprompter field row shares (TeleprompterPage.tsx's LABEL_CLASS); duplicated here rather
+// The label styling every Teleprompter field row shares (BoothPage.tsx's LABEL_CLASS); duplicated here rather
 // than imported so this component has no dependency back on its one caller.
 const LABEL_CLASS = 'block text-[0.82rem] font-medium text-[var(--text-muted)]';
 const HINT_CLASS = 'mt-1 block text-xs';

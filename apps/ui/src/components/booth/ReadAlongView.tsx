@@ -39,8 +39,8 @@ type Props = {
 
 /**
  * The reader text, status line and model-download prompt - everything a reading session shows once a chapter is chosen.
- * Shared by `TeleprompterPage` and `ReadAloudDialog` (teleprompter-manuscript-integration.prd.md Phase 2) so both mount
- * one view until the standalone page is retired (Phase 13). Chapter choice is not this component's job, and neither -
+ * Mounted by `BoothView` (the Booth, stage-navigation-and-page-replacement.prd.md Phase 4, which replaced the Teleprompter page
+ * and the Read aloud dialog that shared it) and by `CompanionShell`. Chapter choice is not this component's job, and neither -
  * since read-aloud-control-bar.prd.md Phase 3 - is Start/Stop, the microphone or the engine/model choice: those moved
  * into `ReadingControlBar`, which the caller renders outside this view (a `Dialog` footer, or the page's own sticky bar).
  */

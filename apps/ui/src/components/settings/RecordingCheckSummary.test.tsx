@@ -3,7 +3,7 @@ import { cleanup, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it } from 'vitest';
 import { wireSettings } from '../../api/mockFixtures';
 import type { ScopedSettingField } from '../../types';
-import { RecordingCheckSummary, recordingRule } from './RecordingCheckSummary';
+import { RecordingCheckSummary, cascadeRule, recordingRule } from './RecordingCheckSummary';
 
 const fields = (): ScopedSettingField[] => wireSettings().RecordingCoverage;
 const withValue = (key: string, effectiveValue: string) => fields().map((field) => (field.key === key ? { ...field, effectiveValue } : field));
@@ -37,5 +37,17 @@ describe('RecordingCheckSummary', () => {
   it('tells a project that a blank value uses the Global one', () => {
     render(<RecordingCheckSummary fields={fields()} scope="project" />);
     expect(screen.getByText(/A value left blank here uses the Global one/)).toBeTruthy();
+  });
+
+  // The model cascade's own sentence (recording-check-model-cascade PRD Phase 5, MC1/MC2).
+  it('says the two-pass check is off by default, and names its models once turned on', () => {
+    expect(cascadeRule(fields())).toBe('The two-pass check is off: every check runs the Proofing model above alone.');
+    const on = fields().map((field) => (field.key === 'cascade_enabled' ? { ...field, effectiveValue: 'true' } : field));
+    expect(cascadeRule(on)).toBe('The two-pass check is on: a fast first pass with tiny, then anything it reports missing is re-checked with large-v3-turbo.');
+  });
+
+  it('renders the cascade sentence in the panel', () => {
+    render(<RecordingCheckSummary fields={fields()} scope="global" />);
+    expect(screen.getByText(/The two-pass check is off/)).toBeTruthy();
   });
 });

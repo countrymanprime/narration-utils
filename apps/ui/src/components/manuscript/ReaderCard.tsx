@@ -1,5 +1,5 @@
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faBookmark as faBookmarkSolid, faChevronDown, faChevronUp, faMicrophone } from '@fortawesome/free-solid-svg-icons';
+import { faBookmark as faBookmarkSolid, faChevronDown, faChevronUp, faMicrophone, faWaveSquare } from '@fortawesome/free-solid-svg-icons';
 import { faBookmark as faBookmarkRegular } from '@fortawesome/free-regular-svg-icons';
 import { useId, type ReactNode } from 'react';
 import { readTimeLabel } from '../../state';
@@ -14,9 +14,10 @@ const STAT_BLOCK_CLASS = 'min-w-[6.5rem] tabular-nums';
 // The action slot (manuscript-chapter-header-alignment.prd.md, Q1 A / Technical Approach): a fixed-width box rendered
 // on every row, empty when the chapter has no actions, so the stat block still lines up beside it. Its content is
 // right-aligned (not left-aligned), so both edges - the cluster's start and end - stay put whether or not a Retail
-// sample tag widens the cluster to its left. Sized for the one "Record in Booth" action (stage-navigation-and-page-
-// replacement.prd.md Phase 4, Q9), which replaced the Read aloud, Booth and Companion buttons.
-const ACTION_SLOT_CLASS = 'flex w-40 flex-none justify-end gap-1';
+// sample tag widens the cluster to its left. Sized for "Record in Booth" (stage-navigation-and-page-replacement.prd.md
+// Phase 4, Q9, which replaced the Read aloud, Booth and Companion buttons) and the icon-only Workspace entry beside it
+// (edit-and-proof-workspace.prd.md Phase 4).
+const ACTION_SLOT_CLASS = 'flex w-52 flex-none justify-end gap-1';
 
 // A Manuscript card's frame: a chapter card or a credits card (manuscript-credits-card-parity.prd.md, Phase 1),
 // sharing one header and one whole-header disclosure. The header's right side is one fixed order - [Retail sample
@@ -42,6 +43,8 @@ export function ReaderCard({
   onToggleBookmark,
   showRetailSample = false,
   onRecordInBooth,
+  showWorkspace = false,
+  onWorkspace,
   wordCount,
   children,
 }: {
@@ -62,6 +65,11 @@ export function ReaderCard({
   /** "Record in Booth" (stage-navigation-and-page-replacement.prd.md Phase 4, Q9): the Booth page on this chapter or
    * credits. Omitted where there is nothing to read aloud (a reference chapter, empty credits); the slot stays either way. */
   onRecordInBooth?: () => void;
+  /** The chapter-header "Open workspace" entry point (edit-and-proof-workspace.prd.md Phase 4, page inventory
+   * "Manuscript"): icon-only, so it fits the fixed-width action slot beside Record in Booth; only ever set for a
+   * narration chapter, never a credits card. */
+  showWorkspace?: boolean;
+  onWorkspace?: () => void;
   wordCount: number;
   children: ReactNode;
 }) {
@@ -142,6 +150,21 @@ export function ReaderCard({
                   <FontAwesomeIcon icon={faMicrophone} /> Record in Booth
                 </Button>
               </TooltipTarget>
+            )}
+            {showWorkspace ? (
+              <TooltipTarget className="relative z-[1]" text="Open the chapter workspace: listen, follow the script and see flags">
+                <Button variant="ghost" className="text-xs" aria-label={`Open workspace for ${title}`} onClick={onWorkspace}>
+                  <FontAwesomeIcon icon={faWaveSquare} />
+                </Button>
+              </TooltipTarget>
+            ) : (
+              onRecordInBooth && (
+                // A credits card can be recorded but has no chapter to open a workspace for: an invisible same-size
+                // placeholder keeps its Record in Booth in line with every chapter's down the column.
+                <Button variant="ghost" className="invisible text-xs" aria-hidden="true" tabIndex={-1}>
+                  <FontAwesomeIcon icon={faWaveSquare} />
+                </Button>
+              )
             )}
           </div>
           <FontAwesomeIcon icon={expanded ? faChevronUp : faChevronDown} className="flex-none" style={{ color: 'var(--text-muted)' }} />

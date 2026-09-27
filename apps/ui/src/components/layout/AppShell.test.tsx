@@ -107,6 +107,44 @@ describe('AppShell header pill mismatch state (Phase 7)', () => {
   });
 });
 
+// stage-navigation-and-page-replacement.prd.md Phase 1 (ADR 0407 item 3, Q5, Q6): the nav is grouped by production
+// stage, each existing page held under its current name; `/production` (PR #760) has no nav entry until Phase 2.
+describe('AppShell grouped navigation (Phase 1)', () => {
+  it('names every group (sidebar, rail and drawer all expose the same accessible name)', () => {
+    renderShell();
+    for (const label of ['Production', 'Prep', 'Record', 'Review', 'Finish']) {
+      expect(screen.getAllByRole('group', { name: label }).length).toBeGreaterThan(0);
+    }
+  });
+
+  it('has no "Production" nav item (dropped from PR #760, D79): the page stays reachable, unlisted', () => {
+    renderShell();
+    expect(screen.queryAllByRole('button', { name: 'Production' })).toHaveLength(0);
+  });
+
+  // Each page takes its new name in the phase that replaces it (Q5): the Booth (Phase 4) has replaced the Teleprompter.
+  it('still lists every other existing page, under its current name', () => {
+    renderShell();
+    for (const name of ['Home', 'Manuscript', 'Story Bible', 'Booth', 'Proofing', 'Tracks', 'Review', 'Delivery', 'Settings']) {
+      expect(screen.getAllByRole('button', { name }).length).toBeGreaterThan(0);
+    }
+  });
+});
+
+// Phase 1 (Q7): the engine chip replaces the REAPER pill, in place.
+describe('AppShell engine chip (Phase 1)', () => {
+  it('defaults to the REAPER pill states when no engine prop is given', () => {
+    renderShell({ dawFileLinked: false });
+    expect(screen.getByRole('button', { name: /No REAPER project linked/ })).toBeTruthy();
+  });
+
+  it('shows "Built-in recorder" and drops the REAPER link action when engine is builtin', () => {
+    renderShell({ engine: 'builtin' });
+    expect(screen.getByLabelText('Built-in recorder')).toBeTruthy();
+    expect(screen.queryByText(/REAPER/)).toBeNull();
+  });
+});
+
 // Phase 1 (app-navigation-and-zoom-controls.prd.md, Q1 A, Q8): Back and Forward at the left of the header.
 describe('AppShell header history controls (Phase 1)', () => {
   it('are disabled with a reason when there is nowhere to go', () => {

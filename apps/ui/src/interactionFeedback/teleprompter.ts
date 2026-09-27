@@ -42,11 +42,6 @@ export const teleprompterFeedback: Record<string, FeedbackRow> = {
   // entries and notes the Manuscript used to hand the read-aloud dialog.
   'src/components/booth/BoothPage.tsx::guideEntities#1': row('mount', 'file-io', 'na', 'na', 'ui', 'silent', 'na', 'exempt', 'Only marks Story Bible mentions in the text and fills the rail; without them the chapter still reads.'),
   'src/components/booth/BoothPage.tsx::noteList#1': row('mount', 'file-io', 'na', 'na', 'ui', 'silent', 'na', 'exempt', 'Only marks note anchors in the text and fills the Notes tab; without them the chapter still reads.'),
-  // Following REAPER while the resume prompt shows (read-aloud-resume-from-daw Phase 5, ADR 0352).
-  'src/components/booth/ResumePrompt.tsx::subscribeDawTransport#1': subscription('RD7: the heartbeat\'s transport push (daw_transport_changed) makes the resume prompt go away the moment REAPER plays or records; it chooses nothing.'),
-  'src/components/booth/ResumePrompt.tsx::subscribeTeleprompterResumeFollow#1': subscription('teleprompter_resume_follow: REAPER playing or recording settles the prompt, and a settled edit cursor re-runs the lookup ("Checking…" shows at once).'),
-  'src/components/booth/ResumePrompt.tsx::teleprompterResumeFollow#1': row('effect', 'instant', 'na', 'na', 'event', 'silent', 'na', 'exempt', 'Starts the host\'s bounded REAPER poll while the prompt shows for a track; not following (track state off, REAPER away) only means the prompt waits for a choice, as before Phase 5 (SILENT_CATCHES).'),
-  'src/components/booth/ResumePrompt.tsx::teleprompterResumeUnfollow#1': row('effect', 'instant', 'na', 'na', 'event', 'silent', 'na', 'exempt', 'Stops the poll when the prompt goes away or the Booth is left; the host also stops it by itself on play, record, a replacing follow or after 30 minutes (SILENT_CATCHES).'),
   'src/components/booth/useTeleprompterSession.ts::subscribeTeleprompterEvent#1': subscription('The live session events.'),
   'src/components/booth/useTeleprompterSession.ts::subscribeTeleprompterState#1': subscription('The live session state.'),
   'src/components/booth/useTeleprompterSession.ts::teleprompterState#1': row('mount', 'instant', 'na', 'na', 'ui', 'silent', 'na', 'exempt', 'Hydrates a session that was already running; the state event follows anyway.'),
@@ -135,6 +130,11 @@ export const teleprompterFeedback: Record<string, FeedbackRow> = {
     'ok',
     'Starts the meter-only child while the microphone popover is open and no session is running; the meter itself shows it working, an inline alert under it otherwise (the host refuses a second meter or one during a session).',
   ),
+  // Following REAPER while the resume prompt shows (read-aloud-resume-from-daw Phase 5, ADR 0352).
+  'src/components/booth/ResumePrompt.tsx::subscribeDawTransport#1': subscription('RD7: the heartbeat\'s transport push (daw_transport_changed) makes the resume prompt go away the moment REAPER plays or records; it chooses nothing.'),
+  'src/components/booth/ResumePrompt.tsx::subscribeTeleprompterResumeFollow#1': subscription('teleprompter_resume_follow: REAPER playing or recording settles the prompt, and a settled edit cursor re-runs the lookup ("Checking…" shows at once).'),
+  'src/components/booth/ResumePrompt.tsx::teleprompterResumeFollow#1': row('effect', 'instant', 'na', 'na', 'event', 'silent', 'na', 'exempt', 'Starts the host\'s bounded REAPER poll while the prompt shows for a track; not following (track state off, REAPER away) only means the prompt waits for a choice, as before Phase 5 (SILENT_CATCHES).'),
+  'src/components/booth/ResumePrompt.tsx::teleprompterResumeUnfollow#1': row('effect', 'instant', 'na', 'na', 'event', 'silent', 'na', 'exempt', 'Stops the poll when the prompt goes away or the dialog closes; the host also stops it by itself on play, record, a replacing follow or after 30 minutes (SILENT_CATCHES).'),
   'src/components/booth/useInputLevel.ts::teleprompterMeterStop#1': row(
     'effect',
     'python',

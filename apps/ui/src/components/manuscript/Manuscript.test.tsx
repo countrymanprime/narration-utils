@@ -21,6 +21,7 @@ function renderManuscript(
   focusStoryBibleEntity = vi.fn(),
   initialEntries = ['/manuscript'],
   initial: Parameters<typeof createMockApi>[1] = {},
+  goToWorkspace?: (chapterId: string) => void,
   goToBooth = vi.fn(),
 ) {
   const api = createMockApi(overrides, initial);
@@ -30,7 +31,13 @@ function renderManuscript(
       <MemoryRouter initialEntries={initialEntries}>
         <ApiProvider api={api}>
           <CommandRouter>
-            <Manuscript notify={notify} focusStoryBibleEntity={focusStoryBibleEntity} projectFolder="/projects/alice" goToBooth={goToBooth} />
+            <Manuscript
+              notify={notify}
+              focusStoryBibleEntity={focusStoryBibleEntity}
+              goToWorkspace={goToWorkspace}
+              projectFolder="/projects/alice"
+              goToBooth={goToBooth}
+            />
           </CommandRouter>
         </ApiProvider>
       </MemoryRouter>
@@ -769,6 +776,23 @@ describe('Manuscript page (integration, driven through the mock NarrationApi)', 
       const opening = openingHeading.closest('[data-credits-entry]') as HTMLElement;
       await within(opening).findByText('Nothing to preview yet.');
       expect(within(opening).queryByRole('button', { name: /in Booth/ })).toBeNull();
+    });
+  });
+  describe('Open workspace (edit-and-proof-workspace.prd.md Phase 4)', () => {
+    it('opens the chapter workspace for a narration chapter', async () => {
+      const goToWorkspace = vi.fn();
+      renderManuscript({}, vi.fn(), ['/manuscript'], {}, goToWorkspace);
+      await waitFor(() => expect(screen.getByRole('heading', { name: 'Chapter 1 — Down the Rabbit-Hole' })).toBeTruthy());
+
+      fireEvent.click(screen.getByRole('button', { name: 'Open workspace for Chapter 1' }));
+
+      expect(goToWorkspace).toHaveBeenCalledWith('chapter-1');
+    });
+
+    it('renders no Workspace entry when the caller has none to open', async () => {
+      renderManuscript();
+      await waitFor(() => expect(screen.getByRole('heading', { name: 'Chapter 1 — Down the Rabbit-Hole' })).toBeTruthy());
+      expect(screen.queryByRole('button', { name: /Open workspace for/ })).toBeNull();
     });
   });
 });

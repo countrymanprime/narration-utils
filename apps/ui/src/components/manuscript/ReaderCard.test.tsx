@@ -100,7 +100,7 @@ describe('ReaderCard (manuscript-credits-card-parity.prd.md, manuscript-chapter-
   it('renders an empty, same-width action slot when there is nothing to record (a row with no action still lines up)', () => {
     renderCard({ onRecordInBooth: undefined });
     expect(screen.queryByRole('button', { name: /in Booth/ })).toBeNull();
-    const slots = document.querySelectorAll('.w-40');
+    const slots = document.querySelectorAll('.w-52');
     expect(slots.length).toBe(1);
   });
 
@@ -108,6 +108,26 @@ describe('ReaderCard (manuscript-credits-card-parity.prd.md, manuscript-chapter-
     renderCard();
     expect(screen.queryByRole('button', { name: /aloud/ })).toBeNull();
     expect(screen.queryByRole('button', { name: /Open (booth|companion) for/ })).toBeNull();
+  });
+
+  // edit-and-proof-workspace.prd.md Phase 4: the chapter header's "Open workspace" entry, icon-only.
+  it('pressing Workspace opens the workspace, not the card', async () => {
+    const user = userEvent.setup();
+    const onWorkspace = vi.fn();
+    const onToggleExpand = vi.fn();
+    render(
+      <ReaderCard chapterId="c1" title="Chapter 2" expanded={false} onToggleExpand={onToggleExpand} showWorkspace onWorkspace={onWorkspace} wordCount={3182}>
+        <p>Body</p>
+      </ReaderCard>,
+    );
+    await user.click(screen.getByRole('button', { name: 'Open workspace for Chapter 2' }));
+    expect(onWorkspace).toHaveBeenCalledTimes(1);
+    expect(onToggleExpand).not.toHaveBeenCalled();
+  });
+
+  it('renders no Workspace button when showWorkspace is false', () => {
+    renderCard({ showWorkspace: false, onWorkspace: undefined });
+    expect(screen.queryByRole('button', { name: /Open workspace for/ })).toBeNull();
   });
 
   it('shows a chevron that flips with expanded state', () => {

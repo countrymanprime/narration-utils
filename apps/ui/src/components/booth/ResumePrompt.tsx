@@ -480,7 +480,7 @@ function unreadableText(result: Located): string {
  *
  * It settles - and stays gone - the moment the narrator makes any choice or a session starts, for as long as this dialog
  * stays open: it does not come back after a session ends, so a finished session's next Start begins at the top with no
- * prompt to clear (`ReadAloudDialog` resets `startWord` to null on that transition). Closing and reopening the dialog
+ * prompt to clear (`BoothSession` resets `startWord` to null on that transition). Closing and reopening the dialog
  * remounts this component and asks again.
  */
 export function ResumePrompt({ chapterId, model, active, onStartWord }: Props) {

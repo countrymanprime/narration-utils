@@ -695,6 +695,48 @@
       "kind": "bool",
       "label": "Check changed chapters in the background",
       "value": ""
+    },
+    {
+      "choices": null,
+      "effectiveSource": "repo_default",
+      "effectiveValue": "false",
+      "isSet": false,
+      "key": "cascade_enabled",
+      "kind": "bool",
+      "label": "Two-pass check (fast first pass, then re-check what's missing)",
+      "value": ""
+    },
+    {
+      "choices": [
+        "tiny",
+        "small",
+        "medium",
+        "large-v3-turbo",
+        "large-v3"
+      ],
+      "effectiveSource": "repo_default",
+      "effectiveValue": "tiny",
+      "isSet": false,
+      "key": "cascade_first_pass_model",
+      "kind": "choice",
+      "label": "First-pass Whisper model",
+      "value": ""
+    },
+    {
+      "choices": [
+        "tiny",
+        "small",
+        "medium",
+        "large-v3-turbo",
+        "large-v3"
+      ],
+      "effectiveSource": "repo_default",
+      "effectiveValue": "large-v3-turbo",
+      "isSet": false,
+      "key": "cascade_recheck_model",
+      "kind": "choice",
+      "label": "Re-check Whisper model",
+      "value": ""
     }
   ],
   "StageRecommendations": [

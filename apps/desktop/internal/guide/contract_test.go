@@ -99,6 +99,28 @@ func TestContractNoGuideFileYetHasNoPronunciationQueries(t *testing.T) {
 	contractfile.Check(t, "guide-pronunciation-queries-empty", queries)
 }
 
+// The query-answer import result, as the host sends it to the UI (prep-depth P6), from the same sidecar-written file: a
+// row naming an entry that is not in it, so the wire shape (applied, issues) is proven with no sidecar call needed.
+func TestContractPronunciationQueriesImportFromTheSidecarsOwnFile(t *testing.T) {
+	dir, err := contractfile.Dir()
+	if err != nil {
+		t.Fatal(err)
+	}
+	bytes, err := os.ReadFile(filepath.Join(dir, "guide-entities-pronunciation-sidecar.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var entities []any
+	if err := json.Unmarshal(bytes, &entities); err != nil {
+		t.Fatal(err)
+	}
+	applied, issues, err := serviceWithGuideFile(t, entities).ImportQueriesCSV("word,entry_id\nGhost,entity-does-not-exist\n")
+	if err != nil {
+		t.Fatal(err)
+	}
+	contractfile.Check(t, "guide-pronunciation-queries-import", map[string]any{"applied": applied, "issues": issues})
+}
+
 // The narrator's own pronunciation, its alternate, a status and a note (prep-depth P1), from the file the sidecar's own test writes.
 func TestContractEntitiesWithPronunciationWorkFromTheSidecarsOwnFile(t *testing.T) {
 	dir, err := contractfile.Dir()

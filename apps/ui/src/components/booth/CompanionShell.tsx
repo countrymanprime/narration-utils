@@ -21,7 +21,7 @@ type Props = {
   session: TeleprompterSession;
   follow: FollowCursor;
   chapterTitle?: string;
-  /** The Record-in-REAPER orchestration `ReadAloudDialog` owns, so Play and Stop here arm and stop exactly as the dialog's do. */
+  /** The Record-in-REAPER orchestration `BoothSession` owns, so Play and Stop here arm and stop exactly as the Booth's do. */
   recording: RecordInReaperState;
   marks?: Map<string, ReaderMark[]>;
   onOpenMark?: (mark: ReaderMark) => void;
@@ -124,7 +124,7 @@ const TOOLBAR_BUTTON_CLASS = 'gap-1.5 px-3 py-1.5 text-[0.75rem]';
 /**
  * Companion mode's layout (booth-mode-and-companion-panel.prd.md Phase 7): `CompactShell` in the app's own window, narrowed
  * and pinned beside the DAW (Phase 6's bindings). It is the same teleprompter session the Read aloud dialog and the booth
- * show (`ReadAloudDialog` renders this in place of its `Dialog`), re-laid out for a 380 px column: REAPER's playhead in the
+ * show (`BoothSession` renders this in place of `BoothView`), re-laid out for a 380 px column: REAPER's playhead in the
  * header, then the script, the note at the playhead and the chapter's pickups (both reserved for the closed-loop proofing
  * PRD, which fills them - an honest "Coming soon" until then, D3), and the gestures that work here.
  *
