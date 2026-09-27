@@ -127,10 +127,6 @@ export const teleprompterFeedback: Record<string, FeedbackRow> = {
     'Starts the meter-only child while the microphone popover is open and no session is running; the meter itself shows it working, an inline alert under it otherwise (the host refuses a second meter or one during a session).',
   ),
   // Following REAPER while the resume prompt shows (read-aloud-resume-from-daw Phase 5, ADR 0352).
-  'src/components/teleprompter/ResumePrompt.tsx::subscribeDawTransport#1': subscription('RD7: the heartbeat\'s transport push (daw_transport_changed) makes the resume prompt go away the moment REAPER plays or records; it chooses nothing.'),
-  'src/components/teleprompter/ResumePrompt.tsx::subscribeTeleprompterResumeFollow#1': subscription('teleprompter_resume_follow: REAPER playing or recording settles the prompt, and a settled edit cursor re-runs the lookup ("Checking…" shows at once).'),
-  'src/components/teleprompter/ResumePrompt.tsx::teleprompterResumeFollow#1': row('effect', 'instant', 'na', 'na', 'event', 'silent', 'na', 'exempt', 'Starts the host\'s bounded REAPER poll while the prompt shows for a track; not following (track state off, REAPER away) only means the prompt waits for a choice, as before Phase 5 (SILENT_CATCHES).'),
-  'src/components/teleprompter/ResumePrompt.tsx::teleprompterResumeUnfollow#1': row('effect', 'instant', 'na', 'na', 'event', 'silent', 'na', 'exempt', 'Stops the poll when the prompt goes away or the dialog closes; the host also stops it by itself on play, record, a replacing follow or after 30 minutes (SILENT_CATCHES).'),
   'src/components/teleprompter/useInputLevel.ts::teleprompterMeterStop#1': row(
     'effect',
     'python',
