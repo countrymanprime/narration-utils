@@ -418,9 +418,9 @@ func sortResolved(spans []Resolved) {
 }
 
 func newID() string {
-	bytes := make([]byte, 8)
+	bytes := make([]byte, 16)
 	_, _ = rand.Read(bytes)
-	return "mk-" + hex.EncodeToString(bytes)
+	return hex.EncodeToString(bytes)
 }
 
 // read reads markup.json; the caller holds the file's lock. A corrupt file is kept aside and a fresh one started (the
