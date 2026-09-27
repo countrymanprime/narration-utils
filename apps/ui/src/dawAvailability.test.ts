@@ -41,4 +41,9 @@ describe('dawCapabilityGate (DAW port PRD Phase 7)', () => {
       reason: 'Experimental: switched off in Settings.',
     });
   });
+
+  it("never disables on useCapability's unresolved seed (no message), since the wire always sends one for a real refusal", () => {
+    const unresolved: CapabilityEntry = { level: 'unsupported', available: false };
+    expect(dawCapabilityGate({ manuscript: false, dawFile: false }, unresolved)).toEqual({ disabled: false });
+  });
 });

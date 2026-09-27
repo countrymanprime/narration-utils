@@ -38,9 +38,15 @@ export function combinedRequiredReason(missing: MissingRequirements): string | u
  * names them; once they are met, whether the page is actually usable comes from the DAW port's own capability entry
  * (`useCapability`) rather than a fixed message, so a narrator learns "REAPER is not answering" or "Experimental:
  * switched off in Settings" instead of just "link a REAPER project" once one already is linked.
+ *
+ * A refusal with no `message` is never treated as a real refusal: the wire contract sets `message` on every genuine
+ * `available: false` answer, so a bare `{ available: false }` is only `useCapability`'s seed before the host's first
+ * answer arrives (`UNKNOWN_CAPABILITY`). Disabling on that seed would flash the nav item off for everyone on every
+ * load and could swallow a click that lands in the gap, for a state that is never the DAW's real answer.
  */
 export function dawCapabilityGate(missing: MissingRequirements, capability: CapabilityEntry): { disabled: boolean; reason?: string } {
   const setupReason = combinedRequiredReason(missing);
   if (setupReason) return { disabled: true, reason: setupReason };
-  return capability.available ? { disabled: false } : { disabled: true, reason: capability.message };
+  if (capability.available || !capability.message) return { disabled: false };
+  return { disabled: true, reason: capability.message };
 }
