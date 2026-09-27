@@ -208,13 +208,13 @@ export async function openDelivery(page: Page, query = ''): Promise<void> {
   await page.getByRole('button', { name: /^Rules and their sources/ }).waitFor();
 }
 
-// Opens Production, with a `?mockProduction=` seed when given, once its board is drawn.
+// Opens Production, with a `?mockProduction=` seed when given, once its board is drawn. By direct navigation, not
+// through the nav (stage-navigation-and-page-replacement.prd.md Phase 1, D79): PR #760's `/production` nav entry is
+// dropped in this phase, so the route is reachable but unlisted until Phase 2 makes it the Production home at `/`.
 export async function openProduction(page: Page, query = ''): Promise<void> {
-  if (query) {
-    await page.goto(`/${query}`);
-    await settlePage(page);
-  }
-  await goToPage(page, 'Production');
+  await page.goto(`/production${query}`);
+  await settlePage(page);
+  await page.getByRole('heading', { level: 1, name: PAGE_HEADING.Production, exact: true }).waitFor();
   await page.getByRole('grid', { name: 'Chapter pipeline' }).waitFor();
 }
 
