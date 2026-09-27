@@ -68,3 +68,24 @@ func TestContractNoGuideFileYetIsAnEmptyList(t *testing.T) {
 	}
 	contractfile.Check(t, "guide-entities-empty", got)
 }
+
+// The narrator's own pronunciation, its alternate, a status and a note (prep-depth P1), from the file the sidecar's own test writes.
+func TestContractEntitiesWithPronunciationWorkFromTheSidecarsOwnFile(t *testing.T) {
+	dir, err := contractfile.Dir()
+	if err != nil {
+		t.Fatal(err)
+	}
+	bytes, err := os.ReadFile(filepath.Join(dir, "guide-entities-pronunciation-sidecar.json"))
+	if err != nil {
+		t.Fatalf("the sidecar's entity file is missing (run the Python contract test with UPDATE_CONTRACTS=1): %v", err)
+	}
+	var entities []any
+	if err := json.Unmarshal(bytes, &entities); err != nil {
+		t.Fatal(err)
+	}
+	got, err := serviceWithGuideFile(t, entities).Entities()
+	if err != nil {
+		t.Fatal(err)
+	}
+	contractfile.Check(t, "guide-entities-pronunciation", got)
+}

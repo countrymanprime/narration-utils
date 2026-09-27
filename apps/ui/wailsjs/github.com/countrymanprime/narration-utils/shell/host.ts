@@ -715,6 +715,18 @@ export function GuidePronounce(id: string, aliasIndex: number | null, source: st
     return $Call.ByID(1577834145, id, aliasIndex, source);
 }
 
+export function GuidePronounceUser(id: string, aliasIndex: number | null, ipa: string): $CancellablePromise<string> {
+    return $Call.ByID(867110926, id, aliasIndex, ipa);
+}
+
+export function GuidePronunciationSetStatus(id: string, aliasIndex: number | null, status: string, note: string | null): $CancellablePromise<string> {
+    return $Call.ByID(3849731891, id, aliasIndex, status, note);
+}
+
+export function GuidePronunciationUseAlternate(id: string, aliasIndex: number | null): $CancellablePromise<string> {
+    return $Call.ByID(661717092, id, aliasIndex);
+}
+
 export function GuideRelate(id: string, otherID: string, label: string): $CancellablePromise<string> {
     return $Call.ByID(761657167, id, otherID, label);
 }

@@ -4,7 +4,20 @@ import type { WorkJob } from './manuscript';
 
 export type GuideEvidence = { chapter: string; chapterId?: string; paragraph: number; paragraphId?: string; excerpt: string; sourceLine?: number };
 export type GuideRelationship = { id: string; name: string; label: string };
-export type GuidePronunciation = { ipa: string; source: string; confidence: string; chosen?: boolean };
+/** Where the narrator is with a pronunciation (prep-depth P1, ADR 0346): looked up, asked of the author, or confirmed by the author. */
+export type GuidePronunciationStatus = 'researched' | 'query_sent' | 'author_confirmed';
+/** The pronunciation itself, without the narrator's bookkeeping about it. */
+export type GuidePronunciationValue = { ipa: string; source: string; confidence: string };
+/**
+ * A name's pronunciation. `source` is `user` for one the narrator typed. `alternate` is the one of the other kind (the narrator's own
+ * or a dictionary's) kept beside it, so switching back is lossless. The schema fills `status` (`researched` on an entry written before it).
+ */
+export type GuidePronunciation = GuidePronunciationValue & {
+  chosen?: boolean;
+  status?: GuidePronunciationStatus;
+  note?: string;
+  alternate?: GuidePronunciationValue;
+};
 export type GuideNote = { text: string; evidence: { chapter?: string; excerpt?: string } };
 /** One labelled fact of an entry ("Codename": "Wren"). The list is ordered and a key is unique whatever its case; a value may be empty. */
 export type GuideProperty = { key: string; value: string };
@@ -81,4 +94,10 @@ export interface StoryBibleApi {
    * on a locked entity, and when the chosen engine has nothing for the name.
    */
   guidePronounce(id: string, source: 'cmu' | 'espeak', aliasIndex?: number): Promise<void>;
+  /** Sets the narrator's own pronunciation (source `user`); the one it replaces is kept as the alternate. Never asks a dictionary. */
+  guidePronounceUser(id: string, ipa: string, aliasIndex?: number): Promise<void>;
+  /** Puts the kept alternate back in use, keeping the one it replaces: lossless both ways. */
+  guidePronunciationUseAlternate(id: string, aliasIndex?: number): Promise<void>;
+  /** Sets a pronunciation's status and, when `note` is given, its note (an empty one clears it). */
+  guidePronunciationSetStatus(id: string, status: GuidePronunciationStatus, note?: string, aliasIndex?: number): Promise<void>;
 }

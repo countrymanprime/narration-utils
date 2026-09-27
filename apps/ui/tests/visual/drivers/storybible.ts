@@ -101,6 +101,22 @@ export const storybibleDrivers: Record<string, Driver> = {
     await page.locator('tr[data-row]', { hasText: 'March Hare' }).click();
     await clickVisible(page, 'button', 'Edit this entry');
   },
+  'entry-pronunciation-work': async (page) => {
+    await goToPage(page, 'Story Bible');
+    await page.locator('tr[data-row]').first().click();
+    const unlock = page.getByRole('button', { name: 'Unlock entry' });
+    if (await unlock.count()) await unlock.click();
+    await clickVisible(page, 'button', 'Edit this entry');
+    await clickVisible(page, 'button', 'Pronunciation details');
+    await page.getByRole('textbox', { name: 'Your pronunciation' }).fill('ˈæ.lɪs');
+    await clickVisible(page, 'button', 'Use mine');
+    await page.getByText('Also kept:').waitFor();
+    await page.getByRole('combobox', { name: /^Pronunciation status for / }).selectOption('query_sent');
+    await page.getByRole('textbox', { name: 'Pronunciation note' }).fill('Asked the author by email.');
+    await clickVisible(page, 'button', 'Save status');
+    await page.getByText('Asked the author by email.', { exact: true }).first().waitFor();
+    await page.getByRole('button', { name: 'Save status' }).scrollIntoViewIfNeeded();
+  },
   'delete-confirm': async (page) => {
     await goToPage(page, 'Story Bible');
     await page.locator('tr[data-row]').first().click();

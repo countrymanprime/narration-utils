@@ -77,6 +77,18 @@ fallback needs a system component many machines don't have) - the message says w
 try the other source or try again. A pronunciation you set this way is kept the next time you
 rebuild the Story Bible; an automatically generated one can still change on a rebuild.
 
+## Your own pronunciation, and what the author said
+
+Under each pronunciation is its status: **Researched** (looked up, the default), **Query sent** (you
+asked the author) or **Author confirmed**, with your note beside it if you wrote one.
+
+In edit mode you can type **Your pronunciation** and press **Use mine**. The dictionary's answer is
+not thrown away: it shows as "Also kept", and **Use ... instead** switches back to it (and keeps
+yours, so you can switch again). Neither step looks anything up. Set the **Status** and a
+**Pronunciation note** (who you asked, and when) and press **Save status**. If you change a
+pronunciation the author confirmed, it goes back to Researched, because the author has not heard the
+new one. A rebuild keeps all of this.
+
 | Message | What it means | What to do |
 | --- | --- | --- |
 | "... could not be spoken: the voice produced no audio for it" | The name is only punctuation or symbols, so the voice has nothing to say. | Preview an alias that has letters in it, or ignore the preview for this name. |

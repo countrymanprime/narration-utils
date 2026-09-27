@@ -165,6 +165,27 @@ func (h *Host) GuidePronounce(id string, aliasIndex *int, source string) (string
 	}
 	return encodeBinding(nil, service.Pronounce(id, aliasIndex, source))
 }
+func (h *Host) GuidePronounceUser(id string, aliasIndex *int, ipa string) (string, error) {
+	service := h.services().guide
+	if service == nil {
+		return "", fmt.Errorf("the Story Bible is unavailable")
+	}
+	return encodeBinding(nil, service.PronounceUser(id, aliasIndex, ipa))
+}
+func (h *Host) GuidePronunciationUseAlternate(id string, aliasIndex *int) (string, error) {
+	service := h.services().guide
+	if service == nil {
+		return "", fmt.Errorf("the Story Bible is unavailable")
+	}
+	return encodeBinding(nil, service.UsePronunciationAlternate(id, aliasIndex))
+}
+func (h *Host) GuidePronunciationSetStatus(id string, aliasIndex *int, status string, note *string) (string, error) {
+	service := h.services().guide
+	if service == nil {
+		return "", fmt.Errorf("the Story Bible is unavailable")
+	}
+	return encodeBinding(nil, service.SetPronunciationStatus(id, aliasIndex, status, note))
+}
 func (h *Host) GuideCreate(name, category string, aliases []string) (string, error) {
 	service := h.services().guide
 	if service == nil {

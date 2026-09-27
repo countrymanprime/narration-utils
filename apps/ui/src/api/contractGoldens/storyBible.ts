@@ -8,6 +8,8 @@ export const storyBibleGoldens: Record<string, z.ZodType> = {
   'guide-entities.json': guideEntitiesSchema,
   'guide-entities-legacy.json': guideEntitiesSchema,
   'guide-entities-empty.json': guideEntitiesSchema,
+  'guide-entities-pronunciation-sidecar.json': guideEntitiesSchema,
+  'guide-entities-pronunciation.json': guideEntitiesSchema,
   'guide-build-idle.json': workJobSchema,
   'guide-build-starting.json': workJobSchema,
   'guide-build-failed.json': workJobSchema,
