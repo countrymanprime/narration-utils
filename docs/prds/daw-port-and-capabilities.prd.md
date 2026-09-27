@@ -66,7 +66,7 @@ We will know it holds when:
 - The built-in recorder or renderer (native recording suite and render-encode-master PRDs). They will be adapters on this port later.
 - New REAPER commands or Lua changes. The bridge and its harness are untouched, and the adapter wraps what exists.
 - Promoting any experimental command to supported. That is the booth actions enablement PRD's work (queued as wave 0b in the [agent train](../operations/agent-train.md)) after the owner's verification pass. This PRD makes promotion a one-line declaration change.
-- Other providers (ASR, TTS, pronunciation, capture, encoders): see [provider ports](provider-ports.prd.md), which shares this PRD's `internal/port` vocabulary.
+- Other providers (ASR, TTS, pronunciation, capture, encoders): see [provider ports](../architecture/provider-ports.md), which shares this PRD's `internal/port` vocabulary.
 - UI primitives. `CapabilityGate` and `useCapability` are in [studio UI primitives](studio-ui-primitives.prd.md). This PRD provides the binding and moves the existing gating callers onto it.
 
 ## Success Metrics
@@ -225,7 +225,7 @@ func Role[T any](r *Resolver, c Capability) (T, error) // *port.NotSupportedErro
   - Types only, plus the resolver and the conformance suite, all test-first:
     - table tests for the resolver: declaration × runtime × toggle gives an expected `Support`;
     - the suite run against the fake.
-  - `internal/port` is created here and is the only shared file with [provider ports](provider-ports.prd.md).
+  - `internal/port` is created here and is the only shared file with [provider ports](../architecture/provider-ports.md).
   - Validate: `go test ./internal/port/... ./internal/dawport/...`, `go vet`, checklocks.
 - **P2 (lane K, Opus).**
   - Adapters wrap; they don't rewrite. Declarations copy `experimentalCommands` exactly.
