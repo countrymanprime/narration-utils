@@ -74,5 +74,6 @@ func (h *Host) DeliveryDeleteProfile(id string) (string, error) {
 	if err := h.profileStore().Delete(id); err != nil {
 		return "", err
 	}
+	h.resaveDeliveryFindings()
 	return encodeBinding(h.deliveryProfilesState())
 }

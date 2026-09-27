@@ -162,4 +162,12 @@ export const reviewStates: StateEntry[] = [
       "Review, a take comparison's audio table - clipping, room noise, level, length and pauses, a row each with what it measures and a column per read, an unavailable figure with its reason; nothing adds the rows up",
     ...KEEPS_DESKTOP_SCROLL,
   },
+  // Delivery findings on the Review page (delivery-platform-profiles.prd.md Phase 9, P12)
+  {
+    page: 'review',
+    state: 'delivery-finding',
+    description:
+      "Review, after a measurement on the Delivery page - its missed and unmeasurable rules listed as Delivery checks by file, one opened: the rule, ACX's requirement, the value measured and the profile that judged it, Open in Delivery in place of Show in manuscript, and the same decision controls as every finding",
+    ...KEEPS_DESKTOP_SCROLL,
+  },
 ];

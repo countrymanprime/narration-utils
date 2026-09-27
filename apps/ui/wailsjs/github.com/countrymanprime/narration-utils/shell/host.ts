@@ -1063,6 +1063,18 @@ export function ProjectSwitch(path: string, name: string): $CancellablePromise<s
 }
 
 /**
+ * PronunciationLookupOpen opens source's fixed lookup-page template for word in the narrator's default browser
+ * (prep-depth.prd.md Phase 2; provider-ports.prd.md Open Question Q5's BrowserLookup role), and nothing else: it
+ * never fetches, scrapes or caches the site itself. source and word cross the Wails boundary, never a URL - the
+ * destination is always built server-side by pronunciationlookup.URL from one of four hardcoded templates, so
+ * nothing UI-supplied can pick an arbitrary destination (mirrors DawCatalogOpenDownloadPage's same trusted-URL
+ * discipline, for the same reason).
+ */
+export function PronunciationLookupOpen(source: string, word: string): $CancellablePromise<string> {
+    return $Call.ByID(1993502409, source, word);
+}
+
+/**
  * ProviderCapabilities answers, for each provider port, every registered provider's label, platforms, modes, asset kind (with
  * the installed count when its catalog is present) and whether it is supported on this platform.
  */

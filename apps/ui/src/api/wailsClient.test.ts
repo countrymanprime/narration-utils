@@ -240,6 +240,19 @@ describe('wailsClient', () => {
     expect(report).toHaveBeenCalledTimes(1);
   });
 
+  it('enters and exits companion mode through its error-only bindings, and turns a host error into its text', async () => {
+    const enter = vi.fn().mockResolvedValue(undefined);
+    const exit = vi.fn().mockResolvedValue(null);
+    standInHost({ CompanionModeEnter: enter, CompanionModeExit: exit });
+    await expect(wailsClient.companionModeEnter()).resolves.toBeUndefined();
+    await expect(wailsClient.companionModeExit()).resolves.toBeUndefined();
+    expect(enter).toHaveBeenCalledWith();
+    expect(exit).toHaveBeenCalledWith();
+
+    standInHost({ CompanionModeEnter: () => Promise.reject(new Error('host is not ready')) });
+    await expect(wailsClient.companionModeEnter()).rejects.toThrow('host is not ready');
+  });
+
   it('opens the release notes through a binding that takes no address', async () => {
     const open = vi.fn().mockResolvedValue('null');
     standInHost({ UpdateOpenNotes: open });
