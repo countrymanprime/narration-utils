@@ -38,7 +38,8 @@ type companionWindow interface {
 // companionModeState remembers the window's bounds from before Companion mode narrowed it. One instance (companion,
 // below) backs the real bindings; tests use their own so cases never see another case's saved bounds.
 type companionModeState struct {
-	mu    sync.Mutex
+	mu sync.Mutex
+	// +checklocks:mu
 	saved *windowBounds
 }
 
