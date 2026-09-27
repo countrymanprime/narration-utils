@@ -45,6 +45,7 @@ import {
   chapterTrackMatchSchema,
   chapterTrackSetSchema,
   trackMappingSchema,
+  trackSelectResultSchema,
 } from './schemas/chapterTrackMap';
 import { takeComparisonJobSchema, takeReviewCreateTakeResultSchema, takeReviewScanJobSchema } from './schemas/takeReview';
 import { deliveryReportExportSchema, measureJobSchema, measurePickResultSchema } from './schemas/measure';
@@ -412,6 +413,7 @@ export const wailsClient: NarrationApi = {
   setCreditsStatus: (kind, status) => decode(creditsStatusesSchema, 'CreditsSetStatus', host.CreditsSetStatus(kind, status)),
   dawCatalogList: () => decode(dawCatalogListSchema, 'DawCatalogList', host.DawCatalogList()),
   dawCatalogOpenDownloadPage: (id) => decode(voidResult, 'DawCatalogOpenDownloadPage', host.DawCatalogOpenDownloadPage(id)),
+  pronunciationLookupOpen: (source, word) => decode(voidResult, 'PronunciationLookupOpen', host.PronunciationLookupOpen(source, word)),
   dawCapabilities: () => decode(dawCapabilitiesSchema, 'DawCapabilities', host.DawCapabilities()),
   subscribeDawCapabilities: (onUpdate) => subscribeChecked('daw_capabilities_changed', dawCapabilitiesSchema, onUpdate),
   providerCapabilities: () => decode(providerCapabilitiesSchema, 'ProviderCapabilities', host.ProviderCapabilities()),
@@ -430,6 +432,7 @@ export const wailsClient: NarrationApi = {
   chapterSyncUndo: (trackGuid) => decode(chapterSyncStateSchema, 'ChapterSyncUndo', host.ChapterSyncUndo(trackGuid)),
   subscribeChapterSync: (onUpdate) => subscribeChecked('chaptersync:state', chapterSyncStateSchema, onUpdate),
   chapterTrackLinks: () => decode(chapterTrackLinksSchema, 'ChapterTrackLinks', host.ChapterTrackLinks()),
+  trackSelectInReaper: (trackGuid) => decode(trackSelectResultSchema, 'TrackSelectInReaper', host.TrackSelectInReaper(trackGuid)),
   chapterRegionsPreview: (openingTrackGuid, closingTrackGuid) =>
     decode(chapterRegionPlanSchema, 'ChapterRegionsPreview', host.ChapterRegionsPreview(openingTrackGuid, closingTrackGuid)),
   chapterRegionsCreate: (openingTrackGuid, closingTrackGuid, update) =>

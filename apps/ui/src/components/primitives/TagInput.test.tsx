@@ -24,13 +24,14 @@ function renderTags(overrides: Partial<Parameters<typeof TagInput>[0]> = {}) {
 }
 
 describe('TagInput', () => {
-  it('is one named group holding the tags, the suggestions and the typing box', () => {
+  it('is one named group holding the tags, the suggestions and the typing box, with no separate Add row', () => {
     renderTags({ actions: <button type="button">Suggest</button> });
     const group = screen.getByRole('group', { name: 'Vocabulary hints' });
     expect(within(group).getByRole('button', { name: 'Remove Wonderland' })).toBeTruthy();
     expect(within(group).getByRole('button', { name: '+ Mad Hatter' })).toBeTruthy();
     expect(within(group).getByRole('textbox', { name: 'Add a vocabulary term' })).toBeTruthy();
     expect(within(group).getByRole('button', { name: 'Suggest' })).toBeTruthy();
+    expect(within(group).queryByRole('button', { name: 'Add' })).toBeNull();
   });
 
   it('says when there is nothing, and only then', () => {
@@ -41,22 +42,30 @@ describe('TagInput', () => {
     expect(screen.queryByText('No hints yet.')).toBeNull();
   });
 
-  it('reports a typed term on Enter and on Add, and empties the box', async () => {
+  it('hides the empty-box text once a draft is typed, so it never reads as one run-on sentence with it', () => {
+    renderTags({ tags: [], suggestions: [] });
+    const box = screen.getByRole('textbox', { name: 'Add a vocabulary term' });
+    expect(screen.getByText('No hints yet.')).toBeTruthy();
+    fireEvent.change(box, { target: { value: 'D' } });
+    expect(screen.queryByText('No hints yet.')).toBeNull();
+  });
+
+  it('reports a typed term on Enter, and empties the box', async () => {
     const user = userEvent.setup();
     const { onAdd } = renderTags();
     const box = screen.getByRole('textbox', { name: 'Add a vocabulary term' }) as HTMLInputElement;
     await user.type(box, 'Dormouse{Enter}');
     expect(onAdd).toHaveBeenLastCalledWith('Dormouse');
     expect(box.value).toBe('');
-    await user.type(box, 'March Hare');
-    await user.click(screen.getByRole('button', { name: 'Add' }));
-    expect(onAdd).toHaveBeenLastCalledWith('March Hare');
-    expect(onAdd).toHaveBeenCalledTimes(2);
   });
 
-  it('hands over the text as typed, so the caller can split a list', async () => {
+  it('hands over the text as typed, so the caller can split a list', () => {
     const { onAdd } = renderTags();
-    await userEvent.setup().type(screen.getByRole('textbox', { name: 'Add a vocabulary term' }), 'Alice, Dinah{Enter}');
+    const box = screen.getByRole('textbox', { name: 'Add a vocabulary term' });
+    // A blob set in one go (as a real paste-then-review or a controlled fill would), not typed key by key,
+    // so the mid-string comma never reaches the comma-commit handler below.
+    fireEvent.change(box, { target: { value: 'Alice, Dinah' } });
+    fireEvent.keyDown(box, { key: 'Enter' });
     expect(onAdd).toHaveBeenCalledWith('Alice, Dinah');
   });
 
@@ -116,5 +125,74 @@ describe('TagInput', () => {
     await user.click(screen.getByRole('button', { name: 'Remove A' }));
     await user.click(screen.getByRole('button', { name: '+ B' }));
     expect(onSubmit).not.toHaveBeenCalled();
+  });
+
+  it('commits on a typed comma as well as Enter, and never types the comma itself', async () => {
+    const user = userEvent.setup();
+    const { onAdd } = renderTags({ tags: [], suggestions: [] });
+    const box = screen.getByRole('textbox', { name: 'Add a vocabulary term' }) as HTMLInputElement;
+    await user.type(box, 'Alice,');
+    expect(onAdd).toHaveBeenLastCalledWith('Alice');
+    expect(box.value).toBe('');
+  });
+
+  it('commits the draft on blur, so Start (or any other click) sees the term that was just typed', () => {
+    const { onAdd } = renderTags({ tags: [], suggestions: [] });
+    const box = screen.getByRole('textbox', { name: 'Add a vocabulary term' });
+    fireEvent.change(box, { target: { value: 'Zeph' } });
+    fireEvent.blur(box);
+    expect(onAdd).toHaveBeenCalledWith('Zeph');
+  });
+
+  it('does not report a blank draft on blur', () => {
+    const { onAdd } = renderTags();
+    const box = screen.getByRole('textbox', { name: 'Add a vocabulary term' });
+    fireEvent.blur(box);
+    expect(onAdd).not.toHaveBeenCalled();
+  });
+
+  it('removes the last tag on Backspace in an empty box (ADR 0363), and never while there is draft text', () => {
+    const { onRemove } = renderTags();
+    const box = screen.getByRole('textbox', { name: 'Add a vocabulary term' }) as HTMLInputElement;
+    fireEvent.change(box, { target: { value: 'x' } });
+    fireEvent.keyDown(box, { key: 'Backspace' });
+    expect(onRemove).not.toHaveBeenCalled();
+
+    fireEvent.change(box, { target: { value: '' } });
+    fireEvent.keyDown(box, { key: 'Backspace' });
+    expect(onRemove).toHaveBeenCalledWith('Cheshire');
+    expect(onRemove).toHaveBeenCalledTimes(1);
+  });
+
+  it('does nothing on Backspace in an empty box with no tags', () => {
+    const { onRemove } = renderTags({ tags: [], suggestions: [] });
+    const box = screen.getByRole('textbox', { name: 'Add a vocabulary term' });
+    fireEvent.keyDown(box, { key: 'Backspace' });
+    expect(onRemove).not.toHaveBeenCalled();
+  });
+
+  it('commits a paste containing a comma or newline at once, instead of leaving it to sit as draft text', () => {
+    const { onAdd } = renderTags({ tags: [], suggestions: [] });
+    const box = screen.getByRole('textbox', { name: 'Add a vocabulary term' }) as HTMLInputElement;
+    const clipboardData = { getData: () => 'Juno, Zeph' };
+    fireEvent.paste(box, { clipboardData });
+    expect(onAdd).toHaveBeenCalledWith('Juno, Zeph');
+    expect(box.value).toBe('');
+  });
+
+  it('leaves an ordinary single-term paste as draft text, uncommitted', () => {
+    const { onAdd } = renderTags({ tags: [], suggestions: [] });
+    const box = screen.getByRole('textbox', { name: 'Add a vocabulary term' });
+    const clipboardData = { getData: () => 'Juno' };
+    fireEvent.paste(box, { clipboardData });
+    expect(onAdd).not.toHaveBeenCalled();
+  });
+
+  it('caps a typed term at 64 characters', async () => {
+    const user = userEvent.setup();
+    renderTags({ tags: [], suggestions: [] });
+    const box = screen.getByRole('textbox', { name: 'Add a vocabulary term' }) as HTMLInputElement;
+    await user.type(box, 'x'.repeat(80));
+    expect(box.value).toHaveLength(64);
   });
 });

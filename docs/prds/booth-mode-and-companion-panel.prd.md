@@ -14,7 +14,7 @@ The teleprompter already follows the narrator's voice, but nothing in the app lo
 - **Speaker tags and reference clips.** `Highlight` already renders Story Bible entity colours in the manuscript reader (studio-ui-primitives evidence: "Speaker tags stay the Story Bible entity colours via `Highlight`; not a new primitive"). A **per-character voice reference clip**, which the booth mock's rail shows for "voices in scene," is [Character Continuity Review](character-continuity-review.prd.md)'s work (all 8 phases pending, a sibling wave-0 stream); no clip exists to play yet.
 - **Room tone and session match.** The scorecard lists "Room-tone capture, live noise floor, session match" as Missing outright, with no measurement path today outside the after-the-fact Delivery page (`internal/measure`). A live room meter can reuse Studio UI Primitives' (PRD deleted, delivered) `LevelMeter` fed by a second, decorative meter channel, but "matches the last session" needs a stored per-chapter baseline that nothing computes today.
 - **Global hotkeys while REAPER has focus.** [Input Commands and Pedals](input-commands-and-pedals.prd.md) scopes this as a Could with its own Phase 12 spike ("Can Wails v3 or the OS register a hotkey that fires while REAPER has focus"), not yet run. Until it lands, every command in this PRD's booth and companion surfaces only fires while the app's window itself has focus.
-- **The mocks.** [`03-booth.webp`](mockups/booth-mode-and-companion-panel/03-booth-concept.webp) and [`07-daw-companion.webp`](mockups/booth-mode-and-companion-panel/07-daw-companion-concept.webp), copied here from `docs/research/mockups/audiobook-studio-benchmark/` as **concept mocks**, not yet owner-approved. They show which primitive each part needs; Studio UI Primitives' (PRD deleted, delivered) own Visual Spec section mapped most of them already (`FocusShell`, `LevelMeter`, `StatusBadge`, `Toolbar`, `Kbd`, `CapabilityGate`, `CompactShell`).
+- **The mocks.** [`03-booth.webp`](mockups/booth-mode-and-companion-panel/03-booth-concept.webp) and [`07-daw-companion.webp`](mockups/booth-mode-and-companion-panel/07-daw-companion-concept.webp), copied here from `docs/research/mockups/audiobook-studio-benchmark/` as **concept mocks, owner-approved as the build spec (D69, 2026-09-27)**. They show which primitive each part needs; Studio UI Primitives' (PRD deleted, delivered) own Visual Spec section mapped most of them already (`FocusShell`, `LevelMeter`, `StatusBadge`, `Toolbar`, `Kbd`, `CapabilityGate`, `CompactShell`).
 
 ## Proposed Solution
 
@@ -182,7 +182,7 @@ Phases 1 to 5: booth mode's layout and silence rule, and companion mode's resize
 
 ## Visual Spec
 
-The images below are the benchmark's **concept mocks, not owner-approved specs**, copied here from `docs/research/mockups/audiobook-studio-benchmark/`. A UI pull request for this PRD's phases compares its capture against these concept mocks and says so in its Mockup check table, until the owner approves them on [#510](https://github.com/countrymanprime/narration-utils/issues/510).
+The images below are the benchmark's **concept mocks, owner-approved as the build spec (D69, 2026-09-27)**, copied here from `docs/research/mockups/audiobook-studio-benchmark/`. Dark mode is a single app-wide theme (D69): a dark mock shows the dark theme, not a per-page look. A UI pull request for this PRD's phases compares its capture against these concept mocks and carries the Mockup check table for it.
 
 ### Booth mode
 

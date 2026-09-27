@@ -138,6 +138,18 @@ export type ChapterTrackSetResult = {
   mappings: TrackMapping[];
 };
 
+/** TrackSelectInReaper's answer (chapter-track-link-control PRD Phase 4, Could): "Select in REAPER" from the chapter
+ * track slide-over. `refused` reasons mirror ReadAloudRecording's connection and experimental-switch cases, plus
+ * `track_missing` for a track no longer in the project; nothing in REAPER changes for a refusal. */
+export type TrackSelectOutcome = 'selected' | 'refused';
+export type TrackSelectReason = 'track_missing' | 'standalone' | 'not_running' | 'experimental_off' | 'failed';
+export type TrackSelectResult = {
+  outcome: TrackSelectOutcome;
+  reason?: TrackSelectReason;
+  message?: string;
+  trackGuid?: string;
+};
+
 /** Whether the saved .rpp could be read: ready, none found, several found and none chosen, or unreadable. */
 export type ChapterTrackLinksProject = 'ready' | 'none' | 'choose' | 'error';
 
@@ -258,4 +270,6 @@ export interface ChapterTrackMapApi {
   chapterRegionsPreview(openingTrackGuid: string, closingTrackGuid: string): Promise<ChapterRegionPlan>;
   /** Recomputes the plan and sends it to REAPER in one undo step; `update` moves a region whose title already exists. */
   chapterRegionsCreate(openingTrackGuid: string, closingTrackGuid: string, update: boolean): Promise<ChapterRegionsCreated>;
+  /** "Select in REAPER": deselects every other track and selects trackGuid. Changes nothing else. */
+  trackSelectInReaper(trackGuid: string): Promise<TrackSelectResult>;
 }

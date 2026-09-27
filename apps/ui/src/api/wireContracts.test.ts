@@ -56,6 +56,7 @@ import {
   chapterTrackMatchSchema,
   chapterTrackSetSchema,
   trackMappingSchema,
+  trackSelectResultSchema,
 } from './schemas/chapterTrackMap';
 import { ttsCatalogSchema, ttsInstallJobSchema } from './schemas/tts';
 import { updateJobSchema, updateStatusSchema } from './schemas/update';
@@ -781,6 +782,16 @@ describe('answers of the mock client for the manuscript, Story Bible and project
     await expect(createMockApi().dawCatalogOpenDownloadPage('reaper')).resolves.toBeUndefined();
     await expect(createMockApi().dawCatalogOpenDownloadPage('not-a-real-daw')).rejects.toThrow(/Unknown DAW catalog entry/);
   });
+
+  it('pronunciation lookup opens for a known source and refuses an unknown one (prep-depth Phase 2)', async () => {
+    const api = createMockApi();
+    await expect(api.pronunciationLookupOpen('forvo', 'Mock Turtle')).resolves.toBeUndefined();
+    await expect(api.pronunciationLookupOpen('youglish', 'café')).resolves.toBeUndefined();
+    await expect(api.pronunciationLookupOpen('merriam_webster', 'croquet')).resolves.toBeUndefined();
+    await expect(api.pronunciationLookupOpen('howjsay', 'croquet')).resolves.toBeUndefined();
+    // @ts-expect-error an unknown source is a build-time error too; the mock also rejects it at runtime.
+    await expect(api.pronunciationLookupOpen('wiktionary', 'croquet')).rejects.toThrow(/Unknown pronunciation lookup source/);
+  });
 });
 
 describe('answers of the mock client for the settings, voice, model, transcript and tracks bindings', () => {
@@ -948,6 +959,25 @@ describe('answers of the mock client for the settings, voice, model, transcript 
     expectMatches(chapterTrackLinksSchema, noProject, 'mock chapter track links, no project');
     expect(noProject.project).toBe('none');
     expect(noProject.tracks).toHaveLength(0);
+  });
+
+  it("TrackSelectInReaper selects the track, and agrees with the host's golden for standalone and experimental_off", async () => {
+    const golden = z.record(z.string(), trackSelectResultSchema).parse(readGolden('track-select-results.json'));
+    const [first] = WIRE_TRACKS_PROJECT.tracks;
+
+    const selected = await createMockApi().trackSelectInReaper(first.guid);
+    expectMatches(trackSelectResultSchema, selected, 'mock track select');
+    expect(selected).toEqual({ outcome: 'selected', trackGuid: first.guid });
+
+    const standalone = await createMockApi({}, { reaperState: 'unavailable' }).trackSelectInReaper(first.guid);
+    expectMatches(trackSelectResultSchema, standalone, 'mock track select, standalone');
+    expect([standalone.outcome, standalone.reason]).toEqual([golden.standalone.outcome, golden.standalone.reason]);
+
+    const experimentalOff = await createMockApi({}, { reaperState: 'experimental_off' }).trackSelectInReaper(first.guid);
+    expectMatches(trackSelectResultSchema, experimentalOff, 'mock track select, experimental off');
+    expect([experimentalOff.outcome, experimentalOff.reason]).toEqual([golden.experimental_off.outcome, golden.experimental_off.reason]);
+
+    await expect(createMockApi().trackSelectInReaper('')).rejects.toThrow();
   });
 
   it('the ChapterRegionsPreview and ChapterRegionsCreate answers', async () => {
@@ -1409,6 +1439,30 @@ describe('answers of the mock client for the settings, voice, model, transcript 
     expect((await api.measureState()).profile?.id).toBe(copy.id);
   });
 
+  it('the delivery findings the Review page lists carry their rule, as the host pins them and the mock saves them', async () => {
+    const pinned = findingsPageSchema.parse(readGolden('findings-list-delivery-qc.json'));
+    const api = createMockApi();
+    let job = await api.measureAnalyze((await api.measurePickFiles()).paths);
+    while (job.phase === 'running') job = await api.measureState();
+    const saved = await api.findingsList({ category: 'delivery_qc' });
+    expectMatches(findingsPageSchema, saved, 'mock delivery findings on the Review page');
+    expect(saved.total).toBeGreaterThan(0);
+    // The same ids the Delivery page gives them, so a decision on either page is one decision.
+    const judged = new Set(job.files.flatMap((file) => file.findings.map((finding) => finding.id)));
+    expect(saved.findings.every((finding) => judged.has(finding.id))).toBe(true);
+    const shape = (finding: (typeof saved.findings)[number]) => {
+      const evidence = deliveryQcEvidenceSchema.parse(finding.evidence);
+      return [
+        finding.analyzer,
+        finding.category,
+        Boolean(finding.evidence_version),
+        Boolean(evidence.rule_label && evidence.requirement && evidence.profile_name),
+        Boolean(finding.source.file),
+      ];
+    };
+    for (const finding of [...pinned.findings, ...saved.findings]) expect(shape(finding)).toEqual(['measure', 'delivery_qc', true, true, true]);
+  });
+
   it('the delivery profiles answer as the host pins them, and refuse the way the host does', async () => {
     const pinned = deliveryProfilesStateSchema.parse(readGolden('delivery-profiles.json'));
     expect(pinned.profiles[0]).toEqual(MOCK_ACX);
@@ -1687,7 +1741,11 @@ describe('answers of the mock client for the settings, voice, model, transcript 
     const byId = new Map(answer.chapters.map((chapter) => [chapter.chapterId, chapter]));
     expect(new Set(answer.chapters.map((chapter) => chapter.verdict))).toEqual(new Set(['recommended', 'not_ready', 'unknown', 'dismissed', 'none']));
     expect(byId.get('chapter-1')).toMatchObject({ verdict: 'none', noneReason: 'stage_not_evaluated' });
-    expect(byId.get('chapter-9')).toMatchObject({ verdict: 'none', noneReason: 'no_required_signals' });
+    // chapter-7 is in Editing, unseeded in `editing`: the mock keeps its pre-existing no-required-signal shape (stagesMock.ts).
+    expect(byId.get('chapter-7')).toMatchObject({ verdict: 'none', noneReason: 'no_required_signals' });
+    // chapter-9 is in Proofing, unseeded in `proofing`: unlike editing, the mock always evaluates the real pickups
+    // signal for a proofing chapter (chapter-stage-recommendations.prd.md Phase 8), so it reads unknown, not none.
+    expect(byId.get('chapter-9')).toMatchObject({ verdict: 'unknown', causes: ['never_analyzed'] });
     expect(byId.get('chapter-6')).toMatchObject({ verdict: 'not_ready' });
     expect(byId.get('chapter-11')).toMatchObject({ verdict: 'unknown', causes: ['never_analyzed'] });
     for (const cause of STAGE_UNKNOWN_CAUSES) {
@@ -1823,6 +1881,7 @@ describe('answers of the mock client for the settings, voice, model, transcript 
       'chapterSyncSetEnabled',
       'chapterSyncUndo',
       'chapterTrackLinks',
+      'trackSelectInReaper',
       'chapterRegionsPreview',
       'chapterRegionsCreate',
       'chapterTrackMatch',
@@ -1956,6 +2015,7 @@ describe('answers of the mock client for the settings, voice, model, transcript 
       'teleprompterMeterStop',
       'teleprompterPause',
       'dawCatalogOpenDownloadPage',
+      'pronunciationLookupOpen',
       'teleprompterSeek',
       'reportClientDiagnostic',
       'systemNotify',
