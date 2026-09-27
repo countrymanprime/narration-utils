@@ -204,3 +204,26 @@ func TestAMeasurementFromAnotherProjectIsNotSavedIntoThisOne(t *testing.T) {
 		t.Fatalf("the other project's measurement was saved into this project's store: %v", got)
 	}
 }
+
+// The delivery findings as the Review page lists them (FindingsList filtered to delivery_qc): a required rule missed
+// (RMS below ACX's minimum) and a value that could not be measured (the noise floor of a file with no quiet window),
+// each with the rule's label, the requirement it enforces and the profile that judged it in its evidence, which the page
+// decodes with deliveryQcEvidenceSchema. Built from deliveryprofile.ReviewFindings, the adapter a measurement saves
+// through, into a real findings store.
+func TestContractDeliveryReviewFindings(t *testing.T) {
+	report := measure.Report{
+		File: "C:/Projects/Alice/renders/Chapter 01.wav", SampleRate: 44100, Channels: 1, DurationSeconds: 1325.4,
+		IntegratedLUFS: fv(-21.2), RMSdBFS: fv(-24.1), SamplePeakdBFS: fv(-4.2), TruePeakdBTP: fv(-4.0),
+		HeadRoomToneSeconds: fv(1.2), TailRoomToneSeconds: fv(3.4), HeadDigitalSilenceSeconds: fv(0), TailDigitalSilenceSeconds: fv(0),
+	}
+	store := findings.NewStore(t.TempDir())
+	fresh := deliveryprofile.ReviewFindings(report, "4f1c2b0e9d8a7c6b5a4f3e2d1c0b9a8f7e6d5c4b3a291807f6e5d4c3b2a19080", deliveryprofile.ACX(), findings.Project{Path: "C:/Projects/Alice"})
+	if _, err := store.SaveAnalyzerFindings(deliveryprofile.ReviewAnalyzer, deliveryprofile.ReviewScope(report.File), fresh); err != nil {
+		t.Fatal(err)
+	}
+	listed, err := (&Host{findings: store}).FindingsList(FindingsQuery{Category: string(findings.CategoryDeliveryQC)})
+	if err != nil {
+		t.Fatal(err)
+	}
+	checkBindingContract(t, "findings-list-delivery-qc", listed)
+}
