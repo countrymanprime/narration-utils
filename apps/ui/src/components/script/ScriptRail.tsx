@@ -100,7 +100,7 @@ export function ScriptRail({
         ) : queries.length === 0 ? (
           <p className="p-3 text-sm text-[var(--text-muted)]">The author has confirmed every pronunciation.</p>
         ) : (
-          <ul aria-label="Pronunciation queries" className="min-h-0 flex-1 divide-y divide-[var(--border)] overflow-y-auto">
+          <ul aria-label="Names to confirm" className="min-h-0 flex-1 divide-y divide-[var(--border)] overflow-y-auto">
             {queries.map((row) => {
               const status = pronunciationStatusInfo(row);
               return (

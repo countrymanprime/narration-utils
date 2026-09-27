@@ -89,7 +89,7 @@ describe('ScriptRail (stage navigation Phase 3, mock 02)', () => {
   it('lists the names the author has not confirmed and opens the queries panel', () => {
     const { openQueries } = renderRail();
     fireEvent.click(screen.getByRole('tab', { name: 'Queries · 2' }));
-    const list = screen.getByRole('list', { name: 'Pronunciation queries' });
+    const list = screen.getByRole('list', { name: 'Names to confirm' });
     expect(
       within(list)
         .getAllByRole('listitem')

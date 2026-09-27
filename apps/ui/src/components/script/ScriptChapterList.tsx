@@ -31,18 +31,22 @@ export function ScriptChapterList({
           const active = chapter.id === activeId;
           const count = toConfirm.get(chapter.id) ?? 0;
           return (
-            <li key={chapter.id} className="flex items-center gap-2">
+            <li key={chapter.id}>
               <button
                 type="button"
                 aria-current={active || undefined}
                 onClick={() => select(chapter.id)}
-                className={`min-w-0 flex-1 truncate rounded-[0.4rem] px-2 py-1.5 text-left text-sm hover:bg-[var(--surface-2)] ${
+                className={`w-full rounded-[0.4rem] px-2 py-1.5 text-left text-sm hover:bg-[var(--surface-2)] ${
                   active ? 'bg-[var(--accent-soft)] font-semibold text-[var(--accent-strong)]' : 'text-[var(--text)]'
                 }`}
               >
                 {chapterName(chapter)}
               </button>
-              {count > 0 && <StatusBadge tone="warning" label={`${count} to confirm`} />}
+              {count > 0 && (
+                <div className="px-2 pb-1">
+                  <StatusBadge tone="warning" label={`${count} to confirm`} />
+                </div>
+              )}
             </li>
           );
         })}

@@ -560,7 +560,7 @@ export const scriptDrivers: Record<string, Driver> = {
     await rail.getByRole('button', { name: 'Manage queries' }).click();
     const panel = page.getByRole('dialog', { name: 'Pronunciation queries' });
     await panel
-      .getByRole('button', { name: /^Mark sent/ })
+      .getByRole('button', { name: /^Mark .+ as sent$/ })
       .first()
       .click();
     await page

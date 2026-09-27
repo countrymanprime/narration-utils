@@ -594,21 +594,31 @@ export function ScriptPage({
     setSheet('detail');
   };
   const rail = (
-    <ScriptRail entities={entities} queries={queries} queriesError={queriesError} openEntity={openEntity} openQueries={() => setQueriesOpen(true)} />
+    <ScriptRail
+      entities={entities}
+      queries={queries}
+      queriesError={queriesError}
+      openEntity={openEntity}
+      openQueries={() => {
+        // One panel at a time: below `xl` the rail itself is a panel, which the queries panel replaces.
+        closeSheet();
+        setQueriesOpen(true);
+      }}
+    />
   );
 
   if (loadError) return <LoadError title="Script" message={loadError} retry={() => setLoadAttempt((attempt) => attempt + 1)} />;
 
   return (
     <div
-      className="reader-page min-h-full [--reader-inline:1.5rem] max-md:[--reader-inline:1rem] xl:grid xl:grid-cols-[15rem_minmax(0,1fr)_22rem]"
+      className="reader-page min-h-full [--reader-inline:1.5rem] max-md:[--reader-inline:1rem] xl:grid xl:grid-cols-[12rem_minmax(0,1fr)_21.5rem]"
       style={{ '--band-h': `${bandHeight}px` } as CSSProperties}
     >
       {/* Mock 02's left column: the chapters with their prep status, and the key to the marks in the text. The page scrolls
           under it, so it sticks to the top of the scroll area (the header above is h-14). */}
       <aside
         aria-label="Chapters and marks"
-        className="sticky top-0 hidden max-h-[calc(100dvh-3.5rem)] self-start overflow-y-auto border-r border-[var(--border)] bg-[var(--surface)] p-3 xl:block"
+        className="sticky top-0 hidden h-[calc(100dvh-3.5rem)] self-start overflow-y-auto border-r border-[var(--border)] bg-[var(--surface)] p-3 xl:block"
       >
         <ScriptChapterList chapters={chapters} activeId={active} toConfirm={toConfirm} select={(id) => showChapter(id)} />
         <div className="mt-4 border-t border-[var(--border)] pt-3">
