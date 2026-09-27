@@ -539,6 +539,14 @@ function Fake:add_item_api(api)
   function api.GetSelectedTrack(_, index)
     return fake:selected_tracks()[index + 1]
   end
+  -- Deselects every track, then selects the one named (select_track, narration_track_select.lua). Real REAPER opens no
+  -- undo point for a selection change; the fake records nothing in self.undo either.
+  function api.SetOnlyTrackSelected(track)
+    for _, other in ipairs(fake.tracks) do
+      other.selected = false
+    end
+    track.selected = true
+  end
   function api.CountMediaItems(_)
     return #fake:ordered_items()
   end
