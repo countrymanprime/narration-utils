@@ -1,16 +1,20 @@
 import { useMemo, type ReactNode } from 'react';
-import type { GuideEntity, ManuscriptNote, ManuscriptParagraph } from '../../types';
+import type { GuideEntity, ManuscriptNote, ManuscriptParagraph, PrepMarkupSpan } from '../../types';
 import { Highlight, highlightKind } from '../primitives/Highlight';
-import { composeAnnotationPieces, entityAnnotations, noteAnnotations, type Annotation, type Piece } from './annotations';
+import { composeAnnotationPieces, entityAnnotations, markupAnnotations, noteAnnotations, type Annotation, type Piece } from './annotations';
+import { MarkupMark, StaleMarkupNotice } from './MarkupMark';
 import type { RetailSampleRange } from './retailSampleRange';
 
 const FORMAT_TAG = { bold: 'strong', italic: 'em', underline: 'u' } as const;
+const NO_MARKUP: PrepMarkupSpan[] = [];
 const JUMP_TARGET_CLASS = 'animate-[jump-target-pulse_1.6s_ease] bg-[color-mix(in_srgb,var(--accent)_16%,transparent)] shadow-[inset_3px_0_0_var(--accent)]';
 
 export function ParagraphView({
   paragraphs,
   entities,
   notes,
+  markup = NO_MARKUP,
+  removeMarkup,
   textClass,
   lineNumberPadding,
   jumpTarget,
@@ -21,6 +25,10 @@ export function ParagraphView({
   paragraphs: ManuscriptParagraph[];
   entities: GuideEntity[];
   notes: ManuscriptNote[];
+  /** The chapter's script markup (prep-depth.prd.md Phase 5): fresh spans are drawn on their line, stale ones listed beside it. */
+  markup?: PrepMarkupSpan[];
+  /** Removes one mark; left out, a stale mark is still said but offers no Remove. */
+  removeMarkup?: (span: PrepMarkupSpan) => void;
   textClass: string;
   lineNumberPadding: string;
   jumpTarget?: number;
@@ -30,6 +38,8 @@ export function ParagraphView({
   openNote: (note: ManuscriptNote) => void;
 }) {
   const entitiesById = useMemo(() => new Map(entities.map((entity) => [entity.id, entity])), [entities]);
+  // A mark whose line is gone has no row to sit beside: it is listed above the chapter instead.
+  const gone = useMemo(() => markup.filter((span) => span.paragraph === null), [markup]);
   if (!paragraphs.length)
     return (
       <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
@@ -38,6 +48,11 @@ export function ParagraphView({
     );
   return (
     <div className="relative bg-[var(--surface)]">
+      {gone.length > 0 && (
+        <div className="border-b border-[var(--border)] px-4 py-2">
+          <StaleMarkupNotice spans={gone} gone remove={removeMarkup} />
+        </div>
+      )}
       {paragraphs.map((paragraph, chapterParagraphIndex) => (
         <ParagraphRow
           key={paragraph.index}
@@ -45,6 +60,8 @@ export function ParagraphView({
           chapterParagraphIndex={chapterParagraphIndex}
           entitiesById={entitiesById}
           notes={notes}
+          markup={markup}
+          removeMarkup={removeMarkup}
           textClass={textClass}
           lineNumberPadding={lineNumberPadding}
           isJumpTarget={jumpTarget === paragraph.index}
@@ -62,6 +79,8 @@ function ParagraphRow({
   chapterParagraphIndex,
   entitiesById,
   notes,
+  markup,
+  removeMarkup,
   textClass,
   lineNumberPadding,
   isJumpTarget,
@@ -73,6 +92,8 @@ function ParagraphRow({
   chapterParagraphIndex: number;
   entitiesById: Map<string, GuideEntity>;
   notes: ManuscriptNote[];
+  markup: PrepMarkupSpan[];
+  removeMarkup?: (span: PrepMarkupSpan) => void;
   textClass: string;
   lineNumberPadding: string;
   isJumpTarget: boolean;
@@ -81,26 +102,40 @@ function ParagraphRow({
   openNote: (note: ManuscriptNote) => void;
 }) {
   const paragraphNotes = useMemo(() => notes.filter((note) => note.paragraph === paragraph.index), [notes, paragraph.index]);
+  const lineMarkup = useMemo(() => markup.filter((span) => span.paragraphId === paragraph.id), [markup, paragraph.id]);
+  const staleMarkup = useMemo(() => lineMarkup.filter((span) => span.stale), [lineMarkup]);
   const annotations = useMemo(() => {
-    const next: Annotation[] = [...entityAnnotations(paragraph, entitiesById), ...noteAnnotations(paragraph, paragraphNotes)];
+    const next: Annotation[] = [
+      ...entityAnnotations(paragraph, entitiesById),
+      ...noteAnnotations(paragraph, paragraphNotes),
+      ...markupAnnotations(paragraph, lineMarkup),
+    ];
     (paragraph.spans ?? []).forEach((span, index) => {
       if (span.end > span.start && span.end <= paragraph.text.length)
         next.push({ id: `format-${span.style}-${index}`, start: span.start, end: span.end, length: span.end - span.start, kind: 'format', style: span.style });
     });
     return next;
-  }, [paragraph, paragraphNotes, entitiesById]);
+  }, [paragraph, paragraphNotes, entitiesById, lineMarkup]);
   const gutterClass = [
     'relative flex items-start justify-center border-r border-[var(--border)]',
     "bg-[var(--surface-2)] px-1.5 font-['IBM_Plex_Mono',ui-monospace,monospace] text-[0.625rem] leading-3",
     'text-[var(--text-muted)]',
     lineNumberPadding,
   ].join(' ');
-  const renderPiece = (piece: Piece, pieceIndex: number) =>
+  // The pieces rebuild the text exactly (composeAnnotationPieces), so each one's offsets are the running sum of the lengths
+  // before it: how a mark split into several pieces knows which piece starts it and which ends it.
+  const renderPiece = (piece: Piece, pieceIndex: number, start: number) =>
     piece.annotations
       .slice()
       .reverse()
       .reduce<ReactNode>((child, item) => {
         const key = `${item.id}-${pieceIndex}`;
+        if (item.kind === 'markup')
+          return (
+            <MarkupMark key={key} span={item.markup!} first={start === item.start} last={start + piece.text.length === item.end}>
+              {child}
+            </MarkupMark>
+          );
         if (item.kind === 'format') {
           const Tag = FORMAT_TAG[item.style!];
           return <Tag key={key}>{child}</Tag>;
@@ -147,8 +182,14 @@ function ParagraphRow({
           </div>
         )}
         <p data-paragraph-text className={`${textClass} whitespace-pre-line`}>
-          {composeAnnotationPieces(paragraph.text, annotations).map(renderPiece)}
+          {
+            composeAnnotationPieces(paragraph.text, annotations).reduce<{ nodes: ReactNode[]; at: number }>(
+              ({ nodes, at }, piece, index) => ({ nodes: [...nodes, renderPiece(piece, index, at)], at: at + piece.text.length }),
+              { nodes: [], at: 0 },
+            ).nodes
+          }
         </p>
+        <StaleMarkupNotice spans={staleMarkup} remove={removeMarkup} />
       </div>
     </div>
   );

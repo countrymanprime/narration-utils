@@ -1,6 +1,6 @@
 # 0071. Releases carry build provenance, and promote refuses a file the release workflows did not build
 
-**Status:** Accepted
+**Status:** Accepted (its second signer, `_attach-platform.yml`, is removed with the macOS and Linux builds by [ADR 0412](0412-windows-is-the-only-supported-platform-for-now.md))
 **Date:** 2026-09-21
 **Supersedes:**
 

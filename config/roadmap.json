@@ -52,7 +52,7 @@
     }
   ],
   "deferred": [
-    "macOS and Linux installers/adapters",
+    "macOS and Linux support, removed for now by owner decision D74 (docs/adr/0412)",
     "Languages beyond US English",
     "Team collaboration or cloud services",
     "Manuscript Teleprompter beyond what has shipped: a default engine chosen by evaluating both, following live REAPER state, and punch-in from a word; never edits text or audio automatically"

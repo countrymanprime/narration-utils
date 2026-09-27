@@ -15,6 +15,7 @@ const (
 	SpacyDir      = "spacy"
 	MoonshineDir  = "moonshine"
 	DictionaryDir = "dictionary"
+	EncoderDir    = "encoder"
 )
 
 // CacheBase is where downloaded assets live: the per-user cache folder, outside the release, the project and the checkout. When the

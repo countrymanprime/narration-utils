@@ -12,6 +12,7 @@ import { hasAudio, ReaperControls } from './ReaperControls';
 import { TakeReviewReads } from './TakeReviewReads';
 import { TakeComparisonView } from './TakeComparisonView';
 import { takeComparisonEvidence, takeReviewEvidence } from './takeReviewFormat';
+import { deliveryEvidence } from './deliveryFindingFormat';
 import {
   analyzerLabel,
   categoryLabel,
@@ -62,6 +63,7 @@ export function FindingDetail({
   onChanged,
   goToManuscript,
   goToStoryBible,
+  goToDelivery,
   reaperStatus,
   onReaperStatusChange,
   onCompared,
@@ -75,6 +77,8 @@ export function FindingDetail({
   onChanged: (finding: Finding, decided: boolean) => void;
   goToManuscript: (chapter: string, paragraph?: number) => void;
   goToStoryBible: (entityId: string) => void;
+  /** Opens the Delivery page on a measured file and one of its rules (a delivery finding has no manuscript position). */
+  goToDelivery: (file: string, rule?: string) => void;
   /** A comparison of this take-review group finished: the page shows it. */
   onCompared: (ended: TakeComparisonJob) => void;
 }) {
@@ -140,8 +144,11 @@ export function FindingDetail({
       : []),
     ...(finding.manuscript?.recorded ? [{ label: 'Recording has', value: finding.manuscript.recorded }] : []),
   ];
+  // A delivery finding is about a measured file and one rule of its profile, not a place in the manuscript (P12).
+  const delivery = deliveryEvidence(finding);
+  const deliveryFile = delivery ? finding.source.file : undefined;
   const whereRows = [
-    { label: 'Chapter', value: chapterLabel(finding) },
+    { label: delivery ? 'File' : 'Chapter', value: chapterLabel(finding) },
     ...(finding.time_range ? [{ label: 'Project time', value: formatTime(finding.time_range.start) }] : []),
     { label: 'Found by', value: analyzerLabel(finding.analyzer) },
     { label: 'Severity', value: severityLabel(finding.severity) },
@@ -168,11 +175,19 @@ export function FindingDetail({
         <b>{confidenceLabel(finding.confidence)}</b>. {finding.confidence_reason}
       </p>
       <div className="mt-3 flex flex-wrap gap-2">
-        <TooltipTarget text={manuscriptBlocked ?? 'Open the manuscript at this line'}>
-          <Button variant="ghost" onClick={() => void openManuscript()} disabled={Boolean(manuscriptBlocked)} pending={action.isPending('manuscript')}>
-            Show in manuscript
-          </Button>
-        </TooltipTarget>
+        {deliveryFile ? (
+          <TooltipTarget text="Open the Delivery page on this file, rule by rule">
+            <Button variant="ghost" onClick={() => goToDelivery(deliveryFile, delivery?.rule)}>
+              Open in Delivery
+            </Button>
+          </TooltipTarget>
+        ) : (
+          <TooltipTarget text={manuscriptBlocked ?? 'Open the manuscript at this line'}>
+            <Button variant="ghost" onClick={() => void openManuscript()} disabled={Boolean(manuscriptBlocked)} pending={action.isPending('manuscript')}>
+              Show in manuscript
+            </Button>
+          </TooltipTarget>
+        )}
         {entityId && hasManuscript && (
           <Button variant="ghost" onClick={() => goToStoryBible(entityId)}>
             Open in Story Bible

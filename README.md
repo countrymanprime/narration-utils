@@ -22,12 +22,10 @@ verifies and removes the voices and models the app has downloaded (Settings > Lo
 [Using the app](docs/guides/using-the-app/README.md) for a full screenshot walkthrough. The UI's component library is a
 Storybook atlas (`pnpm --dir apps/ui run storybook`, checked in CI by the `ui-atlas` job); its generated reference is in
 [`docs/ui/atlas/`](docs/ui/atlas/index.md) and the design rules in the [design system reference](docs/design/design-system.md).
-The guide, the roadmap, the atlas and selected architecture and decision records are also published as a website,
-[countrymanprime.github.io/narration-utils](https://countrymanprime.github.io/narration-utils/) (generated from `docs/` by
-[`tools/docs-site`](docs/operations/ci-and-releases.md#the-public-docs-site)), with the live Storybook under `/storybook/` and a
-[live demo of the app](https://countrymanprime.github.io/narration-utils/demo/) (sample project, nothing saved) under `/demo/`. The `Pages`
-workflow rebuilds all three from `main`; the address answers 404 until the repository owner sets Settings > Pages > Source to GitHub Actions (see
-[Tracking work on GitHub](docs/operations/github-workflow.md#repository-settings-that-only-the-owner-can-change)).
+The public website (docs, live Storybook and a browser demo of the app, built by
+[`tools/docs-site`](docs/operations/ci-and-releases.md#the-public-docs-site)) is **paused** until the main app's development is
+done and the site is reworked (owner decision D75, [the Pages workflow](docs/operations/ci-and-releases.md#the-pages-workflow));
+read the docs here in `docs/` meanwhile.
 
 ![Home, manuscript found](docs/images/ui/home-default.webp)
 
@@ -72,6 +70,11 @@ The layout and its test rule are recorded in
   store) is different enough from Reaper's that it needs its own driver design rather than a
   port of the Reaper one. Placeholder notes live under `integrations/audacity/`.
 
+## Supported platforms
+
+Windows x64 only, for now. macOS and Linux builds were removed until the app is steadier or someone uses those systems
+([ADR 0412](docs/adr/0412-windows-is-the-only-supported-platform-for-now.md)).
+
 ## Install on Windows
 
 The supported way to get the app is a GitHub release. From the [releases page](https://github.com/countrymanprime/narration-utils/releases):
@@ -100,7 +103,7 @@ cannot find the new names: install the next release by hand once, and it updates
 **Uninstall** from Settings > Apps > Installed apps. That removes the program and its shortcuts and **leaves your settings**
 (`%APPDATA%\narration-utils`), **the voices and models you downloaded** (`%LOCALAPPDATA%\narration-utils`, also where the
 update staging lives) **and everything in your project folders** alone; the uninstall page says so. Delete those folders by hand
-if you want them gone. macOS and Linux builds are previews without an installer.
+if you want them gone.
 
 ## Developer bootstrap
 
@@ -118,9 +121,11 @@ creates the checkout-local `.venv`; installs locked Python, Node, and quality
 tool dependencies; builds the UI; and builds the native workspace binary. It
 uses the pinned Wails CLI and Go tooling declared by the repository, never
 Cargo or a Rust toolchain.
-Windows needs Visual Studio's Desktop development with C++ workload; macOS
-needs Xcode Command Line Tools; Linux needs the WebKit/GTK development packages
-listed in CI. The bootstrap does not install operating-system prerequisites.
+Windows needs Visual Studio's Desktop development with C++ workload. A Linux
+machine can be a development host (Go vet and tests, the UI, the sidecars; the
+native build needs the WebKit/GTK development packages listed in
+`.github/actions/setup-toolchain`), but it builds no supported app. The bootstrap
+does not install operating-system prerequisites.
 
 On Windows the command uses the Python Launcher (`py -3.12`) by default. Use
 `pnpm run bootstrap -- --python /path/to/python` to select Python explicitly,

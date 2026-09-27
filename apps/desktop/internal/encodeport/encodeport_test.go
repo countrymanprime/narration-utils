@@ -11,7 +11,7 @@ import (
 )
 
 func TestEveryRegisteredEncoderPassesTheSuite(t *testing.T) {
-	// Empty today (render goes through REAPER); the loop is here so the first row cannot skip the suite.
+	// The FFmpeg row runs here against the fake FFmpeg TestMain sets up (ffmpeg_test.go); a new row cannot skip the suite.
 	for _, entry := range encodeport.Encoders.Entries() {
 		t.Run(entry.Name, func(t *testing.T) { encodeporttest.RunEncoder(t, entry) })
 	}
@@ -23,12 +23,10 @@ func TestEveryRegisteredPackagerPassesTheSuite(t *testing.T) {
 	}
 }
 
-func TestTheRegistriesAreDeclaredEmpty(t *testing.T) {
-	// Provider-ports P13 declares the ports only; the render-encode-master PRD adds the first rows.
+func TestThePackagerRegistryIsDeclaredEmpty(t *testing.T) {
+	// Provider-ports P13 declared both ports only; render-encode-master Phase 1 added the FFmpeg encoder (ffmpeg_test.go checks it),
+	// and Phase 4 adds the first packager.
 	for _, platform := range port.Platforms {
-		if got := encodeport.Encoders.Names(platform); !reflect.DeepEqual(got, []string{}) {
-			t.Errorf("Encoders.Names(%q) = %v, want none", platform, got)
-		}
 		if got := encodeport.Packagers.Names(platform); !reflect.DeepEqual(got, []string{}) {
 			t.Errorf("Packagers.Names(%q) = %v, want none", platform, got)
 		}
@@ -88,7 +86,7 @@ func TestANewEncoderAndPackagerAreOneRowAndPassTheSuiteWithNoOtherEdit(t *testin
 		t.Run(entry.Name, func(t *testing.T) { encodeporttest.RunPackager(t, entry, samples) })
 	}
 
-	if len(encodeport.Encoders.Entries()) != 0 || len(encodeport.Packagers.Entries()) != 0 {
+	if len(encodeport.Encoders.Entries()) != 1 || len(encodeport.Packagers.Entries()) != 0 {
 		t.Error("registering on a new registry changed the program's")
 	}
 }

@@ -19,6 +19,8 @@ export const reviewGoldens: Record<string, z.ZodType> = {
   'takereview-scan-error.json': takeReviewScanJobSchema,
   'takereview-create-take.json': takeReviewCreateTakeResultSchema,
   'findings-list-take-comparison.json': findingsPageSchema,
+  // Delivery findings as the Review page lists them (delivery-platform-profiles.prd.md Phase 9); evidence checked below.
+  'findings-list-delivery-qc.json': findingsPageSchema,
   'takecomparison-idle.json': takeComparisonJobSchema,
   'takecomparison-running.json': takeComparisonJobSchema,
   'takecomparison-success.json': takeComparisonJobSchema,
