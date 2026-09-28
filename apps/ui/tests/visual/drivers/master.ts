@@ -155,7 +155,7 @@ export const masterDrivers: Record<string, Driver> = {
     const dismiss = page.getByRole('button', { name: 'Dismiss message' });
     while ((await dismiss.count()) > 0) await dismiss.first().click();
     const panel = page.getByRole('region', { name: 'Multi-platform export' });
-    await panel.getByRole('checkbox', { name: 'ACX' }).click();
+    await panel.getByRole('checkbox', { name: 'ACX', exact: true }).click();
     await panel.getByRole('button', { name: 'Build 1 package' }).waitFor();
     await scrollToTop(page, panel);
   },
@@ -170,7 +170,7 @@ export const masterDrivers: Record<string, Driver> = {
     const dismiss = page.getByRole('button', { name: 'Dismiss message' });
     while ((await dismiss.count()) > 0) await dismiss.first().click();
     const panel = page.getByRole('region', { name: 'Multi-platform export' });
-    await panel.getByRole('checkbox', { name: 'ACX' }).click();
+    await panel.getByRole('checkbox', { name: 'ACX', exact: true }).click();
     await panel.getByRole('button', { name: 'Build 1 package' }).click();
     await page.getByRole('progressbar', { name: 'Building packages' }).waitFor();
     await scrollToTop(page, panel);
@@ -186,7 +186,7 @@ export const masterDrivers: Record<string, Driver> = {
     const dismiss = page.getByRole('button', { name: 'Dismiss message' });
     while ((await dismiss.count()) > 0) await dismiss.first().click();
     const panel = page.getByRole('region', { name: 'Multi-platform export' });
-    await panel.getByRole('checkbox', { name: 'ACX' }).click();
+    await panel.getByRole('checkbox', { name: 'ACX', exact: true }).click();
     await panel.getByRole('checkbox', { name: /^My ACX/ }).click();
     await panel.getByRole('button', { name: /^Build 2 packages/ }).click();
     await panel.getByRole('list', { name: 'Multi-platform export results' }).waitFor();
