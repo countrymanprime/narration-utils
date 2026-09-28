@@ -382,6 +382,14 @@ export function CreditsProjectValues(): $CancellablePromise<string> {
 }
 
 /**
+ * CreditsRecordedLengths is a credits row's "actual recorded": the same track-based measurement every manuscript
+ * chapter's Recorded column gets, read for the two credits ids from the same confirmed chapter-track-map.json.
+ */
+export function CreditsRecordedLengths(): $CancellablePromise<string> {
+    return $Call.ByID(334169345);
+}
+
+/**
  * CreditsRetailSample reads this project's retail sample and measures it against the current manuscript. A saved range
  * whose lines are gone (the manuscript was replaced) is kept and reported as a problem rather than failing the read.
  */
@@ -2066,6 +2074,16 @@ export function WhisperInstallState(jobID: string): $CancellablePromise<string> 
 
 export function WhisperRemove(modelID: string): $CancellablePromise<string> {
     return $Call.ByID(1246245112, modelID);
+}
+
+/**
+ * WindowSaveZoom persists the window's current zoom level, debounced, whenever the header's useZoom hook sees it
+ * settle - a button, a Ctrl+=/-/0 shortcut, or the resize re-read that picks up an external Ctrl+wheel/pinch change
+ * (Solution Detail: "written to global settings ... debounced"). It always saves at global scope: the level belongs
+ * to this computer's window, not a project (Q4 A).
+ */
+export function WindowSaveZoom(level: number): $CancellablePromise<string> {
+    return $Call.ByID(2654551384, level);
 }
 
 /**

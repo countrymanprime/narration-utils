@@ -99,6 +99,7 @@ var stressReaders = []stressReader{
 	{"chapterSyncWatchTick (the .rpp watcher)", func(h *Host) { h.chapterSyncWatchTick(time.Now()) }},
 	{"backgroundCheckTick (background recording checks)", func(h *Host) { h.backgroundCheckTick(time.Now()) }},
 	{"CreditsStatuses", func(h *Host) { _, _ = h.CreditsStatuses() }},
+	{"CreditsRecordedLengths", func(h *Host) { _, _ = h.CreditsRecordedLengths() }},
 	{"CreditsSetupState", func(h *Host) { _, _ = h.CreditsSetupState() }},
 	{"CreditsSetupDismiss (unknown scope)", func(h *Host) { _, _ = h.CreditsSetupDismiss("forever") }},
 	{"CreditsSetStatus (unknown kind)", func(h *Host) { _, _ = h.CreditsSetStatus("missing", "finalized") }},
