@@ -74,4 +74,4 @@ collaborator, a rights holder checking on progress — who has no need to know w
 
 ---
 
-[← Home](home.md) · [Index](README.md) · [Manuscript →](manuscript.md)
+[← Home](home.md) · [Index](README.md) · [Script →](script.md)

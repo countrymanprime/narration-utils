@@ -1,0 +1,393 @@
+// The `script` rows of STATE_CATALOG (see state-catalog.ts), in the order they are captured.
+import type { StateEntry } from '../lib/types';
+import { COMPANION, REFLOW, KEEPS_DESKTOP_SCROLL, POPUP_ANCHORED_AT_FIRST_WIDTH, RAIL_DEPENDS_ON_WIDTH } from './shared';
+
+export const scriptStates: StateEntry[] = [
+  // Script (stage-navigation-and-page-replacement.prd.md Phase 3, which replaced the Manuscript page)
+  { page: 'script', state: 'reader-text-small', description: 'Script, small text size' },
+  { page: 'script', state: 'reader-text-medium', description: 'Script, medium text size' },
+  { page: 'script', state: 'reader-text-large', description: 'Script, large text size' },
+  { page: 'script', state: 'chapters-overlay-open', description: 'Script, chapters & search overlay open' },
+  {
+    page: 'script',
+    state: 'chapters-overlay-searching',
+    description:
+      'Script, a query typed into Chapters & Search before the debounce settles - matching chapter titles show at once and a "Searching…" hint replaces "No matches" (R1, R2)',
+  },
+  {
+    page: 'script',
+    state: 'chapters-overlay-search',
+    description:
+      'Script, settled search results in Chapters & Search - a line hit reads "[icon] Line n: ...windowed text..." with the matched term highlighted (R3, R4)',
+  },
+  { page: 'script', state: 'detail-sidebar-note', description: 'Script, detail sidebar open on a note' },
+  { page: 'script', state: 'detail-sidebar-entity', description: 'Script, detail sidebar open on an entity' },
+  {
+    page: 'script',
+    state: 'selection-popup',
+    description: 'Script, text-selection action popup open on one word: + Note, + Story Bible and Look up (Look up is offered for one word only)',
+    ...POPUP_ANCHORED_AT_FIRST_WIDTH,
+  },
+  {
+    page: 'script',
+    state: 'word-lookup-definition',
+    description:
+      'Script, the Look up panel for "bank" - each part of speech with numbered definitions, examples and synonyms, and the CC BY 4.0 credit of the dictionary (ADR 0097)',
+  },
+  {
+    page: 'script',
+    state: 'word-lookup-not-found',
+    description: 'Script, the Look up panel for a word the dictionary does not have ("Alice"), said plainly, with the credit',
+  },
+  {
+    page: 'script',
+    state: 'word-lookup-not-installed',
+    description:
+      'Script, Look up with the dictionary not installed - the first-use question with its size, where it is kept and its licence; nothing downloads until Download dictionary',
+  },
+  {
+    page: 'script',
+    state: 'word-lookup-damaged',
+    description: 'Script, Look up with a dictionary whose index fails its check - asked as a repair (Download again), in plain language',
+  },
+  {
+    page: 'script',
+    state: 'overlapping-highlights',
+    description: 'Script, entity highlight overlapping a note',
+    sameAs: { of: 'script/reader-text-medium', reason: 'Medium is the default reader size and the overlap is visible in the default view.' },
+  },
+  { page: 'script', state: 'sticky-header-scrolled', description: 'Script, scrolled with sticky chapter header', ...KEEPS_DESKTOP_SCROLL },
+  { page: 'script', state: 'chapter-collapsed', description: 'Script, a chapter card collapsed' },
+  {
+    page: 'script',
+    state: 'chapter-header-columns',
+    description:
+      'Script, mixed chapter rows (?mockManuscript=mixed): a Front Matter row with no Read aloud and 3-, 4- and 5-digit word counts - the stats and the buttons in two aligned columns, a chevron last (manuscript-chapter-header-alignment.prd.md, manuscript-credits-card-parity.prd.md)',
+  },
+  { page: 'script', state: 'add-note-dialog', description: 'Script, Add Note dialog open after selecting text' },
+  {
+    page: 'script',
+    state: 'script-markup',
+    description:
+      'Script, script markup on Chapter 3 (prep-depth PRD Phase 5): stress underlines, a breath and a pause after words, Mouse and Lory speaker chips, a "Text changed here" notice beside a line whose marked words changed, and a mark whose line is gone listed above the chapter',
+  },
+  {
+    page: 'script',
+    state: 'markup-dialog',
+    description:
+      'Script, the Mark up dialog for a selection that already carries a stress mark: Speaker chosen, the Story Bible characters one press away, and the mark already there with its Remove',
+  },
+  { page: 'script', state: 'formatted-text-and-line-breaks', description: 'Script, paragraphs with preserved bold/italic/underline and a line break' },
+  { page: 'script', state: 'chapter-bookmarked', description: 'Script, a chapter bookmarked (blue bookmark icon)' },
+  { page: 'script', state: 'go-to-line-highlight', description: 'Script, arrived via Story Bible "Go to line" with the target line highlighted' },
+  { page: 'script', state: 'reader-dark', description: 'Script, reader in the Dark theme (readable active controls, opaque sticky header)' },
+  {
+    page: 'script',
+    state: 'credits-entries',
+    description:
+      'Script, the Opening credits pseudo-entry expanded before Chapter 1 with an unresolved-token chip (audiobook-credits-templates.prd.md Phase 3)',
+  },
+  {
+    page: 'script',
+    state: 'credits-entries-fill-in',
+    description:
+      'Script, the credits-setup banner above the Opening credits card and its own "Fill in" button beside the unresolved-token line (credits-token-setup-and-front-matter-detection.prd.md Phase 3, ?mockCredits=setup, mockups/credits-token-setup-and-front-matter-detection/03-manuscript-banner-and-fill-in.webp)',
+  },
+  {
+    page: 'script',
+    state: 'retail-sample',
+    description:
+      'Script, the retail sample picked on lines 1-3 of Chapter 3 (?mockCredits=extras, audiobook-credits-templates.prd.md Phase 5): a "Retail sample" tag on the chapter header, the sampled lines marked with a left rule, "Retail sample starts · about ..." above the first and "Retail sample ends" above the last',
+  },
+
+  {
+    page: 'script',
+    state: 'speaker-attribution-single-speaker',
+    description:
+      'Script, Chapter 3, a dialogue line whose recorded demo cue (prep-depth.prd.md Phase 4, Q1 fixture-then-real) is tagged directly to a known character - a speaker chip reading "Alice" beside the line (docs/prds/mockups/prep-depth/02-prep-script-concept.webp)',
+  },
+  {
+    page: 'script',
+    state: 'speaker-attribution-ambiguous',
+    description:
+      'Script, Chapter 3, a dialogue line whose recorded demo cue resolves only through scene continuation (speaker_source: "continuation", no direct tag) - the chip still names the resolved speaker, "Alice", the same as a direct tag',
+  },
+  {
+    page: 'script',
+    state: 'speaker-attribution-unknown',
+    description:
+      'Script, Chapter 3, a dialogue line spoken by a character with no Story Bible entry (the Mouse) - the recorded demo cue has no resolved speaker, so no chip and no placeholder name (Success Metrics: "unknown renders as unattributed, never a fabricated name")',
+  },
+  // Mock 02's rail (stage-navigation-and-page-replacement.prd.md Phase 3, ADR 0392): a column from `2xl` (the wide width), a panel
+  // opened from the band's Prep rail button below it. The driver picks by what the width shows, so each width loads afresh.
+  {
+    page: 'script',
+    state: 'prep-rail-characters',
+    description:
+      "Script, the rail's Characters tab (mock 02): the Story Bible's characters with their first description line; a name opens its summary. A column beside the reader at the wide width, the Prep panel below it",
+    ...RAIL_DEPENDS_ON_WIDTH,
+  },
+  {
+    page: 'script',
+    state: 'prep-rail-queries',
+    description:
+      "Script, the rail's Queries tab (mock 02): every name the author has not confirmed, with where it is first heard and its status (one marked Query sent), and Manage queries for the Story Bible's queries panel; the chapter list counts each chapter's names still to confirm",
+    ...RAIL_DEPENDS_ON_WIDTH,
+  },
+  {
+    page: 'script',
+    state: 'invalid-payload',
+    description:
+      'Script, the inline error with Retry when the data it loads could not be read, beside the notice Home raised for the same data; navigation still works (ADR 0069, 0075)',
+  },
+  {
+    page: 'script',
+    state: 'read-aloud-setup',
+    description:
+      'Script, the "Read aloud" full-size dialog opened from a chapter header - a non-scrolling control bar at the bottom (read-aloud-control-bar.prd.md Phase 3) with Play, Stop reading, status, the microphone and Settings popover buttons, no chapter picker (the chapter is fixed); above the text the resume prompt (read-aloud-resume-from-daw.prd.md Phase 1) offers where the recording ends as a compact choice: the matched track, "as of the project\'s last save", the matched sentence, and Resume from here / Start from the top / Pick a word',
+    ...REFLOW,
+  },
+  {
+    page: 'script',
+    state: 'read-aloud-resume-low-confidence',
+    description:
+      'Script, the resume prompt when the end of the recording also fits elsewhere in the chapter (?mockResume=low_confidence) - offered as a guess to check, with its confidence and sentence; Resume from here is not the primary action',
+  },
+  {
+    page: 'script',
+    state: 'read-aloud-resume-complete',
+    description:
+      'Script, the resume prompt when the recording already reaches the chapter\'s last word - "This chapter is recorded to the end", no Resume from here, only Pick a word (fixes offering to resume past the end)',
+  },
+  {
+    page: 'script',
+    state: 'read-aloud-resume-agree',
+    description:
+      "Script, the resume prompt when REAPER's recording and the prompter's last reading agree (read-aloud-resume-from-daw.prd.md Phase 3, RD3/RD4, ?mockResume=agree) - a one-line notice presets Start reading to the DAW word without asking, with Change and Start from the top as links; the control bar's start-point chip shows the same preset with no click made",
+    ...REFLOW,
+  },
+  {
+    page: 'script',
+    state: 'read-aloud-resume-disagree',
+    description:
+      'Script, the resume prompt when REAPER and the last reading are far apart (Phase 3, RD1, ?mockResume=disagree) - a compact two-way choice, REAPER and Last reading side by side with their own sentence and word number, plus Start from the top and Pick a word',
+    ...REFLOW,
+  },
+  {
+    page: 'script',
+    state: 'read-aloud-resume-prompter-only',
+    description:
+      'Script, the resume prompt when only the prompter remembers a last reading - no track, no recording (Phase 3, RD8, ?mockResume=prompter_only) - one line, "Your last reading stopped at … Continue there?", never taken silently',
+    ...REFLOW,
+  },
+  {
+    page: 'script',
+    state: 'read-aloud-resume-disagree-live',
+    description:
+      'Script, the resume prompt disagreeing when the REAPER place comes from REAPER\'s live edit cursor, not the saved project (read-aloud-resume-from-daw.prd.md Phase 4, RD2, ADR 0349, ?mockResume=disagree_live) - the REAPER card reads "in REAPER now" instead of "as of the project\'s last save", as in the approved 02-disagree mockup',
+    ...REFLOW,
+  },
+  {
+    page: 'script',
+    state: 'read-aloud-resume-recording',
+    description:
+      'Script, the resume prompt while REAPER records onto the chapter\'s track (Phase 4, ?mockResume=recording) - "in REAPER now", nothing located because the take is still being written, reading starts from the top; no resume button',
+    ...REFLOW,
+  },
+  {
+    page: 'script',
+    state: 'read-aloud-resume-not-found',
+    description:
+      "Script, the resume prompt when the recording's tail did not match the chapter (?mockResume=not_found) - no resume word; says reading starts from the top, shows what was heard, offers Pick a word",
+  },
+  {
+    page: 'script',
+    state: 'read-aloud-resume-no-track',
+    description:
+      'Script, the resume prompt when no track in the REAPER project matches the chapter (?mockResume=none) - says reading starts from the top, with a "Link a track" link to the Tracks page instead of a picker in place (Chapter Track Link Control owns linking)',
+  },
+  {
+    page: 'script',
+    state: 'read-aloud-resume-model-required',
+    description:
+      'Script, the resume prompt when the Whisper model the lookup needs is not downloaded (?mockAssets=missing) - says so with a Download model button that opens the first-use confirm; nothing downloads by itself',
+  },
+  {
+    page: 'script',
+    state: 'read-aloud-resume-error',
+    description: 'Script, the resume prompt when the lookup failed (?mockResume=error) - the reason as an alert, Try again, reading from the top meanwhile',
+  },
+  {
+    page: 'script',
+    state: 'read-aloud-resume-after-choice',
+    description:
+      'Script, the "Read aloud" dialog after "Resume from here" - the resume prompt is gone at once (no summary, no Change): the header slot above the text is empty',
+  },
+  {
+    page: 'script',
+    state: 'read-aloud-resume-after-session',
+    description:
+      'Script, the "Read aloud" dialog after a session has started and ended once - the resume prompt does not come back for the rest of this dialog\'s open, so the next Play begins at the top with nothing to clear',
+  },
+  {
+    page: 'script',
+    state: 'read-aloud-resume-after-reaper-plays',
+    description:
+      'Script, the "Read aloud" dialog opened while REAPER plays (read-aloud-resume-from-daw.prd.md Phase 5, RD7, ADR 0353, ?mockDawPlayhead=12) - the resume prompt has gone away by itself and nothing was preset: the text starts at the top of the dialog body and Play begins at the top, as in the approved 04-after-play-prompt-gone mockup',
+  },
+  {
+    page: 'script',
+    state: 'read-aloud-listening',
+    description:
+      'Script, the "Read aloud" dialog mid-session and listening - the control bar shows Listening, the word count, Stop reading and Follow (disabled, following), the current word highlighted and read words dimmed (reached via the ?mockTeleprompter=listening mock seam)',
+  },
+  {
+    page: 'script',
+    state: 'read-aloud-following-paused',
+    description:
+      'Script, the "Read aloud" dialog listening after the narrator scrolled the text by hand (teleprompter-engines-and-input-devices.prd.md Phase 10) - "Following paused" and an enabled Follow button beside Stop, the highlighted word scrolled out of view',
+  },
+  {
+    page: 'script',
+    state: 'read-aloud-paused',
+    description:
+      'Script, the "Read aloud" dialog after pressing Pause mid-session (read-aloud-control-bar.prd.md Phase 5, Q3, ADR 0248) - the control bar\'s toggle shows Play (not pressed), the status reads "Paused", and the session keeps its place rather than stopping',
+    ...REFLOW,
+  },
+  {
+    page: 'script',
+    state: 'read-aloud-seek-back',
+    description:
+      'Script, the "Read aloud" dialog after clicking an earlier word ("Go back to here", teleprompter-manuscript-integration.prd.md Phase 4) - the highlight has jumped back to the clicked word without restarting the session',
+  },
+  {
+    page: 'script',
+    state: 'read-aloud-story-bible-entry',
+    description:
+      'Script, the "Read aloud" dialog listening, after clicking a Story Bible name in the text (teleprompter-manuscript-integration.prd.md Phase 5) - the rail switches to its Story bible tab with the entry, read-only; the highlight and the text stay where they were',
+  },
+  {
+    page: 'script',
+    state: 'read-aloud-note-open',
+    description:
+      'Script, the "Read aloud" dialog before a session, after clicking a note mark (Phase 5) - the rail switches to its Notes tab with that note current',
+  },
+  {
+    page: 'script',
+    state: 'read-aloud-rail-hidden',
+    description:
+      'Script, the "Read aloud" dialog with its reading panel hidden (Phase 5) - the text takes the width, a "Show reading panel" button stays at the side',
+  },
+  {
+    page: 'script',
+    state: 'read-aloud-rail-full-height',
+    description:
+      'Script, the "Read aloud" dialog with the resume card present and the reading panel open (read-aloud-control-bar.prd.md Phase 1) - the resume card shares the text column\'s left and right edges, and the panel spans the dialog body from its content top to its bottom',
+    sameAs: {
+      of: 'script/read-aloud-setup',
+      reason:
+        'The rail is already open and the resume prompt already shown in read-aloud-setup, the same default state this row measures; the alignment and full-height checks run as bounding-box assertions in the driver, not from the screenshot.',
+    },
+  },
+  {
+    page: 'script',
+    state: 'read-aloud-mic-popover',
+    description:
+      'Script, the "Read aloud" dialog with the control bar\'s microphone popover open (read-aloud-control-bar.prd.md Phases 3-4) - the device list, the selected device, Refresh, and a live input-level meter (a fixed -18 dBFS reading, ?mockLevel=-18, ADR 0247) both inside the popover and, decoratively, in the bar\'s own microphone button',
+    ...REFLOW,
+  },
+  {
+    page: 'script',
+    state: 'read-aloud-settings-popover',
+    description:
+      'Script, the "Read aloud" dialog with the control bar\'s Settings popover open (read-aloud-control-bar.prd.md Phase 3) - Engine (when the host offers more than one) and Model as toggle groups, and a "More in Settings" link',
+    ...REFLOW,
+  },
+  {
+    page: 'script',
+    state: 'read-aloud-reaper-ready',
+    description:
+      'Script, the "Read aloud" dialog with the control bar\'s REAPER state showing the chapter\'s linked track armed and ready (read-aloud-control-bar.prd.md Phase 6, ADR 0249, ?mockReaperState=ready) - the Record in REAPER toggle beneath it (Phase 7, booth-actions-enablement.prd.md Phase 2) is gated on the DAW port\'s record capability (DAW port PRD Phase 7), experimental and off (not pressed) by default, so this state does not yet show "Arm only" (only offered once the toggle is on and the track is not the one armed)',
+    ...REFLOW,
+  },
+  {
+    page: 'script',
+    state: 'read-aloud-reaper-not-armed',
+    description:
+      'Script, the "Read aloud" dialog with the control bar\'s read-only REAPER state showing the chapter\'s linked track not armed (Phase 6, ?mockReaperState=not_armed)',
+  },
+  {
+    page: 'script',
+    state: 'read-aloud-reaper-recording',
+    description:
+      'Script, the "Read aloud" dialog with the control bar\'s read-only REAPER state showing REAPER already recording elsewhere, marked in the danger colour (Phase 6, ?mockReaperState=recording_elsewhere)',
+  },
+  {
+    page: 'script',
+    state: 'read-aloud-flags',
+    description:
+      'Script, the "Read aloud" dialog listening with suspected flags raised (teleprompter-manuscript-integration.prd.md Phase 7) - by default only skipped words (dotted underline) and restarts (dashed underline on the word read again from) show; misreads and extra words wait behind toggles (?mockTeleprompter=flagged)',
+  },
+  {
+    page: 'script',
+    state: 'read-aloud-flag-open',
+    description:
+      'Script, the "Read aloud" dialog after clicking a restart flag (Phase 7) - the rail switches to its Flags tab: what the script says and what was heard, Dismiss, "Punch from here" gated on the DAW port\'s punch capability (DAW port PRD Phase 7; wired to dawport.Puncher by booth-actions-enablement PRD Phase 3) - experimental and off by default, so shown disabled here - and the session’s flags',
+  },
+  {
+    page: 'script',
+    state: 'read-aloud-flag-punch-confirm',
+    description:
+      'Script, the "Read aloud" dialog after clicking "Punch from here" on an open restart flag with the punch capability turned on (booth-actions-enablement PRD Phase 3, ?mockPunchCapabilityOn=1) - a confirm dialog names the resolved time, its source and the pre-roll before anything moves in REAPER',
+  },
+  {
+    page: 'script',
+    state: 'read-aloud-flags-all-kinds',
+    description:
+      'Script, the "Read aloud" dialog with misreads and extra words turned on in the Flags tab (Phase 7) - a misread is a wavy underline, extra words heard are an insertion bar before the word they came before',
+  },
+  {
+    page: 'script',
+    state: 'read-aloud-credits',
+    description:
+      'Script, the "Read aloud" dialog opened from the Opening credits card\'s own Read aloud button (manuscript-credits-card-parity.prd.md Phase 2, ADR 0260) - titled "Read aloud: Opening credits" (chapter-title-display-consistency.prd.md Q4), every token filled (?mockCredits=filled), no resume prompt and no unresolved-token warning',
+  },
+  {
+    page: 'script',
+    state: 'read-aloud-credits-unresolved',
+    description:
+      'Script, the "Read aloud" dialog on the Opening credits with no project credits values set (Phase 2, MC2) - the C6 warning names the unresolved tokens with "Fill them in Settings" in the resume prompt\'s slot, Play still enabled',
+  },
+  {
+    page: 'script',
+    state: 'booth-default',
+    description:
+      'Script, the chapter header\'s "Booth" button opens the same "Read aloud" dialog in `FocusShell`\'s full-screen layout (booth-mode-and-companion-panel.prd.md Phase 1) instead of the normal control bar - a status line (Ready, a decorative "Room" level meter fed by the same mic-level channel [Phase 4], the chapter title, word progress, the microphone button and its own level meter) across the top, the rail on the right (Phase 3\'s "Voices in scene" speaker tags and "Reference clips coming soon" placeholder above the reading panel), the script filling the centre, and a Booth commands `Toolbar` (Play, Stop reading) along the bottom, Play Kbd-labelled Space',
+  },
+  {
+    page: 'script',
+    state: 'booth-dark',
+    description:
+      'Script, the booth (as booth-default) with Dark selected in Settings > Appearance - the booth follows the app theme and forces neither light nor dark (ADR 0365, superseding ADR 0360 Q1), so this differs from booth-default only in the palette',
+  },
+  {
+    page: 'script',
+    state: 'booth-listening',
+    description:
+      'Script, the booth mid-session and listening (booth-mode-and-companion-panel.prd.md Phase 2, same mock seam as read-aloud-listening) - the status badge reads "Reading", the "Room" level meter (Phase 4) moving with the same mock level as the microphone button\'s own meter, the Booth commands toolbar shows Pause (Kbd Space), Stop reading and Follow all enabled, the current word highlighted in the active app theme (the booth follows it, ADR 0365)',
+  },
+  {
+    page: 'script',
+    state: 'companion-default',
+    description:
+      'Script, the chapter header\'s "Companion" button (booth-mode-and-companion-panel.prd.md Phase 7): the same read-aloud session in `CompactShell`, the whole window (the host narrows it to 380 px and pins it beside the DAW, ADR 0401; also captured at that `companion` width) - the "Companion" heading with REAPER\'s playhead badge ("Playhead stopped") and "Full app", then the Script (chapter title, Play Kbd-labelled Space, Stop reading, the resume prompt and the text in its own scroll box), the reserved Note at playhead and Pickups sections ("Coming soon"), and the Hotkeys that work while this window has focus',
+    ...COMPANION,
+  },
+  {
+    page: 'script',
+    state: 'companion-listening',
+    description:
+      'Script, the companion panel mid-session (same mock seam and word as read-aloud-listening) with REAPER playing (?mockDawPlayhead=134.6) - the header badge reads "Playhead 2:14.6", the Script shows Pause (Kbd Space), Stop reading and Follow, and the current word highlighted in its scroll box',
+    ...COMPANION,
+  },
+];

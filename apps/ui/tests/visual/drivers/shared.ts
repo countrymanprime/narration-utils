@@ -31,7 +31,7 @@ export async function openResumePrompt(page: Page, query = ''): Promise<void> {
     await page.goto(`/${query}`);
     await settlePage(page);
   }
-  await goToPage(page, 'Manuscript');
+  await goToPage(page, 'Script');
   await clickVisible(page, 'button', 'Read Chapter 1 aloud');
   const card = page.getByRole('dialog', { name: /Read aloud/ }).getByRole('region', { name: 'Where you stopped' });
   await card.waitFor();
@@ -67,13 +67,13 @@ export async function clickVisible(page: Page, role: Parameters<Page['getByRole'
     .click();
 }
 
-type AppPage = 'Home' | 'Production' | 'Manuscript' | 'Story Bible' | 'Teleprompter' | 'Tracks' | 'Proof' | 'Delivery' | 'Settings';
+type AppPage = 'Home' | 'Production' | 'Script' | 'Story Bible' | 'Teleprompter' | 'Tracks' | 'Proof' | 'Delivery' | 'Settings';
 
 // Every page opens with the shared `Heading` primitive, an <h1>: it is what proves the page has arrived. Home's is "Welcome back".
 export const PAGE_HEADING: Record<AppPage, string> = {
   Home: 'Welcome back',
   Production: 'Production',
-  Manuscript: 'Manuscript',
+  Script: 'Script',
   'Story Bible': 'Story Bible',
   Teleprompter: 'Teleprompter',
   Tracks: 'Tracks',
@@ -87,7 +87,7 @@ export const PAGE_HEADING: Record<AppPage, string> = {
 // Teleprompter, Tracks, Settings) show different content per state, so their drivers wait for their own.
 const PAGE_CONTENT: Partial<Record<AppPage, (page: Page) => Locator>> = {
   Home: (page) => page.getByRole('button', { name: /Show per-chapter breakdown/ }),
-  Manuscript: (page) => page.locator('[data-paragraph-text]'),
+  Script: (page) => page.locator('[data-paragraph-text]'),
 };
 
 // Clicks an item of the app's own navigation, and only that: the Settings category rail reuses the labels "Proofing"
@@ -463,7 +463,7 @@ export async function openLocalAssets(page: Page, seed?: string): Promise<void> 
 export async function openFlaggedReadAloud(page: Page, extraQuery = '') {
   await page.goto(`/?mockTeleprompter=flagged${extraQuery}`);
   await settlePage(page);
-  await goToPage(page, 'Manuscript');
+  await goToPage(page, 'Script');
   await clickVisible(page, 'button', 'Read Chapter 1 aloud');
   const dialog = page.getByRole('dialog', { name: /Read aloud/ });
   await dialog.locator('[data-highlight="Skipped"][role="button"]').first().waitFor();
@@ -547,13 +547,13 @@ export async function selectReaderWord(page: Page, word: string): Promise<void> 
   if (!selected) throw new Error(`no "${word}" in the reader text - did the demo manuscript change?`);
 }
 
-/** Opens the Manuscript (with a mock seam, when given), selects `word` and presses Look up. */
+/** Opens the Script page (with a mock seam, when given), selects `word` and presses Look up. */
 export async function lookUpInReader(page: Page, word: string, url?: string): Promise<void> {
   if (url) {
     await page.goto(url);
     await settlePage(page);
   }
-  await goToPage(page, 'Manuscript');
+  await goToPage(page, 'Script');
   await selectReaderWord(page, word);
   await clickVisible(page, 'button', 'Look up');
 }

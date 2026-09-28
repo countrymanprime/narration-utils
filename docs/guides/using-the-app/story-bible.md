@@ -31,7 +31,7 @@ Manuscript lists them too.
 
 Entries the build isn't sure about are filed under Needs Review, and their evidence is
 highlighted in the review color so it is clear which entries still need a decision. "Go to line"
-on an entry's evidence jumps to that spot in the [Manuscript](manuscript.md).
+on an entry's evidence jumps to that spot in the [Script](script.md).
 
 ![Story Bible - a Needs Review entry, its evidence highlighted in the review color](../../images/ui/storybible-needs-review.webp)
 
@@ -119,4 +119,4 @@ fill in a note if you want it changed.
 
 ---
 
-[← Manuscript](manuscript.md) · [Index](README.md) · [Teleprompter →](teleprompter.md)
+[← Script](script.md) · [Index](README.md) · [Teleprompter →](teleprompter.md)
