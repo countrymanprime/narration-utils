@@ -1,33 +1,14 @@
 import { z } from 'zod';
-import type {
-  ExportFileResult,
-  ExportItem,
-  ExportJob,
-  ExportRequest,
-  MasteringSummary,
-  PackageChecklistItem,
-  PackageItem,
-  PackageJob,
-  PackageManifestFile,
-  PackageRequest,
-} from '../contracts/renderEncodeMaster';
+import type { ExportFileResult, ExportJob, MasteringSummary, PackageChecklistItem, PackageJob, PackageManifestFile } from '../contracts/renderEncodeMaster';
 import { listFromNull } from './base';
 
 const nullableNumber = z.number().nullable();
 
 const packageItemKindSchema = z.enum(['chapter', 'credits_opening', 'credits_closing', 'retail_sample']);
 
-export const exportItemSchema = z.object({ kind: packageItemKindSchema, title: z.string(), path: z.string() }) satisfies z.ZodType<ExportItem>;
-
-export const exportRequestSchema = z.object({
-  items: z.array(exportItemSchema),
-  master: z.boolean(),
-  format: z.string(),
-}) satisfies z.ZodType<ExportRequest>;
-
 const masteringTargetsSchema = z.object({ rms: z.number(), rmsMin: nullableNumber, rmsMax: nullableNumber, peakMax: z.number(), ceiling: z.number() });
 
-export const masteringSummarySchema = z.object({
+const masteringSummarySchema = z.object({
   targets: masteringTargetsSchema,
   highPassHz: z.number(),
   gainDb: z.number(),
@@ -60,14 +41,6 @@ export const exportJobSchema = z.object({
   error: z.string().optional(),
   files: listFromNull(exportFileResultSchema),
 }) satisfies z.ZodType<ExportJob>;
-
-export const packageItemSchema = z.object({ kind: packageItemKindSchema, title: z.string(), path: z.string() }) satisfies z.ZodType<PackageItem>;
-
-export const packageRequestSchema = z.object({
-  profileId: z.string(),
-  profileVersion: z.string(),
-  items: z.array(packageItemSchema),
-}) satisfies z.ZodType<PackageRequest>;
 
 const packageManifestFileSchema = z.object({
   kind: packageItemKindSchema,
