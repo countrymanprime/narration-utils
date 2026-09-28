@@ -354,13 +354,13 @@ export function boardRow(page: Page, chapter: string): Locator {
 }
 
 // Clicks one of a chapter's board cells by its column's name.
-export async function clickBoardCell(page: Page, chapter: string, column: keyof typeof BOARD_COLUMN): Promise<void> {
+async function clickBoardCell(page: Page, chapter: string, column: keyof typeof BOARD_COLUMN): Promise<void> {
   await boardRow(page, chapter).getByRole('gridcell').nth(BOARD_COLUMN[column]).click();
 }
 
 // Opens a chapter's stage slide-over from its current-stage cell (stage-navigation-and-page-replacement.prd.md Phase 2), whichever
 // column that is for the chapter's status. Returns the slide-over.
-export async function openStageSlideOver(page: Page, chapter: string) {
+async function openStageSlideOver(page: Page, chapter: string) {
   const cells = boardRow(page, chapter).getByRole('gridcell');
   const count = await cells.count();
   for (let index = BOARD_COLUMN.Record; index < count; index += 1) {
