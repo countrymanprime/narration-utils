@@ -20,7 +20,7 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const Inactive: Story = {};
-// The current page: accent-strong text on a tinted fill (ADR 0059), exposed as aria-current="page".
+// The current page: accent-strong text on --accent-soft (ADR 0059, ADR 0635), exposed as aria-current="page".
 export const Active: Story = { args: { active: true } };
 export const Disabled: Story = { args: { icon: faFileLines, children: 'Manuscript', disabled: true, disabledReason: MANUSCRIPT_REQUIRED_REASON } };
 
@@ -35,25 +35,46 @@ export const IconOnly: Story = {
   ],
 };
 
-// The full-width sidebar (>= 1400px in AppShell): icon + label, unavailable pages disabled.
+// The full-width sidebar (>= 1400px in AppShell): icon + label, unavailable pages disabled. The 216 px rail and its 8 px
+// inset, as mock 01 draws it (mock-fidelity-primitives-and-components.prd.md Phase 8, ADR 0635).
 export const Sidebar: Story = {
   render: () => (
-    <nav className="w-56 border-r border-[var(--border)] bg-[var(--surface)] p-2" aria-label="Primary navigation">
+    <nav className="flex w-54 flex-col gap-[0.1875rem] border-r border-[var(--border)] bg-[var(--surface)] p-2" aria-label="Primary navigation">
       <NavButton active icon={faHouse} onClick={fn()}>
-        Home
+        Production
       </NavButton>
       <NavButton active={false} icon={faFileLines} onClick={fn()} disabled disabledReason={MANUSCRIPT_REQUIRED_REASON}>
-        Manuscript
+        Script
       </NavButton>
-      <NavButton active={false} icon={faWaveSquare} onClick={fn()} disabled disabledReason={MANUSCRIPT_REQUIRED_REASON}>
-        Proofing
+      <NavButton active={false} icon={faWaveSquare} onClick={fn()} count={14}>
+        Proof
       </NavButton>
       <NavButton active={false} icon={faGear} onClick={fn()}>
         Settings
       </NavButton>
     </nav>
   ),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const current = canvas.getByRole('button', { name: 'Production' });
+    const box = current.getBoundingClientRect();
+    // Measured in the atlas's browser; jsdom (stories.test.tsx) lays nothing out, so there NavButton.test.tsx pins the classes.
+    if (box.height === 0) return;
+    await expect(box.height).toBeCloseTo(34, 0);
+    await expect(box.width).toBeCloseTo(199, 0);
+    const proof = canvas.getByRole('button', { name: 'Proof, 14' }).getBoundingClientRect();
+    await expect(proof.top - box.top).toBeCloseTo(74, 0);
+    const style = getComputedStyle(current);
+    await expect(style.fontSize).toBe('13px');
+    await expect(style.borderTopLeftRadius).toBe('7px');
+    await expect(style.textTransform).toBe('uppercase');
+  },
 };
+
+// The count slot (visual audit SH5): mock 01's "14" beside Proof, a 16 px pill at the item's end. Nothing passes a count
+// until a page's count has data behind it.
+export const WithCount: Story = { args: { icon: faWaveSquare, children: 'Proof', count: 14 } };
+export const ActiveWithCount: Story = { args: { active: true, icon: faWaveSquare, children: 'Proof', count: 3 } };
 
 // The collapsed rail (medium widths in AppShell): the label becomes the aria-label and the tooltip.
 export const IconRail: Story = {

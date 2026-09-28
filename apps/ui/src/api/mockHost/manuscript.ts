@@ -14,7 +14,7 @@ import { aliceChapterSeeds, WIRE_NOTES, WIRE_READER_STATE, WIRE_TRACKS_PROJECT, 
 import { loadAliceManuscript } from '../aliceManuscript';
 import { mockRecordedLength } from '../chapterTrackMatchMock';
 import { mockImportPreview, mockImportPreviewLog } from '../mockImportPreview';
-import type { MockApiSeed, MockState } from './state';
+import { withSeededStatuses, type MockApiSeed, type MockState } from './state';
 
 // `?mockManuscript=mixed` (manuscript-chapter-header-alignment.prd.md; heading cases added by
 // chapter-title-display-consistency.prd.md Phase 1): a buttonless row (Front Matter, contentKind 'opening') before
@@ -104,6 +104,7 @@ export function createManuscriptMock(
       ...chapter,
       paragraphIds: s.paragraphs.filter((paragraph) => paragraph.chapterId === chapter.id).map(({ id, index }) => ({ id, index })),
     }));
+    s.chapters = withSeededStatuses(s.chapters, initial);
     if (initial.mockManuscript === 'mixed') {
       const mixed = applyMixedManuscriptMock(s.chapters, s.paragraphs);
       s.chapters = mixed.chapters;

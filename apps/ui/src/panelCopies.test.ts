@@ -24,10 +24,9 @@ type Copy = keyof typeof COPIES;
 
 const CEILING: Record<Copy, Record<string, number>> = {
   card: {
-    // Page components the page phases own: the Booth's rail and companion (13), Production (11), Proof's findings (12).
+    // Page components the page phases own: the Booth's rail and companion (13).
     'src/components/booth/CompanionShell.tsx': 1,
     'src/components/booth/ReaderRail.tsx': 1,
-    'src/components/production/ProductionPage.tsx': 1,
     'src/components/proof/NotesStrip.tsx': 1,
     // Not cards. A warning on a tinted fill, which neither Panel nor InsetCard draws.
     'src/components/booth/UnresolvedCreditsWarning.tsx': 1,
@@ -47,7 +46,7 @@ const CEILING: Record<Copy, Record<string, number>> = {
   },
   eyebrow: {
     // The shell's nav group headings and the header's Project label (Phase 8, which owns AppShell.tsx).
-    'src/components/layout/AppShell.tsx': 4,
+    'src/components/layout/AppShell.tsx': 3,
     // Page components the page phases own: the Booth (13), Master (14) and Script (15).
     'src/components/booth/BoothView.tsx': 1,
     'src/components/booth/CompanionShell.tsx': 1,
