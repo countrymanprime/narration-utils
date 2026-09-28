@@ -265,6 +265,9 @@ export function CompanionShell({ session: t, follow, chapterTitle, recording, ma
             These work only while this window has focus; hotkeys that reach it from REAPER are not available yet.
           </p>
         </Section>
+        <Section title="This chapter" badge={<StatusBadge tone="neutral" label="Coming soon" />}>
+          <p style={{ color: 'var(--text-muted)' }}>Its recorded length and QC status will show here.</p>
+        </Section>
       </CompactShell>
     </div>,
     document.body,
