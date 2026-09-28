@@ -27,6 +27,7 @@ export const REFLOW_VIEWPORT: Viewport = { name: 'reflow', width: 390, height: 8
 // judged at that width too, the way the narrator actually sees them. Not part of the matrix: rows opt in with `COMPANION`.
 export const COMPANION_VIEWPORT: Viewport = { name: 'companion', width: 380, height: 900 };
 
-// The Script page's full mock-02 layout (stage-navigation-and-page-replacement.prd.md Phase 3, ADR 0392): the chapter list, the
-// reader and the rail side by side need Tailwind's `2xl` (1536 px), past the matrix's desktop width, so the rail rows opt in here.
+// The Script page's full mock-02 layout (stage-navigation-and-page-replacement.prd.md Phase 3, ADR 0393, superseding ADR
+// 0392): the chapter list, the reader and the rail show side by side from 1440 px (D85 on issue #509 - mock 02's own
+// capture width), so the matrix's `desktop` width already shows it; the rail rows also opt in here, an even wider check.
 export const WIDE_VIEWPORT: Viewport = { name: 'wide', width: 1680, height: 1050 };

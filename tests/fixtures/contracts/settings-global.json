@@ -323,6 +323,34 @@
       "kind": "choice",
       "label": "Level matching",
       "value": ""
+    },
+    {
+      "choices": [
+        "auto",
+        "on",
+        "off"
+      ],
+      "effectiveSource": "repo_default",
+      "effectiveValue": "auto",
+      "isSet": false,
+      "key": "capability.render_with_fx",
+      "kind": "choice",
+      "label": "Mastering with the project's FX",
+      "value": ""
+    },
+    {
+      "choices": [
+        "auto",
+        "on",
+        "off"
+      ],
+      "effectiveSource": "repo_default",
+      "effectiveValue": "auto",
+      "isSet": false,
+      "key": "capability.master_chain_read",
+      "kind": "choice",
+      "label": "Master and track FX listing",
+      "value": ""
     }
   ],
   "Editing": [

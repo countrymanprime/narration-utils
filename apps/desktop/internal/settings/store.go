@@ -81,7 +81,7 @@ var builtinDefaults = map[string]Values{
 		"capability.heartbeat": "auto", "capability.project_read": "auto", "capability.track_state": "auto",
 		"capability.record": "auto", "capability.punch": "auto", "capability.regions": "auto", "capability.takes": "auto",
 		"capability.fx_chains": "auto", "capability.silence_trim": "auto", "capability.item_gain": "auto",
-		"capability.track_select": "auto"},
+		"capability.track_select": "auto", "capability.render_with_fx": "auto", "capability.master_chain_read": "auto"},
 	// RecordingCoverage mirrors coverage.DefaultSettings: the recording check's shipped values, chosen on synthetic fixtures
 	// and still Proposed and uncalibrated on real narration (docs/utilities/recording-coverage.md, ADR 0132, Q15).
 	// background_checks defaults on (S7 B, D27): it only ever runs with the model installed, on mains power and while

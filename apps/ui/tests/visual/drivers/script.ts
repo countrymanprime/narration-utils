@@ -46,12 +46,12 @@ export const scriptDrivers: Record<string, Driver> = {
     await clickVisible(page, 'button', 'Chapters & Search');
     // Captured right after typing, before the debounce settles (R1) - the chapter-title subset
     // (R2) and the "Searching…" hint are what this state exists to show.
-    await page.getByPlaceholder('Search manuscript…').fill('Pool');
+    await page.getByPlaceholder('Search Script…').fill('Pool');
   },
   'chapters-overlay-search': async (page) => {
     await goToPage(page, 'Script');
     await clickVisible(page, 'button', 'Chapters & Search');
-    await page.getByPlaceholder('Search manuscript…').fill('Alice');
+    await page.getByPlaceholder('Search Script…').fill('Alice');
     // Waits out the real 2s debounce for the settled, highlighted result row (R3, R4).
     await page.locator('[data-highlight="Search"]').first().waitFor();
   },
