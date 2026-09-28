@@ -62,6 +62,19 @@ var numberSpecs = map[string]map[string]numberSpec{
 	"Teleprompter": {
 		"punch_preroll_seconds": {min: bound(0), max: bound(10), step: bound(0.5), unit: "s"},
 	},
+	// The silence cleanup analyzer's five thresholds (diagnostics-delivery-and-cleanup-tools.prd.md Phase 9 remainder,
+	// ADR 0238): the ranges mirror measure.CleanupOptions.resolve's own per-field bounds (cleanup.go), so a value this
+	// page accepts is one cleanupSettings (cleanup_settings.go) never has to fall back from. pad_seconds keeps
+	// resolve's 0-2 s; min/max_breath_seconds start just above 0 (resolve requires min strictly positive) up to
+	// resolve's ceiling of 5 s; the two dB thresholds start just above 0 (resolve requires them strictly positive)
+	// with no declared maximum, like Editing's unbounded seconds fields.
+	"Cleanup": {
+		"pad_seconds":            {min: bound(0), max: bound(2), step: bound(0.01), unit: "s"},
+		"min_breath_seconds":     {min: bound(0.01), max: bound(5), step: bound(0.01), unit: "s"},
+		"max_breath_seconds":     {min: bound(0.01), max: bound(5), step: bound(0.01), unit: "s"},
+		"breath_below_speech_db": {min: bound(0.1), step: bound(0.5), unit: "dB"},
+		"click_above_silence_db": {min: bound(0.1), step: bound(0.5), unit: "dB"},
+	},
 }
 
 // wire is the range as the Settings page receives it (the `number` object of a ScopedSettingField).
