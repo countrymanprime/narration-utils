@@ -8,11 +8,19 @@ import { describe, expect, it } from 'vitest';
 // build when either comes back.
 
 const SRC = join(__dirname);
-const REMOVED_CLASSES = ['overlay-panel', 'overlay-open', 'sheet-backdrop', 'note-overlay', 'source-flash', 'reader-control-band', 'alias-match-'];
+const REMOVED_CLASSES = [
+  'overlay-panel',
+  'overlay-open',
+  'sheet-backdrop',
+  'note-overlay',
+  'source-flash',
+  'reader-control-band',
+  'alias-match-',
+  'progress-segment',
+];
 // Reviewed exceptions from ADR-0009 that may stay as plain (unlayered) class rules.
 const UNLAYERED_ALLOW_LIST = new Set([
   'manuscript-reader',
-  'progress-segment',
   'scroll-chrome-hidden',
   'guide-list-scroll',
   'reader-page',

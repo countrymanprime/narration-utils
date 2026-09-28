@@ -8,26 +8,43 @@ import { Progress } from '@base-ui/react/progress';
 // number ("44 of 109 MB"): the numbers move on nearly every poll, so they belong here and not in a live region.
 const MINIMUM_RUNNING_PERCENT = 4;
 
+export type ProgressBarTone = 'accent' | 'ok' | 'warn';
+
+// The default 16 px bar keeps its original look (accent fill on --surface-3); 'thin' is the benchmark's 8 px bar
+// under a StatTile and its "this week" rows (mock-fidelity-primitives-and-components.prd.md Phase 9, mocks B01/B05),
+// which sit on the lighter --surface-2 track instead.
+const SIZE_HEIGHT: Record<'default' | 'thin', string> = { default: 'h-4', thin: 'h-2' };
+const SIZE_TRACK: Record<'default' | 'thin', string> = { default: 'bg-[var(--surface-3)]', thin: 'bg-[var(--surface-2)]' };
+const TONE_FILL: Record<ProgressBarTone, string> = {
+  accent: 'bg-[var(--accent)]',
+  ok: 'bg-[var(--ok)]',
+  warn: 'bg-[var(--warn)]',
+};
+
 export function ProgressBar({
   label,
   value,
   running = false,
   valueText,
+  size = 'default',
+  tone = 'accent',
   className = '',
 }: {
   label: string;
   value: number | null;
   running?: boolean;
   valueText?: string;
+  size?: 'default' | 'thin';
+  tone?: ProgressBarTone;
   className?: string;
 }) {
   const indeterminate = value === null;
   return (
     <Progress.Root value={value} aria-label={label} aria-valuetext={valueText} className={className}>
-      <Progress.Track className="progressbar h-4 overflow-hidden rounded-full bg-[var(--surface-3)]">
+      <Progress.Track className={`progressbar overflow-hidden rounded-full ${SIZE_HEIGHT[size]} ${SIZE_TRACK[size]}`}>
         <div
           // motion-safe: the fill neither eases nor slides for people who have asked for reduced motion.
-          className={`h-full bg-[var(--accent)] motion-safe:transition-[width] motion-safe:duration-[0.4s] motion-safe:ease-in-out ${indeterminate ? 'motion-safe:animate-[work-progress-slide_1.15s_ease-in-out_infinite]' : ''}`}
+          className={`h-full ${TONE_FILL[tone]} motion-safe:transition-[width] motion-safe:duration-[0.4s] motion-safe:ease-in-out ${indeterminate ? 'motion-safe:animate-[work-progress-slide_1.15s_ease-in-out_infinite]' : ''}`}
           style={{ width: `${Math.max(value ?? 0, running ? MINIMUM_RUNNING_PERCENT : 0)}%` }}
         />
       </Progress.Track>

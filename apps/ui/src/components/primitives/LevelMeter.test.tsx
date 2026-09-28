@@ -45,4 +45,36 @@ describe('LevelMeter', () => {
     const { container } = render(<LevelMeter label="Input level" peak={-6} rms={-20} />);
     expect(container.querySelector('[data-peak-tick]')).not.toBeNull();
   });
+
+  it('draws a 2 px peak tick (mock B03), not the old hairline', () => {
+    const { container } = render(<LevelMeter label="Input level" peak={-6} rms={-20} />);
+    expect((container.querySelector('[data-peak-tick]') as HTMLElement).className).toContain('w-0.5');
+  });
+
+  it('grades the bar by position, not by the current reading alone: the fixed gradient is masked into segments', () => {
+    const { container } = render(<LevelMeter label="Input level" peak={null} rms={-20} />);
+    const masked = container.querySelector('[style*="mask-image"]') as HTMLElement;
+    expect(masked.style.maskImage).toContain('repeating-linear-gradient');
+    const graded = masked.firstElementChild as HTMLElement;
+    expect(graded.style.background).toContain('linear-gradient');
+    expect(graded.style.background).toContain('var(--meter-body)');
+    expect(graded.style.background).toContain('var(--meter-hot)');
+    expect(graded.style.background).toContain('var(--meter-over)');
+  });
+
+  it('covers exactly the unlit remainder as the reading rises, revealing more of the fixed gradient', () => {
+    const { container, rerender } = render(<LevelMeter label="Input level" peak={null} rms={-60} floor={-60} />);
+    const cover = () => container.querySelector('[style*="mask-image"] > div:last-child') as HTMLElement;
+    expect(cover().style.width).toBe('100%');
+    rerender(<LevelMeter label="Input level" peak={null} rms={-30} floor={-60} />);
+    expect(cover().style.width).toBe('50%');
+    rerender(<LevelMeter label="Input level" peak={null} rms={0} floor={-60} />);
+    expect(cover().style.width).toBe('0%');
+  });
+
+  it('never masks the peak tick, so it stays one continuous line', () => {
+    const { container } = render(<LevelMeter label="Input level" peak={-6} rms={-20} />);
+    const tick = container.querySelector('[data-peak-tick]') as HTMLElement;
+    expect(tick.closest('[style*="mask-image"]')).toBeNull();
+  });
 });
