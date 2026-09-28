@@ -61,7 +61,7 @@ export function FileRulesPanel({ file, profile, onClose }: { file: MeasureFileRe
       }
     >
       {report && (
-        <p className="mt-1 text-sm" style={MUTED}>
+        <p className="text-sm" style={MUTED}>
           {describeFormat(report)} · {formatLength(report.duration_seconds)}.
           {report.integrated_lufs !== null && !lufsRule
             ? ` Loudness ${formatLevel(report.integrated_lufs)} LUFS (information: ${profile.builtIn ? `${profile.platform} sets` : 'the profile has'} no LUFS rule).`
@@ -71,7 +71,7 @@ export function FileRulesPanel({ file, profile, onClose }: { file: MeasureFileRe
       )}
       {/* tabIndex: the table scrolls sideways in a narrow window, and a scrolling region must be reachable by keyboard. */}
       <div tabIndex={0} className="overflow-x-auto focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:outline-none focus-visible:ring-inset">
-        <Table label={`${file.name}, rule by rule`} className="mt-3">
+        <Table label={`${file.name}, rule by rule`} className={report ? 'mt-3' : undefined}>
           <TableHead>
             <TableRow>
               <TableHeader>Result</TableHeader>

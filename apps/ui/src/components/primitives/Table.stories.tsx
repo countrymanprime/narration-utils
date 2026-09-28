@@ -153,42 +153,40 @@ function PerFileChecks() {
   return (
     <div tabIndex={0} role="region" aria-label="Per-file checks, scrolls sideways" className="max-w-2xl overflow-x-auto">
       <div className="min-w-[40rem]">
-        <Panel title="Per-file checks">
-          <div className="mt-3">
-            <Table label="Per-file checks" flush>
-              <TableHead>
-                <TableRow>
-                  <TableHeader>File</TableHeader>
-                  <TableHeader align="right">Length</TableHeader>
-                  <TableHeader align="right">RMS</TableHeader>
-                  <TableHeader align="right">True peak</TableHeader>
-                  <TableHeader>Source</TableHeader>
-                  <TableHeader align="right">Result</TableHeader>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {FILES.map((file) => (
-                  <TableRow key={file.name} emphasis={file.verdict === 'FAIL' ? 'highlight' : file.name.startsWith('05') ? 'current' : undefined}>
-                    <TableCell className="whitespace-nowrap">{file.name}</TableCell>
-                    <TableCell numeric>{file.length}</TableCell>
-                    <TableCell numeric>{file.rms}</TableCell>
-                    <TableCell numeric>{file.peak}</TableCell>
-                    <TableCell muted>{file.source}</TableCell>
-                    <TableCell align="right" className={file.verdict === 'FAIL' ? 'font-semibold text-[var(--danger-text)]' : 'text-[var(--ok-text)]'}>
-                      {file.verdict}
-                    </TableCell>
-                  </TableRow>
-                ))}
-                <TableRow>
-                  <TableCell>Retail sample</TableCell>
-                  <TableCell numeric>4:40</TableCell>
-                  <TableCell colSpan={4} muted>
-                    Waiting on 3 pickups — not mastered
+        <Panel title="Per-file checks" subtitle="measured on the rendered files · true peak (EBU R128)" flush>
+          <Table label="Per-file checks" flush>
+            <TableHead>
+              <TableRow>
+                <TableHeader>File</TableHeader>
+                <TableHeader align="right">Length</TableHeader>
+                <TableHeader align="right">RMS</TableHeader>
+                <TableHeader align="right">True peak</TableHeader>
+                <TableHeader>Source</TableHeader>
+                <TableHeader align="right">Result</TableHeader>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {FILES.map((file) => (
+                <TableRow key={file.name} emphasis={file.verdict === 'FAIL' ? 'highlight' : file.name.startsWith('05') ? 'current' : undefined}>
+                  <TableCell className="whitespace-nowrap">{file.name}</TableCell>
+                  <TableCell numeric>{file.length}</TableCell>
+                  <TableCell numeric>{file.rms}</TableCell>
+                  <TableCell numeric>{file.peak}</TableCell>
+                  <TableCell muted>{file.source}</TableCell>
+                  <TableCell align="right" className={file.verdict === 'FAIL' ? 'font-semibold text-[var(--danger-text)]' : 'text-[var(--ok-text)]'}>
+                    {file.verdict}
                   </TableCell>
                 </TableRow>
-              </TableBody>
-            </Table>
-          </div>
+              ))}
+              <TableRow>
+                <TableCell>Retail sample</TableCell>
+                <TableCell numeric>4:40</TableCell>
+                <TableCell colSpan={4} muted>
+                  Waiting on 3 pickups — not mastered
+                </TableCell>
+              </TableRow>
+            </TableBody>
+          </Table>
         </Panel>
       </div>
     </div>

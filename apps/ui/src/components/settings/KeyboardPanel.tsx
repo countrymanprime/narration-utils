@@ -5,7 +5,9 @@ import { EMPTY_KEYMAP_OVERRIDES, keymapOverridesSchema } from '../../api/schemas
 import { parseWireJson } from '../../api/wire/parseWire';
 import type { ScopedSettingField } from '../../types';
 import { Button } from '../primitives/Button';
+import { InsetCard } from '../primitives/InsetCard';
 import { Kbd } from '../primitives/Kbd';
+import { SectionLabel } from '../primitives/SectionLabel';
 import { StatusBadge } from '../primitives/StatusBadge';
 import type { Notify } from '../primitives/Toast';
 import { COMMAND_CATALOG, type CommandDescriptor, type CommandId } from '../../input/commands.catalog';
@@ -143,33 +145,28 @@ function Recorder({ command, currentGestures, scope, catalog, keymap, busy, onCa
       : `${gestureLabel(captured)} captured. No other command uses it ${SCOPE_ACTIVE[scope]}.`;
 
   return (
-    <div
-      role="group"
-      aria-label={`Change "${command.label}"`}
-      className="mt-3 rounded-md border p-3"
-      style={{ borderColor: 'var(--accent)', background: 'var(--surface-2)' }}
-    >
+    <InsetCard role="group" aria-label={`Change "${command.label}"`} tone="accent" fill className="mt-3">
       <div className="mb-2 flex flex-wrap items-center gap-2 text-sm font-medium">
         <span>Change "{command.label}"</span>
         <span style={{ color: 'var(--text-muted)' }}>now</span>
         <GestureChips gestures={currentGestures} />
       </div>
-      <div className="rounded-md border border-dashed p-4 text-center" style={{ borderColor: 'var(--border)' }}>
-        <div className="text-[0.7rem] font-semibold tracking-[0.08em] uppercase" style={{ color: 'var(--text-muted)' }}>
-          Captured
-        </div>
+      <InsetCard dashed className="text-center">
+        <SectionLabel as="div">Captured</SectionLabel>
         <div className="my-2 flex justify-center">{captured ? <Kbd keys={gestureKeys(captured)} /> : <span aria-hidden="true">—</span>}</div>
         <p className="text-[0.75rem]" style={{ color: 'var(--text-muted)' }}>
           Press another key or pedal to try again. Esc cancels.
         </p>
-      </div>
+      </InsetCard>
       <p role="status" aria-live="polite" className="mt-2 text-sm">
         {status}
       </p>
       {conflict && conflictCommand && (
-        <p role="alert" className="mt-1 rounded-md border p-2 text-[0.82rem]" style={{ borderColor: 'var(--warn)', color: 'var(--warn-text)' }}>
-          Replace takes it from "{conflictCommand.label}", which is then left with no key; you can give it another one afterwards.
-        </p>
+        <InsetCard as="p" tone="warn" role="alert" className="mt-1 text-[0.82rem]">
+          <span style={{ color: 'var(--warn-text)' }}>
+            Replace takes it from "{conflictCommand.label}", which is then left with no key; you can give it another one afterwards.
+          </span>
+        </InsetCard>
       )}
       <div className="mt-3 flex flex-wrap items-center gap-2">
         <Button disabled={!captured || busy} onClick={() => captured && onReplace(captured, conflict ? conflictCommand?.id : undefined)}>
@@ -197,7 +194,7 @@ function Recorder({ command, currentGestures, scope, catalog, keymap, busy, onCa
           Cancel
         </Button>
       </div>
-    </div>
+    </InsetCard>
   );
 }
 
@@ -273,9 +270,9 @@ export function KeyboardPanel({
       )}
       {SCOPE_ORDER.filter((scope) => groups[scope]?.length).map((scope) => (
         <section key={scope}>
-          <h3 className="mb-1 text-[0.75rem] font-semibold tracking-[0.04em] uppercase" style={{ color: 'var(--text-muted)' }}>
+          <SectionLabel as="h3" className="mb-1">
             {SCOPE_LABEL[scope]} · {SCOPE_APPLIES[scope]}
-          </h3>
+          </SectionLabel>
           <div>
             {groups[scope]!.map((command) => {
               const gestures = keymap[command.id] ?? [];

@@ -1,4 +1,6 @@
 import type { Discrepancy } from '../../types';
+import { InsetCard } from '../primitives/InsetCard';
+import { SectionLabel } from '../primitives/SectionLabel';
 
 const KIND_STYLES: Record<string, { color: string; soft: string }> = {
   MISREAD: { color: 'var(--danger-text)', soft: 'var(--review-soft)' },
@@ -40,15 +42,15 @@ export function InlineDiff({ row }: { row: Discrepancy }) {
       <span style={{ color: 'var(--text-muted)' }}>—</span>
     );
   return (
-    <div className="space-y-1.5 rounded p-2" style={{ background: 'var(--surface-2)' }}>
+    <InsetCard fill className="space-y-1.5">
       <div>
-        <span className="section-label">Script</span>
+        <SectionLabel>Script</SectionLabel>
         <div className="mt-0.5">{render(diff.script)}</div>
       </div>
       <div>
-        <span className="section-label">Heard</span>
+        <SectionLabel>Heard</SectionLabel>
         <div className="mt-0.5">{render(diff.heard)}</div>
       </div>
-    </div>
+    </InsetCard>
   );
 }
