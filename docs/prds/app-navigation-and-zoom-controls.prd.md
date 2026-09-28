@@ -37,7 +37,7 @@
 - `AppShell` (`components/layout/AppShell.tsx`) has the page list in a 224 px sidebar at ≥1400 px (`:130`), an icon rail from `md` to 1399 px (`:131-153`) and a modal drawer below `md` (`:154-156`). The top bar is a 56 px `<header>` inside `<main>` (`:159-181`): the "Open navigation" button below `md` (`:160-162`), the project name that truncates (`:163-167`), and the REAPER link pill on the right (`:168-180`). The header is not a `banner` landmark (it sits inside `main`).
 - The aria suite pins the sidebar (`complementary`), the rail and the open drawer (`apps/ui/tests/aria/navigation.spec.ts:7-22`, [ADR 0065](../adr/0065-aria-snapshots-pin-the-role-trees-of-the-dialogs-the-slide-over-and-the-navigation.md)); none of them includes the header today, and the drawer snapshot shows `main` holding only the two toast regions while the drawer is open (`snapshots/navigation-drawer.aria.yml`).
 - Every visual state and every guide screenshot shows the header, so a change there regenerates all of them, like adding a nav item (`docs/prds/README.md`, "Adding a nav item").
-- **A related, separate control:** the Manuscript reader has its own Text size (`Manuscript.tsx:84,448-460`; "Text size is adjustable independently of the rest of the app", `docs/guides/using-the-app/manuscript.md:9`). App zoom multiplies with it.
+- **A related, separate control:** the Manuscript reader has its own Text size (`Manuscript.tsx:84,448-460`; "Text size is adjustable independently of the rest of the app", `docs/guides/using-the-app/script.md:9`). App zoom multiplies with it.
 - **Persistence precedent:** the theme is remembered in `localStorage` (`apps/ui/src/theme/theme.ts:31`, catalog `interactionFeedback.catalog.ts:543`); app-wide settings the host must read live in `%APPDATA%\narration-utils\global-settings.json` (`apps/desktop/internal/settings/store.go:184-192`), and some tools are global-only (`apps/desktop/app.go:1207-1212`). Settings already has a global **Appearance** category (`components/settings/Settings.tsx:26`).
 - `hostAPIVersion` is 47 (`apps/desktop/app.go:52`, `apps/ui/src/hostApi.ts:2`). The highest ADR is 0170, so the next free is 0171 at this commit (sibling PRDs may claim it first; check at merge).
 
@@ -59,7 +59,7 @@ We believe a Back/Forward pair and a zoom group with a visible, resettable level
 ## What We're NOT Building
 
 - **No reload.** It throws away in-memory state (unsaved Settings, a running dialog's view, a teleprompter session) and fixes nothing a narrator can diagnose; Wails already turns F5 and Ctrl+R off. The error boundary and "reopen the page" messages cover the recovery case (`App.tsx:31`).
-- **No find-in-page.** Ctrl+F stays off; the Manuscript has its own search (delivered, [the manuscript guide](../guides/using-the-app/manuscript.md)), and a browser find bar would not reach virtualised or collapsed text.
+- **No find-in-page.** Ctrl+F stays off; the Manuscript has its own search (delivered, [the manuscript guide](../guides/using-the-app/script.md)), and a browser find bar would not reach virtualised or collapsed text.
 - **No address bar, copy link, print, home button (the nav has Home) or DevTools entry.**
 - **No history for in-page state:** closing a slide-over, the previous chapter, the previous Story Bible entry or the previous Settings category are not Back steps (Q5 asks whether the owner wants any of them).
 - **No per-page or per-project zoom**; one level for the app (Q4).

@@ -3,7 +3,7 @@ import { describeApiError } from '../../api/errorMessage';
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faAnglesDown, faAnglesUp, faFont, faList } from '@fortawesome/free-solid-svg-icons';
+import { faAnglesDown, faAnglesUp, faFont, faList, faTableColumns } from '@fortawesome/free-solid-svg-icons';
 import type {
   CreditsRenderResult,
   CreditsSetupState,
@@ -14,6 +14,7 @@ import type {
   ManuscriptParagraph,
   PrepMarkupKind,
   PrepMarkupSpan,
+  PronunciationQuery,
   ReaderState,
   RetailSample,
   SearchHit,
@@ -28,26 +29,29 @@ import { Heading } from '../primitives/Heading';
 import { ToggleGroup } from '../primitives/ToggleGroup';
 import { SlideOver } from '../primitives/SlideOver';
 import { Tooltip, TooltipTarget } from '../primitives/Tooltip';
-import { ChapterNav } from './ChapterNav';
+import { ChapterNav } from '../manuscript/ChapterNav';
 import { useStageRecommendations } from '../stages/useStageRecommendations';
 import { CreditsSetupBanner } from '../credits/CreditsSetupBanner';
 import { CreditsSetupDialog } from '../credits/CreditsSetupDialog';
-import { CreditsEntry } from './CreditsEntry';
-import { loadCreditsExpanded, saveCreditsExpanded, type CreditsExpanded } from './creditsExpandedStorage';
-import { ReaderCard } from './ReaderCard';
-import { retailSampleRange } from './retailSampleRange';
-import { SearchBar } from './SearchBar';
-import { ParagraphView } from './ParagraphView';
-import { recordedDemoDialogueCues } from './dialogueCues';
-import { SelectionMenu } from './SelectionMenu';
-import { AddNoteDialog } from './AddNoteDialog';
-import { MarkupDialog } from './MarkupDialog';
-import { DictionaryInstallPrompt, isSingleWord, WordLookupAnswer } from './WordLookup';
-import { LOOKUP_ACTION, useWordLookup } from './useWordLookup';
-import { CAT_DOT_BG, CAT_DOT_CLASS, EntitySummary } from './EntitySummary';
+import { CreditsEntry } from '../manuscript/CreditsEntry';
+import { loadCreditsExpanded, saveCreditsExpanded, type CreditsExpanded } from '../manuscript/creditsExpandedStorage';
+import { ReaderCard } from '../manuscript/ReaderCard';
+import { retailSampleRange } from '../manuscript/retailSampleRange';
+import { SearchBar } from '../manuscript/SearchBar';
+import { ParagraphView } from '../manuscript/ParagraphView';
+import { recordedDemoDialogueCues } from '../manuscript/dialogueCues';
+import { SelectionMenu } from '../manuscript/SelectionMenu';
+import { AddNoteDialog } from '../manuscript/AddNoteDialog';
+import { MarkupDialog } from '../manuscript/MarkupDialog';
+import { DictionaryInstallPrompt, isSingleWord, WordLookupAnswer } from '../manuscript/WordLookup';
+import { LOOKUP_ACTION, useWordLookup } from '../manuscript/useWordLookup';
+import { CAT_DOT_BG, CAT_DOT_CLASS, EntitySummary } from '../manuscript/EntitySummary';
 import { IconButton } from '../primitives/IconButton';
 import type { Notify } from '../primitives/Toast';
 import { ReadAloudDialog, type ReadAloudSource } from '../teleprompter/ReadAloudDialog';
+import { PronunciationQueries } from '../storybible/PronunciationQueries';
+import { ScriptChapterList, SCRIPT_SECTION_LABEL } from './ScriptChapterList';
+import { ScriptRail } from './ScriptRail';
 
 // Read aloud (teleprompter-manuscript-integration.prd.md) reads narration chapters only, matching the standalone
 // Teleprompter page's own chapter filter.
@@ -70,7 +74,11 @@ const defaultState: ReaderState = { expandedChapters: [], bookmarks: [] };
 const escapeSelector = (value: string) =>
   typeof CSS !== 'undefined' && typeof CSS.escape === 'function' ? CSS.escape(value) : value.replace(/(["\\])/g, '\\$1');
 
-export function Manuscript({
+// The Script page (stage-navigation-and-page-replacement.prd.md Phase 3, mock 02), which replaced the Manuscript page: the
+// chapter list with each chapter's prep status, the reader, and a rail of Pronunciations, Characters and Queries. The list is a
+// column from `xl` and the rail from `2xl` (the reader card's fixed header columns, ADR 0190, need about 800 px, ADR 0392);
+// below those widths the list is the Chapters & Search panel and the rail opens as a panel from the band.
+export function ScriptPage({
   notify,
   focusStoryBibleEntity,
   goToWorkspace,
@@ -103,7 +111,10 @@ export function Manuscript({
   const [entities, setEntities] = useState<GuideEntity[]>([]);
   const [notes, setNotes] = useState<ManuscriptNote[]>([]);
   const [readerState, setReaderState] = useState<ReaderState>(defaultState);
-  const [sheet, setSheet] = useState<'chapters' | 'detail'>();
+  const [sheet, setSheet] = useState<'chapters' | 'detail' | 'prep'>();
+  // The rail's queries (prep-depth P3's list): undefined until the first read answers, and read again after the panel changes one.
+  const [queries, setQueries] = useState<PronunciationQuery[]>();
+  const [queriesOpen, setQueriesOpen] = useState(false);
   const [textSize, setTextSize] = useState<(typeof TEXT_SIZES)[number]>('medium');
   const [detail, setDetail] = useState<{ entity?: GuideEntity; note?: ManuscriptNote }>();
   const [pendingNote, setPendingNote] = useState<{ paragraphIndex: number; anchorStart: number; anchorEnd: number; anchorText: string }>();
@@ -296,6 +307,28 @@ export function Manuscript({
       active = false;
     };
   }, [api, loadAttempt]);
+  const [queriesError, setQueriesError] = useState<string>();
+  const loadQueries = useCallback(async () => {
+    try {
+      setQueries(await api.guidePronunciationQueries());
+      setQueriesError(undefined);
+    } catch (error) {
+      setQueriesError(describeApiError(error));
+    }
+  }, [api]);
+  useEffect(() => {
+    void loadQueries();
+  }, [loadQueries, loadAttempt]);
+  // Each chapter's prep status in the list: the names first heard in it that the author has not confirmed. A query names its
+  // chapter by title (the Story Bible's occurrences do), so it is matched by id or title.
+  const toConfirm = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const row of queries ?? []) {
+      const chapter = chapters.find((item) => item.id === row.chapter || item.title === row.chapter);
+      if (chapter) counts.set(chapter.id, (counts.get(chapter.id) ?? 0) + 1);
+    }
+    return counts;
+  }, [queries, chapters]);
   useEffect(() => {
     let active = true;
     void (async () => {
@@ -404,7 +437,7 @@ export function Manuscript({
         if (Date.now() < deadline) requestAnimationFrame(attempt);
       };
       requestAnimationFrame(attempt);
-      routerNavigate('/manuscript', { replace: true });
+      routerNavigate('/script', { replace: true });
       return;
     }
     let chapter: string | undefined;
@@ -425,7 +458,7 @@ export function Manuscript({
     // the reader has no "reference chapter's own view" to redirect to instead), so every caller -
     // this hash link, a search result, Story Bible "Go to line" - gets the same behavior for free.
     showChapter(chapter, paragraph);
-    routerNavigate('/manuscript', { replace: true });
+    routerNavigate('/script', { replace: true });
   }, [location.hash, chapters, routerNavigate, showChapter, setCreditsExpanded]);
   const toggleManualChapter = (chapter: string) => {
     const expanded = new Set(readerState.expandedChapters || []);
@@ -557,197 +590,244 @@ export function Manuscript({
     }
   };
 
-  if (loadError) return <LoadError title="Manuscript" message={loadError} retry={() => setLoadAttempt((attempt) => attempt + 1)} />;
+  const openEntity = (entity: GuideEntity) => {
+    setDetail({ entity });
+    setSheet('detail');
+  };
+  const rail = (
+    <ScriptRail
+      entities={entities}
+      queries={queries}
+      queriesError={queriesError}
+      openEntity={openEntity}
+      openQueries={() => {
+        // One panel at a time: below `xl` the rail itself is a panel, which the queries panel replaces.
+        closeSheet();
+        setQueriesOpen(true);
+      }}
+    />
+  );
+
+  if (loadError) return <LoadError title="Script" message={loadError} retry={() => setLoadAttempt((attempt) => attempt + 1)} />;
 
   return (
-    <div className="reader-page min-h-full [--reader-inline:1.5rem] max-md:[--reader-inline:1rem]" style={{ '--band-h': `${bandHeight}px` } as CSSProperties}>
-      <div
-        ref={bandRef}
-        className="sticky top-0 z-20 border-b border-[var(--border)] bg-[var(--bg)] p-0 shadow-[0_2px_8px_color-mix(in_srgb,var(--text)_10%,transparent)]"
+    <div
+      className="reader-page min-h-full [--reader-inline:1.5rem] max-md:[--reader-inline:1rem] xl:grid xl:grid-cols-[12rem_minmax(0,1fr)] 2xl:grid-cols-[12rem_minmax(0,1fr)_21.5rem]"
+      style={{ '--band-h': `${bandHeight}px` } as CSSProperties}
+    >
+      {/* Mock 02's left column: the chapters with their prep status, and the key to the marks in the text. The page scrolls
+          under it, so it sticks to the top of the scroll area (the header above is h-14). */}
+      <aside
+        aria-label="Chapters and marks"
+        className="sticky top-0 hidden h-[calc(100dvh-3.5rem)] self-start overflow-y-auto border-r border-[var(--border)] bg-[var(--surface)] p-3 xl:block"
       >
-        <div className="px-[var(--reader-inline)] pt-4 pb-3">
-          <div className="mb-4 flex items-center justify-between gap-4 max-md:flex-col max-md:items-start">
-            <Heading title="Manuscript" />
-            <div className="flex flex-wrap gap-x-4 gap-y-[0.65rem] font-['Barlow_Condensed',sans-serif] text-[0.72rem] tracking-wider text-[var(--text-muted)] uppercase">
-              {[...STORY_BIBLE_TABS.filter((item) => item !== 'All'), 'Note'].map((name) => (
-                <span key={name} className="flex items-center gap-1">
-                  <span className={CAT_DOT_CLASS} style={{ background: CAT_DOT_BG[categoryCssName(name === 'Location' ? 'Place' : name)] }} />
-                  {name}
-                </span>
-              ))}
+        <ScriptChapterList chapters={chapters} activeId={active} toConfirm={toConfirm} select={(id) => showChapter(id)} />
+        <div className="mt-4 border-t border-[var(--border)] pt-3">
+          <h2 className={`${SCRIPT_SECTION_LABEL} mb-2 px-2`}>Marks</h2>
+          <MarksKey className="flex-col px-2" />
+        </div>
+      </aside>
+      <div className="min-w-0">
+        <div
+          ref={bandRef}
+          className="sticky top-0 z-20 border-b border-[var(--border)] bg-[var(--bg)] p-0 shadow-[0_2px_8px_color-mix(in_srgb,var(--text)_10%,transparent)]"
+        >
+          <div className="px-[var(--reader-inline)] pt-4 pb-3">
+            <div className="mb-4 flex items-center justify-between gap-4 max-md:flex-col max-md:items-start">
+              <Heading title="Script" />
+              <MarksKey className="flex-wrap xl:hidden" />
             </div>
-          </div>
-          {/* One control cluster: text size on the left, chapters/search and expand/collapse on the right (R12) - wraps to
+            {/* One control cluster: text size on the left, chapters/search and expand/collapse on the right (R12) - wraps to
               a second line only below 400px, since ml-auto pushes the right group down with the row rather than
               overlapping it once the row can no longer fit both groups side by side. */}
-          <div className="mb-4 flex flex-wrap items-center gap-4">
-            <div className="flex items-center gap-2">
-              <Tooltip
-                label="Text size"
-                icon={<FontAwesomeIcon icon={faFont} />}
-                text="The manuscript always uses the full reading width - adjust text size instead."
-              />
-              <ToggleGroup
-                label="Text size"
-                className="gap-1"
-                value={textSize}
-                onChange={(value) => setTextSize(value as (typeof TEXT_SIZES)[number])}
-                options={TEXT_SIZE_OPTIONS}
-              />
-            </div>
-            <div className="ml-auto flex items-center gap-2">
-              <TooltipTarget text="Chapters & Search">
-                <IconButton
-                  label="Chapters & Search"
-                  onClick={() => {
-                    setDetail(undefined);
-                    setSheet('chapters');
-                  }}
-                >
-                  <FontAwesomeIcon icon={faList} />
-                </IconButton>
-              </TooltipTarget>
-              <TooltipTarget text="Expand all chapters">
-                <IconButton
-                  label="Expand all chapters"
-                  onClick={() => {
-                    void saveState({ ...readerState, expandedChapters: recordedChapters.map((chapter) => chapter.id) });
-                    setCreditsExpanded({ opening: true, closing: true });
-                  }}
-                >
-                  <FontAwesomeIcon icon={faAnglesDown} />
-                </IconButton>
-              </TooltipTarget>
-              <TooltipTarget text="Collapse all chapters">
-                <IconButton
-                  label="Collapse all chapters"
-                  onClick={() => {
-                    void saveState({ ...readerState, expandedChapters: [] });
-                    setCreditsExpanded({ opening: false, closing: false });
-                  }}
-                >
-                  <FontAwesomeIcon icon={faAnglesUp} />
-                </IconButton>
-              </TooltipTarget>
+            <div className="mb-4 flex flex-wrap items-center gap-4">
+              <div className="flex items-center gap-2">
+                <Tooltip
+                  label="Text size"
+                  icon={<FontAwesomeIcon icon={faFont} />}
+                  text="The manuscript always uses the full reading width - adjust text size instead."
+                />
+                <ToggleGroup
+                  label="Text size"
+                  className="gap-1"
+                  value={textSize}
+                  onChange={(value) => setTextSize(value as (typeof TEXT_SIZES)[number])}
+                  options={TEXT_SIZE_OPTIONS}
+                />
+              </div>
+              <div className="ml-auto flex items-center gap-2">
+                <div className="2xl:hidden">
+                  <TooltipTarget text="Pronunciations, characters and queries">
+                    <IconButton
+                      label="Prep rail"
+                      onClick={() => {
+                        setDetail(undefined);
+                        setSheet('prep');
+                      }}
+                    >
+                      <FontAwesomeIcon icon={faTableColumns} />
+                    </IconButton>
+                  </TooltipTarget>
+                </div>
+                <TooltipTarget text="Chapters & Search">
+                  <IconButton
+                    label="Chapters & Search"
+                    onClick={() => {
+                      setDetail(undefined);
+                      setSheet('chapters');
+                    }}
+                  >
+                    <FontAwesomeIcon icon={faList} />
+                  </IconButton>
+                </TooltipTarget>
+                <TooltipTarget text="Expand all chapters">
+                  <IconButton
+                    label="Expand all chapters"
+                    onClick={() => {
+                      void saveState({ ...readerState, expandedChapters: recordedChapters.map((chapter) => chapter.id) });
+                      setCreditsExpanded({ opening: true, closing: true });
+                    }}
+                  >
+                    <FontAwesomeIcon icon={faAnglesDown} />
+                  </IconButton>
+                </TooltipTarget>
+                <TooltipTarget text="Collapse all chapters">
+                  <IconButton
+                    label="Collapse all chapters"
+                    onClick={() => {
+                      void saveState({ ...readerState, expandedChapters: [] });
+                      setCreditsExpanded({ opening: false, closing: false });
+                    }}
+                  >
+                    <FontAwesomeIcon icon={faAnglesUp} />
+                  </IconButton>
+                </TooltipTarget>
+              </div>
             </div>
           </div>
         </div>
-      </div>
-      <div ref={readerRef} className="reader-chapters pt-3">
-        {creditsSetup?.banner && !fillingInCredits && (
-          <div className="mx-[var(--reader-inline)] mb-4">
-            <CreditsSetupBanner state={creditsSetup} notify={notify} onDone={setCreditsSetup} onFillIn={() => setFillingInCredits(true)} />
-          </div>
-        )}
-        {openingTemplate && (
-          <CreditsEntry
-            kind="opening"
-            preview={creditsPreviews.opening}
-            expanded={creditsExpanded.opening}
-            onToggle={() => setCreditsExpanded((current) => ({ ...current, opening: !current.opening }))}
-            textClass={READER_TEXT_CLASSES[textSize]}
-            onFillIn={creditsSetup ? () => setFillingInCredits(true) : undefined}
-            onReadAloud={() => {
-              setReadAloudMode('read');
-              setReadAloud({ kind: 'credits', credits: 'opening', preview: creditsPreviews.opening! });
-            }}
-            onBooth={() => {
-              setReadAloudMode('booth');
-              setReadAloud({ kind: 'credits', credits: 'opening', preview: creditsPreviews.opening! });
-            }}
-            onCompanion={() => {
-              setReadAloudMode('companion');
-              setReadAloud({ kind: 'credits', credits: 'opening', preview: creditsPreviews.opening! });
-            }}
-          />
-        )}
-        {recordedChapters.map((chapter) => {
-          const expanded = (readerState.expandedChapters || []).includes(chapter.id);
-          const chapterBookmark = readerState.bookmarks.find((item) => item.kind === 'chapter' && item.chapterId === chapter.id);
-          return (
-            <ReaderCard
-              key={chapter.id}
-              chapterId={chapter.id}
-              title={chapter.title}
-              subtitle={chapter.subtitle}
-              expanded={expanded}
-              onToggleExpand={() => toggleManualChapter(chapter.id)}
-              bookmarked={Boolean(chapterBookmark)}
-              onToggleBookmark={() => void toggleChapterBookmark(chapter.id)}
-              showRetailSample={Boolean(sampleRange?.chapterIds.has(chapter.id))}
-              showReadAloud={isNarrationChapter(chapter)}
+        <div ref={readerRef} className="reader-chapters pt-3">
+          {creditsSetup?.banner && !fillingInCredits && (
+            <div className="mx-[var(--reader-inline)] mb-4">
+              <CreditsSetupBanner state={creditsSetup} notify={notify} onDone={setCreditsSetup} onFillIn={() => setFillingInCredits(true)} />
+            </div>
+          )}
+          {openingTemplate && (
+            <CreditsEntry
+              kind="opening"
+              preview={creditsPreviews.opening}
+              expanded={creditsExpanded.opening}
+              onToggle={() => setCreditsExpanded((current) => ({ ...current, opening: !current.opening }))}
+              textClass={READER_TEXT_CLASSES[textSize]}
+              onFillIn={creditsSetup ? () => setFillingInCredits(true) : undefined}
               onReadAloud={() => {
                 setReadAloudMode('read');
-                setReadAloud({ kind: 'chapter', chapter });
+                setReadAloud({ kind: 'credits', credits: 'opening', preview: creditsPreviews.opening! });
               }}
-              showBooth={isNarrationChapter(chapter)}
               onBooth={() => {
                 setReadAloudMode('booth');
-                setReadAloud({ kind: 'chapter', chapter });
+                setReadAloud({ kind: 'credits', credits: 'opening', preview: creditsPreviews.opening! });
               }}
-              showWorkspace={goToWorkspace !== undefined && isNarrationChapter(chapter)}
-              onWorkspace={() => goToWorkspace?.(chapter.id)}
-              showCompanion={isNarrationChapter(chapter)}
               onCompanion={() => {
                 setReadAloudMode('companion');
-                setReadAloud({ kind: 'chapter', chapter });
+                setReadAloud({ kind: 'credits', credits: 'opening', preview: creditsPreviews.opening! });
               }}
-              wordCount={chapter.wordCount}
-            >
-              {loadingChapters.has(chapter.id) ? (
-                <div className="space-y-2 p-4" aria-label={`Loading ${chapter.title}`}>
-                  {(chapter.paragraphIds || []).map((paragraph) => (
-                    <div key={paragraph.id} className="h-5 animate-pulse rounded bg-[var(--surface-2)]" />
-                  ))}
-                </div>
-              ) : (
-                <ParagraphView
-                  paragraphs={paragraphs.filter((item) => item.chapterId === chapter.id)}
-                  entities={entities}
-                  notes={notes.filter((item) => item.chapterId === chapter.id || (!item.chapterId && item.chapter === chapter.title))}
-                  markup={markup[chapter.id]}
-                  removeMarkup={(span) => void removeMarkup(span)}
-                  textClass={READER_TEXT_CLASSES[textSize]}
-                  lineNumberPadding={LINE_NUMBER_PADDING_CLASSES[textSize]}
-                  jumpTarget={jumpTarget}
-                  retailSample={sampleRange}
-                  dialogueCues={dialogueCues}
-                  openEntity={(entity) => {
-                    setDetail({ entity });
-                    setSheet('detail');
-                  }}
-                  openNote={(note) => {
-                    setDetail({ note });
-                    setSheet('detail');
-                  }}
-                />
-              )}
-            </ReaderCard>
-          );
-        })}
-        {closingTemplate && (
-          <CreditsEntry
-            kind="closing"
-            preview={creditsPreviews.closing}
-            expanded={creditsExpanded.closing}
-            onToggle={() => setCreditsExpanded((current) => ({ ...current, closing: !current.closing }))}
-            textClass={READER_TEXT_CLASSES[textSize]}
-            onFillIn={creditsSetup ? () => setFillingInCredits(true) : undefined}
-            onReadAloud={() => {
-              setReadAloudMode('read');
-              setReadAloud({ kind: 'credits', credits: 'closing', preview: creditsPreviews.closing! });
-            }}
-            onBooth={() => {
-              setReadAloudMode('booth');
-              setReadAloud({ kind: 'credits', credits: 'closing', preview: creditsPreviews.closing! });
-            }}
-            onCompanion={() => {
-              setReadAloudMode('companion');
-              setReadAloud({ kind: 'credits', credits: 'closing', preview: creditsPreviews.closing! });
-            }}
-          />
-        )}
+            />
+          )}
+          {recordedChapters.map((chapter) => {
+            const expanded = (readerState.expandedChapters || []).includes(chapter.id);
+            const chapterBookmark = readerState.bookmarks.find((item) => item.kind === 'chapter' && item.chapterId === chapter.id);
+            return (
+              <ReaderCard
+                key={chapter.id}
+                chapterId={chapter.id}
+                title={chapter.title}
+                subtitle={chapter.subtitle}
+                expanded={expanded}
+                onToggleExpand={() => toggleManualChapter(chapter.id)}
+                bookmarked={Boolean(chapterBookmark)}
+                onToggleBookmark={() => void toggleChapterBookmark(chapter.id)}
+                showRetailSample={Boolean(sampleRange?.chapterIds.has(chapter.id))}
+                showReadAloud={isNarrationChapter(chapter)}
+                onReadAloud={() => {
+                  setReadAloudMode('read');
+                  setReadAloud({ kind: 'chapter', chapter });
+                }}
+                showBooth={isNarrationChapter(chapter)}
+                onBooth={() => {
+                  setReadAloudMode('booth');
+                  setReadAloud({ kind: 'chapter', chapter });
+                }}
+                showWorkspace={goToWorkspace !== undefined && isNarrationChapter(chapter)}
+                onWorkspace={() => goToWorkspace?.(chapter.id)}
+                showCompanion={isNarrationChapter(chapter)}
+                onCompanion={() => {
+                  setReadAloudMode('companion');
+                  setReadAloud({ kind: 'chapter', chapter });
+                }}
+                wordCount={chapter.wordCount}
+              >
+                {loadingChapters.has(chapter.id) ? (
+                  <div className="space-y-2 p-4" aria-label={`Loading ${chapter.title}`}>
+                    {(chapter.paragraphIds || []).map((paragraph) => (
+                      <div key={paragraph.id} className="h-5 animate-pulse rounded bg-[var(--surface-2)]" />
+                    ))}
+                  </div>
+                ) : (
+                  <ParagraphView
+                    paragraphs={paragraphs.filter((item) => item.chapterId === chapter.id)}
+                    entities={entities}
+                    notes={notes.filter((item) => item.chapterId === chapter.id || (!item.chapterId && item.chapter === chapter.title))}
+                    markup={markup[chapter.id]}
+                    removeMarkup={(span) => void removeMarkup(span)}
+                    textClass={READER_TEXT_CLASSES[textSize]}
+                    lineNumberPadding={LINE_NUMBER_PADDING_CLASSES[textSize]}
+                    jumpTarget={jumpTarget}
+                    retailSample={sampleRange}
+                    dialogueCues={dialogueCues}
+                    openEntity={(entity) => {
+                      setDetail({ entity });
+                      setSheet('detail');
+                    }}
+                    openNote={(note) => {
+                      setDetail({ note });
+                      setSheet('detail');
+                    }}
+                  />
+                )}
+              </ReaderCard>
+            );
+          })}
+          {closingTemplate && (
+            <CreditsEntry
+              kind="closing"
+              preview={creditsPreviews.closing}
+              expanded={creditsExpanded.closing}
+              onToggle={() => setCreditsExpanded((current) => ({ ...current, closing: !current.closing }))}
+              textClass={READER_TEXT_CLASSES[textSize]}
+              onFillIn={creditsSetup ? () => setFillingInCredits(true) : undefined}
+              onReadAloud={() => {
+                setReadAloudMode('read');
+                setReadAloud({ kind: 'credits', credits: 'closing', preview: creditsPreviews.closing! });
+              }}
+              onBooth={() => {
+                setReadAloudMode('booth');
+                setReadAloud({ kind: 'credits', credits: 'closing', preview: creditsPreviews.closing! });
+              }}
+              onCompanion={() => {
+                setReadAloudMode('companion');
+                setReadAloud({ kind: 'credits', credits: 'closing', preview: creditsPreviews.closing! });
+              }}
+            />
+          )}
+        </div>
       </div>
+      <aside
+        aria-label="Prep"
+        className="sticky top-0 hidden h-[calc(100dvh-3.5rem)] flex-col self-start overflow-hidden border-l border-[var(--border)] bg-[var(--surface)] 2xl:flex"
+      >
+        {rail}
+      </aside>
       {fillingInCredits && creditsSetup && (
         <CreditsSetupDialog
           state={creditsSetup}
@@ -808,7 +888,7 @@ export function Manuscript({
       {pendingNote && <AddNoteDialog anchorText={pendingNote.anchorText} confirm={(text) => void confirmNote(text)} cancel={() => setPendingNote(undefined)} />}
       <SlideOver
         open={Boolean(sheet)}
-        title={detail?.note ? 'Note' : detail?.entity?.canonical_name || 'Chapters & Search'}
+        title={detail?.note ? 'Note' : detail?.entity?.canonical_name || (sheet === 'prep' ? 'Prep' : 'Chapters & Search')}
         onClose={closeSheet}
         // Escape clears an in-progress search before it closes the panel, so a narrator who
         // mistypes doesn't lose the panel along with the query (R8): the first Escape is handled
@@ -853,6 +933,8 @@ export function Manuscript({
               Open in Story Bible →
             </Button>
           </>
+        ) : sheet === 'prep' ? (
+          rail
         ) : (
           <>
             <SearchBar query={searchQuery} onQueryChange={setSearchQuery} onEnter={() => void fetchSearch(searchQuery)} autoFocus />
@@ -870,6 +952,7 @@ export function Manuscript({
                 pending={searchPending}
                 lineNumbers={lineNumbers}
                 stageSuggestions={stages.state.byChapter}
+                toConfirm={toConfirm}
                 select={(id, paragraph) => {
                   const chapter = chapters.find((item) => item.id === id);
                   if (chapter) {
@@ -889,6 +972,7 @@ export function Manuscript({
           </>
         )}
       </SlideOver>
+      <PronunciationQueries open={queriesOpen} onClose={() => setQueriesOpen(false)} onChanged={() => void loadQueries()} notify={notify} />
       {readAloud && (
         <ReadAloudDialog
           source={readAloud}
@@ -899,6 +983,23 @@ export function Manuscript({
           mode={readAloudMode}
         />
       )}
+    </div>
+  );
+}
+
+// The key to the marks in the text: the Story Bible categories and notes (mock 02's "Markup layer"). A column of the left rail from
+// `xl`, a row in the band below it.
+function MarksKey({ className }: { className: string }) {
+  return (
+    <div
+      className={`flex gap-x-4 gap-y-[0.65rem] font-['Barlow_Condensed',sans-serif] text-[0.72rem] tracking-wider text-[var(--text-muted)] uppercase ${className}`}
+    >
+      {[...STORY_BIBLE_TABS.filter((item) => item !== 'All'), 'Note'].map((name) => (
+        <span key={name} className="flex items-center gap-1">
+          <span className={CAT_DOT_CLASS} style={{ background: CAT_DOT_BG[categoryCssName(name === 'Location' ? 'Place' : name)] }} />
+          {name}
+        </span>
+      ))}
     </div>
   );
 }

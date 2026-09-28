@@ -233,7 +233,7 @@ self-fetching since the Transcript state carries no chapter id.
 Phase 9 added two read-only consumers, both through `useStageRecommendations` like every other reader here - neither
 confirms, dismisses or reverts:
 
-- `ChapterNav.tsx` (the Manuscript page's Chapters & Search panel) shows a non-interactive "Suggested: `<stage>`" line
+- `ChapterNav.tsx` (the Script page's Chapters & Search panel) shows a non-interactive "Suggested: `<stage>`" line
   under a chapter's title for a live `recommended` verdict only (`stageText.ts`'s `verdictLine`, Q6 option B) - the nav
   row stays dense, and every action stays on Home or the Proofing panel.
 - `TracksPage.tsx` shows a line above the Chapter links table counting chapters whose recommendation carries the
