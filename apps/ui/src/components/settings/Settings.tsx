@@ -17,6 +17,7 @@ import { CreditsPanel } from './CreditsPanel';
 import { DawCatalogPanel } from './DawCatalogPanel';
 import { DeliveryProfilesPanel } from './DeliveryProfilesPanel';
 import { KeyboardPanel } from './KeyboardPanel';
+import { OnlineDictionaryPanel } from './OnlineDictionaryPanel';
 import { RecordingCheckSummary } from './RecordingCheckSummary';
 import { ScopedSetting } from './ScopedSetting';
 import { UpdatesPanel } from './UpdatesPanel';
@@ -409,6 +410,8 @@ export function Settings({
                     void save();
                   }}
                 >
+                  {/* The narrator's own Merriam-Webster key is theirs, not a project's (prep-depth P9), so it is set in Global only. */}
+                  {category === 'ManuscriptGuide' && scope === 'global' && <OnlineDictionaryPanel notify={notify} />}
                   {category === 'About' && (
                     <>
                       <AboutPanel version={data.version} />
