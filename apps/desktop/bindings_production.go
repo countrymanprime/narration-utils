@@ -92,7 +92,7 @@ func (h *Host) saveProductionPlan(what string, change func(*project.Manifest)) (
 	return encodeBinding(production.PlanOf(manifest), nil)
 }
 
-// The Production page's bindings (docs/prds/production-tracking.prd.md Phase 4). ProductionOverview only reads: the
+// The Production page's bindings (production tracking PRD Phase 4, delivered and deleted; ADR 0028). ProductionOverview only reads: the
 // chapters and their measured recorded time from the manuscript, each chapter's readiness from the stage
 // recommendations (read live, Q8 A), and the time log. ProductionStartTimer and ProductionStopTimer are the only two
 // paths that write a session (PRD success metric "Timer honesty"), and only when the narrator clicks. None of them
@@ -103,31 +103,43 @@ var errProductionNoProject = errors.New("open a project before tracking producti
 
 // ProductionOverview is the Production page's board, KPI figures and "Next up" list.
 func (h *Host) ProductionOverview() (string, error) {
+	overview, _, err := h.buildProductionOverview()
+	if err != nil {
+		return "", err
+	}
+	return encodeBinding(overview, nil)
+}
+
+// buildProductionOverview is ProductionOverview's own build, shared with the status report export (Phase 5) so the
+// two never drift: the report is exactly the figures the page just showed. It also answers the plan's milestones,
+// which Overview does not carry (only the deadline).
+func (h *Host) buildProductionOverview() (production.Overview, []project.Milestone, error) {
 	svc := h.services()
 	if svc.production == nil || svc.manuscript == nil {
-		return "", errProductionNoProject
+		return production.Overview{}, nil, errProductionNoProject
 	}
 	chapters, err := productionChapters(svc.manuscript, svc.stages)
 	if err != nil {
-		return "", err
+		return production.Overview{}, nil, err
 	}
 	sessions, err := svc.production.Sessions()
 	if err != nil {
-		return "", err
+		return production.Overview{}, nil, err
 	}
 	// The deadline and contracted amount the narrator set (Phase 3, ProductionSetDeadline); an unreadable manifest is an
 	// error, never read as "none set".
 	manifest, _, err := project.Load(h.persist, svc.config.projectFolder)
 	if err != nil {
-		return "", fmt.Errorf("could not read the project manifest: %w", err)
+		return production.Overview{}, nil, fmt.Errorf("could not read the project manifest: %w", err)
 	}
 	plan := production.PlanOf(manifest)
-	return encodeBinding(production.BuildOverview(production.OverviewInput{
+	overview := production.BuildOverview(production.OverviewInput{
 		Chapters: chapters,
 		Sessions: sessions,
 		Plan:     plan,
 		Now:      time.Now(),
-	}), nil)
+	})
+	return overview, plan.Milestones, nil
 }
 
 // ProductionStartTimer starts a timer on chapterID's stage. It answers {status: "started", session}, or
@@ -170,6 +182,20 @@ func (h *Host) ProductionStopTimer() (string, error) {
 		return encodeBinding(map[string]any{"stopped": false, "session": nil}, nil)
 	}
 	return encodeBinding(map[string]any{"stopped": true, "session": session}, nil)
+}
+
+// ProductionBurndown is the book's logged hours by day (Phase 6, Could): data only, for a future chart primitive to
+// plot. It reads the same time log as ProductionOverview and adds nothing to it.
+func (h *Host) ProductionBurndown() (string, error) {
+	svc := h.services()
+	if svc.production == nil {
+		return "", errProductionNoProject
+	}
+	sessions, err := svc.production.Sessions()
+	if err != nil {
+		return "", err
+	}
+	return encodeBinding(production.Burndown(sessions), nil)
 }
 
 // productionRecorded is the production service's Recorded port over the manuscript's chapter list: each chapter's

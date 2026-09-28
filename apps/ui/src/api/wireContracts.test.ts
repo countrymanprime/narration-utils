@@ -46,7 +46,14 @@ import { COVERAGE_EVALUATOR_REASONS, COVERAGE_REFUSAL_REASONS, coverageResultSch
 import { workspaceAlignmentResultSchema } from './schemas/workspace';
 import { previewResultSchema } from './schemas/preview';
 import { STAGE_REFUSAL_REASONS, STAGE_UNKNOWN_CAUSES, stageDecisionResultSchema, stageRecommendationsSchema } from './schemas/stages';
-import { productionOverviewSchema, productionPlanSchema, productionStartResultSchema, productionStopResultSchema } from './schemas/production';
+import {
+  productionBurndownSchema,
+  productionOverviewSchema,
+  productionPlanSchema,
+  productionReportExportSchema,
+  productionStartResultSchema,
+  productionStopResultSchema,
+} from './schemas/production';
 import { PRODUCTION_SCENARIOS } from './productionMock';
 import { findingMarkerSchema, findingNavigationSchema, findingSchema, findingsPageSchema, findingsSummarySchema, reaperStatusSchema } from './schemas/findings';
 import { tracksDiscoverySchema, tracksProjectSchema } from './schemas/tracks';
@@ -116,7 +123,7 @@ import { unknownKeys } from './schemas/strictness';
 import { GOLDEN } from './contractGoldens';
 import { parseWire, parseWireJson, type WireContext } from './wire/parseWire';
 import { WireError } from './wire/WireError';
-import { creditsRows } from '../components/teleprompter/readerModel';
+import { creditsRows } from '../components/booth/readerModel';
 
 // ADR 0069, rule 4: the fixtures are the contract. Every payload the Go host and the Python sidecars write to
 // tests/fixtures/contracts/ is validated here by the same schemas the app runs, and so is every answer the mock client gives;
@@ -2099,6 +2106,8 @@ describe('answers of the mock client for the settings, voice, model, transcript 
       'productionStartTimer',
       'productionStopTimer',
       'prepCompletenessSummary',
+      'productionStatusReport',
+      'productionBurndown',
       'takeComparisonStart',
       'takeComparisonState',
       'takeComparisonCancel',
@@ -2301,6 +2310,30 @@ describe('the production tracking mock', () => {
     expectMatches(productionStopResultSchema, await api.productionStopTimer(), 'mock production timer stopped');
     expectMatches(productionStopResultSchema, await api.productionStopTimer(), 'mock production timer, nothing to stop');
     await expect(api.productionStartTimer('chapter-99', 'recording')).rejects.toThrow(/no chapter/);
+  });
+
+  it('the status report export leaves out the contracted amount unless asked, and never repeats a file name', async () => {
+    const pinned = productionReportExportSchema.parse(readGolden('production-status-report.json'));
+    const api = createMockApi();
+    const left = await api.productionStatusReport(false);
+    expectMatches(productionReportExportSchema, left, 'mock production status report, default');
+    expect(left).toMatchObject({ folder: pinned.folder, contractedAmountIncluded: false });
+    const included = await api.productionStatusReport(true);
+    expectMatches(productionReportExportSchema, included, 'mock production status report, opted in');
+    expect(included.contractedAmountIncluded).toBe(true);
+    expect(included.jsonFile).not.toBe(left.jsonFile);
+  });
+
+  it('the burndown is empty with nothing logged, and cumulative by day once a seed logs some', async () => {
+    const empty = await createMockApi().productionBurndown();
+    expectMatches(productionBurndownSchema, empty, 'mock production burndown, nothing logged');
+    expect(empty).toEqual([]);
+
+    const seeded = await createMockApi({}, { production: PRODUCTION_SCENARIOS['on-pace'] }).productionBurndown();
+    expectMatches(productionBurndownSchema, seeded, 'mock production burndown, on-pace');
+    expect(seeded.length).toBeGreaterThan(0);
+    expect(seeded.at(-1)?.hoursLogged).toBeCloseTo(seeded.reduce((max, point) => Math.max(max, point.hoursLogged), 0));
+    for (let i = 1; i < seeded.length; i++) expect(seeded[i].hoursLogged).toBeGreaterThanOrEqual(seeded[i - 1].hoursLogged);
   });
 
   it.each(['on-pace', 'at-risk'] as const)('seeds a %s book whose figures come from its log and measured audio only', async (seed) => {

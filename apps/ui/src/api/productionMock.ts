@@ -7,12 +7,14 @@
 import type { ChapterStatus, ManuscriptChapter } from './contracts/manuscript';
 import type {
   ProductionApi,
+  ProductionBurndownPoint,
   ProductionChapter,
   ProductionMilestone,
   ProductionNextUpItem,
   ProductionOverview,
   ProductionPlan,
   ProductionReadiness,
+  ProductionReportExport,
   ProductionSession,
 } from './contracts/production';
 import type { StageRecommendations } from './contracts/stages';
@@ -113,6 +115,27 @@ const hoursOf = (session: ProductionSession) =>
 
 const perFinishedHour = (hours: number, seconds: number) => (hours > 0 && seconds > 0 ? hours / (seconds / 3600) : null);
 
+// The host's Burndown (internal/production/burndown.go, Phase 6): one point per calendar date from the first stopped
+// session's day to the last, running cumulatively; only stopped sessions count.
+function burndownOf(sessions: ProductionSession[]): ProductionBurndownPoint[] {
+  const byDay = new Map<string, number>();
+  for (const session of sessions) {
+    if (session.endedAt === undefined) continue;
+    const day = session.startedAt.slice(0, 10);
+    byDay.set(day, (byDay.get(day) ?? 0) + hoursOf(session));
+  }
+  if (byDay.size === 0) return [];
+  const days = [...byDay.keys()].sort();
+  const points: ProductionBurndownPoint[] = [];
+  let running = 0;
+  for (let d = Date.parse(`${days[0]}T00:00:00Z`); d <= Date.parse(`${days[days.length - 1]}T00:00:00Z`); d += 86_400_000) {
+    const day = new Date(d).toISOString().slice(0, 10);
+    running += byDay.get(day) ?? 0;
+    points.push({ date: day, hoursLogged: running });
+  }
+  return points;
+}
+
 function readinessOf(recommendation: StageRecommendations['chapters'][number]): ProductionReadiness {
   const held = recommendation.signals.find((signal) => signal.state === 'not_met') ?? recommendation.signals.find((signal) => signal.state === 'unknown');
   return { verdict: recommendation.verdict, ...(recommendation.target ? { target: recommendation.target } : {}), reason: held?.reason ?? '' };
@@ -148,6 +171,7 @@ export function createProductionMock(deps: Deps): ProductionApi {
   const sessions: ProductionSession[] = log ? seededSessions(log.hoursScale) : [];
   if (log?.running) sessions.push({ id: 'mock-running', chapterId: 'chapter-6', stage: 'recording', startedAt: MOCK_TIME, source: 'manual' });
   const running = () => sessions.find((session) => session.endedAt === undefined) ?? null;
+  let reportExports = 0;
 
   const overview = async (): Promise<ProductionOverview> => {
     const [manuscript, recommendations] = await Promise.all([deps.chapters(), deps.recommendations()]);
@@ -234,5 +258,18 @@ export function createProductionMock(deps: Deps): ProductionApi {
       current.endedAt = MOCK_TIME;
       return { stopped: true, session: { ...current } };
     },
+    // The host's writeProductionReport (production_report.go): the mock writes nothing, but names the file the same
+    // way (a stem from the export time, -2, -3, ... within the same second) and echoes the narrator's own choice.
+    productionStatusReport: async (includeContractedAmount): Promise<ProductionReportExport> => {
+      reportExports += 1;
+      const stem = `production-status-20260921-100000Z${reportExports > 1 ? `-${reportExports}` : ''}`;
+      return {
+        folder: 'narration-utils/production/reports',
+        htmlFile: `${stem}.html`,
+        jsonFile: `${stem}.json`,
+        contractedAmountIncluded: includeContractedAmount,
+      };
+    },
+    productionBurndown: async () => burndownOf(sessions),
   };
 }

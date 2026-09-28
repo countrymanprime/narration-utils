@@ -12,6 +12,7 @@ import {
   faHouse,
   faLayerGroup,
   faMicrophone,
+  faRotateLeft,
   faScroll,
   faWaveSquare,
 } from '@fortawesome/free-solid-svg-icons';
@@ -30,7 +31,8 @@ import { EngineChip, type EngineState } from './EngineChip';
 const HOME = { name: 'Home', path: '/', icon: faHouse, requiresManuscript: false, requiresDaw: false };
 const SCRIPT = { name: 'Script', path: '/script', icon: faFileLines, requiresManuscript: true, requiresDaw: false };
 const STORY_BIBLE = { name: 'Story Bible', path: '/story-bible', icon: faBookOpen, requiresManuscript: true, requiresDaw: false };
-const TELEPROMPTER = { name: 'Teleprompter', path: '/teleprompter', icon: faScroll, requiresManuscript: true, requiresDaw: false };
+// The Record stage's one page (stage-navigation-and-page-replacement.prd.md Phase 4): it replaced the Teleprompter page.
+const BOOTH = { name: 'Booth', path: '/booth', icon: faScroll, requiresManuscript: true, requiresDaw: false };
 const TRACKS = { name: 'Tracks', path: '/tracks', icon: faLayerGroup, requiresManuscript: false, requiresDaw: false };
 // Proof (stage-navigation-and-page-replacement.prd.md Phase 5): the book's notes at /proof and a chapter's view at /proof/:chapterId,
 // replacing Review and Proofing. Not gated: take-review notes need no manuscript, the page says itself when there is nothing to
@@ -38,6 +40,9 @@ const TRACKS = { name: 'Tracks', path: '/tracks', icon: faLayerGroup, requiresMa
 const PROOF = { name: 'Proof', path: '/proof', icon: faWaveSquare, requiresManuscript: false, requiresDaw: false };
 // Measuring rendered chapter files (diagnostics-delivery-and-cleanup-tools.prd.md Phase 5). Not gated: it reads files the narrator
 // picks, so it needs neither a manuscript nor a REAPER project.
+// Pickups (stage-navigation-and-page-replacement.prd.md Phase 7): the proofer's pickup list, replacing the Tracks page's
+// Pickups dialog. Not gated: its import, export and jumps talk to REAPER and each says itself when REAPER is not there.
+const PICKUPS = { name: 'Pickups', path: '/pickups', icon: faRotateLeft, requiresManuscript: false, requiresDaw: false };
 const DELIVERY = { name: 'Delivery', path: '/delivery', icon: faGaugeHigh, requiresManuscript: false, requiresDaw: false };
 
 // Grouped by production stage (stage-navigation-and-page-replacement.prd.md Phase 1, ADR 0407 item 3): Production,
@@ -49,8 +54,8 @@ type NavItem = typeof HOME;
 const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
   { label: 'Production', items: [HOME] },
   { label: 'Prep', items: [SCRIPT, STORY_BIBLE] },
-  { label: 'Record', items: [TELEPROMPTER] },
-  { label: 'Review', items: [PROOF, TRACKS] },
+  { label: 'Record', items: [BOOTH] },
+  { label: 'Review', items: [PROOF, PICKUPS, TRACKS] },
   { label: 'Finish', items: [DELIVERY] },
 ];
 const isActivePath = (pathname: string, path: string) => (path === '/' ? pathname === '/' : pathname === path || pathname.startsWith(`${path}/`));

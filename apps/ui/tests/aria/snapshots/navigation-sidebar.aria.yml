@@ -18,11 +18,12 @@
     - group "Record":
       - /children: equal
       - text: Record
-      - button "Teleprompter"
+      - button "Booth"
     - group "Review":
       - /children: equal
       - text: Review
       - button "Proof"
+      - button "Pickups"
       - button "Tracks"
     - group "Finish":
       - /children: equal

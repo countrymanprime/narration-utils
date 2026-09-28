@@ -1007,6 +1007,14 @@ export function PreviewCandidates(): $CancellablePromise<string> {
 }
 
 /**
+ * ProductionBurndown is the book's logged hours by day (Phase 6, Could): data only, for a future chart primitive to
+ * plot. It reads the same time log as ProductionOverview and adds nothing to it.
+ */
+export function ProductionBurndown(): $CancellablePromise<string> {
+    return $Call.ByID(211479988);
+}
+
+/**
  * ProductionOverview is the Production page's board, KPI figures and "Next up" list.
  */
 export function ProductionOverview(): $CancellablePromise<string> {
@@ -1046,6 +1054,16 @@ export function ProductionSetDeadline(deadline: string, contractedAmount: number
  */
 export function ProductionStartTimer(chapterID: string, stage: string): $CancellablePromise<string> {
     return $Call.ByID(4160847620, chapterID, stage);
+}
+
+/**
+ * ProductionStatusReport writes the book's status report (Phase 5): hours by stage, PFH, the deadline and milestone
+ * status, and book-wide readiness counts, as an HTML and a JSON file. includeContractedAmount is the narrator's choice
+ * to write the contracted amount and the effective rate; off by default, since a status report is often shared with
+ * someone the narrator would not otherwise tell their rate. It refuses without a project.
+ */
+export function ProductionStatusReport(includeContractedAmount: boolean): $CancellablePromise<string> {
+    return $Call.ByID(1628238977, includeContractedAmount);
 }
 
 /**

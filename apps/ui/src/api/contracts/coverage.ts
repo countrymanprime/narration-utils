@@ -23,7 +23,9 @@ export type CoverageRefusalReason =
   | 'sidecar_missing'
   | 'invalid_params'
   | 'manuscript_changed'
-  | 'result_missing';
+  | 'result_missing'
+  | 'credits_not_set_up'
+  | 'credits_changed';
 
 /** Why a stored result is stale or never, from the staleness evaluator (evidence/staleness.go). */
 export type CoverageEvaluatorReason =

@@ -33,6 +33,12 @@ const (
 	// ReasonResultMissing is a result reader reason: the ledger has a complete
 	// record but its stored report cannot be read.
 	ReasonResultMissing Reason = "result_missing"
+	// ReasonCreditsNotSetUp is a refusal reason (Phase 3): the credits kind checked has no rendered template to
+	// measure against (CT5's row still shows "Not set up" on Home).
+	ReasonCreditsNotSetUp Reason = "credits_not_set_up"
+	// ReasonCreditsChanged is a staleness reason of the result reader (Phase 3): a credits row's rendered template
+	// text no longer matches the hash a stored result was measured against - creditsBasis's own ReasonManuscriptChanged.
+	ReasonCreditsChanged Reason = "credits_changed"
 )
 
 // UnknownError is a refusal with a typed Reason: nothing was run and nothing

@@ -12,7 +12,7 @@ import { ChapterSyncConsentDialog } from './components/tracks/ChapterSyncConsent
 import type { ChapterSyncPreview } from './api/contracts/chapterSync';
 import { useAppHistory } from './hooks/useAppHistory';
 import { notificationForJobEnd, shouldNotifyForJobEnd, shouldQueueJobEndAnnouncement, toastForJobEnd } from './jobEnded';
-import { useBoothRecording } from './components/teleprompter/useBoothRecording';
+import { useBoothRecording } from './components/booth/useBoothRecording';
 import { ConfirmDialog } from './components/primitives/ConfirmDialog';
 import { ShortcutSheet } from './components/help/ShortcutSheet';
 import { Home } from './components/home/Home';
@@ -20,10 +20,12 @@ import { ScriptPage } from './components/script/ScriptPage';
 import { ProjectPicker } from './components/project/ProjectPicker';
 import { Guide } from './components/storybible/Guide';
 import { Settings } from './components/settings/Settings';
-import { TeleprompterPage } from './components/teleprompter/TeleprompterPage';
+import { BoothPage, boothQuery } from './components/booth/BoothPage';
+import type { CreditsKind } from './components/booth/readerModel';
 import { TracksPage } from './components/tracks/TracksPage';
 import { ProofChapterPage } from './components/proof/ProofChapterPage';
 import { ProofPage } from './components/proof/ProofPage';
+import { PickupsPage } from './components/pickups/PickupsPage';
 import { RedirectKeepingLocation } from './components/layout/RedirectKeepingLocation';
 import { leavesCompareRun } from './components/proof/leavesCompareRun';
 import { DeliveryPage } from './components/delivery/DeliveryPage';
@@ -38,7 +40,9 @@ import { useCommand } from './input/useCommand';
 import { mockEngineFromLocation } from './api/mockApi';
 
 // The Settings categories another page can open Settings at, by URL anchor.
-const SETTINGS_ANCHORS: Record<string, string> = { '#credits': 'Credits', '#delivery': 'Delivery', '#teleprompter': 'Teleprompter' };
+// `#teleprompter` is kept as an alias of `#booth` so links from before the Booth replaced the Teleprompter page still land
+// (stage-navigation-and-page-replacement.prd.md Q11); the category's key stays its settings tool's name.
+const SETTINGS_ANCHORS: Record<string, string> = { '#credits': 'Credits', '#delivery': 'Delivery', '#booth': 'Teleprompter', '#teleprompter': 'Teleprompter' };
 
 // The engine chip's state (stage-navigation-and-page-replacement.prd.md Phase 1, Q7): read once at load, since
 // nothing on the host selects it yet and the URL does not change without a reload.
@@ -225,7 +229,7 @@ function AppRoutes() {
   // booth is recording queues here instead - `queuedAnnouncements` - and is shown once `boothRecording` clears
   // (below), rather than interrupting a take. The OS notification above is untouched: silencing it is out of scope
   // (the PRD's "What We're NOT Building" table) and it only ever fires while the window is unfocused anyway (N1).
-  const boothRecording = useBoothRecording();
+  const boothRecording = useBoothRecording(location.pathname === '/booth');
   const boothRecordingRef = useRef(boothRecording);
   boothRecordingRef.current = boothRecording;
   const queuedAnnouncements = useRef<{ text: string; tone: ToastTone }[]>([]);
@@ -397,12 +401,14 @@ function AppRoutes() {
     guardedNavigate(`/proof/${encodeURIComponent(chapterId)}${findingId ? `?finding=${encodeURIComponent(findingId)}` : ''}`);
   // A delivery finding opens the Delivery page on its file and rule: "#file=<path>&rule=<id>" (deliveryLink.ts).
   const goToDelivery = (file: string, rule?: string) => guardedNavigate(`/delivery${deliveryHash({ file, ...(rule ? { rule } : {}) })}`);
+  // A Manuscript card's "Record in Booth" (stage-navigation-and-page-replacement.prd.md Q9): the Booth on that chapter or credits.
+  const goToBooth = (target: { chapter: string } | { credits: CreditsKind }) => guardedNavigate(`/booth${boothQuery(target)}`);
 
   const guardedNavigate = (next: string) => {
-    const nextPath = next.split('#')[0] || '/';
+    const nextPath = next.split(/[?#]/)[0] || '/';
     // A Proof chapter view reads the chapter's paragraphs and alignment, both manuscript-scoped, same as the fixed
     // routes below (a parameterised path, so it needs its own startsWith check rather than joining the exact-match list).
-    if (!data.manuscript && (['/script', '/story-bible', '/teleprompter'].includes(nextPath) || nextPath.startsWith('/proof/'))) {
+    if (!data.manuscript && (['/script', '/story-bible', '/booth'].includes(nextPath) || nextPath.startsWith('/proof/'))) {
       navigate('/', { replace: true });
       return;
     }
@@ -471,7 +477,13 @@ function AppRoutes() {
                 path="/script"
                 element={
                   data.manuscript ? (
-                    <ScriptPage notify={setNotice} focusStoryBibleEntity={goToStoryBible} goToWorkspace={goToProofChapter} projectFolder={data.projectFolder} />
+                    <ScriptPage
+                      notify={setNotice}
+                      focusStoryBibleEntity={goToStoryBible}
+                      goToWorkspace={goToProofChapter}
+                      projectFolder={data.projectFolder}
+                      goToBooth={goToBooth}
+                    />
                   ) : (
                     <Navigate to="/" replace />
                   )
@@ -479,10 +491,6 @@ function AppRoutes() {
               />
               <Route path="/manuscript" element={<RedirectKeepingLocation to="/script" />} />
               <Route path="/story-bible" element={data.manuscript ? <Guide notify={setNotice} goToManuscript={goToScript} /> : <Navigate to="/" replace />} />
-              <Route
-                path="/teleprompter"
-                element={data.manuscript ? <TeleprompterPage onFixCredits={() => guardedNavigate('/settings#credits')} /> : <Navigate to="/" replace />}
-              />
               <Route path="/tracks" element={<TracksPage dawFileLinked={data.dawFileLinked} onLinkDawFile={() => void linkDawFile()} notify={setNotice} />} />
               <Route
                 path="/proof/:chapterId"
@@ -501,6 +509,20 @@ function AppRoutes() {
                 }
               />
               <Route
+                path="/booth"
+                element={
+                  data.manuscript ? (
+                    <BoothPage
+                      onFixCredits={() => guardedNavigate('/settings#credits')}
+                      onExit={() => (history.canGoBack ? guardedBack() : guardedNavigate('/script'))}
+                    />
+                  ) : (
+                    <Navigate to="/" replace />
+                  )
+                }
+              />
+              <Route path="/teleprompter" element={<RedirectKeepingLocation to="/booth" />} />
+              <Route
                 path="/proof"
                 element={
                   <ProofPage
@@ -514,6 +536,8 @@ function AppRoutes() {
                   />
                 }
               />
+              {/* Pickups (stage-navigation-and-page-replacement.prd.md Phase 7) replaces the Tracks page's Pickups dialog, which had no route. */}
+              <Route path="/pickups" element={<PickupsPage />} />
               {/* Retired by Proof (stage-navigation-and-page-replacement.prd.md Phase 5, ADR 0407): old links land, query and hash kept. */}
               <Route path="/review" element={<RedirectKeepingLocation to="/proof" />} />
               <Route path="/proofing" element={<RedirectKeepingLocation to="/proof" />} />

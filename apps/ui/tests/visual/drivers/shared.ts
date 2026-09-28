@@ -23,23 +23,27 @@ export async function freezeClock(page: Page): Promise<void> {
   }
 }
 
-// Opens Chapter 1's read-aloud dialog (after a reload with a mock seam, when one is given) and waits for its resume
-// prompt to have answered (read-aloud-resume-from-daw.prd.md Phase 1, wording updated by Phase 3): the lookup's
-// "Checking..." line is gone.
-export async function openResumePrompt(page: Page, query = ''): Promise<void> {
+// Opens the Booth (after a reload with a mock seam, when one is given) on its default chapter, Chapter 1, once the text is
+// on screen (stage-navigation-and-page-replacement.prd.md Phase 4).
+export async function openBooth(page: Page, query = ''): Promise<void> {
   if (query) {
     await page.goto(`/${query}`);
     await settlePage(page);
   }
-  await goToPage(page, 'Script');
-  await clickVisible(page, 'button', 'Read Chapter 1 aloud');
-  const card = page.getByRole('dialog', { name: /Read aloud/ }).getByRole('region', { name: 'Where you stopped' });
+  await goToPage(page, 'Booth');
+}
+
+// Opens the Booth and waits for its resume prompt to have answered (read-aloud-resume-from-daw.prd.md Phase 1, wording
+// updated by Phase 3): the lookup's "Checking..." line is gone.
+export async function openResumePrompt(page: Page, query = ''): Promise<void> {
+  await openBooth(page, query);
+  const card = page.getByRole('region', { name: 'Where you stopped' });
   await card.waitFor();
   await card.getByText(/Checking where REAPER and your last reading are/).waitFor({ state: 'detached' });
 }
 
 // The control bar's own toolbar, scoped so its Microphone/Settings triggers never collide with a same-named control
-// elsewhere on the page (the standalone Teleprompter page's nav rail also has a "Settings" link).
+// elsewhere on the page (the Booth's nav rail also has a "Settings" link).
 export const controlBar = (page: Page) => page.getByRole('toolbar', { name: 'Reading controls' });
 
 // The microphone picker sits behind the control bar's popover (read-aloud-control-bar.prd.md Phase 3): its combobox
@@ -67,7 +71,7 @@ export async function clickVisible(page: Page, role: Parameters<Page['getByRole'
     .click();
 }
 
-type AppPage = 'Home' | 'Production' | 'Script' | 'Story Bible' | 'Teleprompter' | 'Tracks' | 'Proof' | 'Delivery' | 'Settings';
+type AppPage = 'Home' | 'Production' | 'Script' | 'Story Bible' | 'Booth' | 'Tracks' | 'Proof' | 'Pickups' | 'Delivery' | 'Settings';
 
 // Every page opens with the shared `Heading` primitive, an <h1>: it is what proves the page has arrived. Home's is "Welcome back".
 export const PAGE_HEADING: Record<AppPage, string> = {
@@ -75,19 +79,23 @@ export const PAGE_HEADING: Record<AppPage, string> = {
   Production: 'Production',
   Script: 'Script',
   'Story Bible': 'Story Bible',
-  Teleprompter: 'Teleprompter',
+  // A visually hidden <h1>: the Booth's own status line names the chapter (mock 03).
+  Booth: 'Booth',
   Tracks: 'Tracks',
   Proof: 'Proof',
+  Pickups: 'Pickups',
   Delivery: 'Delivery',
   Settings: 'Settings',
 };
 
 // The heading renders before the page's data does (chapters, the track list and the chapter estimate load after mount),
 // so a page whose main content is the same in every state also gets a wait for that content. Pages left out (Story Bible,
-// Teleprompter, Tracks, Settings) show different content per state, so their drivers wait for their own.
+// Tracks, Settings) show different content per state, so their drivers wait for their own.
 const PAGE_CONTENT: Partial<Record<AppPage, (page: Page) => Locator>> = {
   Home: (page) => page.getByRole('button', { name: /Show per-chapter breakdown/ }),
   Script: (page) => page.locator('[data-paragraph-text]'),
+  // The chapter's text, whatever the session is doing (credits states pick theirs afterwards).
+  Booth: (page) => page.getByRole('region', { name: 'Chapter text' }),
 };
 
 // Clicks an item of the app's own navigation, and only that: the Settings category rail reuses the labels "Proofing"
@@ -185,9 +193,15 @@ export async function openReaperControls(page: Page, reaper?: 'stale' | 'not-run
   await page.getByText('Checking whether REAPER is connected…').waitFor({ state: 'detached' });
 }
 
+// ReaperControls is a plain <div> (not a landmark, so two open at once - the editing check panel - stay unique to
+// axe), named only by its visible "In REAPER" heading; its parent is the control group these drivers act within.
+function reaperControlsGroup(page: Page): Locator {
+  return page.getByRole('heading', { name: 'In REAPER' }).locator('..');
+}
+
 // Presses a REAPER button and waits for what it answers, then scrolls the REAPER controls into view for the picture.
 export async function pressInReaper(page: Page, name: string, answer: Locator): Promise<void> {
-  await page.getByRole('region', { name: 'In REAPER' }).getByRole('button', { name }).click();
+  await reaperControlsGroup(page).getByRole('button', { name }).click();
   await showReaperControls(page, answer);
 }
 
@@ -197,7 +211,7 @@ export async function confirmApprovedMarker(page: Page): Promise<Locator> {
   await openReaperControls(page);
   await page.getByRole('button', { name: 'Accept', exact: true }).click();
   await page.getByText('Saved as accepted.').waitFor();
-  await page.getByRole('region', { name: 'In REAPER' }).getByRole('button', { name: 'Add marker in REAPER' }).click();
+  await reaperControlsGroup(page).getByRole('button', { name: 'Add marker in REAPER' }).click();
   const dialog = page.getByRole('alertdialog', { name: 'Add a marker in REAPER' });
   await dialog.waitFor();
   return dialog;
@@ -318,7 +332,7 @@ export async function compareTakes(page: Page): Promise<Locator> {
 
 export async function showReaperControls(page: Page, shown: Locator): Promise<void> {
   await shown.waitFor();
-  await page.getByRole('region', { name: 'In REAPER' }).scrollIntoViewIfNeeded();
+  await reaperControlsGroup(page).scrollIntoViewIfNeeded();
 }
 
 // Home's chapter breakdown control exists only once the chapter list has loaded, so it is the proof that the whole page
@@ -457,17 +471,12 @@ export async function openLocalAssets(page: Page, seed?: string): Promise<void> 
   await page.getByRole('heading', { level: 3, name: 'Small', exact: true }).waitFor();
 }
 
-// The read-aloud dialog on the `flagged` mock session (teleprompter-manuscript-integration.prd.md Phase 7), once its first
+// The Booth on the `flagged` mock session (teleprompter-manuscript-integration.prd.md Phase 7), once its first
 // default-visible flag (a skip) is drawn as a control in the text. extraQuery adds more mock params (for example
 // `&mockPunchCapabilityOn=1`, booth-actions-enablement PRD Phase 3) to the same navigation.
-export async function openFlaggedReadAloud(page: Page, extraQuery = '') {
-  await page.goto(`/?mockTeleprompter=flagged${extraQuery}`);
-  await settlePage(page);
-  await goToPage(page, 'Script');
-  await clickVisible(page, 'button', 'Read Chapter 1 aloud');
-  const dialog = page.getByRole('dialog', { name: /Read aloud/ });
-  await dialog.locator('[data-highlight="Skipped"][role="button"]').first().waitFor();
-  return dialog;
+export async function openFlaggedBooth(page: Page, extraQuery = '') {
+  await openBooth(page, `?mockTeleprompter=flagged${extraQuery}`);
+  await page.locator('[data-highlight="Skipped"][role="button"]').first().waitFor();
 }
 
 // A real mouse wheel over the reader text (teleprompter-engines-and-input-devices.prd.md Phase 10), far enough that the

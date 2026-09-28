@@ -3,8 +3,8 @@
 # Navigation
 
 The sidebar on the left is grouped by production stage, the way a narrator's week runs: **Production** ([Home](home.md)),
-**Prep** ([Script](script.md), [Story Bible](story-bible.md)), **Record** ([Teleprompter](teleprompter.md)),
-**Review** ([Proof](proof.md), [Tracks](tracks.md)) and **Finish** ([Delivery](delivery.md)).
+**Prep** ([Script](script.md), [Story Bible](story-bible.md)), **Record** ([Booth](booth.md)),
+**Review** ([Proof](proof.md), [Pickups](pickups.md), [Tracks](tracks.md)) and **Finish** ([Delivery](delivery.md)).
 At desktop widths each group shows as a heading over its pages; narrower windows switch it to icon-only groups
 divided by a thin line, then hide it behind a hamburger menu that opens it as a slide-in drawer with the headings
 back. [Settings](settings.md) lives at the bottom of the sidebar, in every layout, below every group.
@@ -16,7 +16,7 @@ In the icon-only layout, hover an icon (or tab to it) to see the page's name.
 ![Icon-only navigation rail with a page name shown on hover](../../images/ui/nav-rail-tooltip.webp)
 
 Script, Story Bible, and Teleprompter stay locked until a manuscript has been
-[imported on Home](home.md). Hovering a locked entry says what is missing. Home, Tracks, Proof, and Delivery
+[imported on Home](home.md). Hovering a locked entry says what is missing. Home, Tracks, Proof, Pickups, and Delivery
 are always available.
 
 The chip at the right of the header shows the linked audio engine, and clicking it opens a file picker to link

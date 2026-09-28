@@ -1,11 +1,13 @@
 import { z } from 'zod';
 import type {
+  ProductionBurndownPoint,
   ProductionChapter,
   ProductionMilestone,
   ProductionNextUpItem,
   ProductionOverview,
   ProductionPlan,
   ProductionReadiness,
+  ProductionReportExport,
   ProductionSession,
   ProductionStartResult,
   ProductionStopResult,
@@ -96,3 +98,12 @@ export const productionStopResultSchema = z.union([
   z.object({ stopped: z.literal(true), session: productionSessionSchema }),
   z.object({ stopped: z.literal(false), session: z.null() }),
 ]) satisfies z.ZodType<ProductionStopResult>;
+
+export const productionReportExportSchema = z.object({
+  folder: z.string(),
+  htmlFile: z.string(),
+  jsonFile: z.string(),
+  contractedAmountIncluded: z.boolean(),
+}) satisfies z.ZodType<ProductionReportExport>;
+
+export const productionBurndownSchema = z.array(z.object({ date: calendarDate, hoursLogged: z.number() })) satisfies z.ZodType<ProductionBurndownPoint[]>;
