@@ -59,6 +59,9 @@ var declares = map[dawport.Capability]dawport.Level{
 	// request carries the narrator's approval for that one render, which the bridge uses up.
 	dawport.CapRenderWithFX:    dawport.Experimental,
 	dawport.CapMasterChainRead: dawport.Experimental,
+	// macro_render is the mastering port's Audacity row (ADR 0306, ADR 0460): REAPER has no macro manager, so this is Unsupported,
+	// not NotYetAvailable (port.go's own example is exactly this shape, the other way around: "Audacity has no punch-and-roll").
+	dawport.CapMacroRender: dawport.Unsupported,
 }
 
 // commandCapability is the capability each of bridge.Actions' commands belongs to. Actions asks its gate about a command by name, and

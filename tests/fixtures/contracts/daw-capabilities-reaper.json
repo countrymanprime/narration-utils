@@ -30,6 +30,12 @@
       "message": "REAPER is not connected to this app. Open this app from the Narration Utils action in REAPER.",
       "reason": "standalone"
     },
+    "macro_render": {
+      "available": false,
+      "level": "unsupported",
+      "message": "Mastering with an effect macro is not something REAPER can do.",
+      "reason": "unsupported"
+    },
     "markers": {
       "available": false,
       "level": "supported",

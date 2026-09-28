@@ -113,6 +113,16 @@ func TestCommands(t *testing.T) {
 			},
 		},
 		{
+			name: "ApplyMacro runs a saved macro by name",
+			run:  func(c *audacitybridge.Client) error { return c.ApplyMacro(ctx, "Mastering for ACX") },
+			sent: []string{`ApplyMacro: MacroName="Mastering for ACX"`},
+			check: func(t *testing.T, p *abt.Project) {
+				if !reflect.DeepEqual(p.MacrosApplied, []string{"Mastering for ACX"}) {
+					t.Errorf("macros applied = %v", p.MacrosApplied)
+				}
+			},
+		},
+		{
 			name: "Import adds audio",
 			run:  func(c *audacitybridge.Client) error { return c.Import(ctx, `D:\takes\pickup 3.flac`) },
 			sent: []string{`Import2: Filename="D:/takes/pickup 3.flac"`},
@@ -166,6 +176,7 @@ func TestCommandsRefuseBeforeSending(t *testing.T) {
 		"a negative label":               func(c *audacitybridge.Client) error { return c.SetLabel(ctx, -1, audacitybridge.LabelEdit{}) },
 		"a negative track":               func(c *audacitybridge.Client) error { return c.SetTrackName(ctx, -1, "x") },
 		"a track name with a quote":      func(c *audacitybridge.Client) error { return c.SetTrackName(ctx, 0, `a"b`) },
+		"a macro name with a quote":      func(c *audacitybridge.Client) error { return c.ApplyMacro(ctx, `a"b`) },
 		"an export path on another host": func(c *audacitybridge.Client) error { return c.Export(ctx, `\\nas\book\x.wav`, 1) },
 	}
 	for name, run := range cases {
