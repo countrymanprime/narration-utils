@@ -382,8 +382,11 @@ export function CreditsProjectValues(): $CancellablePromise<string> {
 }
 
 /**
- * CreditsRecordedLengths is a credits row's "actual recorded": the same track-based measurement every manuscript
- * chapter's Recorded column gets, read for the two credits ids from the same confirmed chapter-track-map.json.
+ * CreditsRecordedLengths is a credits row's "actual recorded" (credits-in-chapter-table.prd.md Phase 3): the same
+ * track-based measurement actual-recorded-column.prd.md gives every manuscript chapter (recordedLengthsFor), read
+ * for the two credits ids. Never an estimate (ADR 0193): a credits id has its own confirmed link, or none, in the
+ * same chapter-track-map.json every manuscript chapter uses (ADR 0333), so this reads it directly rather than
+ * through manuscript.Service's own RecordedLengths hook, which only ever sees the manuscript's own chapter ids.
  */
 export function CreditsRecordedLengths(): $CancellablePromise<string> {
     return $Call.ByID(334169345);
@@ -1868,7 +1871,8 @@ export function TeleprompterPause(paused: boolean): $CancellablePromise<string> 
 }
 
 /**
- * TeleprompterPunch resolves word's punch time again (the narrator may have kept reading since the preview) and
+ * TeleprompterPunch resolves word's punch time again (the narrator may have kept reading since the preview; an
+ * alignment of the same stretch is reused, punchAlignCache) and
  * moves REAPER's edit cursor there minus the pre-roll, through the DAW port's Puncher role. On a successful punch,
  * every anchor at or after word is dropped (the narrator is about to re-record from here, so an anchor from the take
  * being replaced would misplace the next punch, teleprompter.DropAnchorsFrom); that failing is logged, never
@@ -1881,7 +1885,9 @@ export function TeleprompterPunch(word: number): $CancellablePromise<string> {
 /**
  * TeleprompterPunchPreview resolves word's punch time and pre-roll without moving anything in REAPER: what the
  * narrator sees before confirming "Punch from here" (Phase 12's "UI showing resolved time, its source... and pre-roll
- * before moving"). word is the flag's own script word index; the chapter is whichever one is live right now.
+ * before moving"). word is the flag's own script word index; the chapter is whichever one is live right now. When the
+ * anchors do not bracket the word, this runs the offline alignment (a sidecar decode of up to two minutes of the
+ * recording, bounded by teleprompterLocateTimeout), so it can take a few seconds.
  */
 export function TeleprompterPunchPreview(word: number): $CancellablePromise<string> {
     return $Call.ByID(3160914767, word);
@@ -2193,6 +2199,38 @@ export function WorkspaceLoop(chapterID: string, firstToken: number, lastToken: 
  */
 export function WorkspacePeaks(chapterID: string): $CancellablePromise<string> {
     return $Call.ByID(1143383553, chapterID);
+}
+
+/**
+ * WorkspaceTakes lists the takes the narrator can set beside the passage (the tokens firstToken to lastToken of the
+ * chapter's stored alignment, snapped out to whole paragraphs): the other takes of the item it was heard on, the other
+ * retakes of its line on a fixed-lane track, and reads a take-review group set beside it (EP6). It reads only; it works
+ * with REAPER closed.
+ */
+export function WorkspaceTakes(chapterID: string, firstToken: number, lastToken: number): $CancellablePromise<string> {
+    return $Call.ByID(3010134085, chapterID, firstToken, lastToken);
+}
+
+/**
+ * WorkspaceTakesCompareStart compares the passage's usable takes as the one take comparison job (ADR 0165, ADR 0700):
+ * the same sidecar mode, state and cancel as a take-review group's comparison (TakeComparisonState and
+ * TakeComparisonCancel answer for it, with the passage's id as the job's FindingID), with a manifest built from the
+ * saved project. It saves one take_comparison finding whose id is computable from the passage, so the panel reads it back.
+ */
+export function WorkspaceTakesCompareStart(chapterID: string, firstToken: number, lastToken: number): $CancellablePromise<string> {
+    return $Call.ByID(286927960, chapterID, firstToken, lastToken);
+}
+
+/**
+ * WorkspaceUseTake makes a take of the passage the one that plays (EP7, ADR 0233, ADR 0700). candidateID is one of the
+ * ids WorkspaceTakes just offered: the host re-reads the alternates from the saved project and refuses an id it does
+ * not offer, so nothing but a listed take can be chosen. What happens depends on where the take came from: another take
+ * of the item is made active (set_active_take, one undo step); another retake on a fixed-lane track becomes the lane
+ * that plays (pick_retake_lane); a read from another item is added as a take (create_take) and then made active, in
+ * one action the page confirms first. Every REAPER refusal is answered as a refused outcome and changes nothing.
+ */
+export function WorkspaceUseTake(chapterID: string, firstToken: number, lastToken: number, candidateID: string): $CancellablePromise<string> {
+    return $Call.ByID(1964370133, chapterID, firstToken, lastToken, candidateID);
 }
 
 // Private type creation functions

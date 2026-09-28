@@ -23,7 +23,9 @@ const notHeardReason = "None of this part of the script was heard in this take, 
 // Request is one comparison's inputs, all from the host: the group as the store holds it, the project as it is saved,
 // and the manuscript chapter the group's span belongs to.
 type Request struct {
-	Group          findings.Finding
+	Group findings.Finding
+	// Passage, when set, is compared instead of Group: a run of paragraphs the narrator chose in the workspace's text.
+	Passage        *Passage
 	Project        tracks.Project
 	ProjectPath    string
 	ManuscriptPath string
@@ -48,7 +50,13 @@ func (c *Comparer) Compare(ctx context.Context, req Request) (findings.Finding, 
 	if c.Store == nil || c.Runner == nil {
 		return findings.Finding{}, fmt.Errorf("takecompare: the comparison is not configured")
 	}
-	group, err := GroupOf(req.Group)
+	var group Group
+	var err error
+	if req.Passage != nil {
+		group, err = groupOfPassage(*req.Passage)
+	} else {
+		group, err = GroupOf(req.Group)
+	}
 	if err != nil {
 		return findings.Finding{}, err
 	}
@@ -107,7 +115,9 @@ func (c *Comparer) align(ctx context.Context, req Request, group Group, reads []
 	}
 	span := results.Header.Span
 	switch {
-	case span.FirstUnit != group.FirstUnit || span.LastUnit != group.LastUnit:
+	case group.ByParagraph && (span.FirstParagraph != group.FirstParagraph || span.LastParagraph != group.LastParagraph):
+		return Results{}, fmt.Errorf("takecompare: the takes were aligned to paragraphs %d-%d, not the passage's %d-%d", span.FirstParagraph, span.LastParagraph, group.FirstParagraph, group.LastParagraph)
+	case !group.ByParagraph && (span.FirstUnit != group.FirstUnit || span.LastUnit != group.LastUnit):
 		return Results{}, fmt.Errorf("takecompare: the takes were aligned to sentences %d-%d, not the group's %d-%d", span.FirstUnit, span.LastUnit, group.FirstUnit, group.LastUnit)
 	case len(results.Takes) != len(compared):
 		return Results{}, fmt.Errorf("takecompare: the aligner answered for %d takes, not %d", len(results.Takes), len(compared))
@@ -142,10 +152,14 @@ func writeManifest(dir, chapterID string, group Group, reads []resolvedRead, com
 		}
 		takes = append(takes, manifestTake{ItemGUID: read.Item.GUID, TakeGUID: take.GUID, SourceFile: take.SourceFile, StartOffset: take.SOFFS, Length: read.Item.Length * rate})
 	}
+	span := map[string]int{"firstUnit": group.FirstUnit, "lastUnit": group.LastUnit}
+	if group.ByParagraph {
+		span = map[string]int{"firstParagraph": group.FirstParagraph, "lastParagraph": group.LastParagraph}
+	}
 	manifest := map[string]any{
 		"schemaVersion": manifestSchemaVersion,
 		"chapterId":     chapterID,
-		"span":          map[string]int{"firstUnit": group.FirstUnit, "lastUnit": group.LastUnit},
+		"span":          span,
 		"takes":         takes,
 	}
 	encoded, err := json.Marshal(manifest)

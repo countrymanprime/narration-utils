@@ -45,6 +45,44 @@ type Group struct {
 	LastUnit   int
 	Reads      []Read
 	Manuscript findings.Manuscript
+	// ByParagraph names the span by whole paragraphs (FirstParagraph..LastParagraph, in the chapter's order) instead of
+	// sentence units: a passage the workspace chose in the text (edit-and-proof-workspace.prd.md Phase 6), where only the
+	// sidecar knows how the chapter splits into sentences.
+	ByParagraph    bool
+	FirstParagraph int
+	LastParagraph  int
+}
+
+// Passage is a run of whole paragraphs of one chapter and the reads to compare over them, all chosen by the host from
+// the saved project (the page sends a chapter and a token range, never a GUID or a file: threat model 4f).
+type Passage struct {
+	// ID names the passage and is the comparison's store scope, so it is a file-name-safe token the host derives from the chapter, paragraphs and item (PassageFindingID).
+	ID             string
+	FirstParagraph int
+	LastParagraph  int
+	ChapterTitle   string
+	Reads          []Read
+}
+
+// PassageFindingID is the id of the take_comparison finding the comparison of passageID saves in projectPath.
+func PassageFindingID(projectPath, passageID string) string {
+	return findings.StableID(AnalyzerName, projectPath, passageID)
+}
+
+// groupOfPassage reads a passage as a group to compare, or says why it cannot be compared.
+func groupOfPassage(passage Passage) (Group, error) {
+	switch {
+	case passage.ID == "":
+		return Group{}, fmt.Errorf("this passage has no name to save its comparison under")
+	case passage.FirstParagraph < 0 || passage.LastParagraph < passage.FirstParagraph:
+		return Group{}, fmt.Errorf("this passage has no part of the script to compare its takes over")
+	case len(passage.Reads) < minReads:
+		return Group{}, fmt.Errorf("this passage has fewer than two takes, so there is nothing to compare")
+	}
+	return Group{
+		ID: passage.ID, Reads: passage.Reads, ByParagraph: true, FirstParagraph: passage.FirstParagraph, LastParagraph: passage.LastParagraph,
+		Manuscript: findings.Manuscript{ChapterTitle: passage.ChapterTitle},
+	}, nil
 }
 
 // GroupOf reads a take-review finding as a group to compare, or says why it cannot be compared.
@@ -122,4 +160,10 @@ func resolveRead(project tracks.Project, read Read) resolvedRead {
 
 func sameFile(a, b string) bool {
 	return strings.EqualFold(filepath.Clean(a), filepath.Clean(b))
+}
+
+// CheckRead says why read is not the audio the saved project has (empty when it is): the check Compare makes of every
+// read before it aligns one, exported so a caller can tell a narrator a take is not usable before asking.
+func CheckRead(project tracks.Project, read Read) string {
+	return resolveRead(project, read).Reason
 }

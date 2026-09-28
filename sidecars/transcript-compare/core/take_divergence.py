@@ -114,6 +114,19 @@ class TakeAlignment:
 # the span
 
 
+def build_paragraph_span(engine: ModuleType, paragraphs: Sequence[str], first_paragraph: int, last_paragraph: int) -> Span:
+    """The span of every sentence unit of paragraphs `first_paragraph`..`last_paragraph` (inclusive), for a passage
+    chosen by paragraph: only this module knows how the chapter splits into sentences, so the host names paragraphs
+    and the results say which units they were."""
+    units = engine.build_sentence_units(list(paragraphs))
+    if not (0 <= first_paragraph <= last_paragraph < len(paragraphs)):
+        raise SpanError(f"The paragraphs {first_paragraph}..{last_paragraph} are not within the chapter's {len(paragraphs)} paragraph(s)")
+    inside = [unit for unit, (_sentence, paragraph) in enumerate(units) if first_paragraph <= paragraph <= last_paragraph]
+    if not inside:
+        raise SpanError(f"The paragraphs {first_paragraph}..{last_paragraph} have no sentences")
+    return build_span(engine, paragraphs, inside[0], inside[-1])
+
+
 def build_span(engine: ModuleType, paragraphs: Sequence[str], first_unit: int, last_unit: int) -> Span:
     """The spoken words of sentence units `first_unit`..`last_unit` of a chapter's paragraphs,
     split into sentences exactly as the markers and `--find-repeats` split them."""
