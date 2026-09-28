@@ -31,8 +31,8 @@ type Options struct {
 // It is safe for concurrent use; requests are serialised, because the pipe carries one conversation.
 type Client struct {
 	transport Transport
-	timeout   time.Duration
-	lineEnd   string
+	timeout   time.Duration // +checklocksignore: set once in New, read-only after
+	lineEnd   string        // +checklocksignore: set once in New, read-only after
 
 	mu sync.Mutex // guards conn and reader, and serialises requests
 	// +checklocks:mu
@@ -125,6 +125,8 @@ type result struct {
 
 // exchangeLocked writes line and reads its reply, giving up at ctx's end. Both run on a goroutine so a transport whose Write or
 // Read blocks is unblocked by Close (the caller's dropLocked).
+//
+// +checklocks:c.mu
 func (c *Client) exchangeLocked(ctx context.Context, line string) (Reply, bool, error) {
 	conn, reader := c.conn, c.reader
 	done := make(chan result, 1)
@@ -160,6 +162,7 @@ func (c *Client) Close() error {
 	return c.dropLocked()
 }
 
+// +checklocks:c.mu
 func (c *Client) dropLocked() error {
 	if c.conn == nil {
 		return nil
