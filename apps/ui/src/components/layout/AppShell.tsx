@@ -12,12 +12,15 @@ import {
   faGear,
   faHouse,
   faMicrophone,
+  faMinus,
+  faPlus,
   faRotateLeft,
   faWaveSquare,
 } from '@fortawesome/free-solid-svg-icons';
 import { NavButton } from '../primitives/NavButton';
 import { NavDrawer } from '../primitives/NavDrawer';
 import { IconButton } from '../primitives/IconButton';
+import { Button } from '../primitives/Button';
 import { TooltipTarget } from '../primitives/Tooltip';
 import { dawCapabilityGate } from '../../dawAvailability';
 import { DemoBanner } from './DemoBanner';
@@ -73,6 +76,7 @@ export function AppShell({
   engine = 'daw',
   timer = null,
   history,
+  zoom,
   children,
 }: {
   pathname: string;
@@ -94,6 +98,8 @@ export function AppShell({
   timer?: RunningTimer | null;
   /** Page-level Back/Forward (app-navigation-and-zoom-controls.prd.md Phase 1): already guarded and gated by App.tsx. */
   history: { canGoBack: boolean; canGoForward: boolean; back: () => void; forward: () => void };
+  /** The header's zoom group (app-navigation-and-zoom-controls.prd.md Phase 2): `useZoom`'s own state and actions. */
+  zoom: { percent: number; canZoomOut: boolean; canZoomIn: boolean; zoomIn: () => void; zoomOut: () => void; reset: () => void; announcement: string };
   children: ReactNode;
 }) {
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -113,6 +119,12 @@ export function AppShell({
   const requiredReason = (item: NavItem) => gateFor(item).reason;
   const backTooltip = history.canGoBack ? 'Back (Alt+Left)' : 'Back (Alt+Left): no earlier page in this project';
   const forwardTooltip = history.canGoForward ? 'Forward (Alt+Right)' : 'Forward (Alt+Right): no later page yet';
+  // The header's zoom group (Phase 2, Q1/Q9): the readout is always shown and is itself the reset button, disabled
+  // only at exactly 100% (Q9 A). The reset tooltip's wording is the approved mock's (04-tooltip-reset-zoom.webp).
+  const zoomOutTooltip = 'Zoom out (Ctrl+-)';
+  const zoomInTooltip = 'Zoom in (Ctrl+=)';
+  const zoomResetTooltip = 'Reset zoom to 100% (Ctrl+0)';
+  const zoomAtDefault = zoom.percent === 100;
   // The wide rail's group heading (Q6): a visible `section-label`, referenced by the group's `aria-labelledby` so a
   // screen reader hears the stage name once, not twice. Shared by the sidebar and the drawer, which render the same markup.
   const groupHeadingId = (label: string) => `nav-group-${label.toLowerCase().replace(/\s+/g, '-')}`;
@@ -223,6 +235,34 @@ export function AppShell({
               <span className="truncate font-medium">{projectName}</span>
             </div>
             {timer && <TimerChip timer={timer} />}
+            {/* The zoom group (Phase 2, D79/ADR 0407): after a running timer chip, before the engine chip. */}
+            <div className="flex flex-none items-center gap-1" role="group" aria-label="Zoom">
+              <TooltipTarget text={zoomOutTooltip}>
+                <IconButton label="Zoom out" disabledReason={zoom.canZoomOut ? undefined : zoomOutTooltip} onClick={zoom.zoomOut}>
+                  <FontAwesomeIcon icon={faMinus} />
+                </IconButton>
+              </TooltipTarget>
+              <TooltipTarget text={zoomResetTooltip}>
+                <Button
+                  variant="ghost"
+                  aria-label={`Reset zoom to 100% (now ${zoom.percent}%)`}
+                  aria-disabled={zoomAtDefault || undefined}
+                  onClick={zoomAtDefault ? (event) => event.preventDefault() : zoom.reset}
+                  className="h-8 min-w-14 justify-center px-2 py-0 font-['IBM_Plex_Mono',ui-monospace,monospace] text-[0.8rem] font-normal tracking-normal normal-case aria-disabled:pointer-events-none aria-disabled:opacity-40"
+                >
+                  {zoom.percent}%
+                </Button>
+              </TooltipTarget>
+              <TooltipTarget text={zoomInTooltip}>
+                <IconButton label="Zoom in" disabledReason={zoom.canZoomIn ? undefined : zoomInTooltip} onClick={zoom.zoomIn}>
+                  <FontAwesomeIcon icon={faPlus} />
+                </IconButton>
+              </TooltipTarget>
+              {/* A level change is announced once, politely, debounced by useZoom - not on every wheel notch (Solution Detail). */}
+              <div aria-live="polite" className="sr-only">
+                {zoom.announcement}
+              </div>
+            </div>
             <EngineChip
               engine={engine}
               dawFileLinked={dawFileLinked}
