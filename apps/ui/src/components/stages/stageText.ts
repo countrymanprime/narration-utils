@@ -44,12 +44,12 @@ const EDITING_CAUSE_TEXT: Partial<Record<StageUnknownCause, { short: string; act
   provider_error: { short: 'the evidence could not be read', action: 'Check now to read it again.', resolve: 'check-now' },
 };
 
-/** The same causes, worded for the proofing pickups roll-up (proofing-readiness-signals.prd.md Phase 1): there is no
- * per-chapter "proofing check" dialog to open (unlike recording and editing), so every resolvable cause routes to the
- * Tracks page, a wait, or Check now - never `resolve: 'check'`, which `StageEvidence` would otherwise wire to the
- * wrong dialog. Each cause's `reason` (from the signal itself) already names the real action - run Transcript
- * Compare, decide the pickup - so this table's `action` only adds where to look next, not what the signal already
- * said. */
+/** The same causes, worded for the proofing signals instead (proofing-readiness-signals.prd.md Phases 1 and 5): there
+ * is no per-chapter "proofing check" dialog to open (unlike recording and editing), so every resolvable cause routes
+ * to the audio engine panel, a wait, or Check now - never `resolve: 'check'`, which `StageEvidence` would otherwise wire to
+ * the wrong dialog. Each cause's `reason` (from the signal itself) already names the real action - run Transcript
+ * Compare, measure on Master & QC, decide on the Review page - so this table's `action` only adds where to look
+ * next, not what the signal already said. */
 const PROOFING_CAUSE_TEXT: Partial<Record<StageUnknownCause, { short: string; action: string; resolve: StageCauseAction }>> = {
   never_analyzed: { short: 'not checked yet', action: 'Check now once you have run the check the reason above names.', resolve: 'check-now' },
   stale: { short: 'changed since the last check', action: 'Check now once you have run it again.', resolve: 'check-now' },

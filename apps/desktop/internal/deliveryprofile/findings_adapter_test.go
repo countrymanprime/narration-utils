@@ -39,7 +39,7 @@ func TestReviewFindingsAreOneFindingPerRuleNotMetOrNotMeasurable(t *testing.T) {
 	if len(got) != 3 || got["acx.rms"].ID == "" || got["acx.peak"].ID == "" || got["acx.noise_floor"].ID == "" {
 		t.Fatalf("review findings for rules %v, want exactly acx.rms, acx.peak and acx.noise_floor (advice is not a finding)", keys(got))
 	}
-	// The same IDs the Delivery page and the report carry, so a decision made on the Review page is the report's too.
+	// The same IDs Master & QC and the report carry, so a decision made on the Review page is the report's too.
 	judged := map[string]bool{}
 	for _, f := range EvaluateFile(report, ACX()).Findings {
 		judged[f.ID] = true

@@ -32,7 +32,7 @@ func deliveryProfilesPath() string {
 	return filepath.Join("AppData", "Roaming", "narration-utils", deliveryprofile.FileName)
 }
 
-// DeliveryProfilesState is what the Delivery page and Settings read: every profile the narrator can choose (built-ins
+// DeliveryProfilesState is what Master & QC and Settings read: every profile the narrator can choose (built-ins
 // first), the Global default, the current project's own choice (nil: the Global default; absent without a project),
 // the key of the profile it is judged against, and a notice when a choice could not be used.
 type DeliveryProfilesState struct {

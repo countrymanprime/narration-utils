@@ -1,7 +1,7 @@
 // The browser mock's delivery findings on the Review page (delivery-platform-profiles.prd.md Phase 9), answering the way
 // apps/desktop/delivery_findings.go and deliveryprofile.ReviewFindings do: when a measurement ends, and when the project's
 // profile changes, every measured file's rules that are not met or could not be measured are saved into the findings
-// store, one finding per rule per file with the id the Delivery page gives it; a rule met again resolves its finding
+// store, one finding per rule per file with the id Master & QC gives it; a rule met again resolves its finding
 // (not in the latest run), and a decision holds while the audio and the rule are the same.
 import type { DeliveryProfile, DeliveryProfilesApi, Finding, MeasureJob } from '../types';
 
@@ -30,7 +30,7 @@ export function mockDeliveryReviewFindings(job: MeasureJob): { files: string[]; 
     for (const result of file.rules) {
       if (result.status !== 'not_met' && result.status !== 'not_measurable') continue;
       const rule = profile.rules.find((candidate) => candidate.id === result.ruleId);
-      // The rule's own finding, not its advice (true peak, digital silence at an edge): advice stays on the Delivery page.
+      // The rule's own finding, not its advice (true peak, digital silence at an edge): advice stays on Master & QC.
       const raised = file.findings.find((candidate) => candidate.evidence?.rule === result.ruleId && candidate.evidence.advice === undefined);
       if (!rule || !raised) continue;
       findings.push({

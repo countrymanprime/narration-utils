@@ -31,5 +31,5 @@
     - group "Finish":
       - /children: equal
       - text: Finish
-      - button "Delivery"
+      - button "Master & QC"
   - button "Settings"

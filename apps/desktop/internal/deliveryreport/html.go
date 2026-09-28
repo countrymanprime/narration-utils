@@ -60,7 +60,7 @@ func (r Report) fileName(ref string) string {
 	return ref
 }
 
-// formatLevel writes a level with one decimal and a typographic minus, as the Delivery page does.
+// formatLevel writes a level with one decimal and a typographic minus, as Master & QC does.
 func formatLevel(value float64) string {
 	return strings.Replace(strconv.FormatFloat(value, 'f', 1, 64), "-", "−", 1)
 }

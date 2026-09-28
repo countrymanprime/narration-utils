@@ -44,7 +44,7 @@ const PROOF = { name: 'Proof', path: '/proof', icon: faWaveSquare, requiresManus
 // Pickups (stage-navigation-and-page-replacement.prd.md Phase 7): the proofer's pickup list, replacing the Tracks page's
 // Pickups dialog. Not gated: its import, export and jumps talk to REAPER and each says itself when REAPER is not there.
 const PICKUPS = { name: 'Pickups', path: '/pickups', icon: faRotateLeft, requiresManuscript: false, requiresDaw: false };
-const DELIVERY = { name: 'Delivery', path: '/delivery', icon: faGaugeHigh, requiresManuscript: false, requiresDaw: false };
+const MASTER_QC = { name: 'Master & QC', path: '/master', icon: faGaugeHigh, requiresManuscript: false, requiresDaw: false };
 
 // Grouped by production stage (stage-navigation-and-page-replacement.prd.md Phase 1, ADR 0407 item 3): Production,
 // Prep, Record, Review, Finish, with Settings pinned at the foot (below, not a group). Phase 1 holds each existing
@@ -56,7 +56,7 @@ const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
   { label: 'Prep', items: [SCRIPT, STORY_BIBLE] },
   { label: 'Record', items: [BOOTH] },
   { label: 'Review', items: [PROOF, PICKUPS] },
-  { label: 'Finish', items: [DELIVERY] },
+  { label: 'Finish', items: [MASTER_QC] },
 ];
 const isActivePath = (pathname: string, path: string) => (path === '/' ? pathname === '/' : pathname === path || pathname.startsWith(`${path}/`));
 
