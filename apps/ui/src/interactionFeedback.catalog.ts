@@ -75,6 +75,9 @@ export const SILENT_CATCHES: Record<string, string> = {
     'A button/shortcut set (zoomIn, zoomOut, reset); a failure leaves the readout at the level before the click, which the narrator can see and try again.',
   'src/hooks/useZoom.ts#3':
     'The resize-triggered re-read (Ctrl+wheel/pinch outside this hook); a failure just leaves the readout at its last known level until the next resize.',
+  // Phase 3 (app-navigation-and-zoom-controls.prd.md): the debounced persistence write, added after the three above.
+  'src/hooks/useZoom.ts#4':
+    'The debounced persist of the settled level (Q4 A); a failure just leaves the next launch opening at the last successfully saved level, and the narrator sees no error from a header control that already did what they asked.',
   // Phase 1 (app-navigation-and-zoom-controls.prd.md) added two more bare catches in this file (Back/Forward's own guard,
   // and the nav's original one, now #7), renumbering what follows; stage navigation Phase 2's timer read is #1.
   'src/App.tsx#6': 'Best effort recovery for a popstate the app did not start: a reset that fails leaves the finished results in place, which is harmless.',

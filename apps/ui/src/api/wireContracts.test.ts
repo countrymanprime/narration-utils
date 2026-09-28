@@ -80,6 +80,7 @@ import { dawLaunchResultSchema, dawLinkResultSchema, projectFolderSelectionSchem
 import {
   creditsAnnouncementsSchema,
   creditsProjectValuesResultSchema,
+  creditsRecordedLengthsSchema,
   creditsSetupStateSchema,
   creditsRenderResultSchema,
   creditsStatusesSchema,
@@ -932,6 +933,26 @@ describe('answers of the mock client for the manuscript, Story Bible and project
     expectMatches(creditsStatusesSchema, afterClosing, 'mock credits statuses, both set');
     expect(afterClosing).toEqual({ opening: 'finalized', closing: 'recording' });
     expect(await api.creditsStatuses()).toEqual(afterClosing);
+  });
+
+  it('the credits rows recorded lengths, never leaking a manuscript chapter link (credits-in-chapter-table.prd.md, Phase 3)', async () => {
+    const api = createMockApi();
+    const unlinked = await api.creditsRecordedLengths();
+    expectMatches(creditsRecordedLengthsSchema, unlinked, 'mock credits recorded lengths, neither linked');
+    expect(unlinked).toEqual({ opening: { recordedUnavailable: 'unlinked' }, closing: { recordedUnavailable: 'unlinked' } });
+
+    const tracks = await api.tracksList();
+    const confirmed = await api.chapterTrackMapConfirm(tracks.tracks[0].guid, 'credits-opening');
+    expect(confirmed.chapterTitle).toBe('Opening credits');
+
+    const afterLink = await api.creditsRecordedLengths();
+    expectMatches(creditsRecordedLengthsSchema, afterLink, 'mock credits recorded lengths, opening linked');
+    expect(afterLink.closing).toEqual({ recordedUnavailable: 'unlinked' });
+    expect('recordedSeconds' in afterLink.opening).toBe(true);
+
+    // The linked track went to credits-opening, never to a manuscript chapter of the same track.
+    const chapters = await api.manuscriptChapters();
+    expect(chapters.every((chapter) => chapter.recordedUnavailable === 'unlinked')).toBe(true);
   });
 
   it('the DAW catalog list and open-download-page answers, detected and not detected (Phase 2)', async () => {
@@ -2648,6 +2669,7 @@ describe('answers of the mock client for the settings, voice, model, transcript 
       'saveCreditsRetailSample',
       'creditsStatuses',
       'setCreditsStatus',
+      'creditsRecordedLengths',
       'pronunciationOnlineKeyStatus',
       'pronunciationOnlineKeySet',
       'pronunciationOnlineKeyClear',
@@ -2701,6 +2723,7 @@ describe('answers of the mock client for the settings, voice, model, transcript 
       'deleteCreditsTemplate',
       'companionModeEnter',
       'companionModeExit',
+      'windowSaveZoom',
     ];
     const NOT_A_REQUEST = [
       'mediaUrl',

@@ -4,6 +4,7 @@
  * every CreditsRenderResult the UI sees, so what Settings previews here is exactly what later phases (the estimate,
  * the teleprompter) will read and count.
  */
+import type { RecordedUnavailable } from './manuscript';
 
 /** kind: "opening", "closing" or "chapter_announcement" (Open Question C8; chapter announcements render per chapter, Phase 5). */
 export type CreditTemplate = { id: string; kind: string; name: string; body: string; builtIn?: boolean };
@@ -79,6 +80,15 @@ export type CreditsStatus = string;
  * UI treats that as "not_started", the same default a manuscript chapter with no note has. */
 export type CreditsStatuses = Record<string, CreditsStatus>;
 
+/** A credits row's "actual recorded" (Credits in the Chapter Table, Phase 3): the same track-based measurement
+ * `ManuscriptChapter.recordedSeconds`/`recordedUnavailable` give every manuscript chapter (`RecordedUnavailable`,
+ * actual-recorded-column.prd.md), never an estimate (ADR 0193), read for a credits id's own confirmed link in the
+ * same chapter-track-map.json. */
+export type CreditsRecordedLength = { recordedSeconds: number } | { recordedUnavailable: RecordedUnavailable };
+
+/** CreditsRecordedLengths' payload: one entry per credits kind, always both present. */
+export type CreditsRecordedLengths = { opening: CreditsRecordedLength; closing: CreditsRecordedLength };
+
 /** One token the credits setup prompt asks for (credits-token-setup-and-front-matter-detection PRD Phase 2): `token` is its
  * render name ("Copyright Holder"), `field` the `CreditValues` key to fill ("copyrightHolder"), and `candidate` the value
  * detected from the manuscript to prefill (show its `source` and `lines` as the caption; `low` confidence means "check this"). */
@@ -137,4 +147,7 @@ export interface CreditsApi {
   /** Sets kind ("opening" or "closing") to status, on the project manifest so it survives Replace manuscript and Clear
    * derived data, unlike a manuscript chapter's own status. */
   setCreditsStatus(kind: string, status: CreditsStatus): Promise<CreditsStatuses>;
+  /** Reads both credits rows' "actual recorded" (Credits in the Chapter Table, Phase 3): never an estimate, like a
+   * manuscript chapter's own Recorded column. */
+  creditsRecordedLengths(): Promise<CreditsRecordedLengths>;
 }

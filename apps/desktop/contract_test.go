@@ -697,6 +697,19 @@ func TestContractCreditsStatuses(t *testing.T) {
 	check("credits-status-set", set)
 }
 
+// CreditsRecordedLengths' payload (Credits in the Chapter Table, Phase 3): both kinds unavailable before any track
+// is linked and no saved project exists.
+func TestContractCreditsRecordedLengths(t *testing.T) {
+	host := hostWithExtras(t, 10)
+	lengths, err := host.CreditsRecordedLengths()
+	if err != nil {
+		t.Fatal(err)
+	}
+	var decoded any
+	decodeInto(t, lengths, &decoded)
+	contractfile.Check(t, "credits-recorded-lengths", decoded)
+}
+
 // The take-review findings as the Review page lists them (FindingsList filtered to the take-review analyzer,
 // take-review phase 5, ADR 0069): one partial pickup (a read below full coverage) and one near-identical
 // duplicate_read (full coverage, both reads above the quality bar), each with its reads in evidence.members, which
