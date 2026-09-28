@@ -54,7 +54,6 @@ export const globalStates: StateEntry[] = [
     page: 'global',
     state: 'theme-light',
     description: 'Home with Light explicitly selected in Settings > Appearance',
-    sameAs: { of: 'home/default', reason: 'Light is what Home already renders in by default, so explicitly selecting it changes nothing visible.' },
   },
   { page: 'global', state: 'theme-dark', description: 'Home with Dark explicitly selected in Settings > Appearance' },
 ];

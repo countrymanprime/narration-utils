@@ -7,7 +7,12 @@ export const shellStates: StateEntry[] = [
   // already show both Back and Forward disabled at the first page, so that needs no row of its own. Captured
   // at the reflow width too (ADR 0061's declared extension, PRD Solution Detail): the header at 390px is what
   // the narrator sees at high zoom, and no shell state was captured there before.
-  { page: 'shell', state: 'history-enabled', description: 'Header, after one navigation: Back enabled, Forward disabled', ...REFLOW },
+  {
+    page: 'shell',
+    state: 'history-enabled',
+    description: 'Header, after one navigation (Story Bible): Back enabled, focused and its tooltip shown; Forward disabled',
+    ...REFLOW,
+  },
   { page: 'shell', state: 'history-forward', description: 'Header, after a Back: both Back and Forward enabled', ...REFLOW },
   // The engine chip (stage-navigation-and-page-replacement.prd.md Phase 1, Q7), replacing the REAPER pill: its three
   // REAPER states are the existing default/`daw-not-linked`/mismatch captures of other pages' headers, so only the
