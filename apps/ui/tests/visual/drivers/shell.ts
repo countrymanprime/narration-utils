@@ -10,6 +10,9 @@ export const shellDrivers: Record<string, Driver> = {
     // Reaching any page by one nav click also enables Back there, so the header alone is what tells this state apart
     // from the page it landed on: focus Back for its on-button focus ring (button:focus-visible, components.css), a
     // plain style on the button itself rather than a portalled popup that would need its own axe debt declaration.
+    // A Tab first, regardless of where it lands: Chromium only matches :focus-visible for a later script .focus() once
+    // the page's last real input was a key press, not the click the nav just made.
+    await page.keyboard.press('Tab');
     await page.getByRole('button', { name: 'Back' }).focus();
   },
   // After a Back from that page, both Back and Forward are enabled.
