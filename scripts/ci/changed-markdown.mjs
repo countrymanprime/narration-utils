@@ -36,3 +36,24 @@ export function changedMarkdownFiles({ base, head = 'HEAD', cwd = process.cwd() 
   });
   return parseChangedFiles(output).filter(isMarkdownFile);
 }
+
+/** Whether `ref` names a commit in the repository at `cwd`. */
+export function refExists(ref, cwd = process.cwd()) {
+  try {
+    execFileSync('git', ['rev-parse', '--verify', '--quiet', `${ref}^{commit}`], { cwd, stdio: 'ignore' });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * The ref to diff a change against: `origin/<baseRef>` (a pull request's base, GITHUB_BASE_REF in CI), or `origin/main`
+ * outside a pull request. A pull request stacked on another branch has a checkout that holds `origin/main` but not
+ * `origin/<baseRef>`; its HEAD is then GitHub's merge commit, whose first parent is the base's tip, so `HEAD^1` stands in.
+ */
+export function resolveBase({ baseRef, hasRef = refExists } = {}) {
+  if (!baseRef) return 'origin/main';
+  const remote = `origin/${baseRef}`;
+  return hasRef(remote) ? remote : 'HEAD^1';
+}
