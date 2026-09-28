@@ -11,6 +11,7 @@ import { Panel } from '../primitives/Panel';
 import { StageGrid } from '../primitives/StageGrid';
 import { StatTile } from '../primitives/StatTile';
 import { Toolbar, ToolbarButton } from '../primitives/Toolbar';
+import { Tooltip } from '../primitives/Tooltip';
 import { PlanPanel } from './PlanPanel';
 import { StatusReportPanel } from './StatusReportPanel';
 import { BOARD_COLUMNS, boardCell, deadlineFigure, formatClock, formatPfh, formatRate, nextUpLine, stageHoursHint } from './productionFormat';
@@ -192,15 +193,25 @@ export function ProductionPage() {
   const running = overview?.running ?? null;
   const runningChapter = running ? overview?.chapters.find((chapter) => chapter.id === running.chapterId) : undefined;
   const chapters = overview?.chapters ?? [];
+  const deadline = overview ? deadlineFigure(overview.deadline, overview.totals.chapters - overview.totals.finalizedChapters) : undefined;
 
   return (
     <div className="mx-auto flex max-w-6xl flex-col gap-4">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
           <Heading title="Production">
-            {overview
-              ? `${overview.totals.chapters} chapters · ${overview.totals.wordCount.toLocaleString('en-US')} words · ${overview.totals.finalizedChapters} finalized. Time is logged only while you run a timer, and every figure comes from logged hours and measured audio.`
-              : 'Your time, pace and delivery date for this book.'}
+            {overview && deadline ? (
+              <>
+                {`${overview.totals.chapters} chapters · ${overview.totals.wordCount.toLocaleString('en-US')} words`}
+                {overview.deadline && ` · ${deadline.hint} (${deadline.value})`}
+                <Tooltip
+                  label="About these figures"
+                  text="Time is logged only while you run a timer, and every figure comes from logged hours and measured audio."
+                />
+              </>
+            ) : (
+              'Your time, pace and delivery date for this book.'
+            )}
           </Heading>
         </div>
         <Toolbar label="Production actions">
@@ -257,7 +268,8 @@ export function ProductionPage() {
             <NextUp items={overview.nextUp} timerRunning={running !== null} starting={starting} onStart={(item) => void start(item)} />
             <Panel title="Chapter pipeline">
               <p className="mt-1 text-xs" style={MUTED}>
-                Each stage&apos;s readiness is the stage suggestion shown on Home. Prep and Delivery are not available yet: no check reports them per chapter.
+                Each stage&apos;s readiness comes from the same stage-suggestion check used across the app. Prep and Delivery are not available yet: no check
+                reports them per chapter.
               </p>
               {chapters.length === 0 ? (
                 <p className="mt-3 text-sm" style={MUTED}>

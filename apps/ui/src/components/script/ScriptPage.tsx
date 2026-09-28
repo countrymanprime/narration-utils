@@ -613,7 +613,7 @@ export function ScriptPage({
       >
         <ScriptChapterList chapters={chapters} activeId={active} toConfirm={toConfirm} select={(id) => showChapter(id)} />
         <div className="mt-4 border-t border-[var(--border)] pt-3">
-          <h2 className={`${SCRIPT_SECTION_LABEL} mb-2 px-2`}>Marks</h2>
+          <h2 className={`${SCRIPT_SECTION_LABEL} mb-2 px-2`}>Markup layer</h2>
           <MarksKey className="flex-col px-2" />
         </div>
       </aside>
@@ -931,13 +931,30 @@ export function ScriptPage({
   );
 }
 
-// The key to the marks in the text: the Story Bible categories and notes (mock 02's "Markup layer"). A column of the left rail from
-// `xl`, a row in the band below it.
+// The key to the marks in the text (mock 02's "Markup layer"): the reader's own marks (MarkupMark.tsx - speaker, word
+// stress, breath and pause) first, the Story Bible categories and notes after. A column of the left rail from `xl`, a row
+// in the band below it.
 function MarksKey({ className }: { className: string }) {
   return (
     <div
       className={`flex gap-x-4 gap-y-[0.65rem] font-['Barlow_Condensed',sans-serif] text-[0.72rem] tracking-wider text-[var(--text-muted)] uppercase ${className}`}
     >
+      <span className="flex items-center gap-1">
+        <span className="rounded-[0.2rem] bg-[var(--character-soft)] px-[0.35em] text-[var(--character-text)] normal-case">Aa</span>
+        Speaker
+      </span>
+      <span className="flex items-center gap-1">
+        <span className="normal-case underline [text-decoration-color:var(--accent)] decoration-dotted decoration-2 underline-offset-[0.22em]">Aa</span>
+        Word stress
+      </span>
+      <span className="flex items-center gap-1">
+        <span className="font-bold text-[var(--accent-strong)]">/</span>
+        Breath
+      </span>
+      <span className="flex items-center gap-1">
+        <span className="font-bold text-[var(--accent-strong)]">//</span>
+        Pause
+      </span>
       {[...STORY_BIBLE_TABS.filter((item) => item !== 'All'), 'Note'].map((name) => (
         <span key={name} className="flex items-center gap-1">
           <span className={CAT_DOT_CLASS} style={{ background: CAT_DOT_BG[categoryCssName(name === 'Location' ? 'Place' : name)] }} />

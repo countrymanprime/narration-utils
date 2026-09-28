@@ -275,8 +275,8 @@ export function Settings({
                       <div className="font-medium">{data.dawFileLinked ? 'REAPER project linked' : 'No REAPER project linked'}</div>
                       <div style={{ color: 'var(--text-muted)' }}>
                         {data.dawFileLinked
-                          ? 'Tracks and Proofing read from the linked .rpp file.'
-                          : 'Link a REAPER project (.rpp) file to unlock Tracks and Proofing.'}
+                          ? 'Tracks and Proof read from the linked .rpp file.'
+                          : 'Link a REAPER project (.rpp) file to unlock Tracks and Proof.'}
                       </div>
                     </div>
                   </div>

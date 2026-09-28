@@ -532,7 +532,7 @@ describe('App (integration, driven through the mock NarrationApi)', () => {
     expect(window.location.pathname).toBe('/proof');
     const row = await screen.findByText(/pink eyes/);
     fireEvent.click(row);
-    fireEvent.click(await screen.findByRole('button', { name: 'Show in manuscript' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Show in Script' }));
     await waitFor(() => expect(window.location.pathname).toBe('/script'));
   });
 

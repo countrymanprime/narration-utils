@@ -194,8 +194,7 @@ function pickupsSignal(chapter: ManuscriptChapter, scenario: StageProofingScenar
   return {
     ...base,
     state: 'not_met',
-    reason:
-      '1 open pickup(s) to clear up (1 Transcript Compare). Decide each on the Review page; a dismissal is the only way to close one without re-recording.',
+    reason: '1 open pickup(s) to clear up (1 Transcript Compare). Decide each on Proof; a dismissal is the only way to close one without re-recording.',
     evidence: [
       { ...source, value: '1 open, 0 dismissed; current' },
       { kind: 'pickup', label: 'Transcript Compare: discrepancy', value: '“form” heard as “from”', findingId: `mock-proofing-finding-${chapter.id}` },
