@@ -36,6 +36,7 @@ import { createProofingMock } from './mockHost/proofing';
 import { createReaperActionsMock } from './mockHost/reaperActions';
 import { createChapterTracksMock } from './mockHost/chapterTracks';
 import { createStoryBibleMock } from './mockHost/storyBible';
+import { createCharacterMock } from './mockHost/character';
 import { createSystemMock, invalidPayloadOverrides } from './mockHost/system';
 import { createPronunciationLookupMock } from './mockHost/pronunciationLookup';
 
@@ -73,6 +74,7 @@ export function createMockApi(
     peekCoverage: (chapterId) => peekCoverage(chapterId),
   });
   const storyBible = createStoryBibleMock(s, initial, manuscriptReady, assets);
+  const character = createCharacterMock(s);
   const teleprompter = createTeleprompterMock({
     ready: manuscriptReady,
     chapters: () => s.chapters,
@@ -198,6 +200,7 @@ export function createMockApi(
     ...manuscript.bindings,
     ...settings.bindings,
     ...storyBible.bindings,
+    ...character.bindings,
     ...assets.bindings,
     ...proofing.bindings,
     ...reaperActions.bindings,

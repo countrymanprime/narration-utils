@@ -101,6 +101,23 @@ export type GuideBuildResult =
   | { status: 'started'; job: WorkJob }
   | { status: 'asset_required'; model: LanguageModel; installState: AssetInstallState; downloadSize: number; diskSize: number; installPath: string };
 
+/** One entry of the Story Bible's dialogue_cues (character-continuity-review.prd.md Phase 2): a quoted span with
+ * its resolved (or unknown) speaker. A document-level list, a sibling of the entity list, not per-entity data. */
+export type GuideDialogueCueEvidence = { chapterId: string; paragraphId: string; excerpt: string; tag: string };
+export type GuideDialogueCueSpeakerSource = 'tag' | 'continuation' | 'unknown' | 'correction';
+export type GuideDialogueCue = {
+  id: string;
+  chapterId: string;
+  paragraphId: string;
+  quote_start: number;
+  quote_end: number;
+  quote_text: string;
+  speaker_entity_id: string | null;
+  speaker_source: GuideDialogueCueSpeakerSource;
+  evidence: GuideDialogueCueEvidence;
+  corrected: boolean;
+};
+
 export interface StoryBibleApi {
   /**
    * Starts the Story Bible build with the language model the narrator selected, or answers `asset_required` when that model is not
@@ -141,4 +158,12 @@ export interface StoryBibleApi {
    * line, never dropped.
    */
   guidePronunciationImportQueriesCsv(csvText: string): Promise<QueryImportResult>;
+  /** The Story Bible's extracted dialogue cues (character-continuity-review.prd.md Phase 2): one entry per quoted
+   * span, with its resolved or unknown speaker. */
+  guideDialogueCues(): Promise<GuideDialogueCue[]>;
+  /**
+   * Records the narrator's own attribution for one dialogue cue. `speakerEntityId` of `"unknown"` or `""` clears
+   * the cue back to unknown. A rebuild never overwrites a correction (mirroring the entity lock guard, ADR 0007).
+   */
+  guideCorrectCue(cueId: string, speakerEntityId: string): Promise<void>;
 }

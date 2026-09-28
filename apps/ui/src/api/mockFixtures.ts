@@ -2,10 +2,13 @@
 // public-domain Alice's Adventures in Wonderland. Multiple real-text
 // paragraphs per chapter make this a useful reader and proofing demo.
 import type {
+  ApprovedCharacterReference,
   ChapterTagsEmbedResult,
   ChapterTagsPreview,
+  CharacterRegion,
   Discrepancy,
   Finding,
+  GuideDialogueCue,
   GuideEntity,
   LineIdentityLine,
   LineIdentityState,
@@ -374,6 +377,68 @@ export const WIRE_ENTITIES: GuideEntity[] = [
     relationships: [{ id: 'mad-hatter', name: 'Hatter', label: 'takes tea with' }],
     occurrences: [occurrence(6, 0), occurrence(6, 2)],
     occurrence_count: 2,
+  },
+];
+
+// character-continuity-review.prd.md Phase 6 (non-acoustic part only; D87 benches every acoustic-drift binding).
+// The saved REAPER project's regions the narrator can approve as voice references: three candidates, none yet
+// approved by default (`characterReferences` below is where an approval lives), so the "approve a reference"
+// flow itself has something to point at.
+export const WIRE_CHARACTER_REGIONS: CharacterRegion[] = [
+  { index: 1, name: 'Alice ref A', start: 12.5, end: 18.2, guid: '{C0FFEE00-0000-0000-0000-000000000001}' },
+  { index: 2, name: 'Hatter ref A', start: 40.0, end: 47.8, guid: '{C0FFEE00-0000-0000-0000-000000000002}' },
+  { index: 3, name: 'March Hare ref A', start: 52.1, end: 58.6, guid: '{C0FFEE00-0000-0000-0000-000000000003}' },
+];
+
+// Two references already approved by default, so the character bible view has something to show without first
+// driving an approval: Alice's is unchanged since approval; the Hatter's names a region WIRE_CHARACTER_REGIONS
+// no longer has by that GUID, so it demonstrates "changed since approval" without a second fixture set.
+export const WIRE_CHARACTER_REFERENCES: ApprovedCharacterReference[] = [
+  {
+    id: 'ref-alice-1',
+    characterId: 'alice',
+    regionGuid: '{C0FFEE00-0000-0000-0000-000000000001}',
+    snapshot: { name: 'Alice ref A', start: 12.5, end: 18.2 },
+    approvedAt: '2026-09-20T09:00:00.000Z',
+    changedSinceApproval: false,
+  },
+  {
+    id: 'ref-hatter-1',
+    characterId: 'mad-hatter',
+    regionGuid: '{C0FFEE00-0000-0000-0000-000000000099}',
+    snapshot: { name: 'Hatter ref (moved)', start: 39.0, end: 46.0 },
+    approvedAt: '2026-09-21T09:00:00.000Z',
+    note: 'Re-approve once the tea-party region is finalized.',
+    changedSinceApproval: true,
+  },
+];
+
+// One tagged cue (Alice) and one left unknown (three or more active speakers in the scene, ADR 0020), so
+// attribution correction has something to correct without seeding every quote in the demo chapter.
+export const WIRE_DIALOGUE_CUES: GuideDialogueCue[] = [
+  {
+    id: 'cue-1',
+    chapterId: 'chapter-1',
+    paragraphId: 'p-3',
+    quote_start: 0,
+    quote_end: 15,
+    quote_text: 'Oh dear!',
+    speaker_entity_id: 'alice',
+    speaker_source: 'tag',
+    evidence: { chapterId: 'chapter-1', paragraphId: 'p-3', excerpt: 'Oh dear!', tag: 'said Alice' },
+    corrected: false,
+  },
+  {
+    id: 'cue-2',
+    chapterId: 'chapter-6',
+    paragraphId: 'p-24',
+    quote_start: 0,
+    quote_end: 20,
+    quote_text: 'Have some wine.',
+    speaker_entity_id: null,
+    speaker_source: 'unknown',
+    evidence: { chapterId: 'chapter-6', paragraphId: 'p-24', excerpt: 'Have some wine.', tag: '' },
+    corrected: false,
   },
 ];
 
