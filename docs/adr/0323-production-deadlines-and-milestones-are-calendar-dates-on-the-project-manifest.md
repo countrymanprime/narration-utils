@@ -6,7 +6,7 @@
 
 ## Context
 
-The [production tracking PRD](../prds/production-tracking.prd.md) Phase 3 adds the book's delivery deadline, the contracted amount and a list of milestones (Q3, Q5). Q3's recommendation (A) puts them on `project.Manifest` beside `Credits`, so they survive Replace manuscript and Clear derived data. Its Technical Approach sketches the deadline as `Deadline *time.Time`.
+The production tracking PRD (delivered and deleted; `git log --diff-filter=D -- docs/prds/production-tracking.prd.md` finds it) Phase 3 adds the book's delivery deadline, the contracted amount and a list of milestones (Q3, Q5); how it works now is in [Production](../guides/using-the-app/production.md). Q3's recommendation (A) puts them on `project.Manifest` beside `Credits`, so they survive Replace manuscript and Clear derived data. Its Technical Approach sketches the deadline as `Deadline *time.Time`.
 
 A deadline is a day, not an instant. The narrator picks "1 December". A `time.Time` records an instant in some zone, so the same stored value can show as 30 November or 2 December depending on where and when it is read. The app would also have to choose a time of day the narrator never gave. Milestone due dates have the same problem.
 

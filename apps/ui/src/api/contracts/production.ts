@@ -2,7 +2,7 @@ import type { ChapterStatus, ManuscriptContentKind, RecordedUnavailable } from '
 import type { StageVerdict } from './stages';
 
 /**
- * Production tracking (docs/prds/production-tracking.prd.md). Phase 3: the book's deadline, contracted amount and
+ * Production tracking (the PRD, delivered and deleted; ADR 0028). Phase 3: the book's deadline, contracted amount and
  * milestones, stored on the project manifest (apps/desktop/bindings_production.go) so they survive Replace manuscript.
  * Dates are calendar dates written "YYYY-MM-DD" (ADR 0323), never a time of day.
  */
@@ -117,6 +117,13 @@ export type ProductionReportExport = {
   contractedAmountIncluded: boolean;
 };
 
+/**
+ * One calendar date of the book's logged-hours burndown (ProductionBurndown, production-tracking.prd.md Phase 6,
+ * Could): every hour logged by the end of that day, added up from every earlier day. Data only - a future chart
+ * primitive (out of this PRD's scope) would plot it.
+ */
+export type ProductionBurndownPoint = { date: string; hoursLogged: number };
+
 export interface ProductionApi {
   /** Reads this project's deadline, contracted amount and milestones; an empty plan when none are set. */
   productionPlan(): Promise<ProductionPlan>;
@@ -139,4 +146,7 @@ export interface ProductionApi {
    * without a project.
    */
   productionStatusReport(includeContractedAmount: boolean): Promise<ProductionReportExport>;
+  /** The book's logged hours by day, one point per day from the first stopped session to the last; empty until one
+   * is logged. Data only, for a future chart primitive (out of this PRD's scope). */
+  productionBurndown(): Promise<ProductionBurndownPoint[]>;
 }
