@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, expect, it } from 'vitest';
-import { BADGE_STYLE } from './EntitySummary';
+import { ENTITY_BADGE_COLORS } from './EntitySummary';
 
 // ADR 0059: a badge's text is the derived `--<token>-text` of its kind (the kind colour mixed toward --text), on the kind's
 // own soft fill; the pure kind colour on its soft fill was 3.0 to 4.4:1. The palette guard reads tokens, not component
@@ -28,14 +28,14 @@ const FILL: Record<string, string> = {
 };
 describe('entity badge colours (ADR 0059)', () => {
   it('has a badge for every kind and no other', () => {
-    expect(Object.keys(BADGE_STYLE).sort()).toEqual(Object.keys(TOKEN).sort());
+    expect(Object.keys(ENTITY_BADGE_COLORS).sort()).toEqual(Object.keys(TOKEN).sort());
   });
 
   for (const [kind, token] of Object.entries(TOKEN)) {
     it(`draws a ${kind} badge in --${token}-text on ${FILL[kind]}`, () => {
-      const style = BADGE_STYLE[kind];
-      expect(style.color).toBe(`var(--${token}-text)`);
-      expect(style.background).toBe(FILL[kind]);
+      const colors = ENTITY_BADGE_COLORS[kind];
+      expect(colors.text).toBe(`var(--${token}-text)`);
+      expect(colors.fill).toBe(FILL[kind]);
     });
   }
 });
