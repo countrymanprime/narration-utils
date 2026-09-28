@@ -8,7 +8,7 @@
   },
   "refused_no_anchor": {
     "outcome": "refused",
-    "message": "there's no punch anchor near this word yet: read a little further, then try again"
+    "message": "there's no timing for this word yet: record or read a little further, then try again"
   },
   "refused_no_chapter": {
     "outcome": "refused",
@@ -20,7 +20,7 @@
   },
   "resolved_alignment": {
     "outcome": "resolved",
-    "resolvedTime": 7,
+    "resolvedTime": 12.666666666666666,
     "source": "alignment",
     "preRoll": 3
   },
@@ -28,6 +28,12 @@
     "outcome": "resolved",
     "resolvedTime": 2,
     "source": "anchor",
+    "preRoll": 3
+  },
+  "resolved_estimate": {
+    "outcome": "resolved",
+    "resolvedTime": 7,
+    "source": "estimate",
     "preRoll": 3
   }
 }

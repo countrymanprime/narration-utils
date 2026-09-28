@@ -49,6 +49,23 @@ describe('ReaderFlagsPanel "Punch from here"', () => {
     await waitFor(() => expect(screen.queryByRole('alertdialog', { name: 'Punch from here' })).toBeNull());
   });
 
+  it.each([
+    ['anchor', 'Timed from your reading just now.'],
+    ['alignment', 'Timed by finding the word in your recording.'],
+    ['estimate', 'Estimated from your reading pace'],
+  ] as const)('says where a %s time came from before anything moves', async (source, label) => {
+    const user = userEvent.setup();
+    renderPanel(
+      { teleprompterPunchPreview: async () => ({ outcome: 'resolved', resolvedTime: 12.5, source, preRoll: 3 }) },
+      { daw: { toggles: { punch: 'on' } } },
+    );
+
+    await user.click(screen.getByRole('button', { name: 'Punch from here' }));
+    const dialog = await screen.findByRole('alertdialog', { name: 'Punch from here' });
+
+    expect(dialog.textContent).toContain(label);
+  });
+
   it('cancelling the confirm dialog moves nothing', async () => {
     const user = userEvent.setup();
     const { api } = renderPanel({}, { daw: { toggles: { punch: 'on' } } });
