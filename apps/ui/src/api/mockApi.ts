@@ -20,6 +20,7 @@ import { createFindingsMock } from './findingsMock';
 import { createTakeReviewScanMock } from './takeReviewMock';
 import { createTakeComparisonMock } from './takeComparisonMock';
 import { createMeasureMock } from './measureMock';
+import { createRenderEncodeMasterMock } from './renderEncodeMasterMock';
 import { DELIVERY_REVIEW_ANALYZER, mockDeliveryReviewFindings, resavingAfterProfileChange } from './deliveryReviewMock';
 import { createDeliveryProfilesMock } from './deliveryProfilesMock';
 import { createDiagnosticsMock } from './diagnosticsMock';
@@ -134,7 +135,7 @@ export function createMockApi(
   // check-derived misread flag are the same event, merged by overlayFindings into one reviewable flag, exactly as
   // mockups/edit-and-proof-workspace/02-flag-detail-open.webp shows. Computed fresh on every findings read
   // (FindingsMockOptions.lazySeed), not once at boot: chapter-1 usually has no track link yet when this mock is
-  // built (the narrator, or the visual suite's own driver, confirms one on Tracks after the app has already
+  // built (the narrator, or the visual suite's own driver, confirms one in the audio engine panel after the app has already
   // started), so a one-off boot-time computation would see no live item and never find this finding a home.
   const workspaceOverlayFinding = (): Finding[] => {
     const source = mockMisreadFindingSource(workspaceDeps, 'chapter-1');
@@ -189,6 +190,7 @@ export function createMockApi(
     const review = mockDeliveryReviewFindings(job);
     saveFileFindings(DELIVERY_REVIEW_ANALYZER, review.files, review.findings);
   });
+  const renderEncodeMaster = createRenderEncodeMasterMock(endJob, initial.renderExport, deliveryProfile);
   const system = createSystemMock(s, initial, {
     version: update.version,
     project,
@@ -209,6 +211,7 @@ export function createMockApi(
     ...takeReviewScan,
     ...takeComparison,
     ...measurement,
+    ...renderEncodeMaster,
     ...resavingAfterProfileChange(deliveryProfiles, resaveReview),
     ...diagnostics,
     ...editing,

@@ -11,7 +11,6 @@ import {
   faGaugeHigh,
   faGear,
   faHouse,
-  faLayerGroup,
   faMicrophone,
   faRotateLeft,
   faWaveSquare,
@@ -27,8 +26,7 @@ import { TimerChip, type RunningTimer } from './TimerChip';
 
 // requiresManuscript/requiresDaw name what each nav item is gated on (PRD project-workspace-and-daw-link.prd.md, Open
 // Question W16): no item needs a linked DAW project file since Proof replaced Proofing (stage-navigation-and-page-replacement.prd.md
-// Phase 5: its compare run gates itself inside the chapter view) - Tracks reads the project's REAPER file directly through its own
-// discovery flow and is not gated here. The requiresDaw field stays for the next item that needs one.
+// Phase 5: its compare run gates itself inside the chapter view). The requiresDaw field stays for the next item that needs one.
 // The Production stage's page (stage-navigation-and-page-replacement.prd.md Phase 2): the Production home at `/`, which replaced Home.
 // Not gated: with no manuscript it is where the import is.
 const PRODUCTION = { name: 'Production', path: '/', icon: faHouse, requiresManuscript: false, requiresDaw: false };
@@ -37,7 +35,6 @@ const STORY_BIBLE = { name: 'Story Bible', path: '/story-bible', icon: faBookOpe
 // The Record stage's one page (stage-navigation-and-page-replacement.prd.md Phase 4): it replaced the Teleprompter page. Its
 // icon is a record dot, as the stage-nav mocks draw it (audit SH12).
 const BOOTH = { name: 'Booth', path: '/booth', icon: faCircleDot, requiresManuscript: true, requiresDaw: false };
-const TRACKS = { name: 'Tracks', path: '/tracks', icon: faLayerGroup, requiresManuscript: false, requiresDaw: false };
 // Proof (stage-navigation-and-page-replacement.prd.md Phase 5): the book's notes at /proof and a chapter's view at /proof/:chapterId,
 // replacing Review and Proofing. Not gated: take-review notes need no manuscript, the page says itself when there is nothing to
 // proof yet, and the compare run inside a chapter view gates itself on the DAW (CapabilityGate).
@@ -58,7 +55,7 @@ const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
   { label: 'Production', items: [PRODUCTION] },
   { label: 'Prep', items: [SCRIPT, STORY_BIBLE] },
   { label: 'Record', items: [BOOTH] },
-  { label: 'Review', items: [PROOF, PICKUPS, TRACKS] },
+  { label: 'Review', items: [PROOF, PICKUPS] },
   { label: 'Finish', items: [DELIVERY] },
 ];
 const isActivePath = (pathname: string, path: string) => (path === '/' ? pathname === '/' : pathname === path || pathname.startsWith(`${path}/`));
@@ -71,7 +68,7 @@ export function AppShell({
   dawFileLinked,
   dawReachable = false,
   dawProjectMatches = false,
-  onLinkDawFile,
+  onOpenEnginePanel,
   linkingDawFile = false,
   engine = 'daw',
   timer = null,
@@ -87,7 +84,8 @@ export function AppShell({
   dawReachable?: boolean;
   /** Whether that heartbeat's open project is the linked file (Phase 7); only meaningful when dawReachable is true. */
   dawProjectMatches?: boolean;
-  onLinkDawFile: () => void;
+  /** Opens the engine panel from the header's engine chip (stage-navigation-and-page-replacement.prd.md Phase 6). */
+  onOpenEnginePanel: () => void;
   /** True while the shared DAW-link binding is running for any of its three call sites (ADR 0075's ref guard). */
   linkingDawFile?: boolean;
   /** Which engine the header's chip shows (stage-navigation-and-page-replacement.prd.md Phase 1, Q7); UI-only until native recording picks 'builtin'. */
@@ -230,7 +228,7 @@ export function AppShell({
               dawFileLinked={dawFileLinked}
               dawReachable={dawReachable}
               dawProjectMatches={dawProjectMatches}
-              onLinkDawFile={onLinkDawFile}
+              onOpenEnginePanel={onOpenEnginePanel}
               linkingDawFile={linkingDawFile}
             />
           </header>

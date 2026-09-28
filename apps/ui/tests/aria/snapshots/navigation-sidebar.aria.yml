@@ -24,7 +24,6 @@
       - text: Review
       - button "Proof"
       - button "Pickups"
-      - button "Tracks"
     - group "Finish":
       - /children: equal
       - text: Finish

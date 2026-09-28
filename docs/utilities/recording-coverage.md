@@ -61,7 +61,7 @@ flowchart LR
 ```
 
 - **The manifest comes from the saved project, not from REAPER.** `apps/desktop/internal/coverage` reads the `.rpp`
-  the Tracks page selected, the chapter's one confirmed track (`chapter-track-map.json`, analysis evidence ledger), and
+  the audio engine panel selected, the chapter's one confirmed track (`chapter-track-map.json`, analysis evidence ledger), and
   each item's active take and played range, `[SOFFS, SOFFS + LENGTH × PLAYRATE]`, in position order. Muted items are
   listed and skipped. A chapter that cannot be checked gets a typed reason and nothing runs: not linked, several
   tracks, the linked track missing, a missing or non-audio source, an empty range, not a narration chapter, or no

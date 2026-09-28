@@ -220,11 +220,11 @@ run. Choosing another delivery profile judges the last measurement again, and th
 
 A chapter's Proof view, at `/proof/:chapterId`, is one screen to listen to a chapter's recording
 against its script, see where the recording check found a problem, and click a word to hear it again.
-It has no nav item of its own; open it from a linked chapter's **Open workspace** link on
-[Tracks](tracks.md#linking-chapters-to-tracks), a chapter's Proof cell or its recording check's **Open in Proof** on [Production](production.md), from the Manuscript chapter header,
+It has no nav item of its own; open it from a linked chapter's **Open workspace** link in the
+[audio engine panel](navigation.md#linking-chapters-to-tracks), a chapter's Proof cell or its recording check's **Open in Proof** on [Production](production.md), from the Manuscript chapter header,
 from a note's **Open chapter view** above, or from [Proof's own chapter picker](#proof) at the top of
 this page. A chapter has to be linked to a REAPER track first (see [Linking chapters to
-tracks](tracks.md#linking-chapters-to-tracks)).
+tracks](navigation.md#linking-chapters-to-tracks)).
 
 If the chapter hasn't been checked yet, the chapter view says so and offers **Check recording** — the
 same check [Production](production.md#checking-a-chapters-recording) runs. There's no script or player until a check exists.
@@ -335,10 +335,10 @@ stage with its suggestion for Finalized: a badge if the evidence says it's ready
 pickup is still open, or "Can't tell yet" with what to check next. Confirm, Dismiss, and Revert work the
 same way they do on [Production](production.md#stage-suggestions); Why opens the same evidence view, listing what
 was checked (pickups from every tracked analyzer, and any delivery check the narrator turned on) and
-linking a pickup straight to [Proof](#proof) or an unmapped chapter to the [Tracks page](tracks.md). A
+linking a pickup straight to [Proof](#proof) or an unmapped chapter to the [audio engine panel](navigation.md#the-audio-engine-panel). A
 chapter with nothing to report ("No chapter is in Proofing right now") shows that instead of an empty
 table.
 
 ---
 
-[← Tracks](tracks.md) · [Index](README.md) · [Pickups →](pickups.md)
+[← Booth](booth.md) · [Index](README.md) · [Pickups →](pickups.md)

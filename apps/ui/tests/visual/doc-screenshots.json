@@ -231,46 +231,39 @@
     "caption": "Booth - the closing credits chosen, with the unresolved-token warning above the text"
   },
   {
-    "page": "tracks",
+    "page": "engine",
     "state": "default",
     "viewport": "desktop",
-    "docName": "tracks-default",
-    "caption": "Tracks - project tracks with transport controls, tracks with missing or unsupported items flagged"
+    "docName": "engine-panel",
+    "caption": "The audio engine panel, opened from the header chip - the linked REAPER project, the REAPER tools, chapter sync, the tracks with their chapters, and chapter links"
   },
   {
-    "page": "tracks",
-    "state": "unplayable-track-selected",
+    "page": "engine",
+    "state": "sync-activity",
     "viewport": "desktop",
-    "docName": "tracks-unplayable",
-    "caption": "Tracks - a track with a missing source file selected, playback controls disabled"
+    "docName": "engine-panel-sync-activity",
+    "caption": "The audio engine panel - chapter sync's summary and Sync activity, with Undo on a link sync made"
   },
   {
-    "page": "tracks",
+    "page": "engine",
     "state": "rpp-picker",
     "viewport": "desktop",
-    "docName": "tracks-rpp-picker",
-    "caption": "Tracks - choosing between more than one REAPER project file in the project folder"
+    "docName": "engine-panel-rpp-picker",
+    "caption": "The audio engine panel - choosing between more than one REAPER project file in the project folder"
   },
   {
-    "page": "tracks",
-    "state": "skipped-forward",
-    "viewport": "desktop",
-    "docName": "tracks-playback",
-    "caption": "Tracks - a track playing after skipping forward 30 seconds"
-  },
-  {
-    "page": "tracks",
+    "page": "engine",
     "state": "no-rpp",
     "viewport": "desktop",
-    "docName": "tracks-no-project-file",
-    "caption": "Tracks - no REAPER project file found in the project folder"
+    "docName": "engine-panel-no-project-file",
+    "caption": "The audio engine panel - no REAPER project file found in the project folder"
   },
   {
-    "page": "tracks",
+    "page": "engine",
     "state": "chapter-link-confirmed",
     "viewport": "desktop",
-    "docName": "tracks-chapter-links",
-    "caption": "Tracks - the chapter links list, one chapter confirmed to a track"
+    "docName": "engine-panel-chapter-links",
+    "caption": "The audio engine panel - the chapter links list, one chapter confirmed to a track"
   },
   {
     "page": "proof-chapter",

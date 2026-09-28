@@ -13,7 +13,7 @@ import { SlideOver } from '../primitives/SlideOver';
 import type { Notify } from '../primitives/Toast';
 import { chapterTrackButtonState } from './chapterTrackButtonState';
 import { RemoveFromRecordingDialog } from './RemoveFromRecordingDialog';
-import { useTrackPlayback } from '../tracks/useTrackPlayback';
+import { useTrackPlayback } from '../engine/useTrackPlayback';
 
 const noop = () => {};
 

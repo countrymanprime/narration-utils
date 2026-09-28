@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { Link } from 'react-router-dom';
+import { EnginePanelLink } from '../engine/EnginePanelContext';
 import { chapterName, context } from '../../chapterName';
 import type { ManuscriptChapter, StageChapterRecommendation, StageEvidence as Evidence, StageSignal } from '../../types';
 import { Button } from '../primitives/Button';
@@ -221,12 +221,7 @@ function CauseAction({
         {openLabel}
       </Button>
     );
-  if (resolve === 'tracks')
-    return (
-      <Link to="/tracks" className="font-semibold underline">
-        Open Tracks
-      </Link>
-    );
+  if (resolve === 'engine') return <EnginePanelLink />;
   if (resolve === 'check-now')
     return (
       <Button variant="ghost" onClick={onCheckNow}>

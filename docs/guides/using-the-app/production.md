@@ -72,19 +72,19 @@ Its cells:
 
 The chapter's current-stage cell opens its [stage suggestion](#stage-suggestions). The other Record,
 Edit and Proof cells open that stage: the [recording check](#checking-a-chapters-recording), the
-[editing check](tracks.md#editing-check), or the chapter's view on [Proof](proof.md). The board
+[editing check](navigation.md#editing-check), or the chapter's view on [Proof](proof.md). The board
 scrolls sideways in a narrow window; use the arrow keys to move from cell to cell, and Enter or
 Space to open one.
 
-The pill at the top right of every page says whether a REAPER project is linked; see
-[Navigation](navigation.md) for its states. With no REAPER project found, a line above the board
-says so, with a link to [Tracks](tracks.md) when more than one project file was found.
+The engine chip at the top right of every page says whether a REAPER project is linked and opens
+the [audio engine panel](navigation.md#the-audio-engine-panel). With no REAPER project found, a line above the board
+says so, with a link to the [audio engine panel](navigation.md#the-reaper-project) when more than one project file was found.
 
 ### A chapter's track
 
 A chapter's **Recorded** cell opens its track: what the saved project knows about the track (its
 items, span, recorded length, how the link was found and when, and whether you or chapter sync
-made it), and **Another track…** and **Unlink**, the same link as on the [Tracks](tracks.md) page.
+made it), and **Another track…** and **Unlink**, the same link as in the [audio engine panel](navigation.md#linking-chapters-to-tracks).
 A suggested track says it is not linked yet; a chapter two tracks look like says so and lists
 them; a linked track no longer in the saved project says it may have been deleted or the project
 saved elsewhere.
@@ -166,7 +166,7 @@ changes. The panel says which, keeps the old counts labelled as from then, and o
 
 When a chapter cannot be checked, the panel says why in plain words and where to fix it: a
 chapter that is not linked to its REAPER track gets the track picker right there, a missing
-project file points to [Tracks](tracks.md), and a missing Transcript Compare tool points to
+project file points to the [audio engine panel](navigation.md#the-reaper-project), and a missing Transcript Compare tool points to
 [Settings](settings.md).
 
 ## Stage suggestions
@@ -174,7 +174,7 @@ project file points to [Tracks](tracks.md), and a missing Transcript Compare too
 The board suggests when a chapter looks ready for its next stage, from evidence the app already
 has, and never changes a status on its own. A chapter in Recording is suggested for Editing when
 its current recording check finds every paragraph of its text in the recording, in order (misreads
-allowed). A chapter in Editing is checked against its [editing check](tracks.md#editing-check):
+allowed). A chapter in Editing is checked against its [editing check](navigation.md#editing-check):
 empty space, clicks and breaths still to trim. Every one of a stage's checks must be met before a
 suggestion appears — until clicks and breaths are validated on a labeled corpus, an Editing
 chapter reads "Can't tell yet" rather than suggested, even with no empty space left to trim.

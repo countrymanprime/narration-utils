@@ -197,7 +197,7 @@ export const proofChapterDrivers: Record<string, Driver> = {
   'stage-panel-evidence-unknown': async (page) => {
     await openPanel(page, '/?mockProofingSignal=unmapped-track', page.getByText(/no track linked/));
     await clickVisible(page, 'button', /^Why: /);
-    await page.getByRole('link', { name: 'Open Tracks' }).waitFor();
+    await page.getByRole('button', { name: 'Open the audio engine panel' }).waitFor();
   },
 };
 

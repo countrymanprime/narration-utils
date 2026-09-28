@@ -526,19 +526,30 @@ describe('App (integration, driven through the mock NarrationApi)', () => {
     }
   });
 
-  it('keeps Tracks reachable without a manuscript and lists the mock API tracks on its page', async () => {
+  // stage-navigation-and-page-replacement.prd.md Phase 6 (ADR 0407): the engine panel replaces the Tracks page. It opens from the
+  // header's engine chip on any page, with or without a manuscript, and lists the mock project's tracks.
+  it('opens the engine panel from the engine chip, without a manuscript, with the project and its tracks', async () => {
     const source = createMockApi();
     renderApp({ bootstrap: async () => ({ ...(await source.bootstrap()), manuscript: null }) });
     await screen.findByRole('heading', { level: 1, name: 'Production' });
+    expect(screen.queryAllByRole('button', { name: 'Tracks' })).toHaveLength(0);
 
-    const tracksButtons = screen.getAllByRole('button', { name: 'Tracks' });
-    expect(tracksButtons.every((button) => !(button as HTMLButtonElement).disabled)).toBe(true);
-    fireEvent.click(tracksButtons[0]);
+    fireEvent.click(screen.getByRole('button', { name: /^REAPER linked/ }));
+    const panel = await screen.findByRole('dialog', { name: 'Audio engine' });
+    const tracks = await within(panel).findByRole('table', { name: 'Tracks' });
+    expect(within(tracks).getByText('Chapter 1')).toBeTruthy();
+    expect(within(tracks).getByText('Click Track')).toBeTruthy();
+    expect(within(panel).getByRole('button', { name: 'Link a different REAPER project file' })).toBeTruthy();
+    expect(window.location.pathname).toBe('/');
+  });
 
-    await screen.findByRole('heading', { name: 'Tracks' });
-    expect(await screen.findByRole('button', { name: /Chapter 1/ })).toBeTruthy();
-    expect(screen.getByRole('button', { name: /Click Track/ })).toBeTruthy();
-    expect(window.location.pathname).toBe('/tracks');
+  it('redirects /tracks to Proof, keeping its query and hash, and opens the engine panel over it (Q8 A)', async () => {
+    window.history.replaceState(null, '', '/tracks?from=bookmark#top');
+    renderApp();
+    await waitFor(() => expect(window.location.pathname).toBe('/proof'));
+    expect(window.location.search).toBe('?from=bookmark');
+    expect(window.location.hash).toBe('#top');
+    expect(await screen.findByRole('dialog', { name: 'Audio engine' })).toBeTruthy();
   });
 
   it('opens Proof from the navigation, and a note there opens the manuscript at its line', async () => {
@@ -1038,7 +1049,7 @@ describe('App (integration, driven through the mock NarrationApi)', () => {
   });
 
   // Phase 3's "Could" item: a handoff into the DAW Link flow (project-workspace-and-daw-link.prd.md, W19) once a
-  // DAW is detected, reusing the same shared linkDawFile() action the header pill and Tracks page already use.
+  // DAW is detected, reusing the same shared linkDawFile() action the audio engine panel and Settings already use.
   it('offers to link a REAPER project from the DAW catalog panel once REAPER is detected and nothing is linked yet', async () => {
     renderApp({}, { dawFileLinked: false });
     await screen.findByRole('heading', { level: 1, name: 'Production' });

@@ -33,7 +33,7 @@ microphone found" and Play stays disabled until you connect one and press Refres
 
 If the project has a REAPER project, the chapter can come from it. The app reads the project as it was
 last saved and looks at the track you have armed for recording (or, with none armed, the selected track).
-When that track is linked to a chapter on the [Tracks page](tracks.md), or its name clearly matches one
+When that track is linked to a chapter on the [audio engine panel](navigation.md#linking-chapters-to-tracks), or its name clearly matches one
 ("Chapter 2" for Chapter 2, never Chapter 12), the Booth opens on that chapter, with a line beneath the
 picker saying so. When the name is only a near match, or armed tracks point at different chapters,
 nothing is chosen for you: the likely chapters are offered as buttons under the picker. Save the REAPER
@@ -59,7 +59,7 @@ recording in REAPER clears it too, without choosing anything. With **Read track 
 REAPER's edit cursor onto the recording while the notice shows makes it look again from there. A chapter
 already recorded to its last word says so instead of offering to resume past the end. When the match is
 uncertain or a confirmed track has a problem (renamed, missing, or linked to more than one chapter), the
-notice says so with a link to the Tracks page instead of asking you to pick a track here; when the
+notice says so with a link to the [audio engine panel](navigation.md#linking-chapters-to-tracks) instead of asking you to pick a track here; when the
 recording cannot be read or does not match the chapter it says why and reading starts from the top.
 
 ### Recording in REAPER
@@ -162,4 +162,4 @@ Teleprompter opens the Booth.
 
 ---
 
-[← Story Bible](story-bible.md) · [Index](README.md) · [Tracks →](tracks.md)
+[← Story Bible](story-bible.md) · [Index](README.md) · [Proof →](proof.md)

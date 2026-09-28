@@ -219,7 +219,7 @@ chapter's status select, which stays the narrator's override: the verdict in a f
 `recommended`, Revert for a live confirmation, and the "evidence changed since you confirmed" notice with Revert for a
 `contradiction`. `StageEvidence` is the evidence view in the existing `SlideOver` (Q11): each signal's state, reason and
 evidence (a paragraph it names links to the manuscript), the saved project's modified time and its age, and for an
-unknown cause what resolves it (`stageText.ts`, `CAUSE_TEXT`: the recording check dialog, the Tracks page, or Check now).
+unknown cause what resolves it (`stageText.ts`, `CAUSE_TEXT`: the recording check dialog, the audio engine panel, or Check now).
 `StageSummary` holds the chips on the collapsed card; `StageCheckLine` above the table renders nothing while the read
 succeeds and only the reason and a Try again retry when it fails (`home-stage-check-line.prd.md` Phase 1). Confirm is one
 click, reversible by Revert (Q13). A refusal is shown as an error toast and the recommendations are read again; a failed
@@ -238,6 +238,6 @@ confirms, dismisses or reverts:
 - `ChapterNav.tsx` (the Script page's Chapters & Search panel) shows a non-interactive "Suggested: `<stage>`" line
   under a chapter's title for a live `recommended` verdict only (`stageText.ts`'s `verdictLine`, Q6 option B) - the nav
   row stays dense, and every action stays on the Production board or the Proofing panel.
-- `TracksPage.tsx` shows a line above the Chapter links table counting chapters whose recommendation carries the
+- The audio engine panel (`engine/EnginePanel.tsx`) shows a line above the Chapter links table counting chapters whose recommendation carries the
   `unmapped_track` or `unconfirmed_mapping` cause, pointing at that table (the analysis evidence ledger's own mapping
   UI) since linking or confirming the chapter's track there is exactly what resolves the cause.

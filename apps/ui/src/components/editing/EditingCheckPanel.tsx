@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { EnginePanelLink } from '../engine/EnginePanelContext';
 import { chapterName, context } from '../../chapterName';
 import { useApi } from '../../api/ApiContext';
 import { describeApiError } from '../../api/errorMessage';
@@ -21,7 +21,7 @@ import { EDITING_CLASSES, EDITING_CLASS_LABEL, EDITING_SIGNAL_ID, PROCESSED_AUDI
  * below does not already explain in place. */
 const NON_MAPPING_REFUSAL: Partial<Record<EditingRefusalReason, string>> = {
   no_project: 'Open a project before checking editing.',
-  no_project_file: 'Choose the saved REAPER project file on the Tracks page first.',
+  no_project_file: 'Choose the saved REAPER project file in the audio engine panel first.',
   project_unreadable: 'The saved REAPER project file could not be read. Save it again in REAPER.',
   busy: 'Another editing check is running. Wait for it to finish.',
 };
@@ -31,7 +31,7 @@ const MAPPING_REFUSALS = new Set<EditingRefusalReason>(['unmapped', 'multiple_tr
 const POLL_MS = 500;
 
 /** The chapter-track link, confirmed right here (analysis evidence ledger PRD, Phase 7): the same prompt the
- * Tracks page and the recording check show. */
+ * audio engine panel and the recording check show. */
 function MappingFix({ chapter, onLinked }: { chapter: ManuscriptChapter; onLinked: () => void }) {
   const api = useApi();
   const [tracks, setTracks] = useState<Track[]>();
@@ -50,10 +50,7 @@ function MappingFix({ chapter, onLinked }: { chapter: ManuscriptChapter; onLinke
   if (error)
     return (
       <p style={{ color: 'var(--danger-text)' }}>
-        The REAPER tracks could not be listed: {error}{' '}
-        <Link to="/tracks" className="font-semibold underline">
-          Open Tracks
-        </Link>
+        The REAPER tracks could not be listed: {error} <EnginePanelLink />
       </p>
     );
   if (!tracks) return <p role="status">Reading the REAPER tracks…</p>;
@@ -144,7 +141,7 @@ function ClassSummary({
 
 /**
  * The editing check panel (editing-readiness-analysis.prd.md Phase 7): a `SlideOver` opened from SR's evidence
- * popover (`StageEvidence`'s "Open editing check") and from the Tracks page's chapter list. It runs the scan
+ * popover (`StageEvidence`'s "Open editing check") and from the audio engine panel's chapter list. It runs the scan
  * (Phase 5's job, cache-first, with real progress and Cancel), reads the three signals Phase 6 computes when the
  * chapter is in the Editing stage, and lists every open candidate under its own class with a Hear control, Accept /
  * Dismiss / Defer through RD-4, and Go to / Loop in REAPER through RD Phase 7 when the bridge is connected. Analysis
@@ -270,9 +267,7 @@ export function EditingCheckPanel({ chapter, notify, close }: { chapter: Manuscr
             </p>
             <p>{refusal.message}</p>
             {refusal.reason === 'multiple_tracks' ? (
-              <Link to="/tracks" className="font-semibold underline">
-                Open Tracks
-              </Link>
+              <EnginePanelLink />
             ) : (
               <MappingFix
                 chapter={chapter}
