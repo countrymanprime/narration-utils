@@ -34,7 +34,6 @@ type Props = {
 // How long a first Escape waits for the second (Open Question 5: "pressing Escape twice, once to confirm").
 const ESCAPE_CONFIRM_MS = 3000;
 
-const SECTION = 'rounded-lg border border-[var(--border)] bg-[var(--surface)] p-3 text-sm';
 const SECTION_LABEL = "font-['Barlow_Condensed',sans-serif] text-[0.72rem] font-semibold tracking-[0.08em] text-[var(--text-muted)] uppercase";
 
 /** Project seconds as REAPER shows them in its transport, m:ss.t (the mock's "2:14.6"). */
@@ -105,10 +104,13 @@ function useWholeWindow(root: HTMLElement | null) {
   }, [root]);
 }
 
-function Section({ title, badge, children }: { title: string; badge?: ReactNode; children: ReactNode }) {
+// Mock 07: sections sit full-bleed on `--bg` (no card border, background or radius of their own - `CompactShell`'s
+// `main` already gives the whole column its side padding), separated from the one before by a 1 px `--border` rule.
+// The very first section sits right under the header's own rule, so it draws none of its own.
+function Section({ title, badge, children, first = false }: { title: string; badge?: ReactNode; children: ReactNode; first?: boolean }) {
   const headingId = useId();
   return (
-    <section aria-labelledby={headingId} className={SECTION}>
+    <section aria-labelledby={headingId} className={`text-sm ${first ? '' : 'border-t border-[var(--border)] pt-3'}`}>
       <div className="mb-1.5 flex items-center justify-between gap-2">
         <h2 id={headingId} className={SECTION_LABEL}>
           {title}
@@ -119,8 +121,6 @@ function Section({ title, badge, children }: { title: string; badge?: ReactNode;
     </section>
   );
 }
-
-const TOOLBAR_BUTTON_CLASS = 'gap-1.5 px-3 py-1.5 text-[0.75rem]';
 
 /**
  * Companion mode's layout (booth-mode-and-companion-panel.prd.md Phase 7): `CompactShell` in the app's own window, narrowed
@@ -191,7 +191,9 @@ export function CompanionShell({ session: t, follow, chapterTitle, recording, ma
         title="Companion"
         status={<StatusBadge tone={playhead.tone} label={playhead.label} />}
         action={
-          <Button variant="secondary" className="px-2.5 py-1 text-xs" onClick={onFullApp}>
+          // Mock 07 draws Full app at 26 px, slightly smaller than the companion's own 28 px controls; `sm` (28 px, `--button-height-sm`)
+          // is the closest fixed size without adding one the primitive does not have (mock-fidelity PRD Phase 13).
+          <Button variant="secondary" size="sm" onClick={onFullApp}>
             <FontAwesomeIcon icon={faUpRightAndDownLeftFromCenter} /> Full app
           </Button>
         }
@@ -204,18 +206,12 @@ export function CompanionShell({ session: t, follow, chapterTitle, recording, ma
         <p role="status" className="text-xs empty:hidden" style={{ color: 'var(--text-muted)' }}>
           {escapeArmed ? 'Press Esc again to return to the full app.' : ''}
         </p>
-        <Section title="Script">
+        <Section title="Script" first>
           {chapterTitle && <p className="mb-2 font-semibold">{chapterTitle}</p>}
           <Toolbar label="Companion commands">
             <ToolbarButton
               render={
-                <Button
-                  aria-label={playPauseLabel}
-                  aria-pressed={listening}
-                  onClick={onPlayPause}
-                  disabled={playPauseDisabled}
-                  className={TOOLBAR_BUTTON_CLASS}
-                >
+                <Button aria-label={playPauseLabel} aria-pressed={listening} onClick={onPlayPause} disabled={playPauseDisabled} size="sm">
                   <Kbd keys={['Space']} />
                   {playPauseLabel}
                 </Button>
@@ -223,13 +219,7 @@ export function CompanionShell({ session: t, follow, chapterTitle, recording, ma
             />
             <ToolbarButton
               render={
-                <Button
-                  aria-label="Stop reading"
-                  variant="danger"
-                  onClick={onStop}
-                  disabled={!t.active || t.host.phase === 'stopping'}
-                  className={TOOLBAR_BUTTON_CLASS}
-                >
+                <Button aria-label="Stop reading" variant="danger" onClick={onStop} disabled={!t.active || t.host.phase === 'stopping'} size="sm">
                   Stop reading
                 </Button>
               }
@@ -237,7 +227,7 @@ export function CompanionShell({ session: t, follow, chapterTitle, recording, ma
             {t.active && (
               <ToolbarButton
                 render={
-                  <Button aria-label="Follow" onClick={follow.resume} disabled={follow.following} className={TOOLBAR_BUTTON_CLASS}>
+                  <Button aria-label="Follow" onClick={follow.resume} disabled={follow.following} size="sm">
                     Follow
                   </Button>
                 }
@@ -246,6 +236,10 @@ export function CompanionShell({ session: t, follow, chapterTitle, recording, ma
           </Toolbar>
           {/* Its own scroll box, so the sections below stay in reach however long the chapter is; the cursor follows inside it. */}
           <div className="mt-2 max-h-[45vh] overflow-y-auto">
+            {/* TODO(mock-fidelity-p13): mock 07 wants Plex 16px on a 27px line here, denser than ReaderText's own non-`large`
+                branch (21.6/33.6, `text-[1.35rem] leading-[2.1rem]`). ReaderText/ReadAlongView expose only a `large` boolean
+                (26/48 vs 21.6/33.6), no prop that reaches 16/27, and ReaderText.tsx is a parallel task's file on this branch -
+                left as-is rather than hand-rolling a CSS override or editing it here. */}
             <ReadAlongView session={t} follow={follow} header={header} marks={marks} onOpenMark={onOpenMark} hideKey />
           </div>
         </Section>
