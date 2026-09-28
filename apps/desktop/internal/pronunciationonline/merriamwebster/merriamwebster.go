@@ -1,5 +1,5 @@
 // Package merriamwebster is the Merriam-Webster Collegiate Dictionary API adapter for the online pronunciation port
-// (pronunciationonline.Dictionary; ADR 0405 point 2, ADR 0354; prep-depth.prd.md Phase 9). It is the only package in the Go
+// (pronunciationonline.Dictionary; ADR 0405 point 2, ADR 0355; prep-depth.prd.md Phase 9). It is the only package in the Go
 // host's pronunciation code that makes an HTTP request, and .golangci.yml's depguard rule allows net here for that alone.
 //
 // A request goes to one fixed host and path, built here from the looked-up word and the narrator's key and nothing else:

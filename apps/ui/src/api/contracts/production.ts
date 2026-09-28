@@ -104,6 +104,19 @@ export type ProductionStartResult =
 
 export type ProductionStopResult = { stopped: true; session: ProductionSession } | { stopped: false; session: null };
 
+/**
+ * What one status report export wrote (ProductionStatusReport, production-tracking.prd.md Phase 5): the folder
+ * relative to the project (`narration-utils/production/reports`), the two file names in it, and whether the narrator
+ * chose to include the contracted amount and effective rate (off by default: a status report is often shared with
+ * someone the narrator would not otherwise tell their rate).
+ */
+export type ProductionReportExport = {
+  folder: string;
+  htmlFile: string;
+  jsonFile: string;
+  contractedAmountIncluded: boolean;
+};
+
 export interface ProductionApi {
   /** Reads this project's deadline, contracted amount and milestones; an empty plan when none are set. */
   productionPlan(): Promise<ProductionPlan>;
@@ -119,4 +132,11 @@ export interface ProductionApi {
   productionStartTimer(chapterId: string, stage: ChapterStatus): Promise<ProductionStartResult>;
   /** Stops the running timer; a no-op (`stopped: false`) when none runs. */
   productionStopTimer(): Promise<ProductionStopResult>;
+  /**
+   * Writes an HTML and a JSON status report (hours by stage, PFH, the deadline and milestone status, and book-wide
+   * readiness counts) into the project's sidecar folder, from exactly the same figures `productionOverview` just
+   * answered. `includeContractedAmount` writes the contracted amount and effective rate; off by default. Rejects
+   * without a project.
+   */
+  productionStatusReport(includeContractedAmount: boolean): Promise<ProductionReportExport>;
 }

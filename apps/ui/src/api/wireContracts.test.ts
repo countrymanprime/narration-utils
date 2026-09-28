@@ -46,7 +46,13 @@ import { COVERAGE_EVALUATOR_REASONS, COVERAGE_REFUSAL_REASONS, coverageResultSch
 import { workspaceAlignmentResultSchema } from './schemas/workspace';
 import { previewResultSchema } from './schemas/preview';
 import { STAGE_REFUSAL_REASONS, STAGE_UNKNOWN_CAUSES, stageDecisionResultSchema, stageRecommendationsSchema } from './schemas/stages';
-import { productionOverviewSchema, productionPlanSchema, productionStartResultSchema, productionStopResultSchema } from './schemas/production';
+import {
+  productionOverviewSchema,
+  productionPlanSchema,
+  productionReportExportSchema,
+  productionStartResultSchema,
+  productionStopResultSchema,
+} from './schemas/production';
 import { PRODUCTION_SCENARIOS } from './productionMock';
 import { findingMarkerSchema, findingNavigationSchema, findingSchema, findingsPageSchema, findingsSummarySchema, reaperStatusSchema } from './schemas/findings';
 import { tracksDiscoverySchema, tracksProjectSchema } from './schemas/tracks';
@@ -2110,6 +2116,7 @@ describe('answers of the mock client for the settings, voice, model, transcript 
       'productionOverview',
       'productionStartTimer',
       'productionStopTimer',
+      'productionStatusReport',
       'takeComparisonStart',
       'takeComparisonState',
       'takeComparisonCancel',
@@ -2318,6 +2325,18 @@ describe('the production tracking mock', () => {
     expectMatches(productionStopResultSchema, await api.productionStopTimer(), 'mock production timer stopped');
     expectMatches(productionStopResultSchema, await api.productionStopTimer(), 'mock production timer, nothing to stop');
     await expect(api.productionStartTimer('chapter-99', 'recording')).rejects.toThrow(/no chapter/);
+  });
+
+  it('the status report export leaves out the contracted amount unless asked, and never repeats a file name', async () => {
+    const pinned = productionReportExportSchema.parse(readGolden('production-status-report.json'));
+    const api = createMockApi();
+    const left = await api.productionStatusReport(false);
+    expectMatches(productionReportExportSchema, left, 'mock production status report, default');
+    expect(left).toMatchObject({ folder: pinned.folder, contractedAmountIncluded: false });
+    const included = await api.productionStatusReport(true);
+    expectMatches(productionReportExportSchema, included, 'mock production status report, opted in');
+    expect(included.contractedAmountIncluded).toBe(true);
+    expect(included.jsonFile).not.toBe(left.jsonFile);
   });
 
   it.each(['on-pace', 'at-risk'] as const)('seeds a %s book whose figures come from its log and measured audio only', async (seed) => {
