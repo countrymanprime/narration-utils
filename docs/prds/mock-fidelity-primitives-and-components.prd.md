@@ -764,7 +764,7 @@ Paths are under `apps/ui/src/` unless they start with `apps/`, `docs/` or `tests
 
 - 0585 is taken by Phase 0a.
 - Phase 0b took 0590 from its stream's block (0590–0594), so 0586 is spare.
-- 0587 is reserved for Phase 1. Phase 3 took 0605 from its stream's block (0605–0609), so 0588 is spare. Phase 4 took 0640 from its stream's block (0640–0644).
+- Phase 1 took 0595 and Phase 3 took 0605 from their streams' blocks, so 0587 and 0588 are spare. Phase 4 took 0640 from its stream's block (0640–0644).
 - 0589 is spare for the next phase that needs one.
 
 Later phases take their numbers from the block the coordinator gives their stream. Check `docs/adr/` at write time.
