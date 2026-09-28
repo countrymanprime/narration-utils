@@ -19,18 +19,22 @@ export function Toolbar({
   label,
   orientation = 'horizontal',
   className = '',
+  gapClassName = 'gap-1',
   children,
 }: {
   label: string;
   orientation?: 'horizontal' | 'vertical';
   className?: string;
+  // The space between items. A transport draws a real gap (6-12 px, B; 8 px, D); a segmented-looking bar whose items
+  // touch and share a border instead (`SelectionMenu`) passes `gap-0`.
+  gapClassName?: string;
   children: ReactNode;
 }) {
   return (
     <BaseToolbar.Root
       aria-label={label}
       orientation={orientation}
-      className={`flex gap-1 ${orientation === 'vertical' ? 'flex-col' : 'items-center'} ${className}`}
+      className={`flex ${gapClassName} ${orientation === 'vertical' ? 'flex-col' : 'items-center'} ${className}`}
       onKeyDown={(event: KeyboardEvent<HTMLDivElement>) => {
         if (event.key !== 'Home' && event.key !== 'End') return;
         const items = rovingItems(event.currentTarget);

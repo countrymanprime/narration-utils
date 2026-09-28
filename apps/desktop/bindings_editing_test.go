@@ -122,6 +122,46 @@ func TestEditingStartRunsToCompletionWithNoCandidates(t *testing.T) {
 	contractfile.Check(t, "editing-candidates-empty", candidates)
 }
 
+// TestEditingSourceChoiceDefaultsToItemsAndCanBeSetToRender is Q6's own wire contract (editing-readiness-analysis.prd.md
+// Phase 8): the choice binding is a bare wire string ("items" or "render"), never an object, matching every other
+// bare-string binding's own encodeBinding(value, nil) shape.
+func TestEditingSourceChoiceDefaultsToItemsAndCanBeSetToRender(t *testing.T) {
+	host := editingHost(t, false)
+	choice := decodeString(t)(host.EditingSourceChoice("c-0001"))
+	if choice != "items" {
+		t.Fatalf("default source choice = %q, want %q", choice, "items")
+	}
+	contractfile.Check(t, "editing-source-choice-items", choice)
+
+	set := decodeString(t)(host.EditingSetSourceChoice("c-0001", "render"))
+	if set != "render" {
+		t.Fatalf("EditingSetSourceChoice() = %q, want %q", set, "render")
+	}
+	after := decodeString(t)(host.EditingSourceChoice("c-0001"))
+	if after != "render" {
+		t.Fatalf("source choice after Set = %q, want %q", after, "render")
+	}
+
+	if _, err := host.EditingSetSourceChoice("c-0001", "render-plus-fx"); err == nil {
+		t.Fatal("an invalid choice must be rejected")
+	}
+}
+
+func decodeString(t *testing.T) func(string, error) string {
+	t.Helper()
+	return func(payload string, err error) string {
+		t.Helper()
+		if err != nil {
+			t.Fatal(err)
+		}
+		var decoded string
+		if unmarshalErr := json.Unmarshal([]byte(payload), &decoded); unmarshalErr != nil {
+			t.Fatal(unmarshalErr)
+		}
+		return decoded
+	}
+}
+
 func TestEditingCancelWithNothingRunningIsANoOp(t *testing.T) {
 	host := editingHost(t, false)
 	if _, err := host.EditingCancel(); err != nil {

@@ -596,6 +596,10 @@ func (h *Host) configureLocked(next config) {
 		Reporter:    h.persist,
 		// DAW port PRD Phase 5d: reads the saved .rpp through the port's offline role instead of tracks.Parse directly.
 		ProjectReader: reaper.ProjectReader{},
+		// Q6 (editing-readiness-analysis.prd.md Phase 8): the render association PS Phase 4 already owns, reused as-is,
+		// plus this package's own per-chapter source choice.
+		Renders: proofing.NewRenderStore(h.config.projectFolder),
+		Choices: editing.NewChoiceStore(h.config.projectFolder),
 	}, nil)
 	h.character = character.New(character.Config{
 		Project:     h.config.projectFolder,
