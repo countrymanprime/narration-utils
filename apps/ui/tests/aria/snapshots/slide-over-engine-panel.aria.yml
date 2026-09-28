@@ -1,0 +1,39 @@
+# The engine panel (stage-navigation-and-page-replacement.prd.md Phase 6, ADR 0430): a modal slide-over over Home, opened from the
+# header's engine chip, the only thing in <body> besides the two empty toast live regions. Its title is an <h2> (it opens over any
+# page, so it follows the page's <h1>), and each part of what the Tracks page held is a named region under its own heading.
+- /children: equal
+- main:
+  - alert
+  - status
+- dialog "Audio engine":
+  - heading "Audio engine" [level=2]
+  - button "Close the engine panel"
+  - region "REAPER project":
+    - heading "REAPER project" [level=2]
+    - button "Link a different REAPER project file"
+  - region "REAPER tools":
+    - heading "REAPER tools" [level=2]
+    - toolbar "REAPER tools":
+      - /children: equal
+      - button "Link chapters…"
+      - button "Prepare chapter render…"
+      - button "Create chapter regions…"
+      - button "Embed chapter tags…"
+      - button "Cleanup tools…"
+      - button "Retakes on lanes…"
+  - region "Chapter sync":
+    - heading "Chapter sync" [level=2]
+    - button "Turn off"
+    - heading "Tracks that are not chapters (1)" [level=3]
+  - region "Tracks":
+    - heading "Tracks" [level=2]
+    - table "Tracks":
+      - rowgroup:
+        - row "Track Chapter Playable items"
+      - rowgroup:
+        - row "Chapter 1 Not linked 1/1"
+        - row "Chapter 2 Not linked This track has an item that can't be played 0/1"
+        - row "Click Track Muted Not linked This track has an item that can't be played 0/1"
+  - region "Chapter links":
+    - heading "Chapter links" [level=2]
+    - table "Chapter links"

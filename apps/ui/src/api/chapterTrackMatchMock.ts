@@ -148,7 +148,7 @@ const summarizeTrack = (track: Track, mappings: TrackMapping[]): ChapterTrackSum
 const PROJECT_MESSAGE: Record<ChapterTrackLinksProject, string> = {
   ready: '',
   none: 'No REAPER project (.rpp) file was found in this project folder.',
-  choose: 'Choose which REAPER project file to use on the Tracks page.',
+  choose: 'Choose which REAPER project file to use in the audio engine panel.',
   error: 'Could not read the REAPER project file.',
 };
 

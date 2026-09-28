@@ -363,7 +363,7 @@ const NON_TEXT_USES: Record<string, { count: number; what: string }> = {
     what: 'the DAW link status dot in the project-scope panel when nothing is linked, and the global-scope reachability dot when REAPER has not sent a recent heartbeat (Phase 7)',
   },
   'components/storybible/Guide.tsx': { count: 1, what: 'the lock icon beside a locked entry' },
-  'components/tracks/TracksPage.tsx': { count: 1, what: 'the dot of a track that has no colour' },
+  'components/engine/EnginePanel.tsx': { count: 1, what: 'the dot of a track that has no colour' },
   'styles.css': { count: 1, what: "LevelMeter's below-floor zone (Phase 1): --meter-floor is a derived alias of --non-text, not text" },
 };
 

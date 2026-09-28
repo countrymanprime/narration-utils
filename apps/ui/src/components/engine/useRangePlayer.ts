@@ -14,7 +14,7 @@ export type AuditionRange = {
 
 /**
  * Plays one raw source range - a take-review finding member's own source file and matched span -
- * with a fixed pre/post roll, through the same `/media` route the Tracks page player streams from
+ * with a fixed pre/post roll, through the same `/media` route the audio engine panel player streams from
  * (Q7: no REAPER mutation, the app already has read access to the file). Two independent instances
  * (one per audition side) give the side-by-side A/B comparison; each stops itself at
  * `rangeEnd + AUDITION_POST_ROLL_SECONDS` instead of playing to the end of the whole source file,

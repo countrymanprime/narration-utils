@@ -26,7 +26,7 @@ export interface ProjectApi {
   removeRecentProject(path: string): Promise<RecentProject[]>;
   /**
    * Opens a native "*.rpp" file dialog and links the chosen file to the current project (W19's one shared binding
-   * behind the header pill, the Tracks page and Settings' DAW category).
+   * behind the audio engine panel and Settings' DAW category).
    */
   linkDawFile(): Promise<DawLinkResult>;
   /** Starts REAPER on the current project's linked DAW file (Phase 8), a rejected promise on any refusal. */

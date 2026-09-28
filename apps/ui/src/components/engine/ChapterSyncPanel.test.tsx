@@ -4,6 +4,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { ChapterSyncPreview } from '../../api/contracts/chapterSync';
 import { ApiProvider } from '../../api/ApiContext';
 import { createMockApi } from '../../api/mockApi';
+import { WIRE_TRACKS_PROJECT } from '../../api/mockFixtures';
 import { ChapterSyncPanel } from './ChapterSyncPanel';
 
 afterEach(cleanup);
@@ -72,11 +73,49 @@ describe('ChapterSyncPanel', () => {
     const notify = vi.fn();
     render(<ApiProvider api={api}>{<ChapterSyncPanel notify={notify} onChanged={() => {}} />}</ApiProvider>);
     await screen.findByText('Needs you (1)');
-    expect(screen.getByText(/“Chapter 5 part 1” and “Chapter 5 part 2” both look like it\./)).toBeTruthy();
+    // The panel's own wording (mockup 02, D85 #13), not the consent dialog's.
+    expect(screen.getByText('Two tracks match: “Chapter 5 part 1” and “Chapter 5 part 2”. A chapter is checked from one track.')).toBeTruthy();
     const select = screen.getByLabelText('Track for Chapter 5') as HTMLSelectElement;
     expect(select.value).toBe('g5a');
     fireEvent.click(screen.getByRole('button', { name: 'Link' }));
     await waitFor(() => expect(chapterTrackSet).toHaveBeenCalledWith('c5', 'g5a'));
     await waitFor(() => expect(notify).toHaveBeenCalledWith('Track linked.'));
+  });
+
+  it('names the saved file and splits automatic links from the narrator’s in the summary (mockup 02)', async () => {
+    render(<ApiProvider api={createMockApi({}, { chapterSync: 'activity' })}>{<ChapterSyncPanel notify={() => {}} onChanged={() => {}} />}</ApiProvider>);
+    await screen.findByText(/^On · last synced .+ from the saved Alice\.rpp · 1 chapter linked automatically, 1 by you$/);
+  });
+
+  it('lists the Sync activity, newest first, with Undo on a link sync made that still stands', async () => {
+    const api = createMockApi({}, { chapterSync: 'activity' });
+    const undo = vi.spyOn(api, 'chapterSyncUndo');
+    const notify = vi.fn();
+    const onChanged = vi.fn();
+    render(<ApiProvider api={api}>{<ChapterSyncPanel notify={notify} onChanged={onChanged} />}</ApiProvider>);
+    const heading = await screen.findByRole('heading', { name: 'Sync activity' });
+    const lines = Array.from(heading.parentElement!.querySelectorAll('li')).map((item) => item.textContent);
+    expect(lines).toHaveLength(3);
+    expect(lines[0]).toMatch(/ · Linked “Chapter 1” to .+ \(Undo\)$/);
+    expect(lines[1]).toMatch(/ · New track “Room tone”, not a chapter$/);
+    expect(lines[2]).toMatch(/ · First sync: 1 chapter linked$/);
+    fireEvent.click(screen.getByRole('button', { name: /^Undo: Linked “Chapter 1”/ }));
+    await waitFor(() => expect(undo).toHaveBeenCalledWith(WIRE_TRACKS_PROJECT.tracks[0].guid));
+    await waitFor(() => expect(notify).toHaveBeenCalledWith('Link undone. Sync will not make it again.'));
+    expect(onChanged).toHaveBeenCalled();
+    // The link is gone, so its line no longer offers Undo.
+    await waitFor(() => expect(screen.queryByRole('button', { name: /^Undo:/ })).toBeNull());
+  });
+
+  it('counts the tracks that are not chapters and says when REAPER holds unsaved changes', async () => {
+    const preview = { ...needsYouPreview(), needsYou: [], unmatched: [{ guid: 'g1', name: 'Room tone', index: 5, marker: '' as const }] };
+    render(
+      <ApiProvider api={createMockApi({ chapterSyncPreview: async () => preview }, { chapterSync: 'unsaved' })}>
+        {<ChapterSyncPanel notify={() => {}} onChanged={() => {}} />}
+      </ApiProvider>,
+    );
+    await screen.findByText('Tracks that are not chapters (1)');
+    expect(screen.getByText('Room tone')).toBeTruthy();
+    expect(screen.getByText(/REAPER has changes that aren’t saved yet/)).toBeTruthy();
   });
 });

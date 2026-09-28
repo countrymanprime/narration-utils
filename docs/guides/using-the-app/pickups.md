@@ -27,7 +27,7 @@ open as `pickups.csv`, in the same columns, to send back to the proofer.
 
 - **Open Chapter … in Proof** opens that chapter's [Proof view](proof.md#the-chapter-view) at the pickup's place,
   to hear it against the script. It shows when a chapter is
-  [linked to its track](tracks.md#linking-chapters-to-tracks) and that track has audio at the pickup's time. When
+  [linked to its track](navigation.md#linking-chapters-to-tracks) and that track has audio at the pickup's time. When
   chapter tracks share the timeline, every chapter that matches is offered, and none is guessed. With no match,
   the page says the pickup is not on a linked chapter track.
 - **Punch from here** will move REAPER's edit cursor to just before the pickup, ready to record over it. It is an

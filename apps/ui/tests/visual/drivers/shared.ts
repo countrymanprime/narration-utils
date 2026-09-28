@@ -71,7 +71,7 @@ export async function clickVisible(page: Page, role: Parameters<Page['getByRole'
     .click();
 }
 
-type AppPage = 'Home' | 'Production' | 'Script' | 'Story Bible' | 'Booth' | 'Tracks' | 'Proof' | 'Pickups' | 'Delivery' | 'Settings';
+type AppPage = 'Home' | 'Production' | 'Script' | 'Story Bible' | 'Booth' | 'Proof' | 'Pickups' | 'Delivery' | 'Settings';
 
 // Every page opens with the shared `Heading` primitive, an <h1>: it is what proves the page has arrived. Home's is "Welcome back".
 export const PAGE_HEADING: Record<AppPage, string> = {
@@ -81,7 +81,6 @@ export const PAGE_HEADING: Record<AppPage, string> = {
   'Story Bible': 'Story Bible',
   // A visually hidden <h1>: the Booth's own status line names the chapter (mock 03).
   Booth: 'Booth',
-  Tracks: 'Tracks',
   Proof: 'Proof',
   Pickups: 'Pickups',
   Delivery: 'Delivery',
@@ -90,7 +89,7 @@ export const PAGE_HEADING: Record<AppPage, string> = {
 
 // The heading renders before the page's data does (chapters, the track list and the chapter estimate load after mount),
 // so a page whose main content is the same in every state also gets a wait for that content. Pages left out (Story Bible,
-// Tracks, Settings) show different content per state, so their drivers wait for their own.
+// Settings) show different content per state, so their drivers wait for their own.
 const PAGE_CONTENT: Partial<Record<AppPage, (page: Page) => Locator>> = {
   Home: (page) => page.getByRole('button', { name: /Show per-chapter breakdown/ }),
   Script: (page) => page.locator('[data-paragraph-text]'),
@@ -439,11 +438,25 @@ export async function openEditingCheckFromHome(page: Page, query: string) {
   return panel;
 }
 
-// Opens Chapter 1's editing check panel from the Tracks page's Chapter links list (the second entry point Phase 7
-// names), booted with a mock seed. Returns the panel.
-export async function openEditingCheckFromTracks(page: Page, query: string) {
-  await page.goto(`/tracks?${query}`);
+/** Opens the engine panel (stage-navigation-and-page-replacement.prd.md Phase 6) from the header's engine chip, whatever state
+ * the chip is in, and waits for the panel to have read its REAPER project. Returns the panel. */
+export async function openEnginePanel(page: Page): Promise<Locator> {
+  await page
+    .locator('header')
+    .getByRole('button', { name: /^(REAPER project linked|No REAPER project linked|Wrong REAPER project open) — / })
+    .click();
+  const panel = page.getByRole('dialog', { name: 'Audio engine' });
+  await panel.getByRole('region', { name: 'REAPER project' }).waitFor();
+  await panel.getByRole('status').filter({ hasText: 'Looking for the REAPER project file…' }).waitFor({ state: 'detached' });
+  return panel;
+}
+
+// Opens Chapter 1's editing check panel from the engine panel's Chapter links list (the second entry point editing readiness
+// Phase 7 names; the Tracks page's until stage navigation Phase 6), booted with a mock seed. Returns the panel.
+export async function openEditingCheckFromEngine(page: Page, query: string) {
+  await page.goto(`/?${query}`);
   await settlePage(page);
+  await openEnginePanel(page);
   await clickVisible(page, 'button', 'Editing check…');
   const panel = page.getByRole('dialog', { name: /^Editing check: Chapter 1\b/ });
   await panel.getByRole('button', { name: /^Check editing|Check again$/ }).waitFor();
@@ -574,12 +587,12 @@ export async function lookUpInReader(page: Page, word: string, url?: string): Pr
   await clickVisible(page, 'button', 'Look up');
 }
 
-/** Links a chapter to its first available track from the Tracks page's Chapter links table (the same real-UI path
+/** Links a chapter to its first available track from the engine panel's Chapter links table (the same real-UI path
  * 'chapter-link-confirmed' above uses), then follows its "Open workspace" link and waits for its Proof chapter view to
  * render (edit-and-proof-workspace.prd.md Phase 2: no chapter starts linked by default in the mock; the link goes to
  * `/proof/:chapterId` since stage-navigation-and-page-replacement.prd.md Phase 5). */
 export async function openLinkedProofChapter(page: Page, chapterTitle: string): Promise<void> {
-  await goToPage(page, 'Tracks');
+  await openEnginePanel(page);
   const table = page.getByRole('table', { name: 'Chapter links' });
   await table.scrollIntoViewIfNeeded();
   // An anchored-name cell match, not `hasText` (a substring): "Chapter 1" is also a substring of "Chapter 10"-"Chapter 12".
