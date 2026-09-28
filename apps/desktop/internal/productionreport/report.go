@@ -1,5 +1,5 @@
 // Package productionreport builds the Production page's exported status report
-// (docs/prds/production-tracking.prd.md Phase 5): one model rendered twice, as JSON for tools and as a
+// (production tracking PRD Phase 5, delivered and deleted; ADR 0028): one model rendered twice, as JSON for tools and as a
 // self-contained HTML page for a reviewer without the app, mirroring internal/deliveryreport's own shape and
 // "not a certification" framing.
 //
