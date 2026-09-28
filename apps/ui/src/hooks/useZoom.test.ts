@@ -156,4 +156,37 @@ describe('useZoom', () => {
     });
     expect(result.current.announcement).toBe('Zoom 125%');
   });
+
+  it('a failed initial read is silent: the readout stays at its 100% default (SILENT_CATCHES #1)', async () => {
+    const api = { windowZoom: vi.fn().mockRejectedValue(new Error('offline')), windowSetZoom: vi.fn() };
+    const { result } = renderHook(() => useZoom(api));
+    await waitFor(() => expect(api.windowZoom).toHaveBeenCalledOnce());
+    expect(result.current.level).toBe(1.0);
+  });
+
+  it('a failed zoomIn/zoomOut/reset is silent: the level stays at what it was before the click (SILENT_CATCHES #2)', async () => {
+    const api = fakeApi(1.25);
+    const { result } = renderHook(() => useZoom(api));
+    await waitFor(() => expect(result.current.level).toBe(1.25));
+    api.windowSetZoom.mockRejectedValueOnce(new Error('offline'));
+
+    await act(async () => result.current.zoomIn());
+
+    expect(result.current.level).toBe(1.25);
+  });
+
+  it('a failed resize re-read is silent: the level stays at its last known value (SILENT_CATCHES #3)', async () => {
+    const api = fakeApi(1.25);
+    const { result } = renderHook(() => useZoom(api));
+    await waitFor(() => expect(result.current.level).toBe(1.25));
+    api.windowZoom.mockRejectedValueOnce(new Error('offline'));
+
+    await act(async () => {
+      window.dispatchEvent(new Event('resize'));
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(result.current.level).toBe(1.25);
+  });
 });
