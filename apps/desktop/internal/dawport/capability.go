@@ -79,8 +79,8 @@ var specs = []Spec{
 	{CapFXChains, "FX chains", NeedsRunning, reflect.TypeFor[FXManager]()},
 	{CapSilenceTrim, "Silence trim", NeedsRunning, reflect.TypeFor[SilenceTrimmer]()},
 	{CapItemGain, "Level matching", NeedsRunning, reflect.TypeFor[GainAdjuster]()},
-	{CapRenderWithFX, "Master with the project's own FX", NeedsRunning, reflect.TypeFor[FXRenderer]()},
-	{CapMasterChainRead, "List the master and track FX", NeedsRunning, reflect.TypeFor[MasterChainReader]()},
+	{CapRenderWithFX, "Mastering with the project's FX", NeedsRunning, reflect.TypeFor[FXRenderer]()},
+	{CapMasterChainRead, "Master and track FX listing", NeedsRunning, reflect.TypeFor[MasterChainReader]()},
 }
 
 // Capabilities returns every capability's spec, in catalog order. The slice is the caller's own.

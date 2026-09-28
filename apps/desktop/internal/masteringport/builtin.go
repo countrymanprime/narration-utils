@@ -14,7 +14,7 @@ const Builtin = "builtin"
 func init() {
 	Rows.Register(port.Entry[Mastering]{
 		Name:       Builtin,
-		Descriptor: port.Descriptor{Label: "The built-in chain (EQ, limiter, gain)", Modes: []string{ModeWAV}},
+		Descriptor: port.Descriptor{Label: "Built-in chain (EQ, limiter, gain)", Modes: []string{ModeWAV}},
 		New:        func() Mastering { return builtinChain{} },
 	})
 }

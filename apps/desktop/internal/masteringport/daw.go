@@ -10,7 +10,7 @@ import (
 // DAW is the row that masters with the project's own track and master FX, in the DAW.
 const DAW = "daw"
 
-const dawLabel = "Your DAW's own FX"
+const dawLabel = "Your DAW's FX chain"
 
 func init() {
 	Rows.Register(port.Entry[Mastering]{

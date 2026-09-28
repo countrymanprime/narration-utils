@@ -45,7 +45,7 @@ func TestSupportSaysWhatANarratorCanChoose(t *testing.T) {
 	}
 	daw, _ := masteringport.Rows.Lookup(masteringport.DAW)
 	got := masteringport.Support(daw, "windows")
-	want := port.Support{Level: port.NotYetAvailable, Reason: port.ReasonNotYet, Message: "Your DAW's own FX is not available yet. Use the built-in chain."}
+	want := port.Support{Level: port.NotYetAvailable, Reason: port.ReasonNotYet, Message: "Your DAW's FX chain is not available yet."}
 	if got != want {
 		t.Errorf("Support(daw) = %+v, want %+v", got, want)
 	}

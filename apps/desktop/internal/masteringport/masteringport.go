@@ -146,7 +146,7 @@ func Support(entry port.Entry[Mastering], platform string) port.Support {
 
 // NotYetMessage is the sentence a NotYetAvailable row refuses with.
 func NotYetMessage(label string) string {
-	return fmt.Sprintf("%s is not available yet. Use the built-in chain.", label)
+	return fmt.Sprintf("%s is not available yet.", label)
 }
 
 // NotYetAvailable is the refusal of a row that is declared but not built.
