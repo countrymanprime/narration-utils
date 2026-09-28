@@ -12,33 +12,32 @@ const MUTED = { color: 'var(--text-muted)' };
 
 const clampPct = (fraction: number) => Math.min(100, Math.max(0, fraction * 100));
 
-/** A rule's spread as a horizontal track: the book's min-to-max band shaded within the rule's own bound, a median
- * tick, and one tick per judged file. The scale spans the rule's bound when it has one on that side, and the book's
- * own values otherwise (a boundless rule, or a bound the book's values sit outside of). */
+/** A rule's spread as a horizontal band (mock 05's "Book consistency · RMS by chapter", mock-fidelity-primitives-and-
+ * components.prd.md Phase 14): the rule's own min-max bound shaded as its target zone (the new `--ok-zone` token,
+ * dashed edges), and one accent tick per judged file. The scale spans the rule's bound when it has one on that side,
+ * and the book's own values otherwise (a boundless rule, or a bound the book's values sit outside of). */
 function SpreadTrack({ rule, values, stat }: { rule: DeliveryRule; values: readonly number[]; stat: BookSpreadStat }) {
   const lo = Math.min(rule.min ?? stat.min, stat.min);
   const hi = Math.max(rule.max ?? stat.max, stat.max);
   const span = hi - lo || 1;
   const fraction = (value: number) => (value - lo) / span;
-  const bandLeft = clampPct(fraction(stat.min));
-  const bandWidth = Math.max(0, clampPct(fraction(stat.max)) - bandLeft);
+  const zoneLeft = rule.min !== null ? clampPct(fraction(rule.min)) : 0;
+  const zoneRight = rule.max !== null ? clampPct(fraction(rule.max)) : 100;
   return (
-    <div className="relative mt-2 h-2 rounded-full" style={{ background: 'var(--surface-2)' }} aria-hidden="true">
-      <div
-        className="absolute top-0 h-2 rounded-full"
-        style={{ left: `${bandLeft}%`, width: `${bandWidth}%`, background: 'color-mix(in srgb, var(--ok) 40%, transparent)' }}
-      />
+    <div className="relative mt-2 h-[1.625rem] rounded-[3px]" style={{ background: 'var(--surface-2)' }} aria-hidden="true">
+      {(rule.min !== null || rule.max !== null) && (
+        <div
+          className="absolute inset-y-0.5 rounded-[3px] border-x-2 border-dashed"
+          style={{ left: `${zoneLeft}%`, width: `${Math.max(0, zoneRight - zoneLeft)}%`, background: 'var(--ok-zone)', borderColor: 'var(--ok)' }}
+        />
+      )}
       {values.map((value, index) => (
         <span
           key={index}
-          className="absolute top-1/2 size-2 -translate-1/2 rounded-full border-2"
-          style={{ left: `${clampPct(fraction(value))}%`, background: 'var(--surface)', borderColor: 'var(--text-muted)' }}
+          className="absolute top-1/2 h-[1.125rem] w-[0.1875rem] -translate-1/2 rounded-full"
+          style={{ left: `${clampPct(fraction(value))}%`, background: 'var(--accent)' }}
         />
       ))}
-      <span
-        className="absolute -top-1 h-4 w-0.5 -translate-x-1/2 rounded-full"
-        style={{ left: `${clampPct(fraction(stat.median))}%`, background: 'var(--accent)' }}
-      />
     </div>
   );
 }
@@ -68,7 +67,7 @@ function SpreadRow({ rule, values, stat }: { rule: DeliveryRule; values: number[
           </p>
         </>
       ) : (
-        <div className="mt-2 h-2 rounded-full" style={{ background: 'var(--surface-2)' }} aria-hidden="true" />
+        <div className="mt-2 h-[1.625rem] rounded-[3px]" style={{ background: 'var(--surface-2)' }} aria-hidden="true" />
       )}
     </div>
   );

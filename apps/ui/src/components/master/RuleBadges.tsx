@@ -2,33 +2,34 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import type { IconDefinition } from '@fortawesome/fontawesome-svg-core';
 import { faCircleCheck, faCircleMinus, faCircleXmark, faEarListen, faLock, faTriangleExclamation } from '@fortawesome/free-solid-svg-icons';
 import type { DeliveryRuleStatus, DeliveryVerification } from '../../types';
+import { StatusBadge, toneColors, type StatusTone, type BadgeLook } from '../primitives/StatusBadge';
 
 // The small status marks of Master & QC (docs/prds/delivery-platform-profiles.prd.md, mockups 01 to 04): a rule's result,
 // how its requirement was verified, and the profile's counts. The words carry the meaning; the colour and icon repeat it.
+// `Mark` draws through StatusBadge, the one badge primitive (mock-fidelity-primitives-and-components.prd.md Phase 14, ADR
+// 0600): a tone that was already a fill (`ok`, `danger`, `info`) stays soft; one that was outline-only (`warn`, `muted`)
+// keeps that look, so DeliveryProfilesPanel's "Built in"/"Custom" tags and DeliveryProfileEditor's marks are unchanged.
 
 type Tone = 'ok' | 'danger' | 'info' | 'warn' | 'muted';
 
-// A tinted mark mixes its tone into the panel's own surface, not into transparency: over a selected or hovered table row
-// (--surface-2) a see-through tint darkens and its text falls below the contrast the words need.
-const TONE: Record<Tone, { color: string; border: string; background: string }> = {
-  ok: { color: 'var(--ok-text)', border: 'var(--ok)', background: 'color-mix(in srgb, var(--ok) 12%, var(--surface))' },
-  danger: { color: 'var(--danger-text)', border: 'var(--danger)', background: 'color-mix(in srgb, var(--danger) 12%, var(--surface))' },
-  info: { color: 'var(--info-text)', border: 'var(--info)', background: 'color-mix(in srgb, var(--info) 12%, var(--surface))' },
-  warn: { color: 'var(--warn-text)', border: 'var(--warn)', background: 'transparent' },
-  muted: { color: 'var(--text-muted)', border: 'var(--border)', background: 'transparent' },
+const STATUS_TONE: Record<Tone, StatusTone> = {
+  ok: 'success',
+  danger: 'danger',
+  info: 'info',
+  warn: 'warning',
+  muted: 'neutral',
+};
+
+const LOOK: Record<Tone, BadgeLook> = {
+  ok: 'soft',
+  danger: 'soft',
+  info: 'soft',
+  warn: 'outline',
+  muted: 'outline',
 };
 
 export function Mark({ tone, icon, children }: { tone: Tone; icon?: IconDefinition; children: string }) {
-  const { color, border, background } = TONE[tone];
-  return (
-    <span
-      className="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 font-['Barlow_Condensed',sans-serif] text-[0.72rem] leading-tight font-semibold tracking-[0.03em] whitespace-nowrap uppercase"
-      style={{ color, borderColor: border, background }}
-    >
-      {icon && <FontAwesomeIcon icon={icon} aria-hidden="true" className="size-3" />}
-      {children}
-    </span>
-  );
+  return <StatusBadge tone={STATUS_TONE[tone]} look={LOOK[tone]} shape="pill" label={children} icon={icon && <FontAwesomeIcon icon={icon} />} />;
 }
 
 const RESULT: Record<DeliveryRuleStatus, { tone: Tone; icon: IconDefinition; label: string }> = {
@@ -57,10 +58,11 @@ export function VerificationMark({ verification }: { verification: DeliveryVerif
   );
 }
 
+// 16 px, the mocks' round checklist icon (mock-fidelity-primitives-and-components.prd.md Phase 14, mock 05).
 /** How a value stands in a table cell: an icon in the result's colour, beside the value in words. */
 export function ResultIcon({ status }: { status: DeliveryRuleStatus }) {
   const { tone, icon } = RESULT[status];
-  return <FontAwesomeIcon icon={icon} aria-hidden="true" className="mr-1.5 size-3.5 flex-none" style={{ color: TONE[tone].color }} />;
+  return <FontAwesomeIcon icon={icon} aria-hidden="true" className="mr-1.5 size-4 flex-none" style={{ color: toneColors(STATUS_TONE[tone]).text }} />;
 }
 
 export const LISTEN_ICON = faEarListen;

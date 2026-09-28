@@ -256,6 +256,7 @@ export function MasterQcPage({ openSettings, focus }: { openSettings: () => void
           {profiles && profiles.profiles.length > 0 && (
             <ToggleGroup
               label="Delivery platform"
+              look="segmented"
               value={profiles.projectProfile}
               onChange={(key) => void choosePlatform(key)}
               options={profiles.profiles.map((candidate) => ({
@@ -349,10 +350,13 @@ export function MasterQcPage({ openSettings, focus }: { openSettings: () => void
             )}
             {files.length > 0 ? (
               <>
-                {/* tabIndex: the table scrolls sideways in a narrow window, and a scrolling region must be reachable by keyboard. */}
+                {/* tabIndex: the table scrolls sideways in a narrow window, and a scrolling region must be reachable by keyboard.
+                    The bleed that makes PerFileChecks' Table flush to the panel's edges (ADR 0640) belongs on this scroll
+                    container, not on the table itself: a flush table nested in a scrolling ancestor has its negative
+                    margin clipped rather than reachable by scrolling. */}
                 <div
                   tabIndex={0}
-                  className="overflow-x-auto focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:outline-none focus-visible:ring-inset"
+                  className="-mx-[var(--panel-pad,1rem)] w-[calc(100%+2*var(--panel-pad,1rem))] overflow-x-auto focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:outline-none focus-visible:ring-inset"
                 >
                   {judgedBy && <PerFileChecks files={files} profile={judgedBy} selected={detail?.path} onSelect={setSelected} />}
                 </div>

@@ -2,6 +2,7 @@ import type { DeliveryProfile, DeliveryRuleStatus, MeasureJob, PackageChecklistS
 import { Button } from '../primitives/Button';
 import { Panel } from '../primitives/Panel';
 import { ProgressBar } from '../primitives/ProgressBar';
+import { SectionLabel } from '../primitives/SectionLabel';
 import { BookChecklist } from './BookChecklist';
 import { fileVerdict } from './fileVerdict';
 import { ResultIcon } from './RuleBadges';
@@ -81,7 +82,7 @@ export function DeliveryPackagePanel({
       )}
       {built && built.files.length > 0 && (
         <section className="mt-3">
-          <h3 className="section-label">Outputs</h3>
+          <SectionLabel as="h3">Outputs</SectionLabel>
           <p className={`${MONO} mt-1 text-[0.8rem] [overflow-wrap:anywhere]`} style={MUTED}>
             {built.outputDir}
           </p>

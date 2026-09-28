@@ -39,12 +39,16 @@ const CEILING: Record<Copy, Record<string, number>> = {
     'src/components/manuscript/ReaderCard.tsx': 1,
     // The waveform's frame, with its own tight padding round the drawing.
     'src/components/proof/WaveformStrip.tsx': 1,
+    // The Story Bible's Series tab (character-continuity-review PRD): its own card, not a page phase's.
+    'src/components/storybible/Guide.tsx': 1,
   },
   inset: {
     // Proof's finding detail (Phase 12).
     'src/components/proof/FindingDetail.tsx': 1,
     // The disagree choice's card, which is a button (the source and the sentence it names).
     'src/components/booth/ResumePrompt.tsx': 1,
+    // The Series tab's character card and clip row (character-continuity-review PRD, not a page phase's).
+    'src/components/series/SeriesTab.tsx': 2,
   },
   eyebrow: {
     // The shell's nav group headings and the header's Project label (Phase 8, which owns AppShell.tsx).
@@ -54,11 +58,10 @@ const CEILING: Record<Copy, Record<string, number>> = {
     'src/components/booth/CompanionShell.tsx': 1,
     'src/components/booth/ReaderRail.tsx': 1,
     'src/components/master/BookConsistency.tsx': 1,
-    'src/components/master/DeliveryPackagePanel.tsx': 1,
     'src/components/script/ScriptChapterList.tsx': 2,
     'src/components/script/ScriptPage.tsx': 6,
-    // The compare run's step strip, which Phase 5 moves onto the segmented look.
-    'src/components/proof/CompareRun.tsx': 3,
+    // Native takes review (native-recording PRD, not a page phase's).
+    'src/components/proof/NativeTakesPanel.tsx': 2,
   },
   h1: {
     // The Booth's page title is visually hidden (`sr-only`): the reading surface is the page, and a Heading would show.

@@ -22,10 +22,12 @@ const CEILING: Record<string, number> = {
   'src/components/script/ScriptRail.tsx': 1,
   // Phase 8 (the header, serial on AppShell.tsx): the zoom readout, a mono number between the zoom buttons.
   'src/components/layout/AppShell.tsx': 1,
-  // Phase 2: the Stage summary's chips are chips drawn as buttons, and become StatusBadges.
-  'src/components/stages/StageSummary.tsx': 3,
   // Phases 5 and 10: the selection menu's joined buttons become a Toolbar holding a segmented group.
   'src/components/manuscript/SelectionMenu.tsx': 4,
+  // Native takes review (native-recording PRD, not a page phase's).
+  'src/components/proof/NativeTakesPanel.tsx': 2,
+  // The Series tab's small actions (character-continuity-review PRD, not a page phase's).
+  'src/components/series/SeriesTab.tsx': 4,
 };
 
 // A class that sets what `Button` owns. Variant prefixes (`max-sm:`, `hover:`) and the important mark (`!`) are stripped first.
