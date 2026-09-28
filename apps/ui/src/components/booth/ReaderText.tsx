@@ -243,9 +243,12 @@ export function ReaderText({
   }, [container, cursor, follow]);
 
   const gutter = Boolean(speakers?.size);
-  // The Booth's type never drops below 24 px (1.5rem), WCAG's large text, at any width: with no card, a read word's muted
-  // colour on a single mark's tint sits over the page background, 4.4:1, which passes as large text only.
-  const typeClass = large ? 'space-y-7 text-[1.5rem] leading-[2.4rem] md:text-[1.6rem] md:leading-[2.75rem]' : 'space-y-5 text-[1.35rem] leading-[2.1rem]';
+  // The Booth's type is the measured spec (mock-fidelity-primitives-and-components.prd.md Phase 13, mock 03 Q6):
+  // `--font-size-booth-script` (26 px), never below WCAG's large text at any width. With no card, a read word's muted
+  // colour on a single mark's tint sits over the reading surface, which still clears large-text contrast.
+  const typeClass = large
+    ? 'space-y-7 text-[length:var(--font-size-booth-script)] leading-[calc(var(--font-size-booth-script)*var(--line-height-booth-script))]'
+    : 'space-y-5 text-[1.35rem] leading-[2.1rem]';
   return (
     <div ref={container} className={typeClass} aria-label="Chapter text" role="region">
       {rows.map((row) => {

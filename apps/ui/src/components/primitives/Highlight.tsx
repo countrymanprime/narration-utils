@@ -1,7 +1,8 @@
 import type { CSSProperties, KeyboardEvent, MouseEvent, ReactNode } from 'react';
 
-// `Cursor` is the Teleprompter's current word - a solid accent fill rather than a
-// tint, so it reads as a position marker and never as an entity or note.
+// `Cursor` is the Teleprompter's current word (mock-fidelity-primitives-and-components.prd.md Phase 13, mock 03): the
+// accent tint with a 2 px leading caret, so it reads as a position marker and never as an entity or note. Its only
+// consumer is `booth/ReaderText.tsx`, so this is safe to measure against the mock without moving any other reader.
 // `Misread`, `Extra`, `Skipped` and `Restart` are the read-aloud dialog's suspected flags (teleprompter-manuscript-integration.prd.md
 // Phase 7): a decoration in the Transcript Compare colour of the same kind, never a tint, so they layer over an entity or note mark.
 // `Search` is a manuscript search hit's matched term (reader search and controls PRD, R4) - never
@@ -83,7 +84,15 @@ function highlightStyle(kind: HighlightKind, colorToken?: string): CSSProperties
   const resolvedToken = colorToken ?? TOKEN[kind];
   const token = `var(${resolvedToken})`;
   // The negative margin cancels the mark's horizontal padding, so moving the cursor never changes where a line wraps.
-  if (kind === 'Cursor') return { background: token, color: 'var(--accent-contrast)', margin: '0 -0.05em' };
+  // The caret is an inset left border, the same technique as `Extra`'s insertion bar below.
+  if (kind === 'Cursor')
+    return {
+      background: 'var(--accent-soft)',
+      color: 'var(--accent-strong)',
+      margin: '0 -0.05em',
+      borderRadius: '0.25rem',
+      boxShadow: `inset 2px 0 0 ${token}`,
+    };
   if (kind === 'Extra') return { background: 'transparent', boxShadow: `inset 0.14em 0 0 ${token}`, paddingLeft: '0.2em' };
   const decoration = FLAG_DECORATION[kind];
   if (decoration)

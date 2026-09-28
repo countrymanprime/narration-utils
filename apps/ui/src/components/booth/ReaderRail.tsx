@@ -13,10 +13,11 @@ import type { ReaderMarkTarget } from './readerModel';
 import type { RailState, RailTab } from './readerPreferences';
 
 const SECTION_LABEL = "font-['Barlow_Condensed',sans-serif] text-[0.72rem] font-semibold tracking-[0.08em] text-[var(--text-muted)] uppercase";
+// Mock 03's right rail: 37 px rows, 13 px text (mock-fidelity-primitives-and-components.prd.md Phase 13).
 const NOTE_ITEM =
-  'rounded-[0.35rem] border border-transparent px-2 py-1.5 text-sm aria-[current=true]:border-[var(--accent)] aria-[current=true]:bg-[var(--surface-2)]';
+  'min-h-[2.3125rem] rounded-[0.35rem] border border-transparent px-2 py-1.5 text-[0.8125rem] aria-[current=true]:border-[var(--accent)] aria-[current=true]:bg-[var(--surface-2)]';
 const LIST_BUTTON =
-  'flex w-full items-center gap-2 rounded-[0.35rem] border border-transparent px-2 py-1.5 text-left text-sm hover:bg-[var(--surface-2)] focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:outline-none aria-[current=true]:border-[var(--accent)] aria-[current=true]:bg-[var(--surface-2)]';
+  'flex min-h-[2.3125rem] w-full items-center gap-2 rounded-[0.35rem] border border-transparent px-2 py-1.5 text-left text-[0.8125rem] hover:bg-[var(--surface-2)] focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:outline-none aria-[current=true]:border-[var(--accent)] aria-[current=true]:bg-[var(--surface-2)]';
 
 type Props = {
   state: RailState;

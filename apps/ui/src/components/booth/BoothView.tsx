@@ -79,7 +79,7 @@ function BoothStatus({
   const listening = t.active && !t.paused;
   const builtin = recorder?.builtin === true;
   const rec = builtin ? recorder.recording : recording.recording;
-  const tone: StatusTone = rec ? 'danger' : listening ? 'info' : 'neutral';
+  const tone: StatusTone = listening ? 'info' : 'neutral';
   // Mock 03's "REC · P&R" is REAPER's punch and roll; the built-in recorder's take reads "REC · Built-in".
   const label = rec ? (builtin ? 'REC · Built-in' : 'REC · P&R') : listening ? 'Reading' : t.active ? 'Paused' : 'Ready';
   // Only once a session has a script: before it, the rows carry no word positions to count from.
@@ -87,33 +87,49 @@ function BoothStatus({
   return (
     <>
       <span className="flex-none">
-        <StatusBadge tone={tone} label={label} />
+        {rec ? (
+          // The mock's own REC pill (mock-fidelity-primitives-and-components.prd.md Phase 13, mock 03): its
+          // `--rec-fill`/`--rec-text` are a fixed maroon, not a status tone, so it draws outside `StatusBadge`.
+          <span
+            className="inline-flex min-h-7 items-center gap-1.5 rounded-full px-3 font-['Barlow_Condensed',sans-serif] text-[0.8125rem] font-bold tracking-[0.13em] uppercase"
+            style={{ background: 'var(--rec-fill)', color: 'var(--rec-text)' }}
+          >
+            <span aria-hidden="true" className="size-1.5 rounded-full" style={{ background: 'currentcolor' }} />
+            {label}
+          </span>
+        ) : (
+          <StatusBadge tone={tone} label={label} />
+        )}
       </span>
-      {chapterTitle && <span className="min-w-0 truncate font-semibold">{chapterTitle}</span>}
+      {chapterTitle && <span className="min-w-0 truncate font-['Barlow_Condensed',sans-serif] text-[1.1875rem] font-semibold">{chapterTitle}</span>}
       {progress && (
-        <span className="hidden text-xs whitespace-nowrap lg:inline" style={{ color: 'var(--text-muted)' }}>
+        <span className="hidden text-[0.8125rem] whitespace-nowrap lg:inline" style={{ color: 'var(--text-muted)' }}>
           {progressText(progress)}
         </span>
       )}
       {builtin ? (
         <RecorderStatus recorder={recorder} />
       ) : (
-        // Decorative: the command bar's microphone popover has the labelled meter.
-        <span className="flex flex-none items-center gap-1 text-xs" style={{ color: 'var(--text-muted)' }}>
+        // Decorative: the command bar's microphone popover has the labelled meter. `booth` (16 px) is the mock's own
+        // meter height in the top bar (mock 03).
+        <span className="flex flex-none items-center gap-1.5 text-xs" style={{ color: 'var(--text-muted)' }}>
           <span className="max-sm:sr-only">Input</span>
-          <LevelMeter label="Input level" peak={level?.peak ?? null} rms={level?.rms ?? null} decorative size="compact" className="w-8 sm:w-16" />
+          <LevelMeter label="Input level" peak={level?.peak ?? null} rms={level?.rms ?? null} decorative size="booth" className="w-16 sm:w-32" />
+          {level?.peak !== null && level?.peak !== undefined && (
+            <span className="hidden font-['IBM_Plex_Mono',ui-monospace,monospace] text-[0.75rem] tabular-nums sm:inline">{level.peak.toFixed(1)} pk</span>
+          )}
         </span>
       )}
       <div className="ml-auto flex flex-none items-center gap-2">
         {onCompanion && (
           <TooltipTarget text="Pin a narrow companion panel beside your DAW">
-            <Button variant="secondary" aria-label="Companion" className="px-2.5 py-1 text-xs" onClick={onCompanion}>
+            <Button variant="secondary" size="sm" aria-label="Companion" onClick={onCompanion}>
               <FontAwesomeIcon icon={faDownLeftAndUpRightToCenter} />
               <span className="max-sm:hidden">Companion</span>
             </Button>
           </TooltipTarget>
         )}
-        <Button variant="secondary" aria-label="Exit booth" className="px-2.5 py-1 text-xs" onClick={onExit}>
+        <Button variant="secondary" size="sm" aria-label="Exit booth" onClick={onExit}>
           <span className="max-sm:hidden">Exit booth</span> <Kbd keys={['Esc']} />
         </Button>
       </div>
@@ -250,6 +266,9 @@ export function BoothView({
   return (
     <FocusShell
       status={<BoothStatus session={t} chapterTitle={chapterTitle} recording={recording} recorder={recorder} onCompanion={onCompanion} onExit={onExit} />}
+      // Mock 03's reading surface is darker than the app's `--bg` (Q6): the token has a light-theme value too, so
+      // nothing is forced (D69).
+      contentClassName="bg-[var(--reading-bg)]"
       rail={railBeside ? railContent : undefined}
       // A route inside AppShell, whose own `<main>` holds this page: a second one would duplicate the landmark.
       asMain={false}
