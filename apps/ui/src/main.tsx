@@ -105,10 +105,14 @@ const mockReaperInput = MOCK_REAPER_INPUT_SEEDS.find((seed) => seed === mockPara
 const mockResume = MOCK_RESUME_SEEDS.find((seed) => seed === mockParams.get('mockResume'));
 // `?mockRemoved=1`: the last narration chapter boots removed from recording (chapter-track-link-control.prd.md Phase 3).
 const mockRemoved = mockParams.get('mockRemoved') === '1';
-// `?mockChapterSync=ask|off|linked|unsaved|pickups|activity`: chapter sync's consent at boot (daw-chapter-track-auto-sync.prd.md
-// Phases 3, 4 and 8; `unsaved` is REAPER holding unsaved edits, with a Sync activity row; `pickups` is a chapter whose
-// pickup track changed since its last scan; `activity` is the engine panel's Sync activity with an automatic and a manual link).
-const mockChapterSync = (['ask', 'off', 'linked', 'unsaved', 'pickups', 'activity'] as const).find((seed) => seed === mockParams.get('mockChapterSync'));
+// `?mockChapterSync=ask|off|linked|unsaved|pickups|activity|background`: chapter sync's consent at boot
+// (daw-chapter-track-auto-sync.prd.md Phases 3, 4, 7 and 8; `unsaved` is REAPER holding unsaved edits, with a Sync
+// activity row; `pickups` is a chapter whose pickup track changed since its last scan; `activity` is the engine
+// panel's Sync activity with an automatic and a manual link; `background` is a background check waiting because the
+// heartbeat says REAPER is recording, ADR 0211).
+const mockChapterSync = (['ask', 'off', 'linked', 'unsaved', 'pickups', 'activity', 'background'] as const).find(
+  (seed) => seed === mockParams.get('mockChapterSync'),
+);
 // `?mockNoDevices=1` boots the teleprompter with an empty device listing, so the
 // blocked "No microphone found" state (no typed fallback) can be seen without a host.
 const mockNoDevices = mockParams.has('mockNoDevices');
@@ -340,6 +344,10 @@ const mockMeasure = (['running', 'fails', 'spread'] as const).find((seed) => see
 const mockDiagnostics = (['running', 'fails'] as const).find((seed) => seed === mockParams.get('mockDiagnostics'));
 // `?mockRenderExport=running` does the same for Master & QC's export job (render-encode-master.prd.md Phase 5).
 const mockRenderExportHold = mockParams.get('mockRenderExport') === 'running';
+// `?mockPackageMulti=running` holds a started multi-platform package build part way through, separately from
+// `mockRenderExport` (which would also hold the export job itself mid-run, leaving no completed files to build
+// packages from) (render-encode-master.prd.md Phase 6).
+const mockPackageMultiHold = mockParams.get('mockPackageMulti') === 'running';
 const mockDeliveryProfile = mockParams.get('mockDeliveryProfile') === 'custom' ? ('custom' as const) : undefined;
 // `?mockProduction=on-pace|at-risk` seeds the Production page with a time log, a running timer (on-pace only), a deadline and a
 // contracted amount (production-tracking.prd.md Phase 4); with none, nothing is logged or set yet.
@@ -377,6 +385,7 @@ const mockInitial = {
   ...(mockMeasure ? { measure: mockMeasure === 'running' ? ('hold' as const) : mockMeasure === 'spread' ? ('spread' as const) : ('fails' as const) } : {}),
   ...(mockDiagnostics ? { diagnostics: mockDiagnostics === 'running' ? ('hold' as const) : ('fails' as const) } : {}),
   ...(mockRenderExportHold ? { renderExport: 'hold' as const } : {}),
+  ...(mockPackageMultiHold ? { renderPackageMulti: 'hold' as const } : {}),
   ...(mockDeliveryProfile ? { deliveryProfile: mockDeliveryProfile } : {}),
   ...(mockProduction ? { production: PRODUCTION_SCENARIOS[mockProduction] } : {}),
   ...(mockTakeReviewScanHold ? { takeReviewScanHold: true } : {}),

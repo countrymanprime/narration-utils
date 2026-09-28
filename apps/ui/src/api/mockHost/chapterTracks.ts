@@ -90,7 +90,9 @@ export function createChapterTracksMock(
       unsavedEdits: chapterSyncUnsavedEdits,
       activity: chapterSyncActivity,
       chapters: links.project === 'ready' ? mockChapterSyncRows(links) : [],
-      background: { enabled: true, wait: 'nothing' },
+      // The `background` seed (daw-chapter-track-auto-sync.prd.md Phase 7, ADR 0211) shows the engine panel's wait
+      // line for the reason this stream landed: REAPER is running and its heartbeat says it is recording.
+      background: { enabled: true, wait: initial.chapterSync === 'background' ? 'recording' : 'nothing' },
     };
   };
   // Phase 6's status rows, as the host builds them: the link, and the recording check's own answer (the coverage mock's).

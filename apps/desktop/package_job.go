@@ -211,6 +211,11 @@ func (h *Host) startPackage(req PackageRequest) (PackageJob, error) {
 		cancel()
 		return PackageJob{}, errors.New("a package is already being built")
 	}
+	if h.multiPackageJob != nil && h.multiPackageJob.running() {
+		h.mu.Unlock()
+		cancel()
+		return PackageJob{}, errors.New("a multi-platform package is already being built")
+	}
 	h.packageJob = job
 	h.mu.Unlock()
 

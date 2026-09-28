@@ -33,7 +33,7 @@ def load_or_generate_corpus(out_dir: Path, chapters: int) -> dict:
     if not manifest_path.exists():
         manifest = synthetic_corpus.generate_corpus(out_dir, n_chapters=chapters)
         synthetic_corpus.write_manifest(out_dir, manifest)
-    return json.loads(manifest_path.read_text())
+    return json.loads(manifest_path.read_text(encoding="utf-8"))
 
 
 def _try_import_praat():
@@ -221,7 +221,7 @@ def main() -> None:
         result["engines"]["resemblyzer"] = {"status": "did_not_install"}
 
     out_json = corpus_dir.parent / "results.json"
-    out_json.write_text(json.dumps(result, indent=2))
+    out_json.write_text(json.dumps(result, indent=2), encoding="utf-8")
     print(json.dumps(result, indent=2))
     print(f"\nWrote {out_json}")
 

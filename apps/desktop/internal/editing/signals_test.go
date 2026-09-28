@@ -153,30 +153,22 @@ func TestEmptySpaceSignalStaleEvenWithOpenCandidates(t *testing.T) {
 	}
 }
 
-// TestUnvalidatedSignalNeverMet is this pass's own required property: the
-// click and breath signals can never be met, whatever they carry as
-// evidence, because validatedAnalyzerVersions is empty (Phase 4 not run).
-func TestUnvalidatedSignalNeverMet(t *testing.T) {
-	for _, id := range []string{ClickSignalID, BreathSignalID} {
-		signal := UnvalidatedSignal(id, AnalyzerVersion, nil, stages.Basis{LedgerRecordIDs: []string{}}, time.Now().UTC())
-		if signal.State == stages.SignalMet {
-			t.Fatalf("UnvalidatedSignal(%s) = met, want never met", id)
-		}
+// TestShippedClassSignalsNeverMet: under the shipped detector versions and
+// the recorded validation runs, the click and breath signals are unknown even
+// on fully covered input with no candidate (Phase 4: both classes ship gated
+// off).
+func TestShippedClassSignalsNeverMet(t *testing.T) {
+	for _, class := range []struct{ id, analyzer, version string }{
+		{ClickSignalID, AnalyzerClick, ClickAnalyzerVersion},
+		{BreathSignalID, AnalyzerBreath, BreathAnalyzerVersion},
+	} {
+		signal := ClassSignal(coveredClassInput(class.id, class.analyzer, class.version, DetectorValidations()))
 		if signal.State != stages.SignalUnknown {
-			t.Fatalf("UnvalidatedSignal(%s) state = %q, want %q", id, signal.State, stages.SignalUnknown)
+			t.Fatalf("%s state = %q, want %q", class.id, signal.State, stages.SignalUnknown)
 		}
 		if err := signal.Validate(); err != nil {
 			t.Fatalf("signal failed Validate(): %v", err)
 		}
-	}
-}
-
-func TestIsValidatedAlwaysFalseInThisBuild(t *testing.T) {
-	if IsValidated(AnalyzerVersion) {
-		t.Fatalf("IsValidated(%q) = true; Phase 4 has not run, no version should ever validate", AnalyzerVersion)
-	}
-	if IsValidated("anything-else") {
-		t.Fatalf("IsValidated of an arbitrary string = true, want false")
 	}
 }
 

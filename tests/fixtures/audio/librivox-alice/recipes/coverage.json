@@ -1,0 +1,156 @@
+{
+  "cases": [
+    {
+      "id": "kara_01-complete",
+      "source": "kara_01",
+      "split": "tune",
+      "conditions": ["complete", "title_read"],
+      "description": "The whole chapter as published, with the LibriVox preamble and chapter title before it and the closing credit after.",
+      "items": [{"id": "item-1", "pieces": [{"whole": true}]}]
+    },
+    {
+      "id": "kara_01-skipped-paragraph",
+      "source": "kara_01",
+      "split": "tune",
+      "conditions": ["skipped_paragraph", "title_read"],
+      "description": "Paragraph 12 is cut out at the reader's pauses.",
+      "items": [{"id": "item-1", "pieces": [{"head": true}, {"paragraphs": [1, 11]}, {"paragraphs": [13, null]}, {"tail": true}]}]
+    },
+    {
+      "id": "kara_01-skipped-sentence",
+      "source": "kara_01",
+      "split": "tune",
+      "conditions": ["skipped_sentence", "title_read"],
+      "description": "The second of paragraph 19's four sentences (14 s) is cut out at the reader's pauses.",
+      "items": [
+        {
+          "id": "item-1",
+          "pieces": [
+            {"head": true},
+            {"paragraphs": [1, 18]},
+            {"paragraph": 19, "sentences": [0, 1]},
+            {"paragraph": 19, "sentences": [2, null]},
+            {"paragraphs": [20, null]},
+            {"tail": true}
+          ]
+        }
+      ]
+    },
+    {
+      "id": "kara_01-pickup-at-end",
+      "source": "kara_01",
+      "split": "tune",
+      "conditions": ["pickup_at_end", "title_read"],
+      "description": "Paragraph 5 is missing in place and read after the last paragraph, following 3 s of room tone.",
+      "items": [{"id": "item-1", "pieces": [{"head": true}, {"paragraphs": [1, 4]}, {"paragraphs": [6, null]}, {"roomTone": 3}, {"paragraphs": [5, 5]}]}]
+    },
+    {
+      "id": "kara_01-truncated-tail",
+      "source": "kara_01",
+      "split": "tune",
+      "conditions": ["truncated_tail", "title_read"],
+      "description": "The recording stops after paragraph 20; the last four paragraphs are never read.",
+      "items": [{"id": "item-1", "pieces": [{"head": true}, {"paragraphs": [1, 20]}]}]
+    },
+    {
+      "id": "kara_01-retakes",
+      "source": "kara_01",
+      "split": "tune",
+      "conditions": ["retakes_and_false_starts", "complete", "title_read"],
+      "description": "The first two sentences of paragraph 7 are read, then 1.5 s of room tone, then paragraph 7 again in full.",
+      "items": [
+        {
+          "id": "item-1",
+          "pieces": [
+            {"head": true},
+            {"paragraphs": [1, 6]},
+            {"paragraph": 7, "sentences": [0, 2]},
+            {"roomTone": 1.5},
+            {"paragraphs": [7, null]},
+            {"tail": true}
+          ]
+        }
+      ]
+    },
+    {
+      "id": "kara_01-multiple-items",
+      "source": "kara_01",
+      "split": "tune",
+      "conditions": ["multiple_items_trimmed", "complete", "title_read"],
+      "description": "The chapter in three items split at paragraph pauses, each with room tone at its ends.",
+      "items": [
+        {"id": "item-1", "pieces": [{"head": true}, {"paragraphs": [1, 8]}, {"roomTone": 1.0}]},
+        {"id": "item-2", "pieces": [{"roomTone": 0.8}, {"paragraphs": [9, 16]}, {"roomTone": 1.2}]},
+        {"id": "item-3", "pieces": [{"roomTone": 0.5}, {"paragraphs": [17, null]}, {"tail": true}]}
+      ]
+    },
+    {
+      "id": "kara_02-late-start",
+      "source": "kara_02",
+      "split": "tune",
+      "conditions": ["late_start", "title_read"],
+      "description": "The chapter title, then the reading from paragraph 4; paragraphs 1 to 3 are never read.",
+      "items": [{"id": "item-1", "pieces": [{"head": true}, {"paragraphs": [4, null]}, {"tail": true}]}]
+    },
+    {
+      "id": "kara_02-different-text",
+      "source": "kara_02",
+      "split": "tune",
+      "conditions": ["unrelated_speech", "title_read"],
+      "description": "Paragraph 10 is replaced by a paragraph of Chapter VII read by the same narrator.",
+      "items": [
+        {
+          "id": "item-1",
+          "pieces": [
+            {"head": true},
+            {"paragraphs": [1, 9]},
+            {"foreign": {"source": "kara_07", "paragraph": 30}},
+            {"paragraphs": [11, null]},
+            {"tail": true}
+          ]
+        }
+      ]
+    },
+    {
+      "id": "kara_10-editorial-notes-not-read",
+      "source": "kara_10",
+      "split": "held_out",
+      "conditions": ["skipped_sentence", "title_read"],
+      "description": "The whole chapter as published, verse and sung lines included. The script's paragraphs 63 and 74 open with the Gutenberg note \"[later editions continued as follows\", which the reader's edition does not have, so those five words are never read.",
+      "notRead": [63, 74],
+      "items": [{"id": "item-1", "pieces": [{"whole": true}]}]
+    },
+    {
+      "id": "leach_01-complete",
+      "source": "leach_01",
+      "split": "held_out",
+      "conditions": ["complete", "title_read"],
+      "description": "A second narrator's whole chapter as published; the head holds the prefatory poem, which is not in the script.",
+      "items": [{"id": "item-1", "pieces": [{"whole": true}]}]
+    },
+    {
+      "id": "leach_01-skipped-paragraph",
+      "source": "leach_01",
+      "split": "held_out",
+      "conditions": ["skipped_paragraph", "title_read"],
+      "description": "Paragraph 9 is cut out at the reader's pauses.",
+      "items": [{"id": "item-1", "pieces": [{"head": true}, {"paragraphs": [1, 8]}, {"paragraphs": [10, null]}, {"tail": true}]}]
+    },
+    {
+      "id": "leach_01-pickup-at-end",
+      "source": "leach_01",
+      "split": "held_out",
+      "conditions": ["pickup_at_end", "title_read"],
+      "description": "Paragraph 3 is missing in place and read after the last paragraph, following 3 s of room tone.",
+      "items": [{"id": "item-1", "pieces": [{"head": true}, {"paragraphs": [1, 2]}, {"paragraphs": [4, null]}, {"roomTone": 3}, {"paragraphs": [3, 3]}]}]
+    },
+    {
+      "id": "leach_01-truncated-tail",
+      "source": "leach_01",
+      "split": "held_out",
+      "conditions": ["truncated_tail", "title_read"],
+      "description": "The recording stops after paragraph 18.",
+      "items": [{"id": "item-1", "pieces": [{"head": true}, {"paragraphs": [1, 18]}]}]
+    }
+  ]
+}

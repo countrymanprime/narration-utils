@@ -118,6 +118,16 @@ export const proofChapterDrivers: Record<string, Driver> = {
     await finishComparison(page);
     await compareRun(page).scrollIntoViewIfNeeded();
   },
+  // "May have changed since comparison" (reaper-automation-follow-through PRD Phase 13): reviewing the last completed
+  // comparison (its mock fixture carries a baseline count of 41), whose default background check answers 42 - no
+  // seam needed. Live just-finished results carry no baseline in this mock (the real host sets one at prepare_compare),
+  // so this state goes through "Last narrated take" rather than a fresh run, same path as compare-no-daw-review.
+  'compare-results-changed-since': async (page) => {
+    await openCompare(page);
+    await clickVisible(page, 'button', /Last narrated take/);
+    await page.getByText(/may have changed/).waitFor();
+    await compareRun(page).scrollIntoViewIfNeeded();
+  },
   'compare-toast': async (page) => {
     await openCompare(page);
     // Suggesting hints from the manuscript answers with a toast (adding a term answers with none), and an information toast

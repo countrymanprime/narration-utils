@@ -1,7 +1,7 @@
 import { apiErrorMessage, describeApiError } from '../../api/errorMessage';
 import { useEffect, useRef, useState } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faFileExport, faPlay, faRotateLeft, faWandMagicSparkles } from '@fortawesome/free-solid-svg-icons';
+import { faFileExport, faPlay, faRotateLeft, faTriangleExclamation, faWandMagicSparkles } from '@fortawesome/free-solid-svg-icons';
 import type { TranscriptState, TranscriptStartResult, WhisperInstallJob } from '../../types';
 import { isTranscriptActive } from '../../state';
 import { useApi } from '../../api/ApiContext';
@@ -57,6 +57,10 @@ const CHUNK_LENGTH_TOOLTIP = [
   'Longer chunks on a big model risk running out of memory, so the range is capped by the model you pick.',
 ].join(' ');
 const modelLabel = (value: string) => MODEL_OPTIONS.find((option) => option.value === value)?.label ?? value;
+
+/** How often the "may have changed" hint re-asks REAPER for its edit count while results are shown (reaper-automation-follow-through
+ * PRD Phase 13): a background hint, not a status light, so it polls far less often than useReaperStatus's 3 s connection check. */
+const PROJECT_STATE_POLL_MS = 30_000;
 
 /** Whether "Start comparison" can run, and why not (stage-navigation-and-page-replacement.prd.md Phase 5): the run
  * needs a linked REAPER project file (PRD W16, as the Proofing page did) and the DAW port's `review` capability
@@ -250,6 +254,38 @@ export function CompareRun({
     if (reviewingLast) onCloseLast();
     else void api.transcriptReset().catch((error) => notify(describeApiError(error), 'error'));
   };
+
+  // "Changed since comparison" (reaper-automation-follow-through PRD Phase 13): REAPER's own edit counter, checked on a
+  // low-frequency background poll only while results are shown, against the count the comparison started from
+  // (results.projectChangeCount). The counter is only meaningful within one REAPER session of the project — it resets
+  // when the project is reopened — so this is worded as "may have changed", never certainty, and nothing here ever
+  // re-runs the comparison. No baseline (an older or offline comparison) means no check is made and no label shown.
+  const compareBaseline = results.projectChangeCount;
+  const [projectMayHaveChanged, setProjectMayHaveChanged] = useState(false);
+  useEffect(() => {
+    if (!showingResults || compareBaseline === undefined) {
+      setProjectMayHaveChanged(false);
+      return;
+    }
+    let active = true;
+    const unsubscribe = api.subscribeProjectState((update) => {
+      if (!active || update.phase !== 'success' || update.changeCount === undefined) return;
+      void api
+        .projectStateChangedSince(update.changeCount, compareBaseline)
+        .then(({ changed }) => {
+          if (active) setProjectMayHaveChanged(changed);
+        })
+        .catch(() => {});
+    });
+    const check = () => void api.projectStateCheck().catch(() => {});
+    check();
+    const timer = window.setInterval(check, PROJECT_STATE_POLL_MS);
+    return () => {
+      active = false;
+      unsubscribe();
+      window.clearInterval(timer);
+    };
+  }, [api, showingResults, compareBaseline]);
 
   const phase = showingResults ? 'results' : state.phase === 'need_chapter' ? 'chapter' : running ? 'running' : 'setup';
   return (
@@ -496,6 +532,12 @@ export function CompareRun({
               </TooltipTarget>
             </div>
           </div>
+          {projectMayHaveChanged && (
+            <p role="status" className="flex items-start gap-1" style={{ color: 'var(--warn-text)' }}>
+              <FontAwesomeIcon icon={faTriangleExclamation} aria-hidden="true" className="mt-0.5 flex-none" />
+              <span>The REAPER project may have changed since this comparison.</span>
+            </p>
+          )}
           {results.markerExport.phase !== 'idle' && (
             <p
               className={`text-xs ${results.markerExport.phase === 'error' ? 'text-[var(--danger-text)]' : ''}`}
