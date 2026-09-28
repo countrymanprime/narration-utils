@@ -144,8 +144,10 @@ describe('a credits row on the board', () => {
     expect(creditsCell(row('finalized'), column('Proof'))).toEqual({ tone: 'success', label: '✓' });
   });
 
-  it('says nothing measures credits yet, or that the template is not set up', () => {
-    expect(creditsCell(row('recording'), column('Recorded'))).toEqual({ tone: 'neutral', label: '—' });
+  it('shows its own measured Recorded length, why it has none, or that the template is not set up (Phase 3)', () => {
+    expect(creditsCell(row('recording'), column('Recorded'))).toEqual({ tone: 'neutral', label: 'No track' });
+    expect(creditsCell({ ...row('recording'), recordedSeconds: 7 }, column('Recorded'))).toEqual({ tone: 'neutral', label: '0:07' });
+    expect(creditsCell({ ...row('recording'), recordedUnavailable: 'track_missing' }, column('Recorded'))).toEqual({ tone: 'danger', label: 'Track missing' });
     expect(creditsCell({ status: 'recording' }, column('Recorded'))).toEqual({ tone: 'neutral', label: 'Not set up' });
     expect(creditsCell(row('recording'), column('Delivery'))).toEqual({ tone: 'neutral', label: '—' });
   });
