@@ -96,8 +96,8 @@ export const settingsStates: StateEntry[] = [
   { page: 'settings', state: 'global-tts', description: 'Settings, Global scope / TTS category', ...REFLOW },
   {
     page: 'settings',
-    state: 'global-teleprompter',
-    description: 'Settings, Global scope / Teleprompter category (microphone, live engine and model choice)',
+    state: 'global-booth',
+    description: 'Settings, Global scope / Booth category (microphone, live engine and model choice; stage-navigation-and-page-replacement.prd.md Q11)',
     ...REFLOW,
   },
   { page: 'settings', state: 'global-about', description: 'Settings, Global scope / About and updates category (the version, nothing checked yet)', ...REFLOW },

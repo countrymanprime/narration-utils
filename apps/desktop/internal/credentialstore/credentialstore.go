@@ -1,4 +1,4 @@
-// Package credentialstore keeps the narrator's own secrets at rest (ADR 0405 Q10, ADR 0355): today exactly one, the
+// Package credentialstore keeps the narrator's own secrets at rest (ADR 0405 Q10, ADR 0356): today exactly one, the
 // Merriam-Webster Dictionary API key (prep-depth.prd.md Phase 9). It is the first secret this app stores.
 //
 // A secret lives in its own per-user file (credentials.json beside the settings and the recents list), never in the

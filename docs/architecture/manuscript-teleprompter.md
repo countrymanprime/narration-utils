@@ -1,6 +1,6 @@
 # Manuscript Teleprompter
 
-**Status: Shipped (first cut).** The ASR sidecar, its Go host relay and the Teleprompter page exist. This document is the design record; open and planned work is specified in [teleprompter-engines-and-input-devices.prd.md](../prds/teleprompter-engines-and-input-devices.prd.md) and [teleprompter-manuscript-integration.prd.md](../prds/teleprompter-manuscript-integration.prd.md).
+**Status: Shipped (first cut).** The ASR sidecar, its Go host relay and the Booth page (which replaced the Teleprompter page and the Manuscript's Read aloud dialog, stage-navigation-and-page-replacement.prd.md Phase 4) exist. This document is the design record; open and planned work is specified in [teleprompter-engines-and-input-devices.prd.md](../prds/teleprompter-engines-and-input-devices.prd.md) and [teleprompter-manuscript-integration.prd.md](../prds/teleprompter-manuscript-integration.prd.md).
 
 ## Problem
 
@@ -400,7 +400,7 @@ position stay in the snapshot after the stop.
 sequenceDiagram
   autonumber
   actor N as Narrator
-  participant UI as apps/ui: components/teleprompter
+  participant UI as apps/ui: components/booth
   participant B as apps/desktop: bindings.go, app.go
   participant S as internal/teleprompter: Service
   participant P as internal/process: Supervisor
@@ -496,7 +496,7 @@ nothing; a failure at any layer (bad exit code, unparseable output, a timeout)
 comes back as an empty list plus a message, never a rejected call, so the UI
 always gets a result to react to. Phase 1 stops at the binding: no UI calls it
 yet, and the existing typed microphone field is unchanged behavior, only
-relocated to `apps/ui/src/components/teleprompter/MicrophoneField.tsx` as the
+relocated to `apps/ui/src/components/booth/MicrophoneField.tsx` as the
 shared seam this PRD and `teleprompter-manuscript-integration.prd.md` agreed
 on. The device picker itself (consuming `TeleprompterDevices`, replacing the
 typed field entirely with a dropdown-only picker, the "not found" state, and a
@@ -529,35 +529,35 @@ and no auto-stop is armed; flags are kept only when the session ends
 
 ## UI: what shipped and what is still open
 
-**Shipped (Teleprompter page, `apps/ui/src/components/teleprompter/`).** Pick a
-narration chapter, type the microphone's name, choose Tiny or Small, and Start.
-The setup fields collapse to a sticky status bar (Listening, Waiting for you to
-return to the script, Done) with Stop, and the chapter text below highlights the
-current word as you read: read words dim, the current word is a solid accent
-fill (the `Cursor` kind of `Highlight`), words the tracker says you skipped get
-a dotted underline, and the page scrolls to keep the current word near the
-middle. It does not reuse `ParagraphView` (that renders character-offset
-annotations, not words). The design choices are recorded in
-[ADR 0024](../adr/0024-teleprompter-highlight-follows-the-sidecars-spans.md).
-Leaving the page and coming back mid-session picks up where it was. A missing
-model triggers the same first-use download prompt as Transcript Compare. In
-browser mock mode Start replays a position stream recorded from the real tracker
-(`spikes/record_mock_stream.py`), and `?mockTeleprompter=listening|waiting|done`
-boots part-way through a chapter for the visual suite (`ended` boots a session
-that already stopped itself at the end of the chapter).
+**Shipped (the Booth page, `/booth`, `apps/ui/src/components/booth/`).** One page is the read-along
+([ADR 0407](../adr/0407-a-new-page-replaces-its-old-counterpart-in-the-same-change-and-the-navigation-is-grouped-by-production-stage.md):
+it replaced the Teleprompter page, the Manuscript's Read aloud dialog and its booth dialog, and `/teleprompter`
+redirects here keeping its query and hash). `BoothPage` owns what the Booth reads (`?chapter=<id>` or
+`?credits=opening|closing`, else REAPER's confident suggestion, ADR 0113, else the last chapter read) and loads the
+Story Bible entries and notes for the marks; it mounts one `BoothSession`, keyed by what it reads, which holds the one
+`useTeleprompterSession` subscription, the flags kept as findings, the resume prompt and Record in REAPER. `BoothView`
+lays it out on `FocusShell` (mock 03): a status line, the chapter picker above the text while idle, the rail and the
+`ReadingControlBar` as its command bar (microphone, engine and model, Record in REAPER). Companion mode (`CompanionShell`,
+ADR 0401) is entered from the Booth's header. The text highlights the current word as you read: read words dim, the
+current word is a solid accent fill (the `Cursor` kind of `Highlight`), words the tracker says you skipped get a dotted
+underline, and the text scrolls to keep the current word near the middle; scrolling by hand pauses following until
+Follow. It does not reuse `ParagraphView` (that renders character-offset annotations, not words). The design choices are
+recorded in [ADR 0024](../adr/0024-teleprompter-highlight-follows-the-sidecars-spans.md). Leaving the page and coming
+back mid-session picks up where it was; Exit booth (or Escape) asks before stopping a live session. A missing model
+triggers the same first-use download prompt as Transcript Compare. In browser mock mode Start replays a position stream
+recorded from the real tracker (`spikes/record_mock_stream.py`), and `?mockTeleprompter=listening|waiting|done|flagged`
+boots part-way through a chapter for the visual suite (`ended` boots a session that already stopped itself at the end
+of the chapter).
 
-**Still open:** a microphone picker, an engine choice and letting the narrator
-scroll by hand without being pulled back are specified in
-[teleprompter-engines-and-input-devices.prd.md](../prds/teleprompter-engines-and-input-devices.prd.md).
-Flagged words and turning this page into a reading mode of the Manuscript (modal,
-story bible and notes, misread marks, seek to a word and punch-and-roll) are
-specified in
-[teleprompter-manuscript-integration.prd.md](../prds/teleprompter-manuscript-integration.prd.md).
+**Still open:** punch-and-roll from a word beyond the flag's "Punch from here", and the per-character reference clips
+the rail reserves a place for, are specified in
+[teleprompter-manuscript-integration.prd.md](../prds/teleprompter-manuscript-integration.prd.md) and
+[character-continuity-review.prd.md](../prds/character-continuity-review.prd.md).
 
 ## Resume: where REAPER is and where the prompter was
 
-The Read aloud dialog opens with a compact **Where you stopped** prompt above the
-text (`apps/ui/src/components/teleprompter/ResumePrompt.tsx`). It reconciles two
+The Booth opens a chapter with a compact **Where you stopped** prompt above the
+text (`apps/ui/src/components/booth/ResumePrompt.tsx`). It reconciles two
 sources and asks only when they disagree (owner report of 2026-09-24: "find where
 the track was, and find out where you were in the script, and if they match, you
 keep going").
@@ -584,7 +584,7 @@ keep going").
   ([ADR 0206](../adr/0206-resume-reconciles-the-recording-with-the-prompters-last-word-in-the-host-and-asks-only-when-they-disagree.md)).
   A REAPER place reads "in REAPER now" when live and "as of the project's last
   save" otherwise.
-- **It never sits there.** The prompt settles for the rest of the dialog's open
+- **It never sits there.** The prompt settles for the rest of the Booth's visit to the chapter
   on any choice or when a session starts, and does not come back after a session
   ends
   ([ADR 0187](../adr/0187-the-resume-prompt-is-a-compact-notice-that-settles-once-per-dialog-open.md)).

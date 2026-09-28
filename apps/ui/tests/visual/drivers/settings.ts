@@ -84,10 +84,10 @@ export const settingsDrivers: Record<string, Driver> = {
     await clickVisible(page, 'tab', 'Global');
     await clickSettingsCategory(page, 'TTS');
   },
-  'global-teleprompter': async (page) => {
+  'global-booth': async (page) => {
     await goToPage(page, 'Settings');
     await clickVisible(page, 'tab', 'Global');
-    await clickSettingsCategory(page, 'Teleprompter');
+    await clickSettingsCategory(page, 'Booth');
   },
   'global-about': async (page) => {
     await goToPage(page, 'Settings');
