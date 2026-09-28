@@ -1,6 +1,6 @@
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCircleDot, faCrosshairs, faGear, faLock, faMicrophone, faPause, faPlay, faRotate, faStop, faXmark } from '@fortawesome/free-solid-svg-icons';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useCommand } from '../../input/useCommand';
 import { useCapability } from '../../useCapability';
@@ -11,6 +11,7 @@ import { LevelMeter } from '../primitives/LevelMeter';
 import { Popover } from '../primitives/Popover';
 import { ToggleGroup } from '../primitives/ToggleGroup';
 import { TooltipTarget } from '../primitives/Tooltip';
+import { clockText } from './boothProgress';
 import { MicrophoneField } from './MicrophoneField';
 import { useInputLevel } from './useInputLevel';
 import { useReadAloudReaperState } from './useReadAloudReaperState';
@@ -36,6 +37,8 @@ type Props = {
   chapterId?: string;
   /** The chapter's plain display name (no "Read aloud:" prefix), named in the arm button and the first-time confirm. */
   chapterTitle?: string;
+  /** The chapter's short name (its title without the subtitle), in the armed state: "Chapter 1 armed" (mock 06). */
+  chapterShortTitle?: string;
   /** The Record-in-REAPER toggle's state and Play/Stop orchestration (Phase 7, `useRecordInReaper`), owned by
    * BoothSession since its own "Stop reading?" confirm also needs to stop a recording this app started. */
   recording?: RecordInReaperState;
@@ -57,9 +60,11 @@ const NO_RECORDING: RecordInReaperState = {
   afterStop: () => {},
 };
 
-// The words for the chapter's REAPER state, on the Record in REAPER toggle below.
-const REAPER_STATUS_TEXT: Record<ReadAloudReaperState['status'], string> = {
-  ready: 'Chapter armed',
+// The words for the chapter's REAPER state, on the Record in REAPER toggle below; the armed one names the chapter
+// (read-aloud-control-bar mock 06: "Chapter 1 armed").
+const reaperStatusText = (status: ReadAloudReaperState['status'], chapter?: string): string =>
+  status === 'ready' ? `${chapter || 'Chapter'} armed` : REAPER_STATUS_TEXT[status];
+const REAPER_STATUS_TEXT: Record<Exclude<ReadAloudReaperState['status'], 'ready'>, string> = {
   not_armed: 'Not armed',
   other_armed: 'Other track armed',
   several_armed: 'Several armed',
@@ -81,18 +86,36 @@ const ARMABLE_STATUSES: ReadonlySet<ReadAloudReaperState['status']> = new Set(['
  * PRD Phase 7, ADR 0360) rather than hard-coded disabled: experimental and off by default (no behaviour change),
  * that reason explains it; once on, the chapter's own armed/recording state is the more useful one to show.
  */
-function ReaperStateIndicator({ chapterId, chapterTitle, recording }: { chapterId: string; chapterTitle?: string; recording: RecordInReaperState }) {
+function ReaperStateIndicator({
+  chapterId,
+  chapterTitle,
+  chapterShortTitle,
+  recording,
+}: {
+  chapterId: string;
+  chapterTitle?: string;
+  chapterShortTitle?: string;
+  recording: RecordInReaperState;
+}) {
   const { state, error, refresh } = useReadAloudReaperState(chapterId);
   const record = useCapability('record');
-  const label = state ? `Record in REAPER: ${REAPER_STATUS_TEXT[state.status]}` : 'Record in REAPER';
+  const elapsed = useElapsedSeconds(recording.recordingSince);
+  const statusText = state ? reaperStatusText(state.status, chapterShortTitle) : undefined;
+  // While this app's recording runs, the toggle says so with its length (mock 07: "REC 06:42").
+  const rec = elapsed === undefined ? undefined : `REC ${clockText(elapsed, 2)}`;
+  const label = rec ? `Record in REAPER: recording, ${clockText(elapsed!, 2)}` : statusText ? `Record in REAPER: ${statusText}` : 'Record in REAPER';
   const capability: CapabilityEntry = record.available ? { ...record, message: state?.message ?? error ?? 'Checking REAPER…' } : record;
   const armLabel = chapterTitle ? `Arm "${chapterTitle}" only` : 'Arm this chapter only';
   return (
     <div className="flex items-center gap-1">
       <CapabilityGate capability={capability}>
         <Button aria-label={label} aria-pressed={recording.enabled} variant="ghost" className="max-w-[9rem] lg:max-w-[13rem]" onClick={recording.toggle}>
-          <FontAwesomeIcon icon={faCircleDot} className={state?.recording ? 'text-[var(--danger-text)]' : undefined} />
-          <span className="hidden truncate lg:inline">{state ? REAPER_STATUS_TEXT[state.status] : 'Record in REAPER'}</span>
+          <FontAwesomeIcon icon={faCircleDot} className={rec || state?.recording ? 'text-[var(--danger-text)]' : undefined} />
+          {rec ? (
+            <span className="font-['IBM_Plex_Mono',ui-monospace,monospace] text-xs whitespace-nowrap text-[var(--danger-text)] normal-case">{rec}</span>
+          ) : (
+            <span className="hidden truncate lg:inline">{statusText ?? 'Record in REAPER'}</span>
+          )}
         </Button>
       </CapabilityGate>
       {recording.enabled && state && ARMABLE_STATUSES.has(state.status) && (
@@ -108,6 +131,18 @@ function ReaperStateIndicator({ chapterId, chapterTitle, recording }: { chapterI
   );
 }
 
+/** Whole seconds since `since` (a `Date.now()`), ticking once a second; undefined while `since` is. */
+function useElapsedSeconds(since: number | undefined): number | undefined {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    if (since === undefined) return;
+    setNow(Date.now());
+    const timer = window.setInterval(() => setNow(Date.now()), 1000);
+    return () => window.clearInterval(timer);
+  }, [since]);
+  return since === undefined ? undefined : Math.max(0, Math.floor((now - since) / 1000));
+}
+
 /**
  * The read-aloud media bar (read-aloud-control-bar.prd.md Phases 3-7), replacing the configuration `Panel`: a Play/Pause
  * toggle and Stop, status and word count, the start-point chip, Follow, a microphone popover (device list, Refresh and a
@@ -119,7 +154,7 @@ function ReaperStateIndicator({ chapterId, chapterTitle, recording }: { chapterI
  * only starts listening once it confirms; a refusal or timeout shows why instead (`recording.error`, in the status line)
  * and nothing starts. Stop always stops listening, then stops a recording this app started.
  */
-export function ReadingControlBar({ session: t, follow, startPoint, chapterId, chapterTitle, recording = NO_RECORDING }: Props) {
+export function ReadingControlBar({ session: t, follow, startPoint, chapterId, chapterTitle, chapterShortTitle, recording = NO_RECORDING }: Props) {
   const [micOpen, setMicOpen] = useState(false);
   const { level, error: levelError } = useInputLevel(t.device, { active: t.active, enabled: micOpen });
   // While a session runs, listening is either live (Pause) or held (Play resumes it, Q3); while idle, Play starts one.
@@ -133,8 +168,12 @@ export function ReadingControlBar({ session: t, follow, startPoint, chapterId, c
       });
     else t.pause(listening);
   };
+  // Reading reached the end, or stopped itself there, while REAPER goes on recording the take this app started (Q8, Done
+  // B, D28/D39): the app never cuts off a tail of room tone or an ad-lib, so the bar says so and Stop stays the way to end
+  // it, highlighted (read-aloud-control-bar mock 10).
+  const finishedRecording = recording.recording && (!t.active || t.session.position?.status === 'done');
   const onStop = () => {
-    t.stop();
+    if (t.active) t.stop();
     recording.afterStop();
   };
   // Space toggles Play/Pause while this bar's booth scope is active (Phase 4, ADR 0361 decision 4, keeping ADR 0196
@@ -157,7 +196,13 @@ export function ReadingControlBar({ session: t, follow, startPoint, chapterId, c
             <span className="hidden lg:inline">{playPauseLabel}</span>
           </Button>
         </TooltipTarget>
-        <Button aria-label="Stop reading" variant="danger" onClick={onStop} disabled={!t.active || t.host.phase === 'stopping'}>
+        <Button
+          aria-label="Stop reading"
+          variant="danger"
+          className={finishedRecording ? 'bg-[var(--badge-danger-fill)] ring-2 ring-[var(--danger)] ring-offset-1 ring-offset-[var(--surface)]' : undefined}
+          onClick={onStop}
+          disabled={(!t.active && !recording.recording) || t.host.phase === 'stopping'}
+        >
           <FontAwesomeIcon icon={faStop} />
           <span className="hidden lg:inline">Stop reading</span>
         </Button>
@@ -167,9 +212,16 @@ export function ReadingControlBar({ session: t, follow, startPoint, chapterId, c
         <span
           role="status"
           className="font-semibold"
-          style={{ color: recording.error ? 'var(--danger-text)' : t.session.position?.status === 'waiting' && t.active ? 'var(--warn-text)' : undefined }}
+          style={{
+            color:
+              recording.error || finishedRecording
+                ? 'var(--danger-text)'
+                : t.session.position?.status === 'waiting' && t.active
+                  ? 'var(--warn-text)'
+                  : undefined,
+          }}
         >
-          {recording.error || t.status || 'Ready'}
+          {recording.error || (finishedRecording ? 'Reading finished. REAPER is still recording' : t.status || 'Ready')}
         </span>
         {t.session.script && (
           <span className="ml-2 font-['IBM_Plex_Mono',ui-monospace,monospace] text-xs whitespace-nowrap" style={{ color: 'var(--text-muted)' }}>
@@ -182,7 +234,9 @@ export function ReadingControlBar({ session: t, follow, startPoint, chapterId, c
           </span>
         )}
         <div aria-live="polite" className="text-xs empty:hidden" style={{ color: 'var(--text-muted)' }}>
-          {t.active && !follow.following && 'Following paused. Scroll back to the highlighted word or press Follow.'}
+          {finishedRecording
+            ? 'Press Stop when you are done; nothing is cut off until you do.'
+            : t.active && !follow.following && 'Following paused. Scroll back to the highlighted word or press Follow.'}
         </div>
       </div>
 
@@ -235,7 +289,7 @@ export function ReadingControlBar({ session: t, follow, startPoint, chapterId, c
           </div>
         </Popover>
 
-        {chapterId && <ReaperStateIndicator chapterId={chapterId} chapterTitle={chapterTitle} recording={recording} />}
+        {chapterId && <ReaperStateIndicator chapterId={chapterId} chapterTitle={chapterTitle} chapterShortTitle={chapterShortTitle} recording={recording} />}
 
         <Popover
           label="Settings"
