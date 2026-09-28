@@ -5,7 +5,7 @@
 
 ## Context
 
-[Stage Navigation and Page Replacement](../prds/stage-navigation-and-page-replacement.prd.md) Phase 4 replaces the Teleprompter page, the Manuscript's Read aloud dialog and its booth dialog with one Booth page at `/booth` ([ADR 0407](0407-a-new-page-replaces-its-old-counterpart-in-the-same-change-and-the-navigation-is-grouped-by-production-stage.md)). The three surfaces differed on two things the PRD does not settle:
+Stage navigation and page replacement (`docs/prds/stage-navigation-and-page-replacement.prd.md`, delivered and deleted) Phase 4 replaces the Teleprompter page, the Manuscript's Read aloud dialog and its booth dialog with one Booth page at `/booth` ([ADR 0407](0407-a-new-page-replaces-its-old-counterpart-in-the-same-change-and-the-navigation-is-grouped-by-production-stage.md)). The three surfaces differed on two things the PRD does not settle:
 
 - **What a surface reads.** The dialog was opened already pointed at one chapter (or the credits); the page had a picker that opened on REAPER's suggested chapter ([ADR 0113](0113-the-teleprompter-suggests-a-chapter-from-the-saved-armed-track-and-preselects-only-a-confident-match.md)) or the last chapter read.
 - **Leaving during a live session.** The dialog was modal: closing it (the Close button or Escape) asked "Stop reading?" and stopped the session, so a live microphone never outlived it. The page could be left through the nav at any time, and the session kept running in the host; coming back picked it up.
