@@ -69,18 +69,19 @@ turns them into these three event types:
         opens them under (see devices.py); prints once and exits, no
         --wav/--mic session follows. `error` is set (devices always []) if
         listing failed - a caller must never treat that as "no microphones".
-    {"type": "engine_check", "engine": "moonshine", "ok": true, "detail": "moonshine-voice 0.1.5: ..."}
-        only with --check-moonshine: whether this build can run Moonshine (see
-        moonshine_engine.py); prints once and exits, 1 if not. The packaged
-        app's smoke test reads it.
-    {"type": "capabilities", "asr": {"whisper": {"label": "Whisper", "platforms": [], "modes": ["live"], "asset": "whisper", "loadable": null}, ...}, "capture": {...}}
+    {"type": "capabilities", "asr": {"whisper": {"label": "Whisper", "platforms": [], "modes": ["live"], "asset": "whisper", "loadable": null}, "moonshine": {..., "loadable": true, "detail": "moonshine-voice 0.1.5: ..."}}, "capture": {...}}
         only with --capabilities: every row this process has actually
         registered in ENGINES and BACKENDS (see capabilities_report, below),
-        keyed by port then name; registration only, never verified, so
-        "loadable" is always null (sidecar-capabilities-flag PRD, ADR 0403).
-        Prints once and exits 0. The packaged app's smoke test
+        keyed by port then name; registration only by default, so "loadable"
+        is null unless --verify is also given (sidecar-capabilities-flag PRD,
+        ADR 0403). With --verify, the rows _VERIFY_HOOKS names (today: just
+        moonshine, folding in what --check-moonshine used to check alone
+        before Phase 3 retired it) also get "loadable" true/false and a
+        "detail" string, and the process exits 1 if any of them is false.
+        Prints once and exits 0 otherwise. The packaged app's smoke test
         (checkCapabilities) reads it to catch a row Go declares for this
-        platform that this process never registered.
+        platform that this process never registered, or, on Windows, that
+        registered but does not actually load.
     {"type": "locate", "word": 812, "sentence": {...}, "confidence": 0.84, "confident": true, ...}
         only with --locate --wav FILE --tail-start S --tail-end E: seconds S
         to E of a recording, placed in the script; prints once and exits,
@@ -613,27 +614,56 @@ def _load_engine(args) -> EventStream:
     return _engine_events(ENGINES.lookup(args.engine), request)
 
 
-def _capability_row(descriptor) -> dict:
+def _verify_moonshine() -> dict:
+    """The verify hook for asr/moonshine: whether this build's Moonshine native library actually loads, the exact
+    question --check-moonshine used to answer alone (sidecar-capabilities-flag PRD Phase 3, ADR 0403)."""
+    from moonshine_engine import self_check
+
+    return self_check()
+
+
+# Which (port, name) rows --capabilities --verify can additionally prove actually load, not just registered (Q2/Q3,
+# ADR 0403) - today only moonshine, the row --check-moonshine existed to prove alone before Phase 3 folded it into
+# this generic flag and retired the bespoke one. A future engine needing the same guarantee adds one row here, the
+# same one-row-not-a-rewritten-call-site shape ENGINES/BACKENDS already have; looked up by key, never compared, so
+# this needs no provider-guard exception (libs/python/tests/test_provider_guard.py).
+_VERIFY_HOOKS: dict[tuple[str, str], Callable[[], dict]] = {("asr", "moonshine"): _verify_moonshine}
+
+
+def _capability_row(port: str, descriptor, verify: bool) -> dict:
     """One row of a --capabilities report: a Descriptor's label, platforms and modes, plus its asset kind when it
     has one (AsrDescriptor only) - the same "include only when non-empty" rule bindings_providers.go's providerEntry
-    uses. "loadable" is always null: this reports registration only, never whether the row actually loads (Q2)."""
+    uses. "loadable" is null unless `verify` is set and _VERIFY_HOOKS names this (port, descriptor.name) row, in
+    which case the hook's own "ok"/"detail" fill "loadable"/"detail" (Q2/Q3, ADR 0403)."""
     row = {"label": descriptor.label, "platforms": list(descriptor.platforms), "modes": list(descriptor.modes), "loadable": None}
     asset_kind = getattr(descriptor, "asset_kind", "")
     if asset_kind:
         row["asset"] = asset_kind
+    hook = _VERIFY_HOOKS.get((port, descriptor.name)) if verify else None
+    if hook is not None:
+        checked = hook()
+        row["loadable"] = checked["ok"]
+        row["detail"] = checked["detail"]
     return row
 
 
-def capabilities_report(engines=ENGINES, backends=BACKENDS) -> dict:
+def capabilities_report(engines=ENGINES, backends=BACKENDS, verify: bool = False) -> dict:
     """--capabilities: every row this sidecar process has actually registered in ENGINES (live ASR) and BACKENDS
     (capture) by the time this runs - after asr_adapters and capture_dshow's module-level registration, before any
     engine, model or device is touched. `engines`/`backends` are overridable so a test can stand in a reduced
-    registry for "an adapter failed to register" without needing a real broken import."""
+    registry for "an adapter failed to register" without needing a real broken import. `verify` (--capabilities
+    --verify) additionally proves each _VERIFY_HOOKS row actually loads, not just that it registered (Phase 3)."""
     return {
         "type": "capabilities",
-        "asr": {engine.descriptor.name: _capability_row(engine.descriptor) for engine in engines},
-        "capture": {backend.descriptor.name: _capability_row(backend.descriptor) for backend in backends},
+        "asr": {engine.descriptor.name: _capability_row("asr", engine.descriptor, verify) for engine in engines},
+        "capture": {backend.descriptor.name: _capability_row("capture", backend.descriptor, verify) for backend in backends},
     }
+
+
+def _capabilities_all_loadable(report: dict) -> bool:
+    """Whether every verified row (loadable is not None) in a --verify capabilities report loaded; a row this build
+    has no verify hook for (loadable: null) never fails it - only a hook that ran and said false does."""
+    return all(row["loadable"] is not False for port in ("asr", "capture") for row in report[port].values())
 
 
 def _run_locate(ap: argparse.ArgumentParser, args) -> None:
@@ -796,7 +826,7 @@ def _run(args, stream: EventStream, chunks: Iterator[np.ndarray], tracker) -> No
 
 
 # What --meter cannot be combined with: it opens a microphone and reports its level, nothing else.
-_SESSION_ONLY_OPTIONS = ("wav", "manuscript", "script", "control_file", "start_word", "locate", "list_devices", "check_moonshine", "capabilities")
+_SESSION_ONLY_OPTIONS = ("wav", "manuscript", "script", "control_file", "start_word", "locate", "list_devices", "capabilities", "verify")
 
 
 def _run_meter(ap: argparse.ArgumentParser, args) -> None:
@@ -905,15 +935,16 @@ def build_parser() -> argparse.ArgumentParser:
         help="Print the input devices the --mic capture path can open (one JSON object: {type: devices, devices: [...], error}), then exit",
     )
     ap.add_argument(
-        "--check-moonshine",
-        action="store_true",
-        help="Print whether this build can run --engine moonshine (one JSON object: {type: engine_check, engine, ok, detail}), then exit (1 if not)",
-    )
-    ap.add_argument(
         "--capabilities",
         action="store_true",
         help="Print every row this process has registered in ENGINES and BACKENDS, by port then name (one JSON object: "
-        "{type: capabilities, asr, capture}; registration only, not verified), then exit 0",
+        "{type: capabilities, asr, capture}; registration only unless --verify is also given), then exit 0",
+    )
+    ap.add_argument(
+        "--verify",
+        action="store_true",
+        help="With --capabilities, also prove each row this build knows how to verify actually loads (today: --engine moonshine's "
+        "native library, folding in what --check-moonshine used to check alone), not just that it registered; exits 1 if one does not",
     )
     ap.add_argument(
         "--meter",
@@ -1015,16 +1046,13 @@ def main() -> None:
         return
     if args.capture:
         ap.error("--capture is only for --list-devices, --meter and --record")
-    if args.check_moonshine:
-        from moonshine_engine import self_check
-
-        report = self_check()
-        _emit(report)
-        if not report["ok"]:
-            sys.exit(1)
-        return
+    if args.verify and not args.capabilities:
+        ap.error("--verify needs --capabilities")
     if args.capabilities:
-        _emit(capabilities_report())
+        report = capabilities_report(verify=args.verify)
+        _emit(report)
+        if args.verify and not _capabilities_all_loadable(report):
+            sys.exit(1)
         return
     if args.align_word is not None:
         _run_align_word(ap, args)

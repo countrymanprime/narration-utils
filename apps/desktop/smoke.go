@@ -174,11 +174,6 @@ func smoke(ctx context.Context, options smokeOptions) smokeReport {
 		add("sidecar:"+name, started, err, detail)
 	}
 	report.Checks = append(report.Checks, checkFrozenGuide(ctx, options, root)...)
-	if options.Moonshine {
-		started = time.Now()
-		detail, err := checkFrozenMoonshine(ctx, options, root)
-		add("teleprompter:moonshine", started, err, detail)
-	}
 	started = time.Now()
 	capsDetail, capsErr := checkCapabilities(ctx, options, root)
 	add("teleprompter:capabilities", started, capsErr, capsDetail)
@@ -332,69 +327,44 @@ func checkFrozenGuide(ctx context.Context, options smokeOptions, root string) []
 	return checks
 }
 
-// moonshineCheckReport is what `manuscript-teleprompter --check-moonshine` prints (sidecars/manuscript-teleprompter/core/moonshine_engine.py).
-type moonshineCheckReport struct {
-	Type   string `json:"type"`
-	Engine string `json:"engine"`
-	OK     bool   `json:"ok"`
-	Detail string `json:"detail"`
-}
-
-// checkFrozenMoonshine runs the frozen Teleprompter sidecar's own check that it can load Moonshine's native library (moonshine.dll and
-// the onnxruntime.dll beside it, loaded with ctypes, so a freeze can lose them and still start). Its verdict and its exit code must agree.
-func checkFrozenMoonshine(ctx context.Context, options smokeOptions, root string) (string, error) {
-	executable := sidecarPath(root, "manuscript-teleprompter")
-	if executable == "" {
-		return "", errors.New("the manuscript-teleprompter sidecar is missing, so its Moonshine engine could not be checked")
-	}
-	code, stdout, stderr, err := runBounded(ctx, options, executable, "--check-moonshine")
-	if err != nil {
-		return "", fmt.Errorf("the Moonshine check did not run: %w", err)
-	}
-	var parsed moonshineCheckReport
-	if jsonErr := json.Unmarshal([]byte(strings.TrimSpace(stdout)), &parsed); jsonErr != nil || parsed.Type != "engine_check" {
-		return "", fmt.Errorf("the Moonshine check (exit code %d) printed no report: %s", code, firstLine(stderr+" "+stdout))
-	}
-	switch {
-	case parsed.Engine != "moonshine":
-		return "", fmt.Errorf("the Moonshine check reported on the %q engine instead", parsed.Engine)
-	case !parsed.OK:
-		return "", fmt.Errorf("the frozen teleprompter cannot run Moonshine: %s", parsed.Detail)
-	case code != 0:
-		return "", fmt.Errorf("the Moonshine check passed but exited with exit code %d: %s", code, firstLine(stderr))
-	}
-	return parsed.Detail, nil
+// capabilityRow is one row of a --capabilities report - only the fields checkCapabilities itself reads (presence, and, with
+// --verify, whether it loaded); every other field (label, platforms, modes, asset) is the sidecar's own business.
+type capabilityRow struct {
+	Loadable *bool  `json:"loadable"`
+	Detail   string `json:"detail"`
 }
 
 // capabilitiesReport is what `manuscript-teleprompter --capabilities` prints (sidecars/manuscript-teleprompter/core/live_asr.py's
-// capabilities_report): every row it has actually registered, by port then name. Only the keys matter here - checkCapabilities
-// compares row names against the Go-side registries, never their fields, so each row is left as raw JSON.
+// capabilities_report): every row it has actually registered, by port then name.
 type capabilitiesReport struct {
-	Type    string                     `json:"type"`
-	Asr     map[string]json.RawMessage `json:"asr"`
-	Capture map[string]json.RawMessage `json:"capture"`
+	Type    string                   `json:"type"`
+	Asr     map[string]capabilityRow `json:"asr"`
+	Capture map[string]capabilityRow `json:"capture"`
 }
 
 // checkCapabilities runs the frozen Teleprompter sidecar's own --capabilities report and requires every ASR and capture row Go's
 // own registries declare for options.Platform to be one this process actually registered (sidecar-capabilities-flag PRD, generalizing
-// checkFrozenMoonshine's single hardcoded engine comparison into a loop over every registered provider row instead). It proves only
-// that the row registered, not that it loads (Q2/ADR 0403) - that remains checkFrozenMoonshine's job for Moonshine alone until a
-// later phase, if any, extends this into a verify mode.
+// the single hardcoded Moonshine comparison the retired checkFrozenMoonshine made into a loop over every registered provider row
+// instead). With options.Moonshine (Windows, the one platform moonshine-voice is pinned for), it also asks for --verify and requires
+// the moonshine row to report loadable=true - the same guarantee --check-moonshine made alone before Phase 3 folded it into this
+// generic flag and retired the bespoke one (sidecar-capabilities-flag PRD Phase 3, ADR 0403). Every other row stays
+// registration-only (loadable: null) until a future phase gives it its own verify hook.
 func checkCapabilities(ctx context.Context, options smokeOptions, root string) (string, error) {
 	executable := sidecarPath(root, "manuscript-teleprompter")
 	if executable == "" {
 		return "", errors.New("the manuscript-teleprompter sidecar is missing, so its capabilities could not be checked")
 	}
-	code, stdout, stderr, err := runBounded(ctx, options, executable, "--capabilities")
+	args := []string{"--capabilities"}
+	if options.Moonshine {
+		args = append(args, "--verify")
+	}
+	code, stdout, stderr, err := runBounded(ctx, options, executable, args...)
 	if err != nil {
 		return "", fmt.Errorf("the capabilities check did not run: %w", err)
 	}
 	var parsed capabilitiesReport
 	if jsonErr := json.Unmarshal([]byte(strings.TrimSpace(stdout)), &parsed); jsonErr != nil || parsed.Type != "capabilities" {
 		return "", fmt.Errorf("the capabilities check (exit code %d) printed no report: %s", code, firstLine(stderr+" "+stdout))
-	}
-	if code != 0 {
-		return "", fmt.Errorf("the capabilities check passed but exited with exit code %d: %s", code, firstLine(stderr))
 	}
 	var missing []string
 	for _, e := range asrport.Engines.Entries() {
@@ -413,6 +383,19 @@ func checkCapabilities(ctx context.Context, options smokeOptions, root string) (
 	}
 	if len(missing) > 0 {
 		return "", fmt.Errorf("the frozen teleprompter never registered %s, which this build declares for %s", strings.Join(missing, ", "), options.Platform)
+	}
+	if options.Moonshine {
+		row, ok := parsed.Asr["moonshine"]
+		if !ok || row.Loadable == nil || !*row.Loadable {
+			detail := "the report did not verify it"
+			if ok && row.Detail != "" {
+				detail = row.Detail
+			}
+			return "", fmt.Errorf("the frozen teleprompter cannot run Moonshine: %s", detail)
+		}
+	}
+	if code != 0 {
+		return "", fmt.Errorf("the capabilities check passed but exited with exit code %d: %s", code, firstLine(stderr))
 	}
 	return fmt.Sprintf("%d ASR row(s), %d capture row(s)", len(parsed.Asr), len(parsed.Capture)), nil
 }
@@ -512,7 +495,8 @@ func checkCompareCapabilities(ctx context.Context, options smokeOptions, root st
 // checkCatalogs loads the seven approved asset catalogs the release carries (config/*-assets.json in the unpacked resources) and requires
 // each to name at least one asset: an empty or unreadable catalog would leave the narrator nothing to download. A Pending row (the
 // wiktextract catalog, prep-depth Phase 8, until a future session verifies its download) still counts: this check is "the catalog lists
-// something," not "it can be installed." The frozen sidecar's own Moonshine support is checked apart from its catalog, by checkFrozenMoonshine.
+// something," not "it can be installed." The frozen sidecar's own Moonshine support is checked apart from its catalog, by checkCapabilities's
+// verify pass.
 func checkCatalogs(root string) (string, error) {
 	configDir := filepath.Join(root, "config")
 	voices, err := tts.New(filepath.Join(configDir, "tts-assets.json"), "")

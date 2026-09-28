@@ -307,7 +307,9 @@ and exits: `0` when every check passed, `1` when one failed, `2` for a bad comma
 | `sidecar:<name>` | each of the three frozen sidecars is in the unpacked tree and starts (`--help` exits 0) |
 | `guide:cmudict`, `guide:espeak` | the frozen Story Bible sidecar reads the CMU dictionary and starts the espeak-ng phonemizer Piper speaks through, from `piper/espeak-ng-data` (`manuscript-guide self-check`); a freeze that loses either data set fails here, and a self-check that stops reporting one of them fails too |
 | `guide:synthesis` | only with `--piper-model FILE`: the frozen guide loads that voice and speaks one word |
-| `teleprompter:moonshine` | Windows only: the frozen Teleprompter sidecar loads Moonshine's native library (`--check-moonshine`; no model, no network) |
+| `teleprompter:capabilities` | the frozen Teleprompter sidecar's `--capabilities` report names every ASR and capture row this build declares for the platform (sidecar-capabilities-flag PRD Phase 1); Windows only, `--verify` is also asked, and the `moonshine` row must report `loadable: true` — the native library actually loads (no model, no network), the guarantee the retired `--check-moonshine` flag used to make alone (Phase 3, [ADR 0403](../adr/0403-the-capabilities-flag-reports-what-registered-not-what-loads.md)) |
+| `guide:capabilities` | the frozen Story Bible sidecar's `capabilities` subcommand names every TTS and pronunciation row this build declares (Phase 2) |
+| `compare:capabilities` | the frozen Transcript Compare sidecar's `--capabilities` report names every batch ASR row this build declares (Phase 2) |
 | `catalogs` | the four approved asset catalogs load and name assets |
 | `reaper` | the launcher and its six scripts are present and the launcher points at this executable |
 

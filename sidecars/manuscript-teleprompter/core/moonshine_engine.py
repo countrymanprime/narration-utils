@@ -43,11 +43,12 @@ def missing_model_files(model_dir: str | Path) -> list[str]:
 
 
 def self_check() -> dict:
-    """Whether this build carries a working Moonshine, as one `engine_check` event (printed by live_asr.py --check-moonshine for
-    the packaged app's smoke test, apps/desktop/smoke.go). moonshine_voice loads its native moonshine.dll (and the onnxruntime.dll
-    beside it) with ctypes, which PyInstaller cannot see, so a freeze that lost them still starts; asking the native library for
-    its language catalog proves it loads and answers, with no model and no network. Transcriber is imported too, since the
-    package imports it lazily."""
+    """Whether this build carries a working Moonshine, as one `{ok, detail}` report. Called by live_asr.py's `_verify_moonshine`
+    (the asr/moonshine row of --capabilities --verify's `_VERIFY_HOOKS`, for the packaged app's smoke test, apps/desktop/smoke.go)
+    - the same question the retired `--check-moonshine` flag used to ask alone (sidecar-capabilities-flag PRD Phase 3, ADR 0403).
+    moonshine_voice loads its native moonshine.dll (and the onnxruntime.dll beside it) with ctypes, which PyInstaller cannot see,
+    so a freeze that lost them still starts; asking the native library for its language catalog proves it loads and answers, with
+    no model and no network. Transcriber is imported too, since the package imports it lazily."""
 
     def report(ok: bool, detail: str) -> dict:
         return {"type": "engine_check", "engine": "moonshine", "ok": ok, "detail": detail}

@@ -667,10 +667,13 @@ def test_list_devices_reports_a_listing_failure_instead_of_pretending_there_are_
 
 
 # --capabilities is a one-shot mode like --list-devices: every row this process has registered in ENGINES and
-# BACKENDS by the time it runs, registration only (Q2, ADR 0403) - "loadable" is always null. capabilities_report()
-# is tested directly against fake registries below, so the fault-detection case (PRD Success Metrics: a row an
-# adapter failed to register is absent from the report) needs no real broken import to prove; the CLI wiring test
-# only checks --capabilities is short-circuited before a session, the same as --list-devices.
+# BACKENDS by the time it runs, registration only by default (Q2, ADR 0403) - "loadable" is null unless --verify is
+# also given, in which case _VERIFY_HOOKS rows (today: just moonshine, sidecar-capabilities-flag PRD Phase 3) also
+# get a real loadable/detail. capabilities_report() is tested directly against fake registries below, so the
+# fault-detection case (PRD Success Metrics: a row an adapter failed to register is absent from the report) needs no
+# real broken import to prove; the CLI wiring test only checks --capabilities is short-circuited before a session,
+# the same as --list-devices. --capabilities --verify's exit-code/exit-1-on-failure behavior against the real
+# moonshine row is tested in test_moonshine_engine.py, beside self_check()'s own tests.
 def _fake_registry(rows):
     """A registry-shaped stand-in: iterating it gives objects with a `.descriptor`, the only thing
     capabilities_report() reads from ENGINES/BACKENDS."""
@@ -711,12 +714,51 @@ def test_capabilities_report_omits_asset_for_a_row_with_no_asset_kind():
     assert "asset" not in report["capture"]["dshow"]
 
 
-def test_capabilities_report_never_verifies_loading():
+def test_capabilities_report_never_verifies_loading_by_default():
     from narration_common.ports.asr import AsrDescriptor
 
     report = live_asr.capabilities_report(_fake_registry([AsrDescriptor(name="whisper", label="Whisper", modes=("live",))]), [])
 
     assert report["asr"]["whisper"]["loadable"] is None
+
+
+def test_capabilities_report_verify_leaves_a_row_with_no_verify_hook_unloaded():
+    # whisper has no _VERIFY_HOOKS entry, so --verify reports it exactly as registration-only would (Q2/Q3: verify is
+    # opt-in per row, not a blanket "load everything" switch).
+    from narration_common.ports.asr import AsrDescriptor
+
+    report = live_asr.capabilities_report(_fake_registry([AsrDescriptor(name="whisper", label="Whisper", modes=("live",))]), [], verify=True)
+
+    assert report["asr"]["whisper"]["loadable"] is None
+    assert "detail" not in report["asr"]["whisper"]
+
+
+def test_capabilities_report_verifies_the_moonshine_row_when_asked(monkeypatch):
+    # sidecar-capabilities-flag PRD Phase 3: --capabilities --verify folds moonshine_engine.self_check()'s guarantee
+    # (the one --check-moonshine used to make alone) into the generic report, through _VERIFY_HOOKS[("asr", "moonshine")].
+    from narration_common.ports.asr import AsrDescriptor
+
+    monkeypatch.setitem(
+        sys.modules, "moonshine_engine", SimpleNamespace(self_check=lambda: {"ok": True, "detail": "moonshine-voice 0.1.5: native library loaded"})
+    )
+    engines = _fake_registry([AsrDescriptor(name="moonshine", label="Moonshine", platforms=("windows",), modes=("live",), asset_kind="moonshine")])
+
+    report = live_asr.capabilities_report(engines, [], verify=True)
+
+    assert report["asr"]["moonshine"]["loadable"] is True
+    assert report["asr"]["moonshine"]["detail"] == "moonshine-voice 0.1.5: native library loaded"
+
+
+def test_capabilities_report_reports_a_failed_moonshine_verify(monkeypatch):
+    from narration_common.ports.asr import AsrDescriptor
+
+    monkeypatch.setitem(sys.modules, "moonshine_engine", SimpleNamespace(self_check=lambda: {"ok": False, "detail": "MoonshineError: Failed to load"}))
+    engines = _fake_registry([AsrDescriptor(name="moonshine", label="Moonshine", platforms=("windows",), modes=("live",))])
+
+    report = live_asr.capabilities_report(engines, [], verify=True)
+
+    assert report["asr"]["moonshine"]["loadable"] is False
+    assert "MoonshineError" in report["asr"]["moonshine"]["detail"]
 
 
 def test_capabilities_report_only_lists_what_actually_registered():
@@ -747,6 +789,15 @@ def test_capabilities_emits_one_json_line_and_never_requires_wav_or_mic(monkeypa
     assert emitted["type"] == "capabilities"
     assert "whisper" in emitted["asr"]
     assert "dshow" in emitted["capture"]
+
+
+def test_verify_needs_capabilities(monkeypatch, capsys):
+    monkeypatch.setattr(sys, "argv", ["live_asr.py", "--verify"])
+
+    with pytest.raises(SystemExit):
+        live_asr.main()
+
+    assert "--verify needs --capabilities" in capsys.readouterr().err
 
 
 def test_script_id_and_title_go_together_and_need_a_script(capsys):
@@ -851,6 +902,7 @@ def test_meter_mode_ends_on_the_stop_file(monkeypatch, capsys, tmp_path):
         ["--locate"],
         ["--list-devices"],
         ["--capabilities"],
+        ["--verify"],
     ],
 )
 def test_meter_mode_needs_a_microphone_and_takes_no_session_options(extra, monkeypatch, capsys):

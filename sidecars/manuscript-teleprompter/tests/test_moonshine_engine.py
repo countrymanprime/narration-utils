@@ -212,8 +212,9 @@ def test_live_asr_hands_the_model_directory_and_architecture_to_this_module(monk
     assert calls == [("TINY_STREAMING", "D:/assets/moonshine/tiny", live_asr.DECODE_INTERVAL_SECONDS, None, "Call me Ishmael.")]
 
 
-# --check-moonshine is how the packaged app's smoke test (apps/desktop/smoke.go) proves the frozen sidecar carries a working
-# Moonshine: PyInstaller cannot see the ctypes load of moonshine.dll, so a freeze that lost it would still start with --help.
+# --capabilities --verify (retiring the old --check-moonshine flag, sidecar-capabilities-flag PRD Phase 3) is how the packaged
+# app's smoke test (apps/desktop/smoke.go) proves the frozen sidecar carries a working Moonshine: PyInstaller cannot see the
+# ctypes load of moonshine.dll, so a freeze that lost it would still start with --help.
 def _fake_package(languages=("en",), transcriber=True):
     def supported_languages():
         if isinstance(languages, Exception):
@@ -286,12 +287,14 @@ def _live_asr():
     return module
 
 
+# --check-moonshine is retired (sidecar-capabilities-flag PRD Phase 3, ADR 0403): --capabilities --verify makes the same
+# exit-code/verdict guarantee now, through _VERIFY_HOOKS[("asr", "moonshine")] calling this module's self_check().
 @pytest.mark.parametrize(("ok", "code"), [(True, None), (False, 1)])
-def test_check_moonshine_prints_one_json_line_and_exits_by_the_verdict_without_wav_or_mic(monkeypatch, capsys, ok, code):
+def test_capabilities_verify_exits_by_the_moonshine_verdict_without_wav_or_mic(monkeypatch, capsys, ok, code):
     live_asr = _live_asr()
-    report = {"type": "engine_check", "engine": "moonshine", "ok": ok, "detail": "d"}
+    report = {"ok": ok, "detail": "d"}
     monkeypatch.setitem(sys.modules, "moonshine_engine", SimpleNamespace(self_check=lambda: report))
-    monkeypatch.setattr(sys, "argv", ["live_asr.py", "--check-moonshine"])
+    monkeypatch.setattr(sys, "argv", ["live_asr.py", "--capabilities", "--verify"])
 
     if code is None:
         live_asr.main()
@@ -301,4 +304,7 @@ def test_check_moonshine_prints_one_json_line_and_exits_by_the_verdict_without_w
         assert exited.value.code == code
 
     lines = capsys.readouterr().out.strip().splitlines()
-    assert [json.loads(line) for line in lines] == [report]
+    emitted = json.loads(lines[0])
+    assert emitted["type"] == "capabilities"
+    assert emitted["asr"]["moonshine"]["loadable"] is ok
+    assert emitted["asr"]["moonshine"]["detail"] == "d"
