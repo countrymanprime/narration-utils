@@ -185,7 +185,7 @@ export const proofChapterStates: StateEntry[] = [
     page: 'proof-chapter',
     state: 'stage-panel-evidence-unknown',
     description:
-      'Proof chapter view, the stage recommendations panel: Why opened on an unmapped-track cause (?mockProofingSignal=unmapped-track) - "Open Tracks", never "Open recording check" (stageText.ts PROOFING_CAUSE_TEXT)',
+      'Proof chapter view, the stage recommendations panel: Why opened on an unmapped-track cause (?mockProofingSignal=unmapped-track) - "Open the audio engine panel", never "Open recording check" (stageText.ts PROOFING_CAUSE_TEXT)',
   },
   // The chosen rendered file the delivery checks are about (proofing-readiness-signals.prd.md Phase 6).
   {

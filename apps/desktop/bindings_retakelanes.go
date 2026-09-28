@@ -10,7 +10,7 @@ import (
 // h.emitRetakeLanes (app.go) relays every state change as the "retakelanes:state" live event. The wire-contract
 // schemas, golden payloads and mock live in apps/ui/src/api.
 
-// RetakeLanesList lists, from the saved REAPER project the Tracks page reads, every manuscript line whose retakes sit
+// RetakeLanesList lists, from the saved REAPER project the audio engine panel reads, every manuscript line whose retakes sit
 // on more than one fixed lane of a track, and which lane plays.
 func (h *Host) RetakeLanesList() (string, error) {
 	project, err := h.tracksList()

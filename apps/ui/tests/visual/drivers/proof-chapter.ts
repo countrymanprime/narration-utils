@@ -178,7 +178,7 @@ export const proofChapterDrivers: Record<string, Driver> = {
   'stage-panel-evidence-unknown': async (page) => {
     await openPanel(page, '/?mockProofingSignal=unmapped-track', page.getByText(/no track linked/), 'Chapter 9');
     await clickVisible(page, 'button', /^Why: /);
-    await page.getByRole('link', { name: 'Open Tracks' }).waitFor();
+    await page.getByRole('button', { name: 'Open the audio engine panel' }).waitFor();
   },
   // The rendered file section (Phase 6): choosing, then Measure, on an unseeded Proofing chapter (Chapter 9's own
   // delivery checks stay unknown until a render is chosen and measured, matching the mock's default).

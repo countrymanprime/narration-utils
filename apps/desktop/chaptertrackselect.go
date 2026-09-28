@@ -64,7 +64,7 @@ func trackSelectorFrom(svc hostServices) dawport.TrackSelector {
 func trackSelectRefusal(err error) TrackSelectResult {
 	var stale *bridge.TrackStaleError
 	if errors.As(err, &stale) {
-		return trackSelectRefused(readAloudTrackMissing, "This track is no longer in the REAPER project. Link it again on the Tracks page.")
+		return trackSelectRefused(readAloudTrackMissing, "This track is no longer in the REAPER project. Link it again in the audio engine panel.")
 	}
 	return trackSelectRefused(refusedFailed, "REAPER could not do that: "+err.Error()+".")
 }

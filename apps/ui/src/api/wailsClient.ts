@@ -107,6 +107,7 @@ import { cleanupApplyResultSchema, cleanupPreviewResultSchema, levelMatchApplyRe
 import { projectStateChangedSchema, projectStateStartResultSchema, projectStateStateSchema } from './schemas/projectstate';
 import { dictionaryLookupResultSchema } from './schemas/dictionary';
 import { retakeLanesListSchema, retakeLanesStartResultSchema, retakeLanesStateSchema } from './schemas/retakelanes';
+import { exportJobSchema, packageJobSchema } from './schemas/renderEncodeMaster';
 import type { NarrationApi } from '../types';
 import * as host from '../../wailsjs/github.com/countrymanprime/narration-utils/shell/host';
 import { Events } from '@wailsio/runtime';
@@ -568,4 +569,11 @@ export const wailsClient: NarrationApi = {
   teleprompterResumeUnfollow: () => decode(teleprompterResumeFollowSchema, 'TeleprompterResumeUnfollow', host.TeleprompterResumeUnfollow()),
   subscribeTeleprompterResumeFollow: (onEvent) => subscribeChecked('teleprompter_resume_follow', teleprompterResumeFollowEventSchema, onEvent),
   mediaUrl: (sourceFile) => `${mediaRoute}?path=${encodeURIComponent(sourceFile)}`,
+  exportPickFiles: () => decode(measurePickResultSchema, 'ExportPickFiles', host.ExportPickFiles()),
+  exportStart: (req) => decode(exportJobSchema, 'ExportStart', host.ExportStart(req)),
+  exportState: () => decode(exportJobSchema, 'ExportState', host.ExportState()),
+  exportCancel: () => decode(exportJobSchema, 'ExportCancel', host.ExportCancel()),
+  packageStart: (req) => decode(packageJobSchema, 'PackageStart', host.PackageStart(req)),
+  packageState: () => decode(packageJobSchema, 'PackageState', host.PackageState()),
+  packageCancel: () => decode(packageJobSchema, 'PackageCancel', host.PackageCancel()),
 };

@@ -58,6 +58,7 @@ func TestProjectHandlesEveryDocumentedCommand(t *testing.T) {
 		{"SelectTracks: Track=0 Mode=Toggle", false},
 		{"SelectTracks: Track=x", false},
 		{"SelectTracks: TrackCount=x", false},
+		{"SelectNone:", true},
 		{"AddLabel:", true},
 		{"SetLabel: Label=9", false},
 		{"SetLabel: Label=x", false},
