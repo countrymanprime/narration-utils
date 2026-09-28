@@ -113,7 +113,10 @@ export function ReaperControls({
     loopingId && !done ? (loopingId === finding.id ? 'This finding is looping in REAPER.' : 'A loop is playing in REAPER on another finding.') : undefined;
 
   return (
-    <section aria-label="In REAPER" className="mt-4">
+    // A `div`, not a landmark `section`: the editing check panel lists one of these per candidate, and axe's
+    // landmark-unique flags two same-named regions on one page. It is a small repeated control group, not a
+    // distinct page landmark, so the heading below carries the same context without claiming a region role.
+    <div className="mt-4">
       <h3 className="text-sm font-semibold">In REAPER</h3>
       <div className="mt-2 flex flex-wrap gap-2">
         <TooltipTarget text={goToBlocked ?? "Select this finding's item in REAPER and put the edit cursor on it"}>
@@ -180,6 +183,6 @@ export function ReaperControls({
           pending={action.isPending('marker')}
         />
       )}
-    </section>
+    </div>
   );
 }

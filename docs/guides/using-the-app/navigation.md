@@ -3,7 +3,7 @@
 # Navigation
 
 The sidebar on the left is grouped by production stage, the way a narrator's week runs: **Production** ([Home](home.md)),
-**Prep** ([Script](script.md), [Story Bible](story-bible.md)), **Record** ([Teleprompter](teleprompter.md)),
+**Prep** ([Script](script.md), [Story Bible](story-bible.md)), **Record** ([Booth](booth.md)),
 **Review** ([Proof](proof.md), [Pickups](pickups.md), [Tracks](tracks.md)) and **Finish** ([Delivery](delivery.md)).
 At desktop widths each group shows as a heading over its pages; narrower windows switch it to icon-only groups
 divided by a thin line, then hide it behind a hamburger menu that opens it as a slide-in drawer with the headings

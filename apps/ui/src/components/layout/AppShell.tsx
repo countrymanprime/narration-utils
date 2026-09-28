@@ -31,7 +31,8 @@ import { EngineChip, type EngineState } from './EngineChip';
 const HOME = { name: 'Home', path: '/', icon: faHouse, requiresManuscript: false, requiresDaw: false };
 const SCRIPT = { name: 'Script', path: '/script', icon: faFileLines, requiresManuscript: true, requiresDaw: false };
 const STORY_BIBLE = { name: 'Story Bible', path: '/story-bible', icon: faBookOpen, requiresManuscript: true, requiresDaw: false };
-const TELEPROMPTER = { name: 'Teleprompter', path: '/teleprompter', icon: faScroll, requiresManuscript: true, requiresDaw: false };
+// The Record stage's one page (stage-navigation-and-page-replacement.prd.md Phase 4): it replaced the Teleprompter page.
+const BOOTH = { name: 'Booth', path: '/booth', icon: faScroll, requiresManuscript: true, requiresDaw: false };
 const TRACKS = { name: 'Tracks', path: '/tracks', icon: faLayerGroup, requiresManuscript: false, requiresDaw: false };
 // Proof (stage-navigation-and-page-replacement.prd.md Phase 5): the book's notes at /proof and a chapter's view at /proof/:chapterId,
 // replacing Review and Proofing. Not gated: take-review notes need no manuscript, the page says itself when there is nothing to
@@ -53,7 +54,7 @@ type NavItem = typeof HOME;
 const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
   { label: 'Production', items: [HOME] },
   { label: 'Prep', items: [SCRIPT, STORY_BIBLE] },
-  { label: 'Record', items: [TELEPROMPTER] },
+  { label: 'Record', items: [BOOTH] },
   { label: 'Review', items: [PROOF, PICKUPS, TRACKS] },
   { label: 'Finish', items: [DELIVERY] },
 ];

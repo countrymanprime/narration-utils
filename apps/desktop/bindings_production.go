@@ -92,7 +92,7 @@ func (h *Host) saveProductionPlan(what string, change func(*project.Manifest)) (
 	return encodeBinding(production.PlanOf(manifest), nil)
 }
 
-// The Production page's bindings (docs/prds/production-tracking.prd.md Phase 4). ProductionOverview only reads: the
+// The Production page's bindings (production tracking PRD Phase 4, delivered and deleted; ADR 0028). ProductionOverview only reads: the
 // chapters and their measured recorded time from the manuscript, each chapter's readiness from the stage
 // recommendations (read live, Q8 A), and the time log. ProductionStartTimer and ProductionStopTimer are the only two
 // paths that write a session (PRD success metric "Timer honesty"), and only when the narrator clicks. None of them
@@ -182,6 +182,20 @@ func (h *Host) ProductionStopTimer() (string, error) {
 		return encodeBinding(map[string]any{"stopped": false, "session": nil}, nil)
 	}
 	return encodeBinding(map[string]any{"stopped": true, "session": session}, nil)
+}
+
+// ProductionBurndown is the book's logged hours by day (Phase 6, Could): data only, for a future chart primitive to
+// plot. It reads the same time log as ProductionOverview and adds nothing to it.
+func (h *Host) ProductionBurndown() (string, error) {
+	svc := h.services()
+	if svc.production == nil {
+		return "", errProductionNoProject
+	}
+	sessions, err := svc.production.Sessions()
+	if err != nil {
+		return "", err
+	}
+	return encodeBinding(production.Burndown(sessions), nil)
 }
 
 // productionRecorded is the production service's Recorded port over the manuscript's chapter list: each chapter's

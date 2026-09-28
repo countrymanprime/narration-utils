@@ -169,4 +169,4 @@ changes, and a chapter you link yourself is never overwritten.
 
 ---
 
-[← Teleprompter](teleprompter.md) · [Index](README.md) · [Proof →](proof.md)
+[← Booth](booth.md) · [Index](README.md) · [Proof →](proof.md)

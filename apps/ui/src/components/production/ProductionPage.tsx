@@ -124,7 +124,7 @@ function NextUp({
 }
 
 /**
- * Production (docs/prds/production-tracking.prd.md Phase 4, mock 01): the book's figures, a chapter by stage board and the chapters
+ * Production (production tracking PRD Phase 4, delivered and deleted, ADR 0028; mock 01): the book's figures, a chapter by stage board and the chapters
  * that most threaten the delivery date. It reads one overview when it opens and after each timer action (Q8 A); readiness is the stage
  * suggestions' own verdict, never recomputed here. The page never sets a chapter status: only the stage timer writes, and only when
  * the narrator starts or stops it.

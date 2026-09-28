@@ -22,7 +22,7 @@
     - group "Record":
       - /children: equal
       - text: Record
-      - button "Teleprompter"
+      - button "Booth"
     - group "Review":
       - /children: equal
       - text: Review

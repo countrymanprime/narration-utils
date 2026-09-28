@@ -6,7 +6,7 @@
 
 ## Context
 
-The [production tracking PRD](../prds/production-tracking.prd.md) (Phase 2, Q4) adds two figures a narrator otherwise works out in a spreadsheet: **PFH**, hours worked per finished hour, and the **effective hourly rate**, what the book pays per hour worked. The app can reach two different "finished runtime" numbers for a chapter:
+The production tracking PRD (delivered and deleted; `git log --diff-filter=D -- docs/prds/production-tracking.prd.md` finds it) Phase 2, Q4, adds two figures a narrator otherwise works out in a spreadsheet: **PFH**, hours worked per finished hour, and the **effective hourly rate**, what the book pays per hour worked; how it works now is in [Production](../guides/using-the-app/production.md). The app can reach two different "finished runtime" numbers for a chapter:
 
 - the measured recorded seconds of its one confirmed track (`tracks.Track.RecordedSeconds`, [Actual Recorded](../prds/actual-recorded-column.prd.md)); and
 - the word-count estimate on Home (`estimateFinishedHours`, 9,300 words per finished hour).
