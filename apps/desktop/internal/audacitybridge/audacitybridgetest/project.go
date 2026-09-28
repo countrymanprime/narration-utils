@@ -88,6 +88,12 @@ func (p *Project) handle(line string) ([]string, bool) {
 		return p.selectTime(cmd)
 	case "SelectTracks":
 		return p.selectTracks(cmd)
+	case "SelectNone":
+		p.SelStart, p.SelEnd = 0, 0
+		for i := range p.Tracks {
+			p.Tracks[i].Selected = false
+		}
+		return nil, true
 	case "AddLabel":
 		return p.addLabel()
 	case "SetLabel":

@@ -32,15 +32,15 @@
     },
     "markers": {
       "available": false,
-      "level": "not_yet_available",
-      "message": "Audacity support is not available yet. This version can't read audio from Audacity or add labels to it, so open the project from REAPER to compare it.",
-      "reason": "not_yet"
+      "level": "experimental",
+      "message": "Experimental: switched off in Settings.",
+      "reason": "experimental_off"
     },
     "navigate": {
       "available": false,
-      "level": "not_yet_available",
-      "message": "Audacity support is not available yet. This version can't read audio from Audacity or add labels to it, so open the project from REAPER to compare it.",
-      "reason": "not_yet"
+      "level": "experimental",
+      "message": "Experimental: switched off in Settings.",
+      "reason": "experimental_off"
     },
     "pickups": {
       "available": false,
