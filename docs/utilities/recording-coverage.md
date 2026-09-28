@@ -44,9 +44,12 @@ shows the same in-place track-link prompt a refused check always has.
 A chapter whose recording changed since its check is also re-checked in the background
 ([ADR 0211](../adr/0211-a-changed-chapter-is-rechecked-in-the-background-only-on-mains-power-with-reaper-quiet-and-not-recording.md)):
 one at a time, the oldest change first, and only when the setting **Check changed chapters in the background** is on,
-no other job runs, the Whisper model is installed, the computer is on mains power, REAPER is closed (until the bridge
-says whether it is recording), and nothing has changed for three minutes. It is the same check as a press, labelled
-background, and pressing **Check recording** pre-empts it. `chaptersync:state`'s `background.wait` says why none runs.
+no other job runs, the Whisper model is installed, the computer is on mains power, REAPER is closed or its heartbeat
+says it is not recording ([ADR 0305](../adr/0305-the-daw-heartbeat-carries-the-transport-and-is-sent-at-once-when-it-changes.md);
+a REAPER that is running but has not sent the transport yet counts as recording), and nothing has changed for three
+minutes. It is the same check as a press, labelled background, and pressing **Check recording** pre-empts it.
+`chaptersync:state`'s `background.wait` says why none runs, and the engine panel's Chapter sync section shows it in
+words.
 
 ## How it works
 

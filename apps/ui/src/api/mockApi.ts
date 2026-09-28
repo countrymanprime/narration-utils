@@ -44,6 +44,7 @@ import { createStoryBibleMock } from './mockHost/storyBible';
 import { createCharacterMock } from './mockHost/character';
 import { createSystemMock, invalidPayloadOverrides } from './mockHost/system';
 import { createPronunciationLookupMock } from './mockHost/pronunciationLookup';
+import { createPronunciationCommonsAudioMock } from './mockHost/wiktextractCommonsAudio';
 import { createPronunciationOnlineMock } from './mockHost/pronunciationOnline';
 
 export { applyMixedManuscriptMock } from './mockHost/manuscript';
@@ -188,7 +189,7 @@ export function createMockApi(
     picked: measurePicked,
     seed: initial.proofingRender,
   });
-  const { current: deliveryProfile, ...deliveryProfiles } = createDeliveryProfilesMock(initial.deliveryProfile);
+  const { current: deliveryProfile, all: deliveryProfilesAll, ...deliveryProfiles } = createDeliveryProfilesMock(initial.deliveryProfile);
   const { peekDiagnostics, ...diagnostics } = createDiagnosticsMock(endJob, measurePicked, initial.diagnostics);
   const editing = createEditingMock(initial.editing);
   const cleanupAction = createCleanupActionMock(
@@ -206,7 +207,7 @@ export function createMockApi(
     saveFileFindings(DELIVERY_REVIEW_ANALYZER, review.files, review.findings);
     recordRenderMeasurement(job.files);
   });
-  const renderEncodeMaster = createRenderEncodeMasterMock(endJob, initial.renderExport, deliveryProfile);
+  const renderEncodeMaster = createRenderEncodeMasterMock(endJob, initial.renderExport, deliveryProfile, deliveryProfilesAll, initial.renderPackageMulti);
   const system = createSystemMock(s, initial, {
     version: update.version,
     project,
@@ -278,6 +279,7 @@ export function createMockApi(
     ...mastering,
     ...recording,
     ...createPronunciationLookupMock(),
+    ...createPronunciationCommonsAudioMock(),
     ...createPronunciationOnlineMock(),
   };
   const api = initial.invalidPayload ? { ...base, ...invalidPayloadOverrides(initial.invalidPayload, base) } : base;

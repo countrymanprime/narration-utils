@@ -105,6 +105,13 @@ export const proofChapterStates: StateEntry[] = [
     description: 'Proof chapter view, a finished comparison’s summary - how many discrepancies are this chapter’s, Export 1 marker and New comparison',
     ...KEEPS_DESKTOP_SCROLL,
   },
+  {
+    page: 'proof-chapter',
+    state: 'compare-results-changed-since',
+    description:
+      'Proof chapter view, reviewing the last completed comparison after a low-frequency background check finds REAPER’s edit count has moved past it (reaper-automation-follow-through PRD Phase 13) - a "may have changed" note in text and an icon, never colour alone, beside the summary; nothing re-runs on its own',
+    ...KEEPS_DESKTOP_SCROLL,
+  },
   { page: 'proof-chapter', state: 'compare-toast', description: 'Proof chapter view, Suggest from manuscript answered with a toast', ...FREEZES_THE_CLOCK },
   // The vocabulary hints tag-input box (proofing-vocabulary-hints.prd.md Phase 2): the pills box is the input, no separate Add row.
   {
