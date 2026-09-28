@@ -47,7 +47,7 @@ const TOOLTIP: Record<string, string> = {
   exclude_ending_fraction:
     "Drops this share of the book's final chapters from consideration, so a preview candidate never spoils the ending. 0 leaves every chapter eligible.",
   cascade_enabled: 'Runs a fast first pass, then re-checks only what it reports missing with a stronger model, instead of one model over the whole chapter.',
-  cascade_first_pass_model: 'The model for the two-pass check’s fast first pass. Independent of the Proofing model above.',
+  cascade_first_pass_model: 'The model for the two-pass check’s fast first pass. Independent of the Proof model above.',
   cascade_recheck_model: 'The model that re-checks anything the first pass reports missing. Should not be smaller than the first-pass model.',
 };
 const optionTip = (field: ScopedSettingField, value: string) =>
