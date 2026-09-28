@@ -9,7 +9,7 @@ import {
   MATCH_BAR_PERCENT,
   type RgbaImage,
 } from '../tests/visual/mock-match/compare';
-import { APPROVED_MOCKS, mockPath, scoredMocks } from '../tests/visual/mock-match/mocks';
+import { APPROVED_MOCKS, mockPath, NOT_THE_SPEC, scoredMocks } from '../tests/visual/mock-match/mocks';
 import { formatScoreTable, type MockScore } from '../tests/visual/mock-match/report';
 import { APP_DRIVERS } from '../tests/visual/app.drivers';
 import { existsSync } from 'node:fs';
@@ -151,6 +151,15 @@ describe('the approved-mock list', () => {
     const files = APPROVED_MOCKS.map((mock) => mock.file);
     expect(new Set(files).size).toBe(files.length);
     for (const file of files) expect(existsSync(mockPath(file)), file).toBe(true);
+  });
+
+  test('a concept picture or copy is listed apart and never scored', () => {
+    const approved = new Set(APPROVED_MOCKS.map((mock) => mock.file));
+    for (const { file, why } of NOT_THE_SPEC) {
+      expect(existsSync(mockPath(file)), file).toBe(true);
+      expect(approved.has(file), file).toBe(false);
+      expect(why, file).toMatch(/\S/);
+    }
   });
 
   test('a scored mock names a state the visual suite can drive, and an unscored one says why', () => {

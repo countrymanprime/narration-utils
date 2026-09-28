@@ -9,7 +9,7 @@
 
 import { fileURLToPath } from 'node:url';
 
-export interface Region {
+interface Region {
   x: number;
   y: number;
   width: number;

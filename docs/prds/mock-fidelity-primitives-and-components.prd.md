@@ -51,7 +51,7 @@ The comparison follows pixelmatch:
 - **Match %** is matching pixels ÷ all pixels.
 - **Ink match %** is the same measure over only the pixels that are not page background. It is reported beside match % because a sparse screen scores well on background alone.
 
-The tool writes a diff PNG per state and a `scores.md` table to the gitignored `apps/ui/screenshots/mock-match/`. It reports and does not fail; `MOCK_MATCH_ENFORCE=1` fails any state under 90%. `src/mockMatch.test.ts` is its unit test: 17 cases covering the threshold, the anti-aliasing rule, ink match, fitting and the approved list.
+The tool writes a diff PNG per state and a `scores.md` table to the gitignored `apps/ui/screenshots/mock-match/`. It reports and does not fail; `MOCK_MATCH_ENFORCE=1` fails any state under 90%. `src/mockMatch.test.ts` is its unit test: 18 cases covering the threshold, the anti-aliasing rule, ink match, fitting, the approved list and the concept pictures kept out of it.
 
 ### Baseline scores
 
