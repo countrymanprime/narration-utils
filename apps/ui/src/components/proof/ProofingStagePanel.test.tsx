@@ -8,6 +8,7 @@ import { MemoryRouter } from 'react-router-dom';
 import { ApiProvider } from '../../api/ApiContext';
 import { createMockApi } from '../../api/mockApi';
 import { WIRE_CHAPTERS } from '../../api/mockFixtures';
+import { chapterName } from '../../chapterName';
 import type { NarrationApi } from '../../types';
 import { ProofingStagePanel } from './ProofingStagePanel';
 
@@ -32,8 +33,8 @@ const row = (title: string) => screen.getByText(title).closest('tr') as HTMLElem
 describe('the Proofing page panel', () => {
   it('lists every chapter currently in Proofing, each unchecked by default', async () => {
     renderPanel(createMockApi());
-    await waitFor(() => expect(within(row(c9.title)).getByText(/Can.t tell yet/)).toBeTruthy());
-    expect(within(row(c10.title)).getByText(/Can.t tell yet/)).toBeTruthy();
+    await waitFor(() => expect(within(row(chapterName(c9))).getByText(/Can.t tell yet/)).toBeTruthy());
+    expect(within(row(chapterName(c10))).getByText(/Can.t tell yet/)).toBeTruthy();
     expect(screen.getByRole('table', { name: 'Chapters in proofing' })).toBeTruthy();
   });
 
@@ -55,18 +56,18 @@ describe('the Proofing page panel', () => {
   it('shows a recommended verdict and confirms it, which moves the chapter to Finalized and off the panel', async () => {
     const api = createMockApi({}, { stages: { proofing: { [c9.id]: 'met' } } });
     const { notify } = renderPanel(api);
-    await waitFor(() => expect(within(row(c9.title)).getByText('Suggested: Finalized')).toBeTruthy());
-    fireEvent.click(within(row(c9.title)).getByRole('button', { name: `Confirm ${c9.title} as Finalized` }));
+    await waitFor(() => expect(within(row(chapterName(c9))).getByText('Suggested: Finalized')).toBeTruthy());
+    fireEvent.click(within(row(chapterName(c9))).getByRole('button', { name: `Confirm ${c9.title} as Finalized` }));
     await waitFor(() => expect(notify).toHaveBeenCalledWith(`${c9.title} moved to Finalized.`));
-    await waitFor(() => expect(screen.queryByText(c9.title)).toBeNull());
+    await waitFor(() => expect(screen.queryByText(chapterName(c9))).toBeNull());
     expect((await api.manuscriptChapters()).find((chapter) => chapter.id === c9.id)?.status).toBe('finalized');
   });
 
   it('shows a not-ready verdict when a pickup is open, naming Proof in the evidence', async () => {
     const api = createMockApi({}, { stages: { proofing: { [c9.id]: 'not_met' } } });
     renderPanel(api);
-    await waitFor(() => expect(within(row(c9.title)).getByText('Not ready for Finalized')).toBeTruthy());
-    fireEvent.click(within(row(c9.title)).getByRole('button', { name: `Why: ${c9.title}` }));
+    await waitFor(() => expect(within(row(chapterName(c9))).getByText('Not ready for Finalized')).toBeTruthy());
+    fireEvent.click(within(row(chapterName(c9))).getByRole('button', { name: `Why: ${c9.title}` }));
     const view = await screen.findByRole('dialog');
     expect(within(view).getByText(/open pickup/)).toBeTruthy();
     expect(within(view).getByText(/Decide each on Proof/)).toBeTruthy();
@@ -75,8 +76,8 @@ describe('the Proofing page panel', () => {
   it('names the cause of an unknown pickup check and links to the Tracks page, never "Open recording check"', async () => {
     const api = createMockApi({}, { stages: { proofing: { [c9.id]: { unknown: 'unmapped_track' } } } });
     renderPanel(api);
-    await waitFor(() => expect(within(row(c9.title)).getByText(/no track linked/)).toBeTruthy());
-    fireEvent.click(within(row(c9.title)).getByRole('button', { name: `Why: ${c9.title}` }));
+    await waitFor(() => expect(within(row(chapterName(c9))).getByText(/no track linked/)).toBeTruthy());
+    fireEvent.click(within(row(chapterName(c9))).getByRole('button', { name: `Why: ${c9.title}` }));
     const view = await screen.findByRole('dialog');
     expect(within(view).getByRole('link', { name: 'Open Tracks' })).toBeTruthy();
     expect(within(view).queryByRole('button', { name: /Open recording check/ })).toBeNull();
@@ -86,9 +87,9 @@ describe('the Proofing page panel', () => {
   it('dismisses a suggestion without changing the status, and Revert restores a confirmed chapter', async () => {
     const api = createMockApi({}, { stages: { proofing: { [c9.id]: 'met' } } });
     renderPanel(api);
-    await waitFor(() => expect(within(row(c9.title)).getByText('Suggested: Finalized')).toBeTruthy());
-    fireEvent.click(within(row(c9.title)).getByRole('button', { name: `Dismiss the suggestion for ${c9.title}` }));
-    await waitFor(() => expect(within(row(c9.title)).getByText('Suggestion dismissed (Finalized)')).toBeTruthy());
+    await waitFor(() => expect(within(row(chapterName(c9))).getByText('Suggested: Finalized')).toBeTruthy());
+    fireEvent.click(within(row(chapterName(c9))).getByRole('button', { name: `Dismiss the suggestion for ${c9.title}` }));
+    await waitFor(() => expect(within(row(chapterName(c9))).getByText('Suggestion dismissed (Finalized)')).toBeTruthy());
     expect((await api.manuscriptChapters()).find((chapter) => chapter.id === c9.id)?.status).toBe('proofing');
   });
 });

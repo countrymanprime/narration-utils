@@ -29,7 +29,7 @@ export const settingsDrivers: Record<string, Driver> = {
   'global-proofing': async (page) => {
     await goToPage(page, 'Settings');
     await clickVisible(page, 'tab', 'Global');
-    await clickSettingsCategory(page, 'Proofing');
+    await clickSettingsCategory(page, 'Proof');
   },
   'global-storybible': async (page) => {
     await goToPage(page, 'Settings');
@@ -263,7 +263,7 @@ export const settingsDrivers: Record<string, Driver> = {
   'project-proofing': async (page) => {
     await goToPage(page, 'Settings');
     await clickVisible(page, 'tab', 'This Project');
-    await clickSettingsCategory(page, 'Proofing');
+    await clickSettingsCategory(page, 'Proof');
   },
   'project-storybible': async (page) => {
     await goToPage(page, 'Settings');
@@ -340,7 +340,7 @@ export const settingsDrivers: Record<string, Driver> = {
     await goToPage(page, 'Settings');
     await clickVisible(page, 'tab', 'This Project');
     await clickSettingsCategory(page, 'Credits');
-    await page.getByText(/line 1 to Chapter 3, line 3/).waitFor();
+    await page.getByText(/line 1 to Chapter 3 — A Caucus-Race and a Long Tale, line 3/).waitFor();
     await page.getByRole('heading', { name: 'Retail sample' }).scrollIntoViewIfNeeded();
   },
   // A range over 5 minutes (Chapter 1 to Chapter 12) is refused, and the refusal says why.
@@ -348,7 +348,7 @@ export const settingsDrivers: Record<string, Driver> = {
     await goToPage(page, 'Settings');
     await clickVisible(page, 'tab', 'This Project');
     await clickSettingsCategory(page, 'Credits');
-    await page.getByRole('combobox', { name: 'Sample ends in' }).selectOption({ label: 'Chapter 12' });
+    await page.getByRole('combobox', { name: 'Sample ends in' }).selectOption({ label: 'Chapter 12 — Alice’s Evidence' });
     await page.getByRole('button', { name: 'Save sample' }).click();
     await page.getByText(/at most 5 minutes/).waitFor();
     await page.getByRole('button', { name: 'Save sample' }).scrollIntoViewIfNeeded();
@@ -356,8 +356,8 @@ export const settingsDrivers: Record<string, Driver> = {
   'dirty-footer': async (page) => {
     await goToPage(page, 'Settings');
     await clickVisible(page, 'tab', 'Global');
-    await clickSettingsCategory(page, 'Proofing');
-    // Proofing settings fields are <select> comboboxes, not pill buttons
+    await clickSettingsCategory(page, 'Proof');
+    // Proof settings fields are <select> comboboxes, not pill buttons
     // (that's a Setup-page-only control) - pick a different model to dirty it.
     await page.getByRole('combobox').first().selectOption('large-v3');
     // The unsaved-changes footer sits at the end of the page; bring it on screen.
@@ -366,7 +366,7 @@ export const settingsDrivers: Record<string, Driver> = {
   'navigate-away-confirm': async (page) => {
     await goToPage(page, 'Settings');
     await clickVisible(page, 'tab', 'Global');
-    await clickSettingsCategory(page, 'Proofing');
+    await clickSettingsCategory(page, 'Proof');
     await page.getByRole('combobox').first().selectOption('large-v3');
     // Leaving with unsaved changes asks first, so this click does not arrive at Home: it opens the confirm dialog.
     await clickNav(page, 'Home');
@@ -375,7 +375,7 @@ export const settingsDrivers: Record<string, Driver> = {
   'reset-override': async (page) => {
     await goToPage(page, 'Settings');
     await clickVisible(page, 'tab', 'This Project');
-    await clickSettingsCategory(page, 'Proofing');
+    await clickSettingsCategory(page, 'Proof');
     // The mock starts with no project override, so make one the way a narrator does: pick a value and save it. Only a
     // field that has an override shows Reset (the model select), and its row is the one that must not squeeze.
     await page.getByRole('combobox', { name: 'Default Whisper model' }).selectOption('large-v3');
@@ -388,7 +388,7 @@ export const settingsDrivers: Record<string, Driver> = {
     await dismissToast.click({ timeout: 1_000 }).catch(() => undefined);
     await dismissToast.waitFor({ state: 'detached' });
     // Clicking Save scrolled the panel to its footer: bring the top back so the category and its first row are in the shot.
-    await page.getByRole('heading', { level: 2, name: 'Proofing' }).scrollIntoViewIfNeeded();
+    await page.getByRole('heading', { level: 2, name: 'Proof' }).scrollIntoViewIfNeeded();
     await reset.hover();
   },
 };

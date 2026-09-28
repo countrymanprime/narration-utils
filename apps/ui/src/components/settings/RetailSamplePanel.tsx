@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { apiErrorMessage } from '../../api/errorMessage';
 import { useApi } from '../../api/ApiContext';
+import { chapterName } from '../../chapterName';
 import type { ManuscriptChapter, RetailSampleAnswer } from '../../types';
 import { formatMinutesSeconds } from '../../state';
 import { Button } from '../primitives/Button';
@@ -62,8 +63,11 @@ export function RetailSamplePanel({ notify }: { notify: Notify }) {
 
   const byId = useMemo(() => new Map(chapters.map((chapter) => [chapter.id, chapter])), [chapters]);
   const paragraphId = (at: End) => byId.get(at.chapterId)?.paragraphIds?.[Number(at.line) - 1]?.id ?? '';
-  const titleOf = (chapterId: string) => byId.get(chapterId)?.title ?? chapterId;
-  const chapterOptions = chapters.map((chapter) => ({ value: chapter.id, label: chapter.title }));
+  const titleOf = (chapterId: string) => {
+    const chapter = byId.get(chapterId);
+    return chapter ? chapterName(chapter) : chapterId;
+  };
+  const chapterOptions = chapters.map((chapter) => ({ value: chapter.id, label: chapterName(chapter) }));
 
   const save = async (startId: string, endId: string, done: string) => {
     setBusy(true);

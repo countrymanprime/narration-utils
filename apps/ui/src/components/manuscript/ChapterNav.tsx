@@ -1,5 +1,6 @@
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faBookmark, faParagraph } from '@fortawesome/free-solid-svg-icons';
+import { chapterName } from '../../chapterName';
 import { STATUS_COLOR } from '../../chapterStatus';
 import { chapterLineNumber, isListableChapter, windowExcerpt } from '../../state';
 import type { ManuscriptChapter, ReaderBookmark, SearchHit, StageChapterRecommendation } from '../../types';
@@ -120,7 +121,7 @@ export function ChapterNav({
                   >
                     <button
                       className="flex w-full items-start gap-[0.35rem] text-left"
-                      aria-label={`Search result in ${chapter.title}, line ${chapterLineNumber(chapter, hit.paragraph, lineNumbers)}`}
+                      aria-label={`Search result in ${chapterName(chapter, 'short')}, line ${chapterLineNumber(chapter, hit.paragraph, lineNumbers)}`}
                       onClick={() => select(chapter.id, hit.paragraph)}
                     >
                       <FontAwesomeIcon icon={faParagraph} className="mt-[0.15rem] flex-none text-[var(--non-text)]" />
