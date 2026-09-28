@@ -92,4 +92,24 @@ export const storybibleStates: StateEntry[] = [
     state: 'invalid-payload',
     description: 'Story Bible, the inline error with Retry when the entities could not be read; navigation still works (ADR 0069)',
   },
+
+  // Character bible (character-continuity-review.prd.md Phase 6, non-acoustic part only; D87 on #509 benches
+  // every acoustic-drift binding, so there is no findings, drift comparison or audition here).
+  {
+    page: 'storybible',
+    state: 'character-voice-references',
+    description:
+      'Story Bible, a Character entry: Reference clips (an approved reference, one flagged changed since approval, approve-a-region picker) and Dialogue cues (an unattributed cue with its speaker correction control) (character-continuity-review P6)',
+  },
+  {
+    page: 'storybible',
+    state: 'voice-data-panel',
+    description:
+      'Story Bible, the Voice data slide-over from the toolbar: approving a reference for plain Narration (Q9) and the Remove voice data action (Q7)',
+  },
+  {
+    page: 'storybible',
+    state: 'remove-voice-data-confirm',
+    description: 'Story Bible, the Voice data slide-over with the Remove voice data confirm dialog open (Q7, destructive, project-wide)',
+  },
 ];

@@ -90,12 +90,14 @@ import { dawCatalogListSchema } from './schemas/dawCatalog';
 import {
   guideBuildResultSchema,
   guideCreatedSchema,
+  guideDialogueCuesSchema,
   guideEntitiesSchema,
   guidePreviewSchema,
   pronunciationQueriesCsvSchema,
   pronunciationQueriesSchema,
   queryImportResultSchema,
 } from './schemas/storyBible';
+import { approvedCharacterReferencesSchema, characterRegionsSchema, characterReferenceSchema } from './schemas/character';
 import { bootstrapSchema, copyDiagnosticsResultSchema, projectAttachStateSchema, readySchema } from './schemas/system';
 import {
   readAloudReaperStateSchema,
@@ -737,6 +739,45 @@ describe('answers of the mock client for the manuscript, Story Bible and project
     const csv = await api.guidePronunciationQueriesCsv();
     expectMatches(pronunciationQueriesCsvSchema, csv, 'mock pronunciation queries CSV');
     expect(csv.count).toBe(queries.length);
+  });
+
+  it('the Story Bible dialogue cues and their correction', async () => {
+    const api = createMockApi();
+    const cues = await api.guideDialogueCues();
+    expectMatches(guideDialogueCuesSchema, cues, 'mock dialogue cues');
+    const unknown = cues.find((cue) => cue.speaker_entity_id === null);
+    expect(unknown).toBeDefined();
+    await api.guideCorrectCue(unknown?.id ?? '', 'alice');
+    const corrected = (await api.guideDialogueCues()).find((cue) => cue.id === unknown?.id);
+    expect(corrected).toMatchObject({ speaker_entity_id: 'alice', speaker_source: 'correction', corrected: true });
+    // "unknown" clears a correction back to unknown, the same as an empty string.
+    await api.guideCorrectCue(unknown?.id ?? '', 'unknown');
+    const cleared = (await api.guideDialogueCues()).find((cue) => cue.id === unknown?.id);
+    expect(cleared).toMatchObject({ speaker_entity_id: null, speaker_source: 'correction', corrected: true });
+    await expect(api.guideCorrectCue('not-a-real-cue', 'alice')).rejects.toThrow();
+  });
+
+  it('the character bible: regions, approving a reference, revoking it and removing every reference', async () => {
+    const api = createMockApi();
+    const regions = await api.characterListRegions();
+    expectMatches(characterRegionsSchema, regions, 'mock regions');
+    expect(regions.length).toBeGreaterThan(0);
+    const region = regions[0];
+    const reference = await api.characterApprove('alice', region.guid, 'Anchor take.');
+    expectMatches(characterReferenceSchema, reference, 'mock reference');
+    expect(reference.characterId).toBe('alice');
+    expect(reference.regionGuid).toBe(region.guid);
+    const referenced = await api.characterReferences();
+    expectMatches(approvedCharacterReferencesSchema, referenced, 'mock references');
+    expect(referenced.some((row) => row.id === reference.id && !row.changedSinceApproval)).toBe(true);
+    await api.characterRevoke(reference.id);
+    expect((await api.characterReferences()).some((row) => row.id === reference.id)).toBe(false);
+    // Approving a region that is not in the saved project is refused (the real host validates it too).
+    await expect(api.characterApprove('alice', 'not-a-real-region', '')).rejects.toThrow();
+    const seeded = await api.characterReferences();
+    expect(seeded.length).toBeGreaterThan(0);
+    await api.characterRemoveVoiceData();
+    expect(await api.characterReferences()).toHaveLength(0);
   });
 
   it('re-importing an answered pronunciation query file applies a matched row and reports an unmatched one', async () => {
@@ -2215,6 +2256,10 @@ describe('answers of the mock client for the settings, voice, model, transcript 
       'guidePronunciationQueries',
       'guidePronunciationQueriesCsv',
       'guidePronunciationImportQueriesCsv',
+      'guideDialogueCues',
+      'characterListRegions',
+      'characterApprove',
+      'characterReferences',
       'assetsList',
       'assetsInstall',
       'assetsInstallState',
@@ -2401,6 +2446,9 @@ describe('answers of the mock client for the settings, voice, model, transcript 
       'guideDelete',
       'guideRelate',
       'guideUnrelate',
+      'guideCorrectCue',
+      'characterRevoke',
+      'characterRemoveVoiceData',
       'ttsRemove',
       'whisperRemove',
       'assetsRemove',

@@ -204,6 +204,50 @@ export function ChaptersForTracks(guids: string[]): $CancellablePromise<string> 
 }
 
 /**
+ * CharacterApprove approves regionGUID as a voice reference for characterID
+ * (a Story Bible entity id, or the reserved Narration id), with an optional
+ * note. Approving the same character and region again refreshes the
+ * snapshot in place.
+ */
+export function CharacterApprove(characterID: string, regionGUID: string, note: string): $CancellablePromise<string> {
+    return $Call.ByID(3579176758, characterID, regionGUID, note);
+}
+
+/**
+ * CharacterListRegions lists the saved REAPER project's regions, for the
+ * narrator to pick one to approve as a voice reference.
+ */
+export function CharacterListRegions(): $CancellablePromise<string> {
+    return $Call.ByID(1288114066);
+}
+
+/**
+ * CharacterReferences lists every stored reference, each annotated with
+ * whether the region it names has changed since it was approved.
+ */
+export function CharacterReferences(): $CancellablePromise<string> {
+    return $Call.ByID(536905783);
+}
+
+/**
+ * CharacterRemoveVoiceData revokes every reference for the project in one
+ * action (Q7's "Remove voice analysis data", delivered in Phase 6 rather
+ * than Phase 7 per D87): the data-layer effect is the same as revoking each
+ * reference one at a time.
+ */
+export function CharacterRemoveVoiceData(): $CancellablePromise<string> {
+    return $Call.ByID(1324390885);
+}
+
+/**
+ * CharacterRevoke removes one stored reference by id. Revoking an id that is
+ * not (or no longer) stored is not an error.
+ */
+export function CharacterRevoke(id: string): $CancellablePromise<string> {
+    return $Call.ByID(2254082095, id);
+}
+
+/**
  * CleanupApply asks REAPER to remove every silence-trim candidate's cut range (apply_cleanup_trims), in one undo
  * block; a candidate the saved project has made stale is left untouched.
  */
@@ -726,12 +770,30 @@ export function GuideBuildState(): $CancellablePromise<string> {
     return $Call.ByID(1236161883);
 }
 
+/**
+ * GuideCorrectCue records the narrator's own attribution for one dialogue
+ * cue. speakerEntityID "unknown" or "" clears the cue back to unknown; a
+ * rebuild never overwrites a correction (mirroring ADR 0007's lock guard).
+ */
+export function GuideCorrectCue(cueID: string, speakerEntityID: string): $CancellablePromise<string> {
+    return $Call.ByID(2882621287, cueID, speakerEntityID);
+}
+
 export function GuideCreate(name: string, category: string, aliases: string[]): $CancellablePromise<string> {
     return $Call.ByID(4087272090, name, category, aliases);
 }
 
 export function GuideDelete(id: string): $CancellablePromise<string> {
     return $Call.ByID(2382640937, id);
+}
+
+/**
+ * GuideDialogueCues returns the Story Bible's extracted dialogue cues
+ * (character-continuity-review.prd.md Phase 2): one entry per quoted span,
+ * with its resolved or unknown speaker.
+ */
+export function GuideDialogueCues(): $CancellablePromise<string> {
+    return $Call.ByID(1741759900);
 }
 
 export function GuideEdit(id: string, values: { [_ in string]?: string }): $CancellablePromise<string> {
