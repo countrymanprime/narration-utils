@@ -31,8 +31,11 @@ type Options struct {
 // It is safe for concurrent use; requests are serialised, because the pipe carries one conversation.
 type Client struct {
 	transport Transport
-	timeout   time.Duration // +checklocksignore: set once in New, read-only after
-	lineEnd   string        // +checklocksignore: set once in New, read-only after
+	// Set once in New and read-only after, so no lock guards them.
+	// +checklocksignore
+	timeout time.Duration
+	// +checklocksignore
+	lineEnd string
 
 	mu sync.Mutex // guards conn and reader, and serialises requests
 	// +checklocks:mu
