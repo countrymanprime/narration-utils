@@ -17,7 +17,6 @@ import { IconButton } from '../primitives/IconButton';
 import { Panel } from '../primitives/Panel';
 import { SectionLabel } from '../primitives/SectionLabel';
 import { ProgressBar } from '../primitives/ProgressBar';
-import { SectionLabel } from '../primitives/SectionLabel';
 import { ToggleGroup } from '../primitives/ToggleGroup';
 import { TagInput } from '../primitives/TagInput';
 import { Tooltip, TooltipTarget } from '../primitives/Tooltip';
