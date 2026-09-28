@@ -4,20 +4,19 @@
 // (.github/workflows/docs.yml) in CI, which sets GITHUB_BASE_REF and passes --summary.
 //
 // --fix       run markdownlint-cli2 --fix first (what `pnpm lint:md:fix` passes)
-// --base REF  compare against REF instead of origin/main (or origin/$GITHUB_BASE_REF in CI, or the pull request merge
-//             commit's first parent when a stacked pull request's base branch is not in the checkout)
+// --base REF  compare against REF instead of origin/main (or $GITHUB_BASE_REF in CI)
 // --summary   append a job summary to $GITHUB_STEP_SUMMARY when it is set (CI only)
 
 import { appendFileSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 
-import { changedMarkdownFiles, resolveBase } from './changed-markdown.mjs';
+import { changedMarkdownFiles } from './changed-markdown.mjs';
 
 const args = process.argv.slice(2);
 const fix = args.includes('--fix');
 const summary = args.includes('--summary');
 const baseFlagIndex = args.indexOf('--base');
-const base = baseFlagIndex !== -1 ? args[baseFlagIndex + 1] : resolveBase({ baseRef: process.env.GITHUB_BASE_REF });
+const base = baseFlagIndex !== -1 ? args[baseFlagIndex + 1] : process.env.GITHUB_BASE_REF ? `origin/${process.env.GITHUB_BASE_REF}` : 'origin/main';
 
 function writeSummary(text) {
   if (summary && process.env.GITHUB_STEP_SUMMARY) appendFileSync(process.env.GITHUB_STEP_SUMMARY, text);
