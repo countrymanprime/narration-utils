@@ -1,4 +1,5 @@
 import type { ManuscriptChapter } from '../../api/contracts/manuscript';
+import { chapterName } from '../../chapterName';
 import { removalKindLabel, removedWhenLabel } from './chapterRemovalText';
 import { Button } from '../primitives/Button';
 import { Panel } from '../primitives/Panel';
@@ -30,7 +31,7 @@ export function RemovedFromRecordingList({
             className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-[var(--border)] bg-[var(--surface-2)] px-3 py-2.5"
           >
             <div className="min-w-0">
-              <span className="font-medium">{chapter.title}</span>
+              <span className="font-medium">{chapterName(chapter)}</span>
               <span className="text-sm" style={{ color: 'var(--text-muted)' }}>
                 {' '}
                 · {chapter.wordCount.toLocaleString()} words · removed {chapter.kindChangedAt ? removedWhenLabel(chapter.kindChangedAt, now) : ''} as{' '}

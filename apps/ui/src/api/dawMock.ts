@@ -33,6 +33,8 @@ const REAPER_DECLARATION: Record<DawCapabilityKey, DawCapabilityLevel> = {
   fx_chains: 'experimental',
   silence_trim: 'experimental',
   item_gain: 'experimental',
+  render_with_fx: 'not_yet_available',
+  master_chain_read: 'not_yet_available',
 };
 
 const CAPABILITY_NEEDS: Record<DawCapabilityKey, DawMockNeeds> = {
@@ -57,6 +59,8 @@ const CAPABILITY_NEEDS: Record<DawCapabilityKey, DawMockNeeds> = {
   fx_chains: 'running',
   silence_trim: 'running',
   item_gain: 'running',
+  render_with_fx: 'running',
+  master_chain_read: 'running',
 };
 
 /** The host's own wording for a REAPER that is not connected or not answering, and the resolver's generic wording for

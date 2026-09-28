@@ -1,6 +1,6 @@
 # 0392. The Script page's prep status is the names still to confirm, and its rail is a panel below `2xl`
 
-**Status:** Proposed
+**Status:** Proposed (point 2's `2xl` rail breakpoint is superseded by [ADR 0393](0393-the-script-pages-three-columns-show-from-1440px-and-the-reader-card-header-keys-off-its-own-width.md), the owner's D85 on issue #509: the rail shows from 1440 px, mock 02's own capture width. Points 1 and 3 stand.)
 **Date:** 2026-09-27
 
 ## Context

@@ -415,7 +415,7 @@ describe('Script page (integration, driven through the mock NarrationApi)', () =
     renderScript();
     await waitFor(() => screen.getByRole('heading', { name: 'Chapter 1 — Down the Rabbit-Hole' }));
     fireEvent.click(screen.getByRole('button', { name: /Chapters & Search/ }));
-    const input = screen.getByLabelText('Search manuscript');
+    const input = screen.getByLabelText('Search Script');
     fireEvent.change(input, { target: { value: 'Rabbit' } });
     fireEvent.keyDown(input, { key: 'Enter' }); // fires the search immediately, bypassing the debounce (R1)
 
@@ -437,7 +437,7 @@ describe('Script page (integration, driven through the mock NarrationApi)', () =
     });
     await waitFor(() => screen.getByRole('heading', { name: 'Chapter 1 — Down the Rabbit-Hole' }));
     fireEvent.click(screen.getByRole('button', { name: /Chapters & Search/ }));
-    const input = screen.getByLabelText('Search manuscript');
+    const input = screen.getByLabelText('Search Script');
     // Each Enter fires immediately (R1), simulating two real requests racing - the debounce itself
     // (see the dedicated debounce test below) would collapse two edits this close together into one.
     fireEvent.change(input, { target: { value: 'old' } });
@@ -455,7 +455,7 @@ describe('Script page (integration, driven through the mock NarrationApi)', () =
     renderScript({ manuscriptSearch: searchSpy });
     await waitFor(() => screen.getByRole('heading', { name: 'Chapter 1 — Down the Rabbit-Hole' }));
     fireEvent.click(screen.getByRole('button', { name: /Chapters & Search/ }));
-    const input = screen.getByLabelText('Search manuscript');
+    const input = screen.getByLabelText('Search Script');
 
     vi.useFakeTimers();
     fireEvent.change(input, { target: { value: 'Pool of Tears' } });
@@ -477,7 +477,7 @@ describe('Script page (integration, driven through the mock NarrationApi)', () =
     renderScript({ manuscriptSearch: searchSpy });
     await waitFor(() => screen.getByRole('heading', { name: 'Chapter 1 — Down the Rabbit-Hole' }));
     fireEvent.click(screen.getByRole('button', { name: /Chapters & Search/ }));
-    const input = screen.getByLabelText('Search manuscript');
+    const input = screen.getByLabelText('Search Script');
 
     vi.useFakeTimers();
     fireEvent.change(input, { target: { value: 'Rabbit' } });
@@ -496,12 +496,12 @@ describe('Script page (integration, driven through the mock NarrationApi)', () =
     renderScript();
     await waitFor(() => screen.getByRole('heading', { name: 'Chapter 1 — Down the Rabbit-Hole' }));
     fireEvent.click(screen.getByRole('button', { name: /Chapters & Search/ }));
-    fireEvent.change(screen.getByLabelText('Search manuscript'), { target: { value: 'Rabbit' } });
+    fireEvent.change(screen.getByLabelText('Search Script'), { target: { value: 'Rabbit' } });
     const [result] = await screen.findAllByRole('button', { name: /Search result in Chapter 1/ });
     fireEvent.click(result);
 
     fireEvent.click(screen.getByRole('button', { name: /Chapters & Search/ }));
-    expect((screen.getByLabelText('Search manuscript') as HTMLInputElement).value).toBe('');
+    expect((screen.getByLabelText('Search Script') as HTMLInputElement).value).toBe('');
     expect(screen.queryByRole('button', { name: /Search result in/ })).toBeNull();
   });
 
@@ -509,18 +509,18 @@ describe('Script page (integration, driven through the mock NarrationApi)', () =
     renderScript();
     await waitFor(() => screen.getByRole('heading', { name: 'Chapter 1 — Down the Rabbit-Hole' }));
     fireEvent.click(screen.getByRole('button', { name: /Chapters & Search/ }));
-    fireEvent.change(screen.getByLabelText('Search manuscript'), { target: { value: 'Rabbit' } });
+    fireEvent.change(screen.getByLabelText('Search Script'), { target: { value: 'Rabbit' } });
     await screen.findAllByRole('button', { name: /Search result in Chapter 1/ });
 
     // Fired on the focused input itself (not window directly) so it bubbles through Base UI's own
     // document-level Escape listener exactly as a real keypress would - dispatching straight on
     // window would skip that listener entirely and prove nothing about production behavior.
-    const input = screen.getByLabelText('Search manuscript');
+    const input = screen.getByLabelText('Search Script');
     fireEvent.keyDown(input, { key: 'Escape' });
-    expect((screen.getByLabelText('Search manuscript') as HTMLInputElement).value).toBe('');
+    expect((screen.getByLabelText('Search Script') as HTMLInputElement).value).toBe('');
     expect(document.querySelector('[data-slide-over]')).toBeTruthy();
 
-    fireEvent.keyDown(screen.getByLabelText('Search manuscript'), { key: 'Escape' });
+    fireEvent.keyDown(screen.getByLabelText('Search Script'), { key: 'Escape' });
     await waitFor(() => expect(document.querySelector('[data-slide-over]')).toBeNull());
   });
 
@@ -528,7 +528,7 @@ describe('Script page (integration, driven through the mock NarrationApi)', () =
     renderScript();
     await waitFor(() => screen.getByRole('heading', { name: 'Chapter 1 — Down the Rabbit-Hole' }));
     fireEvent.click(screen.getByRole('button', { name: /Chapters & Search/ }));
-    await waitFor(() => expect(document.activeElement).toBe(screen.getByLabelText('Search manuscript')));
+    await waitFor(() => expect(document.activeElement).toBe(screen.getByLabelText('Search Script')));
   });
 
   describe('when the data it loads cannot be read (ADR 0069)', () => {
@@ -842,6 +842,45 @@ describe('Script page (integration, driven through the mock NarrationApi)', () =
       const opening = openingHeading.closest('[data-credits-entry]') as HTMLElement;
       await within(opening).findByText('Nothing to preview yet.');
       expect(within(opening).queryByRole('button', { name: /in Booth/ })).toBeNull();
+    });
+  });
+
+  // D85 #3 on issue #509, ADR 0393 (superseding ADR 0392): three columns show at the mock's own 1440px capture width, not
+  // just from `2xl` (1536px) - jsdom does not lay out at a real width, so this only pins the class mechanism; the actual
+  // rendered layout is checked by the visual suite (script/retail-sample, script/markup-dialog at desktop, 1440px).
+  it('introduces the rail column at 1440px, not 2xl', async () => {
+    renderScript();
+    await waitFor(() => expect(screen.getByRole('heading', { name: 'Script' })).toBeTruthy());
+    const grid = document.querySelector('.reader-page')!;
+    expect(grid.className).toContain('min-[1440px]:grid-cols-[12rem_minmax(0,1fr)_21.5rem]');
+    expect(grid.className).not.toMatch(/(^|\s)2xl:grid-cols-/);
+    const rail = screen.getByRole('complementary', { name: 'Prep' });
+    expect(rail.className).toContain('min-[1440px]:flex');
+    expect(rail.className).not.toMatch(/(^|\s)2xl:flex/);
+  });
+
+  // Audit row SC3 (docs/research/visual-mockup-divergence-audit.md): mock 02's "Markup layer" key describes the reader's
+  // own script marks, not the Story Bible's category colors.
+  describe('the markup layer key (SC3)', () => {
+    it('is titled "Markup layer", not "Marks"', async () => {
+      renderScript();
+      await waitFor(() => expect(screen.getByRole('heading', { name: 'Script' })).toBeTruthy());
+      expect(screen.getAllByText('Markup layer').length).toBeGreaterThan(0);
+      expect(screen.queryByText('Marks')).toBeNull();
+    });
+
+    it('names the reader marks mock 02 draws, not the Story Bible categories', async () => {
+      renderScript();
+      await waitFor(() => expect(screen.getByRole('heading', { name: 'Script' })).toBeTruthy());
+      // The `xl`+ aside key and the sub-`xl` band key both render the same entries; getAllByText covers either or both.
+      for (const text of ['Speaker', 'stress', 'breath ·', 'pause', 'pronunciation', 'author query']) {
+        expect(screen.getAllByText(text, { exact: false }).length).toBeGreaterThan(0);
+      }
+      // The old key (the Story Bible's category colors) is gone: "Location"/"Organization"/"Lore" never named a real
+      // reader mark, and this page has no Location/Organization/Lore entities to otherwise put those words on screen.
+      expect(screen.queryByText('Location')).toBeNull();
+      expect(screen.queryByText('Organization')).toBeNull();
+      expect(screen.queryByText('Lore')).toBeNull();
     });
   });
 });

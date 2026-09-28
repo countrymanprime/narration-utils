@@ -48,27 +48,29 @@ func NewFake(kind dawport.Kind, levels map[dawport.Capability]dawport.Level) *Fa
 	}
 	r := func(c dawport.Capability) role { return role{f: f, c: c} }
 	f.roles = map[dawport.Capability]any{
-		dawport.CapReview:       reviewRole{r(dawport.CapReview)},
-		dawport.CapNavigate:     navigateRole{r(dawport.CapNavigate)},
-		dawport.CapMarkers:      markersRole{r(dawport.CapMarkers)},
-		dawport.CapPickups:      pickupsRole{r(dawport.CapPickups)},
-		dawport.CapLineIdentity: lineIdentityRole{r(dawport.CapLineIdentity)},
-		dawport.CapRenderConfig: renderConfigRole{r(dawport.CapRenderConfig)},
-		dawport.CapCleanupTools: cleanupToolsRole{r(dawport.CapCleanupTools)},
-		dawport.CapRetakeLanes:  retakeLanesRole{r(dawport.CapRetakeLanes)},
-		dawport.CapProjectState: projectStateRole{r(dawport.CapProjectState)},
-		dawport.CapTakeCreate:   takeCreateRole{r(dawport.CapTakeCreate)},
-		dawport.CapHeartbeat:    heartbeatRole{r(dawport.CapHeartbeat)},
-		dawport.CapProjectRead:  projectReadRole{r(dawport.CapProjectRead)},
-		dawport.CapTrackState:   trackStateRole{r(dawport.CapTrackState)},
-		dawport.CapTrackSelect:  trackSelectRole{r(dawport.CapTrackSelect)},
-		dawport.CapRecord:       recordRole{r(dawport.CapRecord)},
-		dawport.CapPunch:        punchRole{r(dawport.CapPunch)},
-		dawport.CapRegions:      regionsRole{r(dawport.CapRegions)},
-		dawport.CapTakes:        takesRole{r(dawport.CapTakes)},
-		dawport.CapFXChains:     fxChainsRole{r(dawport.CapFXChains)},
-		dawport.CapSilenceTrim:  silenceTrimRole{r(dawport.CapSilenceTrim)},
-		dawport.CapItemGain:     itemGainRole{r(dawport.CapItemGain)},
+		dawport.CapReview:          reviewRole{r(dawport.CapReview)},
+		dawport.CapNavigate:        navigateRole{r(dawport.CapNavigate)},
+		dawport.CapMarkers:         markersRole{r(dawport.CapMarkers)},
+		dawport.CapPickups:         pickupsRole{r(dawport.CapPickups)},
+		dawport.CapLineIdentity:    lineIdentityRole{r(dawport.CapLineIdentity)},
+		dawport.CapRenderConfig:    renderConfigRole{r(dawport.CapRenderConfig)},
+		dawport.CapCleanupTools:    cleanupToolsRole{r(dawport.CapCleanupTools)},
+		dawport.CapRetakeLanes:     retakeLanesRole{r(dawport.CapRetakeLanes)},
+		dawport.CapProjectState:    projectStateRole{r(dawport.CapProjectState)},
+		dawport.CapTakeCreate:      takeCreateRole{r(dawport.CapTakeCreate)},
+		dawport.CapHeartbeat:       heartbeatRole{r(dawport.CapHeartbeat)},
+		dawport.CapProjectRead:     projectReadRole{r(dawport.CapProjectRead)},
+		dawport.CapTrackState:      trackStateRole{r(dawport.CapTrackState)},
+		dawport.CapTrackSelect:     trackSelectRole{r(dawport.CapTrackSelect)},
+		dawport.CapRecord:          recordRole{r(dawport.CapRecord)},
+		dawport.CapPunch:           punchRole{r(dawport.CapPunch)},
+		dawport.CapRegions:         regionsRole{r(dawport.CapRegions)},
+		dawport.CapTakes:           takesRole{r(dawport.CapTakes)},
+		dawport.CapFXChains:        fxChainsRole{r(dawport.CapFXChains)},
+		dawport.CapSilenceTrim:     silenceTrimRole{r(dawport.CapSilenceTrim)},
+		dawport.CapItemGain:        itemGainRole{r(dawport.CapItemGain)},
+		dawport.CapRenderWithFX:    renderWithFXRole{r(dawport.CapRenderWithFX)},
+		dawport.CapMasterChainRead: masterChainReadRole{r(dawport.CapMasterChainRead)},
 	}
 	return f
 }
@@ -297,4 +299,14 @@ type itemGainRole struct{ role }
 
 func (r itemGainRole) Apply(context.Context, []dawport.GainCandidate) (dawport.ApplyGainResult, error) {
 	return dawport.ApplyGainResult{}, r.do("Apply")
+}
+
+type renderWithFXRole struct{ role }
+
+func (r renderWithFXRole) RenderWithFX(string, dawport.FXRender) error { return r.do("RenderWithFX") }
+
+type masterChainReadRole struct{ role }
+
+func (r masterChainReadRole) ReadMasterChain(context.Context) (dawport.MasterChain, error) {
+	return dawport.MasterChain{}, r.do("ReadMasterChain")
 }

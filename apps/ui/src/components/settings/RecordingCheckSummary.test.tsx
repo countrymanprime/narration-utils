@@ -41,7 +41,7 @@ describe('RecordingCheckSummary', () => {
 
   // The model cascade's own sentence (recording-check-model-cascade PRD Phase 5, MC1/MC2).
   it('says the two-pass check is off by default, and names its models once turned on', () => {
-    expect(cascadeRule(fields())).toBe('The two-pass check is off: every check runs the Proofing model above alone.');
+    expect(cascadeRule(fields())).toBe('The two-pass check is off: every check runs the Proof model above alone.');
     const on = fields().map((field) => (field.key === 'cascade_enabled' ? { ...field, effectiveValue: 'true' } : field));
     expect(cascadeRule(on)).toBe('The two-pass check is on: a fast first pass with tiny, then anything it reports missing is re-checked with large-v3-turbo.');
   });
