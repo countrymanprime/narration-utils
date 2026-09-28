@@ -35,7 +35,11 @@ type Take struct {
 	RecordedAt int64 `json:"recordedAt"`
 	// Unfinished marks a partial file left by a take whose engine ended without finishing it.
 	Unfinished bool `json:"unfinished"`
-	number     int
+	// LineID is the take's composed line identity (ComposeLineID), or nil when it carries none yet. It is read
+	// from the folder's line-identity sidecar (identity.go), the native-take equivalent of a REAPER item's stamped
+	// P_EXT line id (docs/adr/0026).
+	LineID *string `json:"lineId"`
+	number int
 }
 
 // takeName is "Take 004" for number 4.
@@ -62,6 +66,7 @@ func listTakes(folder, except string) ([]Take, int, error) {
 	}
 	takes := []Take{}
 	highest := 0
+	identities := readIdentities(folder)
 	for _, entry := range entries {
 		match := takeFile.FindStringSubmatch(entry.Name())
 		if match == nil || entry.IsDir() {
@@ -82,6 +87,9 @@ func listTakes(folder, except string) ([]Take, int, error) {
 		}
 		if format, err := readWavFormat(path); err == nil {
 			take.SampleRate, take.Channels, take.Bits, take.Seconds = format.sampleRate, format.channels, format.bits, format.seconds()
+		}
+		if lineID, ok := identities[take.Name]; ok {
+			take.LineID = &lineID
 		}
 		takes = append(takes, take)
 	}
