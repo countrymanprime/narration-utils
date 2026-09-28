@@ -125,7 +125,7 @@ export function NativeTakesPanel({ chapter }: { chapter: ManuscriptChapter }) {
                 <li key={take.name} className="flex items-center gap-2 py-1">
                   <Button
                     variant="ghost"
-                    className="px-2! py-1!"
+                    size="sm"
                     aria-label={`${playing ? 'Stop' : 'Play'} ${take.name}`}
                     aria-pressed={playing}
                     onClick={() => player.toggle(take)}
@@ -157,7 +157,7 @@ export function NativeTakesPanel({ chapter }: { chapter: ManuscriptChapter }) {
                 <li key={take.name} className="flex flex-wrap items-center gap-2 py-1">
                   <Button
                     variant="ghost"
-                    className="px-2! py-1!"
+                    size="sm"
                     aria-label={`${playing ? 'Stop' : 'Play'} ${take.name}`}
                     aria-pressed={playing}
                     onClick={() => player.toggle(take)}

@@ -112,7 +112,7 @@ export function SeriesTab({ notify }: { notify: Notify }) {
         </p>
         <div className="flex flex-wrap items-end gap-2">
           <TextField label="Series name" value={seriesName} onChange={setSeriesName} placeholder="e.g. Wonderland" />
-          <Button variant="ghost" className="text-xs" disabled={!seriesName.trim()} pending={mutation.isPending('create')} onClick={() => void createSeries()}>
+          <Button variant="ghost" size="sm" disabled={!seriesName.trim()} pending={mutation.isPending('create')} onClick={() => void createSeries()}>
             Create series
           </Button>
         </div>
@@ -173,7 +173,7 @@ export function SeriesTab({ notify }: { notify: Notify }) {
             {members.map((path) => (
               <li key={path} className="flex items-center justify-between gap-2 text-sm">
                 <span className="truncate">{path}</span>
-                <Button variant="ghost" className="text-xs" pending={mutation.isPending(`remove:${path}`)} onClick={() => void removeBook(path)}>
+                <Button variant="ghost" size="sm" pending={mutation.isPending(`remove:${path}`)} onClick={() => void removeBook(path)}>
                   Remove
                 </Button>
               </li>
@@ -181,10 +181,10 @@ export function SeriesTab({ notify }: { notify: Notify }) {
           </ul>
           <div className="flex flex-wrap items-end gap-2">
             <TextField label="Add a book" value={newBookPath} onChange={setNewBookPath} placeholder="Project folder" />
-            <Button variant="ghost" className="text-xs" pending={mutation.isPending('browse')} onClick={() => void browseForBook()}>
+            <Button variant="ghost" size="sm" pending={mutation.isPending('browse')} onClick={() => void browseForBook()}>
               Browse…
             </Button>
-            <Button variant="ghost" className="text-xs" disabled={!newBookPath.trim()} pending={mutation.isPending('add-book')} onClick={() => void addBook()}>
+            <Button variant="ghost" size="sm" disabled={!newBookPath.trim()} pending={mutation.isPending('add-book')} onClick={() => void addBook()}>
               Add
             </Button>
           </div>
