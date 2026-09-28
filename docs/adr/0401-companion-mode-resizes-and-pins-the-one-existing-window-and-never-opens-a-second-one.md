@@ -1,6 +1,6 @@
 # 0401. Companion mode resizes and pins the one existing window, and never opens a second one
 
-**Status:** Proposed
+**Status:** Accepted
 **Date:** 2026-09-26
 
 ## Context
@@ -13,7 +13,7 @@ A second, independent always-on-top webview window (Wails v3's `application.NewW
 
 ## Decision
 
-[Booth Mode and Companion Panel](../prds/booth-mode-and-companion-panel.prd.md)'s companion mode is implemented as two new bindings, `CompanionModeEnter()` and `CompanionModeExit()`, that resize and pin **the existing single window** (`apps/desktop/wailsapp.go`'s `mainWindow()`): `Enter` records the window's current size and position, sets it to a narrow width (380 px) and turns `SetAlwaysOnTop(true)` on and keeps it on; `Exit` restores the saved bounds and turns `AlwaysOnTop` back off. No second `application.Window` is created. The UI renders `CompactShell` in place of the normal layout while companion mode is active, exactly as it would render any other route or dialog state.
+The booth mode and companion panel PRD (`docs/prds/booth-mode-and-companion-panel.prd.md`, delivered and deleted)'s companion mode is implemented as two new bindings, `CompanionModeEnter()` and `CompanionModeExit()`, that resize and pin **the existing single window** (`apps/desktop/wailsapp.go`'s `mainWindow()`): `Enter` records the window's current size and position, sets it to a narrow width (380 px) and turns `SetAlwaysOnTop(true)` on and keeps it on; `Exit` restores the saved bounds and turns `AlwaysOnTop` back off. No second `application.Window` is created. The UI renders `CompactShell` in place of the normal layout while companion mode is active, exactly as it would render any other route or dialog state.
 
 This keeps the Wails v3 Migration PRD's "no second window" decision intact; this ADR narrows it rather than superseding it, by naming the one exception it must still respect (a persisted `AlwaysOnTop`, which that decision did not anticipate but does not forbid, since `bringWindowForward` already used the same call for a shorter purpose).
 
