@@ -89,6 +89,13 @@ export const proofDrivers: Record<string, Driver> = {
     await openReaperControls(page, 'standalone');
     await showReaperControls(page, page.getByText(/open this app from the Narration Utils action in REAPER/));
   },
+  'audacity-detail': async (page) => {
+    await page.goto('/?mockDaw=Audacity');
+    await settlePage(page);
+    await openProof(page);
+    await openFindingRow(page, /pink eyes/, MISREAD_DETAIL);
+    await page.getByRole('heading', { name: 'In REAPER' }).waitFor({ state: 'detached' });
+  },
   'reaper-marker-confirm': async (page) => {
     await confirmApprovedMarker(page);
   },

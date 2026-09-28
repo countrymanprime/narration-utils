@@ -4,7 +4,7 @@ import { useRangePlayer } from '../engine/useRangePlayer';
 import { apiErrorMessage } from '../../api/errorMessage';
 import { MAX_REVIEW_NOTE_LENGTH } from '../../api/contracts/findings';
 import { usePendingAction } from '../../hooks/usePendingAction';
-import type { Finding, FindingReviewStatus, ReaperStatus, TakeComparisonJob } from '../../types';
+import type { DawKind, Finding, FindingReviewStatus, ReaperStatus, TakeComparisonJob } from '../../types';
 import { Button } from '../primitives/Button';
 import { Field } from '../primitives/Field';
 import { Panel } from '../primitives/Panel';
@@ -54,7 +54,9 @@ function Facts({ rows, label }: { rows: Array<{ label: string; value: string }>;
  * latest version is fetched and shown, the typed note is kept, and the narrator is told in plain words to look again.
  * A finding with audio also has Go to, Loop and Stop in REAPER (Phase 7, ReaperControls), available while the page's REAPER
  * status says REAPER is listening. A take-review group lists its reads instead, each with its own (TakeReviewReads), and a
- * take comparison sets its reads side by side (TakeComparisonView, take review Phase 10).
+ * take comparison sets its reads side by side (TakeComparisonView, take review Phase 10). None of these three show for an
+ * Audacity session (audacity-integration.prd.md Phase 9): take management has no Audacity analog, so `dawKind` leaves the
+ * whole section out rather than showing it disabled.
  */
 export function FindingDetail({
   finding,
@@ -67,6 +69,7 @@ export function FindingDetail({
   reaperStatus,
   onReaperStatusChange,
   onCompared,
+  dawKind,
 }: {
   finding: Finding;
   hasManuscript: boolean;
@@ -84,6 +87,11 @@ export function FindingDetail({
   goToMaster: (file: string, rule?: string) => void;
   /** A comparison of this take-review group finished: the page shows it. */
   onCompared: (ended: TakeComparisonJob) => void;
+  /** The current session's DAW (audacity-integration.prd.md Phase 9), as `useDawKind` last read it; undefined until
+   * the first answer. REAPER's take management (Go to/Loop/Add marker in REAPER, take review, take comparison) has
+   * no Audacity analog (the PRD's own decisions log), so those sections are left out entirely for 'Audacity' rather
+   * than shown disabled - they are not a gap Audacity will close later, unlike navigate and markers. */
+  dawKind?: DawKind;
 }) {
   const api = useApi();
   const [note, setNote] = useState(finding.review.note ?? '');
@@ -164,6 +172,7 @@ export function FindingDetail({
   const reads = takeReviewEvidence(finding);
   const comparison = takeComparisonEvidence(finding);
   const decided = finding.review.status !== 'unreviewed';
+  const showTakeManagement = dawKind !== 'Audacity';
 
   return (
     // Mock 04's detail title, "02:14.6 · Misread": the note's time and kind; a note with no time is named by its kind alone.
@@ -220,13 +229,14 @@ export function FindingDetail({
           The recording could not be played. Its audio file may have moved.
         </p>
       )}
-      {reads ? (
-        <TakeReviewReads finding={finding} evidence={reads} status={reaperStatus} onStatusChange={onReaperStatusChange} onCompared={onCompared} />
-      ) : comparison ? (
-        <TakeComparisonView finding={finding} evidence={comparison} status={reaperStatus} onStatusChange={onReaperStatusChange} />
-      ) : (
-        hasAudio(finding) && <ReaperControls finding={finding} status={reaperStatus} onStatusChange={onReaperStatusChange} />
-      )}
+      {showTakeManagement &&
+        (reads ? (
+          <TakeReviewReads finding={finding} evidence={reads} status={reaperStatus} onStatusChange={onReaperStatusChange} onCompared={onCompared} />
+        ) : comparison ? (
+          <TakeComparisonView finding={finding} evidence={comparison} status={reaperStatus} onStatusChange={onReaperStatusChange} />
+        ) : (
+          hasAudio(finding) && <ReaperControls finding={finding} status={reaperStatus} onStatusChange={onReaperStatusChange} />
+        ))}
 
       <h3 className="mt-5 text-sm font-semibold">Decision</h3>
       <p className="mt-1 text-sm" style={{ color: 'var(--text-muted)' }}>
