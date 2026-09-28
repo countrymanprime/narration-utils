@@ -32,10 +32,10 @@ export const appFeedback: Record<string, FeedbackRow> = {
     'silent',
     'na',
     'exempt',
-    "Best effort recovery for a popstate the app did not start (Risk 3): if it left Proofing, the run is reset the same way a guarded move would; a reset that fails leaves the finished results in place, which is harmless.",
+    "Best effort recovery for a popstate the app did not start (Risk 3): if it left a Proof chapter view with a compare run, the run is reset the same way a guarded move would; a reset that fails leaves the finished results in place, which is harmless.",
   ),
-  'src/App.tsx::transcriptReset#2': row('click', 'instant', 'na', 'na', 'na', 'silent', 'na', 'exempt', 'Best effort when leaving Proofing through the nav: a reset that fails leaves the finished results in place, which is harmless.'),
-  'src/App.tsx::transcriptReset#3': row('click', 'instant', 'na', 'na', 'na', 'silent', 'na', 'exempt', 'Best effort when leaving Proofing through guarded Back/Forward (a button, Alt+Left/Right, or a mouse button): same as the nav.'),
+  'src/App.tsx::transcriptReset#2': row('click', 'instant', 'na', 'na', 'na', 'silent', 'na', 'exempt', 'Best effort when leaving a Proof chapter view with a compare run through the nav: a reset that fails leaves the finished results in place, which is harmless.'),
+  'src/App.tsx::transcriptReset#3': row('click', 'instant', 'na', 'na', 'na', 'silent', 'na', 'exempt', 'Best effort when leaving a Proof chapter view with a compare run through guarded Back/Forward (a button, Alt+Left/Right, or a mouse button): same as the nav.'),
   'src/App.tsx::linkDawFile#1': row(
     'click',
     'os-dialog',

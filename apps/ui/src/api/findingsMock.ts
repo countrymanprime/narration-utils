@@ -160,6 +160,14 @@ type FindingsMockOptions = {
   rerunAfterFirstList?: boolean;
   /** What the mock's REAPER does; `connected` when not given. */
   reaper?: MockReaper;
+  /**
+   * Findings computed from state that can change after this mock is built (edit-and-proof-workspace.prd.md Phase 4's
+   * workspaceOverlayFinding, mockApi.ts: chapter-1's track link, made only once the narrator confirms one on Tracks,
+   * a mock API call the visual suite's own driver makes after boot - not at createMockApi's boot-time seed). Called
+   * fresh before every read, and any not already in the store (by id) are folded in once, keeping any decision a
+   * later read or review made on one - the same rule saveAnalyzerFindings/saveFinding keep.
+   */
+  lazySeed?: () => Finding[];
 };
 
 const refused = (reason: FindingNavigationRefusal, message: string): FindingNavigation => ({ outcome: 'refused', reason, message });
@@ -264,8 +272,15 @@ export function createFindingsMock(
     if (!finding) throw new Error('that finding is no longer in this project; reload the list');
     return finding;
   };
+  const foldLazySeed = () => {
+    if (!options.lazySeed) return;
+    const known = new Set(store.map((finding) => finding.id));
+    const added = options.lazySeed().filter((finding) => !known.has(finding.id));
+    if (added.length > 0) store = [...store, ...wireClone(added)];
+  };
   return {
     findingsList: async (query) => {
+      foldLazySeed();
       validateQuery(query);
       const matched = store
         .filter((finding) => matches(finding, query))
@@ -279,8 +294,12 @@ export function createFindingsMock(
       }
       return page;
     },
-    findingsGet: async (id) => wireClone(find(id)),
+    findingsGet: async (id) => {
+      foldLazySeed();
+      return wireClone(find(id));
+    },
     findingsReview: async ({ id, evidenceVersion, status, note }) => {
+      foldLazySeed();
       if (!STATUSES.includes(status)) throw new Error(`review status "${status}" is not recognised`);
       if ([...note].length > MAX_REVIEW_NOTE_LENGTH) throw new Error(`a note can be at most ${MAX_REVIEW_NOTE_LENGTH} characters`);
       const current = find(id);
@@ -292,7 +311,10 @@ export function createFindingsMock(
       store = store.map((finding) => (finding.id === id ? decided : finding));
       return wireClone(decided);
     },
-    findingsSummary: async () => summarize(store),
+    findingsSummary: async () => {
+      foldLazySeed();
+      return summarize(store);
+    },
     ...createReaperMock(options.reaper ?? 'connected', find),
     saveAnalyzerFindings: (analyzer, chapterId, fresh) => {
       const kept = store.filter((finding) => finding.analyzer !== analyzer || chapterOf(finding) !== chapterId);

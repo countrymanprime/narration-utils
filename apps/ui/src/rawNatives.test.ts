@@ -20,9 +20,10 @@ type NativeTag = (typeof NATIVE_TAGS)[number];
 // Native elements written in JSX per file, outside the primitives, at the time of ADR 0053 (phase 5: no native select, input, textarea or table part is left).
 const CEILING: Record<NativeTag, Record<string, number>> = {
   button: {
-    // The header pill (PRD project-workspace-and-daw-link.prd.md, W15/W19): a pill shape with a status dot that
+    // The header's engine chip (PRD project-workspace-and-daw-link.prd.md, W15/W19; moved from AppShell.tsx to its
+    // own file by stage-navigation-and-page-replacement.prd.md Phase 1): a pill shape with a status dot that
     // `Button`'s fixed base classes (rounded-md, border, px-4/py-2) cannot express through an appended className.
-    'src/components/layout/AppShell.tsx': 1,
+    'src/components/layout/EngineChip.tsx': 1,
     'src/components/home/Home.tsx': 2,
     // The row's check-status cell (daw-chapter-track-auto-sync.prd.md Phase 6, S14): a bold label with a small muted
     // line under it and a leading icon, which neither `Button` (a padded, uppercase pill) nor `IconButton` (icon-only,
@@ -33,7 +34,7 @@ const CEILING: Record<NativeTag, Record<string, number>> = {
     // now renders through this and has no raw button of its own (its old toggle button is gone, ceiling 0 below).
     'src/components/manuscript/ReaderCard.tsx': 2,
     'src/components/project/ProjectPicker.tsx': 3,
-    'src/components/proofing/Transcript.tsx': 1,
+    'src/components/proof/CompareRun.tsx': 1,
     'src/components/settings/ScopedSetting.tsx': 1,
     // The click-to-seek word ("Start here" / "Go back to here", teleprompter-manuscript-integration.prd.md Phase 4):
     // one word among hundreds inside running prose, so it needs `Button`'s bare click/keyboard semantics without its
@@ -54,7 +55,7 @@ const CEILING: Record<NativeTag, Record<string, number>> = {
     // ReaderText.tsx above - one word among a chapter's worth of running prose, needing Button's bare click/keyboard
     // semantics without its padded, uppercase chrome breaking the text flow. One JSX `<button>`, written once inside
     // the tokens `.map()`.
-    'src/components/workspace/ScriptView.tsx': 1,
+    'src/components/proof/ScriptView.tsx': 1,
     // The "Settings > Credits" link inside the "More fields" sentence (credits-token-setup-and-front-matter-detection.prd.md
     // Phase 2, CS4): an inline word inside a paragraph, the same case `ReaderText.tsx` above is for - `Button`'s padded,
     // uppercase chrome would break the sentence it sits in.
@@ -71,7 +72,9 @@ const CEILING: Record<NativeTag, Record<string, number>> = {
   // Reaper-automation-follow-through PRD Phase 9: `PickupsDialog`'s CSV picker is a hidden native `<input type="file">`
   // triggered by a `Button` (ADR 0053's own escape hatch for file-choosing, since a file picker's OS chrome cannot be
   // restyled the way a text input or select can - the same reason `ManuscriptSelectFile` uses a native OS dialog).
-  input: { 'src/components/tracks/PickupsDialog.tsx': 1 },
+  // prep-depth PRD Phase 6's own re-import file picker (`PronunciationQueries.tsx`) is the same pattern, one hidden
+  // `<input type="file">` triggered by a `Button`.
+  input: { 'src/components/tracks/PickupsDialog.tsx': 1, 'src/components/storybible/PronunciationQueries.tsx': 1 },
   textarea: {},
   table: {},
   thead: {},

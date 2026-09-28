@@ -13,6 +13,8 @@
     "check": "node scripts/quality.mjs check",
     "check:fast": "node scripts/quality.mjs staged",
     "knip": "knip",
+    "lint:md": "node scripts/ci/lint-markdown-changed.mjs",
+    "lint:md:fix": "node scripts/ci/lint-markdown-changed.mjs --fix",
     "fix:staged": "lint-staged",
     "release:sync": "node scripts/release/sync-version.mjs",
     "release:check": "node scripts/release/sync-version.mjs --check",
@@ -30,6 +32,7 @@
     "jsdom": "^30.1.0",
     "knip": "^6.37.0",
     "lint-staged": "^17.5.1",
+    "markdownlint-cli2": "0.23.3",
     "mermaid": "^12.0.0",
     "nx": "^23.2.1"
   }

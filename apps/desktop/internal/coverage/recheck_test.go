@@ -63,6 +63,103 @@ func TestModelCascadeWindowedRecheckSplicesAndRealigns(t *testing.T) {
 	if result.Result.Model != "small" {
 		t.Fatalf("the stored result must still name the first pass's own model, got %q", result.Result.Model)
 	}
+	if result.Result.Recheck == nil || result.Result.Recheck.Model != "large-v3-turbo" || result.Result.Recheck.WholeChapter || result.Result.Recheck.Windows != 1 {
+		t.Fatalf("Recheck = %+v, want one window with the re-check model named (MC5)", result.Result.Recheck)
+	}
+	if result.Result.Recheck.Seconds <= 0 {
+		t.Fatalf("Recheck.Seconds = %v, want the re-checked window's own length", result.Result.Recheck.Seconds)
+	}
+}
+
+func TestModelCascadeNoSecondPassStoresNoRecheck(t *testing.T) {
+	p := newTestProject(t)
+	sidecar := &fakeSidecar{} // present defaults to 10: the first pass calls the chapter complete
+	service := p.service(sidecar)
+
+	run(t, service, cascadeRequest())
+
+	result := currentResult(t, service, DefaultAlignmentParams)
+	if result.Result.Recheck != nil {
+		t.Fatalf("Recheck = %+v, want nil: nothing was missing, so nothing was re-checked", result.Result.Recheck)
+	}
+}
+
+func TestModelCascadePlainCheckStoresNoRecheck(t *testing.T) {
+	p := newTestProject(t)
+	sidecar := &fakeSidecar{present: 8} // a region is missing, but no Recheck model was asked for
+	service := p.service(sidecar)
+
+	run(t, service, testRequest())
+
+	result := currentResult(t, service, DefaultAlignmentParams)
+	if result.Result.Recheck != nil {
+		t.Fatalf("Recheck = %+v, want nil for a plain, single-model check", result.Result.Recheck)
+	}
+}
+
+func TestModelCascadeStateNamesThePassAndModels(t *testing.T) {
+	p := newTestProject(t)
+	sidecar := &fakeSidecar{present: 8, afterRecheckPresent: 10}
+	service := p.service(sidecar)
+	var seen []State
+	service.changed = func(state State) { seen = append(seen, state) }
+
+	run(t, service, cascadeRequest())
+
+	first := seen[0]
+	if first.Pass != "first_pass" || first.FirstPassModel != "small" || first.RecheckModel != "large-v3-turbo" {
+		t.Fatalf("the run's initial state = %+v, want the first pass named with both models", first)
+	}
+	var sawWindows, sawRealign bool
+	for _, state := range seen {
+		if state.Pass == "recheck_windows" {
+			sawWindows = true
+			if state.RecheckWindows != 1 {
+				t.Fatalf("recheck_windows state = %+v, want RecheckWindows = 1", state)
+			}
+		}
+		if state.Pass == "realign" {
+			sawRealign = true
+		}
+	}
+	if !sawWindows || !sawRealign {
+		t.Fatalf("want a recheck_windows state and a realign state among %+v", seen)
+	}
+}
+
+func TestModelCascadeWholeChapterStateNamesThePass(t *testing.T) {
+	p := newTestProject(t)
+	p.items[0].length = 2
+	p.items[1].length = 10
+	p.writeRPP()
+	sidecar := &fakeSidecar{present: 8, wholeChapterPresent: 10}
+	service := p.service(sidecar)
+	var seen []State
+	service.changed = func(state State) { seen = append(seen, state) }
+
+	run(t, service, cascadeRequest())
+
+	var sawWhole bool
+	for _, state := range seen {
+		if state.Pass == "recheck_whole" {
+			sawWhole = true
+		}
+	}
+	if !sawWhole {
+		t.Fatalf("want a recheck_whole state among %+v", seen)
+	}
+}
+
+func TestPlainCheckStateNamesNoPass(t *testing.T) {
+	p := newTestProject(t)
+	sidecar := &fakeSidecar{}
+	service := p.service(sidecar)
+
+	state := run(t, service, testRequest())
+
+	if state.Pass != "" || state.FirstPassModel != "" || state.RecheckModel != "" {
+		t.Fatalf("a plain check's state = %+v, want no cascade fields", state)
+	}
 }
 
 func TestModelCascadeWholeChapterFallback(t *testing.T) {

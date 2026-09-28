@@ -102,6 +102,24 @@ export const manuscriptStates: StateEntry[] = [
 
   {
     page: 'manuscript',
+    state: 'speaker-attribution-single-speaker',
+    description:
+      'Manuscript, Chapter 3, a dialogue line whose recorded demo cue (prep-depth.prd.md Phase 4, Q1 fixture-then-real) is tagged directly to a known character - a speaker chip reading "Alice" beside the line (docs/prds/mockups/prep-depth/02-prep-script-concept.webp)',
+  },
+  {
+    page: 'manuscript',
+    state: 'speaker-attribution-ambiguous',
+    description:
+      'Manuscript, Chapter 3, a dialogue line whose recorded demo cue resolves only through scene continuation (speaker_source: "continuation", no direct tag) - the chip still names the resolved speaker, "Alice", the same as a direct tag',
+  },
+  {
+    page: 'manuscript',
+    state: 'speaker-attribution-unknown',
+    description:
+      'Manuscript, Chapter 3, a dialogue line spoken by a character with no Story Bible entry (the Mouse) - the recorded demo cue has no resolved speaker, so no chip and no placeholder name (Success Metrics: "unknown renders as unattributed, never a fabricated name")',
+  },
+  {
+    page: 'manuscript',
     state: 'invalid-payload',
     description:
       'Manuscript, the inline error with Retry when the data it loads could not be read, beside the notice Home raised for the same data; navigation still works (ADR 0069, 0075)',
@@ -148,6 +166,20 @@ export const manuscriptStates: StateEntry[] = [
   },
   {
     page: 'manuscript',
+    state: 'read-aloud-resume-disagree-live',
+    description:
+      'Manuscript, the resume prompt disagreeing when the REAPER place comes from REAPER\'s live edit cursor, not the saved project (read-aloud-resume-from-daw.prd.md Phase 4, RD2, ADR 0349, ?mockResume=disagree_live) - the REAPER card reads "in REAPER now" instead of "as of the project\'s last save", as in the approved 02-disagree mockup',
+    ...REFLOW,
+  },
+  {
+    page: 'manuscript',
+    state: 'read-aloud-resume-recording',
+    description:
+      'Manuscript, the resume prompt while REAPER records onto the chapter\'s track (Phase 4, ?mockResume=recording) - "in REAPER now", nothing located because the take is still being written, reading starts from the top; no resume button',
+    ...REFLOW,
+  },
+  {
+    page: 'manuscript',
     state: 'read-aloud-resume-not-found',
     description:
       "Manuscript, the resume prompt when the recording's tail did not match the chapter (?mockResume=not_found) - no resume word; says reading starts from the top, shows what was heard, offers Pick a word",
@@ -180,6 +212,12 @@ export const manuscriptStates: StateEntry[] = [
     state: 'read-aloud-resume-after-session',
     description:
       'Manuscript, the "Read aloud" dialog after a session has started and ended once - the resume prompt does not come back for the rest of this dialog\'s open, so the next Play begins at the top with nothing to clear',
+  },
+  {
+    page: 'manuscript',
+    state: 'read-aloud-resume-after-reaper-plays',
+    description:
+      'Manuscript, the "Read aloud" dialog opened while REAPER plays (read-aloud-resume-from-daw.prd.md Phase 5, RD7, ADR 0350, ?mockDawPlayhead=12) - the resume prompt has gone away by itself and nothing was preset: the text starts at the top of the dialog body and Play begins at the top, as in the approved 04-after-play-prompt-gone mockup',
   },
   {
     page: 'manuscript',

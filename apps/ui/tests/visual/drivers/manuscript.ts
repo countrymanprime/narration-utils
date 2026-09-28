@@ -56,6 +56,15 @@ export const manuscriptDrivers: Record<string, Driver> = {
     await openResumePrompt(page, '?mockResume=prompter_only');
     await page.getByText(/Your last reading stopped at/).waitFor();
   },
+  // Live DAW state (read-aloud-resume-from-daw.prd.md Phase 4): the REAPER place read from REAPER now, and a recording.
+  'read-aloud-resume-disagree-live': async (page) => {
+    await openResumePrompt(page, '?mockResume=disagree_live');
+    await page.getByText(/in REAPER now/).waitFor();
+  },
+  'read-aloud-resume-recording': async (page) => {
+    await openResumePrompt(page, '?mockResume=recording');
+    await page.getByText(/REAPER is recording on this track now/).waitFor();
+  },
   'read-aloud-resume-not-found': async (page) => {
     await openResumePrompt(page, '?mockResume=not_found');
     await page.getByText(/did not match this chapter/).waitFor();
@@ -77,6 +86,21 @@ export const manuscriptDrivers: Record<string, Driver> = {
     await openResumePrompt(page);
     await page.getByRole('button', { name: 'Resume from here' }).click();
     await page.getByRole('region', { name: 'Where you stopped' }).waitFor({ state: 'detached' });
+  },
+  // REAPER playing makes the prompt go away by itself (read-aloud-resume-from-daw.prd.md Phase 5, RD7): the DAW mock pushes
+  // its seeded transport (playing) on subscribe, as the host's heartbeat push would when REAPER starts.
+  'read-aloud-resume-after-reaper-plays': async (page) => {
+    await page.goto('/?mockDawPlayhead=12');
+    await settlePage(page);
+    await goToPage(page, 'Manuscript');
+    await clickVisible(page, 'button', 'Read Chapter 1 aloud');
+    const dialog = page.getByRole('dialog', { name: /Read aloud/ });
+    await dialog.getByRole('button', { name: 'Play' }).waitFor();
+    await dialog
+      .getByRole('heading', { name: /Chapter 1/ })
+      .first()
+      .waitFor();
+    await dialog.getByRole('region', { name: 'Where you stopped' }).waitFor({ state: 'detached' });
   },
   // A full session (start, then stop) inside the same dialog open, then a wait for the dialog to settle back to idle:
   // the prompt must not return for the rest of this open, so the next Start begins at the top with nothing to clear.
@@ -493,6 +517,36 @@ export const manuscriptDrivers: Record<string, Driver> = {
     await clickVisible(page, 'button', 'Collapse all chapters');
     await page.getByRole('heading', { name: /^Chapter 3 / }).click();
     await page.getByText(/Retail sample starts/).waitFor();
+  },
+  // Speaker attribution (prep-depth.prd.md Phase 4): Chapter 3 carries the recorded demo cues (dialogueCues.ts),
+  // matched by exact quote text - opening it is enough, no mock query param needed. Chapter 3 is picked
+  // deliberately over the mockup's own Chapter 8: its other speakers are not Story Bible entities, and unlike
+  // nearly every other chapter it never mentions a registered entity whose alias is a substring of another
+  // registered entity's canonical name, so it does not also reproduce the reader's pre-existing
+  // overlapping-highlight bug (#155).
+  'speaker-attribution-single-speaker': async (page) => {
+    await goToPage(page, 'Manuscript');
+    await clickVisible(page, 'button', 'Collapse all chapters');
+    await page.getByRole('heading', { name: /^Chapter 3 / }).click();
+    const row = page.locator('[data-paragraph]', { has: page.locator('[data-paragraph-text]', { hasText: 'you had got to the fifth bend' }) });
+    await row.scrollIntoViewIfNeeded();
+    await row.locator('[data-speaker-tag]').getByText('Alice').waitFor();
+  },
+  'speaker-attribution-ambiguous': async (page) => {
+    await goToPage(page, 'Manuscript');
+    await clickVisible(page, 'button', 'Collapse all chapters');
+    await page.getByRole('heading', { name: /^Chapter 3 / }).click();
+    const row = page.locator('[data-paragraph]', { has: page.locator('[data-paragraph-text]', { hasText: 'why it is you hate' }) });
+    await row.scrollIntoViewIfNeeded();
+    await row.locator('[data-speaker-tag]').getByText('Alice').waitFor();
+  },
+  'speaker-attribution-unknown': async (page) => {
+    await goToPage(page, 'Manuscript');
+    await clickVisible(page, 'button', 'Collapse all chapters');
+    await page.getByRole('heading', { name: /^Chapter 3 / }).click();
+    const row = page.locator('[data-paragraph]', { has: page.locator('[data-paragraph-text]', { hasText: 'Mine is a long and a sad tale' }) });
+    await row.scrollIntoViewIfNeeded();
+    await row.waitFor();
   },
 };
 

@@ -1,13 +1,25 @@
 # The icon-only rail (768 to 1399 px): a named complementary of buttons, the page list pinned exactly and in order.
 # It has no navigation landmark, unlike the sidebar and the drawer; that gap is tracked in #159, and this snapshot changes when it is fixed.
+# Grouped by production stage (stage-navigation-and-page-replacement.prd.md Phase 1, ADR 0407 item 3): the visible
+# divider between groups is decorative (aria-hidden) and does not appear here; each group keeps its accessible name
+# through aria-label instead of a visible heading, since the rail has no room for one.
 - complementary "Primary navigation":
   - /children: equal
-  - button "Home"
-  - button "Manuscript"
-  - button "Proofing"
-  - button "Story Bible"
-  - button "Teleprompter"
-  - button "Tracks"
-  - button "Review"
-  - button "Delivery"
+  - group "Production":
+    - /children: equal
+    - button "Home"
+  - group "Prep":
+    - /children: equal
+    - button "Manuscript"
+    - button "Story Bible"
+  - group "Record":
+    - /children: equal
+    - button "Teleprompter"
+  - group "Review":
+    - /children: equal
+    - button "Proof"
+    - button "Tracks"
+  - group "Finish":
+    - /children: equal
+    - button "Delivery"
   - button "Settings"

@@ -1,9 +1,55 @@
 package guide
 
 import (
+	"encoding/json"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/countrymanprime/narration-utils/shell/internal/process"
+	"github.com/countrymanprime/narration-utils/shell/internal/settings"
 )
+
+// serviceWithFakeSidecarAndEntities is serviceWithGuideFile plus a working (fake, no-op) sidecar process, for a test that
+// needs ImportQueriesCSV to actually call SetPronunciationStatus, not just read the file back. The fake sidecar
+// (preview_test.go's TestMain) does nothing to the guide file and exits 0 for any mode it does not know, which "ok" is,
+// so a test reads back what it was called with from the log, the way the app-level pronunciation-status tests do
+// (guidepronunciationdepth_test.go), never the Story Bible file, which only the real Python sidecar actually rewrites.
+func serviceWithFakeSidecarAndEntities(t *testing.T, entities any) (*Service, string) {
+	t.Helper()
+	project := t.TempDir()
+	logPath := filepath.Join(t.TempDir(), "sidecar.log")
+	t.Setenv(fakeSidecarEnv, "ok")
+	t.Setenv(fakeLogEnv, logPath)
+	sidecars := process.NewSupervisor()
+	t.Cleanup(func() { _ = sidecars.Close() })
+	service := New(project, os.Args[0], "", settings.New(project, project), sidecars)
+	if err := os.MkdirAll(filepath.Dir(service.guidePath()), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	bytes, err := json.Marshal(map[string]any{"schema_version": 2, "entities": entities})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(service.guidePath(), bytes, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	return service, logPath
+}
+
+// sidecarCalls reads back the fake sidecar's log: one line per call, its arguments space-joined.
+func sidecarCalls(t *testing.T, logPath string) []string {
+	t.Helper()
+	raw, err := os.ReadFile(logPath)
+	if os.IsNotExist(err) {
+		return nil
+	}
+	if err != nil {
+		t.Fatal(err)
+	}
+	return strings.Split(strings.TrimRight(string(raw), "\n"), "\n")
+}
 
 func occurrence(chapter string, paragraph int, excerpt string) map[string]any {
 	return map[string]any{"chapter": chapter, "paragraph": paragraph, "excerpt": excerpt}
@@ -130,5 +176,113 @@ func TestAnExportedFileAndAHandEditedOneReadBack(t *testing.T) {
 func TestParseQueriesCSVNeedsAHeaderWithTheWordAndEntryIDColumns(t *testing.T) {
 	if _, issues := ParseQueriesCSV("Wren,entity-wren\n"); len(issues) != 1 || issues[0].Line != 1 {
 		t.Fatalf("issues = %+v", issues)
+	}
+}
+
+// MatchQueryAnswers (prep-depth P6): a parsed answer matches an entity or alias that is still there; one that is not is
+// reported by its own line, never guessed at.
+
+func TestMatchQueryAnswersMatchesAnEntityAndAnAliasByIDAndIndex(t *testing.T) {
+	entities, err := serviceWithGuideFile(t, queriesFixture()).Entities()
+	if err != nil {
+		t.Fatal(err)
+	}
+	aliasIndex := 1
+	answers := []QueryAnswer{
+		{Line: 2, EntityID: "entity-wren", Name: "Wren", Status: pronunciationConfirmed},
+		{Line: 3, EntityID: "entity-wren", AliasIndex: &aliasIndex, Name: "Wrennie", Status: "query_sent"},
+	}
+	matched, issues := MatchQueryAnswers(entities, answers)
+	if len(issues) != 0 {
+		t.Fatalf("issues = %+v", issues)
+	}
+	if len(matched) != 2 || matched[0].Name != "Wren" || matched[1].Name != "Wrennie" {
+		t.Fatalf("matched = %+v", matched)
+	}
+}
+
+func TestMatchQueryAnswersReportsAnEntityOrAliasThatIsNoLongerThere(t *testing.T) {
+	entities, err := serviceWithGuideFile(t, queriesFixture()).Entities()
+	if err != nil {
+		t.Fatal(err)
+	}
+	outOfRange := 9
+	answers := []QueryAnswer{
+		{Line: 2, EntityID: "entity-gone", Name: "Nobody", Status: "researched"},
+		{Line: 3, EntityID: "entity-wren", AliasIndex: &outOfRange, Name: "Wrennie", Status: "researched"},
+	}
+	matched, issues := MatchQueryAnswers(entities, answers)
+	if len(matched) != 0 {
+		t.Fatalf("matched = %+v", matched)
+	}
+	if len(issues) != 2 || issues[0].Line != 2 || issues[1].Line != 3 {
+		t.Fatalf("issues = %+v", issues)
+	}
+	if !strings.Contains(issues[0].Message, "Nobody") || !strings.Contains(issues[1].Message, "Wrennie") {
+		t.Fatalf("issues = %+v", issues)
+	}
+}
+
+// ImportQueriesCSV (prep-depth P6): applies every matched row's status and note through the same sidecar call the
+// narrator's own "Mark answered" uses, and reports every row it could not use, whether ParseQueriesCSV or the match
+// against the current entities rejected it, by line, sorted the way the file reads.
+
+func TestImportQueriesCSVAppliesMatchedRowsAndReportsEveryUnusableOneByLine(t *testing.T) {
+	service, logPath := serviceWithFakeSidecarAndEntities(t, queriesFixture())
+	// Line 2: Wrennie (an alias) confirmed with a note. Line 3: a status ParseQueriesCSV cannot read. Line 4: Wren
+	// confirmed, no note. Line 5: an entity that no longer exists.
+	csv := "word,entry_id,alias_index,status,note\r\n" +
+		"Wrennie,entity-wren,1,author_confirmed,Rhymes with hen\r\n" +
+		"Bad,entity-wren,,not-a-status,\r\n" +
+		"Wren,entity-wren,,author_confirmed,\r\n" +
+		"Ghost,entity-gone,,researched,\r\n"
+	applied, issues, err := service.ImportQueriesCSV(csv)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if applied != 2 {
+		t.Fatalf("applied = %d, issues = %v", applied, issues)
+	}
+	if len(issues) != 2 || !strings.HasPrefix(issues[0], "line 3:") || !strings.HasPrefix(issues[1], "line 5:") {
+		t.Fatalf("issues = %v", issues)
+	}
+	calls := sidecarCalls(t, logPath)
+	if len(calls) != 2 {
+		t.Fatalf("sidecar calls = %v", calls)
+	}
+	if !strings.HasPrefix(calls[0], "pronunciation-status ") || !strings.Contains(calls[0], "--entity-id entity-wren") ||
+		!strings.Contains(calls[0], "--status author_confirmed") || !strings.Contains(calls[0], "--note=Rhymes with hen") ||
+		!strings.Contains(calls[0], "--alias-index 1") {
+		t.Fatalf("Wrennie's call = %q", calls[0])
+	}
+	if !strings.HasPrefix(calls[1], "pronunciation-status ") || !strings.Contains(calls[1], "--entity-id entity-wren") ||
+		!strings.Contains(calls[1], "--status author_confirmed") || strings.Contains(calls[1], "--alias-index") || strings.Contains(calls[1], "--note") {
+		t.Fatalf("Wren's call = %q", calls[1])
+	}
+}
+
+func TestImportQueriesCSVLeavesAnExistingNoteAloneWhenTheRowsNoteIsBlank(t *testing.T) {
+	service, logPath := serviceWithFakeSidecarAndEntities(t, queriesFixture())
+	// Wren already carries the note "Asked." (queriesFixture); a re-imported row with no note must send no --note, the
+	// same "nil means leave it alone" rule GuidePronunciationSetStatus already follows for a direct edit, so the sidecar
+	// never sees a blank note it would otherwise write over the one already there.
+	csv := "word,entry_id,alias_index,status,note\nWren,entity-wren,,query_sent,\n"
+	if applied, issues, err := service.ImportQueriesCSV(csv); err != nil || len(issues) != 0 || applied != 1 {
+		t.Fatalf("applied = %d, issues = %v, err = %v", applied, issues, err)
+	}
+	calls := sidecarCalls(t, logPath)
+	if len(calls) != 1 || strings.Contains(calls[0], "--note") {
+		t.Fatalf("calls = %v, want no --note", calls)
+	}
+}
+
+func TestImportQueriesCSVWithNoStoryBibleReportsEveryRowAsUnmatched(t *testing.T) {
+	service := New(t.TempDir(), "", "", nil, nil)
+	applied, issues, err := service.ImportQueriesCSV("word,entry_id,status\nWren,entity-wren,author_confirmed\n")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if applied != 0 || len(issues) != 1 || !strings.HasPrefix(issues[0], "line 2:") {
+		t.Fatalf("applied = %d, issues = %v", applied, issues)
 	}
 }

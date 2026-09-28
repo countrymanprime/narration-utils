@@ -4,7 +4,6 @@ import {
   type Driver,
   clickVisible,
   confirmDialog,
-  goToPage,
   homeLoaded,
   openEditingCheckFromHome,
   openImportReview,
@@ -115,15 +114,7 @@ export const homeDrivers: Record<string, Driver> = {
     await clickVisible(page, 'button', /Show per-chapter breakdown/);
     await page.getByText('No REAPER project (.rpp) file was found in this project folder.').waitFor();
   },
-  'hint-chips': async (page) => {
-    await goToPage(page, 'Proofing');
-    await clickVisible(page, 'button', /Suggest from manuscript/);
-    // Accept exactly one candidate so accepted (solid pill) and pending
-    // (dashed "+ Term") chips render together, matching this state's
-    // "(accepted + pending)" description - accepting every candidate would
-    // leave nothing pending to show.
-    await clickVisible(page, 'button', '+ Alice');
-  },
+
   'info-tooltip': async (page) => {
     await page.getByLabel('More information').hover();
     // TooltipTarget shows its tooltip 1s after hover - wait for it, don't race it.
@@ -246,6 +237,21 @@ export const homeDrivers: Record<string, Driver> = {
     const dialog = await openRecordingCheck(page, 'Chapter 7', 'mockAssets=missing');
     await dialog.getByRole('button', { name: 'Check recording' }).click();
     await confirmDialog(page, 'Download local Whisper model?').waitFor();
+  },
+  // The model cascade's own result (recording-check-model-cascade PRD Phase 5, MC5): both models named, and the
+  // pickups it confirmed still missing.
+  'recording-check-cascade': async (page) => {
+    const dialog = await openRecordingCheck(page, 'Chapter 4', 'mockCoverage=cascade');
+    await dialog.getByText(/passage.*re-checked with the large-v3-turbo Whisper model/).waitFor();
+    await dialog.getByText('Confirmed missing by the large-v3-turbo Whisper model.').first().waitFor();
+  },
+  // The re-check model's own missing-model gate (Phase 5, MC4): "Check with tiny only" beside the download.
+  'recording-check-recheck-model-required': async (page) => {
+    const dialog = await openRecordingCheck(page, 'Chapter 7', 'mockCoverage=recheck-required');
+    await dialog.getByRole('button', { name: 'Check recording' }).click();
+    const ask = confirmDialog(page, 'Download the re-check model?');
+    await ask.waitFor();
+    await ask.getByRole('button', { name: 'Check with tiny only' }).waitFor();
   },
   'stage-summary-chips': async (page) => {
     await openStageSuggestions(page, 'mixed', false);

@@ -3,7 +3,7 @@
 # Home
 
 The landing page after opening a project: manuscript status, audiobook time estimates,
-recording progress, and shortcuts into the latest [Proofing](proofing.md) comparison and
+recording progress, and shortcuts into [Proof](proof.md) and
 [Story Bible](story-bible.md) review.
 
 ![Home, manuscript found](../../images/ui/home-default.webp)
@@ -83,9 +83,17 @@ in order. The progress is real, from the transcription itself; **Cancel** stops 
 items already transcribed, so the next check is quicker, and **Continue in background** closes
 the work dialog while the row keeps its percent ("Checking 42%"). The app tells you when it ends,
 wherever you are. If the Whisper model is not installed yet, the app asks before downloading it,
-as Proofing does. A changed chapter can also be re-checked on its own, in the background, once
+as a chapter's Proof view does. A changed chapter can also be re-checked on its own, in the background, once
 REAPER has been quiet for a few minutes and the app is not otherwise busy (Settings' **Check
 changed chapters in the background**); pressing **Check recording** yourself always pre-empts it.
+
+With Settings' **Two-pass check** turned on ([Settings](settings.md)), a check instead runs a fast
+first pass, then re-checks only whatever it reports missing with a stronger model: the progress
+names each pass ("First pass (tiny)", then "Re-checking 3 passages (large-v3-turbo)"), and the
+finished result reads "Checked ... with the tiny Whisper model; 3 passages re-checked with the
+large-v3-turbo Whisper model", with each re-checked pickup marked "Confirmed missing by ...". If
+the re-check model is not installed yet, the app offers the download or **Check with tiny only**,
+which finishes the check with the fast pass alone rather than blocking on the download.
 
 ![Home - a chapter's recording check with text still to record](../../images/ui/home-recording-check.webp)
 
@@ -99,7 +107,7 @@ the gap sits in the audio, and **Go to paragraph** to open the manuscript there.
 end is unfinished recording, not a pickup, so it never appears in that list. Below the check's own
 gaps, **Repeated reads (Review)** always shows the chapter's unreviewed take-review pickups —
 repeated reads already recorded, waiting to be compared and kept or discarded — as a count with
-**Open Review**, or "none waiting" when there are none: a different kind of pickup from the gaps
+**Open Proof**, or "none waiting" when there are none: a different kind of pickup from the gaps
 above it. Under that, **Pickup list** always shows the proofer's REAPER pickup markers as one
 project-wide open count with **Open pickups** — the same figure the Tracks page's Pickups list
 shows, not scoped to this chapter, since attributing markers to one chapter's track span is
@@ -233,4 +241,4 @@ card — with **Fill in** to reopen the same dialog for as long as a token stays
 
 ---
 
-[← Navigation](navigation.md) · [Index](README.md) · [Manuscript →](manuscript.md)
+[← Navigation](navigation.md) · [Index](README.md) · [Production →](production.md)

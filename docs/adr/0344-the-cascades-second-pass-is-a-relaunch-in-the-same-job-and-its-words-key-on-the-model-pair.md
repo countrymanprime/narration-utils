@@ -6,7 +6,7 @@
 
 ## Context
 
-The model cascade ([PRD](../prds/recording-check-model-cascade.prd.md), Phase 4) adds the Go
+The model cascade (the recording-check-model-cascade PRD, deleted and delivered; Phase 4) adds the Go
 planner and the host orchestration that turns a first pass's missing regions into a second,
 stronger-model pass: a window planner (`plan.go`), and `internal/coverage/service.go`/`run.go`
 running both passes as the PRD's "one check (one job, one cancel, one `job:ended`)". Three

@@ -97,7 +97,12 @@ type Input struct {
 	Paragraphs   []Paragraph
 	HardWords    map[string]bool
 	OpenFindings []OpenFinding
-	Settings     Settings
+	// AudioEvidence is optional (nil is "no chapter has audio evidence yet", read the same tri-state way as a
+	// missing key inside it): Phase 7's per-chapter audio-checked inputs, keyed by chapter id, already resolved
+	// to plain values by the caller (the host binding, composing RC, Phase 6's mapper and, per ADR 0327, DX-4
+	// once it has a chapter to give).
+	AudioEvidence map[string]ChapterAudioEvidence
+	Settings      Settings
 }
 
 // Outcome names a manuscript-wide state with no ranked candidates to show,
@@ -142,6 +147,10 @@ type Candidate struct {
 	// when it picks the top three chapters overall - the same "rank down" rule applied consistently, not just at
 	// window-selection time.
 	findingsPenalty float64
+	// audioChecked is Phase 7's own label (attachAudioChecked), kept private like features and findingsPenalty:
+	// the wire-facing evidence is the Reasons/Warnings text this package already appends, and this field lets
+	// this package's own tests assert the label directly (Success Metrics: "0 false audio-checked").
+	audioChecked bool
 }
 
 // candidateFeatures are one candidate's named, explainable text features (Phase 1's own scope: "explainable text

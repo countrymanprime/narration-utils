@@ -147,6 +147,8 @@ func TestStageRecommendationsOverTheCoverageCorpus(t *testing.T) {
 	settings := Settings{
 		Alignment:  AlignmentParams{MaxMisreadRun: corpus.Settings.MaxMisreadRun, MinAnchorRun: corpus.Settings.MinAnchorRun},
 		Thresholds: Thresholds{MinParagraphPresent: corpus.Settings.MinParagraphPresent, MaxMissingRun: corpus.Settings.MaxMissingRun},
+		// The corpus predates the model cascade (Phase 5): every case was made with it off, at its own defaults.
+		Cascade: DefaultSettings.Cascade,
 	}
 	if settings != DefaultSettings {
 		t.Fatalf("the corpus results were made at %+v, not the shipped %+v", settings, DefaultSettings)

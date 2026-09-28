@@ -154,7 +154,7 @@ func TestTheNarratorsOwnCheckPreemptsABackgroundOne(t *testing.T) {
 	}
 	sidecar.use(fakeCoverageSidecar(9))
 
-	started := decodeAnswer(t)(host.CoverageStart("c-0001"))
+	started := decodeAnswer(t)(host.CoverageStart("c-0001", nil))
 
 	if started["status"] != "started" {
 		t.Fatalf("the narrator's start was refused: %v", started)

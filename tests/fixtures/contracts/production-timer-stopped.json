@@ -1,0 +1,11 @@
+{
+  "session": {
+    "chapterId": "c-0001",
+    "endedAt": "2026-09-21T10:00:00Z",
+    "id": "0000000000000000",
+    "source": "manual",
+    "stage": "recording",
+    "startedAt": "2026-09-21T10:00:00Z"
+  },
+  "stopped": true
+}

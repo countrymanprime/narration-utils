@@ -8,7 +8,6 @@ import type { ProjectStateState } from './contracts/projectstate';
 import { WIRE_TAKE_REVIEW_FINDINGS, WIRE_TRACKS_PROJECT, WIRE_TRANSCRIPT, editingCandidateFor } from './mockFixtures';
 import { prepMarkupChapterSchema, prepMarkupSpanSchema } from './schemas/prepMarkup';
 import { cleanupApplyResultSchema, cleanupPreviewResultSchema, levelMatchApplyResultSchema, levelMatchPreviewResultSchema } from './schemas/cleanup';
-import { productionPlanSchema } from './schemas/production';
 import { WIRE_TAKE_COMPARISON_FINDING } from './takeComparisonMock';
 import { MOCK_MEASURE_PATHS } from './measureMock';
 import { judgeMock } from './coverageMock';
@@ -46,6 +45,8 @@ import { COVERAGE_EVALUATOR_REASONS, COVERAGE_REFUSAL_REASONS, coverageResultSch
 import { workspaceAlignmentResultSchema } from './schemas/workspace';
 import { previewResultSchema } from './schemas/preview';
 import { STAGE_REFUSAL_REASONS, STAGE_UNKNOWN_CAUSES, stageDecisionResultSchema, stageRecommendationsSchema } from './schemas/stages';
+import { productionOverviewSchema, productionPlanSchema, productionStartResultSchema, productionStopResultSchema } from './schemas/production';
+import { PRODUCTION_SCENARIOS } from './productionMock';
 import { findingMarkerSchema, findingNavigationSchema, findingSchema, findingsPageSchema, findingsSummarySchema, reaperStatusSchema } from './schemas/findings';
 import { tracksDiscoverySchema, tracksProjectSchema } from './schemas/tracks';
 import {
@@ -82,6 +83,7 @@ import {
   guidePreviewSchema,
   pronunciationQueriesCsvSchema,
   pronunciationQueriesSchema,
+  queryImportResultSchema,
 } from './schemas/storyBible';
 import { bootstrapSchema, copyDiagnosticsResultSchema, projectAttachStateSchema, readySchema } from './schemas/system';
 import {
@@ -93,6 +95,7 @@ import {
   teleprompterFlagFindingsSchema,
   teleprompterReadingSchema,
   teleprompterLocateResultSchema,
+  teleprompterResumeFollowSchema,
   teleprompterPunchResultSchema,
   teleprompterStartResultSchema,
   teleprompterStateSchema,
@@ -429,6 +432,20 @@ describe('answers of the mock client (it must pass the schemas the real host ans
     await expect(api.teleprompterLocate('not-a-real-chapter')).rejects.toThrow();
   });
 
+  it('the TeleprompterResumeFollow and Unfollow answers (read-aloud-resume-from-daw PRD Phase 5)', async () => {
+    const api = createMockApi();
+    const chapters = await api.manuscriptChapters();
+    const tracked = await api.teleprompterResumeFollow(chapters[0].id);
+    expectMatches(teleprompterResumeFollowSchema, tracked, 'mock resume follow, a tracked chapter');
+    expect(tracked).toEqual({ following: false, reason: 'unavailable' });
+    const untracked = await api.teleprompterResumeFollow(chapters[chapters.length - 1].id);
+    expectMatches(teleprompterResumeFollowSchema, untracked, 'mock resume follow, no track');
+    expect(untracked).toEqual({ following: false, reason: 'no_track' });
+    expectMatches(teleprompterResumeFollowSchema, await api.teleprompterResumeUnfollow(), 'mock resume unfollow');
+    await expect(api.teleprompterResumeFollow(chapters[0].id, '{00000000-0000-4000-8000-000000000000}')).rejects.toThrow(/not in the selected/);
+    await expect(api.teleprompterResumeFollow('not-a-real-chapter')).rejects.toThrow();
+  });
+
   // `?mockResume=` (main.tsx) reaches every resume card state on the first chapter (teleprompter-manuscript-integration.prd.md
   // Phase 10); each answer is still one the real host could send.
   it.each([
@@ -686,6 +703,25 @@ describe('answers of the mock client for the manuscript, Story Bible and project
     const csv = await api.guidePronunciationQueriesCsv();
     expectMatches(pronunciationQueriesCsvSchema, csv, 'mock pronunciation queries CSV');
     expect(csv.count).toBe(queries.length);
+  });
+
+  it('re-importing an answered pronunciation query file applies a matched row and reports an unmatched one', async () => {
+    const api = createMockApi();
+    const queries = await api.guidePronunciationQueries();
+    const row = queries[0];
+    const aliasCell = row.aliasIndex === null ? '' : String(row.aliasIndex);
+    const csvText =
+      'word,entry_id,alias_index,status,note\n' +
+      `${row.name},${row.entityId},${aliasCell},author_confirmed,Confirmed by the author\n` +
+      'Ghost,not-a-real-entity,,researched,\n';
+    const result = await api.guidePronunciationImportQueriesCsv(csvText);
+    expectMatches(queryImportResultSchema, result, 'mock pronunciation query import');
+    expect(result.applied).toBe(1);
+    expect(result.issues).toHaveLength(1);
+    expect(result.issues[0]).toContain('line 3:');
+    expect(result.issues[0]).toContain('Ghost');
+    const after = await api.guidePronunciationQueries();
+    expect(after.some((query) => query.entityId === row.entityId && query.aliasIndex === row.aliasIndex)).toBe(false);
   });
 
   it('the dictionary lookup answers: a word it has, one it does not, and the first-use gate', async () => {
@@ -1720,6 +1756,34 @@ describe('answers of the mock client for the settings, voice, model, transcript 
     expect(gated.status).toBe('asset_required');
   });
 
+  it('the model cascade names both models, gates on the re-check model, and "Check with tiny only" skips it (Phase 5)', async () => {
+    const api = createMockApi();
+    const chapters = await api.manuscriptChapters();
+    const measured = chapters.find((chapter) => chapter.recordedFraction !== undefined);
+    if (!measured) throw new Error('the mock chapters carry a measured recordedFraction');
+
+    const cascadeApi = createMockApi({}, { coverage: { cascade: [measured.id] } });
+    const result = await cascadeApi.coverageResult(measured.id);
+    expectMatches(coverageResultSchema, result, 'mock coverage result, cascade');
+    expect(result.result?.recheck).toMatchObject({ model: 'large-v3-turbo', wholeChapter: false, windows: 1 });
+
+    const gate = await createMockApi({}, { coverage: { recheckAssetRequired: true } }).coverageStart(measured.id);
+    expectMatches(coverageStartResultSchema, gate, 'mock coverage start, re-check model not installed');
+    expect(gate).toMatchObject({ status: 'recheck_asset_required', model: { id: 'large-v3-turbo' } });
+
+    vi.useFakeTimers();
+    try {
+      const skipApi = createMockApi({}, { coverage: { recheckAssetRequired: true } });
+      const started = await skipApi.coverageStart(measured.id, { skipRecheck: true });
+      expectMatches(coverageStartResultSchema, started, 'mock coverage start, tiny only');
+      expect(started.status).toBe('started');
+      await vi.runAllTimersAsync();
+      expect(await skipApi.coverageState()).toMatchObject({ phase: 'complete' });
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('the workspace alignment shares the coverage result state and reads the chapter as tokens', async () => {
     const api = createMockApi();
     const chapters = await api.manuscriptChapters();
@@ -1926,6 +1990,7 @@ describe('answers of the mock client for the settings, voice, model, transcript 
       'guidePreview',
       'guidePronunciationQueries',
       'guidePronunciationQueriesCsv',
+      'guidePronunciationImportQueriesCsv',
       'assetsList',
       'assetsInstall',
       'assetsInstallState',
@@ -2013,6 +2078,9 @@ describe('answers of the mock client for the settings, voice, model, transcript 
       'stageConfirm',
       'stageDismiss',
       'stageRevert',
+      'productionOverview',
+      'productionStartTimer',
+      'productionStopTimer',
       'takeComparisonStart',
       'takeComparisonState',
       'takeComparisonCancel',
@@ -2051,6 +2119,8 @@ describe('answers of the mock client for the settings, voice, model, transcript 
       'teleprompterState',
       'teleprompterDevices',
       'teleprompterLocate',
+      'teleprompterResumeFollow',
+      'teleprompterResumeUnfollow',
       'teleprompterSaveFlags',
       'readAloudReaperState',
       'readAloudArmOnly',
@@ -2131,6 +2201,7 @@ describe('answers of the mock client for the settings, voice, model, transcript 
       'subscribeCoverage',
       'subscribeTeleprompterEvent',
       'subscribeTeleprompterState',
+      'subscribeTeleprompterResumeFollow',
       'subscribeUpdate',
       'subscribeLineIdentity',
       'subscribePickups',
@@ -2191,5 +2262,39 @@ describe('the credits script the sidecar sends', () => {
     const rows = creditsRows('closing', text, script);
 
     expect(rows.map((row) => [row.key, row.start, row.words?.length])).toEqual(script.spans.map((span) => [span.id, span.start, span.count]));
+  });
+});
+
+describe('the production tracking mock', () => {
+  it('answers every production binding with a payload its schema accepts, with nothing logged before a seed', async () => {
+    const api = createMockApi();
+    const empty = await api.productionOverview();
+    expectMatches(productionOverviewSchema, empty, 'mock production overview, nothing logged');
+    expect(empty.totals).toMatchObject({ hoursLogged: 0, bookPfh: null, effectiveRate: null, contractedAmount: null });
+    expect([empty.deadline, empty.running]).toEqual([null, null]);
+
+    const started = await api.productionStartTimer('chapter-4', 'recording');
+    expectMatches(productionStartResultSchema, started, 'mock production timer started');
+    expect(started.status).toBe('started');
+    const refused = await api.productionStartTimer('chapter-5', 'recording');
+    expectMatches(productionStartResultSchema, refused, 'mock production timer refused');
+    expect(refused).toMatchObject({ status: 'refused', reason: 'timer_running' });
+    expect((await api.productionOverview()).running?.chapterId).toBe('chapter-4');
+    expectMatches(productionStopResultSchema, await api.productionStopTimer(), 'mock production timer stopped');
+    expectMatches(productionStopResultSchema, await api.productionStopTimer(), 'mock production timer, nothing to stop');
+    await expect(api.productionStartTimer('chapter-99', 'recording')).rejects.toThrow(/no chapter/);
+  });
+
+  it.each(['on-pace', 'at-risk'] as const)('seeds a %s book whose figures come from its log and measured audio only', async (seed) => {
+    const overview = await createMockApi({}, { production: PRODUCTION_SCENARIOS[seed] }).productionOverview();
+    expectMatches(productionOverviewSchema, overview, `mock production overview, ${seed}`);
+    expect(overview.deadline).not.toBeNull();
+    const { totals } = overview;
+    expect(totals.bookPfh).toBeCloseTo(totals.hoursLogged / (totals.recordedSeconds / 3600));
+    expect(totals.effectiveRate).toBeCloseTo((totals.contractedAmount ?? 0) / totals.hoursLogged);
+    // An unmeasured chapter has no PFH, whatever was logged on it.
+    for (const chapter of overview.chapters.filter((row) => row.recordedSeconds === null)) expect(chapter.pfh).toBeNull();
+    expect(overview.nextUp.length).toBeGreaterThan(0);
+    expect(overview.nextUp.every((item) => item.stage !== 'finalized')).toBe(true);
   });
 });
