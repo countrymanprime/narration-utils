@@ -19,6 +19,7 @@
     "screenshots": "playwright test tests/visual",
     "aria": "playwright test -c playwright.aria.config.ts",
     "visual:check-run": "playwright test -c playwright.visual-run.config.ts",
+    "mock-match": "playwright test -c playwright.mock-match.config.ts",
     "docs:sync-screenshots": "node scripts/sync-doc-screenshots.mjs",
     "docs:atlas": "node scripts/atlas-docs.mjs",
     "storybook": "storybook dev --port 6006",

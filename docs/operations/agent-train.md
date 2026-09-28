@@ -151,6 +151,7 @@ Decisions the owner made while the train ran (logged on #509). They bind the coo
 | **D74** | Windows only, for now (2026-09-27). Linux and macOS support is removed until the app is in a steadier state or someone uses those systems; `Build (Windows)` stays the build gate. Linux CI runners remain as hosts for platform-neutral checks (docs, the Lua harness, the browser-based UI suites), which is not Linux support |
 | **D75** | The public GitHub Pages site (docs, Storybook, demo) is paused until the main app's development is done (2026-09-27): `pages.yml` no longer deploys on a push to `main`, and (narrowed 2026-09-27, [ADR 0415](../adr/0415-while-pages-is-paused-docs-are-checked-by-lychee-and-a-changed-file-markdownlint-not-by-building-the-site.md)) no longer runs on a pull request either. Workers keep the docs link-clean through `Docs / Links (offline)` (lychee, every pull request) and `Docs / Markdown lint (changed files)` (markdownlint-cli2 on the Markdown files a pull request adds or changes), not by building the site, and don't add work that only serves the published site |
 | **D82** | Every worker owns its PRs until they merge or close (2026-09-27): it stays subscribed, and on a merge-conflict notice or a red check it merges `main` into its own branch (never rebase), fixes, re-runs its targeted checks and pushes. It keeps an hourly `send_later` check-in while a PR is open. The coordinator launches no cascade fixers; a one-PR fixer only for a PR whose own session is archived or failed. The coordinator archives the session once all its PRs are merged or closed (D78) |
+| **D91** | The approved mocks win, measured (2026-09-28). Every screen or state an approved mock covers reaches **at least 90% pixel match** against it, captured at the mock's own size and theme with the app driven to the mock's state and data (`pnpm --dir apps/ui mock-match`, [mock fidelity PRD](../prds/mock-fidelity-primitives-and-components.prd.md)). New primitives, tokens and style changes are in scope, and "the existing style is close enough" is not a reason: a difference a primitive causes is fixed in the primitive, so every consumer inherits it, never restyled locally. A UI PR's Mockup check carries a match % column; a state under 90% needs a reason the owner accepts on #510, and a tooling limit is not one |
 
 ## The coordinator's pass
 
@@ -172,7 +173,7 @@ The Routine fires every 30 minutes (two hourly Routines, 30 minutes apart; D50).
    - `Build (Windows)` and `ui-dist` succeeded on the head. A docs-only PR needs `Docs / Links (offline)` instead;
    - there is no `CHANGES_REQUESTED` review and no unresolved thread whose first comment starts with 🔴;
    - a Claude Approvals check, if present, passes;
-   - a UI PR whose phase has mockups carries its Mockup check table (D46).
+   - a UI PR whose phase has mockups carries its Mockup check table with a match % column (D46, D91).
 
    Merge with `squash` and `expectedHeadSha`, then delete the branch. Don't update the other bottom PRs' branches after a merge (D73); only a PR that no longer merges cleanly gets `main` merged in.
    - **A conflict:** start one **fixer**. Use Sonnet for mechanical files (`hostAPIVersion`, ADR or PRD index rows, status cells, regenerated `Host.*`) and Opus otherwise.
@@ -242,8 +243,15 @@ No human is watching live; never wait for answers. Where a PRD leaves a question
 READ FIRST: CLAUDE.md; docs/operations/agent-train.md ("The worker protocol", "Serial points", "Lanes"); then each PRD in
 scope, in full.
 SCOPE: <PRD path> phases <N…>: <one line each>.
-MOCKUPS (D46): <per phase: exact docs/prds/mockups/... files, or "none">. Open each before coding, build to match, capture
-the same state at the same viewport, and add a "Mockup check" table to the PR (mockup | capture | matches / differs: why).
+MOCKUPS (D46, D91): <per phase: exact docs/prds/mockups/... files, or "none">. Open each before coding and build to match.
+Every approved-mock state reaches at least 90% pixel match: drive the app to the mock's state and data, capture at the
+mock's own size and theme, and score it (the mock and its target state in apps/ui/tests/visual/mock-match/mocks.ts, then
+`pnpm --dir apps/ui mock-match -g "<mock file>"`). The PR's "Mockup check" table is mockup | capture | match % |
+remaining differences; a state under 90% needs a reason the owner can accept on #510 (live data the mock can't have),
+and a tooling limit is not one. New primitives and tokens are in scope; existing styles are not a reason: when a
+primitive, token or style doesn't draw what the mock shows, change the primitive (its <Name>.stories.tsx too, with
+design-spec-guard and an ADR for a changed design decision), don't restyle it locally on the page. The spec per
+primitive is docs/prds/mock-fidelity-primitives-and-components.prd.md.
 YOUR FILES: <the phases' rows from the PRD's Parallel-session table>. NEVER TOUCH: files owned by other lanes or listed for
 a running stream on #509. If you need another lane's change, comment on #509.
 ADR BLOCK: <block>. Check docs/adr/ for the next free number inside it, at write time and again before your last push.
