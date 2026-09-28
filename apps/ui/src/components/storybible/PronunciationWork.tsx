@@ -4,6 +4,7 @@ import { Button } from '../primitives/Button';
 import { Field } from '../primitives/Field';
 import { Select } from '../primitives/Select';
 import { StatusBadge } from '../primitives/StatusBadge';
+import { CommonsAudioLookup } from './CommonsAudioLookup';
 import { OnlinePronunciationLookup } from './OnlinePronunciationLookup';
 import { PRONUNCIATION_STATUSES, pronunciationSourceLabel, pronunciationStatusInfo, pronunciationStatusOf } from './pronunciationStatus';
 
@@ -81,6 +82,7 @@ export function PronunciationWork({
           </div>
           <p className="-mt-1 text-xs text-[var(--text-muted)]">Kept beside the dictionary&apos;s answer; you can switch back at any time.</p>
           <OnlinePronunciationLookup name={name} disabled={disabled} onUse={setIpa} />
+          <CommonsAudioLookup name={name} disabled={disabled} />
           {alternate && (
             <Button variant="ghost" disabled={disabled} pending={pending('alternate')} onClick={onUseAlternate} aria-label={`Use ${alternate.ipa} for ${name}`}>
               Use {alternate.source === 'user' ? 'yours' : alternate.source} instead

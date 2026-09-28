@@ -1348,6 +1348,21 @@ export function ProjectSwitch(path: string, name: string): $CancellablePromise<s
 }
 
 /**
+ * PronunciationCommonsAudioOpen opens the Wikimedia Commons recording that Wiktextract's own offline pronunciation
+ * data (prep-depth Phase 8, #782) names for word, in the narrator's default browser or media player: the same
+ * "open externally" host path PronunciationLookupOpen and PronunciationOnlineSignUpOpen already use (Q12), never
+ * fetched, streamed or cached by the app itself.
+ * 
+ * word crosses the Wails boundary; the address never does - it is built here from Phase 8's own installed index, the
+ * same trusted-URL discipline every other open-externally binding already follows (never a UI-supplied URL). A word
+ * the index has no audio for, and a Wiktextract source not installed yet, are both refused with a clear reason
+ * rather than opening nothing silently.
+ */
+export function PronunciationCommonsAudioOpen(word: string): $CancellablePromise<string> {
+    return $Call.ByID(209296523, word);
+}
+
+/**
  * PronunciationLookupOpen opens source's fixed lookup-page template for word in the narrator's default browser
  * (prep-depth.prd.md Phase 2; provider-ports.prd.md Open Question Q5's BrowserLookup role), and nothing else: it
  * never fetches, scrapes or caches the site itself. source and word cross the Wails boundary, never a URL - the
