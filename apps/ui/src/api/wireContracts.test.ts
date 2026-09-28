@@ -2571,6 +2571,7 @@ describe('answers of the mock client for the settings, voice, model, transcript 
       'deleteCreditsTemplate',
       'companionModeEnter',
       'companionModeExit',
+      'windowSaveZoom',
     ];
     const NOT_A_REQUEST = [
       'mediaUrl',

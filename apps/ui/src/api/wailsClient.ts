@@ -350,6 +350,7 @@ export const wailsClient: NarrationApi = {
   systemCopyDiagnostics: (scope) => decode(copyDiagnosticsResultSchema, 'SystemCopyDiagnostics', host.SystemCopyDiagnostics(scope)),
   windowZoom: () => decode(windowZoomSchema, 'WindowZoom', host.WindowZoom()),
   windowSetZoom: (factor) => decode(windowZoomSchema, 'WindowSetZoom', host.WindowSetZoom(factor)),
+  windowSaveZoom: (level) => decode(voidResult, 'WindowSaveZoom', host.WindowSaveZoom(level)),
   subscribeProjectAttach: (onUpdate) => subscribeChecked('system:attached', projectAttachStateSchema, onUpdate),
   subscribeLiveUpdateHealth: (onDegraded) => liveHealth.subscribe(onDegraded),
   subscribeNotices: (onNotice) => subscribeChecked('system:notice', noticeSchema, (event) => onNotice(event.text)),
