@@ -3,6 +3,7 @@ import { faBackward, faForward, faPause, faPlay } from '@fortawesome/free-solid-
 import { Button } from '../primitives/Button';
 import { Select } from '../primitives/Select';
 import { Panel } from '../primitives/Panel';
+import { Toolbar, ToolbarButton } from '../primitives/Toolbar';
 import { TooltipTarget } from '../primitives/Tooltip';
 import { formatDuration, formatElapsed } from './format';
 import { SKIP_SECONDS, SPEED_OPTIONS, type PlaybackSpeed } from './useChapterPlayback';
@@ -41,16 +42,28 @@ export function TransportBar({ player, reaper }: { player: TransportBarPlayer; r
           This chapter has no playable audio yet.
         </p>
       )}
-      <div className="flex flex-wrap items-center justify-center gap-3">
-        <Button variant="ghost" onClick={player.skipBack} disabled={!player.canPlay} aria-label={`Skip back ${SKIP_SECONDS} seconds`}>
-          <FontAwesomeIcon icon={faBackward} /> {SKIP_SECONDS}s
-        </Button>
-        <Button onClick={player.togglePlay} disabled={!player.canPlay} aria-label={player.isPlaying ? 'Pause' : 'Play'}>
-          <FontAwesomeIcon icon={player.isPlaying ? faPause : faPlay} />
-        </Button>
-        <Button variant="ghost" onClick={player.skipForward} disabled={!player.canPlay} aria-label={`Skip forward ${SKIP_SECONDS} seconds`}>
-          {SKIP_SECONDS}s <FontAwesomeIcon icon={faForward} />
-        </Button>
+      <Toolbar label="Chapter playback controls" className="flex-wrap justify-center" gapClassName="gap-3">
+        <ToolbarButton
+          render={
+            <Button variant="ghost" onClick={player.skipBack} disabled={!player.canPlay} aria-label={`Skip back ${SKIP_SECONDS} seconds`}>
+              <FontAwesomeIcon icon={faBackward} /> {SKIP_SECONDS}s
+            </Button>
+          }
+        />
+        <ToolbarButton
+          render={
+            <Button onClick={player.togglePlay} disabled={!player.canPlay} aria-label={player.isPlaying ? 'Pause' : 'Play'}>
+              <FontAwesomeIcon icon={player.isPlaying ? faPause : faPlay} />
+            </Button>
+          }
+        />
+        <ToolbarButton
+          render={
+            <Button variant="ghost" onClick={player.skipForward} disabled={!player.canPlay} aria-label={`Skip forward ${SKIP_SECONDS} seconds`}>
+              {SKIP_SECONDS}s <FontAwesomeIcon icon={faForward} />
+            </Button>
+          }
+        />
         <span className="font-['IBM_Plex_Mono',ui-monospace,monospace] text-sm" style={{ color: 'var(--text-muted)' }}>
           {formatElapsed(player.elapsed)} / {formatDuration(player.duration)}
         </span>
@@ -61,32 +74,44 @@ export function TransportBar({ player, reaper }: { player: TransportBarPlayer; r
           options={SPEED_OPTIONS.map((speed) => ({ value: String(speed), label: SPEED_LABEL[speed] }))}
         />
         <TooltipTarget text={reaper.goToBlocked ?? "Select this word's item in REAPER and put the edit cursor on it"}>
-          <Button
-            variant="ghost"
-            onClick={() => void reaper.goTo()}
-            disabled={Boolean(reaper.goToBlocked) || reaper.pending !== undefined}
-            pending={reaper.pending === 'goTo'}
-          >
-            Go to in REAPER
-          </Button>
+          <ToolbarButton
+            render={
+              <Button
+                variant="ghost"
+                onClick={() => void reaper.goTo()}
+                disabled={Boolean(reaper.goToBlocked) || reaper.pending !== undefined}
+                pending={reaper.pending === 'goTo'}
+              >
+                Go to in REAPER
+              </Button>
+            }
+          />
         </TooltipTarget>
         {reaper.looping ? (
-          <Button variant="ghost" onClick={() => void reaper.stopLoop()} disabled={reaper.pending !== undefined} pending={reaper.pending === 'stop'}>
-            Stop loop
-          </Button>
+          <ToolbarButton
+            render={
+              <Button variant="ghost" onClick={() => void reaper.stopLoop()} disabled={reaper.pending !== undefined} pending={reaper.pending === 'stop'}>
+                Stop loop
+              </Button>
+            }
+          />
         ) : (
           <TooltipTarget text={reaper.loopBlocked ?? 'Play this word over and over in REAPER'}>
-            <Button
-              variant="ghost"
-              onClick={() => void reaper.loop()}
-              disabled={Boolean(reaper.loopBlocked) || reaper.pending !== undefined}
-              pending={reaper.pending === 'loop'}
-            >
-              Loop in REAPER
-            </Button>
+            <ToolbarButton
+              render={
+                <Button
+                  variant="ghost"
+                  onClick={() => void reaper.loop()}
+                  disabled={Boolean(reaper.loopBlocked) || reaper.pending !== undefined}
+                  pending={reaper.pending === 'loop'}
+                >
+                  Loop in REAPER
+                </Button>
+              }
+            />
           </TooltipTarget>
         )}
-      </div>
+      </Toolbar>
       {reaper.message && (
         <p role="alert" className="mt-2 text-center text-sm" style={{ color: 'var(--danger-text)' }}>
           {reaper.message}
