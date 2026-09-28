@@ -25,7 +25,7 @@ const CATEGORY_LABELS: Record<string, string> = {
 };
 
 const ANALYZER_LABELS: Record<string, string> = {
-  'transcript-compare': 'Proofing comparison',
+  'transcript-compare': 'Local AI compare',
   'story-bible': 'Story Bible',
   'take-review': 'Take review',
   'take-comparison': 'Take comparison',
@@ -131,6 +131,14 @@ export function evidenceRows(finding: Finding): Array<{ label: string; value: st
   if (typeof evidence.timing_gap_seconds === 'number') add('Pause at the boundary', `${evidence.timing_gap_seconds.toFixed(2)} s`);
   add('Existing REAPER marker', text(evidence.existing_marker_name));
   return rows;
+}
+
+/** The Type column's chip (PF2 in the visual mockup divergence audit): the evidence's own kind when the analyzer reports
+ * one (Misread, Skipped, Extra words, …), the category name otherwise (Story Bible entry, Pickup, …). */
+export function evidenceKindLabel(finding: Finding): string {
+  const kind = text(finding.evidence?.kind);
+  if (kind) return KIND_LABELS[kind] ?? humanize(kind.toLowerCase());
+  return categoryLabel(finding.category);
 }
 
 /** When the decision was recorded, in the narrator's own locale; the raw text when it is not a date. */

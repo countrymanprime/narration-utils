@@ -607,7 +607,7 @@ export async function lookUpInReader(page: Page, word: string, url?: string): Pr
 }
 
 /** Links a chapter to its first available track from the engine panel's Chapter links table (the same real-UI path
- * 'chapter-link-confirmed' above uses), then follows its "Open workspace" link and waits for its Proof chapter view to
+ * 'chapter-link-confirmed' above uses), then follows its "Open in Proof" link and waits for its Proof chapter view to
  * render (edit-and-proof-workspace.prd.md Phase 2: no chapter starts linked by default in the mock; the link goes to
  * `/proof/:chapterId` since stage-navigation-and-page-replacement.prd.md Phase 5). */
 export async function openLinkedProofChapter(page: Page, chapterTitle: string): Promise<void> {
@@ -620,7 +620,7 @@ export async function openLinkedProofChapter(page: Page, chapterTitle: string): 
   const row = table.locator('tbody tr').filter({ has: page.getByRole('cell', { name: new RegExp(`^${chapterTitle}( — |$)`) }) });
   await row.getByRole('combobox').selectOption({ index: 0 });
   await row.getByRole('button', { name: 'Confirm' }).click();
-  await row.getByRole('link', { name: 'Open workspace' }).click();
+  await row.getByRole('link', { name: 'Open in Proof' }).click();
   await page.getByRole('heading', { level: 1, name: new RegExp(`^Proof · ${chapterTitle}( — |$)`) }).waitFor();
 }
 

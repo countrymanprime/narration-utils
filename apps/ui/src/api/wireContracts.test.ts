@@ -7,6 +7,7 @@ import { createMockApi } from './mockApi';
 import type { ProjectStateState } from './contracts/projectstate';
 import { WIRE_TAKE_REVIEW_FINDINGS, WIRE_TRACKS_PROJECT, WIRE_TRANSCRIPT, editingCandidateFor } from './mockFixtures';
 import { prepMarkupChapterSchema, prepMarkupSpanSchema } from './schemas/prepMarkup';
+import { prepCompletenessSummarySchema } from './schemas/prepCompleteness';
 import { cleanupApplyResultSchema, cleanupPreviewResultSchema, levelMatchApplyResultSchema, levelMatchPreviewResultSchema } from './schemas/cleanup';
 import { WIRE_TAKE_COMPARISON_FINDING } from './takeComparisonMock';
 import { MOCK_MEASURE_PATHS } from './measureMock';
@@ -45,7 +46,7 @@ import {
 } from './schemas/takeReview';
 import { COVERAGE_EVALUATOR_REASONS, COVERAGE_REFUSAL_REASONS, coverageResultSchema, coverageStartResultSchema, coverageStateSchema } from './schemas/coverage';
 import { workspaceAlignmentResultSchema } from './schemas/workspace';
-import { previewResultSchema } from './schemas/preview';
+import { pinnedPreviewSchema, previewResultSchema } from './schemas/preview';
 import { STAGE_REFUSAL_REASONS, STAGE_UNKNOWN_CAUSES, stageDecisionResultSchema, stageRecommendationsSchema } from './schemas/stages';
 import {
   productionBurndownSchema,
@@ -649,6 +650,22 @@ describe('answers of the mock client for the manuscript, Story Bible and project
     expect((await api.prepMarkupList(chapter?.id ?? '')).spans).toHaveLength(1);
     await expect(api.prepMarkupSave(chapter?.id ?? '', 'no-such-line', 0, 1, 'stress', '')).rejects.toThrow('no longer in this chapter');
     await expect(api.prepMarkupSave(chapter?.id ?? '', paragraph?.id ?? '', 0, 5, 'pause', '')).rejects.toThrow('short or long');
+  });
+
+  // prep-depth.prd.md Phase 7: the per-chapter rollup reads the same two calls above, never a third store.
+  it('the prep completeness summary rolls up open queries and stale markup per chapter', async () => {
+    const api = createMockApi({}, { prepMarkup: [{ chapter: 0, line: 0, words: 'Alice', kind: 'stress', stale: { reason: 'text_changed', was: 'Queen' } }] });
+    const chapters = await api.manuscriptChapters();
+    const summary = await api.prepCompletenessSummary();
+    expectMatches(prepCompletenessSummarySchema, summary, 'mock prep completeness summary');
+    expect(summary.chapters.map((row) => row.chapterId)).toEqual(chapters.map((c) => c.id));
+    expect(summary.totals.chapters).toBe(chapters.length);
+    const firstChapter = summary.chapters.find((row) => row.chapterId === chapters[0]?.id);
+    expect(firstChapter?.staleMarkupSpans).toBe(1);
+    expect(firstChapter?.complete).toBe(false);
+    const openAcrossChapters = summary.chapters.reduce((sum, row) => sum + row.openQueries, 0);
+    expect(summary.totals.openQueries).toBe(openAcrossChapters + summary.totals.unattributedQueries);
+    expect(summary.totals.staleMarkupSpans).toBeGreaterThanOrEqual(1);
   });
 
   it('a created note and bookmark', async () => {
@@ -1929,6 +1946,61 @@ describe('answers of the mock client for the settings, voice, model, transcript 
     expect(nothingEligible).toEqual({ outcome: 'nothing_eligible', candidates: [] });
   });
 
+  it('the preview pin: not present, set, adjust and clear (proofing-preview-suggestion.prd.md Phase 8)', async () => {
+    const api = createMockApi();
+    const notPinned = await api.previewPin();
+    expectMatches(pinnedPreviewSchema, notPinned, 'mock preview pin, none');
+    expect(notPinned).toEqual({ present: false, stale: false, canExtendStart: false, canShrinkStart: false, canExtendEnd: false, canShrinkEnd: false });
+
+    const { candidates } = await api.previewCandidates();
+    const [firstCandidate, secondCandidate] = candidates;
+    expect(firstCandidate.paragraphIds.length).toBeGreaterThan(0);
+
+    const set = await api.previewPinSet(firstCandidate.chapterId, firstCandidate.paragraphIds);
+    expectMatches(pinnedPreviewSchema, set, 'mock preview pin, set');
+    expect(set.present).toBe(true);
+    expect(set.stale).toBe(false);
+    expect(set.candidate?.chapterId).toBe(firstCandidate.chapterId);
+    expect(set.candidate?.paragraphIds).toEqual(firstCandidate.paragraphIds);
+
+    const read = await api.previewPin();
+    expectMatches(pinnedPreviewSchema, read, 'mock preview pin, read back');
+    expect(read).toEqual(set);
+
+    if (secondCandidate) {
+      const replaced = await api.previewPinSet(secondCandidate.chapterId, secondCandidate.paragraphIds);
+      expect(replaced.candidate?.chapterId).toBe(secondCandidate.chapterId);
+    } else {
+      const cleared = await api.previewPinClear();
+      expectMatches(pinnedPreviewSchema, cleared, 'mock preview pin, cleared');
+      expect(cleared.present).toBe(false);
+      await expect(api.previewPinAdjust('end', true)).rejects.toThrow();
+    }
+  });
+
+  it('the preview pin is stale when its text changes or a paragraph disappears', async () => {
+    const chapters = await createMockApi().manuscriptChapters();
+    const chapter = chapters[0];
+    const paragraphs = await createMockApi().manuscriptParagraphs(chapter.id);
+    const paragraphId = paragraphs[0].id;
+
+    const textChanged = await createMockApi(
+      {},
+      { preview: { pin: { chapterId: chapter.id, paragraphIds: [paragraphId], stale: 'text_changed' } } },
+    ).previewPin();
+    expectMatches(pinnedPreviewSchema, textChanged, 'mock preview pin, stale text_changed');
+    expect(textChanged).toMatchObject({ present: true, stale: true, staleReason: 'text_changed' });
+    expect(textChanged.candidate).toBeDefined();
+
+    const paragraphMissing = await createMockApi(
+      {},
+      { preview: { pin: { chapterId: chapter.id, paragraphIds: [paragraphId], stale: 'paragraph_missing' } } },
+    ).previewPin();
+    expectMatches(pinnedPreviewSchema, paragraphMissing, 'mock preview pin, stale paragraph_missing');
+    expect(paragraphMissing).toMatchObject({ present: true, stale: true, staleReason: 'paragraph_missing' });
+    expect(paragraphMissing.candidate).toBeUndefined();
+  });
+
   it('the stage recommendations: every verdict, every unknown cause, a confirmation, the notice, and every refusal', async () => {
     const api = createMockApi(
       {},
@@ -2171,6 +2243,10 @@ describe('answers of the mock client for the settings, voice, model, transcript 
       'workspaceGoTo',
       'workspaceLoop',
       'previewCandidates',
+      'previewPin',
+      'previewPinSet',
+      'previewPinAdjust',
+      'previewPinClear',
       'productionPlan',
       'setProductionDeadline',
       'saveProductionMilestones',
@@ -2181,6 +2257,7 @@ describe('answers of the mock client for the settings, voice, model, transcript 
       'productionOverview',
       'productionStartTimer',
       'productionStopTimer',
+      'prepCompletenessSummary',
       'productionStatusReport',
       'productionBurndown',
       'takeComparisonStart',

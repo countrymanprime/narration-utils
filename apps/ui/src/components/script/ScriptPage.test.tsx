@@ -797,7 +797,7 @@ describe('Script page (integration, driven through the mock NarrationApi)', () =
       renderScript({}, vi.fn(), ['/script'], {}, goToWorkspace);
       await waitFor(() => expect(screen.getByRole('heading', { name: 'Chapter 1 — Down the Rabbit-Hole' })).toBeTruthy());
 
-      fireEvent.click(screen.getByRole('button', { name: 'Open workspace for Chapter 1' }));
+      fireEvent.click(screen.getByRole('button', { name: 'Open in Proof for Chapter 1' }));
 
       expect(goToWorkspace).toHaveBeenCalledWith('chapter-1');
     });
@@ -805,7 +805,7 @@ describe('Script page (integration, driven through the mock NarrationApi)', () =
     it('renders no Workspace entry when the caller has none to open', async () => {
       renderScript();
       await waitFor(() => expect(screen.getByRole('heading', { name: 'Chapter 1 — Down the Rabbit-Hole' })).toBeTruthy());
-      expect(screen.queryByRole('button', { name: /Open workspace for/ })).toBeNull();
+      expect(screen.queryByRole('button', { name: /Open in Proof for/ })).toBeNull();
     });
   });
 

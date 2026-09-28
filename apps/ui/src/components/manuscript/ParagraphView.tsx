@@ -1,12 +1,12 @@
 import { useMemo, type ReactNode } from 'react';
 import type { GuideEntity, ManuscriptNote, ManuscriptParagraph, PrepMarkupSpan } from '../../types';
 import { Highlight, highlightKind } from '../primitives/Highlight';
+import { SpeakerTag } from '../primitives/SpeakerTag';
 import { composeAnnotationPieces, entityAnnotations, markupAnnotations, noteAnnotations, type Annotation, type Piece } from './annotations';
 import type { DialogueCue } from './dialogueCues';
 import { speakerLabelForParagraph } from './dialogueCues';
 import { MarkupMark, StaleMarkupNotice } from './MarkupMark';
 import type { RetailSampleRange } from './retailSampleRange';
-import { SpeakerTag } from './SpeakerTag';
 
 const FORMAT_TAG = { bold: 'strong', italic: 'em', underline: 'u' } as const;
 const NO_MARKUP: PrepMarkupSpan[] = [];
@@ -206,7 +206,10 @@ function ParagraphRow({
         )}
         {speakerLabel && (
           <div className="mb-0.5">
-            <SpeakerTag label={speakerLabel} />
+            {/* speakerId is the resolved canonical name, not the entity id speakerLabelForParagraph already
+                discarded (dialogueCues.ts): the Booth's "Voices in scene" tags key off the same canonical name
+                (BoothView.tsx), so a speaker's colour still matches across both places. */}
+            <SpeakerTag label={speakerLabel} speakerId={speakerLabel} />
           </div>
         )}
         <p data-paragraph-text className={`${textClass} whitespace-pre-line`}>

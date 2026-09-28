@@ -75,7 +75,7 @@ export const homeDrivers: Record<string, Driver> = {
     await page.getByRole('link', { name: 'A Message from the Author' }).waitFor();
     await page.getByRole('link', { name: /^Chapter 12 — Alice.s Evidence$/ }).waitFor();
     await page.waitForFunction(() => {
-      const links = [...document.querySelectorAll<HTMLAnchorElement>('td a[href*="/manuscript#c"]')];
+      const links = [...document.querySelectorAll<HTMLAnchorElement>('td a[href*="/script#c"]')];
       return links.length > 0 && links.every((link) => getComputedStyle(link).textTransform === 'none');
     });
   },

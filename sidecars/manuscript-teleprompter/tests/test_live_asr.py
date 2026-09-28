@@ -732,7 +732,7 @@ def test_capabilities_reflects_the_real_engines_and_backends_registries():
     report = live_asr.capabilities_report()
 
     assert set(report["asr"]) == {"whisper", "moonshine"}
-    assert set(report["capture"]) == {"dshow"}
+    assert set(report["capture"]) == {"dshow", "wasapi"}
 
 
 def test_capabilities_emits_one_json_line_and_never_requires_wav_or_mic(monkeypatch, capsys):

@@ -18,7 +18,7 @@ export const proofStates: StateEntry[] = [
   {
     page: 'proof',
     state: 'filtered',
-    description: 'Proof, filtered to the Proofing comparison and to findings scored 50% or more - one row left and Clear filters offered',
+    description: 'Proof, filtered to Local AI compare and to findings scored 50% or more - one row left and Clear filters offered',
   },
   {
     page: 'proof',
@@ -167,7 +167,7 @@ export const proofStates: StateEntry[] = [
     page: 'proof',
     state: 'delivery-finding',
     description:
-      "Proof, after a measurement on Master & QC - its missed and unmeasurable rules listed as Delivery checks by file, one opened: the rule, ACX's requirement, the value measured and the profile that judged it, Open in Master & QC in place of Show in manuscript, and the same decision controls as every finding",
+      "Proof, after a measurement on Master & QC - its missed and unmeasurable rules listed as Delivery checks by file, one opened: the rule, ACX's requirement, the value measured and the profile that judged it, Open in Master & QC in place of Show in Script, and the same decision controls as every finding",
     ...KEEPS_DESKTOP_SCROLL,
   },
 ];

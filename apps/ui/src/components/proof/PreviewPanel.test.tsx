@@ -1,10 +1,10 @@
 // @vitest-environment jsdom
-import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { PreviewPanel } from './PreviewPanel';
 import { ApiProvider } from '../../api/ApiContext';
 import { createMockApi } from '../../api/mockApi';
-import type { ManuscriptChapter, PreviewCandidate, PreviewResult } from '../../types';
+import type { ManuscriptChapter, PinnedPreview, PreviewCandidate, PreviewResult } from '../../types';
 
 afterEach(cleanup);
 
@@ -139,5 +139,131 @@ describe('PreviewPanel (proofing-preview-suggestion.prd.md Phase 3)', () => {
     );
     const alert = await screen.findByRole('alert');
     expect(alert.textContent).toMatch(/the host is busy/);
+  });
+});
+
+describe('PreviewPanel pin and adjust (proofing-preview-suggestion.prd.md Phase 8)', () => {
+  const NOT_PINNED: PinnedPreview = { present: false, stale: false, canExtendStart: false, canShrinkStart: false, canExtendEnd: false, canShrinkEnd: false };
+
+  const PINNED: PinnedPreview = {
+    present: true,
+    stale: false,
+    candidate: CANDIDATE,
+    pinnedAt: '2026-09-27T12:00:00.000Z',
+    canExtendStart: false,
+    canShrinkStart: true,
+    canExtendEnd: true,
+    canShrinkEnd: true,
+  };
+
+  it('pins a candidate, showing the pinned section and switching the row to Unpin', async () => {
+    const previewPinSet = vi.fn().mockResolvedValue(PINNED);
+    render(
+      <ApiProvider
+        api={createMockApi({
+          previewCandidates: () => Promise.resolve({ outcome: 'ok', candidates: [CANDIDATE] }),
+          manuscriptChapters: () => Promise.resolve([CHAPTER]),
+          previewPin: () => Promise.resolve(NOT_PINNED),
+          previewPinSet,
+        })}
+      >
+        <PreviewPanel notify={vi.fn()} goToManuscript={vi.fn()} />
+      </ApiProvider>,
+    );
+    const pin = await screen.findByRole('button', { name: /pin chapter one as the preview to keep/i });
+    fireEvent.click(pin);
+    expect(previewPinSet).toHaveBeenCalledWith('chapter-1', ['p-1', 'p-2', 'p-3']);
+    await screen.findByText('Pinned preview');
+    await screen.findByRole('button', { name: /^unpin chapter one$/i });
+  });
+
+  it('shows the pinned window, its stale reason with text and an icon, and clears it', async () => {
+    const staleReason: PinnedPreview = { ...PINNED, stale: true, staleReason: 'text_changed' };
+    const previewPinClear = vi.fn().mockResolvedValue(NOT_PINNED);
+    render(
+      <ApiProvider
+        api={createMockApi({
+          previewCandidates: () => Promise.resolve({ outcome: 'ok', candidates: [CANDIDATE] }),
+          manuscriptChapters: () => Promise.resolve([CHAPTER]),
+          previewPin: () => Promise.resolve(staleReason),
+          previewPinClear,
+        })}
+      >
+        <PreviewPanel notify={vi.fn()} goToManuscript={vi.fn()} />
+      </ApiProvider>,
+    );
+    const warning = await screen.findByText(/manuscript text under this pin has changed/i);
+    // The icon sits beside the words - the words carry the meaning on their own (WCAG 1.4.1).
+    expect(warning.closest('p')?.querySelector('svg')).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: /clear the pinned preview/i }));
+    expect(previewPinClear).toHaveBeenCalled();
+    await screen.findByRole('button', { name: /pin chapter one as the preview to keep/i });
+  });
+
+  it('a paragraph_missing pin shows no candidate, only the stale message and a clear action', async () => {
+    const missing: PinnedPreview = {
+      present: true,
+      stale: true,
+      staleReason: 'paragraph_missing',
+      canExtendStart: false,
+      canShrinkStart: false,
+      canExtendEnd: false,
+      canShrinkEnd: false,
+    };
+    render(
+      <ApiProvider
+        api={createMockApi({
+          previewCandidates: () => Promise.resolve({ outcome: 'ok', candidates: [] }),
+          manuscriptChapters: () => Promise.resolve([]),
+          previewPin: () => Promise.resolve(missing),
+        })}
+      >
+        <PreviewPanel notify={vi.fn()} goToManuscript={vi.fn()} />
+      </ApiProvider>,
+    );
+    await screen.findByText(/no longer in the manuscript/i);
+    expect(screen.queryByText(/paragraphs 1 to 3/)).toBeNull();
+  });
+
+  it('extends and shrinks the pinned range by one paragraph', async () => {
+    const previewPinAdjust = vi.fn().mockResolvedValue({ ...PINNED, canExtendEnd: false });
+    render(
+      <ApiProvider
+        api={createMockApi({
+          previewCandidates: () => Promise.resolve({ outcome: 'ok', candidates: [CANDIDATE] }),
+          manuscriptChapters: () => Promise.resolve([CHAPTER]),
+          previewPin: () => Promise.resolve(PINNED),
+          previewPinAdjust,
+        })}
+      >
+        <PreviewPanel notify={vi.fn()} goToManuscript={vi.fn()} />
+      </ApiProvider>,
+    );
+    fireEvent.click(await screen.findByRole('button', { name: /extend the end by one paragraph/i }));
+    expect(previewPinAdjust).toHaveBeenCalledWith('end', true);
+
+    // canExtendStart is false in PINNED: that edge's extend button is disabled but stays focusable (D6, WCAG 1.4.13).
+    const extendStart = screen.getByRole('button', { name: /extend the start by one paragraph/i });
+    fireEvent.click(extendStart);
+    expect(previewPinAdjust).toHaveBeenCalledTimes(1);
+  });
+
+  it('reports a failed pin action without crashing', async () => {
+    const notify = vi.fn();
+    render(
+      <ApiProvider
+        api={createMockApi({
+          previewCandidates: () => Promise.resolve({ outcome: 'ok', candidates: [CANDIDATE] }),
+          manuscriptChapters: () => Promise.resolve([CHAPTER]),
+          previewPin: () => Promise.resolve(NOT_PINNED),
+          previewPinSet: () => Promise.reject(new Error('a pin needs at least one paragraph')),
+        })}
+      >
+        <PreviewPanel notify={notify} goToManuscript={vi.fn()} />
+      </ApiProvider>,
+    );
+    fireEvent.click(await screen.findByRole('button', { name: /pin chapter one as the preview to keep/i }));
+    await waitFor(() => expect(notify).toHaveBeenCalledWith(expect.stringMatching(/a pin needs at least one paragraph/), 'error'));
   });
 });
