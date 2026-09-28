@@ -29,7 +29,7 @@ export const proofDrivers: Record<string, Driver> = {
   },
   filtered: async (page) => {
     await openProof(page);
-    await page.getByRole('combobox', { name: 'Check' }).selectOption({ label: 'Proofing comparison' });
+    await page.getByRole('combobox', { name: 'Check' }).selectOption({ label: 'Local AI compare' });
     await page.getByRole('switch', { name: 'Only findings scored 50% or more' }).click();
     await waitForFindingRows(page, 1);
   },
