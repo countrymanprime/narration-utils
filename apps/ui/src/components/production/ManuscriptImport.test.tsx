@@ -2,7 +2,7 @@
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { MemoryRouter } from 'react-router-dom';
-import { Home } from './Home';
+import { useManuscriptImport } from './ManuscriptImport';
 import { ApiProvider } from '../../api/ApiContext';
 import { createMockApi } from '../../api/mockApi';
 import type { MockImportKind } from '../../api/mockImportPreview';
@@ -10,7 +10,19 @@ import type { Bootstrap, NarrationApi } from '../../types';
 
 afterEach(cleanup);
 
-// Home with the mock host, at the point the narrator has chosen a manuscript and the host has answered with its preview.
+// The hook as the Production home places it: the choose button, then the dialogs and the credits banner.
+function ImportHarness(props: Parameters<typeof useManuscriptImport>[0]) {
+  const { chooseButton, dialogs, creditsBanner } = useManuscriptImport(props);
+  return (
+    <>
+      {chooseButton}
+      {dialogs}
+      {creditsBanner}
+    </>
+  );
+}
+
+// The import with the mock host, at the point the narrator has chosen a manuscript and the host has answered with its preview.
 // `prepare` runs before the file is chosen, so a test can spy on the host's answers (the mock keeps its job in its own closure).
 async function openReview(prepare: (api: NarrationApi) => void = () => {}, importPreview: MockImportKind = 'docx') {
   const api = createMockApi({}, { noManuscript: true, importPreview });
@@ -19,7 +31,7 @@ async function openReview(prepare: (api: NarrationApi) => void = () => {}, impor
   render(
     <MemoryRouter>
       <ApiProvider api={api}>
-        <Home data={data} go={() => {}} notify={() => {}} goToManuscript={() => {}} refreshBootstrap={async () => {}} />
+        <ImportHarness data={data} go={() => {}} notify={() => {}} refreshBootstrap={async () => {}} />
       </ApiProvider>
     </MemoryRouter>,
   );
@@ -173,7 +185,7 @@ describe('build after import (B1-B3)', () => {
     render(
       <MemoryRouter>
         <ApiProvider api={api}>
-          <Home data={await api.bootstrap()} go={() => {}} notify={(text) => notices.push(text)} goToManuscript={() => {}} refreshBootstrap={async () => {}} />
+          <ImportHarness data={await api.bootstrap()} go={() => {}} notify={(text) => notices.push(text)} refreshBootstrap={async () => {}} />
         </ApiProvider>
       </MemoryRouter>,
     );
@@ -340,57 +352,14 @@ describe('the subtitle of each chapter in the review', () => {
   });
 });
 
-// stage-navigation-and-page-replacement.prd.md Phase 5: the card opens Proof, which is never gated itself - a chapter's compare run
-// gates its own Start on the DAW - so the card no longer waits for a linked DAW file (PRD W16's gate moved into the run).
-describe('the Proof card', () => {
-  async function renderHome(dawFileLinked: boolean, go = vi.fn()) {
-    const api = createMockApi({ transcriptLastCompleted: async () => undefined }, { dawFileLinked });
-    const data: Bootstrap = await api.bootstrap();
-    render(
-      <MemoryRouter>
-        <ApiProvider api={api}>
-          <Home data={data} go={go} notify={() => {}} goToManuscript={() => {}} refreshBootstrap={async () => {}} />
-        </ApiProvider>
-      </MemoryRouter>,
-    );
-    return go;
-  }
-
-  it('opens Proof, with or without a linked DAW file', async () => {
-    const go = await renderHome(false);
-    const button = await screen.findByRole('button', { name: 'Open Proof' });
-    expect((button as HTMLButtonElement).disabled).toBe(false);
-    fireEvent.click(button);
-    expect(go).toHaveBeenCalledWith('/proof');
-  });
-
-  it('says it is ready to compare when there is no comparison yet, and offers the latest one once there is', async () => {
-    await renderHome(true);
-    expect((await screen.findByRole('button', { name: 'Open Proof' })).textContent).toContain('Ready to compare selected REAPER audio');
-    cleanup();
-
-    const api = createMockApi({}, { dawFileLinked: false });
-    const data: Bootstrap = await api.bootstrap();
-    render(
-      <MemoryRouter>
-        <ApiProvider api={api}>
-          <Home data={data} go={() => {}} notify={() => {}} goToManuscript={() => {}} refreshBootstrap={async () => {}} />
-        </ApiProvider>
-      </MemoryRouter>,
-    );
-    const button = await screen.findByRole('button', { name: 'Open Proof' });
-    await waitFor(() => expect(button.textContent).toContain('Review latest comparison'));
-  });
-});
-
 describe('the "Set up the credits" prompt (credits-token-setup-and-front-matter-detection.prd.md, Phase 2)', () => {
-  async function renderHome(overrides: Partial<NarrationApi> = {}) {
+  async function renderImport(overrides: Partial<NarrationApi> = {}) {
     const api = createMockApi(overrides, { creditsSetup: true });
     const data: Bootstrap = await api.bootstrap();
     render(
       <MemoryRouter>
         <ApiProvider api={api}>
-          <Home data={data} go={() => {}} notify={() => {}} goToManuscript={() => {}} refreshBootstrap={async () => {}} />
+          <ImportHarness data={data} go={() => {}} notify={() => {}} refreshBootstrap={async () => {}} />
         </ApiProvider>
       </MemoryRouter>,
     );
@@ -398,7 +367,7 @@ describe('the "Set up the credits" prompt (credits-token-setup-and-front-matter-
   }
 
   it('shows the dialog on first load when the host reports it is needed', async () => {
-    await renderHome();
+    await renderImport();
     expect(await screen.findByRole('dialog', { name: 'Set up the credits' })).toBeTruthy();
   });
 
@@ -408,7 +377,7 @@ describe('the "Set up the credits" prompt (credits-token-setup-and-front-matter-
     render(
       <MemoryRouter>
         <ApiProvider api={api}>
-          <Home data={data} go={() => {}} notify={() => {}} goToManuscript={() => {}} refreshBootstrap={async () => {}} />
+          <ImportHarness data={data} go={() => {}} notify={() => {}} refreshBootstrap={async () => {}} />
         </ApiProvider>
       </MemoryRouter>,
     );
@@ -417,7 +386,7 @@ describe('the "Set up the credits" prompt (credits-token-setup-and-front-matter-
   });
 
   it('drops the dialog once Save answers "needed: false"', async () => {
-    await renderHome();
+    await renderImport();
     const dialog = within(await screen.findByRole('dialog', { name: 'Set up the credits' }));
     // Title and Author come prefilled from the mock's detected candidates; Narrator has none (no global default in
     // this seed), so it stays unresolved - and the dialog stays open - unless it is typed in.
@@ -427,7 +396,7 @@ describe('the "Set up the credits" prompt (credits-token-setup-and-front-matter-
   });
 
   it('drops the dialog once "Not now" dismisses it for the session', async () => {
-    await renderHome();
+    await renderImport();
     await screen.findByRole('dialog', { name: 'Set up the credits' });
     fireEvent.click(screen.getByRole('button', { name: 'Not now' }));
     await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Set up the credits' })).toBeNull());
@@ -439,7 +408,7 @@ describe('the "Set up the credits" prompt (credits-token-setup-and-front-matter-
     render(
       <MemoryRouter>
         <ApiProvider api={api}>
-          <Home data={data} go={() => {}} notify={() => {}} goToManuscript={() => {}} refreshBootstrap={async () => {}} />
+          <ImportHarness data={data} go={() => {}} notify={() => {}} refreshBootstrap={async () => {}} />
         </ApiProvider>
       </MemoryRouter>,
     );
@@ -449,13 +418,13 @@ describe('the "Set up the credits" prompt (credits-token-setup-and-front-matter-
 });
 
 describe('the credits-setup banner, the way back after Not now (credits-token-setup-and-front-matter-detection.prd.md, Phase 3)', () => {
-  async function renderHomePastNotNow() {
+  async function renderImportPastNotNow() {
     const api = createMockApi({}, { creditsSetup: true });
     const data: Bootstrap = await api.bootstrap();
     render(
       <MemoryRouter>
         <ApiProvider api={api}>
-          <Home data={data} go={() => {}} notify={() => {}} goToManuscript={() => {}} refreshBootstrap={async () => {}} />
+          <ImportHarness data={data} go={() => {}} notify={() => {}} refreshBootstrap={async () => {}} />
         </ApiProvider>
       </MemoryRouter>,
     );
@@ -465,20 +434,20 @@ describe('the credits-setup banner, the way back after Not now (credits-token-se
   }
 
   it('appears once "Not now" leaves the tokens unresolved, naming them', async () => {
-    await renderHomePastNotNow();
+    await renderImportPastNotNow();
     expect(await screen.findByText(/The credits need 3 values/)).toBeTruthy();
     expect(screen.getByText(/Title, Author, Narrator will be read as written, in brackets\./)).toBeTruthy();
   });
 
   it('Fill in reopens the same dialog, and the banner steps aside while it is open', async () => {
-    await renderHomePastNotNow();
+    await renderImportPastNotNow();
     fireEvent.click(await screen.findByRole('button', { name: 'Fill in' }));
     expect(await screen.findByRole('dialog', { name: 'Set up the credits' })).toBeTruthy();
     expect(screen.queryByText(/The credits need 3 values/)).toBeNull();
   });
 
   it('"Don\'t ask for this project" on the banner removes it, without reopening the dialog', async () => {
-    await renderHomePastNotNow();
+    await renderImportPastNotNow();
     fireEvent.click(await screen.findByRole('button', { name: /^Don.t ask for this project$/ }));
     await waitFor(() => expect(screen.queryByText(/The credits need 3 values/)).toBeNull());
     expect(screen.queryByRole('dialog', { name: 'Set up the credits' })).toBeNull();
@@ -490,7 +459,7 @@ describe('the credits-setup banner, the way back after Not now (credits-token-se
     render(
       <MemoryRouter>
         <ApiProvider api={api}>
-          <Home data={data} go={() => {}} notify={() => {}} goToManuscript={() => {}} refreshBootstrap={async () => {}} />
+          <ImportHarness data={data} go={() => {}} notify={() => {}} refreshBootstrap={async () => {}} />
         </ApiProvider>
       </MemoryRouter>,
     );

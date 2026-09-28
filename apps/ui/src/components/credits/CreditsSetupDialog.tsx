@@ -57,7 +57,7 @@ export function CreditsSetupDialog({
   notify,
 }: {
   state: CreditsSetupState;
-  /** Called with the host's answer after any of the three actions, so the caller (Home) can drop the dialog. */
+  /** Called with the host's answer after any of the three actions, so the caller (the Production home) can drop the dialog. */
   onDone: (next: CreditsSetupState) => void;
   /** "Settings > Credits" (CS4's "More fields" link): the fields this dialog does not ask for, detected but waiting there. */
   onMoreFields: () => void;

@@ -34,7 +34,6 @@ export const PRODUCTION_SCENARIOS: Record<'on-pace' | 'at-risk', ProductionSeed>
   'at-risk': { log: 'at-risk', deadline: '2026-09-29', contractedAmount: 2400 },
 };
 
-const MOCK_TIME = '2026-09-21T10:00:00Z';
 // The mock's today, so the days left to a seeded deadline are the same on every run (the host counts from the real date).
 const MOCK_TODAY = '2026-09-26';
 
@@ -169,12 +168,24 @@ export function createProductionMock(deps: Deps): ProductionApi {
   let plan: ProductionPlan = copy({ deadline: seed.deadline ?? null, contractedAmount: seed.contractedAmount ?? null, milestones: seed.milestones ?? [] });
   const log = seed.log ? LOGS[seed.log] : undefined;
   const sessions: ProductionSession[] = log ? seededSessions(log.hoursScale) : [];
-  if (log?.running) sessions.push({ id: 'mock-running', chapterId: 'chapter-6', stage: 'recording', startedAt: MOCK_TIME, source: 'manual' });
+  // The seeded running session began 42 minutes before the mock was made, so the header's timer chip reads like a real session
+  // (0:42:00 and counting) rather than days on from a fixed date.
+  if (log?.running) {
+    sessions.push({
+      id: 'mock-running',
+      chapterId: 'chapter-6',
+      stage: 'recording',
+      startedAt: new Date(Date.now() - 42 * 60_000).toISOString(),
+      source: 'manual',
+    });
+  }
   const running = () => sessions.find((session) => session.endedAt === undefined) ?? null;
   let reportExports = 0;
 
   const overview = async (): Promise<ProductionOverview> => {
-    const [manuscript, recommendations] = await Promise.all([deps.chapters(), deps.recommendations()]);
+    // Like the host (internal/production/overview.go), stage recommendations that cannot be read leave every chapter's readiness
+    // null rather than failing the whole overview.
+    const [manuscript, recommendations] = await Promise.all([deps.chapters(), deps.recommendations().catch((): StageRecommendations => ({ chapters: [] }))]);
     const readiness = new Map(recommendations.chapters.map((chapter) => [chapter.chapterId, readinessOf(chapter)]));
     const chapters: ProductionChapter[] = manuscript.map((chapter) => {
       const measured = log ? SEED_RECORDED[chapter.id] : chapter.recordedSeconds;
@@ -248,14 +259,14 @@ export function createProductionMock(deps: Deps): ProductionApi {
       if (current) {
         return { status: 'refused', reason: 'timer_running', message: `a timer is already running on ${current.chapterId} (${current.stage}); stop it first` };
       }
-      const session: ProductionSession = { id: `mock-${sessions.length + 1}`, chapterId, stage, startedAt: MOCK_TIME, source: 'manual' };
+      const session: ProductionSession = { id: `mock-${sessions.length + 1}`, chapterId, stage, startedAt: new Date().toISOString(), source: 'manual' };
       sessions.push(session);
       return { status: 'started', session: { ...session } };
     },
     productionStopTimer: async () => {
       const current = running();
       if (!current) return { stopped: false, session: null };
-      current.endedAt = MOCK_TIME;
+      current.endedAt = new Date().toISOString();
       return { stopped: true, session: { ...current } };
     },
     // The host's writeProductionReport (production_report.go): the mock writes nothing, but names the file the same

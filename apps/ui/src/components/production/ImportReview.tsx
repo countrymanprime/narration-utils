@@ -30,10 +30,10 @@ const SECTION_KIND_OPTIONS = [
 ];
 
 // What each group is for, in one short string that is true for that group (the old sentence spoke of reference material only, and front
-// matter is left out of the audiobook totals and Proofing in just the same way). Reference material is filtered from the chapter lists
+// matter is left out of the audiobook totals and Proof in just the same way). Reference material is filtered from the chapter lists
 // (ADR 0005); front matter is listed.
 const FRONT_MATTER_NOTE = 'Not counted as a chapter: excluded from audiobook totals and Proof. Still listed and readable in the manuscript.';
-const REFERENCE_NOTE = 'Excluded from audiobook totals, Proofing and the chapter list. Still readable in the manuscript.';
+const REFERENCE_NOTE = 'Excluded from audiobook totals, Proof and the chapter list. Still readable in the manuscript.';
 
 const LEGEND_CLASSES = "px-1 font-['Barlow_Condensed',sans-serif] text-[0.72rem] font-semibold tracking-[0.08em] text-[var(--text-muted)] uppercase";
 
@@ -86,12 +86,12 @@ type ImportReviewProps = {
   onGroupOpenChange: (group: ReviewGroupKey, open: boolean) => void;
   // The seam for the per-import "Build the Story Bible after import" choice (owner decision D8: on by default). The choice and the build that
   // follows an import belong to the Story Bible briefs work; this dialog only draws the checkbox when it is handed one, so that work adds the
-  // state and the chaining and touches nothing here. Home passes nothing yet, and nothing is shown that does nothing.
+  // state and the chaining and touches nothing here. The Production home passes nothing yet, and nothing is shown that does nothing.
   buildStoryBible?: { checked: boolean; onChange: (checked: boolean) => void };
 };
 
 // The body of the "Import <file>" review dialog: the choices the narrator can change before the import is written, grouped by what each
-// section will be, with a count for each group so a decision is easy to find. The choices are held by the caller (Home), which also sends
+// section will be, with a count for each group so a decision is easy to find. The choices are held by the caller (useManuscriptImport), which also sends
 // them with the commit; this only shows them and reports a change.
 export function ImportReview({
   preview,

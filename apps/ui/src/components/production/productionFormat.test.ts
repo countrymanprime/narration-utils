@@ -1,6 +1,19 @@
 import { describe, expect, it } from 'vitest';
 import type { ProductionChapter } from '../../api/contracts/production';
-import { boardCell, BOARD_COLUMNS, deadlineFigure, formatClock, formatLength, formatPfh, formatRate, nextUpLine, stageHoursHint } from './productionFormat';
+import {
+  boardCell,
+  BOARD_COLUMNS,
+  creditsCell,
+  deadlineFigure,
+  deliveryDue,
+  formatClock,
+  formatLength,
+  formatPfh,
+  formatRate,
+  isCurrentStage,
+  nextUpLine,
+  stageHoursHint,
+} from './productionFormat';
 
 const chapter = (overrides: Partial<ProductionChapter>): ProductionChapter => ({
   id: 'chapter-1',
@@ -81,9 +94,73 @@ describe('the board', () => {
     }
   });
 
-  it("shows a chapter's measured recorded length as m:ss, or a dash when it is not measured (PR10)", () => {
+  it("shows a chapter's measured recorded length as m:ss, or says why it has none (Home's Actual recorded reasons)", () => {
     expect(boardCell(chapter({ recordedSeconds: 708 }), column('Recorded'))).toEqual({ tone: 'neutral', label: '11:48' });
-    expect(boardCell(chapter({ recordedSeconds: null }), column('Recorded'))).toEqual({ tone: 'neutral', label: '—' });
+    expect(boardCell(chapter({ recordedSeconds: null }), column('Recorded'))).toEqual({ tone: 'neutral', label: 'No track' });
+    expect(boardCell(chapter({ recordedUnavailable: 'unlinked' }), column('Recorded'))).toEqual({ tone: 'neutral', label: 'No track' });
+    expect(boardCell(chapter({ recordedUnavailable: 'multiple_tracks' }), column('Recorded'))).toEqual({ tone: 'warning', label: '2+ tracks' });
+    expect(boardCell(chapter({ recordedUnavailable: 'track_missing' }), column('Recorded'))).toEqual({ tone: 'danger', label: 'Track missing' });
+    expect(boardCell(chapter({ recordedUnavailable: 'no_project' }), column('Recorded'))).toEqual({ tone: 'neutral', label: 'No project' });
+  });
+
+  it('shows a chapter not started yet as a dash on its Record stage, whatever its readiness (PR10)', () => {
+    const notStarted = chapter({ status: 'not_started', readiness: { verdict: 'recommended', reason: '' } });
+    expect(boardCell(notStarted, column('Record'))).toEqual({ tone: 'neutral', label: '—' });
+    expect(boardCell(notStarted, column('Edit'))).toEqual({ tone: 'neutral', label: '—' });
+  });
+
+  it('says the evidence changed on the current stage of a chapter whose confirmation it contradicts', () => {
+    const editing = chapter({ status: 'editing', readiness: { verdict: 'none', reason: '' } });
+    expect(boardCell(editing, column('Edit'), { contradiction: true })).toEqual({ tone: 'warning', label: 'Evidence changed' });
+    // Only the current stage: a stage already passed stays done.
+    expect(boardCell(editing, column('Record'), { contradiction: true })).toEqual({ tone: 'success', label: '✓' });
+  });
+
+  it('shows a recording check running on the Record cell, with its percent once there is one', () => {
+    const editing = chapter({ status: 'editing' });
+    expect(boardCell(editing, column('Record'), { checkingPercent: 70.6 })).toEqual({ tone: 'progress', label: 'Checking 70%' });
+    expect(boardCell(editing, column('Record'), { checkingPercent: null })).toEqual({ tone: 'progress', label: 'Checking' });
+    expect(boardCell(editing, column('Edit'), { checkingPercent: 70 })).toEqual({ tone: 'progress', label: 'In progress' });
+  });
+
+  it("finds a chapter's current stage: its own status, or Record for a chapter not started yet", () => {
+    expect(isCurrentStage({ status: 'editing' }, column('Edit'))).toBe(true);
+    expect(isCurrentStage({ status: 'editing' }, column('Record'))).toBe(false);
+    expect(isCurrentStage({ status: 'not_started' }, column('Record'))).toBe(true);
+    expect(isCurrentStage({ status: 'finalized' }, column('Proof'))).toBe(false);
+    expect(isCurrentStage({ status: 'recording' }, column('Recorded'))).toBe(false);
+    expect(isCurrentStage({ status: 'recording' }, column('Prep'))).toBe(false);
+  });
+});
+
+describe('a credits row on the board', () => {
+  const row = (status: ProductionChapter['status'], template: unknown = { name: 'Opening' }) => ({ status, template });
+
+  it('reads its stages from its status alone, never a readiness', () => {
+    expect(creditsCell(row('not_started'), column('Record'))).toEqual({ tone: 'neutral', label: '—' });
+    expect(creditsCell(row('editing'), column('Record'))).toEqual({ tone: 'success', label: '✓' });
+    expect(creditsCell(row('editing'), column('Edit'))).toEqual({ tone: 'progress', label: 'In progress' });
+    expect(creditsCell(row('editing'), column('Proof'))).toEqual({ tone: 'neutral', label: '—' });
+    expect(creditsCell(row('finalized'), column('Proof'))).toEqual({ tone: 'success', label: '✓' });
+  });
+
+  it('says nothing measures credits yet, or that the template is not set up', () => {
+    expect(creditsCell(row('recording'), column('Recorded'))).toEqual({ tone: 'neutral', label: '—' });
+    expect(creditsCell({ status: 'recording' }, column('Recorded'))).toEqual({ tone: 'neutral', label: 'Not set up' });
+    expect(creditsCell(row('recording'), column('Delivery'))).toEqual({ tone: 'neutral', label: '—' });
+  });
+});
+
+describe('the delivery date in the subtitle', () => {
+  it('writes the due date and the days left, or says it is today or over', () => {
+    expect(deliveryDue({ date: '2026-10-14', daysLeft: 18 })).toBe('delivery due Oct 14 (18 days)');
+    expect(deliveryDue({ date: '2026-09-27', daysLeft: 1 })).toBe('delivery due Sep 27 (1 day)');
+    expect(deliveryDue({ date: '2026-09-26', daysLeft: 0 })).toBe('delivery due Sep 26 (today)');
+    expect(deliveryDue({ date: '2026-09-20', daysLeft: -2 })).toBe('delivery was due Sep 20 (2 days over)');
+  });
+
+  it('is empty with no delivery date set', () => {
+    expect(deliveryDue(null)).toBe('');
   });
 });
 
@@ -95,7 +172,7 @@ describe('next up', () => {
     });
     expect(nextUpLine({ chapterId: 'c', title: 'T', stage: 'proofing', readiness: { verdict: 'recommended', target: 'finalized', reason: '' } })).toEqual({
       action: 'Finish proofing',
-      reason: 'Looks ready to move to Finalized: confirm it on Home.',
+      reason: 'Looks ready to move to Finalized: confirm it from its cell on the board.',
     });
     expect(nextUpLine({ chapterId: 'c', title: 'T', stage: 'not_started', readiness: null })).toEqual({
       action: 'Start recording',

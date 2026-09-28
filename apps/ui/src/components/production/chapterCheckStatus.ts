@@ -1,5 +1,5 @@
 // A narration chapter's recording-check status without a click (daw-chapter-track-auto-sync.prd.md Phase 6, S14):
-// Home's row reads this instead of pressing Check. It leads with the track link's own trouble when there is one (a
+// The Production board's Record cell reads this instead of pressing Check. It leads with the track link's own trouble when there is one (a
 // chapter with no confident, confirmed track has nothing for a check's freshness to mean yet), and only once the
 // chapter is linked does it show the check's own freshness (current / stale, with why / never), from
 // `ChapterSyncState.chapters[]` (already computed on the host, ADR 0209-0211; reading it never starts a check).

@@ -16,10 +16,10 @@ Appearance controls the light/dark theme.
 Other categories mix dropdowns and color pickers — Manuscript's own category, for example,
 controls the color used to mark reader notes in the text. **General** (Global only) also holds the
 **Narrator name (default for credits)** and the **Room tone per credits file (seconds)**, 0 to 10 and 0 by
-default: the silence the [Home](home.md) estimate adds to the opening and to the closing credits file, head
+default: the silence the [Production](production.md#the-credits-rows) credits estimate adds to the opening and to the closing credits file, head
 and tail together (ACX asks for 1 to 5 seconds at each end of every file). In both scopes:
 
-- **Recording check** holds the four numbers the [recording check](home.md) uses: the **Share of
+- **Recording check** holds the four numbers the [recording check](production.md#checking-a-chapters-recording) uses: the **Share of
   each paragraph that must be read** (0.8) and the **Longest run of missing words allowed** (3)
   decide when a chapter counts as recorded, and the **Longest misread still counted as read** (8)
   and the **Shortest match that counts as read** (3) decide which words count as read at all. The
@@ -98,8 +98,7 @@ announcement, and the retail sample.
 - **Chapter announcement**: what you read at the head of every chapter. `[Chapter]` is the chapter's
   heading as the manuscript names it ("Chapter 1") and `[Chapter Title]` its subtitle ("Down the
   Rabbit-Hole"), so `[Chapter]{: [Chapter Title]}.` reads "Chapter 1: Down the Rabbit-Hole." and just
-  "Prologue." for a chapter with no subtitle. The first announcement template is timed for every chapter
-  in the Credits time on [Home](home.md). You record it inside each chapter file, so keep it to the chapter
+  "Prologue." for a chapter with no subtitle. You record it inside each chapter file, so keep it to the chapter
   heading and subtitle: Proofing expects the spoken chapter title there, and any other words are reported
   as extra.
 - **Preview** shows the body with the values filled in, its word count, and any token that has no value
@@ -109,8 +108,8 @@ announcement, and the retail sample.
   Publisher, and a Narrator that overrides the global default from General for this project only. A value
   is saved as you type. Where the manuscript suggests a title or author, **Use suggestion** fills it in.
 
-The first opening and closing templates appear in the [Script](script.md) reader and in the
-Credits time on [Home](home.md).
+The first opening and closing templates appear in the [Script](script.md) reader and as the
+credits rows on [Production](production.md#the-credits-rows).
 
 ![Settings, Credits, a chapter announcement previewed for Chapter 1](../../images/ui/settings-credits-chapter-announcement.webp)
 

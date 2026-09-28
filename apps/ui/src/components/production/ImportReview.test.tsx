@@ -75,9 +75,9 @@ describe('ImportReview', () => {
   it('puts a note on front matter and on reference material, each true for its group, and none on the chapters', () => {
     renderReview();
     expect(screen.getByRole('button', { name: 'About reference material' }).getAttribute('aria-description')).toBe(
-      'Excluded from audiobook totals, Proofing and the chapter list. Still readable in the manuscript.',
+      'Excluded from audiobook totals, Proof and the chapter list. Still readable in the manuscript.',
     );
-    expect(screen.getByRole('button', { name: 'About front matter' }).getAttribute('aria-description')).toMatch(/excluded from audiobook totals and Proof/);
+    expect(screen.getByRole('button', { name: 'About front matter' }).getAttribute('aria-description')).toMatch(/excluded from audiobook totals and Proof\./);
     expect(screen.getAllByRole('button', { name: /^About / })).toHaveLength(2);
   });
 

@@ -41,8 +41,8 @@ export function RecordingCheckReport({
   /** Check again, placed after the chapter figures and before Pickups (recording-check-summary.prd.md Phase 4
    * mockups, `01-slideover-not-complete.webp`): the one action the panel has, kept close to the figures it refreshes. */
   actionsSlot?: ReactNode;
-  /** "Open workspace" (edit-and-proof-workspace.prd.md Phase 4, page inventory "Home › recording check dialog: the
-   * summary component is shared; the dialog gets 'Open workspace'"). Undefined when there is none to open (the same
+  /** "Open in Proof" (edit-and-proof-workspace.prd.md Phase 4's "Open workspace", renamed once the workspace became Proof's
+   * chapter view, stage-navigation-and-page-replacement.prd.md Phase 5; the summary component is shared and the dialog gets it). Undefined when there is none to open (the same
    * summary rendered inside the workspace's own Check again). */
   openWorkspace?: () => void;
 }) {

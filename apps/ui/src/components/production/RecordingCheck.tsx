@@ -59,7 +59,7 @@ function coverageWorkJob(state: CoverageState, logs: string[], now: number): Wor
  * Phase 4, RS7, D26): retiring the row's own Check button left the summary needing a new home, and a slide-over leaves the table visible
  * beside it, the same choice chapter-track-link-control.prd.md made for the track panel.
  *
- * `coverage` is the live state the Home panel follows, so a check that was left running in the background is picked up again here.
+ * `coverage` is the live state the Production board follows, so a check that was left running in the background is picked up again here.
  * Mounted conditionally by the caller, same as the dialog it replaces (`{checking && <RecordingCheck .../>}`): a
  * reopened chapter is a fresh mount, so a run left going in the background, or a refusal from the last time it was
  * open, is never shown stale.
@@ -77,7 +77,7 @@ export function RecordingCheck({
   notify: Notify;
   close: () => void;
   goToParagraph: (index: number) => void;
-  /** "Open workspace" (edit-and-proof-workspace.prd.md Phase 4, page inventory "Home › recording check dialog"):
+  /** "Open in Proof" (edit-and-proof-workspace.prd.md Phase 4, now Proof's chapter view):
    * undefined when this dialog is itself opened from the workspace (WorkspacePage.tsx's own Check again), where
    * there is nothing to open. */
   openWorkspace?: () => void;
@@ -263,7 +263,7 @@ export function RecordingCheck({
         title={`Checking ${chapterName(chapter, 'short')}`}
         job={coverageWorkJob(live, logs, now)}
         cancel={cancel}
-        // The check ends with a job:ended event the app announces wherever the narrator is (ADR 0076), and the Home row keeps its percent.
+        // The check ends with a job:ended event the app announces wherever the narrator is (ADR 0076), and the board's Record cell keeps its percent.
         background={close}
         close={() => {
           setWatching(undefined);
