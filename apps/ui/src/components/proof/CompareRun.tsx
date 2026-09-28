@@ -15,6 +15,7 @@ import { Button } from '../primitives/Button';
 import { CapabilityGate, type CapabilityEntry } from '../primitives/CapabilityGate';
 import { IconButton } from '../primitives/IconButton';
 import { Panel } from '../primitives/Panel';
+import { ProgressBar } from '../primitives/ProgressBar';
 import { ToggleGroup } from '../primitives/ToggleGroup';
 import { TagInput } from '../primitives/TagInput';
 import { Tooltip, TooltipTarget } from '../primitives/Tooltip';
@@ -434,9 +435,7 @@ export function CompareRun({
               {state.percent}% · {seconds(state.elapsed)}
             </span>
           </div>
-          <div className="progressbar mt-3 h-4 overflow-hidden rounded-full bg-[var(--surface-3)]">
-            <div className="h-full bg-[var(--accent)] transition-[width] duration-[0.4s] ease-in-out" style={{ width: `${state.percent}%` }} />
-          </div>
+          <ProgressBar className="mt-3" label="Comparison progress" value={state.percent} running valueText={`${state.percent}% · ${seconds(state.elapsed)}`} />
           <div className="mt-3 text-xs" style={{ color: 'var(--text-muted)' }}>
             <div className="mb-1.5 flex items-center justify-between">
               <span className="font-['Barlow_Condensed',sans-serif] text-[0.72rem] font-semibold tracking-[0.08em] text-[var(--text-muted)] uppercase">

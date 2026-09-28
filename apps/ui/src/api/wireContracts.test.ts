@@ -101,6 +101,7 @@ import {
   queryImportResultSchema,
 } from './schemas/storyBible';
 import { approvedCharacterReferencesSchema, characterRegionsSchema, characterReferenceSchema } from './schemas/character';
+import { seriesListSchema, seriesSchema, seriesVoiceBibleSchema } from './schemas/series';
 import { bootstrapSchema, copyDiagnosticsResultSchema, projectAttachStateSchema, readySchema, windowZoomSchema } from './schemas/system';
 import {
   readAloudReaperStateSchema,
@@ -782,6 +783,40 @@ describe('answers of the mock client for the manuscript, Story Bible and project
     expect(seeded.length).toBeGreaterThan(0);
     await api.characterRemoveVoiceData();
     expect(await api.characterReferences()).toHaveLength(0);
+  });
+
+  it('the series voice bible: not in a series, a single-book series, and a multi-book series grouped by character', async () => {
+    const solo = createMockApi({}, { seriesVoiceBible: 'not-in-series' });
+    const notInSeries = await solo.seriesVoiceBible();
+    expectMatches(seriesVoiceBibleSchema, notInSeries, 'mock series voice bible, not in a series');
+    expect(notInSeries).toMatchObject({ inSeries: false });
+    expect(notInSeries.characters).toBeUndefined();
+
+    const oneBook = createMockApi({}, { seriesVoiceBible: 'single-book' });
+    const single = await oneBook.seriesVoiceBible();
+    expectMatches(seriesVoiceBibleSchema, single, 'mock series voice bible, one book so far');
+    expect(single).toMatchObject({ inSeries: true, bookCount: 1 });
+    expect(single.characters).toBeUndefined();
+
+    const api = createMockApi();
+    const bible = await api.seriesVoiceBible();
+    expectMatches(seriesVoiceBibleSchema, bible, 'mock series voice bible');
+    expect(bible.inSeries).toBe(true);
+    expect(bible.bookCount).toBe(2);
+    const alice = bible.characters?.find((character) => character.characterId === 'alice');
+    expect(alice?.clips.length).toBeGreaterThanOrEqual(2);
+    expect(alice?.clips.some((clip) => clip.isCurrentProject)).toBe(true);
+    expect(alice?.clips.some((clip) => !clip.isCurrentProject)).toBe(true);
+
+    const list = await api.seriesList();
+    expectMatches(seriesListSchema, list, 'mock series list');
+    expect(list.length).toBeGreaterThan(0);
+    const created = await api.seriesSave('', 'New Series', ['/books/one']);
+    expectMatches(seriesSchema, created, 'mock series save');
+    expect(created.name).toBe('New Series');
+    await expect(api.seriesSave('', '  ', [])).rejects.toThrow('needs a name');
+    await api.seriesDelete(created.id);
+    expect((await api.seriesList()).some((series) => series.id === created.id)).toBe(false);
   });
 
   it('re-importing an answered pronunciation query file applies a matched row and reports an unmatched one', async () => {
@@ -1563,6 +1598,35 @@ describe('answers of the mock client for the settings, voice, model, transcript 
       Object.keys(golden.takes[0] as object).sort(),
     );
     await expect(createMockApi({}, { recording: { unavailable: true } }).recorderChooseEngine('builtin')).rejects.toThrow('not available');
+  });
+
+  it('recorderSetTakeLine and recorderSetTakeKeeper mark and undo (native recording P4, take review integration)', async () => {
+    const api = createMockApi({}, { recording: { engine: 'builtin' } });
+    const seeded = await api.recorderState();
+    const [first, second] = seeded.takes;
+
+    const assigned = await api.recorderSetTakeLine(first.name, 'p-000001');
+    expectMatches(recorderStateSchema, assigned, 'mock recorder (a take assigned a line)');
+    expect(assigned.takes.find((take) => take.name === first.name)?.lineId).toBe('p-000001@mock-sha');
+
+    const cleared = await api.recorderSetTakeLine(first.name, '');
+    expect(cleared.takes.find((take) => take.name === first.name)?.lineId).toBeNull();
+    await expect(api.recorderSetTakeLine('Take 999', 'p-000001')).rejects.toThrow('not a take in this project');
+
+    // Two takes sharing a line: marking one the keeper hands the mark over from the other.
+    await api.recorderSetTakeLine(first.name, 'p-000002');
+    await api.recorderSetTakeLine(second.name, 'p-000002');
+    const firstKept = await api.recorderSetTakeKeeper(first.name, true);
+    expectMatches(recorderStateSchema, firstKept, 'mock recorder (a take marked keeper)');
+    expect(firstKept.takes.find((take) => take.name === first.name)?.keeper).toBe(true);
+    const secondKept = await api.recorderSetTakeKeeper(second.name, true);
+    expect(secondKept.takes.find((take) => take.name === first.name)?.keeper).toBe(false);
+    expect(secondKept.takes.find((take) => take.name === second.name)?.keeper).toBe(true);
+    const undone = await api.recorderSetTakeKeeper(second.name, false);
+    expect(undone.takes.every((take) => !take.keeper)).toBe(true);
+
+    await expect(createMockApi({}, { recording: { hasProject: false } }).recorderSetTakeLine('Take 001', 'p-000001')).rejects.toThrow('open a project');
+    await expect(createMockApi({}, { recording: { hasProject: false } }).recorderSetTakeKeeper('Take 001', true)).rejects.toThrow('open a project');
   });
 
   it('subscribeDawTransport pushes the seeded transport once, and matches the host goldens (DAW port PRD Phase 9)', () => {
@@ -2519,6 +2583,9 @@ describe('answers of the mock client for the settings, voice, model, transcript 
       'characterListRegions',
       'characterApprove',
       'characterReferences',
+      'seriesVoiceBible',
+      'seriesList',
+      'seriesSave',
       'assetsList',
       'assetsInstall',
       'assetsInstallState',
@@ -2555,6 +2622,8 @@ describe('answers of the mock client for the settings, voice, model, transcript 
       'recorderMeterStop',
       'recorderStart',
       'recorderStop',
+      'recorderSetTakeLine',
+      'recorderSetTakeKeeper',
       'dawCatalogList',
       'tracksDiscover',
       'tracksSelect',
@@ -2724,6 +2793,7 @@ describe('answers of the mock client for the settings, voice, model, transcript 
       'guideCorrectCue',
       'characterRevoke',
       'characterRemoveVoiceData',
+      'seriesDelete',
       'ttsRemove',
       'whisperRemove',
       'assetsRemove',
