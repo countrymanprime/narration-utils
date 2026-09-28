@@ -228,6 +228,6 @@ describe('Table', () => {
     const inset = screen.getByRole('table', { name: 'Inset' }).className;
     expect(inset).toContain('text-[0.875rem]');
     expect(inset).not.toContain('-mx-');
-    expect(screen.getByRole('table', { name: 'Flush' }).className).toContain('-mx-[1.1rem]');
+    expect(screen.getByRole('table', { name: 'Flush' }).className).toContain('-mx-[var(--panel-pad,1rem)]');
   });
 });

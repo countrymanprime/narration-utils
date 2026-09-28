@@ -158,7 +158,7 @@ describe('ProjectPicker', () => {
     fireEvent.click(removeVoltage());
 
     await waitFor(() => expect(screen.queryByText('Voltage and the Undercroft')).toBeNull());
-    await waitFor(() => expect(document.activeElement).toBe(screen.getByText('Open recent')));
+    await waitFor(() => expect(document.activeElement).toBe(screen.getByText('Open recent').parentElement));
   });
 
   it('renders the refusal reason when a switch is rejected', async () => {

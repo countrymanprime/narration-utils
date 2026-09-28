@@ -31,6 +31,7 @@ import { Button } from '../primitives/Button';
 import { Field } from '../primitives/Field';
 import { ConfirmDialog } from '../primitives/ConfirmDialog';
 import { Menu } from '../primitives/Menu';
+import { Panel } from '../primitives/Panel';
 import { Tooltip, TooltipTarget } from '../primitives/Tooltip';
 import { CANONICAL_PREVIEW, previewKey, usePreviewAudio } from './usePreviewAudio';
 import { PropertiesSection } from './PropertiesSection';
@@ -150,12 +151,7 @@ export function GuideDetail({
     if (entity) setDraft(draftOf(entity));
   }, [entity, resetVoiceInstall]);
 
-  if (!entity)
-    return (
-      <section className="rounded-lg border border-[var(--border)] bg-[var(--surface)] p-[1.1rem] shadow-[var(--shadow)]">
-        No matching entities. Build the guide to discover names and terms.
-      </section>
-    );
+  if (!entity) return <Panel>No matching entities. Build the guide to discover names and terms.</Panel>;
   const locked = entity.locked;
   // Entries open read-only (ADR-0018): Edit reveals the form controls and Save.
   // A locked entry cannot be edited at all, and a brand-new draft is created by
@@ -364,33 +360,31 @@ export function GuideDetail({
   };
 
   return (
-    <section className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-lg border border-[var(--border)] bg-[var(--surface)] shadow-[var(--shadow)]">
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--border)] px-[1.1rem] py-[0.85rem]">
-        <div className="flex min-w-0 items-center gap-2">
-          <Dot color={CAT_DOT_BG[categoryCssName(entity.category)]} />
-          <h2 className="truncate font-semibold">{entity.canonical_name || 'New entity'}</h2>
-          <div className="flex items-center gap-2 text-sm" style={{ color: 'var(--text-muted)' }}>
-            <div style={{ position: 'relative' }}>
-              <Menu
-                triggerClassName={badgeClass('pill')}
-                triggerStyle={badgeStyle(entityBadgeColors(entity.category))}
-                disabled={locked || !(editing || isNewDraft) || mutation.isBusy}
-                items={CREATABLE_CATEGORIES.map((label) => ({
-                  key: label,
-                  label,
-                  leading: <Dot color={CAT_DOT_BG[categoryValue(label)]} />,
-                  onSelect: () => {
-                    if (isNewDraft) void createNewEntity(categoryValue(label));
-                    else void save('category', { category: categoryValue(label) }, `Category changed to ${label}.`);
-                  },
-                }))}
-              >
-                {categoryLabel(entity.category)} <FontAwesomeIcon icon={faChevronDown} />
-              </Menu>
-            </div>
-          </div>
+    <Panel
+      title={entity.canonical_name || 'New entity'}
+      leading={<Dot color={CAT_DOT_BG[categoryCssName(entity.category)]} />}
+      subtitle={
+        <div style={{ position: 'relative' }}>
+          <Menu
+            triggerClassName={badgeClass('pill')}
+            triggerStyle={badgeStyle(entityBadgeColors(entity.category))}
+            disabled={locked || !(editing || isNewDraft) || mutation.isBusy}
+            items={CREATABLE_CATEGORIES.map((label) => ({
+              key: label,
+              label,
+              leading: <Dot color={CAT_DOT_BG[categoryValue(label)]} />,
+              onSelect: () => {
+                if (isNewDraft) void createNewEntity(categoryValue(label));
+                else void save('category', { category: categoryValue(label) }, `Category changed to ${label}.`);
+              },
+            }))}
+          >
+            {categoryLabel(entity.category)} <FontAwesomeIcon icon={faChevronDown} />
+          </Menu>
         </div>
-        <div className="flex shrink-0 items-center gap-2">
+      }
+      actions={
+        <>
           <span className="mr-1 font-['IBM_Plex_Mono',ui-monospace,monospace] text-xs" style={{ color: 'var(--text-muted)' }}>
             {entity.occurrence_count} occurrences
           </span>
@@ -450,9 +444,12 @@ export function GuideDetail({
               </IconButton>
             </TooltipTarget>
           )}
-        </div>
-      </div>
-      <div className="min-h-0 flex-1 space-y-4 overflow-y-auto p-[1.1rem]">
+        </>
+      }
+      scroll
+      className="min-h-0 flex-1"
+    >
+      <div className="space-y-4">
         {locked && (
           <p className="rounded px-3 py-1.5 text-xs" style={{ background: 'var(--surface-2)', color: 'var(--text-muted)' }}>
             <FontAwesomeIcon icon={faLock} className="mr-1.5" />
@@ -922,6 +919,6 @@ export function GuideDetail({
       >
         {reviewOverlayEntity && <EntitySummary entity={reviewOverlayEntity} jumpToLine={goToManuscript} />}
       </SlideOver>
-    </section>
+    </Panel>
   );
 }

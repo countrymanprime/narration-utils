@@ -6,6 +6,7 @@ import { Dialog } from '../primitives/Dialog';
 import { Button } from '../primitives/Button';
 import { Select } from '../primitives/Select';
 import { Checkbox } from '../primitives/Checkbox';
+import { InsetCard } from '../primitives/InsetCard';
 import { AUDITION_POST_ROLL_SECONDS, AUDITION_PRE_ROLL_SECONDS, useRangePlayer, type AuditionRange } from '../engine/useRangePlayer';
 import { sourceFileName } from './takeReviewFormat';
 import type { TakeReviewMember } from '../../types';
@@ -35,7 +36,7 @@ type SideProps = {
 function AuditionSide({ side, members, label, selected, onSelect, player, onToggle }: SideProps) {
   const member = members[selected];
   return (
-    <div className="flex flex-col gap-2 rounded-lg border border-[var(--border)] p-3">
+    <InsetCard className="flex flex-col gap-2">
       <div className="flex items-center justify-between gap-2">
         <span className="font-semibold">Read {side}</span>
         <Button variant="secondary" onClick={onToggle} disabled={!member} aria-label={`${player.isPlaying ? 'Pause' : 'Play'} read ${side}`}>
@@ -57,7 +58,7 @@ function AuditionSide({ side, members, label, selected, onSelect, player, onTogg
           This read&rsquo;s audio couldn&rsquo;t be played. Check that its source file is still where the project expects it.
         </p>
       )}
-    </div>
+    </InsetCard>
   );
 }
 
