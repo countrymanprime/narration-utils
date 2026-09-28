@@ -25,6 +25,7 @@ import { createDiagnosticsMock } from './diagnosticsMock';
 import { createEditingMock } from './editingMock';
 import { createCleanupActionMock } from './cleanupActionMock';
 import { createPrepMarkupMock } from './prepMarkupMock';
+import { buildPrepCompletenessSummaryMock } from './prepCompletenessMock';
 import { createMockState, type MockApiSeed } from './mockHost/state';
 import { createUpdateMock } from './mockHost/update';
 import { createProjectMock } from './mockHost/project';
@@ -216,6 +217,17 @@ export function createMockApi(
     editingCandidates: async (chapterId) => (await findings.findingsList({ analyzer: 'editing', chapterId })).findings,
     ...cleanupAction,
     ...prepMarkup,
+    // prep-depth.prd.md Phase 7: read the same two calls the real host reads (Phase 3's queries, Phase 5's markup per
+    // chapter), never a third mock store.
+    prepCompletenessSummary: async () => {
+      const queries = await storyBible.bindings.guidePronunciationQueries();
+      const staleSpansByChapterId = new Map<string, number>();
+      for (const chapter of s.chapters) {
+        const { spans } = await prepMarkup.prepMarkupList(chapter.id);
+        staleSpansByChapterId.set(chapter.id, spans.filter((span) => span.stale).length);
+      }
+      return buildPrepCompletenessSummaryMock(s.chapters, queries, staleSpansByChapterId);
+    },
     takeReviewCreateTake: async (request) => ({
       targetItemGuid: request.targetItemGuid,
       newTakeGuid: '{99999999-0000-4000-8000-000000000099}',

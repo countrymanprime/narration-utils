@@ -966,6 +966,16 @@ export function PickupsState(): $CancellablePromise<string> {
 }
 
 /**
+ * PrepCompletenessSummary reads every manuscript chapter and answers one row each: how many of its names still have
+ * an open pronunciation query, and how many of its markup spans are stale, plus the book-wide totals. With no project
+ * open, or no Story Bible or manuscript yet, it answers an empty summary rather than an error, the same way
+ * GuidePronunciationQueries and PrepMarkupList already do for a phase this early in prep.
+ */
+export function PrepCompletenessSummary(): $CancellablePromise<string> {
+    return $Call.ByID(1398522399);
+}
+
+/**
  * PrepMarkupDelete removes one span by its id; a stale span needs nothing else.
  */
 export function PrepMarkupDelete(chapterID: string, id: string): $CancellablePromise<string> {

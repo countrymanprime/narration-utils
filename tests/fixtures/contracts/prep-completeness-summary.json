@@ -1,0 +1,25 @@
+{
+  "chapters": [
+    {
+      "chapterId": "c-0001",
+      "complete": false,
+      "openQueries": 1,
+      "staleMarkupSpans": 0,
+      "title": "Chapter One"
+    },
+    {
+      "chapterId": "c-0002",
+      "complete": false,
+      "openQueries": 0,
+      "staleMarkupSpans": 1,
+      "title": "Chapter Two"
+    }
+  ],
+  "totals": {
+    "chapters": 2,
+    "completeChapters": 0,
+    "openQueries": 2,
+    "staleMarkupSpans": 1,
+    "unattributedQueries": 1
+  }
+}
