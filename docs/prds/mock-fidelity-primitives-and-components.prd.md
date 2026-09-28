@@ -647,7 +647,7 @@ The dark sets show pill heights of 18, 21, 23, 24, 25 and 26 px, with the OK fil
 | 1 | Button and IconButton | `size`, a `secondary` fill, `link`, height, tracking, disabled; migrate the 7 small recipes and the clones | in review (#894) | 3, 9, 10 | 0b | - |
 | 2 | StatusBadge, Pill, SpeakerTag | `shape` pill/tag, the `-soft` fills, accent/org tones, outline, booth tag size; migrate every chip copy outside the page components | pending | 6, 7 | 0b | - |
 | 3 | Table and StageGrid | row and header sizes, `numeric`/`muted` cells, `--row-selected`, the current row, middle alignment, `flush`; migrate tabular `ul`s and `MONO` overrides | complete (#893, ADR 0605) | 1, 9, 10 | 0b | - |
-| 4 | Panel, Heading, SectionLabel, InsetCard | card header bar and title type, inline subtitle, flush body; page title; the eyebrow and inset-card primitives; migrate hand-drawn cards | in review (ADR 0640) | 5, 8 | 0b, 3 | - |
+| 4 | Panel, Heading, SectionLabel, InsetCard | card header bar and title type, inline subtitle, flush body; page title; the eyebrow and inset-card primitives; migrate hand-drawn cards | in review (#905, ADR 0640) | 5, 8 | 0b, 3 | - |
 | 5 | Tabs, ToggleGroup, Pill | underline spec, sidebar fill, the `segmented` look; migrate the step strip and the segmented Buttons | pending | 4, 8 | 0b, 2 | - |
 | 6 | Inputs | Select line-height, the mono numeric field, the focus ring, the radio; migrate raw labels and fake fields | pending | 2, 7 | 0b | - |
 | 7 | Overlays | dialog header, footer and body copy; the slide-over's transparent backdrop (Q4); the inverted toast; the popover; migrate the hand-drawn listbox | pending | 2, 6 | 0b, 1 | - |
