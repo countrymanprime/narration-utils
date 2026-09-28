@@ -10,6 +10,7 @@ import { BoothView } from './BoothView';
 import { CompanionShell } from './CompanionShell';
 import { RecordInReaperConfirm } from './RecordInReaperConfirm';
 import { useRecordInReaper } from './useRecordInReaper';
+import { useRecorder } from './useRecorder';
 import { ResumePrompt } from './ResumePrompt';
 import { ReaderRail } from './ReaderRail';
 import type { FlagSaveState } from './ReaderFlagsPanel';
@@ -95,6 +96,8 @@ export function BoothSession({ source, entities = NO_ENTITIES, notes = NO_NOTES,
   // chapter track: every method that would touch REAPER checks for a chapter id first and no-ops without one.
   const record = useCapability('record');
   const recording = useRecordInReaper(chapter?.id, record.available);
+  // The built-in recorder (native-recording-suite Phase 2, ADR 0455), for a project that records with it instead of REAPER.
+  const recorder = useRecorder();
   const chapterTitle = source.kind === 'chapter' ? chapterName(source.chapter, 'full') : CREDITS_LABEL[source.credits];
   // What Stop-and-continue does once the live session has stopped: leave the Booth, or leave for Settings (credits'
   // "Fill them in Settings" takes the same "Stop reading?" confirm as Exit booth).
@@ -276,6 +279,7 @@ export function BoothSession({ source, entities = NO_ENTITIES, notes = NO_NOTES,
             chapterTitle={chapterTitle}
             chapterShortTitle={chapter ? chapterName(chapter, 'short') : undefined}
             recording={recording}
+            recorder={recorder}
             startPoint={session.startWord !== null ? { label: startLabel ?? 'a chosen word', onClear: () => setStartWord(null) } : undefined}
             marks={marks}
             onOpenMark={openMark}

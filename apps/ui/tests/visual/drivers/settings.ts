@@ -382,9 +382,11 @@ export const settingsDrivers: Record<string, Driver> = {
     await clickSettingsCategory(page, 'Proof');
     // The mock starts with no project override, so make one the way a narrator does: pick a value and save it. Only a
     // field that has an override shows Reset (the model select), and its row is the one that must not squeeze.
+    // exact: true (app-navigation-and-zoom-controls.prd.md Phase 2): the header's zoom readout is also named "Reset
+    // zoom to 100% (now N%)", which a non-exact match treats as containing "Reset" too.
     await page.getByRole('combobox', { name: 'Default Whisper model' }).selectOption('large-v3');
     await page.getByRole('button', { name: 'Save', exact: true }).click();
-    const reset = page.getByRole('button', { name: 'Reset' });
+    const reset = page.getByRole('button', { name: 'Reset', exact: true });
     await reset.waitFor();
     // The save toast removes itself on a real 2.4 s timer, which would race the screenshot: dismiss it, unless a slow
     // run already let it expire, and wait until it is gone either way.

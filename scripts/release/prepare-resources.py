@@ -182,19 +182,21 @@ def main() -> None:
         # moonshine.dll, and the onnxruntime.dll beside it, with ctypes from its own package directory.
         # PyInstaller cannot see a ctypes load, so the binaries are collected by hand; its data (sample
         # WAVs, TTS embeddings) is not, since the sidecar loads models only from a catalog install.
-        # Two of its dependencies are excluded: sounddevice (PortAudio, about 2 MB of DLLs for every
-        # architecture), which moonshine_voice imports only for its own microphone, agent and TTS helpers,
-        # never for Transcriber (capture here is PyAV's dshow); and google_crc32c, an optional speed-up of
-        # its downloader's checksum, which the frozen sidecar never runs (moonshine_engine.py).
-        # verify-installable.mjs checks both DLLs are in the tree, and
-        # `narration-utils --smoke` runs `manuscript-teleprompter --check-moonshine` to prove they load.
+        # One of its dependencies is excluded: google_crc32c, an optional speed-up of its downloader's
+        # checksum, which the frozen sidecar never runs (moonshine_engine.py).
+        # sounddevice (PortAudio) is the built-in recorder's engine, the capture port's wasapi row
+        # (capture_wasapi.py, ADR 0357), so since native-recording Phase 2 it is in the build: its DLL
+        # (_sounddevice_data/portaudio-binaries, about 2 MB) is loaded with ctypes, and PyInstaller's own
+        # sounddevice hook (pyinstaller-hooks-contrib) collects it. verify-installable.mjs checks all three
+        # DLLs are in the tree, and `narration-utils --smoke` runs `manuscript-teleprompter --check-moonshine`
+        # to prove Moonshine's load.
         Sidecar(
             "manuscript-teleprompter",
             sidecars_root / "manuscript-teleprompter" / "core" / "live_asr.py",
             [shared_python, sidecars_root / "manuscript-teleprompter" / "core"],
             ("faster_whisper",),
             collect_binaries=("moonshine_voice",) if sys.platform == "win32" else (),
-            exclude_modules=("sounddevice", "google_crc32c"),
+            exclude_modules=("google_crc32c",),
         ),
     ]
     selected = [sidecar for sidecar in sidecars if args.sidecar in (None, sidecar.name)]

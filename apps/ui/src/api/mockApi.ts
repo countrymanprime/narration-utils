@@ -17,6 +17,7 @@ import { createProofingRenderMock } from './proofingRenderMock';
 import { createDawMock } from './dawMock';
 import { createProvidersMock } from './providersMock';
 import { createMasteringMock } from './masteringMock';
+import { createRecordingMock } from './recordingMock';
 import { createFindingsMock } from './findingsMock';
 import { createTakeReviewScanMock } from './takeReviewMock';
 import { createTakeComparisonMock } from './takeComparisonMock';
@@ -48,10 +49,11 @@ import { createPronunciationOnlineMock } from './mockHost/pronunciationOnline';
 export { applyMixedManuscriptMock } from './mockHost/manuscript';
 export type { MockUpdateSeed } from './mockHost/update';
 
-// The engine chip's 'builtin' state (stage-navigation-and-page-replacement.prd.md Phase 1, Q7) has no host field yet
-// - nothing selects it until native recording builds a recorder - so it is a URL flag read directly rather than a
-// NarrationApi binding, the same way `?mockEngine=builtin` reaches App.tsx in both the mock and the real client.
-export function mockEngineFromLocation(): 'daw' | 'builtin' {
+// `?mockEngine=builtin` seeds the mock recorder's engine choice (native-recording P2, ADR 0455): the host answers the
+// project's engine in RecorderState, and the mock answers it from this flag, so the story, the visual rows and the demo
+// reach the "Built-in recorder" chip and the Booth's recorder without a click. No window (a node test) is REAPER.
+function mockEngineFromLocation(): 'daw' | 'builtin' {
+  if (typeof window === 'undefined') return 'daw';
   return new URLSearchParams(window.location.search).get('mockEngine') === 'builtin' ? 'builtin' : 'daw';
 }
 
@@ -127,6 +129,8 @@ export function createMockApi(
   const daw = createDawMock(initial.daw);
   const providers = createProvidersMock(initial.providers);
   const mastering = createMasteringMock(initial.mastering);
+  // The engine chip's `?mockEngine=builtin` flag seeds the recorder's engine, so the chip and the Booth agree (ADR 0455).
+  const recording = createRecordingMock({ engine: mockEngineFromLocation(), ...initial.recording });
   const stages = createStagesMock({
     ready: manuscriptReady,
     chapters: () => s.chapters.map(withMeasurement),
@@ -272,6 +276,7 @@ export function createMockApi(
     ...daw,
     ...providers,
     ...mastering,
+    ...recording,
     ...createPronunciationLookupMock(),
     ...createPronunciationOnlineMock(),
   };

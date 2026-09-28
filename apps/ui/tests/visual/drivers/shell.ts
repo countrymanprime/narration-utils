@@ -40,4 +40,12 @@ export const shellDrivers: Record<string, Driver> = {
     await productionLoaded(page);
     await page.getByRole('button', { name: /Wrong REAPER project open/ }).waitFor();
   },
+  // Phase 2: the zoom group at a non-100% level (?mockZoom=125), so the enabled readout, Zoom out and reset can be
+  // seen without driving Ctrl+wheel or a click first.
+  'zoom-level': async (page) => {
+    await page.goto('/?mockZoom=125');
+    await settlePage(page);
+    await productionLoaded(page);
+    await page.getByRole('button', { name: /Reset zoom to 100% \(now 125%\)/ }).waitFor();
+  },
 };

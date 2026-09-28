@@ -9,7 +9,7 @@ export const boothStates: StateEntry[] = [
     page: 'booth',
     state: 'setup',
     description:
-      'Booth (stage-navigation-and-page-replacement.prd.md Phase 4, mock 03), before a session - on FocusShell: a status line (Ready, the chapter, a decorative Input meter, Companion and Exit booth Esc), the pre-session setup above the text, the text itself full-bleed and large with no card around it (audit BO3) (the Chapter picker, credits included), the resume prompt (read-aloud-resume-from-daw.prd.md Phase 1) offering where the recording ends - the matched track, "as of the project\'s last save", the sentence, and Resume from here / Start from the top / Pick a word - the rail (Voices in scene, Coming up - the next names with a Story Bible pronunciation, audit BO8 - then the reading panel) and, as the command bar, the reading controls with Play, Stop reading, the microphone, Record in REAPER ("Chapter 1 armed", mock 06) and Settings',
+      'Booth (stage-navigation-and-page-replacement.prd.md Phase 4, mock 03), before a session - on FocusShell: a status line (Ready, the chapter, a decorative Input meter, Companion and Exit booth Esc), the pre-session setup above the text (with "Record with": REAPER chosen, the built-in recorder offered as Experimental, native-recording Phase 2), the text itself full-bleed and large with no card around it (audit BO3) (the Chapter picker, credits included), the resume prompt (read-aloud-resume-from-daw.prd.md Phase 1) offering where the recording ends - the matched track, "as of the project\'s last save", the sentence, and Resume from here / Start from the top / Pick a word - the rail (Voices in scene, Coming up - the next names with a Story Bible pronunciation, audit BO8 - then the reading panel) and, as the command bar, the reading controls with Play, Stop reading, the microphone, Record in REAPER ("Chapter 1 armed", mock 06) and Settings',
     ...REFLOW,
   },
   {
@@ -307,5 +307,52 @@ export const boothStates: StateEntry[] = [
     description:
       'Booth, the companion panel mid-session (same mock seam and word as listening) with REAPER playing (?mockDawPlayhead=134.6) - the header badge reads "Playhead 2:14.6", the Script shows Pause (Kbd Space), Stop reading and Follow, and the current word highlighted in its scroll box',
     ...COMPANION,
+  },
+  // The built-in recorder (native-recording-suite Phase 2, ADR 0455; D79: the Booth is the Record surface, no page of its own),
+  // with the project on "Built-in recorder" (?mockEngine=builtin) and the mock recorder (D67) standing in for the microphone.
+  {
+    page: 'booth',
+    state: 'recorder-builtin',
+    description:
+      'Booth recording with the built-in recorder (mock 03\'s Record area with the built-in recorder in REAPER\'s place) - the status line\'s Input meter and "— pk" readout and the "Built-in · 3 takes" chip; the setup\'s "Record with" (REAPER / Built-in recorder, Experimental), the Recorder input picker (the shared device picker, Q6), Check level and where the takes are saved; the command bar\'s Record where "Record in REAPER" was; the rail\'s Takes (mock 03\'s "Recorded 41:12 · …": "Recorded 01:55 · 3 takes", newest first, the unfinished partial marked)',
+    ...REFLOW,
+  },
+  {
+    page: 'booth',
+    state: 'recorder-recording',
+    description:
+      'Booth, a built-in recorder take 42 s in (?mockRecorder=recording, the page clock held) - the status badge "REC · Built-in", the meter at mock 03\'s "−14.2 pk", the chip "Built-in · take 4" (the mock\'s "REAPER · take 4"), the command bar\'s Record now "REC 00:42" in the danger colour, "Record with" and Check level disabled while the take runs',
+    ...REFLOW,
+    ...FREEZES_THE_CLOCK,
+  },
+  {
+    page: 'booth',
+    state: 'recorder-level-check',
+    description:
+      'Booth, Check level pressed before a take - the recorder meters the chosen input with no file written: the setup\'s meter and the status line\'s at "−14.2 pk", the button now "Stop level check"',
+  },
+  {
+    page: 'booth',
+    state: 'recorder-take-failed',
+    description:
+      "Booth, the last take ended by itself (?mockRecorder=failed) - the rail's Takes says once, in the warning colour, that the input stopped delivering audio; the take and the audio before it are kept",
+  },
+  {
+    page: 'booth',
+    state: 'recorder-no-devices',
+    description:
+      'Booth, the built-in recorder with no input device listed (?mockRecorder=no-devices) - the shared picker\'s "No microphone found" with "Recording cannot start until a device is listed.", Record disabled, and "No takes yet. Record starts the first."',
+  },
+  {
+    page: 'booth',
+    state: 'recorder-start-refused',
+    description:
+      'Booth, Record pressed on an input another application holds (?mockRecorder=start-fails) - the refusal in a sentence under "Record with", nothing recording',
+  },
+  {
+    page: 'booth',
+    state: 'recorder-unavailable',
+    description:
+      'Booth on REAPER where the built-in recorder\'s capture row is not available (?mockRecorder=unavailable) - "Built-in recorder" disabled in "Record with" and the row\'s sentence beneath; the command bar keeps Record in REAPER',
   },
 ];

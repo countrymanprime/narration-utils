@@ -20,13 +20,23 @@ export const shellStates: StateEntry[] = [
   {
     page: 'shell',
     state: 'engine-builtin',
-    description: 'Header engine chip in its "Built-in recorder" state (?mockEngine=builtin) - UI-only, nothing selects it yet',
+    description:
+      'Header engine chip in its "Built-in recorder" state: the project records with the built-in recorder (native-recording P2, RecorderState.engine; ?mockEngine=builtin seeds the mock recorder)',
     ...REFLOW,
   },
   {
     page: 'shell',
     state: 'engine-mismatch',
     description: 'Header engine chip reading "Wrong REAPER project open": a live heartbeat disagrees with the linked file',
+    ...REFLOW,
+  },
+  // The zoom group (Phase 2, Q1/Q9): the default states already show it at 100% with Zoom out disabled and the
+  // readout itself disabled (Q9 A), so only a non-100% level gets its own row. Reflow (ADR 0061's declared
+  // extension, PRD Solution Detail): the header at 390px is what the narrator sees at high real zoom.
+  {
+    page: 'shell',
+    state: 'zoom-level',
+    description: 'Header zoom group at 125% (?mockZoom=125): the readout enabled and reset-able, Zoom out enabled',
     ...REFLOW,
   },
 ];

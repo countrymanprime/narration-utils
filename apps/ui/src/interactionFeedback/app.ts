@@ -53,6 +53,13 @@ export const appFeedback: Record<string, FeedbackRow> = {
   'src/useCapability.ts::dawCapabilities#1': row('mount', 'file-io', 'na', 'na', 'event', 'silent', 'na', 'exempt', 'Seeds the entry useCapability exposes before the very next daw_capabilities_changed event takes over; a failed seed just leaves the capability unsupported/unavailable a moment longer, the same as an unknown capability.'),
   'src/useCapability.ts::subscribeDawCapabilities#1': subscription("The DAW port's capability report (DAW port PRD Phase 4): every caller of useCapability for the same or a different capability reads this one subscription."),
 
+  // useZoom.ts (app-navigation-and-zoom-controls.prd.md Phase 2): the header's zoom group. The readout is the only feedback surface
+  // (Solution Detail); every call here is instant (the binding sets/reads a number on the window, no file or network,
+  // docs/architecture/threat-model.md row 3) and a failure just leaves the readout at the level it already showed.
+  'src/hooks/useZoom.ts::windowZoom#1': row('mount', 'instant', 'na', 'na', 'ui', 'silent', 'na', 'exempt', "Seeds the readout at the window's real level before the first paint settles; a failed read leaves it at the 100% default until the next resize re-reads it."),
+  'src/hooks/useZoom.ts::windowSetZoom#1': row('click', 'instant', 'inline', 'none', 'ui', 'silent', 'yes', 'exempt', 'Zoom out, Zoom in, reset, and Ctrl+=/-/0: the readout itself is the acknowledgment and the completion. A failed set leaves the previous level shown, visibly unchanged, and survives navigation like the level itself.'),
+  'src/hooks/useZoom.ts::windowZoom#2': row('effect', 'instant', 'na', 'na', 'ui', 'silent', 'na', 'exempt', "The resize-triggered re-read for an external Ctrl+wheel/pinch change (ADR 0201 item 3, no zoom-changed event on Windows); a failed read just leaves the readout at its last known level until the next resize."),
+
   // useDawRecording.ts (input-commands-and-pedals.prd.md Phase 10): the DAW port's live transport state, read only
   // by LiveCommandRouter to silence `noisy` commands while REAPER records (PRD Q5). Not narrator-facing on its own -
   // the router's own status region, not a toast, is how a failed press is explained - so this is a background feed,

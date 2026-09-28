@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client';
 import { App } from './App';
 import { ApiProvider } from './api/ApiContext';
 import { wailsClient } from './api/wailsClient';
+import type { RecordingMockSeed } from './api/recordingMock';
 import { createMockApi } from './api/mockApi';
 import { PRODUCTION_SCENARIOS } from './api/productionMock';
 import { WIRE_CHAPTERS, WIRE_FINDINGS, WIRE_TRACKS_PROJECT, editingCandidateFor, takeReviewPickupFor } from './api/mockFixtures';
@@ -88,6 +89,10 @@ const mockTeleprompter = (['listening', 'waiting', 'done', 'ended', 'flagged'] a
 // holds still for a capture (read-aloud-control-bar.prd.md Phase 4).
 const mockLevelParam = Number(mockParams.get('mockLevel') ?? Number.NaN);
 const mockLevel = Number.isFinite(mockLevelParam) && mockLevelParam >= -100 && mockLevelParam <= 0 ? mockLevelParam : undefined;
+// `?mockZoom=125` boots the header's zoom group already at that percentage (app-navigation-and-zoom-controls.prd.md
+// Phase 2), so the visual suite can capture a non-100% level without driving Ctrl+wheel or a button click first.
+const mockZoomParam = Number(mockParams.get('mockZoom') ?? Number.NaN);
+const mockZoom = Number.isFinite(mockZoomParam) && mockZoomParam > 0 ? mockZoomParam / 100 : undefined;
 // `?mockReaperState=ready|not_armed|other_armed|several_armed|no_link|recording_elsewhere|unavailable|experimental_off` makes
 // the read-aloud dialog's REAPER state (read-aloud-control-bar.prd.md Phase 6) answer that for every chapter.
 const mockReaperState = MOCK_REAPER_SEEDS.find((seed) => seed === mockParams.get('mockReaperState'));
@@ -357,7 +362,21 @@ const MOCK_MARKUP_SEED: PrepMarkupSeed = [
   { chapter: 2, line: 6, words: 'Not I!', kind: 'character_tag', value: 'Lory' },
   { chapter: 2, line: 7, words: 'I thought you did', kind: 'character_tag', value: 'Mouse', stale: { reason: 'paragraph_missing' } },
 ];
+// `?mockRecorder=recording|failed|empty|no-devices|start-fails|unavailable` seeds the Booth's built-in recorder
+// (native-recording-suite Phase 2, ADR 0455), with `?mockEngine=builtin` choosing it: a take 42 s in; the last take ended on
+// its own; no takes yet; no input device listed; a device that will not open on Record; the wasapi row unavailable here.
+const MOCK_RECORDER_SEEDS: Record<string, RecordingMockSeed> = {
+  recording: { recording: true },
+  failed: { lastTakeFailed: true },
+  empty: { takes: 'none' },
+  'no-devices': { takes: 'none', devices: 'none' },
+  'start-fails': { startFails: true },
+  unavailable: { unavailable: true },
+};
+const mockRecorderParam = mockParams.get('mockRecorder') ?? '';
+const mockRecorder = Object.hasOwn(MOCK_RECORDER_SEEDS, mockRecorderParam) ? MOCK_RECORDER_SEEDS[mockRecorderParam] : undefined;
 const mockInitial = {
+  ...(mockRecorder ? { recording: mockRecorder } : {}),
   ...(mockMarkup ? { prepMarkup: MOCK_MARKUP_SEED } : {}),
   ...(mockMeasure ? { measure: mockMeasure === 'running' ? ('hold' as const) : mockMeasure === 'spread' ? ('spread' as const) : ('fails' as const) } : {}),
   ...(mockDiagnostics ? { diagnostics: mockDiagnostics === 'running' ? ('hold' as const) : ('fails' as const) } : {}),
@@ -401,6 +420,7 @@ const mockInitial = {
   ...(mockTeleprompter ? { teleprompter: mockTeleprompter } : {}),
   ...(mockNoDevices ? { teleprompterDevices: [] } : {}),
   ...(mockLevel === undefined ? {} : { teleprompterLevel: mockLevel }),
+  ...(mockZoom === undefined ? {} : { zoom: mockZoom }),
   ...(mockReaperState ? { reaperState: mockReaperState } : {}),
   ...(mockReaperInput ? { reaperInput: mockReaperInput } : {}),
   ...(mockResume ? { resume: mockResume } : {}),

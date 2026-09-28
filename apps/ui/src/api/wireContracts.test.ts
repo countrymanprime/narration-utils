@@ -99,7 +99,7 @@ import {
   queryImportResultSchema,
 } from './schemas/storyBible';
 import { approvedCharacterReferencesSchema, characterRegionsSchema, characterReferenceSchema } from './schemas/character';
-import { bootstrapSchema, copyDiagnosticsResultSchema, projectAttachStateSchema, readySchema } from './schemas/system';
+import { bootstrapSchema, copyDiagnosticsResultSchema, projectAttachStateSchema, readySchema, windowZoomSchema } from './schemas/system';
 import {
   readAloudReaperStateSchema,
   readAloudRecordingSchema,
@@ -122,6 +122,7 @@ import { cleanupToolsStartResultSchema, cleanupToolsStateSchema } from './schema
 import { dawCapabilitiesSchema, dawTransportSchema } from './schemas/daw';
 import { providerCapabilitiesSchema } from './schemas/providers';
 import { masteringProvidersSchema } from './schemas/mastering';
+import { recorderDevicesResultSchema, recorderLevelSchema, recorderStateSchema } from './schemas/recording';
 import { projectStateChangedSchema, projectStateStartResultSchema, projectStateStateSchema } from './schemas/projectstate';
 import { retakeLanesListSchema, retakeLanesStartResultSchema, retakeLanesStateSchema } from './schemas/retakelanes';
 import { chapterTagsEmbedResultSchema, chapterTagsPreviewSchema } from './schemas/chaptertags';
@@ -819,6 +820,23 @@ describe('answers of the mock client for the manuscript, Story Bible and project
     expectMatches(copyDiagnosticsResultSchema, await api.systemCopyDiagnostics('last_run'), 'mock copy diagnostics');
   });
 
+  it('the window zoom binding reads and sets a level (app-navigation-and-zoom-controls.prd.md Phase 2)', async () => {
+    const api = createMockApi();
+    const idle = await api.windowZoom();
+    expectMatches(windowZoomSchema, idle, 'mock window zoom, idle');
+    expect(idle.level).toBe(1.0);
+    const zoomed = await api.windowSetZoom(1.25);
+    expectMatches(windowZoomSchema, zoomed, 'mock window zoom, set to 125%');
+    expect(zoomed.level).toBe(1.25);
+    expect((await api.windowZoom()).level).toBe(1.25);
+    // Defensively clamped, the same range the real host's `nearestZoomStep` promises (ADR 0201).
+    expect((await api.windowSetZoom(5)).level).toBe(2.0);
+    expect((await api.windowSetZoom(0.1)).level).toBe(1.0);
+    const seeded = await createMockApi({}, { zoom: 1.5 }).windowZoom();
+    expect(seeded.level).toBe(1.5);
+    expectMatches(windowZoomSchema, readGolden('window-zoom.json'), 'window-zoom.json');
+  });
+
   it('the project picker answers', async () => {
     const api = createMockApi({}, { projectFolder: '' });
     expectMatches(recentProjectsSchema, await api.projectRecents(), 'mock recents');
@@ -1477,6 +1495,41 @@ describe('answers of the mock client for the settings, voice, model, transcript 
     const stale = await createMockApi({}, { mastering: { choice: 'audacity' } }).masteringProviders();
     expectMatches(masteringProvidersSchema, stale, 'mock mastering chains (a stored choice this version does not have)');
     expect(stale).toEqual(readGolden('mastering-providers-unknown-choice.json'));
+  });
+
+  it('the built-in recorder matches the host goldens and records a take (native recording P2, ADR 0455)', async () => {
+    const none = await createMockApi({}, { recording: { hasProject: false } }).recorderState();
+    expectMatches(recorderStateSchema, none, 'mock recorder (no project)');
+    expect(none).toEqual(readGolden('recorder-state-no-project.json'));
+    expectMatches(recorderStateSchema, readGolden('recorder-state-recording.json'), 'recorder-state-recording.json');
+    expect(await createMockApi().recorderDevices()).toEqual(readGolden('recorder-devices.json'));
+    expectMatches(recorderDevicesResultSchema, await createMockApi({}, { recording: { devices: 'error' } }).recorderDevices(), 'mock recorder devices (error)');
+
+    const api = createMockApi({}, { recording: { takes: 'none' } });
+    const states: unknown[] = [];
+    const levels: unknown[] = [];
+    api.subscribeRecorderState((state) => states.push(state));
+    api.subscribeRecorderLevel((level) => levels.push(level));
+    await expect(api.recorderStart('Mic')).rejects.toThrow('choose the built-in recorder');
+    expect((await api.recorderChooseEngine('builtin')).engine).toBe('builtin');
+    const recording = await api.recorderStart('Analogue 1 + 2 (Focusrite USB Audio)');
+    expectMatches(recorderStateSchema, recording, 'mock recorder (recording)');
+    expect(recording).toMatchObject({ phase: 'recording', take: 'Take 001' });
+    expect((await api.recorderStop()).phase).toBe('stopping');
+    await vi.waitFor(async () => expect((await api.recorderState()).phase).toBe('idle'));
+    const done = await api.recorderState();
+    expectMatches(recorderStateSchema, done, 'mock recorder (a take finished)');
+    expect(done.takes.map((take) => take.name)).toEqual(['Take 001']);
+    expect(done.last?.name).toBe('Take 001');
+    for (const state of states) expectMatches(recorderStateSchema, state, 'mock recording:state');
+    expect(levels.length).toBeGreaterThan(0);
+    for (const level of levels) expectMatches(recorderLevelSchema, level, 'mock recording:level');
+
+    const golden = readGolden('recorder-state-takes.json') as { takes: unknown[] };
+    expect(Object.keys((await createMockApi({}, { recording: { engine: 'builtin' } }).recorderState()).takes[0]).sort()).toEqual(
+      Object.keys(golden.takes[0] as object).sort(),
+    );
+    await expect(createMockApi({}, { recording: { unavailable: true } }).recorderChooseEngine('builtin')).rejects.toThrow('not available');
   });
 
   it('subscribeDawTransport pushes the seeded transport once, and matches the host goldens (DAW port PRD Phase 9)', () => {
@@ -2344,6 +2397,8 @@ describe('answers of the mock client for the settings, voice, model, transcript 
       'bootstrap',
       'systemLookup',
       'systemCopyDiagnostics',
+      'windowZoom',
+      'windowSetZoom',
       'saveSettings',
       'settingsForScope',
       'selectManuscript',
@@ -2405,6 +2460,13 @@ describe('answers of the mock client for the settings, voice, model, transcript 
       'providerCapabilities',
       'masteringProviders',
       'masteringChooseProvider',
+      'recorderState',
+      'recorderChooseEngine',
+      'recorderDevices',
+      'recorderMeterStart',
+      'recorderMeterStop',
+      'recorderStart',
+      'recorderStop',
       'dawCatalogList',
       'tracksDiscover',
       'tracksSelect',
@@ -2618,6 +2680,8 @@ describe('answers of the mock client for the settings, voice, model, transcript 
       'subscribeRetakeLanes',
       'subscribeDawCapabilities',
       'subscribeDawTransport',
+      'subscribeRecorderState',
+      'subscribeRecorderLevel',
     ];
     expect([...CHECKED, ...VOID, ...NOT_A_REQUEST].sort()).toEqual(Object.keys(createMockApi()).sort());
   });
