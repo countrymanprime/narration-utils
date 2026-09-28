@@ -84,4 +84,27 @@ describe('TextField', () => {
     expect(box.disabled).toBe(true);
     expect(box.value).toBe('Alice');
   });
+
+  it('sizes a mono value at the Inputs spec (mock-fidelity-primitives-and-components.prd.md Phase 6): ~15px, not body text size', () => {
+    render(<TextField label="Note colour" mono value="FFD54F" onChange={() => undefined} />);
+    const box = screen.getByLabelText('Note colour');
+    expect(box.className).toContain('text-[0.9375rem]');
+    expect(box.className).not.toContain('text-[0.88rem]');
+  });
+
+  it('is sans-serif body size by default, not the mono size', () => {
+    render(<TextField label="Name" value="Alice" onChange={() => undefined} />);
+    const box = screen.getByLabelText('Name');
+    expect(box.className).toContain('text-[0.88rem]');
+    expect(box.className).not.toContain('text-[0.9375rem]');
+  });
+
+  it('is a value the narrator can read and copy but not edit when readOnly, on --surface-2 with no focus ring', () => {
+    render(<TextField label="Pronunciation" mono readOnly value="/ˈæləs/" onChange={() => undefined} />);
+    const box = screen.getByLabelText('Pronunciation') as HTMLInputElement;
+    expect(box.readOnly).toBe(true);
+    expect(box.value).toBe('/ˈæləs/');
+    expect(box.className).toContain('bg-[var(--surface-2)]');
+    expect(box.className).toContain('cursor-default');
+  });
 });

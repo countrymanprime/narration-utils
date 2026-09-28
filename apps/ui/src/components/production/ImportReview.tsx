@@ -4,6 +4,7 @@ import { chapterName } from '../../chapterName';
 import { Button } from '../primitives/Button';
 import { Checkbox } from '../primitives/Checkbox';
 import { Disclosure } from '../primitives/Disclosure';
+import { FIELD_LABEL_CLASSES } from '../primitives/Field';
 import { SectionLabel } from '../primitives/SectionLabel';
 import { Select } from '../primitives/Select';
 import { Tooltip } from '../primitives/Tooltip';
@@ -193,8 +194,8 @@ export function ImportReview({
           </SectionLabel>
           <div className="space-y-2">
             {preview.format === 'markdown' && (
-              <label className="flex items-center gap-2 text-sm">
-                Markdown chapter heading level
+              <label className="flex items-center gap-2">
+                <span className={FIELD_LABEL_CLASSES}>Markdown chapter heading level</span>
                 <Select
                   label="Markdown chapter heading level"
                   value={String(headingLevel)}

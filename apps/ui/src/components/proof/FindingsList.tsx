@@ -1,7 +1,8 @@
 import type { ReactNode } from 'react';
 import type { Finding, FindingsPage } from '../../types';
 import { Button } from '../primitives/Button';
-import { StatusBadge, type StatusTone } from '../primitives/StatusBadge';
+import { PANEL_FRAME_CLASS } from '../primitives/panelStyles';
+import { StatusBadge, type BadgeShape, type StatusTone } from '../primitives/StatusBadge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../primitives/Table';
 import { analyzerLabel, chapterLabel, confidenceLabel, evidenceKindLabel, findingSummary, formatTime } from './findingFormat';
 import { resolutionOf } from './resolution';
@@ -17,11 +18,12 @@ export const CATEGORY_TONE: Record<string, StatusTone> = {
 };
 
 // A chip on its own `--surface` backing: StatusBadge's tints are contrast-checked over `--surface` (paletteContrast.test.ts), and a
-// selected or hovered row is `--surface-2`, so the backing keeps each chip on the pair it was checked against.
-function NoteChip({ tone, label }: { tone: StatusTone; label: string }) {
+// selected or hovered row is `--surface-2`, so the backing keeps each chip on the pair it was checked against. Mock 04 draws the
+// TYPE column as a `tag` (16 px, radius 3) and RESOLUTION as a `pill` (22 px), the badge's two shapes (ADR 0600).
+function NoteChip({ tone, label, shape }: { tone: StatusTone; label: string; shape?: BadgeShape }) {
   return (
     <span className="inline-flex rounded-full bg-[var(--surface)] whitespace-nowrap">
-      <StatusBadge tone={tone} label={label} />
+      <StatusBadge tone={tone} label={label} shape={shape} />
     </span>
   );
 }
@@ -52,71 +54,70 @@ export function FindingsList({
 }) {
   const findings = page?.findings ?? [];
   return (
-    <section
-      aria-label="Notes"
-      className="min-w-0 self-start overflow-x-auto rounded-lg border border-[var(--border)] bg-[var(--surface)] p-2 shadow-[var(--shadow)]"
-    >
+    <section aria-label="Notes" className={`min-w-0 self-start overflow-x-auto ${PANEL_FRAME_CLASS}`}>
       {header}
-      <Table label="Notes">
-        <TableHead>
-          <TableRow>
-            {showChapter && <TableHeader>Chapter</TableHeader>}
-            <TableHeader>Time</TableHeader>
-            <TableHeader>Type</TableHeader>
-            <TableHeader>Script vs. heard</TableHeader>
-            <TableHeader>From</TableHeader>
-            <TableHeader>Resolution</TableHeader>
-          </TableRow>
-        </TableHead>
-        <TableBody>
-          {findings.map((finding) => (
-            <TableRow key={finding.id} selected={finding.id === selectedId} onActivate={() => onSelect(finding)}>
-              {showChapter && <TableCell className="whitespace-nowrap">{chapterLabel(finding)}</TableCell>}
-              <TableCell className="font-['IBM_Plex_Mono',ui-monospace,monospace] whitespace-nowrap">
-                {finding.time_range ? formatTime(finding.time_range.start) : '—'}
-              </TableCell>
-              <TableCell>
-                <NoteChip tone={CATEGORY_TONE[finding.category] ?? 'neutral'} label={evidenceKindLabel(finding)} />
-                {finding.not_in_latest_run && (
-                  <div className="mt-0.5 text-xs" style={{ color: 'var(--text-muted)' }}>
-                    not in the latest run
-                  </div>
-                )}
-              </TableCell>
-              <TableCell className="[overflow-wrap:anywhere]">{findingSummary(finding)}</TableCell>
-              <TableCell className="text-xs" style={{ color: 'var(--text-muted)' }}>
-                {analyzerLabel(finding.analyzer)}
-                {finding.confidence !== null && ` · ${confidenceLabel(finding.confidence)}`}
-              </TableCell>
-              <TableCell className="whitespace-nowrap">
-                <NoteChip {...resolutionOf(finding)} />
-              </TableCell>
-            </TableRow>
-          ))}
-          {page && findings.length === 0 && (
+      <div className="[--panel-pad:0px]">
+        <Table label="Notes" flush>
+          <TableHead>
             <TableRow>
-              <TableCell colSpan={showChapter ? 6 : 5} className="text-sm" style={{ color: 'var(--text-muted)' }}>
-                <p>{filtered ? 'No findings match these filters.' : 'No findings to show.'}</p>
-                {filtered && (
-                  <Button variant="secondary" className="mt-2" onClick={onClearFilters}>
-                    Clear filters
-                  </Button>
-                )}
-              </TableCell>
+              {showChapter && <TableHeader>Chapter</TableHeader>}
+              <TableHeader>Time</TableHeader>
+              <TableHeader>Type</TableHeader>
+              <TableHeader>Script vs. heard</TableHeader>
+              <TableHeader>From</TableHeader>
+              <TableHeader>Resolution</TableHeader>
             </TableRow>
-          )}
-        </TableBody>
-      </Table>
-      {page && onShowMore && page.total > findings.length && (
-        <div className="flex items-center justify-between gap-3 px-2 pt-3 pb-1 text-sm" style={{ color: 'var(--text-muted)' }}>
-          <span>
-            Showing {findings.length} of {page.total}
-          </span>
-          <Button variant="secondary" onClick={onShowMore}>
-            Show more
-          </Button>
-        </div>
-      )}
+          </TableHead>
+          <TableBody>
+            {findings.map((finding) => (
+              <TableRow key={finding.id} selected={finding.id === selectedId} onActivate={() => onSelect(finding)}>
+                {showChapter && <TableCell className="whitespace-nowrap">{chapterLabel(finding)}</TableCell>}
+                <TableCell className="font-['IBM_Plex_Mono',ui-monospace,monospace] whitespace-nowrap">
+                  {finding.time_range ? formatTime(finding.time_range.start) : '—'}
+                </TableCell>
+                <TableCell>
+                  <NoteChip tone={CATEGORY_TONE[finding.category] ?? 'neutral'} label={evidenceKindLabel(finding)} shape="tag" />
+                  {finding.not_in_latest_run && (
+                    <div className="mt-0.5 text-xs" style={{ color: 'var(--text-muted)' }}>
+                      not in the latest run
+                    </div>
+                  )}
+                </TableCell>
+                <TableCell className="[overflow-wrap:anywhere]">{findingSummary(finding)}</TableCell>
+                <TableCell className="text-xs" style={{ color: 'var(--text-muted)' }}>
+                  {analyzerLabel(finding.analyzer)}
+                  {finding.confidence !== null && ` · ${confidenceLabel(finding.confidence)}`}
+                </TableCell>
+                <TableCell className="whitespace-nowrap">
+                  <NoteChip {...resolutionOf(finding)} />
+                </TableCell>
+              </TableRow>
+            ))}
+            {page && findings.length === 0 && (
+              <TableRow>
+                <TableCell colSpan={showChapter ? 6 : 5} className="text-sm" style={{ color: 'var(--text-muted)' }}>
+                  <p>{filtered ? 'No findings match these filters.' : 'No findings to show.'}</p>
+                  {filtered && (
+                    <Button variant="secondary" className="mt-2" onClick={onClearFilters}>
+                      Clear filters
+                    </Button>
+                  )}
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+        {page && onShowMore && page.total > findings.length && (
+          <div className="flex items-center justify-between gap-3 px-4 py-3 text-sm" style={{ color: 'var(--text-muted)' }}>
+            <span>
+              Showing {findings.length} of {page.total}
+            </span>
+            <Button variant="secondary" onClick={onShowMore}>
+              Show more
+            </Button>
+          </div>
+        )}
+      </div>
     </section>
   );
 }

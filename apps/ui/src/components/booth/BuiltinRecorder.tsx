@@ -4,6 +4,7 @@ import { useEffect, useId, useRef, useState } from 'react';
 import { useApi } from '../../api/ApiContext';
 import type { RecorderTake } from '../../api/contracts/recording';
 import { Button } from '../primitives/Button';
+import { FIELD_LABEL_CLASSES } from '../primitives/Field';
 import { IconButton } from '../primitives/IconButton';
 import { LevelMeter } from '../primitives/LevelMeter';
 import { Panel } from '../primitives/Panel';
@@ -22,7 +23,6 @@ import type { Recorder } from './useRecorder';
 // bar's Record toggle where "Record in REAPER" was, and the rail's session summary ("Recorded 41:12 · …") as the takes
 // list. The pre-session setup gains "Record with" and, for the built-in recorder, its input device (the shared picker, Q6).
 
-const LABEL_CLASS = 'block text-[0.82rem] font-medium text-[var(--text-muted)]';
 const MONO = "font-['IBM_Plex_Mono',ui-monospace,monospace]";
 
 const ENGINE_OPTIONS = [
@@ -124,7 +124,7 @@ export function RecorderSetup({ recorder }: { recorder: Recorder }) {
     <div className="mx-auto mb-4 w-full max-w-3xl">
       <Panel>
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
-          <span className={LABEL_CLASS}>Record with</span>
+          <span className={FIELD_LABEL_CLASSES}>Record with</span>
           <ToggleGroup
             label="Record with"
             className="flex-wrap gap-1.5"
