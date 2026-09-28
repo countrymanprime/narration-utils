@@ -6,6 +6,8 @@ import type { ChapterSyncPreview } from '../../api/contracts/chapterSync';
 import type { Notify } from '../primitives/Toast';
 import { Button } from '../primitives/Button';
 import { Panel } from '../primitives/Panel';
+import { InsetCard } from '../primitives/InsetCard';
+import { SectionLabel } from '../primitives/SectionLabel';
 import { Select } from '../primitives/Select';
 import {
   chapterSyncActivityRows,
@@ -118,7 +120,7 @@ export function ChapterSyncPanel({ notify, onChanged }: { notify: Notify; onChan
         </Button>
       }
     >
-      <p className="mt-1 text-sm" style={{ color: 'var(--text-muted)' }}>
+      <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
         {chapterSyncSummaryText({ lastSync: state.lastSync, projectFile: state.projectFile, chapters: state.chapters, linked: state.counts.linked })}
       </p>
       {state.unsavedEdits && (
@@ -133,12 +135,12 @@ export function ChapterSyncPanel({ notify, onChanged }: { notify: Notify; onChan
       )}
       {preview && preview.needsYou.length > 0 && (
         <div className="mt-3 space-y-2 border-t border-[var(--border)] pt-3">
-          <h3 className="section-label">Needs you ({preview.needsYou.length})</h3>
+          <SectionLabel as="h3">Needs you ({preview.needsYou.length})</SectionLabel>
           {preview.needsYou.map((item) => {
             const fallback = item.best?.trackGuid ?? item.candidates[0]?.trackGuid ?? '';
             const selected = picked[item.chapterId] ?? fallback;
             return (
-              <div key={item.chapterId} className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-[var(--accent)] p-2.5">
+              <InsetCard key={item.chapterId} tone="accent" className="flex flex-wrap items-center justify-between gap-2">
                 <div className="min-w-0 flex-1">
                   <div className="font-medium">{item.chapterTitle}</div>
                   <div className="text-sm" style={{ color: 'var(--text-muted)' }}>
@@ -158,7 +160,7 @@ export function ChapterSyncPanel({ notify, onChanged }: { notify: Notify; onChan
                     </Button>
                   </div>
                 )}
-              </div>
+              </InsetCard>
             );
           })}
         </div>
@@ -167,13 +169,17 @@ export function ChapterSyncPanel({ notify, onChanged }: { notify: Notify; onChan
         <div className="mt-3 grid gap-4 border-t border-[var(--border)] pt-3 text-sm sm:grid-cols-2">
           {notChapters && (
             <div className="min-w-0">
-              <h3 className="section-label mb-1">Tracks that are not chapters ({notChaptersCount})</h3>
+              <SectionLabel as="h3" className="mb-1">
+                Tracks that are not chapters ({notChaptersCount})
+              </SectionLabel>
               <p className="[overflow-wrap:anywhere]">{notChapters}</p>
             </div>
           )}
           {activity.length > 0 && (
             <div className="min-w-0">
-              <h3 className="section-label mb-1">Sync activity</h3>
+              <SectionLabel as="h3" className="mb-1">
+                Sync activity
+              </SectionLabel>
               <ul className="space-y-0.5" style={{ color: 'var(--text-muted)' }}>
                 {activity.map((row) => (
                   <li key={row.key} className="[overflow-wrap:anywhere]">

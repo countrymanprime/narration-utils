@@ -2,6 +2,7 @@ import type { WorkJob } from '../../types';
 import { Button } from './Button';
 import { Dialog } from './Dialog';
 import { ProgressBar } from './ProgressBar';
+import { SectionLabel } from './SectionLabel';
 
 const active = new Set<WorkJob['phase']>(['preparing', 'committing', 'running']);
 
@@ -73,7 +74,9 @@ export function WorkDialog({
       </div>
       <ProgressBar label={`${title} progress`} value={indeterminate ? null : job.percent} running={running} valueText={job.detail} className="mt-3" />
       <div className="mt-3 text-xs" style={{ color: 'var(--text-muted)' }}>
-        <div className="mb-1.5 font-['Barlow_Condensed',sans-serif] text-[0.72rem] font-semibold tracking-[0.08em] uppercase">Live activity</div>
+        <SectionLabel as="div" className="mb-1.5">
+          Live activity
+        </SectionLabel>
         <div
           tabIndex={0}
           className="h-36 overflow-x-hidden overflow-y-auto border border-[var(--border)] bg-[var(--surface-2)] font-['IBM_Plex_Mono',ui-monospace,monospace] focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:outline-none focus-visible:ring-inset"

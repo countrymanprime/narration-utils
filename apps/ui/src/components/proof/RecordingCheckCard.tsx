@@ -51,7 +51,7 @@ export function RecordingCheckCard({
   return (
     <Panel title="Recording check">
       {figures.length > 0 && <StatStrip items={figures} label="Recording check figures" className="mt-3" />}
-      <p className="mt-3 text-sm" style={{ color: 'var(--text-muted)' }}>
+      <p className={`${figures.length > 0 ? 'mt-3' : ''} text-sm`} style={{ color: 'var(--text-muted)' }}>
         {alignment.state === 'never' ? standing : `${checkSentence(flags)} ${standing}`}
       </p>
     </Panel>

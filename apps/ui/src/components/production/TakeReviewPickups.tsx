@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { InsetCard } from '../primitives/InsetCard';
 
 /**
  * RS4 A (recording-check-summary.prd.md Phase 3): the chapter's unreviewed take-review pickups - repeated reads
@@ -11,11 +12,11 @@ import { Link } from 'react-router-dom';
  */
 export function TakeReviewPickups({ count }: { count: number }) {
   return (
-    <div className="mt-2 flex flex-wrap items-center justify-between gap-2 rounded-md border border-dashed border-[var(--border)] px-3 py-2 text-sm">
+    <InsetCard dashed className="mt-2 flex flex-wrap items-center justify-between gap-2 text-sm">
       <span>Repeated reads (Proof): {count === 0 ? 'none waiting' : `${count} group${count === 1 ? '' : 's'} not reviewed yet`}</span>
       <Link to="/proof" className="font-semibold underline">
         Open Proof
       </Link>
-    </div>
+    </InsetCard>
   );
 }

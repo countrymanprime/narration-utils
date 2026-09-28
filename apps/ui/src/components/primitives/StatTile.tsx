@@ -1,9 +1,6 @@
 import { ProgressBar } from './ProgressBar';
+import { SectionLabel } from './SectionLabel';
 
-// The eyebrow label: Barlow Condensed at the shared label size and tracking (mock-fidelity-primitives-and-components.prd.md
-// Phase 0b's --font-size-label/--tracking-label, measured from the benchmark's eyebrows, table headers and tag labels).
-const EYEBROW =
-  "font-['Barlow_Condensed',sans-serif] text-[length:var(--font-size-label)] font-semibold tracking-[var(--tracking-label)] text-[var(--text-muted)] uppercase";
 const MONO = "font-['IBM_Plex_Mono',ui-monospace,monospace]";
 
 const TONE_TEXT: Record<Exclude<StatTileTone, 'neutral'>, string> = {
@@ -40,7 +37,7 @@ export function StatTile({
 }) {
   return (
     <div className={className}>
-      <div className={EYEBROW}>{label}</div>
+      <SectionLabel as="div">{label}</SectionLabel>
       {/* Plex Mono 22 px, weight 500 (mock B01) - one step up from the shared body mono and a touch lighter than the old bold 20 px. */}
       <div className={`mt-0.5 text-[1.375rem] font-medium ${MONO}`}>
         <span style={tone === 'neutral' ? undefined : { color: TONE_TEXT[tone] }}>{value}</span>

@@ -3,6 +3,7 @@ import { EnginePanelLink } from '../engine/EnginePanelContext';
 import { chapterName, context } from '../../chapterName';
 import type { ManuscriptChapter, StageChapterRecommendation, StageEvidence as Evidence, StageSignal } from '../../types';
 import { Button } from '../primitives/Button';
+import { InsetCard } from '../primitives/InsetCard';
 import { SlideOver } from '../primitives/SlideOver';
 import { formatWhen, paragraphRefs } from '../production/recordingCheckText';
 import type { StageDecision, StagesState } from './useStageRecommendations';
@@ -175,7 +176,7 @@ function SignalCard({
   const cause = causeText(signal);
   const age = formatAge(signal.basis.projectFileModTime, now);
   return (
-    <section className="space-y-2 rounded-md border border-[var(--border)] px-3 py-2" aria-label={signalName(signal)}>
+    <InsetCard as="section" className="space-y-2" aria-label={signalName(signal)}>
       <p className="font-semibold">{signalName(signal)}</p>
       <p>
         <span className="font-semibold" style={{ color: signal.state === 'not_met' ? 'var(--danger-text)' : undefined }}>
@@ -207,7 +208,7 @@ function SignalCard({
         Based on the saved REAPER project, file modified {formatWhen(signal.basis.projectFileModTime)}
         {age && ` (${age})`}. Read {formatWhen(signal.computedAt)}.
       </p>
-    </section>
+    </InsetCard>
   );
 }
 
@@ -273,15 +274,11 @@ function EvidenceLine({
 
 function Section({ title, tone, children }: { title: string; tone?: 'warn'; children: ReactNode }) {
   return (
-    <section
-      aria-label={title}
-      className="space-y-2 rounded-md border px-3 py-2"
-      style={{ borderColor: tone === 'warn' ? 'var(--warn)' : 'var(--border)', background: 'var(--surface-2)' }}
-    >
+    <InsetCard as="section" aria-label={title} tone={tone === 'warn' ? 'warn' : 'neutral'} fill className="space-y-2">
       <p className="font-semibold" style={tone === 'warn' ? { color: 'var(--warn-text)' } : undefined}>
         {title}
       </p>
       {children}
-    </section>
+    </InsetCard>
   );
 }

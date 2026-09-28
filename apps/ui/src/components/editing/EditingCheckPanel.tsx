@@ -6,6 +6,7 @@ import { describeApiError } from '../../api/errorMessage';
 import { usePendingAction } from '../../hooks/usePendingAction';
 import type { EditingRefusalReason, EditingSourceChoice, EditingState, Finding, ManuscriptChapter, StageSignal, StageSignalState, Track } from '../../types';
 import { Button } from '../primitives/Button';
+import { InsetCard } from '../primitives/InsetCard';
 import { ProgressBar } from '../primitives/ProgressBar';
 import { SlideOver } from '../primitives/SlideOver';
 import { ToggleGroup } from '../primitives/ToggleGroup';
@@ -112,7 +113,7 @@ function ClassSummary({
 }) {
   const ordered = sortCandidates(candidates);
   return (
-    <section className="space-y-2 rounded-md border border-[var(--border)] px-3 py-2">
+    <InsetCard as="section" className="space-y-2">
       <p className="font-semibold">{EDITING_CLASS_LABEL[cls]}</p>
       {signal ? (
         <>
@@ -142,7 +143,7 @@ function ClassSummary({
           onChanged={onCandidateChanged}
         />
       ))}
-    </section>
+    </InsetCard>
   );
 }
 
@@ -307,7 +308,7 @@ export function EditingCheckPanel({ chapter, notify, close }: { chapter: Manuscr
           </p>
         )}
         {refusal && mappingRefusal && (
-          <div className="space-y-2 rounded-md border px-3 py-2" style={{ borderColor: 'var(--danger)', background: 'var(--surface-2)' }}>
+          <InsetCard tone="danger" fill className="space-y-2">
             <p className="font-semibold" style={{ color: 'var(--danger-text)' }}>
               This chapter can&rsquo;t be checked yet
             </p>
@@ -323,7 +324,7 @@ export function EditingCheckPanel({ chapter, notify, close }: { chapter: Manuscr
                 }}
               />
             )}
-          </div>
+          </InsetCard>
         )}
         {otherRunning && (
           <p role="status" style={{ color: 'var(--text-muted)' }}>

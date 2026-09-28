@@ -9,11 +9,14 @@ import { Tooltip } from './Tooltip';
 // type are the mocks' (tableStyles.ts, ADR 0605).
 
 // `label` names the table for a screen reader ("Chapters", "Aliases"). `flush` runs it to the side edges of the Panel it
-// sits in, as the mocks draw a table in a card; the cells' own padding keeps the text off the card's border. It spans
-// Panel's side padding (1.1rem) until Panel has a flush body (the PRD's Phase 4), which then takes this over.
+// sits in, as the mocks draw a table in a card; the cells' own padding keeps the text off the card's border. It spans the
+// Panel body's padding (`--panel-pad`, ADR 0640), which is nothing in a `Panel flush`.
 export function Table({ label, flush = false, className = '', children }: { label: string; flush?: boolean; className?: string; children: ReactNode }) {
   return (
-    <table aria-label={label} className={`border-collapse ${TABLE_TEXT_CLASS} ${flush ? '-mx-[1.1rem] w-[calc(100%+2.2rem)]' : 'w-full'} ${className}`}>
+    <table
+      aria-label={label}
+      className={`border-collapse ${TABLE_TEXT_CLASS} ${flush ? '-mx-[var(--panel-pad,1rem)] w-[calc(100%+2*var(--panel-pad,1rem))]' : 'w-full'} ${className}`}
+    >
       {children}
     </table>
   );
