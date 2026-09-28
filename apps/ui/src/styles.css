@@ -84,12 +84,10 @@
   --meter-body: var(--ok);
   --meter-hot: var(--warn);
   --meter-over: var(--danger);
-  /* StatusBadge's chip fills (Phase 1): a 14% tint of the tone colour, the one percentage that holds 4.5:1 against every
-     tone's own -text colour in both themes. The entity badges' 18% (ADR 0059) does not: --danger-text
-     on an 18% --danger tint falls to 4.29:1 in the dark theme. Derived the same way as the meter zones above. */
-  --badge-ok-fill: color-mix(in srgb, var(--ok) 14%, transparent);
-  --badge-warn-fill: color-mix(in srgb, var(--warn) 14%, transparent);
-  --badge-info-fill: color-mix(in srgb, var(--info) 14%, transparent);
+  /* The 14% badge tints of ADR 0362 (Phase 1): a 14% tint of the tone colour, the one percentage that holds 4.5:1 against
+     every tone's own -text colour in both themes. StatusBadge fills with the opaque --<tone>-soft family below (ADR 0590,
+     0600); these two stay for their last users, ReadingControlBar's danger chip (Phase 13) and the experimental tone, which
+     has no soft token. The ok, warn and info tints went with StatusBadge's move (Phase 2). */
   --badge-danger-fill: color-mix(in srgb, var(--danger) 14%, transparent);
   --badge-experimental-fill: color-mix(in srgb, var(--experimental) 14%, transparent);
   /* The mock fidelity token batch (mock-fidelity-primitives-and-components.prd.md Phase 0b, ADR 0590), measured on the

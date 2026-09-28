@@ -6,6 +6,7 @@ import { readTimeLabel } from '../../state';
 import { Button } from '../primitives/Button';
 import { PANEL_FRAME_CLASS } from '../primitives/panelStyles';
 import { SectionLabel } from '../primitives/SectionLabel';
+import { StatusBadge } from '../primitives/StatusBadge';
 import { TitleSubtitle } from '../primitives/TitleSubtitle';
 import { TooltipTarget } from '../primitives/Tooltip';
 
@@ -147,11 +148,7 @@ export function ReaderCard({
           </h2>
         </button>
         <div className="flex items-center gap-3 justify-self-end text-right @max-[40rem]:col-start-2 @max-[40rem]:justify-self-start">
-          {showRetailSample && (
-            <span className="rounded-[0.2rem] px-1.5 py-0.5 text-xs font-medium" style={{ background: 'var(--place-soft)', color: 'var(--info-text)' }}>
-              Retail sample
-            </span>
-          )}
+          {showRetailSample && <StatusBadge tone="info" shape="tag" label="Retail sample" />}
           <div className={STAT_BLOCK_CLASS}>
             <div className="font-['IBM_Plex_Mono',ui-monospace,monospace] text-xs">{wordCount.toLocaleString()} words</div>
             <div className="mt-0.5 text-xs" style={{ color: 'var(--text-muted)' }}>

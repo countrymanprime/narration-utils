@@ -3,6 +3,7 @@ import type { WorkspaceExtra, WorkspaceParagraph, WorkspaceToken } from '../../a
 import { Button } from '../primitives/Button';
 import { Panel } from '../primitives/Panel';
 import { SectionLabel } from '../primitives/SectionLabel';
+import { StatusBadge } from '../primitives/StatusBadge';
 
 const STATUS_CLASS: Partial<Record<WorkspaceToken['status'], string>> = {
   skip: 'line-through',
@@ -57,14 +58,7 @@ function Token({ token, isCurrent, onSeek }: { token: WorkspaceToken; isCurrent:
 }
 
 function ExtraChip({ extra }: { extra: WorkspaceExtra }) {
-  return (
-    <span
-      className="mx-1 inline-flex items-center gap-1 rounded-full border px-1.5 py-0.5 text-xs"
-      style={{ borderColor: 'var(--border)', color: 'var(--text-muted)' }}
-    >
-      {'↻'} repeat &middot; &ldquo;{extra.text}&rdquo;
-    </span>
-  );
+  return <StatusBadge tone="neutral" look="outline" className="mx-1" icon="↻" label={`repeat · “${extra.text}”`} />;
 }
 
 /**

@@ -2,7 +2,8 @@ import { useId, type ComponentProps } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faChevronLeft, faChevronRight } from '@fortawesome/free-solid-svg-icons';
 import type { GuideEntity, ManuscriptNote } from '../../types';
-import { CAT_DOT_BG, CAT_DOT_CLASS, EntitySummary } from '../manuscript/EntitySummary';
+import { CAT_DOT_BG, EntitySummary } from '../manuscript/EntitySummary';
+import { Dot } from '../primitives/StatusBadge';
 import { IconButton } from '../primitives/IconButton';
 import { Tab, TabList, TabPanel, Tabs } from '../primitives/Tabs';
 import { TooltipTarget } from '../primitives/Tooltip';
@@ -133,7 +134,7 @@ export function ReaderRail({ state, onTab, onToggle, seekable, entities, notes, 
                       aria-current={entity.id === selectedEntity?.id || undefined}
                       onClick={() => onSelect({ kind: 'entity', entity })}
                     >
-                      <span className={CAT_DOT_CLASS} style={{ background: CAT_DOT_BG[entity.category] ?? 'var(--review)' }} aria-hidden />
+                      <Dot color={CAT_DOT_BG[entity.category] ?? 'var(--review)'} />
                       <span className="min-w-0 [overflow-wrap:anywhere]">{entity.canonical_name}</span>
                     </button>
                   </li>

@@ -14,7 +14,8 @@ import { AssetFacts } from '../assets/AssetFacts';
 import { AssetInstallPrompt } from '../assets/AssetInstallPrompt';
 import { Heading } from '../primitives/Heading';
 import { TooltipTarget } from '../primitives/Tooltip';
-import { CAT_DOT_BG, CAT_DOT_CLASS } from '../manuscript/EntitySummary';
+import { CAT_DOT_BG } from '../manuscript/EntitySummary';
+import { Dot } from '../primitives/StatusBadge';
 import { GuideDetail } from './GuideDetail';
 import { PronunciationQueries } from './PronunciationQueries';
 import { VoiceDataPanel } from './VoiceDataPanel';
@@ -253,7 +254,7 @@ export function Guide({ notify, goToManuscript }: { notify: Notify; goToManuscri
                     <TableRow key={row.id} selected={!pendingNewEntity && selectedId === row.id} onActivate={() => selectRow(row.id)}>
                       <TableCell>
                         <div className="flex items-center gap-2">
-                          <span className={CAT_DOT_CLASS} style={{ background: CAT_DOT_BG[categoryCssName(row.category)] }} />
+                          <Dot color={CAT_DOT_BG[categoryCssName(row.category)]} />
                           <span className="truncate text-sm font-medium">{row.canonical_name}</span>
                           {row.locked && <FontAwesomeIcon icon={faLock} className="text-[10px]" style={{ color: 'var(--non-text)' }} />}
                         </div>

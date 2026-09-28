@@ -9,14 +9,16 @@ const LEGEND_DOT: Record<StatusTone, string> = {
   neutral: 'bg-[var(--text-muted)]',
   info: 'bg-[var(--info)]',
   progress: 'bg-[var(--accent)]',
+  accent: 'bg-[var(--accent)]',
   success: 'bg-[var(--ok)]',
   warning: 'bg-[var(--warn)]',
   danger: 'bg-[var(--danger)]',
   experimental: 'bg-[var(--experimental)]',
+  org: 'bg-[var(--org)]',
 };
 
-// Timeline's markers take every tone but `progress`, which no note category uses.
-const markerTone = (tone: StatusTone): TimelineMarker['tone'] => (tone === 'progress' ? 'info' : tone);
+// Timeline's markers take every tone but `progress`, `accent` and `org`, which no note category uses.
+const markerTone = (tone: StatusTone): TimelineMarker['tone'] => (tone === 'progress' || tone === 'accent' || tone === 'org' ? 'info' : tone);
 
 /** Where the chapter's recording starts and ends on the project timeline: its linked track's items, first to last. */
 function chapterSpan(items: readonly TrackItem[]): { start: number; end: number } | undefined {

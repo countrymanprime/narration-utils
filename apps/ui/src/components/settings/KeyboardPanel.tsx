@@ -8,6 +8,7 @@ import { Button } from '../primitives/Button';
 import { InsetCard } from '../primitives/InsetCard';
 import { Kbd } from '../primitives/Kbd';
 import { SectionLabel } from '../primitives/SectionLabel';
+import { StatusBadge } from '../primitives/StatusBadge';
 import type { Notify } from '../primitives/Toast';
 import { COMMAND_CATALOG, type CommandDescriptor, type CommandId } from '../../input/commands.catalog';
 import { findConflicts, type Conflict } from '../../input/findConflicts';
@@ -93,18 +94,9 @@ function isChanged(keymap: Keymap, defaults: Keymap, commandId: CommandId): bool
   return current.length !== base.length || current.some((value, index) => value !== base[index]);
 }
 
-// The "Keys and pedals" intro copy and the "Changed" badge match the owner-approved mockups
-// (docs/prds/mockups/input-commands-and-pedals/01-settings-global-keyboard.webp).
-function ChangedBadge() {
-  return (
-    <span
-      className="inline-flex items-center rounded-full border px-2 py-0.5 font-['Barlow_Condensed',sans-serif] text-[0.7rem] leading-tight font-semibold tracking-[0.03em] uppercase"
-      style={{ color: 'var(--warn-text)', borderColor: 'var(--warn)' }}
-    >
-      Changed
-    </span>
-  );
-}
+// The "Keys and pedals" intro copy matches the owner-approved mockups
+// (docs/prds/mockups/input-commands-and-pedals/01-settings-global-keyboard.webp); the "Changed" badge is THE pill's warn
+// outline (StatusBadge, ADR 0600), the dark sets' "CHANGED".
 
 function GestureChips({ gestures }: { gestures: Gesture[] }) {
   if (gestures.length === 0) {
@@ -295,7 +287,7 @@ export function KeyboardPanel({
                           Plays audio
                         </span>
                       )}
-                      {changed && <ChangedBadge />}
+                      {changed && <StatusBadge tone="warning" look="outline" label="Changed" />}
                     </span>
                     <span className="flex flex-wrap items-center gap-2">
                       <GestureChips gestures={gestures} />
