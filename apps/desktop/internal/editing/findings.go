@@ -37,7 +37,7 @@ func EmptySpaceFinding(documentID, chapterID, chapterTitle string, candidate Emp
 		primaryFile = itemFiles[primaryItem]
 	}
 	evidenceMap := map[string]any{
-		"class": "silence", "boundary": string(candidate.Class),
+		"class": "silence", "boundary": string(candidate.Class), "source": "items",
 		"duration_seconds": candidate.Range.length(),
 		"item_guids":       candidate.ItemGUIDs,
 		"parts":            partsEvidence(candidate.Parts),
@@ -82,6 +82,61 @@ func EmptySpaceFinding(documentID, chapterID, chapterTitle string, candidate Emp
 		EvidenceVersion: EmptySpaceEvidenceVersion(candidate),
 	}
 	finding.ID = findings.StableID(analyzerName, documentID, chapterID, "empty_space", finding.EvidenceVersion)
+	return finding
+}
+
+// RenderEmptySpaceFinding is EmptySpaceFinding's Phase 8 counterpart for the
+// render path (Q6): a composed candidate over the whole rendered file rather
+// than the chapter's items. There is no item or take GUID to name (a render
+// has no items), so Source names only the render's own path, and
+// evidence["source"] is "render" rather than "items" - the one thing Q6
+// requires every evidence entry to say: which source was analyzed.
+func RenderEmptySpaceFinding(documentID, chapterID, chapterTitle string, candidate EmptySpaceCandidate, renderPath string, policy Policy) findings.Finding {
+	evidenceMap := map[string]any{
+		"class": "silence", "boundary": string(candidate.Class), "source": "render",
+		"duration_seconds": candidate.Range.length(),
+		"parts":            partsEvidence(candidate.Parts),
+	}
+	if policy.MaxGapSeconds != nil {
+		evidenceMap["max_gap_seconds"] = *policy.MaxGapSeconds
+	}
+	if policy.HeadMaxSeconds != nil {
+		evidenceMap["head_max_seconds"] = *policy.HeadMaxSeconds
+	}
+	if policy.TailMaxSeconds != nil {
+		evidenceMap["tail_max_seconds"] = *policy.TailMaxSeconds
+	}
+
+	sourceStart, sourceEnd := sourceRangeOf(candidate)
+	confidence := 0.6
+	evidenceMap["reason"] = fmt.Sprintf("a %s candidate in the rendered file: %.2f s of empty space (%s); it is cut only once you approve it",
+		candidate.Class, candidate.Range.length(), partsSummary(candidate.Parts))
+
+	finding := findings.Finding{
+		SchemaVersion: findings.SchemaVersion,
+		Analyzer:      analyzerName,
+		Source:        findings.Source{File: renderPath},
+		TimeRange: &findings.TimeRange{
+			Start: candidate.Range.Start, End: candidate.Range.End,
+			SourceStart: sourceStart, SourceEnd: sourceEnd,
+		},
+		Manuscript:       &findings.Manuscript{ChapterID: chapterID, ChapterTitle: chapterTitle},
+		Category:         findings.CategorySilenceCleanup,
+		Severity:         findings.SeverityInfo,
+		Confidence:       &confidence,
+		ConfidenceReason: "an empty-space candidate against the narrator's own threshold, not a calibrated score",
+		Evidence:         evidenceMap,
+		SuggestedAction: &findings.SuggestedAction{
+			Kind: "trim_empty_space",
+			Parameters: map[string]any{
+				"start_seconds": candidate.Range.Start, "end_seconds": candidate.Range.End, "boundary": string(candidate.Class),
+			},
+			RequiresConfirmation: true,
+		},
+		Review:          findings.ReviewState{Status: findings.StatusUnreviewed},
+		EvidenceVersion: EmptySpaceEvidenceVersion(candidate),
+	}
+	finding.ID = findings.StableID(analyzerName, documentID, chapterID, "empty_space_render", finding.EvidenceVersion)
 	return finding
 }
 

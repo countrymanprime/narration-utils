@@ -141,6 +141,8 @@ export const SILENT_CATCHES: Record<string, string> = {
     'Re-reads a finding after the host refused a decision, only to tell changed evidence apart; when the re-read fails too, the inline alert still shows the host reason for the refusal, so nothing is hidden.',
   'src/components/editing/EditingCandidateRow.tsx#1':
     'Re-reads a candidate after the host refused a decision, only to tell changed evidence apart; when the re-read fails too, the inline alert still shows the host reason for the refusal, so nothing is hidden (mirrors FindingDetail.tsx#1).',
+  'src/components/editing/EditingCheckPanel.tsx#1':
+    "Q6 (editing-readiness-analysis.prd.md Phase 8): reads the chapter's stored analysis-source choice on open; a failed read just leaves the default (items) selected, which is already correct for a chapter with no choice made yet, so there is nothing to guard or retry.",
   'src/components/engine/RetakeLanesDialog.tsx#1':
     'Hydrates whatever pick was already in flight when the dialog reopened; the list still loads and every pick shows its own failure inline.',
   'src/components/engine/CleanupToolsDialog.tsx#1':
