@@ -7,7 +7,7 @@
   - /children: equal
   - group "Production":
     - /children: equal
-    - button "Home"
+    - button "Production"
   - group "Prep":
     - /children: equal
     - button "Script"

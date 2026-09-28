@@ -45,10 +45,8 @@
       ],
       "needsApproval": true,
       "support": {
-        "available": false,
-        "level": "not_yet_available",
-        "message": "Your DAW's FX chain is not available yet.",
-        "reason": "not_yet"
+        "available": true,
+        "level": "experimental"
       }
     }
   ]

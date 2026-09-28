@@ -150,6 +150,14 @@ var eventSpecs = map[string]eventSpec{
 	"FX_PLUGIN":         {required: []fieldSpec{text("run"), text("name")}},
 	"FX_PLUGINS_LISTED": {required: []fieldSpec{text("run"), count("count"), count("truncated")}},
 	"TAKE_FX_ADDED":     {required: []fieldSpec{text("run"), text("name"), text("itemGuid"), text("takeGuid"), count("splits")}},
+	// master_chain_read and render_with_fx (narration_master_render.lua; render-encode-master PRD Phase 9, ADR 0306): the mastering
+	// port's DAW row. MASTER_CHAIN_FX is one per FX slot, every track's in track order and then the master's (track "master");
+	// enabled is 0 or 1; MASTER_CHAIN_READ closes the list (truncated 1 when the bridge's cap cut it). FX_RENDER_FILE is one per
+	// region rendered, in the order asked, its path inside the run folder; FX_RENDERED closes the render with the folder and count.
+	"MASTER_CHAIN_FX":   {required: []fieldSpec{text("run"), text("track"), text("trackName"), text("name"), count("enabled")}},
+	"MASTER_CHAIN_READ": {required: []fieldSpec{text("run"), count("count"), count("truncated")}},
+	"FX_RENDER_FILE":    {required: []fieldSpec{text("run"), text("region"), text("path")}},
+	"FX_RENDERED":       {required: []fieldSpec{text("run"), text("folder"), count("count")}},
 }
 
 // CheckEvent validates one decoded event line (the tag first) against the table. The error names the tag, the position and name of

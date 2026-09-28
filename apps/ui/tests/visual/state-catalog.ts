@@ -1,7 +1,6 @@
 import type { StateEntry } from './lib/types';
 import { projectStates } from './catalog/project';
 import { startupStates } from './catalog/startup';
-import { homeStates } from './catalog/home';
 import { scriptStates } from './catalog/script';
 import { storybibleStates } from './catalog/storybible';
 import { engineStates } from './catalog/engine';
@@ -27,7 +26,6 @@ export type { StateEntry };
 export const STATE_CATALOG: StateEntry[] = [
   ...projectStates,
   ...startupStates,
-  ...homeStates,
   ...scriptStates,
   ...storybibleStates,
   ...engineStates,

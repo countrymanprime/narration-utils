@@ -7,10 +7,7 @@ import { wireClone } from './mockFixtures';
 
 type MockRow = Omit<MasteringProvider, 'default'>;
 
-const DAW_LABEL = "Your DAW's FX chain";
-const NOT_YET = `${DAW_LABEL} is not available yet.`;
-
-/** internal/masteringport's rows: builtin.go, then daw.go (declared, not yet available). */
+/** internal/masteringport's rows: builtin.go, then daw.go (Experimental until the owner's REAPER pass). */
 const ROWS: MockRow[] = [
   {
     name: 'builtin',
@@ -27,11 +24,11 @@ const ROWS: MockRow[] = [
   },
   {
     name: 'daw',
-    label: DAW_LABEL,
+    label: "Your DAW's FX chain",
     modes: ['daw_region'],
     needsApproval: true,
     needs: ['render_with_fx', 'master_chain_read'],
-    support: { level: 'not_yet_available', available: false, reason: 'not_yet', message: NOT_YET },
+    support: { level: 'experimental', available: true },
     chain: [],
   },
 ];

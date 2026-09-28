@@ -2,7 +2,7 @@
 
 # Navigation
 
-The sidebar on the left is grouped by production stage, the way a narrator's week runs: **Production** ([Home](home.md)),
+The sidebar on the left is grouped by production stage, the way a narrator's week runs: **Production** ([Production](production.md)),
 **Prep** ([Script](script.md), [Story Bible](story-bible.md)), **Record** ([Booth](booth.md)),
 **Review** ([Proof](proof.md), [Pickups](pickups.md)) and **Finish** ([Master & QC](master-and-qc.md)).
 At desktop widths each group shows as a heading over its pages; narrower windows switch it to icon-only groups
@@ -16,13 +16,18 @@ In the icon-only layout, hover an icon (or tab to it) to see the page's name.
 ![Icon-only navigation rail with a page name shown on hover](../../images/ui/nav-rail-tooltip.webp)
 
 Script, Story Bible, and Booth stay locked until a manuscript has been
-[imported on Home](home.md). Hovering a locked entry says what is missing. Home, Proof, Pickups, and Delivery
+[imported on Production](production.md#importing-the-manuscript). Hovering a locked entry says what is missing. Production, Proof, Pickups, and Delivery
 are always available.
 
-The chip at the right of the header shows the linked audio engine, and clicking it opens the
+The header runs, left to right: Back and Forward (below), the project's name, and at the right the timer and
+engine chips. While a [production stage timer](production.md#the-stage-timer) runs, the timer chip counts its
+time and names the chapter ("0:42:07 · timer on Chapter 6") on every page; below the tablet width it keeps the
+clock only. With no timer running it is not there.
+
+The engine chip at the right of the header shows the linked audio engine, and clicking it opens the
 [audio engine panel](#the-audio-engine-panel), where the project's `.rpp` file is linked or changed:
 
-- **REAPER project linked**: a `.rpp` file is linked to this project.
+- **REAPER linked**: a `.rpp` file is linked to this project.
 - **No REAPER project linked**: nothing is linked yet.
 - **Wrong REAPER project open**: REAPER is running with a different project open than the linked one. Link
   the open project instead, or switch REAPER to the linked file.
@@ -51,7 +56,7 @@ file, the REAPER tools, chapter sync, the project's tracks and each chapter's li
 with its close button, Escape or a click beside it. (It replaced the Tracks page; an old link to that page
 opens [Proof](proof.md) with this panel open over it.)
 
-![The audio engine panel open over Home](../../images/ui/engine-panel.webp)
+![The audio engine panel open over the Production home](../../images/ui/engine-panel.webp)
 
 ### The REAPER project
 
@@ -144,7 +149,7 @@ change the REAPER project.
 A linked chapter's row also has **Open workspace**, into the chapter's [Proof view](proof.md#the-chapter-view): one
 screen to listen to the chapter against its script and see where the recording check found a problem.
 
-When one or more chapters have a [Home](home.md#stage-suggestions) stage suggestion that can't be
+When one or more chapters have a [Production](production.md#stage-suggestions) stage suggestion that can't be
 computed because its track link is missing or not yet confirmed, a line above Chapter links says so
 ("N chapters can't get a stage suggestion until their track links are confirmed below") and points
 at this same list - link or confirm the chapter there to let its suggestion be computed on the next
@@ -154,7 +159,7 @@ read.
 
 Each chapter's row also has **Editing check…**, opening its own panel over this one: whether
 empty space, clicks and breaths still need trimming out. The same panel opens from
-[Home](home.md#stage-suggestions)'s evidence popover, under **Why**, when the editing signal
+a chapter's [stage suggestion](production.md#stage-suggestions) on Production when the editing signal
 names it as the way to resolve what's unknown.
 
 The panel never starts a check on its own: opening it only reads what the last check already
@@ -212,4 +217,4 @@ you link yourself is never overwritten.
 
 ---
 
-[← Getting started](getting-started.md) · [Index](README.md) · [Home →](home.md)
+[← Getting started](getting-started.md) · [Index](README.md) · [Production →](production.md)

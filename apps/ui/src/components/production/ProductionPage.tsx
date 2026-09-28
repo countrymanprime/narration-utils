@@ -2,18 +2,21 @@ import { useCallback, useEffect, useState } from 'react';
 import { useApi } from '../../api/ApiContext';
 import { apiErrorMessage } from '../../api/errorMessage';
 import type { ProductionNextUpItem, ProductionOverview, ProductionTotals } from '../../api/contracts/production';
+import type { Bootstrap } from '../../types';
 import { chapterName } from '../../chapterName';
 import { STATUS_LABELS } from '../../chapterStatus';
 import { estimateFinishedHours } from '../../state';
 import { Button } from '../primitives/Button';
 import { Heading } from '../primitives/Heading';
 import { Panel } from '../primitives/Panel';
-import { StageGrid } from '../primitives/StageGrid';
 import { StatTile } from '../primitives/StatTile';
-import { Toolbar, ToolbarButton } from '../primitives/Toolbar';
+import type { Notify } from '../primitives/Toast';
+import { Tooltip } from '../primitives/Tooltip';
+import { ChapterBoard } from './ChapterBoard';
+import { useManuscriptImport } from './ManuscriptImport';
 import { PlanPanel } from './PlanPanel';
 import { StatusReportPanel } from './StatusReportPanel';
-import { BOARD_COLUMNS, boardCell, deadlineFigure, formatClock, formatPfh, formatRate, nextUpLine, stageHoursHint } from './productionFormat';
+import { deadlineFigure, deliveryDue, formatClock, formatPfh, formatRate, nextUpLine, stageHoursHint } from './productionFormat';
 
 const MUTED = { color: 'var(--text-muted)' };
 const DANGER = { color: 'var(--danger-text)' };
@@ -124,37 +127,67 @@ function NextUp({
 }
 
 /**
- * Production (production tracking PRD Phase 4, delivered and deleted, ADR 0028; mock 01): the book's figures, a chapter by stage board and the chapters
- * that most threaten the delivery date. It reads one overview when it opens and after each timer action (Q8 A); readiness is the stage
- * suggestions' own verdict, never recomputed here. The page never sets a chapter status: only the stage timer writes, and only when
- * the narrator starts or stops it.
+ * The Production home at `/` (stage-navigation-and-page-replacement.prd.md Phase 2, mock 01; production tracking PRD Phase 4,
+ * delivered and deleted, ADR 0028): the book's figures, the chapter pipeline whose cells open each stage for the chapter, and the
+ * chapters that most threaten the delivery date. It replaced Home: with no manuscript yet it is the import, and the import and the
+ * credits prompt stay here. It reads one overview when it opens and after anything that changes it (Q8 A); readiness is the stage
+ * suggestions' own verdict, never recomputed here. Only the stage timer and the narrator's own choices on the board write.
  */
-export function ProductionPage() {
+export function ProductionPage({
+  data,
+  go,
+  notify,
+  goToScript,
+  goToProofChapter,
+  refreshBootstrap,
+  onOverview,
+}: {
+  data: Bootstrap;
+  go: (page: string) => void;
+  notify: Notify;
+  goToScript: (chapter: string, paragraph?: number) => void;
+  goToProofChapter: (chapterId: string) => void;
+  refreshBootstrap: () => Promise<void>;
+  /** Every overview this page reads, for the header's running-timer chip. */
+  onOverview?: (overview: ProductionOverview) => void;
+}) {
   const api = useApi();
+  const found = Boolean(data.manuscript);
+  const manuscriptKey = data.manuscript ? `${data.manuscript.id}:${data.manuscript.importedAt}` : 'no-manuscript';
+  const manuscriptImport = useManuscriptImport({ data, go, notify, refreshBootstrap });
   const [load, setLoad] = useState<Load>({ status: 'loading' });
   const [problem, setProblem] = useState<string>();
   const [notice, setNotice] = useState<string>();
   const [starting, setStarting] = useState<string>();
   const [stopping, setStopping] = useState(false);
+  const [reportOpen, setReportOpen] = useState(false);
 
   const read = useCallback(async () => {
     try {
-      setLoad({ status: 'ready', overview: await api.productionOverview() });
+      const overview = await api.productionOverview();
+      setLoad({ status: 'ready', overview });
+      onOverview?.(overview);
     } catch (error) {
       setLoad({ status: 'error', message: apiErrorMessage(error) });
     }
-  }, [api]);
+  }, [api, onOverview]);
+  const reread = useCallback(() => void read(), [read]);
 
   useEffect(() => {
+    if (!found) return;
     let active = true;
     api
       .productionOverview()
-      .then((overview) => active && setLoad({ status: 'ready', overview }))
+      .then((overview) => {
+        if (!active) return;
+        setLoad({ status: 'ready', overview });
+        onOverview?.(overview);
+      })
       .catch((error) => active && setLoad({ status: 'error', message: apiErrorMessage(error) }));
     return () => {
       active = false;
     };
-  }, [api]);
+  }, [api, found, manuscriptKey, onOverview]);
 
   const start = async (item: ProductionNextUpItem) => {
     setStarting(item.chapterId);
@@ -188,37 +221,67 @@ export function ProductionPage() {
     }
   };
 
-  const overview = load.status === 'ready' ? load.overview : undefined;
+  const overview = found && load.status === 'ready' ? load.overview : undefined;
   const running = overview?.running ?? null;
-  const runningChapter = running ? overview?.chapters.find((chapter) => chapter.id === running.chapterId) : undefined;
-  const chapters = overview?.chapters ?? [];
+  const subtitle = overview
+    ? [
+        `${overview.totals.chapters} chapters`,
+        `${overview.totals.wordCount.toLocaleString('en-US')} words`,
+        deliveryDue(overview.deadline) || 'no delivery date set',
+      ].join(' · ')
+    : found
+      ? 'Your time, pace and delivery date for this book.'
+      : 'Import the manuscript to plan, record and deliver this book.';
 
   return (
     <div className="mx-auto flex max-w-6xl flex-col gap-4">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
           <Heading title="Production">
-            {overview
-              ? `${overview.totals.chapters} chapters · ${overview.totals.wordCount.toLocaleString('en-US')} words · ${overview.totals.finalizedChapters} finalized. Time is logged only while you run a timer, and every figure comes from logged hours and measured audio.`
-              : 'Your time, pace and delivery date for this book.'}
+            {subtitle}
+            {overview && (
+              <Tooltip
+                label="About these figures"
+                text="Time is logged only while you run a timer, and every figure comes from logged hours and measured audio."
+              />
+            )}
           </Heading>
         </div>
-        <Toolbar label="Production actions">
-          <ToolbarButton
-            render={
-              <Button variant="ghost" onClick={() => void read()}>
-                Refresh
-              </Button>
-            }
-          />
-        </Toolbar>
+        <div role="group" aria-label="Production actions" className="flex flex-wrap items-center gap-2">
+          {found && (
+            <Button variant="ghost" onClick={() => void read()}>
+              Refresh
+            </Button>
+          )}
+          {found && manuscriptImport.chooseButton}
+          {overview && (
+            <Button variant="ghost" onClick={() => setReportOpen(true)}>
+              Export status report
+            </Button>
+          )}
+          {running && (
+            <Button variant="primary" pending={stopping} onClick={() => void stop()}>
+              Stop timer
+            </Button>
+          )}
+        </div>
       </div>
-      {load.status === 'loading' && (
+      {manuscriptImport.dialogs}
+      {manuscriptImport.creditsBanner}
+      {!found && (
+        <Panel title="No imported manuscript">
+          <p className="mt-1 text-sm" style={MUTED}>
+            Import a Word, Markdown, plain text or EPUB manuscript to see its chapters here.
+          </p>
+          <div className="mt-3">{manuscriptImport.chooseButton}</div>
+        </Panel>
+      )}
+      {found && load.status === 'loading' && (
         <p className="text-sm" style={MUTED}>
           Reading the production log…
         </p>
       )}
-      {load.status === 'error' && (
+      {found && load.status === 'error' && (
         <p role="alert" className="text-sm" style={DANGER}>
           The production overview could not be read: {load.message}
         </p>
@@ -233,55 +296,26 @@ export function ProductionPage() {
           {notice}
         </p>
       )}
-      {running && (
-        <div
-          role="status"
-          aria-label="Timer running"
-          className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-[var(--border)] bg-[var(--accent-soft)] px-4 py-2.5"
-        >
-          <p className="min-w-0 text-sm [overflow-wrap:anywhere]">
-            <span className="font-semibold">Timer running</span> on {runningChapter ? chapterName(runningChapter) : running.chapterId} ·{' '}
-            {STATUS_LABELS[running.stage]}
-          </p>
-          <Button variant="primary" pending={stopping} onClick={() => void stop()}>
-            Stop timer
-          </Button>
-        </div>
-      )}
       {overview && (
         <>
           <Figures overview={overview} />
           {/* Next up leads when stacked (it is where a timer starts); side by side only once the board fits beside it. minmax(0, 1fr)
-              lets the board's panel shrink to the window, its table scrolling inside it. */}
-          <div className="grid grid-cols-[minmax(0,1fr)] gap-4 min-[1600px]:grid-cols-[20rem_minmax(0,1fr)]">
-            <NextUp items={overview.nextUp} timerRunning={running !== null} starting={starting} onStart={(item) => void start(item)} />
-            <Panel title="Chapter pipeline">
-              <p className="mt-1 text-xs" style={MUTED}>
-                Each stage&apos;s readiness is the stage suggestion shown on Home. Prep and Delivery are not available yet: no check reports them per chapter.
-              </p>
-              {chapters.length === 0 ? (
-                <p className="mt-3 text-sm" style={MUTED}>
-                  No chapters yet. Import a manuscript on Home to see its chapters here.
-                </p>
-              ) : (
-                // tabIndex: the board scrolls sideways in a narrow window, and a scrolling region must be reachable by keyboard.
-                <div
-                  tabIndex={0}
-                  className="mt-2 overflow-x-auto focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:outline-none focus-visible:ring-inset"
-                >
-                  <StageGrid
-                    label="Chapter pipeline"
-                    className="w-full [&_td]:whitespace-nowrap"
-                    rows={chapters.map((chapter) => chapterName(chapter))}
-                    columns={BOARD_COLUMNS.map((column) => column.name)}
-                    cell={(row, col) => boardCell(chapters[row], BOARD_COLUMNS[col])}
-                  />
-                </div>
-              )}
-            </Panel>
+              lets the board's panel shrink to the window, its grid scrolling inside it. */}
+          <div className="grid grid-cols-[minmax(0,1fr)] gap-4 min-[1600px]:grid-cols-[minmax(0,1fr)_20rem]">
+            <ChapterBoard
+              overview={overview}
+              notify={notify}
+              goToScript={goToScript}
+              goToProofChapter={goToProofChapter}
+              refreshKey={manuscriptKey}
+              onChanged={reread}
+            />
+            <div className="-order-1 min-[1600px]:order-none">
+              <NextUp items={overview.nextUp} timerRunning={running !== null} starting={starting} onStart={(item) => void start(item)} />
+            </div>
           </div>
           <PlanPanel onSaved={() => void read()} />
-          <StatusReportPanel />
+          <StatusReportPanel open={reportOpen} onClose={() => setReportOpen(false)} />
         </>
       )}
     </div>

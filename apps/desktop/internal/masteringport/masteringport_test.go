@@ -9,6 +9,7 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/countrymanprime/narration-utils/shell/internal/dawport"
 	"github.com/countrymanprime/narration-utils/shell/internal/deliveryprofile"
 	"github.com/countrymanprime/narration-utils/shell/internal/mastering"
 	"github.com/countrymanprime/narration-utils/shell/internal/masteringport"
@@ -43,11 +44,11 @@ func TestSupportSaysWhatANarratorCanChoose(t *testing.T) {
 	if got := masteringport.Support(builtin, "windows"); got != (port.Support{Level: port.Supported, Available: true}) {
 		t.Errorf("Support(builtin) = %+v, want supported and available", got)
 	}
+	// Experimental until the owner's REAPER pass: it can be chosen; whether the launch's DAW can render now is the DAW port's answer
+	// when it masters.
 	daw, _ := masteringport.Rows.Lookup(masteringport.DAW)
-	got := masteringport.Support(daw, "windows")
-	want := port.Support{Level: port.NotYetAvailable, Reason: port.ReasonNotYet, Message: "Your DAW's FX chain is not available yet."}
-	if got != want {
-		t.Errorf("Support(daw) = %+v, want %+v", got, want)
+	if got := masteringport.Support(daw, "windows"); got != (port.Support{Level: port.Experimental, Available: true}) {
+		t.Errorf("Support(daw) = %+v, want experimental and available", got)
 	}
 	windowsOnly := port.Entry[masteringport.Mastering]{Name: "w", Descriptor: port.Descriptor{Label: "Windows chain", Platforms: []string{"windows"}},
 		New: func() masteringport.Mastering { return masteringporttest.NewFake("w", false) }}
@@ -56,16 +57,12 @@ func TestSupportSaysWhatANarratorCanChoose(t *testing.T) {
 	}
 }
 
-func TestTheDAWRowIsADeclarationThatNeedsApproval(t *testing.T) {
+func TestTheDAWRowIsExperimentalAndNeedsApproval(t *testing.T) {
 	entry, _ := masteringport.Rows.Lookup(masteringport.DAW)
-	row := entry.New()
-	caps := row.Capabilities()
-	if caps.Level != port.NotYetAvailable || !caps.NeedsApproval || len(caps.Needs) != 2 {
-		t.Fatalf("daw Capabilities = %+v, want NotYetAvailable, approval, render_with_fx and master_chain_read", caps)
-	}
-	_, err := row.Master(context.Background(), masteringport.Request{Approved: true})
-	if !errors.Is(err, port.ErrNotSupported) {
-		t.Fatalf("daw Master = %v, want a *port.NotSupportedError", err)
+	caps := entry.New().Capabilities()
+	want := []dawport.Capability{dawport.CapRenderWithFX, dawport.CapMasterChainRead}
+	if caps.Level != port.Experimental || !caps.NeedsApproval || !reflect.DeepEqual(caps.Needs, want) {
+		t.Fatalf("daw Capabilities = %+v, want Experimental, approval, render_with_fx and master_chain_read", caps)
 	}
 }
 

@@ -3,7 +3,7 @@ package preview
 import "strings"
 
 // This file is Phase 6 of the proofing-preview-suggestion PRD
-// (docs/prds/proofing-preview-suggestion.prd.md#phase-6---audio-position-mapper-spike-then-build): the spike's
+// (see docs/architecture/preview-suggestion.md): the spike's
 // answer to Q8 ("how does a paragraph get an audio time range") and the mapper it decided to build.
 //
 // The spike compared Q8's three options against the delivered codebase, not against the PRD's proposal text:

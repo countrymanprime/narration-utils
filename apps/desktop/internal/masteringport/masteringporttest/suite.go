@@ -48,8 +48,9 @@ func Run(t *testing.T, entry port.Entry[masteringport.Mastering]) {
 //   - it refuses without approval when it needs it, a destination that exists (leaving that file as it was), the source as its
 //     own destination, and a cancelled context, leaving nothing new behind.
 //
-// A built ModeDAWRegion row needs a fake DAW this suite does not have yet; the phase that builds the first one adds it, and until
-// then such a row is reported, not passed.
+// A ModeDAWRegion row masters through a FakeDAW (fakedaw.go), set with masteringport.UseSession for the run, which must see exactly
+// one render, with a fresh approval, into an empty run folder the row made inside the project and removed afterwards; and the row
+// must refuse a DAW that answers with a file outside that folder, or with an error, leaving nothing behind.
 func Problems(entry port.Entry[masteringport.Mastering], dir string) []string {
 	var problems []string
 	report := func(format string, args ...any) { problems = append(problems, fmt.Sprintf(format, args...)) }
@@ -97,9 +98,11 @@ func Problems(entry port.Entry[masteringport.Mastering], dir string) []string {
 		unchanged()
 		return problems
 	}
-	if !entry.Descriptor.Supports(masteringport.ModeWAV) {
-		report("%q is built, but the suite has no fake DAW to master %v with yet: add one with the row", entry.Name, entry.Descriptor.Modes)
-		return problems
+	var daw *FakeDAW
+	if entry.Descriptor.Supports(masteringport.ModeDAWRegion) {
+		daw = NewFakeDAW(dir)
+		restore := masteringport.UseSession(func() (masteringport.Session, error) { return daw.Session(), nil })
+		defer restore()
 	}
 
 	if caps.NeedsApproval {
@@ -153,7 +156,44 @@ func Problems(entry port.Entry[masteringport.Mastering], dir string) []string {
 	if strays, _ := filepath.Glob(filepath.Join(dir, ".*")); len(strays) > 0 {
 		report("%q left temporary files behind: %v", entry.Name, strays)
 	}
+	if daw != nil {
+		dawProblems(entry.Name, row, daw, dir, request, leftNothing, report)
+	}
 	return problems
+}
+
+// dawProblems checks a ModeDAWRegion row against the fake DAW it mastered through: it asked for exactly the one render the suite's
+// approved request to a free destination needed, with a fresh approval, into an empty run folder inside the project that it
+// removed afterwards; and it does not trust a DAW that answers with a file outside that folder, or with an error.
+func dawProblems(name string, row masteringport.Mastering, daw *FakeDAW, dir string, request func(string) masteringport.Request,
+	leftNothing func(dst, after string), report func(string, ...any)) {
+	if renders := daw.Renders(); len(renders) != 1 {
+		report("%q asked the DAW to render %d times; only the approved request to a free destination should render", name, len(renders))
+	}
+	runs := filepath.Join(dir, "narration-utils", "mastering")
+	if left, _ := os.ReadDir(runs); len(left) > 0 {
+		report("%q left its render folder behind in %s", name, runs)
+	}
+
+	daw.Misbehave(Escapes)
+	escaped := filepath.Join(dir, "escaped-master.wav")
+	if _, err := row.Master(context.Background(), request(escaped)); err == nil {
+		report("%q kept a file the DAW rendered outside the folder the row made for it", name)
+	}
+	leftNothing(escaped, "a DAW that rendered outside its folder")
+	_ = os.Remove(filepath.Join(runs, "escaped.wav"))
+
+	daw.Misbehave(Fails)
+	failed := filepath.Join(dir, "failed-master.wav")
+	if _, err := row.Master(context.Background(), request(failed)); err == nil {
+		report("%q reported success for a render the DAW refused", name)
+	}
+	leftNothing(failed, "a render the DAW refused")
+	daw.Misbehave(Behaves)
+
+	for _, refusal := range daw.Refusals() {
+		report("%q sent a render the bridge refuses: %s", name, refusal)
+	}
 }
 
 func descriptorProblems(entry port.Entry[masteringport.Mastering], report func(string, ...any)) {

@@ -65,7 +65,10 @@ Every folder above except `docs/` is an Nx project with a `project.json`; `pnpm 
 - `libs/python/narration_common/` contains only cross-tool contracts such
   as canonical manuscript access, settings, logging, progress, and bridge
   encoding, and `narration_common/ports`, the provider ports' Protocols, registries and conformance suites
-  (see [provider ports](provider-ports.md)). Feature-specific analysis stays with its tool.
+  (see [provider ports](provider-ports.md)), and `narration_common/recording`, the format of a recorded take (a PCM WAV
+  that never overwrites a file) and the engine-neutral recorder any capture row records through
+  ([ADR 0357](../adr/0357-the-built-in-recorders-capture-engine-is-a-wasapi-shared-mode-row-of-the-capture-port-through-portaudio-in-the-sidecar.md)).
+  Feature-specific analysis stays with its tool.
 
 ## How the parts connect
 
@@ -193,7 +196,7 @@ The Python sidecars retain their stable `core` CLI contracts and are frozen
 as immutable packaged sidecars. Go supervises them; feature code must not add
 a Python server or a browser transport.
 
-A sidecar reaches an engine (Whisper, Moonshine, Piper, CMU, eSpeak, dshow capture) only through an adapter module in its
-`core/` (`asr_adapters.py`, `capture_dshow.py`, `asr_batch.py`, `providers.py`) registered in the `narration_common.ports`
+A sidecar reaches an engine (Whisper, Moonshine, Piper, CMU, eSpeak, dshow and WASAPI capture) only through an adapter module in its
+`core/` (`asr_adapters.py`, `capture_dshow.py`, `capture_wasapi.py`, `asr_batch.py`, `providers.py`) registered in the `narration_common.ports`
 registries, and selects it by name through the registry; `libs/python/tests/test_provider_guard.py` fails on a provider name
 compared or listed anywhere else ([provider ports](provider-ports.md)).

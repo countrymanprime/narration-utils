@@ -18,7 +18,7 @@ start other programs, so there is no Audacity macro or plug-in to install.
   yet" instead of trying to reach REAPER.
 - If the app is already open, the entry brings its window forward and leaves the open project and mode as they are.
 Once a project is open, the [sidebar](navigation.md) takes you to each page, and
-[Home](home.md) is where you import the manuscript that most other pages depend on.
+[Production](production.md) is where you import the manuscript that most other pages depend on.
 
 ---
 

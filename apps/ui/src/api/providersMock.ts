@@ -7,7 +7,8 @@ import { wireClone } from './mockFixtures';
 
 type MockPort = 'asr' | 'tts' | 'pronunciation' | 'capture';
 
-type MockRow = { name: string; label: string; platforms: string[]; modes: string[]; assetKind?: string };
+// level is the row's answer where it runs; a row without one is supported (only the capture port's wasapi row declares one).
+type MockRow = { name: string; label: string; platforms: string[]; modes: string[]; assetKind?: string; level?: 'experimental' };
 
 /** The registries' rows, default first, as the Go packages register them. */
 const ROWS: Record<MockPort, MockRow[]> = {
@@ -21,7 +22,11 @@ const ROWS: Record<MockPort, MockRow[]> = {
     { name: 'wiktextract', label: 'Wiktionary (via Wiktextract)', platforms: [], modes: ['pronounce'] },
     { name: 'espeak', label: 'eSpeak NG', platforms: [], modes: ['pronounce'] },
   ],
-  capture: [{ name: 'dshow', label: 'DirectShow', platforms: ['windows'], modes: [] }],
+  capture: [
+    { name: 'dshow', label: 'DirectShow', platforms: ['windows'], modes: [] },
+    // The built-in recorder's engine (native-recording-suite P1, ADR 0357), Experimental until the owner's microphone check.
+    { name: 'wasapi', label: 'WASAPI', platforms: ['windows'], modes: [], level: 'experimental' },
+  ],
 };
 
 const PLATFORM_LABELS: Record<string, string> = { windows: 'Windows', darwin: 'macOS', linux: 'Linux' };
@@ -42,7 +47,7 @@ function entryFor(row: MockRow, platform: string, isDefault: boolean, seed: Prov
     platforms: [...row.platforms],
     modes: [...row.modes],
     support: runsOn(row, platform)
-      ? { level: 'supported', available: true }
+      ? { level: row.level ?? 'supported', available: true }
       : {
           level: 'unsupported',
           available: false,

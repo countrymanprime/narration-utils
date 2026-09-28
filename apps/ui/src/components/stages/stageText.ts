@@ -3,7 +3,7 @@
 // Pure functions, so StageSuggestion, StageEvidence and StageSummary only lay them out.
 import { STATUS_LABELS } from '../../chapterStatus';
 import type { ChapterStatus, StageChapterRecommendation, StageSignal, StageSignalState, StageUnknownCause } from '../../types';
-import { COVERAGE_REASON_TEXT } from '../home/recordingCheckText';
+import { COVERAGE_REASON_TEXT } from '../production/recordingCheckText';
 
 export const stageLabel = (stage: ChapterStatus) => STATUS_LABELS[stage];
 

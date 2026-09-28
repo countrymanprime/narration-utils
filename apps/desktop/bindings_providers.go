@@ -33,15 +33,15 @@ func providerCapabilitiesPayload(platform string, assets *assetRegistry) map[str
 	installed := installedCounter(assets)
 	asr := map[string]any{}
 	for i, e := range asrport.Engines.Entries() {
-		asr[e.Name] = providerEntry(e.Descriptor, platform, i == 0, e.New().AssetKind(), installed)
+		asr[e.Name] = providerEntry(e.Descriptor, port.Supported, platform, i == 0, e.New().AssetKind(), installed)
 	}
 	tts := map[string]any{}
 	for i, e := range ttsport.Engines.Entries() {
-		tts[e.Name] = providerEntry(e.Descriptor, platform, i == 0, e.New().AssetKind(), installed)
+		tts[e.Name] = providerEntry(e.Descriptor, port.Supported, platform, i == 0, e.New().AssetKind(), installed)
 	}
 	pronunciation := map[string]any{}
 	for i, e := range pronunciationport.Sources.Entries() {
-		pronunciation[e.Name] = providerEntry(e.Descriptor, platform, i == 0, "", installed)
+		pronunciation[e.Name] = providerEntry(e.Descriptor, port.Supported, platform, i == 0, "", installed)
 	}
 	capture := map[string]any{}
 	// The capture default is per platform (captureport.For): the first row declared for it, not the first row registered.
@@ -50,7 +50,7 @@ func providerCapabilitiesPayload(platform string, assets *assetRegistry) map[str
 		defaultBackend = e.Name
 	}
 	for _, e := range captureport.Backends.Entries() {
-		capture[e.Name] = providerEntry(e.Descriptor, platform, e.Name == defaultBackend, "", installed)
+		capture[e.Name] = providerEntry(e.Descriptor, e.New().Level(), platform, e.Name == defaultBackend, "", installed)
 	}
 	return map[string]any{
 		"platform":      platform,
@@ -61,15 +61,16 @@ func providerCapabilitiesPayload(platform string, assets *assetRegistry) map[str
 	}
 }
 
-// providerEntry is one registry row on the wire. isDefault is the row the port falls back to when no setting names one; assetKind
+// providerEntry is one registry row on the wire. level is how far the row is supported where it runs (only a capture row declares
+// one; every other port's rows are Supported); isDefault is the row the port falls back to when no setting names one; assetKind
 // is empty for a provider that installs nothing.
-func providerEntry(d port.Descriptor, platform string, isDefault bool, assetKind string, installed func(kind string) (int, bool)) map[string]any {
+func providerEntry(d port.Descriptor, level port.Level, platform string, isDefault bool, assetKind string, installed func(kind string) (int, bool)) map[string]any {
 	entry := map[string]any{
 		"label":     d.Label,
 		"default":   isDefault,
 		"platforms": nonNil(d.Platforms),
 		"modes":     nonNil(d.Modes),
-		"support":   supportPayload(providerSupport(d, platform)),
+		"support":   supportPayload(providerSupport(d, level, platform)),
 	}
 	if assetKind != "" {
 		asset := map[string]any{"kind": assetKind}
@@ -81,11 +82,12 @@ func providerEntry(d port.Descriptor, platform string, isDefault bool, assetKind
 	return entry
 }
 
-// providerSupport is a row's answer on platform: Supported and available where its descriptor runs, Unsupported elsewhere. A row has
-// no Experimental or NotYetAvailable level today; the registries declare only what ships.
-func providerSupport(d port.Descriptor, platform string) port.Support {
+// providerSupport is a row's answer on platform: its level, and available, where its descriptor runs; Unsupported elsewhere. Only
+// the capture port's wasapi row is Experimental today (docs/adr/0357). It is still available: no narrator switch gates a provider
+// row yet, and the Booth that first uses it (native-recording-suite Phase 2) decides how an Experimental engine is offered.
+func providerSupport(d port.Descriptor, level port.Level, platform string) port.Support {
 	if d.RunsOn(platform) {
-		return port.Support{Level: port.Supported, Available: true}
+		return port.Support{Level: level, Available: true}
 	}
 	return port.Support{
 		Level:   port.Unsupported,

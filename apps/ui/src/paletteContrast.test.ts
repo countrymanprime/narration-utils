@@ -155,6 +155,18 @@ const PAIRS: PairSpec[] = [
     ['surface'],
     'var(--badge-experimental-fill)',
   ),
+  // Per-speaker dialogue colours (D85 #6, ADR 0367): --speaker-1..7 alias the seven entity-kind tokens above, so these
+  // rows are already covered by the highlight-<kind> pairs; a dedicated row per alias protects SpeakerTag/Highlight's
+  // speaker use specifically, the same reasoning as the meter-zone rows above.
+  ...([1, 2, 3, 4, 5, 6, 7] as const).map((n) =>
+    text(
+      `speaker-${n}`,
+      `SpeakerTag/Highlight (speaker ${n}): the derived kind text colour on the speaker chip's own 20% tint`,
+      `var(--speaker-${n}-text)`,
+      SURFACES,
+      tint(`speaker-${n}`, 20),
+    ),
+  ),
 ];
 
 interface KnownFailure {
@@ -349,8 +361,7 @@ const NON_TEXT_USES: Record<string, { count: number; what: string }> = {
   'components/master/BookChecklist.tsx': { count: 1, what: 'the ear icon beside a book rule the narrator checks by listening' },
   'components/master/DeliveryProfilePanel.tsx': { count: 1, what: 'the ear icon beside a rule the narrator checks by listening' },
   'chapterStatus.ts': { count: 1, what: 'the Not Started status colour: a dot and a meter segment, never text' },
-  'components/home/ChapterTrackButton.tsx': { count: 1, what: "the row button's linked-track colour dot" },
-  'components/home/ChapterTrackPanel.tsx': { count: 1, what: "the panel header's linked-track colour dot" },
+  'components/production/ChapterTrackPanel.tsx': { count: 1, what: "the panel header's linked-track colour dot" },
   'components/layout/AppShell.tsx': { count: 1, what: 'the folder icon beside the project name' },
   'components/layout/EngineChip.tsx': { count: 1, what: 'the header chip dot when no DAW file is linked' },
   'components/manuscript/ChapterNav.tsx': { count: 1, what: 'a line-hit result row icon (faParagraph)' },
