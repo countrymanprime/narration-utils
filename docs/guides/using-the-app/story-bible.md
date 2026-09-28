@@ -157,6 +157,19 @@ for the two things that aren't about one character: approving a reference for **
 approved reference in the project - for every character and for narration - in one action, after you
 confirm. It doesn't touch the manuscript, dialogue cues, or anything else in the Story Bible.
 
+## Series voice bible
+
+If you're narrating a series, the **Series** tab (beside the category tabs) shows a character's
+approved reference clips across every book of the series, each labeled by the book it came from.
+Name a series to start: type a name and press **Create series**. A series with only this one book
+in it still shows - honestly - "no other books in this series yet"; add a sibling book's project
+folder below (**Browse…**, or type its path) and press **Add** once it has approved references of
+its own. **Remove** takes a book out of the series without touching that book's own project data.
+
+There is no acoustic comparison here either - no drift evidence against another book, and no
+audition. It's the same reference-clip bookkeeping as the Character entry's own Reference clips
+section, just pooled across the books that share a character.
+
 | Message | What it means | What to do |
 | --- | --- | --- |
 | "... could not be spoken: the voice produced no audio for it" | The name is only punctuation or symbols, so the voice has nothing to say. | Preview an alias that has letters in it, or ignore the preview for this name. |

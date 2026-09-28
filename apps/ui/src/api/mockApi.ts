@@ -42,6 +42,7 @@ import { createReaperActionsMock } from './mockHost/reaperActions';
 import { createChapterTracksMock } from './mockHost/chapterTracks';
 import { createStoryBibleMock } from './mockHost/storyBible';
 import { createCharacterMock } from './mockHost/character';
+import { createSeriesMock } from './mockHost/series';
 import { createSystemMock, invalidPayloadOverrides } from './mockHost/system';
 import { createPronunciationLookupMock } from './mockHost/pronunciationLookup';
 import { createPronunciationCommonsAudioMock } from './mockHost/wiktextractCommonsAudio';
@@ -83,6 +84,7 @@ export function createMockApi(
   });
   const storyBible = createStoryBibleMock(s, initial, manuscriptReady, assets);
   const character = createCharacterMock(s);
+  const series = createSeriesMock(s, (characterId) => s.entities.find((entity) => entity.id === characterId)?.canonical_name);
   const teleprompter = createTeleprompterMock({
     ready: manuscriptReady,
     chapters: () => s.chapters,
@@ -220,6 +222,7 @@ export function createMockApi(
     ...settings.bindings,
     ...storyBible.bindings,
     ...character.bindings,
+    ...series.bindings,
     ...assets.bindings,
     ...proofing.bindings,
     ...reaperActions.bindings,

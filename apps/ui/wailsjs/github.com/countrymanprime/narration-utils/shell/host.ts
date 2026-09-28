@@ -1580,6 +1580,40 @@ export function RetakeLanesState(): $CancellablePromise<string> {
 }
 
 /**
+ * SeriesDelete removes a series by id. Deleting an id that is not present is not an error.
+ */
+export function SeriesDelete(id: string): $CancellablePromise<string> {
+    return $Call.ByID(2391274860, id);
+}
+
+/**
+ * SeriesList lists every series the narrator has created, for managing series membership.
+ */
+export function SeriesList(): $CancellablePromise<string> {
+    return $Call.ByID(3400757367);
+}
+
+/**
+ * SeriesSave creates a series (id empty) or updates one in place (an existing id), naming it and setting its member
+ * project paths (Q10). The narrator adds and removes books this way; there is no separate add/remove binding.
+ */
+export function SeriesSave(id: string, name: string, memberProjectPaths: string[]): $CancellablePromise<string> {
+    return $Call.ByID(2243015706, id, name, memberProjectPaths);
+}
+
+/**
+ * SeriesVoiceBible builds the current project's Series tab view (Phase 11):
+ * its series membership, and - only once the series has a second book with
+ * data to share - every member project's characters and approved reference
+ * clips, pooled by character id. A project outside any series, or in one
+ * with no other book yet, reads back with no character list at all: the
+ * honest empty state, never an error.
+ */
+export function SeriesVoiceBible(): $CancellablePromise<string> {
+    return $Call.ByID(2231610263);
+}
+
+/**
  * StageConfirm sets the chapter's status to target and records the basis the narrator saw, if basisKey is still the one
  * the evidence gives. It answers {status: "ok", chapter} or {status: "refused", reason, message}.
  */
