@@ -40,6 +40,7 @@ export * from './api/contracts/daw';
 export * from './api/contracts/providers';
 export * from './api/contracts/production';
 export * from './api/contracts/pronunciationLookup';
+export * from './api/contracts/wiktextractCommonsAudio';
 export * from './api/contracts/pronunciationOnline';
 export * from './api/contracts/proofingRender';
 export * from './api/contracts/prepCompleteness';
@@ -87,6 +88,7 @@ import type { ProviderCapabilitiesApi } from './api/contracts/providers';
 import type { MasteringApi } from './api/contracts/mastering';
 import type { RecordingApi } from './api/contracts/recording';
 import type { PronunciationLookupApi } from './api/contracts/pronunciationLookup';
+import type { PronunciationCommonsAudioApi } from './api/contracts/wiktextractCommonsAudio';
 import type { PronunciationOnlineApi } from './api/contracts/pronunciationOnline';
 import type { ProofingRenderApi } from './api/contracts/proofingRender';
 import type { PrepCompletenessApi } from './api/contracts/prepCompleteness';
@@ -137,6 +139,7 @@ export interface NarrationApi
     RecordingApi,
     ProductionApi,
     PronunciationLookupApi,
+    PronunciationCommonsAudioApi,
     PronunciationOnlineApi,
     ProofingRenderApi,
     PrepCompletenessApi,

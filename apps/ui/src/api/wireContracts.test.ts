@@ -956,6 +956,13 @@ describe('answers of the mock client for the manuscript, Story Bible and project
     await expect(api.pronunciationLookupOpen('wiktionary', 'croquet')).rejects.toThrow(/Unknown pronunciation lookup source/);
   });
 
+  it('the Commons audio link opens for a word the fixture index has, and refuses one it does not (prep-depth Phase 10)', async () => {
+    const api = createMockApi();
+    await expect(api.pronunciationCommonsAudioOpen('Happy')).resolves.toBeUndefined();
+    await expect(api.pronunciationCommonsAudioOpen('gloomy')).rejects.toThrow(/No Wikimedia Commons audio file/);
+    await expect(api.pronunciationCommonsAudioOpen('   ')).rejects.toThrow(/empty word/);
+  });
+
   it('the online pronunciation lookup: the key status, a lookup, the cache and a confirmed batch (prep-depth Phase 9)', async () => {
     const api = createMockApi();
     const absent = await api.pronunciationOnlineKeyStatus();
@@ -2565,6 +2572,7 @@ describe('answers of the mock client for the settings, voice, model, transcript 
       'teleprompterPause',
       'dawCatalogOpenDownloadPage',
       'pronunciationLookupOpen',
+      'pronunciationCommonsAudioOpen',
       'pronunciationOnlineSignUpOpen',
       'teleprompterSeek',
       'reportClientDiagnostic',

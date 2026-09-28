@@ -44,6 +44,7 @@ import { createStoryBibleMock } from './mockHost/storyBible';
 import { createCharacterMock } from './mockHost/character';
 import { createSystemMock, invalidPayloadOverrides } from './mockHost/system';
 import { createPronunciationLookupMock } from './mockHost/pronunciationLookup';
+import { createPronunciationCommonsAudioMock } from './mockHost/wiktextractCommonsAudio';
 import { createPronunciationOnlineMock } from './mockHost/pronunciationOnline';
 
 export { applyMixedManuscriptMock } from './mockHost/manuscript';
@@ -278,6 +279,7 @@ export function createMockApi(
     ...mastering,
     ...recording,
     ...createPronunciationLookupMock(),
+    ...createPronunciationCommonsAudioMock(),
     ...createPronunciationOnlineMock(),
   };
   const api = initial.invalidPayload ? { ...base, ...invalidPayloadOverrides(initial.invalidPayload, base) } : base;
