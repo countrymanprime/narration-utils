@@ -36,6 +36,9 @@ const SETTINGS_CATEGORIES: SettingsCategory[] = [
   { key: 'Manuscript', label: 'Manuscript', tool: 'Manuscript', scopes: ['global', 'project'] },
   // The recording check's thresholds and alignment (docs/utilities/recording-coverage.md, ADR 0131), Proposed and uncalibrated.
   { key: 'RecordingCoverage', label: 'Recording check', tool: 'RecordingCoverage', scopes: ['global', 'project'] },
+  // The silence cleanup analyzer's own thresholds (diagnostics-delivery-and-cleanup-tools.prd.md Phase 9 remainder,
+  // ADR 0238 decision 4): a saved preset is this set of values at a layer, like every other settings section.
+  { key: 'Cleanup', label: 'Silence cleanup', tool: 'Cleanup', scopes: ['global', 'project'] },
   { key: 'TranscriptCompare', label: 'Proof', tool: 'TranscriptCompare', scopes: ['global', 'project'] },
   // The preview suggestion's target, tolerance, preset and ending exclusion (delivered, PRD deleted; see
   // docs/architecture/preview-suggestion.md): the engine (PreviewCandidates) reads these on every call, layered project over global like every other tool.

@@ -1,7 +1,7 @@
 // How the Diagnostics tab words a diagnostics finding (diagnostics PRD Phase 6). Every figure comes from the finding's own
 // evidence (internal/measure/diagnosticfindings.go), including the threshold that raised it, so what is shown is what the
 // host measured against; a kind or key this page does not know is said to be undescribed rather than guessed at.
-import type { DiagnosticsSourceKind, DiagnosticsThresholds, Finding } from '../../types';
+import type { DiagnosticsCleanupThresholds, DiagnosticsSourceKind, DiagnosticsThresholds, Finding } from '../../types';
 import { formatTime } from '../proof/findingFormat';
 import { formatLevel } from './deliveryFormat';
 
@@ -120,4 +120,32 @@ export function thresholdRows(thresholds: DiagnosticsThresholds): Array<{ label:
     { label: 'Room-tone change', value: `A change of ${formatLevel(thresholds.room_tone_step_db)} dB or more between silences` },
     { label: 'Long pause', value: `${seconds(thresholds.pauses.long_pause_seconds)} or longer, only from transcript timing` },
   ];
+}
+
+/** Every silence cleanup threshold a check uses (ADR 0238 decision 4), for the panel above the candidate list. */
+export function cleanupThresholdRows(thresholds: DiagnosticsCleanupThresholds): Array<{ label: string; value: string }> {
+  return [
+    { label: 'Hold kept at each side', value: seconds(thresholds.pad_seconds) },
+    { label: 'Breath length', value: `${seconds(thresholds.min_breath_seconds)} to ${seconds(thresholds.max_breath_seconds)}` },
+    { label: 'Breath level', value: `${formatLevel(thresholds.breath_below_speech_db)} dB or more below the read's speech level` },
+    { label: 'Click height', value: `${formatLevel(thresholds.click_above_silence_db)} dB or more above the silence around it` },
+  ];
+}
+
+const CLEANUP_CLASS_LABELS: Record<string, string> = { silence: 'Silence', breath: 'Breath', click: 'Click' };
+
+/** A cleanup candidate's class ("silence", "breath" or "click"), in words; an unknown class is said as it came. */
+export function cleanupClassLabel(finding: Finding): string {
+  const value = finding.evidence?.class;
+  if (typeof value !== 'string') return 'Candidate';
+  return CLEANUP_CLASS_LABELS[value] ?? value[0].toUpperCase() + value.slice(1);
+}
+
+/** The candidate's own level (or peak, for a click), with units; undescribed when the evidence lacks it. */
+export function cleanupLevelText(finding: Finding): string {
+  const level = num(finding.evidence?.level_dbfs);
+  const peak = num(finding.evidence?.peak_dbfs);
+  if (level === undefined && peak === undefined) return UNDESCRIBED;
+  const parts = [level !== undefined ? `${formatLevel(level)} dBFS` : undefined, peak !== undefined ? `${formatLevel(peak)} dBFS peak` : undefined];
+  return parts.filter((part): part is string => part !== undefined).join(', ');
 }
