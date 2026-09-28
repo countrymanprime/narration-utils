@@ -3,10 +3,27 @@ import type { NumberSettingRange } from '../../api/contracts/system';
 import type { Scope, ScopedSettingField } from '../../types';
 import { Select } from '../primitives/Select';
 import { Switch } from '../primitives/Switch';
+import { TagInput } from '../primitives/TagInput';
 import { TextField } from '../primitives/TextField';
 import { Tooltip, TooltipTarget } from '../primitives/Tooltip';
 import { proofingChoiceLabel } from '../proof/options';
 import { describeNumberRange, numberProblem } from './numberSetting';
+
+// Terms of a "tags" field are comma-joined (a term never holds a comma; TagInput.tsx commits on Enter or a typed
+// comma). Splitting also accepts a pasted line break, drops blanks, caps a term at TagInput's own MAX_TERM_LENGTH,
+// and folds a repeated name (in any case) to one - the same rule the Proofing vocabulary hints use
+// (apps/ui/src/components/proof/hints.ts), kept as its own copy here since Settings never depends on that page.
+const MAX_TAG_TERM_LENGTH = 64;
+const hasTag = (tags: readonly string[], term: string) => tags.some((tag) => tag.toLowerCase() === term.toLowerCase());
+function splitTagTerms(text: string): string[] {
+  return text
+    .split(/[,\r\n]+/)
+    .map((term) => term.trim().slice(0, MAX_TAG_TERM_LENGTH))
+    .filter(Boolean)
+    .reduce<string[]>((terms, term) => (hasTag(terms, term) ? terms : [...terms, term]), []);
+}
+const tagsFromValue = (value: string): string[] => (value ? splitTagTerms(value) : []);
+const tagsToValue = (tags: readonly string[]): string => tags.join(',');
 
 const DELIVERY_LIMIT_TIP =
   "Your own limit for this measurement. Leave it blank and the measurement is reported without being checked. No distributor's numbers are built in.";
@@ -182,6 +199,7 @@ export function ScopedSetting({
   }
   const isColor = field.kind === 'color';
   const isText = field.kind === 'text';
+  const isTags = field.kind === 'tags';
   return (
     <div className={ROW_CLASSES}>
       <div className="text-[0.82rem] font-medium text-[var(--text-muted)] md:pt-2">
@@ -189,7 +207,25 @@ export function ScopedSetting({
         <Tooltip text={TOOLTIP[field.key] || `Configure ${field.label.toLowerCase()}.`} />
       </div>
       <div className={CONTROLS_CLASSES}>
-        {isColor ? (
+        {isTags ? (
+          <div className={GROWING_CONTROL_CLASSES}>
+            <TagInput
+              label={field.label}
+              inputLabel={`Add a ${field.label.toLowerCase()} name`}
+              placeholder="Type a name and press Enter"
+              tags={tagsFromValue(effective)}
+              suggestions={[]}
+              emptyText="None yet"
+              onAdd={(text) => {
+                const merged = tagsFromValue(effective);
+                for (const term of splitTagTerms(text)) if (!hasTag(merged, term)) merged.push(term);
+                change(tagsToValue(merged));
+              }}
+              onRemove={(tag) => change(tagsToValue(tagsFromValue(effective).filter((t) => t !== tag)))}
+              onAcceptSuggestion={() => {}}
+            />
+          </div>
+        ) : isColor ? (
           <>
             <TextField label={`${field.label} hex`} type="color" value={pickerColor(effective)} onChange={(value) => change(value.slice(1).toUpperCase())} />
             <TextField
