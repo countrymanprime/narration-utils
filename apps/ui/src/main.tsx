@@ -63,6 +63,10 @@ const mockDawNotDetected = mockParams.has('mockDawNotDetected');
 // setting's own effect, DAW port PRD D3), so a `CapabilityGate('silence_trim')`/`('item_gain')` control's live,
 // clickable state can be seen without a host - it still carries the "Experimental" badge (studio-ui-primitives Q4).
 const mockDawExperimentalOn = mockParams.has('mockDawExperimentalOn');
+// `?mockDaw=Audacity` boots the app talking to Audacity instead of REAPER (audacity-integration.prd.md Phase 9): Proof's
+// finding detail leaves out REAPER's take management (Go to/Loop/Add marker, take review, take comparison), which has no
+// Audacity analog, while everything else about a finding works the same.
+const mockDawAudacity = mockParams.get('mockDaw') === 'Audacity';
 // `?mockMarkup=1` seeds script markup on Chapter 3's dialogue (prep-depth.prd.md Phase 5): stresses, a breath, a pause
 // and speaker tags drawn on their lines, a mark whose words changed (said beside its line) and one whose line is gone
 // (listed above the chapter), so every way a mark shows can be seen without a host.
@@ -541,6 +545,7 @@ const mockInitial = {
   ...(mockProofingSignal ? { stages: { proofing: { [WIRE_CHAPTERS[8].id]: { unknown: 'unmapped_track' as StageUnknownCause } } } } : {}),
   ...(mockProofingRenderStale ? { proofingRender: { [WIRE_CHAPTERS[8].id]: { state: 'stale' as const } } } : {}),
   ...(mockDawExperimentalOn ? { daw: { experimentalOn: true } } : {}),
+  ...(mockDawAudacity ? { daw: { daw: 'Audacity' as const } } : {}),
   ...(Number.isFinite(mockDawPlayhead) ? { daw: { transport: { playing: true, recording: false, position: mockDawPlayhead } } } : {}),
 };
 const api = import.meta.env.VITE_USE_MOCK_API === '1' ? createMockApi(window.__NARRATION_MOCK_OVERRIDES__, mockInitial) : wailsClient;

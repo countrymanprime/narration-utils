@@ -96,6 +96,17 @@ export const proofDrivers: Record<string, Driver> = {
     await openReaperControls(page, 'standalone');
     await showReaperControls(page, page.getByText(/open this app from the Narration Utils action in REAPER/));
   },
+  'audacity-detail': async (page) => {
+    await page.goto('/?mockDaw=Audacity');
+    await settlePage(page);
+    await openProof(page);
+    await openFindingRow(page, /pink eyes/, MISREAD_DETAIL);
+    await page.getByRole('heading', { name: 'In REAPER' }).waitFor({ state: 'detached' });
+    // Without the REAPER section, Decision sits right under the evidence at every viewport - scrolled into view so the
+    // capture actually shows that, not just the title area detail-open's own driver leaves in frame (identical there
+    // at the shorter small-desktop/tablet heights, since neither reaches this far without it).
+    await page.getByRole('heading', { level: 3, name: 'Decision' }).scrollIntoViewIfNeeded();
+  },
   'reaper-marker-confirm': async (page) => {
     await confirmApprovedMarker(page);
   },

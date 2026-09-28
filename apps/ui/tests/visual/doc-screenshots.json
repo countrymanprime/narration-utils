@@ -491,6 +491,13 @@
   },
   {
     "page": "proof",
+    "state": "audacity-detail",
+    "viewport": "desktop",
+    "docName": "proof-audacity-detail",
+    "caption": "Proof - a finding's detail with Audacity, no In REAPER row"
+  },
+  {
+    "page": "proof",
     "state": "take-review-scan-form",
     "viewport": "desktop",
     "docName": "proof-take-review-scan",

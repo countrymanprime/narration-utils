@@ -346,5 +346,6 @@ The table is generated from each ADR's heading and Status line ([ADR 0410](0410-
 | [0657](0657-focusshell-takes-a-contentclassname-for-a-hosts-own-main-region-look.md) | `FocusShell` takes a `contentClassName` for a host's own main-region look | Proposed (Phase 13 of the mock fidelity PRD, stream F-P13 on #509) |
 | [0658](0658-the-booth-command-bar-composes-toolbar-and-keyhint-wrapping-popovers-from-outside.md) | The Booth command bar composes `Toolbar` and `KeyHint`, wrapping popovers from outside | Proposed (Phase 13 of the mock fidelity PRD, stream F-P13 on #509) |
 | [0659](0659-the-companion-panels-sections-are-full-bleed-split-by-rules-not-cards.md) | The companion panel's sections are full-bleed, split by rules, not cards | Proposed (Phase 13 of the mock fidelity PRD, stream F-P13 on #509) |
+| [0660](0660-audacitys-finding-detail-hides-reapers-take-management-instead-of-disabling-it-through-capabilitygate.md) | Audacity's finding detail hides REAPER's take management instead of disabling it through `CapabilityGate` | Proposed |
 | [0670](0670-scripts-chapter-list-keeps-its-to-confirm-count-and-shows-no-checkmark-or-percentage-until-prep-depths-rollup-lands.md) | Script's chapter list keeps its to-confirm count and shows no checkmark or percentage until prep-depth's rollup lands | Proposed |
 <!-- adr-index:end -->
