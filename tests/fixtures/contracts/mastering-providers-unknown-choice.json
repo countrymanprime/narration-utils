@@ -1,7 +1,8 @@
 {
-  "choice": null,
+  "choice": "audacity",
   "effective": "builtin",
-  "hasProject": false,
+  "hasProject": true,
+  "notice": "This project chose a mastering chain this version does not have (\"audacity\"). It masters with the default, Built-in chain (EQ, limiter, gain).",
   "providers": [
     {
       "default": true,

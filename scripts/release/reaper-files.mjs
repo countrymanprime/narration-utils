@@ -9,6 +9,7 @@ export const REAPER_FILES = [
   'narration_compare.lua',
   'narration_level_normalize.lua',
   'narration_line_identity.lua',
+  'narration_master_render.lua',
   'narration_navigation.lua',
   'narration_pickups.lua',
   'narration_project_state.lua',

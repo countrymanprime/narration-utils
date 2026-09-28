@@ -70,6 +70,11 @@ var realEvents = map[string][]string{
 	"FX_CHAIN_APPLIED":  {"FX_CHAIN_APPLIED", "c1", "Voice/Test EQ.RfxChain", "{00000001-0000-4000-8000-000000000001}", "1"},
 	"FX_PLUGIN":         {"FX_PLUGIN", "p1", "VST3: ReaEQ (Cockos)"},
 	"FX_PLUGINS_LISTED": {"FX_PLUGINS_LISTED", "p1", "2", "0"},
+	// integrations/reaper/tests/master_render_test.lua (master_chain_read, render_with_fx; render-encode-master PRD Phase 9).
+	"MASTER_CHAIN_FX":   {"MASTER_CHAIN_FX", "c1", "{00000001-0000-4000-8000-000000000001}", "Voice", "VST: ReaEQ (Cockos)", "1"},
+	"MASTER_CHAIN_READ": {"MASTER_CHAIN_READ", "c1", "3", "0"},
+	"FX_RENDER_FILE":    {"FX_RENDER_FILE", "r1", "Chapter 1", "C:/p/narration-utils/mastering/run1/fx-01.wav"},
+	"FX_RENDERED":       {"FX_RENDERED", "r1", "C:/p/narration-utils/mastering/run1", "1"},
 	"TAKE_FX_ADDED":     {"TAKE_FX_ADDED", "x1", "VST3: ReaEQ (Cockos)", "{00000005-0000-4000-8000-000000000005}", "{00000006-0000-4000-8000-000000000006}", "2"},
 }
 
