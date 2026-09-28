@@ -221,6 +221,9 @@ export type MockApiSeed = {
   characterContinuity?: 'empty';
   /** Seeds the mastering chain mock (whether a project is open, its stored choice), see `MasteringMockSeed` (ADR 0306). */
   mastering?: MasteringMockSeed;
+  /** `?mockZoom=`: the window's real zoom level at boot, as a fraction (1.25 is 125%; app-navigation-and-zoom-controls.prd.md
+   * Phase 2). Defaults to 1.0, the same as a fresh window before Phase 3 remembers a level across launches. */
+  zoom?: number;
   /** Seeds the built-in recorder mock (engine, takes, a take recording, devices), see `RecordingMockSeed` (ADR 0455). */
   recording?: RecordingMockSeed;
 };

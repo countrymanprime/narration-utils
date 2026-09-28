@@ -34,6 +34,12 @@ function key(code: string, modifiers: DefaultGesture['modifiers'] = [], source: 
 export const COMMAND_CATALOG: readonly CommandDescriptor[] = [
   { id: 'nav.back', label: 'Back', scope: 'global', defaults: [key('ArrowLeft', ['Alt']), key('BrowserBack'), key('BracketLeft', ['Mod'])] },
   { id: 'nav.forward', label: 'Forward', scope: 'global', defaults: [key('ArrowRight', ['Alt']), key('BrowserForward'), key('BracketRight', ['Mod'])] },
+  // The header's zoom group (app-navigation-and-zoom-controls.prd.md Phase 2): `Equal` is both the unshifted "="
+  // (Ctrl+=) and, on a US layout, "+" held with Shift (Ctrl++), so both chords are bound to the same physical key;
+  // the numpad's own +/-/0 keys are separate physical codes, bound alongside. `Mod` resolves to Cmd on macOS.
+  { id: 'zoom.in', label: 'Zoom in', scope: 'global', defaults: [key('Equal', ['Mod']), key('Equal', ['Mod', 'Shift']), key('NumpadAdd', ['Mod'])] },
+  { id: 'zoom.out', label: 'Zoom out', scope: 'global', defaults: [key('Minus', ['Mod']), key('NumpadSubtract', ['Mod'])] },
+  { id: 'zoom.reset', label: 'Reset zoom to 100%', scope: 'global', defaults: [key('Digit0', ['Mod']), key('Numpad0', ['Mod'])] },
   { id: 'workspace.play', label: 'Play or pause the chapter', scope: 'page', noisy: true, defaults: [key('Space')] },
   { id: 'workspace.word.prev', label: 'Previous word', scope: 'page', defaults: [key('ArrowLeft')] },
   { id: 'workspace.word.next', label: 'Next word', scope: 'page', defaults: [key('ArrowRight')] },
