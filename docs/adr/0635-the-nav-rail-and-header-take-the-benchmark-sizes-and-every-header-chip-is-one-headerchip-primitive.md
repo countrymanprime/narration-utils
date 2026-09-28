@@ -44,7 +44,7 @@ The PRD's table gives the chip as "≈21 px"; the scan puts its edge at 22 with 
 ## Consequences
 
 - Every page's shell is 8 px narrower in the rail and 4 px shorter in the header, so each page's content area grows by that much; the visual suite captures every page again.
-- The 2026-09-24 sets were drawn from the app of that day, so they draw the old 224 px rail and 56 px header. Their pixel match falls a little (0.02 to 2.41 points), and so does their chrome region: every pixel of the page body shifts 8 px left and 4 px up. No shell can match both sets. The benchmark mocks are the spec where they draw the same surface (D92, the PRD's Q1), so they win, and the tool marks these rows "old shell" instead of a regression (ADR 0636). This is for the owner to confirm on #510.
+- The 2026-09-24 sets were drawn from the app of that day, so they draw the old 224 px rail and 56 px header. Their pixel match falls a little (0.04 to 2.40 points), and so does their chrome region: every pixel of the page body shifts 8 px left and 4 px up. No shell can match both sets. The benchmark mocks are the spec where they draw the same surface (D92, the PRD's Q1), so they win, and the tool marks these rows "old shell" instead of a regression (ADR 0636). This is for the owner to confirm on #510.
 - The header keeps what the benchmark mocks don't draw and the app-navigation PRD added (Back, Forward and the zoom group, ADR 0407 item 4); they sit on the 52 px header unchanged.
 - A new header chip is a `HeaderChip`, never a pasted class string; a new look is a new `tone`, in a change to this primitive.
 - Hiding the first group's heading (if a Schedule item is added, mock 01's layout comes back whole), or a count with no data behind it, needs a new ADR that supersedes this one.
