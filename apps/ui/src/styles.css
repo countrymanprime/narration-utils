@@ -92,7 +92,7 @@
   --badge-info-fill: color-mix(in srgb, var(--info) 14%, transparent);
   --badge-danger-fill: color-mix(in srgb, var(--danger) 14%, transparent);
   --badge-experimental-fill: color-mix(in srgb, var(--experimental) 14%, transparent);
-  /* Per-speaker dialogue colours (D85 #6 on #509; ADR 0366): the Script reader's speaker attribution and the Booth's
+  /* Per-speaker dialogue colours (D85 #6 on #509; ADR 0367): the Script reader's speaker attribution and the Booth's
      "Voices in scene" tags give each speaker their own colour, as the mocks show (SC7, BO4). Declared as aliases of the
      seven entity-kind hues, the same derivation ADR 0362 used for the meter zones, so nothing here needs a second round
      of contrast tuning: each token and its -text companion already has a passing pair under its kind name above. A

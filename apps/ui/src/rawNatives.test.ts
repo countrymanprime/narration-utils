@@ -58,7 +58,16 @@ const CEILING: Record<NativeTag, Record<string, number>> = {
     // JSX `<button>`, written once inside the flags `.map()`.
     'src/components/booth/ReaderFlagsPanel.tsx': 1,
     'src/components/storybible/GuideDetail.tsx': 1,
-    'src/components/tracks/TracksPage.tsx': 2,
+    // The engine panel (stage-navigation-and-page-replacement.prd.md Phase 6) took the Tracks page's two: its .rpp picker's
+    // full-width path rows (a mono file path, which Button's uppercase chrome would mangle) stay one JSX `<button>` inside the
+    // candidates `.map()`; the track rows' selection buttons went with the player.
+    'src/components/engine/EnginePanel.tsx': 1,
+    // The Sync activity line's "(Undo)" (daw-chapter-track-auto-sync.prd.md mockup 02): an inline word inside a sentence, the
+    // same case as CreditsSetupDialog.tsx below.
+    'src/components/engine/ChapterSyncPanel.tsx': 1,
+    // "Open the audio engine panel", the in-text pointer that replaced the "Open Tracks" router links (Phase 6): an inline
+    // link-styled action inside a sentence, which Button's padded, uppercase chrome would break. Written once, used everywhere.
+    'src/components/engine/EnginePanelContext.tsx': 1,
     // The chapter workspace's clickable script words (edit-and-proof-workspace.prd.md Phase 2, EP5): the same case as
     // ReaderText.tsx above - one word among a chapter's worth of running prose, needing Button's bare click/keyboard
     // semantics without its padded, uppercase chrome breaking the text flow. One JSX `<button>`, written once inside

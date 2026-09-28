@@ -21,6 +21,6 @@
   "track_missing": {
     "outcome": "refused",
     "reason": "track_missing",
-    "message": "This track is no longer in the REAPER project. Link it again on the Tracks page."
+    "message": "This track is no longer in the REAPER project. Link it again in the audio engine panel."
   }
 }

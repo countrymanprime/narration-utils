@@ -31,7 +31,7 @@ type Config struct {
 	Python  string
 	Backend string
 	// ProjectFile resolves the saved .rpp the narrator chose for the project
-	// (the Tracks page's selection). It must be directly inside Project.
+	// (the audio engine panel's selection). It must be directly inside Project.
 	ProjectFile func() (string, error)
 	// LoadManuscript returns the canonical manuscript (manuscript.Service.Load).
 	LoadManuscript func() (map[string]any, error)
@@ -247,7 +247,7 @@ func (s *Service) savedProject() (tracks.Project, evidence.LedgerProjectFile, er
 	}
 	path, err := s.config.ProjectFile()
 	if err != nil {
-		return tracks.Project{}, evidence.LedgerProjectFile{}, unknownf(ReasonNoProjectFile, "choose the saved REAPER project file on the Tracks page first (%v)", err)
+		return tracks.Project{}, evidence.LedgerProjectFile{}, unknownf(ReasonNoProjectFile, "choose the saved REAPER project file in the audio engine panel first (%v)", err)
 	}
 	relative, err := filepath.Rel(s.config.Project, path)
 	if err != nil || relative != filepath.Base(relative) || relative == "." || relative == ".." || !strings.EqualFold(filepath.Ext(relative), ".rpp") {

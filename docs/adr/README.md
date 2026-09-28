@@ -269,7 +269,8 @@ The table is generated from each ADR's heading and Status line ([ADR 0410](0410-
 | [0363](0363-backspace-on-an-empty-tag-input-removes-the-last-chip.md) | Backspace on an empty tag input removes the last chip | Proposed |
 | [0364](0364-the-end-to-end-corpus-validation-is-synthetic-and-provisional-until-a-permissioned-project-re-runs-it.md) | The end-to-end stage-recommendation corpus validation is synthetic, and provisional until a permissioned project re-runs it | Proposed |
 | [0365](0365-the-theme-is-one-global-setting-and-the-booth-and-companion-follow-it.md) | The theme is one global setting, and the booth and the companion follow it | Accepted |
-| [0366](0366-per-speaker-colours-alias-the-seven-entity-kind-hues-and-hash-by-speaker-name.md) | Per-speaker colours alias the seven entity-kind hues, and a speaker's colour is a hash of its canonical name | Proposed |
+| [0366](0366-the-export-job-combines-mastering-and-encoding-and-intermediates-live-in-the-sidecar-tree.md) | The export job combines mastering and encoding, and intermediates live in the project's sidecar tree | Proposed |
+| [0367](0367-per-speaker-colours-alias-the-seven-entity-kind-hues-and-hash-by-speaker-name.md) | Per-speaker colours alias the seven entity-kind hues, and a speaker's colour is a hash of its canonical name | Proposed |
 | [0380](0380-record-in-reaper-is-a-project-scope-setting-and-arming-is-a-separate-click-from-play.md) | Record in REAPER is a project-scope setting, and arming is a separate click from Play | Accepted |
 | [0381](0381-the-companion-panel-is-the-read-aloud-session-in-the-whole-window-and-follows-the-voice-not-the-daw-playhead.md) | The companion panel is the read-aloud session in the whole window, and its script follows the voice, not the DAW playhead | Proposed |
 | [0382](0382-script-markup-is-a-chapter-keyed-sidecar-of-line-offsets-checked-on-read-and-drawn-without-changing-the-text.md) | Script markup is a chapter-keyed sidecar of line offsets, checked on read and drawn without changing the text | Proposed |
@@ -290,4 +291,5 @@ The table is generated from each ADR's heading and Status line ([ADR 0410](0410-
 | [0413](0413-what-stays-of-the-other-platforms-when-windows-is-the-only-one.md) | What stays of the other platforms when Windows is the only one | Proposed (the worker's choices in applying D74; the owner confirms or overrides them on #510) |
 | [0414](0414-the-teleprompter-default-engine-stays-whisper-tiny-until-a-real-time-ab-evaluation-runs.md) | The teleprompter default engine stays Whisper tiny until a real-time A/B evaluation runs | Proposed |
 | [0415](0415-while-pages-is-paused-docs-are-checked-by-lychee-and-a-changed-file-markdownlint-not-by-building-the-site.md) | While Pages is paused, docs are checked by lychee and a changed-file markdownlint, not by building the site | Accepted |
+| [0430](0430-the-engine-panel-is-a-wide-slide-over-from-the-engine-chip-and-every-pointer-to-the-tracks-page-opens-it.md) | The engine panel is a wide slide-over from the engine chip, and every pointer to the Tracks page opens it | Proposed |
 <!-- adr-index:end -->

@@ -113,7 +113,7 @@ const SECTION_LABEL = "font-['Barlow_Condensed',sans-serif] text-[0.72rem] font-
 /**
  * The rail's "Voices in scene" section (booth-mode-and-companion-panel.prd.md Phase 3): the chapter's Story Bible
  * characters as speaker tags, each opening its entry in the rail's Story bible tab. Each tag draws in its own
- * per-speaker colour (D85 #6, ADR 0366) via `Highlight`'s `colorToken` override, keyed by the same canonical name the
+ * per-speaker colour (D85 #6, ADR 0367) via `Highlight`'s `colorToken` override, keyed by the same canonical name the
  * Script reader's `SpeakerTag` hashes (manuscript/ParagraphView.tsx), so a speaker's colour matches on both pages -
  * still the `Highlight` primitive and its Character kind/behaviour, only the colour source changed. The
  * per-character voice reference clip the booth mock plays here is Character Continuity Review's work (PRD D3): until

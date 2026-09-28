@@ -7,7 +7,7 @@ import (
 	"github.com/countrymanprime/narration-utils/shell/internal/contractfile"
 )
 
-// The Tracks page's project as TracksList sends it (ADR 0069), parsed from the fixture .rpp with its resolved media. The absolute
+// The audio engine panel's project as TracksList sends it (ADR 0069), parsed from the fixture .rpp with its resolved media. The absolute
 // folder of the checkout is replaced so the file reads the same on every machine.
 func TestContractTracksProject(t *testing.T) {
 	folder, err := filepath.Abs("testdata")

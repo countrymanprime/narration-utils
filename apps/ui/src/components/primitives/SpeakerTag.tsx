@@ -17,7 +17,7 @@ type Props = {
 
 /** A speaker's colour, the same one Highlight's `colorToken` override draws with for the Booth's "Voices in scene"
  * tags (booth/BoothView.tsx): both read the token names from speakerColor.ts, so a speaker's colour is the same
- * wherever the app names them (D85 #6, ADR 0366). */
+ * wherever the app names them (D85 #6, ADR 0367). */
 export function SpeakerTag({ label, speakerId, onActivate, description }: Props) {
   const token = speakerColorToken(speakerId ?? label);
   const style = { background: `color-mix(in srgb, var(${token}) 20%, transparent)`, color: `var(${token}-text)` };

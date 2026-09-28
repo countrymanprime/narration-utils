@@ -77,7 +77,7 @@ const TEXT_TOKEN: Partial<Record<HighlightKind, string>> = {
 // background fills the whole line height rather than just the glyph box.
 //
 // `colorToken` (a bare custom-property name, e.g. `--speaker-3` from speakerColor.ts) overrides the kind's own colour
-// for the Booth's per-speaker "Voices in scene" tags (D85 #6, ADR 0366): the mark keeps its kind's `data-highlight`
+// for the Booth's per-speaker "Voices in scene" tags (D85 #6, ADR 0367): the mark keeps its kind's `data-highlight`
 // and behaviour, only which colour it draws with changes, so it needs no new HighlightKind of its own.
 function highlightStyle(kind: HighlightKind, colorToken?: string): CSSProperties {
   const resolvedToken = colorToken ?? TOKEN[kind];

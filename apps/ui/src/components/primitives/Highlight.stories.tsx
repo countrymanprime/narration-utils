@@ -99,7 +99,7 @@ export const StaticIsNotAButton: Story = {
   },
 };
 
-// The Booth's "Voices in scene" tags (booth/BoothView.tsx, D85 #6, ADR 0366): colorToken overrides the kind's own
+// The Booth's "Voices in scene" tags (booth/BoothView.tsx, D85 #6, ADR 0367): colorToken overrides the kind's own
 // colour with one of the seven declared speaker tokens (speakerColor.ts), while the mark keeps its Character kind
 // and behaviour - the same primitive, only its colour source changed.
 export const PerSpeakerColour: Story = {

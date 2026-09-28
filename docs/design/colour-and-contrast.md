@@ -38,12 +38,12 @@ Studio UI Primitives' Phase 1 ([ADR 0360](../adr/0360-studio-primitives-land-as-
 
 ## Per-speaker colours (D85 #6 token batch)
 
-D85 #6 on [#509](https://github.com/countrymanprime/narration-utils/issues/509) ([ADR 0366](../adr/0366-per-speaker-colours-alias-the-seven-entity-kind-hues-and-hash-by-speaker-name.md)) gives each speaker in the Script reader's attribution chip and the Booth's "Voices in scene" tags its own colour, as the benchmark mocks show, instead of the one `--character` colour every speaker drew before this batch.
+D85 #6 on [#509](https://github.com/countrymanprime/narration-utils/issues/509) ([ADR 0367](../adr/0367-per-speaker-colours-alias-the-seven-entity-kind-hues-and-hash-by-speaker-name.md)) gives each speaker in the Script reader's attribution chip and the Booth's "Voices in scene" tags its own colour, as the benchmark mocks show, instead of the one `--character` colour every speaker drew before this batch.
 
 - **`--speaker-1` through `--speaker-7`** each alias one of the kind colours above, in this order: `character`, `place`, `org`, `review`, `lore`, `item`, `event` (and their `-text` companions the same way) — the same alias derivation the meter zones use, so each needs no dark override or new contrast tuning of its own; a dedicated `speaker-N` row in `PAIRS` still protects the speaker use specifically.
 - **`apps/ui/src/components/primitives/speakerColor.ts`** hashes a speaker id (a canonical name, or an entity id where one is available) to one of the seven, deterministically. An eighth or later distinct speaker wraps back to `--speaker-1` (`--character`), the same colour an unresolved speaker (no id at all) falls back to.
 - **Two call sites, one derivation:** `primitives/SpeakerTag.tsx` (the Script reader's chip) reads `speakerColorToken` directly; `primitives/Highlight.tsx`'s `colorToken` prop overrides a mark's own kind colour with it, so the Booth's "Voices in scene" tags stay the same `Highlight kind="Character"` mark (data attribute, activation, keyboard support) with only their colour source changed.
-- **Known limitation:** hashing by name, not a persistent id, means two speakers who share a display name draw identically, and with only seven buckets a modest cast collides more often than not (the birthday paradox) — accepted for now per ADR 0366 rather than inventing new hues, which would need a second round of hand-tuned contrast.
+- **Known limitation:** hashing by name, not a persistent id, means two speakers who share a display name draw identically, and with only seven buckets a modest cast collides more often than not (the birthday paradox) — accepted for now per ADR 0367 rather than inventing new hues, which would need a second round of hand-tuned contrast.
 
 ## Choosing a colour for something new
 
