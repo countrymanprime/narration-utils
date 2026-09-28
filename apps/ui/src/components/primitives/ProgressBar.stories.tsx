@@ -45,3 +45,9 @@ export const Indeterminate: Story = {
 export const JustBegun: Story = { args: { value: 1 } };
 
 export const Done: Story = { args: { value: 100, running: false } };
+
+// The benchmark's 8 px bar under a StatTile (mock B01): --ok on the lighter --surface-2 track.
+export const Thin: Story = { args: { label: 'Finished audio', value: 69, size: 'thin', tone: 'ok' } };
+
+// The benchmark's "this week" rows (mock B01): the same thin bar, warn-toned when a target is at risk.
+export const ThinWarn: Story = { args: { label: 'Voice rest (last 24h)', value: 38, size: 'thin', tone: 'warn' } };
