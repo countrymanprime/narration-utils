@@ -252,6 +252,35 @@ jobs:
           projects: narration-utils-shell
           configuration: ci
 
+  wasapi-spike:
+    # TEMPORARY (native-recording-suite P1, N-B37): measures the WASAPI capture engine on the Windows runner for the spike
+    # report (docs/research/native-recording-capture-engine-spike.md). Removed before the pull request is ready.
+    timeout-minutes: 55
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with: { persist-credentials: false }
+      - uses: ./.github/actions/setup-toolchain
+        with:
+          need-go: 'false'
+          need-wails-tools: 'false'
+          need-stylua: 'false'
+          python-sync-args: --only-group lua
+          pnpm-filter: narration-utils
+      - name: audio service and endpoints
+        shell: pwsh
+        run: |
+          Get-Service audiosrv, AudioEndpointBuilder | Format-Table -AutoSize | Out-String | Write-Output
+          try { Start-Service audiosrv -ErrorAction Stop; Write-Output 'audiosrv started' } catch { Write-Output "audiosrv: $_" }
+          Get-PnpDevice -Class AudioEndpoint -ErrorAction SilentlyContinue | Format-Table -AutoSize | Out-String | Write-Output
+          Get-CimInstance Win32_Processor | Select-Object Name, NumberOfCores, NumberOfLogicalProcessors | Format-List | Out-String | Write-Output
+      - name: probe
+        shell: pwsh
+        run: >-
+          uv run --no-project --python 3.12 --with numpy==2.5.3 --with sounddevice==0.5.6
+          python sidecars/manuscript-teleprompter/spikes/wasapi_probe.py
+          --seconds 1800 --stereo-seconds 120 --throughput-seconds 1800 --out "$env:RUNNER_TEMP/wasapi-probe"
+
   go-test:
     # The tests, with the race detector on the packages that have concurrency (the `ci` configuration of the test target;
     # ADR 0171), then the teleprompter and shutdown tests on one and on four CPUs (`test-schedules`): an ordering bug
