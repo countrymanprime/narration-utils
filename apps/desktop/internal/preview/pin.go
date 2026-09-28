@@ -34,11 +34,11 @@ const (
 	StaleParagraphMissing StaleReason = "paragraph_missing"
 )
 
-// checkStale compares pin's stored anchor text against paragraphs' current text (keyed by paragraph id, the
+// CheckStale compares pin's stored anchor text against paragraphs' current text (keyed by paragraph id, the
 // caller's own read of the manuscript's current state). It is an exact comparison, not prepmarkup's UTF-16-offset
 // anchoring: a pin covers whole paragraphs (Q3), never a sub-paragraph span, so there is no offset to reconcile -
 // only "is this still the same text".
-func checkStale(pin PinnedRange, paragraphs map[string]string) StaleReason {
+func CheckStale(pin PinnedRange, paragraphs map[string]string) StaleReason {
 	for _, id := range pin.ParagraphIDs {
 		current, ok := paragraphs[id]
 		if !ok {

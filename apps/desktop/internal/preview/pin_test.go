@@ -5,24 +5,24 @@ import "testing"
 func TestCheckStaleNoneWhenTextUnchanged(t *testing.T) {
 	pin := PinnedRange{ChapterID: "c1", ParagraphIDs: []string{"p1", "p2"}, AnchorText: map[string]string{"p1": "one", "p2": "two"}}
 	current := map[string]string{"p1": "one", "p2": "two", "p3": "three"}
-	if reason := checkStale(pin, current); reason != StaleNone {
-		t.Fatalf("checkStale = %q, want %q", reason, StaleNone)
+	if reason := CheckStale(pin, current); reason != StaleNone {
+		t.Fatalf("CheckStale = %q, want %q", reason, StaleNone)
 	}
 }
 
 func TestCheckStaleTextChanged(t *testing.T) {
 	pin := PinnedRange{ChapterID: "c1", ParagraphIDs: []string{"p1", "p2"}, AnchorText: map[string]string{"p1": "one", "p2": "two"}}
 	current := map[string]string{"p1": "one", "p2": "two edited"}
-	if reason := checkStale(pin, current); reason != StaleTextChanged {
-		t.Fatalf("checkStale = %q, want %q", reason, StaleTextChanged)
+	if reason := CheckStale(pin, current); reason != StaleTextChanged {
+		t.Fatalf("CheckStale = %q, want %q", reason, StaleTextChanged)
 	}
 }
 
 func TestCheckStaleParagraphMissing(t *testing.T) {
 	pin := PinnedRange{ChapterID: "c1", ParagraphIDs: []string{"p1", "p2"}, AnchorText: map[string]string{"p1": "one", "p2": "two"}}
 	current := map[string]string{"p1": "one"} // p2 is gone (a re-import renumbered or dropped it)
-	if reason := checkStale(pin, current); reason != StaleParagraphMissing {
-		t.Fatalf("checkStale = %q, want %q", reason, StaleParagraphMissing)
+	if reason := CheckStale(pin, current); reason != StaleParagraphMissing {
+		t.Fatalf("CheckStale = %q, want %q", reason, StaleParagraphMissing)
 	}
 }
 
