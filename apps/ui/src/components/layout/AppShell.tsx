@@ -143,9 +143,9 @@ export function AppShell({
       </div>
       <nav className="flex-1 px-2 pt-[0.5625rem] pb-2">
         {NAV_GROUPS.map((group, index) => (
-          <div key={group.label} role="group" aria-labelledby={groupHeadingId(group.label)} className="flex flex-col gap-[0.1875rem]">
+          <div key={group.label} role="group" aria-labelledby={groupHeadingId(group.label)} className="relative flex flex-col gap-[0.1875rem]">
             {/* Mock 01 heads every group but the first, whose one item already says "Production": that heading stays for a
-                screen reader (it names the group) and is not drawn. The rest are 10 px capitals at x 19, 29 px deep with
+                screen reader (it names the group) and is not drawn; `relative` on the group keeps the hidden heading inside it. The rest are 10 px capitals at x 19, 29 px deep with
                 the gap above the group's first item, so a heading sits 32 px between two items as the mock spaces it. */}
             <div
               id={groupHeadingId(group.label)}
