@@ -92,6 +92,29 @@
   --badge-info-fill: color-mix(in srgb, var(--info) 14%, transparent);
   --badge-danger-fill: color-mix(in srgb, var(--danger) 14%, transparent);
   --badge-experimental-fill: color-mix(in srgb, var(--experimental) 14%, transparent);
+  /* The mock fidelity token batch (mock-fidelity-primitives-and-components.prd.md Phase 0b, ADR 0590), measured on the
+     benchmark mocks. No primitive draws these yet: phases 1-15 move onto them. The status soft fills are opaque, like the
+     entity -soft fills the mocks paint pills and board cells with (Q3), and alias them where one already has the value;
+     warn has no entity twin, so it is the warn colour at 18% over the surface (mock 04 measures #f2ead6). */
+  --ok-soft: var(--character-soft);
+  --warn-soft: color-mix(in srgb, var(--warn) 18%, var(--surface));
+  --info-soft: var(--place-soft);
+  --danger-soft: var(--review-soft);
+  /* A selected or highlighted table row (mocks 04 and 05 measure #faf1ed): the accent at 8% over the surface. */
+  --row-selected: color-mix(in srgb, var(--accent) 8%, var(--surface));
+  /* The booth's reading surface (Q6): the card surface in light; dark sets its own, darker than --bg. */
+  --reading-bg: var(--surface);
+  /* The booth's REC pill (mock 03). Light has no mock, so it is the danger pill's own pair. */
+  --rec-fill: var(--review-soft);
+  --rec-text: var(--danger-text);
+  /* The toast is inverted in both themes (daw-chapter-track-auto-sync/03 measures dark --text behind dark --bg). */
+  --toast-bg: var(--text);
+  --toast-text: var(--bg);
+  /* Proof's waveform bars (mock 04 measures 65-77% accent): 76% over the surface, the least that holds a mark's 3:1. */
+  --waveform: color-mix(in srgb, var(--accent) 76%, var(--surface));
+  /* The target zone on Master's book-consistency band (mock 05 measures #c8d4c2, 18%): ok at 16% over the --surface-2
+     track, so the band's --accent chapter ticks keep 3:1 on it (3.05:1 in light; 18% gave 2.98:1). */
+  --ok-zone: color-mix(in srgb, var(--ok) 16%, var(--surface-2));
   /* Per-speaker dialogue colours (D85 #6 on #509; ADR 0367): the Script reader's speaker attribution and the Booth's
      "Voices in scene" tags give each speaker their own colour, as the mocks show (SC7, BO4). Declared as aliases of the
      seven entity-kind hues, the same derivation ADR 0362 used for the meter zones, so nothing here needs a second round
@@ -135,7 +158,22 @@
   /* The booth's script size (booth-mode-and-companion-panel.prd.md). The booth follows the app theme like every other
      surface (ADR 0365, superseding ADR 0360 Q1's forced-dark booth block), so this is its only booth-only token: a size,
      declared once here, the same in light and dark. */
-  --font-size-booth-script: 1.1rem;
+  --font-size-booth-script: 1.625rem;
+  --line-height-booth-script: 1.85;
+  /* The mock fidelity sizes and type (Phase 0b, ADR 0590), measured on the benchmark mocks at 1440 px: the same in both
+     themes. The comment gives each in px at the default root size. */
+  --radius-button: 0.375rem; /* 6 */
+  --radius-card: 0.5rem; /* 8 */
+  --radius-tag: 0.1875rem; /* 3 */
+  --button-height: 2rem; /* 32, border included */
+  --button-height-sm: 1.75rem; /* 28, the companion and dense rows */
+  --row-height: 2.125rem; /* 34, divider included */
+  --header-row-height: 1.9375rem; /* 31, rule included */
+  --font-size-page-title: 1.625rem; /* 26, Barlow Condensed */
+  --font-size-card-title: 1.1875rem; /* 19, Barlow Condensed */
+  --font-size-label: 0.6875rem; /* 11, the eyebrow, table header and tag label */
+  --tracking-label: 0.1em;
+  --tracking-button: 0.06em;
   color-scheme: light;
 }
 /* Single source of truth for dark values - set via ThemeProvider
@@ -183,6 +221,10 @@
   --experimental: #4fbdbd;
   --experimental-text: var(--experimental);
   --bookmark: #6e9fdb;
+  /* Mock 03 measures both (Phase 0b, ADR 0590). */
+  --reading-bg: #0e0d09;
+  --rec-fill: #5e1d16;
+  --rec-text: #f9b8af;
   --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 2px 8px rgba(0, 0, 0, 0.25);
   --shadow-lg: 0 8px 28px rgba(0, 0, 0, 0.5), 0 3px 10px rgba(0, 0, 0, 0.3);
   color-scheme: dark;
@@ -241,16 +283,6 @@
 .manuscript-reader {
   margin: 0 auto;
   max-width: none;
-}
-.progress-segment {
-  display: block;
-  flex: 0 0 auto;
-  height: 100%;
-}
-.progress-segment > span {
-  display: block;
-  width: 100%;
-  height: 100%;
 }
 /* Scroll remains available to wheel/keyboard users, but the
    reader/application chrome does not reserve or display a native gutter. */
