@@ -11,10 +11,17 @@ import { IconButton } from './IconButton';
 // so a closed panel is not in the page at all (it used to stay mounted, invisible). All positioning is Tailwind: an
 // unlayered legacy panel rule used to shadow these utilities and keep the panel permanently off-screen behind a live
 // backdrop (ADR-0017). `data-slide-over` and `data-slide-over-backdrop` mark the panel and its backdrop for tests.
+// `size="wide"` (ADR 0430) is for a panel that holds tables and lists a page used to (the engine panel), not a detail view.
+// `headingLevel` 2 is for a panel that opens over any page and sits beside it rather than inside one of its sections (the
+// engine panel again): its title then follows the page's <h1> directly, where the default <h3> would skip a level.
+const WIDTH = { default: 'w-[min(20rem,100vw)]', wide: 'w-[min(44rem,100vw)]' } as const;
+
 export function SlideOver({
   open,
   title,
   closeLabel = 'Close',
+  size = 'default',
+  headingLevel = 3,
   onClose,
   onEscape,
   children,
@@ -22,6 +29,8 @@ export function SlideOver({
   open: boolean;
   title: ReactNode;
   closeLabel?: string;
+  size?: keyof typeof WIDTH;
+  headingLevel?: 2 | 3;
   onClose: () => void;
   // Runs before Escape closes the panel; returning true means the caller already handled the key
   // itself (for example, clearing a search - R8) and the panel should stay open.
@@ -49,12 +58,12 @@ export function SlideOver({
           <Drawer.Popup
             data-slide-over
             finalFocus={finalFocus}
-            className="flex h-full w-[min(20rem,100vw)] [transform:translateX(var(--drawer-swipe-movement-x,0px))] flex-col border-l border-[var(--border)] bg-[var(--surface)] shadow-[var(--shadow-lg)] transition-transform duration-200 ease-out outline-none data-[ending-style]:[transform:translateX(100%)] data-[starting-style]:[transform:translateX(100%)] data-[swiping]:duration-0"
+            className={`flex h-full ${WIDTH[size]} [transform:translateX(var(--drawer-swipe-movement-x,0px))] flex-col border-l border-[var(--border)] bg-[var(--surface)] shadow-[var(--shadow-lg)] transition-transform duration-200 ease-out outline-none data-[ending-style]:[transform:translateX(100%)] data-[starting-style]:[transform:translateX(100%)] data-[swiping]:duration-0`}
           >
             {/* Content: a mouse drag inside the panel selects text instead of starting a swipe-to-dismiss (touch still swipes). */}
             <Drawer.Content className="flex min-h-0 flex-1 flex-col">
               <div className="flex items-center justify-between gap-3 border-b border-[var(--border)] px-[1.1rem] py-[0.85rem]">
-                <Drawer.Title render={<h3 />} className="text-sm font-semibold">
+                <Drawer.Title render={headingLevel === 2 ? <h2 /> : <h3 />} className="text-sm font-semibold">
                   {title}
                 </Drawer.Title>
                 <IconButton label={closeLabel} onClick={onClose}>

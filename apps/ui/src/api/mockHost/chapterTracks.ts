@@ -1,6 +1,6 @@
 // The mock host (mockApi.ts): tracks, chapter links and chapter sync.
 import type { ChapterSyncBatch, ChapterSyncChapter, ChapterSyncConsent, ChapterSyncState, ChapterSyncTrigger, NarrationApi, TrackMapping } from '../../types';
-import { WIRE_TRACKS_PROJECT, wireClone } from '../mockFixtures';
+import { WIRE_CHAPTERS, WIRE_TRACKS_PROJECT, wireClone } from '../mockFixtures';
 import { mockChapterRegionPlan, mockChapterSyncPreview, mockChapterTrackLinks, mockChapterTrackMatch } from '../chapterTrackMatchMock';
 import { mockChaptersForTracks, mockChapterSuggestion } from '../chapterSuggestionMock';
 import type { CoverageResult } from '../contracts/coverage';
@@ -19,14 +19,43 @@ export function createChapterTracksMock(
   // Chapter sync (apps/desktop/chaptersync.go): the consent, the pairs the narrator undid, and who listens.
   let chapterSyncConsent: ChapterSyncConsent = initial.chapterSync === 'ask' ? 'undecided' : initial.chapterSync === 'off' ? 'off' : 'on';
   let chapterSyncDecidedAt: string | null = chapterSyncConsent === 'undecided' ? null : '2026-09-24T09:00:00Z';
-  let chapterSyncLastSync: string | null = chapterSyncConsent === 'on' && initial.chapterSync !== 'linked' ? '2026-09-24T09:00:00Z' : null;
+  let chapterSyncLastSync: string | null =
+    initial.chapterSync === 'activity'
+      ? '2026-09-24T10:42:00Z'
+      : chapterSyncConsent === 'on' && initial.chapterSync !== 'linked'
+        ? '2026-09-24T09:00:00Z'
+        : null;
   const chapterSyncRejected = new Set<string>();
   const chapterSyncUnsavedEdits = initial.chapterSync === 'unsaved';
   // The Sync activity list, newest first (the host keeps 20): the unsaved seed shows one row from a save in REAPER.
   let chapterSyncActivity: ChapterSyncBatch[] =
     initial.chapterSync === 'unsaved'
       ? [{ at: '2026-09-24T09:05:00Z', trigger: 'watch', linked: [], newTracks: [{ guid: '{mock-room-tone}', name: 'Room tone', index: 9, marker: '' }] }]
-      : [];
+      : initial.chapterSync === 'activity'
+        ? mockSyncActivity()
+        : [];
+  // The activity seed's links: Chapter 1 by sync (its Undo shows), Chapter 2 by the narrator ("…automatically, 1 by you").
+  if (initial.chapterSync === 'activity') {
+    const [first, second] = WIRE_TRACKS_PROJECT.tracks;
+    s.chapterTrackMappings = [
+      {
+        trackGuid: first.guid,
+        chapterId: WIRE_CHAPTERS[0].id,
+        chapterTitle: WIRE_CHAPTERS[0].title,
+        confirmedAt: '2026-09-24T10:42:00Z',
+        origin: 'auto',
+        match: { score: 1, kind: 'exact' },
+      },
+      {
+        trackGuid: second.guid,
+        chapterId: WIRE_CHAPTERS[1].id,
+        chapterTitle: WIRE_CHAPTERS[1].title,
+        confirmedAt: '2026-09-23T08:00:00Z',
+        origin: 'manual',
+        match: null,
+      },
+    ];
+  }
   const chapterSyncSubscribers = new Set<(state: ChapterSyncState) => void>();
   const mockLinksRead = () => {
     const state = s.tracksDiscovery.candidates.length === 0 ? 'none' : s.tracksDiscovery.selected ? 'ready' : 'choose';
@@ -254,4 +283,43 @@ export function createChapterTracksMock(
     },
   } satisfies Partial<NarrationApi>;
   return { bindings, publishChapterSync, mockChapterSyncState };
+}
+
+/** The activity seed's Sync activity, newest first: a link a save in REAPER made, a new track that is not a chapter, the first sync. */
+function mockSyncActivity(): ChapterSyncBatch[] {
+  const [first] = WIRE_TRACKS_PROJECT.tracks;
+  const chapter = WIRE_CHAPTERS[0];
+  return [
+    {
+      at: '2026-09-24T10:42:00Z',
+      trigger: 'watch',
+      linked: [
+        {
+          trackGuid: first.guid,
+          chapterId: chapter.id,
+          chapterTitle: chapter.title,
+          confirmedAt: '2026-09-24T10:42:00Z',
+          origin: 'auto',
+          match: { score: 1, kind: 'exact' },
+        },
+      ],
+      newTracks: [],
+    },
+    { at: '2026-09-23T17:10:00Z', trigger: 'watch', linked: [], newTracks: [{ guid: '{mock-room-tone}', name: 'Room tone', index: 9, marker: '' }] },
+    {
+      at: '2026-09-22T09:00:00Z',
+      trigger: 'consent',
+      linked: [
+        {
+          trackGuid: '{mock-earlier-link}',
+          chapterId: WIRE_CHAPTERS[2].id,
+          chapterTitle: WIRE_CHAPTERS[2].title,
+          confirmedAt: '2026-09-22T09:00:00Z',
+          origin: 'auto',
+          match: { score: 1, kind: 'exact' },
+        },
+      ],
+      newTracks: [],
+    },
+  ];
 }

@@ -49,7 +49,7 @@ func dawResolverFor(svc hostServices) (*dawport.Resolver, dawport.Runtime) {
 	return resolver, runtime
 }
 
-// dawDeclarationFor is the launch's adapter, declaration only: reaper.Declaration() and audacity.New() hold no transport of
+// dawDeclarationFor is the launch's adapter, declaration only: reaper.Declaration() and audacity.Declaration() hold no transport of
 // their own (the registry's live adapters do, DAW port PRD P2), and a standalone launch (KindNone) has no adapter at all,
 // which the resolver reports as every capability unsupported.
 func dawDeclarationFor(kind dawport.Kind) dawport.Adapter {
@@ -57,7 +57,7 @@ func dawDeclarationFor(kind dawport.Kind) dawport.Adapter {
 	case dawport.KindREAPER:
 		return reaper.Declaration()
 	case dawport.KindAudacity:
-		return audacity.New()
+		return audacity.Declaration()
 	default:
 		return nil
 	}

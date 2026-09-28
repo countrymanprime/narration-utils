@@ -8,7 +8,7 @@ import type { Finding, FindingReviewStatus, ReaperStatus } from '../../types';
 import { Button } from '../primitives/Button';
 import { confidenceLabel, formatTime, STATUS_LABELS } from '../proof/findingFormat';
 import { hasAudio, ReaperControls } from '../proof/ReaperControls';
-import { useRangePlayer } from '../tracks/useRangePlayer';
+import { useRangePlayer } from '../engine/useRangePlayer';
 import { EDITING_CLASS_LABEL, candidateAudition, candidateClass, candidateReason } from './editingCheckText';
 
 const STALE_MESSAGE = 'This candidate changed since it was shown, because the check ran again. Look at it again, then decide.';

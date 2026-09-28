@@ -1,0 +1,27 @@
+{
+  "id": "export-1",
+  "kind": "render_export",
+  "phase": "running",
+  "message": "Mastering Chapter 01 (1 of 2).",
+  "percent": 25,
+  "master": true,
+  "format": "mp3",
+  "logs": [
+    "Preparing 2 files."
+  ],
+  "elapsed": 3.5,
+  "files": [
+    {
+      "kind": "chapter",
+      "title": "Chapter 01",
+      "path": "C:/Renders/Chapter 01.wav",
+      "status": "mastering"
+    },
+    {
+      "kind": "chapter",
+      "title": "Chapter 02",
+      "path": "C:/Renders/Chapter 02.wav",
+      "status": "pending"
+    }
+  ]
+}

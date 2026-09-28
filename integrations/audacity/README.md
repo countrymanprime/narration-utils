@@ -14,4 +14,6 @@ There is deliberately no Audacity-side launcher in this folder. Nothing Audacity
 ([feasibility note](../../docs/research/audacity-launcher-feasibility.md)), so the installer adds a Start Menu entry,
 "Narration Utils for Audacity", that starts the app with `--daw Audacity`
 ([ADR 0145](../../docs/adr/0145-the-audacity-launcher-is-an-installer-start-menu-entry-and-a-picker-switch-keeps-an-audacity-launch.md)).
-The integration targets Audacity 3.x, because Audacity 4.0 ships without `mod-script-pipe`.
+The integration targets Audacity 3.x, because Audacity 4.0 ships without `mod-script-pipe`. The pipe client and the
+adapter live in the desktop host, not here: `apps/desktop/internal/audacitybridge` and `apps/desktop/internal/dawport/audacity`
+([ADR 0355](../../docs/adr/0355-audacity-is-driven-over-its-scripting-pipe-built-from-the-published-spec-and-verified-by-the-owners-pass.md)).
