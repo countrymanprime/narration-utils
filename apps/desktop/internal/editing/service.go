@@ -25,14 +25,11 @@ import (
 	"github.com/countrymanprime/narration-utils/shell/internal/tracks"
 )
 
-// AnalyzerVersion is this package's own analyzer version, stamped on every
-// ledger record it writes and compared by CurrentItemRecord and, in Phase 6,
-// the validated-detector gate for clicks and breaths. It has no exported
-// "validated" registry (Phase 4, the click/breath corpus validation, is out
-// of scope for this pass): the empty-space class alone reaches met/not_met;
-// clicks and breaths always read unknown regardless of this string's value,
-// by Phase 6's own design, not because this version happens to be absent
-// from some list.
+// AnalyzerVersion is the empty-space (silence) analyzer's version, stamped on
+// its editing.silence ledger records and compared by CurrentItemRecord. The
+// click and breath classes carry their own versions (ClickAnalyzerVersion,
+// BreathAnalyzerVersion in validation.go), which the validated-detector gate
+// reads.
 const AnalyzerVersion = "editing-v1"
 
 // Reason is a typed refusal this service can answer before it even starts a
