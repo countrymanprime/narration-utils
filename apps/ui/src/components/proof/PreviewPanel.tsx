@@ -148,15 +148,11 @@ export function PreviewPanel({ notify, goToManuscript }: { notify: Notify; goToM
                 return (
                   <TableRow key={candidate.chapterId}>
                     <TableCell className="font-medium">{nameOf(candidate)}</TableCell>
-                    <TableCell className="font-['IBM_Plex_Mono',ui-monospace,monospace] text-xs whitespace-nowrap">
+                    <TableCell numeric align="left">
                       {describeParagraphs(paragraphNumbers(candidate))}
                     </TableCell>
-                    <TableCell align="right" className="font-['IBM_Plex_Mono',ui-monospace,monospace] text-xs whitespace-nowrap">
-                      {formatAudioTime(candidate.estimatedSeconds)}
-                    </TableCell>
-                    <TableCell align="right" className="font-['IBM_Plex_Mono',ui-monospace,monospace] text-xs">
-                      {candidate.wordCount.toLocaleString()}
-                    </TableCell>
+                    <TableCell numeric>{formatAudioTime(candidate.estimatedSeconds)}</TableCell>
+                    <TableCell numeric>{candidate.wordCount.toLocaleString()}</TableCell>
                     <TableCell className="text-xs">
                       <ul className="space-y-0.5">
                         {candidate.reasons.map((reason) => (

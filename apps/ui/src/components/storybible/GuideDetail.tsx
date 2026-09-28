@@ -534,14 +534,14 @@ export function GuideDetail({
               <TableRow>
                 <TableHeader>Alias</TableHeader>
                 <TableHeader style={{ minWidth: '9rem' }}>Pronunciation</TableHeader>
-                <TableHeader>Occurrences</TableHeader>
+                <TableHeader align="right">Occurrences</TableHeader>
                 <TableHeader hiddenLabel="Actions" />
               </TableRow>
             </TableHead>
             <TableBody>
               {entity.aliases.map((alias, index) => (
                 <TableRow key={alias.text}>
-                  <TableCell className="font-['IBM_Plex_Mono',ui-monospace,monospace] text-sm">{alias.text}</TableCell>
+                  <TableCell className="font-['IBM_Plex_Mono',ui-monospace,monospace]">{alias.text}</TableCell>
                   <TableCell>
                     <div style={{ position: 'relative', width: '100%' }}>
                       <div
@@ -569,7 +569,7 @@ export function GuideDetail({
                       </TooltipTarget>
                     </div>
                   </TableCell>
-                  <TableCell className="font-['IBM_Plex_Mono',ui-monospace,monospace]">{alias.occurrences.length}</TableCell>
+                  <TableCell numeric>{alias.occurrences.length}</TableCell>
                   <TableCell align="right">
                     <IconButton
                       label={`Remove alias ${alias.text}`}
@@ -793,7 +793,7 @@ export function GuideDetail({
               ))}
               {entity.relationships.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={3} className="text-sm" style={{ color: 'var(--text-muted)' }}>
+                  <TableCell colSpan={3} style={{ color: 'var(--text-muted)' }}>
                     No related entries yet.
                   </TableCell>
                 </TableRow>

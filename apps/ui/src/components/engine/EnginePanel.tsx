@@ -267,7 +267,7 @@ function RppPicker({ discovery, onSelect }: { discovery: TracksDiscovery; onSele
 function TrackList({ tracks, mappings }: { tracks: Track[]; mappings: TrackMapping[] }) {
   return (
     <Panel title="Tracks">
-      <Table label="Tracks" className="mt-2">
+      <Table label="Tracks" flush className="mt-2">
         <TableHead>
           <TableRow>
             <TableHeader>Track</TableHeader>
@@ -292,7 +292,7 @@ function TrackList({ tracks, mappings }: { tracks: Track[]; mappings: TrackMappi
                 <TableCell style={{ color: chapterTitles.length > 0 ? undefined : 'var(--text-muted)' }}>
                   {chapterTitles.length > 0 ? chapterTitles.join(', ') : 'Not linked'}
                 </TableCell>
-                <TableCell align="right">
+                <TableCell numeric>
                   <span className="inline-flex items-center gap-1.5">
                     {hasIssue && (
                       <span title="This track has an item that can't be played" style={{ color: 'var(--danger-text)' }}>

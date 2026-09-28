@@ -10,7 +10,6 @@ import { PickupListCount } from './PickupListCount';
 import { REGION_LABEL, describePosition, describeRegion, formatAudioTime, paragraphRefs, plural, recordedTo, verdict } from './recordingCheckText';
 import { TakeReviewPickups } from './TakeReviewPickups';
 
-const MONO = "font-['IBM_Plex_Mono',ui-monospace,monospace]";
 const EYEBROW = "font-['Barlow_Condensed',sans-serif] text-[0.72rem] font-semibold tracking-[0.08em] text-[var(--text-muted)] uppercase";
 
 // A pickup is one of the check's own interior gaps (recording-check-summary.prd.md, RS8, D33): a place worth reading
@@ -213,15 +212,13 @@ export function RecordingCheckReport({
                   return (
                     <TableRow key={paragraph.id}>
                       <TableCell>{number}</TableCell>
-                      <TableCell align="right" className={MONO}>
+                      <TableCell numeric>
                         {paragraph.present} of {paragraph.tokens}
                       </TableCell>
-                      <TableCell align="right" className={MONO} style={missing > 0 ? { color: 'var(--danger-text)' } : undefined}>
+                      <TableCell numeric style={missing > 0 ? { color: 'var(--danger-text)' } : undefined}>
                         {missing > 0 ? missing : '—'}
                       </TableCell>
-                      <TableCell align="right" className={MONO}>
-                        {paragraph.longestMissingRun > 0 ? paragraph.longestMissingRun : '—'}
-                      </TableCell>
+                      <TableCell numeric>{paragraph.longestMissingRun > 0 ? paragraph.longestMissingRun : '—'}</TableCell>
                     </TableRow>
                   );
                 })}
