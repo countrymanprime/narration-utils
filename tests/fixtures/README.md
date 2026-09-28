@@ -106,3 +106,9 @@ import generally - any manuscript PDF from a similarly simple generator
 (not Word/LibreOffice's PDF export, which does preserve blank lines) hits
 the same ceiling. The Go importer (`apps/desktop/internal/importer`) reads the same file
 through its own PDF path.
+
+## audio/librivox-alice/
+
+Public-domain LibriVox readings of seven *Alice* chapters (the demo script), with word timings and recipes that
+build real-speech test corpora: the recording check, the character-continuity trial and the audio diagnostics. See
+[its README](audio/librivox-alice/README.md) and ADR 0416.
