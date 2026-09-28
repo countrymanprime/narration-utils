@@ -5,7 +5,7 @@ import { STATUS_COLOR } from '../../chapterStatus';
 import { chapterLineNumber, isListableChapter, windowExcerpt } from '../../state';
 import type { ManuscriptChapter, ReaderBookmark, SearchHit, StageChapterRecommendation } from '../../types';
 import { Highlight } from '../primitives/Highlight';
-import { StatusBadge } from '../primitives/StatusBadge';
+import { Dot, StatusBadge } from '../primitives/StatusBadge';
 import { TitleSubtitle } from '../primitives/TitleSubtitle';
 import { verdictLine } from '../stages/stageText';
 
@@ -94,7 +94,7 @@ export function ChapterNav({
               className="flex w-full items-start gap-[0.6rem] rounded-[0.4rem] border border-transparent px-[0.7rem] py-[0.55rem] text-left hover:bg-[var(--surface-2)]"
               onClick={() => select(chapter.id)}
             >
-              <span className="mt-[0.4rem] size-2 flex-none rounded-full" style={{ background: STATUS_COLOR[chapter.status] }} />
+              <Dot color={STATUS_COLOR[chapter.status]} className="mt-[0.4rem]" />
               <span className="min-w-0 flex-1">
                 <TitleSubtitle title={chapter.title} subtitle={chapter.subtitle} layout="stacked" truncate className="text-sm" />
                 {suggested && (

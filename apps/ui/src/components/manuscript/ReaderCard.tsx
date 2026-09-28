@@ -4,6 +4,7 @@ import { faBookmark as faBookmarkRegular } from '@fortawesome/free-regular-svg-i
 import { useId, type ReactNode } from 'react';
 import { readTimeLabel } from '../../state';
 import { Button } from '../primitives/Button';
+import { StatusBadge } from '../primitives/StatusBadge';
 import { TitleSubtitle } from '../primitives/TitleSubtitle';
 import { TooltipTarget } from '../primitives/Tooltip';
 
@@ -149,11 +150,7 @@ export function ReaderCard({
           </h2>
         </button>
         <div className="flex items-center gap-3 justify-self-end text-right @max-[40rem]:col-start-2 @max-[40rem]:justify-self-start">
-          {showRetailSample && (
-            <span className="rounded-[0.2rem] px-1.5 py-0.5 text-xs font-medium" style={{ background: 'var(--place-soft)', color: 'var(--info-text)' }}>
-              Retail sample
-            </span>
-          )}
+          {showRetailSample && <StatusBadge tone="info" shape="tag" label="Retail sample" />}
           <div className={STAT_BLOCK_CLASS}>
             <div className="font-['IBM_Plex_Mono',ui-monospace,monospace] text-xs">{wordCount.toLocaleString()} words</div>
             <div className="mt-0.5 text-xs" style={{ color: 'var(--text-muted)' }}>
@@ -163,14 +160,14 @@ export function ReaderCard({
           <div className={ACTION_SLOT_CLASS}>
             {onRecordInBooth && (
               <TooltipTarget className="relative z-[1]" text="Read this aloud in the Booth, following your voice">
-                <Button variant="ghost" className="text-xs" aria-label={`Record ${title} in Booth`} onClick={onRecordInBooth}>
+                <Button variant="secondary" aria-label={`Record ${title} in Booth`} onClick={onRecordInBooth}>
                   <FontAwesomeIcon icon={faMicrophone} /> Record in Booth
                 </Button>
               </TooltipTarget>
             )}
             {showWorkspace ? (
               <TooltipTarget className="relative z-[1]" text="Open in Proof: listen, follow the script and see flags">
-                <Button variant="ghost" className="text-xs" aria-label={`Open in Proof for ${title}`} onClick={onWorkspace}>
+                <Button variant="secondary" aria-label={`Open in Proof for ${title}`} onClick={onWorkspace}>
                   <FontAwesomeIcon icon={faWaveSquare} />
                 </Button>
               </TooltipTarget>
@@ -178,7 +175,7 @@ export function ReaderCard({
               onRecordInBooth && (
                 // A credits card can be recorded but has no chapter to open a workspace for: an invisible same-size
                 // placeholder keeps its Record in Booth in line with every chapter's down the column.
-                <Button variant="ghost" className="invisible text-xs" aria-hidden="true" tabIndex={-1}>
+                <Button variant="secondary" className="invisible" aria-hidden="true" tabIndex={-1}>
                   <FontAwesomeIcon icon={faWaveSquare} />
                 </Button>
               )

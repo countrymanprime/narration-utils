@@ -1,5 +1,15 @@
 import { z } from 'zod';
-import type { WorkspaceAlignmentResult, WorkspaceExtra, WorkspaceItem, WorkspaceParagraph, WorkspaceToken } from '../contracts/workspace';
+import type {
+  WorkspaceAlignmentResult,
+  WorkspaceExtra,
+  WorkspaceFXChainsResult,
+  WorkspaceItem,
+  WorkspaceParagraph,
+  WorkspacePeaks,
+  WorkspacePeaksEntry,
+  WorkspacePeaksResult,
+  WorkspaceToken,
+} from '../contracts/workspace';
 import { listFromNull, optionalFromNull } from './base';
 import { COVERAGE_EVALUATOR_REASONS, COVERAGE_REFUSAL_REASONS } from './coverage';
 
@@ -53,3 +63,29 @@ export const workspaceAlignmentResultSchema = z.object({
   extras: listFromNull(extraSchema),
   items: listFromNull(itemSchema),
 }) satisfies z.ZodType<WorkspaceAlignmentResult>;
+
+export const workspaceFXChainsResultSchema = z.object({
+  names: listFromNull(z.string()),
+  truncated: z.boolean(),
+}) satisfies z.ZodType<WorkspaceFXChainsResult>;
+
+// The waveform strip's peaks (edit-and-proof-workspace PRD Phase 5, ADR 0520): apps/desktop/bindings_workspace_peaks.go.
+const peaksSchema = z.object({
+  startSeconds: z.number(),
+  bucketsPerSecond: z.number(),
+  buckets: z.number(),
+  minMax: z.string(),
+  sampleRate: z.number(),
+  channels: z.number(),
+}) satisfies z.ZodType<WorkspacePeaks>;
+
+const peaksEntrySchema = z.object({
+  index: z.number(),
+  peaks: optionalFromNull(peaksSchema),
+  reason: optionalFromNull(z.string()),
+}) satisfies z.ZodType<WorkspacePeaksEntry>;
+
+export const workspacePeaksResultSchema = z.object({
+  chapterId: z.string(),
+  items: listFromNull(peaksEntrySchema),
+}) satisfies z.ZodType<WorkspacePeaksResult>;

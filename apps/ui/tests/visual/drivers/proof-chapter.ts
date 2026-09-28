@@ -263,7 +263,40 @@ export const proofChapterDrivers: Record<string, Driver> = {
     await stale.waitFor();
     await stale.scrollIntoViewIfNeeded();
   },
+  // Native takes (native-recording-suite PRD Phase 4): ?mockEngine=builtin seeds the built-in recorder's default
+  // three takes, all unassigned to a line, offered against Chapter 1's own paragraphs.
+  'native-takes-unassigned': async (page) => {
+    await page.goto('/?mockEngine=builtin');
+    await settlePage(page);
+    await openProofChapter(page);
+    const heading = page.getByRole('heading', { name: 'Native takes' });
+    await heading.waitFor();
+    await heading.scrollIntoViewIfNeeded();
+  },
+  'native-takes-keeper': async (page) => {
+    await page.goto('/?mockEngine=builtin');
+    await settlePage(page);
+    await openProofChapter(page);
+    await assignTakeToParagraph(page, 'Take 001', 'Paragraph 1');
+    await assignTakeToParagraph(page, 'Take 003', 'Paragraph 1');
+    const group = page.getByRole('list', { name: 'Native takes of Paragraph 1' });
+    await group.getByRole('button', { name: 'Mark keeper' }).first().click();
+    const keeper = group.getByRole('button', { name: 'Keeper ✓ (undo)' });
+    await keeper.waitFor();
+    await keeper.scrollIntoViewIfNeeded();
+  },
 };
+
+// Assigns takeName to a chapter paragraph from the Native takes panel's "Not yet assigned to a line" list.
+async function assignTakeToParagraph(page: Page, takeName: string, paragraphLabel: string): Promise<void> {
+  const row = page.getByText(takeName, { exact: true }).locator('xpath=..');
+  await row.getByLabel(`${takeName}'s line`).selectOption({ label: paragraphLabel });
+  await row.getByRole('button', { name: 'Assign' }).click();
+  await page
+    .getByRole('list', { name: `Native takes of ${paragraphLabel}` })
+    .getByText(takeName)
+    .waitFor();
+}
 
 // Opens Chapter 1's Proof view (after loading `url` for a mock seam) and scrolls its compare run into view.
 async function openCompare(page: Page, url?: string): Promise<void> {

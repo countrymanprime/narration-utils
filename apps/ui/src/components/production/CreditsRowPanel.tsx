@@ -1,11 +1,22 @@
 import { Link } from 'react-router-dom';
 import type { ChapterStatus } from '../../types';
 import { STATUS_LABELS, STATUS_ORDER } from '../../chapterStatus';
+import { Button } from '../primitives/Button';
 import { Select } from '../primitives/Select';
 import { SlideOver } from '../primitives/SlideOver';
+import { formatLength } from './productionFormat';
 import type { CreditsRow } from './useCreditsRows';
 
 const MUTED = { color: 'var(--text-muted)' };
+
+// Why a row has no Recorded length, in the panel's own words (mirrors productionFormat.ts's UNRECORDED, actual-
+// recorded-column.prd.md's reasons).
+const UNRECORDED_TEXT: Record<NonNullable<CreditsRow['recordedUnavailable']>, string> = {
+  unlinked: 'No track linked yet',
+  multiple_tracks: 'Linked to more than one track',
+  track_missing: 'Linked track is missing',
+  no_project: 'No REAPER project open',
+};
 
 // Credits run well under a minute, so seconds are shown below one (audiobook-credits-templates.prd.md, Open Question C9).
 const creditsLength = (seconds: number) => (seconds < 60 ? `${Math.round(seconds)}s` : `${Math.round(seconds / 60)}m`);
@@ -28,12 +39,16 @@ export function CreditsRowPanel({
   row,
   label,
   onStatus,
+  onCheck,
   onClose,
 }: {
   open: boolean;
   row: CreditsRow;
   label: string;
   onStatus: (status: ChapterStatus) => void;
+  /** Opens the same recording-check dialog a manuscript row's Record cell opens, over a synthetic chapter for this
+   * credits row (credits-in-chapter-table.prd.md Phase 3). */
+  onCheck: () => void;
   onClose: () => void;
 }) {
   const warning = unresolvedWarning(row.unresolved);
@@ -69,7 +84,12 @@ export function CreditsRowPanel({
           options={STATUS_ORDER.map((status) => ({ value: status, label: STATUS_LABELS[status] }))}
           onChange={(value) => onStatus(value as ChapterStatus)}
         />
-        <p style={MUTED}>Recording check: Not checked. The recording check reads manuscript chapters; credits are not checked yet.</p>
+        <p style={MUTED}>
+          Recorded: {row.recordedSeconds === undefined ? UNRECORDED_TEXT[row.recordedUnavailable ?? 'unlinked'] : formatLength(row.recordedSeconds)}
+        </p>
+        <Button variant="secondary" onClick={onCheck}>
+          Recording check
+        </Button>
       </div>
     </SlideOver>
   );

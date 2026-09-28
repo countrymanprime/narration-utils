@@ -1,6 +1,6 @@
 # 0050. The segmented meter is an image named by its segments, and Field wires its hint and error through Base UI
 
-**Status:** Accepted
+**Status:** Accepted (its MeterBar clause is superseded by [ADR 0619](0619-meterbar-is-removed-its-one-consumer-is-gone.md), which removes the primitive now that its one consumer is gone; the Field clause stands)
 **Date:** 2026-09-20
 **Supersedes:**
 

@@ -61,7 +61,7 @@ export function ReviewFilters({
           Include findings the latest run did not repeat
         </Switch>
         {isFiltered(values) && (
-          <Button variant="ghost" onClick={() => onChange({ ...EMPTY_FILTERS, sort: values.sort })}>
+          <Button variant="secondary" onClick={() => onChange({ ...EMPTY_FILTERS, sort: values.sort })}>
             Clear filters
           </Button>
         )}

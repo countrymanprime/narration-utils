@@ -23,7 +23,7 @@ export function UnresolvedCreditsWarning({ kind, tokens, onFix }: { kind: Credit
         the right thing.
       </p>
       {onFix && (
-        <Button variant="ghost" className="mt-2" onClick={onFix}>
+        <Button variant="secondary" className="mt-2" onClick={onFix}>
           Fill them in Settings
         </Button>
       )}

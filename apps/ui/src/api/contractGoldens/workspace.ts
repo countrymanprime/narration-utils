@@ -1,7 +1,7 @@
 // The golden payloads for the workspace alignment and its Phase 3 REAPER navigation: which schema owns each file in
 // tests/fixtures/contracts/ (see index.ts).
 import type { z } from 'zod';
-import { workspaceAlignmentResultSchema } from '../schemas/workspace';
+import { workspaceAlignmentResultSchema, workspaceFXChainsResultSchema, workspacePeaksResultSchema } from '../schemas/workspace';
 import { findingNavigationSchema } from '../schemas/findings';
 
 export const workspaceGoldens: Record<string, z.ZodType> = {
@@ -14,4 +14,9 @@ export const workspaceGoldens: Record<string, z.ZodType> = {
   'workspace-go-to.json': findingNavigationSchema,
   'workspace-loop.json': findingNavigationSchema,
   'workspace-navigation-no-item.json': findingNavigationSchema,
+  // WorkspaceListFXChains (Phase 8, ADR 0234): the narrator's FX chains by name.
+  'workspace-fx-chains.json': workspaceFXChainsResultSchema,
+  // WorkspacePeaks (Phase 5, ADR 0520): one item's real peaks, and one item with no usable source (a Reason).
+  'workspace-peaks.json': workspacePeaksResultSchema,
+  'workspace-peaks-no-source.json': workspacePeaksResultSchema,
 };

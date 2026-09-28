@@ -52,4 +52,18 @@ describe('StatTile', () => {
     const bar = screen.getByRole('progressbar', { name: 'Finished audio' });
     expect(bar.getAttribute('aria-valuenow')).toBe('42');
   });
+
+  it('draws the progress bar thin and ok-toned (mock B01), not the full-width default', () => {
+    const { container } = render(<StatTile label="Finished audio" value="6.2 of 9 h" progress={0.42} />);
+    const track = container.querySelector('.progressbar') as HTMLElement;
+    expect(track.className).toContain('h-2');
+    expect((track.firstElementChild as HTMLElement).className).toContain('bg-[var(--ok)]');
+  });
+
+  it('sizes the value at the measured Plex Mono 22 px, weight 500 (mock B01)', () => {
+    render(<StatTile label="Text present" value="84%" />);
+    const value = screen.getByText('84%').parentElement as HTMLElement;
+    expect(value.className).toContain('text-[1.375rem]');
+    expect(value.className).toContain('font-medium');
+  });
 });

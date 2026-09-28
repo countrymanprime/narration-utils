@@ -19,7 +19,6 @@ function trackPhrase(suggestion: ChapterSuggestion): string {
   const project = fileName(suggestion.projectFile);
   return suggestion.track ? `REAPER's ${state} track, “${suggestion.track.name}” in ${project},` : `REAPER's ${state} tracks in ${project},`;
 }
-
 type Props = {
   suggestion: ChapterSuggestion | undefined;
   /** The chapters the picker offers (narration only): a suggestion outside them is never shown. */
@@ -56,7 +55,7 @@ export function ChapterSuggestionHint({ suggestion, chapters, value, onChoose }:
         <span>
           {trackPhrase(suggestion)} {saved}, {verb} for {chapterName(chapter, 'short')}.
         </span>
-        <Button variant="ghost" className="px-2.5 py-1" onClick={() => onChoose(confident)}>
+        <Button size="sm" variant="secondary" onClick={() => onChoose(confident)}>
           Use {chapterName(chapter, 'short')}
         </Button>
       </div>
@@ -74,7 +73,7 @@ export function ChapterSuggestionHint({ suggestion, chapters, value, onChoose }:
       </p>
       <div className="flex flex-wrap gap-2" role="group" aria-label="Chapters suggested by REAPER">
         {offered.map((candidate) => (
-          <Button key={candidate.chapterId} variant="ghost" className="px-2.5 py-1" onClick={() => onChoose(candidate.chapterId)}>
+          <Button size="sm" key={candidate.chapterId} variant="secondary" onClick={() => onChoose(candidate.chapterId)}>
             {chapterName(inPicker.get(candidate.chapterId)!, 'short')}
           </Button>
         ))}

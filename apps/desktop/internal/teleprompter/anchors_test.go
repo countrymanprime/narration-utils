@@ -118,17 +118,17 @@ func TestResolveWordTimeInterpolatesBetweenTwoAnchors(t *testing.T) {
 	}
 }
 
-func TestResolveWordTimeExtrapolatesPastTheLastAnchorAsAlignment(t *testing.T) {
+func TestResolveWordTimeExtrapolatesPastTheLastAnchorAsAnEstimate(t *testing.T) {
 	// Pace is 0.5s/word (from word 0 at 0s to word 10 at 5s); word 14 is 4 words past the last anchor, so 5 + 4*0.5 = 7s.
 	position, source, ok := ResolveWordTime([]Anchor{{Word: 0, Position: 0}, {Word: 10, Position: 5}}, 14)
-	if !ok || source != SourceAlignment || position != 7 {
+	if !ok || source != SourceEstimate || position != 7 {
 		t.Fatalf("ResolveWordTime = %v, %q, %v", position, source, ok)
 	}
 }
 
 func TestResolveWordTimeExtrapolatesBeforeTheFirstAnchorClampedAtZero(t *testing.T) {
 	position, source, ok := ResolveWordTime([]Anchor{{Word: 10, Position: 1}, {Word: 20, Position: 6}}, 0)
-	if !ok || source != SourceAlignment || position != 0 {
+	if !ok || source != SourceEstimate || position != 0 {
 		t.Fatalf("ResolveWordTime = %v, %q, %v", position, source, ok)
 	}
 }

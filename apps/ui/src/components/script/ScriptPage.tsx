@@ -45,7 +45,8 @@ import { AddNoteDialog } from '../manuscript/AddNoteDialog';
 import { MarkupDialog } from '../manuscript/MarkupDialog';
 import { DictionaryInstallPrompt, isSingleWord, WordLookupAnswer } from '../manuscript/WordLookup';
 import { LOOKUP_ACTION, useWordLookup } from '../manuscript/useWordLookup';
-import { EntitySummary } from '../manuscript/EntitySummary';
+import { ENTITY_BADGE_COLORS, EntitySummary } from '../manuscript/EntitySummary';
+import { Badge } from '../primitives/StatusBadge';
 import { IconButton } from '../primitives/IconButton';
 import type { Notify } from '../primitives/Toast';
 import type { CreditsKind } from '../booth/readerModel';
@@ -895,7 +896,7 @@ export function ScriptPage({
                 showChapter(chapter, paragraph);
               }}
             />
-            <Button variant="ghost" className="mt-4 text-xs" onClick={() => focusStoryBibleEntity(detail.entity!.id)}>
+            <Button variant="secondary" className="mt-4 text-xs" onClick={() => focusStoryBibleEntity(detail.entity!.id)}>
               Open in Story Bible →
             </Button>
           </>
@@ -957,12 +958,7 @@ function MarksKey({ className }: { className: string }) {
       className={`flex flex-wrap items-center gap-x-4 gap-y-[0.65rem] font-['Barlow_Condensed',sans-serif] text-[0.72rem] tracking-wider text-[var(--text-muted)] uppercase ${className}`}
     >
       <span className="flex items-center gap-1.5">
-        <span
-          className="rounded-[0.2rem] px-[0.45em] py-[0.05em] font-semibold tracking-[0.06em]"
-          style={{ background: 'color-mix(in srgb, var(--character) 22%, transparent)', color: 'var(--character-text)' }}
-        >
-          Speaker
-        </span>
+        <Badge shape="tag" label="Speaker" colors={ENTITY_BADGE_COLORS.Character} />
         attribution
       </span>
       <span className="flex items-center gap-1.5">

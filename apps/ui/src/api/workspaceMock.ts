@@ -17,7 +17,10 @@ import type {
   WorkspaceAlignmentResult,
   WorkspaceApi,
   WorkspaceExtra,
+  WorkspaceFXChainsResult,
   WorkspaceItem,
+  WorkspacePeaks,
+  WorkspacePeaksEntry,
   WorkspaceToken,
 } from '../types';
 import { LOOP_PADDING_SECONDS, REAPER_MESSAGES, type MockReaper } from './findingsMock';
@@ -35,7 +38,11 @@ type Deps = {
    * workspaceLoop to answer `findingsReaperStatus`'s `loopingFindingId` and to let `findingsStopLoop` clear it, so
    * the workspace's own loop is remembered the same way a finding's is (across a poll, a leave and a return). */
   looping?: { current: string | undefined };
+  /** The narrator's FX chains for workspaceListFXChains (Phase 8): a small realistic sample when not given. */
+  fxChains?: string[];
 };
+
+const DEFAULT_MOCK_FX_CHAINS = ['Podcast Voice.RfxChain', 'Vocal Warmth.RfxChain'];
 
 const refused = (reason: FindingNavigationRefusal, message: string): FindingNavigation => ({ outcome: 'refused', reason, message });
 
@@ -174,6 +181,29 @@ function reaperRefusal(mode: MockReaper): FindingNavigation | undefined {
   return undefined;
 }
 
+/** A deterministic stand-in for measure.ComputePeaks (edit-and-proof-workspace.prd.md Phase 5, ADR 0520): a smooth
+ * envelope rather than real sample data, but the same bucket rate and byte layout the host sends, and identical
+ * from one call to the next - the visual suite masks a waveform state only when its content is non-deterministic
+ * (state-catalog.ts), and this mock's is not. */
+const MOCK_BUCKETS_PER_SECOND = 50;
+
+function mockPeaksFor(item: WorkspaceItem): WorkspacePeaks {
+  const playedSeconds = Math.max(0, (item.length ?? 0) * (item.playRate ?? 1));
+  const buckets = Math.round(playedSeconds * MOCK_BUCKETS_PER_SECOND);
+  const bytes = new Int8Array(buckets * 2);
+  for (let bucket = 0; bucket < buckets; bucket += 1) {
+    // A slow envelope (a "paragraph" of louder and quieter passages) plus a fast, cheap ripple - never random, so
+    // the same chapter always draws the same strip.
+    const envelope = 40 + 35 * Math.sin(bucket / 60) ** 2;
+    const ripple = 20 * Math.sin(bucket * 1.3) * Math.sin(bucket / 7);
+    const amplitude = Math.max(0, Math.min(126, Math.round(envelope + ripple)));
+    bytes[2 * bucket] = -amplitude;
+    bytes[2 * bucket + 1] = amplitude;
+  }
+  const minMax = btoa(String.fromCharCode(...new Uint8Array(bytes.buffer)));
+  return { startSeconds: 0, bucketsPerSecond: MOCK_BUCKETS_PER_SECOND, buckets, minMax, sampleRate: 48000, channels: 1 };
+}
+
 export function createWorkspaceMock(deps: Deps): WorkspaceApi {
   const mode = deps.reaper ?? 'connected';
   const target = (chapterId: string, tokenIndex: number): WorkspaceToken | undefined => tokensFor(deps, chapterId).tokens[tokenIndex];
@@ -225,6 +255,15 @@ export function createWorkspaceMock(deps: Deps): WorkspaceApi {
       if (deps.looping) deps.looping.current = `workspace:${chapterId}:${firstToken}-${lastToken}`;
       const start = first.start ?? 0;
       return { outcome: 'looping', loopStart: Math.max(start - LOOP_PADDING_SECONDS, 0), loopEnd: last.end + LOOP_PADDING_SECONDS };
+    },
+    workspaceListFXChains: async (): Promise<WorkspaceFXChainsResult> => {
+      if (mode !== 'connected') throw new Error('REAPER is not connected to this app: open the app from the Narration Utils action in REAPER');
+      return { names: deps.fxChains ?? DEFAULT_MOCK_FX_CHAINS, truncated: false };
+    },
+    workspacePeaks: async (chapterId) => {
+      const liveItem = mockLiveItem(deps, chapterId);
+      const items: WorkspacePeaksEntry[] = liveItem ? [{ index: liveItem.index, peaks: mockPeaksFor(liveItem) }] : [];
+      return { chapterId, items };
     },
   };
 }

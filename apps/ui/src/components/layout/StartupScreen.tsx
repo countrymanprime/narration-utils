@@ -72,7 +72,7 @@ export function StartupScreen({ state, error, details, diagnosticId, retry }: Pr
                 Retry connection
               </Button>
               {details && (
-                <Button variant="ghost" onClick={copyDetails}>
+                <Button variant="secondary" onClick={copyDetails}>
                   <FontAwesomeIcon icon={copied ? faCheck : faCopy} />
                   {copied ? 'Copied' : 'Copy details'}
                 </Button>

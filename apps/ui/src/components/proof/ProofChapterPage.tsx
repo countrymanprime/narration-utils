@@ -11,7 +11,8 @@ import { Heading } from '../primitives/Heading';
 import { Panel } from '../primitives/Panel';
 import type { Notify } from '../primitives/Toast';
 import type { CoverageState, Discrepancy, Finding, FindingReviewStatus, ManuscriptChapter, TrackItem, TranscriptState } from '../../types';
-import type { WorkspaceAlignmentResult, WorkspaceToken } from '../../api/contracts/workspace';
+import type { WorkspaceAlignmentResult, WorkspacePeaksResult, WorkspaceToken } from '../../api/contracts/workspace';
+import { WaveformStrip } from './WaveformStrip';
 import { CommandScope } from '../../input/router';
 import { useCommand } from '../../input/useCommand';
 import { buildFlags, type Flag } from './flags';
@@ -30,6 +31,7 @@ import { ProofingStagePanel } from './ProofingStagePanel';
 import { usePickupsState } from '../pickups/usePickupsState';
 import { FindingDetail } from './FindingDetail';
 import { FindingsList } from './FindingsList';
+import { NativeTakesPanel } from './NativeTakesPanel';
 import { NotesHeader, SourcesLine } from './NotesHeader';
 import { NotesStrip } from './NotesStrip';
 import { RecordingCheckCard } from './RecordingCheckCard';
@@ -88,6 +90,7 @@ function ChapterView({ chapterId, notify, transcript, dawFileLinked, goToManuscr
   const [linkedTrackGuid, setLinkedTrackGuid] = useState<string>();
   const [trackItems, setTrackItems] = useState<TrackItem[]>();
   const [alignment, setAlignment] = useState<WorkspaceAlignmentResult>();
+  const [peaks, setPeaks] = useState<WorkspacePeaksResult>();
   const [loadError, setLoadError] = useState('');
   const [coverage, setCoverage] = useState<CoverageState>({ phase: 'idle', percent: 0, message: '' });
   const [checking, setChecking] = useState(false);
@@ -111,6 +114,13 @@ function ChapterView({ chapterId, notify, transcript, dawFileLinked, goToManuscr
       .workspaceAlignment(chapterId)
       .then(setAlignment)
       .catch((reason: unknown) => setLoadError(String(reason)));
+    // The waveform strip's peaks (edit-and-proof-workspace.prd.md Phase 5): loaded alongside the alignment, since a
+    // re-check that changes the chapter's items should refresh both. A failure here never blocks the rest of the
+    // page - the strip just shows nothing until it succeeds.
+    api
+      .workspacePeaks(chapterId)
+      .then(setPeaks)
+      .catch(() => undefined);
   }, [api, chapterId]);
 
   // Chapter findings for the text overlay (edit-and-proof-workspace.prd.md Phase 4): read fresh whenever the chapter
@@ -314,7 +324,7 @@ function ChapterView({ chapterId, notify, transcript, dawFileLinked, goToManuscr
           <div className="flex flex-wrap items-center gap-2 text-sm" style={{ color: 'var(--text-muted)' }}>
             {alignment && <span className="section-label">{CHECK_STATE_LABEL[alignment.state]}</span>}
             {alignment?.basis && <span>as of last save {formatWhen(alignment.basis.modifiedAt)}</span>}
-            <Button variant="ghost" onClick={() => setChecking(true)}>
+            <Button variant="secondary" onClick={() => setChecking(true)}>
               {alignment?.state === 'never' ? 'Check recording' : 'Check again'}
             </Button>
           </div>
@@ -376,8 +386,21 @@ function ChapterView({ chapterId, notify, transcript, dawFileLinked, goToManuscr
               )
             )}
             <RecordingCheckCard chapter={chapter} alignment={alignment} flags={checkFlags} />
+            <NativeTakesPanel chapter={chapter} />
           </div>
         </div>
+        {alignment && alignment.state !== 'never' && (
+          <WaveformStrip
+            playlist={playlist}
+            alignmentItems={alignment.items}
+            peaks={peaks}
+            tokens={alignment.tokens}
+            flags={flags}
+            elapsed={player.elapsed}
+            duration={player.duration}
+            onSelectFlag={selectFlag}
+          />
+        )}
         {alignment && alignment.state !== 'never' && <TransportBar player={player} reaper={reaper} />}
         {alignment && (alignment.state !== 'never' || flags.length > 0) && (
           <div className={alignment.state !== 'never' ? 'grid gap-4 lg:grid-cols-[minmax(0,1fr)_18rem]' : 'max-w-md'}>

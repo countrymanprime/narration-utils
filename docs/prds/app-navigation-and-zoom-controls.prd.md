@@ -161,8 +161,8 @@ The narrator at a desktop or laptop, usually with REAPER beside the app on one s
 | --- | --- | --- | --- | --- | --- | --- |
 | 0 | Verify today on Wails v3 | Scripted Windows run of the v3 build: which zoom gestures work, whether zoom persists, whether mouse buttons 4/5 and Alt+Left navigate; record the result (the zoom mechanism is D29's `Window.SetZoom`) | complete | 1 | - | - |
 | 1 | Back and Forward | `useAppHistory`, header buttons, guarded back/forward, Alt+Left/Right, mouse buttons, project floor; tests, visual rows (with reflow), aria header snapshot, catalog rows, guide, threat-model note | complete | 0 | Q1, Q5, Q8 | - |
-| 2 | Zoom controls | The zoom binding on `Window.SetZoom`/`GetZoom` (D29), header group (D79: before the engine chip that replaces the REAPER pill in stage navigation (`docs/prds/stage-navigation-and-page-replacement.prd.md`, delivered and deleted) Phase 1, and after a running timer chip; the header is one design, ADR 0407), Ctrl shortcuts, clamping (Q6, ADR 0201), announcements, wire contracts, visual rows, aria, catalog, guide | pending | - | 0, 1, Q1, Q6, Q9, Q10, Wails v3 migration | - |
-| 3 | Remember zoom | Global-only setting written on change, read before the window is created and passed as its startup `Zoom`; optional Settings > Appearance row (Q4 C) | pending | - | 2, Q4 | - |
+| 2 | Zoom controls | The zoom binding on `Window.SetZoom`/`GetZoom` (D29), header group (D79: before the engine chip that replaces the REAPER pill in stage navigation (`docs/prds/stage-navigation-and-page-replacement.prd.md`, delivered and deleted) Phase 1, and after a running timer chip; the header is one design, ADR 0407), Ctrl shortcuts, clamping (Q6, ADR 0201), announcements, wire contracts, visual rows, aria, catalog, guide | complete | - | 0, 1, Q1, Q6, Q9, Q10, Wails v3 migration | - |
+| 3 | Remember zoom | Global-only setting written on change, read before the window is created and passed as its startup `Zoom`; optional Settings > Appearance row (Q4 C) | complete | - | 2, Q4 | - |
 | 4 | macOS app menu (only if Q7 B) | Wails `Menu` with View (Zoom In, Zoom Out, Actual Size) and History (Back, Forward), calling the same UI actions through an event | deferred by D74 (no macOS build, [ADR 0412](../adr/0412-windows-is-the-only-supported-platform-for-now.md)) | - | 2, Q7 | - |
 
 ### Phase Details
@@ -185,6 +185,7 @@ The narrator at a desktop or laptop, usually with REAPER beside the app on one s
 **Phase 3 - Remember zoom**
 - **Scope:** the global-only setting (a `fieldSchemas` entry only if Q4 C), its store write and the read before the window is created (its `Zoom` option); a Go test that a project-scope save is refused and that an out-of-range stored value is clamped; the Settings Appearance row if Q4 C (visual row `settings/global-appearance` re-captured); guide.
 - **Success signal:** metrics row 6.
+- **Result:** Q4 A was taken, not C (Decisions Log, "Persistence"), so no `fieldSchemas` entry and no Settings > Appearance row were added - `Appearance.zoom` is saved and read the same way `Keymap.overrides` and `ReadAloud`'s rows are: a global-only setting with no generic-Settings-page row, through `bindings_window.go`'s own `saveZoom`/`startupZoom` rather than the generic `saveSettings` path. The `settings/global-appearance` visual row was re-run (unchanged: nothing on that page reads `Appearance.zoom`) rather than re-captured, since no pixel there changed.
 
 **Phase 4 - macOS app menu (only if Q7 B)**
 - **Scope:** `main.go` `Menu` for darwin builds only, whose items emit an event the UI's history and zoom hooks already handle; no Windows change. Verified on the optional macOS build, owner-pending.

@@ -23,6 +23,7 @@ import { chapterSyncBatchToastText } from './chapterSyncToastText';
 import { ChapterTrackPanel } from './ChapterTrackPanel';
 import { CreditsRowPanel } from './CreditsRowPanel';
 import { RecordingCheck } from './RecordingCheck';
+import { creditsCheckChapter, creditsCheckKind } from './recordingCheckText';
 import { RemovedFromRecordingList } from './RemovedFromRecordingList';
 import { useCreditsRows, type CreditsKind } from './useCreditsRows';
 import { BOARD_COLUMNS, boardCell, creditsCell, isCurrentStage } from './productionFormat';
@@ -321,21 +322,28 @@ export function ChapterBoard({
         </div>
       )}
       {chapters && <RemovedFromRecordingList chapters={chapters} restoringId={restoringId} onRestore={(chapterId) => void restore(chapterId)} />}
-      {checking && (
-        <RecordingCheck
-          key={checking.id}
-          chapter={checking}
-          coverage={coverage}
-          notify={notify}
-          close={() => {
-            setChecking(undefined);
-            // Linking a track in the slide-over changes the evidence without a finished check, so the suggestions are read again.
-            void stages.refresh();
-          }}
-          goToParagraph={(paragraph) => goToScript(checking.id, paragraph)}
-          openWorkspace={() => goToProofChapter(checking.id)}
-        />
-      )}
+      {checking &&
+        (() => {
+          // A credits row's synthetic chapter (credits-in-chapter-table.prd.md Phase 3, ADR 0333) is never a Proof
+          // workspace or a Script paragraph the way a real chapter's is: it opens the Manuscript credits entry instead,
+          // the same anchor CreditsRowPanel's "Open in Script" link uses.
+          const checkingCreditsKind = creditsCheckKind(checking.id);
+          return (
+            <RecordingCheck
+              key={checking.id}
+              chapter={checking}
+              coverage={coverage}
+              notify={notify}
+              close={() => {
+                setChecking(undefined);
+                // Linking a track in the slide-over changes the evidence without a finished check, so the suggestions are read again.
+                void stages.refresh();
+              }}
+              goToParagraph={checkingCreditsKind ? () => goToScript(`credits-${checkingCreditsKind}`) : (paragraph) => goToScript(checking.id, paragraph)}
+              openWorkspace={checkingCreditsKind ? undefined : () => goToProofChapter(checking.id)}
+            />
+          );
+        })()}
       {why && (
         <StageEvidence
           open={why.open}
@@ -372,7 +380,7 @@ export function ChapterBoard({
                 <p style={MUTED}>Recording check: {checkStatusLine(whyChapter)}</p>
                 <div className="flex flex-wrap gap-2">
                   <Button
-                    variant="ghost"
+                    variant="secondary"
                     onClick={() => {
                       setWhy({ ...why, open: false });
                       setChecking(whyChapter);
@@ -381,7 +389,7 @@ export function ChapterBoard({
                     Recording check
                   </Button>
                   <Button
-                    variant="ghost"
+                    variant="secondary"
                     onClick={() => {
                       setWhy({ ...why, open: false });
                       setEditingChecking(whyChapter);
@@ -439,6 +447,12 @@ export function ChapterBoard({
           row={creditsRows[credits.kind]}
           label={CREDITS_LABEL[credits.kind]}
           onStatus={(status) => void setCreditsStatus(credits.kind, status)}
+          onCheck={() => {
+            // Same pattern as StageEvidence's own "Recording check" button below: close this slide-over, then open
+            // RecordingCheck as a sibling, never nested (a reopened row is a fresh mount, never shown stale).
+            setCredits({ ...credits, open: false });
+            setChecking(creditsCheckChapter(credits.kind, creditsRows[credits.kind].status));
+          }}
           onClose={() => setCredits({ ...credits, open: false })}
         />
       )}

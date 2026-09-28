@@ -382,6 +382,14 @@ export function CreditsProjectValues(): $CancellablePromise<string> {
 }
 
 /**
+ * CreditsRecordedLengths is a credits row's "actual recorded": the same track-based measurement every manuscript
+ * chapter's Recorded column gets, read for the two credits ids from the same confirmed chapter-track-map.json.
+ */
+export function CreditsRecordedLengths(): $CancellablePromise<string> {
+    return $Call.ByID(334169345);
+}
+
+/**
  * CreditsRetailSample reads this project's retail sample and measures it against the current manuscript. A saved range
  * whose lines are gone (the manuscript was replaced) is kept and reported as a problem rather than failing the read.
  */
@@ -610,6 +618,27 @@ export function EditingCancel(): $CancellablePromise<string> {
  */
 export function EditingCandidates(chapterID: string): $CancellablePromise<string> {
     return $Call.ByID(435807084, chapterID);
+}
+
+/**
+ * EditingSetSourceChoice sets chapterID's source choice (Q6: the narrator
+ * chooses per chapter) and answers the choice as stored, the same bare
+ * string shape EditingSourceChoice reads back. choice must be "items" or
+ * "render"; anything else is a rejected promise, the same as any other
+ * binding validation failure in this file.
+ */
+export function EditingSetSourceChoice(chapterID: string, choice: string): $CancellablePromise<string> {
+    return $Call.ByID(3971166288, chapterID, choice);
+}
+
+/**
+ * EditingSourceChoice reads chapterID's current source choice ("items", the
+ * default, or "render"). A missing project or store answers "items" rather
+ * than refusing, matching editing.ChoiceStore.Get's own "no choice made yet
+ * is never an error" rule.
+ */
+export function EditingSourceChoice(chapterID: string): $CancellablePromise<string> {
+    return $Call.ByID(1773421432, chapterID);
 }
 
 /**
@@ -1348,6 +1377,21 @@ export function ProjectSwitch(path: string, name: string): $CancellablePromise<s
 }
 
 /**
+ * PronunciationCommonsAudioOpen opens the Wikimedia Commons recording that Wiktextract's own offline pronunciation
+ * data (prep-depth Phase 8, #782) names for word, in the narrator's default browser or media player: the same
+ * "open externally" host path PronunciationLookupOpen and PronunciationOnlineSignUpOpen already use (Q12), never
+ * fetched, streamed or cached by the app itself.
+ * 
+ * word crosses the Wails boundary; the address never does - it is built here from Phase 8's own installed index, the
+ * same trusted-URL discipline every other open-externally binding already follows (never a UI-supplied URL). A word
+ * the index has no audio for, and a Wiktextract source not installed yet, are both refused with a clear reason
+ * rather than opening nothing silently.
+ */
+export function PronunciationCommonsAudioOpen(word: string): $CancellablePromise<string> {
+    return $Call.ByID(209296523, word);
+}
+
+/**
  * PronunciationLookupOpen opens source's fixed lookup-page template for word in the narrator's default browser
  * (prep-depth.prd.md Phase 2; provider-ports.prd.md Open Question Q5's BrowserLookup role), and nothing else: it
  * never fetches, scrapes or caches the site itself. source and word cross the Wails boundary, never a URL - the
@@ -1499,6 +1543,26 @@ export function RecorderMeterStop(): $CancellablePromise<string> {
 }
 
 /**
+ * RecorderSetTakeKeeper marks or unmarks takeName the keeper among the takes assigned to its line (Phase 4, Q5):
+ * narrator-confirmed, and always undoable by marking it again with keeper false or by marking a different take of the
+ * same line.
+ */
+export function RecorderSetTakeKeeper(takeName: string, keeper: boolean): $CancellablePromise<string> {
+    return $Call.ByID(2270425541, takeName, keeper);
+}
+
+/**
+ * RecorderSetTakeLine assigns takeName the manuscript paragraph or chapter entityId as its line identity (Phase 3,
+ * ADR 0485), so it joins the review pipeline the same way a REAPER item's stamped line id does (native-recording-suite
+ * PRD Phase 4, "take review integration" - Phase 3 built SetTakeLine with no UI caller yet). entityId "" clears the
+ * assignment. The manuscript's current source checksum is read here, never sent by the caller, so a stale UI can
+ * never stamp a wrong one.
+ */
+export function RecorderSetTakeLine(takeName: string, entityId: string): $CancellablePromise<string> {
+    return $Call.ByID(1287519481, takeName, entityId);
+}
+
+/**
  * RecorderStart records a new take of device into the project's Recordings folder and remembers the device for the project.
  * It answers once the take has started; its end arrives as "recording:state".
  */
@@ -1562,6 +1626,40 @@ export function RetakeLanesPick(lineID: string, itemGUID: string): $CancellableP
  */
 export function RetakeLanesState(): $CancellablePromise<string> {
     return $Call.ByID(523795916);
+}
+
+/**
+ * SeriesDelete removes a series by id. Deleting an id that is not present is not an error.
+ */
+export function SeriesDelete(id: string): $CancellablePromise<string> {
+    return $Call.ByID(2391274860, id);
+}
+
+/**
+ * SeriesList lists every series the narrator has created, for managing series membership.
+ */
+export function SeriesList(): $CancellablePromise<string> {
+    return $Call.ByID(3400757367);
+}
+
+/**
+ * SeriesSave creates a series (id empty) or updates one in place (an existing id), naming it and setting its member
+ * project paths (Q10). The narrator adds and removes books this way; there is no separate add/remove binding.
+ */
+export function SeriesSave(id: string, name: string, memberProjectPaths: string[]): $CancellablePromise<string> {
+    return $Call.ByID(2243015706, id, name, memberProjectPaths);
+}
+
+/**
+ * SeriesVoiceBible builds the current project's Series tab view (Phase 11):
+ * its series membership, and - only once the series has a second book with
+ * data to share - every member project's characters and approved reference
+ * clips, pooled by character id. A project outside any series, or in one
+ * with no other book yet, reads back with no character list at all: the
+ * honest empty state, never an error.
+ */
+export function SeriesVoiceBible(): $CancellablePromise<string> {
+    return $Call.ByID(2231610263);
 }
 
 /**
@@ -2020,6 +2118,16 @@ export function WhisperRemove(modelID: string): $CancellablePromise<string> {
 }
 
 /**
+ * WindowSaveZoom persists the window's current zoom level, debounced, whenever the header's useZoom hook sees it
+ * settle - a button, a Ctrl+=/-/0 shortcut, or the resize re-read that picks up an external Ctrl+wheel/pinch change
+ * (Solution Detail: "written to global settings ... debounced"). It always saves at global scope: the level belongs
+ * to this computer's window, not a project (Q4 A).
+ */
+export function WindowSaveZoom(level: number): $CancellablePromise<string> {
+    return $Call.ByID(2654551384, level);
+}
+
+/**
  * WindowSetZoom sets the window's zoom to the nearest of zoomSteps, clamped to [zoomMin, zoomMax] regardless of what
  * factor the caller sends - the defensive floor and ceiling behind the header's own disabled-at-100%/never-past-200%
  * promise (Q6, ADR 0201). The UI calls this from the header's buttons, Ctrl+=/-/0, reset, and the "set back to 200%"
@@ -2058,6 +2166,15 @@ export function WorkspaceGoTo(chapterID: string, tokenIndex: number): $Cancellab
 }
 
 /**
+ * WorkspaceListFXChains lists the narrator's FX chains from REAPER's FXChains folder (list_fx_chains), by relative
+ * name, sorted, capped. It changes nothing and is refused (bridge.ErrUnavailable) offline or before the DAW port's
+ * FX chains capability is on, exactly as list_fx_chains itself already is (ADR 0230, ADR 0234).
+ */
+export function WorkspaceListFXChains(): $CancellablePromise<string> {
+    return $Call.ByID(2672396379);
+}
+
+/**
  * WorkspaceLoop loops the chapter passage from firstToken to lastToken (inclusive, both heard on the same item) in
  * REAPER: the time selection and loop points around it, repeat on, and Play, exactly as FindingsLoop does.
  * FindingsStopLoop stops it - the workspace holds no loop state of its own, sharing the one app loop
@@ -2065,6 +2182,17 @@ export function WorkspaceGoTo(chapterID: string, tokenIndex: number): $Cancellab
  */
 export function WorkspaceLoop(chapterID: string, firstToken: number, lastToken: number): $CancellablePromise<string> {
     return $Call.ByID(465077885, chapterID, firstToken, lastToken);
+}
+
+/**
+ * WorkspacePeaks answers the waveform strip's peaks for every analyzed item of chapterID's stored alignment:
+ * each item's played range, over its active take's source file, at measure.DefaultPeaksPerSecond, from the
+ * evidence cache. It refuses only when there is no project or the chapter's alignment itself cannot be read
+ * (the same errors WorkspaceAlignment already answers) - a single item with no usable source answers a
+ * Reason instead of failing the whole call.
+ */
+export function WorkspacePeaks(chapterID: string): $CancellablePromise<string> {
+    return $Call.ByID(1143383553, chapterID);
 }
 
 // Private type creation functions

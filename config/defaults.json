@@ -35,6 +35,7 @@
   "DAW": {
     "auto_start_launcher": "false",
     "experimental_reaper_actions": "false",
+    "fx_favourites": "",
     "capability.review": "auto",
     "capability.navigate": "auto",
     "capability.markers": "auto",

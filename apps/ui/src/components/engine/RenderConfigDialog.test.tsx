@@ -44,6 +44,12 @@ describe('RenderConfigDialog', () => {
     expect(await screen.findByText(/Render configured for 2 chapter files/)).toBeTruthy();
   });
 
+  it('draws the manual-render shortcut as a key cap, not plain text (mock-fidelity Phase 10)', async () => {
+    renderDialog({}, { renderConfig: 'success' });
+    await screen.findByText(/Render configured for 2 chapter files/);
+    expect(screen.getByRole('img', { name: 'Ctrl + Alt + R' })).toBeTruthy();
+  });
+
   it('reports when no chapter regions exist yet', async () => {
     renderDialog({}, { renderConfig: 'no-regions' });
     expect(await screen.findByText(/No chapter regions were found yet/)).toBeTruthy();

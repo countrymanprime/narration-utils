@@ -59,7 +59,7 @@ export function MarkupDialog({
       onClose={cancel}
       actions={
         <>
-          <Button variant="ghost" onClick={cancel}>
+          <Button variant="secondary" onClick={cancel}>
             Cancel
           </Button>
           <Button variant="primary" disabled={!ready} onClick={add}>
@@ -80,7 +80,7 @@ export function MarkupDialog({
           {characters.length > 0 && (
             <div className="mt-2 flex flex-wrap gap-1.5">
               {characters.slice(0, MAX_CHARACTER_CHOICES).map((name) => (
-                <Button key={name} variant="ghost" className="px-2 py-0.5 text-xs" onClick={() => setSpeaker(name)}>
+                <Button size="sm" key={name} variant="secondary" onClick={() => setSpeaker(name)}>
                   {name}
                 </Button>
               ))}
@@ -99,7 +99,7 @@ export function MarkupDialog({
                 <span>
                   {capitalize(markName(span))} on “{span.anchorText}”
                 </span>
-                <Button variant="ghost" className="px-1.5 py-0 text-xs" aria-label={removeMarkLabel(span)} onClick={() => remove(span)}>
+                <Button size="sm" variant="secondary" aria-label={removeMarkLabel(span)} onClick={() => remove(span)}>
                   Remove
                 </Button>
               </li>

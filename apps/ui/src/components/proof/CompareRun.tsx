@@ -15,6 +15,7 @@ import { Button } from '../primitives/Button';
 import { CapabilityGate, type CapabilityEntry } from '../primitives/CapabilityGate';
 import { IconButton } from '../primitives/IconButton';
 import { Panel } from '../primitives/Panel';
+import { ProgressBar } from '../primitives/ProgressBar';
 import { ToggleGroup } from '../primitives/ToggleGroup';
 import { TagInput } from '../primitives/TagInput';
 import { Tooltip, TooltipTarget } from '../primitives/Tooltip';
@@ -31,7 +32,6 @@ const seconds = (value: number) =>
     .padStart(2, '0')}:${Math.floor(value % 60)
     .toString()
     .padStart(2, '0')}`;
-
 type ModelOption = { value: string; label: string; caption: string };
 const MODEL_OPTIONS: ModelOption[] = [
   { value: 'tiny', label: 'Tiny', caption: 'Fastest · rough accuracy · ~1 GB RAM' },
@@ -294,39 +294,32 @@ export function CompareRun({
         <h2 id="compare-run-title" className="text-sm font-semibold">
           Compare the recording with the script
         </h2>
-        <div className="flex items-center gap-1 text-xs">
-          <span
-            className={`rounded px-2 py-1 font-['Barlow_Condensed',sans-serif] tracking-[0.08em] uppercase ${phase === 'setup' ? 'font-semibold' : ''}`}
-            style={{ background: phase === 'setup' ? 'var(--accent-soft)' : undefined }}
-          >
-            1 · Setup
-          </span>
-          <span style={{ color: 'var(--non-text)' }}>→</span>
-          <span
-            className={`rounded px-2 py-1 font-['Barlow_Condensed',sans-serif] tracking-[0.08em] uppercase ${phase === 'running' ? 'font-semibold' : ''}`}
-            style={{ background: phase === 'running' ? 'var(--accent-soft)' : undefined }}
-          >
-            2 · Running
-          </span>
-          <span style={{ color: 'var(--non-text)' }}>→</span>
-          <span
-            className={`rounded px-2 py-1 font-['Barlow_Condensed',sans-serif] tracking-[0.08em] uppercase ${phase === 'results' ? 'font-semibold' : ''}`}
-            style={{ background: phase === 'results' ? 'var(--accent-soft)' : undefined }}
-          >
-            3 · Results
-          </span>
-        </div>
+        {/* The step strip (mock-fidelity-primitives-and-components.prd.md Phase 5): the segmented look of ToggleGroup. It
+            reports the phase, not a choice — the phase advances on its own, so a click of a step is a no-op (not `disabled`,
+            which would also dim the current step's fill). This gives the strip real semantics: nothing named which step was
+            current before (a background tint only). */}
+        <ToggleGroup
+          label="Comparison progress"
+          look="segmented"
+          value={phase}
+          onChange={() => {}}
+          options={[
+            { value: 'setup', label: '1 · Setup' },
+            { value: 'running', label: '2 · Running' },
+            { value: 'results', label: '3 · Results' },
+          ]}
+        />
       </div>
       {phase === 'setup' && (
         <div className="space-y-4 p-[1.1rem]">
           <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
             <span style={{ color: 'var(--text-muted)' }}>Transcribes the selected REAPER audio with Whisper and compares it with {chapterTitle}.</span>
             {lastCompleted ? (
-              <button className="underline" style={{ color: 'var(--text-muted)' }} onClick={onReviewLast}>
+              <Button variant="link" style={{ color: 'var(--text-muted)' }} onClick={onReviewLast}>
                 Last narrated take: {lastCompleted.trackName || 'Selected REAPER audio'}
                 {lastCompleted.audioItemCount ? ` · ${lastCompleted.audioItemCount} audio item${lastCompleted.audioItemCount === 1 ? '' : 's'}` : ''}
                 {lastCompleted.completedAt ? ` · ${new Date(lastCompleted.completedAt).toLocaleString()}` : ''}
-              </button>
+              </Button>
             ) : (
               <span style={{ color: 'var(--text-muted)' }}>No narrated take yet</span>
             )}
@@ -426,7 +419,7 @@ export function CompareRun({
           </p>
           <div className="mt-3 flex flex-wrap gap-2">
             {state.chapters.map((chapter) => (
-              <Button variant="ghost" key={chapter} onClick={() => void start(chapter)}>
+              <Button variant="secondary" key={chapter} onClick={() => void start(chapter)}>
                 {chapter}
               </Button>
             ))}
@@ -441,9 +434,7 @@ export function CompareRun({
               {state.percent}% · {seconds(state.elapsed)}
             </span>
           </div>
-          <div className="progressbar mt-3 h-4 overflow-hidden rounded-full bg-[var(--surface-3)]">
-            <div className="h-full bg-[var(--accent)] transition-[width] duration-[0.4s] ease-in-out" style={{ width: `${state.percent}%` }} />
-          </div>
+          <ProgressBar className="mt-3" label="Comparison progress" value={state.percent} running valueText={`${state.percent}% · ${seconds(state.elapsed)}`} />
           <div className="mt-3 text-xs" style={{ color: 'var(--text-muted)' }}>
             <div className="mb-1.5 flex items-center justify-between">
               <span className="font-['Barlow_Condensed',sans-serif] text-[0.72rem] font-semibold tracking-[0.08em] text-[var(--text-muted)] uppercase">
@@ -477,7 +468,7 @@ export function CompareRun({
           </div>
           <div className="mt-4 flex items-center justify-between border-t pt-3" style={{ borderColor: 'var(--border)' }}>
             {import.meta.env.MODE === 'mock' && (
-              <Button variant="ghost" className="text-xs" onClick={() => void api.transcriptReset().catch((error) => notify(describeApiError(error), 'error'))}>
+              <Button variant="secondary" onClick={() => void api.transcriptReset().catch((error) => notify(describeApiError(error), 'error'))}>
                 Skip to results (demo)
               </Button>
             )}
@@ -509,7 +500,6 @@ export function CompareRun({
               >
                 <Button
                   variant="primary"
-                  className="text-xs"
                   disabled={!canExportMarkers || pendingMarkers === 0 || exporting}
                   onClick={async () => {
                     try {
@@ -525,7 +515,7 @@ export function CompareRun({
                 </Button>
               </TooltipTarget>
               <TooltipTarget text="Return to setup for another comparison">
-                <Button variant="ghost" className="text-xs" onClick={closeResults}>
+                <Button variant="secondary" onClick={closeResults}>
                   <FontAwesomeIcon icon={faRotateLeft} />
                   New comparison
                 </Button>

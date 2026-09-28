@@ -67,6 +67,10 @@ announced once, for a screen reader, after the level settles — not on every wh
 Zoom is one setting for the whole app, not a page or a project. It is not [Script](script.md)'s own Text size,
 which stays independent and multiplies with app zoom.
 
+The level is remembered across launches: quit at 125% and the app opens at 125% next time, with no flash at
+100% first. It is a machine-wide setting like the [Booth](settings.md)'s microphone, not a project one, so it
+follows you between projects rather than resetting when you switch.
+
 ## The audio engine panel
 
 Click the chip at the right of the header to open the audio engine panel over whatever page you are on.
@@ -129,6 +133,18 @@ region, and saves into the **Output folder** (a `renders` folder in the project 
 press Render in REAPER (Ctrl+Alt+R or File > Render) to create the files. If the project has no chapter
 regions yet, it says so.
 
+**Create chapter regions…** plans one REAPER region per chapter with a confirmed track link, plus an
+**Opening credits track** and **Closing credits track** you choose in the dialog, and shows the plan
+before writing anything: each row's title, track, start, end and status (New region, Already exists,
+Moves an existing region, or Several regions share this title). A chapter or credits track with nothing
+to plan is listed under **Not planned**, with why (for example, no track is linked to that chapter).
+Tick **Move an existing region that shares a chapter's title, instead of adding a second one** to move a
+same-titled region instead of adding another; left unticked, a region that would move or is ambiguous
+still gets a new one alongside it. **Create N regions** writes the plan in one step and reports what
+happened ("Sent 3: 2 created, 1 already existed, 0 moved, 0 ambiguous, 0 failed."). Creating chapter
+regions is an experimental REAPER action ([Settings](settings.md)), off by default: until you turn it
+on, **Create N regions** stays disabled and says why.
+
 **Embed chapter tags…** adds ID3 chapter markers to an MP3 of the whole book that you have already
 rendered, timed from the chapter files of your last chapter render. It lists those chapters and marks
 any that are "not rendered yet"; every one must exist first. Enter the path of the combined book MP3 and
@@ -186,6 +202,14 @@ found. **Check editing** (**Check again** once one has run) runs the scan with r
 **Cancel**; items already checked are cached, so re-checking after a small edit is fast. Every
 result carries the caveat "Analysis of source audio; take FX, item gain and fades are not
 applied", since REAPER's own processing isn't part of what's analyzed.
+
+A chapter's analysis source is your choice: **Items on this chapter's track** (the default) or
+**The rendered file**, a toggle near the top of the panel. Editing happens on items, so items stay
+the default; choosing the render is an explicit second check — its own evidence line always says
+which source was analyzed, and the render check needs a rendered file already chosen for the
+chapter (see [Proof](proof.md#delivery-checks) for choosing one). If the render changes, or
+becomes older than a later edit to the chapter's items, the render's own check reads "Can't tell
+yet" until you check it again.
 
 Each of the three classes — Empty space, Click, Breath — has its own state: **Met** (checked, no
 open candidate remains), **Not met** (one or more open candidates), or **Can't tell yet** with why

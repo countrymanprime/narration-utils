@@ -1,24 +1,27 @@
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faFileLines, faLock } from '@fortawesome/free-solid-svg-icons';
-import type { CSSProperties } from 'react';
 import type { GuideEntity } from '../../types';
 import { allEvidence, categoryLabel, highlightTerms } from '../../state';
 import { Highlight, highlightKind } from '../primitives/Highlight';
 import { TooltipTarget } from '../primitives/Tooltip';
 import { IconButton } from '../primitives/IconButton';
+import { Badge, StatusBadge, toneColors, type BadgeColors } from '../primitives/StatusBadge';
 import { pronunciationSourceLabel } from '../storybible/pronunciationStatus';
 
-export const BADGE_STYLE: Record<string, CSSProperties> = {
-  Character: { background: 'var(--character-soft)', color: 'var(--character-text)' },
-  Place: { background: 'var(--place-soft)', color: 'var(--place-text)' },
-  Organization: { background: 'var(--org-soft)', color: 'var(--org-text)' },
-  Review: { background: 'var(--review-soft)', color: 'var(--review-text)' },
-  Lore: { background: 'color-mix(in srgb, var(--lore) 18%, var(--surface))', color: 'var(--lore-text)' },
-  Item: { background: 'color-mix(in srgb, var(--item) 18%, var(--surface))', color: 'var(--item-text)' },
-  Event: { background: 'color-mix(in srgb, var(--event) 18%, var(--surface))', color: 'var(--event-text)' },
+// An entity kind's badge colours: the kind's soft fill (an 18% mix into the surface for the three kinds with no soft
+// token) under its derived text colour (ADR 0059), drawn by THE badge (StatusBadge.tsx's `Badge`, ADR 0600).
+const kindColors = (kind: string, fill: string): BadgeColors => ({ fill, text: `var(--${kind}-text)`, line: `var(--${kind})` });
+export const ENTITY_BADGE_COLORS: Record<string, BadgeColors> = {
+  Character: kindColors('character', 'var(--character-soft)'),
+  Place: kindColors('place', 'var(--place-soft)'),
+  Organization: kindColors('org', 'var(--org-soft)'),
+  Review: kindColors('review', 'var(--review-soft)'),
+  Lore: kindColors('lore', 'color-mix(in srgb, var(--lore) 18%, var(--surface))'),
+  Item: kindColors('item', 'color-mix(in srgb, var(--item) 18%, var(--surface))'),
+  Event: kindColors('event', 'color-mix(in srgb, var(--event) 18%, var(--surface))'),
 };
-export const BADGE_CLASS =
-  "inline-flex items-center gap-[0.35rem] rounded-full px-[0.55rem] py-[0.15rem] font-['Barlow_Condensed',sans-serif] text-[0.72rem] font-semibold uppercase tracking-[0.03em]";
+/** A kind's badge colours, and the neutral pill's for a category with no kind colour of its own (a draft, a note). */
+export const entityBadgeColors = (category: string): BadgeColors => ENTITY_BADGE_COLORS[category] ?? toneColors('neutral');
 
 export const CAT_DOT_BG: Record<string, string> = {
   Character: 'var(--character)',
@@ -31,7 +34,6 @@ export const CAT_DOT_BG: Record<string, string> = {
   Event: 'var(--event)',
   Note: 'var(--note)',
 };
-export const CAT_DOT_CLASS = 'size-2 flex-none rounded-full';
 
 // A read-only mirror of the Story Bible's own detail panel (GuideDetail),
 // for previewing an entity from the Manuscript without leaving the reader.
@@ -50,12 +52,8 @@ export function EntitySummary({ entity, jumpToLine }: { entity: GuideEntity; jum
         </p>
       )}
       <div className="flex flex-wrap items-center gap-2">
-        <span className={BADGE_CLASS} style={BADGE_STYLE[entity.category]}>
-          {categoryLabel(entity.category)}
-        </span>
-        <span className={BADGE_CLASS} style={{ background: 'var(--surface-2)', color: 'var(--text-muted)' }}>
-          {entity.review_state}
-        </span>
+        <Badge label={categoryLabel(entity.category)} colors={entityBadgeColors(entity.category)} />
+        <StatusBadge tone="neutral" label={entity.review_state} />
         <span className="font-['IBM_Plex_Mono',ui-monospace,monospace] text-xs" style={{ color: 'var(--text-muted)' }}>
           {entity.occurrence_count} occurrences
         </span>

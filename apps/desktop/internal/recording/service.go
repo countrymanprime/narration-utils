@@ -86,6 +86,12 @@ type Service struct {
 	emitLevel func(Level)
 	// +checklocks:mu
 	current *active
+	// starting is set while a Start or Meter call is between its initial check and adopt(): it holds the reservation
+	// on the active slot across that window (folder listing, engine spawn) so two concurrent calls can never both
+	// reach the engine and race over which one adopt() then keeps (a real bug a security review found: the loser's
+	// run could be the one actually writing the take).
+	// +checklocks:mu
+	starting bool
 	// +checklocks:mu
 	message string
 	// +checklocks:mu
@@ -193,18 +199,39 @@ func (s *Service) Meter(device string) error {
 	if err != nil {
 		return err
 	}
-	s.mu.Lock()
-	if a := s.current; a != nil && a.kind == takeRun {
-		s.mu.Unlock()
-		return errors.New("a take is recording; its level shows in the Booth")
+	if err := s.reserve("a take is recording; its level shows in the Booth"); err != nil {
+		return err
 	}
-	s.mu.Unlock()
+	defer s.release()
 	s.stopAndWait()
 	run, err := s.engine.Meter(device, Events{Level: s.level})
 	if err != nil {
 		return err
 	}
 	return s.adopt(&active{run: run, kind: meterRun, device: device, watched: make(chan struct{})})
+}
+
+// reserve claims the active slot for a Start or Meter call for the rest of that call (paired with a deferred
+// release()): refused outright, with refuseMessage, while a take is recording, and refused while another Start or
+// Meter call is already between its own reserve and adopt(), rather than let two calls both reach the engine and
+// race over which one adopt() then keeps.
+func (s *Service) reserve(refuseMessage string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if a := s.current; a != nil && a.kind == takeRun {
+		return errors.New(refuseMessage)
+	}
+	if s.starting {
+		return errors.New("the recorder is already starting")
+	}
+	s.starting = true
+	return nil
+}
+
+func (s *Service) release() {
+	s.mu.Lock()
+	s.starting = false
+	s.mu.Unlock()
 }
 
 // StopMeter ends a running meter; it does nothing while a take records or when nothing runs.
@@ -224,12 +251,10 @@ func (s *Service) Start(device string) error {
 	if err != nil {
 		return err
 	}
-	s.mu.Lock()
-	if a := s.current; a != nil && a.kind == takeRun {
-		s.mu.Unlock()
-		return errors.New("a take is already recording")
+	if err := s.reserve("a take is already recording"); err != nil {
+		return err
 	}
-	s.mu.Unlock()
+	defer s.release()
 	s.stopAndWait()
 
 	folder := s.Folder()
@@ -423,6 +448,21 @@ func (s *Service) SetTakeLine(takeName, entityID, sourceSHA256 string) error {
 		return errors.New("open a project before assigning a take a manuscript line")
 	}
 	if err := setTakeLine(folder, takeName, entityID, sourceSHA256); err != nil {
+		return err
+	}
+	s.publish()
+	return nil
+}
+
+// SetTakeKeeper marks or unmarks takeName the keeper of its line (keeper.go, Q5): narrator-confirmed and always
+// undoable by marking it again with keeper false or by marking a different take of the same line. It publishes the
+// updated state afterward, like every other change here; it never touches the take's audio file.
+func (s *Service) SetTakeKeeper(takeName string, keeper bool) error {
+	folder := s.Folder()
+	if folder == "" {
+		return errors.New("open a project before marking a take the keeper")
+	}
+	if err := setTakeKeeper(folder, takeName, keeper, readIdentities(folder)); err != nil {
 		return err
 	}
 	s.publish()

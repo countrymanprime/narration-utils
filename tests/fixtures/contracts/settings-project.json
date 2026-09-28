@@ -113,6 +113,16 @@
       "value": ""
     },
     {
+      "choices": null,
+      "effectiveSource": "repo_default",
+      "effectiveValue": "",
+      "isSet": false,
+      "key": "fx_favourites",
+      "kind": "tags",
+      "label": "Favourite effects (FX chains and plug-ins)",
+      "value": ""
+    },
+    {
       "choices": [
         "auto",
         "on",

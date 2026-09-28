@@ -164,7 +164,7 @@ export function useManuscriptImport({
   // Replacing clears what the narrator has built on the manuscript, so the button says so before the file dialog opens.
   const button = (
     <Button
-      variant={found ? 'ghost' : 'primary'}
+      variant={found ? 'secondary' : 'primary'}
       pending={choosing.isPending('choose')}
       onClick={() =>
         void choosing.run('choose', async () => {
