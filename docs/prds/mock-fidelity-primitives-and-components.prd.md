@@ -448,7 +448,7 @@ The dark sets show pill heights of 18, 21, 23, 24, 25 and 26 px, with the OK fil
   - Make body copy `--text-muted` by default.
   - Keep ADR 0002's placement: the mocks follow it except in daw/01 and credits/01. Record which convention wins as a Q for the owner, recommending ADR 0002's rule.
   - The slide-over draws a transparent backdrop (Q4).
-  - Invert the toast (new `--toast-bg`/`--toast-text` aliases of `--text`/`--surface`, checked for contrast).
+  - Invert the toast (`--toast-bg`/`--toast-text`, aliases of `--text`/`--bg` from Phase 0b: the dark set draws the toast text in `--bg`, ADR 0590).
   - Match the popover padding and offset.
 - **Migrate:**
   - `storybible/GuideDetail.tsx:633`, a hand-drawn listbox that becomes a Popover.
@@ -643,7 +643,7 @@ The dark sets show pill heights of 18, 21, 23, 24, 25 and 26 px, with the OK fil
 | # | Phase | Description | Status | Parallel | Depends | PRP Plan |
 | --- | --- | --- | --- | --- | --- | --- |
 | 0a | Pixel-match tool | `pnpm --dir apps/ui mock-match`, its unit test, the approved list, the baseline ([ADR 0585](../adr/0585-mock-fidelity-is-a-pixel-match-at-the-mocks-own-size-and-theme-scored-by-a-tool-that-reports-and-does-not-gate.md)) | complete (this PRD's PR) | - | - | - |
-| 0b | Token batch | Every token the mocks need: `-soft` badge fills (Q3), `--row-selected`, `--reading-bg` and the booth script size (Q6), `--rec-fill`/`--rec-text`, `--toast-bg`/`--toast-text`, `--waveform`, `--ok-zone`; radius tokens (`--radius-button` 6, `--radius-card` 8, `--radius-tag` 3); sizes (`--button-height` 32, `--button-height-sm` 28, `--row-height` 34, `--header-row-height` 31); type (`--font-size-page-title` 26, `--font-size-card-title` 19, `--font-size-label` 11, `--tracking-label` 0.1em, `--tracking-button` 0.06em); every pair checked in both themes | pending | - | 0a | - |
+| 0b | Token batch | Every token the mocks need: `-soft` badge fills (Q3), `--row-selected`, `--reading-bg` and the booth script size (Q6), `--rec-fill`/`--rec-text`, `--toast-bg`/`--toast-text`, `--waveform`, `--ok-zone`; radius tokens (`--radius-button` 6, `--radius-card` 8, `--radius-tag` 3); sizes (`--button-height` 32, `--button-height-sm` 28, `--row-height` 34, `--header-row-height` 31); type (`--font-size-page-title` 26, `--font-size-card-title` 19, `--font-size-label` 11, `--tracking-label` 0.1em, `--tracking-button` 0.06em); every pair checked in both themes | complete (#888, ADR 0590) | - | 0a | - |
 | 1 | Button and IconButton | `size`, a `secondary` fill, `link`, height, tracking, disabled; migrate the 7 small recipes and the clones | pending | 3, 9, 10 | 0b | - |
 | 2 | StatusBadge, Pill, SpeakerTag | `shape` pill/tag, the `-soft` fills, accent/org tones, outline, booth tag size; migrate every chip copy outside the page components | pending | 6, 7 | 0b | - |
 | 3 | Table and StageGrid | row and header sizes, `numeric`/`muted` cells, `--row-selected`, the current row, middle alignment, `flush`; migrate tabular `ul`s and `MONO` overrides | pending | 1, 9, 10 | 0b | - |
@@ -653,7 +653,7 @@ The dark sets show pill heights of 18, 21, 23, 24, 25 and 26 px, with the OK fil
 | 7 | Overlays | dialog header, footer and body copy; the slide-over's transparent backdrop (Q4); the inverted toast; the popover; migrate the hand-drawn listbox | pending | 2, 6 | 0b, 1 | - |
 | 8 | Nav rail and header | rail and item sizes, the header height, the `HeaderChip` primitive and its 4 copies, the nav count slot; **serial on `AppShell.tsx`** | pending | 4, 5 | 0b, 2 | - |
 | 9 | StatTile and meters | `StatStrip`, tile sizes, thin toned `ProgressBar`, segmented `LevelMeter`; migrate the progress and StatTile copies | pending | 1, 3, 10 | 0b | - |
-| 10 | Kbd, KeyHint, Toolbar | Plex Mono caps with sizes and a bottom edge, `KeyHint`, toolbar item sizes; migrate TransportBar and SelectionMenu | pending | 1, 3, 9 | 0b | - |
+| 10 | Kbd, KeyHint, Toolbar | Plex Mono caps with sizes and a bottom edge, `KeyHint`, toolbar item sizes; migrate TransportBar and SelectionMenu | in review (#889) | 1, 3, 9 | 0b | - |
 | 11 | Production board and KPI strip | the cell look, labels, column headers, current row, StatStrip, header buttons, `?mockFidelity=01`; mock 01 at 90% | pending | 12, 13, 14, 15 | 1, 2, 3, 4, 9 | - |
 | 12 | Proof findings list | flush table, tags and pills, the notes header, filters behind a control, the waveform card, the detail panel, `?mockFidelity=04`; mock 04 at 90% | pending | 11, 13, 14, 15 | 1, 2, 3, 4 | - |
 | 13 | Booth transport and reading surface | top bar, REC pill, reading surface, command bar with key hints, companion sections, `?mockFidelity=03`/`07`; mocks 03 and 07 at 90% | pending | 11, 12, 14, 15 | 1, 2, 9, 10 | - |
@@ -745,7 +745,7 @@ Paths are under `apps/ui/src/` unless they start with `apps/`, `docs/` or `tests
 
 | ADR | What happens to it |
 | --- | --- |
-| [0362](../adr/0362-studio-token-batch-aliases-meter-and-badge-colours-and-a-minimal-booth-override.md) (badge fills at 14%) | Phase 0b supersedes the badge-fill clause (Q3); its meter aliases stand |
+| [0362](../adr/0362-studio-token-batch-aliases-meter-and-badge-colours-and-a-minimal-booth-override.md) (badge fills at 14%) | Phase 0b supersedes the badge-fill clause (Q3) in [ADR 0590](../adr/0590-the-mock-fidelity-token-batch-fills-badges-with-opaque-soft-tokens-and-names-the-mocks-sizes-and-type.md); its meter aliases stand |
 | [0360](../adr/0360-studio-primitives-land-as-flat-leaf-files-after-one-token-batch-and-capability-gating-is-a-primitive.md) (one token batch before the studio primitives) | Kept: Phase 0b is that batch for this PRD, and a later token need is a follow-up batch, not a feature PR's edit |
 | [0365](../adr/0365-the-theme-is-one-global-setting-and-the-booth-and-companion-follow-it.md) (one global theme) | Kept; Phase 13's reading-surface tokens have a value in each theme |
 | [0003](../adr/0003-tailwind-tokenized-primitives.md), [0009](../adr/0009-complete-tailwind-migration.md), [0017](../adr/0017-no-legacy-css-shadowing-tailwind.md) (tokens, Tailwind, no legacy CSS) | Kept; Phase 4 removes `.section-label`, one of ADR 0009's remaining classes, if no test selects by it |
@@ -763,7 +763,8 @@ Paths are under `apps/ui/src/` unless they start with `apps/`, `docs/` or `tests
 **ADR numbers.** This PRD's block is 0585–0589:
 
 - 0585 is taken by Phase 0a.
-- 0586 is reserved for Phase 0b, 0587 for Phase 1 and 0588 for Phase 3.
+- Phase 0b took 0590 from its stream's block (0590–0594), so 0586 is spare.
+- 0587 is reserved for Phase 1 and 0588 for Phase 3.
 - 0589 is spare for the next phase that needs one.
 
 Later phases take their numbers from the block the coordinator gives their stream. Check `docs/adr/` at write time.
