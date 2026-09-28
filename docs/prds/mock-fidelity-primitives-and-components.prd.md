@@ -51,7 +51,7 @@ The comparison follows pixelmatch:
 - **Match %** is matching pixels ÷ all pixels.
 - **Ink match %** is the same measure over only the pixels that are not page background. It is reported beside match % because a sparse screen scores well on background alone.
 
-The tool writes a diff PNG per state and a `scores.md` table to the gitignored `apps/ui/screenshots/mock-match/`. It reports and does not fail; `MOCK_MATCH_ENFORCE=1` fails any state under 90%. `src/mockMatch.test.ts` is its unit test: 18 cases covering the threshold, the anti-aliasing rule, ink match, fitting, the approved list and the concept pictures kept out of it.
+The tool writes a diff PNG per state and a `scores.md` table to the gitignored `apps/ui/screenshots/mock-match/`. Where a mock draws the app's shell, the nav rail and the header are also scored on their own (**Rail %**, **Header %**, [ADR 0636](../adr/0636-the-mock-match-tool-scores-the-nav-rail-and-header-apart-from-the-page.md)), in the mock's own geometry; the benchmark mocks are the chrome's spec. `MOCK_MATCH_BASELINE=<an earlier run's scores.json>` adds each score's change since that run, which is the before-and-after a phase reports. It reports and does not fail; `MOCK_MATCH_ENFORCE=1` fails any state under 90%. `src/mockMatch.test.ts` is its unit test: 18 cases covering the threshold, the anti-aliasing rule, ink match, fitting, the approved list and the concept pictures kept out of it.
 
 ### Baseline scores
 
@@ -651,10 +651,10 @@ The dark sets show pill heights of 18, 21, 23, 24, 25 and 26 px, with the OK fil
 | 5 | Tabs, ToggleGroup, Pill | underline spec, sidebar fill, the `segmented` look; migrate the step strip and the segmented Buttons | complete (#895, ADR 0625) | 4, 8 | 0b, 2 | - |
 | 6 | Inputs | Select line-height, the mono numeric field, the focus ring, the radio; migrate raw labels and fake fields | pending | 2, 7 | 0b | - |
 | 7 | Overlays | dialog header, footer and body copy; the slide-over's transparent backdrop (Q4); the inverted toast; the popover; migrate the hand-drawn listbox | complete (#898, ADR 0630) | 2, 6 | 0b, 1 | - |
-| 8 | Nav rail and header | rail and item sizes, the header height, the `HeaderChip` primitive and its 4 copies, the nav count slot; **serial on `AppShell.tsx`** | pending | 4, 5 | 0b, 2 | - |
+| 8 | Nav rail and header | rail and item sizes, the header height, the `HeaderChip` primitive and its 4 copies, the nav count slot; **serial on `AppShell.tsx`** | in review (#902, stream F-P8b; ADR 0635, 0636) | 4, 5 | 0b, 2 | - |
 | 9 | StatTile and meters | `StatStrip`, tile sizes, thin toned `ProgressBar`, segmented `LevelMeter`; migrate the progress and StatTile copies | complete | 1, 3, 10 | 0b | - |
 | 10 | Kbd, KeyHint, Toolbar | Plex Mono caps with sizes and a bottom edge, `KeyHint`, toolbar item sizes; migrate TransportBar and SelectionMenu | in review (#889) | 1, 3, 9 | 0b | - |
-| 11 | Production board and KPI strip | the cell look, labels, column headers, current row, StatStrip, header buttons, `?mockFidelity=01`; mock 01 at 90% | pending | 12, 13, 14, 15 | 1, 2, 3, 4, 9 | - |
+| 11 | Production board and KPI strip | the cell look, labels, column headers, current row, StatStrip, header buttons, `?mockFidelity=01`; mock 01 at 90% | in review (#904, ADR 0645; mock 01 at 81.95%, the gap is Phase 8's shell and the features with no data, on #510) | 12, 13, 14, 15 | 1, 2, 3, 4, 9 | - |
 | 12 | Proof findings list | flush table, tags and pills, the notes header, filters behind a control, the waveform card, the detail panel, `?mockFidelity=04`; mock 04 at 90% | pending | 11, 13, 14, 15 | 1, 2, 3, 4 | - |
 | 13 | Booth transport and reading surface | top bar, REC pill, reading surface, command bar with key hints, companion sections, `?mockFidelity=03`/`07`; mocks 03 and 07 at 90% | pending | 11, 12, 14, 15 | 1, 2, 9, 10 | - |
 | 14 | Master per-file checks | segmented platforms, flush table with verdict words, `Mark` to StatusBadge, the band, the checklist, the chain, `?mockFidelity=05`; mock 05 at 90% | pending | 11, 12, 13, 15 | 1, 2, 3, 4, 5 | - |

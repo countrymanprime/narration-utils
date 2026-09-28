@@ -1,6 +1,6 @@
 # 0585. Mock fidelity is a pixel match at the mock's own size and theme, scored by a tool that reports and does not gate
 
-**Status:** Proposed (the owner set the 90% bar in D91 on [#509](https://github.com/countrymanprime/narration-utils/issues/509); how the percentage is computed is this ADR's choice, for the owner to confirm on [#510](https://github.com/countrymanprime/narration-utils/issues/510))
+**Status:** Proposed (the owner set the 90% bar in D91 on [#509](https://github.com/countrymanprime/narration-utils/issues/509); how the percentage is computed is this ADR's choice, for the owner to confirm on [#510](https://github.com/countrymanprime/narration-utils/issues/510); the nav rail and header are also scored apart since [ADR 0636](0636-the-mock-match-tool-scores-the-nav-rail-and-header-apart-from-the-page.md))
 **Date:** 2026-09-28
 **Supersedes:**
 

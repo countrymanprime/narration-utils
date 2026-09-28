@@ -90,7 +90,16 @@ describe('ProductionPage', () => {
       within(boardRow('Chapter 1'))
         .getAllByRole('gridcell')
         .map((cell) => cell.textContent),
-    ).toEqual(['11:48', '✓', '✓', '✓', '—', '—']);
+    ).toEqual(['11:48', '—', '✓', '✓', '✓', '—']);
+  });
+
+  // Mock 01 (ADR 0645): the six figures are one card (StatStrip), and the board and Next up sit side by side in the page's grid.
+  it('draws the figures as one card of six tiles', async () => {
+    await renderPage({ initial: { production: PRODUCTION_SCENARIOS['on-pace'] } });
+    await tile('Delivery date');
+    const figures = screen.getByRole('list', { name: 'Production figures' });
+    expect(within(figures).getAllByRole('listitem')).toHaveLength(6);
+    expect(figures.parentElement?.className).toContain('rounded-[var(--radius-card)]');
   });
 
   it('marks an at-risk deadline and lists the chapters that threaten it first', async () => {

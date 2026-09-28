@@ -39,7 +39,7 @@ export function StatTile({
     <div className={className}>
       <SectionLabel as="div">{label}</SectionLabel>
       {/* Plex Mono 22 px, weight 500 (mock B01) - one step up from the shared body mono and a touch lighter than the old bold 20 px. */}
-      <div className={`mt-0.5 text-[1.375rem] font-medium ${MONO}`}>
+      <div className={`mt-1 text-[1.375rem] leading-[1.35] font-medium ${MONO}`}>
         <span style={tone === 'neutral' ? undefined : { color: TONE_TEXT[tone] }}>{value}</span>
         {unit && (
           <span className={`ml-1 text-sm font-normal ${MONO}`} style={{ color: 'var(--text-muted)' }}>
@@ -48,7 +48,7 @@ export function StatTile({
         )}
       </div>
       {hint && (
-        <div className="text-xs" style={{ color: 'var(--text-muted)' }}>
+        <div className="text-xs leading-[1.5]" style={{ color: 'var(--text-muted)' }}>
           {hint}
         </div>
       )}

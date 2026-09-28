@@ -363,7 +363,7 @@ export async function productionLoaded(page: Page): Promise<void> {
 }
 
 // The board's columns, in order (components/production/productionFormat.ts BOARD_COLUMNS).
-const BOARD_COLUMN = { Recorded: 0, Record: 1, Edit: 2, Proof: 3, Prep: 4, Delivery: 5 } as const;
+const BOARD_COLUMN = { Recorded: 0, Prep: 1, Record: 2, Edit: 3, Proof: 4, Delivery: 5 } as const;
 // A passed stage's glyph (productionFormat.ts boardCell, PR10): a row's current stage, the one cell that opens its stage suggestion, is
 // its first Record, Edit or Proof cell not marked passed (a chapter not started yet reads a dash under Record).
 const PASSED = '✓';

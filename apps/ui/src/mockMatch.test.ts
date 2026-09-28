@@ -3,13 +3,14 @@ import {
   backgroundOf,
   colourDelta,
   compareImages,
+  crop,
   DEFAULT_THRESHOLD,
   fitTo,
   isAntiAliased,
   MATCH_BAR_PERCENT,
   type RgbaImage,
 } from '../tests/visual/mock-match/compare';
-import { APPROVED_MOCKS, mockPath, NOT_THE_SPEC, scoredMocks } from '../tests/visual/mock-match/mocks';
+import { APPROVED_MOCKS, chromeRegions, isChromeSpec, mockPath, NOT_THE_SPEC, scoredMocks } from '../tests/visual/mock-match/mocks';
 import { formatScoreTable, type MockScore } from '../tests/visual/mock-match/report';
 import { APP_DRIVERS } from '../tests/visual/app.drivers';
 import { existsSync } from 'node:fs';
@@ -174,6 +175,65 @@ describe('the approved-mock list', () => {
   });
 });
 
+describe('crop', () => {
+  test('takes the rectangle out row by row', () => {
+    const image = solid(6, 4, WHITE);
+    fillRect(image, 2, 1, 3, 2, BLACK);
+    const part = crop(image, { x: 2, y: 1, width: 3, height: 2 });
+    expect(part.width).toBe(3);
+    expect(part.height).toBe(2);
+    expect(compareImages(part, solid(3, 2, BLACK)).matchPercent).toBe(100);
+  });
+
+  test('refuses a rectangle outside the image', () => {
+    expect(() => crop(solid(4, 4, WHITE), { x: 2, y: 0, width: 3, height: 1 })).toThrow(/outside/);
+  });
+});
+
+describe('chromeRegions', () => {
+  const byFile = (file: string) => {
+    const mock = APPROVED_MOCKS.find((candidate) => candidate.file === file);
+    if (!mock) throw new Error(file);
+    return mock;
+  };
+
+  test('a benchmark mock is the chrome spec, with its 216 px rail and 52 px header', () => {
+    const mock = byFile('stage-navigation-and-page-replacement/01-production-home-concept.webp');
+    expect(isChromeSpec(mock)).toBe(true);
+    expect(chromeRegions(mock, 1440, 900)).toEqual([
+      { name: 'rail', x: 0, y: 0, width: 216, height: 900 },
+      { name: 'header', x: 216, y: 0, width: 1224, height: 52 },
+    ]);
+  });
+
+  test('a 2026-09-24 mock draws the shell of its day: 224 px wide, the 56 px icon rail under 1400 px, none under 768', () => {
+    const wide = byFile('edit-and-proof-workspace/02-flag-detail-open.webp');
+    expect(isChromeSpec(wide)).toBe(false);
+    expect(chromeRegions(wide, 1440, 900).map((region) => [region.name, region.x, region.width, region.height])).toEqual([
+      ['rail', 0, 224, 900],
+      ['header', 224, 1216, 56],
+    ]);
+    expect(chromeRegions(byFile('edit-and-proof-workspace/02-flag-detail-open-1024.webp'), 1024, 768)[0].width).toBe(56);
+    expect(chromeRegions(byFile('input-commands-and-pedals/05-settings-global-keyboard-reflow-390.webp'), 390, 844)).toEqual([
+      { name: 'header', x: 0, y: 0, width: 390, height: 56 },
+    ]);
+  });
+
+  test('a header crop takes its geometry from the window it was cut from', () => {
+    const regions = chromeRegions(byFile('app-navigation-and-zoom-controls/01a-header-crop-default.webp'), 1440, 110);
+    expect(regions.map((region) => [region.name, region.width, region.height])).toEqual([
+      ['rail', 224, 110],
+      ['header', 1216, 56],
+    ]);
+  });
+
+  test('a mock with no shell, or compared by a region of its own, has no chrome', () => {
+    expect(chromeRegions(byFile('stage-navigation-and-page-replacement/03-booth-concept.webp'), 1440, 900)).toEqual([]);
+    expect(chromeRegions(byFile('stage-navigation-and-page-replacement/07-daw-companion-concept.webp'), 420, 900)).toEqual([]);
+    expect(chromeRegions(byFile('read-aloud-control-bar/01-idle.webp'), 1440, 900)).toEqual([]);
+  });
+});
+
 describe('formatScoreTable', () => {
   const score = (file: string, matchPercent: number): MockScore => ({
     file,
@@ -192,5 +252,22 @@ describe('formatScoreTable', () => {
     expect(lines[2]).toContain('b.webp');
     expect(lines[2]).toContain('**71.25** (under 90)');
     expect(lines[3]).toContain('95.50');
+  });
+
+  test('with a baseline, gives each change and marks a fallen chrome region by whether the mock is its spec', () => {
+    const now = (file: string, spec: boolean, rail: number): MockScore => ({
+      ...score(file, 92),
+      chrome: { spec, rail: { matchPercent: rail, inkMatchPercent: 0 }, header: { matchPercent: 90, inkMatchPercent: 0 } },
+    });
+    const table = formatScoreTable(
+      [now('spec.webp', true, 94), now('old.webp', false, 94), now('up.webp', true, 97)],
+      [now('spec.webp', true, 95), now('old.webp', false, 95), { ...now('up.webp', true, 96), matchPercent: 91.5 }],
+    );
+    const line = (file: string) => table.split('\n').find((row) => row.includes(file)) ?? '';
+    expect(line('spec.webp')).toContain('**94.00 (−1.00)** (fell)');
+    expect(line('old.webp')).toContain('94.00 (−1.00) (old shell)');
+    expect(line('up.webp')).toContain('92.00 (+0.50)');
+    expect(line('up.webp')).toContain('97.00 (+1.00)');
+    expect(line('up.webp')).toContain('90.00 (±0.00)');
   });
 });
