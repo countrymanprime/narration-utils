@@ -175,7 +175,10 @@ class Recorder:
                 self._writer.write(block)
             except OSError as error:  # a full disk, WavFullError, a removed drive
                 self._note_error(str(error) or type(error).__name__)
-                self._writer.close()
+                try:
+                    self._writer.close()
+                except OSError as close_error:  # the same failed device, closing: still leaves the file handle shut
+                    self._note_error(str(close_error) or type(close_error).__name__)
                 continue
             events = self._meter.feed(block)
             done = self._clock()
