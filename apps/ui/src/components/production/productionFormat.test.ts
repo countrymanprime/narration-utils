@@ -56,13 +56,13 @@ describe('production figures', () => {
 });
 
 describe('the board', () => {
-  it('marks the stages a chapter has passed as done and the ones ahead as not yet', () => {
+  it("marks the stages a chapter has passed as done and the ones ahead as not yet, as the mock's compact glyphs (PR10)", () => {
     const proofing = chapter({ status: 'proofing' });
-    expect(boardCell(proofing, column('Record'))).toEqual({ tone: 'success', label: 'Done' });
-    expect(boardCell(proofing, column('Edit'))).toEqual({ tone: 'success', label: 'Done' });
+    expect(boardCell(proofing, column('Record'))).toEqual({ tone: 'success', label: '✓' });
+    expect(boardCell(proofing, column('Edit'))).toEqual({ tone: 'success', label: '✓' });
     const recording = chapter({ status: 'recording' });
-    expect(boardCell(recording, column('Proof'))).toEqual({ tone: 'neutral', label: 'Not yet' });
-    expect(boardCell(chapter({ status: 'finalized' }), column('Proof'))).toEqual({ tone: 'success', label: 'Done' });
+    expect(boardCell(recording, column('Proof'))).toEqual({ tone: 'neutral', label: '—' });
+    expect(boardCell(chapter({ status: 'finalized' }), column('Proof'))).toEqual({ tone: 'success', label: '✓' });
   });
 
   it("shows the current stage's readiness as the stage recommendations gave it", () => {
@@ -75,15 +75,15 @@ describe('the board', () => {
     expect(at(null)).toEqual({ tone: 'progress', label: 'In progress' });
   });
 
-  it('says a readiness column with no producer yet is not available (PRD risk table)', () => {
+  it('says a readiness column with no producer yet is not available (PRD risk table), as a dash (PR10)', () => {
     for (const name of ['Prep', 'Delivery']) {
-      expect(boardCell(chapter({ status: 'finalized' }), column(name))).toEqual({ tone: 'neutral', label: 'Not available' });
+      expect(boardCell(chapter({ status: 'finalized' }), column(name))).toEqual({ tone: 'neutral', label: '—' });
     }
   });
 
-  it("shows a chapter's measured recorded length as m:ss, or says it is not measured", () => {
+  it("shows a chapter's measured recorded length as m:ss, or a dash when it is not measured (PR10)", () => {
     expect(boardCell(chapter({ recordedSeconds: 708 }), column('Recorded'))).toEqual({ tone: 'neutral', label: '11:48' });
-    expect(boardCell(chapter({ recordedSeconds: null }), column('Recorded'))).toEqual({ tone: 'neutral', label: 'Not measured' });
+    expect(boardCell(chapter({ recordedSeconds: null }), column('Recorded'))).toEqual({ tone: 'neutral', label: '—' });
   });
 });
 

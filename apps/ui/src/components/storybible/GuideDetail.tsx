@@ -863,8 +863,8 @@ export function GuideDetail({
                     )}
                   </p>
                 </div>
-                <TooltipTarget text="Go to this line in Manuscript">
-                  <IconButton label="Go to line in Manuscript" className="flex-none" onClick={() => goToManuscript(item.chapter, item.paragraph)}>
+                <TooltipTarget text="Go to this line in Script">
+                  <IconButton label="Go to line in Script" className="flex-none" onClick={() => goToManuscript(item.chapter, item.paragraph)}>
                     <FontAwesomeIcon icon={faFileLines} />
                   </IconButton>
                 </TooltipTarget>

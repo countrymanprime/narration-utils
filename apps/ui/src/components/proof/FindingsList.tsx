@@ -2,7 +2,7 @@ import type { Finding, FindingReviewStatus, FindingsPage } from '../../types';
 import { Button } from '../primitives/Button';
 import { StatusBadge, type StatusTone } from '../primitives/StatusBadge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../primitives/Table';
-import { analyzerLabel, categoryLabel, chapterLabel, confidenceLabel, findingSummary, formatTime, STATUS_LABELS } from './findingFormat';
+import { analyzerLabel, chapterLabel, confidenceLabel, evidenceKindLabel, findingSummary, formatTime, STATUS_LABELS } from './findingFormat';
 
 // The note's type as mock 04 draws it (stage-navigation-and-page-replacement.prd.md Phase 5): a chip coloured by what
 // kind of fix it asks for, never by colour alone (the chip says the category in words).
@@ -76,7 +76,7 @@ export function FindingsList({
                 {finding.time_range ? formatTime(finding.time_range.start) : '—'}
               </TableCell>
               <TableCell>
-                <NoteChip tone={CATEGORY_TONE[finding.category] ?? 'neutral'} label={categoryLabel(finding.category)} />
+                <NoteChip tone={CATEGORY_TONE[finding.category] ?? 'neutral'} label={evidenceKindLabel(finding)} />
                 {finding.not_in_latest_run && (
                   <div className="mt-0.5 text-xs" style={{ color: 'var(--text-muted)' }}>
                     not in the latest run

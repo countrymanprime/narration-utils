@@ -65,7 +65,7 @@ import { diagnosticsJobSchema } from './schemas/diagnostics';
 import { coverageResultSchema, coverageStartResultSchema, coverageStateSchema } from './schemas/coverage';
 import { editingCandidatesSchema, editingStartResultSchema, editingStateSchema } from './schemas/editing';
 import { workspaceAlignmentResultSchema } from './schemas/workspace';
-import { previewResultSchema } from './schemas/preview';
+import { pinnedPreviewSchema, previewResultSchema } from './schemas/preview';
 import { stageDecisionResultSchema, stageRecommendationsSchema } from './schemas/stages';
 import {
   productionBurndownSchema,
@@ -75,6 +75,7 @@ import {
   productionStartResultSchema,
   productionStopResultSchema,
 } from './schemas/production';
+import { prepCompletenessSummarySchema } from './schemas/prepCompleteness';
 import { findingMarkerSchema, findingNavigationSchema, findingSchema, findingsPageSchema, findingsSummarySchema, reaperStatusSchema } from './schemas/findings';
 import { assetCatalogSchema, assetInstallJobSchema, assetVerifyResultSchema } from './schemas/assets';
 import { ttsCatalogSchema, ttsInstallJobSchema } from './schemas/tts';
@@ -108,6 +109,7 @@ import { cleanupApplyResultSchema, cleanupPreviewResultSchema, levelMatchApplyRe
 import { projectStateChangedSchema, projectStateStartResultSchema, projectStateStateSchema } from './schemas/projectstate';
 import { dictionaryLookupResultSchema } from './schemas/dictionary';
 import { retakeLanesListSchema, retakeLanesStartResultSchema, retakeLanesStateSchema } from './schemas/retakelanes';
+import { exportJobSchema, packageJobSchema } from './schemas/renderEncodeMaster';
 import type { NarrationApi } from '../types';
 import * as host from '../../wailsjs/github.com/countrymanprime/narration-utils/shell/host';
 import { Events } from '@wailsio/runtime';
@@ -377,6 +379,7 @@ export const wailsClient: NarrationApi = {
   stageDismiss: (chapterId, target, basisKey) => decode(stageDecisionResultSchema, 'StageDismiss', host.StageDismiss(chapterId, target, basisKey)),
   stageRevert: (chapterId) => decode(stageDecisionResultSchema, 'StageRevert', host.StageRevert(chapterId)),
   productionOverview: () => decode(productionOverviewSchema, 'ProductionOverview', host.ProductionOverview()),
+  prepCompletenessSummary: () => decode(prepCompletenessSummarySchema, 'PrepCompletenessSummary', host.PrepCompletenessSummary()),
   productionStartTimer: (chapterId, stage) => decode(productionStartResultSchema, 'ProductionStartTimer', host.ProductionStartTimer(chapterId, stage)),
   productionStopTimer: () => decode(productionStopResultSchema, 'ProductionStopTimer', host.ProductionStopTimer()),
   productionStatusReport: (includeContractedAmount) =>
@@ -398,6 +401,10 @@ export const wailsClient: NarrationApi = {
   workspaceGoTo: (chapterId, tokenIndex) => decode(findingNavigationSchema, 'WorkspaceGoTo', host.WorkspaceGoTo(chapterId, tokenIndex)),
   workspaceLoop: (chapterId, firstToken, lastToken) => decode(findingNavigationSchema, 'WorkspaceLoop', host.WorkspaceLoop(chapterId, firstToken, lastToken)),
   previewCandidates: () => decode(previewResultSchema, 'PreviewCandidates', host.PreviewCandidates()),
+  previewPin: () => decode(pinnedPreviewSchema, 'PreviewPin', host.PreviewPin()),
+  previewPinSet: (chapterId, paragraphIds) => decode(pinnedPreviewSchema, 'PreviewPinSet', host.PreviewPinSet(chapterId, paragraphIds)),
+  previewPinAdjust: (edge, grow) => decode(pinnedPreviewSchema, 'PreviewPinAdjust', host.PreviewPinAdjust(edge, grow)),
+  previewPinClear: () => decode(pinnedPreviewSchema, 'PreviewPinClear', host.PreviewPinClear()),
   productionPlan: () => decode(productionPlanSchema, 'ProductionPlan', host.ProductionPlan()),
   setProductionDeadline: (deadline, contractedAmount) =>
     decode(productionPlanSchema, 'ProductionSetDeadline', host.ProductionSetDeadline(deadline, contractedAmount)),
@@ -574,4 +581,11 @@ export const wailsClient: NarrationApi = {
   teleprompterResumeUnfollow: () => decode(teleprompterResumeFollowSchema, 'TeleprompterResumeUnfollow', host.TeleprompterResumeUnfollow()),
   subscribeTeleprompterResumeFollow: (onEvent) => subscribeChecked('teleprompter_resume_follow', teleprompterResumeFollowEventSchema, onEvent),
   mediaUrl: (sourceFile) => `${mediaRoute}?path=${encodeURIComponent(sourceFile)}`,
+  exportPickFiles: () => decode(measurePickResultSchema, 'ExportPickFiles', host.ExportPickFiles()),
+  exportStart: (req) => decode(exportJobSchema, 'ExportStart', host.ExportStart(req)),
+  exportState: () => decode(exportJobSchema, 'ExportState', host.ExportState()),
+  exportCancel: () => decode(exportJobSchema, 'ExportCancel', host.ExportCancel()),
+  packageStart: (req) => decode(packageJobSchema, 'PackageStart', host.PackageStart(req)),
+  packageState: () => decode(packageJobSchema, 'PackageState', host.PackageState()),
+  packageCancel: () => decode(packageJobSchema, 'PackageCancel', host.PackageCancel()),
 };

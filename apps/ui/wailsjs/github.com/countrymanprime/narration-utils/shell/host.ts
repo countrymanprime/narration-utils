@@ -633,6 +633,38 @@ export function EditingState(): $CancellablePromise<string> {
 }
 
 /**
+ * ExportCancel stops a running export; files already prepared keep their results. With none running it changes
+ * nothing.
+ */
+export function ExportCancel(): $CancellablePromise<string> {
+    return $Call.ByID(2787515454);
+}
+
+/**
+ * ExportPickFiles opens the operating system's picker for the rendered chapter, credits and retail-sample files to
+ * master and encode, and answers the chosen paths (none when the narrator closes it). Only paths chosen here can be
+ * exported.
+ */
+export function ExportPickFiles(): $CancellablePromise<string> {
+    return $Call.ByID(3772614912);
+}
+
+/**
+ * ExportStart masters (when req.master is true) and encodes the picked files as a job and answers it; it refuses a
+ * path that was not picked, a request with no items, or a second export while one runs.
+ */
+export function ExportStart(req: $models.ExportRequest): $CancellablePromise<string> {
+    return $Call.ByID(2735024176, req);
+}
+
+/**
+ * ExportState answers the export job: idle, running with real progress, or how it ended with every file's result.
+ */
+export function ExportState(): $CancellablePromise<string> {
+    return $Call.ByID(3355501889);
+}
+
+/**
  * FindingsAddMarker adds one take marker in REAPER at an accepted finding's spot, on its take, named like the marker
  * Transcript Compare's export adds (approvedMarker). A finding not accepted, one with no item or no time in its audio,
  * and a REAPER that is not listening are refused before anything is sent.
@@ -1007,6 +1039,30 @@ export function MeasureState(): $CancellablePromise<string> {
     return $Call.ByID(2552163807);
 }
 
+/**
+ * PackageCancel stops a running package build. With none running it changes nothing.
+ */
+export function PackageCancel(): $CancellablePromise<string> {
+    return $Call.ByID(1117202284);
+}
+
+/**
+ * PackageStart opens the operating system's folder picker, then assembles the chosen profile's package from an
+ * export's own encoded files as a job, and answers it. It refuses a path that was not encoded in this session, no
+ * items, an unknown profile, or a second package build while one runs. Closing the picker without choosing a folder
+ * answers the current (unstarted) state rather than an error.
+ */
+export function PackageStart(req: $models.PackageRequest): $CancellablePromise<string> {
+    return $Call.ByID(2842461846, req);
+}
+
+/**
+ * PackageState answers the package job: idle, running, or how it ended with the manifest and checklist it built.
+ */
+export function PackageState(): $CancellablePromise<string> {
+    return $Call.ByID(2792423179);
+}
+
 export function PickupsCount(): $CancellablePromise<string> {
     return $Call.ByID(3462748130);
 }
@@ -1044,6 +1100,16 @@ export function PickupsState(): $CancellablePromise<string> {
 }
 
 /**
+ * PrepCompletenessSummary reads every manuscript chapter and answers one row each: how many of its names still have
+ * an open pronunciation query, and how many of its markup spans are stale, plus the book-wide totals. With no project
+ * open, or no Story Bible or manuscript yet, it answers an empty summary rather than an error, the same way
+ * GuidePronunciationQueries and PrepMarkupList already do for a phase this early in prep.
+ */
+export function PrepCompletenessSummary(): $CancellablePromise<string> {
+    return $Call.ByID(1398522399);
+}
+
+/**
  * PrepMarkupDelete removes one span by its id; a stale span needs nothing else.
  */
 export function PrepMarkupDelete(chapterID: string, id: string): $CancellablePromise<string> {
@@ -1072,6 +1138,38 @@ export function PrepMarkupSave(chapterID: string, paragraphID: string, start: nu
  */
 export function PreviewCandidates(): $CancellablePromise<string> {
     return $Call.ByID(2923797608);
+}
+
+/**
+ * PreviewPin reads the narrator's pinned window, if any, resolved against the manuscript's current text.
+ */
+export function PreviewPin(): $CancellablePromise<string> {
+    return $Call.ByID(1241542001);
+}
+
+/**
+ * PreviewPinAdjust grows or shrinks the pinned range by one paragraph at edge ("start" or "end"); grow false
+ * shrinks it instead. It is a no-op, not an error, once the range already reaches the chapter's edge or (shrinking)
+ * is down to one paragraph (preview.AdjustRange's own rule).
+ */
+export function PreviewPinAdjust(edge: string, grow: boolean): $CancellablePromise<string> {
+    return $Call.ByID(1417233170, edge, grow);
+}
+
+/**
+ * PreviewPinClear removes the pin. Clearing when nothing is pinned is not an error.
+ */
+export function PreviewPinClear(): $CancellablePromise<string> {
+    return $Call.ByID(3078643078);
+}
+
+/**
+ * PreviewPinSet pins one window: chapterID and paragraphIDs are normally a candidate's own fields, exactly as
+ * PreviewCandidates answered them, though any contiguous, in-order run of one chapter's paragraph ids is accepted
+ * (Phase 8 does not require the narrator to have started from a suggested candidate at all).
+ */
+export function PreviewPinSet(chapterID: string, paragraphIDs: string[]): $CancellablePromise<string> {
+    return $Call.ByID(3856724439, chapterID, paragraphIDs);
 }
 
 /**

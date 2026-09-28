@@ -32,7 +32,7 @@ const SECTION_KIND_OPTIONS = [
 // What each group is for, in one short string that is true for that group (the old sentence spoke of reference material only, and front
 // matter is left out of the audiobook totals and Proofing in just the same way). Reference material is filtered from the chapter lists
 // (ADR 0005); front matter is listed.
-const FRONT_MATTER_NOTE = 'Not counted as a chapter: excluded from audiobook totals and Proofing. Still listed and readable in the manuscript.';
+const FRONT_MATTER_NOTE = 'Not counted as a chapter: excluded from audiobook totals and Proof. Still listed and readable in the manuscript.';
 const REFERENCE_NOTE = 'Excluded from audiobook totals, Proofing and the chapter list. Still readable in the manuscript.';
 
 const LEGEND_CLASSES = "px-1 font-['Barlow_Condensed',sans-serif] text-[0.72rem] font-semibold tracking-[0.08em] text-[var(--text-muted)] uppercase";

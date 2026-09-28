@@ -145,7 +145,7 @@ func (s *Service) savedProject() (tracks.Project, error) {
 	}
 	path, err := s.config.ProjectFile()
 	if err != nil {
-		return tracks.Project{}, fmt.Errorf("choose the saved REAPER project file on the Tracks page first (%w)", err)
+		return tracks.Project{}, fmt.Errorf("choose the saved REAPER project file in the audio engine panel first (%w)", err)
 	}
 	project, err := s.readProject(path)
 	if err != nil {

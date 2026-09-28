@@ -1,7 +1,7 @@
 package preview
 
 // This file is Phase 5 of the proofing-preview-suggestion PRD
-// (docs/prds/proofing-preview-suggestion.prd.md#phase-5---findings-overlay):
+// (see docs/architecture/preview-suggestion.md):
 // excluding or ranking down candidates that overlap an open finding by
 // paragraph (Q7), so the suggestion never quietly points at a stretch the
 // other tools already flagged.

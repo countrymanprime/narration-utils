@@ -12,7 +12,7 @@ import { Link } from 'react-router-dom';
 export function TakeReviewPickups({ count }: { count: number }) {
   return (
     <div className="mt-2 flex flex-wrap items-center justify-between gap-2 rounded-md border border-dashed border-[var(--border)] px-3 py-2 text-sm">
-      <span>Repeated reads (Review): {count === 0 ? 'none waiting' : `${count} group${count === 1 ? '' : 's'} not reviewed yet`}</span>
+      <span>Repeated reads (Proof): {count === 0 ? 'none waiting' : `${count} group${count === 1 ? '' : 's'} not reviewed yet`}</span>
       <Link to="/proof" className="font-semibold underline">
         Open Proof
       </Link>

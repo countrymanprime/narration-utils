@@ -41,7 +41,7 @@ So "build for Audacity 4 from its published spec" has no spec to build against. 
 5. **A finding's identity is in its label's text** (PRD Question 4): `[nu:<finding id>]`, or `[nu:<finding id> reviewed]` once it is reviewed, then the finding's words. Labels are matched by that identity, never by time: GetInfo reports only about six significant digits. Re-importing adds no second label for a finding, and marking one reviewed rewrites it in place.
 6. **The fake is the spec, and the owner's pass is the check.**
    - `audacitybridgetest` is an in-memory pipe server. It parses commands as Audacity does (the wxWidgets split, then `Unescape`), keeps a small project, answers with the documented replies, and misbehaves on demand: hang, garbage, a missing empty line, hang-up, `Failed!` and no project. Every command and the parser have table-driven tests, run with `-race`.
-   - What only a real Audacity can show is the owner's verification pass (`docs/operations/audacity-verification-pass.md`, added with the adapter): the pipe itself, the escaping, where `AddLabel` puts a label, the loop, and the export. It runs unattended against a scratch project. Each difference it finds corrects the fake, with a test, as with REAPER.
+   - What only a real Audacity can show is the owner's [verification pass](../operations/audacity-verification-pass.md): the pipe itself, the escaping, where `AddLabel` puts a label, the loop, and the export. It runs unattended against a scratch project. Each difference it finds corrects the fake, with a test, as with REAPER.
 
 ## Consequences
 

@@ -6,7 +6,7 @@ import { Dialog } from '../primitives/Dialog';
 import { Button } from '../primitives/Button';
 import { Select } from '../primitives/Select';
 import { Checkbox } from '../primitives/Checkbox';
-import { AUDITION_POST_ROLL_SECONDS, AUDITION_PRE_ROLL_SECONDS, useRangePlayer, type AuditionRange } from '../tracks/useRangePlayer';
+import { AUDITION_POST_ROLL_SECONDS, AUDITION_PRE_ROLL_SECONDS, useRangePlayer, type AuditionRange } from '../engine/useRangePlayer';
 import { sourceFileName } from './takeReviewFormat';
 import type { TakeReviewMember } from '../../types';
 
@@ -64,7 +64,7 @@ function AuditionSide({ side, members, label, selected, onSelect, player, onTogg
 /**
  * Side-by-side A/B audition (phase 7 of take-review-pickups-duplicates-take-intelligence.prd.md,
  * Q7 option A), opened from a take-review finding on the Review page (phase 5): plays two of the finding's own reads from their own raw source file, each with a
- * fixed pre/post roll, over the same `/media` route the Tracks page player streams from
+ * fixed pre/post roll, over the same `/media` route the audio engine panel player streams from
  * (apps/desktop/media.go's authorizedMediaSource already covers every take's own source, phase 2).
  * No REAPER mutation happens here at all - this is read-only playback of files the app already has
  * access to - and only one side plays at a time, so switching between A and B is a real comparison
