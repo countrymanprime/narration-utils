@@ -108,8 +108,8 @@ are measured. The report names the profile and its version, and lists every rule
 requires, how the app checked it, how it was verified and how many files met it. Each finding has an ID, its
 file, its time in the file, what was measured against which threshold, and its review state. The HTML
 and the JSON use the same IDs, and the Measurements tab's rules not met are those same findings. A finding is **open** unless it has been dismissed, and every open finding is listed. The
-review state comes from the project's review decisions, and Delivery's findings are on the
-[Review](review.md#delivery-checks) page too, so a decision you make there is the report's decision. The report also names the app's and the analyzers' versions, and each
+review state comes from the project's review decisions, and Delivery's findings are on
+[Proof](proof.md#delivery-checks) too, so a decision you make there is the report's decision. The report also names the app's and the analyzers' versions, and each
 installed voice and model with its version. It is a measurement, not a distributor's approval.
 
 Files are named only by their file name unless you tick **Include each file's full location**: no
@@ -121,4 +121,4 @@ it), and waits until a measurement or check has finished.
 
 ---
 
-[← Review](review.md) · [Index](README.md) · [Settings →](settings.md)
+[← Proof](proof.md) · [Index](README.md) · [Settings →](settings.md)

@@ -119,4 +119,4 @@ fill in a note if you want it changed.
 
 ---
 
-[← Proofing](proofing.md) · [Index](README.md) · [Teleprompter →](teleprompter.md)
+[← Manuscript](manuscript.md) · [Index](README.md) · [Teleprompter →](teleprompter.md)

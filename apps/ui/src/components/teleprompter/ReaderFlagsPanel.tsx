@@ -4,7 +4,7 @@ import { Button } from '../primitives/Button';
 import { CapabilityGate } from '../primitives/CapabilityGate';
 import { Checkbox } from '../primitives/Checkbox';
 import { ConfirmDialog } from '../primitives/ConfirmDialog';
-import { formatTime } from '../review/findingFormat';
+import { formatTime } from '../proof/findingFormat';
 import { useCapability } from '../../useCapability';
 import { FLAG_KINDS, FLAG_NAMES, type FlagVisibility } from './readerFlags';
 import type { TeleprompterFlag, TeleprompterFlagKind, TeleprompterPunchResult } from '../../types';

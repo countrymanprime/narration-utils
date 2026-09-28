@@ -49,8 +49,9 @@ with no value yet stays in brackets, highlighted, and a line below lists the unr
 [Home](home.md) for what it asks and when. A banner above Opening credits does the same while any
 token stays unresolved and setup has not been dismissed for the project. These
 entries are read-only and are not chapters: they are not in the chapter list or search. Record the
-credits as their own files, as ACX expects, not inside a chapter file: Proofing compares a chapter file
-with that chapter's text only, so credits recorded inside it are reported as extra words. Each credits
+credits as their own files, as ACX expects, not inside a chapter file: a chapter's Proof view compares a
+chapter's recording with that chapter's text only, so credits recorded inside it are reported as extra
+words. Each credits
 card also has a **Read aloud** button once it has anything to read, opening the same full-screen dialog
 described below, titled "Read aloud — Opening credits" or "Read aloud — Closing credits" — see the note
 at the end of that section for how it differs from reading a chapter.
@@ -160,8 +161,8 @@ the panel on a second press.
 A chapter with a live "Suggested: Editing/Proofing/Finalized" recommendation ([Home](home.md)'s
 per-chapter stage suggestions) shows that same wording under its title here too, so it is visible
 while browsing chapters without opening the estimate breakdown. It is read-only in this list -
-Confirm, Dismiss and the evidence view stay on Home and, for a chapter in Proofing, on the
-[Proofing](proofing.md) panel.
+Confirm, Dismiss and the evidence view stay on Home and, for a chapter in Proofing, on that chapter's
+[Proof view](proof.md#the-chapter-view).
 
 The reader shows only the manuscript's narratable chapters. A table of contents or a Characters
 section the importer recognized stays in the project's data (the Story Bible has the readable form
@@ -212,4 +213,4 @@ showing a garbled answer. You can check, repair or remove the dictionary any tim
 
 ---
 
-[← Production](production.md) · [Index](README.md) · [Proofing →](proofing.md)
+[← Production](production.md) · [Index](README.md) · [Story Bible →](story-bible.md)

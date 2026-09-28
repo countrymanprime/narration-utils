@@ -482,11 +482,7 @@ export function AudiobookEstimatePanel({
                                 onClick={() => setTrackChapter({ chapterId: chapter.id, open: true })}
                               />
                               {trackGuid && (
-                                <Link
-                                  className="text-xs underline"
-                                  style={{ color: 'var(--text-muted)' }}
-                                  to={`/tracks/chapter/${encodeURIComponent(chapter.id)}`}
-                                >
+                                <Link className="text-xs underline" style={{ color: 'var(--text-muted)' }} to={`/proof/${encodeURIComponent(chapter.id)}`}>
                                   Open workspace
                                 </Link>
                               )}
