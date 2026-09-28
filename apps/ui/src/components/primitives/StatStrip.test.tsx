@@ -30,15 +30,29 @@ describe('StatStrip', () => {
     expect(screen.getByText('9').style.color).toBe('var(--warn-text)');
   });
 
-  it('draws one card with dividers between tiles rather than a card per tile', () => {
+  it('draws one card with rules between tiles rather than a card per tile', () => {
     const { container } = render(<StatStrip items={ITEMS} />);
-    const list = container.querySelector('ul') as HTMLElement;
-    expect(list.className).toContain('divide-y');
-    expect(list.className).toContain('sm:divide-x');
-    // No tile carries its own border or shadow; the strip alone is the card surface.
+    const card = container.firstElementChild as HTMLElement;
+    expect(card.className).toContain('rounded-[var(--radius-card)]');
+    expect(card.className).toContain('overflow-hidden');
+    // Each tile draws only the rule on its left and top; the card clips the ones on its own edges.
     for (const li of container.querySelectorAll('li')) {
-      expect(li.className).not.toContain('border');
+      expect(li.className).toContain('border-l');
+      expect(li.className).toContain('border-t');
       expect(li.className).not.toContain('shadow');
+      expect(li.className).not.toContain('rounded');
     }
+  });
+
+  // ADR 0645: the strip wraps into full rows as it narrows (every tile, half of them a row, two, one) instead of clipping.
+  it('wraps into full rows by the width it has: all in a row, then half, then two, then one', () => {
+    const six = Array.from({ length: 6 }, (_, index) => ({ key: `k${index}`, label: `Figure ${index}`, value: `${index}` }));
+    const { container } = render(<StatStrip items={six} />);
+    const list = container.querySelector('ul') as HTMLElement;
+    expect(list.style.getPropertyValue('--strip-all')).toBe('6');
+    expect(list.style.getPropertyValue('--strip-half')).toBe('3');
+    expect(list.className).toContain('@min-[64rem]:[--strip-cols:var(--strip-all)]');
+    expect(list.className).toContain('@min-[36rem]:[--strip-cols:var(--strip-half)]');
+    expect(list.className).toContain('@min-[22rem]:[--strip-cols:2]');
   });
 });

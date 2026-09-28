@@ -111,14 +111,14 @@ describe('the board', () => {
 
   it('says the evidence changed on the current stage of a chapter whose confirmation it contradicts', () => {
     const editing = chapter({ status: 'editing', readiness: { verdict: 'none', reason: '' } });
-    expect(boardCell(editing, column('Edit'), { contradiction: true })).toEqual({ tone: 'warning', label: 'Evidence changed' });
+    expect(boardCell(editing, column('Edit'), { contradiction: true })).toEqual({ tone: 'warning', label: 'Changed' });
     // Only the current stage: a stage already passed stays done.
     expect(boardCell(editing, column('Record'), { contradiction: true })).toEqual({ tone: 'success', label: '✓' });
   });
 
   it('shows a recording check running on the Record cell, with its percent once there is one', () => {
     const editing = chapter({ status: 'editing' });
-    expect(boardCell(editing, column('Record'), { checkingPercent: 70.6 })).toEqual({ tone: 'progress', label: 'Checking 70%' });
+    expect(boardCell(editing, column('Record'), { checkingPercent: 70.6 })).toEqual({ tone: 'progress', label: '70%' });
     expect(boardCell(editing, column('Record'), { checkingPercent: null })).toEqual({ tone: 'progress', label: 'Checking' });
     expect(boardCell(editing, column('Edit'), { checkingPercent: 70 })).toEqual({ tone: 'progress', label: 'In progress' });
   });

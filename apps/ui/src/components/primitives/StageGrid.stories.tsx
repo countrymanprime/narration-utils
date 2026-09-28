@@ -140,3 +140,37 @@ export const RowsMatchTheMock: Story = {
     await expect(getComputedStyle(canvas.getByRole('rowheader', { name: 'Chapter 1' })).fontWeight).toBe('400');
   },
 };
+
+// Mock 01's board (ADR 0645): a named Chapter column, a length drawn as a mono figure (FIN.), and every stage cell the
+// 58×20 board cell on a 66 px pitch, so a column's cells line up whatever they say.
+const MOCK_ROWS = ['Opening credits', '1 · Down the Rabbit-Hole', '3 · A Caucus-Race'];
+const MOCK_COLUMNS = ['Fin.', 'Prep', 'Record', 'Edit', 'Proof'];
+const MOCK_CELLS: StageGridCell[][] = [
+  [{ tone: 'neutral', label: '0:12', look: 'text' }, ...Array.from({ length: 4 }, (): StageGridCell => ({ tone: 'success', label: '✓' }))],
+  [{ tone: 'neutral', label: '11:48', look: 'text' }, ...Array.from({ length: 4 }, (): StageGridCell => ({ tone: 'success', label: '✓' }))],
+  [
+    { tone: 'neutral', label: '10:31', look: 'text' },
+    { tone: 'success', label: '✓' },
+    { tone: 'info', label: '62%' },
+    { tone: 'accent', label: 'proofer' },
+    { tone: 'danger', label: '3 open' },
+  ],
+];
+
+export const MockBoard: Story = {
+  render: () => <StageGrid label="Chapter pipeline" rows={MOCK_ROWS} columns={MOCK_COLUMNS} cell={(row, col) => MOCK_CELLS[row][col]} currentRow={2} />,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(canvas.getByRole('columnheader', { name: 'Chapter' })).toBeVisible();
+    await expect(canvas.getByText('11:48').className).toContain('IBM_Plex_Mono');
+    if (canvasElement.getBoundingClientRect().width === 0) return;
+    await document.fonts.ready;
+    const boxes = ['✓', '62%', 'proofer', '3 open'].map((label) => canvas.getAllByText(label).at(-1)!.getBoundingClientRect());
+    for (const box of boxes) {
+      await expect(box.height).toBeCloseTo(20, 0);
+      await expect(box.width).toBeCloseTo(58, 0);
+    }
+    // The 66 px pitch: 58 px cells, 4 px either side.
+    await expect(Math.round(boxes[2].left - boxes[1].left)).toBe(66);
+  },
+};
