@@ -2,13 +2,12 @@ import type { StateEntry } from './lib/types';
 import { projectStates } from './catalog/project';
 import { startupStates } from './catalog/startup';
 import { homeStates } from './catalog/home';
-import { manuscriptStates } from './catalog/manuscript';
-import { proofingStates } from './catalog/proofing';
+import { scriptStates } from './catalog/script';
 import { storybibleStates } from './catalog/storybible';
 import { tracksStates } from './catalog/tracks';
-import { workspaceStates } from './catalog/workspace';
 import { teleprompterStates } from './catalog/teleprompter';
-import { reviewStates } from './catalog/review';
+import { proofStates } from './catalog/proof';
+import { proofChapterStates } from './catalog/proof-chapter';
 import { deliveryStates } from './catalog/delivery';
 import { productionStates } from './catalog/production';
 import { settingsStates } from './catalog/settings';
@@ -28,13 +27,12 @@ export const STATE_CATALOG: StateEntry[] = [
   ...projectStates,
   ...startupStates,
   ...homeStates,
-  ...manuscriptStates,
-  ...proofingStates,
+  ...scriptStates,
   ...storybibleStates,
   ...tracksStates,
-  ...workspaceStates,
   ...teleprompterStates,
-  ...reviewStates,
+  ...proofStates,
+  ...proofChapterStates,
   ...deliveryStates,
   ...productionStates,
   ...settingsStates,

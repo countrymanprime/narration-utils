@@ -9,6 +9,7 @@ import { ThemeProvider } from './theme/ThemeContext';
 import { parseWire } from './api/wire/parseWire';
 import { bootstrapSchema } from './api/schemas/system';
 import type { GuideBuildResult, WorkJob } from './types';
+import { WIRE_CHAPTERS } from './api/mockFixtures';
 import type { JobEnded } from './api/contracts/system';
 import type { DawTransport } from './api/contracts/daw';
 import { setBoothActive } from './components/teleprompter/boothActive';
@@ -43,6 +44,13 @@ const bootstrapWithCandidate = (manuscriptCandidate: { path: string; name: strin
   manuscript: null,
   manuscriptCandidate,
 });
+
+// A run under way: the mock's comparison runs for 2.6 s once started, long enough to leave the page in the middle of it.
+const startRunOnChapterOne = async () => {
+  await screen.findByRole('heading', { name: /^Proof · / });
+  fireEvent.click(await screen.findByRole('button', { name: /Start comparison/ }));
+  await screen.findByRole('button', { name: 'Cancel' });
+};
 
 describe('App (integration, driven through the mock NarrationApi)', () => {
   it('shows the startup screen, then Home once bootstrap resolves', async () => {
@@ -98,13 +106,13 @@ describe('App (integration, driven through the mock NarrationApi)', () => {
     expect(await screen.findByRole('heading', { name: 'Welcome back' })).toBeTruthy();
   });
 
-  it('shows the Manuscript page an inline error with Retry when its chapters cannot be read, beside the notice Home raised for the same data', async () => {
+  it('shows the Script page an inline error with Retry when its chapters cannot be read, beside the notice Home raised for the same data', async () => {
     renderApp({}, { invalidPayload: 'manuscript' });
     await waitFor(() => screen.getByRole('heading', { name: 'Welcome back' }));
     // Home's audiobook estimate reads the same chapters, so it tells the narrator at once, and the notice stays (ADR 0075) ...
     const message = 'The app received data it could not read.';
     await waitFor(() => expect(screen.getAllByText(message)).toHaveLength(1));
-    fireEvent.click(screen.getAllByRole('button', { name: /Manuscript/ })[0]);
+    fireEvent.click(screen.getAllByRole('button', { name: 'Script' })[0]);
     // ... so once the page has its own inline error the same words are on screen twice, which is why the visual driver waits for both.
     expect(await screen.findByText('This page could not be loaded')).toBeTruthy();
     expect(screen.getAllByText(message)).toHaveLength(2);
@@ -207,10 +215,9 @@ describe('App (integration, driven through the mock NarrationApi)', () => {
   });
 
   it('shows a repeated message as a fresh toast, so a second click on the same action gives a new signal', async () => {
+    window.history.replaceState(null, '', `/proof/${WIRE_CHAPTERS[0].id}`);
     renderApp({ transcriptSuggestHints: async () => ({ terms: [], found: 0 }) });
-    await screen.findByRole('heading', { name: 'Welcome back' });
-    fireEvent.click(screen.getAllByRole('button', { name: 'Proofing' })[0]);
-    await screen.findByRole('heading', { name: 'Proofing' });
+    await screen.findByRole('heading', { name: /^Proof · / });
 
     fireEvent.click(await screen.findByRole('button', { name: /Suggest from manuscript/ }));
     await waitFor(() => expect(screen.getByRole('status').firstElementChild).not.toBeNull());
@@ -233,8 +240,8 @@ describe('App (integration, driven through the mock NarrationApi)', () => {
       },
     });
     await screen.findByRole('heading', { name: 'Welcome back' });
-    fireEvent.click(screen.getAllByRole('button', { name: 'Proofing' })[0]);
-    await screen.findByRole('heading', { name: 'Proofing' });
+    fireEvent.click(screen.getAllByRole('button', { name: 'Settings' })[0]);
+    await screen.findByRole('heading', { name: 'Settings' });
 
     act(() => announce({ id: 'guide-1', kind: 'story_bible', outcome: 'success', message: 'Story Bible rebuild complete.', durationMs: 4200 }));
     expect(within(screen.getByRole('status')).getByText('Story Bible rebuild complete.')).toBeTruthy();
@@ -431,11 +438,12 @@ describe('App (integration, driven through the mock NarrationApi)', () => {
     renderApp();
     await screen.findByRole('heading', { name: 'Welcome back' });
 
-    fireEvent.click(screen.getAllByRole('button', { name: 'Manuscript' })[0]);
-    await screen.findByRole('heading', { name: 'Manuscript' });
+    fireEvent.click(screen.getAllByRole('button', { name: 'Script' })[0]);
+    await screen.findByRole('heading', { name: 'Script' });
+    expect(window.location.pathname).toBe('/script');
 
-    fireEvent.click(screen.getAllByRole('button', { name: 'Proofing' })[0]);
-    await screen.findByRole('heading', { name: 'Proofing' });
+    fireEvent.click(screen.getAllByRole('button', { name: 'Proof' })[0]);
+    await screen.findByRole('heading', { name: 'Proof' });
 
     fireEvent.click(screen.getAllByRole('button', { name: 'Story Bible' })[0]);
     await screen.findByRole('heading', { name: 'Story Bible' });
@@ -452,10 +460,10 @@ describe('App (integration, driven through the mock NarrationApi)', () => {
     renderApp({ bootstrap: async () => ({ ...(await source.bootstrap()), manuscript: null }) });
     await screen.findByRole('heading', { name: 'Welcome back' });
 
-    for (const name of ['Manuscript', 'Proofing', 'Story Bible', 'Teleprompter']) {
+    for (const name of ['Script', 'Story Bible', 'Teleprompter']) {
       expect(screen.getAllByRole('button', { name }).every((button) => (button as HTMLButtonElement).disabled)).toBe(true);
     }
-    expect((screen.getByRole('button', { name: 'Open Proofing' }) as HTMLButtonElement).disabled).toBe(true);
+    expect((screen.getByRole('button', { name: 'Open Proof' }) as HTMLButtonElement).disabled).toBe(true);
     expect((screen.getByRole('button', { name: 'Open Story Bible' }) as HTMLButtonElement).disabled).toBe(true);
     expect(screen.getByRole('button', { name: 'Import manuscript' })).toBeTruthy();
     expect(screen.queryByRole('button', { name: 'Import legacy Word file' })).toBeNull();
@@ -494,44 +502,99 @@ describe('App (integration, driven through the mock NarrationApi)', () => {
     expect(window.location.pathname).toBe('/tracks');
   });
 
-  it('opens Review from the navigation, and a finding there opens the manuscript at its line', async () => {
+  it('opens Proof from the navigation, and a note there opens the manuscript at its line', async () => {
     renderApp();
     await screen.findByRole('heading', { name: 'Welcome back' });
-    fireEvent.click(screen.getAllByRole('button', { name: 'Review' })[0]);
-    await screen.findByRole('heading', { name: 'Review' });
-    expect(window.location.pathname).toBe('/review');
+    fireEvent.click(screen.getAllByRole('button', { name: 'Proof' })[0]);
+    await screen.findByRole('heading', { name: 'Proof' });
+    expect(window.location.pathname).toBe('/proof');
     const row = await screen.findByText(/pink eyes/);
     fireEvent.click(row);
     fireEvent.click(await screen.findByRole('button', { name: 'Show in manuscript' }));
-    await waitFor(() => expect(window.location.pathname).toBe('/manuscript'));
+    await waitFor(() => expect(window.location.pathname).toBe('/script'));
   });
 
-  it('keeps Review reachable without a manuscript', async () => {
+  it('opens a chapter view from Proof’s chapter picker', async () => {
+    renderApp();
+    await screen.findByRole('heading', { name: 'Welcome back' });
+    fireEvent.click(screen.getAllByRole('button', { name: 'Proof' })[0]);
+    const picker = (await screen.findByRole('combobox', { name: 'Chapter to open' })) as HTMLSelectElement;
+    const first = picker.options[1];
+    fireEvent.change(picker, { target: { value: first.value } });
+    fireEvent.click(screen.getByRole('button', { name: 'Open chapter' }));
+    await screen.findByRole('heading', { name: `Proof · ${first.textContent}` });
+    expect(window.location.pathname).toBe(`/proof/${encodeURIComponent(first.value)}`);
+  });
+
+  it('keeps Proof reachable without a manuscript', async () => {
     const source = createMockApi();
     renderApp({ bootstrap: async () => ({ ...(await source.bootstrap()), manuscript: null }) });
     await screen.findByRole('heading', { name: 'Welcome back' });
-    const reviewButtons = screen.getAllByRole('button', { name: 'Review' });
-    expect(reviewButtons.every((button) => !(button as HTMLButtonElement).disabled)).toBe(true);
-    fireEvent.click(reviewButtons[0]);
-    await screen.findByRole('heading', { name: 'Review' });
+    const proofButtons = screen.getAllByRole('button', { name: 'Proof' });
+    expect(proofButtons.every((button) => !(button as HTMLButtonElement).disabled)).toBe(true);
+    fireEvent.click(proofButtons[0]);
+    await screen.findByRole('heading', { name: 'Proof' });
   });
 
-  it('opens Delivery from the navigation without a manuscript, and its Change profile opens Settings at Delivery', async () => {
+  // stage-navigation-and-page-replacement.prd.md Phase 5 (ADR 0407): the retired routes land on Proof, query and hash kept.
+  it.each([
+    ['/review?from=bookmark#top', '/proof', '?from=bookmark', '#top'],
+    ['/proofing', '/proof', '', ''],
+    ['/tracks/chapter/chapter-1?t=12.5&finding=f-1', '/proof/chapter-1', '?t=12.5&finding=f-1', ''],
+  ])('redirects %s to Proof, keeping its query and hash', async (from, pathname, search, hash) => {
+    window.history.replaceState(null, '', from);
+    renderApp();
+    await waitFor(() => expect(window.location.pathname).toBe(pathname));
+    expect(window.location.search).toBe(search);
+    expect(window.location.hash).toBe(hash);
+  });
+
+  it('resets a compare run when the narrator leaves the chapter view it lives in, and not when there is none', async () => {
+    const transcriptReset = vi.fn(createMockApi().transcriptReset);
+    window.history.replaceState(null, '', `/proof/${WIRE_CHAPTERS[0].id}`);
+    renderApp({ transcriptReset });
+    await startRunOnChapterOne();
+    fireEvent.click(screen.getAllByRole('button', { name: 'Home' })[0]);
+    await screen.findByRole('heading', { name: 'Welcome back' });
+    expect(transcriptReset).toHaveBeenCalledOnce();
+    cleanup();
+
+    const idleReset = vi.fn(async () => {});
+    window.history.replaceState(null, '', `/proof/${WIRE_CHAPTERS[0].id}`);
+    renderApp({ transcriptReset: idleReset });
+    await screen.findByRole('heading', { name: /^Proof · / });
+    fireEvent.click(screen.getAllByRole('button', { name: 'Home' })[0]);
+    await screen.findByRole('heading', { name: 'Welcome back' });
+    expect(idleReset).not.toHaveBeenCalled();
+  });
+
+  // Stage navigation Phase 3 (ADR 0407): Script replaced the Manuscript page, and an old link still lands, hash and query included.
+  it.each(['/manuscript', '/manuscript#p5', '/manuscript#credits-closing'])('redirects %s to the Script page, which handles its hash', async (from) => {
+    window.history.replaceState(null, '', from);
+    renderApp();
+    await screen.findByRole('heading', { name: 'Script' });
+    expect(window.location.pathname).toBe('/script');
+    // The page consumes a deep link's hash and replaces it (Manuscript.tsx did the same), which shows the hash reached it.
+    await waitFor(() => expect(window.location.hash).toBe(''));
+  });
+
+  it('keeps the query and an unknown hash of a /manuscript link through the redirect', async () => {
+    window.history.replaceState(null, '', '/manuscript?from=finding#x-not-a-deep-link');
+    renderApp();
+    await screen.findByRole('heading', { name: 'Script' });
+    expect(`${window.location.pathname}${window.location.search}${window.location.hash}`).toBe('/script?from=finding#x-not-a-deep-link');
+  });
+
+  it('sends a /manuscript link to Home when there is no manuscript', async () => {
+    window.history.replaceState(null, '', '/manuscript#p5');
     const source = createMockApi();
     renderApp({ bootstrap: async () => ({ ...(await source.bootstrap()), manuscript: null }) });
     await screen.findByRole('heading', { name: 'Welcome back' });
-    const deliveryButtons = screen.getAllByRole('button', { name: 'Delivery' });
-    expect(deliveryButtons.every((button) => !(button as HTMLButtonElement).disabled)).toBe(true);
-    fireEvent.click(deliveryButtons[0]);
-    await screen.findByRole('heading', { name: 'Delivery', level: 1 });
-    expect(window.location.pathname).toBe('/delivery');
-    fireEvent.click(await screen.findByRole('button', { name: 'Change profile' }));
-    await waitFor(() => expect(window.location.pathname).toBe('/settings'));
-    expect(await screen.findByRole('combobox', { name: 'Delivery profile for this project' })).toBeTruthy();
+    expect(window.location.pathname).toBe('/');
   });
 
   it('redirects a direct manuscript-dependent URL to Home when no manuscript exists', async () => {
-    window.history.replaceState(null, '', '/proofing');
+    window.history.replaceState(null, '', '/proof/chapter-1');
     const source = createMockApi();
     renderApp({ bootstrap: async () => ({ ...(await source.bootstrap()), manuscript: null }) });
     await screen.findByRole('heading', { name: 'Welcome back' });
@@ -845,7 +908,7 @@ describe('App (integration, driven through the mock NarrationApi)', () => {
     renderApp({}, { projectFolder: '' });
     await waitFor(() => expect(screen.getByText('Open a project')).toBeTruthy());
     expect(screen.queryByRole('heading', { name: 'Welcome back' })).toBeNull();
-    expect(screen.queryByRole('heading', { name: 'Manuscript' })).toBeNull();
+    expect(screen.queryByRole('heading', { name: 'Script' })).toBeNull();
     expect(screen.queryByRole('navigation')).toBeNull();
   });
 
@@ -969,8 +1032,8 @@ describe('App Back and Forward (Phase 1)', () => {
     expect((screen.getByRole('button', { name: 'Back' }) as HTMLButtonElement).getAttribute('aria-disabled')).toBe('true');
     expect((screen.getByRole('button', { name: 'Forward' }) as HTMLButtonElement).getAttribute('aria-disabled')).toBe('true');
 
-    fireEvent.click(screen.getAllByRole('button', { name: 'Manuscript' })[0]);
-    await screen.findByRole('heading', { name: 'Manuscript' });
+    fireEvent.click(screen.getAllByRole('button', { name: 'Script' })[0]);
+    await screen.findByRole('heading', { name: 'Script' });
     await waitFor(() => expect(screen.getByRole('button', { name: 'Back' }).getAttribute('aria-disabled')).toBeNull());
 
     fireEvent.click(screen.getByRole('button', { name: 'Back' }));
@@ -981,14 +1044,14 @@ describe('App Back and Forward (Phase 1)', () => {
     await waitFor(() => expect(screen.getByRole('button', { name: 'Forward' }).getAttribute('aria-disabled')).toBeNull());
 
     fireEvent.click(screen.getByRole('button', { name: 'Forward' }));
-    await screen.findByRole('heading', { name: 'Manuscript' });
+    await screen.findByRole('heading', { name: 'Script' });
   });
 
   it('Alt+Left and Alt+Right do what the buttons do', async () => {
     renderApp();
     await screen.findByRole('heading', { name: 'Welcome back' });
-    fireEvent.click(screen.getAllByRole('button', { name: 'Manuscript' })[0]);
-    await screen.findByRole('heading', { name: 'Manuscript' });
+    fireEvent.click(screen.getAllByRole('button', { name: 'Script' })[0]);
+    await screen.findByRole('heading', { name: 'Script' });
 
     // `code` is what the registry's KeyboardSource matches on (PRD Q1: the physical key, not the layout-dependent
     // character); a real Alt+Left keydown carries both, so the fixture does too.
@@ -997,21 +1060,21 @@ describe('App Back and Forward (Phase 1)', () => {
     await waitFor(() => expect(screen.getByRole('button', { name: 'Forward' }).getAttribute('aria-disabled')).toBeNull());
 
     fireEvent.keyDown(document, { key: 'ArrowRight', code: 'ArrowRight', altKey: true });
-    await screen.findByRole('heading', { name: 'Manuscript' });
+    await screen.findByRole('heading', { name: 'Script' });
   });
 
   it("the mouse's back and forward buttons do what the header buttons do", async () => {
     renderApp();
     await screen.findByRole('heading', { name: 'Welcome back' });
-    fireEvent.click(screen.getAllByRole('button', { name: 'Manuscript' })[0]);
-    await screen.findByRole('heading', { name: 'Manuscript' });
+    fireEvent.click(screen.getAllByRole('button', { name: 'Script' })[0]);
+    await screen.findByRole('heading', { name: 'Script' });
 
     fireEvent.mouseUp(document, { button: 3 });
     await screen.findByRole('heading', { name: 'Welcome back' });
     await waitFor(() => expect(screen.getByRole('button', { name: 'Forward' }).getAttribute('aria-disabled')).toBeNull());
 
     fireEvent.mouseUp(document, { button: 4 });
-    await screen.findByRole('heading', { name: 'Manuscript' });
+    await screen.findByRole('heading', { name: 'Script' });
   });
 
   it('Back from dirty Settings shows the same "Unsaved settings" confirm as the nav, and completes the move on Save', async () => {
@@ -1033,15 +1096,18 @@ describe('App Back and Forward (Phase 1)', () => {
     expect(saveSettings).toHaveBeenCalledWith('General', 'global', expect.objectContaining({ log_verbosity: 'verbose' }));
   });
 
-  it('Back from Proofing resets the transcript run, like the nav', async () => {
+  it('Back from a Proof chapter view with a run resets the transcript run, like the nav', async () => {
     const transcriptReset = vi.fn(createMockApi().transcriptReset);
     renderApp({ transcriptReset });
     await screen.findByRole('heading', { name: 'Welcome back' });
-    fireEvent.click(screen.getAllByRole('button', { name: 'Proofing' })[0]);
-    await screen.findByRole('heading', { name: 'Proofing' });
+    fireEvent.click(screen.getAllByRole('button', { name: 'Proof' })[0]);
+    const picker = (await screen.findByRole('combobox', { name: 'Chapter to open' })) as HTMLSelectElement;
+    fireEvent.change(picker, { target: { value: picker.options[1].value } });
+    fireEvent.click(screen.getByRole('button', { name: 'Open chapter' }));
+    await startRunOnChapterOne();
 
     fireEvent.click(screen.getByRole('button', { name: 'Back' }));
-    await screen.findByRole('heading', { name: 'Welcome back' });
+    await screen.findByRole('heading', { name: 'Proof' });
     expect(transcriptReset).toHaveBeenCalled();
   });
 
@@ -1053,15 +1119,15 @@ describe('App Back and Forward (Phase 1)', () => {
   it('Alt+Left does nothing while something on screen has role="dialog", and works again once it is gone', async () => {
     renderApp();
     await screen.findByRole('heading', { name: 'Welcome back' });
-    fireEvent.click(screen.getAllByRole('button', { name: 'Manuscript' })[0]);
-    await screen.findByRole('heading', { name: 'Manuscript' });
+    fireEvent.click(screen.getAllByRole('button', { name: 'Script' })[0]);
+    await screen.findByRole('heading', { name: 'Script' });
 
     const probe = document.createElement('div');
     probe.setAttribute('role', 'dialog');
     document.body.appendChild(probe);
     try {
       fireEvent.keyDown(document, { key: 'ArrowLeft', code: 'ArrowLeft', altKey: true });
-      expect(screen.getByRole('heading', { name: 'Manuscript' })).toBeTruthy();
+      expect(screen.getByRole('heading', { name: 'Script' })).toBeTruthy();
     } finally {
       probe.remove();
     }
@@ -1104,15 +1170,15 @@ describe('App shortcut sheet (Phase 7)', () => {
   it('while the sheet is open, Alt+Left no longer goes Back', async () => {
     renderApp();
     await screen.findByRole('heading', { name: 'Welcome back' });
-    fireEvent.click(screen.getAllByRole('button', { name: 'Manuscript' })[0]);
-    await screen.findByRole('heading', { name: 'Manuscript' });
+    fireEvent.click(screen.getAllByRole('button', { name: 'Script' })[0]);
+    await screen.findByRole('heading', { name: 'Script' });
 
     fireEvent.keyDown(document, { key: '?', code: 'Slash', shiftKey: true });
     fireEvent.keyDown(document, { key: 'ArrowLeft', code: 'ArrowLeft', altKey: true });
     // The page behind an open dialog is `aria-hidden` (ADR 0047/0048, `dialogs.spec.ts`'s isolation check), so
-    // `hidden: true` is needed to still see Manuscript's own heading underneath - it never left, only the sheet
+    // `hidden: true` is needed to still see Script's own heading underneath - it never left, only the sheet
     // covers it, which is what "Alt+Left did nothing" means here.
-    expect(screen.getByRole('heading', { name: 'Manuscript', hidden: true })).toBeTruthy();
+    expect(screen.getByRole('heading', { name: 'Script', hidden: true })).toBeTruthy();
     expect(screen.getByRole('dialog', { name: 'Keyboard shortcuts' })).toBeTruthy();
   });
 });

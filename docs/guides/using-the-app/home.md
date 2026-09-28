@@ -3,7 +3,7 @@
 # Home
 
 The landing page after opening a project: manuscript status, audiobook time estimates,
-recording progress, and shortcuts into the latest [Proofing](proofing.md) comparison and
+recording progress, and shortcuts into [Proof](proof.md) and
 [Story Bible](story-bible.md) review.
 
 ![Home, manuscript found](../../images/ui/home-default.webp)
@@ -56,8 +56,8 @@ linked chapters only, and its tooltip says how many of the book's chapters that 
 
 The table's first row is **Opening credits** and its last row is **Closing credits**: not
 chapters, but the same first opening and first closing template the Credits stat and the
-Manuscript page use, each with its own status, word count and estimated length (including room
-tone). The row's title links to the matching entry on the Manuscript page. A template with an
+Script page use, each with its own status, word count and estimated length (including room
+tone). The row's title links to the matching entry on the Script page. A template with an
 unresolved token (`[Author]` never filled in) shows a warning next to its name without blocking
 anything; a missing template reads "Not set up" with a link to [Settings, Credits](settings.md#credits).
 Their **Check** is disabled for now (a recording check reads manuscript chapters only), and their
@@ -65,7 +65,7 @@ Their **Check** is disabled for now (a recording check reads manuscript chapters
 "· credits N of 2" once a credits row is finalized; the header count, **Est. finished audio**, the
 progress bar and the rest of the row totals stay narration-only, as before.
 
-### Checking a chapter's recording
+## Checking a chapter's recording
 
 Every row already shows its recording check without a click: a bold label ("Current", "Out of
 date", "Never checked") and, under it, when it was checked or when the track last changed. A
@@ -83,7 +83,7 @@ in order. The progress is real, from the transcription itself; **Cancel** stops 
 items already transcribed, so the next check is quicker, and **Continue in background** closes
 the work dialog while the row keeps its percent ("Checking 42%"). The app tells you when it ends,
 wherever you are. If the Whisper model is not installed yet, the app asks before downloading it,
-as Proofing does. A changed chapter can also be re-checked on its own, in the background, once
+as a chapter's Proof view does. A changed chapter can also be re-checked on its own, in the background, once
 REAPER has been quiet for a few minutes and the app is not otherwise busy (Settings' **Check
 changed chapters in the background**); pressing **Check recording** yourself always pre-empts it.
 
@@ -107,7 +107,7 @@ the gap sits in the audio, and **Go to paragraph** to open the manuscript there.
 end is unfinished recording, not a pickup, so it never appears in that list. Below the check's own
 gaps, **Repeated reads (Review)** always shows the chapter's unreviewed take-review pickups —
 repeated reads already recorded, waiting to be compared and kept or discarded — as a count with
-**Open Review**, or "none waiting" when there are none: a different kind of pickup from the gaps
+**Open Proof**, or "none waiting" when there are none: a different kind of pickup from the gaps
 above it. Under that, **Pickup list** always shows the proofer's REAPER pickup markers as one
 project-wide open count with **Open pickups** — the same figure the Tracks page's Pickups list
 shows, not scoped to this chapter, since attributing markers to one chapter's track span is
@@ -127,7 +127,7 @@ chapter that is not linked to its REAPER track gets the track picker right there
 as on the [Tracks](tracks.md) page), a missing project file points to Tracks, and a missing
 Transcript Compare tool points to [Settings](settings.md).
 
-### Stage suggestions
+## Stage suggestions
 
 Home suggests when a chapter looks ready for its next stage, from evidence the app already has,
 and never changes a status on its own. A chapter in Recording is suggested for Editing when its
@@ -227,7 +227,7 @@ in a live activity log, so the progress bar and log always match the real work.
 
 ![Home - a finished manuscript import with its real, step-by-step activity log](../../images/ui/home-import-activity.webp)
 
-Once a manuscript is imported you can read it on the [Manuscript](manuscript.md) page.
+Once a manuscript is imported you can read it on the [Script](script.md) page.
 
 The first time a project with an imported manuscript loads, and again right after an import
 finishes, Home asks you to **Set up the credits** if the opening and closing credits still have
@@ -236,7 +236,7 @@ copyright line already say, with the source of each guess shown underneath; a fi
 detected starts empty. Save only writes the fields you confirm — nothing already set in
 [Settings, Credits](settings.md#credits) is changed. **Not now** leaves it for this session;
 **Don't ask for this project** stops it until you replace the manuscript. Either way, a banner
-stays above the estimate — and above the [Manuscript](manuscript.md) page's own Opening credits
+stays above the estimate — and above the [Script](script.md) page's own Opening credits
 card — with **Fill in** to reopen the same dialog for as long as a token stays unresolved.
 
 ---

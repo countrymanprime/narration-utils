@@ -1,6 +1,12 @@
 // The golden payloads for production tracking: which schema owns each file in tests/fixtures/contracts/ (see index.ts).
 import type { z } from 'zod';
-import { productionOverviewSchema, productionPlanSchema, productionStartResultSchema, productionStopResultSchema } from '../schemas/production';
+import {
+  productionOverviewSchema,
+  productionPlanSchema,
+  productionReportExportSchema,
+  productionStartResultSchema,
+  productionStopResultSchema,
+} from '../schemas/production';
 
 export const productionGoldens: Record<string, z.ZodType> = {
   // Phase 3: the plan (ProductionPlan, ProductionSetDeadline, ProductionSaveMilestones).
@@ -13,4 +19,6 @@ export const productionGoldens: Record<string, z.ZodType> = {
   'production-timer-refused.json': productionStartResultSchema,
   'production-timer-stopped.json': productionStopResultSchema,
   'production-timer-stop-none.json': productionStopResultSchema,
+  // Phase 5: the status report export (ProductionStatusReport).
+  'production-status-report.json': productionReportExportSchema,
 };

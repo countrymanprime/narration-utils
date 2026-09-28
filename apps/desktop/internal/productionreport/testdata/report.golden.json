@@ -1,0 +1,58 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-09-27T18:00:00Z",
+  "app": {
+    "name": "Narration Utils",
+    "version": "0.9.0"
+  },
+  "notice": "A summary of this book's logged time, pace and readiness, made on the narrator's computer from the same figures the Production page shows. It is not an invoice or a certification: the PFH and rate come only from hours the narrator logged and audio the app measured, never an estimate presented as a fact, and a figure with no honest input is written as \"not available\".",
+  "book": {
+    "chapters": 3,
+    "finalized_chapters": 1,
+    "word_count": 8600,
+    "recorded_seconds": 1220,
+    "measured_chapters": 2,
+    "hours_logged": 4,
+    "hours_by_stage": {
+      "editing": 1.5,
+      "proofing": 0.5,
+      "recording": 2
+    },
+    "book_pfh": 1.97
+  },
+  "deadline": {
+    "date": "2026-12-01",
+    "days_left": 30
+  },
+  "milestones": [
+    {
+      "name": "ACX 15-minute checkpoint",
+      "due_date": "2026-10-15",
+      "note": "The rights holder approves the first 15 minutes.",
+      "days_left": 18,
+      "overdue": false
+    },
+    {
+      "name": "Final delivery",
+      "due_date": "2026-09-01",
+      "days_left": -26,
+      "overdue": true
+    }
+  ],
+  "readiness": {
+    "recommended": 1,
+    "not_ready": 1,
+    "unknown": 0,
+    "dismissed": 0,
+    "none": 1
+  },
+  "rate": {
+    "contracted_amount": null,
+    "effective_rate": null,
+    "note": "The narrator chose not to include the contracted amount or the effective rate in this report."
+  },
+  "privacy": {
+    "contracted_amount_included": false,
+    "note": "The contracted amount and effective rate are left out unless the narrator ticks the box to include them."
+  }
+}

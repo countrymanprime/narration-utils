@@ -3,8 +3,8 @@
 # Navigation
 
 The sidebar on the left is grouped by production stage, the way a narrator's week runs: **Production** ([Home](home.md)),
-**Prep** ([Manuscript](manuscript.md), [Story Bible](story-bible.md)), **Record** ([Teleprompter](teleprompter.md)),
-**Review** ([Proofing](proofing.md), [Tracks](tracks.md), [Review](review.md)) and **Finish** ([Delivery](delivery.md)).
+**Prep** ([Script](script.md), [Story Bible](story-bible.md)), **Record** ([Teleprompter](teleprompter.md)),
+**Review** ([Proof](proof.md), [Tracks](tracks.md)) and **Finish** ([Delivery](delivery.md)).
 At desktop widths each group shows as a heading over its pages; narrower windows switch it to icon-only groups
 divided by a thin line, then hide it behind a hamburger menu that opens it as a slide-in drawer with the headings
 back. [Settings](settings.md) lives at the bottom of the sidebar, in every layout, below every group.
@@ -15,9 +15,9 @@ In the icon-only layout, hover an icon (or tab to it) to see the page's name.
 
 ![Icon-only navigation rail with a page name shown on hover](../../images/ui/nav-rail-tooltip.webp)
 
-Manuscript, Proofing, Story Bible, and Teleprompter stay locked until a manuscript has been
-[imported on Home](home.md), and Proofing also stays locked until a REAPER project (`.rpp`) is linked to the
-project. Hovering a locked entry says what is missing. Home, Tracks, Review, and Delivery are always available.
+Script, Story Bible, and Teleprompter stay locked until a manuscript has been
+[imported on Home](home.md). Hovering a locked entry says what is missing. Home, Tracks, Proof, and Delivery
+are always available.
 
 The chip at the right of the header shows the linked audio engine, and clicking it opens a file picker to link
 (or change) the project's `.rpp` file:
@@ -42,8 +42,9 @@ have gone Back at least once. Switching to a different project starts a fresh hi
 the project you left.
 
 Back and Forward respect the same checks the nav does: leaving unsaved changes in [Settings](settings.md) asks
-first, and leaving [Proofing](proofing.md) resets its run the same way. They only move between pages — closing a
-slide-over, the previous chapter, or the previous Story Bible entry are not Back steps.
+first, and leaving a chapter's [Proof view](proof.md#the-chapter-view) while a comparison is under way or
+showing results resets it the same way. They only move between pages — closing a slide-over, the previous
+chapter, or the previous Story Bible entry are not Back steps.
 
 ---
 

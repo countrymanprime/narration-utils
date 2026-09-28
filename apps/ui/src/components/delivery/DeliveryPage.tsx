@@ -156,7 +156,7 @@ export function DeliveryPage({ openSettings, focus }: { openSettings: () => void
     const rule = focus.rule ? job.profile?.rules.find((candidate) => candidate.id === focus.rule)?.label : undefined;
     setSelected(file.path);
     setTab('measurements');
-    setFocusNote({ found: true, text: `Opened from the Review page: ${rule ? `${lowerFirst(rule)} in ` : ''}${file.name}.` });
+    setFocusNote({ found: true, text: `Opened from a note on Proof: ${rule ? `${lowerFirst(rule)} in ` : ''}${file.name}.` });
   }, [focus, job]);
 
   useEffect(() => {

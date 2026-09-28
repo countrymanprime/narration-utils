@@ -31,7 +31,7 @@ export async function openResumePrompt(page: Page, query = ''): Promise<void> {
     await page.goto(`/${query}`);
     await settlePage(page);
   }
-  await goToPage(page, 'Manuscript');
+  await goToPage(page, 'Script');
   await clickVisible(page, 'button', 'Read Chapter 1 aloud');
   const card = page.getByRole('dialog', { name: /Read aloud/ }).getByRole('region', { name: 'Where you stopped' });
   await card.waitFor();
@@ -67,18 +67,17 @@ export async function clickVisible(page: Page, role: Parameters<Page['getByRole'
     .click();
 }
 
-type AppPage = 'Home' | 'Production' | 'Manuscript' | 'Proofing' | 'Story Bible' | 'Teleprompter' | 'Tracks' | 'Review' | 'Delivery' | 'Settings';
+type AppPage = 'Home' | 'Production' | 'Script' | 'Story Bible' | 'Teleprompter' | 'Tracks' | 'Proof' | 'Delivery' | 'Settings';
 
 // Every page opens with the shared `Heading` primitive, an <h1>: it is what proves the page has arrived. Home's is "Welcome back".
 export const PAGE_HEADING: Record<AppPage, string> = {
   Home: 'Welcome back',
   Production: 'Production',
-  Manuscript: 'Manuscript',
-  Proofing: 'Proofing',
+  Script: 'Script',
   'Story Bible': 'Story Bible',
   Teleprompter: 'Teleprompter',
   Tracks: 'Tracks',
-  Review: 'Review',
+  Proof: 'Proof',
   Delivery: 'Delivery',
   Settings: 'Settings',
 };
@@ -88,8 +87,7 @@ export const PAGE_HEADING: Record<AppPage, string> = {
 // Teleprompter, Tracks, Settings) show different content per state, so their drivers wait for their own.
 const PAGE_CONTENT: Partial<Record<AppPage, (page: Page) => Locator>> = {
   Home: (page) => page.getByRole('button', { name: /Show per-chapter breakdown/ }),
-  Manuscript: (page) => page.locator('[data-paragraph-text]'),
-  Proofing: (page) => page.getByRole('button', { name: 'Start comparison' }),
+  Script: (page) => page.locator('[data-paragraph-text]'),
 };
 
 // Clicks an item of the app's own navigation, and only that: the Settings category rail reuses the labels "Proofing"
@@ -137,32 +135,40 @@ export async function goToPage(page: Page, name: AppPage): Promise<void> {
   await PAGE_CONTENT[name]?.(page).first().waitFor();
 }
 
-// With no linked DAW file the Proofing nav item is disabled outright (AppShell's requiresDaw gate), so it cannot be
-// clicked to get there - but offline review of the last completed comparison must still be reachable (PRD W16), and
-// is, through Home's own "Open Proofing" card, which navigates directly and is not gated on the DAW link. Used by the
-// `?mockNoDaw=1` proofing states instead of `goToPage`.
-export async function goToProofingViaHomeCard(page: Page): Promise<void> {
-  await homeLoaded(page);
-  await clickVisible(page, 'button', 'Open Proofing');
-  await page.getByRole('heading', { level: 1, name: 'Proofing', exact: true }).waitFor();
-}
-
-// The Review page has arrived once its list has rows: the heading renders before the findings do.
-export async function openReview(page: Page): Promise<void> {
-  await goToPage(page, 'Review');
+// Proof's book level has arrived once its notes table has rows: the heading renders before the notes do.
+export async function openProof(page: Page): Promise<void> {
+  await goToPage(page, 'Proof');
   await waitForFindingRows(page, 4);
 }
 
+// Opens a chapter's Proof view the way a narrator does with no track linked: Proof's chapter picker, then Open chapter
+// (stage-navigation-and-page-replacement.prd.md Phase 5). The picker lists chapters by their full name, so the option is
+// the one whose name starts with `chapterTitle` followed by the " — " subtitle separator or nothing.
+export async function openProofChapter(page: Page, chapterTitle = 'Chapter 1'): Promise<void> {
+  await goToPage(page, 'Proof');
+  const picker = page.getByRole('combobox', { name: 'Chapter to open' });
+  const label = (await picker.locator('option').allTextContents()).find((text) => text === chapterTitle || text.startsWith(`${chapterTitle} — `));
+  if (!label) throw new Error(`no chapter named ${chapterTitle} in Proof's picker`);
+  await picker.selectOption({ label });
+  await page.getByRole('button', { name: 'Open chapter', exact: true }).click();
+  await page.getByRole('heading', { level: 1, name: `Proof · ${label}`, exact: true }).waitFor();
+}
+
+// The chapter view's compare run (the retired Proofing page's setup, run and results), scrolled into view for the picture.
+export function compareRun(page: Page): Locator {
+  return page.getByRole('region', { name: 'Compare the recording with the script' });
+}
+
 export async function waitForFindingRows(page: Page, count: number): Promise<void> {
-  const rows = page.getByRole('table', { name: 'Findings' }).locator('tbody tr[data-row]');
-  await page.waitForFunction(([expected]) => document.querySelectorAll('table[aria-label="Findings"] tbody tr[data-row]').length === expected, [count]);
+  const rows = page.getByRole('table', { name: 'Notes' }).locator('tbody tr[data-row]');
+  await page.waitForFunction(([expected]) => document.querySelectorAll('table[aria-label="Notes"] tbody tr[data-row]').length === expected, [count]);
   await rows.first().waitFor();
 }
 
 // Selects a finding by its row text and waits for its detail, a region named by the finding's kind. On the stacked layout (below
-// `lg`) the detail sits under the list, so its title is scrolled into view for the picture.
+// `xl`) the detail sits under the list, so its title is scrolled into view for the picture.
 export async function openFindingRow(page: Page, text: RegExp, kind: string): Promise<void> {
-  await page.getByRole('table', { name: 'Findings' }).locator('tbody tr[data-row]').filter({ hasText: text }).click();
+  await page.getByRole('table', { name: 'Notes' }).locator('tbody tr[data-row]').filter({ hasText: text }).click();
   await page.getByRole('region', { name: kind }).waitFor();
   await page.getByRole('heading', { level: 2, name: kind }).scrollIntoViewIfNeeded();
 }
@@ -174,7 +180,7 @@ export async function openReaperControls(page: Page, reaper?: 'stale' | 'not-run
     await page.goto(`/?mockReaper=${reaper}`);
     await settlePage(page);
   }
-  await openReview(page);
+  await openProof(page);
   await openFindingRow(page, /pink eyes/, 'Transcript difference');
   await page.getByText('Checking whether REAPER is connected…').waitFor({ state: 'detached' });
 }
@@ -265,7 +271,7 @@ export async function measurementEnded(page: Page, message: string | RegExp): Pr
 
 // Opens Find pickups and duplicates (take review Phase 5) once the tracks have filled the form.
 export async function openScanDialog(page: Page): Promise<Locator> {
-  await openReview(page);
+  await openProof(page);
   await page.getByRole('button', { name: 'Find pickups and duplicates…' }).click();
   const form = page.getByRole('dialog', { name: 'Find pickups and duplicates' });
   await form.getByRole('option', { name: 'Chapter 1' }).waitFor({ state: 'attached' });
@@ -463,7 +469,7 @@ export async function openLocalAssets(page: Page, seed?: string): Promise<void> 
 export async function openFlaggedReadAloud(page: Page, extraQuery = '') {
   await page.goto(`/?mockTeleprompter=flagged${extraQuery}`);
   await settlePage(page);
-  await goToPage(page, 'Manuscript');
+  await goToPage(page, 'Script');
   await clickVisible(page, 'button', 'Read Chapter 1 aloud');
   const dialog = page.getByRole('dialog', { name: /Read aloud/ });
   await dialog.locator('[data-highlight="Skipped"][role="button"]').first().waitFor();
@@ -547,21 +553,22 @@ export async function selectReaderWord(page: Page, word: string): Promise<void> 
   if (!selected) throw new Error(`no "${word}" in the reader text - did the demo manuscript change?`);
 }
 
-/** Opens the Manuscript (with a mock seam, when given), selects `word` and presses Look up. */
+/** Opens the Script page (with a mock seam, when given), selects `word` and presses Look up. */
 export async function lookUpInReader(page: Page, word: string, url?: string): Promise<void> {
   if (url) {
     await page.goto(url);
     await settlePage(page);
   }
-  await goToPage(page, 'Manuscript');
+  await goToPage(page, 'Script');
   await selectReaderWord(page, word);
   await clickVisible(page, 'button', 'Look up');
 }
 
 /** Links a chapter to its first available track from the Tracks page's Chapter links table (the same real-UI path
- * 'chapter-link-confirmed' above uses), then follows its "Open workspace" link and waits for the workspace to
- * render (edit-and-proof-workspace.prd.md Phase 2: no chapter starts linked by default in the mock). */
-export async function openWorkspaceFor(page: Page, chapterTitle: string): Promise<void> {
+ * 'chapter-link-confirmed' above uses), then follows its "Open workspace" link and waits for its Proof chapter view to
+ * render (edit-and-proof-workspace.prd.md Phase 2: no chapter starts linked by default in the mock; the link goes to
+ * `/proof/:chapterId` since stage-navigation-and-page-replacement.prd.md Phase 5). */
+export async function openLinkedProofChapter(page: Page, chapterTitle: string): Promise<void> {
   await goToPage(page, 'Tracks');
   const table = page.getByRole('table', { name: 'Chapter links' });
   await table.scrollIntoViewIfNeeded();
@@ -570,18 +577,18 @@ export async function openWorkspaceFor(page: Page, chapterTitle: string): Promis
   await row.getByRole('combobox').selectOption({ index: 0 });
   await row.getByRole('button', { name: 'Confirm' }).click();
   await row.getByRole('link', { name: 'Open workspace' }).click();
-  await page.getByRole('heading', { level: 1, name: new RegExp(chapterTitle) }).waitFor();
+  await page.getByRole('heading', { level: 1, name: new RegExp(`^Proof · ${chapterTitle}( — |$)`) }).waitFor();
 }
 
 // Some states have no known/safe driver yet (e.g. alias-typeahead, forcing
 // the manuscript-not-found banner without a mock-data override seam). Those
 // are left out here on purpose - the catalog entry is simply skipped.
 
-// Measures the mock's three files on Delivery, then opens the 48 kHz render's sample-rate finding on the Review page, where the
+// Measures the mock's three files on Delivery, then opens the 48 kHz render's sample-rate finding on Proof's notes, where the
 // measurement saved it (delivery-platform-profiles.prd.md Phase 9).
-export async function openDeliveryFindingOnReview(page: Page): Promise<void> {
+export async function openDeliveryFindingOnProof(page: Page): Promise<void> {
   await measureOnDelivery(page);
   await measurementEnded(page, /^Measured 2 of 3 files; 1 could not be measured\./);
-  await goToPage(page, 'Review');
-  await openFindingRow(page, /^Sample rate 48 kHz, not 44\.1 kHz/, 'Delivery check');
+  await goToPage(page, 'Proof');
+  await openFindingRow(page, /Sample rate 48 kHz, not 44\.1 kHz/, 'Delivery check');
 }

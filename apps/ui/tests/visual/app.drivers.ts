@@ -4,12 +4,11 @@ import type { Driver } from './drivers/shared';
 import { projectDrivers } from './drivers/project';
 import { startupDrivers } from './drivers/startup';
 import { homeDrivers } from './drivers/home';
-import { manuscriptDrivers } from './drivers/manuscript';
-import { proofingDrivers } from './drivers/proofing';
+import { scriptDrivers } from './drivers/script';
 import { storybibleDrivers } from './drivers/storybible';
 import { tracksDrivers } from './drivers/tracks';
-import { workspaceDrivers } from './drivers/workspace';
-import { reviewDrivers } from './drivers/review';
+import { proofDrivers } from './drivers/proof';
+import { proofChapterDrivers } from './drivers/proof-chapter';
 import { deliveryDrivers } from './drivers/delivery';
 import { productionDrivers } from './drivers/production';
 import { teleprompterDrivers } from './drivers/teleprompter';
@@ -76,12 +75,11 @@ export const APP_DRIVERS: Record<string, Record<string, Driver>> = {
   project: projectDrivers,
   startup: startupDrivers,
   home: homeDrivers,
-  manuscript: manuscriptDrivers,
-  proofing: proofingDrivers,
+  script: scriptDrivers,
   storybible: storybibleDrivers,
   tracks: tracksDrivers,
-  workspace: workspaceDrivers,
-  review: reviewDrivers,
+  proof: proofDrivers,
+  'proof-chapter': proofChapterDrivers,
   delivery: deliveryDrivers,
   production: productionDrivers,
   teleprompter: teleprompterDrivers,

@@ -87,7 +87,7 @@ The custom-CSS system (`.btn`, `.panel-head`/`.panel-body`, `.progressbar`, etc.
 - **Numeric table columns are right-aligned** (`align="right"` on both the `TableHeader` and its `TableCell`s) — see `AudiobookEstimatePanel.tsx`'s Words/Est./Actual columns for the reference implementation.
 - **Disabled interactive elements never show a hover affordance.** Use `disabled:pointer-events-none` (Tailwind) alongside `disabled:opacity-*`, not just the opacity change alone — a hover transform/background change that still fires on a disabled element reads as clickable when it isn't.
 - **A field that is read-only, locked or not-yet-persisted is `disabled`, not hidden**, so the user can see what exists without being able to edit it. Story Bible entries open read-only and gain Edit/Save/Cancel controls only on request ([ADR 0018](../adr/0018-story-bible-entries-read-only-until-edit.md)); see `GuideDetail.tsx`.s `editingDisabled`.
-- **A non-destructive "peek at something else" action is a `SlideOver` primitive, never a navigation that replaces the current view's state.** See `Manuscript.tsx`'s Chapters & Search overlay and `GuideDetail.tsx`'s "Review entry" overlay — both exist specifically so switching context doesn't discard an in-progress edit.
+- **A non-destructive "peek at something else" action is a `SlideOver` primitive, never a navigation that replaces the current view's state.** See `script/ScriptPage.tsx`'s Chapters & Search overlay and `GuideDetail.tsx`'s "Review entry" overlay — both exist specifically so switching context doesn't discard an in-progress edit.
 
 ## Layout and scrolling
 
@@ -123,7 +123,7 @@ The document (`html`/`body`) never scrolls; it is locked (`overflow: hidden`, `s
 - **Alternating rows.** Paragraph rows alternate between `--surface` and `--row-alt` (a touch darker in light theme, a touch lighter in dark) with a 1px `--border` line between rows, like banded table rows. Highlights tint with `transparent` mixes so they read on either row.
 - **Highlights** are the `Highlight` primitive only ([ADR 0016](../adr/0016-highlight-primitive.md)): entity, note and review share one look, filling the full line height, tinted and underlined in the kind's color and drawn in its derived `--<kind>-text` ([ADR 0059](../adr/0059-text-colours-meet-wcag-aa-with-two-text-levels-a-non-text-token-and-derived-on-tint-text.md)).
 - **Sticky chapter headers** are opaque (`bg-[var(--surface)]`) with a soft shadow once stuck; they must never be transparent over scrolling text.
-- **"Go to line" target** stays highlighted (accent edge and tint) for 30 seconds (`JUMP_HIGHLIGHT_MS` in `Manuscript.tsx`), with a brief ring pulse on arrival.
+- **"Go to line" target** stays highlighted (accent edge and tint) for 30 seconds (`JUMP_HIGHLIGHT_MS` in `script/ScriptPage.tsx`), with a brief ring pulse on arrival.
 - **Formatting and line breaks** from import (`spans`, `\n`) render as `<strong>`/`<em>`/`<u>` and `white-space: pre-line` ([ADR 0014](../adr/0014-inline-formatting-as-offset-spans.md)).
 - **Side panels** use `SlideOver`; state-dependent classes are mutually exclusive ([ADR 0017](../adr/0017-no-legacy-css-shadowing-tailwind.md)).
 

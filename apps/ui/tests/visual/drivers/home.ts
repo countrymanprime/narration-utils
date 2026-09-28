@@ -4,7 +4,6 @@ import {
   type Driver,
   clickVisible,
   confirmDialog,
-  goToPage,
   homeLoaded,
   openEditingCheckFromHome,
   openImportReview,
@@ -115,15 +114,7 @@ export const homeDrivers: Record<string, Driver> = {
     await clickVisible(page, 'button', /Show per-chapter breakdown/);
     await page.getByText('No REAPER project (.rpp) file was found in this project folder.').waitFor();
   },
-  'hint-chips': async (page) => {
-    await goToPage(page, 'Proofing');
-    await clickVisible(page, 'button', /Suggest from manuscript/);
-    // Accept exactly one candidate so accepted (solid pill) and pending
-    // (dashed "+ Term") chips render together, matching this state's
-    // "(accepted + pending)" description - accepting every candidate would
-    // leave nothing pending to show.
-    await clickVisible(page, 'button', '+ Alice');
-  },
+
   'info-tooltip': async (page) => {
     await page.getByLabel('More information').hover();
     // TooltipTarget shows its tooltip 1s after hover - wait for it, don't race it.

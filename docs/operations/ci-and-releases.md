@@ -57,7 +57,7 @@ The checks a pull request shows, by the name GitHub displays (`ci.yml` calls `_q
 | `quality / ui-visual (shard 1/3)` to `(shard 3/3)` | the Playwright visual suite of the mock-backed app (`pnpm --dir apps/ui run screenshots --shard=i/3`), a third each, with the per-capture checks; shard 1 also runs `aria`. Each uploads its capture records, its screenshots, and traces when it fails ([ADR 0244](../adr/0244-the-playwright-suites-are-sharded-in-ci-the-quick-checks-share-a-runner-per-os-and-one-check-sums-up-the-run.md)) |
 | `quality / ui-visual` | the whole-run checks over the three shards' records (`pnpm --dir apps/ui run visual:check-run`): every expected capture present, none blank, no undeclared duplicate, no stale `sameAs`. Skipped when the UI is not affected |
 | `quality / ui-atlas (shard 1/2)`, `(shard 2/2)` | the Storybook component atlas, half the stories each: every story in light and dark at a wide and a narrow viewport, with axe |
-| `quality / quick-ubuntu` | one step each, every step runs even after a red one: `repo-scripts` (the plain-Node tests of `scripts/`: labels, milestones, release tooling, the layout and project guards); `docs-site` (the public docs site, [below](#the-public-docs-site): ruff and pytest of `tools/docs-site`, a strict MkDocs build of `docs/` and the link check over the built HTML); `python` (ruff and pytest for `libs/python`, the sidecars, `scripts/` and `tests/fixtures`); `reaper (Lua)` (StyLua and ruff on `integrations/reaper`, then its bridge harness under Lua 5.4: a fake `reaper` driven through the file protocol, and the mutation checks; [ADR 0066](../adr/0066-the-lua-bridge-is-tested-by-a-harness-under-lua-5-4-and-reaper-api-behaviour-is-checked-in-reaper.md)) |
+| `quality / quick-ubuntu` | one step each, every step runs even after a red one: `repo-scripts` (the plain-Node tests of `scripts/`: labels, milestones, release tooling, the layout and project guards); `docs-site` (the public docs site, [below](#the-public-docs-site): ruff and pytest of `tools/docs-site` only, while GitHub Pages is paused ([ADR 0415](../adr/0415-while-pages-is-paused-docs-are-checked-by-lychee-and-a-changed-file-markdownlint-not-by-building-the-site.md)) — the strict MkDocs build and its link check run from `pages.yml`'s manual build instead); `python` (ruff and pytest for `libs/python`, the sidecars, `scripts/` and `tests/fixtures`); `reaper (Lua)` (StyLua and ruff on `integrations/reaper`, then its bridge harness under Lua 5.4: a fake `reaper` driven through the file protocol, and the mutation checks; [ADR 0066](../adr/0066-the-lua-bridge-is-tested-by-a-harness-under-lua-5-4-and-reaper-api-behaviour-is-checked-in-reaper.md)) |
 | `quality / quick-windows` | Windows, one step each: `reaper (Lua)` again (paths from `package.config`, CRLF), then `go lint` (gofmt, go vet, golangci-lint, checklocks) |
 | `quality / go-test` | Windows: the Go tests (the race detector on every package with concurrency), then `test-schedules` |
 | `ui-dist / build` | builds the UI bundle the Windows build reuses |
@@ -85,14 +85,14 @@ Each file in `.github/workflows`, what starts it, and the checks it shows on a p
 | `ci.yml` (`CI`) | pull request that is not docs- or Markdown-only; manual | `quality / *` and `ui-dist / build` (the reusable `_quality.yml` and `_ui-dist.yml`), `Build (Windows)`, `CI passed` | no ruleset requires it |
 | `prerelease.yml` (`Prerelease`) | push to `main` that is not docs- or Markdown-only; manual | `ui-dist / build`, `version`, `Windows build` (needs `ui-dist` and `version`) and `Windows release` (needs the build); no quality jobs, the pull request's `CI` run is the quality gate ([#544](https://github.com/countrymanprime/narration-utils/issues/544) tracks making it a required one); both run only when `version` found a releasable change. A manual run can tick `cold-freeze` to freeze the sidecars without the [freeze cache](#the-sidecar-freeze-cache) | not a pull request check |
 | `promote-release.yml` | manual, with an RC tag; behind the `production` environment | `promote` | not a pull request check |
-| `docs.yml` (`Docs`) | every pull request (no path filter), weekly (Monday 07:17 UTC), manual | `Links (offline)` (pull requests and manual) and `Links (online, advisory)` (weekly and manual) ([below](#the-docs-link-check)) | the offline job **fails the run** on a dead repository link; no ruleset requires it (owner-only setting) |
+| `docs.yml` (`Docs`) | every pull request (no path filter), weekly (Monday 07:17 UTC), manual | `Markdown lint (changed files)` (pull requests only), `Links (offline)` (pull requests and manual) and `Links (online, advisory)` (weekly and manual) ([below](#the-docs-link-check)) | the offline link job and the changed-file Markdown lint job both **fail the run** on a finding; no ruleset requires either (owner-only setting) |
 | `zizmor.yml` | every pull request, push to `main`, manual | `zizmor` | advisory in GitHub terms (not required); a finding at the `regular` persona fails the run |
 | `security.yml` (`Security scan`) | every pull request, push to `main`, weekly (Tuesday 06:41 UTC), manual | `govulncheck`, `osv-scanner (pull request)` (only for a same-repository pull request that is not Dependabot's) or `osv-scanner` (every other trigger) | advisory: neither fails on a finding |
 | `codeql.yml` (`CodeQL`) | pull request to `main` that is not docs- or Markdown-only (same-repository, not Dependabot), push to `main`, weekly (Monday 05:23 UTC), manual | `Analyze (go)`, `Analyze (javascript-typescript)`, `Analyze (python)` | advisory |
 | `dependency-review.yml` | pull request to `main` | `review` (fails on a high-severity advisory, or on a licence outside the allow-list, that a pull request adds to a **runtime** dependency; needs the dependency graph; [the licence policy](github-workflow.md#the-dependency-licence-allow-list)) | advisory |
 | `labeler.yml` | `pull_request_target` (opened, synchronize, reopened, ready for review) | `label` | not a check that gates anything |
 | `cancel-closed-pr.yml` | `pull_request_target` (closed: merged or closed without merging) | `cancel`: cancels every unfinished run of the pull request's head commit | not a check that gates anything |
-| `pages.yml` (`Pages`) | paused (D75): no push trigger; a pull request that changes `docs/`, `tools/docs-site/`, the Storybook config, `pyproject.toml`, `uv.lock` or the workflow (`build` only); manual | `build`, `deploy` ([below](#the-pages-workflow)); `deploy` runs only on a manual start on `main` with `publish` ticked | the `build` job is the docs link check for a documentation-only pull request; advisory like the rest |
+| `pages.yml` (`Pages`) | paused (D75, narrowed by [ADR 0415](../adr/0415-while-pages-is-paused-docs-are-checked-by-lychee-and-a-changed-file-markdownlint-not-by-building-the-site.md)): no push trigger and no pull request trigger, manual only | `build`, `deploy` ([below](#the-pages-workflow)); `deploy` runs only on a manual start on `main` with `publish` ticked | not a pull request check at all now; `Docs / Links (offline)` and `Docs / Markdown lint (changed files)` cover pull requests instead |
 | `sync-labels.yml`, `sync-milestones.yml` | push to `main` that changes `.github/labels.json`, `config/roadmap.json` or `scripts/github/**`, and the workflow file; manual | `sync` | run after a merge, never on a pull request |
 
 The tests of `scripts/github/*.test.mjs` (the label and milestone sync) run in the `repo-scripts` step of `quality / quick-ubuntu`. Nothing runs on a schedule except
@@ -395,9 +395,10 @@ The `.sha256` beside a file only detects a damaged download: it is not evidence 
 
 ## The docs link check
 
-`docs.yml` (workflow `Docs`) runs [lychee](https://github.com/lycheeverse/lychee) (`lycheeverse/lychee-action`, pinned to a commit, lychee 0.24.2) over every Markdown file in the repository, configured by `.lychee.toml` and `.lycheeignore` at the root. It has two jobs:
+`docs.yml` (workflow `Docs`) runs [lychee](https://github.com/lycheeverse/lychee) (`lycheeverse/lychee-action`, pinned to a commit, lychee 0.24.2) over every Markdown file in the repository, configured by `.lychee.toml` and `.lycheeignore` at the root. It has three jobs:
 
-- **`Links (offline)`** (shown as `Docs / Links (offline)`) starts on **every** pull request: the trigger has no `paths` filter, on purpose. `ci.yml` skips documentation-only pull requests, so a docs job that shared its filter would also skip a *code* change that renames a file a document links to, and a check that GitHub skips because of a path filter stays pending if it is ever required (see the note at the top of this document). Offline mode reads only the tree and never opens a network connection: a relative link must resolve to a file, and a `#fragment` to a heading of that file (checked; `include_fragments = "anchor-only"` works with `--offline`). A local run over the 227 Markdown files and 1,356 links takes 0.13 seconds (the Actions run adds the runner set-up), so it is cheap enough to block on, and it is deterministic. **It blocks in the sense that a dead link turns the check red**; a red check does not stop a merge while no ruleset requires it (owner decision D11), so the maintainer reads it like the others, and adding `Docs / Links (offline)` to the `Pull Request` ruleset's required checks is an owner-only setting that is safe to make. It replaces nothing: the docs-site build ([below](#the-public-docs-site)) checks the built HTML of the pages it publishes, and `apps/ui/src/docsGuide.test.ts` checks the guide's own anchors.
+- **`Links (offline)`** (shown as `Docs / Links (offline)`) starts on **every** pull request: the trigger has no `paths` filter, on purpose. `ci.yml` skips documentation-only pull requests, so a docs job that shared its filter would also skip a *code* change that renames a file a document links to, and a check that GitHub skips because of a path filter stays pending if it is ever required (see the note at the top of this document). Offline mode reads only the tree and never opens a network connection: a relative link must resolve to a file, and a `#fragment` to a heading of that file (checked; `include_fragments = "anchor-only"` works with `--offline`). A local run over the 227 Markdown files and 1,356 links takes 0.13 seconds (the Actions run adds the runner set-up), so it is cheap enough to block on, and it is deterministic. **It blocks in the sense that a dead link turns the check red**; a red check does not stop a merge while no ruleset requires it (owner decision D11), so the maintainer reads it like the others, and adding `Docs / Links (offline)` to the `Pull Request` ruleset's required checks is an owner-only setting that is safe to make. While GitHub Pages is paused ([ADR 0415](../adr/0415-while-pages-is-paused-docs-are-checked-by-lychee-and-a-changed-file-markdownlint-not-by-building-the-site.md)) this is the only link check a pull request runs; `apps/ui/src/docsGuide.test.ts` checks the guide's own anchors regardless.
+- **`Markdown lint (changed files)`** (shown as `Docs / Markdown lint (changed files)`) also starts on every pull request, and also fails the run on a finding, but checks Markdown *style*, not links: heading levels, list marker and indent consistency, trailing whitespace, multiple blank lines, fenced code language, bare URLs, and the rest of `.markdownlint-cli2.jsonc`'s starter rule set (`markdownlint-cli2`, exact version pinned in the root `devDependencies`). It scopes itself to only the `.md` files the pull request adds or changes against the merge base with its base branch (`scripts/ci/changed-markdown.mjs`, `scripts/ci/lint-markdown-changed.mjs`) — not a full-repo baseline, so pre-existing debt in an untouched file never blocks an unrelated change, only in one a pull request itself touches. A rename lands on its new path; a deletion has nothing left to lint. The job writes a job summary naming the fix command on a failure. `pnpm lint:md` runs the same check locally against `origin/main` (or `--base <ref>`), and `pnpm lint:md:fix` adds `--fix`; lint-staged also runs `markdownlint-cli2 --fix` on staged `*.md` files on commit, so most violations never reach a pull request at all. See [ADR 0415](../adr/0415-while-pages-is-paused-docs-are-checked-by-lychee-and-a-changed-file-markdownlint-not-by-building-the-site.md) for why this replaced building the docs site on every pull request, and why the rule set turns off line length, table style and a handful of rules that fired only on the repo's own deliberate style (template formatting, angle-bracket placeholders, bold lead-in labels, footnote-style citation markers).
 - **`Links (online, advisory)`** starts weekly and by hand. It also follows the `http(s)` links (with `actions/cache` on `.lycheecache`, one day), reports the ones that rotted in the job summary, and **never fails**: a link on someone else's server is not a regression in this repository. `429 Too Many Requests` is accepted. The `GITHUB_TOKEN` is passed only to lift GitHub's anonymous rate limit.
 
 **Diagrams.** lychee reads a Mermaid block as text, so `scripts/ci/mermaid-diagrams.test.mjs` (in the `repo-scripts` step of `quality / quick-ubuntu`, and so in `pnpm check`) hands every ```` ```mermaid ```` block of every tracked Markdown file to Mermaid's own parser (`mermaid.parse`, the `mermaid` devDependency of the root package) and fails with the file, the line and the parser's message. It needs no browser: Mermaid's sanitizer only wants a DOM, and the test gives it jsdom (already a dependency of the UI's tests) before it imports Mermaid. It proves the syntax, not that the names in a picture are still true; the five diagrams of [the codebase map](../architecture/codebase-map.md#how-the-parts-connect) and the four flows each say which files they were checked against, and the test fails if one of the five owning docs loses its diagram.
@@ -430,27 +431,29 @@ The run **fails, and writes nothing**, rather than guess: when a licence cannot 
 
 ## The Pages workflow
 
-**Paused (owner decision D75, 2026-09-27).** The site isn't how the owner wants it yet, so nothing is published until the main
-app's development is done and the site is reworked. `pages.yml` no longer runs on a push to `main`. A pull request still runs `build`
-(the docs link check below), and a manual start builds, and deploys only when its `publish` input is ticked on `main`. Unpublishing
-the site that is already live is an owner-only setting (Settings > Pages); to resume, restore the `push: branches: [main]` trigger and
-the unconditional `deploy`. The rest of this section describes the workflow as it runs when publishing.
+**Paused (owner decision D75, 2026-09-27; narrowed by [ADR 0415](../adr/0415-while-pages-is-paused-docs-are-checked-by-lychee-and-a-changed-file-markdownlint-not-by-building-the-site.md), same day).** The site isn't how the owner wants it yet, so nothing is published until the main
+app's development is done and the site is reworked. `pages.yml` no longer runs on a push to `main`, and no longer runs on a pull
+request either: `Docs / Links (offline)` and `Docs / Markdown lint (changed files)` ([The docs link check](#the-docs-link-check))
+cover a pull request's Markdown without building the site. Only a manual start builds, and deploys only when its `publish` input is
+ticked on `main`. Unpublishing the site that is already live is an owner-only setting (Settings > Pages); to resume, restore both the
+`push: branches: [main]` trigger and the `pull_request` trigger (the workflow's header comment keeps the path list) and the
+unconditional `deploy`. The rest of this section describes the workflow as it runs when publishing.
 
 `pages.yml` publishes the public site to GitHub Pages, at `https://countrymanprime.github.io/narration-utils/`, on
 demand: the docs at the root ([below](#the-public-docs-site)) and the Storybook component atlas of `apps/ui` under `/storybook/` (PRD phases 9 and 11).
 
 - **Two jobs.** `build` (read-only token) checks out with `persist-credentials: false`, runs the `setup-toolchain` action (pnpm, and
-  the `docs` uv group only), `pnpm --dir apps/ui run build-storybook`, `nx run docs-site:build` (the strict docs build and its link check),
+  the `docs` uv group only), `pnpm --dir apps/ui run build-storybook`, `nx run docs-site:build-site` (the strict docs build and its link
+  check, named off `pnpm check`'s default target set on purpose while Pages is paused — [ADR 0415](../adr/0415-while-pages-is-paused-docs-are-checked-by-lychee-and-a-changed-file-markdownlint-not-by-building-the-site.md)),
   copies `apps/ui/storybook-static` to `tools/docs-site/build/site/storybook`, checks every link of the combined site (including the atlas
-  page's link to the Storybook) and uploads it with `actions/upload-pages-artifact`. `deploy` needs it, runs only on a push or manual
-  start on `refs/heads/main` (a manual start from a branch builds and stops), holds `pages: write` and `id-token: write` (the only
-  job that does), uses the `github-pages` environment and calls `actions/deploy-pages`. The top-level `permissions` is `{}` and there
-  is no secret. One deployment runs at a time and a running one is never cancelled.
-- **A pull request runs `build` only.** `ci.yml` skips documentation-only pull requests, and those are the ones that break links, so
-  a pull request that changes `docs/`, `tools/docs-site/`, `apps/ui/.storybook/`, `pyproject.toml`, `uv.lock` or the workflow runs the
-  build job too: a read-only `pull_request` token (a fork's is read-only by GitHub's rule), nothing uploaded, its own concurrency
-  group that the next push replaces, and `deploy` skipped by its `if`. The `docs-site` job of `_quality.yml` runs the same target
-  for a code change.
+  page's link to the Storybook) and uploads it with `actions/upload-pages-artifact`. `deploy` needs it, runs only on a manual
+  start on `refs/heads/main` with `publish` ticked (a manual start from a branch builds and stops), holds `pages: write` and
+  `id-token: write` (the only job that does), uses the `github-pages` environment and calls `actions/deploy-pages`. The top-level
+  `permissions` is `{}` and there is no secret. One deployment runs at a time and a running one is never cancelled.
+- **Not a pull request check while paused.** `pages.yml` only starts on `workflow_dispatch` now (ADR 0415); a pull request that
+  changes `docs/`, `tools/docs-site/`, `apps/ui/.storybook/`, `pyproject.toml`, `uv.lock` or the workflow gets its Markdown checked by
+  `Docs / Links (offline)` and `Docs / Markdown lint (changed files)` instead ([The docs link check](#the-docs-link-check)). The
+  `docs-site` step of `_quality.yml`'s `quick-ubuntu` job runs only `lint` and `test` for the same reason, not `build-site`.
 - **It works under a project sub-path.** Pages serves this repository at `/narration-utils/`, not at `/`. Storybook's build writes
   every asset URL relative (`./sb-manager/...`, `./assets/...`), so no `base` setting is needed. Checked by serving the build
   from `/narration-utils/` on a server that answers 404 for anything outside that folder and loading `index.html` and `iframe.html`
@@ -459,9 +462,9 @@ demand: the docs at the root ([below](#the-public-docs-site)) and the Storybook 
   (`/narration-utils/storybook/`) and loaded it from there the same way; the docs pages use relative links only. The fonts are bundled
   (`apps/ui/src/fonts.ts`, #238), so the published atlas makes no third-party request.
 - **Not enabled yet.** Pages is off for the repository and turning it on is an owner-only setting
-  ([the table](github-workflow.md#repository-settings-that-only-the-owner-can-change)). Until then the `deploy` job fails with GitHub's
-  "Pages is not enabled" message on each push to `main` and `build` passes. After the owner sets the source to GitHub Actions, re-run
-  the latest run; the deployed address appears on the `deploy` job and in the repository's Environments list.
+  ([the table](github-workflow.md#repository-settings-that-only-the-owner-can-change)). Until then a manual run with `publish` ticked
+  fails the `deploy` job with GitHub's "Pages is not enabled" message and `build` passes. After the owner sets the source to GitHub
+  Actions, re-run the latest run; the deployed address appears on the `deploy` job and in the repository's Environments list.
 - **Change it like any workflow:** every action is pinned to a commit (`pinact run --verify --check`), `zizmor` must be clean, and a
   new artifact path or job goes through review of the token scopes above.
 
@@ -482,10 +485,13 @@ fails if it gains one, or if `docs_dir` stops being `docs/`.
   strict build reports it. Links inside code spans and fenced blocks are examples and are left alone.
 - **The link check.** `mkdocs build --strict` fails on any warning (a missing page, a `#heading` that is not on the page it names, a link it
   cannot place), then `tools/docs-site/check_site.py` reads the built HTML and fails on any internal `href`, `src` or `#fragment` that does not
-  resolve, under the `/narration-utils/` base. Both run in `nx run docs-site:build`, so `pnpm check`, the `docs-site` step of `quality / quick-ubuntu` and the
-  `Pages` build job all gate on them. This is the first link check the repository has. Proof it fails: `tools/docs-site/tests/test_build.py`
-  builds a tiny tree in which a dead page link, a dead heading link and a stale include line each fail the build.
-- **Build and browse it.** `pnpm exec nx run docs-site:build` writes `tools/docs-site/build/site` (ignored); serve that folder from a
+  resolve, under the `/narration-utils/` base. Both run in `nx run docs-site:build-site`, which only the `Pages` build job calls while GitHub
+  Pages is paused ([ADR 0415](../adr/0415-while-pages-is-paused-docs-are-checked-by-lychee-and-a-changed-file-markdownlint-not-by-building-the-site.md)) — not
+  `pnpm check` or the `docs-site` step of `quality / quick-ubuntu`, which run only `lint` and `test` there. This is the first link check the
+  repository had (`Docs / Links (offline)` and `Docs / Markdown lint (changed files)` are what a pull request runs instead). Proof it fails:
+  `tools/docs-site/tests/test_build.py` builds a tiny tree in which a dead page link, a dead heading link and a stale include line each fail
+  the build.
+- **Build and browse it.** `pnpm exec nx run docs-site:build-site` writes `tools/docs-site/build/site` (ignored); serve that folder from a
   directory that has it as `narration-utils/` to see the site under its real base path. the Nx targets run `uv run --locked --only-group docs`, which installs MkDocs (the `docs`
   uv group, not a default group) into `.venv` on first use; `NO_MKDOCS_2_WARNING=true` silences Material's MkDocs 2.0 notice.
 - **Navigation** is generated from the folders; `mkdocs.yml` (`extra.nav_titles`, `extra.nav_order`) names the sections and orders the top
@@ -513,7 +519,7 @@ runner called:
 | `manuscript-guide`, `manuscript-teleprompter`, `transcript-compare` | `sidecars/<name>` | `lint`, `test` |
 | `reaper` | `integrations/reaper` | `lint` (StyLua, and ruff for the harness runner), `test` (the Lua bridge harness and its mutation checks, [reaper-bridge](../architecture/reaper-bridge.md)) |
 | `repo-scripts` | `scripts` | `lint`, `test` (pytest), `test-node` (`node --test`) |
-| `docs-site` | `tools/docs-site` | `lint` (ruff), `test` (pytest), `build` (the strict MkDocs build of `docs/` and the link check; [above](#the-public-docs-site)) |
+| `docs-site` | `tools/docs-site` | `lint` (ruff), `test` (pytest), `build-site` (the strict MkDocs build of `docs/` and the link check; [above](#the-public-docs-site)) — named off the default `lint format architecture knip test test-node build` set on purpose while GitHub Pages is paused, so `pnpm check` runs only `lint` and `test` here ([ADR 0415](../adr/0415-while-pages-is-paused-docs-are-checked-by-lychee-and-a-changed-file-markdownlint-not-by-building-the-site.md)) |
 | `config`, `fixtures` | `config`, `tests/fixtures` | none (fixtures: `lint`); they exist so a change to them affects the projects that read them |
 | `narration-utils` | the repo root | `knip` (unused files, exports and dependencies, gated at zero: see below); also the `nx release` project |
 

@@ -1039,6 +1039,16 @@ export function ProductionStartTimer(chapterID: string, stage: string): $Cancell
 }
 
 /**
+ * ProductionStatusReport writes the book's status report (Phase 5): hours by stage, PFH, the deadline and milestone
+ * status, and book-wide readiness counts, as an HTML and a JSON file. includeContractedAmount is the narrator's choice
+ * to write the contracted amount and the effective rate; off by default, since a status report is often shared with
+ * someone the narrator would not otherwise tell their rate. It refuses without a project.
+ */
+export function ProductionStatusReport(includeContractedAmount: boolean): $CancellablePromise<string> {
+    return $Call.ByID(1628238977, includeContractedAmount);
+}
+
+/**
  * ProductionStopTimer stops the running timer. It answers {stopped: true, session} with the session it logged, or
  * {stopped: false, session: null} when no timer was running.
  */
@@ -1451,7 +1461,7 @@ export function TeleprompterReaperInput(): $CancellablePromise<string> {
 
 /**
  * TeleprompterResumeFollow starts following REAPER for chapterID's resume prompt (read-aloud-resume-from-daw PRD Phase 5,
- * ADR 0350), replacing any follow already running. trackGUID is the track the prompt's locate read ("" for the chapter's
+ * ADR 0353), replacing any follow already running. trackGUID is the track the prompt's locate read ("" for the chapter's
  * matched track); like TeleprompterLocate, a picked track must be one of the selected project's. It answers whether it
  * follows: not with no track to follow or no way to ask REAPER, which is an answer, not an error.
  */
