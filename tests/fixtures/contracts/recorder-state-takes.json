@@ -24,6 +24,7 @@
     {
       "bits": 24,
       "channels": 1,
+      "keeper": false,
       "lineId": null,
       "name": "Take 001",
       "path": "C:/Projects/Alice/Recordings/Take 001.partial.wav",
@@ -35,6 +36,7 @@
     {
       "bits": 24,
       "channels": 1,
+      "keeper": false,
       "lineId": null,
       "name": "Take 002",
       "path": "C:/Projects/Alice/Recordings/Take 002.wav",

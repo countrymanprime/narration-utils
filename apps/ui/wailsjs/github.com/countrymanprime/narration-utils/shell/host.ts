@@ -1543,6 +1543,26 @@ export function RecorderMeterStop(): $CancellablePromise<string> {
 }
 
 /**
+ * RecorderSetTakeKeeper marks or unmarks takeName the keeper among the takes assigned to its line (Phase 4, Q5):
+ * narrator-confirmed, and always undoable by marking it again with keeper false or by marking a different take of the
+ * same line.
+ */
+export function RecorderSetTakeKeeper(takeName: string, keeper: boolean): $CancellablePromise<string> {
+    return $Call.ByID(2270425541, takeName, keeper);
+}
+
+/**
+ * RecorderSetTakeLine assigns takeName the manuscript paragraph or chapter entityId as its line identity (Phase 3,
+ * ADR 0485), so it joins the review pipeline the same way a REAPER item's stamped line id does (native-recording-suite
+ * PRD Phase 4, "take review integration" - Phase 3 built SetTakeLine with no UI caller yet). entityId "" clears the
+ * assignment. The manuscript's current source checksum is read here, never sent by the caller, so a stale UI can
+ * never stamp a wrong one.
+ */
+export function RecorderSetTakeLine(takeName: string, entityId: string): $CancellablePromise<string> {
+    return $Call.ByID(1287519481, takeName, entityId);
+}
+
+/**
  * RecorderStart records a new take of device into the project's Recordings folder and remembers the device for the project.
  * It answers once the take has started; its end arrives as "recording:state".
  */

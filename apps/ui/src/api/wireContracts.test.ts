@@ -1565,6 +1565,35 @@ describe('answers of the mock client for the settings, voice, model, transcript 
     await expect(createMockApi({}, { recording: { unavailable: true } }).recorderChooseEngine('builtin')).rejects.toThrow('not available');
   });
 
+  it('recorderSetTakeLine and recorderSetTakeKeeper mark and undo (native recording P4, take review integration)', async () => {
+    const api = createMockApi({}, { recording: { engine: 'builtin' } });
+    const seeded = await api.recorderState();
+    const [first, second] = seeded.takes;
+
+    const assigned = await api.recorderSetTakeLine(first.name, 'p-000001');
+    expectMatches(recorderStateSchema, assigned, 'mock recorder (a take assigned a line)');
+    expect(assigned.takes.find((take) => take.name === first.name)?.lineId).toBe('p-000001@mock-sha');
+
+    const cleared = await api.recorderSetTakeLine(first.name, '');
+    expect(cleared.takes.find((take) => take.name === first.name)?.lineId).toBeNull();
+    await expect(api.recorderSetTakeLine('Take 999', 'p-000001')).rejects.toThrow('not a take in this project');
+
+    // Two takes sharing a line: marking one the keeper hands the mark over from the other.
+    await api.recorderSetTakeLine(first.name, 'p-000002');
+    await api.recorderSetTakeLine(second.name, 'p-000002');
+    const firstKept = await api.recorderSetTakeKeeper(first.name, true);
+    expectMatches(recorderStateSchema, firstKept, 'mock recorder (a take marked keeper)');
+    expect(firstKept.takes.find((take) => take.name === first.name)?.keeper).toBe(true);
+    const secondKept = await api.recorderSetTakeKeeper(second.name, true);
+    expect(secondKept.takes.find((take) => take.name === first.name)?.keeper).toBe(false);
+    expect(secondKept.takes.find((take) => take.name === second.name)?.keeper).toBe(true);
+    const undone = await api.recorderSetTakeKeeper(second.name, false);
+    expect(undone.takes.every((take) => !take.keeper)).toBe(true);
+
+    await expect(createMockApi({}, { recording: { hasProject: false } }).recorderSetTakeLine('Take 001', 'p-000001')).rejects.toThrow('open a project');
+    await expect(createMockApi({}, { recording: { hasProject: false } }).recorderSetTakeKeeper('Take 001', true)).rejects.toThrow('open a project');
+  });
+
   it('subscribeDawTransport pushes the seeded transport once, and matches the host goldens (DAW port PRD Phase 9)', () => {
     const seen = (seed: Parameters<typeof createMockApi>[1]): unknown[] => {
       const events: unknown[] = [];
@@ -2555,6 +2584,8 @@ describe('answers of the mock client for the settings, voice, model, transcript 
       'recorderMeterStop',
       'recorderStart',
       'recorderStop',
+      'recorderSetTakeLine',
+      'recorderSetTakeKeeper',
       'dawCatalogList',
       'tracksDiscover',
       'tracksSelect',
