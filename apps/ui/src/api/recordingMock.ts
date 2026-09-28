@@ -25,6 +25,7 @@ const take = (number: number, seconds: number, unfinished = false): RecorderTake
     bits: 24,
     recordedAt: RECORDED_AT + number * 60000,
     unfinished,
+    lineId: null,
   };
 };
 
