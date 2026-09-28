@@ -139,6 +139,8 @@ export const SILENT_CATCHES: Record<string, string> = {
     'Re-reads a finding after the host refused a decision, only to tell changed evidence apart; when the re-read fails too, the inline alert still shows the host reason for the refusal, so nothing is hidden.',
   'src/components/editing/EditingCandidateRow.tsx#1':
     'Re-reads a candidate after the host refused a decision, only to tell changed evidence apart; when the re-read fails too, the inline alert still shows the host reason for the refusal, so nothing is hidden (mirrors FindingDetail.tsx#1).',
+  'src/components/editing/EditingCheckPanel.tsx#1':
+    "Q6 (editing-readiness-analysis.prd.md Phase 8): reads the chapter's stored analysis-source choice on open; a failed read just leaves the default (items) selected, which is already correct for a chapter with no choice made yet, so there is nothing to guard or retry.",
   'src/components/engine/RetakeLanesDialog.tsx#1':
     'Hydrates whatever pick was already in flight when the dialog reopened; the list still loads and every pick shows its own failure inline.',
   'src/components/engine/CleanupToolsDialog.tsx#1':
@@ -169,4 +171,6 @@ export const SILENT_CATCHES: Record<string, string> = {
     'Only offers to review the last compare run; without it the offer is absent (moved from the Proofing page, stage-navigation Phase 5).',
   'src/components/proof/ProofChapterPage.tsx#2':
     "The chapter's findings for the text overlay (edit-and-proof-workspace.prd.md Phase 4): not a narrator action to retry, and not swallowed silently since the check-derived flags (Phase 2) still show with nothing lost - a failure here just leaves the overlay's extra flags and review-in-place off this load, and the book's notes on Proof (which read the same store) still work.",
+  'src/components/proof/ProofChapterPage.tsx#3':
+    "The waveform strip's peaks (edit-and-proof-workspace.prd.md Phase 5, ADR 0520), loaded alongside the alignment: not a narrator action to retry, and nothing to guard - a failure here just leaves the strip showing nothing this load, while the text, transport and flags (which do not depend on it) still work.",
 };

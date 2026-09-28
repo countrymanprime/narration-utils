@@ -50,4 +50,18 @@ export const teleprompterGoldens: Record<string, z.ZodType> = {
   'read-aloud-recordings.json': z.record(z.string(), readAloudRecordingSchema),
   'teleprompter-reaper-inputs.json': z.record(z.string(), teleprompterReaperInputSchema),
   'teleprompter-punch-results.json': z.record(z.string(), teleprompterPunchResultSchema),
+  // The sidecar's own `word_time` lines (align_word.py, ADR 0560): the host reads them (teleprompter.AlignWord) and hands
+  // the UI only the punch result above, so no UI schema owns them; this pins the shape the Go and Python tests share.
+  'teleprompter-word-time.json': z
+    .object({
+      type: z.literal('word_time'),
+      word: z.number().int().nonnegative(),
+      time: z.number().nullable(),
+      exact: z.boolean(),
+      matched: z.number().int().nonnegative(),
+      heard: z.number().int().nonnegative(),
+      tokens: z.number().int().nonnegative(),
+    })
+    .strict()
+    .array(),
 };

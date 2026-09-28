@@ -4,10 +4,11 @@ import { chapterName, context } from '../../chapterName';
 import { useApi } from '../../api/ApiContext';
 import { describeApiError } from '../../api/errorMessage';
 import { usePendingAction } from '../../hooks/usePendingAction';
-import type { EditingRefusalReason, EditingState, Finding, ManuscriptChapter, StageSignal, StageSignalState, Track } from '../../types';
+import type { EditingRefusalReason, EditingSourceChoice, EditingState, Finding, ManuscriptChapter, StageSignal, StageSignalState, Track } from '../../types';
 import { Button } from '../primitives/Button';
 import { ProgressBar } from '../primitives/ProgressBar';
 import { SlideOver } from '../primitives/SlideOver';
+import { ToggleGroup } from '../primitives/ToggleGroup';
 import type { Notify } from '../primitives/Toast';
 import { MappingConfirm } from '../mapping/MappingConfirm';
 import { useReaperStatus } from '../proof/useReaperStatus';
@@ -29,6 +30,12 @@ const NON_MAPPING_REFUSAL: Partial<Record<EditingRefusalReason, string>> = {
 const MAPPING_REFUSALS = new Set<EditingRefusalReason>(['unmapped', 'multiple_tracks', 'mapped_track_missing']);
 
 const POLL_MS = 500;
+
+/** Q6 (editing-readiness-analysis.prd.md Phase 8): the two analysis sources a narrator can pick per chapter. */
+const SOURCE_CHOICE_OPTIONS = [
+  { value: 'items', label: "Items on this chapter's track" },
+  { value: 'render', label: 'The rendered file' },
+] as const satisfies readonly { value: EditingSourceChoice; label: string }[];
 
 /** The chapter-track link, confirmed right here (analysis evidence ledger PRD, Phase 7): the same prompt the
  * audio engine panel and the recording check show. */
@@ -163,6 +170,8 @@ export function EditingCheckPanel({ chapter, notify, close }: { chapter: Manuscr
   const [candidates, setCandidates] = useState<Finding[]>([]);
   const [candidatesError, setCandidatesError] = useState('');
   const [now, setNow] = useState(() => Date.now());
+  const [sourceChoice, setSourceChoice] = useState<EditingSourceChoice>('items');
+  const [sourceChoiceError, setSourceChoiceError] = useState('');
   const documentIdRef = useRef<string | undefined>(undefined);
   const prevPhaseRef = useRef<EditingState['phase'] | undefined>(undefined);
 
@@ -190,7 +199,24 @@ export function EditingCheckPanel({ chapter, notify, close }: { chapter: Manuscr
     void loadCandidates();
     void loadSignals();
     void api.editingState().then(setJob);
-  }, [loadCandidates, loadSignals, api]);
+    void api
+      .editingSourceChoice(chapter.id)
+      .then(setSourceChoice)
+      .catch(() => {
+        // A read failure leaves the default (items) shown; the choice control still works from there.
+      });
+  }, [loadCandidates, loadSignals, api, chapter.id]);
+
+  const switchSource = (choice: EditingSourceChoice) =>
+    void action.run('source', async () => {
+      setSourceChoiceError('');
+      try {
+        setSourceChoice(await api.editingSetSourceChoice(chapter.id, choice));
+        await loadSignals();
+      } catch (error) {
+        setSourceChoiceError(describeApiError(error));
+      }
+    });
 
   const thisChapterRunning = job?.phase === 'running' && job.chapterId === chapter.id;
   const otherRunning = job?.phase === 'running' && job.chapterId !== chapter.id;
@@ -249,11 +275,31 @@ export function EditingCheckPanel({ chapter, notify, close }: { chapter: Manuscr
 
   const mappingRefusal = refusal && MAPPING_REFUSALS.has(refusal.reason);
   const checked = job?.phase === 'complete' || job?.phase === 'cancelled' || job?.phase === 'failed';
+  const sourceEvidenceLabel = signals?.flatMap((signal) => signal.evidence).find((entry) => entry.kind === 'source')?.value;
 
   return (
     <SlideOver open title={chapterName(chapter, context('Editing check'))} onClose={close}>
       <div className="space-y-4 text-sm">
         <p style={{ color: 'var(--text-muted)' }}>{PROCESSED_AUDIO_CAVEAT}</p>
+
+        <div className="space-y-1">
+          <ToggleGroup
+            label="Analysis source"
+            value={sourceChoice}
+            onChange={(value) => switchSource(value as EditingSourceChoice)}
+            options={SOURCE_CHOICE_OPTIONS.map((option) => ({ ...option, disabled: action.isPending('source') }))}
+          />
+          {sourceEvidenceLabel && (
+            <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
+              Source analyzed: {sourceEvidenceLabel}
+            </p>
+          )}
+          {sourceChoiceError && (
+            <p role="alert" style={{ color: 'var(--danger-text)' }}>
+              The source choice could not be saved: {sourceChoiceError}
+            </p>
+          )}
+        </div>
 
         {refusal && !mappingRefusal && (
           <p role="alert" style={{ color: 'var(--danger-text)' }}>

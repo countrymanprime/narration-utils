@@ -91,15 +91,21 @@ func seconds(value float64) string { return strconv.FormatFloat(value, 'f', 3, 6
 
 // locateArgs is the sidecar's `--locate` command line (live_asr.py, locate.check_args).
 func (s *Service) locateArgs(manuscript string, request LocateRequest) []string {
+	return s.recordingArgs([]string{"--locate"}, manuscript, request)
+}
+
+// recordingArgs is the command line of a sidecar run over a stretch of a recording: mode (`--locate`, or
+// `--align-word N`, alignword.go), then the model, the chapter and the range, all from a validated request.
+func (s *Service) recordingArgs(mode []string, manuscript string, request LocateRequest) []string {
 	model := strings.TrimSpace(request.Model)
 	if model == "" {
 		model = "tiny"
 	}
-	args := []string{
-		"--locate", "--engine", "whisper", "--model", model, "--model-dir", request.ModelDir,
+	args := append(append([]string(nil), mode...),
+		"--engine", "whisper", "--model", model, "--model-dir", request.ModelDir,
 		"--manuscript", manuscript, "--chapter", request.Chapter,
 		"--wav", request.Audio, "--tail-start", seconds(request.From), "--tail-end", seconds(request.To),
-	}
+	)
 	if language := strings.TrimSpace(request.Language); language != "" {
 		args = append(args, "--language", language)
 	}
@@ -113,23 +119,7 @@ func (s *Service) locateArgs(manuscript string, request LocateRequest) []string 
 // ctx. It never downloads a model and never touches a running session. A refused request, a sidecar failure, a
 // timeout and output without a `locate` line are all errors; a tail that cannot be placed is not (Word is nil).
 func (s *Service) Locate(ctx context.Context, request LocateRequest) (Located, error) {
-	s.mu.RLock()
-	project, python, sidecars := s.config.Project, s.config.Python, s.sidecars
-	s.mu.RUnlock()
-	if project == "" {
-		return Located{}, errors.New("save the REAPER project and import a manuscript first")
-	}
-	manuscript := filepath.Join(project, "narration-utils", "manuscript", "manuscript.json")
-	if _, err := os.Stat(manuscript); err != nil {
-		return Located{}, errors.New("import a manuscript first")
-	}
-	if python == "" || sidecars == nil {
-		return Located{}, errors.New("configure the teleprompter executable before continuing")
-	}
-	if err := request.validate(); err != nil {
-		return Located{}, err
-	}
-	code, out, stderr, err := sidecars.Run(ctx, python, s.locateArgs(manuscript, request)...)
+	code, out, stderr, err := s.runOverRecording(ctx, request, func(manuscript string) []string { return s.locateArgs(manuscript, request) })
 	if err != nil {
 		return Located{}, err
 	}
@@ -140,6 +130,28 @@ func (s *Service) Locate(ctx context.Context, request LocateRequest) (Located, e
 		return Located{}, errors.New(failureMessage(code, stderr, "Could not find where the recording stops"))
 	}
 	return parseLocated(out)
+}
+
+// runOverRecording is what Locate and AlignWord share: the project's manuscript and the sidecar must be there and the
+// request valid before the one sidecar run args builds (from the manuscript's path) starts.
+func (s *Service) runOverRecording(ctx context.Context, request LocateRequest, args func(manuscript string) []string) (int, string, string, error) {
+	s.mu.RLock()
+	project, python, sidecars := s.config.Project, s.config.Python, s.sidecars
+	s.mu.RUnlock()
+	if project == "" {
+		return 0, "", "", errors.New("save the REAPER project and import a manuscript first")
+	}
+	manuscript := filepath.Join(project, "narration-utils", "manuscript", "manuscript.json")
+	if _, err := os.Stat(manuscript); err != nil {
+		return 0, "", "", errors.New("import a manuscript first")
+	}
+	if python == "" || sidecars == nil {
+		return 0, "", "", errors.New("configure the teleprompter executable before continuing")
+	}
+	if err := request.validate(); err != nil {
+		return 0, "", "", err
+	}
+	return sidecars.Run(ctx, python, args(manuscript)...)
 }
 
 // parseLocated finds the one `locate` line among the sidecar's stdout lines (a library may print other lines).
