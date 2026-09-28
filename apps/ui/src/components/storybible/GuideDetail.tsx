@@ -33,6 +33,8 @@ import { Menu } from '../primitives/Menu';
 import { Tooltip, TooltipTarget } from '../primitives/Tooltip';
 import { CANONICAL_PREVIEW, previewKey, usePreviewAudio } from './usePreviewAudio';
 import { PropertiesSection } from './PropertiesSection';
+import { VoiceReferencesSection } from './VoiceReferencesSection';
+import { DialogueCueAttribution } from './DialogueCueAttribution';
 import { PronunciationWork } from './PronunciationWork';
 import { pronunciationSourceLabel } from './pronunciationStatus';
 import { draftFrom, propertiesFrom, propertyProblem, sameProperties, type DraftProperty } from './propertyDraft';
@@ -734,20 +736,12 @@ export function GuideDetail({
               value={draft.personality}
               onChange={(value) => setDraft({ ...draft, personality: value })}
             />
-            <div>
-              <div className="mb-1.5 text-[0.82rem] font-medium text-[var(--text-muted)]">Voice samples</div>
-              <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
-                No samples yet.
-              </p>
-              <Button
-                variant="ghost"
-                className="mt-1.5 text-xs"
-                disabled={editingDisabled}
-                onClick={() => notify('Voice-sample picker is a future integration.')}
-              >
-                + Add sample
-              </Button>
-            </div>
+            {!isNewDraft && (
+              <>
+                <VoiceReferencesSection characterId={entity.id} characterLabel={entity.canonical_name} notify={notify} />
+                <DialogueCueAttribution entity={entity} entities={entities} notify={notify} />
+              </>
+            )}
           </>
         )}
         {entity.category === 'Place' && (
