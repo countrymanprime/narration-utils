@@ -14,14 +14,14 @@ import { plural, summarize } from './stageText';
 export function StageSummaryChips({ state, onShow }: { state: StagesState; onShow: () => void }) {
   if (state.phase === 'error')
     return (
-      <div className="mt-2 flex flex-wrap gap-2">
+      <div className="flex flex-wrap gap-2">
         <StatusBadge tone="danger" look="outline" label="Couldn’t check stage suggestions" onClick={onShow} />
       </div>
     );
   const { suggested, changed } = summarize([...state.byChapter.values()]);
   if (suggested === 0 && changed === 0) return null;
   return (
-    <div className="mt-2 flex flex-wrap gap-2">
+    <div className="flex flex-wrap gap-2">
       {suggested > 0 && <StatusBadge tone="accent" label={plural(suggested, 'chapter has a suggestion', 'chapters have a suggestion')} onClick={onShow} />}
       {changed > 0 && (
         <StatusBadge tone="warning" look="outline" label={plural(changed, 'chapter’s evidence changed', 'chapters’ evidence changed')} onClick={onShow} />

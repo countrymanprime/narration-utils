@@ -1,3 +1,4 @@
+import { HeaderChip } from '../primitives/HeaderChip';
 import { TooltipTarget } from '../primitives/Tooltip';
 
 // The header's audio-engine indicator (stage-navigation-and-page-replacement.prd.md Phase 1, ADR 0407 item 4),
@@ -30,14 +31,9 @@ export function EngineChip({
     return (
       // role="group" (not a plain span): aria-label is only permitted on an element whose role supports naming, and
       // below `md` the visible text hides, leaving the dot as the chip's only content (axe aria-prohibited-attr).
-      <span
-        role="group"
-        aria-label="Built-in recorder"
-        className="inline-flex items-center gap-[0.4rem] rounded-full border border-[var(--border)] bg-[var(--surface-2)] px-[0.6rem] py-[0.2rem] font-['Barlow_Condensed',sans-serif] text-[0.8rem] font-semibold tracking-[0.03em] max-md:px-[0.35rem]"
-      >
-        <span className="size-[7px] flex-none rounded-full" style={{ backgroundColor: 'var(--accent)', boxShadow: '0 0 5px var(--accent)' }} />
+      <HeaderChip role="group" aria-label="Built-in recorder" dot="var(--accent)" short className="flex-none">
         <span className="max-md:hidden">Built-in recorder</span>
-      </span>
+      </HeaderChip>
     );
   }
   const dawMismatch = dawFileLinked && dawReachable && !dawProjectMatches;
@@ -47,24 +43,16 @@ export function EngineChip({
     : dawFileLinked
       ? 'Open the engine panel: the linked REAPER project, its tracks and the REAPER tools'
       : 'Open the engine panel to link a REAPER project (.rpp) file';
-  const dotStyle = dawMismatch
-    ? { backgroundColor: 'var(--warn)', boxShadow: '0 0 5px var(--warn)' }
-    : dawFileLinked
-      ? { backgroundColor: 'var(--character)', boxShadow: '0 0 5px var(--character)' }
-      : { backgroundColor: 'var(--non-text)' };
+  // The mock's linked chip is `--ok-soft` with an `--ok` dot (mock 01); a wrong project is a warning; nothing linked is a
+  // neutral readout with a quiet dot.
+  const tone = dawMismatch ? 'warning' : dawFileLinked ? 'success' : 'neutral';
+  const dot = dawMismatch ? 'var(--warn)' : dawFileLinked ? 'var(--ok)' : 'var(--non-text)';
   return (
     <TooltipTarget text={tooltip}>
-      <button
-        type="button"
-        onClick={onOpenEnginePanel}
-        aria-busy={linkingDawFile || undefined}
-        aria-label={`${label} — ${tooltip}`}
-        className="inline-flex items-center gap-[0.4rem] rounded-full border border-[var(--border)] bg-[var(--surface-2)] px-[0.6rem] py-[0.2rem] font-['Barlow_Condensed',sans-serif] text-[0.8rem] font-semibold tracking-[0.03em] hover:border-[var(--accent)] disabled:pointer-events-none disabled:opacity-60 max-md:px-[0.35rem]"
-      >
-        <span className="size-[7px] flex-none rounded-full" style={dotStyle} />
+      <HeaderChip tone={tone} dot={dot} onClick={onOpenEnginePanel} aria-busy={linkingDawFile} aria-label={`${label} — ${tooltip}`} short className="flex-none">
         {/* Below `md` the chip shortens to its dot; the full text stays in the accessible name above (app-navigation Q10 A). */}
         <span className="max-md:hidden">{label}</span>
-      </button>
+      </HeaderChip>
     </TooltipTarget>
   );
 }

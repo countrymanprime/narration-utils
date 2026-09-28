@@ -27,7 +27,6 @@ const CEILING: Record<Copy, Record<string, number>> = {
     // Page components the page phases own: the Booth's rail (13), Production (11), Proof's findings (12). The
     // companion panel's own card dropped to 0 in the same phase (ADR 0659: full-bleed sections, not cards).
     'src/components/booth/ReaderRail.tsx': 1,
-    'src/components/production/ProductionPage.tsx': 1,
     'src/components/proof/FindingsList.tsx': 1,
     'src/components/proof/NotesStrip.tsx': 1,
     // Not cards. A warning on a tinted fill, which neither Panel nor InsetCard draws.
@@ -48,7 +47,7 @@ const CEILING: Record<Copy, Record<string, number>> = {
   },
   eyebrow: {
     // The shell's nav group headings and the header's Project label (Phase 8, which owns AppShell.tsx).
-    'src/components/layout/AppShell.tsx': 4,
+    'src/components/layout/AppShell.tsx': 3,
     // Page components the page phases own: the Booth (13), Master (14) and Script (15).
     'src/components/booth/BoothView.tsx': 1,
     'src/components/booth/CompanionShell.tsx': 1,

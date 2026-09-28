@@ -19,8 +19,10 @@ import type {
 } from './contracts/production';
 import type { StageRecommendations } from './contracts/stages';
 
+type SeedLog = 'on-pace' | 'at-risk' | 'mock-fidelity-01';
+
 /** A plan to start from, and optionally a seeded time log (`log`). */
-export type ProductionSeed = Partial<ProductionPlan> & { log?: 'on-pace' | 'at-risk' };
+export type ProductionSeed = Partial<ProductionPlan> & { log?: SeedLog };
 
 type Deps = {
   chapters: () => Promise<ManuscriptChapter[]>;
@@ -28,10 +30,13 @@ type Deps = {
   seed?: ProductionSeed;
 };
 
-/** The `?mockProduction=` scenarios: a time log with the plan that goes with it. */
-export const PRODUCTION_SCENARIOS: Record<'on-pace' | 'at-risk', ProductionSeed> = {
+/** The `?mockProduction=` scenarios: a time log with the plan that goes with it. `mock-fidelity-01` is `?mockFidelity=01`'s
+ * (mockHost/mockFidelity.ts): benchmark mock 01's delivery date, hours and rate. */
+export const PRODUCTION_SCENARIOS: Record<SeedLog, ProductionSeed> = {
   'on-pace': { log: 'on-pace', deadline: '2026-10-14', contractedAmount: 2400 },
   'at-risk': { log: 'at-risk', deadline: '2026-09-29', contractedAmount: 2400 },
+  // 420 over the 11:20 logged is mock 01's "37/hr".
+  'mock-fidelity-01': { log: 'mock-fidelity-01', deadline: '2026-10-14', contractedAmount: 420 },
 };
 
 // The mock's today, so the days left to a seeded deadline are the same on every run (the host counts from the real date).
@@ -68,9 +73,37 @@ const SEED_HOURS: Record<string, Partial<Record<ChapterStatus, number>>> = {
   'chapter-10': { recording: 1.5, editing: 1 },
 };
 
-const LOGS: Record<'on-pace' | 'at-risk', { hoursScale: number; running: boolean }> = {
-  'on-pace': { hoursScale: 1, running: true },
-  'at-risk': { hoursScale: 1.6, running: false },
+// Mock 01's board (benchmark 01-production-home): chapters 1-6 measured at the mock's FIN. lengths, and its stage hours
+// (record 5:40 · edit 3:55 · proof 1:45, 11:20 in all) spread over the chapters that reached each stage.
+const MOCK_01_RECORDED: Record<string, number> = {
+  'chapter-1': 708,
+  'chapter-2': 725,
+  'chapter-3': 631,
+  'chapter-4': 790,
+  'chapter-5': 760,
+  'chapter-6': 802,
+};
+const MOCK_01_HOURS: Record<string, Partial<Record<ChapterStatus, number>>> = {
+  'chapter-1': { recording: 1.25, editing: 1, proofing: 0.5 },
+  'chapter-2': { recording: 1.25, editing: 1, proofing: 0.5 },
+  'chapter-3': { recording: 1, editing: 0.75, proofing: 0.5 },
+  'chapter-4': { recording: 1, editing: 40 / 60, proofing: 0.25 },
+  'chapter-5': { recording: 40 / 60, editing: 0.5 },
+  'chapter-6': { recording: 0.5 },
+};
+
+type SeededLog = {
+  hours: Record<string, Partial<Record<ChapterStatus, number>>>;
+  recorded: Record<string, number>;
+  hoursScale: number;
+  /** The chapter a timer is running on, recording; none when nothing runs. */
+  running?: string;
+};
+
+const LOGS: Record<SeedLog, SeededLog> = {
+  'on-pace': { hours: SEED_HOURS, recorded: SEED_RECORDED, hoursScale: 1, running: 'chapter-6' },
+  'at-risk': { hours: SEED_HOURS, recorded: SEED_RECORDED, hoursScale: 1.6 },
+  'mock-fidelity-01': { hours: MOCK_01_HOURS, recorded: MOCK_01_RECORDED, hoursScale: 1, running: 'chapter-7' },
 };
 
 function checkDate(value: string): string {
@@ -87,10 +120,11 @@ function copy(plan: ProductionPlan): ProductionPlan {
 
 const daysLeft = (date: string) => Math.round((Date.parse(`${date}T00:00:00Z`) - Date.parse(`${MOCK_TODAY}T00:00:00Z`)) / 86_400_000);
 
-function seededSessions(scale: number): ProductionSession[] {
+function seededSessions(log: SeededLog): ProductionSession[] {
+  const scale = log.hoursScale;
   const sessions: ProductionSession[] = [];
   let start = Date.parse('2026-09-01T09:00:00Z');
-  for (const [chapterId, hours] of Object.entries(SEED_HOURS)) {
+  for (const [chapterId, hours] of Object.entries(log.hours)) {
     for (const stage of TIMEABLE) {
       const length = hours[stage];
       if (length === undefined) continue;
@@ -167,13 +201,13 @@ export function createProductionMock(deps: Deps): ProductionApi {
   const seed = deps.seed ?? {};
   let plan: ProductionPlan = copy({ deadline: seed.deadline ?? null, contractedAmount: seed.contractedAmount ?? null, milestones: seed.milestones ?? [] });
   const log = seed.log ? LOGS[seed.log] : undefined;
-  const sessions: ProductionSession[] = log ? seededSessions(log.hoursScale) : [];
+  const sessions: ProductionSession[] = log ? seededSessions(log) : [];
   // The seeded running session began 42 minutes before the mock was made, so the header's timer chip reads like a real session
   // (0:42:00 and counting) rather than days on from a fixed date.
   if (log?.running) {
     sessions.push({
       id: 'mock-running',
-      chapterId: 'chapter-6',
+      chapterId: log.running,
       stage: 'recording',
       startedAt: new Date(Date.now() - 42 * 60_000).toISOString(),
       source: 'manual',
@@ -188,7 +222,7 @@ export function createProductionMock(deps: Deps): ProductionApi {
     const [manuscript, recommendations] = await Promise.all([deps.chapters(), deps.recommendations().catch((): StageRecommendations => ({ chapters: [] }))]);
     const readiness = new Map(recommendations.chapters.map((chapter) => [chapter.chapterId, readinessOf(chapter)]));
     const chapters: ProductionChapter[] = manuscript.map((chapter) => {
-      const measured = log ? SEED_RECORDED[chapter.id] : chapter.recordedSeconds;
+      const measured = log ? log.recorded[chapter.id] : chapter.recordedSeconds;
       const hoursLogged = sessions.filter((session) => session.chapterId === chapter.id).reduce((sum, session) => sum + hoursOf(session), 0);
       return {
         id: chapter.id,

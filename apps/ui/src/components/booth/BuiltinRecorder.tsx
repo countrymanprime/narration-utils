@@ -7,6 +7,7 @@ import { Button } from '../primitives/Button';
 import { IconButton } from '../primitives/IconButton';
 import { LevelMeter } from '../primitives/LevelMeter';
 import { Panel } from '../primitives/Panel';
+import { HeaderChip } from '../primitives/HeaderChip';
 import { SectionLabel } from '../primitives/SectionLabel';
 import { StatusBadge } from '../primitives/StatusBadge';
 import { ToggleGroup } from '../primitives/ToggleGroup';
@@ -68,21 +69,15 @@ export function RecorderStatus({ recorder }: { recorder: Recorder }) {
           {peakText(level?.peak)}
         </span>
       </span>
-      <span
+      <HeaderChip
         role="group"
         aria-label={`Built-in recorder, ${takeLabel(recorder)}`}
-        className="inline-flex flex-none items-center gap-[0.4rem] rounded-full border border-[var(--border)] bg-[var(--surface-2)] px-[0.6rem] py-[0.2rem] font-['Barlow_Condensed',sans-serif] text-[0.8rem] font-semibold tracking-[0.03em] max-md:px-[0.35rem]"
+        dot={recorder.recording ? 'var(--danger)' : 'var(--accent)'}
+        short
+        className="flex-none"
       >
-        <span
-          className="size-[7px] flex-none rounded-full"
-          style={
-            recorder.recording
-              ? { backgroundColor: 'var(--danger)', boxShadow: '0 0 5px var(--danger)' }
-              : { backgroundColor: 'var(--accent)', boxShadow: '0 0 5px var(--accent)' }
-          }
-        />
-        <span className="whitespace-nowrap max-md:hidden">Built-in · {takeLabel(recorder)}</span>
-      </span>
+        <span className="max-md:hidden">Built-in · {takeLabel(recorder)}</span>
+      </HeaderChip>
     </>
   );
 }

@@ -89,7 +89,7 @@ describe('stage suggestions on the board', () => {
     expect(cell('Chapter 4', 'Record').textContent).toBe('Ready');
     expect(cell('Chapter 5', 'Record').textContent).toBe('Not checked');
     expect(cell('Chapter 6', 'Record').textContent).toBe('Not ready');
-    await waitFor(() => expect(cell('Chapter 7', 'Edit').textContent).toBe('Evidence changed'));
+    await waitFor(() => expect(cell('Chapter 7', 'Edit').textContent).toBe('Changed'));
     expect(cell('Chapter 8', 'Record').textContent).toBe('✓');
     // A finalized chapter is not evaluated: every stage it passed reads ✓.
     expect(['Record', 'Edit', 'Proof'].map((column) => cell('Chapter 1', column).textContent)).toEqual(['✓', '✓', '✓']);
@@ -269,7 +269,7 @@ describe('the evidence view', () => {
 
   it('shows the check that is no longer met after a confirmation, and reverts from there', async () => {
     await renderBoard(mixedApi());
-    await waitFor(() => expect(cell('Chapter 7', 'Edit').textContent).toBe('Evidence changed'));
+    await waitFor(() => expect(cell('Chapter 7', 'Edit').textContent).toBe('Changed'));
     const view = await openStage('Chapter 7', 'Edit');
     const notice = await within(view).findByRole('region', { name: 'Evidence changed since you confirmed' });
     expect(within(notice).getByText(/Nothing has changed/)).toBeTruthy();

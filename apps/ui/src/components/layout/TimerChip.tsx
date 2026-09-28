@@ -4,6 +4,7 @@ import { faStopwatch } from '@fortawesome/free-solid-svg-icons';
 import type { ProductionOverview } from '../../api/contracts/production';
 import type { ChapterStatus } from '../../api/contracts/manuscript';
 import { STATUS_LABELS } from '../../chapterStatus';
+import { HeaderChip } from '../primitives/HeaderChip';
 
 /** The production stage timer that is running, as the header shows it: when it started, and on which chapter and stage. */
 export type RunningTimer = { startedAt: string; chapterTitle: string; stage: ChapterStatus };
@@ -37,15 +38,12 @@ export function TimerChip({ timer }: { timer: RunningTimer }) {
   }, []);
   const clock = elapsedClock(timer.startedAt, now);
   return (
-    <span
-      role="timer"
-      aria-label={`Timer running on ${timer.chapterTitle}, ${STATUS_LABELS[timer.stage]}: ${clock}`}
-      className="inline-flex min-w-0 items-center gap-[0.4rem] rounded-full border border-[var(--border)] bg-[var(--surface-2)] px-[0.6rem] py-[0.2rem] font-['Barlow_Condensed',sans-serif] text-[0.8rem] font-semibold tracking-[0.03em]"
-    >
+    <HeaderChip role="timer" aria-label={`Timer running on ${timer.chapterTitle}, ${STATUS_LABELS[timer.stage]}: ${clock}`} className="min-w-0">
       <FontAwesomeIcon icon={faStopwatch} aria-hidden="true" style={{ color: 'var(--text-muted)' }} />
-      <span className="font-['IBM_Plex_Mono',ui-monospace,monospace]">{clock}</span>
+      {/* The digits in Plex Mono 13 px 500, as mock 01 sets them beside the Barlow text. */}
+      <span className="font-['IBM_Plex_Mono',ui-monospace,monospace] text-[0.8125rem] font-medium tracking-normal">{clock}</span>
       {/* Below `md` the chip keeps its clock; the chapter stays in the accessible name above. */}
       <span className="truncate max-md:hidden">· timer on {timer.chapterTitle}</span>
-    </span>
+    </HeaderChip>
   );
 }
