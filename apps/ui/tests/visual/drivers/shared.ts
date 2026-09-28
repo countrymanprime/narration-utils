@@ -511,6 +511,16 @@ export async function clickSettingsCategory(page: Page, name: string): Promise<v
   await page.locator('.settings-nav').getByRole('tab', { name, exact: true }).click();
 }
 
+// Settings > Story Bible with the narrator's own Merriam-Webster key saved in the mock (prep-depth P9): the panel then says Key saved.
+export async function saveOnlineDictionaryKey(page: Page): Promise<void> {
+  await goToPage(page, 'Settings');
+  await clickVisible(page, 'tab', 'Global');
+  await clickSettingsCategory(page, 'Story Bible');
+  await page.getByLabel('Your key', { exact: true }).fill('0b5c1a3e-7d2f-4e6a-9c8b-2f1e0d9c8b7a');
+  await clickVisible(page, 'button', 'Save key');
+  await page.getByText('Key saved', { exact: true }).waitFor();
+}
+
 // Settings > Local assets, optionally booted with a mock seed (?mockAssets=): the rows are on screen once the list has loaded.
 export async function openLocalAssets(page: Page, seed?: string): Promise<void> {
   if (seed) {

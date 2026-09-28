@@ -140,17 +140,20 @@ export const proofChapterStates: StateEntry[] = [
     page: 'proof-chapter',
     state: 'preview-computing',
     description: 'Proof chapter view, the Preview panel still reading candidates (?mockPreviewCandidates=computing)',
+    ...KEEPS_DESKTOP_SCROLL,
   },
   {
     page: 'proof-chapter',
     state: 'preview-no-manuscript',
     description:
       'Proof chapter view, the Preview panel answering no_manuscript (?mockPreviewCandidates=no-manuscript) - a defensive state the binding can return that the page itself cannot otherwise reach, since a chapter view redirects away with no manuscript at all',
+    ...KEEPS_DESKTOP_SCROLL,
   },
   {
     page: 'proof-chapter',
     state: 'preview-nothing-eligible',
     description: 'Proof chapter view, the Preview panel with no eligible text found (?mockPreviewCandidates=nothing-eligible)',
+    ...KEEPS_DESKTOP_SCROLL,
   },
   {
     page: 'proof-chapter',
@@ -202,5 +205,31 @@ export const proofChapterStates: StateEntry[] = [
     state: 'stage-panel-evidence-unknown',
     description:
       'Proof chapter view, the stage recommendations panel: Why opened on an unmapped-track cause (?mockProofingSignal=unmapped-track) - "Open the audio engine panel", never "Open recording check" (stageText.ts PROOFING_CAUSE_TEXT)',
+  },
+  // The chosen rendered file the delivery checks are about (proofing-readiness-signals.prd.md Phase 6).
+  {
+    page: 'proof-chapter',
+    state: 'render-none',
+    description: 'Proof chapter view, the readiness panel’s Rendered file section with nothing chosen yet - "Choose the rendered file for this chapter."',
+    ...KEEPS_DESKTOP_SCROLL,
+  },
+  {
+    page: 'proof-chapter',
+    state: 'render-chosen',
+    description: 'Proof chapter view, a rendered file just chosen - its name, when it was chosen, and Change/Clear/Measure offered',
+    ...KEEPS_DESKTOP_SCROLL,
+  },
+  {
+    page: 'proof-chapter',
+    state: 'render-measured',
+    description: 'Proof chapter view, the chosen render measured - "Measured <time>." under the file, Measure offered again',
+    ...KEEPS_DESKTOP_SCROLL,
+  },
+  {
+    page: 'proof-chapter',
+    state: 'render-stale',
+    description:
+      'Proof chapter view, a chosen render gone stale (?mockProofingRender=chapter-9-stale) - "changed since you chose it", Choose rendered file again',
+    ...KEEPS_DESKTOP_SCROLL,
   },
 ];

@@ -13,6 +13,7 @@ import { createWorkspaceMock, mockMisreadFindingSource } from './workspaceMock';
 import { createPreviewMock } from './previewMock';
 import { createProductionMock } from './productionMock';
 import { createStagesMock } from './stagesMock';
+import { createProofingRenderMock } from './proofingRenderMock';
 import { createDawMock } from './dawMock';
 import { createProvidersMock } from './providersMock';
 import { createMasteringMock } from './masteringMock';
@@ -40,8 +41,10 @@ import { createProofingMock } from './mockHost/proofing';
 import { createReaperActionsMock } from './mockHost/reaperActions';
 import { createChapterTracksMock } from './mockHost/chapterTracks';
 import { createStoryBibleMock } from './mockHost/storyBible';
+import { createCharacterMock } from './mockHost/character';
 import { createSystemMock, invalidPayloadOverrides } from './mockHost/system';
 import { createPronunciationLookupMock } from './mockHost/pronunciationLookup';
+import { createPronunciationOnlineMock } from './mockHost/pronunciationOnline';
 
 export { applyMixedManuscriptMock } from './mockHost/manuscript';
 export type { MockUpdateSeed } from './mockHost/update';
@@ -78,6 +81,7 @@ export function createMockApi(
     peekCoverage: (chapterId) => peekCoverage(chapterId),
   });
   const storyBible = createStoryBibleMock(s, initial, manuscriptReady, assets);
+  const character = createCharacterMock(s);
   const teleprompter = createTeleprompterMock({
     ready: manuscriptReady,
     chapters: () => s.chapters,
@@ -178,6 +182,12 @@ export function createMockApi(
   const takeReviewScan = createTakeReviewScanMock(saveAnalyzerFindings, endJob, initial.takeReviewScanHold);
   const takeComparison = createTakeComparisonMock({ get: findings.findingsGet, save: saveFinding }, endJob, initial.takeComparisonHold);
   const measurePicked = new Set<string>();
+  const { recordMeasurement: recordRenderMeasurement, ...proofingRender } = createProofingRenderMock({
+    ready: manuscriptReady,
+    chapters: () => s.chapters,
+    picked: measurePicked,
+    seed: initial.proofingRender,
+  });
   const { current: deliveryProfile, ...deliveryProfiles } = createDeliveryProfilesMock(initial.deliveryProfile);
   const { peekDiagnostics, ...diagnostics } = createDiagnosticsMock(endJob, measurePicked, initial.diagnostics);
   const editing = createEditingMock(initial.editing);
@@ -194,6 +204,7 @@ export function createMockApi(
   const { resaveReview, ...measurement } = createMeasureMock(endJob, initial.measure, measurePicked, deliveryProfile, peekDiagnostics, (job) => {
     const review = mockDeliveryReviewFindings(job);
     saveFileFindings(DELIVERY_REVIEW_ANALYZER, review.files, review.findings);
+    recordRenderMeasurement(job.files);
   });
   const renderEncodeMaster = createRenderEncodeMasterMock(endJob, initial.renderExport, deliveryProfile);
   const system = createSystemMock(s, initial, {
@@ -207,6 +218,7 @@ export function createMockApi(
     ...manuscript.bindings,
     ...settings.bindings,
     ...storyBible.bindings,
+    ...character.bindings,
     ...assets.bindings,
     ...proofing.bindings,
     ...reaperActions.bindings,
@@ -247,6 +259,7 @@ export function createMockApi(
     ...workspace,
     ...preview,
     ...stages,
+    ...proofingRender,
     ...production,
     ...findings,
     // Merge the workspace's own loop into the shared REAPER status/stop, after ...findings so these win: one app
@@ -265,6 +278,7 @@ export function createMockApi(
     ...mastering,
     ...recording,
     ...createPronunciationLookupMock(),
+    ...createPronunciationOnlineMock(),
   };
   const api = initial.invalidPayload ? { ...base, ...invalidPayloadOverrides(initial.invalidPayload, base) } : base;
   return { ...api, ...overrides };

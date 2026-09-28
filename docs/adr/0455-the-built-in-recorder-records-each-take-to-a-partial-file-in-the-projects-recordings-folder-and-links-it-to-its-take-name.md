@@ -45,7 +45,7 @@ Left open for this phase: the folder's name, how a take gets its name without ev
 - The rail's Takes lists them newest first, each playable through the `/media` route, which now also serves a file the recorder lists. It never serves the take being recorded.
 - The recorder records independently of the reading session: reading and recording are two actions, as in REAPER. Leaving the Booth stops a take (it is saved), so a take never records on with no Record control on screen.
 
-**The wire.** `RecorderState`, `RecorderChooseEngine`, `RecorderDevices`, `RecorderMeterStart`, `RecorderMeterStop`, `RecorderStart` and `RecorderStop`, with the live events `recording:state` and `recording:level` (`hostAPIVersion` 78). They have Zod schemas, goldens and `wireContracts.test.ts` rows. Neither event crosses the REAPER bridge, so `bridge/wire.go` is unchanged.
+**The wire.** `RecorderState`, `RecorderChooseEngine`, `RecorderDevices`, `RecorderMeterStart`, `RecorderMeterStop`, `RecorderStart` and `RecorderStop`, with the live events `recording:state` and `recording:level` (`hostAPIVersion` 80). They have Zod schemas, goldens and `wireContracts.test.ts` rows. Neither event crosses the REAPER bridge, so `bridge/wire.go` is unchanged.
 
 **The build.** `sounddevice` is off the freeze's exclude list, and `verify-installable.mjs` checks that the frozen sidecar carries PortAudio's DLL (ADR 0357's consequence).
 

@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/countrymanprime/narration-utils/shell/internal/bridge"
+	"github.com/countrymanprime/narration-utils/shell/internal/character"
 	"github.com/countrymanprime/narration-utils/shell/internal/cleanuptools"
 	"github.com/countrymanprime/narration-utils/shell/internal/coverage"
 	"github.com/countrymanprime/narration-utils/shell/internal/credits"
@@ -35,6 +36,7 @@ import (
 	"github.com/countrymanprime/narration-utils/shell/internal/production"
 	"github.com/countrymanprime/narration-utils/shell/internal/project"
 	"github.com/countrymanprime/narration-utils/shell/internal/projectstate"
+	"github.com/countrymanprime/narration-utils/shell/internal/pronunciationonline"
 	"github.com/countrymanprime/narration-utils/shell/internal/proofing"
 	"github.com/countrymanprime/narration-utils/shell/internal/recents"
 	"github.com/countrymanprime/narration-utils/shell/internal/recording"
@@ -57,7 +59,7 @@ import (
 // Keep this in lockstep with apps/ui/src/hostApi.ts.  The frontend rejects
 // an older host before bootstrapping so a partial update cannot run against a
 // binding contract it does not understand.
-const hostAPIVersion = 78
+const hostAPIVersion = 80
 
 // Host is the Wails binding boundary. The frontend invokes only this bound
 // object; it never receives a loopback port or an HTTP capability.
@@ -141,6 +143,10 @@ type Host struct {
 	// own ledger records and silence_cleanup findings. Swapped on every project switch like coverage; it starts only on
 	// the narrator's own request (Q9), never in the background.
 	editing *editing.Service
+	// character is the region-approval and reference service (character-continuity-review.prd.md Phase 3,
+	// bindings_character.go). Swapped with editing on every project switch; it produces no findings and does no
+	// acoustic analysis - Phase 6's non-acoustic bindings only (owner decision D87 on #509 benches the acoustic half).
+	character *character.Service
 	// findings is the project's findings store: Transcript Compare's and the
 	// Guide's adapters save into it on every completed run
 	// (review-dashboard-and-findings-adoption.prd.md Phases 2-3), and
@@ -209,6 +215,12 @@ type Host struct {
 	// pickAudioFiles and measureFile are seams for tests (measure_job.go): nil means the operating system's multiple-file
 	// picker and measure.MeasureFile.
 	pickAudioFiles func() ([]string, error)
+	// pronunciationOnline is the Merriam-Webster lookup (prep-depth P9, bindings_pronunciationonline.go): user-level like
+	// recents, set once in NewHost and never swapped by a project switch, so it is read directly.
+	pronunciationOnline *pronunciationonline.Service
+	// pickRenderFile is a seam for tests (bindings_proofing_render.go): nil means the operating system's single-file
+	// picker for a chapter's rendered file.
+	pickRenderFile func() (string, error)
 	// pickDiagnosticsFolder and diagnosticsNow are seams for tests (diagnostics_export.go): nil means the operating
 	// system's folder picker and time.Now.
 	pickDiagnosticsFolder func() (string, error)
@@ -354,7 +366,7 @@ func NewHost() *Host {
 	profiles := deliveryprofile.NewStore(deliveryProfilesPath())
 	profiles.SetPersist(reporter)
 	notes.SetOnJobEnd(func(job manuscript.ImportJob) { host.importJobEnded(job) })
-	host = &Host{diagnostic: fmt.Sprintf("go-%d", time.Now().UnixNano()), version: version, config: config{repoRoot: repoRoot}, manuscript: notes, sidecars: process.NewSupervisor(), settings: store, installJobs: map[string]*installJob{}, recents: recent, creditTemplates: templates, deliveryProfiles: profiles, log: logger, runLog: runLog, persist: reporter, updates: update.NewChecker(version, updateCachePath(), reporter), stager: newUpdateStager(), pendingPath: updatePendingPath()}
+	host = &Host{diagnostic: fmt.Sprintf("go-%d", time.Now().UnixNano()), version: version, config: config{repoRoot: repoRoot}, manuscript: notes, sidecars: process.NewSupervisor(), settings: store, installJobs: map[string]*installJob{}, recents: recent, creditTemplates: templates, deliveryProfiles: profiles, pronunciationOnline: newPronunciationOnline(), log: logger, runLog: runLog, persist: reporter, updates: update.NewChecker(version, updateCachePath(), reporter), stager: newUpdateStager(), pendingPath: updatePendingPath()}
 	// NARRATION_DEBUG=1 already forced the level in runlog.New; a saved General.debug_logging=true from a previous
 	// run turns it on too, so the narrator's last choice survives a restart (SetDebug is a no-op once the
 	// environment has forced it).
@@ -542,6 +554,12 @@ func (h *Host) configureLocked(next config) {
 		// DAW port PRD Phase 5d: reads the saved .rpp through the port's offline role instead of tracks.Parse directly.
 		ProjectReader: reaper.ProjectReader{},
 	}, nil)
+	h.character = character.New(character.Config{
+		Project:     h.config.projectFolder,
+		ProjectFile: func() (string, error) { return selectedProjectFile(projectFolder, settingsStore) },
+		// DAW port PRD Phase 5d: reads the saved .rpp through the port's offline role instead of tracks.Parse directly.
+		ProjectReader: reaper.ProjectReader{},
+	})
 	// Every finished comparison is recorded for the proofing pickups signal (proofing-readiness-signals PRD Phase 2).
 	h.transcript.SetRunRecorder(comparisonRecorder(h.config.projectFolder, h.manuscript, settingsStore, h.persist))
 	// The proofing delivery checks judge the chapter's render against the project's delivery profile as it is when the

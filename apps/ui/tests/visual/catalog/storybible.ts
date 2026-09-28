@@ -82,14 +82,47 @@ export const storybibleStates: StateEntry[] = [
   },
   {
     page: 'storybible',
+    state: 'entry-pronunciation-online',
+    description:
+      "Story Bible, an entry's pronunciation details after Look up online: Merriam-Webster's respelling with Use this, on the narrator's own key (prep-depth P9)",
+    ...KEEPS_DESKTOP_SCROLL,
+  },
+  {
+    page: 'storybible',
     state: 'pronunciation-queries',
     description:
       'Story Bible, the Pronunciation queries slide-over: every name not yet author confirmed in reading order, the first marked sent, with the filter, the open/sent count, Export CSV and Mark sent / Mark answered (prep-depth P3)',
+  },
+  {
+    page: 'storybible',
+    state: 'pronunciation-queries-online-confirm',
+    description:
+      'Story Bible, the notice before a batch online lookup: how many names it sends to Merriam-Webster, one at a time, and that nothing else leaves (prep-depth P9, Q11)',
   },
 
   {
     page: 'storybible',
     state: 'invalid-payload',
     description: 'Story Bible, the inline error with Retry when the entities could not be read; navigation still works (ADR 0069)',
+  },
+
+  // Character bible (character-continuity-review.prd.md Phase 6, non-acoustic part only; D87 on #509 benches
+  // every acoustic-drift binding, so there is no findings, drift comparison or audition here).
+  {
+    page: 'storybible',
+    state: 'character-voice-references',
+    description:
+      'Story Bible, a Character entry: Reference clips (an approved reference, one flagged changed since approval, approve-a-region picker) and Dialogue cues (an unattributed cue with its speaker correction control) (character-continuity-review P6)',
+  },
+  {
+    page: 'storybible',
+    state: 'voice-data-panel',
+    description:
+      'Story Bible, the Voice data slide-over from the toolbar: approving a reference for plain Narration (Q9) and the Remove voice data action (Q7)',
+  },
+  {
+    page: 'storybible',
+    state: 'remove-voice-data-confirm',
+    description: 'Story Bible, the Voice data slide-over with the Remove voice data confirm dialog open (Q7, destructive, project-wide)',
   },
 ];

@@ -341,14 +341,23 @@ paragraph entirely, the section names that instead and offers only to clear it. 
 removes it; like everything else here, nothing is applied, exported, or ever changes the manuscript,
 project, or audio.
 
-Above the Preview panel, the stage recommendations panel lists every chapter currently in the Proofing
-stage with its suggestion for Finalized: a badge if the evidence says it's ready, "Not ready" if a
-pickup is still open, or "Can't tell yet" with what to check next. Confirm, Dismiss, and Revert work the
-same way they do on [Production](production.md#stage-suggestions); Why opens the same evidence view, listing what
-was checked (pickups from every tracked analyzer, and any delivery check the narrator turned on) and
-linking a pickup straight to [Proof](#proof) or an unmapped chapter to the [audio engine panel](navigation.md#the-audio-engine-panel). A
-chapter with nothing to report ("No chapter is in Proofing right now") shows that instead of an empty
-table.
+Above the Preview panel, **Proofing readiness** shows only while this chapter's own status is Proofing:
+its suggestion for Finalized — a badge if the evidence says it's ready, "Not ready" if a pickup is still
+open, or "Can't tell yet" with what to check next. Confirm, Dismiss, and Revert work the same way they
+do on [Production](production.md#stage-suggestions); Why opens the same evidence view, listing what was checked
+(pickups from every tracked analyzer, and any delivery check the narrator turned on) — an open pickup's
+**Open this note** selects it in the Flags panel above without leaving the page, and an unmapped chapter
+links to the [audio engine panel](navigation.md#the-audio-engine-panel).
+
+Below the suggestion, **Rendered file** shows which file the delivery checks measure and lets you change
+it: **Choose rendered file** opens a file picker and attests the file was made from the chapter as it is
+now; **Clear** removes the choice; **Measure** runs the same measurement job [Delivery](delivery.md)
+uses, with its real progress, and needs no second file picker. If the file changes on disk, or the
+chapter's recorded audio changes, after you chose it, the section says so ("changed since you chose it")
+and every delivery check reads unknown until you choose the file again and measure it — a stale render
+never counts as a pass.
+
+![Proof chapter view - the readiness panel's Rendered file section, a render just chosen and measured](../../images/ui/proof-chapter-render-chosen.webp)
 
 ---
 

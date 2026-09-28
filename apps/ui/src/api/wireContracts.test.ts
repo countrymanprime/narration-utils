@@ -9,6 +9,7 @@ import { WIRE_TAKE_REVIEW_FINDINGS, WIRE_TRACKS_PROJECT, WIRE_TRANSCRIPT, editin
 import { prepMarkupChapterSchema, prepMarkupSpanSchema } from './schemas/prepMarkup';
 import { prepCompletenessSummarySchema } from './schemas/prepCompleteness';
 import { cleanupApplyResultSchema, cleanupPreviewResultSchema, levelMatchApplyResultSchema, levelMatchPreviewResultSchema } from './schemas/cleanup';
+import { pronunciationOnlineBatchResultSchema, pronunciationOnlineKeyStatusSchema, pronunciationOnlineResultSchema } from './schemas/pronunciationOnline';
 import { WIRE_TAKE_COMPARISON_FINDING } from './takeComparisonMock';
 import { MOCK_MEASURE_PATHS } from './measureMock';
 import { judgeMock } from './coverageMock';
@@ -48,6 +49,7 @@ import { COVERAGE_EVALUATOR_REASONS, COVERAGE_REFUSAL_REASONS, coverageResultSch
 import { workspaceAlignmentResultSchema } from './schemas/workspace';
 import { pinnedPreviewSchema, previewResultSchema } from './schemas/preview';
 import { STAGE_REFUSAL_REASONS, STAGE_UNKNOWN_CAUSES, stageDecisionResultSchema, stageRecommendationsSchema } from './schemas/stages';
+import { proofingChooseRenderResultSchema, proofingRenderSchema } from './schemas/proofingRender';
 import {
   productionBurndownSchema,
   productionOverviewSchema,
@@ -89,12 +91,14 @@ import { dawCatalogListSchema } from './schemas/dawCatalog';
 import {
   guideBuildResultSchema,
   guideCreatedSchema,
+  guideDialogueCuesSchema,
   guideEntitiesSchema,
   guidePreviewSchema,
   pronunciationQueriesCsvSchema,
   pronunciationQueriesSchema,
   queryImportResultSchema,
 } from './schemas/storyBible';
+import { approvedCharacterReferencesSchema, characterRegionsSchema, characterReferenceSchema } from './schemas/character';
 import { bootstrapSchema, copyDiagnosticsResultSchema, projectAttachStateSchema, readySchema } from './schemas/system';
 import {
   readAloudReaperStateSchema,
@@ -739,6 +743,45 @@ describe('answers of the mock client for the manuscript, Story Bible and project
     expect(csv.count).toBe(queries.length);
   });
 
+  it('the Story Bible dialogue cues and their correction', async () => {
+    const api = createMockApi();
+    const cues = await api.guideDialogueCues();
+    expectMatches(guideDialogueCuesSchema, cues, 'mock dialogue cues');
+    const unknown = cues.find((cue) => cue.speaker_entity_id === null);
+    expect(unknown).toBeDefined();
+    await api.guideCorrectCue(unknown?.id ?? '', 'alice');
+    const corrected = (await api.guideDialogueCues()).find((cue) => cue.id === unknown?.id);
+    expect(corrected).toMatchObject({ speaker_entity_id: 'alice', speaker_source: 'correction', corrected: true });
+    // "unknown" clears a correction back to unknown, the same as an empty string.
+    await api.guideCorrectCue(unknown?.id ?? '', 'unknown');
+    const cleared = (await api.guideDialogueCues()).find((cue) => cue.id === unknown?.id);
+    expect(cleared).toMatchObject({ speaker_entity_id: null, speaker_source: 'correction', corrected: true });
+    await expect(api.guideCorrectCue('not-a-real-cue', 'alice')).rejects.toThrow();
+  });
+
+  it('the character bible: regions, approving a reference, revoking it and removing every reference', async () => {
+    const api = createMockApi();
+    const regions = await api.characterListRegions();
+    expectMatches(characterRegionsSchema, regions, 'mock regions');
+    expect(regions.length).toBeGreaterThan(0);
+    const region = regions[0];
+    const reference = await api.characterApprove('alice', region.guid, 'Anchor take.');
+    expectMatches(characterReferenceSchema, reference, 'mock reference');
+    expect(reference.characterId).toBe('alice');
+    expect(reference.regionGuid).toBe(region.guid);
+    const referenced = await api.characterReferences();
+    expectMatches(approvedCharacterReferencesSchema, referenced, 'mock references');
+    expect(referenced.some((row) => row.id === reference.id && !row.changedSinceApproval)).toBe(true);
+    await api.characterRevoke(reference.id);
+    expect((await api.characterReferences()).some((row) => row.id === reference.id)).toBe(false);
+    // Approving a region that is not in the saved project is refused (the real host validates it too).
+    await expect(api.characterApprove('alice', 'not-a-real-region', '')).rejects.toThrow();
+    const seeded = await api.characterReferences();
+    expect(seeded.length).toBeGreaterThan(0);
+    await api.characterRemoveVoiceData();
+    expect(await api.characterReferences()).toHaveLength(0);
+  });
+
   it('re-importing an answered pronunciation query file applies a matched row and reports an unmatched one', async () => {
     const api = createMockApi();
     const queries = await api.guidePronunciationQueries();
@@ -894,6 +937,34 @@ describe('answers of the mock client for the manuscript, Story Bible and project
     await expect(api.pronunciationLookupOpen('howjsay', 'croquet')).resolves.toBeUndefined();
     // @ts-expect-error an unknown source is a build-time error too; the mock also rejects it at runtime.
     await expect(api.pronunciationLookupOpen('wiktionary', 'croquet')).rejects.toThrow(/Unknown pronunciation lookup source/);
+  });
+
+  it('the online pronunciation lookup: the key status, a lookup, the cache and a confirmed batch (prep-depth Phase 9)', async () => {
+    const api = createMockApi();
+    const absent = await api.pronunciationOnlineKeyStatus();
+    expectMatches(pronunciationOnlineKeyStatusSchema, absent, 'mock key status');
+    expect(absent.present).toBe(false);
+    // Nothing is sent without the narrator's own key.
+    await expect(api.pronunciationOnlineLookup('croquet')).rejects.toThrow(/key/);
+    await expect(api.pronunciationOnlineKeySet('not a key')).rejects.toThrow(/does not look like/);
+    const present = await api.pronunciationOnlineKeySet('0b5c1a3e-7d2f-4e6a-9c8b-2f1e0d9c8b7a');
+    expectMatches(pronunciationOnlineKeyStatusSchema, present, 'mock key set');
+    expect(JSON.stringify(present)).not.toContain('0b5c1a3e');
+    const found = await api.pronunciationOnlineLookup('croquet');
+    expectMatches(pronunciationOnlineResultSchema, found, 'mock lookup');
+    expect(found).toMatchObject({ found: true, cached: false });
+    expect((await api.pronunciationOnlineLookup('Croquet')).cached).toBe(true);
+    expectMatches(pronunciationOnlineResultSchema, await api.pronunciationOnlineLookup('quorlen'), 'mock lookup, not found');
+    // One word only: a passage or a file name is refused, as the host refuses it.
+    await expect(api.pronunciationOnlineLookup('The Mock Turtle sighed deeply')).rejects.toThrow(/one word/);
+    await expect(api.pronunciationOnlineLookup('C:\\Books\\alice.docx')).rejects.toThrow(/one word/);
+    // A batch needs its distinct word count confirmed.
+    await expect(api.pronunciationOnlineLookupBatch(['wren', 'Wren', 'alice'], 3)).rejects.toThrow(/confirmation/);
+    const batch = await api.pronunciationOnlineLookupBatch(['wren', 'Wren', 'alice'], 2);
+    expectMatches(pronunciationOnlineBatchResultSchema, batch, 'mock batch');
+    expect(batch).toMatchObject({ words: 2, fetched: 2 });
+    await expect(api.pronunciationOnlineSignUpOpen()).resolves.toBeUndefined();
+    expectMatches(pronunciationOnlineKeyStatusSchema, await api.pronunciationOnlineKeyClear(), 'mock key clear');
   });
 });
 
@@ -2099,6 +2170,55 @@ describe('answers of the mock client for the settings, voice, model, transcript 
     await expect(api.stageRevert('no-such-chapter')).rejects.toThrow('not a narration chapter');
   });
 
+  it('the proofing render association: none, choosing, a re-read, staleness, a measurement and clearing', async () => {
+    const api = createMockApi({}, { proofingRender: { 'chapter-2': { state: 'stale' }, 'chapter-3': { state: 'current', measured: true } } });
+
+    const none = await api.proofingRenderState('chapter-1');
+    expectMatches(proofingRenderSchema, none, 'mock proofing render, none');
+    expect(none).toMatchObject({ state: 'none', cause: 'never_analyzed' });
+
+    const stale = await api.proofingRenderState('chapter-2');
+    expectMatches(proofingRenderSchema, stale, 'mock proofing render, stale');
+    expect(stale).toMatchObject({ state: 'stale', cause: 'stale' });
+
+    const measured = await api.proofingRenderState('chapter-3');
+    expectMatches(proofingRenderSchema, measured, 'mock proofing render, already measured');
+    expect(measured).toMatchObject({ state: 'current', measurementFailed: false });
+    expect(measured.measurement?.integrated_lufs).toBeTypeOf('number');
+
+    const chosen = await api.proofingChooseRender('chapter-1');
+    expectMatches(proofingChooseRenderResultSchema, chosen, 'mock proofing choose render');
+    if (chosen.status !== 'ok') throw new Error('choosing a render must succeed in the mock');
+    expect(chosen.render).toMatchObject({ state: 'current', measurementFailed: false });
+    expect(chosen.render.path).toBeTruthy();
+    expect(chosen.render.measurement).toBeUndefined();
+
+    const reread = await api.proofingRenderState('chapter-1');
+    expect(reread).toEqual(chosen.render);
+
+    // Measuring the chosen render (DX-1's job) records the result against this chapter, the same as
+    // apps/desktop/internal/proofing/renders.go's RecordRenderMeasurements.
+    let job = await api.measureAnalyze([chosen.render.path!]);
+    while (job.phase === 'running') job = await api.measureState();
+    const afterMeasuring = await api.proofingRenderState('chapter-1');
+    expectMatches(proofingRenderSchema, afterMeasuring, 'mock proofing render, measured');
+    expect(afterMeasuring.measurement?.sample_rate).toBeTypeOf('number');
+    expect(afterMeasuring.measuredAt).toBeTruthy();
+
+    const cleared = await api.proofingClearRender('chapter-1');
+    expectMatches(proofingRenderSchema, cleared, 'mock proofing render, cleared');
+    expect(cleared).toMatchObject({ state: 'none' });
+
+    // The two ProofingChooseRender branches the mock never produces (the dialog is not simulated): pinned directly
+    // against the schema, the same convention as ProjectLinkDawFile's untested cancel-or-mismatch shapes.
+    expectMatches(proofingChooseRenderResultSchema, { status: 'cancelled' }, 'proofing choose render, cancelled');
+    expectMatches(
+      proofingChooseRenderResultSchema,
+      { status: 'refused', message: 'Link this chapter to the REAPER track it is recorded on.' },
+      'proofing choose render, refused',
+    );
+  });
+
   it('the CleanupPreview, CleanupApply, LevelMatchPreview and LevelMatchApply answers', async () => {
     const chapterId = 'chapter-1';
     const api = createMockApi({}, { findings: [editingCandidateFor(chapterId, 'Chapter One')] });
@@ -2201,6 +2321,10 @@ describe('answers of the mock client for the settings, voice, model, transcript 
       'guidePronunciationQueries',
       'guidePronunciationQueriesCsv',
       'guidePronunciationImportQueriesCsv',
+      'guideDialogueCues',
+      'characterListRegions',
+      'characterApprove',
+      'characterReferences',
       'assetsList',
       'assetsInstall',
       'assetsInstallState',
@@ -2301,6 +2425,9 @@ describe('answers of the mock client for the settings, voice, model, transcript 
       'stageConfirm',
       'stageDismiss',
       'stageRevert',
+      'proofingRenderState',
+      'proofingChooseRender',
+      'proofingClearRender',
       'productionOverview',
       'productionStartTimer',
       'productionStopTimer',
@@ -2373,6 +2500,11 @@ describe('answers of the mock client for the settings, voice, model, transcript 
       'saveCreditsRetailSample',
       'creditsStatuses',
       'setCreditsStatus',
+      'pronunciationOnlineKeyStatus',
+      'pronunciationOnlineKeySet',
+      'pronunciationOnlineKeyClear',
+      'pronunciationOnlineLookup',
+      'pronunciationOnlineLookupBatch',
     ];
     const VOID = [
       'manuscriptImportCancel',
@@ -2391,6 +2523,9 @@ describe('answers of the mock client for the settings, voice, model, transcript 
       'guideDelete',
       'guideRelate',
       'guideUnrelate',
+      'guideCorrectCue',
+      'characterRevoke',
+      'characterRemoveVoiceData',
       'ttsRemove',
       'whisperRemove',
       'assetsRemove',
@@ -2407,6 +2542,7 @@ describe('answers of the mock client for the settings, voice, model, transcript 
       'teleprompterPause',
       'dawCatalogOpenDownloadPage',
       'pronunciationLookupOpen',
+      'pronunciationOnlineSignUpOpen',
       'teleprompterSeek',
       'reportClientDiagnostic',
       'systemNotify',
