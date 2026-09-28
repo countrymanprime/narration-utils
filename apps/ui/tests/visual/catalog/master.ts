@@ -138,6 +138,12 @@ export const masterStates: StateEntry[] = [
     page: 'master',
     state: 'multi-export-empty',
     description: 'Master & QC, Multi-platform export with nothing checked - a checkbox per delivery platform and "Build 0 packages" disabled',
+    sameAs: {
+      of: 'master/diagnostics-empty',
+      reason:
+        'At the desktop viewport height, scrolling the Diagnostics section (left column) into view also brings the Multi-platform export panel (right column) into the same frame on this freshly opened, nothing-done page, so the two captures match; narrower viewports crop differently and the states diverge there.',
+      viewports: ['desktop'],
+    },
     ...KEEPS_DESKTOP_SCROLL,
   },
   {
