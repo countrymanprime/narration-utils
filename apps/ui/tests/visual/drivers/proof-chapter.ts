@@ -184,12 +184,19 @@ export const proofChapterDrivers: Record<string, Driver> = {
   // delivery checks stay unknown until a render is chosen and measured, matching the mock's default).
   'render-none': async (page) => {
     await openPanel(page, '/', page.getByText('Proofing readiness'), 'Chapter 9');
-    await page.getByText('Choose the rendered file for this chapter.').waitFor();
+    const reason = page.getByText('Choose the rendered file for this chapter.');
+    await reason.waitFor();
+    // The panel scrolled to its own heading above, which leaves this section - the only thing that
+    // differs from render-chosen - below the fold at narrower viewports (whole-run.check.ts caught them
+    // as identical captures).
+    await reason.scrollIntoViewIfNeeded();
   },
   'render-chosen': async (page) => {
     await openPanel(page, '/', page.getByText('Proofing readiness'), 'Chapter 9');
     await clickVisible(page, 'button', 'Choose rendered file');
-    await page.getByRole('button', { name: 'Measure' }).waitFor();
+    const measure = page.getByRole('button', { name: 'Measure' });
+    await measure.waitFor();
+    await measure.scrollIntoViewIfNeeded();
   },
   'render-measured': async (page) => {
     await openPanel(page, '/', page.getByText('Proofing readiness'), 'Chapter 9');
@@ -198,11 +205,15 @@ export const proofChapterDrivers: Record<string, Driver> = {
     // Scoped to the section itself: a page-wide /Measured/ also matches a delivery check's own
     // "Measured <timestamp>" evidence line elsewhere on this same chapter's page.
     const renderedFileSection = page.getByRole('heading', { name: 'Rendered file' }).locator('xpath=..');
-    await renderedFileSection.getByText(/Measured/).waitFor();
+    const measured = renderedFileSection.getByText(/Measured/);
+    await measured.waitFor();
+    await measured.scrollIntoViewIfNeeded();
   },
   'render-stale': async (page) => {
     await openPanel(page, '/?mockProofingRender=chapter-9-stale', page.getByText('Proofing readiness'), 'Chapter 9');
-    await page.getByText(/changed since you chose it/).waitFor();
+    const stale = page.getByText(/changed since you chose it/);
+    await stale.waitFor();
+    await stale.scrollIntoViewIfNeeded();
   },
 };
 
