@@ -136,36 +136,46 @@ func (s *Service) runRender(ctx context.Context, request Request, status proofin
 func renderFindingsScope(chapterID string) string { return chapterID + "-render" }
 
 // composeAndPersistRender is composeAndPersist's (scan.go) render-path
-// counterpart: Phase 3's own composition (ComposeRenderEmptySpace), over the
-// render's whole-file scan rather than a set of items, saved to the render's
-// own findings scope.
+// counterpart: Phase 3's own composition (ComposeRenderEmptySpace) for empty
+// space, plus one ClassCandidateFinding (findings.go, Phase 4) per click and
+// breath candidate the render's own decode found, fed the same synthetic
+// whole-file ItemAudible renderAudible builds for composition - all saved
+// together to the render's own findings scope in one call, tagged
+// evidence["source"] = "render" so gatherCandidates (provider.go) never
+// mixes them into the item path's own candidates.
 func (s *Service) composeAndPersistRender(request Request, path string, scan RenderScan) {
 	if s.findings == nil {
 		return
 	}
 	policy := s.policy()
-	candidates, ok := ComposeRenderEmptySpace(path, scan, policy)
-	scope := renderFindingsScope(request.ChapterID)
-	if !ok {
-		_, _ = s.findings.SaveAnalyzerFindings(analyzerName, scope, []findings.Finding{})
-		return
+	fresh := []findings.Finding{}
+	if candidates, ok := ComposeRenderEmptySpace(path, scan, policy); ok {
+		for _, candidate := range candidates {
+			fresh = append(fresh, RenderEmptySpaceFinding(request.DocumentID, request.ChapterID, request.ChapterTitle, candidate, path, policy))
+		}
 	}
-	fresh := make([]findings.Finding, 0, len(candidates))
-	for _, candidate := range candidates {
-		fresh = append(fresh, RenderEmptySpaceFinding(request.DocumentID, request.ChapterID, request.ChapterTitle, candidate, path, policy))
+	audible := renderAudible(path, scan)
+	for _, candidate := range scan.Cleanup.Candidates {
+		if candidate.Class != measure.CleanupClick && candidate.Class != measure.CleanupBreath {
+			continue
+		}
+		finding := ClassCandidateFinding(request.DocumentID, request.ChapterID, request.ChapterTitle, audible, scan.Cleanup, candidate)
+		finding.Evidence["source"] = "render"
+		fresh = append(fresh, finding)
 	}
-	_, _ = s.findings.SaveAnalyzerFindings(analyzerName, scope, fresh)
+	_, _ = s.findings.SaveAnalyzerFindings(analyzerName, renderFindingsScope(request.ChapterID), fresh)
 }
 
 // renderSignals is provider.go's SignalProvider.Signals render-choice branch
 // (Q6): it reads stored evidence only, exactly like gatherCoverage/
 // gatherCandidates do for the item path (Q12) - proofing.EvaluateRender reads
 // the render association and the saved project already in view, this
-// package's own CurrentRenderRecord reads the ledger, and the click/breath
-// candidates come straight from that same ledger record's own payload
-// (RenderScanPayload.Scan), never a fresh decode.
+// package's own CurrentRenderRecord reads the ledger for scan currency, and
+// every class's candidates come from the render's own persisted findings
+// (gatherRenderCandidates), never a fresh decode or the raw ledger payload.
 func (s *Service) renderSignals(chapter stages.ChapterContext, view stages.EvidenceView, now time.Time) ([]stages.Signal, error) {
 	basis := stages.Basis{ProjectFileModTime: view.ProjectFile.ModTime}
+	validations := DetectorValidations()
 	if s.config.Renders == nil {
 		unknownEmptySpace := unknownEditingSignal(
 			stages.Signal{ID: EmptySpaceSignalID, Stage: stages.StageEditing, Evidence: []stages.Evidence{processedAudioCaveat(), renderSourceEvidence()}, Basis: basis, ComputedAt: now},
@@ -173,8 +183,8 @@ func (s *Service) renderSignals(chapter stages.ChapterContext, view stages.Evide
 		)
 		return []stages.Signal{
 			unknownEmptySpace,
-			UnvalidatedSignal(ClickSignalID, AnalyzerVersion, []stages.Evidence{renderSourceEvidence()}, basis, now),
-			UnvalidatedSignal(BreathSignalID, AnalyzerVersion, []stages.Evidence{renderSourceEvidence()}, basis, now),
+			RenderClassSignal(RenderClassSignalInput{ID: ClickSignalID, AnalyzerID: AnalyzerClick, AnalyzerVersion: ClickAnalyzerVersion, Validations: validations, Basis: basis, ComputedAt: now}),
+			RenderClassSignal(RenderClassSignalInput{ID: BreathSignalID, AnalyzerID: AnalyzerBreath, AnalyzerVersion: BreathAnalyzerVersion, Validations: validations, Basis: basis, ComputedAt: now}),
 		}, nil
 	}
 
@@ -184,16 +194,15 @@ func (s *Service) renderSignals(chapter stages.ChapterContext, view stages.Evide
 	}
 
 	scanState := RenderScanNever
-	var payload RenderScanPayload
 	if status.Association != nil {
 		renderKey := status.Association.Render.Key
-		_, found, ok, err := CurrentRenderRecord(s.ledger, chapter.DocumentID, chapter.ChapterID, renderKey)
+		_, _, ok, err := CurrentRenderRecord(s.ledger, chapter.DocumentID, chapter.ChapterID, renderKey)
 		if err != nil {
 			return nil, err
 		}
 		switch {
 		case ok:
-			scanState, payload = RenderScanCurrent, found
+			scanState = RenderScanCurrent
 		default:
 			anyRecords, err := s.ledger.List(AnalyzerEditingRender, chapter.ChapterID)
 			if err != nil {
@@ -206,25 +215,22 @@ func (s *Service) renderSignals(chapter stages.ChapterContext, view stages.Evide
 	}
 
 	running := s.Busy() && s.State().ChapterID == chapter.ChapterID
-	var candidates []CandidateStatus
-	var clickEvidence, breathEvidence []stages.Evidence
-	if scanState == RenderScanCurrent && payload.Scan != nil {
-		candidates, err = s.gatherRenderCandidates(chapter.ChapterID)
-		if err != nil {
-			return nil, err
-		}
-		clickEvidence = RenderClickBreathEvidence(status.Association.Path, payload.Scan.Cleanup.Candidates, measure.CleanupClick)
-		breathEvidence = RenderClickBreathEvidence(status.Association.Path, payload.Scan.Cleanup.Candidates, measure.CleanupBreath)
-	} else {
-		clickEvidence = []stages.Evidence{renderSourceEvidence()}
-		breathEvidence = []stages.Evidence{renderSourceEvidence()}
+	renderCandidates, err := s.gatherRenderCandidates(chapter.ChapterID)
+	if err != nil {
+		return nil, err
 	}
 
 	emptySpace := RenderEmptySpaceSignal(RenderEmptySpaceInput{
-		Render: status, ScanState: scanState, Policy: s.policy(), Candidates: candidates, Running: running,
+		Render: status, ScanState: scanState, Policy: s.policy(), Candidates: renderCandidates["silence"], Running: running,
 		Basis: basis, ComputedAt: now,
 	})
-	click := UnvalidatedSignal(ClickSignalID, AnalyzerVersion, clickEvidence, basis, now)
-	breath := UnvalidatedSignal(BreathSignalID, AnalyzerVersion, breathEvidence, basis, now)
+	click := RenderClassSignal(RenderClassSignalInput{
+		ID: ClickSignalID, AnalyzerID: AnalyzerClick, AnalyzerVersion: ClickAnalyzerVersion, Validations: validations,
+		Render: status, ScanState: scanState, Candidates: renderCandidates["click"], Running: running, Basis: basis, ComputedAt: now,
+	})
+	breath := RenderClassSignal(RenderClassSignalInput{
+		ID: BreathSignalID, AnalyzerID: AnalyzerBreath, AnalyzerVersion: BreathAnalyzerVersion, Validations: validations,
+		Render: status, ScanState: scanState, Candidates: renderCandidates["breath"], Running: running, Basis: basis, ComputedAt: now,
+	})
 	return []stages.Signal{emptySpace, click, breath}, nil
 }

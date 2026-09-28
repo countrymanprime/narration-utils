@@ -10,7 +10,25 @@ import (
 	"time"
 
 	"github.com/countrymanprime/narration-utils/shell/internal/coverage"
+	"github.com/countrymanprime/narration-utils/shell/internal/dawport"
 )
+
+// fakeBackgroundHeartbeat is a dawport.Heartbeat a test can point at a chosen transport, for background-check gating
+// on REAPER's own recording state (daw-chapter-track-auto-sync.prd.md Phase 7, ADR 0211; the transport itself is
+// ADR 0305). Only Reachable and Transport matter to backgroundCheckTick; the rest answer as an unlinked heartbeat.
+type fakeBackgroundHeartbeat struct {
+	reachable    bool
+	transport    dawport.Transport
+	hasTransport bool
+}
+
+func (f fakeBackgroundHeartbeat) Reachable() bool                { return f.reachable }
+func (f fakeBackgroundHeartbeat) CurrentProject() (string, bool) { return "", false }
+func (f fakeBackgroundHeartbeat) Matches(string) bool            { return false }
+func (f fakeBackgroundHeartbeat) ChangeCount() (int, bool)       { return 0, false }
+func (f fakeBackgroundHeartbeat) Transport() (dawport.Transport, bool) {
+	return f.transport, f.hasTransport
+}
 
 // Background recording checks (daw-chapter-track-auto-sync PRD Phase 7, S7, D27, ADR 0211): the host's loop over the
 // real coverage service, with the power state and the clock handed in.
@@ -115,6 +133,38 @@ func TestOnBatteryNothingStarts(t *testing.T) {
 	host, _, now := staleCoverageHost(t)
 	host.powerState = func() coverage.Power { return coverage.PowerBattery }
 	if decision := host.backgroundCheckTick(now); decision.Wait != coverage.WaitBattery || host.services().coverage.Busy() {
+		t.Fatalf("decision = %+v", decision)
+	}
+}
+
+// TestNothingStartsWhileReaperIsRecording covers the heartbeat's recording bit (Phase 7's own gap, ADR 0211 and
+// ADR 0305): a live heartbeat that says REAPER is recording holds off, even though every other condition (mains
+// power, quiet chapter, model installed) allows a check.
+func TestNothingStartsWhileReaperIsRecording(t *testing.T) {
+	host, _, now := staleCoverageHost(t)
+	host.reachability = fakeBackgroundHeartbeat{reachable: true, transport: dawport.Transport{Recording: true}, hasTransport: true}
+	if decision := host.backgroundCheckTick(now); decision.Wait != coverage.WaitRecording || host.services().coverage.Busy() {
+		t.Fatalf("decision = %+v", decision)
+	}
+}
+
+// TestABackgroundCheckRunsWhileReaperIsOpenAndKnownNotRecording is the flip side: REAPER is reachable, and its own
+// heartbeat says it is not recording, so the check that TestNothingStartsWhileReaperIsRecording held off now starts.
+func TestABackgroundCheckRunsWhileReaperIsOpenAndKnownNotRecording(t *testing.T) {
+	host, _, now := staleCoverageHost(t)
+	host.reachability = fakeBackgroundHeartbeat{reachable: true, transport: dawport.Transport{Recording: false}, hasTransport: true}
+	if decision := host.backgroundCheckTick(now); decision.ChapterID != "c-0001" {
+		t.Fatalf("decision = %+v", decision)
+	}
+}
+
+// TestNothingStartsWhileReaperIsRunningWithNoTransportInTheHeartbeat covers the fallback for an older script or a
+// heartbeat that has not carried the transport yet: unknown counts as recording (ADR 0211), same as before this
+// stream landed the wiring.
+func TestNothingStartsWhileReaperIsRunningWithNoTransportInTheHeartbeat(t *testing.T) {
+	host, _, now := staleCoverageHost(t)
+	host.reachability = fakeBackgroundHeartbeat{reachable: true}
+	if decision := host.backgroundCheckTick(now); decision.Wait != coverage.WaitRecording {
 		t.Fatalf("decision = %+v", decision)
 	}
 }

@@ -84,10 +84,10 @@ func processedAudioCaveat() stages.Evidence {
 // Phase 8 of editing-readiness-analysis.prd.md: "the evidence names which
 // [source] was analyzed", for both choices, not only the render one. Every
 // editing signal carries exactly one of these, always, whatever its state -
-// EmptySpaceSignal (the item path, below) and RenderEmptySpaceSignal
-// (render_signal.go) each add their own at construction; provider.go adds
-// the item one to the click/breath UnvalidatedSignal calls it makes, and
-// render_signal.go's RenderClickBreathEvidence does the same for render.
+// EmptySpaceSignal (the item path, below), RenderEmptySpaceSignal
+// (render_signal.go), ClassSignal (validation.go, the item path's click and
+// breath signal) and RenderClassSignal (render_signal.go, its render-path
+// counterpart) each add their own at construction.
 func itemsSourceEvidence() stages.Evidence {
 	return stages.Evidence{Kind: "source", Label: "Source analyzed", Value: "items on the chapter's track"}
 }
@@ -226,51 +226,5 @@ var staleEditingText = map[evidence.EvaluatorReason]string{
 
 func unknownEditingSignal(signal stages.Signal, cause stages.UnknownCause, reason string) stages.Signal {
 	signal.State, signal.Cause, signal.Reason = stages.SignalUnknown, cause, reason
-	return signal
-}
-
-// unvalidatedReason is the fixed reason the click and breath signals always
-// give (Q5's D22 default, applied because Phase 4 - the corpus validation
-// that would ever populate a "this version is validated" registry - is out
-// of this pass's scope, per the parent task's own instruction: "the click
-// and breath signals must report unknown... and must NEVER report met - do
-// not invent a validated version to make them pass"). validatedAnalyzerVersions
-// is deliberately empty, not absent: it documents, in code, that no version
-// of this package's click or breath detector has ever been validated on the
-// corpus, rather than silently special-casing the two signals with no
-// explanation of why.
-var validatedAnalyzerVersions = map[string]bool{}
-
-const unvalidatedReason = "This detector has not been validated on a labeled corpus yet (Phase 4 of the editing-readiness-analysis PRD has not run), so it can never say \"done\" - only \"unknown\"."
-
-// IsValidated reports whether analyzerVersion is recorded as validated on
-// the corpus (Q5): the actual gate mechanism Phase 4 would populate.
-// validatedAnalyzerVersions is empty in this pass (Phase 4, the corpus
-// validation run, is out of scope), so this always answers false today -
-// but it is a real conditional, not a hardcoded "always unknown" comment,
-// so a later Phase 4 landing entries in the map is enough to flip a
-// version's own signal, with no change needed here.
-func IsValidated(analyzerVersion string) bool { return validatedAnalyzerVersions[analyzerVersion] }
-
-// UnvalidatedSignal answers id (ClickSignalID or BreathSignalID) unknown
-// when analyzerVersion is not validated (IsValidated), which is always, in
-// this build (validatedAnalyzerVersions is empty - see its own doc comment).
-// The parent task's own instruction is exactly this: "the click and breath
-// signals must report unknown... and must NEVER report met - do not invent
-// a validated version to make them pass." It still carries the click/breath
-// findings this package's scan already persists (Phase 5) as evidence, so a
-// narrator can see raw candidates even though the signal itself can never
-// resolve them from an unvalidated detector.
-func UnvalidatedSignal(id, analyzerVersion string, evidenceEntries []stages.Evidence, basis stages.Basis, now time.Time) stages.Signal {
-	signal := stages.Signal{ID: id, Stage: stages.StageEditing, Basis: basis, ComputedAt: now, Evidence: []stages.Evidence{processedAudioCaveat()}}
-	signal.Evidence = append(signal.Evidence, evidenceEntries...)
-	if !IsValidated(analyzerVersion) {
-		return unknownEditingSignal(signal, stages.CauseMeasurementUnavailable, unvalidatedReason)
-	}
-	// Unreachable while validatedAnalyzerVersions is empty; kept so a future
-	// Phase 4 has a real branch to land validated behaviour in, rather than
-	// this function needing to be rewritten from an unconditional unknown.
-	signal.State, signal.Reason = stages.SignalUnknown, "validated detector output is not yet wired into this signal"
-	signal.Cause = stages.CauseProviderError
 	return signal
 }

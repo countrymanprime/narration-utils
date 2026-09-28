@@ -78,10 +78,15 @@
               "kind": "source",
               "label": "Source analyzed",
               "value": "items on the chapter's track"
+            },
+            {
+              "kind": "validation",
+              "label": "Detector",
+              "value": "editing-breath-v1: held-out recall 84% (27 of 32) on a synthetic corpus, 2026-09-28; validation needs 90% in every condition on a narrator corpus."
             }
           ],
           "id": "editing.breaths",
-          "reason": "This detector has not been validated on a labeled corpus yet (Phase 4 of the editing-readiness-analysis PRD has not run), so it can never say \"done\" - only \"unknown\".",
+          "reason": "The breath detector is not validated yet on a labeled narrator recording, so it can list candidates but never say this chapter is done.",
           "stage": "editing",
           "state": "unknown"
         },
@@ -103,10 +108,15 @@
               "kind": "source",
               "label": "Source analyzed",
               "value": "items on the chapter's track"
+            },
+            {
+              "kind": "validation",
+              "label": "Detector",
+              "value": "editing-click-v1: held-out recall 38% (12 of 32) on a synthetic corpus, 2026-09-28; validation needs 90% in every condition on a narrator corpus."
             }
           ],
           "id": "editing.clicks",
-          "reason": "This detector has not been validated on a labeled corpus yet (Phase 4 of the editing-readiness-analysis PRD has not run), so it can never say \"done\" - only \"unknown\".",
+          "reason": "The click detector is not validated yet on a labeled narrator recording, so it can list candidates but never say this chapter is done.",
           "stage": "editing",
           "state": "unknown"
         },

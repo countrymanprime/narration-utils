@@ -1,4 +1,11 @@
-import type { ChapterSyncBatch, ChapterSyncChapter, ChapterSyncNeedsYou, ChapterSyncPickupTrack, ChapterSyncTrackRef } from '../../api/contracts/chapterSync';
+import type {
+  ChapterSyncBackgroundWait,
+  ChapterSyncBatch,
+  ChapterSyncChapter,
+  ChapterSyncNeedsYou,
+  ChapterSyncPickupTrack,
+  ChapterSyncTrackRef,
+} from '../../api/contracts/chapterSync';
 
 /**
  * Why a chapter is in Needs you, as the consent dialog says it (daw-chapter-track-auto-sync.prd.md Phase 3, mockup 01). The
@@ -100,6 +107,23 @@ export function chapterSyncSummaryText(
     else links = 'no chapters linked';
   }
   return `On · ${synced}${file} · ${links}`;
+}
+
+/**
+ * Chapter sync's background-checks wait line (daw-chapter-track-auto-sync.prd.md Phase 7, ADR 0211): why a changed
+ * chapter is not being re-checked on its own right now. '' when there is nothing worth telling the narrator: checks
+ * are off, another check (the narrator's own or another background pick) is already running, or nothing has
+ * changed since its last check.
+ */
+export function chapterSyncBackgroundWaitText(background: { enabled: boolean; wait: ChapterSyncBackgroundWait }): string {
+  if (!background.enabled) return '';
+  const REASONS: Partial<Record<ChapterSyncBackgroundWait, string>> = {
+    recording: 'Background checks: waiting, REAPER is recording.',
+    battery: 'Background checks: waiting for mains power.',
+    quiet: 'Background checks: waiting for things to settle down.',
+    model: 'Background checks: waiting for the Whisper model.',
+  };
+  return REASONS[background.wait] ?? '';
 }
 
 /** One line of the Sync activity list. `undoTrackGuid` is the automatic link Undo would remove ('' for a line with no Undo). */

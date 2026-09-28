@@ -12,7 +12,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/countrymanprime/narration-utils/shell/internal/measure"
 	"github.com/countrymanprime/narration-utils/shell/internal/proofing"
 	"github.com/countrymanprime/narration-utils/shell/internal/stages"
 )
@@ -121,28 +120,70 @@ func RenderEmptySpaceSignal(in RenderEmptySpaceInput) stages.Signal {
 	return signal
 }
 
-// RenderClickBreathEvidence builds the render path's own evidence entries for
-// the click or breath UnvalidatedSignal call: the source-naming entry every
-// render-sourced signal carries, plus one "candidate" entry per matching
-// measure.CleanupCandidate from the render's own decode, in the same shape
-// provider.go's findingEvidence builds for the item path's findings. This
-// package never persists a separate click/breath finding for either source
-// (provider.go's own gatherCandidates has the same gap for items - Phase 4,
-// which would validate these detectors, has not run); reading the raw
-// candidates straight from the render's own ledger payload is enough to
-// satisfy Phase 8's success signal ("a render with a known click reports
-// it") without a store round-trip that would have nothing to add yet.
-func RenderClickBreathEvidence(path string, candidates []measure.CleanupCandidate, class measure.CleanupClass) []stages.Evidence {
-	evidenceEntries := []stages.Evidence{renderSourceEvidence()}
-	for _, candidate := range candidates {
-		if candidate.Class != class {
-			continue
-		}
-		evidenceEntries = append(evidenceEntries, stages.Evidence{
-			Kind: "candidate", Label: "Candidate", File: path,
-			Range: &stages.TimeRange{Start: candidate.StartSeconds, End: candidate.EndSeconds},
-			Value: candidate.Why,
-		})
+// RenderClassSignalInput is everything RenderClassSignal reads for the
+// render path's click or breath signal (Q6): the same validated-detector
+// gate ClassSignal (validation.go) applies to the item path - a detector is
+// validated or not, whatever audio it reads - judged against the chapter's
+// rendered file instead of its items once that gate is open.
+type RenderClassSignalInput struct {
+	ID              string
+	AnalyzerID      string
+	AnalyzerVersion string
+	Validations     []DetectorValidation
+	Render          proofing.RenderStatus
+	ScanState       RenderScanState
+	Candidates      []CandidateStatus
+	Running         bool
+	Basis           stages.Basis
+	ComputedAt      time.Time
+}
+
+// RenderClassSignal is ClassSignal's (validation.go) render-path counterpart:
+// the same validated-version gate first, with the same "a %s detector is not
+// validated yet" reason and validation-summary evidence entry ClassSignal
+// gives the item path - so a narrator sees one consistent story about
+// whether a detector is trusted, whichever source is chosen - then the
+// render's own association, staleness and scan currency (proofing.EvaluateRender,
+// RenderScanState) instead of item mapping and per-item coverage. Candidates
+// come from the render's own persisted findings (composeAndPersistRender,
+// render_service.go's gatherRenderCandidates), the same open/dismissed
+// tracking the item path's click and breath candidates already have.
+func RenderClassSignal(in RenderClassSignalInput) stages.Signal {
+	signal := stages.Signal{
+		ID: in.ID, Stage: stages.StageEditing, Evidence: []stages.Evidence{processedAudioCaveat(), renderSourceEvidence()},
+		Basis: in.Basis, ComputedAt: in.ComputedAt,
 	}
-	return evidenceEntries
+	open := 0
+	for _, candidate := range in.Candidates {
+		if candidate.Open {
+			open++
+			signal.Evidence = append(signal.Evidence, candidate.Evidence)
+		}
+	}
+	noun := classNoun(in.AnalyzerID)
+	if !IsValidated(in.Validations, in.AnalyzerID, in.AnalyzerVersion) {
+		signal.Evidence = append(signal.Evidence, stages.Evidence{
+			Kind: "validation", Label: "Detector", Value: validationSummary(in.Validations, in.AnalyzerID, in.AnalyzerVersion),
+		})
+		return unknownEditingSignal(signal, stages.CauseMeasurementUnavailable, fmt.Sprintf(
+			"The %s detector is not validated yet on a labeled narrator recording, so it can list candidates but never say this chapter is done.", noun))
+	}
+	if in.Render.State != proofing.RenderCurrent {
+		return unknownEditingSignal(signal, in.Render.Cause, in.Render.Reason)
+	}
+	if in.Running {
+		return unknownEditingSignal(signal, stages.CauseAnalysisRunning, "An editing check of the rendered file is running.")
+	}
+	switch in.ScanState {
+	case RenderScanNever:
+		return unknownEditingSignal(signal, stages.CauseNeverAnalyzed, "This chapter's render has not been checked yet.")
+	case RenderScanStale:
+		return unknownEditingSignal(signal, stages.CauseStale, "The rendered file was checked, but the render changed since - check it again.")
+	}
+	if open > 0 {
+		signal.State, signal.Reason = stages.SignalNotMet, fmt.Sprintf("%d %s candidate(s) remain open in the rendered file.", open, noun)
+		return signal
+	}
+	signal.State, signal.Reason = stages.SignalMet, fmt.Sprintf("No open %s candidates in the rendered file at its current state.", noun)
+	return signal
 }
