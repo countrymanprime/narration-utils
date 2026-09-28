@@ -1,6 +1,9 @@
 import { ProgressBar } from './ProgressBar';
 
-const EYEBROW = "font-['Barlow_Condensed',sans-serif] text-[0.72rem] font-semibold tracking-[0.08em] text-[var(--text-muted)] uppercase";
+// The eyebrow label: Barlow Condensed at the shared label size and tracking (mock-fidelity-primitives-and-components.prd.md
+// Phase 0b's --font-size-label/--tracking-label, measured from the benchmark's eyebrows, table headers and tag labels).
+const EYEBROW =
+  "font-['Barlow_Condensed',sans-serif] text-[length:var(--font-size-label)] font-semibold tracking-[var(--tracking-label)] text-[var(--text-muted)] uppercase";
 const MONO = "font-['IBM_Plex_Mono',ui-monospace,monospace]";
 
 const TONE_TEXT: Record<Exclude<StatTileTone, 'neutral'>, string> = {
@@ -38,7 +41,8 @@ export function StatTile({
   return (
     <div className={className}>
       <div className={EYEBROW}>{label}</div>
-      <div className={`mt-0.5 text-xl font-semibold ${MONO}`}>
+      {/* Plex Mono 22 px, weight 500 (mock B01) - one step up from the shared body mono and a touch lighter than the old bold 20 px. */}
+      <div className={`mt-0.5 text-[1.375rem] font-medium ${MONO}`}>
         <span style={tone === 'neutral' ? undefined : { color: TONE_TEXT[tone] }}>{value}</span>
         {unit && (
           <span className={`ml-1 text-sm font-normal ${MONO}`} style={{ color: 'var(--text-muted)' }}>
@@ -53,7 +57,7 @@ export function StatTile({
       )}
       {progress !== undefined && (
         <div className="mt-1.5">
-          <ProgressBar label={label} value={Math.round(progress * 100)} />
+          <ProgressBar label={label} value={Math.round(progress * 100)} size="thin" tone="ok" />
         </div>
       )}
     </div>
