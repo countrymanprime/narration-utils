@@ -7,12 +7,16 @@ the differences a comparison heard between the script and the recording (see
 [Comparing the recording with the script](#comparing-the-recording-with-the-script)), the
 [Story Bible](story-bible.md) entries and pronunciations that need a look, the lines you recorded
 more than once ([pickups and duplicates](#pickups-and-duplicates)), and the delivery rules your
-measured files did not meet ([delivery checks](#delivery-checks)). Each finding waits in
-the list until you accept, dismiss or defer it, and your decision is kept with the project. Running a
-check again keeps your decision on a finding whose evidence did not change.
+measured files did not meet ([delivery checks](#delivery-checks)). Each note waits in
+the list until you mark it for a pickup, a fix in the edit, waive it or defer it, and your decision is kept
+with the project. Running a check again keeps your decision on a finding whose evidence did not change.
 
-The line under the title counts the latest run's findings by status: to review, accepted, dismissed
-and deferred.
+Beside the title, **Sources** names where the notes came from: the proofer's sheet (while the pickup list
+has any), the local AI compare, the Story Bible and the other checks that found something.
+
+The notes table's header counts the latest run's notes, **Notes · 14** for example, with a chip for each
+resolution that has notes: how many are to review, how many need a pickup, how many are to fix in the
+edit, how many are waived and how many are deferred.
 
 ![Proof - every check's findings in one list, with the counts by status](../../images/ui/proof-default.webp)
 
@@ -20,6 +24,11 @@ Proof is always in the navigation, even before a manuscript is imported. Until a
 something, it says **No notes yet** and where findings come from.
 
 ![Proof - no notes yet](../../images/ui/proof-empty.webp)
+
+The notes header also has **Import proofer sheet** and **Export for proofer**: the proofer's pickup
+list, the same one the [Pickups](pickups.md) page works through. Import reads a proofer's CSV sheet and
+adds each pickup as a marker in REAPER, and says which rows it could not use; Export saves the pickups
+still open as a CSV for the proofer. Both need REAPER running.
 
 Under the page title, **Chapter to open** picks a narration chapter and **Open chapter** opens its
 [chapter view](#the-chapter-view) directly, without going by way of a note — useful when you want to
@@ -56,16 +65,25 @@ window):
   finding, why the entry needs a look;
 - its confidence, and the check's reason for it.
 
-**Show in manuscript** opens the [Script](script.md) at the finding's line (it needs an
+The detail's title is the note's time and kind, **0:12.4 · Misread** for example. **Play ±3 s** plays the
+note in the app, from 3 seconds before it to 3 seconds after, straight from its audio file (so REAPER's FX
+and edits are not applied); press it again, now **Stop**, to stop. It is off for a note with no place in a
+recording, such as a Story Bible entry.
+
+**Show in Script** opens the [Script](script.md) at the finding's line (it needs an
 imported manuscript), and a Story Bible finding also has **Open in Story Bible**. A delivery check has
 **Open in Master & QC** instead (see [Delivery checks](#delivery-checks)). **Open chapter view** opens
 the finding's [chapter view](#the-chapter-view) beside it, to listen against the script.
 
 ![Proof - a transcript difference selected: what the script says, what was recorded, the evidence and the decision](../../images/ui/proof-detail.webp)
 
-**Accept**, **Dismiss** or **Defer** records your decision at once, with the note if you wrote one (up
-to 2,000 characters). The page says it was saved, and the list and the counts update. **Reopen** puts a
-decided finding back in the list to review.
+**Pickup** (or **Fix in edit**, for a note fixed in the edit rather than re-recorded), **Waive** or
+**Defer** records your decision at once, with the note if you wrote one (up to 2,000 characters). The
+first button says which fix the note asks for: a misread, a skip or a pronunciation needs a pickup;
+extra words, a repeated read, pacing and the audio checks are fixed in the edit. **Waive** says the line
+stays as it was read. The page says it was saved ("Saved: needs a pickup."), the note's Resolution
+becomes **Pickup**, **Edit** or **Waived**, and the header's chips update. **Reopen** puts a decided note
+back in the list to review.
 
 A decision is always made on the evidence you are looking at. If the check ran again after you opened
 the finding and the evidence changed, the decision is not saved: the page says so, shows the latest
@@ -94,7 +112,7 @@ its old project time, so it is still found after you move the item.
 ![Proof - a finding looping in REAPER, with Stop loop](../../images/ui/proof-reaper-looping.webp)
 
 - **Add marker in REAPER** puts one take marker on the finding's spot, after you confirm. It is off
-  until you accept the finding. The marker is named like the ones a chapter's [comparison
+  until you mark the note for a pickup or an edit. The marker is named like the ones a chapter's [comparison
   export](#comparing-the-recording-with-the-script) adds, for example
   `MISREAD: 'pink eyes' as 'pale eyes'`, so Export markers does not add it a second time. If the take
   already has a marker of the same kind there, nothing is added and the page says so. This is the only
@@ -152,7 +170,7 @@ Nothing ranks one read over another; listen and choose.
 - **Audition reads** plays two reads side by side (Read A and Read B, each with Play and Loop), with a
   little audio before and after. It plays each read straight from its file, so REAPER's FX, gain and
   edits are not applied and it can sound different from the project. Nothing in REAPER changes.
-- **Add as take…** is on once you accept the group. Choose the **Target item** (the item the take is
+- **Add as take…** is on once you have marked the group for a pickup or an edit. Choose the **Target item** (the item the take is
   added to) and the **Candidate read** (the read that becomes the new take); nothing is chosen for you.
   **Create take** adds it in REAPER: the item's active take and length stay as they were, and one Undo
   in REAPER removes the new take. You choose which take plays in REAPER yourself.
@@ -161,7 +179,7 @@ Nothing ranks one read over another; listen and choose.
 
 ![Proof - Add as take on an accepted group: the target item and the candidate read, chosen by you](../../images/ui/proof-take-review-add-take.webp)
 
-Dismiss a group that is a line repeated on purpose. Scanning the track again keeps your decision on a
+Waive a group that is a line repeated on purpose. Scanning the track again keeps your decision on a
 group whose reads did not change.
 
 ### Comparing takes
@@ -194,7 +212,7 @@ parts:
 Nothing adds the rows up or picks a take: a read can be word for word but noisy, another clean but with
 a misread, and which matters is your call. **Go to**, **Loop** and **Audition reads** work as they do on
 the group. When you have chosen, make that take active in REAPER yourself; the app never changes which
-take plays. Accept, dismiss or defer the comparison like any other finding; comparing the same group
+take plays. Decide on the comparison like any other note; comparing the same group
 again replaces it, and keeps your decision only if the measurements did not change.
 
 ## Delivery checks
@@ -210,7 +228,7 @@ A delivery check has no line in the manuscript and no item in REAPER, so **Open 
 place: it opens Master & QC on that file, rule by rule. If the file is not in the last measurement
 (the app keeps the last measurement until it closes), the page says so; measure it again to see it.
 
-Accept, Dismiss and Defer work as for every other finding, and change nothing but your decision: not
+Pickup (here **Fix in edit**), Waive and Defer work as for every other note, and change nothing but your decision: not
 the profile and not the measurement. Your decision holds while the same audio is judged against the same
 rule. After a new render, or if you change that rule's numbers in a custom profile, the check comes back
 to review with your note kept. When a file meets the rule again, its check is no longer in the latest
@@ -231,8 +249,22 @@ same check [Production](production.md#checking-a-chapters-recording) runs. There
 
 ![Proof chapter view - a linked chapter that hasn't been checked yet](../../images/ui/proof-chapter-never.webp)
 
-Once a current check exists, the chapter view shows the chapter's script, a transport, and the check's
-flags, under the heading "Proof · <chapter name>" and a breadcrumb "Proof › <chapter>". The header names
+The chapter view opens on the chapter's notes, under the heading "Proof · <chapter name>" and a breadcrumb
+"Proof › <chapter>", with the same **Sources** line as the book's notes:
+
+- a strip across the chapter's recording, from 0:00 to its length, with a pin at each note that has a
+  time, coloured by its type and named in the legend under it. Press a pin (or focus the strip and use the
+  arrow keys, then Enter) to open that note. The strip has no waveform yet: the app does not read the
+  recording's levels for it;
+- the chapter's notes table, with the same header, resolutions and proofer's sheet as the book's, and no
+  Chapter column;
+- the selected note beside it, with **Play ±3 s** and the same decisions as on the book's notes;
+- the **Recording check** card: how much of the chapter's text is recorded, its recorded length, what the
+  check flagged ("1 misread, 1 extra passage.") and whether the check is current for the project as last
+  saved.
+
+Under the notes, once a current check exists, the chapter view shows the chapter's script, a transport,
+and the check's flags. The header names
 the check's state (current, or stale if an item changed since), and **as of last save** — the chapter
 view always reads the REAPER project as it was last saved, not whatever is open live in REAPER right
 now.
@@ -264,8 +296,8 @@ skipped word was never recorded, so there's nothing to play).
 
 Clicking any word with a recorded time seeks the app's own player there (starting about a second
 before it, so you hear it in context). A flag backed by a finding shows which check found it, and the
-same **Accept**, **Dismiss**, **Defer** and note controls as on [Proof's notes](#a-finding-and-your-decision) — a
-decision made here is the same decision Proof shows.
+same **Pickup** (or **Fix in edit**), **Waive**, **Defer** and note controls as on [Proof's
+notes](#a-finding-and-your-decision) — a decision made here is the same decision Proof shows.
 
 ## Comparing the recording with the script
 

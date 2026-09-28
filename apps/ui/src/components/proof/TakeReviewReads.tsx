@@ -13,7 +13,7 @@ import { coverageLabel, memberLabel, sourceFileName } from './takeReviewFormat';
 import { useReadNavigation } from './useReadNavigation';
 
 const NO_ITEM = 'This read has no REAPER item to go to. Scan the chapter again to find it where it is now.';
-const NOT_ACCEPTED = 'Accept this finding first. A take is only added for a finding you accepted.';
+const NOT_ACCEPTED = 'Mark this note as a pickup or an edit first. A take is only added for a note you mean to fix.';
 const CHOOSE_BOTH = 'Choose a target item and a different candidate read.';
 
 /**

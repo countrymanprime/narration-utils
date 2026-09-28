@@ -58,7 +58,12 @@ describe('ProofPage', () => {
   it('lists the latest run with the counts by status, and asks the narrator to pick a finding', async () => {
     renderPage();
     expect(await rows()).toHaveLength(4);
-    expect(await screen.findByText('3 to review · 0 accepted · 1 dismissed · 0 deferred')).toBeTruthy();
+    // Mock 04's notes header (D85 #7): "Notes · N" and a chip per resolution that has notes.
+    expect(await screen.findByRole('heading', { name: 'Notes · 4' })).toBeTruthy();
+    expect(screen.getByText('3 to review')).toBeTruthy();
+    expect(screen.getByText('1 waived')).toBeTruthy();
+    // PF4: the Sources line names where the notes come from.
+    expect(screen.getByText('local AI compare · Story Bible')).toBeTruthy();
     expect(screen.getByText(/Select a note to see its evidence/)).toBeTruthy();
     const first = (await rows())[0];
     expect(first.textContent).toContain('“a White Rabbit with pink eyes” read as “a white rabbit with pale eyes”');
@@ -82,7 +87,7 @@ describe('ProofPage', () => {
     const list = vi.spyOn(api, 'findingsList');
     await rows();
     await user.selectOptions(screen.getByRole('combobox', { name: 'Check' }), 'story-bible');
-    await waitFor(() => expect(list).toHaveBeenLastCalledWith(expect.objectContaining({ analyzer: 'story-bible', sort: 'chapter' })));
+    await waitFor(() => expect(list).toHaveBeenCalledWith(expect.objectContaining({ analyzer: 'story-bible', sort: 'chapter' })));
     await waitFor(async () => expect(await rows()).toHaveLength(1));
     await user.click(screen.getByRole('switch', { name: 'Include findings the latest run did not repeat' }));
     await waitFor(async () => expect(await rows()).toHaveLength(2));
@@ -113,7 +118,7 @@ describe('ProofPage', () => {
     const user = userEvent.setup();
     renderPage();
     await openFinding(user, /pink eyes/);
-    const detail = screen.getByRole('region', { name: 'Transcript difference' });
+    const detail = screen.getByRole('region', { name: '0:12.4 · Misread' });
     expect(within(detail).getByText('a White Rabbit with pink eyes')).toBeTruthy();
     expect(within(detail).getByText('Misread')).toBeTruthy();
     expect(within(detail).getByText('0.42 s')).toBeTruthy();
@@ -123,22 +128,44 @@ describe('ProofPage', () => {
     expect(within(detail).getByRole('button', { name: 'Loop in REAPER' })).toBeTruthy();
   });
 
+  it('plays a note with 3 s either side (PF8), and says why a note with no recording position cannot', async () => {
+    const user = userEvent.setup();
+    vi.spyOn(window.HTMLMediaElement.prototype, 'play').mockResolvedValue(undefined);
+    vi.spyOn(window.HTMLMediaElement.prototype, 'pause').mockImplementation(() => {});
+    renderPage();
+    await openFinding(user, /pink eyes/);
+    await user.click(screen.getByRole('button', { name: 'Play ±3 s' }));
+    expect(await screen.findByRole('button', { name: 'Stop' })).toBeTruthy();
+
+    const entityRow = (await rows()).find((row) => /Story Bible entry/.test(row.textContent ?? ''));
+    await user.click(entityRow!);
+    expect((await screen.findByRole('button', { name: 'Play ±3 s' })).hasAttribute('disabled')).toBe(true);
+  });
+
+  it('offers the proofer’s sheet in and out on the notes header (D85 #8)', async () => {
+    renderPage();
+    await rows();
+    expect(screen.getByRole('button', { name: 'Import proofer sheet' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Export for proofer' })).toBeTruthy();
+  });
+
   it('records a decision with its note, says so, and updates the list and the counts', async () => {
     const user = userEvent.setup();
     const { api } = renderPage();
     const review = vi.spyOn(api, 'findingsReview');
     await openFinding(user, /pink eyes/);
     await user.type(screen.getByRole('textbox', { name: 'Note (optional)' }), 'Re-record the line');
-    await user.click(screen.getByRole('button', { name: 'Accept' }));
-    expect(await screen.findByText('Saved as accepted.')).toBeTruthy();
+    await user.click(screen.getByRole('button', { name: 'Pickup' }));
+    expect(await screen.findByText('Saved: needs a pickup.')).toBeTruthy();
     expect(review).toHaveBeenCalledWith({
       id: WIRE_FINDINGS[0].id,
       evidenceVersion: WIRE_FINDINGS[0].evidence_version,
       status: 'accepted',
       note: 'Re-record the line',
     });
-    expect(await screen.findByText('2 to review · 1 accepted · 1 dismissed · 0 deferred')).toBeTruthy();
-    expect((await rows())[0].textContent).toContain('Accepted');
+    expect(await screen.findByText('1 need pickup')).toBeTruthy();
+    expect(screen.getByText('2 to review')).toBeTruthy();
+    expect((await rows())[0].textContent).toContain('Pickup');
     expect(screen.getByRole('button', { name: 'Reopen' })).toBeTruthy();
   });
 
@@ -148,11 +175,11 @@ describe('ProofPage', () => {
     const review = vi.spyOn(api, 'findingsReview');
     await openFinding(user, /pink eyes/);
     await user.type(screen.getByRole('textbox', { name: 'Note (optional)' }), 'Pale is fine');
-    await user.click(screen.getByRole('button', { name: 'Dismiss' }));
+    await user.click(screen.getByRole('button', { name: 'Waive' }));
     expect((await screen.findByRole('alert')).textContent).toMatch(/^Not saved: this finding changed since you opened it, because its check ran again\./);
     expect((screen.getByRole('textbox', { name: 'Note (optional)' }) as HTMLTextAreaElement).value).toBe('Pale is fine');
-    await user.click(screen.getByRole('button', { name: 'Dismiss' }));
-    expect(await screen.findByText('Saved as dismissed.')).toBeTruthy();
+    await user.click(screen.getByRole('button', { name: 'Waive' }));
+    expect(await screen.findByText('Saved: waived.')).toBeTruthy();
     expect(review).toHaveBeenLastCalledWith(expect.objectContaining({ evidenceVersion: `${WIRE_FINDINGS[0].evidence_version}-rerun`, note: 'Pale is fine' }));
     expect(screen.queryByRole('alert')).toBeNull();
   });
@@ -173,7 +200,7 @@ describe('ProofPage', () => {
     await user.click(note);
     await user.paste('x'.repeat(2001));
     expect(screen.getByText('A note can be at most 2000 characters.')).toBeTruthy();
-    expect((screen.getByRole('button', { name: 'Accept' }) as HTMLButtonElement).disabled).toBe(true);
+    expect((screen.getByRole('button', { name: 'Pickup' }) as HTMLButtonElement).disabled).toBe(true);
   });
 
   it('says a finding is not in the latest run', async () => {
@@ -381,8 +408,8 @@ describe('ProofPage adds an approved marker in REAPER', () => {
     await openFinding(user, /pink eyes/);
     await waitFor(() => expect(inReaper().getByRole('button', { name: 'Go to in REAPER' }).hasAttribute('disabled')).toBe(false));
     expect(addMarker().disabled).toBe(true);
-    await user.click(screen.getByRole('button', { name: 'Accept' }));
-    await screen.findByText('Saved as accepted.');
+    await user.click(screen.getByRole('button', { name: 'Pickup' }));
+    await screen.findByText('Saved: needs a pickup.');
     await waitFor(() => expect(addMarker().disabled).toBe(false));
   };
 
@@ -476,8 +503,8 @@ describe('ProofPage adds an approved marker in REAPER', () => {
     expect(goToManuscript).not.toHaveBeenCalled();
 
     // Dismissed like any other finding, against the evidence version it was shown with.
-    await user.click(within(detail).getByRole('button', { name: 'Dismiss' }));
-    expect(await within(detail).findByText('Saved as dismissed.')).toBeTruthy();
+    await user.click(within(detail).getByRole('button', { name: 'Waive' }));
+    expect(await within(detail).findByText('Saved: waived.')).toBeTruthy();
     expect((await api.findingsGet('delivery-rms')).review.status).toBe('dismissed');
   });
 });

@@ -121,7 +121,11 @@ export function ScriptView({
     const target = container?.querySelector(`[data-token-index="${currentTokenIndex}"]`);
     if (!container || !target) return;
     suppressScrollRef.current = true;
-    target.scrollIntoView?.({ block: 'center', behavior: 'smooth' });
+    // Only the script's own box scrolls, never the page: the chapter view leads with mock 04's notes (ADR 0470), so a
+    // `scrollIntoView` here would drag the whole page down to the script on load and on every word.
+    const box = container.getBoundingClientRect();
+    const word = target.getBoundingClientRect();
+    container.scrollBy?.({ top: word.top - box.top - (container.clientHeight - word.height) / 2, behavior: 'smooth' });
     const clear = setTimeout(() => {
       suppressScrollRef.current = false;
     }, 400);

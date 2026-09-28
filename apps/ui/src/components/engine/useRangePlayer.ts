@@ -20,7 +20,11 @@ export type AuditionRange = {
  * `rangeEnd + AUDITION_POST_ROLL_SECONDS` instead of playing to the end of the whole source file,
  * and can loop back to `rangeStart - AUDITION_PRE_ROLL_SECONDS`.
  */
-export function useRangePlayer(mediaUrl: (sourceFile: string) => string) {
+export function useRangePlayer(
+  mediaUrl: (sourceFile: string) => string,
+  // Proof's Play ±3 s (mock 04) plays a note with 3 s either side; every audition keeps the fixed roll above.
+  roll: { pre: number; post: number } = { pre: AUDITION_PRE_ROLL_SECONDS, post: AUDITION_POST_ROLL_SECONDS },
+) {
   const audioRef = useRef<HTMLAudioElement | undefined>(undefined);
   if (!audioRef.current) audioRef.current = new Audio();
 
@@ -33,16 +37,18 @@ export function useRangePlayer(mediaUrl: (sourceFile: string) => string) {
   rangeRef.current = range;
   const loopRef = useRef(loop);
   loopRef.current = loop;
+  const rollRef = useRef(roll);
+  rollRef.current = roll;
 
   useEffect(() => {
     const audio = audioRef.current!;
     const onTimeUpdate = () => {
       const active = rangeRef.current;
       if (!active) return;
-      const stopAt = active.rangeEnd + AUDITION_POST_ROLL_SECONDS;
+      const stopAt = active.rangeEnd + rollRef.current.post;
       if (audio.currentTime < stopAt) return;
       if (loopRef.current) {
-        audio.currentTime = Math.max(0, active.rangeStart - AUDITION_PRE_ROLL_SECONDS);
+        audio.currentTime = Math.max(0, active.rangeStart - rollRef.current.pre);
         audio.play().catch((reason: unknown) => {
           // A newer play() interrupting this one (the narrator switched reads mid-loop) is expected, not a failure.
           if (reason instanceof DOMException && reason.name === 'AbortError') return;
@@ -75,7 +81,7 @@ export function useRangePlayer(mediaUrl: (sourceFile: string) => string) {
       setLoadError(false);
       setRange(next);
       audio.src = mediaUrl(next.sourceFile);
-      audio.currentTime = Math.max(0, next.rangeStart - AUDITION_PRE_ROLL_SECONDS);
+      audio.currentTime = Math.max(0, next.rangeStart - rollRef.current.pre);
       setIsPlaying(true);
       audio.play().catch((reason: unknown) => {
         // A newer play() interrupting this one (switching reads quickly) is expected, not a failure.

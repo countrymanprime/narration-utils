@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useApi } from '../../api/ApiContext';
 import { describeApiError } from '../../api/errorMessage';
 import type { Finding, FindingsPage, FindingsSummary, ManuscriptChapter, TakeComparisonJob, TakeReviewScanJob } from '../../types';
+import { usePickupsState } from '../pickups/usePickupsState';
 import { chapterName } from '../../chapterName';
 import { LoadError } from '../layout/LoadError';
 import { Button } from '../primitives/Button';
@@ -13,12 +14,23 @@ import { FindingDetail } from './FindingDetail';
 import { FindingsList } from './FindingsList';
 import { ReviewFilters } from './ReviewFilters';
 import { EMPTY_FILTERS, isFiltered, queryFor, REVIEW_PAGE_SIZE, type ReviewFilterValues } from './reviewQuery';
-import { STATUS_LABELS } from './findingFormat';
+import { NotesHeader, SourcesLine } from './NotesHeader';
+import { resolutionCounts, type ResolutionCounts } from './resolution';
 import { TakeReviewScanDialog } from './TakeReviewScanDialog';
 import { useReaperStatus } from './useReaperStatus';
 
-const countsLine = (summary: FindingsSummary): string =>
-  (['unreviewed', 'accepted', 'dismissed', 'deferred'] as const).map((status) => `${summary[status]} ${STATUS_LABELS[status].toLowerCase()}`).join(' · ');
+// The notes header's chips from the summary's own counts (over the latest run), with the accepted notes split into pickups and
+// edits by reading them: the summary counts statuses, and whether an accepted note is a pickup or an edit is the note's own.
+function headerCounts(summary: FindingsSummary | undefined, accepted: readonly Finding[]): ResolutionCounts {
+  const split = resolutionCounts(accepted);
+  return {
+    toReview: summary?.unreviewed ?? 0,
+    pickup: split.pickup,
+    edit: split.edit,
+    waived: summary?.dismissed ?? 0,
+    deferred: summary?.deferred ?? 0,
+  };
+}
 
 /**
  * Proof, the book level (stage-navigation-and-page-replacement.prd.md Phase 5, mock 04; the Review page of
@@ -51,6 +63,8 @@ export function ProofPage({
   const api = useApi();
   const [summary, setSummary] = useState<FindingsSummary>();
   const [page, setPage] = useState<FindingsPage>();
+  const [accepted, setAccepted] = useState<Finding[]>([]);
+  const pickups = usePickupsState();
   const [loadError, setLoadError] = useState<string>();
   const [filters, setFilters] = useState<ReviewFilterValues>(EMPTY_FILTERS);
   const [limit, setLimit] = useState(REVIEW_PAGE_SIZE);
@@ -98,12 +112,13 @@ export function ProofPage({
   // was sent (the filters changed again) is dropped.
   useEffect(() => {
     let active = true;
-    Promise.all([api.findingsSummary(), api.findingsList(queryFor(filters, limit))])
-      .then(([nextSummary, nextPage]) => {
+    Promise.all([api.findingsSummary(), api.findingsList(queryFor(filters, limit)), api.findingsList({ status: 'accepted' })])
+      .then(([nextSummary, nextPage, acceptedPage]) => {
         if (!active) return;
         loadedOnce.current = true;
         setSummary(nextSummary);
         setPage(nextPage);
+        setAccepted(acceptedPage.findings);
       })
       .catch((error) => active && failed(error));
     return () => {
@@ -151,8 +166,9 @@ export function ProofPage({
   return (
     <div className="mx-auto flex max-w-7xl flex-col gap-4">
       <div className="flex flex-wrap items-start justify-between gap-2">
-        <div className="min-w-0">
-          <Heading title="Proof">{summary && !nothingYet ? countsLine(summary) : undefined}</Heading>
+        <div className="flex min-w-0 flex-wrap items-center gap-x-4 gap-y-2">
+          <Heading title="Proof" />
+          <SourcesLine analyzers={summary?.analyzers ?? []} proofer={pickups.total > 0} />
         </div>
         <div className="flex flex-wrap items-center gap-2">
           {chapters.length > 0 && (
@@ -191,6 +207,7 @@ export function ProofPage({
               filtered={isFiltered(filters)}
               onClearFilters={() => changeFilters({ ...EMPTY_FILTERS, sort: filters.sort })}
               onShowMore={() => setLimit((current) => current + REVIEW_PAGE_SIZE)}
+              header={<NotesHeader total={summary?.total ?? 0} counts={headerCounts(summary, accepted)} pickups={pickups} />}
             />
             <div className="min-w-0">
               {selected ? (

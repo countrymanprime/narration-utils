@@ -560,6 +560,7 @@ function AppRoutes() {
                         transcript={data.transcript}
                         dawFileLinked={data.dawFileLinked}
                         goToManuscript={goToScript}
+                        goToStoryBible={goToStoryBible}
                         refreshKey={`${data.manuscript.id}:${data.manuscript.importedAt}`}
                       />
                     ) : (
