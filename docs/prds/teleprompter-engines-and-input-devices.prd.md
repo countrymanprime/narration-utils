@@ -2,12 +2,12 @@
 
 **Supersedes:** in `docs/architecture/manuscript-teleprompter.md`, the "Open items for task planning" list (engine, Moonshine provisioning and packaging, device selection; the tracker-placement decision and the tracker-limits note stay as record), the "Still open here" list under "UI: what shipped and what is still open", and the "Direction, in order" item 4 (record the default in an ADR). **Source:** `manuscript-teleprompter.md` stays as the design record of the shipped sidecar, host relay and page (event contract, tracker behavior, measurements, prior-art survey, license and attribution notes); the older briefs' engine survey is carried into Research Summary below.
 
-**Status (2026-09-27):** issue [#299](https://github.com/countrymanprime/narration-utils/issues/299).
+**Status (2026-09-28):** issue [#299](https://github.com/countrymanprime/narration-utils/issues/299).
 
-- **Delivered:** phases 1 (#300), 2 (#304), 3 (#305), 4 (by the release-readiness stack), 5 (#307), 6 (#390, Moonshine frozen into the Windows sidecar), 7 (#395, Whisper or Moonshine end to end), 9 (#384, auto-stop at Done), 10 (#403, manual scroll without pull-back) and 11 (#406, the chapter suggested from the saved REAPER track).
-- **Left:** phase 8 (the engine A/B evaluation and the default-engine ADR) - the protocol and lag-capture aid are now delivered (see the Phase 8 details below and [ADR 0414](../adr/0414-the-teleprompter-default-engine-stays-whisper-tiny-until-a-real-time-ab-evaluation-runs.md), Proposed), ENG-8 itself (the real-time run) is not - then phase 12 (roadmap and status bookkeeping), which waits on phase 8.
+- **Delivered:** phases 1 (#300), 2 (#304), 3 (#305), 4 (by the release-readiness stack), 5 (#307), 6 (#390, Moonshine frozen into the Windows sidecar), 7 (#395, Whisper or Moonshine end to end), 9 (#384, auto-stop at Done), 10 (#403, manual scroll without pull-back), 11 (#406, the chapter suggested from the saved REAPER track) and 12 (this PR, roadmap and status bookkeeping - `docs/roadmap.md`, `config/roadmap.json` and `docs/README.md` were already largely accurate from other work; this PR corrected two stale "read-aloud dialog" references, now the Booth, and the `docs/README.md` inventory rows).
+- **Left:** phase 8 (the engine A/B evaluation and the default-engine ADR) - the protocol and lag-capture aid are delivered (see the Phase 8 details below and [ADR 0414](../adr/0414-the-teleprompter-default-engine-stays-whisper-tiny-until-a-real-time-ab-evaluation-runs.md), Proposed), ENG-8 itself (the real-time run) is not.
 - **Needs the owner:** ENG-8, the A/B of both engines on a real microphone (or, provisionally per D70/D71, a real-time loopback pass on LibriVox/synthetic audio - a `--wav` replay does not measure lag, see ADR 0414); ENG-7, a live-microphone session with each engine in the packaged app on a clean Windows machine; ENG-9, ten real reads to confirm the 5 s auto-stop; ENG-10, momentum scrolling on a real touchpad or touchscreen in the packaged app; ENG-11, an armed chapter track in a real REAPER save.
-- **Agents without the owner:** nothing to finish phase 8 with (a results table and an accepted ADR both need ENG-8's actual run); ENG-12 follows it.
+- **Agents without the owner:** nothing to finish phase 8 with (a results table and an accepted ADR both need ENG-8's actual run).
 
 This is "PR C" of the teleprompter initiative plus its open follow-ups. Sibling PRD: `teleprompter-manuscript-integration.prd.md` (PRD 1) owns the Manuscript reading-mode modal, flags, seek, DAW resume, punch-and-roll and microphone detection inside REAPER. This PRD owns the live engine choice, device enumeration and its settings, Moonshine provisioning and packaging, and the standalone reading-experience follow-ups (auto-stop, manual scroll). Citations are `file:line` on `main` (d5cc994; no code in the desktop host, the sidecars or the shared Python library changed since b9d348d apart from tests and dependency bumps) for anything checked in code; "per docs" marks a claim taken from a document and not verified.
 
@@ -200,7 +200,7 @@ Phases 1 to 3 (device picker and settings, Whisper only) are shippable on their 
 | 9 | Auto-stop at Done | Go timer on `done`, message, tests | complete | 1, 5, 6, 10 | - | - |
 | 10 | Manual scroll without pull-back | `useFollowCursor`, intent detection, Follow control, tests | complete | all except PRD 1 phases 4, 5, 7 | - | - |
 | 11 | Chapter from REAPER track name | Chapter suggestions from `.rpp` track names using the shared matcher | complete | 8, 9, 10 | PRD 1 phase 8 (or builds the matcher first) | - |
-| 12 | Roadmap and status bookkeeping | `roadmap.md` and `roadmap.json` together, README inventory, brief status line | pending | - | 2, 8 (and PRD 1 phase 7 per the roadmap question) | - |
+| 12 | Roadmap and status bookkeeping | `roadmap.md` and `roadmap.json` together, README inventory, brief status line | complete | - | 2, 8 (and PRD 1 phase 7 per the roadmap question) | - |
 
 ### Phase Details
 
@@ -273,6 +273,7 @@ Phases 1 to 3 (device picker and settings, Whisper only) are shippable on their 
 - **Goal**: docs say one true thing.
 - **Scope**: `docs/roadmap.md` and `config/roadmap.json` in one commit, `docs/README.md` inventory, the `manuscript-teleprompter.md` status line (it still says "Planned. Deferred work item" although the sidecar, host relay and page are shipped; proposed replacement: "Shipped (first cut): the sidecar, host relay and Teleprompter page exist; open work is tracked in the two teleprompter PRDs"), and the sentence about an in-app roadmap reader if the user agrees.
 - **Success signal**: no two documents disagree about the feature's status.
+- **Done (2026-09-28):** most of this phase's scope was already accurate from other, unrelated work: `manuscript-teleprompter.md`'s status line already reads "Shipped (first cut)" (stage navigation Phase 4, which replaced the Teleprompter page with the Booth), and `docs/roadmap.md` already said the app does not read `roadmap.json` (only `sync-milestones.mjs`'s `milestones` array is read). This PR fixed what was still stale: two "the read-aloud dialog" references in `docs/roadmap.md` and `config/roadmap.json` (that dialog no longer exists; the Booth itself now shows flags), and the `docs/README.md` inventory, which still described the retired standalone Teleprompter page (typed device name, Whisper only) and listed `teleprompter-manuscript-integration.prd.md` as merely "Planned" although most of its phases are delivered. Both rows are merged into one accurate "Booth" row. Phase 8's real-time engine evaluation (ENG-8) remains owner-gated and is reported as still pending everywhere, per D65 - this phase does not claim it is done.
 
 ### Parallelism Notes
 
@@ -361,4 +362,4 @@ Cross-cutting: every phase re-checks `docs/adr/` numbering immediately before wr
 ---
 
 *Generated: 2026-09-19*
-*Status: IN DELIVERY - see the status block under the title (2026-09-23)*
+*Status: IN DELIVERY - see the status block under the title (2026-09-28)*
