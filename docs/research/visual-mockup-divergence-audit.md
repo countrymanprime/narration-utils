@@ -242,7 +242,7 @@ PR #827's head (`20e35e0`) predates #824, so its rail still reads Manuscript and
 | # | Mock | Current | Cat. | Evidence | Recommendation |
 | --- | --- | --- | --- | --- | --- |
 | SV1 | Story Bible › Series view: voices, reference clips, pitch and rate against the anchor, lines by chapter | Not built | b | Character continuity P11 (stage nav: "a Series tab of Story Bible") | Fix in P11 |
-| SV2 | Engine chip "Built-in recorder · 48 kHz / 24-bit" | "Built-in recorder" (the `shell/engine-builtin` mock flag) | b | Stage nav Q7: UI-only until native recording | Fix with native recording |
+| SV2 | Engine chip "Built-in recorder · 48 kHz / 24-bit" | "Built-in recorder" (the `apps/desktop/engine-builtin` mock flag) | b | Stage nav Q7: UI-only until native recording | Fix with native recording |
 
 ## Other approved mockup sets
 

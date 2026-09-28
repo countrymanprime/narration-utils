@@ -11,7 +11,7 @@ import type { Notify } from '../primitives/Toast';
 import { pronunciationSourceLabel, pronunciationStatusInfo } from './pronunciationStatus';
 
 // Saves the CSV the host wrote as a browser download: the WebView2 host handles it like a real browser's "Save As", so no native file
-// dialog binding is needed (the pickup list's export does the same, PickupsDialog.tsx).
+// dialog binding is needed (the pickup list's export does the same, pickups/PickupsPage.tsx).
 function downloadCSV(csv: string, name: string): void {
   const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
   const link = document.createElement('a');

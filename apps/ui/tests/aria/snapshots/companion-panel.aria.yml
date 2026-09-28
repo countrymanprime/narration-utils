@@ -2,8 +2,9 @@
 # whole window - the full app behind it is aria-hidden and inert, so CompactShell's own banner and main are the only
 # landmarks in the tree (no duplicate main beside the app's). The banner names the panel, REAPER's playhead and Full app;
 # main holds the Script (the chapter, the Companion commands toolbar with Play Kbd-labelled Space, the resume prompt and the
-# chapter text, whose marks are not buttons here - there is no rail to open them in), the reserved Note at playhead and
-# Pickups sections ("Coming soon"), and the Hotkeys that work while this window has focus.
+# chapter text, whose marks are not buttons here - there is no rail to open them in), the reserved Note at playhead section
+# ("Coming soon"), Pickups reading the Pickups page's list (stage-navigation-and-page-replacement.prd.md Phase 7: what is left and
+# the one last jumped to, no actions of its own), and the Hotkeys that work while this window has focus.
 # `children: equal` at the root, like the short dialogs (not the booth, whose dialog shares the page's live regions): the
 # banner and main are all there is, so anything of the full app left exposed behind the panel fails this. Inside them the
 # match is partial - the chapter text is too long to list in full.
@@ -31,7 +32,8 @@
     - text: Coming soon
   - region "Pickups":
     - heading "Pickups" [level=2]
-    - text: Coming soon
+    - paragraph: No pickups yet
+    - paragraph: Jump to one or mark it done on the Pickups page in the full app.
   - region "Hotkeys":
     - heading "Hotkeys" [level=2]
     - term:

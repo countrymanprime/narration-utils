@@ -84,6 +84,8 @@ const COVERAGE_REFUSAL_MESSAGES: Record<CoverageRefusalReason, string> = {
   invalid_params: 'The recording check settings are not valid.',
   manuscript_changed: 'The manuscript changed during the recording check; check again.',
   result_missing: 'The stored result of the last check could not be read.',
+  credits_not_set_up: 'Credits recording checks are not available.',
+  credits_changed: 'The credits text changed during the recording check; check again.',
 };
 
 const STEP_MS = 300;

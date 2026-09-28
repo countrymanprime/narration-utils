@@ -36,19 +36,22 @@ const (
 
 // job is one run: what it was built from and where its files are.
 type job struct {
-	runID        string
-	request      Request
-	basis        ChapterBasis
-	plan         plan
-	projectFile  evidence.LedgerProjectFile
-	inputs       projectInputs
-	words        wordsCache
-	seeded       int
-	startedAt    time.Time
-	dir          string
-	progressPath string
-	child        Child
-	done         chan struct{}
+	runID       string
+	request     Request
+	basis       ChapterBasis
+	plan        plan
+	projectFile evidence.LedgerProjectFile
+	inputs      projectInputs
+	// manuscriptPath is the --manuscript argument every sidecar launch of this run uses: the real project manuscript
+	// for a manuscript chapter, or a credits row's synthetic stand-in (Phase 3, writeCreditsManuscript).
+	manuscriptPath string
+	words          wordsCache
+	seeded         int
+	startedAt      time.Time
+	dir            string
+	progressPath   string
+	child          Child
+	done           chan struct{}
 
 	// lastError is the message of an ERROR progress line, for the failure text.
 	lastError string
@@ -255,6 +258,11 @@ func (s *Service) finish(running *job) {
 	if err := os.RemoveAll(running.dir); err != nil {
 		s.config.Reporter.Warn("coverage_run_cleanup_failed", fmt.Sprintf("Recording coverage run folder was not removed: %v", err))
 	}
+	if _, isCredits := CreditsKind(running.basis.ChapterID); isCredits {
+		// Best-effort, like the run folder above: the synthetic manuscript is transient, rewritten fresh by the
+		// next credits check either way.
+		_ = os.Remove(running.manuscriptPath)
+	}
 
 	completed := s.now().UTC()
 	s.mu.Lock()
@@ -276,6 +284,9 @@ func (s *Service) finish(running *job) {
 func (s *Service) inputsUnchanged(running *job) error {
 	basis, err := s.chapter(running.basis.ChapterID)
 	if err != nil || basis != running.basis {
+		if _, isCredits := CreditsKind(running.basis.ChapterID); isCredits {
+			return fmt.Errorf("the credits text changed during the recording check; check again")
+		}
 		return fmt.Errorf("the manuscript changed during the recording check; check again")
 	}
 	if readProjectInputs(s.config.Project) != running.inputs {

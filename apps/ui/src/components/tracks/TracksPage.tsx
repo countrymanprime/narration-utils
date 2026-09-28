@@ -11,7 +11,6 @@ import { ChapterSyncPanel } from './ChapterSyncPanel';
 import { useStageRecommendations } from '../stages/useStageRecommendations';
 import { useTrackPlayback } from './useTrackPlayback';
 import { LinkChaptersDialog } from './LinkChaptersDialog';
-import { PickupsDialog } from './PickupsDialog';
 import { RenderConfigDialog } from './RenderConfigDialog';
 import { CleanupToolsDialog } from './CleanupToolsDialog';
 import { RetakeLanesDialog } from './RetakeLanesDialog';
@@ -146,7 +145,6 @@ export function TracksPage({ dawFileLinked, onLinkDawFile, notify }: { dawFileLi
   // mapping it doesn't otherwise hear about (chapterTrackSet and chapterSyncSetEnabled send no event of their own).
   const [chapterSyncRefresh, setChapterSyncRefresh] = useState(0);
   const [linkChaptersOpen, setLinkChaptersOpen] = useState(false);
-  const [pickupsOpen, setPickupsOpen] = useState(false);
   const [renderConfigOpen, setRenderConfigOpen] = useState(false);
   const [cleanupToolsOpen, setCleanupToolsOpen] = useState(false);
   const [retakeLanesOpen, setRetakeLanesOpen] = useState(false);
@@ -232,9 +230,6 @@ export function TracksPage({ dawFileLinked, onLinkDawFile, notify }: { dawFileLi
                 Link chapters…
               </Button>
             )}
-            <Button variant="ghost" onClick={() => setPickupsOpen(true)}>
-              Pickups…
-            </Button>
             <Button variant="ghost" onClick={() => setRenderConfigOpen(true)}>
               Prepare chapter render…
             </Button>
@@ -256,7 +251,6 @@ export function TracksPage({ dawFileLinked, onLinkDawFile, notify }: { dawFileLi
       <DawFileLink dawFileLinked={dawFileLinked} onLinkDawFile={onLinkDawFile} />
       <ChapterSyncPanel notify={notify} onChanged={() => setChapterSyncRefresh((count) => count + 1)} />
       {linkChaptersOpen && project && <LinkChaptersDialog chapters={chapters} tracks={project.tracks} onClose={() => setLinkChaptersOpen(false)} />}
-      {pickupsOpen && <PickupsDialog onClose={() => setPickupsOpen(false)} />}
       {renderConfigOpen && <RenderConfigDialog onClose={() => setRenderConfigOpen(false)} />}
       {createRegionsOpen && project && <CreateChapterRegionsDialog tracks={project.tracks} onClose={() => setCreateRegionsOpen(false)} />}
       {chapterTagsOpen && <ChapterTagsDialog onClose={() => setChapterTagsOpen(false)} />}
