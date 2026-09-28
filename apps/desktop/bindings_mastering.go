@@ -12,8 +12,8 @@ import (
 // The mastering chain a project masters with (ADR 0306, owner decision D86): a row of masteringport.Rows, chosen per project.
 // The choice is the project settings row Mastering.provider, written only by MasteringChooseProvider, which checks it against
 // the registry; it is not a generic Settings field, so the Settings page neither lists nor saves it, and no global or repo
-// default exists: a project with no choice masters with the registry's default row (builtin). No screen reads it yet; Master &
-// QC (stage navigation Phase 8) will. The wire schema, golden payloads, wireContracts row and mock live in apps/ui/src/api.
+// default exists: a project with no choice masters with the registry's default row (builtin). Master & QC (stage navigation
+// Phase 8) reads it to draw the chain. The wire schema, golden payloads, wireContracts row and mock live in apps/ui/src/api.
 const (
 	masteringSettingsTool = "Mastering"
 	masteringProviderKey  = "provider"
@@ -39,6 +39,15 @@ type MasteringProvider struct {
 	NeedsApproval bool           `json:"needsApproval"`
 	Needs         []string       `json:"needs"`
 	Support       map[string]any `json:"support"`
+	// Chain is the row's own fixed chain, for Master & QC to draw before anything is mastered; empty when the chain is not the
+	// app's (the DAW row).
+	Chain []MasteringStep `json:"chain"`
+}
+
+// MasteringStep is one step of a row's declared chain (masteringport.Step) on the wire.
+type MasteringStep struct {
+	Name   string `json:"name"`
+	Detail string `json:"detail"`
 }
 
 // MasteringProviders answers the mastering rows and the current project's choice. It changes nothing.
@@ -77,9 +86,13 @@ func masteringProvidersPayload(rows *port.Registry[masteringport.Mastering], pla
 		for _, c := range caps.Needs {
 			needs = append(needs, string(c))
 		}
+		chain := make([]MasteringStep, 0, len(caps.Chain))
+		for _, step := range caps.Chain {
+			chain = append(chain, MasteringStep{Name: step.Name, Detail: step.Detail})
+		}
 		state.Providers = append(state.Providers, MasteringProvider{
 			Name: entry.Name, Label: entry.Descriptor.Label, Default: entry.Name == fallback.Name, Modes: nonNil(entry.Descriptor.Modes),
-			NeedsApproval: caps.NeedsApproval, Needs: needs, Support: supportPayload(masteringport.Support(entry, platform)),
+			NeedsApproval: caps.NeedsApproval, Needs: needs, Support: supportPayload(masteringport.Support(entry, platform)), Chain: chain,
 		})
 	}
 	if choice == "" {

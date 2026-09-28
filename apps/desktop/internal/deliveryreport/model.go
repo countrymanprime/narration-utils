@@ -11,7 +11,7 @@ const notice = "A generic technical measurement of the files listed, made on the
 	"A rule marked \"not checked by the app\" or \"listen\" was not judged, and never counts as met. " +
 	"Every open finding, and every file that was not measured or checked, is listed."
 
-const scopeDescription = "The files the narrator chose on the Delivery page in this session: the last measurement and the last diagnostics check. " +
+const scopeDescription = "The files the narrator chose on Master & QC in this session: the last measurement and the last diagnostics check. " +
 	"Files are not matched to chapters yet, so each is listed by its file name."
 
 // Report is the whole exported report; JSON and HTML are two renderings of it.

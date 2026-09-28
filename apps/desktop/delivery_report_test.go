@@ -21,7 +21,7 @@ import (
 )
 
 // The report export (diagnostics PRD Phase 7) and the host's judgement of a measurement against the project's delivery
-// profile (ADR 0179), which the Delivery page shows and the report carries with the same IDs.
+// profile (ADR 0179), which Master & QC shows and the report carries with the same IDs.
 
 // withProfileStore gives host a delivery-profile store in a temporary folder.
 func withProfileStore(t *testing.T, host *Host) *Host {

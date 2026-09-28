@@ -46,4 +46,4 @@ to. Jumping, punching and marking one done stay on this page.
 
 ---
 
-[← Proof](proof.md) · [Index](README.md) · [Delivery →](delivery.md)
+[← Proof](proof.md) · [Index](README.md) · [Master & QC →](master-and-qc.md)

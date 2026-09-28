@@ -6,8 +6,8 @@ import { Button } from '../primitives/Button';
 import { ConfirmDialog } from '../primitives/ConfirmDialog';
 import { Select } from '../primitives/Select';
 import type { Notify } from '../primitives/Toast';
-import { deliveryProfileKey, deliveryProfileTitle } from '../delivery/deliveryProfile';
-import { LOCK_ICON, Mark } from '../delivery/RuleBadges';
+import { deliveryProfileKey, deliveryProfileTitle } from '../master/deliveryProfile';
+import { LOCK_ICON, Mark } from '../master/RuleBadges';
 import { DeliveryProfileEditor } from './DeliveryProfileEditor';
 
 const MUTED = { color: 'var(--text-muted)' };
@@ -50,7 +50,7 @@ function describe(profile: DeliveryProfile, base?: DeliveryProfile): string {
  * Settings > Delivery (delivery-platform-profiles.prd.md Phases 3 and 4, mockups 05 and 06): the profile this project is judged
  * against (or, in the Global scope, the default for every project that has not chosen one), and the profiles themselves. A
  * built-in cannot be changed; Duplicate makes a custom copy whose numbers can change and whose rules can be turned off. A
- * choice takes effect at once: the Delivery page and the report judge against it the next time they are read.
+ * choice takes effect at once: Master & QC and the report judge against it the next time they are read.
  */
 export function DeliveryProfilesPanel({ scope, notify }: { scope: Scope; notify: Notify }) {
   const api = useApi();
@@ -159,7 +159,7 @@ export function DeliveryProfilesPanel({ scope, notify }: { scope: Scope; notify:
         <p style={MUTED}>
           {scope === 'global'
             ? 'Every project that has not chosen its own profile is judged against this one.'
-            : 'The Delivery page and the report judge this project’s files against it. Each project keeps its own choice.'}
+            : 'Master & QC and the report judge this project’s files against it. Each project keeps its own choice.'}
         </p>
         <div className="max-w-md">
           <Select

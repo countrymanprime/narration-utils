@@ -27,7 +27,13 @@ var _ Mastering = builtinChain{}
 
 func (builtinChain) Name() string { return Builtin }
 
-func (builtinChain) Capabilities() Capabilities { return Capabilities{Level: port.Supported} }
+func (builtinChain) Capabilities() Capabilities {
+	return Capabilities{Level: port.Supported, Chain: []Step{
+		{Name: "EQ", Detail: fmt.Sprintf("High-pass %d Hz", mastering.HighPassHz)},
+		{Name: "Limiter", Detail: fmt.Sprintf("%.1f dB under the peak limit", mastering.CeilingMargin)},
+		{Name: "Gain", Detail: "To the RMS target"},
+	}}
+}
 
 func (builtinChain) Master(ctx context.Context, req Request) (Result, error) {
 	res, err := mastering.Master(ctx, mastering.Request{Source: req.Source, Destination: req.Destination, Profile: req.Profile},

@@ -16,7 +16,7 @@ import (
 )
 
 // TestMeasuringAChosenRenderRecordsItForItsChapter is Phase 4 through the host: a render chosen for a chapter, measured
-// by the Delivery page's measurement job, becomes a ledger record the chapter's render status reads back; a file that is
+// by Master & QC's measurement job, becomes a ledger record the chapter's render status reads back; a file that is
 // no chapter's render records nothing.
 func TestMeasuringAChosenRenderRecordsItForItsChapter(t *testing.T) {
 	host := stagesHost(t, 10)

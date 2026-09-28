@@ -6,8 +6,8 @@ import { Field } from '../primitives/Field';
 import { Switch } from '../primitives/Switch';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../primitives/Table';
 import { TextField } from '../primitives/TextField';
-import { deliveryProfileTitle, formatBound } from '../delivery/deliveryProfile';
-import { Mark } from '../delivery/RuleBadges';
+import { deliveryProfileTitle, formatBound } from '../master/deliveryProfile';
+import { Mark } from '../master/RuleBadges';
 
 const MUTED = { color: 'var(--text-muted)' };
 const MONO = "font-['IBM_Plex_Mono',ui-monospace,monospace]";
