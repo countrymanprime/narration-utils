@@ -583,7 +583,14 @@ export const scriptDrivers: Record<string, Driver> = {
 // The Script page's rail as the width shows it (Phase 3): the Prep column from `xl`, or the Prep panel from the band's Prep rail
 // button below it. Returns the rail's container.
 async function openPrepRail(page: Page, load = true) {
-  if (load) await goToPage(page, 'Script');
+  if (load) {
+    // Chapter 3 open and the rest collapsed, like 'retail-sample': Chapter 1's overlapping highlights are the tracked
+    // nested-interactive debt (#155, axe-debt.ts), which the wide width, where the reader shows beside the rail, would inherit.
+    await goToPage(page, 'Script');
+    await clickVisible(page, 'button', 'Collapse all chapters');
+    await page.getByRole('heading', { name: /^Chapter 3 / }).click();
+    await page.locator('[data-paragraph-text]').first().waitFor();
+  }
   const column = page.getByRole('complementary', { name: 'Prep' });
   if (await column.isVisible()) return column;
   await clickVisible(page, 'button', 'Prep rail');

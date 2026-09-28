@@ -30,14 +30,6 @@ const ALIAS_COMBOBOX = 'The alias typeahead is the one bespoke combobox and has 
 
 export const AXE_DEBT: AxeDebt[] = [
   ...NESTED_HIGHLIGHT_STATES.map((state) => ({ page: 'script', state, rules: ['nested-interactive'], reason: NESTED_MARKS })),
-  // The rail states show the reader's default view beside the rail at the wide width; below it the rail is a modal panel.
-  ...['prep-rail-characters', 'prep-rail-queries'].map((state) => ({
-    page: 'script',
-    state,
-    rules: ['nested-interactive'],
-    reason: NESTED_MARKS,
-    viewports: ['wide'],
-  })),
   { page: 'script', state: 'selection-popup', rules: ['nested-interactive', 'region'], reason: `${NESTED_MARKS}; and ${PORTALLED_POPUP}` },
   { page: 'global', state: 'tooltip', rules: ['aria-hidden-focus', 'region'], reason: `${FOCUS_GUARDS}; and ${PORTALLED_POPUP}` },
   { page: 'home', state: 'info-tooltip', rules: ['aria-hidden-focus', 'region'], reason: `${FOCUS_GUARDS}; and ${PORTALLED_POPUP}` },
