@@ -169,6 +169,13 @@
   },
   {
     "page": "proof-chapter",
+    "state": "render-chosen",
+    "viewport": "desktop",
+    "docName": "proof-chapter-render-chosen",
+    "caption": "Proof chapter view - the readiness panel's Rendered file section, a render just chosen and measured"
+  },
+  {
+    "page": "proof-chapter",
     "state": "preview-default",
     "viewport": "desktop",
     "docName": "proof-chapter-preview",

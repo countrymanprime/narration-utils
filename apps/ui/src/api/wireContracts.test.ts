@@ -48,6 +48,7 @@ import { COVERAGE_EVALUATOR_REASONS, COVERAGE_REFUSAL_REASONS, coverageResultSch
 import { workspaceAlignmentResultSchema } from './schemas/workspace';
 import { pinnedPreviewSchema, previewResultSchema } from './schemas/preview';
 import { STAGE_REFUSAL_REASONS, STAGE_UNKNOWN_CAUSES, stageDecisionResultSchema, stageRecommendationsSchema } from './schemas/stages';
+import { proofingChooseRenderResultSchema, proofingRenderSchema } from './schemas/proofingRender';
 import {
   productionBurndownSchema,
   productionOverviewSchema,
@@ -89,12 +90,14 @@ import { dawCatalogListSchema } from './schemas/dawCatalog';
 import {
   guideBuildResultSchema,
   guideCreatedSchema,
+  guideDialogueCuesSchema,
   guideEntitiesSchema,
   guidePreviewSchema,
   pronunciationQueriesCsvSchema,
   pronunciationQueriesSchema,
   queryImportResultSchema,
 } from './schemas/storyBible';
+import { approvedCharacterReferencesSchema, characterRegionsSchema, characterReferenceSchema } from './schemas/character';
 import { bootstrapSchema, copyDiagnosticsResultSchema, projectAttachStateSchema, readySchema } from './schemas/system';
 import {
   readAloudReaperStateSchema,
@@ -736,6 +739,45 @@ describe('answers of the mock client for the manuscript, Story Bible and project
     const csv = await api.guidePronunciationQueriesCsv();
     expectMatches(pronunciationQueriesCsvSchema, csv, 'mock pronunciation queries CSV');
     expect(csv.count).toBe(queries.length);
+  });
+
+  it('the Story Bible dialogue cues and their correction', async () => {
+    const api = createMockApi();
+    const cues = await api.guideDialogueCues();
+    expectMatches(guideDialogueCuesSchema, cues, 'mock dialogue cues');
+    const unknown = cues.find((cue) => cue.speaker_entity_id === null);
+    expect(unknown).toBeDefined();
+    await api.guideCorrectCue(unknown?.id ?? '', 'alice');
+    const corrected = (await api.guideDialogueCues()).find((cue) => cue.id === unknown?.id);
+    expect(corrected).toMatchObject({ speaker_entity_id: 'alice', speaker_source: 'correction', corrected: true });
+    // "unknown" clears a correction back to unknown, the same as an empty string.
+    await api.guideCorrectCue(unknown?.id ?? '', 'unknown');
+    const cleared = (await api.guideDialogueCues()).find((cue) => cue.id === unknown?.id);
+    expect(cleared).toMatchObject({ speaker_entity_id: null, speaker_source: 'correction', corrected: true });
+    await expect(api.guideCorrectCue('not-a-real-cue', 'alice')).rejects.toThrow();
+  });
+
+  it('the character bible: regions, approving a reference, revoking it and removing every reference', async () => {
+    const api = createMockApi();
+    const regions = await api.characterListRegions();
+    expectMatches(characterRegionsSchema, regions, 'mock regions');
+    expect(regions.length).toBeGreaterThan(0);
+    const region = regions[0];
+    const reference = await api.characterApprove('alice', region.guid, 'Anchor take.');
+    expectMatches(characterReferenceSchema, reference, 'mock reference');
+    expect(reference.characterId).toBe('alice');
+    expect(reference.regionGuid).toBe(region.guid);
+    const referenced = await api.characterReferences();
+    expectMatches(approvedCharacterReferencesSchema, referenced, 'mock references');
+    expect(referenced.some((row) => row.id === reference.id && !row.changedSinceApproval)).toBe(true);
+    await api.characterRevoke(reference.id);
+    expect((await api.characterReferences()).some((row) => row.id === reference.id)).toBe(false);
+    // Approving a region that is not in the saved project is refused (the real host validates it too).
+    await expect(api.characterApprove('alice', 'not-a-real-region', '')).rejects.toThrow();
+    const seeded = await api.characterReferences();
+    expect(seeded.length).toBeGreaterThan(0);
+    await api.characterRemoveVoiceData();
+    expect(await api.characterReferences()).toHaveLength(0);
   });
 
   it('re-importing an answered pronunciation query file applies a matched row and reports an unmatched one', async () => {
@@ -2063,6 +2105,55 @@ describe('answers of the mock client for the settings, voice, model, transcript 
     await expect(api.stageRevert('no-such-chapter')).rejects.toThrow('not a narration chapter');
   });
 
+  it('the proofing render association: none, choosing, a re-read, staleness, a measurement and clearing', async () => {
+    const api = createMockApi({}, { proofingRender: { 'chapter-2': { state: 'stale' }, 'chapter-3': { state: 'current', measured: true } } });
+
+    const none = await api.proofingRenderState('chapter-1');
+    expectMatches(proofingRenderSchema, none, 'mock proofing render, none');
+    expect(none).toMatchObject({ state: 'none', cause: 'never_analyzed' });
+
+    const stale = await api.proofingRenderState('chapter-2');
+    expectMatches(proofingRenderSchema, stale, 'mock proofing render, stale');
+    expect(stale).toMatchObject({ state: 'stale', cause: 'stale' });
+
+    const measured = await api.proofingRenderState('chapter-3');
+    expectMatches(proofingRenderSchema, measured, 'mock proofing render, already measured');
+    expect(measured).toMatchObject({ state: 'current', measurementFailed: false });
+    expect(measured.measurement?.integrated_lufs).toBeTypeOf('number');
+
+    const chosen = await api.proofingChooseRender('chapter-1');
+    expectMatches(proofingChooseRenderResultSchema, chosen, 'mock proofing choose render');
+    if (chosen.status !== 'ok') throw new Error('choosing a render must succeed in the mock');
+    expect(chosen.render).toMatchObject({ state: 'current', measurementFailed: false });
+    expect(chosen.render.path).toBeTruthy();
+    expect(chosen.render.measurement).toBeUndefined();
+
+    const reread = await api.proofingRenderState('chapter-1');
+    expect(reread).toEqual(chosen.render);
+
+    // Measuring the chosen render (DX-1's job) records the result against this chapter, the same as
+    // apps/desktop/internal/proofing/renders.go's RecordRenderMeasurements.
+    let job = await api.measureAnalyze([chosen.render.path!]);
+    while (job.phase === 'running') job = await api.measureState();
+    const afterMeasuring = await api.proofingRenderState('chapter-1');
+    expectMatches(proofingRenderSchema, afterMeasuring, 'mock proofing render, measured');
+    expect(afterMeasuring.measurement?.sample_rate).toBeTypeOf('number');
+    expect(afterMeasuring.measuredAt).toBeTruthy();
+
+    const cleared = await api.proofingClearRender('chapter-1');
+    expectMatches(proofingRenderSchema, cleared, 'mock proofing render, cleared');
+    expect(cleared).toMatchObject({ state: 'none' });
+
+    // The two ProofingChooseRender branches the mock never produces (the dialog is not simulated): pinned directly
+    // against the schema, the same convention as ProjectLinkDawFile's untested cancel-or-mismatch shapes.
+    expectMatches(proofingChooseRenderResultSchema, { status: 'cancelled' }, 'proofing choose render, cancelled');
+    expectMatches(
+      proofingChooseRenderResultSchema,
+      { status: 'refused', message: 'Link this chapter to the REAPER track it is recorded on.' },
+      'proofing choose render, refused',
+    );
+  });
+
   it('the CleanupPreview, CleanupApply, LevelMatchPreview and LevelMatchApply answers', async () => {
     const chapterId = 'chapter-1';
     const api = createMockApi({}, { findings: [editingCandidateFor(chapterId, 'Chapter One')] });
@@ -2165,6 +2256,10 @@ describe('answers of the mock client for the settings, voice, model, transcript 
       'guidePronunciationQueries',
       'guidePronunciationQueriesCsv',
       'guidePronunciationImportQueriesCsv',
+      'guideDialogueCues',
+      'characterListRegions',
+      'characterApprove',
+      'characterReferences',
       'assetsList',
       'assetsInstall',
       'assetsInstallState',
@@ -2258,6 +2353,9 @@ describe('answers of the mock client for the settings, voice, model, transcript 
       'stageConfirm',
       'stageDismiss',
       'stageRevert',
+      'proofingRenderState',
+      'proofingChooseRender',
+      'proofingClearRender',
       'productionOverview',
       'productionStartTimer',
       'productionStopTimer',
@@ -2348,6 +2446,9 @@ describe('answers of the mock client for the settings, voice, model, transcript 
       'guideDelete',
       'guideRelate',
       'guideUnrelate',
+      'guideCorrectCue',
+      'characterRevoke',
+      'characterRemoveVoiceData',
       'ttsRemove',
       'whisperRemove',
       'assetsRemove',

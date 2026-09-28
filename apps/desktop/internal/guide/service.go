@@ -104,9 +104,13 @@ func (s *Service) SaveFindings() error {
 // schemaVersion is the newest Story Bible file this host reads; the Python sidecar writes it (manuscript_guide.py SCHEMA_VERSION).
 const schemaVersion = 2
 
-func (s *Service) Entities() ([]map[string]any, error) {
-	// The entries carry the narrator's edits and locks, so a file that cannot be read is kept aside and the narrator told, and the
-	// Story Bible starts empty. A file from a newer version is refused with a message and left exactly as it is.
+// document reads and version-checks the Story Bible file, returning its raw
+// JSON object - a missing file reads as an empty object, exactly the shape
+// Entities and DialogueCues both build their own key's default from. The
+// entries carry the narrator's edits and locks, so a file that cannot be
+// read is kept aside and the narrator told, and a file from a newer version
+// is refused with a message and left exactly as it is.
+func (s *Service) document() (map[string]any, error) {
 	var document map[string]any
 	var versionErr error
 	outcome := s.persist.Load().ReadJSON(s.guidePath(), "Story Bible", persist.NarratorData, func(bytes []byte) error {
@@ -131,7 +135,15 @@ func (s *Service) Entities() ([]map[string]any, error) {
 		return nil, fmt.Errorf("the Story Bible file could not be read")
 	}
 	if document == nil {
-		return []map[string]any{}, nil
+		return map[string]any{}, nil
+	}
+	return document, nil
+}
+
+func (s *Service) Entities() ([]map[string]any, error) {
+	document, err := s.document()
+	if err != nil {
+		return nil, err
 	}
 	raw, present := document["entities"]
 	if !present || raw == nil {
@@ -198,6 +210,72 @@ func normalizeEntity(entity map[string]any) error {
 	}
 	return nil
 }
+
+// DialogueCue is one entry of the guide file's dialogue_cues
+// (character-continuity-review.prd.md Phase 2, manuscript_guide.py
+// extract_dialogue_cues/merge_dialogue_cues): a quoted span with its
+// resolved (or unknown) speaker. It is a document-level list, a sibling of
+// "entities", not per-entity data.
+type DialogueCue struct {
+	ID              string              `json:"id"`
+	ChapterID       string              `json:"chapterId"`
+	ParagraphID     string              `json:"paragraphId"`
+	QuoteStart      int                 `json:"quote_start"`
+	QuoteEnd        int                 `json:"quote_end"`
+	QuoteText       string              `json:"quote_text"`
+	SpeakerEntityID *string             `json:"speaker_entity_id"`
+	SpeakerSource   string              `json:"speaker_source"`
+	Evidence        DialogueCueEvidence `json:"evidence"`
+	Corrected       bool                `json:"corrected"`
+}
+
+// DialogueCueEvidence is one cue's manuscript evidence: where it was found
+// and the speech-verb tag text that resolved it, empty for an untagged or
+// continuation cue.
+type DialogueCueEvidence struct {
+	ChapterID   string `json:"chapterId"`
+	ParagraphID string `json:"paragraphId"`
+	Excerpt     string `json:"excerpt"`
+	Tag         string `json:"tag"`
+}
+
+// DialogueCues returns the Story Bible's extracted dialogue cues (Phase 2),
+// each a quoted span with its resolved or unknown speaker. A guide file
+// written before Phase 2 has none, which reads as an empty list, the same
+// way a missing "entities" list does.
+func (s *Service) DialogueCues() ([]DialogueCue, error) {
+	document, err := s.document()
+	if err != nil {
+		return nil, err
+	}
+	raw, present := document["dialogue_cues"]
+	if !present || raw == nil {
+		return []DialogueCue{}, nil
+	}
+	encoded, err := json.Marshal(raw)
+	if err != nil {
+		return nil, fmt.Errorf("the Story Bible dialogue cue data is invalid")
+	}
+	var cues []DialogueCue
+	if err := json.Unmarshal(encoded, &cues); err != nil {
+		return nil, fmt.Errorf("the Story Bible dialogue cue data is invalid")
+	}
+	if cues == nil {
+		cues = []DialogueCue{}
+	}
+	return cues, nil
+}
+
+// CorrectCue records the narrator's own attribution for one dialogue cue
+// (speakerEntityID "unknown" or "" clears it back to unknown), so the next
+// rebuild's merge_dialogue_cues keeps it instead of overwriting it with
+// fresh, possibly-unknown, extraction - the same durability ADR 0007's lock
+// guard already gives a locked entity, applied to a cue instead.
+func (s *Service) CorrectCue(cueID, speakerEntityID string) error {
+	_, err := s.Run("correct-cue", "--guide", s.guidePath(), "--cue-id", cueID, "--speaker-entity-id", speakerEntityID)
+	return err
+}
+
 func (s *Service) Run(args ...string) (string, error) {
 	return s.runContext(context.Background(), args...)
 }
