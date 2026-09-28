@@ -97,6 +97,12 @@ With the built-in recorder chosen:
 - Listen through your interface's own direct monitoring: the app meters the input but does not play it
   back to you while you record.
 
+A take does not belong to a line of the script until you say so. On that chapter's **Proof** page, the
+**Native takes** panel offers each not-yet-assigned take a paragraph to assign it to; once assigned, it is
+listed under that paragraph, and you can mark one take the **keeper** for it. Marking a keeper hands the
+mark over from any other take of the same line, and you can undo it at any time - nothing here changes the
+take's audio or your project's REAPER state.
+
 Leaving the Booth stops a take and saves it. The built-in recorder is new: tell us how it behaves with your
 microphone, and keep a DAW to hand for anything important until it leaves Experimental.
 

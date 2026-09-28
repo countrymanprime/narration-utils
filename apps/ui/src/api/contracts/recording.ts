@@ -24,6 +24,10 @@ export type RecorderTake = {
   unfinished: boolean;
   /** The manuscript line this take is assigned to (a composed line id), null when it carries none yet. */
   lineId: string | null;
+  /** Whether the narrator marked this take the keeper of its line (native-recording-suite PRD Phase 4, Q5):
+   * narrator-confirmed, and always undoable by marking it false again or by marking a different take of the same
+   * line. A take with no line assigned yet can still be marked alone, with no group to clear. */
+  keeper: boolean;
 };
 
 /** How the most recent take ended. */
@@ -80,6 +84,11 @@ export interface RecordingApi {
   recorderStart(device: string): Promise<RecorderState>;
   /** Asks the take or meter to end; answers at once. */
   recorderStop(): Promise<RecorderState>;
+  /** Assigns takeName the manuscript paragraph or chapter entityId as its line identity ("" clears it); the
+   * manuscript's current source checksum is read host-side, never sent here. */
+  recorderSetTakeLine(takeName: string, entityId: string): Promise<RecorderState>;
+  /** Marks or unmarks takeName the keeper of its line; always undoable. */
+  recorderSetTakeKeeper(takeName: string, keeper: boolean): Promise<RecorderState>;
   subscribeRecorderState(onUpdate: (state: RecorderState) => void): () => void;
   subscribeRecorderLevel(onLevel: (level: RecorderLevel) => void): () => void;
 }

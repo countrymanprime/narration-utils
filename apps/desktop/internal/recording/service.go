@@ -454,6 +454,21 @@ func (s *Service) SetTakeLine(takeName, entityID, sourceSHA256 string) error {
 	return nil
 }
 
+// SetTakeKeeper marks or unmarks takeName the keeper of its line (keeper.go, Q5): narrator-confirmed and always
+// undoable by marking it again with keeper false or by marking a different take of the same line. It publishes the
+// updated state afterward, like every other change here; it never touches the take's audio file.
+func (s *Service) SetTakeKeeper(takeName string, keeper bool) error {
+	folder := s.Folder()
+	if folder == "" {
+		return errors.New("open a project before marking a take the keeper")
+	}
+	if err := setTakeKeeper(folder, takeName, keeper, readIdentities(folder)); err != nil {
+		return err
+	}
+	s.publish()
+	return nil
+}
+
 // TakePath answers the take file at path when it is one of this project's listed takes (finished or unfinished, not the
 // one recording now), as the service's own copy of the path, so the media route plays only a take this list vouches for.
 func (s *Service) TakePath(path string) (string, bool) {

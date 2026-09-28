@@ -199,6 +199,10 @@ const mockUpdate = (
 const mockAssets = (['missing', 'downloading', 'verifying', 'download-fails', 'installing', 'checking', 'damaged'] as const).find(
   (seed) => seed === mockParams.get('mockAssets'),
 );
+// `?mockSeries=not-in-series|single-book` boots the Series tab (character-continuity-review.prd.md Phase 11) outside any
+// series, or in one with no other book yet, so its honest empty state can be seen. Unset boots as a member of a two-book
+// series (WIRE_SERIES), matching the approved concept mock.
+const mockSeries = (['not-in-series', 'single-book'] as const).find((seed) => seed === mockParams.get('mockSeries'));
 // `?mockDictionary=missing|damaged` boots without the offline dictionary, or with one whose index fails its check, so the reader's Look up asks to
 // download it (or to download it again) first (story-bible-and-import-ux-briefs.prd.md Phase 8).
 const mockDictionary = (['missing', 'damaged'] as const).find((seed) => seed === mockParams.get('mockDictionary'));
@@ -399,6 +403,7 @@ const mockInitial = {
   ...(mockFindings === 'changed' ? { findingsRerun: true } : {}),
   ...(mockImportPreview ? { importPreview: mockImportPreview } : {}),
   ...(mockAssets ? { assets: mockAssets } : {}),
+  ...(mockSeries ? { seriesVoiceBible: mockSeries } : {}),
   ...(mockDictionary ? { dictionary: mockDictionary } : {}),
   ...(mockUpdate ? { update: mockUpdate } : {}),
   ...(mockLiveDegraded ? { liveUpdatesDegraded: true } : {}),

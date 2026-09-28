@@ -13,8 +13,9 @@ import { TextField } from '../primitives/TextField';
 import type { Notify } from '../primitives/Toast';
 
 /** mm:ss, the region-length format the mock's reference clip rows use (06-series-voice-bible-concept.webp); this
- * view never sees a region longer than about an hour, so no hour component is needed. */
-function formatRegionTime(seconds: number): string {
+ * view never sees a region longer than about an hour, so no hour component is needed. Exported for the Series tab
+ * (components/series/SeriesTab.tsx, Phase 11), which reuses this formatting for the same clips read cross-project. */
+export function formatRegionTime(seconds: number): string {
   const whole = Math.max(0, Math.round(seconds));
   const minutes = Math.floor(whole / 60);
   const remaining = whole % 60;

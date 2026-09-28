@@ -50,11 +50,7 @@ export const APPROVED_MOCKS: ApprovedMock[] = [
   { file: `${BENCHMARK}/03-booth-concept.webp`, target: { page: 'booth', state: 'speaker-tags' }, theme: 'dark' },
   { file: `${BENCHMARK}/04-proof-pickups-concept.webp`, target: { page: 'proof', state: 'default' }, theme: 'light' },
   { file: `${BENCHMARK}/05-master-delivery-concept.webp`, target: { page: 'master', state: 'measured' }, theme: 'light' },
-  {
-    file: `${BENCHMARK}/06-series-voice-bible-concept.webp`,
-    theme: 'light',
-    unscored: 'the series voice bible is not built yet (character-continuity-review.prd.md Phase 11)',
-  },
+  { file: `${BENCHMARK}/06-series-voice-bible-concept.webp`, target: { page: 'storybible', state: 'series-tab-populated' }, theme: 'light' },
   {
     file: `${BENCHMARK}/07-daw-companion-concept.webp`,
     target: { page: 'booth', state: 'companion-default' },

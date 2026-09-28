@@ -43,6 +43,7 @@ import (
 	"github.com/countrymanprime/narration-utils/shell/internal/renderconfig"
 	"github.com/countrymanprime/narration-utils/shell/internal/retakelanes"
 	"github.com/countrymanprime/narration-utils/shell/internal/runlog"
+	"github.com/countrymanprime/narration-utils/shell/internal/series"
 	"github.com/countrymanprime/narration-utils/shell/internal/settings"
 	"github.com/countrymanprime/narration-utils/shell/internal/stages"
 	"github.com/countrymanprime/narration-utils/shell/internal/takecompare"
@@ -207,6 +208,9 @@ type Host struct {
 	// deliveryProfiles is the narrator's custom delivery profiles and their Global default (delivery-platform-profiles.prd.md,
 	// ADR 0179): user-level like creditTemplates, set once in NewHost and never swapped by a project switch.
 	deliveryProfiles *deliveryprofile.Store
+	// series is the narrator's own series.json (character-continuity-review.prd.md Phase 9/11, Q10): user-level
+	// like recents and creditTemplates, set once in NewHost and never swapped by a project switch.
+	series *series.Store
 	// deliveryFindingsMu keeps one save of the delivery review findings at a time (delivery_findings.go), so a profile
 	// change and a measurement ending together cannot leave the findings of the profile that lost the race.
 	deliveryFindingsMu sync.Mutex
@@ -389,8 +393,10 @@ func NewHost() *Host {
 	templates.SetPersist(reporter)
 	profiles := deliveryprofile.NewStore(deliveryProfilesPath())
 	profiles.SetPersist(reporter)
+	seriesStore := series.New(seriesPath())
+	seriesStore.SetPersist(reporter)
 	notes.SetOnJobEnd(func(job manuscript.ImportJob) { host.importJobEnded(job) })
-	host = &Host{diagnostic: fmt.Sprintf("go-%d", time.Now().UnixNano()), version: version, config: config{repoRoot: repoRoot}, manuscript: notes, sidecars: process.NewSupervisor(), settings: store, installJobs: map[string]*installJob{}, recents: recent, creditTemplates: templates, deliveryProfiles: profiles, pronunciationOnline: newPronunciationOnline(), log: logger, runLog: runLog, persist: reporter, updates: update.NewChecker(version, updateCachePath(), reporter), stager: newUpdateStager(), pendingPath: updatePendingPath()}
+	host = &Host{diagnostic: fmt.Sprintf("go-%d", time.Now().UnixNano()), version: version, config: config{repoRoot: repoRoot}, manuscript: notes, sidecars: process.NewSupervisor(), settings: store, installJobs: map[string]*installJob{}, recents: recent, creditTemplates: templates, deliveryProfiles: profiles, series: seriesStore, pronunciationOnline: newPronunciationOnline(), log: logger, runLog: runLog, persist: reporter, updates: update.NewChecker(version, updateCachePath(), reporter), stager: newUpdateStager(), pendingPath: updatePendingPath()}
 	// NARRATION_DEBUG=1 already forced the level in runlog.New; a saved General.debug_logging=true from a previous
 	// run turns it on too, so the narrator's last choice survives a restart (SetDebug is a no-op once the
 	// environment has forced it).
@@ -443,6 +449,19 @@ func creditTemplatesPath() string {
 		return filepath.Join(value, "AppData", "Roaming", "narration-utils", "credit-templates.json")
 	}
 	return filepath.Join("AppData", "Roaming", "narration-utils", "credit-templates.json")
+}
+
+// seriesPath resolves the per-user series file (character-continuity-review.prd.md Q10), alongside
+// recent-projects.json and credit-templates.json. Like creditTemplatesPath, this mirrors settings.Store's own
+// %APPDATA%-with-%USERPROFILE%-fallback chain rather than sharing it.
+func seriesPath() string {
+	if value := os.Getenv("APPDATA"); value != "" {
+		return filepath.Join(value, "narration-utils", "series.json")
+	}
+	if value := os.Getenv("USERPROFILE"); value != "" {
+		return filepath.Join(value, "AppData", "Roaming", "narration-utils", "series.json")
+	}
+	return filepath.Join("AppData", "Roaming", "narration-utils", "series.json")
 }
 
 // ServiceStartup is Wails v3's start hook for the Host service (main.go): it runs once, before the window loads the UI, with a
@@ -1450,10 +1469,17 @@ var fieldSchemas = map[string][]fieldSchema{
 	// The per-capability toggles (DAW port PRD P4) come after the three above, from capabilityFieldSchemas: one
 	// choice field per dawport.Capability, labeled with the port's own narrator-facing label, so Settings lists and
 	// saves every DAW.capability.<name> row through this same generic mechanism.
+	// fx_favourites is the narrator's favourite REAPER effects (edit-and-proof-workspace PRD Phase 8, EP8 B, ADR
+	// 0234): names WorkspaceListFXChains or a future FX plug-in listing already lists, kept as one "tags" field
+	// rather than two, since a chain and a plug-in are just two shapes of name (a chain always ends ".RfxChain";
+	// ADR 0234's add_take_fx already refuses that suffix as a plug-in name, so the two are never confused). It
+	// works at either scope through the same global/project layering as every other setting; there is no separate
+	// project-only or global-only rule for it (unlike Teleprompter, Keymap or Updates above).
 	"DAW": append([]fieldSchema{
 		{"reaper_path", "REAPER executable (override)", "text", nil},
 		{"auto_start_launcher", "Start the launcher script automatically", "bool", nil},
 		{"experimental_reaper_actions", "Experimental REAPER actions", "bool", nil},
+		{"fx_favourites", "Favourite effects (FX chains and plug-ins)", "tags", nil},
 	}, capabilityFieldSchemas()...),
 	// RecordingCoverage is the recording check's four settings (docs/utilities/recording-coverage.md Q3, ADR 0131),
 	// read by coverage.ResolveSettings. The two thresholds judge a stored result on read; the two alignment settings are
@@ -1701,6 +1727,8 @@ func validateSettingValue(tool string, schema fieldSchema, value string) error {
 			return fmt.Errorf("setting %s must be %d bytes or smaller", schema.key, keymapOverridesMaxBytes)
 		}
 		return nil
+	case "tags":
+		return validateTagsSetting(schema.key, value)
 	case "color":
 		if len(value) != 6 || !isHex(value) {
 			return fmt.Errorf("setting %s must be a six-digit color", schema.key)
@@ -1715,6 +1743,35 @@ func validateSettingValue(tool string, schema fieldSchema, value string) error {
 		}
 	default:
 		return fmt.Errorf("unsupported setting kind %q for %s", schema.kind, schema.key)
+	}
+	return nil
+}
+
+// tagsFieldMaxBytes bounds a "tags" field's whole stored value: a generous cap for a narrator's whole favourites
+// list, well short of anything that would slow down loading or saving settings (keymapOverridesMaxBytes is the
+// same idea for Keymap.overrides). maxTagTermLength mirrors TagInput's own MAX_TERM_LENGTH
+// (apps/ui/src/components/primitives/TagInput.tsx): a term this long already reads as a mistake, not a name.
+const (
+	tagsFieldMaxBytes = 4096
+	maxTagTermLength  = 64
+)
+
+// validateTagsSetting checks a "tags" field's stored value: terms joined by commas (TagInput.tsx never lets a term
+// hold one, so a comma is always a separator here), each non-empty and within the UI's own term length.
+func validateTagsSetting(key, value string) error {
+	if len(value) > tagsFieldMaxBytes {
+		return fmt.Errorf("setting %s must be %d bytes or smaller", key, tagsFieldMaxBytes)
+	}
+	if value == "" {
+		return nil
+	}
+	for _, term := range strings.Split(value, ",") {
+		if strings.TrimSpace(term) == "" {
+			return fmt.Errorf("setting %s holds an empty term", key)
+		}
+		if len(term) > maxTagTermLength {
+			return fmt.Errorf("setting %s holds a term longer than %d characters", key, maxTagTermLength)
+		}
 	}
 	return nil
 }
