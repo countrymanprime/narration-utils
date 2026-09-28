@@ -14,7 +14,11 @@ The rules below are the ones those two functions keep today:
   mono samples at ``SAMPLE_RATE``, each ``chunk_samples(chunk_seconds)`` long except the last, which may be shorter but is never
   empty. Closing the iterator releases the device, and closing it twice is safe.
 
-Nothing here imports a backend or numpy: PyAV stays a lazy import inside its adapter (P11).
+A row may also declare ``level`` (a ``Level``); one that does not is ``Supported``. The ``wasapi`` row (native-recording-suite
+P1, ADR 0357) declares ``Experimental``, and adds ``record(device, path)``, the built-in recorder's take at the device's own
+rate, which a caller reaches only through that row's own type, never through this Protocol.
+
+Nothing here imports a backend or numpy: PyAV and sounddevice stay lazy imports inside their adapters (P11).
 """
 
 from dataclasses import dataclass

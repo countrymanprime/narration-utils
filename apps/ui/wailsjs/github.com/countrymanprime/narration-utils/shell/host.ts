@@ -1038,6 +1038,16 @@ export function PickupsState(): $CancellablePromise<string> {
 }
 
 /**
+ * PrepCompletenessSummary reads every manuscript chapter and answers one row each: how many of its names still have
+ * an open pronunciation query, and how many of its markup spans are stale, plus the book-wide totals. With no project
+ * open, or no Story Bible or manuscript yet, it answers an empty summary rather than an error, the same way
+ * GuidePronunciationQueries and PrepMarkupList already do for a phase this early in prep.
+ */
+export function PrepCompletenessSummary(): $CancellablePromise<string> {
+    return $Call.ByID(1398522399);
+}
+
+/**
  * PrepMarkupDelete removes one span by its id; a stale span needs nothing else.
  */
 export function PrepMarkupDelete(chapterID: string, id: string): $CancellablePromise<string> {
@@ -1066,6 +1076,38 @@ export function PrepMarkupSave(chapterID: string, paragraphID: string, start: nu
  */
 export function PreviewCandidates(): $CancellablePromise<string> {
     return $Call.ByID(2923797608);
+}
+
+/**
+ * PreviewPin reads the narrator's pinned window, if any, resolved against the manuscript's current text.
+ */
+export function PreviewPin(): $CancellablePromise<string> {
+    return $Call.ByID(1241542001);
+}
+
+/**
+ * PreviewPinAdjust grows or shrinks the pinned range by one paragraph at edge ("start" or "end"); grow false
+ * shrinks it instead. It is a no-op, not an error, once the range already reaches the chapter's edge or (shrinking)
+ * is down to one paragraph (preview.AdjustRange's own rule).
+ */
+export function PreviewPinAdjust(edge: string, grow: boolean): $CancellablePromise<string> {
+    return $Call.ByID(1417233170, edge, grow);
+}
+
+/**
+ * PreviewPinClear removes the pin. Clearing when nothing is pinned is not an error.
+ */
+export function PreviewPinClear(): $CancellablePromise<string> {
+    return $Call.ByID(3078643078);
+}
+
+/**
+ * PreviewPinSet pins one window: chapterID and paragraphIDs are normally a candidate's own fields, exactly as
+ * PreviewCandidates answered them, though any contiguous, in-order run of one chapter's paragraph ids is accepted
+ * (Phase 8 does not require the narrator to have started from a suggested candidate at all).
+ */
+export function PreviewPinSet(chapterID: string, paragraphIDs: string[]): $CancellablePromise<string> {
+    return $Call.ByID(3856724439, chapterID, paragraphIDs);
 }
 
 /**

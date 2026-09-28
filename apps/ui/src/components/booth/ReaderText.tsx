@@ -1,6 +1,6 @@
 import { Fragment, memo, useEffect, useMemo, useRef, type ReactNode, type RefObject } from 'react';
-import { SpeakerTag } from '../manuscript/SpeakerTag';
 import { Highlight, highlightKind, type HighlightKind } from '../primitives/Highlight';
+import { SpeakerTag } from '../primitives/SpeakerTag';
 import { TooltipTarget } from '../primitives/Tooltip';
 import { flagHint } from './readerFlags';
 import { scrollCursorIntoView } from './useFollowCursor';

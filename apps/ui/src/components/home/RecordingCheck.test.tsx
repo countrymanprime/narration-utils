@@ -48,7 +48,7 @@ describe('Open workspace from the recording check dialog (edit-and-proof-workspa
     await openBreakdown({}, {}, goToWorkspace);
     const dialog = await openCheck('Chapter 1'); // a current, fully-recorded check, so the report (and its button) render
 
-    fireEvent.click(within(dialog).getByRole('button', { name: 'Open workspace' }));
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Open in Proof' }));
 
     expect(goToWorkspace).toHaveBeenCalledWith(WIRE_CHAPTERS[0].id);
   });
@@ -56,7 +56,7 @@ describe('Open workspace from the recording check dialog (edit-and-proof-workspa
   it('renders no Open workspace button when the caller has none', async () => {
     await openBreakdown();
     const dialog = await openCheck('Chapter 1');
-    expect(within(dialog).queryByRole('button', { name: 'Open workspace' })).toBeNull();
+    expect(within(dialog).queryByRole('button', { name: 'Open in Proof' })).toBeNull();
   });
 });
 
@@ -122,7 +122,7 @@ describe('recording check on Home', () => {
     const chapter = WIRE_CHAPTERS[3];
     await openBreakdown({ findings: [...WIRE_FINDINGS, takeReviewPickupFor(chapter.id, chapter.title)] });
     const dialog = await openCheck('Chapter 4');
-    expect(await within(dialog).findByText('Repeated reads (Review): 1 group not reviewed yet')).toBeTruthy();
+    expect(await within(dialog).findByText('Repeated reads (Proof): 1 group not reviewed yet')).toBeTruthy();
     expect(within(dialog).getByRole('link', { name: 'Open Proof' }).getAttribute('href')).toBe('/proof');
   });
 
@@ -131,7 +131,7 @@ describe('recording check on Home', () => {
     await openBreakdown({ findings: [...WIRE_FINDINGS, takeReviewPickupFor(WIRE_CHAPTERS[0].id, WIRE_CHAPTERS[0].title)] });
     const dialog = await openCheck(chapter.title);
     await within(dialog).findByText(/^Recorded to paragraph \d+ of \d+/);
-    expect(await within(dialog).findByText('Repeated reads (Review): none waiting')).toBeTruthy();
+    expect(await within(dialog).findByText('Repeated reads (Proof): none waiting')).toBeTruthy();
   });
 
   it("shows the proofer's project-wide open pickup count, the same figure the Pickups page shows (recording-check-summary.prd.md RS5 B)", async () => {
