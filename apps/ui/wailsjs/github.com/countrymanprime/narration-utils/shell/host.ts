@@ -103,7 +103,7 @@ export function ChapterSyncPreview(): $CancellablePromise<string> {
 }
 
 /**
- * ChapterSyncSetEnabled stores the narrator's answer (Sync is true, Not now is false, and the Tracks page's toggle
+ * ChapterSyncSetEnabled stores the narrator's answer (Sync is true, Not now is false, and the audio engine panel's toggle
  * uses the same call) and, when on, runs the first sync. It returns the new state with the sync's batch.
  */
 export function ChapterSyncSetEnabled(on: boolean): $CancellablePromise<string> {
@@ -201,6 +201,50 @@ export function ChapterTrackUnlink(chapterID: string): $CancellablePromise<strin
  */
 export function ChaptersForTracks(guids: string[]): $CancellablePromise<string> {
     return $Call.ByID(1946035715, guids);
+}
+
+/**
+ * CharacterApprove approves regionGUID as a voice reference for characterID
+ * (a Story Bible entity id, or the reserved Narration id), with an optional
+ * note. Approving the same character and region again refreshes the
+ * snapshot in place.
+ */
+export function CharacterApprove(characterID: string, regionGUID: string, note: string): $CancellablePromise<string> {
+    return $Call.ByID(3579176758, characterID, regionGUID, note);
+}
+
+/**
+ * CharacterListRegions lists the saved REAPER project's regions, for the
+ * narrator to pick one to approve as a voice reference.
+ */
+export function CharacterListRegions(): $CancellablePromise<string> {
+    return $Call.ByID(1288114066);
+}
+
+/**
+ * CharacterReferences lists every stored reference, each annotated with
+ * whether the region it names has changed since it was approved.
+ */
+export function CharacterReferences(): $CancellablePromise<string> {
+    return $Call.ByID(536905783);
+}
+
+/**
+ * CharacterRemoveVoiceData revokes every reference for the project in one
+ * action (Q7's "Remove voice analysis data", delivered in Phase 6 rather
+ * than Phase 7 per D87): the data-layer effect is the same as revoking each
+ * reference one at a time.
+ */
+export function CharacterRemoveVoiceData(): $CancellablePromise<string> {
+    return $Call.ByID(1324390885);
+}
+
+/**
+ * CharacterRevoke removes one stored reference by id. Revoking an id that is
+ * not (or no longer) stored is not an error.
+ */
+export function CharacterRevoke(id: string): $CancellablePromise<string> {
+    return $Call.ByID(2254082095, id);
 }
 
 /**
@@ -589,6 +633,38 @@ export function EditingState(): $CancellablePromise<string> {
 }
 
 /**
+ * ExportCancel stops a running export; files already prepared keep their results. With none running it changes
+ * nothing.
+ */
+export function ExportCancel(): $CancellablePromise<string> {
+    return $Call.ByID(2787515454);
+}
+
+/**
+ * ExportPickFiles opens the operating system's picker for the rendered chapter, credits and retail-sample files to
+ * master and encode, and answers the chosen paths (none when the narrator closes it). Only paths chosen here can be
+ * exported.
+ */
+export function ExportPickFiles(): $CancellablePromise<string> {
+    return $Call.ByID(3772614912);
+}
+
+/**
+ * ExportStart masters (when req.master is true) and encodes the picked files as a job and answers it; it refuses a
+ * path that was not picked, a request with no items, or a second export while one runs.
+ */
+export function ExportStart(req: $models.ExportRequest): $CancellablePromise<string> {
+    return $Call.ByID(2735024176, req);
+}
+
+/**
+ * ExportState answers the export job: idle, running with real progress, or how it ended with every file's result.
+ */
+export function ExportState(): $CancellablePromise<string> {
+    return $Call.ByID(3355501889);
+}
+
+/**
  * FindingsAddMarker adds one take marker in REAPER at an accepted finding's spot, on its take, named like the marker
  * Transcript Compare's export adds (approvedMarker). A finding not accepted, one with no item or no time in its audio,
  * and a REAPER that is not listening are refused before anything is sent.
@@ -694,12 +770,30 @@ export function GuideBuildState(): $CancellablePromise<string> {
     return $Call.ByID(1236161883);
 }
 
+/**
+ * GuideCorrectCue records the narrator's own attribution for one dialogue
+ * cue. speakerEntityID "unknown" or "" clears the cue back to unknown; a
+ * rebuild never overwrites a correction (mirroring ADR 0007's lock guard).
+ */
+export function GuideCorrectCue(cueID: string, speakerEntityID: string): $CancellablePromise<string> {
+    return $Call.ByID(2882621287, cueID, speakerEntityID);
+}
+
 export function GuideCreate(name: string, category: string, aliases: string[]): $CancellablePromise<string> {
     return $Call.ByID(4087272090, name, category, aliases);
 }
 
 export function GuideDelete(id: string): $CancellablePromise<string> {
     return $Call.ByID(2382640937, id);
+}
+
+/**
+ * GuideDialogueCues returns the Story Bible's extracted dialogue cues
+ * (character-continuity-review.prd.md Phase 2): one entry per quoted span,
+ * with its resolved or unknown speaker.
+ */
+export function GuideDialogueCues(): $CancellablePromise<string> {
+    return $Call.ByID(1741759900);
 }
 
 export function GuideEdit(id: string, values: { [_ in string]?: string }): $CancellablePromise<string> {
@@ -898,6 +992,22 @@ export function ManuscriptSetChapterStatus(chapter: string, status: string): $Ca
 }
 
 /**
+ * MasteringChooseProvider saves the current project's mastering row and answers the rows again. An empty name clears the choice,
+ * so the project masters with the default row. A row that is not registered, or not available on this computer yet, is refused
+ * with its sentence, and nothing is saved.
+ */
+export function MasteringChooseProvider(name: string): $CancellablePromise<string> {
+    return $Call.ByID(611142244, name);
+}
+
+/**
+ * MasteringProviders answers the mastering rows and the current project's choice. It changes nothing.
+ */
+export function MasteringProviders(): $CancellablePromise<string> {
+    return $Call.ByID(1713708686);
+}
+
+/**
  * MeasureAnalyze measures picked files as a job and answers it; it refuses a path that was not picked, more than
  * maxMeasureFiles files, or a second measurement while one runs.
  */
@@ -927,6 +1037,30 @@ export function MeasurePickFiles(): $CancellablePromise<string> {
  */
 export function MeasureState(): $CancellablePromise<string> {
     return $Call.ByID(2552163807);
+}
+
+/**
+ * PackageCancel stops a running package build. With none running it changes nothing.
+ */
+export function PackageCancel(): $CancellablePromise<string> {
+    return $Call.ByID(1117202284);
+}
+
+/**
+ * PackageStart opens the operating system's folder picker, then assembles the chosen profile's package from an
+ * export's own encoded files as a job, and answers it. It refuses a path that was not encoded in this session, no
+ * items, an unknown profile, or a second package build while one runs. Closing the picker without choosing a folder
+ * answers the current (unstarted) state rather than an error.
+ */
+export function PackageStart(req: $models.PackageRequest): $CancellablePromise<string> {
+    return $Call.ByID(2842461846, req);
+}
+
+/**
+ * PackageState answers the package job: idle, running, or how it ended with the manifest and checklist it built.
+ */
+export function PackageState(): $CancellablePromise<string> {
+    return $Call.ByID(2792423179);
 }
 
 export function PickupsCount(): $CancellablePromise<string> {
@@ -966,6 +1100,16 @@ export function PickupsState(): $CancellablePromise<string> {
 }
 
 /**
+ * PrepCompletenessSummary reads every manuscript chapter and answers one row each: how many of its names still have
+ * an open pronunciation query, and how many of its markup spans are stale, plus the book-wide totals. With no project
+ * open, or no Story Bible or manuscript yet, it answers an empty summary rather than an error, the same way
+ * GuidePronunciationQueries and PrepMarkupList already do for a phase this early in prep.
+ */
+export function PrepCompletenessSummary(): $CancellablePromise<string> {
+    return $Call.ByID(1398522399);
+}
+
+/**
  * PrepMarkupDelete removes one span by its id; a stale span needs nothing else.
  */
 export function PrepMarkupDelete(chapterID: string, id: string): $CancellablePromise<string> {
@@ -994,6 +1138,46 @@ export function PrepMarkupSave(chapterID: string, paragraphID: string, start: nu
  */
 export function PreviewCandidates(): $CancellablePromise<string> {
     return $Call.ByID(2923797608);
+}
+
+/**
+ * PreviewPin reads the narrator's pinned window, if any, resolved against the manuscript's current text.
+ */
+export function PreviewPin(): $CancellablePromise<string> {
+    return $Call.ByID(1241542001);
+}
+
+/**
+ * PreviewPinAdjust grows or shrinks the pinned range by one paragraph at edge ("start" or "end"); grow false
+ * shrinks it instead. It is a no-op, not an error, once the range already reaches the chapter's edge or (shrinking)
+ * is down to one paragraph (preview.AdjustRange's own rule).
+ */
+export function PreviewPinAdjust(edge: string, grow: boolean): $CancellablePromise<string> {
+    return $Call.ByID(1417233170, edge, grow);
+}
+
+/**
+ * PreviewPinClear removes the pin. Clearing when nothing is pinned is not an error.
+ */
+export function PreviewPinClear(): $CancellablePromise<string> {
+    return $Call.ByID(3078643078);
+}
+
+/**
+ * PreviewPinSet pins one window: chapterID and paragraphIDs are normally a candidate's own fields, exactly as
+ * PreviewCandidates answered them, though any contiguous, in-order run of one chapter's paragraph ids is accepted
+ * (Phase 8 does not require the narrator to have started from a suggested candidate at all).
+ */
+export function PreviewPinSet(chapterID: string, paragraphIDs: string[]): $CancellablePromise<string> {
+    return $Call.ByID(3856724439, chapterID, paragraphIDs);
+}
+
+/**
+ * ProductionBurndown is the book's logged hours by day (Phase 6, Could): data only, for a future chart primitive to
+ * plot. It reads the same time log as ProductionOverview and adds nothing to it.
+ */
+export function ProductionBurndown(): $CancellablePromise<string> {
+    return $Call.ByID(211479988);
 }
 
 /**
@@ -1039,6 +1223,16 @@ export function ProductionStartTimer(chapterID: string, stage: string): $Cancell
 }
 
 /**
+ * ProductionStatusReport writes the book's status report (Phase 5): hours by stage, PFH, the deadline and milestone
+ * status, and book-wide readiness counts, as an HTML and a JSON file. includeContractedAmount is the narrator's choice
+ * to write the contracted amount and the effective rate; off by default, since a status report is often shared with
+ * someone the narrator would not otherwise tell their rate. It refuses without a project.
+ */
+export function ProductionStatusReport(includeContractedAmount: boolean): $CancellablePromise<string> {
+    return $Call.ByID(1628238977, includeContractedAmount);
+}
+
+/**
  * ProductionStopTimer stops the running timer. It answers {stopped: true, session} with the session it logged, or
  * {stopped: false, session: null} when no timer was running.
  */
@@ -1063,8 +1257,8 @@ export function ProjectCreateIn(parent: string, name: string): $CancellablePromi
 }
 
 /**
- * ProjectLinkDawFile is the one shared binding behind the header pill, the
- * Tracks page and Settings' DAW category (PRD project-workspace-and-daw-
+ * ProjectLinkDawFile is the one shared binding behind the audio engine panel
+ * and Settings' DAW category (PRD project-workspace-and-daw-
  * link.prd.md, Open Question W19): it opens a native "*.rpp" file dialog and
  * links the chosen file to the current project through the manifest storage
  * Phase 1-3 already built (project.BuildDawLink, Manifest.Save). Cancelling
@@ -1136,6 +1330,78 @@ export function PronunciationLookupOpen(source: string, word: string): $Cancella
 }
 
 /**
+ * PronunciationOnlineKeyClear removes the saved key; cached answers stay.
+ */
+export function PronunciationOnlineKeyClear(): $CancellablePromise<string> {
+    return $Call.ByID(3315931556);
+}
+
+/**
+ * PronunciationOnlineKeySet saves the narrator's pasted key (Q10). An error never quotes what was pasted.
+ */
+export function PronunciationOnlineKeySet(key: string): $CancellablePromise<string> {
+    return $Call.ByID(2329407561, key);
+}
+
+/**
+ * PronunciationOnlineKeyStatus says whether the narrator has saved their Merriam-Webster key, and whether it is sealed at
+ * rest on this platform. Never the key.
+ */
+export function PronunciationOnlineKeyStatus(): $CancellablePromise<string> {
+    return $Call.ByID(822152461);
+}
+
+/**
+ * PronunciationOnlineLookup looks one word up for the narrator, who pressed Look up for it (D72: narrator-initiated): from
+ * the local cache when it was looked up before, otherwise from Merriam-Webster on the narrator's key.
+ */
+export function PronunciationOnlineLookup(word: string): $CancellablePromise<string> {
+    return $Call.ByID(2880033266, word);
+}
+
+/**
+ * PronunciationOnlineLookupBatch looks every word in words up once (Q11: opt-in with a notice). confirmedCount is the word
+ * count the narrator confirmed in the notice; the Service refuses the batch unless it is exactly the number of distinct
+ * words it would send.
+ */
+export function PronunciationOnlineLookupBatch(words: string[], confirmedCount: number): $CancellablePromise<string> {
+    return $Call.ByID(132804926, words, confirmedCount);
+}
+
+/**
+ * PronunciationOnlineSignUpOpen opens the dictionary's free-key sign-up page in the narrator's browser: a fixed constant of
+ * the adapter's, never an address the UI supplies (the same trusted-URL discipline as PronunciationLookupOpen).
+ */
+export function PronunciationOnlineSignUpOpen(): $CancellablePromise<string> {
+    return $Call.ByID(1086970160);
+}
+
+/**
+ * ProofingChooseRender opens the native file picker for the chapter's rendered file and, once one is chosen, attests
+ * it was made from the chapter as the saved project has it now (Q9 A). It answers {status: "cancelled"} when the
+ * narrator closes the dialog without choosing, {status: "refused", message} when the file could not be read or the
+ * chapter has no one confirmed track in the saved project, or {status: "ok", render} with the render evaluated again.
+ */
+export function ProofingChooseRender(chapterID: string): $CancellablePromise<string> {
+    return $Call.ByID(4132274041, chapterID);
+}
+
+/**
+ * ProofingClearRender removes the chapter's render association and answers the render state again (none).
+ */
+export function ProofingClearRender(chapterID: string): $CancellablePromise<string> {
+    return $Call.ByID(3281337037, chapterID);
+}
+
+/**
+ * ProofingRenderState reads the chapter's render association and, once it is current, its latest measurement of
+ * exactly that render. It starts nothing.
+ */
+export function ProofingRenderState(chapterID: string): $CancellablePromise<string> {
+    return $Call.ByID(2166190973, chapterID);
+}
+
+/**
  * ProviderCapabilities answers, for each provider port, every registered provider's label, platforms, modes, asset kind (with
  * the installed count when its catalog is present) and whether it is supported on this platform.
  */
@@ -1172,6 +1438,59 @@ export function Ready(): $CancellablePromise<{ [_ in string]?: any }> {
 }
 
 /**
+ * RecorderChooseEngine saves which engine the project records with: "daw" (REAPER, the default) or "builtin". The built-in
+ * recorder is refused, with its sentence, where its capture row is not available; nothing changes while a take records.
+ */
+export function RecorderChooseEngine(engine: string): $CancellablePromise<string> {
+    return $Call.ByID(247123031, engine);
+}
+
+/**
+ * RecorderDevices lists the input devices the built-in recorder can open. Like TeleprompterDevices, a listing problem comes
+ * back as {"devices": [], "error": "..."}, never a rejected promise.
+ */
+export function RecorderDevices(): $CancellablePromise<string> {
+    return $Call.ByID(3873686667);
+}
+
+/**
+ * RecorderMeterStart shows device's level before a take (no file is written), replacing a meter already running. It is
+ * refused while a take records.
+ */
+export function RecorderMeterStart(device: string): $CancellablePromise<string> {
+    return $Call.ByID(1811880147, device);
+}
+
+/**
+ * RecorderMeterStop ends the level meter; it leaves a take alone.
+ */
+export function RecorderMeterStop(): $CancellablePromise<string> {
+    return $Call.ByID(4289082273);
+}
+
+/**
+ * RecorderStart records a new take of device into the project's Recordings folder and remembers the device for the project.
+ * It answers once the take has started; its end arrives as "recording:state".
+ */
+export function RecorderStart(device: string): $CancellablePromise<string> {
+    return $Call.ByID(1722162476, device);
+}
+
+/**
+ * RecorderState answers the recorder's state. It changes nothing.
+ */
+export function RecorderState(): $CancellablePromise<string> {
+    return $Call.ByID(1538594405);
+}
+
+/**
+ * RecorderStop asks the take (or the meter) to end and answers at once; the take's end arrives as "recording:state".
+ */
+export function RecorderStop(): $CancellablePromise<string> {
+    return $Call.ByID(925363464);
+}
+
+/**
  * RenderConfigConfigure asks REAPER to set the render bounds to all regions, the naming pattern to the region
  * name, and the output folder to outputFolder. It never renders anything: the narrator presses Render themselves
  * once the resulting file names (RenderConfigState's targets, once the run succeeds) look right.
@@ -1193,7 +1512,7 @@ export function RenderConfigSuggestFolder(): $CancellablePromise<string> {
 }
 
 /**
- * RetakeLanesList lists, from the saved REAPER project the Tracks page reads, every manuscript line whose retakes sit
+ * RetakeLanesList lists, from the saved REAPER project the audio engine panel reads, every manuscript line whose retakes sit
  * on more than one fixed lane of a track, and which lane plays.
  */
 export function RetakeLanesList(): $CancellablePromise<string> {
@@ -1668,6 +1987,25 @@ export function WhisperInstallState(jobID: string): $CancellablePromise<string> 
 
 export function WhisperRemove(modelID: string): $CancellablePromise<string> {
     return $Call.ByID(1246245112, modelID);
+}
+
+/**
+ * WindowSetZoom sets the window's zoom to the nearest of zoomSteps, clamped to [zoomMin, zoomMax] regardless of what
+ * factor the caller sends - the defensive floor and ceiling behind the header's own disabled-at-100%/never-past-200%
+ * promise (Q6, ADR 0201). The UI calls this from the header's buttons, Ctrl+=/-/0, reset, and the "set back to 200%"
+ * clamp it runs itself when it sees an external (Ctrl+wheel or pinch) zoom above the ceiling; Ctrl+wheel and pinch
+ * never call it directly.
+ */
+export function WindowSetZoom(factor: number): $CancellablePromise<string> {
+    return $Call.ByID(36100721, factor);
+}
+
+/**
+ * WindowZoom reads the window's current zoom level (ADR 0201 item 3): the UI asks for this when it sees the page's
+ * own zoom change (a devicePixelRatio or resize event), since Wails v3 surfaces no zoom-changed callback on Windows.
+ */
+export function WindowZoom(): $CancellablePromise<string> {
+    return $Call.ByID(1473407121);
 }
 
 /**

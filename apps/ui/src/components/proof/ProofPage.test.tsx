@@ -22,7 +22,7 @@ function renderPage({
   const api = createMockApi(overrides, initial);
   const goToManuscript = vi.fn();
   const goToStoryBible = vi.fn();
-  const goToDelivery = vi.fn();
+  const goToMaster = vi.fn();
   const notify = vi.fn();
   render(
     <ApiProvider api={api}>
@@ -33,13 +33,13 @@ function renderPage({
           goToManuscript={goToManuscript}
           goToStoryBible={goToStoryBible}
           goToWorkspace={goToWorkspace}
-          goToDelivery={goToDelivery}
+          goToMaster={goToMaster}
           openChapter={vi.fn()}
         />
       </TooltipProvider>
     </ApiProvider>,
   );
-  return { api, goToManuscript, goToStoryBible, goToDelivery, notify };
+  return { api, goToManuscript, goToStoryBible, goToMaster, notify };
 }
 
 const rows = async () => {
@@ -58,11 +58,20 @@ describe('ProofPage', () => {
   it('lists the latest run with the counts by status, and asks the narrator to pick a finding', async () => {
     renderPage();
     expect(await rows()).toHaveLength(4);
-    expect(await screen.findByText('3 to review · 0 accepted · 1 dismissed · 0 deferred')).toBeTruthy();
+    // Mock 04's notes header (D85 #7): "Notes · N" and a chip per resolution that has notes.
+    expect(await screen.findByRole('heading', { name: 'Notes · 4' })).toBeTruthy();
+    expect(screen.getByText('3 to review')).toBeTruthy();
+    expect(screen.getByText('1 waived')).toBeTruthy();
+    // PF4: the Sources line names where the notes come from.
+    expect(screen.getByText('local AI compare · Story Bible')).toBeTruthy();
     expect(screen.getByText(/Select a note to see its evidence/)).toBeTruthy();
     const first = (await rows())[0];
     expect(first.textContent).toContain('“a White Rabbit with pink eyes” read as “a white rabbit with pale eyes”');
     expect(first.textContent).toContain('90%');
+    // PF2: the Type column shows the evidence's own kind, not the broader category, when the analyzer reports one.
+    expect(first.textContent).toContain('Misread');
+    const entityRow = (await rows()).find((row) => /White Rabbit/.test(row.textContent ?? '') && !/pink eyes/.test(row.textContent ?? ''));
+    expect(entityRow?.textContent).toContain('Story Bible entry');
   });
 
   it('says there is nothing to review yet, with no filters, when the project has no findings', async () => {
@@ -78,7 +87,7 @@ describe('ProofPage', () => {
     const list = vi.spyOn(api, 'findingsList');
     await rows();
     await user.selectOptions(screen.getByRole('combobox', { name: 'Check' }), 'story-bible');
-    await waitFor(() => expect(list).toHaveBeenLastCalledWith(expect.objectContaining({ analyzer: 'story-bible', sort: 'chapter' })));
+    await waitFor(() => expect(list).toHaveBeenCalledWith(expect.objectContaining({ analyzer: 'story-bible', sort: 'chapter' })));
     await waitFor(async () => expect(await rows()).toHaveLength(1));
     await user.click(screen.getByRole('switch', { name: 'Include findings the latest run did not repeat' }));
     await waitFor(async () => expect(await rows()).toHaveLength(2));
@@ -109,7 +118,7 @@ describe('ProofPage', () => {
     const user = userEvent.setup();
     renderPage();
     await openFinding(user, /pink eyes/);
-    const detail = screen.getByRole('region', { name: 'Transcript difference' });
+    const detail = screen.getByRole('region', { name: '0:12.4 · Misread' });
     expect(within(detail).getByText('a White Rabbit with pink eyes')).toBeTruthy();
     expect(within(detail).getByText('Misread')).toBeTruthy();
     expect(within(detail).getByText('0.42 s')).toBeTruthy();
@@ -119,22 +128,44 @@ describe('ProofPage', () => {
     expect(within(detail).getByRole('button', { name: 'Loop in REAPER' })).toBeTruthy();
   });
 
+  it('plays a note with 3 s either side (PF8), and says why a note with no recording position cannot', async () => {
+    const user = userEvent.setup();
+    vi.spyOn(window.HTMLMediaElement.prototype, 'play').mockResolvedValue(undefined);
+    vi.spyOn(window.HTMLMediaElement.prototype, 'pause').mockImplementation(() => {});
+    renderPage();
+    await openFinding(user, /pink eyes/);
+    await user.click(screen.getByRole('button', { name: 'Play ±3 s' }));
+    expect(await screen.findByRole('button', { name: 'Stop' })).toBeTruthy();
+
+    const entityRow = (await rows()).find((row) => /Story Bible entry/.test(row.textContent ?? ''));
+    await user.click(entityRow!);
+    expect((await screen.findByRole('button', { name: 'Play ±3 s' })).hasAttribute('disabled')).toBe(true);
+  });
+
+  it('offers the proofer’s sheet in and out on the notes header (D85 #8)', async () => {
+    renderPage();
+    await rows();
+    expect(screen.getByRole('button', { name: 'Import proofer sheet' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Export for proofer' })).toBeTruthy();
+  });
+
   it('records a decision with its note, says so, and updates the list and the counts', async () => {
     const user = userEvent.setup();
     const { api } = renderPage();
     const review = vi.spyOn(api, 'findingsReview');
     await openFinding(user, /pink eyes/);
     await user.type(screen.getByRole('textbox', { name: 'Note (optional)' }), 'Re-record the line');
-    await user.click(screen.getByRole('button', { name: 'Accept' }));
-    expect(await screen.findByText('Saved as accepted.')).toBeTruthy();
+    await user.click(screen.getByRole('button', { name: 'Pickup' }));
+    expect(await screen.findByText('Saved: needs a pickup.')).toBeTruthy();
     expect(review).toHaveBeenCalledWith({
       id: WIRE_FINDINGS[0].id,
       evidenceVersion: WIRE_FINDINGS[0].evidence_version,
       status: 'accepted',
       note: 'Re-record the line',
     });
-    expect(await screen.findByText('2 to review · 1 accepted · 1 dismissed · 0 deferred')).toBeTruthy();
-    expect((await rows())[0].textContent).toContain('Accepted');
+    expect(await screen.findByText('1 need pickup')).toBeTruthy();
+    expect(screen.getByText('2 to review')).toBeTruthy();
+    expect((await rows())[0].textContent).toContain('Pickup');
     expect(screen.getByRole('button', { name: 'Reopen' })).toBeTruthy();
   });
 
@@ -144,11 +175,11 @@ describe('ProofPage', () => {
     const review = vi.spyOn(api, 'findingsReview');
     await openFinding(user, /pink eyes/);
     await user.type(screen.getByRole('textbox', { name: 'Note (optional)' }), 'Pale is fine');
-    await user.click(screen.getByRole('button', { name: 'Dismiss' }));
+    await user.click(screen.getByRole('button', { name: 'Waive' }));
     expect((await screen.findByRole('alert')).textContent).toMatch(/^Not saved: this finding changed since you opened it, because its check ran again\./);
     expect((screen.getByRole('textbox', { name: 'Note (optional)' }) as HTMLTextAreaElement).value).toBe('Pale is fine');
-    await user.click(screen.getByRole('button', { name: 'Dismiss' }));
-    expect(await screen.findByText('Saved as dismissed.')).toBeTruthy();
+    await user.click(screen.getByRole('button', { name: 'Waive' }));
+    expect(await screen.findByText('Saved: waived.')).toBeTruthy();
     expect(review).toHaveBeenLastCalledWith(expect.objectContaining({ evidenceVersion: `${WIRE_FINDINGS[0].evidence_version}-rerun`, note: 'Pale is fine' }));
     expect(screen.queryByRole('alert')).toBeNull();
   });
@@ -169,7 +200,7 @@ describe('ProofPage', () => {
     await user.click(note);
     await user.paste('x'.repeat(2001));
     expect(screen.getByText('A note can be at most 2000 characters.')).toBeTruthy();
-    expect((screen.getByRole('button', { name: 'Accept' }) as HTMLButtonElement).disabled).toBe(true);
+    expect((screen.getByRole('button', { name: 'Pickup' }) as HTMLButtonElement).disabled).toBe(true);
   });
 
   it('says a finding is not in the latest run', async () => {
@@ -188,7 +219,7 @@ describe('ProofPage', () => {
     const user = userEvent.setup();
     const { goToManuscript, goToStoryBible } = renderPage();
     await openFinding(user, /pink eyes/);
-    await user.click(screen.getByRole('button', { name: 'Show in manuscript' }));
+    await user.click(screen.getByRole('button', { name: 'Show in Script' }));
     await waitFor(() => expect(goToManuscript).toHaveBeenCalledWith('chapter-1', 1));
     await openFinding(user, /.White Rabbit.Story Bible/);
     await user.click(screen.getByRole('button', { name: 'Open in Story Bible' }));
@@ -212,11 +243,11 @@ describe('ProofPage', () => {
     expect(screen.queryByRole('button', { name: 'Open chapter view' })).toBeNull();
   });
 
-  it('keeps Show in manuscript off, with the reason, when there is no manuscript', async () => {
+  it('keeps Show in Script off, with the reason, when there is no manuscript', async () => {
     const user = userEvent.setup();
     renderPage({ hasManuscript: false });
     await openFinding(user, /pink eyes/);
-    expect((screen.getByRole('button', { name: 'Show in manuscript' }) as HTMLButtonElement).disabled).toBe(true);
+    expect((screen.getByRole('button', { name: 'Show in Script' }) as HTMLButtonElement).disabled).toBe(true);
     expect(screen.getByRole('group', { name: 'Import a manuscript to open this finding in it.' })).toBeTruthy();
     expect(screen.queryByRole('button', { name: 'Open in Story Bible' })).toBeNull();
   });
@@ -265,7 +296,7 @@ describe('ProofPage', () => {
 
 // Go to, Loop and Stop in REAPER (review dashboard Phase 7), against the mock's REAPER.
 describe('ProofPage in REAPER', () => {
-  const inReaper = () => within(screen.getByRole('region', { name: 'In REAPER' }));
+  const inReaper = () => within(screen.getByRole('heading', { name: 'In REAPER' }).parentElement!);
   const button = (name: string) => inReaper().getByRole('button', { name }) as HTMLButtonElement;
 
   it('goes to a finding and says where REAPER put the cursor', async () => {
@@ -355,7 +386,7 @@ describe('ProofPage in REAPER', () => {
     await waitFor(async () => expect(await rows()).toHaveLength(1));
     await openFinding(user, /White Rabbit/);
     await screen.findByRole('heading', { level: 3, name: 'Decision' });
-    expect(screen.queryByRole('region', { name: 'In REAPER' })).toBeNull();
+    expect(screen.queryByRole('heading', { name: 'In REAPER' })).toBeNull();
   });
 
   it('keeps the buttons off with the reason when the status cannot be read', async () => {
@@ -369,7 +400,7 @@ describe('ProofPage in REAPER', () => {
 
 // The approved marker (review dashboard Phase 8, ADR 0123): one take marker for an accepted finding, after a confirm.
 describe('ProofPage adds an approved marker in REAPER', () => {
-  const inReaper = () => within(screen.getByRole('region', { name: 'In REAPER' }));
+  const inReaper = () => within(screen.getByRole('heading', { name: 'In REAPER' }).parentElement!);
   const addMarker = () => inReaper().getByRole('button', { name: 'Add marker in REAPER' }) as HTMLButtonElement;
   const MARKER = "MISREAD: 'a White Rabbit with pink eyes' as 'a white rabbit with pale eyes'";
 
@@ -377,8 +408,8 @@ describe('ProofPage adds an approved marker in REAPER', () => {
     await openFinding(user, /pink eyes/);
     await waitFor(() => expect(inReaper().getByRole('button', { name: 'Go to in REAPER' }).hasAttribute('disabled')).toBe(false));
     expect(addMarker().disabled).toBe(true);
-    await user.click(screen.getByRole('button', { name: 'Accept' }));
-    await screen.findByText('Saved as accepted.');
+    await user.click(screen.getByRole('button', { name: 'Pickup' }));
+    await screen.findByText('Saved: needs a pickup.');
     await waitFor(() => expect(addMarker().disabled).toBe(false));
   };
 
@@ -429,7 +460,7 @@ describe('ProofPage adds an approved marker in REAPER', () => {
     expect((await inReaper().findByRole('alert')).textContent).toContain('so no marker was added');
   });
 
-  it('lists a delivery finding by its file and rule, and opens the Delivery page on them instead of the manuscript', async () => {
+  it('lists a delivery finding by its file and rule, and opens Master & QC on them instead of the manuscript', async () => {
     const user = userEvent.setup();
     const delivery: Finding = {
       schema_version: 1,
@@ -457,7 +488,7 @@ describe('ProofPage adds an approved marker in REAPER', () => {
       evidence_version: 'sha256:1',
       review: { status: 'unreviewed' },
     };
-    const { api, goToDelivery, goToManuscript } = renderPage({ initial: { findings: [...WIRE_FINDINGS, delivery] } });
+    const { api, goToMaster, goToManuscript } = renderPage({ initial: { findings: [...WIRE_FINDINGS, delivery] } });
     const row = (await rows()).find((candidate) => candidate.textContent?.includes('RMS −24.1 dBFS, below the minimum of −23'));
     expect(row?.textContent).toContain('Chapter 01.wav');
     expect(row?.textContent).toContain('Delivery check');
@@ -466,14 +497,14 @@ describe('ProofPage adds an approved marker in REAPER', () => {
     const detail = await screen.findByRole('region', { name: 'Delivery check' });
     expect(within(detail).getByText('File')).toBeTruthy();
     expect(within(detail).getByText('Each file measures between -23 dB and -18 dB RMS.')).toBeTruthy();
-    expect(within(detail).queryByRole('button', { name: 'Show in manuscript' })).toBeNull();
-    await user.click(within(detail).getByRole('button', { name: 'Open in Delivery' }));
-    expect(goToDelivery).toHaveBeenCalledWith('C:/Projects/Alice/renders/Chapter 01.wav', 'acx.rms');
+    expect(within(detail).queryByRole('button', { name: 'Show in Script' })).toBeNull();
+    await user.click(within(detail).getByRole('button', { name: 'Open in Master & QC' }));
+    expect(goToMaster).toHaveBeenCalledWith('C:/Projects/Alice/renders/Chapter 01.wav', 'acx.rms');
     expect(goToManuscript).not.toHaveBeenCalled();
 
     // Dismissed like any other finding, against the evidence version it was shown with.
-    await user.click(within(detail).getByRole('button', { name: 'Dismiss' }));
-    expect(await within(detail).findByText('Saved as dismissed.')).toBeTruthy();
+    await user.click(within(detail).getByRole('button', { name: 'Waive' }));
+    expect(await within(detail).findByText('Saved: waived.')).toBeTruthy();
     expect((await api.findingsGet('delivery-rms')).review.status).toBe('dismissed');
   });
 });

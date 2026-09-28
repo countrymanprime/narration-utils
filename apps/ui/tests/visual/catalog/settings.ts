@@ -36,8 +36,20 @@ export const settingsStates: StateEntry[] = [
       'Settings, Global scope / Recording check category (ADR 0131): the four number settings at their defaults (0.8, 3, 8, 3 words; ADR 0132), under a summary that labels them uncalibrated and states the rule they make',
     ...REFLOW,
   },
-  { page: 'settings', state: 'global-proofing', description: 'Settings, Global scope / Proofing category', ...REFLOW },
-  { page: 'settings', state: 'global-storybible', description: 'Settings, Global scope / Story Bible category', ...REFLOW },
+  { page: 'settings', state: 'global-proofing', description: 'Settings, Global scope / Proof category', ...REFLOW },
+  {
+    page: 'settings',
+    state: 'global-storybible',
+    description: 'Settings, Global scope / Story Bible category, with the online dictionary panel offering a free Merriam-Webster key',
+    ...REFLOW,
+  },
+  {
+    page: 'settings',
+    state: 'global-storybible-key-saved',
+    description:
+      'Settings, Global scope / Story Bible category after the narrator saved their own Merriam-Webster key: Key saved, Replace and Remove (prep-depth P9)',
+    ...REFLOW,
+  },
   {
     page: 'settings',
     state: 'global-delivery',
@@ -84,8 +96,8 @@ export const settingsStates: StateEntry[] = [
   { page: 'settings', state: 'global-tts', description: 'Settings, Global scope / TTS category', ...REFLOW },
   {
     page: 'settings',
-    state: 'global-teleprompter',
-    description: 'Settings, Global scope / Teleprompter category (microphone, live engine and model choice)',
+    state: 'global-booth',
+    description: 'Settings, Global scope / Booth category (microphone, live engine and model choice; stage-navigation-and-page-replacement.prd.md Q11)',
     ...REFLOW,
   },
   { page: 'settings', state: 'global-about', description: 'Settings, Global scope / About and updates category (the version, nothing checked yet)', ...REFLOW },
@@ -202,7 +214,7 @@ export const settingsStates: StateEntry[] = [
       'Settings, Project scope / Recording check category: every setting unset in the project and inheriting its default, with the note that a blank project value uses the Global one',
     ...REFLOW,
   },
-  { page: 'settings', state: 'project-proofing', description: 'Settings, Project scope / Proofing category', ...REFLOW },
+  { page: 'settings', state: 'project-proofing', description: 'Settings, Project scope / Proof category', ...REFLOW },
   { page: 'settings', state: 'project-storybible', description: 'Settings, Project scope / Story Bible category', ...REFLOW },
   {
     page: 'settings',

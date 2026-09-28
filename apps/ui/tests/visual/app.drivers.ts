@@ -3,15 +3,15 @@ import { THEME_STORAGE_KEY } from '../../src/theme/theme';
 import type { Driver } from './drivers/shared';
 import { projectDrivers } from './drivers/project';
 import { startupDrivers } from './drivers/startup';
-import { homeDrivers } from './drivers/home';
-import { manuscriptDrivers } from './drivers/manuscript';
+import { scriptDrivers } from './drivers/script';
 import { storybibleDrivers } from './drivers/storybible';
-import { tracksDrivers } from './drivers/tracks';
+import { engineDrivers } from './drivers/engine';
 import { proofDrivers } from './drivers/proof';
 import { proofChapterDrivers } from './drivers/proof-chapter';
-import { deliveryDrivers } from './drivers/delivery';
+import { pickupsDrivers } from './drivers/pickups';
+import { masterDrivers } from './drivers/master';
 import { productionDrivers } from './drivers/production';
-import { teleprompterDrivers } from './drivers/teleprompter';
+import { boothDrivers } from './drivers/booth';
 import { settingsDrivers } from './drivers/settings';
 import { globalDrivers } from './drivers/global';
 import { shellDrivers } from './drivers/shell';
@@ -44,7 +44,7 @@ export const documentScroll = 'locked';
 //
 // UI_THEME=dark (or light) starts every capture in that theme, so the whole suite can be looked at in dark: the app reads the
 // same localStorage key the theme picker writes (theme/theme.ts). The suite still fails at its end on `theme-dark`,
-// `reader-dark` and `booth-dark` matching their default states: that check is for the default run, so copy `screenshots/app` aside and use the PNGs.
+// `reader-dark` and `booth/dark` matching their default states: that check is for the default run, so copy `screenshots/app` aside and use the PNGs.
 /** @public */
 export async function beforeCapture(page: Page): Promise<void> {
   await startInRequestedTheme(page);
@@ -74,15 +74,15 @@ async function throttleRequestedCpu(page: Page): Promise<void> {
 export const APP_DRIVERS: Record<string, Record<string, Driver>> = {
   project: projectDrivers,
   startup: startupDrivers,
-  home: homeDrivers,
-  manuscript: manuscriptDrivers,
+  script: scriptDrivers,
   storybible: storybibleDrivers,
-  tracks: tracksDrivers,
+  engine: engineDrivers,
   proof: proofDrivers,
   'proof-chapter': proofChapterDrivers,
-  delivery: deliveryDrivers,
+  pickups: pickupsDrivers,
+  master: masterDrivers,
   production: productionDrivers,
-  teleprompter: teleprompterDrivers,
+  booth: boothDrivers,
   settings: settingsDrivers,
   global: globalDrivers,
   shell: shellDrivers,

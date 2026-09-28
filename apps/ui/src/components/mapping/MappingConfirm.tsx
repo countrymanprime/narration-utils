@@ -16,14 +16,28 @@ type Props = {
   busy?: boolean;
   onConfirm: (trackGuid: string) => void;
   onClear: () => void;
+  /** The read view's two actions; the Production board's track slide-over names them as its mockup does
+   * (chapter-track-link-control mock 02: "Another track…", "Unlink"). */
+  changeLabel?: string;
+  clearLabel?: string;
 };
 
 // A reusable inline "link this chapter to a track" prompt (analysis evidence ledger PRD, Phase 7, Q7): the Tracks
-// page's list uses one per chapter, and Home's recording check (components/home/RecordingCheck.tsx) shows one when a
-// chapter has no confirmed track, without needing the Tracks page around it. It owns only the pending pick in the
+// page's list uses one per chapter, and the recording check (components/production/RecordingCheck.tsx) shows one when a
+// chapter has no confirmed track, without needing the audio engine panel around it. It owns only the pending pick in the
 // track dropdown; the confirmed link itself lives in the caller's state, refreshed from `chapterTrackMapList` after
 // `onConfirm`/`onClear` resolve.
-export function MappingConfirm({ chapterTitle, tracks, linkedTrackGuid, linkedTrackName, busy = false, onConfirm, onClear }: Props) {
+export function MappingConfirm({
+  chapterTitle,
+  tracks,
+  linkedTrackGuid,
+  linkedTrackName,
+  busy = false,
+  onConfirm,
+  onClear,
+  changeLabel = 'Change',
+  clearLabel = 'Clear',
+}: Props) {
   const hasLink = Boolean(linkedTrackGuid);
   const [picking, setPicking] = useState(!hasLink);
   const options = tracks.map((track) => ({ value: track.guid, label: track.name || `Track ${track.index + 1}` }));
@@ -41,10 +55,10 @@ export function MappingConfirm({ chapterTitle, tracks, linkedTrackGuid, linkedTr
       <div className="flex flex-wrap items-center gap-2">
         <span className="text-sm">{linkedTrackName ?? 'Linked track is missing from this project'}</span>
         <Button variant="ghost" onClick={() => setPicking(true)} disabled={busy}>
-          Change
+          {changeLabel}
         </Button>
         <Button variant="ghost" onClick={onClear} pending={busy}>
-          Clear
+          {clearLabel}
         </Button>
       </div>
     );

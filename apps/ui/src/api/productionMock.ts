@@ -7,12 +7,14 @@
 import type { ChapterStatus, ManuscriptChapter } from './contracts/manuscript';
 import type {
   ProductionApi,
+  ProductionBurndownPoint,
   ProductionChapter,
   ProductionMilestone,
   ProductionNextUpItem,
   ProductionOverview,
   ProductionPlan,
   ProductionReadiness,
+  ProductionReportExport,
   ProductionSession,
 } from './contracts/production';
 import type { StageRecommendations } from './contracts/stages';
@@ -32,7 +34,6 @@ export const PRODUCTION_SCENARIOS: Record<'on-pace' | 'at-risk', ProductionSeed>
   'at-risk': { log: 'at-risk', deadline: '2026-09-29', contractedAmount: 2400 },
 };
 
-const MOCK_TIME = '2026-09-21T10:00:00Z';
 // The mock's today, so the days left to a seeded deadline are the same on every run (the host counts from the real date).
 const MOCK_TODAY = '2026-09-26';
 
@@ -113,6 +114,27 @@ const hoursOf = (session: ProductionSession) =>
 
 const perFinishedHour = (hours: number, seconds: number) => (hours > 0 && seconds > 0 ? hours / (seconds / 3600) : null);
 
+// The host's Burndown (internal/production/burndown.go, Phase 6): one point per calendar date from the first stopped
+// session's day to the last, running cumulatively; only stopped sessions count.
+function burndownOf(sessions: ProductionSession[]): ProductionBurndownPoint[] {
+  const byDay = new Map<string, number>();
+  for (const session of sessions) {
+    if (session.endedAt === undefined) continue;
+    const day = session.startedAt.slice(0, 10);
+    byDay.set(day, (byDay.get(day) ?? 0) + hoursOf(session));
+  }
+  if (byDay.size === 0) return [];
+  const days = [...byDay.keys()].sort();
+  const points: ProductionBurndownPoint[] = [];
+  let running = 0;
+  for (let d = Date.parse(`${days[0]}T00:00:00Z`); d <= Date.parse(`${days[days.length - 1]}T00:00:00Z`); d += 86_400_000) {
+    const day = new Date(d).toISOString().slice(0, 10);
+    running += byDay.get(day) ?? 0;
+    points.push({ date: day, hoursLogged: running });
+  }
+  return points;
+}
+
 function readinessOf(recommendation: StageRecommendations['chapters'][number]): ProductionReadiness {
   const held = recommendation.signals.find((signal) => signal.state === 'not_met') ?? recommendation.signals.find((signal) => signal.state === 'unknown');
   return { verdict: recommendation.verdict, ...(recommendation.target ? { target: recommendation.target } : {}), reason: held?.reason ?? '' };
@@ -146,11 +168,24 @@ export function createProductionMock(deps: Deps): ProductionApi {
   let plan: ProductionPlan = copy({ deadline: seed.deadline ?? null, contractedAmount: seed.contractedAmount ?? null, milestones: seed.milestones ?? [] });
   const log = seed.log ? LOGS[seed.log] : undefined;
   const sessions: ProductionSession[] = log ? seededSessions(log.hoursScale) : [];
-  if (log?.running) sessions.push({ id: 'mock-running', chapterId: 'chapter-6', stage: 'recording', startedAt: MOCK_TIME, source: 'manual' });
+  // The seeded running session began 42 minutes before the mock was made, so the header's timer chip reads like a real session
+  // (0:42:00 and counting) rather than days on from a fixed date.
+  if (log?.running) {
+    sessions.push({
+      id: 'mock-running',
+      chapterId: 'chapter-6',
+      stage: 'recording',
+      startedAt: new Date(Date.now() - 42 * 60_000).toISOString(),
+      source: 'manual',
+    });
+  }
   const running = () => sessions.find((session) => session.endedAt === undefined) ?? null;
+  let reportExports = 0;
 
   const overview = async (): Promise<ProductionOverview> => {
-    const [manuscript, recommendations] = await Promise.all([deps.chapters(), deps.recommendations()]);
+    // Like the host (internal/production/overview.go), stage recommendations that cannot be read leave every chapter's readiness
+    // null rather than failing the whole overview.
+    const [manuscript, recommendations] = await Promise.all([deps.chapters(), deps.recommendations().catch((): StageRecommendations => ({ chapters: [] }))]);
     const readiness = new Map(recommendations.chapters.map((chapter) => [chapter.chapterId, readinessOf(chapter)]));
     const chapters: ProductionChapter[] = manuscript.map((chapter) => {
       const measured = log ? SEED_RECORDED[chapter.id] : chapter.recordedSeconds;
@@ -224,15 +259,28 @@ export function createProductionMock(deps: Deps): ProductionApi {
       if (current) {
         return { status: 'refused', reason: 'timer_running', message: `a timer is already running on ${current.chapterId} (${current.stage}); stop it first` };
       }
-      const session: ProductionSession = { id: `mock-${sessions.length + 1}`, chapterId, stage, startedAt: MOCK_TIME, source: 'manual' };
+      const session: ProductionSession = { id: `mock-${sessions.length + 1}`, chapterId, stage, startedAt: new Date().toISOString(), source: 'manual' };
       sessions.push(session);
       return { status: 'started', session: { ...session } };
     },
     productionStopTimer: async () => {
       const current = running();
       if (!current) return { stopped: false, session: null };
-      current.endedAt = MOCK_TIME;
+      current.endedAt = new Date().toISOString();
       return { stopped: true, session: { ...current } };
     },
+    // The host's writeProductionReport (production_report.go): the mock writes nothing, but names the file the same
+    // way (a stem from the export time, -2, -3, ... within the same second) and echoes the narrator's own choice.
+    productionStatusReport: async (includeContractedAmount): Promise<ProductionReportExport> => {
+      reportExports += 1;
+      const stem = `production-status-20260921-100000Z${reportExports > 1 ? `-${reportExports}` : ''}`;
+      return {
+        folder: 'narration-utils/production/reports',
+        htmlFile: `${stem}.html`,
+        jsonFile: `${stem}.json`,
+        contractedAmountIncluded: includeContractedAmount,
+      };
+    },
+    productionBurndown: async () => burndownOf(sessions),
   };
 }

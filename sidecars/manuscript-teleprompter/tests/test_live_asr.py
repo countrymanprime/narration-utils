@@ -2,6 +2,7 @@ import importlib.util
 import io
 import json
 import sys
+import threading
 from contextlib import redirect_stderr
 from pathlib import Path
 from types import SimpleNamespace
@@ -732,7 +733,7 @@ def test_capabilities_reflects_the_real_engines_and_backends_registries():
     report = live_asr.capabilities_report()
 
     assert set(report["asr"]) == {"whisper", "moonshine"}
-    assert set(report["capture"]) == {"dshow"}
+    assert set(report["capture"]) == {"dshow", "wasapi"}
 
 
 def test_capabilities_emits_one_json_line_and_never_requires_wav_or_mic(monkeypatch, capsys):
@@ -947,3 +948,171 @@ def test_main_loads_the_engine_the_flag_names_with_the_chapter_as_default_contex
     live_asr.main()
 
     assert loaded == [(engine, "Call me Ishmael.")]
+
+
+# --record (native-recording-suite PRD Phase 2): the built-in recorder's take, through a capture row's record(). A fake
+# row stands in for wasapi with the shared core's SyntheticSource, so the take, its level events and its `recorded`
+# event are the real Recorder's and WavWriter's.
+class _FakeRecordingRow:
+    def __init__(self, source_factory=None, record_error=None):
+        from narration_common.recording import SyntheticSource
+
+        self.descriptor = SimpleNamespace(name="wasapi", label="WASAPI")
+        self._factory = source_factory or (lambda: SyntheticSource(sample_rate=48000, channels=1, realtime=False, stop_after=100))
+        self._record_error = record_error
+        self.opened = []
+
+    def record(self, device, path, *, on_level=None):
+        from narration_common.recording import Recorder
+
+        if self._record_error is not None:
+            raise self._record_error
+        self.opened.append(device)
+        return Recorder(self._factory(), path, on_level=on_level).start()
+
+    def list_devices(self):
+        return [SimpleNamespace(to_json=lambda: {"name": "Studio Mic"})], None
+
+    def chunks(self, device, chunk_seconds=0.1):
+        return _loud_chunks(2)
+
+
+class _FakeBackends:
+    def __init__(self, row):
+        self.row = row
+        self.looked_up = []
+
+    def lookup(self, name):
+        self.looked_up.append(name)
+        if name != "wasapi":
+            raise ValueError(f'There is no capture backend called "{name}".')
+        return self.row
+
+
+def _recorded(capsys):
+    printed = [json.loads(line) for line in capsys.readouterr().out.splitlines()]
+    return printed, [event for event in printed if event["type"] == "recorded"]
+
+
+def test_record_mode_records_a_take_through_the_wasapi_row_and_reports_it_last(monkeypatch, capsys, tmp_path):
+    backends = _FakeBackends(_FakeRecordingRow())
+    monkeypatch.setattr(live_asr, "BACKENDS", backends)
+    stop_file = tmp_path / "take.stop"
+    take = tmp_path / "Take 001.partial.wav"
+    # The synthetic device stops after 100 blocks (1 s); the stop file then ends the take the way the host does.
+    monkeypatch.setattr(live_asr, "RECORD_POLL_SECONDS", 0.01)
+    threading.Timer(0.3, lambda: stop_file.write_text("")).start()
+    monkeypatch.setattr(sys, "argv", ["live_asr.py", "--record", str(take), "--mic", "Studio Mic", "--stop-file", str(stop_file)])
+
+    live_asr.main()
+
+    printed, recorded = _recorded(capsys)
+    assert backends.looked_up == ["wasapi"]
+    assert backends.row.opened == ["Studio Mic"]
+    assert len(recorded) == 1 and printed[-1] is recorded[0]
+    event = recorded[0]
+    assert event["sampleRate"] == 48000 and event["channels"] == 1 and event["bits"] == 24
+    assert event["frames"] == 48000 and event["seconds"] == pytest.approx(1.0)
+    assert event["error"] is None
+    assert set(event) == {"type", *live_asr._RECORDED_FIELDS}
+    assert {e["type"] for e in printed[:-1]} == {"level"}
+    assert take.exists() and take.read_bytes()[:4] == b"RIFF"
+
+
+def test_record_mode_ends_on_its_own_when_the_device_fails_and_keeps_the_audio(monkeypatch, capsys, tmp_path):
+    from narration_common.recording import SyntheticSource
+
+    row = _FakeRecordingRow(lambda: SyntheticSource(sample_rate=48000, realtime=False, fail_after=50))
+    monkeypatch.setattr(live_asr, "BACKENDS", _FakeBackends(row))
+    take = tmp_path / "take.wav"
+    monkeypatch.setattr(sys, "argv", ["live_asr.py", "--record", str(take), "--mic", "Studio Mic", "--stop-file", str(tmp_path / "never.stop")])
+
+    live_asr.main()
+
+    _printed, recorded = _recorded(capsys)
+    assert recorded[0]["frames"] == 50 * 480
+    assert "unplugged" in recorded[0]["error"]
+
+
+def test_record_mode_refuses_an_existing_take_and_exits_1_without_a_recorded_event(monkeypatch, capsys, tmp_path):
+    monkeypatch.setattr(live_asr, "BACKENDS", _FakeBackends(_FakeRecordingRow(record_error=FileExistsError("exists"))))
+    monkeypatch.setattr(sys, "argv", ["live_asr.py", "--record", str(tmp_path / "t.wav"), "--mic", "Mic", "--stop-file", str(tmp_path / "s")])
+
+    with pytest.raises(SystemExit) as exit_info:
+        live_asr.main()
+
+    assert exit_info.value.code == 1
+    captured = capsys.readouterr()
+    assert captured.out == ""
+    assert "already saved" in captured.err
+
+
+def test_record_mode_reports_a_device_that_will_not_open_on_stderr(monkeypatch, capsys, tmp_path):
+    monkeypatch.setattr(live_asr, "BACKENDS", _FakeBackends(_FakeRecordingRow(record_error=OSError('There is no WASAPI input device called "Gone".'))))
+    monkeypatch.setattr(sys, "argv", ["live_asr.py", "--record", str(tmp_path / "t.wav"), "--mic", "Gone", "--stop-file", str(tmp_path / "s")])
+
+    with pytest.raises(SystemExit):
+        live_asr.main()
+
+    assert "could not open Gone" in capsys.readouterr().err
+
+
+@pytest.mark.parametrize(
+    "argv",
+    [
+        ["--record", "t.wav", "--stop-file", "s"],
+        ["--record", "t.wav", "--mic", "Mic"],
+        ["--record", "t.wav", "--mic", "Mic", "--stop-file", "s", "--meter"],
+        ["--record", "t.wav", "--mic", "Mic", "--stop-file", "s", "--script", "s.txt"],
+        ["--record", "t.wav", "--mic", "Mic", "--stop-file", "s", "--capture", "nosuch"],
+    ],
+)
+def test_record_mode_needs_a_microphone_and_a_stop_file_and_takes_nothing_else(argv, monkeypatch, capsys):
+    monkeypatch.setattr(live_asr, "BACKENDS", _FakeBackends(_FakeRecordingRow()))
+    monkeypatch.setattr(sys, "argv", ["live_asr.py", *argv])
+
+    with pytest.raises(SystemExit):
+        live_asr.main()
+
+    err = capsys.readouterr().err
+    assert "--record" in err or "nosuch" in err
+
+
+def test_a_row_without_record_cannot_record(monkeypatch, capsys, tmp_path):
+    row = SimpleNamespace(descriptor=SimpleNamespace(name="wasapi", label="DirectShow"))
+    monkeypatch.setattr(live_asr, "BACKENDS", _FakeBackends(row))
+    monkeypatch.setattr(sys, "argv", ["live_asr.py", "--record", str(tmp_path / "t.wav"), "--mic", "Mic", "--stop-file", "s"])
+
+    with pytest.raises(SystemExit):
+        live_asr.main()
+
+    assert "cannot record a take" in capsys.readouterr().err
+
+
+def test_list_devices_with_capture_lists_that_rows_devices(monkeypatch, capsys):
+    monkeypatch.setattr(live_asr, "BACKENDS", _FakeBackends(_FakeRecordingRow()))
+    monkeypatch.setattr(sys, "argv", ["live_asr.py", "--list-devices", "--capture", "wasapi"])
+
+    live_asr.main()
+
+    assert json.loads(capsys.readouterr().out) == {"type": "devices", "devices": [{"name": "Studio Mic"}], "error": None}
+
+
+def test_meter_with_capture_meters_through_that_row(monkeypatch, capsys):
+    monkeypatch.setattr(live_asr, "BACKENDS", _FakeBackends(_FakeRecordingRow()))
+    monkeypatch.setattr(live_asr, "iter_microphone_chunks", lambda name: pytest.fail("--capture must not use dshow"))
+    monkeypatch.setattr(sys, "argv", ["live_asr.py", "--meter", "--mic", "Studio Mic", "--capture", "wasapi"])
+
+    live_asr.main()
+
+    printed = [json.loads(line) for line in capsys.readouterr().out.splitlines()]
+    assert len(printed) == 10 and {event["type"] for event in printed} == {"level"}
+
+
+def test_capture_is_refused_for_a_reading_session(monkeypatch, capsys):
+    monkeypatch.setattr(sys, "argv", ["live_asr.py", "--mic", "Mic", "--capture", "wasapi"])
+
+    with pytest.raises(SystemExit):
+        live_asr.main()
+
+    assert "--capture is only for" in capsys.readouterr().err

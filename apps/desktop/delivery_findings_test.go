@@ -106,7 +106,7 @@ func TestAMeasurementSavesOneReviewFindingPerRuleMissedPerFile(t *testing.T) {
 	if err != nil || page.Total != 3 {
 		t.Fatalf("the Review page's list has %d delivery findings (%v), want 3", page.Total, err)
 	}
-	// Judging the job again (the Delivery page reading it) writes nothing new and gives the same ids.
+	// Judging the job again (Master & QC reading it) writes nothing new and gives the same ids.
 	job := host.judgeMeasure(host.measureState())
 	for _, file := range job.Files {
 		for _, f := range file.Findings {

@@ -16,10 +16,10 @@ Appearance controls the light/dark theme.
 Other categories mix dropdowns and color pickers — Manuscript's own category, for example,
 controls the color used to mark reader notes in the text. **General** (Global only) also holds the
 **Narrator name (default for credits)** and the **Room tone per credits file (seconds)**, 0 to 10 and 0 by
-default: the silence the [Home](home.md) estimate adds to the opening and to the closing credits file, head
+default: the silence the [Production](production.md#the-credits-rows) credits estimate adds to the opening and to the closing credits file, head
 and tail together (ACX asks for 1 to 5 seconds at each end of every file). In both scopes:
 
-- **Recording check** holds the four numbers the [recording check](home.md) uses: the **Share of
+- **Recording check** holds the four numbers the [recording check](production.md#checking-a-chapters-recording) uses: the **Share of
   each paragraph that must be read** (0.8) and the **Longest run of missing words allowed** (3)
   decide when a chapter counts as recorded, and the **Longest misread still counted as read** (8)
   and the **Shortest match that counts as read** (3) decide which words count as read at all. The
@@ -39,7 +39,7 @@ and tail together (ACX asks for 1 to 5 seconds at each end of every file). In bo
   for misread, skipped and extra words. It shows whether the chosen model is installed, with
   **Remove local model…** once it is.
 - **Story Bible** picks the spaCy model and whether to **Build the Story Bible after import**.
-- **Delivery** chooses the delivery profile the [Delivery](delivery.md) page and its report judge
+- **Delivery** chooses the delivery profile [Master & QC](master-and-qc.md) and its report judge
   against. In This Project, pick this project's profile, or the Global default; in Global, pick the
   default for every project that has not chosen one (ACX until you change it). A choice takes effect at
   once. The **Profiles** list shows the built-in ACX profile, read-only, and your custom profiles with
@@ -54,11 +54,12 @@ and tail together (ACX asks for 1 to 5 seconds at each end of every file). In bo
 
 Choosing a model or a voice here never downloads it; the app asks when a feature first needs it.
 
-The **Teleprompter** category (Global scope only — the microphone, engine and model are machine facts, not a
-per-project preference) remembers the microphone, live engine and model you last chose on the
-[Teleprompter](teleprompter.md) page, and changing them here changes what the page starts with. The engine is Whisper
-(the default) or, on Windows only, Moonshine; the model is Tiny or Small for either. Choosing Moonshine does not download
-its model: the Teleprompter asks the first time you start reading with it.
+The **Booth** category (Global scope only — the microphone, engine and model are machine facts, not a
+per-project preference) remembers the microphone, live engine and model you last chose in the
+[Booth](booth.md), and changing them here changes what the Booth starts with. The engine is Whisper
+(the default) or Moonshine; the model is Tiny or Small for either. Choosing Moonshine does not download
+its model: the Booth asks the first time you start reading with it. Old links to this category by its former
+name, Teleprompter, still open it.
 
 ![Settings - Global scope, Manuscript category (note color picker)](../../images/ui/settings-manuscript.webp)
 
@@ -97,8 +98,7 @@ announcement, and the retail sample.
 - **Chapter announcement**: what you read at the head of every chapter. `[Chapter]` is the chapter's
   heading as the manuscript names it ("Chapter 1") and `[Chapter Title]` its subtitle ("Down the
   Rabbit-Hole"), so `[Chapter]{: [Chapter Title]}.` reads "Chapter 1: Down the Rabbit-Hole." and just
-  "Prologue." for a chapter with no subtitle. The first announcement template is timed for every chapter
-  in the Credits time on [Home](home.md). You record it inside each chapter file, so keep it to the chapter
+  "Prologue." for a chapter with no subtitle. You record it inside each chapter file, so keep it to the chapter
   heading and subtitle: Proofing expects the spoken chapter title there, and any other words are reported
   as extra.
 - **Preview** shows the body with the values filled in, its word count, and any token that has no value
@@ -108,8 +108,8 @@ announcement, and the retail sample.
   Publisher, and a Narrator that overrides the global default from General for this project only. A value
   is saved as you type. Where the manuscript suggests a title or author, **Use suggestion** fills it in.
 
-The first opening and closing templates appear in the [Manuscript](manuscript.md) reader and in the
-Credits time on [Home](home.md).
+The first opening and closing templates appear in the [Script](script.md) reader and as the
+credits rows on [Production](production.md#the-credits-rows).
 
 ![Settings, Credits, a chapter announcement previewed for Chapter 1](../../images/ui/settings-credits-chapter-announcement.webp)
 
@@ -117,9 +117,9 @@ Credits time on [Home](home.md).
 
 **Retail sample** is the stretch of the book you pick for the retailer's sample: up to 5 minutes, from
 anywhere in the book. Choose the chapter and line it **starts in** and **ends in** (the line numbers the
-[Manuscript](manuscript.md) reader shows) and **Save sample**. The panel says where it runs and how long it
+[Script](script.md) reader shows) and **Save sample**. The panel says where it runs and how long it
 is at about 155 words a minute; a range longer than 5 minutes is refused with its length, and the sample
-you had is kept. **Clear sample** removes it. The sample is a marker in the Manuscript reader only: it adds
+you had is kept. **Clear sample** removes it. The sample is a marker in the Script page's reader only: it adds
 no time to the estimate, since it is read again from the finished chapter. It is kept with the project, so
 replacing the manuscript keeps it; if its lines are gone, the panel says so and you pick it again.
 
@@ -128,7 +128,7 @@ replacing the manuscript keeps it; if its lines are gone, the panel says so and 
 ## Local assets
 
 The **Local assets** category of the Global scope lists every optional download Narration Utils can keep on this computer: preview
-voices, Whisper models for proofing comparisons, the language model the Story Bible uses and the dictionary the Manuscript reader's
+voices, Whisper models for proofing comparisons, the language model the Story Bible uses and the dictionary the Script reader's
 Look up reads. Nothing here downloads by itself, and
 removing one never touches your settings or projects. The page also shows how much disk the installed ones use and the folder they
 are kept in.
@@ -179,4 +179,4 @@ If Narration Utils will not start after an update and the program file is missin
 
 ---
 
-[← Delivery](delivery.md) · [Index](README.md)
+[← Master & QC](master-and-qc.md) · [Index](README.md)

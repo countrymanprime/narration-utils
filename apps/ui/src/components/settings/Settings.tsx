@@ -17,6 +17,7 @@ import { CreditsPanel } from './CreditsPanel';
 import { DawCatalogPanel } from './DawCatalogPanel';
 import { DeliveryProfilesPanel } from './DeliveryProfilesPanel';
 import { KeyboardPanel } from './KeyboardPanel';
+import { OnlineDictionaryPanel } from './OnlineDictionaryPanel';
 import { RecordingCheckSummary } from './RecordingCheckSummary';
 import { ScopedSetting } from './ScopedSetting';
 import { UpdatesPanel } from './UpdatesPanel';
@@ -33,9 +34,9 @@ const SETTINGS_CATEGORIES: SettingsCategory[] = [
   { key: 'Manuscript', label: 'Manuscript', tool: 'Manuscript', scopes: ['global', 'project'] },
   // The recording check's thresholds and alignment (docs/utilities/recording-coverage.md, ADR 0131), Proposed and uncalibrated.
   { key: 'RecordingCoverage', label: 'Recording check', tool: 'RecordingCoverage', scopes: ['global', 'project'] },
-  { key: 'TranscriptCompare', label: 'Proofing', tool: 'TranscriptCompare', scopes: ['global', 'project'] },
-  // The preview suggestion's target, tolerance, preset and ending exclusion (docs/prds/proofing-preview-suggestion.prd.md
-  // Phase 4): the engine (PreviewCandidates) reads these on every call, layered project over global like every other tool.
+  { key: 'TranscriptCompare', label: 'Proof', tool: 'TranscriptCompare', scopes: ['global', 'project'] },
+  // The preview suggestion's target, tolerance, preset and ending exclusion (delivered, PRD deleted; see
+  // docs/architecture/preview-suggestion.md): the engine (PreviewCandidates) reads these on every call, layered project over global like every other tool.
   { key: 'Preview', label: 'Preview', tool: 'Preview', scopes: ['global', 'project'] },
   // Which signals must be met for a stage suggestion (chapter-stage-recommendations.prd.md Phase 6, Q8, deleted; see
   // docs/architecture/stage-recommendations.md):
@@ -46,7 +47,9 @@ const SETTINGS_CATEGORIES: SettingsCategory[] = [
   { key: 'Delivery', label: 'Delivery', scopes: ['project', 'global'] },
   { key: 'Daw', label: 'DAW Integration', tool: 'DAW', scopes: ['global', 'project'] },
   { key: 'Piper', label: 'TTS', tool: 'Piper', scopes: ['global', 'project'] },
-  { key: 'Teleprompter', label: 'Teleprompter', tool: 'Teleprompter', scopes: ['global'] },
+  // The Booth's microphone, engine and model (stage-navigation-and-page-replacement.prd.md Q11): named for the page that
+  // uses them; the key stays the settings tool's name, and App.tsx's `#booth` and old `#teleprompter` anchors both open it.
+  { key: 'Teleprompter', label: 'Booth', tool: 'Teleprompter', scopes: ['global'] },
   { key: 'LocalAssets', label: 'Local assets', scopes: ['global'] },
   { key: 'ProjectData', label: 'Project data', scopes: ['project'] },
   // Credit values are per-project (Open Question C2); the global narrator default lives in the General category.
@@ -273,8 +276,8 @@ export function Settings({
                       <div className="font-medium">{data.dawFileLinked ? 'REAPER project linked' : 'No REAPER project linked'}</div>
                       <div style={{ color: 'var(--text-muted)' }}>
                         {data.dawFileLinked
-                          ? 'Tracks and Proofing read from the linked .rpp file.'
-                          : 'Link a REAPER project (.rpp) file to unlock Tracks and Proofing.'}
+                          ? 'Tracks and Proof read from the linked .rpp file.'
+                          : 'Link a REAPER project (.rpp) file to unlock Tracks and Proof.'}
                       </div>
                     </div>
                   </div>
@@ -407,6 +410,8 @@ export function Settings({
                     void save();
                   }}
                 >
+                  {/* The narrator's own Merriam-Webster key is theirs, not a project's (prep-depth P9), so it is set in Global only. */}
+                  {category === 'ManuscriptGuide' && scope === 'global' && <OnlineDictionaryPanel notify={notify} />}
                   {category === 'About' && (
                     <>
                       <AboutPanel version={data.version} />

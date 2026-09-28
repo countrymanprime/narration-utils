@@ -89,7 +89,14 @@ turns them into these three event types:
         the input level in dBFS every 100 ms of audio, in every session (see
         levels.py). With --meter --mic NAME it is the only event: no model,
         no script, until the stop file appears, so the narrator can check the
-        microphone before Start
+        microphone before Start; with --capture NAME it meters through that
+        capture row (wasapi: the built-in recorder's device, before Record)
+    {"type": "recorded", "path": "...", "sampleRate": 48000, "channels": 1, "bits": 24, "frames": 96000, "seconds": 2.0, "overflows": 0, "droppedBlocks": 0, "droppedFrames": 0, "clipped": 0, "latencyMs": 10.0, "error": null}
+        only with --record PATH --mic NAME --stop-file F (native-recording
+        P2): once, last, after the `level` events of the take it recorded
+        into PATH through --capture's row (wasapi by default); `error` says
+        why a take ended on its own (the device or the disk failed), with the
+        audio before it kept
 Word timings come from the engine and are advisory: they can be noisy or run
 backwards (Moonshine's do, mostly in partials), so the only guarantee is that
 `end` is never before `start`. Consumers should rely on word ORDER, not times.
@@ -127,6 +134,10 @@ import asr_adapters  # noqa: F401
 # Registers the "dshow" row into BACKENDS (provider-ports P11); iter_microphone_chunks below looks it up rather than
 # calling devices.py/PyAV itself.
 import capture_dshow  # noqa: F401
+
+# Registers the Experimental "wasapi" row after it (native-recording-suite P1, ADR 0357): the built-in recorder's engine.
+# Nothing here opens it; --capabilities reports it, and the packaged app's smoke test checks it registered.
+import capture_wasapi  # noqa: F401
 from narration_common.logging_utils import log, set_log_file
 
 # Word and Hypothesis are the speech engine port's types (provider-ports P3); they are re-exported here so `live_asr.Hypothesis`
@@ -773,13 +784,93 @@ def _run_meter(ap: argparse.ArgumentParser, args) -> None:
         ap.error("--meter needs --mic")
     taken = [f"--{name.replace('_', '-')}" for name in _SESSION_ONLY_OPTIONS if getattr(args, name) not in (None, False)]
     if taken:
-        ap.error(f"--meter takes only --mic and --stop-file, not {' '.join(taken)}")
+        ap.error(f"--meter takes only --mic, --capture and --stop-file, not {' '.join(taken)}")
     log(f"Metering {args.mic}...")
     try:
-        for _chunk in metered(stoppable(iter_microphone_chunks(args.mic), args.stop_file), LevelMeter(), _emit):
+        # --capture meters through that row (the built-in recorder's wasapi, native-recording P2); dshow otherwise.
+        chunks = _capture_row(ap, args.capture).chunks(args.mic) if args.capture else iter_microphone_chunks(args.mic)
+        for _chunk in metered(stoppable(chunks, args.stop_file), LevelMeter(), _emit):
             pass
     except KeyboardInterrupt:
         log("Stopped.")
+
+
+# The capture row --record records through when --capture names none: the built-in recorder's engine (ADR 0357).
+RECORD_CAPTURE = "wasapi"
+# How often --record looks for the stop file and for a take the device ended on its own.
+RECORD_POLL_SECONDS = 0.05
+# What --record cannot be combined with: it records one take and reports its level, nothing else.
+_RECORD_EXCLUDED_OPTIONS = (*_SESSION_ONLY_OPTIONS, "meter")
+# The recorder's result fields the host reads; the per-block timings stay in the spike report's summary().
+_RECORDED_FIELDS = (
+    "path",
+    "sampleRate",
+    "channels",
+    "bits",
+    "frames",
+    "seconds",
+    "overflows",
+    "droppedBlocks",
+    "droppedFrames",
+    "clipped",
+    "latencyMs",
+    "error",
+)
+
+
+def _capture_row(ap: argparse.ArgumentParser, name: str | None, default: str = "dshow"):
+    """The capture port's row called ``name`` (``default`` when none is given); an unknown name is a usage error."""
+    try:
+        return BACKENDS.lookup(name or default)
+    except Exception as error:  # noqa: BLE001 - NotSupportedError's sentence is the message
+        ap.error(str(error))
+
+
+def _run_list_devices(ap: argparse.ArgumentParser, args) -> None:
+    """--list-devices: the dshow devices (devices.py, the teleprompter's picker) or, with --capture NAME, that row's."""
+    if args.capture:
+        devices, error = _capture_row(ap, args.capture).list_devices()
+    else:
+        from devices import list_input_devices
+
+        devices, error = list_input_devices()
+    _emit({"type": "devices", "devices": [device.to_json() for device in devices], "error": error})
+
+
+def _run_record(ap: argparse.ArgumentParser, args) -> None:
+    """--record PATH --mic NAME --stop-file F: record one take of NAME into PATH through the capture row --capture names
+    (wasapi by default), printing `level` events while it runs and one `recorded` event with the take's numbers when it
+    ends (native-recording-suite PRD Phase 2). PATH must not exist yet: the writer never overwrites (ADR 0357, Q5). It
+    ends when the stop file appears, or on its own when the device or the disk fails; either way the audio written so
+    far is kept and `recorded` says why in `error`. A take that could not start at all exits 1 with the reason on
+    stderr, and prints no `recorded`."""
+    if not args.mic:
+        ap.error("--record needs --mic")
+    if not args.stop_file:
+        ap.error("--record needs --stop-file")
+    taken = [f"--{name.replace('_', '-')}" for name in _RECORD_EXCLUDED_OPTIONS if getattr(args, name) not in (None, False)]
+    if taken:
+        ap.error(f"--record takes only --mic, --capture and --stop-file, not {' '.join(taken)}")
+    row = _capture_row(ap, args.capture, RECORD_CAPTURE)
+    if not callable(getattr(row, "record", None)):
+        ap.error(f"the {row.descriptor.label} capture row cannot record a take")
+    stop_file = Path(args.stop_file)
+    log(f"Recording {args.mic} to {args.record}...")
+    try:
+        recorder = row.record(args.mic, args.record, on_level=_emit)
+    except FileExistsError:
+        log(f"A take is already saved at {args.record}; nothing was recorded.")
+        sys.exit(1)
+    except Exception as error:  # noqa: BLE001 - the device could not open: one sentence for the host, exit 1
+        log(f"The built-in recorder could not open {args.mic}: {error}")
+        sys.exit(1)
+    try:
+        while not stop_file.exists() and not recorder.failed.wait(RECORD_POLL_SECONDS):
+            pass
+    except KeyboardInterrupt:
+        log("Stopped.")
+    summary = recorder.stop().summary()
+    _emit({"type": "recorded", **{key: summary[key] for key in _RECORDED_FIELDS}})
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -804,6 +895,17 @@ def build_parser() -> argparse.ArgumentParser:
         "--meter",
         action="store_true",
         help="Report only the --mic input level ({type: level, peak, rms} in dBFS every 100 ms) until --stop-file appears; no model, no script",
+    )
+    ap.add_argument(
+        "--record",
+        default=None,
+        metavar="PATH",
+        help="Record one take of --mic into PATH (a new 24-bit WAV; never overwritten) through --capture's row until --stop-file appears; prints level events, then one recorded event",
+    )
+    ap.add_argument(
+        "--capture",
+        default=None,
+        help="The capture port row --list-devices, --meter and --record use (default: dshow; wasapi for --record)",
     )
     ap.add_argument("--wav", default=None, help="Replay this audio file as if it were live mic input (fixture testing)")
     ap.add_argument("--mic", default=None, help="Capture from this input device name instead of --wav (Windows dshow device name)")
@@ -870,15 +972,17 @@ def main() -> None:
 
     if args.log:
         set_log_file(open(args.log, "a", encoding="utf-8"))  # noqa: SIM115
+    if args.record:
+        _run_record(ap, args)
+        return
     if args.meter:
         _run_meter(ap, args)
         return
     if args.list_devices:
-        from devices import list_input_devices
-
-        devices, error = list_input_devices()
-        _emit({"type": "devices", "devices": [device.to_json() for device in devices], "error": error})
+        _run_list_devices(ap, args)
         return
+    if args.capture:
+        ap.error("--capture is only for --list-devices, --meter and --record")
     if args.check_moonshine:
         from moonshine_engine import self_check
 

@@ -30,11 +30,23 @@
       "message": "REAPER is not connected to this app. Open this app from the Narration Utils action in REAPER.",
       "reason": "standalone"
     },
+    "macro_render": {
+      "available": false,
+      "level": "unsupported",
+      "message": "Mastering with an effect macro is not something REAPER can do.",
+      "reason": "unsupported"
+    },
     "markers": {
       "available": false,
       "level": "supported",
       "message": "REAPER is not connected to this app. Open this app from the Narration Utils action in REAPER.",
       "reason": "standalone"
+    },
+    "master_chain_read": {
+      "available": false,
+      "level": "experimental",
+      "message": "Experimental: switched off in Settings.",
+      "reason": "experimental_off"
     },
     "navigate": {
       "available": false,
@@ -81,6 +93,12 @@
       "level": "supported",
       "message": "REAPER is not connected to this app. Open this app from the Narration Utils action in REAPER.",
       "reason": "standalone"
+    },
+    "render_with_fx": {
+      "available": false,
+      "level": "experimental",
+      "message": "Experimental: switched off in Settings.",
+      "reason": "experimental_off"
     },
     "retake_lanes": {
       "available": false,

@@ -89,7 +89,7 @@ const PAIRS: PairSpec[] = [
   ),
   text('warn-on-accent-soft', 'SKIPPED word in the inline diff: warn text on accent-soft', 'var(--warn-text)', ['surface-2'], 'var(--accent-soft)'),
   text('info', 'the text-safe info colour on the page', 'var(--info-text)', PAGE_SURFACES),
-  text('ok', 'a rule met on the Delivery page: the text-safe ok colour', 'var(--ok-text)', PAGE_SURFACES),
+  text('ok', 'a rule met on Master & QC: the text-safe ok colour', 'var(--ok-text)', PAGE_SURFACES),
   text(
     'experimental',
     'the text-safe experimental colour: an ADR 0300 capability the host reports as experimental (studio-ui-primitives.prd.md Phase 1, ADR 0360 Q6)',
@@ -154,6 +154,18 @@ const PAIRS: PairSpec[] = [
     'var(--experimental-text)',
     ['surface'],
     'var(--badge-experimental-fill)',
+  ),
+  // Per-speaker dialogue colours (D85 #6, ADR 0367): --speaker-1..7 alias the seven entity-kind tokens above, so these
+  // rows are already covered by the highlight-<kind> pairs; a dedicated row per alias protects SpeakerTag/Highlight's
+  // speaker use specifically, the same reasoning as the meter-zone rows above.
+  ...([1, 2, 3, 4, 5, 6, 7] as const).map((n) =>
+    text(
+      `speaker-${n}`,
+      `SpeakerTag/Highlight (speaker ${n}): the derived kind text colour on the speaker chip's own 20% tint`,
+      `var(--speaker-${n}-text)`,
+      SURFACES,
+      tint(`speaker-${n}`, 20),
+    ),
   ),
 ];
 
@@ -346,11 +358,10 @@ const tokensUsedAsText = (): Set<string> => new Set([...textColourUses().values(
 // (a conditional, a fallback or a colour map slips past a pattern for text colours). Whether a listed use really is an icon,
 // a dot or a decorative glyph is the reviewer's call: the test only makes every use visible.
 const NON_TEXT_USES: Record<string, { count: number; what: string }> = {
-  'components/delivery/BookChecklistPanel.tsx': { count: 1, what: 'the ear icon beside a book rule the narrator checks by listening' },
-  'components/delivery/DeliveryProfilePanel.tsx': { count: 1, what: 'the ear icon beside a rule the narrator checks by listening' },
+  'components/master/BookChecklist.tsx': { count: 1, what: 'the ear icon beside a book rule the narrator checks by listening' },
+  'components/master/DeliveryProfilePanel.tsx': { count: 1, what: 'the ear icon beside a rule the narrator checks by listening' },
   'chapterStatus.ts': { count: 1, what: 'the Not Started status colour: a dot and a meter segment, never text' },
-  'components/home/ChapterTrackButton.tsx': { count: 1, what: "the row button's linked-track colour dot" },
-  'components/home/ChapterTrackPanel.tsx': { count: 1, what: "the panel header's linked-track colour dot" },
+  'components/production/ChapterTrackPanel.tsx': { count: 1, what: "the panel header's linked-track colour dot" },
   'components/layout/AppShell.tsx': { count: 1, what: 'the folder icon beside the project name' },
   'components/layout/EngineChip.tsx': { count: 1, what: 'the header chip dot when no DAW file is linked' },
   'components/manuscript/ChapterNav.tsx': { count: 1, what: 'a line-hit result row icon (faParagraph)' },
@@ -363,7 +374,7 @@ const NON_TEXT_USES: Record<string, { count: number; what: string }> = {
     what: 'the DAW link status dot in the project-scope panel when nothing is linked, and the global-scope reachability dot when REAPER has not sent a recent heartbeat (Phase 7)',
   },
   'components/storybible/Guide.tsx': { count: 1, what: 'the lock icon beside a locked entry' },
-  'components/tracks/TracksPage.tsx': { count: 1, what: 'the dot of a track that has no colour' },
+  'components/engine/EnginePanel.tsx': { count: 1, what: 'the dot of a track that has no colour' },
   'styles.css': { count: 1, what: "LevelMeter's below-floor zone (Phase 1): --meter-floor is a derived alias of --non-text, not text" },
 };
 

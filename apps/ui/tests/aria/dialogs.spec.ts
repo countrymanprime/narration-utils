@@ -12,41 +12,31 @@ const MODALS: { name: string; state: [string, string]; snapshot: string }[] = [
     state: ['storybible', 'delete-confirm'],
     snapshot: 'confirm-delete-entry.aria.yml',
   },
-  { name: 'the import confirm is an alert dialog', state: ['home', 'import-confirm'], snapshot: 'confirm-import-manuscript.aria.yml' },
+  { name: 'the import confirm is an alert dialog', state: ['production', 'import-confirm'], snapshot: 'confirm-import-manuscript.aria.yml' },
   {
     name: 'the unsaved-settings confirm is an alert dialog with three actions',
     state: ['settings', 'navigate-away-confirm'],
     snapshot: 'confirm-unsaved-settings.aria.yml',
   },
-  { name: 'the add-note form is a modal dialog with a labelled field', state: ['manuscript', 'add-note-dialog'], snapshot: 'dialog-add-note.aria.yml' },
+  { name: 'the add-note form is a modal dialog with a labelled field', state: ['script', 'add-note-dialog'], snapshot: 'dialog-add-note.aria.yml' },
   {
-    name: "the read-aloud dialog's resume card is a named region with the resume point and its three choices",
-    state: ['manuscript', 'read-aloud-setup'],
-    snapshot: 'dialog-read-aloud-resume.aria.yml',
-  },
-  {
-    name: "the read-aloud dialog's control bar is a named toolbar with Play/Stop reading, status, Follow, the microphone and Settings",
-    state: ['manuscript', 'read-aloud-listening'],
-    snapshot: 'dialog-read-aloud-controls.aria.yml',
-  },
-  {
-    name: 'the read-aloud dialog on the credits has no resume region; the unresolved-token warning is a status in its place',
-    state: ['manuscript', 'read-aloud-credits-unresolved'],
-    snapshot: 'dialog-read-aloud-credits.aria.yml',
-  },
-  {
-    name: 'the pronunciation queries are a modal slide-over with the filter, the count, Export CSV and a list of queries each with its marks',
+    name: 'the pronunciation queries are a modal slide-over with the filter, the count, Export CSV, Look up online and a list of queries each with its marks',
     state: ['storybible', 'pronunciation-queries'],
     snapshot: 'slide-over-pronunciation-queries.aria.yml',
   },
   {
+    name: 'the notice before a batch online lookup is an alert dialog naming how many names it sends, with Cancel and the lookup',
+    state: ['storybible', 'pronunciation-queries-online-confirm'],
+    snapshot: 'confirm-pronunciation-online-batch.aria.yml',
+  },
+  {
     name: 'the chapters overlay is a modal slide-over named for what it holds',
-    state: ['manuscript', 'chapters-overlay-open'],
+    state: ['script', 'chapters-overlay-open'],
     snapshot: 'slide-over-chapters.aria.yml',
   },
   {
     name: 'the recording check is a modal slide-over with its count, the missing region and its paragraph link, and Check again',
-    state: ['home', 'recording-check-incomplete'],
+    state: ['production', 'recording-check-incomplete'],
     snapshot: 'slide-over-recording-check.aria.yml',
   },
   {
@@ -56,32 +46,32 @@ const MODALS: { name: string; state: [string, string]; snapshot: string }[] = [
   },
   {
     name: 'the look-up panel is a modal slide-over named for the word, its definitions a list under a heading per part of speech',
-    state: ['manuscript', 'word-lookup-definition'],
+    state: ['script', 'word-lookup-definition'],
     snapshot: 'slide-over-word-lookup.aria.yml',
   },
   {
     name: 'the stage suggestion evidence is a modal slide-over named for the chapter, each check a named region, with Confirm, Dismiss and Check now',
-    state: ['home', 'stage-evidence-recommended'],
+    state: ['production', 'stage-evidence-recommended'],
     snapshot: 'slide-over-stage-evidence.aria.yml',
   },
   {
     name: 'the dictionary download question is an alert dialog',
-    state: ['manuscript', 'word-lookup-not-installed'],
+    state: ['script', 'word-lookup-not-installed'],
     snapshot: 'confirm-download-dictionary.aria.yml',
   },
   {
-    name: 'the chapter track panel is a modal slide-over named for the chapter, with its facts and the Change/Clear link',
-    state: ['home', 'chapter-track-panel-linked'],
+    name: 'the chapter track panel is a modal slide-over named for the chapter, with its facts, the Another track…/Unlink link and the Chapter section',
+    state: ['production', 'chapter-track-panel-linked'],
     snapshot: 'slide-over-chapter-track.aria.yml',
   },
   {
     name: 'the remove-from-recording confirm is an alert dialog with the What-is-it radio group and both actions',
-    state: ['home', 'chapter-remove-confirm'],
+    state: ['production', 'chapter-remove-confirm'],
     snapshot: 'confirm-remove-from-recording.aria.yml',
   },
   {
     name: 'the "Set up the credits" prompt is a modal dialog with the detected fields and the three dismissal actions',
-    state: ['home', 'credits-setup-dialog'],
+    state: ['production', 'credits-setup-dialog'],
     snapshot: 'dialog-credits-setup.aria.yml',
   },
   {
@@ -90,19 +80,24 @@ const MODALS: { name: string; state: [string, string]; snapshot: string }[] = [
     snapshot: 'dialog-shortcut-sheet.aria.yml',
   },
   {
+    name: 'the engine panel is a modal slide-over named Audio engine, with its REAPER project, REAPER tools toolbar, Chapter sync, Tracks and Chapter links regions',
+    state: ['engine', 'default'],
+    snapshot: 'slide-over-engine-panel.aria.yml',
+  },
+  {
     name: 'the create-chapter-regions dialog is a modal dialog with the credits selects, the plan table, the not-planned list and Create N regions',
-    state: ['tracks', 'create-regions-preview'],
+    state: ['engine', 'create-regions-preview'],
     snapshot: 'dialog-create-chapter-regions.aria.yml',
   },
   {
-    name: 'the booth is the same dialog with a named status region, a Rail landmark and a Booth commands toolbar in place of the control bar',
-    state: ['manuscript', 'booth-default'],
-    snapshot: 'dialog-read-aloud-booth.aria.yml',
+    name: "the companion panel is the whole window: CompactShell's banner and main, the full app behind it hidden, with the Script, Note at playhead, Pickups and Hotkeys regions",
+    state: ['booth', 'companion-default'],
+    snapshot: 'companion-panel.aria.yml',
   },
   {
-    name: "the companion panel is the whole window: CompactShell's banner and main, the full app behind it hidden, with the Script, Note at playhead, Pickups and Hotkeys regions",
-    state: ['manuscript', 'companion-default'],
-    snapshot: 'companion-panel.aria.yml',
+    name: 'leaving the Booth while it listens asks first: an alert dialog with Stop reading? and both actions',
+    state: ['booth', 'exit-confirm'],
+    snapshot: 'confirm-stop-reading.aria.yml',
   },
 ];
 
@@ -128,21 +123,21 @@ test('the isolation check fails when the page behind a modal is exposed', async 
 });
 
 test('the info icon is a button that says it is expanded, and its hint is a tooltip', async ({ page }) => {
-  await openApp(page, DESKTOP, ['home', 'info-tooltip']);
-  await expect(page.getByRole('button', { name: 'More information' }).first()).toMatchAriaSnapshot({ name: 'info-button-expanded.aria.yml' });
+  await openApp(page, DESKTOP, ['production', 'info-tooltip']);
+  await expect(page.getByRole('button', { name: 'About these figures' })).toMatchAriaSnapshot({ name: 'info-button-expanded.aria.yml' });
   await expect(page.getByRole('tooltip')).toMatchAriaSnapshot({ name: 'info-tooltip.aria.yml' });
 });
 
 // The note on the Reference material group is an info icon inside an alert dialog (ADR 0049): it is a button with the note as its
 // description, its popup is a tooltip that stays above the dialog, and the first Escape closes the note and only the second the dialog.
 test('the note on the reference material group of the import review is an info icon whose Escape closes it before the dialog', async ({ page }) => {
-  await openApp(page, DESKTOP, ['home', 'import-confirm']);
+  await openApp(page, DESKTOP, ['production', 'import-confirm']);
   const dialog = page.getByRole('alertdialog', { name: 'Import Alice.docx' });
   const info = dialog.getByRole('button', { name: 'About reference material' });
   await expect(info).toHaveAttribute('aria-description', /Still readable in the manuscript/);
   await info.hover();
   const note = page.getByRole('tooltip');
-  await expect(note).toContainText('Excluded from audiobook totals, Proofing and the chapter list. Still readable in the manuscript.');
+  await expect(note).toContainText('Excluded from audiobook totals, Proof and the chapter list. Still readable in the manuscript.');
   await page.keyboard.press('Escape');
   await expect(note).toHaveCount(0);
   await expect(dialog).toBeVisible();
@@ -152,7 +147,7 @@ test('the note on the reference material group of the import review is an info i
 
 // The same, reached by keyboard: Tab to the icon opens its note, the first Escape closes the note only, the second the dialog.
 test('the note on reference material reached by keyboard also takes the first Escape', async ({ page }) => {
-  await openApp(page, DESKTOP, ['home', 'import-confirm']);
+  await openApp(page, DESKTOP, ['production', 'import-confirm']);
   const dialog = page.getByRole('alertdialog', { name: 'Import Alice.docx' });
   const info = dialog.getByRole('button', { name: 'About reference material' });
   for (let presses = 0; presses < 20 && !(await info.evaluate((element) => element === document.activeElement)); presses++) await page.keyboard.press('Tab');
@@ -166,10 +161,10 @@ test('the note on reference material reached by keyboard also takes the first Es
 });
 
 // The evidence view of a stage suggestion hands over to the recording check (chapter-stage-recommendations.prd.md Phase 5): the slide-over
-// closes and the dialog opens with focus inside it, not on the Why button the closing slide-over returns focus to. Escape on the slide-over
-// alone returns focus to the row's Why.
+// closes and the dialog opens with focus inside it, not on the board cell the closing slide-over returns focus to. Escape on the
+// slide-over alone returns focus to the chapter's current-stage cell (stage-navigation-and-page-replacement.prd.md Phase 2).
 test('Open recording check in a stage suggestion moves focus into the recording check dialog', async ({ page }) => {
-  await openApp(page, DESKTOP, ['home', 'stage-evidence-unknown']);
+  await openApp(page, DESKTOP, ['production', 'stage-evidence-unknown']);
   await page
     .getByRole('dialog', { name: 'Stage suggestion: Chapter 5 — Advice from a Caterpillar' })
     .getByRole('button', { name: 'Open recording check' })
@@ -180,9 +175,13 @@ test('Open recording check in a stage suggestion moves focus into the recording 
   await expect.poll(() => check.evaluate((dialog) => dialog.contains(document.activeElement))).toBe(true);
 });
 
-test('Escape closes a stage suggestion’s evidence and returns focus to its Why button', async ({ page }) => {
-  await openApp(page, DESKTOP, ['home', 'stage-evidence-recommended']);
+test('Escape closes a stage suggestion’s evidence and returns focus to the board cell that opened it', async ({ page }) => {
+  await openApp(page, DESKTOP, ['production', 'stage-evidence-recommended']);
   await page.keyboard.press('Escape');
   await expect(page.getByRole('dialog', { name: 'Stage suggestion: Chapter 4 — The Rabbit Sends in a Little Bill' })).toHaveCount(0);
-  await expect(page.getByRole('button', { name: 'Why: Chapter 4' })).toBeFocused();
+  const row = page
+    .getByRole('grid', { name: 'Chapter pipeline' })
+    .getByRole('row')
+    .filter({ has: page.getByRole('rowheader', { name: /^Chapter 4\b/ }) });
+  await expect(row.getByRole('gridcell', { name: 'Ready' })).toBeFocused();
 });

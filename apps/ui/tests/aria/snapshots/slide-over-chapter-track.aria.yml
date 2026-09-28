@@ -1,15 +1,19 @@
 - main:
   - alert
   - status
-- 'dialog "Track: Chapter 1"':
-  - 'heading "Track: Chapter 1" [level=3]'
+- 'dialog "Track: Chapter 1 — Down the Rabbit-Hole"':
+  - 'heading "Track: Chapter 1 — Down the Rabbit-Hole" [level=3]'
   - button "Close"
   - text: Chapter 1 Track 1 Linked
   - region /As of last save Sep \d+, \d+, \d+:\d+ AM/:
     - heading /As of last save Sep \d+, \d+, \d+:\d+ AM/ [level=3]
-    - text: /Items 1 playable of 1 Span 0:\d+ to \d+:\d+ Found through Confirmed link Linked Sep 1, \d+, \d+:\d+ PM/
+    - text: /Items 1 playable of 1 Span 0:\d+ to \d+:\d+ Found through Confirmed link Recorded length [\d,.]+[bkmBKM]+ Linked Sep 1, \d+, \d+:\d+ PM, by you/
   - region "Link":
     - heading "Link" [level=3]
     - text: Chapter 1
-    - button "Change"
-    - button "Clear"
+    - button "Another track…"
+    - button "Unlink"
+  - region "Chapter":
+    - heading "Chapter" [level=3]
+    - paragraph: Imported by mistake? Take it out of the board and totals. Its text stays in the manuscript.
+    - button "Remove from recording…"

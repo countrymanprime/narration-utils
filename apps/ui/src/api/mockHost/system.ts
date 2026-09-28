@@ -70,6 +70,7 @@ export function createSystemMock(
     dictionaryState,
   }: { version: () => string; project: ProjectMock; transcript: () => TranscriptState; dictionaryState: () => AssetInstallState },
 ) {
+  let zoom = initial.zoom ?? 1.0;
   const bindings = {
     ready: async () => ({ apiVersion: DESKTOP_HOST_API_VERSION, diagnosticId: 'mock' }),
     bootstrap: async () => ({
@@ -111,6 +112,14 @@ export function createSystemMock(
     companionModeEnter: async () => {},
     companionModeExit: async () => {},
     systemCopyDiagnostics: async () => ({ path: 'C:/Users/narrator/Documents/diagnostics-20260926T120000.jsonl' }),
+    // The mock has no real webview zoom to read, so it keeps its own level in memory (`?mockZoom=`, app-navigation-and-
+    // zoom-controls.prd.md Phase 2). Unlike the real host it does not snap to the header's steps: the mock only ever
+    // sees the exact values the UI's own hook computes.
+    windowZoom: async () => ({ level: zoom }),
+    windowSetZoom: async (factor) => {
+      zoom = Math.min(2, Math.max(1, factor));
+      return { level: zoom };
+    },
     subscribeNotices: (onNotice) => {
       const text = initial.notice;
       if (!text) return () => {};

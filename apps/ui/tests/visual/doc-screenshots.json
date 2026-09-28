@@ -7,8 +7,8 @@
     "caption": "No project open yet - recent projects, browse, and create actions"
   },
   {
-    "page": "home",
-    "state": "default",
+    "page": "production",
+    "state": "no-data",
     "viewport": "desktop",
     "docName": "nav-sidebar-desktop",
     "caption": "Primary navigation - the persistent sidebar shown at desktop widths"
@@ -21,116 +21,116 @@
     "caption": "Primary navigation - the icon-only rail shows a page's name when you hover its icon"
   },
   {
-    "page": "home",
-    "state": "default",
+    "page": "production",
+    "state": "on-pace",
     "viewport": "desktop",
-    "docName": "home-default",
-    "caption": "Home - manuscript loaded, chapter table collapsed"
+    "docName": "production-home",
+    "caption": "Production - the figures, the chapter pipeline and Next up, with a stage timer running in the header"
   },
   {
-    "page": "manuscript",
+    "page": "script",
     "state": "reader-text-medium",
     "viewport": "desktop",
-    "docName": "manuscript-reader",
-    "caption": "Manuscript reader at the medium text size"
+    "docName": "script-reader",
+    "caption": "Script reader at the medium text size"
   },
   {
-    "page": "manuscript",
+    "page": "script",
+    "state": "prep-rail-queries",
+    "viewport": "desktop",
+    "docName": "script-prep-rail-queries",
+    "caption": "Script - the rail's Queries tab: every name the author has not confirmed, with where it is first heard, and the chapter list counting each chapter's names still to confirm"
+  },
+  {
+    "page": "script",
     "state": "reader-text-large",
     "viewport": "desktop",
-    "docName": "manuscript-reader-large",
-    "caption": "Manuscript reader at the large text size"
+    "docName": "script-reader-large",
+    "caption": "Script reader at the large text size"
   },
   {
-    "page": "manuscript",
+    "page": "script",
     "state": "chapter-collapsed",
     "viewport": "desktop",
-    "docName": "manuscript-chapter-list",
-    "caption": "Manuscript - collapsed chapter list, for jumping between chapters without scrolling"
+    "docName": "script-chapter-list",
+    "caption": "Script - collapsed chapter list, for jumping between chapters without scrolling"
   },
   {
-    "page": "manuscript",
+    "page": "script",
     "state": "detail-sidebar-note",
     "viewport": "desktop",
-    "docName": "manuscript-note-sidebar",
-    "caption": "Manuscript - detail sidebar open on a reader note"
+    "docName": "script-note-sidebar",
+    "caption": "Script - detail sidebar open on a reader note"
   },
   {
-    "page": "manuscript",
+    "page": "script",
     "state": "selection-popup",
     "viewport": "desktop",
-    "docName": "manuscript-selection-popup",
-    "caption": "Manuscript - text-selection action popup on one word (+ Note, + Story Bible, Look up)"
+    "docName": "script-selection-popup",
+    "caption": "Script - text-selection action popup on one word (+ Note, + Story Bible, Look up)"
   },
   {
-    "page": "manuscript",
+    "page": "script",
     "state": "word-lookup-definition",
     "viewport": "desktop",
-    "docName": "manuscript-word-lookup",
-    "caption": "Manuscript - the Look up panel: definitions, examples and synonyms by part of speech, with the dictionary's credit"
+    "docName": "script-word-lookup",
+    "caption": "Script - the Look up panel: definitions, examples and synonyms by part of speech, with the dictionary's credit"
   },
   {
-    "page": "manuscript",
+    "page": "script",
     "state": "word-lookup-not-found",
     "viewport": "desktop",
-    "docName": "manuscript-word-lookup-not-found",
-    "caption": "Manuscript - Look up for a word the dictionary does not have"
+    "docName": "script-word-lookup-not-found",
+    "caption": "Script - Look up for a word the dictionary does not have"
   },
   {
-    "page": "manuscript",
+    "page": "script",
     "state": "word-lookup-not-installed",
     "viewport": "desktop",
-    "docName": "manuscript-word-lookup-download",
-    "caption": "Manuscript - the first Look up asks before downloading the dictionary"
+    "docName": "script-word-lookup-download",
+    "caption": "Script - the first Look up asks before downloading the dictionary"
   },
   {
-    "page": "manuscript",
+    "page": "script",
     "state": "add-note-dialog",
     "viewport": "desktop",
-    "docName": "manuscript-add-note",
-    "caption": "Manuscript - Add Note dialog open after selecting text"
+    "docName": "script-add-note",
+    "caption": "Script - Add Note dialog open after selecting text"
   },
   {
-    "page": "home",
-    "state": "chapter-table-expanded",
-    "viewport": "desktop",
-    "docName": "home-chapter-table-expanded",
-    "caption": "Home - per-chapter breakdown expanded"
-  },
-  {
-    "page": "home",
+    "page": "production",
     "state": "recording-check-incomplete",
     "viewport": "desktop",
-    "docName": "home-recording-check",
-    "caption": "Home - a chapter's recording check with text still to record: the count, the missing region and the short paragraphs"
+    "docName": "production-recording-check",
+    "caption": "Production - a chapter's recording check, opened from its Record cell, with text still to record"
   },
   {
-    "page": "home",
-    "state": "stage-suggestions",
+    "page": "production",
+    "state": "stage-summary-chips",
     "viewport": "desktop",
-    "docName": "home-stage-suggestions",
-    "caption": "Home - stage suggestions under each chapter's status: suggested with Confirm, can't tell yet, not ready, evidence changed since you confirmed, and confirmed"
+    "docName": "production-stage-suggestions",
+    "caption": "Production - the stage suggestion chips above the board, and the current-stage cells that read Ready and Evidence changed"
   },
   {
-    "page": "home",
+    "page": "production",
     "state": "stage-evidence-recommended",
     "viewport": "desktop",
-    "docName": "home-stage-evidence",
-    "caption": "Home - Why: the evidence behind a suggestion, the saved project it was read from and how old that is, with Confirm and Dismiss"
+    "docName": "production-stage-evidence",
+    "caption": "Production - a chapter's stage slide-over: its status, its checks, and the evidence behind a suggestion with Confirm and Dismiss"
   },
   {
-    "page": "home",
+    "page": "production",
     "state": "stage-evidence-changed",
     "viewport": "desktop",
-    "docName": "home-stage-evidence-changed",
-    "caption": "Home - evidence changed since you confirmed: the check that is no longer met and Revert; nothing moved on its own"
+    "docName": "production-stage-evidence-changed",
+    "caption": "Production - evidence changed since you confirmed: the check that is no longer met and Revert; nothing moved on its own"
   },
   {
-    "page": "home",
+    "page": "production",
     "state": "import-confirm",
     "viewport": "desktop",
-    "docName": "home-import-confirm",
-    "caption": "Home - import manuscript confirm dialog with format/paragraph/chapter preview"
+    "docName": "production-import-confirm",
+    "caption": "Production - import manuscript confirm dialog with format/paragraph/chapter preview"
   },
   {
     "page": "proof-chapter",
@@ -169,6 +169,13 @@
   },
   {
     "page": "proof-chapter",
+    "state": "render-chosen",
+    "viewport": "desktop",
+    "docName": "proof-chapter-render-chosen",
+    "caption": "Proof chapter view - the readiness panel's Rendered file section, a render just chosen and measured"
+  },
+  {
+    "page": "proof-chapter",
     "state": "preview-default",
     "viewport": "desktop",
     "docName": "proof-chapter-preview",
@@ -196,67 +203,74 @@
     "caption": "Story Bible - alias typeahead dropdown matching existing entries"
   },
   {
-    "page": "teleprompter",
-    "state": "setup-default",
+    "page": "booth",
+    "state": "setup",
     "viewport": "desktop",
-    "docName": "teleprompter-setup",
-    "caption": "Teleprompter - before a session: the chapter picker above the text, and the control bar with Play, the microphone and the engine settings at the bottom"
+    "docName": "booth-setup",
+    "caption": "Booth - before a session: the chapter picker and the Where you stopped notice above the text, the rail with Voices in scene and the reading panel, and the reading controls along the bottom"
   },
   {
-    "page": "teleprompter",
+    "page": "booth",
     "state": "listening",
     "viewport": "desktop",
-    "docName": "teleprompter-listening",
-    "caption": "Teleprompter - listening, with read words dimmed and the current word highlighted"
+    "docName": "booth-listening",
+    "caption": "Booth - listening, with read words dimmed, the current word highlighted and Story Bible names marked"
   },
   {
-    "page": "teleprompter",
+    "page": "booth",
     "state": "waiting",
     "viewport": "desktop",
-    "docName": "teleprompter-waiting",
-    "caption": "Teleprompter - waiting after the narrator paused"
+    "docName": "booth-waiting",
+    "caption": "Booth - waiting after the narrator paused"
   },
   {
-    "page": "tracks",
+    "page": "booth",
+    "state": "flag-open",
+    "viewport": "desktop",
+    "docName": "booth-flag",
+    "caption": "Booth - a suspected restart opened in the Flags tab, with the script's words and what was heard"
+  },
+  {
+    "page": "booth",
+    "state": "credits-unresolved",
+    "viewport": "desktop",
+    "docName": "booth-credits",
+    "caption": "Booth - the closing credits chosen, with the unresolved-token warning above the text"
+  },
+  {
+    "page": "engine",
     "state": "default",
     "viewport": "desktop",
-    "docName": "tracks-default",
-    "caption": "Tracks - project tracks with transport controls, tracks with missing or unsupported items flagged"
+    "docName": "engine-panel",
+    "caption": "The audio engine panel, opened from the header chip - the linked REAPER project, the REAPER tools, chapter sync, the tracks with their chapters, and chapter links"
   },
   {
-    "page": "tracks",
-    "state": "unplayable-track-selected",
+    "page": "engine",
+    "state": "sync-activity",
     "viewport": "desktop",
-    "docName": "tracks-unplayable",
-    "caption": "Tracks - a track with a missing source file selected, playback controls disabled"
+    "docName": "engine-panel-sync-activity",
+    "caption": "The audio engine panel - chapter sync's summary and Sync activity, with Undo on a link sync made"
   },
   {
-    "page": "tracks",
+    "page": "engine",
     "state": "rpp-picker",
     "viewport": "desktop",
-    "docName": "tracks-rpp-picker",
-    "caption": "Tracks - choosing between more than one REAPER project file in the project folder"
+    "docName": "engine-panel-rpp-picker",
+    "caption": "The audio engine panel - choosing between more than one REAPER project file in the project folder"
   },
   {
-    "page": "tracks",
-    "state": "skipped-forward",
-    "viewport": "desktop",
-    "docName": "tracks-playback",
-    "caption": "Tracks - a track playing after skipping forward 30 seconds"
-  },
-  {
-    "page": "tracks",
+    "page": "engine",
     "state": "no-rpp",
     "viewport": "desktop",
-    "docName": "tracks-no-project-file",
-    "caption": "Tracks - no REAPER project file found in the project folder"
+    "docName": "engine-panel-no-project-file",
+    "caption": "The audio engine panel - no REAPER project file found in the project folder"
   },
   {
-    "page": "tracks",
+    "page": "engine",
     "state": "chapter-link-confirmed",
     "viewport": "desktop",
-    "docName": "tracks-chapter-links",
-    "caption": "Tracks - the chapter links list, one chapter confirmed to a track"
+    "docName": "engine-panel-chapter-links",
+    "caption": "The audio engine panel - the chapter links list, one chapter confirmed to a track"
   },
   {
     "page": "proof-chapter",
@@ -336,46 +350,46 @@
     "caption": "Home with Dark theme selected"
   },
   {
-    "page": "home",
+    "page": "production",
     "state": "manuscript-candidate-offer",
     "viewport": "desktop",
-    "docName": "home-manuscript-offer",
-    "caption": "Home - offer to import a manuscript file found in the project folder"
+    "docName": "production-manuscript-offer",
+    "caption": "Production - offer to import a manuscript file found in the project folder"
   },
   {
-    "page": "home",
+    "page": "production",
     "state": "import-activity-log",
     "viewport": "desktop",
-    "docName": "home-import-activity",
-    "caption": "Home - a finished manuscript import with its real, step-by-step activity log"
+    "docName": "production-import-activity",
+    "caption": "Production - a finished manuscript import with its real, step-by-step activity log"
   },
   {
-    "page": "manuscript",
+    "page": "script",
     "state": "formatted-text-and-line-breaks",
     "viewport": "desktop",
-    "docName": "manuscript-formatting",
-    "caption": "Manuscript - italic, bold and underline from the source document, and a preserved line break inside a paragraph"
+    "docName": "script-formatting",
+    "caption": "Script - italic, bold and underline from the source document, and a preserved line break inside a paragraph"
   },
   {
-    "page": "manuscript",
+    "page": "script",
     "state": "chapter-bookmarked",
     "viewport": "desktop",
-    "docName": "manuscript-bookmark",
-    "caption": "Manuscript - a chapter bookmarked, shown with a blue bookmark icon"
+    "docName": "script-bookmark",
+    "caption": "Script - a chapter bookmarked, shown with a blue bookmark icon"
   },
   {
-    "page": "manuscript",
+    "page": "script",
     "state": "go-to-line-highlight",
     "viewport": "desktop",
-    "docName": "manuscript-go-to-line",
-    "caption": "Manuscript - the line reached from the Story Bible stays highlighted so it is easy to find"
+    "docName": "script-go-to-line",
+    "caption": "Script - the line reached from the Story Bible stays highlighted so it is easy to find"
   },
   {
-    "page": "manuscript",
+    "page": "script",
     "state": "reader-dark",
     "viewport": "desktop",
-    "docName": "manuscript-reader-dark",
-    "caption": "Manuscript reader in the Dark theme - readable controls and an opaque sticky chapter header"
+    "docName": "script-reader-dark",
+    "caption": "Script reader in the Dark theme - readable controls and an opaque sticky chapter header"
   },
   {
     "page": "storybible",
@@ -406,39 +420,11 @@
     "caption": "Settings, Credits - the retail sample picked on Chapter 3, lines 1 to 3"
   },
   {
-    "page": "manuscript",
+    "page": "script",
     "state": "retail-sample",
     "viewport": "desktop",
-    "docName": "manuscript-retail-sample",
-    "caption": "Manuscript - the retail sample marked on lines 1 to 3 of Chapter 3"
-  },
-  {
-    "page": "manuscript",
-    "state": "read-aloud-setup",
-    "viewport": "desktop",
-    "docName": "manuscript-read-aloud-resume",
-    "caption": "Manuscript - the Read aloud dialog before reading, with the Where you stopped notice above the text, the reading panel beside it and the control bar below"
-  },
-  {
-    "page": "manuscript",
-    "state": "read-aloud-listening",
-    "viewport": "desktop",
-    "docName": "manuscript-read-aloud-listening",
-    "caption": "Manuscript - Read aloud listening, with read words dimmed, the current word highlighted and Story Bible names marked"
-  },
-  {
-    "page": "manuscript",
-    "state": "read-aloud-flag-open",
-    "viewport": "desktop",
-    "docName": "manuscript-read-aloud-flag",
-    "caption": "Manuscript - a suspected restart opened in the Flags tab, with the script's words and what was heard"
-  },
-  {
-    "page": "manuscript",
-    "state": "read-aloud-credits-unresolved",
-    "viewport": "desktop",
-    "docName": "manuscript-read-aloud-credits",
-    "caption": "Manuscript - the Read aloud dialog on the opening credits, with the unresolved-token warning in place of the resume notice"
+    "docName": "script-retail-sample",
+    "caption": "Script - the retail sample marked on lines 1 to 3 of Chapter 3"
   },
   {
     "page": "proof",
@@ -459,7 +445,7 @@
     "state": "filtered",
     "viewport": "tablet",
     "docName": "proof-filtered",
-    "caption": "Proof - filtered to the Proofing comparison and to findings scored 50% or more"
+    "caption": "Proof - filtered to Local AI compare and to findings scored 50% or more"
   },
   {
     "page": "proof",
@@ -546,59 +532,73 @@
     "caption": "Proof - a take comparison's audio: clipping, room noise, level, length and pauses per read, side by side, never added up"
   },
   {
-    "page": "delivery",
+    "page": "master",
     "state": "empty",
     "viewport": "desktop",
-    "docName": "delivery-empty",
-    "caption": "Delivery - nothing measured yet, judged against ACX (September 2026): how many rules the app checks, does not check and leaves to listening"
+    "docName": "master-empty",
+    "caption": "Master & QC - nothing checked yet: the ACX platform tab, the built-in mastering chain as its three steps, and the delivery package's book checklist"
   },
   {
-    "page": "delivery",
+    "page": "master",
     "state": "profile-rules",
     "viewport": "desktop",
-    "docName": "delivery-profile-rules",
-    "caption": "Delivery - the ACX profile's rules and their sources: what ACX requires, how the app checks it, and whether it is verified"
+    "docName": "master-profile-rules",
+    "caption": "Master & QC - the ACX profile's rules and their sources: what ACX requires, how the app checks it, and whether it is verified"
   },
   {
-    "page": "delivery",
+    "page": "master",
     "state": "running",
     "viewport": "desktop",
-    "docName": "delivery-running",
-    "caption": "Delivery - a measurement in progress, with its real progress and Cancel"
+    "docName": "master-running",
+    "caption": "Master & QC - a check in progress, with its real progress and Cancel"
   },
   {
-    "page": "delivery",
+    "page": "master",
     "state": "measured",
     "viewport": "desktop",
-    "docName": "delivery-measured",
-    "caption": "Delivery - three files judged against ACX rule by rule: a 48 kHz render not met on sample rate, room tone and the MP3 not checked by the app, a silent render not measurable, an MP3 that could not be read"
+    "docName": "master-measured",
+    "caption": "Master & QC - three files checked against ACX: length, RMS, true peak, noise floor and head / tail per file, a 48 kHz render that fails, and why it fails with a suggested fix beside the book's consistency"
   },
   {
-    "page": "delivery",
+    "page": "master",
     "state": "file-rules",
     "viewport": "desktop",
-    "docName": "delivery-file-rules",
-    "caption": "Delivery - one file against ACX, rule by rule, with what ACX requires and how it was verified"
+    "docName": "master-file-rules",
+    "caption": "Master & QC - one file against ACX, rule by rule, with what ACX requires and how it was verified"
   },
   {
-    "page": "delivery",
+    "page": "master",
     "state": "custom-profile",
     "viewport": "desktop",
-    "docName": "delivery-custom-profile",
-    "caption": "Delivery - judged by a custom profile based on ACX, with two rules turned off"
+    "docName": "master-custom-profile",
+    "caption": "Master & QC - judged by a custom profile based on ACX, chosen as its own platform tab"
   },
   {
-    "page": "delivery",
+    "page": "master",
     "state": "diagnostics-findings",
     "viewport": "desktop",
-    "docName": "delivery-diagnostics-findings",
-    "caption": "Delivery, Diagnostics - the measured files checked: each file summarised, and each finding with its time, what was measured, the threshold that raised it and the source"
+    "docName": "master-diagnostics-findings",
+    "caption": "Master & QC, Diagnostics - the checked files diagnosed: each file summarised, and each finding with its time, what was measured, the threshold that raised it and the source"
   },
   {
-    "page": "delivery",
+    "page": "master",
     "state": "report-exported",
     "viewport": "desktop",
-    "docName": "delivery-report-exported",
-    "caption": "Delivery - Export report wrote an HTML and a JSON report into the project's narration-utils/delivery folder, with file names only"
+    "docName": "master-report-exported",
+    "caption": "Master & QC - Export report wrote an HTML and a JSON report into the project's narration-utils/delivery folder, with file names only"
+  },
+  {
+    "page": "master",
+    "state": "to-spec-picked",
+    "viewport": "desktop",
+    "docName": "master-to-spec-picked",
+    "caption": "Master & QC - Master all to spec with five files picked and given a role, mastered by the built-in chain before encoding"
+  },
+  {
+    "page": "master",
+    "state": "package-built",
+    "viewport": "desktop",
+    "docName": "master-package-built",
+    "caption": "Master & QC - the ACX package built from the mastered and encoded files: the packager's checklist, and the output folder with every file it wrote"
   }
 ]

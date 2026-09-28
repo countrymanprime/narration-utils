@@ -67,7 +67,7 @@ type Deps = {
 /** The sentence the host gives with each refusal (apps/desktop/internal/coverage), in short. */
 const COVERAGE_REFUSAL_MESSAGES: Record<CoverageRefusalReason, string> = {
   no_project: 'Open a project before checking a recording.',
-  no_project_file: 'Choose the saved REAPER project file on the Tracks page first.',
+  no_project_file: 'Choose the saved REAPER project file in the audio engine panel first.',
   project_unreadable: 'The saved REAPER project file could not be read.',
   no_manuscript: 'Import a manuscript before checking a recording.',
   chapter_not_found: 'That chapter is not part of the current manuscript.',
@@ -84,6 +84,8 @@ const COVERAGE_REFUSAL_MESSAGES: Record<CoverageRefusalReason, string> = {
   invalid_params: 'The recording check settings are not valid.',
   manuscript_changed: 'The manuscript changed during the recording check; check again.',
   result_missing: 'The stored result of the last check could not be read.',
+  credits_not_set_up: 'Credits recording checks are not available.',
+  credits_changed: 'The credits text changed during the recording check; check again.',
 };
 
 const STEP_MS = 300;

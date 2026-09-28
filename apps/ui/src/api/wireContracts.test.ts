@@ -7,12 +7,16 @@ import { createMockApi } from './mockApi';
 import type { ProjectStateState } from './contracts/projectstate';
 import { WIRE_TAKE_REVIEW_FINDINGS, WIRE_TRACKS_PROJECT, WIRE_TRANSCRIPT, editingCandidateFor } from './mockFixtures';
 import { prepMarkupChapterSchema, prepMarkupSpanSchema } from './schemas/prepMarkup';
+import { prepCompletenessSummarySchema } from './schemas/prepCompleteness';
 import { cleanupApplyResultSchema, cleanupPreviewResultSchema, levelMatchApplyResultSchema, levelMatchPreviewResultSchema } from './schemas/cleanup';
+import { pronunciationOnlineBatchResultSchema, pronunciationOnlineKeyStatusSchema, pronunciationOnlineResultSchema } from './schemas/pronunciationOnline';
 import { WIRE_TAKE_COMPARISON_FINDING } from './takeComparisonMock';
 import { MOCK_MEASURE_PATHS } from './measureMock';
 import { judgeMock } from './coverageMock';
 import { MOCK_REAPER_INPUT_SEEDS, MOCK_REAPER_SEEDS, mockLastReading } from './teleprompterMock';
 import { deliveryQcEvidenceSchema, deliveryReportExportSchema, measureJobSchema, measurePickResultSchema } from './schemas/measure';
+import { exportJobSchema, packageJobSchema } from './schemas/renderEncodeMaster';
+import { MOCK_EXPORT_ITEMS, MOCK_EXPORT_PATHS } from './renderEncodeMasterMock';
 import { deliveryProfileSchema, deliveryProfilesStateSchema } from './schemas/deliveryProfiles';
 import { MOCK_ACX, evaluateMockFile, mockCustomProfile } from './deliveryProfilesMock';
 import { diagnosticsJobSchema } from './schemas/diagnostics';
@@ -43,9 +47,17 @@ import {
 } from './schemas/takeReview';
 import { COVERAGE_EVALUATOR_REASONS, COVERAGE_REFUSAL_REASONS, coverageResultSchema, coverageStartResultSchema, coverageStateSchema } from './schemas/coverage';
 import { workspaceAlignmentResultSchema } from './schemas/workspace';
-import { previewResultSchema } from './schemas/preview';
+import { pinnedPreviewSchema, previewResultSchema } from './schemas/preview';
 import { STAGE_REFUSAL_REASONS, STAGE_UNKNOWN_CAUSES, stageDecisionResultSchema, stageRecommendationsSchema } from './schemas/stages';
-import { productionOverviewSchema, productionPlanSchema, productionStartResultSchema, productionStopResultSchema } from './schemas/production';
+import { proofingChooseRenderResultSchema, proofingRenderSchema } from './schemas/proofingRender';
+import {
+  productionBurndownSchema,
+  productionOverviewSchema,
+  productionPlanSchema,
+  productionReportExportSchema,
+  productionStartResultSchema,
+  productionStopResultSchema,
+} from './schemas/production';
 import { PRODUCTION_SCENARIOS } from './productionMock';
 import { findingMarkerSchema, findingNavigationSchema, findingSchema, findingsPageSchema, findingsSummarySchema, reaperStatusSchema } from './schemas/findings';
 import { tracksDiscoverySchema, tracksProjectSchema } from './schemas/tracks';
@@ -79,13 +91,15 @@ import { dawCatalogListSchema } from './schemas/dawCatalog';
 import {
   guideBuildResultSchema,
   guideCreatedSchema,
+  guideDialogueCuesSchema,
   guideEntitiesSchema,
   guidePreviewSchema,
   pronunciationQueriesCsvSchema,
   pronunciationQueriesSchema,
   queryImportResultSchema,
 } from './schemas/storyBible';
-import { bootstrapSchema, copyDiagnosticsResultSchema, projectAttachStateSchema, readySchema } from './schemas/system';
+import { approvedCharacterReferencesSchema, characterRegionsSchema, characterReferenceSchema } from './schemas/character';
+import { bootstrapSchema, copyDiagnosticsResultSchema, projectAttachStateSchema, readySchema, windowZoomSchema } from './schemas/system';
 import {
   readAloudReaperStateSchema,
   readAloudRecordingSchema,
@@ -107,6 +121,8 @@ import { renderConfigStartResultSchema, renderConfigStateSchema, renderConfigSug
 import { cleanupToolsStartResultSchema, cleanupToolsStateSchema } from './schemas/cleanuptools';
 import { dawCapabilitiesSchema, dawTransportSchema } from './schemas/daw';
 import { providerCapabilitiesSchema } from './schemas/providers';
+import { masteringProvidersSchema } from './schemas/mastering';
+import { recorderDevicesResultSchema, recorderLevelSchema, recorderStateSchema } from './schemas/recording';
 import { projectStateChangedSchema, projectStateStartResultSchema, projectStateStateSchema } from './schemas/projectstate';
 import { retakeLanesListSchema, retakeLanesStartResultSchema, retakeLanesStateSchema } from './schemas/retakelanes';
 import { chapterTagsEmbedResultSchema, chapterTagsPreviewSchema } from './schemas/chaptertags';
@@ -115,7 +131,7 @@ import { unknownKeys } from './schemas/strictness';
 import { GOLDEN } from './contractGoldens';
 import { parseWire, parseWireJson, type WireContext } from './wire/parseWire';
 import { WireError } from './wire/WireError';
-import { creditsRows } from '../components/teleprompter/readerModel';
+import { creditsRows } from '../components/booth/readerModel';
 
 // ADR 0069, rule 4: the fixtures are the contract. Every payload the Go host and the Python sidecars write to
 // tests/fixtures/contracts/ is validated here by the same schemas the app runs, and so is every answer the mock client gives;
@@ -587,6 +603,12 @@ describe('answers of the mock client for the manuscript, Story Bible and project
     expect(unsaved).toMatchObject({ consent: 'on', unsavedEdits: true, batch: null });
     expect(unsaved.activity.map((row) => row.trigger)).toEqual(['watch']);
 
+    // The engine panel's Sync activity (stage navigation Phase 6): three batches, one automatic and one manual link.
+    const activity = await createMockApi({}, { chapterSync: 'activity' }).chapterSyncState();
+    expectMatches(chapterSyncStateSchema, activity, 'mock chapter sync, the engine panel activity');
+    expect(activity.activity.map((row) => row.trigger)).toEqual(['watch', 'watch', 'consent']);
+    expect(activity.chapters.slice(0, 2).map((row) => row.origin)).toEqual(['auto', 'manual']);
+
     // Phase 6: a status row per narration chapter, the recording check's own answer, with no Check press.
     expect(quiet.chapters.length).toBeGreaterThan(0);
     const staleApi = createMockApi({}, { coverage: { stale: [quiet.chapters[0].chapterId] } });
@@ -633,6 +655,22 @@ describe('answers of the mock client for the manuscript, Story Bible and project
     expect((await api.prepMarkupList(chapter?.id ?? '')).spans).toHaveLength(1);
     await expect(api.prepMarkupSave(chapter?.id ?? '', 'no-such-line', 0, 1, 'stress', '')).rejects.toThrow('no longer in this chapter');
     await expect(api.prepMarkupSave(chapter?.id ?? '', paragraph?.id ?? '', 0, 5, 'pause', '')).rejects.toThrow('short or long');
+  });
+
+  // prep-depth.prd.md Phase 7: the per-chapter rollup reads the same two calls above, never a third store.
+  it('the prep completeness summary rolls up open queries and stale markup per chapter', async () => {
+    const api = createMockApi({}, { prepMarkup: [{ chapter: 0, line: 0, words: 'Alice', kind: 'stress', stale: { reason: 'text_changed', was: 'Queen' } }] });
+    const chapters = await api.manuscriptChapters();
+    const summary = await api.prepCompletenessSummary();
+    expectMatches(prepCompletenessSummarySchema, summary, 'mock prep completeness summary');
+    expect(summary.chapters.map((row) => row.chapterId)).toEqual(chapters.map((c) => c.id));
+    expect(summary.totals.chapters).toBe(chapters.length);
+    const firstChapter = summary.chapters.find((row) => row.chapterId === chapters[0]?.id);
+    expect(firstChapter?.staleMarkupSpans).toBe(1);
+    expect(firstChapter?.complete).toBe(false);
+    const openAcrossChapters = summary.chapters.reduce((sum, row) => sum + row.openQueries, 0);
+    expect(summary.totals.openQueries).toBe(openAcrossChapters + summary.totals.unattributedQueries);
+    expect(summary.totals.staleMarkupSpans).toBeGreaterThanOrEqual(1);
   });
 
   it('a created note and bookmark', async () => {
@@ -705,6 +743,45 @@ describe('answers of the mock client for the manuscript, Story Bible and project
     expect(csv.count).toBe(queries.length);
   });
 
+  it('the Story Bible dialogue cues and their correction', async () => {
+    const api = createMockApi();
+    const cues = await api.guideDialogueCues();
+    expectMatches(guideDialogueCuesSchema, cues, 'mock dialogue cues');
+    const unknown = cues.find((cue) => cue.speaker_entity_id === null);
+    expect(unknown).toBeDefined();
+    await api.guideCorrectCue(unknown?.id ?? '', 'alice');
+    const corrected = (await api.guideDialogueCues()).find((cue) => cue.id === unknown?.id);
+    expect(corrected).toMatchObject({ speaker_entity_id: 'alice', speaker_source: 'correction', corrected: true });
+    // "unknown" clears a correction back to unknown, the same as an empty string.
+    await api.guideCorrectCue(unknown?.id ?? '', 'unknown');
+    const cleared = (await api.guideDialogueCues()).find((cue) => cue.id === unknown?.id);
+    expect(cleared).toMatchObject({ speaker_entity_id: null, speaker_source: 'correction', corrected: true });
+    await expect(api.guideCorrectCue('not-a-real-cue', 'alice')).rejects.toThrow();
+  });
+
+  it('the character bible: regions, approving a reference, revoking it and removing every reference', async () => {
+    const api = createMockApi();
+    const regions = await api.characterListRegions();
+    expectMatches(characterRegionsSchema, regions, 'mock regions');
+    expect(regions.length).toBeGreaterThan(0);
+    const region = regions[0];
+    const reference = await api.characterApprove('alice', region.guid, 'Anchor take.');
+    expectMatches(characterReferenceSchema, reference, 'mock reference');
+    expect(reference.characterId).toBe('alice');
+    expect(reference.regionGuid).toBe(region.guid);
+    const referenced = await api.characterReferences();
+    expectMatches(approvedCharacterReferencesSchema, referenced, 'mock references');
+    expect(referenced.some((row) => row.id === reference.id && !row.changedSinceApproval)).toBe(true);
+    await api.characterRevoke(reference.id);
+    expect((await api.characterReferences()).some((row) => row.id === reference.id)).toBe(false);
+    // Approving a region that is not in the saved project is refused (the real host validates it too).
+    await expect(api.characterApprove('alice', 'not-a-real-region', '')).rejects.toThrow();
+    const seeded = await api.characterReferences();
+    expect(seeded.length).toBeGreaterThan(0);
+    await api.characterRemoveVoiceData();
+    expect(await api.characterReferences()).toHaveLength(0);
+  });
+
   it('re-importing an answered pronunciation query file applies a matched row and reports an unmatched one', async () => {
     const api = createMockApi();
     const queries = await api.guidePronunciationQueries();
@@ -741,6 +818,23 @@ describe('answers of the mock client for the manuscript, Story Bible and project
   it('copy diagnostics answers the saved path', async () => {
     const api = createMockApi();
     expectMatches(copyDiagnosticsResultSchema, await api.systemCopyDiagnostics('last_run'), 'mock copy diagnostics');
+  });
+
+  it('the window zoom binding reads and sets a level (app-navigation-and-zoom-controls.prd.md Phase 2)', async () => {
+    const api = createMockApi();
+    const idle = await api.windowZoom();
+    expectMatches(windowZoomSchema, idle, 'mock window zoom, idle');
+    expect(idle.level).toBe(1.0);
+    const zoomed = await api.windowSetZoom(1.25);
+    expectMatches(windowZoomSchema, zoomed, 'mock window zoom, set to 125%');
+    expect(zoomed.level).toBe(1.25);
+    expect((await api.windowZoom()).level).toBe(1.25);
+    // Defensively clamped, the same range the real host's `nearestZoomStep` promises (ADR 0201).
+    expect((await api.windowSetZoom(5)).level).toBe(2.0);
+    expect((await api.windowSetZoom(0.1)).level).toBe(1.0);
+    const seeded = await createMockApi({}, { zoom: 1.5 }).windowZoom();
+    expect(seeded.level).toBe(1.5);
+    expectMatches(windowZoomSchema, readGolden('window-zoom.json'), 'window-zoom.json');
   });
 
   it('the project picker answers', async () => {
@@ -860,6 +954,34 @@ describe('answers of the mock client for the manuscript, Story Bible and project
     await expect(api.pronunciationLookupOpen('howjsay', 'croquet')).resolves.toBeUndefined();
     // @ts-expect-error an unknown source is a build-time error too; the mock also rejects it at runtime.
     await expect(api.pronunciationLookupOpen('wiktionary', 'croquet')).rejects.toThrow(/Unknown pronunciation lookup source/);
+  });
+
+  it('the online pronunciation lookup: the key status, a lookup, the cache and a confirmed batch (prep-depth Phase 9)', async () => {
+    const api = createMockApi();
+    const absent = await api.pronunciationOnlineKeyStatus();
+    expectMatches(pronunciationOnlineKeyStatusSchema, absent, 'mock key status');
+    expect(absent.present).toBe(false);
+    // Nothing is sent without the narrator's own key.
+    await expect(api.pronunciationOnlineLookup('croquet')).rejects.toThrow(/key/);
+    await expect(api.pronunciationOnlineKeySet('not a key')).rejects.toThrow(/does not look like/);
+    const present = await api.pronunciationOnlineKeySet('0b5c1a3e-7d2f-4e6a-9c8b-2f1e0d9c8b7a');
+    expectMatches(pronunciationOnlineKeyStatusSchema, present, 'mock key set');
+    expect(JSON.stringify(present)).not.toContain('0b5c1a3e');
+    const found = await api.pronunciationOnlineLookup('croquet');
+    expectMatches(pronunciationOnlineResultSchema, found, 'mock lookup');
+    expect(found).toMatchObject({ found: true, cached: false });
+    expect((await api.pronunciationOnlineLookup('Croquet')).cached).toBe(true);
+    expectMatches(pronunciationOnlineResultSchema, await api.pronunciationOnlineLookup('quorlen'), 'mock lookup, not found');
+    // One word only: a passage or a file name is refused, as the host refuses it.
+    await expect(api.pronunciationOnlineLookup('The Mock Turtle sighed deeply')).rejects.toThrow(/one word/);
+    await expect(api.pronunciationOnlineLookup('C:\\Books\\alice.docx')).rejects.toThrow(/one word/);
+    // A batch needs its distinct word count confirmed.
+    await expect(api.pronunciationOnlineLookupBatch(['wren', 'Wren', 'alice'], 3)).rejects.toThrow(/confirmation/);
+    const batch = await api.pronunciationOnlineLookupBatch(['wren', 'Wren', 'alice'], 2);
+    expectMatches(pronunciationOnlineBatchResultSchema, batch, 'mock batch');
+    expect(batch).toMatchObject({ words: 2, fetched: 2 });
+    await expect(api.pronunciationOnlineSignUpOpen()).resolves.toBeUndefined();
+    expectMatches(pronunciationOnlineKeyStatusSchema, await api.pronunciationOnlineKeyClear(), 'mock key clear');
   });
 });
 
@@ -1352,6 +1474,68 @@ describe('answers of the mock client for the settings, voice, model, transcript 
     expect(state.pronunciation.cmu?.asset).toBeUndefined();
   });
 
+  it('masteringProviders and masteringChooseProvider match the host goldens (mastering port, ADR 0306)', async () => {
+    const none = await createMockApi({}, { mastering: { hasProject: false } }).masteringProviders();
+    expectMatches(masteringProvidersSchema, none, 'mock mastering chains (no project)');
+    expect(none).toEqual(readGolden('mastering-providers-no-project.json'));
+
+    const api = createMockApi();
+    const chosen = await api.masteringChooseProvider('builtin');
+    expectMatches(masteringProvidersSchema, chosen, 'mock mastering chains (builtin chosen)');
+    expect(chosen).toEqual(readGolden('mastering-providers-builtin-chosen.json'));
+    // The DAW row is Experimental (render-encode-master Phase 9): it can be chosen, and the project masters with it.
+    const daw = await api.masteringChooseProvider('daw');
+    expectMatches(masteringProvidersSchema, daw, 'mock mastering chains (daw chosen)');
+    expect(daw).toEqual(readGolden('mastering-providers-daw-chosen.json'));
+    // The Audacity row is Experimental too (render-encode-master Phase 10, ADR 0460): it can be chosen the same way.
+    const audacity = await api.masteringChooseProvider('audacity');
+    expectMatches(masteringProvidersSchema, audacity, 'mock mastering chains (audacity chosen)');
+    expect(audacity).toEqual(readGolden('mastering-providers-audacity-chosen.json'));
+    // A row this version does not have is refused, and the saved choice stays.
+    await expect(api.masteringChooseProvider('dolby-atmos')).rejects.toThrow('There is no mastering chain called "dolby-atmos".');
+    expect((await api.masteringProviders()).choice).toBe('audacity');
+    expect((await api.masteringChooseProvider('')).choice).toBeNull();
+
+    const stale = await createMockApi({}, { mastering: { choice: 'dolby-atmos' } }).masteringProviders();
+    expectMatches(masteringProvidersSchema, stale, 'mock mastering chains (a stored choice this version does not have)');
+    expect(stale).toEqual(readGolden('mastering-providers-unknown-choice.json'));
+  });
+
+  it('the built-in recorder matches the host goldens and records a take (native recording P2, ADR 0455)', async () => {
+    const none = await createMockApi({}, { recording: { hasProject: false } }).recorderState();
+    expectMatches(recorderStateSchema, none, 'mock recorder (no project)');
+    expect(none).toEqual(readGolden('recorder-state-no-project.json'));
+    expectMatches(recorderStateSchema, readGolden('recorder-state-recording.json'), 'recorder-state-recording.json');
+    expect(await createMockApi().recorderDevices()).toEqual(readGolden('recorder-devices.json'));
+    expectMatches(recorderDevicesResultSchema, await createMockApi({}, { recording: { devices: 'error' } }).recorderDevices(), 'mock recorder devices (error)');
+
+    const api = createMockApi({}, { recording: { takes: 'none' } });
+    const states: unknown[] = [];
+    const levels: unknown[] = [];
+    api.subscribeRecorderState((state) => states.push(state));
+    api.subscribeRecorderLevel((level) => levels.push(level));
+    await expect(api.recorderStart('Mic')).rejects.toThrow('choose the built-in recorder');
+    expect((await api.recorderChooseEngine('builtin')).engine).toBe('builtin');
+    const recording = await api.recorderStart('Analogue 1 + 2 (Focusrite USB Audio)');
+    expectMatches(recorderStateSchema, recording, 'mock recorder (recording)');
+    expect(recording).toMatchObject({ phase: 'recording', take: 'Take 001' });
+    expect((await api.recorderStop()).phase).toBe('stopping');
+    await vi.waitFor(async () => expect((await api.recorderState()).phase).toBe('idle'));
+    const done = await api.recorderState();
+    expectMatches(recorderStateSchema, done, 'mock recorder (a take finished)');
+    expect(done.takes.map((take) => take.name)).toEqual(['Take 001']);
+    expect(done.last?.name).toBe('Take 001');
+    for (const state of states) expectMatches(recorderStateSchema, state, 'mock recording:state');
+    expect(levels.length).toBeGreaterThan(0);
+    for (const level of levels) expectMatches(recorderLevelSchema, level, 'mock recording:level');
+
+    const golden = readGolden('recorder-state-takes.json') as { takes: unknown[] };
+    expect(Object.keys((await createMockApi({}, { recording: { engine: 'builtin' } }).recorderState()).takes[0]).sort()).toEqual(
+      Object.keys(golden.takes[0] as object).sort(),
+    );
+    await expect(createMockApi({}, { recording: { unavailable: true } }).recorderChooseEngine('builtin')).rejects.toThrow('not available');
+  });
+
   it('subscribeDawTransport pushes the seeded transport once, and matches the host goldens (DAW port PRD Phase 9)', () => {
     const seen = (seed: Parameters<typeof createMockApi>[1]): unknown[] => {
       const events: unknown[] = [];
@@ -1461,6 +1645,62 @@ describe('answers of the mock client for the settings, voice, model, transcript 
     expect(cancelled.files.map((file) => file.status)).toEqual(['cancelled', 'cancelled', 'cancelled']);
   });
 
+  it('the export job masters (when asked) and encodes every picked file, in the shape the host pins', async () => {
+    const api = createMockApi();
+    expectMatches(exportJobSchema, await api.exportState(), 'mock export, idle');
+    await expect(api.exportStart({ items: MOCK_EXPORT_ITEMS, master: false, format: 'mp3' })).rejects.toThrow(/not chosen in the file picker/);
+    const picked = await api.exportPickFiles();
+    expectMatches(measurePickResultSchema, picked, 'mock export picker');
+    expect(picked.paths).toEqual(MOCK_EXPORT_PATHS);
+    await expect(api.exportStart({ items: [], master: false, format: 'mp3' })).rejects.toThrow(/at least one file/);
+    let job = await api.exportStart({ items: MOCK_EXPORT_ITEMS, master: true, format: 'mp3' });
+    expectMatches(exportJobSchema, job, 'mock export, started');
+    await expect(api.exportStart({ items: MOCK_EXPORT_ITEMS, master: true, format: 'mp3' })).rejects.toThrow(/already running/);
+    let percent = job.percent;
+    while (job.phase === 'running') {
+      job = await api.exportState();
+      expectMatches(exportJobSchema, job, `mock export, ${job.phase} at ${job.percent}%`);
+      expect(job.percent).toBeGreaterThanOrEqual(percent);
+      percent = job.percent;
+    }
+    expect(job.phase).toBe('success');
+    expect(job.files.every((file) => file.status === 'done' && file.encodedPath && file.mastering)).toBe(true);
+
+    await api.exportStart({ items: MOCK_EXPORT_ITEMS, master: false, format: 'mp3' });
+    await api.exportState();
+    const cancelledExport = await api.exportCancel();
+    expectMatches(exportJobSchema, cancelledExport, 'mock export, cancelled');
+    expect(cancelledExport.files.some((file) => file.status === 'cancelled')).toBe(true);
+  });
+
+  it("the package job assembles the profile's book checklist from an export's own encoded files, in the shape the host pins", async () => {
+    const api = createMockApi();
+    expectMatches(packageJobSchema, await api.packageState(), 'mock package, idle');
+    const profile = await api.deliveryProfiles();
+    const acx = profile.profiles.find((candidate) => candidate.id === 'acx')!;
+
+    await expect(
+      api.packageStart({ profileId: acx.id, profileVersion: acx.version, items: [{ kind: 'chapter', title: 'Chapter 01', path: 'C:/not-encoded.mp3' }] }),
+    ).rejects.toThrow(/not encoded in this session/);
+
+    await api.exportPickFiles();
+    let job = await api.exportStart({ items: MOCK_EXPORT_ITEMS, master: false, format: 'mp3' });
+    while (job.phase === 'running') job = await api.exportState();
+    const items = job.files.map((file) => ({ kind: file.kind, title: file.title, path: file.encodedPath! }));
+
+    const missingRetailSample = items.filter((item) => item.kind !== 'retail_sample');
+    const refused = await api.packageStart({ profileId: acx.id, profileVersion: acx.version, items: missingRetailSample });
+    expectMatches(packageJobSchema, refused, 'mock package, refused (missing retail sample)');
+    expect(refused.phase).toBe('error');
+    expect(refused.checklist.find((entry) => entry.ruleId === 'acx.retail_sample')?.status).toBe('missing');
+
+    const built = await api.packageStart({ profileId: acx.id, profileVersion: acx.version, items });
+    expectMatches(packageJobSchema, built, 'mock package, success');
+    expect(built.phase).toBe('success');
+    expect(built.files).toHaveLength(items.length);
+    expect(built.checklist.every((entry) => entry.status !== 'missing')).toBe(true);
+  });
+
   it('an MP3 is judged on its container, and the mock judges it as the host pins', () => {
     const pinned = measureJobSchema.parse(readGolden('measure-mp3.json'));
     expect(pinned.profile).not.toBeNull();
@@ -1516,7 +1756,7 @@ describe('answers of the mock client for the settings, voice, model, transcript 
     const saved = await api.findingsList({ category: 'delivery_qc' });
     expectMatches(findingsPageSchema, saved, 'mock delivery findings on the Review page');
     expect(saved.total).toBeGreaterThan(0);
-    // The same ids the Delivery page gives them, so a decision on either page is one decision.
+    // The same ids Master & QC gives them, so a decision on either page is one decision.
     const judged = new Set(job.files.flatMap((file) => file.findings.map((finding) => finding.id)));
     expect(saved.findings.every((finding) => judged.has(finding.id))).toBe(true);
     const shape = (finding: (typeof saved.findings)[number]) => {
@@ -1838,6 +2078,61 @@ describe('answers of the mock client for the settings, voice, model, transcript 
     expect(nothingEligible).toEqual({ outcome: 'nothing_eligible', candidates: [] });
   });
 
+  it('the preview pin: not present, set, adjust and clear (proofing-preview-suggestion.prd.md Phase 8)', async () => {
+    const api = createMockApi();
+    const notPinned = await api.previewPin();
+    expectMatches(pinnedPreviewSchema, notPinned, 'mock preview pin, none');
+    expect(notPinned).toEqual({ present: false, stale: false, canExtendStart: false, canShrinkStart: false, canExtendEnd: false, canShrinkEnd: false });
+
+    const { candidates } = await api.previewCandidates();
+    const [firstCandidate, secondCandidate] = candidates;
+    expect(firstCandidate.paragraphIds.length).toBeGreaterThan(0);
+
+    const set = await api.previewPinSet(firstCandidate.chapterId, firstCandidate.paragraphIds);
+    expectMatches(pinnedPreviewSchema, set, 'mock preview pin, set');
+    expect(set.present).toBe(true);
+    expect(set.stale).toBe(false);
+    expect(set.candidate?.chapterId).toBe(firstCandidate.chapterId);
+    expect(set.candidate?.paragraphIds).toEqual(firstCandidate.paragraphIds);
+
+    const read = await api.previewPin();
+    expectMatches(pinnedPreviewSchema, read, 'mock preview pin, read back');
+    expect(read).toEqual(set);
+
+    if (secondCandidate) {
+      const replaced = await api.previewPinSet(secondCandidate.chapterId, secondCandidate.paragraphIds);
+      expect(replaced.candidate?.chapterId).toBe(secondCandidate.chapterId);
+    } else {
+      const cleared = await api.previewPinClear();
+      expectMatches(pinnedPreviewSchema, cleared, 'mock preview pin, cleared');
+      expect(cleared.present).toBe(false);
+      await expect(api.previewPinAdjust('end', true)).rejects.toThrow();
+    }
+  });
+
+  it('the preview pin is stale when its text changes or a paragraph disappears', async () => {
+    const chapters = await createMockApi().manuscriptChapters();
+    const chapter = chapters[0];
+    const paragraphs = await createMockApi().manuscriptParagraphs(chapter.id);
+    const paragraphId = paragraphs[0].id;
+
+    const textChanged = await createMockApi(
+      {},
+      { preview: { pin: { chapterId: chapter.id, paragraphIds: [paragraphId], stale: 'text_changed' } } },
+    ).previewPin();
+    expectMatches(pinnedPreviewSchema, textChanged, 'mock preview pin, stale text_changed');
+    expect(textChanged).toMatchObject({ present: true, stale: true, staleReason: 'text_changed' });
+    expect(textChanged.candidate).toBeDefined();
+
+    const paragraphMissing = await createMockApi(
+      {},
+      { preview: { pin: { chapterId: chapter.id, paragraphIds: [paragraphId], stale: 'paragraph_missing' } } },
+    ).previewPin();
+    expectMatches(pinnedPreviewSchema, paragraphMissing, 'mock preview pin, stale paragraph_missing');
+    expect(paragraphMissing).toMatchObject({ present: true, stale: true, staleReason: 'paragraph_missing' });
+    expect(paragraphMissing.candidate).toBeUndefined();
+  });
+
   it('the stage recommendations: every verdict, every unknown cause, a confirmation, the notice, and every refusal', async () => {
     const api = createMockApi(
       {},
@@ -1894,6 +2189,55 @@ describe('answers of the mock client for the settings, voice, model, transcript 
     expectMatches(stageDecisionResultSchema, dismissed, 'mock stage dismiss');
     expect(dismissed).toMatchObject({ status: 'ok', chapter: { verdict: 'dismissed' } });
     await expect(api.stageRevert('no-such-chapter')).rejects.toThrow('not a narration chapter');
+  });
+
+  it('the proofing render association: none, choosing, a re-read, staleness, a measurement and clearing', async () => {
+    const api = createMockApi({}, { proofingRender: { 'chapter-2': { state: 'stale' }, 'chapter-3': { state: 'current', measured: true } } });
+
+    const none = await api.proofingRenderState('chapter-1');
+    expectMatches(proofingRenderSchema, none, 'mock proofing render, none');
+    expect(none).toMatchObject({ state: 'none', cause: 'never_analyzed' });
+
+    const stale = await api.proofingRenderState('chapter-2');
+    expectMatches(proofingRenderSchema, stale, 'mock proofing render, stale');
+    expect(stale).toMatchObject({ state: 'stale', cause: 'stale' });
+
+    const measured = await api.proofingRenderState('chapter-3');
+    expectMatches(proofingRenderSchema, measured, 'mock proofing render, already measured');
+    expect(measured).toMatchObject({ state: 'current', measurementFailed: false });
+    expect(measured.measurement?.integrated_lufs).toBeTypeOf('number');
+
+    const chosen = await api.proofingChooseRender('chapter-1');
+    expectMatches(proofingChooseRenderResultSchema, chosen, 'mock proofing choose render');
+    if (chosen.status !== 'ok') throw new Error('choosing a render must succeed in the mock');
+    expect(chosen.render).toMatchObject({ state: 'current', measurementFailed: false });
+    expect(chosen.render.path).toBeTruthy();
+    expect(chosen.render.measurement).toBeUndefined();
+
+    const reread = await api.proofingRenderState('chapter-1');
+    expect(reread).toEqual(chosen.render);
+
+    // Measuring the chosen render (DX-1's job) records the result against this chapter, the same as
+    // apps/desktop/internal/proofing/renders.go's RecordRenderMeasurements.
+    let job = await api.measureAnalyze([chosen.render.path!]);
+    while (job.phase === 'running') job = await api.measureState();
+    const afterMeasuring = await api.proofingRenderState('chapter-1');
+    expectMatches(proofingRenderSchema, afterMeasuring, 'mock proofing render, measured');
+    expect(afterMeasuring.measurement?.sample_rate).toBeTypeOf('number');
+    expect(afterMeasuring.measuredAt).toBeTruthy();
+
+    const cleared = await api.proofingClearRender('chapter-1');
+    expectMatches(proofingRenderSchema, cleared, 'mock proofing render, cleared');
+    expect(cleared).toMatchObject({ state: 'none' });
+
+    // The two ProofingChooseRender branches the mock never produces (the dialog is not simulated): pinned directly
+    // against the schema, the same convention as ProjectLinkDawFile's untested cancel-or-mismatch shapes.
+    expectMatches(proofingChooseRenderResultSchema, { status: 'cancelled' }, 'proofing choose render, cancelled');
+    expectMatches(
+      proofingChooseRenderResultSchema,
+      { status: 'refused', message: 'Link this chapter to the REAPER track it is recorded on.' },
+      'proofing choose render, refused',
+    );
   });
 
   it('the CleanupPreview, CleanupApply, LevelMatchPreview and LevelMatchApply answers', async () => {
@@ -1956,6 +2300,13 @@ describe('answers of the mock client for the settings, voice, model, transcript 
   it('every method of the API is either checked in this file, void, or not a request', () => {
     // A new binding fails this until it has a schema and a row above (ADR 0069). The list of what is checked is kept by hand.
     const CHECKED = [
+      'exportPickFiles',
+      'exportStart',
+      'exportState',
+      'exportCancel',
+      'packageStart',
+      'packageState',
+      'packageCancel',
       'teleprompterPunchPreview',
       'teleprompterPunch',
       'pickupsPunch',
@@ -1963,6 +2314,8 @@ describe('answers of the mock client for the settings, voice, model, transcript 
       'bootstrap',
       'systemLookup',
       'systemCopyDiagnostics',
+      'windowZoom',
+      'windowSetZoom',
       'saveSettings',
       'settingsForScope',
       'selectManuscript',
@@ -1991,6 +2344,10 @@ describe('answers of the mock client for the settings, voice, model, transcript 
       'guidePronunciationQueries',
       'guidePronunciationQueriesCsv',
       'guidePronunciationImportQueriesCsv',
+      'guideDialogueCues',
+      'characterListRegions',
+      'characterApprove',
+      'characterReferences',
       'assetsList',
       'assetsInstall',
       'assetsInstallState',
@@ -2018,6 +2375,15 @@ describe('answers of the mock client for the settings, voice, model, transcript 
       'launchDaw',
       'dawCapabilities',
       'providerCapabilities',
+      'masteringProviders',
+      'masteringChooseProvider',
+      'recorderState',
+      'recorderChooseEngine',
+      'recorderDevices',
+      'recorderMeterStart',
+      'recorderMeterStop',
+      'recorderStart',
+      'recorderStop',
       'dawCatalogList',
       'tracksDiscover',
       'tracksSelect',
@@ -2071,6 +2437,10 @@ describe('answers of the mock client for the settings, voice, model, transcript 
       'workspaceGoTo',
       'workspaceLoop',
       'previewCandidates',
+      'previewPin',
+      'previewPinSet',
+      'previewPinAdjust',
+      'previewPinClear',
       'productionPlan',
       'setProductionDeadline',
       'saveProductionMilestones',
@@ -2078,9 +2448,15 @@ describe('answers of the mock client for the settings, voice, model, transcript 
       'stageConfirm',
       'stageDismiss',
       'stageRevert',
+      'proofingRenderState',
+      'proofingChooseRender',
+      'proofingClearRender',
       'productionOverview',
       'productionStartTimer',
       'productionStopTimer',
+      'prepCompletenessSummary',
+      'productionStatusReport',
+      'productionBurndown',
       'takeComparisonStart',
       'takeComparisonState',
       'takeComparisonCancel',
@@ -2147,6 +2523,11 @@ describe('answers of the mock client for the settings, voice, model, transcript 
       'saveCreditsRetailSample',
       'creditsStatuses',
       'setCreditsStatus',
+      'pronunciationOnlineKeyStatus',
+      'pronunciationOnlineKeySet',
+      'pronunciationOnlineKeyClear',
+      'pronunciationOnlineLookup',
+      'pronunciationOnlineLookupBatch',
     ];
     const VOID = [
       'manuscriptImportCancel',
@@ -2165,6 +2546,9 @@ describe('answers of the mock client for the settings, voice, model, transcript 
       'guideDelete',
       'guideRelate',
       'guideUnrelate',
+      'guideCorrectCue',
+      'characterRevoke',
+      'characterRemoveVoiceData',
       'ttsRemove',
       'whisperRemove',
       'assetsRemove',
@@ -2181,6 +2565,7 @@ describe('answers of the mock client for the settings, voice, model, transcript 
       'teleprompterPause',
       'dawCatalogOpenDownloadPage',
       'pronunciationLookupOpen',
+      'pronunciationOnlineSignUpOpen',
       'teleprompterSeek',
       'reportClientDiagnostic',
       'systemNotify',
@@ -2212,6 +2597,8 @@ describe('answers of the mock client for the settings, voice, model, transcript 
       'subscribeRetakeLanes',
       'subscribeDawCapabilities',
       'subscribeDawTransport',
+      'subscribeRecorderState',
+      'subscribeRecorderLevel',
     ];
     expect([...CHECKED, ...VOID, ...NOT_A_REQUEST].sort()).toEqual(Object.keys(createMockApi()).sort());
   });
@@ -2283,6 +2670,30 @@ describe('the production tracking mock', () => {
     expectMatches(productionStopResultSchema, await api.productionStopTimer(), 'mock production timer stopped');
     expectMatches(productionStopResultSchema, await api.productionStopTimer(), 'mock production timer, nothing to stop');
     await expect(api.productionStartTimer('chapter-99', 'recording')).rejects.toThrow(/no chapter/);
+  });
+
+  it('the status report export leaves out the contracted amount unless asked, and never repeats a file name', async () => {
+    const pinned = productionReportExportSchema.parse(readGolden('production-status-report.json'));
+    const api = createMockApi();
+    const left = await api.productionStatusReport(false);
+    expectMatches(productionReportExportSchema, left, 'mock production status report, default');
+    expect(left).toMatchObject({ folder: pinned.folder, contractedAmountIncluded: false });
+    const included = await api.productionStatusReport(true);
+    expectMatches(productionReportExportSchema, included, 'mock production status report, opted in');
+    expect(included.contractedAmountIncluded).toBe(true);
+    expect(included.jsonFile).not.toBe(left.jsonFile);
+  });
+
+  it('the burndown is empty with nothing logged, and cumulative by day once a seed logs some', async () => {
+    const empty = await createMockApi().productionBurndown();
+    expectMatches(productionBurndownSchema, empty, 'mock production burndown, nothing logged');
+    expect(empty).toEqual([]);
+
+    const seeded = await createMockApi({}, { production: PRODUCTION_SCENARIOS['on-pace'] }).productionBurndown();
+    expectMatches(productionBurndownSchema, seeded, 'mock production burndown, on-pace');
+    expect(seeded.length).toBeGreaterThan(0);
+    expect(seeded.at(-1)?.hoursLogged).toBeCloseTo(seeded.reduce((max, point) => Math.max(max, point.hoursLogged), 0));
+    for (let i = 1; i < seeded.length; i++) expect(seeded[i].hoursLogged).toBeGreaterThanOrEqual(seeded[i - 1].hoursLogged);
   });
 
   it.each(['on-pace', 'at-risk'] as const)('seeds a %s book whose figures come from its log and measured audio only', async (seed) => {

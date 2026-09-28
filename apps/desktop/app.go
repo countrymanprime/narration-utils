@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/countrymanprime/narration-utils/shell/internal/bridge"
+	"github.com/countrymanprime/narration-utils/shell/internal/character"
 	"github.com/countrymanprime/narration-utils/shell/internal/cleanuptools"
 	"github.com/countrymanprime/narration-utils/shell/internal/coverage"
 	"github.com/countrymanprime/narration-utils/shell/internal/credits"
@@ -35,8 +36,10 @@ import (
 	"github.com/countrymanprime/narration-utils/shell/internal/production"
 	"github.com/countrymanprime/narration-utils/shell/internal/project"
 	"github.com/countrymanprime/narration-utils/shell/internal/projectstate"
+	"github.com/countrymanprime/narration-utils/shell/internal/pronunciationonline"
 	"github.com/countrymanprime/narration-utils/shell/internal/proofing"
 	"github.com/countrymanprime/narration-utils/shell/internal/recents"
+	"github.com/countrymanprime/narration-utils/shell/internal/recording"
 	"github.com/countrymanprime/narration-utils/shell/internal/renderconfig"
 	"github.com/countrymanprime/narration-utils/shell/internal/retakelanes"
 	"github.com/countrymanprime/narration-utils/shell/internal/runlog"
@@ -56,7 +59,7 @@ import (
 // Keep this in lockstep with apps/ui/src/hostApi.ts.  The frontend rejects
 // an older host before bootstrapping so a partial update cannot run against a
 // binding contract it does not understand.
-const hostAPIVersion = 76
+const hostAPIVersion = 80
 
 // Host is the Wails binding boundary. The frontend invokes only this bound
 // object; it never receives a loopback port or an HTTP capability.
@@ -113,7 +116,17 @@ type Host struct {
 	// diagnosticsJob runs the windowed diagnostics over picked files (diagnostics_job.go, the Diagnostics view); it
 	// accepts the same picked paths as measureJob. h.mu guards the pointer; it is not per project.
 	diagnosticsJob *diagnosticsJob
-	transcript     *transcript.Service
+	// exportJob masters (optionally) and encodes the narrator's picked files (export_job.go, render-encode-master
+	// PRD Phase 5); exportPicked is every path its own picker chose this session, mirroring measurePicked's own
+	// discipline (ADR 0156). packageJob assembles one profile's package from an export's own encoded files
+	// (package_job.go, Phase 4's internal/packager). h.mu guards all three; none is per project.
+	// +checklocks:mu
+	exportJob *exportJob
+	// +checklocks:mu
+	exportPicked map[string]bool
+	// +checklocks:mu
+	packageJob *packageJobState
+	transcript *transcript.Service
 	// coverage is the recording-coverage service (docs/utilities/recording-coverage.md, ADR 0128): it reads the saved .rpp and
 	// runs the Transcript Compare sidecar's --coverage mode. Swapped on every project switch like transcript; the Coverage* bindings
 	// reach it (Phase 5, bindings_coverage.go) and it fills the manuscript chapters' recordedFraction.
@@ -130,6 +143,10 @@ type Host struct {
 	// own ledger records and silence_cleanup findings. Swapped on every project switch like coverage; it starts only on
 	// the narrator's own request (Q9), never in the background.
 	editing *editing.Service
+	// character is the region-approval and reference service (character-continuity-review.prd.md Phase 3,
+	// bindings_character.go). Swapped with editing on every project switch; it produces no findings and does no
+	// acoustic analysis - Phase 6's non-acoustic bindings only (owner decision D87 on #509 benches the acoustic half).
+	character *character.Service
 	// findings is the project's findings store: Transcript Compare's and the
 	// Guide's adapters save into it on every completed run
 	// (review-dashboard-and-findings-adoption.prd.md Phases 2-3), and
@@ -157,6 +174,8 @@ type Host struct {
 	cleanupTools    *cleanuptools.Service
 	retakeLanes     *retakelanes.Service
 	teleprompter    *teleprompter.Service
+	// recorder is the built-in recorder (native-recording-suite P2, docs/adr/0455), rebuilt with the project like teleprompter.
+	recorder *recording.Service
 	// bridge is the REAPER session's file-based IPC client (nil when launched
 	// without a REAPER session directory); take-review's create-take action
 	// (takereview.go) is its first direct consumer outside transcript.Service,
@@ -196,6 +215,12 @@ type Host struct {
 	// pickAudioFiles and measureFile are seams for tests (measure_job.go): nil means the operating system's multiple-file
 	// picker and measure.MeasureFile.
 	pickAudioFiles func() ([]string, error)
+	// pronunciationOnline is the Merriam-Webster lookup (prep-depth P9, bindings_pronunciationonline.go): user-level like
+	// recents, set once in NewHost and never swapped by a project switch, so it is read directly.
+	pronunciationOnline *pronunciationonline.Service
+	// pickRenderFile is a seam for tests (bindings_proofing_render.go): nil means the operating system's single-file
+	// picker for a chapter's rendered file.
+	pickRenderFile func() (string, error)
 	// pickDiagnosticsFolder and diagnosticsNow are seams for tests (diagnostics_export.go): nil means the operating
 	// system's folder picker and time.Now.
 	pickDiagnosticsFolder func() (string, error)
@@ -204,6 +229,13 @@ type Host struct {
 	// diagnoseFile is the same seam for the diagnostics job: nil means measure.DiagnoseFile.
 	// +checklocks:mu
 	diagnoseFile diagnoseFileFunc
+	// masterFile and encodeFile are seams for tests (export_job.go): nil means mastering.Master and the real
+	// encodeport.Encoders registry. pickPackageFolder is the same seam for package_job.go: nil means the operating
+	// system's folder picker.
+	masterFile        masterFileFunc
+	encodeFile        encodeFileFunc
+	assemblePackage   assembleFunc
+	pickPackageFolder func() (string, error)
 	// updates asks GitHub for a newer release and remembers the answer (ADR 0072). It is set once in NewHost and never swapped, so it is
 	// read directly, like recents.
 	updates *update.Checker
@@ -334,7 +366,7 @@ func NewHost() *Host {
 	profiles := deliveryprofile.NewStore(deliveryProfilesPath())
 	profiles.SetPersist(reporter)
 	notes.SetOnJobEnd(func(job manuscript.ImportJob) { host.importJobEnded(job) })
-	host = &Host{diagnostic: fmt.Sprintf("go-%d", time.Now().UnixNano()), version: version, config: config{repoRoot: repoRoot}, manuscript: notes, sidecars: process.NewSupervisor(), settings: store, installJobs: map[string]*installJob{}, recents: recent, creditTemplates: templates, deliveryProfiles: profiles, log: logger, runLog: runLog, persist: reporter, updates: update.NewChecker(version, updateCachePath(), reporter), stager: newUpdateStager(), pendingPath: updatePendingPath()}
+	host = &Host{diagnostic: fmt.Sprintf("go-%d", time.Now().UnixNano()), version: version, config: config{repoRoot: repoRoot}, manuscript: notes, sidecars: process.NewSupervisor(), settings: store, installJobs: map[string]*installJob{}, recents: recent, creditTemplates: templates, deliveryProfiles: profiles, pronunciationOnline: newPronunciationOnline(), log: logger, runLog: runLog, persist: reporter, updates: update.NewChecker(version, updateCachePath(), reporter), stager: newUpdateStager(), pendingPath: updatePendingPath()}
 	// NARRATION_DEBUG=1 already forced the level in runlog.New; a saved General.debug_logging=true from a previous
 	// run turns it on too, so the narrator's last choice survives a restart (SetDebug is a no-op once the
 	// environment has forced it).
@@ -494,7 +526,17 @@ func (h *Host) configureLocked(next config) {
 		Project: h.config.projectFolder, Python: h.config.comparePython, Backend: h.config.compareBackend,
 		ProjectFile:    func() (string, error) { return selectedProjectFile(projectFolder, settingsStore) },
 		LoadManuscript: h.manuscript.Load,
-		Reporter:       h.persist,
+		// A credits row's check (credits-in-chapter-table.prd.md Phase 3) measures the same first-of-kind template
+		// render the Home row and the teleprompter show (h.creditsScript, ADR 0093, ADR 0150), never manuscript
+		// paragraphs.
+		LoadCredits: func(kind string) (string, string, error) {
+			script, err := h.creditsScript(kind)
+			if err != nil {
+				return "", "", err
+			}
+			return script.Title, script.Text, nil
+		},
+		Reporter: h.persist,
 		// DAW port PRD Phase 5d: reads the saved .rpp through the port's offline role instead of tracks.Parse directly.
 		ProjectReader: reaper.ProjectReader{},
 	}, h.coverageLauncherLocked(), h.emitCoverage)
@@ -512,6 +554,12 @@ func (h *Host) configureLocked(next config) {
 		// DAW port PRD Phase 5d: reads the saved .rpp through the port's offline role instead of tracks.Parse directly.
 		ProjectReader: reaper.ProjectReader{},
 	}, nil)
+	h.character = character.New(character.Config{
+		Project:     h.config.projectFolder,
+		ProjectFile: func() (string, error) { return selectedProjectFile(projectFolder, settingsStore) },
+		// DAW port PRD Phase 5d: reads the saved .rpp through the port's offline role instead of tracks.Parse directly.
+		ProjectReader: reaper.ProjectReader{},
+	})
 	// Every finished comparison is recorded for the proofing pickups signal (proofing-readiness-signals PRD Phase 2).
 	h.transcript.SetRunRecorder(comparisonRecorder(h.config.projectFolder, h.manuscript, settingsStore, h.persist))
 	// The proofing delivery checks judge the chapter's render against the project's delivery profile as it is when the
@@ -628,6 +676,12 @@ func (h *Host) configureLocked(next config) {
 	// a developer/evaluation-only opt-in, same pattern as NARRATION_DEBUG (runlog), never a Settings toggle.
 	h.teleprompter = teleprompter.New(teleprompter.Config{Project: h.config.projectFolder, SessionDir: teleprompterDir, Python: h.config.teleprompterPython, Backend: h.config.teleprompterBackend, Platform: h.platform, EvalTiming: os.Getenv("NARRATION_TELEPROMPTER_EVAL") == "1"}, h.sidecars, h.emitTeleprompterEvent, h.emitTeleprompterState)
 	h.teleprompter.SetLog(func(kind, message string) { _ = h.log.Report(kind, message) })
+	// The built-in recorder (native-recording-suite P2, docs/adr/0455) runs the same sidecar with --record over the capture
+	// port's wasapi row. An attach waits while a take records (idleLocked), so the old one can only be metering: it is stopped.
+	if h.recorder != nil {
+		h.recorder.StopMeter()
+	}
+	h.recorder = h.newRecorderLocked(teleprompterDir)
 }
 
 // packagedResources materializes the embedded release resources under the per-user cache so Python/ONNX dynamic libraries can use
@@ -923,6 +977,12 @@ func (h *Host) ServiceShutdown() error {
 		_ = live.Close(stopContext)
 		cancelStop()
 	}
+	// A built-in recorder take is finished (its partial file linked to its take name) before the sidecars are closed.
+	if recorder := h.services().recorder; recorder != nil {
+		stopContext, cancelStop := context.WithTimeout(context.Background(), 12*time.Second)
+		_ = recorder.Close(stopContext)
+		cancelStop()
+	}
 	// A REAPER recording this app started is stopped before the app quits (threat-model row 5j): otherwise REAPER
 	// keeps recording with nothing left open to stop it.
 	h.stopReadAloudRecordingOnShutdown()
@@ -1140,6 +1200,9 @@ func (h *Host) idleLocked() bool {
 		return false
 	}
 	if h.teleprompter != nil && h.teleprompter.Busy() {
+		return false
+	}
+	if h.recorder != nil && h.recorder.Busy() {
 		return false
 	}
 	return true

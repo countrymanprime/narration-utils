@@ -7,19 +7,19 @@
   - /children: equal
   - group "Production":
     - /children: equal
-    - button "Home"
+    - button "Production"
   - group "Prep":
     - /children: equal
-    - button "Manuscript"
+    - button "Script"
     - button "Story Bible"
   - group "Record":
     - /children: equal
-    - button "Teleprompter"
+    - button "Booth"
   - group "Review":
     - /children: equal
     - button "Proof"
-    - button "Tracks"
+    - button "Pickups"
   - group "Finish":
     - /children: equal
-    - button "Delivery"
+    - button "Master & QC"
   - button "Settings"

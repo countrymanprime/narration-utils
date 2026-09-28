@@ -8,7 +8,8 @@ import { Field } from '../primitives/Field';
 import { Panel } from '../primitives/Panel';
 import { StatusBadge } from '../primitives/StatusBadge';
 import { TooltipTarget } from '../primitives/Tooltip';
-import { analyzerLabel, STATUS_LABELS } from './findingFormat';
+import { analyzerLabel } from './findingFormat';
+import { DECISION_ORDER, decisionLabel, flagFixKind, resolutionFor, savedMessage } from './resolution';
 import type { WorkspaceToken } from '../../api/contracts/workspace';
 import type { Discrepancy } from '../../api/contracts/transcript';
 import { canAddEquivalence } from '../../state';
@@ -18,15 +19,6 @@ import { formatElapsed } from './format';
 import type { WorkspaceReaperControls } from './useWorkspaceReaper';
 
 const KIND_ORDER: FlagKind[] = ['skip', 'partial', 'not_recorded', 'misread', 'extra', 'pickup', 'cleanup'];
-
-// The decisions a narrator can make on a flag backed by a Finding, in the order the buttons show them (mirrors
-// review/FindingDetail.tsx's own DECISIONS - kept as its own small array rather than a shared import, since the two
-// panels' surrounding markup differs enough that sharing the array alone would buy little).
-const DECISIONS: Array<{ status: FindingReviewStatus; label: string; variant: 'primary' | 'ghost' }> = [
-  { status: 'accepted', label: 'Accept', variant: 'primary' },
-  { status: 'dismissed', label: 'Dismiss', variant: 'ghost' },
-  { status: 'deferred', label: 'Defer', variant: 'ghost' },
-];
 
 export type FlagDecisionResult = { ok: true } | { ok: false; message: string };
 
@@ -61,13 +53,15 @@ function FlagDecision({ flag, onDecide }: { flag: Flag; onDecide: (status: Findi
   const [saved, setSaved] = useState<string>();
   const action = usePendingAction();
   const noteTooLong = [...note].length > MAX_REVIEW_NOTE_LENGTH;
+  // Proof's one vocabulary (D85 #7, resolution.ts): accepting a flag records the fix it asks for, a pickup or an edit.
+  const fix = flagFixKind(flag.kind);
 
   const decide = (status: FindingReviewStatus) =>
     action.run(status, async () => {
       setProblem(undefined);
       setSaved(undefined);
       const result = await onDecide(status, note.trim());
-      if (result.ok) setSaved(`Saved as ${STATUS_LABELS[status].toLowerCase()}.`);
+      if (result.ok) setSaved(savedMessage(status, fix));
       else setProblem(`Not saved: ${result.message}`);
     });
 
@@ -76,7 +70,7 @@ function FlagDecision({ flag, onDecide }: { flag: Flag; onDecide: (status: Findi
   return (
     <div className="mt-3 space-y-2 border-t pt-3 text-sm" style={{ borderColor: 'var(--border)' }}>
       <div className="section-label">Decision</div>
-      {decided && <p style={{ color: 'var(--text-muted)' }}>{STATUS_LABELS[flag.reviewStatus!]}.</p>}
+      {decided && <p style={{ color: 'var(--text-muted)' }}>{resolutionFor(flag.reviewStatus!, fix).label}.</p>}
       <Field
         label="Note (optional)"
         textarea
@@ -85,16 +79,16 @@ function FlagDecision({ flag, onDecide }: { flag: Flag; onDecide: (status: Findi
         error={noteTooLong ? `A note can be at most ${MAX_REVIEW_NOTE_LENGTH} characters.` : undefined}
       />
       <div className="flex flex-wrap gap-2">
-        {DECISIONS.map((decision) => (
+        {DECISION_ORDER.map((status) => (
           <Button
-            key={decision.status}
-            variant={decision.variant}
+            key={status}
+            variant={status === 'accepted' ? 'primary' : 'ghost'}
             className="px-3 py-1"
-            onClick={() => void decide(decision.status)}
-            pending={action.isPending(decision.status)}
-            disabled={noteTooLong || action.isBlockedFor(decision.status)}
+            onClick={() => void decide(status)}
+            pending={action.isPending(status)}
+            disabled={noteTooLong || action.isBlockedFor(status)}
           >
-            {decision.label}
+            {decisionLabel(status, fix)}
           </Button>
         ))}
       </div>
@@ -107,7 +101,8 @@ function FlagDecision({ flag, onDecide }: { flag: Flag; onDecide: (status: Findi
         {saved}
       </p>
       <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
-        Accept keeps it as a fix to make. Decisions show in the book's notes on Proof too.
+        {fix === 'edit' ? 'Fix in edit' : 'Pickup'} keeps it as a fix to make; Waive says it stays as read. Decisions show in the book&apos;s notes on Proof
+        too.
       </p>
     </div>
   );
@@ -131,9 +126,9 @@ function CompareActions({ row, actions }: { row: Discrepancy; actions: CompareFl
         )}
       </div>
       <div className="flex flex-wrap gap-2">
-        <TooltipTarget text={row.chapter ? 'Open this line in the Manuscript' : 'No manuscript source is available'}>
+        <TooltipTarget text={row.chapter ? 'Open this line in Script' : 'No manuscript source is available'}>
           <Button variant="ghost" disabled={!row.chapter} onClick={() => actions.showInManuscript(row)}>
-            Show in manuscript
+            Show in Script
           </Button>
         </TooltipTarget>
         <TooltipTarget

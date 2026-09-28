@@ -259,7 +259,7 @@ func TestProviderUnknownCauses(t *testing.T) {
 		service.config.ProjectFile = func() (string, error) { return "", errors.New("not chosen") }
 		settings, unavailable := DefaultSettings, ""
 		signal := oneSignal(t, providerFor(service, &settings, &unavailable), chapterOne(), service.EvidenceView(context.Background(), testDocument))
-		if signal.Cause != stages.CauseProjectUnreadable || !strings.Contains(signal.Reason, "Tracks page") {
+		if signal.Cause != stages.CauseProjectUnreadable || !strings.Contains(signal.Reason, "audio engine panel") {
 			t.Fatalf("signal = %+v", signal)
 		}
 	})

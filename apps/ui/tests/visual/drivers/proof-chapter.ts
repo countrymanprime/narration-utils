@@ -20,10 +20,21 @@ export const proofChapterDrivers: Record<string, Driver> = {
     await openLinkedProofChapter(page, 'Chapter 1');
     await page.getByText('Check current').waitFor();
   },
+  'note-selected': async (page) => {
+    await openLinkedProofChapter(page, 'Chapter 1');
+    await page.getByRole('region', { name: 'Notes in the recording' }).getByRole('button').first().click();
+    const play = page.getByRole('button', { name: 'Play ±3 s' });
+    await play.waitFor();
+    await play.scrollIntoViewIfNeeded();
+  },
   playing: async (page) => {
     await openLinkedProofChapter(page, 'Chapter 1');
     await clickVisible(page, 'button', 'Play');
-    await page.getByRole('button', { name: 'Pause' }).waitFor();
+    // The transport sits under mock 04's notes (ADR 0470), below the fold at the smaller widths, so it is scrolled into view
+    // at each one (KEEPS_DESKTOP_SCROLL on the row): otherwise small-desktop shows only the notes, the same as `current`.
+    const pause = page.getByRole('button', { name: 'Pause' });
+    await pause.waitFor();
+    await pause.scrollIntoViewIfNeeded();
   },
   'flag-selected': async (page) => {
     // ?mockCoverage=pickups replaces the default findings seed with one scoped to Chapter 4 (main.tsx), so Chapter
@@ -33,7 +44,17 @@ export const proofChapterDrivers: Record<string, Driver> = {
     await settlePage(page);
     await openLinkedProofChapter(page, 'Chapter 1');
     await clickVisible(page, 'button', 'Next flag');
-    await page.getByText('Play from here').waitFor();
+    // Selecting a flag previews it: ProofChapterPage's selectFlag seeks the player and auto-plays if it wasn't already
+    // (a real feature, not a driver bug). Pausing first makes the capture deterministic (no live elapsed readout or
+    // highlighted word, and no follow-the-word scrolling of the script's own box while the picture is taken).
+    await clickVisible(page, 'button', 'Pause');
+    // Below `xl` the Flags panel's detail sits under the flags list and legend (openFindingRow's comment says the same
+    // of Proof's Notes table), so it needs scrolling into view itself - without it, a reused desktop scroll position
+    // leaves narrower viewports showing only the list, and flag-selected/flag-finding-open/flag-decided capture the
+    // same picture (KEEPS_DESKTOP_SCROLL below re-drives per viewport so this scroll happens at each width).
+    const detail = page.getByText('Play from here');
+    await detail.waitFor();
+    await detail.scrollIntoViewIfNeeded();
   },
   // edit-and-proof-workspace.prd.md Phase 4: Chapter 1's mock seeds a transcript_discrepancy finding at the same
   // misread the check already flags (mockApi.ts's workspaceOverlayFinding), so "Next flag" selects the one flag on
@@ -41,21 +62,32 @@ export const proofChapterDrivers: Record<string, Driver> = {
   'flag-finding-open': async (page) => {
     await openLinkedProofChapter(page, 'Chapter 1');
     await clickVisible(page, 'button', 'Next flag');
-    await page.getByText('Decision', { exact: true }).waitFor();
+    // See flag-selected above: pause the preview playback the selection started, so the capture is deterministic.
+    await clickVisible(page, 'button', 'Pause');
+    const decision = page.getByText('Decision', { exact: true });
+    await decision.waitFor();
+    await decision.scrollIntoViewIfNeeded();
   },
   'flag-decided': async (page) => {
     await openLinkedProofChapter(page, 'Chapter 1');
     await clickVisible(page, 'button', 'Next flag');
-    await clickVisible(page, 'button', 'Accept');
-    await page.getByText('Saved as accepted.').waitFor();
+    // See flag-selected above.
+    await clickVisible(page, 'button', 'Pause');
+    await clickVisible(page, 'button', 'Pickup');
+    const saved = page.getByText('Saved: needs a pickup.');
+    await saved.waitFor();
+    await saved.scrollIntoViewIfNeeded();
   },
   standalone: async (page) => {
     await page.goto('/?mockReaper=standalone');
     await settlePage(page);
     await openLinkedProofChapter(page, 'Chapter 1');
     await page.getByText('Check current').waitFor();
-    // Phase 3: Go to/Loop are disabled once useReaperStatus's first poll answers 'standalone'.
-    await page.getByRole('button', { name: 'Go to in REAPER' }).waitFor();
+    // Phase 3: Go to/Loop are disabled once useReaperStatus's first poll answers 'standalone'. The transport is scrolled into
+    // view at each width, as `playing` does.
+    const goTo = page.getByRole('button', { name: 'Go to in REAPER' });
+    await goTo.waitFor();
+    await goTo.scrollIntoViewIfNeeded();
   },
   // The compare run (the retired Proofing page, stage-navigation-and-page-replacement.prd.md Phase 5), on Chapter 1 opened from
   // Proof's chapter picker with no track linked, scrolled so the run fills the picture.
@@ -157,29 +189,69 @@ export const proofChapterDrivers: Record<string, Driver> = {
   'preview-shorter': async (page) => {
     await openPanel(page, '/?mockPreviewCandidates=shorter', page.getByText(/shorter than the target length/));
   },
+  'preview-pinned': async (page) => {
+    await openPanel(page, '/?mockPreviewCandidates=pinned', page.getByText('Pinned preview'));
+  },
+  'preview-pin-stale': async (page) => {
+    await openPanel(page, '/?mockPreviewCandidates=pin-stale', page.getByText(/manuscript text under this pin has changed/));
+  },
   'preview-warnings': async (page) => {
     await openPanel(page, '/?mockPreviewCandidates=warnings', page.getByText(/imported before chapters were classified/));
   },
+  // proofing-readiness-signals.prd.md Phase 6: the panel is this one chapter's own readiness, so `?mockProofingStages=mixed`'s
+  // two seeded chapters (main.tsx: Chapter 9 met, Chapter 10 not_met) are opened on their own chapter view, not a shared table.
   'stage-panel-suggestions': async (page) => {
-    await openPanel(page, '/?mockProofingStages=mixed', page.getByText('Suggested: Finalized'));
+    await openPanel(page, '/?mockProofingStages=mixed', page.getByText('Suggested: Finalized'), 'Chapter 9');
   },
   'stage-panel-evidence-recommended': async (page) => {
-    await openPanel(page, '/?mockProofingStages=mixed', page.getByText('Suggested: Finalized'));
+    await openPanel(page, '/?mockProofingStages=mixed', page.getByText('Suggested: Finalized'), 'Chapter 9');
     await clickVisible(page, 'button', /^Why: /);
     await page.getByRole('dialog').waitFor();
   },
   'stage-panel-evidence-not-ready': async (page) => {
-    await openPanel(page, '/?mockProofingStages=mixed', page.getByText('Not ready for Finalized'));
-    await page
-      .locator('tr', { hasText: 'Not ready for Finalized' })
-      .getByRole('button', { name: /^Why: / })
-      .click();
+    await openPanel(page, '/?mockProofingStages=mixed', page.getByText('Not ready for Finalized'), 'Chapter 10');
+    await clickVisible(page, 'button', /^Why: /);
     await page.getByRole('dialog').waitFor();
   },
   'stage-panel-evidence-unknown': async (page) => {
-    await openPanel(page, '/?mockProofingSignal=unmapped-track', page.getByText(/no track linked/));
+    await openPanel(page, '/?mockProofingSignal=unmapped-track', page.getByText(/no track linked/), 'Chapter 9');
     await clickVisible(page, 'button', /^Why: /);
-    await page.getByRole('link', { name: 'Open Tracks' }).waitFor();
+    await page.getByRole('button', { name: 'Open the audio engine panel' }).waitFor();
+  },
+  // The rendered file section (Phase 6): choosing, then Measure, on an unseeded Proofing chapter (Chapter 9's own
+  // delivery checks stay unknown until a render is chosen and measured, matching the mock's default).
+  'render-none': async (page) => {
+    await openPanel(page, '/', page.getByText('Proofing readiness'), 'Chapter 9');
+    const reason = page.getByText('Choose the rendered file for this chapter.');
+    await reason.waitFor();
+    // The panel scrolled to its own heading above, which leaves this section - the only thing that
+    // differs from render-chosen - below the fold at narrower viewports (whole-run.check.ts caught them
+    // as identical captures).
+    await reason.scrollIntoViewIfNeeded();
+  },
+  'render-chosen': async (page) => {
+    await openPanel(page, '/', page.getByText('Proofing readiness'), 'Chapter 9');
+    await clickVisible(page, 'button', 'Choose rendered file');
+    const measure = page.getByRole('button', { name: 'Measure' });
+    await measure.waitFor();
+    await measure.scrollIntoViewIfNeeded();
+  },
+  'render-measured': async (page) => {
+    await openPanel(page, '/', page.getByText('Proofing readiness'), 'Chapter 9');
+    await clickVisible(page, 'button', 'Choose rendered file');
+    await clickVisible(page, 'button', 'Measure');
+    // Scoped to the section itself: a page-wide /Measured/ also matches a delivery check's own
+    // "Measured <timestamp>" evidence line elsewhere on this same chapter's page.
+    const renderedFileSection = page.getByRole('heading', { name: 'Rendered file' }).locator('xpath=..');
+    const measured = renderedFileSection.getByText(/Measured/);
+    await measured.waitFor();
+    await measured.scrollIntoViewIfNeeded();
+  },
+  'render-stale': async (page) => {
+    await openPanel(page, '/?mockProofingRender=chapter-9-stale', page.getByText('Proofing readiness'), 'Chapter 9');
+    const stale = page.getByText(/changed since you chose it/);
+    await stale.waitFor();
+    await stale.scrollIntoViewIfNeeded();
   },
 };
 
@@ -214,13 +286,14 @@ async function selectCompareFlag(page: Page, label: string): Promise<void> {
   throw new Error(`no compare flag labelled ${label}`);
 }
 
-// Opens Chapter 1's Proof view after loading `url` for a mock seam, waits for `ready` and scrolls it into view.
-async function openPanel(page: Page, url: string, ready: ReturnType<Page['getByText']>): Promise<void> {
+// Opens a chapter's Proof view (Chapter 1 unless chapterTitle names another) after loading `url` for a mock seam,
+// waits for `ready` and scrolls it into view.
+async function openPanel(page: Page, url: string, ready: ReturnType<Page['getByText']>, chapterTitle?: string): Promise<void> {
   if (url !== '/') {
     await page.goto(url);
     await settlePage(page);
   }
-  await openProofChapter(page);
+  await openProofChapter(page, chapterTitle);
   await ready.first().waitFor();
   await ready.first().scrollIntoViewIfNeeded();
 }

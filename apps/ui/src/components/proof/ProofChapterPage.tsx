@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
+import { EnginePanelLink } from '../engine/EnginePanelContext';
 import { useApi } from '../../api/ApiContext';
 import { apiErrorMessage, describeApiError } from '../../api/errorMessage';
 import { chapterName } from '../../chapterName';
-import { formatWhen } from '../home/recordingCheckText';
-import { RecordingCheck } from '../home/RecordingCheck';
+import { formatWhen } from '../production/recordingCheckText';
+import { RecordingCheck } from '../production/RecordingCheck';
 import { Button } from '../primitives/Button';
 import { Heading } from '../primitives/Heading';
 import { Panel } from '../primitives/Panel';
@@ -26,6 +27,14 @@ import { CompareRun } from './CompareRun';
 import { overlayDiscrepancies } from './compareFlags';
 import { PreviewPanel } from './PreviewPanel';
 import { ProofingStagePanel } from './ProofingStagePanel';
+import { usePickupsState } from '../pickups/usePickupsState';
+import { FindingDetail } from './FindingDetail';
+import { FindingsList } from './FindingsList';
+import { NotesHeader, SourcesLine } from './NotesHeader';
+import { NotesStrip } from './NotesStrip';
+import { RecordingCheckCard } from './RecordingCheckCard';
+import { resolutionCounts } from './resolution';
+import { useReaperStatus } from './useReaperStatus';
 
 /** How long before a clicked word's start the app player starts, so the narrator hears it in context (EP5). */
 const PRE_ROLL_SECONDS = 1;
@@ -42,13 +51,17 @@ type ChapterViewProps = {
   transcript: TranscriptState;
   /** PRD project-workspace-and-daw-link.prd.md, W16: the compare run and its REAPER actions need a linked project file. */
   dawFileLinked: boolean;
-  goToManuscript: (chapter: string, paragraph: number) => void;
+  goToManuscript: (chapter: string, paragraph?: number) => void;
+  /** Opens a Story Bible entry, for a note about one (a note's detail, as on the book level). */
+  goToStoryBible: (entityId: string) => void;
   /** Changes after a manuscript import or replacement, so the stage panel reads again (chapter-stage-recommendations.prd.md Phase 8). */
   refreshKey: string;
 };
 
 /**
- * Proof's chapter view, `/proof/:chapterId` (stage-navigation-and-page-replacement.prd.md Phase 5): the chapter
+ * Proof's chapter view, `/proof/:chapterId`, led by mock 04 (D85 #2 on #509, ADR 0470): the Sources line, a strip of the
+ * chapter's notes over its recording (NotesStrip), the chapter's notes table and a note's detail with Play ±3 s, and the
+ * recording-check card (D85 #11). Under it, as before (stage-navigation-and-page-replacement.prd.md Phase 5): the chapter
  * workspace of edit-and-proof-workspace.prd.md at its new address, with the retired Proofing page folded in. It plays
  * the chapter's recorded audio in the app, honouring each item's played range, follows the script with a karaoke
  * highlight and auto-scroll, shows the check's flags inline, and seeks on a click (EP5), with Go to/Loop in REAPER
@@ -63,8 +76,12 @@ export function ProofChapterPage(props: ChapterViewProps) {
   return <ChapterView key={chapterId} chapterId={chapterId} {...props} />;
 }
 
-function ChapterView({ chapterId, notify, transcript, dawFileLinked, goToManuscript, refreshKey }: ChapterViewProps & { chapterId: string }) {
+function ChapterView({ chapterId, notify, transcript, dawFileLinked, goToManuscript, goToStoryBible, refreshKey }: ChapterViewProps & { chapterId: string }) {
   const api = useApi();
+  const pickups = usePickupsState();
+  const reaperStatus = useReaperStatus();
+  // The note open in mock 04's detail, by id, so a re-read of the chapter's findings shows its latest version.
+  const [selectedFindingId, setSelectedFindingId] = useState<string>();
   const [searchParams] = useSearchParams();
 
   const [chapter, setChapter] = useState<ManuscriptChapter>();
@@ -194,7 +211,7 @@ function ChapterView({ chapterId, notify, transcript, dawFileLinked, goToManuscr
     [flags, alignment, seekToken],
   );
 
-  // ?finding=<id> (Navigation and deep links; "Open in workspace" from Review, Home and the Manuscript, Phase 4):
+  // ?finding=<id> (Navigation and deep links; "Open in workspace" from Proof's notes, the Production board and Script, Phase 4):
   // selects the flag that finding backs and seeks the app player to it, once its flag exists - a finding whose
   // overlay flag isn't ready yet on the first render (findings and the alignment load separately) is retried on
   // every render until it is, then forgotten so a later selection by hand is never fought.
@@ -209,8 +226,11 @@ function ChapterView({ chapterId, notify, transcript, dawFileLinked, goToManuscr
     const index = flags.findIndex((flag) => flag.findingId === findingId);
     if (index === -1) return;
     appliedFindingLinkRef.current = true;
+    setSelectedFindingId(findingId);
     selectFlag(index);
   }, [flags, searchParams, selectFlag]);
+
+  const selectedFinding = findings.find((finding) => finding.id === selectedFindingId);
 
   const stepWord = useCallback(
     (direction: -1 | 1) => {
@@ -282,12 +302,15 @@ function ChapterView({ chapterId, notify, transcript, dawFileLinked, goToManuscr
     content = null; // still loading, or the id doesn't resolve to a chapter
   } else {
     content = (
-      <div className="mx-auto max-w-5xl space-y-4">
+      <div className="mx-auto max-w-7xl space-y-4">
         <nav aria-label="Breadcrumb" className="text-sm" style={{ color: 'var(--text-muted)' }}>
           <Link to="/proof">Proof</Link> <span aria-hidden="true">&rsaquo;</span> {chapterName(chapter)}
         </nav>
         <div className="flex flex-wrap items-start justify-between gap-2">
-          <Heading title={`Proof · ${chapterName(chapter)}`} />
+          <div className="flex min-w-0 flex-wrap items-center gap-x-4 gap-y-2">
+            <Heading title={`Proof · ${chapterName(chapter)}`} />
+            <SourcesLine analyzers={[...new Set(findings.map((finding) => finding.analyzer))]} proofer={pickups.total > 0} />
+          </div>
           <div className="flex flex-wrap items-center gap-2 text-sm" style={{ color: 'var(--text-muted)' }}>
             {alignment && <span className="section-label">{CHECK_STATE_LABEL[alignment.state]}</span>}
             {alignment?.basis && <span>as of last save {formatWhen(alignment.basis.modifiedAt)}</span>}
@@ -304,7 +327,8 @@ function ChapterView({ chapterId, notify, transcript, dawFileLinked, goToManuscr
         {!linkedTrackGuid && (
           <Panel title="No linked track">
             <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
-              This chapter isn&rsquo;t linked to a REAPER track yet. Link one from the Chapter links table on Tracks, then open this chapter again.
+              This chapter isn&rsquo;t linked to a REAPER track yet. Link one from the Chapter links table in the audio engine panel, then open this chapter
+              again. <EnginePanelLink />
             </p>
           </Panel>
         )}
@@ -315,6 +339,45 @@ function ChapterView({ chapterId, notify, transcript, dawFileLinked, goToManuscr
             </p>
           </Panel>
         )}
+        <NotesStrip findings={findings} items={trackItems ?? []} selectedId={selectedFindingId} onSelect={(finding) => setSelectedFindingId(finding.id)} />
+        <div className="grid gap-4 xl:grid-cols-[minmax(0,1.7fr)_minmax(0,1fr)]">
+          <FindingsList
+            page={{ findings, total: findings.length }}
+            selectedId={selectedFindingId}
+            onSelect={(finding) => setSelectedFindingId(finding.id)}
+            filtered={false}
+            onClearFilters={() => undefined}
+            showChapter={false}
+            header={<NotesHeader total={findings.length} counts={resolutionCounts(findings)} pickups={pickups} />}
+          />
+          <div className="flex min-w-0 flex-col gap-4">
+            {selectedFinding ? (
+              <FindingDetail
+                // One detail per note, so a note typed on one never shows on the next; a refreshed note keeps it.
+                key={selectedFinding.id}
+                finding={selectedFinding}
+                hasManuscript
+                onChanged={(_finding, decided) => decided && loadFindings()}
+                goToManuscript={goToManuscript}
+                goToStoryBible={goToStoryBible}
+                // A chapter's notes are about its recording; a delivery check is about a rendered file and is never one of them.
+                goToMaster={() => undefined}
+                reaperStatus={reaperStatus.status}
+                onReaperStatusChange={reaperStatus.refresh}
+                onCompared={loadFindings}
+              />
+            ) : (
+              findings.length > 0 && (
+                <Panel>
+                  <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
+                    Select a note, or a pin on the strip, to see it and play it with 3 s either side.
+                  </p>
+                </Panel>
+              )
+            )}
+            <RecordingCheckCard chapter={chapter} alignment={alignment} flags={checkFlags} />
+          </div>
+        </div>
         {alignment && alignment.state !== 'never' && <TransportBar player={player} reaper={reaper} />}
         {alignment && (alignment.state !== 'never' || flags.length > 0) && (
           <div className={alignment.state !== 'never' ? 'grid gap-4 lg:grid-cols-[minmax(0,1fr)_18rem]' : 'max-w-md'}>
@@ -341,7 +404,7 @@ function ChapterView({ chapterId, notify, transcript, dawFileLinked, goToManuscr
           </div>
         )}
         <CompareRun
-          chapterTitle={chapter.title}
+          chapterTitle={chapterName(chapter, 'short')}
           state={transcript}
           notify={notify}
           dawFileLinked={dawFileLinked}
@@ -358,7 +421,17 @@ function ChapterView({ chapterId, notify, transcript, dawFileLinked, goToManuscr
           foundHere={compareRows.length}
         />
         <PreviewPanel notify={notify} goToManuscript={goToManuscript} />
-        <ProofingStagePanel notify={notify} goToManuscript={goToManuscript} refreshKey={refreshKey} />
+        <ProofingStagePanel
+          notify={notify}
+          chapter={chapter}
+          goToManuscript={goToManuscript}
+          refreshKey={refreshKey}
+          onStatusChanged={(status) => setChapter((current) => (current ? { ...current, status } : current))}
+          onOpenFinding={(findingId) => {
+            const index = flags.findIndex((flag) => flag.findingId === findingId);
+            if (index !== -1) selectFlag(index);
+          }}
+        />
         {checking && (
           <RecordingCheck
             chapter={chapter}

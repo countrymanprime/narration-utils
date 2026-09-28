@@ -1,19 +1,10 @@
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import {
-  faBookmark as faBookmarkSolid,
-  faChevronDown,
-  faChevronUp,
-  faExpand,
-  faMicrophone,
-  faTableColumns,
-  faWaveSquare,
-} from '@fortawesome/free-solid-svg-icons';
+import { faBookmark as faBookmarkSolid, faChevronDown, faChevronUp, faMicrophone, faWaveSquare } from '@fortawesome/free-solid-svg-icons';
 import { faBookmark as faBookmarkRegular } from '@fortawesome/free-regular-svg-icons';
 import { useId, type ReactNode } from 'react';
 import { readTimeLabel } from '../../state';
 import { Button } from '../primitives/Button';
 import { TitleSubtitle } from '../primitives/TitleSubtitle';
-import { IconButton } from '../primitives/IconButton';
 import { TooltipTarget } from '../primitives/Tooltip';
 
 // The stat block's minimum width (manuscript-chapter-header-alignment.prd.md, Q2 A): fits "99,999 words" at the mono
@@ -23,11 +14,10 @@ const STAT_BLOCK_CLASS = 'min-w-[6.5rem] tabular-nums';
 // The action slot (manuscript-chapter-header-alignment.prd.md, Q1 A / Technical Approach): a fixed-width box rendered
 // on every row, empty when the chapter has no actions, so the stat block still lines up beside it. Its content is
 // right-aligned (not left-aligned), so both edges - the cluster's start and end - stay put whether or not a Retail
-// sample tag widens the cluster to its left. Widened from its original 8rem (booth-mode-and-companion-panel.prd.md
-// Phase 1, Open Question 1 A) to fit "Booth" beside "Read aloud" without either wrapping, and again by an icon button's
-// width each for "Companion" (booth-mode-and-companion-panel.prd.md Phase 7) and the icon-only Workspace entry
+// sample tag widens the cluster to its left. Sized for "Record in Booth" (stage-navigation-and-page-replacement.prd.md
+// Phase 4, Q9, which replaced the Read aloud, Booth and Companion buttons) and the icon-only Workspace entry beside it
 // (edit-and-proof-workspace.prd.md Phase 4).
-const ACTION_SLOT_CLASS = 'flex w-80 flex-none justify-end gap-1';
+const ACTION_SLOT_CLASS = 'flex w-52 flex-none justify-end gap-1';
 
 // A Manuscript card's frame: a chapter card or a credits card (manuscript-credits-card-parity.prd.md, Phase 1),
 // sharing one header and one whole-header disclosure. The header's right side is one fixed order - [Retail sample
@@ -38,7 +28,7 @@ const ACTION_SLOT_CLASS = 'flex w-80 flex-none justify-end gap-1';
 // primitives/Disclosure.tsx): the title button's `::after` pseudo-element is stretched over the whole header
 // (`after:absolute after:inset-0`), so a press anywhere in the header - the padding, the stat block, the chevron -
 // toggles the card, while the header's own `sticky` positioning gives that overlay its containing block. The
-// bookmark and Read aloud sit `relative z-[1]` above the overlay so they keep their own presses and focus. The
+// bookmark and Record in Booth sit `relative z-[1]` above the overlay so they keep their own presses and focus. The
 // header keeps one tab stop for the toggle, and its accessible name stays the title (eyebrow is aria-hidden), so an
 // exact-name lookup ("Opening credits", "Chapter 2 — The Pool of Tears") keeps working.
 export function ReaderCard({
@@ -52,14 +42,9 @@ export function ReaderCard({
   bookmarked,
   onToggleBookmark,
   showRetailSample = false,
-  showReadAloud = false,
-  onReadAloud,
-  showBooth = false,
-  onBooth,
+  onRecordInBooth,
   showWorkspace = false,
   onWorkspace,
-  showCompanion = false,
-  onCompanion,
   wordCount,
   children,
 }: {
@@ -77,37 +62,45 @@ export function ReaderCard({
   bookmarked?: boolean;
   onToggleBookmark?: () => void;
   showRetailSample?: boolean;
-  showReadAloud?: boolean;
-  onReadAloud?: () => void;
-  /** The chapter-header "Booth" entry point (booth-mode-and-companion-panel.prd.md Phase 1, Open Question 1 A): gated
-   * the same as `showReadAloud` on every caller (a narration chapter, or a credits card with something to read) - the
-   * fixed-width action slot below assumes the two always agree, so a row with one and not the other misaligns it
-   * from every other row in the column (manuscript-chapter-header-alignment.prd.md). */
-  showBooth?: boolean;
-  onBooth?: () => void;
+  /** "Record in Booth" (stage-navigation-and-page-replacement.prd.md Phase 4, Q9): the Booth page on this chapter or
+   * credits. Omitted where there is nothing to read aloud (a reference chapter, empty credits); the slot stays either way. */
+  onRecordInBooth?: () => void;
   /** The chapter-header "Open workspace" entry point (edit-and-proof-workspace.prd.md Phase 4, page inventory
-   * "Manuscript"): icon-only (a text label would overflow the fixed-width action slot beside Read aloud and Booth),
-   * gated the same way on every caller - a narration chapter, never a credits card. */
+   * "Manuscript"): icon-only, so it fits the fixed-width action slot beside Record in Booth; only ever set for a
+   * narration chapter, never a credits card. */
   showWorkspace?: boolean;
   onWorkspace?: () => void;
-  /** The chapter-header "Companion" entry point (booth-mode-and-companion-panel.prd.md Phase 7): the same session again,
-   * in the narrow panel pinned beside the DAW. Gated the same as `showReadAloud`, for the same alignment reason as Booth. */
-  showCompanion?: boolean;
-  onCompanion?: () => void;
   wordCount: number;
   children: ReactNode;
 }) {
   const bodyId = useId();
   return (
     <article
-      className="relative mx-[var(--reader-inline)] mb-4 scroll-mt-[var(--band-h,4rem)] overflow-visible rounded-lg border border-[var(--border)] bg-[var(--surface)]"
+      // `@container` (Tailwind v4's built-in container-query support, verified against the installed
+      // tailwindcss@4.3.3): the header below reacts to this card's own rendered width, not the viewport - see the
+      // arbitrary `@min-` container variant on the header. `container-type: inline-size` only contains sizing in
+      // the inline axis and does not clip overflow (that needs `size`, not `inline-size`), so the header's sticky
+      // positioning and the toggle's `overflow-visible` are unaffected.
+      className="@container relative mx-[var(--reader-inline)] mb-4 scroll-mt-[var(--band-h,4rem)] overflow-visible rounded-lg border border-[var(--border)] bg-[var(--surface)]"
       data-chapter={chapterId ? title : undefined}
       data-chapter-id={chapterId}
       data-credits-entry={creditsKind}
       aria-label={creditsKind ? title : undefined}
     >
+      {/* The header's right-side cluster (Retail sample tag, stat block, action slot, chevron) sits beside the title
+          once the card itself has room, and wraps below it otherwise (manuscript-chapter-header-alignment.prd.md).
+          That used to be a viewport breakpoint (`md`, 768px), on the assumption that a viewport wide enough implies
+          a card wide enough - true until the Script page's mock-02 three-column layout (D85 #3, ADR 0393, superseding
+          ADR 0392): there the card's own rendered width (as little as ~520-630px at the 1440px desktop capture) can be
+          narrower than the viewport implies, so the cluster overflowed or clipped instead of wrapping (the visual
+          suite's retail-sample and markup-dialog states, stage-navigation-and-page-replacement.prd.md Phase 3). A
+          container query keys the wrap on the card's actual width in every context it renders in (Script's 2- and
+          3-column modes, a narrower Booth/companion panel), not on which viewport implies which reader width.
+          40rem (640px) is the card width the fixed-width cluster (Retail sample tag + the 6.5rem stat block + the
+          13rem action slot + their gaps + the chevron) needs to sit beside a legible title; below it, the existing
+          `max-*` classes below take over unchanged. */}
       <header
-        className={`sticky top-[var(--band-h,4rem)] z-10 grid grid-cols-[1.75rem_minmax(0,1fr)] items-center gap-3 border-[var(--border)] bg-[var(--surface)] p-3 has-[:focus-visible]:outline-2 has-[:focus-visible]:-outline-offset-2 has-[:focus-visible]:outline-[var(--accent)] md:grid-cols-[1.4rem_minmax(0,1fr)_auto] md:px-5 md:py-[0.8rem] ${expanded ? 'rounded-t-lg border-b shadow-[0_2px_6px_color-mix(in_srgb,var(--text)_8%,transparent)]' : 'rounded-lg border-b-0'}`}
+        className={`sticky top-[var(--band-h,4rem)] z-10 grid grid-cols-[1.75rem_minmax(0,1fr)] items-center gap-3 border-[var(--border)] bg-[var(--surface)] p-3 has-[:focus-visible]:outline-2 has-[:focus-visible]:-outline-offset-2 has-[:focus-visible]:outline-[var(--accent)] @min-[40rem]:grid-cols-[1.4rem_minmax(0,1fr)_auto] @min-[40rem]:px-5 @min-[40rem]:py-[0.8rem] ${expanded ? 'rounded-t-lg border-b shadow-[0_2px_6px_color-mix(in_srgb,var(--text)_8%,transparent)]' : 'rounded-lg border-b-0'}`}
       >
         {onToggleBookmark ? (
           <TooltipTarget className="relative z-[1] -ml-1 flex size-[1.4rem]" text={bookmarked ? 'Remove chapter bookmark' : 'Bookmark this chapter'}>
@@ -155,7 +148,7 @@ export function ReaderCard({
             <TitleSubtitle title={title} subtitle={subtitle} />
           </h2>
         </button>
-        <div className="flex items-center gap-3 justify-self-end text-right max-md:col-start-2 max-md:justify-self-start">
+        <div className="flex items-center gap-3 justify-self-end text-right @max-[40rem]:col-start-2 @max-[40rem]:justify-self-start">
           {showRetailSample && (
             <span className="rounded-[0.2rem] px-1.5 py-0.5 text-xs font-medium" style={{ background: 'var(--place-soft)', color: 'var(--info-text)' }}>
               Retail sample
@@ -168,44 +161,27 @@ export function ReaderCard({
             </div>
           </div>
           <div className={ACTION_SLOT_CLASS}>
-            {showReadAloud && (
-              <TooltipTarget className="relative z-[1]" text="Read this chapter aloud and follow along">
-                <Button variant="ghost" className="text-xs" aria-label={`Read ${title} aloud`} onClick={onReadAloud}>
-                  <FontAwesomeIcon icon={faMicrophone} /> Read aloud
-                </Button>
-              </TooltipTarget>
-            )}
-            {showBooth && (
-              <TooltipTarget className="relative z-[1]" text="Open the full-screen booth for this chapter">
-                <Button variant="ghost" className="text-xs" aria-label={`Open booth for ${title}`} onClick={onBooth}>
-                  <FontAwesomeIcon icon={faExpand} /> Booth
+            {onRecordInBooth && (
+              <TooltipTarget className="relative z-[1]" text="Read this aloud in the Booth, following your voice">
+                <Button variant="ghost" className="text-xs" aria-label={`Record ${title} in Booth`} onClick={onRecordInBooth}>
+                  <FontAwesomeIcon icon={faMicrophone} /> Record in Booth
                 </Button>
               </TooltipTarget>
             )}
             {showWorkspace ? (
-              <TooltipTarget className="relative z-[1]" text="Open the chapter workspace: listen, follow the script and see flags">
-                <Button variant="ghost" className="text-xs" aria-label={`Open workspace for ${title}`} onClick={onWorkspace}>
+              <TooltipTarget className="relative z-[1]" text="Open in Proof: listen, follow the script and see flags">
+                <Button variant="ghost" className="text-xs" aria-label={`Open in Proof for ${title}`} onClick={onWorkspace}>
                   <FontAwesomeIcon icon={faWaveSquare} />
                 </Button>
               </TooltipTarget>
             ) : (
-              showReadAloud && (
-                // A credits card has Read aloud/Booth but no chapter to open a workspace for (showWorkspace is only
-                // ever set for a real chapter, manuscript-chapter-header-alignment.prd.md's caller-agreement rule
-                // doesn't cover this third button): an invisible same-size placeholder keeps every Read-aloud row's
-                // button cluster the same width, so Read aloud still left-aligns down the column instead of sitting
-                // one button-width further right on a credits card than on a chapter.
+              onRecordInBooth && (
+                // A credits card can be recorded but has no chapter to open a workspace for: an invisible same-size
+                // placeholder keeps its Record in Booth in line with every chapter's down the column.
                 <Button variant="ghost" className="invisible text-xs" aria-hidden="true" tabIndex={-1}>
                   <FontAwesomeIcon icon={faWaveSquare} />
                 </Button>
               )
-            )}
-            {showCompanion && (
-              <TooltipTarget className="relative z-[1]" text="Pin a narrow companion panel beside your DAW">
-                <IconButton label={`Open companion for ${title}`} onClick={onCompanion}>
-                  <FontAwesomeIcon icon={faTableColumns} />
-                </IconButton>
-              </TooltipTarget>
             )}
           </div>
           <FontAwesomeIcon icon={expanded ? faChevronUp : faChevronDown} className="flex-none" style={{ color: 'var(--text-muted)' }} />

@@ -742,5 +742,113 @@
     "file": "narration_track_select.lua",
     "find": "local track = find_track(wanted)\n  if not track then",
     "replace": "local track = find_track(wanted) or reaper.GetTrack(0, 0)\n  if false then"
+  },
+  {
+    "name": "a render runs without a well-formed approval",
+    "file": "narration_master_render.lua",
+    "find": "if #approval < 32 or #approval > 128 or not approval:match('^%x+$') then",
+    "replace": "if false then"
+  },
+  {
+    "name": "an approval renders more than once",
+    "file": "narration_master_render.lua",
+    "find": "  if used[approval] then\n",
+    "replace": "  if false then\n"
+  },
+  {
+    "name": "a refused render leaves its approval usable",
+    "file": "narration_master_render.lua",
+    "find": "  used[approval] = true\n",
+    "replace": "\n"
+  },
+  {
+    "name": "a folder with a .. part is accepted",
+    "file": "narration_master_render.lua",
+    "find": "    if part == '.' or part == '..' then\n      return nil\n",
+    "replace": "    if false then\n      return nil\n"
+  },
+  {
+    "name": "a folder outside the app's mastering folder is accepted",
+    "file": "narration_master_render.lua",
+    "find": "if count < 4 or parts[count - 2] ~= 'narration-utils' or parts[count - 1] ~= 'mastering' then",
+    "replace": "if count < 1 then"
+  },
+  {
+    "name": "a run folder that does not exist is accepted",
+    "file": "narration_master_render.lua",
+    "find": "if not name or not has_subdirectory(core.dirname(folder), name) then",
+    "replace": "if not name then"
+  },
+  {
+    "name": "a run folder that is not empty is rendered into",
+    "file": "narration_master_render.lua",
+    "find": "  if not is_empty(folder) then\n",
+    "replace": "  if false then\n"
+  },
+  {
+    "name": "a render runs while REAPER records",
+    "file": "narration_master_render.lua",
+    "find": "  if recording() then\n    event(session_dir, 'ERROR', run_id, 'REAPER is recording. Stop recording first.')",
+    "replace": "  if false then\n    event(session_dir, 'ERROR', run_id, 'REAPER is recording. Stop recording first.')"
+  },
+  {
+    "name": "a render outside the run folder is not refused",
+    "file": "narration_master_render.lua",
+    "find": "if #predicted ~= 1 or slash(predicted[1]) ~= slash(file) then",
+    "replace": "if #predicted == 0 then"
+  },
+  {
+    "name": "a format other than WAV renders",
+    "file": "narration_master_render.lua",
+    "find": "if #predicted == 1 and not predicted[1]:lower():match('%.wav$') then",
+    "replace": "if false then"
+  },
+  {
+    "name": "the render adds its file to the project",
+    "file": "narration_master_render.lua",
+    "find": "reaper.GetSetProjectInfo(0, 'RENDER_ADDTOPROJ', 0, true)",
+    "replace": "reaper.GetSetProjectInfo(0, 'RENDER_ADDTOPROJ', 1, true)"
+  },
+  {
+    "name": "the render is stems, not the master mix",
+    "file": "narration_master_render.lua",
+    "find": "local RENDER_MASTER_MIX = 0",
+    "replace": "local RENDER_MASTER_MIX = 3"
+  },
+  {
+    "name": "the render ignores the region's bounds",
+    "file": "narration_master_render.lua",
+    "find": "reaper.GetSetProjectInfo(0, 'RENDER_STARTPOS', region.start, true)",
+    "replace": "reaper.GetSetProjectInfo(0, 'RENDER_STARTPOS', 0, true)"
+  },
+  {
+    "name": "the narrator's render settings are not put back",
+    "file": "narration_master_render.lua",
+    "find": "  write_settings(saved)\n",
+    "replace": "\n"
+  },
+  {
+    "name": "a render that wrote nothing is reported as done",
+    "file": "narration_master_render.lua",
+    "find": "    if not core.file_exists(file) then\n      return nil, string.format",
+    "replace": "    if false then\n      return nil, string.format"
+  },
+  {
+    "name": "an unknown region is skipped instead of refused",
+    "file": "narration_master_render.lua",
+    "find": "    if not found then\n      return nil, string.format('There is no region named",
+    "replace": "    if false then\n      return nil, string.format('There is no region named"
+  },
+  {
+    "name": "the chain listing cap is lifted",
+    "file": "narration_master_render.lua",
+    "find": "local MASTER_CHAIN_LIMIT = 500",
+    "replace": "local MASTER_CHAIN_LIMIT = 5000"
+  },
+  {
+    "name": "the chain listing leaves out the master track",
+    "file": "narration_master_render.lua",
+    "find": "  list(reaper.GetMasterTrack(0), 'master', 'MASTER')\n",
+    "replace": "\n"
   }
 ]

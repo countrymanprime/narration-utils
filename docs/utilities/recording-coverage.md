@@ -1,6 +1,6 @@
 # Recording Check (recording coverage)
 
-**Status: Implemented.** The Home check, the stored result, the measured recorded length and the `recording` stage
+**Status: Implemented.** The Production board's check, the stored result, the measured recorded length and the `recording` stage
 signal all work. The four settings ship with values chosen on synthetic fixtures and are labelled uncalibrated on real
 narration ([ADR 0132](../adr/0132-the-recording-check-ships-0-8-3-8-3-chosen-on-synthetic-fixtures-and-labelled-uncalibrated.md)).
 The model cascade (a fast first pass, then a stronger re-check of only what it reports missing) also ships, opt-in
@@ -11,12 +11,12 @@ and off by default until a real corpus confirms the first pass never gives a fal
 
 A chapter is recorded when all of its text is on the track, in order, even with mistakes. Before this check the app
 could not say whether that was true. Transcript Compare finds mistakes inside what was read, and by design ignores what
-was never read. The Home breakdown guessed the recorded length from the chapter's status. So a narrator decided "done
+was never read. Home's breakdown (now the Production board) guessed the recorded length from the chapter's status. So a narrator decided "done
 recording" from memory. The cost of a wrong call is an editing pass started on a chapter with a hole in it.
 
 ## Workflow
 
-Save the REAPER project. Every narration chapter's row of the Home breakdown already shows its check without a click
+Save the REAPER project. Every narration chapter's Record cell on the Production board already shows its check without a click
 (Phase 6, S14 below): a bold label ("Current", "Out of date", "Never checked", "Needs a track", "Suggested track",
 "Track missing" or "No track yet") and, under it, when it was checked or last changed. There is no separate Check
 button any more; the row itself opens the chapter's recording-check panel, a slide-over with the stored result and
@@ -25,7 +25,7 @@ file. It transcribes each item's played range that it has not transcribed before
 to the words in order. The result reads "Text present: N of M words" and lists each missing region: which paragraphs,
 how many words, the first and last missing words, and where the gap sits in the audio. When every paragraph passes the
 two thresholds, the chapter's `recording` signal is `met`, and the stage recommendations can suggest moving it on. The
-narrator always confirms. See [Using the app: Home](../guides/using-the-app/home.md#checking-a-chapters-recording) for
+narrator always confirms. See [Using the app: Production](../guides/using-the-app/production.md#checking-a-chapters-recording) for
 the screens and [Settings](../guides/using-the-app/settings.md) for the four numbers.
 
 Each chapter's status is known without a click for exactly this reason. Chapter sync's `chaptersync:state` event
@@ -33,7 +33,7 @@ Each chapter's status is known without a click for exactly this reason. Chapter 
 chapter: its track, whether its check is `current`, `stale` (with the reasons above) or `never` run, when the check
 finished, whether one is running, and when the track last changed. The row is this evaluation of the stored result
 against the saved project, so reading it still never starts a check (Q14). The event is sent after each sync, each
-save the watcher picks up, and each check that ends; Home re-reads its chapter list and stage suggestions on the same
+save the watcher picks up, and each check that ends; the Production board re-reads its chapter list and stage suggestions on the same
 event, so the row and the rest of the page never disagree.
 
 A chapter with no confirmed track yet reads its link trouble instead of a freshness word ("Needs a track", "Suggested
@@ -52,16 +52,16 @@ background, and pressing **Check recording** pre-empts it. `chaptersync:state`'s
 
 ```mermaid
 flowchart LR
-  home["Home: Check recording"] -->|CoverageStart| svc["apps/desktop/internal/coverage"]
+  home["Production: Check recording"] -->|CoverageStart| svc["apps/desktop/internal/coverage"]
   svc -->|reads| rpp["saved .rpp, confirmed track map"]
   svc -->|manifest, words files| side["compare.py --coverage"]
   side -->|COVERAGE lines| svc
   svc --> ledger["ledger record, stored report"]
-  ledger -->|thresholds on read| out["Home result, recordedFraction, recording signal"]
+  ledger -->|thresholds on read| out["Production result, recordedFraction, recording signal"]
 ```
 
 - **The manifest comes from the saved project, not from REAPER.** `apps/desktop/internal/coverage` reads the `.rpp`
-  the Tracks page selected, the chapter's one confirmed track (`chapter-track-map.json`, analysis evidence ledger), and
+  the audio engine panel selected, the chapter's one confirmed track (`chapter-track-map.json`, analysis evidence ledger), and
   each item's active take and played range, `[SOFFS, SOFFS + LENGTH × PLAYRATE]`, in position order. Muted items are
   listed and skipped. A chapter that cannot be checked gets a typed reason and nothing runs: not linked, several
   tracks, the linked track missing, a missing or non-audio source, an empty range, not a narration chapter, or no
@@ -104,13 +104,13 @@ flowchart LR
   removed, trimmed, moved, muted or switched to another take, or an audio file changed. It also goes stale when the
   chapter's text, the equivalences, the vocabulary hints or an alignment setting changes. A different Whisper model or
   language keeps it current and labelled with the model (Q13).
-- **Three readers.** The Home slide-over (`RecordingCheck.tsx`, opened from the row's check-status cell since Phase 6
+- **Three readers.** The Production board's slide-over (`RecordingCheck.tsx`, opened from the chapter's Record cell since stage navigation Phase 2, from the row's check-status cell since Phase 6
   retired the row's own Check button) shows the stored report. The `CoverageResult` payload also
   carries `judgement`: met or not met by the narrator's thresholds, with the gap that fails first. It comes from
   `coverage.Judge`, the same function the stage signal uses, so the two cannot disagree. It is set for any complete
   result with a report, a stale one included (as of the last check)
   ([ADR 0204](../adr/0204-the-recording-check-result-carries-the-hosts-judgement-by-the-stage-signals-rule.md)). `recordedFraction` on the chapter
-  payload is the present share of a current complete check only; it no longer feeds Home's **Actual recorded** column,
+  payload is the present share of a current complete check only; it no longer feeds the board's **Recorded** column,
   which instead reads `recordedSeconds`, a real duration from the chapter's linked track in the saved project, unrelated
   to any check ([Actual Recorded](../prds/actual-recorded-column.prd.md) Phase 3, superseding Q12 below).
   `coverage.RecordingSignal` gives the stage recommendations engine the tri-state
@@ -239,7 +239,7 @@ docs/prds/recording-coverage-analysis.prd.md` finds it); MC1-MC7 are the model c
 | Q11 | A spoken title or subtitle is optional, and never counted as missing or extra |
 | Q12 | *Superseded* by [Actual Recorded](../prds/actual-recorded-column.prd.md) Phase 3: an unmeasured chapter kept the status estimate, labelled "estimated from status"; the column now reads a real recorded length or a plain dash, never a guess |
 | Q13 | Another model or language keeps a result current (labelled). Another alignment setting makes it stale |
-| Q14 | On demand only: Home reads stored results and never starts a check. Superseded in part by [ADR 0211](../adr/0211-a-changed-chapter-is-rechecked-in-the-background-only-on-mains-power-with-reaper-quiet-and-not-recording.md): the host re-checks a changed chapter on its own, only on mains power with REAPER quiet and not recording (`RecordingCoverage.background_checks`, on by default); reading a status still never starts one |
+| Q14 | On demand only: the Production board reads stored results and never starts a check. Superseded in part by [ADR 0211](../adr/0211-a-changed-chapter-is-rechecked-in-the-background-only-on-mains-power-with-reaper-quiet-and-not-recording.md): the host re-checks a changed chapter on its own, only on mains power with REAPER quiet and not recording (`RecordingCoverage.background_checks`, on by default); reading a status still never starts one |
 | Q15 | Synthetic fixtures now, with `NARRATION_COVERAGE_CORPUS` for a real permissioned corpus later ([ADR 0125](../adr/0125-recording-coverage-ground-truth-is-scripted-recordings-with-paragraph-labels-and-a-corpus-directory-variable.md)) |
 | MC1 | The cascade is opt-in, off by default, until a real corpus confirms the first pass never gives a false "met" |
 | MC2 | Two independent settings: `cascade_first_pass_model` (default `tiny`) and `cascade_recheck_model` (default `large-v3-turbo`), from the approved catalog |

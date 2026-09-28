@@ -13,23 +13,23 @@
     - group "Production":
       - /children: equal
       - text: Production
-      - button "Home"
+      - button "Production"
     - group "Prep":
       - /children: equal
       - text: Prep
-      - button "Manuscript"
+      - button "Script"
       - button "Story Bible"
     - group "Record":
       - /children: equal
       - text: Record
-      - button "Teleprompter"
+      - button "Booth"
     - group "Review":
       - /children: equal
       - text: Review
       - button "Proof"
-      - button "Tracks"
+      - button "Pickups"
     - group "Finish":
       - /children: equal
       - text: Finish
-      - button "Delivery"
+      - button "Master & QC"
   - button "Settings"

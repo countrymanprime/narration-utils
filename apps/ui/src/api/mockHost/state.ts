@@ -1,8 +1,11 @@
 // The mock host (mockApi.ts): its seeds and shared state.
 import type {
+  ApprovedCharacterReference,
   CreditValues,
   Finding,
+  GuideDialogueCue,
   GuideEntity,
+  CharacterRegion,
   ManuscriptChapter,
   ManuscriptParagraph,
   TeleprompterDevice,
@@ -10,15 +13,26 @@ import type {
   TracksDiscovery,
 } from '../../types';
 import type { JobEnded } from '../contracts/system';
-import { WIRE_CHAPTERS, WIRE_ENTITIES, WIRE_PARAGRAPHS, WIRE_TRACKS_PROJECT, wireClone } from '../mockFixtures';
+import {
+  WIRE_CHAPTERS,
+  WIRE_CHARACTER_REFERENCES,
+  WIRE_CHARACTER_REGIONS,
+  WIRE_DIALOGUE_CUES,
+  WIRE_ENTITIES,
+  WIRE_PARAGRAPHS,
+  WIRE_TRACKS_PROJECT,
+  wireClone,
+} from '../mockFixtures';
 import type { MockImportKind } from '../mockImportPreview';
 import type { MockReaperInputSeed, MockReaperSeed, TeleprompterSeed } from '../teleprompterMock';
 import type { CoverageSeed } from '../coverageMock';
 import type { PreviewSeed } from '../previewMock';
 import type { StagesSeed } from '../stagesMock';
+import type { ProofingRenderSeed } from '../proofingRenderMock';
 import type { MockResumeSeed } from '../resumeMockSeed';
 import type { MockReaper } from '../findingsMock';
 import type { MockMeasureSeed } from '../measureMock';
+import type { MockExportSeed } from '../renderEncodeMasterMock';
 import type { MockDeliveryProfileSeed } from '../deliveryProfilesMock';
 import type { MockDiagnosticsSeed } from '../diagnosticsMock';
 import type { EditingSeed } from '../editingMock';
@@ -29,6 +43,8 @@ import type { MockAssetSeed } from '../assetInstallMock';
 import type { MockUpdateSeed } from './update';
 import type { DawMockSeed } from '../dawMock';
 import type { ProvidersMockSeed } from '../providersMock';
+import type { MasteringMockSeed } from '../masteringMock';
+import type { RecordingMockSeed } from '../recordingMock';
 
 // What createMockApi boots from (the seeds), and the host state more than one domain reads or writes.
 // manuscriptCandidate boots a project with no imported manuscript but a
@@ -100,9 +116,10 @@ export type MockApiSeed = {
    * dialog shows), `off` answered Not now, and `linked` is on and, once something subscribes, runs a sync that links the
    * confident chapters and sends the batch for the toast. `unsaved` is on, with REAPER holding unsaved edits and a Sync
    * activity row from a save in REAPER (Phase 4). `pickups` is on, with the first chapter's pickup track changed since its
-   * last take-review scan (Phase 8). Unset, sync is on and has run before with nothing new, so no dialog or
+   * last take-review scan (Phase 8). `activity` is on, with Chapter 1 linked by sync and Chapter 2 by the narrator, and a Sync
+   * activity list of three batches (the engine panel's mockup-02 state, stage navigation Phase 6). Unset, sync is on and has run before with nothing new, so no dialog or
    * toast covers the other states. */
-  chapterSync?: 'ask' | 'off' | 'linked' | 'unsaved' | 'pickups';
+  chapterSync?: 'ask' | 'off' | 'linked' | 'unsaved' | 'pickups' | 'activity';
   /** Whether the mock project boots with a linked DAW project file (PRD W13/W14). Defaults to true. */
   dawFileLinked?: boolean;
   /** Makes the next `linkDawFile()` call behave like a chosen file outside the project folder (PRD W15): refused, not linked. */
@@ -147,6 +164,8 @@ export type MockApiSeed = {
   coverage?: CoverageSeed;
   /** Seeds the stage recommendations mock (a chapter's recording evidence, a live confirmation, a dismissal), see `StagesSeed`. */
   stages?: StagesSeed;
+  /** Seeds a chapter's chosen render (proofing-readiness-signals.prd.md Phase 6), see `ProofingRenderSeed`. */
+  proofingRender?: ProofingRenderSeed;
   /**
    * Boots without the offline dictionary (`missing`) or with one that fails its check (`damaged`), so a lookup answers with its first-use
    * gate (story-bible-and-import-ux-briefs.prd.md Phases 7-8). A download seed of `assets` boots without it too.
@@ -164,6 +183,8 @@ export type MockApiSeed = {
   takeComparisonHold?: boolean;
   /** Holds a started measurement part way through, so its real progress can be looked at, or breaks it (diagnostics PRD Phases 1 and 5). */
   measure?: MockMeasureSeed;
+  /** Holds a started export part way through, so its real progress can be looked at (render-encode-master PRD Phase 5). */
+  renderExport?: MockExportSeed;
   /** Holds a started diagnostics check part way through, or breaks it (diagnostics PRD Phase 6). */
   diagnostics?: MockDiagnosticsSeed;
   /** Seeds the editing-readiness check mock (a refusal, a held-running state, or seeded candidates), see `EditingSeed`. */
@@ -192,6 +213,19 @@ export type MockApiSeed = {
   daw?: DawMockSeed;
   /** Seeds the provider capabilities mock (platform, installed asset counts), see `ProvidersMockSeed` (provider-ports PRD Phase 14). */
   providers?: ProvidersMockSeed;
+  /**
+   * Boots the character bible with no approved references and no saved-project regions yet
+   * (character-continuity-review.prd.md Phase 6), so its empty state can be seen. Unset boots with
+   * `WIRE_CHARACTER_REGIONS` and `WIRE_CHARACTER_REFERENCES` (one changed-since-approval reference among them).
+   */
+  characterContinuity?: 'empty';
+  /** Seeds the mastering chain mock (whether a project is open, its stored choice), see `MasteringMockSeed` (ADR 0306). */
+  mastering?: MasteringMockSeed;
+  /** `?mockZoom=`: the window's real zoom level at boot, as a fraction (1.25 is 125%; app-navigation-and-zoom-controls.prd.md
+   * Phase 2). Defaults to 1.0, the same as a fresh window before Phase 3 remembers a level across launches. */
+  zoom?: number;
+  /** Seeds the built-in recorder mock (engine, takes, a take recording, devices), see `RecordingMockSeed` (ADR 0455). */
+  recording?: RecordingMockSeed;
 };
 
 export const wireContext = (payload: string) => ({ boundary: 'host.binding', payload });
@@ -211,6 +245,12 @@ export type MockState = {
   chapterTrackMappings: TrackMapping[];
   jobEndListeners: Set<(event: JobEnded) => void>;
   endJob: (event: JobEnded) => void;
+  /** The Story Bible's dialogue cues (character-continuity-review.prd.md Phase 2). */
+  dialogueCues: GuideDialogueCue[];
+  /** The saved REAPER project's regions, for approving one as a voice reference (Phase 3/6). */
+  regions: CharacterRegion[];
+  /** Every approved (or previously approved) voice reference (Phase 3/6). */
+  characterReferences: ApprovedCharacterReference[];
 };
 
 export function createMockState(initial: MockApiSeed): MockState {
@@ -230,5 +270,8 @@ export function createMockState(initial: MockApiSeed): MockState {
     chapterTrackMappings: wireClone(initial.chapterTrackMappings ?? []).map((link) => ({ origin: 'manual', match: null, ...link })),
     jobEndListeners,
     endJob: (event) => void setTimeout(() => jobEndListeners.forEach((listener) => listener(event)), 0),
+    dialogueCues: wireClone(WIRE_DIALOGUE_CUES),
+    regions: initial.characterContinuity === 'empty' ? [] : wireClone(WIRE_CHARACTER_REGIONS),
+    characterReferences: initial.characterContinuity === 'empty' ? [] : wireClone(WIRE_CHARACTER_REFERENCES),
   };
 }

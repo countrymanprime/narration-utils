@@ -6,7 +6,7 @@
 import recordedStream from './teleprompterRecording.json';
 import { recordedStreamSchema } from './schemas/teleprompter';
 import { parseWire } from './wire/parseWire';
-import { CREDITS_LABEL, creditsParagraphs, tokenize, wordOffsets, type CreditsKind } from '../components/teleprompter/readerModel';
+import { CREDITS_LABEL, creditsParagraphs, tokenize, wordOffsets, type CreditsKind } from '../components/booth/readerModel';
 import { mockRecordedEnd } from './chapterTrackMatchMock';
 import { seedLastReading, seedLocateResult, seedTrackMatch, type LocateDraft, type MockResumeSeed } from './resumeMockSeed';
 import type {
@@ -177,7 +177,7 @@ function mockReaperState(seed: MockReaperSeed, title: string): ReadAloudReaperSt
       return {
         status: 'no_link',
         reason: 'unlinked',
-        message: `"${title}" has no linked track. Link it to its REAPER track on the Tracks page.`,
+        message: `"${title}" has no linked track. Link it to its REAPER track in the audio engine panel.`,
         playing: false,
         recording: false,
       };
@@ -218,7 +218,7 @@ function mockReadAloudRecording(seed: MockReaperSeed, kind: 'arm' | 'start' | 's
     };
   // ReadAloudRecordStop takes no chapter id (it stops whatever this app is recording), so no_link only refuses arm and start.
   if (kind !== 'stop' && seed === 'no_link')
-    return { outcome: 'refused', reason: 'unlinked', message: `"${title}" has no linked track. Link it to its REAPER track on the Tracks page.` };
+    return { outcome: 'refused', reason: 'unlinked', message: `"${title}" has no linked track. Link it to its REAPER track in the audio engine panel.` };
   // arm_only refuses only while REAPER is recording (narration_transport.lua); an arm count that is not the chapter's alone is
   // exactly what arming fixes, so every other seed succeeds.
   if (kind === 'arm') {
@@ -244,7 +244,7 @@ function mockReadAloudRecording(seed: MockReaperSeed, kind: 'arm' | 'start' | 's
       return { outcome: 'refused', reason: 'already_recording', message: 'REAPER is already recording.' };
     default:
       // Unreachable: 'unavailable', 'experimental_off' and (for start) 'no_link' all returned above.
-      return { outcome: 'refused', reason: 'unlinked', message: `"${title}" has no linked track. Link it to its REAPER track on the Tracks page.` };
+      return { outcome: 'refused', reason: 'unlinked', message: `"${title}" has no linked track. Link it to its REAPER track in the audio engine panel.` };
   }
 }
 

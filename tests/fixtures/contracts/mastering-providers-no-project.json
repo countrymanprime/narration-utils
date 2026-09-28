@@ -1,0 +1,70 @@
+{
+  "choice": null,
+  "effective": "builtin",
+  "hasProject": false,
+  "providers": [
+    {
+      "chain": [
+        {
+          "detail": "High-pass 80 Hz",
+          "name": "EQ"
+        },
+        {
+          "detail": "0.5 dB under the peak limit",
+          "name": "Limiter"
+        },
+        {
+          "detail": "To the RMS target",
+          "name": "Gain"
+        }
+      ],
+      "default": true,
+      "label": "Built-in chain (EQ, limiter, gain)",
+      "modes": [
+        "wav"
+      ],
+      "name": "builtin",
+      "needs": [],
+      "needsApproval": false,
+      "support": {
+        "available": true,
+        "level": "supported"
+      }
+    },
+    {
+      "chain": [],
+      "default": false,
+      "label": "Your DAW's FX chain",
+      "modes": [
+        "daw_region"
+      ],
+      "name": "daw",
+      "needs": [
+        "render_with_fx",
+        "master_chain_read"
+      ],
+      "needsApproval": true,
+      "support": {
+        "available": true,
+        "level": "experimental"
+      }
+    },
+    {
+      "chain": [],
+      "default": false,
+      "label": "Audacity's effect macro",
+      "modes": [
+        "wav"
+      ],
+      "name": "audacity",
+      "needs": [
+        "macro_render"
+      ],
+      "needsApproval": true,
+      "support": {
+        "available": true,
+        "level": "experimental"
+      }
+    }
+  ]
+}

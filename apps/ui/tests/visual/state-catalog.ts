@@ -1,14 +1,14 @@
 import type { StateEntry } from './lib/types';
 import { projectStates } from './catalog/project';
 import { startupStates } from './catalog/startup';
-import { homeStates } from './catalog/home';
-import { manuscriptStates } from './catalog/manuscript';
+import { scriptStates } from './catalog/script';
 import { storybibleStates } from './catalog/storybible';
-import { tracksStates } from './catalog/tracks';
-import { teleprompterStates } from './catalog/teleprompter';
+import { engineStates } from './catalog/engine';
+import { boothStates } from './catalog/booth';
 import { proofStates } from './catalog/proof';
 import { proofChapterStates } from './catalog/proof-chapter';
-import { deliveryStates } from './catalog/delivery';
+import { pickupsStates } from './catalog/pickups';
+import { masterStates } from './catalog/master';
 import { productionStates } from './catalog/production';
 import { settingsStates } from './catalog/settings';
 import { globalStates } from './catalog/global';
@@ -26,14 +26,14 @@ export type { StateEntry };
 export const STATE_CATALOG: StateEntry[] = [
   ...projectStates,
   ...startupStates,
-  ...homeStates,
-  ...manuscriptStates,
+  ...scriptStates,
   ...storybibleStates,
-  ...tracksStates,
-  ...teleprompterStates,
+  ...engineStates,
+  ...boothStates,
   ...proofStates,
   ...proofChapterStates,
-  ...deliveryStates,
+  ...pickupsStates,
+  ...masterStates,
   ...productionStates,
   ...settingsStates,
   ...globalStates,

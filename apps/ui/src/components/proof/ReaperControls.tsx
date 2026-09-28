@@ -14,7 +14,7 @@ const NO_ITEM = 'This finding has no REAPER item to go to, because it came from 
 const NO_SOURCE_TIME = 'This finding has no time in its audio to loop. Go to it instead.';
 const CHECKING = 'Checking whether REAPER is connected…';
 // The approved marker's own reasons (apps/desktop/bindings_marker.go): only an accepted finding gets one (review dashboard Phase 8).
-const NOT_ACCEPTED = 'Accept this finding first. Only a finding you accepted gets a marker in REAPER.';
+const NOT_ACCEPTED = 'Mark this note as a pickup or an edit first. Only a note you mean to fix gets a marker in REAPER.';
 const MARKER_NO_SOURCE_TIME = 'This finding has no time in its audio to put a marker at.';
 
 /** A finding has audio to go to when an analyzer recorded where it is in REAPER or in time; a Story Bible entry has neither. */
@@ -113,7 +113,10 @@ export function ReaperControls({
     loopingId && !done ? (loopingId === finding.id ? 'This finding is looping in REAPER.' : 'A loop is playing in REAPER on another finding.') : undefined;
 
   return (
-    <section aria-label="In REAPER" className="mt-4">
+    // A `div`, not a landmark `section`: the editing check panel lists one of these per candidate, and axe's
+    // landmark-unique flags two same-named regions on one page. It is a small repeated control group, not a
+    // distinct page landmark, so the heading below carries the same context without claiming a region role.
+    <div className="mt-4">
       <h3 className="text-sm font-semibold">In REAPER</h3>
       <div className="mt-2 flex flex-wrap gap-2">
         <TooltipTarget text={goToBlocked ?? "Select this finding's item in REAPER and put the edit cursor on it"}>
@@ -173,13 +176,13 @@ export function ReaperControls({
       {confirmingMarker && (
         <ConfirmDialog
           title="Add a marker in REAPER"
-          body={`REAPER adds one take marker at ${formatTime(finding.time_range?.start ?? 0)}, on this finding's take, named with what the script says and what was recorded, like the markers Proofing exports. A marker of the same kind already there is not added twice, and one Undo in REAPER removes it.`}
+          body={`REAPER adds one take marker at ${formatTime(finding.time_range?.start ?? 0)}, on this finding's take, named with what the script says and what was recorded, like the markers Proof exports. A marker of the same kind already there is not added twice, and one Undo in REAPER removes it.`}
           confirmLabel="Add marker"
           confirm={() => void addMarker()}
           cancel={() => setConfirmingMarker(false)}
           pending={action.isPending('marker')}
         />
       )}
-    </section>
+    </div>
   );
 }

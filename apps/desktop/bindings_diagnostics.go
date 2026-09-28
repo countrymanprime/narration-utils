@@ -1,6 +1,6 @@
 package main
 
-// The diagnostics bindings (diagnostics-delivery-and-cleanup-tools.prd.md Phase 6): the Delivery page's Diagnostics tab
+// The diagnostics bindings (diagnostics-delivery-and-cleanup-tools.prd.md Phase 6): Master & QC's Diagnostics section
 // runs the windowed analyzers (ADR 0158) over files picked with MeasurePickFiles. The job is in diagnostics_job.go; the
 // wire-contract schema, golden payloads and mock are in apps/ui/src/api. None of them reads a project service, so a
 // project switch does not touch them.

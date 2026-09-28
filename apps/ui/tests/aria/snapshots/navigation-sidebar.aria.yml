@@ -2,30 +2,30 @@
 # Grouped by production stage (stage-navigation-and-page-replacement.prd.md Phase 1, ADR 0407 item 3): each group is
 # a named `group`, so a group added, removed, renamed or reordered fails here too. Its visible heading text is also
 # its accessible name (aria-labelledby), so the heading text itself is listed as the group's first child.
-# `/production` (PR #760) has no nav entry in Phase 1 (D79); it joins Production in Phase 2.
+# Phase 2 made the Production page the Production group's item at `/`, in place of Home.
 - complementary:
   - navigation:
     - /children: equal
     - group "Production":
       - /children: equal
       - text: Production
-      - button "Home"
+      - button "Production"
     - group "Prep":
       - /children: equal
       - text: Prep
-      - button "Manuscript"
+      - button "Script"
       - button "Story Bible"
     - group "Record":
       - /children: equal
       - text: Record
-      - button "Teleprompter"
+      - button "Booth"
     - group "Review":
       - /children: equal
       - text: Review
       - button "Proof"
-      - button "Tracks"
+      - button "Pickups"
     - group "Finish":
       - /children: equal
       - text: Finish
-      - button "Delivery"
+      - button "Master & QC"
   - button "Settings"

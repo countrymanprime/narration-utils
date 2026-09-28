@@ -1,0 +1,27 @@
+{
+  "attestedAt": "2026-09-21T10:00:00Z",
+  "format": "wav",
+  "measuredAt": "2026-09-21T10:00:00Z",
+  "measurement": {
+    "channels": 2,
+    "clip_run_count": 0,
+    "clip_runs": null,
+    "digital_silent_windows": 0,
+    "duration_seconds": 1843.5,
+    "full_scale_samples": 0,
+    "head_digital_silence_seconds": null,
+    "head_room_tone_seconds": null,
+    "integrated_lufs": -19.4,
+    "noise_floor_dbfs": -66.8,
+    "rms_dbfs": -21.2,
+    "sample_peak_dbfs": -3.6,
+    "sample_rate": 48000,
+    "tail_digital_silence_seconds": null,
+    "tail_room_tone_seconds": null,
+    "true_peak_dbtp": -3.1
+  },
+  "measurementFailed": false,
+  "path": "C:/Projects/Alice/Renders/Chapter 01.wav",
+  "reason": "",
+  "state": "current"
+}

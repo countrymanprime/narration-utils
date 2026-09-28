@@ -31,7 +31,7 @@ Manuscript lists them too.
 
 Entries the build isn't sure about are filed under Needs Review, and their evidence is
 highlighted in the review color so it is clear which entries still need a decision. "Go to line"
-on an entry's evidence jumps to that spot in the [Manuscript](manuscript.md).
+on an entry's evidence jumps to that spot in the [Script](script.md).
 
 ![Story Bible - a Needs Review entry, its evidence highlighted in the review color](../../images/ui/storybible-needs-review.webp)
 
@@ -89,6 +89,26 @@ yours, so you can switch again). Neither step looks anything up. Set the **Statu
 pronunciation the author confirmed, it goes back to Researched, because the author has not heard the
 new one. A rebuild keeps all of this.
 
+## Looking a name up online (Merriam-Webster)
+
+When no dictionary on your computer knows a name, you can ask Merriam-Webster's online dictionary,
+on your own free key. Get one from **Settings > Story Bible > Get a free key** (it opens
+Merriam-Webster's sign-up page in your browser), paste it into **Your key** and press **Save key**.
+On Windows the key is kept encrypted for your Windows account; **Remove key** deletes it.
+
+Then, in an entry's **Pronunciation details**, **Look up online** sends that one name, and nothing
+else from your book, to Merriam-Webster, and shows its answer in Merriam-Webster's own respelling
+(for example \krō-ˈkā\). **Use this** copies it into **Your pronunciation**; press **Use mine** to
+keep it. Every answer is kept on your computer, so looking the same name up again sends nothing and
+works offline ("from this computer's copy"). In **Pronunciation queries**, **Look up online…** asks
+about every name on the list at once, after telling you how many names it will send.
+
+| Message | What it means | What to do |
+| --- | --- | --- |
+| "Add your own free Merriam-Webster key in Settings > Story Bible first." | No key is saved. | Save your key in Settings > Story Bible. |
+| "Merriam-Webster refused the key ..." | The key was mistyped, or is not for the Collegiate Dictionary. | Copy it again from your dictionaryapi.com account page and save it. |
+| "An online lookup sends one word or name only ..." | The name is longer than three words or has symbols. | Look up a shorter alias, or one word of the name. |
+
 ## Pronunciation queries for the author
 
 The **Pronunciation queries** button at the top of the Story Bible opens a panel that lists every
@@ -110,6 +130,33 @@ is listed underneath with the reason, and nothing else in the Story Bible is tou
 row whose `note` column is left blank does not erase a note you already had for that name - only
 fill in a note if you want it changed.
 
+## Voice references and dialogue cue attribution
+
+A Character entry has two more sections below Personality notes: **Reference clips** and **Dialogue
+cues**. Neither judges your reading - they only track what you've approved and who a line of
+dialogue is attributed to; there is no acoustic comparison or "drift" flag in the app yet.
+
+**Reference clips** lists the REAPER regions you've approved as a voice reference for this
+character. Choose a region from the picker (the regions of the saved REAPER project), add an
+optional note such as "anchor take, chapter 1", and press **Approve as reference**. Approving the
+same region again for the same character just updates its note in place. **Revoke** removes a
+reference outright. If the region's name or time range changed in REAPER since you approved it, the
+reference shows a **Changed since approval** badge - re-approve it once you're happy with the new
+region, or revoke it. Playing a reference clip's audio in the app is not built yet; open the region
+by name in REAPER to hear it.
+
+**Dialogue cues** lists the quoted lines the Story Bible build attributed to this character, plus
+any line left unattributed (three or more speakers active in a scene, or no speaker tag at all, are
+left `unknown` rather than guessed). Pick a different speaker, or **Unknown**, from the dropdown
+beside a cue to correct it. A correction survives the next Story Bible rebuild - it is never
+silently overwritten by a fresh, possibly-wrong, extraction.
+
+The **Voice data** button at the top of the Story Bible (beside Pronunciation queries) opens a panel
+for the two things that aren't about one character: approving a reference for **plain narration**
+(useful as a baseline separate from any character), and **Remove voice data**, which revokes every
+approved reference in the project - for every character and for narration - in one action, after you
+confirm. It doesn't touch the manuscript, dialogue cues, or anything else in the Story Bible.
+
 | Message | What it means | What to do |
 | --- | --- | --- |
 | "... could not be spoken: the voice produced no audio for it" | The name is only punctuation or symbols, so the voice has nothing to say. | Preview an alias that has letters in it, or ignore the preview for this name. |
@@ -119,4 +166,4 @@ fill in a note if you want it changed.
 
 ---
 
-[← Manuscript](manuscript.md) · [Index](README.md) · [Teleprompter →](teleprompter.md)
+[← Script](script.md) · [Index](README.md) · [Booth →](booth.md)

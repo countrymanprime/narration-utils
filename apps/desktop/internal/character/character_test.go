@@ -326,6 +326,33 @@ func TestReApprovingAChangedRegionClearsTheChangedFlag(t *testing.T) {
 	}
 }
 
+func TestRemoveAllRevokesEveryReference(t *testing.T) {
+	service := New(projectFile(t, twoRegions))
+	if _, err := service.Approve("char-alice", "{AAAAAAAA-0000-0000-0000-000000000001}", ""); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := service.Approve(NarrationCharacterID, "{BBBBBBBB-0000-0000-0000-000000000002}", ""); err != nil {
+		t.Fatal(err)
+	}
+	if err := service.RemoveAll(); err != nil {
+		t.Fatal(err)
+	}
+	approved, err := service.References()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(approved) != 0 {
+		t.Fatalf("RemoveAll must clear every reference, got %#v", approved)
+	}
+}
+
+func TestRemoveAllOnAProjectWithNoReferencesIsNotAnError(t *testing.T) {
+	service := New(projectFile(t, twoRegions))
+	if err := service.RemoveAll(); err != nil {
+		t.Fatal(err)
+	}
+}
+
 func TestReferencesFileIsWrittenAtomicallyAndSurvivesAFailedRename(t *testing.T) {
 	service := newTestService(t, twoRegions)
 	renameCalls := 0

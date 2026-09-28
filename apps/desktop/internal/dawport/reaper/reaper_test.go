@@ -116,6 +116,7 @@ var experimentalCapability = map[string]dawport.Capability{
 	"create_regions":      dawport.CapRegions,
 	"play_position":       dawport.CapPunch,
 	"punch_to":            dawport.CapPunch,
+	"master_chain_read":   dawport.CapMasterChainRead,
 }
 
 // supportedCommands are the commands the Supported capabilities send, none of which is gated today.
@@ -199,6 +200,13 @@ func TestTheDeclarationMatchesTodaysGating(t *testing.T) {
 	// Built, never wired, so never gated: declared Experimental so they stay off by default (PRD P2).
 	want[dawport.CapSilenceTrim] = dawport.Experimental
 	want[dawport.CapItemGain] = dawport.Experimental
+	// The mastering port's DAW row (ADR 0306, render-encode-master PRD Phase 9): render_with_fx is not one of bridge.Actions'
+	// commands (it answers through the fan-out), so it is not gated by bridge.Actions; like every Experimental capability, the
+	// resolver hands its role out only when the narrator's settings allow it. master_chain_read is gated above.
+	want[dawport.CapRenderWithFX] = dawport.Experimental
+	// macro_render is the mastering port's Audacity row (ADR 0306, ADR 0460): REAPER has no macro manager, so it is Unsupported,
+	// not Supported like everything else this loop defaults to.
+	want[dawport.CapMacroRender] = dawport.Unsupported
 	if !maps.Equal(declared, want) {
 		t.Errorf("Declares() = %v, want %v", declared, want)
 	}

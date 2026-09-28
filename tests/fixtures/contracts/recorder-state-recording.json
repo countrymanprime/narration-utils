@@ -1,0 +1,28 @@
+{
+  "device": "Analogue 1 + 2 (Focusrite USB Audio)",
+  "engine": "builtin",
+  "folder": "C:/Projects/Alice/Recordings",
+  "hasProject": true,
+  "last": null,
+  "message": "",
+  "phase": "recording",
+  "startedAt": 1790000000000,
+  "support": {
+    "available": true,
+    "level": "experimental"
+  },
+  "take": "Take 002",
+  "takes": [
+    {
+      "bits": 24,
+      "channels": 1,
+      "lineId": null,
+      "name": "Take 001",
+      "path": "C:/Projects/Alice/Recordings/Take 001.partial.wav",
+      "recordedAt": 1790000000000,
+      "sampleRate": 48000,
+      "seconds": 0.5,
+      "unfinished": true
+    }
+  ]
+}

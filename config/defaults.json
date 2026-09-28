@@ -55,7 +55,10 @@
     "capability.fx_chains": "auto",
     "capability.silence_trim": "auto",
     "capability.item_gain": "auto",
-    "capability.track_select": "auto"
+    "capability.render_with_fx": "auto",
+    "capability.master_chain_read": "auto",
+    "capability.track_select": "auto",
+    "capability.macro_render": "auto"
   },
   "RecordingCoverage": {
     "min_paragraph_present": "0.8",

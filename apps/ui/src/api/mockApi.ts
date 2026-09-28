@@ -13,18 +13,23 @@ import { createWorkspaceMock, mockMisreadFindingSource } from './workspaceMock';
 import { createPreviewMock } from './previewMock';
 import { createProductionMock } from './productionMock';
 import { createStagesMock } from './stagesMock';
+import { createProofingRenderMock } from './proofingRenderMock';
 import { createDawMock } from './dawMock';
 import { createProvidersMock } from './providersMock';
+import { createMasteringMock } from './masteringMock';
+import { createRecordingMock } from './recordingMock';
 import { createFindingsMock } from './findingsMock';
 import { createTakeReviewScanMock } from './takeReviewMock';
 import { createTakeComparisonMock } from './takeComparisonMock';
 import { createMeasureMock } from './measureMock';
+import { createRenderEncodeMasterMock } from './renderEncodeMasterMock';
 import { DELIVERY_REVIEW_ANALYZER, mockDeliveryReviewFindings, resavingAfterProfileChange } from './deliveryReviewMock';
 import { createDeliveryProfilesMock } from './deliveryProfilesMock';
 import { createDiagnosticsMock } from './diagnosticsMock';
 import { createEditingMock } from './editingMock';
 import { createCleanupActionMock } from './cleanupActionMock';
 import { createPrepMarkupMock } from './prepMarkupMock';
+import { buildPrepCompletenessSummaryMock } from './prepCompletenessMock';
 import { createMockState, type MockApiSeed } from './mockHost/state';
 import { createUpdateMock } from './mockHost/update';
 import { createProjectMock } from './mockHost/project';
@@ -36,16 +41,19 @@ import { createProofingMock } from './mockHost/proofing';
 import { createReaperActionsMock } from './mockHost/reaperActions';
 import { createChapterTracksMock } from './mockHost/chapterTracks';
 import { createStoryBibleMock } from './mockHost/storyBible';
+import { createCharacterMock } from './mockHost/character';
 import { createSystemMock, invalidPayloadOverrides } from './mockHost/system';
 import { createPronunciationLookupMock } from './mockHost/pronunciationLookup';
+import { createPronunciationOnlineMock } from './mockHost/pronunciationOnline';
 
 export { applyMixedManuscriptMock } from './mockHost/manuscript';
 export type { MockUpdateSeed } from './mockHost/update';
 
-// The engine chip's 'builtin' state (stage-navigation-and-page-replacement.prd.md Phase 1, Q7) has no host field yet
-// - nothing selects it until native recording builds a recorder - so it is a URL flag read directly rather than a
-// NarrationApi binding, the same way `?mockEngine=builtin` reaches App.tsx in both the mock and the real client.
-export function mockEngineFromLocation(): 'daw' | 'builtin' {
+// `?mockEngine=builtin` seeds the mock recorder's engine choice (native-recording P2, ADR 0455): the host answers the
+// project's engine in RecorderState, and the mock answers it from this flag, so the story, the visual rows and the demo
+// reach the "Built-in recorder" chip and the Booth's recorder without a click. No window (a node test) is REAPER.
+function mockEngineFromLocation(): 'daw' | 'builtin' {
+  if (typeof window === 'undefined') return 'daw';
   return new URLSearchParams(window.location.search).get('mockEngine') === 'builtin' ? 'builtin' : 'daw';
 }
 
@@ -73,6 +81,7 @@ export function createMockApi(
     peekCoverage: (chapterId) => peekCoverage(chapterId),
   });
   const storyBible = createStoryBibleMock(s, initial, manuscriptReady, assets);
+  const character = createCharacterMock(s);
   const teleprompter = createTeleprompterMock({
     ready: manuscriptReady,
     chapters: () => s.chapters,
@@ -119,6 +128,9 @@ export function createMockApi(
   const preview = createPreviewMock({ chapters: () => s.chapters, paragraphs: () => s.paragraphs }, initial.preview);
   const daw = createDawMock(initial.daw);
   const providers = createProvidersMock(initial.providers);
+  const mastering = createMasteringMock(initial.mastering);
+  // The engine chip's `?mockEngine=builtin` flag seeds the recorder's engine, so the chip and the Booth agree (ADR 0455).
+  const recording = createRecordingMock({ engine: mockEngineFromLocation(), ...initial.recording });
   const stages = createStagesMock({
     ready: manuscriptReady,
     chapters: () => s.chapters.map(withMeasurement),
@@ -132,7 +144,7 @@ export function createMockApi(
   // check-derived misread flag are the same event, merged by overlayFindings into one reviewable flag, exactly as
   // mockups/edit-and-proof-workspace/02-flag-detail-open.webp shows. Computed fresh on every findings read
   // (FindingsMockOptions.lazySeed), not once at boot: chapter-1 usually has no track link yet when this mock is
-  // built (the narrator, or the visual suite's own driver, confirms one on Tracks after the app has already
+  // built (the narrator, or the visual suite's own driver, confirms one in the audio engine panel after the app has already
   // started), so a one-off boot-time computation would see no live item and never find this finding a home.
   const workspaceOverlayFinding = (): Finding[] => {
     const source = mockMisreadFindingSource(workspaceDeps, 'chapter-1');
@@ -170,6 +182,12 @@ export function createMockApi(
   const takeReviewScan = createTakeReviewScanMock(saveAnalyzerFindings, endJob, initial.takeReviewScanHold);
   const takeComparison = createTakeComparisonMock({ get: findings.findingsGet, save: saveFinding }, endJob, initial.takeComparisonHold);
   const measurePicked = new Set<string>();
+  const { recordMeasurement: recordRenderMeasurement, ...proofingRender } = createProofingRenderMock({
+    ready: manuscriptReady,
+    chapters: () => s.chapters,
+    picked: measurePicked,
+    seed: initial.proofingRender,
+  });
   const { current: deliveryProfile, ...deliveryProfiles } = createDeliveryProfilesMock(initial.deliveryProfile);
   const { peekDiagnostics, ...diagnostics } = createDiagnosticsMock(endJob, measurePicked, initial.diagnostics);
   const editing = createEditingMock(initial.editing);
@@ -186,7 +204,9 @@ export function createMockApi(
   const { resaveReview, ...measurement } = createMeasureMock(endJob, initial.measure, measurePicked, deliveryProfile, peekDiagnostics, (job) => {
     const review = mockDeliveryReviewFindings(job);
     saveFileFindings(DELIVERY_REVIEW_ANALYZER, review.files, review.findings);
+    recordRenderMeasurement(job.files);
   });
+  const renderEncodeMaster = createRenderEncodeMasterMock(endJob, initial.renderExport, deliveryProfile);
   const system = createSystemMock(s, initial, {
     version: update.version,
     project,
@@ -198,6 +218,7 @@ export function createMockApi(
     ...manuscript.bindings,
     ...settings.bindings,
     ...storyBible.bindings,
+    ...character.bindings,
     ...assets.bindings,
     ...proofing.bindings,
     ...reaperActions.bindings,
@@ -207,6 +228,7 @@ export function createMockApi(
     ...takeReviewScan,
     ...takeComparison,
     ...measurement,
+    ...renderEncodeMaster,
     ...resavingAfterProfileChange(deliveryProfiles, resaveReview),
     ...diagnostics,
     ...editing,
@@ -216,6 +238,17 @@ export function createMockApi(
     editingCandidates: async (chapterId) => (await findings.findingsList({ analyzer: 'editing', chapterId })).findings,
     ...cleanupAction,
     ...prepMarkup,
+    // prep-depth.prd.md Phase 7: read the same two calls the real host reads (Phase 3's queries, Phase 5's markup per
+    // chapter), never a third mock store.
+    prepCompletenessSummary: async () => {
+      const queries = await storyBible.bindings.guidePronunciationQueries();
+      const staleSpansByChapterId = new Map<string, number>();
+      for (const chapter of s.chapters) {
+        const { spans } = await prepMarkup.prepMarkupList(chapter.id);
+        staleSpansByChapterId.set(chapter.id, spans.filter((span) => span.stale).length);
+      }
+      return buildPrepCompletenessSummaryMock(s.chapters, queries, staleSpansByChapterId);
+    },
     takeReviewCreateTake: async (request) => ({
       targetItemGuid: request.targetItemGuid,
       newTakeGuid: '{99999999-0000-4000-8000-000000000099}',
@@ -226,6 +259,7 @@ export function createMockApi(
     ...workspace,
     ...preview,
     ...stages,
+    ...proofingRender,
     ...production,
     ...findings,
     // Merge the workspace's own loop into the shared REAPER status/stop, after ...findings so these win: one app
@@ -241,7 +275,10 @@ export function createMockApi(
     },
     ...daw,
     ...providers,
+    ...mastering,
+    ...recording,
     ...createPronunciationLookupMock(),
+    ...createPronunciationOnlineMock(),
   };
   const api = initial.invalidPayload ? { ...base, ...invalidPayloadOverrides(initial.invalidPayload, base) } : base;
   return { ...api, ...overrides };

@@ -2,6 +2,7 @@ package main
 
 import (
 	"github.com/countrymanprime/narration-utils/shell/internal/bridge"
+	"github.com/countrymanprime/narration-utils/shell/internal/character"
 	"github.com/countrymanprime/narration-utils/shell/internal/cleanuptools"
 	"github.com/countrymanprime/narration-utils/shell/internal/coverage"
 	"github.com/countrymanprime/narration-utils/shell/internal/dawport"
@@ -13,6 +14,7 @@ import (
 	"github.com/countrymanprime/narration-utils/shell/internal/pickups"
 	"github.com/countrymanprime/narration-utils/shell/internal/production"
 	"github.com/countrymanprime/narration-utils/shell/internal/projectstate"
+	"github.com/countrymanprime/narration-utils/shell/internal/recording"
 	"github.com/countrymanprime/narration-utils/shell/internal/renderconfig"
 	"github.com/countrymanprime/narration-utils/shell/internal/retakelanes"
 	"github.com/countrymanprime/narration-utils/shell/internal/settings"
@@ -40,11 +42,13 @@ type hostServices struct {
 	retakeLanes  *retakelanes.Service
 	settings     *settings.Store
 	teleprompter *teleprompter.Service
+	recorder     *recording.Service
 	transcript   *transcript.Service
 	coverage     *coverage.Service
 	stages       *stages.Service
 	production   *production.Service
 	editing      *editing.Service
+	character    *character.Service
 	// reachability tracks the current bridge client's PROJECT_STATUS heartbeat (ADR 0092, Phase 7, W10), behind the
 	// DAW port's Heartbeat role (DAW port PRD P5c). Never a true nil interface: with no bridge client configureLocked
 	// still sets it to an always-unreachable stand-in.
@@ -102,11 +106,13 @@ func (h *Host) services() hostServices {
 		retakeLanes:     h.retakeLanes,
 		settings:        h.settings,
 		teleprompter:    h.teleprompter,
+		recorder:        h.recorder,
 		transcript:      h.transcript,
 		coverage:        h.coverage,
 		stages:          h.stages,
 		production:      h.production,
 		editing:         h.editing,
+		character:       h.character,
 		reachability:    h.reachability,
 		bridge:          h.bridge,
 		actions:         h.actions,

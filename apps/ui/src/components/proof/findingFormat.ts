@@ -25,7 +25,7 @@ const CATEGORY_LABELS: Record<string, string> = {
 };
 
 const ANALYZER_LABELS: Record<string, string> = {
-  'transcript-compare': 'Proofing comparison',
+  'transcript-compare': 'Local AI compare',
   'story-bible': 'Story Bible',
   'take-review': 'Take review',
   'take-comparison': 'Take comparison',
@@ -133,9 +133,26 @@ export function evidenceRows(finding: Finding): Array<{ label: string; value: st
   return rows;
 }
 
+/** The Type column's chip (PF2 in the visual mockup divergence audit): the evidence's own kind when the analyzer reports
+ * one (Misread, Skipped, Extra words, …), the category name otherwise (Story Bible entry, Pickup, …). */
+export function evidenceKindLabel(finding: Finding): string {
+  const kind = text(finding.evidence?.kind);
+  if (kind) return KIND_LABELS[kind] ?? humanize(kind.toLowerCase());
+  return categoryLabel(finding.category);
+}
+
 /** When the decision was recorded, in the narrator's own locale; the raw text when it is not a date. */
 export function formatDecidedAt(timestamp: string | undefined): string | undefined {
   if (!timestamp) return undefined;
   const date = new Date(timestamp);
   return Number.isNaN(date.getTime()) ? timestamp : date.toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
+}
+
+/** The stretch of recording a note is about, as its own audio file and file-relative seconds, for Play ±3 s (mock 04, PF8).
+ * Undefined when the analyzer recorded no file or no file-relative time (a Story Bible entry, an older comparison). */
+export function playableClip(finding: Finding): { sourceFile: string; rangeStart: number; rangeEnd: number } | undefined {
+  const file = finding.source.file;
+  const start = finding.time_range?.source_start;
+  if (!file || start === undefined) return undefined;
+  return { sourceFile: file, rangeStart: start, rangeEnd: Math.max(start, finding.time_range?.source_end ?? start) };
 }

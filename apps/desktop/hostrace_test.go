@@ -61,6 +61,10 @@ var stressReaders = []stressReader{
 	{"ManuscriptNotes", func(h *Host) { _, _ = h.ManuscriptNotes("missing") }},
 	{"ManuscriptParagraphs", func(h *Host) { _, _ = h.ManuscriptParagraphs("missing") }},
 	{"PreviewCandidates", func(h *Host) { _, _ = h.PreviewCandidates() }},
+	{"PreviewPin", func(h *Host) { _, _ = h.PreviewPin() }},
+	{"PreviewPinSet (unknown chapter)", func(h *Host) { _, _ = h.PreviewPinSet("missing", []string{"missing"}) }},
+	{"PreviewPinAdjust (nothing pinned)", func(h *Host) { _, _ = h.PreviewPinAdjust("end", true) }},
+	{"PreviewPinClear", func(h *Host) { _, _ = h.PreviewPinClear() }},
 	{"ManuscriptReader", func(h *Host) { _, _ = h.ManuscriptReader() }},
 	{"ManuscriptReaderState", func(h *Host) { _, _ = h.ManuscriptReaderState() }},
 	{"ManuscriptSearch", func(h *Host) { _, _ = h.ManuscriptSearch("word") }},
@@ -106,7 +110,13 @@ var stressReaders = []stressReader{
 		_, _ = h.TeleprompterSaveFlags("ch-1", []liveflags.Flag{{Kind: "misread", ParagraphID: "p-1", WordStart: 0, WordEnd: 1}})
 	}},
 	{"DawCapabilities", func(h *Host) { _, _ = h.DawCapabilities() }},
+	{"PronunciationOnlineKeyStatus", func(h *Host) { _, _ = h.PronunciationOnlineKeyStatus() }},
 	{"ProviderCapabilities", func(h *Host) { _, _ = h.ProviderCapabilities() }},
+	{"MasteringProviders", func(h *Host) { _, _ = h.MasteringProviders() }},
+	{"RecorderState", func(h *Host) { _, _ = h.RecorderState() }},
+	{"RecorderStop", func(h *Host) { _, _ = h.RecorderStop() }},
+	{"RecorderMeterStop", func(h *Host) { _, _ = h.RecorderMeterStop() }},
+	{"MasteringChooseProvider (clear)", func(h *Host) { _, _ = h.MasteringChooseProvider("") }},
 	{"TracksDiscover", func(h *Host) { _, _ = h.TracksDiscover() }},
 	{"TracksList", func(h *Host) { _, _ = h.TracksList() }},
 	{"TracksSelect", func(h *Host) { _, _ = h.TracksSelect("not-a-project-file.rpp") }},
@@ -160,6 +170,16 @@ var stressReaders = []stressReader{
 	{"DiagnosticsState", func(h *Host) { _, _ = h.DiagnosticsState() }},
 	{"DiagnosticsCancel (nothing running)", func(h *Host) { _, _ = h.DiagnosticsCancel() }},
 	{"DiagnosticsAnalyze (not picked)", func(h *Host) { _, _ = h.DiagnosticsAnalyze([]string{"C:/missing.wav"}, "raw_recording") }},
+	{"ExportState", func(h *Host) { _, _ = h.ExportState() }},
+	{"ExportCancel (nothing running)", func(h *Host) { _, _ = h.ExportCancel() }},
+	{"ExportStart (not picked)", func(h *Host) {
+		_, _ = h.ExportStart(ExportRequest{Items: []ExportItem{{Kind: "chapter", Title: "01", Path: "C:/missing.wav"}}})
+	}},
+	{"PackageState", func(h *Host) { _, _ = h.PackageState() }},
+	{"PackageCancel (nothing running)", func(h *Host) { _, _ = h.PackageCancel() }},
+	{"PackageStart (nothing exported)", func(h *Host) {
+		_, _ = h.PackageStart(PackageRequest{ProfileID: "acx", Items: []PackageItem{{Kind: "chapter", Path: "C:/missing.mp3"}}})
+	}},
 	{"canAttach (ProjectCreateIn's pre-check)", func(h *Host) { _ = h.canAttach() }},
 	{"CoverageStart (asset gate)", func(h *Host) { _, _ = h.CoverageStart("c-0001", nil) }},
 	{"CoverageState", func(h *Host) { _, _ = h.CoverageState() }},
@@ -169,9 +189,14 @@ var stressReaders = []stressReader{
 	{"StageConfirm (refused)", func(h *Host) { _, _ = h.StageConfirm("c-0001", "editing", "key") }},
 	{"StageDismiss (refused)", func(h *Host) { _, _ = h.StageDismiss("c-0001", "editing", "key") }},
 	{"StageRevert (refused)", func(h *Host) { _, _ = h.StageRevert("c-0001") }},
+	{"ProofingRenderState", func(h *Host) { _, _ = h.ProofingRenderState("c-0001") }},
+	{"ProofingChooseRender (no window)", func(h *Host) { _, _ = h.ProofingChooseRender("c-0001") }},
+	{"ProofingClearRender", func(h *Host) { _, _ = h.ProofingClearRender("c-0001") }},
 	{"ProductionOverview", func(h *Host) { _, _ = h.ProductionOverview() }},
 	{"ProductionStartTimer (unknown chapter)", func(h *Host) { _, _ = h.ProductionStartTimer("missing", "recording") }},
 	{"ProductionStopTimer", func(h *Host) { _, _ = h.ProductionStopTimer() }},
+	{"ProductionStatusReport", func(h *Host) { _, _ = h.ProductionStatusReport(false) }},
+	{"ProductionBurndown", func(h *Host) { _, _ = h.ProductionBurndown() }},
 	{"emit callbacks", func(h *Host) {
 		h.emitTranscript(emptyTranscript())
 		h.emitTeleprompterState(map[string]any{"phase": "idle"})

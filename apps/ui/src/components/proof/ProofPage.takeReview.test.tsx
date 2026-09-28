@@ -32,7 +32,7 @@ function renderPage({ overrides = {}, initial = {} }: { overrides?: Partial<Narr
   render(
     <ApiProvider api={api}>
       <TooltipProvider>
-        <ProofPage notify={vi.fn()} hasManuscript goToManuscript={vi.fn()} goToStoryBible={vi.fn()} goToDelivery={vi.fn()} openChapter={vi.fn()} />
+        <ProofPage notify={vi.fn()} hasManuscript goToManuscript={vi.fn()} goToStoryBible={vi.fn()} goToMaster={vi.fn()} openChapter={vi.fn()} />
       </TooltipProvider>
     </ApiProvider>,
   );
@@ -165,7 +165,7 @@ describe('A take-review group on the Review page', () => {
     expect(items[1].textContent).toContain('Part of the span (70%)');
     expect(reads.textContent).not.toMatch(/best|rank(ed|ing)? (read|take)|score/i);
     // The finding-level REAPER controls are replaced by each read's own.
-    expect(screen.queryByRole('region', { name: 'In REAPER' })).toBeNull();
+    expect(screen.queryByRole('heading', { name: 'In REAPER' })).toBeNull();
   });
 
   it('goes to and loops one read in REAPER by its place in the finding', async () => {
@@ -227,10 +227,10 @@ describe('A take-review group on the Review page', () => {
     });
     let reads = await openGroup(user, /Partial pickup/);
     expect(within(reads).getByRole('button', { name: 'Add as take…' })).toHaveProperty('disabled', true);
-    expect(within(reads).getByText(/Accept this finding first/)).toBeTruthy();
+    expect(within(reads).getByText(/Mark this note as a pickup or an edit first/)).toBeTruthy();
 
-    await user.click(screen.getByRole('button', { name: 'Accept' }));
-    await screen.findByText('Saved as accepted.');
+    await user.click(screen.getByRole('button', { name: 'Pickup' }));
+    await screen.findByText('Saved: needs a pickup.');
     reads = screen.getByRole('region', { name: 'Reads' });
     await waitFor(() => expect(within(reads).getByRole('button', { name: 'Add as take…' })).toHaveProperty('disabled', false));
     await user.click(within(reads).getByRole('button', { name: 'Add as take…' }));

@@ -1,0 +1,11 @@
+{
+  "devices": [
+    {
+      "name": "Microphone Array (Realtek(R) Audio)"
+    },
+    {
+      "name": "Analogue 1 + 2 (Focusrite USB Audio)"
+    }
+  ],
+  "error": null
+}

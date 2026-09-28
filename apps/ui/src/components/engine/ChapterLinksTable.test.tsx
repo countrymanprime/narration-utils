@@ -1,0 +1,134 @@
+// @vitest-environment jsdom
+import { cleanup, render, screen, waitFor, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { MemoryRouter } from 'react-router-dom';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { ChapterLinksTable } from './ChapterLinksTable';
+import { ApiProvider } from '../../api/ApiContext';
+import { createMockApi } from '../../api/mockApi';
+import { WIRE_CHAPTERS, WIRE_TRACKS_PROJECT } from '../../api/mockFixtures';
+import { chapterName } from '../../chapterName';
+
+afterEach(cleanup);
+
+const notify = vi.fn();
+
+function renderTable() {
+  const api = createMockApi();
+  render(
+    <ApiProvider api={api}>
+      <MemoryRouter>
+        <ChapterLinksTable tracks={WIRE_TRACKS_PROJECT.tracks} notify={notify} />
+      </MemoryRouter>
+    </ApiProvider>,
+  );
+  return api;
+}
+
+// A chapter's row, found by its first cell (the chapter title), not a bare text match: several track names in the
+// fixture happen to equal chapter titles ("Chapter 1", "Chapter 2"), so `getByText` alone would match more than one
+// element once a track name appears in the row too.
+function chapterRow(table: HTMLElement, title: string): HTMLTableRowElement {
+  const row = within(table)
+    .getAllByRole('row')
+    .find((candidate) => within(candidate).queryByRole('cell', { name: title }));
+  if (!row) throw new Error(`No row found for chapter "${title}"`);
+  return row as HTMLTableRowElement;
+}
+
+describe('ChapterLinksTable', () => {
+  it('lists every narration chapter as not linked when nothing is confirmed', async () => {
+    renderTable();
+
+    const table = await screen.findByRole('table', { name: 'Chapter links' });
+    const firstRow = chapterRow(table, chapterName(WIRE_CHAPTERS[0]));
+    expect(within(firstRow).getByText('Not linked')).toBeTruthy();
+  });
+
+  it('confirms a link, then shows it as Linked with the track name', async () => {
+    const user = userEvent.setup();
+    renderTable();
+    const table = await screen.findByRole('table', { name: 'Chapter links' });
+    const firstRow = chapterRow(table, chapterName(WIRE_CHAPTERS[0]));
+
+    await user.selectOptions(within(firstRow).getByRole('combobox'), WIRE_TRACKS_PROJECT.tracks[0].guid);
+    await user.click(within(firstRow).getByRole('button', { name: 'Confirm' }));
+
+    await waitFor(() => expect(within(firstRow).getByText('Linked')).toBeTruthy());
+    expect(within(firstRow).getAllByText(WIRE_TRACKS_PROJECT.tracks[0].name).length).toBeGreaterThan(0);
+  });
+
+  it('clears a confirmed link back to Not linked', async () => {
+    const user = userEvent.setup();
+    renderTable();
+    const table = await screen.findByRole('table', { name: 'Chapter links' });
+    const firstRow = chapterRow(table, chapterName(WIRE_CHAPTERS[0]));
+    await user.selectOptions(within(firstRow).getByRole('combobox'), WIRE_TRACKS_PROJECT.tracks[0].guid);
+    await user.click(within(firstRow).getByRole('button', { name: 'Confirm' }));
+    await waitFor(() => expect(within(firstRow).getByText('Linked')).toBeTruthy());
+
+    await user.click(within(firstRow).getByRole('button', { name: 'Clear' }));
+
+    await waitFor(() => expect(within(firstRow).getByText('Not linked')).toBeTruthy());
+  });
+
+  it('Change to another track leaves one link, not two', async () => {
+    const user = userEvent.setup();
+    const api = renderTable();
+    const table = await screen.findByRole('table', { name: 'Chapter links' });
+    const firstRow = chapterRow(table, chapterName(WIRE_CHAPTERS[0]));
+    await user.selectOptions(within(firstRow).getByRole('combobox'), WIRE_TRACKS_PROJECT.tracks[0].guid);
+    await user.click(within(firstRow).getByRole('button', { name: 'Confirm' }));
+    await waitFor(() => expect(within(firstRow).getByText('Linked')).toBeTruthy());
+
+    await user.click(within(firstRow).getByRole('button', { name: 'Change' }));
+    await user.selectOptions(within(firstRow).getByRole('combobox'), WIRE_TRACKS_PROJECT.tracks[1].guid);
+    await user.click(within(firstRow).getByRole('button', { name: 'Confirm' }));
+
+    await waitFor(() => expect(within(firstRow).getAllByText(WIRE_TRACKS_PROJECT.tracks[1].name).length).toBeGreaterThan(0));
+    const { mappings } = await api.chapterTrackMapList();
+    expect(mappings.filter((mapping) => mapping.chapterId === WIRE_CHAPTERS[0].id).map((mapping) => mapping.trackGuid)).toEqual([
+      WIRE_TRACKS_PROJECT.tracks[1].guid,
+    ]);
+  });
+
+  it('Clear removes every link a chapter holds, including a double link left by an older Change', async () => {
+    const user = userEvent.setup();
+    const api = createMockApi();
+    await api.chapterTrackMapConfirm(WIRE_TRACKS_PROJECT.tracks[0].guid, WIRE_CHAPTERS[0].id);
+    await api.chapterTrackMapConfirm(WIRE_TRACKS_PROJECT.tracks[1].guid, WIRE_CHAPTERS[0].id);
+    render(
+      <ApiProvider api={api}>
+        <MemoryRouter>
+          <ChapterLinksTable tracks={WIRE_TRACKS_PROJECT.tracks} notify={notify} />
+        </MemoryRouter>
+      </ApiProvider>,
+    );
+    const table = await screen.findByRole('table', { name: 'Chapter links' });
+    const firstRow = chapterRow(table, chapterName(WIRE_CHAPTERS[0]));
+    await waitFor(() => expect(within(firstRow).getByText('Linked')).toBeTruthy());
+
+    await user.click(within(firstRow).getByRole('button', { name: 'Clear' }));
+
+    await waitFor(() => expect(within(firstRow).getByText('Not linked')).toBeTruthy());
+    const { mappings } = await api.chapterTrackMapList();
+    expect(mappings.filter((mapping) => mapping.chapterId === WIRE_CHAPTERS[0].id)).toHaveLength(0);
+  });
+
+  it('shows a link to a track that no longer exists as Track missing', async () => {
+    const api = createMockApi();
+    await api.chapterTrackMapConfirm('{NOT-A-REAL-TRACK-GUID}', WIRE_CHAPTERS[0].id);
+    render(
+      <ApiProvider api={api}>
+        <MemoryRouter>
+          <ChapterLinksTable tracks={WIRE_TRACKS_PROJECT.tracks} notify={notify} />
+        </MemoryRouter>
+      </ApiProvider>,
+    );
+
+    const table = await screen.findByRole('table', { name: 'Chapter links' });
+    const firstRow = chapterRow(table, chapterName(WIRE_CHAPTERS[0]));
+    await waitFor(() => expect(within(firstRow).getByText('Track missing')).toBeTruthy());
+    expect(within(firstRow).getByText('Linked track is missing from this project')).toBeTruthy();
+  });
+});

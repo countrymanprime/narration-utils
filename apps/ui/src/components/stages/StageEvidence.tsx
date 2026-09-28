@@ -1,10 +1,10 @@
 import type { ReactNode } from 'react';
-import { Link } from 'react-router-dom';
+import { EnginePanelLink } from '../engine/EnginePanelContext';
 import { chapterName, context } from '../../chapterName';
 import type { ManuscriptChapter, StageChapterRecommendation, StageEvidence as Evidence, StageSignal } from '../../types';
 import { Button } from '../primitives/Button';
 import { SlideOver } from '../primitives/SlideOver';
-import { formatWhen, paragraphRefs } from '../home/recordingCheckText';
+import { formatWhen, paragraphRefs } from '../production/recordingCheckText';
 import type { StageDecision, StagesState } from './useStageRecommendations';
 import {
   SIGNAL_STATE_LABEL,
@@ -36,6 +36,12 @@ type Props = {
   onOpenEditingCheck: () => void;
   /** Opens the manuscript at a paragraph (its index in the whole manuscript). */
   goToParagraph: (index: number) => void;
+  /** Opens the finding an evidence entry names (the proofing pickups roll-up's open items), on whatever page hosts
+   * this popover; undefined where there is nowhere to open it. */
+  onOpenFinding?: (findingId: string) => void;
+  /** Shown first, above the verdict: the Production board's status override and its links to the chapter's checks
+   * (stage-navigation-and-page-replacement.prd.md Phase 2), which Home's table row used to carry. */
+  status?: ReactNode;
 };
 
 /**
@@ -46,9 +52,10 @@ type Props = {
  * the evidence again; nothing here starts an analysis (Q12).
  */
 export function StageEvidence(props: Props) {
-  const { open, chapter, recommendation, onClose } = props;
+  const { open, chapter, recommendation, onClose, status } = props;
   return (
     <SlideOver open={open} title={chapterName(chapter ?? { title: recommendation?.title ?? '' }, context('Stage suggestion'))} onClose={onClose}>
+      {status && <div className="mb-4 border-b border-[var(--border)] pb-4">{status}</div>}
       {recommendation && chapter ? <EvidenceBody {...props} chapter={chapter} recommendation={recommendation} /> : <Unread {...props} />}
     </SlideOver>
   );
@@ -56,6 +63,8 @@ export function StageEvidence(props: Props) {
 
 function Unread({ phase, error, onCheckNow }: Props) {
   if (phase === 'loading') return <p role="status">Checking…</p>;
+  // Read, and this chapter has no suggestion (it is finalized, or not narration the stage engine assesses).
+  if (phase === 'ready') return <p style={{ color: 'var(--text-muted)' }}>No stage suggestion for this chapter.</p>;
   return (
     <div role="alert" className="space-y-3 text-sm">
       <p style={{ color: 'var(--danger-text)' }}>Couldn’t check this chapter{error ? `: ${error}` : '.'}</p>
@@ -77,6 +86,7 @@ function EvidenceBody({
   onOpenCheck,
   onOpenEditingCheck,
   goToParagraph,
+  onOpenFinding,
 }: Props & { chapter: ManuscriptChapter; recommendation: StageChapterRecommendation }) {
   const now = Date.now();
   const decision = (kind: StageDecision, label: string, variant: 'primary' | 'ghost' = 'ghost') => (
@@ -127,6 +137,7 @@ function EvidenceBody({
             onOpenCheck={onOpenCheck}
             onOpenEditingCheck={onOpenEditingCheck}
             goToParagraph={goToParagraph}
+            onOpenFinding={onOpenFinding}
           />
         ))}
       </div>
@@ -150,6 +161,7 @@ function SignalCard({
   onOpenCheck,
   onOpenEditingCheck,
   goToParagraph,
+  onOpenFinding,
 }: {
   signal: StageSignal;
   chapter: ManuscriptChapter;
@@ -158,6 +170,7 @@ function SignalCard({
   onOpenCheck: () => void;
   onOpenEditingCheck: () => void;
   goToParagraph: (index: number) => void;
+  onOpenFinding?: (findingId: string) => void;
 }) {
   const cause = causeText(signal);
   const age = formatAge(signal.basis.projectFileModTime, now);
@@ -186,7 +199,7 @@ function SignalCard({
       {signal.evidence.length > 0 && (
         <ul className="space-y-1">
           {signal.evidence.map((entry, index) => (
-            <EvidenceLine key={`${entry.kind}-${index}`} entry={entry} chapter={chapter} goToParagraph={goToParagraph} />
+            <EvidenceLine key={`${entry.kind}-${index}`} entry={entry} chapter={chapter} goToParagraph={goToParagraph} onOpenFinding={onOpenFinding} />
           ))}
         </ul>
       )}
@@ -215,12 +228,7 @@ function CauseAction({
         {openLabel}
       </Button>
     );
-  if (resolve === 'tracks')
-    return (
-      <Link to="/tracks" className="font-semibold underline">
-        Open Tracks
-      </Link>
-    );
+  if (resolve === 'engine') return <EnginePanelLink />;
   if (resolve === 'check-now')
     return (
       <Button variant="ghost" onClick={onCheckNow}>
@@ -230,7 +238,17 @@ function CauseAction({
   return null;
 }
 
-function EvidenceLine({ entry, chapter, goToParagraph }: { entry: Evidence; chapter: ManuscriptChapter; goToParagraph: (index: number) => void }) {
+function EvidenceLine({
+  entry,
+  chapter,
+  goToParagraph,
+  onOpenFinding,
+}: {
+  entry: Evidence;
+  chapter: ManuscriptChapter;
+  goToParagraph: (index: number) => void;
+  onOpenFinding?: (findingId: string) => void;
+}) {
   const first = entry.paragraphIds?.length ? paragraphRefs(chapter, entry.paragraphIds.slice(0, 1))[0] : undefined;
   return (
     <li>
@@ -239,6 +257,13 @@ function EvidenceLine({ entry, chapter, goToParagraph }: { entry: Evidence; chap
         <div className="mt-1">
           <Button variant="ghost" className="px-3 py-1" onClick={() => goToParagraph(first.index!)}>
             Go to paragraph {first.number}
+          </Button>
+        </div>
+      )}
+      {entry.findingId && onOpenFinding && (
+        <div className="mt-1">
+          <Button variant="ghost" className="px-3 py-1" onClick={() => onOpenFinding(entry.findingId!)}>
+            Open this note
           </Button>
         </div>
       )}

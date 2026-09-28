@@ -1,9 +1,9 @@
 import { TooltipTarget } from '../primitives/Tooltip';
 
 // The header's audio-engine indicator (stage-navigation-and-page-replacement.prd.md Phase 1, ADR 0407 item 4),
-// replacing the REAPER link pill in place: same styled button, same click action (today's link/relink flow; the
-// engine panel opens from here from Phase 6), same three REAPER states, plus a fourth the UI can draw but that
-// nothing selects yet ('builtin', Q7) - the native recording suite's own binding chooses it later.
+// replacing the REAPER link pill in place: same styled button, same three REAPER states, plus a fourth the UI can draw
+// but that nothing selects yet ('builtin', Q7) - the native recording suite's own binding chooses it later. A click
+// opens the engine panel (Phase 6, Q3 A), which holds the link and relink action the chip used to run itself.
 export type EngineState = 'daw' | 'builtin';
 
 export function EngineChip({
@@ -11,7 +11,7 @@ export function EngineChip({
   dawFileLinked,
   dawReachable = false,
   dawProjectMatches = false,
-  onLinkDawFile,
+  onOpenEnginePanel,
   linkingDawFile = false,
 }: {
   /** Which engine backs this project (Q7); the UI defaults to 'daw' until native recording picks 'builtin'. */
@@ -21,7 +21,8 @@ export function EngineChip({
   dawReachable?: boolean;
   /** Whether that heartbeat's open project is the linked file (Phase 7); only meaningful when dawReachable is true. */
   dawProjectMatches?: boolean;
-  onLinkDawFile: () => void;
+  /** Opens the engine panel (Phase 6): the linked .rpp and its link action, the tracks, chapter sync and the REAPER tools. */
+  onOpenEnginePanel: () => void;
   /** True while the shared DAW-link binding is running for any of its three call sites (ADR 0075's ref guard). */
   linkingDawFile?: boolean;
 }) {
@@ -40,12 +41,12 @@ export function EngineChip({
     );
   }
   const dawMismatch = dawFileLinked && dawReachable && !dawProjectMatches;
-  const label = dawMismatch ? 'Wrong REAPER project open' : dawFileLinked ? 'REAPER project linked' : 'No REAPER project linked';
+  const label = dawMismatch ? 'Wrong REAPER project open' : dawFileLinked ? 'REAPER linked' : 'No REAPER project linked';
   const tooltip = dawMismatch
-    ? 'REAPER has a different project open than the one linked here. Click to link the open project, or switch REAPER to the linked file.'
+    ? 'REAPER has a different project open than the one linked here. Open the engine panel to link the open project, or switch REAPER to the linked file.'
     : dawFileLinked
-      ? 'Change the linked REAPER project (.rpp) file'
-      : 'Link a REAPER project (.rpp) file';
+      ? 'Open the engine panel: the linked REAPER project, its tracks and the REAPER tools'
+      : 'Open the engine panel to link a REAPER project (.rpp) file';
   const dotStyle = dawMismatch
     ? { backgroundColor: 'var(--warn)', boxShadow: '0 0 5px var(--warn)' }
     : dawFileLinked
@@ -55,8 +56,7 @@ export function EngineChip({
     <TooltipTarget text={tooltip}>
       <button
         type="button"
-        onClick={onLinkDawFile}
-        disabled={linkingDawFile}
+        onClick={onOpenEnginePanel}
         aria-busy={linkingDawFile || undefined}
         aria-label={`${label} — ${tooltip}`}
         className="inline-flex items-center gap-[0.4rem] rounded-full border border-[var(--border)] bg-[var(--surface-2)] px-[0.6rem] py-[0.2rem] font-['Barlow_Condensed',sans-serif] text-[0.8rem] font-semibold tracking-[0.03em] hover:border-[var(--accent)] disabled:pointer-events-none disabled:opacity-60 max-md:px-[0.35rem]"

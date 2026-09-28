@@ -3,15 +3,15 @@
 // Pure functions, so StageSuggestion, StageEvidence and StageSummary only lay them out.
 import { STATUS_LABELS } from '../../chapterStatus';
 import type { ChapterStatus, StageChapterRecommendation, StageSignal, StageSignalState, StageUnknownCause } from '../../types';
-import { COVERAGE_REASON_TEXT } from '../home/recordingCheckText';
+import { COVERAGE_REASON_TEXT } from '../production/recordingCheckText';
 
 export const stageLabel = (stage: ChapterStatus) => STATUS_LABELS[stage];
 
 /**
  * How a cause is resolved. `check`: the chapter's recording check dialog, which also links a track and offers the Whisper model;
- * `tracks`: the Tracks page; `wait`: nothing to do but let the running check end; `check-now`: read the evidence again.
+ * `engine`: the audio engine panel (stage-navigation-and-page-replacement.prd.md Phase 6, which replaced the Tracks page); `wait`: nothing to do but let the running check end; `check-now`: read the evidence again.
  */
-export type StageCauseAction = 'check' | 'tracks' | 'wait' | 'check-now';
+export type StageCauseAction = 'check' | 'engine' | 'wait' | 'check-now';
 
 /** Each cause in a few words (the row) and what to do about it (the evidence view). */
 export const CAUSE_TEXT: Record<StageUnknownCause, { short: string; action: string; resolve: StageCauseAction }> = {
@@ -19,11 +19,11 @@ export const CAUSE_TEXT: Record<StageUnknownCause, { short: string; action: stri
   stale: { short: 'changed since the last check', action: 'Check the recording again; only the changed items are transcribed.', resolve: 'check' },
   incomplete_run: { short: 'the last check did not finish', action: 'Run the recording check again, to the end.', resolve: 'check' },
   analysis_running: { short: 'a check is running', action: 'Wait for the check to end; the suggestion is read again then.', resolve: 'wait' },
-  unmapped_track: { short: 'no track linked', action: 'Link the track in the recording check, or on the Tracks page.', resolve: 'check' },
+  unmapped_track: { short: 'no track linked', action: 'Link the track in the recording check, or in the audio engine panel.', resolve: 'check' },
   unconfirmed_mapping: { short: 'track link not confirmed', action: 'Confirm the matching track in the recording check.', resolve: 'check' },
-  multiple_tracks: { short: 'more than one track linked', action: 'Keep one track link on the Tracks page.', resolve: 'tracks' },
+  multiple_tracks: { short: 'more than one track linked', action: 'Keep one track link in the audio engine panel.', resolve: 'engine' },
   measurement_unavailable: { short: 'cannot be checked here', action: 'The recording check says what it needs first.', resolve: 'check' },
-  project_unreadable: { short: 'project file not readable', action: 'Choose or save the REAPER project file, then check now.', resolve: 'tracks' },
+  project_unreadable: { short: 'project file not readable', action: 'Choose or save the REAPER project file, then check now.', resolve: 'engine' },
   provider_error: { short: 'the evidence could not be read', action: 'Check now to read it again.', resolve: 'check-now' },
 };
 
@@ -36,47 +36,63 @@ const EDITING_CAUSE_TEXT: Partial<Record<StageUnknownCause, { short: string; act
   stale: { short: 'changed since the last check', action: 'Check editing again; only the changed items are re-decoded.', resolve: 'check' },
   incomplete_run: { short: 'the last check did not finish', action: 'Run the editing check again, to the end.', resolve: 'check' },
   analysis_running: { short: 'a check is running', action: 'Wait for the check to end; the suggestion is read again then.', resolve: 'wait' },
-  unmapped_track: { short: 'no track linked', action: 'Link the track in the editing check, or on the Tracks page.', resolve: 'check' },
+  unmapped_track: { short: 'no track linked', action: 'Link the track in the editing check, or in the audio engine panel.', resolve: 'check' },
   unconfirmed_mapping: { short: 'track link not confirmed', action: 'Confirm the matching track in the editing check.', resolve: 'check' },
-  multiple_tracks: { short: 'more than one track linked', action: 'Keep one track link on the Tracks page.', resolve: 'tracks' },
+  multiple_tracks: { short: 'more than one track linked', action: 'Keep one track link in the audio engine panel.', resolve: 'engine' },
   measurement_unavailable: { short: 'cannot be checked here', action: 'The editing check says what it needs first.', resolve: 'check' },
-  project_unreadable: { short: 'project file not readable', action: 'Choose or save the REAPER project file, then check now.', resolve: 'tracks' },
+  project_unreadable: { short: 'project file not readable', action: 'Choose or save the REAPER project file, then check now.', resolve: 'engine' },
   provider_error: { short: 'the evidence could not be read', action: 'Check now to read it again.', resolve: 'check-now' },
 };
 
 /** The same causes, worded for the proofing signals instead (proofing-readiness-signals.prd.md Phases 1 and 5): there
  * is no per-chapter "proofing check" dialog to open (unlike recording and editing), so every resolvable cause routes
- * to the Tracks page, a wait, or Check now - never `resolve: 'check'`, which `StageEvidence` would otherwise wire to
+ * to the audio engine panel, a wait, or Check now - never `resolve: 'check'`, which `StageEvidence` would otherwise wire to
  * the wrong dialog. Each cause's `reason` (from the signal itself) already names the real action - run Transcript
- * Compare, measure on the Delivery page, decide on the Review page - so this table's `action` only adds where to look
+ * Compare, measure on Master & QC, decide on the Review page - so this table's `action` only adds where to look
  * next, not what the signal already said. */
 const PROOFING_CAUSE_TEXT: Partial<Record<StageUnknownCause, { short: string; action: string; resolve: StageCauseAction }>> = {
   never_analyzed: { short: 'not checked yet', action: 'Check now once you have run the check the reason above names.', resolve: 'check-now' },
   stale: { short: 'changed since the last check', action: 'Check now once you have run it again.', resolve: 'check-now' },
   incomplete_run: { short: 'the last check did not finish', action: 'Check now once it has run to the end.', resolve: 'check-now' },
   analysis_running: { short: 'a check is running', action: 'Wait for the check to end; the suggestion is read again then.', resolve: 'wait' },
-  unmapped_track: { short: 'no track linked', action: 'Link the track on the Tracks page.', resolve: 'tracks' },
-  unconfirmed_mapping: { short: 'track link not confirmed', action: 'Confirm the matching track on the Tracks page.', resolve: 'tracks' },
-  multiple_tracks: { short: 'more than one track linked', action: 'Keep one track link on the Tracks page.', resolve: 'tracks' },
+  unmapped_track: { short: 'no track linked', action: 'Link the track in the audio engine panel.', resolve: 'engine' },
+  unconfirmed_mapping: { short: 'track link not confirmed', action: 'Confirm the matching track in the audio engine panel.', resolve: 'engine' },
+  multiple_tracks: { short: 'more than one track linked', action: 'Keep one track link in the audio engine panel.', resolve: 'engine' },
   measurement_unavailable: { short: 'cannot be checked here', action: 'Check now once the reason above is resolved.', resolve: 'check-now' },
-  project_unreadable: { short: 'project file not readable', action: 'Choose or save the REAPER project file, then check now.', resolve: 'tracks' },
+  project_unreadable: { short: 'project file not readable', action: 'Choose or save the REAPER project file, then check now.', resolve: 'engine' },
   provider_error: { short: 'the evidence could not be read', action: 'Check now to read it again.', resolve: 'check-now' },
+};
+
+/** The delivery checks' own causes (proofing-readiness-signals.prd.md Phase 5), including the render length check:
+ * `never_analyzed`, `stale` and `measurement_unavailable` are all about the chosen render, resolved in the
+ * "Rendered file" section of this same panel (Phase 6's Choose, Clear and Measure), so `resolve: 'check-now'` would
+ * be misleading here - there is nothing to re-check until the render is chosen or measured. The mapping causes stay
+ * `tracks`, same as the pickups roll-up. */
+const PROOFING_DELIVERY_CAUSE_TEXT: Partial<Record<StageUnknownCause, { short: string; action: string; resolve: StageCauseAction }>> = {
+  ...PROOFING_CAUSE_TEXT,
+  never_analyzed: { short: 'not checked yet', action: 'Choose the rendered file in the Rendered file section below, then Measure.', resolve: 'wait' },
+  stale: { short: 'changed since the last check', action: 'Choose the rendered file again in the Rendered file section below, then Measure.', resolve: 'wait' },
+  measurement_unavailable: { short: 'cannot be checked here', action: 'See the Rendered file section below.', resolve: 'wait' },
 };
 
 /** True for the three signal ids the editing-readiness PRD's Phase 6 registers (apps/desktop/internal/editing/signals.go). */
 export const isEditingSignal = (signalId: string): boolean => signalId.startsWith('editing.');
 
-/** True for a proofing stage signal (apps/desktop/internal/proofing): the pickups roll-up and every delivery check.
- * Unlike `isEditingSignal`, nothing outside this file needs it: every `PROOFING_CAUSE_TEXT` cause resolves to
- * `tracks`, `wait` or `check-now`, never `check`, so `StageEvidence` never needs to pick a proofing-specific dialog. */
-const isProofingSignal = (signalId: string): boolean => signalId.startsWith('proofing.');
+/** True for the proofing pickups roll-up (apps/desktop/internal/proofing/pickups.go), as opposed to a delivery check. */
+const isProofingPickupsSignal = (signalId: string): boolean => signalId === 'proofing.pickups';
+
+/** True for a proofing delivery check, including the render length check (apps/desktop/internal/proofing/delivery.go,
+ * renders.go): every one of them is about the chapter's chosen render, whose actions live in this panel's own
+ * "Rendered file" section (Phase 6), not a dialog `StageEvidence` could open. */
+const isProofingDeliverySignal = (signalId: string): boolean => signalId.startsWith('proofing.delivery.');
 
 /** A signal's cause, worded for whichever check produced it: `stageText.ts`'s `CAUSE_TEXT` is shared by every
  * provider, but "Open recording check" is the wrong sentence, and the wrong dialog, for an editing or proofing signal. */
 export function causeText(signal: Pick<StageSignal, 'id' | 'cause'>): { short: string; action: string; resolve: StageCauseAction } | undefined {
   if (!signal.cause) return undefined;
   if (isEditingSignal(signal.id)) return EDITING_CAUSE_TEXT[signal.cause] ?? CAUSE_TEXT[signal.cause];
-  if (isProofingSignal(signal.id)) return PROOFING_CAUSE_TEXT[signal.cause] ?? CAUSE_TEXT[signal.cause];
+  if (isProofingDeliverySignal(signal.id)) return PROOFING_DELIVERY_CAUSE_TEXT[signal.cause] ?? CAUSE_TEXT[signal.cause];
+  if (isProofingPickupsSignal(signal.id)) return PROOFING_CAUSE_TEXT[signal.cause] ?? CAUSE_TEXT[signal.cause];
   return CAUSE_TEXT[signal.cause];
 }
 

@@ -5,53 +5,61 @@ import {
   faArrowRight,
   faBars,
   faBookOpen,
+  faCircleDot,
   faFileLines,
   faFolder,
   faGaugeHigh,
   faGear,
   faHouse,
-  faLayerGroup,
   faMicrophone,
-  faScroll,
+  faMinus,
+  faPlus,
+  faRotateLeft,
   faWaveSquare,
 } from '@fortawesome/free-solid-svg-icons';
 import { NavButton } from '../primitives/NavButton';
 import { NavDrawer } from '../primitives/NavDrawer';
 import { IconButton } from '../primitives/IconButton';
+import { Button } from '../primitives/Button';
 import { TooltipTarget } from '../primitives/Tooltip';
 import { dawCapabilityGate } from '../../dawAvailability';
 import { DemoBanner } from './DemoBanner';
 import { EngineChip, type EngineState } from './EngineChip';
+import { TimerChip, type RunningTimer } from './TimerChip';
 
 // requiresManuscript/requiresDaw name what each nav item is gated on (PRD project-workspace-and-daw-link.prd.md, Open
 // Question W16): no item needs a linked DAW project file since Proof replaced Proofing (stage-navigation-and-page-replacement.prd.md
-// Phase 5: its compare run gates itself inside the chapter view) - Tracks reads the project's REAPER file directly through its own
-// discovery flow and is not gated here. The requiresDaw field stays for the next item that needs one.
-const HOME = { name: 'Home', path: '/', icon: faHouse, requiresManuscript: false, requiresDaw: false };
-const MANUSCRIPT = { name: 'Manuscript', path: '/manuscript', icon: faFileLines, requiresManuscript: true, requiresDaw: false };
+// Phase 5: its compare run gates itself inside the chapter view). The requiresDaw field stays for the next item that needs one.
+// The Production stage's page (stage-navigation-and-page-replacement.prd.md Phase 2): the Production home at `/`, which replaced Home.
+// Not gated: with no manuscript it is where the import is.
+const PRODUCTION = { name: 'Production', path: '/', icon: faHouse, requiresManuscript: false, requiresDaw: false };
+const SCRIPT = { name: 'Script', path: '/script', icon: faFileLines, requiresManuscript: true, requiresDaw: false };
 const STORY_BIBLE = { name: 'Story Bible', path: '/story-bible', icon: faBookOpen, requiresManuscript: true, requiresDaw: false };
-const TELEPROMPTER = { name: 'Teleprompter', path: '/teleprompter', icon: faScroll, requiresManuscript: true, requiresDaw: false };
-const TRACKS = { name: 'Tracks', path: '/tracks', icon: faLayerGroup, requiresManuscript: false, requiresDaw: false };
+// The Record stage's one page (stage-navigation-and-page-replacement.prd.md Phase 4): it replaced the Teleprompter page. Its
+// icon is a record dot, as the stage-nav mocks draw it (audit SH12).
+const BOOTH = { name: 'Booth', path: '/booth', icon: faCircleDot, requiresManuscript: true, requiresDaw: false };
 // Proof (stage-navigation-and-page-replacement.prd.md Phase 5): the book's notes at /proof and a chapter's view at /proof/:chapterId,
 // replacing Review and Proofing. Not gated: take-review notes need no manuscript, the page says itself when there is nothing to
 // proof yet, and the compare run inside a chapter view gates itself on the DAW (CapabilityGate).
 const PROOF = { name: 'Proof', path: '/proof', icon: faWaveSquare, requiresManuscript: false, requiresDaw: false };
 // Measuring rendered chapter files (diagnostics-delivery-and-cleanup-tools.prd.md Phase 5). Not gated: it reads files the narrator
 // picks, so it needs neither a manuscript nor a REAPER project.
-const DELIVERY = { name: 'Delivery', path: '/delivery', icon: faGaugeHigh, requiresManuscript: false, requiresDaw: false };
+// Pickups (stage-navigation-and-page-replacement.prd.md Phase 7): the proofer's pickup list, replacing the Tracks page's
+// Pickups dialog. Not gated: its import, export and jumps talk to REAPER and each says itself when REAPER is not there.
+const PICKUPS = { name: 'Pickups', path: '/pickups', icon: faRotateLeft, requiresManuscript: false, requiresDaw: false };
+const MASTER_QC = { name: 'Master & QC', path: '/master', icon: faGaugeHigh, requiresManuscript: false, requiresDaw: false };
 
 // Grouped by production stage (stage-navigation-and-page-replacement.prd.md Phase 1, ADR 0407 item 3): Production,
 // Prep, Record, Review, Finish, with Settings pinned at the foot (below, not a group). Phase 1 holds each existing
 // page under its current name in the group its job belongs to (D3/Q5): a page is renamed only in the phase that
-// ships its replacement. `/production` (PR #760) drops its nav entry here - the page and route stay reachable
-// directly, unlisted, until Phase 2 makes it the Production home at `/` (D79: never keep two versions of a nav).
-type NavItem = typeof HOME;
+// ships its replacement. Phase 2 made the Production page the home at `/` (`/production` redirects there).
+type NavItem = typeof PRODUCTION;
 const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
-  { label: 'Production', items: [HOME] },
-  { label: 'Prep', items: [MANUSCRIPT, STORY_BIBLE] },
-  { label: 'Record', items: [TELEPROMPTER] },
-  { label: 'Review', items: [PROOF, TRACKS] },
-  { label: 'Finish', items: [DELIVERY] },
+  { label: 'Production', items: [PRODUCTION] },
+  { label: 'Prep', items: [SCRIPT, STORY_BIBLE] },
+  { label: 'Record', items: [BOOTH] },
+  { label: 'Review', items: [PROOF, PICKUPS] },
+  { label: 'Finish', items: [MASTER_QC] },
 ];
 const isActivePath = (pathname: string, path: string) => (path === '/' ? pathname === '/' : pathname === path || pathname.startsWith(`${path}/`));
 
@@ -63,10 +71,12 @@ export function AppShell({
   dawFileLinked,
   dawReachable = false,
   dawProjectMatches = false,
-  onLinkDawFile,
+  onOpenEnginePanel,
   linkingDawFile = false,
   engine = 'daw',
+  timer = null,
   history,
+  zoom,
   children,
 }: {
   pathname: string;
@@ -78,13 +88,18 @@ export function AppShell({
   dawReachable?: boolean;
   /** Whether that heartbeat's open project is the linked file (Phase 7); only meaningful when dawReachable is true. */
   dawProjectMatches?: boolean;
-  onLinkDawFile: () => void;
+  /** Opens the engine panel from the header's engine chip (stage-navigation-and-page-replacement.prd.md Phase 6). */
+  onOpenEnginePanel: () => void;
   /** True while the shared DAW-link binding is running for any of its three call sites (ADR 0075's ref guard). */
   linkingDawFile?: boolean;
   /** Which engine the header's chip shows (stage-navigation-and-page-replacement.prd.md Phase 1, Q7); UI-only until native recording picks 'builtin'. */
   engine?: EngineState;
+  /** The production stage timer while it runs (Phase 2's timer chip); null hides the chip. */
+  timer?: RunningTimer | null;
   /** Page-level Back/Forward (app-navigation-and-zoom-controls.prd.md Phase 1): already guarded and gated by App.tsx. */
   history: { canGoBack: boolean; canGoForward: boolean; back: () => void; forward: () => void };
+  /** The header's zoom group (app-navigation-and-zoom-controls.prd.md Phase 2): `useZoom`'s own state and actions. */
+  zoom: { percent: number; canZoomOut: boolean; canZoomIn: boolean; zoomIn: () => void; zoomOut: () => void; reset: () => void; announcement: string };
   children: ReactNode;
 }) {
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -104,6 +119,12 @@ export function AppShell({
   const requiredReason = (item: NavItem) => gateFor(item).reason;
   const backTooltip = history.canGoBack ? 'Back (Alt+Left)' : 'Back (Alt+Left): no earlier page in this project';
   const forwardTooltip = history.canGoForward ? 'Forward (Alt+Right)' : 'Forward (Alt+Right): no later page yet';
+  // The header's zoom group (Phase 2, Q1/Q9): the readout is always shown and is itself the reset button, disabled
+  // only at exactly 100% (Q9 A). The reset tooltip's wording is the approved mock's (04-tooltip-reset-zoom.webp).
+  const zoomOutTooltip = 'Zoom out (Ctrl+-)';
+  const zoomInTooltip = 'Zoom in (Ctrl+=)';
+  const zoomResetTooltip = 'Reset zoom to 100% (Ctrl+0)';
+  const zoomAtDefault = zoom.percent === 100;
   // The wide rail's group heading (Q6): a visible `section-label`, referenced by the group's `aria-labelledby` so a
   // screen reader hears the stage name once, not twice. Shared by the sidebar and the drawer, which render the same markup.
   const groupHeadingId = (label: string) => `nav-group-${label.toLowerCase().replace(/\s+/g, '-')}`;
@@ -188,7 +209,7 @@ export function AppShell({
         </NavDrawer>
         {/* tabIndex -1: a dialog that closes with nothing to give focus back to (its opener is gone) sends focus into <main> (its first control, or <main> itself), not to <body>. */}
         <main tabIndex={-1} className="flex min-w-0 flex-1 flex-col overflow-hidden focus:outline-none">
-          <header className="flex h-14 flex-none items-center justify-between gap-3 border-b border-[var(--border)] bg-[var(--surface)] px-3 text-sm md:px-5">
+          <header className="flex h-14 flex-none items-center gap-3 border-b border-[var(--border)] bg-[var(--surface)] px-3 text-sm md:px-5">
             <IconButton label="Open navigation" onClick={() => setDrawerOpen(true)} className="hidden max-md:inline-flex">
               <FontAwesomeIcon icon={faBars} />
             </IconButton>
@@ -205,25 +226,53 @@ export function AppShell({
                 </IconButton>
               </TooltipTarget>
             </div>
-            <div className="flex min-w-0 items-center gap-2">
+            {/* Left-aligned after the history buttons, as the mocks draw it; it takes the free width and truncates first. */}
+            <div className="flex min-w-0 flex-1 items-center gap-2">
               {/* Below `md` the two new history buttons leave less room (Phase 1, Q10 A): the label and
                   folder icon drop first, and the project name is left to truncate on its own. */}
               <span className="section-label max-md:hidden">Project</span>
               <FontAwesomeIcon icon={faFolder} style={{ color: 'var(--non-text)' }} className="max-md:hidden" />
               <span className="truncate font-medium">{projectName}</span>
             </div>
+            {timer && <TimerChip timer={timer} />}
+            {/* The zoom group (Phase 2, D79/ADR 0407): after a running timer chip, before the engine chip. */}
+            <div className="flex flex-none items-center gap-1" role="group" aria-label="Zoom">
+              <TooltipTarget text={zoomOutTooltip}>
+                <IconButton label="Zoom out" disabledReason={zoom.canZoomOut ? undefined : zoomOutTooltip} onClick={zoom.zoomOut}>
+                  <FontAwesomeIcon icon={faMinus} />
+                </IconButton>
+              </TooltipTarget>
+              <TooltipTarget text={zoomResetTooltip}>
+                <Button
+                  variant="ghost"
+                  aria-label={`Reset zoom to 100% (now ${zoom.percent}%)`}
+                  aria-disabled={zoomAtDefault || undefined}
+                  onClick={zoomAtDefault ? (event) => event.preventDefault() : zoom.reset}
+                  className="h-8 min-w-14 justify-center px-2 py-0 font-['IBM_Plex_Mono',ui-monospace,monospace] text-[0.8rem] font-normal tracking-normal normal-case aria-disabled:pointer-events-none aria-disabled:opacity-40"
+                >
+                  {zoom.percent}%
+                </Button>
+              </TooltipTarget>
+              <TooltipTarget text={zoomInTooltip}>
+                <IconButton label="Zoom in" disabledReason={zoom.canZoomIn ? undefined : zoomInTooltip} onClick={zoom.zoomIn}>
+                  <FontAwesomeIcon icon={faPlus} />
+                </IconButton>
+              </TooltipTarget>
+              {/* A level change is announced once, politely, debounced by useZoom - not on every wheel notch (Solution Detail). */}
+              <div aria-live="polite" className="sr-only">
+                {zoom.announcement}
+              </div>
+            </div>
             <EngineChip
               engine={engine}
               dawFileLinked={dawFileLinked}
               dawReachable={dawReachable}
               dawProjectMatches={dawProjectMatches}
-              onLinkDawFile={onLinkDawFile}
+              onOpenEnginePanel={onOpenEnginePanel}
               linkingDawFile={linkingDawFile}
             />
           </header>
-          <div className={`scroll-chrome-hidden relative flex-1 overflow-y-auto ${isActivePath(pathname, '/manuscript') ? 'p-0' : 'p-4 md:p-6'}`}>
-            {children}
-          </div>
+          <div className={`scroll-chrome-hidden relative flex-1 overflow-y-auto ${isActivePath(pathname, '/script') ? 'p-0' : 'p-4 md:p-6'}`}>{children}</div>
         </main>
       </div>
     </div>

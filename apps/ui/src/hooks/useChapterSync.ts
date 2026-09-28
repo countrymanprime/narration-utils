@@ -4,7 +4,7 @@ import type { ChapterSyncApi, ChapterSyncState } from '../api/contracts/chapterS
 /**
  * Chapter sync's live state (daw-chapter-track-auto-sync PRD Phase 3): read once with `chapterSyncState()`, then kept
  * current by `chaptersync:state`, sent after every link path, sync and Undo. `undefined` until the first read
- * resolves. Home and Tracks each call this to drive their own display from the same one subscription shape.
+ * resolves. The Production board and Tracks each call this to drive their own display from the same one subscription shape.
  */
 export function useChapterSync(api: Pick<ChapterSyncApi, 'chapterSyncState' | 'subscribeChapterSync'>): ChapterSyncState | undefined {
   const [state, setState] = useState<ChapterSyncState>();

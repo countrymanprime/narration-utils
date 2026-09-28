@@ -46,7 +46,7 @@ import type { MockApiSeed } from './state';
 const PICKUPS_MOCK_PUNCH_PREROLL = 3;
 
 /**
- * The REAPER actions the Tracks page runs, each a run with its own state and live event: line identity, pickups,
+ * The REAPER actions the audio engine panel runs, each a run with its own state and live event: line identity, pickups,
  * the chapter render, the cleanup tools, the project-state check, retake lanes and chapter tags.
  */
 export function createReaperActionsMock(initial: MockApiSeed, projectFolder: () => string) {

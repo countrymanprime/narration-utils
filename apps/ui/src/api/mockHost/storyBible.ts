@@ -476,6 +476,16 @@ export function createStoryBibleMock(
       rowIssues.sort((a, b) => a.line - b.line);
       return { applied, issues: rowIssues.map((issue) => `line ${issue.line}: ${issue.message}`) };
     },
+    guideDialogueCues: async () => wireClone(s.dialogueCues),
+    guideCorrectCue: async (cueId, speakerEntityId) => {
+      const cue = s.dialogueCues.find((row) => row.id === cueId);
+      if (!cue) throw new Error('Cue not found.');
+      const value = speakerEntityId.trim();
+      const speaker = value === '' || value.toLowerCase() === 'unknown' ? null : value;
+      s.dialogueCues = s.dialogueCues.map((row) =>
+        row.id === cueId ? { ...row, speaker_entity_id: speaker, speaker_source: 'correction', corrected: true } : row,
+      );
+    },
   } satisfies Partial<NarrationApi>;
   return { bindings };
 }

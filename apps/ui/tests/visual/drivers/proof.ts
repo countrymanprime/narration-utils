@@ -6,6 +6,7 @@ import {
   confirmApprovedMarker,
   goToPage,
   openDeliveryFindingOnProof,
+  MISREAD_DETAIL,
   openFindingRow,
   openPickupGroup,
   openReaperControls,
@@ -29,7 +30,7 @@ export const proofDrivers: Record<string, Driver> = {
   },
   filtered: async (page) => {
     await openProof(page);
-    await page.getByRole('combobox', { name: 'Check' }).selectOption({ label: 'Proofing comparison' });
+    await page.getByRole('combobox', { name: 'Check' }).selectOption({ label: 'Local AI compare' });
     await page.getByRole('switch', { name: 'Only findings scored 50% or more' }).click();
     await waitForFindingRows(page, 1);
   },
@@ -40,14 +41,14 @@ export const proofDrivers: Record<string, Driver> = {
   },
   'detail-open': async (page) => {
     await openProof(page);
-    await openFindingRow(page, /pink eyes/, 'Transcript difference');
+    await openFindingRow(page, /pink eyes/, MISREAD_DETAIL);
   },
   'decision-saved': async (page) => {
     await openProof(page);
-    await openFindingRow(page, /pink eyes/, 'Transcript difference');
+    await openFindingRow(page, /pink eyes/, MISREAD_DETAIL);
     await page.getByRole('textbox', { name: 'Note (optional)' }).fill('Re-record this line in the pickup session.');
-    await page.getByRole('button', { name: 'Accept' }).click();
-    const saved = page.getByText('Saved as accepted.');
+    await page.getByRole('button', { name: 'Pickup', exact: true }).click();
+    const saved = page.getByText('Saved: needs a pickup.');
     await saved.waitFor();
     await saved.scrollIntoViewIfNeeded();
   },
@@ -55,9 +56,9 @@ export const proofDrivers: Record<string, Driver> = {
     await page.goto('/?mockFindings=changed');
     await settlePage(page);
     await openProof(page);
-    await openFindingRow(page, /pink eyes/, 'Transcript difference');
+    await openFindingRow(page, /pink eyes/, MISREAD_DETAIL);
     await page.getByRole('textbox', { name: 'Note (optional)' }).fill('Pale is close enough.');
-    await page.getByRole('button', { name: 'Dismiss' }).click();
+    await page.getByRole('button', { name: 'Waive', exact: true }).click();
     const refused = page.getByRole('alert').filter({ hasText: 'this finding changed since you opened it' });
     await refused.waitFor();
     await refused.scrollIntoViewIfNeeded();
@@ -122,8 +123,8 @@ export const proofDrivers: Record<string, Driver> = {
   },
   'take-review-add-take': async (page) => {
     await openPickupGroup(page);
-    await page.getByRole('button', { name: 'Accept', exact: true }).click();
-    await page.getByText('Saved as accepted.').waitFor();
+    await page.getByRole('button', { name: 'Pickup', exact: true }).click();
+    await page.getByText('Saved: needs a pickup.').waitFor();
     await page.getByRole('region', { name: 'Reads' }).getByRole('button', { name: 'Add as take…' }).click();
     const dialog = page.getByRole('alertdialog', { name: 'Add candidate as a new take' });
     await dialog.getByRole('combobox', { name: 'Target item' }).selectOption({ index: 1 });

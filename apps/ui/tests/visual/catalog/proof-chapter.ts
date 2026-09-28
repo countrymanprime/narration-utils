@@ -6,7 +6,7 @@ import type { StateEntry } from '../lib/types';
 import { FREEZES_THE_CLOCK, KEEPS_DESKTOP_SCROLL, LIVE_PROGRESS_MOVES_ON } from './shared';
 
 export const proofChapterStates: StateEntry[] = [
-  // The chapter workspace (edit-and-proof-workspace.prd.md Phases 2 to 4), reached from a linked chapter's "Open workspace" link.
+  // The chapter workspace (edit-and-proof-workspace.prd.md Phases 2 to 4), reached from a linked chapter's "Open in Proof" link.
   {
     page: 'proof-chapter',
     state: 'never',
@@ -27,31 +27,47 @@ export const proofChapterStates: StateEntry[] = [
   },
   {
     page: 'proof-chapter',
+    state: 'note-selected',
+    description:
+      'Proof chapter view led by mock 04 (D85 #2): a pin on the notes strip pressed - the note open beside the chapter\'s notes table ("0:0x.x · Misread", Play ±3 s, Pickup/Waive/Defer), with the recording-check card under it (D85 #11)',
+    // Below `xl` the detail sits under the notes table, so the driver scrolls it into view at each width.
+    ...KEEPS_DESKTOP_SCROLL,
+  },
+  {
+    page: 'proof-chapter',
     state: 'playing',
     description: 'Proof chapter view, Play pressed - transport shows Pause and a live elapsed readout, the currently spoken word highlighted in the script',
+    // The transport sits under mock 04's notes, below the fold under `xl`: the driver scrolls to it at each width.
+    ...KEEPS_DESKTOP_SCROLL,
   },
   {
     page: 'proof-chapter',
     state: 'flag-selected',
     description: 'Proof chapter view, a flag selected from the Flags panel - its script/heard text and "Play from here" shown in the panel’s detail section',
+    // Below `xl` the detail sits under the flags list, off the bottom of a reused desktop scroll position (issue #509
+    // D82 judge-duplicate fix): the driver scrolls it into view per viewport.
+    ...KEEPS_DESKTOP_SCROLL,
   },
   {
     page: 'proof-chapter',
     state: 'flag-finding-open',
     description:
-      'Proof chapter view, a finding-backed flag selected (edit-and-proof-workspace.prd.md Phase 4): "From <analyzer>", Go to/Loop in REAPER for that word, and the Decision section (Accept/Dismiss/Defer, a note field) - mockups/edit-and-proof-workspace/02-flag-detail-open.webp',
+      'Proof chapter view, a finding-backed flag selected (edit-and-proof-workspace.prd.md Phase 4): "From <analyzer>", Go to/Loop in REAPER for that word, and the Decision section (Pickup/Waive/Defer, D85 #7, a note field) - mockups/edit-and-proof-workspace/02-flag-detail-open.webp',
+    ...KEEPS_DESKTOP_SCROLL,
   },
   {
     page: 'proof-chapter',
     state: 'flag-decided',
     description:
-      'Proof chapter view, the finding-backed flag just accepted in place - "Saved as accepted." and the decision reflected, without leaving the page',
+      'Proof chapter view, the finding-backed flag just marked for a pickup in place - "Saved: needs a pickup." and the decision reflected, without leaving the page',
+    ...KEEPS_DESKTOP_SCROLL,
   },
   {
     page: 'proof-chapter',
     state: 'standalone',
     description:
       'Proof chapter view with REAPER not running (edit-and-proof-workspace PRD Phase 3) - Go to in REAPER and Loop in REAPER on the transport bar are disabled, with the reason under a tooltip; everything else still works',
+    ...KEEPS_DESKTOP_SCROLL,
   },
   // The compare run (the Proofing page's setup, run and results, folded in by stage navigation Phase 5), scrolled into view.
   {
@@ -74,7 +90,7 @@ export const proofChapterStates: StateEntry[] = [
     page: 'proof-chapter',
     state: 'compare-results-misread',
     description:
-      "Proof chapter view, a finished comparison's misread selected in the Flags panel - the inline script/heard diff, its marker state, Show in manuscript, Play recorded audio and Add pronunciation equivalence (the Proofing page's expanded results row)",
+      "Proof chapter view, a finished comparison's misread selected in the Flags panel - the inline script/heard diff, its marker state, Show in Script, Play recorded audio and Add pronunciation equivalence (the Proofing page's expanded results row)",
     ...KEEPS_DESKTOP_SCROLL,
   },
   {
@@ -135,17 +151,20 @@ export const proofChapterStates: StateEntry[] = [
     page: 'proof-chapter',
     state: 'preview-computing',
     description: 'Proof chapter view, the Preview panel still reading candidates (?mockPreviewCandidates=computing)',
+    ...KEEPS_DESKTOP_SCROLL,
   },
   {
     page: 'proof-chapter',
     state: 'preview-no-manuscript',
     description:
       'Proof chapter view, the Preview panel answering no_manuscript (?mockPreviewCandidates=no-manuscript) - a defensive state the binding can return that the page itself cannot otherwise reach, since a chapter view redirects away with no manuscript at all',
+    ...KEEPS_DESKTOP_SCROLL,
   },
   {
     page: 'proof-chapter',
     state: 'preview-nothing-eligible',
     description: 'Proof chapter view, the Preview panel with no eligible text found (?mockPreviewCandidates=nothing-eligible)',
+    ...KEEPS_DESKTOP_SCROLL,
   },
   {
     page: 'proof-chapter',
@@ -158,6 +177,20 @@ export const proofChapterStates: StateEntry[] = [
     state: 'preview-warnings',
     description:
       'Proof chapter view, the Preview panel with a full-length candidate warned for a reason other than being short (an unclassified import, ?mockPreviewCandidates=warnings) - text and an icon, never colour alone',
+  },
+  // The pin and adjust UI (proofing-preview-suggestion.prd.md Phase 8): the narrator's own pinned window, settled on
+  // rather than recomputed, with edge adjustment and a stale banner when the manuscript has moved on since.
+  {
+    page: 'proof-chapter',
+    state: 'preview-pinned',
+    description:
+      'Proof chapter view, a pinned preview beneath the candidates (?mockPreviewCandidates=pinned): its range, reasons, and the edge-adjustment controls',
+  },
+  {
+    page: 'proof-chapter',
+    state: 'preview-pin-stale',
+    description:
+      'Proof chapter view, a pinned preview whose manuscript text changed since it was pinned (?mockPreviewCandidates=pin-stale) - the stale banner in text and an icon, never colour alone, beside its still-recomputed evidence',
   },
   // The stage recommendations panel (chapter-stage-recommendations.prd.md Phase 8, proofing-readiness-signals.prd.md Phases 1 and 5):
   // every narration chapter currently in Proofing, with the StageSuggestion/StageEvidence pattern Home's breakdown table uses.
@@ -182,6 +215,32 @@ export const proofChapterStates: StateEntry[] = [
     page: 'proof-chapter',
     state: 'stage-panel-evidence-unknown',
     description:
-      'Proof chapter view, the stage recommendations panel: Why opened on an unmapped-track cause (?mockProofingSignal=unmapped-track) - "Open Tracks", never "Open recording check" (stageText.ts PROOFING_CAUSE_TEXT)',
+      'Proof chapter view, the stage recommendations panel: Why opened on an unmapped-track cause (?mockProofingSignal=unmapped-track) - "Open the audio engine panel", never "Open recording check" (stageText.ts PROOFING_CAUSE_TEXT)',
+  },
+  // The chosen rendered file the delivery checks are about (proofing-readiness-signals.prd.md Phase 6).
+  {
+    page: 'proof-chapter',
+    state: 'render-none',
+    description: 'Proof chapter view, the readiness panel’s Rendered file section with nothing chosen yet - "Choose the rendered file for this chapter."',
+    ...KEEPS_DESKTOP_SCROLL,
+  },
+  {
+    page: 'proof-chapter',
+    state: 'render-chosen',
+    description: 'Proof chapter view, a rendered file just chosen - its name, when it was chosen, and Change/Clear/Measure offered',
+    ...KEEPS_DESKTOP_SCROLL,
+  },
+  {
+    page: 'proof-chapter',
+    state: 'render-measured',
+    description: 'Proof chapter view, the chosen render measured - "Measured <time>." under the file, Measure offered again',
+    ...KEEPS_DESKTOP_SCROLL,
+  },
+  {
+    page: 'proof-chapter',
+    state: 'render-stale',
+    description:
+      'Proof chapter view, a chosen render gone stale (?mockProofingRender=chapter-9-stale) - "changed since you chose it", Choose rendered file again',
+    ...KEEPS_DESKTOP_SCROLL,
   },
 ];

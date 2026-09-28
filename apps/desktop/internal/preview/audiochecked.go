@@ -1,7 +1,7 @@
 package preview
 
 // This file is Phase 7 of the proofing-preview-suggestion PRD
-// (docs/prds/proofing-preview-suggestion.prd.md#phase-7---audio-quality-and-performance-signals): saying which
+// (see docs/architecture/preview-suggestion.md): saying which
 // candidates are "audio-checked" and what was checked, composing RC's coverage/currency signal, Phase 6's
 // paragraph mapping, DX-4's windowed findings and pace evidence the same tri-state way SR's own stages package
 // composes signals (met/not_met/unknown; unknown never counts as good - SR D2, ADR 0015). A DX-4 windowed

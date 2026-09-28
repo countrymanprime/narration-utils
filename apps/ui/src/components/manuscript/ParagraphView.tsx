@@ -1,12 +1,12 @@
 import { useMemo, type ReactNode } from 'react';
 import type { GuideEntity, ManuscriptNote, ManuscriptParagraph, PrepMarkupSpan } from '../../types';
 import { Highlight, highlightKind } from '../primitives/Highlight';
+import { SpeakerTag } from '../primitives/SpeakerTag';
 import { composeAnnotationPieces, entityAnnotations, markupAnnotations, noteAnnotations, type Annotation, type Piece } from './annotations';
 import type { DialogueCue } from './dialogueCues';
 import { speakerLabelForParagraph } from './dialogueCues';
 import { MarkupMark, StaleMarkupNotice } from './MarkupMark';
 import type { RetailSampleRange } from './retailSampleRange';
-import { SpeakerTag } from './SpeakerTag';
 
 const FORMAT_TAG = { bold: 'strong', italic: 'em', underline: 'u' } as const;
 const NO_MARKUP: PrepMarkupSpan[] = [];
@@ -138,8 +138,14 @@ function ParagraphRow({
   ].join(' ');
   // The pieces rebuild the text exactly (composeAnnotationPieces), so each one's offsets are the running sum of the lengths
   // before it: how a mark split into several pieces knows which piece starts it and which ends it.
-  const renderPiece = (piece: Piece, pieceIndex: number, start: number) =>
-    piece.annotations
+  const renderPiece = (piece: Piece, pieceIndex: number, start: number) => {
+    // An entity mention inside a note's anchor (or two overlapping entities) share a piece and would otherwise nest
+    // one interactive mark inside another (axe nested-interactive), which is invalid for a screen reader regardless
+    // of which one visually wins. Only the innermost - the one composeAnnotationPieces already made interactively
+    // topmost - keeps the click/keyboard activation here; the outer one is still a real tab stop on its other,
+    // non-overlapping pieces of the same line, so nothing loses reachability.
+    let interactiveClaimed = false;
+    return piece.annotations
       .slice()
       .reverse()
       .reduce<ReactNode>((child, item) => {
@@ -154,18 +160,21 @@ function ParagraphRow({
           const Tag = FORMAT_TAG[item.style!];
           return <Tag key={key}>{child}</Tag>;
         }
+        const claimsActivation = !interactiveClaimed;
+        interactiveClaimed = true;
         if (item.kind === 'note')
           return (
-            <Highlight key={key} kind="Note" onActivate={() => openNote(item.note!)}>
+            <Highlight key={key} kind="Note" onActivate={claimsActivation ? () => openNote(item.note!) : undefined}>
               {child}
             </Highlight>
           );
         return (
-          <Highlight key={key} kind={highlightKind(item.entity!.category)} onActivate={() => openEntity(item.entity!)}>
+          <Highlight key={key} kind={highlightKind(item.entity!.category)} onActivate={claimsActivation ? () => openEntity(item.entity!) : undefined}>
             {child}
           </Highlight>
         );
       }, piece.text);
+  };
   const inSample = retailSample !== undefined && paragraph.index >= retailSample.start && paragraph.index <= retailSample.end;
   const sampleLabel =
     inSample && paragraph.index === retailSample.start
@@ -197,7 +206,10 @@ function ParagraphRow({
         )}
         {speakerLabel && (
           <div className="mb-0.5">
-            <SpeakerTag label={speakerLabel} />
+            {/* speakerId is the resolved canonical name, not the entity id speakerLabelForParagraph already
+                discarded (dialogueCues.ts): the Booth's "Voices in scene" tags key off the same canonical name
+                (BoothView.tsx), so a speaker's colour still matches across both places. */}
+            <SpeakerTag label={speakerLabel} speakerId={speakerLabel} />
           </div>
         )}
         <p data-paragraph-text className={`${textClass} whitespace-pre-line`}>

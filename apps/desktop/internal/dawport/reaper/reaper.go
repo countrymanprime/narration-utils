@@ -43,7 +43,7 @@ var declares = map[dawport.Capability]dawport.Level{
 	dawport.CapHeartbeat:    dawport.Supported,
 	dawport.CapProjectRead:  dawport.Supported,
 	// bridge's experimentalCommands: chapter_track_state, select_track; arm_only, record_start, record_stop; punch_to,
-	// play_position; create_regions; set_active_take; list_fx_chains, apply_fx_chain, list_fx, add_take_fx.
+	// play_position; create_regions; set_active_take; list_fx_chains, apply_fx_chain, list_fx, add_take_fx; master_chain_read.
 	dawport.CapTrackState:  dawport.Experimental,
 	dawport.CapTrackSelect: dawport.Experimental,
 	dawport.CapRecord:      dawport.Experimental,
@@ -54,6 +54,14 @@ var declares = map[dawport.Capability]dawport.Level{
 	// Built, never wired to a binding, so never gated: Experimental keeps them off until they are verified.
 	dawport.CapSilenceTrim: dawport.Experimental,
 	dawport.CapItemGain:    dawport.Experimental,
+	// The mastering port's DAW row (ADR 0306, render-encode-master PRD Phase 9, masterrender.go): Experimental until the owner's
+	// REAPER pass. master_chain_read is one of bridge.Actions' gated commands; render_with_fx answers through the fan-out, and each
+	// request carries the narrator's approval for that one render, which the bridge uses up.
+	dawport.CapRenderWithFX:    dawport.Experimental,
+	dawport.CapMasterChainRead: dawport.Experimental,
+	// macro_render is the mastering port's Audacity row (ADR 0306, ADR 0460): REAPER has no macro manager, so this is Unsupported,
+	// not NotYetAvailable (port.go's own example is exactly this shape, the other way around: "Audacity has no punch-and-roll").
+	dawport.CapMacroRender: dawport.Unsupported,
 }
 
 // commandCapability is the capability each of bridge.Actions' commands belongs to. Actions asks its gate about a command by name, and
@@ -73,6 +81,7 @@ var commandCapability = map[string]dawport.Capability{
 	"apply_fx_chain":      dawport.CapFXChains,
 	"list_fx":             dawport.CapFXChains,
 	"add_take_fx":         dawport.CapFXChains,
+	"master_chain_read":   dawport.CapMasterChainRead,
 }
 
 // Gate is bridge.Actions' gate over allowed (the resolver's Allowed): a command is sent only when its capability is allowed. A nil
@@ -154,27 +163,29 @@ func New(client *bridge.Client, allowed func(dawport.Capability) error) (*Adapte
 	return &Adapter{
 		heartbeat: heartbeat,
 		roles: map[dawport.Capability]any{
-			dawport.CapReview:       review{client: client},
-			dawport.CapNavigate:     navigator,
-			dawport.CapMarkers:      navigator,
-			dawport.CapPickups:      pickupList{commands},
-			dawport.CapLineIdentity: lineStamper{commands},
-			dawport.CapRenderConfig: renderConfigurer{commands},
-			dawport.CapCleanupTools: cleanupLauncher{commands},
-			dawport.CapRetakeLanes:  retakeLanePicker{commands},
-			dawport.CapProjectState: projectStateReader{commands},
-			dawport.CapTakeCreate:   takeCreator{commands},
-			dawport.CapHeartbeat:    heartbeat,
-			dawport.CapProjectRead:  ProjectReader{},
-			dawport.CapTrackState:   actions,
-			dawport.CapTrackSelect:  actions,
-			dawport.CapRecord:       actions,
-			dawport.CapPunch:        actions,
-			dawport.CapRegions:      actions,
-			dawport.CapTakes:        actions,
-			dawport.CapFXChains:     actions,
-			dawport.CapSilenceTrim:  bridge.NewCleanupClient(client),
-			dawport.CapItemGain:     bridge.NewLevelMatchClient(client),
+			dawport.CapReview:          review{client: client},
+			dawport.CapNavigate:        navigator,
+			dawport.CapMarkers:         navigator,
+			dawport.CapPickups:         pickupList{commands},
+			dawport.CapLineIdentity:    lineStamper{commands},
+			dawport.CapRenderConfig:    renderConfigurer{commands},
+			dawport.CapCleanupTools:    cleanupLauncher{commands},
+			dawport.CapRetakeLanes:     retakeLanePicker{commands},
+			dawport.CapProjectState:    projectStateReader{commands},
+			dawport.CapTakeCreate:      takeCreator{commands},
+			dawport.CapHeartbeat:       heartbeat,
+			dawport.CapProjectRead:     ProjectReader{},
+			dawport.CapTrackState:      actions,
+			dawport.CapTrackSelect:     actions,
+			dawport.CapRecord:          actions,
+			dawport.CapPunch:           actions,
+			dawport.CapRegions:         actions,
+			dawport.CapTakes:           actions,
+			dawport.CapFXChains:        actions,
+			dawport.CapSilenceTrim:     bridge.NewCleanupClient(client),
+			dawport.CapItemGain:        bridge.NewLevelMatchClient(client),
+			dawport.CapRenderWithFX:    fxRenderer{commands},
+			dawport.CapMasterChainRead: masterChainReader{actions},
 		},
 	}, nil
 }

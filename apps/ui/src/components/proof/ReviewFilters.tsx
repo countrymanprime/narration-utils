@@ -2,12 +2,13 @@ import type { FindingReviewStatus, FindingSortKey, FindingsSummary } from '../..
 import { Button } from '../primitives/Button';
 import { Select } from '../primitives/Select';
 import { Switch } from '../primitives/Switch';
-import { analyzerLabel, categoryLabel, STATUS_LABELS } from './findingFormat';
+import { analyzerLabel, categoryLabel } from './findingFormat';
+import { PROOF_STATUS_LABELS } from './resolution';
 import { CONFIDENT_MINIMUM, EMPTY_FILTERS, isFiltered, type ReviewFilterValues } from './reviewQuery';
 
 const STATUS_OPTIONS = [
   { value: '', label: 'All statuses' },
-  ...(['unreviewed', 'accepted', 'dismissed', 'deferred'] as const).map((status) => ({ value: status, label: STATUS_LABELS[status] })),
+  ...(['unreviewed', 'accepted', 'dismissed', 'deferred'] as const).map((status) => ({ value: status, label: PROOF_STATUS_LABELS[status] })),
 ];
 
 const SORT_OPTIONS: Array<{ value: FindingSortKey; label: string }> = [

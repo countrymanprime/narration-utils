@@ -11,7 +11,7 @@ The decision store and the service that composes the providers, the engine and t
 [ADR 0161](../adr/0161-stage-decisions-live-in-their-own-sidecar-and-confirm-writes-the-record-before-the-status.md)).
 `coverage.Service.EvidenceView` builds the view every provider shares (`stages.Config.View`), and a test runs the
 service over the recording-coverage corpus (Phase 3). The host builds the service for each project and four bindings reach
-it (Phase 4, `apps/desktop/bindings_stages.go`, see [The bindings](#the-bindings)); the Home surface is Phase 5 (see [On Home](#on-home)). The
+it (Phase 4, `apps/desktop/bindings_stages.go`, see [The bindings](#the-bindings)); the Home surface is Phase 5 (see [On the Production board](#on-the-production-board)). The
 contract's decision is
 [ADR 0160](../adr/0160-stage-recommendations-are-computed-from-tri-state-signals-by-a-pure-engine.md).
 
@@ -130,7 +130,7 @@ evidence changed while the narrator was looking.
 
 `stages.Service` reads the manuscript through functions the host passes (`manuscript.Service`'s `Load`,
 `ChaptersUnmeasured` and `SetChapterStatus`), so the stages package does not import the manuscript package. `Recommendations` assesses every
-narration chapter (a chapter with no content kind is narration, as on Home), with one `EvidenceView` shared by every
+narration chapter (a chapter with no content kind is narration, as on the Production board), with one `EvidenceView` shared by every
 provider. Nothing is cached: each call is a fresh read.
 
 | Action | Checks first | Writes |
@@ -205,10 +205,12 @@ time is the saved project's parse, once per read, and each linked chapter's fing
 source file it plays (`evidence.Identify`); no audio is decoded. `stages_timing_test.go` repeats the measurement on any
 project copy (`STAGES_TIMING_PROJECT`).
 
-## On Home
+## On the Production board
 
-Phase 5 shows the recommendations in the Home estimate card (`apps/ui/src/components/stages/`, wired into
-`components/home/AudiobookEstimatePanel.tsx`). `useStageRecommendations` reads `StageRecommendations()` when Home opens,
+Phase 5 showed the recommendations in Home's estimate card; stage navigation Phase 2 moved them onto the Production
+home's board (`apps/ui/src/components/stages/`, wired into `components/production/ChapterBoard.tsx`): a chapter's
+current-stage cell reads the verdict and opens `StageEvidence`, where Confirm, Dismiss, Revert and the status override
+live. `useStageRecommendations` reads `StageRecommendations()` when the page opens,
 after a manuscript import, after a recording check ends or its dialog closes, after a status is changed by hand, when the
 window regains focus or the page becomes visible again (`useRefreshOnFocus`, throttled to once per 30 s and skipped while
 a decision is pending, `home-stage-check-line.prd.md` Phase 2, Q2 A) and, on a
@@ -217,7 +219,7 @@ chapter's status select, which stays the narrator's override: the verdict in a f
 `recommended`, Revert for a live confirmation, and the "evidence changed since you confirmed" notice with Revert for a
 `contradiction`. `StageEvidence` is the evidence view in the existing `SlideOver` (Q11): each signal's state, reason and
 evidence (a paragraph it names links to the manuscript), the saved project's modified time and its age, and for an
-unknown cause what resolves it (`stageText.ts`, `CAUSE_TEXT`: the recording check dialog, the Tracks page, or Check now).
+unknown cause what resolves it (`stageText.ts`, `CAUSE_TEXT`: the recording check dialog, the audio engine panel, or Check now).
 `StageSummary` holds the chips on the collapsed card; `StageCheckLine` above the table renders nothing while the read
 succeeds and only the reason and a Try again retry when it fails (`home-stage-check-line.prd.md` Phase 1). Confirm is one
 click, reversible by Revert (Q13). A refusal is shown as an error toast and the recommendations are read again; a failed
@@ -233,9 +235,9 @@ self-fetching since the Transcript state carries no chapter id.
 Phase 9 added two read-only consumers, both through `useStageRecommendations` like every other reader here - neither
 confirms, dismisses or reverts:
 
-- `ChapterNav.tsx` (the Manuscript page's Chapters & Search panel) shows a non-interactive "Suggested: `<stage>`" line
+- `ChapterNav.tsx` (the Script page's Chapters & Search panel) shows a non-interactive "Suggested: `<stage>`" line
   under a chapter's title for a live `recommended` verdict only (`stageText.ts`'s `verdictLine`, Q6 option B) - the nav
-  row stays dense, and every action stays on Home or the Proofing panel.
-- `TracksPage.tsx` shows a line above the Chapter links table counting chapters whose recommendation carries the
+  row stays dense, and every action stays on the Production board or the Proofing panel.
+- The audio engine panel (`engine/EnginePanel.tsx`) shows a line above the Chapter links table counting chapters whose recommendation carries the
   `unmapped_track` or `unconfirmed_mapping` cause, pointing at that table (the analysis evidence ledger's own mapping
   UI) since linking or confirming the chapter's track there is exactly what resolves the cause.
