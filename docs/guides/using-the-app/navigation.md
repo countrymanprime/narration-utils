@@ -2,7 +2,7 @@
 
 # Navigation
 
-The sidebar on the left is grouped by production stage, the way a narrator's week runs: **Production** ([Home](home.md)),
+The sidebar on the left is grouped by production stage, the way a narrator's week runs: **Production** ([Production](production.md)),
 **Prep** ([Script](script.md), [Story Bible](story-bible.md)), **Record** ([Booth](booth.md)),
 **Review** ([Proof](proof.md), [Tracks](tracks.md)) and **Finish** ([Delivery](delivery.md)).
 At desktop widths each group shows as a heading over its pages; narrower windows switch it to icon-only groups
@@ -15,14 +15,19 @@ In the icon-only layout, hover an icon (or tab to it) to see the page's name.
 
 ![Icon-only navigation rail with a page name shown on hover](../../images/ui/nav-rail-tooltip.webp)
 
-Script, Story Bible, and Teleprompter stay locked until a manuscript has been
-[imported on Home](home.md). Hovering a locked entry says what is missing. Home, Tracks, Proof, and Delivery
+Script, Story Bible, and Booth stay locked until a manuscript has been
+[imported on Production](production.md#importing-the-manuscript). Hovering a locked entry says what is missing. Production, Tracks, Proof, and Delivery
 are always available.
 
-The chip at the right of the header shows the linked audio engine, and clicking it opens a file picker to link
+The header runs, left to right: Back and Forward (below), the project's name, and at the right the timer and
+engine chips. While a [production stage timer](production.md#the-stage-timer) runs, the timer chip counts its
+time and names the chapter ("0:42:07 · timer on Chapter 6") on every page; below the tablet width it keeps the
+clock only. With no timer running it is not there.
+
+The engine chip at the right of the header shows the linked audio engine, and clicking it opens a file picker to link
 (or change) the project's `.rpp` file:
 
-- **REAPER project linked**: a `.rpp` file is linked to this project.
+- **REAPER linked**: a `.rpp` file is linked to this project.
 - **No REAPER project linked**: nothing is linked yet.
 - **Wrong REAPER project open**: REAPER is running with a different project open than the linked one. Link
   the open project instead, or switch REAPER to the linked file.
@@ -48,4 +53,4 @@ chapter, or the previous Story Bible entry are not Back steps.
 
 ---
 
-[← Getting started](getting-started.md) · [Index](README.md) · [Home →](home.md)
+[← Getting started](getting-started.md) · [Index](README.md) · [Production →](production.md)

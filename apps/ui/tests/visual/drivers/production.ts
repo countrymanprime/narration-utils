@@ -107,7 +107,10 @@ export const productionDrivers: Record<string, Driver> = {
     await page.goto('/?mockNoRpp=1');
     await settlePage(page);
     await productionLoaded(page);
-    await page.getByText('No REAPER project (.rpp) file was found in this project folder.').waitFor();
+    const line = page.getByText('No REAPER project (.rpp) file was found in this project folder.');
+    await line.waitFor();
+    // Below the widest layout Next up comes first, so the board and its line are below the fold.
+    await line.scrollIntoViewIfNeeded();
   },
 
   'info-tooltip': async (page) => {
@@ -251,21 +254,27 @@ export const productionDrivers: Record<string, Driver> = {
   },
   'stage-summary-chips': async (page) => {
     await openStageSuggestions(page, 'mixed');
+    // Below the widest layout Next up comes first, so the board's chips are below the fold.
+    await page.getByRole('button', { name: '1 chapter has a suggestion' }).scrollIntoViewIfNeeded();
   },
   'stage-dismissed': async (page) => {
     const view = await openStageEvidence(page, 'Chapter 4');
     await view.getByRole('button', { name: 'Dismiss', exact: true }).click();
-    await page.getByText('Suggestion dismissed (Editing)').waitFor();
-    // The dismissal's toast removes itself on a real timer, which would race the shots of the other viewports.
+    await page.getByText('Suggestion to move Chapter 4 to Editing dismissed.').waitFor();
+    // The slide-over covers the toast, so it closes first; then the toast, which removes itself on a real timer that would
+    // race the shots of the other viewports.
+    await page.keyboard.press('Escape');
+    await view.waitFor({ state: 'hidden' });
     await page.getByRole('button', { name: 'Dismiss message' }).click();
     await page.getByRole('button', { name: 'Dismiss message' }).waitFor({ state: 'detached' });
-    await view.getByRole('button', { name: 'Close' }).click();
-    await view.waitFor({ state: 'hidden' });
     await page.getByRole('button', { name: '1 chapter has a suggestion' }).waitFor({ state: 'detached' });
   },
   'stage-error': async (page) => {
     await openStageSuggestions(page, 'error');
-    await page.getByText('Couldn’t check stage suggestions: the saved REAPER project could not be read').waitFor();
+    const line = page.getByText('Couldn’t check stage suggestions: the saved REAPER project could not be read');
+    await line.waitFor();
+    // Below the widest layout Next up comes first, so the board's error line is below the fold.
+    await line.scrollIntoViewIfNeeded();
   },
   'stage-evidence-recommended': async (page) => {
     const view = await openStageEvidence(page, 'Chapter 4');

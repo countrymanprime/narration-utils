@@ -40,8 +40,8 @@ export function StatusReportPanel({ open, onClose }: { open: boolean; onClose: (
   return (
     <SlideOver open={open} title="Status report" onClose={onClose}>
       <p className="text-sm" style={MUTED}>
-        Writes an HTML page anyone can open and a JSON file with the same figures shown above (hours by stage, hours per finished hour, the deadline and
-        milestone status, and chapter readiness counts) into this project’s narration-utils/production/reports folder.
+        Writes an HTML page anyone can open and a JSON file with the same figures the Production page shows (hours by stage, hours per finished hour, the
+        deadline and milestone status, and chapter readiness counts) into this project’s narration-utils/production/reports folder.
       </p>
       <div className="mt-3">
         <Checkbox checked={includeContractedAmount} onChange={setIncludeContractedAmount}>

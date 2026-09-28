@@ -83,6 +83,7 @@ export const productionStates: StateEntry[] = [
     state: 'chapter-track-no-project',
     description:
       'Production, the board with no REAPER project found: the line above it names why, and every Recorded cell reads No project (TL7, ?mockNoRpp=1, mockups/chapter-track-link-control/08-no-project-line.webp)',
+    ...KEEPS_DESKTOP_SCROLL,
   },
   {
     page: 'production',
@@ -251,6 +252,7 @@ export const productionStates: StateEntry[] = [
     state: 'stage-summary-chips',
     description:
       "Production, the board with its stage suggestion chips (?mockStages=mixed): one chapter has a suggestion, one chapter’s evidence changed, and those chapters' current-stage cells read Ready and Evidence changed",
+    ...KEEPS_DESKTOP_SCROLL,
   },
   {
     page: 'production',
@@ -262,6 +264,7 @@ export const productionStates: StateEntry[] = [
     page: 'production',
     state: 'stage-error',
     description: 'Production, the stage suggestions could not be read (?mockStages=error): the error chip and the reason above the board with Try again',
+    ...KEEPS_DESKTOP_SCROLL,
   },
   {
     page: 'production',

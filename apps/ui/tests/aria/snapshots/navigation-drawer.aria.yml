@@ -13,7 +13,7 @@
     - group "Production":
       - /children: equal
       - text: Production
-      - button "Home"
+      - button "Production"
     - group "Prep":
       - /children: equal
       - text: Prep

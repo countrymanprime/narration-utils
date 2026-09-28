@@ -54,10 +54,6 @@ export const globalStates: StateEntry[] = [
     page: 'global',
     state: 'theme-light',
     description: 'The Production home with Light explicitly selected in Settings > Appearance',
-    sameAs: {
-      of: 'production/no-data',
-      reason: 'Light is what the Production home already renders in by default, so explicitly selecting it changes nothing visible.',
-    },
   },
   { page: 'global', state: 'theme-dark', description: 'The Production home with Dark explicitly selected in Settings > Appearance' },
 ];

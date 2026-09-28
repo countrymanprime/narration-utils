@@ -183,7 +183,9 @@ export function createProductionMock(deps: Deps): ProductionApi {
   let reportExports = 0;
 
   const overview = async (): Promise<ProductionOverview> => {
-    const [manuscript, recommendations] = await Promise.all([deps.chapters(), deps.recommendations()]);
+    // Like the host (internal/production/overview.go), stage recommendations that cannot be read leave every chapter's readiness
+    // null rather than failing the whole overview.
+    const [manuscript, recommendations] = await Promise.all([deps.chapters(), deps.recommendations().catch((): StageRecommendations => ({ chapters: [] }))]);
     const readiness = new Map(recommendations.chapters.map((chapter) => [chapter.chapterId, readinessOf(chapter)]));
     const chapters: ProductionChapter[] = manuscript.map((chapter) => {
       const measured = log ? SEED_RECORDED[chapter.id] : chapter.recordedSeconds;

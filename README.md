@@ -17,7 +17,7 @@ logic is DAW-agnostic; a thin per-DAW driver wires it into a specific host.
   Teleprompter page) — first cut: listens to a microphone with a local Whisper model and highlights the word you are
   reading in a chosen chapter.
 
-The tools share one native UI, shown below on the Home page, plus a manuscript reader and a Settings page that also lists,
+The tools share one native UI, shown below on the Production page, plus a manuscript reader and a Settings page that also lists,
 verifies and removes the voices and models the app has downloaded (Settings > Local assets). See
 [Using the app](docs/guides/using-the-app/README.md) for a full screenshot walkthrough. The UI's component library is a
 Storybook atlas (`pnpm --dir apps/ui run storybook`, checked in CI by the `ui-atlas` job); its generated reference is in
@@ -27,7 +27,7 @@ The public website (docs, live Storybook and a browser demo of the app, built by
 done and the site is reworked (owner decision D75, [the Pages workflow](docs/operations/ci-and-releases.md#the-pages-workflow));
 read the docs here in `docs/` meanwhile.
 
-![Home, manuscript found](docs/images/ui/home-default.webp)
+![Production, the figures, the chapter pipeline and Next up](docs/images/ui/production-home.webp)
 
 ## Layout
 
