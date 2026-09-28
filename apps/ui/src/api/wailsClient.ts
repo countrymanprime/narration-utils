@@ -73,6 +73,7 @@ import {
   productionStartResultSchema,
   productionStopResultSchema,
 } from './schemas/production';
+import { prepCompletenessSummarySchema } from './schemas/prepCompleteness';
 import { findingMarkerSchema, findingNavigationSchema, findingSchema, findingsPageSchema, findingsSummarySchema, reaperStatusSchema } from './schemas/findings';
 import { assetCatalogSchema, assetInstallJobSchema, assetVerifyResultSchema } from './schemas/assets';
 import { ttsCatalogSchema, ttsInstallJobSchema } from './schemas/tts';
@@ -368,6 +369,7 @@ export const wailsClient: NarrationApi = {
   stageDismiss: (chapterId, target, basisKey) => decode(stageDecisionResultSchema, 'StageDismiss', host.StageDismiss(chapterId, target, basisKey)),
   stageRevert: (chapterId) => decode(stageDecisionResultSchema, 'StageRevert', host.StageRevert(chapterId)),
   productionOverview: () => decode(productionOverviewSchema, 'ProductionOverview', host.ProductionOverview()),
+  prepCompletenessSummary: () => decode(prepCompletenessSummarySchema, 'PrepCompletenessSummary', host.PrepCompletenessSummary()),
   productionStartTimer: (chapterId, stage) => decode(productionStartResultSchema, 'ProductionStartTimer', host.ProductionStartTimer(chapterId, stage)),
   productionStopTimer: () => decode(productionStopResultSchema, 'ProductionStopTimer', host.ProductionStopTimer()),
   productionStatusReport: (includeContractedAmount) =>
