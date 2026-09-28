@@ -3,6 +3,7 @@ import { describeApiError } from '../../api/errorMessage';
 import { useApi } from '../../api/ApiContext';
 import { usePendingAction } from '../../hooks/usePendingAction';
 import type { GuideDialogueCue, GuideEntity } from '../../types';
+import { InsetCard } from '../primitives/InsetCard';
 import { Select } from '../primitives/Select';
 import type { Notify } from '../primitives/Toast';
 
@@ -63,7 +64,7 @@ export function DialogueCueAttribution({ entity, entities, notify }: { entity: G
       <div className="mb-1.5 text-[0.82rem] font-medium text-[var(--text-muted)]">Dialogue cues</div>
       <ul className="space-y-1.5">
         {relevant.map((cue) => (
-          <li key={cue.id} className="rounded-md border p-2" style={{ borderColor: 'var(--border)' }}>
+          <InsetCard as="li" key={cue.id}>
             <p className="text-sm">“{cue.quote_text}”</p>
             <div className="mt-1 flex flex-wrap items-center gap-2">
               <span className="text-xs" style={{ color: 'var(--text-muted)' }}>
@@ -77,7 +78,7 @@ export function DialogueCueAttribution({ entity, entities, notify }: { entity: G
                 options={characterOptions}
               />
             </div>
-          </li>
+          </InsetCard>
         ))}
       </ul>
     </div>

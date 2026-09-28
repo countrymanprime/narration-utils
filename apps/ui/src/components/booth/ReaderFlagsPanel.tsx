@@ -4,12 +4,12 @@ import { Button } from '../primitives/Button';
 import { CapabilityGate } from '../primitives/CapabilityGate';
 import { Checkbox } from '../primitives/Checkbox';
 import { ConfirmDialog } from '../primitives/ConfirmDialog';
+import { SectionLabel } from '../primitives/SectionLabel';
 import { formatTime } from '../proof/findingFormat';
 import { useCapability } from '../../useCapability';
 import { FLAG_KINDS, FLAG_NAMES, type FlagVisibility } from './readerFlags';
 import type { TeleprompterFlag, TeleprompterFlagKind, TeleprompterPunchResult } from '../../types';
 
-const SECTION_LABEL = "font-['Barlow_Condensed',sans-serif] text-[0.72rem] font-semibold tracking-[0.08em] text-[var(--text-muted)] uppercase";
 const LIST_BUTTON =
   'flex w-full flex-col items-start gap-0.5 rounded-[0.35rem] border border-transparent px-2 py-1.5 text-left text-sm hover:bg-[var(--surface-2)] focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:outline-none aria-[current=true]:border-[var(--accent)] aria-[current=true]:bg-[var(--surface-2)]';
 
@@ -160,7 +160,9 @@ export function ReaderFlagsPanel({ flags, visibility, onVisibility, dismissed, o
         Suspected by live listening, which can mishear a correct read. Transcript Compare over the recording is authoritative.
       </p>
       <fieldset>
-        <legend className={`mb-1 ${SECTION_LABEL}`}>Show in the text</legend>
+        <SectionLabel as="legend" className="mb-1">
+          Show in the text
+        </SectionLabel>
         {FLAG_KINDS.map((kind) => (
           <Checkbox key={kind} checked={visibility[kind]} onChange={(checked) => onVisibility(kind, checked)}>
             {SHOW_LABELS[kind]}
@@ -205,7 +207,9 @@ export function ReaderFlagsPanel({ flags, visibility, onVisibility, dismissed, o
         <PunchConfirmDialog state={punch} onConfirm={() => confirmPunch(selected)} onCancel={() => setPunch({ phase: 'idle' })} />
       )}
       <div>
-        <div className={`mb-1.5 ${SECTION_LABEL}`}>This session</div>
+        <SectionLabel as="div" className="mb-1.5">
+          This session
+        </SectionLabel>
         {shown.length === 0 ? (
           <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
             {flags.length === 0 ? 'No flags yet.' : 'No flags of the kinds shown.'}

@@ -107,7 +107,7 @@ const openTrack = async (title: string) => {
 };
 
 /** The state a track slide-over's header names ("Suggested", "Linked", "Not linked"). */
-const trackState = (dialog: HTMLElement) => dialog.querySelector('.uppercase.tracking-\\[0\\.08em\\]')?.textContent;
+const trackState = (dialog: HTMLElement) => dialog.querySelector('.uppercase.tracking-\\[var\\(--tracking-label\\)\\]')?.textContent;
 
 const withChapters = (api: NarrationApi, change: (chapter: ProductionChapter) => ProductionChapter) => {
   const read = api.productionOverview;

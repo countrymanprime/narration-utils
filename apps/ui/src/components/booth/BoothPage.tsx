@@ -166,7 +166,7 @@ export function BoothPage({ onFixCredits, onExit, hideAppShell = BOOTH_HIDES_APP
       {chapters?.length === 0 && (
         <div className="p-4 md:p-6">
           <Panel title="This manuscript has no chapters to read">
-            <p className="mt-1 text-sm" style={{ color: 'var(--text-muted)' }}>
+            <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
               The booth reads narration chapters. Import a manuscript with at least one narration chapter first.
             </p>
           </Panel>

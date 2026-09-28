@@ -647,7 +647,7 @@ The dark sets show pill heights of 18, 21, 23, 24, 25 and 26 px, with the OK fil
 | 1 | Button and IconButton | `size`, a `secondary` fill, `link`, height, tracking, disabled; migrate the 7 small recipes and the clones | in review (#894) | 3, 9, 10 | 0b | - |
 | 2 | StatusBadge, Pill, SpeakerTag | `shape` pill/tag, the `-soft` fills, accent/org tones, outline, booth tag size; migrate every chip copy outside the page components | complete (#892, ADR 0600) | 6, 7 | 0b | - |
 | 3 | Table and StageGrid | row and header sizes, `numeric`/`muted` cells, `--row-selected`, the current row, middle alignment, `flush`; migrate tabular `ul`s and `MONO` overrides | complete (#893, ADR 0605) | 1, 9, 10 | 0b | - |
-| 4 | Panel, Heading, SectionLabel, InsetCard | card header bar and title type, inline subtitle, flush body; page title; the eyebrow and inset-card primitives; migrate hand-drawn cards | in review (ADR 0640) | 5, 8 | 0b, 3 | - |
+| 4 | Panel, Heading, SectionLabel, InsetCard | card header bar and title type, inline subtitle, flush body; page title; the eyebrow and inset-card primitives; migrate hand-drawn cards | in review (#905, ADR 0640) | 5, 8 | 0b, 3 | - |
 | 5 | Tabs, ToggleGroup, Pill | underline spec, sidebar fill, the `segmented` look; migrate the step strip and the segmented Buttons | complete (#895, ADR 0625) | 4, 8 | 0b, 2 | - |
 | 6 | Inputs | Select line-height, the mono numeric field, the focus ring, the radio; migrate raw labels and fake fields | pending | 2, 7 | 0b | - |
 | 7 | Overlays | dialog header, footer and body copy; the slide-over's transparent backdrop (Q4); the inverted toast; the popover; migrate the hand-drawn listbox | pending | 2, 6 | 0b, 1 | - |
@@ -765,7 +765,7 @@ Paths are under `apps/ui/src/` unless they start with `apps/`, `docs/` or `tests
 
 - 0585 is taken by Phase 0a.
 - Phase 0b took 0590 from its stream's block (0590–0594), so 0586 is spare.
-- 0587 is reserved for Phase 1. Phase 3 took 0605 from its stream's block (0605–0609), so 0588 is spare. Phase 4 took 0640 from its stream's block (0640–0644).
+- Phase 1 took 0595 and Phase 3 took 0605 from their streams' blocks, so 0587 and 0588 are spare. Phase 4 took 0640 from its stream's block (0640–0644).
 - 0589 is spare for the next phase that needs one.
 
 Later phases take their numbers from the block the coordinator gives their stream. Check `docs/adr/` at write time.

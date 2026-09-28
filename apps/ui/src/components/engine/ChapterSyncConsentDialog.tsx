@@ -1,6 +1,7 @@
 import type { ChapterSyncPreview } from '../../api/contracts/chapterSync';
 import { Button } from '../primitives/Button';
 import { Dialog } from '../primitives/Dialog';
+import { SectionLabel } from '../primitives/SectionLabel';
 import { chapterSyncNotChaptersText, chapterSyncReasonText } from './chapterSyncText';
 
 /**
@@ -47,7 +48,9 @@ export function ChapterSyncConsentDialog({
       ) : (
         <div className="space-y-3 text-sm">
           <section>
-            <h3 className="section-label mb-1">Will be linked ({preview.autoLink.length})</h3>
+            <SectionLabel as="h3" className="mb-1">
+              Will be linked ({preview.autoLink.length})
+            </SectionLabel>
             {preview.autoLink.length === 0 ? (
               <p style={{ color: 'var(--text-muted)' }}>None yet.</p>
             ) : (
@@ -62,7 +65,9 @@ export function ChapterSyncConsentDialog({
           </section>
           {preview.needsYou.length > 0 && (
             <section>
-              <h3 className="section-label mb-1">Needs you ({preview.needsYou.length})</h3>
+              <SectionLabel as="h3" className="mb-1">
+                Needs you ({preview.needsYou.length})
+              </SectionLabel>
               <ul className="space-y-1">
                 {preview.needsYou.map((item) => (
                   <li key={item.chapterId}>
@@ -77,13 +82,17 @@ export function ChapterSyncConsentDialog({
           )}
           {preview.noTrack.length > 0 && (
             <section>
-              <h3 className="section-label mb-1">Chapters with no track yet ({preview.noTrack.length})</h3>
+              <SectionLabel as="h3" className="mb-1">
+                Chapters with no track yet ({preview.noTrack.length})
+              </SectionLabel>
               <p>{preview.noTrack.map((chapter) => chapter.chapterTitle).join(', ')}</p>
             </section>
           )}
           {notChapters && notChapters.names !== 'None.' && (
             <section>
-              <h3 className="section-label mb-1">Tracks that are not chapters ({preview.unmatched.length + preview.pickupTracks.length})</h3>
+              <SectionLabel as="h3" className="mb-1">
+                Tracks that are not chapters ({preview.unmatched.length + preview.pickupTracks.length})
+              </SectionLabel>
               <p>{notChapters.names}</p>
               {notChapters.note && (
                 <p className="mt-0.5" style={{ color: 'var(--text-muted)' }}>

@@ -27,7 +27,7 @@ function ThresholdsPanel({ job }: { job: DiagnosticsJob | undefined }) {
     <Panel title="Thresholds">
       {job ? (
         <>
-          <dl className="mt-2 grid grid-cols-[max-content_1fr] gap-x-6 gap-y-1 text-sm">
+          <dl className="grid grid-cols-[max-content_1fr] gap-x-6 gap-y-1 text-sm">
             {thresholdRows(job.thresholds).map((row) => (
               <div key={row.label} className="contents">
                 <dt>{row.label}</dt>
@@ -40,7 +40,7 @@ function ThresholdsPanel({ job }: { job: DiagnosticsJob | undefined }) {
           </p>
         </>
       ) : (
-        <p className="mt-2 text-sm" style={MUTED}>
+        <p className="text-sm" style={MUTED}>
           Reading the thresholds…
         </p>
       )}
@@ -138,7 +138,7 @@ export function DiagnosticsSection({ measuredPaths }: { measuredPaths: readonly 
           </div>
         }
       >
-        <p className="mt-2 text-sm" style={MUTED}>
+        <p className="text-sm" style={MUTED}>
           Clipping, level shifts, room-tone changes and long pauses, each with its time in the file and the threshold that raised it. Listen at those times in
           REAPER: nothing here is saved, played or changed.
         </p>

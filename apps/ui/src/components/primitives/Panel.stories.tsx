@@ -174,14 +174,17 @@ export const MatchesTheMock: Story = {
     const subtitle = canvas.getByText(/one chain for the book/);
     if (!(await laidOut(canvasElement))) return;
     const header = title.parentElement!.parentElement!;
-    await expect(px(header.getBoundingClientRect().height)).toBe(50);
+    // One line while the subtitle fits beside the title; in a narrow card it wraps inside its own box.
+    if (subtitle.getBoundingClientRect().height < 20) {
+      await expect(px(header.getBoundingClientRect().height)).toBe(50);
+      // Inline: on the title's line, 10 px after it.
+      await expect(px(subtitle.getBoundingClientRect().left - title.getBoundingClientRect().right)).toBe(10);
+    }
     await expect(getComputedStyle(header).borderBottomWidth).toBe('1px');
     await expect(getComputedStyle(title).fontSize).toBe('19px');
     await expect(getComputedStyle(title).fontFamily).toContain('Barlow Condensed');
     await expect(getComputedStyle(title).fontWeight).toBe('600');
     await expect(getComputedStyle(subtitle).fontSize).toBe('13px');
-    // Inline: on the title's line, 10 px after it.
-    await expect(px(subtitle.getBoundingClientRect().left - title.getBoundingClientRect().right)).toBe(10);
     const frame = region.getBoundingClientRect();
     await expect(px(title.getBoundingClientRect().left - frame.left)).toBe(17);
     await expect(getComputedStyle(region).borderTopLeftRadius).toBe('8px');
@@ -220,7 +223,8 @@ export const HeaderWithActions: Story = {
     if (narrow) return;
     await expect(px(button.getBoundingClientRect().top - box.top)).toBe(11);
     await expect(px(box.bottom - 1 - button.getBoundingClientRect().bottom)).toBe(11);
-    await expect(px(box.right - button.getBoundingClientRect().right)).toBe(17);
+    // The border and 16 px, to a pixel: the box edges fall on fractions.
+    await expect(Math.abs(box.right + 1 - button.getBoundingClientRect().right - 17)).toBeLessThanOrEqual(1);
   },
 };
 
@@ -379,5 +383,28 @@ export const HeaderOnItsOwn: Story = {
   ),
   play: async ({ canvasElement }) => {
     await expect(within(canvasElement).getByRole('group', { name: 'Keyboard' })).toBeVisible();
+  },
+};
+
+// The dark Settings mocks' category title: Barlow 17 px, uppercase, tracked. The subtitle keeps to the title's line and
+// wraps in its own box before it drops under the title.
+export const CapsTitle: Story = {
+  render: () => (
+    <div className="space-y-4">
+      <Heading title="Settings" />
+      <Panel title="Delivery" titleStyle="caps" subtitle="This Project — falls back to Global where unset">
+        <p className="text-sm">Delivery profile for this project</p>
+      </Panel>
+    </div>
+  ),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const title = canvas.getByRole('heading', { level: 2, name: 'Delivery' });
+    const subtitle = canvas.getByText(/falls back to Global/);
+    if (!(await laidOut(canvasElement))) return;
+    await expect(getComputedStyle(title).fontSize).toBe('17px');
+    await expect(getComputedStyle(title).textTransform).toBe('uppercase');
+    // Beside the title while it has 10 rem (it wraps inside its own box before it drops under the title).
+    await expect(px(subtitle.getBoundingClientRect().left - title.getBoundingClientRect().right)).toBe(10);
   },
 };

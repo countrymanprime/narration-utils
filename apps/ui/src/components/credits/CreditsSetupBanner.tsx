@@ -4,6 +4,7 @@ import { useApi } from '../../api/ApiContext';
 import type { CreditsSetupState } from '../../types';
 import { Button } from '../primitives/Button';
 import { Dot } from '../primitives/StatusBadge';
+import { Panel } from '../primitives/Panel';
 import type { Notify } from '../primitives/Toast';
 
 /**
@@ -39,27 +40,26 @@ export function CreditsSetupBanner({
     }
   };
   return (
-    <section
-      className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border p-[1.1rem] shadow-[var(--shadow)]"
-      style={{ borderColor: 'var(--review)', background: 'var(--surface)' }}
-    >
-      <div className="flex items-center gap-2 text-sm">
-        <Dot color="var(--review)" />
-        <span>
-          <strong>
-            The credits need {tokens.length} value{tokens.length === 1 ? '' : 's'}
-          </strong>{' '}
-          — {tokens.join(', ')} will be read as written, in brackets.
-        </span>
+    <Panel tone="review" className="mb-4">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-2 text-sm">
+          <Dot color="var(--review)" />
+          <span>
+            <strong>
+              The credits need {tokens.length} value{tokens.length === 1 ? '' : 's'}
+            </strong>{' '}
+            — {tokens.join(', ')} will be read as written, in brackets.
+          </span>
+        </div>
+        <div className="flex gap-2">
+          <Button variant="secondary" type="button" disabled={busy} onClick={() => void dontAsk()}>
+            Don&rsquo;t ask for this project
+          </Button>
+          <Button variant="primary" type="button" disabled={busy} onClick={onFillIn}>
+            Fill in
+          </Button>
+        </div>
       </div>
-      <div className="flex gap-2">
-        <Button variant="secondary" type="button" disabled={busy} onClick={() => void dontAsk()}>
-          Don&rsquo;t ask for this project
-        </Button>
-        <Button variant="primary" type="button" disabled={busy} onClick={onFillIn}>
-          Fill in
-        </Button>
-      </div>
-    </section>
+    </Panel>
   );
 }

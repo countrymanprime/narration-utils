@@ -15,5 +15,11 @@ export const PANEL_BODY_CLASS = 'p-[var(--panel-pad)] [--panel-pad:1rem]';
 export const PANEL_TITLE_CLASS =
   "min-w-0 font-['Barlow_Condensed',sans-serif] text-[length:var(--font-size-card-title)] leading-[1.2] font-semibold text-[var(--text)] [overflow-wrap:anywhere]";
 
-// The subtitle sits on the title's line, 10 px after it: Plex Sans 13 px, muted.
-export const PANEL_SUBTITLE_CLASS = 'min-w-0 text-[0.8125rem] text-[var(--text-muted)] [overflow-wrap:anywhere]';
+// The caps title the dark Settings mocks draw over a category (delivery-platform-profiles 05 and 09, input-commands 01):
+// Barlow Condensed 17 px, semibold, uppercase, tracked 0.08 em.
+export const PANEL_CAPS_TITLE_CLASS =
+  "min-w-0 font-['Barlow_Condensed',sans-serif] text-[1.0625rem] leading-[1.2] font-semibold tracking-[0.08em] text-[var(--text)] uppercase [overflow-wrap:anywhere]";
+
+// The subtitle sits on the title's line, 10 px after it: Plex Sans 13 px, muted. It keeps to that line and wraps inside
+// its own box while it has 10 rem, and only then drops under the title.
+export const PANEL_SUBTITLE_CLASS = 'min-w-0 flex-[1_1_10rem] text-[0.8125rem] text-[var(--text-muted)] [overflow-wrap:anywhere]';

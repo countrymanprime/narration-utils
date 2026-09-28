@@ -15,6 +15,7 @@ import { Button } from '../primitives/Button';
 import { CapabilityGate, type CapabilityEntry } from '../primitives/CapabilityGate';
 import { IconButton } from '../primitives/IconButton';
 import { Panel } from '../primitives/Panel';
+import { SectionLabel } from '../primitives/SectionLabel';
 import { ProgressBar } from '../primitives/ProgressBar';
 import { ToggleGroup } from '../primitives/ToggleGroup';
 import { TagInput } from '../primitives/TagInput';
@@ -289,15 +290,12 @@ export function CompareRun({
 
   const phase = showingResults ? 'results' : state.phase === 'need_chapter' ? 'chapter' : running ? 'running' : 'setup';
   return (
-    <section aria-labelledby="compare-run-title" className="rounded-lg border border-[var(--border)] bg-[var(--surface)] shadow-[var(--shadow)]">
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--border)] px-[1.1rem] py-[0.85rem]">
-        <h2 id="compare-run-title" className="text-sm font-semibold">
-          Compare the recording with the script
-        </h2>
-        {/* The step strip (mock-fidelity-primitives-and-components.prd.md Phase 5): the segmented look of ToggleGroup. It
-            reports the phase, not a choice — the phase advances on its own, so a click of a step is a no-op (not `disabled`,
-            which would also dim the current step's fill). This gives the strip real semantics: nothing named which step was
-            current before (a background tint only). */}
+    <Panel
+      title="Compare the recording with the script"
+      actions={
+        // The step strip (mock-fidelity-primitives-and-components.prd.md Phase 5): the segmented look of ToggleGroup. It
+        // reports the phase, not a choice — the phase advances on its own, so a click of a step is a no-op (not `disabled`,
+        // which would also dim the current step's fill).
         <ToggleGroup
           label="Comparison progress"
           look="segmented"
@@ -309,9 +307,10 @@ export function CompareRun({
             { value: 'results', label: '3 · Results' },
           ]}
         />
-      </div>
+      }
+    >
       {phase === 'setup' && (
-        <div className="space-y-4 p-[1.1rem]">
+        <div className="space-y-4">
           <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
             <span style={{ color: 'var(--text-muted)' }}>Transcribes the selected REAPER audio with Whisper and compares it with {chapterTitle}.</span>
             {lastCompleted ? (
@@ -413,11 +412,8 @@ export function CompareRun({
         </div>
       )}
       {phase === 'chapter' && (
-        <Panel title="Choose manuscript chapter">
-          <p className="mt-1 text-sm" style={{ color: 'var(--text-muted)' }}>
-            The track name did not confidently match a chapter.
-          </p>
-          <div className="mt-3 flex flex-wrap gap-2">
+        <Panel title="Choose manuscript chapter" subtitle="The track name did not confidently match a chapter.">
+          <div className="flex flex-wrap gap-2">
             {state.chapters.map((chapter) => (
               <Button variant="secondary" key={chapter} onClick={() => void start(chapter)}>
                 {chapter}
@@ -427,7 +423,7 @@ export function CompareRun({
         </Panel>
       )}
       {phase === 'running' && (
-        <div className="p-[1.1rem]">
+        <div>
           <div className="flex justify-between text-sm">
             <span>{state.message}</span>
             <span>
@@ -437,9 +433,7 @@ export function CompareRun({
           <ProgressBar className="mt-3" label="Comparison progress" value={state.percent} running valueText={`${state.percent}% · ${seconds(state.elapsed)}`} />
           <div className="mt-3 text-xs" style={{ color: 'var(--text-muted)' }}>
             <div className="mb-1.5 flex items-center justify-between">
-              <span className="font-['Barlow_Condensed',sans-serif] text-[0.72rem] font-semibold tracking-[0.08em] text-[var(--text-muted)] uppercase">
-                Live activity
-              </span>
+              <SectionLabel>Live activity</SectionLabel>
               <ToggleGroup
                 label="Log detail"
                 className="gap-1"
@@ -479,7 +473,7 @@ export function CompareRun({
         </div>
       )}
       {phase === 'results' && (
-        <div className="space-y-2 p-[1.1rem] text-sm">
+        <div className="space-y-2 text-sm">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <p>
               {results.trackName ? `${results.trackName}: ` : ''}
@@ -564,6 +558,6 @@ export function CompareRun({
           />
         </AssetInstallPrompt>
       )}
-    </section>
+    </Panel>
   );
 }
