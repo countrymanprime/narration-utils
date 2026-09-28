@@ -170,4 +170,25 @@ export const storybibleDrivers: Record<string, Driver> = {
     // The properties table is below the fold of the detail panel: bring it into view for the screenshot.
     await page.getByRole('table', { name: 'Properties' }).scrollIntoViewIfNeeded();
   },
+  'character-voice-references': async (page) => {
+    await goToPage(page, 'Story Bible');
+    // The Hatter's fixture reference is changed since approval (the mock's snapshot no longer matches a current
+    // region by that GUID), so selecting them shows the warning badge alongside a steady reference elsewhere.
+    await page.locator('tr[data-row]', { hasText: 'Hatter' }).click();
+    await page.getByText('Reference clips').waitFor();
+    await page.getByText('Changed since approval').waitFor();
+    await page.getByText('Dialogue cues').waitFor();
+  },
+  'voice-data-panel': async (page) => {
+    await goToPage(page, 'Story Bible');
+    await clickVisible(page, 'button', 'Voice data');
+    await page.getByRole('dialog', { name: 'Voice data' }).waitFor();
+    await page.getByRole('combobox', { name: 'Approve a region for Narration' }).waitFor();
+  },
+  'remove-voice-data-confirm': async (page) => {
+    await goToPage(page, 'Story Bible');
+    await clickVisible(page, 'button', 'Voice data');
+    await clickVisible(page, 'button', 'Remove voice data…');
+    await confirmDialog(page, 'Remove voice data').waitFor();
+  },
 };
