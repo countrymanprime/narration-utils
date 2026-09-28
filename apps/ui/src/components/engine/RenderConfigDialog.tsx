@@ -45,7 +45,7 @@ export function RenderConfigDialog({ onClose }: { onClose: () => void }) {
       description="Set the render bounds to every chapter region and name each file after its region. This does not render anything: you press Render in REAPER yourself."
       actions={
         <>
-          <Button variant="ghost" onClick={onClose} disabled={running}>
+          <Button variant="secondary" onClick={onClose} disabled={running}>
             Close
           </Button>
           <Button onClick={configure} disabled={!folder.trim()} pending={running}>

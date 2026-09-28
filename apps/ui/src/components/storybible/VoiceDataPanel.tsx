@@ -44,7 +44,7 @@ export function VoiceDataPanel({ open, onClose, notify }: { open: boolean; onClo
         </p>
         <VoiceReferencesSection key={refreshKey} characterId={NARRATION_CHARACTER_ID} characterLabel="Narration" notify={notify} />
         <div className="border-t pt-4" style={{ borderColor: 'var(--border)' }}>
-          <Button variant="danger" className="text-xs" onClick={() => setConfirmingRemoveAll(true)}>
+          <Button variant="danger" onClick={() => setConfirmingRemoveAll(true)}>
             Remove voice data…
           </Button>
         </div>

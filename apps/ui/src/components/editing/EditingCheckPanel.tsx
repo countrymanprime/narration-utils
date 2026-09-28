@@ -289,7 +289,7 @@ export function EditingCheckPanel({ chapter, notify, close }: { chapter: Manuscr
           <div className="space-y-2">
             <p role="status">{job.message}</p>
             <ProgressBar label="Editing check progress" value={job.percent} running valueText={`${job.itemsDone} of ${job.itemsTotal} items`} />
-            <Button variant="ghost" onClick={cancel} pending={action.isPending('cancel')}>
+            <Button variant="secondary" onClick={cancel} pending={action.isPending('cancel')}>
               Cancel
             </Button>
           </div>

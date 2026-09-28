@@ -99,7 +99,7 @@ export function DeliveryPackagePanel({
           Build packages
         </Button>
         {packageRunning && (
-          <Button variant="ghost" onClick={jobs.cancelPackage}>
+          <Button variant="secondary" onClick={jobs.cancelPackage}>
             Cancel
           </Button>
         )}

@@ -895,7 +895,7 @@ export function ScriptPage({
                 showChapter(chapter, paragraph);
               }}
             />
-            <Button variant="ghost" className="mt-4 text-xs" onClick={() => focusStoryBibleEntity(detail.entity!.id)}>
+            <Button variant="secondary" className="mt-4 text-xs" onClick={() => focusStoryBibleEntity(detail.entity!.id)}>
               Open in Story Bible →
             </Button>
           </>

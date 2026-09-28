@@ -14,7 +14,7 @@ const meta = {
     onClose: fn(),
     actions: (
       <>
-        <Button variant="ghost">Cancel</Button>
+        <Button variant="secondary">Cancel</Button>
         <Button variant="primary">Add note</Button>
       </>
     ),
@@ -42,7 +42,7 @@ export const ActionsBetweenWithGroup: Story = {
     title: 'Unsaved settings',
     actions: (
       <>
-        <Button variant="ghost">Cancel</Button>
+        <Button variant="secondary">Cancel</Button>
         <div className="flex gap-2">
           <Button variant="danger">Discard</Button>
           <Button variant="primary">Save</Button>
@@ -170,7 +170,7 @@ function WithOpener() {
         Open dialog
       </button>
       {open && (
-        <Dialog title="Add note" onClose={() => setOpen(false)} actions={<Button variant="ghost">Cancel</Button>}>
+        <Dialog title="Add note" onClose={() => setOpen(false)} actions={<Button variant="secondary">Cancel</Button>}>
           <p className="text-sm">Note body</p>
         </Dialog>
       )}

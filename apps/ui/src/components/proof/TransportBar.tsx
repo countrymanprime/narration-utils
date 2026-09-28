@@ -1,6 +1,7 @@
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faBackward, faForward, faPause, faPlay } from '@fortawesome/free-solid-svg-icons';
 import { Button } from '../primitives/Button';
+import { IconButton } from '../primitives/IconButton';
 import { Select } from '../primitives/Select';
 import { Panel } from '../primitives/Panel';
 import { TooltipTarget } from '../primitives/Tooltip';
@@ -42,13 +43,13 @@ export function TransportBar({ player, reaper }: { player: TransportBarPlayer; r
         </p>
       )}
       <div className="flex flex-wrap items-center justify-center gap-3">
-        <Button variant="ghost" onClick={player.skipBack} disabled={!player.canPlay} aria-label={`Skip back ${SKIP_SECONDS} seconds`}>
+        <Button variant="secondary" onClick={player.skipBack} disabled={!player.canPlay} aria-label={`Skip back ${SKIP_SECONDS} seconds`}>
           <FontAwesomeIcon icon={faBackward} /> {SKIP_SECONDS}s
         </Button>
-        <Button onClick={player.togglePlay} disabled={!player.canPlay} aria-label={player.isPlaying ? 'Pause' : 'Play'}>
+        <IconButton variant="primary" onClick={player.togglePlay} disabled={!player.canPlay} label={player.isPlaying ? 'Pause' : 'Play'}>
           <FontAwesomeIcon icon={player.isPlaying ? faPause : faPlay} />
-        </Button>
-        <Button variant="ghost" onClick={player.skipForward} disabled={!player.canPlay} aria-label={`Skip forward ${SKIP_SECONDS} seconds`}>
+        </IconButton>
+        <Button variant="secondary" onClick={player.skipForward} disabled={!player.canPlay} aria-label={`Skip forward ${SKIP_SECONDS} seconds`}>
           {SKIP_SECONDS}s <FontAwesomeIcon icon={faForward} />
         </Button>
         <span className="font-['IBM_Plex_Mono',ui-monospace,monospace] text-sm" style={{ color: 'var(--text-muted)' }}>
@@ -62,7 +63,7 @@ export function TransportBar({ player, reaper }: { player: TransportBarPlayer; r
         />
         <TooltipTarget text={reaper.goToBlocked ?? "Select this word's item in REAPER and put the edit cursor on it"}>
           <Button
-            variant="ghost"
+            variant="secondary"
             onClick={() => void reaper.goTo()}
             disabled={Boolean(reaper.goToBlocked) || reaper.pending !== undefined}
             pending={reaper.pending === 'goTo'}
@@ -71,13 +72,13 @@ export function TransportBar({ player, reaper }: { player: TransportBarPlayer; r
           </Button>
         </TooltipTarget>
         {reaper.looping ? (
-          <Button variant="ghost" onClick={() => void reaper.stopLoop()} disabled={reaper.pending !== undefined} pending={reaper.pending === 'stop'}>
+          <Button variant="secondary" onClick={() => void reaper.stopLoop()} disabled={reaper.pending !== undefined} pending={reaper.pending === 'stop'}>
             Stop loop
           </Button>
         ) : (
           <TooltipTarget text={reaper.loopBlocked ?? 'Play this word over and over in REAPER'}>
             <Button
-              variant="ghost"
+              variant="secondary"
               onClick={() => void reaper.loop()}
               disabled={Boolean(reaper.loopBlocked) || reaper.pending !== undefined}
               pending={reaper.pending === 'loop'}

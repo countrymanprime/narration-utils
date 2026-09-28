@@ -61,17 +61,17 @@ export function SelectionMenu({
       style={position}
       onMouseDown={(event) => event.preventDefault()}
     >
-      <Button variant="primary" className="rounded-none border-0 text-xs" aria-label="+ Note" disabled={busy} onClick={addNote}>
+      <Button variant="primary" className="rounded-none border-0" aria-label="+ Note" disabled={busy} onClick={addNote}>
         <FontAwesomeIcon icon={faNoteSticky} /> Note
       </Button>
       {markUp && (
-        <Button variant="ghost" className="rounded-none border-0 border-l border-l-[var(--border)] text-xs" disabled={busy} onClick={markUp}>
+        <Button variant="secondary" className="rounded-none border-0 border-l border-l-[var(--border)]" disabled={busy} onClick={markUp}>
           <FontAwesomeIcon icon={faHighlighter} /> Mark up
         </Button>
       )}
       <Button
-        variant="ghost"
-        className="rounded-none border-0 border-l border-l-[var(--border)] text-xs"
+        variant="secondary"
+        className="rounded-none border-0 border-l border-l-[var(--border)]"
         aria-label="+ Story Bible"
         pending={addingToStoryBible}
         disabled={lookingUp}
@@ -81,8 +81,8 @@ export function SelectionMenu({
       </Button>
       {lookUp && (
         <Button
-          variant="ghost"
-          className="rounded-none border-0 border-l border-l-[var(--border)] text-xs"
+          variant="secondary"
+          className="rounded-none border-0 border-l border-l-[var(--border)]"
           pending={lookingUp}
           disabled={addingToStoryBible}
           onClick={lookUp}
