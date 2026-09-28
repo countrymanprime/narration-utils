@@ -57,9 +57,8 @@ const NO_RECORDING: RecordInReaperState = {
   afterStop: () => {},
 };
 
-// Exported for BoothView's own, read-only REAPER status text (booth-mode-and-companion-panel.prd.md Phase 1): the same
-// wording, since a narrator moving between the normal dialog and booth mode should see the same words for the same state.
-export const REAPER_STATUS_TEXT: Record<ReadAloudReaperState['status'], string> = {
+// The words for the chapter's REAPER state, on the Record in REAPER toggle below.
+const REAPER_STATUS_TEXT: Record<ReadAloudReaperState['status'], string> = {
   ready: 'Chapter armed',
   not_armed: 'Not armed',
   other_armed: 'Other track armed',
