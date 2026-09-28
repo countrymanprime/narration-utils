@@ -323,6 +323,8 @@ const mockTakeComparisonHold = mockParams.get('mockTakeComparison') === 'running
 const mockMeasure = (['running', 'fails', 'spread'] as const).find((seed) => seed === mockParams.get('mockMeasure'));
 // `?mockDiagnostics=running|fails` does the same for the Delivery page's Diagnostics tab (diagnostics PRD Phase 6).
 const mockDiagnostics = (['running', 'fails'] as const).find((seed) => seed === mockParams.get('mockDiagnostics'));
+// `?mockRenderExport=running` does the same for the Delivery page's Master & QC tab's export job (render-encode-master.prd.md Phase 5).
+const mockRenderExportHold = mockParams.get('mockRenderExport') === 'running';
 const mockDeliveryProfile = mockParams.get('mockDeliveryProfile') === 'custom' ? ('custom' as const) : undefined;
 // `?mockProduction=on-pace|at-risk` seeds the Production page with a time log, a running timer (on-pace only), a deadline and a
 // contracted amount (production-tracking.prd.md Phase 4); with none, nothing is logged or set yet.
@@ -345,6 +347,7 @@ const mockInitial = {
   ...(mockMarkup ? { prepMarkup: MOCK_MARKUP_SEED } : {}),
   ...(mockMeasure ? { measure: mockMeasure === 'running' ? ('hold' as const) : mockMeasure === 'spread' ? ('spread' as const) : ('fails' as const) } : {}),
   ...(mockDiagnostics ? { diagnostics: mockDiagnostics === 'running' ? ('hold' as const) : ('fails' as const) } : {}),
+  ...(mockRenderExportHold ? { renderExport: 'hold' as const } : {}),
   ...(mockDeliveryProfile ? { deliveryProfile: mockDeliveryProfile } : {}),
   ...(mockProduction ? { production: PRODUCTION_SCENARIOS[mockProduction] } : {}),
   ...(mockTakeReviewScanHold ? { takeReviewScanHold: true } : {}),

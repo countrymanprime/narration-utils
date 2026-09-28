@@ -20,6 +20,7 @@ import { createFindingsMock } from './findingsMock';
 import { createTakeReviewScanMock } from './takeReviewMock';
 import { createTakeComparisonMock } from './takeComparisonMock';
 import { createMeasureMock } from './measureMock';
+import { createRenderEncodeMasterMock } from './renderEncodeMasterMock';
 import { DELIVERY_REVIEW_ANALYZER, mockDeliveryReviewFindings, resavingAfterProfileChange } from './deliveryReviewMock';
 import { createDeliveryProfilesMock } from './deliveryProfilesMock';
 import { createDiagnosticsMock } from './diagnosticsMock';
@@ -189,6 +190,7 @@ export function createMockApi(
     const review = mockDeliveryReviewFindings(job);
     saveFileFindings(DELIVERY_REVIEW_ANALYZER, review.files, review.findings);
   });
+  const renderEncodeMaster = createRenderEncodeMasterMock(endJob, initial.renderExport, deliveryProfile);
   const system = createSystemMock(s, initial, {
     version: update.version,
     project,
@@ -209,6 +211,7 @@ export function createMockApi(
     ...takeReviewScan,
     ...takeComparison,
     ...measurement,
+    ...renderEncodeMaster,
     ...resavingAfterProfileChange(deliveryProfiles, resaveReview),
     ...diagnostics,
     ...editing,

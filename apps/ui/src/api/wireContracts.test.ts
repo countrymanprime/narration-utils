@@ -13,6 +13,8 @@ import { MOCK_MEASURE_PATHS } from './measureMock';
 import { judgeMock } from './coverageMock';
 import { MOCK_REAPER_INPUT_SEEDS, MOCK_REAPER_SEEDS, mockLastReading } from './teleprompterMock';
 import { deliveryQcEvidenceSchema, deliveryReportExportSchema, measureJobSchema, measurePickResultSchema } from './schemas/measure';
+import { exportJobSchema, packageJobSchema } from './schemas/renderEncodeMaster';
+import { MOCK_EXPORT_ITEMS, MOCK_EXPORT_PATHS } from './renderEncodeMasterMock';
 import { deliveryProfileSchema, deliveryProfilesStateSchema } from './schemas/deliveryProfiles';
 import { MOCK_ACX, evaluateMockFile, mockCustomProfile } from './deliveryProfilesMock';
 import { diagnosticsJobSchema } from './schemas/diagnostics';
@@ -1494,6 +1496,62 @@ describe('answers of the mock client for the settings, voice, model, transcript 
     expect(cancelled.files.map((file) => file.status)).toEqual(['cancelled', 'cancelled', 'cancelled']);
   });
 
+  it('the export job masters (when asked) and encodes every picked file, in the shape the host pins', async () => {
+    const api = createMockApi();
+    expectMatches(exportJobSchema, await api.exportState(), 'mock export, idle');
+    await expect(api.exportStart({ items: MOCK_EXPORT_ITEMS, master: false, format: 'mp3' })).rejects.toThrow(/not chosen in the file picker/);
+    const picked = await api.exportPickFiles();
+    expectMatches(measurePickResultSchema, picked, 'mock export picker');
+    expect(picked.paths).toEqual(MOCK_EXPORT_PATHS);
+    await expect(api.exportStart({ items: [], master: false, format: 'mp3' })).rejects.toThrow(/at least one file/);
+    let job = await api.exportStart({ items: MOCK_EXPORT_ITEMS, master: true, format: 'mp3' });
+    expectMatches(exportJobSchema, job, 'mock export, started');
+    await expect(api.exportStart({ items: MOCK_EXPORT_ITEMS, master: true, format: 'mp3' })).rejects.toThrow(/already running/);
+    let percent = job.percent;
+    while (job.phase === 'running') {
+      job = await api.exportState();
+      expectMatches(exportJobSchema, job, `mock export, ${job.phase} at ${job.percent}%`);
+      expect(job.percent).toBeGreaterThanOrEqual(percent);
+      percent = job.percent;
+    }
+    expect(job.phase).toBe('success');
+    expect(job.files.every((file) => file.status === 'done' && file.encodedPath && file.mastering)).toBe(true);
+
+    await api.exportStart({ items: MOCK_EXPORT_ITEMS, master: false, format: 'mp3' });
+    await api.exportState();
+    const cancelledExport = await api.exportCancel();
+    expectMatches(exportJobSchema, cancelledExport, 'mock export, cancelled');
+    expect(cancelledExport.files.some((file) => file.status === 'cancelled')).toBe(true);
+  });
+
+  it("the package job assembles the profile's book checklist from an export's own encoded files, in the shape the host pins", async () => {
+    const api = createMockApi();
+    expectMatches(packageJobSchema, await api.packageState(), 'mock package, idle');
+    const profile = await api.deliveryProfiles();
+    const acx = profile.profiles.find((candidate) => candidate.id === 'acx')!;
+
+    await expect(
+      api.packageStart({ profileId: acx.id, profileVersion: acx.version, items: [{ kind: 'chapter', title: 'Chapter 01', path: 'C:/not-encoded.mp3' }] }),
+    ).rejects.toThrow(/not encoded in this session/);
+
+    await api.exportPickFiles();
+    let job = await api.exportStart({ items: MOCK_EXPORT_ITEMS, master: false, format: 'mp3' });
+    while (job.phase === 'running') job = await api.exportState();
+    const items = job.files.map((file) => ({ kind: file.kind, title: file.title, path: file.encodedPath! }));
+
+    const missingRetailSample = items.filter((item) => item.kind !== 'retail_sample');
+    const refused = await api.packageStart({ profileId: acx.id, profileVersion: acx.version, items: missingRetailSample });
+    expectMatches(packageJobSchema, refused, 'mock package, refused (missing retail sample)');
+    expect(refused.phase).toBe('error');
+    expect(refused.checklist.find((entry) => entry.ruleId === 'acx.retail_sample')?.status).toBe('missing');
+
+    const built = await api.packageStart({ profileId: acx.id, profileVersion: acx.version, items });
+    expectMatches(packageJobSchema, built, 'mock package, success');
+    expect(built.phase).toBe('success');
+    expect(built.files).toHaveLength(items.length);
+    expect(built.checklist.every((entry) => entry.status !== 'missing')).toBe(true);
+  });
+
   it('an MP3 is judged on its container, and the mock judges it as the host pins', () => {
     const pinned = measureJobSchema.parse(readGolden('measure-mp3.json'));
     expect(pinned.profile).not.toBeNull();
@@ -1989,6 +2047,13 @@ describe('answers of the mock client for the settings, voice, model, transcript 
   it('every method of the API is either checked in this file, void, or not a request', () => {
     // A new binding fails this until it has a schema and a row above (ADR 0069). The list of what is checked is kept by hand.
     const CHECKED = [
+      'exportPickFiles',
+      'exportStart',
+      'exportState',
+      'exportCancel',
+      'packageStart',
+      'packageState',
+      'packageCancel',
       'teleprompterPunchPreview',
       'teleprompterPunch',
       'pickupsPunch',

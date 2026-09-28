@@ -1,0 +1,103 @@
+// The Master & QC export flow (render-encode-master.prd.md Phase 5): the narrator picks rendered chapter (and
+// credits, and retail sample) WAV files, optionally masters them (internal/mastering, Phase 3), encodes them
+// (internal/encodeport, Phases 1-2) and assembles one delivery profile's package (internal/packager, Phase 4).
+// Mastering and encoding run together as one job (ExportStart/State/Cancel), matching the narrator's one "Master &
+// encode" action; packaging is its own job (PackageStart/State/Cancel) over an export's own encoded files.
+
+import type { MeasurePickResult } from './measure';
+
+/** Where one item lands in the eventual package (packager.Kind); "chapter" may repeat, the others at most once. */
+export type PackageItemKind = 'chapter' | 'credits_opening' | 'credits_closing' | 'retail_sample';
+
+/** One rendered WAV to master and encode: its place in the package, and (for a chapter) its title. */
+export type ExportItem = { kind: PackageItemKind; title: string; path: string };
+
+/** What ExportStart is asked to master (optionally) and encode. */
+export type ExportRequest = { items: ExportItem[]; master: boolean; format: string };
+
+/** The mastering chain's own report (internal/mastering.Result), narrowed to what the page shows per file. */
+export type MasteringSummary = {
+  targets: { rms: number; rmsMin: number | null; rmsMax: number | null; peakMax: number; ceiling: number };
+  highPassHz: number;
+  gainDb: number;
+  beforeRmsDbfs: number | null;
+  afterRmsDbfs: number | null;
+  afterPeakDbfs: number | null;
+};
+
+export type ExportFileStatus = 'pending' | 'mastering' | 'encoding' | 'done' | 'failed' | 'cancelled';
+
+/** One item's progress through the export job. `masteredPath`/`encodedPath` are the new files it wrote. */
+export type ExportFileResult = {
+  kind: PackageItemKind;
+  title: string;
+  path: string;
+  status: ExportFileStatus;
+  masteredPath?: string;
+  encodedPath?: string;
+  mastering?: MasteringSummary;
+  error?: string;
+};
+
+/** The export job (ExportStart/State/Cancel), in the shape of the host's other jobs. */
+export type ExportJob = {
+  id: string | null;
+  kind: 'render_export';
+  phase: 'idle' | 'running' | 'success' | 'cancelled' | 'error';
+  message: string;
+  percent: number;
+  master: boolean;
+  format: string;
+  logs: string[];
+  elapsed: number;
+  error?: string;
+  files: ExportFileResult[];
+};
+
+/** One already-encoded file (an ExportJob file's own `encodedPath`) ready to package. */
+export type PackageItem = { kind: PackageItemKind; title: string; path: string };
+
+/** What PackageStart is asked to assemble: one profile's book checklist and the encoded items ready. */
+export type PackageRequest = { profileId: string; profileVersion: string; items: PackageItem[] };
+
+/** One file the package job wrote (internal/packager.ManifestFile). */
+export type PackageManifestFile = { kind: PackageItemKind; name: string; destPath: string; tagged: boolean };
+
+/** One book-scope rule's result against the package (internal/packager.ChecklistItem). */
+export type PackageChecklistStatus = 'included' | 'missing' | 'off' | 'not_applicable';
+export type PackageChecklistItem = { ruleId: string; label: string; status: PackageChecklistStatus; detail: string };
+
+/** The package job (PackageStart/State/Cancel), in the shape of the host's other jobs. Closing the folder picker
+ * without choosing one leaves the job at its prior (often idle) state rather than erroring. */
+export type PackageJob = {
+  id: string | null;
+  kind: 'render_package';
+  phase: 'idle' | 'running' | 'success' | 'cancelled' | 'error';
+  message: string;
+  profile: string;
+  outputDir: string;
+  files: PackageManifestFile[];
+  checklist: PackageChecklistItem[];
+  elapsed: number;
+  error?: string;
+};
+
+export interface RenderEncodeMasterApi {
+  /** Opens the picker for the files to master and encode. Only paths chosen here can be exported. */
+  exportPickFiles(): Promise<MeasurePickResult>;
+  /** Masters (when requested) and encodes the picked files as a job; rejects a path that was not picked, an empty
+   * request, or a second export while one runs. */
+  exportStart(req: ExportRequest): Promise<ExportJob>;
+  /** The export job: idle, running with real progress, or how it ended with every file's result. */
+  exportState(): Promise<ExportJob>;
+  /** Stops a running export; files already prepared keep their results. Answers the job. */
+  exportCancel(): Promise<ExportJob>;
+  /** Opens the folder picker, then assembles the chosen profile's package from an export's own encoded files as a
+   * job; rejects a path that was not encoded in this session, no items, an unknown profile, or a second package
+   * build while one runs. */
+  packageStart(req: PackageRequest): Promise<PackageJob>;
+  /** The package job: idle, running, or how it ended with the manifest and checklist it built. */
+  packageState(): Promise<PackageJob>;
+  /** Stops a running package build. Answers the job. */
+  packageCancel(): Promise<PackageJob>;
+}

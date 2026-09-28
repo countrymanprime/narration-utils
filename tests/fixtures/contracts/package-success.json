@@ -1,0 +1,37 @@
+{
+  "id": "package-1",
+  "kind": "render_package",
+  "phase": "success",
+  "message": "Built the acx package with 2 files.",
+  "profile": "acx",
+  "outputDir": "C:\\Users\\Narrator\\Desktop\\Wonderland ACX",
+  "files": [
+    {
+      "kind": "chapter",
+      "name": "01 - Chapter One.mp3",
+      "destPath": "C:\\Users\\Narrator\\Desktop\\Wonderland ACX\\01 - Chapter One.mp3",
+      "tagged": false
+    },
+    {
+      "kind": "credits_opening",
+      "name": "Credits, Opening.mp3",
+      "destPath": "C:\\Users\\Narrator\\Desktop\\Wonderland ACX\\Credits, Opening.mp3",
+      "tagged": false
+    }
+  ],
+  "checklist": [
+    {
+      "ruleId": "acx.credits",
+      "label": "Opening and closing credits",
+      "status": "included",
+      "detail": "Opening and closing credits included as separate files."
+    },
+    {
+      "ruleId": "acx.retail_sample",
+      "label": "Retail sample",
+      "status": "missing",
+      "detail": "Needs a retail sample file."
+    }
+  ],
+  "elapsed": 4.2
+}
