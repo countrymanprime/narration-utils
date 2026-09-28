@@ -4,6 +4,7 @@ import { chapterName } from '../../chapterName';
 import { Panel } from '../primitives/Panel';
 import { Select } from '../primitives/Select';
 import { useApi } from '../../api/ApiContext';
+import { BOOTH_HIDES_APP_SHELL } from './boothLayout';
 import { ChapterSuggestionHint, preselectedChapter } from './ChapterSuggestionHint';
 import { BoothSession, type BoothSource } from './BoothSession';
 import { CREDITS_LABEL, type CreditsKind } from './readerModel';
@@ -22,6 +23,8 @@ type Props = {
   onFixCredits?: () => void;
   /** Exit booth: back to where the narrator came from. */
   onExit: () => void;
+  /** Covers the app shell (audit BO2); defaults to `BOOTH_HIDES_APP_SHELL`, off until the owner decides. */
+  hideAppShell?: boolean;
 };
 
 const NO_ENTITIES: GuideEntity[] = [];
@@ -74,7 +77,7 @@ function pickerValueOf(params: URLSearchParams): string {
  * that shows. What it reads is in the address (`?chapter=` or `?credits=`), so a Script card, a bookmark and Back all land
  * on the same chapter; with neither, it opens on REAPER's confidently suggested chapter, else the last chapter read.
  */
-export function BoothPage({ onFixCredits, onExit }: Props) {
+export function BoothPage({ onFixCredits, onExit, hideAppShell = BOOTH_HIDES_APP_SHELL }: Props) {
   const api = useApi();
   const [params, setParams] = useSearchParams();
   const [chapters, setChapters] = useState<ManuscriptChapter[]>();
@@ -153,8 +156,12 @@ export function BoothPage({ onFixCredits, onExit }: Props) {
   );
 
   return (
-    // The Booth fills AppShell's content area edge to edge (mock 03), inside the area's own padding.
-    <div className="-m-4 flex h-[calc(100%+2rem)] flex-col md:-m-6 md:h-[calc(100%+3rem)]">
+    // The Booth fills AppShell's content area edge to edge (mock 03), inside the area's own padding - or, with the shell
+    // hidden (BO2's switch), the whole window above it.
+    <div
+      data-booth-full-screen={hideAppShell || undefined}
+      className={hideAppShell ? 'fixed inset-0 z-40 flex flex-col bg-[var(--bg)]' : '-m-4 flex h-[calc(100%+2rem)] flex-col md:-m-6 md:h-[calc(100%+3rem)]'}
+    >
       <h1 className="sr-only">Booth</h1>
       {chapters?.length === 0 && (
         <div className="p-4 md:p-6">
