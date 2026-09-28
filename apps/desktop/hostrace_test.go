@@ -161,7 +161,7 @@ var stressReaders = []stressReader{
 	{"DiagnosticsCancel (nothing running)", func(h *Host) { _, _ = h.DiagnosticsCancel() }},
 	{"DiagnosticsAnalyze (not picked)", func(h *Host) { _, _ = h.DiagnosticsAnalyze([]string{"C:/missing.wav"}, "raw_recording") }},
 	{"canAttach (ProjectCreateIn's pre-check)", func(h *Host) { _ = h.canAttach() }},
-	{"CoverageStart (asset gate)", func(h *Host) { _, _ = h.CoverageStart("c-0001") }},
+	{"CoverageStart (asset gate)", func(h *Host) { _, _ = h.CoverageStart("c-0001", nil) }},
 	{"CoverageState", func(h *Host) { _, _ = h.CoverageState() }},
 	{"CoverageCancel", func(h *Host) { _, _ = h.CoverageCancel() }},
 	{"CoverageResult", func(h *Host) { _, _ = h.CoverageResult("c-0001") }},
@@ -172,6 +172,8 @@ var stressReaders = []stressReader{
 	{"ProductionOverview", func(h *Host) { _, _ = h.ProductionOverview() }},
 	{"ProductionStartTimer (unknown chapter)", func(h *Host) { _, _ = h.ProductionStartTimer("missing", "recording") }},
 	{"ProductionStopTimer", func(h *Host) { _, _ = h.ProductionStopTimer() }},
+	{"ProductionStatusReport", func(h *Host) { _, _ = h.ProductionStatusReport(false) }},
+	{"ProductionBurndown", func(h *Host) { _, _ = h.ProductionBurndown() }},
 	{"emit callbacks", func(h *Host) {
 		h.emitTranscript(emptyTranscript())
 		h.emitTeleprompterState(map[string]any{"phase": "idle"})

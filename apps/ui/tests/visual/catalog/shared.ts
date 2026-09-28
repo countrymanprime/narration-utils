@@ -1,5 +1,5 @@
 // The row metadata (extra viewports, reloadPerViewport reasons) the page files under catalog/ share.
-import { COMPANION_VIEWPORT, REFLOW_VIEWPORT } from '../viewports';
+import { COMPANION_VIEWPORT, REFLOW_VIEWPORT, WIDE_VIEWPORT } from '../viewports';
 
 // The Settings row stacks below `md`, so every Settings state is also captured at the reflow width (ADR 0061) and the
 // collapsed-control check runs there.
@@ -20,3 +20,7 @@ export const POPUP_ANCHORED_AT_FIRST_WIDTH = { reloadPerViewport: true } as cons
 export const LIVE_PROGRESS_MOVES_ON = { reloadPerViewport: true } as const;
 export const TOAST_FADES_OUT = { reloadPerViewport: true } as const;
 export const FREEZES_THE_CLOCK = { reloadPerViewport: true } as const;
+// The Script page's rail is a column from `2xl` and a panel below it (stage navigation Phase 3, ADR 0392), so its driver opens it
+// the way the width shows it (resizing one load would keep the panel open where the column shows), and its rows are also captured
+// at the wide width, the one where mock 02's three columns show.
+export const RAIL_DEPENDS_ON_WIDTH = { reloadPerViewport: true as const, extraViewports: [WIDE_VIEWPORT] };

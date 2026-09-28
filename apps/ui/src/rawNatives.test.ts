@@ -20,9 +20,10 @@ type NativeTag = (typeof NATIVE_TAGS)[number];
 // Native elements written in JSX per file, outside the primitives, at the time of ADR 0053 (phase 5: no native select, input, textarea or table part is left).
 const CEILING: Record<NativeTag, Record<string, number>> = {
   button: {
-    // The header pill (PRD project-workspace-and-daw-link.prd.md, W15/W19): a pill shape with a status dot that
+    // The header's engine chip (PRD project-workspace-and-daw-link.prd.md, W15/W19; moved from AppShell.tsx to its
+    // own file by stage-navigation-and-page-replacement.prd.md Phase 1): a pill shape with a status dot that
     // `Button`'s fixed base classes (rounded-md, border, px-4/py-2) cannot express through an appended className.
-    'src/components/layout/AppShell.tsx': 1,
+    'src/components/layout/EngineChip.tsx': 1,
     'src/components/home/Home.tsx': 2,
     // The row's check-status cell (daw-chapter-track-auto-sync.prd.md Phase 6, S14): a bold label with a small muted
     // line under it and a leading icon, which neither `Button` (a padded, uppercase pill) nor `IconButton` (icon-only,
@@ -33,28 +34,36 @@ const CEILING: Record<NativeTag, Record<string, number>> = {
     // now renders through this and has no raw button of its own (its old toggle button is gone, ceiling 0 below).
     'src/components/manuscript/ReaderCard.tsx': 2,
     'src/components/project/ProjectPicker.tsx': 3,
-    'src/components/proofing/Transcript.tsx': 1,
+    // The Script page's chapter list (stage-navigation-and-page-replacement.prd.md Phase 3, mock 02): a list row naming the
+    // chapter with its current state, the same shape as ChapterNav's rows, which Button's padded, uppercase chrome does not
+    // fit. One JSX `<button>`, written once inside the chapters `.map()`.
+    'src/components/script/ScriptChapterList.tsx': 1,
+    // The Script rail's names (Phase 3): a name in a table cell or a list row that opens its Story Bible summary, the same
+    // case as ReaderRail.tsx's entries below. Two JSX `<button>`s, one inside the Pronunciations rows and one inside the
+    // Characters rows.
+    'src/components/script/ScriptRail.tsx': 2,
+    'src/components/proof/CompareRun.tsx': 1,
     'src/components/settings/ScopedSetting.tsx': 1,
     // The click-to-seek word ("Start here" / "Go back to here", teleprompter-manuscript-integration.prd.md Phase 4):
     // one word among hundreds inside running prose, so it needs `Button`'s bare click/keyboard semantics without its
     // padded, uppercase button chrome, which would break the text flow and read as a real action button rather than a
     // word. One JSX `<button>` in the source (it is written once, inside the words `.map()`, not once per word).
-    'src/components/teleprompter/ReaderText.tsx': 1,
+    'src/components/booth/ReaderText.tsx': 1,
     // The read-aloud rail's Story bible entries (teleprompter-manuscript-integration.prd.md Phase 5): a list row with a
     // category dot and a current state, the same shape as ChapterNav's rows, which Button's padded, uppercase chrome does
     // not fit. One JSX `<button>`, written once inside the entries `.map()`.
-    'src/components/teleprompter/ReaderRail.tsx': 1,
+    'src/components/booth/ReaderRail.tsx': 1,
     // The read-aloud rail's Flags list (teleprompter-manuscript-integration.prd.md Phase 7): the same list row as the Story
     // bible entries above (two lines of text and a current state), which Button's padded, uppercase chrome does not fit. One
     // JSX `<button>`, written once inside the flags `.map()`.
-    'src/components/teleprompter/ReaderFlagsPanel.tsx': 1,
+    'src/components/booth/ReaderFlagsPanel.tsx': 1,
     'src/components/storybible/GuideDetail.tsx': 1,
     'src/components/tracks/TracksPage.tsx': 2,
     // The chapter workspace's clickable script words (edit-and-proof-workspace.prd.md Phase 2, EP5): the same case as
     // ReaderText.tsx above - one word among a chapter's worth of running prose, needing Button's bare click/keyboard
     // semantics without its padded, uppercase chrome breaking the text flow. One JSX `<button>`, written once inside
     // the tokens `.map()`.
-    'src/components/workspace/ScriptView.tsx': 1,
+    'src/components/proof/ScriptView.tsx': 1,
     // The "Settings > Credits" link inside the "More fields" sentence (credits-token-setup-and-front-matter-detection.prd.md
     // Phase 2, CS4): an inline word inside a paragraph, the same case `ReaderText.tsx` above is for - `Button`'s padded,
     // uppercase chrome would break the sentence it sits in.
@@ -65,13 +74,15 @@ const CEILING: Record<NativeTag, Record<string, number>> = {
     // choice's own card ("a card that is a button" - two places, REAPER and Last reading - written once as `card()`,
     // called twice): `Button`'s padded, uppercase chrome fits neither a plain link nor a card naming a source, a time and
     // a quoted sentence.
-    'src/components/teleprompter/ResumePrompt.tsx': 2,
+    'src/components/booth/ResumePrompt.tsx': 2,
   },
   select: {},
   // Reaper-automation-follow-through PRD Phase 9: `PickupsDialog`'s CSV picker is a hidden native `<input type="file">`
   // triggered by a `Button` (ADR 0053's own escape hatch for file-choosing, since a file picker's OS chrome cannot be
   // restyled the way a text input or select can - the same reason `ManuscriptSelectFile` uses a native OS dialog).
-  input: { 'src/components/tracks/PickupsDialog.tsx': 1 },
+  // prep-depth PRD Phase 6's own re-import file picker (`PronunciationQueries.tsx`) is the same pattern, one hidden
+  // `<input type="file">` triggered by a `Button`.
+  input: { 'src/components/tracks/PickupsDialog.tsx': 1, 'src/components/storybible/PronunciationQueries.tsx': 1 },
   textarea: {},
   table: {},
   thead: {},

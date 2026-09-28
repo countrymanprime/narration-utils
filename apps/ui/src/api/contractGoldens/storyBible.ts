@@ -7,6 +7,7 @@ import {
   guidePreviewSchema,
   pronunciationQueriesCsvSchema,
   pronunciationQueriesSchema,
+  queryImportResultSchema,
 } from '../schemas/storyBible';
 
 export const storyBibleGoldens: Record<string, z.ZodType> = {
@@ -19,6 +20,7 @@ export const storyBibleGoldens: Record<string, z.ZodType> = {
   'guide-pronunciation-queries.json': pronunciationQueriesSchema,
   'guide-pronunciation-queries-empty.json': pronunciationQueriesSchema,
   'guide-pronunciation-queries-csv.json': pronunciationQueriesCsvSchema,
+  'guide-pronunciation-queries-import.json': queryImportResultSchema,
   'guide-build-idle.json': workJobSchema,
   'guide-build-starting.json': workJobSchema,
   'guide-build-failed.json': workJobSchema,

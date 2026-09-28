@@ -14,10 +14,26 @@ import { SlideOver } from '../primitives/SlideOver';
 import type { Notify } from '../primitives/Toast';
 import { WorkDialog } from '../primitives/WorkDialog';
 import { RecordingCheckReport } from './RecordingCheckReport';
-import { COVERAGE_REASON_TEXT, LINK_REASONS, REASON_PAGE, formatWhen } from './recordingCheckText';
+import { COVERAGE_REASON_TEXT, LINK_REASONS, REASON_PAGE, formatWhen, passLabel, recheckLabel } from './recordingCheckText';
+
+/**
+ * A credits row's recording check reuses this same dialog (credits-in-chapter-table.prd.md Phase 3): a synthetic
+ * ManuscriptChapter, never a real one and never sent anywhere as one (ADR 0150, ADR 0183 keep credits out of
+ * `manuscriptChapters`) - just enough for `RecordingCheck` and `RecordingCheckReport` to run and read a credits
+ * check with no change of their own. `id` matches the host's own `coverage.CreditsChapterID` ("credits-opening" /
+ * "credits-closing"), and the one paragraph id matches `coverage.creditsParagraphID`'s "<id>-p0", so a reported gap
+ * numbers as "paragraph 1" the same way a real chapter's first paragraph would.
+ */
+export function creditsCheckChapter(kind: 'opening' | 'closing', title: string): ManuscriptChapter {
+  const id = `credits-${kind}`;
+  return { id, title, index: -1, wordCount: 0, status: 'not_started', paragraphIds: [{ id: `${id}-p0`, index: 0 }] };
+}
 
 type Refusal = Extract<CoverageStartResult, { status: 'refused' }>;
 type ModelRequired = Extract<CoverageStartResult, { status: 'asset_required' }>;
+/** The model cascade's own re-check gate (Phase 5, MC4): the same shape as ModelRequired, kept apart so the dialog
+ * can offer "Check with tiny only" beside the download. */
+type RecheckRequired = Extract<CoverageStartResult, { status: 'recheck_asset_required' }>;
 
 const WORK_PHASE: Record<CoverageState['phase'], WorkJob['phase']> = {
   idle: 'preparing',
@@ -31,11 +47,14 @@ const WORK_PHASE: Record<CoverageState['phase'], WorkJob['phase']> = {
 function coverageWorkJob(state: CoverageState, logs: string[], now: number): WorkJob {
   const started = state.startedAt ? Date.parse(state.startedAt) : NaN;
   const ended = state.completedAt ? Date.parse(state.completedAt) : now;
+  // The model cascade's own pass, ahead of the sidecar's own message (Phase 5's "First pass (tiny)", then
+  // "Re-checking 3 passages (large-v3-turbo)"): absent for a plain, single-model check.
+  const pass = passLabel(state);
   return {
     id: state.runId ?? null,
     kind: 'recording_coverage',
     phase: WORK_PHASE[state.phase],
-    message: state.message,
+    message: pass ? `${pass} — ${state.message}` : state.message,
     percent: state.percent,
     logs,
     elapsed: Number.isNaN(started) ? 0 : Math.max(0, (ended - started) / 1000),
@@ -64,18 +83,24 @@ export function RecordingCheck({
   notify,
   close,
   goToParagraph,
+  openWorkspace,
 }: {
   chapter: ManuscriptChapter;
   coverage: CoverageState;
   notify: Notify;
   close: () => void;
   goToParagraph: (index: number) => void;
+  /** "Open workspace" (edit-and-proof-workspace.prd.md Phase 4, page inventory "Home › recording check dialog"):
+   * undefined when this dialog is itself opened from the workspace (WorkspacePage.tsx's own Check again), where
+   * there is nothing to open. */
+  openWorkspace?: () => void;
 }) {
   const api = useApi();
   const [result, setResult] = useState<CoverageResult>();
   const [loadError, setLoadError] = useState('');
   const [refusal, setRefusal] = useState<Refusal>();
   const [modelRequired, setModelRequired] = useState<ModelRequired>();
+  const [recheckRequired, setRecheckRequired] = useState<RecheckRequired>();
   // The run this dialog shows progress for: one it started, or the chapter's own run already going when it opened.
   const [watching, setWatching] = useState(coverage.phase === 'running' && coverage.chapterId === chapter.id ? coverage.runId : undefined);
   // The state the start answered with, until the first live event of that run arrives.
@@ -128,16 +153,31 @@ export function RecordingCheck({
       await start();
     },
   });
+  // The model cascade's own re-check model (Phase 5, MC4): the same asset-install flow as whisperInstall, for the
+  // gate's "Download model" choice; "Check with tiny only" instead skips straight to start({skipRecheck: true}).
+  const recheckInstall = useAssetInstall<WhisperInstallJob>({
+    start: () => (recheckRequired ? api.whisperInstall(recheckRequired.model.id) : Promise.reject(new Error('Check a recording first.'))),
+    state: (jobId) => api.whisperInstallState(jobId),
+    cancel: (jobId) => api.whisperInstallCancel(jobId),
+    onSuccess: async () => {
+      setRecheckRequired(undefined);
+      notify('Whisper model installed.');
+      await start();
+    },
+  });
 
-  const start = () =>
+  const start = (options?: { skipRecheck?: boolean }) =>
     actions.run('check', async () => {
       setRefusal(undefined);
       try {
-        const answer = await api.coverageStart(chapter.id);
+        const answer = await api.coverageStart(chapter.id, options);
         if (answer.status === 'refused') setRefusal(answer);
         else if (answer.status === 'asset_required') {
           whisperInstall.reset();
           setModelRequired(answer);
+        } else if (answer.status === 'recheck_asset_required') {
+          recheckInstall.reset();
+          setRecheckRequired(answer);
         } else {
           setLogs([]);
           setStartedState(answer.state);
@@ -184,6 +224,47 @@ export function RecordingCheck({
           downloadSize={modelRequired.downloadSize}
           diskSize={modelRequired.diskSize}
           installPath={modelRequired.installPath}
+        />
+      </AssetInstallPrompt>
+    );
+  }
+
+  if (recheckRequired) {
+    // MC4: the re-check model is not installed. "Check with tiny only" (the alternative) starts the check with the
+    // first pass alone, its result labelled as such by naming just the one model (recordingCheckText.recheckLabel).
+    return (
+      <AssetInstallPrompt
+        ask={{
+          title: 'Download the re-check model?',
+          body: `The ${recheckRequired.model.displayName} Whisper model re-checks anything the fast first pass reports missing. It is not bundled with Narration Utils and will be stored in your per-user asset cache.`,
+          confirmLabel: 'Download model',
+          alternative: {
+            label: 'Check with tiny only',
+            action: () => {
+              setRecheckRequired(undefined);
+              void start({ skipRecheck: true });
+            },
+          },
+        }}
+        workTitle="Downloading Whisper model"
+        install={recheckInstall}
+        dismiss={() => {
+          setRecheckRequired(undefined);
+          recheckInstall.reset();
+        }}
+      >
+        <AssetFacts
+          label="Model"
+          name={recheckRequired.model.displayName}
+          version={recheckRequired.model.version}
+          publisher={recheckRequired.model.publisher}
+          license={recheckRequired.model.license}
+          licenseUrl={recheckRequired.model.licenseUrl}
+          modelCardUrl={recheckRequired.model.modelCardUrl}
+          provenanceUrl={recheckRequired.model.provenanceUrl}
+          downloadSize={recheckRequired.downloadSize}
+          diskSize={recheckRequired.diskSize}
+          installPath={recheckRequired.installPath}
         />
       </AssetInstallPrompt>
     );
@@ -241,6 +322,7 @@ export function RecordingCheck({
           goToParagraph={goToParagraph}
           showReasons={!refusal}
           checkButton={checkButton}
+          openWorkspace={openWorkspace}
         />
       </div>
     </SlideOver>
@@ -255,6 +337,7 @@ function ResultBody({
   goToParagraph,
   showReasons,
   checkButton,
+  openWorkspace,
 }: {
   chapter: ManuscriptChapter;
   result?: CoverageResult;
@@ -265,6 +348,7 @@ function ResultBody({
   /** Check recording / Check again (recording-check-summary.prd.md Phase 4): the slide-over has no dialog action bar,
    * so it sits with the report's own figures when there is a report, and right here otherwise. */
   checkButton: ReactNode;
+  openWorkspace?: () => void;
 }) {
   if (loadError) {
     return (
@@ -310,11 +394,19 @@ function ResultBody({
       {result.state === 'current' && result.record && (
         <p style={{ color: 'var(--text-muted)' }}>
           Checked {formatWhen(result.record.completedAt)}
-          {result.result ? ` with the ${result.result.model} Whisper model` : ''}.
+          {result.result ? ` with the ${result.result.model} Whisper model` : ''}
+          {result.result && recheckLabel(result.result) ? `; ${recheckLabel(result.result)}` : ''}.
         </p>
       )}
       {result.result && (
-        <RecordingCheckReport chapter={chapter} report={result.result} judgement={result.judgement} goToParagraph={goToParagraph} actionsSlot={checkButton} />
+        <RecordingCheckReport
+          chapter={chapter}
+          report={result.result}
+          judgement={result.judgement}
+          goToParagraph={goToParagraph}
+          actionsSlot={checkButton}
+          openWorkspace={openWorkspace}
+        />
       )}
     </>
   );

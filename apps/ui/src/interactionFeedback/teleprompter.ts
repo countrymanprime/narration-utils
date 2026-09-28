@@ -3,20 +3,20 @@ import { type FeedbackRow, row, subscription } from './row';
 
 // prettier-ignore
 export const teleprompterFeedback: Record<string, FeedbackRow> = {
-  // Teleprompter. Phase 2 (teleprompter-manuscript-integration.prd.md) extracted the session core into
-  // `useTeleprompterSession` so the standalone page and the `ReadAloudDialog` modal share it; the rows below moved
-  // with the calls they describe, and `TeleprompterPage.tsx` keeps only what stayed there (chapter selection).
-  'src/components/teleprompter/TeleprompterPage.tsx::manuscriptChapters#1': row('mount', 'file-io', 'na', 'na', 'ui', 'inline', 'na', 'ok', 'An inline error.'),
-  'src/components/teleprompter/TeleprompterPage.tsx::readerState#1': row('mount', 'file-io', 'na', 'na', 'ui', 'silent', 'na', 'exempt', 'Only picks the chapter the narrator last read; the first chapter is used without it.'),
+  // The Booth (stage-navigation-and-page-replacement.prd.md Phase 4 replaced the Teleprompter page and the Read aloud
+  // dialog with it): the session core is `useTeleprompterSession`, mounted once by `BoothSession`, and `BoothPage.tsx`
+  // keeps the chapter selection and what it loads for the marks.
+  'src/components/booth/BoothPage.tsx::manuscriptChapters#1': row('mount', 'file-io', 'na', 'na', 'ui', 'inline', 'na', 'ok', 'An inline error.'),
+  'src/components/booth/BoothPage.tsx::readerState#1': row('mount', 'file-io', 'na', 'na', 'ui', 'silent', 'na', 'exempt', 'Only picks the chapter the narrator last read; the first chapter is used without it.'),
   // Phase 11 of the input-devices PRD (ADR 0113): the REAPER suggestion is a hint beneath the picker, and the
   // session-state read only stops it moving a session already running.
-  'src/components/teleprompter/TeleprompterPage.tsx::chapterSuggestion#1': row('mount', 'file-io', 'na', 'na', 'ui', 'silent', 'na', 'exempt', 'A hint only: with no .rpp, or none chosen, the picker keeps its usual default and no hint shows.'),
-  'src/components/teleprompter/TeleprompterPage.tsx::teleprompterState#1': row('mount', 'instant', 'na', 'na', 'ui', 'silent', 'na', 'exempt', 'Only guards the REAPER preselection; the session hook reads and reports the state itself.'),
-  'src/components/teleprompter/useResumeLocate.ts::teleprompterLocate#1': row('mount', 'python', 'inline', 'pending', 'ui', 'inline', 'no', 'ok', 'The read-aloud resume prompt (read-aloud-resume-from-daw.prd.md Phase 1, ADR 0187, amending ADR 0112) asks where the recording ends once when the dialog opens, and again on Try again or a finished model download: "Checking where REAPER and your last reading are…" (Phase 3 wording) shows at once and replaces the choices, and only the latest lookup may answer; a failure is an inline alert with Try again. It settles - and stays gone - the moment a choice is made or a session starts, for the rest of the dialog\'s open.'),
-  'src/components/teleprompter/useResumeLocate.ts::whisperInstall#1': row('click', 'download', 'dialog', 'host', 'dialog', 'dialog', 'no', 'ok', 'Only after Download model... and the first-use confirm; the host joins a download already running for the same asset. Bytes, the check, Cancel and a failure sentence in the dialog, through useAssetInstall; a finished download runs the lookup again.'),
-  'src/components/teleprompter/useResumeLocate.ts::whisperInstallState#1': row('timer', 'download', 'dialog', 'na', 'poll', 'dialog', 'no', 'ok', 'The one install-poll loop (useAssetInstall), every 400 ms, as for the Start reading download.'),
-  'src/components/teleprompter/useResumeLocate.ts::whisperInstallCancel#1': row('click', 'download', 'dialog', 'dialog', 'dialog', 'dialog', 'no', 'ok', 'Cancel stops the download and the dialog says it was cancelled; drawn only while bytes arrive.'),
-  'src/components/teleprompter/TeleprompterPage.tsx::creditsTemplates#1': row(
+  'src/components/booth/BoothPage.tsx::chapterSuggestion#1': row('mount', 'file-io', 'na', 'na', 'ui', 'silent', 'na', 'exempt', 'A hint only: with no .rpp, or none chosen, the picker keeps its usual default and no hint shows.'),
+  'src/components/booth/BoothPage.tsx::teleprompterState#1': row('mount', 'instant', 'na', 'na', 'ui', 'silent', 'na', 'exempt', 'Only guards the REAPER preselection; the session hook reads and reports the state itself.'),
+  'src/components/booth/useResumeLocate.ts::teleprompterLocate#1': row('mount', 'python', 'inline', 'pending', 'ui', 'inline', 'no', 'ok', 'The read-aloud resume prompt (read-aloud-resume-from-daw.prd.md Phase 1, ADR 0187, amending ADR 0112) asks where the recording ends once when the dialog opens, and again on Try again or a finished model download: "Checking where REAPER and your last reading are…" (Phase 3 wording) shows at once and replaces the choices, and only the latest lookup may answer; a failure is an inline alert with Try again. It settles - and stays gone - the moment a choice is made or a session starts, for the rest of the dialog\'s open.'),
+  'src/components/booth/useResumeLocate.ts::whisperInstall#1': row('click', 'download', 'dialog', 'host', 'dialog', 'dialog', 'no', 'ok', 'Only after Download model... and the first-use confirm; the host joins a download already running for the same asset. Bytes, the check, Cancel and a failure sentence in the dialog, through useAssetInstall; a finished download runs the lookup again.'),
+  'src/components/booth/useResumeLocate.ts::whisperInstallState#1': row('timer', 'download', 'dialog', 'na', 'poll', 'dialog', 'no', 'ok', 'The one install-poll loop (useAssetInstall), every 400 ms, as for the Start reading download.'),
+  'src/components/booth/useResumeLocate.ts::whisperInstallCancel#1': row('click', 'download', 'dialog', 'dialog', 'dialog', 'dialog', 'no', 'ok', 'Cancel stops the download and the dialog says it was cancelled; drawn only while bytes arrive.'),
+  'src/components/booth/BoothPage.tsx::creditsTemplates#1': row(
     'mount',
     'file-io',
     'na',
@@ -27,7 +27,7 @@ export const teleprompterFeedback: Record<string, FeedbackRow> = {
     'exempt',
     'Loads the credits template library so the picker can offer Opening and Closing credits (audiobook-credits-templates.prd.md Phase 4); a failed load leaves the credits out of the picker, like the Manuscript entries, and the chapters stay readable.',
   ),
-  'src/components/teleprompter/TeleprompterPage.tsx::creditsPreview#1': row(
+  'src/components/booth/BoothPage.tsx::creditsPreview#1': row(
     'mount',
     'instant',
     'na',
@@ -38,11 +38,15 @@ export const teleprompterFeedback: Record<string, FeedbackRow> = {
     'exempt',
     'Renders the first opening- and closing-kind template (ADR 0093) with the project values for the credits in the picker, their text and the unresolved-token warning; a failed render leaves that credits out of the picker rather than a toast over the page.',
   ),
-  'src/components/teleprompter/useTeleprompterSession.ts::subscribeTeleprompterEvent#1': subscription('The live session events.'),
-  'src/components/teleprompter/useTeleprompterSession.ts::subscribeTeleprompterState#1': subscription('The live session state.'),
-  'src/components/teleprompter/useTeleprompterSession.ts::teleprompterState#1': row('mount', 'instant', 'na', 'na', 'ui', 'silent', 'na', 'exempt', 'Hydrates a session that was already running; the state event follows anyway.'),
-  'src/components/teleprompter/useTeleprompterSession.ts::teleprompterDevices#1': row('effect', 'python', 'na', 'disabled', 'ui', 'inline', 'na', 'ok', 'Loads the device list on mount and again on a manual Refresh click in the picker (disabled while a listing is already in flight); a listing failure shows inline instead of blocking Start with a previously-chosen device (the host never fails this call outright).'),
-  'src/components/teleprompter/useReadAloudReaperState.ts::readAloudReaperState#1': row(
+  // The Booth's marks in the text (stage-navigation-and-page-replacement.prd.md Phase 4): the page loads the Story Bible
+  // entries and notes the Manuscript used to hand the read-aloud dialog.
+  'src/components/booth/BoothPage.tsx::guideEntities#1': row('mount', 'file-io', 'na', 'na', 'ui', 'silent', 'na', 'exempt', 'Only marks Story Bible mentions in the text and fills the rail; without them the chapter still reads.'),
+  'src/components/booth/BoothPage.tsx::noteList#1': row('mount', 'file-io', 'na', 'na', 'ui', 'silent', 'na', 'exempt', 'Only marks note anchors in the text and fills the Notes tab; without them the chapter still reads.'),
+  'src/components/booth/useTeleprompterSession.ts::subscribeTeleprompterEvent#1': subscription('The live session events.'),
+  'src/components/booth/useTeleprompterSession.ts::subscribeTeleprompterState#1': subscription('The live session state.'),
+  'src/components/booth/useTeleprompterSession.ts::teleprompterState#1': row('mount', 'instant', 'na', 'na', 'ui', 'silent', 'na', 'exempt', 'Hydrates a session that was already running; the state event follows anyway.'),
+  'src/components/booth/useTeleprompterSession.ts::teleprompterDevices#1': row('effect', 'python', 'na', 'disabled', 'ui', 'inline', 'na', 'ok', 'Loads the device list on mount and again on a manual Refresh click in the picker (disabled while a listing is already in flight); a listing failure shows inline instead of blocking Start with a previously-chosen device (the host never fails this call outright).'),
+  'src/components/booth/useReadAloudReaperState.ts::readAloudReaperState#1': row(
     'effect',
     'file-io',
     'na',
@@ -53,8 +57,8 @@ export const teleprompterFeedback: Record<string, FeedbackRow> = {
     'ok',
     'Reads the chapter\'s REAPER state on mount, again on a manual Refresh click, and again once "Arm only" finishes (read-aloud-control-bar.prd.md Phase 6, ADR 0249, never on a timer); the button\'s visible text and its tooltip show the last-known state or the reason it could not be read. The toggle itself (Phase 7, booth-actions-enablement.prd.md Phase 2) is gated separately on the record capability, not on this read.',
   ),
-  'src/components/teleprompter/useRecordInReaper.ts::settingsForScope#1': row('effect', 'file-io', 'na', 'na', 'ui', 'silent', 'na', 'exempt', 'Loads the Record-in-REAPER toggle\'s saved per-project state on mount (read-aloud-control-bar.prd.md Phase 7, Q9); if it fails the toggle just starts off and unconfirmed, exactly as a project that has never turned it on.'),
-  'src/components/teleprompter/useRecordInReaper.ts::saveSettings#1': row(
+  'src/components/booth/useRecordInReaper.ts::settingsForScope#1': row('effect', 'file-io', 'na', 'na', 'ui', 'silent', 'na', 'exempt', 'Loads the Record-in-REAPER toggle\'s saved per-project state on mount (read-aloud-control-bar.prd.md Phase 7, Q9); if it fails the toggle just starts off and unconfirmed, exactly as a project that has never turned it on.'),
+  'src/components/booth/useRecordInReaper.ts::saveSettings#1': row(
     'click',
     'file-io',
     'none',
@@ -65,7 +69,7 @@ export const teleprompterFeedback: Record<string, FeedbackRow> = {
     'ok',
     'Saving the toggle (on confirm, or off at once for a project that already confirmed it, Q9): a one-field or two-field write, the same tier-1 cost as Settings.tsx\'s own saveSettings rows. The toggle\'s own pressed state flips at once (optimistic); a failure shows inline in the bar\'s status line rather than silently reverting, since REAPER behaviour hinges on the narrator trusting what the toggle says.',
   ),
-  'src/components/teleprompter/useRecordInReaper.ts::readAloudArmOnly#1': row(
+  'src/components/booth/useRecordInReaper.ts::readAloudArmOnly#1': row(
     'click',
     'file-io',
     'disabled',
@@ -76,7 +80,7 @@ export const teleprompterFeedback: Record<string, FeedbackRow> = {
     'ok',
     '"Arm only" (Q7 A) disables itself while the request is in flight; readAloudReaperState is re-asked once it settles, so the bar\'s own status text is the completion signal. A refusal (already recording) shows inline in the bar\'s status line.',
   ),
-  'src/components/teleprompter/useRecordInReaper.ts::readAloudRecordStart#1': row(
+  'src/components/booth/useRecordInReaper.ts::readAloudRecordStart#1': row(
     'click',
     'file-io',
     'disabled',
@@ -87,7 +91,7 @@ export const teleprompterFeedback: Record<string, FeedbackRow> = {
     'ok',
     'Play with the toggle on (Q8): the Play/Pause button is already disabled while starting (useTeleprompterSession\'s own phase guard covers the click that follows); a refusal or the 3-second timeout shows inline in the status line and TeleprompterStart is never sent, so nothing starts listening silently.',
   ),
-  'src/components/teleprompter/useRecordInReaper.ts::readAloudRecordStop#1': row(
+  'src/components/booth/useRecordInReaper.ts::readAloudRecordStop#1': row(
     'click',
     'file-io',
     'none',
@@ -98,11 +102,11 @@ export const teleprompterFeedback: Record<string, FeedbackRow> = {
     'ok',
     'Stop (and the dialog\'s "Stop reading?" confirm) always stops listening first; this is a best-effort follow-up only when this app actually started a REAPER recording, so a refusal (REAPER already stopped on its own) shows inline but never blocks the reading session from having already ended.',
   ),
-  'src/components/teleprompter/useTeleprompterSession.ts::settingsForScope#1': row('effect', 'file-io', 'na', 'na', 'ui', 'silent', 'na', 'exempt', 'Loads the persisted microphone (docs/prds/teleprompter-engines-and-input-devices.prd.md Phase 2) and runs the one-time browser-storage migration on the standalone page; if it fails the field just starts empty, exactly as it did before Phase 2.'),
-  'src/components/teleprompter/useTeleprompterSession.ts::manuscriptParagraphs#1': row('effect', 'file-io', 'na', 'na', 'ui', 'inline', 'na', 'ok', 'An inline error.'),
-  'src/components/teleprompter/useTeleprompterSession.ts::teleprompterStart#1': row('click', 'job', 'disabled', 'host', 'ui', 'inline', 'no', 'ok', 'The state event moves the page to "starting" and disables Start; the host refuses a second session.'),
-  'src/components/teleprompter/useTeleprompterSession.ts::teleprompterStop#1': row('click', 'job', 'none', 'none', 'ui', 'inline', 'no', 'ok', 'The state event moves the page on; an inline error otherwise.'),
-  'src/components/teleprompter/useTeleprompterSession.ts::teleprompterPause#1': row(
+  'src/components/booth/useTeleprompterSession.ts::settingsForScope#1': row('effect', 'file-io', 'na', 'na', 'ui', 'silent', 'na', 'exempt', 'Loads the persisted microphone (docs/prds/teleprompter-engines-and-input-devices.prd.md Phase 2) and runs the one-time browser-storage migration on the standalone page; if it fails the field just starts empty, exactly as it did before Phase 2.'),
+  'src/components/booth/useTeleprompterSession.ts::manuscriptParagraphs#1': row('effect', 'file-io', 'na', 'na', 'ui', 'inline', 'na', 'ok', 'An inline error.'),
+  'src/components/booth/useTeleprompterSession.ts::teleprompterStart#1': row('click', 'job', 'disabled', 'host', 'ui', 'inline', 'no', 'ok', 'The state event moves the page to "starting" and disables Start; the host refuses a second session.'),
+  'src/components/booth/useTeleprompterSession.ts::teleprompterStop#1': row('click', 'job', 'none', 'none', 'ui', 'inline', 'no', 'ok', 'The state event moves the page on; an inline error otherwise.'),
+  'src/components/booth/useTeleprompterSession.ts::teleprompterPause#1': row(
     'click',
     'file-io',
     'none',
@@ -113,9 +117,9 @@ export const teleprompterFeedback: Record<string, FeedbackRow> = {
     'ok',
     'Pause/resume on the control channel (read-aloud-control-bar.prd.md Phase 5, ADR 0248); the state event\'s `paused` flag moves the bar\'s toggle and status ("Paused"/"Listening"), an inline error otherwise.',
   ),
-  'src/components/teleprompter/useInputLevel.ts::subscribeTeleprompterEvent#1': subscription('The bar and microphone-popover meter (Phase 4, ADR 0247): its own subscription, apart from the session model, so a burst of level events never re-renders the reader\'s rows.'),
-  'src/components/teleprompter/useBoothRecording.ts::subscribeDawTransport#1': subscription('booth-mode-and-companion-panel.prd.md Phase 5: the no-sound, no-notification rule\'s own reactive read of the DAW\'s live transport, apart from useDawRecording\'s ref-based gesture-time check (input-commands-and-pedals.prd.md Phase 10).'),
-  'src/components/teleprompter/useInputLevel.ts::teleprompterMeterStart#1': row(
+  'src/components/booth/useInputLevel.ts::subscribeTeleprompterEvent#1': subscription('The bar and microphone-popover meter (Phase 4, ADR 0247): its own subscription, apart from the session model, so a burst of level events never re-renders the reader\'s rows.'),
+  'src/components/booth/useBoothRecording.ts::subscribeDawTransport#1': subscription('booth-mode-and-companion-panel.prd.md Phase 5: the no-sound, no-notification rule\'s own reactive read of the DAW\'s live transport, apart from useDawRecording\'s ref-based gesture-time check (input-commands-and-pedals.prd.md Phase 10).'),
+  'src/components/booth/useInputLevel.ts::teleprompterMeterStart#1': row(
     'effect',
     'python',
     'na',
@@ -126,7 +130,7 @@ export const teleprompterFeedback: Record<string, FeedbackRow> = {
     'ok',
     'Starts the meter-only child while the microphone popover is open and no session is running; the meter itself shows it working, an inline alert under it otherwise (the host refuses a second meter or one during a session).',
   ),
-  'src/components/teleprompter/useInputLevel.ts::teleprompterMeterStop#1': row(
+  'src/components/booth/useInputLevel.ts::teleprompterMeterStop#1': row(
     'effect',
     'python',
     'na',
@@ -137,7 +141,7 @@ export const teleprompterFeedback: Record<string, FeedbackRow> = {
     'exempt',
     'Releases the meter-only child when the popover closes, a session starts, the device changes or the dialog unmounts; there is nothing left mounted to tell, and a session or the next popover open still works either way (SILENT_CATCHES).',
   ),
-  'src/components/teleprompter/ReadAloudDialog.tsx::teleprompterSaveFlags#1': row(
+  'src/components/booth/BoothSession.tsx::teleprompterSaveFlags#1': row(
     'effect',
     'file-io',
     'none',
@@ -148,14 +152,14 @@ export const teleprompterFeedback: Record<string, FeedbackRow> = {
     'ok',
     'Keeps the session’s suspected flags as findings when reading stops, when the dialog closes and on a dismiss after the session (ADR 0117); the Flags tab says they were kept, or shows the failure. Saving again is idempotent on the host, so there is nothing to guard.',
   ),
-  'src/components/teleprompter/useTeleprompterSession.ts::teleprompterSeek#1': row('click', 'file-io', 'none', 'none', 'event', 'inline', 'no', 'ok', 'The tracker\'s next position event (jump: "restart") shows the move; an inline error otherwise. No caller triggers this yet (teleprompter-manuscript-integration.prd.md Phase 4 adds the word-click affordance); the seek channel itself is Phase 3.'),
-  'src/components/teleprompter/ReaderFlagsPanel.tsx::teleprompterPunchPreview#1': row('click', 'file-io', 'pending', 'pending', 'dialog', 'inline', 'no', 'ok', 'Resolves the flagged word\'s time from the anchors file only, no REAPER round trip (booth-actions-enablement PRD Phase 3). Success opens the confirm dialog; a refusal (no anchor recorded yet, no live chapter) shows inline under the flag and nothing moves.'),
-  'src/components/teleprompter/ReaderFlagsPanel.tsx::teleprompterPunch#1': row('click', 'job', 'pending', 'pending', 'ui', 'inline', 'no', 'ok', 'The confirm dialog\'s own Punch button, over the same round trip pickupsPunch uses. Success closes the dialog (REAPER\'s cursor moved); a refusal shows inline in the dialog, which stays open.'),
-  'src/components/teleprompter/useTeleprompterSession.ts::assetsInstall#1': row('click', 'download', 'dialog', 'host', 'dialog', 'dialog', 'no', 'ok', 'The first-use dialog says Starting at once; the host joins a download that is already running for the same asset (S16), so a second press starts no second one. The asset is the model of the chosen engine (Whisper or Moonshine), named by the gate. Real bytes, the check, Cancel while bytes arrive, and a failure sentence in the dialog, through useAssetInstall.'),
-  'src/components/teleprompter/useTeleprompterSession.ts::assetsInstallState#1': row('timer', 'download', 'dialog', 'na', 'poll', 'dialog', 'no', 'ok', 'The one install-poll loop (useAssetInstall), every 400 ms: the dialog shows the bytes as they arrive, and a failed poll is shown in the dialog. The download outlives the dialog and ends with job:ended.'),
-  'src/components/teleprompter/useTeleprompterSession.ts::assetsInstallCancel#1': row('click', 'download', 'dialog', 'dialog', 'dialog', 'dialog', 'no', 'ok', 'Cancel stops the download and the dialog says it was cancelled; it is drawn only while bytes arrive, and a failed cancel is shown in the dialog.'),
-  'src/components/teleprompter/useTeleprompterSession.ts::saveSettings#1': row('effect', 'file-io', 'na', 'na', 'ui', 'silent', 'na', 'exempt', 'The one-time browser-storage-to-settings migration write (standalone page only); a failure leaves the device in local state for this visit and the migration is retried next load since the settings value never got marked set.'),
-  'src/components/teleprompter/useTeleprompterSession.ts::saveSettings#2': row(
+  'src/components/booth/useTeleprompterSession.ts::teleprompterSeek#1': row('click', 'file-io', 'none', 'none', 'event', 'inline', 'no', 'ok', 'The tracker\'s next position event (jump: "restart") shows the move; an inline error otherwise. No caller triggers this yet (teleprompter-manuscript-integration.prd.md Phase 4 adds the word-click affordance); the seek channel itself is Phase 3.'),
+  'src/components/booth/ReaderFlagsPanel.tsx::teleprompterPunchPreview#1': row('click', 'file-io', 'pending', 'pending', 'dialog', 'inline', 'no', 'ok', 'Resolves the flagged word\'s time from the anchors file only, no REAPER round trip (booth-actions-enablement PRD Phase 3). Success opens the confirm dialog; a refusal (no anchor recorded yet, no live chapter) shows inline under the flag and nothing moves.'),
+  'src/components/booth/ReaderFlagsPanel.tsx::teleprompterPunch#1': row('click', 'job', 'pending', 'pending', 'ui', 'inline', 'no', 'ok', 'The confirm dialog\'s own Punch button, over the same round trip pickupsPunch uses. Success closes the dialog (REAPER\'s cursor moved); a refusal shows inline in the dialog, which stays open.'),
+  'src/components/booth/useTeleprompterSession.ts::assetsInstall#1': row('click', 'download', 'dialog', 'host', 'dialog', 'dialog', 'no', 'ok', 'The first-use dialog says Starting at once; the host joins a download that is already running for the same asset (S16), so a second press starts no second one. The asset is the model of the chosen engine (Whisper or Moonshine), named by the gate. Real bytes, the check, Cancel while bytes arrive, and a failure sentence in the dialog, through useAssetInstall.'),
+  'src/components/booth/useTeleprompterSession.ts::assetsInstallState#1': row('timer', 'download', 'dialog', 'na', 'poll', 'dialog', 'no', 'ok', 'The one install-poll loop (useAssetInstall), every 400 ms: the dialog shows the bytes as they arrive, and a failed poll is shown in the dialog. The download outlives the dialog and ends with job:ended.'),
+  'src/components/booth/useTeleprompterSession.ts::assetsInstallCancel#1': row('click', 'download', 'dialog', 'dialog', 'dialog', 'dialog', 'no', 'ok', 'Cancel stops the download and the dialog says it was cancelled; it is drawn only while bytes arrive, and a failed cancel is shown in the dialog.'),
+  'src/components/booth/useTeleprompterSession.ts::saveSettings#1': row('effect', 'file-io', 'na', 'na', 'ui', 'silent', 'na', 'exempt', 'The one-time browser-storage-to-settings migration write (standalone page only); a failure leaves the device in local state for this visit and the migration is retried next load since the settings value never got marked set.'),
+  'src/components/booth/useTeleprompterSession.ts::saveSettings#2': row(
     'input',
     'file-io',
     'none',
@@ -168,7 +172,11 @@ export const teleprompterFeedback: Record<string, FeedbackRow> = {
   ),
   // Companion mode (booth-mode-and-companion-panel.prd.md Phase 7, ADR 0401): CompanionShell narrows and pins the one window
   // while it is mounted and gives it back on unmount, and shows REAPER's playhead from the DAW port's live transport.
-  'src/components/teleprompter/CompanionShell.tsx::companionModeEnter#1': row('mount', 'instant', 'na', 'na', 'ui', 'inline', 'na', 'ok', 'Narrows and pins the window as the companion panel mounts; the panel itself is the acknowledgment, and a failure is an inline alert above its sections, with the panel still fully usable (Full app still works).'),
-  'src/components/teleprompter/CompanionShell.tsx::companionModeExit#1': row('mount', 'instant', 'na', 'na', 'ui', 'silent', 'na', 'exempt', 'Gives the window its size, position and stacking back as the companion panel unmounts (Full app, the double Escape, the dialog closing). Nothing is left mounted to tell, and the host\'s exit is a no-op when nothing was entered (SILENT_CATCHES).'),
-  'src/components/teleprompter/CompanionShell.tsx::subscribeDawTransport#1': subscription('The DAW port\'s live transport state (DAW port PRD Phase 9, daw_transport_changed) for the companion header\'s playhead badge; until the first push it reads "Playhead stopped".'),
+  'src/components/booth/CompanionShell.tsx::companionModeEnter#1': row('mount', 'instant', 'na', 'na', 'ui', 'inline', 'na', 'ok', 'Narrows and pins the window as the companion panel mounts; the panel itself is the acknowledgment, and a failure is an inline alert above its sections, with the panel still fully usable (Full app still works).'),
+  'src/components/booth/CompanionShell.tsx::companionModeExit#1': row('mount', 'instant', 'na', 'na', 'ui', 'silent', 'na', 'exempt', 'Gives the window its size, position and stacking back as the companion panel unmounts (Full app, the double Escape, the dialog closing). Nothing is left mounted to tell, and the host\'s exit is a no-op when nothing was entered (SILENT_CATCHES).'),
+  'src/components/booth/CompanionShell.tsx::subscribeDawTransport#1': subscription('The DAW port\'s live transport state (DAW port PRD Phase 9, daw_transport_changed) for the companion header\'s playhead badge; until the first push it reads "Playhead stopped".'),
+  'src/components/booth/ResumePrompt.tsx::subscribeDawTransport#1': subscription('REAPER starting to play or record settles the resume prompt (read-aloud-resume-from-daw.prd.md Phase 5, RD7, ADR 0353): the narrator is working in REAPER, so the notice steps aside without a choice being made.'),
+  'src/components/booth/ResumePrompt.tsx::subscribeTeleprompterResumeFollow#1': subscription('The bounded REAPER follow\'s live events while the prompt shows for a matched track (Phase 5, ADR 0353): a cursor move retries the lookup, and REAPER playing or recording settles the prompt.'),
+  'src/components/booth/ResumePrompt.tsx::teleprompterResumeFollow#1': row('effect', 'file-io', 'na', 'na', 'ui', 'silent', 'na', 'exempt', 'Starts the bounded REAPER follow for the matched track while the prompt shows (Phase 5, ADR 0353); a failure to start just means the poll never begins (SILENT_CATCHES).'),
+  'src/components/booth/ResumePrompt.tsx::teleprompterResumeUnfollow#1': row('effect', 'file-io', 'na', 'na', 'ui', 'silent', 'na', 'exempt', 'Stops the follow on cleanup; a failure here is unobservable and harmless (SILENT_CATCHES).'),
 };

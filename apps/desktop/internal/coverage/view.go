@@ -13,7 +13,7 @@ var RefusalReasons = []Reason{
 	ReasonNoProject, ReasonNoProjectFile, ReasonProjectUnreadable, ReasonNoManuscript, ReasonChapterNotFound,
 	ReasonNotNarration, ReasonUnmapped, ReasonMultipleTracks, ReasonMappedTrackMissing, ReasonNoItems,
 	ReasonUnsupportedItem, ReasonSourceMissing, ReasonItemUnreadable, ReasonBusy, ReasonSidecarMissing,
-	ReasonInvalidParams, ReasonManuscriptChanged, ReasonResultMissing,
+	ReasonInvalidParams, ReasonManuscriptChanged, ReasonResultMissing, ReasonCreditsNotSetUp, ReasonCreditsChanged,
 }
 
 // ResultView is a ChapterResult as the CoverageResult binding sends it
@@ -70,6 +70,8 @@ type ReportView struct {
 	Items             []ItemLine      `json:"items"`
 	Paragraphs        []ParagraphLine `json:"paragraphs"`
 	Regions           []RegionLine    `json:"regions"`
+	// Recheck is the model cascade's second pass (Phase 5), straight from the stored result; nil for a plain check.
+	Recheck *Recheck `json:"recheck,omitempty"`
 }
 
 // View is the result as the binding sends it, judged by thresholds.
@@ -92,6 +94,7 @@ func (r ChapterResult) View(chapterID string, thresholds Thresholds) ResultView 
 			MissingTokens: report.Summary.MissingTokens, ExtraTokens: report.Summary.ExtraTokens,
 			LongestMissingRun: report.Summary.LongestMissingRun, PlayedSeconds: report.Summary.Items.PlayedSeconds,
 			Items: nonNil(report.Items), Paragraphs: nonNil(report.Paragraphs), Regions: regionViews(report.Regions),
+			Recheck: r.Result.Recheck,
 		}
 	}
 	if r.Current() {

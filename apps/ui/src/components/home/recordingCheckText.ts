@@ -1,7 +1,7 @@
 // The words of the recording check (docs/utilities/recording-coverage.md, ADR 0130): every reason the host can give
 // for a check it refused or a result it cannot trust, in the narrator's terms, and the sentences a stored report is read
 // out as. Pure functions, so the dialog only lays them out.
-import type { CoverageJudgement, CoverageReason, CoverageRegion, CoverageRegionKind, CoverageReport, ManuscriptChapter } from '../../types';
+import type { CoverageJudgement, CoverageReason, CoverageRegion, CoverageRegionKind, CoverageReport, CoverageState, ManuscriptChapter } from '../../types';
 
 /**
  * One plain sentence per reason. The host also sends its own message with a refusal, but that one is written for a log
@@ -26,6 +26,8 @@ export const COVERAGE_REASON_TEXT: Record<CoverageReason, string> = {
   invalid_params: 'The recording check settings are not valid.',
   manuscript_changed: 'The chapter’s text changed since this check.',
   result_missing: 'The result of the last check could not be read. Check again.',
+  credits_not_set_up: 'Add a template for this in Settings > Credits before checking it.',
+  credits_changed: 'The credits text changed since this check.',
   item_added: 'Audio was added to the chapter’s track since this check.',
   item_removed: 'Audio was removed from the chapter’s track since this check.',
   item_trimmed: 'An item on the chapter’s track was trimmed since this check.',
@@ -50,6 +52,7 @@ export const REASON_PAGE: Partial<Record<CoverageReason, { path: string; label: 
   multiple_tracks: { path: '/tracks', label: 'Open Tracks' },
   mapped_track_missing: { path: '/tracks', label: 'Open Tracks' },
   sidecar_missing: { path: '/settings', label: 'Open Settings' },
+  credits_not_set_up: { path: '/settings', label: 'Open Settings' },
 };
 
 export const REGION_LABEL: Record<CoverageRegionKind, string> = {
@@ -153,4 +156,31 @@ export function describePosition(region: CoverageRegion): string | undefined {
 export function formatWhen(value: string): string {
   const date = new Date(value);
   return Number.isNaN(date.getTime()) ? value : date.toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
+}
+
+/** MC5: "3 passages re-checked with the large-v3-turbo Whisper model" or "the whole chapter re-checked with the
+ * large-v3-turbo Whisper model", appended to a stored report's own "Checked ... with the tiny Whisper model" line.
+ * undefined for a plain, single-model check. */
+export function recheckLabel(report: CoverageReport): string | undefined {
+  if (!report.recheck) return undefined;
+  const { model, wholeChapter, windows } = report.recheck;
+  return `${wholeChapter ? 'the whole chapter' : plural(windows, 'passage')} re-checked with the ${model} Whisper model`;
+}
+
+/** The user flow's "First pass (tiny)", then "Re-checking 3 passages (large-v3-turbo)": a live check's current pass
+ * in plain words, from the model cascade's own progress fields (Phase 5). undefined for a plain, single-model check
+ * (state.pass is only ever set for one that asked for a re-check) or before the first live event of a new run. */
+export function passLabel(state: CoverageState): string | undefined {
+  switch (state.pass) {
+    case 'first_pass':
+      return state.firstPassModel ? `First pass (${state.firstPassModel})` : 'First pass';
+    case 'recheck_windows':
+      return `Re-checking ${plural(state.recheckWindows ?? 0, 'passage')}${state.recheckModel ? ` (${state.recheckModel})` : ''}`;
+    case 'recheck_whole':
+      return `Re-checking the whole chapter${state.recheckModel ? ` (${state.recheckModel})` : ''}`;
+    case 'realign':
+      return 'Combining the two passes';
+    default:
+      return undefined;
+  }
 }

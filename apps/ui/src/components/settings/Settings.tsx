@@ -46,7 +46,9 @@ const SETTINGS_CATEGORIES: SettingsCategory[] = [
   { key: 'Delivery', label: 'Delivery', scopes: ['project', 'global'] },
   { key: 'Daw', label: 'DAW Integration', tool: 'DAW', scopes: ['global', 'project'] },
   { key: 'Piper', label: 'TTS', tool: 'Piper', scopes: ['global', 'project'] },
-  { key: 'Teleprompter', label: 'Teleprompter', tool: 'Teleprompter', scopes: ['global'] },
+  // The Booth's microphone, engine and model (stage-navigation-and-page-replacement.prd.md Q11): named for the page that
+  // uses them; the key stays the settings tool's name, and App.tsx's `#booth` and old `#teleprompter` anchors both open it.
+  { key: 'Teleprompter', label: 'Booth', tool: 'Teleprompter', scopes: ['global'] },
   { key: 'LocalAssets', label: 'Local assets', scopes: ['global'] },
   { key: 'ProjectData', label: 'Project data', scopes: ['project'] },
   // Credit values are per-project (Open Question C2); the global narrator default lives in the General category.

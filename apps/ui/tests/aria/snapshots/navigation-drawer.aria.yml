@@ -10,13 +10,26 @@
   - button "Close navigation"
   - navigation:
     - /children: equal
-    - button "Home"
-    - button "Production"
-    - button "Manuscript"
-    - button "Proofing"
-    - button "Story Bible"
-    - button "Teleprompter"
-    - button "Tracks"
-    - button "Review"
-    - button "Delivery"
+    - group "Production":
+      - /children: equal
+      - text: Production
+      - button "Home"
+    - group "Prep":
+      - /children: equal
+      - text: Prep
+      - button "Script"
+      - button "Story Bible"
+    - group "Record":
+      - /children: equal
+      - text: Record
+      - button "Booth"
+    - group "Review":
+      - /children: equal
+      - text: Review
+      - button "Proof"
+      - button "Tracks"
+    - group "Finish":
+      - /children: equal
+      - text: Finish
+      - button "Delivery"
   - button "Settings"

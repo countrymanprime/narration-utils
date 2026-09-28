@@ -50,6 +50,16 @@ it cannot use. The bindings are `GuidePronunciationQueries` and `GuidePronunciat
 Bible's Pronunciation queries panel saves the CSV as a download and marks a row sent or answered through
 `GuidePronunciationSetStatus`.
 
+Once the author replies, the narrator can **re-import** the answered file instead of marking each row by hand (prep depth
+Phase 6, [ADR 0352](../adr/0352-a-re-imported-query-answer-is-matched-by-entry-id-and-alias-index-and-a-blank-note-column-leaves-the-note-alone.md)):
+`guide.MatchQueryAnswers` matches each of `ParseQueriesCSV`'s rows to a still-existing entity or alias by `entry_id` and
+`alias_index`, never by the free-text word, and reports a row whose entry or alias is gone the same way a row it could not
+parse is reported. `guide.Service.ImportQueriesCSV` then applies every matched row through the existing
+`SetPronunciationStatus` call, one sidecar call per row; a blank note column is sent as no note (leaving an existing one
+alone), never as a note that clears it. The binding is `GuidePronunciationImportQueriesCSV` (`hostAPIVersion` 71), which
+takes the file's text (the UI reads whatever file the narrator picks) and answers `{applied, issues}`; the panel's Import
+answers button shows the count and lists any row it could not use.
+
 ## Target workflow
 
 Run the guide after manuscript selection; review uncertain candidates; lock narrator-authored pronunciation and notes; export approved vocabulary for transcription; consult chapter/scene and dialogue information during recording.
@@ -57,7 +67,7 @@ Run the guide after manuscript selection; review uncertain candidates; lock narr
 ## Inputs and outputs
 
 - Inputs: Word manuscript, the selected catalog-managed spaCy language model (downloaded after a confirmation; without one the build offers a rules-only run), optional eSpeak, the selected catalog-managed Piper voice, and existing guide JSON.
-- Outputs: `<project>/ManuscriptGuide/manuscript_guide.json`, optional audio previews, and shared `entity` and `pronunciation` findings for entries that need review or a pronunciation with low or unknown confidence (`apps/desktop/internal/guide/findings_adapter.go`), which the [Review page](../guides/using-the-app/review.md) lists and decides.
+- Outputs: `<project>/ManuscriptGuide/manuscript_guide.json`, optional audio previews, and shared `entity` and `pronunciation` findings for entries that need review or a pronunciation with low or unknown confidence (`apps/desktop/internal/guide/findings_adapter.go`), which [Proof](../guides/using-the-app/proof.md) lists and decides.
 - Narrator actions: edit, lock, merge/reject candidates, approve pronunciations, and choose exports.
 
 ## Planned features

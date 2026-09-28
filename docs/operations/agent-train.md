@@ -149,7 +149,8 @@ Decisions the owner made while the train ran (logged on #509). They bind the coo
 | **D72** | The privacy line is outbound user data, not inbound reference data. The app may call external APIs to **fetch** dictionary or pronunciation data (local first, online optional), but never sends the narrator's or authors' data out. An online lookup sends a single word, never passages, file names or project identifiers; it is narrator-initiated, or opt-in with a notice for a batch; results are cached locally; there is no telemetry and no project-run proxy. A service that needs a key uses the narrator's own key, stored locally and never logged |
 | **D73** | A PR need not contain `main`'s tip to merge (supersedes that D40 condition, 2026-09-27). The merge is a squash, so GitHub refuses it when the PR no longer merges cleanly; then, and only then, the coordinator merges `main` into the PR (a fixer when the conflict isn't mechanical) and waits for its checks. The green run must still be on the PR's current head |
 | **D74** | Windows only, for now (2026-09-27). Linux and macOS support is removed until the app is in a steadier state or someone uses those systems; `Build (Windows)` stays the build gate. Linux CI runners remain as hosts for platform-neutral checks (docs, the Lua harness, the browser-based UI suites), which is not Linux support |
-| **D75** | The public GitHub Pages site (docs, Storybook, demo) is paused until the main app's development is done (2026-09-27): `pages.yml` no longer deploys on a push to `main`. Workers keep the docs link-clean (the `Pages` build job still runs on pull requests) but don't add work that only serves the published site |
+| **D75** | The public GitHub Pages site (docs, Storybook, demo) is paused until the main app's development is done (2026-09-27): `pages.yml` no longer deploys on a push to `main`, and (narrowed 2026-09-27, [ADR 0415](../adr/0415-while-pages-is-paused-docs-are-checked-by-lychee-and-a-changed-file-markdownlint-not-by-building-the-site.md)) no longer runs on a pull request either. Workers keep the docs link-clean through `Docs / Links (offline)` (lychee, every pull request) and `Docs / Markdown lint (changed files)` (markdownlint-cli2 on the Markdown files a pull request adds or changes), not by building the site, and don't add work that only serves the published site |
+| **D82** | Every worker owns its PRs until they merge or close (2026-09-27): it stays subscribed, and on a merge-conflict notice or a red check it merges `main` into its own branch (never rebase), fixes, re-runs its targeted checks and pushes. It keeps an hourly `send_later` check-in while a PR is open. The coordinator launches no cascade fixers; a one-PR fixer only for a PR whose own session is archived or failed. The coordinator archives the session once all its PRs are merged or closed (D78) |
 
 ## The coordinator's pass
 
@@ -220,7 +221,8 @@ A worker is one cloud session for one stream. It opens one PR per phase, stacked
 - **Finishing:**
   - Subscribe to your PRs, and drive `Build (Windows)` and `ui-dist` to green.
   - Answer every red-circle thread.
-  - Comment `<ID>: PRs #… green` on #509, then end.
+  - Comment `<ID>: PRs #… green` on #509, then end the turn, **staying subscribed** (D82).
+  - **Until each PR merges or closes, you own it (D82).** On a merge-conflict notice, a red check or a review comment: merge `main` into your branch (never rebase or force-push), resolve keeping both sides' intent (the rules in the fixer template), re-run your targeted checks, push, and end the turn again. Schedule a `send_later` check-in about an hour out whenever a PR is still open, and re-check merge state and CI when it fires. Stop once every PR is merged or closed.
   - After three failed CI rounds on one PR: mark it draft, paste the failure into it, comment on #509, and end.
 - **No resume-in-place:** there is no tool to send a follow-up task into a session that has already finished and gone idle. A stream's next PRD phase (D62) is always a **new** session, branched fresh off the current `main` tip — never a message into the old one. The gain from D62 is launching that new session the moment the phase is ready, not batching it to the next tick; it is not session reuse.
 - **Owner steps:** anything needing the owner, REAPER, audio hardware or owner input goes on #510 as a comment and is marked pending in the PR. Never wait for a human.
@@ -232,7 +234,7 @@ A worker is one cloud session for one stream. It opens one PR per phase, stacked
 
 Fill in the `<>` fields.
 
-```
+```text
 You are worker stream <ID> (lane <L>: <lane name>) in the narration-utils agent train. Repo countrymanprime/narration-utils.
 No human is watching live; never wait for answers. Where a PRD leaves a question open, take its stated recommendation
 (implementation plan D22) and record anything that truly needs the owner as a Proposed ADR, plus a comment on #510.
@@ -266,7 +268,9 @@ synthetic, results provisional; D72 fetch reference data freely, but never send 
 USAGE: follow "The worker protocol" exactly: push after every green step, check #509 and your rate_limit_info at every
 checkpoint, pause or yield as it says.
 FINISH: subscribe to your PRs; drive Build (Windows) and ui-dist green; answer every red-circle thread; comment
-"<ID>: PRs #… green" on #509; end. NEVER merge. End every GitHub comment with a blank line, "---", then
+"<ID>: PRs #… green" on #509; end the turn but stay subscribed. D82: you own your PRs until they merge or close: on a
+merge conflict or red check, merge main into your branch (never rebase), fix, re-check, push; keep an hourly send_later
+check-in while any PR is open. NEVER merge. End every GitHub comment with a blank line, "---", then
 "_Generated by [Claude Code](https://claude.ai/code)_".
 ```
 
@@ -274,7 +278,7 @@ FINISH: subscribe to your PRs; drive Build (Windows) and ui-dist green; answer e
 
 The worker template, with this paragraph first:
 
-```
+```text
 RESUME: stream <ID> was paused. Its work is on branch <branch>, draft PR #<n>. Read the PR's "## Resume notes" and its
 diff, check out the branch, merge main into it (never rebase), re-run the checks listed there, then continue from "Next".
 Mark the PR ready for review when its phase is done.
@@ -282,7 +286,7 @@ Mark the PR ready for review when its phase is done.
 
 ### Fixer template
 
-```
+```text
 You are a fixer in the narration-utils agent train. PR #<n> (branch <b>) <has a merge conflict with main | fails <check> |
 turned main red>. Merge main into the branch (never rebase or force-push). Resolve keeping both sides' intent: for
 hostAPIVersion take the higher value + 1 and regenerate Host.*; for ADR or PRD index rows keep both rows; for an ADR number

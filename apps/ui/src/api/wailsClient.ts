@@ -39,6 +39,7 @@ import {
   guidePreviewSchema,
   pronunciationQueriesCsvSchema,
   pronunciationQueriesSchema,
+  queryImportResultSchema,
 } from './schemas/storyBible';
 import { settingsForScopeSchema } from './schemas/settings';
 import { tracksDiscoverySchema, tracksProjectSchema } from './schemas/tracks';
@@ -63,7 +64,14 @@ import { editingCandidatesSchema, editingStartResultSchema, editingStateSchema }
 import { workspaceAlignmentResultSchema } from './schemas/workspace';
 import { previewResultSchema } from './schemas/preview';
 import { stageDecisionResultSchema, stageRecommendationsSchema } from './schemas/stages';
-import { productionOverviewSchema, productionPlanSchema, productionStartResultSchema, productionStopResultSchema } from './schemas/production';
+import {
+  productionBurndownSchema,
+  productionOverviewSchema,
+  productionPlanSchema,
+  productionReportExportSchema,
+  productionStartResultSchema,
+  productionStopResultSchema,
+} from './schemas/production';
 import { findingMarkerSchema, findingNavigationSchema, findingSchema, findingsPageSchema, findingsSummarySchema, reaperStatusSchema } from './schemas/findings';
 import { assetCatalogSchema, assetInstallJobSchema, assetVerifyResultSchema } from './schemas/assets';
 import { ttsCatalogSchema, ttsInstallJobSchema } from './schemas/tts';
@@ -264,6 +272,8 @@ export const wailsClient: NarrationApi = {
     decode(voidResult, 'GuidePronunciationUseAlternate', host.GuidePronunciationUseAlternate(id, aliasIndex ?? null)),
   guidePronunciationQueries: () => decode(pronunciationQueriesSchema, 'GuidePronunciationQueries', host.GuidePronunciationQueries()),
   guidePronunciationQueriesCsv: () => decode(pronunciationQueriesCsvSchema, 'GuidePronunciationQueriesCSV', host.GuidePronunciationQueriesCSV()),
+  guidePronunciationImportQueriesCsv: (csvText) =>
+    decode(queryImportResultSchema, 'GuidePronunciationImportQueriesCSV', host.GuidePronunciationImportQueriesCSV(csvText)),
   guidePronunciationSetStatus: (id, status, note, aliasIndex) =>
     decode(voidResult, 'GuidePronunciationSetStatus', host.GuidePronunciationSetStatus(id, aliasIndex ?? null, status, note ?? null)),
   ttsCatalog: () => decode(ttsCatalogSchema, 'TtsCatalog', host.TtsCatalog()),
@@ -346,7 +356,8 @@ export const wailsClient: NarrationApi = {
     decode(prepMarkupSpanSchema, 'PrepMarkupSave', host.PrepMarkupSave(chapterId, paragraphId, start, end, kind, value)),
   prepMarkupDelete: (chapterId, id) => decode(voidResult, 'PrepMarkupDelete', host.PrepMarkupDelete(chapterId, id)),
   subscribeTranscript: (onUpdate) => subscribeChecked('transcript:state', transcriptStateSchema, onUpdate),
-  coverageStart: (chapterId) => decode(coverageStartResultSchema, 'CoverageStart', host.CoverageStart(chapterId)),
+  coverageStart: (chapterId, options) =>
+    decode(coverageStartResultSchema, 'CoverageStart', host.CoverageStart(chapterId, options?.skipRecheck ? { skipRecheck: 'true' } : {})),
   coverageState: () => decode(coverageStateSchema, 'CoverageState', host.CoverageState()),
   coverageCancel: () => decode(voidResult, 'CoverageCancel', host.CoverageCancel()),
   coverageResult: (chapterId) => decode(coverageResultSchema, 'CoverageResult', host.CoverageResult(chapterId)),
@@ -357,6 +368,9 @@ export const wailsClient: NarrationApi = {
   productionOverview: () => decode(productionOverviewSchema, 'ProductionOverview', host.ProductionOverview()),
   productionStartTimer: (chapterId, stage) => decode(productionStartResultSchema, 'ProductionStartTimer', host.ProductionStartTimer(chapterId, stage)),
   productionStopTimer: () => decode(productionStopResultSchema, 'ProductionStopTimer', host.ProductionStopTimer()),
+  productionStatusReport: (includeContractedAmount) =>
+    decode(productionReportExportSchema, 'ProductionStatusReport', host.ProductionStatusReport(includeContractedAmount)),
+  productionBurndown: () => decode(productionBurndownSchema, 'ProductionBurndown', host.ProductionBurndown()),
   subscribeCoverage: (onUpdate) => subscribeChecked('coverage:state', coverageStateSchema, onUpdate),
   editingStart: (documentId, chapterId, chapterTitle) =>
     decode(editingStartResultSchema, 'EditingStart', host.EditingStart(documentId, chapterId, chapterTitle)),

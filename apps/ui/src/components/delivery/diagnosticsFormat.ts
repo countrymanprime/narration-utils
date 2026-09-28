@@ -2,7 +2,7 @@
 // evidence (internal/measure/diagnosticfindings.go), including the threshold that raised it, so what is shown is what the
 // host measured against; a kind or key this page does not know is said to be undescribed rather than guessed at.
 import type { DiagnosticsSourceKind, DiagnosticsThresholds, Finding } from '../../types';
-import { formatTime } from '../review/findingFormat';
+import { formatTime } from '../proof/findingFormat';
 import { formatLevel } from './deliveryFormat';
 
 const UNDESCRIBED = 'Not described here';

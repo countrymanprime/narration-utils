@@ -9,13 +9,32 @@ import type {
   CoverageReport,
   CoverageJudgement,
   CoverageResult,
+  CoverageStartOptions,
   CoverageStartResult,
   CoverageState,
   JobEnded,
   ManuscriptChapter,
 } from '../types';
+import { MOCK_ASSET_ROOT } from './mockHost/assets';
 
 type AssetRequired = Extract<CoverageStartResult, { status: 'asset_required' }>;
+
+/** The model cascade's own re-check model (recording-check-model-cascade PRD Phase 5, MC2's default), for the
+ * recheckAssetRequired seed's "Download model" prompt - its own identity, distinct from mockWhisperIdentity's small
+ * (the Transcript Compare / first-pass default), so the two are never confused on screen. */
+const mockRecheckModelIdentity = {
+  id: 'large-v3-turbo',
+  provider: 'faster-whisper',
+  displayName: 'Large v3 Turbo',
+  version: '1fc70f1e2249e0752d6f6b5f0642a1b3b7ba1d61',
+  publisher: 'Systran',
+  license: 'MIT',
+  licenseUrl: 'https://huggingface.co/mobiuslabsgmbh/faster-whisper-large-v3-turbo',
+  modelCardUrl: 'https://huggingface.co/mobiuslabsgmbh/faster-whisper-large-v3-turbo',
+  provenanceUrl: 'https://huggingface.co/mobiuslabsgmbh/faster-whisper-large-v3-turbo',
+  attribution: 'CTranslate2 conversion of OpenAI Whisper large-v3-turbo, published by Systran.',
+};
+const mockRecheckModelDownloadSize = 1622601342;
 
 export type CoverageSeed = {
   /** Every start answers this refusal, so each reason's state can be seen without a host. */
@@ -30,6 +49,12 @@ export type CoverageSeed = {
    * default tail-only split (recording-check-summary.prd.md Phase 1, RS2/RS8): so the summary's headline, "Recorded
    * to" line and Pickups list can all be seen together. */
   pickups?: string[];
+  /** Chapters whose check ran the model cascade (recording-check-model-cascade PRD Phase 5, MC5): the result names
+   * both models and one re-checked passage, and every pickup shown was confirmed by the re-check model. */
+  cascade?: string[];
+  /** The next start (without options.skipRecheck) answers recheck_asset_required instead of running (MC4), so the
+   * "Download model" / "Check with tiny only" choice can be seen without a host. */
+  recheckAssetRequired?: boolean;
 };
 
 type Deps = {
@@ -59,6 +84,8 @@ const COVERAGE_REFUSAL_MESSAGES: Record<CoverageRefusalReason, string> = {
   invalid_params: 'The recording check settings are not valid.',
   manuscript_changed: 'The manuscript changed during the recording check; check again.',
   result_missing: 'The stored result of the last check could not be read.',
+  credits_not_set_up: 'Credits recording checks are not available.',
+  credits_changed: 'The credits text changed during the recording check; check again.',
 };
 
 const STEP_MS = 300;
@@ -243,8 +270,16 @@ export function createCoverageMock(deps: Deps): CoverageApi & {
   const measured = new Map<string, number>(Object.entries(deps.seed?.measured ?? {}));
   const stale = new Set(deps.seed?.stale ?? []);
   const pickupChapters = new Set(deps.seed?.pickups ?? []);
-  const reportOf = (chapter: ManuscriptChapter, fraction: number) =>
-    pickupChapters.has(chapter.id) ? pickupsReportFor(chapter) : reportFor(chapter, fraction);
+  const cascadeChapters = new Set(deps.seed?.cascade ?? []);
+  // MC5: one window, large-v3-turbo, of a chapter's own pace - close to what a real cascade re-checks, not a round number.
+  const withCascade = (report: CoverageReport): CoverageReport => ({
+    ...report,
+    recheck: { model: 'large-v3-turbo', wholeChapter: false, windows: 1, seconds: Math.max(25, Math.round(report.missingTokens / (WORDS_PER_MINUTE / 60))) },
+  });
+  const reportOf = (chapter: ManuscriptChapter, fraction: number) => {
+    const report = pickupChapters.has(chapter.id) ? pickupsReportFor(chapter) : reportFor(chapter, fraction);
+    return cascadeChapters.has(chapter.id) ? withCascade(report) : report;
+  };
 
   const publish = () => subscribers.forEach((listener) => listener({ ...state }));
   const stop = () => {
@@ -299,10 +334,20 @@ export function createCoverageMock(deps: Deps): CoverageApi & {
       delete unmeasured.recordedFraction;
       return unmeasured;
     },
-    coverageStart: async (chapterId) => {
+    coverageStart: async (chapterId, options?: CoverageStartOptions) => {
       if (deps.seed?.refusal) return refuse(deps.seed.refusal);
       const required = deps.assetRequired();
       if (required) return required;
+      if (deps.seed?.recheckAssetRequired && !options?.skipRecheck) {
+        return {
+          status: 'recheck_asset_required',
+          model: mockRecheckModelIdentity,
+          installState: 'not_installed',
+          downloadSize: mockRecheckModelDownloadSize,
+          diskSize: mockRecheckModelDownloadSize,
+          installPath: `${MOCK_ASSET_ROOT}/whisper/faster-whisper/large-v3-turbo`,
+        };
+      }
       if (state.phase === 'running') return refuse('busy');
       const chapter = deps.chapters().find((item) => item.id === chapterId);
       if (!chapter) return refuse('chapter_not_found');

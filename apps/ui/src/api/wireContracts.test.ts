@@ -45,7 +45,14 @@ import { COVERAGE_EVALUATOR_REASONS, COVERAGE_REFUSAL_REASONS, coverageResultSch
 import { workspaceAlignmentResultSchema } from './schemas/workspace';
 import { previewResultSchema } from './schemas/preview';
 import { STAGE_REFUSAL_REASONS, STAGE_UNKNOWN_CAUSES, stageDecisionResultSchema, stageRecommendationsSchema } from './schemas/stages';
-import { productionOverviewSchema, productionPlanSchema, productionStartResultSchema, productionStopResultSchema } from './schemas/production';
+import {
+  productionBurndownSchema,
+  productionOverviewSchema,
+  productionPlanSchema,
+  productionReportExportSchema,
+  productionStartResultSchema,
+  productionStopResultSchema,
+} from './schemas/production';
 import { PRODUCTION_SCENARIOS } from './productionMock';
 import { findingMarkerSchema, findingNavigationSchema, findingSchema, findingsPageSchema, findingsSummarySchema, reaperStatusSchema } from './schemas/findings';
 import { tracksDiscoverySchema, tracksProjectSchema } from './schemas/tracks';
@@ -83,6 +90,7 @@ import {
   guidePreviewSchema,
   pronunciationQueriesCsvSchema,
   pronunciationQueriesSchema,
+  queryImportResultSchema,
 } from './schemas/storyBible';
 import { bootstrapSchema, copyDiagnosticsResultSchema, projectAttachStateSchema, readySchema } from './schemas/system';
 import {
@@ -114,7 +122,7 @@ import { unknownKeys } from './schemas/strictness';
 import { GOLDEN } from './contractGoldens';
 import { parseWire, parseWireJson, type WireContext } from './wire/parseWire';
 import { WireError } from './wire/WireError';
-import { creditsRows } from '../components/teleprompter/readerModel';
+import { creditsRows } from '../components/booth/readerModel';
 
 // ADR 0069, rule 4: the fixtures are the contract. Every payload the Go host and the Python sidecars write to
 // tests/fixtures/contracts/ is validated here by the same schemas the app runs, and so is every answer the mock client gives;
@@ -702,6 +710,25 @@ describe('answers of the mock client for the manuscript, Story Bible and project
     const csv = await api.guidePronunciationQueriesCsv();
     expectMatches(pronunciationQueriesCsvSchema, csv, 'mock pronunciation queries CSV');
     expect(csv.count).toBe(queries.length);
+  });
+
+  it('re-importing an answered pronunciation query file applies a matched row and reports an unmatched one', async () => {
+    const api = createMockApi();
+    const queries = await api.guidePronunciationQueries();
+    const row = queries[0];
+    const aliasCell = row.aliasIndex === null ? '' : String(row.aliasIndex);
+    const csvText =
+      'word,entry_id,alias_index,status,note\n' +
+      `${row.name},${row.entityId},${aliasCell},author_confirmed,Confirmed by the author\n` +
+      'Ghost,not-a-real-entity,,researched,\n';
+    const result = await api.guidePronunciationImportQueriesCsv(csvText);
+    expectMatches(queryImportResultSchema, result, 'mock pronunciation query import');
+    expect(result.applied).toBe(1);
+    expect(result.issues).toHaveLength(1);
+    expect(result.issues[0]).toContain('line 3:');
+    expect(result.issues[0]).toContain('Ghost');
+    const after = await api.guidePronunciationQueries();
+    expect(after.some((query) => query.entityId === row.entityId && query.aliasIndex === row.aliasIndex)).toBe(false);
   });
 
   it('the dictionary lookup answers: a word it has, one it does not, and the first-use gate', async () => {
@@ -1736,6 +1763,34 @@ describe('answers of the mock client for the settings, voice, model, transcript 
     expect(gated.status).toBe('asset_required');
   });
 
+  it('the model cascade names both models, gates on the re-check model, and "Check with tiny only" skips it (Phase 5)', async () => {
+    const api = createMockApi();
+    const chapters = await api.manuscriptChapters();
+    const measured = chapters.find((chapter) => chapter.recordedFraction !== undefined);
+    if (!measured) throw new Error('the mock chapters carry a measured recordedFraction');
+
+    const cascadeApi = createMockApi({}, { coverage: { cascade: [measured.id] } });
+    const result = await cascadeApi.coverageResult(measured.id);
+    expectMatches(coverageResultSchema, result, 'mock coverage result, cascade');
+    expect(result.result?.recheck).toMatchObject({ model: 'large-v3-turbo', wholeChapter: false, windows: 1 });
+
+    const gate = await createMockApi({}, { coverage: { recheckAssetRequired: true } }).coverageStart(measured.id);
+    expectMatches(coverageStartResultSchema, gate, 'mock coverage start, re-check model not installed');
+    expect(gate).toMatchObject({ status: 'recheck_asset_required', model: { id: 'large-v3-turbo' } });
+
+    vi.useFakeTimers();
+    try {
+      const skipApi = createMockApi({}, { coverage: { recheckAssetRequired: true } });
+      const started = await skipApi.coverageStart(measured.id, { skipRecheck: true });
+      expectMatches(coverageStartResultSchema, started, 'mock coverage start, tiny only');
+      expect(started.status).toBe('started');
+      await vi.runAllTimersAsync();
+      expect(await skipApi.coverageState()).toMatchObject({ phase: 'complete' });
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('the workspace alignment shares the coverage result state and reads the chapter as tokens', async () => {
     const api = createMockApi();
     const chapters = await api.manuscriptChapters();
@@ -1942,6 +1997,7 @@ describe('answers of the mock client for the settings, voice, model, transcript 
       'guidePreview',
       'guidePronunciationQueries',
       'guidePronunciationQueriesCsv',
+      'guidePronunciationImportQueriesCsv',
       'assetsList',
       'assetsInstall',
       'assetsInstallState',
@@ -2032,6 +2088,8 @@ describe('answers of the mock client for the settings, voice, model, transcript 
       'productionOverview',
       'productionStartTimer',
       'productionStopTimer',
+      'productionStatusReport',
+      'productionBurndown',
       'takeComparisonStart',
       'takeComparisonState',
       'takeComparisonCancel',
@@ -2234,6 +2292,30 @@ describe('the production tracking mock', () => {
     expectMatches(productionStopResultSchema, await api.productionStopTimer(), 'mock production timer stopped');
     expectMatches(productionStopResultSchema, await api.productionStopTimer(), 'mock production timer, nothing to stop');
     await expect(api.productionStartTimer('chapter-99', 'recording')).rejects.toThrow(/no chapter/);
+  });
+
+  it('the status report export leaves out the contracted amount unless asked, and never repeats a file name', async () => {
+    const pinned = productionReportExportSchema.parse(readGolden('production-status-report.json'));
+    const api = createMockApi();
+    const left = await api.productionStatusReport(false);
+    expectMatches(productionReportExportSchema, left, 'mock production status report, default');
+    expect(left).toMatchObject({ folder: pinned.folder, contractedAmountIncluded: false });
+    const included = await api.productionStatusReport(true);
+    expectMatches(productionReportExportSchema, included, 'mock production status report, opted in');
+    expect(included.contractedAmountIncluded).toBe(true);
+    expect(included.jsonFile).not.toBe(left.jsonFile);
+  });
+
+  it('the burndown is empty with nothing logged, and cumulative by day once a seed logs some', async () => {
+    const empty = await createMockApi().productionBurndown();
+    expectMatches(productionBurndownSchema, empty, 'mock production burndown, nothing logged');
+    expect(empty).toEqual([]);
+
+    const seeded = await createMockApi({}, { production: PRODUCTION_SCENARIOS['on-pace'] }).productionBurndown();
+    expectMatches(productionBurndownSchema, seeded, 'mock production burndown, on-pace');
+    expect(seeded.length).toBeGreaterThan(0);
+    expect(seeded.at(-1)?.hoursLogged).toBeCloseTo(seeded.reduce((max, point) => Math.max(max, point.hoursLogged), 0));
+    for (let i = 1; i < seeded.length; i++) expect(seeded[i].hoursLogged).toBeGreaterThanOrEqual(seeded[i - 1].hoursLogged);
   });
 
   it.each(['on-pace', 'at-risk'] as const)('seeds a %s book whose figures come from its log and measured audio only', async (seed) => {

@@ -13,7 +13,7 @@ makes a take active, moves or deletes audio, or ranks the reads.
 
 ## Workflow
 
-Everything happens on the [Review page](../guides/using-the-app/review.md#pickups-and-duplicates):
+Everything happens on [Proof](../guides/using-the-app/proof.md#pickups-and-duplicates):
 
 1. **Find pickups and duplicates…**: the narrator picks the chapter track and at most one pickup addition, a pickup track
    or a stretch of the timeline. The scan is a cancellable job with the sidecar's own progress. A track named as the

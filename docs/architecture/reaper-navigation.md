@@ -78,7 +78,7 @@ The answer arrives through `Client.Dispatch`, which the host's 150 ms loop alrea
 
 ## From the Review page
 
-Phase 7 puts the Navigator behind four host bindings (`apps/desktop/bindings_navigation.go`, host API 38) and three buttons in the Review page's finding detail (`apps/ui/src/components/review/ReaperControls.tsx`):
+Phase 7 puts the Navigator behind four host bindings (`apps/desktop/bindings_navigation.go`, host API 38) and three buttons in Proof's note detail (the Review page until stage navigation Phase 5; `apps/ui/src/components/proof/ReaperControls.tsx`):
 
 | Binding | Sends | Answers |
 | --- | --- | --- |
@@ -97,7 +97,7 @@ The host remembers which finding it looped (`findingNavigation.loopingID`) until
 
 ## From the workspace
 
-Phase 3 of [the edit-and-proof workspace PRD](../prds/edit-and-proof-workspace.prd.md) puts the same `navigate_item` and `loop_context` behind two more host bindings, on the chapter workspace's transport bar (`apps/ui/src/components/workspace/TransportBar.tsx`, `useWorkspaceReaper.ts`), for the word currently at the playhead:
+Phase 3 of [the edit-and-proof workspace PRD](../prds/edit-and-proof-workspace.prd.md) puts the same `navigate_item` and `loop_context` behind two more host bindings, on the chapter workspace's transport bar (now Proof's chapter view; `apps/ui/src/components/proof/TransportBar.tsx`, `useWorkspaceReaper.ts`), for the word currently at the playhead:
 
 | Binding | Sends | Answers |
 | --- | --- | --- |
@@ -108,7 +108,7 @@ No new Lua command, and no new bridge type: both resolve into a `bridge.Target` 
 
 The page sends only the chapter id and the token index (or, for Loop, the first and last token of the passage, both required to be heard on the same item); it never sends a GUID or a time. The host resolves a token to where to go by reading the chapter's stored word alignment (`WorkspaceAlignment`, ADR 0242) - the token's item index, and the source time it was heard at - and joining that item's current GUID and take GUID from the saved project, exactly as `WorkspaceAlignment` itself already joins played ranges for display. A token nothing was heard for (a missing or skipped word) has no item to resolve, so it is refused (`no_item`) before anything is sent, in the workspace's own words ("This word wasn't heard in the recording..."); a passage whose two tokens were heard on different items is refused as a caller error (reload the workspace), since the page only ever sends a passage from one paragraph's worth of adjacent, same-item tokens. REAPER's own refusals (`stale`, `recording`, `script_outdated`, no answer, no bridge) come back worded exactly as they are for the Review page, since they are the same `bridge.Navigator` answering the same way; a stale item or take is reworded from "this finding's..." to "this word's..." in the host (`workspaceRefusal`, `bindings_workspace.go`), without touching `bridge.StaleError`'s own message, which the Review page's refusals still use unchanged.
 
-Verified: Go tests over a fake navigator and a real coverage-backed saved project (`bindings_workspace_navigation_test.go`), the contract payloads (`bindings_workspace_contract_test.go`, goldens `workspace-go-to.json`, `workspace-loop.json`, `workspace-navigation-no-item.json`), and the UI (`WorkspacePage.test.tsx`: Go to and Loop send the current token, Stop loop replaces Loop while looping, REAPER not connected disables both with the reason, a refusal shows as an alert). REAPER's own behaviour for these two bindings - `navigate_item` from a token the workspace resolved, and hearing the loop - was not re-verified by a scripted run for this phase (the commands and their refusals are the same ones [the manual checklist](#manual-verification-checklist) already ran against a real REAPER for the Review page); a scripted run from the workspace itself, and the owner hearing it, are pending on [#510](https://github.com/countrymanprime/narration-utils/issues/510).
+Verified: Go tests over a fake navigator and a real coverage-backed saved project (`bindings_workspace_navigation_test.go`), the contract payloads (`bindings_workspace_contract_test.go`, goldens `workspace-go-to.json`, `workspace-loop.json`, `workspace-navigation-no-item.json`), and the UI (`ProofChapterPage.test.tsx`: Go to and Loop send the current token, Stop loop replaces Loop while looping, REAPER not connected disables both with the reason, a refusal shows as an alert). REAPER's own behaviour for these two bindings - `navigate_item` from a token the workspace resolved, and hearing the loop - was not re-verified by a scripted run for this phase (the commands and their refusals are the same ones [the manual checklist](#manual-verification-checklist) already ran against a real REAPER for the Review page); a scripted run from the workspace itself, and the owner hearing it, are pending on [#510](https://github.com/countrymanprime/narration-utils/issues/510).
 
 ## Verification record
 

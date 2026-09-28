@@ -34,6 +34,8 @@ export const COVERAGE_REFUSAL_REASONS = [
   'invalid_params',
   'manuscript_changed',
   'result_missing',
+  'credits_not_set_up',
+  'credits_changed',
 ] as const satisfies readonly CoverageRefusalReason[];
 
 export const COVERAGE_EVALUATOR_REASONS = [
@@ -54,6 +56,8 @@ export const COVERAGE_EVALUATOR_REASONS = [
 const refusalReasonSchema = z.enum(COVERAGE_REFUSAL_REASONS);
 const reasonSchema = z.union([refusalReasonSchema, z.enum(COVERAGE_EVALUATOR_REASONS)]);
 
+const coveragePassSchema = z.enum(['first_pass', 'recheck_windows', 'recheck_whole', 'realign']);
+
 export const coverageStateSchema = z.object({
   runId: z.string().optional(),
   chapterId: z.string().optional(),
@@ -65,12 +69,24 @@ export const coverageStateSchema = z.object({
   startedAt: z.string().optional(),
   completedAt: z.string().optional(),
   background: z.boolean().optional(),
+  pass: coveragePassSchema.optional(),
+  firstPassModel: z.string().optional(),
+  recheckModel: z.string().optional(),
+  recheckWindows: z.number().optional(),
 }) satisfies z.ZodType<CoverageState>;
 
 export const coverageStartResultSchema = z.discriminatedUnion('status', [
   z.object({ status: z.literal('started'), state: coverageStateSchema }),
   z.object({ status: z.literal('refused'), reason: refusalReasonSchema, message: z.string() }),
   modelAssetRequiredSchema,
+  z.object({
+    status: z.literal('recheck_asset_required'),
+    model: modelAssetRequiredSchema.shape.model,
+    installState: modelAssetRequiredSchema.shape.installState,
+    downloadSize: z.number(),
+    diskSize: z.number(),
+    installPath: z.string(),
+  }),
 ]) satisfies z.ZodType<CoverageStartResult>;
 
 const itemSchema = z.object({
@@ -98,6 +114,8 @@ const regionSchema = z.object({
   after: optionalFromNull(regionPositionSchema),
 }) satisfies z.ZodType<CoverageRegion>;
 
+const recheckSchema = z.object({ model: z.string(), wholeChapter: z.boolean(), windows: z.number(), seconds: z.number() });
+
 const reportSchema = z.object({
   model: z.string(),
   language: z.string().optional(),
@@ -111,6 +129,7 @@ const reportSchema = z.object({
   items: listFromNull(itemSchema),
   paragraphs: listFromNull(z.object({ id: z.string(), tokens: z.number(), present: z.number(), longestMissingRun: z.number() })),
   regions: listFromNull(regionSchema),
+  recheck: optionalFromNull(recheckSchema),
 }) satisfies z.ZodType<CoverageReport>;
 
 export const coverageResultSchema = z.object({

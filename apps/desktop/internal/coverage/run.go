@@ -36,19 +36,22 @@ const (
 
 // job is one run: what it was built from and where its files are.
 type job struct {
-	runID        string
-	request      Request
-	basis        ChapterBasis
-	plan         plan
-	projectFile  evidence.LedgerProjectFile
-	inputs       projectInputs
-	words        wordsCache
-	seeded       int
-	startedAt    time.Time
-	dir          string
-	progressPath string
-	child        Child
-	done         chan struct{}
+	runID       string
+	request     Request
+	basis       ChapterBasis
+	plan        plan
+	projectFile evidence.LedgerProjectFile
+	inputs      projectInputs
+	// manuscriptPath is the --manuscript argument every sidecar launch of this run uses: the real project manuscript
+	// for a manuscript chapter, or a credits row's synthetic stand-in (Phase 3, writeCreditsManuscript).
+	manuscriptPath string
+	words          wordsCache
+	seeded         int
+	startedAt      time.Time
+	dir            string
+	progressPath   string
+	child          Child
+	done           chan struct{}
 
 	// lastError is the message of an ERROR progress line, for the failure text.
 	lastError string
@@ -68,9 +71,28 @@ func (j *job) wordsDir() string     { return filepath.Join(j.dir, "words") }
 func (j *job) resultsPath() string  { return filepath.Join(j.dir, "coverage.txt") }
 func (j *job) windowsPath() string  { return filepath.Join(j.dir, "windows.json") }
 
+// label is the wire name of the stage (model cascade PRD Phase 5's State.Pass): what the dialog shows without
+// having to re-derive it from Stage's raw sidecar progress text.
+func (st stage) label() string {
+	switch st {
+	case stageRecheckWindows:
+		return "recheck_windows"
+	case stageRecheckWhole:
+		return "recheck_whole"
+	case stageRealign:
+		return "realign"
+	default:
+		return "first_pass"
+	}
+}
+
 func (j *job) initialState() State {
 	started := j.startedAt
-	return State{RunID: j.runID, ChapterID: j.basis.ChapterID, Phase: PhaseRunning, Stage: "START", Message: "Starting the recording check...", StartedAt: &started, Background: j.request.Background}
+	state := State{RunID: j.runID, ChapterID: j.basis.ChapterID, Phase: PhaseRunning, Stage: "START", Message: "Starting the recording check...", StartedAt: &started, Background: j.request.Background}
+	if j.request.Recheck.Model != "" {
+		state.Pass, state.FirstPassModel, state.RecheckModel = j.stage.label(), j.request.Transcription.Model, j.request.Recheck.Model
+	}
+	return state
 }
 
 // watch follows a run's progress file until its sidecar process exits, then either advances the
@@ -140,6 +162,10 @@ func (s *Service) launchStage(running *job, next stage) bool {
 	running.stage, running.child = next, child
 	s.mu.Lock()
 	s.state.Stage, s.state.Percent = "", 0
+	s.state.Pass = next.label()
+	if next == stageRecheckWindows {
+		s.state.RecheckWindows = len(running.recheck.Windows)
+	}
 	state := s.state
 	s.mu.Unlock()
 	s.notify(state)
@@ -232,6 +258,11 @@ func (s *Service) finish(running *job) {
 	if err := os.RemoveAll(running.dir); err != nil {
 		s.config.Reporter.Warn("coverage_run_cleanup_failed", fmt.Sprintf("Recording coverage run folder was not removed: %v", err))
 	}
+	if _, isCredits := CreditsKind(running.basis.ChapterID); isCredits {
+		// Best-effort, like the run folder above: the synthetic manuscript is transient, rewritten fresh by the
+		// next credits check either way.
+		_ = os.Remove(running.manuscriptPath)
+	}
 
 	completed := s.now().UTC()
 	s.mu.Lock()
@@ -253,6 +284,9 @@ func (s *Service) finish(running *job) {
 func (s *Service) inputsUnchanged(running *job) error {
 	basis, err := s.chapter(running.basis.ChapterID)
 	if err != nil || basis != running.basis {
+		if _, isCredits := CreditsKind(running.basis.ChapterID); isCredits {
+			return fmt.Errorf("the credits text changed during the recording check; check again")
+		}
 		return fmt.Errorf("the manuscript changed during the recording check; check again")
 	}
 	if readProjectInputs(s.config.Project) != running.inputs {
@@ -314,5 +348,25 @@ func (s *Service) storedResult(running *job, recordID string, report Report) Sto
 		EquivalencesHash: running.inputs.EquivalencesHash,
 		Alignment:        running.request.Alignment,
 		Report:           report,
+		Recheck:          recheckSummary(running, report),
+	}
+}
+
+// recheckSummary is the model cascade's own label for storage (Phase 5, MC5): nil when no re-check was asked for or
+// needed ("no second pass when nothing is missing"), otherwise the re-check model, whether it ran windows or the
+// whole chapter, and how many windows or how many seconds of audio it covered. The whole-chapter case reads its
+// seconds from the final, realigned report - the sidecar's own count of what it played - rather than re-deriving it
+// from the plan, which only ever measured the first pass's own items.
+func recheckSummary(running *job, report Report) *Recheck {
+	if !running.recheck.needed() {
+		return nil
+	}
+	seconds := totalLength(running.recheck.Windows)
+	if running.recheck.WholeChapter {
+		seconds = report.Summary.Items.PlayedSeconds
+	}
+	return &Recheck{
+		Model: running.request.Recheck.Model, WholeChapter: running.recheck.WholeChapter,
+		Windows: len(running.recheck.Windows), Seconds: seconds,
 	}
 }

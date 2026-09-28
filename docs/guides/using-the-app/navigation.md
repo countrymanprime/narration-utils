@@ -2,12 +2,12 @@
 
 # Navigation
 
-[Home](home.md), [Production](production.md), [Manuscript](manuscript.md), [Proofing](proofing.md), [Story Bible](story-bible.md),
-[Teleprompter](teleprompter.md), [Tracks](tracks.md), [Review](review.md), and [Delivery](delivery.md) are
-reachable from a sidebar on the left. At
-desktop widths it stays open with labels; narrower windows switch it to icon-only, then hide
-it behind a hamburger menu that opens it as a slide-in drawer. [Settings](settings.md) lives at the
-bottom of the sidebar in every layout.
+The sidebar on the left is grouped by production stage, the way a narrator's week runs: **Production** ([Home](home.md)),
+**Prep** ([Script](script.md), [Story Bible](story-bible.md)), **Record** ([Booth](booth.md)),
+**Review** ([Proof](proof.md), [Tracks](tracks.md)) and **Finish** ([Delivery](delivery.md)).
+At desktop widths each group shows as a heading over its pages; narrower windows switch it to icon-only groups
+divided by a thin line, then hide it behind a hamburger menu that opens it as a slide-in drawer with the headings
+back. [Settings](settings.md) lives at the bottom of the sidebar, in every layout, below every group.
 
 ![Primary navigation sidebar at desktop width](../../images/ui/nav-sidebar-desktop.webp)
 
@@ -15,17 +15,19 @@ In the icon-only layout, hover an icon (or tab to it) to see the page's name.
 
 ![Icon-only navigation rail with a page name shown on hover](../../images/ui/nav-rail-tooltip.webp)
 
-Production, Manuscript, Proofing, Story Bible, and Teleprompter stay locked until a manuscript has been
-[imported on Home](home.md), and Proofing also stays locked until a REAPER project (`.rpp`) is linked to the
-project. Hovering a locked entry says what is missing. Home, Tracks, Review, and Delivery are always available.
+Script, Story Bible, and Teleprompter stay locked until a manuscript has been
+[imported on Home](home.md). Hovering a locked entry says what is missing. Home, Tracks, Proof, and Delivery
+are always available.
 
-The pill at the right of the header shows the REAPER link, and clicking it opens a file picker to link (or
-change) the project's `.rpp` file:
+The chip at the right of the header shows the linked audio engine, and clicking it opens a file picker to link
+(or change) the project's `.rpp` file:
 
 - **REAPER project linked**: a `.rpp` file is linked to this project.
 - **No REAPER project linked**: nothing is linked yet.
 - **Wrong REAPER project open**: REAPER is running with a different project open than the linked one. Link
   the open project instead, or switch REAPER to the linked file.
+- **Built-in recorder**: the project records through the app's own recorder instead of REAPER. Nothing chooses
+  this yet; it appears once a future update adds a built-in recorder.
 
 The file must be saved inside the project folder; one from another folder is refused with a message saying
 so. The same link can be made from the [Tracks](tracks.md) page and from [Settings](settings.md#daw-integration).
@@ -40,8 +42,9 @@ have gone Back at least once. Switching to a different project starts a fresh hi
 the project you left.
 
 Back and Forward respect the same checks the nav does: leaving unsaved changes in [Settings](settings.md) asks
-first, and leaving [Proofing](proofing.md) resets its run the same way. They only move between pages — closing a
-slide-over, the previous chapter, or the previous Story Bible entry are not Back steps.
+first, and leaving a chapter's [Proof view](proof.md#the-chapter-view) while a comparison is under way or
+showing results resets it the same way. They only move between pages — closing a slide-over, the previous
+chapter, or the previous Story Bible entry are not Back steps.
 
 ---
 

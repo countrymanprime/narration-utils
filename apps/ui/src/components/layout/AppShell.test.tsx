@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { AppShell } from './AppShell';
 import { TooltipProvider } from '../primitives/Tooltip';
@@ -11,8 +11,6 @@ afterEach(cleanup);
 
 const noHistory = { canGoBack: false, canGoForward: false, back: () => {}, forward: () => {} };
 
-// A connected, reachable REAPER by default (DAW port PRD Phase 7): `review` is Supported and needs the bridge, so
-// with no toggle set this reproduces today's behaviour, where Proofing's gating comes only from `dawFileLinked`.
 function renderShell(props: Partial<Parameters<typeof AppShell>[0]> = {}, daw: DawMockSeed = {}) {
   const api = createMockApi({}, { daw });
   return render(
@@ -27,42 +25,29 @@ function renderShell(props: Partial<Parameters<typeof AppShell>[0]> = {}, daw: D
 }
 
 describe('AppShell nav gating (PRD project-workspace-and-daw-link.prd.md, W16/W17)', () => {
-  it('disables only Proofing among the DAW-independent pages when there is a manuscript but no linked DAW file', () => {
-    renderShell({ hasManuscript: true, dawFileLinked: false });
-    expect(screen.getAllByRole('button', { name: 'Proofing' }).every((button) => (button as HTMLButtonElement).disabled)).toBe(true);
-    for (const name of ['Manuscript', 'Story Bible', 'Teleprompter', 'Tracks', 'Home']) {
+  it('disables the manuscript pages, and only those, when there is no manuscript', () => {
+    renderShell({ hasManuscript: false, dawFileLinked: false });
+    for (const name of ['Script', 'Story Bible', 'Booth']) {
+      expect(screen.getAllByRole('button', { name }).every((button) => (button as HTMLButtonElement).disabled)).toBe(true);
+    }
+    for (const name of ['Home', 'Tracks', 'Proof', 'Delivery']) {
       expect(screen.getAllByRole('button', { name }).every((button) => (button as HTMLButtonElement).disabled)).toBe(false);
     }
+    expect(screen.getAllByRole('group', { name: /Import a manuscript to unlock this page/ }).length).toBeGreaterThan(0);
   });
 
-  it('names both missing requirements in the combined reason (W17) when neither is met', () => {
-    renderShell({ hasManuscript: false, dawFileLinked: false });
-    const proofing = screen.getAllByRole('button', { name: 'Proofing' })[0] as HTMLButtonElement;
-    expect(proofing.disabled).toBe(true);
-    // The disabled NavButton wraps itself in a labelled group carrying the combined reason as its accessible name.
-    expect(screen.getAllByRole('group', { name: /Import a manuscript and link a REAPER project/ }).length).toBeGreaterThan(0);
+  // stage-navigation-and-page-replacement.prd.md Phase 5: Proof replaces Proofing and Review, and its compare run gates itself on
+  // the DAW inside the chapter view (CompareRun.test.tsx), so the nav item is never off - not for a missing file, nor for REAPER.
+  it('never gates Proof, with no linked file and with REAPER not connected', () => {
+    renderShell({ hasManuscript: true, dawFileLinked: false }, { connected: false });
+    expect(screen.getAllByRole('button', { name: 'Proof' }).every((button) => !(button as HTMLButtonElement).disabled)).toBe(true);
+    expect(screen.queryAllByRole('button', { name: 'Proofing' })).toHaveLength(0);
+    expect(screen.queryAllByRole('button', { name: 'Review' })).toHaveLength(0);
   });
 
-  it('enables Proofing once both a manuscript and a DAW file are present', async () => {
-    renderShell({ hasManuscript: true, dawFileLinked: true });
-    await waitFor(() => expect(screen.getAllByRole('button', { name: 'Proofing' }).every((button) => !(button as HTMLButtonElement).disabled)).toBe(true));
-  });
-});
-
-// DAW port PRD Phase 7 (ADR 0360): once the setup facts are met, Proofing's gating comes from the `review`
-// capability (`useCapability`) instead of stopping at "a file is linked" - the same way a hard REAPER refusal
-// (unreachable, turned off in Settings) is surfaced everywhere else CapabilityGate is used.
-describe('AppShell nav gating reads the review capability (DAW port PRD Phase 7)', () => {
-  it('disables Proofing with the capability message when REAPER is not connected, even with a manuscript and a linked file', async () => {
-    renderShell({ hasManuscript: true, dawFileLinked: true }, { connected: false });
-    const proofing = (await screen.findAllByRole('button', { name: 'Proofing' }))[0] as HTMLButtonElement;
-    await waitFor(() => expect(proofing.disabled).toBe(true));
-    expect(screen.getAllByRole('group', { name: /REAPER is not connected to this app/ }).length).toBeGreaterThan(0);
-  });
-
-  it('still reports the missing setup facts, not the capability, when both are unmet', async () => {
-    renderShell({ hasManuscript: false, dawFileLinked: false }, { connected: false });
-    await waitFor(() => expect(screen.getAllByRole('group', { name: /Import a manuscript and link a REAPER project/ }).length).toBeGreaterThan(0));
+  it('marks Proof active on the book level and on a chapter view', () => {
+    renderShell({ pathname: '/proof/chapter-1' });
+    expect(screen.getAllByRole('button', { name: 'Proof' }).some((button) => button.getAttribute('aria-current') === 'page')).toBe(true);
   });
 });
 
@@ -104,6 +89,43 @@ describe('AppShell header pill mismatch state (Phase 7)', () => {
     renderShell({ dawFileLinked: true, dawReachable: true, dawProjectMatches: true });
     expect(screen.getByRole('button', { name: /REAPER project linked/ })).toBeTruthy();
     expect(screen.queryByText(/Wrong REAPER project open/)).toBeNull();
+  });
+});
+
+// stage-navigation-and-page-replacement.prd.md Phase 1 (ADR 0407 item 3, Q5, Q6): the nav is grouped by production
+// stage, each existing page held under its current name; `/production` (PR #760) has no nav entry until Phase 2.
+describe('AppShell grouped navigation (Phase 1)', () => {
+  it('names every group (sidebar, rail and drawer all expose the same accessible name)', () => {
+    renderShell();
+    for (const label of ['Production', 'Prep', 'Record', 'Review', 'Finish']) {
+      expect(screen.getAllByRole('group', { name: label }).length).toBeGreaterThan(0);
+    }
+  });
+
+  it('has no "Production" nav item (dropped from PR #760, D79): the page stays reachable, unlisted', () => {
+    renderShell();
+    expect(screen.queryAllByRole('button', { name: 'Production' })).toHaveLength(0);
+  });
+
+  it('lists every other page, with Proof in place of Proofing and Review (Phase 5) and Booth in place of the Teleprompter (Phase 4)', () => {
+    renderShell();
+    for (const name of ['Home', 'Script', 'Story Bible', 'Booth', 'Proof', 'Tracks', 'Delivery', 'Settings']) {
+      expect(screen.getAllByRole('button', { name }).length).toBeGreaterThan(0);
+    }
+  });
+});
+
+// Phase 1 (Q7): the engine chip replaces the REAPER pill, in place.
+describe('AppShell engine chip (Phase 1)', () => {
+  it('defaults to the REAPER pill states when no engine prop is given', () => {
+    renderShell({ dawFileLinked: false });
+    expect(screen.getByRole('button', { name: /No REAPER project linked/ })).toBeTruthy();
+  });
+
+  it('shows "Built-in recorder" and drops the REAPER link action when engine is builtin', () => {
+    renderShell({ engine: 'builtin' });
+    expect(screen.getByLabelText('Built-in recorder')).toBeTruthy();
+    expect(screen.queryByText(/REAPER/)).toBeNull();
   });
 });
 

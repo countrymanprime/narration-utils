@@ -17,8 +17,8 @@ export const globalStates: StateEntry[] = [
     state: 'toast',
     description: 'Global toast overlay',
     sameAs: {
-      of: 'proofing/toast',
-      reason: 'The global overlay is captured by asking Proofing to suggest vocabulary hints, the same flow as the Proofing toast.',
+      of: 'proof-chapter/compare-toast',
+      reason: 'The global overlay is captured by asking a Proof chapter view to suggest vocabulary hints, the same flow as its compare-toast.',
     },
     ...FREEZES_THE_CLOCK,
   },
@@ -54,7 +54,6 @@ export const globalStates: StateEntry[] = [
     page: 'global',
     state: 'theme-light',
     description: 'Home with Light explicitly selected in Settings > Appearance',
-    sameAs: { of: 'home/default', reason: 'Light is what Home already renders in by default, so explicitly selecting it changes nothing visible.' },
   },
   { page: 'global', state: 'theme-dark', description: 'Home with Dark explicitly selected in Settings > Appearance' },
 ];

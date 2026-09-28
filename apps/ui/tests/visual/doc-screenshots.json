@@ -28,67 +28,74 @@
     "caption": "Home - manuscript loaded, chapter table collapsed"
   },
   {
-    "page": "manuscript",
+    "page": "script",
     "state": "reader-text-medium",
     "viewport": "desktop",
-    "docName": "manuscript-reader",
-    "caption": "Manuscript reader at the medium text size"
+    "docName": "script-reader",
+    "caption": "Script reader at the medium text size"
   },
   {
-    "page": "manuscript",
+    "page": "script",
+    "state": "prep-rail-queries",
+    "viewport": "desktop",
+    "docName": "script-prep-rail-queries",
+    "caption": "Script - the rail's Queries tab: every name the author has not confirmed, with where it is first heard, and the chapter list counting each chapter's names still to confirm"
+  },
+  {
+    "page": "script",
     "state": "reader-text-large",
     "viewport": "desktop",
-    "docName": "manuscript-reader-large",
-    "caption": "Manuscript reader at the large text size"
+    "docName": "script-reader-large",
+    "caption": "Script reader at the large text size"
   },
   {
-    "page": "manuscript",
+    "page": "script",
     "state": "chapter-collapsed",
     "viewport": "desktop",
-    "docName": "manuscript-chapter-list",
-    "caption": "Manuscript - collapsed chapter list, for jumping between chapters without scrolling"
+    "docName": "script-chapter-list",
+    "caption": "Script - collapsed chapter list, for jumping between chapters without scrolling"
   },
   {
-    "page": "manuscript",
+    "page": "script",
     "state": "detail-sidebar-note",
     "viewport": "desktop",
-    "docName": "manuscript-note-sidebar",
-    "caption": "Manuscript - detail sidebar open on a reader note"
+    "docName": "script-note-sidebar",
+    "caption": "Script - detail sidebar open on a reader note"
   },
   {
-    "page": "manuscript",
+    "page": "script",
     "state": "selection-popup",
     "viewport": "desktop",
-    "docName": "manuscript-selection-popup",
-    "caption": "Manuscript - text-selection action popup on one word (+ Note, + Story Bible, Look up)"
+    "docName": "script-selection-popup",
+    "caption": "Script - text-selection action popup on one word (+ Note, + Story Bible, Look up)"
   },
   {
-    "page": "manuscript",
+    "page": "script",
     "state": "word-lookup-definition",
     "viewport": "desktop",
-    "docName": "manuscript-word-lookup",
-    "caption": "Manuscript - the Look up panel: definitions, examples and synonyms by part of speech, with the dictionary's credit"
+    "docName": "script-word-lookup",
+    "caption": "Script - the Look up panel: definitions, examples and synonyms by part of speech, with the dictionary's credit"
   },
   {
-    "page": "manuscript",
+    "page": "script",
     "state": "word-lookup-not-found",
     "viewport": "desktop",
-    "docName": "manuscript-word-lookup-not-found",
-    "caption": "Manuscript - Look up for a word the dictionary does not have"
+    "docName": "script-word-lookup-not-found",
+    "caption": "Script - Look up for a word the dictionary does not have"
   },
   {
-    "page": "manuscript",
+    "page": "script",
     "state": "word-lookup-not-installed",
     "viewport": "desktop",
-    "docName": "manuscript-word-lookup-download",
-    "caption": "Manuscript - the first Look up asks before downloading the dictionary"
+    "docName": "script-word-lookup-download",
+    "caption": "Script - the first Look up asks before downloading the dictionary"
   },
   {
-    "page": "manuscript",
+    "page": "script",
     "state": "add-note-dialog",
     "viewport": "desktop",
-    "docName": "manuscript-add-note",
-    "caption": "Manuscript - Add Note dialog open after selecting text"
+    "docName": "script-add-note",
+    "caption": "Script - Add Note dialog open after selecting text"
   },
   {
     "page": "home",
@@ -133,46 +140,46 @@
     "caption": "Home - import manuscript confirm dialog with format/paragraph/chapter preview"
   },
   {
-    "page": "home",
-    "state": "hint-chips",
+    "page": "proof-chapter",
+    "state": "compare-hints-chips",
     "viewport": "desktop",
-    "docName": "proofing-hint-chips",
-    "caption": "Proofing - vocabulary hint chips: an accepted term alongside suggested (pending) candidates"
+    "docName": "proof-chapter-hint-chips",
+    "caption": "Proof chapter view - vocabulary hint chips: an accepted term alongside suggested (pending) candidates"
   },
   {
-    "page": "proofing",
-    "state": "setup-default",
+    "page": "proof-chapter",
+    "state": "compare-setup",
     "viewport": "desktop",
-    "docName": "proofing-setup",
-    "caption": "Proofing - setup panel before starting a comparison"
+    "docName": "proof-chapter-compare-setup",
+    "caption": "Proof chapter view - the compare run's setup before starting a comparison"
   },
   {
-    "page": "proofing",
-    "state": "setup-alt-selection",
+    "page": "proof-chapter",
+    "state": "compare-setup-alt",
     "viewport": "desktop",
-    "docName": "proofing-setup-alt",
-    "caption": "Proofing - a different model, chunk length, and worker count selected"
+    "docName": "proof-chapter-compare-setup-alt",
+    "caption": "Proof chapter view - a different model, chunk length, and worker count selected"
   },
   {
-    "page": "proofing",
-    "state": "results-row-expanded",
+    "page": "proof-chapter",
+    "state": "compare-results-misread",
     "viewport": "desktop",
-    "docName": "proofing-results",
-    "caption": "Proofing - results table with a discrepancy row expanded"
+    "docName": "proof-chapter-compare-misread",
+    "caption": "Proof chapter view - a comparison's misread as a flag, its script and heard text side by side"
   },
   {
-    "page": "proofing",
-    "state": "results-extra-row-expanded",
+    "page": "proof-chapter",
+    "state": "compare-results-extra",
     "viewport": "desktop",
-    "docName": "proofing-results-extra",
-    "caption": "Proofing - an EXTRA (words heard but not written) discrepancy row expanded"
+    "docName": "proof-chapter-compare-extra",
+    "caption": "Proof chapter view - an EXTRA (words heard but not written) discrepancy as a flag"
   },
   {
-    "page": "proofing",
+    "page": "proof-chapter",
     "state": "preview-default",
     "viewport": "desktop",
-    "docName": "proofing-preview",
-    "caption": "Proofing - the Preview panel suggesting three candidate excerpts from the manuscript"
+    "docName": "proof-chapter-preview",
+    "caption": "Proof chapter view - the Preview panel suggesting three candidate excerpts from the manuscript"
   },
   {
     "page": "storybible",
@@ -196,25 +203,39 @@
     "caption": "Story Bible - alias typeahead dropdown matching existing entries"
   },
   {
-    "page": "teleprompter",
-    "state": "setup-default",
+    "page": "booth",
+    "state": "setup",
     "viewport": "desktop",
-    "docName": "teleprompter-setup",
-    "caption": "Teleprompter - before a session: the chapter picker above the text, and the control bar with Play, the microphone and the engine settings at the bottom"
+    "docName": "booth-setup",
+    "caption": "Booth - before a session: the chapter picker and the Where you stopped notice above the text, the rail with Voices in scene and the reading panel, and the reading controls along the bottom"
   },
   {
-    "page": "teleprompter",
+    "page": "booth",
     "state": "listening",
     "viewport": "desktop",
-    "docName": "teleprompter-listening",
-    "caption": "Teleprompter - listening, with read words dimmed and the current word highlighted"
+    "docName": "booth-listening",
+    "caption": "Booth - listening, with read words dimmed, the current word highlighted and Story Bible names marked"
   },
   {
-    "page": "teleprompter",
+    "page": "booth",
     "state": "waiting",
     "viewport": "desktop",
-    "docName": "teleprompter-waiting",
-    "caption": "Teleprompter - waiting after the narrator paused"
+    "docName": "booth-waiting",
+    "caption": "Booth - waiting after the narrator paused"
+  },
+  {
+    "page": "booth",
+    "state": "flag-open",
+    "viewport": "desktop",
+    "docName": "booth-flag",
+    "caption": "Booth - a suspected restart opened in the Flags tab, with the script's words and what was heard"
+  },
+  {
+    "page": "booth",
+    "state": "credits-unresolved",
+    "viewport": "desktop",
+    "docName": "booth-credits",
+    "caption": "Booth - the closing credits chosen, with the unresolved-token warning above the text"
   },
   {
     "page": "tracks",
@@ -259,32 +280,32 @@
     "caption": "Tracks - the chapter links list, one chapter confirmed to a track"
   },
   {
-    "page": "workspace",
+    "page": "proof-chapter",
     "state": "never",
     "viewport": "desktop",
-    "docName": "workspace-never",
-    "caption": "Chapter workspace - a linked chapter that hasn't been checked yet"
+    "docName": "proof-chapter-never",
+    "caption": "Proof chapter view - a linked chapter that hasn't been checked yet"
   },
   {
-    "page": "workspace",
+    "page": "proof-chapter",
     "state": "current",
     "viewport": "desktop",
-    "docName": "workspace-default",
-    "caption": "Chapter workspace - script, transport, and the Flags panel with its legend"
+    "docName": "proof-chapter-default",
+    "caption": "Proof chapter view - script, transport, and the Flags panel with its legend"
   },
   {
-    "page": "workspace",
+    "page": "proof-chapter",
     "state": "playing",
     "viewport": "desktop",
-    "docName": "workspace-playing",
-    "caption": "Chapter workspace - playing, the spoken word highlighted and the script following along"
+    "docName": "proof-chapter-playing",
+    "caption": "Proof chapter view - playing, the spoken word highlighted and the script following along"
   },
   {
-    "page": "workspace",
+    "page": "proof-chapter",
     "state": "flag-selected",
     "viewport": "desktop",
-    "docName": "workspace-flag-detail",
-    "caption": "Chapter workspace - a flag selected from the Flags panel, its script and heard text shown"
+    "docName": "proof-chapter-flag-detail",
+    "caption": "Proof chapter view - a flag selected from the Flags panel, its script and heard text shown"
   },
   {
     "page": "settings",
@@ -350,32 +371,32 @@
     "caption": "Home - a finished manuscript import with its real, step-by-step activity log"
   },
   {
-    "page": "manuscript",
+    "page": "script",
     "state": "formatted-text-and-line-breaks",
     "viewport": "desktop",
-    "docName": "manuscript-formatting",
-    "caption": "Manuscript - italic, bold and underline from the source document, and a preserved line break inside a paragraph"
+    "docName": "script-formatting",
+    "caption": "Script - italic, bold and underline from the source document, and a preserved line break inside a paragraph"
   },
   {
-    "page": "manuscript",
+    "page": "script",
     "state": "chapter-bookmarked",
     "viewport": "desktop",
-    "docName": "manuscript-bookmark",
-    "caption": "Manuscript - a chapter bookmarked, shown with a blue bookmark icon"
+    "docName": "script-bookmark",
+    "caption": "Script - a chapter bookmarked, shown with a blue bookmark icon"
   },
   {
-    "page": "manuscript",
+    "page": "script",
     "state": "go-to-line-highlight",
     "viewport": "desktop",
-    "docName": "manuscript-go-to-line",
-    "caption": "Manuscript - the line reached from the Story Bible stays highlighted so it is easy to find"
+    "docName": "script-go-to-line",
+    "caption": "Script - the line reached from the Story Bible stays highlighted so it is easy to find"
   },
   {
-    "page": "manuscript",
+    "page": "script",
     "state": "reader-dark",
     "viewport": "desktop",
-    "docName": "manuscript-reader-dark",
-    "caption": "Manuscript reader in the Dark theme - readable controls and an opaque sticky chapter header"
+    "docName": "script-reader-dark",
+    "caption": "Script reader in the Dark theme - readable controls and an opaque sticky chapter header"
   },
   {
     "page": "storybible",
@@ -406,144 +427,116 @@
     "caption": "Settings, Credits - the retail sample picked on Chapter 3, lines 1 to 3"
   },
   {
-    "page": "manuscript",
+    "page": "script",
     "state": "retail-sample",
     "viewport": "desktop",
-    "docName": "manuscript-retail-sample",
-    "caption": "Manuscript - the retail sample marked on lines 1 to 3 of Chapter 3"
+    "docName": "script-retail-sample",
+    "caption": "Script - the retail sample marked on lines 1 to 3 of Chapter 3"
   },
   {
-    "page": "manuscript",
-    "state": "read-aloud-setup",
-    "viewport": "desktop",
-    "docName": "manuscript-read-aloud-resume",
-    "caption": "Manuscript - the Read aloud dialog before reading, with the Where you stopped notice above the text, the reading panel beside it and the control bar below"
-  },
-  {
-    "page": "manuscript",
-    "state": "read-aloud-listening",
-    "viewport": "desktop",
-    "docName": "manuscript-read-aloud-listening",
-    "caption": "Manuscript - Read aloud listening, with read words dimmed, the current word highlighted and Story Bible names marked"
-  },
-  {
-    "page": "manuscript",
-    "state": "read-aloud-flag-open",
-    "viewport": "desktop",
-    "docName": "manuscript-read-aloud-flag",
-    "caption": "Manuscript - a suspected restart opened in the Flags tab, with the script's words and what was heard"
-  },
-  {
-    "page": "manuscript",
-    "state": "read-aloud-credits-unresolved",
-    "viewport": "desktop",
-    "docName": "manuscript-read-aloud-credits",
-    "caption": "Manuscript - the Read aloud dialog on the opening credits, with the unresolved-token warning in place of the resume notice"
-  },
-  {
-    "page": "review",
+    "page": "proof",
     "state": "default",
     "viewport": "desktop",
-    "docName": "review-default",
-    "caption": "Review - every check's findings in one list, with the counts by status"
+    "docName": "proof-default",
+    "caption": "Proof - every check's findings in one list, with the counts by status"
   },
   {
-    "page": "review",
+    "page": "proof",
     "state": "detail-open",
     "viewport": "desktop",
-    "docName": "review-detail",
-    "caption": "Review - a transcript difference selected: what the script says, what was recorded, the evidence and the decision"
+    "docName": "proof-detail",
+    "caption": "Proof - a transcript difference selected: what the script says, what was recorded, the evidence and the decision"
   },
   {
-    "page": "review",
+    "page": "proof",
     "state": "filtered",
     "viewport": "tablet",
-    "docName": "review-filtered",
-    "caption": "Review - filtered to the Proofing comparison and to findings scored 50% or more"
+    "docName": "proof-filtered",
+    "caption": "Proof - filtered to the Proofing comparison and to findings scored 50% or more"
   },
   {
-    "page": "review",
+    "page": "proof",
     "state": "evidence-changed",
     "viewport": "desktop",
-    "docName": "review-evidence-changed",
-    "caption": "Review - a decision not saved because the check ran again since the finding was shown"
+    "docName": "proof-evidence-changed",
+    "caption": "Proof - a decision not saved because the check ran again since the finding was shown"
   },
   {
-    "page": "review",
+    "page": "proof",
     "state": "empty",
     "viewport": "desktop",
-    "docName": "review-empty",
-    "caption": "Review - nothing to review yet"
+    "docName": "proof-empty",
+    "caption": "Proof - no notes yet"
   },
   {
-    "page": "review",
+    "page": "proof",
     "state": "reaper-looping",
     "viewport": "desktop",
-    "docName": "review-reaper-looping",
-    "caption": "Review - a finding looping in REAPER, with Stop loop"
+    "docName": "proof-reaper-looping",
+    "caption": "Proof - a finding looping in REAPER, with Stop loop"
   },
   {
-    "page": "review",
+    "page": "proof",
     "state": "reaper-stale",
     "viewport": "desktop",
-    "docName": "review-reaper-stale",
-    "caption": "Review - Go to refused because the finding's item is no longer in the REAPER project"
+    "docName": "proof-reaper-stale",
+    "caption": "Proof - Go to refused because the finding's item is no longer in the REAPER project"
   },
   {
-    "page": "review",
+    "page": "proof",
     "state": "reaper-not-running",
     "viewport": "desktop",
-    "docName": "review-reaper-not-connected",
-    "caption": "Review - Go to and Loop off because REAPER is not answering"
+    "docName": "proof-reaper-not-connected",
+    "caption": "Proof - Go to and Loop off because REAPER is not answering"
   },
   {
-    "page": "review",
+    "page": "proof",
     "state": "reaper-marker-confirm",
     "viewport": "desktop",
-    "docName": "review-reaper-marker-confirm",
-    "caption": "Review - the confirm before an accepted finding gets its marker in REAPER"
+    "docName": "proof-reaper-marker-confirm",
+    "caption": "Proof - the confirm before an accepted finding gets its marker in REAPER"
   },
   {
-    "page": "review",
+    "page": "proof",
     "state": "take-review-scan-form",
     "viewport": "desktop",
-    "docName": "review-take-review-scan",
-    "caption": "Review - Find pickups and duplicates: the track to scan and the optional pickup track or stretch of the timeline"
+    "docName": "proof-take-review-scan",
+    "caption": "Proof - Find pickups and duplicates: the track to scan and the optional pickup track or stretch of the timeline"
   },
   {
-    "page": "review",
+    "page": "proof",
     "state": "take-review-scan-progress",
     "viewport": "desktop",
-    "docName": "review-take-review-progress",
-    "caption": "Review - a pickup and duplicate scan running, with its real progress and Cancel"
+    "docName": "proof-take-review-progress",
+    "caption": "Proof - a pickup and duplicate scan running, with its real progress and Cancel"
   },
   {
-    "page": "review",
+    "page": "proof",
     "state": "take-review-group",
     "viewport": "desktop",
-    "docName": "review-take-review-group",
-    "caption": "Review - a pickup group: every read with its own Go to and Loop in REAPER, Audition reads and Add as take"
+    "docName": "proof-take-review-group",
+    "caption": "Proof - a pickup group: every read with its own Go to and Loop in REAPER, Audition reads and Add as take"
   },
   {
-    "page": "review",
+    "page": "proof",
     "state": "take-review-add-take",
     "viewport": "desktop",
-    "docName": "review-take-review-add-take",
-    "caption": "Review - Add as take on an accepted group: the target item and the candidate read, chosen by you"
+    "docName": "proof-take-review-add-take",
+    "caption": "Proof - Add as take on an accepted group: the target item and the candidate read, chosen by you"
   },
   {
-    "page": "review",
+    "page": "proof",
     "state": "take-comparison",
     "viewport": "desktop",
-    "docName": "review-take-comparison",
-    "caption": "Review - a take comparison: each read of the same words, with the words it misread or did not reach marked and listed"
+    "docName": "proof-take-comparison",
+    "caption": "Proof - a take comparison: each read of the same words, with the words it misread or did not reach marked and listed"
   },
   {
-    "page": "review",
+    "page": "proof",
     "state": "take-comparison-measurements",
     "viewport": "desktop",
-    "docName": "review-take-comparison-measurements",
-    "caption": "Review - a take comparison's audio: clipping, room noise, level, length and pauses per read, side by side, never added up"
+    "docName": "proof-take-comparison-measurements",
+    "caption": "Proof - a take comparison's audio: clipping, room noise, level, length and pauses per read, side by side, never added up"
   },
   {
     "page": "delivery",

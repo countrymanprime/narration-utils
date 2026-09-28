@@ -9,9 +9,7 @@ afterEach(cleanup);
 function renderCard(overrides: Partial<Parameters<typeof ReaderCard>[0]> = {}) {
   const onToggleExpand = vi.fn();
   const onToggleBookmark = vi.fn();
-  const onReadAloud = vi.fn();
-  const onBooth = vi.fn();
-  const onCompanion = vi.fn();
+  const onRecordInBooth = vi.fn();
   render(
     <ReaderCard
       chapterId="c1"
@@ -21,19 +19,14 @@ function renderCard(overrides: Partial<Parameters<typeof ReaderCard>[0]> = {}) {
       onToggleExpand={onToggleExpand}
       bookmarked={false}
       onToggleBookmark={onToggleBookmark}
-      showReadAloud
-      onReadAloud={onReadAloud}
-      showBooth
-      onBooth={onBooth}
-      showCompanion
-      onCompanion={onCompanion}
+      onRecordInBooth={onRecordInBooth}
       wordCount={3182}
       {...overrides}
     >
       <p>Body</p>
     </ReaderCard>,
   );
-  return { onToggleExpand, onToggleBookmark, onReadAloud, onBooth, onCompanion };
+  return { onToggleExpand, onToggleBookmark, onRecordInBooth };
 }
 
 describe('ReaderCard (manuscript-credits-card-parity.prd.md, manuscript-chapter-header-alignment.prd.md)', () => {
@@ -85,11 +78,11 @@ describe('ReaderCard (manuscript-credits-card-parity.prd.md, manuscript-chapter-
     expect(onToggleExpand).not.toHaveBeenCalled();
   });
 
-  it('pressing Read aloud reads aloud, not the card', async () => {
+  it('pressing Record in Booth opens the Booth, not the card (stage-navigation-and-page-replacement.prd.md Q9)', async () => {
     const user = userEvent.setup();
-    const { onReadAloud, onToggleExpand } = renderCard();
-    await user.click(screen.getByRole('button', { name: 'Read Chapter 2 aloud' }));
-    expect(onReadAloud).toHaveBeenCalledTimes(1);
+    const { onRecordInBooth, onToggleExpand } = renderCard();
+    await user.click(screen.getByRole('button', { name: 'Record Chapter 2 in Booth' }));
+    expect(onRecordInBooth).toHaveBeenCalledTimes(1);
     expect(onToggleExpand).not.toHaveBeenCalled();
   });
 
@@ -97,42 +90,44 @@ describe('ReaderCard (manuscript-credits-card-parity.prd.md, manuscript-chapter-
     renderCard();
     const header = document.querySelector('header')!;
     const wordsIndex = header.innerHTML.indexOf('3,182 words');
-    const actionIndex = header.innerHTML.indexOf('Read Chapter 2 aloud');
+    const actionIndex = header.innerHTML.indexOf('Record Chapter 2 in Booth');
     const chevronIndex = header.innerHTML.indexOf('data-icon="chevron-down"');
     expect(wordsIndex).toBeGreaterThan(-1);
     expect(actionIndex).toBeGreaterThan(wordsIndex);
     expect(chevronIndex).toBeGreaterThan(actionIndex);
   });
 
-  it('renders an empty, same-width action slot when there is no Read aloud, Booth or Companion (a row with no action still lines up)', () => {
-    renderCard({ showReadAloud: false, onReadAloud: undefined, showBooth: false, onBooth: undefined, showCompanion: false, onCompanion: undefined });
-    expect(screen.queryByRole('button', { name: /Read .* aloud/ })).toBeNull();
-    expect(screen.queryByRole('button', { name: /Open booth for/ })).toBeNull();
-    expect(screen.queryByRole('button', { name: /Open companion for/ })).toBeNull();
-    const slots = document.querySelectorAll('.w-64');
+  it('renders an empty, same-width action slot when there is nothing to record (a row with no action still lines up)', () => {
+    renderCard({ onRecordInBooth: undefined });
+    expect(screen.queryByRole('button', { name: /in Booth/ })).toBeNull();
+    const slots = document.querySelectorAll('.w-52');
     expect(slots.length).toBe(1);
   });
 
-  it('pressing Companion (booth-mode-and-companion-panel.prd.md Phase 7) opens the companion, not the card', async () => {
+  it('offers one Booth action, not the old Read aloud, Booth and Companion buttons (ADR 0407)', () => {
+    renderCard();
+    expect(screen.queryByRole('button', { name: /aloud/ })).toBeNull();
+    expect(screen.queryByRole('button', { name: /Open (booth|companion) for/ })).toBeNull();
+  });
+
+  // edit-and-proof-workspace.prd.md Phase 4: the chapter header's "Open workspace" entry, icon-only.
+  it('pressing Workspace opens the workspace, not the card', async () => {
     const user = userEvent.setup();
-    const { onCompanion, onToggleExpand } = renderCard();
-    await user.click(screen.getByRole('button', { name: 'Open companion for Chapter 2' }));
-    expect(onCompanion).toHaveBeenCalledTimes(1);
+    const onWorkspace = vi.fn();
+    const onToggleExpand = vi.fn();
+    render(
+      <ReaderCard chapterId="c1" title="Chapter 2" expanded={false} onToggleExpand={onToggleExpand} showWorkspace onWorkspace={onWorkspace} wordCount={3182}>
+        <p>Body</p>
+      </ReaderCard>,
+    );
+    await user.click(screen.getByRole('button', { name: 'Open workspace for Chapter 2' }));
+    expect(onWorkspace).toHaveBeenCalledTimes(1);
     expect(onToggleExpand).not.toHaveBeenCalled();
   });
 
-  it('pressing Booth opens the booth, not the card', async () => {
-    const user = userEvent.setup();
-    const { onBooth, onToggleExpand } = renderCard();
-    await user.click(screen.getByRole('button', { name: 'Open booth for Chapter 2' }));
-    expect(onBooth).toHaveBeenCalledTimes(1);
-    expect(onToggleExpand).not.toHaveBeenCalled();
-  });
-
-  it('renders no Booth button when showBooth is false, even with Read aloud shown', () => {
-    renderCard({ showBooth: false, onBooth: undefined });
-    expect(screen.getByRole('button', { name: 'Read Chapter 2 aloud' })).toBeTruthy();
-    expect(screen.queryByRole('button', { name: /Open booth for/ })).toBeNull();
+  it('renders no Workspace button when showWorkspace is false', () => {
+    renderCard({ showWorkspace: false, onWorkspace: undefined });
+    expect(screen.queryByRole('button', { name: /Open workspace for/ })).toBeNull();
   });
 
   it('shows a chevron that flips with expanded state', () => {
@@ -198,7 +193,7 @@ describe('ReaderCard (manuscript-credits-card-parity.prd.md, manuscript-chapter-
   });
 
   it('shows the read time from the shared helper, seconds under a minute', () => {
-    renderCard({ wordCount: 7, showReadAloud: false, onReadAloud: undefined });
+    renderCard({ wordCount: 7, onRecordInBooth: undefined });
     expect(screen.getByText('~2 s read')).toBeTruthy();
   });
 });

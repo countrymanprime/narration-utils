@@ -49,6 +49,19 @@ func TestContractCoverageResults(t *testing.T) {
 	pinResult(t, "coverage-result-unmapped", currentResult(t, service, DefaultAlignmentParams))
 }
 
+// TestContractCoverageResultWithARecheck pins the model cascade's own wire shape (Phase 5, MC5): StoredResult.Recheck
+// on a result the second pass resolved.
+func TestContractCoverageResultWithARecheck(t *testing.T) {
+	p := newTestProject(t)
+	service := p.service(&fakeSidecar{present: 8, afterRecheckPresent: 10})
+	run(t, service, cascadeRequest())
+	current := currentResult(t, service, DefaultAlignmentParams)
+	if !current.Current() || current.Result.Recheck == nil {
+		t.Fatalf("the cascade fixture needs a Recheck: %+v", current)
+	}
+	pinResult(t, "coverage-result-cascade", current)
+}
+
 // pinAlignment pins a WorkspaceAlignment answer the same way pinResult does: the basis label's embedded time is fixed
 // before Stabilize, which only replaces a string that is a timestamp end to end.
 func pinAlignment(t *testing.T, name string, view AlignmentView) {

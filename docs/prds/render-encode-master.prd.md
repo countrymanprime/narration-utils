@@ -151,10 +151,10 @@ Phases 0 to 5: a narrator can encode rendered WAVs to MP3/M4B, optionally master
 | 1 | `Encoder` port: MP3 | `internal/encodeport`, WAV to MP3 (CBR), progress, cancellation, catalog asset row | complete (the `ffmpeg` row, `internal/ffmpeg` and `config/encoder-assets.json`; [ADR 0343](../adr/0343-an-encode-writes-a-partial-file-beside-its-destination-checks-it-with-the-apps-own-mp3-reader-and-never-replaces-a-file.md), Proposed; threat model row 1f; the real `ffmpeg.exe` run on Windows is pending the owner on #510) | 2 | 0 | `Encoder` (`provider-ports.prd.md`) | - |
 | 2 | `Encoder` port: M4B/AAC | M4B chapters (reusing the chapter-timeline shape from `chaptertags`), AAC encode | complete (native `aac` encoder, "ipod"-muxed MP4; chapters embedded as a QuickTime/MP4 chapter track, read back by `encodeport.ReadM4BChapters`; cross-checked against `chaptertags.BuildTimeline` on its own fixture set) | 1 | 0 | `Encoder` (`provider-ports.prd.md`) | - |
 | 3 | Mastering chain (Should) | `internal/mastering`: EQ, limiter, gain into the profile's RMS window; narrator-triggered, writes new files | complete | 4 | - | none (reads `internal/measure`); `fx_chains` (Q3, Could, gated on that capability reaching Supported) | - |
-| 4 | `Packager` port | `internal/packager`, reads the selected delivery profile's book checklist, assembles and names a complete package (Q5) | pending | 3 | 1, 2; [Delivery Platform Profiles](delivery-platform-profiles.prd.md) Phase 7 | `render_config` (reads confirmed render targets); `Packager` (`provider-ports.prd.md`) | - |
+| 4 | `Packager` port | `internal/packager`, reads the selected delivery profile's book checklist, assembles and names a complete package (Q5) | complete (the book assembler; the `encodeport.Packager` port registry itself stays empty, D67 mock-first, per [Provider Ports](../architecture/provider-ports.md)) | 3 | 1, 2; [Delivery Platform Profiles](delivery-platform-profiles.prd.md) Phase 7 | `render_config` (reads confirmed render targets); `Packager` (`provider-ports.prd.md`) | - |
 | 5 | Master & QC export flow | Bindings, UI export flow, checklist report, visual suite. **D79:** built on the Delivery page's `MasterQcPanel`; [stage navigation](stage-navigation-and-page-replacement.prd.md) Phase 8 turns the Delivery page into the Finish group's Master & QC page (`/master`), carrying this panel | pending | - | 3, 4 | UI primitives `StatusBadge`, `Toolbar` (`studio-ui-primitives.prd.md`, if landed) | - |
 | 6 | Multi-platform export (Could) | One mastered/encoded source produces packages for several selected profiles in one action. **D79:** build it on the Master & QC page, after [stage navigation](stage-navigation-and-page-replacement.prd.md) Phase 8, not on `DeliveryPage.tsx` | pending | - | 5; [stage navigation](stage-navigation-and-page-replacement.prd.md) Phase 8 | none | - |
-| 7 | FLAC output (Could, Q7) | `Encoder` gains a FLAC target | pending | - | 1 | `Encoder` | - |
+| 7 | FLAC output (Could, Q7) | `Encoder` gains a FLAC target | complete (the `ffmpeg` row's native `flac` encoder; no bitrate, no MPEG-1-style rate restriction; `checkFLAC` reads the written STREAMINFO block back before it is kept) | - | 1 | `Encoder` | - |
 
 ### Phase details
 
@@ -165,7 +165,7 @@ Phases 0 to 5: a narrator can encode rendered WAVs to MP3/M4B, optionally master
 - **Phase 4.** Tests: a profile with `acx.credits`/`acx.retail_sample`/`acx.one_section_per_file` requirements produces exactly those files, named per the profile's template; a project missing a required item (no retail sample picked, say) refuses with a clear reason rather than shipping an incomplete package.
 - **Phase 5.** Visual states: encode/master progress, a completed package checklist, a refused/incomplete package state; guide page and screenshots.
 - **Phase 6.** Tests: two profiles sharing MP3 at the same bitrate reuse one encoded file; a profile requiring M4B triggers a second encode only for that format.
-- **Phase 7.** Tests: FLAC round-trips through a profile that declares it accepted (INaudio, per docs, once that platform's own profile exists).
+- **Phase 7.** Tests: FLAC round-trips through a profile that declares it accepted (INaudio, per docs, once that platform's own profile exists). No such profile exists yet (INaudio is research only, not a built `deliveryprofile.Profile`), so the round trip is proven against this phase's own fixture instead: `TestTheRealFFmpegRoundTripsFLACLosslessly` (opt-in, `NARRATION_UTILS_FFMPEG`) encodes a tone WAV to FLAC and decodes it back with the same FFmpeg build, and asserts the PCM samples are exact. The Encoder-port capability this phase adds is independent of any one profile consuming it, matching Q7's own "a straightforward Encoder-port addition later" framing.
 
 ### Standing gates
 
@@ -196,6 +196,7 @@ Phase 0 gates Phases 1 and 2 but not Phase 3 (mastering has no encoder dependenc
 | Mastering parameters (proposed, Q4) | Fixed defaults from the selected delivery profile's own RMS/peak rule | Narrator-adjustable EQ/limiter | Matches "master to spec," not a general mastering suite, for v1 |
 | Package output location (proposed, Q5) | A narrator-chosen folder, outside the project's derived-data sidecar tree | Always inside the project folder | A deliverable, not derived app state |
 | MP3 parser consolidation (proposed, Q6) | Not in this PRD | Merge into a shared `internal/mp3frame` | Each existing parser serves a narrow, different purpose; merging is its own refactor cost |
+| FLAC in v1 vs. later (Q7) | Not in the MVP (Phases 0-5); added in Phase 7 as the Could it already was, once the encoder shape (Phases 0-1) was stable | Ship it inside Phase 1 alongside MP3 | Matches the recommendation's own framing: "a straightforward Encoder-port addition later"; no profile has required it yet, but the capability costs nothing to add against the same `ffmpeg` row |
 
 ## Research Summary
 

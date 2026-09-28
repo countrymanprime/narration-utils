@@ -19,7 +19,7 @@ renders every chapter it is handed, `reference` included, so a narrator who page
 Characters as ordinary, readable chapters.
 
 Fixing that read-through view is manuscript-reader-search-and-controls Phase 5 (delivered since, PRD
-deleted, see [the manuscript guide](../guides/using-the-app/manuscript.md) and
+deleted, see [the manuscript guide](../guides/using-the-app/script.md) and
 [ADR 0090](0090-the-page-flip-reader-hides-reference-chapters-superseding-the-reader-half-of-adr-0005.md)),
 which reverses the reader half of ADR 0005. That PRD had not landed (stack S19b of `implementation-plan.md`'s train, section
 4) when this stack ran, so this PRD's Phase 2 cannot itself change what the reader displays without duplicating or pre-empting that
