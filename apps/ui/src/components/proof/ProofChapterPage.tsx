@@ -33,6 +33,7 @@ import { usePickupsState } from '../pickups/usePickupsState';
 import { FindingDetail } from './FindingDetail';
 import { FindingsList } from './FindingsList';
 import { NativeTakesPanel } from './NativeTakesPanel';
+import { TakesPanel } from './TakesPanel';
 import { NotesHeader, SourcesLine } from './NotesHeader';
 import { NotesStrip } from './NotesStrip';
 import { RecordingCheckCard } from './RecordingCheckCard';
@@ -429,6 +430,17 @@ function ChapterView({ chapterId, notify, transcript, dawFileLinked, goToManuscr
               compare={compareRows.length > 0 ? compareActions : undefined}
             />
           </div>
+        )}
+        {alignment && alignment.state !== 'never' && (
+          <TakesPanel
+            chapterId={chapterId}
+            alignment={alignment}
+            currentToken={currentToken}
+            findings={findings}
+            reaper={reaperStatus.status}
+            onReaperStatusChange={reaperStatus.refresh}
+            onFindingsChanged={loadFindings}
+          />
         )}
         <CompareRun
           chapterTitle={chapterName(chapter, 'short')}

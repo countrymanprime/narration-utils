@@ -99,6 +99,11 @@ const MODALS: { name: string; state: [string, string]; snapshot: string }[] = [
     state: ['booth', 'exit-confirm'],
     snapshot: 'confirm-stop-reading.aria.yml',
   },
+  {
+    name: 'adding a read from another item as a take and making it active asks first: an alert dialog with both actions',
+    state: ['proof-chapter', 'takes-confirm'],
+    snapshot: 'confirm-add-take-and-activate.aria.yml',
+  },
 ];
 
 for (const modal of MODALS) {

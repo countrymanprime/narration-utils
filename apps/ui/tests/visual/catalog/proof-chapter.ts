@@ -69,6 +69,48 @@ export const proofChapterStates: StateEntry[] = [
       'Proof chapter view with REAPER not running (edit-and-proof-workspace PRD Phase 3) - Go to in REAPER and Loop in REAPER on the transport bar are disabled, with the reason under a tooltip; everything else still works',
     ...KEEPS_DESKTOP_SCROLL,
   },
+  // The Takes panel (edit-and-proof-workspace.prd.md Phase 6, EP6 and EP7, ADR 0700): the takes of the paragraph at the playhead,
+  // heard side by side, compared word by word, and chosen. It shows on Chapter 1 (a current check with a live item).
+  {
+    page: 'proof-chapter',
+    state: 'takes-list',
+    description:
+      'Proof chapter view, Show takes for this paragraph pressed - the Takes panel lists the paragraph’s four takes (another take of the item, one retake on a lane, one read from Find pickups) with where each came from, which one plays in REAPER, "Not compared yet", and Use this take on each',
+    ...KEEPS_DESKTOP_SCROLL,
+  },
+  {
+    page: 'proof-chapter',
+    state: 'takes-compared',
+    description:
+      'Proof chapter view, the takes compared - each take says how much of the passage’s words it matched, and the Takes side by side view sets their words and audio measurements beside each other with nothing ranking them',
+    ...KEEPS_DESKTOP_SCROLL,
+  },
+  {
+    page: 'proof-chapter',
+    state: 'takes-used',
+    description:
+      'Proof chapter view, Use this take pressed on another take of the item - "Made that take active in REAPER, in one undo step", and that take now marked as the one playing',
+    ...KEEPS_DESKTOP_SCROLL,
+  },
+  {
+    page: 'proof-chapter',
+    state: 'takes-confirm',
+    description:
+      'Proof chapter view, Use this take pressed on a read from another item - the confirm that says REAPER adds it as a new take and makes it active (two undo steps) before anything is sent',
+  },
+  {
+    page: 'proof-chapter',
+    state: 'takes-audition',
+    description:
+      'Proof chapter view, Hear side by side pressed - the A/B dialog with the "Raw source, no FX or edits applied" label and Read A/Read B pickers over the passage’s takes',
+  },
+  {
+    page: 'proof-chapter',
+    state: 'takes-standalone',
+    description:
+      'Proof chapter view with REAPER not running - the takes are listed and can be heard and compared, and Use this take is off on each, with the reason under a tooltip',
+    ...KEEPS_DESKTOP_SCROLL,
+  },
   // The compare run (the Proofing page's setup, run and results, folded in by stage navigation Phase 5), scrolled into view.
   {
     page: 'proof-chapter',
