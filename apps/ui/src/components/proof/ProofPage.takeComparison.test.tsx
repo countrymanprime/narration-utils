@@ -71,7 +71,9 @@ describe('Compare takes on the Review page', () => {
     await user.click(within(progress).getByRole('button', { name: 'Close' }));
 
     const comparison = await screen.findByRole('region', { name: 'Takes side by side' });
-    expect(screen.getByRole('combobox', { name: 'Check' })).toHaveProperty('value', 'take-comparison');
+    // Mock 04 draws no filter row (mock-fidelity-primitives-and-components.prd.md Phase 12): open the popover to check it.
+    await user.click(screen.getByRole('button', { name: /^Filters/ }));
+    expect(await screen.findByRole('combobox', { name: 'Check' })).toHaveProperty('value', 'take-comparison');
     expect((await rows())[0].textContent).toMatch(/2 reads of sentences 4–8, side by side/);
     expect(within(comparison).getByText(/7 of 11 words as written · 1 misread · 3 not reached/)).toBeTruthy();
     expect(within(comparison).getByRole('list', { name: 'Where read 2 departs from the script' }).textContent).toMatch(/Misread “very” as “remarkably”/);
