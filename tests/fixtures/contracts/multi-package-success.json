@@ -1,0 +1,54 @@
+{
+  "id": "package-multi-1",
+  "kind": "render_package_multi",
+  "phase": "success",
+  "message": "Built 2 packages.",
+  "results": [
+    {
+      "profile": "acx",
+      "platform": "ACX",
+      "phase": "success",
+      "message": "Built 2 files.",
+      "outputDir": "C:\\Users\\Narrator\\Desktop\\Wonderland\\ACX (September 2026)",
+      "files": [
+        {
+          "kind": "chapter",
+          "name": "01 - Chapter One.mp3",
+          "destPath": "C:\\Users\\Narrator\\Desktop\\Wonderland\\ACX (September 2026)\\01 - Chapter One.mp3",
+          "tagged": false
+        },
+        {
+          "kind": "retail_sample",
+          "name": "Retail Sample.mp3",
+          "destPath": "C:\\Users\\Narrator\\Desktop\\Wonderland\\ACX (September 2026)\\Retail Sample.mp3",
+          "tagged": false
+        }
+      ],
+      "checklist": [
+        {
+          "ruleId": "acx.retail_sample",
+          "label": "Retail sample",
+          "status": "included",
+          "detail": "A retail sample is included."
+        }
+      ]
+    },
+    {
+      "profile": "kobo",
+      "platform": "Kobo (M4B)",
+      "phase": "success",
+      "message": "Built 1 file.",
+      "outputDir": "C:\\Users\\Narrator\\Desktop\\Wonderland\\Kobo (M4B)",
+      "files": [
+        {
+          "kind": "chapter",
+          "name": "01 - Chapter One.m4b",
+          "destPath": "C:\\Users\\Narrator\\Desktop\\Wonderland\\Kobo (M4B)\\01 - Chapter One.m4b",
+          "tagged": false
+        }
+      ],
+      "checklist": []
+    }
+  ],
+  "elapsed": 8.1
+}

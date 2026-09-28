@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useApi } from '../../api/ApiContext';
 import { apiErrorMessage } from '../../api/errorMessage';
-import type { DeliveryProfile, ExportItem, ExportJob, PackageItem, PackageJob } from '../../types';
+import type { DeliveryProfile, ExportItem, ExportJob, MultiPackageJob, PackageItem, PackageJob } from '../../types';
 
 /** How often a running export or package job is read. */
 const POLL_MS = 500;
@@ -28,6 +28,8 @@ export function useExportJobs() {
   const [problem, setProblem] = useState<string>();
   const [packageJob, setPackageJob] = useState<PackageJob>();
   const [packageProblem, setPackageProblem] = useState<string>();
+  const [multiPackageJob, setMultiPackageJob] = useState<MultiPackageJob>();
+  const [multiPackageProblem, setMultiPackageProblem] = useState<string>();
 
   useEffect(() => {
     let active = true;
@@ -39,6 +41,10 @@ export function useExportJobs() {
       .packageState()
       .then((state) => active && setPackageJob(state))
       .catch((error) => active && setPackageProblem(apiErrorMessage(error)));
+    api
+      .packageMultiState()
+      .then((state) => active && setMultiPackageJob(state))
+      .catch((error) => active && setMultiPackageProblem(apiErrorMessage(error)));
     return () => {
       active = false;
     };
@@ -75,6 +81,22 @@ export function useExportJobs() {
       clearTimeout(timer);
     };
   }, [api, packageRunning, packageJob]);
+
+  const multiPackageRunning = multiPackageJob?.phase === 'running';
+  useEffect(() => {
+    if (!multiPackageRunning) return;
+    let active = true;
+    const timer = setTimeout(() => {
+      api
+        .packageMultiState()
+        .then((state) => active && setMultiPackageJob(state))
+        .catch((error) => active && setMultiPackageProblem(apiErrorMessage(error)));
+    }, POLL_MS);
+    return () => {
+      active = false;
+      clearTimeout(timer);
+    };
+  }, [api, multiPackageRunning, multiPackageJob]);
 
   const pick = async () => {
     setPicking(true);
@@ -121,6 +143,22 @@ export function useExportJobs() {
   };
   const cancelPackage = () => void api.packageCancel().then(setPackageJob, (error) => setPackageProblem(apiErrorMessage(error)));
 
+  const startMultiPackage = async (profiles: DeliveryProfile[]) => {
+    setMultiPackageProblem(undefined);
+    const packageItems: PackageItem[] = doneFiles.map((file) => ({ kind: file.kind, title: file.title, path: file.encodedPath as string }));
+    try {
+      setMultiPackageJob(
+        await api.packageStartMulti({
+          selections: profiles.map((profile) => ({ profileId: profile.id, profileVersion: profile.version })),
+          items: packageItems,
+        }),
+      );
+    } catch (error) {
+      setMultiPackageProblem(apiErrorMessage(error));
+    }
+  };
+  const cancelMultiPackage = () => void api.packageMultiCancel().then(setMultiPackageJob, (error) => setMultiPackageProblem(apiErrorMessage(error)));
+
   return {
     picking,
     items,
@@ -140,6 +178,11 @@ export function useExportJobs() {
     packageProblem,
     startPackage,
     cancelPackage,
+    multiPackageJob,
+    multiPackageRunning,
+    multiPackageProblem,
+    startMultiPackage,
+    cancelMultiPackage,
   };
 }
 

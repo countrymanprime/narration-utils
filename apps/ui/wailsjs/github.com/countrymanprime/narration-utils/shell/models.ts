@@ -146,6 +146,43 @@ export class LineIdentityStampRow {
 }
 
 /**
+ * MultiPackageRequest is what PackageStartMulti is asked to build: every selected platform, and the same encoded
+ * items a single PackageStart would be sent (an export job's own EncodedPaths for its current format).
+ */
+export class MultiPackageRequest {
+    "selections": ProfileSelection[];
+    "items": PackageItem[];
+
+    /** Creates a new MultiPackageRequest instance. */
+    constructor($$source: Partial<MultiPackageRequest> = {}) {
+        if (!("selections" in $$source)) {
+            this["selections"] = [];
+        }
+        if (!("items" in $$source)) {
+            this["items"] = [];
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new MultiPackageRequest instance from a string or object.
+     */
+    static createFrom($$source: any = {}): MultiPackageRequest {
+        const $$createField0_0 = $$createType3;
+        const $$createField1_0 = $$createType5;
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        if ("selections" in $$parsedSource) {
+            $$parsedSource["selections"] = $$createField0_0($$parsedSource["selections"]);
+        }
+        if ("items" in $$parsedSource) {
+            $$parsedSource["items"] = $$createField1_0($$parsedSource["items"]);
+        }
+        return new MultiPackageRequest($$parsedSource as Partial<MultiPackageRequest>);
+    }
+}
+
+/**
  * PackageItem is one already-encoded file (an ExportJob file's own EncodedPath) ready to package. Kind is one of
  * packager.Kind's own values, kept a plain string on the wire so the UI's contract does not depend on a Go enum type.
  */
@@ -206,12 +243,40 @@ export class PackageRequest {
      * Creates a new PackageRequest instance from a string or object.
      */
     static createFrom($$source: any = {}): PackageRequest {
-        const $$createField2_0 = $$createType3;
+        const $$createField2_0 = $$createType5;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("items" in $$parsedSource) {
             $$parsedSource["items"] = $$createField2_0($$parsedSource["items"]);
         }
         return new PackageRequest($$parsedSource as Partial<PackageRequest>);
+    }
+}
+
+/**
+ * ProfileSelection is one platform the narrator checked to build a package for.
+ */
+export class ProfileSelection {
+    "profileId": string;
+    "profileVersion": string;
+
+    /** Creates a new ProfileSelection instance. */
+    constructor($$source: Partial<ProfileSelection> = {}) {
+        if (!("profileId" in $$source)) {
+            this["profileId"] = "";
+        }
+        if (!("profileVersion" in $$source)) {
+            this["profileVersion"] = "";
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new ProfileSelection instance from a string or object.
+     */
+    static createFrom($$source: any = {}): ProfileSelection {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new ProfileSelection($$parsedSource as Partial<ProfileSelection>);
     }
 }
 
@@ -247,5 +312,7 @@ export class TakeReviewScanScope {
 // Private type creation functions
 const $$createType0 = ExportItem.createFrom;
 const $$createType1 = $Create.Array($$createType0);
-const $$createType2 = PackageItem.createFrom;
+const $$createType2 = ProfileSelection.createFrom;
 const $$createType3 = $Create.Array($$createType2);
+const $$createType4 = PackageItem.createFrom;
+const $$createType5 = $Create.Array($$createType4);

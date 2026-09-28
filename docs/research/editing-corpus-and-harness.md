@@ -113,5 +113,6 @@ Success Metrics' proposed 90% recall target, which is scored on real narration, 
   D70/D71 (LibriVox or the owner's own chapters, `labels.csv` in the format above, audio and labels both outside the
   repo), run `TestClassRecallPrecisionOnRealCorpus`, and record the held-out numbers, the corpus's conditions (how many
   narrators or rooms, how many labeled locations per class) and the source provenance here. Until then the click and
-  breath signals stay gated `unknown` regardless (Phase 4, Q5's validated-version gate) - this note's job is only to
-  prove the harness that will decide that gate actually works.
+  breath signals stay gated `unknown` regardless (Phase 4, Q5's validated-version gate; see
+  [editing-click-breath-validation.md](editing-click-breath-validation.md) for Phase 4's run and the gate's rule) -
+  this note's job is only to prove the harness that will decide that gate actually works.

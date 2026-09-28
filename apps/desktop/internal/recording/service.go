@@ -414,6 +414,21 @@ func (s *Service) settle(a *active, result *Result, failure string) (*LastTake, 
 	return last, ""
 }
 
+// SetTakeLine assigns takeName the manuscript line entityID at the manuscript's current sourceSHA256 (identity.go's
+// ComposeLineID), or clears its assignment when entityID is "". It publishes the updated state afterward, like
+// every other change here; it never touches the take's audio file.
+func (s *Service) SetTakeLine(takeName, entityID, sourceSHA256 string) error {
+	folder := s.Folder()
+	if folder == "" {
+		return errors.New("open a project before assigning a take a manuscript line")
+	}
+	if err := setTakeLine(folder, takeName, entityID, sourceSHA256); err != nil {
+		return err
+	}
+	s.publish()
+	return nil
+}
+
 // TakePath answers the take file at path when it is one of this project's listed takes (finished or unfinished, not the
 // one recording now), as the service's own copy of the path, so the media route plays only a take this list vouches for.
 func (s *Service) TakePath(path string) (string, bool) {

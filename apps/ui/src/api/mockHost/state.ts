@@ -119,7 +119,7 @@ export type MockApiSeed = {
    * last take-review scan (Phase 8). `activity` is on, with Chapter 1 linked by sync and Chapter 2 by the narrator, and a Sync
    * activity list of three batches (the engine panel's mockup-02 state, stage navigation Phase 6). Unset, sync is on and has run before with nothing new, so no dialog or
    * toast covers the other states. */
-  chapterSync?: 'ask' | 'off' | 'linked' | 'unsaved' | 'pickups' | 'activity';
+  chapterSync?: 'ask' | 'off' | 'linked' | 'unsaved' | 'pickups' | 'activity' | 'background';
   /** Whether the mock project boots with a linked DAW project file (PRD W13/W14). Defaults to true. */
   dawFileLinked?: boolean;
   /** Makes the next `linkDawFile()` call behave like a chosen file outside the project folder (PRD W15): refused, not linked. */
@@ -185,6 +185,10 @@ export type MockApiSeed = {
   measure?: MockMeasureSeed;
   /** Holds a started export part way through, so its real progress can be looked at (render-encode-master PRD Phase 5). */
   renderExport?: MockExportSeed;
+  /** Holds a started multi-platform package build part way through, so its per-profile progress can be looked at
+   * (render-encode-master PRD Phase 6), separately from `renderExport` (which would also hold the export job itself
+   * mid-run, leaving no completed files to build packages from). */
+  renderPackageMulti?: MockExportSeed;
   /** Holds a started diagnostics check part way through, or breaks it (diagnostics PRD Phase 6). */
   diagnostics?: MockDiagnosticsSeed;
   /** Seeds the editing-readiness check mock (a refusal, a held-running state, or seeded candidates), see `EditingSeed`. */

@@ -54,24 +54,41 @@ func (p *SignalProvider) Signals(ctx context.Context, chapter stages.ChapterCont
 		return p.projectUnreadableSignals(view.ProjectErr, now), nil
 	}
 
-	coverage, _, basisRecordIDs, err := p.service.gatherCoverage(chapter, view)
+	coverage, _, basisRecordIDs, err := p.service.gatherCoverage(chapter, view, AnalyzerSilence, AnalyzerVersion)
 	if err != nil {
 		return nil, err
 	}
-	basis := stages.Basis{LedgerRecordIDs: basisRecordIDs, ProjectFileModTime: view.ProjectFile.ModTime}
+	clickCoverage, _, clickRecordIDs, err := p.service.gatherCoverage(chapter, view, AnalyzerClick, ClickAnalyzerVersion)
+	if err != nil {
+		return nil, err
+	}
+	breathCoverage, _, breathRecordIDs, err := p.service.gatherCoverage(chapter, view, AnalyzerBreath, BreathAnalyzerVersion)
+	if err != nil {
+		return nil, err
+	}
+	basis := func(ids []string) stages.Basis {
+		return stages.Basis{LedgerRecordIDs: ids, ProjectFileModTime: view.ProjectFile.ModTime}
+	}
 
 	running := p.service.Busy() && p.service.State().ChapterID == chapter.ChapterID
-	candidateStatuses, clickEvidence, breathEvidence, err := p.service.gatherCandidates(chapter.ChapterID)
+	candidates, err := p.service.gatherCandidates(chapter.ChapterID)
 	if err != nil {
 		return nil, err
 	}
 
 	emptySpace := EmptySpaceSignal(EmptySpaceInput{
-		Coverage: coverage, Policy: p.service.policy(), Candidates: candidateStatuses, Running: running,
-		Basis: basis, ComputedAt: now,
+		Coverage: coverage, Policy: p.service.policy(), Candidates: candidates["silence"], Running: running,
+		Basis: basis(basisRecordIDs), ComputedAt: now,
 	})
-	click := UnvalidatedSignal(ClickSignalID, AnalyzerVersion, clickEvidence, basis, now)
-	breath := UnvalidatedSignal(BreathSignalID, AnalyzerVersion, breathEvidence, basis, now)
+	validations := DetectorValidations()
+	click := ClassSignal(ClassSignalInput{
+		ID: ClickSignalID, AnalyzerID: AnalyzerClick, AnalyzerVersion: ClickAnalyzerVersion, Validations: validations,
+		Coverage: clickCoverage, Candidates: candidates["click"], Running: running, Basis: basis(clickRecordIDs), ComputedAt: now,
+	})
+	breath := ClassSignal(ClassSignalInput{
+		ID: BreathSignalID, AnalyzerID: AnalyzerBreath, AnalyzerVersion: BreathAnalyzerVersion, Validations: validations,
+		Coverage: breathCoverage, Candidates: candidates["breath"], Running: running, Basis: basis(breathRecordIDs), ComputedAt: now,
+	})
 	return []stages.Signal{emptySpace, click, breath}, nil
 }
 
@@ -83,16 +100,17 @@ func (p *SignalProvider) projectUnreadableSignals(err error, now time.Time) []st
 	)
 	return []stages.Signal{
 		emptySpace,
-		UnvalidatedSignal(ClickSignalID, AnalyzerVersion, nil, basis, now),
-		UnvalidatedSignal(BreathSignalID, AnalyzerVersion, nil, basis, now),
+		ClassSignal(ClassSignalInput{ID: ClickSignalID, AnalyzerID: AnalyzerClick, AnalyzerVersion: ClickAnalyzerVersion, Validations: DetectorValidations(), Basis: basis, ComputedAt: now}),
+		ClassSignal(ClassSignalInput{ID: BreathSignalID, AnalyzerID: AnalyzerBreath, AnalyzerVersion: BreathAnalyzerVersion, Validations: DetectorValidations(), Basis: basis, ComputedAt: now}),
 	}
 }
 
 // gatherCoverage is the provider's own read of stored evidence (Q12): the
-// chapter's confirmed track (D5), every item's own staleness
+// chapter's confirmed track (D5), every item's own staleness against
+// analyzerID's record at analyzerVersion
 // (CurrentItemRecord, item-scoped per ledger.go's own header comment), and
 // the typed reasons of every item Resolve refused. It never decodes audio.
-func (s *Service) gatherCoverage(chapter stages.ChapterContext, view stages.EvidenceView) (ChapterCoverage, string, []string, error) {
+func (s *Service) gatherCoverage(chapter stages.ChapterContext, view stages.EvidenceView, analyzerID, analyzerVersion string) (ChapterCoverage, string, []string, error) {
 	trackGUID, err := s.confirmedTrackGUID(chapter.DocumentID, chapter.ChapterID)
 	if err != nil {
 		reason, _ := ReasonOf(err)
@@ -130,7 +148,7 @@ func (s *Service) gatherCoverage(chapter stages.ChapterContext, view stages.Evid
 		}
 		key := evidence.ComputeAnalysisKey(identity, evidence.PlayedRange{Start: res.Source.PlayedRange.Start, End: res.Source.PlayedRange.End}, 1)
 		scopeIn := ItemScopeInput{DocumentID: chapter.DocumentID, ChapterID: chapter.ChapterID, TrackGUID: track.GUID, Item: res.Item, Key: key}
-		staleness, err := CurrentItemRecord(s.ledger, AnalyzerSilence, AnalyzerVersion, paramHash, scopeIn)
+		staleness, err := CurrentItemRecord(s.ledger, analyzerID, analyzerVersion, paramHash, scopeIn)
 		if err != nil {
 			return ChapterCoverage{}, trackGUID, nil, err
 		}
@@ -143,34 +161,26 @@ func (s *Service) gatherCoverage(chapter stages.ChapterContext, view stages.Evid
 }
 
 // gatherCandidates reads the chapter's already-persisted silence_cleanup
-// findings (Phase 5's own scan output) and turns them into the open/closed
-// statuses EmptySpaceSignal needs (D9), plus the click/breath candidates as
-// plain stages.Evidence entries (never resolved to met/not_met - Q5).
-func (s *Service) gatherCandidates(chapterID string) (statuses []CandidateStatus, clickEvidence, breathEvidence []stages.Evidence, err error) {
+// findings (the scan's own output) and turns them into open/closed statuses
+// per class (D9: dismissed is the only status that is not open), keyed by
+// evidence.class: silence, click or breath.
+func (s *Service) gatherCandidates(chapterID string) (map[string][]CandidateStatus, error) {
+	byClass := map[string][]CandidateStatus{}
 	if s.findings == nil {
-		return nil, nil, nil, nil
+		return byClass, nil
 	}
 	found, err := s.findings.List(findings.Query{Analyzer: analyzerName, ChapterID: chapterID})
 	if err != nil {
-		return nil, nil, nil, err
+		return nil, err
 	}
 	for _, finding := range found {
 		class, _ := finding.Evidence["class"].(string)
-		switch class {
-		case "silence":
-			statuses = append(statuses, CandidateStatus{Open: finding.Review.Status != findings.StatusDismissed, Evidence: findingEvidence(finding)})
-		case "click":
-			clickEvidence = append(clickEvidence, findingEvidence(finding))
-		case "breath":
-			breathEvidence = append(breathEvidence, findingEvidence(finding))
-		}
+		byClass[class] = append(byClass[class], CandidateStatus{Open: finding.Review.Status != findings.StatusDismissed, Evidence: findingEvidence(finding)})
 	}
-	return statuses, clickEvidence, breathEvidence, nil
+	return byClass, nil
 }
 
-// findingEvidence turns one click/breath finding into a stages.Evidence
-// entry (the click and breath signals carry their raw candidates as
-// evidence even though the signal itself can never resolve them, Q5).
+// findingEvidence turns one finding into a stages.Evidence entry.
 func findingEvidence(finding findings.Finding) stages.Evidence {
 	entry := stages.Evidence{Kind: "candidate", Label: "Candidate", File: finding.Source.File}
 	if finding.TimeRange != nil {

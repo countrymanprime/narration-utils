@@ -34,6 +34,12 @@ export const engineStates: StateEntry[] = [
   },
   {
     page: 'engine',
+    state: 'sync-background-wait',
+    description:
+      'The engine panel, Chapter sync with background recording checks on but waiting (?mockChapterSync=background, daw-chapter-track-auto-sync.prd.md Phase 7, ADR 0211): "Background checks: waiting, REAPER is recording." - the heartbeat\'s recording bit this stream lands',
+  },
+  {
+    page: 'engine',
     state: 'rpp-picker',
     description: 'The engine panel, more than one .rpp file found - choose-a-project-file prompt (reached via the ?mockMultipleRpp=1 mock seam)',
   },
