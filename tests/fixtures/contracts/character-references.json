@@ -1,0 +1,27 @@
+[
+  {
+    "approvedAt": "2026-09-21T10:00:00Z",
+    "changedSinceApproval": false,
+    "characterId": "alice",
+    "id": "4f0d7ef723784eaff80b779e",
+    "note": "Anchor take, chapter 1.",
+    "regionGuid": "{AAAAAAAA-0000-0000-0000-000000000001}",
+    "snapshot": {
+      "end": 3.5,
+      "name": "Alice ref A",
+      "start": 1.5
+    }
+  },
+  {
+    "approvedAt": "2026-09-21T10:00:00Z",
+    "changedSinceApproval": true,
+    "characterId": "narration",
+    "id": "8c0bc49cf7b6bf256eedfe26",
+    "regionGuid": "{BBBBBBBB-0000-0000-0000-000000000002}",
+    "snapshot": {
+      "end": 14,
+      "name": "Narration ref",
+      "start": 10
+    }
+  }
+]
