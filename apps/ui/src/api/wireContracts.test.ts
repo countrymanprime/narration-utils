@@ -48,6 +48,7 @@ import { COVERAGE_EVALUATOR_REASONS, COVERAGE_REFUSAL_REASONS, coverageResultSch
 import { workspaceAlignmentResultSchema } from './schemas/workspace';
 import { pinnedPreviewSchema, previewResultSchema } from './schemas/preview';
 import { STAGE_REFUSAL_REASONS, STAGE_UNKNOWN_CAUSES, stageDecisionResultSchema, stageRecommendationsSchema } from './schemas/stages';
+import { proofingChooseRenderResultSchema, proofingRenderSchema } from './schemas/proofingRender';
 import {
   productionBurndownSchema,
   productionOverviewSchema,
@@ -2063,6 +2064,55 @@ describe('answers of the mock client for the settings, voice, model, transcript 
     await expect(api.stageRevert('no-such-chapter')).rejects.toThrow('not a narration chapter');
   });
 
+  it('the proofing render association: none, choosing, a re-read, staleness, a measurement and clearing', async () => {
+    const api = createMockApi({}, { proofingRender: { 'chapter-2': { state: 'stale' }, 'chapter-3': { state: 'current', measured: true } } });
+
+    const none = await api.proofingRenderState('chapter-1');
+    expectMatches(proofingRenderSchema, none, 'mock proofing render, none');
+    expect(none).toMatchObject({ state: 'none', cause: 'never_analyzed' });
+
+    const stale = await api.proofingRenderState('chapter-2');
+    expectMatches(proofingRenderSchema, stale, 'mock proofing render, stale');
+    expect(stale).toMatchObject({ state: 'stale', cause: 'stale' });
+
+    const measured = await api.proofingRenderState('chapter-3');
+    expectMatches(proofingRenderSchema, measured, 'mock proofing render, already measured');
+    expect(measured).toMatchObject({ state: 'current', measurementFailed: false });
+    expect(measured.measurement?.integrated_lufs).toBeTypeOf('number');
+
+    const chosen = await api.proofingChooseRender('chapter-1');
+    expectMatches(proofingChooseRenderResultSchema, chosen, 'mock proofing choose render');
+    if (chosen.status !== 'ok') throw new Error('choosing a render must succeed in the mock');
+    expect(chosen.render).toMatchObject({ state: 'current', measurementFailed: false });
+    expect(chosen.render.path).toBeTruthy();
+    expect(chosen.render.measurement).toBeUndefined();
+
+    const reread = await api.proofingRenderState('chapter-1');
+    expect(reread).toEqual(chosen.render);
+
+    // Measuring the chosen render (DX-1's job) records the result against this chapter, the same as
+    // apps/desktop/internal/proofing/renders.go's RecordRenderMeasurements.
+    let job = await api.measureAnalyze([chosen.render.path!]);
+    while (job.phase === 'running') job = await api.measureState();
+    const afterMeasuring = await api.proofingRenderState('chapter-1');
+    expectMatches(proofingRenderSchema, afterMeasuring, 'mock proofing render, measured');
+    expect(afterMeasuring.measurement?.sample_rate).toBeTypeOf('number');
+    expect(afterMeasuring.measuredAt).toBeTruthy();
+
+    const cleared = await api.proofingClearRender('chapter-1');
+    expectMatches(proofingRenderSchema, cleared, 'mock proofing render, cleared');
+    expect(cleared).toMatchObject({ state: 'none' });
+
+    // The two ProofingChooseRender branches the mock never produces (the dialog is not simulated): pinned directly
+    // against the schema, the same convention as ProjectLinkDawFile's untested cancel-or-mismatch shapes.
+    expectMatches(proofingChooseRenderResultSchema, { status: 'cancelled' }, 'proofing choose render, cancelled');
+    expectMatches(
+      proofingChooseRenderResultSchema,
+      { status: 'refused', message: 'Link this chapter to the REAPER track it is recorded on.' },
+      'proofing choose render, refused',
+    );
+  });
+
   it('the CleanupPreview, CleanupApply, LevelMatchPreview and LevelMatchApply answers', async () => {
     const chapterId = 'chapter-1';
     const api = createMockApi({}, { findings: [editingCandidateFor(chapterId, 'Chapter One')] });
@@ -2258,6 +2308,9 @@ describe('answers of the mock client for the settings, voice, model, transcript 
       'stageConfirm',
       'stageDismiss',
       'stageRevert',
+      'proofingRenderState',
+      'proofingChooseRender',
+      'proofingClearRender',
       'productionOverview',
       'productionStartTimer',
       'productionStopTimer',

@@ -21,6 +21,7 @@ import { editingGoldens } from './editing';
 import { workspaceGoldens } from './workspace';
 import { previewGoldens } from './preview';
 import { stagesGoldens } from './stages';
+import { proofingRenderGoldens } from './proofingRender';
 import { deliveryGoldens } from './delivery';
 import { dawGoldens } from './daw';
 import { providerGoldens } from './providers';
@@ -50,6 +51,7 @@ const FEATURE_AREAS: Array<Record<string, z.ZodType>> = [
   workspaceGoldens,
   previewGoldens,
   stagesGoldens,
+  proofingRenderGoldens,
   deliveryGoldens,
   dawGoldens,
   providerGoldens,

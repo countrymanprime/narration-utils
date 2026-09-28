@@ -1268,6 +1268,31 @@ export function PronunciationLookupOpen(source: string, word: string): $Cancella
 }
 
 /**
+ * ProofingChooseRender opens the native file picker for the chapter's rendered file and, once one is chosen, attests
+ * it was made from the chapter as the saved project has it now (Q9 A). It answers {status: "cancelled"} when the
+ * narrator closes the dialog without choosing, {status: "refused", message} when the file could not be read or the
+ * chapter has no one confirmed track in the saved project, or {status: "ok", render} with the render evaluated again.
+ */
+export function ProofingChooseRender(chapterID: string): $CancellablePromise<string> {
+    return $Call.ByID(4132274041, chapterID);
+}
+
+/**
+ * ProofingClearRender removes the chapter's render association and answers the render state again (none).
+ */
+export function ProofingClearRender(chapterID: string): $CancellablePromise<string> {
+    return $Call.ByID(3281337037, chapterID);
+}
+
+/**
+ * ProofingRenderState reads the chapter's render association and, once it is current, its latest measurement of
+ * exactly that render. It starts nothing.
+ */
+export function ProofingRenderState(chapterID: string): $CancellablePromise<string> {
+    return $Call.ByID(2166190973, chapterID);
+}
+
+/**
  * ProviderCapabilities answers, for each provider port, every registered provider's label, platforms, modes, asset kind (with
  * the installed count when its catalog is present) and whether it is supported on this platform.
  */

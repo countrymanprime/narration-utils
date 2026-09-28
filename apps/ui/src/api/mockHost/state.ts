@@ -16,6 +16,7 @@ import type { MockReaperInputSeed, MockReaperSeed, TeleprompterSeed } from '../t
 import type { CoverageSeed } from '../coverageMock';
 import type { PreviewSeed } from '../previewMock';
 import type { StagesSeed } from '../stagesMock';
+import type { ProofingRenderSeed } from '../proofingRenderMock';
 import type { MockResumeSeed } from '../resumeMockSeed';
 import type { MockReaper } from '../findingsMock';
 import type { MockMeasureSeed } from '../measureMock';
@@ -150,6 +151,8 @@ export type MockApiSeed = {
   coverage?: CoverageSeed;
   /** Seeds the stage recommendations mock (a chapter's recording evidence, a live confirmation, a dismissal), see `StagesSeed`. */
   stages?: StagesSeed;
+  /** Seeds a chapter's chosen render (proofing-readiness-signals.prd.md Phase 6), see `ProofingRenderSeed`. */
+  proofingRender?: ProofingRenderSeed;
   /**
    * Boots without the offline dictionary (`missing`) or with one that fails its check (`damaged`), so a lookup answers with its first-use
    * gate (story-bible-and-import-ux-briefs.prd.md Phases 7-8). A download seed of `assets` boots without it too.

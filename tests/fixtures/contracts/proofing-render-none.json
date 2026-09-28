@@ -1,0 +1,9 @@
+{
+  "attestedAt": null,
+  "cause": "never_analyzed",
+  "measuredAt": null,
+  "measurement": null,
+  "measurementFailed": false,
+  "reason": "Choose the rendered file for this chapter.",
+  "state": "none"
+}

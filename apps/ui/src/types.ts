@@ -39,6 +39,7 @@ export * from './api/contracts/daw';
 export * from './api/contracts/providers';
 export * from './api/contracts/production';
 export * from './api/contracts/pronunciationLookup';
+export * from './api/contracts/proofingRender';
 export * from './api/contracts/prepCompleteness';
 export * from './api/contracts/renderEncodeMaster';
 
@@ -82,6 +83,7 @@ import type { DawCapabilitiesApi } from './api/contracts/daw';
 import type { ProviderCapabilitiesApi } from './api/contracts/providers';
 import type { MasteringApi } from './api/contracts/mastering';
 import type { PronunciationLookupApi } from './api/contracts/pronunciationLookup';
+import type { ProofingRenderApi } from './api/contracts/proofingRender';
 import type { PrepCompletenessApi } from './api/contracts/prepCompleteness';
 import type { RenderEncodeMasterApi } from './api/contracts/renderEncodeMaster';
 
@@ -128,5 +130,6 @@ export interface NarrationApi
     MasteringApi,
     ProductionApi,
     PronunciationLookupApi,
+    ProofingRenderApi,
     PrepCompletenessApi,
     RenderEncodeMasterApi {}
