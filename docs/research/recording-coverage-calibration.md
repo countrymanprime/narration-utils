@@ -359,26 +359,30 @@ The first run on real narration: the 14 cases built from the committed LibriVox 
 `tests/fixtures/audio/librivox-alice`). Nine `tune` cases are Kara Shallenberg's Chapters I and II, and five `held_out`
 cases are her Chapter X and Eric Leach's Chapter I. They run 10 to 14 minutes each, 173 audio minutes in all, and every
 item keeps its LibriVox preamble or closing credit as real unrelated speech. The labels come from how each case was cut,
-so they are exact. The check ran through the shipped sidecar with `small` on the same machine as above:
+so they are exact. The check ran through the shipped sidecar with `small` and `large-v3-turbo` on the same machine as
+above:
 
-| Settings | Cases | False met | False not met | Wrong verdicts |
-| --- | --- | --- | --- | --- |
-| Shipped: 0.8, 3, 8, 3 | 14 (4 complete) | 0 | 0 | none |
-| Proposed: 0.95, 3, 8, 3 | 14 (4 complete) | 0 | 3 | `kara_01-complete`, `kara_01-retakes`, `leach_01-complete` |
+| Model | Settings | Cases | False met | False not met | Wrong verdicts |
+| --- | --- | --- | --- | --- | --- |
+| small | Shipped: 0.8, 3, 8, 3 | 14 (4 complete) | 0 | 0 | none |
+| small | Proposed: 0.95, 3, 8, 3 | 14 (4 complete) | 0 | 3 | `kara_01-complete`, `kara_01-retakes`, `leach_01-complete` |
+| large-v3-turbo | Shipped: 0.8, 3, 8, 3 | 14 (4 complete) | 0 | 0 | none |
+| large-v3-turbo | Proposed: 0.95, 3, 8, 3 | 14 (4 complete) | 0 | 3 | `kara_01-complete`, `kara_01-multiple-items`, `leach_01-complete` |
 
-- **Neither setting passed a chapter that was not read.** That held for a skipped paragraph, a skipped sentence, a
-  pickup read at the end, a truncated tail, a late start and a paragraph read as another chapter's text, in both
+- **No model or setting passed a chapter that was not read.** That held for a skipped paragraph, a skipped sentence,
+  a pickup read at the end, a truncated tail, a late start and a paragraph read as another chapter's text, in both
   voices.
-- **The shipped 0.8 was right on every case.** The Proposed 0.95 failed three of the four complete chapters: `small`
-  drops or misspells enough words of some real paragraphs to bring them under 95% present. This is the false "not
-  met" cost the Piper renders could not show, and it argues for keeping 0.8.
+- **The shipped 0.8 was right on every case, with either model.** The Proposed 0.95 failed three of the four complete
+  chapters with both. So it is not only `small` mishearing: with the larger model too, some real paragraphs come out
+  under 95% present. This is the false "not met" cost the Piper renders could not show, and it argues for keeping 0.8.
 - **One case caught a mismatch the check should catch.** The script's Chapter X has the Gutenberg note "[later
   editions continued as follows" at the head of two verses, and the reader's edition does not have it. The check says
   "not met" for those five unread words, which is right. The case (`kara_10-editorial-notes-not-read`) is labelled
   that way.
 - **Sung text is in the set.** Kara sings "Beau--ootiful Soo--oop!", and even `large-v3-turbo` matched none of those
   words to the script when the corpus was aligned. The case keeps it as a hard stretch for later settings and models.
-- **Speed:** 9.5 seconds of CPU per audio minute, as on the Piper renders.
+- **Speed:** `small` took 9.5 seconds of CPU per audio minute, as on the Piper renders, and `large-v3-turbo` 15.3.
+  Neither changed a verdict at the shipped settings, so `small` stays the default.
 
 This is two readers, with 4 complete and 10 incomplete chapters: counts, not rates. It supports keeping the shipped
 defaults for these conditions on real speech. The owner's own recordings are still what removes the "uncalibrated"
