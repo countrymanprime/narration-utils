@@ -199,6 +199,9 @@ func TestTheDeclarationMatchesTodaysGating(t *testing.T) {
 	// Built, never wired, so never gated: declared Experimental so they stay off by default (PRD P2).
 	want[dawport.CapSilenceTrim] = dawport.Experimental
 	want[dawport.CapItemGain] = dawport.Experimental
+	// Declared for the mastering port's DAW row (ADR 0306) with no command yet, so no role.
+	want[dawport.CapRenderWithFX] = dawport.NotYetAvailable
+	want[dawport.CapMasterChainRead] = dawport.NotYetAvailable
 	if !maps.Equal(declared, want) {
 		t.Errorf("Declares() = %v, want %v", declared, want)
 	}

@@ -76,14 +76,31 @@ export function ReaderCard({
   const bodyId = useId();
   return (
     <article
-      className="relative mx-[var(--reader-inline)] mb-4 scroll-mt-[var(--band-h,4rem)] overflow-visible rounded-lg border border-[var(--border)] bg-[var(--surface)]"
+      // `@container` (Tailwind v4's built-in container-query support, verified against the installed
+      // tailwindcss@4.3.3): the header below reacts to this card's own rendered width, not the viewport - see the
+      // arbitrary `@min-` container variant on the header. `container-type: inline-size` only contains sizing in
+      // the inline axis and does not clip overflow (that needs `size`, not `inline-size`), so the header's sticky
+      // positioning and the toggle's `overflow-visible` are unaffected.
+      className="@container relative mx-[var(--reader-inline)] mb-4 scroll-mt-[var(--band-h,4rem)] overflow-visible rounded-lg border border-[var(--border)] bg-[var(--surface)]"
       data-chapter={chapterId ? title : undefined}
       data-chapter-id={chapterId}
       data-credits-entry={creditsKind}
       aria-label={creditsKind ? title : undefined}
     >
+      {/* The header's right-side cluster (Retail sample tag, stat block, action slot, chevron) sits beside the title
+          once the card itself has room, and wraps below it otherwise (manuscript-chapter-header-alignment.prd.md).
+          That used to be a viewport breakpoint (`md`, 768px), on the assumption that a viewport wide enough implies
+          a card wide enough - true until the Script page's mock-02 three-column layout (D85 #3, ADR 0393, superseding
+          ADR 0392): there the card's own rendered width (as little as ~520-630px at the 1440px desktop capture) can be
+          narrower than the viewport implies, so the cluster overflowed or clipped instead of wrapping (the visual
+          suite's retail-sample and markup-dialog states, stage-navigation-and-page-replacement.prd.md Phase 3). A
+          container query keys the wrap on the card's actual width in every context it renders in (Script's 2- and
+          3-column modes, a narrower Booth/companion panel), not on which viewport implies which reader width.
+          40rem (640px) is the card width the fixed-width cluster (Retail sample tag + the 6.5rem stat block + the
+          13rem action slot + their gaps + the chevron) needs to sit beside a legible title; below it, the existing
+          `max-*` classes below take over unchanged. */}
       <header
-        className={`sticky top-[var(--band-h,4rem)] z-10 grid grid-cols-[1.75rem_minmax(0,1fr)] items-center gap-3 border-[var(--border)] bg-[var(--surface)] p-3 has-[:focus-visible]:outline-2 has-[:focus-visible]:-outline-offset-2 has-[:focus-visible]:outline-[var(--accent)] md:grid-cols-[1.4rem_minmax(0,1fr)_auto] md:px-5 md:py-[0.8rem] ${expanded ? 'rounded-t-lg border-b shadow-[0_2px_6px_color-mix(in_srgb,var(--text)_8%,transparent)]' : 'rounded-lg border-b-0'}`}
+        className={`sticky top-[var(--band-h,4rem)] z-10 grid grid-cols-[1.75rem_minmax(0,1fr)] items-center gap-3 border-[var(--border)] bg-[var(--surface)] p-3 has-[:focus-visible]:outline-2 has-[:focus-visible]:-outline-offset-2 has-[:focus-visible]:outline-[var(--accent)] @min-[40rem]:grid-cols-[1.4rem_minmax(0,1fr)_auto] @min-[40rem]:px-5 @min-[40rem]:py-[0.8rem] ${expanded ? 'rounded-t-lg border-b shadow-[0_2px_6px_color-mix(in_srgb,var(--text)_8%,transparent)]' : 'rounded-lg border-b-0'}`}
       >
         {onToggleBookmark ? (
           <TooltipTarget className="relative z-[1] -ml-1 flex size-[1.4rem]" text={bookmarked ? 'Remove chapter bookmark' : 'Bookmark this chapter'}>
@@ -131,7 +148,7 @@ export function ReaderCard({
             <TitleSubtitle title={title} subtitle={subtitle} />
           </h2>
         </button>
-        <div className="flex items-center gap-3 justify-self-end text-right max-md:col-start-2 max-md:justify-self-start">
+        <div className="flex items-center gap-3 justify-self-end text-right @max-[40rem]:col-start-2 @max-[40rem]:justify-self-start">
           {showRetailSample && (
             <span className="rounded-[0.2rem] px-1.5 py-0.5 text-xs font-medium" style={{ background: 'var(--place-soft)', color: 'var(--info-text)' }}>
               Retail sample

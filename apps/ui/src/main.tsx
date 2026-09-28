@@ -229,6 +229,9 @@ const mockRegionsCapabilityOn = mockParams.has('mockRegionsCapabilityOn');
 // so "Punch from here"'s enabled state - the confirm dialog in the read-aloud rail, the pickup list's own button - can
 // be captured without also exercising the Settings toggle.
 const mockPunchCapabilityOn = mockParams.has('mockPunchCapabilityOn');
+// `?mockRecordCapabilityOn=1` turns the 'record' DAW capability on directly (the same bypass), so the Booth's Record in
+// REAPER toggle, its first-time confirm and a recording's "REC 06:42" can be captured.
+const mockRecordCapabilityOn = mockParams.has('mockRecordCapabilityOn');
 // `?mockDawPlayhead=134.6` seeds the DAW port's live transport (daw_transport_changed) as playing at that project time, for
 // the companion panel's playhead badge (booth-mode-and-companion-panel.prd.md Phase 7). Without it, the transport is stopped.
 const mockDawPlayhead = Number.parseFloat(mockParams.get('mockDawPlayhead') ?? '');
@@ -437,6 +440,7 @@ const mockInitial = {
   ...(mockRegionsCreateError ? { regionsCreateAlwaysErrors: true } : {}),
   ...(mockRegionsCapabilityOn ? { daw: { toggles: { regions: 'on' as const } } } : {}),
   ...(mockPunchCapabilityOn ? { daw: { toggles: { punch: 'on' as const } } } : {}),
+  ...(mockRecordCapabilityOn ? { daw: { toggles: { record: 'on' as const } } } : {}),
   ...(mockCoverage || mockCoverageRefusal || mockStages === 'mixed'
     ? {
         coverage: {

@@ -98,7 +98,7 @@ const PAGE_CONTENT: Partial<Record<AppPage, (page: Page) => Locator>> = {
   Booth: (page) => page.getByRole('region', { name: 'Chapter text' }),
 };
 
-// Clicks an item of the app's own navigation, and only that: the Settings category rail reuses the labels "Proofing"
+// Clicks an item of the app's own navigation, and only that: the Settings category rail reuses the labels "Proof"
 // and "Story Bible", so an unscoped query can land on the wrong control. The shell renders one of two navigation asides
 // per width (the full sidebar from 1400 px, the icon rail below), the other is display:none, and both come before <main>
 // in the DOM, so the first visible aside is the navigation.
@@ -468,7 +468,7 @@ export async function openEditingCheckFromTracks(page: Page, query: string) {
 }
 
 // Settings' own category rail (.settings-nav, a tab list) reuses the same labels as the
-// primary app nav ("Proofing", "Story Bible") - an unscoped role/name query
+// primary app nav ("Proof", "Story Bible") - an unscoped role/name query
 // matches both and .first() can silently click the wrong one (navigating
 // away from Settings instead of switching category). Always scope category
 // clicks to .settings-nav specifically.
@@ -561,6 +561,13 @@ export async function selectReaderWord(page: Page, word: string): Promise<void> 
         const range = document.createRange();
         range.setStart(candidate, match.index);
         range.setEnd(candidate, match.index + target.length);
+        // A real selection is always on screen already (a narrator can only drag-select what they can see) - this
+        // programmatic one is not, so it scrolls the words into view first. Without this, a chapter whose card sits
+        // far enough down the page (a narrower reader card wraps its header cluster below the title, taking a second
+        // row per card above it - the Script page's mock-02 three columns, D85 #3 on issue #509) can select text
+        // below the fold, and SelectionMenu's popup (`fixed`, placed from the selection's own viewport rect) then
+        // renders off-screen too, since it does not itself scroll anything into view.
+        paragraph.scrollIntoView({ block: 'center' });
         const selection = window.getSelection();
         selection?.removeAllRanges();
         selection?.addRange(range);

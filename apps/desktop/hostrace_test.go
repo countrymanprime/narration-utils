@@ -107,6 +107,8 @@ var stressReaders = []stressReader{
 	}},
 	{"DawCapabilities", func(h *Host) { _, _ = h.DawCapabilities() }},
 	{"ProviderCapabilities", func(h *Host) { _, _ = h.ProviderCapabilities() }},
+	{"MasteringProviders", func(h *Host) { _, _ = h.MasteringProviders() }},
+	{"MasteringChooseProvider (clear)", func(h *Host) { _, _ = h.MasteringChooseProvider("") }},
 	{"TracksDiscover", func(h *Host) { _, _ = h.TracksDiscover() }},
 	{"TracksList", func(h *Host) { _, _ = h.TracksList() }},
 	{"TracksSelect", func(h *Host) { _, _ = h.TracksSelect("not-a-project-file.rpp") }},

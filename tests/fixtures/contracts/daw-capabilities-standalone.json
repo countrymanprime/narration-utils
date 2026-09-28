@@ -36,6 +36,12 @@
       "message": "No DAW is connected to this app. Open this app from your DAW to use it.",
       "reason": "standalone"
     },
+    "master_chain_read": {
+      "available": false,
+      "level": "unsupported",
+      "message": "No DAW is connected to this app. Open this app from your DAW to use it.",
+      "reason": "standalone"
+    },
     "navigate": {
       "available": false,
       "level": "unsupported",
@@ -79,6 +85,12 @@
       "reason": "standalone"
     },
     "render_config": {
+      "available": false,
+      "level": "unsupported",
+      "message": "No DAW is connected to this app. Open this app from your DAW to use it.",
+      "reason": "standalone"
+    },
+    "render_with_fx": {
       "available": false,
       "level": "unsupported",
       "message": "No DAW is connected to this app. Open this app from your DAW to use it.",

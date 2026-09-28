@@ -930,6 +930,22 @@ export function ManuscriptSetChapterStatus(chapter: string, status: string): $Ca
 }
 
 /**
+ * MasteringChooseProvider saves the current project's mastering row and answers the rows again. An empty name clears the choice,
+ * so the project masters with the default row. A row that is not registered, or not available on this computer yet, is refused
+ * with its sentence, and nothing is saved.
+ */
+export function MasteringChooseProvider(name: string): $CancellablePromise<string> {
+    return $Call.ByID(611142244, name);
+}
+
+/**
+ * MasteringProviders answers the mastering rows and the current project's choice. It changes nothing.
+ */
+export function MasteringProviders(): $CancellablePromise<string> {
+    return $Call.ByID(1713708686);
+}
+
+/**
  * MeasureAnalyze measures picked files as a job and answers it; it refuses a path that was not picked, more than
  * maxMeasureFiles files, or a second measurement while one runs.
  */
