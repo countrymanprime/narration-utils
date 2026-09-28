@@ -1,7 +1,9 @@
 package main
 
 import (
+	"fmt"
 	"math"
+	"strconv"
 
 	"github.com/wailsapp/wails/v3/pkg/application"
 )
@@ -63,6 +65,63 @@ func (h *Host) WindowSetZoom(factor float64) (string, error) {
 
 func readZoom(window zoomWindow) WindowZoomResult {
 	return WindowZoomResult{Level: window.GetZoom()}
+}
+
+// appearanceTool and appearanceZoomKey hold the remembered zoom level (app-navigation-and-zoom-controls.prd.md Phase
+// 3, Q4 A: one app-wide level in global settings). There is no fieldSchemas entry for it - that is only added if Q4
+// C (a Settings > Appearance row) is taken, and it was not - so it never appears on the generic Settings page; only
+// this file's own binding and main.go's startup read ever touch it, the same way Keymap.overrides and ReadAloud's
+// rows are global/project-only tools with no fieldSchemas UI row of their own.
+const (
+	appearanceTool    = "Appearance"
+	appearanceZoomKey = "zoom"
+)
+
+// WindowSaveZoom persists the window's current zoom level, debounced, whenever the header's useZoom hook sees it
+// settle - a button, a Ctrl+=/-/0 shortcut, or the resize re-read that picks up an external Ctrl+wheel/pinch change
+// (Solution Detail: "written to global settings ... debounced"). It always saves at global scope: the level belongs
+// to this computer's window, not a project (Q4 A).
+func (h *Host) WindowSaveZoom(level float64) (string, error) {
+	return encodeBinding(nil, h.saveZoom(level, "global"))
+}
+
+// saveZoom is WindowSaveZoom's scope-checked body, factored out so a test can exercise the refusal directly (the
+// same shape as keymap_settings_test.go's saveSettings("Keymap", "project", ...) check) without going through the
+// generic fieldSchemas/saveSettings path, which appearanceTool deliberately has no entry in.
+func (h *Host) saveZoom(level float64, scope string) error {
+	if scope != "global" {
+		return fmt.Errorf("zoom is global: it belongs to this window, not a project")
+	}
+	value := strconv.FormatFloat(level, 'f', -1, 64)
+	return h.services().settings.Save(appearanceTool, "global", map[string]*string{appearanceZoomKey: &value})
+}
+
+// startupZoom reads the remembered level for main.go to pass as mainWindowOptions' Zoom, before the window - and so
+// this file's own bindings - exist. It goes through h.services() like every other read (hostguard_test.go).
+func (h *Host) startupZoom() float64 {
+	effective, _ := h.services().settings.Effective(appearanceTool, appearanceZoomKey, "")
+	return clampedStartupZoom(effective)
+}
+
+// clampedStartupZoom is startupZoom's pure body. A missing or unparsable stored value answers 0: Wails' own "leave
+// it at WebView2's default" sentinel (webview_window_windows.go only calls PutZoomFactor when options.Zoom > 0), the
+// same as a fresh install that has never saved a level. A parsed value outside [zoomMin, zoomMax] is clamped:
+// PutZoomFactor applies whatever mainWindowOptions gives it with no floor or ceiling of its own at window-creation
+// time (unlike the runtime SetZoom/ZoomOut ADR 0201 already floors), so a hand-edited file or a value stored under a
+// wider range some earlier version allowed must not reach it unclamped.
+func clampedStartupZoom(stored string) float64 {
+	level, err := strconv.ParseFloat(stored, 64)
+	if err != nil || level == 0 {
+		return 0
+	}
+	switch {
+	case level < zoomMin:
+		return zoomMin
+	case level > zoomMax:
+		return zoomMax
+	default:
+		return level
+	}
 }
 
 // nearestZoomStep clamps factor to [zoomMin, zoomMax] and snaps it to the closest value in zoomSteps. A tie (exactly
