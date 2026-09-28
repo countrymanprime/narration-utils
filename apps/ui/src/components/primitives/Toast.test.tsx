@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react';
+import { faLayerGroup } from '@fortawesome/free-solid-svg-icons';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { TOAST_INFO_MS, ToastRegion, type ToastMessage } from './Toast';
 
@@ -80,5 +81,21 @@ describe('ToastRegion', () => {
     act(() => void vi.advanceTimersByTime(600));
     expect(dismiss).toHaveBeenCalledExactlyOnceWith(2);
     expect(screen.getAllByRole('button', { name: 'Dismiss message' })).toHaveLength(2);
+  });
+
+  it('leads an information message with its icon, and an error with its warning glyph only', () => {
+    render(
+      <ToastRegion
+        messages={[
+          { ...info(1, 'Linked.'), icon: faLayerGroup },
+          { ...failure(2), icon: faLayerGroup },
+        ]}
+        dismiss={vi.fn()}
+      />,
+    );
+    expect(within(screen.getByRole('status')).getByText('Linked.').parentElement!.querySelector('svg[data-icon="layer-group"]')).not.toBeNull();
+    const error = within(screen.getByRole('alert')).getByText('Failure 2').parentElement!;
+    expect(error.querySelector('svg[data-icon="circle-exclamation"]')).not.toBeNull();
+    expect(error.querySelector('svg[data-icon="layer-group"]')).toBeNull();
   });
 });

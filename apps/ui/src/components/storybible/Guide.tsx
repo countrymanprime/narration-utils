@@ -269,7 +269,7 @@ export function Guide({ notify, goToManuscript }: { notify: Notify; goToManuscri
                   ))}
                   {sorted.length === 0 && (
                     <TableRow>
-                      <TableCell colSpan={2} className="text-sm" style={{ color: 'var(--text-muted)' }}>
+                      <TableCell colSpan={2} style={{ color: 'var(--text-muted)' }}>
                         No matching entries.
                       </TableCell>
                     </TableRow>

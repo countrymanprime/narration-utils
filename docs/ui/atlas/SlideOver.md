@@ -9,6 +9,7 @@ Storybook title: `Primitives/SlideOver`. Source: `src/components/primitives/Slid
 - Open
 - Closed
 - Long Content
+- Wide
 - Custom Close Label
 - Close Button Invokes On Close
 - Backdrop Click Invokes On Close
@@ -19,8 +20,13 @@ Storybook title: `Primitives/SlideOver`. Source: `src/components/primitives/Slid
 ## Used by
 
 - `src/components/editing/EditingCheckPanel.tsx`
-- `src/components/home/ChapterTrackPanel.tsx`
-- `src/components/home/RecordingCheck.tsx`
-- `src/components/manuscript/Manuscript.tsx`
+- `src/components/engine/EnginePanel.tsx`
+- `src/components/production/ChapterTrackPanel.tsx`
+- `src/components/production/CreditsRowPanel.tsx`
+- `src/components/production/RecordingCheck.tsx`
+- `src/components/production/StatusReportPanel.tsx`
+- `src/components/script/ScriptPage.tsx`
 - `src/components/stages/StageEvidence.tsx`
 - `src/components/storybible/GuideDetail.tsx`
+- `src/components/storybible/PronunciationQueries.tsx`
+- `src/components/storybible/VoiceDataPanel.tsx`

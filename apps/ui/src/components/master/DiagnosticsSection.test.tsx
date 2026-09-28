@@ -57,6 +57,23 @@ describe('Master & QC, Diagnostics', () => {
     expect(within(thresholds).getByText('2.0 s or longer, only from transcript timing')).toBeTruthy();
     expect(screen.getByText(/Nothing checked yet/)).toBeTruthy();
     expect(screen.queryByRole('button', { name: /Check the measured files/ })).toBeNull();
+
+    const cleanup = screen.getByRole('region', { name: 'Silence cleanup candidates' });
+    expect(within(cleanup).getByText('0.1 s')).toBeTruthy();
+    expect(within(cleanup).getByText('0.1 s to 0.9 s')).toBeTruthy();
+    expect(within(cleanup).queryByRole('table', { name: 'Silence cleanup candidates' })).toBeNull();
+  });
+
+  it('opens Settings > Silence cleanup from the candidates panel', async () => {
+    const openSettings = vi.fn();
+    render(
+      <ApiProvider api={createMockApi({}, {})}>
+        <MasterQcPage openSettings={openSettings} />
+      </ApiProvider>,
+    );
+    const cleanup = await screen.findByRole('region', { name: 'Silence cleanup candidates' });
+    await userEvent.setup().click(within(cleanup).getByRole('button', { name: 'Open Settings' }));
+    expect(openSettings).toHaveBeenCalled();
   });
 
   it('checks picked files and lists each finding with its time, measured value, threshold and source, read-only', async () => {
@@ -89,6 +106,23 @@ describe('Master & QC, Diagnostics', () => {
     expect(within(rowOf(files, 'Chapter 03.mp3')).getByText('Could not be checked: not a RIFF/WAVE file')).toBeTruthy();
     expect(screen.getByText('Checked 2 of 3 files; 1 could not be checked.')).toBeTruthy();
     expect(screen.getByText('3 findings to listen to.')).toBeTruthy();
+  });
+
+  it('lists silence cleanup candidates apart from Findings, read-only', async () => {
+    const overrides = checksAtOnce();
+    const { user } = await openDiagnostics({ overrides });
+    await user.click(screen.getByRole('button', { name: 'Choose files to check…' }));
+    await screen.findByText('Checked 2 of 3 files; 1 could not be checked.');
+
+    const candidates = screen.getByRole('table', { name: 'Silence cleanup candidates' });
+    expect(within(rowOf(candidates, 'Silence')).getByText(/1\.00 s below the silence floor/)).toBeTruthy();
+    expect(within(rowOf(candidates, 'Breath')).getByText(/quiet and strongly noise-like/)).toBeTruthy();
+    expect(within(rowOf(candidates, 'Click')).getByText(/a burst of 30 ms with silence on both sides/)).toBeTruthy();
+    // Not mixed into the plain Findings table above.
+    const findings = screen.getByRole('table', { name: 'Findings' });
+    expect(within(findings).queryAllByText(/silence candidate|breath candidate|click candidate/)).toEqual([]);
+    // Read-only: nothing to apply from this list.
+    expect(within(candidates).queryAllByRole('button')).toEqual([]);
   });
 
   it('checks the files already measured without picking them again', async () => {

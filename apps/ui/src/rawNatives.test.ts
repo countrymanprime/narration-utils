@@ -51,7 +51,6 @@ const CEILING: Record<NativeTag, Record<string, number>> = {
     // bible entries above (two lines of text and a current state), which Button's padded, uppercase chrome does not fit. One
     // JSX `<button>`, written once inside the flags `.map()`.
     'src/components/booth/ReaderFlagsPanel.tsx': 1,
-    'src/components/storybible/GuideDetail.tsx': 1,
     // The engine panel (stage-navigation-and-page-replacement.prd.md Phase 6) took the Tracks page's two: its .rpp picker's
     // full-width path rows (a mono file path, which Button's uppercase chrome would mangle) stay one JSX `<button>` inside the
     // candidates `.map()`; the track rows' selection buttons went with the player.
