@@ -32,10 +32,12 @@ const ANALYZER_LABELS: Record<string, string> = {
   measure: 'Delivery measurement',
 };
 
+/** A status where no single note is in view (the Status filter), in mock 04's words (D85 #7, `resolution.ts`): an accepted note is a
+ * pickup or an edit, a dismissed one is waived. */
 export const STATUS_LABELS: Record<FindingReviewStatus, string> = {
   unreviewed: 'To review',
-  accepted: 'Accepted',
-  dismissed: 'Dismissed',
+  accepted: 'Pickup or edit',
+  dismissed: 'Waived',
   deferred: 'Deferred',
 };
 
@@ -146,4 +148,13 @@ export function formatDecidedAt(timestamp: string | undefined): string | undefin
   if (!timestamp) return undefined;
   const date = new Date(timestamp);
   return Number.isNaN(date.getTime()) ? timestamp : date.toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
+}
+
+/** The stretch of recording a note is about, as its own audio file and file-relative seconds, for Play ±3 s (mock 04, PF8).
+ * Undefined when the analyzer recorded no file or no file-relative time (a Story Bible entry, an older comparison). */
+export function playableClip(finding: Finding): { sourceFile: string; rangeStart: number; rangeEnd: number } | undefined {
+  const file = finding.source.file;
+  const start = finding.time_range?.source_start;
+  if (!file || start === undefined) return undefined;
+  return { sourceFile: file, rangeStart: start, rangeEnd: Math.max(start, finding.time_range?.source_end ?? start) };
 }

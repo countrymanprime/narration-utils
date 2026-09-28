@@ -24,7 +24,15 @@ const linkedTrackGuid = WIRE_TRACKS_PROJECT.tracks[0].guid;
 type PageProps = Parameters<typeof ProofChapterPage>[0];
 
 function renderWorkspace(overrides: Partial<NarrationApi> = {}, initial: Parameters<typeof createMockApi>[1] = {}, page: Partial<PageProps> = {}) {
-  const props: PageProps = { notify: () => {}, transcript: WIRE_TRANSCRIPT, dawFileLinked: true, goToManuscript: () => {}, refreshKey: 'test', ...page };
+  const props: PageProps = {
+    notify: () => {},
+    transcript: WIRE_TRANSCRIPT,
+    dawFileLinked: true,
+    goToManuscript: () => {},
+    goToStoryBible: () => {},
+    refreshKey: 'test',
+    ...page,
+  };
   const api = createMockApi(overrides, {
     chapterTrackMappings: [{ trackGuid: linkedTrackGuid, chapterId: chapter.id, chapterTitle: chapter.title, confirmedAt: '2026-01-01T00:00:00Z' }],
     ...initial,
@@ -55,7 +63,7 @@ describe('ProofChapterPage', () => {
     await screen.findByRole('heading', { name: `Proof · ${chapterName(chapter)}` });
     expect(await screen.findByText(/Flags/)).toBeTruthy();
     // The mock places one deterministic misread flag on a current, fully-recorded chapter.
-    expect(await screen.findByText('Misread')).toBeTruthy();
+    expect((await screen.findAllByText('Misread')).length > 0).toBeTruthy();
   });
 
   it('plays from a clicked word', async () => {
@@ -139,7 +147,16 @@ describe('ProofChapterPage', () => {
             <Routes>
               <Route
                 path="/proof/:chapterId"
-                element={<ProofChapterPage notify={() => {}} transcript={WIRE_TRANSCRIPT} dawFileLinked goToManuscript={() => {}} refreshKey="test" />}
+                element={
+                  <ProofChapterPage
+                    notify={() => {}}
+                    transcript={WIRE_TRANSCRIPT}
+                    dawFileLinked
+                    goToManuscript={() => {}}
+                    goToStoryBible={() => {}}
+                    refreshKey="test"
+                  />
+                }
               />
             </Routes>
           </MemoryRouter>
@@ -163,13 +180,15 @@ describe('ProofChapterPage findings in the text (Phase 4)', () => {
     const user = userEvent.setup();
     renderWorkspace();
     await screen.findByRole('heading', { name: `Proof · ${chapterName(chapter)}` });
-    await screen.findByText('Misread');
+    await screen.findAllByText('Misread');
 
     // The mock's only flag on this chapter is the misread; "Next flag" selects it (same as the ]/[ keyboard tests).
     await user.click(await screen.findByRole('button', { name: 'Next flag' }));
-    expect(await screen.findByText('From')).toBeTruthy();
-    expect(await screen.findByText(/Local AI compare/)).toBeTruthy();
-    expect(screen.getAllByText('Misread')).toHaveLength(2); // the legend row, and the selected flag's own heading - never a second flag row
+    expect(await within(screen.getByRole('region', { name: /^Flags/ })).findByText('From')).toBeTruthy();
+    expect(await within(screen.getByRole('region', { name: /^Flags/ })).findByText(/Local AI compare/)).toBeTruthy();
+    // The flags legend row and the selected flag's own heading - never a second flag row (the third is the notes table's Type chip).
+    const flagsPanel = screen.getByRole('region', { name: /^Flags/ });
+    expect(within(flagsPanel).getAllByText('Misread')).toHaveLength(2);
   });
 
   it('accepts a finding-backed flag in place, and the decision shows without leaving the page', async () => {
@@ -178,8 +197,8 @@ describe('ProofChapterPage findings in the text (Phase 4)', () => {
     await screen.findByRole('heading', { name: `Proof · ${chapterName(chapter)}` });
     await user.click(await screen.findByRole('button', { name: 'Next flag' }));
 
-    await user.click(await screen.findByRole('button', { name: 'Accept' }));
-    expect(await screen.findByText('Saved as accepted.')).toBeTruthy();
+    await user.click(await screen.findByRole('button', { name: 'Pickup' }));
+    expect(await screen.findByText('Saved: needs a pickup.')).toBeTruthy();
 
     const decided = await api.findingsGet('workspace-overlay-chapter-1');
     expect(decided.review.status).toBe('accepted');
@@ -194,7 +213,7 @@ describe('ProofChapterPage findings in the text (Phase 4)', () => {
     const note = await screen.findByLabelText('Note (optional)');
     await user.type(note, 'a'.repeat(2001));
     expect(await screen.findByText(/at most 2000 characters/)).toBeTruthy();
-    expect(screen.getByRole('button', { name: 'Accept' }).hasAttribute('disabled')).toBe(true);
+    expect(screen.getByRole('button', { name: 'Pickup' }).hasAttribute('disabled')).toBe(true);
   });
 
   it('does not offer a decision on a flag with no backing finding', async () => {
@@ -206,7 +225,7 @@ describe('ProofChapterPage findings in the text (Phase 4)', () => {
     await user.click(await screen.findByRole('button', { name: 'Next flag' }));
 
     expect(screen.queryByText('Decision')).toBeNull();
-    expect(screen.queryByRole('button', { name: 'Accept' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Pickup' })).toBeNull();
   });
 
   it('selects the flag a ?finding= deep link names ("Open chapter view" from Proof’s notes, Home or the Manuscript)', async () => {
@@ -222,7 +241,16 @@ describe('ProofChapterPage findings in the text (Phase 4)', () => {
             <Routes>
               <Route
                 path="/proof/:chapterId"
-                element={<ProofChapterPage notify={() => {}} transcript={WIRE_TRANSCRIPT} dawFileLinked goToManuscript={() => {}} refreshKey="test" />}
+                element={
+                  <ProofChapterPage
+                    notify={() => {}}
+                    transcript={WIRE_TRANSCRIPT}
+                    dawFileLinked
+                    goToManuscript={() => {}}
+                    goToStoryBible={() => {}}
+                    refreshKey="test"
+                  />
+                }
               />
             </Routes>
           </MemoryRouter>
@@ -230,8 +258,8 @@ describe('ProofChapterPage findings in the text (Phase 4)', () => {
       </ApiProvider>,
     );
     await screen.findByRole('heading', { name: `Proof · ${chapterName(chapter)}` });
-    expect(await screen.findByText('From')).toBeTruthy();
-    expect(await screen.findByText(/Local AI compare/)).toBeTruthy();
+    expect(await within(screen.getByRole('region', { name: /^Flags/ })).findByText('From')).toBeTruthy();
+    expect(await within(await screen.findByRole('region', { name: /^Flags/ })).findByText(/Local AI compare/)).toBeTruthy();
   });
 });
 
@@ -366,6 +394,44 @@ describe('ProofChapterPage compare results (stage navigation Phase 5)', () => {
     const panel = await flagsPanel();
     await within(panel).findByText('Extra words');
     expect(((await selectCompareFlag(user, panel)) as HTMLButtonElement).disabled).toBe(true);
-    expect((screen.getByRole('button', { name: /Export/ }) as HTMLButtonElement).disabled).toBe(true);
+    expect((screen.getByRole('button', { name: /Export \d+ marker/ }) as HTMLButtonElement).disabled).toBe(true);
+  });
+});
+
+// D85 #2 and #11 on #509 (ADR 0470): the chapter view leads with mock 04 - the notes strip, the chapter's notes table and a
+// note's detail - and edit-and-proof mock 01's recording-check card.
+describe('ProofChapterPage, mock 04 on the chapter view', () => {
+  it('lists the chapter’s notes with no Chapter column, under the notes header', async () => {
+    renderWorkspace();
+    const table = await screen.findByRole('table', { name: 'Notes' });
+    await waitFor(() => expect(within(table).getAllByRole('row').length).toBeGreaterThan(1));
+    const headers = within(table)
+      .getAllByRole('columnheader')
+      .map((header) => header.textContent);
+    expect(headers).toEqual(['Time', 'Type', 'Script vs. heard', 'From', 'Resolution']);
+    expect(screen.getByRole('heading', { name: /^Notes · \d+$/ })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Import proofer sheet' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Export for proofer' })).toBeTruthy();
+  });
+
+  it('pins each timed note on the strip, and a pin opens the note with Play ±3 s', async () => {
+    const user = userEvent.setup();
+    renderWorkspace();
+    const strip = await screen.findByRole('region', { name: 'Notes in the recording' });
+    const pins = within(strip).getAllByRole('button');
+    expect(pins.length).toBeGreaterThan(0);
+    await user.click(pins[0]);
+    const play = await screen.findByRole('button', { name: 'Play ±3 s' });
+    expect((play as HTMLButtonElement).disabled).toBe(false);
+    await user.click(play);
+    expect(await screen.findByRole('button', { name: 'Stop' })).toBeTruthy();
+  });
+
+  it('shows the recording-check card with the chapter’s own figures', async () => {
+    renderWorkspace();
+    const card = await screen.findByRole('region', { name: 'Recording check' });
+    expect(await within(card).findByText('Recorded')).toBeTruthy();
+    expect(within(card).getByText('100%')).toBeTruthy();
+    expect(within(card).getByText(/Current for the project saved/)).toBeTruthy();
   });
 });

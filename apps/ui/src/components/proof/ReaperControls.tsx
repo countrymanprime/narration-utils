@@ -14,7 +14,7 @@ const NO_ITEM = 'This finding has no REAPER item to go to, because it came from 
 const NO_SOURCE_TIME = 'This finding has no time in its audio to loop. Go to it instead.';
 const CHECKING = 'Checking whether REAPER is connected…';
 // The approved marker's own reasons (apps/desktop/bindings_marker.go): only an accepted finding gets one (review dashboard Phase 8).
-const NOT_ACCEPTED = 'Accept this finding first. Only a finding you accepted gets a marker in REAPER.';
+const NOT_ACCEPTED = 'Mark this note as a pickup or an edit first. Only a note you mean to fix gets a marker in REAPER.';
 const MARKER_NO_SOURCE_TIME = 'This finding has no time in its audio to put a marker at.';
 
 /** A finding has audio to go to when an analyzer recorded where it is in REAPER or in time; a Story Bible entry has neither. */

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useApi } from '../../api/ApiContext';
+import { useRangePlayer } from '../engine/useRangePlayer';
 import { apiErrorMessage } from '../../api/errorMessage';
 import { MAX_REVIEW_NOTE_LENGTH } from '../../api/contracts/findings';
 import { usePendingAction } from '../../hooks/usePendingAction';
@@ -18,22 +19,20 @@ import {
   categoryLabel,
   chapterLabel,
   confidenceLabel,
+  evidenceKindLabel,
   evidenceRows,
   formatDecidedAt,
   formatTime,
+  playableClip,
   severityLabel,
-  STATUS_LABELS,
 } from './findingFormat';
+import { DECISION_ORDER, decisionLabel, fixKindOf, resolutionOf, savedMessage } from './resolution';
 
 const STALE_MESSAGE =
   'Not saved: this finding changed since you opened it, because its check ran again. The latest version is shown now. Look at it again, then decide.';
 
-// The decisions a narrator can make, in the order the buttons show them. "Reopen" puts a decided finding back in the queue.
-const DECISIONS: Array<{ status: FindingReviewStatus; label: string; variant: 'primary' | 'ghost' }> = [
-  { status: 'accepted', label: 'Accept', variant: 'primary' },
-  { status: 'dismissed', label: 'Dismiss', variant: 'ghost' },
-  { status: 'deferred', label: 'Defer', variant: 'ghost' },
-];
+// Mock 04's "Play ±3 s": the note's own stretch of recording with three seconds either side, in the app.
+const PLAY_ROLL = { pre: 3, post: 3 };
 
 function Facts({ rows, label }: { rows: Array<{ label: string; value: string }>; label: string }) {
   if (rows.length === 0) return null;
@@ -92,6 +91,9 @@ export function FindingDetail({
   const [saved, setSaved] = useState<string>();
   const action = usePendingAction();
   const noteTooLong = [...note].length > MAX_REVIEW_NOTE_LENGTH;
+  const fix = fixKindOf(finding);
+  const player = useRangePlayer(api.mediaUrl, PLAY_ROLL);
+  const clip = playableClip(finding);
 
   const decide = (status: FindingReviewStatus) =>
     action.run(status, async () => {
@@ -101,7 +103,7 @@ export function FindingDetail({
       try {
         const decided = await api.findingsReview({ id: finding.id, evidenceVersion: shownVersion, status, note: note.trim() });
         onChanged(decided, true);
-        setSaved(status === 'unreviewed' ? 'Put back in the queue.' : `Saved as ${STATUS_LABELS[status].toLowerCase()}.`);
+        setSaved(savedMessage(status, fix));
       } catch (error) {
         await explainRefusal(error, shownVersion);
       }
@@ -164,7 +166,8 @@ export function FindingDetail({
   const decided = finding.review.status !== 'unreviewed';
 
   return (
-    <Panel title={categoryLabel(finding.category)}>
+    // Mock 04's detail title, "02:14.6 · Misread": the note's time and kind; a note with no time is named by its kind alone.
+    <Panel title={finding.time_range ? `${formatTime(finding.time_range.start)} · ${evidenceKindLabel(finding)}` : categoryLabel(finding.category)}>
       {finding.not_in_latest_run && (
         <p className="mt-3 rounded-md border border-[var(--border)] bg-[var(--surface-2)] px-3 py-2 text-sm">
           The latest run did not find this again. It is kept here with your decision so nothing you decided is lost.
@@ -179,6 +182,13 @@ export function FindingDetail({
         <b>{confidenceLabel(finding.confidence)}</b>. {finding.confidence_reason}
       </p>
       <div className="mt-3 flex flex-wrap gap-2">
+        {!delivery && (
+          <TooltipTarget text={clip ? 'Play this note in the app, from 3 s before it to 3 s after' : 'This note has no place in a recording to play.'}>
+            <Button variant="ghost" onClick={() => (player.isPlaying ? player.stop() : clip && player.play(clip))} disabled={!clip}>
+              {player.isPlaying ? 'Stop' : 'Play ±3 s'}
+            </Button>
+          </TooltipTarget>
+        )}
         {deliveryFile ? (
           <TooltipTarget text="Open the Delivery page on this file, rule by rule">
             <Button variant="ghost" onClick={() => goToDelivery(deliveryFile, delivery?.rule)}>
@@ -205,6 +215,11 @@ export function FindingDetail({
           </TooltipTarget>
         )}
       </div>
+      {player.loadError && (
+        <p role="alert" className="mt-2 text-sm" style={{ color: 'var(--danger-text)' }}>
+          The recording could not be played. Its audio file may have moved.
+        </p>
+      )}
       {reads ? (
         <TakeReviewReads finding={finding} evidence={reads} status={reaperStatus} onStatusChange={onReaperStatusChange} onCompared={onCompared} />
       ) : comparison ? (
@@ -215,7 +230,7 @@ export function FindingDetail({
 
       <h3 className="mt-5 text-sm font-semibold">Decision</h3>
       <p className="mt-1 text-sm" style={{ color: 'var(--text-muted)' }}>
-        {decided ? `${STATUS_LABELS[finding.review.status]}${decidedAt ? ` on ${decidedAt}` : ''}.` : 'Not decided yet.'}
+        {decided ? `${resolutionOf(finding).label}${decidedAt ? ` on ${decidedAt}` : ''}.` : 'Not decided yet.'}
       </p>
       <div className="mt-3">
         <Field
@@ -227,15 +242,15 @@ export function FindingDetail({
         />
       </div>
       <div className="mt-3 flex flex-wrap gap-2">
-        {DECISIONS.map((decision) => (
+        {DECISION_ORDER.map((status) => (
           <Button
-            key={decision.status}
-            variant={decision.variant}
-            onClick={() => void decide(decision.status)}
-            pending={action.isPending(decision.status)}
-            disabled={noteTooLong || action.isBlockedFor(decision.status)}
+            key={status}
+            variant={status === 'accepted' ? 'primary' : 'ghost'}
+            onClick={() => void decide(status)}
+            pending={action.isPending(status)}
+            disabled={noteTooLong || action.isBlockedFor(status)}
           >
-            {decision.label}
+            {decisionLabel(status, fix)}
           </Button>
         ))}
         {decided && (
