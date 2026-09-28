@@ -22,7 +22,7 @@ The visual audit left three Production layout questions to the owner: PR3 (the p
 
 ## Decision
 
-**StatusBadge** gains a fourth shape, `cell`: 20 px tall and at least 58 px wide, on `--radius-tag`, its label centred in Barlow Condensed 600 at `--font-size-label` in its own case, and never wrapped. A long label ("Evidence changed") widens the cell rather than breaking it. This is the one badge whose height is fixed, against ADR 0600's clause 6: a cell sits in a board that scrolls sideways inside its card, so it never pushes the page sideways, and a wrapped cell would break the rows the mock lines up.
+**StatusBadge** gains a fourth shape, `cell`: 20 px tall and at least 58 px wide, on `--radius-tag`, its label centred in Barlow Condensed 600 at `--font-size-label` in its own case, never wrapped, and clipped inside the cell if it is longer, so it never draws over the next column. This is the one badge whose height is fixed, against ADR 0600's clause 6: a wrapped cell would break the rows the mock lines up, and a board keeps its labels short instead.
 
 **StageGrid** takes mock 01's board:
 
@@ -40,6 +40,7 @@ The visual audit left three Production layout questions to the owner: PR3 (the p
 - **Figures:** the six figures are one `StatStrip`. The finished-audio hint is one line ("6 of 12 chapters measured"); the "~" on the target already says it is an estimate.
 - **Board card:** a flush `Panel`. Its header holds the subtitle "every cell opens that stage for the chapter" (the Recorded explanation moves to a tooltip), with the stage suggestion chips as the header's actions, where the mock draws its filter. A failed suggestion read or a project note sits in a strip under the header.
 - **Board rows:** the chapter a timer runs on is the current row, in bold. The Recorded length is a mono figure.
+- **Board labels** fit the 58 px cell: a stage whose evidence changed since it was confirmed reads "Changed" (the chip over the board says whose), and a recording check under way reads its percent ("70%"), as mock 01 draws a stage under way. The slide-overs keep the full wording.
 - **PR9, column order:** the mock's order, Recorded then Prep, Record, Edit, Proof and Delivery. Moving Prep before Record was "a layout choice" in the audit; the mock's order is the pipeline's order.
 - **PR12, side by side:** the board and Next up sit side by side from a 1280 px window, Next up in a 21.25 rem column. Below that they stack with Next up first, as before. #760's reason for stacking was that the board squeezed out Delivery at 1440 px. It no longer holds: the board's cells are 58 px, and its columns fit in 810 px.
 - **Next up:** a Panel with the subtitle "ranked by deadline risk" (the order's explanation moves to a tooltip). Each item is two lines: the chapter's name in bold, then what to do and why, muted. The item's Start timer button is `size="sm"`.

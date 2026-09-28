@@ -15,7 +15,8 @@ export type StatusTone = 'neutral' | 'info' | 'progress' | 'accent' | 'success' 
  * - `booth`: the Booth's speaker tag beside the script (mock 03). A tag at 26 px, radius 4, 8 px each side.
  * - `cell`: a Production board cell (mock 01, ADR 0645). A flat 20 px block at least 58 px wide, on the tag radius, its
  *   label centred in Barlow Condensed 600 at the 11 px label size in its own case ("✓", "3 open", "PASS"), so every cell
- *   of a column lines up whatever it says.
+ *   of a column lines up whatever it says. A label longer than the cell is clipped inside it: a board's caller keeps its
+ *   labels short.
  */
 export type BadgeShape = 'pill' | 'tag' | 'booth' | 'cell';
 
@@ -55,7 +56,7 @@ const SHAPE_CLASS: Record<BadgeShape, string> = {
   pill: 'min-h-[1.375rem] gap-[0.35rem] rounded-full px-[0.5625rem] py-[0.1rem] text-[0.72rem] tracking-[0.06em]',
   tag: 'min-h-4 gap-1 rounded-[var(--radius-tag)] px-[0.3125rem] py-0 text-[length:var(--font-size-label)] tracking-[0.06em] uppercase',
   booth: 'min-h-[1.625rem] gap-1 rounded-[0.25rem] px-[0.4375rem] py-[0.1rem] text-[0.75rem] tracking-[0.06em] uppercase',
-  cell: 'h-5 min-w-[3.625rem] justify-center gap-1 rounded-[var(--radius-tag)] px-1.5 py-0 text-[length:var(--font-size-label)] tracking-[0.04em] whitespace-nowrap',
+  cell: 'h-5 min-w-[3.625rem] justify-center gap-1 overflow-hidden rounded-[var(--radius-tag)] px-1.5 py-0 text-[length:var(--font-size-label)] tracking-[0.04em] whitespace-nowrap',
 };
 
 /** The class list of a badge of `shape`, for an element that is not a `Badge` (a Menu trigger, a speaker tag button). */

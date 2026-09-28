@@ -260,7 +260,7 @@ export const productionStates: StateEntry[] = [
     page: 'production',
     state: 'stage-summary-chips',
     description:
-      "Production, the board with its stage suggestion chips (?mockStages=mixed): one chapter has a suggestion, one chapter’s evidence changed, and those chapters' current-stage cells read Ready and Evidence changed",
+      "Production, the board with its stage suggestion chips (?mockStages=mixed): one chapter has a suggestion, one chapter’s evidence changed, and those chapters' current-stage cells read Ready and Changed",
     ...KEEPS_DESKTOP_SCROLL,
   },
   {

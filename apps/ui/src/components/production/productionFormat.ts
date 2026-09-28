@@ -95,13 +95,15 @@ export function boardCell(chapter: ProductionChapter, column: BoardColumn, live:
       : { tone: 'neutral', label: formatLength(chapter.recordedSeconds) };
   }
   if (column.stage === 'recording' && live.checkingPercent !== undefined) {
-    return { tone: 'progress', label: live.checkingPercent === null ? 'Checking' : `Checking ${Math.floor(live.checkingPercent)}%` };
+    // The percent alone, as mock 01 draws a stage under way: the cell is 58 px (ADR 0645) and the slide-over says what runs.
+    return { tone: 'progress', label: live.checkingPercent === null ? 'Checking' : `${Math.floor(live.checkingPercent)}%` };
   }
   const at = STATUS_ORDER.indexOf(chapter.status);
   const stage = STATUS_ORDER.indexOf(column.stage);
   if (at > stage) return { tone: 'success', label: '✓' };
   if (at < stage) return { tone: 'neutral', label: DASH };
-  if (live.contradiction) return { tone: 'warning', label: 'Evidence changed' };
+  // "Changed": the summary chip over the board says whose evidence changed, and the cell is 58 px (ADR 0645).
+  if (live.contradiction) return { tone: 'warning', label: 'Changed' };
   switch (chapter.readiness?.verdict) {
     case 'recommended':
       return { tone: 'info', label: 'Ready' };

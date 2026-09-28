@@ -90,6 +90,8 @@ describe('StatusBadge', () => {
     expect(cell.className).toContain('h-5');
     expect(cell.className).toContain('min-w-[3.625rem]');
     expect(cell.className).toContain('justify-center');
+    // A label longer than the cell is clipped inside it, never drawn over the next column.
+    expect(cell.className).toContain('overflow-hidden');
     expect(cell.className).toContain('rounded-[var(--radius-tag)]');
     expect(cell.className).not.toContain('uppercase');
   });
