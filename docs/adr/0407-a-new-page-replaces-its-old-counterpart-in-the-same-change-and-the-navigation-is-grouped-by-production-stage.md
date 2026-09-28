@@ -1,6 +1,6 @@
 # 0407. A new page replaces its old counterpart in the same change, and the navigation is grouped by production stage
 
-**Status:** Proposed
+**Status:** Accepted
 **Date:** 2026-09-27
 
 ## Context
@@ -17,7 +17,7 @@ On 2026-09-27 the owner decided against that (D79 on #509): "the 'booth' page ba
 2. **A component the new page keeps moves; it is not copied.** Where the replacement reuses part of the old page (the teleprompter session, the reader's paragraph renderer, the findings list, the delivery tables), the file moves to the new page's feature folder or stays where it is and is imported, and the old page's copy never lives on.
 3. **The navigation is grouped by stage.** `AppShell.tsx`'s `NAV` becomes a list of groups: **Production**, **Prep**, **Record**, **Review** and **Finish**, with Settings pinned at the foot. A page's nav item sits in the group of the stage it serves, and a new page names its group in its PRD. On the wide rail the group names are text labels; on the icon-only rail and in the drawer they are dividers with the group name as the accessible name. The groups are drawn with the existing `NavButton` and `NavDrawer` primitives and the `section-label` style; no new primitive.
 4. **The top bar is one design.** From the left: the drawer button (below `md`), Back and Forward, the project name (and, once a project belongs to a series, its series chip), then, on the right, a running-timer chip while a stage timer runs, the zoom group, and the **engine chip**. The engine chip replaces the REAPER link pill, keeps its link action and its three states (linked, wrong project open, not linked) and adds a fourth, "Built-in recorder", which the UI can draw but which nothing selects until native recording is built.
-5. **Not every mock nav item becomes a page.** A nav item exists only for a page that exists. The mocks' Schedule, Pickups and Delivery items are covered by [Stage Navigation and Page Replacement](../prds/stage-navigation-and-page-replacement.prd.md): Pickups is a page of its own, Schedule stays Production's plan panel and Delivery stays the package panel of Master & QC until either needs a page.
+5. **Not every mock nav item becomes a page.** A nav item exists only for a page that exists. The mocks' Schedule, Pickups and Delivery items were covered by stage navigation and page replacement (delivered and deleted; see [Navigation](../guides/using-the-app/navigation.md)): Pickups is a page of its own, Schedule stays Production's plan panel and Delivery stays the package panel of Master & QC until either needs a page.
 
 ## Consequences
 
