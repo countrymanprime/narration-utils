@@ -1,3 +1,4 @@
+import { faLayerGroup } from '@fortawesome/free-solid-svg-icons';
 import { describeApiError } from '../../api/errorMessage';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
@@ -11,6 +12,7 @@ import { useChapterSync } from '../../hooks/useChapterSync';
 import { Button } from '../primitives/Button';
 import { Panel } from '../primitives/Panel';
 import { Select } from '../primitives/Select';
+import { Tooltip } from '../primitives/Tooltip';
 import { StageGrid, type StageGridCell } from '../primitives/StageGrid';
 import type { Notify } from '../primitives/Toast';
 import { EditingCheckPanel } from '../editing/EditingCheckPanel';
@@ -119,12 +121,17 @@ export function ChapterBoard({
     if (!batch || batch.linked.length === 0 || lastBatchAt.current === batch.at) return;
     lastBatchAt.current = batch.at;
     const trackName = (guid: string) => trackLinks?.tracks.find((track) => track.guid === guid)?.name;
-    notify(chapterSyncBatchToastText(batch, trackName), 'info', {
-      label: 'Undo',
-      onAction: () => {
-        void Promise.all(batch.linked.map((link) => api.chapterSyncUndo(link.trackGuid))).catch((error) => notify(describeApiError(error), 'error'));
+    notify(
+      chapterSyncBatchToastText(batch, trackName),
+      'info',
+      {
+        label: 'Undo',
+        onAction: () => {
+          void Promise.all(batch.linked.map((link) => api.chapterSyncUndo(link.trackGuid))).catch((error) => notify(describeApiError(error), 'error'));
+        },
       },
-    });
+      faLayerGroup,
+    );
     void loadTrackLinks();
   }, [chapterSync?.batch, trackLinks, api, notify, loadTrackLinks]);
 
@@ -227,7 +234,7 @@ export function ChapterBoard({
     const column = BOARD_COLUMNS[colIndex];
     if (row.kind === 'credits') {
       const base = creditsCell(creditsRows![row.credits], column);
-      return { ...base, onActivate: () => setCredits({ kind: row.credits, open: true }) };
+      return { ...base, ...(column.kind === 'recorded' ? { look: 'text' as const } : {}), onActivate: () => setCredits({ kind: row.credits, open: true }) };
     }
     const { chapter } = row;
     const running = coverage.phase === 'running' && coverage.chapterId === chapter.id;
@@ -241,7 +248,8 @@ export function ChapterBoard({
     };
     if (column.kind === 'recorded') {
       const link = trackLinks?.chapters.find((entry) => entry.chapterId === chapter.id);
-      return link ? { ...base, onActivate: () => setTrackChapter({ chapterId: chapter.id, open: true }) } : base;
+      const figure = { ...base, look: 'text' as const };
+      return link ? { ...figure, onActivate: () => setTrackChapter({ chapterId: chapter.id, open: true }) } : figure;
     }
     if (column.kind === 'unavailable') return column.name === 'Prep' ? { ...base, onActivate: () => goToScript(chapter.id) } : base;
     if (isCurrentStage(chapter, column)) return { ...base, onActivate: () => setWhy({ chapterId: chapter.id, open: true }) };
@@ -281,181 +289,200 @@ export function ChapterBoard({
     return `${text.label}${text.detail ? ` · ${text.detail}` : ''}`;
   };
 
+  // Mock 01 bolds the chapter the work is on: the one a timer runs on.
+  const currentRow = overview.running ? rows.findIndex((row) => row.kind === 'chapter' && row.chapter.id === overview.running?.chapterId) : -1;
+
   return (
-    <Panel title="Chapter pipeline">
-      <p className="mt-1 text-xs" style={MUTED}>
-        Every cell opens that stage for the chapter. Recorded is the audio on the chapter&apos;s linked REAPER track, as of the saved project.
-      </p>
-      <StageSummaryChips state={stages.state} onShow={showFirstSuggestion} />
-      <StageCheckLine state={stages.state} onCheckNow={() => void stages.refresh()} />
-      {trackLinks && trackLinks.project !== 'ready' && (
-        <p className="py-1.5 text-sm" style={MUTED}>
-          {trackLinks.message}
-          {trackLinks.project === 'choose' && (
-            <>
-              {' '}
-              <Link className="font-semibold underline" to="/tracks">
-                Choose it on Tracks
-              </Link>
-              {' to see chapter tracks.'}
-            </>
+    // Mock 01's card (ADR 0645): the title with its subtitle in the header, the suggestion chips where the mock draws its filter,
+    // and the board flush under the header's divider.
+    <Panel
+      title="Chapter pipeline"
+      subtitle={
+        <span className="inline-flex items-center gap-1">
+          every cell opens that stage for the chapter
+          <Tooltip label="About Recorded" text="Recorded is the audio on the chapter's linked REAPER track, as of the saved project." />
+        </span>
+      }
+      actions={<StageSummaryChips state={stages.state} onShow={showFirstSuggestion} />}
+      flush
+    >
+      {/* StageCheckLine's own condition: a failed read, kept on screen while its retry loads. */}
+      {((stages.state.phase !== 'ready' && stages.state.error) || (trackLinks && trackLinks.project !== 'ready')) && (
+        <div className="border-b border-[var(--border)] px-4 py-1">
+          <StageCheckLine state={stages.state} onCheckNow={() => void stages.refresh()} />
+          {trackLinks && trackLinks.project !== 'ready' && (
+            <p className="py-1.5 text-sm" style={MUTED}>
+              {trackLinks.message}
+              {trackLinks.project === 'choose' && (
+                <>
+                  {' '}
+                  <Link className="font-semibold underline" to="/tracks">
+                    Choose it on Tracks
+                  </Link>
+                  {' to see chapter tracks.'}
+                </>
+              )}
+            </p>
           )}
-        </p>
+        </div>
       )}
       {narration.length === 0 ? (
-        <p className="mt-3 text-sm" style={MUTED}>
+        <p className="p-4 text-sm" style={MUTED}>
           No narratable chapters yet.
         </p>
       ) : (
         // tabIndex: the board scrolls sideways in a narrow window, and a scrolling region must be reachable by keyboard.
         <div
           tabIndex={0}
-          className="mt-2 overflow-x-auto focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:outline-none focus-visible:ring-inset"
+          className="overflow-x-auto focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:outline-none focus-visible:ring-inset"
         >
           <StageGrid
             label="Chapter pipeline"
-            className="w-full [&_td]:whitespace-nowrap"
             rows={rows.map(rowName)}
             columns={BOARD_COLUMNS.map((column) => column.name)}
             cell={cell}
+            currentRow={currentRow === -1 ? undefined : currentRow}
           />
         </div>
       )}
-      {chapters && <RemovedFromRecordingList chapters={chapters} restoringId={restoringId} onRestore={(chapterId) => void restore(chapterId)} />}
-      {checking &&
-        (() => {
-          // A credits row's synthetic chapter (credits-in-chapter-table.prd.md Phase 3, ADR 0333) is never a Proof
-          // workspace or a Script paragraph the way a real chapter's is: it opens the Manuscript credits entry instead,
-          // the same anchor CreditsRowPanel's "Open in Script" link uses.
-          const checkingCreditsKind = creditsCheckKind(checking.id);
-          return (
-            <RecordingCheck
-              key={checking.id}
-              chapter={checking}
-              coverage={coverage}
-              notify={notify}
-              close={() => {
-                setChecking(undefined);
-                // Linking a track in the slide-over changes the evidence without a finished check, so the suggestions are read again.
-                void stages.refresh();
-              }}
-              goToParagraph={checkingCreditsKind ? () => goToScript(`credits-${checkingCreditsKind}`) : (paragraph) => goToScript(checking.id, paragraph)}
-              openWorkspace={checkingCreditsKind ? undefined : () => goToProofChapter(checking.id)}
-            />
-          );
-        })()}
-      {why && (
-        <StageEvidence
-          open={why.open}
-          chapter={whyChapter}
-          recommendation={stages.state.byChapter.get(why.chapterId)}
-          phase={stages.state.phase}
-          error={stages.state.error}
-          isPending={(decision) => stages.isPending(decision, why.chapterId)}
-          busy={stages.busy}
-          onDecide={(decision) => {
-            const recommendation = stages.state.byChapter.get(why.chapterId);
-            if (recommendation) void stages.decide(decision, recommendation);
-          }}
-          onClose={() => setWhy({ ...why, open: false })}
-          onCheckNow={() => void stages.refresh()}
-          onOpenCheck={() => {
-            setWhy({ ...why, open: false });
-            if (whyChapter) setChecking(whyChapter);
-          }}
-          onOpenEditingCheck={() => {
-            setWhy({ ...why, open: false });
-            if (whyChapter) setEditingChecking(whyChapter);
-          }}
-          goToParagraph={(paragraph) => goToScript(why.chapterId, paragraph)}
-          status={
-            whyChapter && (
-              <div className="space-y-3 text-sm">
-                <Select
-                  label={`${whyChapter.title} status`}
-                  value={whyChapter.status}
-                  options={STATUS_ORDER.map((status) => ({ value: status, label: STATUS_LABELS[status] }))}
-                  onChange={(value) => void setStatus(whyChapter.id, value as ChapterStatus)}
-                />
-                <p style={MUTED}>Recording check: {checkStatusLine(whyChapter)}</p>
-                <div className="flex flex-wrap gap-2">
-                  <Button
-                    variant="secondary"
-                    onClick={() => {
-                      setWhy({ ...why, open: false });
-                      setChecking(whyChapter);
-                    }}
-                  >
-                    Recording check
-                  </Button>
-                  <Button
-                    variant="secondary"
-                    onClick={() => {
-                      setWhy({ ...why, open: false });
-                      setEditingChecking(whyChapter);
-                    }}
-                  >
-                    Editing check
-                  </Button>
+      {/* The removed list is a card of its own, 16 px in from the board's card as the padded body put it; the slide-overs portal out. */}
+      <div className="p-4 empty:hidden">
+        {chapters && <RemovedFromRecordingList chapters={chapters} restoringId={restoringId} onRestore={(chapterId) => void restore(chapterId)} />}
+        {checking &&
+          (() => {
+            // A credits row's synthetic chapter (credits-in-chapter-table.prd.md Phase 3, ADR 0333) is never a Proof
+            // workspace or a Script paragraph the way a real chapter's is: it opens the Manuscript credits entry instead,
+            // the same anchor CreditsRowPanel's "Open in Script" link uses.
+            const checkingCreditsKind = creditsCheckKind(checking.id);
+            return (
+              <RecordingCheck
+                key={checking.id}
+                chapter={checking}
+                coverage={coverage}
+                notify={notify}
+                close={() => {
+                  setChecking(undefined);
+                  // Linking a track in the slide-over changes the evidence without a finished check, so the suggestions are read again.
+                  void stages.refresh();
+                }}
+                goToParagraph={checkingCreditsKind ? () => goToScript(`credits-${checkingCreditsKind}`) : (paragraph) => goToScript(checking.id, paragraph)}
+                openWorkspace={checkingCreditsKind ? undefined : () => goToProofChapter(checking.id)}
+              />
+            );
+          })()}
+        {why && (
+          <StageEvidence
+            open={why.open}
+            chapter={whyChapter}
+            recommendation={stages.state.byChapter.get(why.chapterId)}
+            phase={stages.state.phase}
+            error={stages.state.error}
+            isPending={(decision) => stages.isPending(decision, why.chapterId)}
+            busy={stages.busy}
+            onDecide={(decision) => {
+              const recommendation = stages.state.byChapter.get(why.chapterId);
+              if (recommendation) void stages.decide(decision, recommendation);
+            }}
+            onClose={() => setWhy({ ...why, open: false })}
+            onCheckNow={() => void stages.refresh()}
+            onOpenCheck={() => {
+              setWhy({ ...why, open: false });
+              if (whyChapter) setChecking(whyChapter);
+            }}
+            onOpenEditingCheck={() => {
+              setWhy({ ...why, open: false });
+              if (whyChapter) setEditingChecking(whyChapter);
+            }}
+            goToParagraph={(paragraph) => goToScript(why.chapterId, paragraph)}
+            status={
+              whyChapter && (
+                <div className="space-y-3 text-sm">
+                  <Select
+                    label={`${whyChapter.title} status`}
+                    value={whyChapter.status}
+                    options={STATUS_ORDER.map((status) => ({ value: status, label: STATUS_LABELS[status] }))}
+                    onChange={(value) => void setStatus(whyChapter.id, value as ChapterStatus)}
+                  />
+                  <p style={MUTED}>Recording check: {checkStatusLine(whyChapter)}</p>
+                  <div className="flex flex-wrap gap-2">
+                    <Button
+                      variant="secondary"
+                      onClick={() => {
+                        setWhy({ ...why, open: false });
+                        setChecking(whyChapter);
+                      }}
+                    >
+                      Recording check
+                    </Button>
+                    <Button
+                      variant="secondary"
+                      onClick={() => {
+                        setWhy({ ...why, open: false });
+                        setEditingChecking(whyChapter);
+                      }}
+                    >
+                      Editing check
+                    </Button>
+                  </div>
                 </div>
-              </div>
-            )
-          }
-        />
-      )}
-      {editingChecking && (
-        <EditingCheckPanel
-          key={editingChecking.id}
-          chapter={editingChecking}
-          notify={notify}
-          close={() => {
-            setEditingChecking(undefined);
-            // Accepting, dismissing or deferring an editing candidate changes the evidence the stage suggestions read.
-            void stages.refresh();
-          }}
-        />
-      )}
-      {trackChapter &&
-        (() => {
-          const link = trackLinks?.chapters.find((entry) => entry.chapterId === trackChapter.chapterId);
-          const trackGuid = link?.track?.trackGuid;
-          const trackSummary = trackGuid ? trackLinks?.tracks.find((track) => track.guid === trackGuid) : undefined;
-          const measured = overview.chapters.find((chapter) => chapter.id === trackChapter.chapterId)?.recordedSeconds;
-          return (
-            <ChapterTrackPanel
-              open={trackChapter.open}
-              chapterId={trackChapter.chapterId}
-              chapterTitle={manuscriptChapter(trackChapter.chapterId)?.title ?? ''}
-              subtitle={manuscriptChapter(trackChapter.chapterId)?.subtitle}
-              link={link}
-              trackSummary={trackSummary}
-              recordedSeconds={measured ?? undefined}
-              savedAt={trackLinks?.savedAt ?? ''}
-              notify={notify}
-              onClose={() => setTrackChapter({ ...trackChapter, open: false })}
-              onChanged={async () => {
-                await loadTrackLinks();
-                onChanged();
-              }}
-              onRemoveFromRecording={(kind) => removeFromRecording(trackChapter.chapterId, kind)}
-            />
-          );
-        })()}
-      {credits && creditsRows && (
-        <CreditsRowPanel
-          open={credits.open}
-          row={creditsRows[credits.kind]}
-          label={CREDITS_LABEL[credits.kind]}
-          onStatus={(status) => void setCreditsStatus(credits.kind, status)}
-          onCheck={() => {
-            // Same pattern as StageEvidence's own "Recording check" button below: close this slide-over, then open
-            // RecordingCheck as a sibling, never nested (a reopened row is a fresh mount, never shown stale).
-            setCredits({ ...credits, open: false });
-            setChecking(creditsCheckChapter(credits.kind, creditsRows[credits.kind].status));
-          }}
-          onClose={() => setCredits({ ...credits, open: false })}
-        />
-      )}
+              )
+            }
+          />
+        )}
+        {editingChecking && (
+          <EditingCheckPanel
+            key={editingChecking.id}
+            chapter={editingChecking}
+            notify={notify}
+            close={() => {
+              setEditingChecking(undefined);
+              // Accepting, dismissing or deferring an editing candidate changes the evidence the stage suggestions read.
+              void stages.refresh();
+            }}
+          />
+        )}
+        {trackChapter &&
+          (() => {
+            const link = trackLinks?.chapters.find((entry) => entry.chapterId === trackChapter.chapterId);
+            const trackGuid = link?.track?.trackGuid;
+            const trackSummary = trackGuid ? trackLinks?.tracks.find((track) => track.guid === trackGuid) : undefined;
+            const measured = overview.chapters.find((chapter) => chapter.id === trackChapter.chapterId)?.recordedSeconds;
+            return (
+              <ChapterTrackPanel
+                open={trackChapter.open}
+                chapterId={trackChapter.chapterId}
+                chapterTitle={manuscriptChapter(trackChapter.chapterId)?.title ?? ''}
+                subtitle={manuscriptChapter(trackChapter.chapterId)?.subtitle}
+                link={link}
+                trackSummary={trackSummary}
+                recordedSeconds={measured ?? undefined}
+                savedAt={trackLinks?.savedAt ?? ''}
+                notify={notify}
+                onClose={() => setTrackChapter({ ...trackChapter, open: false })}
+                onChanged={async () => {
+                  await loadTrackLinks();
+                  onChanged();
+                }}
+                onRemoveFromRecording={(kind) => removeFromRecording(trackChapter.chapterId, kind)}
+              />
+            );
+          })()}
+        {credits && creditsRows && (
+          <CreditsRowPanel
+            open={credits.open}
+            row={creditsRows[credits.kind]}
+            label={CREDITS_LABEL[credits.kind]}
+            onStatus={(status) => void setCreditsStatus(credits.kind, status)}
+            onCheck={() => {
+              // Same pattern as StageEvidence's own "Recording check" button below: close this slide-over, then open
+              // RecordingCheck as a sibling, never nested (a reopened row is a fresh mount, never shown stale).
+              setCredits({ ...credits, open: false });
+              setChecking(creditsCheckChapter(credits.kind, creditsRows[credits.kind].status));
+            }}
+            onClose={() => setCredits({ ...credits, open: false })}
+          />
+        )}
+      </div>
     </Panel>
   );
 }

@@ -4,9 +4,12 @@ import { useEffect, useId, useRef, useState } from 'react';
 import { useApi } from '../../api/ApiContext';
 import type { RecorderTake } from '../../api/contracts/recording';
 import { Button } from '../primitives/Button';
+import { FIELD_LABEL_CLASSES } from '../primitives/Field';
 import { IconButton } from '../primitives/IconButton';
 import { LevelMeter } from '../primitives/LevelMeter';
 import { Panel } from '../primitives/Panel';
+import { HeaderChip } from '../primitives/HeaderChip';
+import { SectionLabel } from '../primitives/SectionLabel';
 import { StatusBadge } from '../primitives/StatusBadge';
 import { ToggleGroup } from '../primitives/ToggleGroup';
 import { TooltipTarget } from '../primitives/Tooltip';
@@ -20,8 +23,6 @@ import type { Recorder } from './useRecorder';
 // bar's Record toggle where "Record in REAPER" was, and the rail's session summary ("Recorded 41:12 · …") as the takes
 // list. The pre-session setup gains "Record with" and, for the built-in recorder, its input device (the shared picker, Q6).
 
-const LABEL_CLASS = 'block text-[0.82rem] font-medium text-[var(--text-muted)]';
-const SECTION_LABEL = "font-['Barlow_Condensed',sans-serif] text-[0.72rem] font-semibold tracking-[0.08em] text-[var(--text-muted)] uppercase";
 const MONO = "font-['IBM_Plex_Mono',ui-monospace,monospace]";
 
 const ENGINE_OPTIONS = [
@@ -68,21 +69,15 @@ export function RecorderStatus({ recorder }: { recorder: Recorder }) {
           {peakText(level?.peak)}
         </span>
       </span>
-      <span
+      <HeaderChip
         role="group"
         aria-label={`Built-in recorder, ${takeLabel(recorder)}`}
-        className="inline-flex flex-none items-center gap-[0.4rem] rounded-full border border-[var(--border)] bg-[var(--surface-2)] px-[0.6rem] py-[0.2rem] font-['Barlow_Condensed',sans-serif] text-[0.8rem] font-semibold tracking-[0.03em] max-md:px-[0.35rem]"
+        dot={recorder.recording ? 'var(--danger)' : 'var(--accent)'}
+        short
+        className="flex-none"
       >
-        <span
-          className="size-[7px] flex-none rounded-full"
-          style={
-            recorder.recording
-              ? { backgroundColor: 'var(--danger)', boxShadow: '0 0 5px var(--danger)' }
-              : { backgroundColor: 'var(--accent)', boxShadow: '0 0 5px var(--accent)' }
-          }
-        />
-        <span className="whitespace-nowrap max-md:hidden">Built-in · {takeLabel(recorder)}</span>
-      </span>
+        <span className="max-md:hidden">Built-in · {takeLabel(recorder)}</span>
+      </HeaderChip>
     </>
   );
 }
@@ -129,7 +124,7 @@ export function RecorderSetup({ recorder }: { recorder: Recorder }) {
     <div className="mx-auto mb-4 w-full max-w-3xl">
       <Panel>
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
-          <span className={LABEL_CLASS}>Record with</span>
+          <span className={FIELD_LABEL_CLASSES}>Record with</span>
           <ToggleGroup
             label="Record with"
             className="flex-wrap gap-1.5"
@@ -234,9 +229,9 @@ export function RecorderTakes({ recorder }: { recorder: Recorder }) {
     last && (last.error ?? (last.dropouts > 0 ? `${last.name} lost audio ${last.dropouts} ${last.dropouts === 1 ? 'time' : 'times'}.` : null));
   return (
     <section aria-labelledby={headingId} className="mb-4 space-y-1.5">
-      <h2 id={headingId} className={SECTION_LABEL}>
+      <SectionLabel as="h2" id={headingId}>
         Takes
-      </h2>
+      </SectionLabel>
       <p className="text-sm">
         {state.takes.length === 0 ? (
           'No takes yet. Record starts the first.'

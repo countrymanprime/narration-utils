@@ -9,7 +9,7 @@ import { estimateFinishedHours } from '../../state';
 import { Button } from '../primitives/Button';
 import { Heading } from '../primitives/Heading';
 import { Panel } from '../primitives/Panel';
-import { StatTile } from '../primitives/StatTile';
+import { StatStrip } from '../primitives/StatStrip';
 import type { Notify } from '../primitives/Toast';
 import { Tooltip } from '../primitives/Tooltip';
 import { ChapterBoard } from './ChapterBoard';
@@ -40,7 +40,8 @@ function Figures({ overview }: { overview: ProductionOverview }) {
       label: 'Finished audio',
       value: formatClock(totals.recordedSeconds, 'seconds'),
       unit: target > 0 ? `/ ~${formatClock(target, 'hours')}` : undefined,
-      hint: `${totals.measuredChapters} of ${totals.chapters} chapters measured; target estimated from words`,
+      // One line, as mock 01's tile: the "~" on the target says it is estimated (from the words).
+      hint: `${totals.measuredChapters} of ${totals.chapters} chapters measured`,
       progress: target > 0 ? Math.min(1, totals.recordedSeconds / 3600 / target) : undefined,
     },
     {
@@ -62,15 +63,8 @@ function Figures({ overview }: { overview: ProductionOverview }) {
       progress: totals.chapters > 0 ? totals.finalizedChapters / totals.chapters : undefined,
     },
   ];
-  return (
-    <ul aria-label="Production figures" className="grid grid-cols-2 gap-3 min-[768px]:grid-cols-3 min-[1400px]:grid-cols-6">
-      {tiles.map(({ label, ...tile }) => (
-        <li key={label} className="min-w-0 rounded-lg border border-[var(--border)] bg-[var(--surface)] p-3 shadow-[var(--shadow)]">
-          <StatTile label={label} {...tile} />
-        </li>
-      ))}
-    </ul>
-  );
+  // Mock 01 draws the six figures as one card, its tiles divided by rules (StatStrip, ADR 0615).
+  return <StatStrip label="Production figures" items={tiles.map((tile) => ({ key: tile.label, ...tile }))} />;
 }
 
 function NextUp({
@@ -85,30 +79,43 @@ function NextUp({
   onStart: (item: ProductionNextUpItem) => void;
 }) {
   return (
-    <Panel title="Next up">
-      <p className="mt-1 text-xs" style={MUTED}>
-        Held-back chapters first, then the least advanced (the book has one delivery date, so no chapter has its own).
-      </p>
+    <Panel
+      title="Next up"
+      subtitle={
+        <span className="inline-flex items-center gap-1">
+          ranked by deadline risk
+          <Tooltip
+            label="About this order"
+            text="Held-back chapters first, then the least advanced (the book has one delivery date, so no chapter has its own)."
+          />
+        </span>
+      }
+    >
       {items.length === 0 ? (
-        <p className="mt-3 text-sm" style={MUTED}>
+        <p className="text-sm" style={MUTED}>
           Every chapter is finalized.
         </p>
       ) : (
-        <ol aria-label="Next up" className="mt-2 grid gap-x-6 min-[768px]:grid-cols-2 min-[1200px]:grid-cols-3 min-[1600px]:grid-cols-1">
+        // Mock 01's list: each item a bold line and a muted one, split by rules. Stacked above the board (below 1280 px) it runs in
+        // two columns, so the board still starts on the first screen.
+        <ol aria-label="Next up" className="-my-2 grid gap-x-6 min-[768px]:grid-cols-2 min-[1280px]:grid-cols-1">
           {items.map((item) => {
             const name = chapterName(item);
             const { action, reason } = nextUpLine(item);
             return (
-              <li key={item.chapterId} className="flex min-w-0 flex-col gap-1 border-t border-[var(--border)] py-2.5">
-                <span className="font-semibold [overflow-wrap:anywhere]">{name}</span>
-                <span className="text-sm">{action}</span>
-                <span className="text-xs [overflow-wrap:anywhere]" style={MUTED}>
-                  {reason}
+              <li
+                key={item.chapterId}
+                className="flex min-w-0 flex-col gap-0.5 border-t border-[var(--border)] py-2.5 first:border-t-0 min-[768px]:max-[1279px]:nth-2:border-t-0"
+              >
+                <span className="text-[0.9375rem] leading-[1.35] font-semibold [overflow-wrap:anywhere]">{name}</span>
+                <span className="text-[0.8125rem] leading-[1.4] [overflow-wrap:anywhere]" style={MUTED}>
+                  {action} · {reason}
                 </span>
                 {!timerRunning && (
                   <Button
                     variant="secondary"
-                    className="self-start"
+                    size="sm"
+                    className="mt-1.5 self-start"
                     aria-label={`Start timer on ${name}, ${STATUS_LABELS[item.stage]}`}
                     pending={starting === item.chapterId}
                     disabled={starting !== undefined && starting !== item.chapterId}
@@ -234,8 +241,10 @@ export function ProductionPage({
       : 'Import the manuscript to plan, record and deliver this book.';
 
   return (
-    <div className="mx-auto flex max-w-6xl flex-col gap-4">
-      <div className="flex flex-wrap items-start justify-between gap-3">
+    // Mock 01's content fills the window beside the rail (1176 px at 1440); the cap only keeps a very wide window readable.
+    <div className="mx-auto flex max-w-[96rem] flex-col gap-4">
+      {/* Mock 01 lines the actions up with the foot of the title and its subtitle. */}
+      <div className="flex flex-wrap items-end justify-between gap-3">
         <div className="min-w-0">
           <Heading title="Production">
             {subtitle}
@@ -299,9 +308,10 @@ export function ProductionPage({
       {overview && (
         <>
           <Figures overview={overview} />
-          {/* Next up leads when stacked (it is where a timer starts); side by side only once the board fits beside it. minmax(0, 1fr)
-              lets the board's panel shrink to the window, its grid scrolling inside it. */}
-          <div className="grid grid-cols-[minmax(0,1fr)] gap-4 min-[1600px]:grid-cols-[minmax(0,1fr)_20rem]">
+          {/* Mock 01 (ADR 0645): the board with Next up in a column beside it, once the board's six columns fit beside a 340 px
+              column; stacked below that, Next up leads (it is where a timer starts). minmax(0, 1fr) lets the board's panel
+              shrink to the window, its grid scrolling inside it. */}
+          <div className="grid grid-cols-[minmax(0,1fr)] items-start gap-4 min-[1280px]:grid-cols-[minmax(0,1fr)_21.25rem]">
             <ChapterBoard
               overview={overview}
               notify={notify}
@@ -310,7 +320,7 @@ export function ProductionPage({
               refreshKey={manuscriptKey}
               onChanged={reread}
             />
-            <div className="-order-1 min-[1600px]:order-none">
+            <div className="-order-1 min-[1280px]:order-none">
               <NextUp items={overview.nextUp} timerRunning={running !== null} starting={starting} onStart={(item) => void start(item)} />
             </div>
           </div>

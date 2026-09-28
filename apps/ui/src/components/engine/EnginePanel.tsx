@@ -4,6 +4,7 @@ import { faTriangleExclamation } from '@fortawesome/free-solid-svg-icons';
 import { useApi } from '../../api/ApiContext';
 import { Button } from '../primitives/Button';
 import { Panel } from '../primitives/Panel';
+import { SectionLabel } from '../primitives/SectionLabel';
 import { SlideOver } from '../primitives/SlideOver';
 import { StatusBadge } from '../primitives/StatusBadge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../primitives/Table';
@@ -158,7 +159,7 @@ function EnginePanelBody({ notify, link }: { notify: Notify; link: EngineLinkSta
       )}
       {hasTracks && (
         <Panel title="REAPER tools">
-          <Toolbar label="REAPER tools" className="mt-2 flex-wrap">
+          <Toolbar label="REAPER tools" className="flex-wrap">
             {chapters.length > 0 && (
               <ToolbarButton render={<Button variant="secondary" onClick={() => setTool('link-chapters')} />}>Link chapters…</ToolbarButton>
             )}
@@ -209,7 +210,7 @@ function ProjectSection({ discovery, link, onSelectRpp }: { discovery?: TracksDi
         </Button>
       }
     >
-      <div className="mt-2 space-y-2 text-sm">
+      <div className="space-y-2 text-sm">
         {discovery?.selected && (
           <div className="min-w-0">
             <div className="font-medium [overflow-wrap:anywhere]">{basename(discovery.selected)}</div>
@@ -241,7 +242,7 @@ function ProjectSection({ discovery, link, onSelectRpp }: { discovery?: TracksDi
 function RppPicker({ discovery, onSelect }: { discovery: TracksDiscovery; onSelect: (path: string) => void }) {
   return (
     <div>
-      <h3 className="section-label">Choose a REAPER project file</h3>
+      <SectionLabel as="h3">Choose a REAPER project file</SectionLabel>
       <p className="mt-1" style={{ color: 'var(--text-muted)' }}>
         More than one .rpp file was found in this project folder. Choose which one to read tracks from.
       </p>
@@ -266,8 +267,8 @@ function RppPicker({ discovery, onSelect }: { discovery: TracksDiscovery; onSele
 // made or changed in Chapter links below, or by chapter sync above.
 function TrackList({ tracks, mappings }: { tracks: Track[]; mappings: TrackMapping[] }) {
   return (
-    <Panel title="Tracks">
-      <Table label="Tracks" className="mt-2">
+    <Panel title="Tracks" flush>
+      <Table label="Tracks">
         <TableHead>
           <TableRow>
             <TableHeader>Track</TableHeader>
@@ -292,7 +293,7 @@ function TrackList({ tracks, mappings }: { tracks: Track[]; mappings: TrackMappi
                 <TableCell style={{ color: chapterTitles.length > 0 ? undefined : 'var(--text-muted)' }}>
                   {chapterTitles.length > 0 ? chapterTitles.join(', ') : 'Not linked'}
                 </TableCell>
-                <TableCell align="right">
+                <TableCell numeric>
                   <span className="inline-flex items-center gap-1.5">
                     {hasIssue && (
                       <span title="This track has an item that can't be played" style={{ color: 'var(--danger-text)' }}>

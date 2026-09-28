@@ -4,7 +4,8 @@ import { StageGrid, type StageGridCell } from './StageGrid';
 import type { StatusTone } from './StatusBadge';
 
 // Shaped like the production home concept mock (studio-ui-primitives.prd.md mock 01): chapters down, stages across,
-// every cell a `StatusBadge` reached by grid keyboard navigation rather than one tab stop per cell.
+// every cell a `StatusBadge` reached by grid keyboard navigation rather than one tab stop per cell. Chapter 2 is the current
+// row, drawn in bold as the mock draws the chapter the work is on.
 const CHAPTERS = ['Chapter 1', 'Chapter 2', 'Chapter 3', 'Chapter 4'];
 const STAGES = ['Prep', 'Record', 'Edit', 'Proof', 'QC'];
 
@@ -37,7 +38,7 @@ function ProductionBoard() {
     const found = BOARD[`${CHAPTERS[row]}:${STAGES[col]}`] ?? { tone: 'neutral' as StatusTone, label: 'Not started' };
     return { ...found, onActivate: () => onActivate(CHAPTERS[row], STAGES[col]) };
   };
-  return <StageGrid label="Production board" rows={CHAPTERS} columns={STAGES} cell={cell} />;
+  return <StageGrid label="Production board" rows={CHAPTERS} columns={STAGES} cell={cell} currentRow={1} />;
 }
 
 const meta = {
@@ -118,5 +119,58 @@ export const NamesRowsAndColumns: Story = {
         .getAllByRole('rowheader')
         .map((header) => header.textContent),
     ).toEqual(CHAPTERS);
+  },
+};
+
+// The header and rows are Table's, measured on mock 01 (mock-fidelity-primitives-and-components.prd.md Phase 3): a 31 px
+// header row and 34 px body rows.
+export const RowsMatchTheMock: Story = {
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(canvas.getByRole('rowheader', { name: 'Chapter 2' }).className).toContain('font-semibold');
+    await expect(canvas.getByRole('rowheader', { name: 'Chapter 1' }).className).toContain('font-normal');
+    // The sizes need layout: the atlas's browser has it, the stories' jsdom run (stories.test.tsx) lays nothing out.
+    if (canvasElement.getBoundingClientRect().width === 0) return;
+    // Measured once the web fonts are in: a fallback face sets different line boxes.
+    await document.fonts.ready;
+    const [header, first] = canvas.getAllByRole('row');
+    await expect(Math.round(header.getBoundingClientRect().height)).toBe(31);
+    await expect(Math.round(first.getBoundingClientRect().height)).toBe(34);
+    await expect(getComputedStyle(canvas.getByRole('rowheader', { name: 'Chapter 2' })).fontWeight).toBe('600');
+    await expect(getComputedStyle(canvas.getByRole('rowheader', { name: 'Chapter 1' })).fontWeight).toBe('400');
+  },
+};
+
+// Mock 01's board (ADR 0645): a named Chapter column, a length drawn as a mono figure (FIN.), and every stage cell the
+// 58×20 board cell on a 66 px pitch, so a column's cells line up whatever they say.
+const MOCK_ROWS = ['Opening credits', '1 · Down the Rabbit-Hole', '3 · A Caucus-Race'];
+const MOCK_COLUMNS = ['Fin.', 'Prep', 'Record', 'Edit', 'Proof'];
+const MOCK_CELLS: StageGridCell[][] = [
+  [{ tone: 'neutral', label: '0:12', look: 'text' }, ...Array.from({ length: 4 }, (): StageGridCell => ({ tone: 'success', label: '✓' }))],
+  [{ tone: 'neutral', label: '11:48', look: 'text' }, ...Array.from({ length: 4 }, (): StageGridCell => ({ tone: 'success', label: '✓' }))],
+  [
+    { tone: 'neutral', label: '10:31', look: 'text' },
+    { tone: 'success', label: '✓' },
+    { tone: 'info', label: '62%' },
+    { tone: 'accent', label: 'proofer' },
+    { tone: 'danger', label: '3 open' },
+  ],
+];
+
+export const MockBoard: Story = {
+  render: () => <StageGrid label="Chapter pipeline" rows={MOCK_ROWS} columns={MOCK_COLUMNS} cell={(row, col) => MOCK_CELLS[row][col]} currentRow={2} />,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(canvas.getByRole('columnheader', { name: 'Chapter' })).toBeVisible();
+    await expect(canvas.getByText('11:48').className).toContain('IBM_Plex_Mono');
+    if (canvasElement.getBoundingClientRect().width === 0) return;
+    await document.fonts.ready;
+    const boxes = ['✓', '62%', 'proofer', '3 open'].map((label) => canvas.getAllByText(label).at(-1)!.getBoundingClientRect());
+    for (const box of boxes) {
+      await expect(box.height).toBeCloseTo(20, 0);
+      await expect(box.width).toBeCloseTo(58, 0);
+    }
+    // The 66 px pitch: 58 px cells, 4 px either side.
+    await expect(Math.round(boxes[2].left - boxes[1].left)).toBe(66);
   },
 };

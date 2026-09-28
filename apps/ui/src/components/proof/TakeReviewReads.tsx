@@ -4,6 +4,8 @@ import { apiErrorMessage } from '../../api/errorMessage';
 import type { Finding, ReaperStatus, TakeComparisonJob, TakeReviewEvidence } from '../../types';
 import { Button } from '../primitives/Button';
 import { ConfirmDialog } from '../primitives/ConfirmDialog';
+import { FIELD_LABEL_CLASSES } from '../primitives/Field';
+import { InsetCard } from '../primitives/InsetCard';
 import { Select } from '../primitives/Select';
 import { TooltipTarget } from '../primitives/Tooltip';
 import { AuditionDialog } from './AuditionDialog';
@@ -60,7 +62,7 @@ export function TakeReviewReads({
           const name = `read ${index + 1}`;
           const blocked = (read.item_guid ? undefined : NO_ITEM) ?? connectionReason;
           return (
-            <li key={`${read.item_guid}-${read.take_guid}-${index}`} className="rounded-md border border-[var(--border)] px-3 py-2">
+            <InsetCard as="li" key={`${read.item_guid}-${read.take_guid}-${index}`}>
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div className="min-w-0">
                   <div className="font-medium [overflow-wrap:anywhere]">
@@ -96,7 +98,7 @@ export function TakeReviewReads({
                   </TooltipTarget>
                 </div>
               </div>
-            </li>
+            </InsetCard>
           );
         })}
       </ol>
@@ -243,8 +245,8 @@ function AddTakeDialog({
       pending={creating}
     >
       <div className="mt-3 flex flex-col gap-3">
-        <label className="flex flex-col gap-1 text-sm">
-          Target item (where the take is added)
+        <label className="flex flex-col gap-2">
+          <span className={FIELD_LABEL_CLASSES}>Target item (where the take is added)</span>
           <Select
             label="Target item"
             value={target}
@@ -256,8 +258,8 @@ function AddTakeDialog({
             ]}
           />
         </label>
-        <label className="flex flex-col gap-1 text-sm">
-          Candidate (source attached as the new take)
+        <label className="flex flex-col gap-2">
+          <span className={FIELD_LABEL_CLASSES}>Candidate (source attached as the new take)</span>
           <Select
             label="Candidate read"
             value={candidate}

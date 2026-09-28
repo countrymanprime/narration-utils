@@ -61,4 +61,12 @@ describe('RadioGroup', () => {
     await user.keyboard('{ArrowDown}');
     expect(screen.getByRole('radio', { name: 'Front matter' }).getAttribute('aria-checked')).toBe('true');
   });
+
+  it('draws an unselected option with --surface-3 and a --border rim (mock-fidelity-primitives-and-components.prd.md Phase 6)', () => {
+    render(<Controlled />);
+    const unselected = screen.getByRole('radio', { name: 'Front matter' });
+    expect(unselected.className).toContain('bg-[var(--surface-3)]');
+    expect(unselected.className).toContain('border-[var(--border)]');
+    expect(unselected.className).not.toContain('bg-[var(--surface)]');
+  });
 });

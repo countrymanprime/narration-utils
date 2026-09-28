@@ -6,8 +6,8 @@ import { Button } from '../primitives/Button';
 import { Panel } from '../primitives/Panel';
 import { ProgressBar } from '../primitives/ProgressBar';
 import { ToggleGroup } from '../primitives/ToggleGroup';
-import { thresholdRows } from './diagnosticsFormat';
-import { CheckedFilesTable, FindingsTable } from './DiagnosticsTables';
+import { cleanupThresholdRows, thresholdRows } from './diagnosticsFormat';
+import { CheckedFilesTable, CleanupFindingsTable, FindingsTable } from './DiagnosticsTables';
 
 /** How often a running check is read. */
 const POLL_MS = 500;
@@ -22,12 +22,70 @@ const SOURCE_KINDS = [
 
 const plural = (count: number, one: string, many: string) => `${count} ${count === 1 ? one : many}`;
 
+/**
+ * Silence cleanup candidates (diagnostics-delivery-and-cleanup-tools.prd.md Phase 9 remainder, ADR 0238): every
+ * `silence_cleanup` finding a checked file raised, apart from the Diagnostics tab's own findings above, with the
+ * thresholds a check used (the narrator's own, from Settings > Silence cleanup). Findings view only: nothing here
+ * applies a cut - that is the REAPER actions of PRD Phases 10 and 11, behind their own verification.
+ */
+function CleanupSection({ job, openSettings }: { job: DiagnosticsJob | undefined; openSettings: () => void }) {
+  const files = job?.files ?? [];
+  const candidates = files.flatMap((file) => file.cleanupFindings);
+  const anyChecked = files.some((file) => file.status === 'checked');
+  const ended = job !== undefined && (job.phase === 'success' || job.phase === 'cancelled' || job.phase === 'error');
+  return (
+    <Panel title="Silence cleanup candidates">
+      <p className="mt-2 text-sm" style={MUTED}>
+        Silences, breaths and clicks the same check found while reading each file, each a candidate to cut, never applied here: cutting a candidate needs the
+        REAPER actions this app does not yet run from here. Nothing is saved, played or changed.
+      </p>
+      {candidates.length > 0 ? (
+        <div
+          tabIndex={0}
+          className="overflow-x-auto focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:outline-none focus-visible:ring-inset"
+        >
+          <CleanupFindingsTable files={files} />
+        </div>
+      ) : (
+        ended &&
+        anyChecked && (
+          <p className="mt-3 text-sm" style={MUTED}>
+            No silence, breath or click candidates in the checked files, against the thresholds below.
+          </p>
+        )
+      )}
+      {job ? (
+        <>
+          <dl className="mt-4 grid grid-cols-[max-content_1fr] gap-x-6 gap-y-1 text-sm">
+            {cleanupThresholdRows(job.cleanupThresholds).map((row) => (
+              <div key={row.label} className="contents">
+                <dt>{row.label}</dt>
+                <dd className="[overflow-wrap:anywhere]">{row.value}</dd>
+              </div>
+            ))}
+          </dl>
+          <div className="mt-2 flex flex-wrap items-center gap-1 text-xs" style={MUTED}>
+            <span>Set in Settings &gt; Silence cleanup.</span>
+            <Button variant="ghost" onClick={openSettings}>
+              Open Settings
+            </Button>
+          </div>
+        </>
+      ) : (
+        <p className="mt-2 text-sm" style={MUTED}>
+          Reading the thresholds…
+        </p>
+      )}
+    </Panel>
+  );
+}
+
 function ThresholdsPanel({ job }: { job: DiagnosticsJob | undefined }) {
   return (
     <Panel title="Thresholds">
       {job ? (
         <>
-          <dl className="mt-2 grid grid-cols-[max-content_1fr] gap-x-6 gap-y-1 text-sm">
+          <dl className="grid grid-cols-[max-content_1fr] gap-x-6 gap-y-1 text-sm">
             {thresholdRows(job.thresholds).map((row) => (
               <div key={row.label} className="contents">
                 <dt>{row.label}</dt>
@@ -40,7 +98,7 @@ function ThresholdsPanel({ job }: { job: DiagnosticsJob | undefined }) {
           </p>
         </>
       ) : (
-        <p className="mt-2 text-sm" style={MUTED}>
+        <p className="text-sm" style={MUTED}>
           Reading the thresholds…
         </p>
       )}
@@ -54,9 +112,10 @@ function ThresholdsPanel({ job }: { job: DiagnosticsJob | undefined }) {
  * the file, what was measured, the threshold that raised it and whether the audio is a raw recording or a rendered chapter, never a
  * grade. It is read-only: nothing is saved, played or sent to REAPER, so every finding stays unreviewed (PRD Open Question 4), and
  * the narrator listens at those times in REAPER (Open Question 8). `measuredPaths` are the files of the last measurement, which the
- * host already accepts, so they can be checked without picking them again.
+ * host already accepts, so they can be checked without picking them again. Below it, `CleanupSection` lists the same check's silence
+ * cleanup candidates (Phase 9 remainder, ADR 0238) apart from these findings; `openSettings` opens Settings > Silence cleanup.
  */
-export function DiagnosticsSection({ measuredPaths }: { measuredPaths: readonly string[] }) {
+export function DiagnosticsSection({ measuredPaths, openSettings }: { measuredPaths: readonly string[]; openSettings: () => void }) {
   const api = useApi();
   const [job, setJob] = useState<DiagnosticsJob>();
   const [jobError, setJobError] = useState<string>();
@@ -138,7 +197,7 @@ export function DiagnosticsSection({ measuredPaths }: { measuredPaths: readonly 
           </div>
         }
       >
-        <p className="mt-2 text-sm" style={MUTED}>
+        <p className="text-sm" style={MUTED}>
           Clipping, level shifts, room-tone changes and long pauses, each with its time in the file and the threshold that raised it. Listen at those times in
           REAPER: nothing here is saved, played or changed.
         </p>
@@ -231,6 +290,7 @@ export function DiagnosticsSection({ measuredPaths }: { measuredPaths: readonly 
         )}
       </Panel>
       <ThresholdsPanel job={job} />
+      <CleanupSection job={job} openSettings={openSettings} />
     </div>
   );
 }

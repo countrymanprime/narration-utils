@@ -20,10 +20,6 @@ type NativeTag = (typeof NATIVE_TAGS)[number];
 // Native elements written in JSX per file, outside the primitives, at the time of ADR 0053 (phase 5: no native select, input, textarea or table part is left).
 const CEILING: Record<NativeTag, Record<string, number>> = {
   button: {
-    // The header's engine chip (PRD project-workspace-and-daw-link.prd.md, W15/W19; moved from AppShell.tsx to its
-    // own file by stage-navigation-and-page-replacement.prd.md Phase 1): a pill shape with a status dot that
-    // `Button`'s fixed base classes (rounded-md, border, px-4/py-2) cannot express through an appended className.
-    'src/components/layout/EngineChip.tsx': 1,
     'src/components/manuscript/ChapterNav.tsx': 4,
     // The card's bookmark toggle and its whole-header toggle (manuscript-credits-card-parity.prd.md). `CreditsEntry.tsx`
     // now renders through this and has no raw button of its own (its old toggle button is gone, ceiling 0 below).
@@ -51,7 +47,6 @@ const CEILING: Record<NativeTag, Record<string, number>> = {
     // bible entries above (two lines of text and a current state), which Button's padded, uppercase chrome does not fit. One
     // JSX `<button>`, written once inside the flags `.map()`.
     'src/components/booth/ReaderFlagsPanel.tsx': 1,
-    'src/components/storybible/GuideDetail.tsx': 1,
     // The engine panel (stage-navigation-and-page-replacement.prd.md Phase 6) took the Tracks page's two: its .rpp picker's
     // full-width path rows (a mono file path, which Button's uppercase chrome would mangle) stay one JSX `<button>` inside the
     // candidates `.map()`; the track rows' selection buttons went with the player.

@@ -136,4 +136,61 @@ describe('StageGrid', () => {
     await user.tab();
     await expect(user.keyboard('{Enter}')).resolves.not.toThrow();
   });
+  // It shares Table's header and row look (mock-fidelity-primitives-and-components.prd.md Phase 3).
+  it('sizes its header and rows from the row tokens, as Table does, with the cells in the middle of the row', () => {
+    render(grid());
+    const header = screen.getByRole('columnheader', { name: 'Prep' }).className;
+    expect(header).toContain('h-[var(--header-row-height)]');
+    expect(header).toContain('tracking-[var(--tracking-label)]');
+    const rowHeader = screen.getByRole('rowheader', { name: 'Chapter 1' }).className;
+    expect(rowHeader).toContain('h-[var(--row-height)]');
+    const cell = screen.getAllByRole('gridcell')[0].className;
+    expect(cell).toContain('h-[var(--row-height)]');
+    expect(cell).toContain('align-middle');
+  });
+
+  it('draws the current row in bold, and only that row', () => {
+    const cell = (row: number, col: number): StageGridCell => ({ tone: 'progress', label: `${ROWS[row]} ${COLUMNS[col]}` });
+    render(<StageGrid label="Production board" rows={ROWS} columns={COLUMNS} cell={cell} currentRow={1} />);
+    expect(screen.getAllByRole('row')[2].className).toContain('font-semibold');
+    expect(screen.getAllByRole('row')[1].className).not.toContain('font-semibold');
+  });
+  // ADR 0645: mock 01's board, flush in its card.
+  it('names the row-header column visibly, "Chapter" unless told otherwise', () => {
+    render(grid());
+    expect(screen.getByRole('columnheader', { name: 'Chapter' }).textContent).toBe('Chapter');
+    render(<StageGrid label="Other" rowHeader="Take" rows={ROWS} columns={COLUMNS} cell={() => ({ tone: 'neutral', label: '—' })} />);
+    expect(screen.getByRole('columnheader', { name: 'Take' })).toBeTruthy();
+  });
+
+  it('draws every badge cell in the board-cell shape', () => {
+    render(grid());
+    expect(screen.getByText('Chapter 1 Prep').className).toContain('min-w-[3.625rem]');
+  });
+
+  it('draws a text cell as a mono figure, not a badge, and still activates it', async () => {
+    const onActivate = vi.fn();
+    const user = userEvent.setup();
+    const cell = (row: number, col: number): StageGridCell =>
+      col === 0 ? { tone: 'neutral', label: '11:48', look: 'text', onActivate: () => onActivate(row) } : { tone: 'success', label: '✓' };
+    render(<StageGrid label="Production board" rows={ROWS} columns={COLUMNS} cell={cell} />);
+    const figure = screen.getAllByText('11:48')[0];
+    expect(figure.className).toContain('IBM_Plex_Mono');
+    expect(figure.className).not.toContain('min-w-[3.625rem]');
+    await user.click(figure);
+    expect(onActivate).toHaveBeenCalledWith(0);
+  });
+
+  it("lays its columns out at mock 01's widths from the left, the spare width after the last, and truncates a long row name", () => {
+    const cell = (_row: number, col: number): StageGridCell => (col === 0 ? { tone: 'neutral', label: '1:00', look: 'text' } : { tone: 'success', label: '✓' });
+    render(<StageGrid label="Board" rows={['A very long chapter name indeed']} columns={['Fin.', 'Prep', 'Record']} cell={cell} />);
+    const table = screen.getByRole('grid', { name: 'Board' });
+    expect(table.className).toContain('table-fixed');
+    const widths = [...table.querySelectorAll('col')].map((col) => col.style.width);
+    expect(widths).toEqual(['15.25rem', '7rem', '4.125rem', '']);
+    expect(table.style.minWidth).toBe('30.5rem');
+    const name = screen.getByRole('rowheader', { name: 'A very long chapter name indeed' });
+    expect(name.className).toContain('truncate');
+    expect(name.getAttribute('title')).toBe('A very long chapter name indeed');
+  });
 });

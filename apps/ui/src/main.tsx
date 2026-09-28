@@ -6,6 +6,7 @@ import { wailsClient } from './api/wailsClient';
 import type { RecordingMockSeed } from './api/recordingMock';
 import { createMockApi } from './api/mockApi';
 import { PRODUCTION_SCENARIOS } from './api/productionMock';
+import { MOCK_FIDELITY, mockFidelityFrom } from './api/mockHost/mockFidelity';
 import { WIRE_CHAPTERS, WIRE_FINDINGS, WIRE_TRACKS_PROJECT, editingCandidateFor, takeReviewPickupFor } from './api/mockFixtures';
 import { COVERAGE_REFUSAL_REASONS } from './api/schemas/coverage';
 import { EDITING_REFUSAL_REASONS } from './api/schemas/editing';
@@ -360,6 +361,8 @@ const mockDeliveryProfile = mockParams.get('mockDeliveryProfile') === 'custom' ?
 // `?mockProduction=on-pace|at-risk` seeds the Production page with a time log, a running timer (on-pace only), a deadline and a
 // contracted amount (production-tracking.prd.md Phase 4); with none, nothing is logged or set yet.
 const mockProduction = (['on-pace', 'at-risk'] as const).find((seed) => seed === mockParams.get('mockProduction'));
+// `?mockFidelity=01` draws the mock backend as benchmark mock 01 draws Production, for the pixel-match tool (mockHost/mockFidelity.ts).
+const mockFidelity = mockFidelityFrom(mockParams.get('mockFidelity'));
 
 const MOCK_MARKUP_SEED: PrepMarkupSeed = [
   { chapter: 2, line: 1, words: 'how to get dry again', kind: 'stress', stale: { reason: 'text_changed', was: 'how to get warm again' } },
@@ -388,6 +391,7 @@ const MOCK_RECORDER_SEEDS: Record<string, RecordingMockSeed> = {
 const mockRecorderParam = mockParams.get('mockRecorder') ?? '';
 const mockRecorder = Object.hasOwn(MOCK_RECORDER_SEEDS, mockRecorderParam) ? MOCK_RECORDER_SEEDS[mockRecorderParam] : undefined;
 const mockInitial = {
+  ...(mockFidelity ? MOCK_FIDELITY[mockFidelity] : {}),
   ...(mockRecorder ? { recording: mockRecorder } : {}),
   ...(mockMarkup ? { prepMarkup: MOCK_MARKUP_SEED } : {}),
   ...(mockMeasure ? { measure: mockMeasure === 'running' ? ('hold' as const) : mockMeasure === 'spread' ? ('spread' as const) : ('fails' as const) } : {}),

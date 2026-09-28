@@ -5,6 +5,7 @@ import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { useApi } from '../../api/ApiContext';
 import { Button } from '../primitives/Button';
+import { InsetCard } from '../primitives/InsetCard';
 import { useResumeLocate, type LocateState } from './useResumeLocate';
 import { WhisperModelPrompt } from './WhisperModelPrompt';
 import type { ChapterTrackMatch, TeleprompterLocateResult, TeleprompterReading, TeleprompterResumePlace } from '../../types';
@@ -19,7 +20,7 @@ const FROM_THE_TOP = 'reading starts from the top.';
  * Pick a word and Continue there are links beside the compact notices, not pill buttons). */
 function TextLink({ children, onClick }: { children: ReactNode; onClick: () => void }) {
   return (
-    <Button variant="link" style={{ color: 'var(--accent)' }} onClick={onClick}>
+    <Button variant="link" style={{ color: 'var(--accent-strong)' }} onClick={onClick}>
       {children}
     </Button>
   );
@@ -547,11 +548,8 @@ export function ResumePrompt({ chapterId, model, active, onStartWord }: Props) {
   };
 
   return (
-    <div
-      role="region"
-      aria-label="Where you stopped"
-      className="flex flex-wrap items-start gap-x-3 gap-y-2 rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 py-2.5 text-sm"
-    >
+    // A compact bordered notice, not a Panel (ADR 0187).
+    <InsetCard role="region" aria-label="Where you stopped" className="flex flex-wrap items-start gap-x-3 gap-y-2 text-sm">
       <PromptBody state={lookup.state} onChoose={choose} onRetry={lookup.retry} onAskForModel={lookup.askForModel} />
       {lookup.prompt && (
         <WhisperModelPrompt
@@ -561,6 +559,6 @@ export function ResumePrompt({ chapterId, model, active, onStartWord }: Props) {
           dismiss={lookup.closeModelPrompt}
         />
       )}
-    </div>
+    </InsetCard>
   );
 }

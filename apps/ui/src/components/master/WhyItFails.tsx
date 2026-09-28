@@ -85,7 +85,7 @@ export function WhyItFails({
         </Button>
       }
     >
-      <div className="mt-2 grid gap-4 lg:grid-cols-2">
+      <div className="grid gap-4 lg:grid-cols-2">
         <Verdict file={file} profile={profile} />
         <BookConsistency profile={profile} files={files} />
       </div>

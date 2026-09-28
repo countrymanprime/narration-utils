@@ -58,14 +58,14 @@ export function MasterToSpecPanel({ jobs, chainLabel }: { jobs: ExportJobs; chai
       }
     >
       {problem && (
-        <p role="alert" className="mt-2 text-sm" style={DANGER}>
+        <p role="alert" className="text-sm" style={DANGER}>
           {problem}
         </p>
       )}
       {(items.length > 0 || started) && (
         <div
           tabIndex={0}
-          className="mt-2 overflow-x-auto focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:outline-none focus-visible:ring-inset"
+          className={`${problem ? 'mt-2' : ''} overflow-x-auto focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:outline-none focus-visible:ring-inset`}
         >
           <Table label="Files to export">
             <TableHead>
@@ -82,7 +82,7 @@ export function MasterToSpecPanel({ jobs, chainLabel }: { jobs: ExportJobs; chai
                 const result = exportJob?.files.find((file) => file.path === item.path);
                 return (
                   <TableRow key={item.path}>
-                    <TableCell className="text-sm">{fileName(item.path)}</TableCell>
+                    <TableCell>{fileName(item.path)}</TableCell>
                     <TableCell>
                       {started ? (
                         KIND_OPTIONS.find((option) => option.value === item.kind)?.label
@@ -107,7 +107,7 @@ export function MasterToSpecPanel({ jobs, chainLabel }: { jobs: ExportJobs; chai
                           />
                         ))}
                     </TableCell>
-                    <TableCell className="text-sm" style={result?.status === 'failed' ? DANGER : result?.status === 'done' ? OK : MUTED}>
+                    <TableCell style={result?.status === 'failed' ? DANGER : result?.status === 'done' ? OK : MUTED}>
                       {result ? exportRowStatus(result) : 'Not started'}
                     </TableCell>
                     <TableCell>

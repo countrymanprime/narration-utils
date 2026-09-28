@@ -6,6 +6,7 @@ import { chapterName } from '../../chapterName';
 import { describeApiError } from '../../api/errorMessage';
 import { useApi } from '../../api/ApiContext';
 import { describeParagraphs, formatAudioTime, paragraphRefs } from '../production/recordingCheckText';
+import { InsetCard } from '../primitives/InsetCard';
 import { Panel } from '../primitives/Panel';
 import { IconButton } from '../primitives/IconButton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../primitives/Table';
@@ -109,27 +110,27 @@ export function PreviewPanel({ notify, goToManuscript }: { notify: Notify; goToM
   return (
     <Panel title="Preview">
       {phase === 'loading' && (
-        <p role="status" className="mt-1 text-sm" style={{ color: 'var(--text-muted)' }}>
+        <p role="status" className="text-sm" style={{ color: 'var(--text-muted)' }}>
           Computing suggestions…
         </p>
       )}
       {phase === 'error' && (
-        <p role="alert" className="mt-1 text-sm" style={{ color: 'var(--danger-text)' }}>
+        <p role="alert" className="text-sm" style={{ color: 'var(--danger-text)' }}>
           Couldn’t read preview suggestions: {error}
         </p>
       )}
       {phase === 'ready' && result?.outcome === 'no_manuscript' && (
-        <p className="mt-1 text-sm" style={{ color: 'var(--text-muted)' }}>
+        <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
           Import a manuscript to see preview suggestions.
         </p>
       )}
       {phase === 'ready' && result?.outcome === 'nothing_eligible' && (
-        <p className="mt-1 text-sm" style={{ color: 'var(--text-muted)' }}>
+        <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
           No eligible text was found for a preview. Narration chapters with at least one paragraph are needed.
         </p>
       )}
       {phase === 'ready' && result?.outcome === 'ok' && (
-        <div className="mt-1 overflow-auto">
+        <div className="overflow-auto">
           <Table label="Preview candidates">
             <TableHead>
               <TableRow>
@@ -148,15 +149,11 @@ export function PreviewPanel({ notify, goToManuscript }: { notify: Notify; goToM
                 return (
                   <TableRow key={candidate.chapterId}>
                     <TableCell className="font-medium">{nameOf(candidate)}</TableCell>
-                    <TableCell className="font-['IBM_Plex_Mono',ui-monospace,monospace] text-xs whitespace-nowrap">
+                    <TableCell numeric align="left">
                       {describeParagraphs(paragraphNumbers(candidate))}
                     </TableCell>
-                    <TableCell align="right" className="font-['IBM_Plex_Mono',ui-monospace,monospace] text-xs whitespace-nowrap">
-                      {formatAudioTime(candidate.estimatedSeconds)}
-                    </TableCell>
-                    <TableCell align="right" className="font-['IBM_Plex_Mono',ui-monospace,monospace] text-xs">
-                      {candidate.wordCount.toLocaleString()}
-                    </TableCell>
+                    <TableCell numeric>{formatAudioTime(candidate.estimatedSeconds)}</TableCell>
+                    <TableCell numeric>{candidate.wordCount.toLocaleString()}</TableCell>
                     <TableCell className="text-xs">
                       <ul className="space-y-0.5">
                         {candidate.reasons.map((reason) => (
@@ -212,7 +209,7 @@ export function PreviewPanel({ notify, goToManuscript }: { notify: Notify; goToM
         </div>
       )}
       {pinned?.present && (
-        <div className="mt-3 rounded-md border border-[var(--border)] p-3">
+        <InsetCard className="mt-3">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <h3 className="text-sm font-medium">Pinned preview</h3>
             <TooltipTarget text="Clear the pinned preview">
@@ -301,7 +298,7 @@ export function PreviewPanel({ notify, goToManuscript }: { notify: Notify; goToM
               </div>
             </>
           )}
-        </div>
+        </InsetCard>
       )}
     </Panel>
   );

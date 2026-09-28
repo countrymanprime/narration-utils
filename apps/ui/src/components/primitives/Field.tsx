@@ -1,8 +1,14 @@
 import { Field as BaseField } from '@base-ui/react/field';
 import type { ReactNode } from 'react';
 
+// The look every field label shares: ~14px, Plex Sans 500, --text-muted (mock-fidelity-primitives-and-components.prd.md
+// Phase 6). A control with no visible `Field` wrapper (a raw `<label>` beside a `Select`, a read-only value's caption)
+// imports this instead of pasting its own copy, so a size fix here reaches every consumer.
+export const FIELD_LABEL_CLASSES = 'block text-[0.88rem] font-medium text-[var(--text-muted)]';
+
+// mt-2 (8px) is the mocks' label-to-control gap (mock-fidelity-primitives-and-components.prd.md Phase 6).
 const CONTROL_CLASSES =
-  'mt-1 w-full rounded-[var(--control-radius)] font-medium border border-[var(--border)] bg-[var(--surface)] px-3 py-[0.6rem] text-[0.88rem] leading-[1.35] text-[var(--text)] focus:outline-2 focus:outline-offset-1 focus:outline-[var(--accent)] data-[invalid]:border-[var(--danger)]';
+  'mt-2 w-full rounded-[var(--control-radius)] font-medium border border-[var(--border)] bg-[var(--surface)] px-3 py-[0.6rem] text-[0.88rem] leading-[1.35] text-[var(--text)] focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[var(--accent)] data-[invalid]:border-[var(--danger)]';
 
 // A labelled text control. Base UI's Field wires the label, the hint and the error to the control (`for`, `aria-invalid`,
 // `aria-describedby`), so none of that is written by hand here (ADR 0047). The control stays controlled: it never holds
@@ -39,8 +45,8 @@ export function Field({
   secret?: boolean;
 }) {
   return (
-    <BaseField.Root invalid={Boolean(error)} disabled={disabled} className="text-[0.82rem] font-medium text-[var(--text-muted)] first:mt-3">
-      <BaseField.Label className="block text-[0.82rem] font-medium text-[var(--text-muted)]">{label}</BaseField.Label>
+    <BaseField.Root invalid={Boolean(error)} disabled={disabled} className="text-[0.88rem] font-medium text-[var(--text-muted)] first:mt-3">
+      <BaseField.Label className={FIELD_LABEL_CLASSES}>{label}</BaseField.Label>
       <BaseField.Control
         render={
           textarea ? (

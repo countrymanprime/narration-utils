@@ -9,6 +9,7 @@ import { Button } from '../primitives/Button';
 import { CapabilityGate } from '../primitives/CapabilityGate';
 import { Heading } from '../primitives/Heading';
 import { Panel } from '../primitives/Panel';
+import { SectionLabel } from '../primitives/SectionLabel';
 import { StatusBadge } from '../primitives/StatusBadge';
 import { formatTime } from '../proof/findingFormat';
 import { useCapability } from '../../useCapability';
@@ -192,7 +193,7 @@ export function PickupsPage() {
             </>
           }
         >
-          <div className="mt-3 flex flex-wrap items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <p className="text-lg font-semibold">
               {state.total > 0 ? `${state.remaining} pickup${state.remaining === 1 ? '' : 's'} remaining of ${state.total}` : 'No pickups yet'}
             </p>
@@ -217,7 +218,7 @@ export function PickupsPage() {
               <div className="mt-2 flex flex-col gap-2 text-sm">
                 <p>
                   <span className="mr-1.5 font-mono">{formatTime(activeNext.position)}</span>
-                  {activeNext.tag && <span className="section-label mr-1.5">{activeNext.tag}</span>}
+                  {activeNext.tag && <SectionLabel className="mr-1.5">{activeNext.tag}</SectionLabel>}
                   {activeNext.note}
                 </p>
                 <PickupChapterLinks matches={nextChapters} />
@@ -254,7 +255,7 @@ export function PickupsPage() {
         {/* Mock 04's right panel: closed-loop proofing (its Phase 4, retargeted here) plans a chapter's session. Until then
             the slot says so rather than drawing an empty plan (booth mode D3's precedent). */}
         <Panel title="Pickup session" actions={<StatusBadge tone="neutral" label="Coming soon" />}>
-          <p className="mt-2 text-sm" style={{ color: 'var(--text-muted)' }}>
+          <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
             Planning a pickup session is not available yet. It will gather a chapter&apos;s pickups in script order, each with its line in context, ready to
             record in one sitting. For now, work through the list with Next pickup.
           </p>

@@ -69,4 +69,12 @@ describe('Field', () => {
     expect(input.getAttribute('autocomplete')).toBe('off');
     expect(input.getAttribute('spellcheck')).toBe('false');
   });
+
+  it('labels at the Inputs spec (mock-fidelity-primitives-and-components.prd.md Phase 6): ~14px, 8px above the control', () => {
+    render(<Field label="Name" value="Alice" onChange={noop} />);
+    const label = screen.getByText('Name');
+    expect(label.className).toContain('text-[0.88rem]');
+    const control = screen.getByRole('textbox', { name: 'Name' });
+    expect(control.className).toContain('mt-2');
+  });
 });

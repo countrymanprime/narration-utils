@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { chapterName } from '../../chapterName';
+import { FIELD_LABEL_CLASSES } from '../primitives/Field';
 import { Panel } from '../primitives/Panel';
 import { Select } from '../primitives/Select';
 import { useApi } from '../../api/ApiContext';
@@ -11,7 +12,6 @@ import { CREDITS_LABEL, type CreditsKind } from './readerModel';
 import { ACTIVE_PHASES, errorText } from './useTeleprompterSession';
 import type { ChapterSuggestion, CreditsRenderResult, GuideEntity, ManuscriptChapter, ManuscriptNote } from '../../types';
 
-const LABEL_CLASS = 'block text-[0.82rem] font-medium text-[var(--text-muted)]';
 const CREDITS_KINDS: CreditsKind[] = ['opening', 'closing'];
 /** Picker values for the credits; a chapter's value is its id, which never starts with this prefix. */
 const CREDITS_PREFIX = 'credits:';
@@ -146,7 +146,7 @@ export function BoothPage({ onFixCredits, onExit, hideAppShell = BOOTH_HIDES_APP
   const setup = chapters && chapters.length > 0 && (
     <div className="mx-auto mb-4 w-full max-w-3xl">
       <Panel>
-        <label className={LABEL_CLASS} htmlFor="booth-chapter">
+        <label className={FIELD_LABEL_CLASSES} htmlFor="booth-chapter">
           Chapter
         </label>
         <Select id="booth-chapter" className="mt-1" fullWidth value={chosen} onChange={select} options={options} />
@@ -166,7 +166,7 @@ export function BoothPage({ onFixCredits, onExit, hideAppShell = BOOTH_HIDES_APP
       {chapters?.length === 0 && (
         <div className="p-4 md:p-6">
           <Panel title="This manuscript has no chapters to read">
-            <p className="mt-1 text-sm" style={{ color: 'var(--text-muted)' }}>
+            <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
               The booth reads narration chapters. Import a manuscript with at least one narration chapter first.
             </p>
           </Panel>

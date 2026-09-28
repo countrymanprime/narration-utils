@@ -24,6 +24,10 @@ export const productionDrivers: Record<string, Driver> = {
     await openProduction(page, '?mockProduction=on-pace');
     await page.getByRole('timer', { name: /^Timer running on Chapter 6/ }).waitFor();
   },
+  'mock-fidelity-01': async (page) => {
+    await openProduction(page, '?mockFidelity=01');
+    await page.getByRole('timer', { name: /^Timer running on Chapter 7/ }).waitFor();
+  },
   'at-risk': async (page) => {
     await openProduction(page, '?mockProduction=at-risk');
     await page.getByText(/^Due 29 Sep/).waitFor();
@@ -32,7 +36,7 @@ export const productionDrivers: Record<string, Driver> = {
     await openProduction(page, '?mockProduction=on-pace');
     const panel = page.getByRole('region', { name: 'Delivery plan' });
     await panel.getByRole('button', { name: 'Add the ACX 15-minute checkpoint' }).click();
-    await panel.getByRole('list', { name: 'Milestones' }).waitFor();
+    await panel.getByRole('table', { name: 'Milestones' }).waitFor();
     await panel.scrollIntoViewIfNeeded();
   },
   'status-report': async (page) => {
@@ -101,7 +105,8 @@ export const productionDrivers: Record<string, Driver> = {
     await productionLoaded(page);
     const removed = page.getByText(/Removed from recording/);
     await removed.waitFor();
-    await removed.scrollIntoViewIfNeeded();
+    // The list's last control, so the whole list is on screen whether or not its heading already was.
+    await page.getByRole('button', { name: /^Restore/ }).scrollIntoViewIfNeeded();
   },
   'chapter-track-no-project': async (page) => {
     await page.goto('/?mockNoRpp=1');
@@ -367,14 +372,14 @@ export const productionDrivers: Record<string, Driver> = {
   },
   'credits-panel': async (page) => {
     await productionLoaded(page);
-    await boardRow(page, 'Opening credits').getByRole('gridcell').nth(1).click();
+    await boardRow(page, 'Opening credits').getByRole('gridcell').nth(2).click();
     await page.getByRole('dialog', { name: 'Opening credits' }).getByRole('link', { name: 'Open in Script' }).waitFor();
   },
   'credits-panel-not-set-up': async (page) => {
     await page.goto('/?mockCreditsMissing=1');
     await settlePage(page);
     await productionLoaded(page);
-    await boardRow(page, 'Closing credits').getByRole('gridcell').nth(1).click();
+    await boardRow(page, 'Closing credits').getByRole('gridcell').nth(2).click();
     await page
       .getByRole('dialog', { name: 'Closing credits' })
       .getByText(/^Not set up/)

@@ -2,6 +2,7 @@
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { MemoryRouter } from 'react-router-dom';
+import { PRODUCTION_SCENARIOS } from '../../api/productionMock';
 import { useCallback, useState } from 'react';
 import { ChapterBoard } from './ChapterBoard';
 import { ApiProvider } from '../../api/ApiContext';
@@ -106,7 +107,7 @@ const openTrack = async (title: string) => {
 };
 
 /** The state a track slide-over's header names ("Suggested", "Linked", "Not linked"). */
-const trackState = (dialog: HTMLElement) => dialog.querySelector('.uppercase.tracking-\\[0\\.08em\\]')?.textContent;
+const trackState = (dialog: HTMLElement) => dialog.querySelector('.uppercase.tracking-\\[var\\(--tracking-label\\)\\]')?.textContent;
 
 const withChapters = (api: NarrationApi, change: (chapter: ProductionChapter) => ProductionChapter) => {
   const read = api.productionOverview;
@@ -125,7 +126,7 @@ describe('ChapterBoard', () => {
       within(grid)
         .getAllByRole('columnheader', { hidden: true })
         .map((header) => header.textContent),
-    ).toEqual(['Chapter', 'Recorded', 'Record', 'Edit', 'Proof', 'Prep', 'Delivery']);
+    ).toEqual(['Chapter', 'Recorded', 'Prep', 'Record', 'Edit', 'Proof', 'Delivery']);
     expect(within(grid).getAllByRole('rowheader', { hidden: true })).toHaveLength(14);
     expect(within(grid).getAllByRole('rowheader', { hidden: true })[1].textContent).toBe('Chapter 1 — Down the Rabbit-Hole');
     expect(cell('Chapter 1', 'Proof').textContent).toBe('✓');
@@ -526,5 +527,15 @@ describe('remove from recording (chapter-track-link-control.prd.md Phase 3)', ()
     await waitFor(() => expect(notify).toHaveBeenCalledWith('Error: the last narration chapter cannot be removed from recording', 'error'));
     // The confirm stays open so the narrator sees the failure and can cancel or retry.
     expect(screen.getByRole('alertdialog', { name: 'Remove Chapter 3 from recording?' })).toBeTruthy();
+  });
+
+  // Mock 01 (ADR 0645): the chapter the timer runs on is the board's current row, in bold, and a length is a figure, not a badge.
+  it('draws the chapter a timer runs on in bold, and its length as a figure', async () => {
+    await renderBoard({}, { production: PRODUCTION_SCENARIOS['on-pace'] });
+    await waitFor(() => expect(cell('Chapter 1', 'Recorded').textContent).toBe('11:48'));
+    const header = (name: string) => screen.getByRole('rowheader', { name: new RegExp(`^${name} —`), hidden: true });
+    expect(header('Chapter 6').className).toContain('font-semibold');
+    expect(header('Chapter 5').className).toContain('font-normal');
+    expect(cell('Chapter 1', 'Recorded').querySelector('span')?.className).toContain('IBM_Plex_Mono');
   });
 });

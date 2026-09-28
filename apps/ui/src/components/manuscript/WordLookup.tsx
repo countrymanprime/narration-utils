@@ -2,6 +2,7 @@ import type { DictionaryEntry, DictionaryLookupResult } from '../../api/contract
 import type { AssetInstall } from '../../hooks/useAssetInstall';
 import { AssetFacts } from '../assets/AssetFacts';
 import { AssetInstallPrompt } from '../assets/AssetInstallPrompt';
+import { FIELD_LABEL_CLASSES } from '../primitives/Field';
 
 export type DictionaryAnswer = Extract<DictionaryLookupResult, { status: 'ok' }>;
 export type DictionaryGate = Extract<DictionaryLookupResult, { status: 'asset_required' }>;
@@ -17,8 +18,6 @@ export function isSingleWord(text: string): boolean {
   const word = text.replace(/^[\s\p{P}\p{S}]+|[\s\p{P}\p{S}]+$/gu, '');
   return word !== '' && !/[\s\p{Cc}]/u.test(word) && [...word].length <= LONGEST_WORD;
 }
-
-const LABEL_CLASS = 'mb-1 text-[0.82rem] font-medium text-[var(--text-muted)]';
 
 const capitalized = (text: string) => text.charAt(0).toUpperCase() + text.slice(1);
 
@@ -65,7 +64,7 @@ export function WordLookupAnswer({ answer }: { answer: DictionaryAnswer }) {
         answer.entries.map((entry) => <EntrySection key={`${entry.headword}/${entry.partOfSpeech}`} entry={entry} query={answer.query} />)
       )}
       <div className="border-t border-[var(--border)] pt-3">
-        <div className={LABEL_CLASS}>Source</div>
+        <div className={`${FIELD_LABEL_CLASSES} mb-1`}>Source</div>
         <p className="text-xs break-words text-[var(--text-muted)]">{answer.dictionary.attribution}</p>
       </div>
     </div>
