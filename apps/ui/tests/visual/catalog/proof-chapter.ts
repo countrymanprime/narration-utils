@@ -34,6 +34,8 @@ export const proofChapterStates: StateEntry[] = [
     page: 'proof-chapter',
     state: 'flag-selected',
     description: 'Proof chapter view, a flag selected from the Flags panel - its script/heard text and "Play from here" shown in the panel’s detail section',
+    // Below `xl` the detail sits under the flags list, off the bottom of a reused desktop scroll position (issue #509
+    // D82 judge-duplicate fix): the driver scrolls it into view per viewport.
     ...KEEPS_DESKTOP_SCROLL,
   },
   {
@@ -48,6 +50,7 @@ export const proofChapterStates: StateEntry[] = [
     state: 'flag-decided',
     description:
       'Proof chapter view, the finding-backed flag just accepted in place - "Saved as accepted." and the decision reflected, without leaving the page',
+    ...KEEPS_DESKTOP_SCROLL,
   },
   {
     page: 'proof-chapter',
