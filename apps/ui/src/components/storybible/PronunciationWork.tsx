@@ -4,6 +4,7 @@ import { Button } from '../primitives/Button';
 import { Field } from '../primitives/Field';
 import { Select } from '../primitives/Select';
 import { StatusBadge } from '../primitives/StatusBadge';
+import { OnlinePronunciationLookup } from './OnlinePronunciationLookup';
 import { PRONUNCIATION_STATUSES, pronunciationSourceLabel, pronunciationStatusInfo, pronunciationStatusOf } from './pronunciationStatus';
 
 // The limits the host and the sidecar enforce (guide/service.go, manuscript_guide.py); checked here too so the narrator is told first.
@@ -79,6 +80,7 @@ export function PronunciationWork({
             </Button>
           </div>
           <p className="-mt-1 text-xs text-[var(--text-muted)]">Kept beside the dictionary&apos;s answer; you can switch back at any time.</p>
+          <OnlinePronunciationLookup name={name} disabled={disabled} onUse={setIpa} />
           {alternate && (
             <Button variant="ghost" disabled={disabled} pending={pending('alternate')} onClick={onUseAlternate} aria-label={`Use ${alternate.ipa} for ${name}`}>
               Use {alternate.source === 'user' ? 'yours' : alternate.source} instead

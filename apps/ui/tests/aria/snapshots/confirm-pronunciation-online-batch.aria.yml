@@ -1,0 +1,12 @@
+# The batch notice (prep-depth P9, Q11) opens over the Pronunciation queries slide-over; everything behind it is aria-hidden, so
+# <body> holds the alert dialog and the two empty toast live regions. Its message names the count and says nothing else is sent.
+- /children: equal
+- main:
+  - alert
+  - status
+- alertdialog /Look up \d+ names online\?/:
+  - heading /Look up \d+ names online\?/ [level=2]
+  - button "Close"
+  - text: /Merriam-Webster is sent each of these \d+ names on its own, on your own key, and nothing else from your book/
+  - button "Cancel"
+  - button /Look up \d+/

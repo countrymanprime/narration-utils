@@ -36,6 +36,7 @@ import (
 	"github.com/countrymanprime/narration-utils/shell/internal/production"
 	"github.com/countrymanprime/narration-utils/shell/internal/project"
 	"github.com/countrymanprime/narration-utils/shell/internal/projectstate"
+	"github.com/countrymanprime/narration-utils/shell/internal/pronunciationonline"
 	"github.com/countrymanprime/narration-utils/shell/internal/proofing"
 	"github.com/countrymanprime/narration-utils/shell/internal/recents"
 	"github.com/countrymanprime/narration-utils/shell/internal/renderconfig"
@@ -57,7 +58,7 @@ import (
 // Keep this in lockstep with apps/ui/src/hostApi.ts.  The frontend rejects
 // an older host before bootstrapping so a partial update cannot run against a
 // binding contract it does not understand.
-const hostAPIVersion = 79
+const hostAPIVersion = 80
 
 // Host is the Wails binding boundary. The frontend invokes only this bound
 // object; it never receives a loopback port or an HTTP capability.
@@ -211,6 +212,9 @@ type Host struct {
 	// pickAudioFiles and measureFile are seams for tests (measure_job.go): nil means the operating system's multiple-file
 	// picker and measure.MeasureFile.
 	pickAudioFiles func() ([]string, error)
+	// pronunciationOnline is the Merriam-Webster lookup (prep-depth P9, bindings_pronunciationonline.go): user-level like
+	// recents, set once in NewHost and never swapped by a project switch, so it is read directly.
+	pronunciationOnline *pronunciationonline.Service
 	// pickRenderFile is a seam for tests (bindings_proofing_render.go): nil means the operating system's single-file
 	// picker for a chapter's rendered file.
 	pickRenderFile func() (string, error)
@@ -359,7 +363,7 @@ func NewHost() *Host {
 	profiles := deliveryprofile.NewStore(deliveryProfilesPath())
 	profiles.SetPersist(reporter)
 	notes.SetOnJobEnd(func(job manuscript.ImportJob) { host.importJobEnded(job) })
-	host = &Host{diagnostic: fmt.Sprintf("go-%d", time.Now().UnixNano()), version: version, config: config{repoRoot: repoRoot}, manuscript: notes, sidecars: process.NewSupervisor(), settings: store, installJobs: map[string]*installJob{}, recents: recent, creditTemplates: templates, deliveryProfiles: profiles, log: logger, runLog: runLog, persist: reporter, updates: update.NewChecker(version, updateCachePath(), reporter), stager: newUpdateStager(), pendingPath: updatePendingPath()}
+	host = &Host{diagnostic: fmt.Sprintf("go-%d", time.Now().UnixNano()), version: version, config: config{repoRoot: repoRoot}, manuscript: notes, sidecars: process.NewSupervisor(), settings: store, installJobs: map[string]*installJob{}, recents: recent, creditTemplates: templates, deliveryProfiles: profiles, pronunciationOnline: newPronunciationOnline(), log: logger, runLog: runLog, persist: reporter, updates: update.NewChecker(version, updateCachePath(), reporter), stager: newUpdateStager(), pendingPath: updatePendingPath()}
 	// NARRATION_DEBUG=1 already forced the level in runlog.New; a saved General.debug_logging=true from a previous
 	// run turns it on too, so the narrator's last choice survives a restart (SetDebug is a no-op once the
 	// environment has forced it).

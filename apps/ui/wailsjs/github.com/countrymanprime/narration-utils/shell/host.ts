@@ -1330,6 +1330,53 @@ export function PronunciationLookupOpen(source: string, word: string): $Cancella
 }
 
 /**
+ * PronunciationOnlineKeyClear removes the saved key; cached answers stay.
+ */
+export function PronunciationOnlineKeyClear(): $CancellablePromise<string> {
+    return $Call.ByID(3315931556);
+}
+
+/**
+ * PronunciationOnlineKeySet saves the narrator's pasted key (Q10). An error never quotes what was pasted.
+ */
+export function PronunciationOnlineKeySet(key: string): $CancellablePromise<string> {
+    return $Call.ByID(2329407561, key);
+}
+
+/**
+ * PronunciationOnlineKeyStatus says whether the narrator has saved their Merriam-Webster key, and whether it is sealed at
+ * rest on this platform. Never the key.
+ */
+export function PronunciationOnlineKeyStatus(): $CancellablePromise<string> {
+    return $Call.ByID(822152461);
+}
+
+/**
+ * PronunciationOnlineLookup looks one word up for the narrator, who pressed Look up for it (D72: narrator-initiated): from
+ * the local cache when it was looked up before, otherwise from Merriam-Webster on the narrator's key.
+ */
+export function PronunciationOnlineLookup(word: string): $CancellablePromise<string> {
+    return $Call.ByID(2880033266, word);
+}
+
+/**
+ * PronunciationOnlineLookupBatch looks every word in words up once (Q11: opt-in with a notice). confirmedCount is the word
+ * count the narrator confirmed in the notice; the Service refuses the batch unless it is exactly the number of distinct
+ * words it would send.
+ */
+export function PronunciationOnlineLookupBatch(words: string[], confirmedCount: number): $CancellablePromise<string> {
+    return $Call.ByID(132804926, words, confirmedCount);
+}
+
+/**
+ * PronunciationOnlineSignUpOpen opens the dictionary's free-key sign-up page in the narrator's browser: a fixed constant of
+ * the adapter's, never an address the UI supplies (the same trusted-URL discipline as PronunciationLookupOpen).
+ */
+export function PronunciationOnlineSignUpOpen(): $CancellablePromise<string> {
+    return $Call.ByID(1086970160);
+}
+
+/**
  * ProofingChooseRender opens the native file picker for the chapter's rendered file and, once one is chosen, attests
  * it was made from the chapter as the saved project has it now (Q9 A). It answers {status: "cancelled"} when the
  * narrator closes the dialog without choosing, {status: "refused", message} when the file could not be read or the

@@ -18,6 +18,7 @@ export function Field({
   autoFocus,
   hint,
   error,
+  secret = false,
 }: {
   label: string;
   value: string;
@@ -33,12 +34,30 @@ export function Field({
   // What is wrong with the value: shows under the field, marks it `aria-invalid` and describes it (a disabled field shows
   // the error but is not marked invalid: Base UI leaves `aria-invalid` off a disabled control).
   error?: string;
+  // A value that must not be shown or kept by the browser (the narrator's own API key): a masked input with the browser's
+  // autofill, spell check and autocorrect off. Never with `textarea`.
+  secret?: boolean;
 }) {
   return (
     <BaseField.Root invalid={Boolean(error)} disabled={disabled} className="text-[0.82rem] font-medium text-[var(--text-muted)] first:mt-3">
       <BaseField.Label className="block text-[0.82rem] font-medium text-[var(--text-muted)]">{label}</BaseField.Label>
       <BaseField.Control
-        render={textarea ? <textarea className={`min-h-20 ${CONTROL_CLASSES}`} /> : <input className={`min-h-[var(--control-height)] ${CONTROL_CLASSES}`} />}
+        render={
+          textarea ? (
+            <textarea className={`min-h-20 ${CONTROL_CLASSES}`} />
+          ) : secret ? (
+            <input
+              type="password"
+              autoComplete="off"
+              spellCheck={false}
+              autoCapitalize="off"
+              autoCorrect="off"
+              className={`min-h-[var(--control-height)] ${CONTROL_CLASSES}`}
+            />
+          ) : (
+            <input className={`min-h-[var(--control-height)] ${CONTROL_CLASSES}`} />
+          )
+        }
         disabled={disabled}
         placeholder={placeholder}
         autoFocus={autoFocus}

@@ -4,6 +4,20 @@
   "hasProject": true,
   "providers": [
     {
+      "chain": [
+        {
+          "detail": "High-pass 80 Hz",
+          "name": "EQ"
+        },
+        {
+          "detail": "0.5 dB under the peak limit",
+          "name": "Limiter"
+        },
+        {
+          "detail": "To the RMS target",
+          "name": "Gain"
+        }
+      ],
       "default": true,
       "label": "Built-in chain (EQ, limiter, gain)",
       "modes": [
@@ -18,6 +32,7 @@
       }
     },
     {
+      "chain": [],
       "default": false,
       "label": "Your DAW's FX chain",
       "modes": [

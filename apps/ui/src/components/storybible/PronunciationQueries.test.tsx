@@ -47,6 +47,8 @@ function renderPanel(rows = ROWS) {
     current = current.filter((row) => row.entityId !== 'entity-wren' || row.aliasIndex !== null);
     return { applied: 1, issues: [] };
   });
+  const batch = vi.spyOn(api, 'pronunciationOnlineLookupBatch');
+  void api.pronunciationOnlineKeySet('0b5c1a3e-7d2f-4e6a-9c8b-2f1e0d9c8b7a');
   const notify = vi.fn();
   const onChanged = vi.fn();
   render(
@@ -54,7 +56,7 @@ function renderPanel(rows = ROWS) {
       <PronunciationQueries open onClose={vi.fn()} onChanged={onChanged} notify={notify} />
     </ApiProvider>,
   );
-  return { list, setStatus, csv, importCsv, notify, onChanged };
+  return { list, setStatus, csv, batch, importCsv, notify, onChanged };
 }
 
 beforeEach(() => {
@@ -147,5 +149,37 @@ describe('the pronunciation queries panel', () => {
     renderPanel([]);
     expect(await screen.findByText('Every pronunciation is confirmed by the author. Nothing to ask.')).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Export CSV' }).hasAttribute('disabled')).toBe(true);
+  });
+});
+
+// Q11 (prep-depth P9): a batch online lookup is opt-in with a notice naming how many names it sends, once per batch.
+describe('looking every query up online', () => {
+  const rows = [
+    query({}),
+    query({ entityId: 'e2', name: 'wren' }),
+    query({ entityId: 'e3', name: 'Alice' }),
+    query({ entityId: 'e4', name: 'a very long name here' }),
+  ];
+
+  it('asks once, naming the count, and sends nothing when declined', async () => {
+    const { batch } = renderPanel(rows);
+    await userEvent.click(await screen.findByRole('button', { name: 'Look up online…' }));
+    const dialog = await screen.findByRole('alertdialog', { name: 'Look up 2 names online?' });
+    expect(within(dialog).getByText(/sent each of these 2 names on its own/)).toBeTruthy();
+    expect(within(dialog).getByText(/1 name is longer than three words or has symbols/)).toBeTruthy();
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Cancel' }));
+    expect(batch).not.toHaveBeenCalled();
+  });
+
+  it('sends the distinct names with the confirmed count, and reports what happened', async () => {
+    const { batch, notify } = renderPanel(rows);
+    await userEvent.click(await screen.findByRole('button', { name: 'Look up online…' }));
+    await userEvent.click(within(await screen.findByRole('alertdialog')).getByRole('button', { name: 'Look up 2' }));
+    await waitFor(() => expect(batch).toHaveBeenCalledTimes(1));
+    expect(batch).toHaveBeenCalledWith(['Wren', 'Alice'], 2);
+    await waitFor(() =>
+      expect(notify).toHaveBeenCalledWith(expect.stringMatching(/^Merriam-Webster: 2 looked up, 0 already on this computer, 0 not in the dictionary/)),
+    );
+    expect(screen.queryByRole('alertdialog')).toBeNull();
   });
 });
