@@ -14,8 +14,8 @@ export const STATUS_COLOR: Record<keyof typeof STATUS_LABELS, string> = {
 };
 
 // StatusBadge's tone (studio-ui-primitives.prd.md Phase 3, Q6): a closed set of meanings, so three stage names in the
-// middle of the pipeline share one meaning, `progress`, rather than each inventing its own. The hand-drawn dots above
-// stay on STATUS_COLOR for now; a feature that adopts StatusBadge for a chapter's status reads this map instead.
+// middle of the pipeline share one meaning, `progress`, rather than each inventing its own. The chapter list's dots (a `Dot`,
+// ADR 0600) keep STATUS_COLOR's five hues; a feature that adopts StatusBadge for a chapter's status reads this map instead.
 export const STATUS_TONE: Record<keyof typeof STATUS_LABELS, StatusTone> = {
   not_started: 'neutral',
   recording: 'progress',

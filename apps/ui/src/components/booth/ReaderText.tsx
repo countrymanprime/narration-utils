@@ -257,7 +257,7 @@ export function ReaderText({
         if (gutter && row.kind === 'paragraph')
           return (
             <div key={row.key} className="lg:grid lg:grid-cols-[7rem_minmax(0,1fr)] lg:gap-x-4">
-              <div className="leading-none lg:pt-[0.6em]">{speaker && <SpeakerTag label={speaker} />}</div>
+              <div className="leading-none lg:pt-[0.6em]">{speaker && <SpeakerTag label={speaker} size="booth" />}</div>
               <p className="whitespace-pre-line">{content}</p>
             </div>
           );
