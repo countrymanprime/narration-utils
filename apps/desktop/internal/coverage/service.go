@@ -35,6 +35,10 @@ type Config struct {
 	ProjectFile func() (string, error)
 	// LoadManuscript returns the canonical manuscript (manuscript.Service.Load).
 	LoadManuscript func() (map[string]any, error)
+	// LoadCredits returns a credits kind's ("opening" or "closing") rendered title and text - the same first-of-kind
+	// template render the Home row and the teleprompter show (Phase 3, ADR 0093, ADR 0150) - or an error when the
+	// library has no template of that kind (CT5). nil refuses every credits check with ReasonCreditsNotSetUp.
+	LoadCredits func(kind string) (title, text string, err error)
 	// Reporter logs a stored file that cannot be read (ADR 0069); may be nil.
 	Reporter *persist.Reporter
 	// ProjectReader reads the saved .rpp ProjectFile resolves (DAW port PRD Phase 5d); nil falls back to tracks.Parse
@@ -270,14 +274,44 @@ func (s *Service) readProject(path string) (tracks.Project, error) {
 }
 
 func (s *Service) chapter(chapterID string) (ChapterBasis, error) {
+	basis, _, err := s.basisAndText(chapterID)
+	return basis, err
+}
+
+// basisAndText resolves chapterID's basis, and, for a credits row, the rendered text a run measures against (Phase
+// 3): manuscriptPath (used only by a caller launching the sidecar) stays the real manuscript for a manuscript
+// chapter, and text is empty - the sidecar already reads that file itself. A credits id (CreditsKind) never reaches
+// LoadManuscript at all: credits are not manuscript chapters (ADR 0150, ADR 0183) and must never be looked up as one.
+func (s *Service) basisAndText(chapterID string) (basis ChapterBasis, text string, err error) {
 	if s.config.LoadManuscript == nil {
-		return ChapterBasis{}, unknown(ReasonNoManuscript, "import a manuscript before checking a recording")
+		return ChapterBasis{}, "", unknown(ReasonNoManuscript, "import a manuscript before checking a recording")
 	}
-	data, err := s.config.LoadManuscript()
-	if err != nil {
-		return ChapterBasis{}, unknown(ReasonNoManuscript, err.Error())
+	data, loadErr := s.config.LoadManuscript()
+	if loadErr != nil {
+		return ChapterBasis{}, "", unknown(ReasonNoManuscript, loadErr.Error())
 	}
-	return chapterBasis(data, chapterID)
+	if kind, ok := CreditsKind(chapterID); ok {
+		documentID, _ := data["documentId"].(string)
+		if documentID == "" {
+			return ChapterBasis{}, "", unknown(ReasonNoManuscript, "import a manuscript before checking a recording")
+		}
+		if s.config.LoadCredits == nil {
+			return ChapterBasis{}, "", unknown(ReasonCreditsNotSetUp, "credits recording checks are not available")
+		}
+		title, renderedText, loadErr := s.config.LoadCredits(kind)
+		if loadErr != nil {
+			return ChapterBasis{}, "", unknown(ReasonCreditsNotSetUp, loadErr.Error())
+		}
+		return creditsBasis(documentID, kind, title, renderedText), renderedText, nil
+	}
+	basis, err = chapterBasis(data, chapterID)
+	return basis, "", err
+}
+
+// manuscriptPath is the real project's canonical manuscript file: the sidecar's own --manuscript argument for a
+// manuscript chapter's check, and the depth writeCreditsManuscript's stand-in file matches for a credits one.
+func (s *Service) manuscriptPath() string {
+	return filepath.Join(s.config.Project, "narration-utils", "manuscript", "manuscript.json")
 }
 
 func (s *Service) prepareAndLaunch(request Request) (*job, error) {
@@ -293,7 +327,7 @@ func (s *Service) prepareAndLaunch(request Request) (*job, error) {
 	if s.config.Python == "" {
 		return nil, unknown(ReasonSidecarMissing, "configure the Transcript Compare executable before checking a recording")
 	}
-	basis, err := s.chapter(request.ChapterID)
+	basis, text, err := s.basisAndText(request.ChapterID)
 	if err != nil {
 		return nil, err
 	}
@@ -309,12 +343,20 @@ func (s *Service) prepareAndLaunch(request Request) (*job, error) {
 	if err != nil {
 		return nil, err
 	}
+	manuscriptPath := s.manuscriptPath()
+	if _, isCredits := CreditsKind(basis.ChapterID); isCredits {
+		manuscriptPath = creditsManuscriptPath(s.config.Project)
+		if err := writeCreditsManuscript(manuscriptPath, basis, text); err != nil {
+			return nil, fmt.Errorf("could not prepare the credits recording check: %w", err)
+		}
+	}
 	inputs := readProjectInputs(s.config.Project)
 	started := s.now().UTC()
 	running := &job{
 		runID: strconv.FormatInt(started.UnixNano(), 10), request: request, basis: basis, plan: planned,
 		projectFile: projectFile, inputs: inputs, startedAt: started, done: make(chan struct{}),
-		words: wordsCache{store: s.cache, paramHash: wordsParamHash(request.Transcription, request.Recheck.Model, inputs)},
+		manuscriptPath: manuscriptPath,
+		words:          wordsCache{store: s.cache, paramHash: wordsParamHash(request.Transcription, request.Recheck.Model, inputs)},
 	}
 	running.dir = filepath.Join(runsDir(s.config.Project), running.runID)
 	running.progressPath = filepath.Join(running.dir, "progress.txt")
@@ -341,7 +383,7 @@ func (s *Service) sidecarArgs(running *job, transcription Transcription) []strin
 	args := []string{
 		"--coverage",
 		"--manifest", running.manifestPath(),
-		"--manuscript", filepath.Join(s.config.Project, "narration-utils", "manuscript", "manuscript.json"),
+		"--manuscript", running.manuscriptPath,
 		"--chapter-id", running.basis.ChapterID,
 		"--words-dir", running.wordsDir(),
 		"--out", running.resultsPath(),
@@ -370,7 +412,7 @@ func (s *Service) recheckArgs(running *job) []string {
 	args := []string{
 		"--coverage",
 		"--recheck", running.windowsPath(),
-		"--manuscript", filepath.Join(s.config.Project, "narration-utils", "manuscript", "manuscript.json"),
+		"--manuscript", running.manuscriptPath,
 		"--words-dir", running.wordsDir(),
 		"--progress", running.progressPath,
 		"--model", transcription.Model,

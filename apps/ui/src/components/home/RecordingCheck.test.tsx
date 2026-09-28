@@ -134,11 +134,11 @@ describe('recording check on Home', () => {
     expect(await within(dialog).findByText('Repeated reads (Review): none waiting')).toBeTruthy();
   });
 
-  it("shows the proofer's project-wide open pickup count, the same figure PickupsDialog shows (recording-check-summary.prd.md RS5 B)", async () => {
+  it("shows the proofer's project-wide open pickup count, the same figure the Pickups page shows (recording-check-summary.prd.md RS5 B)", async () => {
     await openBreakdown({ pickups: 'next-success' });
     const dialog = await openCheck('Chapter 1');
     expect(await within(dialog).findByText('Pickup list: 2 open (project-wide)')).toBeTruthy();
-    expect(within(dialog).getByRole('link', { name: 'Open pickups' }).getAttribute('href')).toBe('/tracks');
+    expect(within(dialog).getByRole('link', { name: 'Open pickups' }).getAttribute('href')).toBe('/pickups');
   });
 
   it('reads "open REAPER to count" for the pickup list when REAPER is not connected (RS5 B)', async () => {

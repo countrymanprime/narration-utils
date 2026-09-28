@@ -126,64 +126,6 @@ export const tracksDrivers: Record<string, Driver> = {
     await message.waitFor();
     await message.scrollIntoViewIfNeeded();
   },
-  'pickups-empty': async (page) => {
-    await goToPage(page, 'Tracks');
-    await clickVisible(page, 'button', 'Pickups…');
-    await page.getByText('No pickups yet').waitFor();
-  },
-  'pickups-imported': async (page) => {
-    await goToPage(page, 'Tracks');
-    await clickVisible(page, 'button', 'Pickups…');
-    await page.locator('input[type="file"]').setInputFiles({
-      name: 'pickups.csv',
-      mimeType: 'text/csv',
-      buffer: Buffer.from('start,note,tag\n1.5,Mispronounced "labyrinthine",narrator\n42,Dog barked in the background,\n'),
-    });
-    await page.getByText('2 pickups remaining of 2').waitFor();
-  },
-  'pickups-import-errors': async (page) => {
-    await goToPage(page, 'Tracks');
-    await clickVisible(page, 'button', 'Pickups…');
-    await page.locator('input[type="file"]').setInputFiles({
-      name: 'pickups.csv',
-      mimeType: 'text/csv',
-      buffer: Buffer.from('1.5,Good row\nnot-a-number,Bad row\n'),
-    });
-    await page.getByText(/1 row could not be used/).waitFor();
-    // The row report lands immediately; the run itself settles 300ms later in the mock. Wait for the
-    // completed message too, so the screenshot shows the settled "1 pickup remaining" count, not a still-busy
-    // Import button over a stale "No pickups yet".
-    await page.getByText('Imported 1 pickup.').waitFor();
-  },
-  'pickups-next': async (page) => {
-    await page.goto('/?mockPickups=import-success');
-    await settlePage(page);
-    await goToPage(page, 'Tracks');
-    await clickVisible(page, 'button', 'Pickups…');
-    await clickVisible(page, 'button', 'Next pickup');
-    await page.getByRole('button', { name: 'Mark this pickup done' }).waitFor();
-  },
-  // "Punch from here" wired to dawport.Puncher (booth-actions-enablement PRD Phase 3): the punch capability is turned
-  // on directly (?mockPunchCapabilityOn=1), the same bypass mockRegionsCapabilityOn uses.
-  'pickups-next-punch-enabled': async (page) => {
-    await page.goto('/?mockPickups=import-success&mockPunchCapabilityOn=1');
-    await settlePage(page);
-    await goToPage(page, 'Tracks');
-    await clickVisible(page, 'button', 'Pickups…');
-    await clickVisible(page, 'button', 'Next pickup');
-    const button = page.getByRole('button', { name: 'Punch from here' });
-    await button.waitFor();
-    if (await button.getAttribute('aria-disabled')) throw new Error('Punch from here is still gated with the capability on');
-  },
-  'pickups-error': async (page) => {
-    await page.goto('/?mockPickups=error');
-    await settlePage(page);
-    await goToPage(page, 'Tracks');
-    await clickVisible(page, 'button', 'Pickups…');
-    const message = page.getByText(/Narration Utils script/).first();
-    await message.waitFor();
-    await message.scrollIntoViewIfNeeded();
-  },
   'render-config-prefilled': async (page) => {
     await goToPage(page, 'Tracks');
     await clickVisible(page, 'button', 'Prepare chapter render…');
