@@ -9,6 +9,9 @@ from the pieces by the rules in docs/research/recording-coverage-fixtures.md, so
 - `{"paragraph": n, "sentences": [i, j]}`: sentences i to j of paragraph n (0-based, half-open; j null for the end).
 - `{"roomTone": seconds}`: the recording's own room tone.
 - `{"foreign": {"source": id, "paragraph": n}}`: a paragraph of another recording, as different text in its place.
+
+A recipe's `"notRead": [n, ...]` names paragraphs the reader left words out of in the source recording itself, such
+as an editorial note in the script that the reader's edition does not have: they are partial wherever they are read.
 """
 
 from __future__ import annotations
@@ -122,6 +125,10 @@ def build_case(recipe: dict, alignments: dict[str, Alignment], out: Path | None)
         if out is not None:
             audio.write_wav(out / name, samples, alignment.rate)
         items.append({"id": item["id"], "audio": name})
+    for number in recipe.get("notRead", []):
+        if number in reading.full:
+            reading.full.discard(number)
+            reading.partial.add(number)
     return {
         "schemaVersion": SCHEMA_VERSION,
         "id": recipe["id"],

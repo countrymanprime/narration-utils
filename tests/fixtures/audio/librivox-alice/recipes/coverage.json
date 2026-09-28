@@ -112,11 +112,12 @@
       ]
     },
     {
-      "id": "kara_10-complete",
+      "id": "kara_10-editorial-notes-not-read",
       "source": "kara_10",
       "split": "held_out",
-      "conditions": ["complete", "title_read"],
-      "description": "The whole chapter as published, verse included.",
+      "conditions": ["skipped_sentence", "title_read"],
+      "description": "The whole chapter as published, verse and sung lines included. The script's paragraphs 63 and 74 open with the Gutenberg note \"[later editions continued as follows\", which the reader's edition does not have, so those five words are never read.",
+      "notRead": [63, 74],
       "items": [{"id": "item-1", "pieces": [{"whole": true}]}]
     },
     {

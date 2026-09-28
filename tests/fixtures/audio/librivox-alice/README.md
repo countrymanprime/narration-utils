@@ -39,8 +39,9 @@ uv run --project sidecars/transcript-compare python tests/fixtures/audio/librivo
 
 14 cases in ADR 0125's layout, 9 `tune` (Kara) and 5 `held_out` (Kara's Chapter X and all of Leach): complete chapters,
 a skipped paragraph, a skipped sentence, a pickup read at the end, a truncated tail, a late start, a false start and
-retake, three items, and a paragraph replaced by another chapter's text. Every item keeps its LibriVox preamble or
-closing credit, which is real unrelated speech. Labels follow the rules in
+retake, three items, a paragraph replaced by another chapter's text, and a whole chapter whose script has editorial
+notes the reader's edition does not (`notRead`). Every item keeps its LibriVox preamble or closing credit, which is
+real unrelated speech. Labels follow the rules in
 [recording-coverage-fixtures.md](../../../../docs/research/recording-coverage-fixtures.md) and are derived from the
 recipe, so they are exact.
 
@@ -49,8 +50,8 @@ NARRATION_COVERAGE_CORPUS=../narration-corpus/coverage uv run --project sidecars
 uv run --project sidecars/transcript-compare python sidecars/transcript-compare/tests/coverage_calibration.py audio --corpus ../narration-corpus/coverage --model small=<model dir> --model medium=<model dir> --work ../narration-corpus/work
 ```
 
-The first command validates the labels. The second runs the shipped sidecar and Whisper over the audio. Results go in
-[recording-coverage-calibration.md](../../../../docs/research/recording-coverage-calibration.md).
+The first command validates the labels. The second runs the shipped sidecar and Whisper over the audio. Results are in
+[recording-coverage-calibration.md](../../../../docs/research/recording-coverage-calibration.md#librivox-real-speech-2026-09-27).
 
 ### `characters/`: the character-continuity trial on one reader (N-D22)
 
