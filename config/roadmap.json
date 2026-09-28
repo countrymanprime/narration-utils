@@ -26,7 +26,7 @@
     },
     {
       "title": "Manuscript Teleprompter (first cut)",
-      "summary": "Listen on a chosen microphone with a local Whisper model, or Moonshine on Windows, and highlight the word being read in a chosen chapter; the read-aloud dialog flags suspected misreads, skips, extra words and restarts for review."
+      "summary": "Listen on a chosen microphone with a local Whisper model, or Moonshine on Windows, and highlight the word being read in a chosen chapter; the Booth flags suspected misreads, skips, extra words and restarts for review."
     }
   ],
   "milestones": [
