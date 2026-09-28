@@ -13,6 +13,7 @@ import { settingsFeedback } from './interactionFeedback/settings';
 import { storyBibleFeedback } from './interactionFeedback/storyBible';
 import { teleprompterFeedback } from './interactionFeedback/teleprompter';
 import { tracksFeedback } from './interactionFeedback/tracks';
+import { pickupsFeedback } from './interactionFeedback/pickups';
 import { proofFeedback } from './interactionFeedback/proof';
 import { editingFeedback } from './interactionFeedback/editing';
 import { deliveryFeedback } from './interactionFeedback/delivery';
@@ -32,6 +33,7 @@ const AREAS: Array<Record<string, FeedbackRow>> = [
   storyBibleFeedback,
   teleprompterFeedback,
   tracksFeedback,
+  pickupsFeedback,
   proofFeedback,
   editingFeedback,
   deliveryFeedback,
@@ -108,8 +110,10 @@ export const SILENT_CATCHES: Record<string, string> = {
     'Only decides whether the "Link chapters…" button shows; without it the button is absent, same as a project with no chapters.',
   'src/components/tracks/LinkChaptersDialog.tsx#1':
     'Hydrates whatever stamp or read was already in flight when the dialog reopened; the live event follows anyway.',
-  'src/components/tracks/PickupsDialog.tsx#1':
+  'src/components/pickups/usePickupsState.ts#1':
     'Hydrates whatever run was already in flight, then refreshes the count; a failure here leaves the count at its last known value, and every narrator-triggered action still shows its own failure inline.',
+  'src/components/pickups/PickupsPage.tsx#1':
+    'Reads the chapters, chapter links and tracks only to place a pickup in its chapter; without them the pickup says it is not on a linked chapter track, and every pickup action still works and shows its own failure inline.',
   'src/components/proof/FindingDetail.tsx#1':
     'Re-reads a finding after the host refused a decision, only to tell changed evidence apart; when the re-read fails too, the inline alert still shows the host reason for the refusal, so nothing is hidden.',
   'src/components/editing/EditingCandidateRow.tsx#1':
@@ -123,7 +127,7 @@ export const SILENT_CATCHES: Record<string, string> = {
   'src/components/home/RecordingCheckReport.tsx#1':
     "A background count of the chapter's other pickups (take review, RS4 A); a failure just leaves that line out of the Pickups list, with the check's own gaps unaffected.",
   'src/components/home/RecordingCheckReport.tsx#2':
-    "The pickup list's own background refresh (RS5 B), mirroring PickupsDialog.tsx#1; a failure leaves the count at whatever the subscription last reported, and the narrator can still reach the real count on Tracks.",
+    "The pickup list's own background refresh (RS5 B), mirroring usePickupsState.ts#1; a failure leaves the count at whatever the subscription last reported, and the narrator can still reach the real count on the Pickups page.",
   'src/input/keymap.ts#1':
     "keymapFromBindings (input-commands-and-pedals.prd.md Phase 6): one stored gesture this build cannot parse (a hand-edited settings file, or an older/newer app's own bug) falls back to that one command's catalog default; not a narrator action, and not swallowed silently since the Keyboard & pedals panel still shows every other override normally.",
   'src/components/tracks/CreateChapterRegionsDialog.tsx#1':
