@@ -184,10 +184,10 @@ export function PickupsPage() {
                   if (file) void importFile(file);
                 }}
               />
-              <Button variant="ghost" onClick={pickFile} pending={state.phase === 'importing'}>
+              <Button variant="secondary" onClick={pickFile} pending={state.phase === 'importing'}>
                 Import proofer CSV…
               </Button>
-              <Button variant="ghost" onClick={exportList} disabled={state.total === 0} pending={state.phase === 'exporting'}>
+              <Button variant="secondary" onClick={exportList} disabled={state.total === 0} pending={state.phase === 'exporting'}>
                 Export CSV
               </Button>
             </>
@@ -224,11 +224,11 @@ export function PickupsPage() {
                 <PickupChapterLinks matches={nextChapters} />
                 <div className="flex flex-wrap gap-2">
                   <CapabilityGate capability={punchCapability}>
-                    <Button variant="ghost" onClick={punchCurrent} pending={punching}>
+                    <Button variant="secondary" onClick={punchCurrent} pending={punching}>
                       Punch from here
                     </Button>
                   </CapabilityGate>
-                  <Button variant="ghost" onClick={resolveCurrent} pending={state.phase === 'resolving'}>
+                  <Button variant="secondary" onClick={resolveCurrent} pending={state.phase === 'resolving'}>
                     Mark this pickup done
                   </Button>
                 </div>

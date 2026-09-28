@@ -20,9 +20,9 @@ const FROM_THE_TOP = 'reading starts from the top.';
  * Pick a word and Continue there are links beside the compact notices, not pill buttons). */
 function TextLink({ children, onClick }: { children: ReactNode; onClick: () => void }) {
   return (
-    <button type="button" className="underline" style={{ color: 'var(--accent)' }} onClick={onClick}>
+    <Button variant="link" style={{ color: 'var(--accent)' }} onClick={onClick}>
       {children}
-    </button>
+    </Button>
   );
 }
 
@@ -303,7 +303,7 @@ function PromptBody({
     return (
       <Actions
         buttons={
-          <Button variant="ghost" onClick={onRetry}>
+          <Button variant="secondary" onClick={onRetry}>
             Try again
           </Button>
         }
@@ -363,7 +363,7 @@ function LocatedBody({ result, onChoose }: { result: Located; onChoose: (word: n
     return (
       <Actions
         buttons={
-          <Button variant="ghost" onClick={() => onChoose(null)}>
+          <Button variant="secondary" onClick={() => onChoose(null)}>
             Pick a word
           </Button>
         }
@@ -404,15 +404,15 @@ function LocatedBody({ result, onChoose }: { result: Located; onChoose: (word: n
         buttons={
           <>
             <Button
-              variant={located.confident ? 'primary' : 'ghost'}
+              variant={located.confident ? 'primary' : 'secondary'}
               onClick={() => onChoose(point.word, point.sentence ? chipLabel(point.sentence, point.word) : undefined)}
             >
               Resume from here
             </Button>
-            <Button variant="ghost" onClick={() => onChoose(null)}>
+            <Button variant="secondary" onClick={() => onChoose(null)}>
               Start from the top
             </Button>
-            <Button variant="ghost" onClick={() => onChoose(null)}>
+            <Button variant="secondary" onClick={() => onChoose(null)}>
               Pick a word
             </Button>
           </>
@@ -437,7 +437,7 @@ function LocatedBody({ result, onChoose }: { result: Located; onChoose: (word: n
     <Actions
       buttons={
         result.status === 'not_found' ? (
-          <Button variant="ghost" onClick={() => onChoose(null)}>
+          <Button variant="secondary" onClick={() => onChoose(null)}>
             Pick a word
           </Button>
         ) : null

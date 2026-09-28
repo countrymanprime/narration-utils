@@ -18,7 +18,6 @@ import {
   stageLabel,
   verdictSentence,
 } from './stageText';
-
 type Props = {
   open: boolean;
   chapter?: ManuscriptChapter;
@@ -69,7 +68,7 @@ function Unread({ phase, error, onCheckNow }: Props) {
   return (
     <div role="alert" className="space-y-3 text-sm">
       <p style={{ color: 'var(--danger-text)' }}>Couldn’t check this chapter{error ? `: ${error}` : '.'}</p>
-      <Button variant="ghost" onClick={onCheckNow}>
+      <Button variant="secondary" onClick={onCheckNow}>
         Check now
       </Button>
     </div>
@@ -90,7 +89,7 @@ function EvidenceBody({
   onOpenFinding,
 }: Props & { chapter: ManuscriptChapter; recommendation: StageChapterRecommendation }) {
   const now = Date.now();
-  const decision = (kind: StageDecision, label: string, variant: 'primary' | 'ghost' = 'ghost') => (
+  const decision = (kind: StageDecision, label: string, variant: 'primary' | 'secondary' = 'secondary') => (
     <Button variant={variant} pending={isPending(kind)} disabled={busy && !isPending(kind)} onClick={() => onDecide(kind)}>
       {label}
     </Button>
@@ -143,7 +142,7 @@ function EvidenceBody({
         ))}
       </div>
       <div className="flex flex-wrap items-center gap-2 border-t border-[var(--border)] pt-3">
-        <Button variant="ghost" pending={phase === 'loading'} onClick={onCheckNow}>
+        <Button variant="secondary" pending={phase === 'loading'} onClick={onCheckNow}>
           Check now
         </Button>
         <span className="text-xs" style={{ color: 'var(--text-muted)' }}>
@@ -225,14 +224,14 @@ function CauseAction({
 }) {
   if (resolve === 'check')
     return (
-      <Button variant="ghost" onClick={onOpenCheck}>
+      <Button variant="secondary" onClick={onOpenCheck}>
         {openLabel}
       </Button>
     );
   if (resolve === 'engine') return <EnginePanelLink />;
   if (resolve === 'check-now')
     return (
-      <Button variant="ghost" onClick={onCheckNow}>
+      <Button variant="secondary" onClick={onCheckNow}>
         Check now
       </Button>
     );
@@ -256,14 +255,14 @@ function EvidenceLine({
       <span className="font-semibold">{entry.label}:</span> {evidenceValue(entry.kind, entry.value)}
       {first?.index !== undefined && (
         <div className="mt-1">
-          <Button variant="ghost" className="px-3 py-1" onClick={() => goToParagraph(first.index!)}>
+          <Button size="sm" variant="secondary" onClick={() => goToParagraph(first.index!)}>
             Go to paragraph {first.number}
           </Button>
         </div>
       )}
       {entry.findingId && onOpenFinding && (
         <div className="mt-1">
-          <Button variant="ghost" className="px-3 py-1" onClick={() => onOpenFinding(entry.findingId!)}>
+          <Button size="sm" variant="secondary" onClick={() => onOpenFinding(entry.findingId!)}>
             Open this note
           </Button>
         </div>

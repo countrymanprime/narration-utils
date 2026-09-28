@@ -98,7 +98,7 @@ export function DeliveryProfileEditor({
       description={`${base ? `Based on ${deliveryProfileTitle(base)}. ` : ''}Saving makes revision ${profile.revision + 1}; projects using it are judged again without measuring.`}
       actions={
         <>
-          <Button variant="ghost" onClick={onCancel}>
+          <Button variant="secondary" onClick={onCancel}>
             Cancel
           </Button>
           <Button onClick={save} disabled={invalid} pending={pending}>

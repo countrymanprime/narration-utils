@@ -32,7 +32,7 @@ export function ChapterSyncConsentDialog({
       escapeCloses={!busy}
       actions={
         <>
-          <Button variant="ghost" disabled={busy} onClick={onNotNow}>
+          <Button variant="secondary" disabled={busy} onClick={onNotNow}>
             Not now
           </Button>
           <Button pending={busy} onClick={onSync} disabled={!preview}>

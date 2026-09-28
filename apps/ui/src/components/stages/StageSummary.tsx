@@ -44,7 +44,7 @@ export function StageCheckLine({ state, onCheckNow }: { state: StagesState; onCh
       <p role="alert" style={{ color: 'var(--danger-text)' }}>
         Couldn’t check stage suggestions: {state.error}
       </p>
-      <Button variant="ghost" className="px-3 py-1" pending={state.phase === 'loading'} onClick={onCheckNow}>
+      <Button variant="secondary" size="sm" pending={state.phase === 'loading'} onClick={onCheckNow}>
         Try again
       </Button>
     </div>

@@ -159,13 +159,15 @@ function EnginePanelBody({ notify, link }: { notify: Notify; link: EngineLinkSta
       )}
       {hasTracks && (
         <Panel title="REAPER tools">
-          <Toolbar label="REAPER tools" className="flex-wrap">
-            {chapters.length > 0 && <ToolbarButton render={<Button variant="ghost" onClick={() => setTool('link-chapters')} />}>Link chapters…</ToolbarButton>}
-            <ToolbarButton render={<Button variant="ghost" onClick={() => setTool('render-config')} />}>Prepare chapter render…</ToolbarButton>
-            <ToolbarButton render={<Button variant="ghost" onClick={() => setTool('create-regions')} />}>Create chapter regions…</ToolbarButton>
-            <ToolbarButton render={<Button variant="ghost" onClick={() => setTool('chapter-tags')} />}>Embed chapter tags…</ToolbarButton>
-            <ToolbarButton render={<Button variant="ghost" onClick={() => setTool('cleanup-tools')} />}>Cleanup tools…</ToolbarButton>
-            <ToolbarButton render={<Button variant="ghost" onClick={() => setTool('retake-lanes')} />}>Retakes on lanes…</ToolbarButton>
+          <Toolbar label="REAPER tools" className="mt-2 flex-wrap">
+            {chapters.length > 0 && (
+              <ToolbarButton render={<Button variant="secondary" onClick={() => setTool('link-chapters')} />}>Link chapters…</ToolbarButton>
+            )}
+            <ToolbarButton render={<Button variant="secondary" onClick={() => setTool('render-config')} />}>Prepare chapter render…</ToolbarButton>
+            <ToolbarButton render={<Button variant="secondary" onClick={() => setTool('create-regions')} />}>Create chapter regions…</ToolbarButton>
+            <ToolbarButton render={<Button variant="secondary" onClick={() => setTool('chapter-tags')} />}>Embed chapter tags…</ToolbarButton>
+            <ToolbarButton render={<Button variant="secondary" onClick={() => setTool('cleanup-tools')} />}>Cleanup tools…</ToolbarButton>
+            <ToolbarButton render={<Button variant="secondary" onClick={() => setTool('retake-lanes')} />}>Retakes on lanes…</ToolbarButton>
           </Toolbar>
         </Panel>
       )}
@@ -203,7 +205,7 @@ function ProjectSection({ discovery, link, onSelectRpp }: { discovery?: TracksDi
     <Panel
       title="REAPER project"
       actions={
-        <Button variant="ghost" pending={link.linkingDawFile} onClick={link.onLinkDawFile}>
+        <Button variant="secondary" pending={link.linkingDawFile} onClick={link.onLinkDawFile}>
           {link.dawFileLinked ? 'Link a different REAPER project file' : 'Link a REAPER project file'}
         </Button>
       }

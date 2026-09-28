@@ -186,12 +186,12 @@ export function ReaderFlagsPanel({ flags, visibility, onVisibility, dismissed, o
                 Dismissed
               </span>
             ) : (
-              <Button variant="ghost" onClick={() => onDismiss(selected)}>
+              <Button variant="secondary" onClick={() => onDismiss(selected)}>
                 Dismiss
               </Button>
             )}
             <CapabilityGate capability={punchCapability}>
-              <Button variant="ghost" pending={punch.phase === 'previewing'} onClick={() => startPunch(selected)}>
+              <Button variant="secondary" pending={punch.phase === 'previewing'} onClick={() => startPunch(selected)}>
                 Punch from here
               </Button>
             </CapabilityGate>

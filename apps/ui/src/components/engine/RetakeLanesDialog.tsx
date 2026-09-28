@@ -44,7 +44,7 @@ function RetakeRow({
         {plays ? 'Plays' : 'Silent'}
       </span>
       <Button
-        variant="ghost"
+        variant="secondary"
         aria-label={`Play lane ${lane} for ${line.lineId} on ${line.trackName}`}
         onClick={onPick}
         pending={picking && state.itemGuid === retake.itemGuid}
@@ -131,7 +131,7 @@ export function RetakeLanesDialog({ onClose }: { onClose: () => void }) {
       escapeCloses={!picking}
       description="Choose which lane plays for a line. A lane plays across its whole track, so choosing one silences the other lanes of that track everywhere, not only for this line. Narration Utils changes nothing else, and Undo in REAPER puts the previous lanes back."
       actions={
-        <Button variant="ghost" onClick={onClose} disabled={picking}>
+        <Button variant="secondary" onClick={onClose} disabled={picking}>
           Close
         </Button>
       }

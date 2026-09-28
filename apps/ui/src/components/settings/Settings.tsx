@@ -25,7 +25,6 @@ import { RecordingCheckSummary } from './RecordingCheckSummary';
 import { ScopedSetting } from './ScopedSetting';
 import { UpdatesPanel } from './UpdatesPanel';
 import type { Notify } from '../primitives/Toast';
-
 type SettingsCategory = { key: string; label: string; tool?: string; scopes: Scope[]; filter?: (field: ScopedSettingField) => boolean };
 const SETTINGS_CATEGORIES: SettingsCategory[] = [
   { key: 'General', label: 'General', tool: 'General', scopes: ['global'] },
@@ -280,7 +279,7 @@ export function Settings({
                       </div>
                     </div>
                   </div>
-                  <Button variant="ghost" onClick={onLinkDawFile}>
+                  <Button variant="secondary" onClick={onLinkDawFile}>
                     {data.dawFileLinked ? 'Change linked project file' : 'Link a REAPER project file'}
                   </Button>
                 </div>
@@ -311,7 +310,7 @@ export function Settings({
                       </div>
                     </div>
                   </div>
-                  <Button variant="ghost" type="button" disabled={!data.dawFileLinked || launchingDaw} onClick={() => void handleLaunchDaw()}>
+                  <Button variant="secondary" type="button" disabled={!data.dawFileLinked || launchingDaw} onClick={() => void handleLaunchDaw()}>
                     {launchingDaw ? 'Starting REAPER…' : 'Launch REAPER'}
                   </Button>
                   {!data.dawFileLinked && <p style={{ color: 'var(--text-muted)' }}>Link a REAPER project (.rpp) file before starting REAPER.</p>}
@@ -335,7 +334,7 @@ export function Settings({
                       {dirty && 'Unsaved changes'}
                     </span>
                     <div className="flex gap-2">
-                      <Button variant="ghost" type="button" disabled={!dirty} onClick={() => void discard()}>
+                      <Button variant="secondary" type="button" disabled={!dirty} onClick={() => void discard()}>
                         Discard changes
                       </Button>
                       <Button variant="primary" type="submit" disabled={!dirty}>
@@ -354,8 +353,8 @@ export function Settings({
                         {reaperLauncher}
                       </code>
                       <Button
-                        variant="ghost"
-                        className="mt-2 text-xs"
+                        variant="secondary"
+                        className="mt-2"
                         type="button"
                         onClick={() =>
                           void navigator.clipboard
@@ -440,7 +439,7 @@ export function Settings({
                             </div>
                           </div>
                           {selectedWhisperModel.installState === 'installed' && (
-                            <Button variant="ghost" className="text-xs" type="button" onClick={() => setConfirmRemoveModel(true)}>
+                            <Button variant="secondary" type="button" onClick={() => setConfirmRemoveModel(true)}>
                               Remove local model…
                             </Button>
                           )}
@@ -472,7 +471,7 @@ export function Settings({
                             </div>
                           </div>
                           {selectedTtsVoice.installState === 'installed' && (
-                            <Button variant="ghost" className="text-xs" type="button" onClick={() => setConfirmRemoveVoice(true)}>
+                            <Button variant="secondary" type="button" onClick={() => setConfirmRemoveVoice(true)}>
                               Remove local voice…
                             </Button>
                           )}
@@ -500,7 +499,7 @@ export function Settings({
                       {dirty && 'Unsaved changes'}
                     </span>
                     <div className="flex gap-2">
-                      <Button variant="ghost" type="button" disabled={!dirty} onClick={() => void discard()}>
+                      <Button variant="secondary" type="button" disabled={!dirty} onClick={() => void discard()}>
                         Discard changes
                       </Button>
                       <Button variant="primary" type="submit" disabled={!dirty}>

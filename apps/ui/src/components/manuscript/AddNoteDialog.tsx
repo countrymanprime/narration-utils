@@ -11,7 +11,7 @@ export function AddNoteDialog({ anchorText, confirm, cancel }: { anchorText: str
       onClose={cancel}
       actions={
         <>
-          <Button variant="ghost" onClick={cancel}>
+          <Button variant="secondary" onClick={cancel}>
             Cancel
           </Button>
           <Button variant="primary" disabled={!text.trim()} onClick={() => confirm(text.trim())}>

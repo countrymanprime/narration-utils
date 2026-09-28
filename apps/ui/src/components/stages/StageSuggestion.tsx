@@ -5,9 +5,6 @@ import { StatusBadge } from '../primitives/StatusBadge';
 import type { StageDecision, StagesState } from './useStageRecommendations';
 import { stageLabel, verdictLine } from './stageText';
 
-/** The small buttons of a row: the table has twelve of them, so they are a size down from the page's. */
-const SMALL = 'px-2 py-0.5 text-[0.75rem]';
-
 /**
  * A chapter's stage suggestion under its status (chapter-stage-recommendations.prd.md Phase 5, deleted; see
  * docs/architecture/stage-recommendations.md): the verdict in a few words,
@@ -37,13 +34,14 @@ export function StageSuggestion({
     if (phase === 'error') return <Note tone="danger">Couldn’t check</Note>;
     return null;
   }
-  const decision = (kind: StageDecision, label: string, visible: string, variant: 'primary' | 'ghost' = 'ghost') => (
-    <Button variant={variant} className={SMALL} aria-label={label} pending={isPending(kind)} disabled={busy && !isPending(kind)} onClick={() => onDecide(kind)}>
+  const decision = (kind: StageDecision, label: string, visible: string, variant: 'primary' | 'secondary' = 'secondary') => (
+    // The small buttons of a row: the table has twelve of them, so they are a size down from the page's.
+    <Button variant={variant} size="sm" aria-label={label} pending={isPending(kind)} disabled={busy && !isPending(kind)} onClick={() => onDecide(kind)}>
       {visible}
     </Button>
   );
   const why = (
-    <Button variant="ghost" className={SMALL} aria-label={`Why: ${title}`} onClick={onWhy}>
+    <Button variant="secondary" size="sm" aria-label={`Why: ${title}`} onClick={onWhy}>
       Why
     </Button>
   );
