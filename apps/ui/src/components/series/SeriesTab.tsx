@@ -5,6 +5,7 @@ import { usePendingAction } from '../../hooks/usePendingAction';
 import type { Series, SeriesVoiceBible } from '../../types';
 import { formatRegionTime } from '../storybible/VoiceReferencesSection';
 import { Button } from '../primitives/Button';
+import { InsetCard } from '../primitives/InsetCard';
 import { StatusBadge } from '../primitives/StatusBadge';
 import { TextField } from '../primitives/TextField';
 import type { Notify } from '../primitives/Toast';
@@ -111,7 +112,7 @@ export function SeriesTab({ notify }: { notify: Notify }) {
         </p>
         <div className="flex flex-wrap items-end gap-2">
           <TextField label="Series name" value={seriesName} onChange={setSeriesName} placeholder="e.g. Wonderland" />
-          <Button variant="ghost" className="text-xs" disabled={!seriesName.trim()} pending={mutation.isPending('create')} onClick={() => void createSeries()}>
+          <Button variant="ghost" size="sm" disabled={!seriesName.trim()} pending={mutation.isPending('create')} onClick={() => void createSeries()}>
             Create series
           </Button>
         </div>
@@ -136,11 +137,11 @@ export function SeriesTab({ notify }: { notify: Notify }) {
         </p>
       ) : (
         (bible.characters ?? []).map((character) => (
-          <div key={character.characterId} className="rounded-md border p-3" style={{ borderColor: 'var(--border)' }}>
+          <InsetCard key={character.characterId}>
             <div className="mb-1.5 text-sm font-medium">{character.name}</div>
             <ul className="space-y-1.5">
               {character.clips.map((clip) => (
-                <li key={clip.id} className="flex items-center gap-2 rounded-md border p-2" style={{ borderColor: 'var(--border)' }}>
+                <InsetCard as="li" key={clip.id} className="flex items-center gap-2">
                   <div className="min-w-0 flex-1">
                     <div className="truncate text-sm font-medium">{clip.name}</div>
                     <div className="text-xs" style={{ color: 'var(--text-muted)' }}>
@@ -150,10 +151,10 @@ export function SeriesTab({ notify }: { notify: Notify }) {
                   </div>
                   {clip.isCurrentProject && <StatusBadge tone="neutral" label="This book" />}
                   {clip.changedSinceApproval && <StatusBadge tone="warning" label="Changed since approval" />}
-                </li>
+                </InsetCard>
               ))}
             </ul>
-          </div>
+          </InsetCard>
         ))
       )}
 
@@ -172,7 +173,7 @@ export function SeriesTab({ notify }: { notify: Notify }) {
             {members.map((path) => (
               <li key={path} className="flex items-center justify-between gap-2 text-sm">
                 <span className="truncate">{path}</span>
-                <Button variant="ghost" className="text-xs" pending={mutation.isPending(`remove:${path}`)} onClick={() => void removeBook(path)}>
+                <Button variant="ghost" size="sm" pending={mutation.isPending(`remove:${path}`)} onClick={() => void removeBook(path)}>
                   Remove
                 </Button>
               </li>
@@ -180,10 +181,10 @@ export function SeriesTab({ notify }: { notify: Notify }) {
           </ul>
           <div className="flex flex-wrap items-end gap-2">
             <TextField label="Add a book" value={newBookPath} onChange={setNewBookPath} placeholder="Project folder" />
-            <Button variant="ghost" className="text-xs" pending={mutation.isPending('browse')} onClick={() => void browseForBook()}>
+            <Button variant="ghost" size="sm" pending={mutation.isPending('browse')} onClick={() => void browseForBook()}>
               Browse…
             </Button>
-            <Button variant="ghost" className="text-xs" disabled={!newBookPath.trim()} pending={mutation.isPending('add-book')} onClick={() => void addBook()}>
+            <Button variant="ghost" size="sm" disabled={!newBookPath.trim()} pending={mutation.isPending('add-book')} onClick={() => void addBook()}>
               Add
             </Button>
           </div>

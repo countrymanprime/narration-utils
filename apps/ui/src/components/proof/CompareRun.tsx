@@ -15,6 +15,7 @@ import { Button } from '../primitives/Button';
 import { CapabilityGate, type CapabilityEntry } from '../primitives/CapabilityGate';
 import { IconButton } from '../primitives/IconButton';
 import { Panel } from '../primitives/Panel';
+import { SectionLabel } from '../primitives/SectionLabel';
 import { ProgressBar } from '../primitives/ProgressBar';
 import { SectionLabel } from '../primitives/SectionLabel';
 import { ToggleGroup } from '../primitives/ToggleGroup';

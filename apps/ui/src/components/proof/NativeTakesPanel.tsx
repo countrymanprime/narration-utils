@@ -7,6 +7,7 @@ import type { ManuscriptChapter } from '../../api/contracts/manuscript';
 import type { RecorderState, RecorderTake } from '../../api/contracts/recording';
 import { Button } from '../primitives/Button';
 import { Panel } from '../primitives/Panel';
+import { SectionLabel } from '../primitives/SectionLabel';
 import { Select } from '../primitives/Select';
 
 /** A composed line id ("p-000001@abc123") back to the manuscript entity id it names (internal/recording.ParseLineID's
@@ -116,7 +117,7 @@ export function NativeTakesPanel({ chapter }: { chapter: ManuscriptChapter }) {
     <Panel title="Native takes">
       {[...groups.entries()].map(([lineId, takes]) => (
         <div key={lineId} className="mt-3 first:mt-0">
-          <h3 className="section-label">{paragraphLabel(entityIdOf(lineId))}</h3>
+          <SectionLabel as="h3">{paragraphLabel(entityIdOf(lineId))}</SectionLabel>
           <ul aria-label={`Native takes of ${paragraphLabel(entityIdOf(lineId))}`} className="mt-1 divide-y divide-[var(--border)] text-sm">
             {takes.map((take) => {
               const playing = player.playing === take.path;
@@ -124,7 +125,7 @@ export function NativeTakesPanel({ chapter }: { chapter: ManuscriptChapter }) {
                 <li key={take.name} className="flex items-center gap-2 py-1">
                   <Button
                     variant="ghost"
-                    className="px-2! py-1!"
+                    size="sm"
                     aria-label={`${playing ? 'Stop' : 'Play'} ${take.name}`}
                     aria-pressed={playing}
                     onClick={() => player.toggle(take)}
@@ -148,7 +149,7 @@ export function NativeTakesPanel({ chapter }: { chapter: ManuscriptChapter }) {
       ))}
       {unassigned.length > 0 && paragraphIds.length > 0 && (
         <div className="mt-3 first:mt-0">
-          <h3 className="section-label">Not yet assigned to a line</h3>
+          <SectionLabel as="h3">Not yet assigned to a line</SectionLabel>
           <ul aria-label="Native takes not yet assigned to a line" className="mt-1 divide-y divide-[var(--border)] text-sm">
             {unassigned.map((take) => {
               const playing = player.playing === take.path;
@@ -156,7 +157,7 @@ export function NativeTakesPanel({ chapter }: { chapter: ManuscriptChapter }) {
                 <li key={take.name} className="flex flex-wrap items-center gap-2 py-1">
                   <Button
                     variant="ghost"
-                    className="px-2! py-1!"
+                    size="sm"
                     aria-label={`${playing ? 'Stop' : 'Play'} ${take.name}`}
                     aria-pressed={playing}
                     onClick={() => player.toggle(take)}

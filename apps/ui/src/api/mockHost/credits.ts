@@ -169,7 +169,7 @@ export function createCreditsMock(
     creditTemplates.push({ id: 'mock-chapter-announcement', kind: 'chapter_announcement', name: 'Chapter announcement', body: initial.chapterAnnouncement });
   let nextCreditTemplateId = 1;
   let creditValues: CreditValues = wireClone(initial.creditValues ?? {});
-  let creditsStatuses: CreditsStatuses = {};
+  let creditsStatuses: CreditsStatuses = wireClone(initial.creditsStatuses ?? {});
   let retailSample: { startParagraphId: string; endParagraphId: string } | undefined;
   let seededSample = initial.retailSample;
   const readRetailSample = (): RetailSampleAnswer => {

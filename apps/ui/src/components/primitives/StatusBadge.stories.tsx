@@ -54,7 +54,8 @@ export const EveryShapeAndLook: Story = {
 };
 
 // The measured spec (mock-fidelity-primitives-and-components.prd.md Phase 2, ADR 0600): a pill is 22 px tall and fully
-// rounded, a tag 16 px on the 3 px tag radius, the Booth's tag 26 px. Measured at the default root size.
+// rounded, a tag 16 px on the 3 px tag radius, the Booth's tag 26 px, the Production board's cell 58×20 (ADR 0645). Measured
+// at the default root size.
 export const MeasuredShapes: Story = {
   render: () => (
     <div className="flex flex-wrap items-center gap-3">
@@ -62,6 +63,8 @@ export const MeasuredShapes: Story = {
       <StatusBadge tone="danger" shape="tag" label="Misread" />
       <StatusBadge tone="neutral" shape="booth" label="Narrator" />
       <StatusBadge tone="warning" look="outline" label="Changed" />
+      <StatusBadge tone="success" shape="cell" label="✓" />
+      <StatusBadge tone="danger" shape="cell" label="3 open" />
     </div>
   ),
   play: async ({ canvasElement }) => {
@@ -78,6 +81,13 @@ export const MeasuredShapes: Story = {
     await expect(getComputedStyle(canvas.getByText('Misread')).borderTopLeftRadius).toBe('3px');
     await expect(getComputedStyle(canvas.getByText('Pickup')).textTransform).toBe('none');
     await expect(getComputedStyle(canvas.getByText('Misread')).textTransform).toBe('uppercase');
+    // Every board cell is the same 58×20 block, whatever its label says.
+    for (const label of ['✓', '3 open']) {
+      const box = canvas.getByText(label).getBoundingClientRect();
+      await expect(box.height).toBeCloseTo(20, 0);
+      await expect(box.width).toBeCloseTo(58, 0);
+    }
+    await expect(getComputedStyle(canvas.getByText('3 open')).textTransform).toBe('none');
   },
 };
 

@@ -4,7 +4,7 @@ import { apiErrorMessage } from '../../api/errorMessage';
 import type { TakeReviewScanJob, TakeReviewScanScope } from '../../types';
 import { Button } from '../primitives/Button';
 import { Dialog } from '../primitives/Dialog';
-import { Field } from '../primitives/Field';
+import { Field, FIELD_LABEL_CLASSES } from '../primitives/Field';
 import { Select } from '../primitives/Select';
 import { WorkDialog } from '../primitives/WorkDialog';
 import { formatTime } from './findingFormat';
@@ -23,8 +23,8 @@ export function parseTimelineTime(text: string): number | undefined {
 
 function Labeled({ label, children }: { label: string; children: ReactNode }) {
   return (
-    <label className="flex flex-col gap-1 text-sm">
-      {label}
+    <label className="flex flex-col gap-2">
+      <span className={FIELD_LABEL_CLASSES}>{label}</span>
       {children}
     </label>
   );

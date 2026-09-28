@@ -97,6 +97,13 @@ describe('wailsClient', () => {
       room_tone_step_db: 6,
       pauses: { min_pause_seconds: 0.3, long_pause_seconds: 2 },
     };
+    const cleanupThresholds = {
+      pad_seconds: 0.15,
+      min_breath_seconds: 0.12,
+      max_breath_seconds: 0.9,
+      breath_below_speech_db: 12,
+      click_above_silence_db: 30,
+    };
     const job = {
       id: 'diagnostics-1',
       kind: 'diagnostics',
@@ -107,6 +114,7 @@ describe('wailsClient', () => {
       elapsed: 0,
       sourceKind: 'raw_recording',
       thresholds,
+      cleanupThresholds,
       files: null,
     };
     const analyze = vi.fn().mockResolvedValue(JSON.stringify(job));

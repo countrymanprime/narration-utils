@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { WorkspaceExtra, WorkspaceParagraph, WorkspaceToken } from '../../api/contracts/workspace';
 import { Button } from '../primitives/Button';
-import { StatusBadge } from '../primitives/StatusBadge';
 import { Panel } from '../primitives/Panel';
 import { SectionLabel } from '../primitives/SectionLabel';
+import { StatusBadge } from '../primitives/StatusBadge';
 
 const STATUS_CLASS: Partial<Record<WorkspaceToken['status'], string>> = {
   skip: 'line-through',

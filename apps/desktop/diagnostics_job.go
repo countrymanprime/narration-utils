@@ -31,31 +31,38 @@ const (
 )
 
 // DiagnosticsFileResult is one file of a check. Summary and Findings are set once it is checked (Findings is empty, not
-// null, when nothing crossed a threshold); Error says why a failed file could not be checked.
+// null, when nothing crossed a threshold); Error says why a failed file could not be checked. CleanupFindings are the
+// silence cleanup analyzer's own candidates (measure.Diagnostics.CleanupFindings, ADR 0238 decision 3): apart from
+// Findings, so the Diagnostics tab's list is unchanged and a caller lists them only where the narrator asked for
+// cleanup. Read-only, like every other finding here: nothing is applied.
 type DiagnosticsFileResult struct {
-	Path     string                     `json:"path"`
-	Name     string                     `json:"name"`
-	Status   string                     `json:"status"`
-	Summary  *measure.DiagnosticSummary `json:"summary"`
-	Findings []findings.Finding         `json:"findings"`
-	Error    string                     `json:"error,omitempty"`
+	Path            string                     `json:"path"`
+	Name            string                     `json:"name"`
+	Status          string                     `json:"status"`
+	Summary         *measure.DiagnosticSummary `json:"summary"`
+	Findings        []findings.Finding         `json:"findings"`
+	CleanupFindings []findings.Finding         `json:"cleanupFindings"`
+	Error           string                     `json:"error,omitempty"`
 }
 
 // DiagnosticsJob is the check as the UI sees it, in the shape of the other host jobs. SourceKind is what the narrator
 // said the files are (null before any check); Thresholds are the ones the analyzers use, shown even before a check so
-// they are never hidden.
+// they are never hidden. CleanupThresholds are the silence cleanup analyzer's own thresholds (Phase 9 remainder, ADR
+// 0238 decision 4), read from the narrator's settings (cleanup_settings.go) and shown the same way, before a check
+// as after one.
 type DiagnosticsJob struct {
-	ID         *string                   `json:"id"`
-	Kind       string                    `json:"kind"`
-	Phase      string                    `json:"phase"`
-	Message    string                    `json:"message"`
-	Percent    int                       `json:"percent"`
-	Logs       []string                  `json:"logs"`
-	Elapsed    float64                   `json:"elapsed"`
-	Error      string                    `json:"error,omitempty"`
-	SourceKind *measure.SourceKind       `json:"sourceKind"`
-	Thresholds measure.DiagnosticOptions `json:"thresholds"`
-	Files      []DiagnosticsFileResult   `json:"files"`
+	ID                *string                   `json:"id"`
+	Kind              string                    `json:"kind"`
+	Phase             string                    `json:"phase"`
+	Message           string                    `json:"message"`
+	Percent           int                       `json:"percent"`
+	Logs              []string                  `json:"logs"`
+	Elapsed           float64                   `json:"elapsed"`
+	Error             string                    `json:"error,omitempty"`
+	SourceKind        *measure.SourceKind       `json:"sourceKind"`
+	Thresholds        measure.DiagnosticOptions `json:"thresholds"`
+	CleanupThresholds measure.CleanupOptions    `json:"cleanupThresholds"`
+	Files             []DiagnosticsFileResult   `json:"files"`
 }
 
 type diagnoseFileFunc func(ctx context.Context, path string, in measure.DiagnosticInput) (measure.Diagnostics, error)
@@ -81,9 +88,10 @@ type diagnosticsJob struct {
 	// +checklocks:mu
 	logs []string
 	// +checklocks:mu
-	started    time.Time
-	sourceKind measure.SourceKind
-	thresholds measure.DiagnosticOptions
+	started        time.Time
+	sourceKind     measure.SourceKind
+	thresholds     measure.DiagnosticOptions
+	cleanupOptions measure.CleanupOptions
 	// +checklocks:mu
 	files []DiagnosticsFileResult
 	// weights are the files' sizes when the check started (at least 1), so the percent is the share of all bytes read.
@@ -110,7 +118,8 @@ func (j *diagnosticsJob) snapshot() DiagnosticsJob {
 	return DiagnosticsJob{
 		ID: &id, Kind: jobKindDiagnostics, Phase: j.phase, Message: j.message, Percent: j.percent, Logs: append([]string{}, j.logs...),
 		Elapsed: time.Since(j.started).Seconds(), Error: j.errorText, SourceKind: &kind, Thresholds: j.thresholds,
-		Files: append([]DiagnosticsFileResult{}, j.files...),
+		CleanupThresholds: j.cleanupOptions,
+		Files:             append([]DiagnosticsFileResult{}, j.files...),
 	}
 }
 
@@ -143,7 +152,7 @@ func (j *diagnosticsJob) complete(index int, result measure.Diagnostics, err err
 		j.logs = append(j.logs, fmt.Sprintf("%s could not be checked: %s", file.Name, file.Error))
 	} else {
 		summary := result.Summary()
-		file.Status, file.Summary, file.Findings = diagnosticsFileChecked, &summary, result.Findings()
+		file.Status, file.Summary, file.Findings, file.CleanupFindings = diagnosticsFileChecked, &summary, result.Findings(), result.CleanupFindings()
 		j.logs = append(j.logs, fmt.Sprintf("Checked %s: %s.", file.Name, countFindings(len(file.Findings))))
 	}
 	j.doneWeight += j.weights[index]
@@ -233,7 +242,8 @@ func (h *Host) startDiagnostics(requested []string, sourceKind string) (Diagnost
 	ctx = runlog.WithRun(ctx, h.jobRuns.begin(h.runLog, id, jobKindDiagnostics, "source_kind", sourceKind, "file_count", len(paths)))
 	job := &diagnosticsJob{
 		id: id, phase: "running", started: time.Now(), cancel: cancel,
-		sourceKind: kind, thresholds: diagnosticThresholds(), message: fmt.Sprintf("Checking %s.", countFiles(len(paths))),
+		sourceKind: kind, thresholds: diagnosticThresholds(), cleanupOptions: cleanupSettings(h.services().settings),
+		message: fmt.Sprintf("Checking %s.", countFiles(len(paths))),
 	}
 	job.logs = []string{job.message}
 	for _, path := range paths {
@@ -288,6 +298,7 @@ func (h *Host) runDiagnostics(ctx context.Context, job *diagnosticsJob, paths []
 		result, err := diagnose(ctx, path, measure.DiagnosticInput{
 			SourceKind: job.sourceKind,
 			Options:    job.thresholds,
+			Cleanup:    job.cleanupOptions,
 			Progress:   func(done, total int64) { job.progress(index, done, total) },
 		})
 		if ctx.Err() != nil {
@@ -307,7 +318,7 @@ func (h *Host) diagnosticsState() DiagnosticsJob {
 	}
 	return DiagnosticsJob{
 		Kind: jobKindDiagnostics, Phase: "idle", Message: "Choose the files to check.", Logs: []string{},
-		Thresholds: diagnosticThresholds(), Files: []DiagnosticsFileResult{},
+		Thresholds: diagnosticThresholds(), CleanupThresholds: cleanupSettings(h.services().settings), Files: []DiagnosticsFileResult{},
 	}
 }
 

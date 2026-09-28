@@ -89,12 +89,18 @@ describe('ScriptRail (stage navigation Phase 3, mock 02)', () => {
   it('lists the names the author has not confirmed and opens the queries panel', () => {
     const { openQueries } = renderRail();
     fireEvent.click(screen.getByRole('tab', { name: 'Queries · 2' }));
-    const list = screen.getByRole('list', { name: 'Names to confirm' });
+    const table = screen.getByRole('table', { name: 'Names to confirm' });
+    const rows = within(table).getAllByRole('row').slice(1);
     expect(
-      within(list)
-        .getAllByRole('listitem')
-        .map((item) => item.textContent),
-    ).toEqual(['Queen’s GardenChapter 1 — Down the Rabbit-HoleQuery sent', 'White RabbitChapter 1 — Down the Rabbit-HoleResearched']);
+      rows.map((row) =>
+        within(row)
+          .getAllByRole('cell')
+          .map((cell) => cell.textContent),
+      ),
+    ).toEqual([
+      ['Queen’s GardenChapter 1 — Down the Rabbit-Hole', 'Query sent'],
+      ['White RabbitChapter 1 — Down the Rabbit-Hole', 'Researched'],
+    ]);
     fireEvent.click(screen.getByRole('button', { name: 'Manage queries' }));
     expect(openQueries).toHaveBeenCalled();
   });

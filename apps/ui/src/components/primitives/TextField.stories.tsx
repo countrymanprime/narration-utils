@@ -34,6 +34,9 @@ export const Filled: Story = { args: { value: 'located in' } };
 export const Disabled: Story = { args: { value: 'located in', disabled: true } };
 export const Monospace: Story = { args: { label: 'Note colour', value: 'FFD54F', mono: true } };
 export const ColourPicker: Story = { args: { label: 'Note colour hex', type: 'color', value: '#ffd54f' } };
+// A value the app computed - a generated pronunciation, a hex the app resolved - that the narrator can read and copy but
+// not edit (mock-fidelity-primitives-and-components.prd.md Phase 6: GuideDetail's migrated fake fields).
+export const ReadOnly: Story = { args: { label: 'Pronunciation', mono: true, readOnly: true, value: '/ˈælɪs/' } };
 
 // The field is named by its label, and typing reports the text (not the event), one change per key.
 export const TypingReportsTheText: Story = {
