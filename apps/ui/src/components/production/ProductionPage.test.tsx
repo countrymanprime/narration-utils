@@ -90,7 +90,7 @@ describe('ProductionPage', () => {
       within(boardRow('Chapter 1'))
         .getAllByRole('gridcell')
         .map((cell) => cell.textContent),
-    ).toEqual(['11:48', 'Done', 'Done', 'Done', 'Not available', 'Not available']);
+    ).toEqual(['11:48', '✓', '✓', '✓', '—', '—']);
   });
 
   it('marks an at-risk deadline and lists the chapters that threaten it first', async () => {

@@ -17,11 +17,11 @@
 2. **The chapter's current-stage cell** (its status's column, or Record for a chapter not started yet) opens the stage slide-over (`StageEvidence`). Its top carries the **status select**, the recording check's state, and **Recording check** and **Editing check**; the suggestion with Confirm, Dismiss and Revert follows. The cell reads the verdict: Ready, Not ready, Not checked, In progress, or Evidence changed.
 3. **A passed or later Record, Edit or Proof cell** opens that stage: the recording check, the editing check, or the chapter's Proof view. **Prep** opens the chapter on Script; **Delivery** opens nothing until Master & QC (Phase 8).
 4. **A credits row's cell** opens a credits slide-over (`CreditsRowPanel`) with its template, words, estimated length, unresolved tokens, Open in Script and its status, written only through `setCreditsStatus`.
-5. The cells keep `StageGrid`'s words (Done, Not yet, Ready, …) rather than mock 01's glyphs (✓, –): a cell's label is its accessible name, and a glyph reads as "check mark". Glyphs need `StageGrid` to separate a visual label from a spoken one, which is a primitive change for lane U.
+5. The cells use mock 01's compact glyphs where main's copy-fix pass (#844, audit PR10) put them: ✓ for a passed stage and a dash for one ahead, for a not-started chapter's Record, and for Prep and Delivery. A current stage keeps its verdict word, and a Recorded cell with no length keeps its reason (No track, 2+ tracks, Track missing, No project), which carries Home's Actual recorded column.
 
 ## Consequences
 
 - Every surface Home opened is one click from the board, under the same slide-over names, so their aria snapshots and visual states carry over as `production/*`.
 - Setting a status by hand takes two clicks instead of one (the cell, then the select). The suggestion and the override sit together, which is what Home's row did.
 - The summary chips above the board open the first chapter they count, since there is no collapsed breakdown to expand.
-- Mock 01's compact glyph cells wait for a `StageGrid` spoken-label slot (lane U).
+- A glyph cell's accessible name is the glyph itself ("check mark", "em dash"); a spoken label separate from the visual one needs a `StageGrid` slot (lane U).

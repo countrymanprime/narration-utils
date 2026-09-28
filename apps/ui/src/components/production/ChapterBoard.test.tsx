@@ -128,10 +128,10 @@ describe('ChapterBoard', () => {
     ).toEqual(['Chapter', 'Recorded', 'Record', 'Edit', 'Proof', 'Prep', 'Delivery']);
     expect(within(grid).getAllByRole('rowheader', { hidden: true })).toHaveLength(14);
     expect(within(grid).getAllByRole('rowheader', { hidden: true })[1].textContent).toBe('Chapter 1 — Down the Rabbit-Hole');
-    expect(cell('Chapter 1', 'Proof').textContent).toBe('Done');
-    expect(cell('Chapter 11', 'Record').textContent).toBe('Not started');
-    expect(cell('Chapter 11', 'Edit').textContent).toBe('Not yet');
-    expect(cell('Chapter 1', 'Delivery').textContent).toBe('Not available');
+    expect(cell('Chapter 1', 'Proof').textContent).toBe('✓');
+    expect(cell('Chapter 11', 'Record').textContent).toBe('—');
+    expect(cell('Chapter 11', 'Edit').textContent).toBe('—');
+    expect(cell('Chapter 1', 'Delivery').textContent).toBe('—');
   });
 
   it('says so when there are no narratable chapters yet', async () => {
@@ -230,7 +230,7 @@ describe('recorded length on the board (actual-recorded-column.prd.md)', () => {
     const select = (await within(view).findByLabelText('Chapter 4 status')) as HTMLSelectElement;
     fireEvent.change(select, { target: { value: 'editing' } });
     await waitFor(() => expect(select.value).toBe('editing'));
-    await waitFor(() => expect(cell('Chapter 4', 'Edit').textContent).not.toBe('Not yet'));
+    await waitFor(() => expect(cell('Chapter 4', 'Edit').textContent).not.toBe('—'));
     expect(cell('Chapter 4', 'Recorded').textContent).toBe('42:01');
   });
 
@@ -282,7 +282,7 @@ describe('credits rows on the board (credits-in-chapter-table.prd.md Phase 2)', 
       creditsPreview: async (body: string) => ({ text: body, words: body.split(/\s+/).filter(Boolean).length, unresolved: [] }),
     });
     await waitFor(() => expect(rowNames()[0]).toBe('Opening credits'));
-    expect(cell('Opening credits', 'Recorded').textContent).toBe('Not measured');
+    expect(cell('Opening credits', 'Recorded').textContent).toBe('—');
     const dialog = await openCredits('Opening credits');
     // A 155-word segment at 155 wpm reads 60s; the room-tone allowance defaults to 0.
     expect(within(dialog).getByText(/155 words · about 1m/)).toBeTruthy();
@@ -326,13 +326,13 @@ describe('credits rows on the board (credits-in-chapter-table.prd.md Phase 2)', 
     const manuscriptSetChapterStatus = vi.fn();
     await renderBoard({ setCreditsStatus, manuscriptSetChapterStatus });
     await waitFor(() => expect(rowNames()[0]).toBe('Opening credits'));
-    expect(cell('Opening credits', 'Proof').textContent).toBe('Not yet');
+    expect(cell('Opening credits', 'Proof').textContent).toBe('—');
     const dialog = await openCredits('Opening credits');
     fireEvent.change(within(dialog).getByLabelText('Opening credits status'), { target: { value: 'finalized' } });
     await waitFor(() => expect((within(dialog).getByLabelText('Opening credits status') as HTMLSelectElement).value).toBe('finalized'));
     expect(setCreditsStatus).toHaveBeenCalledWith('opening', 'finalized');
     expect(manuscriptSetChapterStatus).not.toHaveBeenCalled();
-    expect(cell('Opening credits', 'Proof').textContent).toBe('Done');
+    expect(cell('Opening credits', 'Proof').textContent).toBe('✓');
   });
 
   it('never sends a credits id to manuscriptChapters, stages or coverage', async () => {

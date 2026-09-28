@@ -69,13 +69,13 @@ describe('production figures', () => {
 });
 
 describe('the board', () => {
-  it('marks the stages a chapter has passed as done and the ones ahead as not yet', () => {
+  it("marks the stages a chapter has passed as done and the ones ahead as not yet, as the mock's compact glyphs (PR10)", () => {
     const proofing = chapter({ status: 'proofing' });
-    expect(boardCell(proofing, column('Record'))).toEqual({ tone: 'success', label: 'Done' });
-    expect(boardCell(proofing, column('Edit'))).toEqual({ tone: 'success', label: 'Done' });
+    expect(boardCell(proofing, column('Record'))).toEqual({ tone: 'success', label: '✓' });
+    expect(boardCell(proofing, column('Edit'))).toEqual({ tone: 'success', label: '✓' });
     const recording = chapter({ status: 'recording' });
-    expect(boardCell(recording, column('Proof'))).toEqual({ tone: 'neutral', label: 'Not yet' });
-    expect(boardCell(chapter({ status: 'finalized' }), column('Proof'))).toEqual({ tone: 'success', label: 'Done' });
+    expect(boardCell(recording, column('Proof'))).toEqual({ tone: 'neutral', label: '—' });
+    expect(boardCell(chapter({ status: 'finalized' }), column('Proof'))).toEqual({ tone: 'success', label: '✓' });
   });
 
   it("shows the current stage's readiness as the stage recommendations gave it", () => {
@@ -88,13 +88,13 @@ describe('the board', () => {
     expect(at(null)).toEqual({ tone: 'progress', label: 'In progress' });
   });
 
-  it('says a readiness column with no producer yet is not available (PRD risk table)', () => {
+  it('says a readiness column with no producer yet is not available (PRD risk table), as a dash (PR10)', () => {
     for (const name of ['Prep', 'Delivery']) {
-      expect(boardCell(chapter({ status: 'finalized' }), column(name))).toEqual({ tone: 'neutral', label: 'Not available' });
+      expect(boardCell(chapter({ status: 'finalized' }), column(name))).toEqual({ tone: 'neutral', label: '—' });
     }
   });
 
-  it("shows a chapter's measured recorded length as m:ss, or says why it has none", () => {
+  it("shows a chapter's measured recorded length as m:ss, or says why it has none (Home's Actual recorded reasons)", () => {
     expect(boardCell(chapter({ recordedSeconds: 708 }), column('Recorded'))).toEqual({ tone: 'neutral', label: '11:48' });
     expect(boardCell(chapter({ recordedSeconds: null }), column('Recorded'))).toEqual({ tone: 'neutral', label: 'No track' });
     expect(boardCell(chapter({ recordedUnavailable: 'unlinked' }), column('Recorded'))).toEqual({ tone: 'neutral', label: 'No track' });
@@ -103,17 +103,17 @@ describe('the board', () => {
     expect(boardCell(chapter({ recordedUnavailable: 'no_project' }), column('Recorded'))).toEqual({ tone: 'neutral', label: 'No project' });
   });
 
-  it('says a chapter not started yet has not started its Record stage, whatever its readiness', () => {
+  it('shows a chapter not started yet as a dash on its Record stage, whatever its readiness (PR10)', () => {
     const notStarted = chapter({ status: 'not_started', readiness: { verdict: 'recommended', reason: '' } });
-    expect(boardCell(notStarted, column('Record'))).toEqual({ tone: 'neutral', label: 'Not started' });
-    expect(boardCell(notStarted, column('Edit'))).toEqual({ tone: 'neutral', label: 'Not yet' });
+    expect(boardCell(notStarted, column('Record'))).toEqual({ tone: 'neutral', label: '—' });
+    expect(boardCell(notStarted, column('Edit'))).toEqual({ tone: 'neutral', label: '—' });
   });
 
   it('says the evidence changed on the current stage of a chapter whose confirmation it contradicts', () => {
     const editing = chapter({ status: 'editing', readiness: { verdict: 'none', reason: '' } });
     expect(boardCell(editing, column('Edit'), { contradiction: true })).toEqual({ tone: 'warning', label: 'Evidence changed' });
     // Only the current stage: a stage already passed stays done.
-    expect(boardCell(editing, column('Record'), { contradiction: true })).toEqual({ tone: 'success', label: 'Done' });
+    expect(boardCell(editing, column('Record'), { contradiction: true })).toEqual({ tone: 'success', label: '✓' });
   });
 
   it('shows a recording check running on the Record cell, with its percent once there is one', () => {
@@ -137,17 +137,17 @@ describe('a credits row on the board', () => {
   const row = (status: ProductionChapter['status'], template: unknown = { name: 'Opening' }) => ({ status, template });
 
   it('reads its stages from its status alone, never a readiness', () => {
-    expect(creditsCell(row('not_started'), column('Record'))).toEqual({ tone: 'neutral', label: 'Not started' });
-    expect(creditsCell(row('editing'), column('Record'))).toEqual({ tone: 'success', label: 'Done' });
+    expect(creditsCell(row('not_started'), column('Record'))).toEqual({ tone: 'neutral', label: '—' });
+    expect(creditsCell(row('editing'), column('Record'))).toEqual({ tone: 'success', label: '✓' });
     expect(creditsCell(row('editing'), column('Edit'))).toEqual({ tone: 'progress', label: 'In progress' });
-    expect(creditsCell(row('editing'), column('Proof'))).toEqual({ tone: 'neutral', label: 'Not yet' });
-    expect(creditsCell(row('finalized'), column('Proof'))).toEqual({ tone: 'success', label: 'Done' });
+    expect(creditsCell(row('editing'), column('Proof'))).toEqual({ tone: 'neutral', label: '—' });
+    expect(creditsCell(row('finalized'), column('Proof'))).toEqual({ tone: 'success', label: '✓' });
   });
 
   it('says nothing measures credits yet, or that the template is not set up', () => {
-    expect(creditsCell(row('recording'), column('Recorded'))).toEqual({ tone: 'neutral', label: 'Not measured' });
+    expect(creditsCell(row('recording'), column('Recorded'))).toEqual({ tone: 'neutral', label: '—' });
     expect(creditsCell({ status: 'recording' }, column('Recorded'))).toEqual({ tone: 'neutral', label: 'Not set up' });
-    expect(creditsCell(row('recording'), column('Delivery'))).toEqual({ tone: 'neutral', label: 'Not available' });
+    expect(creditsCell(row('recording'), column('Delivery'))).toEqual({ tone: 'neutral', label: '—' });
   });
 });
 

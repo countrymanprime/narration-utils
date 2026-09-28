@@ -85,9 +85,10 @@ export function isCurrentStage(chapter: Pick<ProductionChapter, 'status'>, colum
  * background check with no percent yet), and evidence that changed since the narrator confirmed the stage. */
 export type LiveCell = { checkingPercent?: number | null; contradiction?: boolean };
 
-/** One board cell. It only reads the chapter: the board never sets a status. */
+/** One board cell. It only reads the chapter: the board never sets a status. Done and empty cells are the mock's compact
+ * glyphs (PR10); a stage still being worked keeps its full word, and so does a Recorded cell that says why it has no length. */
 export function boardCell(chapter: ProductionChapter, column: BoardColumn, live: LiveCell = {}): StageGridCell {
-  if (column.kind === 'unavailable') return { tone: 'neutral', label: 'Not available' };
+  if (column.kind === 'unavailable') return { tone: 'neutral', label: DASH };
   if (column.kind === 'recorded') {
     return chapter.recordedSeconds === null
       ? UNRECORDED[chapter.recordedUnavailable ?? 'unlinked']
@@ -98,9 +99,8 @@ export function boardCell(chapter: ProductionChapter, column: BoardColumn, live:
   }
   const at = STATUS_ORDER.indexOf(chapter.status);
   const stage = STATUS_ORDER.indexOf(column.stage);
-  if (chapter.status === 'not_started' && column.stage === 'recording') return { tone: 'neutral', label: 'Not started' };
-  if (at > stage) return { tone: 'success', label: 'Done' };
-  if (at < stage) return { tone: 'neutral', label: 'Not yet' };
+  if (at > stage) return { tone: 'success', label: '✓' };
+  if (at < stage) return { tone: 'neutral', label: DASH };
   if (live.contradiction) return { tone: 'warning', label: 'Evidence changed' };
   switch (chapter.readiness?.verdict) {
     case 'recommended':
@@ -116,13 +116,12 @@ export function boardCell(chapter: ProductionChapter, column: BoardColumn, live:
 
 /** A credits row's cell (credits-in-chapter-table.prd.md): its status only, since nothing measures or assesses credits yet. */
 export function creditsCell(row: { status: ChapterStatus; template?: unknown }, column: BoardColumn): StageGridCell {
-  if (column.kind === 'unavailable') return { tone: 'neutral', label: 'Not available' };
-  if (column.kind === 'recorded') return { tone: 'neutral', label: row.template ? 'Not measured' : 'Not set up' };
+  if (column.kind === 'unavailable') return { tone: 'neutral', label: DASH };
+  if (column.kind === 'recorded') return { tone: 'neutral', label: row.template ? DASH : 'Not set up' };
   const at = STATUS_ORDER.indexOf(row.status);
   const stage = STATUS_ORDER.indexOf(column.stage);
-  if (row.status === 'not_started' && column.stage === 'recording') return { tone: 'neutral', label: 'Not started' };
-  if (at > stage) return { tone: 'success', label: 'Done' };
-  if (at < stage) return { tone: 'neutral', label: 'Not yet' };
+  if (at > stage) return { tone: 'success', label: '✓' };
+  if (at < stage) return { tone: 'neutral', label: DASH };
   return { tone: 'progress', label: 'In progress' };
 }
 

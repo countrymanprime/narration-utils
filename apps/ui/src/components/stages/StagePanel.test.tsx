@@ -90,9 +90,9 @@ describe('stage suggestions on the board', () => {
     expect(cell('Chapter 5', 'Record').textContent).toBe('Not checked');
     expect(cell('Chapter 6', 'Record').textContent).toBe('Not ready');
     await waitFor(() => expect(cell('Chapter 7', 'Edit').textContent).toBe('Evidence changed'));
-    expect(cell('Chapter 8', 'Record').textContent).toBe('Done');
-    // A finalized chapter is not evaluated: every stage it passed reads Done.
-    expect(['Record', 'Edit', 'Proof'].map((column) => cell('Chapter 1', column).textContent)).toEqual(['Done', 'Done', 'Done']);
+    expect(cell('Chapter 8', 'Record').textContent).toBe('✓');
+    // A finalized chapter is not evaluated: every stage it passed reads ✓.
+    expect(['Record', 'Edit', 'Proof'].map((column) => cell('Chapter 1', column).textContent)).toEqual(['✓', '✓', '✓']);
   });
 
   it('confirms a suggestion: the status moves, the view offers Revert, and Revert moves it back', async () => {
@@ -104,7 +104,7 @@ describe('stage suggestions on the board', () => {
     await waitFor(() => expect(statusOf(view, 'Chapter 4')).toBe('editing'));
     expect(notify).toHaveBeenCalledWith('Chapter 4 moved to Editing.');
     expect((await api.manuscriptChapters()).find((chapter) => chapter.id === c4)?.status).toBe('editing');
-    await waitFor(() => expect(cell('Chapter 4', 'Record').textContent).toBe('Done'));
+    await waitFor(() => expect(cell('Chapter 4', 'Record').textContent).toBe('✓'));
     const confirmed = await within(view).findByRole('region', { name: 'Confirmed' });
     fireEvent.click(within(confirmed).getByRole('button', { name: 'Revert to Recording' }));
     await waitFor(() => expect(statusOf(view, 'Chapter 4')).toBe('recording'));
@@ -208,7 +208,7 @@ describe('stage suggestions on the board', () => {
     const reads = stageRecommendations.mock.calls.length;
     fireEvent.change(within(view).getByLabelText('Chapter 6 status'), { target: { value: 'editing' } });
     await waitFor(() => expect(stageRecommendations.mock.calls.length).toBe(reads + 1));
-    await waitFor(() => expect(cell('Chapter 6', 'Record').textContent).toBe('Done'));
+    await waitFor(() => expect(cell('Chapter 6', 'Record').textContent).toBe('✓'));
   });
 
   it('reads the suggestions and the chapter list again when the window regains focus (home-stage-check-line.prd.md Phase 2)', async () => {

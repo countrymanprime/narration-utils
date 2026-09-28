@@ -62,13 +62,13 @@ Its cells:
   union of its unmuted items, overlaps counted once). A chapter with none says why: **No track**,
   **2+ tracks**, **Track missing** or **No project**. It never guesses from a status or a recording
   check. The cell opens the chapter's [track](#a-chapters-track).
-- **Record**, **Edit** and **Proof**: **Done** for a stage the chapter has passed, **Not yet** for one
-  ahead of it, and for its current stage what the [stage suggestion](#stage-suggestions) says:
-  **Ready**, **Not ready**, **Not checked**, **In progress** or **Evidence changed**. A chapter not
-  started yet reads **Not started** under Record, and a recording check running on it reads
+- **Record**, **Edit** and **Proof**: a check mark (✓) for a stage the chapter has passed, a dash (—)
+  for one ahead of it, and for its current stage what the [stage suggestion](#stage-suggestions)
+  says: **Ready**, **Not ready**, **Not checked**, **In progress** or **Evidence changed**. A chapter
+  not started yet reads a dash under Record too, and a recording check running on it reads
   **Checking 42%**.
-- **Prep** and **Delivery**: **Not available**, since no check reports them per chapter yet. Prep
-  opens the chapter on [Script](script.md).
+- **Prep** and **Delivery**: a dash, since no check reports them per chapter yet. Prep opens the
+  chapter on [Script](script.md).
 
 The chapter's current-stage cell opens its [stage suggestion](#stage-suggestions). The other Record,
 Edit and Proof cells open that stage: the [recording check](#checking-a-chapters-recording), the

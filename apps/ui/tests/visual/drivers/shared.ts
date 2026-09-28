@@ -358,8 +358,9 @@ export async function productionLoaded(page: Page): Promise<void> {
 
 // The board's columns, in order (components/production/productionFormat.ts BOARD_COLUMNS).
 const BOARD_COLUMN = { Recorded: 0, Record: 1, Edit: 2, Proof: 3, Prep: 4, Delivery: 5 } as const;
-// A current-stage cell's words (productionFormat.ts boardCell): the one cell of a row that opens its stage suggestion.
-const CURRENT_STAGE = /^(Ready|Not ready|Not checked|In progress|Evidence changed|Not started|Checking.*)$/;
+// A passed stage's glyph (productionFormat.ts boardCell, PR10): a row's current stage, the one cell that opens its stage suggestion, is
+// its first Record, Edit or Proof cell not marked passed (a chapter not started yet reads a dash under Record).
+const PASSED = '✓';
 
 // A chapter's row on the Production board. A prefix match on the row header ("Chapter 1" and "Chapter 1 — Down the Rabbit-Hole"),
 // with a word boundary so "Chapter 1" never matches "Chapter 10".
@@ -380,8 +381,8 @@ async function clickBoardCell(page: Page, chapter: string, column: keyof typeof 
 async function openStageSlideOver(page: Page, chapter: string) {
   const cells = boardRow(page, chapter).getByRole('gridcell');
   const count = await cells.count();
-  for (let index = BOARD_COLUMN.Record; index < count; index += 1) {
-    if (CURRENT_STAGE.test(((await cells.nth(index).textContent()) ?? '').trim())) {
+  for (let index = BOARD_COLUMN.Record; index <= Math.min(BOARD_COLUMN.Proof, count - 1); index += 1) {
+    if (((await cells.nth(index).textContent()) ?? '').trim() !== PASSED) {
       await cells.nth(index).click();
       return page.getByRole('dialog', { name: new RegExp(`^Stage suggestion: ${chapter}\\b`) });
     }
@@ -626,7 +627,7 @@ export async function lookUpInReader(page: Page, word: string, url?: string): Pr
 }
 
 /** Links a chapter to its first available track from the engine panel's Chapter links table (the same real-UI path
- * 'chapter-link-confirmed' above uses), then follows its "Open workspace" link and waits for its Proof chapter view to
+ * 'chapter-link-confirmed' above uses), then follows its "Open in Proof" link and waits for its Proof chapter view to
  * render (edit-and-proof-workspace.prd.md Phase 2: no chapter starts linked by default in the mock; the link goes to
  * `/proof/:chapterId` since stage-navigation-and-page-replacement.prd.md Phase 5). */
 export async function openLinkedProofChapter(page: Page, chapterTitle: string): Promise<void> {
@@ -639,7 +640,7 @@ export async function openLinkedProofChapter(page: Page, chapterTitle: string): 
   const row = table.locator('tbody tr').filter({ has: page.getByRole('cell', { name: new RegExp(`^${chapterTitle}( — |$)`) }) });
   await row.getByRole('combobox').selectOption({ index: 0 });
   await row.getByRole('button', { name: 'Confirm' }).click();
-  await row.getByRole('link', { name: 'Open workspace' }).click();
+  await row.getByRole('link', { name: 'Open in Proof' }).click();
   await page.getByRole('heading', { level: 1, name: new RegExp(`^Proof · ${chapterTitle}( — |$)`) }).waitFor();
 }
 

@@ -175,6 +175,12 @@ export const proofChapterDrivers: Record<string, Driver> = {
   'preview-shorter': async (page) => {
     await openPanel(page, '/?mockPreviewCandidates=shorter', page.getByText(/shorter than the target length/));
   },
+  'preview-pinned': async (page) => {
+    await openPanel(page, '/?mockPreviewCandidates=pinned', page.getByText('Pinned preview'));
+  },
+  'preview-pin-stale': async (page) => {
+    await openPanel(page, '/?mockPreviewCandidates=pin-stale', page.getByText(/manuscript text under this pin has changed/));
+  },
   'preview-warnings': async (page) => {
     await openPanel(page, '/?mockPreviewCandidates=warnings', page.getByText(/imported before chapters were classified/));
   },

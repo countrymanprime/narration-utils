@@ -155,6 +155,18 @@ const PAIRS: PairSpec[] = [
     ['surface'],
     'var(--badge-experimental-fill)',
   ),
+  // Per-speaker dialogue colours (D85 #6, ADR 0367): --speaker-1..7 alias the seven entity-kind tokens above, so these
+  // rows are already covered by the highlight-<kind> pairs; a dedicated row per alias protects SpeakerTag/Highlight's
+  // speaker use specifically, the same reasoning as the meter-zone rows above.
+  ...([1, 2, 3, 4, 5, 6, 7] as const).map((n) =>
+    text(
+      `speaker-${n}`,
+      `SpeakerTag/Highlight (speaker ${n}): the derived kind text colour on the speaker chip's own 20% tint`,
+      `var(--speaker-${n}-text)`,
+      SURFACES,
+      tint(`speaker-${n}`, 20),
+    ),
+  ),
 ];
 
 interface KnownFailure {

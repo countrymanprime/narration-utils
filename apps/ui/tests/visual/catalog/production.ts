@@ -8,7 +8,7 @@ export const productionStates: StateEntry[] = [
     page: 'production',
     state: 'no-data',
     description:
-      'Production before anything is logged or set - every undefined figure a dash with why (no measured time, no contracted amount, no delivery date), the chapter pipeline from the chapters\' statuses and stage suggestions with Prep and Delivery "Not available", and Next up with Start timer',
+      "Production before anything is logged or set - every undefined figure a dash with why (no measured time, no contracted amount, no delivery date), the chapter pipeline from the chapters' statuses and stage suggestions with Prep and Delivery a dash (PR10), and Next up with Start timer",
   },
   {
     page: 'production',

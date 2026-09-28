@@ -274,7 +274,7 @@ Each edit is one sentence or one cell, citing D79.
 | [App Navigation and Zoom Controls](app-navigation-and-zoom-controls.prd.md) | P2's zoom group sits before the engine chip; one header design |
 | [Teleprompter Manuscript Integration](teleprompter-manuscript-integration.prd.md) | P13 superseded by Phase 4 |
 | [Proofing Readiness Signals](proofing-readiness-signals.prd.md) | P6 builds in the Proof chapter view |
-| [Proofing Preview Suggestion](proofing-preview-suggestion.prd.md) | P8 pins in the Proof chapter view |
+| Proofing Preview Suggestion (delivered, PRD deleted; see [the preview suggestion](../architecture/preview-suggestion.md)) | P8 pins in the Proof chapter view |
 | [Manuscript Credits Card Parity](manuscript-credits-card-parity.prd.md) | P3's hash handler on Script |
 | [Credits Token Setup](credits-token-setup-and-front-matter-detection.prd.md) | P3's banner on the Production home and Script |
 | [Chapter Title Display Consistency](chapter-title-display-consistency.prd.md) | P3 applies to the Booth, skips the dying files |
