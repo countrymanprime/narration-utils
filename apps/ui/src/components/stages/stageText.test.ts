@@ -72,9 +72,9 @@ describe('stage suggestion text', () => {
       expect(pickups?.action).not.toMatch(/Rendered file/);
       expect(pickups?.resolve).not.toBe('check');
     }
-    // A mapping cause is worded the same way for every proofing signal (Tracks, not the rendered file).
-    expect(causeText({ id: 'proofing.delivery.sample_rate', cause: 'unmapped_track' })?.resolve).toBe('tracks');
-    expect(causeText({ id: 'proofing.pickups', cause: 'unmapped_track' })?.resolve).toBe('tracks');
+    // A mapping cause is worded the same way for every proofing signal (the audio engine panel, not the rendered file).
+    expect(causeText({ id: 'proofing.delivery.sample_rate', cause: 'unmapped_track' })?.resolve).toBe('engine');
+    expect(causeText({ id: 'proofing.pickups', cause: 'unmapped_track' })?.resolve).toBe('engine');
   });
 
   it('reads a stale signal’s reason codes as the recording check’s sentences', () => {
