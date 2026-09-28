@@ -13,6 +13,7 @@ import {
   faHouse,
   faLayerGroup,
   faMicrophone,
+  faRotateLeft,
   faWaveSquare,
 } from '@fortawesome/free-solid-svg-icons';
 import { NavButton } from '../primitives/NavButton';
@@ -40,6 +41,9 @@ const TRACKS = { name: 'Tracks', path: '/tracks', icon: faLayerGroup, requiresMa
 const PROOF = { name: 'Proof', path: '/proof', icon: faWaveSquare, requiresManuscript: false, requiresDaw: false };
 // Measuring rendered chapter files (diagnostics-delivery-and-cleanup-tools.prd.md Phase 5). Not gated: it reads files the narrator
 // picks, so it needs neither a manuscript nor a REAPER project.
+// Pickups (stage-navigation-and-page-replacement.prd.md Phase 7): the proofer's pickup list, replacing the Tracks page's
+// Pickups dialog. Not gated: its import, export and jumps talk to REAPER and each says itself when REAPER is not there.
+const PICKUPS = { name: 'Pickups', path: '/pickups', icon: faRotateLeft, requiresManuscript: false, requiresDaw: false };
 const DELIVERY = { name: 'Delivery', path: '/delivery', icon: faGaugeHigh, requiresManuscript: false, requiresDaw: false };
 
 // Grouped by production stage (stage-navigation-and-page-replacement.prd.md Phase 1, ADR 0407 item 3): Production,
@@ -52,7 +56,7 @@ const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
   { label: 'Production', items: [HOME] },
   { label: 'Prep', items: [SCRIPT, STORY_BIBLE] },
   { label: 'Record', items: [BOOTH] },
-  { label: 'Review', items: [PROOF, TRACKS] },
+  { label: 'Review', items: [PROOF, PICKUPS, TRACKS] },
   { label: 'Finish', items: [DELIVERY] },
 ];
 const isActivePath = (pathname: string, path: string) => (path === '/' ? pathname === '/' : pathname === path || pathname.startsWith(`${path}/`));

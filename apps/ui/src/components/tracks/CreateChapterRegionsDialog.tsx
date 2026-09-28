@@ -21,7 +21,7 @@ const REGION_STATE_LABEL: Record<ChapterRegionState, string> = {
  * UI half, "not delivered yet" there). Plans one REAPER region per chapter with a confirmed track link (the Tracks
  * page's "Link chapters…" flow), plus the opening/closing credits tracks chosen below, and writes them to the saved
  * project in one undo step (`ChapterRegionsCreate`, already wired to `dawport.RegionWriter` via the DAW port
- * resolver). Reachable from the Tracks page next to "Link chapters…", "Pickups…" and "Prepare chapter render…", not
+ * resolver). Reachable from the Tracks page next to "Link chapters…" and "Prepare chapter render…", not
  * a new nav item. Styled after LinkChaptersDialog.tsx: both preview a REAPER write derived from the same confirmed
  * chapter links before gating the primary action on the preview's readiness, over the same Table/Select primitives. */
 export function CreateChapterRegionsDialog({ tracks, onClose }: { tracks: Track[]; onClose: () => void }) {
