@@ -294,28 +294,21 @@ export function CompareRun({
         <h2 id="compare-run-title" className="text-sm font-semibold">
           Compare the recording with the script
         </h2>
-        <div className="flex items-center gap-1 text-xs">
-          <span
-            className={`rounded px-2 py-1 font-['Barlow_Condensed',sans-serif] tracking-[0.08em] uppercase ${phase === 'setup' ? 'font-semibold' : ''}`}
-            style={{ background: phase === 'setup' ? 'var(--accent-soft)' : undefined }}
-          >
-            1 · Setup
-          </span>
-          <span style={{ color: 'var(--non-text)' }}>→</span>
-          <span
-            className={`rounded px-2 py-1 font-['Barlow_Condensed',sans-serif] tracking-[0.08em] uppercase ${phase === 'running' ? 'font-semibold' : ''}`}
-            style={{ background: phase === 'running' ? 'var(--accent-soft)' : undefined }}
-          >
-            2 · Running
-          </span>
-          <span style={{ color: 'var(--non-text)' }}>→</span>
-          <span
-            className={`rounded px-2 py-1 font-['Barlow_Condensed',sans-serif] tracking-[0.08em] uppercase ${phase === 'results' ? 'font-semibold' : ''}`}
-            style={{ background: phase === 'results' ? 'var(--accent-soft)' : undefined }}
-          >
-            3 · Results
-          </span>
-        </div>
+        {/* The step strip (mock-fidelity-primitives-and-components.prd.md Phase 5): the segmented look of ToggleGroup. It
+            reports the phase, not a choice — the phase advances on its own, so a click of a step is a no-op (not `disabled`,
+            which would also dim the current step's fill). This gives the strip real semantics: nothing named which step was
+            current before (a background tint only). */}
+        <ToggleGroup
+          label="Comparison progress"
+          look="segmented"
+          value={phase}
+          onChange={() => {}}
+          options={[
+            { value: 'setup', label: '1 · Setup' },
+            { value: 'running', label: '2 · Running' },
+            { value: 'results', label: '3 · Results' },
+          ]}
+        />
       </div>
       {phase === 'setup' && (
         <div className="space-y-4 p-[1.1rem]">
