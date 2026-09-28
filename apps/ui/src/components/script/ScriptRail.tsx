@@ -78,16 +78,25 @@ export function ScriptRail({
         {characters.length === 0 ? (
           <p className="p-3 text-sm text-[var(--text-muted)]">No characters in the Story Bible yet.</p>
         ) : (
-          <ul aria-label="Characters" className="divide-y divide-[var(--border)]">
-            {characters.map((entity) => (
-              <li key={entity.id} className="px-3 py-2">
-                <button type="button" className={`${NAME_BUTTON} block`} onClick={() => openEntity(entity)}>
-                  {entity.canonical_name}
-                </button>
-                {entity.description.text && <p className="mt-0.5 line-clamp-2 text-xs text-[var(--text-muted)]">{entity.description.text}</p>}
-              </li>
-            ))}
-          </ul>
+          <Table label="Characters">
+            <TableHead sticky>
+              <TableRow>
+                <TableHeader>Name</TableHeader>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {characters.map((entity) => (
+                <TableRow key={entity.id}>
+                  <TableCell valign="top">
+                    <button type="button" className={`${NAME_BUTTON} block`} onClick={() => openEntity(entity)}>
+                      {entity.canonical_name}
+                    </button>
+                    {entity.description.text && <p className="mt-0.5 line-clamp-2 text-xs text-[var(--text-muted)]">{entity.description.text}</p>}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
         )}
       </TabPanel>
       <TabPanel value="queries" className="flex min-h-0 flex-col">
@@ -100,20 +109,32 @@ export function ScriptRail({
         ) : queries.length === 0 ? (
           <p className="p-3 text-sm text-[var(--text-muted)]">The author has confirmed every pronunciation.</p>
         ) : (
-          <ul aria-label="Names to confirm" className="min-h-0 flex-1 divide-y divide-[var(--border)] overflow-y-auto">
-            {queries.map((row) => {
-              const status = pronunciationStatusInfo(row);
-              return (
-                <li key={`${row.entityId}:${row.aliasIndex ?? ''}`} className="flex items-start justify-between gap-2 px-3 py-2">
-                  <div className="min-w-0">
-                    <div className="font-semibold">{row.name}</div>
-                    {row.chapter && <div className="text-xs text-[var(--text-muted)]">{row.chapter}</div>}
-                  </div>
-                  <StatusBadge tone={status.tone} label={status.label} />
-                </li>
-              );
-            })}
-          </ul>
+          <div className="min-h-0 flex-1 overflow-y-auto">
+            <Table label="Names to confirm">
+              <TableHead sticky>
+                <TableRow>
+                  <TableHeader>Name</TableHeader>
+                  <TableHeader>Status</TableHeader>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {queries.map((row) => {
+                  const status = pronunciationStatusInfo(row);
+                  return (
+                    <TableRow key={`${row.entityId}:${row.aliasIndex ?? ''}`}>
+                      <TableCell>
+                        <div className="font-semibold">{row.name}</div>
+                        {row.chapter && <div className="text-xs text-[var(--text-muted)]">{row.chapter}</div>}
+                      </TableCell>
+                      <TableCell>
+                        <StatusBadge tone={status.tone} label={status.label} />
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </div>
         )}
         <div className="border-t border-[var(--border)] p-3">
           <Button variant="secondary" className="text-xs" onClick={openQueries}>

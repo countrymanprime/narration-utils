@@ -658,7 +658,7 @@ The dark sets show pill heights of 18, 21, 23, 24, 25 and 26 px, with the OK fil
 | 12 | Proof findings list | flush table, tags and pills, the notes header, filters behind a control, the waveform card, the detail panel, `?mockFidelity=04`; mock 04 at 90% | pending | 11, 13, 14, 15 | 1, 2, 3, 4 | - |
 | 13 | Booth transport and reading surface | top bar, REC pill, reading surface, command bar with key hints, companion sections, `?mockFidelity=03`/`07`; mocks 03 and 07 at 90% | pending | 11, 12, 14, 15 | 1, 2, 9, 10 | - |
 | 14 | Master per-file checks | segmented platforms, flush table with verdict words, `Mark` to StatusBadge, the band, the checklist, the chain, `?mockFidelity=05`; mock 05 at 90% | pending | 11, 12, 13, 15 | 1, 2, 3, 4, 5 | - |
-| 15 | Script prep rail and chapter list | chapter list, markup legend, reader header, paragraph bars and tags, rail tables, `?mockFidelity=02`; mock 02 at 90% | pending | 11, 12, 13, 14 | 2, 3, 4, 5 | - |
+| 15 | Script prep rail and chapter list | chapter list, markup legend, reader header, paragraph bars and tags, rail tables, `?mockFidelity=02`; mock 02 at 90% | in review (#TBD, ADR 0670; 85.71%, under 90%, reason on #510) | 11, 12, 13, 14 | 2, 3, 4, 5 | - |
 | 16 | Re-score and close-out | the whole baseline re-run on one machine; every state at 90% or its accepted reason; `design-system.md` and `colour-and-contrast.md` updated; doc screenshots regenerated once; this PRD deleted | pending | - | 1–15 | - |
 
 ### Phase details

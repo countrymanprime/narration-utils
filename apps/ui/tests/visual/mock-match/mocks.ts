@@ -45,7 +45,7 @@ const REPLACED_MANUSCRIPT_CROP =
 export const APPROVED_MOCKS: ApprovedMock[] = [
   // The benchmark mocks (D69), light except the Booth and the companion panel.
   { file: `${BENCHMARK}/01-production-home-concept.webp`, target: { page: 'production', state: 'on-pace' }, theme: 'light' },
-  { file: `${BENCHMARK}/02-prep-script-concept.webp`, target: { page: 'script', state: 'prep-rail-characters' }, theme: 'light' },
+  { file: `${BENCHMARK}/02-prep-script-concept.webp`, target: { page: 'script', state: 'prep-rail-pronunciations' }, theme: 'light' },
   { file: `${BENCHMARK}/03-booth-concept.webp`, target: { page: 'booth', state: 'speaker-tags' }, theme: 'dark' },
   { file: `${BENCHMARK}/04-proof-pickups-concept.webp`, target: { page: 'proof', state: 'default' }, theme: 'light' },
   { file: `${BENCHMARK}/05-master-delivery-concept.webp`, target: { page: 'master', state: 'measured' }, theme: 'light' },
