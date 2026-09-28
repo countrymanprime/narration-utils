@@ -298,7 +298,7 @@ export const boothStates: StateEntry[] = [
     page: 'booth',
     state: 'companion-default',
     description:
-      'Booth, Companion pressed in its header (booth-mode-and-companion-panel.prd.md Phase 7, stage navigation Q9): the same session in CompactShell, the whole window (the host narrows it to 380 px and pins it beside the DAW, ADR 0401; also captured at that companion width) - the Companion heading with REAPER\'s playhead badge ("Playhead stopped") and Full app, then the Script (chapter title, Play Kbd-labelled Space, Stop reading, the resume prompt and the text in its own scroll box), the reserved Note at playhead and Pickups sections ("Coming soon"), and the Hotkeys that work while this window has focus',
+      'Booth, Companion pressed in its header (booth-mode-and-companion-panel.prd.md Phase 7, stage navigation Q9): the same session in CompactShell, the whole window (the host narrows it to 380 px and pins it beside the DAW, ADR 0401; also captured at that companion width) - the Companion heading with REAPER\'s playhead badge ("Playhead stopped") and Full app, then the Script (chapter title, Play Kbd-labelled Space, Stop reading, the resume prompt and the text in its own scroll box), the Pickups section, the Hotkeys that work while this window has focus, and the reserved Note at playhead and This chapter sections ("Coming soon")',
     ...COMPANION,
   },
   {

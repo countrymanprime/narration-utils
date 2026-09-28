@@ -110,7 +110,7 @@ function renderCompanion(overrides: Partial<Parameters<typeof CompanionShell>[0]
 }
 
 describe('CompanionShell (booth-mode-and-companion-panel.prd.md Phase 7)', () => {
-  it('lays out CompactShell: the Companion heading, Full app, and the script, note, pickups and hotkeys sections in order', () => {
+  it('lays out CompactShell: the Companion heading, Full app, and the script, note, pickups, hotkeys and this-chapter sections in order', () => {
     renderCompanion();
     expect(screen.getByRole('heading', { level: 1, name: 'Companion' })).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Full app' })).toBeTruthy();
@@ -118,7 +118,7 @@ describe('CompanionShell (booth-mode-and-companion-panel.prd.md Phase 7)', () =>
     const sections = within(main)
       .getAllByRole('region')
       .map((region) => document.getElementById(region.getAttribute('aria-labelledby') ?? '')?.textContent);
-    expect(sections).toEqual(['Script', 'Note at playhead', 'Pickups', 'Hotkeys']);
+    expect(sections).toEqual(['Script', 'Note at playhead', 'Pickups', 'Hotkeys', 'This chapter']);
     expect(within(main).getByText('Chapter 5 — Advice from a Caterpillar')).toBeTruthy();
   });
 
@@ -179,6 +179,13 @@ describe('CompanionShell (booth-mode-and-companion-panel.prd.md Phase 7)', () =>
     expect(await within(section).findByText('2 pickups remaining of 2')).toBeTruthy();
     expect(within(section).getByText(/Mispronounced "labyrinthine"/)).toBeTruthy();
     expect(within(section).queryByText('Coming soon')).toBeNull();
+    expect(within(section).queryByRole('button')).toBeNull();
+  });
+
+  it('reserves the this-chapter section with an honest "Coming soon", not an empty gap or made-up numbers', () => {
+    renderCompanion();
+    const section = screen.getByRole('region', { name: 'This chapter' });
+    expect(within(section).getByText('Coming soon')).toBeTruthy();
     expect(within(section).queryByRole('button')).toBeNull();
   });
 

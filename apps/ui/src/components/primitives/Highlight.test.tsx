@@ -76,11 +76,12 @@ describe('Highlight colours (ADR 0059)', () => {
     expect(screen.getByText('other').getAttribute('role')).toBeNull();
   });
 
-  it('draws the Teleprompter cursor as an accent fill in the accent contrast colour', () => {
+  it('draws the Teleprompter cursor as an accent tint with a caret (mock-fidelity-primitives-and-components.prd.md Phase 13, ADR 0655)', () => {
     render(<Highlight kind="Cursor">word</Highlight>);
     const mark = screen.getByText('word');
-    expect(mark.style.color).toBe('var(--accent-contrast)');
-    expect(mark.style.background).toContain('var(--accent)');
+    expect(mark.style.color).toBe('var(--accent-strong)');
+    expect(mark.style.background).toBe('var(--accent-soft)');
+    expect(mark.style.boxShadow).toContain('var(--accent)');
   });
 
   // Per-speaker dialogue colours (D85 #6, ADR 0367): the Booth's "Voices in scene" tags override the kind's own

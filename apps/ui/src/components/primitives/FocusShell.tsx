@@ -16,6 +16,10 @@ export type FocusShellProps = {
   // The script / main content.
   children: ReactNode;
   className?: string;
+  // The main region's own background and padding (the Booth's darker reading surface, mock-fidelity-primitives-and-
+  // components.prd.md Phase 13, mock 03 Q6): a composed style, not a second look this primitive owns, since every other
+  // host draws the shell's own `--bg`.
+  contentClassName?: string;
   // False when the host page already has its own `<main>` that stays in the accessibility tree while this shell is
   // showing (a full-size `Dialog`'s content: Base UI keeps the page's own `<main>` un-hidden rather than aria-hidden it
   // outright, to keep any live region inside it announced) - rendering a second `<main>` there would duplicate the
@@ -41,6 +45,7 @@ export function FocusShell({
   commandsLabel = 'Commands',
   children,
   className = '',
+  contentClassName = '',
   asMain = true,
 }: FocusShellProps) {
   const showRail = rail !== undefined && !railCollapsed;
@@ -51,7 +56,7 @@ export function FocusShell({
         {status}
       </div>
       <div className="flex min-h-0 flex-1">
-        <Content tabIndex={0} className="min-w-0 flex-1 overflow-y-auto p-4">
+        <Content tabIndex={0} className={`min-w-0 flex-1 overflow-y-auto p-4 ${contentClassName}`}>
           {children}
         </Content>
         {showRail && (
