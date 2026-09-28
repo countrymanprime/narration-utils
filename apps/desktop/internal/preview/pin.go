@@ -3,7 +3,7 @@ package preview
 import "time"
 
 // This file is Phase 8 of the proofing-preview-suggestion PRD
-// (docs/prds/proofing-preview-suggestion.prd.md#phase-8---pin-adjust-and-close-out): letting the narrator settle
+// (see docs/architecture/preview-suggestion.md, and ADR 0383 for the pin's own design decisions): letting the narrator settle
 // on a suggested window and keep it (Q9 recommendation B), and move its edges by paragraph (User Flow step 5).
 
 // PinnedRange is the narrator's own decision to keep one window: "a pin per book" (Q9), not per chapter -
