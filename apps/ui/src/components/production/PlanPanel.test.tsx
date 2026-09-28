@@ -56,8 +56,9 @@ describe('PlanPanel', () => {
     const { api } = renderPanel();
     const user = userEvent.setup();
     await user.click(await screen.findByRole('button', { name: 'Add the ACX 15-minute checkpoint' }));
-    const list = screen.getByRole('list', { name: 'Milestones' });
-    const row = within(list).getAllByRole('listitem')[0];
+    const table = screen.getByRole('table', { name: 'Milestones' });
+    // The first row is the column headers.
+    const row = within(table).getAllByRole('row')[1];
     expect((within(row).getByLabelText('Name') as HTMLInputElement).value).toBe(ACX_CHECKPOINT.name);
     // The template is offered once.
     expect(screen.getByRole('button', { name: 'Add the ACX 15-minute checkpoint' }).hasAttribute('disabled')).toBe(true);
@@ -65,7 +66,7 @@ describe('PlanPanel', () => {
     await user.click(screen.getByRole('button', { name: 'Save milestones' }));
     expect((await screen.findByRole('status')).textContent).toContain('Saved');
     expect((await api.productionPlan()).milestones).toEqual([{ name: ACX_CHECKPOINT.name, dueDate: '2026-10-01', note: ACX_CHECKPOINT.note }]);
-    await user.click(within(screen.getByRole('list', { name: 'Milestones' })).getByRole('button', { name: `Remove ${ACX_CHECKPOINT.name}` }));
+    await user.click(within(screen.getByRole('table', { name: 'Milestones' })).getByRole('button', { name: `Remove ${ACX_CHECKPOINT.name}` }));
     await user.click(screen.getByRole('button', { name: 'Save milestones' }));
     await vi.waitFor(async () => expect((await api.productionPlan()).milestones).toEqual([]));
   });

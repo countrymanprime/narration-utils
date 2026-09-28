@@ -4,7 +4,6 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '.
 import { formatLength } from './deliveryFormat';
 import { findingKindLabel, measuredText, sourceKindLabel, thresholdText, timeRangeText } from './diagnosticsFormat';
 
-const MONO = "font-['IBM_Plex_Mono',ui-monospace,monospace] whitespace-nowrap";
 const MUTED = { color: 'var(--text-muted)' };
 const SUMMARY_COLUMNS = 5;
 
@@ -58,24 +57,16 @@ export function CheckedFilesTable({ files }: { files: readonly DiagnosticsFileRe
               <TableCell className="min-w-[9rem] font-medium [overflow-wrap:anywhere]">{file.name}</TableCell>
               {summary ? (
                 <>
-                  <TableCell align="right" className={MONO}>
-                    {formatLength(summary.duration_seconds)}
-                  </TableCell>
-                  <TableCell align="right" className={MONO}>
-                    {summary.clip_regions}
-                  </TableCell>
-                  <TableCell align="right" className={MONO}>
-                    {summary.level_shifts}
-                  </TableCell>
-                  <TableCell align="right" className={MONO}>
-                    {`${summary.silences} (${formatLength(summary.silence_seconds)})`}
-                  </TableCell>
+                  <TableCell numeric>{formatLength(summary.duration_seconds)}</TableCell>
+                  <TableCell numeric>{summary.clip_regions}</TableCell>
+                  <TableCell numeric>{summary.level_shifts}</TableCell>
+                  <TableCell numeric>{`${summary.silences} (${formatLength(summary.silence_seconds)})`}</TableCell>
                   <TableCell className="min-w-[12rem] text-[0.8rem]" style={summary.pacing.status === 'measured' ? undefined : MUTED}>
                     {pacingText(summary)}
                   </TableCell>
                 </>
               ) : (
-                <TableCell colSpan={SUMMARY_COLUMNS} className="text-sm" style={file.status === 'failed' ? { color: 'var(--danger-text)' } : MUTED}>
+                <TableCell colSpan={SUMMARY_COLUMNS} style={file.status === 'failed' ? { color: 'var(--danger-text)' } : MUTED}>
                   {notChecked(file)}
                 </TableCell>
               )}
@@ -110,7 +101,9 @@ export function FindingsTable({ files, sourceKind }: { files: readonly Diagnosti
       <TableBody>
         {rows.map(({ file, finding }) => (
           <TableRow key={`${file.path}:${finding.id}`}>
-            <TableCell className={MONO}>{timeRangeText(finding)}</TableCell>
+            <TableCell numeric align="left">
+              {timeRangeText(finding)}
+            </TableCell>
             <TableCell className="min-w-[14rem]">
               <span className="font-medium">{findingKindLabel(finding)}</span>
               <span className="ml-2 text-[0.75rem] font-semibold tracking-[0.03em] uppercase" style={finding.severity === 'info' ? MUTED : undefined}>

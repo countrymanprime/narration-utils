@@ -46,7 +46,7 @@ export function PropertiesSection({
               ))}
           {shown.length === 0 && (
             <TableRow>
-              <TableCell colSpan={editing ? 3 : 2} className="text-sm" style={{ color: 'var(--text-muted)' }}>
+              <TableCell colSpan={editing ? 3 : 2} style={{ color: 'var(--text-muted)' }}>
                 No properties yet.
               </TableCell>
             </TableRow>
