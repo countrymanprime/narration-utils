@@ -37,6 +37,7 @@ import (
 	"github.com/countrymanprime/narration-utils/shell/internal/project"
 	"github.com/countrymanprime/narration-utils/shell/internal/projectstate"
 	"github.com/countrymanprime/narration-utils/shell/internal/pronunciationonline"
+	"github.com/countrymanprime/narration-utils/shell/internal/pronunciationport"
 	"github.com/countrymanprime/narration-utils/shell/internal/proofing"
 	"github.com/countrymanprime/narration-utils/shell/internal/recents"
 	"github.com/countrymanprime/narration-utils/shell/internal/recording"
@@ -1433,9 +1434,18 @@ var fieldSchemas = map[string][]fieldSchema{
 	// debug_logging turns on the run log's debug-level decision records (docs/prds/tool-run-logging.prd.md Q1, ADR
 	// 0251): global only (saveSettings refuses it at project scope), a machine switch like NARRATION_DEBUG=1, not a
 	// per-project preference.
-	"General":           {{"log_verbosity", "Log verbosity", "choice", []string{"quiet", "normal", "verbose"}}, {"notifications", "Notify me when a long task finishes while I'm away", "bool", nil}, {"narrator_name", "Narrator name (default for credits)", "text", nil}, {"credits_room_tone_seconds", "Room tone per credits file (seconds)", "choice", []string{"0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10"}}, {"debug_logging", "Debug logging (writes decision records to the run log)", "bool", nil}},
-	"Manuscript":        {{"color_note", "Note color", "color", nil}},
-	"ManuscriptGuide":   {{"spacy_model", "spaCy model", "choice", []string{"en_core_web_sm", "en_core_web_lg"}}, {"build_after_import", "Build the Story Bible after import", "bool", nil}},
+	"General":    {{"log_verbosity", "Log verbosity", "choice", []string{"quiet", "normal", "verbose"}}, {"notifications", "Notify me when a long task finishes while I'm away", "bool", nil}, {"narrator_name", "Narrator name (default for credits)", "text", nil}, {"credits_room_tone_seconds", "Room tone per credits file (seconds)", "choice", []string{"0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10"}}, {"debug_logging", "Debug logging (writes decision records to the run log)", "bool", nil}},
+	"Manuscript": {{"color_note", "Note color", "color", nil}},
+	// default_pronunciation_source (story-bible-and-import-ux-briefs PRD phase 11) is which pronunciation source a new
+	// name's pronunciation prefers, both at build time and when the narrator adds an alias: "" (Automatic) keeps the
+	// existing CMU-then-Wiktionary-then-eSpeak fallback unchanged, and a source is still tried through the rest of the
+	// chain if the preferred one has nothing for the name (manuscript_guide.py's pronunciation()). It never affects the
+	// entity/alias Generate-Replace control's own explicit choice (GuideDetail.tsx, D13/B9-B11).
+	"ManuscriptGuide": {
+		{"spacy_model", "spaCy model", "choice", []string{"en_core_web_sm", "en_core_web_lg"}},
+		{"build_after_import", "Build the Story Bible after import", "bool", nil},
+		{"default_pronunciation_source", "Default pronunciation source", "choice", append([]string{""}, pronunciationport.FallbackOrder("")...)},
+	},
 	"Piper":             {{"tts_provider", "TTS provider", "choice", []string{ttsport.Piper}}, {"tts_voice_id", "Preview voice", "choice", []string{"en_US-ljspeech-high"}}},
 	"Updates":           {{"check_on_startup", "Check for updates on startup", "bool", nil}, {"channel", "Update channel", "choice", []string{"candidates", "stable"}}},
 	"TranscriptCompare": {{"model_size", "Default Whisper model", "choice", []string{"tiny", "small", "medium", "large-v3-turbo", "large-v3"}}, {"chunk_seconds", "Default chunk length", "choice", []string{"30", "60", "300", "600"}}, {"color_misread", "Misread marker color", "color", nil}, {"color_skipped", "Skipped marker color", "color", nil}, {"color_extra", "Extra marker color", "color", nil}},

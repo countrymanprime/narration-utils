@@ -38,7 +38,10 @@ and tail together (ACX asks for 1 to 5 seconds at each end of every file). In bo
 - **Proofing** picks the default Whisper model and chunk length for a comparison and the marker colors
   for misread, skipped and extra words. It shows whether the chosen model is installed, with
   **Remove local model…** once it is.
-- **Story Bible** picks the spaCy model and whether to **Build the Story Bible after import**.
+- **Story Bible** picks the spaCy model, whether to **Build the Story Bible after import**, and the
+  **Default pronunciation source** a fresh pronunciation tries first (Automatic, CMU, Wiktionary or
+  eSpeak) at build time and when you add an alias; it never limits generating or replacing a
+  pronunciation by hand for a specific entry, which always lets you pick.
 - **Delivery** chooses the delivery profile [Master & QC](master-and-qc.md) and its report judge
   against. In This Project, pick this project's profile, or the Global default; in Global, pick the
   default for every project that has not chosen one (ACX until you change it). A choice takes effect at

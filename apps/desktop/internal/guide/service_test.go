@@ -190,3 +190,44 @@ func TestAliasAndCreateOperationsUseCanonicalManuscriptWithoutLegacyESpeakPath(t
 		t.Fatalf("create arguments must not include an eSpeak path: %#v", create)
 	}
 }
+
+// story-bible-and-import-ux-briefs PRD phase 11 (the settings default): --default-source is left off build, an alias
+// edit and create entirely while the narrator has not set a preference, so every project's command line is unchanged
+// from before this setting existed; once set, it reaches all three, but never a field edit that does not touch aliases.
+func TestDefaultPronunciationSourceIsOmittedWhenUnset(t *testing.T) {
+	root := t.TempDir()
+	t.Setenv("APPDATA", filepath.Join(root, "appdata")) // sandbox global scope away from the real machine (store_test.go's own pattern)
+	s := New(root, "unused", "", settings.New(root, root), process.NewSupervisor())
+	if got := s.buildArgs("progress.txt", "log.txt", "en_core_web_sm"); slices.Contains(got, "--default-source") {
+		t.Fatalf("build arguments must not include --default-source when unset: %#v", got)
+	}
+	if got := s.editArgs("entity-1", map[string]string{"aliases": "A. Name"}); slices.Contains(got, "--default-source") {
+		t.Fatalf("alias edit arguments must not include --default-source when unset: %#v", got)
+	}
+	if got := s.createArgs("Name", "Character", []string{"A. Name"}, "", nil); slices.Contains(got, "--default-source") {
+		t.Fatalf("create arguments must not include --default-source when unset: %#v", got)
+	}
+}
+
+func TestDefaultPronunciationSourceReachesBuildAliasEditAndCreate(t *testing.T) {
+	root := t.TempDir()
+	t.Setenv("APPDATA", filepath.Join(root, "appdata")) // sandbox global scope away from the real machine (store_test.go's own pattern)
+	store := settings.New(root, root)
+	value := "espeak"
+	if err := store.Save("ManuscriptGuide", "global", map[string]*string{"default_pronunciation_source": &value}); err != nil {
+		t.Fatal(err)
+	}
+	s := New(root, "unused", "", store, process.NewSupervisor())
+	if got := s.buildArgs("progress.txt", "log.txt", "en_core_web_sm"); !slices.Contains(got, "--default-source") || !slices.Contains(got, "espeak") {
+		t.Fatalf("build arguments must carry the narrator's default source: %#v", got)
+	}
+	if got := s.editArgs("entity-1", map[string]string{"aliases": "A. Name"}); !slices.Contains(got, "--default-source") || !slices.Contains(got, "espeak") {
+		t.Fatalf("alias edit arguments must carry the narrator's default source: %#v", got)
+	}
+	if got := s.createArgs("Name", "Character", []string{"A. Name"}, "", nil); !slices.Contains(got, "--default-source") || !slices.Contains(got, "espeak") {
+		t.Fatalf("create arguments must carry the narrator's default source: %#v", got)
+	}
+	if got := s.editArgs("entity-1", map[string]string{"description": "New."}); slices.Contains(got, "--default-source") {
+		t.Fatalf("a field edit that is not aliases must not include --default-source: %#v", got)
+	}
+}

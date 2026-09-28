@@ -624,6 +624,21 @@
       "kind": "bool",
       "label": "Build the Story Bible after import",
       "value": ""
+    },
+    {
+      "choices": [
+        "",
+        "cmu",
+        "wiktextract",
+        "espeak"
+      ],
+      "effectiveSource": "hardcoded",
+      "effectiveValue": "",
+      "isSet": false,
+      "key": "default_pronunciation_source",
+      "kind": "choice",
+      "label": "Default pronunciation source",
+      "value": ""
     }
   ],
   "Piper": [
