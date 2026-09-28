@@ -58,7 +58,7 @@ window):
 
 **Show in manuscript** opens the [Script](script.md) at the finding's line (it needs an
 imported manuscript), and a Story Bible finding also has **Open in Story Bible**. A delivery check has
-**Open in Delivery** instead (see [Delivery checks](#delivery-checks)). **Open chapter view** opens
+**Open in Master & QC** instead (see [Delivery checks](#delivery-checks)). **Open chapter view** opens
 the finding's [chapter view](#the-chapter-view) beside it, to listen against the script.
 
 ![Proof - a transcript difference selected: what the script says, what was recorded, the evidence and the decision](../../images/ui/proof-detail.webp)
@@ -351,7 +351,7 @@ links to the [audio engine panel](navigation.md#the-audio-engine-panel).
 
 Below the suggestion, **Rendered file** shows which file the delivery checks measure and lets you change
 it: **Choose rendered file** opens a file picker and attests the file was made from the chapter as it is
-now; **Clear** removes the choice; **Measure** runs the same measurement job [Delivery](delivery.md)
+now; **Clear** removes the choice; **Measure** runs the same measurement job [Master & QC](master-and-qc.md)
 uses, with its real progress, and needs no second file picker. If the file changes on disk, or the
 chapter's recorded audio changes, after you chose it, the section says so ("changed since you chose it")
 and every delivery check reads unknown until you choose the file again and measure it — a stale render
