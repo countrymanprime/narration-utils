@@ -38,7 +38,7 @@ export function StatTile({
   return (
     <div className={className}>
       <SectionLabel as="div">{label}</SectionLabel>
-      {/* Plex Mono 22 px, weight 500 (mock B01) - one step up from the shared body mono and a touch lighter than the old bold 20 px. */}
+      {/* Plex Mono 22 px, weight 500 (mock B01, ADR 0616) - one step up from the shared body mono and a touch lighter than a plain bold. */}
       <div className={`mt-1 text-[1.375rem] leading-[1.35] font-medium ${MONO}`}>
         <span style={tone === 'neutral' ? undefined : { color: TONE_TEXT[tone] }}>{value}</span>
         {unit && (

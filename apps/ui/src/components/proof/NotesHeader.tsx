@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useApi } from '../../api/ApiContext';
 import type { PickupsState } from '../../types';
 import { Button } from '../primitives/Button';
+import { PanelHeader } from '../primitives/Panel';
 import { StatusBadge } from '../primitives/StatusBadge';
 import { analyzerLabel } from './findingFormat';
 import type { ResolutionCounts } from './resolution';
@@ -91,50 +92,62 @@ export function NotesHeader({ total, counts, pickups }: { total: number; counts:
     { count: counts.deferred, label: 'deferred', tone: 'info' as const },
   ].filter((chip) => chip.count > 0);
 
+  const messages = rowErrors.length > 0 || problem || pickups.phase === 'error' || (pickups.phase === 'success' && pickups.importReport);
+
   return (
-    <div className="border-b border-[var(--border)] px-2 pt-1 pb-3">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div className="flex min-w-0 flex-wrap items-center gap-2">
-          <h2 className="font-['Barlow_Condensed',sans-serif] text-xl font-semibold">Notes · {total}</h2>
-          {chips.map((chip) => (
-            <StatusBadge key={chip.label} tone={chip.tone} label={`${chip.count} ${chip.label}`} />
-          ))}
+    <>
+      <PanelHeader
+        title={`Notes · ${total}`}
+        subtitle={
+          chips.length > 0 && (
+            <div className="flex flex-wrap gap-2">
+              {chips.map((chip) => (
+                <StatusBadge key={chip.label} tone={chip.tone} label={`${chip.count} ${chip.label}`} />
+              ))}
+            </div>
+          )
+        }
+        actions={
+          <>
+            <input
+              ref={fileInput}
+              type="file"
+              accept=".csv,text/csv"
+              className="hidden"
+              onChange={(event) => {
+                const file = event.target.files?.[0];
+                event.target.value = '';
+                if (file) void importSheet(file);
+              }}
+            />
+            <Button variant="secondary" onClick={() => fileInput.current?.click()} pending={pickups.phase === 'importing'}>
+              Import proofer sheet
+            </Button>
+            <Button variant="secondary" onClick={exportSheet} disabled={pickups.total === 0} pending={pickups.phase === 'exporting'}>
+              Export for proofer
+            </Button>
+          </>
+        }
+      />
+      {messages && (
+        <div className="px-4 pt-2">
+          {rowErrors.length > 0 && (
+            <p className="text-sm" style={{ color: 'var(--warn-text)' }}>
+              {rowErrors.length} row{rowErrors.length === 1 ? '' : 's'} of the sheet could not be used: {rowErrors.join('; ')}
+            </p>
+          )}
+          {(problem || pickups.phase === 'error') && (
+            <p role="alert" className="text-sm" style={{ color: 'var(--danger-text)' }}>
+              {problem || pickups.message}
+            </p>
+          )}
+          {pickups.phase === 'success' && pickups.importReport && (
+            <p role="status" className="text-sm" style={{ color: 'var(--text-muted)' }}>
+              {pickups.message}
+            </p>
+          )}
         </div>
-        <div className="flex flex-wrap gap-2">
-          <input
-            ref={fileInput}
-            type="file"
-            accept=".csv,text/csv"
-            className="hidden"
-            onChange={(event) => {
-              const file = event.target.files?.[0];
-              event.target.value = '';
-              if (file) void importSheet(file);
-            }}
-          />
-          <Button variant="secondary" onClick={() => fileInput.current?.click()} pending={pickups.phase === 'importing'}>
-            Import proofer sheet
-          </Button>
-          <Button variant="secondary" onClick={exportSheet} disabled={pickups.total === 0} pending={pickups.phase === 'exporting'}>
-            Export for proofer
-          </Button>
-        </div>
-      </div>
-      {rowErrors.length > 0 && (
-        <p className="mt-2 text-sm" style={{ color: 'var(--warn-text)' }}>
-          {rowErrors.length} row{rowErrors.length === 1 ? '' : 's'} of the sheet could not be used: {rowErrors.join('; ')}
-        </p>
       )}
-      {(problem || pickups.phase === 'error') && (
-        <p role="alert" className="mt-2 text-sm" style={{ color: 'var(--danger-text)' }}>
-          {problem || pickups.message}
-        </p>
-      )}
-      {pickups.phase === 'success' && pickups.importReport && (
-        <p role="status" className="mt-2 text-sm" style={{ color: 'var(--text-muted)' }}>
-          {pickups.message}
-        </p>
-      )}
-    </div>
+    </>
   );
 }
