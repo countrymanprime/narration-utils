@@ -77,12 +77,12 @@ const CEILING: Record<NativeTag, Record<string, number>> = {
     'src/components/booth/ResumePrompt.tsx': 2,
   },
   select: {},
-  // Reaper-automation-follow-through PRD Phase 9: `PickupsDialog`'s CSV picker is a hidden native `<input type="file">`
+  // Reaper-automation-follow-through PRD Phase 9: the Pickups page's CSV picker (the Tracks page's `PickupsDialog` until stage-navigation-and-page-replacement.prd.md Phase 7) is a hidden native `<input type="file">`
   // triggered by a `Button` (ADR 0053's own escape hatch for file-choosing, since a file picker's OS chrome cannot be
   // restyled the way a text input or select can - the same reason `ManuscriptSelectFile` uses a native OS dialog).
   // prep-depth PRD Phase 6's own re-import file picker (`PronunciationQueries.tsx`) is the same pattern, one hidden
   // `<input type="file">` triggered by a `Button`.
-  input: { 'src/components/tracks/PickupsDialog.tsx': 1, 'src/components/storybible/PronunciationQueries.tsx': 1 },
+  input: { 'src/components/pickups/PickupsPage.tsx': 1, 'src/components/storybible/PronunciationQueries.tsx': 1 },
   textarea: {},
   table: {},
   thead: {},
