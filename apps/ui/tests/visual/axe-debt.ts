@@ -40,4 +40,8 @@ export const AXE_DEBT: AxeDebt[] = [
   // The rail shows labels at the desktop width, so the hint only exists (and is only reported) below it.
   { page: 'global', state: 'nav-rail-tooltip', rules: ['region'], reason: PORTALLED_POPUP, viewports: ['small-desktop', 'tablet'] },
   { page: 'storybible', state: 'alias-typeahead', rules: ['aria-required-attr', 'aria-required-children'], reason: ALIAS_COMBOBOX },
+  // home/editing-check-running|partial|complete-candidates also hit landmark-unique (#682: ReaperControls.tsx's
+  // aria-label="In REAPER" is hard-coded, so every row with audio repeats it) - NOT declared here: MAX_AXE_DEBT_RULES
+  // is already at its cap (19) and raising it needs a maintainer's decision, not a worker's (see the comment above
+  // this list). The real fix is #682's own PR parameterizing that label; see PR #829's comment for detail.
 ];
