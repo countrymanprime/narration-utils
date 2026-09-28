@@ -65,7 +65,7 @@ Their **Check** is disabled for now (a recording check reads manuscript chapters
 "· credits N of 2" once a credits row is finalized; the header count, **Est. finished audio**, the
 progress bar and the rest of the row totals stay narration-only, as before.
 
-### Checking a chapter's recording
+## Checking a chapter's recording
 
 Every row already shows its recording check without a click: a bold label ("Current", "Out of
 date", "Never checked") and, under it, when it was checked or when the track last changed. A
@@ -127,7 +127,7 @@ chapter that is not linked to its REAPER track gets the track picker right there
 as on the [Tracks](tracks.md) page), a missing project file points to Tracks, and a missing
 Transcript Compare tool points to [Settings](settings.md).
 
-### Stage suggestions
+## Stage suggestions
 
 Home suggests when a chapter looks ready for its next stage, from evidence the app already has,
 and never changes a status on its own. A chapter in Recording is suggested for Editing when its
