@@ -1,0 +1,48 @@
+name: 'Spike: app-nav-zoom-controls Phase 0 verify'
+# Throwaway research tooling for docs/prds/app-navigation-and-zoom-controls.prd.md Phase 0 (docs/research/
+# app-navigation-and-zoom-controls-phase0.md), the same way apps/desktop/cmd/spike-globalhotkeys served its own
+# spike: workflow_dispatch only, never on a pull request or push, and not part of Build (Windows) or CI passed.
+# Safe to delete once that research note is written and the PR reviewed; nothing else depends on it existing.
+on:
+  workflow_dispatch: {}
+permissions: { contents: read }
+jobs:
+  ui-dist:
+    uses: ./.github/workflows/_ui-dist.yml
+  verify:
+    name: Verify on Windows
+    needs: ui-dist
+    timeout-minutes: 20
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/build-native
+        with:
+          platform: windows-x64
+      - name: Run the Phase 0 scripted verification
+        shell: pwsh
+        run: |
+          $exe = 'apps/desktop/build/bin/narration-utils.exe'
+          if (-not (Test-Path $exe)) { throw "Built executable not found at $exe" }
+          ./scripts/research/app-nav-zoom-p0-verify.ps1 -ExePath (Resolve-Path $exe) -ReportPath "$env:RUNNER_TEMP\app-nav-zoom-p0-report.json"
+      - name: Show the report
+        if: always()
+        shell: pwsh
+        run: |
+          $reportPath = "$env:RUNNER_TEMP\app-nav-zoom-p0-report.json"
+          if (Test-Path $reportPath) {
+            Get-Content $reportPath | Write-Host
+            "### Phase 0 verification report`n``````json`n$(Get-Content $reportPath -Raw)`n```````n" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
+          } else {
+            Write-Host "No report was written."
+          }
+      - name: Upload the report
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: app-nav-zoom-p0-report
+          path: ${{ runner.temp }}/app-nav-zoom-p0-report.json
+          if-no-files-found: warn
+          retention-days: 7
