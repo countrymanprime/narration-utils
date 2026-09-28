@@ -16,12 +16,9 @@ import { describe, expect, test } from 'vitest';
 type Shape = 'chip' | 'dot' | 'tag';
 
 const PENDING: Record<string, Partial<Record<Shape, number>> & { owner: string }> = {
-  // The header chips and their status dots (Phase 8's `HeaderChip`).
-  'src/components/layout/EngineChip.tsx': { chip: 2, dot: 2, owner: 'Phase 8' },
-  'src/components/layout/TimerChip.tsx': { chip: 1, owner: 'Phase 8' },
-  'src/components/booth/BuiltinRecorder.tsx': { chip: 1, dot: 1, owner: 'Phase 8 (the chip only)' },
   // The Booth's control-bar chip (the start-point chip: a quoted sentence fragment with a nested clear button, which
-  // `Badge`'s label/icon-only API has no room for).
+  // `Badge`'s label/icon-only API has no room for). Phase 8's header chips (EngineChip, TimerChip) and BuiltinRecorder's
+  // chip are fully migrated to `HeaderChip`/primitives now, so their entries are gone, not just lowered.
   'src/components/booth/ReadingControlBar.tsx': { chip: 1, owner: 'Phase 13' },
   // The Booth's REC pill and its dot: drawn with `--rec-fill`/`--rec-text`, not a `StatusTone`, since no other page ever
   // reuses this exact maroon (ADR 0656).
