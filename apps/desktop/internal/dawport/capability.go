@@ -29,7 +29,7 @@ const (
 	CapSilenceTrim  Capability = "silence_trim"
 	CapItemGain     Capability = "item_gain"
 	// The mastering port's DAW row (ADR 0306, owner decision D86): declared, not yet built. render_with_fx is the one
-	// capability that makes the engine render, so each use needs the narrator's approval in the UI (threat model row 6s).
+	// capability that makes the engine render, so each use needs the narrator's approval in the UI (threat model row 5o).
 	CapRenderWithFX    Capability = "render_with_fx"
 	CapMasterChainRead Capability = "master_chain_read"
 )
