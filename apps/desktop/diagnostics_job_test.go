@@ -61,6 +61,7 @@ func writeClippedWAV(t *testing.T, path string) {
 }
 
 func TestDiagnosticsStateIsIdleWithTheThresholdsItWouldUse(t *testing.T) {
+	t.Setenv("APPDATA", t.TempDir()) // never read the real machine's global-settings.json
 	host, _ := measureHost(t)
 	job := host.diagnosticsState()
 	if job.Phase != "idle" || job.Kind != jobKindDiagnostics || job.ID != nil || job.SourceKind != nil || job.Files == nil || job.Logs == nil {
@@ -68,6 +69,90 @@ func TestDiagnosticsStateIsIdleWithTheThresholdsItWouldUse(t *testing.T) {
 	}
 	if job.Thresholds != measure.DefaultDiagnosticOptions() {
 		t.Fatalf("thresholds = %+v, want the starting thresholds of ADR 0158", job.Thresholds)
+	}
+	if job.CleanupThresholds != measure.DefaultCleanupOptions() {
+		t.Fatalf("cleanup thresholds = %+v, want the silence cleanup analyzer's defaults", job.CleanupThresholds)
+	}
+}
+
+// The narrator's own silence cleanup thresholds (Phase 9 remainder, ADR 0238 decision 4) are read from the layered
+// store at start, shown even while idle, and threaded into every file's measure.DiagnosticInput.Cleanup - the
+// classifier itself (internal/measure/cleanup.go) is untouched; only what reaches it changes.
+func TestDiagnosticsThreadsTheNarratorsCleanupSettingsIntoEachFile(t *testing.T) {
+	t.Setenv("APPDATA", t.TempDir()) // never touch the real machine's global-settings.json
+	path := filepath.Join(t.TempDir(), "a.wav")
+	writeToneWAV(t, path)
+	host, _ := measureHost(t, path)
+	if err := host.saveSettings("Cleanup", "global", map[string]*string{
+		settingCleanupPadSeconds: strPtr("0.25"),
+	}); err != nil {
+		t.Fatal(err)
+	}
+	want := cleanupSettings(host.services().settings)
+	if want.PadSeconds != 0.25 {
+		t.Fatalf("test setup: pad_seconds = %v, want 0.25", want.PadSeconds)
+	}
+
+	var captured measure.CleanupOptions
+	host.diagnoseFile = func(_ context.Context, filePath string, in measure.DiagnosticInput) (measure.Diagnostics, error) {
+		captured = in.Cleanup
+		return measure.Diagnostics{File: filePath, SourceKind: in.SourceKind, Options: in.Options}, nil
+	}
+	started, err := host.startDiagnostics(pickAll(t, host), string(measure.SourceProcessedRender))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if started.CleanupThresholds != want {
+		t.Fatalf("started job's cleanup thresholds = %+v, want %+v", started.CleanupThresholds, want)
+	}
+	job := waitForDiagnostics(t, host)
+	if job.Phase != "success" {
+		t.Fatalf("job = %+v", job)
+	}
+	if captured != want {
+		t.Fatalf("measure.DiagnosticInput.Cleanup = %+v, want the narrator's own %+v", captured, want)
+	}
+}
+
+// CleanupFindings (internal/measure/cleanup.go) turns cleanup candidates into silence_cleanup findings apart from
+// Findings (ADR 0238 decision 3): the diagnostics job carries them on the file as their own list, never mixed into
+// the Diagnostics tab's existing findings.
+func TestDiagnosticsFileResultCarriesCleanupFindingsApartFromFindings(t *testing.T) {
+	t.Setenv("APPDATA", t.TempDir()) // never read the real machine's global-settings.json
+	path := filepath.Join(t.TempDir(), "a.wav")
+	writeToneWAV(t, path)
+	host, _ := measureHost(t, path)
+	host.diagnoseFile = func(_ context.Context, filePath string, in measure.DiagnosticInput) (measure.Diagnostics, error) {
+		return measure.Diagnostics{
+			File: filePath, SourceKind: in.SourceKind, Options: in.Options,
+			Cleanup: measure.CleanupDiagnostics{
+				Options: in.Cleanup,
+				Candidates: []measure.CleanupCandidate{
+					{Class: measure.CleanupSilence, StartSeconds: 10, EndSeconds: 12, CutStart: 10.15, CutEnd: 11.85, Confidence: 0.6, Why: "2.00 s below the silence floor"},
+				},
+			},
+		}, nil
+	}
+	if _, err := host.startDiagnostics(pickAll(t, host), string(measure.SourceProcessedRender)); err != nil {
+		t.Fatal(err)
+	}
+	job := waitForDiagnostics(t, host)
+	if job.Phase != "success" || len(job.Files) != 1 {
+		t.Fatalf("job = %+v", job)
+	}
+	file := job.Files[0]
+	if len(file.Findings) != 0 {
+		t.Fatalf("findings = %+v, want the plain Diagnostics tab list untouched", file.Findings)
+	}
+	if len(file.CleanupFindings) != 1 {
+		t.Fatalf("cleanup findings = %+v, want the one silence candidate", file.CleanupFindings)
+	}
+	finding := file.CleanupFindings[0]
+	if finding.Evidence["kind"] != "silence_cleanup" || finding.Evidence["class"] != measure.CleanupSilence || finding.Category != findings.CategorySilenceCleanup {
+		t.Fatalf("cleanup finding = %+v", finding)
+	}
+	if finding.SuggestedAction == nil || finding.SuggestedAction.Kind != "split_and_trim" || !finding.SuggestedAction.RequiresConfirmation {
+		t.Fatalf("suggested action = %+v, want split_and_trim requiring confirmation", finding.SuggestedAction)
 	}
 }
 

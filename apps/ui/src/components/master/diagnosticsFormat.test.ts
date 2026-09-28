@@ -3,14 +3,25 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { diagnosticsJobSchema } from '../../api/schemas/diagnostics';
 import type { Finding } from '../../types';
-import { MOCK_DIAGNOSTICS_THRESHOLDS } from '../../api/diagnosticsMock';
-import { findingKindLabel, measuredText, sourceKindLabel, thresholdRows, thresholdText, timeRangeText } from './diagnosticsFormat';
+import { MOCK_CLEANUP_THRESHOLDS, MOCK_DIAGNOSTICS_THRESHOLDS } from '../../api/diagnosticsMock';
+import {
+  cleanupClassLabel,
+  cleanupLevelText,
+  cleanupThresholdRows,
+  findingKindLabel,
+  measuredText,
+  sourceKindLabel,
+  thresholdRows,
+  thresholdText,
+  timeRangeText,
+} from './diagnosticsFormat';
 
 // The host's own findings (bindings_diagnostics_contract_test.go), so the wording is tested against what the host sends.
 const pinned = diagnosticsJobSchema.parse(
   JSON.parse(readFileSync(join(__dirname, '..', '..', '..', '..', '..', 'tests', 'fixtures', 'contracts', 'diagnostics-success.json'), 'utf8')),
 );
 const [clip, shift, roomTone] = pinned.files[0].findings;
+const [silence, breath, click] = pinned.files[0].cleanupFindings;
 
 const pause: Finding = {
   ...clip,
@@ -71,5 +82,27 @@ describe('diagnostics wording', () => {
       { label: 'Room-tone change', value: 'A change of 6.0 dB or more between silences' },
       { label: 'Long pause', value: '2.0 s or longer, only from transcript timing' },
     ]);
+  });
+
+  it('lists every silence cleanup threshold a check uses with its unit', () => {
+    expect(cleanupThresholdRows(MOCK_CLEANUP_THRESHOLDS)).toEqual([
+      { label: 'Hold kept at each side', value: '0.1 s' },
+      { label: 'Breath length', value: '0.1 s to 0.9 s' },
+      { label: 'Breath level', value: "12.0 dB or more below the read's speech level" },
+      { label: 'Click height', value: '30.0 dB or more above the silence around it' },
+    ]);
+  });
+
+  it('names each cleanup candidate class, and an unknown class as it came', () => {
+    expect([silence, breath, click].map(cleanupClassLabel)).toEqual(['Silence', 'Breath', 'Click']);
+    expect(cleanupClassLabel({ ...silence, evidence: { ...silence.evidence, class: 'unknown_class' } })).toBe('Unknown_class');
+    expect(cleanupClassLabel({ ...silence, evidence: {} })).toBe('Candidate');
+  });
+
+  it("says a cleanup candidate's own level, or peak for a click, and not described when neither is there", () => {
+    expect(cleanupLevelText(silence)).toBe('−64.0 dBFS');
+    expect(cleanupLevelText(breath)).toBe('−38.0 dBFS');
+    expect(cleanupLevelText(click)).toBe('−45.0 dBFS, −8.0 dBFS peak');
+    expect(cleanupLevelText({ ...silence, evidence: {} })).toBe('Not described here');
   });
 });

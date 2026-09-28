@@ -13,5 +13,5 @@ Storybook title: `Primitives/Popover`. Source: `src/components/primitives/Popove
 
 ## Used by
 
+- `src/components/booth/ReadingControlBar.tsx`
 - `src/components/primitives/Dialog.tsx`
-- `src/components/teleprompter/ReadingControlBar.tsx`
