@@ -1,4 +1,4 @@
-// This file is Phase 5 of docs/prds/proofing-readiness-signals.prd.md: one
+// This file is Phase 5 of proofing-readiness-signals.prd.md (delivered and deleted; see ADR 0525): one
 // tri-state signal per delivery check, from the stored measurement of the
 // chapter's chosen render (Phase 4) and the delivery profile the project is
 // judged against now (internal/deliveryprofile, ADR 0179; the PRD's

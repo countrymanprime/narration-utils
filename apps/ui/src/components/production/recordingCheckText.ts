@@ -1,7 +1,17 @@
 // The words of the recording check (docs/utilities/recording-coverage.md, ADR 0130): every reason the host can give
 // for a check it refused or a result it cannot trust, in the narrator's terms, and the sentences a stored report is read
 // out as. Pure functions, so the dialog only lays them out.
-import type { CoverageJudgement, CoverageReason, CoverageRegion, CoverageRegionKind, CoverageReport, CoverageState, ManuscriptChapter } from '../../types';
+import type {
+  ChapterStatus,
+  CoverageJudgement,
+  CoverageReason,
+  CoverageRegion,
+  CoverageRegionKind,
+  CoverageReport,
+  CoverageState,
+  ManuscriptChapter,
+} from '../../types';
+import type { CreditsKind } from './useCreditsRows';
 
 /**
  * One plain sentence per reason. The host also sends its own message with a refusal, but that one is written for a log
@@ -54,6 +64,35 @@ export const REASON_PAGE: Partial<Record<CoverageReason, { path: string; label: 
   sidecar_missing: { path: '/settings', label: 'Open Settings' },
   credits_not_set_up: { path: '/settings', label: 'Open Settings' },
 };
+
+// The row labels the credits-in-chapter-table board and Manuscript's CreditsEntry both show (ADR 0150).
+const CREDITS_CHECK_TITLE: Record<CreditsKind, string> = { opening: 'Opening credits', closing: 'Closing credits' };
+
+/** The `credits-<kind>` id a credits row's check runs and reads under (ADR 0150, ADR 0333), matching the host's
+ * `coverage.CreditsChapterID`. */
+const creditsCheckId = (kind: CreditsKind): string => `credits-${kind}`;
+
+/** The credits kind a check id names, or undefined for a manuscript chapter id (the host's `coverage.CreditsKind`,
+ * mirrored here so a mounted `RecordingCheck` can tell a credits row apart from a real chapter without importing
+ * `useCreditsRows`' own module). */
+export function creditsCheckKind(chapterId: string): CreditsKind | undefined {
+  if (chapterId === creditsCheckId('opening')) return 'opening';
+  if (chapterId === creditsCheckId('closing')) return 'closing';
+  return undefined;
+}
+
+/**
+ * The synthetic `ManuscriptChapter` a credits row's Check button opens `RecordingCheck` with (ADR 0333, credits-in-
+ * chapter-table.prd.md Phase 3): `RecordingCheck` treats `chapter.id` as an opaque key for every host call, so this
+ * needs nothing beyond a title and the one paragraph id the host's synthetic check manuscript gives the credits kind
+ * (`coverage.creditsParagraphID`, `"<chapterId>-p0"`), so a reported gap numbers as "paragraph 1" the same way a real
+ * chapter's first paragraph would. Never inserted into the real chapters array (ADR 0150: credits are not manuscript
+ * chapters) - it exists only for the seconds this dialog is open.
+ */
+export function creditsCheckChapter(kind: CreditsKind, status: ChapterStatus): ManuscriptChapter {
+  const id = creditsCheckId(kind);
+  return { id, title: CREDITS_CHECK_TITLE[kind], index: 0, wordCount: 0, status, paragraphIds: [{ id: `${id}-p0`, index: 0 }] };
+}
 
 export const REGION_LABEL: Record<CoverageRegionKind, string> = {
   head: 'Start not read',

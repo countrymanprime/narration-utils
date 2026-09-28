@@ -114,10 +114,19 @@ export function boardCell(chapter: ProductionChapter, column: BoardColumn, live:
   }
 }
 
-/** A credits row's cell (credits-in-chapter-table.prd.md): its status only, since nothing measures or assesses credits yet. */
-export function creditsCell(row: { status: ChapterStatus; template?: unknown }, column: BoardColumn): StageGridCell {
+/** A credits row's cell (credits-in-chapter-table.prd.md): its status, and, since Phase 3, its own measured Recorded
+ * figure - the same track-based measurement a manuscript row's Recorded cell shows (ADR 0193), never an estimate. */
+export function creditsCell(
+  row: { status: ChapterStatus; template?: unknown; recordedSeconds?: number; recordedUnavailable?: RecordedUnavailable },
+  column: BoardColumn,
+): StageGridCell {
   if (column.kind === 'unavailable') return { tone: 'neutral', label: DASH };
-  if (column.kind === 'recorded') return { tone: 'neutral', label: row.template ? DASH : 'Not set up' };
+  if (column.kind === 'recorded') {
+    if (!row.template) return { tone: 'neutral', label: 'Not set up' };
+    return row.recordedSeconds === undefined
+      ? UNRECORDED[row.recordedUnavailable ?? 'unlinked']
+      : { tone: 'neutral', label: formatLength(row.recordedSeconds) };
+  }
   const at = STATUS_ORDER.indexOf(row.status);
   const stage = STATUS_ORDER.indexOf(column.stage);
   if (at > stage) return { tone: 'success', label: '✓' };
