@@ -4,9 +4,9 @@ import { faBookmark as faBookmarkRegular } from '@fortawesome/free-regular-svg-i
 import { useId, type ReactNode } from 'react';
 import { readTimeLabel } from '../../state';
 import { Button } from '../primitives/Button';
-import { StatusBadge } from '../primitives/StatusBadge';
 import { PANEL_FRAME_CLASS } from '../primitives/panelStyles';
 import { SectionLabel } from '../primitives/SectionLabel';
+import { StatusBadge } from '../primitives/StatusBadge';
 import { TitleSubtitle } from '../primitives/TitleSubtitle';
 import { TooltipTarget } from '../primitives/Tooltip';
 
