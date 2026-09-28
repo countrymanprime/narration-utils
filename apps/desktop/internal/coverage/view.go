@@ -13,7 +13,7 @@ var RefusalReasons = []Reason{
 	ReasonNoProject, ReasonNoProjectFile, ReasonProjectUnreadable, ReasonNoManuscript, ReasonChapterNotFound,
 	ReasonNotNarration, ReasonUnmapped, ReasonMultipleTracks, ReasonMappedTrackMissing, ReasonNoItems,
 	ReasonUnsupportedItem, ReasonSourceMissing, ReasonItemUnreadable, ReasonBusy, ReasonSidecarMissing,
-	ReasonInvalidParams, ReasonManuscriptChanged, ReasonResultMissing,
+	ReasonInvalidParams, ReasonManuscriptChanged, ReasonResultMissing, ReasonCreditsNotSetUp, ReasonCreditsChanged,
 }
 
 // ResultView is a ChapterResult as the CoverageResult binding sends it
