@@ -39,6 +39,10 @@ type Take struct {
 	// from the folder's line-identity sidecar (identity.go), the native-take equivalent of a REAPER item's stamped
 	// P_EXT line id (docs/adr/0026).
 	LineID *string `json:"lineId"`
+	// Keeper marks this take the narrator's chosen read for its line (keeper.go, native-recording-suite PRD Phase 4,
+	// Q5): narrator-confirmed and always undoable, and never a REAPER active-take equivalent since a native take has
+	// no REAPER item.
+	Keeper bool `json:"keeper"`
 	number int
 }
 
@@ -67,6 +71,7 @@ func listTakes(folder, except string) ([]Take, int, error) {
 	takes := []Take{}
 	highest := 0
 	identities := readIdentities(folder)
+	keepers := readKeepers(folder)
 	for _, entry := range entries {
 		match := takeFile.FindStringSubmatch(entry.Name())
 		if match == nil || entry.IsDir() {
@@ -91,6 +96,7 @@ func listTakes(folder, except string) ([]Take, int, error) {
 		if lineID, ok := identities[take.Name]; ok {
 			take.LineID = &lineID
 		}
+		take.Keeper = keepers[take.Name]
 		takes = append(takes, take)
 	}
 	sort.SliceStable(takes, func(i, j int) bool {

@@ -13,6 +13,7 @@ const recorderTakeSchema = z.object({
   recordedAt: z.number(),
   unfinished: z.boolean(),
   lineId: z.string().nullable(),
+  keeper: z.boolean(),
 }) satisfies z.ZodType<RecorderTake>;
 
 const recorderLastTakeSchema = z.object({

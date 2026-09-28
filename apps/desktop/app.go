@@ -43,6 +43,7 @@ import (
 	"github.com/countrymanprime/narration-utils/shell/internal/renderconfig"
 	"github.com/countrymanprime/narration-utils/shell/internal/retakelanes"
 	"github.com/countrymanprime/narration-utils/shell/internal/runlog"
+	"github.com/countrymanprime/narration-utils/shell/internal/series"
 	"github.com/countrymanprime/narration-utils/shell/internal/settings"
 	"github.com/countrymanprime/narration-utils/shell/internal/stages"
 	"github.com/countrymanprime/narration-utils/shell/internal/takecompare"
@@ -207,6 +208,9 @@ type Host struct {
 	// deliveryProfiles is the narrator's custom delivery profiles and their Global default (delivery-platform-profiles.prd.md,
 	// ADR 0179): user-level like creditTemplates, set once in NewHost and never swapped by a project switch.
 	deliveryProfiles *deliveryprofile.Store
+	// series is the narrator's own series.json (character-continuity-review.prd.md Phase 9/11, Q10): user-level
+	// like recents and creditTemplates, set once in NewHost and never swapped by a project switch.
+	series *series.Store
 	// deliveryFindingsMu keeps one save of the delivery review findings at a time (delivery_findings.go), so a profile
 	// change and a measurement ending together cannot leave the findings of the profile that lost the race.
 	deliveryFindingsMu sync.Mutex
@@ -389,8 +393,10 @@ func NewHost() *Host {
 	templates.SetPersist(reporter)
 	profiles := deliveryprofile.NewStore(deliveryProfilesPath())
 	profiles.SetPersist(reporter)
+	seriesStore := series.New(seriesPath())
+	seriesStore.SetPersist(reporter)
 	notes.SetOnJobEnd(func(job manuscript.ImportJob) { host.importJobEnded(job) })
-	host = &Host{diagnostic: fmt.Sprintf("go-%d", time.Now().UnixNano()), version: version, config: config{repoRoot: repoRoot}, manuscript: notes, sidecars: process.NewSupervisor(), settings: store, installJobs: map[string]*installJob{}, recents: recent, creditTemplates: templates, deliveryProfiles: profiles, pronunciationOnline: newPronunciationOnline(), log: logger, runLog: runLog, persist: reporter, updates: update.NewChecker(version, updateCachePath(), reporter), stager: newUpdateStager(), pendingPath: updatePendingPath()}
+	host = &Host{diagnostic: fmt.Sprintf("go-%d", time.Now().UnixNano()), version: version, config: config{repoRoot: repoRoot}, manuscript: notes, sidecars: process.NewSupervisor(), settings: store, installJobs: map[string]*installJob{}, recents: recent, creditTemplates: templates, deliveryProfiles: profiles, series: seriesStore, pronunciationOnline: newPronunciationOnline(), log: logger, runLog: runLog, persist: reporter, updates: update.NewChecker(version, updateCachePath(), reporter), stager: newUpdateStager(), pendingPath: updatePendingPath()}
 	// NARRATION_DEBUG=1 already forced the level in runlog.New; a saved General.debug_logging=true from a previous
 	// run turns it on too, so the narrator's last choice survives a restart (SetDebug is a no-op once the
 	// environment has forced it).
@@ -443,6 +449,19 @@ func creditTemplatesPath() string {
 		return filepath.Join(value, "AppData", "Roaming", "narration-utils", "credit-templates.json")
 	}
 	return filepath.Join("AppData", "Roaming", "narration-utils", "credit-templates.json")
+}
+
+// seriesPath resolves the per-user series file (character-continuity-review.prd.md Q10), alongside
+// recent-projects.json and credit-templates.json. Like creditTemplatesPath, this mirrors settings.Store's own
+// %APPDATA%-with-%USERPROFILE%-fallback chain rather than sharing it.
+func seriesPath() string {
+	if value := os.Getenv("APPDATA"); value != "" {
+		return filepath.Join(value, "narration-utils", "series.json")
+	}
+	if value := os.Getenv("USERPROFILE"); value != "" {
+		return filepath.Join(value, "AppData", "Roaming", "narration-utils", "series.json")
+	}
+	return filepath.Join("AppData", "Roaming", "narration-utils", "series.json")
 }
 
 // ServiceStartup is Wails v3's start hook for the Host service (main.go): it runs once, before the window loads the UI, with a
