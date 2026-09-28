@@ -6,7 +6,8 @@ export type ScopedSettingField = {
   label: string;
   // A `bool` is stored as the string "true" or "false" (every setting value is a string) and shown as a Switch.
   // A `number` is stored as its decimal text ("-3.5"); clearing one saves `null`, never "". Its range is in `number`.
-  kind: 'text' | 'choice' | 'color' | 'bool' | 'number';
+  // A `tags` field is a comma-joined list of terms (a term never holds a comma; TagInput.tsx), shown as chips.
+  kind: 'text' | 'choice' | 'color' | 'bool' | 'number' | 'tags';
   choices: string[];
   value: string;
   isSet: boolean;

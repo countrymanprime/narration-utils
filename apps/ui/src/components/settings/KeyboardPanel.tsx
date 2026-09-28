@@ -6,6 +6,7 @@ import { parseWireJson } from '../../api/wire/parseWire';
 import type { ScopedSettingField } from '../../types';
 import { Button } from '../primitives/Button';
 import { Kbd } from '../primitives/Kbd';
+import { StatusBadge } from '../primitives/StatusBadge';
 import type { Notify } from '../primitives/Toast';
 import { COMMAND_CATALOG, type CommandDescriptor, type CommandId } from '../../input/commands.catalog';
 import { findConflicts, type Conflict } from '../../input/findConflicts';
@@ -91,18 +92,9 @@ function isChanged(keymap: Keymap, defaults: Keymap, commandId: CommandId): bool
   return current.length !== base.length || current.some((value, index) => value !== base[index]);
 }
 
-// The "Keys and pedals" intro copy and the "Changed" badge match the owner-approved mockups
-// (docs/prds/mockups/input-commands-and-pedals/01-settings-global-keyboard.webp).
-function ChangedBadge() {
-  return (
-    <span
-      className="inline-flex items-center rounded-full border px-2 py-0.5 font-['Barlow_Condensed',sans-serif] text-[0.7rem] leading-tight font-semibold tracking-[0.03em] uppercase"
-      style={{ color: 'var(--warn-text)', borderColor: 'var(--warn)' }}
-    >
-      Changed
-    </span>
-  );
-}
+// The "Keys and pedals" intro copy matches the owner-approved mockups
+// (docs/prds/mockups/input-commands-and-pedals/01-settings-global-keyboard.webp); the "Changed" badge is THE pill's warn
+// outline (StatusBadge, ADR 0600), the dark sets' "CHANGED".
 
 function GestureChips({ gestures }: { gestures: Gesture[] }) {
   if (gestures.length === 0) {
@@ -120,7 +112,6 @@ function GestureChips({ gestures }: { gestures: Gesture[] }) {
     </span>
   );
 }
-
 type RecorderProps = {
   command: CommandDescriptor;
   currentGestures: Gesture[];
@@ -186,23 +177,23 @@ function Recorder({ command, currentGestures, scope, catalog, keymap, busy, onCa
         </Button>
         {!conflict && (
           <>
-            <Button variant="ghost" disabled={!captured || busy} onClick={() => captured && onAdd(captured)}>
+            <Button variant="secondary" disabled={!captured || busy} onClick={() => captured && onAdd(captured)}>
               Add as another key
             </Button>
-            <Button variant="ghost" disabled={busy} onClick={onUnbind}>
+            <Button variant="secondary" disabled={busy} onClick={onUnbind}>
               Unbind
             </Button>
-            <Button variant="ghost" disabled={busy} onClick={onResetOne}>
+            <Button variant="secondary" disabled={busy} onClick={onResetOne}>
               Reset to default
             </Button>
           </>
         )}
         {conflict && (
-          <Button variant="ghost" disabled={busy} onClick={() => setCaptured(undefined)}>
+          <Button variant="secondary" disabled={busy} onClick={() => setCaptured(undefined)}>
             Try another key
           </Button>
         )}
-        <Button variant="ghost" className="ml-auto" disabled={busy} onClick={onCancel}>
+        <Button variant="secondary" className="ml-auto" disabled={busy} onClick={onCancel}>
           Cancel
         </Button>
       </div>
@@ -271,7 +262,7 @@ export function KeyboardPanel({
             keyboard. These apply to every project.
           </p>
         </div>
-        <Button variant="ghost" disabled={busy || !anyChanged} onClick={() => void persist(defaults)}>
+        <Button variant="secondary" disabled={busy || !anyChanged} onClick={() => void persist(defaults)}>
           Reset all to defaults
         </Button>
       </div>
@@ -299,26 +290,16 @@ export function KeyboardPanel({
                           Plays audio
                         </span>
                       )}
-                      {changed && <ChangedBadge />}
+                      {changed && <StatusBadge tone="warning" look="outline" label="Changed" />}
                     </span>
                     <span className="flex flex-wrap items-center gap-2">
                       <GestureChips gestures={gestures} />
                       {changed && (
-                        <Button
-                          variant="ghost"
-                          className="text-xs"
-                          disabled={busy}
-                          onClick={() => void persist({ ...keymap, [command.id]: defaults[command.id] ?? [] })}
-                        >
+                        <Button variant="secondary" disabled={busy} onClick={() => void persist({ ...keymap, [command.id]: defaults[command.id] ?? [] })}>
                           Reset
                         </Button>
                       )}
-                      <Button
-                        variant="ghost"
-                        className="text-xs"
-                        disabled={busy}
-                        onClick={() => setRecordingId(recordingId === command.id ? undefined : command.id)}
-                      >
+                      <Button variant="secondary" disabled={busy} onClick={() => setRecordingId(recordingId === command.id ? undefined : command.id)}>
                         Change
                       </Button>
                     </span>

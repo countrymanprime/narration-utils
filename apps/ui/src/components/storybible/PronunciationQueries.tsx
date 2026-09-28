@@ -168,7 +168,7 @@ export function PronunciationQueries({ open, onClose, onChanged, notify }: { ope
               <span role="status" className="text-sm" style={{ color: 'var(--text-muted)' }}>
                 {rows.length} open · {sent} sent
               </span>
-              <Button variant="ghost" disabled={mutation.isBusy} pending={mutation.isPending('import')} onClick={pickImportFile}>
+              <Button variant="secondary" disabled={mutation.isBusy} pending={mutation.isPending('import')} onClick={pickImportFile}>
                 Import answers…
               </Button>
               <Button disabled={rows.length === 0 || mutation.isBusy} pending={mutation.isPending('export')} onClick={() => void exportCsv()}>
@@ -179,7 +179,7 @@ export function PronunciationQueries({ open, onClose, onChanged, notify }: { ope
         )}
         {rows && rows.length > 0 && (
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-            <Button variant="ghost" disabled={online.words.length === 0 || mutation.isBusy} onClick={() => setConfirmOnline(true)}>
+            <Button variant="secondary" disabled={online.words.length === 0 || mutation.isBusy} onClick={() => setConfirmOnline(true)}>
               Look up online…
             </Button>
             <span className="text-xs text-[var(--text-muted)]">Asks Merriam-Webster about each name, on your own key.</span>
@@ -216,7 +216,7 @@ export function PronunciationQueries({ open, onClose, onChanged, notify }: { ope
                   <div className="flex flex-wrap gap-2 pt-1">
                     {row.status === 'researched' && (
                       <Button
-                        variant="ghost"
+                        variant="secondary"
                         disabled={mutation.isBusy}
                         pending={mutation.isPending(`query_sent:${key}`)}
                         onClick={() => void setStatus(row, 'query_sent', `${row.name}: marked as sent.`)}
@@ -226,7 +226,7 @@ export function PronunciationQueries({ open, onClose, onChanged, notify }: { ope
                       </Button>
                     )}
                     <Button
-                      variant="ghost"
+                      variant="secondary"
                       disabled={mutation.isBusy}
                       pending={mutation.isPending(`author_confirmed:${key}`)}
                       onClick={() => void setStatus(row, 'author_confirmed', `${row.name}: marked as answered.`)}

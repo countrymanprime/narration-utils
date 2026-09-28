@@ -60,7 +60,7 @@ export function ChapterTagsDialog({ onClose }: { onClose: () => void }) {
       description="Add ID3 chapter markers to a copy of an already-rendered MP3, using the chapter names and lengths from your last chapter render. The file you choose below is never changed; a new, tagged copy is written beside it."
       actions={
         <>
-          <Button variant="ghost" onClick={onClose} disabled={embedding}>
+          <Button variant="secondary" onClick={onClose} disabled={embedding}>
             Close
           </Button>
           <Button onClick={embed} disabled={!canEmbed} pending={embedding}>

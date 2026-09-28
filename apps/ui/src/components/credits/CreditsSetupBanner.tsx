@@ -3,6 +3,7 @@ import { apiErrorMessage } from '../../api/errorMessage';
 import { useApi } from '../../api/ApiContext';
 import type { CreditsSetupState } from '../../types';
 import { Button } from '../primitives/Button';
+import { Dot } from '../primitives/StatusBadge';
 import type { Notify } from '../primitives/Toast';
 
 /**
@@ -43,7 +44,7 @@ export function CreditsSetupBanner({
       style={{ borderColor: 'var(--review)', background: 'var(--surface)' }}
     >
       <div className="flex items-center gap-2 text-sm">
-        <span className="size-2 flex-none rounded-full" style={{ background: 'var(--review)' }} />
+        <Dot color="var(--review)" />
         <span>
           <strong>
             The credits need {tokens.length} value{tokens.length === 1 ? '' : 's'}
@@ -52,7 +53,7 @@ export function CreditsSetupBanner({
         </span>
       </div>
       <div className="flex gap-2">
-        <Button variant="ghost" type="button" disabled={busy} onClick={() => void dontAsk()}>
+        <Button variant="secondary" type="button" disabled={busy} onClick={() => void dontAsk()}>
           Don&rsquo;t ask for this project
         </Button>
         <Button variant="primary" type="button" disabled={busy} onClick={onFillIn}>

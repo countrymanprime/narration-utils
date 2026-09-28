@@ -23,7 +23,8 @@ import { useAssetInstall } from '../../hooks/useAssetInstall';
 import { usePendingAction } from '../../hooks/usePendingAction';
 import { AssetFacts } from '../assets/AssetFacts';
 import { AssetInstallPrompt } from '../assets/AssetInstallPrompt';
-import { BADGE_CLASS, BADGE_STYLE, CAT_DOT_BG, CAT_DOT_CLASS, EntitySummary } from '../manuscript/EntitySummary';
+import { CAT_DOT_BG, EntitySummary, entityBadgeColors } from '../manuscript/EntitySummary';
+import { Dot, badgeClass, badgeStyle } from '../primitives/StatusBadge';
 import { Highlight, highlightKind } from '../primitives/Highlight';
 import { SlideOver } from '../primitives/SlideOver';
 import { Button } from '../primitives/Button';
@@ -362,18 +363,18 @@ export function GuideDetail({
     <section className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-lg border border-[var(--border)] bg-[var(--surface)] shadow-[var(--shadow)]">
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--border)] px-[1.1rem] py-[0.85rem]">
         <div className="flex min-w-0 items-center gap-2">
-          <span className={CAT_DOT_CLASS} style={{ background: CAT_DOT_BG[categoryCssName(entity.category)] }} />
+          <Dot color={CAT_DOT_BG[categoryCssName(entity.category)]} />
           <h2 className="truncate font-semibold">{entity.canonical_name || 'New entity'}</h2>
           <div className="flex items-center gap-2 text-sm" style={{ color: 'var(--text-muted)' }}>
             <div style={{ position: 'relative' }}>
               <Menu
-                triggerClassName={BADGE_CLASS}
-                triggerStyle={BADGE_STYLE[entity.category]}
+                triggerClassName={badgeClass('pill')}
+                triggerStyle={badgeStyle(entityBadgeColors(entity.category))}
                 disabled={locked || !(editing || isNewDraft) || mutation.isBusy}
                 items={CREATABLE_CATEGORIES.map((label) => ({
                   key: label,
                   label,
-                  leading: <span className={CAT_DOT_CLASS} style={{ background: CAT_DOT_BG[categoryValue(label)] }} />,
+                  leading: <Dot color={CAT_DOT_BG[categoryValue(label)]} />,
                   onSelect: () => {
                     if (isNewDraft) void createNewEntity(categoryValue(label));
                     else void save('category', { category: categoryValue(label) }, `Category changed to ${label}.`);
@@ -609,22 +610,22 @@ export function GuideDetail({
                   Selected match: <strong>{selectedAliasMatch.canonical_name}</strong>
                   {selectedAliasMatch.locked ? ' · locked' : ''}
                 </span>
-                <Button variant="ghost" className="text-xs" onClick={() => setReviewOverlayId(selectedAliasMatch.id)}>
+                <Button variant="secondary" onClick={() => setReviewOverlayId(selectedAliasMatch.id)}>
                   Review entry
                 </Button>
                 {selectedAliasMatch.locked ? (
                   <TooltipTarget text="Locked entries cannot be merged because the source would be deleted.">
-                    <Button variant="primary" className="text-xs" disabled>
+                    <Button variant="primary" disabled>
                       Merge into current entry
                     </Button>
                   </TooltipTarget>
                 ) : (
-                  <Button variant="primary" className="text-xs" disabled={mutation.isBusy} onClick={() => setConfirmation('merge')}>
+                  <Button variant="primary" disabled={mutation.isBusy} onClick={() => setConfirmation('merge')}>
                     <FontAwesomeIcon icon={faCodeMerge} />
                     Merge into current entry
                   </Button>
                 )}
-                <Button variant="ghost" className="text-xs" onClick={clearAliasMatch}>
+                <Button variant="secondary" onClick={clearAliasMatch}>
                   Clear selection
                 </Button>
               </div>
@@ -644,7 +645,7 @@ export function GuideDetail({
                       className={`flex w-full items-center gap-2 border-b border-[var(--border)] px-3 py-2 text-left hover:bg-[var(--surface-2)] ${index === aliasActiveIndex ? 'bg-[var(--surface-2)]' : ''}`}
                       onClick={() => setAliasSelectedId(match.id)}
                     >
-                      <span className={CAT_DOT_CLASS} style={{ background: CAT_DOT_BG[categoryCssName(match.category)] }} />
+                      <Dot color={CAT_DOT_BG[categoryCssName(match.category)]} />
                       <span className="min-w-0 flex-1">
                         <strong className="text-sm">{match.canonical_name}</strong>
                         <span className="block text-xs" style={{ color: 'var(--text-muted)' }}>
@@ -816,8 +817,7 @@ export function GuideDetail({
               options={[{ value: '', label: 'Choose entry…' }, ...otherEntities.map((row) => ({ value: row.id, label: row.canonical_name }))]}
             />
             <Button
-              variant="ghost"
-              className="text-xs"
+              variant="secondary"
               disabled={editingDisabled || waiting('relate')}
               pending={mutation.isPending('relate')}
               onClick={() => void addRelationship()}

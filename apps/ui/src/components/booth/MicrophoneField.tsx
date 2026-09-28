@@ -10,7 +10,6 @@ const LABEL_CLASS = 'block text-[0.82rem] font-medium text-[var(--text-muted)]';
 const HINT_CLASS = 'mt-1 block text-xs';
 
 const CHOOSE_LABEL = 'Choose a microphone…';
-
 type Props = {
   value: string;
   onChange: (value: string) => void;
@@ -50,7 +49,7 @@ export function MicrophoneField({
   const listEmpty = devices.length === 0;
 
   const refreshButton = onRefresh && (
-    <Button variant="ghost" className="px-2! py-1! text-[0.7rem]!" onClick={onRefresh} pending={refreshing}>
+    <Button size="sm" variant="secondary" onClick={onRefresh} pending={refreshing}>
       <FontAwesomeIcon icon={faRotate} /> {refreshing ? 'Refreshing…' : 'Refresh'}
     </Button>
   );

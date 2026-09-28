@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { WorkspaceExtra, WorkspaceParagraph, WorkspaceToken } from '../../api/contracts/workspace';
 import { Button } from '../primitives/Button';
+import { StatusBadge } from '../primitives/StatusBadge';
 
 const STATUS_CLASS: Partial<Record<WorkspaceToken['status'], string>> = {
   skip: 'line-through',
@@ -55,14 +56,7 @@ function Token({ token, isCurrent, onSeek }: { token: WorkspaceToken; isCurrent:
 }
 
 function ExtraChip({ extra }: { extra: WorkspaceExtra }) {
-  return (
-    <span
-      className="mx-1 inline-flex items-center gap-1 rounded-full border px-1.5 py-0.5 text-xs"
-      style={{ borderColor: 'var(--border)', color: 'var(--text-muted)' }}
-    >
-      {'↻'} repeat &middot; &ldquo;{extra.text}&rdquo;
-    </span>
-  );
+  return <StatusBadge tone="neutral" look="outline" className="mx-1" icon="↻" label={`repeat · “${extra.text}”`} />;
 }
 
 /**
@@ -144,8 +138,9 @@ export function ScriptView({
           {!isPlaying ? 'Paused · click a word to play from it' : autoFollow ? 'Following playback · scroll away to stop following' : 'Not following playback'}
           {isPlaying && !autoFollow && (
             <Button
-              variant="ghost"
-              className="ml-2 px-2 py-0.5 text-xs"
+              size="sm"
+              variant="secondary"
+              className="ml-2"
               onClick={() => {
                 setAutoFollow(true);
               }}

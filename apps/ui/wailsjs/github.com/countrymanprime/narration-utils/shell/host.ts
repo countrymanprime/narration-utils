@@ -2166,6 +2166,15 @@ export function WorkspaceGoTo(chapterID: string, tokenIndex: number): $Cancellab
 }
 
 /**
+ * WorkspaceListFXChains lists the narrator's FX chains from REAPER's FXChains folder (list_fx_chains), by relative
+ * name, sorted, capped. It changes nothing and is refused (bridge.ErrUnavailable) offline or before the DAW port's
+ * FX chains capability is on, exactly as list_fx_chains itself already is (ADR 0230, ADR 0234).
+ */
+export function WorkspaceListFXChains(): $CancellablePromise<string> {
+    return $Call.ByID(2672396379);
+}
+
+/**
  * WorkspaceLoop loops the chapter passage from firstToken to lastToken (inclusive, both heard on the same item) in
  * REAPER: the time selection and loop points around it, repeat on, and Play, exactly as FindingsLoop does.
  * FindingsStopLoop stops it - the workspace holds no loop state of its own, sharing the one app loop

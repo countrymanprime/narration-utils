@@ -4,6 +4,7 @@ import type { Bootstrap, Scope, ScopedSettingField, TtsCatalog, WhisperCatalog }
 import { useApi } from '../../api/ApiContext';
 import { usePendingAction } from '../../hooks/usePendingAction';
 import { Button } from '../primitives/Button';
+import { Dot } from '../primitives/StatusBadge';
 import { Heading } from '../primitives/Heading';
 import { ConfirmDialog } from '../primitives/ConfirmDialog';
 import { Tab, TabList, TabPanel, Tabs } from '../primitives/Tabs';
@@ -22,7 +23,6 @@ import { RecordingCheckSummary } from './RecordingCheckSummary';
 import { ScopedSetting } from './ScopedSetting';
 import { UpdatesPanel } from './UpdatesPanel';
 import type { Notify } from '../primitives/Toast';
-
 type SettingsCategory = { key: string; label: string; tool?: string; scopes: Scope[]; filter?: (field: ScopedSettingField) => boolean };
 const SETTINGS_CATEGORIES: SettingsCategory[] = [
   { key: 'General', label: 'General', tool: 'General', scopes: ['global'] },
@@ -270,7 +270,7 @@ export function Settings({
               {category === 'Daw' && scope === 'project' ? (
                 <div className="space-y-3 text-sm">
                   <div className="flex items-center gap-3 rounded-md p-3" style={{ background: 'var(--surface-2)' }}>
-                    <span className="size-2 shrink-0 rounded-full" style={{ background: data.dawFileLinked ? 'var(--character)' : 'var(--non-text)' }} />
+                    <Dot color={data.dawFileLinked ? 'var(--character)' : 'var(--non-text)'} />
                     <div>
                       {/* Copy names only the one fact the host actually has (a stored link) - reachability is still unknown (PRD W15). */}
                       <div className="font-medium">{data.dawFileLinked ? 'REAPER project linked' : 'No REAPER project linked'}</div>
@@ -281,7 +281,7 @@ export function Settings({
                       </div>
                     </div>
                   </div>
-                  <Button variant="ghost" onClick={onLinkDawFile}>
+                  <Button variant="secondary" onClick={onLinkDawFile}>
                     {data.dawFileLinked ? 'Change linked project file' : 'Link a REAPER project file'}
                   </Button>
                 </div>
@@ -300,7 +300,7 @@ export function Settings({
                   {/* Truthful about what the host actually knows (PRD W15): reachability is a real Phase 7 fact now
                       (a live heartbeat), not the permanent "Connected" claim Phase 3 shipped. */}
                   <div className="flex items-center gap-3 rounded-md p-3" style={{ background: 'var(--surface-2)' }}>
-                    <span className="size-2 shrink-0 rounded-full" style={{ background: data.dawReachable ? 'var(--character)' : 'var(--non-text)' }} />
+                    <Dot color={data.dawReachable ? 'var(--character)' : 'var(--non-text)'} />
                     <div>
                       <div className="font-medium">{data.dawReachable ? `${data.daw || 'REAPER'} is reachable` : 'REAPER is not reachable'}</div>
                       <div style={{ color: 'var(--text-muted)' }}>
@@ -312,7 +312,7 @@ export function Settings({
                       </div>
                     </div>
                   </div>
-                  <Button variant="ghost" type="button" disabled={!data.dawFileLinked || launchingDaw} onClick={() => void handleLaunchDaw()}>
+                  <Button variant="secondary" type="button" disabled={!data.dawFileLinked || launchingDaw} onClick={() => void handleLaunchDaw()}>
                     {launchingDaw ? 'Starting REAPER…' : 'Launch REAPER'}
                   </Button>
                   {!data.dawFileLinked && <p style={{ color: 'var(--text-muted)' }}>Link a REAPER project (.rpp) file before starting REAPER.</p>}
@@ -336,7 +336,7 @@ export function Settings({
                       {dirty && 'Unsaved changes'}
                     </span>
                     <div className="flex gap-2">
-                      <Button variant="ghost" type="button" disabled={!dirty} onClick={() => void discard()}>
+                      <Button variant="secondary" type="button" disabled={!dirty} onClick={() => void discard()}>
                         Discard changes
                       </Button>
                       <Button variant="primary" type="submit" disabled={!dirty}>
@@ -355,8 +355,8 @@ export function Settings({
                         {reaperLauncher}
                       </code>
                       <Button
-                        variant="ghost"
-                        className="mt-2 text-xs"
+                        variant="secondary"
+                        className="mt-2"
                         type="button"
                         onClick={() =>
                           void navigator.clipboard
@@ -441,7 +441,7 @@ export function Settings({
                             </div>
                           </div>
                           {selectedWhisperModel.installState === 'installed' && (
-                            <Button variant="ghost" className="text-xs" type="button" onClick={() => setConfirmRemoveModel(true)}>
+                            <Button variant="secondary" type="button" onClick={() => setConfirmRemoveModel(true)}>
                               Remove local model…
                             </Button>
                           )}
@@ -473,7 +473,7 @@ export function Settings({
                             </div>
                           </div>
                           {selectedTtsVoice.installState === 'installed' && (
-                            <Button variant="ghost" className="text-xs" type="button" onClick={() => setConfirmRemoveVoice(true)}>
+                            <Button variant="secondary" type="button" onClick={() => setConfirmRemoveVoice(true)}>
                               Remove local voice…
                             </Button>
                           )}
@@ -501,7 +501,7 @@ export function Settings({
                       {dirty && 'Unsaved changes'}
                     </span>
                     <div className="flex gap-2">
-                      <Button variant="ghost" type="button" disabled={!dirty} onClick={() => void discard()}>
+                      <Button variant="secondary" type="button" disabled={!dirty} onClick={() => void discard()}>
                         Discard changes
                       </Button>
                       <Button variant="primary" type="submit" disabled={!dirty}>

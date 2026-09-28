@@ -193,32 +193,32 @@ export function FindingDetail({
       <div className="mt-3 flex flex-wrap gap-2">
         {!delivery && (
           <TooltipTarget text={clip ? 'Play this note in the app, from 3 s before it to 3 s after' : 'This note has no place in a recording to play.'}>
-            <Button variant="ghost" onClick={() => (player.isPlaying ? player.stop() : clip && player.play(clip))} disabled={!clip}>
+            <Button variant="secondary" onClick={() => (player.isPlaying ? player.stop() : clip && player.play(clip))} disabled={!clip}>
               {player.isPlaying ? 'Stop' : 'Play ±3 s'}
             </Button>
           </TooltipTarget>
         )}
         {deliveryFile ? (
           <TooltipTarget text="Open Master & QC on this file, rule by rule">
-            <Button variant="ghost" onClick={() => goToMaster(deliveryFile, delivery?.rule)}>
+            <Button variant="secondary" onClick={() => goToMaster(deliveryFile, delivery?.rule)}>
               Open in Master & QC
             </Button>
           </TooltipTarget>
         ) : (
           <TooltipTarget text={manuscriptBlocked ?? 'Open this line in Script'}>
-            <Button variant="ghost" onClick={() => void openManuscript()} disabled={Boolean(manuscriptBlocked)} pending={action.isPending('manuscript')}>
+            <Button variant="secondary" onClick={() => void openManuscript()} disabled={Boolean(manuscriptBlocked)} pending={action.isPending('manuscript')}>
               Show in Script
             </Button>
           </TooltipTarget>
         )}
         {entityId && hasManuscript && (
-          <Button variant="ghost" onClick={() => goToStoryBible(entityId)}>
+          <Button variant="secondary" onClick={() => goToStoryBible(entityId)}>
             Open in Story Bible
           </Button>
         )}
         {goToWorkspace && (
           <TooltipTarget text={chapterId ? "Open this note in its chapter's view, to listen against the script" : 'This note has no chapter to open.'}>
-            <Button variant="ghost" onClick={() => chapterId && goToWorkspace(chapterId, finding.id)} disabled={!chapterId}>
+            <Button variant="secondary" onClick={() => chapterId && goToWorkspace(chapterId, finding.id)} disabled={!chapterId}>
               Open chapter view
             </Button>
           </TooltipTarget>
@@ -255,7 +255,7 @@ export function FindingDetail({
         {DECISION_ORDER.map((status) => (
           <Button
             key={status}
-            variant={status === 'accepted' ? 'primary' : 'ghost'}
+            variant={status === 'accepted' ? 'primary' : 'secondary'}
             onClick={() => void decide(status)}
             pending={action.isPending(status)}
             disabled={noteTooLong || action.isBlockedFor(status)}
@@ -265,7 +265,7 @@ export function FindingDetail({
         ))}
         {decided && (
           <Button
-            variant="ghost"
+            variant="secondary"
             onClick={() => void decide('unreviewed')}
             pending={action.isPending('unreviewed')}
             disabled={action.isBlockedFor('unreviewed')}

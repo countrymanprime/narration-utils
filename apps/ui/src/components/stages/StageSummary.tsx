@@ -1,9 +1,9 @@
 import { Button } from '../primitives/Button';
+import { StatusBadge } from '../primitives/StatusBadge';
 import type { StagesState } from './useStageRecommendations';
 import { plural, summarize } from './stageText';
 
-// A chip is the Button primitive a size down; its colours say what it counts.
-const CHIP = 'px-2.5 py-1 text-[0.78rem]';
+// A chip is THE pill made a button (StatusBadge, ADR 0600); its tone says what it counts.
 
 /**
  * The estimate card's summary of the stage suggestions (chapter-stage-recommendations.prd.md Phase 5, deleted; see
@@ -15,29 +15,16 @@ export function StageSummaryChips({ state, onShow }: { state: StagesState; onSho
   if (state.phase === 'error')
     return (
       <div className="mt-2 flex flex-wrap gap-2">
-        <Button variant="ghost" className={CHIP} style={{ borderColor: 'var(--danger)', color: 'var(--danger-text)' }} onClick={onShow}>
-          Couldn’t check stage suggestions
-        </Button>
+        <StatusBadge tone="danger" look="outline" label="Couldn’t check stage suggestions" onClick={onShow} />
       </div>
     );
   const { suggested, changed } = summarize([...state.byChapter.values()]);
   if (suggested === 0 && changed === 0) return null;
   return (
     <div className="mt-2 flex flex-wrap gap-2">
-      {suggested > 0 && (
-        <Button
-          variant="ghost"
-          className={CHIP}
-          style={{ borderColor: 'var(--accent)', color: 'var(--accent-strong)', background: 'var(--accent-soft)' }}
-          onClick={onShow}
-        >
-          {plural(suggested, 'chapter has a suggestion', 'chapters have a suggestion')}
-        </Button>
-      )}
+      {suggested > 0 && <StatusBadge tone="accent" label={plural(suggested, 'chapter has a suggestion', 'chapters have a suggestion')} onClick={onShow} />}
       {changed > 0 && (
-        <Button variant="ghost" className={CHIP} style={{ borderColor: 'var(--warn)', color: 'var(--warn-text)' }} onClick={onShow}>
-          {plural(changed, 'chapter’s evidence changed', 'chapters’ evidence changed')}
-        </Button>
+        <StatusBadge tone="warning" look="outline" label={plural(changed, 'chapter’s evidence changed', 'chapters’ evidence changed')} onClick={onShow} />
       )}
     </div>
   );
@@ -57,7 +44,7 @@ export function StageCheckLine({ state, onCheckNow }: { state: StagesState; onCh
       <p role="alert" style={{ color: 'var(--danger-text)' }}>
         Couldn’t check stage suggestions: {state.error}
       </p>
-      <Button variant="ghost" className="px-3 py-1" pending={state.phase === 'loading'} onClick={onCheckNow}>
+      <Button variant="secondary" size="sm" pending={state.phase === 'loading'} onClick={onCheckNow}>
         Try again
       </Button>
     </div>
