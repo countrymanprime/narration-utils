@@ -119,4 +119,4 @@ fill in a note if you want it changed.
 
 ---
 
-[← Script](script.md) · [Index](README.md) · [Teleprompter →](teleprompter.md)
+[← Script](script.md) · [Index](README.md) · [Booth →](booth.md)

@@ -31,7 +31,7 @@ read the docs here in `docs/` meanwhile.
 
 ## Layout
 
-```
+```text
 narration-utils/
   apps/
     desktop/                   Go/Wails desktop host: app.go, bindings*.go, internal/ (domain services, the asset manager),

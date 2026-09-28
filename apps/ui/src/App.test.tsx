@@ -12,7 +12,6 @@ import type { GuideBuildResult, WorkJob } from './types';
 import { WIRE_CHAPTERS } from './api/mockFixtures';
 import type { JobEnded } from './api/contracts/system';
 import type { DawTransport } from './api/contracts/daw';
-import { setBoothActive } from './components/teleprompter/boothActive';
 
 // BrowserRouter reads/writes the real window.location via history.pushState,
 // which jsdom keeps alive across tests in this file - reset it so each test
@@ -154,8 +153,8 @@ describe('App (integration, driven through the mock NarrationApi)', () => {
     expect(screen.getByText(/Desktop host API version 1 is incompatible/)).toBeTruthy();
   });
 
-  it("opens Settings > Credits from the teleprompter's unresolved-token warning (credits PRD Phase 4, C6)", async () => {
-    window.history.replaceState(null, '', '/teleprompter');
+  it("opens Settings > Credits from the Booth's unresolved-token warning (credits PRD Phase 4, C6)", async () => {
+    window.history.replaceState(null, '', '/booth');
     renderApp();
     const picker = (await screen.findByLabelText('Chapter')) as HTMLSelectElement;
     await waitFor(() => expect(Array.from(picker.options, (option) => option.textContent)).toContain('Closing credits'));
@@ -261,6 +260,8 @@ describe('App (integration, driven through the mock NarrationApi)', () => {
 
   it('queues a job-end toast while the booth is recording, and shows it once recording stops (booth-mode-and-companion-panel.prd.md Phase 5)', async () => {
     let announce: ((event: JobEnded) => void) | undefined;
+    // Every subscriber hears the transport (the Booth page subscribes too, beside App's toast guard).
+    const transportListeners = new Set<(transport: DawTransport) => void>();
     let emitTransport: ((transport: DawTransport) => void) | undefined;
     renderApp({
       subscribeJobEnded: (listener) => {
@@ -268,16 +269,19 @@ describe('App (integration, driven through the mock NarrationApi)', () => {
         return () => {};
       },
       subscribeDawTransport: (listener) => {
-        emitTransport = listener;
+        transportListeners.add(listener);
+        emitTransport = (transport) => transportListeners.forEach((each) => each(transport));
         listener({ playing: false, recording: false });
-        return () => {};
+        return () => transportListeners.delete(listener);
       },
     });
     await screen.findByRole('heading', { name: 'Welcome back' });
     await waitFor(() => expect(announce).toBeDefined());
     await waitFor(() => expect(emitTransport).toBeDefined());
 
-    act(() => setBoothActive(true));
+    // The Booth is showing (stage-navigation-and-page-replacement.prd.md Phase 4: its route, not a dialog flag).
+    fireEvent.click(screen.getAllByRole('button', { name: 'Booth' })[0]);
+    await screen.findByRole('heading', { name: 'Booth' });
     act(() => emitTransport?.({ playing: true, recording: true }));
 
     act(() => announce?.({ id: 'guide-1', kind: 'story_bible', outcome: 'success', message: 'Story Bible rebuild complete.', durationMs: 4200 }));
@@ -291,9 +295,7 @@ describe('App (integration, driven through the mock NarrationApi)', () => {
 
     // Recording stops: the queued success toast now appears.
     act(() => emitTransport?.({ playing: false, recording: false }));
-    expect(within(screen.getByRole('status')).getByText('Story Bible rebuild complete.')).toBeTruthy();
-
-    setBoothActive(false);
+    expect(screen.getByText('Story Bible rebuild complete.')).toBeTruthy();
   });
 
   it('raises an OS notification for a slow job finishing while the window is unfocused, and not otherwise (N1-N4)', async () => {
@@ -454,7 +456,7 @@ describe('App (integration, driven through the mock NarrationApi)', () => {
     renderApp({ bootstrap: async () => ({ ...(await source.bootstrap()), manuscript: null }) });
     await screen.findByRole('heading', { name: 'Welcome back' });
 
-    for (const name of ['Script', 'Story Bible', 'Teleprompter']) {
+    for (const name of ['Script', 'Story Bible', 'Booth']) {
       expect(screen.getAllByRole('button', { name }).every((button) => (button as HTMLButtonElement).disabled)).toBe(true);
     }
     expect((screen.getByRole('button', { name: 'Open Proof' }) as HTMLButtonElement).disabled).toBe(true);
@@ -463,22 +465,42 @@ describe('App (integration, driven through the mock NarrationApi)', () => {
     expect(screen.queryByRole('button', { name: 'Import legacy Word file' })).toBeNull();
   });
 
-  it('opens the Teleprompter with a manuscript, and sends a direct URL to Home without one', async () => {
+  it('opens the Booth with a manuscript, and sends a direct URL to Home without one', async () => {
     window.history.replaceState(null, '', '/');
     renderApp();
     await screen.findByRole('heading', { name: 'Welcome back' });
 
-    fireEvent.click(screen.getAllByRole('button', { name: 'Teleprompter' })[0]);
+    fireEvent.click(screen.getAllByRole('button', { name: 'Booth' })[0]);
 
-    await screen.findByRole('heading', { name: 'Teleprompter' });
-    expect(window.location.pathname).toBe('/teleprompter');
+    await screen.findByRole('heading', { name: 'Booth' });
+    expect(window.location.pathname).toBe('/booth');
     cleanup();
 
-    window.history.replaceState(null, '', '/teleprompter');
+    window.history.replaceState(null, '', '/booth');
     const source = createMockApi();
     renderApp({ bootstrap: async () => ({ ...(await source.bootstrap()), manuscript: null }) });
     await screen.findByRole('heading', { name: 'Welcome back' });
     expect(window.location.pathname).toBe('/');
+  });
+
+  // stage-navigation-and-page-replacement.prd.md Phase 4 (ADR 0407): the retired Teleprompter route lands on the Booth with its
+  // query and hash, and replaces the entry so Back never returns to the redirect.
+  it('redirects /teleprompter to /booth, keeping the query and hash', async () => {
+    window.history.replaceState(null, '', '/teleprompter?chapter=chapter-2#x');
+    renderApp();
+    await screen.findByRole('heading', { name: 'Booth' });
+    expect(window.location.pathname).toBe('/booth');
+    expect(window.location.search).toBe('?chapter=chapter-2');
+    expect(window.location.hash).toBe('#x');
+  });
+
+  it('opens Settings on the Booth category from #booth and from the old #teleprompter anchor (Q11)', async () => {
+    for (const anchor of ['#booth', '#teleprompter']) {
+      window.history.replaceState(null, '', `/settings${anchor}`);
+      renderApp();
+      expect(await screen.findByRole('heading', { name: 'Booth' })).toBeTruthy();
+      cleanup();
+    }
   });
 
   it('keeps Tracks reachable without a manuscript and lists the mock API tracks on its page', async () => {

@@ -15,14 +15,15 @@ const OVERLAPPING_PAIRS: ReadonlySet<string> = new Set(['booth+dialog', 'booth+g
  * narrator-visible conflict rather than one the router's own precedence already keeps apart.
  *
  * A screen has at most one "surface" scope - `dialog`, `booth` or `page` - plus `global`, unless a dialog is open
- * (`router.tsx`'s `activeScopes`, ADR 0361 decision 4). `booth` can sit on top of a dialog (the read-aloud dialog is
- * both a `dialog` and a `booth`) or stand as a full page on its own (the Teleprompter page), so it claims the
- * surface the same way `dialog` does: on a booth screen, `page` is never also active, exactly as `page` is never
- * active while a dialog is open. That is the one point past the ADR's literal "page overlaps booth": read that way,
- * the default catalog could never pass "zero conflicts" once `workspace.*` (`page`, Space) and `reading.toggle`
- * (`booth`, Space) both exist, and the two are never actually reachable on the same screen (different routes) either
- * way. The realisable pairs this leaves are exactly `dialog`+`booth` (the read-aloud dialog), `booth`+`global` (the
- * Teleprompter page) and `page`+`global` (every other page) - the three entries below.
+ * (`router.tsx`'s `activeScopes`, ADR 0361 decision 4). `booth` is the Booth page's (stage-navigation-and-page-
+ * replacement.prd.md Phase 4, which replaced the Teleprompter page and the read-aloud dialog with it), and a confirm
+ * or popover opened inside it can sit on top as a `dialog`, so it claims the surface the same way `dialog` does: on a
+ * booth screen, `page` is never also active, exactly as `page` is never active while a dialog is open. That is the one
+ * point past the ADR's literal "page overlaps booth": read that way, the default catalog could never pass "zero
+ * conflicts" once `workspace.*` (`page`, Space) and `reading.toggle` (`booth`, Space) both exist, and the two are never
+ * actually reachable on the same screen (different routes) either way. The realisable pairs this leaves are exactly
+ * `dialog`+`booth` (a dialog over the Booth), `booth`+`global` (the Booth) and `page`+`global` (every other page) - the
+ * three entries below.
  */
 export function scopesOverlap(a: Scope, b: Scope): boolean {
   if (a === b) return true;
