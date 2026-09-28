@@ -39,15 +39,21 @@ const (
 type Server struct {
 	mu sync.Mutex
 	// Project is the fake's state, read and changed under mu by the handlers.
+	// +checklocks:mu
 	project *Project
 	// down: Dial answers ErrNotReachable (Audacity closed, or scripting off).
+	// +checklocks:mu
 	down bool
 	// faults are consumed one per command, in order; an empty queue answers normally.
+	// +checklocks:mu
 	faults []Fault
 	// log is every command line received, in order.
+	// +checklocks:mu
 	log []string
 	// dials counts successful connections.
+	// +checklocks:mu
 	dials int
+	// +checklocks:mu
 	conns []*pipeEnd
 }
 
