@@ -83,6 +83,10 @@ Results are in [character-continuity-acoustic-trial.md](../../../../docs/researc
 NARRATION_SIGNAL_CORPUS=../narration-corpus/signal go test ./internal/measure -run TestLibriVoxSignalCorpus -v   # from apps/desktop
 ```
 
+The same corpus is the editing check's real-speech click evaluation (`go test ./internal/editing -run
+TestClickBreathOnLibriVoxSignalCorpus`), reported in
+[editing-click-breath-validation.md](../../../../docs/research/editing-click-breath-validation.md#real-speech-the-librivox-signal-set).
+
 ## Findings from the first run (2026-09-27)
 
 `TestLibriVoxSignalCorpus`, with `measure.DiagnoseFile` and `measure.AnalyzeFile` at their defaults:

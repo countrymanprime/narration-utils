@@ -43,7 +43,7 @@ export function buildWaveformSegments(
 /** A flag kind's marker tone on the strip, sharing Timeline's own tone fills (NotesStrip.tsx's CATEGORY_TONE does
  * the same for a Finding's category): skip and pickup read as the strongest signals (a gap, or a proofer's own
  * note), misread and extra as informational, cleanup as resolved-sounding, the rest neutral. */
-export const FLAG_MARKER_TONE: Record<FlagKind, TimelineMarker['tone']> = {
+const FLAG_MARKER_TONE: Record<FlagKind, TimelineMarker['tone']> = {
   skip: 'danger',
   not_recorded: 'danger',
   partial: 'warning',

@@ -90,12 +90,14 @@ func breathSweep() []sweepStep {
 // those, only values at least as sensitive as DX's default (for both knobs, a
 // lower value raises more candidates), since precision measured on synthetic
 // audio never justifies giving up recall margin on real audio; then the
-// highest precision; then the value nearest DX's default.
-func chooseConservative(t *testing.T, dir string, labels []CorpusLabel, class LabelClass, steps []sweepStep, dxDefault float64) float64 {
+// highest precision; then the value nearest DX's default. tune scores one
+// step's cleanup options on the tuning half, so the synthetic and the
+// LibriVox runs (librivoxvalidation_test.go) share the rule.
+func chooseConservative(t *testing.T, class LabelClass, steps []sweepStep, dxDefault float64, tune func(measure.CleanupOptions) ClassMetrics) float64 {
 	t.Helper()
 	best, bestRecall, bestPrecision := math.NaN(), -1.0, -1.0
 	for _, step := range steps {
-		m := pooled(scoreByCondition(t, dir, labels, step.cleanup, SplitTune), class)
+		m := tune(step.cleanup)
 		recall, precision := m.Recall(), m.Precision()
 		if math.IsNaN(precision) {
 			precision = 0
@@ -122,11 +124,16 @@ func TestShippedDefaultsAreTheTuningHalfChoice(t *testing.T) {
 	dir := t.TempDir()
 	labels := writeValidationCorpus(t, dir)
 	dx, shipped := measure.DefaultCleanupOptions(), DefaultScanOptions()
+	tune := func(class LabelClass) func(measure.CleanupOptions) ClassMetrics {
+		return func(cleanup measure.CleanupOptions) ClassMetrics {
+			return pooled(scoreByCondition(t, dir, labels, cleanup, SplitTune), class)
+		}
+	}
 
-	if got := chooseConservative(t, dir, labels, LabelClick, clickSweep(), dx.ClickAboveSilenceDB); got != shipped.Cleanup.ClickAboveSilenceDB {
+	if got := chooseConservative(t, LabelClick, clickSweep(), dx.ClickAboveSilenceDB, tune(LabelClick)); got != shipped.Cleanup.ClickAboveSilenceDB {
 		t.Errorf("tuning half chooses ClickAboveSilenceDB %v, DefaultScanOptions ships %v", got, shipped.Cleanup.ClickAboveSilenceDB)
 	}
-	if got := chooseConservative(t, dir, labels, LabelBreath, breathSweep(), dx.BreathBelowSpeechDB); got != shipped.Cleanup.BreathBelowSpeechDB {
+	if got := chooseConservative(t, LabelBreath, breathSweep(), dx.BreathBelowSpeechDB, tune(LabelBreath)); got != shipped.Cleanup.BreathBelowSpeechDB {
 		t.Errorf("tuning half chooses BreathBelowSpeechDB %v, DefaultScanOptions ships %v", got, shipped.Cleanup.BreathBelowSpeechDB)
 	}
 	rest := shipped.Cleanup
