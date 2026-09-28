@@ -56,8 +56,6 @@ const CEILING: Record<Copy, Record<string, number>> = {
     'src/components/master/DeliveryPackagePanel.tsx': 1,
     'src/components/script/ScriptChapterList.tsx': 2,
     'src/components/script/ScriptPage.tsx': 6,
-    // The compare run's step strip, which Phase 5 moves onto the segmented look.
-    'src/components/proof/CompareRun.tsx': 3,
   },
   h1: {
     // The Booth's page title is visually hidden (`sr-only`): the reading surface is the page, and a Heading would show.

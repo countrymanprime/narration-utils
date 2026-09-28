@@ -152,6 +152,9 @@ func TestNothingStartsWhileReaperIsRecording(t *testing.T) {
 // heartbeat says it is not recording, so the check that TestNothingStartsWhileReaperIsRecording held off now starts.
 func TestABackgroundCheckRunsWhileReaperIsOpenAndKnownNotRecording(t *testing.T) {
 	host, _, now := staleCoverageHost(t)
+	// The check this starts writes its results into the test's temp folder: let it finish before the folder is removed,
+	// which Windows refuses while the run still holds it ("The directory is not empty").
+	t.Cleanup(host.services().coverage.Wait)
 	host.reachability = fakeBackgroundHeartbeat{reachable: true, transport: dawport.Transport{Recording: false}, hasTransport: true}
 	if decision := host.backgroundCheckTick(now); decision.ChapterID != "c-0001" {
 		t.Fatalf("decision = %+v", decision)
