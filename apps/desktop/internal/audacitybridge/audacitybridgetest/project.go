@@ -38,6 +38,7 @@ type Project struct {
 	Playing, Looping          bool
 	Exports                   []Export
 	Imported                  []string
+	MacrosApplied             []string
 	Opened, Saved             string
 	LoopStart, LoopEnd        float64
 	RejectExportsWithoutAudio bool
@@ -126,6 +127,13 @@ func (p *Project) handle(line string) ([]string, bool) {
 		}
 		p.Imported = append(p.Imported, name)
 		p.AddWaveTrack(strings.TrimSuffix(filepath.Base(name), filepath.Ext(name)), 0, 1)
+		return nil, true
+	case "ApplyMacro":
+		name := cmd.Params["MacroName"]
+		if name == "" {
+			return []string{"ApplyMacro needs a MacroName."}, false
+		}
+		p.MacrosApplied = append(p.MacrosApplied, name)
 		return nil, true
 	case "OpenProject2":
 		p.Opened = cmd.Params["Filename"]
