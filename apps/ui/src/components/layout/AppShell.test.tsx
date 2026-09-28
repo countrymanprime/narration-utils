@@ -10,13 +10,24 @@ import type { DawMockSeed } from '../../api/dawMock';
 afterEach(cleanup);
 
 const noHistory = { canGoBack: false, canGoForward: false, back: () => {}, forward: () => {} };
+const defaultZoom = { percent: 100, canZoomOut: false, canZoomIn: true, zoomIn: () => {}, zoomOut: () => {}, reset: () => {}, announcement: '' };
 
 function renderShell(props: Partial<Parameters<typeof AppShell>[0]> = {}, daw: DawMockSeed = {}) {
   const api = createMockApi({}, { daw });
   return render(
     <ApiProvider api={api}>
       <TooltipProvider>
-        <AppShell pathname="/" navigate={() => {}} projectName="Alice" hasManuscript dawFileLinked onOpenEnginePanel={() => {}} history={noHistory} {...props}>
+        <AppShell
+          pathname="/"
+          navigate={() => {}}
+          projectName="Alice"
+          hasManuscript
+          dawFileLinked
+          onOpenEnginePanel={() => {}}
+          history={noHistory}
+          zoom={defaultZoom}
+          {...props}
+        >
           <div>page content</div>
         </AppShell>
       </TooltipProvider>
@@ -185,6 +196,57 @@ describe('AppShell header history controls (Phase 1)', () => {
     renderShell({ history: { ...noHistory, back } });
     fireEvent.click(screen.getByRole('button', { name: 'Back' }));
     expect(back).not.toHaveBeenCalled();
+  });
+});
+
+// Phase 2 (app-navigation-and-zoom-controls.prd.md, Q1/Q9, ADR 0201): the zoom group, after a running timer chip and
+// before the engine chip.
+describe('AppShell header zoom group (Phase 2)', () => {
+  it('is a "Zoom" group with the level readout between zoom out and zoom in', () => {
+    renderShell({ zoom: { ...defaultZoom, percent: 125, canZoomOut: true } });
+    const group = screen.getByRole('group', { name: 'Zoom' });
+    expect(within(group).getByRole('button', { name: 'Zoom out' })).toBeTruthy();
+    expect(within(group).getByRole('button', { name: 'Zoom in' })).toBeTruthy();
+    expect(within(group).getByText('125%')).toBeTruthy();
+  });
+
+  it('zoom out is disabled at 100%, matching canZoomOut', () => {
+    renderShell({ zoom: defaultZoom });
+    expect(screen.getByRole('button', { name: 'Zoom out' }).getAttribute('aria-disabled')).toBe('true');
+  });
+
+  it('zoom in is disabled at the 200% ceiling, matching canZoomIn', () => {
+    renderShell({ zoom: { ...defaultZoom, percent: 200, canZoomOut: true, canZoomIn: false } });
+    expect(screen.getByRole('button', { name: 'Zoom in' }).getAttribute('aria-disabled')).toBe('true');
+  });
+
+  it('calls zoomIn/zoomOut only when enabled', () => {
+    const zoomIn = vi.fn();
+    const zoomOut = vi.fn();
+    renderShell({ zoom: { ...defaultZoom, percent: 125, canZoomOut: true, zoomIn, zoomOut } });
+    fireEvent.click(screen.getByRole('button', { name: 'Zoom in' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Zoom out' }));
+    expect(zoomIn).toHaveBeenCalledTimes(1);
+    expect(zoomOut).toHaveBeenCalledTimes(1);
+  });
+
+  it('the readout is disabled at exactly 100% (Q9 A) and calls reset() when not', () => {
+    renderShell({ zoom: defaultZoom });
+    const atDefault = screen.getByRole('button', { name: /Reset zoom to 100%/ });
+    expect(atDefault.getAttribute('aria-disabled')).toBe('true');
+    cleanup();
+
+    const reset = vi.fn();
+    renderShell({ zoom: { ...defaultZoom, percent: 125, canZoomOut: true, reset } });
+    const enabled = screen.getByRole('button', { name: /Reset zoom to 100% \(now 125%\)/ });
+    expect(enabled.getAttribute('aria-disabled')).toBeNull();
+    fireEvent.click(enabled);
+    expect(reset).toHaveBeenCalledTimes(1);
+  });
+
+  it('announces a debounced level change politely', () => {
+    renderShell({ zoom: { ...defaultZoom, percent: 125, canZoomOut: true, announcement: 'Zoom 125%' } });
+    expect(screen.getByText('Zoom 125%')).toBeTruthy();
   });
 });
 
