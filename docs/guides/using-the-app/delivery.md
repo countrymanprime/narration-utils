@@ -121,4 +121,4 @@ it), and waits until a measurement or check has finished.
 
 ---
 
-[← Proof](proof.md) · [Index](README.md) · [Settings →](settings.md)
+[← Pickups](pickups.md) · [Index](README.md) · [Settings →](settings.md)
