@@ -16,7 +16,7 @@ In the icon-only layout, hover an icon (or tab to it) to see the page's name.
 ![Icon-only navigation rail with a page name shown on hover](../../images/ui/nav-rail-tooltip.webp)
 
 Script, Story Bible, and Booth stay locked until a manuscript has been
-[imported on Production](production.md#importing-the-manuscript). Hovering a locked entry says what is missing. Production, Proof, Pickups, and Delivery
+[imported on Production](production.md#importing-the-manuscript). Hovering a locked entry says what is missing. Production, Proof, Pickups, and Master & QC
 are always available.
 
 The header runs, left to right: Back and Forward (below), the project's name, and at the right the timer, the

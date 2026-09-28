@@ -1,6 +1,6 @@
 {
-  "choice": "builtin",
-  "effective": "builtin",
+  "choice": "audacity",
+  "effective": "audacity",
   "hasProject": true,
   "providers": [
     {

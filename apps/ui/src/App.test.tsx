@@ -55,7 +55,7 @@ const startRunOnChapterOne = async () => {
 describe('App (integration, driven through the mock NarrationApi)', () => {
   it('shows the startup screen, then the Production home once bootstrap resolves', async () => {
     renderApp();
-    expect(screen.getByText(/Opening Narration Console/)).toBeTruthy();
+    expect(screen.getByText(/Opening Narration Studio/)).toBeTruthy();
     await waitFor(() => expect(screen.getByRole('heading', { level: 1, name: 'Production' })).toBeTruthy());
     expect(screen.getAllByText('Alice’s Adventures in Wonderland').length).toBeGreaterThan(0);
     expect(await screen.findByRole('grid', { name: 'Chapter pipeline' })).toBeTruthy();

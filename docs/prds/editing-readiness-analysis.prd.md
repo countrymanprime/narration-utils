@@ -196,7 +196,7 @@ Every phase follows the `CLAUDE.md` workflow: find or open the tracking issue fi
 | 5 | Editing check job and bindings | Chapter to track to items, cache-first scan, three ledger records per item, one job with progress and cancel, findings persisted, bindings, host API bump | complete | - | 3, EL-5, RD-1; also 4 for the click and breath classes | - |
 | 6 | Editing signals for SR | Three signals per SR's contract, evidence and basis, edit-type table tests, wiring into SR's engine | complete | 7 | 5, SR-1 | - |
 | 7 | Editing check panel | Slide-over with run, progress, per-class candidates, hear, dismiss, accept, defer, optional Go to in REAPER, states, docs, screenshots | complete | 6 | 5, RD-4, SR-5, EL-7 | - |
-| 8 | Rendered chapter WAV source (Could) | Whole-file source for a narrator-picked render, per-chapter choice, labeled evidence. **D79:** the editing check panel is reached from the Proof chapter view once [stage navigation](stage-navigation-and-page-replacement.prd.md) Phase 6 retires the Tracks page. | pending | - | 5, 6, PS-4 | - |
+| 8 | Rendered chapter WAV source (Could) | Whole-file source for a narrator-picked render, per-chapter choice, labeled evidence. **D79:** the editing check panel is reached from the Proof chapter view once stage navigation (`docs/prds/stage-navigation-and-page-replacement.prd.md`, delivered and deleted) Phase 6 retires the Tracks page. | pending | - | 5, 6, PS-4 | - |
 
 ### Phase Details
 
