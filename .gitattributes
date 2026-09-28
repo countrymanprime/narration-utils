@@ -33,7 +33,5 @@ apps/ui/src/api/fixtures/alice-in-wonderland.txt -text
 tests/fixtures/heading-misreads/*.md text eol=lf
 tests/fixtures/heading-misreads/*.txt text eol=lf
 
-# The LibriVox recordings are the published files byte for byte (sources.json pins their checksums), and the committed
-# word timings and recipes are read by build.py on every platform.
-tests/fixtures/audio/**/*.mp3 binary
+# The LibriVox word timings, markers and recipes are read byte for byte by build.py on every platform.
 tests/fixtures/audio/**/*.json text eol=lf

@@ -3,7 +3,7 @@
   "sources": [
     {
       "id": "kara_01",
-      "file": "source/kara_01.mp3",
+      "file": "kara_01.mp3",
       "chapter": "c-0001",
       "reader": "Kara Shallenberg",
       "url": "https://archive.org/download/alices_adventures_1003/alices_adventures_01_carroll_64kb.mp3",
@@ -12,7 +12,7 @@
     },
     {
       "id": "kara_02",
-      "file": "source/kara_02.mp3",
+      "file": "kara_02.mp3",
       "chapter": "c-0002",
       "reader": "Kara Shallenberg",
       "url": "https://archive.org/download/alices_adventures_1003/alices_adventures_02_carroll_64kb.mp3",
@@ -21,7 +21,7 @@
     },
     {
       "id": "kara_07",
-      "file": "source/kara_07.mp3",
+      "file": "kara_07.mp3",
       "chapter": "c-0007",
       "reader": "Kara Shallenberg",
       "url": "https://archive.org/download/alices_adventures_1003/alices_adventures_07_carroll_64kb.mp3",
@@ -30,7 +30,7 @@
     },
     {
       "id": "kara_09",
-      "file": "source/kara_09.mp3",
+      "file": "kara_09.mp3",
       "chapter": "c-0009",
       "reader": "Kara Shallenberg",
       "url": "https://archive.org/download/alices_adventures_1003/alices_adventures_09_carroll_64kb.mp3",
@@ -39,7 +39,7 @@
     },
     {
       "id": "kara_10",
-      "file": "source/kara_10.mp3",
+      "file": "kara_10.mp3",
       "chapter": "c-0010",
       "reader": "Kara Shallenberg",
       "url": "https://archive.org/download/alices_adventures_1003/alices_adventures_10_carroll_64kb.mp3",
@@ -48,7 +48,7 @@
     },
     {
       "id": "kara_11",
-      "file": "source/kara_11.mp3",
+      "file": "kara_11.mp3",
       "chapter": "c-0011",
       "reader": "Kara Shallenberg",
       "url": "https://archive.org/download/alices_adventures_1003/alices_adventures_11_carroll_64kb.mp3",
@@ -57,7 +57,7 @@
     },
     {
       "id": "leach_01",
-      "file": "source/leach_01.mp3",
+      "file": "leach_01.mp3",
       "chapter": "c-0001",
       "reader": "Eric Leach",
       "url": "https://archive.org/download/alices_adventures_1005_librivox/wonderland_01_carroll_64kb.mp3",

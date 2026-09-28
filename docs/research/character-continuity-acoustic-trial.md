@@ -199,7 +199,7 @@ Provisional, pending the real-corpus re-run:
 ## Real-speech re-run: LibriVox, 2026-09-27
 
 The same `run_trial.py` on real speech: Kara Shallenberg's solo LibriVox reading of Chapters I, II, VII, IX, X and XI,
-committed with [ADR 0416](../adr/0416-public-domain-librivox-readings-of-the-demo-script-are-committed-as-test-audio-and-corpora-are-built-from-them.md)
+fetched from archive.org as [ADR 0416](../adr/0416-librivox-readings-of-the-demo-script-are-fetched-from-archive-org-and-only-their-markers-and-recipes-are-committed.md)
 and cut by `tests/fixtures/audio/librivox-alice/build.py characters`. 462 clips averaging 4.0 s: narration plus 11
 characters, each line labelled only where the text names its speaker ("'…,' said the Hatter"). Alice appears in all six
 chapters, and the Hatter, March Hare, Dormouse, Gryphon, Mock Turtle and Queen in two or three. Timestamps come from
@@ -232,7 +232,7 @@ The decision above is left as it stands for the owner to review with this eviden
 
 ## Re-running this trial
 
-On the owner's own recordings, or on the committed LibriVox reading. For the LibriVox reading, build the clips first
+On the owner's own recordings, or on the LibriVox reading. For the LibriVox reading, build the clips first
 and point the trial at them (Praat installs in seconds with `uv run --with`, and nothing is added to the project):
 
 ```bash

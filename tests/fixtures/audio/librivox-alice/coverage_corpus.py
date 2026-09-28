@@ -57,13 +57,13 @@ def _piece_audio(piece: dict, alignment: Alignment, others: dict[str, Alignment]
     if piece.get("whole"):
         for number in range(1, n + 1):
             reading.read(number, whole=True)
-        return alignment.samples
+        return alignment.slice(0.0, alignment.duration)
     if piece.get("head"):
         return alignment.slice(0.0, alignment.cuts[0])
     if piece.get("tail"):
         return alignment.slice(alignment.cuts[n], alignment.duration)
     if "roomTone" in piece:
-        return audio.room_tone(alignment.samples, alignment.rate, alignment.levels, float(piece["roomTone"]))
+        return alignment.room_tone(float(piece["roomTone"]))
     if "foreign" in piece:
         other = others[piece["foreign"]["source"]]
         number = piece["foreign"]["paragraph"]
@@ -79,10 +79,10 @@ def _piece_audio(piece: dict, alignment: Alignment, others: dict[str, Alignment]
         return alignment.slice(alignment.cuts[first - 1], alignment.cuts[last])
     if "sentences" in piece:
         number = piece["paragraph"]
-        cuts = alignment.sentence_cuts(number)
+        cuts, clean = alignment.sentence_cuts(number), alignment.sentence_clean[number - 1]
         lo, hi = piece["sentences"][0], piece["sentences"][1]
         hi = len(cuts) - 1 if hi is None else hi
-        if not (alignment.clean_cut(cuts[lo]) and alignment.clean_cut(cuts[hi])):
+        if not (clean[lo] and clean[hi]):
             raise ValueError(f"sentences {lo}-{hi} of paragraph {number} of {alignment.source['id']} are not cut at pauses")
         reading.read(number, whole=(lo == 0 and hi == len(cuts) - 1))
         return alignment.slice(cuts[lo], cuts[hi])

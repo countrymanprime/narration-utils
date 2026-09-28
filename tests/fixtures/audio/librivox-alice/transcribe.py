@@ -13,12 +13,16 @@ import argparse
 import json
 from pathlib import Path
 
+from sources import fetch, sources_dir
+
 HERE = Path(__file__).resolve().parent
 
 
 def transcribe(model_dir: Path, device: str, only: list[str]) -> None:
     from faster_whisper import WhisperModel
 
+    directory = sources_dir()
+    fetch(directory, set(only) or None)
     sources = json.loads((HERE / "sources.json").read_text(encoding="utf-8"))["sources"]
     model = WhisperModel(str(model_dir), device=device, compute_type="float16" if device == "cuda" else "int8", cpu_threads=16)
     # The app's asset folders keep each model in a folder named by its revision hash.
@@ -28,7 +32,7 @@ def transcribe(model_dir: Path, device: str, only: list[str]) -> None:
         if only and source["id"] not in only:
             continue
         segments, _ = model.transcribe(
-            str(HERE / source["file"]),
+            str(directory / source["file"]),
             language="en",
             word_timestamps=True,
             condition_on_previous_text=False,
@@ -37,7 +41,7 @@ def transcribe(model_dir: Path, device: str, only: list[str]) -> None:
         words = [[word.word.strip(), round(word.start, 2), round(word.end, 2)] for segment in segments for word in segment.words]
         payload = {"source": source["id"], "model": model_name, "words": words}
         target = HERE / "alignment" / f"{source['id']}.words.json"
-        target.write_text(json.dumps(payload, ensure_ascii=False, separators=(",", ":")) + "\n", encoding="utf-8")
+        target.write_text(json.dumps(payload, ensure_ascii=False, separators=(",", ":")) + "\n", encoding="utf-8", newline="\n")
         print(f"{source['id']}: {len(words)} words")
 
 

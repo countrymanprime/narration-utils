@@ -280,5 +280,5 @@ The table is generated from each ADR's heading and Status line ([ADR 0410](0410-
 | [0413](0413-what-stays-of-the-other-platforms-when-windows-is-the-only-one.md) | What stays of the other platforms when Windows is the only one | Proposed (the worker's choices in applying D74; the owner confirms or overrides them on #510) |
 | [0414](0414-the-teleprompter-default-engine-stays-whisper-tiny-until-a-real-time-ab-evaluation-runs.md) | The teleprompter default engine stays Whisper tiny until a real-time A/B evaluation runs | Proposed |
 | [0415](0415-while-pages-is-paused-docs-are-checked-by-lychee-and-a-changed-file-markdownlint-not-by-building-the-site.md) | While Pages is paused, docs are checked by lychee and a changed-file markdownlint, not by building the site | Accepted |
-| [0416](0416-public-domain-librivox-readings-of-the-demo-script-are-committed-as-test-audio-and-corpora-are-built-from-them.md) | Public-domain LibriVox readings of the demo script are committed as test audio, and the corpora are built from them | Proposed |
+| [0416](0416-librivox-readings-of-the-demo-script-are-fetched-from-archive-org-and-only-their-markers-and-recipes-are-committed.md) | LibriVox readings of the demo script are fetched from archive.org, and only their markers and recipes are committed | Proposed |
 <!-- adr-index:end -->

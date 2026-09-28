@@ -354,8 +354,8 @@ fallback runs almost every time and the cascade costs more than `small`, and `ti
 
 ## LibriVox real speech (2026-09-27)
 
-The first run on real narration: the 14 cases built from the committed LibriVox readings
-([ADR 0416](../adr/0416-public-domain-librivox-readings-of-the-demo-script-are-committed-as-test-audio-and-corpora-are-built-from-them.md),
+The first run on real narration: the 14 cases built from the LibriVox readings
+([ADR 0416](../adr/0416-librivox-readings-of-the-demo-script-are-fetched-from-archive-org-and-only-their-markers-and-recipes-are-committed.md),
 `tests/fixtures/audio/librivox-alice`). Nine `tune` cases are Kara Shallenberg's Chapters I and II, and five `held_out`
 cases are her Chapter X and Eric Leach's Chapter I. They run 10 to 14 minutes each, 173 audio minutes in all, and every
 item keeps its LibriVox preamble or closing credit as real unrelated speech. The labels come from how each case was cut,

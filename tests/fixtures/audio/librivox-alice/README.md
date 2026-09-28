@@ -2,36 +2,43 @@
 
 Public-domain LibriVox readings of *Alice's Adventures in Wonderland*, the same Project Gutenberg text as the demo
 manuscript (`apps/ui/src/api/fixtures/alice-in-wonderland.txt`), plus the tools that cut and mix them into test corpora
-with known defects. [ADR 0416](../../../../docs/adr/0416-public-domain-librivox-readings-of-the-demo-script-are-committed-as-test-audio-and-corpora-are-built-from-them.md)
-records why the audio is committed: cloud sessions cannot download it.
+with known defects. The recordings are downloaded from archive.org when they are used; the repository holds where every
+paragraph and sentence sits in them and the recipes for each test state
+([ADR 0416](../../../../docs/adr/0416-librivox-readings-of-the-demo-script-are-fetched-from-archive-org-and-only-their-markers-and-recipes-are-committed.md)).
 
 ## What is here
 
 | Path | What |
 | --- | --- |
-| `source/*.mp3` | Seven chapter recordings, unmodified LibriVox 64 kbps mono MP3s (22.05 kHz). `kara_01`, `02`, `07`, `09`, `10`, `11`: Kara Shallenberg's solo reading (2010). `leach_01`: Eric Leach's Chapter I (2010), whose head also holds the prefatory poem, which is not in the script. |
-| `sources.json` | Each file's archive.org URL, reader, chapter and MD5/SHA-256. The MD5s are the ones archive.org publishes. |
+| `sources.json` | The seven recordings: archive.org URL, reader, chapter, MD5 (as archive.org publishes it) and SHA-256. All are unmodified LibriVox 64 kbps mono MP3s (22.05 kHz). `kara_01`, `02`, `07`, `09`, `10`, `11`: Kara Shallenberg's solo reading (2010). `leach_01`: Eric Leach's Chapter I (2010), whose head also holds the prefatory poem, which is not in the script. |
 | `alignment/*.words.json` | Whisper `large-v3-turbo` word timings for each recording (`transcribe.py`, a maintainer step that needs the model). |
+| `alignment/*.markers.json` | The markers: each paragraph's id, start and end, the cut points between paragraphs and between sentences, and whether each cut is in a real pause (`cuts_clean`, `sentence_cuts_clean`). `cuts_s[0]` ends the LibriVox preamble and title; the last cut starts the closing credit. |
 | `recipes/coverage.json` | Recording-check cases: which paragraphs, sentences, room tone and foreign text each item holds. |
 | `recipes/signal.json` | Signal defects and where they go: clipping, level shift, clicks, dead air, dropouts, hiss, room-tone change, head and tail. |
-| `build.py` | Builds all three corpora into a directory outside the repository. |
-| `alice_text.py`, `paragraph_spans.py`, `audio.py` | The manuscript, the alignment of script to audio (cuts land in the reader's pauses), decoding, joining and writing. |
+| `build.py` | Fetches the recordings and builds all three corpora into a directory outside the repository. |
+| `sources.py` | Where the recordings are kept, and the checksum-verified download. |
+| `alice_text.py`, `paragraph_spans.py`, `audio.py` | The manuscript, the alignment of script to audio (cuts land in the reader's pauses) and its markers, decoding, joining and writing. |
 | `coverage_corpus.py`, `characters_corpus.py`, `signal_corpus.py` | One builder per corpus; each module's docstring is its recipe format. |
 
-`sidecars/transcript-compare/tests/test_librivox_alice_corpus.py` checks, in `pnpm check`, that every MP3 is the
-published file, that at least 95% of each chapter's words are found in order, that every coverage recipe builds a case
-the harness accepts, and that a signal edit is labelled where it was made.
+`sidecars/transcript-compare/tests/test_librivox_alice_corpus.py` checks, in `pnpm check` and with no network, that
+at least 95% of each chapter's words are found in order, that the markers place every paragraph and sentence in order,
+and that every coverage recipe builds a case the harness accepts. Once the recordings are fetched it also checks their
+checksums, that the committed markers are the ones the recordings give, and that a signal edit is labelled where it was
+made.
 
-## Build the corpora
+## Fetch the recordings and build the corpora
 
-Needs only the sidecar's environment (numpy and PyAV): no network, no model, no GPU. About 10 seconds.
+Needs only the sidecar's environment (numpy and PyAV), and archive.org the first time: no model, no GPU.
 
 ```bash
 uv run --project sidecars/transcript-compare python tests/fixtures/audio/librivox-alice/build.py all --out ../narration-corpus
 ```
 
-`--out` must be outside the repository (about 620 MB of WAV). Build one corpus with `coverage`, `characters` or
-`signal` in place of `all`. The build is deterministic: the same inputs give byte-identical files.
+The first run downloads the seven recordings (about 45 MB) into `NARRATION_LIBRIVOX_DIR`, or
+`~/.cache/narration-utils/librivox-alice` when it is unset, and keeps each only if its SHA-256 matches `sources.json`.
+After that a build takes about 10 seconds. `build.py fetch` only downloads. `--out` must be outside the repository
+(about 620 MB of WAV). Build one corpus with `coverage`, `characters` or `signal` in place of `all`. The build is
+deterministic: the same recordings give byte-identical files.
 
 ## What each corpus is for
 
@@ -107,5 +114,12 @@ If a check misses a defect because of a known limit, add `knownIssue` to the edi
 uv run --project sidecars/transcript-compare python tests/fixtures/audio/librivox-alice/transcribe.py --model <large-v3-turbo model dir>
 ```
 
-This took 15 minutes on 16 CPU threads. The recipes' paragraph numbers depend on the cut points, so rebuild and run the
-tests afterwards.
+This took 15 minutes on 16 CPU threads. Then rewrite the markers from the recordings and run the tests, since the
+recipes' edit points depend on the cut points:
+
+```bash
+uv run --project sidecars/transcript-compare python tests/fixtures/audio/librivox-alice/build.py markers
+```
+
+Do the same if archive.org ever replaces a recording: its SHA-256 stops matching, the build refuses it, and
+`sources.json`, the word timings and the markers are regenerated together.

@@ -109,6 +109,6 @@ through its own PDF path.
 
 ## audio/librivox-alice/
 
-Public-domain LibriVox readings of seven *Alice* chapters (the demo script), with word timings and recipes that
-build real-speech test corpora: the recording check, the character-continuity trial and the audio diagnostics. See
-[its README](audio/librivox-alice/README.md) and ADR 0416.
+Markers and recipes for seven public-domain LibriVox readings of *Alice* chapters (the demo script), which are fetched
+from archive.org to build real-speech test corpora: the recording check, the character-continuity trial and the audio
+diagnostics. See [its README](audio/librivox-alice/README.md) and ADR 0416.

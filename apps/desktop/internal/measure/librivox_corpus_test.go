@@ -10,10 +10,10 @@ import (
 	"testing"
 )
 
-// signalCorpusEnv names a signal corpus built from the committed LibriVox
-// recordings (tests/fixtures/audio/librivox-alice, `build.py signal`): real
-// narration with defects put in at known times. The built WAVs are never
-// committed, so the test is skipped unless the variable is set.
+// signalCorpusEnv names a signal corpus built from the LibriVox recordings
+// (tests/fixtures/audio/librivox-alice, `build.py signal`, which fetches them
+// from archive.org): real narration with defects put in at known times. The
+// audio is never committed, so the test is skipped unless the variable is set.
 const signalCorpusEnv = "NARRATION_SIGNAL_CORPUS"
 
 // How far a finding may sit from the labelled time and still be the same event.

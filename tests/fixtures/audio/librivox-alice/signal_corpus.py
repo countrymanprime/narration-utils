@@ -67,7 +67,7 @@ def _layout(recipe: dict, alignment: Alignment) -> tuple[list[np.ndarray], list[
                 inserts.setdefault(edit[kind]["afterParagraph"], []).append((kind, float(edit[kind]["seconds"])))
 
     def tone(seconds: float) -> np.ndarray:
-        return audio.room_tone(alignment.samples, alignment.rate, alignment.levels, seconds)
+        return alignment.room_tone(seconds)
 
     pieces, tags = [tone(recipe.get("headSeconds", 1.0))], [("edge", 0)]
     trim = recipe.get("trimToSpeech", False)
