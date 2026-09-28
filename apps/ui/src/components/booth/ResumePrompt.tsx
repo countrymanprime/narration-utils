@@ -20,7 +20,7 @@ const FROM_THE_TOP = 'reading starts from the top.';
  * Pick a word and Continue there are links beside the compact notices, not pill buttons). */
 function TextLink({ children, onClick }: { children: ReactNode; onClick: () => void }) {
   return (
-    <Button variant="link" style={{ color: 'var(--accent)' }} onClick={onClick}>
+    <Button variant="link" style={{ color: 'var(--accent-strong)' }} onClick={onClick}>
       {children}
     </Button>
   );

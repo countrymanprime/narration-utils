@@ -123,6 +123,13 @@ export const scriptStates: StateEntry[] = [
   // the width shows, so each width loads afresh.
   {
     page: 'script',
+    state: 'prep-rail-pronunciations',
+    description:
+      "Script, the rail's default Pronunciations tab (mock 02): word, how to say it and its status, opened without a tab click since Pronunciations shows first. A column beside the reader at the wide width, the Prep panel below it",
+    ...RAIL_DEPENDS_ON_WIDTH,
+  },
+  {
+    page: 'script',
     state: 'prep-rail-characters',
     description:
       "Script, the rail's Characters tab (mock 02): the Story Bible's characters with their first description line; a name opens its summary. A column beside the reader at the wide width, the Prep panel below it",

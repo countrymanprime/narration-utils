@@ -5,9 +5,9 @@ import { faFolderOpen, faFolderPlus, faXmark } from '@fortawesome/free-solid-svg
 import { useApi } from '../../api/ApiContext';
 import { Button } from '../primitives/Button';
 import { Heading } from '../primitives/Heading';
+import { IconButton } from '../primitives/IconButton';
 import { Panel } from '../primitives/Panel';
 import { SectionLabel } from '../primitives/SectionLabel';
-import { IconButton } from '../primitives/IconButton';
 import { NewProjectDialog } from './NewProjectDialog';
 import { DemoBanner } from '../layout/DemoBanner';
 import type { ProjectSwitchResult, RecentProject } from '../../types';
