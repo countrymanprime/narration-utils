@@ -84,7 +84,7 @@ The custom-CSS system (`.btn`, `.panel-head`/`.panel-body`, `.progressbar`, etc.
 
 ## Conventions
 
-- **Numeric table columns are right-aligned** (`align="right"` on both the `TableHeader` and its `TableCell`s) — see `AudiobookEstimatePanel.tsx`'s Words/Est./Actual columns for the reference implementation.
+- **Numeric table columns are right-aligned** (`align="right"` on both the `TableHeader` and its `TableCell`s) — see `DiagnosticsTables.tsx` (Delivery's diagnostics) for a reference implementation.
 - **Disabled interactive elements never show a hover affordance.** Use `disabled:pointer-events-none` (Tailwind) alongside `disabled:opacity-*`, not just the opacity change alone — a hover transform/background change that still fires on a disabled element reads as clickable when it isn't.
 - **A field that is read-only, locked or not-yet-persisted is `disabled`, not hidden**, so the user can see what exists without being able to edit it. Story Bible entries open read-only and gain Edit/Save/Cancel controls only on request ([ADR 0018](../adr/0018-story-bible-entries-read-only-until-edit.md)); see `GuideDetail.tsx`.s `editingDisabled`.
 - **A non-destructive "peek at something else" action is a `SlideOver` primitive, never a navigation that replaces the current view's state.** See `script/ScriptPage.tsx`'s Chapters & Search overlay and `GuideDetail.tsx`'s "Review entry" overlay — both exist specifically so switching context doesn't discard an in-progress edit.

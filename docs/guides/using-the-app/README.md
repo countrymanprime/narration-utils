@@ -13,8 +13,7 @@ Read them in order the first time, or jump straight to the page you need.
 | --- | --- |
 | [Getting started](getting-started.md) | The project picker shown before a project is open. |
 | [Navigation](navigation.md) | The sidebar, its icon-only and drawer layouts, and locked entries; the header's engine chip and the audio engine panel it opens: the linked REAPER project, its tracks and chapter links, chapter sync, and the REAPER tools (chapter stamps, chapter render setup, chapter tags, cleanup tools, retakes on lanes). |
-| [Home](home.md) | Manuscript status, time estimates, and importing a manuscript. |
-| [Production](production.md) | Hours logged by stage, PFH and effective rate from measured audio, the delivery date, and which chapters to work on next. |
+| [Production](production.md) | The page a project opens on: importing the manuscript, hours logged by stage, PFH and effective rate from measured audio, the delivery date, which chapters to work on next, and the chapter pipeline whose cells open each chapter's track, recording check, stage suggestion and editing check. |
 | [Script](script.md) | Prep: the chapter list with each chapter's prep status, the reader (highlights, notes, bookmarks, markup, formatting) and the Pronunciations, Characters and Queries rail. |
 | [Story Bible](story-bible.md) | Characters, places, and organizations with pronunciation and notes. |
 | [Booth](booth.md) | Where you record: a live read-along that follows you as you narrate a chapter, with companion mode beside your DAW. |

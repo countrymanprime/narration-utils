@@ -4,19 +4,20 @@ import { apiErrorMessage } from '../../api/errorMessage';
 import type { ProductionReportExport } from '../../api/contracts/production';
 import { Button } from '../primitives/Button';
 import { Checkbox } from '../primitives/Checkbox';
-import { Panel } from '../primitives/Panel';
+import { SlideOver } from '../primitives/SlideOver';
 
 const MUTED = { color: 'var(--text-muted)' };
 const DANGER = { color: 'var(--danger-text)' };
 
 /**
- * The status report export (production-tracking.prd.md Phase 5, user flow step 5): an explicit action that writes an
+ * The status report export (production-tracking.prd.md Phase 5, user flow step 5), a slide-over opened from the Production home's
+ * header button (mock 01's "Export status report"; stage-navigation-and-page-replacement.prd.md Phase 2): an explicit action that writes an
  * HTML page anyone can open and a JSON file with the same figures the page just showed (hours by stage, PFH, the
  * deadline and milestone status, book-wide readiness counts), into the project's own sidecar folder. The contracted
  * amount and effective rate are left out unless the narrator ticks the box: a status report is often the one thing a
  * narrator shares with someone they would not otherwise tell their rate.
  */
-export function StatusReportPanel() {
+export function StatusReportPanel({ open, onClose }: { open: boolean; onClose: () => void }) {
   const api = useApi();
   const [includeContractedAmount, setIncludeContractedAmount] = useState(false);
   const [pending, setPending] = useState(false);
@@ -37,22 +38,20 @@ export function StatusReportPanel() {
   };
 
   return (
-    <Panel
-      title="Status report"
-      actions={
-        <Button onClick={() => void exportReport()} pending={pending}>
-          Export status report
-        </Button>
-      }
-    >
-      <p className="mt-1 text-sm" style={MUTED}>
-        Writes an HTML page anyone can open and a JSON file with the same figures shown above (hours by stage, hours per finished hour, the deadline and
-        milestone status, and chapter readiness counts) into this project’s narration-utils/production/reports folder.
+    <SlideOver open={open} title="Status report" onClose={onClose}>
+      <p className="text-sm" style={MUTED}>
+        Writes an HTML page anyone can open and a JSON file with the same figures the Production page shows (hours by stage, hours per finished hour, the
+        deadline and milestone status, and chapter readiness counts) into this project’s narration-utils/production/reports folder.
       </p>
-      <div className="mt-2">
+      <div className="mt-3">
         <Checkbox checked={includeContractedAmount} onChange={setIncludeContractedAmount}>
           Include the contracted amount and effective rate (left out by default)
         </Checkbox>
+      </div>
+      <div className="mt-3">
+        <Button onClick={() => void exportReport()} pending={pending}>
+          Export status report
+        </Button>
       </div>
       {problem && (
         <p role="alert" className="mt-2 text-sm" style={DANGER}>
@@ -72,6 +71,6 @@ export function StatusReportPanel() {
           </p>
         </div>
       )}
-    </Panel>
+    </SlideOver>
   );
 }

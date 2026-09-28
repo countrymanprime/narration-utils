@@ -17,7 +17,7 @@ const narration = (chapter: ManuscriptChapter) => chapter.contentKind === undefi
  * The Proofing page's own stage-recommendations surface (chapter-stage-recommendations.prd.md Phase 8, deleted; see
  * docs/architecture/stage-recommendations.md):
  * every narration chapter currently in Proofing, with the same `StageSuggestion` row and `StageEvidence` slide-over
- * Home's breakdown table uses (Phase 5) - no new pattern. Unlike Home, this panel is chapter-based rather than tied
+ * the Production board uses (Phase 5) - no new pattern. Unlike the board, this panel is chapter-based rather than tied
  * to the last Transcript Compare run's identity (the transcript state carries no chapter id), so it reads the
  * chapter list and the suggestions independently of whatever `Transcript` above it is doing.
  */
@@ -29,7 +29,7 @@ export function ProofingStagePanel({
   notify: Notify;
   /** Opens the manuscript at a chapter and paragraph (its index in the whole manuscript). */
   goToManuscript: (chapter: string, paragraph: number) => void;
-  /** Changes after a manuscript import/replacement, like Home's own (AudiobookEstimatePanel.tsx). */
+  /** Changes after a manuscript import/replacement, like the Production board's own (ChapterBoard.tsx). */
   refreshKey: string;
 }) {
   const api = useApi();

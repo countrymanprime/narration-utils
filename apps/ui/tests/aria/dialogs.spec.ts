@@ -12,7 +12,7 @@ const MODALS: { name: string; state: [string, string]; snapshot: string }[] = [
     state: ['storybible', 'delete-confirm'],
     snapshot: 'confirm-delete-entry.aria.yml',
   },
-  { name: 'the import confirm is an alert dialog', state: ['home', 'import-confirm'], snapshot: 'confirm-import-manuscript.aria.yml' },
+  { name: 'the import confirm is an alert dialog', state: ['production', 'import-confirm'], snapshot: 'confirm-import-manuscript.aria.yml' },
   {
     name: 'the unsaved-settings confirm is an alert dialog with three actions',
     state: ['settings', 'navigate-away-confirm'],
@@ -36,7 +36,7 @@ const MODALS: { name: string; state: [string, string]; snapshot: string }[] = [
   },
   {
     name: 'the recording check is a modal slide-over with its count, the missing region and its paragraph link, and Check again',
-    state: ['home', 'recording-check-incomplete'],
+    state: ['production', 'recording-check-incomplete'],
     snapshot: 'slide-over-recording-check.aria.yml',
   },
   {
@@ -51,7 +51,7 @@ const MODALS: { name: string; state: [string, string]; snapshot: string }[] = [
   },
   {
     name: 'the stage suggestion evidence is a modal slide-over named for the chapter, each check a named region, with Confirm, Dismiss and Check now',
-    state: ['home', 'stage-evidence-recommended'],
+    state: ['production', 'stage-evidence-recommended'],
     snapshot: 'slide-over-stage-evidence.aria.yml',
   },
   {
@@ -60,18 +60,18 @@ const MODALS: { name: string; state: [string, string]; snapshot: string }[] = [
     snapshot: 'confirm-download-dictionary.aria.yml',
   },
   {
-    name: 'the chapter track panel is a modal slide-over named for the chapter, with its facts and the Change/Clear link',
-    state: ['home', 'chapter-track-panel-linked'],
+    name: 'the chapter track panel is a modal slide-over named for the chapter, with its facts, the Another track…/Unlink link and the Chapter section',
+    state: ['production', 'chapter-track-panel-linked'],
     snapshot: 'slide-over-chapter-track.aria.yml',
   },
   {
     name: 'the remove-from-recording confirm is an alert dialog with the What-is-it radio group and both actions',
-    state: ['home', 'chapter-remove-confirm'],
+    state: ['production', 'chapter-remove-confirm'],
     snapshot: 'confirm-remove-from-recording.aria.yml',
   },
   {
     name: 'the "Set up the credits" prompt is a modal dialog with the detected fields and the three dismissal actions',
-    state: ['home', 'credits-setup-dialog'],
+    state: ['production', 'credits-setup-dialog'],
     snapshot: 'dialog-credits-setup.aria.yml',
   },
   {
@@ -123,21 +123,21 @@ test('the isolation check fails when the page behind a modal is exposed', async 
 });
 
 test('the info icon is a button that says it is expanded, and its hint is a tooltip', async ({ page }) => {
-  await openApp(page, DESKTOP, ['home', 'info-tooltip']);
-  await expect(page.getByRole('button', { name: 'More information' }).first()).toMatchAriaSnapshot({ name: 'info-button-expanded.aria.yml' });
+  await openApp(page, DESKTOP, ['production', 'info-tooltip']);
+  await expect(page.getByRole('button', { name: 'About these figures' })).toMatchAriaSnapshot({ name: 'info-button-expanded.aria.yml' });
   await expect(page.getByRole('tooltip')).toMatchAriaSnapshot({ name: 'info-tooltip.aria.yml' });
 });
 
 // The note on the Reference material group is an info icon inside an alert dialog (ADR 0049): it is a button with the note as its
 // description, its popup is a tooltip that stays above the dialog, and the first Escape closes the note and only the second the dialog.
 test('the note on the reference material group of the import review is an info icon whose Escape closes it before the dialog', async ({ page }) => {
-  await openApp(page, DESKTOP, ['home', 'import-confirm']);
+  await openApp(page, DESKTOP, ['production', 'import-confirm']);
   const dialog = page.getByRole('alertdialog', { name: 'Import Alice.docx' });
   const info = dialog.getByRole('button', { name: 'About reference material' });
   await expect(info).toHaveAttribute('aria-description', /Still readable in the manuscript/);
   await info.hover();
   const note = page.getByRole('tooltip');
-  await expect(note).toContainText('Excluded from audiobook totals, Proofing and the chapter list. Still readable in the manuscript.');
+  await expect(note).toContainText('Excluded from audiobook totals, Proof and the chapter list. Still readable in the manuscript.');
   await page.keyboard.press('Escape');
   await expect(note).toHaveCount(0);
   await expect(dialog).toBeVisible();
@@ -147,7 +147,7 @@ test('the note on the reference material group of the import review is an info i
 
 // The same, reached by keyboard: Tab to the icon opens its note, the first Escape closes the note only, the second the dialog.
 test('the note on reference material reached by keyboard also takes the first Escape', async ({ page }) => {
-  await openApp(page, DESKTOP, ['home', 'import-confirm']);
+  await openApp(page, DESKTOP, ['production', 'import-confirm']);
   const dialog = page.getByRole('alertdialog', { name: 'Import Alice.docx' });
   const info = dialog.getByRole('button', { name: 'About reference material' });
   for (let presses = 0; presses < 20 && !(await info.evaluate((element) => element === document.activeElement)); presses++) await page.keyboard.press('Tab');
@@ -161,10 +161,10 @@ test('the note on reference material reached by keyboard also takes the first Es
 });
 
 // The evidence view of a stage suggestion hands over to the recording check (chapter-stage-recommendations.prd.md Phase 5): the slide-over
-// closes and the dialog opens with focus inside it, not on the Why button the closing slide-over returns focus to. Escape on the slide-over
-// alone returns focus to the row's Why.
+// closes and the dialog opens with focus inside it, not on the board cell the closing slide-over returns focus to. Escape on the
+// slide-over alone returns focus to the chapter's current-stage cell (stage-navigation-and-page-replacement.prd.md Phase 2).
 test('Open recording check in a stage suggestion moves focus into the recording check dialog', async ({ page }) => {
-  await openApp(page, DESKTOP, ['home', 'stage-evidence-unknown']);
+  await openApp(page, DESKTOP, ['production', 'stage-evidence-unknown']);
   await page
     .getByRole('dialog', { name: 'Stage suggestion: Chapter 5 — Advice from a Caterpillar' })
     .getByRole('button', { name: 'Open recording check' })
@@ -175,9 +175,13 @@ test('Open recording check in a stage suggestion moves focus into the recording 
   await expect.poll(() => check.evaluate((dialog) => dialog.contains(document.activeElement))).toBe(true);
 });
 
-test('Escape closes a stage suggestion’s evidence and returns focus to its Why button', async ({ page }) => {
-  await openApp(page, DESKTOP, ['home', 'stage-evidence-recommended']);
+test('Escape closes a stage suggestion’s evidence and returns focus to the board cell that opened it', async ({ page }) => {
+  await openApp(page, DESKTOP, ['production', 'stage-evidence-recommended']);
   await page.keyboard.press('Escape');
   await expect(page.getByRole('dialog', { name: 'Stage suggestion: Chapter 4 — The Rabbit Sends in a Little Bill' })).toHaveCount(0);
-  await expect(page.getByRole('button', { name: 'Why: Chapter 4' })).toBeFocused();
+  const row = page
+    .getByRole('grid', { name: 'Chapter pipeline' })
+    .getByRole('row')
+    .filter({ has: page.getByRole('rowheader', { name: /^Chapter 4\b/ }) });
+  await expect(row.getByRole('gridcell', { name: 'Ready' })).toBeFocused();
 });

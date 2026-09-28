@@ -1,4 +1,4 @@
-import type { ChapterStatus } from '../../api/contracts/manuscript';
+import type { ChapterStatus, RecordedUnavailable } from '../../api/contracts/manuscript';
 import type { ProductionChapter, ProductionDeadline, ProductionNextUpItem } from '../../api/contracts/production';
 import { STATUS_LABELS, STATUS_ORDER } from '../../chapterStatus';
 import type { StageGridCell } from '../primitives/StageGrid';
@@ -67,17 +67,41 @@ export const BOARD_COLUMNS: readonly BoardColumn[] = [
   { name: 'Delivery', kind: 'unavailable' },
 ];
 
+// Why a chapter has no Recorded length, short enough for a board cell (actual-recorded-column.prd.md's reasons).
+const UNRECORDED: Record<RecordedUnavailable, StageGridCell> = {
+  unlinked: { tone: 'neutral', label: 'No track' },
+  multiple_tracks: { tone: 'warning', label: '2+ tracks' },
+  track_missing: { tone: 'danger', label: 'Track missing' },
+  no_project: { tone: 'neutral', label: 'No project' },
+};
+
+/** Whether a stage column is the chapter's current stage: its own status, or Record for a chapter not started yet. */
+export function isCurrentStage(chapter: Pick<ProductionChapter, 'status'>, column: BoardColumn): boolean {
+  if (column.kind !== 'stage') return false;
+  return column.stage === chapter.status || (chapter.status === 'not_started' && column.stage === 'recording');
+}
+
+/** What the board knows live, beyond the overview: a recording check running on the chapter (its percent, or `null` for a
+ * background check with no percent yet), and evidence that changed since the narrator confirmed the stage. */
+export type LiveCell = { checkingPercent?: number | null; contradiction?: boolean };
+
 /** One board cell. It only reads the chapter: the board never sets a status. Done and empty cells are the mock's compact
- * glyphs (PR10); a stage still being worked keeps its full word, since the mock has no glyph for those. */
-export function boardCell(chapter: ProductionChapter, column: BoardColumn): StageGridCell {
+ * glyphs (PR10); a stage still being worked keeps its full word, and so does a Recorded cell that says why it has no length. */
+export function boardCell(chapter: ProductionChapter, column: BoardColumn, live: LiveCell = {}): StageGridCell {
   if (column.kind === 'unavailable') return { tone: 'neutral', label: DASH };
   if (column.kind === 'recorded') {
-    return { tone: 'neutral', label: chapter.recordedSeconds === null ? DASH : formatLength(chapter.recordedSeconds) };
+    return chapter.recordedSeconds === null
+      ? UNRECORDED[chapter.recordedUnavailable ?? 'unlinked']
+      : { tone: 'neutral', label: formatLength(chapter.recordedSeconds) };
+  }
+  if (column.stage === 'recording' && live.checkingPercent !== undefined) {
+    return { tone: 'progress', label: live.checkingPercent === null ? 'Checking' : `Checking ${Math.floor(live.checkingPercent)}%` };
   }
   const at = STATUS_ORDER.indexOf(chapter.status);
   const stage = STATUS_ORDER.indexOf(column.stage);
   if (at > stage) return { tone: 'success', label: '✓' };
   if (at < stage) return { tone: 'neutral', label: DASH };
+  if (live.contradiction) return { tone: 'warning', label: 'Evidence changed' };
   switch (chapter.readiness?.verdict) {
     case 'recommended':
       return { tone: 'info', label: 'Ready' };
@@ -88,6 +112,17 @@ export function boardCell(chapter: ProductionChapter, column: BoardColumn): Stag
     default:
       return { tone: 'progress', label: 'In progress' };
   }
+}
+
+/** A credits row's cell (credits-in-chapter-table.prd.md): its status only, since nothing measures or assesses credits yet. */
+export function creditsCell(row: { status: ChapterStatus; template?: unknown }, column: BoardColumn): StageGridCell {
+  if (column.kind === 'unavailable') return { tone: 'neutral', label: DASH };
+  if (column.kind === 'recorded') return { tone: 'neutral', label: row.template ? DASH : 'Not set up' };
+  const at = STATUS_ORDER.indexOf(row.status);
+  const stage = STATUS_ORDER.indexOf(column.stage);
+  if (at > stage) return { tone: 'success', label: '✓' };
+  if (at < stage) return { tone: 'neutral', label: DASH };
+  return { tone: 'progress', label: 'In progress' };
 }
 
 const ACTION: Partial<Record<ChapterStatus, string>> = {
@@ -103,7 +138,16 @@ export function nextUpLine(item: ProductionNextUpItem): { action: string; reason
   if (item.stage === 'not_started') return { action, reason: 'Not started yet.' };
   const readiness = item.readiness;
   if (readiness?.verdict === 'recommended' && readiness.target) {
-    return { action, reason: `Looks ready to move to ${STATUS_LABELS[readiness.target]}: confirm it on Home.` };
+    return { action, reason: `Looks ready to move to ${STATUS_LABELS[readiness.target]}: confirm it from its cell on the board.` };
   }
   return { action, reason: readiness?.reason || 'In progress.' };
+}
+
+/** The page subtitle's delivery part (mock 01: "delivery due Oct 14 (18 days)"); empty with no delivery date set. */
+export function deliveryDue(deadline: ProductionDeadline | null): string {
+  if (deadline === null) return '';
+  const due = new Date(`${deadline.date}T00:00:00Z`).toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' });
+  const { daysLeft } = deadline;
+  if (daysLeft < 0) return `delivery was due ${due} (${plural(-daysLeft, 'day', 'days')} over)`;
+  return `delivery due ${due} (${daysLeft === 0 ? 'today' : plural(daysLeft, 'day', 'days')})`;
 }
