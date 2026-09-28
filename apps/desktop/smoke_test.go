@@ -24,9 +24,10 @@ import (
 
 const healthySelfCheck = `{"ok": true, "checks": [{"name": "cmudict", "ok": true, "detail": "hello = HH AH0 L OW1"}, {"name": "espeak", "ok": true, "detail": "hello = həlˈoʊ"}]}`
 
-const healthyMoonshineCheck = `{"type": "engine_check", "engine": "moonshine", "ok": true, "detail": "moonshine-voice 0.1.5: native library loaded, 10 language(s)"}`
-
-const healthyCapabilities = `{"type": "capabilities", "asr": {"whisper": {"label": "Whisper", "platforms": [], "modes": ["live"], "asset": "whisper", "loadable": null}, "moonshine": {"label": "Moonshine", "platforms": ["windows"], "modes": ["live"], "asset": "moonshine", "loadable": null}}, "capture": {"dshow": {"label": "DirectShow", "platforms": ["windows"], "modes": [], "loadable": null}, "wasapi": {"label": "WASAPI", "platforms": ["windows"], "modes": [], "loadable": null}}}`
+// healthyCapabilities is what the frozen Teleprompter's `--capabilities --verify` prints on a healthy build (options.Moonshine
+// is true in smokeOptionsFor, so checkCapabilities asks for --verify by default; moonshine's loadable/detail mirror what
+// --check-moonshine used to print alone before Phase 3 folded that guarantee into this flag).
+const healthyCapabilities = `{"type": "capabilities", "asr": {"whisper": {"label": "Whisper", "platforms": [], "modes": ["live"], "asset": "whisper", "loadable": null}, "moonshine": {"label": "Moonshine", "platforms": ["windows"], "modes": ["live"], "asset": "moonshine", "loadable": true, "detail": "moonshine-voice 0.1.5: native library loaded, 10 language(s)"}}, "capture": {"dshow": {"label": "DirectShow", "platforms": ["windows"], "modes": [], "loadable": null}, "wasapi": {"label": "WASAPI", "platforms": ["windows"], "modes": [], "loadable": null}}}`
 
 const healthyGuideCapabilities = `{"type": "capabilities", "tts": {"piper": {"label": "Piper", "platforms": [], "modes": [], "asset": "tts", "loadable": null}}, "pronunciation": {"cmu": {"label": "CMU dictionary", "platforms": [], "modes": ["pronounce"], "loadable": null}, "wiktextract": {"label": "Wiktionary (via Wiktextract)", "platforms": [], "modes": ["pronounce"], "loadable": null}, "espeak": {"label": "eSpeak NG", "platforms": [], "modes": ["pronounce"], "loadable": null}}}`
 
@@ -69,9 +70,7 @@ type fakeRun struct {
 	selfExit  int               // its exit code
 	errFor    map[string]error  // sidecar name -> the error starting it
 	stderrFor map[string]string // sidecar name -> what it says on stderr
-	moonshine string            // what `--check-moonshine` prints; healthyMoonshineCheck when empty
-	moonExit  int               // its exit code
-	caps      string            // what the teleprompter's `--capabilities` prints; healthyCapabilities when empty
+	caps      string            // what the teleprompter's `--capabilities` (with or without --verify) prints; healthyCapabilities when empty
 	capsExit  int               // its exit code
 
 	guideCaps       string // what the guide's `capabilities` prints; healthyGuideCapabilities when empty
@@ -99,13 +98,6 @@ func (f *fakeRun) run(_ context.Context, program string, args ...string) (int, s
 			out = healthyGuideCapabilities
 		}
 		return f.guideCapsExit, out, f.stderrFor[name], nil
-	}
-	if len(args) > 0 && args[0] == "--check-moonshine" {
-		out := f.moonshine
-		if out == "" {
-			out = healthyMoonshineCheck
-		}
-		return f.moonExit, out, f.stderrFor[name], nil
 	}
 	if len(args) > 0 && args[0] == "--capabilities" && name == "transcript-compare" {
 		out := f.compareCaps
@@ -151,7 +143,7 @@ func TestSmokePassesOnAHealthyPackage(t *testing.T) {
 	}
 	for _, want := range []string{
 		"resources", "asset-cache", "sidecar:manuscript-guide", "sidecar:transcript-compare", "sidecar:manuscript-teleprompter",
-		"guide:cmudict", "guide:espeak", "teleprompter:moonshine", "teleprompter:capabilities", "guide:capabilities",
+		"guide:cmudict", "guide:espeak", "teleprompter:capabilities", "guide:capabilities",
 		"compare:capabilities", "catalogs", "reaper",
 	} {
 		if !slices.Contains(names, want) {
@@ -178,7 +170,7 @@ func TestSmokeFailsWhenABundledSidecarIsMissing(t *testing.T) {
 			dependents := map[string][]string{
 				"manuscript-guide":        {"guide:self-check", "guide:capabilities"},
 				"transcript-compare":      {"compare:capabilities"},
-				"manuscript-teleprompter": {"teleprompter:moonshine", "teleprompter:capabilities"},
+				"manuscript-teleprompter": {"teleprompter:capabilities"},
 			}[missing]
 			for _, dependent := range dependents {
 				if _, ok := failed[dependent]; ok {
@@ -265,6 +257,8 @@ func TestSmokeWithoutAVoiceNeverNeedsOne(t *testing.T) {
 	}
 }
 
+// TestSmokeProvesTheFrozenTeleprompterCanRunMoonshine: sidecar-capabilities-flag PRD Phase 3 folded --check-moonshine's
+// guarantee into --capabilities --verify (ADR 0403), so proving Moonshine works is now part of the capabilities check.
 func TestSmokeProvesTheFrozenTeleprompterCanRunMoonshine(t *testing.T) {
 	run := &fakeRun{}
 	report := smoke(context.Background(), smokeOptionsFor(t, healthyTree(t), run))
@@ -273,30 +267,30 @@ func TestSmokeProvesTheFrozenTeleprompterCanRunMoonshine(t *testing.T) {
 	}
 	asked := false
 	for _, call := range run.calls {
-		asked = asked || (strings.Contains(filepath.Base(call[0]), "manuscript-teleprompter") && slices.Contains(call, "--check-moonshine"))
+		asked = asked || (strings.Contains(filepath.Base(call[0]), "manuscript-teleprompter") && slices.Contains(call, "--capabilities") && slices.Contains(call, "--verify"))
 	}
 	if !asked {
-		t.Fatalf("the frozen teleprompter was never asked to check Moonshine: %v", run.calls)
+		t.Fatalf("the frozen teleprompter was never asked to verify Moonshine: %v", run.calls)
 	}
 }
 
-func TestSmokeFailsWhenTheFrozenTeleprompterCannotRunMoonshine(t *testing.T) {
-	lostDLL := `{"type": "engine_check", "engine": "moonshine", "ok": false, "detail": "MoonshineError: Failed to load Moonshine library from moonshine.dll"}`
+func TestSmokeFailsWhenTheFrozenTeleprompterCannotVerifyMoonshine(t *testing.T) {
+	lostDLL := `{"type": "capabilities", "asr": {"whisper": {"label": "Whisper", "platforms": [], "modes": ["live"], "asset": "whisper", "loadable": null}, "moonshine": {"label": "Moonshine", "platforms": ["windows"], "modes": ["live"], "asset": "moonshine", "loadable": false, "detail": "MoonshineError: Failed to load Moonshine library from moonshine.dll"}}, "capture": {"dshow": {"label": "DirectShow", "platforms": ["windows"], "modes": [], "loadable": null}, "wasapi": {"label": "WASAPI", "platforms": ["windows"], "modes": [], "loadable": null}}}`
+	unverified := `{"type": "capabilities", "asr": {"whisper": {"label": "Whisper", "platforms": [], "modes": ["live"], "asset": "whisper", "loadable": null}, "moonshine": {"label": "Moonshine", "platforms": ["windows"], "modes": ["live"], "asset": "moonshine", "loadable": null}}, "capture": {"dshow": {"label": "DirectShow", "platforms": ["windows"], "modes": [], "loadable": null}, "wasapi": {"label": "WASAPI", "platforms": ["windows"], "modes": [], "loadable": null}}}`
 	for name, tc := range map[string]struct {
 		run    *fakeRun
 		detail string
 	}{
-		"the native library is not in the freeze": {&fakeRun{moonshine: lostDLL, moonExit: 1}, "moonshine.dll"},
-		"an older sidecar without the flag": {
-			&fakeRun{moonshine: " ", moonExit: 2, stderrFor: map[string]string{"manuscript-teleprompter": "error: unrecognized arguments: --check-moonshine"}},
+		"the native library is not in the freeze": {&fakeRun{caps: lostDLL}, "moonshine.dll"},
+		"an older sidecar without --verify support": {
+			&fakeRun{caps: " ", capsExit: 2, stderrFor: map[string]string{"manuscript-teleprompter": "error: unrecognized arguments: --verify"}},
 			"unrecognized arguments",
 		},
-		"an exit code the verdict does not explain": {&fakeRun{moonExit: 1}, "exit code 1"},
-		"a verdict for another engine":              {&fakeRun{moonshine: `{"type": "engine_check", "engine": "whisper", "ok": true, "detail": "x"}`}, "whisper"},
+		"a report that registered moonshine but never verified it": {&fakeRun{caps: unverified}, "did not verify it"},
 	} {
 		t.Run(name, func(t *testing.T) {
 			report := smoke(context.Background(), smokeOptionsFor(t, healthyTree(t), tc.run))
-			detail := failedChecks(report)["teleprompter:moonshine"]
+			detail := failedChecks(report)["teleprompter:capabilities"]
 			if report.OK || !strings.Contains(detail, tc.detail) {
 				t.Fatalf("the smoke test passed or did not say why (want %q): ok=%v detail=%q", tc.detail, report.OK, detail)
 			}
@@ -534,7 +528,7 @@ func TestSmokeCapabilitiesCheckRunsRegardlessOfTheMoonshineWheel(t *testing.T) {
 }
 
 func TestSmokeLeavesMoonshineAloneWhereThePlatformHasNoWheel(t *testing.T) {
-	run := &fakeRun{moonshine: "not json", moonExit: 1}
+	run := &fakeRun{}
 	options := smokeOptionsFor(t, healthyTree(t), run)
 	options.Moonshine = false
 	report := smoke(context.Background(), options)
@@ -542,8 +536,8 @@ func TestSmokeLeavesMoonshineAloneWhereThePlatformHasNoWheel(t *testing.T) {
 		t.Fatalf("a platform without Moonshine failed its smoke test: %+v", report.Checks)
 	}
 	for _, call := range run.calls {
-		if slices.Contains(call, "--check-moonshine") {
-			t.Fatalf("Moonshine was checked where it is not shipped: %v", call)
+		if slices.Contains(call, "--verify") {
+			t.Fatalf("Moonshine was verified where it is not shipped: %v", call)
 		}
 	}
 }

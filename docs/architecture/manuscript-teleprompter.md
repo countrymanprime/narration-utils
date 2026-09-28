@@ -435,7 +435,9 @@ sequenceDiagram
 engine too ([ADR 0107](../adr/0107-moonshine-ships-inside-the-windows-teleprompter-sidecar-and-runs-only-from-a-verified-catalog-install.md)): `moonshine-voice` is pinned for Windows only, its
 `ctypes`-loaded `moonshine.dll` and `onnxruntime.dll` are collected by hand and
 required by `verify-installable.mjs`, and `narration-utils --smoke` runs
-`manuscript-teleprompter --check-moonshine` to prove they load. The frozen
+`manuscript-teleprompter --capabilities --verify` to prove they load
+(sidecar-capabilities-flag PRD Phase 3 folded the bespoke `--check-moonshine`
+flag into this generic one; [ADR 0403](../adr/0403-the-capabilities-flag-reports-what-registered-not-what-loads.md)). The frozen
 sidecar runs Moonshine only from a `--model-dir` holding every file of
 `config/moonshine-assets.json` (`core/moonshine_engine.py`); it never uses the
 library's downloader. Freezing it in cost 24.1 MB (+9.4%).
