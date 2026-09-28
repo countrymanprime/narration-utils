@@ -59,7 +59,7 @@ import (
 // Keep this in lockstep with apps/ui/src/hostApi.ts.  The frontend rejects
 // an older host before bootstrapping so a partial update cannot run against a
 // binding contract it does not understand.
-const hostAPIVersion = 80
+const hostAPIVersion = 81
 
 // Host is the Wails binding boundary. The frontend invokes only this bound
 // object; it never receives a loopback port or an HTTP capability.
@@ -126,7 +126,12 @@ type Host struct {
 	exportPicked map[string]bool
 	// +checklocks:mu
 	packageJob *packageJobState
-	transcript *transcript.Service
+	// multiPackageJob builds several profiles' packages from one export's own encoded files in one action
+	// (multi_package_job.go, render-encode-master PRD Phase 6). h.mu guards the pointer; it is not per project, and
+	// it and packageJob never run at the same time (each start site checks the other's running state).
+	// +checklocks:mu
+	multiPackageJob *multiPackageJobState
+	transcript      *transcript.Service
 	// coverage is the recording-coverage service (docs/utilities/recording-coverage.md, ADR 0128): it reads the saved .rpp and
 	// runs the Transcript Compare sidecar's --coverage mode. Swapped on every project switch like transcript; the Coverage* bindings
 	// reach it (Phase 5, bindings_coverage.go) and it fills the manuscript chapters' recordedFraction.
@@ -236,6 +241,12 @@ type Host struct {
 	encodeFile        encodeFileFunc
 	assemblePackage   assembleFunc
 	pickPackageFolder func() (string, error)
+	// resolveProfile is the same seam for multi_package_job.go's own profile resolution: nil means
+	// h.profileStore().Resolve. It exists so a test can resolve a selection to a synthetic profile - for example one
+	// requiring a format no built-in or persistable custom profile can yet, since deliveryprofile's own store
+	// validates a custom profile's rules against a known-metric whitelist - without touching internal/deliveryprofile
+	// itself (render-encode-master PRD Phase 6, ADR 0480).
+	resolveProfile func(deliveryprofile.Ref) (deliveryprofile.Profile, bool, error)
 	// updates asks GitHub for a newer release and remembers the answer (ADR 0072). It is set once in NewHost and never swapped, so it is
 	// read directly, like recents.
 	updates *update.Checker
