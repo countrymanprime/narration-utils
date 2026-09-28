@@ -87,6 +87,10 @@ export const SILENT_CATCHES: Record<string, string> = {
     'Renders the Opening credits pseudo-entry preview; a failed render just leaves that entry showing "Nothing to preview yet." rather than a toast over the manuscript itself.',
   'src/components/script/ScriptPage.tsx#2': 'Renders the Closing credits pseudo-entry preview; same fallback as the opening one above.',
   'src/components/proof/CompareRun.tsx#1': 'Reads the last model and chunk choice; the defaults stay usable and Settings reports a real error.',
+  'src/components/proof/CompareRun.tsx#2':
+    'The "may have changed since comparison" background check (reaper-automation-follow-through PRD Phase 13): comparing a successful REAPER answer against the baseline is best-effort - a failure just leaves the note as it was, tried again next low-frequency poll.',
+  'src/components/proof/CompareRun.tsx#3':
+    "The same background check's REAPER round trip: a failed ask (REAPER closed, no bridge) is routine while results sit reviewed, not a narrator-facing failure, so it is silent and retried next poll.",
   // Phase 2 (teleprompter-manuscript-integration.prd.md) moved the device/settings catches into `useTeleprompterSession.ts`;
   // `TeleprompterPage.tsx` keeps only the chapter-selection catch it never shared with the modal.
   'src/components/booth/BoothPage.tsx#1':
