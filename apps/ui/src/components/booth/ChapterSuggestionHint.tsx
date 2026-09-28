@@ -1,3 +1,4 @@
+import { chapterName } from '../../chapterName';
 import { Button } from '../primitives/Button';
 import type { ChapterSuggestion, ManuscriptChapter } from '../../types';
 
@@ -53,10 +54,10 @@ export function ChapterSuggestionHint({ suggestion, chapters, value, onChoose }:
     return (
       <div className="mt-1.5 flex flex-wrap items-center gap-2 text-[0.8rem]" style={MUTED}>
         <span>
-          {trackPhrase(suggestion)} {saved}, {verb} for {chapter.title}.
+          {trackPhrase(suggestion)} {saved}, {verb} for {chapterName(chapter, 'short')}.
         </span>
         <Button variant="ghost" className="px-2.5 py-1" onClick={() => onChoose(confident)}>
-          Use {chapter.title}
+          Use {chapterName(chapter, 'short')}
         </Button>
       </div>
     );
@@ -74,7 +75,7 @@ export function ChapterSuggestionHint({ suggestion, chapters, value, onChoose }:
       <div className="flex flex-wrap gap-2" role="group" aria-label="Chapters suggested by REAPER">
         {offered.map((candidate) => (
           <Button key={candidate.chapterId} variant="ghost" className="px-2.5 py-1" onClick={() => onChoose(candidate.chapterId)}>
-            {inPicker.get(candidate.chapterId)!.title}
+            {chapterName(inPicker.get(candidate.chapterId)!, 'short')}
           </Button>
         ))}
       </div>

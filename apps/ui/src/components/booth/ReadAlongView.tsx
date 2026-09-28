@@ -35,6 +35,13 @@ type Props = {
    * above the text must still give way to the rail's own Key tab, the same as it does when `aside` is set.
    */
   hideKey?: boolean;
+  /**
+   * The Booth's reading surface (mock 03, audit BO3): the text straight on the page, full-bleed and large, with no bordered
+   * card around it. The companion panel keeps the card (its own mock 07).
+   */
+  fullBleed?: boolean;
+  /** Speaker tags by row key (the Booth's gutter, audit BO4; see `ReaderText`). */
+  speakers?: Map<string, string>;
 };
 
 /**
@@ -44,32 +51,38 @@ type Props = {
  * since read-aloud-control-bar.prd.md Phase 3 - is Start/Stop, the microphone or the engine/model choice: those moved
  * into `ReadingControlBar`, which the caller renders outside this view (a `Dialog` footer, or the page's own sticky bar).
  */
-export function ReadAlongView({ session: t, follow, header, marks, onOpenMark, aside, hideKey = false }: Props) {
+export function ReadAlongView({ session: t, follow, header, marks, onOpenMark, aside, hideKey = false, fullBleed = false, speakers }: Props) {
+  const text = (
+    <ReaderText
+      rows={t.rows}
+      cursor={t.cursor}
+      skipped={t.session.skipped}
+      follow={t.active && follow.following}
+      readerRef={follow.readerRef}
+      onSeek={t.active ? t.seek : undefined}
+      marks={marks}
+      onOpenMark={onOpenMark}
+      speakers={speakers}
+      large={fullBleed}
+    />
+  );
   const main = (
-    <div className="mx-auto w-full max-w-3xl min-w-0 space-y-4">
+    <div className={`mx-auto w-full min-w-0 space-y-4 ${fullBleed ? 'max-w-5xl' : 'max-w-3xl'}`}>
       {header}
       {(t.error || t.host.phase === 'error') && (
         <p role="alert" className="text-sm" style={{ color: 'var(--danger-text)' }}>
           {t.error || t.host.message}
         </p>
       )}
-      {t.rows.length > 0 && (
-        <Panel>
-          {!aside && !hideKey && <ReaderKey seekable={t.active} />}
-          <div className={aside ? '' : 'mt-3'}>
-            <ReaderText
-              rows={t.rows}
-              cursor={t.cursor}
-              skipped={t.session.skipped}
-              follow={t.active && follow.following}
-              readerRef={follow.readerRef}
-              onSeek={t.active ? t.seek : undefined}
-              marks={marks}
-              onOpenMark={onOpenMark}
-            />
-          </div>
-        </Panel>
-      )}
+      {t.rows.length > 0 &&
+        (fullBleed ? (
+          <div className="px-1 py-2 md:px-4">{text}</div>
+        ) : (
+          <Panel>
+            {!aside && !hideKey && <ReaderKey seekable={t.active} />}
+            <div className={aside ? '' : 'mt-3'}>{text}</div>
+          </Panel>
+        ))}
       {t.prompt && (
         <AssetInstallPrompt
           ask={{

@@ -10,7 +10,9 @@ import { Kbd } from '../primitives/Kbd';
 import { LevelMeter } from '../primitives/LevelMeter';
 import { speakerColorToken } from '../primitives/speakerColor';
 import { StatusBadge, type StatusTone } from '../primitives/StatusBadge';
+import { pronunciationStatusInfo } from '../storybible/pronunciationStatus';
 import { TooltipTarget } from '../primitives/Tooltip';
+import { boothProgress, progressText, type ComingUpName } from './boothProgress';
 import { ReadingControlBar } from './ReadingControlBar';
 import { ReadAlongView } from './ReadAlongView';
 import { useInputLevel } from './useInputLevel';
@@ -25,6 +27,8 @@ type Props = {
   /** Absent in credits mode (no chapter track, mirroring `ReadingControlBar`'s own `chapterId?`). */
   chapterId?: string;
   chapterTitle?: string;
+  /** The chapter's short name, in the command bar's armed state ("Chapter 1 armed"). */
+  chapterShortTitle?: string;
   /** The Record-in-REAPER toggle's state (booth-actions-enablement.prd.md Phase 2), owned by `BoothSession`: the
    * command bar's toggle and the status bar's "REC · P&R" badge read the same one. */
   recording: RecordInReaperState;
@@ -44,14 +48,18 @@ type Props = {
   speakers?: GuideEntity[];
   /** Opens a speaker's Story Bible entry in the rail, the same as activating its mark in the text. */
   onOpenSpeaker?: (entity: GuideEntity) => void;
+  /** Speaker tags by row key, for the text's gutter (audit BO4). */
+  speakerLabels?: Map<string, string>;
+  /** The next names ahead with a pronunciation, for the rail's "Coming up" (audit BO8). Absent in credits mode. */
+  comingUp?: ComingUpName[];
   /** Companion mode (ADR 0401), entered from the header (stage navigation Q9). */
   onCompanion?: () => void;
   /** Exit booth (the header button, or Escape: `BoothSession` asks first while a session listens). */
   onExit: () => void;
 };
 
-/** The booth's status line (mock 03's top bar): recording/reading state, the chapter, word progress and the live input
- * level. The microphone, engine and model choices and the REAPER toggle are the command bar's (`ReadingControlBar`),
+/** The booth's status line (mock 03's top bar): recording/reading state, the chapter, progress ("¶ 38 of 71 · 41% · ~8:10
+ * finished left", audit BO5) and the live input level. The microphone, engine and model choices and the REAPER toggle are the command bar's (`ReadingControlBar`),
  * so the status line only reads them. */
 function BoothStatus({
   session: t,
@@ -65,13 +73,17 @@ function BoothStatus({
   const listening = t.active && !t.paused;
   const tone: StatusTone = recording.recording ? 'danger' : listening ? 'info' : 'neutral';
   const label = recording.recording ? 'REC · P&R' : listening ? 'Reading' : t.active ? 'Paused' : 'Ready';
+  // Only once a session has a script: before it, the rows carry no word positions to count from.
+  const progress = t.session.script ? boothProgress(t.rows, t.session.cursor, t.session.script.tokens) : undefined;
   return (
     <>
-      <StatusBadge tone={tone} label={label} />
+      <span className="flex-none">
+        <StatusBadge tone={tone} label={label} />
+      </span>
       {chapterTitle && <span className="min-w-0 truncate font-semibold">{chapterTitle}</span>}
-      {t.session.script && (
-        <span className="hidden font-['IBM_Plex_Mono',ui-monospace,monospace] text-xs whitespace-nowrap sm:inline" style={{ color: 'var(--text-muted)' }}>
-          {t.session.cursor.toLocaleString()} of {t.session.script.tokens.toLocaleString()} words
+      {progress && (
+        <span className="hidden text-xs whitespace-nowrap lg:inline" style={{ color: 'var(--text-muted)' }}>
+          {progressText(progress)}
         </span>
       )}
       {/* Decorative: the command bar's microphone popover has the labelled meter. */}
@@ -142,6 +154,42 @@ function BoothSpeakers({ speakers, onOpenSpeaker }: { speakers: GuideEntity[]; o
 }
 
 /**
+ * The rail's "Coming up" (mock 03, audit BO8): the next few names the narrator will read that have a pronunciation in the
+ * Story Bible (the same list Script's Pronunciations tab keeps), each with how to say it and where that stands - so a
+ * name is checked before it is reached, not after. Nothing ahead with a pronunciation: the section is not drawn (booth
+ * mode D3's precedent, nothing drawn empty).
+ */
+function BoothComingUp({ names, onOpen }: { names: ComingUpName[]; onOpen?: (entity: GuideEntity) => void }) {
+  const headingId = useId();
+  if (names.length === 0) return null;
+  return (
+    <section aria-labelledby={headingId} className="mb-4 space-y-1.5">
+      <h2 id={headingId} className={SECTION_LABEL}>
+        Coming up
+      </h2>
+      <ul className="divide-y divide-[var(--border)] text-sm">
+        {names.map((name) => (
+          <li key={name.key} className="flex flex-wrap items-baseline gap-x-2 py-1">
+            {/* The name as the text marks it (its Story Bible category's colour), opening its entry like a mark does. */}
+            <Highlight
+              kind={highlightKind(name.entity.category)}
+              label={onOpen ? `${name.text}: open in the Story bible` : undefined}
+              onActivate={onOpen && (() => onOpen(name.entity))}
+            >
+              {name.text}
+            </Highlight>
+            <span style={{ color: 'var(--text-muted)' }}>
+              <span className="font-['IBM_Plex_Mono',ui-monospace,monospace]">{name.pronunciation.ipa}</span> ·{' '}
+              {pronunciationStatusInfo(name.pronunciation).label}
+            </span>
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
+/**
  * The Booth page's surface (stage-navigation-and-page-replacement.prd.md Phase 4, mock 03), built on `FocusShell`: the
  * status line, the chapter text (with the pre-session setup above it while idle), the rail and, as the command bar, the
  * same `ReadingControlBar` the read-aloud dialog used - Play/Pause (Space), Stop, Follow, the microphone, Record in
@@ -153,6 +201,7 @@ export function BoothView({
   follow,
   chapterId,
   chapterTitle,
+  chapterShortTitle,
   recording,
   startPoint,
   marks,
@@ -162,6 +211,8 @@ export function BoothView({
   rail,
   speakers,
   onOpenSpeaker,
+  speakerLabels,
+  comingUp,
   onCompanion,
   onExit,
 }: Props) {
@@ -171,6 +222,7 @@ export function BoothView({
   const railContent = speakers ? (
     <>
       <BoothSpeakers speakers={speakers} onOpenSpeaker={onOpenSpeaker} />
+      {comingUp && <BoothComingUp names={comingUp} onOpen={onOpenSpeaker} />}
       {rail}
     </>
   ) : (
@@ -184,11 +236,19 @@ export function BoothView({
       asMain={false}
       commandsLabel="Booth commands"
       commands={
-        <ReadingControlBar session={t} follow={follow} startPoint={startPoint} chapterId={chapterId} chapterTitle={chapterTitle} recording={recording} />
+        <ReadingControlBar
+          session={t}
+          follow={follow}
+          startPoint={startPoint}
+          chapterId={chapterId}
+          chapterTitle={chapterTitle}
+          chapterShortTitle={chapterShortTitle}
+          recording={recording}
+        />
       }
     >
       {!t.active && setup}
-      <ReadAlongView session={t} follow={follow} header={header} marks={marks} onOpenMark={onOpenMark} hideKey />
+      <ReadAlongView session={t} follow={follow} header={header} marks={marks} onOpenMark={onOpenMark} hideKey fullBleed speakers={speakerLabels} />
       {!railBeside && (
         <aside aria-label="Rail" className="mx-auto mt-4 w-full max-w-3xl">
           {railContent}

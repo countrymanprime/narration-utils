@@ -394,7 +394,7 @@ describe('chapter-track link control on Home', () => {
   it("opens the row's track panel showing what the suggestion was found through, and confirms it via Change (TL5)", async () => {
     const { notify } = await openTracks();
     fireEvent.click(trackButton('Chapter 1'));
-    const dialog = await screen.findByRole('dialog', { name: 'Track: Chapter 1' });
+    const dialog = await screen.findByRole('dialog', { name: 'Track: Chapter 1 — Down the Rabbit-Hole' });
     expect(within(dialog).getByText('Suggested')).toBeTruthy();
     expect(within(dialog).getByText('Found through')).toBeTruthy();
     expect(within(dialog).getByText('Track name')).toBeTruthy();
@@ -412,7 +412,7 @@ describe('chapter-track link control on Home', () => {
   it('offers every unclaimed track to a chapter with no suggestion, and reflects the link after Confirm (TL3)', async () => {
     const { notify } = await openTracks();
     fireEvent.click(trackButton('Chapter 3'));
-    const dialog = await screen.findByRole('dialog', { name: 'Track: Chapter 3' });
+    const dialog = await screen.findByRole('dialog', { name: 'Track: Chapter 3 — A Caucus-Race and a Long Tale' });
     expect(within(dialog).queryByText('Possible tracks')).toBeNull();
     const select = await within(dialog).findByLabelText('Track for Chapter 3');
     fireEvent.change(select, { target: { value: '{DA2D209F-D10F-5E46-93E7-098D96499ED0}' } }); // "Chapter 2" track
@@ -426,7 +426,7 @@ describe('chapter-track link control on Home', () => {
     const { notify } = await openTracks();
     // Confirm Chapter 1 onto its suggested "Chapter 1" track first, so a second chapter can displace it.
     fireEvent.click(trackButton('Chapter 1'));
-    const first = await screen.findByRole('dialog', { name: 'Track: Chapter 1' });
+    const first = await screen.findByRole('dialog', { name: 'Track: Chapter 1 — Down the Rabbit-Hole' });
     fireEvent.click(await within(first).findByRole('button', { name: 'Change' }));
     fireEvent.click(within(first).getByRole('button', { name: 'Confirm' }));
     await waitFor(() => expect(notify).toHaveBeenCalledWith('Track linked.'));
@@ -435,7 +435,7 @@ describe('chapter-track link control on Home', () => {
 
     // Chapter 3 has no suggestion of its own; link it onto the same "Chapter 1" track Chapter 1 just confirmed.
     fireEvent.click(trackButton('Chapter 3'));
-    const second = await screen.findByRole('dialog', { name: 'Track: Chapter 3' });
+    const second = await screen.findByRole('dialog', { name: 'Track: Chapter 3 — A Caucus-Race and a Long Tale' });
     fireEvent.change(await within(second).findByLabelText('Track for Chapter 3'), { target: { value: '{0E4D1D7F-D039-674D-87E6-719376DE95EC}' } });
     fireEvent.click(within(second).getByRole('button', { name: 'Confirm' }));
     await waitFor(() => expect(notify).toHaveBeenCalledWith('Linked. This track was linked to Chapter 1, which is now unlinked.'));
@@ -445,7 +445,7 @@ describe('chapter-track link control on Home', () => {
 
     // Unlink Chapter 3: freeing the track lets the matcher suggest it back to Chapter 1 by name, same as at the start.
     fireEvent.click(trackButton('Chapter 3'));
-    const third = await screen.findByRole('dialog', { name: 'Track: Chapter 3' });
+    const third = await screen.findByRole('dialog', { name: 'Track: Chapter 3 — A Caucus-Race and a Long Tale' });
     fireEvent.click(await within(third).findByRole('button', { name: 'Clear' }));
     await waitFor(() => expect(notify).toHaveBeenCalledWith('Track unlinked.'));
     fireEvent.click(within(third).getByRole('button', { name: 'Close' }));
@@ -536,13 +536,13 @@ describe('remove from recording (chapter-track-link-control.prd.md Phase 3)', ()
   it('removes a chapter from recording, drops it from the table, and lists it under Removed from recording with Restore', async () => {
     const { notify } = await openTracks();
     fireEvent.click(trackButton('Chapter 3'));
-    const panel = await screen.findByRole('dialog', { name: 'Track: Chapter 3' });
+    const panel = await screen.findByRole('dialog', { name: 'Track: Chapter 3 — A Caucus-Race and a Long Tale' });
     fireEvent.click(within(panel).getByRole('button', { name: 'Remove from recording…' }));
     const confirm = await screen.findByRole('alertdialog', { name: 'Remove Chapter 3 from recording?' });
     fireEvent.click(within(confirm).getByRole('button', { name: 'Remove from recording' }));
     await waitFor(() => expect(notify).toHaveBeenCalledWith('Chapter 3 removed from recording.'));
     // The slide-over closes with the row it was about, and the row itself leaves the table.
-    await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Track: Chapter 3' })).toBeNull());
+    await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Track: Chapter 3 — A Caucus-Race and a Long Tale' })).toBeNull());
     expect(screen.queryByRole('link', { name: /^Chapter 3\b/ })).toBeNull();
     expect(await screen.findByText('Removed from recording (1)')).toBeTruthy();
     expect(screen.getByText(/removed today as not a chapter/)).toBeTruthy();
@@ -556,7 +556,7 @@ describe('remove from recording (chapter-track-link-control.prd.md Phase 3)', ()
   it('reclassifies as front matter when that option is chosen', async () => {
     await openTracks();
     fireEvent.click(trackButton('Chapter 3'));
-    const panel = await screen.findByRole('dialog', { name: 'Track: Chapter 3' });
+    const panel = await screen.findByRole('dialog', { name: 'Track: Chapter 3 — A Caucus-Race and a Long Tale' });
     fireEvent.click(within(panel).getByRole('button', { name: 'Remove from recording…' }));
     const confirm = await screen.findByRole('alertdialog', { name: 'Remove Chapter 3 from recording?' });
     fireEvent.click(within(confirm).getByRole('radio', { name: 'Front matter' }));
@@ -567,13 +567,13 @@ describe('remove from recording (chapter-track-link-control.prd.md Phase 3)', ()
   it('cancels without changing anything', async () => {
     await openTracks();
     fireEvent.click(trackButton('Chapter 3'));
-    const panel = await screen.findByRole('dialog', { name: 'Track: Chapter 3' });
+    const panel = await screen.findByRole('dialog', { name: 'Track: Chapter 3 — A Caucus-Race and a Long Tale' });
     fireEvent.click(within(panel).getByRole('button', { name: 'Remove from recording…' }));
     const confirm = await screen.findByRole('alertdialog', { name: 'Remove Chapter 3 from recording?' });
     fireEvent.click(within(confirm).getByRole('button', { name: 'Cancel' }));
     expect(screen.queryByRole('alertdialog', { name: 'Remove Chapter 3 from recording?' })).toBeNull();
     // The track panel itself is untouched: still open on the same chapter, nothing removed.
-    expect(await screen.findByRole('dialog', { name: 'Track: Chapter 3' })).toBeTruthy();
+    expect(await screen.findByRole('dialog', { name: 'Track: Chapter 3 — A Caucus-Race and a Long Tale' })).toBeTruthy();
   });
 
   it('shows the reason and a failure toast when the host refuses (the last narration chapter)', async () => {
@@ -590,7 +590,7 @@ describe('remove from recording (chapter-track-link-control.prd.md Phase 3)', ()
     await screen.findByText('Audiobook estimate');
     fireEvent.click(screen.getByRole('button', { name: /Show per-chapter breakdown/ }));
     fireEvent.click(trackButton('Chapter 3'));
-    const panel = await screen.findByRole('dialog', { name: 'Track: Chapter 3' });
+    const panel = await screen.findByRole('dialog', { name: 'Track: Chapter 3 — A Caucus-Race and a Long Tale' });
     fireEvent.click(within(panel).getByRole('button', { name: 'Remove from recording…' }));
     const confirm = await screen.findByRole('alertdialog', { name: 'Remove Chapter 3 from recording?' });
     fireEvent.click(within(confirm).getByRole('button', { name: 'Remove from recording' }));

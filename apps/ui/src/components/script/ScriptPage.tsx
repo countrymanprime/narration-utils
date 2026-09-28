@@ -19,7 +19,7 @@ import type {
   RetailSample,
   SearchHit,
 } from '../../types';
-import { categoryCssName, chapterLineNumbers, chapterTextMatches, isListableChapter, STORY_BIBLE_TABS } from '../../state';
+import { chapterLineNumbers, chapterTextMatches, isListableChapter } from '../../state';
 import { useApi } from '../../api/ApiContext';
 import { usePendingAction } from '../../hooks/usePendingAction';
 import { useTextSelection } from '../../hooks/useTextSelection';
@@ -45,7 +45,7 @@ import { AddNoteDialog } from '../manuscript/AddNoteDialog';
 import { MarkupDialog } from '../manuscript/MarkupDialog';
 import { DictionaryInstallPrompt, isSingleWord, WordLookupAnswer } from '../manuscript/WordLookup';
 import { LOOKUP_ACTION, useWordLookup } from '../manuscript/useWordLookup';
-import { CAT_DOT_BG, CAT_DOT_CLASS, EntitySummary } from '../manuscript/EntitySummary';
+import { EntitySummary } from '../manuscript/EntitySummary';
 import { IconButton } from '../primitives/IconButton';
 import type { Notify } from '../primitives/Toast';
 import type { CreditsKind } from '../booth/readerModel';
@@ -75,8 +75,10 @@ const escapeSelector = (value: string) =>
 
 // The Script page (stage-navigation-and-page-replacement.prd.md Phase 3, mock 02), which replaced the Manuscript page: the
 // chapter list with each chapter's prep status, the reader, and a rail of Pronunciations, Characters and Queries. The list is a
-// column from `xl` and the rail from `2xl` (the reader card's fixed header columns, ADR 0190, need about 800 px, ADR 0392);
-// below those widths the list is the Chapters & Search panel and the rail opens as a panel from the band.
+// column from `xl` and the rail from 1440 px (mock 02's own three-column capture width - D85 on issue #509, ADR 0393,
+// superseding ADR 0392's `2xl`); below those widths the list is the Chapters & Search panel and the rail opens as a panel
+// from the band. The reader card's header no longer assumes a viewport breakpoint means it has room (ADR 0190) - it reacts
+// to its own rendered width instead (a CSS container query, ReaderCard.tsx), which is what makes three columns safe at 1440.
 export function ScriptPage({
   notify,
   focusStoryBibleEntity,
@@ -602,7 +604,17 @@ export function ScriptPage({
 
   return (
     <div
-      className="reader-page min-h-full [--reader-inline:1.5rem] max-md:[--reader-inline:1rem] xl:grid xl:grid-cols-[12rem_minmax(0,1fr)] 2xl:grid-cols-[12rem_minmax(0,1fr)_21.5rem]"
+      // The two grid-column counts below both use an arbitrary `min-[Npx]` breakpoint on purpose, not Tailwind's
+      // named `xl` scale for the narrower one: Tailwind v4 emits every arbitrary min-width variant's `@media` block
+      // grouped together and ordered by width (so the 1440 block correctly follows and overrides the 1280 one at
+      // 1440px+), but it emits the named scale's blocks (xl, 2xl, ...) as a separate, later group regardless of the
+      // actual pixel value - a named `xl` breakpoint here (1280px) would still win the cascade at 1440px+ over this
+      // rule, since its own `@media` block comes after the arbitrary 1440 one in the compiled stylesheet even though
+      // 1280 is less than 1440. Verified against the installed tailwindcss@4.3.3's own compiler and confirmed
+      // empirically (a real 1440px render kept two columns until this was fixed). Plain `xl:grid` alone is fine to
+      // keep for turning on the grid itself - nothing else sets `display` at another breakpoint on this element, so
+      // there is no such conflict for that property.
+      className="reader-page min-h-full [--reader-inline:1.5rem] max-md:[--reader-inline:1rem] min-[1280px]:grid-cols-[12rem_minmax(0,1fr)] min-[1440px]:grid-cols-[12rem_minmax(0,1fr)_21.5rem] xl:grid"
       style={{ '--band-h': `${bandHeight}px` } as CSSProperties}
     >
       {/* Mock 02's left column: the chapters with their prep status, and the key to the marks in the text. The page scrolls
@@ -613,7 +625,7 @@ export function ScriptPage({
       >
         <ScriptChapterList chapters={chapters} activeId={active} toConfirm={toConfirm} select={(id) => showChapter(id)} />
         <div className="mt-4 border-t border-[var(--border)] pt-3">
-          <h2 className={`${SCRIPT_SECTION_LABEL} mb-2 px-2`}>Marks</h2>
+          <h2 className={`${SCRIPT_SECTION_LABEL} mb-2 px-2`}>Markup layer</h2>
           <MarksKey className="flex-col px-2" />
         </div>
       </aside>
@@ -635,7 +647,7 @@ export function ScriptPage({
                 <Tooltip
                   label="Text size"
                   icon={<FontAwesomeIcon icon={faFont} />}
-                  text="The manuscript always uses the full reading width - adjust text size instead."
+                  text="Script always uses the full reading width - adjust text size instead."
                 />
                 <ToggleGroup
                   label="Text size"
@@ -646,7 +658,7 @@ export function ScriptPage({
                 />
               </div>
               <div className="ml-auto flex items-center gap-2">
-                <div className="2xl:hidden">
+                <div className="min-[1440px]:hidden">
                   <TooltipTarget text="Pronunciations, characters and queries">
                     <IconButton
                       label="Prep rail"
@@ -778,7 +790,7 @@ export function ScriptPage({
       </div>
       <aside
         aria-label="Prep"
-        className="sticky top-0 hidden h-[calc(100dvh-3.5rem)] flex-col self-start overflow-hidden border-l border-[var(--border)] bg-[var(--surface)] 2xl:flex"
+        className="sticky top-0 hidden h-[calc(100dvh-3.5rem)] flex-col self-start overflow-hidden border-l border-[var(--border)] bg-[var(--surface)] min-[1440px]:flex"
       >
         {rail}
       </aside>
@@ -931,19 +943,62 @@ export function ScriptPage({
   );
 }
 
-// The key to the marks in the text: the Story Bible categories and notes (mock 02's "Markup layer"). A column of the left rail from
-// `xl`, a row in the band below it.
+// Mock 02's "Markup layer" key (audit row SC3, docs/research/visual-mockup-divergence-audit.md): what each mark actually
+// draws in the reader's text, not the Story Bible's category colors (those are a different key, EntitySummary's category
+// dots, shown where an entity mention is looked up - unrelated to the marks a narrator adds here). Four of the five
+// entries are the reader's real script marks (prep-depth.prd.md Phase 5, MarkupMark.tsx: a speaker chip, a dotted stress
+// underline, a breath/pause glyph after the words) plus the "pronunciation" and "author query" ideas mock 02 draws beside
+// them - the reader's own equivalents are a highlighted name (its pronunciation lives on its Story Bible entry) and a
+// highlighted note (the narrator's "+ Note", answered by the author). A column of the left rail from `xl`, a row in the
+// band below it.
 function MarksKey({ className }: { className: string }) {
   return (
     <div
-      className={`flex gap-x-4 gap-y-[0.65rem] font-['Barlow_Condensed',sans-serif] text-[0.72rem] tracking-wider text-[var(--text-muted)] uppercase ${className}`}
+      className={`flex flex-wrap items-center gap-x-4 gap-y-[0.65rem] font-['Barlow_Condensed',sans-serif] text-[0.72rem] tracking-wider text-[var(--text-muted)] uppercase ${className}`}
     >
-      {[...STORY_BIBLE_TABS.filter((item) => item !== 'All'), 'Note'].map((name) => (
-        <span key={name} className="flex items-center gap-1">
-          <span className={CAT_DOT_CLASS} style={{ background: CAT_DOT_BG[categoryCssName(name === 'Location' ? 'Place' : name)] }} />
-          {name}
+      <span className="flex items-center gap-1.5">
+        <span
+          className="rounded-[0.2rem] px-[0.45em] py-[0.05em] font-semibold tracking-[0.06em]"
+          style={{ background: 'color-mix(in srgb, var(--character) 22%, transparent)', color: 'var(--character-text)' }}
+        >
+          Speaker
         </span>
-      ))}
+        attribution
+      </span>
+      <span className="flex items-center gap-1.5">
+        <span className="underline decoration-dotted decoration-2 underline-offset-[0.22em]" style={{ textDecorationColor: 'var(--accent)' }}>
+          word
+        </span>
+        stress
+      </span>
+      <span className="flex items-center gap-1.5">
+        <span aria-hidden="true" className="font-bold" style={{ color: 'var(--accent-strong)' }}>
+          /
+        </span>
+        breath ·
+        <span aria-hidden="true" className="font-bold" style={{ color: 'var(--accent-strong)' }}>
+          //
+        </span>
+        pause
+      </span>
+      <span className="flex items-center gap-1.5">
+        <span className="underline decoration-dotted decoration-2 underline-offset-[0.22em]" style={{ textDecorationColor: 'var(--character)' }}>
+          word
+        </span>
+        pronunciation
+      </span>
+      <span className="flex items-center gap-1.5">
+        <span
+          className="rounded-[0.15rem] px-[0.05em]"
+          // The real Note highlight (Highlight.tsx) keeps the ambient text color on purpose (ADR 0016) - it is drawn
+          // over full-contrast reading text, not this key's own muted label color, so the swatch sets it explicitly
+          // rather than inheriting the muted color the rest of the key uses (axe color-contrast on the tinted background).
+          style={{ background: 'color-mix(in srgb, var(--note) 20%, transparent)', boxShadow: 'inset 0 -1.5px 0 var(--note)', color: 'var(--text)' }}
+        >
+          word
+        </span>
+        author query
+      </span>
     </div>
   );
 }

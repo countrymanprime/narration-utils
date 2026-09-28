@@ -69,6 +69,18 @@ type manuscriptDoc struct {
 		Text      string `json:"text"`
 		Index     int    `json:"index"`
 	} `json:"paragraphs"`
+	// SourceMetadata is structure the importer read straight from the source's own markup at import time - a
+	// Markdown YAML front matter block, or a DOCX Title/Subtitle paragraph style
+	// (credits-token-setup-and-front-matter-detection.prd.md, Phase 4) - as opposed to Detect's own plain-text guess
+	// below. Nil when the import carried none of it.
+	SourceMetadata *sourceMetadataDoc `json:"sourceMetadata,omitempty"`
+}
+
+type sourceMetadataDoc struct {
+	Title    string `json:"title,omitempty"`
+	Subtitle string `json:"subtitle,omitempty"`
+	Author   string `json:"author,omitempty"`
+	Series   string `json:"series,omitempty"`
 }
 
 func readManuscriptDoc(projectFolder string) (manuscriptDoc, bool) {

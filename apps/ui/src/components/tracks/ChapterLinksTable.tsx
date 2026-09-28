@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { chapterName } from '../../chapterName';
 import { useApi } from '../../api/ApiContext';
 import { EditingCheckPanel } from '../editing/EditingCheckPanel';
 import { MappingConfirm } from '../mapping/MappingConfirm';
@@ -99,7 +100,7 @@ export function ChapterLinksTable({ tracks, refreshKey, notify }: { tracks: Trac
         <TableBody>
           {rows.map((row) => (
             <TableRow key={row.chapter.id}>
-              <TableCell className="font-medium">{row.chapter.title}</TableCell>
+              <TableCell className="font-medium">{chapterName(row.chapter)}</TableCell>
               <TableCell style={{ color: STATE_COLOR[row.state] }}>{STATE_LABEL[row.state]}</TableCell>
               <TableCell>
                 {row.state === 'linked' && (
@@ -115,7 +116,7 @@ export function ChapterLinksTable({ tracks, refreshKey, notify }: { tracks: Trac
               </TableCell>
               <TableCell>
                 <MappingConfirm
-                  chapterTitle={row.chapter.title}
+                  chapterTitle={chapterName(row.chapter, 'short')}
                   tracks={tracks}
                   linkedTrackGuid={row.mapping?.trackGuid}
                   linkedTrackName={row.trackName}
