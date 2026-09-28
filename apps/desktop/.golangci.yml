@@ -97,6 +97,10 @@ linters:
         # are checked where they enter (host bindings require absolute paths and resolve
         # project-relative ones, see docs/architecture/host-binding-concurrency.md).
         - G304
+        # G703 is G304's taint-analysis twin: it follows a variable path (an environment variable, a
+        # decoded file) into the same os.Open calls, so the same reasoning applies. It first fired on
+        # the gated LibriVox corpus test, whose corpus directory comes from NARRATION_SIGNAL_CORPUS.
+        - G703
         # G301 wants directories created 0750 or tighter. The app creates its data and the
         # project's narration-utils folders 0755 on purpose: a REAPER project can live on a share or be
         # read by a second account, and every file in them is written 0600 (G306 stays on). Windows,

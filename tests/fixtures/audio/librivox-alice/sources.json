@@ -1,0 +1,68 @@
+{
+  "license": "Public domain (LibriVox). Text: Project Gutenberg eBook #11, the same file as apps/ui/src/api/fixtures/alice-in-wonderland.txt.",
+  "sources": [
+    {
+      "id": "kara_01",
+      "file": "kara_01.mp3",
+      "chapter": "c-0001",
+      "reader": "Kara Shallenberg",
+      "url": "https://archive.org/download/alices_adventures_1003/alices_adventures_01_carroll_64kb.mp3",
+      "md5": "acb753db12223babd9b31abdc7a72a57",
+      "sha256": "da919b104680c7184a3451ec2cdd65ad0b48ebc0b4eb2ec91620dd9b29e623c6"
+    },
+    {
+      "id": "kara_02",
+      "file": "kara_02.mp3",
+      "chapter": "c-0002",
+      "reader": "Kara Shallenberg",
+      "url": "https://archive.org/download/alices_adventures_1003/alices_adventures_02_carroll_64kb.mp3",
+      "md5": "7623f6ca3dc5996914cac7baef38e918",
+      "sha256": "bed4e9e4c376f909457f850c82d43c863f802ecb6283039d1c717d473dc9dad8"
+    },
+    {
+      "id": "kara_07",
+      "file": "kara_07.mp3",
+      "chapter": "c-0007",
+      "reader": "Kara Shallenberg",
+      "url": "https://archive.org/download/alices_adventures_1003/alices_adventures_07_carroll_64kb.mp3",
+      "md5": "6b074b97016d4d27abaa6873d975977b",
+      "sha256": "d7bf97333b7359287a56dc2f5d4ba13e12fc633c6f6d2850584fa4a000b173cf"
+    },
+    {
+      "id": "kara_09",
+      "file": "kara_09.mp3",
+      "chapter": "c-0009",
+      "reader": "Kara Shallenberg",
+      "url": "https://archive.org/download/alices_adventures_1003/alices_adventures_09_carroll_64kb.mp3",
+      "md5": "86520cbebfae0588525c7bd789ae5245",
+      "sha256": "c41ddf5dd0e6bfa9df76a89bdc6b6d9d5d48f799fda8f47c499d840515323561"
+    },
+    {
+      "id": "kara_10",
+      "file": "kara_10.mp3",
+      "chapter": "c-0010",
+      "reader": "Kara Shallenberg",
+      "url": "https://archive.org/download/alices_adventures_1003/alices_adventures_10_carroll_64kb.mp3",
+      "md5": "788cbccd54cd0b7a69e814ed342b79ac",
+      "sha256": "595c8a21a229d96609be73779674fd77d1984c88f1df40b0f8b011adfe012433"
+    },
+    {
+      "id": "kara_11",
+      "file": "kara_11.mp3",
+      "chapter": "c-0011",
+      "reader": "Kara Shallenberg",
+      "url": "https://archive.org/download/alices_adventures_1003/alices_adventures_11_carroll_64kb.mp3",
+      "md5": "78efe17d9b6eb73d3ebfe2bbbac8fe4e",
+      "sha256": "3881f9ae03c2fff73f00752d70fa0a75cf0a0db4621af05400546a57873a12f0"
+    },
+    {
+      "id": "leach_01",
+      "file": "leach_01.mp3",
+      "chapter": "c-0001",
+      "reader": "Eric Leach",
+      "url": "https://archive.org/download/alices_adventures_1005_librivox/wonderland_01_carroll_64kb.mp3",
+      "md5": "98147b6f2147b997d17648cb273844e0",
+      "sha256": "d8d3a53af8080ea2c2772a48a05b761aee44ec2b3f6d753406a19af5519da15c"
+    }
+  ]
+}

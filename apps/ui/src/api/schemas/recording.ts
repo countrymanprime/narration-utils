@@ -12,6 +12,7 @@ const recorderTakeSchema = z.object({
   bits: z.number().int().min(0),
   recordedAt: z.number(),
   unfinished: z.boolean(),
+  lineId: z.string().nullable(),
 }) satisfies z.ZodType<RecorderTake>;
 
 const recorderLastTakeSchema = z.object({

@@ -15,8 +15,8 @@ import { MOCK_MEASURE_PATHS } from './measureMock';
 import { judgeMock } from './coverageMock';
 import { MOCK_REAPER_INPUT_SEEDS, MOCK_REAPER_SEEDS, mockLastReading } from './teleprompterMock';
 import { deliveryQcEvidenceSchema, deliveryReportExportSchema, measureJobSchema, measurePickResultSchema } from './schemas/measure';
-import { exportJobSchema, packageJobSchema } from './schemas/renderEncodeMaster';
-import { MOCK_EXPORT_ITEMS, MOCK_EXPORT_PATHS } from './renderEncodeMasterMock';
+import { exportJobSchema, multiPackageJobSchema, packageJobSchema } from './schemas/renderEncodeMaster';
+import { MOCK_EXPORT_ITEMS, MOCK_EXPORT_PATHS, createRenderEncodeMasterMock } from './renderEncodeMasterMock';
 import { deliveryProfileSchema, deliveryProfilesStateSchema } from './schemas/deliveryProfiles';
 import { MOCK_ACX, evaluateMockFile, mockCustomProfile } from './deliveryProfilesMock';
 import { diagnosticsJobSchema } from './schemas/diagnostics';
@@ -956,6 +956,13 @@ describe('answers of the mock client for the manuscript, Story Bible and project
     await expect(api.pronunciationLookupOpen('wiktionary', 'croquet')).rejects.toThrow(/Unknown pronunciation lookup source/);
   });
 
+  it('the Commons audio link opens for a word the fixture index has, and refuses one it does not (prep-depth Phase 10)', async () => {
+    const api = createMockApi();
+    await expect(api.pronunciationCommonsAudioOpen('Happy')).resolves.toBeUndefined();
+    await expect(api.pronunciationCommonsAudioOpen('gloomy')).rejects.toThrow(/No Wikimedia Commons audio file/);
+    await expect(api.pronunciationCommonsAudioOpen('   ')).rejects.toThrow(/empty word/);
+  });
+
   it('the online pronunciation lookup: the key status, a lookup, the cache and a confirmed batch (prep-depth Phase 9)', async () => {
     const api = createMockApi();
     const absent = await api.pronunciationOnlineKeyStatus();
@@ -1487,12 +1494,16 @@ describe('answers of the mock client for the settings, voice, model, transcript 
     const daw = await api.masteringChooseProvider('daw');
     expectMatches(masteringProvidersSchema, daw, 'mock mastering chains (daw chosen)');
     expect(daw).toEqual(readGolden('mastering-providers-daw-chosen.json'));
+    // The Audacity row is Experimental too (render-encode-master Phase 10, ADR 0460): it can be chosen the same way.
+    const audacity = await api.masteringChooseProvider('audacity');
+    expectMatches(masteringProvidersSchema, audacity, 'mock mastering chains (audacity chosen)');
+    expect(audacity).toEqual(readGolden('mastering-providers-audacity-chosen.json'));
     // A row this version does not have is refused, and the saved choice stays.
-    await expect(api.masteringChooseProvider('audacity')).rejects.toThrow('There is no mastering chain called "audacity".');
-    expect((await api.masteringProviders()).choice).toBe('daw');
+    await expect(api.masteringChooseProvider('dolby-atmos')).rejects.toThrow('There is no mastering chain called "dolby-atmos".');
+    expect((await api.masteringProviders()).choice).toBe('audacity');
     expect((await api.masteringChooseProvider('')).choice).toBeNull();
 
-    const stale = await createMockApi({}, { mastering: { choice: 'audacity' } }).masteringProviders();
+    const stale = await createMockApi({}, { mastering: { choice: 'dolby-atmos' } }).masteringProviders();
     expectMatches(masteringProvidersSchema, stale, 'mock mastering chains (a stored choice this version does not have)');
     expect(stale).toEqual(readGolden('mastering-providers-unknown-choice.json'));
   });
@@ -1696,6 +1707,90 @@ describe('answers of the mock client for the settings, voice, model, transcript 
     expect(built.files).toHaveLength(items.length);
     expect(built.checklist.every((entry) => entry.status !== 'missing')).toBe(true);
   });
+
+  it(
+    "packageStartMulti reuses one profile's encoded files for a matching format and re-encodes once for a " +
+      'differing one (render-encode-master PRD Phase 6), in the shape the host pins',
+    async () => {
+      const api = createMockApi();
+      expectMatches(multiPackageJobSchema, await api.packageMultiState(), 'mock multi-package, idle');
+      const profilesState = await api.deliveryProfiles();
+      const acx = profilesState.profiles.find((candidate) => candidate.id === 'acx')!;
+
+      await expect(api.packageStartMulti({ selections: [], items: [] })).rejects.toThrow(/at least one platform/);
+      await expect(api.packageStartMulti({ selections: [{ profileId: 'not-a-real-profile', profileVersion: '' }], items: [] })).rejects.toThrow(
+        /no delivery profile/,
+      );
+
+      await api.exportPickFiles();
+      let job = await api.exportStart({ items: MOCK_EXPORT_ITEMS, master: false, format: 'mp3' });
+      while (job.phase === 'running') job = await api.exportState();
+      const items = job.files.map((file) => ({ kind: file.kind, title: file.title, path: file.encodedPath! }));
+
+      // Two selections of the same (mp3-requiring) built-in profile reuse the same encoded files: the PRD's own
+      // "two profiles sharing MP3 at the same bitrate reuse one encoded file" test requirement.
+      const built = await api.packageStartMulti({
+        selections: [
+          { profileId: acx.id, profileVersion: acx.version },
+          { profileId: acx.id, profileVersion: acx.version },
+        ],
+        items,
+      });
+      expectMatches(multiPackageJobSchema, built, 'mock multi-package, success (matching format)');
+      expect(built.phase).toBe('success');
+      expect(built.results).toHaveLength(2);
+      expect(built.results.every((result) => result.phase === 'success')).toBe(true);
+      expect(built.results.every((result) => result.files.every((file) => file.name.endsWith('.mp3')))).toBe(true);
+
+      const missingRetailSample = items.filter((item) => item.kind !== 'retail_sample');
+      const refused = await api.packageStartMulti({ selections: [{ profileId: acx.id, profileVersion: acx.version }], items: missingRetailSample });
+      expectMatches(multiPackageJobSchema, refused, 'mock multi-package, error');
+      expect(refused.phase).toBe('error');
+      expect(refused.results[0].phase).toBe('error');
+    },
+  );
+
+  it(
+    "the mock's own multi-package re-encode logic runs once per differing format, not once per selected profile " +
+      '(render-encode-master PRD Phase 6): a synthetic profile requiring M4B (no built-in profile asks for anything ' +
+      'but MP3 today) turns credits and retail sample off so it can be judged from chapters alone',
+    async () => {
+      const m4b = structuredClone(MOCK_ACX);
+      m4b.id = 'm4b-mock';
+      m4b.builtIn = false;
+      m4b.name = 'M4B Platform';
+      m4b.platform = 'M4B Platform';
+      for (const rule of m4b.rules) {
+        if (rule.id === 'acx.format') rule.metric = 'm4b_format';
+        if (rule.id === 'acx.credits' || rule.id === 'acx.retail_sample') rule.off = true;
+      }
+      const published: unknown[] = [];
+      const api = createRenderEncodeMasterMock(
+        (event) => published.push(event),
+        undefined,
+        () => MOCK_ACX,
+        () => [MOCK_ACX, m4b],
+      );
+      await api.exportPickFiles();
+      let job = await api.exportStart({ items: MOCK_EXPORT_ITEMS, master: false, format: 'mp3' });
+      while (job.phase === 'running') job = await api.exportState();
+      const items = job.files.map((file) => ({ kind: file.kind, title: file.title, path: file.encodedPath! }));
+
+      const built = await api.packageStartMulti({
+        selections: [
+          { profileId: 'm4b-mock', profileVersion: '' },
+          { profileId: MOCK_ACX.id, profileVersion: MOCK_ACX.version },
+        ],
+        items,
+      });
+      expectMatches(multiPackageJobSchema, built, 'mock multi-package, success (mixed reuse and re-encode)');
+      expect(built.phase).toBe('success');
+      const m4bResult = built.results.find((result) => result.profile === 'm4b-mock')!;
+      const acxResult = built.results.find((result) => result.profile === MOCK_ACX.id)!;
+      expect(m4bResult.files.every((file) => file.name.endsWith('.m4b'))).toBe(true);
+      expect(acxResult.files.every((file) => file.name.endsWith('.mp3'))).toBe(true);
+    },
+  );
 
   it('an MP3 is judged on its container, and the mock judges it as the host pins', () => {
     const pinned = measureJobSchema.parse(readGolden('measure-mp3.json'));
@@ -2303,6 +2398,9 @@ describe('answers of the mock client for the settings, voice, model, transcript 
       'packageStart',
       'packageState',
       'packageCancel',
+      'packageStartMulti',
+      'packageMultiState',
+      'packageMultiCancel',
       'teleprompterPunchPreview',
       'teleprompterPunch',
       'pickupsPunch',
@@ -2561,6 +2659,7 @@ describe('answers of the mock client for the settings, voice, model, transcript 
       'teleprompterPause',
       'dawCatalogOpenDownloadPage',
       'pronunciationLookupOpen',
+      'pronunciationCommonsAudioOpen',
       'pronunciationOnlineSignUpOpen',
       'teleprompterSeek',
       'reportClientDiagnostic',

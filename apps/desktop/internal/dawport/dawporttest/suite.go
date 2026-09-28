@@ -263,4 +263,5 @@ var roleChecks = map[dawport.Capability]roleCheck{
 	dawport.CapItemGain:        check[dawport.GainAdjuster](),
 	dawport.CapRenderWithFX:    check[dawport.FXRenderer](),
 	dawport.CapMasterChainRead: check[dawport.MasterChainReader](),
+	dawport.CapMacroRender:     check[dawport.MacroRenderer](),
 }

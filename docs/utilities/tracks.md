@@ -8,7 +8,7 @@ A narrator wants to see what a REAPER project actually contains - which tracks e
 
 ## Workflow
 
-Open a project folder and click the header's engine chip. The audio engine panel ([stage navigation](../prds/stage-navigation-and-page-replacement.prd.md) Phase 6, which replaced the Tracks page) finds the project's `.rpp` file, lists its tracks with the chapter each is linked to, and lists every chapter's confirmed link to a track. A chapter's audio plays in its Proof chapter view and in Home's chapter track panel. From the panel the narrator can also:
+Open a project folder and click the header's engine chip. The audio engine panel (stage navigation and page replacement, `docs/prds/stage-navigation-and-page-replacement.prd.md`, delivered and deleted, Phase 6, which replaced the Tracks page) finds the project's `.rpp` file, lists its tracks with the chapter each is linked to, and lists every chapter's confirmed link to a track. A chapter's audio plays in its Proof chapter view and in Home's chapter track panel. From the panel the narrator can also:
 
 - stamp each chapter's identity onto the REAPER items that hold it, and read back what is stamped (**Link chapters…**);
 - configure REAPER's render for one file per chapter region, without rendering (**Prepare chapter render…**);

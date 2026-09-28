@@ -91,3 +91,60 @@ func TestContractPackageBindings(t *testing.T) {
 	failedSnapshot.Elapsed = 1.1
 	contractfile.Check(t, "package-error", failedSnapshot)
 }
+
+// What PackageStartMulti, PackageMultiState and PackageMultiCancel send (render-encode-master.prd.md Phase 6): the
+// idle job, one mid-run, one that finished with a mix of a reused-format package and a re-encoded-format package,
+// and one where one profile's package failed while another succeeded.
+
+func contractMultiPackageJob() *multiPackageJobState {
+	return &multiPackageJobState{
+		id: "package-multi-1", phase: "success", started: time.Now(), cancel: func() {}, outputDir: `C:\Users\Narrator\Desktop\Wonderland`,
+		results: []MultiPackageResult{
+			{
+				Profile: "acx", Platform: "ACX", Phase: "success", Message: "Built 2 files.", OutputDir: `C:\Users\Narrator\Desktop\Wonderland\ACX (September 2026)`,
+				Files: []PackageManifestFile{
+					{Kind: string(packager.KindChapter), Name: "01 - Chapter One.mp3", DestPath: `C:\Users\Narrator\Desktop\Wonderland\ACX (September 2026)\01 - Chapter One.mp3`},
+					{Kind: string(packager.KindRetailSample), Name: "Retail Sample.mp3", DestPath: `C:\Users\Narrator\Desktop\Wonderland\ACX (September 2026)\Retail Sample.mp3`},
+				},
+				Checklist: []PackageChecklistItem{
+					{RuleID: "acx.retail_sample", Label: "Retail sample", Status: string(packager.ChecklistIncluded), Detail: "A retail sample is included."},
+				},
+			},
+			{
+				Profile: "kobo", Platform: "Kobo (M4B)", Phase: "success", Message: "Built 1 file.", OutputDir: `C:\Users\Narrator\Desktop\Wonderland\Kobo (M4B)`,
+				Files: []PackageManifestFile{
+					{Kind: string(packager.KindChapter), Name: "01 - Chapter One.m4b", DestPath: `C:\Users\Narrator\Desktop\Wonderland\Kobo (M4B)\01 - Chapter One.m4b`},
+				},
+				Checklist: []PackageChecklistItem{},
+			},
+		},
+		message: "Built 2 packages.",
+	}
+}
+
+func TestContractMultiPackageBindings(t *testing.T) {
+	contractfile.Check(t, "multi-package-idle", NewHost().multiPackageState())
+
+	running := contractMultiPackageJob()
+	running.phase = "running"
+	running.results[1].Phase, running.results[1].Files, running.results[1].Checklist = "running", nil, nil
+	running.message = "Building the Kobo (M4B) package (2 of 2)."
+	runningSnapshot := running.snapshot()
+	runningSnapshot.Elapsed = 6.4
+	contractfile.Check(t, "multi-package-running", runningSnapshot)
+
+	success := contractMultiPackageJob()
+	successSnapshot := success.snapshot()
+	successSnapshot.Elapsed = 8.1
+	contractfile.Check(t, "multi-package-success", successSnapshot)
+
+	failed := contractMultiPackageJob()
+	failed.phase, failed.message = "error", "1 of 2 packages could not be built; the rest are ready."
+	failed.results[1].Phase, failed.results[1].Message, failed.results[1].Error = "error",
+		"The package could not be built: packager: a required delivery item is missing: retail sample (Needs a retail sample file.)",
+		"packager: a required delivery item is missing: retail sample (Needs a retail sample file.)"
+	failed.results[1].OutputDir, failed.results[1].Files, failed.results[1].Checklist = "", nil, nil
+	failedSnapshot := failed.snapshot()
+	failedSnapshot.Elapsed = 7.3
+	contractfile.Check(t, "multi-package-error", failedSnapshot)
+}

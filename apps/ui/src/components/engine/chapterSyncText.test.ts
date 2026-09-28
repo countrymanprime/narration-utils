@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { ChapterSyncNeedsYou, ChapterSyncPickupTrack, ChapterSyncTrackRef } from '../../api/contracts/chapterSync';
 import {
   chapterSyncActivityRows,
+  chapterSyncBackgroundWaitText,
   chapterSyncNotChaptersText,
   chapterSyncPanelNotChaptersText,
   chapterSyncPanelReasonText,
@@ -34,6 +35,28 @@ describe('chapterSyncReasonText', () => {
     expect(chapterSyncReasonText({ ...base, reason: 'region', best: null })).toMatch(/region/);
     expect(chapterSyncReasonText({ ...base, reason: 'rejected', best: null })).toMatch(/unlinked/);
     expect(chapterSyncReasonText({ ...base, reason: 'not-mutual', best: candidate('g1', 'Ch 2') })).toMatch(/“Ch 2”/);
+  });
+});
+
+describe('chapterSyncBackgroundWaitText (daw-chapter-track-auto-sync.prd.md Phase 7, ADR 0211)', () => {
+  it('says nothing while background checks are off, regardless of wait', () => {
+    expect(chapterSyncBackgroundWaitText({ enabled: false, wait: 'recording' })).toBe('');
+  });
+
+  it('names REAPER recording, the reason this stream landed', () => {
+    expect(chapterSyncBackgroundWaitText({ enabled: true, wait: 'recording' })).toMatch(/REAPER is recording/);
+  });
+
+  it('names battery, quiet and model', () => {
+    expect(chapterSyncBackgroundWaitText({ enabled: true, wait: 'battery' })).toMatch(/mains power/);
+    expect(chapterSyncBackgroundWaitText({ enabled: true, wait: 'quiet' })).toMatch(/settle/);
+    expect(chapterSyncBackgroundWaitText({ enabled: true, wait: 'model' })).toMatch(/Whisper model/);
+  });
+
+  it('says nothing for off, busy, nothing or an unlooked-at empty wait: none of those need a line', () => {
+    for (const wait of ['', 'off', 'busy', 'nothing'] as const) {
+      expect(chapterSyncBackgroundWaitText({ enabled: true, wait })).toBe('');
+    }
   });
 });
 

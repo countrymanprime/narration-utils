@@ -27,6 +27,12 @@ export const engineDrivers: Record<string, Driver> = {
     await openEnginePanel(page);
     await page.getByText('Chapter sync is off.').waitFor();
   },
+  'sync-background-wait': async (page) => {
+    await page.goto('/?mockChapterSync=background');
+    await settlePage(page);
+    await openEnginePanel(page);
+    await page.getByText(/Background checks: waiting/).waitFor();
+  },
   'rpp-picker': async (page) => {
     // Reload with the mock's two-.rpp seam (see main.tsx) - the outer
     // loop's default page.goto('/') has already happened by now.

@@ -13,6 +13,10 @@ numbers Phase 4/5 need to start, but every number here must be re-run on a real 
 owner's own recordings, or a permissioned LibriVox reading once the sandbox can reach it -
 before the thresholds ship. The exact command is in [Re-running this trial](#re-running-this-trial).
 
+**Update, 2026-09-27:** the trial has now run on real speech, a LibriVox solo reading, and there neither engine
+separates the characters (1.2x, over 80% false accepts). On that corpus the reject gate fires. See
+[Real-speech re-run](#real-speech-re-run-librivox-2026-09-27). The decision below is unchanged, pending the owner.
+
 ## Corpus route
 
 The PRD's Phase 1 scope calls for a LibriVox solo dramatic reading: one reader voicing several
@@ -192,9 +196,52 @@ Provisional, pending the real-corpus re-run:
   this trial surfaced (tightening the percentile lowers false accepts, raises false rejects)
   rather than hard-coding the 90th percentile used here for the trial's own reporting.
 
+## Real-speech re-run: LibriVox, 2026-09-27
+
+The same `run_trial.py` on real speech: Kara Shallenberg's solo LibriVox reading of Chapters I, II, VII, IX, X and XI,
+fetched from archive.org as [ADR 0416](../adr/0416-librivox-readings-of-the-demo-script-are-fetched-from-archive-org-and-only-their-markers-and-recipes-are-committed.md)
+and cut by `tests/fixtures/audio/librivox-alice/build.py characters`. 462 clips averaging 4.0 s: narration plus 11
+characters, each line labelled only where the text names its speaker ("'…,' said the Hatter"). Alice appears in all six
+chapters, and the Hatter, March Hare, Dormouse, Gryphon, Mock Turtle and Queen in two or three. Timestamps come from
+Whisper word timings, not by hand, and a clip may carry up to about 0.1 s of the words around it. Resemblyzer was not
+installed (it is already rejected). The run takes 30 seconds.
+
+| Engine | Same-character distance (median, IQR) | Different-character distance (median, IQR) | Separation ratio | At the 90th-percentile-of-same threshold: false-reject / false-accept |
+| --- | --- | --- | --- | --- |
+| Dependency-free baseline | 2.34 (1.65-3.28) | 2.83 (2.04-4.05) | 1.21x (synthetic: 3.81x) | 10.2% / 83.4% |
+| Praat (parselmouth) | 2.06 (1.33-3.02) | 2.42 (1.60-3.56) | 1.17x (synthetic: 6.86x) | 10.2% / 81.7% |
+
+The baseline's reference-count sweep inverts: with 1, 3 and 5 reference clips a character's own lines sit *further*
+from its baseline (median 3.37, 2.97, 2.77) than other characters' lines do (2.45). Only with every reference does the
+same-character median (2.34) drop just under it.
+
+What this means for the decision above:
+
+- **On one real narrator, neither engine separates the characters.** A threshold that keeps 90% of a character's own
+  lines also accepts over 80% of other characters' lines. That is the reject gate's condition ("reject if a stable
+  threshold cannot be calibrated"). It is also the PRD's pre-registered concern: one narrator's character voices are
+  closer together than distinct speakers are.
+- **The synthetic corpus was an upper bound, as this note warned.** Its voices were built to differ. A real reader's
+  do not differ that much in pitch, formants, rate or level.
+- **Limits of this run:** one reader, who may voice characters more lightly than a dramatic narrator does; clips cut
+  from Whisper timings, not hand-checked; and only lines the text tags. The owner's own recordings, with characters
+  voiced on purpose, are still the deciding corpus (D19). This run is evidence for that decision, not a replacement.
+
+The decision above is left as it stands for the owner to review with this evidence
+([#510](https://github.com/countrymanprime/narration-utils/issues/510), N-D22).
+
 ## Re-running this trial
 
-On the owner's own recordings, or once the sandbox can reach `librivox.org`/`archive.org`:
+On the owner's own recordings, or on the LibriVox reading. For the LibriVox reading, build the clips first
+and point the trial at them (Praat installs in seconds with `uv run --with`, and nothing is added to the project):
+
+```bash
+uv run --project sidecars/transcript-compare python tests/fixtures/audio/librivox-alice/build.py characters --out <scratch_dir_outside_the_repo>
+cd scripts/research/character-continuity-acoustic-trial
+uv run --no-project --with numpy --with praat-parselmouth python run_trial.py <scratch_dir_outside_the_repo>/characters
+```
+
+For the synthetic corpus:
 
 ```bash
 cd scripts/research/character-continuity-acoustic-trial

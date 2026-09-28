@@ -9,6 +9,7 @@ import { ProgressBar } from '../primitives/ProgressBar';
 import { ToggleGroup } from '../primitives/ToggleGroup';
 import { deliveryProfileKey, deliveryProfileTitle } from './deliveryProfile';
 import { DeliveryPackagePanel } from './DeliveryPackagePanel';
+import { MultiPlatformExportPanel } from './MultiPlatformExportPanel';
 import { DeliveryProfilePanel, type ProfileState } from './DeliveryProfilePanel';
 import { DiagnosticsSection } from './DiagnosticsSection';
 import { fileVerdict } from './fileVerdict';
@@ -394,6 +395,7 @@ export function MasterQcPage({ openSettings, focus }: { openSettings: () => void
         </div>
         <div className="flex min-w-0 flex-col gap-4">
           <DeliveryPackagePanel profile={current} platform={platform} measure={job} jobs={jobs} />
+          <MultiPlatformExportPanel profiles={profiles?.profiles ?? []} jobs={jobs} />
           <DeliveryProfilePanel state={profile} openSettings={openSettings} />
         </div>
       </div>

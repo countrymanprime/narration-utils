@@ -16,6 +16,7 @@
     {
       "bits": 24,
       "channels": 1,
+      "lineId": null,
       "name": "Take 001",
       "path": "C:/Projects/Alice/Recordings/Take 001.partial.wav",
       "recordedAt": 1790000000000,

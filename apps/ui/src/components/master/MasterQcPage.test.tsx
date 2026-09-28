@@ -7,7 +7,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { ApiProvider } from '../../api/ApiContext';
 import { createMockApi } from '../../api/mockApi';
 import { deliveryReportExportSchema, measureJobSchema } from '../../api/schemas/measure';
-import type { ExportJob, MeasureJob, NarrationApi, PackageJob } from '../../types';
+import type { ExportJob, MeasureJob, MultiPackageJob, NarrationApi, PackageJob } from '../../types';
 import { MasterQcPage } from './MasterQcPage';
 import type { MasterFocus } from './masterLink';
 
@@ -236,6 +236,77 @@ describe('MasterQcPage', () => {
     expect(within(panel).getByRole('heading', { name: 'Outputs' })).toBeTruthy();
     expect(within(panel).getByText('01 - ch1.mp3')).toBeTruthy();
     expect(within(panel).getByText('Built the acx package.')).toBeTruthy();
+  });
+
+  it('builds packages for every checked platform in one action, once files are ready', async () => {
+    const user = userEvent.setup();
+    const built: MultiPackageJob = {
+      id: 'package-multi-1',
+      kind: 'render_package_multi',
+      phase: 'success',
+      message: 'Built 1 packages.',
+      results: [
+        {
+          profile: 'acx',
+          platform: 'ACX',
+          phase: 'success',
+          message: 'Built 1 files.',
+          outputDir: 'C:/Delivery/ACX',
+          files: [{ kind: 'chapter', name: '01 - ch1.mp3', destPath: 'C:/Delivery/ACX/01 - ch1.mp3', tagged: false }],
+          checklist: [],
+        },
+      ],
+      elapsed: 2,
+    };
+    const packageStartMulti = vi.fn<NarrationApi['packageStartMulti']>().mockResolvedValue(built);
+    renderPage({ overrides: { exportState: async () => EXPORTED, packageStartMulti } });
+    const panel = await screen.findByRole('region', { name: 'Multi-platform export' });
+    const button = within(panel).getByRole('button', { name: /^Build \d+ packages?$/ });
+    expect(button).toHaveProperty('disabled', true);
+    await user.click(within(panel).getByRole('checkbox', { name: 'ACX' }));
+    expect(within(panel).getByRole('button', { name: 'Build 1 package' })).toHaveProperty('disabled', false);
+    await user.click(within(panel).getByRole('button', { name: 'Build 1 package' }));
+    await waitFor(() =>
+      expect(packageStartMulti).toHaveBeenCalledWith({
+        selections: [{ profileId: 'acx', profileVersion: '2026-09' }],
+        items: [{ kind: 'chapter', title: 'ch1', path: 'C:/encoded/01.mp3' }],
+      }),
+    );
+    const results = await within(panel).findByRole('list', { name: 'Multi-platform export results' });
+    expect(within(results).getByText('ACX')).toBeTruthy();
+    expect(within(results).getByText('C:/Delivery/ACX')).toBeTruthy();
+    expect(within(results).getByText('1 file')).toBeTruthy();
+  });
+
+  it('shows a pending, a running and a failed profile in the multi-platform export results', async () => {
+    const running: MultiPackageJob = {
+      id: 'package-multi-1',
+      kind: 'render_package_multi',
+      phase: 'running',
+      message: 'Building the Kobo (M4B) package (2 of 3).',
+      results: [
+        { profile: 'acx', platform: 'ACX', phase: 'success', message: 'Built 1 files.', outputDir: 'C:/Delivery/ACX', files: [], checklist: [] },
+        { profile: 'kobo', platform: 'Kobo (M4B)', phase: 'running', message: '', outputDir: '', files: [], checklist: [] },
+        {
+          profile: 'apple',
+          platform: 'Apple',
+          phase: 'error',
+          message: 'The package could not be built: retail sample missing',
+          outputDir: '',
+          files: [],
+          checklist: [],
+          error: 'retail sample missing',
+        },
+      ],
+      elapsed: 4,
+    };
+    renderPage({ overrides: { exportState: async () => EXPORTED, packageMultiState: async () => running } });
+    const panel = await screen.findByRole('region', { name: 'Multi-platform export' });
+    const results = await within(panel).findByRole('list', { name: 'Multi-platform export results' });
+    expect(within(results).getByText('ACX')).toBeTruthy();
+    expect(within(results).getByText('Kobo (M4B)')).toBeTruthy();
+    expect(within(results).getByText('Apple')).toBeTruthy();
+    expect(within(results).getByText('retail sample missing')).toBeTruthy();
   });
 
   it('says what the package waits on before anything is mastered', async () => {
