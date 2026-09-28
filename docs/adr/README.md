@@ -291,4 +291,5 @@ The table is generated from each ADR's heading and Status line ([ADR 0410](0410-
 | [0414](0414-the-teleprompter-default-engine-stays-whisper-tiny-until-a-real-time-ab-evaluation-runs.md) | The teleprompter default engine stays Whisper tiny until a real-time A/B evaluation runs | Proposed |
 | [0415](0415-while-pages-is-paused-docs-are-checked-by-lychee-and-a-changed-file-markdownlint-not-by-building-the-site.md) | While Pages is paused, docs are checked by lychee and a changed-file markdownlint, not by building the site | Accepted |
 | [0430](0430-the-engine-panel-is-a-wide-slide-over-from-the-engine-chip-and-every-pointer-to-the-tracks-page-opens-it.md) | The engine panel is a wide slide-over from the engine chip, and every pointer to the Tracks page opens it | Proposed |
+| [0440](0440-master-and-qcs-platform-tabs-are-the-projects-delivery-profile-and-the-page-draws-only-what-the-host-measures.md) | Master & QC's platform tabs are the project's delivery profile, and the page draws only what the host measures | Proposed |
 <!-- adr-index:end -->
