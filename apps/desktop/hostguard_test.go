@@ -33,6 +33,7 @@ var swappableHostFields = map[string]bool{
 	"stages":          true,
 	"production":      true,
 	"editing":         true,
+	"character":       true,
 	"reachability":    true,
 	"bridge":          true,
 	"navigation":      true,

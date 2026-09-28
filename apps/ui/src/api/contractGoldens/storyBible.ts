@@ -3,6 +3,7 @@ import type { z } from 'zod';
 import { workJobSchema } from '../schemas/manuscript';
 import {
   guideBuildResultSchema,
+  guideDialogueCuesSchema,
   guideEntitiesSchema,
   guidePreviewSchema,
   pronunciationQueriesCsvSchema,
@@ -27,4 +28,5 @@ export const storyBibleGoldens: Record<string, z.ZodType> = {
   'guide-build-started.json': guideBuildResultSchema,
   'guide-build-asset-required.json': guideBuildResultSchema,
   'guide-preview-asset-required.json': guidePreviewSchema,
+  'guide-dialogue-cues.json': guideDialogueCuesSchema,
 };

@@ -3,6 +3,8 @@ import type {
   GuideAlias,
   GuideAppearance,
   GuideBuildResult,
+  GuideDialogueCue,
+  GuideDialogueCueEvidence,
   GuideEntity,
   GuideEvidence,
   GuideNote,
@@ -153,6 +155,29 @@ const languageModelSchema = z.object({
   provenanceUrl: z.string(),
   attribution: z.string(),
 });
+
+const guideDialogueCueEvidenceSchema = z.object({
+  chapterId: z.string(),
+  paragraphId: z.string(),
+  excerpt: z.string(),
+  tag: z.string(),
+}) satisfies z.ZodType<GuideDialogueCueEvidence>;
+
+const guideDialogueCueSchema = z.object({
+  id: z.string(),
+  chapterId: z.string(),
+  paragraphId: z.string(),
+  quote_start: z.number(),
+  quote_end: z.number(),
+  quote_text: z.string(),
+  speaker_entity_id: z.string().nullable(),
+  speaker_source: z.enum(['tag', 'continuation', 'unknown', 'correction']),
+  evidence: guideDialogueCueEvidenceSchema,
+  corrected: z.boolean(),
+}) satisfies z.ZodType<GuideDialogueCue>;
+
+/** The dialogue cue list: the host sends an empty list for a guide with none, and older guide a missing key. */
+export const guideDialogueCuesSchema = listFromNull(guideDialogueCueSchema);
 
 /** What starting a build answers: the job that started, or the first-use gate for the language model. */
 export const guideBuildResultSchema = z.discriminatedUnion('status', [

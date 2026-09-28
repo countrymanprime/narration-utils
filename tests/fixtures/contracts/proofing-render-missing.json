@@ -1,0 +1,11 @@
+{
+  "attestedAt": "2026-09-21T10:00:00Z",
+  "cause": "measurement_unavailable",
+  "format": "wav",
+  "measuredAt": null,
+  "measurement": null,
+  "measurementFailed": false,
+  "path": "C:/Projects/Alice/Renders/Chapter 01.wav",
+  "reason": "The rendered file Chapter 01.wav could not be read. Choose the rendered file again.",
+  "state": "missing"
+}
