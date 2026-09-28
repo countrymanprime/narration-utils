@@ -14,10 +14,21 @@ type Props = {
  * exactly what Play and Stop do so a narrator never wonders whether REAPER is recording by surprise.
  */
 export function RecordInReaperConfirm({ chapterTitle, confirm, cancel }: Props) {
+  // The title and the "never stopped" and "asked once" sentences are read-aloud-control-bar mock 05's own words. The first
+  // sentence keeps to what Play and Stop do today: the mock's "Pause and Stop will stop that recording" waits for Pause
+  // to stop REAPER too (Q8 Pause A, still to be checked in REAPER's scripted run), so it is not promised here.
   return (
     <ConfirmDialog
-      title="Record in REAPER?"
-      body={`Play will arm and start recording on the track linked to "${chapterTitle}", and Stop will stop it. Nothing on any other track is affected. You can turn this off again from the same toggle.`}
+      title="Record in REAPER when you press Play?"
+      body={
+        <>
+          <p>
+            Play will arm and start recording in REAPER on the track linked to <strong>{chapterTitle}</strong>, and Stop will stop that recording.
+          </p>
+          <p className="mt-2">Nothing is recorded on any other track, and a recording you started in REAPER yourself is never stopped by the app.</p>
+          <p className="mt-2">You will be asked this once for this project. You can turn it off from the bar at any time.</p>
+        </>
+      }
       confirmLabel="Turn on"
       confirm={confirm}
       cancel={cancel}
