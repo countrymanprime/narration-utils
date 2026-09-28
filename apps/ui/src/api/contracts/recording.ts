@@ -22,6 +22,8 @@ export type RecorderTake = {
   recordedAt: number;
   /** A partial file a take left when its engine ended without finishing it; it plays up to the last second written. */
   unfinished: boolean;
+  /** The manuscript line this take is assigned to (a composed line id), null when it carries none yet. */
+  lineId: string | null;
 };
 
 /** How the most recent take ended. */
