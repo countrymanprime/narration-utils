@@ -84,7 +84,15 @@ import { assetCatalogSchema, assetInstallJobSchema, assetVerifyResultSchema } fr
 import { ttsCatalogSchema, ttsInstallJobSchema } from './schemas/tts';
 import { updateJobSchema, updateStatusSchema } from './schemas/update';
 import { startResultSchema, whisperCatalogSchema, whisperInstallJobSchema } from './schemas/whisper';
-import { bootstrapSchema, copyDiagnosticsResultSchema, jobEndedSchema, noticeSchema, projectAttachStateSchema, readySchema } from './schemas/system';
+import {
+  bootstrapSchema,
+  copyDiagnosticsResultSchema,
+  jobEndedSchema,
+  noticeSchema,
+  projectAttachStateSchema,
+  readySchema,
+  windowZoomSchema,
+} from './schemas/system';
 import {
   TELEPROMPTER_EVENT_TYPES,
   readAloudReaperStateSchema,
@@ -340,6 +348,8 @@ export const wailsClient: NarrationApi = {
     await hostResult(host.CompanionModeExit());
   },
   systemCopyDiagnostics: (scope) => decode(copyDiagnosticsResultSchema, 'SystemCopyDiagnostics', host.SystemCopyDiagnostics(scope)),
+  windowZoom: () => decode(windowZoomSchema, 'WindowZoom', host.WindowZoom()),
+  windowSetZoom: (factor) => decode(windowZoomSchema, 'WindowSetZoom', host.WindowSetZoom(factor)),
   subscribeProjectAttach: (onUpdate) => subscribeChecked('system:attached', projectAttachStateSchema, onUpdate),
   subscribeLiveUpdateHealth: (onDegraded) => liveHealth.subscribe(onDegraded),
   subscribeNotices: (onNotice) => subscribeChecked('system:notice', noticeSchema, (event) => onNotice(event.text)),

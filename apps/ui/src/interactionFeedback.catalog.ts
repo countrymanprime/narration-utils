@@ -68,6 +68,13 @@ export const SILENT_CATCHES: Record<string, string> = {
     "Seeds useChapterSync's state before the next chaptersync:state event; a failed seed just leaves the state undefined a moment longer.",
   'src/useCapability.ts#1':
     "Seeds useCapability's entry before the next daw_capabilities_changed event; a failed seed just leaves the capability unsupported/unavailable a moment longer, same as an unknown capability key.",
+  // Phase 2 (app-navigation-and-zoom-controls.prd.md): useZoom's three call sites, none of which has anywhere better to send a failure -
+  // the header's readout is the only surface, and every one leaves the level exactly where it was, corrected by the next resize.
+  'src/hooks/useZoom.ts#1': 'The initial read on mount; a failure just leaves the readout at its 100% default until the next resize re-reads it.',
+  'src/hooks/useZoom.ts#2':
+    'A button/shortcut set (zoomIn, zoomOut, reset); a failure leaves the readout at the level before the click, which the narrator can see and try again.',
+  'src/hooks/useZoom.ts#3':
+    'The resize-triggered re-read (Ctrl+wheel/pinch outside this hook); a failure just leaves the readout at its last known level until the next resize.',
   // Phase 1 (app-navigation-and-zoom-controls.prd.md) added two more bare catches in this file (Back/Forward's own guard,
   // and the nav's original one, now #7), renumbering what follows; stage navigation Phase 2's timer read is #1.
   'src/App.tsx#6': 'Best effort recovery for a popstate the app did not start: a reset that fails leaves the finished results in place, which is harmless.',

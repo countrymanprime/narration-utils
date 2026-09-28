@@ -11,6 +11,7 @@ import { usePendingAction } from './hooks/usePendingAction';
 import { ChapterSyncConsentDialog } from './components/engine/ChapterSyncConsentDialog';
 import type { ChapterSyncPreview } from './api/contracts/chapterSync';
 import { useAppHistory } from './hooks/useAppHistory';
+import { useZoom } from './hooks/useZoom';
 import { notificationForJobEnd, shouldNotifyForJobEnd, shouldQueueJobEndAnnouncement, toastForJobEnd } from './jobEnded';
 import { useBoothRecording } from './components/booth/useBoothRecording';
 import { ConfirmDialog } from './components/primitives/ConfirmDialog';
@@ -78,6 +79,7 @@ function AppRoutes() {
   const navigate = useNavigate();
   const location = useLocation();
   const history = useAppHistory();
+  const zoom = useZoom(api);
   // The latest guarded back/forward, read by the one document-level listener below (mounted once) instead
   // of resubscribing it on every render.
   const guardedBackRef = useRef<() => void>(() => {});
@@ -370,6 +372,17 @@ function AppRoutes() {
   useCommand('nav.forward', () => {
     if (!isModalOpen()) guardedForwardRef.current();
   });
+  // The header's zoom group (app-navigation-and-zoom-controls.prd.md Phase 2): Ctrl+=/-/0 (and the numpad
+  // equivalents) run the same steps as the header's own buttons, and do nothing while a modal is open, like Back/Forward.
+  useCommand('zoom.in', () => {
+    if (!isModalOpen()) void zoom.zoomIn();
+  });
+  useCommand('zoom.out', () => {
+    if (!isModalOpen()) void zoom.zoomOut();
+  });
+  useCommand('zoom.reset', () => {
+    if (!isModalOpen()) void zoom.reset();
+  });
   // The "?" shortcut sheet (input-commands-and-pedals.prd.md Phase 7): a `global` command mounted here, alongside
   // Back/Forward, since both are always-available app-level commands rather than a feature's own.
   useCommand('help.shortcuts', () => setShortcutsOpen(true));
@@ -491,6 +504,15 @@ function AppRoutes() {
             engine={engine}
             timer={runningTimer}
             history={{ canGoBack: history.canGoBack, canGoForward: history.canGoForward, back: guardedBack, forward: guardedForward }}
+            zoom={{
+              percent: zoom.percent,
+              canZoomOut: zoom.canZoomOut,
+              canZoomIn: zoom.canZoomIn,
+              zoomIn: zoom.zoomIn,
+              zoomOut: zoom.zoomOut,
+              reset: zoom.reset,
+              announcement: zoom.announcement,
+            }}
           >
             <ErrorBoundary key={location.pathname.split('/')[1] || 'production'}>
               <Routes>

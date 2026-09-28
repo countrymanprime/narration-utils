@@ -1990,6 +1990,25 @@ export function WhisperRemove(modelID: string): $CancellablePromise<string> {
 }
 
 /**
+ * WindowSetZoom sets the window's zoom to the nearest of zoomSteps, clamped to [zoomMin, zoomMax] regardless of what
+ * factor the caller sends - the defensive floor and ceiling behind the header's own disabled-at-100%/never-past-200%
+ * promise (Q6, ADR 0201). The UI calls this from the header's buttons, Ctrl+=/-/0, reset, and the "set back to 200%"
+ * clamp it runs itself when it sees an external (Ctrl+wheel or pinch) zoom above the ceiling; Ctrl+wheel and pinch
+ * never call it directly.
+ */
+export function WindowSetZoom(factor: number): $CancellablePromise<string> {
+    return $Call.ByID(36100721, factor);
+}
+
+/**
+ * WindowZoom reads the window's current zoom level (ADR 0201 item 3): the UI asks for this when it sees the page's
+ * own zoom change (a devicePixelRatio or resize event), since Wails v3 surfaces no zoom-changed callback on Windows.
+ */
+export function WindowZoom(): $CancellablePromise<string> {
+    return $Call.ByID(1473407121);
+}
+
+/**
  * WorkspaceAlignment reads a chapter's stored word alignment (edit-and-proof-workspace PRD Phase 1, ADR 0242) joined
  * with its current paragraphs and its items' current played ranges (coverage.AlignmentView). It never runs anything
  * (Q14), exactly like CoverageResult, whose state, reasons and basis it shares. A stored report from before the

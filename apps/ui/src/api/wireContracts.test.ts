@@ -99,7 +99,7 @@ import {
   queryImportResultSchema,
 } from './schemas/storyBible';
 import { approvedCharacterReferencesSchema, characterRegionsSchema, characterReferenceSchema } from './schemas/character';
-import { bootstrapSchema, copyDiagnosticsResultSchema, projectAttachStateSchema, readySchema } from './schemas/system';
+import { bootstrapSchema, copyDiagnosticsResultSchema, projectAttachStateSchema, readySchema, windowZoomSchema } from './schemas/system';
 import {
   readAloudReaperStateSchema,
   readAloudRecordingSchema,
@@ -818,6 +818,23 @@ describe('answers of the mock client for the manuscript, Story Bible and project
   it('copy diagnostics answers the saved path', async () => {
     const api = createMockApi();
     expectMatches(copyDiagnosticsResultSchema, await api.systemCopyDiagnostics('last_run'), 'mock copy diagnostics');
+  });
+
+  it('the window zoom binding reads and sets a level (app-navigation-and-zoom-controls.prd.md Phase 2)', async () => {
+    const api = createMockApi();
+    const idle = await api.windowZoom();
+    expectMatches(windowZoomSchema, idle, 'mock window zoom, idle');
+    expect(idle.level).toBe(1.0);
+    const zoomed = await api.windowSetZoom(1.25);
+    expectMatches(windowZoomSchema, zoomed, 'mock window zoom, set to 125%');
+    expect(zoomed.level).toBe(1.25);
+    expect((await api.windowZoom()).level).toBe(1.25);
+    // Defensively clamped, the same range the real host's `nearestZoomStep` promises (ADR 0201).
+    expect((await api.windowSetZoom(5)).level).toBe(2.0);
+    expect((await api.windowSetZoom(0.1)).level).toBe(1.0);
+    const seeded = await createMockApi({}, { zoom: 1.5 }).windowZoom();
+    expect(seeded.level).toBe(1.5);
+    expectMatches(windowZoomSchema, readGolden('window-zoom.json'), 'window-zoom.json');
   });
 
   it('the project picker answers', async () => {
@@ -2297,6 +2314,8 @@ describe('answers of the mock client for the settings, voice, model, transcript 
       'bootstrap',
       'systemLookup',
       'systemCopyDiagnostics',
+      'windowZoom',
+      'windowSetZoom',
       'saveSettings',
       'settingsForScope',
       'selectManuscript',
