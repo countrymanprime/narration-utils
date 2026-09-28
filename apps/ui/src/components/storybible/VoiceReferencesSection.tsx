@@ -7,6 +7,7 @@ import { usePendingAction } from '../../hooks/usePendingAction';
 import type { ApprovedCharacterReference, CharacterRegion } from '../../types';
 import { Button } from '../primitives/Button';
 import { IconButton } from '../primitives/IconButton';
+import { InsetCard } from '../primitives/InsetCard';
 import { Select } from '../primitives/Select';
 import { StatusBadge } from '../primitives/StatusBadge';
 import { TextField } from '../primitives/TextField';
@@ -98,7 +99,7 @@ export function VoiceReferencesSection({ characterId, characterLabel, notify }: 
       ) : (
         <ul className="space-y-1.5">
           {ownReferences.map((reference) => (
-            <li key={reference.id} className="flex items-center gap-2 rounded-md border p-2" style={{ borderColor: 'var(--border)' }}>
+            <InsetCard as="li" key={reference.id} className="flex items-center gap-2">
               <IconButton label={`Play ${reference.snapshot.name}`} onClick={play}>
                 <FontAwesomeIcon icon={faPlay} />
               </IconButton>
@@ -113,7 +114,7 @@ export function VoiceReferencesSection({ characterId, characterLabel, notify }: 
               <Button variant="secondary" pending={mutation.isPending(`revoke:${reference.id}`)} onClick={() => void revoke(reference)}>
                 Revoke
               </Button>
-            </li>
+            </InsetCard>
           ))}
         </ul>
       )}

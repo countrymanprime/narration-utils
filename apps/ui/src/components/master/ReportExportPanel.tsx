@@ -46,7 +46,7 @@ export function ReportExportPanel({ busy }: { busy: boolean }) {
         </Button>
       }
     >
-      <p className="mt-1 text-sm" style={MUTED}>
+      <p className="text-sm" style={MUTED}>
         Writes an HTML page anyone can open and a JSON file with the same findings, of the files measured and checked here, into this project’s
         narration-utils/delivery folder. Every open finding and every file not measured is listed. It is a measurement, not a distributor’s approval, and your
         audio is never changed.

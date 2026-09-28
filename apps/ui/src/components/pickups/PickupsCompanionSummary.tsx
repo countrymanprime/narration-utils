@@ -1,3 +1,4 @@
+import { SectionLabel } from '../primitives/SectionLabel';
 import { usePickupsState } from './usePickupsState';
 
 /**
@@ -13,7 +14,7 @@ export function PickupsCompanionSummary() {
       <p>{state.total > 0 ? `${state.remaining} pickup${state.remaining === 1 ? '' : 's'} remaining of ${state.total}` : 'No pickups yet'}</p>
       {next && (
         <p>
-          Next: {next.tag && <span className="section-label mr-1.5">{next.tag}</span>}
+          Next: {next.tag && <SectionLabel className="mr-1.5">{next.tag}</SectionLabel>}
           {next.note}
         </p>
       )}

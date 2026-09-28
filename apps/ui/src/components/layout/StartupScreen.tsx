@@ -2,6 +2,9 @@ import { useState } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCheck, faCircleNotch, faCopy, faRotate } from '@fortawesome/free-solid-svg-icons';
 import { Button } from '../primitives/Button';
+import { Heading } from '../primitives/Heading';
+import { InsetCard } from '../primitives/InsetCard';
+import { Panel } from '../primitives/Panel';
 import { DemoBanner } from './DemoBanner';
 
 export type StartupState = 'connecting' | 'error' | 'timeout' | 'disconnected';
@@ -37,49 +40,47 @@ export function StartupScreen({ state, error, details, diagnosticId, retry }: Pr
     <div className="flex h-full flex-col overflow-hidden">
       <DemoBanner />
       <main className="grid min-h-0 flex-1 place-items-center overflow-y-auto p-6">
-        <div className="max-w-lg rounded-lg border border-[var(--border)] bg-[var(--surface)] p-6 text-center shadow-[var(--shadow)]">
-          <h1 className="text-lg font-semibold">
-            {waiting ? (
-              <>
-                <FontAwesomeIcon icon={faCircleNotch} spin className="mr-2" />
-                Opening Narration Studio…
-              </>
-            ) : (
-              'Desktop host needs attention'
-            )}
-          </h1>
-          <p className="mt-3 text-sm" style={{ color: 'var(--text-muted)' }}>
-            {detail}
-          </p>
-          {details && !waiting && (
-            <pre
-              aria-label="Technical details"
-              className="mt-3 max-h-40 overflow-auto rounded-md border border-[var(--border)] bg-[var(--surface-2)] p-3 text-left font-['IBM_Plex_Mono',ui-monospace,monospace] text-xs break-words whitespace-pre-wrap"
-              style={{ color: 'var(--text-muted)' }}
-            >
-              {details}
-            </pre>
-          )}
-          {diagnosticId && (
-            <p className="mt-3 font-['IBM_Plex_Mono',ui-monospace,monospace] text-xs" style={{ color: 'var(--text-muted)' }}>
-              Diagnostic: {diagnosticId}
+        <Panel className="max-w-lg">
+          <div className="text-center">
+            <Heading
+              title={waiting ? 'Opening Narration Studio…' : 'Desktop host needs attention'}
+              icon={waiting ? <FontAwesomeIcon icon={faCircleNotch} spin /> : undefined}
+            />
+            <p className="mt-3 text-sm" style={{ color: 'var(--text-muted)' }}>
+              {detail}
             </p>
-          )}
-          {!waiting && (
-            <div className="mt-5 flex flex-wrap justify-center gap-3">
-              <Button variant="primary" onClick={retry}>
-                <FontAwesomeIcon icon={faRotate} />
-                Retry connection
-              </Button>
-              {details && (
-                <Button variant="secondary" onClick={copyDetails}>
-                  <FontAwesomeIcon icon={copied ? faCheck : faCopy} />
-                  {copied ? 'Copied' : 'Copy details'}
+            {details && !waiting && (
+              <InsetCard fill className="mt-3">
+                <pre
+                  aria-label="Technical details"
+                  className="max-h-40 overflow-auto text-left font-['IBM_Plex_Mono',ui-monospace,monospace] text-xs break-words whitespace-pre-wrap"
+                  style={{ color: 'var(--text-muted)' }}
+                >
+                  {details}
+                </pre>
+              </InsetCard>
+            )}
+            {diagnosticId && (
+              <p className="mt-3 font-['IBM_Plex_Mono',ui-monospace,monospace] text-xs" style={{ color: 'var(--text-muted)' }}>
+                Diagnostic: {diagnosticId}
+              </p>
+            )}
+            {!waiting && (
+              <div className="mt-5 flex flex-wrap justify-center gap-3">
+                <Button variant="primary" onClick={retry}>
+                  <FontAwesomeIcon icon={faRotate} />
+                  Retry connection
                 </Button>
-              )}
-            </div>
-          )}
-        </div>
+                {details && (
+                  <Button variant="ghost" onClick={copyDetails}>
+                    <FontAwesomeIcon icon={copied ? faCheck : faCopy} />
+                    {copied ? 'Copied' : 'Copy details'}
+                  </Button>
+                )}
+              </div>
+            )}
+          </div>
+        </Panel>
       </main>
     </div>
   );
