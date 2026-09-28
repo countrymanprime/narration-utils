@@ -51,7 +51,7 @@ export function CleanupToolsDialog({ onClose }: { onClose: () => void }) {
       escapeCloses={!running}
       description="Open a repair tool in REAPER on the items you have selected there. Narration Utils changes nothing itself: you apply or cancel the repair in the tool’s own window."
       actions={
-        <Button variant="ghost" onClick={onClose} disabled={running}>
+        <Button variant="secondary" onClick={onClose} disabled={running}>
           Close
         </Button>
       }
@@ -70,7 +70,7 @@ export function CleanupToolsDialog({ onClose }: { onClose: () => void }) {
               </p>
             </div>
             <Button
-              variant="ghost"
+              variant="secondary"
               aria-label={`Open ${tool.label}`}
               onClick={() => launch(tool.key)}
               pending={running && state.tool === tool.key}

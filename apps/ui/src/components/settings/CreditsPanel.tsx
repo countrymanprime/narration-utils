@@ -222,10 +222,10 @@ export function CreditsPanel({ notify }: { notify: Notify }) {
             fullWidth
             options={templates.map((template) => ({ value: template.id, label: `${template.name} (${KIND_LABEL[template.kind] ?? template.kind})` }))}
           />
-          <Button variant="ghost" type="button" disabled={busy} onClick={newTemplate}>
+          <Button variant="secondary" type="button" disabled={busy} onClick={newTemplate}>
             New
           </Button>
-          <Button variant="ghost" type="button" disabled={!selected || busy} pending={busy} onClick={() => void duplicateTemplate()}>
+          <Button variant="secondary" type="button" disabled={!selected || busy} pending={busy} onClick={() => void duplicateTemplate()}>
             Duplicate
           </Button>
           <Button variant="danger" type="button" disabled={!selected || busy} pending={busy} onClick={() => void deleteTemplate()}>
@@ -316,7 +316,7 @@ export function CreditsPanel({ notify }: { notify: Notify }) {
                   <span>
                     Detected from {candidate.source}: “{candidate.value}”{candidate.confidence === 'low' ? ' (check this)' : ''}.
                   </span>
-                  <Button variant="ghost" type="button" className="px-2 py-0.5 text-[0.7rem] normal-case" onClick={() => acceptDetected(key, candidate)}>
+                  <Button size="sm" variant="secondary" type="button" onClick={() => acceptDetected(key, candidate)}>
                     Use suggestion
                   </Button>
                 </p>

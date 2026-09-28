@@ -55,7 +55,7 @@ export function FileRulesPanel({ file, profile, onClose }: { file: MeasureFileRe
     <Panel
       title={`${file.name} against ${deliveryProfileTitle(profile)}`}
       actions={
-        <Button variant="ghost" onClick={onClose}>
+        <Button variant="secondary" onClick={onClose}>
           Close
         </Button>
       }

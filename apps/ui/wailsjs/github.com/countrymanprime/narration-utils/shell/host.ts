@@ -1543,6 +1543,26 @@ export function RecorderMeterStop(): $CancellablePromise<string> {
 }
 
 /**
+ * RecorderSetTakeKeeper marks or unmarks takeName the keeper among the takes assigned to its line (Phase 4, Q5):
+ * narrator-confirmed, and always undoable by marking it again with keeper false or by marking a different take of the
+ * same line.
+ */
+export function RecorderSetTakeKeeper(takeName: string, keeper: boolean): $CancellablePromise<string> {
+    return $Call.ByID(2270425541, takeName, keeper);
+}
+
+/**
+ * RecorderSetTakeLine assigns takeName the manuscript paragraph or chapter entityId as its line identity (Phase 3,
+ * ADR 0485), so it joins the review pipeline the same way a REAPER item's stamped line id does (native-recording-suite
+ * PRD Phase 4, "take review integration" - Phase 3 built SetTakeLine with no UI caller yet). entityId "" clears the
+ * assignment. The manuscript's current source checksum is read here, never sent by the caller, so a stale UI can
+ * never stamp a wrong one.
+ */
+export function RecorderSetTakeLine(takeName: string, entityId: string): $CancellablePromise<string> {
+    return $Call.ByID(1287519481, takeName, entityId);
+}
+
+/**
  * RecorderStart records a new take of device into the project's Recordings folder and remembers the device for the project.
  * It answers once the take has started; its end arrives as "recording:state".
  */
@@ -1606,6 +1626,40 @@ export function RetakeLanesPick(lineID: string, itemGUID: string): $CancellableP
  */
 export function RetakeLanesState(): $CancellablePromise<string> {
     return $Call.ByID(523795916);
+}
+
+/**
+ * SeriesDelete removes a series by id. Deleting an id that is not present is not an error.
+ */
+export function SeriesDelete(id: string): $CancellablePromise<string> {
+    return $Call.ByID(2391274860, id);
+}
+
+/**
+ * SeriesList lists every series the narrator has created, for managing series membership.
+ */
+export function SeriesList(): $CancellablePromise<string> {
+    return $Call.ByID(3400757367);
+}
+
+/**
+ * SeriesSave creates a series (id empty) or updates one in place (an existing id), naming it and setting its member
+ * project paths (Q10). The narrator adds and removes books this way; there is no separate add/remove binding.
+ */
+export function SeriesSave(id: string, name: string, memberProjectPaths: string[]): $CancellablePromise<string> {
+    return $Call.ByID(2243015706, id, name, memberProjectPaths);
+}
+
+/**
+ * SeriesVoiceBible builds the current project's Series tab view (Phase 11):
+ * its series membership, and - only once the series has a second book with
+ * data to share - every member project's characters and approved reference
+ * clips, pooled by character id. A project outside any series, or in one
+ * with no other book yet, reads back with no character list at all: the
+ * honest empty state, never an error.
+ */
+export function SeriesVoiceBible(): $CancellablePromise<string> {
+    return $Call.ByID(2231610263);
 }
 
 /**
@@ -2109,6 +2163,15 @@ export function WorkspaceAlignment(chapterID: string): $CancellablePromise<strin
  */
 export function WorkspaceGoTo(chapterID: string, tokenIndex: number): $CancellablePromise<string> {
     return $Call.ByID(3177963740, chapterID, tokenIndex);
+}
+
+/**
+ * WorkspaceListFXChains lists the narrator's FX chains from REAPER's FXChains folder (list_fx_chains), by relative
+ * name, sorted, capped. It changes nothing and is refused (bridge.ErrUnavailable) offline or before the DAW port's
+ * FX chains capability is on, exactly as list_fx_chains itself already is (ADR 0230, ADR 0234).
+ */
+export function WorkspaceListFXChains(): $CancellablePromise<string> {
+    return $Call.ByID(2672396379);
 }
 
 /**

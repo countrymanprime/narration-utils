@@ -61,7 +61,7 @@ export function StaleMarkupNotice({ spans, gone = false, remove }: { spans: Prep
             )}
           </span>
           {remove && (
-            <Button variant="ghost" className="px-1.5 py-0 text-xs" aria-label={removeMarkLabel(span)} onClick={() => remove(span)}>
+            <Button size="sm" variant="secondary" aria-label={removeMarkLabel(span)} onClick={() => remove(span)}>
               Remove
             </Button>
           )}

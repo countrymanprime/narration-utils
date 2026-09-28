@@ -229,10 +229,13 @@ func (s *Store) writeLocked(file seriesFile) error {
 	return nil
 }
 
+// newSeriesID returns 32 lowercase hex characters - the same shape as every other random id in this codebase
+// (findings, notes, ...), so a series id a contract golden captures is stabilized by internal/contractfile's own
+// 32-hex-character rule (Phase 11 is the first phase to put a series id on the wire; Phase 9 never did).
 func newSeriesID() string {
 	buffer := make([]byte, 16)
 	if _, err := rand.Read(buffer); err != nil {
-		return fmt.Sprintf("s-%d", time.Now().UnixNano())
+		return fmt.Sprintf("%032x", time.Now().UnixNano())
 	}
-	return "s-" + hex.EncodeToString(buffer)
+	return hex.EncodeToString(buffer)
 }

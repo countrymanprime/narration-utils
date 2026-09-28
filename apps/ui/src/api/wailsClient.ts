@@ -47,6 +47,7 @@ import {
   queryImportResultSchema,
 } from './schemas/storyBible';
 import { approvedCharacterReferencesSchema, characterRegionsSchema, characterReferenceSchema } from './schemas/character';
+import { seriesListSchema, seriesSchema, seriesVoiceBibleSchema } from './schemas/series';
 import { settingsForScopeSchema } from './schemas/settings';
 import { tracksDiscoverySchema, tracksProjectSchema } from './schemas/tracks';
 import {
@@ -67,7 +68,7 @@ import { deliveryProfileSchema, deliveryProfilesStateSchema } from './schemas/de
 import { diagnosticsJobSchema } from './schemas/diagnostics';
 import { coverageResultSchema, coverageStartResultSchema, coverageStateSchema } from './schemas/coverage';
 import { editingCandidatesSchema, editingSourceChoiceSchema, editingStartResultSchema, editingStateSchema } from './schemas/editing';
-import { workspaceAlignmentResultSchema, workspacePeaksResultSchema } from './schemas/workspace';
+import { workspaceAlignmentResultSchema, workspaceFXChainsResultSchema, workspacePeaksResultSchema } from './schemas/workspace';
 import { pinnedPreviewSchema, previewResultSchema } from './schemas/preview';
 import { stageDecisionResultSchema, stageRecommendationsSchema } from './schemas/stages';
 import { proofingChooseRenderResultSchema, proofingRenderSchema } from './schemas/proofingRender';
@@ -301,6 +302,10 @@ export const wailsClient: NarrationApi = {
   characterRevoke: (id) => decode(voidResult, 'CharacterRevoke', host.CharacterRevoke(id)),
   characterReferences: () => decode(approvedCharacterReferencesSchema, 'CharacterReferences', host.CharacterReferences()),
   characterRemoveVoiceData: () => decode(voidResult, 'CharacterRemoveVoiceData', host.CharacterRemoveVoiceData()),
+  seriesVoiceBible: () => decode(seriesVoiceBibleSchema, 'SeriesVoiceBible', host.SeriesVoiceBible()),
+  seriesList: () => decode(seriesListSchema, 'SeriesList', host.SeriesList()),
+  seriesSave: (id, name, memberProjectPaths) => decode(seriesSchema, 'SeriesSave', host.SeriesSave(id, name, memberProjectPaths)),
+  seriesDelete: (id) => decode(voidResult, 'SeriesDelete', host.SeriesDelete(id)),
   ttsCatalog: () => decode(ttsCatalogSchema, 'TtsCatalog', host.TtsCatalog()),
   ttsInstall: (voiceId) => decode(ttsInstallJobSchema, 'TtsInstall', host.TtsInstall(voiceId)),
   ttsInstallState: (jobId) => decode(ttsInstallJobSchema, 'TtsInstallState', host.TtsInstallState(jobId)),
@@ -424,6 +429,7 @@ export const wailsClient: NarrationApi = {
   workspaceAlignment: (chapterId) => decode(workspaceAlignmentResultSchema, 'WorkspaceAlignment', host.WorkspaceAlignment(chapterId)),
   workspaceGoTo: (chapterId, tokenIndex) => decode(findingNavigationSchema, 'WorkspaceGoTo', host.WorkspaceGoTo(chapterId, tokenIndex)),
   workspaceLoop: (chapterId, firstToken, lastToken) => decode(findingNavigationSchema, 'WorkspaceLoop', host.WorkspaceLoop(chapterId, firstToken, lastToken)),
+  workspaceListFXChains: () => decode(workspaceFXChainsResultSchema, 'WorkspaceListFXChains', host.WorkspaceListFXChains()),
   workspacePeaks: (chapterId) => decode(workspacePeaksResultSchema, 'WorkspacePeaks', host.WorkspacePeaks(chapterId)),
   previewCandidates: () => decode(previewResultSchema, 'PreviewCandidates', host.PreviewCandidates()),
   previewPin: () => decode(pinnedPreviewSchema, 'PreviewPin', host.PreviewPin()),
@@ -531,6 +537,8 @@ export const wailsClient: NarrationApi = {
   recorderMeterStop: () => decode(recorderStateSchema, 'RecorderMeterStop', host.RecorderMeterStop()),
   recorderStart: (device) => decode(recorderStateSchema, 'RecorderStart', host.RecorderStart(device)),
   recorderStop: () => decode(recorderStateSchema, 'RecorderStop', host.RecorderStop()),
+  recorderSetTakeLine: (takeName, entityId) => decode(recorderStateSchema, 'RecorderSetTakeLine', host.RecorderSetTakeLine(takeName, entityId)),
+  recorderSetTakeKeeper: (takeName, keeper) => decode(recorderStateSchema, 'RecorderSetTakeKeeper', host.RecorderSetTakeKeeper(takeName, keeper)),
   subscribeRecorderState: (onUpdate) => subscribeChecked('recording:state', recorderStateSchema, onUpdate),
   subscribeRecorderLevel: (onLevel) => subscribeChecked('recording:level', recorderLevelSchema, onLevel),
   subscribeDawTransport: (onUpdate) => subscribeChecked('daw_transport_changed', dawTransportSchema, onUpdate),
