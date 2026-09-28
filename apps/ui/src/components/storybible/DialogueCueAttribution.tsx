@@ -72,7 +72,7 @@ export function DialogueCueAttribution({ entity, entities, notify }: { entity: G
               <Select
                 label={`Speaker for “${cue.quote_text}”`}
                 value={cue.speaker_entity_id ?? UNKNOWN_SPEAKER}
-                disabled={mutation.isBlockedFor(`correct:${cue.id}`)}
+                disabled={mutation.isBusy}
                 onChange={(value) => void correct(cue, value)}
                 options={characterOptions}
               />

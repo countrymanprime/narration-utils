@@ -94,9 +94,9 @@ describe('Story Bible character detail: dialogue cue attribution (character-cont
   });
 
   it('shows a cue already attributed to this character with its excerpt', async () => {
-    const alice = WIRE_ENTITIES.find((row) => row.id === 'alice');
-    if (!alice) throw new Error('fixture must include alice');
-    renderDetail(alice);
+    const hatter = WIRE_ENTITIES.find((row) => row.id === 'mad-hatter');
+    if (!hatter) throw new Error('fixture must include mad-hatter');
+    renderDetail(hatter);
     expect(await screen.findByText('“Oh dear!”')).toBeTruthy();
   });
 });

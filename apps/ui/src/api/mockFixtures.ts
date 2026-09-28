@@ -413,8 +413,11 @@ export const WIRE_CHARACTER_REFERENCES: ApprovedCharacterReference[] = [
   },
 ];
 
-// One tagged cue (Alice) and one left unknown (three or more active speakers in the scene, ADR 0020), so
-// attribution correction has something to correct without seeding every quote in the demo chapter.
+// One tagged cue (the Hatter, not Alice: App.test.tsx's Story Bible flow finds Alice's own Name field by its
+// display value, and a cue pre-attributed to Alice would make her dialogue-cue Select show that same display
+// value too, an ambiguous match neither this fixture nor that test should have to know about) and one left
+// unknown (three or more active speakers in the scene, ADR 0020), so attribution correction has something to
+// correct without seeding every quote in the demo chapter.
 export const WIRE_DIALOGUE_CUES: GuideDialogueCue[] = [
   {
     id: 'cue-1',
@@ -423,9 +426,9 @@ export const WIRE_DIALOGUE_CUES: GuideDialogueCue[] = [
     quote_start: 0,
     quote_end: 15,
     quote_text: 'Oh dear!',
-    speaker_entity_id: 'alice',
+    speaker_entity_id: 'mad-hatter',
     speaker_source: 'tag',
-    evidence: { chapterId: 'chapter-1', paragraphId: 'p-3', excerpt: 'Oh dear!', tag: 'said Alice' },
+    evidence: { chapterId: 'chapter-1', paragraphId: 'p-3', excerpt: 'Oh dear!', tag: 'said the Hatter' },
     corrected: false,
   },
   {

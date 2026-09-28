@@ -3,6 +3,7 @@ import { describeApiError } from '../../api/errorMessage';
 import { useApi } from '../../api/ApiContext';
 import { usePendingAction } from '../../hooks/usePendingAction';
 import { NARRATION_CHARACTER_ID } from '../../types';
+import { Button } from '../primitives/Button';
 import { ConfirmDialog } from '../primitives/ConfirmDialog';
 import { SlideOver } from '../primitives/SlideOver';
 import type { Notify } from '../primitives/Toast';
@@ -43,9 +44,9 @@ export function VoiceDataPanel({ open, onClose, notify }: { open: boolean; onClo
         </p>
         <VoiceReferencesSection key={refreshKey} characterId={NARRATION_CHARACTER_ID} characterLabel="Narration" notify={notify} />
         <div className="border-t pt-4" style={{ borderColor: 'var(--border)' }}>
-          <button type="button" className="text-xs font-medium underline" style={{ color: 'var(--danger-text)' }} onClick={() => setConfirmingRemoveAll(true)}>
+          <Button variant="danger" className="text-xs" onClick={() => setConfirmingRemoveAll(true)}>
             Remove voice data…
-          </button>
+          </Button>
         </div>
       </div>
       {confirmingRemoveAll && (
