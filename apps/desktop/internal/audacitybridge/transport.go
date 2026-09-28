@@ -13,7 +13,6 @@ package audacitybridge
 
 import (
 	"context"
-	"errors"
 	"io"
 )
 
@@ -36,24 +35,31 @@ type TransportFunc func(ctx context.Context) (Conn, error)
 
 func (f TransportFunc) Dial(ctx context.Context) (Conn, error) { return f(ctx) }
 
+// Sentence is an error whose text is a whole sentence for the narrator, which is why it is a type rather than an errors.New
+// lower-case fragment (as dawport/audacity's NotAvailableError). A Sentence constant is comparable, so errors.Is matches it through
+// any wrapping.
+type Sentence string
+
+func (s Sentence) Error() string { return string(s) }
+
 // The sentinel errors every failure is one of, so a caller can word it for the narrator without parsing text.
-var (
+const (
 	// ErrNotReachable: there is no scripting pipe to open. Audacity is closed, or mod-script-pipe is not enabled in
 	// Preferences > Modules (and Audacity restarted), or this Audacity has no scripting pipe at all (Audacity 4.0, ADR 0355).
-	ErrNotReachable = errors.New("Audacity is not reachable: open Audacity and enable mod-script-pipe in Preferences > Modules, then restart Audacity")
+	ErrNotReachable = Sentence("Audacity is not reachable: open Audacity and enable mod-script-pipe in Preferences > Modules, then restart Audacity")
 	// ErrTimeout: Audacity took the command but did not finish answering in time (it is busy, showing a dialog, or hung).
-	ErrTimeout = errors.New("Audacity did not answer in time: check that Audacity is not showing a dialog, then try again")
+	ErrTimeout = Sentence("Audacity did not answer in time: check that Audacity is not showing a dialog, then try again")
 	// ErrProtocol: Audacity's answer did not follow the documented framing. The connection is dropped and the next request
 	// reconnects.
-	ErrProtocol = errors.New("Audacity's answer was not in the expected form")
+	ErrProtocol = Sentence("Audacity's answer was not in the expected form")
 	// ErrNoProject: Audacity answered with a bare empty line and no terminator, which is what it does when no project window is
 	// open (the spec note, "Concurrency"; audacity/audacity#11471). Nothing was done. The connection stays usable.
-	ErrNoProject = errors.New("Audacity has no project open: open the chapter's project in Audacity, then try again")
+	ErrNoProject = Sentence("Audacity has no project open: open the chapter's project in Audacity, then try again")
 	// ErrCommandFailed is what every *CommandError is: Audacity ran the command and reported "BatchCommand finished: Failed!".
-	ErrCommandFailed = errors.New("Audacity could not do that")
+	ErrCommandFailed = Sentence("Audacity could not do that")
 	// ErrInvalidValue: a value cannot be put into a command safely (a double quote, a line break or a control character in a
 	// string, a number that is not finite, an empty or malformed name). Nothing was sent.
-	ErrInvalidValue = errors.New("that value cannot be sent to Audacity")
+	ErrInvalidValue = Sentence("that value cannot be sent to Audacity")
 	// ErrUnsupportedPlatform: this build has no pipe transport (the app is Windows-only, D74).
-	ErrUnsupportedPlatform = errors.New("Audacity scripting is only supported on Windows")
+	ErrUnsupportedPlatform = Sentence("Audacity scripting is only supported on Windows")
 )

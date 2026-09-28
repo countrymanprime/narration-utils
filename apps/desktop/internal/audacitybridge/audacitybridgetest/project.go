@@ -145,7 +145,7 @@ func number(cmd Parsed, key string, fallback float64) (float64, error) {
 	}
 	f, err := strconv.ParseFloat(v, 64)
 	if err != nil {
-		return 0, fmt.Errorf("Could not parse %s=%s", key, v)
+		return 0, audacityText(fmt.Sprintf("Could not parse %s=%s", key, v))
 	}
 	return f, nil
 }

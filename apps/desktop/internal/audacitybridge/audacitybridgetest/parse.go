@@ -15,11 +15,16 @@ type Parsed struct {
 	Order  []string
 }
 
+// audacityText is an error whose text is what Audacity itself answers (capitalised, several lines), sent back as the reply body.
+type audacityText string
+
+func (a audacityText) Error() string { return string(a) }
+
 // ParseCommand parses one command line (without its line ending).
 func ParseCommand(line string) (Parsed, error) {
 	name, rest, ok := strings.Cut(line, ":")
 	if !ok {
-		return Parsed{}, fmt.Errorf("Syntax error!\nCommand is missing ':'")
+		return Parsed{}, audacityText("Syntax error!\nCommand is missing ':'")
 	}
 	p := Parsed{Name: strings.TrimSpace(name), Params: map[string]string{}}
 	i := 0
@@ -32,7 +37,7 @@ func ParseCommand(line string) (Parsed, error) {
 		}
 		eq := strings.IndexByte(rest[i:], '=')
 		if eq < 0 {
-			return Parsed{}, fmt.Errorf("Syntax error!\nParameter %q has no value", rest[i:])
+			return Parsed{}, audacityText(fmt.Sprintf("Syntax error!\nParameter %q has no value", rest[i:]))
 		}
 		key := rest[i : i+eq]
 		i += eq + 1
@@ -40,7 +45,7 @@ func ParseCommand(line string) (Parsed, error) {
 		if i < len(rest) && rest[i] == '"' {
 			end := strings.IndexByte(rest[i+1:], '"')
 			if end < 0 {
-				return Parsed{}, fmt.Errorf("Syntax error!\nUnterminated quote")
+				return Parsed{}, audacityText("Syntax error!\nUnterminated quote")
 			}
 			value = rest[i+1 : i+1+end]
 			i += end + 2
