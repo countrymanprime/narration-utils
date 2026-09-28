@@ -172,9 +172,13 @@ export async function waitForFindingRows(page: Page, count: number): Promise<voi
   await rows.first().waitFor();
 }
 
-// Selects a finding by its row text and waits for its detail, a region named by the finding's kind. On the stacked layout (below
-// `xl`) the detail sits under the list, so its title is scrolled into view for the picture.
-export async function openFindingRow(page: Page, text: RegExp, kind: string): Promise<void> {
+// The first transcript difference's detail title (WIRE_FINDINGS[0], a misread at 0:12.4).
+export const MISREAD_DETAIL = '0:12.4 · Misread';
+
+// Selects a finding by its row text and waits for its detail, a region named by its title: mock 04's "0:12.4 · Misread" for a
+// note with a time, its category for one without. On the stacked layout (below `xl`) the detail sits under the list, so its
+// title is scrolled into view for the picture.
+export async function openFindingRow(page: Page, text: RegExp, kind: string | RegExp): Promise<void> {
   await page.getByRole('table', { name: 'Notes' }).locator('tbody tr[data-row]').filter({ hasText: text }).click();
   await page.getByRole('region', { name: kind }).waitFor();
   await page.getByRole('heading', { level: 2, name: kind }).scrollIntoViewIfNeeded();
@@ -188,7 +192,7 @@ export async function openReaperControls(page: Page, reaper?: 'stale' | 'not-run
     await settlePage(page);
   }
   await openProof(page);
-  await openFindingRow(page, /pink eyes/, 'Transcript difference');
+  await openFindingRow(page, /pink eyes/, MISREAD_DETAIL);
   await page.getByText('Checking whether REAPER is connected…').waitFor({ state: 'detached' });
 }
 
@@ -204,12 +208,12 @@ export async function pressInReaper(page: Page, name: string, answer: Locator): 
   await showReaperControls(page, answer);
 }
 
-// Accepts the open finding (only an accepted finding gets an approved marker, review dashboard Phase 8) and opens the
+// Marks the open finding for a pickup (only an accepted finding gets an approved marker, review dashboard Phase 8) and opens the
 // Add a marker in REAPER confirm.
 export async function confirmApprovedMarker(page: Page): Promise<Locator> {
   await openReaperControls(page);
-  await page.getByRole('button', { name: 'Accept', exact: true }).click();
-  await page.getByText('Saved as accepted.').waitFor();
+  await page.getByRole('button', { name: 'Pickup', exact: true }).click();
+  await page.getByText('Saved: needs a pickup.').waitFor();
   await reaperControlsGroup(page).getByRole('button', { name: 'Add marker in REAPER' }).click();
   const dialog = page.getByRole('alertdialog', { name: 'Add a marker in REAPER' });
   await dialog.waitFor();
@@ -320,7 +324,7 @@ export async function scanChapterOne(page: Page): Promise<void> {
 // Scans, opens the partial pickup group and waits for its reads' REAPER controls to know REAPER is connected.
 export async function openPickupGroup(page: Page): Promise<Locator> {
   await scanChapterOne(page);
-  await openFindingRow(page, /Partial pickup/, 'Pickup');
+  await openFindingRow(page, /Partial pickup/, /pickup$/i);
   await page.getByText('Checking whether REAPER is connected…').waitFor({ state: 'detached' });
   return page.getByRole('region', { name: 'Reads' });
 }

@@ -27,8 +27,18 @@ export const proofChapterStates: StateEntry[] = [
   },
   {
     page: 'proof-chapter',
+    state: 'note-selected',
+    description:
+      'Proof chapter view led by mock 04 (D85 #2): a pin on the notes strip pressed - the note open beside the chapter\'s notes table ("0:0x.x · Misread", Play ±3 s, Pickup/Waive/Defer), with the recording-check card under it (D85 #11)',
+    // Below `xl` the detail sits under the notes table, so the driver scrolls it into view at each width.
+    ...KEEPS_DESKTOP_SCROLL,
+  },
+  {
+    page: 'proof-chapter',
     state: 'playing',
     description: 'Proof chapter view, Play pressed - transport shows Pause and a live elapsed readout, the currently spoken word highlighted in the script',
+    // The transport sits under mock 04's notes, below the fold under `xl`: the driver scrolls to it at each width.
+    ...KEEPS_DESKTOP_SCROLL,
   },
   {
     page: 'proof-chapter',
@@ -42,14 +52,14 @@ export const proofChapterStates: StateEntry[] = [
     page: 'proof-chapter',
     state: 'flag-finding-open',
     description:
-      'Proof chapter view, a finding-backed flag selected (edit-and-proof-workspace.prd.md Phase 4): "From <analyzer>", Go to/Loop in REAPER for that word, and the Decision section (Accept/Dismiss/Defer, a note field) - mockups/edit-and-proof-workspace/02-flag-detail-open.webp',
+      'Proof chapter view, a finding-backed flag selected (edit-and-proof-workspace.prd.md Phase 4): "From <analyzer>", Go to/Loop in REAPER for that word, and the Decision section (Pickup/Waive/Defer, D85 #7, a note field) - mockups/edit-and-proof-workspace/02-flag-detail-open.webp',
     ...KEEPS_DESKTOP_SCROLL,
   },
   {
     page: 'proof-chapter',
     state: 'flag-decided',
     description:
-      'Proof chapter view, the finding-backed flag just accepted in place - "Saved as accepted." and the decision reflected, without leaving the page',
+      'Proof chapter view, the finding-backed flag just marked for a pickup in place - "Saved: needs a pickup." and the decision reflected, without leaving the page',
     ...KEEPS_DESKTOP_SCROLL,
   },
   {
@@ -57,6 +67,7 @@ export const proofChapterStates: StateEntry[] = [
     state: 'standalone',
     description:
       'Proof chapter view with REAPER not running (edit-and-proof-workspace PRD Phase 3) - Go to in REAPER and Loop in REAPER on the transport bar are disabled, with the reason under a tooltip; everything else still works',
+    ...KEEPS_DESKTOP_SCROLL,
   },
   // The compare run (the Proofing page's setup, run and results, folded in by stage navigation Phase 5), scrolled into view.
   {

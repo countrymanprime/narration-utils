@@ -47,6 +47,14 @@ export function resolutionFor(status: FindingReviewStatus, fix: FixKind): { labe
 /** A note's Resolution column chip (mock 04): Pickup, Edit or Waived once decided; To review or Deferred otherwise. */
 export const resolutionOf = (finding: Finding) => resolutionFor(finding.review.status, fixKindOf(finding));
 
+/** A status where no single note is in view (Proof's Status filter), in the same words: an accepted note is a pickup or an edit. */
+export const PROOF_STATUS_LABELS: Record<FindingReviewStatus, string> = {
+  unreviewed: 'To review',
+  accepted: 'Pickup or edit',
+  dismissed: 'Waived',
+  deferred: 'Deferred',
+};
+
 /** The decision buttons, in order; accepting a note records the fix it asks for, so its button says which. */
 export const DECISION_ORDER: readonly FindingReviewStatus[] = ['accepted', 'dismissed', 'deferred'];
 

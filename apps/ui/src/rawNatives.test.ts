@@ -86,7 +86,8 @@ const CEILING: Record<NativeTag, Record<string, number>> = {
   // restyled the way a text input or select can - the same reason `ManuscriptSelectFile` uses a native OS dialog).
   // prep-depth PRD Phase 6's own re-import file picker (`PronunciationQueries.tsx`) is the same pattern, one hidden
   // `<input type="file">` triggered by a `Button`.
-  input: { 'src/components/pickups/PickupsPage.tsx': 1, 'src/components/storybible/PronunciationQueries.tsx': 1 },
+  // Proof's notes header opens the proofer's sheet with the same hidden file picker as the Pickups page (D85 #8, ADR 0470).
+  input: { 'src/components/pickups/PickupsPage.tsx': 1, 'src/components/proof/NotesHeader.tsx': 1, 'src/components/storybible/PronunciationQueries.tsx': 1 },
   textarea: {},
   table: {},
   thead: {},

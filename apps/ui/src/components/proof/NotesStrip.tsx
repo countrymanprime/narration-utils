@@ -19,7 +19,7 @@ const LEGEND_DOT: Record<StatusTone, string> = {
 const markerTone = (tone: StatusTone): TimelineMarker['tone'] => (tone === 'progress' ? 'info' : tone);
 
 /** Where the chapter's recording starts and ends on the project timeline: its linked track's items, first to last. */
-export function chapterSpan(items: readonly TrackItem[]): { start: number; end: number } | undefined {
+function chapterSpan(items: readonly TrackItem[]): { start: number; end: number } | undefined {
   if (items.length === 0) return undefined;
   const start = Math.min(...items.map((item) => item.position));
   const end = Math.max(...items.map((item) => item.position + item.length));
@@ -61,7 +61,8 @@ export function NotesStrip({
   return (
     <section aria-label="Notes in the recording" className="rounded-lg border border-[var(--border)] bg-[var(--surface)] px-4 pt-3 pb-2 shadow-[var(--shadow)]">
       <Timeline duration={duration} playhead={selected ? selected.time_range!.start - span.start : undefined}>
-        <div className="relative">
+        {/* Inset by a pin's half-width, so a note at 0:00 or at the very end shows whole rather than cut by the strip's edge. */}
+        <div className="relative mx-1.5">
           <div aria-hidden="true" className="absolute inset-x-0 top-1/2 h-px bg-[var(--border)]" />
           <TimelineLane
             label="Notes"

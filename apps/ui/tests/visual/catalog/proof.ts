@@ -7,7 +7,8 @@ export const proofStates: StateEntry[] = [
   {
     page: 'proof',
     state: 'default',
-    description: 'Proof, the latest run of every check in one list with the counts by status, and a prompt to select a finding',
+    description:
+      'Proof, the latest run of every check in one list under mock 04\'s notes header ("Notes · 4", a chip per resolution, Import proofer sheet, Export for proofer), the Sources line, and a prompt to select a finding',
   },
   {
     page: 'proof',
@@ -29,13 +30,15 @@ export const proofStates: StateEntry[] = [
     page: 'proof',
     state: 'detail-open',
     description:
-      'Proof, a transcript difference selected - what the script says and what was recorded, where, the evidence, the confidence reason, and the decision controls',
+      'Proof, a transcript difference selected - mock 04\'s "0:12.4 · Misread" title, Play ±3 s, what the script says and what was recorded, where, the evidence, the confidence reason, and Pickup, Waive and Defer',
     ...KEEPS_DESKTOP_SCROLL,
   },
+
   {
     page: 'proof',
     state: 'decision-saved',
-    description: 'Proof, a finding accepted with a note - "Saved as accepted.", its status and time, Reopen offered, and the list and counts updated',
+    description:
+      'Proof, a misread marked for a pickup with a note - "Saved: needs a pickup.", its resolution and time, Reopen offered, and the Pickup chip and "1 need pickup" in the list',
     ...KEEPS_DESKTOP_SCROLL,
   },
   {

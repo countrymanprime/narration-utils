@@ -32,12 +32,10 @@ const ANALYZER_LABELS: Record<string, string> = {
   measure: 'Delivery measurement',
 };
 
-/** A status where no single note is in view (the Status filter), in mock 04's words (D85 #7, `resolution.ts`): an accepted note is a
- * pickup or an edit, a dismissed one is waived. */
 export const STATUS_LABELS: Record<FindingReviewStatus, string> = {
   unreviewed: 'To review',
-  accepted: 'Pickup or edit',
-  dismissed: 'Waived',
+  accepted: 'Accepted',
+  dismissed: 'Dismissed',
   deferred: 'Deferred',
 };
 

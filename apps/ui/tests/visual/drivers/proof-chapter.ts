@@ -20,10 +20,21 @@ export const proofChapterDrivers: Record<string, Driver> = {
     await openLinkedProofChapter(page, 'Chapter 1');
     await page.getByText('Check current').waitFor();
   },
+  'note-selected': async (page) => {
+    await openLinkedProofChapter(page, 'Chapter 1');
+    await page.getByRole('region', { name: 'Notes in the recording' }).getByRole('button').first().click();
+    const play = page.getByRole('button', { name: 'Play ±3 s' });
+    await play.waitFor();
+    await play.scrollIntoViewIfNeeded();
+  },
   playing: async (page) => {
     await openLinkedProofChapter(page, 'Chapter 1');
     await clickVisible(page, 'button', 'Play');
-    await page.getByRole('button', { name: 'Pause' }).waitFor();
+    // The transport sits under mock 04's notes (ADR 0470), below the fold at the smaller widths, so it is scrolled into view
+    // at each one (KEEPS_DESKTOP_SCROLL on the row): otherwise small-desktop shows only the notes, the same as `current`.
+    const pause = page.getByRole('button', { name: 'Pause' });
+    await pause.waitFor();
+    await pause.scrollIntoViewIfNeeded();
   },
   'flag-selected': async (page) => {
     // ?mockCoverage=pickups replaces the default findings seed with one scoped to Chapter 4 (main.tsx), so Chapter
@@ -34,11 +45,8 @@ export const proofChapterDrivers: Record<string, Driver> = {
     await openLinkedProofChapter(page, 'Chapter 1');
     await clickVisible(page, 'button', 'Next flag');
     // Selecting a flag previews it: ProofChapterPage's selectFlag seeks the player and auto-plays if it wasn't already
-    // (a real feature, not a driver bug). While playing, ScriptView's follow-the-word effect calls the current token's
-    // native scrollIntoView on every word, which - with no `block: 'nearest'` cap - walks the whole scrollable-ancestor
-    // chain, not just the script's own box, undoing any scroll this driver does further down the page a moment later.
-    // Pausing first makes the capture deterministic (no live elapsed readout or highlighted word either) and stops the
-    // fight, so the scroll below actually holds long enough to be screenshotted.
+    // (a real feature, not a driver bug). Pausing first makes the capture deterministic (no live elapsed readout or
+    // highlighted word, and no follow-the-word scrolling of the script's own box while the picture is taken).
     await clickVisible(page, 'button', 'Pause');
     // Below `xl` the Flags panel's detail sits under the flags list and legend (openFindingRow's comment says the same
     // of Proof's Notes table), so it needs scrolling into view itself - without it, a reused desktop scroll position
@@ -54,8 +62,7 @@ export const proofChapterDrivers: Record<string, Driver> = {
   'flag-finding-open': async (page) => {
     await openLinkedProofChapter(page, 'Chapter 1');
     await clickVisible(page, 'button', 'Next flag');
-    // See flag-selected above: pause the preview playback the selection started, so the script's follow-the-word
-    // auto-scroll stops fighting this driver's own scroll and the capture is deterministic.
+    // See flag-selected above: pause the preview playback the selection started, so the capture is deterministic.
     await clickVisible(page, 'button', 'Pause');
     const decision = page.getByText('Decision', { exact: true });
     await decision.waitFor();
@@ -66,8 +73,8 @@ export const proofChapterDrivers: Record<string, Driver> = {
     await clickVisible(page, 'button', 'Next flag');
     // See flag-selected above.
     await clickVisible(page, 'button', 'Pause');
-    await clickVisible(page, 'button', 'Accept');
-    const saved = page.getByText('Saved as accepted.');
+    await clickVisible(page, 'button', 'Pickup');
+    const saved = page.getByText('Saved: needs a pickup.');
     await saved.waitFor();
     await saved.scrollIntoViewIfNeeded();
   },
@@ -76,8 +83,11 @@ export const proofChapterDrivers: Record<string, Driver> = {
     await settlePage(page);
     await openLinkedProofChapter(page, 'Chapter 1');
     await page.getByText('Check current').waitFor();
-    // Phase 3: Go to/Loop are disabled once useReaperStatus's first poll answers 'standalone'.
-    await page.getByRole('button', { name: 'Go to in REAPER' }).waitFor();
+    // Phase 3: Go to/Loop are disabled once useReaperStatus's first poll answers 'standalone'. The transport is scrolled into
+    // view at each width, as `playing` does.
+    const goTo = page.getByRole('button', { name: 'Go to in REAPER' });
+    await goTo.waitFor();
+    await goTo.scrollIntoViewIfNeeded();
   },
   // The compare run (the retired Proofing page, stage-navigation-and-page-replacement.prd.md Phase 5), on Chapter 1 opened from
   // Proof's chapter picker with no track linked, scrolled so the run fills the picture.
