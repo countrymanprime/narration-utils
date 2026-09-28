@@ -12,7 +12,7 @@ const IDLE: ChapterTagsPreview = { chapters: [], ready: false };
  * Phase 11's last "Prepare chapter render" result (the per-chapter MP3 titles and files) to build a chapter
  * timeline, then writes ID3v2 CHAP/CTOC frames into a NEW copy of a separate, already-rendered combined-book MP3
  * the narrator names below - never into the per-chapter files, and never overwriting the file they name. Reachable
- * from the Tracks page next to "Link chapters…", "Pickups…" and "Prepare chapter render…" (Phases 7, 9 and 11),
+ * from the Tracks page next to "Link chapters…" and "Prepare chapter render…" (Phases 7 and 11),
  * not a new nav item. */
 export function ChapterTagsDialog({ onClose }: { onClose: () => void }) {
   const api = useApi();
