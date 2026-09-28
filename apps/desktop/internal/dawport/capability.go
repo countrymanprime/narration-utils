@@ -28,6 +28,10 @@ const (
 	CapFXChains     Capability = "fx_chains"
 	CapSilenceTrim  Capability = "silence_trim"
 	CapItemGain     Capability = "item_gain"
+	// The mastering port's DAW row (ADR 0306, owner decision D86): declared, not yet built. render_with_fx is the one
+	// capability that makes the engine render, so each use needs the narrator's approval in the UI (threat model row 6s).
+	CapRenderWithFX    Capability = "render_with_fx"
+	CapMasterChainRead Capability = "master_chain_read"
 )
 
 // Needs is what a capability needs from the running engine before it can be used.
@@ -75,6 +79,8 @@ var specs = []Spec{
 	{CapFXChains, "FX chains", NeedsRunning, reflect.TypeFor[FXManager]()},
 	{CapSilenceTrim, "Silence trim", NeedsRunning, reflect.TypeFor[SilenceTrimmer]()},
 	{CapItemGain, "Level matching", NeedsRunning, reflect.TypeFor[GainAdjuster]()},
+	{CapRenderWithFX, "Master with the project's own FX", NeedsRunning, reflect.TypeFor[FXRenderer]()},
+	{CapMasterChainRead, "List the master and track FX", NeedsRunning, reflect.TypeFor[MasterChainReader]()},
 }
 
 // Capabilities returns every capability's spec, in catalog order. The slice is the caller's own.

@@ -53,6 +53,52 @@ type (
 	Transport = daw.Transport
 )
 
+// The mastering port's DAW row (ADR 0306) exchanges values the bridge has no command for yet, so they are dawport's own types rather
+// than aliases: the REAPER phase that builds render_with_fx and master_chain_read gives the bridge matching shapes.
+
+// FXRender asks the engine to render regions through the project's track and master FX, as a render from the engine's own
+// dialog would, into a folder the host chose.
+type FXRender struct {
+	// Regions names the regions to render, one file each, by the region names the host wrote (CreateRegions).
+	Regions []string
+	// OutputFolder is where the files go: a folder the host made inside the app's project folder for this run, empty, and never
+	// the recording's own folder. The engine writes nothing outside it.
+	OutputFolder string
+	// Approval is the narrator's yes for this one render, from the UI's confirm naming the regions, the chain and the folder. The
+	// host sends only an approval it was just given; an adapter refuses a request without one.
+	Approval string
+}
+
+// FXRendered is what a render wrote: one file per region, in the order asked.
+type FXRendered struct {
+	Files []FXRenderedFile
+}
+
+// FXRenderedFile is one region's rendered file, a path inside FXRender.OutputFolder.
+type FXRenderedFile struct {
+	Region string
+	Path   string
+}
+
+// MasterChain is the FX a render runs, in chain order: every track's FX, then the master track's.
+type MasterChain struct {
+	Tracks []TrackFX
+	Master []FXSlot
+}
+
+// TrackFX is one track's FX chain.
+type TrackFX struct {
+	TrackGUID string
+	Name      string
+	FX        []FXSlot
+}
+
+// FXSlot is one plugin in a chain, as the engine names it, and whether it is switched on.
+type FXSlot struct {
+	Name    string
+	Enabled bool
+}
+
 // Trace ties a request to the host's run log (runlog.Run's ID and Level), for the commands whose script logs under the host's run.
 type Trace struct{ RunID, Level string }
 
@@ -139,6 +185,14 @@ type TakeCreator interface {
 	CreateTake(runID, payloadPath string) error
 }
 
+// FXRenderer renders regions through the project's own FX into a folder the host chose (the mastering port's DAW row, ADR 0306).
+// It is the one role that makes the engine render: each request carries the narrator's approval and runs only on their action.
+// The answer arrives through Events tagged with runID (a FXRendered).
+type FXRenderer interface {
+	Events
+	RenderWithFX(runID string, render FXRender) error
+}
+
 // Synchronous roles: a call returns once the engine has answered (bridge.Actions, bridge.Navigator), so it must never be made from a
 // Subscription's Handle. The method sets are exactly the concrete types' so the REAPER adapter hands those types out as they are.
 
@@ -222,4 +276,10 @@ type SilenceTrimmer interface {
 // GainAdjuster applies per-item gain to match levels.
 type GainAdjuster interface {
 	Apply(ctx context.Context, candidates []GainCandidate) (ApplyGainResult, error)
+}
+
+// MasterChainReader lists the FX a render with FX would run, so the UI can show the narrator the chain before they approve it. It
+// reads and changes nothing.
+type MasterChainReader interface {
+	ReadMasterChain(ctx context.Context) (MasterChain, error)
 }
