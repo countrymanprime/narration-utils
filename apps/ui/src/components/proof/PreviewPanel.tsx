@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCheck, faCopy, faFileLines, faTriangleExclamation } from '@fortawesome/free-solid-svg-icons';
 import type { ManuscriptChapter, PreviewCandidate, PreviewResult } from '../../types';
+import { chapterName } from '../../chapterName';
 import { describeApiError } from '../../api/errorMessage';
 import { useApi } from '../../api/ApiContext';
 import { describeParagraphs, formatAudioTime, paragraphRefs } from '../production/recordingCheckText';
@@ -54,19 +55,24 @@ export function PreviewPanel({ notify, goToManuscript }: { notify: Notify; goToM
     return () => window.clearTimeout(clear);
   }, [copiedChapterId]);
 
+  const chapterOf = (candidate: PreviewCandidate): ManuscriptChapter | undefined => chapters.find((item) => item.id === candidate.chapterId);
+  // The candidate's own chapterTitle (a plain string on the wire) is the fallback when the chapter list hasn't
+  // loaded yet or no longer has the chapter; chapterName still squashes it the same way.
+  const nameOf = (candidate: PreviewCandidate, form: 'full' | 'short' = 'full') => chapterName(chapterOf(candidate) ?? { title: candidate.chapterTitle }, form);
+
   const paragraphNumbers = (candidate: PreviewCandidate): number[] => {
-    const chapter = chapters.find((item) => item.id === candidate.chapterId);
+    const chapter = chapterOf(candidate);
     return chapter ? paragraphRefs(chapter, candidate.paragraphIds).map((ref) => ref.number) : [];
   };
 
   const firstParagraphIndex = (candidate: PreviewCandidate): number | undefined => {
-    const chapter = chapters.find((item) => item.id === candidate.chapterId);
+    const chapter = chapterOf(candidate);
     if (!chapter || candidate.paragraphIds.length === 0) return undefined;
     return paragraphRefs(chapter, candidate.paragraphIds.slice(0, 1))[0]?.index;
   };
 
   const copyRange = (candidate: PreviewCandidate) => {
-    const text = `${candidate.chapterTitle}, ${describeParagraphs(paragraphNumbers(candidate))} (${formatAudioTime(candidate.estimatedSeconds)})`;
+    const text = `${nameOf(candidate, 'short')}, ${describeParagraphs(paragraphNumbers(candidate))} (${formatAudioTime(candidate.estimatedSeconds)})`;
     void navigator.clipboard?.writeText(text).then(
       () => setCopiedChapterId(candidate.chapterId),
       (err) => notify(describeApiError(err), 'error'),
@@ -113,7 +119,7 @@ export function PreviewPanel({ notify, goToManuscript }: { notify: Notify; goToM
                 const copied = copiedChapterId === candidate.chapterId;
                 return (
                   <TableRow key={candidate.chapterId}>
-                    <TableCell className="font-medium">{candidate.chapterTitle}</TableCell>
+                    <TableCell className="font-medium">{nameOf(candidate)}</TableCell>
                     <TableCell className="font-['IBM_Plex_Mono',ui-monospace,monospace] text-xs whitespace-nowrap">
                       {describeParagraphs(paragraphNumbers(candidate))}
                     </TableCell>
@@ -142,16 +148,19 @@ export function PreviewPanel({ notify, goToManuscript }: { notify: Notify; goToM
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-1">
-                        <TooltipTarget text={`Open ${candidate.chapterTitle} in the manuscript reader`}>
+                        <TooltipTarget text={`Open ${nameOf(candidate, 'short')} in the manuscript reader`}>
                           <IconButton
-                            label={`Open ${candidate.chapterTitle} in the manuscript reader`}
+                            label={`Open ${nameOf(candidate, 'short')} in the manuscript reader`}
                             onClick={() => goToManuscript(candidate.chapterId, firstParagraphIndex(candidate) ?? 0)}
                           >
                             <FontAwesomeIcon icon={faFileLines} />
                           </IconButton>
                         </TooltipTarget>
-                        <TooltipTarget text={copied ? 'Copied' : `Copy range and length for ${candidate.chapterTitle}`}>
-                          <IconButton label={copied ? 'Copied' : `Copy range and length for ${candidate.chapterTitle}`} onClick={() => copyRange(candidate)}>
+                        <TooltipTarget text={copied ? 'Copied' : `Copy range and length for ${nameOf(candidate, 'short')}`}>
+                          <IconButton
+                            label={copied ? 'Copied' : `Copy range and length for ${nameOf(candidate, 'short')}`}
+                            onClick={() => copyRange(candidate)}
+                          >
                             <FontAwesomeIcon icon={copied ? faCheck : faCopy} />
                           </IconButton>
                         </TooltipTarget>

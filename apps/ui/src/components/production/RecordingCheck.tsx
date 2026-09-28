@@ -483,7 +483,7 @@ function TrackLink({ chapter, onLinked }: { chapter: ManuscriptChapter; onLinked
   if (!tracks) return <p role="status">Reading the REAPER tracks…</p>;
   return (
     <MappingConfirm
-      chapterTitle={chapter.title}
+      chapterTitle={chapterName(chapter, 'short')}
       tracks={tracks}
       busy={confirming.isBusy}
       onConfirm={(trackGuid) =>

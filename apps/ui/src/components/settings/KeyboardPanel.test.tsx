@@ -63,7 +63,7 @@ describe('KeyboardPanel', () => {
     renderPanel();
     expect(await screen.findByText('Global · anywhere, except while a dialog is open')).toBeTruthy();
     expect(screen.getByText("Page · a chapter's Proof view")).toBeTruthy();
-    expect(screen.getByText('Booth · read aloud and the Teleprompter')).toBeTruthy();
+    expect(screen.getByText('Booth · the Booth and its companion panel')).toBeTruthy();
     expect(screen.getByText('Back')).toBeTruthy();
     expect(screen.getByText('Play or pause reading')).toBeTruthy();
   });

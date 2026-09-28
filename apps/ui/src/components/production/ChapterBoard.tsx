@@ -412,6 +412,7 @@ export function ChapterBoard({
               open={trackChapter.open}
               chapterId={trackChapter.chapterId}
               chapterTitle={manuscriptChapter(trackChapter.chapterId)?.title ?? ''}
+              subtitle={manuscriptChapter(trackChapter.chapterId)?.subtitle}
               link={link}
               trackSummary={trackSummary}
               recordedSeconds={measured ?? undefined}

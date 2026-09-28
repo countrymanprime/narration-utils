@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import type { ManuscriptChapter } from '../../types';
+import { chapterName } from '../../chapterName';
 import { useApi } from '../../api/ApiContext';
 import { apiErrorMessage } from '../../api/errorMessage';
 import { Panel } from '../primitives/Panel';
@@ -87,10 +88,10 @@ export function ProofingStagePanel({
             <TableBody>
               {rows.map((chapter) => (
                 <TableRow key={chapter.id}>
-                  <TableCell className="font-medium">{chapter.title}</TableCell>
+                  <TableCell className="font-medium">{chapterName(chapter)}</TableCell>
                   <TableCell>
                     <StageSuggestion
-                      title={chapter.title}
+                      title={chapterName(chapter, 'short')}
                       recommendation={stages.state.byChapter.get(chapter.id)}
                       phase={stages.state.phase}
                       isPending={(decision) => stages.isPending(decision, chapter.id)}

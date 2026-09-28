@@ -686,10 +686,10 @@ describe('App (integration, driven through the mock NarrationApi)', () => {
     fireEvent.click(screen.getAllByRole('button', { name: 'Settings' })[0]);
     await screen.findByRole('heading', { name: 'Settings' });
 
-    // A project has no override for any Proofing field until one is saved, so all of them are unset (empty) here. The
+    // A project has no override for any Proof field until one is saved, so all of them are unset (empty) here. The
     // host rejects an empty choice or colour ("unsupported value for chunk_seconds"), so only the edited field may go.
     fireEvent.click(screen.getByRole('tab', { name: 'This Project' }));
-    fireEvent.click(await screen.findByRole('tab', { name: 'Proofing' }));
+    fireEvent.click(await screen.findByRole('tab', { name: 'Proof' }));
     fireEvent.change(await screen.findByRole('combobox', { name: 'Default Whisper model' }), { target: { value: 'large-v3' } });
     fireEvent.click(screen.getByRole('button', { name: 'Save' }));
 
@@ -779,7 +779,7 @@ describe('App (integration, driven through the mock NarrationApi)', () => {
     // A project shows the Global value ("small") for a field it has no override for. Changing it and changing it back must
     // not pin that value in the project, or a later change to the Global default would no longer reach it.
     fireEvent.click(screen.getByRole('tab', { name: 'This Project' }));
-    fireEvent.click(await screen.findByRole('tab', { name: 'Proofing' }));
+    fireEvent.click(await screen.findByRole('tab', { name: 'Proof' }));
     const model = await screen.findByRole('combobox', { name: 'Default Whisper model' });
     fireEvent.change(model, { target: { value: 'large-v3' } });
     fireEvent.change(model, { target: { value: 'small' } });

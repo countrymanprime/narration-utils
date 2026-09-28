@@ -1,8 +1,8 @@
 - main:
   - alert
   - status
-- 'dialog "Track: Chapter 1"':
-  - 'heading "Track: Chapter 1" [level=3]'
+- 'dialog "Track: Chapter 1 — Down the Rabbit-Hole"':
+  - 'heading "Track: Chapter 1 — Down the Rabbit-Hole" [level=3]'
   - button "Close"
   - text: Chapter 1 Track 1 Linked
   - region /As of last save Sep \d+, \d+, \d+:\d+ AM/:

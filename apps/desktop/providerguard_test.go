@@ -15,6 +15,7 @@ import (
 
 	"github.com/countrymanprime/narration-utils/shell/internal/asrport"
 	"github.com/countrymanprime/narration-utils/shell/internal/captureport"
+	"github.com/countrymanprime/narration-utils/shell/internal/masteringport"
 	"github.com/countrymanprime/narration-utils/shell/internal/port"
 	"github.com/countrymanprime/narration-utils/shell/internal/pronunciationport"
 	"github.com/countrymanprime/narration-utils/shell/internal/ttsport"
@@ -43,6 +44,7 @@ func providerNames() map[string]bool {
 	add(entryNames(ttsport.Engines.Entries()))
 	add(entryNames(pronunciationport.Sources.Entries()))
 	add(entryNames(captureport.Backends.Entries()))
+	add(entryNames(masteringport.Rows.Entries()))
 	return names
 }
 

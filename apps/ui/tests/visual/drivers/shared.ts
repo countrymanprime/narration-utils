@@ -98,7 +98,7 @@ const PAGE_CONTENT: Partial<Record<AppPage, (page: Page) => Locator>> = {
   Booth: (page) => page.getByRole('region', { name: 'Chapter text' }),
 };
 
-// Clicks an item of the app's own navigation, and only that: the Settings category rail reuses the labels "Proofing"
+// Clicks an item of the app's own navigation, and only that: the Settings category rail reuses the labels "Proof"
 // and "Story Bible", so an unscoped query can land on the wrong control. The shell renders one of two navigation asides
 // per width (the full sidebar from 1400 px, the icon rail below), the other is display:none, and both come before <main>
 // in the DOM, so the first visible aside is the navigation.
@@ -422,7 +422,8 @@ export async function openTrackPanel(page: Page, chapter: string, seed: string) 
   await settlePage(page);
   await productionLoaded(page);
   await clickBoardCell(page, chapter, 'Recorded');
-  const dialog = page.getByRole('dialog', { name: `Track: ${chapter}` });
+  // The slide-over's name carries the chapter's subtitle after " — " (chapter-title-display-consistency.prd.md Q6).
+  const dialog = page.getByRole('dialog', { name: new RegExp(`^Track: ${chapter}( — |$)`) });
   await dialog.getByText('Reading the saved project…').waitFor({ state: 'detached' });
   return dialog;
 }
@@ -471,7 +472,7 @@ export async function openEditingCheckFromTracks(page: Page, query: string) {
 }
 
 // Settings' own category rail (.settings-nav, a tab list) reuses the same labels as the
-// primary app nav ("Proofing", "Story Bible") - an unscoped role/name query
+// primary app nav ("Proof", "Story Bible") - an unscoped role/name query
 // matches both and .first() can silently click the wrong one (navigating
 // away from Settings instead of switching category). Always scope category
 // clicks to .settings-nav specifically.
@@ -564,6 +565,13 @@ export async function selectReaderWord(page: Page, word: string): Promise<void> 
         const range = document.createRange();
         range.setStart(candidate, match.index);
         range.setEnd(candidate, match.index + target.length);
+        // A real selection is always on screen already (a narrator can only drag-select what they can see) - this
+        // programmatic one is not, so it scrolls the words into view first. Without this, a chapter whose card sits
+        // far enough down the page (a narrower reader card wraps its header cluster below the title, taking a second
+        // row per card above it - the Script page's mock-02 three columns, D85 #3 on issue #509) can select text
+        // below the fold, and SelectionMenu's popup (`fixed`, placed from the selection's own viewport rect) then
+        // renders off-screen too, since it does not itself scroll anything into view.
+        paragraph.scrollIntoView({ block: 'center' });
         const selection = window.getSelection();
         selection?.removeAllRanges();
         selection?.addRange(range);
@@ -595,8 +603,10 @@ export async function openLinkedProofChapter(page: Page, chapterTitle: string): 
   await goToPage(page, 'Tracks');
   const table = page.getByRole('table', { name: 'Chapter links' });
   await table.scrollIntoViewIfNeeded();
-  // An exact-name cell match, not `hasText` (a substring): "Chapter 1" is also a substring of "Chapter 10"-"Chapter 12".
-  const row = table.locator('tbody tr').filter({ has: page.getByRole('cell', { name: chapterTitle, exact: true }) });
+  // An anchored-name cell match, not `hasText` (a substring): "Chapter 1" is also a substring of "Chapter 10"-"Chapter 12".
+  // The cell's full name may carry the chapter's subtitle after " — " (chapter-title-display-consistency.prd.md Q6), so
+  // the match allows that suffix rather than requiring an exact "Chapter 1".
+  const row = table.locator('tbody tr').filter({ has: page.getByRole('cell', { name: new RegExp(`^${chapterTitle}( — |$)`) }) });
   await row.getByRole('combobox').selectOption({ index: 0 });
   await row.getByRole('button', { name: 'Confirm' }).click();
   await row.getByRole('link', { name: 'Open workspace' }).click();

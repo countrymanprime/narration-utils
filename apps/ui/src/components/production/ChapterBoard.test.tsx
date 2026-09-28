@@ -100,9 +100,9 @@ const cell = (name: string, column: string) => {
 const openTrack = async (title: string) => {
   await waitFor(() => {
     fireEvent.click(cell(title, 'Recorded'));
-    expect(screen.getByRole('dialog', { name: `Track: ${title}` })).toBeTruthy();
+    expect(screen.getByRole('dialog', { name: new RegExp(`^Track: ${title}( — |$)`) })).toBeTruthy();
   });
-  return screen.getByRole('dialog', { name: `Track: ${title}` });
+  return screen.getByRole('dialog', { name: new RegExp(`^Track: ${title}( — |$)`) });
 };
 
 /** The state a track slide-over's header names ("Suggested", "Linked", "Not linked"). */
@@ -461,7 +461,7 @@ describe('remove from recording (chapter-track-link-control.prd.md Phase 3)', ()
     fireEvent.click(within(confirm).getByRole('button', { name: 'Remove from recording' }));
     await waitFor(() => expect(notify).toHaveBeenCalledWith('Chapter 3 removed from recording.'));
     // The slide-over closes with the row it was about, and the row itself leaves the board.
-    await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Track: Chapter 3' })).toBeNull());
+    await waitFor(() => expect(screen.queryByRole('dialog', { name: /^Track: Chapter 3( — |$)/ })).toBeNull());
     await waitFor(() => expect(boardRow('Chapter 3')).toBeNull());
     expect(await screen.findByText('Removed from recording (1)')).toBeTruthy();
     expect(screen.getByText(/removed today as not a chapter/)).toBeTruthy();
@@ -486,7 +486,7 @@ describe('remove from recording (chapter-track-link-control.prd.md Phase 3)', ()
     fireEvent.click(within(confirm).getByRole('button', { name: 'Cancel' }));
     expect(screen.queryByRole('alertdialog', { name: 'Remove Chapter 3 from recording?' })).toBeNull();
     // The track panel itself is untouched: still open on the same chapter, nothing removed.
-    expect(await screen.findByRole('dialog', { name: 'Track: Chapter 3' })).toBeTruthy();
+    expect(await screen.findByRole('dialog', { name: /^Track: Chapter 3( — |$)/ })).toBeTruthy();
     expect(boardRow('Chapter 3')).not.toBeNull();
   });
 
