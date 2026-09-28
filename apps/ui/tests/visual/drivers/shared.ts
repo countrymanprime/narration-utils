@@ -71,13 +71,13 @@ export async function clickVisible(page: Page, role: Parameters<Page['getByRole'
     .click();
 }
 
-type AppPage = 'Home' | 'Production' | 'Manuscript' | 'Story Bible' | 'Booth' | 'Tracks' | 'Proof' | 'Delivery' | 'Settings';
+type AppPage = 'Home' | 'Production' | 'Script' | 'Story Bible' | 'Booth' | 'Tracks' | 'Proof' | 'Delivery' | 'Settings';
 
 // Every page opens with the shared `Heading` primitive, an <h1>: it is what proves the page has arrived. Home's is "Welcome back".
 export const PAGE_HEADING: Record<AppPage, string> = {
   Home: 'Welcome back',
   Production: 'Production',
-  Manuscript: 'Manuscript',
+  Script: 'Script',
   'Story Bible': 'Story Bible',
   // A visually hidden <h1>: the Booth's own status line names the chapter (mock 03).
   Booth: 'Booth',
@@ -92,7 +92,7 @@ export const PAGE_HEADING: Record<AppPage, string> = {
 // Tracks, Settings) show different content per state, so their drivers wait for their own.
 const PAGE_CONTENT: Partial<Record<AppPage, (page: Page) => Locator>> = {
   Home: (page) => page.getByRole('button', { name: /Show per-chapter breakdown/ }),
-  Manuscript: (page) => page.locator('[data-paragraph-text]'),
+  Script: (page) => page.locator('[data-paragraph-text]'),
   // The chapter's text, whatever the session is doing (credits states pick theirs afterwards).
   Booth: (page) => page.getByRole('region', { name: 'Chapter text' }),
 };
@@ -549,13 +549,13 @@ export async function selectReaderWord(page: Page, word: string): Promise<void> 
   if (!selected) throw new Error(`no "${word}" in the reader text - did the demo manuscript change?`);
 }
 
-/** Opens the Manuscript (with a mock seam, when given), selects `word` and presses Look up. */
+/** Opens the Script page (with a mock seam, when given), selects `word` and presses Look up. */
 export async function lookUpInReader(page: Page, word: string, url?: string): Promise<void> {
   if (url) {
     await page.goto(url);
     await settlePage(page);
   }
-  await goToPage(page, 'Manuscript');
+  await goToPage(page, 'Script');
   await selectReaderWord(page, word);
   await clickVisible(page, 'button', 'Look up');
 }

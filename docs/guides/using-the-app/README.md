@@ -15,7 +15,7 @@ Read them in order the first time, or jump straight to the page you need.
 | [Navigation](navigation.md) | The sidebar, its icon-only and drawer layouts, and locked entries. |
 | [Home](home.md) | Manuscript status, time estimates, and importing a manuscript. |
 | [Production](production.md) | Hours logged by stage, PFH and effective rate from measured audio, the delivery date, and which chapters to work on next. |
-| [Manuscript](manuscript.md) | The reader: highlights, notes, bookmarks, formatting, and themes. |
+| [Script](script.md) | Prep: the chapter list with each chapter's prep status, the reader (highlights, notes, bookmarks, markup, formatting) and the Pronunciations, Characters and Queries rail. |
 | [Story Bible](story-bible.md) | Characters, places, and organizations with pronunciation and notes. |
 | [Booth](booth.md) | Where you record: a live read-along that follows you as you narrate a chapter, with companion mode beside your DAW. |
 | [Tracks](tracks.md) | Listing and playing the project's REAPER tracks, scanning for pickups and duplicates, and the REAPER tools: chapter stamps, pickup lists, chapter render setup and chapter tags. |

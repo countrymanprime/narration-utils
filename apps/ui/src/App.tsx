@@ -16,7 +16,7 @@ import { useBoothRecording } from './components/booth/useBoothRecording';
 import { ConfirmDialog } from './components/primitives/ConfirmDialog';
 import { ShortcutSheet } from './components/help/ShortcutSheet';
 import { Home } from './components/home/Home';
-import { Manuscript } from './components/manuscript/Manuscript';
+import { ScriptPage } from './components/script/ScriptPage';
 import { ProjectPicker } from './components/project/ProjectPicker';
 import { Guide } from './components/storybible/Guide';
 import { Settings } from './components/settings/Settings';
@@ -388,9 +388,10 @@ function AppRoutes() {
   // path params - "#p123" points at paragraph 123 (its globally unique
   // index, assigned when the manuscript is imported), "#c<chapter-id>" at a
   // chapter with no specific line, and "#<entityId>" at a Story Bible entry.
-  // See Manuscript.tsx/Guide.tsx for where these are consumed.
-  const goToManuscript = (chapter: string, paragraph?: number) =>
-    guardedNavigate(`/manuscript#${paragraph !== undefined ? `p${paragraph}` : `c${encodeURIComponent(chapter)}`}`);
+  // See script/ScriptPage.tsx and Guide.tsx for where these are consumed. The pages that call it still name the prop
+  // `goToManuscript` (it opens the manuscript's text, now on the Script page).
+  const goToScript = (chapter: string, paragraph?: number) =>
+    guardedNavigate(`/script#${paragraph !== undefined ? `p${paragraph}` : `c${encodeURIComponent(chapter)}`}`);
   const goToStoryBible = (entityId: string) => guardedNavigate(`/story-bible#${encodeURIComponent(entityId)}`);
   // A chapter's Proof view (stage-navigation-and-page-replacement.prd.md Phase 5; edit-and-proof-workspace.prd.md's
   // "Open in workspace"): from Proof's notes, Home and the Manuscript. findingId is the deep link's ?finding=, so the
@@ -406,7 +407,7 @@ function AppRoutes() {
     const nextPath = next.split(/[?#]/)[0] || '/';
     // A Proof chapter view reads the chapter's paragraphs and alignment, both manuscript-scoped, same as the fixed
     // routes below (a parameterised path, so it needs its own startsWith check rather than joining the exact-match list).
-    if (!data.manuscript && (['/manuscript', '/story-bible', '/booth'].includes(nextPath) || nextPath.startsWith('/proof/'))) {
+    if (!data.manuscript && (['/script', '/story-bible', '/booth'].includes(nextPath) || nextPath.startsWith('/proof/'))) {
       navigate('/', { replace: true });
       return;
     }
@@ -465,17 +466,17 @@ function AppRoutes() {
                     data={data}
                     go={guardedNavigate}
                     notify={setNotice}
-                    goToManuscript={goToManuscript}
+                    goToManuscript={goToScript}
                     goToWorkspace={goToProofChapter}
                     refreshBootstrap={refreshBootstrap}
                   />
                 }
               />
               <Route
-                path="/manuscript"
+                path="/script"
                 element={
                   data.manuscript ? (
-                    <Manuscript
+                    <ScriptPage
                       notify={setNotice}
                       focusStoryBibleEntity={goToStoryBible}
                       goToWorkspace={goToProofChapter}
@@ -487,10 +488,8 @@ function AppRoutes() {
                   )
                 }
               />
-              <Route
-                path="/story-bible"
-                element={data.manuscript ? <Guide notify={setNotice} goToManuscript={goToManuscript} /> : <Navigate to="/" replace />}
-              />
+              <Route path="/manuscript" element={<RedirectKeepingLocation to="/script" />} />
+              <Route path="/story-bible" element={data.manuscript ? <Guide notify={setNotice} goToManuscript={goToScript} /> : <Navigate to="/" replace />} />
               <Route path="/tracks" element={<TracksPage dawFileLinked={data.dawFileLinked} onLinkDawFile={() => void linkDawFile()} notify={setNotice} />} />
               <Route
                 path="/proof/:chapterId"
@@ -500,7 +499,7 @@ function AppRoutes() {
                       notify={setNotice}
                       transcript={data.transcript}
                       dawFileLinked={data.dawFileLinked}
-                      goToManuscript={goToManuscript}
+                      goToManuscript={goToScript}
                       refreshKey={`${data.manuscript.id}:${data.manuscript.importedAt}`}
                     />
                   ) : (
@@ -514,7 +513,7 @@ function AppRoutes() {
                   data.manuscript ? (
                     <BoothPage
                       onFixCredits={() => guardedNavigate('/settings#credits')}
-                      onExit={() => (history.canGoBack ? guardedBack() : guardedNavigate('/manuscript'))}
+                      onExit={() => (history.canGoBack ? guardedBack() : guardedNavigate('/script'))}
                     />
                   ) : (
                     <Navigate to="/" replace />
@@ -528,7 +527,7 @@ function AppRoutes() {
                   <ProofPage
                     notify={setNotice}
                     hasManuscript={Boolean(data.manuscript)}
-                    goToManuscript={goToManuscript}
+                    goToManuscript={goToScript}
                     goToStoryBible={goToStoryBible}
                     goToWorkspace={(chapterId, findingId) => goToProofChapter(chapterId, findingId)}
                     goToDelivery={goToDelivery}

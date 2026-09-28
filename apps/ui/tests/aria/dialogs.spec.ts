@@ -18,7 +18,7 @@ const MODALS: { name: string; state: [string, string]; snapshot: string }[] = [
     state: ['settings', 'navigate-away-confirm'],
     snapshot: 'confirm-unsaved-settings.aria.yml',
   },
-  { name: 'the add-note form is a modal dialog with a labelled field', state: ['manuscript', 'add-note-dialog'], snapshot: 'dialog-add-note.aria.yml' },
+  { name: 'the add-note form is a modal dialog with a labelled field', state: ['script', 'add-note-dialog'], snapshot: 'dialog-add-note.aria.yml' },
   {
     name: 'the pronunciation queries are a modal slide-over with the filter, the count, Export CSV and a list of queries each with its marks',
     state: ['storybible', 'pronunciation-queries'],
@@ -26,7 +26,7 @@ const MODALS: { name: string; state: [string, string]; snapshot: string }[] = [
   },
   {
     name: 'the chapters overlay is a modal slide-over named for what it holds',
-    state: ['manuscript', 'chapters-overlay-open'],
+    state: ['script', 'chapters-overlay-open'],
     snapshot: 'slide-over-chapters.aria.yml',
   },
   {
@@ -41,7 +41,7 @@ const MODALS: { name: string; state: [string, string]; snapshot: string }[] = [
   },
   {
     name: 'the look-up panel is a modal slide-over named for the word, its definitions a list under a heading per part of speech',
-    state: ['manuscript', 'word-lookup-definition'],
+    state: ['script', 'word-lookup-definition'],
     snapshot: 'slide-over-word-lookup.aria.yml',
   },
   {
@@ -51,7 +51,7 @@ const MODALS: { name: string; state: [string, string]; snapshot: string }[] = [
   },
   {
     name: 'the dictionary download question is an alert dialog',
-    state: ['manuscript', 'word-lookup-not-installed'],
+    state: ['script', 'word-lookup-not-installed'],
     snapshot: 'confirm-download-dictionary.aria.yml',
   },
   {

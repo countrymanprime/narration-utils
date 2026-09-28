@@ -27,7 +27,7 @@ function renderShell(props: Partial<Parameters<typeof AppShell>[0]> = {}, daw: D
 describe('AppShell nav gating (PRD project-workspace-and-daw-link.prd.md, W16/W17)', () => {
   it('disables the manuscript pages, and only those, when there is no manuscript', () => {
     renderShell({ hasManuscript: false, dawFileLinked: false });
-    for (const name of ['Manuscript', 'Story Bible', 'Booth']) {
+    for (const name of ['Script', 'Story Bible', 'Booth']) {
       expect(screen.getAllByRole('button', { name }).every((button) => (button as HTMLButtonElement).disabled)).toBe(true);
     }
     for (const name of ['Home', 'Tracks', 'Proof', 'Delivery']) {
@@ -109,7 +109,7 @@ describe('AppShell grouped navigation (Phase 1)', () => {
 
   it('lists every other page, with Proof in place of Proofing and Review (Phase 5) and Booth in place of the Teleprompter (Phase 4)', () => {
     renderShell();
-    for (const name of ['Home', 'Manuscript', 'Story Bible', 'Booth', 'Proof', 'Tracks', 'Delivery', 'Settings']) {
+    for (const name of ['Home', 'Script', 'Story Bible', 'Booth', 'Proof', 'Tracks', 'Delivery', 'Settings']) {
       expect(screen.getAllByRole('button', { name }).length).toBeGreaterThan(0);
     }
   });

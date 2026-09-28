@@ -39,7 +39,7 @@ const CEILING: Record<string, number> = {
   // The chapter card moved into ReaderCard.tsx (manuscript-credits-card-parity.prd.md, Phase 1's first commit); this
   // is now only the prop handoff (`subtitle={chapter.subtitle}`), since ReaderCard reads the plain `subtitle` prop,
   // not `.subtitle`.
-  [join('src', 'components', 'manuscript', 'Manuscript.tsx')]: 1,
+  [join('src', 'components', 'script', 'ScriptPage.tsx')]: 1,
 };
 
 const uiRoot = join(__dirname, '..');

@@ -2,8 +2,8 @@
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { Manuscript } from './Manuscript';
-import { saveCreditsExpanded } from './creditsExpandedStorage';
+import { ScriptPage } from './ScriptPage';
+import { saveCreditsExpanded } from '../manuscript/creditsExpandedStorage';
 import { ApiProvider } from '../../api/ApiContext';
 import { createMockApi } from '../../api/mockApi';
 import { WireError } from '../../api/wire/WireError';
@@ -16,10 +16,10 @@ afterEach(() => {
   window.localStorage.clear();
 });
 
-function renderManuscript(
+function renderScript(
   overrides: Parameters<typeof createMockApi>[0] = {},
   focusStoryBibleEntity = vi.fn(),
-  initialEntries = ['/manuscript'],
+  initialEntries = ['/script'],
   initial: Parameters<typeof createMockApi>[1] = {},
   goToWorkspace?: (chapterId: string) => void,
   goToBooth = vi.fn(),
@@ -31,7 +31,7 @@ function renderManuscript(
       <MemoryRouter initialEntries={initialEntries}>
         <ApiProvider api={api}>
           <CommandRouter>
-            <Manuscript
+            <ScriptPage
               notify={notify}
               focusStoryBibleEntity={focusStoryBibleEntity}
               goToWorkspace={goToWorkspace}
@@ -63,8 +63,11 @@ const referenceChapter = {
 // substring, then fires the mouseup the app listens for - simulating a real
 // browser text selection rather than clicking an invented "+" button, since
 // that's the actual interaction the Manuscript page exposes.
+// The reader's own text: the chapter list and the rail beside it name chapters and characters too ("Alice's Evidence").
+const readerText = () => document.querySelector<HTMLElement>('.reader-chapters') ?? document.body;
+
 function selectPhrase(phrase: string) {
-  const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+  const walker = document.createTreeWalker(readerText(), NodeFilter.SHOW_TEXT);
   let node: Text | null;
   while ((node = walker.nextNode() as Text | null)) {
     const index = node.textContent?.indexOf(phrase) ?? -1;
@@ -88,9 +91,9 @@ function paragraph(index: number) {
   return value;
 }
 
-describe('Manuscript page (integration, driven through the mock NarrationApi)', () => {
+describe('Script page (integration, driven through the mock NarrationApi)', () => {
   it('loads the first chapter and highlights Story Bible entities inline', async () => {
-    renderManuscript();
+    renderScript();
     await waitFor(() => expect(screen.getByRole('heading', { name: 'Chapter 1 — Down the Rabbit-Hole' })).toBeTruthy());
     await waitFor(() => expect(paragraph(0)).toBeTruthy());
     const highlighted = await waitFor(() => {
@@ -105,7 +108,7 @@ describe('Manuscript page (integration, driven through the mock NarrationApi)', 
   });
 
   it('selecting text within one line offers + Note and + Story Bible, and adding a note attaches it to that line', async () => {
-    const { api } = renderManuscript();
+    const { api } = renderScript();
     await waitFor(() => screen.getByRole('heading', { name: 'Chapter 1 — Down the Rabbit-Hole' }));
     await waitFor(() => expect(paragraph(0)).toBeTruthy());
 
@@ -125,7 +128,7 @@ describe('Manuscript page (integration, driven through the mock NarrationApi)', 
 
   describe('script markup (prep-depth PRD Phase 5)', () => {
     it('marks up a selection: the mark is saved on that line and drawn on it', async () => {
-      const { api, notify } = renderManuscript();
+      const { api, notify } = renderScript();
       await waitFor(() => screen.getByRole('heading', { name: 'Chapter 1 — Down the Rabbit-Hole' }));
       await waitFor(() => expect(paragraph(0)).toBeTruthy());
 
@@ -144,7 +147,7 @@ describe('Manuscript page (integration, driven through the mock NarrationApi)', 
     });
 
     it('shows the marks already placed, says where the text changed, and removes a stale one', async () => {
-      const { api, notify } = renderManuscript({}, vi.fn(), ['/manuscript'], {
+      const { api, notify } = renderScript({}, vi.fn(), ['/script'], {
         prepMarkup: [
           { chapter: 0, line: 0, words: 'Alice', kind: 'stress' },
           { chapter: 0, line: 0, words: 'tired', kind: 'stress', stale: { reason: 'text_changed', was: 'weary' } },
@@ -162,14 +165,14 @@ describe('Manuscript page (integration, driven through the mock NarrationApi)', 
     });
 
     it('a reader with no markup file still reads (the list failing is said once, not a load error)', async () => {
-      const { notify } = renderManuscript({ prepMarkupList: async () => Promise.reject(new Error('your script markup file could not be read')) });
+      const { notify } = renderScript({ prepMarkupList: async () => Promise.reject(new Error('your script markup file could not be read')) });
       await waitFor(() => expect(paragraph(0)).toBeTruthy());
       await waitFor(() => expect(notify).toHaveBeenCalledWith(expect.stringContaining('script markup'), 'error'));
     });
   });
 
   it('sending a selection to the Story Bible creates a draft entity and hands off to the Story Bible page', async () => {
-    const { focusStoryBibleEntity } = renderManuscript({ guideCreate: async () => 'new-halcyon' });
+    const { focusStoryBibleEntity } = renderScript({ guideCreate: async () => 'new-halcyon' });
     await waitFor(() => screen.getByRole('heading', { name: 'Chapter 1 — Down the Rabbit-Hole' }));
     await waitFor(() => expect(paragraph(0)).toBeTruthy());
 
@@ -181,7 +184,7 @@ describe('Manuscript page (integration, driven through the mock NarrationApi)', 
 
   describe('Look up', () => {
     const openReader = async (initial: Parameters<typeof createMockApi>[1] = {}, overrides: Parameters<typeof createMockApi>[0] = {}) => {
-      const rendered = renderManuscript(overrides, vi.fn(), ['/manuscript'], initial);
+      const rendered = renderScript(overrides, vi.fn(), ['/script'], initial);
       await waitFor(() => screen.getByRole('heading', { name: 'Chapter 1 — Down the Rabbit-Hole' }));
       await waitFor(() => expect(paragraph(0)).toBeTruthy());
       return rendered;
@@ -259,7 +262,7 @@ describe('Manuscript page (integration, driven through the mock NarrationApi)', 
   });
 
   it('allows a selection spanning two adjacent lines', async () => {
-    renderManuscript();
+    renderScript();
     await waitFor(() => screen.getByRole('heading', { name: 'Chapter 1 — Down the Rabbit-Hole' }));
     await waitFor(() => expect(paragraph(1)).toBeTruthy());
 
@@ -284,7 +287,7 @@ describe('Manuscript page (integration, driven through the mock NarrationApi)', 
   });
 
   it('keeps the selection menu open for a multi-line selection, but validates when adding a note', async () => {
-    const { notify } = renderManuscript();
+    const { notify } = renderScript();
     await waitFor(() => screen.getByRole('heading', { name: 'Chapter 1 — Down the Rabbit-Hole' }));
     await waitFor(() => expect(paragraph(0)).toBeTruthy());
 
@@ -303,7 +306,7 @@ describe('Manuscript page (integration, driven through the mock NarrationApi)', 
   });
 
   it('opens an existing note with the note headers and a delete button (not a bookmark toggle)', async () => {
-    const { api } = renderManuscript();
+    const { api } = renderScript();
     await waitFor(() => screen.getByRole('heading', { name: 'Chapter 1 — Down the Rabbit-Hole' }));
     await waitFor(() => expect(document.querySelector('[data-highlight="Note"]')).toBeTruthy());
     const [existingNote] = await api.noteList();
@@ -319,8 +322,53 @@ describe('Manuscript page (integration, driven through the mock NarrationApi)', 
     await waitFor(async () => expect(await api.noteList()).not.toContainEqual(expect.objectContaining({ id: existingNote.id })));
   });
 
+  describe('the chapter list and the prep rail (stage navigation Phase 3, mock 02)', () => {
+    it('opens a chapter from the chapter list and marks it as the one being read', async () => {
+      renderScript();
+      await waitFor(() => screen.getByRole('heading', { name: 'Chapter 1 — Down the Rabbit-Hole' }));
+      const list = screen.getByRole('navigation', { name: 'Chapters' });
+      fireEvent.click(within(list).getByRole('button', { name: /The Pool of Tears/ }));
+      await waitFor(() => expect(screen.getByRole('heading', { name: 'Chapter 2 — The Pool of Tears' })).toBeTruthy());
+      await waitFor(() =>
+        expect(
+          within(list)
+            .getByRole('button', { name: /The Pool of Tears/ })
+            .getAttribute('aria-current'),
+        ).toBe('true'),
+      );
+    });
+
+    it("shows each chapter's names still to confirm, and the rail's queries open the Story Bible's queries panel", async () => {
+      renderScript();
+      const list = await screen.findByRole('navigation', { name: 'Chapters' });
+      // The demo Story Bible's pronunciations are all "researched", so every name with a first line has a query open.
+      await waitFor(() => expect(within(list).getAllByText(/to confirm$/).length).toBeGreaterThan(0));
+      const rail = screen.getByRole('complementary', { name: 'Prep' });
+      fireEvent.click(await within(rail).findByRole('tab', { name: /^Queries · \d+$/ }));
+      fireEvent.click(within(rail).getByRole('button', { name: 'Manage queries' }));
+      expect(await screen.findByRole('dialog', { name: 'Pronunciation queries' })).toBeTruthy();
+    });
+
+    it("opens a name's Story Bible summary from the rail", async () => {
+      const { focusStoryBibleEntity } = renderScript();
+      const rail = await screen.findByRole('complementary', { name: 'Prep' });
+      fireEvent.click(await within(rail).findByRole('button', { name: 'White Rabbit' }));
+      const panel = await screen.findByRole('dialog', { name: 'White Rabbit' });
+      fireEvent.click(within(panel).getByRole('button', { name: /Open in Story Bible/ }));
+      expect(focusStoryBibleEntity).toHaveBeenCalledWith('white-rabbit');
+    });
+
+    it('opens the rail as a panel from the band, for widths where it is not a column', async () => {
+      renderScript();
+      await waitFor(() => screen.getByRole('heading', { name: 'Chapter 1 — Down the Rabbit-Hole' }));
+      fireEvent.click(screen.getByRole('button', { name: 'Prep rail' }));
+      const panel = await screen.findByRole('dialog', { name: 'Prep' });
+      expect(within(panel).getByRole('tablist', { name: 'Prep' })).toBeTruthy();
+    });
+  });
+
   it('switches chapters from the Chapters & Search overlay', async () => {
-    renderManuscript();
+    renderScript();
     await waitFor(() => screen.getByRole('heading', { name: 'Chapter 1 — Down the Rabbit-Hole' }));
 
     fireEvent.click(screen.getByRole('button', { name: /Chapters & Search/ }));
@@ -330,14 +378,14 @@ describe('Manuscript page (integration, driven through the mock NarrationApi)', 
   });
 
   it('uses only manual chapter expansion controls', async () => {
-    renderManuscript();
+    renderScript();
     await waitFor(() => screen.getByRole('heading', { name: 'Chapter 1 — Down the Rabbit-Hole' }));
     expect(screen.queryByText('Auto-focus chapters')).toBeNull();
 
     fireEvent.click(screen.getByRole('button', { name: /Collapse all/ }));
     await waitFor(() => expect(document.querySelector('[data-paragraph="0"]')).toBeNull());
 
-    fireEvent.click(screen.getByRole('button', { name: /Chapter 2 — The Pool of Tears/ }));
+    fireEvent.click(within(readerText()).getByRole('button', { name: /Chapter 2 — The Pool of Tears/ }));
     await waitFor(() => expect(document.querySelector('[data-chapter="Chapter 2"] .manuscript-reader')).toBeTruthy());
 
     fireEvent.click(screen.getByRole('button', { name: /Expand all/ }));
@@ -345,7 +393,7 @@ describe('Manuscript page (integration, driven through the mock NarrationApi)', 
   });
 
   it('uses outline/fill chapter bookmarks and has no per-paragraph bookmark gutter', async () => {
-    renderManuscript();
+    renderScript();
     await waitFor(() => screen.getByRole('heading', { name: 'Chapter 1 — Down the Rabbit-Hole' }));
     expect(document.querySelector('[data-chapter="Chapter 1"] button.group svg')).toBeTruthy();
     expect(document.querySelectorAll('[data-chapter="Chapter 1"] button.group svg')).toHaveLength(2);
@@ -355,7 +403,7 @@ describe('Manuscript page (integration, driven through the mock NarrationApi)', 
   });
 
   it('names each chapter bookmark toggle, since its icons say nothing to a screen reader (axe: button-name)', async () => {
-    renderManuscript();
+    renderScript();
     await waitFor(() => screen.getByRole('heading', { name: 'Chapter 1 — Down the Rabbit-Hole' }));
     const toggle = document.querySelector<HTMLElement>('[data-chapter="Chapter 1"] button.group')!;
     expect(toggle.getAttribute('aria-label')).toBe('Bookmark this chapter');
@@ -364,7 +412,7 @@ describe('Manuscript page (integration, driven through the mock NarrationApi)', 
   });
 
   it('filters chapters and nests matching search results beneath them', async () => {
-    renderManuscript();
+    renderScript();
     await waitFor(() => screen.getByRole('heading', { name: 'Chapter 1 — Down the Rabbit-Hole' }));
     fireEvent.click(screen.getByRole('button', { name: /Chapters & Search/ }));
     const input = screen.getByLabelText('Search manuscript');
@@ -379,7 +427,7 @@ describe('Manuscript page (integration, driven through the mock NarrationApi)', 
 
   it('keeps only the latest asynchronous search response', async () => {
     let resolveOld: (results: Array<{ chapter: string; paragraph: number; sourceLine: number; excerpt: string }>) => void = () => {};
-    renderManuscript({
+    renderScript({
       manuscriptSearch: async (query) =>
         query === 'old'
           ? new Promise((resolve) => {
@@ -404,7 +452,7 @@ describe('Manuscript page (integration, driven through the mock NarrationApi)', 
 
   it('debounces the line search 2s behind the last keystroke; chapter-title matches show at once and Enter fires immediately (R1, R2)', async () => {
     const searchSpy = vi.fn(async () => []);
-    renderManuscript({ manuscriptSearch: searchSpy });
+    renderScript({ manuscriptSearch: searchSpy });
     await waitFor(() => screen.getByRole('heading', { name: 'Chapter 1 — Down the Rabbit-Hole' }));
     fireEvent.click(screen.getByRole('button', { name: /Chapters & Search/ }));
     const input = screen.getByLabelText('Search manuscript');
@@ -426,7 +474,7 @@ describe('Manuscript page (integration, driven through the mock NarrationApi)', 
 
   it('does not repeat the search 2s after Enter already fetched it (code review: the debounce catching up must not re-fire)', async () => {
     const searchSpy = vi.fn(async () => []);
-    renderManuscript({ manuscriptSearch: searchSpy });
+    renderScript({ manuscriptSearch: searchSpy });
     await waitFor(() => screen.getByRole('heading', { name: 'Chapter 1 — Down the Rabbit-Hole' }));
     fireEvent.click(screen.getByRole('button', { name: /Chapters & Search/ }));
     const input = screen.getByLabelText('Search manuscript');
@@ -445,7 +493,7 @@ describe('Manuscript page (integration, driven through the mock NarrationApi)', 
   });
 
   it('clears the query and results when a search result is selected (R8)', async () => {
-    renderManuscript();
+    renderScript();
     await waitFor(() => screen.getByRole('heading', { name: 'Chapter 1 — Down the Rabbit-Hole' }));
     fireEvent.click(screen.getByRole('button', { name: /Chapters & Search/ }));
     fireEvent.change(screen.getByLabelText('Search manuscript'), { target: { value: 'Rabbit' } });
@@ -458,7 +506,7 @@ describe('Manuscript page (integration, driven through the mock NarrationApi)', 
   });
 
   it('Escape clears an in-progress search before it closes the panel (R8)', async () => {
-    renderManuscript();
+    renderScript();
     await waitFor(() => screen.getByRole('heading', { name: 'Chapter 1 — Down the Rabbit-Hole' }));
     fireEvent.click(screen.getByRole('button', { name: /Chapters & Search/ }));
     fireEvent.change(screen.getByLabelText('Search manuscript'), { target: { value: 'Rabbit' } });
@@ -477,7 +525,7 @@ describe('Manuscript page (integration, driven through the mock NarrationApi)', 
   });
 
   it('autofocuses the search input when the Chapters & Search panel opens (R8)', async () => {
-    renderManuscript();
+    renderScript();
     await waitFor(() => screen.getByRole('heading', { name: 'Chapter 1 — Down the Rabbit-Hole' }));
     fireEvent.click(screen.getByRole('button', { name: /Chapters & Search/ }));
     await waitFor(() => expect(document.activeElement).toBe(screen.getByLabelText('Search manuscript')));
@@ -488,9 +536,9 @@ describe('Manuscript page (integration, driven through the mock NarrationApi)', 
       new WireError('host.binding', 'ManuscriptChapters', [{ path: '[0].index', message: 'Invalid input: expected number, received string' }]);
 
     it('shows an inline error with Retry, in plain words and without the technical text', async () => {
-      renderManuscript({ manuscriptChapters: () => Promise.reject(unreadable()) });
+      renderScript({ manuscriptChapters: () => Promise.reject(unreadable()) });
       expect(await screen.findByRole('alert')).toHaveProperty('textContent', 'The app received data it could not read.');
-      expect(screen.getByRole('heading', { name: 'Manuscript' })).toBeTruthy();
+      expect(screen.getByRole('heading', { name: 'Script' })).toBeTruthy();
       expect(document.body.textContent).not.toContain('index');
     });
 
@@ -500,7 +548,7 @@ describe('Manuscript page (integration, driven through the mock NarrationApi)', 
         .fn()
         .mockRejectedValueOnce(unreadable())
         .mockImplementation(() => real.manuscriptChapters());
-      renderManuscript({ manuscriptChapters: chapters });
+      renderScript({ manuscriptChapters: chapters });
       fireEvent.click(await screen.findByRole('button', { name: 'Retry' }));
       await waitFor(() => expect(screen.queryByRole('alert')).toBeNull());
       expect(await screen.findByRole('button', { name: 'Text size' })).toBeTruthy();
@@ -510,7 +558,7 @@ describe('Manuscript page (integration, driven through the mock NarrationApi)', 
 
   describe('hides reference material from the continuous reader (R13, Phase 5)', () => {
     it('opens on the first recorded chapter even when a reference chapter sorts first', async () => {
-      renderManuscript({ manuscriptChapters: async () => [referenceChapter, ...(await createMockApi().manuscriptChapters())] });
+      renderScript({ manuscriptChapters: async () => [referenceChapter, ...(await createMockApi().manuscriptChapters())] });
       await waitFor(() => screen.getByRole('heading', { name: 'Chapter 1 — Down the Rabbit-Hole' }));
       expect(document.querySelector('[data-chapter-id="contents"]')).toBeNull();
     });
@@ -519,7 +567,7 @@ describe('Manuscript page (integration, driven through the mock NarrationApi)', 
       // No expandedChapters saved (the shape a pre-Phase-5 project's reader state can be in) - the
       // default used to be [state.activeChapter], which would have resolved to the now-filtered-out
       // 'contents' id and left the fallback chapter's header rendered but its body collapsed.
-      renderManuscript({
+      renderScript({
         manuscriptChapters: async () => [referenceChapter, ...(await createMockApi().manuscriptChapters())],
         readerState: async () => ({ activeChapter: 'contents', bookmarks: [] }),
       });
@@ -528,7 +576,7 @@ describe('Manuscript page (integration, driven through the mock NarrationApi)', 
     });
 
     it('never renders a reference chapter as an article in the page-flip view', async () => {
-      renderManuscript({ manuscriptChapters: async () => [referenceChapter, ...(await createMockApi().manuscriptChapters())] });
+      renderScript({ manuscriptChapters: async () => [referenceChapter, ...(await createMockApi().manuscriptChapters())] });
       await waitFor(() => screen.getByRole('heading', { name: 'Chapter 1 — Down the Rabbit-Hole' }));
       expect(screen.queryByText('Contents')).toBeNull();
       expect(document.querySelector('[data-chapter-id="contents"]')).toBeNull();
@@ -536,7 +584,7 @@ describe('Manuscript page (integration, driven through the mock NarrationApi)', 
 
     it('Expand all chapters never requests paragraphs for a reference chapter', async () => {
       const paragraphsSpy = vi.fn(async () => []);
-      renderManuscript({
+      renderScript({
         manuscriptChapters: async () => [referenceChapter, ...(await createMockApi().manuscriptChapters())],
         manuscriptParagraphs: paragraphsSpy,
       });
@@ -547,8 +595,8 @@ describe('Manuscript page (integration, driven through the mock NarrationApi)', 
     });
 
     it('a "#p" deep link into a hidden paragraph tells the narrator instead of navigating there', async () => {
-      const { notify } = renderManuscript({ manuscriptChapters: async () => [referenceChapter, ...(await createMockApi().manuscriptChapters())] }, vi.fn(), [
-        '/manuscript#p900',
+      const { notify } = renderScript({ manuscriptChapters: async () => [referenceChapter, ...(await createMockApi().manuscriptChapters())] }, vi.fn(), [
+        '/script#p900',
       ]);
       await waitFor(() => screen.getByRole('heading', { name: 'Chapter 1 — Down the Rabbit-Hole' }));
       await waitFor(() => expect(notify).toHaveBeenCalledWith(expect.stringContaining('reference material')));
@@ -558,7 +606,7 @@ describe('Manuscript page (integration, driven through the mock NarrationApi)', 
 
   describe('credits pseudo-entries (PRD audiobook-credits-templates.prd.md, Phase 3)', () => {
     it('shows an Opening credits entry before the first chapter and a Closing credits entry after the last, both open by default (MC5)', async () => {
-      renderManuscript();
+      renderScript();
       await waitFor(() => screen.getByRole('heading', { name: 'Chapter 1 — Down the Rabbit-Hole' }));
       await waitFor(() => screen.getByRole('heading', { name: 'Chapter 12 — Alice’s Evidence' }));
 
@@ -575,7 +623,7 @@ describe('Manuscript page (integration, driven through the mock NarrationApi)', 
     });
 
     it('shows an unresolved-token chip, never silent empty text (C6)', async () => {
-      renderManuscript();
+      renderScript();
       await waitFor(() => screen.getByRole('heading', { name: 'Chapter 1 — Down the Rabbit-Hole' }));
       const opening = screen.getByRole('heading', { name: 'Opening credits' }).closest('[data-credits-entry]') as HTMLElement;
 
@@ -588,7 +636,7 @@ describe('Manuscript page (integration, driven through the mock NarrationApi)', 
     });
 
     it('collapsing a credits card hides its preview, and remembers that per project across a reload (MC5 b)', async () => {
-      renderManuscript();
+      renderScript();
       await waitFor(() => screen.getByRole('heading', { name: 'Chapter 1 — Down the Rabbit-Hole' }));
       const opening = () => screen.getByRole('heading', { name: 'Opening credits' }).closest('[data-credits-entry]') as HTMLElement;
       await within(opening()).findByText('[Title]');
@@ -597,7 +645,7 @@ describe('Manuscript page (integration, driven through the mock NarrationApi)', 
       await waitFor(() => expect(within(opening()).queryByText('[Title]')).toBeNull());
       cleanup();
 
-      renderManuscript();
+      renderScript();
       await waitFor(() => screen.getByRole('heading', { name: 'Chapter 1 — Down the Rabbit-Hole' }));
       expect(screen.getByRole('button', { name: 'Opening credits' }).getAttribute('aria-expanded')).toBe('false');
       expect(within(opening()).queryByText('[Title]')).toBeNull();
@@ -606,7 +654,7 @@ describe('Manuscript page (integration, driven through the mock NarrationApi)', 
     it('Expand all and Collapse all include the credits cards, and never send a credits id to readerStateSave or manuscriptParagraphs', async () => {
       const saveStateSpy = vi.fn(async () => ({ expandedChapters: [], bookmarks: [] }));
       const paragraphsSpy = vi.fn(async () => []);
-      renderManuscript({ readerStateSave: saveStateSpy, manuscriptParagraphs: paragraphsSpy });
+      renderScript({ readerStateSave: saveStateSpy, manuscriptParagraphs: paragraphsSpy });
       await waitFor(() => screen.getByRole('heading', { name: 'Chapter 1 — Down the Rabbit-Hole' }));
 
       fireEvent.click(screen.getByRole('button', { name: 'Collapse all chapters' }));
@@ -623,7 +671,7 @@ describe('Manuscript page (integration, driven through the mock NarrationApi)', 
     });
 
     it('a credits entry is not a chapter: it is absent from Chapters & Search and never counted in the chapter list', async () => {
-      renderManuscript();
+      renderScript();
       await waitFor(() => screen.getByRole('heading', { name: 'Chapter 1 — Down the Rabbit-Hole' }));
       fireEvent.click(screen.getByRole('button', { name: /Chapters & Search/ }));
       const chaptersPanel = await screen.findByText('Chapters');
@@ -633,7 +681,7 @@ describe('Manuscript page (integration, driven through the mock NarrationApi)', 
     });
 
     it('renders no credits entries when the template library has no opening or closing template', async () => {
-      renderManuscript({ creditsTemplates: async () => [] });
+      renderScript({ creditsTemplates: async () => [] });
       await waitFor(() => screen.getByRole('heading', { name: 'Chapter 1 — Down the Rabbit-Hole' }));
       expect(screen.queryByRole('heading', { name: 'Opening credits' })).toBeNull();
       expect(screen.queryByRole('heading', { name: 'Closing credits' })).toBeNull();
@@ -642,7 +690,7 @@ describe('Manuscript page (integration, driven through the mock NarrationApi)', 
     it('a "#credits-opening"/"#credits-closing" deep link (Home\'s credits rows, credits-in-chapter-table.prd.md Phase 2, CT7) opens the matching entry', async () => {
       // Both cards open by default (MC5), so start them collapsed: the hash alone must open the closing one.
       saveCreditsExpanded('/projects/alice', { opening: false, closing: false });
-      renderManuscript({}, vi.fn(), ['/manuscript#credits-closing']);
+      renderScript({}, vi.fn(), ['/script#credits-closing']);
       await waitFor(() => screen.getByRole('heading', { name: 'Chapter 1 — Down the Rabbit-Hole' }));
       // Collapsed entries show no unresolved-token count (asserted above); the closing entry opening on its own,
       // with the opening entry left collapsed, proves the hash targeted the right one.
@@ -654,7 +702,7 @@ describe('Manuscript page (integration, driven through the mock NarrationApi)', 
 
   describe('the credits-setup banner and Fill in (credits-token-setup-and-front-matter-detection.prd.md, Phase 3)', () => {
     it('shows the banner above the credits cards while setup is not dismissed at the project scope', async () => {
-      renderManuscript({}, vi.fn(), ['/manuscript'], { creditsSetup: true });
+      renderScript({}, vi.fn(), ['/script'], { creditsSetup: true });
       await waitFor(() => screen.getByRole('heading', { name: 'Chapter 1 — Down the Rabbit-Hole' }));
       const banner = await screen.findByText(/The credits need 3 values/);
       const opening = screen.getByRole('heading', { name: 'Opening credits' }).closest('[data-credits-entry]')!;
@@ -663,14 +711,14 @@ describe('Manuscript page (integration, driven through the mock NarrationApi)', 
     });
 
     it('no banner on the default mock boot, even though the default project has unresolved tokens (already dismissed at the project scope)', async () => {
-      renderManuscript();
+      renderScript();
       await waitFor(() => screen.getByRole('heading', { name: 'Chapter 1 — Down the Rabbit-Hole' }));
       await waitFor(() => expect(screen.getAllByText(/3 unresolved tokens: Title, Author, Narrator/).length).toBeGreaterThan(0));
       expect(screen.queryByText(/The credits need/)).toBeNull();
     });
 
     it('Fill in on the credits card opens the setup dialog, prefilled from the same detected candidates as Home', async () => {
-      renderManuscript();
+      renderScript();
       await waitFor(() => screen.getByRole('heading', { name: 'Chapter 1 — Down the Rabbit-Hole' }));
       const opening = screen.getByRole('heading', { name: 'Opening credits' }).closest('[data-credits-entry]') as HTMLElement;
       await within(opening).findByText(/unresolved token/);
@@ -679,7 +727,7 @@ describe('Manuscript page (integration, driven through the mock NarrationApi)', 
     });
 
     it('Fill in on the banner opens the same dialog and the banner steps aside while it is open', async () => {
-      renderManuscript({}, vi.fn(), ['/manuscript'], { creditsSetup: true });
+      renderScript({}, vi.fn(), ['/script'], { creditsSetup: true });
       await waitFor(() => screen.getByRole('heading', { name: 'Chapter 1 — Down the Rabbit-Hole' }));
       const banner = (await screen.findByText(/The credits need 3 values/)).closest('section') as HTMLElement;
       fireEvent.click(within(banner).getByRole('button', { name: 'Fill in' }));
@@ -688,7 +736,7 @@ describe('Manuscript page (integration, driven through the mock NarrationApi)', 
     });
 
     it('Save in the dialog opened from Manuscript resolves the credits card, closing the dialog', async () => {
-      renderManuscript({}, vi.fn(), ['/manuscript'], { creditsSetup: true });
+      renderScript({}, vi.fn(), ['/script'], { creditsSetup: true });
       await waitFor(() => screen.getByRole('heading', { name: 'Chapter 1 — Down the Rabbit-Hole' }));
       const banner = (await screen.findByText(/The credits need 3 values/)).closest('section') as HTMLElement;
       fireEvent.click(within(banner).getByRole('button', { name: 'Fill in' }));
@@ -723,7 +771,7 @@ describe('Manuscript page (integration, driven through the mock NarrationApi)', 
 
     it('marks the chapter that holds the sample and, once it is open, exactly the sampled lines', async () => {
       const { chapter, answer } = await sampleOnChapterTwo();
-      renderManuscript({ creditsRetailSample: async () => answer });
+      renderScript({ creditsRetailSample: async () => answer });
       const heading = await screen.findByRole('heading', { name: /Chapter 2/ });
       const article = heading.closest('article')!;
       expect(await within(article).findByText('Retail sample')).toBeTruthy();
@@ -737,9 +785,27 @@ describe('Manuscript page (integration, driven through the mock NarrationApi)', 
     });
 
     it('marks nothing when no sample is picked or the saved one cannot be measured', async () => {
-      renderManuscript({ creditsRetailSample: async () => ({ sample: null, problem: 'pick the range again' }) });
+      renderScript({ creditsRetailSample: async () => ({ sample: null, problem: 'pick the range again' }) });
       await screen.findByRole('heading', { name: /Chapter 2/ });
       expect(screen.queryByText('Retail sample')).toBeNull();
+    });
+  });
+
+  describe('Open workspace (edit-and-proof-workspace.prd.md Phase 4)', () => {
+    it('opens the chapter workspace for a narration chapter', async () => {
+      const goToWorkspace = vi.fn();
+      renderScript({}, vi.fn(), ['/script'], {}, goToWorkspace);
+      await waitFor(() => expect(screen.getByRole('heading', { name: 'Chapter 1 — Down the Rabbit-Hole' })).toBeTruthy());
+
+      fireEvent.click(screen.getByRole('button', { name: 'Open workspace for Chapter 1' }));
+
+      expect(goToWorkspace).toHaveBeenCalledWith('chapter-1');
+    });
+
+    it('renders no Workspace entry when the caller has none to open', async () => {
+      renderScript();
+      await waitFor(() => expect(screen.getByRole('heading', { name: 'Chapter 1 — Down the Rabbit-Hole' })).toBeTruthy());
+      expect(screen.queryByRole('button', { name: /Open workspace for/ })).toBeNull();
     });
   });
 
@@ -747,7 +813,7 @@ describe('Manuscript page (integration, driven through the mock NarrationApi)', 
   // "Record in Booth" link to the Booth page; the Read aloud dialog is gone (ADR 0407).
   describe('Record in Booth', () => {
     it('opens the Booth on a narration chapter, with no dialog of its own', async () => {
-      const { goToBooth } = renderManuscript();
+      const { goToBooth } = renderScript();
       await waitFor(() => expect(screen.getByRole('heading', { name: 'Chapter 1 — Down the Rabbit-Hole' })).toBeTruthy());
 
       fireEvent.click(screen.getByRole('button', { name: 'Record Chapter 1 in Booth' }));
@@ -758,7 +824,7 @@ describe('Manuscript page (integration, driven through the mock NarrationApi)', 
     });
 
     it('opens the Booth on the opening and the closing credits', async () => {
-      const { goToBooth } = renderManuscript();
+      const { goToBooth } = renderScript();
       for (const [kind, name] of [
         ['opening', 'Opening credits'],
         ['closing', 'Closing credits'],
@@ -771,28 +837,11 @@ describe('Manuscript page (integration, driven through the mock NarrationApi)', 
     });
 
     it('shows no Record in Booth on a credits card with nothing to read (preview.words === 0)', async () => {
-      renderManuscript({ creditsPreview: async () => ({ text: '', words: 0, unresolved: [] }) });
+      renderScript({ creditsPreview: async () => ({ text: '', words: 0, unresolved: [] }) });
       const openingHeading = await screen.findByRole('heading', { name: 'Opening credits' });
       const opening = openingHeading.closest('[data-credits-entry]') as HTMLElement;
       await within(opening).findByText('Nothing to preview yet.');
       expect(within(opening).queryByRole('button', { name: /in Booth/ })).toBeNull();
-    });
-  });
-  describe('Open workspace (edit-and-proof-workspace.prd.md Phase 4)', () => {
-    it('opens the chapter workspace for a narration chapter', async () => {
-      const goToWorkspace = vi.fn();
-      renderManuscript({}, vi.fn(), ['/manuscript'], {}, goToWorkspace);
-      await waitFor(() => expect(screen.getByRole('heading', { name: 'Chapter 1 — Down the Rabbit-Hole' })).toBeTruthy());
-
-      fireEvent.click(screen.getByRole('button', { name: 'Open workspace for Chapter 1' }));
-
-      expect(goToWorkspace).toHaveBeenCalledWith('chapter-1');
-    });
-
-    it('renders no Workspace entry when the caller has none to open', async () => {
-      renderManuscript();
-      await waitFor(() => expect(screen.getByRole('heading', { name: 'Chapter 1 — Down the Rabbit-Hole' })).toBeTruthy());
-      expect(screen.queryByRole('button', { name: /Open workspace for/ })).toBeNull();
     });
   });
 });

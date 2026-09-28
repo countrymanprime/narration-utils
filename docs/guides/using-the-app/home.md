@@ -56,8 +56,8 @@ linked chapters only, and its tooltip says how many of the book's chapters that 
 
 The table's first row is **Opening credits** and its last row is **Closing credits**: not
 chapters, but the same first opening and first closing template the Credits stat and the
-Manuscript page use, each with its own status, word count and estimated length (including room
-tone). The row's title links to the matching entry on the Manuscript page. A template with an
+Script page use, each with its own status, word count and estimated length (including room
+tone). The row's title links to the matching entry on the Script page. A template with an
 unresolved token (`[Author]` never filled in) shows a warning next to its name without blocking
 anything; a missing template reads "Not set up" with a link to [Settings, Credits](settings.md#credits).
 Their **Check** is disabled for now (a recording check reads manuscript chapters only), and their
@@ -227,7 +227,7 @@ in a live activity log, so the progress bar and log always match the real work.
 
 ![Home - a finished manuscript import with its real, step-by-step activity log](../../images/ui/home-import-activity.webp)
 
-Once a manuscript is imported you can read it on the [Manuscript](manuscript.md) page.
+Once a manuscript is imported you can read it on the [Script](script.md) page.
 
 The first time a project with an imported manuscript loads, and again right after an import
 finishes, Home asks you to **Set up the credits** if the opening and closing credits still have
@@ -236,7 +236,7 @@ copyright line already say, with the source of each guess shown underneath; a fi
 detected starts empty. Save only writes the fields you confirm — nothing already set in
 [Settings, Credits](settings.md#credits) is changed. **Not now** leaves it for this session;
 **Don't ask for this project** stops it until you replace the manuscript. Either way, a banner
-stays above the estimate — and above the [Manuscript](manuscript.md) page's own Opening credits
+stays above the estimate — and above the [Script](script.md) page's own Opening credits
 card — with **Fill in** to reopen the same dialog for as long as a token stays unresolved.
 
 ---

@@ -109,7 +109,7 @@ announcement, and the retail sample.
   Publisher, and a Narrator that overrides the global default from General for this project only. A value
   is saved as you type. Where the manuscript suggests a title or author, **Use suggestion** fills it in.
 
-The first opening and closing templates appear in the [Manuscript](manuscript.md) reader and in the
+The first opening and closing templates appear in the [Script](script.md) reader and in the
 Credits time on [Home](home.md).
 
 ![Settings, Credits, a chapter announcement previewed for Chapter 1](../../images/ui/settings-credits-chapter-announcement.webp)
@@ -118,9 +118,9 @@ Credits time on [Home](home.md).
 
 **Retail sample** is the stretch of the book you pick for the retailer's sample: up to 5 minutes, from
 anywhere in the book. Choose the chapter and line it **starts in** and **ends in** (the line numbers the
-[Manuscript](manuscript.md) reader shows) and **Save sample**. The panel says where it runs and how long it
+[Script](script.md) reader shows) and **Save sample**. The panel says where it runs and how long it
 is at about 155 words a minute; a range longer than 5 minutes is refused with its length, and the sample
-you had is kept. **Clear sample** removes it. The sample is a marker in the Manuscript reader only: it adds
+you had is kept. **Clear sample** removes it. The sample is a marker in the Script page's reader only: it adds
 no time to the estimate, since it is read again from the finished chapter. It is kept with the project, so
 replacing the manuscript keeps it; if its lines are gone, the panel says so and you pick it again.
 
@@ -129,7 +129,7 @@ replacing the manuscript keeps it; if its lines are gone, the panel says so and 
 ## Local assets
 
 The **Local assets** category of the Global scope lists every optional download Narration Utils can keep on this computer: preview
-voices, Whisper models for proofing comparisons, the language model the Story Bible uses and the dictionary the Manuscript reader's
+voices, Whisper models for proofing comparisons, the language model the Story Bible uses and the dictionary the Script reader's
 Look up reads. Nothing here downloads by itself, and
 removing one never touches your settings or projects. The page also shows how much disk the installed ones use and the folder they
 are kept in.

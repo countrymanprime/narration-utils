@@ -321,7 +321,7 @@ All three are prefilled in the prompt. Low confidence is marked "check this", an
 **Phase 3.** Goal: the prompt is never the only way in. Success:
 - the banner and "Fill in" appear only while tokens are unresolved and setup is not dismissed;
 - Replace manuscript asks again;
-- `docs/guides/using-the-app/manuscript.md` and the credits steady-state doc describe it;
+- `docs/guides/using-the-app/script.md` and the credits steady-state doc describe it;
 - this PRD is deleted if Phase 4 is dropped.
 
 **Phase 4.** Goal: use structure the text-only pass cannot see. Success: a Markdown file with `title:`/`author:` front matter and a DOCX with a `Title`-styled paragraph are detected at high confidence. `manuscript.json` changes only additively; if it does, `narration_common/manuscript.py` `validate` accepts it.
@@ -334,7 +334,7 @@ All three are prefilled in the prompt. Low confidence is marked "check this", an
 | --- | --- | --- |
 | 1 | `apps/desktop/internal/credits/{suggestions,detect,frontmatter}.go` and tests; `internal/importer/{coreprops,epub}.go` (new `ReadEPUBMetadata`); `apps/desktop/creditsbindings.go`; `apps/ui/src/api/schemas/credits.ts`, `wireContracts.test.ts`, `mockApi.ts`; `tests/fixtures/contracts/credits-project-values-*.json`; `CreditsPanel.tsx`; `state-catalog.ts`; `docs/architecture/threat-model.md`, `SECURITY.md` | Import Structure (delivered, PRD deleted) (`epub.go`); the credits PRD's closing steady-state docs PR (it describes `suggestions.go`); [Credits in the Chapter Table](credits-in-chapter-table.prd.md) (credits schemas, mock) |
 | 2 | `creditsbindings.go`, `apps/desktop/{app.go,app_test.go,hostrace_test.go}` (`hostAPIVersion`), `Host.*`, `apps/ui/src/hostApi.ts`; `internal/project/manifest.go`; new `apps/ui/src/components/credits/CreditsSetupDialog.tsx`; `Home.tsx`; `apps/ui/tests/aria/`; visual catalog and drivers; new ADR | Every binding phase (API version); Credits in the Chapter Table Phase 1 (`manifest.go`, CT3); [Chapter Track Link Control](chapter-track-link-control.prd.md) and [DAW Chapter-Track Auto-Sync](daw-chapter-track-auto-sync.prd.md) (`Home.tsx` if they add dialogs there); [Project Workspace](project-workspace-and-daw-link.prd.md) (open and create flow) |
-| 3 | `Home.tsx`, `Manuscript.tsx`, `CreditsEntry.tsx`, the visual catalog, `docs/guides/using-the-app/manuscript.md`, `docs/prds/audiobook-credits-templates.prd.md` (a note under C3) | Reader PRDs (`Manuscript.tsx`); Credits in the Chapter Table (Home credits rows); the credits PRD's own closing PR |
+| 3 | `Home.tsx`, `Manuscript.tsx`, `CreditsEntry.tsx`, the visual catalog, `docs/guides/using-the-app/script.md`, `docs/prds/audiobook-credits-templates.prd.md` (a note under C3) | Reader PRDs (`Manuscript.tsx`); Credits in the Chapter Table (Home credits rows); the credits PRD's own closing PR |
 | 4 | `internal/importer/{markdown,docx,model}.go`, `internal/manuscript/service.go` (`canonicalize`), `libs/python/narration_common/manuscript.py`, contract goldens | Import Structure; any importer or canonical-manuscript change (run `change-impact-scan` over `narration_common` consumers) |
 
 Cross-cutting:

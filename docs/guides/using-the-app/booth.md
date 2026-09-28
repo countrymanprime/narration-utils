@@ -5,7 +5,7 @@
 The Booth is where you record: it follows you as you read a chapter aloud, listening through your microphone
 with a local speech engine and highlighting the word you are on. It needs an [imported manuscript](home.md),
 and nothing you say is edited, saved, or sent anywhere. Open it from **Booth** in the navigation, or from
-**Record in Booth** on a chapter or credits card on [Manuscript](manuscript.md), which opens it on that
+**Record in Booth** on a chapter or credits card on [Script](script.md), which opens it on that
 chapter. What the Booth is reading is part of its address (`/booth?chapter=…`), so Back and a bookmark land
 on the same chapter. The Booth follows the app's theme, light or dark, like every other page.
 
@@ -101,7 +101,7 @@ before then, it keeps listening instead. You can still press Stop at any time.
 
 ## The rail
 
-The Booth marks Story Bible names and your notes in the text, in the same colours as the Manuscript
+The Booth marks Story Bible names and your notes in the text, in the same colours as the Script
 reader. The rail on the right starts with **Voices in scene**, the chapter's characters (click one to open
 its Story Bible entry; reference clips of each voice are coming later), then a reading panel with four
 tabs: **Key** (what each mark means), **Flags** (see below), **Notes** (the chapter's notes) and **Story

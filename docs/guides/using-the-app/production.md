@@ -62,4 +62,4 @@ the whole list; one with no name or no real date is refused, and nothing is save
 
 ---
 
-[← Home](home.md) · [Index](README.md) · [Manuscript →](manuscript.md)
+[← Home](home.md) · [Index](README.md) · [Script →](script.md)

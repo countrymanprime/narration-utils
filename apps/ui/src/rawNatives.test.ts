@@ -34,6 +34,14 @@ const CEILING: Record<NativeTag, Record<string, number>> = {
     // now renders through this and has no raw button of its own (its old toggle button is gone, ceiling 0 below).
     'src/components/manuscript/ReaderCard.tsx': 2,
     'src/components/project/ProjectPicker.tsx': 3,
+    // The Script page's chapter list (stage-navigation-and-page-replacement.prd.md Phase 3, mock 02): a list row naming the
+    // chapter with its current state, the same shape as ChapterNav's rows, which Button's padded, uppercase chrome does not
+    // fit. One JSX `<button>`, written once inside the chapters `.map()`.
+    'src/components/script/ScriptChapterList.tsx': 1,
+    // The Script rail's names (Phase 3): a name in a table cell or a list row that opens its Story Bible summary, the same
+    // case as ReaderRail.tsx's entries below. Two JSX `<button>`s, one inside the Pronunciations rows and one inside the
+    // Characters rows.
+    'src/components/script/ScriptRail.tsx': 2,
     'src/components/proof/CompareRun.tsx': 1,
     'src/components/settings/ScopedSetting.tsx': 1,
     // The click-to-seek word ("Start here" / "Go back to here", teleprompter-manuscript-integration.prd.md Phase 4):

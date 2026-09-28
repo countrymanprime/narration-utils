@@ -28,67 +28,74 @@
     "caption": "Home - manuscript loaded, chapter table collapsed"
   },
   {
-    "page": "manuscript",
+    "page": "script",
     "state": "reader-text-medium",
     "viewport": "desktop",
-    "docName": "manuscript-reader",
-    "caption": "Manuscript reader at the medium text size"
+    "docName": "script-reader",
+    "caption": "Script reader at the medium text size"
   },
   {
-    "page": "manuscript",
+    "page": "script",
+    "state": "prep-rail-queries",
+    "viewport": "desktop",
+    "docName": "script-prep-rail-queries",
+    "caption": "Script - the rail's Queries tab: every name the author has not confirmed, with where it is first heard, and the chapter list counting each chapter's names still to confirm"
+  },
+  {
+    "page": "script",
     "state": "reader-text-large",
     "viewport": "desktop",
-    "docName": "manuscript-reader-large",
-    "caption": "Manuscript reader at the large text size"
+    "docName": "script-reader-large",
+    "caption": "Script reader at the large text size"
   },
   {
-    "page": "manuscript",
+    "page": "script",
     "state": "chapter-collapsed",
     "viewport": "desktop",
-    "docName": "manuscript-chapter-list",
-    "caption": "Manuscript - collapsed chapter list, for jumping between chapters without scrolling"
+    "docName": "script-chapter-list",
+    "caption": "Script - collapsed chapter list, for jumping between chapters without scrolling"
   },
   {
-    "page": "manuscript",
+    "page": "script",
     "state": "detail-sidebar-note",
     "viewport": "desktop",
-    "docName": "manuscript-note-sidebar",
-    "caption": "Manuscript - detail sidebar open on a reader note"
+    "docName": "script-note-sidebar",
+    "caption": "Script - detail sidebar open on a reader note"
   },
   {
-    "page": "manuscript",
+    "page": "script",
     "state": "selection-popup",
     "viewport": "desktop",
-    "docName": "manuscript-selection-popup",
-    "caption": "Manuscript - text-selection action popup on one word (+ Note, + Story Bible, Look up)"
+    "docName": "script-selection-popup",
+    "caption": "Script - text-selection action popup on one word (+ Note, + Story Bible, Look up)"
   },
   {
-    "page": "manuscript",
+    "page": "script",
     "state": "word-lookup-definition",
     "viewport": "desktop",
-    "docName": "manuscript-word-lookup",
-    "caption": "Manuscript - the Look up panel: definitions, examples and synonyms by part of speech, with the dictionary's credit"
+    "docName": "script-word-lookup",
+    "caption": "Script - the Look up panel: definitions, examples and synonyms by part of speech, with the dictionary's credit"
   },
   {
-    "page": "manuscript",
+    "page": "script",
     "state": "word-lookup-not-found",
     "viewport": "desktop",
-    "docName": "manuscript-word-lookup-not-found",
-    "caption": "Manuscript - Look up for a word the dictionary does not have"
+    "docName": "script-word-lookup-not-found",
+    "caption": "Script - Look up for a word the dictionary does not have"
   },
   {
-    "page": "manuscript",
+    "page": "script",
     "state": "word-lookup-not-installed",
     "viewport": "desktop",
-    "docName": "manuscript-word-lookup-download",
-    "caption": "Manuscript - the first Look up asks before downloading the dictionary"
+    "docName": "script-word-lookup-download",
+    "caption": "Script - the first Look up asks before downloading the dictionary"
   },
   {
-    "page": "manuscript",
+    "page": "script",
     "state": "add-note-dialog",
     "viewport": "desktop",
-    "docName": "manuscript-add-note",
-    "caption": "Manuscript - Add Note dialog open after selecting text"
+    "docName": "script-add-note",
+    "caption": "Script - Add Note dialog open after selecting text"
   },
   {
     "page": "home",
@@ -364,32 +371,32 @@
     "caption": "Home - a finished manuscript import with its real, step-by-step activity log"
   },
   {
-    "page": "manuscript",
+    "page": "script",
     "state": "formatted-text-and-line-breaks",
     "viewport": "desktop",
-    "docName": "manuscript-formatting",
-    "caption": "Manuscript - italic, bold and underline from the source document, and a preserved line break inside a paragraph"
+    "docName": "script-formatting",
+    "caption": "Script - italic, bold and underline from the source document, and a preserved line break inside a paragraph"
   },
   {
-    "page": "manuscript",
+    "page": "script",
     "state": "chapter-bookmarked",
     "viewport": "desktop",
-    "docName": "manuscript-bookmark",
-    "caption": "Manuscript - a chapter bookmarked, shown with a blue bookmark icon"
+    "docName": "script-bookmark",
+    "caption": "Script - a chapter bookmarked, shown with a blue bookmark icon"
   },
   {
-    "page": "manuscript",
+    "page": "script",
     "state": "go-to-line-highlight",
     "viewport": "desktop",
-    "docName": "manuscript-go-to-line",
-    "caption": "Manuscript - the line reached from the Story Bible stays highlighted so it is easy to find"
+    "docName": "script-go-to-line",
+    "caption": "Script - the line reached from the Story Bible stays highlighted so it is easy to find"
   },
   {
-    "page": "manuscript",
+    "page": "script",
     "state": "reader-dark",
     "viewport": "desktop",
-    "docName": "manuscript-reader-dark",
-    "caption": "Manuscript reader in the Dark theme - readable controls and an opaque sticky chapter header"
+    "docName": "script-reader-dark",
+    "caption": "Script reader in the Dark theme - readable controls and an opaque sticky chapter header"
   },
   {
     "page": "storybible",
@@ -420,11 +427,11 @@
     "caption": "Settings, Credits - the retail sample picked on Chapter 3, lines 1 to 3"
   },
   {
-    "page": "manuscript",
+    "page": "script",
     "state": "retail-sample",
     "viewport": "desktop",
-    "docName": "manuscript-retail-sample",
-    "caption": "Manuscript - the retail sample marked on lines 1 to 3 of Chapter 3"
+    "docName": "script-retail-sample",
+    "caption": "Script - the retail sample marked on lines 1 to 3 of Chapter 3"
   },
   {
     "page": "proof",
