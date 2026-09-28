@@ -98,4 +98,20 @@ describe('Toolbar', () => {
     render(<Example />);
     expect(screen.getByRole('button', { name: 'Full screen' })).toBeTruthy();
   });
+
+  it('draws a real gap by default, and none for a segmented bar whose items share a border instead', () => {
+    const { rerender } = render(
+      <Toolbar label="Gapped">
+        <ToolbarButton render={<Button>One</Button>} />
+      </Toolbar>,
+    );
+    expect(screen.getByRole('toolbar').className).toContain('gap-1');
+    rerender(
+      <Toolbar label="Flush" gapClassName="gap-0">
+        <ToolbarButton render={<Button>One</Button>} />
+      </Toolbar>,
+    );
+    expect(screen.getByRole('toolbar').className).toContain('gap-0');
+    expect(screen.getByRole('toolbar').className).not.toContain('gap-1');
+  });
 });

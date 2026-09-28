@@ -322,4 +322,5 @@ The table is generated from each ADR's heading and Status line ([ADR 0410](0410-
 | [0617](0617-progressbar-gains-a-thin-toned-variant-for-the-benchmarks-under-tile-and-weekly-bars.md) | ProgressBar gains a thin, toned variant for the benchmark's under-tile and weekly bars | Proposed (Phase 9 of the mock fidelity PRD, stream F-P9 on #509) |
 | [0618](0618-levelmeter-is-a-position-graded-led-ladder-not-one-flat-colour-for-the-current-reading.md) | LevelMeter is a position-graded LED ladder, not one flat colour for the current reading | Proposed (Phase 9 of the mock fidelity PRD, stream F-P9 on #509) |
 | [0619](0619-meterbar-is-removed-its-one-consumer-is-gone.md) | MeterBar is removed: its one consumer is gone | Proposed (Phase 9 of the mock fidelity PRD, stream F-P9 on #509) |
+| [0620](0620-kbd-draws-plex-mono-caps-in-two-sizes-with-a-pressed-bottom-edge-and-keyhint-composes-one-with-its-action.md) | Kbd draws Plex Mono caps in two sizes with a pressed bottom edge, and KeyHint composes one with its action | Proposed (Phase 10 of the mock fidelity PRD, stream F-P10 on #509) |
 <!-- adr-index:end -->
