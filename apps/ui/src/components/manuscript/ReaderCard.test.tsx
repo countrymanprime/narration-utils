@@ -120,14 +120,14 @@ describe('ReaderCard (manuscript-credits-card-parity.prd.md, manuscript-chapter-
         <p>Body</p>
       </ReaderCard>,
     );
-    await user.click(screen.getByRole('button', { name: 'Open workspace for Chapter 2' }));
+    await user.click(screen.getByRole('button', { name: 'Open in Proof for Chapter 2' }));
     expect(onWorkspace).toHaveBeenCalledTimes(1);
     expect(onToggleExpand).not.toHaveBeenCalled();
   });
 
   it('renders no Workspace button when showWorkspace is false', () => {
     renderCard({ showWorkspace: false, onWorkspace: undefined });
-    expect(screen.queryByRole('button', { name: /Open workspace for/ })).toBeNull();
+    expect(screen.queryByRole('button', { name: /Open in Proof for/ })).toBeNull();
   });
 
   it('shows a chevron that flips with expanded state', () => {

@@ -6,7 +6,7 @@ import type { StateEntry } from '../lib/types';
 import { FREEZES_THE_CLOCK, KEEPS_DESKTOP_SCROLL, LIVE_PROGRESS_MOVES_ON } from './shared';
 
 export const proofChapterStates: StateEntry[] = [
-  // The chapter workspace (edit-and-proof-workspace.prd.md Phases 2 to 4), reached from a linked chapter's "Open workspace" link.
+  // The chapter workspace (edit-and-proof-workspace.prd.md Phases 2 to 4), reached from a linked chapter's "Open in Proof" link.
   {
     page: 'proof-chapter',
     state: 'never',
@@ -74,7 +74,7 @@ export const proofChapterStates: StateEntry[] = [
     page: 'proof-chapter',
     state: 'compare-results-misread',
     description:
-      "Proof chapter view, a finished comparison's misread selected in the Flags panel - the inline script/heard diff, its marker state, Show in manuscript, Play recorded audio and Add pronunciation equivalence (the Proofing page's expanded results row)",
+      "Proof chapter view, a finished comparison's misread selected in the Flags panel - the inline script/heard diff, its marker state, Show in Script, Play recorded audio and Add pronunciation equivalence (the Proofing page's expanded results row)",
     ...KEEPS_DESKTOP_SCROLL,
   },
   {

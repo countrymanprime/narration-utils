@@ -186,9 +186,9 @@ export function FindingDetail({
             </Button>
           </TooltipTarget>
         ) : (
-          <TooltipTarget text={manuscriptBlocked ?? 'Open the manuscript at this line'}>
+          <TooltipTarget text={manuscriptBlocked ?? 'Open this line in Script'}>
             <Button variant="ghost" onClick={() => void openManuscript()} disabled={Boolean(manuscriptBlocked)} pending={action.isPending('manuscript')}>
-              Show in manuscript
+              Show in Script
             </Button>
           </TooltipTarget>
         )}

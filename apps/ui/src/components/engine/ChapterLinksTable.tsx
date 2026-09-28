@@ -92,7 +92,7 @@ export function ChapterLinksTable({ tracks, refreshKey, notify }: { tracks: Trac
           <TableRow>
             <TableHeader>Chapter</TableHeader>
             <TableHeader>Status</TableHeader>
-            <TableHeader hiddenLabel="Workspace" />
+            <TableHeader hiddenLabel="Proof" />
             <TableHeader hiddenLabel="Editing check" />
             <TableHeader hiddenLabel="Link" />
           </TableRow>
@@ -105,7 +105,7 @@ export function ChapterLinksTable({ tracks, refreshKey, notify }: { tracks: Trac
               <TableCell>
                 {row.state === 'linked' && (
                   <Link className="text-sm font-semibold underline" to={`/proof/${encodeURIComponent(row.chapter.id)}`}>
-                    Open workspace
+                    Open in Proof
                   </Link>
                 )}
               </TableCell>

@@ -276,7 +276,7 @@ export function AudiobookEstimatePanel({
       <TableRow key={`credits-${kind}`}>
         <TableCell>
           <div>
-            <Link className="font-medium hover:underline" to={`/manuscript#credits-${kind}`}>
+            <Link className="font-medium hover:underline" to={`/script#credits-${kind}`}>
               {label}
             </Link>
           </div>
@@ -311,7 +311,7 @@ export function AudiobookEstimatePanel({
         <TableCell align="right">
           <TooltipTarget text={CREDITS_CHECK_DISABLED_REASON}>
             <Button variant="ghost" className="px-3 py-1 whitespace-nowrap" disabled aria-label={`Check recording of ${label}`}>
-              Check
+              Not checked
             </Button>
           </TooltipTarget>
         </TableCell>
@@ -455,7 +455,7 @@ export function AudiobookEstimatePanel({
                       <div>
                         <Link
                           className="hover:underline"
-                          to={`/manuscript#c${encodeURIComponent(chapter.id)}`}
+                          to={`/script#c${encodeURIComponent(chapter.id)}`}
                           aria-label={chapterName(chapter)}
                           onClick={(event) => {
                             if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
@@ -483,7 +483,7 @@ export function AudiobookEstimatePanel({
                               />
                               {trackGuid && (
                                 <Link className="text-xs underline" style={{ color: 'var(--text-muted)' }} to={`/proof/${encodeURIComponent(chapter.id)}`}>
-                                  Open workspace
+                                  Open in Proof
                                 </Link>
                               )}
                             </div>

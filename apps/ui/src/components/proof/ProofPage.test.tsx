@@ -63,6 +63,10 @@ describe('ProofPage', () => {
     const first = (await rows())[0];
     expect(first.textContent).toContain('“a White Rabbit with pink eyes” read as “a white rabbit with pale eyes”');
     expect(first.textContent).toContain('90%');
+    // PF2: the Type column shows the evidence's own kind, not the broader category, when the analyzer reports one.
+    expect(first.textContent).toContain('Misread');
+    const entityRow = (await rows()).find((row) => /White Rabbit/.test(row.textContent ?? '') && !/pink eyes/.test(row.textContent ?? ''));
+    expect(entityRow?.textContent).toContain('Story Bible entry');
   });
 
   it('says there is nothing to review yet, with no filters, when the project has no findings', async () => {
@@ -188,7 +192,7 @@ describe('ProofPage', () => {
     const user = userEvent.setup();
     const { goToManuscript, goToStoryBible } = renderPage();
     await openFinding(user, /pink eyes/);
-    await user.click(screen.getByRole('button', { name: 'Show in manuscript' }));
+    await user.click(screen.getByRole('button', { name: 'Show in Script' }));
     await waitFor(() => expect(goToManuscript).toHaveBeenCalledWith('chapter-1', 1));
     await openFinding(user, /.White Rabbit.Story Bible/);
     await user.click(screen.getByRole('button', { name: 'Open in Story Bible' }));
@@ -212,11 +216,11 @@ describe('ProofPage', () => {
     expect(screen.queryByRole('button', { name: 'Open chapter view' })).toBeNull();
   });
 
-  it('keeps Show in manuscript off, with the reason, when there is no manuscript', async () => {
+  it('keeps Show in Script off, with the reason, when there is no manuscript', async () => {
     const user = userEvent.setup();
     renderPage({ hasManuscript: false });
     await openFinding(user, /pink eyes/);
-    expect((screen.getByRole('button', { name: 'Show in manuscript' }) as HTMLButtonElement).disabled).toBe(true);
+    expect((screen.getByRole('button', { name: 'Show in Script' }) as HTMLButtonElement).disabled).toBe(true);
     expect(screen.getByRole('group', { name: 'Import a manuscript to open this finding in it.' })).toBeTruthy();
     expect(screen.queryByRole('button', { name: 'Open in Story Bible' })).toBeNull();
   });
@@ -466,7 +470,7 @@ describe('ProofPage adds an approved marker in REAPER', () => {
     const detail = await screen.findByRole('region', { name: 'Delivery check' });
     expect(within(detail).getByText('File')).toBeTruthy();
     expect(within(detail).getByText('Each file measures between -23 dB and -18 dB RMS.')).toBeTruthy();
-    expect(within(detail).queryByRole('button', { name: 'Show in manuscript' })).toBeNull();
+    expect(within(detail).queryByRole('button', { name: 'Show in Script' })).toBeNull();
     await user.click(within(detail).getByRole('button', { name: 'Open in Delivery' }));
     expect(goToDelivery).toHaveBeenCalledWith('C:/Projects/Alice/renders/Chapter 01.wav', 'acx.rms');
     expect(goToManuscript).not.toHaveBeenCalled();
