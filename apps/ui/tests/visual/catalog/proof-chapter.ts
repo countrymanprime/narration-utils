@@ -250,4 +250,21 @@ export const proofChapterStates: StateEntry[] = [
       'Proof chapter view, a chosen render gone stale (?mockProofingRender=chapter-9-stale) - "changed since you chose it", Choose rendered file again',
     ...KEEPS_DESKTOP_SCROLL,
   },
+  // Native takes (native-recording-suite PRD Phase 4, "take review integration"): the built-in recorder's takes
+  // (?mockEngine=builtin) beside REAPER-sourced take review on the same Proof page - one take-review experience
+  // whatever the source.
+  {
+    page: 'proof-chapter',
+    state: 'native-takes-unassigned',
+    description:
+      'Proof chapter view, the Native takes panel (?mockEngine=builtin) with an unassigned take offered for assignment to one of the chapter’s paragraphs',
+    ...KEEPS_DESKTOP_SCROLL,
+  },
+  {
+    page: 'proof-chapter',
+    state: 'native-takes-keeper',
+    description:
+      'Proof chapter view, the Native takes panel with two takes assigned to the same line, one marked the keeper (Q5: narrator-confirmed, undoable) and the other not',
+    ...KEEPS_DESKTOP_SCROLL,
+  },
 ];

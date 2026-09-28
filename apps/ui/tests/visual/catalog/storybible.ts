@@ -125,4 +125,18 @@ export const storybibleStates: StateEntry[] = [
     state: 'remove-voice-data-confirm',
     description: 'Story Bible, the Voice data slide-over with the Remove voice data confirm dialog open (Q7, destructive, project-wide)',
   },
+
+  // Series tab (character-continuity-review.prd.md Phase 11, D79: a tab, no nav entry of its own; non-acoustic
+  // only, D87 on #509 - reference clips and their source book, no per-book drift evidence).
+  {
+    page: 'storybible',
+    state: 'series-tab-empty',
+    description: 'Story Bible, the Series tab for a project outside any series: the honest empty state and Create series (?mockSeries=not-in-series)',
+  },
+  {
+    page: 'storybible',
+    state: 'series-tab-populated',
+    description:
+      'Story Bible, the Series tab with a two-book series: characters grouped across books with their approved reference clips, each labeled by its source book (P11)',
+  },
 ];

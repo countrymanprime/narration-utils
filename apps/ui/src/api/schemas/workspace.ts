@@ -2,6 +2,7 @@ import { z } from 'zod';
 import type {
   WorkspaceAlignmentResult,
   WorkspaceExtra,
+  WorkspaceFXChainsResult,
   WorkspaceItem,
   WorkspaceParagraph,
   WorkspacePeaks,
@@ -62,6 +63,11 @@ export const workspaceAlignmentResultSchema = z.object({
   extras: listFromNull(extraSchema),
   items: listFromNull(itemSchema),
 }) satisfies z.ZodType<WorkspaceAlignmentResult>;
+
+export const workspaceFXChainsResultSchema = z.object({
+  names: listFromNull(z.string()),
+  truncated: z.boolean(),
+}) satisfies z.ZodType<WorkspaceFXChainsResult>;
 
 // The waveform strip's peaks (edit-and-proof-workspace PRD Phase 5, ADR 0520): apps/desktop/bindings_workspace_peaks.go.
 const peaksSchema = z.object({
