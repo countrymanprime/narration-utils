@@ -103,7 +103,7 @@ export function ChapterLinksTable({ tracks, refreshKey, notify }: { tracks: Trac
               <TableCell style={{ color: STATE_COLOR[row.state] }}>{STATE_LABEL[row.state]}</TableCell>
               <TableCell>
                 {row.state === 'linked' && (
-                  <Link className="text-sm font-semibold underline" to={`/tracks/chapter/${encodeURIComponent(row.chapter.id)}`}>
+                  <Link className="text-sm font-semibold underline" to={`/proof/${encodeURIComponent(row.chapter.id)}`}>
                     Open workspace
                   </Link>
                 )}

@@ -22,9 +22,8 @@
     - group "Review":
       - /children: equal
       - text: Review
-      - button "Proofing"
+      - button "Proof"
       - button "Tracks"
-      - button "Review"
     - group "Finish":
       - /children: equal
       - text: Finish

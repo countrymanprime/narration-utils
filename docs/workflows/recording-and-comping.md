@@ -6,11 +6,11 @@ Turn retakes and repeated reads into organized comparison candidates without mak
 
 ## Flow
 
-What each step runs on is in [Take review](../utilities/take-review.md); the screen-by-screen guide is the Review page's
-[Pickups and duplicates](../guides/using-the-app/review.md#pickups-and-duplicates) section.
+What each step runs on is in [Take review](../utilities/take-review.md); the screen-by-screen guide is Proof's
+[Pickups and duplicates](../guides/using-the-app/proof.md#pickups-and-duplicates) section.
 
 1. Record normal narration and pickups: as takes of the timeline item, on a pickup track, or later in the timeline.
-2. On the Review page, **Find pickups and duplicates…** on the chapter track, adding the pickup track or stretch of the
+2. On Proof, **Find pickups and duplicates…** on the chapter track, adding the pickup track or stretch of the
    timeline if there is one. Every take of every item in scope is transcribed and aligned to the manuscript.
 3. Review each group of repeated reads: its part of the script, each read's range, whether it covers the whole part or
    only some of it, and how closely it matches. Go to or loop a read in REAPER, or audition two from their raw source.

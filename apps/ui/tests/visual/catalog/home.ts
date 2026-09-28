@@ -72,11 +72,6 @@ export const homeStates: StateEntry[] = [
       'Home, the toast for a chapter-sync batch that just linked a track, with Undo (?mockChapterSync=linked, daw-chapter-track-auto-sync.prd.md Phase 3, S12, mockups/daw-chapter-track-auto-sync/03-auto-linked-toast-undo.webp)',
     ...TOAST_FADES_OUT,
   },
-  {
-    page: 'home',
-    state: 'hint-chips',
-    description: 'Vocabulary hint chips widget (accepted + pending) - lives on Proofing, catalogued under "home" for historical reasons',
-  },
   { page: 'home', state: 'info-tooltip', description: 'Home, info icon tooltip visible', pointer: 'keep', ...TOOLTIP_CLOSES_ON_RESIZE },
   { page: 'home', state: 'manuscript-candidate-offer', description: 'Home, offer to import a manuscript file found in the project folder' },
   {
