@@ -16,6 +16,13 @@ export const productionStates: StateEntry[] = [
     description:
       'Production with a time log, a delivery date 18 days out and a contracted amount (?mockProduction=on-pace) - hours by stage, PFH and the effective rate from logged hours and measured audio only, the running timer on Chapter 6 with Stop timer, and no Start timer while it runs',
   },
+  // mock-fidelity-primitives-and-components.prd.md Phase 11: benchmark mock 01's own data (Q5), the state the pixel-match tool scores.
+  {
+    page: 'production',
+    state: 'mock-fidelity-01',
+    description:
+      "Production drawn with benchmark mock 01's data (?mockFidelity=01) - chapters 1-4 finished, 5 in proof, 6 in edit, 7 being recorded with the timer on it (its row bold), the mock's hours and delivery date - the one-card figures, the flush Chapter pipeline with its board cells beside Next up, the state mock 01 is scored against",
+  },
   {
     page: 'production',
     state: 'at-risk',
@@ -77,6 +84,8 @@ export const productionStates: StateEntry[] = [
     state: 'chapter-removed-list',
     description:
       'Production, the board with the last narration chapter already removed from recording, listed under it with Restore (?mockRemoved=1, mockup 07-removed-from-recording-list.webp)',
+    // The list is under the board: on the first screen beside Next up at 1440 px, below it when Next up stacks above the board.
+    ...KEEPS_DESKTOP_SCROLL,
   },
   {
     page: 'production',

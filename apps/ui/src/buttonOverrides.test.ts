@@ -23,7 +23,6 @@ const CEILING: Record<string, number> = {
   // Phase 8 (the header, serial on AppShell.tsx): the zoom readout, a mono number between the zoom buttons.
   'src/components/layout/AppShell.tsx': 1,
   // Phase 2: the Stage summary's chips are chips drawn as buttons, and become StatusBadges.
-  'src/components/stages/StageSummary.tsx': 3,
   // Phases 5 and 10: the selection menu's joined buttons become a Toolbar holding a segmented group.
   'src/components/manuscript/SelectionMenu.tsx': 4,
 };

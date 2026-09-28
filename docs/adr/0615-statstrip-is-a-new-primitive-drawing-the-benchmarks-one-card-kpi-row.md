@@ -1,6 +1,6 @@
 # 0615. StatStrip is a new primitive drawing the benchmark's one-card KPI row
 
-**Status:** Proposed (Phase 9 of the [mock fidelity PRD](../prds/mock-fidelity-primitives-and-components.prd.md), stream F-P9 on [#509](https://github.com/countrymanprime/narration-utils/issues/509))
+**Status:** Proposed (Phase 9 of the [mock fidelity PRD](../prds/mock-fidelity-primitives-and-components.prd.md), stream F-P9 on [#509](https://github.com/countrymanprime/narration-utils/issues/509); the 16 px tile padding and the stacking below `sm` are superseded by [ADR 0645](0645-the-production-board-draws-mock-01s-cells-columns-and-layout-and-the-mock-wins-the-open-audit-layout-questions.md), which wraps the strip into full rows)
 **Date:** 2026-09-28
 **Supersedes:** none
 

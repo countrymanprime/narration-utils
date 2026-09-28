@@ -53,17 +53,17 @@ export function deadlineFigure(deadline: ProductionDeadline | null, unfinished: 
 type BoardColumn = { name: string; kind: 'recorded' } | { name: string; kind: 'stage'; stage: ChapterStatus } | { name: string; kind: 'unavailable' };
 
 /**
- * The board's columns. Record, Edit and Proof come from the chapter's status and its current stage's readiness (the stage
- * recommendations, read live, Q8 A). Prep and Delivery have no per-chapter producer yet (prep depth, and a delivery check tied to a
- * chapter's file), so they say "Not available" rather than guess (the PRD's risk table).
+ * The board's columns, in mock 01's order (ADR 0645): the length, then the stages in the order the work goes. Record, Edit and
+ * Proof come from the chapter's status and its current stage's readiness (the stage recommendations, read live, Q8 A). Prep and
+ * Delivery have no per-chapter producer yet (prep depth, and a delivery check tied to a chapter's file), so they are a dash rather
+ * than a guess (the PRD's risk table).
  */
 export const BOARD_COLUMNS: readonly BoardColumn[] = [
   { name: 'Recorded', kind: 'recorded' },
+  { name: 'Prep', kind: 'unavailable' },
   { name: 'Record', kind: 'stage', stage: 'recording' },
   { name: 'Edit', kind: 'stage', stage: 'editing' },
   { name: 'Proof', kind: 'stage', stage: 'proofing' },
-  // Last, so a narrow window shows the columns with real answers before it scrolls.
-  { name: 'Prep', kind: 'unavailable' },
   { name: 'Delivery', kind: 'unavailable' },
 ];
 
