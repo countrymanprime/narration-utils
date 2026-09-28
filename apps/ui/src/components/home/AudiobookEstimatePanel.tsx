@@ -476,7 +476,7 @@ export function AudiobookEstimatePanel({
                           return (
                             <div className="flex flex-col items-start gap-0.5">
                               <ChapterTrackButton
-                                chapterTitle={chapter.title}
+                                chapterTitle={chapterName(chapter, 'short')}
                                 link={link}
                                 trackColor={trackSummary?.color}
                                 onClick={() => setTrackChapter({ chapterId: chapter.id, open: true })}
@@ -552,7 +552,7 @@ export function AudiobookEstimatePanel({
                       />
                     </TableCell>
                     <TableCell align="right">
-                      <ChapterCheckStatusButton chapterTitle={chapter.title} status={checkStatus} onClick={() => setChecking(chapter)} />
+                      <ChapterCheckStatusButton chapterTitle={chapterName(chapter, 'short')} status={checkStatus} onClick={() => setChecking(chapter)} />
                     </TableCell>
                   </TableRow>
                 );
@@ -629,6 +629,7 @@ export function AudiobookEstimatePanel({
               open={trackChapter.open}
               chapterId={trackChapter.chapterId}
               chapterTitle={chapter?.title ?? ''}
+              subtitle={chapter?.subtitle}
               link={link}
               trackSummary={trackSummary}
               savedAt={trackLinks?.savedAt ?? ''}
