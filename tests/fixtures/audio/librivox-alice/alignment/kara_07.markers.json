@@ -1,0 +1,1855 @@
+{
+ "schemaVersion": 1,
+ "source": "kara_07",
+ "chapter": "c-0007",
+ "duration_s": 894.194,
+ "sample_rate": 22050,
+ "cuts_s": [
+  12.86,
+  36.13,
+  53.12,
+  58.24,
+  65.75,
+  68.6,
+  72.99,
+  78.34,
+  84.85,
+  93.95,
+  101.25,
+  111.77,
+  120.74,
+  126.67,
+  128.92,
+  132.87,
+  141.05,
+  150.85,
+  160.2,
+  173.0,
+  186.97,
+  202.48,
+  207.66,
+  216.78,
+  222.15,
+  229.63,
+  243.34,
+  255.43,
+  260.9,
+  269.05,
+  272.63,
+  287.02,
+  293.82,
+  304.04,
+  308.53,
+  313.37,
+  316.94,
+  319.7,
+  330.29,
+  338.75,
+  341.89,
+  349.44,
+  355.63,
+  378.97,
+  383.7,
+  391.75,
+  398.93,
+  401.58,
+  417.61,
+  422.56,
+  424.31,
+  428.22,
+  432.3,
+  438.32,
+  451.93,
+  461.99,
+  466.05,
+  475.02,
+  481.99,
+  490.93,
+  494.69,
+  498.98,
+  505.34,
+  513.93,
+  518.37,
+  526.53,
+  536.94,
+  539.72,
+  542.1,
+  548.84,
+  560.32,
+  566.33,
+  571.32,
+  577.39,
+  582.89,
+  593.27,
+  598.44,
+  603.26,
+  611.37,
+  613.48,
+  618.97,
+  631.93,
+  637.8,
+  653.65,
+  660.34,
+  671.41,
+  675.95,
+  680.94,
+  686.49,
+  709.15,
+  718.45,
+  728.74,
+  734.98,
+  740.43,
+  746.74,
+  760.28,
+  762.05,
+  764.88,
+  766.85,
+  790.82,
+  797.9,
+  800.0,
+  821.54,
+  832.47,
+  847.45,
+  881.09
+ ],
+ "cuts_clean": [
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  false,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  false,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  false,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true
+ ],
+ "paragraphs": [
+  {
+   "id": "c-0007-p001",
+   "start_s": 13.36,
+   "end_s": 35.12,
+   "matched": 1.0,
+   "sentence_cuts_s": [
+    12.86,
+    29.09,
+    36.13
+   ],
+   "sentence_cuts_clean": [
+    true,
+    true,
+    true
+   ]
+  },
+  {
+   "id": "c-0007-p002",
+   "start_s": 36.8,
+   "end_s": 52.38,
+   "matched": 0.962,
+   "sentence_cuts_s": [
+    36.13,
+    42.95,
+    43.56,
+    45.77,
+    47.76,
+    53.12
+   ],
+   "sentence_cuts_clean": [
+    true,
+    false,
+    false,
+    true,
+    false,
+    true
+   ]
+  },
+  {
+   "id": "c-0007-p003",
+   "start_s": 53.4,
+   "end_s": 57.4,
+   "matched": 1.0,
+   "sentence_cuts_s": [
+    53.12,
+    58.24
+   ],
+   "sentence_cuts_clean": [
+    true,
+    true
+   ]
+  },
+  {
+   "id": "c-0007-p004",
+   "start_s": 58.66,
+   "end_s": 64.7,
+   "matched": 1.0,
+   "sentence_cuts_s": [
+    58.24,
+    62.35,
+    65.75
+   ],
+   "sentence_cuts_clean": [
+    true,
+    true,
+    true
+   ]
+  },
+  {
+   "id": "c-0007-p005",
+   "start_s": 66.12,
+   "end_s": 67.96,
+   "matched": 1.0,
+   "sentence_cuts_s": [
+    65.75,
+    68.6
+   ],
+   "sentence_cuts_clean": [
+    true,
+    true
+   ]
+  },
+  {
+   "id": "c-0007-p006",
+   "start_s": 68.82,
+   "end_s": 72.48,
+   "matched": 1.0,
+   "sentence_cuts_s": [
+    68.6,
+    72.99
+   ],
+   "sentence_cuts_clean": [
+    true,
+    true
+   ]
+  },
+  {
+   "id": "c-0007-p007",
+   "start_s": 73.1,
+   "end_s": 77.68,
+   "matched": 1.0,
+   "sentence_cuts_s": [
+    72.99,
+    78.34
+   ],
+   "sentence_cuts_clean": [
+    true,
+    true
+   ]
+  },
+  {
+   "id": "c-0007-p008",
+   "start_s": 78.64,
+   "end_s": 84.02,
+   "matched": 1.0,
+   "sentence_cuts_s": [
+    78.34,
+    84.85
+   ],
+   "sentence_cuts_clean": [
+    true,
+    true
+   ]
+  },
+  {
+   "id": "c-0007-p009",
+   "start_s": 85.06,
+   "end_s": 93.24,
+   "matched": 1.0,
+   "sentence_cuts_s": [
+    84.85,
+    87.93,
+    93.95
+   ],
+   "sentence_cuts_clean": [
+    true,
+    true,
+    true
+   ]
+  },
+  {
+   "id": "c-0007-p010",
+   "start_s": 93.24,
+   "end_s": 100.62,
+   "matched": 1.0,
+   "sentence_cuts_s": [
+    93.95,
+    101.25
+   ],
+   "sentence_cuts_clean": [
+    true,
+    true
+   ]
+  },
+  {
+   "id": "c-0007-p011",
+   "start_s": 101.9,
+   "end_s": 111.24,
+   "matched": 1.0,
+   "sentence_cuts_s": [
+    101.25,
+    111.77
+   ],
+   "sentence_cuts_clean": [
+    true,
+    true
+   ]
+  },
+  {
+   "id": "c-0007-p012",
+   "start_s": 111.24,
+   "end_s": 120.26,
+   "matched": 1.0,
+   "sentence_cuts_s": [
+    111.77,
+    113.97,
+    115.14,
+    120.74
+   ],
+   "sentence_cuts_clean": [
+    true,
+    false,
+    true,
+    true
+   ]
+  },
+  {
+   "id": "c-0007-p013",
+   "start_s": 120.26,
+   "end_s": 125.3,
+   "matched": 1.0,
+   "sentence_cuts_s": [
+    120.74,
+    124.65,
+    126.67
+   ],
+   "sentence_cuts_clean": [
+    true,
+    true,
+    true
+   ]
+  },
+  {
+   "id": "c-0007-p014",
+   "start_s": 126.48,
+   "end_s": 128.08,
+   "matched": 1.0,
+   "sentence_cuts_s": [
+    126.67,
+    128.92
+   ],
+   "sentence_cuts_clean": [
+    true,
+    true
+   ]
+  },
+  {
+   "id": "c-0007-p015",
+   "start_s": 128.98,
+   "end_s": 132.08,
+   "matched": 1.0,
+   "sentence_cuts_s": [
+    128.92,
+    132.87
+   ],
+   "sentence_cuts_clean": [
+    true,
+    true
+   ]
+  },
+  {
+   "id": "c-0007-p016",
+   "start_s": 132.8,
+   "end_s": 140.5,
+   "matched": 1.0,
+   "sentence_cuts_s": [
+    132.87,
+    141.05
+   ],
+   "sentence_cuts_clean": [
+    true,
+    true
+   ]
+  },
+  {
+   "id": "c-0007-p017",
+   "start_s": 140.5,
+   "end_s": 149.9,
+   "matched": 1.0,
+   "sentence_cuts_s": [
+    141.05,
+    142.99,
+    144.01,
+    150.85
+   ],
+   "sentence_cuts_clean": [
+    true,
+    true,
+    true,
+    true
+   ]
+  },
+  {
+   "id": "c-0007-p018",
+   "start_s": 150.92,
+   "end_s": 159.68,
+   "matched": 1.0,
+   "sentence_cuts_s": [
+    150.85,
+    160.2
+   ],
+   "sentence_cuts_clean": [
+    true,
+    true
+   ]
+  },
+  {
+   "id": "c-0007-p019",
+   "start_s": 159.68,
+   "end_s": 171.27,
+   "matched": 1.0,
+   "sentence_cuts_s": [
+    160.2,
+    173.0
+   ],
+   "sentence_cuts_clean": [
+    true,
+    true
+   ]
+  },
+  {
+   "id": "c-0007-p020",
+   "start_s": 172.82,
+   "end_s": 186.18,
+   "matched": 1.0,
+   "sentence_cuts_s": [
+    173.0,
+    186.97
+   ],
+   "sentence_cuts_clean": [
+    true,
+    true
+   ]
+  },
+  {
+   "id": "c-0007-p021",
+   "start_s": 186.18,
+   "end_s": 201.4,
+   "matched": 1.0,
+   "sentence_cuts_s": [
+    186.97,
+    190.82,
+    192.46,
+    202.48
+   ],
+   "sentence_cuts_clean": [
+    true,
+    true,
+    false,
+    true
+   ]
+  },
+  {
+   "id": "c-0007-p022",
+   "start_s": 202.7,
+   "end_s": 207.22,
+   "matched": 1.0,
+   "sentence_cuts_s": [
+    202.48,
+    207.66
+   ],
+   "sentence_cuts_clean": [
+    true,
+    true
+   ]
+  },
+  {
+   "id": "c-0007-p023",
+   "start_s": 207.82,
+   "end_s": 215.6,
+   "matched": 1.0,
+   "sentence_cuts_s": [
+    207.66,
+    209.35,
+    210.08,
+    213.28,
+    216.78
+   ],
+   "sentence_cuts_clean": [
+    true,
+    false,
+    false,
+    true,
+    true
+   ]
+  },
+  {
+   "id": "c-0007-p024",
+   "start_s": 216.58,
+   "end_s": 220.4,
+   "matched": 1.0,
+   "sentence_cuts_s": [
+    216.78,
+    222.15
+   ],
+   "sentence_cuts_clean": [
+    true,
+    true
+   ]
+  },
+  {
+   "id": "c-0007-p025",
+   "start_s": 222.02,
+   "end_s": 228.86,
+   "matched": 1.0,
+   "sentence_cuts_s": [
+    222.15,
+    229.63
+   ],
+   "sentence_cuts_clean": [
+    true,
+    true
+   ]
+  },
+  {
+   "id": "c-0007-p026",
+   "start_s": 229.86,
+   "end_s": 242.42,
+   "matched": 1.0,
+   "sentence_cuts_s": [
+    229.63,
+    243.34
+   ],
+   "sentence_cuts_clean": [
+    true,
+    true
+   ]
+  },
+  {
+   "id": "c-0007-p027",
+   "start_s": 243.96,
+   "end_s": 253.88,
+   "matched": 0.967,
+   "sentence_cuts_s": [
+    243.34,
+    247.3,
+    248.46,
+    249.58,
+    255.43
+   ],
+   "sentence_cuts_clean": [
+    true,
+    true,
+    true,
+    true,
+    true
+   ]
+  },
+  {
+   "id": "c-0007-p028",
+   "start_s": 255.36,
+   "end_s": 260.16,
+   "matched": 1.0,
+   "sentence_cuts_s": [
+    255.43,
+    256.13,
+    257.25,
+    260.9
+   ],
+   "sentence_cuts_clean": [
+    true,
+    true,
+    true,
+    true
+   ]
+  },
+  {
+   "id": "c-0007-p029",
+   "start_s": 260.16,
+   "end_s": 267.6,
+   "matched": 1.0,
+   "sentence_cuts_s": [
+    260.9,
+    269.05
+   ],
+   "sentence_cuts_clean": [
+    true,
+    true
+   ]
+  },
+  {
+   "id": "c-0007-p030",
+   "start_s": 268.96,
+   "end_s": 271.76,
+   "matched": 1.0,
+   "sentence_cuts_s": [
+    269.05,
+    272.63
+   ],
+   "sentence_cuts_clean": [
+    true,
+    true
+   ]
+  },
+  {
+   "id": "c-0007-p031",
+   "start_s": 271.76,
+   "end_s": 285.8,
+   "matched": 1.0,
+   "sentence_cuts_s": [
+    272.63,
+    274.71,
+    281.31,
+    287.02
+   ],
+   "sentence_cuts_clean": [
+    true,
+    true,
+    true,
+    true
+   ]
+  },
+  {
+   "id": "c-0007-p032",
+   "start_s": 287.2,
+   "end_s": 292.74,
+   "matched": 1.0,
+   "sentence_cuts_s": [
+    287.02,
+    293.82
+   ],
+   "sentence_cuts_clean": [
+    true,
+    true
+   ]
+  },
+  {
+   "id": "c-0007-p033",
+   "start_s": 293.76,
+   "end_s": 302.94,
+   "matched": 1.0,
+   "sentence_cuts_s": [
+    293.82,
+    304.04
+   ],
+   "sentence_cuts_clean": [
+    true,
+    true
+   ]
+  },
+  {
+   "id": "c-0007-p034",
+   "start_s": 303.82,
+   "end_s": 307.62,
+   "matched": 1.0,
+   "sentence_cuts_s": [
+    304.04,
+    305.49,
+    308.53
+   ],
+   "sentence_cuts_clean": [
+    true,
+    true,
+    true
+   ]
+  },
+  {
+   "id": "c-0007-p035",
+   "start_s": 308.62,
+   "end_s": 312.26,
+   "matched": 1.0,
+   "sentence_cuts_s": [
+    308.53,
+    313.37
+   ],
+   "sentence_cuts_clean": [
+    true,
+    true
+   ]
+  },
+  {
+   "id": "c-0007-p036",
+   "start_s": 313.22,
+   "end_s": 315.76,
+   "matched": 1.0,
+   "sentence_cuts_s": [
+    313.37,
+    316.94
+   ],
+   "sentence_cuts_clean": [
+    true,
+    true
+   ]
+  },
+  {
+   "id": "c-0007-p037",
+   "start_s": 316.76,
+   "end_s": 318.3,
+   "matched": 1.0,
+   "sentence_cuts_s": [
+    316.94,
+    319.7
+   ],
+   "sentence_cuts_clean": [
+    true,
+    true
+   ]
+  },
+  {
+   "id": "c-0007-p038",
+   "start_s": 319.96,
+   "end_s": 329.04,
+   "matched": 1.0,
+   "sentence_cuts_s": [
+    319.7,
+    322.45,
+    330.29
+   ],
+   "sentence_cuts_clean": [
+    true,
+    true,
+    true
+   ]
+  },
+  {
+   "id": "c-0007-p039",
+   "start_s": 330.48,
+   "end_s": 337.4,
+   "matched": 1.0,
+   "sentence_cuts_s": [
+    330.29,
+    336.54,
+    338.75
+   ],
+   "sentence_cuts_clean": [
+    true,
+    true,
+    true
+   ]
+  },
+  {
+   "id": "c-0007-p040",
+   "start_s": 338.76,
+   "end_s": 340.84,
+   "matched": 1.0,
+   "sentence_cuts_s": [
+    338.75,
+    341.89
+   ],
+   "sentence_cuts_clean": [
+    true,
+    true
+   ]
+  },
+  {
+   "id": "c-0007-p041",
+   "start_s": 341.74,
+   "end_s": 348.18,
+   "matched": 1.0,
+   "sentence_cuts_s": [
+    341.89,
+    342.56,
+    345.58,
+    349.44
+   ],
+   "sentence_cuts_clean": [
+    true,
+    true,
+    true,
+    true
+   ]
+  },
+  {
+   "id": "c-0007-p042",
+   "start_s": 349.24,
+   "end_s": 354.82,
+   "matched": 1.0,
+   "sentence_cuts_s": [
+    349.44,
+    355.63
+   ],
+   "sentence_cuts_clean": [
+    true,
+    true
+   ]
+  },
+  {
+   "id": "c-0007-p043",
+   "start_s": 355.88,
+   "end_s": 377.84,
+   "matched": 0.986,
+   "sentence_cuts_s": [
+    355.63,
+    356.14,
+    358.43,
+    359.82,
+    365.2,
+    375.85,
+    378.97
+   ],
+   "sentence_cuts_clean": [
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true
+   ]
+  },
+  {
+   "id": "c-0007-p044",
+   "start_s": 378.88,
+   "end_s": 382.9,
+   "matched": 1.0,
+   "sentence_cuts_s": [
+    378.97,
+    383.7
+   ],
+   "sentence_cuts_clean": [
+    true,
+    true
+   ]
+  },
+  {
+   "id": "c-0007-p045",
+   "start_s": 382.9,
+   "end_s": 390.4,
+   "matched": 1.0,
+   "sentence_cuts_s": [
+    383.7,
+    391.75
+   ],
+   "sentence_cuts_clean": [
+    true,
+    true
+   ]
+  },
+  {
+   "id": "c-0007-p046",
+   "start_s": 392.04,
+   "end_s": 397.78,
+   "matched": 1.0,
+   "sentence_cuts_s": [
+    391.75,
+    398.93
+   ],
+   "sentence_cuts_clean": [
+    true,
+    true
+   ]
+  },
+  {
+   "id": "c-0007-p047",
+   "start_s": 398.74,
+   "end_s": 401.4,
+   "matched": 1.0,
+   "sentence_cuts_s": [
+    398.93,
+    400.42,
+    401.58
+   ],
+   "sentence_cuts_clean": [
+    true,
+    true,
+    true
+   ]
+  },
+  {
+   "id": "c-0007-p048",
+   "start_s": 401.4,
+   "end_s": 417.74,
+   "matched": 0.936,
+   "sentence_cuts_s": [
+    401.58,
+    404.24,
+    405.59,
+    406.2,
+    417.61
+   ],
+   "sentence_cuts_clean": [
+    true,
+    true,
+    true,
+    false,
+    true
+   ]
+  },
+  {
+   "id": "c-0007-p049",
+   "start_s": 417.74,
+   "end_s": 422.2,
+   "matched": 1.0,
+   "sentence_cuts_s": [
+    417.61,
+    419.95,
+    422.56
+   ],
+   "sentence_cuts_clean": [
+    true,
+    false,
+    true
+   ]
+  },
+  {
+   "id": "c-0007-p050",
+   "start_s": 422.9,
+   "end_s": 424.48,
+   "matched": 1.0,
+   "sentence_cuts_s": [
+    422.56,
+    424.31
+   ],
+   "sentence_cuts_clean": [
+    true,
+    true
+   ]
+  },
+  {
+   "id": "c-0007-p051",
+   "start_s": 425.58,
+   "end_s": 427.82,
+   "matched": 1.0,
+   "sentence_cuts_s": [
+    424.31,
+    428.22
+   ],
+   "sentence_cuts_clean": [
+    true,
+    true
+   ]
+  },
+  {
+   "id": "c-0007-p052",
+   "start_s": 428.52,
+   "end_s": 431.98,
+   "matched": 1.0,
+   "sentence_cuts_s": [
+    428.22,
+    432.3
+   ],
+   "sentence_cuts_clean": [
+    true,
+    true
+   ]
+  },
+  {
+   "id": "c-0007-p053",
+   "start_s": 432.86,
+   "end_s": 438.22,
+   "matched": 0.933,
+   "sentence_cuts_s": [
+    432.3,
+    436.88,
+    438.32
+   ],
+   "sentence_cuts_clean": [
+    true,
+    true,
+    true
+   ]
+  },
+  {
+   "id": "c-0007-p054",
+   "start_s": 439.28,
+   "end_s": 450.46,
+   "matched": 1.0,
+   "sentence_cuts_s": [
+    438.32,
+    451.93
+   ],
+   "sentence_cuts_clean": [
+    true,
+    true
+   ]
+  },
+  {
+   "id": "c-0007-p055",
+   "start_s": 451.88,
+   "end_s": 461.1,
+   "matched": 1.0,
+   "sentence_cuts_s": [
+    451.93,
+    459.56,
+    461.99
+   ],
+   "sentence_cuts_clean": [
+    true,
+    false,
+    true
+   ]
+  },
+  {
+   "id": "c-0007-p056",
+   "start_s": 461.94,
+   "end_s": 464.62,
+   "matched": 1.0,
+   "sentence_cuts_s": [
+    461.99,
+    463.54,
+    466.05
+   ],
+   "sentence_cuts_clean": [
+    true,
+    false,
+    true
+   ]
+  },
+  {
+   "id": "c-0007-p057",
+   "start_s": 466.02,
+   "end_s": 473.54,
+   "matched": 0.958,
+   "sentence_cuts_s": [
+    466.05,
+    471.93,
+    475.02
+   ],
+   "sentence_cuts_clean": [
+    true,
+    false,
+    true
+   ]
+  },
+  {
+   "id": "c-0007-p058",
+   "start_s": 474.88,
+   "end_s": 482.12,
+   "matched": 1.0,
+   "sentence_cuts_s": [
+    475.02,
+    477.3,
+    481.45,
+    481.99
+   ],
+   "sentence_cuts_clean": [
+    true,
+    true,
+    false,
+    true
+   ]
+  },
+  {
+   "id": "c-0007-p059",
+   "start_s": 482.12,
+   "end_s": 489.58,
+   "matched": 1.0,
+   "sentence_cuts_s": [
+    481.99,
+    490.93
+   ],
+   "sentence_cuts_clean": [
+    true,
+    true
+   ]
+  },
+  {
+   "id": "c-0007-p060",
+   "start_s": 491.0,
+   "end_s": 494.24,
+   "matched": 1.0,
+   "sentence_cuts_s": [
+    490.93,
+    493.09,
+    494.69
+   ],
+   "sentence_cuts_clean": [
+    true,
+    true,
+    true
+   ]
+  },
+  {
+   "id": "c-0007-p061",
+   "start_s": 494.24,
+   "end_s": 498.54,
+   "matched": 1.0,
+   "sentence_cuts_s": [
+    494.69,
+    498.98
+   ],
+   "sentence_cuts_clean": [
+    true,
+    true
+   ]
+  },
+  {
+   "id": "c-0007-p062",
+   "start_s": 498.54,
+   "end_s": 504.16,
+   "matched": 1.0,
+   "sentence_cuts_s": [
+    498.98,
+    502.41,
+    505.34
+   ],
+   "sentence_cuts_clean": [
+    true,
+    false,
+    true
+   ]
+  },
+  {
+   "id": "c-0007-p063",
+   "start_s": 505.26,
+   "end_s": 512.96,
+   "matched": 1.0,
+   "sentence_cuts_s": [
+    505.34,
+    508.46,
+    510.15,
+    513.93
+   ],
+   "sentence_cuts_clean": [
+    true,
+    true,
+    true,
+    true
+   ]
+  },
+  {
+   "id": "c-0007-p064",
+   "start_s": 513.68,
+   "end_s": 517.62,
+   "matched": 1.0,
+   "sentence_cuts_s": [
+    513.93,
+    518.37
+   ],
+   "sentence_cuts_clean": [
+    true,
+    true
+   ]
+  },
+  {
+   "id": "c-0007-p065",
+   "start_s": 518.36,
+   "end_s": 525.1,
+   "matched": 1.0,
+   "sentence_cuts_s": [
+    518.37,
+    519.89,
+    521.21,
+    522.33,
+    526.53
+   ],
+   "sentence_cuts_clean": [
+    true,
+    true,
+    true,
+    true,
+    true
+   ]
+  },
+  {
+   "id": "c-0007-p066",
+   "start_s": 526.26,
+   "end_s": 535.74,
+   "matched": 1.0,
+   "sentence_cuts_s": [
+    526.53,
+    528.57,
+    536.94
+   ],
+   "sentence_cuts_clean": [
+    true,
+    true,
+    false
+   ]
+  },
+  {
+   "id": "c-0007-p067",
+   "start_s": 536.76,
+   "end_s": 538.78,
+   "matched": 1.0,
+   "sentence_cuts_s": [
+    536.94,
+    538.0,
+    539.72
+   ],
+   "sentence_cuts_clean": [
+    false,
+    true,
+    true
+   ]
+  },
+  {
+   "id": "c-0007-p068",
+   "start_s": 539.46,
+   "end_s": 541.54,
+   "matched": 1.0,
+   "sentence_cuts_s": [
+    539.72,
+    540.82,
+    542.1
+   ],
+   "sentence_cuts_clean": [
+    true,
+    true,
+    true
+   ]
+  },
+  {
+   "id": "c-0007-p069",
+   "start_s": 542.36,
+   "end_s": 547.22,
+   "matched": 1.0,
+   "sentence_cuts_s": [
+    542.1,
+    548.84
+   ],
+   "sentence_cuts_clean": [
+    true,
+    true
+   ]
+  },
+  {
+   "id": "c-0007-p070",
+   "start_s": 548.76,
+   "end_s": 559.2,
+   "matched": 0.939,
+   "sentence_cuts_s": [
+    548.84,
+    560.32
+   ],
+   "sentence_cuts_clean": [
+    true,
+    true
+   ]
+  },
+  {
+   "id": "c-0007-p071",
+   "start_s": 560.06,
+   "end_s": 565.9,
+   "matched": 1.0,
+   "sentence_cuts_s": [
+    560.32,
+    561.52,
+    566.33
+   ],
+   "sentence_cuts_clean": [
+    true,
+    true,
+    true
+   ]
+  },
+  {
+   "id": "c-0007-p072",
+   "start_s": 566.8,
+   "end_s": 571.32,
+   "matched": 1.0,
+   "sentence_cuts_s": [
+    566.33,
+    571.32
+   ],
+   "sentence_cuts_clean": [
+    true,
+    true
+   ]
+  },
+  {
+   "id": "c-0007-p073",
+   "start_s": 572.04,
+   "end_s": 577.3,
+   "matched": 1.0,
+   "sentence_cuts_s": [
+    571.32,
+    577.39
+   ],
+   "sentence_cuts_clean": [
+    true,
+    true
+   ]
+  },
+  {
+   "id": "c-0007-p074",
+   "start_s": 577.98,
+   "end_s": 581.86,
+   "matched": 1.0,
+   "sentence_cuts_s": [
+    577.39,
+    582.89
+   ],
+   "sentence_cuts_clean": [
+    true,
+    true
+   ]
+  },
+  {
+   "id": "c-0007-p075",
+   "start_s": 582.6,
+   "end_s": 592.74,
+   "matched": 0.973,
+   "sentence_cuts_s": [
+    582.89,
+    593.27
+   ],
+   "sentence_cuts_clean": [
+    true,
+    true
+   ]
+  },
+  {
+   "id": "c-0007-p076",
+   "start_s": 593.86,
+   "end_s": 597.5,
+   "matched": 1.0,
+   "sentence_cuts_s": [
+    593.27,
+    598.44
+   ],
+   "sentence_cuts_clean": [
+    true,
+    true
+   ]
+  },
+  {
+   "id": "c-0007-p077",
+   "start_s": 598.3,
+   "end_s": 603.32,
+   "matched": 1.0,
+   "sentence_cuts_s": [
+    598.44,
+    603.26
+   ],
+   "sentence_cuts_clean": [
+    true,
+    true
+   ]
+  },
+  {
+   "id": "c-0007-p078",
+   "start_s": 604.18,
+   "end_s": 609.78,
+   "matched": 1.0,
+   "sentence_cuts_s": [
+    603.26,
+    611.37
+   ],
+   "sentence_cuts_clean": [
+    true,
+    true
+   ]
+  },
+  {
+   "id": "c-0007-p079",
+   "start_s": 611.1,
+   "end_s": 613.5,
+   "matched": 1.0,
+   "sentence_cuts_s": [
+    611.37,
+    613.48
+   ],
+   "sentence_cuts_clean": [
+    true,
+    true
+   ]
+  },
+  {
+   "id": "c-0007-p080",
+   "start_s": 614.22,
+   "end_s": 618.26,
+   "matched": 1.0,
+   "sentence_cuts_s": [
+    613.48,
+    616.82,
+    618.97
+   ],
+   "sentence_cuts_clean": [
+    true,
+    false,
+    true
+   ]
+  },
+  {
+   "id": "c-0007-p081",
+   "start_s": 619.2,
+   "end_s": 630.22,
+   "matched": 1.0,
+   "sentence_cuts_s": [
+    618.97,
+    627.78,
+    631.93
+   ],
+   "sentence_cuts_clean": [
+    true,
+    true,
+    true
+   ]
+  },
+  {
+   "id": "c-0007-p082",
+   "start_s": 631.7,
+   "end_s": 637.92,
+   "matched": 1.0,
+   "sentence_cuts_s": [
+    631.93,
+    637.8
+   ],
+   "sentence_cuts_clean": [
+    true,
+    true
+   ]
+  },
+  {
+   "id": "c-0007-p083",
+   "start_s": 639.52,
+   "end_s": 653.66,
+   "matched": 0.944,
+   "sentence_cuts_s": [
+    637.8,
+    640.87,
+    645.04,
+    645.04,
+    653.65
+   ],
+   "sentence_cuts_clean": [
+    true,
+    true,
+    true,
+    true,
+    true
+   ]
+  },
+  {
+   "id": "c-0007-p084",
+   "start_s": 654.26,
+   "end_s": 660.08,
+   "matched": 1.0,
+   "sentence_cuts_s": [
+    653.65,
+    655.47,
+    658.53,
+    660.34
+   ],
+   "sentence_cuts_clean": [
+    true,
+    true,
+    true,
+    false
+   ]
+  },
+  {
+   "id": "c-0007-p085",
+   "start_s": 660.98,
+   "end_s": 671.66,
+   "matched": 1.0,
+   "sentence_cuts_s": [
+    660.34,
+    662.09,
+    663.71,
+    665.68,
+    671.41
+   ],
+   "sentence_cuts_clean": [
+    false,
+    true,
+    false,
+    true,
+    true
+   ]
+  },
+  {
+   "id": "c-0007-p086",
+   "start_s": 671.66,
+   "end_s": 675.9,
+   "matched": 1.0,
+   "sentence_cuts_s": [
+    671.41,
+    673.22,
+    675.95
+   ],
+   "sentence_cuts_clean": [
+    true,
+    true,
+    true
+   ]
+  },
+  {
+   "id": "c-0007-p087",
+   "start_s": 675.9,
+   "end_s": 680.96,
+   "matched": 1.0,
+   "sentence_cuts_s": [
+    675.95,
+    680.94
+   ],
+   "sentence_cuts_clean": [
+    true,
+    true
+   ]
+  },
+  {
+   "id": "c-0007-p088",
+   "start_s": 680.96,
+   "end_s": 686.22,
+   "matched": 1.0,
+   "sentence_cuts_s": [
+    680.94,
+    686.49
+   ],
+   "sentence_cuts_clean": [
+    true,
+    true
+   ]
+  },
+  {
+   "id": "c-0007-p089",
+   "start_s": 687.34,
+   "end_s": 707.8,
+   "matched": 1.0,
+   "sentence_cuts_s": [
+    686.49,
+    697.85,
+    709.15
+   ],
+   "sentence_cuts_clean": [
+    true,
+    true,
+    true
+   ]
+  },
+  {
+   "id": "c-0007-p090",
+   "start_s": 709.28,
+   "end_s": 718.64,
+   "matched": 1.0,
+   "sentence_cuts_s": [
+    709.15,
+    716.07,
+    718.45
+   ],
+   "sentence_cuts_clean": [
+    true,
+    true,
+    true
+   ]
+  },
+  {
+   "id": "c-0007-p091",
+   "start_s": 720.08,
+   "end_s": 727.66,
+   "matched": 1.0,
+   "sentence_cuts_s": [
+    718.45,
+    728.74
+   ],
+   "sentence_cuts_clean": [
+    true,
+    true
+   ]
+  },
+  {
+   "id": "c-0007-p092",
+   "start_s": 728.76,
+   "end_s": 735.2,
+   "matched": 1.0,
+   "sentence_cuts_s": [
+    728.74,
+    734.98
+   ],
+   "sentence_cuts_clean": [
+    true,
+    true
+   ]
+  },
+  {
+   "id": "c-0007-p093",
+   "start_s": 736.16,
+   "end_s": 739.36,
+   "matched": 1.0,
+   "sentence_cuts_s": [
+    734.98,
+    740.43
+   ],
+   "sentence_cuts_clean": [
+    true,
+    true
+   ]
+  },
+  {
+   "id": "c-0007-p094",
+   "start_s": 740.68,
+   "end_s": 746.7,
+   "matched": 1.0,
+   "sentence_cuts_s": [
+    740.43,
+    746.74
+   ],
+   "sentence_cuts_clean": [
+    true,
+    false
+   ]
+  },
+  {
+   "id": "c-0007-p095",
+   "start_s": 747.54,
+   "end_s": 758.86,
+   "matched": 1.0,
+   "sentence_cuts_s": [
+    746.74,
+    760.28
+   ],
+   "sentence_cuts_clean": [
+    false,
+    true
+   ]
+  },
+  {
+   "id": "c-0007-p096",
+   "start_s": 760.14,
+   "end_s": 762.1,
+   "matched": 1.0,
+   "sentence_cuts_s": [
+    760.28,
+    761.19,
+    762.05
+   ],
+   "sentence_cuts_clean": [
+    true,
+    true,
+    true
+   ]
+  },
+  {
+   "id": "c-0007-p097",
+   "start_s": 762.96,
+   "end_s": 764.82,
+   "matched": 1.0,
+   "sentence_cuts_s": [
+    762.05,
+    764.18,
+    764.88
+   ],
+   "sentence_cuts_clean": [
+    true,
+    true,
+    true
+   ]
+  },
+  {
+   "id": "c-0007-p098",
+   "start_s": 765.88,
+   "end_s": 767.0,
+   "matched": 1.0,
+   "sentence_cuts_s": [
+    764.88,
+    766.85
+   ],
+   "sentence_cuts_clean": [
+    true,
+    true
+   ]
+  },
+  {
+   "id": "c-0007-p099",
+   "start_s": 768.24,
+   "end_s": 791.04,
+   "matched": 1.0,
+   "sentence_cuts_s": [
+    766.85,
+    790.82
+   ],
+   "sentence_cuts_clean": [
+    true,
+    true
+   ]
+  },
+  {
+   "id": "c-0007-p100",
+   "start_s": 791.04,
+   "end_s": 797.2,
+   "matched": 1.0,
+   "sentence_cuts_s": [
+    790.82,
+    797.9
+   ],
+   "sentence_cuts_clean": [
+    true,
+    true
+   ]
+  },
+  {
+   "id": "c-0007-p101",
+   "start_s": 797.86,
+   "end_s": 800.12,
+   "matched": 1.0,
+   "sentence_cuts_s": [
+    797.9,
+    800.0
+   ],
+   "sentence_cuts_clean": [
+    true,
+    true
+   ]
+  },
+  {
+   "id": "c-0007-p102",
+   "start_s": 801.32,
+   "end_s": 821.4,
+   "matched": 1.0,
+   "sentence_cuts_s": [
+    800.0,
+    821.54
+   ],
+   "sentence_cuts_clean": [
+    true,
+    true
+   ]
+  },
+  {
+   "id": "c-0007-p103",
+   "start_s": 822.4,
+   "end_s": 832.04,
+   "matched": 1.0,
+   "sentence_cuts_s": [
+    821.54,
+    824.86,
+    827.58,
+    832.47
+   ],
+   "sentence_cuts_clean": [
+    true,
+    true,
+    true,
+    true
+   ]
+  },
+  {
+   "id": "c-0007-p104",
+   "start_s": 832.98,
+   "end_s": 846.64,
+   "matched": 0.976,
+   "sentence_cuts_s": [
+    832.47,
+    838.34,
+    840.23,
+    840.61,
+    842.77,
+    845.0,
+    847.45
+   ],
+   "sentence_cuts_clean": [
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true
+   ]
+  },
+  {
+   "id": "c-0007-p105",
+   "start_s": 848.02,
+   "end_s": 880.44,
+   "matched": 1.0,
+   "sentence_cuts_s": [
+    847.45,
+    853.11,
+    862.32,
+    881.09
+   ],
+   "sentence_cuts_clean": [
+    true,
+    true,
+    true,
+    true
+   ]
+  }
+ ]
+}
