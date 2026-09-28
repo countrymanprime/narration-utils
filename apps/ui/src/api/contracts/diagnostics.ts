@@ -11,6 +11,24 @@ import type { MeasureJob } from './measure';
 /** What the narrator says the checked files are: room tone and level mean different things for each. */
 export type DiagnosticsSourceKind = 'raw_recording' | 'processed_render';
 
+/**
+ * The silence cleanup analyzer's own thresholds (diagnostics-delivery-and-cleanup-tools.prd.md Phase 9 remainder,
+ * ADR 0238 decision 4; internal/measure.CleanupOptions), read from the narrator's settings ("Cleanup" tool) and
+ * shown the same way as `thresholds`: even before a check, so they are never hidden.
+ */
+export type DiagnosticsCleanupThresholds = {
+  /** Kept at each side of a cut silence, in seconds. */
+  pad_seconds: number;
+  /** The shortest run read as a breath, in seconds. */
+  min_breath_seconds: number;
+  /** The longest run read as a breath, in seconds. */
+  max_breath_seconds: number;
+  /** How far below the read's speech level a breath sits, in dB. */
+  breath_below_speech_db: number;
+  /** How far above the silence around it a click's peak stands, in dB. */
+  click_above_silence_db: number;
+};
+
 /** The thresholds the analyzers use (internal/measure.DiagnosticOptions). */
 export type DiagnosticsThresholds = {
   /** At or above this, a sample counts towards clipping; 0 is the format's full scale. */
@@ -48,24 +66,31 @@ export type DiagnosticsSummary = {
 
 export type DiagnosticsFileStatus = 'pending' | 'checking' | 'checked' | 'failed' | 'cancelled';
 
-/** One file of a check: its summary and findings once checked (an empty list when nothing crossed a threshold), or why it could not be. */
+/**
+ * One file of a check: its summary and findings once checked (an empty list when nothing crossed a threshold), or why
+ * it could not be. `cleanupFindings` are the silence cleanup analyzer's own candidates (ADR 0238 decision 3), apart
+ * from `findings` so the Diagnostics tab's own list is unchanged; read-only, like every finding here.
+ */
 export type DiagnosticsFileResult = {
   path: string;
   name: string;
   status: DiagnosticsFileStatus;
   summary: DiagnosticsSummary | null;
   findings: Finding[];
+  cleanupFindings: Finding[];
   error?: string;
 };
 
 /**
  * The diagnostics job (DiagnosticsAnalyze/State/Cancel), in the shape of the measurement job. `sourceKind` is null
- * before any check; `thresholds` are the ones a check uses, answered even when idle so they are never hidden.
+ * before any check; `thresholds` and `cleanupThresholds` are the ones a check uses, answered even when idle so they
+ * are never hidden.
  */
 export type DiagnosticsJob = Omit<MeasureJob, 'kind' | 'files' | 'profile' | 'bookRules' | 'profileNotice'> & {
   kind: 'diagnostics';
   sourceKind: DiagnosticsSourceKind | null;
   thresholds: DiagnosticsThresholds;
+  cleanupThresholds: DiagnosticsCleanupThresholds;
   files: DiagnosticsFileResult[];
 };
 

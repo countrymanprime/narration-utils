@@ -1,6 +1,6 @@
 # 0056. A presentational Table primitive replaces the dtable class, and pressable rows take the keyboard
 
-**Status:** Accepted
+**Status:** Accepted (its "`TableCell` is top-aligned" clause is superseded by [ADR 0605](0605-table-and-stage-grid-share-the-mocks-row-and-header-sizes-and-cells-sit-in-the-middle-of-the-row.md): cells sit in the middle of the row, and `valign="top"` keeps one at the top)
 **Date:** 2026-09-20
 **Supersedes:** the `table.dtable` exception of [ADR 0009](0009-complete-tailwind-migration.md) (the rest of ADR 0009 stands)
 

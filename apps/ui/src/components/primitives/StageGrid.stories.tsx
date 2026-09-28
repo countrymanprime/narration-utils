@@ -4,7 +4,8 @@ import { StageGrid, type StageGridCell } from './StageGrid';
 import type { StatusTone } from './StatusBadge';
 
 // Shaped like the production home concept mock (studio-ui-primitives.prd.md mock 01): chapters down, stages across,
-// every cell a `StatusBadge` reached by grid keyboard navigation rather than one tab stop per cell.
+// every cell a `StatusBadge` reached by grid keyboard navigation rather than one tab stop per cell. Chapter 2 is the current
+// row, drawn in bold as the mock draws the chapter the work is on.
 const CHAPTERS = ['Chapter 1', 'Chapter 2', 'Chapter 3', 'Chapter 4'];
 const STAGES = ['Prep', 'Record', 'Edit', 'Proof', 'QC'];
 
@@ -37,7 +38,7 @@ function ProductionBoard() {
     const found = BOARD[`${CHAPTERS[row]}:${STAGES[col]}`] ?? { tone: 'neutral' as StatusTone, label: 'Not started' };
     return { ...found, onActivate: () => onActivate(CHAPTERS[row], STAGES[col]) };
   };
-  return <StageGrid label="Production board" rows={CHAPTERS} columns={STAGES} cell={cell} />;
+  return <StageGrid label="Production board" rows={CHAPTERS} columns={STAGES} cell={cell} currentRow={1} />;
 }
 
 const meta = {
@@ -118,5 +119,24 @@ export const NamesRowsAndColumns: Story = {
         .getAllByRole('rowheader')
         .map((header) => header.textContent),
     ).toEqual(CHAPTERS);
+  },
+};
+
+// The header and rows are Table's, measured on mock 01 (mock-fidelity-primitives-and-components.prd.md Phase 3): a 31 px
+// header row and 34 px body rows.
+export const RowsMatchTheMock: Story = {
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(canvas.getByRole('rowheader', { name: 'Chapter 2' }).className).toContain('font-semibold');
+    await expect(canvas.getByRole('rowheader', { name: 'Chapter 1' }).className).toContain('font-normal');
+    // The sizes need layout: the atlas's browser has it, the stories' jsdom run (stories.test.tsx) lays nothing out.
+    if (canvasElement.getBoundingClientRect().width === 0) return;
+    // Measured once the web fonts are in: a fallback face sets different line boxes.
+    await document.fonts.ready;
+    const [header, first] = canvas.getAllByRole('row');
+    await expect(Math.round(header.getBoundingClientRect().height)).toBe(31);
+    await expect(Math.round(first.getBoundingClientRect().height)).toBe(34);
+    await expect(getComputedStyle(canvas.getByRole('rowheader', { name: 'Chapter 2' })).fontWeight).toBe('600');
+    await expect(getComputedStyle(canvas.getByRole('rowheader', { name: 'Chapter 1' })).fontWeight).toBe('400');
   },
 };

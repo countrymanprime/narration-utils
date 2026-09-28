@@ -40,10 +40,14 @@ import { PronunciationWork } from './PronunciationWork';
 import { pronunciationSourceLabel } from './pronunciationStatus';
 import { draftFrom, propertiesFrom, propertyProblem, sameProperties, type DraftProperty } from './propertyDraft';
 import { IconButton } from '../primitives/IconButton';
+import { Listbox, listboxOptionId } from '../primitives/Listbox';
 import { Select } from '../primitives/Select';
 import { TextField } from '../primitives/TextField';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../primitives/Table';
 import type { Notify } from '../primitives/Toast';
+
+// The alias box's popup of matching entries, named by the text box that drives it.
+const ALIAS_MATCHES_ID = 'story-bible-alias-matches';
 
 // What the form holds while an entry is being edited: the entry's own values, until the narrator changes them.
 type Draft = { name: string; description: string; personality: string; context: string; properties: DraftProperty[] };
@@ -536,14 +540,14 @@ export function GuideDetail({
               <TableRow>
                 <TableHeader>Alias</TableHeader>
                 <TableHeader style={{ minWidth: '9rem' }}>Pronunciation</TableHeader>
-                <TableHeader>Occurrences</TableHeader>
+                <TableHeader align="right">Occurrences</TableHeader>
                 <TableHeader hiddenLabel="Actions" />
               </TableRow>
             </TableHead>
             <TableBody>
               {entity.aliases.map((alias, index) => (
                 <TableRow key={alias.text}>
-                  <TableCell className="font-['IBM_Plex_Mono',ui-monospace,monospace] text-sm">{alias.text}</TableCell>
+                  <TableCell className="font-['IBM_Plex_Mono',ui-monospace,monospace]">{alias.text}</TableCell>
                   <TableCell>
                     <div style={{ position: 'relative', width: '100%' }}>
                       <TextField
@@ -575,7 +579,7 @@ export function GuideDetail({
                       </TooltipTarget>
                     </div>
                   </TableCell>
-                  <TableCell className="font-['IBM_Plex_Mono',ui-monospace,monospace]">{alias.occurrences.length}</TableCell>
+                  <TableCell numeric>{alias.occurrences.length}</TableCell>
                   <TableCell align="right">
                     <IconButton
                       label={`Remove alias ${alias.text}`}
@@ -600,6 +604,8 @@ export function GuideDetail({
               label="Add an alias or find a matching entry"
               role="combobox"
               aria-expanded={aliasMatches.length > 0}
+              aria-controls={aliasMatches.length > 0 ? ALIAS_MATCHES_ID : undefined}
+              aria-activedescendant={aliasMatches[aliasActiveIndex] ? listboxOptionId(ALIAS_MATCHES_ID, aliasMatches[aliasActiveIndex].id) : undefined}
               disabled={editingDisabled}
               value={aliasQuery}
               onChange={(value) => {
@@ -636,57 +642,44 @@ export function GuideDetail({
                 </Button>
               </div>
             ) : aliasQuery ? (
-              <div
-                className="mt-1 flex flex-col overflow-hidden rounded-[var(--control-radius)] border border-[var(--border)] bg-[var(--surface)] shadow-[var(--shadow-lg)]"
-                role="listbox"
-                aria-label="Matching Story Bible entries"
-              >
-                {aliasMatches.length > 0 ? (
-                  aliasMatches.map((match, index) => (
-                    <button
-                      key={match.id}
-                      type="button"
-                      role="option"
-                      aria-selected={index === aliasActiveIndex}
-                      className={`flex w-full items-center gap-2 border-b border-[var(--border)] px-3 py-2 text-left hover:bg-[var(--surface-2)] ${index === aliasActiveIndex ? 'bg-[var(--surface-2)]' : ''}`}
-                      onClick={() => setAliasSelectedId(match.id)}
-                    >
-                      <Dot color={CAT_DOT_BG[categoryCssName(match.category)]} />
-                      <span className="min-w-0 flex-1">
-                        <strong className="text-sm">{match.canonical_name}</strong>
-                        <span className="block text-xs" style={{ color: 'var(--text-muted)' }}>
-                          {categoryLabel(match.category)} · {match.occurrence_count} occurrence{match.occurrence_count === 1 ? '' : 's'}
-                        </span>
-                      </span>
-                    </button>
-                  ))
-                ) : (
-                  <div className="p-3 text-sm" style={{ color: 'var(--text-muted)' }}>
-                    No matching Story Bible entries.
-                  </div>
-                )}
-                <div data-alias-actions className="flex items-center justify-between p-2">
-                  <TooltipTarget text="Add alias">
-                    <IconButton
-                      label="Add alias"
-                      disabled={editingDisabled || waiting('alias')}
-                      pending={mutation.isPending('alias')}
-                      onClick={addAliasFromQuery}
-                    >
-                      <FontAwesomeIcon icon={faPlus} />
-                    </IconButton>
-                  </TooltipTarget>
-                  <TooltipTarget text="Rescan occurrences for this entry">
-                    <IconButton
-                      label="Rescan occurrences"
-                      disabled={isNewDraft || waiting('rescan')}
-                      pending={mutation.isPending('rescan')}
-                      onClick={() => void rescanOccurrences()}
-                    >
-                      <FontAwesomeIcon icon={faRotate} />
-                    </IconButton>
-                  </TooltipTarget>
-                </div>
+              <div className="mt-1">
+                <Listbox
+                  id={ALIAS_MATCHES_ID}
+                  label="Matching Story Bible entries"
+                  options={aliasMatches.map((match) => ({
+                    id: match.id,
+                    label: match.canonical_name,
+                    description: `${categoryLabel(match.category)} · ${match.occurrence_count} occurrence${match.occurrence_count === 1 ? '' : 's'}`,
+                    leading: <Dot color={CAT_DOT_BG[categoryCssName(match.category)]} />,
+                  }))}
+                  activeIndex={aliasActiveIndex}
+                  onPick={setAliasSelectedId}
+                  empty="No matching Story Bible entries."
+                  footer={
+                    <div data-alias-actions className="flex items-center justify-between p-2">
+                      <TooltipTarget text="Add alias">
+                        <IconButton
+                          label="Add alias"
+                          disabled={editingDisabled || waiting('alias')}
+                          pending={mutation.isPending('alias')}
+                          onClick={addAliasFromQuery}
+                        >
+                          <FontAwesomeIcon icon={faPlus} />
+                        </IconButton>
+                      </TooltipTarget>
+                      <TooltipTarget text="Rescan occurrences for this entry">
+                        <IconButton
+                          label="Rescan occurrences"
+                          disabled={isNewDraft || waiting('rescan')}
+                          pending={mutation.isPending('rescan')}
+                          onClick={() => void rescanOccurrences()}
+                        >
+                          <FontAwesomeIcon icon={faRotate} />
+                        </IconButton>
+                      </TooltipTarget>
+                    </div>
+                  }
+                />
               </div>
             ) : (
               <div data-alias-actions className="mt-2 flex items-center justify-between">
@@ -799,7 +792,7 @@ export function GuideDetail({
               ))}
               {entity.relationships.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={3} className="text-sm" style={{ color: 'var(--text-muted)' }}>
+                  <TableCell colSpan={3} style={{ color: 'var(--text-muted)' }}>
                     No related entries yet.
                   </TableCell>
                 </TableRow>

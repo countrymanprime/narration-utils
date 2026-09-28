@@ -1,5 +1,6 @@
 import { useRef, useState, type KeyboardEvent } from 'react';
 import { StatusBadge, type StatusTone } from './StatusBadge';
+import { TABLE_CELL_CLASS, TABLE_HEADER_CLASS, TABLE_TEXT_CLASS } from './tableStyles';
 
 export type StageGridCell = { tone: StatusTone; label: string; onActivate?: () => void };
 
@@ -8,18 +9,21 @@ export type StageGridCell = { tone: StatusTone; label: string; onActivate?: () =
 // focused cell), arrow keys move focus cell to cell, Home/End move to the current row's ends, Ctrl+Home/End to the
 // grid's corners, Enter or Space activates the focused cell. `rows` and `columns` name the row and column headers
 // (the browser's own `scope`), so a screen reader hears "<chapter>, <stage>, <status>" without this primitive
-// writing that name itself.
+// writing that name itself. Its header and rows are Table's (tableStyles.ts, ADR 0605); `currentRow` draws the chapter the
+// work is on in bold, as mock 01 does.
 export function StageGrid({
   label,
   rows,
   columns,
   cell,
+  currentRow,
   className = '',
 }: {
   label: string;
   rows: string[];
   columns: string[];
   cell: (row: number, col: number) => StageGridCell;
+  currentRow?: number;
   className?: string;
 }) {
   const [active, setActive] = useState({ row: 0, col: 0 });
@@ -80,19 +84,14 @@ export function StageGrid({
   };
 
   return (
-    <table role="grid" aria-label={label} className={`border-collapse text-[0.86rem] ${className}`}>
+    <table role="grid" aria-label={label} className={`border-collapse ${TABLE_TEXT_CLASS} ${className}`}>
       <thead>
         <tr role="row">
-          <th role="columnheader" scope="col" className="border-b border-[var(--border)] px-[0.7rem] py-2">
+          <th role="columnheader" scope="col" className={TABLE_HEADER_CLASS}>
             <span className="sr-only">Chapter</span>
           </th>
           {columns.map((column) => (
-            <th
-              key={column}
-              role="columnheader"
-              scope="col"
-              className="border-b border-[var(--border)] px-[0.7rem] py-2 font-['Barlow_Condensed',sans-serif] text-[0.72rem] font-semibold tracking-[0.05em] text-[var(--text-muted)] uppercase"
-            >
+            <th key={column} role="columnheader" scope="col" className={TABLE_HEADER_CLASS}>
               {column}
             </th>
           ))}
@@ -100,8 +99,12 @@ export function StageGrid({
       </thead>
       <tbody>
         {rows.map((rowLabel, row) => (
-          <tr role="row" key={rowLabel}>
-            <th role="rowheader" scope="row" className="border-b border-[var(--border)] px-[0.7rem] py-[0.55rem] text-left font-normal whitespace-nowrap">
+          <tr role="row" key={rowLabel} className={row === currentRow ? 'font-semibold' : undefined}>
+            <th
+              role="rowheader"
+              scope="row"
+              className={`${TABLE_CELL_CLASS} text-left align-middle whitespace-nowrap ${row === currentRow ? 'font-semibold' : 'font-normal'}`}
+            >
               {rowLabel}
             </th>
             {columns.map((_, col) => {
@@ -119,7 +122,7 @@ export function StageGrid({
                   onKeyDown={(event) => onKeyDown(event, row, col)}
                   onClick={() => onCellClick(row, col)}
                   onFocus={() => setActive({ row, col })}
-                  className={`border-b border-[var(--border)] px-[0.7rem] py-[0.55rem] align-middle focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-[var(--accent)] ${onActivate ? 'cursor-pointer hover:bg-[var(--surface-2)]' : ''}`}
+                  className={`${TABLE_CELL_CLASS} align-middle focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-[var(--accent)] ${onActivate ? 'cursor-pointer hover:bg-[var(--surface-2)]' : ''}`}
                 >
                   <StatusBadge tone={tone} label={cellLabel} />
                 </td>
