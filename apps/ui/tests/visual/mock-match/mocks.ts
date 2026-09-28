@@ -44,7 +44,8 @@ const REPLACED_MANUSCRIPT_CROP =
 
 export const APPROVED_MOCKS: ApprovedMock[] = [
   // The benchmark mocks (D69), light except the Booth and the companion panel.
-  { file: `${BENCHMARK}/01-production-home-concept.webp`, target: { page: 'production', state: 'on-pace' }, theme: 'light' },
+  // Scored against its own data (?mockFidelity=01, mock-fidelity-primitives-and-components.prd.md Phase 11, Q5).
+  { file: `${BENCHMARK}/01-production-home-concept.webp`, target: { page: 'production', state: 'mock-fidelity-01' }, theme: 'light' },
   { file: `${BENCHMARK}/02-prep-script-concept.webp`, target: { page: 'script', state: 'prep-rail-characters' }, theme: 'light' },
   { file: `${BENCHMARK}/03-booth-concept.webp`, target: { page: 'booth', state: 'speaker-tags' }, theme: 'dark' },
   { file: `${BENCHMARK}/04-proof-pickups-concept.webp`, target: { page: 'proof', state: 'default' }, theme: 'light' },
@@ -344,6 +345,48 @@ export function scoredMocks(): (ApprovedMock & { target: { page: string; state: 
 /** The mock's path on disk. */
 export function mockPath(file: string): string {
   return fileURLToPath(new URL(`../../../../../docs/prds/mockups/${file}`, import.meta.url));
+}
+
+/** A part of the app's chrome, as a rectangle of the mock: the nav rail or the header bar right of it. */
+export interface ChromeRegion extends Region {
+  name: 'rail' | 'header';
+}
+
+// The mocks that draw no app shell, so they have no chrome to score: the Booth is full-screen (benchmark 03), the companion is
+// a crop of its own panel (07), and the read-aloud sets draw the old read-aloud dialog over the whole window.
+const NO_SHELL = [
+  `${BENCHMARK}/03-booth-concept.webp`,
+  `${BENCHMARK}/07-daw-companion-concept.webp`,
+  'read-aloud-control-bar/',
+  'read-aloud-resume-from-daw/',
+  'manuscript-credits-card-parity/05-read-aloud-dialog-opening-credits.webp',
+];
+
+/**
+ * Whether the mock's chrome is the chrome's spec: the benchmark mocks are (D92); a 2026-09-24 set draws the shell of its day,
+ * which the benchmark set has since replaced, so its chrome is scored for information and a fall there is not a regression.
+ */
+export function isChromeSpec(mock: ApprovedMock): boolean {
+  return mock.file.startsWith(`${BENCHMARK}/`);
+}
+
+/**
+ * The nav rail and the header as the mock draws them, each scored on its own beside the whole screen, so a change to the chrome
+ * is measured apart from the page under it (Phase 8 of the PRD: a primitive phase must not lower a state's chrome score). The
+ * geometry is the mock's own, never the app's: the benchmark mocks draw a 216 px rail and a 52 px header (rules at x 215 and
+ * y 51); the 2026-09-24 sets were drawn from the app of that day, a 224 px rail at 1400 px and wider, the 56 px icon rail from
+ * 768 px, none below, and a 56 px header. A mock with no shell, or compared by a region of its own, has none.
+ */
+export function chromeRegions(mock: ApprovedMock, width: number, height: number): ChromeRegion[] {
+  if (mock.mockRegion || NO_SHELL.some((prefix) => mock.file.startsWith(prefix))) return [];
+  const benchmark = isChromeSpec(mock);
+  const shellWidth = mock.viewport?.width ?? width;
+  const rail = benchmark ? 216 : shellWidth >= 1400 ? 224 : shellWidth >= 768 ? 56 : 0;
+  const header = benchmark ? 52 : 56;
+  const regions: ChromeRegion[] = [];
+  if (rail > 0) regions.push({ name: 'rail', x: 0, y: 0, width: Math.min(rail, width), height });
+  regions.push({ name: 'header', x: rail, y: 0, width: width - rail, height: Math.min(header, height) });
+  return regions;
 }
 
 /** The file name the capture, the diff and the record of one mock are written under. */

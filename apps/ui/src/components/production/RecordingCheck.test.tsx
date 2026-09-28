@@ -229,7 +229,7 @@ describe('recording check on the board', () => {
     const progress = await screen.findByRole('dialog', { name: 'Checking Chapter 7' });
     fireEvent.click(within(progress).getByRole('button', { name: 'Continue in background' }));
     await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
-    await waitFor(() => expect(cell('Chapter 7', 'Record').textContent).toBe('Checking 70%'), { timeout: 2000 });
+    await waitFor(() => expect(cell('Chapter 7', 'Record').textContent).toBe('70%'), { timeout: 2000 });
     fireEvent.click(cell('Chapter 7', 'Record'));
     expect(await screen.findByRole('dialog', { name: 'Checking Chapter 7' })).toBeTruthy();
   });

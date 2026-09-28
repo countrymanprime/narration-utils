@@ -113,6 +113,18 @@ describe('AppShell grouped navigation (Phase 1)', () => {
     }
   });
 
+  // ADR 0407 item 3 and ADR 0635 item 3: on the wide rail every group's heading is drawn, the first one too (its space stands in
+  // for the benchmark mocks' Schedule item, which has no page), never only named for a screen reader.
+  it('draws every group heading on the wide rail, the first one too', () => {
+    const { container } = renderShell();
+    for (const label of ['Production', 'Prep', 'Record', 'Review', 'Finish']) {
+      const heading = container.querySelector(`#nav-group-${label.toLowerCase()}`);
+      expect(heading?.textContent).toBe(label);
+      expect(heading?.className).not.toMatch(/\bsr-only\b/);
+      expect(heading?.className).toMatch(/\bsection-label\b/);
+    }
+  });
+
   // Phase 2: the Production home replaced Home at `/`, as the Production group's one item, active on `/` and nowhere else.
   it("has Production, not Home, as the Production group's item, active at /", () => {
     renderShell({ pathname: '/' });
