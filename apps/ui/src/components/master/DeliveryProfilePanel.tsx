@@ -64,7 +64,7 @@ export function DeliveryProfilePanel({ state, openSettings }: { state: ProfileSt
     <Panel
       title="Delivery profile"
       actions={
-        <Button variant="ghost" onClick={openSettings}>
+        <Button variant="secondary" onClick={openSettings}>
           Change profile
         </Button>
       }

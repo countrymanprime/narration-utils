@@ -7,6 +7,7 @@ import { TextField } from '../primitives/TextField';
 import { Tooltip, TooltipTarget } from '../primitives/Tooltip';
 import { proofingChoiceLabel } from '../proof/options';
 import { describeNumberRange, numberProblem } from './numberSetting';
+import { Button } from '../primitives/Button';
 
 const DELIVERY_LIMIT_TIP =
   "Your own limit for this measurement. Leave it blank and the measurement is reported without being checked. No distributor's numbers are built in.";
@@ -160,9 +161,9 @@ export function ScopedSetting({
 }) {
   const effective = value || field.effectiveValue;
   const resetButton = scope === 'project' && field.isSet && (
-    <button type="button" className="ml-auto flex-none text-[0.75rem] text-[var(--accent)] underline" onClick={onClearOverride}>
+    <Button variant="link" className="ml-auto flex-none text-[0.75rem] text-[var(--accent)]" onClick={onClearOverride}>
       Reset
-    </button>
+    </Button>
   );
   if (field.kind === 'number' && field.number) {
     return <NumberSetting field={field} range={field.number} scope={scope} value={value} change={change} resetButton={resetButton} />;

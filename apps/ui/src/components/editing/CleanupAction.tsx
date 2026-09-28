@@ -60,7 +60,7 @@ function CleanupTrimAction({ chapterId, notify }: { chapterId: string; notify: N
     <>
       <CapabilityGate capability={capability}>
         <Button
-          variant="ghost"
+          variant="secondary"
           onClick={() => void openPreview()}
           pending={action.isPending('cleanup-preview')}
           disabled={action.isBlockedFor('cleanup-preview')}
@@ -126,7 +126,12 @@ function LevelMatchAction({ chapterId, notify }: { chapterId: string; notify: No
   return (
     <>
       <CapabilityGate capability={capability}>
-        <Button variant="ghost" onClick={() => void openPreview()} pending={action.isPending('gain-preview')} disabled={action.isBlockedFor('gain-preview')}>
+        <Button
+          variant="secondary"
+          onClick={() => void openPreview()}
+          pending={action.isPending('gain-preview')}
+          disabled={action.isBlockedFor('gain-preview')}
+        >
           Match levels…
         </Button>
       </CapabilityGate>

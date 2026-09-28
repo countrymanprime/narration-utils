@@ -244,7 +244,7 @@ export function AppShell({
               </TooltipTarget>
               <TooltipTarget text={zoomResetTooltip}>
                 <Button
-                  variant="ghost"
+                  variant="secondary"
                   aria-label={`Reset zoom to 100% (now ${zoom.percent}%)`}
                   aria-disabled={zoomAtDefault || undefined}
                   onClick={zoomAtDefault ? (event) => event.preventDefault() : zoom.reset}

@@ -50,7 +50,7 @@ export const LongTitleWraps: Story = {
       <Heading title="Tracks" />
       <Panel
         title="The_Very_Long_Running_Series_Book_Three_The_Reckoning_chapter_twenty_seven_revised_v14_FINAL.rpp"
-        actions={<Button variant="ghost">Rescan folder</Button>}
+        actions={<Button variant="secondary">Rescan folder</Button>}
       >
         <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
           The title wraps and the action stays beside it.
@@ -72,7 +72,7 @@ export const WithHeaderAndActions: Story = {
         title="Choose a REAPER project file"
         actions={
           <>
-            <Button variant="ghost">Rescan folder</Button>
+            <Button variant="secondary">Rescan folder</Button>
             <Button onClick={onUseFile}>Use this file</Button>
           </>
         }

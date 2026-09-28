@@ -31,7 +31,13 @@ export function OnlinePronunciationLookup({ name, disabled, onUse }: { name: str
   return (
     <div className="space-y-2">
       <div className="flex flex-wrap items-center gap-2">
-        <Button variant="ghost" disabled={disabled} pending={pending} onClick={() => void lookUp()} aria-label={`Look up ${name} online in Merriam-Webster`}>
+        <Button
+          variant="secondary"
+          disabled={disabled}
+          pending={pending}
+          onClick={() => void lookUp()}
+          aria-label={`Look up ${name} online in Merriam-Webster`}
+        >
           Look up online
         </Button>
         <span className="text-xs text-[var(--text-muted)]">Sends “{name}” alone to Merriam-Webster, on your own key.</span>
@@ -50,7 +56,7 @@ export function OnlinePronunciationLookup({ name, disabled, onUse }: { name: str
                   <span className="font-['IBM_Plex_Mono',ui-monospace,monospace] text-[var(--text)]">\{row.spelling}\</span>
                   <span className="text-[var(--text-muted)]">{row.headword}</span>
                   <Button
-                    variant="ghost"
+                    variant="secondary"
                     disabled={disabled}
                     onClick={() => onUse(row.spelling)}
                     aria-label={`Use ${row.spelling} as your pronunciation of ${name}`}

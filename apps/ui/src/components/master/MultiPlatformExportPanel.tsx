@@ -110,7 +110,7 @@ export function MultiPlatformExportPanel({ profiles, jobs }: { profiles: Deliver
           Build {plural(chosen.length, 'package')}
         </Button>
         {multiPackageRunning && (
-          <Button variant="ghost" onClick={jobs.cancelMultiPackage}>
+          <Button variant="secondary" onClick={jobs.cancelMultiPackage}>
             Cancel
           </Button>
         )}
