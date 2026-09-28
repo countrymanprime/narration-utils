@@ -56,7 +56,7 @@ window):
   finding, why the entry needs a look;
 - its confidence, and the check's reason for it.
 
-**Show in manuscript** opens the [Manuscript](manuscript.md) at the finding's line (it needs an
+**Show in manuscript** opens the [Script](script.md) at the finding's line (it needs an
 imported manuscript), and a Story Bible finding also has **Open in Story Bible**. A delivery check has
 **Open in Delivery** instead (see [Delivery checks](#delivery-checks)). **Open chapter view** opens
 the finding's [chapter view](#the-chapter-view) beside it, to listen against the script.

@@ -75,9 +75,9 @@ export const SILENT_CATCHES: Record<string, string> = {
   'src/components/home/Home.tsx#1': 'Only decides whether the "entries need review" nudge shows; without it the nudge is absent.',
   'src/components/home/Home.tsx#2':
     'Only pre-fills the "Build the Story Bible after import" checkbox from Settings; it keeps its on-by-default (D8) local state without it, and the narrator can still change it per import.',
-  'src/components/manuscript/Manuscript.tsx#1':
+  'src/components/script/ScriptPage.tsx#1':
     'Renders the Opening credits pseudo-entry preview; a failed render just leaves that entry showing "Nothing to preview yet." rather than a toast over the manuscript itself.',
-  'src/components/manuscript/Manuscript.tsx#2': 'Renders the Closing credits pseudo-entry preview; same fallback as the opening one above.',
+  'src/components/script/ScriptPage.tsx#2': 'Renders the Closing credits pseudo-entry preview; same fallback as the opening one above.',
   'src/components/proof/CompareRun.tsx#1': 'Reads the last model and chunk choice; the defaults stay usable and Settings reports a real error.',
   // Phase 2 (teleprompter-manuscript-integration.prd.md) moved the device/settings catches into `useTeleprompterSession.ts`;
   // `TeleprompterPage.tsx` keeps only the chapter-selection catch it never shared with the modal.

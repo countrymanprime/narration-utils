@@ -21,4 +21,10 @@ export const productionDrivers: Record<string, Driver> = {
     await panel.getByRole('list', { name: 'Milestones' }).waitFor();
     await panel.scrollIntoViewIfNeeded();
   },
+  'status-report': async (page) => {
+    await openProduction(page, '?mockProduction=on-pace');
+    await page.getByRole('button', { name: 'Export status report' }).click();
+    await page.getByText(/^Wrote production-status-/).waitFor();
+    await page.getByRole('region', { name: 'Status report' }).scrollIntoViewIfNeeded();
+  },
 };

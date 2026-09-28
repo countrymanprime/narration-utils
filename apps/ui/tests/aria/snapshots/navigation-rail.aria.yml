@@ -10,7 +10,7 @@
     - button "Home"
   - group "Prep":
     - /children: equal
-    - button "Manuscript"
+    - button "Script"
     - button "Story Bible"
   - group "Record":
     - /children: equal

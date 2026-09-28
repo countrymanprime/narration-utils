@@ -13,6 +13,7 @@ import type {
   ProductionOverview,
   ProductionPlan,
   ProductionReadiness,
+  ProductionReportExport,
   ProductionSession,
 } from './contracts/production';
 import type { StageRecommendations } from './contracts/stages';
@@ -148,6 +149,7 @@ export function createProductionMock(deps: Deps): ProductionApi {
   const sessions: ProductionSession[] = log ? seededSessions(log.hoursScale) : [];
   if (log?.running) sessions.push({ id: 'mock-running', chapterId: 'chapter-6', stage: 'recording', startedAt: MOCK_TIME, source: 'manual' });
   const running = () => sessions.find((session) => session.endedAt === undefined) ?? null;
+  let reportExports = 0;
 
   const overview = async (): Promise<ProductionOverview> => {
     const [manuscript, recommendations] = await Promise.all([deps.chapters(), deps.recommendations()]);
@@ -233,6 +235,18 @@ export function createProductionMock(deps: Deps): ProductionApi {
       if (!current) return { stopped: false, session: null };
       current.endedAt = MOCK_TIME;
       return { stopped: true, session: { ...current } };
+    },
+    // The host's writeProductionReport (production_report.go): the mock writes nothing, but names the file the same
+    // way (a stem from the export time, -2, -3, ... within the same second) and echoes the narrator's own choice.
+    productionStatusReport: async (includeContractedAmount): Promise<ProductionReportExport> => {
+      reportExports += 1;
+      const stem = `production-status-20260921-100000Z${reportExports > 1 ? `-${reportExports}` : ''}`;
+      return {
+        folder: 'narration-utils/production/reports',
+        htmlFile: `${stem}.html`,
+        jsonFile: `${stem}.json`,
+        contractedAmountIncluded: includeContractedAmount,
+      };
     },
   };
 }

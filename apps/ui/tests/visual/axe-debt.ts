@@ -29,8 +29,8 @@ const FOCUS_GUARDS = "Base UI's own focus guards are focusable inside an aria-hi
 const ALIAS_COMBOBOX = 'The alias typeahead is the one bespoke combobox and has no expanded state, controls or option children (#156)';
 
 export const AXE_DEBT: AxeDebt[] = [
-  ...NESTED_HIGHLIGHT_STATES.map((state) => ({ page: 'manuscript', state, rules: ['nested-interactive'], reason: NESTED_MARKS })),
-  { page: 'manuscript', state: 'selection-popup', rules: ['nested-interactive', 'region'], reason: `${NESTED_MARKS}; and ${PORTALLED_POPUP}` },
+  ...NESTED_HIGHLIGHT_STATES.map((state) => ({ page: 'script', state, rules: ['nested-interactive'], reason: NESTED_MARKS })),
+  { page: 'script', state: 'selection-popup', rules: ['nested-interactive', 'region'], reason: `${NESTED_MARKS}; and ${PORTALLED_POPUP}` },
   { page: 'global', state: 'tooltip', rules: ['aria-hidden-focus', 'region'], reason: `${FOCUS_GUARDS}; and ${PORTALLED_POPUP}` },
   { page: 'home', state: 'info-tooltip', rules: ['aria-hidden-focus', 'region'], reason: `${FOCUS_GUARDS}; and ${PORTALLED_POPUP}` },
   // The rail shows labels at the desktop width, so the hint only exists (and is only reported) below it.
