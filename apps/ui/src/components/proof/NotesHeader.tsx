@@ -112,10 +112,10 @@ export function NotesHeader({ total, counts, pickups }: { total: number; counts:
               if (file) void importSheet(file);
             }}
           />
-          <Button variant="ghost" onClick={() => fileInput.current?.click()} pending={pickups.phase === 'importing'}>
+          <Button variant="secondary" onClick={() => fileInput.current?.click()} pending={pickups.phase === 'importing'}>
             Import proofer sheet
           </Button>
-          <Button variant="ghost" onClick={exportSheet} disabled={pickups.total === 0} pending={pickups.phase === 'exporting'}>
+          <Button variant="secondary" onClick={exportSheet} disabled={pickups.total === 0} pending={pickups.phase === 'exporting'}>
             Export for proofer
           </Button>
         </div>

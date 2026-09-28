@@ -82,7 +82,7 @@ export function CreateChapterRegionsDialog({ tracks, onClose }: { tracks: Track[
       description="Plan one REAPER region per chapter with a confirmed track link, plus the opening and closing credits tracks you choose below. Nothing is written until you create them."
       actions={
         <>
-          <Button variant="ghost" onClick={onClose} disabled={creating}>
+          <Button variant="secondary" onClick={onClose} disabled={creating}>
             {created ? 'Close' : 'Cancel'}
           </Button>
           <CapabilityGate capability={regionsCapability}>

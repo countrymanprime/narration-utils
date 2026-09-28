@@ -106,11 +106,11 @@ export function CreditsSetupDialog({
       onClose={() => void notNow()}
       actions={
         <>
-          <Button variant="ghost" type="button" disabled={busy} onClick={() => void dontAsk()}>
+          <Button variant="secondary" type="button" disabled={busy} onClick={() => void dontAsk()}>
             Don&rsquo;t ask for this project
           </Button>
           <div className="flex gap-2">
-            <Button variant="ghost" type="button" disabled={busy} onClick={() => void notNow()}>
+            <Button variant="secondary" type="button" disabled={busy} onClick={() => void notNow()}>
               Not now
             </Button>
             <Button variant="primary" type="button" disabled={busy} pending={busy} onClick={() => void save()}>
@@ -153,9 +153,9 @@ export function CreditsSetupDialog({
               {' '}
               {humanList(moreFields.map((candidate) => CANDIDATE_LABELS[candidate.token] ?? candidate.token))} {moreFields.length === 1 ? 'was' : 'were'} also
               found and {moreFields.length === 1 ? 'is' : 'are'} waiting in{' '}
-              <button type="button" className="underline" onClick={onMoreFields}>
+              <Button variant="link" onClick={onMoreFields}>
                 Settings &gt; Credits
-              </button>
+              </Button>
               .
             </>
           )}

@@ -1,6 +1,7 @@
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faBackward, faForward, faPause, faPlay } from '@fortawesome/free-solid-svg-icons';
 import { Button } from '../primitives/Button';
+import { IconButton } from '../primitives/IconButton';
 import { Select } from '../primitives/Select';
 import { Panel } from '../primitives/Panel';
 import { Toolbar, ToolbarButton } from '../primitives/Toolbar';
@@ -45,21 +46,21 @@ export function TransportBar({ player, reaper }: { player: TransportBarPlayer; r
       <Toolbar label="Chapter playback controls" className="flex-wrap justify-center" gapClassName="gap-3">
         <ToolbarButton
           render={
-            <Button variant="ghost" onClick={player.skipBack} disabled={!player.canPlay} aria-label={`Skip back ${SKIP_SECONDS} seconds`}>
+            <Button variant="secondary" onClick={player.skipBack} disabled={!player.canPlay} aria-label={`Skip back ${SKIP_SECONDS} seconds`}>
               <FontAwesomeIcon icon={faBackward} /> {SKIP_SECONDS}s
             </Button>
           }
         />
         <ToolbarButton
           render={
-            <Button onClick={player.togglePlay} disabled={!player.canPlay} aria-label={player.isPlaying ? 'Pause' : 'Play'}>
+            <IconButton variant="primary" onClick={player.togglePlay} disabled={!player.canPlay} label={player.isPlaying ? 'Pause' : 'Play'}>
               <FontAwesomeIcon icon={player.isPlaying ? faPause : faPlay} />
-            </Button>
+            </IconButton>
           }
         />
         <ToolbarButton
           render={
-            <Button variant="ghost" onClick={player.skipForward} disabled={!player.canPlay} aria-label={`Skip forward ${SKIP_SECONDS} seconds`}>
+            <Button variant="secondary" onClick={player.skipForward} disabled={!player.canPlay} aria-label={`Skip forward ${SKIP_SECONDS} seconds`}>
               {SKIP_SECONDS}s <FontAwesomeIcon icon={faForward} />
             </Button>
           }
@@ -77,7 +78,7 @@ export function TransportBar({ player, reaper }: { player: TransportBarPlayer; r
           <ToolbarButton
             render={
               <Button
-                variant="ghost"
+                variant="secondary"
                 onClick={() => void reaper.goTo()}
                 disabled={Boolean(reaper.goToBlocked) || reaper.pending !== undefined}
                 pending={reaper.pending === 'goTo'}
@@ -90,7 +91,7 @@ export function TransportBar({ player, reaper }: { player: TransportBarPlayer; r
         {reaper.looping ? (
           <ToolbarButton
             render={
-              <Button variant="ghost" onClick={() => void reaper.stopLoop()} disabled={reaper.pending !== undefined} pending={reaper.pending === 'stop'}>
+              <Button variant="secondary" onClick={() => void reaper.stopLoop()} disabled={reaper.pending !== undefined} pending={reaper.pending === 'stop'}>
                 Stop loop
               </Button>
             }
@@ -100,7 +101,7 @@ export function TransportBar({ player, reaper }: { player: TransportBarPlayer; r
             <ToolbarButton
               render={
                 <Button
-                  variant="ghost"
+                  variant="secondary"
                   onClick={() => void reaper.loop()}
                   disabled={Boolean(reaper.loopBlocked) || reaper.pending !== undefined}
                   pending={reaper.pending === 'loop'}

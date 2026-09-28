@@ -81,9 +81,9 @@ function FlagDecision({ flag, onDecide }: { flag: Flag; onDecide: (status: Findi
       <div className="flex flex-wrap gap-2">
         {DECISION_ORDER.map((status) => (
           <Button
+            size="sm"
             key={status}
-            variant={status === 'accepted' ? 'primary' : 'ghost'}
-            className="px-3 py-1"
+            variant={status === 'accepted' ? 'primary' : 'secondary'}
             onClick={() => void decide(status)}
             pending={action.isPending(status)}
             disabled={noteTooLong || action.isBlockedFor(status)}
@@ -127,7 +127,7 @@ function CompareActions({ row, actions }: { row: Discrepancy; actions: CompareFl
       </div>
       <div className="flex flex-wrap gap-2">
         <TooltipTarget text={row.chapter ? 'Open this line in Script' : 'No manuscript source is available'}>
-          <Button variant="ghost" disabled={!row.chapter} onClick={() => actions.showInManuscript(row)}>
+          <Button variant="secondary" disabled={!row.chapter} onClick={() => actions.showInManuscript(row)}>
             Show in Script
           </Button>
         </TooltipTarget>
@@ -136,12 +136,12 @@ function CompareActions({ row, actions }: { row: Discrepancy; actions: CompareFl
             actions.canJump ? `Play the heard audio at ${formatElapsed(row.projectTime)} in REAPER` : 'Link a REAPER project (.rpp) file to play recorded audio'
           }
         >
-          <Button variant="ghost" disabled={!row.projectTime || !actions.canJump} onClick={() => actions.jump(row)}>
+          <Button variant="secondary" disabled={!row.projectTime || !actions.canJump} onClick={() => actions.jump(row)}>
             Play recorded audio
           </Button>
         </TooltipTarget>
         <TooltipTarget text={eligible ? 'Add pronunciation equivalence' : 'Only available for single-word misreads'}>
-          <Button variant="ghost" disabled={!eligible} onClick={() => actions.addEquivalence(row)}>
+          <Button variant="secondary" disabled={!eligible} onClick={() => actions.addEquivalence(row)}>
             Add pronunciation equivalence
           </Button>
         </TooltipTarget>
@@ -201,7 +201,7 @@ export function FlagsPanel({
       {flags.length > 0 && (
         <div className="mt-3 flex items-center justify-center gap-2">
           <Button
-            variant="ghost"
+            variant="secondary"
             aria-label="Previous flag"
             disabled={selectedIndex === undefined || selectedIndex <= 0}
             onClick={() => selectedIndex !== undefined && onSelect(selectedIndex - 1)}
@@ -212,7 +212,7 @@ export function FlagsPanel({
             {selectedIndex !== undefined ? `Flag ${selectedIndex + 1} of ${flags.length}` : `${flags.length} flag${flags.length === 1 ? '' : 's'}`}
           </span>
           <Button
-            variant="ghost"
+            variant="secondary"
             aria-label="Next flag"
             disabled={selectedIndex === undefined ? flags.length === 0 : selectedIndex >= flags.length - 1}
             onClick={() => onSelect(selectedIndex === undefined ? 0 : selectedIndex + 1)}
@@ -245,14 +245,14 @@ export function FlagsPanel({
             </div>
           )}
           <div className="flex flex-wrap gap-2">
-            <Button variant="ghost" disabled={selected.seekTokenIndex === undefined} onClick={() => onPlayFromFlag(selected)}>
+            <Button variant="secondary" disabled={selected.seekTokenIndex === undefined} onClick={() => onPlayFromFlag(selected)}>
               Play from here
             </Button>
             {selected.seekTokenIndex !== undefined && (
               <>
                 <TooltipTarget text={reaper.goToTokenBlocked(selected.seekTokenIndex) ?? "Select this word's item in REAPER and put the edit cursor on it"}>
                   <Button
-                    variant="ghost"
+                    variant="secondary"
                     disabled={Boolean(reaper.goToTokenBlocked(selected.seekTokenIndex)) || reaper.tokenPending !== undefined}
                     pending={reaper.tokenPending === 'goTo'}
                     onClick={() => void reaper.goToToken(selected.seekTokenIndex!)}
@@ -262,7 +262,7 @@ export function FlagsPanel({
                 </TooltipTarget>
                 <TooltipTarget text={reaper.loopTokenBlocked(selected.seekTokenIndex) ?? 'Play this word over and over in REAPER'}>
                   <Button
-                    variant="ghost"
+                    variant="secondary"
                     disabled={Boolean(reaper.loopTokenBlocked(selected.seekTokenIndex)) || reaper.tokenPending !== undefined}
                     pending={reaper.tokenPending === 'loop'}
                     onClick={() => void reaper.loopToken(selected.seekTokenIndex!)}

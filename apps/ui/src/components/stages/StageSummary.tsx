@@ -15,7 +15,7 @@ export function StageSummaryChips({ state, onShow }: { state: StagesState; onSho
   if (state.phase === 'error')
     return (
       <div className="mt-2 flex flex-wrap gap-2">
-        <Button variant="ghost" className={CHIP} style={{ borderColor: 'var(--danger)', color: 'var(--danger-text)' }} onClick={onShow}>
+        <Button variant="secondary" className={CHIP} style={{ borderColor: 'var(--danger)', color: 'var(--danger-text)' }} onClick={onShow}>
           Couldn’t check stage suggestions
         </Button>
       </div>
@@ -26,7 +26,7 @@ export function StageSummaryChips({ state, onShow }: { state: StagesState; onSho
     <div className="mt-2 flex flex-wrap gap-2">
       {suggested > 0 && (
         <Button
-          variant="ghost"
+          variant="secondary"
           className={CHIP}
           style={{ borderColor: 'var(--accent)', color: 'var(--accent-strong)', background: 'var(--accent-soft)' }}
           onClick={onShow}
@@ -35,7 +35,7 @@ export function StageSummaryChips({ state, onShow }: { state: StagesState; onSho
         </Button>
       )}
       {changed > 0 && (
-        <Button variant="ghost" className={CHIP} style={{ borderColor: 'var(--warn)', color: 'var(--warn-text)' }} onClick={onShow}>
+        <Button variant="secondary" className={CHIP} style={{ borderColor: 'var(--warn)', color: 'var(--warn-text)' }} onClick={onShow}>
           {plural(changed, 'chapter’s evidence changed', 'chapters’ evidence changed')}
         </Button>
       )}
@@ -57,7 +57,7 @@ export function StageCheckLine({ state, onCheckNow }: { state: StagesState; onCh
       <p role="alert" style={{ color: 'var(--danger-text)' }}>
         Couldn’t check stage suggestions: {state.error}
       </p>
-      <Button variant="ghost" className="px-3 py-1" pending={state.phase === 'loading'} onClick={onCheckNow}>
+      <Button variant="secondary" size="sm" pending={state.phase === 'loading'} onClick={onCheckNow}>
         Try again
       </Button>
     </div>
