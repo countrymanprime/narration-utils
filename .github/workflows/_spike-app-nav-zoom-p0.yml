@@ -1,9 +1,15 @@
 name: 'Spike: app-nav-zoom-controls Phase 0 verify'
 # Throwaway research tooling for docs/prds/app-navigation-and-zoom-controls.prd.md Phase 0 (docs/research/
 # app-navigation-and-zoom-controls-phase0.md), the same way apps/desktop/cmd/spike-globalhotkeys served its own
-# spike: workflow_dispatch only, never on a pull request or push, and not part of Build (Windows) or CI passed.
-# Safe to delete once that research note is written and the PR reviewed; nothing else depends on it existing.
+# spike. Not part of Build (Windows) or CI passed, and scoped to only fire on a pull request that touches this
+# workflow or its script (workflow_dispatch alone cannot run a workflow that only exists on a branch, not main,
+# so a pull-request trigger is how this actually executes before merge). Deleted, along with the script, once
+# the research note is written and reviewed - nothing else depends on either existing.
 on:
+  pull_request:
+    paths:
+      - 'scripts/research/app-nav-zoom-p0-verify.ps1'
+      - '.github/workflows/_spike-app-nav-zoom-p0.yml'
   workflow_dispatch: {}
 permissions: { contents: read }
 jobs:
