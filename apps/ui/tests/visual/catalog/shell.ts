@@ -10,7 +10,7 @@ export const shellStates: StateEntry[] = [
   {
     page: 'shell',
     state: 'history-enabled',
-    description: 'Header, after one navigation: Back enabled and focused (its focus ring), Forward disabled',
+    description: 'Header, after one navigation (Story Bible): Back enabled, focused and its tooltip shown; Forward disabled',
     ...REFLOW,
   },
   { page: 'shell', state: 'history-forward', description: 'Header, after a Back: both Back and Forward enabled', ...REFLOW },
