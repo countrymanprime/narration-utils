@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { percentInRange, zoneFor, updateHeldPeak, PEAK_HOLD_MS } from './levelMeter';
+import { percentInRange, zoneFor, zoneBoundaries, updateHeldPeak, PEAK_HOLD_MS } from './levelMeter';
 
 describe('percentInRange', () => {
   it('is 0% at the floor and 100% at 0 dBFS', () => {
@@ -39,6 +39,22 @@ describe('zoneFor', () => {
     expect(zoneFor(-6, -6)).toBe('over');
     expect(zoneFor(-8, -6)).toBe('hot');
     expect(zoneFor(-24, -6)).toBe('body');
+  });
+});
+
+describe('zoneBoundaries', () => {
+  it('agrees with zoneFor at its own boundaries', () => {
+    const floor = -60;
+    const ceiling = -3;
+    const { hotStart, overStart } = zoneBoundaries(floor, ceiling);
+    // Just below hotStart reads "body"; at and above it, "hot", up to overStart.
+    expect(zoneFor(floor + ((0 - floor) * (hotStart - 1)) / 100, ceiling)).toBe('body');
+    expect(zoneFor(floor + ((0 - floor) * (hotStart + 1)) / 100, ceiling)).toBe('hot');
+    expect(zoneFor(floor + ((0 - floor) * (overStart + 1)) / 100, ceiling)).toBe('over');
+  });
+
+  it('honours a custom floor and ceiling', () => {
+    expect(zoneBoundaries(-80, -10)).toEqual({ hotStart: percentInRange(-16, -80), overStart: percentInRange(-10, -80) });
   });
 });
 

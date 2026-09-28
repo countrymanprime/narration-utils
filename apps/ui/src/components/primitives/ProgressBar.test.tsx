@@ -33,4 +33,25 @@ describe('ProgressBar', () => {
     rerender(<ProgressBar label="Working" value={72} running />);
     expect((container.querySelector('.progressbar > div') as HTMLElement).style.width).toBe('72%');
   });
+
+  it('defaults to the 16 px accent bar on --surface-3', () => {
+    const { container } = render(<ProgressBar label="Working" value={40} />);
+    const track = container.querySelector('.progressbar') as HTMLElement;
+    expect(track.className).toContain('h-4');
+    expect(track.className).toContain('bg-[var(--surface-3)]');
+    expect((track.firstElementChild as HTMLElement).className).toContain('bg-[var(--accent)]');
+  });
+
+  it('draws the thin 8 px bar on --surface-2 when asked, tinted by tone', () => {
+    const { container } = render(<ProgressBar label="Finished audio" value={40} size="thin" tone="ok" />);
+    const track = container.querySelector('.progressbar') as HTMLElement;
+    expect(track.className).toContain('h-2');
+    expect(track.className).toContain('bg-[var(--surface-2)]');
+    expect((track.firstElementChild as HTMLElement).className).toContain('bg-[var(--ok)]');
+  });
+
+  it('tints the fill warn when asked', () => {
+    const { container } = render(<ProgressBar label="Voice rest" value={38} tone="warn" />);
+    expect((container.querySelector('.progressbar > div') as HTMLElement).className).toContain('bg-[var(--warn)]');
+  });
 });
