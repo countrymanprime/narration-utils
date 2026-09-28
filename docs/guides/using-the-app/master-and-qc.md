@@ -97,6 +97,25 @@ with why), and **Outputs** lists the folder and every file it wrote.
 
 ![The ACX package built: the packager's checklist, and the output folder with every file it wrote](../../images/ui/master-package-built.webp)
 
+## Building packages for several platforms at once
+
+If you deliver to more than one platform, **Multi-platform export** (below Delivery package) lets you build
+all of them from the one source you already mastered and encoded, without re-encoding unless a platform
+needs a different file format. Check the box for each platform you want a package for, then **Build N
+packages**. This does not change which platform the page's checks and the delivery package above are judged
+against - that is still the platform tab; the checkboxes only choose what to build packages for.
+
+You are asked for one folder once, and each platform's package goes into its own correctly named subfolder
+of it. Two platforms that both take the same file format (most do: MP3 at the same bitrate) share the one
+set of already-encoded files; a platform that needs a different format (an M4B audiobook file, say) is
+encoded for just that once, however many platforms need it, not once per platform. Cancel stops the build
+before its next platform starts; platforms already built keep their packages, and one not yet reached is
+left waiting.
+
+Once it finishes, each platform gets its own row: built, with its folder and how many files it wrote, or why
+it could not be built (the same reasons Delivery package's own checklist would show, such as a required file
+being missing for that platform).
+
 ## The delivery profile
 
 Below the package, **Delivery profile** names the profile the project is judged against and how many of its
