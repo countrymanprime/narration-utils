@@ -29,7 +29,7 @@ export function recordingRule(fields: readonly ScopedSettingField[]): string {
  * fields amount to, on or off. */
 export function cascadeRule(fields: readonly ScopedSettingField[]): string {
   const on = effective(fields, 'cascade_enabled') === 'true';
-  if (!on) return 'The two-pass check is off: every check runs the Proofing model above alone.';
+  if (!on) return 'The two-pass check is off: every check runs the Proof model above alone.';
   const first = effective(fields, 'cascade_first_pass_model') || 'tiny';
   const recheck = effective(fields, 'cascade_recheck_model') || 'large-v3-turbo';
   return `The two-pass check is on: a fast first pass with ${first}, then anything it reports missing is re-checked with ${recheck}.`;

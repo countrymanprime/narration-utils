@@ -65,6 +65,64 @@ func TestCommittedManuscriptKeepsLineBreaksAndFormattingSpans(t *testing.T) {
 	}
 }
 
+// TestCommittedManuscriptCarriesSourceMetadataFromFrontMatter covers
+// credits-token-setup-and-front-matter-detection.prd.md Phase 4: a Markdown import's YAML front matter reaches
+// manuscript.json as an additive sourceMetadata block, for internal/credits.Detect to read back.
+func TestCommittedManuscriptCarriesSourceMetadataFromFrontMatter(t *testing.T) {
+	project := t.TempDir()
+	source := filepath.Join(project, "book.md")
+	content := "---\ntitle: After the Applause\nauthor: Adrian Crow\nseries: Ember Trilogy\n---\n# Chapter One\nBody.\n"
+	if err := os.WriteFile(source, []byte(content), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	service := New(project)
+	job := service.Begin(source)
+	if _, err := service.Preview(job.ID, 1); err != nil {
+		t.Fatal(err)
+	}
+	committed, err := service.Commit(job.ID, false, Choices{})
+	if err != nil || committed.Phase != "success" {
+		t.Fatalf("commit = %#v, %v", committed, err)
+	}
+	canonical, err := service.Load()
+	if err != nil {
+		t.Fatal(err)
+	}
+	metadata, ok := canonical["sourceMetadata"].(map[string]any)
+	if !ok {
+		t.Fatalf("sourceMetadata missing or wrong type: %#v", canonical["sourceMetadata"])
+	}
+	if metadata["title"] != "After the Applause" || metadata["author"] != "Adrian Crow" || metadata["series"] != "Ember Trilogy" {
+		t.Fatalf("sourceMetadata = %#v", metadata)
+	}
+	if _, hasSubtitle := metadata["subtitle"]; hasSubtitle {
+		t.Fatalf("sourceMetadata = %#v, want no subtitle key (Markdown front matter never sets one)", metadata)
+	}
+}
+
+// TestCommittedManuscriptOmitsSourceMetadataWhenTheImportHasNone covers the additive contract: an import with no
+// detected front matter must not add the key at all, so every manuscript.json written before this phase, and every
+// import with nothing to report, keeps producing the exact same shape (existing goldens included).
+func TestCommittedManuscriptOmitsSourceMetadataWhenTheImportHasNone(t *testing.T) {
+	project := t.TempDir()
+	service := New(project)
+	job := service.Begin(layout.RepoFile(layout.FixturesDir + "/alice.md"))
+	if _, err := service.Preview(job.ID, 1); err != nil {
+		t.Fatal(err)
+	}
+	committed, err := service.Commit(job.ID, false, Choices{})
+	if err != nil || committed.Phase != "success" {
+		t.Fatalf("commit = %#v, %v", committed, err)
+	}
+	canonical, err := service.Load()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, exists := canonical["sourceMetadata"]; exists {
+		t.Fatalf("sourceMetadata = %#v, want the key absent entirely (additive)", canonical["sourceMetadata"])
+	}
+}
+
 func TestImportJobReportsRealProgressAndLogs(t *testing.T) {
 	project := t.TempDir()
 	source := filepath.Join(project, "book.md")

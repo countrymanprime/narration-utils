@@ -59,9 +59,25 @@ type Draft struct {
 	Sections            []DraftSection       `json:"sections"`
 	CharacterCandidates []CharacterCandidate `json:"characterCandidates"`
 	ChapterTitles       []string             `json:"chapterTitles"`
+	// SourceMetadata is structure the importer read straight from the source's own markup or front matter at import
+	// time - a Markdown YAML front matter block, or a DOCX Title/Subtitle paragraph style - as opposed to a later
+	// best-effort guess over plain text (credits-token-setup-and-front-matter-detection.prd.md, Phase 4). Nil when the
+	// source carried none of it.
+	SourceMetadata *SourceMetadata `json:"sourceMetadata,omitempty"`
 	// Notices are human-readable import-log lines about repairs the importer
 	// made to the source (e.g. splitting a glued heading).
 	Notices []string `json:"notices,omitempty"`
+}
+
+// SourceMetadata is document-level title/subtitle/author/series structure read directly from the source's own
+// markup, never guessed from plain text. It becomes another candidate source for internal/credits.Detect
+// (credits-token-setup-and-front-matter-detection.prd.md, Phase 4); nothing here is ever written to a project's
+// credits values on its own (ADR 0019: detected is offered, not imported).
+type SourceMetadata struct {
+	Title    string `json:"title,omitempty"`
+	Subtitle string `json:"subtitle,omitempty"`
+	Author   string `json:"author,omitempty"`
+	Series   string `json:"series,omitempty"`
 }
 
 type Error struct{ Message string }

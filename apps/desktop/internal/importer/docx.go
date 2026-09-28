@@ -438,7 +438,18 @@ func docxWithProgress(path string, progress Progress) (Draft, error) {
 			levels[index] = max(record.level, 1)
 		}
 	}
+	// sourceMetadata captures the book's own Title-styled paragraph, and an immediately following Subtitle-styled
+	// one, as structure rather than a guess (credits-token-setup-and-front-matter-detection.prd.md, Phase 4). It is
+	// only ever read from the document's very first heading: a Subtitle-styled line under some other, later heading
+	// is that heading's own chapter subtitle (the existing F4 handling below), never the book's.
+	var sourceMetadata *SourceMetadata
 	for index, record := range records {
+		switch {
+		case index == first && record.heading && record.style == "title":
+			sourceMetadata = &SourceMetadata{Title: strings.TrimSpace(record.text)}
+		case sourceMetadata != nil && index == first+1 && !record.heading && record.style == "subtitle":
+			sourceMetadata.Subtitle = collapse(record.text)
+		}
 		if open != nil && subtitle == "" {
 			line := collapse(record.text)
 			underHeading := record.heading && record.hasLevel && open.hasLevel && subtitleHeading(chapter, open.level, line, record.level) &&
@@ -495,6 +506,7 @@ func docxWithProgress(path string, progress Progress) (Draft, error) {
 	}
 	progress.report(80, "Classifying front matter, chapters and reference sections")
 	draft, err := newDraft("docx", filepath.Base(path), paragraphs, titles, headingLevels, nil)
+	draft.SourceMetadata = sourceMetadata
 	if err != nil {
 		draft.Notices = notices
 		return draft, err

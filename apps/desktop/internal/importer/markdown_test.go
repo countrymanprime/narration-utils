@@ -133,3 +133,48 @@ func TestMarkdownGluedHeadingSplitIsReportedAsANotice(t *testing.T) {
 		t.Fatalf("expected one notice describing the split, got %#v", draft.Notices)
 	}
 }
+
+// TestMarkdownYAMLFrontMatterBecomesSourceMetadata covers credits-token-setup-and-front-matter-detection.prd.md
+// Phase 4: a leading YAML front matter fence's title/author/series keys are captured into Draft.SourceMetadata, and
+// the fence itself never leaks into the visible manuscript as a Front Matter paragraph.
+func TestMarkdownYAMLFrontMatterBecomesSourceMetadata(t *testing.T) {
+	draft := importMarkdown(t, "---\ntitle: After the Applause\nauthor: Adrian Crow\nseries: Ember Trilogy\n---\n# Chapter One\nBody.\n")
+	if draft.SourceMetadata == nil {
+		t.Fatal("SourceMetadata is nil")
+	}
+	if got := *draft.SourceMetadata; got.Title != "After the Applause" || got.Author != "Adrian Crow" || got.Series != "Ember Trilogy" {
+		t.Fatalf("got %+v", got)
+	}
+	if draft.Paragraphs[0].Chapter != "Chapter One" || draft.Paragraphs[0].Text != "Body." {
+		t.Fatalf("the front matter fence leaked into the manuscript: %+v", draft.Paragraphs)
+	}
+}
+
+// TestMarkdownFrontMatterFenceIsStrippedEvenWithNoRecognizedKeys covers a fence with keys this phase does not read
+// (a Jekyll "layout:", say): it must not appear in the manuscript even though it yields no metadata.
+func TestMarkdownFrontMatterFenceIsStrippedEvenWithNoRecognizedKeys(t *testing.T) {
+	draft := importMarkdown(t, "---\nlayout: post\n---\n# Chapter One\nBody.\n")
+	if draft.SourceMetadata != nil {
+		t.Fatalf("SourceMetadata = %+v, want nil", draft.SourceMetadata)
+	}
+	if draft.Paragraphs[0].Chapter != "Chapter One" || draft.Paragraphs[0].Text != "Body." {
+		t.Fatalf("the front matter fence leaked into the manuscript: %+v", draft.Paragraphs)
+	}
+}
+
+func TestMarkdownWithNoFrontMatterFenceHasNoSourceMetadata(t *testing.T) {
+	draft := importMarkdown(t, "# Chapter One\nBody.\n")
+	if draft.SourceMetadata != nil {
+		t.Fatalf("SourceMetadata = %+v, want nil", draft.SourceMetadata)
+	}
+}
+
+// TestMarkdownUnclosedFrontMatterFenceIsLeftAsOrdinaryText: a "---" with no closing fence is not front matter at all
+// (it is common as a Markdown horizontal rule or a heading underline), so it is left for the existing pipeline to
+// read as it always has, rather than silently swallowing the rest of the file looking for a fence that never closes.
+func TestMarkdownUnclosedFrontMatterFenceIsLeftAsOrdinaryText(t *testing.T) {
+	draft := importMarkdown(t, "---\ntitle: Oops\n# Chapter One\nBody.\n")
+	if draft.SourceMetadata != nil {
+		t.Fatalf("SourceMetadata = %+v, want nil (no closing fence)", draft.SourceMetadata)
+	}
+}
