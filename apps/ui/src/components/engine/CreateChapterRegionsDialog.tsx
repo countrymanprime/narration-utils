@@ -127,8 +127,8 @@ export function CreateChapterRegionsDialog({ tracks, onClose }: { tracks: Track[
                 <TableRow key={`${row.kind}-${row.chapterId || row.trackGuid}`}>
                   <TableCell>{row.title}</TableCell>
                   <TableCell>{row.trackName}</TableCell>
-                  <TableCell align="right">{formatDuration(row.start)}</TableCell>
-                  <TableCell align="right">{formatDuration(row.end)}</TableCell>
+                  <TableCell numeric>{formatDuration(row.start)}</TableCell>
+                  <TableCell numeric>{formatDuration(row.end)}</TableCell>
                   <TableCell>{REGION_STATE_LABEL[row.state]}</TableCell>
                 </TableRow>
               ))}

@@ -133,4 +133,101 @@ describe('Table', () => {
     renderTable();
     expect(screen.getByRole('columnheader', { name: 'Actions' }).className).toContain('relative');
   });
+  // The mock fidelity spec (mock-fidelity-primitives-and-components.prd.md Phase 3, measured on benchmark mocks 01 and 05):
+  // a 31 px header and 34 px rows, taken from the size tokens, with the label type the mocks draw.
+  it('sizes the header row and the body rows from the row tokens', () => {
+    renderTable();
+    const header = screen.getByRole('columnheader', { name: 'Time' }).className;
+    expect(header).toContain('h-[var(--header-row-height)]');
+    expect(header).toContain('text-[length:var(--font-size-label)]');
+    expect(header).toContain('tracking-[var(--tracking-label)]');
+    expect(screen.getByRole('cell', { name: '0:04' }).className).toContain('h-[var(--row-height)]');
+  });
+
+  it('sits a cell in the middle of its row, and at the top on request for a multi-line cell', () => {
+    render(
+      <Table label="Cells">
+        <TableBody>
+          <TableRow>
+            <TableCell>middle</TableCell>
+            <TableCell valign="top">top</TableCell>
+          </TableRow>
+        </TableBody>
+      </Table>,
+    );
+    expect(screen.getByRole('cell', { name: 'middle' }).className).toContain('align-middle');
+    expect(screen.getByRole('cell', { name: 'top' }).className).toContain('align-top');
+    expect(screen.getByRole('cell', { name: 'top' }).className).not.toContain('align-middle');
+  });
+
+  it('draws a numeric cell in mono, right-aligned and unbroken, and a muted cell smaller in the muted text colour', () => {
+    render(
+      <Table label="Cells">
+        <TableBody>
+          <TableRow>
+            <TableCell numeric>12:05</TableCell>
+            <TableCell muted>Proofer</TableCell>
+          </TableRow>
+        </TableBody>
+      </Table>,
+    );
+    const numeric = screen.getByRole('cell', { name: '12:05' }).className;
+    expect(numeric).toContain('IBM_Plex_Mono');
+    expect(numeric).toContain('text-right');
+    expect(numeric).toContain('whitespace-nowrap');
+    const muted = screen.getByRole('cell', { name: 'Proofer' }).className;
+    expect(muted).toContain('text-[var(--text-muted)]');
+    expect(muted).toContain('text-[0.75rem]');
+  });
+
+  it('fills a selected row with the row-selected token, and draws the current row in bold without a fill', () => {
+    render(
+      <Table label="Rows">
+        <TableBody>
+          <TableRow onActivate={() => undefined} selected>
+            <TableCell>picked</TableCell>
+          </TableRow>
+          <TableRow emphasis="current">
+            <TableCell>now</TableCell>
+          </TableRow>
+          <TableRow emphasis="highlight">
+            <TableCell>failing</TableCell>
+          </TableRow>
+        </TableBody>
+      </Table>,
+    );
+    expect(screen.getByRole('row', { name: 'picked' }).className).toContain('bg-[var(--row-selected)]');
+    const current = screen.getByRole('row', { name: 'now' });
+    expect(current.className).toContain('font-semibold');
+    expect(current.className).not.toContain('bg-');
+    const highlight = screen.getByRole('row', { name: 'failing' });
+    expect(highlight.className).toContain('bg-[var(--row-selected)]');
+    // A highlight is the look alone: it is not a selection a screen reader should hear.
+    expect(highlight.hasAttribute('aria-selected')).toBe(false);
+  });
+
+  it('sets the body text at 14 px, and a flush table reaches the edges of the panel it sits in', () => {
+    render(
+      <>
+        <Table label="Inset">
+          <TableBody>
+            <TableRow>
+              <TableCell>a</TableCell>
+            </TableRow>
+          </TableBody>
+        </Table>
+        <Table label="Flush" flush>
+          <TableBody>
+            <TableRow>
+              <TableCell>b</TableCell>
+            </TableRow>
+          </TableBody>
+        </Table>
+      </>,
+    );
+    const inset = screen.getByRole('table', { name: 'Inset' }).className;
+    expect(inset).toContain('text-[0.875rem]');
+    expect(inset).not.toContain('-mx-');
+    expect(screen.getByRole('table', { name: 'Flush' }).className).toContain('-mx-[1.1rem]');
+  });
 });

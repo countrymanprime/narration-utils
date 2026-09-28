@@ -129,7 +129,7 @@ export function ChapterLinksTable({ tracks, refreshKey, notify }: { tracks: Trac
           ))}
           {rows.length === 0 && (
             <TableRow>
-              <TableCell colSpan={5} className="text-sm" style={{ color: 'var(--text-muted)' }}>
+              <TableCell colSpan={5} style={{ color: 'var(--text-muted)' }}>
                 No chapters to link yet.
               </TableCell>
             </TableRow>

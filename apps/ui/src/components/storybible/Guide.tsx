@@ -264,7 +264,7 @@ export function Guide({ notify, goToManuscript }: { notify: Notify; goToManuscri
                           {categoryLabel(row.category)}
                         </div>
                       </TableCell>
-                      <TableCell align="right" className="font-['IBM_Plex_Mono',ui-monospace,monospace]" style={{ color: 'var(--text-muted)' }}>
+                      <TableCell numeric style={{ color: 'var(--text-muted)' }}>
                         {row.occurrence_count}
                       </TableCell>
                     </TableRow>
