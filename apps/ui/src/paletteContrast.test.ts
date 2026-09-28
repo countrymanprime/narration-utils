@@ -20,9 +20,11 @@ const THEMES = parseThemes(CSS);
 // forced-dark block of ADR 0360 Q1): the booth and the companion are checked by the same pairs, in both themes.
 const THEME_NAMES: Theme[] = ['light', 'dark'];
 
-const SURFACES = ['bg', 'surface', 'surface-2', 'surface-3', 'row-alt'] as const;
-const PAGE_SURFACES = ['bg', 'surface', 'surface-2'] as const;
-const READING_SURFACES = ['surface', 'row-alt'] as const;
+// --row-selected is a table row's fill (Phase 0b), so everything a row holds is measured on it; --reading-bg is the booth's
+// reading surface (Phase 0b, Q6), so the reader's highlights and speaker colours are measured on it too.
+const SURFACES = ['bg', 'surface', 'surface-2', 'surface-3', 'row-alt', 'row-selected'] as const;
+const PAGE_SURFACES = ['bg', 'surface', 'surface-2', 'row-selected'] as const;
+const READING_SURFACES = ['surface', 'row-alt', 'reading-bg'] as const;
 
 const TEXT_MIN = 4.5;
 const NON_TEXT_MIN = 3;
@@ -155,6 +157,29 @@ const PAIRS: PairSpec[] = [
     ['surface'],
     'var(--badge-experimental-fill)',
   ),
+  // The mock fidelity token batch (mock-fidelity-primitives-and-components.prd.md Phase 0b, ADR 0590). The status soft fills
+  // are opaque, so a pill in a selected row is measured there as well as on the card.
+  ...(
+    [
+      ['ok', 'success'],
+      ['warn', 'warning'],
+      ['info', 'info'],
+      ['danger', 'danger'],
+    ] as const
+  ).map(([tone, name]) =>
+    text(
+      `${tone}-soft`,
+      `status pill and board cell (${name}): ${tone} text on the opaque ${tone} soft fill`,
+      `var(--${tone}-text)`,
+      ['surface', 'row-selected'],
+      `var(--${tone}-soft)`,
+    ),
+  ),
+  text('booth-script', "the booth's script and its muted past paragraphs on the reading surface", 'var(--text-muted)', ['reading-bg']),
+  text('rec', "the booth's REC pill: rec text on the rec fill", 'var(--rec-text)', ['surface'], 'var(--rec-fill)'),
+  text('toast-tokens', 'Toast: the inverted pair', 'var(--toast-text)', ['surface'], 'var(--toast-bg)'),
+  mark('waveform', "Proof's waveform bars on the card", 'var(--waveform)', ['surface']),
+  mark('ok-zone-tick', "Master's book-consistency band: an accent chapter tick on the ok target zone", 'var(--accent)', ['surface'], 'var(--ok-zone)'),
   // Per-speaker dialogue colours (D85 #6, ADR 0367): --speaker-1..7 alias the seven entity-kind tokens above, so these
   // rows are already covered by the highlight-<kind> pairs; a dedicated row per alias protects SpeakerTag/Highlight's
   // speaker use specifically, the same reasoning as the meter-zone rows above.
