@@ -56,6 +56,28 @@ type (
 // The mastering port's DAW row (ADR 0306) exchanges values the bridge has no command for yet, so they are dawport's own types rather
 // than aliases: the REAPER phase that builds render_with_fx and master_chain_read gives the bridge matching shapes.
 
+// MacroRender asks the engine to apply one named effect macro to the narrator's audio and export the result (the mastering port's
+// Audacity row, ADR 0306, ADR 0460). Unlike FXRender it names no region and no per-track chain: Audacity's macros are opaque, one
+// named chain the narrator built in its own Macro Manager, not a list of plugins this app can read back.
+type MacroRender struct {
+	// Source is the WAV to master, imported into the engine before the macro runs.
+	Source string
+	// Macro is the exact name of the narrator's chosen macro, as their engine's macro manager lists it.
+	Macro string
+	// OutputPath is where the engine exports the result: a path inside a folder the host made for this run, which does not exist
+	// yet (the adapter never lets the engine overwrite a file).
+	OutputPath string
+	// Approval is the narrator's yes for this one render, from the UI's confirm naming the macro. The host sends only an approval
+	// it was just given; an adapter refuses a request without one.
+	Approval string
+}
+
+// MacroRendered is what a macro render wrote.
+type MacroRendered struct {
+	// Path is the file the engine exported, OutputPath unchanged on success.
+	Path string
+}
+
 // FXRender asks the engine to render regions through the project's track and master FX, as a render from the engine's own
 // dialog would, into a folder the host chose.
 type FXRender struct {
@@ -282,4 +304,11 @@ type GainAdjuster interface {
 // reads and changes nothing.
 type MasterChainReader interface {
 	ReadMasterChain(ctx context.Context) (MasterChain, error)
+}
+
+// MacroRenderer applies one named effect macro and exports the result (the mastering port's Audacity row, ADR 0306, ADR 0460). It
+// is synchronous, unlike FXRenderer: the engine it drives answers a scripting command directly, with no separate event log to poll.
+// It is the one role that makes the engine render, so each call carries the narrator's approval and runs only on their action.
+type MacroRenderer interface {
+	RenderWithMacro(ctx context.Context, request MacroRender) (MacroRendered, error)
 }

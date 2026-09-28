@@ -35,6 +35,7 @@ const REAPER_DECLARATION: Record<DawCapabilityKey, DawCapabilityLevel> = {
   item_gain: 'experimental',
   render_with_fx: 'experimental',
   master_chain_read: 'experimental',
+  macro_render: 'unsupported',
 };
 
 const CAPABILITY_NEEDS: Record<DawCapabilityKey, DawMockNeeds> = {
@@ -61,6 +62,7 @@ const CAPABILITY_NEEDS: Record<DawCapabilityKey, DawMockNeeds> = {
   item_gain: 'running',
   render_with_fx: 'running',
   master_chain_read: 'running',
+  macro_render: 'running',
 };
 
 /** The host's own wording for a REAPER that is not connected or not answering, and the resolver's generic wording for
@@ -77,7 +79,7 @@ const MESSAGE_AUDACITY_NOT_YET =
  * apps/desktop/internal/dawport/audacity/audacity.go's Declaration). */
 const MESSAGE_AUDACITY_NOT_CONNECTED = "Audacity isn't connected to this app yet. This part of Audacity support is still being tested.";
 /** What the Audacity adapter builds, Experimental until the owner's verification pass (ADR 0355); the rest is not_yet_available. */
-const AUDACITY_EXPERIMENTAL: ReadonlySet<DawCapabilityKey> = new Set<DawCapabilityKey>(['navigate', 'markers']);
+const AUDACITY_EXPERIMENTAL: ReadonlySet<DawCapabilityKey> = new Set<DawCapabilityKey>(['navigate', 'markers', 'macro_render']);
 
 type DawToggle = 'auto' | 'on' | 'off';
 
@@ -137,7 +139,12 @@ function explain(daw: DawKind, key: DawCapabilityKey, reason: DawCapabilitySuppo
 
 function supportFor(daw: DawKind, key: DawCapabilityKey, seed: DawMockSeed, connected: boolean, reachable: boolean): DawCapabilitySupport {
   const level = declarationFor(daw)[key] ?? 'unsupported';
-  if (level === 'unsupported') return { level, available: false, reason: 'standalone', message: explain(daw, key, 'standalone') };
+  if (level === 'unsupported') {
+    // No engine at all (resolver.go's Adapter == nil) is 'standalone'; a launched engine that simply cannot do this (macro_render
+    // for REAPER, ADR 0460) is 'unsupported', checked before connection state, the same order the declaration check runs in.
+    const reason = daw === 'none' ? 'standalone' : 'unsupported';
+    return { level, available: false, reason, message: explain(daw, key, reason) };
+  }
   if (level === 'not_yet_available') return { level, available: false, reason: 'not_yet', message: explain(daw, key, 'not_yet') };
   const toggle = seed.toggles?.[key] ?? 'auto';
   if (toggle === 'off') return { level, available: false, reason: 'turned_off', message: explain(daw, key, 'turned_off') };

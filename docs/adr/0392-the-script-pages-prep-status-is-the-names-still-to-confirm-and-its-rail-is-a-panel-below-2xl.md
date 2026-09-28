@@ -5,7 +5,7 @@
 
 ## Context
 
-[Stage navigation](../prds/stage-navigation-and-page-replacement.prd.md) Phase 3 replaces the Manuscript page with **Script** (`/script`), built to mock 02: a chapter list "with prep status", the reader, and a rail of Pronunciations, Characters and Queries. Three things were left to the phase:
+Stage navigation and page replacement (`docs/prds/stage-navigation-and-page-replacement.prd.md`, delivered and deleted) Phase 3 replaces the Manuscript page with **Script** (`/script`), built to mock 02: a chapter list "with prep status", the reader, and a rail of Pronunciations, Characters and Queries. Three things were left to the phase:
 
 - **What a chapter's prep status is.** Mock 02 draws a tick or a percentage per chapter. Nothing in the app measures a chapter's prep: [Prep Depth](../prds/prep-depth.prd.md) Phase 7's per-chapter rollup (open queries, stale markup) is a pending Could. The one per-chapter prep fact the app has today is the pronunciation queries list (prep-depth P3): every name the author has not confirmed, with the chapter it is first heard in.
 - **Where the rail goes on a narrower window.** The app is captured at 1440, 1024 and 768 px (ADR 0037). The reader's chapter card lays its header out in fixed columns (ADR 0190) and needs about 800 px; at 1440 px, beside the navigation's labelled rail, three columns leave the reader about 680 px, and the card's title column collapses to nothing (found by the visual suite's retail-sample and markup-dialog states).

@@ -14,7 +14,11 @@ export interface ChapterNameContext {
   readonly prefix: string;
 }
 
-export type ChapterNameForm = 'full' | 'short' | ChapterNameContext;
+// 'plain' is 'full' with " - " (an ASCII hyphen) in place of the em dash, for a name a consumer may not take an em
+// dash in (a file name, a REAPER region: owner decision D34). It mirrors internal/chaptername's and
+// narration_common's Plain form; tests/fixtures/chapter-names.json pins all three to the same output
+// (chapterName.fixture.test.ts).
+export type ChapterNameForm = 'full' | 'short' | 'plain' | ChapterNameContext;
 
 export function context(prefix: string): ChapterNameContext {
   return { prefix };
@@ -38,21 +42,23 @@ function splitLegacyNewline(title: string): { title: string; subtitle?: string }
   return { title: squash(first ?? ''), subtitle: subtitle || undefined };
 }
 
-function fullName(title: string, subtitle: string | undefined): string {
+function joinedName(title: string, subtitle: string | undefined, separator: string): string {
   if (!subtitle) return title;
   const stripped = title.replace(TRAILING_SEPARATOR, '').trim();
-  return stripped ? `${stripped} — ${subtitle}` : subtitle;
+  return stripped ? `${stripped}${separator}${subtitle}` : subtitle;
 }
 
 // The chapter's name as plain text. 'full' (the default) is "Title — Subtitle", or the title alone when there is no
-// subtitle. 'short' is always the title alone - for a control inside a row that already shows the full name. A context
-// prefix (context('Read aloud')) gives "Prefix: Title — Subtitle".
+// subtitle. 'short' is always the title alone - for a control inside a row that already shows the full name. 'plain'
+// is 'full' with " - " in place of the em dash. A context prefix (context('Read aloud')) gives
+// "Prefix: Title — Subtitle".
 export function chapterName(chapter: ChapterNameInput, form: ChapterNameForm = 'full'): string {
   const legacy = splitLegacyNewline(chapter.title);
   const title = legacy.title;
   const subtitle = chapter.subtitle !== undefined ? squash(chapter.subtitle) || undefined : legacy.subtitle;
 
-  if (typeof form === 'object') return `${form.prefix}: ${fullName(title, subtitle)}`;
+  if (typeof form === 'object') return `${form.prefix}: ${joinedName(title, subtitle, ' — ')}`;
   if (form === 'short') return title;
-  return fullName(title, subtitle);
+  if (form === 'plain') return joinedName(title, subtitle, ' - ');
+  return joinedName(title, subtitle, ' — ');
 }

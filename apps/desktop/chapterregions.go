@@ -7,6 +7,7 @@ import (
 	"math"
 
 	"github.com/countrymanprime/narration-utils/shell/internal/bridge"
+	"github.com/countrymanprime/narration-utils/shell/internal/chaptername"
 	"github.com/countrymanprime/narration-utils/shell/internal/dawport"
 	"github.com/countrymanprime/narration-utils/shell/internal/tracks"
 )
@@ -146,7 +147,11 @@ func chapterRegionPlanIn(svc hostServices, openingTrackGUID, closingTrackGUID st
 		case 0:
 			plan.Skipped = append(plan.Skipped, chapterRegionSkip{Kind: "chapter", ChapterID: chapter.ChapterID, Title: chapter.ChapterTitle, Reason: "No track is linked to this chapter."})
 		case 1:
-			add("chapter", chapter.ChapterID, chapter.ChapterTitle, chapter.Links[0].TrackGUID)
+			// The region name (then the render file name, then the ID3 CHAP title that reads it: Q7 of
+			// chapter-title-display-consistency.prd.md) follows the same title/subtitle rule as everywhere else, with
+			// D34's ASCII "Plain" form so an em dash never reaches a file name or a REAPER object.
+			subtitle := chapter.ChapterSubtitle
+			add("chapter", chapter.ChapterID, chaptername.Name(chapter.ChapterTitle, &subtitle, chaptername.Plain), chapter.Links[0].TrackGUID)
 		default:
 			plan.Skipped = append(plan.Skipped, chapterRegionSkip{Kind: "chapter", ChapterID: chapter.ChapterID, Title: chapter.ChapterTitle, Reason: "Several tracks are linked to this chapter; link one."})
 		}

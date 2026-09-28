@@ -42,7 +42,7 @@ export function StartupScreen({ state, error, details, diagnosticId, retry }: Pr
             {waiting ? (
               <>
                 <FontAwesomeIcon icon={faCircleNotch} spin className="mr-2" />
-                Opening Narration Console…
+                Opening Narration Studio…
               </>
             ) : (
               'Desktop host needs attention'

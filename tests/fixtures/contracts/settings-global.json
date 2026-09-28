@@ -351,6 +351,20 @@
       "kind": "choice",
       "label": "Master and track FX listing",
       "value": ""
+    },
+    {
+      "choices": [
+        "auto",
+        "on",
+        "off"
+      ],
+      "effectiveSource": "repo_default",
+      "effectiveValue": "auto",
+      "isSet": false,
+      "key": "capability.macro_render",
+      "kind": "choice",
+      "label": "Mastering with an effect macro",
+      "value": ""
     }
   ],
   "Editing": [
