@@ -21,6 +21,7 @@ import { createRecordingMock } from './recordingMock';
 import { createFindingsMock } from './findingsMock';
 import { createTakeReviewScanMock } from './takeReviewMock';
 import { createTakeComparisonMock } from './takeComparisonMock';
+import { createWorkspaceTakesMock } from './workspaceTakesMock';
 import { createMeasureMock } from './measureMock';
 import { createRenderEncodeMasterMock } from './renderEncodeMasterMock';
 import { DELIVERY_REVIEW_ANALYZER, mockDeliveryReviewFindings, resavingAfterProfileChange } from './deliveryReviewMock';
@@ -189,7 +190,19 @@ export function createMockApi(
     ...(initial.findings ? {} : { lazySeed: workspaceOverlayFinding }),
   });
   const takeReviewScan = createTakeReviewScanMock(saveAnalyzerFindings, endJob, initial.takeReviewScanHold);
-  const takeComparison = createTakeComparisonMock({ get: findings.findingsGet, save: saveFinding }, endJob, initial.takeComparisonHold);
+  const { beginPassageComparison, ...takeComparison } = createTakeComparisonMock(
+    { get: findings.findingsGet, save: saveFinding },
+    endJob,
+    initial.takeComparisonHold,
+  );
+  const workspaceTakes = createWorkspaceTakesMock({
+    alignment: workspace.workspaceAlignment,
+    paragraphs: () => s.paragraphs,
+    chapterTitle: (chapterId) => s.chapters.find((chapter) => chapter.id === chapterId)?.title ?? 'Chapter',
+    comparison: (findingId) => findings.findingsGet(findingId).catch(() => undefined),
+    beginPassageComparison,
+    reaper: initial.reaper,
+  });
   const measurePicked = new Set<string>();
   const { recordMeasurement: recordRenderMeasurement, ...proofingRender } = createProofingRenderMock({
     ready: manuscriptReady,
@@ -267,6 +280,7 @@ export function createMockApi(
     ...teleprompter,
     ...coverage,
     ...workspace,
+    ...workspaceTakes,
     ...preview,
     ...stages,
     ...proofingRender,

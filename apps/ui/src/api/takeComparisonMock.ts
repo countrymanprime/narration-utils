@@ -188,6 +188,41 @@ function mockTakeComparisonOf(group: Finding): Finding | undefined {
   };
 }
 
+/** A read of a workspace passage in the mock's comparison (edit-and-proof-workspace.prd.md Phase 6): where it is in its own file. */
+export type MockPassageRead = { item_guid: string; take_guid: string; source_file: string; source_start: number; source_length: number };
+
+/**
+ * The comparison the mock saves for a workspace passage: the same evidence shape the host saves for a take-review group
+ * (apps/desktop/internal/takecompare, `Passage`), over the passage's paragraphs' words. `passageId` is the evidence's
+ * `source_finding_id` and the finding's id derives from it, so a second comparison of the passage replaces the first.
+ */
+export function mockPassageComparison(passageId: string, chapterId: string, chapterTitle: string, spanText: string, reads: MockPassageRead[]): Finding {
+  const words = spanText.split(/\s+/).filter(Boolean);
+  const evidence: TakeComparisonEvidence = {
+    source_finding_id: passageId,
+    span: { first_unit: 0, last_unit: 0, words: words.map((text, index) => ({ index, text, unit: 0, paragraph: 0 })) },
+    model: 'small',
+    compared: reads.length,
+    members: reads.map((source, read) => comparedMember(read, source, words)),
+  };
+  return {
+    schema_version: 1,
+    id: `c-${passageId}`,
+    analyzer: 'take-comparison',
+    project: { path: 'mock-project' },
+    source: {},
+    manuscript: { chapter_id: chapterId, chapter_title: chapterTitle, expected: spanText },
+    category: 'take_comparison',
+    severity: 'info',
+    confidence: null,
+    evidence_version: `e-${passageId}`,
+    confidence_reason:
+      "A comparison shows each take's evidence per category, side by side. It does not add the categories up or pick a take: you choose the take in REAPER.",
+    evidence,
+    review: { status: 'unreviewed' },
+  };
+}
+
 function comparisonOf(group: Finding): Finding {
   const comparison = mockTakeComparisonOf(group);
   if (!comparison) throw new Error(`the mock fixture ${group.id} is not a comparable group`);
@@ -201,7 +236,11 @@ export function createTakeComparisonMock(
   store: Store,
   publish: (event: JobEnded) => void,
   hold = false,
-): Pick<TakeReviewApi, 'takeComparisonStart' | 'takeComparisonState' | 'takeComparisonCancel'> {
+): Pick<TakeReviewApi, 'takeComparisonStart' | 'takeComparisonState' | 'takeComparisonCancel'> & {
+  /** Starts the one comparison job for a workspace passage (workspaceTakesCompareStart): `comparison` is what a
+   * successful run saves. Shares the group comparison's job, state and cancel, as the host does. */
+  beginPassageComparison: (passageId: string, comparison: Finding, reads: number) => TakeComparisonJob;
+} {
   let job: TakeComparisonJob = {
     id: null,
     kind: 'take_comparison',
@@ -236,6 +275,14 @@ export function createTakeComparisonMock(
   };
 
   return {
+    beginPassageComparison: (passageId, passageComparison, reads) => {
+      if (job.phase === 'running') throw new Error('a take comparison is already running');
+      comparison = passageComparison;
+      const message = `Comparing ${reads} reads.`;
+      stage = 0;
+      job = { id: 'take-comparison-1', kind: 'take_comparison', phase: 'running', message, percent: 0, logs: [message], elapsed: 0, findingId: passageId };
+      return wireClone(job);
+    },
     takeComparisonStart: async (findingId) => {
       if (job.phase === 'running') throw new Error('a take comparison is already running');
       const group = await store.get(findingId).catch(() => {
