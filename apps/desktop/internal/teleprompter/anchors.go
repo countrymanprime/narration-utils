@@ -10,7 +10,7 @@ import (
 )
 
 // Punch and roll's word-to-time anchors (teleprompter-manuscript-integration.prd.md Phase 12, ADR 0246, owner decision
-// 2026-09-23: live anchors first, offline alignment as the fallback). While a live session reads a chapter, the host
+// 2026-09-23: live anchors first, offline alignment as the fallback, alignword.go and ADR 0560). While a live session reads a chapter, the host
 // polls REAPER's play position (bridge.Puncher.PlayPosition, from apps/desktop's own poll loop, never from this
 // DAW-agnostic package) and pairs it with the word the reader is on, appending an Anchor here. "Punch from here" on a
 // flag then asks ResolveWordTime for that word's project time before moving the cursor.
@@ -143,20 +143,21 @@ func DropAnchorsFrom(project, chapterID string, word int) error {
 	return writeAnchors(project, chapterID, kept)
 }
 
-// Anchor and alignment are ResolveWordTime's two sources, matching Phase 12's "resolved time, its source (anchor or
-// alignment) and pre-roll" UI requirement.
+// A punch time's three sources, matching Phase 12's "resolved time, its source (anchor or alignment) and pre-roll" UI
+// requirement (ADR 0560): SourceAnchor is ResolveWordTime's exact or bracketed answer from the live anchors;
+// SourceAlignment is the offline word-time alignment over the recording (AlignWord, the fallback when no anchor
+// brackets the word); SourceEstimate is ResolveWordTime's extrapolation from the anchors' pace, the last resort when
+// the recording cannot be aligned (no model installed, nothing recorded yet, or the word not in the stretch decoded).
 const (
 	SourceAnchor    = "anchor"
 	SourceAlignment = "alignment"
+	SourceEstimate  = "estimate"
 )
 
 // ResolveWordTime finds word's project time from anchors. An exact anchor, or one interpolated between the anchors
 // immediately before and after word, is SourceAnchor. A word outside every anchor's range is extrapolated from the
-// anchors' overall pace (SourceAlignment): a stand-in for a real offline re-decode with word-level timestamps, which
-// needs a sidecar mode this phase does not build (see the PRD's Phase 12 "offline alignment... over the resolved
-// range" and its remaining-scope note); the extrapolation at least keeps "Punch from here" working between and
-// slightly beyond anchors, while a genuine offline pass is a documented follow-up. ok is false with fewer than two
-// anchors (nothing to interpolate or extrapolate from): the caller falls back to "Pick a word" instead of guessing.
+// anchors' overall pace (SourceEstimate): the caller tries the offline alignment (AlignWord) before settling for it. ok
+// is false with fewer than two anchors (nothing to interpolate or extrapolate from).
 func ResolveWordTime(anchors []Anchor, word int) (position float64, source string, ok bool) {
 	if len(anchors) == 0 {
 		return 0, "", false
@@ -198,5 +199,5 @@ func ResolveWordTime(anchors []Anchor, word int) (position float64, source strin
 	if position < 0 {
 		position = 0
 	}
-	return position, SourceAlignment, true
+	return position, SourceEstimate, true
 }

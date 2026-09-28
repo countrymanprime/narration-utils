@@ -157,3 +157,18 @@ def test_load_records_reads_json_lines(tmp_path):
     path.write_text("\n".join(json.dumps(r) for r in _reading()) + "\n", encoding="utf-8")
 
     assert replay.load_records(str(path)) == _reading()
+
+
+def test_loaded_as_a_script_it_puts_its_own_folder_on_the_import_path(monkeypatch):
+    """`python replay.py` from anywhere finds its siblings: the module adds core/ to sys.path when it is not there yet,
+    whichever test (or sidecar module) happened to add it first in this run."""
+    import sys
+
+    core = str(REPLAY_PATH.parent)
+    monkeypatch.setattr(sys, "path", [entry for entry in sys.path if entry != core])
+    spec = importlib.util.spec_from_file_location("replay_fresh", REPLAY_PATH)
+    fresh = importlib.util.module_from_spec(spec)
+    assert spec and spec.loader
+    spec.loader.exec_module(fresh)
+
+    assert sys.path[0] == core

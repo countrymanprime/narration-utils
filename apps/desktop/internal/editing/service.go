@@ -22,6 +22,7 @@ import (
 	"github.com/countrymanprime/narration-utils/shell/internal/evidence"
 	"github.com/countrymanprime/narration-utils/shell/internal/findings"
 	"github.com/countrymanprime/narration-utils/shell/internal/persist"
+	"github.com/countrymanprime/narration-utils/shell/internal/proofing"
 	"github.com/countrymanprime/narration-utils/shell/internal/tracks"
 )
 
@@ -46,6 +47,13 @@ const (
 	ReasonNoProjectFile      Reason = "no_project_file"
 	ReasonProjectUnreadable  Reason = "project_unreadable"
 	ReasonBusy               Reason = "busy"
+	// ReasonNoRender: the chapter's source choice is SourceRender (Q6, Phase 8)
+	// but no render is associated with it at all (proofing.RenderNone) - the
+	// only render-choice case that refuses to start, mirroring "an unconfirmed
+	// mapping refuses to start" for the item path (render_service.go's own
+	// startRender doc comment explains why the other render states, missing,
+	// stale and unsupported, are allowed to start instead).
+	ReasonNoRender Reason = "no_render"
 )
 
 type refusalError struct {
@@ -121,6 +129,14 @@ type Config struct {
 	// directly, so a Config literal built before this field existed - every caller and test but the one proving this
 	// field is honoured - keeps reading exactly as it did before.
 	ProjectReader dawport.ProjectReader
+	// Renders is PS Phase 4's chapter-to-render association store (Q6, Phase 8 of this PRD): reused as-is, never
+	// duplicated, for "which file is the chapter's current render, and is it stale". A nil Renders (a Config literal
+	// built before this field existed, or a project with no proofing service) makes a render-choice Start() refuse
+	// with ReasonNoRender rather than panicking - the same defensive nil handling ProjectReader above already gets.
+	Renders *proofing.RenderStore
+	// Choices is this package's own per-chapter source choice (choice.go, Q6): nil reads as every chapter's own
+	// default, SourceItems (sourceChoice, render_service.go) - "no choice made yet" is never an error or a panic.
+	Choices *ChoiceStore
 }
 
 // Service runs one editing check at a time over one project.
@@ -214,7 +230,7 @@ func (s *Service) Start(ctx context.Context, request Request) (State, error) {
 	s.busy = true
 	s.mu.Unlock()
 
-	track, project, projectFile, err := s.resolveChapter(request)
+	choice, err := s.sourceChoice(request.DocumentID, request.ChapterID)
 	if err != nil {
 		s.mu.Lock()
 		s.busy = false
@@ -222,12 +238,43 @@ func (s *Service) Start(ctx context.Context, request Request) (State, error) {
 		return State{}, err
 	}
 
+	if choice == SourceRender {
+		status, projectFile, err := s.startRender(ctx, request)
+		if err != nil {
+			s.mu.Lock()
+			s.busy = false
+			s.mu.Unlock()
+			return State{}, err
+		}
+		return s.startJob(request, 1, "Checking the rendered file...", func(runCtx context.Context) {
+			s.runRender(runCtx, request, status, projectFile)
+		}), nil
+	}
+
+	track, project, projectFile, err := s.resolveChapter(request)
+	if err != nil {
+		s.mu.Lock()
+		s.busy = false
+		s.mu.Unlock()
+		return State{}, err
+	}
+	return s.startJob(request, len(track.Items), "Checking...", func(runCtx context.Context) {
+		s.run(runCtx, request, track, project, projectFile)
+	}), nil
+}
+
+// startJob is the goroutine-launching machinery Start shares between the
+// item path (run, scan.go) and the render path (runRender,
+// render_service.go): real-progress state, a cancellable context and the
+// busy-flag bookkeeping every job needs, whatever it decodes. work does the
+// actual scan; startJob only wraps it.
+func (s *Service) startJob(request Request, itemsTotal int, message string, work func(context.Context)) State {
 	runCtx, cancel := context.WithCancel(context.Background())
 	done := make(chan struct{})
 	started := s.now()
 	state := State{
 		RunID: fmt.Sprintf("%d", started.UnixNano()), ChapterID: request.ChapterID, Phase: PhaseRunning,
-		ItemsTotal: len(track.Items), StartedAt: &started, Message: "Checking...",
+		ItemsTotal: itemsTotal, StartedAt: &started, Message: message,
 	}
 	s.mu.Lock()
 	s.cancel, s.done, s.state = cancel, done, state
@@ -237,12 +284,12 @@ func (s *Service) Start(ctx context.Context, request Request) (State, error) {
 	go func() {
 		defer close(done)
 		defer cancel()
-		s.run(runCtx, request, track, project, projectFile)
+		work(runCtx)
 		s.mu.Lock()
 		s.busy = false
 		s.mu.Unlock()
 	}()
-	return state, nil
+	return state
 }
 
 // resolveChapter resolves request's chapter to its confirmed track (D5) and

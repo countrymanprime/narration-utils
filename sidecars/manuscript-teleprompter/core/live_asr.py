@@ -85,6 +85,11 @@ turns them into these three event types:
         only with --locate --wav FILE --tail-start S --tail-end E: seconds S
         to E of a recording, placed in the script; prints once and exits,
         no session follows (see locate.py for every field)
+    {"type": "word_time", "word": 812, "time": 783.42, "exact": true, ...}
+        only with --align-word N --wav FILE --tail-start S --tail-end E:
+        when script word N starts in the recording, placed through seconds
+        S to E of it (punch and roll's offline fallback); prints once and
+        exits (see align_word.py for every field)
     {"type": "level", "peak": -12.3, "rms": -24.1}
         the input level in dBFS every 100 ms of audio, in every session (see
         levels.py). With --meter --mic NAME it is the only event: no model,
@@ -649,6 +654,25 @@ def _run_locate(ap: argparse.ArgumentParser, args) -> None:
     _emit(locate.run(args.wav, args.tail_start, args.tail_end, tokens, breaks, decode))
 
 
+def _run_align_word(ap: argparse.ArgumentParser, args) -> None:
+    """--align-word: time one script word in a stretch of a recording and print one `word_time` line (align_word.py,
+    punch and roll's offline fallback). Checked like --locate, the chapter before the model loads."""
+    import align_word
+    import locate
+    from chapter_script import ChapterError
+
+    align_word.check_args(ap, args)
+    _check_engine_args(ap, args)
+    try:
+        tokens, _breaks = locate.load_script(args)
+    except ChapterError as error:
+        choices = f" Choose one of: {'; '.join(error.candidates)}" if error.candidates else ""
+        ap.error(f"{error}{choices}")
+    decode = _load_whisper_decoder(args, vad_filter=True)
+    log(f"Timing script word {args.align_word} in seconds {args.tail_start:g} to {args.tail_end:g} of {args.wav}...")
+    _emit(align_word.run(args.wav, args.tail_start, args.tail_end, tokens, args.align_word, decode))
+
+
 def _check_engine_args(ap: argparse.ArgumentParser, args) -> None:
     ENGINES.lookup(args.engine).check(ap, args)
     if bool(args.manuscript) != bool(args.chapter):
@@ -949,8 +973,16 @@ def build_parser() -> argparse.ArgumentParser:
         help="Instead of a session: transcribe seconds --tail-start to --tail-end of --wav, place them in the script and print one "
         "`locate` line with the word to resume from (locate.py); needs --model-dir, never downloads a model",
     )
-    ap.add_argument("--tail-start", type=float, default=None, help="--locate: where the tail starts in --wav, in seconds")
-    ap.add_argument("--tail-end", type=float, default=None, help="--locate: where the tail (the recorded audio) ends in --wav, in seconds")
+    ap.add_argument(
+        "--align-word",
+        type=int,
+        default=None,
+        metavar="WORD",
+        help="Instead of a session: transcribe seconds --tail-start to --tail-end of --wav, place them in the script and print one "
+        "`word_time` line with when script word WORD starts in --wav (align_word.py, punch and roll); needs --model-dir, never downloads a model",
+    )
+    ap.add_argument("--tail-start", type=float, default=None, help="--locate/--align-word: where the stretch starts in --wav, in seconds")
+    ap.add_argument("--tail-end", type=float, default=None, help="--locate/--align-word: where the stretch (the recorded audio) ends in --wav, in seconds")
     ap.add_argument("--device", default="cpu", choices=["cpu", "cuda"], help="Inference device (default: cpu)")
     ap.add_argument(
         "--decode-interval",
@@ -993,6 +1025,9 @@ def main() -> None:
         return
     if args.capabilities:
         _emit(capabilities_report())
+        return
+    if args.align_word is not None:
+        _run_align_word(ap, args)
         return
     if args.locate:
         _run_locate(ap, args)
