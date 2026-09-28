@@ -26,10 +26,6 @@ const PENDING: Record<string, Partial<Record<Shape, number>> & { owner: string }
   // The Proof notes header's sources line and the legend's dots.
   'src/components/proof/NotesHeader.tsx': { chip: 1, owner: 'Phase 12' },
   'src/components/proof/NotesStrip.tsx': { dot: 1, owner: 'Phase 12' },
-  // Master's rule badges, the mastering chain's steps and the band's chapter marks.
-  'src/components/master/RuleBadges.tsx': { chip: 1, owner: 'Phase 14' },
-  'src/components/master/MasteringChain.tsx': { chip: 1, owner: 'Phase 14' },
-  'src/components/master/BookConsistency.tsx': { dot: 1, owner: 'Phase 14' },
   // Not a copy to migrate: the script mark's character tag is CSS generated content (`before:`), never an element, so the
   // selection offsets see only the manuscript's text (ADR 0382); it is sized in em to ride the reading text.
   'src/components/manuscript/MarkupMark.tsx': { tag: 1, owner: 'none: generated content, ADR 0382' },

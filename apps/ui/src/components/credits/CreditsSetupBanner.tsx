@@ -3,8 +3,8 @@ import { apiErrorMessage } from '../../api/errorMessage';
 import { useApi } from '../../api/ApiContext';
 import type { CreditsSetupState } from '../../types';
 import { Button } from '../primitives/Button';
-import { Panel } from '../primitives/Panel';
 import { Dot } from '../primitives/StatusBadge';
+import { Panel } from '../primitives/Panel';
 import type { Notify } from '../primitives/Toast';
 
 /**

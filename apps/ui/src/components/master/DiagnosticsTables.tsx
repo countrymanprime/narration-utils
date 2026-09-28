@@ -154,7 +154,9 @@ export function CleanupFindingsTable({ files }: { files: readonly DiagnosticsFil
             </TableCell>
             <TableCell className="min-w-[6rem] font-medium">{cleanupClassLabel(finding)}</TableCell>
             <TableCell className="min-w-[16rem] text-[0.8rem]">{finding.confidence_reason}</TableCell>
-            <TableCell className="min-w-[8rem] font-['IBM_Plex_Mono',ui-monospace,monospace] text-[0.8rem]">{cleanupLevelText(finding)}</TableCell>
+            <TableCell numeric align="left" className="min-w-[8rem]">
+              {cleanupLevelText(finding)}
+            </TableCell>
             <TableCell className="min-w-[9rem] [overflow-wrap:anywhere]">{file.name}</TableCell>
           </TableRow>
         ))}

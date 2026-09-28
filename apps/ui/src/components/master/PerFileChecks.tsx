@@ -2,12 +2,11 @@ import type { DeliveryProfile, DeliveryRuleResult, MeasureFileResult, MeasureRep
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../primitives/Table';
 import { formatLength, formatLevel } from './deliveryFormat';
 import { fileVerdict, leftToCheck } from './fileVerdict';
-import { Mark } from './RuleBadges';
 
-const MONO = "font-['IBM_Plex_Mono',ui-monospace,monospace] whitespace-nowrap";
 const MUTED = { color: 'var(--text-muted)' };
 const DANGER = { color: 'var(--danger-text)' };
 const WARN = { color: 'var(--warn-text)' };
+const OK = { color: 'var(--ok-text)' };
 
 /** Why a file has no measurements yet, or will not have any. */
 function notMeasured(file: MeasureFileResult): string {
@@ -41,7 +40,7 @@ function resultFor(file: MeasureFileResult, profile: DeliveryProfile, metrics: r
 function LevelCell({ value, result }: { value: number | null; result?: DeliveryRuleResult }) {
   if (value === null) {
     return (
-      <TableCell className={MONO} style={MUTED}>
+      <TableCell numeric style={MUTED}>
         <span aria-hidden="true">–</span>
         <span className="sr-only">Not measurable</span>
       </TableCell>
@@ -50,7 +49,7 @@ function LevelCell({ value, result }: { value: number | null; result?: DeliveryR
   const missed = result?.status === 'not_met';
   const advised = !missed && !!result?.advice;
   return (
-    <TableCell className={`${MONO} ${missed ? 'font-semibold' : ''}`} style={missed ? DANGER : advised ? WARN : undefined}>
+    <TableCell numeric className={missed ? 'font-semibold' : ''} style={missed ? DANGER : advised ? WARN : undefined}>
       {formatLevel(value)}
       {missed && <span className="sr-only"> (not met)</span>}
       {advised && <span className="sr-only"> (advice: {result?.advice})</span>}
@@ -71,18 +70,25 @@ function RoomToneCell({ file, profile, report }: { file: MeasureFileResult; prof
       </span>
     );
   return (
-    <TableCell className={MONO}>
+    <TableCell numeric>
       {seconds(report.head_room_tone_seconds, head)} / {seconds(report.tail_room_tone_seconds, tail)}
     </TableCell>
   );
 }
 
+// The verdict is a word, not a badge (mock-fidelity-primitives-and-components.prd.md Phase 14, mock 05): PASS in
+// --ok-text, FAIL in --danger-text bold, right-aligned.
 function ResultCell({ file }: { file: MeasureFileResult }) {
   const verdict = fileVerdict(file);
   const left = leftToCheck(file);
   return (
     <TableCell className="text-right whitespace-nowrap">
-      {verdict === 'fail' ? <Mark tone="danger">Fail</Mark> : verdict === 'pass' ? <Mark tone="ok">Pass</Mark> : <Mark tone="muted">Not judged</Mark>}
+      <span
+        className={`font-['Barlow_Condensed',sans-serif] text-[0.8125rem] tracking-[0.03em] uppercase ${verdict === 'fail' ? 'font-semibold' : ''}`}
+        style={verdict === 'fail' ? DANGER : verdict === 'pass' ? OK : MUTED}
+      >
+        {verdict === 'fail' ? 'Fail' : verdict === 'pass' ? 'Pass' : 'Not judged'}
+      </span>
       {left > 0 && (
         <span className="mt-0.5 block text-[0.72rem]" style={MUTED}>
           {left} to check yourself
@@ -110,6 +116,9 @@ export function PerFileChecks({
   onSelect: (path: string) => void;
 }) {
   return (
+    // Flush to the panel's edges (ADR 0640), but the bleed is on the caller's scroll wrapper (MasterQcPage.tsx), not
+    // here: this table sits inside a horizontally-scrolling ancestor, and `flush`'s own negative margin would be
+    // clipped rather than reachable by scrolling there.
     <Table label="Per-file checks" className="mt-3">
       <TableHead>
         <TableRow>
@@ -127,7 +136,12 @@ export function PerFileChecks({
           const report = file.status === 'measured' ? file.report : null;
           const failed = fileVerdict(file) === 'fail';
           return (
-            <TableRow key={file.path} onActivate={report ? () => onSelect(file.path) : undefined} selected={selected === file.path}>
+            <TableRow
+              key={file.path}
+              onActivate={report ? () => onSelect(file.path) : undefined}
+              selected={selected === file.path}
+              emphasis={failed ? 'highlight' : undefined}
+            >
               <TableCell className="min-w-[9rem] [overflow-wrap:anywhere]">
                 <span className={failed ? 'font-semibold' : 'font-medium'}>{file.name}</span>
                 {report && (
@@ -138,7 +152,7 @@ export function PerFileChecks({
               </TableCell>
               {report ? (
                 <>
-                  <TableCell className={MONO}>{formatLength(report.duration_seconds)}</TableCell>
+                  <TableCell numeric>{formatLength(report.duration_seconds)}</TableCell>
                   <LevelCell value={report.rms_dbfs} result={resultFor(file, profile, ['rms_dbfs'])} />
                   <LevelCell value={report.true_peak_dbtp} result={resultFor(file, profile, ['true_peak_dbtp', 'sample_peak_dbfs'])} />
                   <LevelCell value={report.noise_floor_dbfs} result={resultFor(file, profile, ['noise_floor_dbfs'])} />

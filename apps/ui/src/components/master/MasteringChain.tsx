@@ -3,6 +3,7 @@ import { useApi } from '../../api/ApiContext';
 import { apiErrorMessage } from '../../api/errorMessage';
 import type { MasteringProviders } from '../../api/contracts/mastering';
 import { Panel } from '../primitives/Panel';
+import { Badge } from '../primitives/StatusBadge';
 
 const MUTED = { color: 'var(--text-muted)' };
 
@@ -52,19 +53,30 @@ export function MasteringChain({ providers, problem }: { providers?: MasteringPr
           )}
           {row.chain.length > 0 ? (
             <ol aria-label="Mastering steps" className="mt-3 flex flex-wrap items-center gap-2">
-              {row.chain.map((step, index) => (
-                <Fragment key={step.name}>
-                  {index > 0 && (
-                    <li aria-hidden="true" className="text-sm" style={MUTED}>
-                      →
+              {row.chain.map((step, index) => {
+                // The chain's last step is the platform's own gain target, not one of the book's fixed steps (mock 05:
+                // its chip alone is --accent-soft, mock-fidelity-primitives-and-components.prd.md Phase 14).
+                const last = index === row.chain.length - 1;
+                return (
+                  <Fragment key={step.name}>
+                    {index > 0 && (
+                      <li aria-hidden="true" className="text-sm" style={MUTED}>
+                        →
+                      </li>
+                    )}
+                    <li>
+                      <Badge
+                        label={`${step.name} · ${step.detail}`}
+                        colors={
+                          last
+                            ? { fill: 'var(--accent-soft)', text: 'var(--accent-strong)', line: 'transparent' }
+                            : { fill: 'var(--surface-2)', text: 'var(--text)', line: 'transparent' }
+                        }
+                      />
                     </li>
-                  )}
-                  <li className="rounded-full border border-[var(--border)] bg-[var(--surface-2)] px-3 py-1 text-[0.8rem]">
-                    <span className="font-semibold">{step.name}</span>
-                    <span style={MUTED}> · {step.detail}</span>
-                  </li>
-                </Fragment>
-              ))}
+                  </Fragment>
+                );
+              })}
             </ol>
           ) : (
             <p className="mt-2 text-sm" style={MUTED}>

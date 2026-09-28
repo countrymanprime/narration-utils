@@ -52,7 +52,6 @@ const CEILING: Record<Copy, Record<string, number>> = {
     'src/components/booth/CompanionShell.tsx': 1,
     'src/components/booth/ReaderRail.tsx': 1,
     'src/components/master/BookConsistency.tsx': 1,
-    'src/components/master/DeliveryPackagePanel.tsx': 1,
     'src/components/script/ScriptChapterList.tsx': 2,
     'src/components/script/ScriptPage.tsx': 6,
   },
