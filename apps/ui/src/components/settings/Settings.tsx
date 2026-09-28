@@ -4,6 +4,7 @@ import type { Bootstrap, Scope, ScopedSettingField, TtsCatalog, WhisperCatalog }
 import { useApi } from '../../api/ApiContext';
 import { usePendingAction } from '../../hooks/usePendingAction';
 import { Button } from '../primitives/Button';
+import { Dot } from '../primitives/StatusBadge';
 import { Heading } from '../primitives/Heading';
 import { ConfirmDialog } from '../primitives/ConfirmDialog';
 import { Tab, TabList, TabPanel, Tabs } from '../primitives/Tabs';
@@ -269,7 +270,7 @@ export function Settings({
               {category === 'Daw' && scope === 'project' ? (
                 <div className="space-y-3 text-sm">
                   <div className="flex items-center gap-3 rounded-md p-3" style={{ background: 'var(--surface-2)' }}>
-                    <span className="size-2 shrink-0 rounded-full" style={{ background: data.dawFileLinked ? 'var(--character)' : 'var(--non-text)' }} />
+                    <Dot color={data.dawFileLinked ? 'var(--character)' : 'var(--non-text)'} />
                     <div>
                       {/* Copy names only the one fact the host actually has (a stored link) - reachability is still unknown (PRD W15). */}
                       <div className="font-medium">{data.dawFileLinked ? 'REAPER project linked' : 'No REAPER project linked'}</div>
@@ -299,7 +300,7 @@ export function Settings({
                   {/* Truthful about what the host actually knows (PRD W15): reachability is a real Phase 7 fact now
                       (a live heartbeat), not the permanent "Connected" claim Phase 3 shipped. */}
                   <div className="flex items-center gap-3 rounded-md p-3" style={{ background: 'var(--surface-2)' }}>
-                    <span className="size-2 shrink-0 rounded-full" style={{ background: data.dawReachable ? 'var(--character)' : 'var(--non-text)' }} />
+                    <Dot color={data.dawReachable ? 'var(--character)' : 'var(--non-text)'} />
                     <div>
                       <div className="font-medium">{data.dawReachable ? `${data.daw || 'REAPER'} is reachable` : 'REAPER is not reachable'}</div>
                       <div style={{ color: 'var(--text-muted)' }}>
