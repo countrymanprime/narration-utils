@@ -15,7 +15,7 @@ export type ListboxOption = {
 export const listboxOptionId = (listId: string, optionId: string) => `${listId}-option-${optionId}`;
 
 // A list of choices drawn on the popover surface (mock-fidelity-primitives-and-components.prd.md Phase 7): the frame, radius and
-// shadow of Popover, rows with a divider, the active row on `--surface-2` and the chosen one marked with an `--accent` check
+// shadow of Popover, undivided rows, the active row on `--surface-2` and the chosen one marked with an `--accent` check
 // (read-aloud-control-bar/03). It is the popup of a combobox: focus stays in the text box that drives it, which moves the active
 // row with the arrow keys and names it with `aria-activedescendant`, so the options are not in the Tab order; a press picks one.
 // `footer` is drawn inside the frame but outside the listbox role, whose children may only be options.
@@ -54,7 +54,9 @@ export function Listbox({
                 role="option"
                 tabIndex={-1}
                 aria-selected={selectedId === undefined ? active : selected}
-                className={`flex w-full items-center gap-2 border-b border-[var(--border)] px-3 py-2 text-left hover:bg-[var(--surface-2)] ${active ? 'bg-[var(--surface-2)]' : ''}`}
+                className={`flex w-full items-center gap-2 px-3 py-2 text-left hover:bg-[var(--surface-2)] ${active ? 'bg-[var(--surface-2)]' : ''}`}
+                // A press picks without taking focus from the text box that drives the list.
+                onMouseDown={(event) => event.preventDefault()}
                 onClick={() => onPick(option.id)}
               >
                 {selectedId !== undefined && (
@@ -72,9 +74,9 @@ export function Listbox({
           })}
         </div>
       ) : (
-        empty && <div className="border-b border-[var(--border)] p-3 text-sm text-[var(--text-muted)]">{empty}</div>
+        empty && <div className="p-3 text-sm text-[var(--text-muted)]">{empty}</div>
       )}
-      {footer}
+      {footer && <div className="border-t border-[var(--border)]">{footer}</div>}
     </div>
   );
 }
