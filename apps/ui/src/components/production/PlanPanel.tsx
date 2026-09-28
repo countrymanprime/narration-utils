@@ -92,7 +92,7 @@ export function PlanPanel({ onSaved }: { onSaved: () => void }) {
 
   return (
     <Panel title="Delivery plan">
-      <p className="mt-1 text-xs" style={MUTED}>
+      <p className="text-xs" style={MUTED}>
         The delivery date and what the book pays you. Both are optional: until they are set, the days left and the effective rate stay a dash.
       </p>
       {problem && (

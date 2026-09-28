@@ -4,6 +4,7 @@ import { chapterName } from '../../chapterName';
 import { Button } from '../primitives/Button';
 import { Checkbox } from '../primitives/Checkbox';
 import { Disclosure } from '../primitives/Disclosure';
+import { SectionLabel } from '../primitives/SectionLabel';
 import { Select } from '../primitives/Select';
 import { Tooltip } from '../primitives/Tooltip';
 import { TitleSubtitle } from '../primitives/TitleSubtitle';
@@ -34,8 +35,6 @@ const SECTION_KIND_OPTIONS = [
 // (ADR 0005); front matter is listed.
 const FRONT_MATTER_NOTE = 'Not counted as a chapter: excluded from audiobook totals and Proof. Still listed and readable in the manuscript.';
 const REFERENCE_NOTE = 'Excluded from audiobook totals, Proof and the chapter list. Still readable in the manuscript.';
-
-const LEGEND_CLASSES = "px-1 font-['Barlow_Condensed',sans-serif] text-[0.72rem] font-semibold tracking-[0.08em] text-[var(--text-muted)] uppercase";
 
 // The heading as it will be written: the title and, when it keeps one, the subtitle, the way the reader writes them ("Chapter One — Down
 // the Rabbit-Hole"), and a line turned off that returns to the text, said as such.
@@ -190,7 +189,9 @@ export function ImportReview({
     <div ref={root}>
       {(preview.format === 'markdown' || buildStoryBible || subtitleChoices) && (
         <fieldset className="mt-4 min-w-0 border-t pt-3" style={{ borderColor: 'var(--border)' }}>
-          <legend className={LEGEND_CLASSES}>Import options</legend>
+          <SectionLabel as="legend" className="px-1">
+            Import options
+          </SectionLabel>
           <div className="space-y-2">
             {preview.format === 'markdown' && (
               <label className="flex items-center gap-2 text-sm">
@@ -224,7 +225,9 @@ export function ImportReview({
       {preview.format === 'pdf' && preview.chapterTitles.length > 0 && <p className="mt-3 text-xs">Detected chapters: {preview.chapterTitles.join(' · ')}</p>}
       {(sections.length > 0 || candidates.length > 0 || notices.length > 0) && (
         <fieldset className="mt-4 min-w-0">
-          <legend className={LEGEND_CLASSES}>Review what was found</legend>
+          <SectionLabel as="legend" className="px-1">
+            Review what was found
+          </SectionLabel>
           {sectionGroup('narration', 'Narration chapters', `${counts.narration} ${plural(counts.narration, 'chapter')}`)}
           {sectionGroup('opening', 'Front matter', `${counts.opening} ${plural(counts.opening, 'section')}`, {
             label: 'About front matter',
