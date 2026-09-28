@@ -9,6 +9,7 @@ import { WIRE_TAKE_REVIEW_FINDINGS, WIRE_TRACKS_PROJECT, WIRE_TRANSCRIPT, editin
 import { prepMarkupChapterSchema, prepMarkupSpanSchema } from './schemas/prepMarkup';
 import { prepCompletenessSummarySchema } from './schemas/prepCompleteness';
 import { cleanupApplyResultSchema, cleanupPreviewResultSchema, levelMatchApplyResultSchema, levelMatchPreviewResultSchema } from './schemas/cleanup';
+import { editingSourceChoiceSchema } from './schemas/editing';
 import { pronunciationOnlineBatchResultSchema, pronunciationOnlineKeyStatusSchema, pronunciationOnlineResultSchema } from './schemas/pronunciationOnline';
 import { WIRE_TAKE_COMPARISON_FINDING } from './takeComparisonMock';
 import { MOCK_MEASURE_PATHS } from './measureMock';
@@ -2417,6 +2418,23 @@ describe('answers of the mock client for the settings, voice, model, transcript 
     await expect(api.levelMatchPreview(chapterId, 'rms_dbfs', -6, 1)).rejects.toThrow();
   });
 
+  it('the editing source choice defaults to items and round-trips through Set (Q6, editing-readiness-analysis.prd.md Phase 8)', async () => {
+    const api = createMockApi();
+    const chapterId = 'chapter-7'; // WIRE_CHAPTERS[6] is the fixture's one Editing-status chapter.
+
+    const initial = await api.editingSourceChoice(chapterId);
+    expectMatches(editingSourceChoiceSchema, initial, 'mock editing source choice');
+    expect(initial).toBe('items');
+
+    const set = await api.editingSetSourceChoice(chapterId, 'render');
+    expectMatches(editingSourceChoiceSchema, set, 'mock editing set source choice');
+    expect(set).toBe('render');
+
+    expect(await api.editingSourceChoice(chapterId)).toBe('render');
+    // A different chapter is unaffected.
+    expect(await api.editingSourceChoice('chapter-1')).toBe('items');
+  });
+
   it('the production plan: empty, a deadline and amount set and cleared, milestones saved, and every refusal', async () => {
     const api = createMockApi();
     const empty = await api.productionPlan();
@@ -2630,6 +2648,8 @@ describe('answers of the mock client for the settings, voice, model, transcript 
       'editingStart',
       'editingState',
       'editingCandidates',
+      'editingSourceChoice',
+      'editingSetSourceChoice',
       'cleanupPreview',
       'cleanupApply',
       'levelMatchPreview',
