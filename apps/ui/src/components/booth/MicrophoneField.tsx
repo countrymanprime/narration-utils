@@ -20,6 +20,12 @@ type Props = {
   error?: string | null;
   onRefresh?: () => void;
   refreshing?: boolean;
+  /** The field's id, so two pickers can share a page: the teleprompter's (the default) and the built-in recorder's (Q6). */
+  id?: string;
+  /** Its visible label ("Microphone" by default). */
+  label?: string;
+  /** What an empty list blocks, after "Connect a microphone, then refresh." */
+  blocks?: string;
 };
 
 // The device picker (docs/prds/teleprompter-engines-and-input-devices.prd.md Phase 2), replacing Phase 1's typed-name
@@ -28,7 +34,17 @@ type Props = {
 // failed or empty listing blocks the phase instead of falling back to typing, so a device the list does not have
 // simply cannot be started with, and a remembered device the list no longer has is kept selected and shown as
 // "(not found)" rather than silently replaced.
-export function MicrophoneField({ value, onChange, devices, error, onRefresh, refreshing = false }: Props) {
+export function MicrophoneField({
+  value,
+  onChange,
+  devices,
+  error,
+  onRefresh,
+  refreshing = false,
+  id = 'teleprompter-device',
+  label = 'Microphone',
+  blocks = 'Reading cannot start until a device is listed.',
+}: Props) {
   const knownNames = new Set(devices.map((device) => device.name));
   const remembersAnUnlistedDevice = value !== '' && !knownNames.has(value);
   const listEmpty = devices.length === 0;
@@ -43,22 +59,16 @@ export function MicrophoneField({ value, onChange, devices, error, onRefresh, re
     return (
       <div>
         <div className="flex items-baseline justify-between gap-2">
-          <span className={LABEL_CLASS} id="teleprompter-device-label">
-            Microphone
+          <span className={LABEL_CLASS} id={`${id}-label`}>
+            {label}
           </span>
           {refreshButton}
         </div>
-        <p
-          id="teleprompter-device"
-          role="alert"
-          aria-labelledby="teleprompter-device-label"
-          className="mt-1 text-sm font-medium"
-          style={{ color: 'var(--danger-text)' }}
-        >
+        <p id={id} role="alert" aria-labelledby={`${id}-label`} className="mt-1 text-sm font-medium" style={{ color: 'var(--danger-text)' }}>
           {error ? "Couldn't list microphones" : 'No microphone found'}
         </p>
         <span className={HINT_CLASS} style={{ color: 'var(--text-muted)' }}>
-          {error || 'Connect a microphone, then refresh. Reading cannot start until a device is listed.'}
+          {error || `Connect a microphone, then refresh. ${blocks}`}
         </span>
       </div>
     );
@@ -72,12 +82,12 @@ export function MicrophoneField({ value, onChange, devices, error, onRefresh, re
   return (
     <div>
       <div className="flex items-baseline justify-between gap-2">
-        <label className={LABEL_CLASS} htmlFor="teleprompter-device">
-          Microphone
+        <label className={LABEL_CLASS} htmlFor={id}>
+          {label}
         </label>
         {refreshButton}
       </div>
-      <Select id="teleprompter-device" className="mt-1" fullWidth value={value} onChange={onChange} options={options} />
+      <Select id={id} className="mt-1" fullWidth value={value} onChange={onChange} options={options} />
       {remembersAnUnlistedDevice && (
         <span className={HINT_CLASS} role="alert" style={{ color: 'var(--warn-text)' }}>
           The remembered microphone was not found in the current device list. Pick it again or choose another one.

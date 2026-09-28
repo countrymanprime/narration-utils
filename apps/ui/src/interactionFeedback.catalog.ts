@@ -19,6 +19,7 @@ import { editingFeedback } from './interactionFeedback/editing';
 import { deliveryFeedback } from './interactionFeedback/delivery';
 import { productionFeedback } from './interactionFeedback/production';
 import { creditsFeedback } from './interactionFeedback/credits';
+import { recordingFeedback } from './interactionFeedback/recording';
 
 export type { FeedbackRow } from './interactionFeedback/row';
 
@@ -39,6 +40,7 @@ const AREAS: Array<Record<string, FeedbackRow>> = [
   deliveryFeedback,
   productionFeedback,
   creditsFeedback,
+  recordingFeedback,
 ];
 
 export const FEEDBACK_CATALOG: Record<string, FeedbackRow> = {};
@@ -90,6 +92,10 @@ export const SILENT_CATCHES: Record<string, string> = {
     'Only guards the REAPER preselection against a running session; useTeleprompterSession reads the state again and reports its failure.',
   'src/components/booth/CompanionShell.tsx#1':
     "Companion mode's exit on unmount: nothing is left mounted to tell, and the host's exit is a no-op when companion mode was never entered, so there is no state it could leave wrong that a retry would fix.",
+  'src/components/booth/useRecorder.ts#1': "Only the engine chip's first reading; without it the chip stays on REAPER until the next recording:state.",
+  'src/components/booth/useRecorder.ts#2':
+    'Leaving the Booth stops a take; nothing is left mounted to show a failure, and the host finishes the take when the app quits.',
+  'src/components/booth/useRecorder.ts#3': 'Leaving the Booth releases a level check; nothing is left mounted to show a failure.',
   'src/components/booth/useInputLevel.ts#1':
     'Best-effort release of the meter-only child (popover close, session start, device change or unmount); nothing is left mounted to show a failure, and the meter simply starts fresh the next time the popover opens.',
   'src/components/booth/useTeleprompterSession.ts#1':

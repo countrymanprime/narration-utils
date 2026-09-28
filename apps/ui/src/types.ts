@@ -80,6 +80,7 @@ import type { PreviewApi } from './api/contracts/preview';
 import type { DawCapabilitiesApi } from './api/contracts/daw';
 import type { ProviderCapabilitiesApi } from './api/contracts/providers';
 import type { MasteringApi } from './api/contracts/mastering';
+import type { RecordingApi } from './api/contracts/recording';
 import type { PronunciationLookupApi } from './api/contracts/pronunciationLookup';
 import type { RenderEncodeMasterApi } from './api/contracts/renderEncodeMaster';
 
@@ -124,6 +125,7 @@ export interface NarrationApi
     DawCapabilitiesApi,
     ProviderCapabilitiesApi,
     MasteringApi,
+    RecordingApi,
     ProductionApi,
     PronunciationLookupApi,
     RenderEncodeMasterApi {}

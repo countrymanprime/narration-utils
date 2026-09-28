@@ -19,6 +19,8 @@ import type { RecordInReaperState } from './useRecordInReaper';
 import type { FollowCursor } from './useFollowCursor';
 import type { ReaderMark } from './readerModel';
 import type { TeleprompterSession } from './useTeleprompterSession';
+import { RecorderSetup, RecorderStatus, RecorderTakes } from './BuiltinRecorder';
+import type { Recorder } from './useRecorder';
 
 type Props = {
   session: TeleprompterSession;
@@ -31,6 +33,9 @@ type Props = {
   /** The Record-in-REAPER toggle's state (booth-actions-enablement.prd.md Phase 2), owned by `BoothSession`: the
    * command bar's toggle and the status bar's "REC · P&R" badge read the same one. */
   recording: RecordInReaperState;
+  /** The built-in recorder (native-recording-suite Phase 2, ADR 0455): with the project on "Built-in recorder" it takes
+   * REAPER's place in the status line, the command bar and the rail. */
+  recorder?: Recorder;
   /** The resume prompt's chosen start point, shown as the command bar's clearable chip while idle. */
   startPoint?: { label: string; onClear: () => void };
   marks?: Map<string, ReaderMark[]>;
@@ -64,14 +69,18 @@ function BoothStatus({
   session: t,
   chapterTitle,
   recording,
+  recorder,
   onCompanion,
   onExit,
-}: Pick<Props, 'session' | 'chapterTitle' | 'recording' | 'onCompanion' | 'onExit'>) {
+}: Pick<Props, 'session' | 'chapterTitle' | 'recording' | 'recorder' | 'onCompanion' | 'onExit'>) {
   // A running session relays its own levels; before one starts the command bar's microphone popover runs the meter.
   const { level } = useInputLevel(t.device, { active: t.active, enabled: false });
   const listening = t.active && !t.paused;
-  const tone: StatusTone = recording.recording ? 'danger' : listening ? 'info' : 'neutral';
-  const label = recording.recording ? 'REC · P&R' : listening ? 'Reading' : t.active ? 'Paused' : 'Ready';
+  const builtin = recorder?.builtin === true;
+  const rec = builtin ? recorder.recording : recording.recording;
+  const tone: StatusTone = rec ? 'danger' : listening ? 'info' : 'neutral';
+  // Mock 03's "REC · P&R" is REAPER's punch and roll; the built-in recorder's take reads "REC · Built-in".
+  const label = rec ? (builtin ? 'REC · Built-in' : 'REC · P&R') : listening ? 'Reading' : t.active ? 'Paused' : 'Ready';
   // Only once a session has a script: before it, the rows carry no word positions to count from.
   const progress = t.session.script ? boothProgress(t.rows, t.session.cursor, t.session.script.tokens) : undefined;
   return (
@@ -85,11 +94,15 @@ function BoothStatus({
           {progressText(progress)}
         </span>
       )}
-      {/* Decorative: the command bar's microphone popover has the labelled meter. */}
-      <span className="flex flex-none items-center gap-1 text-xs" style={{ color: 'var(--text-muted)' }}>
-        <span className="max-sm:sr-only">Input</span>
-        <LevelMeter label="Input level" peak={level?.peak ?? null} rms={level?.rms ?? null} decorative size="compact" className="w-8 sm:w-16" />
-      </span>
+      {builtin ? (
+        <RecorderStatus recorder={recorder} />
+      ) : (
+        // Decorative: the command bar's microphone popover has the labelled meter.
+        <span className="flex flex-none items-center gap-1 text-xs" style={{ color: 'var(--text-muted)' }}>
+          <span className="max-sm:sr-only">Input</span>
+          <LevelMeter label="Input level" peak={level?.peak ?? null} rms={level?.rms ?? null} decorative size="compact" className="w-8 sm:w-16" />
+        </span>
+      )}
       <div className="ml-auto flex flex-none items-center gap-2">
         {onCompanion && (
           <TooltipTarget text="Pin a narrow companion panel beside your DAW">
@@ -198,6 +211,7 @@ export function BoothView({
   chapterTitle,
   chapterShortTitle,
   recording,
+  recorder,
   startPoint,
   marks,
   onOpenMark,
@@ -214,18 +228,23 @@ export function BoothView({
   // From `md` the rail is FocusShell's own column (mock 03); below it an 18rem column would crush the text, so the same
   // rail follows the text instead, in the one scrolling region (WCAG 1.4.10 reflow, ADR 0061).
   const railBeside = useMediaQuery('(min-width: 48rem)', true);
+  const takes = recorder && <RecorderTakes recorder={recorder} />;
   const railContent = speakers ? (
     <>
+      {takes}
       <BoothSpeakers speakers={speakers} onOpenSpeaker={onOpenSpeaker} />
       {comingUp && <BoothComingUp names={comingUp} onOpen={onOpenSpeaker} />}
       {rail}
     </>
   ) : (
-    rail
+    <>
+      {takes}
+      {rail}
+    </>
   );
   return (
     <FocusShell
-      status={<BoothStatus session={t} chapterTitle={chapterTitle} recording={recording} onCompanion={onCompanion} onExit={onExit} />}
+      status={<BoothStatus session={t} chapterTitle={chapterTitle} recording={recording} recorder={recorder} onCompanion={onCompanion} onExit={onExit} />}
       rail={railBeside ? railContent : undefined}
       // A route inside AppShell, whose own `<main>` holds this page: a second one would duplicate the landmark.
       asMain={false}
@@ -239,10 +258,12 @@ export function BoothView({
           chapterTitle={chapterTitle}
           chapterShortTitle={chapterShortTitle}
           recording={recording}
+          recorder={recorder}
         />
       }
     >
       {!t.active && setup}
+      {!t.active && recorder && <RecorderSetup recorder={recorder} />}
       <ReadAlongView session={t} follow={follow} header={header} marks={marks} onOpenMark={onOpenMark} hideKey fullBleed speakers={speakerLabels} />
       {!railBeside && (
         <aside aria-label="Rail" className="mx-auto mt-4 w-full max-w-3xl">

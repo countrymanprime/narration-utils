@@ -26,6 +26,7 @@ import { dawGoldens } from './daw';
 import { providerGoldens } from './providers';
 import { renderEncodeMasterGoldens } from './renderEncodeMaster';
 import { masteringGoldens } from './mastering';
+import { recordingGoldens } from './recording';
 import { prepMarkupGoldens } from './prepMarkup';
 import { productionGoldens } from './production';
 
@@ -54,6 +55,7 @@ const FEATURE_AREAS: Array<Record<string, z.ZodType>> = [
   providerGoldens,
   renderEncodeMasterGoldens,
   masteringGoldens,
+  recordingGoldens,
   prepMarkupGoldens,
   productionGoldens,
 ];

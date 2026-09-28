@@ -39,16 +39,12 @@ import { DESKTOP_HOST_API_VERSION } from './hostApi';
 import { isWireError } from './api/wire/WireError';
 import { describeApiError } from './api/errorMessage';
 import { useCommand } from './input/useCommand';
-import { mockEngineFromLocation } from './api/mockApi';
+import { useRecordingEngine } from './components/booth/useRecorder';
 
 // The Settings categories another page can open Settings at, by URL anchor.
 // `#teleprompter` is kept as an alias of `#booth` so links from before the Booth replaced the Teleprompter page still land
 // (stage-navigation-and-page-replacement.prd.md Q11); the category's key stays its settings tool's name.
 const SETTINGS_ANCHORS: Record<string, string> = { '#credits': 'Credits', '#delivery': 'Delivery', '#booth': 'Teleprompter', '#teleprompter': 'Teleprompter' };
-
-// The engine chip's state (stage-navigation-and-page-replacement.prd.md Phase 1, Q7): read once at load, since
-// nothing on the host selects it yet and the URL does not change without a reload.
-const ENGINE = mockEngineFromLocation();
 
 const LIVE_UPDATES_DEGRADED = 'Some live updates from the desktop host could not be read, so what you see may be out of date. Reopen the page to refresh it.';
 
@@ -123,6 +119,8 @@ function AppRoutes() {
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
   // The engine panel (stage-navigation-and-page-replacement.prd.md Phase 6): one panel for the app, opened from the header's
   // engine chip and from every pointer that used to send the narrator to the Tracks page.
+  // The engine chip's state: the project's recording engine (native-recording-suite P2, ADR 0455), REAPER by default.
+  const engine = useRecordingEngine();
   const [enginePanelOpen, setEnginePanelOpen] = useState(false);
   const openEnginePanel = useCallback(() => setEnginePanelOpen(true), []);
   // A link inside the panel ("Open workspace" in Chapter links) moves to another page: the panel closes behind it. The one move
@@ -469,7 +467,7 @@ function AppRoutes() {
             dawProjectMatches={data.dawProjectMatches}
             onOpenEnginePanel={openEnginePanel}
             linkingDawFile={dawLink.isBusy}
-            engine={ENGINE}
+            engine={engine}
             history={{ canGoBack: history.canGoBack, canGoForward: history.canGoForward, back: guardedBack, forward: guardedForward }}
           >
             <ErrorBoundary key={location.pathname.split('/')[1] || 'home'}>
