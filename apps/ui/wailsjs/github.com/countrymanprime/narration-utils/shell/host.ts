@@ -2100,5 +2100,16 @@ export function WorkspaceLoop(chapterID: string, firstToken: number, lastToken: 
     return $Call.ByID(465077885, chapterID, firstToken, lastToken);
 }
 
+/**
+ * WorkspacePeaks answers the waveform strip's peaks for every analyzed item of chapterID's stored alignment:
+ * each item's played range, over its active take's source file, at measure.DefaultPeaksPerSecond, from the
+ * evidence cache. It refuses only when there is no project or the chapter's alignment itself cannot be read
+ * (the same errors WorkspaceAlignment already answers) - a single item with no usable source answers a
+ * Reason instead of failing the whole call.
+ */
+export function WorkspacePeaks(chapterID: string): $CancellablePromise<string> {
+    return $Call.ByID(1143383553, chapterID);
+}
+
 // Private type creation functions
 const $$createType0 = $Create.Map($Create.Any, $Create.Any);

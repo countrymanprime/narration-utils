@@ -169,4 +169,6 @@ export const SILENT_CATCHES: Record<string, string> = {
     'Only offers to review the last compare run; without it the offer is absent (moved from the Proofing page, stage-navigation Phase 5).',
   'src/components/proof/ProofChapterPage.tsx#2':
     "The chapter's findings for the text overlay (edit-and-proof-workspace.prd.md Phase 4): not a narrator action to retry, and not swallowed silently since the check-derived flags (Phase 2) still show with nothing lost - a failure here just leaves the overlay's extra flags and review-in-place off this load, and the book's notes on Proof (which read the same store) still work.",
+  'src/components/proof/ProofChapterPage.tsx#3':
+    "The waveform strip's peaks (edit-and-proof-workspace.prd.md Phase 5, ADR 0520), loaded alongside the alignment: not a narrator action to retry, and nothing to guard - a failure here just leaves the strip showing nothing this load, while the text, transport and flags (which do not depend on it) still work.",
 };

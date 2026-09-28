@@ -274,24 +274,25 @@ def read_audio_range(path: str, start: float, end: float) -> np.ndarray:
     return audio[first:last]
 
 
-def check_args(ap, args) -> None:
-    """Refuse a locate run the host could never have asked for (argparse exits with status 2)."""
+def check_args(ap, args, mode: str = "--locate") -> None:
+    """Refuse a locate run the host could never have asked for (argparse exits with status 2). `mode` names the flag in
+    the messages: the punch word-time alignment (align_word.py, `--align-word`) reads a recording the same way."""
     if args.mic:
-        ap.error("--locate reads a recording (--wav), not a microphone")
+        ap.error(f"{mode} reads a recording (--wav), not a microphone")
     if not args.wav:
-        ap.error("--locate needs --wav")
+        ap.error(f"{mode} needs --wav")
     if args.engine != "whisper":
-        ap.error("--locate runs the whisper engine only")
+        ap.error(f"{mode} runs the whisper engine only")
     if not args.model_dir:
-        ap.error("--locate needs --model-dir: it never downloads a model")
+        ap.error(f"{mode} needs --model-dir: it never downloads a model")
     if not (args.manuscript or args.script):
-        ap.error("--locate needs --manuscript and --chapter, or --script")
+        ap.error(f"{mode} needs --manuscript and --chapter, or --script")
     if args.tail_start is None or args.tail_end is None:
-        ap.error("--locate needs --tail-start and --tail-end")
+        ap.error(f"{mode} needs --tail-start and --tail-end")
     if not (np.isfinite(args.tail_start) and np.isfinite(args.tail_end)) or args.tail_start < 0 or args.tail_end <= args.tail_start:
         ap.error("--tail-start and --tail-end must be seconds with 0 <= start < end")
     if args.tail_end - args.tail_start > MAX_TAIL_SECONDS:
-        ap.error(f"--locate reads at most {MAX_TAIL_SECONDS:g} seconds of audio")
+        ap.error(f"{mode} reads at most {MAX_TAIL_SECONDS:g} seconds of audio")
 
 
 def load_script(args) -> tuple[list[str], set[int]]:
