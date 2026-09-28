@@ -419,7 +419,9 @@ export type MockDeliveryProfileSeed = 'custom';
 const refOf = (profile: DeliveryProfile): DeliveryProfileRef => (profile.builtIn ? { id: profile.id, version: profile.version } : { id: profile.id });
 
 /** The profiles, the Global default and the project's choice; `current` answers the profile the project is judged against. */
-export function createDeliveryProfilesMock(seed?: MockDeliveryProfileSeed): DeliveryProfilesApi & { current: () => DeliveryProfile } {
+export function createDeliveryProfilesMock(
+  seed?: MockDeliveryProfileSeed,
+): DeliveryProfilesApi & { current: () => DeliveryProfile; all: () => DeliveryProfile[] } {
   const custom: DeliveryProfile[] = seed === 'custom' ? [mockCustomProfile()] : [];
   let globalDefault: DeliveryProfileRef = refOf(MOCK_ACX);
   let projectChoice: DeliveryProfileRef | null = seed === 'custom' ? refOf(custom[0]) : null;
@@ -445,6 +447,9 @@ export function createDeliveryProfilesMock(seed?: MockDeliveryProfileSeed): Deli
 
   return {
     current,
+    /** Every profile the narrator can choose from, built-in first (render-encode-master PRD Phase 6's own
+     * multi-select reads this, the same list `state()` already reports as `profiles`). */
+    all,
     deliveryProfiles: async () => state(),
     deliverySelectProfile: async (scope, id, version) => {
       if (scope !== 'global' && scope !== 'project') throw new Error(`unsupported scope "${scope}": choose global or project`);

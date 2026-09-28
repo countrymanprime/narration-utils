@@ -1,5 +1,14 @@
 import { z } from 'zod';
-import type { ExportFileResult, ExportJob, MasteringSummary, PackageChecklistItem, PackageJob, PackageManifestFile } from '../contracts/renderEncodeMaster';
+import type {
+  ExportFileResult,
+  ExportJob,
+  MasteringSummary,
+  MultiPackageJob,
+  MultiPackageResult,
+  PackageChecklistItem,
+  PackageJob,
+  PackageManifestFile,
+} from '../contracts/renderEncodeMaster';
 import { listFromNull } from './base';
 
 const nullableNumber = z.number().nullable();
@@ -68,3 +77,24 @@ export const packageJobSchema = z.object({
   elapsed: z.number(),
   error: z.string().optional(),
 }) satisfies z.ZodType<PackageJob>;
+
+const multiPackageResultSchema = z.object({
+  profile: z.string(),
+  platform: z.string(),
+  phase: z.enum(['pending', 'running', 'success', 'error']),
+  message: z.string(),
+  outputDir: z.string(),
+  files: listFromNull(packageManifestFileSchema),
+  checklist: listFromNull(packageChecklistItemSchema),
+  error: z.string().optional(),
+}) satisfies z.ZodType<MultiPackageResult>;
+
+export const multiPackageJobSchema = z.object({
+  id: z.string().nullable(),
+  kind: z.literal('render_package_multi'),
+  phase: z.enum(['idle', 'running', 'success', 'cancelled', 'error']),
+  message: z.string(),
+  results: listFromNull(multiPackageResultSchema),
+  elapsed: z.number(),
+  error: z.string().optional(),
+}) satisfies z.ZodType<MultiPackageJob>;

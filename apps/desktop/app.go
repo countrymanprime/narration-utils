@@ -53,6 +53,7 @@ import (
 	"github.com/countrymanprime/narration-utils/shell/internal/ttsport"
 	"github.com/countrymanprime/narration-utils/shell/internal/update"
 	"github.com/countrymanprime/narration-utils/shell/internal/whisper"
+	"github.com/countrymanprime/narration-utils/shell/internal/wiktextract"
 	"github.com/wailsapp/wails/v3/pkg/application"
 )
 
@@ -126,7 +127,12 @@ type Host struct {
 	exportPicked map[string]bool
 	// +checklocks:mu
 	packageJob *packageJobState
-	transcript *transcript.Service
+	// multiPackageJob builds several profiles' packages from one export's own encoded files in one action
+	// (multi_package_job.go, render-encode-master PRD Phase 6). h.mu guards the pointer; it is not per project, and
+	// it and packageJob never run at the same time (each start site checks the other's running state).
+	// +checklocks:mu
+	multiPackageJob *multiPackageJobState
+	transcript      *transcript.Service
 	// coverage is the recording-coverage service (docs/utilities/recording-coverage.md, ADR 0128): it reads the saved .rpp and
 	// runs the Transcript Compare sidecar's --coverage mode. Swapped on every project switch like transcript; the Coverage* bindings
 	// reach it (Phase 5, bindings_coverage.go) and it fills the manuscript chapters' recordedFraction.
@@ -221,6 +227,14 @@ type Host struct {
 	// pickRenderFile is a seam for tests (bindings_proofing_render.go): nil means the operating system's single-file
 	// picker for a chapter's rendered file.
 	pickRenderFile func() (string, error)
+	// wiktextractManager is a seam for tests (bindings_wiktextract_commons.go, prep-depth Phase 10): nil means a
+	// manager built fresh over the checkout's or the packaged release's own catalog and the per-user asset cache,
+	// the same way as every other asset kind (assetcache.go). This binding is a light, occasional reader of Phase
+	// 8's own install, not a project service, and is not yet part of the asset registry Settings wires up (#782's
+	// own deferred fast-follow), so there is no cached Host field to keep in sync with a repaired or reinstalled
+	// asset - set only before Startup, like platform.
+	// +checklocks:mu
+	wiktextractManager func() (*wiktextract.Manager, error)
 	// pickDiagnosticsFolder and diagnosticsNow are seams for tests (diagnostics_export.go): nil means the operating
 	// system's folder picker and time.Now.
 	pickDiagnosticsFolder func() (string, error)
@@ -236,6 +250,12 @@ type Host struct {
 	encodeFile        encodeFileFunc
 	assemblePackage   assembleFunc
 	pickPackageFolder func() (string, error)
+	// resolveProfile is the same seam for multi_package_job.go's own profile resolution: nil means
+	// h.profileStore().Resolve. It exists so a test can resolve a selection to a synthetic profile - for example one
+	// requiring a format no built-in or persistable custom profile can yet, since deliveryprofile's own store
+	// validates a custom profile's rules against a known-metric whitelist - without touching internal/deliveryprofile
+	// itself (render-encode-master PRD Phase 6, ADR 0480).
+	resolveProfile func(deliveryprofile.Ref) (deliveryprofile.Profile, bool, error)
 	// updates asks GitHub for a newer release and remembers the answer (ADR 0072). It is set once in NewHost and never swapped, so it is
 	// read directly, like recents.
 	updates *update.Checker

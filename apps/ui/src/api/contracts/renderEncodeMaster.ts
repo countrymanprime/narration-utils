@@ -82,6 +82,42 @@ export type PackageJob = {
   error?: string;
 };
 
+/** One platform the narrator checked to build a package for, in the multi-platform export panel's own selection
+ * (render-encode-master.prd.md Phase 6: several profiles, one action, built on Phase 5's own export/package split). */
+export type ProfileSelection = { profileId: string; profileVersion: string };
+
+/** What PackageStartMulti is asked to build: every selected platform, and the same encoded items a single
+ * PackageStart would be sent (an export job's own EncodedPaths for its current format). */
+export type MultiPackageRequest = { selections: ProfileSelection[]; items: PackageItem[] };
+
+/** One selected profile's own place in a multi-platform run. `phase` has no "cancelled": a cancel is a whole-job
+ * event (`MultiPackageJob.phase` reports it), and a profile a cancel never reached simply stays "pending". */
+export type MultiPackagePhase = 'pending' | 'running' | 'success' | 'error';
+export type MultiPackageResult = {
+  profile: string;
+  platform: string;
+  phase: MultiPackagePhase;
+  message: string;
+  outputDir: string;
+  files: PackageManifestFile[];
+  checklist: PackageChecklistItem[];
+  error?: string;
+};
+
+/** The multi-platform package job (PackageStartMulti/State/Cancel), in the shape of the host's other jobs: one
+ * mastered/encoded source produces a package for every selected profile, reusing already-encoded files for any
+ * profile whose required format matches the export job's own current format, and encoding once (never once per
+ * profile) for any other required format. */
+export type MultiPackageJob = {
+  id: string | null;
+  kind: 'render_package_multi';
+  phase: 'idle' | 'running' | 'success' | 'cancelled' | 'error';
+  message: string;
+  results: MultiPackageResult[];
+  elapsed: number;
+  error?: string;
+};
+
 export interface RenderEncodeMasterApi {
   /** Opens the picker for the files to master and encode. Only paths chosen here can be exported. */
   exportPickFiles(): Promise<MeasurePickResult>;
@@ -100,4 +136,15 @@ export interface RenderEncodeMasterApi {
   packageState(): Promise<PackageJob>;
   /** Stops a running package build. Answers the job. */
   packageCancel(): Promise<PackageJob>;
+  /** Resolves every selected profile, works out each one's required encode format, reuses the export job's own
+   * encoded files for any selection matching its format, asks for one root output folder, then builds each
+   * profile's package in its own subfolder, in order, as a job; rejects an empty selection, an unknown profile, a
+   * path that was not encoded in this session, or a second package build (single or multi-platform) or export while
+   * one runs. */
+  packageStartMulti(req: MultiPackageRequest): Promise<MultiPackageJob>;
+  /** The multi-platform package job: idle, running with each selected profile's own phase, or how it ended with
+   * every profile's own result. */
+  packageMultiState(): Promise<MultiPackageJob>;
+  /** Stops a running multi-platform build before its next profile starts. Answers the job. */
+  packageMultiCancel(): Promise<MultiPackageJob>;
 }
