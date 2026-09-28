@@ -60,8 +60,6 @@ const CEILING: Record<Copy, Record<string, number>> = {
     'src/components/master/BookConsistency.tsx': 1,
     'src/components/script/ScriptChapterList.tsx': 2,
     'src/components/script/ScriptPage.tsx': 6,
-    // Native takes review (native-recording PRD, not a page phase's).
-    'src/components/proof/NativeTakesPanel.tsx': 2,
   },
   h1: {
     // The Booth's page title is visually hidden (`sr-only`): the reading surface is the page, and a Heading would show.

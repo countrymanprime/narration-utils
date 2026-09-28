@@ -159,7 +159,7 @@ function EnginePanelBody({ notify, link }: { notify: Notify; link: EngineLinkSta
       )}
       {hasTracks && (
         <Panel title="REAPER tools">
-          <Toolbar label="REAPER tools" className="mt-2 flex-wrap">
+          <Toolbar label="REAPER tools" className="flex-wrap">
             {chapters.length > 0 && (
               <ToolbarButton render={<Button variant="secondary" onClick={() => setTool('link-chapters')} />}>Link chapters…</ToolbarButton>
             )}

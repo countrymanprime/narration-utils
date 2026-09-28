@@ -13,7 +13,6 @@ import { useWorkJob } from '../../hooks/useWorkJob';
 import { AssetFacts } from '../assets/AssetFacts';
 import { AssetInstallPrompt } from '../assets/AssetInstallPrompt';
 import { Heading } from '../primitives/Heading';
-import { PANEL_FRAME_CLASS } from '../primitives/panelStyles';
 import { TooltipTarget } from '../primitives/Tooltip';
 import { CAT_DOT_BG } from '../manuscript/EntitySummary';
 import { Dot } from '../primitives/StatusBadge';
@@ -23,6 +22,7 @@ import { VoiceDataPanel } from './VoiceDataPanel';
 import { SeriesTab } from '../series/SeriesTab';
 import { WorkDialog } from '../primitives/WorkDialog';
 import { IconButton } from '../primitives/IconButton';
+import { PANEL_FRAME_CLASS } from '../primitives/panelStyles';
 import { SearchField } from '../primitives/SearchField';
 import { Tab, TabList, TabPanel, Tabs } from '../primitives/Tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../primitives/Table';
@@ -228,7 +228,7 @@ export function Guide({ notify, goToManuscript }: { notify: Notify; goToManuscri
         </TabList>
       </div>
       {tab === 'Series' ? (
-        <div className="min-h-0 flex-1 overflow-hidden rounded-lg border border-[var(--border)] bg-[var(--surface)] shadow-[var(--shadow)]">
+        <div className={`${PANEL_FRAME_CLASS} min-h-0 flex-1 overflow-hidden`}>
           <SeriesTab notify={notify} />
         </div>
       ) : (
