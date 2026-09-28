@@ -24,8 +24,8 @@ type Copy = keyof typeof COPIES;
 
 const CEILING: Record<Copy, Record<string, number>> = {
   card: {
-    // Page components the page phases own: the Booth's rail and companion (13), Production (11), Proof's findings (12).
-    'src/components/booth/CompanionShell.tsx': 1,
+    // Page components the page phases own: the Booth's rail (13), Production (11), Proof's findings (12). The
+    // companion panel's own card dropped to 0 in the same phase (ADR 0659: full-bleed sections, not cards).
     'src/components/booth/ReaderRail.tsx': 1,
     'src/components/production/ProductionPage.tsx': 1,
     'src/components/proof/FindingsList.tsx': 1,
