@@ -11,6 +11,7 @@ func TestValidateSettingValueAcceptsWhatEachKindStores(t *testing.T) {
 	color := fieldSchema{key: "color_note", label: "Note color", kind: "color"}
 	flag := fieldSchema{key: "notify", label: "Notify", kind: "bool"}
 	text := fieldSchema{key: "note_label", label: "Note label", kind: "text"}
+	tags := fieldSchema{key: "fx_favourites", label: "Favourite effects", kind: "tags"}
 
 	cases := []struct {
 		name    string
@@ -33,6 +34,12 @@ func TestValidateSettingValueAcceptsWhatEachKindStores(t *testing.T) {
 		{"bool capitalised", flag, "True", "must be true or false"},
 		{"bool a number", flag, "1", "must be true or false"},
 		{"bool yes", flag, "yes", "must be true or false"},
+		{"tags empty", tags, "", ""},
+		{"tags one term", tags, "Vocal Warmth.RfxChain", ""},
+		{"tags several terms", tags, "Vocal Warmth.RfxChain,ReaEQ", ""},
+		{"tags an empty term", tags, "ReaEQ,,ReaComp", "holds an empty term"},
+		{"tags a blank term", tags, "ReaEQ, ", "holds an empty term"},
+		{"tags a term too long", tags, strings.Repeat("x", 65), "longer than 64 characters"},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -60,7 +67,7 @@ func TestValidateSettingValueRejectsAnUnknownKind(t *testing.T) {
 
 // The wire kinds the UI is written against; changing one is a contract change (hostAPIVersion).
 func TestFieldSchemasUseOnlyKindsTheUIKnows(t *testing.T) {
-	known := map[string]bool{"choice": true, "color": true, "text": true, "bool": true, "number": true}
+	known := map[string]bool{"choice": true, "color": true, "text": true, "bool": true, "number": true, "tags": true}
 	for tool, schemas := range fieldSchemas {
 		for _, schema := range schemas {
 			if !known[schema.kind] {
