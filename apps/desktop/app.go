@@ -228,6 +228,7 @@ type Host struct {
 	// 8's own install, not a project service, and is not yet part of the asset registry Settings wires up (#782's
 	// own deferred fast-follow), so there is no cached Host field to keep in sync with a repaired or reinstalled
 	// asset - set only before Startup, like platform.
+	// +checklocks:mu
 	wiktextractManager func() (*wiktextract.Manager, error)
 	// pickDiagnosticsFolder and diagnosticsNow are seams for tests (diagnostics_export.go): nil means the operating
 	// system's folder picker and time.Now.
