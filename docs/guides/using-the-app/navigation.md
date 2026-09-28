@@ -67,6 +67,10 @@ announced once, for a screen reader, after the level settles — not on every wh
 Zoom is one setting for the whole app, not a page or a project. It is not [Script](script.md)'s own Text size,
 which stays independent and multiplies with app zoom.
 
+The level is remembered across launches: quit at 125% and the app opens at 125% next time, with no flash at
+100% first. It is a machine-wide setting like the [Booth](settings.md)'s microphone, not a project one, so it
+follows you between projects rather than resetting when you switch.
+
 ## The audio engine panel
 
 Click the chip at the right of the header to open the audio engine panel over whatever page you are on.

@@ -32,19 +32,27 @@ function nearestStepIndex(level: number): number {
  *
  * `announcement` is the debounced, polite text a run of wheel notches or clicks should announce once, at the level
  * the narrator settles on ("Solution Detail": "not on every wheel notch").
+ *
+ * The settled level is also persisted (app-navigation-and-zoom-controls.prd.md Phase 3, Q4 A): `windowSaveZoom`,
+ * debounced by the same settle, so a run of wheel notches or clicks writes once, not on every step. The mount read's
+ * own value is skipped, the same way it is never announced - it is already what is on disk (or what a fresh install
+ * has never set), so saving it back would be a no-op write on every launch.
  */
-export function useZoom(api: Pick<SystemApi, 'windowZoom' | 'windowSetZoom'>) {
+export function useZoom(api: Pick<SystemApi, 'windowZoom' | 'windowSetZoom' | 'windowSaveZoom'>) {
   const [level, setLevel] = useState(1.0);
   const debouncedLevel = useDebouncedValue(level, ANNOUNCE_DEBOUNCE_MS);
   const [announcement, setAnnouncement] = useState('');
   // The level already announced (and the mount read's own value, which must not announce itself).
   const announcedRef = useRef(1.0);
+  // The level already saved (and the mount read's own value, which must not be written straight back).
+  const savedRef = useRef(1.0);
 
   useEffect(() => {
     void api
       .windowZoom()
       .then((result) => {
         announcedRef.current = result.level;
+        savedRef.current = result.level;
         setLevel(result.level);
       })
       .catch(() => undefined);
@@ -55,6 +63,12 @@ export function useZoom(api: Pick<SystemApi, 'windowZoom' | 'windowSetZoom'>) {
     announcedRef.current = debouncedLevel;
     setAnnouncement(`Zoom ${Math.round(debouncedLevel * 100)}%`);
   }, [debouncedLevel]);
+
+  useEffect(() => {
+    if (debouncedLevel === savedRef.current) return;
+    savedRef.current = debouncedLevel;
+    void api.windowSaveZoom(debouncedLevel).catch(() => undefined);
+  }, [debouncedLevel, api]);
 
   // Returns its promise (rather than firing and forgetting) so a caller - a button's onClick, or a test - can await
   // the level actually landing; nothing here throws, since a failed call has nowhere to go but staying at the old level.

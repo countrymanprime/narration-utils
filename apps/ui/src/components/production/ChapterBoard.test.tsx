@@ -282,12 +282,40 @@ describe('credits rows on the board (credits-in-chapter-table.prd.md Phase 2)', 
       creditsPreview: async (body: string) => ({ text: body, words: body.split(/\s+/).filter(Boolean).length, unresolved: [] }),
     });
     await waitFor(() => expect(rowNames()[0]).toBe('Opening credits'));
-    expect(cell('Opening credits', 'Recorded').textContent).toBe('—');
+    // No track is linked yet (Phase 3): the same "No track" a manuscript chapter's own Recorded cell shows.
+    expect(cell('Opening credits', 'Recorded').textContent).toBe('No track');
     const dialog = await openCredits('Opening credits');
     // A 155-word segment at 155 wpm reads 60s; the room-tone allowance defaults to 0.
     expect(within(dialog).getByText(/155 words · about 1m/)).toBeTruthy();
     expect(within(dialog).getByRole('link', { name: 'Open in Script' }).getAttribute('href')).toBe('/script#credits-opening');
     expect(within(dialog).queryByRole('alert')).toBeNull();
+  });
+
+  it('shows its own measured Recorded length once a track is linked to the credits id (Phase 3)', async () => {
+    const { api, rerender } = await renderBoard();
+    await waitFor(() => expect(rowNames()[0]).toBe('Opening credits'));
+    await api.chapterTrackMapConfirm('{0E4D1D7F-D039-674D-87E6-719376DE95EC}', 'credits-opening');
+    rerender('after-link');
+    await waitFor(() => expect(cell('Opening credits', 'Recorded').textContent).not.toBe('No track'));
+    expect(cell('Closing credits', 'Recorded').textContent).toBe('No track');
+  });
+
+  it("enables the credits row's Check button, opening the same recording-check dialog a manuscript chapter uses (Phase 3, CT4)", async () => {
+    await renderBoard();
+    await waitFor(() => expect(rowNames()[0]).toBe('Opening credits'));
+    const panel = await openCredits('Opening credits');
+    fireEvent.click(within(panel).getByRole('button', { name: 'Recording check' }));
+    const check = await screen.findByRole('dialog', { name: 'Recording check: Opening credits' });
+    expect(within(check).getByText(/Not checked yet/)).toBeTruthy();
+    expect(within(check).getByRole('button', { name: 'Check recording' })).toBeTruthy();
+  });
+
+  it("a manuscript chapter's own recording check is unchanged by the credits Check button existing (Phase 3, regression)", async () => {
+    await renderBoard();
+    fireEvent.click(cell('Chapter 1', 'Record'));
+    const dialog = await screen.findByRole('dialog', { name: /^Recording check: Chapter 1/ });
+    // Chapter 1's default mock result already has a report: unlike a credits row's dialog, it keeps its "Open in Proof" link.
+    expect(within(dialog).getByRole('button', { name: 'Open in Proof' })).toBeTruthy();
   });
 
   it('warns when a credits template has an unresolved token, without hiding or blocking the row (C6)', async () => {

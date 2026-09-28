@@ -47,7 +47,7 @@ import {
   takeReviewScanJobSchema,
 } from './schemas/takeReview';
 import { COVERAGE_EVALUATOR_REASONS, COVERAGE_REFUSAL_REASONS, coverageResultSchema, coverageStartResultSchema, coverageStateSchema } from './schemas/coverage';
-import { workspaceAlignmentResultSchema } from './schemas/workspace';
+import { workspaceAlignmentResultSchema, workspacePeaksResultSchema } from './schemas/workspace';
 import { pinnedPreviewSchema, previewResultSchema } from './schemas/preview';
 import { STAGE_REFUSAL_REASONS, STAGE_UNKNOWN_CAUSES, stageDecisionResultSchema, stageRecommendationsSchema } from './schemas/stages';
 import { proofingChooseRenderResultSchema, proofingRenderSchema } from './schemas/proofingRender';
@@ -81,6 +81,7 @@ import { dawLaunchResultSchema, dawLinkResultSchema, projectFolderSelectionSchem
 import {
   creditsAnnouncementsSchema,
   creditsProjectValuesResultSchema,
+  creditsRecordedLengthsSchema,
   creditsSetupStateSchema,
   creditsRenderResultSchema,
   creditsStatusesSchema,
@@ -933,6 +934,26 @@ describe('answers of the mock client for the manuscript, Story Bible and project
     expectMatches(creditsStatusesSchema, afterClosing, 'mock credits statuses, both set');
     expect(afterClosing).toEqual({ opening: 'finalized', closing: 'recording' });
     expect(await api.creditsStatuses()).toEqual(afterClosing);
+  });
+
+  it('the credits rows recorded lengths, never leaking a manuscript chapter link (credits-in-chapter-table.prd.md, Phase 3)', async () => {
+    const api = createMockApi();
+    const unlinked = await api.creditsRecordedLengths();
+    expectMatches(creditsRecordedLengthsSchema, unlinked, 'mock credits recorded lengths, neither linked');
+    expect(unlinked).toEqual({ opening: { recordedUnavailable: 'unlinked' }, closing: { recordedUnavailable: 'unlinked' } });
+
+    const tracks = await api.tracksList();
+    const confirmed = await api.chapterTrackMapConfirm(tracks.tracks[0].guid, 'credits-opening');
+    expect(confirmed.chapterTitle).toBe('Opening credits');
+
+    const afterLink = await api.creditsRecordedLengths();
+    expectMatches(creditsRecordedLengthsSchema, afterLink, 'mock credits recorded lengths, opening linked');
+    expect(afterLink.closing).toEqual({ recordedUnavailable: 'unlinked' });
+    expect('recordedSeconds' in afterLink.opening).toBe(true);
+
+    // The linked track went to credits-opening, never to a manuscript chapter of the same track.
+    const chapters = await api.manuscriptChapters();
+    expect(chapters.every((chapter) => chapter.recordedUnavailable === 'unlinked')).toBe(true);
   });
 
   it('the DAW catalog list and open-download-page answers, detected and not detected (Phase 2)', async () => {
@@ -2135,6 +2156,44 @@ describe('answers of the mock client for the settings, voice, model, transcript 
     expect(unknown).toMatchObject({ state: 'never', paragraphs: [], tokens: [] });
   });
 
+  it("the workspace peaks answer the live item's waveform, deterministically (edit-and-proof-workspace PRD Phase 5)", async () => {
+    const chapters = await createMockApi().manuscriptChapters();
+    const measured = chapters.find((chapter) => chapter.recordedFraction !== undefined);
+    if (!measured) throw new Error('the mock chapters carry a measured recordedFraction');
+    // WIRE_TRACKS_PROJECT's own "Chapter 1" track is the only one with a supported, source-available item -
+    // workspacePeaks needs a confirmed link to a live item, which the base mock fixtures don't seed by default.
+    const [linkedTrack] = WIRE_TRACKS_PROJECT.tracks;
+    const api = createMockApi(
+      {},
+      {
+        chapterTrackMappings: [
+          {
+            trackGuid: linkedTrack.guid,
+            chapterId: measured.id,
+            chapterTitle: measured.title,
+            confirmedAt: '2026-09-24T09:00:00Z',
+            origin: 'manual',
+            match: null,
+          },
+        ],
+      },
+    );
+
+    const first = await api.workspacePeaks(measured.id);
+    expectMatches(workspacePeaksResultSchema, first, 'mock workspace peaks');
+    expect(first.chapterId).toBe(measured.id);
+    expect(first.items.length).toBeGreaterThan(0);
+    expect(first.items[0].peaks?.buckets).toBeGreaterThan(0);
+    expect(first.items[0].reason).toBeUndefined();
+
+    const second = await api.workspacePeaks(measured.id);
+    expect(second).toEqual(first);
+
+    const unknown = await api.workspacePeaks('no-such-chapter');
+    expectMatches(workspacePeaksResultSchema, unknown, 'mock workspace peaks, no live item');
+    expect(unknown.items).toEqual([]);
+  });
+
   it('the workspace REAPER bindings answers, every outcome and refusal (edit-and-proof-workspace PRD Phase 3)', async () => {
     const api = createMockApi();
     const chapters = await api.manuscriptChapters();
@@ -2548,6 +2607,7 @@ describe('answers of the mock client for the settings, voice, model, transcript 
       'workspaceAlignment',
       'workspaceGoTo',
       'workspaceLoop',
+      'workspacePeaks',
       'previewCandidates',
       'previewPin',
       'previewPinSet',
@@ -2637,6 +2697,7 @@ describe('answers of the mock client for the settings, voice, model, transcript 
       'saveCreditsRetailSample',
       'creditsStatuses',
       'setCreditsStatus',
+      'creditsRecordedLengths',
       'pronunciationOnlineKeyStatus',
       'pronunciationOnlineKeySet',
       'pronunciationOnlineKeyClear',
@@ -2690,6 +2751,7 @@ describe('answers of the mock client for the settings, voice, model, transcript 
       'deleteCreditsTemplate',
       'companionModeEnter',
       'companionModeExit',
+      'windowSaveZoom',
     ];
     const NOT_A_REQUEST = [
       'mediaUrl',

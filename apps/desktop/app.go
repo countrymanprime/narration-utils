@@ -60,7 +60,7 @@ import (
 // Keep this in lockstep with apps/ui/src/hostApi.ts.  The frontend rejects
 // an older host before bootstrapping so a partial update cannot run against a
 // binding contract it does not understand.
-const hostAPIVersion = 81
+const hostAPIVersion = 82
 
 // Host is the Wails binding boundary. The frontend invokes only this bound
 // object; it never receives a loopback port or an HTTP capability.
@@ -174,6 +174,10 @@ type Host struct {
 	// *bridge.Client or *bridge.Actions themselves. Swappable like navigation and actions; nil with no bridge client.
 	dawPortResolver *dawport.Resolver
 	lineIdentity    *lineidentity.Service
+	// punchAlignments is punch and roll's last offline word-time alignment (teleprompterpunchalign.go, ADR 0560), so a
+	// punch after its preview does not decode the same stretch twice. It has its own lock and is not per project: its
+	// key names the source file and the stretch.
+	punchAlignments punchAlignCache
 	pickups         *pickups.Service
 	projectState    *projectstate.Service
 	renderConfig    *renderconfig.Service

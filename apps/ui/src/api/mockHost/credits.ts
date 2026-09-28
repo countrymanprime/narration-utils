@@ -12,7 +12,8 @@ import type {
   NarrationApi,
   RetailSampleAnswer,
 } from '../../types';
-import { wireClone } from '../mockFixtures';
+import { mockRecordedLength } from '../chapterTrackMatchMock';
+import { WIRE_TRACKS_PROJECT, wireClone } from '../mockFixtures';
 import { type MockApiSeed, mockDocumentId, type MockState } from './state';
 import type { MockSettings } from './settings';
 
@@ -330,6 +331,15 @@ export function createCreditsMock(
     setCreditsStatus: async (kind, status) => {
       creditsStatuses = { ...creditsStatuses, [kind]: status };
       return wireClone(creditsStatuses);
+    },
+    // A credits id's confirmed link lives in the same s.chapterTrackMappings as every manuscript chapter's (ADR
+    // 0333), so the same mockRecordedLength manuscriptChapters() uses reads it, keyed by "credits-opening"/"credits-closing".
+    creditsRecordedLengths: async () => {
+      const readable = Boolean(s.tracksDiscovery.selected);
+      return {
+        opening: mockRecordedLength('credits-opening', WIRE_TRACKS_PROJECT, s.chapterTrackMappings, readable),
+        closing: mockRecordedLength('credits-closing', WIRE_TRACKS_PROJECT, s.chapterTrackMappings, readable),
+      };
     },
   } satisfies Partial<NarrationApi>;
   return { bindings, mockCreditsText };

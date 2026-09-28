@@ -598,6 +598,25 @@ keep going").
 
 Nothing here writes to REAPER; moving REAPER's cursor to a word is punch-and-roll
 ([ADR 0246](../adr/0246-punch-and-roll-moves-only-the-edit-cursor-and-anchors-words-by-a-polled-play-position.md)).
+
+## Punch from here: where a word's time comes from
+
+"Punch from here" on a flag (`ReaderFlagsPanel.tsx`) previews a time before anything moves, and names its source
+(`TeleprompterPunchPreview`/`TeleprompterPunch`, `apps/desktop/teleprompterpunch.go`):
+
+- **`anchor`**: the live anchors the host records while a session reads the chapter (REAPER's play position polled
+  every 3 s beside the word being read, `teleprompterpunchpoll.go`, `internal/teleprompter/anchors.go`), exact or
+  interpolated between the two around the word.
+- **`alignment`**: when no anchor brackets the word, the word is timed from the chapter's recording
+  (`teleprompterpunchalign.go`): the resume prompt's track, REAPER's live items or the saved `.rpp`, the item holding
+  the anchors' pace estimate (else the item that ends last), at most 120 s of it, and one run of the sidecar's
+  `--align-word` mode (`core/align_word.py`: the locate's decode and placement, then a matching-blocks pass that maps
+  each heard word to a script word). The answer is mapped back through the item's offset and rate. Nothing runs while
+  REAPER records onto the track, and nothing is downloaded
+  ([ADR 0560](../adr/0560-punch-and-roll-times-a-word-past-the-anchors-by-aligning-it-in-the-recording-before-falling-back-to-the-reading-pace.md)).
+- **`estimate`**: the anchors' pace, only when the recording cannot answer.
+
+A punch after its preview reuses the preview's alignment; a successful punch drops the anchors at or after the word.
 The owner-approved mockups the prompt was built to are in
 [`docs/prds/mockups/read-aloud-resume-from-daw/`](../prds/mockups/read-aloud-resume-from-daw/01-agree.webp)
 (agree, disagree, recorded to the end, gone after play, checking, last reading

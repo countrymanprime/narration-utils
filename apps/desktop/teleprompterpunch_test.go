@@ -76,7 +76,7 @@ func TestPunchPreRollFallsBackOnAnUnparseableStoredValue(t *testing.T) {
 }
 
 func TestResolvePunchWithNoProjectIsRefused(t *testing.T) {
-	if _, _, _, _, err := resolvePunch(hostServices{}, 5); err != errNoProject {
+	if _, _, _, _, err := resolvePunch(hostServices{}, 5, nil); err != errNoProject {
 		t.Fatalf("resolvePunch error = %v, want errNoProject", err)
 	}
 }
@@ -84,14 +84,14 @@ func TestResolvePunchWithNoProjectIsRefused(t *testing.T) {
 func TestResolvePunchWithNoLiveChapterIsRefused(t *testing.T) {
 	svc := hostServices{}
 	svc.config.projectFolder = t.TempDir()
-	if _, _, _, _, err := resolvePunch(svc, 5); err != ErrNoLiveChapter {
+	if _, _, _, _, err := resolvePunch(svc, 5, nil); err != ErrNoLiveChapter {
 		t.Fatalf("resolvePunch error = %v, want ErrNoLiveChapter", err)
 	}
 }
 
 func TestResolvePunchWithNoAnchorsIsRefused(t *testing.T) {
 	host, _ := newHostForPunchTest(t)
-	if _, _, _, _, err := resolvePunch(host.services(), 5); err != ErrNoPunchAnchor {
+	if _, _, _, _, err := resolvePunch(host.services(), 5, nil); err != ErrNoPunchAnchor {
 		t.Fatalf("resolvePunch error = %v, want ErrNoPunchAnchor", err)
 	}
 }
@@ -103,7 +103,7 @@ func TestResolvePunchInterpolatesFromRecordedAnchorsOfTheLiveChapter(t *testing.
 			t.Fatal(err)
 		}
 	}
-	chapterID, position, source, preRoll, err := resolvePunch(host.services(), 4)
+	chapterID, position, source, preRoll, err := resolvePunch(host.services(), 4, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -237,7 +237,13 @@ func TestContractTeleprompterPunchResults(t *testing.T) {
 	}
 	resolvedAnchorRaw, resolvedAnchorErr := withAnchors.TeleprompterPunchPreview(4)
 	answers["resolved_anchor"] = decodedPunch(t, resolvedAnchorRaw, resolvedAnchorErr)
-	resolvedAlignmentRaw, resolvedAlignmentErr := withAnchors.TeleprompterPunchPreview(14)
+	// Past the anchors, with no track for the chapter to align: the anchors' pace estimate.
+	resolvedEstimateRaw, resolvedEstimateErr := withAnchors.TeleprompterPunchPreview(14)
+	answers["resolved_estimate"] = decodedPunch(t, resolvedEstimateRaw, resolvedEstimateErr)
+
+	// Past the anchors, timed from the chapter's recording by the offline alignment (teleprompterpunchalign.go).
+	aligned := newPunchAlignHost(t, true)
+	resolvedAlignmentRaw, resolvedAlignmentErr := aligned.host.TeleprompterPunchPreview(30)
 	answers["resolved_alignment"] = decodedPunch(t, resolvedAlignmentRaw, resolvedAlignmentErr)
 
 	noAnchors, _ := newHostForPunchTest(t)
