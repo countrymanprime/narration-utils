@@ -157,6 +157,12 @@ export const proofChapterDrivers: Record<string, Driver> = {
   'preview-shorter': async (page) => {
     await openPanel(page, '/?mockPreviewCandidates=shorter', page.getByText(/shorter than the target length/));
   },
+  'preview-pinned': async (page) => {
+    await openPanel(page, '/?mockPreviewCandidates=pinned', page.getByText('Pinned preview'));
+  },
+  'preview-pin-stale': async (page) => {
+    await openPanel(page, '/?mockPreviewCandidates=pin-stale', page.getByText(/manuscript text under this pin has changed/));
+  },
   'preview-warnings': async (page) => {
     await openPanel(page, '/?mockPreviewCandidates=warnings', page.getByText(/imported before chapters were classified/));
   },
@@ -179,7 +185,7 @@ export const proofChapterDrivers: Record<string, Driver> = {
   'stage-panel-evidence-unknown': async (page) => {
     await openPanel(page, '/?mockProofingSignal=unmapped-track', page.getByText(/no track linked/));
     await clickVisible(page, 'button', /^Why: /);
-    await page.getByRole('link', { name: 'Open Tracks' }).waitFor();
+    await page.getByRole('button', { name: 'Open the audio engine panel' }).waitFor();
   },
 };
 

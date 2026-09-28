@@ -159,7 +159,11 @@ func (s *Service) evaluate(project tracks.Project, projectFile evidence.LedgerPr
 	answer.Result = &stored
 	if stored.DocumentID != basis.DocumentID || stored.ManuscriptHash != basis.Hash || evaluation.Record.Scope.DocumentID != basis.DocumentID {
 		answer.State = evidence.StateStale
-		answer.Reasons = append(answer.Reasons, string(ReasonManuscriptChanged))
+		reason := ReasonManuscriptChanged
+		if _, isCredits := CreditsKind(basis.ChapterID); isCredits {
+			reason = ReasonCreditsChanged
+		}
+		answer.Reasons = append(answer.Reasons, string(reason))
 	}
 	return answer, nil
 }

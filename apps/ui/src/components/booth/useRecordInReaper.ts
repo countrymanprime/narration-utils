@@ -12,6 +12,8 @@ export type RecordInReaperState = {
   enabled: boolean;
   /** This app is, as far as it knows, currently recording in REAPER because `beforeStart` told it to. */
   recording: boolean;
+  /** When (`Date.now()`) REAPER confirmed the recording this app started, for the toggle's "REC 06:42"; absent while not recording. */
+  recordingSince?: number;
   /** The last arm, start or stop refusal's message, cleared at the start of the next attempt. */
   error?: string;
   armPending: boolean;
@@ -47,7 +49,8 @@ export function useRecordInReaper(chapterId: string | undefined, capabilityAvail
   const [confirmed, setConfirmed] = useState(false);
   const [confirmPending, setConfirmPending] = useState(false);
   const [armPending, setArmPending] = useState(false);
-  const [recording, setRecording] = useState(false);
+  const [recordingSince, setRecordingSince] = useState<number>();
+  const recording = recordingSince !== undefined;
   const [error, setError] = useState<string>();
 
   useEffect(() => {
@@ -114,11 +117,14 @@ export function useRecordInReaper(chapterId: string | undefined, capabilityAvail
 
   const beforeStart = useCallback(async (): Promise<boolean> => {
     if (!enabled || !capabilityAvailable || !chapterId) return true;
+    // Reading finished while REAPER kept recording (Q8 Done B) and Play starts reading again: REAPER is already
+    // recording the take this app started, so asking it to start again would only be refused.
+    if (recording) return true;
     setError(undefined);
     try {
       const result = await api.readAloudRecordStart(chapterId);
       if (result.outcome === 'started') {
-        setRecording(true);
+        setRecordingSince(Date.now());
         return true;
       }
       setError(result.message);
@@ -127,13 +133,13 @@ export function useRecordInReaper(chapterId: string | undefined, capabilityAvail
       setError(errorText(reason));
       return false;
     }
-  }, [api, chapterId, enabled, capabilityAvailable]);
+  }, [api, chapterId, enabled, capabilityAvailable, recording]);
 
   const afterStop = useCallback(() => {
     if (!recording) return;
-    setRecording(false);
+    setRecordingSince(undefined);
     api.readAloudRecordStop().catch((reason) => setError(errorText(reason)));
   }, [api, recording]);
 
-  return { loaded, enabled, recording, error, armPending, confirmPending, toggle, confirm, cancelConfirm, armOnly, beforeStart, afterStop };
+  return { loaded, enabled, recording, recordingSince, error, armPending, confirmPending, toggle, confirm, cancelConfirm, armOnly, beforeStart, afterStop };
 }

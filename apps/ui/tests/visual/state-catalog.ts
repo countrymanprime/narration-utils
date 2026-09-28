@@ -4,10 +4,11 @@ import { startupStates } from './catalog/startup';
 import { homeStates } from './catalog/home';
 import { scriptStates } from './catalog/script';
 import { storybibleStates } from './catalog/storybible';
-import { tracksStates } from './catalog/tracks';
+import { engineStates } from './catalog/engine';
 import { boothStates } from './catalog/booth';
 import { proofStates } from './catalog/proof';
 import { proofChapterStates } from './catalog/proof-chapter';
+import { pickupsStates } from './catalog/pickups';
 import { deliveryStates } from './catalog/delivery';
 import { productionStates } from './catalog/production';
 import { settingsStates } from './catalog/settings';
@@ -29,10 +30,11 @@ export const STATE_CATALOG: StateEntry[] = [
   ...homeStates,
   ...scriptStates,
   ...storybibleStates,
-  ...tracksStates,
+  ...engineStates,
   ...boothStates,
   ...proofStates,
   ...proofChapterStates,
+  ...pickupsStates,
   ...deliveryStates,
   ...productionStates,
   ...settingsStates,

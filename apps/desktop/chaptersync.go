@@ -61,7 +61,7 @@ type chapterSyncBatch = chaptersync.Activity
 // last stored snapshot's time (null before the first sync). Batch is set only on the answer or event of a sync that
 // linked something or found a new unmatched track. UnsavedEdits says REAPER, running this project, has edits since the
 // last sync that are not saved yet (Phase 4: the heartbeat's edit counter moved; a sync reads only the saved file).
-// Activity is the stored list of batches, newest first (the Tracks page's Sync activity). Chapters is one row per
+// Activity is the stored list of batches, newest first (the audio engine panel's Sync activity). Chapters is one row per
 // narration chapter with its link and the status of its recording check (Phase 6), when the manuscript and the saved
 // .rpp can be read; empty otherwise.
 type chapterSyncState struct {
@@ -133,7 +133,7 @@ func (h *Host) ChapterSyncState() (string, error) { return encodeBinding(h.chapt
 // ChapterSyncPreview plans a sync without writing anything: the consent dialog's preview.
 func (h *Host) ChapterSyncPreview() (string, error) { return encodeBinding(h.chapterSyncPreview()) }
 
-// ChapterSyncSetEnabled stores the narrator's answer (Sync is true, Not now is false, and the Tracks page's toggle
+// ChapterSyncSetEnabled stores the narrator's answer (Sync is true, Not now is false, and the audio engine panel's toggle
 // uses the same call) and, when on, runs the first sync. It returns the new state with the sync's batch.
 func (h *Host) ChapterSyncSetEnabled(on bool) (string, error) {
 	return encodeBinding(h.chapterSyncSetEnabled(on))

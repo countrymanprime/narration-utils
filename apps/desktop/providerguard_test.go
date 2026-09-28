@@ -15,6 +15,7 @@ import (
 
 	"github.com/countrymanprime/narration-utils/shell/internal/asrport"
 	"github.com/countrymanprime/narration-utils/shell/internal/captureport"
+	"github.com/countrymanprime/narration-utils/shell/internal/masteringport"
 	"github.com/countrymanprime/narration-utils/shell/internal/port"
 	"github.com/countrymanprime/narration-utils/shell/internal/pronunciationport"
 	"github.com/countrymanprime/narration-utils/shell/internal/ttsport"
@@ -43,6 +44,7 @@ func providerNames() map[string]bool {
 	add(entryNames(ttsport.Engines.Entries()))
 	add(entryNames(pronunciationport.Sources.Entries()))
 	add(entryNames(captureport.Backends.Entries()))
+	add(entryNames(masteringport.Rows.Entries()))
 	return names
 }
 
@@ -264,7 +266,7 @@ func providerViolations(t *testing.T) map[string][]providerComparison {
 
 func TestTheProviderGuardKnowsEveryRegisteredName(t *testing.T) {
 	names := providerNames()
-	for _, want := range []string{asrport.Whisper, asrport.Moonshine, ttsport.Piper, pronunciationport.CMU, pronunciationport.Espeak, captureport.DShow} {
+	for _, want := range []string{asrport.Whisper, asrport.Moonshine, ttsport.Piper, pronunciationport.CMU, pronunciationport.Espeak, captureport.DShow, captureport.WASAPI} {
 		if !names[want] {
 			t.Errorf("providerNames() is missing %q; the guard would let it be compared", want)
 		}

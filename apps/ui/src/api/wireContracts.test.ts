@@ -13,6 +13,8 @@ import { MOCK_MEASURE_PATHS } from './measureMock';
 import { judgeMock } from './coverageMock';
 import { MOCK_REAPER_INPUT_SEEDS, MOCK_REAPER_SEEDS, mockLastReading } from './teleprompterMock';
 import { deliveryQcEvidenceSchema, deliveryReportExportSchema, measureJobSchema, measurePickResultSchema } from './schemas/measure';
+import { exportJobSchema, packageJobSchema } from './schemas/renderEncodeMaster';
+import { MOCK_EXPORT_ITEMS, MOCK_EXPORT_PATHS } from './renderEncodeMasterMock';
 import { deliveryProfileSchema, deliveryProfilesStateSchema } from './schemas/deliveryProfiles';
 import { MOCK_ACX, evaluateMockFile, mockCustomProfile } from './deliveryProfilesMock';
 import { diagnosticsJobSchema } from './schemas/diagnostics';
@@ -43,7 +45,7 @@ import {
 } from './schemas/takeReview';
 import { COVERAGE_EVALUATOR_REASONS, COVERAGE_REFUSAL_REASONS, coverageResultSchema, coverageStartResultSchema, coverageStateSchema } from './schemas/coverage';
 import { workspaceAlignmentResultSchema } from './schemas/workspace';
-import { previewResultSchema } from './schemas/preview';
+import { pinnedPreviewSchema, previewResultSchema } from './schemas/preview';
 import { STAGE_REFUSAL_REASONS, STAGE_UNKNOWN_CAUSES, stageDecisionResultSchema, stageRecommendationsSchema } from './schemas/stages';
 import {
   productionBurndownSchema,
@@ -114,6 +116,7 @@ import { renderConfigStartResultSchema, renderConfigStateSchema, renderConfigSug
 import { cleanupToolsStartResultSchema, cleanupToolsStateSchema } from './schemas/cleanuptools';
 import { dawCapabilitiesSchema, dawTransportSchema } from './schemas/daw';
 import { providerCapabilitiesSchema } from './schemas/providers';
+import { masteringProvidersSchema } from './schemas/mastering';
 import { projectStateChangedSchema, projectStateStartResultSchema, projectStateStateSchema } from './schemas/projectstate';
 import { retakeLanesListSchema, retakeLanesStartResultSchema, retakeLanesStateSchema } from './schemas/retakelanes';
 import { chapterTagsEmbedResultSchema, chapterTagsPreviewSchema } from './schemas/chaptertags';
@@ -593,6 +596,12 @@ describe('answers of the mock client for the manuscript, Story Bible and project
     expectMatches(chapterSyncStateSchema, unsaved, 'mock chapter sync, unsaved edits');
     expect(unsaved).toMatchObject({ consent: 'on', unsavedEdits: true, batch: null });
     expect(unsaved.activity.map((row) => row.trigger)).toEqual(['watch']);
+
+    // The engine panel's Sync activity (stage navigation Phase 6): three batches, one automatic and one manual link.
+    const activity = await createMockApi({}, { chapterSync: 'activity' }).chapterSyncState();
+    expectMatches(chapterSyncStateSchema, activity, 'mock chapter sync, the engine panel activity');
+    expect(activity.activity.map((row) => row.trigger)).toEqual(['watch', 'watch', 'consent']);
+    expect(activity.chapters.slice(0, 2).map((row) => row.origin)).toEqual(['auto', 'manual']);
 
     // Phase 6: a status row per narration chapter, the recording check's own answer, with no Check press.
     expect(quiet.chapters.length).toBeGreaterThan(0);
@@ -1359,6 +1368,25 @@ describe('answers of the mock client for the settings, voice, model, transcript 
     expect(state.pronunciation.cmu?.asset).toBeUndefined();
   });
 
+  it('masteringProviders and masteringChooseProvider match the host goldens (mastering port, ADR 0306)', async () => {
+    const none = await createMockApi({}, { mastering: { hasProject: false } }).masteringProviders();
+    expectMatches(masteringProvidersSchema, none, 'mock mastering chains (no project)');
+    expect(none).toEqual(readGolden('mastering-providers-no-project.json'));
+
+    const api = createMockApi();
+    const chosen = await api.masteringChooseProvider('builtin');
+    expectMatches(masteringProvidersSchema, chosen, 'mock mastering chains (builtin chosen)');
+    expect(chosen).toEqual(readGolden('mastering-providers-builtin-chosen.json'));
+    // The DAW row is declared, not built: choosing it is refused with its sentence, and the saved choice stays.
+    await expect(api.masteringChooseProvider('daw')).rejects.toThrow("Your DAW's FX chain is not available yet.");
+    expect((await api.masteringProviders()).choice).toBe('builtin');
+    expect((await api.masteringChooseProvider('')).choice).toBeNull();
+
+    const stale = await createMockApi({}, { mastering: { choice: 'daw' } }).masteringProviders();
+    expectMatches(masteringProvidersSchema, stale, 'mock mastering chains (a stored choice not available yet)');
+    expect(stale).toEqual(readGolden('mastering-providers-daw-not-yet.json'));
+  });
+
   it('subscribeDawTransport pushes the seeded transport once, and matches the host goldens (DAW port PRD Phase 9)', () => {
     const seen = (seed: Parameters<typeof createMockApi>[1]): unknown[] => {
       const events: unknown[] = [];
@@ -1466,6 +1494,62 @@ describe('answers of the mock client for the settings, voice, model, transcript 
     const cancelled = await api.measureCancel();
     expectMatches(measureJobSchema, cancelled, 'mock measurement, cancelled');
     expect(cancelled.files.map((file) => file.status)).toEqual(['cancelled', 'cancelled', 'cancelled']);
+  });
+
+  it('the export job masters (when asked) and encodes every picked file, in the shape the host pins', async () => {
+    const api = createMockApi();
+    expectMatches(exportJobSchema, await api.exportState(), 'mock export, idle');
+    await expect(api.exportStart({ items: MOCK_EXPORT_ITEMS, master: false, format: 'mp3' })).rejects.toThrow(/not chosen in the file picker/);
+    const picked = await api.exportPickFiles();
+    expectMatches(measurePickResultSchema, picked, 'mock export picker');
+    expect(picked.paths).toEqual(MOCK_EXPORT_PATHS);
+    await expect(api.exportStart({ items: [], master: false, format: 'mp3' })).rejects.toThrow(/at least one file/);
+    let job = await api.exportStart({ items: MOCK_EXPORT_ITEMS, master: true, format: 'mp3' });
+    expectMatches(exportJobSchema, job, 'mock export, started');
+    await expect(api.exportStart({ items: MOCK_EXPORT_ITEMS, master: true, format: 'mp3' })).rejects.toThrow(/already running/);
+    let percent = job.percent;
+    while (job.phase === 'running') {
+      job = await api.exportState();
+      expectMatches(exportJobSchema, job, `mock export, ${job.phase} at ${job.percent}%`);
+      expect(job.percent).toBeGreaterThanOrEqual(percent);
+      percent = job.percent;
+    }
+    expect(job.phase).toBe('success');
+    expect(job.files.every((file) => file.status === 'done' && file.encodedPath && file.mastering)).toBe(true);
+
+    await api.exportStart({ items: MOCK_EXPORT_ITEMS, master: false, format: 'mp3' });
+    await api.exportState();
+    const cancelledExport = await api.exportCancel();
+    expectMatches(exportJobSchema, cancelledExport, 'mock export, cancelled');
+    expect(cancelledExport.files.some((file) => file.status === 'cancelled')).toBe(true);
+  });
+
+  it("the package job assembles the profile's book checklist from an export's own encoded files, in the shape the host pins", async () => {
+    const api = createMockApi();
+    expectMatches(packageJobSchema, await api.packageState(), 'mock package, idle');
+    const profile = await api.deliveryProfiles();
+    const acx = profile.profiles.find((candidate) => candidate.id === 'acx')!;
+
+    await expect(
+      api.packageStart({ profileId: acx.id, profileVersion: acx.version, items: [{ kind: 'chapter', title: 'Chapter 01', path: 'C:/not-encoded.mp3' }] }),
+    ).rejects.toThrow(/not encoded in this session/);
+
+    await api.exportPickFiles();
+    let job = await api.exportStart({ items: MOCK_EXPORT_ITEMS, master: false, format: 'mp3' });
+    while (job.phase === 'running') job = await api.exportState();
+    const items = job.files.map((file) => ({ kind: file.kind, title: file.title, path: file.encodedPath! }));
+
+    const missingRetailSample = items.filter((item) => item.kind !== 'retail_sample');
+    const refused = await api.packageStart({ profileId: acx.id, profileVersion: acx.version, items: missingRetailSample });
+    expectMatches(packageJobSchema, refused, 'mock package, refused (missing retail sample)');
+    expect(refused.phase).toBe('error');
+    expect(refused.checklist.find((entry) => entry.ruleId === 'acx.retail_sample')?.status).toBe('missing');
+
+    const built = await api.packageStart({ profileId: acx.id, profileVersion: acx.version, items });
+    expectMatches(packageJobSchema, built, 'mock package, success');
+    expect(built.phase).toBe('success');
+    expect(built.files).toHaveLength(items.length);
+    expect(built.checklist.every((entry) => entry.status !== 'missing')).toBe(true);
   });
 
   it('an MP3 is judged on its container, and the mock judges it as the host pins', () => {
@@ -1845,6 +1929,61 @@ describe('answers of the mock client for the settings, voice, model, transcript 
     expect(nothingEligible).toEqual({ outcome: 'nothing_eligible', candidates: [] });
   });
 
+  it('the preview pin: not present, set, adjust and clear (proofing-preview-suggestion.prd.md Phase 8)', async () => {
+    const api = createMockApi();
+    const notPinned = await api.previewPin();
+    expectMatches(pinnedPreviewSchema, notPinned, 'mock preview pin, none');
+    expect(notPinned).toEqual({ present: false, stale: false, canExtendStart: false, canShrinkStart: false, canExtendEnd: false, canShrinkEnd: false });
+
+    const { candidates } = await api.previewCandidates();
+    const [firstCandidate, secondCandidate] = candidates;
+    expect(firstCandidate.paragraphIds.length).toBeGreaterThan(0);
+
+    const set = await api.previewPinSet(firstCandidate.chapterId, firstCandidate.paragraphIds);
+    expectMatches(pinnedPreviewSchema, set, 'mock preview pin, set');
+    expect(set.present).toBe(true);
+    expect(set.stale).toBe(false);
+    expect(set.candidate?.chapterId).toBe(firstCandidate.chapterId);
+    expect(set.candidate?.paragraphIds).toEqual(firstCandidate.paragraphIds);
+
+    const read = await api.previewPin();
+    expectMatches(pinnedPreviewSchema, read, 'mock preview pin, read back');
+    expect(read).toEqual(set);
+
+    if (secondCandidate) {
+      const replaced = await api.previewPinSet(secondCandidate.chapterId, secondCandidate.paragraphIds);
+      expect(replaced.candidate?.chapterId).toBe(secondCandidate.chapterId);
+    } else {
+      const cleared = await api.previewPinClear();
+      expectMatches(pinnedPreviewSchema, cleared, 'mock preview pin, cleared');
+      expect(cleared.present).toBe(false);
+      await expect(api.previewPinAdjust('end', true)).rejects.toThrow();
+    }
+  });
+
+  it('the preview pin is stale when its text changes or a paragraph disappears', async () => {
+    const chapters = await createMockApi().manuscriptChapters();
+    const chapter = chapters[0];
+    const paragraphs = await createMockApi().manuscriptParagraphs(chapter.id);
+    const paragraphId = paragraphs[0].id;
+
+    const textChanged = await createMockApi(
+      {},
+      { preview: { pin: { chapterId: chapter.id, paragraphIds: [paragraphId], stale: 'text_changed' } } },
+    ).previewPin();
+    expectMatches(pinnedPreviewSchema, textChanged, 'mock preview pin, stale text_changed');
+    expect(textChanged).toMatchObject({ present: true, stale: true, staleReason: 'text_changed' });
+    expect(textChanged.candidate).toBeDefined();
+
+    const paragraphMissing = await createMockApi(
+      {},
+      { preview: { pin: { chapterId: chapter.id, paragraphIds: [paragraphId], stale: 'paragraph_missing' } } },
+    ).previewPin();
+    expectMatches(pinnedPreviewSchema, paragraphMissing, 'mock preview pin, stale paragraph_missing');
+    expect(paragraphMissing).toMatchObject({ present: true, stale: true, staleReason: 'paragraph_missing' });
+    expect(paragraphMissing.candidate).toBeUndefined();
+  });
+
   it('the stage recommendations: every verdict, every unknown cause, a confirmation, the notice, and every refusal', async () => {
     const api = createMockApi(
       {},
@@ -1963,6 +2102,13 @@ describe('answers of the mock client for the settings, voice, model, transcript 
   it('every method of the API is either checked in this file, void, or not a request', () => {
     // A new binding fails this until it has a schema and a row above (ADR 0069). The list of what is checked is kept by hand.
     const CHECKED = [
+      'exportPickFiles',
+      'exportStart',
+      'exportState',
+      'exportCancel',
+      'packageStart',
+      'packageState',
+      'packageCancel',
       'teleprompterPunchPreview',
       'teleprompterPunch',
       'pickupsPunch',
@@ -2025,6 +2171,8 @@ describe('answers of the mock client for the settings, voice, model, transcript 
       'launchDaw',
       'dawCapabilities',
       'providerCapabilities',
+      'masteringProviders',
+      'masteringChooseProvider',
       'dawCatalogList',
       'tracksDiscover',
       'tracksSelect',
@@ -2078,6 +2226,10 @@ describe('answers of the mock client for the settings, voice, model, transcript 
       'workspaceGoTo',
       'workspaceLoop',
       'previewCandidates',
+      'previewPin',
+      'previewPinSet',
+      'previewPinAdjust',
+      'previewPinClear',
       'productionPlan',
       'setProductionDeadline',
       'saveProductionMilestones',

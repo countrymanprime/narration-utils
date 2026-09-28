@@ -159,6 +159,20 @@ export const proofChapterStates: StateEntry[] = [
     description:
       'Proof chapter view, the Preview panel with a full-length candidate warned for a reason other than being short (an unclassified import, ?mockPreviewCandidates=warnings) - text and an icon, never colour alone',
   },
+  // The pin and adjust UI (proofing-preview-suggestion.prd.md Phase 8): the narrator's own pinned window, settled on
+  // rather than recomputed, with edge adjustment and a stale banner when the manuscript has moved on since.
+  {
+    page: 'proof-chapter',
+    state: 'preview-pinned',
+    description:
+      'Proof chapter view, a pinned preview beneath the candidates (?mockPreviewCandidates=pinned): its range, reasons, and the edge-adjustment controls',
+  },
+  {
+    page: 'proof-chapter',
+    state: 'preview-pin-stale',
+    description:
+      'Proof chapter view, a pinned preview whose manuscript text changed since it was pinned (?mockPreviewCandidates=pin-stale) - the stale banner in text and an icon, never colour alone, beside its still-recomputed evidence',
+  },
   // The stage recommendations panel (chapter-stage-recommendations.prd.md Phase 8, proofing-readiness-signals.prd.md Phases 1 and 5):
   // every narration chapter currently in Proofing, with the StageSuggestion/StageEvidence pattern Home's breakdown table uses.
   {
@@ -182,6 +196,6 @@ export const proofChapterStates: StateEntry[] = [
     page: 'proof-chapter',
     state: 'stage-panel-evidence-unknown',
     description:
-      'Proof chapter view, the stage recommendations panel: Why opened on an unmapped-track cause (?mockProofingSignal=unmapped-track) - "Open Tracks", never "Open recording check" (stageText.ts PROOFING_CAUSE_TEXT)',
+      'Proof chapter view, the stage recommendations panel: Why opened on an unmapped-track cause (?mockProofingSignal=unmapped-track) - "Open the audio engine panel", never "Open recording check" (stageText.ts PROOFING_CAUSE_TEXT)',
   },
 ];

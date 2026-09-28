@@ -6,9 +6,10 @@ import { startupDrivers } from './drivers/startup';
 import { homeDrivers } from './drivers/home';
 import { scriptDrivers } from './drivers/script';
 import { storybibleDrivers } from './drivers/storybible';
-import { tracksDrivers } from './drivers/tracks';
+import { engineDrivers } from './drivers/engine';
 import { proofDrivers } from './drivers/proof';
 import { proofChapterDrivers } from './drivers/proof-chapter';
+import { pickupsDrivers } from './drivers/pickups';
 import { deliveryDrivers } from './drivers/delivery';
 import { productionDrivers } from './drivers/production';
 import { boothDrivers } from './drivers/booth';
@@ -77,9 +78,10 @@ export const APP_DRIVERS: Record<string, Record<string, Driver>> = {
   home: homeDrivers,
   script: scriptDrivers,
   storybible: storybibleDrivers,
-  tracks: tracksDrivers,
+  engine: engineDrivers,
   proof: proofDrivers,
   'proof-chapter': proofChapterDrivers,
+  pickups: pickupsDrivers,
   delivery: deliveryDrivers,
   production: productionDrivers,
   booth: boothDrivers,

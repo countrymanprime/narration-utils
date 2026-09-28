@@ -58,7 +58,16 @@ const CEILING: Record<NativeTag, Record<string, number>> = {
     // JSX `<button>`, written once inside the flags `.map()`.
     'src/components/booth/ReaderFlagsPanel.tsx': 1,
     'src/components/storybible/GuideDetail.tsx': 1,
-    'src/components/tracks/TracksPage.tsx': 2,
+    // The engine panel (stage-navigation-and-page-replacement.prd.md Phase 6) took the Tracks page's two: its .rpp picker's
+    // full-width path rows (a mono file path, which Button's uppercase chrome would mangle) stay one JSX `<button>` inside the
+    // candidates `.map()`; the track rows' selection buttons went with the player.
+    'src/components/engine/EnginePanel.tsx': 1,
+    // The Sync activity line's "(Undo)" (daw-chapter-track-auto-sync.prd.md mockup 02): an inline word inside a sentence, the
+    // same case as CreditsSetupDialog.tsx below.
+    'src/components/engine/ChapterSyncPanel.tsx': 1,
+    // "Open the audio engine panel", the in-text pointer that replaced the "Open Tracks" router links (Phase 6): an inline
+    // link-styled action inside a sentence, which Button's padded, uppercase chrome would break. Written once, used everywhere.
+    'src/components/engine/EnginePanelContext.tsx': 1,
     // The chapter workspace's clickable script words (edit-and-proof-workspace.prd.md Phase 2, EP5): the same case as
     // ReaderText.tsx above - one word among a chapter's worth of running prose, needing Button's bare click/keyboard
     // semantics without its padded, uppercase chrome breaking the text flow. One JSX `<button>`, written once inside
@@ -77,12 +86,12 @@ const CEILING: Record<NativeTag, Record<string, number>> = {
     'src/components/booth/ResumePrompt.tsx': 2,
   },
   select: {},
-  // Reaper-automation-follow-through PRD Phase 9: `PickupsDialog`'s CSV picker is a hidden native `<input type="file">`
+  // Reaper-automation-follow-through PRD Phase 9: the Pickups page's CSV picker (the Tracks page's `PickupsDialog` until stage-navigation-and-page-replacement.prd.md Phase 7) is a hidden native `<input type="file">`
   // triggered by a `Button` (ADR 0053's own escape hatch for file-choosing, since a file picker's OS chrome cannot be
   // restyled the way a text input or select can - the same reason `ManuscriptSelectFile` uses a native OS dialog).
   // prep-depth PRD Phase 6's own re-import file picker (`PronunciationQueries.tsx`) is the same pattern, one hidden
   // `<input type="file">` triggered by a `Button`.
-  input: { 'src/components/tracks/PickupsDialog.tsx': 1, 'src/components/storybible/PronunciationQueries.tsx': 1 },
+  input: { 'src/components/pickups/PickupsPage.tsx': 1, 'src/components/storybible/PronunciationQueries.tsx': 1 },
   textarea: {},
   table: {},
   thead: {},

@@ -63,10 +63,10 @@ func readAloudTrackGUID(svc hostServices, chapterID string) (string, *ReadAloudR
 	}
 	switch {
 	case len(links) == 0:
-		refused := readAloudRefused(readAloudUnlinked, fmt.Sprintf("%q has no linked track. Link it to its REAPER track on the Tracks page.", title))
+		refused := readAloudRefused(readAloudUnlinked, fmt.Sprintf("%q has no linked track. Link it to its REAPER track in the audio engine panel.", title))
 		return "", &refused, nil
 	case len(links) > 1:
-		refused := readAloudRefused(readAloudSeveralLinks, fmt.Sprintf("%q is linked to %d tracks. Keep the one to record on, on the Tracks page.", title, len(links)))
+		refused := readAloudRefused(readAloudSeveralLinks, fmt.Sprintf("%q is linked to %d tracks. Keep the one to record on, in the audio engine panel.", title, len(links)))
 		return "", &refused, nil
 	}
 	return links[0], nil, nil
@@ -78,7 +78,7 @@ func readAloudRecordRefusal(err error) ReadAloudRecording {
 	var stale *bridge.TrackStaleError
 	switch {
 	case errors.As(err, &stale):
-		return readAloudRefused(readAloudTrackMissing, "The track linked to this chapter is no longer in the REAPER project. Link it again on the Tracks page.")
+		return readAloudRefused(readAloudTrackMissing, "The track linked to this chapter is no longer in the REAPER project. Link it again in the audio engine panel.")
 	case errors.Is(err, context.DeadlineExceeded):
 		return readAloudRefused("timeout", "REAPER did not confirm within 3 seconds. Nothing started.")
 	case errors.Is(err, bridge.ErrNoTrackArmed):

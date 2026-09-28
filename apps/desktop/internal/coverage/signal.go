@@ -113,7 +113,7 @@ func contextCause(result ChapterResult, unconfirmed bool) (stages.UnknownCause, 
 		case ReasonMappedTrackMissing:
 			return stages.CauseUnmappedTrack, "The track this chapter is linked to is no longer in the saved project. Link it again.", true
 		case ReasonNoProject, ReasonNoProjectFile:
-			return stages.CauseProjectUnreadable, "Choose the saved REAPER project file on the Tracks page.", true
+			return stages.CauseProjectUnreadable, "Choose the saved REAPER project file in the audio engine panel.", true
 		case ReasonProjectUnreadable:
 			return stages.CauseProjectUnreadable, "The saved REAPER project file could not be read. Save it again in REAPER.", true
 		case ReasonNoManuscript, ReasonChapterNotFound, ReasonNotNarration, ReasonInvalidParams:

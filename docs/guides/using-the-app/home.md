@@ -28,12 +28,12 @@ a plain icon for one with no link at all. A number badge means the chapter is li
 one track at once; an exclamation mark means its linked track is no longer in the saved project.
 Selecting it opens the chapter's track panel, with what the saved project knows about the track
 (its item count, span and how the link was found) and the same link, change or clear picker as the
-[Tracks](tracks.md) page - so a chapter's track never needs a trip there just to be linked. The
+[audio engine panel](navigation.md#linking-chapters-to-tracks) - so a chapter's track never needs a trip there just to be linked. The
 column, and every chapter's Track button, is absent when no REAPER project is linked yet; the table
-says so in its place, with a link to [Tracks](tracks.md) if more than one project file was found.
+says so in its place, with a link to the [audio engine panel](navigation.md#the-reaper-project) if more than one project file was found.
 
 When the panel knows the chapter's track, it can play that track's recorded audio right there -
-Play/Pause and skip 30 seconds back or forward, the same player the [Tracks](tracks.md) page uses -
+Play/Pause and skip 30 seconds back or forward, the same player the [Proof chapter view](proof.md#the-chapter-view) uses -
 and **Select in REAPER** brings the track into view in REAPER itself. Selecting is an experimental
 REAPER action ([Settings](settings.md)) and changes nothing else: no undo point, and REAPER's own
 selection is all it touches.
@@ -109,7 +109,7 @@ gaps, **Repeated reads (Review)** always shows the chapter's unreviewed take-rev
 repeated reads already recorded, waiting to be compared and kept or discarded — as a count with
 **Open Proof**, or "none waiting" when there are none: a different kind of pickup from the gaps
 above it. Under that, **Pickup list** always shows the proofer's REAPER pickup markers as one
-project-wide open count with **Open pickups** — the same figure the Tracks page's Pickups list
+project-wide open count with **Open pickups**, which opens [Pickups](pickups.md) — the same figure that page
 shows, not scoped to this chapter, since attributing markers to one chapter's track span is
 ambiguous when chapter tracks share the timeline. It reads "open REAPER to count" instead of a
 number when REAPER is not running. **Paragraph detail** stays folded by default; open it to see
@@ -124,7 +124,7 @@ changes. The panel says which, keeps the old counts labelled as from then, and o
 
 When a chapter cannot be checked, the panel says why in plain words and where to fix it: a
 chapter that is not linked to its REAPER track gets the track picker right there (the same link
-as on the [Tracks](tracks.md) page), a missing project file points to Tracks, and a missing
+as in the [audio engine panel](navigation.md#linking-chapters-to-tracks)), a missing project file points to the audio engine panel, and a missing
 Transcript Compare tool points to [Settings](settings.md).
 
 ## Stage suggestions
@@ -132,7 +132,7 @@ Transcript Compare tool points to [Settings](settings.md).
 Home suggests when a chapter looks ready for its next stage, from evidence the app already has,
 and never changes a status on its own. A chapter in Recording is suggested for Editing when its
 current recording check finds every paragraph of its text in the recording, in order (misreads
-allowed). A chapter in Editing is checked against its [editing check](tracks.md#editing-check):
+allowed). A chapter in Editing is checked against its [editing check](navigation.md#editing-check):
 empty space, clicks and breaths still to trim. Every one of a stage's checks must be met before a
 suggestion appears — until clicks and breaths are validated on a labeled corpus, an Editing
 chapter reads "Can't tell yet" rather than suggested, even with no empty space left to trim.
@@ -161,7 +161,7 @@ the breakdown. There, under each chapter's status:
 its state and reason, the facts behind it (the text present, each missing region with **Go to
 paragraph**), and the saved REAPER project it was read from with how old that file is. For a
 check that cannot tell, it says what to do and offers the way there: **Open recording check** for
-the recording stage, or **Open editing check** for the [editing check](tracks.md#editing-check),
+the recording stage, or **Open editing check** for the [editing check](navigation.md#editing-check),
 where you can run the check or link the chapter's track. Confirm, Dismiss and Revert are there
 too.
 

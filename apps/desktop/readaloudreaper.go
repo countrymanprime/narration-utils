@@ -88,10 +88,10 @@ func readAloudReaperStateIn(ctx context.Context, svc hostServices, reader trackS
 	switch {
 	case len(links) == 0:
 		return readAloudReaperState{Status: readAloudNoLink, Reason: readAloudUnlinked,
-			Message: fmt.Sprintf("%q has no linked track. Link it to its REAPER track on the Tracks page.", title)}, nil
+			Message: fmt.Sprintf("%q has no linked track. Link it to its REAPER track in the audio engine panel.", title)}, nil
 	case len(links) > 1:
 		return readAloudReaperState{Status: readAloudNoLink, Reason: readAloudSeveralLinks,
-			Message: fmt.Sprintf("%q is linked to %d tracks. Keep the one to record on, on the Tracks page.", title, len(links))}, nil
+			Message: fmt.Sprintf("%q is linked to %d tracks. Keep the one to record on, in the audio engine panel.", title, len(links))}, nil
 	}
 	guid := links[0]
 	if status := reaperStatus(svc); status.Connection != reaperConnected {
@@ -157,7 +157,7 @@ func readAloudRefusal(err error, title, guid string) readAloudReaperState {
 	switch {
 	case errors.Is(err, bridge.ErrStale):
 		return readAloudReaperState{Status: readAloudNoLink, Reason: readAloudTrackMissing, TrackGUID: guid,
-			Message: fmt.Sprintf("The track linked to %q is no longer in the REAPER project. Link it again on the Tracks page.", title)}
+			Message: fmt.Sprintf("The track linked to %q is no longer in the REAPER project. Link it again in the audio engine panel.", title)}
 	case errors.Is(err, bridge.ErrExperimentalOff):
 		return unavailable(readAloudExperimentalOff, messageExperimentalOff)
 	case errors.Is(err, bridge.ErrNoAnswer):
