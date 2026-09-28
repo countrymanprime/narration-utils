@@ -75,6 +75,11 @@
               "value": "Analysis of source audio; take FX, item gain and fades are not applied."
             },
             {
+              "kind": "source",
+              "label": "Source analyzed",
+              "value": "items on the chapter's track"
+            },
+            {
               "kind": "validation",
               "label": "Detector",
               "value": "editing-breath-v1: held-out recall 84% (27 of 32) on a synthetic corpus, 2026-09-28; validation needs 90% in every condition on a narrator corpus."
@@ -100,6 +105,11 @@
               "value": "Analysis of source audio; take FX, item gain and fades are not applied."
             },
             {
+              "kind": "source",
+              "label": "Source analyzed",
+              "value": "items on the chapter's track"
+            },
+            {
               "kind": "validation",
               "label": "Detector",
               "value": "editing-click-v1: held-out recall 38% (12 of 32) on a synthetic corpus, 2026-09-28; validation needs 90% in every condition on a narrator corpus."
@@ -123,6 +133,11 @@
               "kind": "caveat",
               "label": "Caveat",
               "value": "Analysis of source audio; take FX, item gain and fades are not applied."
+            },
+            {
+              "kind": "source",
+              "label": "Source analyzed",
+              "value": "items on the chapter's track"
             }
           ],
           "id": "editing.empty_space",
