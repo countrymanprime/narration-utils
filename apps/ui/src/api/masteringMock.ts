@@ -7,7 +7,8 @@ import { wireClone } from './mockFixtures';
 
 type MockRow = Omit<MasteringProvider, 'default'>;
 
-/** internal/masteringport's rows: builtin.go, then daw.go (Experimental until the owner's REAPER pass). */
+/** internal/masteringport's rows: builtin.go, daw.go, then mastering_audacity.go (both Experimental until their owner's
+ * pass, ADR 0306, ADR 0460). */
 const ROWS: MockRow[] = [
   {
     name: 'builtin',
@@ -23,6 +24,14 @@ const ROWS: MockRow[] = [
     modes: ['daw_region'],
     needsApproval: true,
     needs: ['render_with_fx', 'master_chain_read'],
+    support: { level: 'experimental', available: true },
+  },
+  {
+    name: 'audacity',
+    label: "Audacity's effect macro",
+    modes: ['wav'],
+    needsApproval: true,
+    needs: ['macro_render'],
     support: { level: 'experimental', available: true },
   },
 ];

@@ -1398,12 +1398,16 @@ describe('answers of the mock client for the settings, voice, model, transcript 
     const daw = await api.masteringChooseProvider('daw');
     expectMatches(masteringProvidersSchema, daw, 'mock mastering chains (daw chosen)');
     expect(daw).toEqual(readGolden('mastering-providers-daw-chosen.json'));
+    // The Audacity row is Experimental too (render-encode-master Phase 10, ADR 0460): it can be chosen the same way.
+    const audacity = await api.masteringChooseProvider('audacity');
+    expectMatches(masteringProvidersSchema, audacity, 'mock mastering chains (audacity chosen)');
+    expect(audacity).toEqual(readGolden('mastering-providers-audacity-chosen.json'));
     // A row this version does not have is refused, and the saved choice stays.
-    await expect(api.masteringChooseProvider('audacity')).rejects.toThrow('There is no mastering chain called "audacity".');
-    expect((await api.masteringProviders()).choice).toBe('daw');
+    await expect(api.masteringChooseProvider('dolby-atmos')).rejects.toThrow('There is no mastering chain called "dolby-atmos".');
+    expect((await api.masteringProviders()).choice).toBe('audacity');
     expect((await api.masteringChooseProvider('')).choice).toBeNull();
 
-    const stale = await createMockApi({}, { mastering: { choice: 'audacity' } }).masteringProviders();
+    const stale = await createMockApi({}, { mastering: { choice: 'dolby-atmos' } }).masteringProviders();
     expectMatches(masteringProvidersSchema, stale, 'mock mastering chains (a stored choice this version does not have)');
     expect(stale).toEqual(readGolden('mastering-providers-unknown-choice.json'));
   });
