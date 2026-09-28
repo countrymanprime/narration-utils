@@ -155,7 +155,8 @@ type proofingSources struct {
 	lengthTolerance func() *float64
 }
 
-// proofingProvider is the proofing stage's provider (docs/prds/proofing-readiness-signals.prd.md): the pickups roll-up
+// proofingProvider is the proofing stage's provider (proofing-readiness-signals.prd.md, delivered and deleted; see
+// ADR 0525): the pickups roll-up
 // over the findings store's transcript_discrepancy, pickup and duplicate_read findings, with Transcript Compare's latest
 // run judged from the ledger records comparisonRecorder writes (Phase 2), and one delivery signal per check from the
 // chapter's chosen render, its stored measurement and the delivery profile (Phases 4 and 5). It reads only; it never

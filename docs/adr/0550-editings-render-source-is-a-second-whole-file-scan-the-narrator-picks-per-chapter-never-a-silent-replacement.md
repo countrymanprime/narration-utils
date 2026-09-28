@@ -2,7 +2,7 @@
 
 **Status:** Proposed (the worker's choices in building editing-readiness-analysis PRD Phase 8; the owner confirms Q6's recommendation on #510)
 **Date:** 2026-09-28
-**Supersedes:** none. It builds on Phase 2's played-range item source (`apps/desktop/internal/editing/source.go`) and reuses [proofing-readiness-signals PRD Phase 4](../prds/proofing-readiness-signals.prd.md)'s chapter-to-render association (`internal/proofing`, `RenderStore`/`EvaluateRender`) as-is.
+**Supersedes:** none. It builds on Phase 2's played-range item source (`apps/desktop/internal/editing/source.go`) and reuses proofing-readiness-signals PRD Phase 4's chapter-to-render association (`internal/proofing`, `RenderStore`/`EvaluateRender`, now closed out into [ADR 0525](0525-proofing-is-met-by-a-current-zero-open-pickup-source-and-every-required-delivery-check-confirmed-through-the-shared-stage-engine.md) and [`docs/architecture/stage-recommendations.md`](../architecture/stage-recommendations.md)) as-is.
 
 ## Context
 

@@ -1,4 +1,4 @@
-// This file is Phase 4 of docs/prds/proofing-readiness-signals.prd.md: which
+// This file is Phase 4 of proofing-readiness-signals.prd.md (delivered and deleted; see ADR 0525): which
 // rendered file the delivery checks are about, and whether it is still the
 // current one (Q8, Q9 A, Q10 A). The narrator chooses a chapter's render and so
 // attests it was made from the chapter as it is; the association keeps the
