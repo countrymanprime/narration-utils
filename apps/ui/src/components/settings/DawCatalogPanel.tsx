@@ -92,18 +92,18 @@ export function DawCatalogPanel({
             </div>
           </div>
           {!entry.installed && (
-            <Button variant="ghost" type="button" disabled={opening.isBusy} onClick={() => void handleOpen(entry)}>
+            <Button variant="secondary" type="button" disabled={opening.isBusy} onClick={() => void handleOpen(entry)}>
               {opening.isPending(entry.id) ? 'Opening…' : `Get ${entry.name}`}
             </Button>
           )}
           {entry.installed && onLinkDawFile && !dawFileLinked && (
-            <Button variant="ghost" type="button" onClick={onLinkDawFile}>
+            <Button variant="secondary" type="button" onClick={onLinkDawFile}>
               Link a REAPER project file
             </Button>
           )}
         </div>
       ))}
-      <Button variant="ghost" type="button" disabled={opening.isBusy} onClick={() => void handleCheckAgain()}>
+      <Button variant="secondary" type="button" disabled={opening.isBusy} onClick={() => void handleCheckAgain()}>
         {opening.isPending('check-again') ? 'Checking…' : 'Check again'}
       </Button>
     </div>

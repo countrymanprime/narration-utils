@@ -17,6 +17,8 @@ type Story = StoryObj<typeof meta>;
 export const Default: Story = {};
 export const Primary: Story = { args: { variant: 'primary', label: 'Save changes' } };
 export const Danger: Story = { args: { variant: 'danger', label: 'Delete entity', children: <FontAwesomeIcon icon={faTrash} /> } };
+// 28 px, beside a small Button in a dense row.
+export const Small: Story = { args: { size: 'sm' } };
 export const Disabled: Story = { args: { disabled: true, label: 'Remove relationship', children: <FontAwesomeIcon icon={faXmark} /> } };
 
 // The action this button started is running (ADR 0075): the icon becomes a spinner, the name stays, and a press does nothing.

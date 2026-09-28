@@ -121,7 +121,7 @@ export function ReaperControls({
       <div className="mt-2 flex flex-wrap gap-2">
         <TooltipTarget text={goToBlocked ?? "Select this finding's item in REAPER and put the edit cursor on it"}>
           <Button
-            variant="ghost"
+            variant="secondary"
             onClick={() => void send('goto', () => api.findingsGoTo(finding.id))}
             disabled={Boolean(goToBlocked) || action.isBlockedFor('goto')}
             pending={action.isPending('goto')}
@@ -131,7 +131,7 @@ export function ReaperControls({
         </TooltipTarget>
         <TooltipTarget text={loopBlocked ?? 'Play the audio around this finding over and over in REAPER'}>
           <Button
-            variant="ghost"
+            variant="secondary"
             onClick={() => void send('loop', () => api.findingsLoop(finding.id))}
             disabled={Boolean(loopBlocked) || action.isBlockedFor('loop')}
             pending={action.isPending('loop')}
@@ -141,7 +141,7 @@ export function ReaperControls({
         </TooltipTarget>
         {loopingId && (
           <Button
-            variant="ghost"
+            variant="secondary"
             onClick={() => void send('stop', () => api.findingsStopLoop())}
             disabled={action.isBlockedFor('stop')}
             pending={action.isPending('stop')}
@@ -151,7 +151,7 @@ export function ReaperControls({
         )}
         <TooltipTarget text={markerBlocked ?? 'Add one take marker in REAPER at this finding, after you confirm'}>
           <Button
-            variant="ghost"
+            variant="secondary"
             onClick={() => setConfirmingMarker(true)}
             disabled={Boolean(markerBlocked) || action.isBlockedFor('marker')}
             pending={action.isPending('marker')}

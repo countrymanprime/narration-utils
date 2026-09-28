@@ -341,7 +341,7 @@ function ResultBody({
     return (
       <div role="alert" className="space-y-2">
         <p style={{ color: 'var(--danger-text)' }}>The last check could not be read: {loadError}</p>
-        <Button variant="ghost" onClick={() => void retry()}>
+        <Button variant="secondary" onClick={() => void retry()}>
           Retry
         </Button>
       </div>

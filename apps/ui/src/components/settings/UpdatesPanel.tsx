@@ -144,28 +144,16 @@ export function UpdatesPanel({ formDirty = false }: { formDirty?: boolean }) {
           </div>
           {available && (
             <div className="flex flex-wrap items-center gap-3">
-              {available.replaces && !status.downloaded && (
-                <Button className="text-xs" onClick={() => setConfirming(true)}>
-                  Download update
-                </Button>
-              )}
-              {available.replaces && status.downloaded && status.canInstall && (
-                <Button className="text-xs" onClick={() => setConfirmingInstall(true)}>
-                  Install and restart
-                </Button>
-              )}
-              {available.replaces && status.downloaded && !status.canInstall && (
-                <Button className="text-xs" onClick={showDownload}>
-                  Show the downloaded file
-                </Button>
-              )}
-              <Button variant="ghost" className="text-xs" aria-label="Release notes (opens in your browser)" onClick={openNotes}>
+              {available.replaces && !status.downloaded && <Button onClick={() => setConfirming(true)}>Download update</Button>}
+              {available.replaces && status.downloaded && status.canInstall && <Button onClick={() => setConfirmingInstall(true)}>Install and restart</Button>}
+              {available.replaces && status.downloaded && !status.canInstall && <Button onClick={showDownload}>Show the downloaded file</Button>}
+              <Button variant="secondary" aria-label="Release notes (opens in your browser)" onClick={openNotes}>
                 Release notes
               </Button>
             </div>
           )}
           <div className="flex flex-wrap items-center gap-3">
-            <Button ref={checkButton} variant="ghost" className="text-xs" disabled={checking || formDirty} onClick={() => void check()}>
+            <Button ref={checkButton} variant="secondary" disabled={checking || formDirty} onClick={() => void check()}>
               {checking ? 'Checking…' : 'Check now'}
             </Button>
             {formDirty && (
