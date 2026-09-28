@@ -195,7 +195,10 @@ export const proofChapterDrivers: Record<string, Driver> = {
     await openPanel(page, '/', page.getByText('Proofing readiness'), 'Chapter 9');
     await clickVisible(page, 'button', 'Choose rendered file');
     await clickVisible(page, 'button', 'Measure');
-    await page.getByText(/Measured/).waitFor();
+    // Scoped to the section itself: a page-wide /Measured/ also matches a delivery check's own
+    // "Measured <timestamp>" evidence line elsewhere on this same chapter's page.
+    const renderedFileSection = page.getByRole('heading', { name: 'Rendered file' }).locator('xpath=..');
+    await renderedFileSection.getByText(/Measured/).waitFor();
   },
   'render-stale': async (page) => {
     await openPanel(page, '/?mockProofingRender=chapter-9-stale', page.getByText('Proofing readiness'), 'Chapter 9');
