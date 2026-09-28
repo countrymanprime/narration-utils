@@ -8,7 +8,7 @@
 // overridden in mockApi.ts to read the shared `findingsMock` store instead - a candidate is seeded like any other
 // finding (`initial.findings`, editingCandidateFor in mockFixtures.ts), and Accept/Dismiss/Defer on it go through the
 // same `findingsReview` binding a real editing candidate would.
-import type { EditingApi, EditingRefusalReason, EditingState } from '../types';
+import type { EditingApi, EditingRefusalReason, EditingSourceChoice, EditingState } from '../types';
 import { wireClone } from './mockFixtures';
 
 /** The host's own refusal sentences (apps/desktop/internal/editing/service.go's unknown/unknownf messages), in short. */
@@ -20,6 +20,7 @@ const EDITING_REFUSAL_MESSAGES: Record<EditingRefusalReason, string> = {
   no_project_file: 'no REAPER project file is chosen for this project',
   project_unreadable: 'could not read the saved project',
   busy: 'an editing check is already running',
+  no_render: 'choose the rendered file for this chapter before checking it',
 };
 
 const STEP_MS = 150;
@@ -46,7 +47,12 @@ const idle: EditingState = {
   failed: 0,
 };
 
-export function createEditingMock(seed?: EditingSeed): EditingApi {
+/** Q6's per-chapter source choice (Phase 8), shared with stagesMock.ts's own `editingSourceChoice` dep
+ * (mockApi.ts wires the two together) so switching a chapter's choice here is visible on its editing signals
+ * there. Callers that do not care (most tests) get a private map of their own. */
+export type EditingChoices = Map<string, EditingSourceChoice>;
+
+export function createEditingMock(seed?: EditingSeed, choices: EditingChoices = new Map()): EditingApi {
   let state: EditingState = { ...idle };
   let timers: ReturnType<typeof setTimeout>[] = [];
   const itemsTotal = seed?.itemsTotal ?? DEFAULT_ITEMS_TOTAL;
@@ -135,5 +141,10 @@ export function createEditingMock(seed?: EditingSeed): EditingApi {
     },
     // Overridden in mockApi.ts to read the shared findings store; this default (always clean) is never reached there.
     editingCandidates: async () => [],
+    editingSourceChoice: async (chapterId) => choices.get(chapterId) ?? 'items',
+    editingSetSourceChoice: async (chapterId, choice) => {
+      choices.set(chapterId, choice);
+      return choice;
+    },
   };
 }

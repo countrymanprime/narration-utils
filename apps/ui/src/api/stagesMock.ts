@@ -7,6 +7,7 @@
 // dismissal, the "evidence changed since you confirmed" notice) without a host.
 import type {
   ChapterStatus,
+  EditingSourceChoice,
   ManuscriptChapter,
   StageChapterRecommendation,
   StageConfirmation,
@@ -62,6 +63,10 @@ type Deps = {
   chapters: () => ManuscriptChapter[];
   setStatus: (chapterId: string, status: ChapterStatus) => void;
   seed?: StagesSeed;
+  /** Q6 (editing-readiness-analysis.prd.md Phase 8): the chapter's current editing source choice, read from the same
+   * store editingMock.ts's editingSourceChoice/editingSetSourceChoice write to (mockApi.ts wires the two together).
+   * Omitted (most callers of this mock directly, outside mockApi.ts) reads every chapter as "items", the default. */
+  editingSourceChoice?: (chapterId: string) => EditingSourceChoice;
 };
 
 const MOCK_TIME = '2026-09-21T10:00:00Z';
@@ -116,45 +121,66 @@ const PROOFING_UNKNOWN_REASONS: Partial<Record<StageUnknownCause, string>> = {
   provider_error: 'could not check: the pickup results could not be read',
 };
 
+/** Q6's own "the evidence names which source was analyzed" requirement (editing-readiness-analysis.prd.md Phase 8),
+ * for both choices: every editing signal carries exactly one of these, always, whatever its state. */
+function editingSourceEvidence(sourceChoice: EditingSourceChoice) {
+  return sourceChoice === 'render'
+    ? { kind: 'source', label: 'Source analyzed', value: 'the rendered file (FX and edits included)' }
+    : { kind: 'source', label: 'Source analyzed', value: "items on the chapter's track" };
+}
+
 /** Click and breath are never seeded (Phase 4's corpus validation has not shipped): every build, mock included,
- * reports them `unknown` so a narrator is never told a class it cannot vouch for is done. */
-function unvalidatedSignal(id: 'editing.clicks' | 'editing.breaths'): StageSignal {
+ * reports them `unknown` so a narrator is never told a class it cannot vouch for is done. Choosing the rendered
+ * source (Q6) adds a known click candidate to the click signal's own evidence - the mock's stand-in for Phase 8's
+ * own success signal, "a render with a known click reports it": the signal itself still never reports `met`. */
+function unvalidatedSignal(id: 'editing.clicks' | 'editing.breaths', sourceChoice: EditingSourceChoice): StageSignal {
+  const evidence: StageSignal['evidence'] = [editingSourceEvidence(sourceChoice)];
+  if (sourceChoice === 'render' && id === 'editing.clicks') {
+    evidence.push({ kind: 'candidate', label: 'Candidate', value: 'a click, well above the surrounding silence', range: { start: 41.2, end: 41.23 } });
+  }
   return {
     id,
     stage: 'editing',
     state: 'unknown',
     cause: 'measurement_unavailable',
     reason: 'Not yet validated on the corpus: this build never reports it met (editing-readiness-analysis.prd.md Phase 4).',
-    evidence: [],
+    evidence,
     basis: { ledgerRecordIds: [], fingerprint: '', projectFileModTime: MOCK_TIME },
     computedAt: MOCK_TIME,
   };
 }
 
-function emptySpaceSignal(chapter: ManuscriptChapter, scenario: StageEditingScenario): StageSignal {
+function emptySpaceSignal(chapter: ManuscriptChapter, scenario: StageEditingScenario, sourceChoice: EditingSourceChoice): StageSignal {
   const base = { id: 'editing.empty_space', stage: 'editing' as const, computedAt: MOCK_TIME };
   const caveat = { kind: 'caveat', label: 'Caveat', value: 'Analysis of source audio; take FX, item gain and fades are not applied.' };
+  const source = editingSourceEvidence(sourceChoice);
   const basis = {
     ledgerRecordIds: [`mock-editing-record-${chapter.id}`],
     fingerprint: `mock-editing-fingerprint-${chapter.id}`,
     projectFileModTime: MOCK_TIME,
   };
+  if (sourceChoice === 'render') {
+    // This mock cannot simulate a real render decode; choosing render always reads as a clean, current check of the
+    // rendered file, so switching the source is visibly different from whatever the items scenario says (Phase 8's
+    // own success signal: "switching the chosen source changes the signal and the evidence names the source").
+    return { ...base, state: 'met', reason: 'Checked the rendered file; no open empty-space candidate remains.', evidence: [caveat, source], basis };
+  }
   if (typeof scenario !== 'string') {
     return {
       ...base,
       state: 'unknown',
       cause: scenario.unknown,
       reason: scenario.reason ?? EDITING_UNKNOWN_REASONS[scenario.unknown] ?? 'Cannot check editing here yet.',
-      evidence: [caveat],
+      evidence: [caveat, source],
       basis,
     };
   }
-  if (scenario === 'met') return { ...base, state: 'met', reason: 'Checked; no open empty-space candidate remains.', evidence: [caveat], basis };
+  if (scenario === 'met') return { ...base, state: 'met', reason: 'Checked; no open empty-space candidate remains.', evidence: [caveat, source], basis };
   return {
     ...base,
     state: 'not_met',
     reason: '1 empty-space candidate: 1.80 s between two phrases, above the maximum gap.',
-    evidence: [caveat, { kind: 'candidate', label: 'Candidate', value: 'above the maximum gap', range: { start: 12.4, end: 14.2 } }],
+    evidence: [caveat, source, { kind: 'candidate', label: 'Candidate', value: 'above the maximum gap', range: { start: 12.4, end: 14.2 } }],
     basis,
   };
 }
@@ -271,14 +297,19 @@ export function createStagesMock(deps: Deps): StagesApi {
       // only way to `recommended` - is not reachable yet; only empty space can move the verdict between `unknown`
       // and `not_ready`, matching the real engine (D2: all three signals required by default, Q5).
       const scenario = editing.get(chapter.id)!;
-      const state = scenarioState(scenario);
+      const sourceChoice = deps.editingSourceChoice?.(chapter.id) ?? 'items';
+      const state = sourceChoice === 'render' ? 'met' : scenarioState(scenario);
       const basisKey = keyFor(chapter.id, target, scenario);
       const verdict = state === 'not_met' ? 'not_ready' : 'unknown';
       return {
         target,
         verdict,
         basisKey,
-        signals: [emptySpaceSignal(chapter, scenario), unvalidatedSignal('editing.clicks'), unvalidatedSignal('editing.breaths')],
+        signals: [
+          emptySpaceSignal(chapter, scenario, sourceChoice),
+          unvalidatedSignal('editing.clicks', sourceChoice),
+          unvalidatedSignal('editing.breaths', sourceChoice),
+        ],
       };
     }
     if (status === 'proofing') {
