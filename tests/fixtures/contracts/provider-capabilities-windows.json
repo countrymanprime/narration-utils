@@ -46,6 +46,18 @@
         "available": true,
         "level": "supported"
       }
+    },
+    "wasapi": {
+      "default": false,
+      "label": "WASAPI",
+      "modes": [],
+      "platforms": [
+        "windows"
+      ],
+      "support": {
+        "available": true,
+        "level": "experimental"
+      }
     }
   },
   "platform": "windows",

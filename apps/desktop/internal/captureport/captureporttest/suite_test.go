@@ -22,6 +22,15 @@ func TestTheFakePassesTheSuite(t *testing.T) {
 
 type flipping struct{ calls *int }
 
+func (flipping) Level() port.Level { return port.Supported }
+
+type leveled struct {
+	Fake
+	level func() port.Level
+}
+
+func (l leveled) Level() port.Level { return l.level() }
+
 func (f flipping) Name() string {
 	*f.calls++
 	if *f.calls%2 == 0 {
@@ -50,6 +59,28 @@ func TestTheSuiteCatchesABrokenRow(t *testing.T) {
 		"name changes": {func(e *port.Entry[captureport.Backend]) {
 			calls := 0
 			e.New = func() captureport.Backend { return flipping{&calls} }
+		}, "not static"},
+		"not yet available": {func(e *port.Entry[captureport.Backend]) {
+			e.New = func() captureport.Backend {
+				return leveled{NewFake("fake"), func() port.Level { return port.NotYetAvailable }}
+			}
+		}, "Experimental or Supported"},
+		"level out of range": {func(e *port.Entry[captureport.Backend]) {
+			e.New = func() captureport.Backend {
+				return leveled{NewFake("fake"), func() port.Level { return port.Level(9) }}
+			}
+		}, "Experimental or Supported"},
+		"level changes": {func(e *port.Entry[captureport.Backend]) {
+			calls := 0
+			e.New = func() captureport.Backend {
+				return leveled{NewFake("fake"), func() port.Level {
+					calls++
+					if calls%2 == 0 {
+						return port.Experimental
+					}
+					return port.Supported
+				}}
+			}
 		}, "not static"},
 	}
 	for name, tc := range cases {

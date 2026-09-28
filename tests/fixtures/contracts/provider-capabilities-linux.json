@@ -50,6 +50,20 @@
         "message": "DirectShow is not available on Linux.",
         "reason": "unsupported"
       }
+    },
+    "wasapi": {
+      "default": false,
+      "label": "WASAPI",
+      "modes": [],
+      "platforms": [
+        "windows"
+      ],
+      "support": {
+        "available": false,
+        "level": "unsupported",
+        "message": "WASAPI is not available on Linux.",
+        "reason": "unsupported"
+      }
     }
   },
   "platform": "linux",
