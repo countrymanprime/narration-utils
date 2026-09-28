@@ -4,7 +4,7 @@
 import { MATCH_BAR_PERCENT } from './compare';
 
 /** The match of one region of the screen (mocks.ts `chromeRegions`). */
-export interface RegionScore {
+interface RegionScore {
   matchPercent: number;
   inkMatchPercent: number;
 }
