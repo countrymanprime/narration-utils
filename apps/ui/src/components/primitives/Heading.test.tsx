@@ -37,4 +37,16 @@ describe('Heading', () => {
     const { container } = render(<Heading title="Settings" />);
     expect(container.querySelector('p')).toBeNull();
   });
+
+  it('draws the title at the page-title size and the subtitle at 13 px', () => {
+    render(<Heading title="Master & QC">Measured on the rendered files.</Heading>);
+    expect(screen.getByRole('heading', { level: 1 }).className).toContain('var(--font-size-page-title)');
+    expect(screen.getByText('Measured on the rendered files.').className).toContain('text-[0.8125rem]');
+  });
+
+  it('puts an icon before the title, inside the heading', () => {
+    render(<Heading title="Opening Narration Studio…" icon={<svg data-testid="spinner" />} />);
+    const heading = screen.getByRole('heading', { level: 1, name: 'Opening Narration Studio…' });
+    expect(heading.contains(screen.getByTestId('spinner'))).toBe(true);
+  });
 });

@@ -6,6 +6,7 @@ import { MAX_REVIEW_NOTE_LENGTH, type FindingReviewStatus } from '../../api/cont
 import { Button } from '../primitives/Button';
 import { Field } from '../primitives/Field';
 import { Panel } from '../primitives/Panel';
+import { SectionLabel } from '../primitives/SectionLabel';
 import { StatusBadge } from '../primitives/StatusBadge';
 import { TooltipTarget } from '../primitives/Tooltip';
 import { analyzerLabel } from './findingFormat';
@@ -69,7 +70,7 @@ function FlagDecision({ flag, onDecide }: { flag: Flag; onDecide: (status: Findi
 
   return (
     <div className="mt-3 space-y-2 border-t pt-3 text-sm" style={{ borderColor: 'var(--border)' }}>
-      <div className="section-label">Decision</div>
+      <SectionLabel as="div">Decision</SectionLabel>
       {decided && <p style={{ color: 'var(--text-muted)' }}>{resolutionFor(flag.reviewStatus!, fix).label}.</p>}
       <Field
         label="Note (optional)"
@@ -115,7 +116,7 @@ function CompareActions({ row, actions }: { row: Discrepancy; actions: CompareFl
   return (
     <>
       <div>
-        <span className="section-label">Marker</span> {marker === 'pending' && <StatusBadge tone="progress" label="Ready to export" />}
+        <SectionLabel>Marker</SectionLabel> {marker === 'pending' && <StatusBadge tone="progress" label="Ready to export" />}
         {marker === 'exported' && <StatusBadge tone="success" label="Exported" />}
         {marker === 'existing' && (
           <TooltipTarget text={row.existingMarkerName ? `Existing marker: ${row.existingMarkerName}` : 'A matching marker already exists'}>
@@ -185,11 +186,8 @@ export function FlagsPanel({
   const selectedTime = selected?.seekTokenIndex !== undefined ? tokens[selected.seekTokenIndex]?.start : undefined;
 
   return (
-    <Panel title={`Flags · ${flags.length}`}>
-      <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
-        What Whisper heard, not proof. From the chapter&rsquo;s last check.
-      </p>
-      <ul className="mt-2 space-y-1 text-sm">
+    <Panel title={`Flags · ${flags.length}`} subtitle={<>What Whisper heard, not proof. From the chapter&rsquo;s last check.</>}>
+      <ul className="space-y-1 text-sm">
         {countByKind(flags).map(({ kind, label, count }) => (
           <li key={kind} className="flex items-center justify-between">
             <span>{label}</span>
@@ -229,18 +227,18 @@ export function FlagsPanel({
           ) : (
             <>
               <div>
-                <span className="section-label">Script</span> &ldquo;{scriptWords.length > 0 ? scriptWords.join(' ') : (selected.script ?? '')}&rdquo;
+                <SectionLabel>Script</SectionLabel> &ldquo;{scriptWords.length > 0 ? scriptWords.join(' ') : (selected.script ?? '')}&rdquo;
               </div>
               {selected.heard && (
                 <div>
-                  <span className="section-label">Heard</span> &ldquo;{selected.heard}&rdquo;
+                  <SectionLabel>Heard</SectionLabel> &ldquo;{selected.heard}&rdquo;
                 </div>
               )}
             </>
           )}
           {selected.analyzer && (
             <div style={{ color: 'var(--text-muted)' }}>
-              <span className="section-label">From</span> {analyzerLabel(selected.analyzer)}
+              <SectionLabel>From</SectionLabel> {analyzerLabel(selected.analyzer)}
               {selectedTime !== undefined && `, ${formatElapsed(selectedTime)}`}
             </div>
           )}

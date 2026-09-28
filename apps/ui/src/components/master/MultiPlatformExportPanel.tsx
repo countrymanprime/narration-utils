@@ -4,6 +4,7 @@ import { Button } from '../primitives/Button';
 import { Checkbox } from '../primitives/Checkbox';
 import { Panel } from '../primitives/Panel';
 import { ProgressBar } from '../primitives/ProgressBar';
+import { SectionLabel } from '../primitives/SectionLabel';
 import { ResultIcon } from './RuleBadges';
 import type { ExportJobs } from './useExportJobs';
 
@@ -90,7 +91,9 @@ export function MultiPlatformExportPanel({ profiles, jobs }: { profiles: Deliver
         </p>
       ) : (
         <fieldset className="flex flex-col gap-0.5">
-          <legend className="section-label mb-1">Build packages for</legend>
+          <SectionLabel as="legend" className="mb-1">
+            Build packages for
+          </SectionLabel>
           {profiles.map((profile) => (
             <Checkbox key={profile.id} checked={selected.has(profile.id)} onChange={(checked) => toggle(profile.id, checked)} disabled={multiPackageRunning}>
               {platformNameFor(profile)}

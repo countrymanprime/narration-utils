@@ -4,6 +4,9 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faFolderOpen, faFolderPlus, faXmark } from '@fortawesome/free-solid-svg-icons';
 import { useApi } from '../../api/ApiContext';
 import { Button } from '../primitives/Button';
+import { Heading } from '../primitives/Heading';
+import { Panel } from '../primitives/Panel';
+import { SectionLabel } from '../primitives/SectionLabel';
 import { NewProjectDialog } from './NewProjectDialog';
 import { DemoBanner } from '../layout/DemoBanner';
 import type { ProjectSwitchResult, RecentProject } from '../../types';
@@ -111,23 +114,16 @@ export function ProjectPicker() {
       <DemoBanner />
       <main tabIndex={-1} className="grid min-h-0 flex-1 place-items-center overflow-y-auto p-6 focus:outline-none">
         {/* min-w-0: as a grid item the card otherwise grows to its longest nowrap child (a project path) and overflows narrow screens. */}
-        <div className="w-full max-w-2xl min-w-0 rounded-lg border border-[var(--border)] bg-[var(--surface)] p-6 shadow-[var(--shadow)]">
-          <h1 className="text-lg font-semibold">Open a project</h1>
-          <p className="mt-1 text-sm" style={{ color: 'var(--text-muted)' }}>
-            Choose a recent project, browse to an existing folder, or create a new one.
-          </p>
+        <Panel className="w-full max-w-2xl min-w-0">
+          <Heading title="Open a project">Choose a recent project, browse to an existing folder, or create a new one.</Heading>
           {reason && (
             <p className="mt-3 text-sm" role="alert" style={{ color: 'var(--danger-text)' }}>
               {reason}
             </p>
           )}
           <section className="mt-5">
-            <div
-              className="mb-2 font-['Barlow_Condensed',sans-serif] text-[0.72rem] font-semibold tracking-[0.08em] text-[var(--text-muted)] uppercase"
-              tabIndex={-1}
-              ref={recentsHeadingRef}
-            >
-              Open recent
+            <div className="mb-2" tabIndex={-1} ref={recentsHeadingRef}>
+              <SectionLabel>Open recent</SectionLabel>
             </div>
             {recentsFailed ? (
               <p className="text-sm" style={{ color: 'var(--danger-text)' }}>
@@ -185,7 +181,7 @@ export function ProjectPicker() {
               Create new…
             </button>
           </div>
-        </div>
+        </Panel>
         {newProjectOpen && <NewProjectDialog onClose={() => setNewProjectOpen(false)} onCreated={projectCreated} />}
       </main>
     </div>

@@ -6,6 +6,8 @@ import { usePendingAction } from '../../hooks/usePendingAction';
 import { Button } from '../primitives/Button';
 import { Dot } from '../primitives/StatusBadge';
 import { Heading } from '../primitives/Heading';
+import { PanelHeader } from '../primitives/Panel';
+import { PANEL_FRAME_CLASS } from '../primitives/panelStyles';
 import { ConfirmDialog } from '../primitives/ConfirmDialog';
 import { Tab, TabList, TabPanel, Tabs } from '../primitives/Tabs';
 import { ToggleGroup } from '../primitives/ToggleGroup';
@@ -252,17 +254,13 @@ export function Settings({
               </Tab>
             ))}
           </TabList>
-          <TabPanel
-            value={category}
-            className="min-h-0 overflow-visible rounded-lg border border-[var(--border)] bg-[var(--surface)] shadow-[var(--shadow)] md:overflow-auto"
-          >
-            <div className="flex items-center justify-between gap-3 border-b border-[var(--border)] px-[1.1rem] py-[0.85rem]">
-              <h2 className="font-['Barlow_Condensed',sans-serif] text-lg tracking-[0.08em] uppercase">{active?.label}</h2>
-              <span className="text-xs" style={{ color: 'var(--text-muted)' }}>
-                {scope === 'global' ? 'Global defaults' : 'This Project — falls back to Global where unset'}
-              </span>
-            </div>
-            <div className="p-[1.1rem]">
+          <TabPanel value={category} className={`${PANEL_FRAME_CLASS} min-h-0 overflow-visible md:overflow-auto`}>
+            <PanelHeader
+              title={active?.label ?? ''}
+              titleStyle="caps"
+              subtitle={scope === 'global' ? 'Global defaults' : 'This Project — falls back to Global where unset'}
+            />
+            <div className="p-4">
               {loadError && (
                 <div className="mb-4 rounded-md p-3 text-sm" role="alert" style={{ background: 'var(--review-soft)', color: 'var(--danger-text)' }}>
                   Settings could not be loaded: {loadError}. Select another category or try again.
