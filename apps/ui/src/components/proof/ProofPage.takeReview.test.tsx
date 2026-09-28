@@ -74,7 +74,9 @@ describe('Find pickups and duplicates on the Review page', () => {
     await user.click(within(progress).getByRole('button', { name: 'Close' }));
 
     await waitFor(async () => expect(await rows()).toHaveLength(2));
-    expect(screen.getByRole('combobox', { name: 'Check' })).toHaveProperty('value', 'take-review');
+    // Mock 04 draws no filter row (mock-fidelity-primitives-and-components.prd.md Phase 12): open the popover to check it.
+    await user.click(screen.getByRole('button', { name: /^Filters/ }));
+    expect(await screen.findByRole('combobox', { name: 'Check' })).toHaveProperty('value', 'take-review');
     expect((await rows())[0].textContent).toMatch(/2 reads of sentences/);
   }, 15000);
 

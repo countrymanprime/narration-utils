@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faFilter } from '@fortawesome/free-solid-svg-icons';
 import { useApi } from '../../api/ApiContext';
 import { describeApiError } from '../../api/errorMessage';
 import type { Finding, FindingsPage, FindingsSummary, ManuscriptChapter, TakeComparisonJob, TakeReviewScanJob } from '../../types';
@@ -7,7 +9,9 @@ import { chapterName } from '../../chapterName';
 import { LoadError } from '../layout/LoadError';
 import { Button } from '../primitives/Button';
 import { Heading } from '../primitives/Heading';
+import { IconButton } from '../primitives/IconButton';
 import { Panel } from '../primitives/Panel';
+import { Popover } from '../primitives/Popover';
 import { Select } from '../primitives/Select';
 import type { Notify } from '../primitives/Toast';
 import { FindingDetail } from './FindingDetail';
@@ -186,6 +190,22 @@ export function ProofPage({
               </Button>
             </>
           )}
+          {!nothingYet && (
+            <Popover
+              label="Filter findings"
+              side="bottom"
+              align="end"
+              trigger={
+                <IconButton label={isFiltered(filters) ? 'Filters (some are hidden)' : 'Filters'}>
+                  <FontAwesomeIcon icon={faFilter} />
+                </IconButton>
+              }
+            >
+              <div className="w-[34rem] max-w-[90vw]">
+                <ReviewFilters summary={summary} values={filters} onChange={changeFilters} />
+              </div>
+            </Popover>
+          )}
           <Button variant="secondary" onClick={() => setScanning(true)}>
             Find pickups and duplicates…
           </Button>
@@ -200,7 +220,6 @@ export function ProofPage({
         </Panel>
       ) : (
         <>
-          <ReviewFilters summary={summary} values={filters} onChange={changeFilters} />
           <div className="grid gap-4 xl:grid-cols-[minmax(0,1.7fr)_minmax(0,1fr)]">
             <FindingsList
               page={page}

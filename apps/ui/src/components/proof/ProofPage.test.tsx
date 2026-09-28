@@ -54,6 +54,12 @@ const openFinding = async (user: ReturnType<typeof userEvent.setup>, text: RegEx
   await user.click(row);
 };
 
+// Mock 04 draws no filter row (mock-fidelity-primitives-and-components.prd.md Phase 12): the filters sit behind this button.
+const openFilters = async (user: ReturnType<typeof userEvent.setup>) => {
+  await user.click(await screen.findByRole('button', { name: /^Filters/ }));
+  await screen.findByRole('group', { name: 'Filter findings' });
+};
+
 describe('ProofPage', () => {
   it('lists the latest run with the counts by status, and asks the narrator to pick a finding', async () => {
     renderPage();
@@ -86,6 +92,7 @@ describe('ProofPage', () => {
     const { api } = renderPage();
     const list = vi.spyOn(api, 'findingsList');
     await rows();
+    await openFilters(user);
     await user.selectOptions(screen.getByRole('combobox', { name: 'Check' }), 'story-bible');
     await waitFor(() => expect(list).toHaveBeenCalledWith(expect.objectContaining({ analyzer: 'story-bible', sort: 'chapter' })));
     await waitFor(async () => expect(await rows()).toHaveLength(1));
@@ -98,6 +105,7 @@ describe('ProofPage', () => {
     const user = userEvent.setup();
     renderPage();
     await rows();
+    await openFilters(user);
     await user.click(screen.getByRole('switch', { name: 'Only findings scored 50% or more' }));
     await waitFor(async () => expect(await rows()).toHaveLength(1));
   });
@@ -106,11 +114,14 @@ describe('ProofPage', () => {
     const user = userEvent.setup();
     renderPage();
     await rows();
+    await openFilters(user);
     await user.selectOptions(screen.getByRole('combobox', { name: 'Status' }), 'deferred');
     expect(await screen.findByText('No findings match these filters.')).toBeTruthy();
     const table = screen.getByRole('table', { name: 'Notes' });
     await user.click(within(table).getByRole('button', { name: 'Clear filters' }));
     await waitFor(async () => expect(await rows()).toHaveLength(4));
+    // Clicking "Clear filters" in the table is an outside click, so it closes the filters popover; reopen it to check.
+    await openFilters(user);
     expect((screen.getByRole('combobox', { name: 'Status' }) as HTMLSelectElement).value).toBe('');
   });
 
@@ -207,6 +218,7 @@ describe('ProofPage', () => {
     const user = userEvent.setup();
     renderPage();
     await rows();
+    await openFilters(user);
     await user.click(screen.getByRole('switch', { name: 'Include findings the latest run did not repeat' }));
     await waitFor(async () => expect(await rows()).toHaveLength(5));
     await openFinding(user, /Antipathies/);
@@ -371,7 +383,9 @@ describe('ProofPage in REAPER', () => {
   it('turns the buttons off for a finding from an older check with no REAPER item', async () => {
     const user = userEvent.setup();
     renderPage();
-    await user.selectOptions(await screen.findByRole('combobox', { name: 'Status' }), 'dismissed');
+    await rows();
+    await openFilters(user);
+    await user.selectOptions(screen.getByRole('combobox', { name: 'Status' }), 'dismissed');
     await waitFor(async () => expect(await rows()).toHaveLength(1));
     await openFinding(user, /and then/);
     expect(await inReaper().findByText(/came from an older check/)).toBeTruthy();
@@ -382,7 +396,9 @@ describe('ProofPage in REAPER', () => {
   it('has no REAPER controls for a finding with no audio, such as a Story Bible entry', async () => {
     const user = userEvent.setup();
     renderPage();
-    await user.selectOptions(await screen.findByRole('combobox', { name: 'Check' }), 'story-bible');
+    await rows();
+    await openFilters(user);
+    await user.selectOptions(screen.getByRole('combobox', { name: 'Check' }), 'story-bible');
     await waitFor(async () => expect(await rows()).toHaveLength(1));
     await openFinding(user, /White Rabbit/);
     await screen.findByRole('heading', { level: 3, name: 'Decision' });
