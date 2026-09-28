@@ -99,13 +99,15 @@ export function Dialog({
       }}
     >
       <Parts.Portal>
-        <Parts.Backdrop data-dialog-backdrop className="fixed inset-0 z-[60] bg-[var(--backdrop)]" />
+        {/* forceRender: Base UI leaves out the backdrop of a dialog opened inside another dialog or a SlideOver (a Drawer), which
+            left the page undimmed behind a confirm opened from a panel (chapter-track-link-control/06 draws it dimmed). */}
+        <Parts.Backdrop data-dialog-backdrop forceRender className="fixed inset-0 z-[60] bg-[var(--backdrop)]" />
         <Parts.Viewport className="fixed inset-0 z-[60] flex items-center justify-center p-4">
           <Parts.Popup
             ref={popupRef}
             initialFocus={initialFocus}
             finalFocus={finalFocus}
-            className={`flex w-full flex-col overflow-hidden rounded-[0.55rem] border focus:outline-none ${
+            className={`flex w-full flex-col overflow-hidden rounded-[var(--radius-card)] border focus:outline-none ${
               size === 'full' ? 'max-w-[calc(100vw-2rem)]' : 'max-w-[70vw]'
             }`}
             style={{
@@ -116,7 +118,8 @@ export function Dialog({
               boxShadow: 'var(--shadow-lg)',
             }}
           >
-            <div className="flex flex-none items-center justify-between gap-3 border-b border-[var(--border)] px-[1.1rem] py-[0.85rem]">
+            {/* 59 px and a 1 px divider in every mock, with or without the Close button. */}
+            <div className="flex min-h-[3.75rem] flex-none items-center justify-between gap-3 border-b border-[var(--border)] px-[1.1rem] py-[0.85rem]">
               <Parts.Title className="font-semibold">{title}</Parts.Title>
               {onClose && (
                 <IconButton label="Close" onClick={onClose}>
@@ -145,7 +148,9 @@ export function Dialog({
             {hasContent(actions) && (
               <div
                 data-dialog-actions
-                className={`flex flex-none gap-2 border-t px-4 pt-3 pb-4 ${actionsAlign === 'between' ? 'justify-between' : 'justify-end'}`}
+                // The mocks' action row is 66 px under its divider (12 above a 38 px button, 16 below; the min-height counts the divider). Button is 32 px now
+                // (ADR 0595), so the row keeps the mocks' height and centres the buttons in the 38 px band.
+                className={`flex min-h-[4.1875rem] flex-none items-center gap-2 border-t px-4 pt-3 pb-4 ${actionsAlign === 'between' ? 'justify-between' : 'justify-end'}`}
                 style={{ borderColor: 'var(--border)' }}
               >
                 {actions}

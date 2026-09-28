@@ -841,6 +841,16 @@ export const wireSettings = (): Record<string, ScopedSettingField[]> => ({
     choice('cascade_first_pass_model', 'First-pass Whisper model', ['tiny', 'small', 'medium', 'large-v3-turbo', 'large-v3'], 'tiny'),
     choice('cascade_recheck_model', 'Re-check Whisper model', ['tiny', 'small', 'medium', 'large-v3-turbo', 'large-v3'], 'large-v3-turbo'),
   ],
+  // The silence cleanup analyzer's five thresholds (diagnostics-delivery-and-cleanup-tools.prd.md Phase 9 remainder,
+  // ADR 0238 decision 4), mirroring the host's fieldSchemas and numberSpecs: measure.DefaultCleanupOptions' own
+  // starting values, all still unset at every scope (repo default only) the way a fresh install reads them.
+  Cleanup: [
+    recordingCheck('pad_seconds', 'Hold kept at each side of a cut silence', '0.15', { min: 0, max: 2, step: 0.01, unit: 's' }),
+    recordingCheck('min_breath_seconds', 'Shortest run read as a breath', '0.12', { min: 0.01, max: 5, step: 0.01, unit: 's' }),
+    recordingCheck('max_breath_seconds', 'Longest run read as a breath', '0.9', { min: 0.01, max: 5, step: 0.01, unit: 's' }),
+    recordingCheck('breath_below_speech_db', 'How far below speech level a breath sits', '12', { min: 0.1, max: null, step: 0.5, unit: 'dB' }),
+    recordingCheck('click_above_silence_db', 'How far above the silence around it a click stands', '30', { min: 0.1, max: null, step: 0.5, unit: 'dB' }),
+  ],
   // Which signals must be met for a stage suggestion (chapter-stage-recommendations PRD Phase 6, Q8), mirroring the
   // host's fieldSchemas: the master switch, then one choice per signal a provider declares. Only the recording
   // signal is wired so far (coverage.RecordingSignalID); the editing and proofing signal phases add their own rows.
