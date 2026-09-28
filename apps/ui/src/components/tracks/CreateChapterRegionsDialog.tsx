@@ -7,7 +7,7 @@ import { Checkbox } from '../primitives/Checkbox';
 import { Dialog } from '../primitives/Dialog';
 import { Select } from '../primitives/Select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../primitives/Table';
-import { formatDuration } from '../workspace/format';
+import { formatDuration } from '../proof/format';
 import type { ChapterRegionPlan, ChapterRegionState, ChapterRegionsCreated, Track } from '../../types';
 
 const REGION_STATE_LABEL: Record<ChapterRegionState, string> = {

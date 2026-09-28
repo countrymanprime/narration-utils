@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { Track } from '../../types';
-import { buildPlaylist } from '../workspace/playlist';
+import { buildPlaylist } from '../proof/playlist';
 
 const SKIP_SECONDS = 30;
 

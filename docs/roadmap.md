@@ -19,7 +19,7 @@ The suite helps a narrator find and review issues faster. It may analyze local m
 
 ### 1. Dashboard foundation
 
-**Status: built; checks in REAPER pending with the owner.** The [Review page](guides/using-the-app/review.md) lists the findings of Transcript Compare and the Story Bible, records decisions in the project sidecar, and goes to, loops and marks a finding in REAPER ([review dashboard PRD](prds/review-dashboard-and-findings-adoption.prd.md) Phases 1 to 8). The owner's checks in REAPER are in [the checklist](architecture/reaper-navigation.md#manual-verification-checklist).
+**Status: built; checks in REAPER pending with the owner.** [Proof](guides/using-the-app/proof.md) lists the findings of Transcript Compare and the Story Bible, records decisions in the project sidecar, and goes to, loops and marks a finding in REAPER ([review dashboard PRD](prds/review-dashboard-and-findings-adoption.prd.md) Phases 1 to 8). The owner's checks in REAPER are in [the checklist](architecture/reaper-navigation.md#manual-verification-checklist).
 
 - Adapt Manuscript Guide and Transcript Compare outputs into structured findings.
 - Add a review page in the app with filters and review decisions; REAPER only carries out its navigate, loop and marker actions.
@@ -27,7 +27,7 @@ The suite helps a narrator find and review issues faster. It may analyze local m
 
 ### 2. Recording and take review
 
-**Status: built; a scan and comparison of a real chapter and the checks in REAPER are pending with the owner.** [Take review](utilities/take-review.md) finds pickups, restarts and duplicate reads on the [Review page](guides/using-the-app/review.md#pickups-and-duplicates), adds a chosen read as a take in one undo step, auditions reads side by side and compares a group's takes per category, never ranked. What is still open is [listed there](utilities/take-review.md#what-is-still-open).
+**Status: built; a scan and comparison of a real chapter and the checks in REAPER are pending with the owner.** [Take review](utilities/take-review.md) finds pickups, restarts and duplicate reads on [Proof](guides/using-the-app/proof.md#pickups-and-duplicates), adds a chosen read as a take in one undo step, auditions reads side by side and compares a group's takes per category, never ranked. What is still open is [listed there](utilities/take-review.md#what-is-still-open).
 
 - Add pickup/restart and duplicate-read detection.
 - Group reviewed duplicate candidates as REAPER takes.

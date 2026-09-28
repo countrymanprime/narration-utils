@@ -67,7 +67,7 @@ Run the guide after manuscript selection; review uncertain candidates; lock narr
 ## Inputs and outputs
 
 - Inputs: Word manuscript, the selected catalog-managed spaCy language model (downloaded after a confirmation; without one the build offers a rules-only run), optional eSpeak, the selected catalog-managed Piper voice, and existing guide JSON.
-- Outputs: `<project>/ManuscriptGuide/manuscript_guide.json`, optional audio previews, and shared `entity` and `pronunciation` findings for entries that need review or a pronunciation with low or unknown confidence (`apps/desktop/internal/guide/findings_adapter.go`), which the [Review page](../guides/using-the-app/review.md) lists and decides.
+- Outputs: `<project>/ManuscriptGuide/manuscript_guide.json`, optional audio previews, and shared `entity` and `pronunciation` findings for entries that need review or a pronunciation with low or unknown confidence (`apps/desktop/internal/guide/findings_adapter.go`), which [Proof](../guides/using-the-app/proof.md) lists and decides.
 - Narrator actions: edit, lock, merge/reject candidates, approve pronunciations, and choose exports.
 
 ## Planned features
