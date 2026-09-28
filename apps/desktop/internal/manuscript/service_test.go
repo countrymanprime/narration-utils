@@ -12,6 +12,7 @@ import (
 	"github.com/countrymanprime/narration-utils/shell/internal/evidence"
 	"github.com/countrymanprime/narration-utils/shell/internal/importer"
 	"github.com/countrymanprime/narration-utils/shell/internal/layout"
+	"github.com/countrymanprime/narration-utils/shell/internal/preview"
 	"github.com/countrymanprime/narration-utils/shell/internal/proofing"
 	"github.com/countrymanprime/narration-utils/shell/internal/stages"
 )
@@ -514,6 +515,24 @@ func TestResetDerivedClearsTheChapterTrackMappingFile(t *testing.T) {
 	}
 	if _, err := os.Stat(mappingFile); !os.IsNotExist(err) {
 		t.Fatalf("resetDerived left the chapter-track mapping file behind: %v", err)
+	}
+}
+
+// A pinned preview names chapter and paragraph ids a re-import renumbers, so resetDerived clears it with the rest
+// (proofing-preview-suggestion.prd.md Phase 8, Q9: "cleared by resetDerived because chapter and paragraph ids
+// reset on re-import").
+func TestResetDerivedClearsThePreviewPin(t *testing.T) {
+	project := t.TempDir()
+	store := preview.NewPinStore(project)
+	if err := store.Write(preview.PinnedRange{ChapterID: "c1", ParagraphIDs: []string{"p1"}, AnchorText: map[string]string{"p1": "hello"}}); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := resetDerived(project); err != nil {
+		t.Fatal(err)
+	}
+	if _, ok := store.Read(); ok {
+		t.Fatal("resetDerived left the preview pin behind")
 	}
 }
 
