@@ -71,9 +71,13 @@ especially welcome:
   ([ADR 0150](docs/adr/0150-the-teleprompter-reads-credits-as-a-host-rendered-script-file-not-a-chapter.md)).
 - The built-in recorder's capture engine (the capture port's Experimental `wasapi` row,
   [ADR 0357](docs/adr/0357-the-built-in-recorders-capture-engine-is-a-wasapi-shared-mode-row-of-the-capture-port-through-portaudio-in-the-sidecar.md)),
-  which opens a microphone and writes a new WAV take: a take that overwrites or truncates an existing file, a device opened that
-  the narrator did not choose, a file written anywhere but the path the app gave it, or captured audio that leaves the machine is
-  in scope. Nothing in the app calls it yet; the Booth's recorder will (native-recording-suite Phase 2).
+  which opens a microphone and writes a new WAV take, and the Booth's built-in recorder that calls it (`internal/recording`,
+  native-recording-suite Phase 2, [ADR 0455](docs/adr/0455-the-built-in-recorder-records-each-take-to-a-partial-file-in-the-projects-recordings-folder-and-links-it-to-its-take-name.md)):
+  the takes are `Recordings/Take NNN.wav` in the project folder, written as `Take NNN.partial.wav` and given their name by a hard
+  link that never replaces a file. A take that overwrites, truncates or deletes an existing file (the one file the recorder removes is a
+  partial holding no audio at all), a device opened that the narrator did not choose or that stays open after they stop, a file
+  written anywhere but the project's Recordings folder, the media route playing a file that is not a listed take, or captured
+  audio that leaves the machine is in scope.
 - The Master & QC export flow, which masters and encodes narrator-picked rendered WAV files (`internal/mastering`, `internal/encodeport`,
   render-encode-master PRD Phases 1-3, 5) and assembles a delivery package into a folder the narrator chooses (`internal/packager`, Phase 4):
   a path the picker did not choose, a file name it builds from a chapter's title using a character a file system cannot hold, an output folder

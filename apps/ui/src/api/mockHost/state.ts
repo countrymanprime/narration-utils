@@ -44,6 +44,7 @@ import type { MockUpdateSeed } from './update';
 import type { DawMockSeed } from '../dawMock';
 import type { ProvidersMockSeed } from '../providersMock';
 import type { MasteringMockSeed } from '../masteringMock';
+import type { RecordingMockSeed } from '../recordingMock';
 
 // What createMockApi boots from (the seeds), and the host state more than one domain reads or writes.
 // manuscriptCandidate boots a project with no imported manuscript but a
@@ -220,6 +221,8 @@ export type MockApiSeed = {
   characterContinuity?: 'empty';
   /** Seeds the mastering chain mock (whether a project is open, its stored choice), see `MasteringMockSeed` (ADR 0306). */
   mastering?: MasteringMockSeed;
+  /** Seeds the built-in recorder mock (engine, takes, a take recording, devices), see `RecordingMockSeed` (ADR 0455). */
+  recording?: RecordingMockSeed;
 };
 
 export const wireContext = (payload: string) => ({ boundary: 'host.binding', payload });
