@@ -270,7 +270,7 @@ Shared serialization points:
 - **Wave checkpoints (D43):** the non-visual quality jobs go green on `main` before the next wave starts.
 - **Final sweep (D43, D44, D46):** the full `pnpm check`, visual suite, atlas and aria snapshots, a mockup pass, doc screenshots regenerated once, and the whole `quality` workflow green.
 - **Not scheduled:**
-  - native-recording-suite: long-term.
+  - native-recording-suite: long-term. (Superseded 2026-09-28 by D86: planned, phase 1 launched as N-B37.)
   - EP-10: D30.
   - TS7 P3: waits on upstream.
   - release-readiness P15 and P16: D7, owner-run.

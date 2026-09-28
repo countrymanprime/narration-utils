@@ -69,6 +69,11 @@ especially welcome:
 - The arguments and session files the app hands its local sidecars and the FFmpeg encoder, for example a value from the interface becoming a
   sidecar option, a file path FFmpeg reads as an option or a URL, an encode that writes over its source or an existing file, or the teleprompter's stop, control and credits-text files in the session folder
   ([ADR 0150](docs/adr/0150-the-teleprompter-reads-credits-as-a-host-rendered-script-file-not-a-chapter.md)).
+- The built-in recorder's capture engine (the capture port's Experimental `wasapi` row,
+  [ADR 0357](docs/adr/0357-the-built-in-recorders-capture-engine-is-a-wasapi-shared-mode-row-of-the-capture-port-through-portaudio-in-the-sidecar.md)),
+  which opens a microphone and writes a new WAV take: a take that overwrites or truncates an existing file, a device opened that
+  the narrator did not choose, a file written anywhere but the path the app gave it, or captured audio that leaves the machine is
+  in scope. Nothing in the app calls it yet; the Booth's recorder will (native-recording-suite Phase 2).
 - The delivery package the app assembles into a folder the narrator chooses (`internal/packager`, render-encode-master PRD Phase 4): a file
   name it builds from a chapter's title using a character a file system cannot hold, or a package that overwrites an existing file or its own
   source, is in scope; every file it writes is a new copy of an already-encoded file, and the source is never changed.
