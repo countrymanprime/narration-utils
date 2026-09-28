@@ -3,7 +3,6 @@ import { THEME_STORAGE_KEY } from '../../src/theme/theme';
 import type { Driver } from './drivers/shared';
 import { projectDrivers } from './drivers/project';
 import { startupDrivers } from './drivers/startup';
-import { homeDrivers } from './drivers/home';
 import { scriptDrivers } from './drivers/script';
 import { storybibleDrivers } from './drivers/storybible';
 import { tracksDrivers } from './drivers/tracks';
@@ -74,7 +73,6 @@ async function throttleRequestedCpu(page: Page): Promise<void> {
 export const APP_DRIVERS: Record<string, Record<string, Driver>> = {
   project: projectDrivers,
   startup: startupDrivers,
-  home: homeDrivers,
   script: scriptDrivers,
   storybible: storybibleDrivers,
   tracks: tracksDrivers,

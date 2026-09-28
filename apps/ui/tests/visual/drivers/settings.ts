@@ -368,8 +368,8 @@ export const settingsDrivers: Record<string, Driver> = {
     await clickVisible(page, 'tab', 'Global');
     await clickSettingsCategory(page, 'Proofing');
     await page.getByRole('combobox').first().selectOption('large-v3');
-    // Leaving with unsaved changes asks first, so this click does not arrive at Home: it opens the confirm dialog.
-    await clickNav(page, 'Home');
+    // Leaving with unsaved changes asks first, so this click does not arrive at Production: it opens the confirm dialog.
+    await clickNav(page, 'Production');
     await confirmDialog(page, 'Unsaved settings').waitFor();
   },
   'reset-override': async (page) => {

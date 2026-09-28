@@ -18,7 +18,7 @@ const ALIAS_COMBOBOX = 'The alias typeahead is the one bespoke combobox and has 
 export const AXE_DEBT: AxeDebt[] = [
   { page: 'script', state: 'selection-popup', rules: ['region'], reason: PORTALLED_POPUP },
   { page: 'global', state: 'tooltip', rules: ['aria-hidden-focus', 'region'], reason: `${FOCUS_GUARDS}; and ${PORTALLED_POPUP}` },
-  { page: 'home', state: 'info-tooltip', rules: ['aria-hidden-focus', 'region'], reason: `${FOCUS_GUARDS}; and ${PORTALLED_POPUP}` },
+  { page: 'production', state: 'info-tooltip', rules: ['aria-hidden-focus', 'region'], reason: `${FOCUS_GUARDS}; and ${PORTALLED_POPUP}` },
   // The rail shows labels at the desktop width, so the hint only exists (and is only reported) below it.
   { page: 'global', state: 'nav-rail-tooltip', rules: ['region'], reason: PORTALLED_POPUP, viewports: ['small-desktop', 'tablet'] },
   { page: 'storybible', state: 'alias-typeahead', rules: ['aria-required-attr', 'aria-required-children'], reason: ALIAS_COMBOBOX },

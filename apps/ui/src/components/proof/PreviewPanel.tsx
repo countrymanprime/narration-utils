@@ -4,7 +4,7 @@ import { faCheck, faCopy, faFileLines, faTriangleExclamation } from '@fortawesom
 import type { ManuscriptChapter, PreviewCandidate, PreviewResult } from '../../types';
 import { describeApiError } from '../../api/errorMessage';
 import { useApi } from '../../api/ApiContext';
-import { describeParagraphs, formatAudioTime, paragraphRefs } from '../home/recordingCheckText';
+import { describeParagraphs, formatAudioTime, paragraphRefs } from '../production/recordingCheckText';
 import { Panel } from '../primitives/Panel';
 import { IconButton } from '../primitives/IconButton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../primitives/Table';

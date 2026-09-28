@@ -27,7 +27,7 @@ const TOOLTIP: Record<string, string> = {
   color_note: 'Color used for narrator note treatment.',
   log_verbosity: 'Controls diagnostic output shown in logs.',
   credits_room_tone_seconds:
-    'Silence the Home estimate adds to each opening and closing credits file, head and tail together. ACX asks for 1 to 5 seconds at each end; leave 0 to count the words only.',
+    'Silence the credits estimate adds to each opening and closing credits file, head and tail together. ACX asks for 1 to 5 seconds at each end; leave 0 to count the words only.',
   check_on_startup:
     'Once a day, when the app starts, it asks GitHub whether a newer release exists. It sends nothing about you or your projects, and it never downloads anything without your click.',
   channel: 'Release candidates are the pre-releases that come before each stable release; every release so far is one.',
@@ -38,9 +38,9 @@ const TOOLTIP: Record<string, string> = {
   reaper_path: 'Leave blank to auto-detect reaper.exe. Set this only when auto-detect finds the wrong install or none at all.',
   auto_start_launcher:
     'When Narration Utils starts REAPER, also pass the Narration Utils action as a startup script, so the bridge is live immediately. Off by default: REAPER is never changed automatically.',
-  suggestions_enabled: 'Turns every stage suggestion on Home off at once, without changing which signals are required below.',
+  suggestions_enabled: 'Turns every stage suggestion on the Production board off at once, without changing which signals are required below.',
   'recording.text_present':
-    'Whether every paragraph present in order, as the recording check measures it, must be met before Home suggests moving a chapter from Recording to Editing.',
+    'Whether every paragraph present in order, as the recording check measures it, must be met before the Production board suggests moving a chapter from Recording to Editing.',
   target_seconds: 'How long a preview excerpt should be, in seconds. The Preview panel suggests candidates near this length.',
   tolerance_fraction: 'How far a candidate may sit from the target length and still count as on target, as a fraction of the target (0.1 = 10%).',
   preset: 'Sample favors a clean, varied, shareable excerpt. Spot check favors a passage worth a second look.',

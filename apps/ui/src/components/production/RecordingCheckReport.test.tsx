@@ -91,15 +91,15 @@ describe('RecordingCheckReport', () => {
   });
 
   // edit-and-proof-workspace.prd.md Phase 4, page inventory "Home › recording check dialog": the dialog gets "Open workspace".
-  it('shows an Open workspace button when the caller has one, and calls it', () => {
+  it('shows an Open in Proof button when the caller has one, and calls it', () => {
     const openWorkspace = vi.fn();
     renderReport(openWorkspace);
-    fireEvent.click(screen.getByRole('button', { name: 'Open workspace' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Open in Proof' }));
     expect(openWorkspace).toHaveBeenCalledTimes(1);
   });
 
-  it('renders no Open workspace button when the caller has none', () => {
+  it('renders no Open in Proof button when the caller has none', () => {
     renderReport();
-    expect(screen.queryByRole('button', { name: 'Open workspace' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Open in Proof' })).toBeNull();
   });
 });

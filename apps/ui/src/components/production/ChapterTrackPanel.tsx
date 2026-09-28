@@ -18,8 +18,12 @@ const noop = () => {};
 
 const EYEBROW = "font-['Barlow_Condensed',sans-serif] text-[0.72rem] font-semibold tracking-[0.08em] text-[var(--text-muted)] uppercase";
 
+// Recorded length as the mockup writes it (chapter-track-link-control mock 02, "13m"): seconds under a minute.
+const recordedLength = (seconds: number) => (seconds < 60 ? `${Math.round(seconds)}s` : `${Math.round(seconds / 60)}m`);
+
 /**
- * The track slide-over a row's ChapterTrackButton opens (chapter-track-link-control.prd.md Phase 2): what the saved
+ * The track slide-over a chapter's Recorded cell on the Production board opens (chapter-track-link-control.prd.md Phase 2,
+ * moved from Home's track button by stage-navigation-and-page-replacement.prd.md Phase 2): what the saved
  * project knows about the chapter's track as of its last save, and the narrator's link/relink/unlink actions. Reuses
  * MappingConfirm for the track picker, so Change/Clear behave the same way here as on the Tracks page - one host
  * operation (`chapterTrackSet`) makes a relink atomic (Phase 1), so a narrator can never end up with two links.
@@ -32,6 +36,7 @@ export function ChapterTrackPanel({
   chapterTitle,
   link,
   trackSummary,
+  recordedSeconds,
   savedAt,
   notify,
   onClose,
@@ -45,6 +50,8 @@ export function ChapterTrackPanel({
   link?: ChapterTrackLink;
   /** The linked or suggested track's own facts, resolved by the caller from ChapterTrackLinks' `tracks` list. */
   trackSummary?: ChapterTrackSummary;
+  /** The audio measured on the linked track as of the saved project (actual-recorded-column.prd.md); undefined when there is none. */
+  recordedSeconds?: number;
   savedAt: string;
   notify: Notify;
   onClose: () => void;
@@ -135,6 +142,7 @@ export function ChapterTrackPanel({
     }
   };
 
+  const state = link ? chapterTrackButtonState(link) : undefined;
   return (
     <SlideOver open={open} title={`Track: ${chapterTitle}`} onClose={onClose}>
       {!link ? (
@@ -142,6 +150,19 @@ export function ChapterTrackPanel({
       ) : (
         <div className="space-y-4 text-sm">
           <Header chapterTitle={chapterTitle} link={link} trackSummary={trackSummary} />
+          {/* The state's own sentence (chapter-track-link-control mocks 03-05). */}
+          {state?.kind === 'missing' && (
+            <p role="alert" className="rounded-md border px-3 py-2" style={{ borderColor: 'var(--danger)', color: 'var(--danger-text)' }}>
+              The linked track{link.track?.trackName ? ` “${link.track.trackName}”` : ''} is not in the saved project. It may have been deleted or the project
+              saved elsewhere. Link another track, or unlink.
+            </p>
+          )}
+          {state?.kind === 'suggested' && <p>Not linked yet. This track looks like the chapter; link it to use it for checks and recorded time.</p>}
+          {link.status === 'ambiguous' && link.links.length <= 1 && link.candidates.length > 1 && (
+            <p className="rounded-md border px-3 py-2" style={{ borderColor: 'var(--warn)' }}>
+              {link.candidates.length} tracks look like this chapter. Link the one it is recorded on.
+            </p>
+          )}
           {trackSummary && (
             <section aria-labelledby="chapter-track-facts" className="space-y-1.5">
               <h3 id="chapter-track-facts" className={EYEBROW}>
@@ -162,7 +183,10 @@ export function ChapterTrackPanel({
                   }
                 />
               )}
-              {link.links[0] && <Fact label="Linked" value={formatWhen(link.links[0].confirmedAt)} />}
+              {recordedSeconds !== undefined && <Fact label="Recorded length" value={recordedLength(recordedSeconds)} />}
+              {link.links[0] && (
+                <Fact label="Linked" value={`${formatWhen(link.links[0].confirmedAt)}, ${link.links[0].origin === 'auto' ? 'by chapter sync' : 'by you'}`} />
+              )}
             </section>
           )}
           {trackIndex >= 0 && (
@@ -217,7 +241,7 @@ export function ChapterTrackPanel({
               </ul>
             </section>
           )}
-          {link.status !== 'ambiguous' && link.candidates.length > 0 && !link.track && (
+          {link.candidates.length > 0 && !link.track && !(link.status === 'ambiguous' && link.links.length > 1) && (
             <section aria-labelledby="chapter-track-candidates" className="space-y-2">
               <h3 id="chapter-track-candidates" className={EYEBROW}>
                 Possible tracks
@@ -254,14 +278,17 @@ export function ChapterTrackPanel({
                 busy={busy}
                 onConfirm={(trackGuid) => void link_(trackGuid)}
                 onClear={() => void unlink()}
+                changeLabel="Another track…"
+                clearLabel="Unlink"
               />
             )}
           </section>
           <section aria-labelledby="chapter-track-remove" className="space-y-2 border-t border-[var(--border)] pt-3">
-            <h3 id="chapter-track-remove" className="sr-only">
+            <h3 id="chapter-track-remove" className={EYEBROW}>
               Chapter
             </h3>
-            <Button variant="ghost" onClick={() => setRemoveOpen(true)}>
+            <p style={{ color: 'var(--text-muted)' }}>Imported by mistake? Take it out of the board and totals. Its text stays in the manuscript.</p>
+            <Button variant="danger" onClick={() => setRemoveOpen(true)}>
               Remove from recording…
             </Button>
           </section>
@@ -281,7 +308,7 @@ function Header({ chapterTitle, link, trackSummary }: { chapterTitle: string; li
     renamed: 'Linked, renamed',
     suggested: 'Suggested',
     ambiguous: 'Ambiguous',
-    missing: 'Track missing',
+    missing: 'Missing',
     not_linked: 'Not linked',
   };
   return (

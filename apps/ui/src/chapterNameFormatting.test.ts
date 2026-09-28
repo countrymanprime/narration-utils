@@ -14,7 +14,7 @@ import { describe, expect, test } from 'vitest';
 const ALLOW_LIST = new Set([
   join('src', 'components', 'primitives', 'TitleSubtitle.tsx'),
   // Decides which subtitle survives the import review's own choices (join it, drop it, keep it) - not a display site.
-  join('src', 'components', 'home', 'importReviewModel.ts'),
+  join('src', 'components', 'production', 'importReviewModel.ts'),
   // Fits the sidecar's tracked title tokens - not a display site (chapter-title-display-consistency.prd.md, Q9).
   join('src', 'components', 'booth', 'readerModel.ts'),
   // Renders the read-aloud heading's own stacked title/subtitle (Q9), the same visual convention TitleSubtitle.tsx
@@ -26,14 +26,10 @@ const ALLOW_LIST = new Set([
 // Manuscript and Chapters & Search onto TitleSubtitle (lowering these); Phase 3 moves the rest, including the Read
 // aloud heading and the Teleprompter select, and the ceiling reaches zero.
 const CEILING: Record<string, number> = {
-  // Phase 2 (C1): the Chapter cell now goes through chapterName()/TitleSubtitle; the two reads left are the prop
-  // handoff to TitleSubtitle (`subtitle={chapter.subtitle}`) and the status-change handler's own object spread, which
-  // preserves the row's subtitle across a status update rather than drawing it (`subtitle: c.subtitle`).
-  [join('src', 'components', 'home', 'AudiobookEstimatePanel.tsx')]: 2,
   // Phase 2: the joined-title row now goes through chapterName()/TitleSubtitle; one read left is the prop handoff to
   // TitleSubtitle (`subtitle={heading.subtitle}`), and one is the Subtitle checkbox's own accessible-name suffix
   // ("Subtitle — {section.subtitle}"), which shows the raw second line, not a formatted chapter name.
-  [join('src', 'components', 'home', 'ImportReview.tsx')]: 2,
+  [join('src', 'components', 'production', 'ImportReview.tsx')]: 2,
   // Phase 2: the row now goes through TitleSubtitle; the one read left is the prop handoff (`subtitle={chapter.subtitle}`).
   [join('src', 'components', 'manuscript', 'ChapterNav.tsx')]: 1,
   // The chapter card moved into ReaderCard.tsx (manuscript-credits-card-parity.prd.md, Phase 1's first commit); this

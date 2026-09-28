@@ -3,8 +3,8 @@ import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { useApi } from '../../api/ApiContext';
 import { apiErrorMessage, describeApiError } from '../../api/errorMessage';
 import { chapterName } from '../../chapterName';
-import { formatWhen } from '../home/recordingCheckText';
-import { RecordingCheck } from '../home/RecordingCheck';
+import { formatWhen } from '../production/recordingCheckText';
+import { RecordingCheck } from '../production/RecordingCheck';
 import { Button } from '../primitives/Button';
 import { Heading } from '../primitives/Heading';
 import { Panel } from '../primitives/Panel';
@@ -194,7 +194,7 @@ function ChapterView({ chapterId, notify, transcript, dawFileLinked, goToManuscr
     [flags, alignment, seekToken],
   );
 
-  // ?finding=<id> (Navigation and deep links; "Open in workspace" from Review, Home and the Manuscript, Phase 4):
+  // ?finding=<id> (Navigation and deep links; "Open in workspace" from Proof's notes, the Production board and Script, Phase 4):
   // selects the flag that finding backs and seeks the app player to it, once its flag exists - a finding whose
   // overlay flag isn't ready yet on the first render (findings and the alignment load separately) is retried on
   // every render until it is, then forgotten so a later selection by hand is never fought.

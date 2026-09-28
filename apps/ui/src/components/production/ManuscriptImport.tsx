@@ -1,22 +1,18 @@
 import { apiErrorMessage, describeApiError } from '../../api/errorMessage';
-import { useEffect, useRef, useState } from 'react';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faFileArrowUp, faFileLines } from '@fortawesome/free-solid-svg-icons';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { useApi } from '../../api/ApiContext';
 import { usePendingAction } from '../../hooks/usePendingAction';
 import { useWorkJob } from '../../hooks/useWorkJob';
-import type { CreditsSetupState, GuideEntity, ManuscriptImportSelection, TranscriptState, WorkJob } from '../../types';
+import type { CreditsSetupState, ManuscriptImportSelection, WorkJob } from '../../types';
 import type { Bootstrap } from '../../types';
 import { CreditsSetupBanner } from '../credits/CreditsSetupBanner';
 import { CreditsSetupDialog } from '../credits/CreditsSetupDialog';
-import { Heading } from '../primitives/Heading';
-import { AudiobookEstimatePanel } from './AudiobookEstimatePanel';
+import { Button } from '../primitives/Button';
 import { ImportReview, ImportSummary } from './ImportReview';
 import { subtitleOverridesToCommit, type ReviewGroupKey, type ReviewGroupOpen } from './importReviewModel';
 import { ConfirmDialog } from '../primitives/ConfirmDialog';
 import { WorkDialog } from '../primitives/WorkDialog';
 import { TooltipTarget } from '../primitives/Tooltip';
-import { IconButton } from '../primitives/IconButton';
 import type { Notify } from '../primitives/Toast';
 
 // Import runs as a host-side job; the UI only ever displays the percent and log
@@ -28,31 +24,24 @@ const IMPORT_POLL_MS = 200;
 const declinedCandidates = new Set<string>();
 const IMPORT_POLLED_PHASES: WorkJob['phase'][] = ['preparing', 'committing'];
 
-function completedLabel(value?: string) {
-  if (!value) return 'completed previously';
-  const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? 'completed previously' : `completed ${date.toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}`;
-}
-
-export function Home({
+/**
+ * The manuscript import and the credits prompt (moved from Home by stage-navigation-and-page-replacement.prd.md Phase 2: "the import
+ * flow and the manuscript candidate offer are the page's empty state"). A hook, not a component, so the Production home can put the
+ * choose-a-file button in its empty state or its header while the dialogs stay mounted in one place: an import that finishes turns
+ * the empty state into the board, and must not lose the job it is following when it does.
+ */
+export function useManuscriptImport({
   data,
   go,
   notify,
-  goToManuscript,
-  goToWorkspace,
   refreshBootstrap,
 }: {
   data: Bootstrap;
   go: (page: string) => void;
   notify: Notify;
-  goToManuscript: (chapter: string, paragraph?: number) => void;
-  /** "Open workspace" from the recording check slide-over (edit-and-proof-workspace.prd.md Phase 4). */
-  goToWorkspace?: (chapterId: string) => void;
   refreshBootstrap: () => Promise<void>;
-}) {
+}): { chooseButton: ReactNode; dialogs: ReactNode; creditsBanner: ReactNode } {
   const api = useApi();
-  const [entities, setEntities] = useState<GuideEntity[]>([]);
-  const [lastCompleted, setLastCompleted] = useState<TranscriptState>();
   const found = Boolean(data.manuscript);
   // The import's own job is polled while the host prepares or commits it; its success stays set, for the effect below to act on once.
   const [importJob, setImportJob] = useWorkJob({
@@ -101,16 +90,6 @@ export function Home({
       .creditsSetupState()
       .then(setCreditsSetup)
       .catch(() => setCreditsSetup(undefined));
-  }, [api, data.manuscript?.id, data.manuscript?.importedAt]);
-  useEffect(() => {
-    void api
-      .guideEntities()
-      .then(setEntities)
-      .catch(() => {});
-    void api
-      .transcriptLastCompleted()
-      .then(setLastCompleted)
-      .catch(() => setLastCompleted(undefined));
   }, [api, data.manuscript?.id, data.manuscript?.importedAt]);
   // The host finishes writing the manuscript before it reports success, so the shared application state is refreshed
   // exactly once, on that transition. A checked "Build the Story Bible after import" chains straight into
@@ -182,70 +161,37 @@ export function Home({
       setImportJob((current) => (current ? { ...current, phase: 'error', error: message, message } : current));
     }
   };
-  const review = entities.find(
-    (entity) => entity.review_state === 'needs review' || entity.review_state === 'unreviewed' || entity.category === 'Needs Review',
+  // Replacing clears what the narrator has built on the manuscript, so the button says so before the file dialog opens.
+  const button = (
+    <Button
+      variant={found ? 'ghost' : 'primary'}
+      pending={choosing.isPending('choose')}
+      onClick={() =>
+        void choosing.run('choose', async () => {
+          try {
+            const result = await api.selectManuscript();
+            if (result.selected && result.jobId) {
+              setImportSelection({});
+              void beginImportPreview(result.jobId);
+            } else notify('No manuscript selected');
+          } catch (error) {
+            notify(describeApiError(error), 'error');
+          }
+        })
+      }
+    >
+      {found ? 'Replace manuscript' : 'Import manuscript'}
+    </Button>
   );
-  return (
-    <div className="mx-auto max-w-5xl space-y-4">
-      <Heading title="Welcome back">
-        Project folder: <span className="font-['IBM_Plex_Mono',ui-monospace,monospace]">…/{data.projectName}/</span>
-      </Heading>
-      <section
-        className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-[var(--border)] bg-[var(--surface)] p-[1.1rem] shadow-[var(--shadow)]"
-        style={!found ? { borderColor: 'var(--review)' } : undefined}
-      >
-        <div className="flex items-center gap-2 text-sm">
-          <span className="size-2 flex-none rounded-full" style={{ background: found ? 'var(--character)' : 'var(--review)' }} />
-          <span>
-            {found ? (
-              <>
-                <strong>Manuscript found</strong> — {data.manuscript!.narratableWordCount.toLocaleString()} words across{' '}
-                {data.manuscript!.narratableChapterCount} narratable chapters
-              </>
-            ) : (
-              <>
-                <strong>No imported manuscript</strong> — import a Word, Markdown, plain text or EPUB manuscript
-              </>
-            )}
-          </span>
-        </div>
-        <div className="flex gap-2">
-          {found && (
-            <TooltipTarget text="View manuscript">
-              <IconButton label="View manuscript" onClick={() => go('/manuscript')}>
-                <FontAwesomeIcon icon={faFileLines} />
-              </IconButton>
-            </TooltipTarget>
-          )}
-          <TooltipTarget
-            text={
-              found
-                ? 'Replace manuscript — confirmation clears Story Bible, notes, bookmarks, chapter statuses, and saved proofing results.'
-                : 'Import manuscript'
-            }
-          >
-            <IconButton
-              label={found ? 'Replace manuscript' : 'Import manuscript'}
-              pending={choosing.isPending('choose')}
-              onClick={() =>
-                void choosing.run('choose', async () => {
-                  try {
-                    const result = await api.selectManuscript();
-                    if (result.selected && result.jobId) {
-                      setImportSelection({});
-                      void beginImportPreview(result.jobId);
-                    } else notify('No manuscript selected');
-                  } catch (error) {
-                    notify(describeApiError(error), 'error');
-                  }
-                })
-              }
-            >
-              <FontAwesomeIcon icon={faFileArrowUp} />
-            </IconButton>
-          </TooltipTarget>
-        </div>
-      </section>
+  const chooseButton = found ? (
+    <TooltipTarget text="Replace manuscript — confirmation clears Story Bible, notes, bookmarks, chapter statuses, and saved proofing results.">
+      {button}
+    </TooltipTarget>
+  ) : (
+    button
+  );
+  const dialogs = (
+    <>
       {offerCandidate && (
         <ConfirmDialog
           title="Import manuscript?"
@@ -328,86 +274,16 @@ export function Home({
           onMoreFields={() => go('/settings#credits')}
         />
       )}
+    </>
+  );
+  const creditsBanner = (
+    <>
       {/* The way back (Phase 3): shown whenever the host says tokens are still unresolved and the narrator has not
           said "Don't ask" - never while the dialog above is already open, auto or by hand. */}
       {!offerCandidate && !importJob && creditsSetup?.banner && !creditsSetup.needed && !fillingInCredits && (
         <CreditsSetupBanner state={creditsSetup} notify={notify} onDone={setCreditsSetup} onFillIn={() => setFillingInCredits(true)} />
       )}
-      <AudiobookEstimatePanel
-        notify={notify}
-        goToManuscript={goToManuscript}
-        goToWorkspace={goToWorkspace}
-        refreshKey={data.manuscript ? `${data.manuscript.id}:${data.manuscript.importedAt}` : 'no-manuscript'}
-      />
-      {(() => {
-        // Proof (stage-navigation-and-page-replacement.prd.md Phase 5) is never gated itself - a chapter's compare run gates its own
-        // Start on the DAW - so the card only needs a manuscript to compare a recording with.
-        const proofingBlocked = !found;
-        const proofingReason = 'Import a manuscript to compare a recording with it.';
-        return (
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-            <TooltipTarget text={proofingBlocked ? proofingReason : 'Open Proof'} className="w-full">
-              <button
-                aria-label="Open Proof"
-                disabled={proofingBlocked}
-                className="w-full rounded-lg border border-[var(--border)] bg-[var(--surface)] p-[1.1rem] text-left shadow-[var(--shadow)] transition hover:-translate-y-px disabled:pointer-events-none disabled:opacity-50"
-                onClick={() => go('/proof')}
-              >
-                <div className="mb-1 flex items-center justify-between">
-                  <span className="font-['Barlow_Condensed',sans-serif] text-[0.72rem] font-semibold tracking-[0.08em] text-[var(--text-muted)] uppercase">
-                    Proof
-                  </span>
-                  <span
-                    className="inline-flex items-center gap-[0.35rem] rounded-full px-[0.55rem] py-[0.15rem] font-['Barlow_Condensed',sans-serif] text-[0.72rem] font-semibold tracking-[0.03em] uppercase"
-                    style={
-                      lastCompleted
-                        ? { background: 'var(--review-soft)', color: 'var(--danger-text)' }
-                        : { background: 'var(--surface-2)', color: 'var(--text-muted)' }
-                    }
-                  >
-                    {lastCompleted ? `${lastCompleted.rows.length} ${lastCompleted.rows.length === 1 ? 'discrepancy' : 'discrepancies'}` : 'Ready'}
-                  </span>
-                </div>
-                <div className="font-semibold">{lastCompleted ? 'Review latest comparison' : 'Ready to compare selected REAPER audio'}</div>
-                <div className="mt-1 text-sm" style={{ color: 'var(--text-muted)' }}>
-                  {lastCompleted
-                    ? `${lastCompleted.trackName || 'Selected REAPER audio'}${lastCompleted.audioItemCount ? ` · ${lastCompleted.audioItemCount} audio item${lastCompleted.audioItemCount === 1 ? '' : 's'}` : ''} · ${completedLabel(lastCompleted.completedAt)}`
-                    : 'Select audio items or a track in REAPER, then open a chapter on Proof.'}
-                </div>
-              </button>
-            </TooltipTarget>
-            <TooltipTarget text={found ? 'Open Story Bible' : 'Import a manuscript to unlock Story Bible.'} className="w-full">
-              <button
-                aria-label="Open Story Bible"
-                disabled={!found}
-                className="w-full rounded-lg border border-[var(--border)] bg-[var(--surface)] p-[1.1rem] text-left shadow-[var(--shadow)] transition hover:-translate-y-px disabled:pointer-events-none disabled:opacity-50"
-                onClick={() => go('/story-bible')}
-              >
-                <div className="mb-1 flex items-center justify-between">
-                  <span className="font-['Barlow_Condensed',sans-serif] text-[0.72rem] font-semibold tracking-[0.08em] text-[var(--text-muted)] uppercase">
-                    Story Bible
-                  </span>
-                  <span
-                    className="inline-flex items-center gap-[0.35rem] rounded-full px-[0.55rem] py-[0.15rem] font-['Barlow_Condensed',sans-serif] text-[0.72rem] font-semibold tracking-[0.03em] uppercase"
-                    style={{ background: 'var(--surface-2)', color: 'var(--text-muted)' }}
-                  >
-                    {entities.length} entities · {review ? 1 : 0} review
-                  </span>
-                </div>
-                <div className="font-semibold">
-                  {review ? `Review “${review.canonical_name}”` : entities.length ? 'Browse Story Bible entries' : 'No Story Bible entries yet'}
-                </div>
-                <div className="mt-1 text-sm" style={{ color: 'var(--text-muted)' }}>
-                  {review?.description.text ||
-                    (entities.length
-                      ? `${entities.length} saved ${entities.length === 1 ? 'entity' : 'entities'}`
-                      : 'Build the Story Bible to discover names and terms.')}
-                </div>
-              </button>
-            </TooltipTarget>
-          </div>
-        );
-      })()}
-    </div>
+    </>
   );
+  return { chooseButton, dialogs, creditsBanner };
 }

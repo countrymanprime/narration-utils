@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { AppShell } from './AppShell';
 import { TooltipProvider } from '../primitives/Tooltip';
@@ -30,7 +30,7 @@ describe('AppShell nav gating (PRD project-workspace-and-daw-link.prd.md, W16/W1
     for (const name of ['Script', 'Story Bible', 'Booth']) {
       expect(screen.getAllByRole('button', { name }).every((button) => (button as HTMLButtonElement).disabled)).toBe(true);
     }
-    for (const name of ['Home', 'Tracks', 'Proof', 'Delivery']) {
+    for (const name of ['Production', 'Tracks', 'Proof', 'Delivery']) {
       expect(screen.getAllByRole('button', { name }).every((button) => (button as HTMLButtonElement).disabled)).toBe(false);
     }
     expect(screen.getAllByRole('group', { name: /Import a manuscript to unlock this page/ }).length).toBeGreaterThan(0);
@@ -61,10 +61,10 @@ describe('AppShell header pill (PRD project-workspace-and-daw-link.prd.md, W15)'
     expect(onLinkDawFile).toHaveBeenCalledTimes(1);
   });
 
-  it('shows "REAPER project linked" once one is, and never claims to know whether REAPER is running', () => {
+  it('shows "REAPER linked" once one is, and never claims to know whether REAPER is running', () => {
     renderShell({ dawFileLinked: true });
-    const pill = screen.getByRole('button', { name: /REAPER project linked/ });
-    expect(pill.textContent).toBe('REAPER project linked');
+    const pill = screen.getByRole('button', { name: /REAPER linked/ });
+    expect(pill.textContent).toBe('REAPER linked');
     expect(screen.queryByText(/detected/i)).toBeNull();
     expect(screen.queryByText(/No DAW detected/i)).toBeNull();
   });
@@ -73,9 +73,9 @@ describe('AppShell header pill (PRD project-workspace-and-daw-link.prd.md, W15)'
 // Phase 7 (PRD project-workspace-and-daw-link.prd.md, ADR 0092): the mismatch state only appears once a live
 // heartbeat disagrees with the linked file, never from a linked-but-unconfirmed state.
 describe('AppShell header pill mismatch state (Phase 7)', () => {
-  it('still reads "REAPER project linked" when linked but not yet confirmed reachable', () => {
+  it('still reads "REAPER linked" when linked but not yet confirmed reachable', () => {
     renderShell({ dawFileLinked: true, dawReachable: false, dawProjectMatches: false });
-    expect(screen.getByRole('button', { name: /REAPER project linked/ })).toBeTruthy();
+    expect(screen.getByRole('button', { name: /REAPER linked/ })).toBeTruthy();
     expect(screen.queryByText(/Wrong REAPER project open/)).toBeNull();
   });
 
@@ -85,15 +85,15 @@ describe('AppShell header pill mismatch state (Phase 7)', () => {
     expect(pill.textContent).toBe('Wrong REAPER project open');
   });
 
-  it('reads "REAPER project linked" when reachable and the open project matches', () => {
+  it('reads "REAPER linked" when reachable and the open project matches', () => {
     renderShell({ dawFileLinked: true, dawReachable: true, dawProjectMatches: true });
-    expect(screen.getByRole('button', { name: /REAPER project linked/ })).toBeTruthy();
+    expect(screen.getByRole('button', { name: /REAPER linked/ })).toBeTruthy();
     expect(screen.queryByText(/Wrong REAPER project open/)).toBeNull();
   });
 });
 
 // stage-navigation-and-page-replacement.prd.md Phase 1 (ADR 0407 item 3, Q5, Q6): the nav is grouped by production
-// stage, each existing page held under its current name; `/production` (PR #760) has no nav entry until Phase 2.
+// stage, each existing page held under its current name until the phase that replaces it; Phase 2 made Production the item at `/`.
 describe('AppShell grouped navigation (Phase 1)', () => {
   it('names every group (sidebar, rail and drawer all expose the same accessible name)', () => {
     renderShell();
@@ -102,14 +102,18 @@ describe('AppShell grouped navigation (Phase 1)', () => {
     }
   });
 
-  it('has no "Production" nav item (dropped from PR #760, D79): the page stays reachable, unlisted', () => {
-    renderShell();
-    expect(screen.queryAllByRole('button', { name: 'Production' })).toHaveLength(0);
+  // Phase 2: the Production home replaced Home at `/`, as the Production group's one item, active on `/` and nowhere else.
+  it("has Production, not Home, as the Production group's item, active at /", () => {
+    renderShell({ pathname: '/' });
+    expect(screen.queryAllByRole('button', { name: 'Home' })).toHaveLength(0);
+    const [item] = screen.getAllByRole('group', { name: 'Production' });
+    const button = within(item).getByRole('button', { name: 'Production' });
+    expect(button.getAttribute('aria-current')).toBe('page');
   });
 
-  it('lists every other page, with Proof in place of Proofing and Review (Phase 5) and Booth in place of the Teleprompter (Phase 4)', () => {
+  it('lists every other page, with Production in place of Home (Phase 2), Proof in place of Proofing and Review (Phase 5) and Booth in place of the Teleprompter (Phase 4)', () => {
     renderShell();
-    for (const name of ['Home', 'Script', 'Story Bible', 'Booth', 'Proof', 'Tracks', 'Delivery', 'Settings']) {
+    for (const name of ['Production', 'Script', 'Story Bible', 'Booth', 'Proof', 'Tracks', 'Delivery', 'Settings']) {
       expect(screen.getAllByRole('button', { name }).length).toBeGreaterThan(0);
     }
   });
@@ -152,5 +156,25 @@ describe('AppShell header history controls (Phase 1)', () => {
     renderShell({ history: { ...noHistory, back } });
     fireEvent.click(screen.getByRole('button', { name: 'Back' }));
     expect(back).not.toHaveBeenCalled();
+  });
+});
+
+// Phase 2 (the header, item 4): the running-timer chip sits right-aligned before the engine chip, and only while a timer runs.
+describe('AppShell running-timer chip (Phase 2)', () => {
+  it('shows no timer chip when no timer runs', () => {
+    renderShell();
+    expect(screen.queryByRole('timer')).toBeNull();
+  });
+
+  it('shows the running timer between the project name and the engine chip', () => {
+    const startedAt = new Date(Date.now() - 65_000).toISOString();
+    renderShell({ timer: { startedAt, chapterTitle: 'Chapter 7', stage: 'recording' } });
+    const chip = screen.getByRole('timer', { name: /^Timer running on Chapter 7, Recording: 0:01:0\d$/ });
+    expect(chip.textContent).toMatch(/^0:01:0\d· timer on Chapter 7$/);
+    const header = chip.closest('header')!;
+    const order = [within(header).getByText('Project'), chip, within(header).getByRole('button', { name: /REAPER linked/ })];
+    for (let i = 1; i < order.length; i += 1) {
+      expect(order[i - 1].compareDocumentPosition(order[i]) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    }
   });
 });

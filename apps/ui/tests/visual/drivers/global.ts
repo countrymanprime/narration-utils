@@ -3,7 +3,7 @@ import { type Driver, clickSettingsCategory, clickVisible, compareRun, confirmDi
 
 export const globalDrivers: Record<string, Driver> = {
   tooltip: async (page) => {
-    await page.getByLabel('More information').hover();
+    await page.getByLabel('About these figures').hover();
     // TooltipTarget shows its tooltip 1s after hover - wait for it, don't race it.
     await page.getByRole('tooltip').waitFor();
   },
@@ -44,7 +44,7 @@ export const globalDrivers: Record<string, Driver> = {
     await page.waitForFunction(() => document.documentElement.style.scrollbarGutter === '');
   },
   'shortcut-sheet': async (page) => {
-    await goToPage(page, 'Home');
+    await goToPage(page, 'Production');
     // The registry's own binding (commands.catalog.ts: `help.shortcuts`), by physical key rather than the
     // character it types (PRD Q1) - same as a real Shift+Slash keydown.
     await page.keyboard.press('Shift+Slash');
@@ -55,13 +55,13 @@ export const globalDrivers: Record<string, Driver> = {
     await clickVisible(page, 'tab', 'Global');
     await clickSettingsCategory(page, 'Appearance');
     await clickVisible(page, 'button', 'Light');
-    await goToPage(page, 'Home');
+    await goToPage(page, 'Production');
   },
   'theme-dark': async (page) => {
     await goToPage(page, 'Settings');
     await clickVisible(page, 'tab', 'Global');
     await clickSettingsCategory(page, 'Appearance');
     await clickVisible(page, 'button', 'Dark');
-    await goToPage(page, 'Home');
+    await goToPage(page, 'Production');
   },
 };

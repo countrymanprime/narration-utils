@@ -1,15 +1,18 @@
 // @vitest-environment jsdom
-// The stage suggestions on the Home estimate card, end to end against the mock host (chapter-stage-recommendations.prd.md Phase 5):
-// the rows, the summary chips, Confirm, Dismiss, Revert, a refused decision, Check now, the error state and the evidence view.
+// The stage suggestions on the Production board, end to end against the mock host (chapter-stage-recommendations.prd.md Phase 5): the
+// current-stage cells, the summary chips, Confirm, Dismiss, Revert, a refused decision, Check now, the error state and the evidence view.
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { MemoryRouter } from 'react-router-dom';
+import { useCallback, useState } from 'react';
 import { ApiProvider } from '../../api/ApiContext';
 import { createMockApi } from '../../api/mockApi';
 import { WIRE_CHAPTERS } from '../../api/mockFixtures';
+import type { ProductionOverview } from '../../api/contracts/production';
 import type { StagesSeed } from '../../api/stagesMock';
 import type { NarrationApi } from '../../types';
-import { AudiobookEstimatePanel } from '../home/AudiobookEstimatePanel';
+import type { Notify } from '../primitives/Toast';
+import { ChapterBoard } from '../production/ChapterBoard';
 
 afterEach(cleanup);
 
@@ -25,76 +28,96 @@ function mixedApi(overrides: Partial<NarrationApi> = {}) {
   return createMockApi(overrides, { stages: MIXED, coverage: { measured: { [c4]: 1 } } });
 }
 
-function renderPanel(api: NarrationApi, notify = vi.fn(), goToManuscript = vi.fn()) {
+// The board as the Production home holds it, reading the overview again whenever the board says something changed.
+function Board({ api, initial, ...props }: { api: NarrationApi; initial: ProductionOverview; notify: Notify; goToScript: () => void }) {
+  const [overview, setOverview] = useState(initial);
+  const changed = useCallback(() => void api.productionOverview().then(setOverview), [api]);
+  return <ChapterBoard overview={overview} {...props} goToProofChapter={() => {}} onChanged={changed} />;
+}
+
+async function renderBoard(api: NarrationApi, notify = vi.fn(), goToScript = vi.fn()) {
+  const overview = await api.productionOverview();
   render(
     <MemoryRouter>
       <ApiProvider api={api}>
-        <AudiobookEstimatePanel notify={notify} goToManuscript={goToManuscript} />
+        <Board api={api} initial={overview} notify={notify} goToScript={goToScript} />
       </ApiProvider>
     </MemoryRouter>,
   );
-  return { notify, goToManuscript };
+  await screen.findByRole('grid', { name: 'Chapter pipeline' });
+  return { notify, goToScript };
 }
 
-async function expandBreakdown() {
-  fireEvent.click(await screen.findByRole('button', { name: /Show per-chapter breakdown/ }));
-  await screen.findByText('Suggested: Editing');
-}
+/** One board cell, by the chapter's title and the column's name. */
+const cell = (title: string, column: string) => {
+  const grid = screen.getByRole('grid', { name: 'Chapter pipeline', hidden: true });
+  const columns = within(grid)
+    .getAllByRole('columnheader', { hidden: true })
+    .map((header) => header.textContent);
+  const row = within(grid)
+    .getByRole('rowheader', { name: new RegExp(`^${title} —`), hidden: true })
+    .closest('tr') as HTMLElement;
+  return within(row).getAllByRole('gridcell', { hidden: true })[columns.indexOf(column) - 1];
+};
 
-const row = (title: string) => screen.getByRole('link', { name: new RegExp(`^${title} —`) }).closest('tr') as HTMLElement;
+/** Opens a chapter's stage suggestion from its current stage cell. */
+const openStage = async (title: string, column: 'Record' | 'Edit' = 'Record') => {
+  fireEvent.click(cell(title, column));
+  return screen.findByRole('dialog', { name: new RegExp(`^Stage suggestion: ${title} —`) });
+};
 
-describe('stage suggestions on Home', () => {
-  it('summarizes suggestions and changed evidence on the collapsed card, and a chip opens the breakdown', async () => {
-    renderPanel(mixedApi());
+const statusOf = (view: HTMLElement, title: string) => (within(view).getByLabelText(`${title} status`) as HTMLSelectElement).value;
+
+describe('stage suggestions on the board', () => {
+  it('summarizes suggestions and changed evidence in chips, and a chip opens the first suggested chapter', async () => {
+    await renderBoard(mixedApi());
     const chip = await screen.findByRole('button', { name: '1 chapter has a suggestion' });
     expect(screen.getByRole('button', { name: '1 chapter’s evidence changed' })).toBeTruthy();
-    expect(screen.queryByRole('table')).toBeNull();
     fireEvent.click(chip);
-    expect(screen.getByRole('table')).toBeTruthy();
+    expect(await screen.findByRole('dialog', { name: 'Stage suggestion: Chapter 4 — The Rabbit Sends in a Little Bill' })).toBeTruthy();
   });
 
   it('shows no chip when nothing is suggested and no evidence changed', async () => {
-    renderPanel(createMockApi());
-    await screen.findByText('Audiobook estimate');
-    fireEvent.click(screen.getByRole('button', { name: /Show per-chapter breakdown/ }));
-    await waitFor(() => expect(within(row('Chapter 6')).getByText('Not ready for Editing')).toBeTruthy());
-    expect(screen.queryByRole('button', { name: /has a suggestion/ })).toBeNull();
+    await renderBoard(createMockApi());
+    expect(cell('Chapter 6', 'Record').textContent).toBe('Not ready');
+    await waitFor(() => expect(screen.queryByRole('button', { name: /has a suggestion/ })).toBeNull());
+    expect(screen.queryByRole('button', { name: /evidence changed/ })).toBeNull();
   });
 
-  it('gives every row its verdict next to the status select, which stays', async () => {
-    renderPanel(mixedApi());
-    await expandBreakdown();
-    expect(within(row('Chapter 4')).getByLabelText('Chapter 4 status')).toBeTruthy();
-    expect(within(row('Chapter 4')).getByRole('button', { name: 'Confirm Chapter 4 as Editing' })).toBeTruthy();
-    expect(within(row('Chapter 5')).getByText('Can’t tell yet: no track linked')).toBeTruthy();
-    expect(within(row('Chapter 6')).getByText('Not ready for Editing')).toBeTruthy();
-    expect(within(row('Chapter 7')).getByText('Evidence changed since you confirmed')).toBeTruthy();
-    expect(within(row('Chapter 8')).getByText('Confirmed from Recording')).toBeTruthy();
-    // A finalized chapter is not evaluated, and its row says nothing.
-    expect(within(row('Chapter 1')).queryByRole('button', { name: /Why/ })).toBeNull();
+  it("gives every chapter's current stage cell its verdict", async () => {
+    await renderBoard(mixedApi());
+    expect(cell('Chapter 4', 'Record').textContent).toBe('Ready');
+    expect(cell('Chapter 5', 'Record').textContent).toBe('Not checked');
+    expect(cell('Chapter 6', 'Record').textContent).toBe('Not ready');
+    await waitFor(() => expect(cell('Chapter 7', 'Edit').textContent).toBe('Evidence changed'));
+    expect(cell('Chapter 8', 'Record').textContent).toBe('Done');
+    // A finalized chapter is not evaluated: every stage it passed reads Done.
+    expect(['Record', 'Edit', 'Proof'].map((column) => cell('Chapter 1', column).textContent)).toEqual(['Done', 'Done', 'Done']);
   });
 
-  it('confirms a suggestion: the status moves, the row offers Revert, and Revert moves it back', async () => {
+  it('confirms a suggestion: the status moves, the view offers Revert, and Revert moves it back', async () => {
     const api = mixedApi();
-    const { notify } = renderPanel(api);
-    await expandBreakdown();
-    fireEvent.click(screen.getByRole('button', { name: 'Confirm Chapter 4 as Editing' }));
-    await waitFor(() => expect((screen.getByLabelText('Chapter 4 status') as HTMLSelectElement).value).toBe('editing'));
+    const { notify } = await renderBoard(api);
+    const view = await openStage('Chapter 4');
+    expect(statusOf(view, 'Chapter 4')).toBe('recording');
+    fireEvent.click(await within(view).findByRole('button', { name: 'Confirm Editing' }));
+    await waitFor(() => expect(statusOf(view, 'Chapter 4')).toBe('editing'));
     expect(notify).toHaveBeenCalledWith('Chapter 4 moved to Editing.');
     expect((await api.manuscriptChapters()).find((chapter) => chapter.id === c4)?.status).toBe('editing');
-    fireEvent.click(within(row('Chapter 4')).getByRole('button', { name: 'Revert to Recording: Chapter 4' }));
-    await waitFor(() => expect((screen.getByLabelText('Chapter 4 status') as HTMLSelectElement).value).toBe('recording'));
-    expect(within(row('Chapter 4')).getByText('Suggested: Editing')).toBeTruthy();
+    await waitFor(() => expect(cell('Chapter 4', 'Record').textContent).toBe('Done'));
+    const confirmed = await within(view).findByRole('region', { name: 'Confirmed' });
+    fireEvent.click(within(confirmed).getByRole('button', { name: 'Revert to Recording' }));
+    await waitFor(() => expect(statusOf(view, 'Chapter 4')).toBe('recording'));
+    await waitFor(() => expect(cell('Chapter 4', 'Record').textContent).toBe('Ready'));
   });
 
   it('dismisses a suggestion without touching the status', async () => {
-    const api = mixedApi();
-    renderPanel(api);
-    await expandBreakdown();
-    fireEvent.click(screen.getByRole('button', { name: 'Dismiss the suggestion for Chapter 4' }));
-    await waitFor(() => expect(within(row('Chapter 4')).getByText('Suggestion dismissed (Editing)')).toBeTruthy());
-    expect((screen.getByLabelText('Chapter 4 status') as HTMLSelectElement).value).toBe('recording');
-    expect(screen.queryByRole('button', { name: /has a suggestion/ })).toBeNull();
+    await renderBoard(mixedApi());
+    const view = await openStage('Chapter 4');
+    fireEvent.click(await within(view).findByRole('button', { name: 'Dismiss' }));
+    await waitFor(() => expect(screen.queryByRole('button', { name: /has a suggestion/, hidden: true })).toBeNull());
+    expect(statusOf(view, 'Chapter 4')).toBe('recording');
+    expect(within(view).queryByRole('button', { name: 'Dismiss' })).toBeNull();
   });
 
   it('says a refused decision and reads the suggestions again', async () => {
@@ -109,16 +132,17 @@ describe('stage suggestions on Home', () => {
         message: 'the evidence changed while you were looking; check again',
       }),
     };
-    const { notify } = renderPanel(api);
-    await expandBreakdown();
+    const { notify } = await renderBoard(api);
+    const view = await openStage('Chapter 4');
+    const confirm = await within(view).findByRole('button', { name: 'Confirm Editing' });
     const reads = stageRecommendations.mock.calls.length;
-    fireEvent.click(screen.getByRole('button', { name: 'Confirm Chapter 4 as Editing' }));
+    fireEvent.click(confirm);
     await waitFor(() => expect(notify).toHaveBeenCalledWith('The evidence changed while you were looking; check again.', 'error'));
     await waitFor(() => expect(stageRecommendations.mock.calls.length).toBe(reads + 1));
-    expect((screen.getByLabelText('Chapter 4 status') as HTMLSelectElement).value).toBe('recording');
+    expect(statusOf(view, 'Chapter 4')).toBe('recording');
   });
 
-  it('reads every row as "Couldn’t check" when the suggestions cannot be read, and Try again retries', async () => {
+  it('says the suggestions could not be read, in the chip, the line and the stage view, and Try again retries', async () => {
     let fail = true;
     const base = mixedApi();
     const api = {
@@ -128,26 +152,27 @@ describe('stage suggestions on Home', () => {
         return base.stageRecommendations();
       },
     };
-    renderPanel(api);
+    await renderBoard(api);
     expect(await screen.findByRole('button', { name: 'Couldn’t check stage suggestions' })).toBeTruthy();
-    fireEvent.click(screen.getByRole('button', { name: /Show per-chapter breakdown/ }));
     expect(screen.getByRole('alert').textContent).toBe('Couldn’t check stage suggestions: the saved REAPER project could not be read');
-    expect(within(row('Chapter 4')).getByText('Couldn’t check')).toBeTruthy();
+    const view = await openStage('Chapter 4');
+    expect(within(view).getByRole('alert').textContent).toMatch(/^Couldn’t check this chapter: the saved REAPER project could not be read/);
+    fireEvent.click(within(view).getByRole('button', { name: 'Close' }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
     fail = false;
     fireEvent.click(screen.getByRole('button', { name: 'Try again' }));
-    await waitFor(() => expect(within(row('Chapter 4')).getByText('Suggested: Editing')).toBeTruthy());
+    expect(await screen.findByRole('button', { name: '1 chapter has a suggestion' })).toBeTruthy();
   });
 
-  it('shows no Check now above the table after a successful read', async () => {
-    renderPanel(mixedApi());
-    await expandBreakdown();
-    await waitFor(() => expect(within(row('Chapter 4')).getByText('Suggested: Editing')).toBeTruthy());
+  it('shows no Check now or Try again above the board after a successful read', async () => {
+    await renderBoard(mixedApi());
+    await screen.findByRole('button', { name: '1 chapter has a suggestion' });
     expect(screen.queryByRole('button', { name: 'Check now' })).toBeNull();
     expect(screen.queryByRole('button', { name: 'Try again' })).toBeNull();
     expect(screen.queryByRole('alert')).toBeNull();
   });
 
-  it('says a row is being checked until the first read answers', async () => {
+  it('says a chapter is being checked until the first read answers', async () => {
     let answer: () => void = () => {};
     const base = mixedApi();
     const api = {
@@ -155,30 +180,43 @@ describe('stage suggestions on Home', () => {
       stageRecommendations: () =>
         new Promise<Awaited<ReturnType<typeof base.stageRecommendations>>>((resolve) => (answer = () => void base.stageRecommendations().then(resolve))),
     };
-    renderPanel(api);
-    fireEvent.click(await screen.findByRole('button', { name: /Show per-chapter breakdown/ }));
-    expect(within(row('Chapter 4')).getByText('Checking…')).toBeTruthy();
+    await renderBoard(api);
+    const view = await openStage('Chapter 4');
+    expect(within(view).getByRole('status').textContent).toBe('Checking…');
     answer();
-    await waitFor(() => expect(within(row('Chapter 4')).getByText('Suggested: Editing')).toBeTruthy());
+    expect(await within(view).findByText(/looks ready to move from Recording to Editing/)).toBeTruthy();
+  });
+
+  it('says so when the engine gives a chapter no stage suggestion', async () => {
+    const base = mixedApi();
+    const stageRecommendations = async () => {
+      const read = await base.stageRecommendations();
+      return { ...read, chapters: read.chapters.filter((chapter) => chapter.chapterId !== WIRE_CHAPTERS[10].id) };
+    };
+    await renderBoard({ ...base, stageRecommendations });
+    await screen.findByRole('button', { name: '1 chapter has a suggestion' });
+    const view = await openStage('Chapter 11');
+    expect(await within(view).findByText('No stage suggestion for this chapter.')).toBeTruthy();
   });
 
   it('reads the suggestions again after the status is changed by hand', async () => {
     const base = mixedApi();
     const stageRecommendations = vi.fn(base.stageRecommendations);
-    renderPanel({ ...base, stageRecommendations });
-    await expandBreakdown();
+    await renderBoard({ ...base, stageRecommendations });
+    const view = await openStage('Chapter 6');
+    await within(view).findByText('Not met.');
     const reads = stageRecommendations.mock.calls.length;
-    fireEvent.change(screen.getByLabelText('Chapter 6 status'), { target: { value: 'editing' } });
+    fireEvent.change(within(view).getByLabelText('Chapter 6 status'), { target: { value: 'editing' } });
     await waitFor(() => expect(stageRecommendations.mock.calls.length).toBe(reads + 1));
-    await waitFor(() => expect(within(row('Chapter 6')).queryByText('Not ready for Editing')).toBeNull());
+    await waitFor(() => expect(cell('Chapter 6', 'Record').textContent).toBe('Done'));
   });
 
   it('reads the suggestions and the chapter list again when the window regains focus (home-stage-check-line.prd.md Phase 2)', async () => {
     const base = mixedApi();
     const stageRecommendations = vi.fn(base.stageRecommendations);
     const manuscriptChapters = vi.fn(base.manuscriptChapters);
-    renderPanel({ ...base, stageRecommendations, manuscriptChapters });
-    await expandBreakdown();
+    await renderBoard({ ...base, stageRecommendations, manuscriptChapters });
+    await screen.findByRole('button', { name: '1 chapter has a suggestion' });
     const stageReads = stageRecommendations.mock.calls.length;
     const chapterReads = manuscriptChapters.mock.calls.length;
     fireEvent(window, new Event('focus'));
@@ -189,51 +227,54 @@ describe('stage suggestions on Home', () => {
 
 describe('the evidence view', () => {
   it('states what was checked, the evidence, the saved project it was read from, and confirms from there', async () => {
-    renderPanel(mixedApi());
-    await expandBreakdown();
-    fireEvent.click(screen.getByRole('button', { name: 'Why: Chapter 4' }));
-    const view = await screen.findByRole('dialog', { name: 'Stage suggestion: Chapter 4 — The Rabbit Sends in a Little Bill' });
-    expect(within(view).getByText(/looks ready to move from Recording to Editing/)).toBeTruthy();
+    await renderBoard(mixedApi());
+    const view = await openStage('Chapter 4');
+    expect(await within(view).findByText(/looks ready to move from Recording to Editing/)).toBeTruthy();
     const check = within(view).getByRole('region', { name: /Every paragraph of the chapter’s text is in the recording/ });
     expect(within(check).getByText('Met.')).toBeTruthy();
     expect(within(check).getByText('Text present:')).toBeTruthy();
     expect(within(check).getByText(/Based on the saved REAPER project, file modified/)).toBeTruthy();
     fireEvent.click(within(view).getByRole('button', { name: 'Confirm Editing' }));
-    await waitFor(() => expect((screen.getByLabelText('Chapter 4 status') as HTMLSelectElement).value).toBe('editing'));
+    await waitFor(() => expect(statusOf(view, 'Chapter 4')).toBe('editing'));
     expect(await within(view).findByRole('region', { name: 'Confirmed' })).toBeTruthy();
   });
 
   it('names the cause of an unknown check and opens the recording check that resolves it', async () => {
-    renderPanel(mixedApi());
-    await expandBreakdown();
-    fireEvent.click(screen.getByRole('button', { name: 'Why: Chapter 5' }));
-    const view = await screen.findByRole('dialog', { name: 'Stage suggestion: Chapter 5 — Advice from a Caterpillar' });
-    expect(within(view).getByText('Can’t tell yet.')).toBeTruthy();
+    await renderBoard(mixedApi());
+    const view = await openStage('Chapter 5');
+    expect(await within(view).findByText('Can’t tell yet.')).toBeTruthy();
     expect(within(view).getByText(/never counts as done/)).toBeTruthy();
     expect(within(view).getByText('Link the track in the recording check, or on the Tracks page.')).toBeTruthy();
     fireEvent.click(within(view).getByRole('button', { name: 'Open recording check' }));
     expect(await screen.findByRole('dialog', { name: 'Recording check: Chapter 5 — Advice from a Caterpillar' })).toBeTruthy();
   });
 
+  it('opens the recording and editing checks from the buttons above the verdict', async () => {
+    await renderBoard(mixedApi());
+    fireEvent.click(within(await openStage('Chapter 5')).getByRole('button', { name: 'Recording check' }));
+    expect(await screen.findByRole('dialog', { name: 'Recording check: Chapter 5 — Advice from a Caterpillar' })).toBeTruthy();
+    cleanup();
+    await renderBoard(mixedApi());
+    fireEvent.click(within(await openStage('Chapter 5')).getByRole('button', { name: 'Editing check' }));
+    expect(await screen.findByRole('dialog', { name: 'Editing check: Chapter 5 — Advice from a Caterpillar' })).toBeTruthy();
+  });
+
   it('links a paragraph the evidence names to the manuscript', async () => {
-    const { goToManuscript } = renderPanel(mixedApi());
-    await expandBreakdown();
-    fireEvent.click(screen.getByRole('button', { name: 'Why: Chapter 6' }));
-    const view = await screen.findByRole('dialog', { name: 'Stage suggestion: Chapter 6 — Pig and Pepper' });
-    expect(within(view).getByText('Not met.')).toBeTruthy();
+    const { goToScript } = await renderBoard(mixedApi());
+    const view = await openStage('Chapter 6');
+    expect(await within(view).findByText('Not met.')).toBeTruthy();
     fireEvent.click(within(view).getByRole('button', { name: /^Go to paragraph \d+$/ }));
-    expect(goToManuscript).toHaveBeenCalledWith(WIRE_CHAPTERS[5].id, expect.any(Number));
+    expect(goToScript).toHaveBeenCalledWith(WIRE_CHAPTERS[5].id, expect.any(Number));
   });
 
   it('shows the check that is no longer met after a confirmation, and reverts from there', async () => {
-    renderPanel(mixedApi());
-    await expandBreakdown();
-    fireEvent.click(screen.getByRole('button', { name: 'Why: Chapter 7' }));
-    const view = await screen.findByRole('dialog', { name: 'Stage suggestion: Chapter 7 — A Mad Tea-Party' });
-    const notice = within(view).getByRole('region', { name: 'Evidence changed since you confirmed' });
+    await renderBoard(mixedApi());
+    await waitFor(() => expect(cell('Chapter 7', 'Edit').textContent).toBe('Evidence changed'));
+    const view = await openStage('Chapter 7', 'Edit');
+    const notice = await within(view).findByRole('region', { name: 'Evidence changed since you confirmed' });
     expect(within(notice).getByText(/Nothing has changed/)).toBeTruthy();
     expect(within(view).getByText('What changed')).toBeTruthy();
     fireEvent.click(within(notice).getByRole('button', { name: 'Revert to Recording' }));
-    await waitFor(() => expect((screen.getByLabelText('Chapter 7 status') as HTMLSelectElement).value).toBe('recording'));
+    await waitFor(() => expect(statusOf(view, 'Chapter 7')).toBe('recording'));
   });
 });

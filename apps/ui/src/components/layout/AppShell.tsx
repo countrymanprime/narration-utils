@@ -22,12 +22,15 @@ import { TooltipTarget } from '../primitives/Tooltip';
 import { dawCapabilityGate } from '../../dawAvailability';
 import { DemoBanner } from './DemoBanner';
 import { EngineChip, type EngineState } from './EngineChip';
+import { TimerChip, type RunningTimer } from './TimerChip';
 
 // requiresManuscript/requiresDaw name what each nav item is gated on (PRD project-workspace-and-daw-link.prd.md, Open
 // Question W16): no item needs a linked DAW project file since Proof replaced Proofing (stage-navigation-and-page-replacement.prd.md
 // Phase 5: its compare run gates itself inside the chapter view) - Tracks reads the project's REAPER file directly through its own
 // discovery flow and is not gated here. The requiresDaw field stays for the next item that needs one.
-const HOME = { name: 'Home', path: '/', icon: faHouse, requiresManuscript: false, requiresDaw: false };
+// The Production stage's page (stage-navigation-and-page-replacement.prd.md Phase 2): the Production home at `/`, which replaced Home.
+// Not gated: with no manuscript it is where the import is.
+const PRODUCTION = { name: 'Production', path: '/', icon: faHouse, requiresManuscript: false, requiresDaw: false };
 const SCRIPT = { name: 'Script', path: '/script', icon: faFileLines, requiresManuscript: true, requiresDaw: false };
 const STORY_BIBLE = { name: 'Story Bible', path: '/story-bible', icon: faBookOpen, requiresManuscript: true, requiresDaw: false };
 // The Record stage's one page (stage-navigation-and-page-replacement.prd.md Phase 4): it replaced the Teleprompter page.
@@ -44,11 +47,10 @@ const DELIVERY = { name: 'Delivery', path: '/delivery', icon: faGaugeHigh, requi
 // Grouped by production stage (stage-navigation-and-page-replacement.prd.md Phase 1, ADR 0407 item 3): Production,
 // Prep, Record, Review, Finish, with Settings pinned at the foot (below, not a group). Phase 1 holds each existing
 // page under its current name in the group its job belongs to (D3/Q5): a page is renamed only in the phase that
-// ships its replacement. `/production` (PR #760) drops its nav entry here - the page and route stay reachable
-// directly, unlisted, until Phase 2 makes it the Production home at `/` (D79: never keep two versions of a nav).
-type NavItem = typeof HOME;
+// ships its replacement. Phase 2 made the Production page the home at `/` (`/production` redirects there).
+type NavItem = typeof PRODUCTION;
 const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
-  { label: 'Production', items: [HOME] },
+  { label: 'Production', items: [PRODUCTION] },
   { label: 'Prep', items: [SCRIPT, STORY_BIBLE] },
   { label: 'Record', items: [BOOTH] },
   { label: 'Review', items: [PROOF, TRACKS] },
@@ -67,6 +69,7 @@ export function AppShell({
   onLinkDawFile,
   linkingDawFile = false,
   engine = 'daw',
+  timer = null,
   history,
   children,
 }: {
@@ -84,6 +87,8 @@ export function AppShell({
   linkingDawFile?: boolean;
   /** Which engine the header's chip shows (stage-navigation-and-page-replacement.prd.md Phase 1, Q7); UI-only until native recording picks 'builtin'. */
   engine?: EngineState;
+  /** The production stage timer while it runs (Phase 2's timer chip); null hides the chip. */
+  timer?: RunningTimer | null;
   /** Page-level Back/Forward (app-navigation-and-zoom-controls.prd.md Phase 1): already guarded and gated by App.tsx. */
   history: { canGoBack: boolean; canGoForward: boolean; back: () => void; forward: () => void };
   children: ReactNode;
@@ -189,7 +194,7 @@ export function AppShell({
         </NavDrawer>
         {/* tabIndex -1: a dialog that closes with nothing to give focus back to (its opener is gone) sends focus into <main> (its first control, or <main> itself), not to <body>. */}
         <main tabIndex={-1} className="flex min-w-0 flex-1 flex-col overflow-hidden focus:outline-none">
-          <header className="flex h-14 flex-none items-center justify-between gap-3 border-b border-[var(--border)] bg-[var(--surface)] px-3 text-sm md:px-5">
+          <header className="flex h-14 flex-none items-center gap-3 border-b border-[var(--border)] bg-[var(--surface)] px-3 text-sm md:px-5">
             <IconButton label="Open navigation" onClick={() => setDrawerOpen(true)} className="hidden max-md:inline-flex">
               <FontAwesomeIcon icon={faBars} />
             </IconButton>
@@ -206,13 +211,15 @@ export function AppShell({
                 </IconButton>
               </TooltipTarget>
             </div>
-            <div className="flex min-w-0 items-center gap-2">
+            {/* Left-aligned after the history buttons, as the mocks draw it; it takes the free width and truncates first. */}
+            <div className="flex min-w-0 flex-1 items-center gap-2">
               {/* Below `md` the two new history buttons leave less room (Phase 1, Q10 A): the label and
                   folder icon drop first, and the project name is left to truncate on its own. */}
               <span className="section-label max-md:hidden">Project</span>
               <FontAwesomeIcon icon={faFolder} style={{ color: 'var(--non-text)' }} className="max-md:hidden" />
               <span className="truncate font-medium">{projectName}</span>
             </div>
+            {timer && <TimerChip timer={timer} />}
             <EngineChip
               engine={engine}
               dawFileLinked={dawFileLinked}

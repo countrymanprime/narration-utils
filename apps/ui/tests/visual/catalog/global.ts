@@ -3,13 +3,13 @@ import type { StateEntry } from '../lib/types';
 import { TOOLTIP_CLOSES_ON_RESIZE, FREEZES_THE_CLOCK } from './shared';
 
 export const globalStates: StateEntry[] = [
-  // Global overlays (captured once against Home, not per-page)
+  // Global overlays (captured once against the Production home, not per-page)
   {
     page: 'global',
     state: 'tooltip',
     description: 'Global tooltip overlay',
     pointer: 'keep',
-    sameAs: { of: 'home/info-tooltip', reason: 'The global overlay is captured by hovering the same Home info icon.' },
+    sameAs: { of: 'production/info-tooltip', reason: 'The global overlay is captured by hovering the same Production info icon.' },
     ...TOOLTIP_CLOSES_ON_RESIZE,
   },
   {
@@ -40,21 +40,24 @@ export const globalStates: StateEntry[] = [
       "Primary navigation - hovering an enabled icon in the icon-only rail shows that page's name; at desktop width there is no icon-only rail, so this is a no-op there",
     pointer: 'keep',
     sameAs: {
-      of: 'home/default',
+      of: 'production/no-data',
       reason: 'Only the icon-only rail shows tooltips; the full sidebar has nothing to hover.',
       viewports: ['desktop'],
     },
     ...TOOLTIP_CLOSES_ON_RESIZE,
   },
 
-  // Theme smoke check (Home only, not the full page/state matrix - see
+  // Theme smoke check (the Production home only, not the full page/state matrix - see
   // ADR 0010) - explicit Light/Dark selected via Settings > Appearance,
-  // captured on Home across every viewport.
+  // captured on the Production home across every viewport.
   {
     page: 'global',
     state: 'theme-light',
-    description: 'Home with Light explicitly selected in Settings > Appearance',
-    sameAs: { of: 'home/default', reason: 'Light is what Home already renders in by default, so explicitly selecting it changes nothing visible.' },
+    description: 'The Production home with Light explicitly selected in Settings > Appearance',
+    sameAs: {
+      of: 'production/no-data',
+      reason: 'Light is what the Production home already renders in by default, so explicitly selecting it changes nothing visible.',
+    },
   },
-  { page: 'global', state: 'theme-dark', description: 'Home with Dark explicitly selected in Settings > Appearance' },
+  { page: 'global', state: 'theme-dark', description: 'The Production home with Dark explicitly selected in Settings > Appearance' },
 ];

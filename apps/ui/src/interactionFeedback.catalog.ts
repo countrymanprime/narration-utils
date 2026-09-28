@@ -6,7 +6,6 @@
 // renumbers the ones after it in the same file; the test names the keys that changed.
 import type { FeedbackRow } from './interactionFeedback/row';
 import { appFeedback } from './interactionFeedback/app';
-import { homeFeedback } from './interactionFeedback/home';
 import { manuscriptFeedback } from './interactionFeedback/manuscript';
 import { projectFeedback } from './interactionFeedback/project';
 import { settingsFeedback } from './interactionFeedback/settings';
@@ -25,7 +24,6 @@ export type { FeedbackRow } from './interactionFeedback/row';
 // in two areas fails here rather than one silently replacing the other.
 const AREAS: Array<Record<string, FeedbackRow>> = [
   appFeedback,
-  homeFeedback,
   manuscriptFeedback,
   projectFeedback,
   settingsFeedback,
@@ -52,26 +50,27 @@ for (const rows of AREAS) {
  * The list may only shrink: a new one needs a reason a reviewer accepts, and a narrator's action never belongs here.
  */
 export const SILENT_CATCHES: Record<string, string> = {
-  'src/components/home/ChapterTrackPanel.tsx#1':
-    'onRemoveFromRecording already shows the failure (its own toast, in AudiobookEstimatePanel) before rethrowing; this catch only stops that rejection from going unhandled and skips closing the confirm, so the narrator can retry.',
+  'src/components/production/ChapterTrackPanel.tsx#1':
+    'onRemoveFromRecording already shows the failure (its own toast, in ChapterBoard) before rethrowing; this catch only stops that rejection from going unhandled and skips closing the confirm, so the narrator can retry.',
   'src/api/wailsClient.ts#1': 'The diagnostic report itself: a report that fails must not raise a second error over the one being reported.',
   'src/api/wailsClient.ts#2': 'The host binding is missing (not running inside the desktop app), so there is nothing to report to.',
-  'src/App.tsx#1': 'A diagnostic report while showing the startup error; it must not throw over it.',
-  'src/App.tsx#2': 'The window error handler reports a diagnostic; a failing report must not raise another window error.',
-  'src/App.tsx#3': 'The unhandled-rejection handler reports a diagnostic; a failing report must not raise another rejection.',
-  'src/App.tsx#4': "Cosmetic: the narrator's entity colours. The built-in colours stay if the settings cannot be read, and Settings reports the real error.",
+  'src/App.tsx#1':
+    "The header's running-timer chip (stage-navigation-and-page-replacement.prd.md Phase 2) on first load: an unreadable overview just leaves the chip hidden until the Production home reads one and says why there.",
+  'src/App.tsx#2': 'A diagnostic report while showing the startup error; it must not throw over it.',
+  'src/App.tsx#3': 'The window error handler reports a diagnostic; a failing report must not raise another window error.',
+  'src/App.tsx#4': 'The unhandled-rejection handler reports a diagnostic; a failing report must not raise another rejection.',
+  'src/App.tsx#5': "Cosmetic: the narrator's entity colours. The built-in colours stay if the settings cannot be read, and Settings reports the real error.",
   'src/hooks/useChapterSync.ts#1':
     "Seeds useChapterSync's state before the next chaptersync:state event; a failed seed just leaves the state undefined a moment longer.",
   'src/useCapability.ts#1':
     "Seeds useCapability's entry before the next daw_capabilities_changed event; a failed seed just leaves the capability unsupported/unavailable a moment longer, same as an unknown capability key.",
   // Phase 1 (app-navigation-and-zoom-controls.prd.md) added two more bare catches in this file (Back/Forward's own guard,
-  // and the nav's original one, now #6), renumbering what follows.
-  'src/App.tsx#5': 'Best effort recovery for a popstate the app did not start: a reset that fails leaves the finished results in place, which is harmless.',
-  'src/App.tsx#6':
+  // and the nav's original one, now #7), renumbering what follows; stage navigation Phase 2's timer read is #1.
+  'src/App.tsx#6': 'Best effort recovery for a popstate the app did not start: a reset that fails leaves the finished results in place, which is harmless.',
+  'src/App.tsx#7':
     'Best effort when leaving a Proof chapter view with a compare run through the nav: a reset that fails leaves the finished results in place, which is harmless.',
-  'src/App.tsx#7': 'Best effort when leaving a Proof chapter view with a compare run through guarded Back/Forward: same as the nav, harmless either way.',
-  'src/components/home/Home.tsx#1': 'Only decides whether the "entries need review" nudge shows; without it the nudge is absent.',
-  'src/components/home/Home.tsx#2':
+  'src/App.tsx#8': 'Best effort when leaving a Proof chapter view with a compare run through guarded Back/Forward: same as the nav, harmless either way.',
+  'src/components/production/ManuscriptImport.tsx#1':
     'Only pre-fills the "Build the Story Bible after import" checkbox from Settings; it keeps its on-by-default (D8) local state without it, and the narrator can still change it per import.',
   'src/components/script/ScriptPage.tsx#1':
     'Renders the Opening credits pseudo-entry preview; a failed render just leaves that entry showing "Nothing to preview yet." rather than a toast over the manuscript itself.',
@@ -120,9 +119,9 @@ export const SILENT_CATCHES: Record<string, string> = {
     'Hydrates whatever launch was already in flight when the dialog reopened; the narrator can press Open either way, and a launch shows its own failure inline.',
   'src/components/tracks/RenderConfigDialog.tsx#1':
     'Hydrates whatever configure run was already in flight, then offers a suggested output folder when none was configured yet; the narrator can still type a folder and press Configure render either way.',
-  'src/components/home/RecordingCheckReport.tsx#1':
+  'src/components/production/RecordingCheckReport.tsx#1':
     "A background count of the chapter's other pickups (take review, RS4 A); a failure just leaves that line out of the Pickups list, with the check's own gaps unaffected.",
-  'src/components/home/RecordingCheckReport.tsx#2':
+  'src/components/production/RecordingCheckReport.tsx#2':
     "The pickup list's own background refresh (RS5 B), mirroring PickupsDialog.tsx#1; a failure leaves the count at whatever the subscription last reported, and the narrator can still reach the real count on Tracks.",
   'src/input/keymap.ts#1':
     "keymapFromBindings (input-commands-and-pedals.prd.md Phase 6): one stored gesture this build cannot parse (a hand-edited settings file, or an older/newer app's own bug) falls back to that one command's catalog default; not a narrator action, and not swallowed silently since the Keyboard & pedals panel still shows every other override normally.",

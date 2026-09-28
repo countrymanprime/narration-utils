@@ -4,7 +4,7 @@ import { chapterName, context } from '../../chapterName';
 import type { ManuscriptChapter, StageChapterRecommendation, StageEvidence as Evidence, StageSignal } from '../../types';
 import { Button } from '../primitives/Button';
 import { SlideOver } from '../primitives/SlideOver';
-import { formatWhen, paragraphRefs } from '../home/recordingCheckText';
+import { formatWhen, paragraphRefs } from '../production/recordingCheckText';
 import type { StageDecision, StagesState } from './useStageRecommendations';
 import {
   SIGNAL_STATE_LABEL,
@@ -36,6 +36,9 @@ type Props = {
   onOpenEditingCheck: () => void;
   /** Opens the manuscript at a paragraph (its index in the whole manuscript). */
   goToParagraph: (index: number) => void;
+  /** Shown first, above the verdict: the Production board's status override and its links to the chapter's checks
+   * (stage-navigation-and-page-replacement.prd.md Phase 2), which Home's table row used to carry. */
+  status?: ReactNode;
 };
 
 /**
@@ -46,9 +49,10 @@ type Props = {
  * the evidence again; nothing here starts an analysis (Q12).
  */
 export function StageEvidence(props: Props) {
-  const { open, chapter, recommendation, onClose } = props;
+  const { open, chapter, recommendation, onClose, status } = props;
   return (
     <SlideOver open={open} title={chapterName(chapter ?? { title: recommendation?.title ?? '' }, context('Stage suggestion'))} onClose={onClose}>
+      {status && <div className="mb-4 border-b border-[var(--border)] pb-4">{status}</div>}
       {recommendation && chapter ? <EvidenceBody {...props} chapter={chapter} recommendation={recommendation} /> : <Unread {...props} />}
     </SlideOver>
   );
@@ -56,6 +60,8 @@ export function StageEvidence(props: Props) {
 
 function Unread({ phase, error, onCheckNow }: Props) {
   if (phase === 'loading') return <p role="status">Checking…</p>;
+  // Read, and this chapter has no suggestion (it is finalized, or not narration the stage engine assesses).
+  if (phase === 'ready') return <p style={{ color: 'var(--text-muted)' }}>No stage suggestion for this chapter.</p>;
   return (
     <div role="alert" className="space-y-3 text-sm">
       <p style={{ color: 'var(--danger-text)' }}>Couldn’t check this chapter{error ? `: ${error}` : '.'}</p>

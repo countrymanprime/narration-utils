@@ -11,7 +11,7 @@ import { SlideOver } from '../primitives/SlideOver';
 import type { Notify } from '../primitives/Toast';
 import { MappingConfirm } from '../mapping/MappingConfirm';
 import { useReaperStatus } from '../proof/useReaperStatus';
-import { formatWhen } from '../home/recordingCheckText';
+import { formatWhen } from '../production/recordingCheckText';
 import { formatAge, SIGNAL_STATE_LABEL } from '../stages/stageText';
 import { CleanupAction } from './CleanupAction';
 import { EditingCandidateRow } from './EditingCandidateRow';
@@ -31,7 +31,7 @@ const MAPPING_REFUSALS = new Set<EditingRefusalReason>(['unmapped', 'multiple_tr
 const POLL_MS = 500;
 
 /** The chapter-track link, confirmed right here (analysis evidence ledger PRD, Phase 7): the same prompt the
- * Tracks page and Home's recording check show. */
+ * Tracks page and the recording check show. */
 function MappingFix({ chapter, onLinked }: { chapter: ManuscriptChapter; onLinked: () => void }) {
   const api = useApi();
   const [tracks, setTracks] = useState<Track[]>();

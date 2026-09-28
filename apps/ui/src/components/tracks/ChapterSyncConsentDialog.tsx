@@ -71,7 +71,7 @@ export function ChapterSyncConsentDialog({
                 ))}
               </ul>
               <p className="mt-1" style={{ color: 'var(--text-muted)' }}>
-                You choose these after syncing, on Tracks or from the chapter&rsquo;s track button on Home.
+                You choose these after syncing, on Tracks or from the chapter&rsquo;s Recorded cell on Production.
               </p>
             </section>
           )}

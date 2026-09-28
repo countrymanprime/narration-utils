@@ -71,11 +71,10 @@ export async function clickVisible(page: Page, role: Parameters<Page['getByRole'
     .click();
 }
 
-type AppPage = 'Home' | 'Production' | 'Script' | 'Story Bible' | 'Booth' | 'Tracks' | 'Proof' | 'Delivery' | 'Settings';
+type AppPage = 'Production' | 'Script' | 'Story Bible' | 'Booth' | 'Tracks' | 'Proof' | 'Delivery' | 'Settings';
 
-// Every page opens with the shared `Heading` primitive, an <h1>: it is what proves the page has arrived. Home's is "Welcome back".
+// Every page opens with the shared `Heading` primitive, an <h1>: it is what proves the page has arrived.
 export const PAGE_HEADING: Record<AppPage, string> = {
-  Home: 'Welcome back',
   Production: 'Production',
   Script: 'Script',
   'Story Bible': 'Story Bible',
@@ -91,7 +90,8 @@ export const PAGE_HEADING: Record<AppPage, string> = {
 // so a page whose main content is the same in every state also gets a wait for that content. Pages left out (Story Bible,
 // Tracks, Settings) show different content per state, so their drivers wait for their own.
 const PAGE_CONTENT: Partial<Record<AppPage, (page: Page) => Locator>> = {
-  Home: (page) => page.getByRole('button', { name: /Show per-chapter breakdown/ }),
+  // The chapter pipeline is drawn once the production overview has answered.
+  Production: (page) => page.getByRole('grid', { name: 'Chapter pipeline' }),
   Script: (page) => page.locator('[data-paragraph-text]'),
   // The chapter's text, whatever the session is doing (credits states pick theirs afterwards).
   Booth: (page) => page.getByRole('region', { name: 'Chapter text' }),
@@ -227,11 +227,10 @@ export async function openDelivery(page: Page, query = ''): Promise<void> {
   await page.getByRole('button', { name: /^Rules and their sources/ }).waitFor();
 }
 
-// Opens Production, with a `?mockProduction=` seed when given, once its board is drawn. By direct navigation, not
-// through the nav (stage-navigation-and-page-replacement.prd.md Phase 1, D79): PR #760's `/production` nav entry is
-// dropped in this phase, so the route is reachable but unlisted until Phase 2 makes it the Production home at `/`.
+// Opens the Production home, with a `?mockProduction=` seed when given, once its board is drawn (stage-navigation-and-page-replacement.prd.md
+// Phase 2: it is the app's page at `/`).
 export async function openProduction(page: Page, query = ''): Promise<void> {
-  await page.goto(`/production${query}`);
+  await page.goto(`/${query}`);
   await settlePage(page);
   await page.getByRole('heading', { level: 1, name: PAGE_HEADING.Production, exact: true }).waitFor();
   await page.getByRole('grid', { name: 'Chapter pipeline' }).waitFor();
@@ -334,10 +333,43 @@ export async function showReaperControls(page: Page, shown: Locator): Promise<vo
   await reaperControlsGroup(page).scrollIntoViewIfNeeded();
 }
 
-// Home's chapter breakdown control exists only once the chapter list has loaded, so it is the proof that the whole page
-// (not just its heading) is there before a state that adds nothing of its own is photographed.
-export async function homeLoaded(page: Page): Promise<void> {
-  await PAGE_CONTENT.Home?.(page).first().waitFor();
+// The Production home's board exists only once its overview has been read, so it is the proof that the whole page (not just its
+// heading) is there before a state that adds nothing of its own is photographed.
+export async function productionLoaded(page: Page): Promise<void> {
+  await PAGE_CONTENT.Production?.(page).first().waitFor();
+}
+
+// The board's columns, in order (components/production/productionFormat.ts BOARD_COLUMNS).
+const BOARD_COLUMN = { Recorded: 0, Record: 1, Edit: 2, Proof: 3, Prep: 4, Delivery: 5 } as const;
+// A current-stage cell's words (productionFormat.ts boardCell): the one cell of a row that opens its stage suggestion.
+const CURRENT_STAGE = /^(Ready|Not ready|Not checked|In progress|Evidence changed|Not started|Checking.*)$/;
+
+// A chapter's row on the Production board. A prefix match on the row header ("Chapter 1" and "Chapter 1 — Down the Rabbit-Hole"),
+// with a word boundary so "Chapter 1" never matches "Chapter 10".
+export function boardRow(page: Page, chapter: string): Locator {
+  return page
+    .getByRole('grid', { name: 'Chapter pipeline' })
+    .getByRole('row')
+    .filter({ has: page.getByRole('rowheader', { name: new RegExp(`^${chapter}\\b`) }) });
+}
+
+// Clicks one of a chapter's board cells by its column's name.
+export async function clickBoardCell(page: Page, chapter: string, column: keyof typeof BOARD_COLUMN): Promise<void> {
+  await boardRow(page, chapter).getByRole('gridcell').nth(BOARD_COLUMN[column]).click();
+}
+
+// Opens a chapter's stage slide-over from its current-stage cell (stage-navigation-and-page-replacement.prd.md Phase 2), whichever
+// column that is for the chapter's status. Returns the slide-over.
+export async function openStageSlideOver(page: Page, chapter: string) {
+  const cells = boardRow(page, chapter).getByRole('gridcell');
+  const count = await cells.count();
+  for (let index = BOARD_COLUMN.Record; index < count; index += 1) {
+    if (CURRENT_STAGE.test(((await cells.nth(index).textContent()) ?? '').trim())) {
+      await cells.nth(index).click();
+      return page.getByRole('dialog', { name: new RegExp(`^Stage suggestion: ${chapter}\\b`) });
+    }
+  }
+  throw new Error(`no current-stage cell on the board for ${chapter}`);
 }
 
 // ConfirmDialog is an alertdialog (Base UI AlertDialog, ADR 0048) and every other dialog is a role="dialog". Wait for
@@ -360,79 +392,67 @@ export async function openImportReview(page: Page, preview?: 'markdown' | 'repai
   return dialog;
 }
 
-// Opens a chapter's recording check from the per-chapter breakdown's check-status cell (docs/utilities/recording-coverage.md, ADR 0130;
-// daw-chapter-track-auto-sync.prd.md Phase 6, which retired the row's own Check button), optionally booted with a mock seed
-// (main.tsx), and waits until the stored result has been read into the slide-over. Returns the slide-over.
+// Opens a chapter's recording check from its Record cell on the Production board (docs/utilities/recording-coverage.md, ADR 0130;
+// stage-navigation-and-page-replacement.prd.md Phase 2), optionally booted with a mock seed (main.tsx), and waits until the stored
+// result has been read into the slide-over. A chapter still recording has Record as its current stage, whose cell opens the stage
+// slide-over instead: its "Recording check" button is the way on. Returns the slide-over.
 export async function openRecordingCheck(page: Page, chapter: string, seed?: string) {
   if (seed) {
     await page.goto(`/?${seed}`);
     await settlePage(page);
   }
-  await homeLoaded(page);
-  await clickVisible(page, 'button', /Show per-chapter breakdown/);
-  // A prefix match: the button's own accessible name also carries its freshness or link state, which differs per row and mock seed.
-  await clickVisible(page, 'button', new RegExp(`^Recording check for ${chapter}:`));
+  await productionLoaded(page);
+  await clickBoardCell(page, chapter, 'Record');
+  const stage = page.getByRole('dialog', { name: new RegExp(`^Stage suggestion: ${chapter}\\b`) });
   // A prefix match: the panel's full name also carries the chapter's subtitle when it has one
   // (chapter-title-display-consistency.prd.md Q6), which this helper's callers do not all pass.
   const dialog = page.getByRole('dialog', { name: new RegExp(`^Recording check: ${chapter}\\b`) });
+  await stage.or(dialog).first().waitFor();
+  if (await stage.isVisible()) await stage.getByRole('button', { name: 'Recording check', exact: true }).click();
   await dialog.getByRole('button', { name: /^Check (recording|again)$/ }).waitFor();
   await dialog.getByText('Reading the last check…').waitFor({ state: 'detached' });
   return dialog;
 }
 
-// Opens a chapter's track slide-over from the per-chapter breakdown (chapter-track-link-control.prd.md Phase 2),
-// booted with a mock seed (main.tsx's `?mockChapterLink=`), and waits for its saved-project facts to have loaded.
-// Returns the dialog.
+// Opens a chapter's track slide-over from its Recorded cell (chapter-track-link-control.prd.md Phase 2), booted with a mock seed
+// (main.tsx's `?mockChapterLink=`), and waits for its saved-project facts to have loaded. Returns the dialog.
 export async function openTrackPanel(page: Page, chapter: string, seed: string) {
   await page.goto(`/?${seed}`);
   await settlePage(page);
-  await homeLoaded(page);
-  await clickVisible(page, 'button', /Show per-chapter breakdown/);
-  await clickVisible(page, 'button', new RegExp(`^Track for ${chapter}:`));
+  await productionLoaded(page);
+  await clickBoardCell(page, chapter, 'Recorded');
   const dialog = page.getByRole('dialog', { name: `Track: ${chapter}` });
   await dialog.getByText('Reading the saved project…').waitFor({ state: 'detached' });
   return dialog;
 }
 
-// Home booted with a stage suggestions seed (`?mockStages=`, main.tsx), once the first read has answered: the chips on the collapsed
-// card (`mixed`) or its error chip (`error`) are on screen (chapter-stage-recommendations.prd.md Phase 5).
-export async function openStageSuggestions(page: Page, seed: 'mixed' | 'error', expand = true) {
+// The Production home booted with a stage suggestions seed (`?mockStages=`, main.tsx), once the first read has answered: the chips
+// above the board (`mixed`) or its error chip (`error`) are on screen (chapter-stage-recommendations.prd.md Phase 5).
+export async function openStageSuggestions(page: Page, seed: 'mixed' | 'error') {
   await page.goto(`/?mockStages=${seed}`);
   await settlePage(page);
-  await homeLoaded(page);
+  await productionLoaded(page);
   await page.getByRole('button', { name: seed === 'mixed' ? '1 chapter has a suggestion' : 'Couldn’t check stage suggestions' }).waitFor();
-  if (expand) await clickVisible(page, 'button', /Show per-chapter breakdown/);
 }
 
-// Scrolls the breakdown so Chapter 4, the first chapter with a suggestion, is at the top: the rows below the fold are the state.
-export async function scrollToStageRows(page: Page) {
-  const row = page.getByRole('row').filter({ has: page.getByRole('link', { name: /^Chapter 4 —/ }) });
-  await row.evaluate((element) => element.scrollIntoView({ block: 'start' }));
-  await settlePage(page);
-}
-
-// A chapter's evidence view from its row's Why, on the `mixed` seed. Returns the slide-over.
+// A chapter's stage slide-over on the `mixed` seed. Returns the slide-over.
 export async function openStageEvidence(page: Page, chapter: string) {
   await openStageSuggestions(page, 'mixed');
-  await clickVisible(page, 'button', `Why: ${chapter}`);
-  // A prefix match, for the same reason as openRecordingCheck's above.
-  const view = page.getByRole('dialog', { name: new RegExp(`^Stage suggestion: ${chapter}\\b`) });
+  const view = await openStageSlideOver(page, chapter);
   await view.getByRole('button', { name: 'Check now' }).waitFor();
   return view;
 }
 
-// Opens Chapter 7's editing check panel from its evidence popover's "Open editing check" (editing-readiness-analysis.prd.md
-// Phase 7), booted with a mock seed (`?mockEditingSignal=`/`?mockEditing=`/`?mockEditingCandidates=1`, main.tsx). Unlike
-// openStageEvidence this never uses the `mixed` seed: Chapter 7 is `mixed`'s own "evidence changed" demo, whose evidence
-// view shows the recording contradiction's signals, not editing's - a query-string seed instead gives Chapter 7 (already
-// in Editing status in the fixture) a plain, uncontested editing signal. Returns the panel.
-export async function openEditingCheckFromHome(page: Page, query: string) {
+// Opens Chapter 7's editing check panel from its stage slide-over's "Editing check" (editing-readiness-analysis.prd.md Phase 7),
+// booted with a mock seed (`?mockEditingSignal=`/`?mockEditing=`/`?mockEditingCandidates=1`, main.tsx). Unlike openStageEvidence
+// this never uses the `mixed` seed: Chapter 7 is `mixed`'s own "evidence changed" demo - a query-string seed instead gives
+// Chapter 7 (already in Editing status in the fixture) a plain, uncontested editing signal. Returns the panel.
+export async function openEditingCheck(page: Page, query: string) {
   await page.goto(`/?${query}`);
   await settlePage(page);
-  await homeLoaded(page);
-  await clickVisible(page, 'button', /Show per-chapter breakdown/);
-  await clickVisible(page, 'button', /^Why: Chapter 7/);
-  await clickVisible(page, 'button', 'Open editing check');
+  await productionLoaded(page);
+  const stage = await openStageSlideOver(page, 'Chapter 7');
+  await stage.getByRole('button', { name: 'Editing check', exact: true }).click();
   const panel = page.getByRole('dialog', { name: /^Editing check: Chapter 7\b/ });
   await panel.getByRole('button', { name: /^Check editing|Check again$/ }).waitFor();
   return panel;

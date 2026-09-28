@@ -7,8 +7,8 @@
     "caption": "No project open yet - recent projects, browse, and create actions"
   },
   {
-    "page": "home",
-    "state": "default",
+    "page": "production",
+    "state": "no-data",
     "viewport": "desktop",
     "docName": "nav-sidebar-desktop",
     "caption": "Primary navigation - the persistent sidebar shown at desktop widths"
@@ -21,11 +21,11 @@
     "caption": "Primary navigation - the icon-only rail shows a page's name when you hover its icon"
   },
   {
-    "page": "home",
-    "state": "default",
+    "page": "production",
+    "state": "on-pace",
     "viewport": "desktop",
-    "docName": "home-default",
-    "caption": "Home - manuscript loaded, chapter table collapsed"
+    "docName": "production-home",
+    "caption": "Production - the figures, the chapter pipeline and Next up, with a stage timer running in the header"
   },
   {
     "page": "script",
@@ -98,46 +98,39 @@
     "caption": "Script - Add Note dialog open after selecting text"
   },
   {
-    "page": "home",
-    "state": "chapter-table-expanded",
-    "viewport": "desktop",
-    "docName": "home-chapter-table-expanded",
-    "caption": "Home - per-chapter breakdown expanded"
-  },
-  {
-    "page": "home",
+    "page": "production",
     "state": "recording-check-incomplete",
     "viewport": "desktop",
-    "docName": "home-recording-check",
-    "caption": "Home - a chapter's recording check with text still to record: the count, the missing region and the short paragraphs"
+    "docName": "production-recording-check",
+    "caption": "Production - a chapter's recording check, opened from its Record cell, with text still to record"
   },
   {
-    "page": "home",
-    "state": "stage-suggestions",
+    "page": "production",
+    "state": "stage-summary-chips",
     "viewport": "desktop",
-    "docName": "home-stage-suggestions",
-    "caption": "Home - stage suggestions under each chapter's status: suggested with Confirm, can't tell yet, not ready, evidence changed since you confirmed, and confirmed"
+    "docName": "production-stage-suggestions",
+    "caption": "Production - the stage suggestion chips above the board, and the current-stage cells that read Ready and Evidence changed"
   },
   {
-    "page": "home",
+    "page": "production",
     "state": "stage-evidence-recommended",
     "viewport": "desktop",
-    "docName": "home-stage-evidence",
-    "caption": "Home - Why: the evidence behind a suggestion, the saved project it was read from and how old that is, with Confirm and Dismiss"
+    "docName": "production-stage-evidence",
+    "caption": "Production - a chapter's stage slide-over: its status, its checks, and the evidence behind a suggestion with Confirm and Dismiss"
   },
   {
-    "page": "home",
+    "page": "production",
     "state": "stage-evidence-changed",
     "viewport": "desktop",
-    "docName": "home-stage-evidence-changed",
-    "caption": "Home - evidence changed since you confirmed: the check that is no longer met and Revert; nothing moved on its own"
+    "docName": "production-stage-evidence-changed",
+    "caption": "Production - evidence changed since you confirmed: the check that is no longer met and Revert; nothing moved on its own"
   },
   {
-    "page": "home",
+    "page": "production",
     "state": "import-confirm",
     "viewport": "desktop",
-    "docName": "home-import-confirm",
-    "caption": "Home - import manuscript confirm dialog with format/paragraph/chapter preview"
+    "docName": "production-import-confirm",
+    "caption": "Production - import manuscript confirm dialog with format/paragraph/chapter preview"
   },
   {
     "page": "proof-chapter",
@@ -357,18 +350,18 @@
     "caption": "Home with Dark theme selected"
   },
   {
-    "page": "home",
+    "page": "production",
     "state": "manuscript-candidate-offer",
     "viewport": "desktop",
-    "docName": "home-manuscript-offer",
-    "caption": "Home - offer to import a manuscript file found in the project folder"
+    "docName": "production-manuscript-offer",
+    "caption": "Production - offer to import a manuscript file found in the project folder"
   },
   {
-    "page": "home",
+    "page": "production",
     "state": "import-activity-log",
     "viewport": "desktop",
-    "docName": "home-import-activity",
-    "caption": "Home - a finished manuscript import with its real, step-by-step activity log"
+    "docName": "production-import-activity",
+    "caption": "Production - a finished manuscript import with its real, step-by-step activity log"
   },
   {
     "page": "script",
