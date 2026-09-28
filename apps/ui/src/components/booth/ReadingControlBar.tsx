@@ -232,12 +232,14 @@ export function ReadingControlBar({ session: t, follow, startPoint, chapterId, c
         <TooltipTarget text={t.active ? playPauseLabel : t.startReason}>
           <ToolbarButton
             render={
-              <Button aria-label={playPauseLabel} aria-pressed={listening} onClick={onPlayPause} disabled={playPauseDisabled}>
+              <Button aria-label={playPauseLabel} aria-pressed={listening} variant="secondary" onClick={onPlayPause} disabled={playPauseDisabled}>
                 {/* The real, already-wired Space shortcut (`useCommand('reading.toggle', ...)` above), shown the way mock
                     03's command bar shows every action: a key cap beside its label (Phase 10's `KeyHint`, 23 px in the
                     command bar per `Kbd.tsx`). No other row here gets one - BO10's Punch & roll/Back one sentence/Flag/Mark
                     pickup keys have no bound command yet (booth-actions-enablement/input-commands), so inventing caps for
-                    them would show a shortcut that does not exist. */}
+                    them would show a shortcut that does not exist.
+                    `secondary`, not the default `primary`: `KeyHint`'s action label is a fixed `--text-muted`, which does
+                    not clear contrast on `--accent`'s fill (caught by the visual suite's axe pass, ADR 0059). */}
                 <KeyHint keys={['Space']} action={playPauseLabel} size="md" />
               </Button>
             }
