@@ -592,8 +592,10 @@ export async function openLinkedProofChapter(page: Page, chapterTitle: string): 
   await goToPage(page, 'Tracks');
   const table = page.getByRole('table', { name: 'Chapter links' });
   await table.scrollIntoViewIfNeeded();
-  // An exact-name cell match, not `hasText` (a substring): "Chapter 1" is also a substring of "Chapter 10"-"Chapter 12".
-  const row = table.locator('tbody tr').filter({ has: page.getByRole('cell', { name: chapterTitle, exact: true }) });
+  // An anchored-name cell match, not `hasText` (a substring): "Chapter 1" is also a substring of "Chapter 10"-"Chapter 12".
+  // The cell's full name may carry the chapter's subtitle after " — " (chapter-title-display-consistency.prd.md Q6), so
+  // the match allows that suffix rather than requiring an exact "Chapter 1".
+  const row = table.locator('tbody tr').filter({ has: page.getByRole('cell', { name: new RegExp(`^${chapterTitle}( — |$)`) }) });
   await row.getByRole('combobox').selectOption({ index: 0 });
   await row.getByRole('button', { name: 'Confirm' }).click();
   await row.getByRole('link', { name: 'Open workspace' }).click();

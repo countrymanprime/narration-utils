@@ -341,7 +341,7 @@ function ChapterView({ chapterId, notify, transcript, dawFileLinked, goToManuscr
           </div>
         )}
         <CompareRun
-          chapterTitle={chapter.title}
+          chapterTitle={chapterName(chapter, 'short')}
           state={transcript}
           notify={notify}
           dawFileLinked={dawFileLinked}

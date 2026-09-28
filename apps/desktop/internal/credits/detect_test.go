@@ -103,6 +103,77 @@ func TestDetectFallsBackToFrontMatterWhenTheEPUBHasNoMetadata(t *testing.T) {
 	}
 }
 
+// manuscriptWithDocxSourceMetadata builds a manuscript.json whose front matter guesser would find a different Title
+// and Author than the sourceMetadata block (a DOCX Title-styled paragraph, Phase 4), so a test can tell which source
+// Detect actually used.
+func manuscriptWithDocxSourceMetadata() map[string]any {
+	return map[string]any{
+		"schemaVersion":  1,
+		"importer":       map[string]any{"format": "docx"},
+		"source":         map[string]any{"fileName": "book.docx", "storedPath": ""},
+		"sourceMetadata": map[string]any{"title": "After the Applause", "subtitle": "A Novel"},
+		"chapters": []map[string]any{
+			{"id": "c-0001", "title": "AFTER THE APPLAUSE", "contentKind": "narration"},
+		},
+		"paragraphs": []map[string]any{
+			{"id": "p-000001", "chapterId": "c-0001", "text": "It began.", "index": 0},
+		},
+	}
+}
+
+func TestDetectPrefersSourceMetadataOverTheFrontMatterGuess(t *testing.T) {
+	project := t.TempDir()
+	writeManuscript(t, project, manuscriptWithDocxSourceMetadata())
+
+	byToken := map[string]Candidate{}
+	for _, candidate := range Detect(project) {
+		byToken[candidate.Token] = candidate
+	}
+	if got := byToken[TokenTitle]; got.Value != "After the Applause" || got.Confidence != ConfidenceHigh {
+		t.Fatalf("Title = %+v, want the document's own Title style to win at high confidence", got)
+	}
+	if got := byToken[TokenSubtitle]; got.Value != "A Novel" || got.Confidence != ConfidenceHigh {
+		t.Fatalf("Subtitle = %+v, want the document's own Subtitle style", got)
+	}
+}
+
+// TestDetectSourceMetadataBeatsDocxCoreProperties covers the CS6 extension (Phase 4): a Title-styled paragraph is
+// structure the narrator can see and edit, unlike docProps/core.xml (often an editor's or typesetter's name), so it
+// must win even when the document's own properties disagree.
+func TestDetectSourceMetadataBeatsDocxCoreProperties(t *testing.T) {
+	project := t.TempDir()
+	stored := realStoredPath("book.docx")
+	doc := manuscriptWithDocxSourceMetadata()
+	doc["source"] = map[string]any{"fileName": "book.docx", "storedPath": stored}
+	writeManuscript(t, project, doc)
+	writeMinimalDocxWithCoreProps(t, filepath.Join(project, stored),
+		`<?xml version="1.0"?><cp:coreProperties xmlns:cp="http://schemas.openxmlformats.org/package/2006/metadata/core-properties" xmlns:dc="http://purl.org/dc/elements/1.1/">`+
+			`<dc:title>book</dc:title><dc:creator>Microsoft Office User</dc:creator></cp:coreProperties>`)
+
+	byToken := map[string]Candidate{}
+	for _, candidate := range Detect(project) {
+		byToken[candidate.Token] = candidate
+	}
+	if got := byToken[TokenTitle]; got.Value != "After the Applause" {
+		t.Fatalf("Title = %+v, want the document's own Title style to beat docProps", got)
+	}
+}
+
+func TestDetectWithNoSourceMetadataFallsBackAsBefore(t *testing.T) {
+	project := t.TempDir()
+	doc := manuscriptWithDocxSourceMetadata()
+	delete(doc, "sourceMetadata")
+	writeManuscript(t, project, doc)
+
+	byToken := map[string]Candidate{}
+	for _, candidate := range Detect(project) {
+		byToken[candidate.Token] = candidate
+	}
+	if _, ok := byToken[TokenTitle]; ok {
+		t.Fatalf("Title = %+v, want nothing: this chapter title is not front matter and there is no sourceMetadata", byToken[TokenTitle])
+	}
+}
+
 func TestDetectIsEmptyNotNilWithNoManuscript(t *testing.T) {
 	got := Detect(t.TempDir())
 	if got == nil || len(got) != 0 {
@@ -116,7 +187,7 @@ func TestDetectNeverPanicsOnHostileManuscriptJSON(t *testing.T) {
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		t.Fatal(err)
 	}
-	for _, blob := range []string{`{`, `null`, `[]`, `{"chapters": "not an array"}`, `{"source": {"storedPath": "../../etc/passwd"}}`} {
+	for _, blob := range []string{`{`, `null`, `[]`, `{"chapters": "not an array"}`, `{"source": {"storedPath": "../../etc/passwd"}}`, `{"sourceMetadata": "not an object"}`, `{"sourceMetadata": {"title": 12345}}`} {
 		if err := os.WriteFile(filepath.Join(dir, "manuscript.json"), []byte(blob), 0o644); err != nil {
 			t.Fatal(err)
 		}
