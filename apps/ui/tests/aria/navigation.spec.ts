@@ -27,3 +27,11 @@ test('the header names its page-history group, with Back and Forward', async ({ 
   await openApp(page, DESKTOP);
   await expect(page.getByRole('group', { name: 'Page history' })).toMatchAriaSnapshot({ name: 'navigation-header.aria.yml' });
 });
+
+// Phase 2 (Q1/Q9): the zoom group, pinned separately since it changes on a different schedule than Back/Forward
+// (it steps with the level, not with navigation). The default boot is 100%, so the readout reads "100%" and is itself
+// disabled (Q9 A).
+test('the header names its zoom group, with zoom out, the reset readout and zoom in', async ({ page }) => {
+  await openApp(page, DESKTOP);
+  await expect(page.getByRole('group', { name: 'Zoom' })).toMatchAriaSnapshot({ name: 'navigation-header-zoom.aria.yml' });
+});
