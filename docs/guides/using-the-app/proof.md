@@ -350,4 +350,4 @@ never counts as a pass.
 
 ---
 
-[← Tracks](tracks.md) · [Index](README.md) · [Delivery →](delivery.md)
+[← Tracks](tracks.md) · [Index](README.md) · [Pickups →](pickups.md)
