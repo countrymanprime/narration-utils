@@ -94,6 +94,8 @@ export const SILENT_CATCHES: Record<string, string> = {
     'The "may have changed since comparison" background check (reaper-automation-follow-through PRD Phase 13): comparing a successful REAPER answer against the baseline is best-effort - a failure just leaves the note as it was, tried again next low-frequency poll.',
   'src/components/proof/CompareRun.tsx#3':
     "The same background check's REAPER round trip: a failed ask (REAPER closed, no bridge) is routine while results sit reviewed, not a narrator-facing failure, so it is silent and retried next poll.",
+  'src/components/proof/NativeTakesPanel.tsx#1':
+    "The panel's first read of the chapter's native takes; a failure just leaves it unrendered a moment longer until the next recording:state event (subscribeRecorderState) catches up, the same fallback useRecorder.ts::recorderState#2 already uses.",
   // Phase 2 (teleprompter-manuscript-integration.prd.md) moved the device/settings catches into `useTeleprompterSession.ts`;
   // `TeleprompterPage.tsx` keeps only the chapter-selection catch it never shared with the modal.
   'src/components/booth/BoothPage.tsx#1':

@@ -26,6 +26,7 @@ const take = (number: number, seconds: number, unfinished = false): RecorderTake
     recordedAt: RECORDED_AT + number * 60000,
     unfinished,
     lineId: null,
+    keeper: false,
   };
 };
 
@@ -169,6 +170,31 @@ export function createRecordingMock(seed: RecordingMockSeed = {}): RecordingApi 
         publish();
       }, STOP_MS);
       return stopping;
+    },
+    recorderSetTakeLine: async (takeName, entityId) => {
+      if (!hasProject) throw new Error('open a project before assigning a take a manuscript line');
+      if (!state.takes.some((candidate) => candidate.name === takeName)) throw new Error(`${takeName} is not a take in this project`);
+      const lineId = entityId === '' ? null : `${entityId}@mock-sha`;
+      state = { ...state, takes: state.takes.map((candidate) => (candidate.name === takeName ? { ...candidate, lineId } : candidate)) };
+      publish();
+      return wireClone(state);
+    },
+    recorderSetTakeKeeper: async (takeName, keeper) => {
+      if (!hasProject) throw new Error('open a project before marking a take the keeper');
+      const target = state.takes.find((candidate) => candidate.name === takeName);
+      if (!target) throw new Error(`${takeName} is not a take in this project`);
+      state = {
+        ...state,
+        takes: state.takes.map((candidate) => {
+          if (candidate.name === takeName) return { ...candidate, keeper };
+          // Marking a take the keeper hands the mark over from any other take sharing its line; a take with no
+          // line has no group to clear.
+          if (keeper && target.lineId !== null && candidate.lineId === target.lineId) return { ...candidate, keeper: false };
+          return candidate;
+        }),
+      };
+      publish();
+      return wireClone(state);
     },
     subscribeRecorderState: (onUpdate) => {
       stateSubscribers.add(onUpdate);

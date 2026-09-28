@@ -56,7 +56,7 @@ export function ConfirmDialog({
       description={body}
       actions={
         <>
-          <Button variant="ghost" disabled={pending} onClick={cancel}>
+          <Button variant="secondary" disabled={pending} onClick={cancel}>
             Cancel
           </Button>
           <div className="flex gap-2">
@@ -66,7 +66,7 @@ export function ConfirmDialog({
               </Button>
             )}
             {secondary && (
-              <Button variant="ghost" disabled={pending} onClick={secondary}>
+              <Button variant="secondary" disabled={pending} onClick={secondary}>
                 {secondaryLabel}
               </Button>
             )}

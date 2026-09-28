@@ -78,7 +78,7 @@ export function CreditsEntry({
                 {preview.unresolved.length} unresolved token{preview.unresolved.length === 1 ? '' : 's'}: {preview.unresolved.join(', ')}
               </p>
               {onFillIn && (
-                <Button variant="ghost" type="button" className="px-2 py-0.5 text-[0.7rem] normal-case" onClick={onFillIn}>
+                <Button size="sm" variant="secondary" type="button" onClick={onFillIn}>
                   Fill in
                 </Button>
               )}

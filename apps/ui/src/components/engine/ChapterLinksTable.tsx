@@ -110,7 +110,7 @@ export function ChapterLinksTable({ tracks, refreshKey, notify }: { tracks: Trac
                 )}
               </TableCell>
               <TableCell>
-                <Button variant="ghost" className="text-sm" onClick={() => setEditingChecking(row.chapter)}>
+                <Button variant="secondary" onClick={() => setEditingChecking(row.chapter)}>
                   Editing check…
                 </Button>
               </TableCell>

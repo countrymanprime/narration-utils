@@ -72,7 +72,7 @@ function CurrentStamps({ state, onRead, pending }: { state: LineIdentityState; o
     <div className="mt-4 border-t pt-3" style={{ borderColor: 'var(--border)' }}>
       <div className="flex items-center justify-between gap-2">
         <h3 className="font-semibold">Currently stamped in REAPER</h3>
-        <Button variant="ghost" onClick={onRead} pending={pending}>
+        <Button variant="secondary" onClick={onRead} pending={pending}>
           Read current stamps
         </Button>
       </div>
@@ -161,7 +161,7 @@ export function LinkChaptersDialog({ chapters, tracks, onClose }: { chapters: Ma
       description="Choose which REAPER track holds each chapter's recording. Every item on a linked track will be stamped with that chapter's identity; nothing is written until you approve."
       actions={
         <>
-          <Button variant="ghost" onClick={onClose} disabled={running}>
+          <Button variant="secondary" onClick={onClose} disabled={running}>
             {state.phase === 'success' && state.stamp.applied > 0 ? 'Close' : 'Cancel'}
           </Button>
           <Button onClick={approve} disabled={preview.length === 0} pending={running}>

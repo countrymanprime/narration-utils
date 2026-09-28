@@ -24,6 +24,14 @@ export function zoneFor(dbfs: number, ceiling: number): LevelMeterZone {
   return 'body';
 }
 
+/**
+ * Where the hot and over zones start, as the same 0-100% width `percentInRange` uses (`LevelMeter`'s segmented look,
+ * studio benchmark mock B03: the bar is graded by position, not lit a single colour for the current reading).
+ */
+export function zoneBoundaries(floor: number, ceiling: number): { hotStart: number; overStart: number } {
+  return { hotStart: percentInRange(ceiling - HOT_MARGIN_DB, floor), overStart: percentInRange(ceiling, floor) };
+}
+
 // How long a peak marker is held before it may fall to a lower reading (a classic meter's peak-hold ballistics): a
 // still meter between words should not visibly crawl down on every quiet chunk.
 export const PEAK_HOLD_MS = 1500;

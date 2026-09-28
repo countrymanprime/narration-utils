@@ -9,7 +9,7 @@ function CommandButton({ label, keys }: { label: string; keys: string[] }) {
   return (
     <ToolbarButton
       render={
-        <Button variant="ghost" className="flex-col gap-1 px-3 py-1.5 text-[0.7rem] normal-case">
+        <Button variant="secondary" className="flex-col gap-1 px-3 py-1.5 text-[0.7rem] normal-case">
           <Kbd keys={keys} />
           {label}
         </Button>
@@ -105,6 +105,28 @@ export const ArrowsHomeAndEndMoveFocus: Story = {
     await userEvent.keyboard('{Home}');
     await expect(play).toHaveFocus();
   },
+};
+
+// A segmented-looking bar whose items touch and share a border instead of a gap (`manuscript/SelectionMenu`).
+export const FlushSegmentedBar: Story = {
+  render: (args) => (
+    <Toolbar {...args} gapClassName="gap-0" className="overflow-hidden rounded-[0.45rem] border border-[var(--border)]">
+      <ToolbarButton
+        render={
+          <Button variant="primary" className="rounded-none border-0">
+            Note
+          </Button>
+        }
+      />
+      <ToolbarButton
+        render={
+          <Button variant="ghost" className="rounded-none border-0 border-l border-l-[var(--border)]">
+            Story Bible
+          </Button>
+        }
+      />
+    </Toolbar>
+  ),
 };
 
 export const IsNamedAsAToolbar: Story = {

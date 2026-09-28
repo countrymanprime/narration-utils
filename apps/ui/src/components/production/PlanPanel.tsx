@@ -158,7 +158,7 @@ export function PlanPanel({ onSaved }: { onSaved: () => void }) {
                   </TableCell>
                   <TableCell align="right">
                     <Button
-                      variant="ghost"
+                      variant="secondary"
                       aria-label={`Remove ${milestone.name.trim() || `milestone ${index + 1}`}`}
                       onClick={() => setMilestones((current) => current.filter((_, at) => at !== index))}
                     >
@@ -172,10 +172,10 @@ export function PlanPanel({ onSaved }: { onSaved: () => void }) {
         </div>
       )}
       <div className="mt-3 flex flex-wrap gap-2">
-        <Button variant="ghost" disabled={!loaded} onClick={() => setMilestones((current) => [...current, { name: '', dueDate: '' }])}>
+        <Button variant="secondary" disabled={!loaded} onClick={() => setMilestones((current) => [...current, { name: '', dueDate: '' }])}>
           Add milestone
         </Button>
-        <Button variant="ghost" disabled={!loaded || hasCheckpoint} onClick={() => setMilestones((current) => [...current, { ...ACX_CHECKPOINT }])}>
+        <Button variant="secondary" disabled={!loaded || hasCheckpoint} onClick={() => setMilestones((current) => [...current, { ...ACX_CHECKPOINT }])}>
           Add the ACX 15-minute checkpoint
         </Button>
         <Button

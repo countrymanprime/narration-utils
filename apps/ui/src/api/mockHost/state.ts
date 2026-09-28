@@ -8,6 +8,7 @@ import type {
   CharacterRegion,
   ManuscriptChapter,
   ManuscriptParagraph,
+  Series,
   TeleprompterDevice,
   TrackMapping,
   TracksDiscovery,
@@ -20,6 +21,7 @@ import {
   WIRE_DIALOGUE_CUES,
   WIRE_ENTITIES,
   WIRE_PARAGRAPHS,
+  WIRE_SERIES,
   WIRE_TRACKS_PROJECT,
   wireClone,
 } from '../mockFixtures';
@@ -223,6 +225,12 @@ export type MockApiSeed = {
    * `WIRE_CHARACTER_REGIONS` and `WIRE_CHARACTER_REFERENCES` (one changed-since-approval reference among them).
    */
   characterContinuity?: 'empty';
+  /**
+   * Boots the current project outside any series (character-continuity-review.prd.md Phase 11), so the Series
+   * tab's "not in a series" state can be seen. Unset boots as a member of `WIRE_SERIES` (two books), matching the
+   * approved concept mock (06-series-voice-bible-concept.webp).
+   */
+  seriesVoiceBible?: 'not-in-series' | 'single-book';
   /** Seeds the mastering chain mock (whether a project is open, its stored choice), see `MasteringMockSeed` (ADR 0306). */
   mastering?: MasteringMockSeed;
   /** `?mockZoom=`: the window's real zoom level at boot, as a fraction (1.25 is 125%; app-navigation-and-zoom-controls.prd.md
@@ -255,6 +263,8 @@ export type MockState = {
   regions: CharacterRegion[];
   /** Every approved (or previously approved) voice reference (Phase 3/6). */
   characterReferences: ApprovedCharacterReference[];
+  /** The narrator's own series list (Phase 9/11, Q10). */
+  series: Series[];
 };
 
 export function createMockState(initial: MockApiSeed): MockState {
@@ -277,5 +287,13 @@ export function createMockState(initial: MockApiSeed): MockState {
     dialogueCues: wireClone(WIRE_DIALOGUE_CUES),
     regions: initial.characterContinuity === 'empty' ? [] : wireClone(WIRE_CHARACTER_REGIONS),
     characterReferences: initial.characterContinuity === 'empty' ? [] : wireClone(WIRE_CHARACTER_REFERENCES),
+    series: seriesSeed(initial.seriesVoiceBible),
   };
+}
+
+function seriesSeed(seed: MockApiSeed['seriesVoiceBible']): Series[] {
+  if (seed === 'not-in-series') return [];
+  const wonderland = wireClone(WIRE_SERIES);
+  if (seed === 'single-book') wonderland.memberProjectPaths = wonderland.memberProjectPaths.slice(0, 1);
+  return [wonderland];
 }

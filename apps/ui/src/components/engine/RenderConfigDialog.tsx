@@ -3,6 +3,7 @@ import { useApi } from '../../api/ApiContext';
 import { Button } from '../primitives/Button';
 import { Dialog } from '../primitives/Dialog';
 import { Field } from '../primitives/Field';
+import { Kbd } from '../primitives/Kbd';
 import type { RenderConfigState } from '../../types';
 
 const IDLE: RenderConfigState = { phase: 'idle', message: '', folder: '', targets: [], count: 0 };
@@ -45,7 +46,7 @@ export function RenderConfigDialog({ onClose }: { onClose: () => void }) {
       description="Set the render bounds to every chapter region and name each file after its region. This does not render anything: you press Render in REAPER yourself."
       actions={
         <>
-          <Button variant="ghost" onClick={onClose} disabled={running}>
+          <Button variant="secondary" onClick={onClose} disabled={running}>
             Close
           </Button>
           <Button onClick={configure} disabled={!folder.trim()} pending={running}>
@@ -72,7 +73,11 @@ export function RenderConfigDialog({ onClose }: { onClose: () => void }) {
             </ul>
           )}
           {state.count > 0 && (
-            <p className="mt-3 text-sm font-semibold">Render is configured — press Render in REAPER (Ctrl+Alt+R or File &gt; Render) to create the files.</p>
+            <p className="mt-3 flex flex-wrap items-center gap-1.5 text-sm font-semibold">
+              <span>Render is configured — press Render in REAPER</span>
+              <Kbd keys={['Ctrl', 'Alt', 'R']} />
+              <span>or File &gt; Render to create the files.</span>
+            </p>
           )}
         </div>
       )}

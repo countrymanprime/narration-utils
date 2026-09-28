@@ -58,4 +58,14 @@ describe('SelectionMenu', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Look up' }));
     expect(lookUp).not.toHaveBeenCalled();
   });
+
+  it('is a named toolbar whose actions rove focus (mock-fidelity Phase 10)', () => {
+    render(<SelectionMenu selection={selection} addNote={vi.fn()} addToStoryBible={vi.fn()} lookUp={vi.fn()} dismiss={vi.fn()} />);
+    const toolbar = screen.getByRole('toolbar', { name: 'Selected manuscript text actions' });
+    const [note, storyBible, lookUp] = screen.getAllByRole('button');
+    expect(toolbar.contains(note)).toBe(true);
+    expect(note.tabIndex).toBe(0);
+    expect(storyBible.tabIndex).toBe(-1);
+    expect(lookUp.tabIndex).toBe(-1);
+  });
 });

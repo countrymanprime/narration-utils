@@ -4,6 +4,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faBook, faBookOpen, faHighlighter, faNoteSticky } from '@fortawesome/free-solid-svg-icons';
 import type { ManuscriptSelection } from '../../hooks/useTextSelection';
 import { Button } from '../primitives/Button';
+import { Toolbar, ToolbarButton } from '../primitives/Toolbar';
 
 // A single, opaque rich-text toolbar. Rendering in document.body prevents it
 // being clipped by reader cards and allows placement to be clamped precisely.
@@ -55,41 +56,57 @@ export function SelectionMenu({
   return createPortal(
     <div
       ref={ref}
-      className="fixed isolate z-[65] flex overflow-hidden rounded-[0.45rem] border border-[var(--border)] bg-[var(--surface)] shadow-[var(--shadow-lg)]"
-      role="toolbar"
-      aria-label="Selected manuscript text actions"
+      className="fixed isolate z-[65] overflow-hidden rounded-[0.45rem] border border-[var(--border)] bg-[var(--surface)] shadow-[var(--shadow-lg)]"
       style={position}
       onMouseDown={(event) => event.preventDefault()}
     >
-      <Button variant="primary" className="rounded-none border-0 text-xs" aria-label="+ Note" disabled={busy} onClick={addNote}>
-        <FontAwesomeIcon icon={faNoteSticky} /> Note
-      </Button>
-      {markUp && (
-        <Button variant="ghost" className="rounded-none border-0 border-l border-l-[var(--border)] text-xs" disabled={busy} onClick={markUp}>
-          <FontAwesomeIcon icon={faHighlighter} /> Mark up
-        </Button>
-      )}
-      <Button
-        variant="ghost"
-        className="rounded-none border-0 border-l border-l-[var(--border)] text-xs"
-        aria-label="+ Story Bible"
-        pending={addingToStoryBible}
-        disabled={lookingUp}
-        onClick={addToStoryBible}
-      >
-        <FontAwesomeIcon icon={faBookOpen} /> Story Bible
-      </Button>
-      {lookUp && (
-        <Button
-          variant="ghost"
-          className="rounded-none border-0 border-l border-l-[var(--border)] text-xs"
-          pending={lookingUp}
-          disabled={addingToStoryBible}
-          onClick={lookUp}
-        >
-          <FontAwesomeIcon icon={faBook} /> Look up
-        </Button>
-      )}
+      <Toolbar label="Selected manuscript text actions" gapClassName="gap-0">
+        <ToolbarButton
+          render={
+            <Button variant="primary" className="rounded-none border-0" aria-label="+ Note" disabled={busy} onClick={addNote}>
+              <FontAwesomeIcon icon={faNoteSticky} /> Note
+            </Button>
+          }
+        />
+        {markUp && (
+          <ToolbarButton
+            render={
+              <Button variant="secondary" className="rounded-none border-0 border-l border-l-[var(--border)]" disabled={busy} onClick={markUp}>
+                <FontAwesomeIcon icon={faHighlighter} /> Mark up
+              </Button>
+            }
+          />
+        )}
+        <ToolbarButton
+          render={
+            <Button
+              variant="secondary"
+              className="rounded-none border-0 border-l border-l-[var(--border)]"
+              aria-label="+ Story Bible"
+              pending={addingToStoryBible}
+              disabled={lookingUp}
+              onClick={addToStoryBible}
+            >
+              <FontAwesomeIcon icon={faBookOpen} /> Story Bible
+            </Button>
+          }
+        />
+        {lookUp && (
+          <ToolbarButton
+            render={
+              <Button
+                variant="secondary"
+                className="rounded-none border-0 border-l border-l-[var(--border)]"
+                pending={lookingUp}
+                disabled={addingToStoryBible}
+                onClick={lookUp}
+              >
+                <FontAwesomeIcon icon={faBook} /> Look up
+              </Button>
+            }
+          />
+        )}
+      </Toolbar>
     </div>,
     document.body,
   );

@@ -8,6 +8,7 @@ import { teleprompterGoldens } from './teleprompter';
 import { manuscriptGoldens } from './manuscript';
 import { storyBibleGoldens } from './storyBible';
 import { characterGoldens } from './character';
+import { seriesGoldens } from './series';
 import { projectGoldens } from './project';
 import { creditsGoldens } from './credits';
 import { assetsGoldens } from './assets';
@@ -41,6 +42,7 @@ const FEATURE_AREAS: Array<Record<string, z.ZodType>> = [
   manuscriptGoldens,
   storyBibleGoldens,
   characterGoldens,
+  seriesGoldens,
   projectGoldens,
   creditsGoldens,
   assetsGoldens,

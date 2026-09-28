@@ -38,7 +38,7 @@ function AuditionSide({ side, members, label, selected, onSelect, player, onTogg
     <div className="flex flex-col gap-2 rounded-lg border border-[var(--border)] p-3">
       <div className="flex items-center justify-between gap-2">
         <span className="font-semibold">Read {side}</span>
-        <Button variant="ghost" onClick={onToggle} disabled={!member} aria-label={`${player.isPlaying ? 'Pause' : 'Play'} read ${side}`}>
+        <Button variant="secondary" onClick={onToggle} disabled={!member} aria-label={`${player.isPlaying ? 'Pause' : 'Play'} read ${side}`}>
           <FontAwesomeIcon icon={player.isPlaying ? faPause : faPlay} />
         </Button>
       </div>

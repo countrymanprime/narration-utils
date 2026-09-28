@@ -18,6 +18,7 @@ import { CAT_DOT_BG, CAT_DOT_CLASS } from '../manuscript/EntitySummary';
 import { GuideDetail } from './GuideDetail';
 import { PronunciationQueries } from './PronunciationQueries';
 import { VoiceDataPanel } from './VoiceDataPanel';
+import { SeriesTab } from '../series/SeriesTab';
 import { WorkDialog } from '../primitives/WorkDialog';
 import { IconButton } from '../primitives/IconButton';
 import { SearchField } from '../primitives/SearchField';
@@ -220,75 +221,83 @@ export function Guide({ notify, goToManuscript }: { notify: Notify; goToManuscri
               {name === 'All' ? `All · ${visible.length}` : `${TAB_PLURAL[name]} · ${visible.filter((row) => categoryLabel(row.category) === name).length}`}
             </Tab>
           ))}
+          {/* character-continuity-review.prd.md Phase 11, D79: a tab here, not a nav entry of its own. */}
+          <Tab value="Series">Series</Tab>
         </TabList>
       </div>
-      <div className="grid min-h-0 flex-1 gap-4 max-md:h-auto lg:grid-cols-[18rem_minmax(0,1fr)] [&>*]:max-md:min-h-96">
-        <TabPanel
-          value={tab}
-          className="flex min-h-0 flex-col overflow-hidden rounded-lg border border-[var(--border)] bg-[var(--surface)] shadow-[var(--shadow)]"
-        >
-          <div className="p-[1.1rem] pb-2">
-            <SearchField label="Search entries" value={query} onChange={setQuery} placeholder="Search entries…" />
-          </div>
-          <div className="guide-list-scroll min-h-0 overflow-y-auto px-2 pb-2">
-            <Table label="Story Bible entries">
-              <TableHead sticky>
-                <TableRow>
-                  <TableHeader sorted={sortedState('name')} onSort={() => toggleSort('name')}>
-                    Name
-                  </TableHeader>
-                  <TableHeader align="right" sorted={sortedState('occurrences')} onSort={() => toggleSort('occurrences')}>
-                    Occurrences
-                  </TableHeader>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {sorted.map((row) => (
-                  <TableRow key={row.id} selected={!pendingNewEntity && selectedId === row.id} onActivate={() => selectRow(row.id)}>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <span className={CAT_DOT_CLASS} style={{ background: CAT_DOT_BG[categoryCssName(row.category)] }} />
-                        <span className="truncate text-sm font-medium">{row.canonical_name}</span>
-                        {row.locked && <FontAwesomeIcon icon={faLock} className="text-[10px]" style={{ color: 'var(--non-text)' }} />}
-                      </div>
-                      <div className="mt-0.5 text-xs" style={{ color: 'var(--text-muted)' }}>
-                        {categoryLabel(row.category)}
-                      </div>
-                    </TableCell>
-                    <TableCell numeric style={{ color: 'var(--text-muted)' }}>
-                      {row.occurrence_count}
-                    </TableCell>
-                  </TableRow>
-                ))}
-                {sorted.length === 0 && (
-                  <TableRow>
-                    <TableCell colSpan={2} style={{ color: 'var(--text-muted)' }}>
-                      No matching entries.
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          </div>
-        </TabPanel>
-        <div className="flex min-h-0 min-w-0">
-          <GuideDetail
-            // One detail per entry, so what an action left pending on one entry never shows on the next.
-            key={newEntityDraft ? 'new-draft' : (selected?.id ?? 'none')}
-            entity={newEntityDraft ?? selected}
-            isNewDraft={Boolean(newEntityDraft)}
-            onDiscardNewDraft={() => setPendingNewEntity(undefined)}
-            onCreatedNewDraft={(id) => {
-              setPendingNewEntity(undefined);
-              void load(id);
-            }}
-            entities={rows}
-            reload={load}
-            notify={notify}
-            goToManuscript={goToManuscript}
-          />
+      {tab === 'Series' ? (
+        <div className="min-h-0 flex-1 overflow-hidden rounded-lg border border-[var(--border)] bg-[var(--surface)] shadow-[var(--shadow)]">
+          <SeriesTab notify={notify} />
         </div>
-      </div>
+      ) : (
+        <div className="grid min-h-0 flex-1 gap-4 max-md:h-auto lg:grid-cols-[18rem_minmax(0,1fr)] [&>*]:max-md:min-h-96">
+          <TabPanel
+            value={tab}
+            className="flex min-h-0 flex-col overflow-hidden rounded-lg border border-[var(--border)] bg-[var(--surface)] shadow-[var(--shadow)]"
+          >
+            <div className="p-[1.1rem] pb-2">
+              <SearchField label="Search entries" value={query} onChange={setQuery} placeholder="Search entries…" />
+            </div>
+            <div className="guide-list-scroll min-h-0 overflow-y-auto px-2 pb-2">
+              <Table label="Story Bible entries">
+                <TableHead sticky>
+                  <TableRow>
+                    <TableHeader sorted={sortedState('name')} onSort={() => toggleSort('name')}>
+                      Name
+                    </TableHeader>
+                    <TableHeader align="right" sorted={sortedState('occurrences')} onSort={() => toggleSort('occurrences')}>
+                      Occurrences
+                    </TableHeader>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {sorted.map((row) => (
+                    <TableRow key={row.id} selected={!pendingNewEntity && selectedId === row.id} onActivate={() => selectRow(row.id)}>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <span className={CAT_DOT_CLASS} style={{ background: CAT_DOT_BG[categoryCssName(row.category)] }} />
+                          <span className="truncate text-sm font-medium">{row.canonical_name}</span>
+                          {row.locked && <FontAwesomeIcon icon={faLock} className="text-[10px]" style={{ color: 'var(--non-text)' }} />}
+                        </div>
+                        <div className="mt-0.5 text-xs" style={{ color: 'var(--text-muted)' }}>
+                          {categoryLabel(row.category)}
+                        </div>
+                      </TableCell>
+                      <TableCell numeric style={{ color: 'var(--text-muted)' }}>
+                        {row.occurrence_count}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                  {sorted.length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={2} style={{ color: 'var(--text-muted)' }}>
+                        No matching entries.
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+          </TabPanel>
+          <div className="flex min-h-0 min-w-0">
+            <GuideDetail
+              // One detail per entry, so what an action left pending on one entry never shows on the next.
+              key={newEntityDraft ? 'new-draft' : (selected?.id ?? 'none')}
+              entity={newEntityDraft ?? selected}
+              isNewDraft={Boolean(newEntityDraft)}
+              onDiscardNewDraft={() => setPendingNewEntity(undefined)}
+              onCreatedNewDraft={(id) => {
+                setPendingNewEntity(undefined);
+                void load(id);
+              }}
+              entities={rows}
+              reload={load}
+              notify={notify}
+              goToManuscript={goToManuscript}
+            />
+          </div>
+        </div>
+      )}
       {modelPrompt && (
         <AssetInstallPrompt
           ask={{
