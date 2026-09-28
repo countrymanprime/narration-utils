@@ -21,18 +21,22 @@ const (
 
 // PipeTransport is Audacity's scripting pipe on this machine. It is local-only by construction: `\\.\pipe\` names a pipe on the
 // local computer, never a remote one.
-func PipeTransport() Transport { return TransportFunc(dialPipes) }
+func PipeTransport() Transport {
+	return TransportFunc(func(ctx context.Context) (Conn, error) { return dialPipes(ctx, toServerPipe, fromServerPipe) })
+}
 
-func dialPipes(ctx context.Context) (Conn, error) {
+// dialPipes opens the pipe Audacity reads (to) and the one it writes (from). Only PipeTransport's fixed names reach it outside
+// tests, which serve their own pipes under test-only names.
+func dialPipes(ctx context.Context, toName, fromName string) (Conn, error) {
 	if err := ctx.Err(); err != nil {
 		return nil, err
 	}
 	// Audacity's own clients open the pipe it reads first, then the one it writes (pipe_test.py).
-	to, err := openPipe(toServerPipe, windows.GENERIC_WRITE)
+	to, err := openPipe(toName, windows.GENERIC_WRITE)
 	if err != nil {
 		return nil, err
 	}
-	from, err := openPipe(fromServerPipe, windows.GENERIC_READ)
+	from, err := openPipe(fromName, windows.GENERIC_READ)
 	if err != nil {
 		_ = windows.CloseHandle(to)
 		return nil, err
