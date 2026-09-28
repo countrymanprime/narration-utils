@@ -77,6 +77,13 @@ func (c *Client) SelectTracks(ctx context.Context, first, count int) error {
 	return err
 }
 
+// SelectNone clears the time selection and deselects every track (SelectNone:), so the next AddLabel makes a new label track
+// rather than adding to one the narrator had selected.
+func (c *Client) SelectNone(ctx context.Context) error {
+	_, err := c.Do(ctx, NewCommand("SelectNone"))
+	return err
+}
+
 // AddLabel adds an empty label at the selection, on the selected label track, or on a new label track when none is selected
 // (AddLabel:, which takes no parameters). Find it afterwards with Labels and name it with SetLabel.
 func (c *Client) AddLabel(ctx context.Context) error {

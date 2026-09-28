@@ -1,4 +1,4 @@
-// The golden payloads for the REAPER actions on the Tracks page: which schema owns each file in tests/fixtures/contracts/ (see index.ts).
+// The golden payloads for the REAPER actions in the audio engine panel: which schema owns each file in tests/fixtures/contracts/ (see index.ts).
 import { z } from 'zod';
 import { chapterTagsEmbedResultSchema, chapterTagsPreviewSchema } from '../schemas/chaptertags';
 import { cleanupToolsStateSchema } from '../schemas/cleanuptools';

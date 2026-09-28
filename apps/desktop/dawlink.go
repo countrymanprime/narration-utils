@@ -10,8 +10,8 @@ import (
 	"github.com/countrymanprime/narration-utils/shell/internal/project"
 )
 
-// ProjectLinkDawFile is the one shared binding behind the header pill, the
-// Tracks page and Settings' DAW category (PRD project-workspace-and-daw-
+// ProjectLinkDawFile is the one shared binding behind the audio engine panel
+// and Settings' DAW category (PRD project-workspace-and-daw-
 // link.prd.md, Open Question W19): it opens a native "*.rpp" file dialog and
 // links the chosen file to the current project through the manifest storage
 // Phase 1-3 already built (project.BuildDawLink, Manifest.Save). Cancelling

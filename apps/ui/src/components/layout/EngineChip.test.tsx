@@ -9,21 +9,32 @@ afterEach(cleanup);
 function renderChip(props: Partial<Parameters<typeof EngineChip>[0]> = {}) {
   return render(
     <TooltipProvider>
-      <EngineChip dawFileLinked={false} onLinkDawFile={() => {}} {...props} />
+      <EngineChip dawFileLinked={false} onOpenEnginePanel={() => {}} {...props} />
     </TooltipProvider>,
   );
 }
 
 // The chip replaces the REAPER pill in place (stage-navigation-and-page-replacement.prd.md Phase 1, ADR 0407 item
-// 4): its three REAPER states and click action are unchanged from the pill it replaces.
+// 4): its three REAPER states are unchanged from the pill it replaces; since Phase 6 a click opens the engine panel, which holds
+// the link action the pill ran itself.
 describe('EngineChip REAPER states (unchanged from the pill)', () => {
-  it('shows "No REAPER project linked" and opens the picker on click when nothing is linked', () => {
-    const onLinkDawFile = vi.fn();
-    renderChip({ dawFileLinked: false, onLinkDawFile });
+  it('shows "No REAPER project linked" and opens the engine panel on click when nothing is linked', () => {
+    const onOpenEnginePanel = vi.fn();
+    renderChip({ dawFileLinked: false, onOpenEnginePanel });
     const chip = screen.getByRole('button', { name: /No REAPER project linked/ });
     expect(chip.textContent).toContain('No REAPER project linked');
+    expect(chip.getAttribute('aria-label')).toContain('Open the engine panel');
     fireEvent.click(chip);
-    expect(onLinkDawFile).toHaveBeenCalledTimes(1);
+    expect(onOpenEnginePanel).toHaveBeenCalledTimes(1);
+  });
+
+  it('still opens the panel while a link runs, marked busy', () => {
+    const onOpenEnginePanel = vi.fn();
+    renderChip({ dawFileLinked: true, linkingDawFile: true, onOpenEnginePanel });
+    const chip = screen.getByRole('button', { name: /REAPER project linked/ });
+    expect(chip.getAttribute('aria-busy')).toBe('true');
+    fireEvent.click(chip);
+    expect(onOpenEnginePanel).toHaveBeenCalledTimes(1);
   });
 
   it('shows "REAPER project linked" once one is', () => {
