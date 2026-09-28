@@ -4,6 +4,7 @@ import { apiErrorMessage } from '../../api/errorMessage';
 import type { Finding, ReaperStatus, TakeComparisonJob, TakeReviewEvidence } from '../../types';
 import { Button } from '../primitives/Button';
 import { ConfirmDialog } from '../primitives/ConfirmDialog';
+import { FIELD_LABEL_CLASSES } from '../primitives/Field';
 import { Select } from '../primitives/Select';
 import { TooltipTarget } from '../primitives/Tooltip';
 import { AuditionDialog } from './AuditionDialog';
@@ -243,8 +244,8 @@ function AddTakeDialog({
       pending={creating}
     >
       <div className="mt-3 flex flex-col gap-3">
-        <label className="flex flex-col gap-1 text-sm">
-          Target item (where the take is added)
+        <label className="flex flex-col gap-2">
+          <span className={FIELD_LABEL_CLASSES}>Target item (where the take is added)</span>
           <Select
             label="Target item"
             value={target}
@@ -256,8 +257,8 @@ function AddTakeDialog({
             ]}
           />
         </label>
-        <label className="flex flex-col gap-1 text-sm">
-          Candidate (source attached as the new take)
+        <label className="flex flex-col gap-2">
+          <span className={FIELD_LABEL_CLASSES}>Candidate (source attached as the new take)</span>
           <Select
             label="Candidate read"
             value={candidate}

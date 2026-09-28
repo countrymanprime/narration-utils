@@ -470,12 +470,14 @@ export function GuideDetail({
               <Tooltip text="Generated pronunciation; the waveform button plays an audio preview." />
             </div>
             <div style={{ position: 'relative', width: '100%' }}>
-              <div
-                className="min-h-[var(--control-height)] w-full cursor-default rounded-[var(--control-radius)] border border-[var(--border)] bg-[var(--surface-2)] px-3 py-[0.6rem] font-['IBM_Plex_Mono',ui-monospace,monospace] text-[0.88rem] leading-[1.35] text-[var(--text)]"
+              <TextField
+                label="Pronunciation"
+                mono
+                readOnly
+                value={entity.pronunciation.ipa || 'Not generated'}
+                onChange={() => undefined}
                 style={{ paddingRight: canEdit && editing ? '5rem' : '2.75rem' }}
-              >
-                {entity.pronunciation.ipa || 'Not generated'}
-              </div>
+              />
               <div className="flex items-center gap-1" style={{ position: 'absolute', right: '.25rem', top: '50%', transform: 'translateY(-50%)' }}>
                 <TooltipTarget
                   text={playingPreview === CANONICAL_PREVIEW ? 'Pause pronunciation preview' : (canonicalPlayReason ?? 'Play provider-generated pronunciation')}
@@ -543,12 +545,16 @@ export function GuideDetail({
                   <TableCell className="font-['IBM_Plex_Mono',ui-monospace,monospace] text-sm">{alias.text}</TableCell>
                   <TableCell>
                     <div style={{ position: 'relative', width: '100%' }}>
-                      <div
-                        className="min-h-[var(--control-height)] w-full cursor-default rounded-[var(--control-radius)] border border-[var(--border)] bg-[var(--surface-2)] px-3 py-[0.6rem] font-['IBM_Plex_Mono',ui-monospace,monospace] text-xs leading-[1.35] text-[var(--text)]"
-                        style={{ paddingRight: '2.75rem' }}
-                      >
-                        {alias.pronunciation.ipa || 'Not generated'}
-                      </div>
+                      <TextField
+                        label={`${alias.text}'s pronunciation`}
+                        mono
+                        readOnly
+                        value={alias.pronunciation.ipa || 'Not generated'}
+                        onChange={() => undefined}
+                        // The table row is compact: the inline style wins over the primitive's own mono size (a plain
+                        // utility class can't be layered safely over it, see TextField.tsx).
+                        style={{ fontSize: '0.75rem', paddingRight: '2.75rem' }}
+                      />
                       <TooltipTarget
                         text={
                           playingPreview === previewKey(index)

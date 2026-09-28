@@ -1,12 +1,10 @@
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faRotate } from '@fortawesome/free-solid-svg-icons';
 import { Button } from '../primitives/Button';
+import { FIELD_LABEL_CLASSES } from '../primitives/Field';
 import { Select } from '../primitives/Select';
 import type { TeleprompterDevice } from '../../types';
 
-// The label styling every Teleprompter field row shares (BoothPage.tsx's LABEL_CLASS); duplicated here rather
-// than imported so this component has no dependency back on its one caller.
-const LABEL_CLASS = 'block text-[0.82rem] font-medium text-[var(--text-muted)]';
 const HINT_CLASS = 'mt-1 block text-xs';
 
 const CHOOSE_LABEL = 'Choose a microphone…';
@@ -59,7 +57,7 @@ export function MicrophoneField({
     return (
       <div>
         <div className="flex items-baseline justify-between gap-2">
-          <span className={LABEL_CLASS} id={`${id}-label`}>
+          <span className={FIELD_LABEL_CLASSES} id={`${id}-label`}>
             {label}
           </span>
           {refreshButton}
@@ -82,7 +80,7 @@ export function MicrophoneField({
   return (
     <div>
       <div className="flex items-baseline justify-between gap-2">
-        <label className={LABEL_CLASS} htmlFor={id}>
+        <label className={FIELD_LABEL_CLASSES} htmlFor={id}>
           {label}
         </label>
         {refreshButton}

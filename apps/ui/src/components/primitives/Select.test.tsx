@@ -74,4 +74,11 @@ describe('Select', () => {
     await userEvent.setup().selectOptions(screen.getByRole('combobox', { name: 'Status' }), 'b');
     expect(onChange).not.toHaveBeenCalled();
   });
+
+  it('is a fixed height, the same as TextField (mock-fidelity-primitives-and-components.prd.md Phase 6: both 40.8px)', () => {
+    render(<Controlled />);
+    const select = screen.getByRole('combobox', { name: 'Chapter status' });
+    expect(select.className).toContain('h-[var(--control-height)]');
+    expect(select.className).not.toContain('min-h-[var(--control-height)]');
+  });
 });
