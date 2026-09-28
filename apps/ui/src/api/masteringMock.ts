@@ -17,6 +17,11 @@ const ROWS: MockRow[] = [
     needsApproval: false,
     needs: [],
     support: { level: 'supported', available: true },
+    chain: [
+      { name: 'EQ', detail: 'High-pass 80 Hz' },
+      { name: 'Limiter', detail: '0.5 dB under the peak limit' },
+      { name: 'Gain', detail: 'To the RMS target' },
+    ],
   },
   {
     name: 'daw',
@@ -25,6 +30,7 @@ const ROWS: MockRow[] = [
     needsApproval: true,
     needs: ['render_with_fx', 'master_chain_read'],
     support: { level: 'experimental', available: true },
+    chain: [],
   },
   {
     name: 'audacity',
@@ -33,6 +39,7 @@ const ROWS: MockRow[] = [
     needsApproval: true,
     needs: ['macro_render'],
     support: { level: 'experimental', available: true },
+    chain: [],
   },
 ];
 

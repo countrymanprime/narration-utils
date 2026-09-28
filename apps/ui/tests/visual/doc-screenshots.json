@@ -169,6 +169,13 @@
   },
   {
     "page": "proof-chapter",
+    "state": "render-chosen",
+    "viewport": "desktop",
+    "docName": "proof-chapter-render-chosen",
+    "caption": "Proof chapter view - the readiness panel's Rendered file section, a render just chosen and measured"
+  },
+  {
+    "page": "proof-chapter",
     "state": "preview-default",
     "viewport": "desktop",
     "docName": "proof-chapter-preview",
@@ -525,59 +532,73 @@
     "caption": "Proof - a take comparison's audio: clipping, room noise, level, length and pauses per read, side by side, never added up"
   },
   {
-    "page": "delivery",
+    "page": "master",
     "state": "empty",
     "viewport": "desktop",
-    "docName": "delivery-empty",
-    "caption": "Delivery - nothing measured yet, judged against ACX (September 2026): how many rules the app checks, does not check and leaves to listening"
+    "docName": "master-empty",
+    "caption": "Master & QC - nothing checked yet: the ACX platform tab, the built-in mastering chain as its three steps, and the delivery package's book checklist"
   },
   {
-    "page": "delivery",
+    "page": "master",
     "state": "profile-rules",
     "viewport": "desktop",
-    "docName": "delivery-profile-rules",
-    "caption": "Delivery - the ACX profile's rules and their sources: what ACX requires, how the app checks it, and whether it is verified"
+    "docName": "master-profile-rules",
+    "caption": "Master & QC - the ACX profile's rules and their sources: what ACX requires, how the app checks it, and whether it is verified"
   },
   {
-    "page": "delivery",
+    "page": "master",
     "state": "running",
     "viewport": "desktop",
-    "docName": "delivery-running",
-    "caption": "Delivery - a measurement in progress, with its real progress and Cancel"
+    "docName": "master-running",
+    "caption": "Master & QC - a check in progress, with its real progress and Cancel"
   },
   {
-    "page": "delivery",
+    "page": "master",
     "state": "measured",
     "viewport": "desktop",
-    "docName": "delivery-measured",
-    "caption": "Delivery - three files judged against ACX rule by rule: a 48 kHz render not met on sample rate, room tone and the MP3 not checked by the app, a silent render not measurable, an MP3 that could not be read"
+    "docName": "master-measured",
+    "caption": "Master & QC - three files checked against ACX: length, RMS, true peak, noise floor and head / tail per file, a 48 kHz render that fails, and why it fails with a suggested fix beside the book's consistency"
   },
   {
-    "page": "delivery",
+    "page": "master",
     "state": "file-rules",
     "viewport": "desktop",
-    "docName": "delivery-file-rules",
-    "caption": "Delivery - one file against ACX, rule by rule, with what ACX requires and how it was verified"
+    "docName": "master-file-rules",
+    "caption": "Master & QC - one file against ACX, rule by rule, with what ACX requires and how it was verified"
   },
   {
-    "page": "delivery",
+    "page": "master",
     "state": "custom-profile",
     "viewport": "desktop",
-    "docName": "delivery-custom-profile",
-    "caption": "Delivery - judged by a custom profile based on ACX, with two rules turned off"
+    "docName": "master-custom-profile",
+    "caption": "Master & QC - judged by a custom profile based on ACX, chosen as its own platform tab"
   },
   {
-    "page": "delivery",
+    "page": "master",
     "state": "diagnostics-findings",
     "viewport": "desktop",
-    "docName": "delivery-diagnostics-findings",
-    "caption": "Delivery, Diagnostics - the measured files checked: each file summarised, and each finding with its time, what was measured, the threshold that raised it and the source"
+    "docName": "master-diagnostics-findings",
+    "caption": "Master & QC, Diagnostics - the checked files diagnosed: each file summarised, and each finding with its time, what was measured, the threshold that raised it and the source"
   },
   {
-    "page": "delivery",
+    "page": "master",
     "state": "report-exported",
     "viewport": "desktop",
-    "docName": "delivery-report-exported",
-    "caption": "Delivery - Export report wrote an HTML and a JSON report into the project's narration-utils/delivery folder, with file names only"
+    "docName": "master-report-exported",
+    "caption": "Master & QC - Export report wrote an HTML and a JSON report into the project's narration-utils/delivery folder, with file names only"
+  },
+  {
+    "page": "master",
+    "state": "to-spec-picked",
+    "viewport": "desktop",
+    "docName": "master-to-spec-picked",
+    "caption": "Master & QC - Master all to spec with five files picked and given a role, mastered by the built-in chain before encoding"
+  },
+  {
+    "page": "master",
+    "state": "package-built",
+    "viewport": "desktop",
+    "docName": "master-package-built",
+    "caption": "Master & QC - the ACX package built from the mastered and encoded files: the packager's checklist, and the output folder with every file it wrote"
   }
 ]

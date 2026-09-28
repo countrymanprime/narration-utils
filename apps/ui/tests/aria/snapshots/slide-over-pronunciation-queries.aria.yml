@@ -1,5 +1,5 @@
 # The pronunciation queries are a modal drawer: a named dialog, the only thing in <body> besides the two empty toast live regions.
-# Inside, the match is partial: the filter, the open/sent count as a status, Export CSV, and the list of queries, the first (marked sent
+# Inside, the match is partial: the filter, the open/sent count as a status, Export CSV, Look up online (prep-depth P9), and the list of queries, the first (marked sent
 # by the driver) with Mark answered only and the next with both marks, each button named for its name. The excerpts are left out.
 - /children: equal
 - main:
@@ -14,6 +14,7 @@
         - option "Researched"
     - status: /\d+ open · 1 sent/
     - button "Export CSV"
+    - button "Look up online…"
     - list "Pronunciation queries":
         - listitem:
             - text: Alice Query sent

@@ -61,4 +61,12 @@ describe('Field', () => {
     expect(control.getAttribute('placeholder')).toBe('Say what to change');
     expect(document.activeElement).toBe(control);
   });
+
+  it('masks a secret and keeps the browser from saving or checking it', () => {
+    render(<Field label="API key" value="0b5c1a3e-7d2f" onChange={vi.fn()} secret />);
+    const input = screen.getByLabelText('API key');
+    expect(input.getAttribute('type')).toBe('password');
+    expect(input.getAttribute('autocomplete')).toBe('off');
+    expect(input.getAttribute('spellcheck')).toBe('false');
+  });
 });

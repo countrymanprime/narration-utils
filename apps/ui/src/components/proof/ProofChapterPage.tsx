@@ -360,7 +360,17 @@ function ChapterView({ chapterId, notify, transcript, dawFileLinked, goToManuscr
           foundHere={compareRows.length}
         />
         <PreviewPanel notify={notify} goToManuscript={goToManuscript} />
-        <ProofingStagePanel notify={notify} goToManuscript={goToManuscript} refreshKey={refreshKey} />
+        <ProofingStagePanel
+          notify={notify}
+          chapter={chapter}
+          goToManuscript={goToManuscript}
+          refreshKey={refreshKey}
+          onStatusChanged={(status) => setChapter((current) => (current ? { ...current, status } : current))}
+          onOpenFinding={(findingId) => {
+            const index = flags.findIndex((flag) => flag.findingId === findingId);
+            if (index !== -1) selectFlag(index);
+          }}
+        />
         {checking && (
           <RecordingCheck
             chapter={chapter}

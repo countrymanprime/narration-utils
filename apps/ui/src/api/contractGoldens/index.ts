@@ -7,6 +7,7 @@ import { proofingGoldens } from './proofing';
 import { teleprompterGoldens } from './teleprompter';
 import { manuscriptGoldens } from './manuscript';
 import { storyBibleGoldens } from './storyBible';
+import { characterGoldens } from './character';
 import { projectGoldens } from './project';
 import { creditsGoldens } from './credits';
 import { assetsGoldens } from './assets';
@@ -21,6 +22,7 @@ import { editingGoldens } from './editing';
 import { workspaceGoldens } from './workspace';
 import { previewGoldens } from './preview';
 import { stagesGoldens } from './stages';
+import { proofingRenderGoldens } from './proofingRender';
 import { deliveryGoldens } from './delivery';
 import { dawGoldens } from './daw';
 import { providerGoldens } from './providers';
@@ -28,6 +30,7 @@ import { renderEncodeMasterGoldens } from './renderEncodeMaster';
 import { masteringGoldens } from './mastering';
 import { prepMarkupGoldens } from './prepMarkup';
 import { productionGoldens } from './production';
+import { pronunciationOnlineGoldens } from './pronunciationOnline';
 import { prepCompletenessGoldens } from './prepCompleteness';
 
 const FEATURE_AREAS: Array<Record<string, z.ZodType>> = [
@@ -36,6 +39,7 @@ const FEATURE_AREAS: Array<Record<string, z.ZodType>> = [
   teleprompterGoldens,
   manuscriptGoldens,
   storyBibleGoldens,
+  characterGoldens,
   projectGoldens,
   creditsGoldens,
   assetsGoldens,
@@ -50,6 +54,7 @@ const FEATURE_AREAS: Array<Record<string, z.ZodType>> = [
   workspaceGoldens,
   previewGoldens,
   stagesGoldens,
+  proofingRenderGoldens,
   deliveryGoldens,
   dawGoldens,
   providerGoldens,
@@ -57,6 +62,7 @@ const FEATURE_AREAS: Array<Record<string, z.ZodType>> = [
   masteringGoldens,
   prepMarkupGoldens,
   productionGoldens,
+  pronunciationOnlineGoldens,
   prepCompletenessGoldens,
 ];
 

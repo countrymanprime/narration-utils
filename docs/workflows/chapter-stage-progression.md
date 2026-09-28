@@ -19,7 +19,7 @@ from evidence it already holds, one rule per advance:
    See the editing check ([the audio engine panel](../guides/using-the-app/navigation.md#editing-check)).
 3. **Proofing to Finalized.** Zero open pickups from every source the narrator has marked required, and every
    required delivery or performance check is met; a check that is unavailable is unknown, never good. See
-   [Take review](../utilities/take-review.md) (pickups) and [Delivery](../guides/using-the-app/delivery.md).
+   [Take review](../utilities/take-review.md) (pickups) and [Master & QC](../guides/using-the-app/master-and-qc.md).
 
 ## Flow
 

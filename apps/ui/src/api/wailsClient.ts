@@ -31,17 +31,20 @@ import {
 import { dawCatalogListSchema } from './schemas/dawCatalog';
 import { dawCapabilitiesSchema, dawTransportSchema } from './schemas/daw';
 import { providerCapabilitiesSchema } from './schemas/providers';
+import { pronunciationOnlineBatchResultSchema, pronunciationOnlineKeyStatusSchema, pronunciationOnlineResultSchema } from './schemas/pronunciationOnline';
 import { masteringProvidersSchema } from './schemas/mastering';
 import { chapterSyncPreviewSchema, chapterSyncStateSchema } from './schemas/chapterSync';
 import {
   guideBuildResultSchema,
   guideCreatedSchema,
+  guideDialogueCuesSchema,
   guideEntitiesSchema,
   guidePreviewSchema,
   pronunciationQueriesCsvSchema,
   pronunciationQueriesSchema,
   queryImportResultSchema,
 } from './schemas/storyBible';
+import { approvedCharacterReferencesSchema, characterRegionsSchema, characterReferenceSchema } from './schemas/character';
 import { settingsForScopeSchema } from './schemas/settings';
 import { tracksDiscoverySchema, tracksProjectSchema } from './schemas/tracks';
 import {
@@ -65,6 +68,7 @@ import { editingCandidatesSchema, editingStartResultSchema, editingStateSchema }
 import { workspaceAlignmentResultSchema } from './schemas/workspace';
 import { pinnedPreviewSchema, previewResultSchema } from './schemas/preview';
 import { stageDecisionResultSchema, stageRecommendationsSchema } from './schemas/stages';
+import { proofingChooseRenderResultSchema, proofingRenderSchema } from './schemas/proofingRender';
 import {
   productionBurndownSchema,
   productionOverviewSchema,
@@ -279,6 +283,14 @@ export const wailsClient: NarrationApi = {
     decode(queryImportResultSchema, 'GuidePronunciationImportQueriesCSV', host.GuidePronunciationImportQueriesCSV(csvText)),
   guidePronunciationSetStatus: (id, status, note, aliasIndex) =>
     decode(voidResult, 'GuidePronunciationSetStatus', host.GuidePronunciationSetStatus(id, aliasIndex ?? null, status, note ?? null)),
+  guideDialogueCues: () => decode(guideDialogueCuesSchema, 'GuideDialogueCues', host.GuideDialogueCues()),
+  guideCorrectCue: (cueId, speakerEntityId) => decode(voidResult, 'GuideCorrectCue', host.GuideCorrectCue(cueId, speakerEntityId)),
+  characterListRegions: () => decode(characterRegionsSchema, 'CharacterListRegions', host.CharacterListRegions()),
+  characterApprove: (characterId, regionGuid, note) =>
+    decode(characterReferenceSchema, 'CharacterApprove', host.CharacterApprove(characterId, regionGuid, note ?? '')),
+  characterRevoke: (id) => decode(voidResult, 'CharacterRevoke', host.CharacterRevoke(id)),
+  characterReferences: () => decode(approvedCharacterReferencesSchema, 'CharacterReferences', host.CharacterReferences()),
+  characterRemoveVoiceData: () => decode(voidResult, 'CharacterRemoveVoiceData', host.CharacterRemoveVoiceData()),
   ttsCatalog: () => decode(ttsCatalogSchema, 'TtsCatalog', host.TtsCatalog()),
   ttsInstall: (voiceId) => decode(ttsInstallJobSchema, 'TtsInstall', host.TtsInstall(voiceId)),
   ttsInstallState: (jobId) => decode(ttsInstallJobSchema, 'TtsInstallState', host.TtsInstallState(jobId)),
@@ -368,6 +380,9 @@ export const wailsClient: NarrationApi = {
   stageConfirm: (chapterId, target, basisKey) => decode(stageDecisionResultSchema, 'StageConfirm', host.StageConfirm(chapterId, target, basisKey)),
   stageDismiss: (chapterId, target, basisKey) => decode(stageDecisionResultSchema, 'StageDismiss', host.StageDismiss(chapterId, target, basisKey)),
   stageRevert: (chapterId) => decode(stageDecisionResultSchema, 'StageRevert', host.StageRevert(chapterId)),
+  proofingRenderState: (chapterId) => decode(proofingRenderSchema, 'ProofingRenderState', host.ProofingRenderState(chapterId)),
+  proofingChooseRender: (chapterId) => decode(proofingChooseRenderResultSchema, 'ProofingChooseRender', host.ProofingChooseRender(chapterId)),
+  proofingClearRender: (chapterId) => decode(proofingRenderSchema, 'ProofingClearRender', host.ProofingClearRender(chapterId)),
   productionOverview: () => decode(productionOverviewSchema, 'ProductionOverview', host.ProductionOverview()),
   prepCompletenessSummary: () => decode(prepCompletenessSummarySchema, 'PrepCompletenessSummary', host.PrepCompletenessSummary()),
   productionStartTimer: (chapterId, stage) => decode(productionStartResultSchema, 'ProductionStartTimer', host.ProductionStartTimer(chapterId, stage)),
@@ -475,6 +490,13 @@ export const wailsClient: NarrationApi = {
   dawCatalogList: () => decode(dawCatalogListSchema, 'DawCatalogList', host.DawCatalogList()),
   dawCatalogOpenDownloadPage: (id) => decode(voidResult, 'DawCatalogOpenDownloadPage', host.DawCatalogOpenDownloadPage(id)),
   pronunciationLookupOpen: (source, word) => decode(voidResult, 'PronunciationLookupOpen', host.PronunciationLookupOpen(source, word)),
+  pronunciationOnlineKeyStatus: () => decode(pronunciationOnlineKeyStatusSchema, 'PronunciationOnlineKeyStatus', host.PronunciationOnlineKeyStatus()),
+  pronunciationOnlineKeySet: (key) => decode(pronunciationOnlineKeyStatusSchema, 'PronunciationOnlineKeySet', host.PronunciationOnlineKeySet(key)),
+  pronunciationOnlineKeyClear: () => decode(pronunciationOnlineKeyStatusSchema, 'PronunciationOnlineKeyClear', host.PronunciationOnlineKeyClear()),
+  pronunciationOnlineSignUpOpen: () => decode(voidResult, 'PronunciationOnlineSignUpOpen', host.PronunciationOnlineSignUpOpen()),
+  pronunciationOnlineLookup: (word) => decode(pronunciationOnlineResultSchema, 'PronunciationOnlineLookup', host.PronunciationOnlineLookup(word)),
+  pronunciationOnlineLookupBatch: (words, confirmedCount) =>
+    decode(pronunciationOnlineBatchResultSchema, 'PronunciationOnlineLookupBatch', host.PronunciationOnlineLookupBatch(words, confirmedCount)),
   dawCapabilities: () => decode(dawCapabilitiesSchema, 'DawCapabilities', host.DawCapabilities()),
   subscribeDawCapabilities: (onUpdate) => subscribeChecked('daw_capabilities_changed', dawCapabilitiesSchema, onUpdate),
   providerCapabilities: () => decode(providerCapabilitiesSchema, 'ProviderCapabilities', host.ProviderCapabilities()),

@@ -110,6 +110,7 @@ var stressReaders = []stressReader{
 		_, _ = h.TeleprompterSaveFlags("ch-1", []liveflags.Flag{{Kind: "misread", ParagraphID: "p-1", WordStart: 0, WordEnd: 1}})
 	}},
 	{"DawCapabilities", func(h *Host) { _, _ = h.DawCapabilities() }},
+	{"PronunciationOnlineKeyStatus", func(h *Host) { _, _ = h.PronunciationOnlineKeyStatus() }},
 	{"ProviderCapabilities", func(h *Host) { _, _ = h.ProviderCapabilities() }},
 	{"MasteringProviders", func(h *Host) { _, _ = h.MasteringProviders() }},
 	{"MasteringChooseProvider (clear)", func(h *Host) { _, _ = h.MasteringChooseProvider("") }},
@@ -185,6 +186,9 @@ var stressReaders = []stressReader{
 	{"StageConfirm (refused)", func(h *Host) { _, _ = h.StageConfirm("c-0001", "editing", "key") }},
 	{"StageDismiss (refused)", func(h *Host) { _, _ = h.StageDismiss("c-0001", "editing", "key") }},
 	{"StageRevert (refused)", func(h *Host) { _, _ = h.StageRevert("c-0001") }},
+	{"ProofingRenderState", func(h *Host) { _, _ = h.ProofingRenderState("c-0001") }},
+	{"ProofingChooseRender (no window)", func(h *Host) { _, _ = h.ProofingChooseRender("c-0001") }},
+	{"ProofingClearRender", func(h *Host) { _, _ = h.ProofingClearRender("c-0001") }},
 	{"ProductionOverview", func(h *Host) { _, _ = h.ProductionOverview() }},
 	{"ProductionStartTimer (unknown chapter)", func(h *Host) { _, _ = h.ProductionStartTimer("missing", "recording") }},
 	{"ProductionStopTimer", func(h *Host) { _, _ = h.ProductionStopTimer() }},

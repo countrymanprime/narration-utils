@@ -89,7 +89,7 @@ const PAIRS: PairSpec[] = [
   ),
   text('warn-on-accent-soft', 'SKIPPED word in the inline diff: warn text on accent-soft', 'var(--warn-text)', ['surface-2'], 'var(--accent-soft)'),
   text('info', 'the text-safe info colour on the page', 'var(--info-text)', PAGE_SURFACES),
-  text('ok', 'a rule met on the Delivery page: the text-safe ok colour', 'var(--ok-text)', PAGE_SURFACES),
+  text('ok', 'a rule met on Master & QC: the text-safe ok colour', 'var(--ok-text)', PAGE_SURFACES),
   text(
     'experimental',
     'the text-safe experimental colour: an ADR 0300 capability the host reports as experimental (studio-ui-primitives.prd.md Phase 1, ADR 0360 Q6)',
@@ -358,8 +358,8 @@ const tokensUsedAsText = (): Set<string> => new Set([...textColourUses().values(
 // (a conditional, a fallback or a colour map slips past a pattern for text colours). Whether a listed use really is an icon,
 // a dot or a decorative glyph is the reviewer's call: the test only makes every use visible.
 const NON_TEXT_USES: Record<string, { count: number; what: string }> = {
-  'components/delivery/BookChecklistPanel.tsx': { count: 1, what: 'the ear icon beside a book rule the narrator checks by listening' },
-  'components/delivery/DeliveryProfilePanel.tsx': { count: 1, what: 'the ear icon beside a rule the narrator checks by listening' },
+  'components/master/BookChecklist.tsx': { count: 1, what: 'the ear icon beside a book rule the narrator checks by listening' },
+  'components/master/DeliveryProfilePanel.tsx': { count: 1, what: 'the ear icon beside a rule the narrator checks by listening' },
   'chapterStatus.ts': { count: 1, what: 'the Not Started status colour: a dot and a meter segment, never text' },
   'components/production/ChapterTrackPanel.tsx': { count: 1, what: "the panel header's linked-track colour dot" },
   'components/layout/AppShell.tsx': { count: 1, what: 'the folder icon beside the project name' },

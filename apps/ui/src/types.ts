@@ -3,6 +3,7 @@
 export * from './api/contracts/system';
 export * from './api/contracts/manuscript';
 export * from './api/contracts/storyBible';
+export * from './api/contracts/character';
 export * from './api/contracts/transcript';
 export * from './api/contracts/assets';
 export * from './api/contracts/tts';
@@ -39,6 +40,8 @@ export * from './api/contracts/daw';
 export * from './api/contracts/providers';
 export * from './api/contracts/production';
 export * from './api/contracts/pronunciationLookup';
+export * from './api/contracts/pronunciationOnline';
+export * from './api/contracts/proofingRender';
 export * from './api/contracts/prepCompleteness';
 export * from './api/contracts/renderEncodeMaster';
 
@@ -49,6 +52,7 @@ import type { FindingsApi } from './api/contracts/findings';
 import type { ManuscriptApi } from './api/contracts/manuscript';
 import type { ProjectApi } from './api/contracts/project';
 import type { StoryBibleApi } from './api/contracts/storyBible';
+import type { CharacterApi } from './api/contracts/character';
 import type { SystemApi } from './api/contracts/system';
 import type { TakeReviewApi } from './api/contracts/takeReview';
 import type { TeleprompterApi } from './api/contracts/teleprompter';
@@ -82,6 +86,8 @@ import type { DawCapabilitiesApi } from './api/contracts/daw';
 import type { ProviderCapabilitiesApi } from './api/contracts/providers';
 import type { MasteringApi } from './api/contracts/mastering';
 import type { PronunciationLookupApi } from './api/contracts/pronunciationLookup';
+import type { PronunciationOnlineApi } from './api/contracts/pronunciationOnline';
+import type { ProofingRenderApi } from './api/contracts/proofingRender';
 import type { PrepCompletenessApi } from './api/contracts/prepCompleteness';
 import type { RenderEncodeMasterApi } from './api/contracts/renderEncodeMaster';
 
@@ -91,6 +97,7 @@ export interface NarrationApi
     SystemApi,
     ManuscriptApi,
     StoryBibleApi,
+    CharacterApi,
     TranscriptApi,
     TtsApi,
     WhisperApi,
@@ -128,5 +135,7 @@ export interface NarrationApi
     MasteringApi,
     ProductionApi,
     PronunciationLookupApi,
+    PronunciationOnlineApi,
+    ProofingRenderApi,
     PrepCompletenessApi,
     RenderEncodeMasterApi {}

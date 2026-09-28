@@ -67,7 +67,9 @@ describe('RenderConfigDialog', () => {
 
   it('the API surface offers only configure-render methods, never a render-triggering one', () => {
     const { api } = renderDialog();
-    const renderNamed = Object.keys(api).filter((name) => /render/i.test(name));
+    // Matches this dialog's own vocabulary (REAPER's render, `renderConfig*`/`subscribeRenderConfig`), not a chapter's
+    // rendered file (proofing-readiness-signals.prd.md Phase 6's `proofing*Render*`), a different, unrelated "render".
+    const renderNamed = Object.keys(api).filter((name) => /^(render|subscribeRender)/i.test(name));
     expect(renderNamed.sort()).toEqual(['renderConfigConfigure', 'renderConfigState', 'renderConfigSuggestFolder', 'subscribeRenderConfig']);
   });
 });
