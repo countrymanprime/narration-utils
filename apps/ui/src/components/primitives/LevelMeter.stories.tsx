@@ -29,6 +29,10 @@ export const CompactSize: Story = { args: { peak: -14, rms: -24, size: 'compact'
 
 export const CustomFloorAndCeiling: Story = { args: { peak: -12, rms: -18, floor: -80, ceiling: -10, label: 'Room level' } };
 
+// The benchmark's Booth input meter (mock B03): a fixed body/hot/over gradient, masked into LED segments, with only the
+// reading's width revealed.
+export const BoothInputMeter: Story = { name: 'Booth input meter (mock B03)', args: { peak: -14.2, rms: -18, size: 'booth', className: 'w-56' } };
+
 export const IsNamedAndReadsItsValue: Story = {
   play: async ({ canvasElement }) => {
     const meter = within(canvasElement).getByRole('meter', { name: 'Input level' });
