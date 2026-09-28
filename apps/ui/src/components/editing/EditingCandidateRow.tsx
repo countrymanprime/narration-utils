@@ -6,6 +6,7 @@ import { apiErrorMessage } from '../../api/errorMessage';
 import { usePendingAction } from '../../hooks/usePendingAction';
 import type { Finding, FindingReviewStatus, ReaperStatus } from '../../types';
 import { Button } from '../primitives/Button';
+import { InsetCard } from '../primitives/InsetCard';
 import { confidenceLabel, formatTime, STATUS_LABELS } from '../proof/findingFormat';
 import { hasAudio, ReaperControls } from '../proof/ReaperControls';
 import { useRangePlayer } from '../engine/useRangePlayer';
@@ -75,8 +76,9 @@ export function EditingCandidateRow({
   };
 
   return (
-    <section
-      className="space-y-2 rounded-md border border-[var(--border)] px-3 py-2"
+    <InsetCard
+      as="section"
+      className="space-y-2"
       aria-label={`${cls ? EDITING_CLASS_LABEL[cls] : 'Candidate'} at ${formatTime(finding.time_range?.start ?? 0)}`}
     >
       <div className="flex flex-wrap items-center justify-between gap-2">
@@ -142,6 +144,6 @@ export function EditingCandidateRow({
         </p>
       )}
       {hasAudio(finding) && <ReaperControls finding={finding} status={reaperStatus} onStatusChange={onReaperStatusChange} />}
-    </section>
+    </InsetCard>
   );
 }

@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { WorkspaceExtra, WorkspaceParagraph, WorkspaceToken } from '../../api/contracts/workspace';
 import { Button } from '../primitives/Button';
+import { Panel } from '../primitives/Panel';
+import { SectionLabel } from '../primitives/SectionLabel';
 import { StatusBadge } from '../primitives/StatusBadge';
 
 const STATUS_CLASS: Partial<Record<WorkspaceToken['status'], string>> = {
@@ -129,11 +131,11 @@ export function ScriptView({
   const wordCount = tokens.length;
 
   return (
-    <section aria-label="Script" className="rounded-lg border border-[var(--border)] bg-[var(--surface)] p-[1.1rem] shadow-[var(--shadow)]">
+    <Panel label="Script">
       <div className="flex flex-wrap items-center justify-between gap-2 text-sm" style={{ color: 'var(--text-muted)' }}>
-        <span className="section-label">
+        <SectionLabel>
           Script &middot; {paragraphs.length} paragraphs &middot; {wordCount.toLocaleString()} words
-        </span>
+        </SectionLabel>
         <span>
           {!isPlaying ? 'Paused · click a word to play from it' : autoFollow ? 'Following playback · scroll away to stop following' : 'Not following playback'}
           {isPlaying && !autoFollow && (
@@ -193,6 +195,6 @@ export function ScriptView({
           );
         })}
       </div>
-    </section>
+    </Panel>
   );
 }

@@ -9,6 +9,8 @@ import type { ChapterTrackLink, ChapterTrackSummary, Track } from '../../types';
 import { formatAudioTime, formatWhen } from './recordingCheckText';
 import { MappingConfirm } from '../mapping/MappingConfirm';
 import { Button } from '../primitives/Button';
+import { InsetCard } from '../primitives/InsetCard';
+import { SectionLabel } from '../primitives/SectionLabel';
 import { SlideOver } from '../primitives/SlideOver';
 import type { Notify } from '../primitives/Toast';
 import { chapterTrackButtonState } from './chapterTrackButtonState';
@@ -16,8 +18,6 @@ import { RemoveFromRecordingDialog } from './RemoveFromRecordingDialog';
 import { useTrackPlayback } from '../engine/useTrackPlayback';
 
 const noop = () => {};
-
-const EYEBROW = "font-['Barlow_Condensed',sans-serif] text-[0.72rem] font-semibold tracking-[0.08em] text-[var(--text-muted)] uppercase";
 
 // Recorded length as the mockup writes it (chapter-track-link-control mock 02, "13m"): seconds under a minute.
 const recordedLength = (seconds: number) => (seconds < 60 ? `${Math.round(seconds)}s` : `${Math.round(seconds / 60)}m`);
@@ -156,22 +156,24 @@ export function ChapterTrackPanel({
           <Header chapterTitle={shortName} link={link} trackSummary={trackSummary} />
           {/* The state's own sentence (chapter-track-link-control mocks 03-05). */}
           {state?.kind === 'missing' && (
-            <p role="alert" className="rounded-md border px-3 py-2" style={{ borderColor: 'var(--danger)', color: 'var(--danger-text)' }}>
-              The linked track{link.track?.trackName ? ` “${link.track.trackName}”` : ''} is not in the saved project. It may have been deleted or the project
-              saved elsewhere. Link another track, or unlink.
-            </p>
+            <InsetCard as="p" role="alert" tone="danger">
+              <span style={{ color: 'var(--danger-text)' }}>
+                The linked track{link.track?.trackName ? ` “${link.track.trackName}”` : ''} is not in the saved project. It may have been deleted or the project
+                saved elsewhere. Link another track, or unlink.
+              </span>
+            </InsetCard>
           )}
           {state?.kind === 'suggested' && <p>Not linked yet. This track looks like the chapter; link it to use it for checks and recorded time.</p>}
           {link.status === 'ambiguous' && link.links.length <= 1 && link.candidates.length > 1 && (
-            <p className="rounded-md border px-3 py-2" style={{ borderColor: 'var(--warn)' }}>
+            <InsetCard as="p" tone="warn">
               {link.candidates.length} tracks look like this chapter. Link the one it is recorded on.
-            </p>
+            </InsetCard>
           )}
           {trackSummary && (
             <section aria-labelledby="chapter-track-facts" className="space-y-1.5">
-              <h3 id="chapter-track-facts" className={EYEBROW}>
+              <SectionLabel as="h3" id="chapter-track-facts">
                 As of last save {formatWhen(savedAt)}
-              </h3>
+              </SectionLabel>
               <Fact label="Items" value={`${trackSummary.playableCount} playable of ${trackSummary.itemCount}`} />
               {trackSummary.missingSourceCount > 0 && <Fact label="Missing sources" value={String(trackSummary.missingSourceCount)} />}
               {trackSummary.span && <Fact label="Span" value={`${formatAudioTime(trackSummary.span.start)} to ${formatAudioTime(trackSummary.span.end)}`} />}
@@ -226,20 +228,20 @@ export function ChapterTrackPanel({
           )}
           {link.status === 'ambiguous' && link.links.length > 1 && (
             <section aria-labelledby="chapter-track-conflict" className="space-y-2">
-              <h3 id="chapter-track-conflict" className={EYEBROW}>
+              <SectionLabel as="h3" id="chapter-track-conflict">
                 Linked to {link.links.length} tracks
-              </h3>
+              </SectionLabel>
               <p style={{ color: 'var(--text-muted)' }}>Keep one link; the others will be cleared.</p>
               <ul className="space-y-2">
                 {link.links.map((mapping) => {
                   const summary = tracks?.find((track) => track.guid === mapping.trackGuid);
                   return (
-                    <li key={mapping.trackGuid} className="flex items-center justify-between gap-2 rounded-md border border-[var(--border)] px-3 py-2">
+                    <InsetCard as="li" key={mapping.trackGuid} className="flex items-center justify-between gap-2">
                       <span>{summary?.name || 'Track'}</span>
                       <Button variant="secondary" disabled={busy} pending={busy} onClick={() => void link_(mapping.trackGuid)}>
                         Keep this one
                       </Button>
-                    </li>
+                    </InsetCard>
                   );
                 })}
               </ul>
@@ -247,12 +249,12 @@ export function ChapterTrackPanel({
           )}
           {link.candidates.length > 0 && !link.track && !(link.status === 'ambiguous' && link.links.length > 1) && (
             <section aria-labelledby="chapter-track-candidates" className="space-y-2">
-              <h3 id="chapter-track-candidates" className={EYEBROW}>
+              <SectionLabel as="h3" id="chapter-track-candidates">
                 Possible tracks
-              </h3>
+              </SectionLabel>
               <ul className="space-y-2">
                 {link.candidates.map((candidate) => (
-                  <li key={candidate.trackGuid} className="flex items-center justify-between gap-2 rounded-md border border-[var(--border)] px-3 py-2">
+                  <InsetCard as="li" key={candidate.trackGuid} className="flex items-center justify-between gap-2">
                     <span>
                       {candidate.trackName}
                       {candidate.region && <span style={{ color: 'var(--text-muted)' }}> · region "{candidate.region.name}"</span>}
@@ -260,15 +262,15 @@ export function ChapterTrackPanel({
                     <Button disabled={busy} pending={busy} onClick={() => void link_(candidate.trackGuid)}>
                       Link
                     </Button>
-                  </li>
+                  </InsetCard>
                 ))}
               </ul>
             </section>
           )}
           <section aria-labelledby="chapter-track-link" className="space-y-2">
-            <h3 id="chapter-track-link" className={EYEBROW}>
+            <SectionLabel as="h3" id="chapter-track-link">
               Link
-            </h3>
+            </SectionLabel>
             {tracksError ? (
               <p style={{ color: 'var(--danger-text)' }}>The REAPER tracks could not be listed: {tracksError}</p>
             ) : !tracks ? (
@@ -288,9 +290,9 @@ export function ChapterTrackPanel({
             )}
           </section>
           <section aria-labelledby="chapter-track-remove" className="space-y-2 border-t border-[var(--border)] pt-3">
-            <h3 id="chapter-track-remove" className={EYEBROW}>
+            <SectionLabel as="h3" id="chapter-track-remove">
               Chapter
-            </h3>
+            </SectionLabel>
             <p style={{ color: 'var(--text-muted)' }}>Imported by mistake? Take it out of the board and totals. Its text stays in the manuscript.</p>
             <Button variant="danger" onClick={() => setRemoveOpen(true)}>
               Remove from recording…
@@ -326,7 +328,7 @@ function Header({ chapterTitle, link, trackSummary }: { chapterTitle: string; li
           {trackSummary && <div style={{ color: 'var(--text-muted)' }}>Track {trackSummary.index + 1}</div>}
         </div>
       </div>
-      <span className={EYEBROW}>{STATE_LABEL[state.kind]}</span>
+      <SectionLabel>{STATE_LABEL[state.kind]}</SectionLabel>
     </div>
   );
 }

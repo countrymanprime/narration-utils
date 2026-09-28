@@ -80,7 +80,7 @@ export function ReadAlongView({ session: t, follow, header, marks, onOpenMark, a
         ) : (
           <Panel>
             {!aside && !hideKey && <ReaderKey seekable={t.active} />}
-            <div className={aside ? '' : 'mt-3'}>{text}</div>
+            <div className={aside || hideKey ? '' : 'mt-3'}>{text}</div>
           </Panel>
         ))}
       {t.prompt && (

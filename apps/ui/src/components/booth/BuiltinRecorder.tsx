@@ -8,6 +8,7 @@ import { IconButton } from '../primitives/IconButton';
 import { LevelMeter } from '../primitives/LevelMeter';
 import { Panel } from '../primitives/Panel';
 import { HeaderChip } from '../primitives/HeaderChip';
+import { SectionLabel } from '../primitives/SectionLabel';
 import { StatusBadge } from '../primitives/StatusBadge';
 import { ToggleGroup } from '../primitives/ToggleGroup';
 import { TooltipTarget } from '../primitives/Tooltip';
@@ -22,7 +23,6 @@ import type { Recorder } from './useRecorder';
 // list. The pre-session setup gains "Record with" and, for the built-in recorder, its input device (the shared picker, Q6).
 
 const LABEL_CLASS = 'block text-[0.82rem] font-medium text-[var(--text-muted)]';
-const SECTION_LABEL = "font-['Barlow_Condensed',sans-serif] text-[0.72rem] font-semibold tracking-[0.08em] text-[var(--text-muted)] uppercase";
 const MONO = "font-['IBM_Plex_Mono',ui-monospace,monospace]";
 
 const ENGINE_OPTIONS = [
@@ -229,9 +229,9 @@ export function RecorderTakes({ recorder }: { recorder: Recorder }) {
     last && (last.error ?? (last.dropouts > 0 ? `${last.name} lost audio ${last.dropouts} ${last.dropouts === 1 ? 'time' : 'times'}.` : null));
   return (
     <section aria-labelledby={headingId} className="mb-4 space-y-1.5">
-      <h2 id={headingId} className={SECTION_LABEL}>
+      <SectionLabel as="h2" id={headingId}>
         Takes
-      </h2>
+      </SectionLabel>
       <p className="text-sm">
         {state.takes.length === 0 ? (
           'No takes yet. Record starts the first.'
