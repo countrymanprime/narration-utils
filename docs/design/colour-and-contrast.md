@@ -45,7 +45,7 @@ Studio UI Primitives' Phase 1 ([ADR 0360](../adr/0360-studio-primitives-land-as-
 | An icon, dot, decorative glyph, an unset colour | `--non-text` (and list it in `NON_TEXT_USES` in `paletteContrast.test.ts` with what it draws) |
 | The current item on an accent tint (navigation, tabs) | `--accent-strong` |
 | Error, warning or info text, on the page or on a soft fill | `--danger-text`, `--warn-text`, `--info-text`; `--danger`, `--warn` and `--info` stay for borders, dots and fills |
-| A requirement met (the Delivery page's rule results) | `--ok-text`; `--ok` stays for borders, dots and fills |
+| A requirement met (Master & QC's rule results) | `--ok-text`; `--ok` stays for borders, dots and fills |
 | An entity's text on a tint of its own colour (highlights, badges) | `--<kind>-text` |
 | Anything else | A token from `styles.css` with a pair declared in `paletteContrast.test.ts`; never a Tailwind palette colour (`text-red-400`) or a literal colour |
 

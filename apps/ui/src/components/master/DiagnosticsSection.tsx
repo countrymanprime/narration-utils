@@ -49,14 +49,14 @@ function ThresholdsPanel({ job }: { job: DiagnosticsJob | undefined }) {
 }
 
 /**
- * The Delivery page's Diagnostics tab (docs/prds/diagnostics-delivery-and-cleanup-tools.prd.md Phase 6): the windowed analyzers
+ * Master & QC's Diagnostics section, formerly the Delivery page's tab (docs/prds/diagnostics-delivery-and-cleanup-tools.prd.md Phase 6): the windowed analyzers
  * (ADR 0158) over files picked for measuring, as a host job with real progress and Cancel (ADR 0015). Each finding shows its time in
  * the file, what was measured, the threshold that raised it and whether the audio is a raw recording or a rendered chapter, never a
  * grade. It is read-only: nothing is saved, played or sent to REAPER, so every finding stays unreviewed (PRD Open Question 4), and
  * the narrator listens at those times in REAPER (Open Question 8). `measuredPaths` are the files of the last measurement, which the
  * host already accepts, so they can be checked without picking them again.
  */
-export function DiagnosticsTab({ measuredPaths }: { measuredPaths: readonly string[] }) {
+export function DiagnosticsSection({ measuredPaths }: { measuredPaths: readonly string[] }) {
   const api = useApi();
   const [job, setJob] = useState<DiagnosticsJob>();
   const [jobError, setJobError] = useState<string>();

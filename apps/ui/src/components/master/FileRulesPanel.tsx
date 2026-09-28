@@ -5,7 +5,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '.
 import { deliveryProfileTitle, describeMet, describeMiss, formatRuleValue, requirementOwner } from './deliveryProfile';
 import { formatLength, formatLevel } from './deliveryFormat';
 import { Requirement } from './DeliveryProfilePanel';
-import { describeFormat } from './MeasurementsTable';
+import { describeFormat } from './PerFileChecks';
 import { ResultMark, VerificationMark } from './RuleBadges';
 
 const MONO = "font-['IBM_Plex_Mono',ui-monospace,monospace]";

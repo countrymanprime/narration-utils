@@ -1,4 +1,4 @@
-// The Delivery page's reading of a delivery profile (docs/prds/delivery-platform-profiles.prd.md, ADR 0179): how a profile is
+// Master & QC's reading of a delivery profile (docs/prds/delivery-platform-profiles.prd.md, ADR 0179): how a profile is
 // named, how a rule's bound and a measured value are written, and the words for a rule's result. The host judges
 // (deliveryprofile.EvaluateFile, on every read of the measurement); the page only shows its results.
 import type { DeliveryProfile, DeliveryRule, DeliveryRuleResult } from '../../types';

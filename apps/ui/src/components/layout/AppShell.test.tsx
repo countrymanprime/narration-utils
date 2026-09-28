@@ -30,7 +30,7 @@ describe('AppShell nav gating (PRD project-workspace-and-daw-link.prd.md, W16/W1
     for (const name of ['Script', 'Story Bible', 'Booth']) {
       expect(screen.getAllByRole('button', { name }).every((button) => (button as HTMLButtonElement).disabled)).toBe(true);
     }
-    for (const name of ['Home', 'Proof', 'Pickups', 'Delivery']) {
+    for (const name of ['Home', 'Proof', 'Pickups', 'Master & QC']) {
       expect(screen.getAllByRole('button', { name }).every((button) => (button as HTMLButtonElement).disabled)).toBe(false);
     }
     expect(screen.getAllByRole('group', { name: /Import a manuscript to unlock this page/ }).length).toBeGreaterThan(0);
@@ -109,7 +109,7 @@ describe('AppShell grouped navigation (Phase 1)', () => {
 
   it('lists every other page, with Proof in place of Proofing and Review (Phase 5) and Booth in place of the Teleprompter (Phase 4)', () => {
     renderShell();
-    for (const name of ['Home', 'Script', 'Story Bible', 'Booth', 'Proof', 'Pickups', 'Delivery', 'Settings']) {
+    for (const name of ['Home', 'Script', 'Story Bible', 'Booth', 'Proof', 'Pickups', 'Master & QC', 'Settings']) {
       expect(screen.getAllByRole('button', { name }).length).toBeGreaterThan(0);
     }
   });

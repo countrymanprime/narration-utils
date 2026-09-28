@@ -71,7 +71,7 @@ export async function clickVisible(page: Page, role: Parameters<Page['getByRole'
     .click();
 }
 
-type AppPage = 'Home' | 'Production' | 'Script' | 'Story Bible' | 'Booth' | 'Proof' | 'Pickups' | 'Delivery' | 'Settings';
+type AppPage = 'Home' | 'Production' | 'Script' | 'Story Bible' | 'Booth' | 'Proof' | 'Pickups' | 'Master & QC' | 'Settings';
 
 // Every page opens with the shared `Heading` primitive, an <h1>: it is what proves the page has arrived. Home's is "Welcome back".
 export const PAGE_HEADING: Record<AppPage, string> = {
@@ -83,7 +83,7 @@ export const PAGE_HEADING: Record<AppPage, string> = {
   Booth: 'Booth',
   Proof: 'Proof',
   Pickups: 'Pickups',
-  Delivery: 'Delivery',
+  'Master & QC': 'Master & QC',
   Settings: 'Settings',
 };
 
@@ -216,15 +216,17 @@ export async function confirmApprovedMarker(page: Page): Promise<Locator> {
   return dialog;
 }
 
-// Opens Delivery (after a reload with mock seams, when given) and waits for the delivery profile to have been read, so the panel
-// shows what the page judges against (delivery-platform-profiles.prd.md Phase 3).
-export async function openDelivery(page: Page, query = ''): Promise<void> {
+// Opens Master & QC (after a reload with mock seams, when given) and waits for the delivery profile and the mastering chain to
+// have been read, so the page shows what it judges against and masters with (stage-navigation-and-page-replacement.prd.md
+// Phase 8; delivery-platform-profiles.prd.md Phase 3).
+export async function openMaster(page: Page, query = ''): Promise<void> {
   if (query) {
     await page.goto(`/${query}`);
     await settlePage(page);
   }
-  await goToPage(page, 'Delivery');
+  await goToPage(page, 'Master & QC');
   await page.getByRole('button', { name: /^Rules and their sources/ }).waitFor();
+  await page.getByRole('list', { name: 'Mastering steps' }).waitFor();
 }
 
 // Opens Production, with a `?mockProduction=` seed when given, once its board is drawn. By direct navigation, not
@@ -237,32 +239,32 @@ export async function openProduction(page: Page, query = ''): Promise<void> {
   await page.getByRole('grid', { name: 'Chapter pipeline' }).waitFor();
 }
 
-// Opens Delivery and measures the mock picker's three files (two WAVs, one of them silent, and an MP3). The mock reads a quarter of
-// a file per poll, so a measurement that is not held runs to its end in a few seconds.
-export async function measureOnDelivery(page: Page, query = ''): Promise<void> {
-  await openDelivery(page, query);
-  await page.getByRole('button', { name: 'Choose files to measure…' }).click();
-  await page.getByRole('table', { name: 'Measurements' }).waitFor();
+// Opens Master & QC and checks the mock picker's three files (two WAVs, one of them silent, and an MP3). The mock reads a quarter
+// of a file per poll, so a measurement that is not held runs to its end in a few seconds.
+export async function measureOnMaster(page: Page, query = ''): Promise<void> {
+  await openMaster(page, query);
+  await page.getByRole('button', { name: 'Check files…' }).click();
+  await page.getByRole('table', { name: 'Per-file checks' }).waitFor();
 }
 
-// Opens Delivery's Diagnostics tab (diagnostics PRD Phase 6), after a reload with mock seams when given, once its thresholds are read.
+// Opens Master & QC's Diagnostics section (diagnostics PRD Phase 6), after a reload with mock seams when given, once its
+// thresholds are read, and scrolls it to the top of the window: it sits below the checks and the mastering chain.
 export async function openDiagnostics(page: Page, query = ''): Promise<void> {
-  await openDelivery(page, query);
-  await page.getByRole('tab', { name: 'Diagnostics' }).click();
+  await openMaster(page, query);
   await page.getByRole('region', { name: 'Thresholds' }).getByText('Room-tone change').waitFor();
+  await scrollToTop(page, page.getByRole('region', { name: 'Diagnostics' }));
 }
 
-// Opens Delivery's Master & QC tab (render-encode-master.prd.md Phase 5), after a reload with mock seams when given.
-export async function openMasterQc(page: Page, query = ''): Promise<void> {
-  await openDelivery(page, query);
-  await page.getByRole('tab', { name: 'Master & QC' }).click();
-  await page.getByRole('button', { name: 'Choose files…' }).waitFor();
+// Scrolls a region to the top of the page's scroller, so a capture of the window shows it (a section below the fold).
+export async function scrollToTop(page: Page, region: Locator): Promise<void> {
+  await region.evaluate((element) => element.scrollIntoView({ block: 'start' }));
+  await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => resolve(undefined))));
 }
 
-// Picks the mock's five files (opening/closing credits, two chapters, a retail sample) on Master & QC and assigns the
-// three non-chapter roles the mock picker cannot infer on its own.
-export async function pickMasterQcFiles(page: Page): Promise<void> {
-  await page.getByRole('button', { name: 'Choose files…' }).click();
+// Picks the mock's five files (opening/closing credits, two chapters, a retail sample) with Master & QC's "Master all to spec…"
+// (render-encode-master.prd.md Phase 5) and assigns the three non-chapter roles the mock picker cannot infer on its own.
+export async function pickFilesToMaster(page: Page): Promise<void> {
+  await page.getByRole('button', { name: 'Master all to spec…' }).click();
   await page.getByRole('table', { name: 'Files to export' }).waitFor();
   await page.getByLabel('Role for 00 Opening credits.wav').selectOption('credits_opening');
   await page.getByLabel('Role for 00 Closing credits.wav').selectOption('credits_closing');
@@ -287,7 +289,7 @@ export async function diagnosticsEnded(page: Page, message: string | RegExp): Pr
 // Waits for the measurement to end with `message` on the page (the unheld mock reads three files in twelve polls, about six
 // seconds), then dismisses the toast the same end raises (job:ended, ADR 0076), which would otherwise race the screenshot.
 export async function measurementEnded(page: Page, message: string | RegExp): Promise<void> {
-  await page.getByRole('region', { name: 'Measurements' }).getByText(message).waitFor({ timeout: 15_000 });
+  await page.getByRole('region', { name: 'Per-file checks' }).getByText(message).waitFor({ timeout: 15_000 });
   const dismissToast = page.getByRole('button', { name: 'Dismiss message' });
   await dismissToast.click({ timeout: 1_000 }).catch(() => undefined);
   await dismissToast.waitFor({ state: 'detached' });
@@ -626,10 +628,10 @@ export async function openLinkedProofChapter(page: Page, chapterTitle: string): 
 // the manuscript-not-found banner without a mock-data override seam). Those
 // are left out here on purpose - the catalog entry is simply skipped.
 
-// Measures the mock's three files on Delivery, then opens the 48 kHz render's sample-rate finding on Proof's notes, where the
+// Measures the mock's three files on Master & QC, then opens the 48 kHz render's sample-rate finding on Proof's notes, where the
 // measurement saved it (delivery-platform-profiles.prd.md Phase 9).
 export async function openDeliveryFindingOnProof(page: Page): Promise<void> {
-  await measureOnDelivery(page);
+  await measureOnMaster(page);
   await measurementEnded(page, /^Measured 2 of 3 files; 1 could not be measured\./);
   await goToPage(page, 'Proof');
   await openFindingRow(page, /Sample rate 48 kHz, not 44\.1 kHz/, 'Delivery check');

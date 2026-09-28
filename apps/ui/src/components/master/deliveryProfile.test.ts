@@ -3,7 +3,6 @@ import { MOCK_ACX, mockCustomProfile } from '../../api/deliveryProfilesMock';
 import type { DeliveryRule } from '../../types';
 import { formatLength, formatLevel } from './deliveryFormat';
 import { deliveryProfileKey, deliveryProfileTitle, describeCheck, describeMiss, formatBound, formatRuleValue, profileCounts } from './deliveryProfile';
-import { ruleColumns } from './MeasurementsTable';
 
 const rule = (id: string): DeliveryRule => {
   const found = MOCK_ACX.rules.find((candidate) => candidate.id === id);
@@ -56,18 +55,6 @@ describe('writing a rule', () => {
     expect(describeCheck(rule('acx.credits'))).toBe('Not checked by the app.');
     expect(describeCheck(rule('acx.consistency'))).toBe('Listen');
     expect(describeCheck({ ...rule('acx.rms'), off: true })).toMatch(/^Off/);
-  });
-
-  it('lays the file rules out as columns, room tone at the head and tail in one', () => {
-    expect(ruleColumns(MOCK_ACX).map((column) => [column.label, column.sub])).toEqual([
-      ['RMS', '−23 to −18 dBFS'],
-      ['Peak', '≤ −3 dBFS'],
-      ['Noise floor', '≤ −60 dBFS'],
-      ['Sample rate', '44.1 kHz'],
-      ['File length', '≤ 120 min'],
-      ['Room tone', 'head · tail'],
-      ['MP3 format', '192 kbps+ CBR'],
-    ]);
   });
 });
 

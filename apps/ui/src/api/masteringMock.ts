@@ -19,6 +19,11 @@ const ROWS: MockRow[] = [
     needsApproval: false,
     needs: [],
     support: { level: 'supported', available: true },
+    chain: [
+      { name: 'EQ', detail: 'High-pass at 80 Hz' },
+      { name: 'Limiter', detail: "Peaks held 0.5 dB under the profile's peak limit" },
+      { name: 'Gain', detail: "Toward the profile's RMS target" },
+    ],
   },
   {
     name: 'daw',
@@ -27,6 +32,7 @@ const ROWS: MockRow[] = [
     needsApproval: true,
     needs: ['render_with_fx', 'master_chain_read'],
     support: { level: 'not_yet_available', available: false, reason: 'not_yet', message: NOT_YET },
+    chain: [],
   },
 ];
 

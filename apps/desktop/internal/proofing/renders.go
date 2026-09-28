@@ -4,7 +4,7 @@
 // attests it was made from the chapter as it is; the association keeps the
 // render's fingerprint and the chapter items' fingerprint at that moment, and a
 // later change to either makes it stale. The association stores no
-// measurement: measuring the render (the Delivery page's measurement job,
+// measurement: measuring the render (Master & QC's measurement job,
 // DX-1) writes an analysis evidence ledger record with the Report, keyed by the
 // render's fingerprint, and the narrator's limits are applied on read (Phase 5)
 // so changing a limit never forces a re-measure.

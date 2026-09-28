@@ -3,7 +3,7 @@ import type { IconDefinition } from '@fortawesome/fontawesome-svg-core';
 import { faCircleCheck, faCircleMinus, faCircleXmark, faEarListen, faLock, faTriangleExclamation } from '@fortawesome/free-solid-svg-icons';
 import type { DeliveryRuleStatus, DeliveryVerification } from '../../types';
 
-// The small status marks of the Delivery page (docs/prds/delivery-platform-profiles.prd.md, mockups 01 to 04): a rule's result,
+// The small status marks of Master & QC (docs/prds/delivery-platform-profiles.prd.md, mockups 01 to 04): a rule's result,
 // how its requirement was verified, and the profile's counts. The words carry the meaning; the colour and icon repeat it.
 
 type Tone = 'ok' | 'danger' | 'info' | 'warn' | 'muted';

@@ -199,15 +199,15 @@ again replaces it, and keeps your decision only if the measurements did not chan
 
 ## Delivery checks
 
-When you measure rendered files on the [Delivery](delivery.md) page, each rule a file did not meet, and
+When you check rendered files on [Master & QC](master-and-qc.md), each rule a file did not meet, and
 each value the app could not measure, becomes a **Delivery check** here: one per rule per file, found by
 **Delivery measurement**. The list names the file where other findings name a chapter, and says the
 rule, the value and how it missed ("RMS −24.1 dBFS, below the minimum of −23"). Selected, it shows the
 rule, what the profile requires, what was measured and which profile judged it. A rule's advice (a true
-peak above ACX's advice, for example) stays on the Delivery page.
+peak above ACX's advice, for example) stays on Master & QC.
 
-A delivery check has no line in the manuscript and no item in REAPER, so **Open in Delivery** takes its
-place: it opens the Delivery page on that file, rule by rule. If the file is not in the last measurement
+A delivery check has no line in the manuscript and no item in REAPER, so **Open in Master & QC** takes its
+place: it opens Master & QC on that file, rule by rule. If the file is not in the last measurement
 (the app keeps the last measurement until it closes), the page says so; measure it again to see it.
 
 Accept, Dismiss and Defer work as for every other finding, and change nothing but your decision: not

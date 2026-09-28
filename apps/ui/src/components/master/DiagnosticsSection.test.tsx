@@ -8,13 +8,13 @@ import { ApiProvider } from '../../api/ApiContext';
 import { createMockApi } from '../../api/mockApi';
 import { diagnosticsJobSchema } from '../../api/schemas/diagnostics';
 import type { DiagnosticsJob, NarrationApi } from '../../types';
-import { DeliveryPage } from './DeliveryPage';
+import { MasterQcPage } from './MasterQcPage';
 
 afterEach(cleanup);
 
 type Initial = Parameters<typeof createMockApi>[1];
 
-// The host's own payloads (written by bindings_diagnostics_contract_test.go), so the tab is tested against what the host sends.
+// The host's own payloads (written by bindings_diagnostics_contract_test.go), so the section is tested against what the host sends.
 const contract = (name: string): DiagnosticsJob =>
   diagnosticsJobSchema.parse(JSON.parse(readFileSync(join(__dirname, '..', '..', '..', '..', '..', 'tests', 'fixtures', 'contracts', name), 'utf8')));
 
@@ -23,10 +23,10 @@ async function openDiagnostics({ overrides = {}, initial = {} }: { overrides?: P
   const api = createMockApi(overrides, initial);
   render(
     <ApiProvider api={api}>
-      <DeliveryPage openSettings={vi.fn()} />
+      <MasterQcPage openSettings={vi.fn()} />
     </ApiProvider>,
   );
-  await user.click(await screen.findByRole('tab', { name: 'Diagnostics' }));
+  await screen.findByRole('region', { name: 'Thresholds' });
   return { api, user };
 }
 
@@ -48,7 +48,7 @@ const rowOf = (table: HTMLElement, text: string) => {
   return row;
 };
 
-describe('Delivery, Diagnostics tab', () => {
+describe('Master & QC, Diagnostics', () => {
   it('shows every threshold before anything is checked, and says nothing is checked yet', async () => {
     await openDiagnostics();
     const thresholds = await screen.findByRole('region', { name: 'Thresholds' });
@@ -93,10 +93,8 @@ describe('Delivery, Diagnostics tab', () => {
 
   it('checks the files already measured without picking them again', async () => {
     const { api, user } = await openDiagnostics();
-    await user.click(screen.getByRole('tab', { name: 'Measurements' }));
-    await user.click(await screen.findByRole('button', { name: 'Choose files to measure…' }));
+    await user.click(await screen.findByRole('button', { name: 'Check files…' }));
     await waitFor(async () => expect((await api.measureState()).phase).not.toBe('running'), { timeout: 10_000 });
-    await user.click(screen.getByRole('tab', { name: 'Diagnostics' }));
     await user.click(await screen.findByRole('button', { name: 'Check the 3 measured files' }));
     expect(await screen.findByRole('table', { name: 'Findings' }, { timeout: 10_000 })).toBeTruthy();
     expect((await api.diagnosticsState()).sourceKind).toBe('processed_render');

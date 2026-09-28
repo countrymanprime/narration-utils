@@ -1607,7 +1607,7 @@ describe('answers of the mock client for the settings, voice, model, transcript 
     const saved = await api.findingsList({ category: 'delivery_qc' });
     expectMatches(findingsPageSchema, saved, 'mock delivery findings on the Review page');
     expect(saved.total).toBeGreaterThan(0);
-    // The same ids the Delivery page gives them, so a decision on either page is one decision.
+    // The same ids Master & QC gives them, so a decision on either page is one decision.
     const judged = new Set(job.files.flatMap((file) => file.findings.map((finding) => finding.id)));
     expect(saved.findings.every((finding) => judged.has(finding.id))).toBe(true);
     const shape = (finding: (typeof saved.findings)[number]) => {

@@ -3,8 +3,8 @@
 // median and max, and where each judged file falls between them. No new chart primitive (studio-ui-primitives.prd.md
 // keeps charts feature-local): a plain track built from the page's own design tokens, so it reads correctly in light and
 // dark without forcing either (dark mode is a global theme only, D69 on #509).
+import { useId } from 'react';
 import type { DeliveryProfile, DeliveryRule, MeasureFileResult } from '../../types';
-import { Panel } from '../primitives/Panel';
 import { type BookSpreadStat, bookSpreadRows } from './bookSpread';
 import { formatRuleValue } from './deliveryProfile';
 
@@ -75,19 +75,25 @@ function SpreadRow({ rule, values, stat }: { rule: DeliveryRule; values: number[
 }
 
 /**
- * The book-wide spread (Phase 10): min, median and max across every measured file, for RMS, peak and noise floor -
- * the numeric per-file level rules a profile carries, whichever it has turned on. A rule reads only the files the
- * app has actually judged it for (`met` or `not_met`); a file whose value is `not_checked` (an MP3 before Phase 8)
- * or `not_measurable` (silence, too short) never contributes, so an unmeasured book shows "No measurements yet"
- * rather than a zero or a guess. Renders whenever the project has a delivery profile, even before anything is
- * measured, so the empty state is explicit rather than the panel simply not appearing.
+ * The book-wide spread (Phase 10), drawn as mock 05's "Book consistency" beside why a file fails (stage navigation Phase 8): min,
+ * median and max across every measured file, for RMS, peak and noise floor - the numeric per-file level rules a profile carries,
+ * whichever it has turned on. A rule reads only the files the app has actually judged it for (`met` or `not_met`); a file whose
+ * value is `not_checked` (an MP3 before Phase 8) or `not_measurable` (silence, too short) never contributes, so an unmeasured book
+ * shows "No measurements yet" rather than a zero or a guess. It is a section inside its caller's panel, not a panel of its own.
  */
-export function BookSpreadPanel({ profile, files }: { profile: DeliveryProfile; files: readonly MeasureFileResult[] }) {
+export function BookConsistency({ profile, files, titled = true }: { profile: DeliveryProfile; files: readonly MeasureFileResult[]; titled?: boolean }) {
+  const headingId = useId();
   const rows = bookSpreadRows(profile, files);
   if (rows.length === 0) return null;
+  // Untitled inside a panel that already carries the name, so the page never has two regions called "Book consistency".
   return (
-    <Panel title="Book-wide spread">
-      <p className="text-sm" style={MUTED}>
+    <section aria-labelledby={titled ? headingId : undefined}>
+      {titled && (
+        <h3 id={headingId} className="section-label">
+          Book consistency
+        </h3>
+      )}
+      <p className="mt-1 text-sm" style={MUTED}>
         How RMS, peak and noise floor spread across every measured file, judged against {profile.name}.
       </p>
       <div className="mt-1">
@@ -95,6 +101,6 @@ export function BookSpreadPanel({ profile, files }: { profile: DeliveryProfile; 
           <SpreadRow key={row.rule.id} rule={row.rule} values={row.values} stat={row.stat} />
         ))}
       </div>
-    </Panel>
+    </section>
   );
 }

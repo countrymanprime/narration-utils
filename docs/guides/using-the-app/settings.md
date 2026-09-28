@@ -39,7 +39,7 @@ and tail together (ACX asks for 1 to 5 seconds at each end of every file). In bo
   for misread, skipped and extra words. It shows whether the chosen model is installed, with
   **Remove local model…** once it is.
 - **Story Bible** picks the spaCy model and whether to **Build the Story Bible after import**.
-- **Delivery** chooses the delivery profile the [Delivery](delivery.md) page and its report judge
+- **Delivery** chooses the delivery profile [Master & QC](master-and-qc.md) and its report judge
   against. In This Project, pick this project's profile, or the Global default; in Global, pick the
   default for every project that has not chosen one (ACX until you change it). A choice takes effect at
   once. The **Profiles** list shows the built-in ACX profile, read-only, and your custom profiles with
@@ -180,4 +180,4 @@ If Narration Utils will not start after an update and the program file is missin
 
 ---
 
-[← Delivery](delivery.md) · [Index](README.md)
+[← Master & QC](master-and-qc.md) · [Index](README.md)

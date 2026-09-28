@@ -120,3 +120,39 @@ func TestANewRowIsOneRegistrationAndPassesTheSuiteWithNoOtherEdit(t *testing.T) 
 		t.Error("registering on a new registry changed the program's")
 	}
 }
+
+func TestTheBuiltinRowDeclaresTheStepsItRuns(t *testing.T) {
+	// Master & QC draws the chain before anything is mastered (stage navigation Phase 8), so the row declares its steps, and they are
+	// the steps a master reports, in the same order. The DAW row declares none: the project's own FX chain decides what runs there.
+	entry, _ := masteringport.Rows.Lookup(masteringport.Builtin)
+	declared := entry.New().Capabilities().Chain
+	want := []masteringport.Step{
+		{Name: "EQ", Detail: "High-pass at 80 Hz"},
+		{Name: "Limiter", Detail: "Peaks held 0.5 dB under the profile's peak limit"},
+		{Name: "Gain", Detail: "Toward the profile's RMS target"},
+	}
+	if !reflect.DeepEqual(declared, want) {
+		t.Fatalf("declared chain = %+v, want %+v", declared, want)
+	}
+	dir := t.TempDir()
+	source := filepath.Join(dir, "source.wav")
+	if err := os.WriteFile(source, masteringporttest.ToneWAV(), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	ran, err := entry.New().Master(context.Background(), masteringport.Request{Source: source, Destination: filepath.Join(dir, "out.wav"), Profile: deliveryprofile.ACX()})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(ran.Chain) != len(declared) {
+		t.Fatalf("a master ran %d steps, the row declares %d", len(ran.Chain), len(declared))
+	}
+	for i := range declared {
+		if ran.Chain[i].Name != declared[i].Name {
+			t.Errorf("step %d ran %q, the row declares %q", i, ran.Chain[i].Name, declared[i].Name)
+		}
+	}
+	daw, _ := masteringport.Rows.Lookup(masteringport.DAW)
+	if chain := daw.New().Capabilities().Chain; len(chain) != 0 {
+		t.Errorf("the DAW row declares %+v, want no steps of its own", chain)
+	}
+}
