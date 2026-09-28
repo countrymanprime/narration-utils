@@ -54,6 +54,10 @@ var declares = map[dawport.Capability]dawport.Level{
 	// Built, never wired to a binding, so never gated: Experimental keeps them off until they are verified.
 	dawport.CapSilenceTrim: dawport.Experimental,
 	dawport.CapItemGain:    dawport.Experimental,
+	// Declared for the mastering port's DAW row (ADR 0306): no Lua command and no role yet. The REAPER phase adds the commands
+	// with their harness tests and moves both to Experimental; render_with_fx stays behind the narrator's per-render approval.
+	dawport.CapRenderWithFX:    dawport.NotYetAvailable,
+	dawport.CapMasterChainRead: dawport.NotYetAvailable,
 }
 
 // commandCapability is the capability each of bridge.Actions' commands belongs to. Actions asks its gate about a command by name, and

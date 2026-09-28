@@ -80,6 +80,7 @@ import type { WorkspaceApi } from './api/contracts/workspace';
 import type { PreviewApi } from './api/contracts/preview';
 import type { DawCapabilitiesApi } from './api/contracts/daw';
 import type { ProviderCapabilitiesApi } from './api/contracts/providers';
+import type { MasteringApi } from './api/contracts/mastering';
 import type { PronunciationLookupApi } from './api/contracts/pronunciationLookup';
 
 /** The app compatibility facade; domain interfaces remain independently testable. */
@@ -123,5 +124,6 @@ export interface NarrationApi
     PreviewApi,
     DawCapabilitiesApi,
     ProviderCapabilitiesApi,
+    MasteringApi,
     ProductionApi,
     PronunciationLookupApi {}

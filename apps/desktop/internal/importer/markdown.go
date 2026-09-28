@@ -44,6 +44,7 @@ func markdownWithProgress(path string, headingLevel int, progress Progress) (Dra
 	}
 	progress.report(25, "Parsing %d KB using H%d as the chapter heading level", len(raw)/1024, headingLevel)
 	content := strings.TrimPrefix(string(raw), "\xef\xbb\xbf")
+	sourceMetadata, content := extractYAMLFrontMatter(content)
 	chapter, subtitle, section := "Front Matter", "", ""
 	paragraphs := []Paragraph{}
 	titles, pending := []string{}, []markdownLine{}
@@ -165,6 +166,7 @@ func markdownWithProgress(path string, headingLevel int, progress Progress) (Dra
 	}
 	progress.report(80, "Classifying front matter, chapters and reference sections")
 	draft, err := newDraft("markdown", filepath.Base(path), paragraphs, titles, headingLevels, nil)
+	draft.SourceMetadata = sourceMetadata
 	if err == nil {
 		notices = applyTableOfContents(&draft, notices, toc.entries, titles, anchorChapter)
 	}

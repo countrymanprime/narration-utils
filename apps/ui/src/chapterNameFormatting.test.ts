@@ -26,10 +26,13 @@ const ALLOW_LIST = new Set([
 // Manuscript and Chapters & Search onto TitleSubtitle (lowering these); Phase 3 moves the rest, including the Read
 // aloud heading and the Teleprompter select, and the ceiling reaches zero.
 const CEILING: Record<string, number> = {
-  // Phase 2 (C1): the Chapter cell now goes through chapterName()/TitleSubtitle; the two reads left are the prop
+  // Phase 2 (C1): the Chapter cell now goes through chapterName()/TitleSubtitle; two of the three reads are the prop
   // handoff to TitleSubtitle (`subtitle={chapter.subtitle}`) and the status-change handler's own object spread, which
-  // preserves the row's subtitle across a status update rather than drawing it (`subtitle: c.subtitle`).
-  [join('src', 'components', 'home', 'AudiobookEstimatePanel.tsx')]: 2,
+  // preserves the row's subtitle across a status update rather than drawing it (`subtitle: c.subtitle`). Phase 3 adds
+  // one more: the ChapterTrackPanel call's own prop handoff (`subtitle={chapter?.subtitle}`), so its slide-over title
+  // can draw the chapter's full name through chapterName(..., context('Track')) - the same category of read, one
+  // level further down the tree.
+  [join('src', 'components', 'home', 'AudiobookEstimatePanel.tsx')]: 3,
   // Phase 2: the joined-title row now goes through chapterName()/TitleSubtitle; one read left is the prop handoff to
   // TitleSubtitle (`subtitle={heading.subtitle}`), and one is the Subtitle checkbox's own accessible-name suffix
   // ("Subtitle — {section.subtitle}"), which shows the raw second line, not a formatted chapter name.

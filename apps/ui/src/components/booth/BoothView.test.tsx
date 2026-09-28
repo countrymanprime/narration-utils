@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { cleanup, render, screen, within } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -131,16 +131,53 @@ describe('BoothView (booth-mode-and-companion-panel.prd.md Phases 1-2; stage-nav
     expect(within(status).getByText('Input')).toBeTruthy();
   });
 
-  it('shows the chapter title and word progress in the status region', () => {
+  it('draws the text full-bleed, with no bordered card (audit BO3), and a speaker tag in the gutter of each attributed paragraph (BO4)', () => {
+    const row = (key: string, text: string) => ({ key, kind: 'paragraph' as const, start: 0, words: null, gaps: null, text });
+    const { container } = renderBooth({
+      session: baseSession({ rows: [row('p1', 'Said the Mouse.'), row('p2', "'I beg your pardon,' said Alice.")] }),
+      speakerLabels: new Map([['p2', 'Alice']]),
+    });
+    const text = screen.getByRole('region', { name: 'Chapter text' });
+    expect(text.closest('section')).toBeNull();
+    const tags = container.querySelectorAll('[data-speaker-tag]');
+    expect([...tags].map((tag) => tag.textContent)).toEqual(['Alice']);
+    expect(tags[0].parentElement?.nextElementSibling?.textContent).toContain('I beg your pardon');
+  });
+
+  it('lists what is coming up in the rail: each name, how to say it and its status, opening its Story Bible entry (audit BO8)', async () => {
+    const onOpenSpeaker = vi.fn();
+    const hatter = { id: 'hatter', canonical_name: 'Hatter', aliases: [], category: 'Character' } as unknown as GuideEntity;
+    renderBooth({
+      speakers: [],
+      onOpenSpeaker,
+      comingUp: [
+        { key: 'hatter', text: 'Hatter', entity: hatter, pronunciation: { ipa: '/ˈhætər/', source: 'cmu', confidence: '', status: 'author_confirmed' } },
+      ],
+    });
+    const section = screen.getByRole('region', { name: 'Coming up' });
+    expect(section.textContent).toContain('/ˈhætər/ · Author confirmed');
+    fireEvent.click(within(section).getByRole('button', { name: 'Hatter: open in the Story bible' }));
+    expect(onOpenSpeaker).toHaveBeenCalledWith(hatter);
+  });
+
+  it('draws no Coming up section when no name ahead has a pronunciation', () => {
+    renderBooth({ speakers: [], comingUp: [] });
+    expect(screen.queryByRole('region', { name: 'Coming up' })).toBeNull();
+  });
+
+  it("shows the chapter title and mock 03's progress in the status region: paragraph, share and finished time left", () => {
+    const row = (key: string, start: number) => ({ key, kind: 'paragraph' as const, start, words: null, gaps: null, text: '' });
     renderBooth({
       chapterTitle: 'Chapter 3',
       session: baseSession({
-        session: { ...initialSession, script: { type: 'script', chapter: { id: 'c1', title: 'Chapter 3' }, tokens: 120, spans: [] }, cursor: 40 },
+        rows: [{ key: 'title', kind: 'title', start: 0, words: null, gaps: null, text: 'Chapter 3' }, row('p1', 2), row('p2', 30), row('p3', 60)],
+        session: { ...initialSession, script: { type: 'script', chapter: { id: 'c1', title: 'Chapter 3' }, tokens: 1240, spans: [] }, cursor: 40 },
       }),
     });
     const status = screen.getByRole('region', { name: 'Status' });
     expect(within(status).getByText('Chapter 3')).toBeTruthy();
-    expect(status.textContent).toContain('40 of 120 words');
+    // 1,200 words left at 9,300 finished words an hour is 7 min 44.5 s.
+    expect(status.textContent).toContain('¶ 2 of 3 · 3% · ~7:45 finished left');
   });
 
   it('offers Companion and Exit booth (Esc) in the header', async () => {
