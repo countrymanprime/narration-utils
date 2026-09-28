@@ -1,7 +1,8 @@
 // This file is Phase 4 of docs/prds/editing-readiness-analysis.prd.md
 // ("Click and breath validation"): the corpus the click and breath detectors
 // are tuned and held out on. No permissioned narrator audio exists on main
-// (D70/D71; the Alice corpus is not merged), so, like Phase 1's
+// (D70/D71; the LibriVox Alice signal set labels clicks only and runs
+// separately, librivoxvalidation_test.go), so, like Phase 1's
 // syntheticcorpus_test.go, it is generated in code - but unlike Phase 1's four
 // clean cases it is built to hurt: every event sits in one of four recording
 // conditions, and the Phase Details' named hard cases (breath after a plosive,
