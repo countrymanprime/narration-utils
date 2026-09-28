@@ -175,6 +175,10 @@ type Host struct {
 	// *bridge.Client or *bridge.Actions themselves. Swappable like navigation and actions; nil with no bridge client.
 	dawPortResolver *dawport.Resolver
 	lineIdentity    *lineidentity.Service
+	// punchAlignments is punch and roll's last offline word-time alignment (teleprompterpunchalign.go, ADR 0560), so a
+	// punch after its preview does not decode the same stretch twice. It has its own lock and is not per project: its
+	// key names the source file and the stretch.
+	punchAlignments punchAlignCache
 	pickups         *pickups.Service
 	projectState    *projectstate.Service
 	renderConfig    *renderconfig.Service
