@@ -198,11 +198,20 @@ end
 -- Mirrors what the S5 spike observed in a real REAPER (docs/research/reaper-spike-s5-render-details.md): reading
 -- RENDER_TARGETS predicts one file per region, named `<folder>/<region name>.wav`, only when RENDER_PATTERN is
 -- literally "$region" and RENDER_BOUNDSFLAG is 3 ("all regions"); any other configuration predicts nothing.
+--
+-- For render_with_fx (narration_master_render.lua), custom time bounds (RENDER_BOUNDSFLAG 0) with a plain pattern (no
+-- `$` wildcard) predict the one file `<folder>/<pattern>.<render_ext>`: render_ext is "wav" unless a test sets it, to
+-- model a narrator whose last-used render format is not WAV. (Not yet checked in REAPER: the owner's scripted pass,
+-- #510, records what RENDER_TARGETS answers for custom bounds.)
 function Fake:render_targets()
-  if self.render_info_string['RENDER_PATTERN'] ~= '$region' or self.render_info['RENDER_BOUNDSFLAG'] ~= 3 then
+  local folder = self.render_info_string['RENDER_FILE'] or ''
+  local pattern = self.render_info_string['RENDER_PATTERN'] or ''
+  if self.render_info['RENDER_BOUNDSFLAG'] == 0 and pattern ~= '' and not pattern:find('$', 1, true) then
+    return folder .. '/' .. pattern .. '.' .. (self.render_ext or 'wav')
+  end
+  if pattern ~= '$region' or self.render_info['RENDER_BOUNDSFLAG'] ~= 3 then
     return ''
   end
-  local folder = self.render_info_string['RENDER_FILE'] or ''
   local names = {}
   for _, marker in ipairs(self.markers) do
     if marker.is_region then
@@ -210,6 +219,30 @@ function Fake:render_targets()
     end
   end
   return table.concat(names, ';')
+end
+
+-- What action 42230 does in the fake (Main_OnCommand, below): one entry in fake.renders, and a file per target.
+function Fake:render()
+  self.renders = self.renders or {}
+  local targets = self:render_targets()
+  self.renders[#self.renders + 1] = {
+    targets = targets,
+    boundsflag = self.render_info['RENDER_BOUNDSFLAG'],
+    startpos = self.render_info['RENDER_STARTPOS'],
+    endpos = self.render_info['RENDER_ENDPOS'],
+    settings = self.render_info['RENDER_SETTINGS'],
+    addtoproj = self.render_info['RENDER_ADDTOPROJ'],
+  }
+  if self.render_writes_nothing then
+    return
+  end
+  for target in targets:gmatch('([^;]+)') do
+    local handle = io.open(target, 'wb')
+    if handle then
+      handle:write('RIFF....WAVE')
+      handle:close()
+    end
+  end
 end
 
 -- Deferred queue --------------------------------------------------------------------------------------------------
@@ -402,8 +435,16 @@ function Fake:add_project_api(api)
   -- Records every call in fake.calls: narration_render.lua's harness tests assert this is never invoked, since the
   -- S5 spike proved it (or a real render action's ID passed to the RENDER_STATS getter, below) can actually
   -- trigger a render.
+  --
+  -- Action 42230 ("File: Render project, using the most recent render settings, auto-close render dialog") renders
+  -- like REAPER: it writes every predicted target (Fake:render_targets) as a small WAV-looking file, and records the
+  -- settings it rendered with in fake.renders, so render_with_fx's tests can check the bounds, the master mix and that
+  -- nothing is added to the project. fake.render_writes_nothing models a render that failed or was cancelled.
   function api.Main_OnCommand(command_id, flag)
     fake.calls[#fake.calls + 1] = { name = 'Main_OnCommand', command_id = command_id, flag = flag }
+    if command_id == 42230 then
+      fake:render()
+    end
     return true
   end
   -- The action list (narration_cleanup.lua). Per the ReaScript docs (not yet checked in a real REAPER: see
@@ -591,6 +632,19 @@ function Fake:add_item_api(api)
   end
   function api.TrackFX_GetCount(track)
     return #(track.fx or {})
+  end
+  -- A slot's name as REAPER shows it in the FX chain window (the plug-in's name, or the narrator's rename), and whether
+  -- it is switched on. A slot the test left without `enabled` is on, as a newly added FX is.
+  function api.TrackFX_GetFXName(track, fx, _)
+    local slot = (track.fx or {})[fx + 1]
+    if not slot then
+      return false, ''
+    end
+    return true, slot.name
+  end
+  function api.TrackFX_GetEnabled(track, fx)
+    local slot = (track.fx or {})[fx + 1]
+    return slot ~= nil and slot.enabled ~= false
   end
   function api.GetMediaItem_Track(item)
     return item.track
