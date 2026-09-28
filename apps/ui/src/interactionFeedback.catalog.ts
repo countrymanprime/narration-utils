@@ -13,6 +13,7 @@ import { settingsFeedback } from './interactionFeedback/settings';
 import { storyBibleFeedback } from './interactionFeedback/storyBible';
 import { teleprompterFeedback } from './interactionFeedback/teleprompter';
 import { tracksFeedback } from './interactionFeedback/tracks';
+import { pickupsFeedback } from './interactionFeedback/pickups';
 import { proofFeedback } from './interactionFeedback/proof';
 import { editingFeedback } from './interactionFeedback/editing';
 import { deliveryFeedback } from './interactionFeedback/delivery';
@@ -32,6 +33,7 @@ const AREAS: Array<Record<string, FeedbackRow>> = [
   storyBibleFeedback,
   teleprompterFeedback,
   tracksFeedback,
+  pickupsFeedback,
   proofFeedback,
   editingFeedback,
   deliveryFeedback,
@@ -79,37 +81,39 @@ export const SILENT_CATCHES: Record<string, string> = {
   'src/components/proof/CompareRun.tsx#1': 'Reads the last model and chunk choice; the defaults stay usable and Settings reports a real error.',
   // Phase 2 (teleprompter-manuscript-integration.prd.md) moved the device/settings catches into `useTeleprompterSession.ts`;
   // `TeleprompterPage.tsx` keeps only the chapter-selection catch it never shared with the modal.
-  'src/components/teleprompter/TeleprompterPage.tsx#1':
+  'src/components/booth/BoothPage.tsx#1':
     'Only renders the opening or closing credits for the picker (credits PRD Phase 4); a failed render leaves those credits out of the picker, as the Manuscript page leaves its entry empty, and the chapters are unaffected.',
-  'src/components/teleprompter/TeleprompterPage.tsx#2': 'Only picks the chapter the narrator last read; the first chapter is used without it.',
-  'src/components/teleprompter/TeleprompterPage.tsx#3':
+  'src/components/booth/BoothPage.tsx#2': 'Only picks the chapter the narrator last read; the first chapter is used without it.',
+  'src/components/booth/BoothPage.tsx#3':
     'The REAPER chapter suggestion (ADR 0113) is a hint: no .rpp, or none chosen, is normal for a narrator not using REAPER, so it means no hint.',
-  'src/components/teleprompter/TeleprompterPage.tsx#4':
+  'src/components/booth/BoothPage.tsx#4':
     'Only guards the REAPER preselection against a running session; useTeleprompterSession reads the state again and reports its failure.',
-  'src/components/teleprompter/CompanionShell.tsx#1':
+  'src/components/booth/CompanionShell.tsx#1':
     "Companion mode's exit on unmount: nothing is left mounted to tell, and the host's exit is a no-op when companion mode was never entered, so there is no state it could leave wrong that a retry would fix.",
-  'src/components/teleprompter/useInputLevel.ts#1':
+  'src/components/booth/useInputLevel.ts#1':
     'Best-effort release of the meter-only child (popover close, session start, device change or unmount); nothing is left mounted to show a failure, and the meter simply starts fresh the next time the popover opens.',
-  'src/components/teleprompter/useTeleprompterSession.ts#1':
+  'src/components/booth/useTeleprompterSession.ts#1':
     'Clearing the migrated browser-storage device once it is written to settings; if storage cannot be reached the stale value is simply left behind and never read again (the settings value now wins).',
-  'src/components/teleprompter/useTeleprompterSession.ts#2': 'Hydrates a session that was already running; the state event follows anyway.',
-  'src/components/teleprompter/useTeleprompterSession.ts#3':
+  'src/components/booth/useTeleprompterSession.ts#2': 'Hydrates a session that was already running; the state event follows anyway.',
+  'src/components/booth/useTeleprompterSession.ts#3':
     'Loads the persisted device and runs the one-time migration; if it fails the field just starts empty, exactly as it did before Phase 2.',
-  'src/components/teleprompter/useTeleprompterSession.ts#4':
+  'src/components/booth/useTeleprompterSession.ts#4':
     'The one-time browser-storage-to-settings migration write; a failure leaves the device in local state for this visit and the migration is retried next load since the settings value never got marked set.',
   'src/components/manuscript/creditsExpandedStorage.ts#1':
     "Remembering a credits card's open state per project in localStorage (MC5 b); the choice lasts for this visit only when storage is disabled.",
-  'src/components/teleprompter/readerPreferences.ts#1':
+  'src/components/booth/readerPreferences.ts#1':
     'Remembering the read-aloud rail (open, tab) in localStorage; the choice lasts for this dialog only when storage is disabled.',
-  'src/components/teleprompter/readerPreferences.ts#2':
+  'src/components/booth/readerPreferences.ts#2':
     'Remembering which flag kinds the read-aloud dialog shows in localStorage (Phase 7); the choice lasts for this dialog only when storage is disabled.',
   'src/theme/ThemeContext.tsx#1': 'Remembering the theme in localStorage; the preference just does not persist when storage is disabled.',
   'src/components/tracks/TracksPage.tsx#1':
     'Only decides whether the "Link chapters…" button shows; without it the button is absent, same as a project with no chapters.',
   'src/components/tracks/LinkChaptersDialog.tsx#1':
     'Hydrates whatever stamp or read was already in flight when the dialog reopened; the live event follows anyway.',
-  'src/components/tracks/PickupsDialog.tsx#1':
+  'src/components/pickups/usePickupsState.ts#1':
     'Hydrates whatever run was already in flight, then refreshes the count; a failure here leaves the count at its last known value, and every narrator-triggered action still shows its own failure inline.',
+  'src/components/pickups/PickupsPage.tsx#1':
+    'Reads the chapters, chapter links and tracks only to place a pickup in its chapter; without them the pickup says it is not on a linked chapter track, and every pickup action still works and shows its own failure inline.',
   'src/components/proof/FindingDetail.tsx#1':
     'Re-reads a finding after the host refused a decision, only to tell changed evidence apart; when the re-read fails too, the inline alert still shows the host reason for the refusal, so nothing is hidden.',
   'src/components/editing/EditingCandidateRow.tsx#1':
@@ -123,7 +127,7 @@ export const SILENT_CATCHES: Record<string, string> = {
   'src/components/home/RecordingCheckReport.tsx#1':
     "A background count of the chapter's other pickups (take review, RS4 A); a failure just leaves that line out of the Pickups list, with the check's own gaps unaffected.",
   'src/components/home/RecordingCheckReport.tsx#2':
-    "The pickup list's own background refresh (RS5 B), mirroring PickupsDialog.tsx#1; a failure leaves the count at whatever the subscription last reported, and the narrator can still reach the real count on Tracks.",
+    "The pickup list's own background refresh (RS5 B), mirroring usePickupsState.ts#1; a failure leaves the count at whatever the subscription last reported, and the narrator can still reach the real count on the Pickups page.",
   'src/input/keymap.ts#1':
     "keymapFromBindings (input-commands-and-pedals.prd.md Phase 6): one stored gesture this build cannot parse (a hand-edited settings file, or an older/newer app's own bug) falls back to that one command's catalog default; not a narrator action, and not swallowed silently since the Keyboard & pedals panel still shows every other override normally.",
   'src/components/tracks/CreateChapterRegionsDialog.tsx#1':
@@ -136,9 +140,9 @@ export const SILENT_CATCHES: Record<string, string> = {
     'navigator.hid.getDevices() rejecting (an unsupported or torn-down navigator.hid, Phase 11): leaves this source with no devices; KeyboardSource and MidiSource still cover the booth, so it just contributes nothing rather than surfacing an error nobody can act on.',
   'src/input/HidSource.ts#3':
     "requestHidDevice()'s chooser promise rejecting (the narrator cancelled it, or - Phase 8's spike found this plausible on WebView2 - no chooser ever appeared): not a narrator action to retry automatically, and the only outcome either way is that no new device got paired this time.",
-  'src/components/teleprompter/ResumePrompt.tsx#1':
+  'src/components/booth/ResumePrompt.tsx#1':
     "Starts the bounded REAPER follow for the matched track while the prompt shows (read-aloud-resume-from-daw.prd.md Phase 5, ADR 0353); a failure to start just means that poll never begins, and the DAW-transport subscription and the narrator's own choices still settle the prompt.",
-  'src/components/teleprompter/ResumePrompt.tsx#2':
+  'src/components/booth/ResumePrompt.tsx#2':
     'Stops the follow on cleanup (the prompt settles, a session starts, or the dialog closes); a failure here is unobservable and harmless, since the poll it would have stopped already lost its listener.',
   'src/components/proof/ProofChapterPage.tsx#1':
     'Only offers to review the last compare run; without it the offer is absent (moved from the Proofing page, stage-navigation Phase 5).',

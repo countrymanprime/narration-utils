@@ -70,6 +70,39 @@ describe('ParagraphView', () => {
     expect(openEntity).toHaveBeenCalledWith(entity);
   });
 
+  // axe's nested-interactive: a note anchored over the whole line and a Story Bible mention inside it used to render
+  // as one interactive <mark> nested in another. Only the shorter, inner one should still carry the click/keyboard
+  // activation - the outer note stays reachable through its own, non-overlapping text either side.
+  it('does not nest an entity mark inside a note mark that overlaps it, and keeps both activatable', async () => {
+    const user = userEvent.setup();
+    const entity = { id: 'e1', canonical_name: words[2], aliases: [], category: 'Place' } as unknown as GuideEntity;
+    const openEntity = vi.fn();
+    const openNote = vi.fn();
+    const overlappingNote = { ...note, paragraph: plain.index, anchorStart: 0, anchorEnd: plain.text.length, anchorText: plain.text };
+    render(
+      <ParagraphView
+        paragraphs={[{ ...plain, entityIds: ['e1'] }]}
+        entities={[entity]}
+        notes={[overlappingNote]}
+        textClass=""
+        lineNumberPadding=""
+        openEntity={openEntity}
+        openNote={openNote}
+      />,
+    );
+
+    const buttons = screen.getAllByRole('button');
+    for (const button of buttons) expect(buttons.filter((other) => other !== button && button.contains(other))).toHaveLength(0);
+
+    const entityMark = buttons.find((button) => button.getAttribute('data-highlight') === 'Place')!;
+    await user.click(entityMark);
+    expect(openEntity).toHaveBeenCalledWith(entity);
+
+    const noteMark = buttons.find((button) => button.getAttribute('data-highlight') === 'Note')!;
+    await user.click(noteMark);
+    expect(openNote).toHaveBeenCalledWith(overlappingNote);
+  });
+
   // Speaker attribution (prep-depth.prd.md Phase 4): a fixed cue against a recorded fixture, not the real
   // extractor - see dialogueCues.test.ts for the pure-function coverage of unknown/single-speaker/ambiguous cues.
   describe('speaker attribution', () => {

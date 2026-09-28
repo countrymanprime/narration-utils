@@ -95,31 +95,17 @@ describe('CreditsEntry (Manuscript pseudo-entry for opening/closing credits, PRD
     expect(screen.queryByRole('button', { name: 'Fill in' })).toBeNull();
   });
 
-  it('shows a Booth button beside Read aloud, gated the same way (booth-mode-and-companion-panel.prd.md Phase 1): a row with one and not the other misaligns the header column', () => {
+  it('shows Record in Booth once there is something to read (stage-navigation-and-page-replacement.prd.md Phase 4)', () => {
     const preview: CreditsRenderResult = { text: 'Alice, written by Lewis Carroll.', words: 5, unresolved: [] };
-    const onBooth = vi.fn();
-    render(<CreditsEntry kind="opening" preview={preview} expanded onToggle={vi.fn()} textClass="text-sm" onBooth={onBooth} />);
-    fireEvent.click(screen.getByRole('button', { name: 'Open booth for Opening credits' }));
-    expect(onBooth).toHaveBeenCalledTimes(1);
+    const onRecordInBooth = vi.fn();
+    render(<CreditsEntry kind="opening" preview={preview} expanded onToggle={vi.fn()} textClass="text-sm" onRecordInBooth={onRecordInBooth} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Record Opening credits in Booth' }));
+    expect(onRecordInBooth).toHaveBeenCalledTimes(1);
   });
 
-  it('shows no Booth button on a credits card with nothing to read (preview.words === 0), matching Read aloud', () => {
+  it('shows no Record in Booth on a credits card with nothing to read (preview.words === 0)', () => {
     const preview: CreditsRenderResult = { text: '', words: 0, unresolved: [] };
-    render(<CreditsEntry kind="opening" preview={preview} expanded onToggle={vi.fn()} textClass="text-sm" onBooth={vi.fn()} />);
-    expect(screen.queryByRole('button', { name: /Open booth/ })).toBeNull();
-  });
-
-  it('shows a Companion button beside Booth, gated the same way (booth-mode-and-companion-panel.prd.md Phase 7)', () => {
-    const preview: CreditsRenderResult = { text: 'Alice, written by Lewis Carroll.', words: 5, unresolved: [] };
-    const onCompanion = vi.fn();
-    render(<CreditsEntry kind="opening" preview={preview} expanded onToggle={vi.fn()} textClass="text-sm" onCompanion={onCompanion} />);
-    fireEvent.click(screen.getByRole('button', { name: 'Open companion for Opening credits' }));
-    expect(onCompanion).toHaveBeenCalledTimes(1);
-  });
-
-  it('shows no Companion button on a credits card with nothing to read', () => {
-    const preview: CreditsRenderResult = { text: '', words: 0, unresolved: [] };
-    render(<CreditsEntry kind="opening" preview={preview} expanded onToggle={vi.fn()} textClass="text-sm" onCompanion={vi.fn()} />);
-    expect(screen.queryByRole('button', { name: /Open companion/ })).toBeNull();
+    render(<CreditsEntry kind="opening" preview={preview} expanded onToggle={vi.fn()} textClass="text-sm" onRecordInBooth={vi.fn()} />);
+    expect(screen.queryByRole('button', { name: /in Booth/ })).toBeNull();
   });
 });

@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createTeleprompterMock } from './teleprompterMock';
 import { mockChapterTrackMatch } from './chapterTrackMatchMock';
-import { tokenize } from '../components/teleprompter/readerModel';
+import { tokenize } from '../components/booth/readerModel';
 import { MOCK_RESUME_SEEDS } from './resumeMockSeed';
 import { teleprompterLocateResultSchema } from './schemas/teleprompter';
 import type { ManuscriptChapter, ManuscriptParagraph, TeleprompterEvent, TeleprompterState } from '../types';

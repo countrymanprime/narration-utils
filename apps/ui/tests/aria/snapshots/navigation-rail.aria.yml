@@ -14,10 +14,11 @@
     - button "Story Bible"
   - group "Record":
     - /children: equal
-    - button "Teleprompter"
+    - button "Booth"
   - group "Review":
     - /children: equal
     - button "Proof"
+    - button "Pickups"
     - button "Tracks"
   - group "Finish":
     - /children: equal
