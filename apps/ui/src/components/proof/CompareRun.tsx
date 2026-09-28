@@ -295,7 +295,8 @@ export function CompareRun({
       actions={
         // The step strip (mock-fidelity-primitives-and-components.prd.md Phase 5): the segmented look of ToggleGroup. It
         // reports the phase, not a choice — the phase advances on its own, so a click of a step is a no-op (not `disabled`,
-        // which would also dim the current step's fill).
+        // which would also dim the current step's fill). This gives the strip real semantics: nothing named which step was
+        // current before (a background tint only).
         <ToggleGroup
           label="Comparison progress"
           look="segmented"

@@ -252,10 +252,15 @@ export const scriptDrivers: Record<string, Driver> = {
     await row.scrollIntoViewIfNeeded();
     await row.waitFor();
   },
+  'prep-rail-pronunciations': async (page) => {
+    // The rail's default tab (mock 02): no tab click, since Pronunciations opens first.
+    const rail = await openPrepRail(page);
+    await rail.getByRole('table', { name: 'Pronunciations' }).waitFor();
+  },
   'prep-rail-characters': async (page) => {
     const rail = await openPrepRail(page);
     await rail.getByRole('tab', { name: /^Characters · / }).click();
-    await rail.getByRole('list', { name: 'Characters' }).waitFor();
+    await rail.getByRole('table', { name: 'Characters' }).waitFor();
   },
   'prep-rail-queries': async (page) => {
     // One name marked sent through the queries panel itself, so the tab shows both statuses a narrator sees.

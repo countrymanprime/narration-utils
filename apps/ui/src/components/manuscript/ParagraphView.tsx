@@ -1,6 +1,7 @@
 import { useMemo, type ReactNode } from 'react';
 import type { GuideEntity, ManuscriptNote, ManuscriptParagraph, PrepMarkupSpan } from '../../types';
 import { Highlight, highlightKind } from '../primitives/Highlight';
+import { speakerColorToken } from '../primitives/speakerColor';
 import { SpeakerTag } from '../primitives/SpeakerTag';
 import { composeAnnotationPieces, entityAnnotations, markupAnnotations, noteAnnotations, type Annotation, type Piece } from './annotations';
 import type { DialogueCue } from './dialogueCues';
@@ -198,7 +199,13 @@ function ParagraphRow({
           {chapterParagraphIndex + 1}
         </span>
       </div>
-      <div className={`min-w-0 px-4 py-1 ${inSample ? 'shadow-[inset_3px_0_0_var(--info)]' : ''}`}>
+      <div
+        className={`min-w-0 px-4 py-1 ${inSample ? 'shadow-[inset_3px_0_0_var(--info)]' : ''}`}
+        // The speaker's own colour as a 3 px left bar (mock 02), the same token SpeakerTag's chip already uses
+        // (speakerColor.ts) - inline since it is one of 7 dynamic tokens, not a fixed Tailwind class. The retail
+        // sample's inset shadow above takes precedence; the two never draw on the same paragraph in practice.
+        style={speakerLabel && !inSample ? { boxShadow: `inset 3px 0 0 var(${speakerColorToken(speakerLabel)})` } : undefined}
+      >
         {sampleLabel && (
           <div className="text-xs font-medium" style={{ color: 'var(--info-text)' }}>
             {sampleLabel}
