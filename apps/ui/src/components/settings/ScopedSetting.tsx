@@ -8,6 +8,7 @@ import { TextField } from '../primitives/TextField';
 import { Tooltip, TooltipTarget } from '../primitives/Tooltip';
 import { proofingChoiceLabel } from '../proof/options';
 import { describeNumberRange, numberProblem } from './numberSetting';
+import { Button } from '../primitives/Button';
 
 // Terms of a "tags" field are comma-joined (a term never holds a comma; TagInput.tsx commits on Enter or a typed
 // comma). Splitting also accepts a pasted line break, drops blanks, caps a term at TagInput's own MAX_TERM_LENGTH,
@@ -177,9 +178,9 @@ export function ScopedSetting({
 }) {
   const effective = value || field.effectiveValue;
   const resetButton = scope === 'project' && field.isSet && (
-    <button type="button" className="ml-auto flex-none text-[0.75rem] text-[var(--accent)] underline" onClick={onClearOverride}>
+    <Button variant="link" className="ml-auto flex-none text-[0.75rem] text-[var(--accent)]" onClick={onClearOverride}>
       Reset
-    </button>
+    </Button>
   );
   if (field.kind === 'number' && field.number) {
     return <NumberSetting field={field} range={field.number} scope={scope} value={value} change={change} resetButton={resetButton} />;

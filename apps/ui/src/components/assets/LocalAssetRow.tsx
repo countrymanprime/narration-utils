@@ -230,17 +230,17 @@ export function LocalAssetRow({ item, onChanged, notify }: { item: AssetItem; on
       )}
       <div className="mt-3 flex flex-wrap gap-2">
         {state === 'starting' || state === 'verifying' ? (
-          <Button ref={firstButton} variant="ghost" pending aria-label={`${state === 'starting' ? 'Starting the download of' : 'Verifying'} ${subject}`}>
+          <Button ref={firstButton} variant="secondary" pending aria-label={`${state === 'starting' ? 'Starting the download of' : 'Verifying'} ${subject}`}>
             {state === 'starting' ? 'Starting' : 'Verifying'}
           </Button>
         ) : state === 'downloading' ? (
-          <Button ref={firstButton} variant="ghost" aria-label={`Cancel the download of ${subject}`} onClick={() => void install.cancel()}>
+          <Button ref={firstButton} variant="secondary" aria-label={`Cancel the download of ${subject}`} onClick={() => void install.cancel()}>
             Cancel
           </Button>
         ) : state === 'installed' ? (
           <Button
             ref={firstButton}
-            variant="ghost"
+            variant="secondary"
             aria-label={`Verify ${subject}`}
             pending={actions.isPending('verify')}
             disabled={actions.isBlockedFor('verify')}

@@ -163,7 +163,7 @@ export function TakeReviewScanDialog({ onClose }: { onClose: (ended?: TakeReview
       }
       actions={
         <>
-          <Button variant="ghost" onClick={() => onClose()}>
+          <Button variant="secondary" onClick={() => onClose()}>
             Cancel
           </Button>
           <Button onClick={start} pending={starting} disabled={incomplete || Boolean(tracksError)}>

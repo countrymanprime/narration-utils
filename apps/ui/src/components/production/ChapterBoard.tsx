@@ -380,7 +380,7 @@ export function ChapterBoard({
                 <p style={MUTED}>Recording check: {checkStatusLine(whyChapter)}</p>
                 <div className="flex flex-wrap gap-2">
                   <Button
-                    variant="ghost"
+                    variant="secondary"
                     onClick={() => {
                       setWhy({ ...why, open: false });
                       setChecking(whyChapter);
@@ -389,7 +389,7 @@ export function ChapterBoard({
                     Recording check
                   </Button>
                   <Button
-                    variant="ghost"
+                    variant="secondary"
                     onClick={() => {
                       setWhy({ ...why, open: false });
                       setEditingChecking(whyChapter);

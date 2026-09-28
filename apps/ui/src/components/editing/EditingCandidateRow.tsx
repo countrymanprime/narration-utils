@@ -13,10 +13,10 @@ import { EDITING_CLASS_LABEL, candidateAudition, candidateClass, candidateReason
 
 const STALE_MESSAGE = 'This candidate changed since it was shown, because the check ran again. Look at it again, then decide.';
 
-const DECISIONS: Array<{ status: FindingReviewStatus; label: string; variant: 'primary' | 'ghost' }> = [
+const DECISIONS: Array<{ status: FindingReviewStatus; label: string; variant: 'primary' | 'secondary' }> = [
   { status: 'accepted', label: 'Accept', variant: 'primary' },
-  { status: 'dismissed', label: 'Dismiss', variant: 'ghost' },
-  { status: 'deferred', label: 'Defer', variant: 'ghost' },
+  { status: 'dismissed', label: 'Dismiss', variant: 'secondary' },
+  { status: 'deferred', label: 'Defer', variant: 'secondary' },
 ];
 
 /**
@@ -84,8 +84,8 @@ export function EditingCandidateRow({
           {cls ? EDITING_CLASS_LABEL[cls] : 'Candidate'} · {formatTime(finding.time_range?.start ?? 0)}
         </p>
         <Button
-          variant="ghost"
-          className="px-3 py-1"
+          size="sm"
+          variant="secondary"
           onClick={toggleHear}
           disabled={!audition}
           aria-label={
@@ -114,9 +114,9 @@ export function EditingCandidateRow({
       <div className="flex flex-wrap gap-2">
         {DECISIONS.map((decision) => (
           <Button
+            size="sm"
             key={decision.status}
             variant={decision.variant}
-            className="px-3 py-1"
             onClick={() => void decide(decision.status)}
             pending={action.isPending(decision.status)}
             disabled={action.isBlockedFor(decision.status)}
@@ -126,8 +126,8 @@ export function EditingCandidateRow({
         ))}
         {decided && (
           <Button
-            variant="ghost"
-            className="px-3 py-1"
+            size="sm"
+            variant="secondary"
             onClick={() => void decide('unreviewed')}
             pending={action.isPending('unreviewed')}
             disabled={action.isBlockedFor('unreviewed')}

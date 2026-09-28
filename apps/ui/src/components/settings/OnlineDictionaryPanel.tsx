@@ -83,7 +83,7 @@ export function OnlineDictionaryPanel({ notify }: { notify: Notify }) {
         sent, never your text, file names or project. Answers are kept on this computer, so a word is never sent twice.
       </p>
       {!present && (
-        <Button variant="ghost" pending={busy === 'signup'} onClick={() => void signUp()}>
+        <Button variant="secondary" pending={busy === 'signup'} onClick={() => void signUp()}>
           Get a free key
         </Button>
       )}
@@ -99,11 +99,11 @@ export function OnlineDictionaryPanel({ notify }: { notify: Notify }) {
             disabled={busy !== undefined}
           />
         </div>
-        <Button variant="ghost" disabled={draft.trim() === '' || busy !== undefined} pending={busy === 'save'} onClick={() => void save()}>
+        <Button variant="secondary" disabled={draft.trim() === '' || busy !== undefined} pending={busy === 'save'} onClick={() => void save()}>
           Save key
         </Button>
         {present && (
-          <Button variant="ghost" disabled={busy !== undefined} pending={busy === 'remove'} onClick={() => void remove()}>
+          <Button variant="secondary" disabled={busy !== undefined} pending={busy === 'remove'} onClick={() => void remove()}>
             Remove key
           </Button>
         )}

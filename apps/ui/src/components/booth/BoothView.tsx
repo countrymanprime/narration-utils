@@ -107,13 +107,13 @@ function BoothStatus({
       <div className="ml-auto flex flex-none items-center gap-2">
         {onCompanion && (
           <TooltipTarget text="Pin a narrow companion panel beside your DAW">
-            <Button variant="ghost" aria-label="Companion" className="px-2.5 py-1 text-xs" onClick={onCompanion}>
+            <Button variant="secondary" aria-label="Companion" className="px-2.5 py-1 text-xs" onClick={onCompanion}>
               <FontAwesomeIcon icon={faDownLeftAndUpRightToCenter} />
               <span className="max-sm:hidden">Companion</span>
             </Button>
           </TooltipTarget>
         )}
-        <Button variant="ghost" aria-label="Exit booth" className="px-2.5 py-1 text-xs" onClick={onExit}>
+        <Button variant="secondary" aria-label="Exit booth" className="px-2.5 py-1 text-xs" onClick={onExit}>
           <span className="max-sm:hidden">Exit booth</span> <Kbd keys={['Esc']} />
         </Button>
       </div>

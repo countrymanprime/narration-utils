@@ -609,22 +609,22 @@ export function GuideDetail({
                   Selected match: <strong>{selectedAliasMatch.canonical_name}</strong>
                   {selectedAliasMatch.locked ? ' · locked' : ''}
                 </span>
-                <Button variant="ghost" className="text-xs" onClick={() => setReviewOverlayId(selectedAliasMatch.id)}>
+                <Button variant="secondary" onClick={() => setReviewOverlayId(selectedAliasMatch.id)}>
                   Review entry
                 </Button>
                 {selectedAliasMatch.locked ? (
                   <TooltipTarget text="Locked entries cannot be merged because the source would be deleted.">
-                    <Button variant="primary" className="text-xs" disabled>
+                    <Button variant="primary" disabled>
                       Merge into current entry
                     </Button>
                   </TooltipTarget>
                 ) : (
-                  <Button variant="primary" className="text-xs" disabled={mutation.isBusy} onClick={() => setConfirmation('merge')}>
+                  <Button variant="primary" disabled={mutation.isBusy} onClick={() => setConfirmation('merge')}>
                     <FontAwesomeIcon icon={faCodeMerge} />
                     Merge into current entry
                   </Button>
                 )}
-                <Button variant="ghost" className="text-xs" onClick={clearAliasMatch}>
+                <Button variant="secondary" onClick={clearAliasMatch}>
                   Clear selection
                 </Button>
               </div>
@@ -816,8 +816,7 @@ export function GuideDetail({
               options={[{ value: '', label: 'Choose entry…' }, ...otherEntities.map((row) => ({ value: row.id, label: row.canonical_name }))]}
             />
             <Button
-              variant="ghost"
-              className="text-xs"
+              variant="secondary"
               disabled={editingDisabled || waiting('relate')}
               pending={mutation.isPending('relate')}
               onClick={() => void addRelationship()}
