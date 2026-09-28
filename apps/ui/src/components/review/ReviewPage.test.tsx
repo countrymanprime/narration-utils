@@ -264,7 +264,7 @@ describe('ReviewPage', () => {
 
 // Go to, Loop and Stop in REAPER (review dashboard Phase 7), against the mock's REAPER.
 describe('ReviewPage in REAPER', () => {
-  const inReaper = () => within(screen.getByRole('region', { name: 'In REAPER' }));
+  const inReaper = () => within(screen.getByRole('heading', { name: 'In REAPER' }).parentElement!);
   const button = (name: string) => inReaper().getByRole('button', { name }) as HTMLButtonElement;
 
   it('goes to a finding and says where REAPER put the cursor', async () => {
@@ -354,7 +354,7 @@ describe('ReviewPage in REAPER', () => {
     await waitFor(async () => expect(await rows()).toHaveLength(1));
     await openFinding(user, /White Rabbit/);
     await screen.findByRole('heading', { level: 3, name: 'Decision' });
-    expect(screen.queryByRole('region', { name: 'In REAPER' })).toBeNull();
+    expect(screen.queryByRole('heading', { name: 'In REAPER' })).toBeNull();
   });
 
   it('keeps the buttons off with the reason when the status cannot be read', async () => {
@@ -368,7 +368,7 @@ describe('ReviewPage in REAPER', () => {
 
 // The approved marker (review dashboard Phase 8, ADR 0123): one take marker for an accepted finding, after a confirm.
 describe('ReviewPage adds an approved marker in REAPER', () => {
-  const inReaper = () => within(screen.getByRole('region', { name: 'In REAPER' }));
+  const inReaper = () => within(screen.getByRole('heading', { name: 'In REAPER' }).parentElement!);
   const addMarker = () => inReaper().getByRole('button', { name: 'Add marker in REAPER' }) as HTMLButtonElement;
   const MARKER = "MISREAD: 'a White Rabbit with pink eyes' as 'a white rabbit with pale eyes'";
 
