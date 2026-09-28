@@ -107,9 +107,13 @@ bring it back with its status and any notes intact.
 **Opening credits** and **Closing credits** are not chapters, but the first opening and first
 closing template in [Settings, Credits](settings.md#credits), each with its own status. A credits
 cell opens its row: the template's name, words and estimated length (including room tone), a
-warning for an unresolved token (`[Author]` never filled in), **Open in Script**, and its status. A
-missing template reads "Not set up" with a link to [Settings, Credits](settings.md#credits). The
-recording check reads manuscript chapters only, so credits are not checked yet.
+warning for an unresolved token (`[Author]` never filled in), **Open in Script**, its Recorded
+length (once its own track is linked - never an estimate, the same rule a chapter's own Recorded
+figure follows), its status and a **Recording check** button. A missing template reads "Not set up"
+with a link to [Settings, Credits](settings.md#credits). Checking a credits row works the same as
+[checking a chapter's recording](#checking-a-chapters-recording) below: the same dialog, against the
+credits template's rendered text rather than a manuscript chapter, and an edited template stales a
+stored result the same way an edited chapter does.
 
 ## Checking a chapter's recording
 

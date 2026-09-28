@@ -44,7 +44,7 @@ func main() {
 		Assets:         application.AssetOptions{Handler: application.AssetFileServerFS(frontendAssets), Middleware: host.mediaMiddleware},
 		SingleInstance: &application.SingleInstanceOptions{UniqueID: "b742fa00-67d8-4a0c-a290-b70b193cc785", OnSecondInstanceLaunch: host.onSecondInstance},
 	})
-	app.Window.NewWithOptions(mainWindowOptions())
+	app.Window.NewWithOptions(mainWindowOptions(host.startupZoom()))
 	if err := app.Run(); err != nil {
 		log.Fatal(err)
 	}
@@ -56,7 +56,9 @@ func main() {
 //     stays on because v3 leaves WebView2's IsPinchZoomEnabled at its default. The header's zoom controls (nav PRD Phase 2) set the
 //     level at runtime with Window.SetZoom on the window this names.
 //   - DefaultContextMenuDisabled: v2 hid the browser's right-click menu (Reload, Inspect) in a production build; v3 shows it.
-func mainWindowOptions() application.WebviewWindowOptions {
+//   - Zoom: the remembered level (nav PRD Phase 3, Q4 A), read by host.startupZoom() before this is called and
+//     already clamped to [zoomMin, zoomMax]; 0 on a fresh install, which leaves WebView2 at its own 100% default.
+func mainWindowOptions(zoom float64) application.WebviewWindowOptions {
 	return application.WebviewWindowOptions{
 		Name:                       mainWindowName,
 		Title:                      "Narration Utils",
@@ -65,6 +67,7 @@ func mainWindowOptions() application.WebviewWindowOptions {
 		MinWidth:                   960,
 		MinHeight:                  640,
 		URL:                        "/",
+		Zoom:                       zoom,
 		ZoomControlEnabled:         true,
 		DefaultContextMenuDisabled: true,
 	}

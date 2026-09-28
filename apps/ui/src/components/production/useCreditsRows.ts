@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import type { ChapterStatus, CreditTemplate, NarrationApi } from '../../types';
+import type { ChapterStatus, CreditTemplate, NarrationApi, RecordedUnavailable } from '../../types';
 import { estimateCreditsSeconds, roomToneSeconds } from '../../state';
 
 // The one template of a kind (ADR 0093): the first in the library.
@@ -25,6 +25,11 @@ export type CreditsRow = {
   estimatedSeconds?: number;
   unresolved: string[];
   status: ChapterStatus;
+  /** The row's confirmed track's recorded audio in the saved project, in seconds (credits-in-chapter-table.prd.md
+   * Phase 3): the same never-an-estimate measurement a manuscript chapter's own Recorded column shows (ADR 0193). */
+  recordedSeconds?: number;
+  /** Set instead of `recordedSeconds` when the row has none, saying why. */
+  recordedUnavailable?: RecordedUnavailable;
 };
 
 /**
@@ -47,11 +52,17 @@ export function useCreditsRows(
     let active = true;
     (async () => {
       try {
-        const [templates, statuses, roomTone] = await Promise.all([api.creditsTemplates(), api.creditsStatuses(), readRoomTone(api)]);
+        const [templates, statuses, roomTone, recordedLengths] = await Promise.all([
+          api.creditsTemplates(),
+          api.creditsStatuses(),
+          readRoomTone(api),
+          api.creditsRecordedLengths(),
+        ]);
         const build = async (kind: CreditsKind): Promise<CreditsRow> => {
           const status = (statuses[kind] as ChapterStatus | undefined) ?? 'not_started';
+          const recorded = recordedLengths[kind];
           const template = firstOfKind(templates, kind);
-          if (!template) return { kind, unresolved: [], status };
+          if (!template) return { kind, unresolved: [], status, ...recorded };
           const preview = await api.creditsPreview(template.body);
           return {
             kind,
@@ -60,6 +71,7 @@ export function useCreditsRows(
             estimatedSeconds: estimateCreditsSeconds([preview.words], roomTone),
             unresolved: preview.unresolved,
             status,
+            ...recorded,
           };
         };
         const [opening, closing] = await Promise.all([build('opening'), build('closing')]);
