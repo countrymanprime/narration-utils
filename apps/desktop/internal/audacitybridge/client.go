@@ -30,12 +30,10 @@ type Options struct {
 //
 // It is safe for concurrent use; requests are serialised, because the pipe carries one conversation.
 type Client struct {
+	// Set once in New and read-only after, so no lock guards them (Do reads them before it locks).
 	transport Transport
-	// Set once in New and read-only after, so no lock guards them.
-	// +checklocksignore
-	timeout time.Duration
-	// +checklocksignore
-	lineEnd string
+	timeout   time.Duration
+	lineEnd   string
 
 	mu sync.Mutex // guards conn and reader, and serialises requests
 	// +checklocks:mu
@@ -79,15 +77,16 @@ func (c *Client) Do(ctx context.Context, cmd *Command) (Reply, error) {
 	if err != nil {
 		return Reply{}, err
 	}
+	transport, timeout := c.transport, c.timeout
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	if err := ctx.Err(); err != nil {
 		return Reply{}, err
 	}
-	ctx, cancel := context.WithTimeout(ctx, c.timeout)
+	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 	if c.conn == nil {
-		conn, err := c.transport.Dial(ctx)
+		conn, err := transport.Dial(ctx)
 		if err != nil {
 			c.reachable.Store(false)
 			if errors.Is(err, ErrNotReachable) || errors.Is(err, ErrUnsupportedPlatform) {
