@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import type { Bootstrap, CopyDiagnosticsResult, HostReady, JobEnded, ProjectAttachState } from '../contracts/system';
+import type { Bootstrap, CopyDiagnosticsResult, HostReady, JobEnded, ProjectAttachState, WindowZoom } from '../contracts/system';
 import { transcriptStateSchema } from './transcript';
 
 /**
@@ -52,3 +52,6 @@ export const jobEndedSchema = z.object({
 
 /** SystemCopyDiagnostics's answer (docs/prds/tool-run-logging.prd.md phase 7). */
 export const copyDiagnosticsResultSchema = z.object({ path: z.string() }) satisfies z.ZodType<CopyDiagnosticsResult>;
+
+/** WindowZoom's and WindowSetZoom's answer (app-navigation-and-zoom-controls.prd.md Phase 2). */
+export const windowZoomSchema = z.object({ level: z.number() }) satisfies z.ZodType<WindowZoom>;

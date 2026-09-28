@@ -103,7 +103,7 @@ export function ChapterSyncPreview(): $CancellablePromise<string> {
 }
 
 /**
- * ChapterSyncSetEnabled stores the narrator's answer (Sync is true, Not now is false, and the Tracks page's toggle
+ * ChapterSyncSetEnabled stores the narrator's answer (Sync is true, Not now is false, and the audio engine panel's toggle
  * uses the same call) and, when on, runs the first sync. It returns the new state with the sync's batch.
  */
 export function ChapterSyncSetEnabled(on: boolean): $CancellablePromise<string> {
@@ -1195,8 +1195,8 @@ export function ProjectCreateIn(parent: string, name: string): $CancellablePromi
 }
 
 /**
- * ProjectLinkDawFile is the one shared binding behind the header pill, the
- * Tracks page and Settings' DAW category (PRD project-workspace-and-daw-
+ * ProjectLinkDawFile is the one shared binding behind the audio engine panel
+ * and Settings' DAW category (PRD project-workspace-and-daw-
  * link.prd.md, Open Question W19): it opens a native "*.rpp" file dialog and
  * links the chosen file to the current project through the manifest storage
  * Phase 1-3 already built (project.BuildDawLink, Manifest.Save). Cancelling
@@ -1325,7 +1325,7 @@ export function RenderConfigSuggestFolder(): $CancellablePromise<string> {
 }
 
 /**
- * RetakeLanesList lists, from the saved REAPER project the Tracks page reads, every manuscript line whose retakes sit
+ * RetakeLanesList lists, from the saved REAPER project the audio engine panel reads, every manuscript line whose retakes sit
  * on more than one fixed lane of a track, and which lane plays.
  */
 export function RetakeLanesList(): $CancellablePromise<string> {
@@ -1800,6 +1800,25 @@ export function WhisperInstallState(jobID: string): $CancellablePromise<string> 
 
 export function WhisperRemove(modelID: string): $CancellablePromise<string> {
     return $Call.ByID(1246245112, modelID);
+}
+
+/**
+ * WindowSetZoom sets the window's zoom to the nearest of zoomSteps, clamped to [zoomMin, zoomMax] regardless of what
+ * factor the caller sends - the defensive floor and ceiling behind the header's own disabled-at-100%/never-past-200%
+ * promise (Q6, ADR 0201). The UI calls this from the header's buttons, Ctrl+=/-/0, reset, and the "set back to 200%"
+ * clamp it runs itself when it sees an external (Ctrl+wheel or pinch) zoom above the ceiling; Ctrl+wheel and pinch
+ * never call it directly.
+ */
+export function WindowSetZoom(factor: number): $CancellablePromise<string> {
+    return $Call.ByID(36100721, factor);
+}
+
+/**
+ * WindowZoom reads the window's current zoom level (ADR 0201 item 3): the UI asks for this when it sees the page's
+ * own zoom change (a devicePixelRatio or resize event), since Wails v3 surfaces no zoom-changed callback on Windows.
+ */
+export function WindowZoom(): $CancellablePromise<string> {
+    return $Call.ByID(1473407121);
 }
 
 /**

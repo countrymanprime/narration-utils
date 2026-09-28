@@ -88,6 +88,10 @@ const mockTeleprompter = (['listening', 'waiting', 'done', 'ended', 'flagged'] a
 // holds still for a capture (read-aloud-control-bar.prd.md Phase 4).
 const mockLevelParam = Number(mockParams.get('mockLevel') ?? Number.NaN);
 const mockLevel = Number.isFinite(mockLevelParam) && mockLevelParam >= -100 && mockLevelParam <= 0 ? mockLevelParam : undefined;
+// `?mockZoom=125` boots the header's zoom group already at that percentage (app-navigation-and-zoom-controls.prd.md
+// Phase 2), so the visual suite can capture a non-100% level without driving Ctrl+wheel or a button click first.
+const mockZoomParam = Number(mockParams.get('mockZoom') ?? Number.NaN);
+const mockZoom = Number.isFinite(mockZoomParam) && mockZoomParam > 0 ? mockZoomParam / 100 : undefined;
 // `?mockReaperState=ready|not_armed|other_armed|several_armed|no_link|recording_elsewhere|unavailable|experimental_off` makes
 // the read-aloud dialog's REAPER state (read-aloud-control-bar.prd.md Phase 6) answer that for every chapter.
 const mockReaperState = MOCK_REAPER_SEEDS.find((seed) => seed === mockParams.get('mockReaperState'));
@@ -392,6 +396,7 @@ const mockInitial = {
   ...(mockTeleprompter ? { teleprompter: mockTeleprompter } : {}),
   ...(mockNoDevices ? { teleprompterDevices: [] } : {}),
   ...(mockLevel === undefined ? {} : { teleprompterLevel: mockLevel }),
+  ...(mockZoom === undefined ? {} : { zoom: mockZoom }),
   ...(mockReaperState ? { reaperState: mockReaperState } : {}),
   ...(mockReaperInput ? { reaperInput: mockReaperInput } : {}),
   ...(mockResume ? { resume: mockResume } : {}),

@@ -55,6 +55,9 @@ export type JobEnded = { id: string; kind: string; outcome: 'success' | 'error' 
  * when the narrator cancelled the folder picker — no file was written. */
 export type CopyDiagnosticsResult = { path: string };
 
+/** The window's real webview zoom level as a fraction (1.25 is 125%), whatever set it (app-navigation-and-zoom-controls.prd.md Phase 2). */
+export type WindowZoom = { level: number };
+
 export interface SystemApi {
   ready(): Promise<HostReady>;
   bootstrap(): Promise<Bootstrap>;
@@ -86,4 +89,12 @@ export interface SystemApi {
   companionModeEnter(): Promise<void>;
   /** Puts the window back where `companionModeEnter` found it and un-pins it; a no-op when companion mode is not on. */
   companionModeExit(): Promise<void>;
+  /** Reads the window's current real zoom level (app-navigation-and-zoom-controls.prd.md Phase 2, ADR 0201 item 3):
+   * the UI calls this when it sees the page's own zoom change (a devicePixelRatio or resize event), since Wails v3
+   * surfaces no zoom-changed callback on Windows. */
+  windowZoom(): Promise<WindowZoom>;
+  /** Sets the window's zoom, snapped to the nearest of the header's steps and clamped to [1.0, 2.0] host-side
+   * regardless of what factor is sent (Q6, ADR 0201). Called from the header's buttons, Ctrl+=/-/0, reset, and the
+   * "set back to 200%" clamp the UI runs when it sees an external (Ctrl+wheel or pinch) zoom above the ceiling. */
+  windowSetZoom(factor: number): Promise<WindowZoom>;
 }
