@@ -9,7 +9,8 @@ import type { ReactNode } from 'react';
 export function CompactShell({ title, status, action, children }: { title: string; status?: ReactNode; action?: ReactNode; children: ReactNode }) {
   return (
     <div className="flex size-full max-w-[30rem] min-w-[20rem] flex-col bg-[var(--bg)] text-[var(--text)]">
-      <header className="flex flex-none flex-wrap items-center justify-between gap-2 border-b border-[var(--border)] bg-[var(--surface)] px-[0.85rem] py-[0.65rem]">
+      {/* 45 px (mock 07): `min-h` rather than a fixed `h` so a title long enough to wrap (LongTitleWraps) still grows the header instead of clipping it. */}
+      <header className="flex min-h-[2.8125rem] flex-none flex-wrap items-center justify-between gap-2 border-b border-[var(--border)] bg-[var(--surface)] px-[0.85rem] py-[0.4rem]">
         <div className="flex min-w-0 flex-wrap items-center gap-2">
           <h1 className="min-w-0 truncate text-sm font-semibold [overflow-wrap:anywhere]">{title}</h1>
           {status}
