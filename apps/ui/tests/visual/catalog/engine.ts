@@ -1,9 +1,9 @@
 // The `engine` rows of STATE_CATALOG (see state-catalog.ts), in the order they are captured: the engine panel, a slide-over from
 // the header's engine chip that replaced the Tracks page (stage-navigation-and-page-replacement.prd.md Phase 6, ADR 0407). Each
-// state is the panel, or one of its REAPER tools' dialogs opened from it, over Home. The Tracks page's player states
+// state is the panel, or one of its REAPER tools' dialogs opened from it, over the Production home. The Tracks page's player states
 // (`default`'s transport, `playing`, `skipped-forward`, `last-track-selected`, `unplayable-track-selected`) went with the player:
-// a chapter is heard in its Proof chapter view. `tracks/sync-consent` went too: the same dialog over the same Home is
-// `home/chapter-sync-consent`, which sits here with the chapter sync rows it belongs to.
+// a chapter is heard in its Proof chapter view. `tracks/sync-consent` went too: the same dialog over the Production home is
+// `production/chapter-sync-consent`.
 import type { StateEntry } from '../lib/types';
 import { KEEPS_DESKTOP_SCROLL } from './shared';
 
@@ -12,7 +12,7 @@ export const engineStates: StateEntry[] = [
     page: 'engine',
     state: 'default',
     description:
-      'The engine panel opened from the header chip over Home (Phase 6, Q3 A): the linked Alice.rpp and "Link a different REAPER project file", the six REAPER tools, Chapter sync, the track list with each track\'s chapter and its unplayable items flagged, and Chapter links',
+      'The engine panel opened from the header chip over the Production home (Phase 6, Q3 A): the linked Alice.rpp and "Link a different REAPER project file", the six REAPER tools, Chapter sync, the track list with each track\'s chapter and its unplayable items flagged, and Chapter links',
   },
   {
     page: 'engine',
@@ -31,12 +31,6 @@ export const engineStates: StateEntry[] = [
     state: 'sync-off',
     description:
       'The engine panel, the Chapter sync section with sync turned off (?mockChapterSync=off, daw-chapter-track-auto-sync.prd.md Phase 3, mockup 02)',
-  },
-  {
-    page: 'home',
-    state: 'chapter-sync-consent',
-    description:
-      'Home, the same "Sync chapters to tracks?" dialog (?mockChapterSync=ask) - it shows from every link path, wherever the narrator is (Phase 3\'s "Home variant" row)',
   },
   {
     page: 'engine',
@@ -72,7 +66,7 @@ export const engineStates: StateEntry[] = [
     page: 'engine',
     state: 'editing-check-unmapped',
     description:
-      'The engine panel, the Chapter links list\'s "Editing check…" opened on an unlinked chapter, Check editing pressed: "This chapter can\'t be checked yet" with the inline track-link prompt, same as Home\'s recording check offers (?mockEditingRefusal=unmapped)',
+      'The engine panel, the Chapter links list\'s "Editing check…" opened on an unlinked chapter, Check editing pressed: "This chapter can\'t be checked yet" with the inline track-link prompt, same as the recording check offers (?mockEditingRefusal=unmapped)',
     ...KEEPS_DESKTOP_SCROLL,
   },
   {

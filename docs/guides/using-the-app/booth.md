@@ -3,7 +3,7 @@
 # Booth
 
 The Booth is where you record: it follows you as you read a chapter aloud, listening through your microphone
-with a local speech engine and highlighting the word you are on. It needs an [imported manuscript](home.md),
+with a local speech engine and highlighting the word you are on. It needs an [imported manuscript](production.md#importing-the-manuscript),
 and nothing you say is edited, saved, or sent anywhere. Open it from **Booth** in the navigation, or from
 **Record in Booth** on a chapter or credits card on [Script](script.md), which opens it on that
 chapter. What the Booth is reading is part of its address (`/booth?chapter=…`), so Back and a bookmark land

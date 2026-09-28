@@ -45,7 +45,7 @@ contents and back matter (endnotes, glossary, and the like) are recognized from 
 markup and kept out of the narration chapters, the same as a Word document's front matter. A
 plain-text file with no chapter markings, or an EPUB with no table of contents or headings,
 still imports as one narration chapter rather than failing or importing nothing narratable — the
-import log says so. Re-import a manuscript (Replace manuscript on [Home](home.md)) to pick this up in an older project.
+import log says so. Re-import a manuscript (Replace manuscript on [Production](production.md#importing-the-manuscript)) to pick this up in an older project.
 
 ![Script - italic, bold and underline from the source document, and a preserved line break inside a paragraph](../../images/ui/script-formatting.webp)
 
@@ -70,8 +70,8 @@ chapter card does — press anywhere on its header, not just the title — with 
 way it is set. Both are open by default and stay open or closed the way you leave them for as long as
 you keep the project open. Open one to read the credits with the project's values filled in. A token
 with no value yet stays in brackets, highlighted, and a line below lists the unresolved tokens, with a
-**Fill in** next to it that opens the same "Set up the credits" dialog Home offers — see
-[Home](home.md) for what it asks and when. A banner above Opening credits does the same while any
+**Fill in** next to it that opens the same "Set up the credits" dialog Production offers — see
+[Production](production.md#importing-the-manuscript) for what it asks and when. A banner above Opening credits does the same while any
 token stays unresolved and setup has not been dismissed for the project. These
 entries are read-only and are not chapters: they are not in the chapter list or search. Record the
 credits as their own files, as ACX expects, not inside a chapter file: a chapter's Proof view compares a
@@ -84,9 +84,9 @@ a **Retail sample** tag, and in the open chapter its lines have a rule down thei
 sample starts" and its length above the first line and "Last line of the retail sample" above the last.
 
 A heading that isn't really a chapter (a part title, an epigraph, or front matter your source read in
-as one) is removed from recording from its track panel on [Home](home.md), not from here: choosing
+as one) is removed from recording from its track panel on [Production](production.md#a-chapters-track), not from here: choosing
 **Not a chapter** takes it out of this chapter list and search too, and **Front matter** keeps it in the
-list without recording it. Either way its text is untouched and **Restore** on Home brings it back as a
+list without recording it. Either way its text is untouched and **Restore** on Production brings it back as a
 narration chapter.
 
 ![Script, the retail sample marked on lines 1 to 3 of Chapter 3](../../images/ui/script-retail-sample.webp)
@@ -124,10 +124,10 @@ highlighted; choosing one clears the search box, closes the panel, and jumps to 
 clear (×) icon empties the box and returns focus to it; Escape clears the box first, then closes
 the panel on a second press.
 
-A chapter with a live "Suggested: Editing/Proofing/Finalized" recommendation ([Home](home.md)'s
-per-chapter stage suggestions) shows that same wording under its title here too, so it is visible
-while browsing chapters without opening the estimate breakdown. It is read-only in this list -
-Confirm, Dismiss and the evidence view stay on Home and, for a chapter in Proofing, on that chapter's
+A chapter with a live "Suggested: Editing/Proofing/Finalized" recommendation ([Production](production.md#stage-suggestions)'s
+stage suggestions) shows that same wording under its title here too, so it is visible
+while browsing chapters without opening the board. It is read-only in this list -
+Confirm, Dismiss and the evidence view stay on Production and, for a chapter in Proofing, on that chapter's
 [Proof view](proof.md#the-chapter-view).
 
 The reader shows only the manuscript's narratable chapters. A table of contents or a Characters

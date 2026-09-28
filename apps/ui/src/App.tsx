@@ -15,7 +15,6 @@ import { notificationForJobEnd, shouldNotifyForJobEnd, shouldQueueJobEndAnnounce
 import { useBoothRecording } from './components/booth/useBoothRecording';
 import { ConfirmDialog } from './components/primitives/ConfirmDialog';
 import { ShortcutSheet } from './components/help/ShortcutSheet';
-import { Home } from './components/home/Home';
 import { ScriptPage } from './components/script/ScriptPage';
 import { ProjectPicker } from './components/project/ProjectPicker';
 import { Guide } from './components/storybible/Guide';
@@ -32,6 +31,8 @@ import { RedirectKeepingLocation } from './components/layout/RedirectKeepingLoca
 import { leavesCompareRun } from './components/proof/leavesCompareRun';
 import { DeliveryPage } from './components/delivery/DeliveryPage';
 import { ProductionPage } from './components/production/ProductionPage';
+import { runningTimerOf, type RunningTimer } from './components/layout/TimerChip';
+import type { ProductionOverview } from './api/contracts/production';
 import { deliveryHash, parseDeliveryHash } from './components/delivery/deliveryLink';
 import { TooltipProvider } from './components/primitives/Tooltip';
 import { ErrorBoundary } from './components/primitives/ErrorBoundary';
@@ -138,6 +139,26 @@ function AppRoutes() {
   // boundary (the active manuscript affects several pages).  Refresh this
   // payload in place instead of reloading the browser, which could interrupt
   // the completion dialog before its activity log is visible.
+  // The header's running-timer chip (stage-navigation-and-page-replacement.prd.md Phase 2): read once for the project's manuscript,
+  // so the chip shows on whichever page the app opens on, and then from every overview the Production home reads, since only its
+  // Start and Stop timer change it.
+  const [runningTimer, setRunningTimer] = useState<RunningTimer | null>(null);
+  const onProductionOverview = useCallback((overview: ProductionOverview) => setRunningTimer(runningTimerOf(overview)), []);
+  const manuscriptId = data?.manuscript?.id;
+  useEffect(() => {
+    if (!manuscriptId) {
+      setRunningTimer(null);
+      return;
+    }
+    let active = true;
+    api
+      .productionOverview()
+      .then((overview) => active && setRunningTimer(runningTimerOf(overview)))
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, [api, manuscriptId]);
   const refreshBootstrap = useCallback(async () => {
     try {
       const next = await api.bootstrap();
@@ -406,7 +427,7 @@ function AppRoutes() {
     guardedNavigate(`/script#${paragraph !== undefined ? `p${paragraph}` : `c${encodeURIComponent(chapter)}`}`);
   const goToStoryBible = (entityId: string) => guardedNavigate(`/story-bible#${encodeURIComponent(entityId)}`);
   // A chapter's Proof view (stage-navigation-and-page-replacement.prd.md Phase 5; edit-and-proof-workspace.prd.md's
-  // "Open in workspace"): from Proof's notes, Home and the Manuscript. findingId is the deep link's ?finding=, so the
+  // "Open in workspace"): from Proof's notes, the Production board and Script. findingId is the deep link's ?finding=, so the
   // chapter view lands on the flag that finding backs (Navigation and deep links).
   const goToProofChapter = (chapterId: string, findingId?: string) =>
     guardedNavigate(`/proof/${encodeURIComponent(chapterId)}${findingId ? `?finding=${encodeURIComponent(findingId)}` : ''}`);
@@ -468,20 +489,22 @@ function AppRoutes() {
             onOpenEnginePanel={openEnginePanel}
             linkingDawFile={dawLink.isBusy}
             engine={engine}
+            timer={runningTimer}
             history={{ canGoBack: history.canGoBack, canGoForward: history.canGoForward, back: guardedBack, forward: guardedForward }}
           >
-            <ErrorBoundary key={location.pathname.split('/')[1] || 'home'}>
+            <ErrorBoundary key={location.pathname.split('/')[1] || 'production'}>
               <Routes>
                 <Route
                   path="/"
                   element={
-                    <Home
+                    <ProductionPage
                       data={data}
                       go={guardedNavigate}
                       notify={setNotice}
-                      goToManuscript={goToScript}
-                      goToWorkspace={goToProofChapter}
+                      goToScript={goToScript}
+                      goToProofChapter={goToProofChapter}
                       refreshBootstrap={refreshBootstrap}
+                      onOverview={onProductionOverview}
                     />
                   }
                 />
@@ -559,7 +582,8 @@ function AppRoutes() {
                   path="/tracks/chapter/:chapterId"
                   element={<RedirectKeepingLocation to={({ chapterId = '' }) => `/proof/${encodeURIComponent(chapterId)}`} />}
                 />
-                <Route path="/production" element={data.manuscript ? <ProductionPage /> : <Navigate to="/" replace />} />
+                {/* The Production page moved to `/` (stage-navigation-and-page-replacement.prd.md Phase 2). */}
+                <Route path="/production" element={<RedirectKeepingLocation to="/" />} />
                 <Route
                   path="/delivery"
                   element={<DeliveryPage openSettings={() => guardedNavigate('/settings#delivery')} focus={parseDeliveryHash(location.hash)} />}
