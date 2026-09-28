@@ -650,7 +650,7 @@ The dark sets show pill heights of 18, 21, 23, 24, 25 and 26 px, with the OK fil
 | 4 | Panel, Heading, SectionLabel, InsetCard | card header bar and title type, inline subtitle, flush body; page title; the eyebrow and inset-card primitives; migrate hand-drawn cards | in review (#905, ADR 0640) | 5, 8 | 0b, 3 | - |
 | 5 | Tabs, ToggleGroup, Pill | underline spec, sidebar fill, the `segmented` look; migrate the step strip and the segmented Buttons | complete (#895, ADR 0625) | 4, 8 | 0b, 2 | - |
 | 6 | Inputs | Select line-height, the mono numeric field, the focus ring, the radio; migrate raw labels and fake fields | pending | 2, 7 | 0b | - |
-| 7 | Overlays | dialog header, footer and body copy; the slide-over's transparent backdrop (Q4); the inverted toast; the popover; migrate the hand-drawn listbox | pending | 2, 6 | 0b, 1 | - |
+| 7 | Overlays | dialog header, footer and body copy; the slide-over's transparent backdrop (Q4); the inverted toast; the popover; migrate the hand-drawn listbox | complete (#898, ADR 0630) | 2, 6 | 0b, 1 | - |
 | 8 | Nav rail and header | rail and item sizes, the header height, the `HeaderChip` primitive and its 4 copies, the nav count slot; **serial on `AppShell.tsx`** | pending | 4, 5 | 0b, 2 | - |
 | 9 | StatTile and meters | `StatStrip`, tile sizes, thin toned `ProgressBar`, segmented `LevelMeter`; migrate the progress and StatTile copies | complete | 1, 3, 10 | 0b | - |
 | 10 | Kbd, KeyHint, Toolbar | Plex Mono caps with sizes and a bottom edge, `KeyHint`, toolbar item sizes; migrate TransportBar and SelectionMenu | in review (#889) | 1, 3, 9 | 0b | - |

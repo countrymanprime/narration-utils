@@ -206,6 +206,11 @@ describe('App (integration, driven through the mock NarrationApi)', () => {
     const aliasInput = screen.getByPlaceholderText('Add an alias or find a matching entry…');
     fireEvent.change(aliasInput, { target: { value: 'White Rabbit' } });
     const matchList = await screen.findByRole('listbox', { name: 'Matching Story Bible entries' });
+    // The text box is the combobox that drives the list (#156): it names the list and the active option.
+    const combobox = screen.getByRole('combobox', { name: 'Add an alias or find a matching entry' });
+    expect(combobox.getAttribute('aria-expanded')).toBe('true');
+    expect(combobox.getAttribute('aria-controls')).toBe(matchList.id);
+    expect(combobox.getAttribute('aria-activedescendant')).toBe(within(matchList).getAllByRole('option')[0].id);
     fireEvent.click(within(matchList).getByRole('option', { name: /White Rabbit/ }));
     fireEvent.click(screen.getByRole('button', { name: 'Review entry' }));
 

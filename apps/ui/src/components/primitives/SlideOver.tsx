@@ -62,7 +62,8 @@ export function SlideOver({
           >
             {/* Content: a mouse drag inside the panel selects text instead of starting a swipe-to-dismiss (touch still swipes). */}
             <Drawer.Content className="flex min-h-0 flex-1 flex-col">
-              <div className="flex items-center justify-between gap-3 border-b border-[var(--border)] px-[1.1rem] py-[0.85rem]">
+              {/* 59 px and a 1 px divider, the same header as Dialog's (chapter-track-link-control/02). */}
+              <div className="flex min-h-[3.75rem] flex-none items-center justify-between gap-3 border-b border-[var(--border)] px-[1.1rem] py-[0.85rem]">
                 <Drawer.Title render={headingLevel === 2 ? <h2 /> : <h3 />} className="text-sm font-semibold">
                   {title}
                 </Drawer.Title>

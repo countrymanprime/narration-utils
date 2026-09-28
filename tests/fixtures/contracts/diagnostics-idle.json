@@ -18,5 +18,12 @@
       "long_pause_seconds": 2
     }
   },
+  "cleanupThresholds": {
+    "pad_seconds": 0.15,
+    "min_breath_seconds": 0.12,
+    "max_breath_seconds": 0.9,
+    "breath_below_speech_db": 12,
+    "click_above_silence_db": 30
+  },
   "files": []
 }

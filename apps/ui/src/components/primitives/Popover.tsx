@@ -17,7 +17,8 @@ export function Popover({
   trigger,
   label,
   side = 'bottom',
-  align = 'start',
+  // The mocks right-align a popover to its trigger (read-aloud-control-bar/03 and 04).
+  align = 'end',
   open,
   defaultOpen,
   onOpenChange,
@@ -39,11 +40,12 @@ export function Popover({
     <BasePopover.Root open={open} defaultOpen={defaultOpen} onOpenChange={onOpenChange}>
       <BasePopover.Trigger render={trigger} />
       <BasePopover.Portal>
-        <BasePopover.Positioner side={side} align={align} sideOffset={8} collisionPadding={8} className="z-[70]">
+        {/* Measured on read-aloud-control-bar/03 and 04: 12 px from the trigger, 16 px padding, radius 8, at least 336 px wide. */}
+        <BasePopover.Positioner side={side} align={align} sideOffset={12} collisionPadding={8} className="z-[70]">
           <BasePopover.Popup
             aria-label={label}
             {...{ [POPOVER_POPUP_ATTRIBUTE]: '' }}
-            className="w-max min-w-48 rounded-[0.5rem] border border-[var(--border)] bg-[var(--surface)] p-3 shadow-[var(--shadow-lg)] outline-none"
+            className="w-max max-w-[calc(100vw-1rem)] min-w-[min(21rem,calc(100vw-1rem))] rounded-[var(--radius-card)] border border-[var(--border)] bg-[var(--surface)] p-4 shadow-[var(--shadow-lg)] outline-none"
           >
             {children}
           </BasePopover.Popup>
