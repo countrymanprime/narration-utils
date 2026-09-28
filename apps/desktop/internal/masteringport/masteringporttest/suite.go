@@ -83,7 +83,7 @@ func Problems(entry port.Entry[masteringport.Mastering], dir string) []string {
 	}
 	profile := deliveryprofile.ACX()
 	request := func(dst string) masteringport.Request {
-		return masteringport.Request{Source: source, Region: "Chapter 1", Destination: dst, Profile: profile, Approved: true}
+		return masteringport.Request{Source: source, Region: "Chapter 1", Macro: "Suite Macro", Destination: dst, Profile: profile, Approved: true}
 	}
 
 	if caps.Level < port.Experimental {
@@ -102,6 +102,14 @@ func Problems(entry port.Entry[masteringport.Mastering], dir string) []string {
 	if entry.Descriptor.Supports(masteringport.ModeDAWRegion) {
 		daw = NewFakeDAW(dir)
 		restore := masteringport.UseSession(func() (masteringport.Session, error) { return daw.Session(), nil })
+		defer restore()
+	}
+	// A row need not be ModeDAWRegion to make the DAW render: the Audacity row masters a rendered WAV (ModeWAV) but still triggers a
+	// render through macro_render, under the same approval rules. Any row that needs it gets a fake to master through, the same way.
+	var audacityDAW *FakeAudacity
+	if slices.Contains(caps.Needs, dawport.CapMacroRender) {
+		audacityDAW = NewFakeAudacity(dir)
+		restore := masteringport.UseSession(func() (masteringport.Session, error) { return audacityDAW.Session(), nil })
 		defer restore()
 	}
 
@@ -159,6 +167,9 @@ func Problems(entry port.Entry[masteringport.Mastering], dir string) []string {
 	if daw != nil {
 		dawProblems(entry.Name, row, daw, dir, request, leftNothing, report)
 	}
+	if audacityDAW != nil {
+		audacityProblems(entry.Name, row, audacityDAW, dir, request, leftNothing, report)
+	}
 	return problems
 }
 
@@ -189,6 +200,42 @@ func dawProblems(name string, row masteringport.Mastering, daw *FakeDAW, dir str
 		report("%q reported success for a render the DAW refused", name)
 	}
 	leftNothing(failed, "a render the DAW refused")
+	daw.Misbehave(Behaves)
+
+	for _, refusal := range daw.Refusals() {
+		report("%q sent a render the bridge refuses: %s", name, refusal)
+	}
+}
+
+// audacityProblems checks a macro_render row against the fake Audacity it mastered through: it asked for exactly the one render
+// the suite's approved request to a free destination needed, with a fresh approval and the macro's name, into an empty run folder
+// inside the project that it removed afterwards; and it does not trust an answer with a file outside that folder, or an error.
+func audacityProblems(name string, row masteringport.Mastering, daw *FakeAudacity, dir string, request func(string) masteringport.Request,
+	leftNothing func(dst, after string), report func(string, ...any)) {
+	if renders := daw.Renders(); len(renders) != 1 {
+		report("%q asked Audacity to render %d times; only the approved request to a free destination should render", name, len(renders))
+	} else if renders[0].Macro == "" {
+		report("%q asked Audacity to render with no macro named", name)
+	}
+	runs := filepath.Join(dir, "narration-utils", "mastering")
+	if left, _ := os.ReadDir(runs); len(left) > 0 {
+		report("%q left its render folder behind in %s", name, runs)
+	}
+
+	daw.Misbehave(Escapes)
+	escaped := filepath.Join(dir, "escaped-master.wav")
+	if _, err := row.Master(context.Background(), request(escaped)); err == nil {
+		report("%q kept a file Audacity exported outside the folder the row made for it", name)
+	}
+	leftNothing(escaped, "an export outside its folder")
+	_ = os.Remove(filepath.Join(runs, "escaped.wav"))
+
+	daw.Misbehave(Fails)
+	failed := filepath.Join(dir, "failed-master.wav")
+	if _, err := row.Master(context.Background(), request(failed)); err == nil {
+		report("%q reported success for a render Audacity refused", name)
+	}
+	leftNothing(failed, "a render Audacity refused")
 	daw.Misbehave(Behaves)
 
 	for _, refusal := range daw.Refusals() {

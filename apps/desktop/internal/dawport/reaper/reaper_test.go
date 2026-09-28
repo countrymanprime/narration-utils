@@ -204,6 +204,9 @@ func TestTheDeclarationMatchesTodaysGating(t *testing.T) {
 	// commands (it answers through the fan-out), so it is not gated by bridge.Actions; like every Experimental capability, the
 	// resolver hands its role out only when the narrator's settings allow it. master_chain_read is gated above.
 	want[dawport.CapRenderWithFX] = dawport.Experimental
+	// macro_render is the mastering port's Audacity row (ADR 0306, ADR 0460): REAPER has no macro manager, so it is Unsupported,
+	// not Supported like everything else this loop defaults to.
+	want[dawport.CapMacroRender] = dawport.Unsupported
 	if !maps.Equal(declared, want) {
 		t.Errorf("Declares() = %v, want %v", declared, want)
 	}

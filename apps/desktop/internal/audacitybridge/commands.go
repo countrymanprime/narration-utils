@@ -145,6 +145,14 @@ func (c *Client) PlayLooped(ctx context.Context) error {
 	return err
 }
 
+// ApplyMacro runs one saved Macro Manager chain by its exact name (ApplyMacro: MacroName=...), against whatever is currently
+// selected. The scripting reference documents no way to list or read a macro's own steps back, so a caller narrates its own words
+// for the narrator's report rather than asking Audacity what the macro does.
+func (c *Client) ApplyMacro(ctx context.Context, name string) error {
+	_, err := c.Do(ctx, NewCommand("ApplyMacro").String("MacroName", name))
+	return err
+}
+
 // ExportFormats are the extensions Export may write. Export2 picks the exporter from the file's extension, and one exporter,
 // "(external program)" (ID CL), runs a command line from Audacity's preferences (the launcher feasibility note), so an extension
 // outside this list is refused rather than handed to Audacity.

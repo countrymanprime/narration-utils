@@ -33,7 +33,7 @@ func TestTheDeclarationIsWhatIsBuilt(t *testing.T) {
 	for _, spec := range dawport.Capabilities() {
 		c := spec.Capability
 		want := dawport.NotYetAvailable
-		if c == dawport.CapNavigate || c == dawport.CapMarkers {
+		if c == dawport.CapNavigate || c == dawport.CapMarkers || c == dawport.CapMacroRender {
 			want = dawport.Experimental
 		}
 		if got := declared[c]; got != want {
@@ -66,7 +66,7 @@ func TestWhatIsNotBuiltKeepsADR0144sSentence(t *testing.T) {
 		for _, rt := range []dawport.Runtime{{}, {Bridge: true}, {Bridge: true, Reachable: true}} {
 			resolver := resolverFor(adapter, rt, dawport.ToggleOn)
 			for c, s := range resolver.All() {
-				if c == dawport.CapNavigate || c == dawport.CapMarkers {
+				if c == dawport.CapNavigate || c == dawport.CapMarkers || c == dawport.CapMacroRender {
 					continue
 				}
 				if s.Available || s.Reason != dawport.ReasonNotYet || s.Message != string(ErrNotAvailable) {

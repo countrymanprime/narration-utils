@@ -44,6 +44,25 @@ describe('useRangePlayer', () => {
     expect(result.current.isPlaying).toBe(true);
   });
 
+  it('takes a caller roll instead of the audition one (Proof Play ±3 s)', () => {
+    const { result } = renderHook(() => useRangePlayer(mediaUrl, { pre: 3, post: 3 }));
+    act(() => result.current.play(range));
+    expect(audio().currentTime).toBe(7);
+
+    act(() => {
+      audio().currentTime = range.rangeEnd + 2;
+      audio().dispatchEvent(new Event('timeupdate'));
+    });
+    expect(result.current.isPlaying).toBe(true);
+
+    act(() => {
+      audio().currentTime = range.rangeEnd + 3;
+      audio().dispatchEvent(new Event('timeupdate'));
+    });
+    expect(audio().pause).toHaveBeenCalled();
+    expect(result.current.isPlaying).toBe(false);
+  });
+
   it('clamps the pre-roll seek to zero near the start of the file', () => {
     const { result } = renderHook(() => useRangePlayer(mediaUrl));
 

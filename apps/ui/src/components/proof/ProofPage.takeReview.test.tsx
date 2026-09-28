@@ -227,10 +227,10 @@ describe('A take-review group on the Review page', () => {
     });
     let reads = await openGroup(user, /Partial pickup/);
     expect(within(reads).getByRole('button', { name: 'Add as take…' })).toHaveProperty('disabled', true);
-    expect(within(reads).getByText(/Accept this finding first/)).toBeTruthy();
+    expect(within(reads).getByText(/Mark this note as a pickup or an edit first/)).toBeTruthy();
 
-    await user.click(screen.getByRole('button', { name: 'Accept' }));
-    await screen.findByText('Saved as accepted.');
+    await user.click(screen.getByRole('button', { name: 'Pickup' }));
+    await screen.findByText('Saved: needs a pickup.');
     reads = screen.getByRole('region', { name: 'Reads' });
     await waitFor(() => expect(within(reads).getByRole('button', { name: 'Add as take…' })).toHaveProperty('disabled', false));
     await user.click(within(reads).getByRole('button', { name: 'Add as take…' }));
