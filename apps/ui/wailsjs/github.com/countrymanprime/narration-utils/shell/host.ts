@@ -382,6 +382,14 @@ export function CreditsProjectValues(): $CancellablePromise<string> {
 }
 
 /**
+ * CreditsRecordedLengths is a credits row's "actual recorded": the same track-based measurement every manuscript
+ * chapter's Recorded column gets, read for the two credits ids from the same confirmed chapter-track-map.json.
+ */
+export function CreditsRecordedLengths(): $CancellablePromise<string> {
+    return $Call.ByID(334169345);
+}
+
+/**
  * CreditsRetailSample reads this project's retail sample and measures it against the current manuscript. A saved range
  * whose lines are gone (the manuscript was replaced) is kept and reported as a problem rather than failing the read.
  */
@@ -1348,6 +1356,21 @@ export function ProjectSwitch(path: string, name: string): $CancellablePromise<s
 }
 
 /**
+ * PronunciationCommonsAudioOpen opens the Wikimedia Commons recording that Wiktextract's own offline pronunciation
+ * data (prep-depth Phase 8, #782) names for word, in the narrator's default browser or media player: the same
+ * "open externally" host path PronunciationLookupOpen and PronunciationOnlineSignUpOpen already use (Q12), never
+ * fetched, streamed or cached by the app itself.
+ * 
+ * word crosses the Wails boundary; the address never does - it is built here from Phase 8's own installed index, the
+ * same trusted-URL discipline every other open-externally binding already follows (never a UI-supplied URL). A word
+ * the index has no audio for, and a Wiktextract source not installed yet, are both refused with a clear reason
+ * rather than opening nothing silently.
+ */
+export function PronunciationCommonsAudioOpen(word: string): $CancellablePromise<string> {
+    return $Call.ByID(209296523, word);
+}
+
+/**
  * PronunciationLookupOpen opens source's fixed lookup-page template for word in the narrator's default browser
  * (prep-depth.prd.md Phase 2; provider-ports.prd.md Open Question Q5's BrowserLookup role), and nothing else: it
  * never fetches, scrapes or caches the site itself. source and word cross the Wails boundary, never a URL - the
@@ -2017,6 +2040,16 @@ export function WhisperInstallState(jobID: string): $CancellablePromise<string> 
 
 export function WhisperRemove(modelID: string): $CancellablePromise<string> {
     return $Call.ByID(1246245112, modelID);
+}
+
+/**
+ * WindowSaveZoom persists the window's current zoom level, debounced, whenever the header's useZoom hook sees it
+ * settle - a button, a Ctrl+=/-/0 shortcut, or the resize re-read that picks up an external Ctrl+wheel/pinch change
+ * (Solution Detail: "written to global settings ... debounced"). It always saves at global scope: the level belongs
+ * to this computer's window, not a project (Q4 A).
+ */
+export function WindowSaveZoom(level: number): $CancellablePromise<string> {
+    return $Call.ByID(2654551384, level);
 }
 
 /**

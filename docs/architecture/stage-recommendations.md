@@ -93,8 +93,8 @@ type Provider interface {
 - A provider may also drop its own ids that its evidence says are not required right now, by having a
   `FilterRequired(required []string) []string` method: the host's `RequiredSignals` (`apps/desktop/bindings_stages.go`,
   `filterRequired`) applies it after the settings, for the provider's own stage only, and never adds an id. The proofing
-  provider ([`apps/desktop/internal/proofing`](../../apps/desktop/internal/proofing),
-  [the proofing readiness signals PRD](../prds/proofing-readiness-signals.prd.md)) uses it so a delivery check
+  provider ([`apps/desktop/internal/proofing`](../../apps/desktop/internal/proofing), proofing readiness signals,
+  delivered and deleted; see [ADR 0525](../adr/0525-proofing-is-met-by-a-current-zero-open-pickup-source-and-every-required-delivery-check-confirmed-through-the-shared-stage-engine.md)) uses it so a delivery check
   (`proofing.delivery.<metric>`) is required only while the project's delivery profile has a required rule for its
   metric turned on, and `proofing.delivery.render_length` only while a tolerance is set; `proofing.pickups` is always
   required unless the narrator ignores it.

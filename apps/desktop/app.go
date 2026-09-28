@@ -53,6 +53,7 @@ import (
 	"github.com/countrymanprime/narration-utils/shell/internal/ttsport"
 	"github.com/countrymanprime/narration-utils/shell/internal/update"
 	"github.com/countrymanprime/narration-utils/shell/internal/whisper"
+	"github.com/countrymanprime/narration-utils/shell/internal/wiktextract"
 	"github.com/wailsapp/wails/v3/pkg/application"
 )
 
@@ -230,6 +231,14 @@ type Host struct {
 	// pickRenderFile is a seam for tests (bindings_proofing_render.go): nil means the operating system's single-file
 	// picker for a chapter's rendered file.
 	pickRenderFile func() (string, error)
+	// wiktextractManager is a seam for tests (bindings_wiktextract_commons.go, prep-depth Phase 10): nil means a
+	// manager built fresh over the checkout's or the packaged release's own catalog and the per-user asset cache,
+	// the same way as every other asset kind (assetcache.go). This binding is a light, occasional reader of Phase
+	// 8's own install, not a project service, and is not yet part of the asset registry Settings wires up (#782's
+	// own deferred fast-follow), so there is no cached Host field to keep in sync with a repaired or reinstalled
+	// asset - set only before Startup, like platform.
+	// +checklocks:mu
+	wiktextractManager func() (*wiktextract.Manager, error)
 	// pickDiagnosticsFolder and diagnosticsNow are seams for tests (diagnostics_export.go): nil means the operating
 	// system's folder picker and time.Now.
 	pickDiagnosticsFolder func() (string, error)
@@ -1495,7 +1504,8 @@ var fieldSchemas = map[string][]fieldSchema{
 		{"proofing.delivery.tail_room_tone_seconds", "Rendered file: room tone, tail (proofing)", "choice", []string{"required", "ignored"}},
 		{proofing.RenderLengthSignalID, "Rendered file: length matches the chapter (proofing)", "choice", []string{"required", "ignored"}},
 	},
-	// Proofing is the proofing signals' own setting (docs/prds/proofing-readiness-signals.prd.md Q9 C): how far, in
+	// Proofing is the proofing signals' own setting (proofing-readiness-signals.prd.md Q9 C, delivered and deleted;
+	// see ADR 0525): how far, in
 	// seconds, a chapter's rendered file may differ in length from its items' span before the render length check is not
 	// met. Unset by default and then the check is not required: no default is proposed until render-versus-project
 	// lengths are measured on real renders (tails, padding).
