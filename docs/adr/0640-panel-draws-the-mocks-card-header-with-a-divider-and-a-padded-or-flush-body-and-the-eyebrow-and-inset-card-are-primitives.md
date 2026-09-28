@@ -37,7 +37,9 @@ The app drew the card title in IBM Plex Sans 16 px, inside the card's 17.6 px pa
   - `className` is for layout only.
 - **`PanelHeader`** is the header row on its own, for a card that is not a `section` of its own (a `TabPanel` drawn as a card). With `PANEL_FRAME_CLASS`, that card takes the same look without copying it.
 
-The dark settings panels draw their title in Barlow about 17 px, uppercase with wide tracking. The benchmark set wins over a dark set (D92), so Settings takes the 19 px sentence-case title too.
+The dark Settings mocks (delivery-platform-profiles 05 and 09, input-commands-and-pedals 01) draw a category's title differently. Its capitals are 12 px tall, so it is Barlow Condensed at 17 px, uppercase and tracked. The benchmark set has no Settings screen, so nothing there contradicts that title, and `titleStyle="caps"` draws it. The body padding is the benchmark's 16 px, not the dark set's 18 px, because the benchmark wins where both draw a thing (D92).
+
+A subtitle keeps to the title's line and wraps inside its own box while it has 10 rem, as the 390 px Settings mock draws it. Only below that does it drop under the title.
 
 **Heading** takes `--font-size-page-title` (26 px) and a 13 px muted subtitle. A new `icon` prop leads the title (the start-up screen's spinner), so the last raw page `h1`s become Headings.
 
@@ -50,7 +52,7 @@ The dark settings panels draw their title in Barlow about 17 px, uppercase with 
 - `dashed` marks a placeholder.
 - `as` picks `div`, `section`, `li` or `p`.
 
-It replaces the hand-drawn `rounded-md border px-3 py-2` copies. Their padding was 8 px above and below; the mock's is 12 px all round.
+It replaces the hand-drawn `rounded-md border px-3 py-2` copies. Their padding was 8 px above and below; the mock's is 12 px all round. The Booth's resume prompt is one of them: [ADR 0187](0187-the-resume-prompt-is-a-compact-notice-that-settles-once-per-dialog-open.md) made it a compact bordered notice rather than a `Panel`, and an inset card is exactly that.
 
 A source guard (`apps/ui/src/panelCopies.test.ts`, in the pattern of `rawNatives.test.ts`) counts these per file outside the primitives:
 
