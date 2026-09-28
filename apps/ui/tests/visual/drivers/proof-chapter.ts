@@ -3,6 +3,15 @@ import { settlePage } from '../helpers/settle';
 import { type Page } from '@playwright/test';
 import { type Driver, clickVisible, compareRun, freezeClock, openLinkedProofChapter, openProofChapter } from './shared';
 
+// Pauses the chapter's player when it is playing, so the script stops following the playhead (and the picture stops moving).
+async function pausePlayback(page: Page): Promise<void> {
+  const pause = page.getByRole('button', { name: 'Pause', exact: true });
+  if (await pause.isVisible()) {
+    await pause.click();
+    await page.getByRole('button', { name: 'Play', exact: true }).waitFor();
+  }
+}
+
 export const proofChapterDrivers: Record<string, Driver> = {
   never: async (page) => {
     // Chapter 7 has no recordedFraction in the fixture (mockFixtures.ts: only chapters 1-6 do), so it reads "never checked".
@@ -33,7 +42,12 @@ export const proofChapterDrivers: Record<string, Driver> = {
     await settlePage(page);
     await openLinkedProofChapter(page, 'Chapter 1');
     await clickVisible(page, 'button', 'Next flag');
-    await page.getByText('Play from here').waitFor();
+    const detail = page.getByText('Play from here');
+    await detail.waitFor();
+    // Below the desktop width the Flags panel sits under the script, so the selected flag's detail is below the fold. Playback
+    // is paused first: while it plays, the script follows it and scrolls the page back to the playing word.
+    await pausePlayback(page);
+    await detail.scrollIntoViewIfNeeded();
   },
   // edit-and-proof-workspace.prd.md Phase 4: Chapter 1's mock seeds a transcript_discrepancy finding at the same
   // misread the check already flags (mockApi.ts's workspaceOverlayFinding), so "Next flag" selects the one flag on
@@ -41,7 +55,11 @@ export const proofChapterDrivers: Record<string, Driver> = {
   'flag-finding-open': async (page) => {
     await openLinkedProofChapter(page, 'Chapter 1');
     await clickVisible(page, 'button', 'Next flag');
-    await page.getByText('Decision', { exact: true }).waitFor();
+    const decision = page.getByText('Decision', { exact: true });
+    await decision.waitFor();
+    // As flag-selected: below the desktop width the detail, and its Decision section, is below the fold.
+    await pausePlayback(page);
+    await decision.scrollIntoViewIfNeeded();
   },
   'flag-decided': async (page) => {
     await openLinkedProofChapter(page, 'Chapter 1');
