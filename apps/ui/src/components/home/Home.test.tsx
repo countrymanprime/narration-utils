@@ -340,34 +340,35 @@ describe('the subtitle of each chapter in the review', () => {
   });
 });
 
-describe('the Proofing card and a linked DAW file (PRD project-workspace-and-daw-link.prd.md, W16)', () => {
-  // The mock's default `transcriptLastCompleted` already has a completed comparison, so "review latest comparison"
-  // would stay reachable regardless of the DAW link - override it to nothing-to-review to isolate the Start gate.
-  async function renderHome(dawFileLinked: boolean) {
+// stage-navigation-and-page-replacement.prd.md Phase 5: the card opens Proof, which is never gated itself - a chapter's compare run
+// gates its own Start on the DAW - so the card no longer waits for a linked DAW file (PRD W16's gate moved into the run).
+describe('the Proof card', () => {
+  async function renderHome(dawFileLinked: boolean, go = vi.fn()) {
     const api = createMockApi({ transcriptLastCompleted: async () => undefined }, { dawFileLinked });
     const data: Bootstrap = await api.bootstrap();
     render(
       <MemoryRouter>
         <ApiProvider api={api}>
-          <Home data={data} go={() => {}} notify={() => {}} goToManuscript={() => {}} refreshBootstrap={async () => {}} />
+          <Home data={data} go={go} notify={() => {}} goToManuscript={() => {}} refreshBootstrap={async () => {}} />
         </ApiProvider>
       </MemoryRouter>,
     );
+    return go;
   }
 
-  it('disables the Proofing card with a reason that names the missing DAW link when there is nothing to review yet', async () => {
-    await renderHome(false);
-    const button = await screen.findByRole('button', { name: 'Open Proofing' });
-    await waitFor(() => expect((button as HTMLButtonElement).disabled).toBe(true));
-  });
-
-  it('enables the Proofing card once a DAW file is linked', async () => {
-    await renderHome(true);
-    const button = await screen.findByRole('button', { name: 'Open Proofing' });
+  it('opens Proof, with or without a linked DAW file', async () => {
+    const go = await renderHome(false);
+    const button = await screen.findByRole('button', { name: 'Open Proof' });
     expect((button as HTMLButtonElement).disabled).toBe(false);
+    fireEvent.click(button);
+    expect(go).toHaveBeenCalledWith('/proof');
   });
 
-  it('keeps the Proofing card open for reviewing an existing comparison even without a linked DAW file', async () => {
+  it('says it is ready to compare when there is no comparison yet, and offers the latest one once there is', async () => {
+    await renderHome(true);
+    expect((await screen.findByRole('button', { name: 'Open Proof' })).textContent).toContain('Ready to compare selected REAPER audio');
+    cleanup();
+
     const api = createMockApi({}, { dawFileLinked: false });
     const data: Bootstrap = await api.bootstrap();
     render(
@@ -377,9 +378,8 @@ describe('the Proofing card and a linked DAW file (PRD project-workspace-and-daw
         </ApiProvider>
       </MemoryRouter>,
     );
-    const button = await screen.findByRole('button', { name: 'Open Proofing' });
+    const button = await screen.findByRole('button', { name: 'Open Proof' });
     await waitFor(() => expect(button.textContent).toContain('Review latest comparison'));
-    expect((button as HTMLButtonElement).disabled).toBe(false);
   });
 });
 
