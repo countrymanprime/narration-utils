@@ -105,10 +105,14 @@ const mockReaperInput = MOCK_REAPER_INPUT_SEEDS.find((seed) => seed === mockPara
 const mockResume = MOCK_RESUME_SEEDS.find((seed) => seed === mockParams.get('mockResume'));
 // `?mockRemoved=1`: the last narration chapter boots removed from recording (chapter-track-link-control.prd.md Phase 3).
 const mockRemoved = mockParams.get('mockRemoved') === '1';
-// `?mockChapterSync=ask|off|linked|unsaved|pickups|activity`: chapter sync's consent at boot (daw-chapter-track-auto-sync.prd.md
-// Phases 3, 4 and 8; `unsaved` is REAPER holding unsaved edits, with a Sync activity row; `pickups` is a chapter whose
-// pickup track changed since its last scan; `activity` is the engine panel's Sync activity with an automatic and a manual link).
-const mockChapterSync = (['ask', 'off', 'linked', 'unsaved', 'pickups', 'activity'] as const).find((seed) => seed === mockParams.get('mockChapterSync'));
+// `?mockChapterSync=ask|off|linked|unsaved|pickups|activity|background`: chapter sync's consent at boot
+// (daw-chapter-track-auto-sync.prd.md Phases 3, 4, 7 and 8; `unsaved` is REAPER holding unsaved edits, with a Sync
+// activity row; `pickups` is a chapter whose pickup track changed since its last scan; `activity` is the engine
+// panel's Sync activity with an automatic and a manual link; `background` is a background check waiting because the
+// heartbeat says REAPER is recording, ADR 0211).
+const mockChapterSync = (['ask', 'off', 'linked', 'unsaved', 'pickups', 'activity', 'background'] as const).find(
+  (seed) => seed === mockParams.get('mockChapterSync'),
+);
 // `?mockNoDevices=1` boots the teleprompter with an empty device listing, so the
 // blocked "No microphone found" state (no typed fallback) can be seen without a host.
 const mockNoDevices = mockParams.has('mockNoDevices');

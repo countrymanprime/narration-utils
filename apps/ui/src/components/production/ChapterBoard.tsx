@@ -269,7 +269,13 @@ export function ChapterBoard({
     const running = coverage.phase === 'running' && coverage.chapterId === chapter.id;
     const text = chapterCheckStatusText(
       chapter.title,
-      chapterCheckStatus(link, syncRow, running || (syncRow?.checking ?? false), running ? coverage.percent : undefined),
+      chapterCheckStatus(
+        link,
+        syncRow,
+        running || (syncRow?.checking ?? false),
+        running ? coverage.percent : undefined,
+        running ? coverage.background : undefined,
+      ),
     );
     return `${text.label}${text.detail ? ` · ${text.detail}` : ''}`;
   };

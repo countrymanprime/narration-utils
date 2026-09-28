@@ -9,6 +9,7 @@ import { Panel } from '../primitives/Panel';
 import { Select } from '../primitives/Select';
 import {
   chapterSyncActivityRows,
+  chapterSyncBackgroundWaitText,
   chapterSyncPanelNotChaptersText,
   chapterSyncPanelReasonText,
   chapterSyncSummaryText,
@@ -123,6 +124,11 @@ export function ChapterSyncPanel({ notify, onChanged }: { notify: Notify; onChan
       {state.unsavedEdits && (
         <p role="status" className="mt-1 text-sm" style={{ color: 'var(--warn-text)' }}>
           REAPER has changes that aren&rsquo;t saved yet. Sync reads the saved project, so it picks them up when you save.
+        </p>
+      )}
+      {chapterSyncBackgroundWaitText(state.background) && (
+        <p className="mt-1 text-sm" style={{ color: 'var(--text-muted)' }}>
+          {chapterSyncBackgroundWaitText(state.background)}
         </p>
       )}
       {preview && preview.needsYou.length > 0 && (
