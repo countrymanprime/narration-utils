@@ -330,6 +330,17 @@ suggestion is recomputed fresh every time you visit the page, never applied, exp
 
 ![Proof chapter view - the Preview panel suggesting three candidate excerpts from the manuscript](../../images/ui/proof-chapter-preview.webp)
 
+Pin a candidate to settle on it: the pin icon on a row keeps that window, shown in its own "Pinned
+preview" section below the table with the same evidence, and the pin button on its row turns into
+"Unpin". Move its edges by one paragraph at a time with the Start and End + and − controls — extending
+or shrinking is disabled, not hidden, once an edge already reaches the chapter's own boundary or the
+range is down to one paragraph. There is one pin per book: pinning another candidate replaces it. If the
+manuscript text under a pinned paragraph changes since it was pinned or last adjusted, the section says
+so in words and an icon, alongside its still-recomputed length and evidence; if a re-import drops the
+paragraph entirely, the section names that instead and offers only to clear it. Clearing the pin (the ✕)
+removes it; like everything else here, nothing is applied, exported, or ever changes the manuscript,
+project, or audio.
+
 Above the Preview panel, **Proofing readiness** shows only while this chapter's own status is Proofing:
 its suggestion for Finalized — a badge if the evidence says it's ready, "Not ready" if a pickup is still
 open, or "Can't tell yet" with what to check next. Confirm, Dismiss, and Revert work the same way they

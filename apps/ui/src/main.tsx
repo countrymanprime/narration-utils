@@ -126,19 +126,25 @@ const mockCreditsSetupNarratorDefault = mockParams.get('mockCredits') === 'setup
 // `?mockPreviewError=<text>` makes the Story Bible preview fail with that text once the
 // preview voice is installed, so the failure toast can be seen without a real host.
 const mockPreviewError = mockParams.get('mockPreviewError');
-// `?mockPreviewCandidates=no-manuscript|nothing-eligible|computing|shorter|warnings` forces the Proofing page's
-// Preview panel (proofing-preview-suggestion.prd.md Phase 3) into a named state the unseeded demo book (the full
-// Alice's Adventures in Wonderland text, aliceManuscript.ts) wouldn't otherwise reach on its own - every chapter there
-// is long enough to hit the target length cleanly, so the plain default state has no warnings at all:
-// `no-manuscript`/`nothing-eligible` force PreviewApi's outcome directly (the route itself already redirects away
-// with no manuscript at all, so this is the only way to see that defensive state on the real page); `computing`
-// never resolves the read; `shorter` and `warnings` each seed one hand-built candidate (the engine's two warning
-// texts, `preview.reasonsFor` and `wholeChapterCandidate`) rather than a real short or unclassified chapter, so
-// their paragraph ids are illustrative only - opening one in the reader or copying its range lands on the chapter's
-// first paragraph rather than the exact seeded range.
-const mockPreviewCandidatesParam = (['no-manuscript', 'nothing-eligible', 'computing', 'shorter', 'warnings'] as const).find(
+// `?mockPreviewCandidates=no-manuscript|nothing-eligible|computing|shorter|warnings|pinned|pin-stale` forces the
+// Proof chapter view's Preview panel (proofing-preview-suggestion.prd.md Phase 3, moved there by stage-navigation
+// Phase 5) into a named state the unseeded demo book (the full Alice's Adventures in Wonderland text,
+// aliceManuscript.ts) wouldn't otherwise reach on its own - every chapter there is long enough to hit the target
+// length cleanly, so the plain default state has no warnings at all: `no-manuscript`/`nothing-eligible` force
+// PreviewApi's outcome directly (the route itself already redirects away with no manuscript at all, so this is
+// the only way to see that defensive state on the real page); `computing` never resolves the read; `shorter` and
+// `warnings` each seed one hand-built candidate (the engine's two warning texts, `preview.reasonsFor` and
+// `wholeChapterCandidate`) rather than a real short or unclassified chapter, so their paragraph ids are
+// illustrative only - opening one in the reader or copying its range lands on the chapter's first paragraph
+// rather than the exact seeded range. `pinned` and `pin-stale` (Phase 8) seed a narrator pin on the first
+// chapter's real paragraphs alongside the normal default candidates, the second with a `text_changed` staleness.
+const mockPreviewCandidatesParam = (['no-manuscript', 'nothing-eligible', 'computing', 'shorter', 'warnings', 'pinned', 'pin-stale'] as const).find(
   (seed) => seed === mockParams.get('mockPreviewCandidates'),
 );
+// `pinned` and `pin-stale` seed a narrator pin (Phase 8) on the demo book's first chapter alongside the normal
+// default candidates, so the pinned section can be captured with and without its stale banner.
+const MOCK_PREVIEW_PIN_CHAPTER = WIRE_CHAPTERS[0];
+const MOCK_PREVIEW_PIN_PARAGRAPH_IDS = (MOCK_PREVIEW_PIN_CHAPTER.paragraphIds ?? []).map((paragraph) => paragraph.id);
 const MOCK_PREVIEW_SHORTER_CANDIDATE: PreviewCandidate = {
   chapterId: WIRE_CHAPTERS[10].id,
   chapterTitle: WIRE_CHAPTERS[10].title,
@@ -381,6 +387,12 @@ const mockInitial = {
   ...(mockPreviewCandidatesParam === 'computing' ? { preview: { hold: true } } : {}),
   ...(mockPreviewCandidatesParam === 'shorter' ? { preview: { outcome: 'ok' as const, candidates: [MOCK_PREVIEW_SHORTER_CANDIDATE] } } : {}),
   ...(mockPreviewCandidatesParam === 'warnings' ? { preview: { outcome: 'ok' as const, candidates: [MOCK_PREVIEW_WARNING_CANDIDATE] } } : {}),
+  ...(mockPreviewCandidatesParam === 'pinned'
+    ? { preview: { pin: { chapterId: MOCK_PREVIEW_PIN_CHAPTER.id, paragraphIds: MOCK_PREVIEW_PIN_PARAGRAPH_IDS } } }
+    : {}),
+  ...(mockPreviewCandidatesParam === 'pin-stale'
+    ? { preview: { pin: { chapterId: MOCK_PREVIEW_PIN_CHAPTER.id, paragraphIds: MOCK_PREVIEW_PIN_PARAGRAPH_IDS, stale: 'text_changed' as const } } }
+    : {}),
   ...(mockTeleprompter ? { teleprompter: mockTeleprompter } : {}),
   ...(mockNoDevices ? { teleprompterDevices: [] } : {}),
   ...(mockLevel === undefined ? {} : { teleprompterLevel: mockLevel }),

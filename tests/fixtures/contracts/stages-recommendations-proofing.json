@@ -152,7 +152,7 @@
             }
           ],
           "id": "proofing.pickups",
-          "reason": "1 open pickup(s) to clear up (1 Take review). Decide each on the Review page; a dismissal is the only way to close one without re-recording.",
+          "reason": "1 open pickup(s) to clear up (1 Take review). Decide each on Proof; a dismissal is the only way to close one without re-recording.",
           "stage": "proofing",
           "state": "not_met"
         }

@@ -176,7 +176,7 @@ export function ReaperControls({
       {confirmingMarker && (
         <ConfirmDialog
           title="Add a marker in REAPER"
-          body={`REAPER adds one take marker at ${formatTime(finding.time_range?.start ?? 0)}, on this finding's take, named with what the script says and what was recorded, like the markers Proofing exports. A marker of the same kind already there is not added twice, and one Undo in REAPER removes it.`}
+          body={`REAPER adds one take marker at ${formatTime(finding.time_range?.start ?? 0)}, on this finding's take, named with what the script says and what was recorded, like the markers Proof exports. A marker of the same kind already there is not added twice, and one Undo in REAPER removes it.`}
           confirmLabel="Add marker"
           confirm={() => void addMarker()}
           cancel={() => setConfirmingMarker(false)}

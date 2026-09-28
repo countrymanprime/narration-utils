@@ -27,6 +27,7 @@ func Run(t *testing.T, entry port.Entry[captureport.Backend]) {
 // that:
 //   - the row has a name and a label, names at least one platform, each once and known to the port, and declares no modes;
 //   - New builds a non-nil backend without panicking, which calls itself by the row's name;
+//   - its level is Experimental or Supported: a row that cannot be used at all has no business in the registry;
 //   - what the backend says is static: two backends from New, and two calls on one, answer the same.
 func Problems(entry port.Entry[captureport.Backend]) []string {
 	var problems []string
@@ -71,7 +72,11 @@ func Problems(entry port.Entry[captureport.Backend]) []string {
 	if name != entry.Name {
 		report("%q's backend calls itself %q", entry.Name, name)
 	}
-	if name != first.Name() || name != second.Name() {
+	level := first.Level()
+	if level < port.Experimental || level > port.Supported {
+		report("%q's backend is at level %v; a registered capture backend is Experimental or Supported", entry.Name, level)
+	}
+	if name != first.Name() || name != second.Name() || level != first.Level() || level != second.Level() {
 		report("%q's backend is not static: two answers differed", entry.Name)
 	}
 	return problems

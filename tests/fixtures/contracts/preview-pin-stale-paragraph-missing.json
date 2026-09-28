@@ -1,0 +1,10 @@
+{
+  "canExtendEnd": false,
+  "canExtendStart": false,
+  "canShrinkEnd": false,
+  "canShrinkStart": false,
+  "pinnedAt": "2020-01-01T00:00:00Z",
+  "present": true,
+  "stale": true,
+  "staleReason": "paragraph_missing"
+}
