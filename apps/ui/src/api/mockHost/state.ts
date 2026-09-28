@@ -184,6 +184,10 @@ export type MockApiSeed = {
   measure?: MockMeasureSeed;
   /** Holds a started export part way through, so its real progress can be looked at (render-encode-master PRD Phase 5). */
   renderExport?: MockExportSeed;
+  /** Holds a started multi-platform package build part way through, so its per-profile progress can be looked at
+   * (render-encode-master PRD Phase 6), separately from `renderExport` (which would also hold the export job itself
+   * mid-run, leaving no completed files to build packages from). */
+  renderPackageMulti?: MockExportSeed;
   /** Holds a started diagnostics check part way through, or breaks it (diagnostics PRD Phase 6). */
   diagnostics?: MockDiagnosticsSeed;
   /** Seeds the editing-readiness check mock (a refusal, a held-running state, or seeded candidates), see `EditingSeed`. */

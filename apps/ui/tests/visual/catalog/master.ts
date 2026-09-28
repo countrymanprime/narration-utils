@@ -132,6 +132,35 @@ export const masterStates: StateEntry[] = [
       'Master & QC, the ACX package built from the five encoded files (mock 05\'s delivery package) - the packager\'s checklist with every rule included, the OUTPUTS folder and the files written, and "Built the acx package"',
     ...KEEPS_DESKTOP_SCROLL,
   },
+  // Master & QC, multi-platform export (render-encode-master.prd.md Phase 6): several profiles' packages from one
+  // mastered/encoded source, in one action, beside the single-platform Delivery package above
+  {
+    page: 'master',
+    state: 'multi-export-empty',
+    description: 'Master & QC, Multi-platform export with nothing checked - a checkbox per delivery platform and "Build 0 packages" disabled',
+    ...KEEPS_DESKTOP_SCROLL,
+  },
+  {
+    page: 'master',
+    state: 'multi-export-selected',
+    description:
+      'Master & QC, Multi-platform export with the files already mastered and encoded and one platform checked (?mockDeliveryProfile=custom for a second platform to choose from) - "Build 1 package" enabled',
+    ...KEEPS_DESKTOP_SCROLL,
+  },
+  {
+    page: 'master',
+    state: 'multi-export-running',
+    description:
+      'Master & QC, a multi-platform build part way through (?mockPackageMulti=running) - the first checked platform Building…, the rest waiting, Cancel, and a progress indicator',
+    ...KEEPS_DESKTOP_SCROLL,
+  },
+  {
+    page: 'master',
+    state: 'multi-export-results',
+    description:
+      'Master & QC, a finished multi-platform build (?mockDeliveryProfile=custom, both platforms checked) - a per-profile result row for each: its name, Built, the output folder and how many files it wrote',
+    ...KEEPS_DESKTOP_SCROLL,
+  },
   // Delivery findings on Proof (delivery-platform-profiles.prd.md Phase 9, P12): "Open in Master & QC" lands here
   {
     page: 'master',

@@ -11,6 +11,9 @@ import type {
   ExportRequest,
   JobEnded,
   MeasurePickResult,
+  MultiPackageJob,
+  MultiPackageRequest,
+  MultiPackageResult,
   PackageItem,
   PackageJob,
   PackageRequest,
@@ -54,16 +57,64 @@ function mockMastering(): NonNullable<ExportJob['files'][number]['mastering']> {
   };
 }
 
+/** The label a checkbox or tab gives a profile: its platform for a built-in, its own name for a custom profile -
+ * the same rule MasterQcPage.tsx's own `platformName` applies to the single-select platform tabs. */
+const platformNameFor = (profile: DeliveryProfile): string => (profile.builtIn ? profile.platform : profile.name);
+
+/** requiredFormatMock mirrors apps/desktop/multi_package_job.go's own requiredFormat: the capture group of the
+ * first file-scope rule whose metric matches "<format>_format", or "mp3" when no such rule exists. */
+function requiredFormatMock(profile: DeliveryProfile): string {
+  for (const rule of profile.rules) {
+    if (rule.scope !== 'file') continue;
+    const match = /^(\w+)_format$/.exec(rule.metric);
+    if (match) return match[1];
+  }
+  return 'mp3';
+}
+
+/** sanitizeFolderNameMock mirrors apps/desktop/multi_package_job.go's own sanitizeFolderName (the characters Windows
+ * refuses in a path segment; the mock leaves out the control-character half of that set, since fixture and narrator
+ * input here is never anything but printable text). */
+function sanitizeFolderNameMock(name: string): string {
+  const replaced = name.trim().replace(/[<>:"/\\|?*]/g, '_');
+  // A run of only dots ("", ".", "..", ...) would join as a no-op or a parent-directory escape rather than a real
+  // subfolder name (mirrors apps/desktop/multi_package_job.go's own fix: a custom profile's name has no character
+  // restriction beyond its length).
+  return /^\.*$/.test(replaced) ? 'package' : replaced;
+}
+
+function packageNameForFormat(item: PackageItem, index: number, format: string): string {
+  const ext = `.${format}`;
+  switch (item.kind) {
+    case 'credits_opening':
+      return `Credits, Opening${ext}`;
+    case 'credits_closing':
+      return `Credits, Closing${ext}`;
+    case 'retail_sample':
+      return `Retail Sample${ext}`;
+    default:
+      return `${String(index + 1).padStart(2, '0')} - ${item.title}${ext}`;
+  }
+}
+
 /**
  * `picked` is the export picker's allowlist (mirrors ADR 0156's own discipline); `encoded` is the last export's own
  * encoded paths, package's own allowlist (mirrors the host's own "was it encoded this session" check).
+ *
+ * `profiles` is every profile a multi-platform selection may pick from (Phase 6, D67: the same list
+ * deliveryProfilesMock.ts's own `all()` already exposes for the single-profile tabs), defaulting to ACX alone.
+ * `multiPackageSeed` freezes the multi-platform job at "running" on its own (separately from `seed`, which would
+ * also freeze the export job itself mid-run, leaving no completed files to build packages from).
  */
 export function createRenderEncodeMasterMock(
   publish: (event: JobEnded) => void,
   seed?: MockExportSeed,
   profile: () => DeliveryProfile = () => MOCK_ACX,
+  profiles: () => DeliveryProfile[] = () => [MOCK_ACX],
+  multiPackageSeed?: MockExportSeed,
 ): RenderEncodeMasterApi {
   const hold = seed === 'hold';
+  const multiHold = multiPackageSeed === 'hold';
   const picked = new Set<string>();
   const encoded = new Set<string>();
   let exportJob: ExportJob = {
@@ -87,6 +138,14 @@ export function createRenderEncodeMasterMock(
     outputDir: '',
     files: [],
     checklist: [],
+    elapsed: 0,
+  };
+  let multiPackageJob: MultiPackageJob = {
+    id: null,
+    kind: 'render_package_multi',
+    phase: 'idle',
+    message: 'Export files, then choose the platforms to build for.',
+    results: [],
     elapsed: 0,
   };
 
@@ -119,11 +178,11 @@ export function createRenderEncodeMasterMock(
     if (index + 1 >= exportJob.files.length) endExport('success', `Prepared ${files(exportJob.files.length)}.`);
   };
 
-  const bookRuleLabel = (ruleId: string): string => profile().rules.find((rule) => rule.id === ruleId)?.label ?? ruleId;
+  const bookRuleLabel = (forProfile: DeliveryProfile, ruleId: string): string => forProfile.rules.find((rule) => rule.id === ruleId)?.label ?? ruleId;
 
-  const checklistFor = (items: PackageItem[]): PackageJob['checklist'] =>
-    profile()
-      .rules.filter((rule) => rule.scope === 'book')
+  const checklistFor = (forProfile: DeliveryProfile, items: PackageItem[]): PackageJob['checklist'] =>
+    forProfile.rules
+      .filter((rule) => rule.scope === 'book')
       .map((rule) => {
         if (rule.off) return { ruleId: rule.id, label: rule.label, status: 'off', detail: 'Turned off in this profile: not required.' };
         switch (rule.metric) {
@@ -225,7 +284,7 @@ export function createRenderEncodeMasterMock(
       if (req.items.length === 0) throw new Error('choose at least one exported chapter to package');
       if (req.profileId !== profile().id) throw new Error(`there is no delivery profile "${req.profileId}"`);
       if (packageJob.phase === 'running') throw new Error('a package is already being built');
-      const checklist = checklistFor(req.items);
+      const checklist = checklistFor(profile(), req.items);
       const missing = checklist.filter((item) => item.status === 'missing');
       packageJob = {
         id: 'package-1',
@@ -242,7 +301,7 @@ export function createRenderEncodeMasterMock(
         packageJob = {
           ...packageJob,
           phase: 'error',
-          message: `The package could not be built: ${missing.map((item) => `${bookRuleLabel(item.ruleId)} (${item.detail})`).join('; ')}`,
+          message: `The package could not be built: ${missing.map((item) => `${bookRuleLabel(profile(), item.ruleId)} (${item.detail})`).join('; ')}`,
         };
         publish({ id: packageJob.id ?? '', kind: 'render_package', outcome: 'error', message: packageJob.message, durationMs: 900 });
         return wireClone(packageJob);
@@ -266,6 +325,108 @@ export function createRenderEncodeMasterMock(
         publish({ id: packageJob.id ?? '', kind: 'render_package', outcome: 'cancelled', message: packageJob.message, durationMs: 500 });
       }
       return wireClone(packageJob);
+    },
+    packageStartMulti: async (req: MultiPackageRequest): Promise<MultiPackageJob> => {
+      if (req.selections.length === 0) throw new Error('choose at least one platform to build for');
+      const resolved = req.selections.map((selection) => {
+        const found = profiles().find((candidate) => candidate.id === selection.profileId);
+        if (!found) throw new Error(`there is no delivery profile "${selection.profileId}"`);
+        return found;
+      });
+      const unencoded = req.items.find((item) => !encoded.has(item.path));
+      if (unencoded !== undefined) throw new Error(`"${unencoded.path}" was not encoded in this session; export it again`);
+      if (req.items.length === 0) throw new Error('choose at least one exported chapter to package');
+      if (packageJob.phase === 'running') throw new Error('a package is already being built');
+      if (multiPackageJob.phase === 'running') throw new Error('a multi-platform package is already being built');
+
+      const rootDir = 'C:\\Users\\Narrator\\Desktop\\Wonderland';
+      const currentFormat = exportJob.format || 'mp3';
+      // itemsByFormat memoizes the mock's own "re-encode", exactly as the host's own reencodeItems does: a format
+      // matching the export job's own current format reuses req.items untouched; any other format is turned into
+      // its own fake encoded item set once, shared by every selection that needs it.
+      const itemsByFormat = new Map<string, PackageItem[]>([[currentFormat, req.items]]);
+      const itemsFor = (format: string): PackageItem[] => {
+        const cached = itemsByFormat.get(format);
+        if (cached) return cached;
+        const reencoded = req.items.map((item) => ({
+          ...item,
+          path: `C:/Users/Narrator/Wonderland/narration-utils/render-encode-master/encoded-${format}/${item.kind}.${format}`,
+        }));
+        itemsByFormat.set(format, reencoded);
+        return reencoded;
+      };
+
+      const results: MultiPackageResult[] = resolved.map((forProfile) => {
+        const format = requiredFormatMock(forProfile);
+        const items = itemsFor(format);
+        const checklist = checklistFor(forProfile, items);
+        const missing = checklist.filter((item) => item.status === 'missing');
+        const outputDir = `${rootDir}\\${sanitizeFolderNameMock(platformNameFor(forProfile))}`;
+        if (missing.length > 0) {
+          return {
+            profile: forProfile.id,
+            platform: platformNameFor(forProfile),
+            phase: 'error',
+            message: `The package could not be built: ${missing.map((item) => `${bookRuleLabel(forProfile, item.ruleId)} (${item.detail})`).join('; ')}`,
+            outputDir: '',
+            files: [],
+            checklist,
+            error: missing.map((item) => `${bookRuleLabel(forProfile, item.ruleId)} (${item.detail})`).join('; '),
+          };
+        }
+        const files = items.map((item, index) => ({
+          kind: item.kind,
+          name: packageNameForFormat(item, index, format),
+          destPath: `${outputDir}\\${packageNameForFormat(item, index, format)}`,
+          tagged: false,
+        }));
+        return {
+          profile: forProfile.id,
+          platform: platformNameFor(forProfile),
+          phase: 'success',
+          message: `Built ${files.length} files.`,
+          outputDir,
+          files,
+          checklist,
+        };
+      });
+
+      const message = multiHold
+        ? `Building the ${platformNameFor(resolved[0])} package (1 of ${resolved.length}).`
+        : `Built ${results.filter((r) => r.phase === 'success').length} packages.`;
+      multiPackageJob = {
+        id: 'package-multi-1',
+        kind: 'render_package_multi',
+        phase: multiHold ? 'running' : results.some((r) => r.phase === 'error') ? 'error' : 'success',
+        message,
+        results: multiHold ? results.map((r, i) => (i === 0 ? { ...r, phase: 'running' } : { ...r, phase: 'pending', files: [], checklist: [] })) : results,
+        elapsed: multiHold ? 3 : 6,
+      };
+      if (!multiHold) {
+        publish({
+          id: multiPackageJob.id ?? '',
+          kind: 'render_package_multi',
+          outcome: multiPackageJob.phase === 'error' ? 'error' : 'success',
+          message: multiPackageJob.message,
+          durationMs: Math.round(multiPackageJob.elapsed * 1000),
+        });
+      }
+      return wireClone(multiPackageJob);
+    },
+    packageMultiState: async (): Promise<MultiPackageJob> => wireClone(multiPackageJob),
+    packageMultiCancel: async (): Promise<MultiPackageJob> => {
+      if (multiPackageJob.phase === 'running') {
+        const done = multiPackageJob.results.filter((r) => r.phase === 'success').length;
+        multiPackageJob = { ...multiPackageJob, phase: 'cancelled', message: `Cancelled. ${done} of ${multiPackageJob.results.length} packages were built.` };
+        publish({
+          id: multiPackageJob.id ?? '',
+          kind: 'render_package_multi',
+          outcome: 'cancelled',
+          message: multiPackageJob.message,
+          durationMs: Math.round(multiPackageJob.elapsed * 1000),
+        });
+      }
+      return wireClone(multiPackageJob);
     },
   };
 }
