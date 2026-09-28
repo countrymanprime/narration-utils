@@ -28,7 +28,7 @@ func ReviewScope(file string) string {
 
 // ReviewFindings is one finding per file rule that is not met or could not be measured, with the same id the Delivery
 // page and the exported report give it, so a decision made on the Review page is the report's decision too. A rule's
-// advice (true peak above ACX's advice, digital silence at an edge) stays on the Delivery page: it is not a rule missed.
+// advice (true peak above ACX's advice, digital silence at an edge) stays on Master & QC: it is not a rule missed.
 // fingerprint names the audio that was measured (measure.Fingerprint's SHA-256); it is part of the evidence version, so
 // a decision holds while the same audio is judged the same way and the finding returns to unreviewed after a re-render.
 func ReviewFindings(report measure.Report, fingerprint string, profile Profile, project findings.Project) []findings.Finding {

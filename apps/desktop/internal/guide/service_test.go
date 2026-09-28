@@ -94,6 +94,67 @@ func TestEntitiesNormalizesNullCollectionsAndRejectsMalformedGuide(t *testing.T)
 	}
 }
 
+func TestDialogueCuesToleratesMissingGuideAndMissingKey(t *testing.T) {
+	root := t.TempDir()
+	s := New(root, "", "", settings.New(root, root), process.NewSupervisor())
+	if cues, err := s.DialogueCues(); err != nil || len(cues) != 0 {
+		t.Fatalf("missing guide must be empty: %#v, %v", cues, err)
+	}
+	if err := os.MkdirAll(filepath.Dir(s.guidePath()), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	// A guide written before Phase 2 has entities but no dialogue_cues key at all.
+	if err := os.WriteFile(s.guidePath(), []byte(`{"entities":[]}`), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if cues, err := s.DialogueCues(); err != nil || len(cues) != 0 {
+		t.Fatalf("a guide with no dialogue_cues key must be empty: %#v, %v", cues, err)
+	}
+}
+
+func TestDialogueCuesReadsTheDocumentLevelList(t *testing.T) {
+	root := t.TempDir()
+	s := New(root, "", "", settings.New(root, root), process.NewSupervisor())
+	if err := os.MkdirAll(filepath.Dir(s.guidePath()), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	document := `{"entities":[],"dialogue_cues":[{"id":"cue-1","chapterId":"ch1","paragraphId":"p1","quote_start":0,"quote_end":5,` +
+		`"quote_text":"Hallo","speaker_entity_id":"alice","speaker_source":"tag",` +
+		`"evidence":{"chapterId":"ch1","paragraphId":"p1","excerpt":"Hallo","tag":"said Alice"},"corrected":false}]}`
+	if err := os.WriteFile(s.guidePath(), []byte(document), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	cues, err := s.DialogueCues()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(cues) != 1 || cues[0].ID != "cue-1" || cues[0].SpeakerEntityID == nil || *cues[0].SpeakerEntityID != "alice" {
+		t.Fatalf("cues = %#v", cues)
+	}
+}
+
+func TestDialogueCuesRejectsMalformedShape(t *testing.T) {
+	root := t.TempDir()
+	s := New(root, "", "", settings.New(root, root), process.NewSupervisor())
+	if err := os.MkdirAll(filepath.Dir(s.guidePath()), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(s.guidePath(), []byte(`{"dialogue_cues":{}}`), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := s.DialogueCues(); err == nil {
+		t.Fatal("malformed dialogue_cues must return an error")
+	}
+}
+
+func TestCorrectCueFailsCleanlyWithNoConfiguredSidecar(t *testing.T) {
+	root := t.TempDir()
+	s := New(root, "", "", settings.New(root, root), process.NewSupervisor())
+	if err := s.CorrectCue("cue-1", "alice"); err == nil {
+		t.Fatal("want an error with no configured sidecar")
+	}
+}
+
 func TestCommandUsesFrozenSidecarDirectlyWithoutBackendScript(t *testing.T) {
 	root := t.TempDir()
 	program := filepath.Join(root, "manuscript-guide")

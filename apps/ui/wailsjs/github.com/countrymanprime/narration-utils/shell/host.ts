@@ -103,7 +103,7 @@ export function ChapterSyncPreview(): $CancellablePromise<string> {
 }
 
 /**
- * ChapterSyncSetEnabled stores the narrator's answer (Sync is true, Not now is false, and the Tracks page's toggle
+ * ChapterSyncSetEnabled stores the narrator's answer (Sync is true, Not now is false, and the audio engine panel's toggle
  * uses the same call) and, when on, runs the first sync. It returns the new state with the sync's batch.
  */
 export function ChapterSyncSetEnabled(on: boolean): $CancellablePromise<string> {
@@ -201,6 +201,50 @@ export function ChapterTrackUnlink(chapterID: string): $CancellablePromise<strin
  */
 export function ChaptersForTracks(guids: string[]): $CancellablePromise<string> {
     return $Call.ByID(1946035715, guids);
+}
+
+/**
+ * CharacterApprove approves regionGUID as a voice reference for characterID
+ * (a Story Bible entity id, or the reserved Narration id), with an optional
+ * note. Approving the same character and region again refreshes the
+ * snapshot in place.
+ */
+export function CharacterApprove(characterID: string, regionGUID: string, note: string): $CancellablePromise<string> {
+    return $Call.ByID(3579176758, characterID, regionGUID, note);
+}
+
+/**
+ * CharacterListRegions lists the saved REAPER project's regions, for the
+ * narrator to pick one to approve as a voice reference.
+ */
+export function CharacterListRegions(): $CancellablePromise<string> {
+    return $Call.ByID(1288114066);
+}
+
+/**
+ * CharacterReferences lists every stored reference, each annotated with
+ * whether the region it names has changed since it was approved.
+ */
+export function CharacterReferences(): $CancellablePromise<string> {
+    return $Call.ByID(536905783);
+}
+
+/**
+ * CharacterRemoveVoiceData revokes every reference for the project in one
+ * action (Q7's "Remove voice analysis data", delivered in Phase 6 rather
+ * than Phase 7 per D87): the data-layer effect is the same as revoking each
+ * reference one at a time.
+ */
+export function CharacterRemoveVoiceData(): $CancellablePromise<string> {
+    return $Call.ByID(1324390885);
+}
+
+/**
+ * CharacterRevoke removes one stored reference by id. Revoking an id that is
+ * not (or no longer) stored is not an error.
+ */
+export function CharacterRevoke(id: string): $CancellablePromise<string> {
+    return $Call.ByID(2254082095, id);
 }
 
 /**
@@ -726,12 +770,30 @@ export function GuideBuildState(): $CancellablePromise<string> {
     return $Call.ByID(1236161883);
 }
 
+/**
+ * GuideCorrectCue records the narrator's own attribution for one dialogue
+ * cue. speakerEntityID "unknown" or "" clears the cue back to unknown; a
+ * rebuild never overwrites a correction (mirroring ADR 0007's lock guard).
+ */
+export function GuideCorrectCue(cueID: string, speakerEntityID: string): $CancellablePromise<string> {
+    return $Call.ByID(2882621287, cueID, speakerEntityID);
+}
+
 export function GuideCreate(name: string, category: string, aliases: string[]): $CancellablePromise<string> {
     return $Call.ByID(4087272090, name, category, aliases);
 }
 
 export function GuideDelete(id: string): $CancellablePromise<string> {
     return $Call.ByID(2382640937, id);
+}
+
+/**
+ * GuideDialogueCues returns the Story Bible's extracted dialogue cues
+ * (character-continuity-review.prd.md Phase 2): one entry per quoted span,
+ * with its resolved or unknown speaker.
+ */
+export function GuideDialogueCues(): $CancellablePromise<string> {
+    return $Call.ByID(1741759900);
 }
 
 export function GuideEdit(id: string, values: { [_ in string]?: string }): $CancellablePromise<string> {
@@ -1195,8 +1257,8 @@ export function ProjectCreateIn(parent: string, name: string): $CancellablePromi
 }
 
 /**
- * ProjectLinkDawFile is the one shared binding behind the header pill, the
- * Tracks page and Settings' DAW category (PRD project-workspace-and-daw-
+ * ProjectLinkDawFile is the one shared binding behind the audio engine panel
+ * and Settings' DAW category (PRD project-workspace-and-daw-
  * link.prd.md, Open Question W19): it opens a native "*.rpp" file dialog and
  * links the chosen file to the current project through the manifest storage
  * Phase 1-3 already built (project.BuildDawLink, Manifest.Save). Cancelling
@@ -1268,6 +1330,78 @@ export function PronunciationLookupOpen(source: string, word: string): $Cancella
 }
 
 /**
+ * PronunciationOnlineKeyClear removes the saved key; cached answers stay.
+ */
+export function PronunciationOnlineKeyClear(): $CancellablePromise<string> {
+    return $Call.ByID(3315931556);
+}
+
+/**
+ * PronunciationOnlineKeySet saves the narrator's pasted key (Q10). An error never quotes what was pasted.
+ */
+export function PronunciationOnlineKeySet(key: string): $CancellablePromise<string> {
+    return $Call.ByID(2329407561, key);
+}
+
+/**
+ * PronunciationOnlineKeyStatus says whether the narrator has saved their Merriam-Webster key, and whether it is sealed at
+ * rest on this platform. Never the key.
+ */
+export function PronunciationOnlineKeyStatus(): $CancellablePromise<string> {
+    return $Call.ByID(822152461);
+}
+
+/**
+ * PronunciationOnlineLookup looks one word up for the narrator, who pressed Look up for it (D72: narrator-initiated): from
+ * the local cache when it was looked up before, otherwise from Merriam-Webster on the narrator's key.
+ */
+export function PronunciationOnlineLookup(word: string): $CancellablePromise<string> {
+    return $Call.ByID(2880033266, word);
+}
+
+/**
+ * PronunciationOnlineLookupBatch looks every word in words up once (Q11: opt-in with a notice). confirmedCount is the word
+ * count the narrator confirmed in the notice; the Service refuses the batch unless it is exactly the number of distinct
+ * words it would send.
+ */
+export function PronunciationOnlineLookupBatch(words: string[], confirmedCount: number): $CancellablePromise<string> {
+    return $Call.ByID(132804926, words, confirmedCount);
+}
+
+/**
+ * PronunciationOnlineSignUpOpen opens the dictionary's free-key sign-up page in the narrator's browser: a fixed constant of
+ * the adapter's, never an address the UI supplies (the same trusted-URL discipline as PronunciationLookupOpen).
+ */
+export function PronunciationOnlineSignUpOpen(): $CancellablePromise<string> {
+    return $Call.ByID(1086970160);
+}
+
+/**
+ * ProofingChooseRender opens the native file picker for the chapter's rendered file and, once one is chosen, attests
+ * it was made from the chapter as the saved project has it now (Q9 A). It answers {status: "cancelled"} when the
+ * narrator closes the dialog without choosing, {status: "refused", message} when the file could not be read or the
+ * chapter has no one confirmed track in the saved project, or {status: "ok", render} with the render evaluated again.
+ */
+export function ProofingChooseRender(chapterID: string): $CancellablePromise<string> {
+    return $Call.ByID(4132274041, chapterID);
+}
+
+/**
+ * ProofingClearRender removes the chapter's render association and answers the render state again (none).
+ */
+export function ProofingClearRender(chapterID: string): $CancellablePromise<string> {
+    return $Call.ByID(3281337037, chapterID);
+}
+
+/**
+ * ProofingRenderState reads the chapter's render association and, once it is current, its latest measurement of
+ * exactly that render. It starts nothing.
+ */
+export function ProofingRenderState(chapterID: string): $CancellablePromise<string> {
+    return $Call.ByID(2166190973, chapterID);
+}
+
+/**
  * ProviderCapabilities answers, for each provider port, every registered provider's label, platforms, modes, asset kind (with
  * the installed count when its catalog is present) and whether it is supported on this platform.
  */
@@ -1325,7 +1459,7 @@ export function RenderConfigSuggestFolder(): $CancellablePromise<string> {
 }
 
 /**
- * RetakeLanesList lists, from the saved REAPER project the Tracks page reads, every manuscript line whose retakes sit
+ * RetakeLanesList lists, from the saved REAPER project the audio engine panel reads, every manuscript line whose retakes sit
  * on more than one fixed lane of a track, and which lane plays.
  */
 export function RetakeLanesList(): $CancellablePromise<string> {

@@ -22,7 +22,7 @@ function renderPage({
   const api = createMockApi(overrides, initial);
   const goToManuscript = vi.fn();
   const goToStoryBible = vi.fn();
-  const goToDelivery = vi.fn();
+  const goToMaster = vi.fn();
   const notify = vi.fn();
   render(
     <ApiProvider api={api}>
@@ -33,13 +33,13 @@ function renderPage({
           goToManuscript={goToManuscript}
           goToStoryBible={goToStoryBible}
           goToWorkspace={goToWorkspace}
-          goToDelivery={goToDelivery}
+          goToMaster={goToMaster}
           openChapter={vi.fn()}
         />
       </TooltipProvider>
     </ApiProvider>,
   );
-  return { api, goToManuscript, goToStoryBible, goToDelivery, notify };
+  return { api, goToManuscript, goToStoryBible, goToMaster, notify };
 }
 
 const rows = async () => {
@@ -433,7 +433,7 @@ describe('ProofPage adds an approved marker in REAPER', () => {
     expect((await inReaper().findByRole('alert')).textContent).toContain('so no marker was added');
   });
 
-  it('lists a delivery finding by its file and rule, and opens the Delivery page on them instead of the manuscript', async () => {
+  it('lists a delivery finding by its file and rule, and opens Master & QC on them instead of the manuscript', async () => {
     const user = userEvent.setup();
     const delivery: Finding = {
       schema_version: 1,
@@ -461,7 +461,7 @@ describe('ProofPage adds an approved marker in REAPER', () => {
       evidence_version: 'sha256:1',
       review: { status: 'unreviewed' },
     };
-    const { api, goToDelivery, goToManuscript } = renderPage({ initial: { findings: [...WIRE_FINDINGS, delivery] } });
+    const { api, goToMaster, goToManuscript } = renderPage({ initial: { findings: [...WIRE_FINDINGS, delivery] } });
     const row = (await rows()).find((candidate) => candidate.textContent?.includes('RMS −24.1 dBFS, below the minimum of −23'));
     expect(row?.textContent).toContain('Chapter 01.wav');
     expect(row?.textContent).toContain('Delivery check');
@@ -471,8 +471,8 @@ describe('ProofPage adds an approved marker in REAPER', () => {
     expect(within(detail).getByText('File')).toBeTruthy();
     expect(within(detail).getByText('Each file measures between -23 dB and -18 dB RMS.')).toBeTruthy();
     expect(within(detail).queryByRole('button', { name: 'Show in Script' })).toBeNull();
-    await user.click(within(detail).getByRole('button', { name: 'Open in Delivery' }));
-    expect(goToDelivery).toHaveBeenCalledWith('C:/Projects/Alice/renders/Chapter 01.wav', 'acx.rms');
+    await user.click(within(detail).getByRole('button', { name: 'Open in Master & QC' }));
+    expect(goToMaster).toHaveBeenCalledWith('C:/Projects/Alice/renders/Chapter 01.wav', 'acx.rms');
     expect(goToManuscript).not.toHaveBeenCalled();
 
     // Dismissed like any other finding, against the evidence version it was shown with.

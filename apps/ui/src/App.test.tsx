@@ -599,6 +599,15 @@ describe('App (integration, driven through the mock NarrationApi)', () => {
     expect(window.location.hash).toBe(hash);
   });
 
+  // Stage navigation Phase 8 (ADR 0407): Master & QC replaced Delivery, and a finding's old /delivery#file=… link still lands on it.
+  it('redirects /delivery to Master & QC, keeping the query and the file and rule anchor', async () => {
+    window.history.replaceState(null, '', '/delivery?from=report#file=C%3A%2Fa.wav&rule=acx.rms');
+    renderApp();
+    await screen.findByRole('heading', { name: 'Master & QC', level: 1 });
+    expect(`${window.location.pathname}${window.location.search}${window.location.hash}`).toBe('/master?from=report#file=C%3A%2Fa.wav&rule=acx.rms');
+    expect(screen.queryAllByRole('button', { name: 'Delivery' })).toHaveLength(0);
+  });
+
   it('resets a compare run when the narrator leaves the chapter view it lives in, and not when there is none', async () => {
     const transcriptReset = vi.fn(createMockApi().transcriptReset);
     window.history.replaceState(null, '', `/proof/${WIRE_CHAPTERS[0].id}`);

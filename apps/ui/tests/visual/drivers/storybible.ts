@@ -1,6 +1,6 @@
 // How to reach each `storybible` state in STATE_CATALOG (see app.drivers.ts).
 import { settlePage } from '../helpers/settle';
-import { type Driver, askForTheLanguageModel, askForThePreviewVoice, clickNav, clickVisible, confirmDialog, goToPage } from './shared';
+import { type Driver, askForTheLanguageModel, askForThePreviewVoice, clickNav, clickVisible, confirmDialog, goToPage, saveOnlineDictionaryKey } from './shared';
 
 export const storybibleDrivers: Record<string, Driver> = {
   'entry-saving': async (page) => {
@@ -117,6 +117,28 @@ export const storybibleDrivers: Record<string, Driver> = {
     await page.getByText('Asked the author by email.', { exact: true }).first().waitFor();
     await page.getByRole('button', { name: 'Save status' }).scrollIntoViewIfNeeded();
   },
+  'entry-pronunciation-online': async (page) => {
+    await saveOnlineDictionaryKey(page);
+    // The "key saved" toast belongs to Settings; dismissed so it does not cover the answer this state is about.
+    await page.getByRole('button', { name: 'Dismiss message' }).click();
+    await goToPage(page, 'Story Bible');
+    await page.locator('tr[data-row]').first().click();
+    const unlock = page.getByRole('button', { name: 'Unlock entry' });
+    if (await unlock.count()) await unlock.click();
+    await clickVisible(page, 'button', 'Edit this entry');
+    await clickVisible(page, 'button', 'Pronunciation details');
+    await page.getByRole('button', { name: /^Look up .+ online in Merriam-Webster$/ }).click();
+    const answer = page.getByRole('button', { name: /^Use .+ as your pronunciation of / }).first();
+    await answer.waitFor();
+    await answer.evaluate((element) => element.scrollIntoView({ block: 'center' }));
+  },
+  'pronunciation-queries-online-confirm': async (page) => {
+    await goToPage(page, 'Story Bible');
+    await clickVisible(page, 'button', 'Pronunciation queries');
+    await page.getByRole('list', { name: 'Pronunciation queries' }).waitFor();
+    await clickVisible(page, 'button', 'Look up online…');
+    await page.getByRole('alertdialog', { name: /^Look up \d+ names? online\?$/ }).waitFor();
+  },
   'pronunciation-queries': async (page) => {
     await goToPage(page, 'Story Bible');
     await clickVisible(page, 'button', 'Pronunciation queries');
@@ -169,5 +191,26 @@ export const storybibleDrivers: Record<string, Driver> = {
     await page.getByRole('alert').filter({ hasText: 'Give property 3 a name' }).waitFor();
     // The properties table is below the fold of the detail panel: bring it into view for the screenshot.
     await page.getByRole('table', { name: 'Properties' }).scrollIntoViewIfNeeded();
+  },
+  'character-voice-references': async (page) => {
+    await goToPage(page, 'Story Bible');
+    // The Hatter's fixture reference is changed since approval (the mock's snapshot no longer matches a current
+    // region by that GUID), so selecting them shows the warning badge alongside a steady reference elsewhere.
+    await page.locator('tr[data-row]', { hasText: 'Hatter' }).click();
+    await page.getByText('Reference clips').waitFor();
+    await page.getByText('Changed since approval').waitFor();
+    await page.getByText('Dialogue cues').waitFor();
+  },
+  'voice-data-panel': async (page) => {
+    await goToPage(page, 'Story Bible');
+    await clickVisible(page, 'button', 'Voice data');
+    await page.getByRole('dialog', { name: 'Voice data' }).waitFor();
+    await page.getByRole('combobox', { name: 'Approve a region for Narration' }).waitFor();
+  },
+  'remove-voice-data-confirm': async (page) => {
+    await goToPage(page, 'Story Bible');
+    await clickVisible(page, 'button', 'Voice data');
+    await clickVisible(page, 'button', 'Remove voice data…');
+    await confirmDialog(page, 'Remove voice data').waitFor();
   },
 };
