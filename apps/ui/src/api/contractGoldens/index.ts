@@ -29,6 +29,7 @@ import { masteringGoldens } from './mastering';
 import { recordingGoldens } from './recording';
 import { prepMarkupGoldens } from './prepMarkup';
 import { productionGoldens } from './production';
+import { prepCompletenessGoldens } from './prepCompleteness';
 
 const FEATURE_AREAS: Array<Record<string, z.ZodType>> = [
   systemGoldens,
@@ -58,6 +59,7 @@ const FEATURE_AREAS: Array<Record<string, z.ZodType>> = [
   recordingGoldens,
   prepMarkupGoldens,
   productionGoldens,
+  prepCompletenessGoldens,
 ];
 
 /** Which schema owns each golden file, over every feature area. */

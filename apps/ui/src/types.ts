@@ -39,6 +39,7 @@ export * from './api/contracts/daw';
 export * from './api/contracts/providers';
 export * from './api/contracts/production';
 export * from './api/contracts/pronunciationLookup';
+export * from './api/contracts/prepCompleteness';
 export * from './api/contracts/renderEncodeMaster';
 
 import type { ChapterTrackMapApi } from './api/contracts/chapterTrackMap';
@@ -82,6 +83,7 @@ import type { ProviderCapabilitiesApi } from './api/contracts/providers';
 import type { MasteringApi } from './api/contracts/mastering';
 import type { RecordingApi } from './api/contracts/recording';
 import type { PronunciationLookupApi } from './api/contracts/pronunciationLookup';
+import type { PrepCompletenessApi } from './api/contracts/prepCompleteness';
 import type { RenderEncodeMasterApi } from './api/contracts/renderEncodeMaster';
 
 /** The app compatibility facade; domain interfaces remain independently testable. */
@@ -128,4 +130,5 @@ export interface NarrationApi
     RecordingApi,
     ProductionApi,
     PronunciationLookupApi,
+    PrepCompletenessApi,
     RenderEncodeMasterApi {}

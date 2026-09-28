@@ -7,6 +7,7 @@ import { createMockApi } from './mockApi';
 import type { ProjectStateState } from './contracts/projectstate';
 import { WIRE_TAKE_REVIEW_FINDINGS, WIRE_TRACKS_PROJECT, WIRE_TRANSCRIPT, editingCandidateFor } from './mockFixtures';
 import { prepMarkupChapterSchema, prepMarkupSpanSchema } from './schemas/prepMarkup';
+import { prepCompletenessSummarySchema } from './schemas/prepCompleteness';
 import { cleanupApplyResultSchema, cleanupPreviewResultSchema, levelMatchApplyResultSchema, levelMatchPreviewResultSchema } from './schemas/cleanup';
 import { WIRE_TAKE_COMPARISON_FINDING } from './takeComparisonMock';
 import { MOCK_MEASURE_PATHS } from './measureMock';
@@ -650,6 +651,22 @@ describe('answers of the mock client for the manuscript, Story Bible and project
     expect((await api.prepMarkupList(chapter?.id ?? '')).spans).toHaveLength(1);
     await expect(api.prepMarkupSave(chapter?.id ?? '', 'no-such-line', 0, 1, 'stress', '')).rejects.toThrow('no longer in this chapter');
     await expect(api.prepMarkupSave(chapter?.id ?? '', paragraph?.id ?? '', 0, 5, 'pause', '')).rejects.toThrow('short or long');
+  });
+
+  // prep-depth.prd.md Phase 7: the per-chapter rollup reads the same two calls above, never a third store.
+  it('the prep completeness summary rolls up open queries and stale markup per chapter', async () => {
+    const api = createMockApi({}, { prepMarkup: [{ chapter: 0, line: 0, words: 'Alice', kind: 'stress', stale: { reason: 'text_changed', was: 'Queen' } }] });
+    const chapters = await api.manuscriptChapters();
+    const summary = await api.prepCompletenessSummary();
+    expectMatches(prepCompletenessSummarySchema, summary, 'mock prep completeness summary');
+    expect(summary.chapters.map((row) => row.chapterId)).toEqual(chapters.map((c) => c.id));
+    expect(summary.totals.chapters).toBe(chapters.length);
+    const firstChapter = summary.chapters.find((row) => row.chapterId === chapters[0]?.id);
+    expect(firstChapter?.staleMarkupSpans).toBe(1);
+    expect(firstChapter?.complete).toBe(false);
+    const openAcrossChapters = summary.chapters.reduce((sum, row) => sum + row.openQueries, 0);
+    expect(summary.totals.openQueries).toBe(openAcrossChapters + summary.totals.unattributedQueries);
+    expect(summary.totals.staleMarkupSpans).toBeGreaterThanOrEqual(1);
   });
 
   it('a created note and bookmark', async () => {
@@ -2283,6 +2300,7 @@ describe('answers of the mock client for the settings, voice, model, transcript 
       'productionOverview',
       'productionStartTimer',
       'productionStopTimer',
+      'prepCompletenessSummary',
       'productionStatusReport',
       'productionBurndown',
       'takeComparisonStart',

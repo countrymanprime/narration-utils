@@ -145,10 +145,10 @@ export const HidesTooltipOnBlur: Story = {
 // wrapper span becomes the tab stop (tabIndex 0) and carries the explanation as its name (role group).
 export const OnDisabledButton: Story = {
   render: () => (
-    <TooltipTarget text="Import a manuscript to unlock Proofing." className="max-w-sm">
-      <button className={cardClass} aria-label="Open Proofing" disabled>
-        <div className="font-semibold">Proofing</div>
-        <div className="mt-1 text-sm">Select audio items or a track in REAPER, then start Proofing.</div>
+    <TooltipTarget text="Import a manuscript to unlock Proof." className="max-w-sm">
+      <button className={cardClass} aria-label="Open Proof" disabled>
+        <div className="font-semibold">Proof</div>
+        <div className="mt-1 text-sm">Select audio items or a track in REAPER, then start proofing.</div>
       </button>
     </TooltipTarget>
   ),
@@ -158,12 +158,12 @@ export const DisabledButtonExplainsWhyOnFocus: Story = {
   render: OnDisabledButton.render,
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    const button = canvas.getByRole('button', { name: 'Open Proofing' });
+    const button = canvas.getByRole('button', { name: 'Open Proof' });
     await expect(button).toBeDisabled();
     await userEvent.tab();
     await expect(button.parentElement).toHaveFocus();
-    await expect(canvas.getByRole('group', { name: 'Import a manuscript to unlock Proofing.' })).toBe(button.parentElement);
-    await expect(await within(document.body).findByRole('tooltip')).toHaveTextContent('Import a manuscript to unlock Proofing.');
+    await expect(canvas.getByRole('group', { name: 'Import a manuscript to unlock Proof.' })).toBe(button.parentElement);
+    await expect(await within(document.body).findByRole('tooltip')).toHaveTextContent('Import a manuscript to unlock Proof.');
   },
 };
 
