@@ -10,10 +10,19 @@ const VARIANT_CLASSES: Record<IconButtonVariant, string> = {
   danger: 'border-[var(--danger)] bg-[var(--surface)] text-[var(--danger-text)] hover:bg-[var(--review-soft)]',
 };
 
+// `md` is 32 px, `--button-height` (ADR 0053, and what the mocks draw); `sm` is 28 px, `--button-height-sm`, beside a small Button in a dense row.
+type IconButtonSize = 'md' | 'sm';
+
+const SIZE_CLASSES: Record<IconButtonSize, string> = {
+  md: 'size-[var(--button-height)]',
+  sm: 'size-[var(--button-height-sm)]',
+};
+
 type Props = Omit<ComponentPropsWithRef<'button'>, 'aria-label' | 'title'> & {
   // The accessible name. An icon has no text, so it is required: it is what a screen reader says and what a hint repeats.
   label: string;
   variant?: IconButtonVariant;
+  size?: IconButtonSize;
   // The action this button started is running (ADR 0075): the icon becomes a spinner, the button is marked busy and ignores a press, and it
   // stays focusable so a keyboard user keeps their place.
   pending?: boolean;
@@ -24,7 +33,7 @@ type Props = Omit<ComponentPropsWithRef<'button'>, 'aria-label' | 'title'> & {
   disabledReason?: string;
 };
 
-// A square 32 px button that holds one icon. Its look was a class string pasted at every call site; this is the one place
+// A square button that holds one icon. Its look was a class string pasted at every call site; this is the one place
 // it lives (ADR 0053). A hint is composed around it, `<TooltipTarget text="..."><IconButton .../></TooltipTarget>`, because
 // the hint often says more than the label and the wrapper sometimes needs its own layout class. A disabled one is dimmed and
 // takes no hover, like `Button`. It also renders as the button of a Base UI part (`render={<IconButton .../>}`), so it
@@ -32,6 +41,7 @@ type Props = Omit<ComponentPropsWithRef<'button'>, 'aria-label' | 'title'> & {
 export function IconButton({
   label,
   variant = 'default',
+  size = 'md',
   className = '',
   type = 'button',
   pending = false,
@@ -50,7 +60,7 @@ export function IconButton({
       // A press does nothing while pending or gated, and it does not submit a form either (`preventDefault` stops the native submit).
       onClick={gated ? (event) => event.preventDefault() : onClick}
       // `display` has no specificity here, so a caller can hide it (`hidden max-md:inline-flex`) without a class fight.
-      className={`size-8 items-center justify-center rounded-md border disabled:pointer-events-none disabled:opacity-40 aria-busy:pointer-events-none aria-busy:opacity-60 not-aria-busy:aria-disabled:opacity-40 [:where(&)]:inline-flex ${VARIANT_CLASSES[variant]} ${className}`}
+      className={`${SIZE_CLASSES[size]} items-center justify-center rounded-[var(--radius-button)] border disabled:pointer-events-none disabled:opacity-55 aria-busy:pointer-events-none aria-busy:opacity-60 not-aria-busy:aria-disabled:opacity-55 [:where(&)]:inline-flex ${VARIANT_CLASSES[variant]} ${className}`}
       {...rest}
     >
       {pending ? <FontAwesomeIcon icon={faCircleNotch} className="motion-safe:animate-spin" aria-hidden="true" /> : children}

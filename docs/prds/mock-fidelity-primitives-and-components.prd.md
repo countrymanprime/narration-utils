@@ -644,7 +644,7 @@ The dark sets show pill heights of 18, 21, 23, 24, 25 and 26 px, with the OK fil
 | --- | --- | --- | --- | --- | --- | --- |
 | 0a | Pixel-match tool | `pnpm --dir apps/ui mock-match`, its unit test, the approved list, the baseline ([ADR 0585](../adr/0585-mock-fidelity-is-a-pixel-match-at-the-mocks-own-size-and-theme-scored-by-a-tool-that-reports-and-does-not-gate.md)) | complete (this PRD's PR) | - | - | - |
 | 0b | Token batch | Every token the mocks need: `-soft` badge fills (Q3), `--row-selected`, `--reading-bg` and the booth script size (Q6), `--rec-fill`/`--rec-text`, `--toast-bg`/`--toast-text`, `--waveform`, `--ok-zone`; radius tokens (`--radius-button` 6, `--radius-card` 8, `--radius-tag` 3); sizes (`--button-height` 32, `--button-height-sm` 28, `--row-height` 34, `--header-row-height` 31); type (`--font-size-page-title` 26, `--font-size-card-title` 19, `--font-size-label` 11, `--tracking-label` 0.1em, `--tracking-button` 0.06em); every pair checked in both themes | complete (#888, ADR 0590) | - | 0a | - |
-| 1 | Button and IconButton | `size`, a `secondary` fill, `link`, height, tracking, disabled; migrate the 7 small recipes and the clones | pending | 3, 9, 10 | 0b | - |
+| 1 | Button and IconButton | `size`, a `secondary` fill, `link`, height, tracking, disabled; migrate the 7 small recipes and the clones | complete (#894, ADR 0595) | 3, 9, 10 | 0b | - |
 | 2 | StatusBadge, Pill, SpeakerTag | `shape` pill/tag, the `-soft` fills, accent/org tones, outline, booth tag size; migrate every chip copy outside the page components | complete (#892, ADR 0600) | 6, 7 | 0b | - |
 | 3 | Table and StageGrid | row and header sizes, `numeric`/`muted` cells, `--row-selected`, the current row, middle alignment, `flush`; migrate tabular `ul`s and `MONO` overrides | complete (#893, ADR 0605) | 1, 9, 10 | 0b | - |
 | 4 | Panel, Heading, SectionLabel, InsetCard | card header bar and title type, inline subtitle, flush body; page title; the eyebrow and inset-card primitives; migrate hand-drawn cards | in review (ADR 0640) | 5, 8 | 0b, 3 | - |
@@ -765,7 +765,7 @@ Paths are under `apps/ui/src/` unless they start with `apps/`, `docs/` or `tests
 
 - 0585 is taken by Phase 0a.
 - Phase 0b took 0590 from its stream's block (0590–0594), so 0586 is spare.
-- 0587 is reserved for Phase 1. Phase 3 took 0605 from its stream's block (0605–0609), so 0588 is spare. Phase 4 took 0640 from its stream's block (0640–0644).
+- Phase 1 took 0595 from its stream's block (0595–0599), so 0587 is spare. Phase 3 took 0605 from its stream's block (0605–0609), so 0588 is spare. Phase 4 took 0640 from its stream's block (0640–0644).
 - 0589 is spare for the next phase that needs one.
 
 Later phases take their numbers from the block the coordinator gives their stream. Check `docs/adr/` at write time.

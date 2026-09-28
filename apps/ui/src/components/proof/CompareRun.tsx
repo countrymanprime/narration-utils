@@ -33,7 +33,6 @@ const seconds = (value: number) =>
     .padStart(2, '0')}:${Math.floor(value % 60)
     .toString()
     .padStart(2, '0')}`;
-
 type ModelOption = { value: string; label: string; caption: string };
 const MODEL_OPTIONS: ModelOption[] = [
   { value: 'tiny', label: 'Tiny', caption: 'Fastest · rough accuracy · ~1 GB RAM' },
@@ -316,11 +315,11 @@ export function CompareRun({
           <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
             <span style={{ color: 'var(--text-muted)' }}>Transcribes the selected REAPER audio with Whisper and compares it with {chapterTitle}.</span>
             {lastCompleted ? (
-              <button className="underline" style={{ color: 'var(--text-muted)' }} onClick={onReviewLast}>
+              <Button variant="link" style={{ color: 'var(--text-muted)' }} onClick={onReviewLast}>
                 Last narrated take: {lastCompleted.trackName || 'Selected REAPER audio'}
                 {lastCompleted.audioItemCount ? ` · ${lastCompleted.audioItemCount} audio item${lastCompleted.audioItemCount === 1 ? '' : 's'}` : ''}
                 {lastCompleted.completedAt ? ` · ${new Date(lastCompleted.completedAt).toLocaleString()}` : ''}
-              </button>
+              </Button>
             ) : (
               <span style={{ color: 'var(--text-muted)' }}>No narrated take yet</span>
             )}
@@ -417,7 +416,7 @@ export function CompareRun({
         <Panel title="Choose manuscript chapter" subtitle="The track name did not confidently match a chapter.">
           <div className="flex flex-wrap gap-2">
             {state.chapters.map((chapter) => (
-              <Button variant="ghost" key={chapter} onClick={() => void start(chapter)}>
+              <Button variant="secondary" key={chapter} onClick={() => void start(chapter)}>
                 {chapter}
               </Button>
             ))}
@@ -464,7 +463,7 @@ export function CompareRun({
           </div>
           <div className="mt-4 flex items-center justify-between border-t pt-3" style={{ borderColor: 'var(--border)' }}>
             {import.meta.env.MODE === 'mock' && (
-              <Button variant="ghost" className="text-xs" onClick={() => void api.transcriptReset().catch((error) => notify(describeApiError(error), 'error'))}>
+              <Button variant="secondary" onClick={() => void api.transcriptReset().catch((error) => notify(describeApiError(error), 'error'))}>
                 Skip to results (demo)
               </Button>
             )}
@@ -496,7 +495,6 @@ export function CompareRun({
               >
                 <Button
                   variant="primary"
-                  className="text-xs"
                   disabled={!canExportMarkers || pendingMarkers === 0 || exporting}
                   onClick={async () => {
                     try {
@@ -512,7 +510,7 @@ export function CompareRun({
                 </Button>
               </TooltipTarget>
               <TooltipTarget text="Return to setup for another comparison">
-                <Button variant="ghost" className="text-xs" onClick={closeResults}>
+                <Button variant="secondary" onClick={closeResults}>
                   <FontAwesomeIcon icon={faRotateLeft} />
                   New comparison
                 </Button>

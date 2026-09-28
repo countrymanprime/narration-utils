@@ -112,7 +112,7 @@ export function VoiceReferencesSection({ characterId, characterLabel, notify }: 
                 </div>
               </div>
               {reference.changedSinceApproval && <StatusBadge tone="warning" label="Changed since approval" />}
-              <Button variant="ghost" className="text-xs" pending={mutation.isPending(`revoke:${reference.id}`)} onClick={() => void revoke(reference)}>
+              <Button variant="secondary" pending={mutation.isPending(`revoke:${reference.id}`)} onClick={() => void revoke(reference)}>
                 Revoke
               </Button>
             </InsetCard>
@@ -130,7 +130,7 @@ export function VoiceReferencesSection({ characterId, characterLabel, notify }: 
           ]}
         />
         <TextField label="Note (optional)" value={note} onChange={setNote} placeholder="e.g. anchor take, chapter 1" />
-        <Button variant="ghost" className="text-xs" disabled={!regionGuid} pending={mutation.isPending('approve')} onClick={() => void approve()}>
+        <Button variant="secondary" disabled={!regionGuid} pending={mutation.isPending('approve')} onClick={() => void approve()}>
           Approve as reference
         </Button>
       </div>

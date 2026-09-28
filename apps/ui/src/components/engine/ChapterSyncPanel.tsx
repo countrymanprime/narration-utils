@@ -65,7 +65,7 @@ export function ChapterSyncPanel({ notify, onChanged }: { notify: Notify; onChan
       <Panel title="Chapter sync">
         <div className="flex items-center justify-between gap-3 text-sm" style={{ color: 'var(--text-muted)' }}>
           Chapter sync is off.
-          <Button variant="ghost" pending={toggling} onClick={() => void toggle(true)}>
+          <Button variant="secondary" pending={toggling} onClick={() => void toggle(true)}>
             Turn on
           </Button>
         </div>
@@ -115,7 +115,7 @@ export function ChapterSyncPanel({ notify, onChanged }: { notify: Notify; onChan
     <Panel
       title="Chapter sync"
       actions={
-        <Button variant="ghost" pending={toggling} onClick={() => void toggle(false)}>
+        <Button variant="secondary" pending={toggling} onClick={() => void toggle(false)}>
           Turn off
         </Button>
       }
@@ -187,16 +187,15 @@ export function ChapterSyncPanel({ notify, onChanged }: { notify: Notify; onChan
                     {row.undoTrackGuid && stillAuto(row.undoTrackGuid) && (
                       <>
                         {' ('}
-                        <button
-                          type="button"
-                          className="underline disabled:opacity-60"
+                        <Button
+                          variant="link"
                           style={{ color: 'var(--text)' }}
                           disabled={undoingTrackGuid === row.undoTrackGuid}
                           aria-label={`Undo: ${row.text}`}
                           onClick={() => void undo(row.undoTrackGuid)}
                         >
                           Undo
-                        </button>
+                        </Button>
                         {')'}
                       </>
                     )}

@@ -114,7 +114,6 @@ function GestureChips({ gestures }: { gestures: Gesture[] }) {
     </span>
   );
 }
-
 type RecorderProps = {
   command: CommandDescriptor;
   currentGestures: Gesture[];
@@ -175,23 +174,23 @@ function Recorder({ command, currentGestures, scope, catalog, keymap, busy, onCa
         </Button>
         {!conflict && (
           <>
-            <Button variant="ghost" disabled={!captured || busy} onClick={() => captured && onAdd(captured)}>
+            <Button variant="secondary" disabled={!captured || busy} onClick={() => captured && onAdd(captured)}>
               Add as another key
             </Button>
-            <Button variant="ghost" disabled={busy} onClick={onUnbind}>
+            <Button variant="secondary" disabled={busy} onClick={onUnbind}>
               Unbind
             </Button>
-            <Button variant="ghost" disabled={busy} onClick={onResetOne}>
+            <Button variant="secondary" disabled={busy} onClick={onResetOne}>
               Reset to default
             </Button>
           </>
         )}
         {conflict && (
-          <Button variant="ghost" disabled={busy} onClick={() => setCaptured(undefined)}>
+          <Button variant="secondary" disabled={busy} onClick={() => setCaptured(undefined)}>
             Try another key
           </Button>
         )}
-        <Button variant="ghost" className="ml-auto" disabled={busy} onClick={onCancel}>
+        <Button variant="secondary" className="ml-auto" disabled={busy} onClick={onCancel}>
           Cancel
         </Button>
       </div>
@@ -260,7 +259,7 @@ export function KeyboardPanel({
             keyboard. These apply to every project.
           </p>
         </div>
-        <Button variant="ghost" disabled={busy || !anyChanged} onClick={() => void persist(defaults)}>
+        <Button variant="secondary" disabled={busy || !anyChanged} onClick={() => void persist(defaults)}>
           Reset all to defaults
         </Button>
       </div>
@@ -293,21 +292,11 @@ export function KeyboardPanel({
                     <span className="flex flex-wrap items-center gap-2">
                       <GestureChips gestures={gestures} />
                       {changed && (
-                        <Button
-                          variant="ghost"
-                          className="text-xs"
-                          disabled={busy}
-                          onClick={() => void persist({ ...keymap, [command.id]: defaults[command.id] ?? [] })}
-                        >
+                        <Button variant="secondary" disabled={busy} onClick={() => void persist({ ...keymap, [command.id]: defaults[command.id] ?? [] })}>
                           Reset
                         </Button>
                       )}
-                      <Button
-                        variant="ghost"
-                        className="text-xs"
-                        disabled={busy}
-                        onClick={() => setRecordingId(recordingId === command.id ? undefined : command.id)}
-                      >
+                      <Button variant="secondary" disabled={busy} onClick={() => setRecordingId(recordingId === command.id ? undefined : command.id)}>
                         Change
                       </Button>
                     </span>

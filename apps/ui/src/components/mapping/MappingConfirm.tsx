@@ -54,10 +54,10 @@ export function MappingConfirm({
     return (
       <div className="flex flex-wrap items-center gap-2">
         <span className="text-sm">{linkedTrackName ?? 'Linked track is missing from this project'}</span>
-        <Button variant="ghost" onClick={() => setPicking(true)} disabled={busy}>
+        <Button variant="secondary" onClick={() => setPicking(true)} disabled={busy}>
           {changeLabel}
         </Button>
-        <Button variant="ghost" onClick={onClear} pending={busy}>
+        <Button variant="secondary" onClick={onClear} pending={busy}>
           {clearLabel}
         </Button>
       </div>
@@ -79,7 +79,7 @@ export function MappingConfirm({
         Confirm
       </Button>
       {hasLink && (
-        <Button variant="ghost" onClick={() => setPicking(false)} disabled={busy}>
+        <Button variant="secondary" onClick={() => setPicking(false)} disabled={busy}>
           Cancel
         </Button>
       )}

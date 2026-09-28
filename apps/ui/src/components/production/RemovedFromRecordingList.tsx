@@ -36,7 +36,7 @@ export function RemovedFromRecordingList({
                 {removalKindLabel(chapter.contentKind ?? 'reference')}
               </span>
             </div>
-            <Button variant="ghost" pending={restoringId === chapter.id} onClick={() => onRestore(chapter.id)}>
+            <Button variant="secondary" pending={restoringId === chapter.id} onClick={() => onRestore(chapter.id)}>
               Restore
             </Button>
           </InsetCard>

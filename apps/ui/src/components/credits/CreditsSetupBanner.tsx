@@ -52,7 +52,7 @@ export function CreditsSetupBanner({
           </span>
         </div>
         <div className="flex gap-2">
-          <Button variant="ghost" type="button" disabled={busy} onClick={() => void dontAsk()}>
+          <Button variant="secondary" type="button" disabled={busy} onClick={() => void dontAsk()}>
             Don&rsquo;t ask for this project
           </Button>
           <Button variant="primary" type="button" disabled={busy} onClick={onFillIn}>

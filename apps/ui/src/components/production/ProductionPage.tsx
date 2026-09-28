@@ -107,7 +107,7 @@ function NextUp({
                 </span>
                 {!timerRunning && (
                   <Button
-                    variant="ghost"
+                    variant="secondary"
                     className="self-start"
                     aria-label={`Start timer on ${name}, ${STATUS_LABELS[item.stage]}`}
                     pending={starting === item.chapterId}
@@ -249,13 +249,13 @@ export function ProductionPage({
         </div>
         <div role="group" aria-label="Production actions" className="flex flex-wrap items-center gap-2">
           {found && (
-            <Button variant="ghost" onClick={() => void read()}>
+            <Button variant="secondary" onClick={() => void read()}>
               Refresh
             </Button>
           )}
           {found && manuscriptImport.chooseButton}
           {overview && (
-            <Button variant="ghost" onClick={() => setReportOpen(true)}>
+            <Button variant="secondary" onClick={() => setReportOpen(true)}>
               Export status report
             </Button>
           )}

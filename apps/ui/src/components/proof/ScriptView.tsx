@@ -140,8 +140,9 @@ export function ScriptView({
           {!isPlaying ? 'Paused · click a word to play from it' : autoFollow ? 'Following playback · scroll away to stop following' : 'Not following playback'}
           {isPlaying && !autoFollow && (
             <Button
-              variant="ghost"
-              className="ml-2 px-2 py-0.5 text-xs"
+              size="sm"
+              variant="secondary"
+              className="ml-2"
               onClick={() => {
                 setAutoFollow(true);
               }}
