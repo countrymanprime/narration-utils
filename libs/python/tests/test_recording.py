@@ -303,6 +303,42 @@ def test_a_disk_error_closes_the_file_keeps_draining_and_reports_it(tmp_path, mo
     assert result.frames == 1000 == read_wav_header(tmp_path / "take.wav").frames
 
 
+def test_a_second_io_error_while_closing_after_a_write_failure_does_not_kill_the_writer_thread(tmp_path, monkeypatch):
+    """A security review found that the writer thread's ``except OSError`` around ``write()`` calls ``close()``
+    unguarded: on a genuinely failed device (a dropped share, a pulled drive), that ``close()`` can itself raise, and
+    the exception used to escape the thread uncaught, killing it silently instead of being folded into the take's
+    reported error."""
+
+    def failing_write(self, frames):
+        raise OSError("disk full")
+
+    real_patch = wav_module.WavWriter._patch
+    raised = {"once": False}
+
+    def failing_patch(self):
+        if not raised["once"]:
+            raised["once"] = True
+            raise OSError("device removed")
+        return real_patch(self)
+
+    monkeypatch.setattr(wav_module.WavWriter, "write", failing_write)
+    monkeypatch.setattr(wav_module.WavWriter, "_patch", failing_patch)
+
+    unhandled = []
+    original_hook = threading.excepthook
+    threading.excepthook = unhandled.append
+    try:
+        source = SyntheticSource(16000, 1, 160, realtime=False, stop_after=5)
+        recorder = Recorder(source, tmp_path / "take.wav").start()
+        assert recorder.failed.wait(10)
+        result = recorder.stop()
+    finally:
+        threading.excepthook = original_hook
+
+    assert not unhandled, f"the writer thread died on an unhandled exception: {unhandled}"
+    assert result.error == "disk full"
+
+
 def test_a_listener_that_raises_is_reported_and_the_take_is_still_written(tmp_path):
     def broken(_event):
         raise KeyError("ui gone")

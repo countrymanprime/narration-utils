@@ -1507,7 +1507,8 @@ var fieldSchemas = map[string][]fieldSchema{
 		{"proofing.delivery.tail_room_tone_seconds", "Rendered file: room tone, tail (proofing)", "choice", []string{"required", "ignored"}},
 		{proofing.RenderLengthSignalID, "Rendered file: length matches the chapter (proofing)", "choice", []string{"required", "ignored"}},
 	},
-	// Proofing is the proofing signals' own setting (docs/prds/proofing-readiness-signals.prd.md Q9 C): how far, in
+	// Proofing is the proofing signals' own setting (proofing-readiness-signals.prd.md Q9 C, delivered and deleted;
+	// see ADR 0525): how far, in
 	// seconds, a chapter's rendered file may differ in length from its items' span before the render length check is not
 	// met. Unset by default and then the check is not required: no default is proposed until render-versus-project
 	// lengths are measured on real renders (tails, padding).

@@ -5,12 +5,14 @@
 [DX Phase 9's click and breath detectors](../../apps/desktop/internal/measure/cleanup.go) (exercised, not changed; DX-9
 owns them) on a tuning half, chooses the scan defaults there, and reports precision and recall on a held-out half per
 class and recording condition. Neither class reaches the proposed 90% recall, so both `editing.clicks` and
-`editing.breaths` stay `unknown` ("not validated yet") for every analyzer version. No permissioned narrator audio is on
-`main` (the Alice corpus, #836, is not merged), so the corpus is synthetic, and per Q10 a synthetic run could not
-validate a detector even at 100%. The real run is a QA item on
-[#510](https://github.com/countrymanprime/narration-utils/issues/510). Decisions:
-[ADR 0510](../adr/0510-click-and-breath-signals-open-only-on-a-recorded-permissioned-held-out-run-at-target-in-every-condition.md)
-and [ADR 0511](../adr/0511-click-and-breath-sensitivity-is-a-scan-parameter-and-its-defaults-only-move-toward-more-candidates.md).
+`editing.breaths` stay `unknown` ("not validated yet") for every analyzer version. The main corpus is synthetic, and per
+Q10 a synthetic run could not validate a detector even at 100%. The LibriVox Alice signal set (#836) is the second,
+real-speech evaluation set ([below](#real-speech-the-librivox-signal-set)); its run is pending. The permissioned run is
+a QA item on [#510](https://github.com/countrymanprime/narration-utils/issues/510). Decisions:
+[ADR 0510](../adr/0510-click-and-breath-signals-open-only-on-a-recorded-permissioned-held-out-run-at-target-in-every-condition.md),
+[ADR 0511](../adr/0511-click-and-breath-sensitivity-is-a-scan-parameter-and-its-defaults-only-move-toward-more-candidates.md)
+and
+[ADR 0575](../adr/0575-the-librivox-signal-set-is-a-second-click-evaluation-split-by-pause-that-reports-and-never-opens-the-gate-alone.md).
 
 ## The corpus
 
@@ -110,6 +112,74 @@ What would move the numbers is DX-9's to decide, not this phase's. The run point
   dBFS;
 - a click test that needs a short silent flank on one side only, or one based on spectral flatness or crest factor;
 - a breath test that looks at spectral shape, not just zero crossings.
+
+## Real speech: the LibriVox signal set
+
+**Status: harness in place, run pending (2026-09-28, stream N-K12).** The session that built the harness could not
+fetch the recordings. archive.org answered, but the egress policy refused the storage host its downloads redirect to
+(`dn710306.ca.archive.org`). No number from this set is reported here, and none is predicted. The run is on #510.
+
+[`librivoxvalidation_test.go`](../../apps/desktop/internal/editing/librivoxvalidation_test.go) runs this phase's
+harness on the `signal/` set of the [LibriVox Alice corpus](../../tests/fixtures/audio/librivox-alice/README.md): the
+same matching (`scoreSource`, 50 ms tolerance), the same selection rule (`chooseConservative`) and the shipped
+`DefaultScanOptions`.
+
+### What the set holds
+
+The set is 3.8 minutes of Kara Shallenberg's Chapter IX, read in one room, in 11 cases. Clicks are in three of them.
+
+| Condition (case) | Clicks | Held-out | Tuning | Known misses |
+| --- | --- | --- | --- | --- |
+| `kara_09-clicks`: -6 dBFS peak, mid-pause | 4 (after paragraphs 3, 7, 12, 17) | 3, 12 | 7, 17 | paragraph 17: the room tone sits at the -50 dBFS floor, so there is no silent flank |
+| `kara_09-quiet-clicks`: -24 dBFS, mid-pause | 3 (after 3, 7, 12) | 3, 12 | 7 | none |
+| `kara_09-click-before-breath`: -6 dBFS, at the cut | 1 (after 12) | 12 | none | folded into the reader's breath |
+
+Each click is a 2 ms decaying 3 kHz burst added to the real audio. Its surroundings are real (room tone, breaths, the
+reader's own mouth noise), but the click is not.
+
+### How it is split
+
+The synthetic corpus splits by file. This set is one reading, so it splits by pause instead: within each case, in time
+order, the clicks alternate held-out, tune, held-out, and so on. That gives 5 held-out and 3 tuning clicks
+(ADR 0575).
+
+### What it can decide
+
+The set cannot open a class on its own, whatever it scores:
+
+- **Clicks** have 5 held-out labels, under the PRD's 25. The two known misses cap recall at 0.75 (6 of 8) until DX-9
+  fixes them.
+- **Breaths** have no labels, so recall is not measurable. The run lists each case's breath candidates and how many the
+  unedited control also raises at the same time. The reader breathes, so those are mostly real breaths, but nobody has
+  listened yet.
+
+**So no class meets its target on both sets, and no enabling ADR is proposed.** Clicks already miss on synthetic audio
+(0.38). Breaths are unmeasured on real speech.
+
+### Run it
+
+Run this from `apps/desktop`, after `build.py fetch` and `build.py signal --out <dir>`:
+
+```bash
+NARRATION_SIGNAL_CORPUS=<dir>/signal go test ./internal/editing -run TestClickBreathOnLibriVoxSignalCorpus -v
+```
+
+It logs:
+
+- the tuning sweep, and whether real speech picks the shipped `ClickAboveSilenceDB` (this is reported, never applied);
+- held-out click recall per condition, and the verdict against the bar;
+- every missed click;
+- per case, the click and breath candidates, and how many the control also has.
+
+It fails only on a broken corpus or a stale `knownIssue`. Paste the held-out table here in place of the pending status.
+
+### What would make it count
+
+These are for the owner, on #510:
+
+- a decision on whether a LibriVox reading counts as ADR 0510's permissioned corpus (the recommendation is yes);
+- breath labels placed by listening;
+- enough clicks, ideally the reader's own, to pass 25 per half.
 
 ## What the product does with this
 

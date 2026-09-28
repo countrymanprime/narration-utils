@@ -120,6 +120,9 @@ export function createSystemMock(
       zoom = Math.min(2, Math.max(1, factor));
       return { level: zoom };
     },
+    // The mock has no disk to persist to (app-navigation-and-zoom-controls.prd.md Phase 3): it only proves the UI
+    // calls it, the same way companionModeEnter/Exit do nothing for a mock with no real window.
+    windowSaveZoom: async () => {},
     subscribeNotices: (onNotice) => {
       const text = initial.notice;
       if (!text) return () => {};

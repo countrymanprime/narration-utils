@@ -98,4 +98,8 @@ export interface SystemApi {
    * regardless of what factor is sent (Q6, ADR 0201). Called from the header's buttons, Ctrl+=/-/0, reset, and the
    * "set back to 200%" clamp the UI runs when it sees an external (Ctrl+wheel or pinch) zoom above the ceiling. */
   windowSetZoom(factor: number): Promise<WindowZoom>;
+  /** Persists the window's zoom level so the next launch opens at it (app-navigation-and-zoom-controls.prd.md Phase
+   * 3, Q4 A: one app-wide level, not per project). Called from the header's useZoom hook, debounced, whenever the
+   * level settles - a button, a shortcut, or the resize re-read that picks up an external Ctrl+wheel/pinch change. */
+  windowSaveZoom(level: number): Promise<void>;
 }
