@@ -1,6 +1,6 @@
 # 0360. Studio primitives land as flat leaf files after one token batch, and capability gating is a primitive
 
-**Status:** Accepted (its Q1 booth token block, `[data-surface='booth']` over `FocusShell` whatever the theme, is superseded by [ADR 0365](0365-the-theme-is-one-global-setting-and-the-booth-and-companion-follow-it.md): the booth follows the app theme; the rest stands)
+**Status:** Accepted (its Q1 booth token block, `[data-surface='booth']` over `FocusShell` whatever the theme, is superseded by [ADR 0365](0365-the-theme-is-one-global-setting-and-the-booth-and-companion-follow-it.md): the booth follows the app theme; its Q6 StatusBadge tones gain `accent` and `org` in [ADR 0600](0600-every-pill-tag-and-status-dot-is-one-badge-primitive-with-a-pill-a-tag-and-a-booth-shape.md); the rest stands)
 **Date:** 2026-09-26
 **Supersedes:**
 

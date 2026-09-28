@@ -30,6 +30,26 @@ export const ACast: Story = {
   ),
 };
 
+// The Booth's tag beside the script (mock 03): the same tag at 26 px, radius 4 (ADR 0600).
+export const BoothSize: Story = {
+  args: { label: 'March Hare', speakerId: 'march-hare', size: 'booth' },
+  play: async ({ canvasElement }) => {
+    const { height } = within(canvasElement).getByText('March Hare').getBoundingClientRect();
+    // Measured in the atlas's browser; jsdom (stories.test.tsx) lays nothing out.
+    if (height > 0) await expect(height).toBeCloseTo(26, 0);
+  },
+};
+
+// The Script's tag (mock 02): 16 px on the 3 px tag radius.
+export const ScriptSize: Story = {
+  args: { label: 'Queen', speakerId: 'queen' },
+  play: async ({ canvasElement }) => {
+    const { height } = within(canvasElement).getByText('Queen').getBoundingClientRect();
+    // Measured in the atlas's browser; jsdom (stories.test.tsx) lays nothing out.
+    if (height > 0) await expect(height).toBeCloseTo(16, 0);
+  },
+};
+
 export const Interactive: Story = { args: { onActivate: fn() } };
 
 export const ClickActivates: Story = {
