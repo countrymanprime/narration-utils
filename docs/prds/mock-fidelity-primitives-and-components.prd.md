@@ -448,7 +448,7 @@ The dark sets show pill heights of 18, 21, 23, 24, 25 and 26 px, with the OK fil
   - Make body copy `--text-muted` by default.
   - Keep ADR 0002's placement: the mocks follow it except in daw/01 and credits/01. Record which convention wins as a Q for the owner, recommending ADR 0002's rule.
   - The slide-over draws a transparent backdrop (Q4).
-  - Invert the toast (new `--toast-bg`/`--toast-text` aliases of `--text`/`--surface`, checked for contrast).
+  - Invert the toast (`--toast-bg`/`--toast-text`, aliases of `--text`/`--bg` from Phase 0b: the dark set draws the toast text in `--bg`, ADR 0590).
   - Match the popover padding and offset.
 - **Migrate:**
   - `storybible/GuideDetail.tsx:633`, a hand-drawn listbox that becomes a Popover.
@@ -745,7 +745,7 @@ Paths are under `apps/ui/src/` unless they start with `apps/`, `docs/` or `tests
 
 | ADR | What happens to it |
 | --- | --- |
-| [0362](../adr/0362-studio-token-batch-aliases-meter-and-badge-colours-and-a-minimal-booth-override.md) (badge fills at 14%) | Phase 0b supersedes the badge-fill clause (Q3); its meter aliases stand |
+| [0362](../adr/0362-studio-token-batch-aliases-meter-and-badge-colours-and-a-minimal-booth-override.md) (badge fills at 14%) | Phase 0b supersedes the badge-fill clause (Q3) in [ADR 0590](../adr/0590-the-mock-fidelity-token-batch-fills-badges-with-opaque-soft-tokens-and-names-the-mocks-sizes-and-type.md); its meter aliases stand |
 | [0360](../adr/0360-studio-primitives-land-as-flat-leaf-files-after-one-token-batch-and-capability-gating-is-a-primitive.md) (one token batch before the studio primitives) | Kept: Phase 0b is that batch for this PRD, and a later token need is a follow-up batch, not a feature PR's edit |
 | [0365](../adr/0365-the-theme-is-one-global-setting-and-the-booth-and-companion-follow-it.md) (one global theme) | Kept; Phase 13's reading-surface tokens have a value in each theme |
 | [0003](../adr/0003-tailwind-tokenized-primitives.md), [0009](../adr/0009-complete-tailwind-migration.md), [0017](../adr/0017-no-legacy-css-shadowing-tailwind.md) (tokens, Tailwind, no legacy CSS) | Kept; Phase 4 removes `.section-label`, one of ADR 0009's remaining classes, if no test selects by it |
@@ -763,7 +763,8 @@ Paths are under `apps/ui/src/` unless they start with `apps/`, `docs/` or `tests
 **ADR numbers.** This PRD's block is 0585–0589:
 
 - 0585 is taken by Phase 0a.
-- 0586 is reserved for Phase 0b, 0587 for Phase 1 and 0588 for Phase 3.
+- Phase 0b took 0590 from its stream's block (0590–0594), so 0586 is spare.
+- 0587 is reserved for Phase 1 and 0588 for Phase 3.
 - 0589 is spare for the next phase that needs one.
 
 Later phases take their numbers from the block the coordinator gives their stream. Check `docs/adr/` at write time.
