@@ -205,8 +205,8 @@ const mockChapterLink = (['missing', 'ambiguous', 'confirmed'] as const).find((s
 // `?mockLineIdentity=success|conflict|error` boots the Tracks page's "Link chapters" dialog with LineIdentityState already at that
 // result, so its stale/conflict/drift and error states can be seen without a real REAPER round trip.
 const mockLineIdentity = (['success', 'conflict', 'error'] as const).find((seed) => seed === mockParams.get('mockLineIdentity'));
-// `?mockPickups=import-success|next-success|export-success|error` boots the Tracks page's "Pickups" dialog with
-// PickupsState already at that result, so the remaining-count, next and export states can be seen without a real
+// `?mockPickups=import-success|next-success|export-success|error` boots the Pickups page (and the Booth companion's
+// Pickups section) with PickupsState already at that result, so the remaining-count, next and export states can be seen without a real
 // REAPER round trip.
 const mockPickups = (['import-success', 'next-success', 'export-success', 'error'] as const).find((seed) => seed === mockParams.get('mockPickups'));
 // `?mockRenderConfig=success|no-regions|error` boots the Tracks page's "Prepare chapter render" dialog with

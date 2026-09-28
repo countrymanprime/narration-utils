@@ -10,7 +10,7 @@ const IDLE: RenderConfigState = { phase: 'idle', message: '', folder: '', target
 /** Per-chapter render configuration (reaper-automation-follow-through PRD, Phase 11, Open Question 7 answered
  * (a)): configure only. Sets the render bounds to all regions, the naming pattern to the region name, and the
  * output folder; this dialog never triggers a render itself. Reachable from the Tracks page next to "Link
- * chapters…" and "Pickups…" (Phases 7 and 9), not a new nav item. */
+ * chapters…" (Phase 7), not a new nav item. */
 export function RenderConfigDialog({ onClose }: { onClose: () => void }) {
   const api = useApi();
   const [state, setState] = useState<RenderConfigState>(IDLE);
