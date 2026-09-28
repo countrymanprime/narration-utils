@@ -96,6 +96,36 @@ export const AutomaticActivationFollowsFocus: Story = {
   },
 };
 
+// Measured on the benchmark mocks (mock-fidelity-primitives-and-components.prd.md Phase 5, ADR 0625): the selected
+// underline tab's text is `--accent-strong`, distinct from an unselected tab's `--text-muted`, with a 2 px underline.
+export const MeasuredShapes: Story = {
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const selected = canvas.getByRole('tab', { name: 'All · 3' });
+    const unselected = canvas.getByRole('tab', { name: 'Places · 3' });
+    // Measured in the atlas's browser; jsdom (stories.test.tsx) loads no stylesheet — `getBoundingClientRect` stays 0 there
+    // (jsdom does no layout at all), which the height check below uses as the gate, the same one StatusBadge.stories.tsx
+    // uses. `getComputedStyle` is not a safe gate here: jsdom still answers it with non-zero initial values.
+    if (selected.getBoundingClientRect().height === 0) return;
+    const selectedStyle = getComputedStyle(selected);
+    await expect(selectedStyle.borderBottomWidth).toBe('2px');
+    await expect(selectedStyle.textTransform).toBe('uppercase');
+    await expect(selectedStyle.color).not.toBe(getComputedStyle(unselected).color);
+  },
+};
+
+// The sidebar tab's selected fill moved onto the `--accent-soft` token (Phase 0b), so it is a solid colour, not a
+// translucent `color-mix` over whatever sits behind it.
+export const SidebarMeasuredFill: Story = {
+  render: () => <SideTabs />,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const selected = canvas.getByRole('tab', { name: 'Appearance' });
+    if (selected.getBoundingClientRect().height === 0) return;
+    await expect(getComputedStyle(selected).backgroundColor).not.toBe('rgba(0, 0, 0, 0)');
+  },
+};
+
 export const SidebarUsesTheVerticalArrows: Story = {
   render: () => <SideTabs />,
   play: async ({ canvasElement }) => {
