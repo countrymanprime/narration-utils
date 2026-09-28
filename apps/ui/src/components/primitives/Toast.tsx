@@ -1,14 +1,17 @@
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import type { IconDefinition } from '@fortawesome/fontawesome-svg-core';
 import { faCircleExclamation, faXmark } from '@fortawesome/free-solid-svg-icons';
 import { useEffect, useState } from 'react';
 
 export type ToastTone = 'info' | 'error';
 /** A toast's one action (for example Undo): its own label, run when pressed, which also dismisses the toast. */
 export type ToastAction = { label: string; onAction: () => void };
-export type ToastMessage = { id: number; text: string; tone: ToastTone; action?: ToastAction };
+export type ToastMessage = { id: number; text: string; tone: ToastTone; action?: ToastAction; icon?: IconDefinition };
 /** How a page or a component tells the narrator something. An error is announced at once and stays until it is dismissed (ADR 0075).
- * `action` adds one button (for example Undo) before the dismiss button; pressing it runs the action and dismisses the toast. */
-export type Notify = (text: string, tone?: ToastTone, action?: ToastAction) => void;
+ * `action` adds one button (for example Undo) before the dismiss button; pressing it runs the action and dismisses the toast.
+ * `icon` leads an information message with the glyph of what it is about (the track glyph for a chapter sync); an error always
+ * leads with its warning glyph. */
+export type Notify = (text: string, tone?: ToastTone, action?: ToastAction, icon?: IconDefinition) => void;
 
 /** How long an information message stays. An error has no timer. */
 export const TOAST_INFO_MS = 5_000;
@@ -30,9 +33,15 @@ function ToastItem({ message, dismiss }: { message: ToastMessage; dismiss: (id: 
   return (
     <div
       data-tone={message.tone}
-      className={`ease flex items-center gap-[0.6rem] rounded-[0.4rem] bg-[var(--text)] px-4 py-[0.65rem] text-[0.85rem] text-[var(--bg)] shadow-[var(--shadow)] motion-safe:transition-[opacity,transform] motion-safe:duration-150 ${sticky ? 'border-l-4 border-[var(--danger)]' : ''} ${leaving ? 'translate-y-1 opacity-0' : 'opacity-100'}`}
+      // Inverted in both themes (ADR 0590's --toast-bg/--toast-text), 45 px tall with a leading glyph, radius 6
+      // (daw-chapter-track-auto-sync/03).
+      className={`ease flex min-h-[2.8125rem] items-center gap-[0.625rem] rounded-[var(--radius-button)] bg-[var(--toast-bg)] px-4 py-2 text-[0.85rem] text-[var(--toast-text)] shadow-[var(--shadow)] motion-safe:transition-[opacity,transform] motion-safe:duration-150 ${sticky ? 'border-l-4 border-[var(--danger)]' : ''} ${leaving ? 'translate-y-1 opacity-0' : 'opacity-100'}`}
     >
-      {sticky && <FontAwesomeIcon icon={faCircleExclamation} aria-hidden="true" />}
+      {sticky ? (
+        <FontAwesomeIcon icon={faCircleExclamation} aria-hidden="true" />
+      ) : (
+        message.icon && <FontAwesomeIcon icon={message.icon} aria-hidden="true" className="flex-none" />
+      )}
       <span className="min-w-0 break-words">{message.text}</span>
       {message.action && (
         <button
