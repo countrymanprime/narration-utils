@@ -13,6 +13,7 @@ import { createWorkspaceMock, mockMisreadFindingSource } from './workspaceMock';
 import { createPreviewMock } from './previewMock';
 import { createProductionMock } from './productionMock';
 import { createStagesMock } from './stagesMock';
+import { createProofingRenderMock } from './proofingRenderMock';
 import { createDawMock } from './dawMock';
 import { createProvidersMock } from './providersMock';
 import { createFindingsMock } from './findingsMock';
@@ -170,6 +171,12 @@ export function createMockApi(
   const takeReviewScan = createTakeReviewScanMock(saveAnalyzerFindings, endJob, initial.takeReviewScanHold);
   const takeComparison = createTakeComparisonMock({ get: findings.findingsGet, save: saveFinding }, endJob, initial.takeComparisonHold);
   const measurePicked = new Set<string>();
+  const { recordMeasurement: recordRenderMeasurement, ...proofingRender } = createProofingRenderMock({
+    ready: manuscriptReady,
+    chapters: () => s.chapters,
+    picked: measurePicked,
+    seed: initial.proofingRender,
+  });
   const { current: deliveryProfile, ...deliveryProfiles } = createDeliveryProfilesMock(initial.deliveryProfile);
   const { peekDiagnostics, ...diagnostics } = createDiagnosticsMock(endJob, measurePicked, initial.diagnostics);
   const editing = createEditingMock(initial.editing);
@@ -186,6 +193,7 @@ export function createMockApi(
   const { resaveReview, ...measurement } = createMeasureMock(endJob, initial.measure, measurePicked, deliveryProfile, peekDiagnostics, (job) => {
     const review = mockDeliveryReviewFindings(job);
     saveFileFindings(DELIVERY_REVIEW_ANALYZER, review.files, review.findings);
+    recordRenderMeasurement(job.files);
   });
   const system = createSystemMock(s, initial, {
     version: update.version,
@@ -226,6 +234,7 @@ export function createMockApi(
     ...workspace,
     ...preview,
     ...stages,
+    ...proofingRender,
     ...production,
     ...findings,
     // Merge the workspace's own loop into the shared REAPER status/stop, after ...findings so these win: one app

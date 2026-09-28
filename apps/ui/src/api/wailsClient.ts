@@ -64,6 +64,7 @@ import { editingCandidatesSchema, editingStartResultSchema, editingStateSchema }
 import { workspaceAlignmentResultSchema } from './schemas/workspace';
 import { previewResultSchema } from './schemas/preview';
 import { stageDecisionResultSchema, stageRecommendationsSchema } from './schemas/stages';
+import { proofingChooseRenderResultSchema, proofingRenderSchema } from './schemas/proofingRender';
 import { productionOverviewSchema, productionPlanSchema, productionStartResultSchema, productionStopResultSchema } from './schemas/production';
 import { findingMarkerSchema, findingNavigationSchema, findingSchema, findingsPageSchema, findingsSummarySchema, reaperStatusSchema } from './schemas/findings';
 import { assetCatalogSchema, assetInstallJobSchema, assetVerifyResultSchema } from './schemas/assets';
@@ -358,6 +359,9 @@ export const wailsClient: NarrationApi = {
   stageConfirm: (chapterId, target, basisKey) => decode(stageDecisionResultSchema, 'StageConfirm', host.StageConfirm(chapterId, target, basisKey)),
   stageDismiss: (chapterId, target, basisKey) => decode(stageDecisionResultSchema, 'StageDismiss', host.StageDismiss(chapterId, target, basisKey)),
   stageRevert: (chapterId) => decode(stageDecisionResultSchema, 'StageRevert', host.StageRevert(chapterId)),
+  proofingRenderState: (chapterId) => decode(proofingRenderSchema, 'ProofingRenderState', host.ProofingRenderState(chapterId)),
+  proofingChooseRender: (chapterId) => decode(proofingChooseRenderResultSchema, 'ProofingChooseRender', host.ProofingChooseRender(chapterId)),
+  proofingClearRender: (chapterId) => decode(proofingRenderSchema, 'ProofingClearRender', host.ProofingClearRender(chapterId)),
   productionOverview: () => decode(productionOverviewSchema, 'ProductionOverview', host.ProductionOverview()),
   productionStartTimer: (chapterId, stage) => decode(productionStartResultSchema, 'ProductionStartTimer', host.ProductionStartTimer(chapterId, stage)),
   productionStopTimer: () => decode(productionStopResultSchema, 'ProductionStopTimer', host.ProductionStopTimer()),

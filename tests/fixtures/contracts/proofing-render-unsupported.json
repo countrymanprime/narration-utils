@@ -1,0 +1,11 @@
+{
+  "attestedAt": "2026-09-21T10:00:00Z",
+  "cause": "measurement_unavailable",
+  "format": "mp3",
+  "measuredAt": null,
+  "measurement": null,
+  "measurementFailed": false,
+  "path": "C:/Projects/Alice/Renders/Chapter 01.mp3",
+  "reason": "The rendered file is not a WAV file; only a WAV render is measured. Choose the WAV render the delivered file was made from.",
+  "state": "unsupported"
+}
