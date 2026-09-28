@@ -48,6 +48,7 @@ import { workspaceAlignmentResultSchema } from './schemas/workspace';
 import { previewResultSchema } from './schemas/preview';
 import { STAGE_REFUSAL_REASONS, STAGE_UNKNOWN_CAUSES, stageDecisionResultSchema, stageRecommendationsSchema } from './schemas/stages';
 import {
+  productionBurndownSchema,
   productionOverviewSchema,
   productionPlanSchema,
   productionReportExportSchema,
@@ -2153,6 +2154,7 @@ describe('answers of the mock client for the settings, voice, model, transcript 
       'productionStartTimer',
       'productionStopTimer',
       'productionStatusReport',
+      'productionBurndown',
       'takeComparisonStart',
       'takeComparisonState',
       'takeComparisonCancel',
@@ -2367,6 +2369,18 @@ describe('the production tracking mock', () => {
     expectMatches(productionReportExportSchema, included, 'mock production status report, opted in');
     expect(included.contractedAmountIncluded).toBe(true);
     expect(included.jsonFile).not.toBe(left.jsonFile);
+  });
+
+  it('the burndown is empty with nothing logged, and cumulative by day once a seed logs some', async () => {
+    const empty = await createMockApi().productionBurndown();
+    expectMatches(productionBurndownSchema, empty, 'mock production burndown, nothing logged');
+    expect(empty).toEqual([]);
+
+    const seeded = await createMockApi({}, { production: PRODUCTION_SCENARIOS['on-pace'] }).productionBurndown();
+    expectMatches(productionBurndownSchema, seeded, 'mock production burndown, on-pace');
+    expect(seeded.length).toBeGreaterThan(0);
+    expect(seeded.at(-1)?.hoursLogged).toBeCloseTo(seeded.reduce((max, point) => Math.max(max, point.hoursLogged), 0));
+    for (let i = 1; i < seeded.length; i++) expect(seeded[i].hoursLogged).toBeGreaterThanOrEqual(seeded[i - 1].hoursLogged);
   });
 
   it.each(['on-pace', 'at-risk'] as const)('seeds a %s book whose figures come from its log and measured audio only', async (seed) => {

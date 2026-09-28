@@ -6,7 +6,7 @@
 
 ## Context
 
-The [production tracking PRD](../prds/production-tracking.prd.md) (Phase 5) adds a **status report export**: an HTML page and a JSON file, written into the project's own `narration-utils/production/reports` folder, carrying the same figures the Production page just showed (hours by stage, book PFH, the deadline and milestone status, and book-wide readiness counts, [ADR 0320](0320-pfh-and-the-effective-rate-come-only-from-logged-hours-and-measured-recorded-time.md)).
+The production tracking PRD (delivered and deleted; `git log --diff-filter=D -- docs/prds/production-tracking.prd.md` finds it) Phase 5 adds a **status report export**: an HTML page and a JSON file, written into the project's own `narration-utils/production/reports` folder, carrying the same figures the Production page just showed (hours by stage, book PFH, the deadline and milestone status, and book-wide readiness counts, [ADR 0320](0320-pfh-and-the-effective-rate-come-only-from-logged-hours-and-measured-recorded-time.md)).
 
 Unlike the delivery report ([`internal/deliveryreport`](../../apps/desktop/internal/deliveryreport)), which the narrator keeps for their own records, a status report is the kind of document a narrator hands to someone else: a publisher, a collaborator, a rights holder checking on progress. Two of the figures the page shows — the contracted amount and the effective hourly rate — are financial facts about the narrator's own business, not facts about the book's production progress. A recipient who only needs to know "is chapter 4 on pace" has no need to also learn what the book pays.
 

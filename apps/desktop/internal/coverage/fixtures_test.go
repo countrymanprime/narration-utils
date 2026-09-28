@@ -35,11 +35,18 @@ type testItem struct {
 }
 
 type testProject struct {
-	t      *testing.T
-	dir    string
-	rpp    string
-	items  []testItem
-	tracks int // extra tracks with no items
+	t       *testing.T
+	dir     string
+	rpp     string
+	items   []testItem
+	tracks  int // extra tracks with no items
+	credits map[string]testCreditsTemplate
+}
+
+// testCreditsTemplate is a testProject's stand-in for a credits row's rendered title and text (credit.go's
+// LoadCredits), so a test can seed, change or omit one without a real credits.TemplateStore.
+type testCreditsTemplate struct {
+	title, text string
 }
 
 func newTestProject(t *testing.T) *testProject {
@@ -96,6 +103,24 @@ func (p *testProject) loadManuscript() (map[string]any, error) {
 	return data, json.Unmarshal(raw, &data)
 }
 
+// setCredits seeds kind's ("opening" or "closing") rendered template for loadCredits, replacing any earlier one.
+func (p *testProject) setCredits(kind, title, text string) {
+	if p.credits == nil {
+		p.credits = map[string]testCreditsTemplate{}
+	}
+	p.credits[kind] = testCreditsTemplate{title: title, text: text}
+}
+
+// loadCredits is the testProject's Config.LoadCredits: a plain lookup into credits, refusing a kind that was never
+// seeded (CT5: the library has no template of that kind yet).
+func (p *testProject) loadCredits(kind string) (string, string, error) {
+	template, ok := p.credits[kind]
+	if !ok {
+		return "", "", fmt.Errorf("no %s credits template", kind)
+	}
+	return template.title, template.text, nil
+}
+
 func (p *testProject) confirm(documentID, trackGUID, chapterID string) {
 	p.t.Helper()
 	if _, err := evidence.NewMappingStore(p.dir).Confirm(documentID, trackGUID, chapterID, "Chapter One"); err != nil {
@@ -145,6 +170,7 @@ func (p *testProject) service(sidecar *fakeSidecar) *Service {
 		Backend:        "compare.py",
 		ProjectFile:    func() (string, error) { return p.rpp, nil },
 		LoadManuscript: p.loadManuscript,
+		LoadCredits:    p.loadCredits,
 	}, sidecar.launcher(), nil)
 	service.pollInterval = time.Millisecond
 	return service

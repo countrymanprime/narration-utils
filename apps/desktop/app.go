@@ -511,7 +511,17 @@ func (h *Host) configureLocked(next config) {
 		Project: h.config.projectFolder, Python: h.config.comparePython, Backend: h.config.compareBackend,
 		ProjectFile:    func() (string, error) { return selectedProjectFile(projectFolder, settingsStore) },
 		LoadManuscript: h.manuscript.Load,
-		Reporter:       h.persist,
+		// A credits row's check (credits-in-chapter-table.prd.md Phase 3) measures the same first-of-kind template
+		// render the Home row and the teleprompter show (h.creditsScript, ADR 0093, ADR 0150), never manuscript
+		// paragraphs.
+		LoadCredits: func(kind string) (string, string, error) {
+			script, err := h.creditsScript(kind)
+			if err != nil {
+				return "", "", err
+			}
+			return script.Title, script.Text, nil
+		},
+		Reporter: h.persist,
 		// DAW port PRD Phase 5d: reads the saved .rpp through the port's offline role instead of tracks.Parse directly.
 		ProjectReader: reaper.ProjectReader{},
 	}, h.coverageLauncherLocked(), h.emitCoverage)
