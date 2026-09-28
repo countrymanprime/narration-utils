@@ -154,7 +154,7 @@ function PerFileChecks() {
     <div tabIndex={0} role="region" aria-label="Per-file checks, scrolls sideways" className="max-w-2xl overflow-x-auto">
       <div className="min-w-[40rem]">
         <Panel title="Per-file checks" subtitle="measured on the rendered files · true peak (EBU R128)" flush>
-          <Table label="Per-file checks">
+          <Table label="Per-file checks" flush>
             <TableHead>
               <TableRow>
                 <TableHeader>File</TableHeader>

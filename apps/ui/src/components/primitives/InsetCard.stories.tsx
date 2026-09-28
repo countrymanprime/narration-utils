@@ -5,7 +5,7 @@ import { Heading } from './Heading';
 import { InsetCard } from './InsetCard';
 import { Panel } from './Panel';
 
-// A card inside a card: a 1 px frame, a 6 px radius and 12 px inside (ADR 0640). `tone` colours the frame, `fill` lifts
+// A card inside a card: a 1 px frame, a 6 px radius and 12 px inside, on the surface (ADR 0640). `tone` colours the frame, `fill` lifts
 // it onto `--surface-2`, and `dashed` marks a placeholder.
 const meta = {
   title: 'Primitives/InsetCard',

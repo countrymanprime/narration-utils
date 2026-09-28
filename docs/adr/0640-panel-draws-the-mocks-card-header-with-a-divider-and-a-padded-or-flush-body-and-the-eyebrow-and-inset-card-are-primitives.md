@@ -45,7 +45,7 @@ A subtitle keeps to the title's line and wraps inside its own box while it has 1
 
 **SectionLabel** is a new primitive for the eyebrow: Barlow Condensed at `--font-size-label` (11 px), weight 600, uppercase, `--tracking-label` (0.1 em), `--text-muted`. `as` picks the element: a heading when it names a region, a `legend` over a fieldset, a `span` by default. The global `.section-label` class draws the same thing from the same tokens, for the files later phases own. Those files are the Script page, the Master page, the Booth and the shell's nav groups (Phase 8). This phase doesn't edit them, so the class stays until they migrate.
 
-**InsetCard** is a new primitive for a card inside a card: a 1 px border, a 6 px radius and 12 px inside it. It has these props:
+**InsetCard** is a new primitive for a card inside a card: a 1 px border, a 6 px radius and 12 px inside it, on `--surface`. That is the panel it sits in; where it sits on the page (the Booth's resume prompt) it stays an opaque card, so its text keeps the contrast it was checked at. It has these props:
 
 - `tone` colours the frame: `accent`, `warn` or `danger`.
 - `fill` sets it on `--surface-2`.
