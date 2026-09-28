@@ -1,4 +1,5 @@
 import { Fragment, memo, useEffect, useMemo, useRef, type ReactNode, type RefObject } from 'react';
+import { SpeakerTag } from '../manuscript/SpeakerTag';
 import { Highlight, highlightKind, type HighlightKind } from '../primitives/Highlight';
 import { TooltipTarget } from '../primitives/Tooltip';
 import { flagHint } from './readerFlags';
@@ -209,6 +210,8 @@ export function ReaderText({
   marks,
   onOpenMark,
   readerRef,
+  speakers,
+  large = false,
 }: {
   rows: ReaderRow[];
   cursor: number;
@@ -222,6 +225,14 @@ export function ReaderText({
   onOpenMark?: (mark: ReaderMark) => void;
   /** The reader element, for `useFollowCursor` (engines PRD Phase 10), which pauses `follow` while the narrator scrolls by hand. */
   readerRef?: RefObject<HTMLDivElement | null>;
+  /**
+   * The speaker of each attributed paragraph, by row key (the Booth, mock 03, audit BO4: prep-depth's speaker attribution,
+   * the same `speakerLabelForParagraph` the Script reader shows). When at least one row has a speaker, every row gets a
+   * gutter so the text keeps one left edge; an unattributed row's gutter stays empty, never a guessed name.
+   */
+  speakers?: Map<string, string>;
+  /** The Booth's full-bleed reading size (mock 03, audit BO3): larger type with more air between lines. */
+  large?: boolean;
 }) {
   const ownRef = useRef<HTMLDivElement>(null);
   const container = readerRef ?? ownRef;
@@ -231,17 +242,30 @@ export function ReaderText({
     if (follow) scrollCursorIntoView(container.current);
   }, [container, cursor, follow]);
 
+  const gutter = Boolean(speakers?.size);
+  // The Booth's type never drops below 24 px (1.5rem), WCAG's large text, at any width: with no card, a read word's muted
+  // colour on a single mark's tint sits over the page background, 4.4:1, which passes as large text only.
+  const typeClass = large ? 'space-y-7 text-[1.5rem] leading-[2.4rem] md:text-[1.6rem] md:leading-[2.75rem]' : 'space-y-5 text-[1.35rem] leading-[2.1rem]';
   return (
-    <div ref={container} className="space-y-5 text-[1.35rem] leading-[2.1rem]" aria-label="Chapter text" role="region">
+    <div ref={container} className={typeClass} aria-label="Chapter text" role="region">
       {rows.map((row) => {
         const content = (
           <RowContent row={row} cursor={cursor} skipped={skipped} onSeek={onSeek} marks={marks?.get(row.key) ?? NO_MARKS} onOpenMark={onOpenMark} />
         );
+        const speaker = speakers?.get(row.key);
+        // The gutter (from `lg`; below it the tag sits above its paragraph, so a narrow text column keeps its width).
+        if (gutter && row.kind === 'paragraph')
+          return (
+            <div key={row.key} className="lg:grid lg:grid-cols-[7rem_minmax(0,1fr)] lg:gap-x-4">
+              <div className="leading-none lg:pt-[0.6em]">{speaker && <SpeakerTag label={speaker} />}</div>
+              <p className="whitespace-pre-line">{content}</p>
+            </div>
+          );
         return row.kind === 'title' ? (
           // Source casing, never CSS capitals (chapter-title-display-consistency.prd.md Q2/Q9): what is read aloud is
           // what is shown. Stacked, like TitleSubtitle's own layout: the subtitle is a muted line under the title,
           // with a visually hidden " — " between them so the two lines still read as one name to a screen reader.
-          <h2 key={row.key} className="font-['Barlow_Condensed',sans-serif] leading-tight tracking-[0.02em] normal-case">
+          <h2 key={row.key} className={`font-['Barlow_Condensed',sans-serif] leading-tight tracking-[0.02em] normal-case ${gutter ? 'lg:pl-[8rem]' : ''}`}>
             <span className="block text-[1.7rem] font-semibold">{content}</span>
             {row.subtitle && (
               <>

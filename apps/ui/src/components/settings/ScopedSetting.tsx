@@ -31,9 +31,9 @@ const TOOLTIP: Record<string, string> = {
   check_on_startup:
     'Once a day, when the app starts, it asks GitHub whether a newer release exists. It sends nothing about you or your projects, and it never downloads anything without your click.',
   channel: 'Release candidates are the pre-releases that come before each stable release; every release so far is one.',
-  input_device: 'The microphone the Teleprompter listens to. Choose it from the list on the Teleprompter page; it is remembered here.',
+  input_device: 'The microphone the Booth listens to. Choose it from the list in the Booth; it is remembered here.',
   engine:
-    'Which local speech engine listens for your voice during a Teleprompter session. Moonshine is offered on Windows only. Choosing one never downloads anything: a missing model is asked for when you start reading.',
+    'Which local speech engine listens for your voice during a Booth session. Moonshine is offered on Windows only. Choosing one never downloads anything: a missing model is asked for when you start reading.',
   model: 'Which model size the live engine loads. Tiny keeps up on most computers; Small is more accurate but needs a faster one.',
   reaper_path: 'Leave blank to auto-detect reaper.exe. Set this only when auto-detect finds the wrong install or none at all.',
   auto_start_launcher:
