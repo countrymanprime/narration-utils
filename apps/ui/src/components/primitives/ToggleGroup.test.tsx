@@ -73,4 +73,26 @@ describe('ToggleGroup', () => {
     await user.tab();
     expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Normal' }));
   });
+
+  // The segmented look (mock-fidelity-primitives-and-components.prd.md Phase 5, the Master platform switch): one container,
+  // still a named group of pressed chips underneath.
+  it('is the same group and chips in the segmented look', async () => {
+    const onChange = vi.fn();
+    render(
+      <ToggleGroup
+        label="Platform"
+        look="segmented"
+        value="acx"
+        options={[
+          { value: 'acx', label: 'ACX' },
+          { value: 'kobo', label: 'Kobo' },
+        ]}
+        onChange={onChange}
+      />,
+    );
+    const group = screen.getByRole('group', { name: 'Platform' });
+    expect(within(group).getByRole('button', { name: 'ACX' }).getAttribute('aria-pressed')).toBe('true');
+    await userEvent.setup().click(within(group).getByRole('button', { name: 'Kobo' }));
+    expect(onChange).toHaveBeenCalledWith('kobo');
+  });
 });
