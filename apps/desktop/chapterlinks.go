@@ -120,6 +120,13 @@ type trackSummary struct {
 type chapterTrackLink struct {
 	ChapterID    string `json:"chapterId"`
 	ChapterTitle string `json:"chapterTitle"`
+	// ChapterSubtitle is the chapter's subtitle field ("" when it has none). It
+	// never reaches the wire (json:"-"): the UI already builds its own display
+	// name with chapterName(). It exists so a host-side consumer that writes a
+	// chapter's name as plain text (chapterRegionPlanIn, Q7 of
+	// chapter-title-display-consistency.prd.md, owner decision D34) can follow
+	// the same rule without a new wire payload.
+	ChapterSubtitle string `json:"-"`
 	chaptermatch.Result
 	Links       []evidence.TrackMapping `json:"links"`
 	RecordedEnd *tracks.RecordedEnd     `json:"recordedEnd"`
@@ -165,9 +172,15 @@ func chapterTrackLinksIn(svc hostServices) (chapterTrackLinks, error) {
 	}
 	chapters := make([]chaptermatch.Chapter, 0, len(raw))
 	narration := make([]chaptermatch.Chapter, 0, len(raw))
+	// subtitles holds each chapter's subtitle by id, off to the side of chaptermatch.Chapter: the matcher compares
+	// titles only (chapter-title-display-consistency.prd.md, "No change to what the chapter matchers compare"), so
+	// the subtitle never joins the matched/narration lists above, only chapterTrackLink's own (non-wire) field below.
+	subtitles := make(map[string]string, len(raw))
 	for _, chapter := range raw {
 		id, _ := chapter["id"].(string)
 		title, _ := chapter["title"].(string)
+		subtitle, _ := chapter["subtitle"].(string)
+		subtitles[id] = subtitle
 		chapters = append(chapters, chaptermatch.Chapter{ID: id, Title: title})
 		if kind, _ := chapter["contentKind"].(string); kind == "" || kind == "narration" {
 			narration = append(narration, chaptermatch.Chapter{ID: id, Title: title})
@@ -184,7 +197,7 @@ func chapterTrackLinksIn(svc hostServices) (chapterTrackLinks, error) {
 		}
 	}
 	for _, chapter := range narration {
-		row := chapterTrackLink{ChapterID: chapter.ID, ChapterTitle: chapter.Title, Links: []evidence.TrackMapping{}}
+		row := chapterTrackLink{ChapterID: chapter.ID, ChapterTitle: chapter.Title, ChapterSubtitle: subtitles[chapter.ID], Links: []evidence.TrackMapping{}}
 		for _, mapping := range mappings {
 			if mapping.ChapterID == chapter.ID {
 				row.Links = append(row.Links, mapping)
