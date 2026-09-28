@@ -187,6 +187,14 @@ found. **Check editing** (**Check again** once one has run) runs the scan with r
 result carries the caveat "Analysis of source audio; take FX, item gain and fades are not
 applied", since REAPER's own processing isn't part of what's analyzed.
 
+A chapter's analysis source is your choice: **Items on this chapter's track** (the default) or
+**The rendered file**, a toggle near the top of the panel. Editing happens on items, so items stay
+the default; choosing the render is an explicit second check — its own evidence line always says
+which source was analyzed, and the render check needs a rendered file already chosen for the
+chapter (see [Proof](proof.md#delivery-checks) for choosing one). If the render changes, or
+becomes older than a later edit to the chapter's items, the render's own check reads "Can't tell
+yet" until you check it again.
+
 Each of the three classes — Empty space, Click, Breath — has its own state: **Met** (checked, no
 open candidate remains), **Not met** (one or more open candidates), or **Can't tell yet** with why
 (not checked yet, changed since the last check, no track linked, a maximum gap not set in

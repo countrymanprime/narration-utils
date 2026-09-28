@@ -80,6 +80,22 @@ func processedAudioCaveat() stages.Evidence {
 	return stages.Evidence{Kind: "caveat", Label: "Caveat", Value: "Analysis of source audio; take FX, item gain and fades are not applied."}
 }
 
+// itemsSourceEvidence and renderSourceEvidence are Q6's own requirement,
+// Phase 8 of editing-readiness-analysis.prd.md: "the evidence names which
+// [source] was analyzed", for both choices, not only the render one. Every
+// editing signal carries exactly one of these, always, whatever its state -
+// EmptySpaceSignal (the item path, below) and RenderEmptySpaceSignal
+// (render_signal.go) each add their own at construction; provider.go adds
+// the item one to the click/breath UnvalidatedSignal calls it makes, and
+// render_signal.go's RenderClickBreathEvidence does the same for render.
+func itemsSourceEvidence() stages.Evidence {
+	return stages.Evidence{Kind: "source", Label: "Source analyzed", Value: "items on the chapter's track"}
+}
+
+func renderSourceEvidence() stages.Evidence {
+	return stages.Evidence{Kind: "source", Label: "Source analyzed", Value: "the rendered file (FX and edits included)"}
+}
+
 // EmptySpaceInput is everything EmptySpaceSignal reads.
 type EmptySpaceInput struct {
 	Coverage   ChapterCoverage
@@ -97,7 +113,7 @@ type EmptySpaceInput struct {
 // cause, for everything else. The same input always gives the same signal.
 func EmptySpaceSignal(in EmptySpaceInput) stages.Signal {
 	signal := stages.Signal{
-		ID: EmptySpaceSignalID, Stage: stages.StageEditing, Evidence: []stages.Evidence{processedAudioCaveat()},
+		ID: EmptySpaceSignalID, Stage: stages.StageEditing, Evidence: []stages.Evidence{processedAudioCaveat(), itemsSourceEvidence()},
 		Basis: in.Basis, ComputedAt: in.ComputedAt,
 	}
 	if cause, reason, ok := mappingCause(in.Coverage, in.Unconfirmed()); ok {

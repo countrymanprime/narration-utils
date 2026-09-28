@@ -28,6 +28,11 @@
             "kind": "caveat",
             "label": "Caveat",
             "value": "Analysis of source audio; take FX, item gain and fades are not applied."
+          },
+          {
+            "kind": "source",
+            "label": "Source analyzed",
+            "value": "items on the chapter's track"
           }
         ],
         "id": "editing.breaths",
@@ -48,6 +53,11 @@
             "kind": "caveat",
             "label": "Caveat",
             "value": "Analysis of source audio; take FX, item gain and fades are not applied."
+          },
+          {
+            "kind": "source",
+            "label": "Source analyzed",
+            "value": "items on the chapter's track"
           }
         ],
         "id": "editing.clicks",
@@ -68,6 +78,11 @@
             "kind": "caveat",
             "label": "Caveat",
             "value": "Analysis of source audio; take FX, item gain and fades are not applied."
+          },
+          {
+            "kind": "source",
+            "label": "Source analyzed",
+            "value": "items on the chapter's track"
           }
         ],
         "id": "editing.empty_space",

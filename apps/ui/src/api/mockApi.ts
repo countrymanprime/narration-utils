@@ -26,7 +26,7 @@ import { createRenderEncodeMasterMock } from './renderEncodeMasterMock';
 import { DELIVERY_REVIEW_ANALYZER, mockDeliveryReviewFindings, resavingAfterProfileChange } from './deliveryReviewMock';
 import { createDeliveryProfilesMock } from './deliveryProfilesMock';
 import { createDiagnosticsMock } from './diagnosticsMock';
-import { createEditingMock } from './editingMock';
+import { createEditingMock, type EditingChoices } from './editingMock';
 import { createCleanupActionMock } from './cleanupActionMock';
 import { createPrepMarkupMock } from './prepMarkupMock';
 import { buildPrepCompletenessSummaryMock } from './prepCompletenessMock';
@@ -131,12 +131,18 @@ export function createMockApi(
   const mastering = createMasteringMock(initial.mastering);
   // The engine chip's `?mockEngine=builtin` flag seeds the recorder's engine, so the chip and the Booth agree (ADR 0455).
   const recording = createRecordingMock({ engine: mockEngineFromLocation(), ...initial.recording });
+  // Q6 (editing-readiness-analysis.prd.md Phase 8): shared between the stages mock (which signal a chapter's editing
+  // check reads) and the editing mock (editingSourceChoice/editingSetSourceChoice below), so switching a chapter's
+  // source there is visible on its editing signals here, the same live wiring a real host has through the same
+  // project sidecar.
+  const editingChoices: EditingChoices = new Map();
   const stages = createStagesMock({
     ready: manuscriptReady,
     chapters: () => s.chapters.map(withMeasurement),
     setStatus: (chapterId, status) => {
       s.chapters = s.chapters.map((chapter) => (chapter.id === chapterId ? { ...chapter, status } : chapter));
     },
+    editingSourceChoice: (chapterId) => editingChoices.get(chapterId) ?? 'items',
     seed: initial.stages,
   });
   // A transcript_discrepancy finding for chapter-1's own deterministic mock misread (edit-and-proof-workspace.prd.md
@@ -190,7 +196,7 @@ export function createMockApi(
   });
   const { current: deliveryProfile, ...deliveryProfiles } = createDeliveryProfilesMock(initial.deliveryProfile);
   const { peekDiagnostics, ...diagnostics } = createDiagnosticsMock(endJob, measurePicked, initial.diagnostics);
-  const editing = createEditingMock(initial.editing);
+  const editing = createEditingMock(initial.editing, editingChoices);
   const cleanupAction = createCleanupActionMock(
     async (chapterId) => (await findings.findingsList({ analyzer: 'editing', chapterId })).findings,
     initial.cleanupAction,

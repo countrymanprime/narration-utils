@@ -54,6 +54,14 @@ func (p *SignalProvider) Signals(ctx context.Context, chapter stages.ChapterCont
 		return p.projectUnreadableSignals(view.ProjectErr, now), nil
 	}
 
+	choice, err := p.service.sourceChoice(chapter.DocumentID, chapter.ChapterID)
+	if err != nil {
+		return nil, err
+	}
+	if choice == SourceRender {
+		return p.service.renderSignals(chapter, view, now)
+	}
+
 	coverage, _, basisRecordIDs, err := p.service.gatherCoverage(chapter, view)
 	if err != nil {
 		return nil, err
@@ -70,21 +78,21 @@ func (p *SignalProvider) Signals(ctx context.Context, chapter stages.ChapterCont
 		Coverage: coverage, Policy: p.service.policy(), Candidates: candidateStatuses, Running: running,
 		Basis: basis, ComputedAt: now,
 	})
-	click := UnvalidatedSignal(ClickSignalID, AnalyzerVersion, clickEvidence, basis, now)
-	breath := UnvalidatedSignal(BreathSignalID, AnalyzerVersion, breathEvidence, basis, now)
+	click := UnvalidatedSignal(ClickSignalID, AnalyzerVersion, append([]stages.Evidence{itemsSourceEvidence()}, clickEvidence...), basis, now)
+	breath := UnvalidatedSignal(BreathSignalID, AnalyzerVersion, append([]stages.Evidence{itemsSourceEvidence()}, breathEvidence...), basis, now)
 	return []stages.Signal{emptySpace, click, breath}, nil
 }
 
 func (p *SignalProvider) projectUnreadableSignals(err error, now time.Time) []stages.Signal {
 	basis := stages.Basis{LedgerRecordIDs: []string{}}
 	emptySpace := unknownEditingSignal(
-		stages.Signal{ID: EmptySpaceSignalID, Stage: stages.StageEditing, Evidence: []stages.Evidence{processedAudioCaveat()}, Basis: basis, ComputedAt: now},
+		stages.Signal{ID: EmptySpaceSignalID, Stage: stages.StageEditing, Evidence: []stages.Evidence{processedAudioCaveat(), itemsSourceEvidence()}, Basis: basis, ComputedAt: now},
 		stages.CauseProjectUnreadable, "The saved REAPER project file could not be read: "+err.Error()+".",
 	)
 	return []stages.Signal{
 		emptySpace,
-		UnvalidatedSignal(ClickSignalID, AnalyzerVersion, nil, basis, now),
-		UnvalidatedSignal(BreathSignalID, AnalyzerVersion, nil, basis, now),
+		UnvalidatedSignal(ClickSignalID, AnalyzerVersion, []stages.Evidence{itemsSourceEvidence()}, basis, now),
+		UnvalidatedSignal(BreathSignalID, AnalyzerVersion, []stages.Evidence{itemsSourceEvidence()}, basis, now),
 	}
 }
 
@@ -158,6 +166,14 @@ func (s *Service) gatherCandidates(chapterID string) (statuses []CandidateStatus
 		class, _ := finding.Evidence["class"].(string)
 		switch class {
 		case "silence":
+			// A source key absent entirely is a finding written before Phase 8
+			// (or the render path's own composeAndPersistRender, findings.go);
+			// either way it is an item-path candidate, never a render one -
+			// render_signal.go's own render candidates carry "source": "render"
+			// explicitly and are read separately (gatherRenderCandidates below).
+			if src, _ := finding.Evidence["source"].(string); src != "" && src != "items" {
+				continue
+			}
 			statuses = append(statuses, CandidateStatus{Open: finding.Review.Status != findings.StatusDismissed, Evidence: findingEvidence(finding)})
 		case "click":
 			clickEvidence = append(clickEvidence, findingEvidence(finding))
@@ -166,6 +182,31 @@ func (s *Service) gatherCandidates(chapterID string) (statuses []CandidateStatus
 		}
 	}
 	return statuses, clickEvidence, breathEvidence, nil
+}
+
+// gatherRenderCandidates is gatherCandidates' render-path counterpart (Q6):
+// the same already-persisted silence_cleanup findings, filtered to the
+// render-sourced ones a render scan wrote (composeAndPersistRender,
+// render_service.go), under the same evidence.class/source distinction
+// gatherCandidates itself now makes.
+func (s *Service) gatherRenderCandidates(chapterID string) ([]CandidateStatus, error) {
+	if s.findings == nil {
+		return nil, nil
+	}
+	found, err := s.findings.List(findings.Query{Analyzer: analyzerName, ChapterID: chapterID})
+	if err != nil {
+		return nil, err
+	}
+	var statuses []CandidateStatus
+	for _, finding := range found {
+		class, _ := finding.Evidence["class"].(string)
+		src, _ := finding.Evidence["source"].(string)
+		if class != "silence" || src != "render" {
+			continue
+		}
+		statuses = append(statuses, CandidateStatus{Open: finding.Review.Status != findings.StatusDismissed, Evidence: findingEvidence(finding)})
+	}
+	return statuses, nil
 }
 
 // findingEvidence turns one click/breath finding into a stages.Evidence

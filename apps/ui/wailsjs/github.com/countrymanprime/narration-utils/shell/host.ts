@@ -613,6 +613,27 @@ export function EditingCandidates(chapterID: string): $CancellablePromise<string
 }
 
 /**
+ * EditingSetSourceChoice sets chapterID's source choice (Q6: the narrator
+ * chooses per chapter) and answers the choice as stored, the same bare
+ * string shape EditingSourceChoice reads back. choice must be "items" or
+ * "render"; anything else is a rejected promise, the same as any other
+ * binding validation failure in this file.
+ */
+export function EditingSetSourceChoice(chapterID: string, choice: string): $CancellablePromise<string> {
+    return $Call.ByID(3971166288, chapterID, choice);
+}
+
+/**
+ * EditingSourceChoice reads chapterID's current source choice ("items", the
+ * default, or "render"). A missing project or store answers "items" rather
+ * than refusing, matching editing.ChoiceStore.Get's own "no choice made yet
+ * is never an error" rule.
+ */
+export function EditingSourceChoice(chapterID: string): $CancellablePromise<string> {
+    return $Call.ByID(1773421432, chapterID);
+}
+
+/**
  * EditingStart starts an editing-readiness scan of one chapter: played-range
  * empty-space (and, cached alongside it, click/breath candidates - always
  * unknown until Phase 4 validates them). It answers {status: "started",
