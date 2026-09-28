@@ -9,6 +9,7 @@ import (
 
 	"github.com/countrymanprime/narration-utils/shell/internal/character"
 	"github.com/countrymanprime/narration-utils/shell/internal/coverage"
+	"github.com/countrymanprime/narration-utils/shell/internal/editing"
 	"github.com/countrymanprime/narration-utils/shell/internal/evidence"
 	"github.com/countrymanprime/narration-utils/shell/internal/importer"
 	"github.com/countrymanprime/narration-utils/shell/internal/layout"
@@ -375,6 +376,23 @@ func TestResetDerivedClearsTheProofingRenderChoices(t *testing.T) {
 	}
 	if _, err := os.Stat(proofing.Dir(project)); !os.IsNotExist(err) {
 		t.Fatalf("resetDerived left the proofing folder behind: %v", err)
+	}
+}
+
+// A chapter's editing source choice (Q6, editing-readiness-analysis.prd.md Phase 8) is keyed by documentId and
+// chapter id, which a re-import renumbers, so resetDerived clears its folder the same way it clears proofing's own.
+func TestResetDerivedClearsTheEditingSourceChoices(t *testing.T) {
+	project := t.TempDir()
+	store := editing.NewChoiceStore(project)
+	if err := store.Set("doc-1", "chapter-1", editing.SourceRender); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := resetDerived(project); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := os.Stat(editing.ChoiceDir(project)); !os.IsNotExist(err) {
+		t.Fatalf("resetDerived left the editing source-choice folder behind: %v", err)
 	}
 }
 
