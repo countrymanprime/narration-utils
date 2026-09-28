@@ -105,7 +105,7 @@ func (c *Client) Do(ctx context.Context, cmd *Command) (Reply, error) {
 		return Reply{}, err
 	}
 	if err != nil {
-		c.dropLocked()
+		_ = c.dropLocked()
 		c.reachable.Store(false)
 		return Reply{}, err
 	}

@@ -11,7 +11,6 @@ import (
 	"bufio"
 	"context"
 	"io"
-	"net"
 	"strings"
 	"sync"
 
@@ -49,7 +48,7 @@ type Server struct {
 	log []string
 	// dials counts successful connections.
 	dials int
-	conns []net.Conn
+	conns []*pipeEnd
 }
 
 // NewServer is a fake Audacity with an empty project (no tracks, nothing selected).
@@ -63,7 +62,7 @@ func (s *Server) Transport() audacitybridge.Transport {
 			s.mu.Unlock()
 			return nil, audacitybridge.ErrNotReachable
 		}
-		client, server := net.Pipe()
+		client, server := pipePair()
 		s.dials++
 		s.conns = append(s.conns, server)
 		s.mu.Unlock()
@@ -116,8 +115,8 @@ func (s *Server) With(f func(p *Project)) {
 	f(s.project)
 }
 
-func (s *Server) serve(conn net.Conn) {
-	defer conn.Close()
+func (s *Server) serve(conn *pipeEnd) {
+	defer func() { _ = conn.Close() }()
 	r := bufio.NewReader(conn)
 	for {
 		line, err := readCommand(r)
@@ -193,4 +192,25 @@ func readCommand(r *bufio.Reader) (string, error) {
 	// writes again). Audacity deletes every CR and LF it reads (ScripterCallback).
 	line = strings.TrimPrefix(line, "\x00")
 	return strings.NewReplacer("\r", "", "\n", "").Replace(line), nil
+}
+
+// pipeEnd is one end of an in-memory, synchronous duplex pipe (two io.Pipes), standing in for the two named pipes: Close unblocks
+// a Read or Write waiting on either side, as the Windows transport's Close does.
+type pipeEnd struct {
+	r *io.PipeReader
+	w *io.PipeWriter
+}
+
+func pipePair() (client, server *pipeEnd) {
+	toServerR, toServerW := io.Pipe()
+	toClientR, toClientW := io.Pipe()
+	return &pipeEnd{r: toClientR, w: toServerW}, &pipeEnd{r: toServerR, w: toClientW}
+}
+
+func (p *pipeEnd) Read(b []byte) (int, error)  { return p.r.Read(b) }
+func (p *pipeEnd) Write(b []byte) (int, error) { return p.w.Write(b) }
+
+func (p *pipeEnd) Close() error {
+	_ = p.r.CloseWithError(io.ErrClosedPipe)
+	return p.w.Close() // the peer reads io.EOF, as from a pipe the other side hung up
 }

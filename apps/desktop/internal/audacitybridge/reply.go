@@ -44,14 +44,14 @@ func (e *CommandError) Error() string {
 	return fmt.Sprintf("Audacity could not run %s: %s", e.Command, detail)
 }
 
-func (e *CommandError) Is(target error) bool { return target == ErrCommandFailed }
+func (e *CommandError) Is(target error) bool { return target == error(ErrCommandFailed) }
 
 // ProtocolError is an answer that broke the framing: Detail says how.
 type ProtocolError struct{ Detail string }
 
 func (e *ProtocolError) Error() string { return ErrProtocol.Error() + ": " + e.Detail }
 func (e *ProtocolError) Is(target error) bool {
-	return target == ErrProtocol
+	return target == error(ErrProtocol)
 }
 
 // readReply reads one framed reply from r. It is strict: a terminator must be exactly one of the two documented lines and must be
