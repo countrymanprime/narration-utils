@@ -84,7 +84,7 @@ func providerEntry(d port.Descriptor, level port.Level, platform string, isDefau
 
 // providerSupport is a row's answer on platform: its level, and available, where its descriptor runs; Unsupported elsewhere. Only
 // the capture port's wasapi row is Experimental today (docs/adr/0357). It is still available: no narrator switch gates a provider
-// row yet, and the Booth that first uses it (native-recording-suite Phase 2) decides how an Experimental engine is offered.
+// row: the Booth that uses it (native-recording-suite Phase 2, bindings_recording.go) offers it as an Experimental choice.
 func providerSupport(d port.Descriptor, level port.Level, platform string) port.Support {
 	if d.RunsOn(platform) {
 		return port.Support{Level: level, Available: true}

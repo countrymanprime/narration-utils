@@ -47,6 +47,14 @@ if (process.platform === 'win32') {
   if (moonshineMissing.length) {
     throw new Error(`Release Moonshine engine is incomplete: moonshine_voice/${moonshineMissing.join(', moonshine_voice/')}. Manuscript Teleprompter must collect the moonshine_voice binaries (scripts/release/prepare-resources.py).`);
   }
+  // The built-in recorder's engine (the capture port's wasapi row, ADR 0357, native-recording Phase 2) is sounddevice, whose
+  // PortAudio DLL ships in `_sounddevice_data/portaudio-binaries` and is loaded with ctypes: without it the row lists "cannot
+  // list devices here" and nothing records.
+  const portaudioDir = resolve(runtime, 'manuscript-teleprompter', '_internal', '_sounddevice_data', 'portaudio-binaries');
+  const portaudio = existsSync(portaudioDir) ? readdirSync(portaudioDir).filter((name) => /^libportaudio.*\.dll$/i.test(name)) : [];
+  if (!portaudio.length) {
+    throw new Error('Release built-in recorder is incomplete: _sounddevice_data/portaudio-binaries has no libportaudio DLL. Manuscript Teleprompter must collect the _sounddevice_data binaries (scripts/release/prepare-resources.py).');
+  }
 }
 // The six approved asset catalogs travel with the release: the app reads them to know what it may offer to download.
 const catalogsMissing = ['tts-assets.json', 'whisper-assets.json', 'spacy-assets.json', 'moonshine-assets.json', 'dictionary-assets.json', 'encoder-assets.json'].filter((name) => !existsSync(resolve(resources, 'config', name)));
