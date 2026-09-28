@@ -181,10 +181,14 @@ func startDownload(t *testing.T, host *Host) jobPayload {
 	return decodeJob(t, text, err)
 }
 
+// cancelDownload asks the job to stop and waits until it has: the download goroutine is still removing its staged files
+// when the cancel returns, and Windows will not remove a test's temp folder while it does ("The directory is not empty").
 func cancelDownload(t *testing.T, host *Host, id string) jobPayload {
 	t.Helper()
 	text, err := host.UpdateJobCancel(id)
-	return decodeJob(t, text, err)
+	answer := decodeJob(t, text, err)
+	waitForJob(t, host, id, finished)
+	return answer
 }
 
 func TestDownloadRefusesWhenThereIsNothingNewOrItCannotReplaceItself(t *testing.T) {
