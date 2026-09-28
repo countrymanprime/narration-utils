@@ -36,6 +36,9 @@ type Props = {
   onOpenEditingCheck: () => void;
   /** Opens the manuscript at a paragraph (its index in the whole manuscript). */
   goToParagraph: (index: number) => void;
+  /** Opens the finding an evidence entry names (the proofing pickups roll-up's open items), on whatever page hosts
+   * this popover; undefined where there is nowhere to open it. */
+  onOpenFinding?: (findingId: string) => void;
 };
 
 /**
@@ -77,6 +80,7 @@ function EvidenceBody({
   onOpenCheck,
   onOpenEditingCheck,
   goToParagraph,
+  onOpenFinding,
 }: Props & { chapter: ManuscriptChapter; recommendation: StageChapterRecommendation }) {
   const now = Date.now();
   const decision = (kind: StageDecision, label: string, variant: 'primary' | 'ghost' = 'ghost') => (
@@ -127,6 +131,7 @@ function EvidenceBody({
             onOpenCheck={onOpenCheck}
             onOpenEditingCheck={onOpenEditingCheck}
             goToParagraph={goToParagraph}
+            onOpenFinding={onOpenFinding}
           />
         ))}
       </div>
@@ -150,6 +155,7 @@ function SignalCard({
   onOpenCheck,
   onOpenEditingCheck,
   goToParagraph,
+  onOpenFinding,
 }: {
   signal: StageSignal;
   chapter: ManuscriptChapter;
@@ -158,6 +164,7 @@ function SignalCard({
   onOpenCheck: () => void;
   onOpenEditingCheck: () => void;
   goToParagraph: (index: number) => void;
+  onOpenFinding?: (findingId: string) => void;
 }) {
   const cause = causeText(signal);
   const age = formatAge(signal.basis.projectFileModTime, now);
@@ -186,7 +193,7 @@ function SignalCard({
       {signal.evidence.length > 0 && (
         <ul className="space-y-1">
           {signal.evidence.map((entry, index) => (
-            <EvidenceLine key={`${entry.kind}-${index}`} entry={entry} chapter={chapter} goToParagraph={goToParagraph} />
+            <EvidenceLine key={`${entry.kind}-${index}`} entry={entry} chapter={chapter} goToParagraph={goToParagraph} onOpenFinding={onOpenFinding} />
           ))}
         </ul>
       )}
@@ -230,7 +237,17 @@ function CauseAction({
   return null;
 }
 
-function EvidenceLine({ entry, chapter, goToParagraph }: { entry: Evidence; chapter: ManuscriptChapter; goToParagraph: (index: number) => void }) {
+function EvidenceLine({
+  entry,
+  chapter,
+  goToParagraph,
+  onOpenFinding,
+}: {
+  entry: Evidence;
+  chapter: ManuscriptChapter;
+  goToParagraph: (index: number) => void;
+  onOpenFinding?: (findingId: string) => void;
+}) {
   const first = entry.paragraphIds?.length ? paragraphRefs(chapter, entry.paragraphIds.slice(0, 1))[0] : undefined;
   return (
     <li>
@@ -239,6 +256,13 @@ function EvidenceLine({ entry, chapter, goToParagraph }: { entry: Evidence; chap
         <div className="mt-1">
           <Button variant="ghost" className="px-3 py-1" onClick={() => goToParagraph(first.index!)}>
             Go to paragraph {first.number}
+          </Button>
+        </div>
+      )}
+      {entry.findingId && onOpenFinding && (
+        <div className="mt-1">
+          <Button variant="ghost" className="px-3 py-1" onClick={() => onOpenFinding(entry.findingId!)}>
+            Open this note
           </Button>
         </div>
       )}

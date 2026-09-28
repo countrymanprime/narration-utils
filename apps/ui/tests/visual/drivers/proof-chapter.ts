@@ -160,26 +160,46 @@ export const proofChapterDrivers: Record<string, Driver> = {
   'preview-warnings': async (page) => {
     await openPanel(page, '/?mockPreviewCandidates=warnings', page.getByText(/imported before chapters were classified/));
   },
+  // proofing-readiness-signals.prd.md Phase 6: the panel is this one chapter's own readiness, so `?mockProofingStages=mixed`'s
+  // two seeded chapters (main.tsx: Chapter 9 met, Chapter 10 not_met) are opened on their own chapter view, not a shared table.
   'stage-panel-suggestions': async (page) => {
-    await openPanel(page, '/?mockProofingStages=mixed', page.getByText('Suggested: Finalized'));
+    await openPanel(page, '/?mockProofingStages=mixed', page.getByText('Suggested: Finalized'), 'Chapter 9');
   },
   'stage-panel-evidence-recommended': async (page) => {
-    await openPanel(page, '/?mockProofingStages=mixed', page.getByText('Suggested: Finalized'));
+    await openPanel(page, '/?mockProofingStages=mixed', page.getByText('Suggested: Finalized'), 'Chapter 9');
     await clickVisible(page, 'button', /^Why: /);
     await page.getByRole('dialog').waitFor();
   },
   'stage-panel-evidence-not-ready': async (page) => {
-    await openPanel(page, '/?mockProofingStages=mixed', page.getByText('Not ready for Finalized'));
-    await page
-      .locator('tr', { hasText: 'Not ready for Finalized' })
-      .getByRole('button', { name: /^Why: / })
-      .click();
+    await openPanel(page, '/?mockProofingStages=mixed', page.getByText('Not ready for Finalized'), 'Chapter 10');
+    await clickVisible(page, 'button', /^Why: /);
     await page.getByRole('dialog').waitFor();
   },
   'stage-panel-evidence-unknown': async (page) => {
-    await openPanel(page, '/?mockProofingSignal=unmapped-track', page.getByText(/no track linked/));
+    await openPanel(page, '/?mockProofingSignal=unmapped-track', page.getByText(/no track linked/), 'Chapter 9');
     await clickVisible(page, 'button', /^Why: /);
     await page.getByRole('link', { name: 'Open Tracks' }).waitFor();
+  },
+  // The rendered file section (Phase 6): choosing, then Measure, on an unseeded Proofing chapter (Chapter 9's own
+  // delivery checks stay unknown until a render is chosen and measured, matching the mock's default).
+  'render-none': async (page) => {
+    await openPanel(page, '/', page.getByText('Proofing readiness'), 'Chapter 9');
+    await page.getByText('Choose the rendered file for this chapter.').waitFor();
+  },
+  'render-chosen': async (page) => {
+    await openPanel(page, '/', page.getByText('Proofing readiness'), 'Chapter 9');
+    await clickVisible(page, 'button', 'Choose rendered file');
+    await page.getByRole('button', { name: 'Measure' }).waitFor();
+  },
+  'render-measured': async (page) => {
+    await openPanel(page, '/', page.getByText('Proofing readiness'), 'Chapter 9');
+    await clickVisible(page, 'button', 'Choose rendered file');
+    await clickVisible(page, 'button', 'Measure');
+    await page.getByText(/Measured/).waitFor();
+  },
+  'render-stale': async (page) => {
+    await openPanel(page, '/?mockProofingRender=chapter-9-stale', page.getByText('Proofing readiness'), 'Chapter 9');
+    await page.getByText(/changed since you chose it/).waitFor();
   },
 };
 
@@ -214,13 +234,14 @@ async function selectCompareFlag(page: Page, label: string): Promise<void> {
   throw new Error(`no compare flag labelled ${label}`);
 }
 
-// Opens Chapter 1's Proof view after loading `url` for a mock seam, waits for `ready` and scrolls it into view.
-async function openPanel(page: Page, url: string, ready: ReturnType<Page['getByText']>): Promise<void> {
+// Opens a chapter's Proof view (Chapter 1 unless chapterTitle names another) after loading `url` for a mock seam,
+// waits for `ready` and scrolls it into view.
+async function openPanel(page: Page, url: string, ready: ReturnType<Page['getByText']>, chapterTitle?: string): Promise<void> {
   if (url !== '/') {
     await page.goto(url);
     await settlePage(page);
   }
-  await openProofChapter(page);
+  await openProofChapter(page, chapterTitle);
   await ready.first().waitFor();
   await ready.first().scrollIntoViewIfNeeded();
 }

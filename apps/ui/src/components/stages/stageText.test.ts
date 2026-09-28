@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { StageChapterRecommendation, StageUnknownCause } from '../../types';
-import { CAUSE_TEXT, evidenceValue, formatAge, summarize, verdictLine, verdictSentence } from './stageText';
+import { CAUSE_TEXT, causeText, evidenceValue, formatAge, summarize, verdictLine, verdictSentence } from './stageText';
 
 const base: StageChapterRecommendation = {
   chapterId: 'c4',
@@ -58,6 +58,23 @@ describe('stage suggestion text', () => {
       expect(CAUSE_TEXT[cause].short.length).toBeGreaterThan(0);
       expect(CAUSE_TEXT[cause].action.length).toBeGreaterThan(0);
     }
+  });
+
+  it('points a proofing delivery check at the Rendered file section, not a proofing dialog, unlike the pickups roll-up', () => {
+    for (const cause of ['never_analyzed', 'stale', 'measurement_unavailable'] as const) {
+      const delivery = causeText({ id: 'proofing.delivery.rms_dbfs', cause });
+      expect(delivery?.action).toMatch(/Rendered file section below/);
+      expect(delivery?.resolve).toBe('wait');
+      // The render length check is a proofing.delivery.* id too and gets the same wording.
+      expect(causeText({ id: 'proofing.delivery.render_length', cause })?.action).toMatch(/Rendered file section below/);
+      // The pickups roll-up keeps its own wording (never a rendered-file sentence) for the same cause.
+      const pickups = causeText({ id: 'proofing.pickups', cause });
+      expect(pickups?.action).not.toMatch(/Rendered file/);
+      expect(pickups?.resolve).not.toBe('check');
+    }
+    // A mapping cause is worded the same way for every proofing signal (Tracks, not the rendered file).
+    expect(causeText({ id: 'proofing.delivery.sample_rate', cause: 'unmapped_track' })?.resolve).toBe('tracks');
+    expect(causeText({ id: 'proofing.pickups', cause: 'unmapped_track' })?.resolve).toBe('tracks');
   });
 
   it('reads a stale signal’s reason codes as the recording check’s sentences', () => {

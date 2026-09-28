@@ -184,4 +184,26 @@ export const proofChapterStates: StateEntry[] = [
     description:
       'Proof chapter view, the stage recommendations panel: Why opened on an unmapped-track cause (?mockProofingSignal=unmapped-track) - "Open Tracks", never "Open recording check" (stageText.ts PROOFING_CAUSE_TEXT)',
   },
+  // The chosen rendered file the delivery checks are about (proofing-readiness-signals.prd.md Phase 6).
+  {
+    page: 'proof-chapter',
+    state: 'render-none',
+    description: 'Proof chapter view, the readiness panel’s Rendered file section with nothing chosen yet - "Choose the rendered file for this chapter."',
+  },
+  {
+    page: 'proof-chapter',
+    state: 'render-chosen',
+    description: 'Proof chapter view, a rendered file just chosen - its name, when it was chosen, and Change/Clear/Measure offered',
+  },
+  {
+    page: 'proof-chapter',
+    state: 'render-measured',
+    description: 'Proof chapter view, the chosen render measured - "Measured <time>." under the file, Measure offered again',
+  },
+  {
+    page: 'proof-chapter',
+    state: 'render-stale',
+    description:
+      'Proof chapter view, a chosen render gone stale (?mockProofingRender=chapter-9-stale) - "changed since you chose it", Choose rendered file again',
+  },
 ];

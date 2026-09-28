@@ -280,6 +280,10 @@ const mockProofingStages = mockParams.get('mockProofingStages') === 'mixed';
 // the evidence view's cause action ("Open Tracks", never "Open recording check" - stageText.ts's `PROOFING_CAUSE_TEXT`) can be seen
 // without a host.
 const mockProofingSignal = mockParams.get('mockProofingSignal') === 'unmapped-track';
+// `?mockProofingRender=chapter-9-stale` seeds Chapter 9's chosen render as stale (proofing-readiness-signals.prd.md
+// Phase 6), so the "Rendered file" section's stale state can be seen without choosing a file and then editing the
+// chapter to invalidate it.
+const mockProofingRenderStale = mockParams.get('mockProofingRender') === 'chapter-9-stale';
 const MOCK_STAGES_MEASURED = { [WIRE_CHAPTERS[3].id]: 1 };
 const MOCK_STAGES_SEEDS = {
   mixed: {
@@ -478,6 +482,7 @@ const mockInitial = {
     : {}),
   ...(mockProofingStages ? { stages: { proofing: { [WIRE_CHAPTERS[8].id]: 'met' as const, [WIRE_CHAPTERS[9].id]: 'not_met' as const } } } : {}),
   ...(mockProofingSignal ? { stages: { proofing: { [WIRE_CHAPTERS[8].id]: { unknown: 'unmapped_track' as StageUnknownCause } } } } : {}),
+  ...(mockProofingRenderStale ? { proofingRender: { [WIRE_CHAPTERS[8].id]: { state: 'stale' as const } } } : {}),
   ...(mockDawExperimentalOn ? { daw: { experimentalOn: true } } : {}),
   ...(Number.isFinite(mockDawPlayhead) ? { daw: { transport: { playing: true, recording: false, position: mockDawPlayhead } } } : {}),
 };
