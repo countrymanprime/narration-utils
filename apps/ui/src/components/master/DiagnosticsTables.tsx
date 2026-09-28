@@ -5,6 +5,7 @@ import { formatLength } from './deliveryFormat';
 import { cleanupClassLabel, cleanupLevelText, findingKindLabel, measuredText, sourceKindLabel, thresholdText, timeRangeText } from './diagnosticsFormat';
 
 const MUTED = { color: 'var(--text-muted)' };
+const MONO = "font-['IBM_Plex_Mono',ui-monospace,monospace]";
 const SUMMARY_COLUMNS = 5;
 
 /** The source kind the finding records, or the check's when a finding does not say. */
