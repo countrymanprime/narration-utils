@@ -86,9 +86,12 @@ type Service struct {
 	emitLevel func(Level)
 	// +checklocks:mu
 	current *active
+	// +checklocks:mu
 	message string
-	device  string
-	last    *LastTake
+	// +checklocks:mu
+	device string
+	// +checklocks:mu
+	last *LastTake
 }
 
 // New is a recorder for config over engine. emitState gets every change and emitLevel every level report; either may be
