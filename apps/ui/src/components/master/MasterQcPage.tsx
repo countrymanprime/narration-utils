@@ -269,7 +269,7 @@ export function MasterQcPage({ openSettings, focus }: { openSettings: () => void
           )}
         </div>
         <div className="flex flex-wrap items-center gap-2 lg:ml-auto">
-          <Button variant="ghost" onClick={() => void jobs.pick()} pending={jobs.picking} disabled={jobs.exportRunning}>
+          <Button variant="secondary" onClick={() => void jobs.pick()} pending={jobs.picking} disabled={jobs.exportRunning}>
             Master all to spec…
           </Button>
           <Button onClick={() => void check()} pending={checking} disabled={running}>
@@ -288,7 +288,7 @@ export function MasterQcPage({ openSettings, focus }: { openSettings: () => void
             title="Per-file checks"
             actions={
               measuredPaths.length > 0 && (
-                <Button variant="ghost" onClick={() => void chooseOther()} pending={checking} disabled={running}>
+                <Button variant="secondary" onClick={() => void chooseOther()} pending={checking} disabled={running}>
                   Choose other files…
                 </Button>
               )
@@ -325,7 +325,7 @@ export function MasterQcPage({ openSettings, focus }: { openSettings: () => void
                   <p aria-live="polite" className="text-sm">
                     {job.message}
                   </p>
-                  <Button variant="ghost" onClick={cancel}>
+                  <Button variant="secondary" onClick={cancel}>
                     Cancel
                   </Button>
                 </div>

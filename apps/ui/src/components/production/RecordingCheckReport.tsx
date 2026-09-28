@@ -133,7 +133,7 @@ export function RecordingCheckReport({
       <div className="flex flex-wrap gap-2">
         {actionsSlot}
         {openWorkspace && (
-          <Button variant="ghost" onClick={openWorkspace}>
+          <Button variant="secondary" onClick={openWorkspace}>
             Open in Proof
           </Button>
         )}
@@ -170,7 +170,7 @@ export function RecordingCheckReport({
                     )}
                   </div>
                   {first?.index !== undefined && (
-                    <Button variant="ghost" className="px-3 py-1" onClick={() => goToParagraph(first.index!)}>
+                    <Button size="sm" variant="secondary" onClick={() => goToParagraph(first.index!)}>
                       Go to paragraph {first.number}
                     </Button>
                   )}

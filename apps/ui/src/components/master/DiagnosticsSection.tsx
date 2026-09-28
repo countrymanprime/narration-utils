@@ -128,7 +128,7 @@ export function DiagnosticsSection({ measuredPaths }: { measuredPaths: readonly 
         actions={
           <div className="flex flex-wrap gap-2">
             {measuredPaths.length > 0 && (
-              <Button variant="ghost" onClick={() => void checkMeasured()} pending={picking} disabled={running}>
+              <Button variant="secondary" onClick={() => void checkMeasured()} pending={picking} disabled={running}>
                 {`Check the ${plural(measuredPaths.length, 'measured file', 'measured files')}`}
               </Button>
             )}
@@ -172,7 +172,7 @@ export function DiagnosticsSection({ measuredPaths }: { measuredPaths: readonly 
               <p aria-live="polite" className="text-sm">
                 {job.message}
               </p>
-              <Button variant="ghost" onClick={cancel}>
+              <Button variant="secondary" onClick={cancel}>
                 Cancel
               </Button>
             </div>

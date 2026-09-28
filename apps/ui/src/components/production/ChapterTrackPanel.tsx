@@ -206,13 +206,13 @@ export function ChapterTrackPanel({
                 </p>
               )}
               <div className="flex flex-wrap items-center gap-2">
-                <Button variant="ghost" onClick={player.skipBackward} disabled={!canPlay} aria-label="Skip back 30 seconds">
+                <Button variant="secondary" onClick={player.skipBackward} disabled={!canPlay} aria-label="Skip back 30 seconds">
                   <FontAwesomeIcon icon={faBackward} /> 30s
                 </Button>
                 <Button onClick={player.togglePlay} disabled={!canPlay} aria-label={player.isPlaying ? 'Pause' : 'Play'}>
                   <FontAwesomeIcon icon={player.isPlaying ? faPause : faPlay} />
                 </Button>
-                <Button variant="ghost" onClick={player.skipForward} disabled={!canPlay} aria-label="Skip forward 30 seconds">
+                <Button variant="secondary" onClick={player.skipForward} disabled={!canPlay} aria-label="Skip forward 30 seconds">
                   30s <FontAwesomeIcon icon={faForward} />
                 </Button>
                 {canPlay && (
@@ -221,7 +221,7 @@ export function ChapterTrackPanel({
                   </span>
                 )}
               </div>
-              <Button variant="ghost" className="w-full" disabled={selecting} pending={selecting} onClick={() => void selectInReaper()}>
+              <Button variant="secondary" className="w-full" disabled={selecting} pending={selecting} onClick={() => void selectInReaper()}>
                 Select in REAPER
               </Button>
             </section>
@@ -238,7 +238,7 @@ export function ChapterTrackPanel({
                   return (
                     <InsetCard as="li" key={mapping.trackGuid} className="flex items-center justify-between gap-2">
                       <span>{summary?.name || 'Track'}</span>
-                      <Button variant="ghost" disabled={busy} pending={busy} onClick={() => void link_(mapping.trackGuid)}>
+                      <Button variant="secondary" disabled={busy} pending={busy} onClick={() => void link_(mapping.trackGuid)}>
                         Keep this one
                       </Button>
                     </InsetCard>

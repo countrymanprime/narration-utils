@@ -32,6 +32,7 @@ import { ProofingStagePanel } from './ProofingStagePanel';
 import { usePickupsState } from '../pickups/usePickupsState';
 import { FindingDetail } from './FindingDetail';
 import { FindingsList } from './FindingsList';
+import { NativeTakesPanel } from './NativeTakesPanel';
 import { NotesHeader, SourcesLine } from './NotesHeader';
 import { NotesStrip } from './NotesStrip';
 import { RecordingCheckCard } from './RecordingCheckCard';
@@ -324,7 +325,7 @@ function ChapterView({ chapterId, notify, transcript, dawFileLinked, goToManuscr
           <div className="flex flex-wrap items-center gap-2 text-sm" style={{ color: 'var(--text-muted)' }}>
             {alignment && <SectionLabel>{CHECK_STATE_LABEL[alignment.state]}</SectionLabel>}
             {alignment?.basis && <span>as of last save {formatWhen(alignment.basis.modifiedAt)}</span>}
-            <Button variant="ghost" onClick={() => setChecking(true)}>
+            <Button variant="secondary" onClick={() => setChecking(true)}>
               {alignment?.state === 'never' ? 'Check recording' : 'Check again'}
             </Button>
           </div>
@@ -386,6 +387,7 @@ function ChapterView({ chapterId, notify, transcript, dawFileLinked, goToManuscr
               )
             )}
             <RecordingCheckCard chapter={chapter} alignment={alignment} flags={checkFlags} />
+            <NativeTakesPanel chapter={chapter} />
           </div>
         </div>
         {alignment && alignment.state !== 'never' && (

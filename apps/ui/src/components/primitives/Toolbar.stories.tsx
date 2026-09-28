@@ -9,7 +9,7 @@ function CommandButton({ label, keys }: { label: string; keys: string[] }) {
   return (
     <ToolbarButton
       render={
-        <Button variant="ghost" className="flex-col gap-1 px-3 py-1.5 text-[0.7rem] normal-case">
+        <Button variant="secondary" className="flex-col gap-1 px-3 py-1.5 text-[0.7rem] normal-case">
           <Kbd keys={keys} />
           {label}
         </Button>

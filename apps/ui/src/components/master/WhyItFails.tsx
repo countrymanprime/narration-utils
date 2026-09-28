@@ -80,7 +80,7 @@ export function WhyItFails({
     <Panel
       title={`${file.name} · ${failed ? 'Why it fails' : 'Why it passes'}`}
       actions={
-        <Button variant="ghost" onClick={onToggleRules} aria-expanded={rulesOpen}>
+        <Button variant="secondary" onClick={onToggleRules} aria-expanded={rulesOpen}>
           Every rule
         </Button>
       }

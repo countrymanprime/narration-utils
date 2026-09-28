@@ -7,6 +7,7 @@ import { Button } from '../primitives/Button';
 import { Heading } from '../primitives/Heading';
 import { Panel } from '../primitives/Panel';
 import { SectionLabel } from '../primitives/SectionLabel';
+import { IconButton } from '../primitives/IconButton';
 import { NewProjectDialog } from './NewProjectDialog';
 import { DemoBanner } from '../layout/DemoBanner';
 import type { ProjectSwitchResult, RecentProject } from '../../types';
@@ -148,19 +149,18 @@ export function ProjectPicker() {
                         {entry.path}
                       </div>
                     </button>
-                    <button
-                      type="button"
+                    <IconButton
                       ref={(node) => {
                         if (node) removeButtonRefs.current.set(entry.path, node);
                         else removeButtonRefs.current.delete(entry.path);
                       }}
-                      className="absolute top-2 right-2 inline-flex items-center gap-[0.4rem] rounded-md border border-transparent px-4 py-2 font-['Barlow_Condensed',sans-serif] text-[0.85rem] font-semibold tracking-[0.03em] uppercase disabled:pointer-events-none disabled:opacity-40"
-                      aria-label={`Remove ${entry.name} from recent projects`}
+                      className="absolute top-2 right-2"
+                      label={`Remove ${entry.name} from recent projects`}
                       onClick={() => void removeRecent(entry)}
                       disabled={busy}
                     >
                       <FontAwesomeIcon icon={faXmark} />
-                    </button>
+                    </IconButton>
                   </li>
                 ))}
               </ul>
@@ -171,15 +171,10 @@ export function ProjectPicker() {
               <FontAwesomeIcon icon={faFolderOpen} />
               Browse…
             </Button>
-            <button
-              type="button"
-              className="inline-flex items-center gap-[0.4rem] rounded-md border border-transparent px-4 py-2 font-['Barlow_Condensed',sans-serif] text-[0.85rem] font-semibold tracking-[0.03em] uppercase disabled:pointer-events-none disabled:opacity-40"
-              onClick={() => setNewProjectOpen(true)}
-              disabled={busy}
-            >
+            <Button variant="secondary" onClick={() => setNewProjectOpen(true)} disabled={busy}>
               <FontAwesomeIcon icon={faFolderPlus} />
               Create new…
-            </button>
+            </Button>
           </div>
         </Panel>
         {newProjectOpen && <NewProjectDialog onClose={() => setNewProjectOpen(false)} onCreated={projectCreated} />}

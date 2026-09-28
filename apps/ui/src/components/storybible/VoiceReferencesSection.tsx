@@ -14,8 +14,9 @@ import { TextField } from '../primitives/TextField';
 import type { Notify } from '../primitives/Toast';
 
 /** mm:ss, the region-length format the mock's reference clip rows use (06-series-voice-bible-concept.webp); this
- * view never sees a region longer than about an hour, so no hour component is needed. */
-function formatRegionTime(seconds: number): string {
+ * view never sees a region longer than about an hour, so no hour component is needed. Exported for the Series tab
+ * (components/series/SeriesTab.tsx, Phase 11), which reuses this formatting for the same clips read cross-project. */
+export function formatRegionTime(seconds: number): string {
   const whole = Math.max(0, Math.round(seconds));
   const minutes = Math.floor(whole / 60);
   const remaining = whole % 60;
@@ -111,7 +112,7 @@ export function VoiceReferencesSection({ characterId, characterLabel, notify }: 
                 </div>
               </div>
               {reference.changedSinceApproval && <StatusBadge tone="warning" label="Changed since approval" />}
-              <Button variant="ghost" className="text-xs" pending={mutation.isPending(`revoke:${reference.id}`)} onClick={() => void revoke(reference)}>
+              <Button variant="secondary" pending={mutation.isPending(`revoke:${reference.id}`)} onClick={() => void revoke(reference)}>
                 Revoke
               </Button>
             </InsetCard>
@@ -129,7 +130,7 @@ export function VoiceReferencesSection({ characterId, characterLabel, notify }: 
           ]}
         />
         <TextField label="Note (optional)" value={note} onChange={setNote} placeholder="e.g. anchor take, chapter 1" />
-        <Button variant="ghost" className="text-xs" disabled={!regionGuid} pending={mutation.isPending('approve')} onClick={() => void approve()}>
+        <Button variant="secondary" disabled={!regionGuid} pending={mutation.isPending('approve')} onClick={() => void approve()}>
           Approve as reference
         </Button>
       </div>
