@@ -191,7 +191,7 @@ export function CompanionShell({ session: t, follow, chapterTitle, recording, ma
         title="Companion"
         status={<StatusBadge tone={playhead.tone} label={playhead.label} />}
         action={
-          <Button variant="ghost" className="px-2.5 py-1 text-xs" onClick={onFullApp}>
+          <Button variant="secondary" className="px-2.5 py-1 text-xs" onClick={onFullApp}>
             <FontAwesomeIcon icon={faUpRightAndDownLeftFromCenter} /> Full app
           </Button>
         }

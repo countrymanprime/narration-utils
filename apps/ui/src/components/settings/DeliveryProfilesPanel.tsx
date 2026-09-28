@@ -207,13 +207,13 @@ export function DeliveryProfilesPanel({ scope, notify }: { scope: Scope; notify:
                   </div>
                 </div>
                 <div className="flex flex-wrap gap-2">
-                  <Button variant="ghost" onClick={() => void duplicate(profile)} disabled={busy}>
+                  <Button variant="secondary" onClick={() => void duplicate(profile)} disabled={busy}>
                     Duplicate
                   </Button>
                   {!profile.builtIn && (
                     <>
                       <Button
-                        variant="ghost"
+                        variant="secondary"
                         onClick={() => {
                           setEditError(undefined);
                           setEditing(profile);

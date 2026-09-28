@@ -74,6 +74,77 @@ describe('Button pending (ADR 0075)', () => {
   });
 });
 
+// The measured spec (ADR 0595). jsdom computes no Tailwind, so these read the classes that name the tokens; the atlas measures the pixels.
+describe('Button look (ADR 0595)', () => {
+  const classes = (element: HTMLElement) => element.getAttribute('class')?.split(/\s+/) ?? [];
+
+  it('is 32 px by default and 28 px at size sm, from the height tokens', () => {
+    render(
+      <>
+        <Button>Save</Button>
+        <Button size="sm">Resolve</Button>
+      </>,
+    );
+    expect(classes(screen.getByRole('button', { name: 'Save' }))).toContain('min-h-[var(--button-height)]');
+    expect(classes(screen.getByRole('button', { name: 'Resolve' }))).toContain('min-h-[var(--button-height-sm)]');
+  });
+
+  it('sets its own label type, tracking, radius and 55% disabled', () => {
+    render(<Button>Save</Button>);
+    const list = classes(screen.getByRole('button'));
+    for (const token of [
+      'px-3',
+      'leading-none',
+      'text-[length:var(--font-size-sm)]',
+      'tracking-[var(--tracking-button)]',
+      'rounded-[var(--radius-button)]',
+      'uppercase',
+      'disabled:opacity-55',
+    ]) {
+      expect(list).toContain(token);
+    }
+  });
+
+  it('fills secondary with --surface and leaves ghost unfilled', () => {
+    render(
+      <>
+        <Button variant="secondary">Export</Button>
+        <Button variant="ghost">Cancel</Button>
+      </>,
+    );
+    expect(classes(screen.getByRole('button', { name: 'Export' }))).toContain('bg-[var(--surface)]');
+    expect(classes(screen.getByRole('button', { name: 'Cancel' }))).toContain('bg-transparent');
+  });
+
+  it('draws a link as underlined text with none of the button chrome, whatever its size', () => {
+    render(
+      <Button variant="link" size="sm">
+        Settings
+      </Button>,
+    );
+    const list = classes(screen.getByRole('button', { name: 'Settings' }));
+    expect(list).toContain('underline');
+    for (const chrome of ['border', 'uppercase', 'px-3', 'min-h-[var(--button-height-sm)]']) expect(list).not.toContain(chrome);
+  });
+});
+
+describe('IconButton size (ADR 0595)', () => {
+  it('is 32 px by default and 28 px at size sm', () => {
+    render(
+      <>
+        <IconButton label="Play">
+          <span />
+        </IconButton>
+        <IconButton label="Stop" size="sm">
+          <span />
+        </IconButton>
+      </>,
+    );
+    expect(screen.getByRole('button', { name: 'Play' }).getAttribute('class')).toContain('size-[var(--button-height)]');
+    expect(screen.getByRole('button', { name: 'Stop' }).getAttribute('class')).toContain('size-[var(--button-height-sm)]');
+  });
+});
+
 describe('IconButton pending (ADR 0075)', () => {
   it('swaps its icon for a spinner, keeps its name, and ignores a press while pending', () => {
     const onClick = vi.fn();

@@ -44,12 +44,12 @@ export function WorkDialog({
         showCancel || showClose || showBackground ? (
           <>
             {showBackground && (
-              <Button variant="ghost" onClick={background}>
+              <Button variant="secondary" onClick={background}>
                 Continue in background
               </Button>
             )}
             {showCancel && (
-              <Button variant="ghost" onClick={cancel}>
+              <Button variant="secondary" onClick={cancel}>
                 Cancel
               </Button>
             )}

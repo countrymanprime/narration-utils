@@ -160,14 +160,14 @@ export function ReaderCard({
           <div className={ACTION_SLOT_CLASS}>
             {onRecordInBooth && (
               <TooltipTarget className="relative z-[1]" text="Read this aloud in the Booth, following your voice">
-                <Button variant="ghost" className="text-xs" aria-label={`Record ${title} in Booth`} onClick={onRecordInBooth}>
+                <Button variant="secondary" aria-label={`Record ${title} in Booth`} onClick={onRecordInBooth}>
                   <FontAwesomeIcon icon={faMicrophone} /> Record in Booth
                 </Button>
               </TooltipTarget>
             )}
             {showWorkspace ? (
               <TooltipTarget className="relative z-[1]" text="Open in Proof: listen, follow the script and see flags">
-                <Button variant="ghost" className="text-xs" aria-label={`Open in Proof for ${title}`} onClick={onWorkspace}>
+                <Button variant="secondary" aria-label={`Open in Proof for ${title}`} onClick={onWorkspace}>
                   <FontAwesomeIcon icon={faWaveSquare} />
                 </Button>
               </TooltipTarget>
@@ -175,7 +175,7 @@ export function ReaderCard({
               onRecordInBooth && (
                 // A credits card can be recorded but has no chapter to open a workspace for: an invisible same-size
                 // placeholder keeps its Record in Booth in line with every chapter's down the column.
-                <Button variant="ghost" className="invisible text-xs" aria-hidden="true" tabIndex={-1}>
+                <Button variant="secondary" className="invisible" aria-hidden="true" tabIndex={-1}>
                   <FontAwesomeIcon icon={faWaveSquare} />
                 </Button>
               )

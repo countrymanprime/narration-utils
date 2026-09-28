@@ -28,7 +28,7 @@ export function CommonsAudioLookup({ name, disabled }: { name: string; disabled:
 
   return (
     <div className="space-y-1">
-      <Button variant="ghost" disabled={disabled} pending={pending} onClick={() => void open()} aria-label={`Listen to ${name} on Wikimedia Commons`}>
+      <Button variant="secondary" disabled={disabled} pending={pending} onClick={() => void open()} aria-label={`Listen to ${name} on Wikimedia Commons`}>
         Listen on Commons
       </Button>
       {error && (
