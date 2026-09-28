@@ -1,6 +1,6 @@
 # 0407. A new page replaces its old counterpart in the same change, and the navigation is grouped by production stage
 
-**Status:** Accepted
+**Status:** Accepted (item 3's drawn heading for every wide-rail group is amended by [ADR 0635](0635-the-nav-rail-and-header-take-the-benchmark-sizes-and-every-header-chip-is-one-headerchip-primitive.md): the first group's heading names it for a screen reader and is not drawn, as mock 01 draws it; the rest stands)
 **Date:** 2026-09-27
 
 ## Context

@@ -6,7 +6,7 @@ import { describe, expect, test } from 'vitest';
 // Every pill is THE pill (mock-fidelity-primitives-and-components.prd.md Phase 2, ADR 0600): a status pill, a type tag, a
 // speaker tag, a summary chip and a status dot are drawn by `StatusBadge`/`Badge`/`Dot` (primitives/StatusBadge.tsx),
 // `SpeakerTag` or `Pill`, never by pasting the classes. The owner saw pills of 18 to 26 px side by side because each page
-// drew its own. This scan reads every class string outside the primitives and counts the three shapes a copy leaves
+// drew its own. The header's chips are `HeaderChip` (Phase 8, ADR 0635). This scan reads every class string outside the primitives and counts the three shapes a copy leaves
 // behind, per file:
 // - a chip: `rounded-full` with side padding;
 // - a dot: `rounded-full` at a dot's size (6-8 px);
@@ -16,10 +16,6 @@ import { describe, expect, test } from 'vitest';
 type Shape = 'chip' | 'dot' | 'tag';
 
 const PENDING: Record<string, Partial<Record<Shape, number>> & { owner: string }> = {
-  // The header chips and their status dots (Phase 8's `HeaderChip`).
-  'src/components/layout/EngineChip.tsx': { chip: 2, dot: 2, owner: 'Phase 8' },
-  'src/components/layout/TimerChip.tsx': { chip: 1, owner: 'Phase 8' },
-  'src/components/booth/BuiltinRecorder.tsx': { chip: 1, dot: 1, owner: 'Phase 8 (the chip only)' },
   // The Booth's control-bar chip.
   'src/components/booth/ReadingControlBar.tsx': { chip: 1, owner: 'Phase 13' },
   // The Proof notes header's sources line and the legend's dots.

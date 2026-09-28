@@ -130,19 +130,29 @@ export function AppShell({
   const groupHeadingId = (label: string) => `nav-group-${label.toLowerCase().replace(/\s+/g, '-')}`;
   const navigation = (
     <>
-      <div className="flex items-center gap-2 border-b border-[var(--border)] p-4">
-        <span className="flex size-7 items-center justify-center rounded bg-[var(--accent)] text-[var(--accent-contrast)]">
+      {/* The brand block (mock 01, Phase 8): 62 px and its rule; the 30 px mark at 16 px in, radius 6; the name Barlow
+          Condensed 700 at 13 px over a 10 px muted tagline, 10 px after the mark. */}
+      <div className="flex h-[3.9375rem] flex-none items-center gap-[0.625rem] border-b border-[var(--border)] px-4">
+        <span className="flex size-[1.875rem] flex-none items-center justify-center rounded-[var(--radius-button)] bg-[var(--accent)] text-[0.875rem] text-[var(--accent-contrast)]">
           <FontAwesomeIcon icon={faMicrophone} fixedWidth />
         </span>
-        <span className="leading-tight">
-          <b className="block font-['Barlow_Condensed',sans-serif] text-sm tracking-[0.02em] uppercase">Narration</b>
-          <span className="block font-['Barlow_Condensed',sans-serif] text-[0.65rem] tracking-[0.08em] text-[var(--text-muted)] uppercase">Console</span>
+        <span className="pb-[0.125rem] font-['Barlow_Condensed',sans-serif] leading-none uppercase">
+          <b className="block text-[0.8125rem] font-bold tracking-[0.11em]">Narration</b>
+          <span className="mt-[0.4375rem] block text-[0.625rem] font-semibold tracking-[0.1em] text-[var(--text-muted)]">Console</span>
         </span>
       </div>
-      <nav className="flex-1 p-2">
-        {NAV_GROUPS.map((group) => (
-          <div key={group.label} role="group" aria-labelledby={groupHeadingId(group.label)}>
-            <div id={groupHeadingId(group.label)} className="section-label px-[0.8rem] pt-3 pb-1 first:pt-1">
+      <nav className="flex-1 px-2 pt-[0.5625rem] pb-2">
+        {NAV_GROUPS.map((group, index) => (
+          <div key={group.label} role="group" aria-labelledby={groupHeadingId(group.label)} className="flex flex-col gap-[0.1875rem]">
+            {/* Mock 01 heads every group but the first, whose one item already says "Production": that heading stays for a
+                screen reader (it names the group) and is not drawn. The rest are 10 px capitals at x 19, 29 px deep with
+                the gap above the group's first item, so a heading sits 32 px between two items as the mock spaces it. */}
+            <div
+              id={groupHeadingId(group.label)}
+              className={
+                index === 0 ? 'sr-only' : 'section-label px-[0.625rem] pt-[0.6875rem] pb-[0.375rem] text-[0.625rem] leading-[0.75rem] tracking-[0.1em]'
+              }
+            >
               {group.label}
             </div>
             {group.items.map((item) => (
@@ -160,7 +170,8 @@ export function AppShell({
           </div>
         ))}
       </nav>
-      <div className="border-t border-[var(--border)] p-2">
+      {/* The foot: its rule, then Settings 10 px from it, 4 px further in than the items above (mock 01). */}
+      <div className="flex-none border-t border-[var(--border)] px-3 py-[0.625rem]">
         <NavButton active={settingsActive} icon={faGear} onClick={() => go('/settings')}>
           Settings
         </NavButton>
@@ -171,7 +182,7 @@ export function AppShell({
     <div className="flex h-full flex-col overflow-hidden bg-[var(--bg)]">
       <DemoBanner />
       <div className="flex min-h-0 flex-1 overflow-hidden">
-        <aside className="hidden w-56 flex-none flex-col border-r border-[var(--border)] bg-[var(--surface)] min-[1400px]:flex">{navigation}</aside>
+        <aside className="hidden w-54 flex-none flex-col border-r border-[var(--border)] bg-[var(--surface)] min-[1400px]:flex">{navigation}</aside>
         <aside
           className="medium-rail hidden w-14 flex-none flex-col gap-1 border-r border-[var(--border)] bg-[var(--surface)] p-2 md:max-[1399px]:flex"
           aria-label="Primary navigation"
@@ -209,7 +220,7 @@ export function AppShell({
         </NavDrawer>
         {/* tabIndex -1: a dialog that closes with nothing to give focus back to (its opener is gone) sends focus into <main> (its first control, or <main> itself), not to <body>. */}
         <main tabIndex={-1} className="flex min-w-0 flex-1 flex-col overflow-hidden focus:outline-none">
-          <header className="flex h-14 flex-none items-center gap-3 border-b border-[var(--border)] bg-[var(--surface)] px-3 text-sm md:px-5">
+          <header className="flex h-13 flex-none items-center gap-3 border-b border-[var(--border)] bg-[var(--surface)] px-3 text-sm md:px-5">
             <IconButton label="Open navigation" onClick={() => setDrawerOpen(true)} className="hidden max-md:inline-flex">
               <FontAwesomeIcon icon={faBars} />
             </IconButton>
