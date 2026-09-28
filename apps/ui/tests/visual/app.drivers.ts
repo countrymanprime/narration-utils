@@ -9,7 +9,7 @@ import { engineDrivers } from './drivers/engine';
 import { proofDrivers } from './drivers/proof';
 import { proofChapterDrivers } from './drivers/proof-chapter';
 import { pickupsDrivers } from './drivers/pickups';
-import { deliveryDrivers } from './drivers/delivery';
+import { masterDrivers } from './drivers/master';
 import { productionDrivers } from './drivers/production';
 import { boothDrivers } from './drivers/booth';
 import { settingsDrivers } from './drivers/settings';
@@ -80,7 +80,7 @@ export const APP_DRIVERS: Record<string, Record<string, Driver>> = {
   proof: proofDrivers,
   'proof-chapter': proofChapterDrivers,
   pickups: pickupsDrivers,
-  delivery: deliveryDrivers,
+  master: masterDrivers,
   production: productionDrivers,
   booth: boothDrivers,
   settings: settingsDrivers,

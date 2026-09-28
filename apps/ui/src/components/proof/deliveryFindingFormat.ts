@@ -3,8 +3,8 @@
 // page has no profile to look the rule up in, so the host names the rule, its requirement and the profile in the evidence.
 import { deliveryQcEvidenceSchema } from '../../api/schemas/measure';
 import type { Finding } from '../../types';
-import { formatLength } from '../delivery/deliveryFormat';
-import { formatRuleValue } from '../delivery/deliveryProfile';
+import { formatLength } from '../master/deliveryFormat';
+import { formatRuleValue } from '../master/deliveryProfile';
 
 type DeliveryEvidence = ReturnType<typeof deliveryQcEvidenceSchema.parse>;
 

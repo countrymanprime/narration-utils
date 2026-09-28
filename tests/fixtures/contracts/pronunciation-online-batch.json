@@ -1,0 +1,9 @@
+{
+  "failed": 0,
+  "fetched": 1,
+  "fromCache": 2,
+  "notFound": 1,
+  "stopReason": "",
+  "stopped": false,
+  "words": 3
+}

@@ -38,4 +38,8 @@ export const settingsFeedback: Record<string, FeedbackRow> = {
   'src/components/settings/UpdatesPanel.tsx::updateInstall#1': row('click', 'job', 'dialog', 'dialog', 'dialog', 'inline', 'no', 'ok', 'The install dialog is shown at once and the app restarts (ADR 0074).'),
   'src/components/settings/UpdatesPanel.tsx::updateStatus#2': row('effect', 'file-io', 'na', 'na', 'ui', 'inline', 'na', 'ok', 'Re-reads the status when the saved channel changes.'),
 
+  'src/components/settings/OnlineDictionaryPanel.tsx::pronunciationOnlineKeyStatus#1': row('mount', 'file-io', 'na', 'na', 'ui', 'inline', 'na', 'exempt', 'Settings > Story Bible reads whether the narrator saved a Merriam-Webster key (never the key); a failure is the field\'s inline error (prep-depth P9).'),
+  'src/components/settings/OnlineDictionaryPanel.tsx::pronunciationOnlineKeySet#1': row('click', 'file-io', 'pending', 'disabled', 'toast', 'inline', 'na', 'ok', 'Save key is busy and the panel\'s other buttons off while the host seals and saves the key; the field clears and a toast confirms, or the field shows why the paste was refused without echoing it (prep-depth P9).'),
+  'src/components/settings/OnlineDictionaryPanel.tsx::pronunciationOnlineKeyClear#1': row('click', 'file-io', 'pending', 'disabled', 'toast', 'toast', 'na', 'ok', 'Remove key is busy while the host deletes it; a toast confirms, or names the failure (prep-depth P9).'),
+  'src/components/settings/OnlineDictionaryPanel.tsx::pronunciationOnlineSignUpOpen#1': row('click', 'instant', 'pending', 'disabled', 'ui', 'toast', 'na', 'ok', 'Get a free key opens Merriam-Webster\'s fixed sign-up page in the browser; a failure is an error toast (prep-depth P9).'),
 };

@@ -1,6 +1,6 @@
 // Package masteringport declares the Mastering port (ADR 0306, owner decision D86): which chain turns a narrator's audio into a
 // mastered WAV is swappable, like the other providers (ADR 0301), while what judges the result is not. Every row's written file is
-// measured by internal/measure and judged by internal/deliveryprofile, the same code the Delivery page and the proofing checks use,
+// measured by internal/measure and judged by internal/deliveryprofile, the same code Master & QC and the proofing checks use,
 // so a narrator reads one set of numbers whichever chain made the file (Judge, and the conformance suite's check that a row's
 // Result is exactly Judge's answer).
 //
@@ -88,6 +88,10 @@ type Capabilities struct {
 	NeedsApproval bool
 	// Needs are the DAW port capabilities the row uses, which the launch's DAW must have available.
 	Needs []dawport.Capability
+	// Chain is the row's own fixed chain, in order, in words that hold for any profile, so it can be shown before anything is
+	// mastered; each master's Result.Chain says what ran with its numbers. Empty for a row whose chain is not the app's (the DAW
+	// row: the project's own FX chain decides).
+	Chain []Step
 }
 
 // Mastering is one mastering chain.

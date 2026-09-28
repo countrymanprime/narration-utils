@@ -14,7 +14,7 @@ import (
 	"github.com/countrymanprime/narration-utils/shell/internal/measure"
 )
 
-// The Delivery page's report export (diagnostics-delivery-and-cleanup-tools.prd.md Phase 7). The page sends only the
+// Master & QC's report export (diagnostics-delivery-and-cleanup-tools.prd.md Phase 7). The page sends only the
 // narrator's one choice, whether to include full paths; the host builds the report from what it already holds (the last
 // measurement and diagnostics check, the project's delivery profile, the project's review store, the installed assets) and writes
 // an HTML and a JSON file into the project's narration-utils/delivery folder. It never writes next to the audio, never

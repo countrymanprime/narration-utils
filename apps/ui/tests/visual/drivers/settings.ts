@@ -1,7 +1,7 @@
 // How to reach each `settings` state in STATE_CATALOG (see app.drivers.ts).
 import type { Page } from '@playwright/test';
 import { settlePage } from '../helpers/settle';
-import { type Driver, clickNav, clickSettingsCategory, clickVisible, confirmDialog, goToPage, openLocalAssets } from './shared';
+import { type Driver, clickNav, clickSettingsCategory, clickVisible, confirmDialog, goToPage, openLocalAssets, saveOnlineDictionaryKey } from './shared';
 
 export const settingsDrivers: Record<string, Driver> = {
   'global-general': async (page) => {
@@ -35,6 +35,10 @@ export const settingsDrivers: Record<string, Driver> = {
     await goToPage(page, 'Settings');
     await clickVisible(page, 'tab', 'Global');
     await clickSettingsCategory(page, 'Story Bible');
+    await page.getByText('No key', { exact: true }).waitFor();
+  },
+  'global-storybible-key-saved': async (page) => {
+    await saveOnlineDictionaryKey(page);
   },
   'global-delivery': async (page) => {
     await goToPage(page, 'Settings');

@@ -9,6 +9,7 @@ import { WIRE_TAKE_REVIEW_FINDINGS, WIRE_TRACKS_PROJECT, WIRE_TRANSCRIPT, editin
 import { prepMarkupChapterSchema, prepMarkupSpanSchema } from './schemas/prepMarkup';
 import { prepCompletenessSummarySchema } from './schemas/prepCompleteness';
 import { cleanupApplyResultSchema, cleanupPreviewResultSchema, levelMatchApplyResultSchema, levelMatchPreviewResultSchema } from './schemas/cleanup';
+import { pronunciationOnlineBatchResultSchema, pronunciationOnlineKeyStatusSchema, pronunciationOnlineResultSchema } from './schemas/pronunciationOnline';
 import { WIRE_TAKE_COMPARISON_FINDING } from './takeComparisonMock';
 import { MOCK_MEASURE_PATHS } from './measureMock';
 import { judgeMock } from './coverageMock';
@@ -936,6 +937,34 @@ describe('answers of the mock client for the manuscript, Story Bible and project
     // @ts-expect-error an unknown source is a build-time error too; the mock also rejects it at runtime.
     await expect(api.pronunciationLookupOpen('wiktionary', 'croquet')).rejects.toThrow(/Unknown pronunciation lookup source/);
   });
+
+  it('the online pronunciation lookup: the key status, a lookup, the cache and a confirmed batch (prep-depth Phase 9)', async () => {
+    const api = createMockApi();
+    const absent = await api.pronunciationOnlineKeyStatus();
+    expectMatches(pronunciationOnlineKeyStatusSchema, absent, 'mock key status');
+    expect(absent.present).toBe(false);
+    // Nothing is sent without the narrator's own key.
+    await expect(api.pronunciationOnlineLookup('croquet')).rejects.toThrow(/key/);
+    await expect(api.pronunciationOnlineKeySet('not a key')).rejects.toThrow(/does not look like/);
+    const present = await api.pronunciationOnlineKeySet('0b5c1a3e-7d2f-4e6a-9c8b-2f1e0d9c8b7a');
+    expectMatches(pronunciationOnlineKeyStatusSchema, present, 'mock key set');
+    expect(JSON.stringify(present)).not.toContain('0b5c1a3e');
+    const found = await api.pronunciationOnlineLookup('croquet');
+    expectMatches(pronunciationOnlineResultSchema, found, 'mock lookup');
+    expect(found).toMatchObject({ found: true, cached: false });
+    expect((await api.pronunciationOnlineLookup('Croquet')).cached).toBe(true);
+    expectMatches(pronunciationOnlineResultSchema, await api.pronunciationOnlineLookup('quorlen'), 'mock lookup, not found');
+    // One word only: a passage or a file name is refused, as the host refuses it.
+    await expect(api.pronunciationOnlineLookup('The Mock Turtle sighed deeply')).rejects.toThrow(/one word/);
+    await expect(api.pronunciationOnlineLookup('C:\\Books\\alice.docx')).rejects.toThrow(/one word/);
+    // A batch needs its distinct word count confirmed.
+    await expect(api.pronunciationOnlineLookupBatch(['wren', 'Wren', 'alice'], 3)).rejects.toThrow(/confirmation/);
+    const batch = await api.pronunciationOnlineLookupBatch(['wren', 'Wren', 'alice'], 2);
+    expectMatches(pronunciationOnlineBatchResultSchema, batch, 'mock batch');
+    expect(batch).toMatchObject({ words: 2, fetched: 2 });
+    await expect(api.pronunciationOnlineSignUpOpen()).resolves.toBeUndefined();
+    expectMatches(pronunciationOnlineKeyStatusSchema, await api.pronunciationOnlineKeyClear(), 'mock key clear');
+  });
 });
 
 describe('answers of the mock client for the settings, voice, model, transcript and tracks bindings', () => {
@@ -1670,7 +1699,7 @@ describe('answers of the mock client for the settings, voice, model, transcript 
     const saved = await api.findingsList({ category: 'delivery_qc' });
     expectMatches(findingsPageSchema, saved, 'mock delivery findings on the Review page');
     expect(saved.total).toBeGreaterThan(0);
-    // The same ids the Delivery page gives them, so a decision on either page is one decision.
+    // The same ids Master & QC gives them, so a decision on either page is one decision.
     const judged = new Set(job.files.flatMap((file) => file.findings.map((finding) => finding.id)));
     expect(saved.findings.every((finding) => judged.has(finding.id))).toBe(true);
     const shape = (finding: (typeof saved.findings)[number]) => {
@@ -2428,6 +2457,11 @@ describe('answers of the mock client for the settings, voice, model, transcript 
       'saveCreditsRetailSample',
       'creditsStatuses',
       'setCreditsStatus',
+      'pronunciationOnlineKeyStatus',
+      'pronunciationOnlineKeySet',
+      'pronunciationOnlineKeyClear',
+      'pronunciationOnlineLookup',
+      'pronunciationOnlineLookupBatch',
     ];
     const VOID = [
       'manuscriptImportCancel',
@@ -2465,6 +2499,7 @@ describe('answers of the mock client for the settings, voice, model, transcript 
       'teleprompterPause',
       'dawCatalogOpenDownloadPage',
       'pronunciationLookupOpen',
+      'pronunciationOnlineSignUpOpen',
       'teleprompterSeek',
       'reportClientDiagnostic',
       'systemNotify',

@@ -1,7 +1,10 @@
 // The mastering port's choice payload (ADR 0306, owner decision D86): every mastering chain this build has, read from the host's
 // Go registry (internal/masteringport), what each needs and whether it can be chosen now, and the current project's own choice.
-// apps/desktop/bindings_mastering.go is the binding. No screen reads it yet; Master & QC (stage navigation Phase 8) will.
+// apps/desktop/bindings_mastering.go is the binding. Master & QC (stage navigation Phase 8) reads it to draw the chain.
 import type { DawCapabilitySupport } from './daw';
+
+/** One step of a row's own fixed chain (masteringport.Step), in words that hold for any delivery profile. */
+export type MasteringStep = { name: string; detail: string };
 
 export type MasteringProvider = {
   /** The row's name, the value the project's choice stores ('builtin', 'daw'). New rows may appear, so it is a plain string. */
@@ -18,6 +21,9 @@ export type MasteringProvider = {
   needs: string[];
   /** Whether it can be chosen now: the DAW port's own Support shape (port.Support in Go). */
   support: DawCapabilitySupport;
+  /** The row's own chain in order, drawn before anything is mastered; empty when the chain is not the app's (the DAW row, whose
+   * project FX chain decides). */
+  chain: MasteringStep[];
 };
 
 export type MasteringProviders = {

@@ -63,7 +63,7 @@ export function FindingDetail({
   goToManuscript,
   goToStoryBible,
   goToWorkspace,
-  goToDelivery,
+  goToMaster,
   reaperStatus,
   onReaperStatusChange,
   onCompared,
@@ -80,8 +80,8 @@ export function FindingDetail({
   /** Opens the chapter workspace on this finding (edit-and-proof-workspace.prd.md Phase 4, "Open in workspace"); undefined
    * where the caller has no workspace to open (there is none outside the app - every caller passes it). */
   goToWorkspace?: (chapterId: string, findingId: string) => void;
-  /** Opens the Delivery page on a measured file and one of its rules (a delivery finding has no manuscript position). */
-  goToDelivery: (file: string, rule?: string) => void;
+  /** Opens Master & QC on a measured file and one of its rules (a delivery finding has no manuscript position). */
+  goToMaster: (file: string, rule?: string) => void;
   /** A comparison of this take-review group finished: the page shows it. */
   onCompared: (ended: TakeComparisonJob) => void;
 }) {
@@ -190,9 +190,9 @@ export function FindingDetail({
           </TooltipTarget>
         )}
         {deliveryFile ? (
-          <TooltipTarget text="Open the Delivery page on this file, rule by rule">
-            <Button variant="ghost" onClick={() => goToDelivery(deliveryFile, delivery?.rule)}>
-              Open in Delivery
+          <TooltipTarget text="Open Master & QC on this file, rule by rule">
+            <Button variant="ghost" onClick={() => goToMaster(deliveryFile, delivery?.rule)}>
+              Open in Master & QC
             </Button>
           </TooltipTarget>
         ) : (

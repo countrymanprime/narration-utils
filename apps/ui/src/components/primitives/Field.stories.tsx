@@ -58,6 +58,15 @@ export const TextareaMultiline: Story = {
 
 // Locked story-bible entries (ADR 0007) and unsaved new drafts render their fields disabled.
 export const TextInputDisabled: Story = { args: { disabled: true } };
+// A secret (the narrator's own API key): masked, with the browser's autofill and spell check off.
+export const SecretInput: Story = {
+  args: { label: 'Merriam-Webster key', value: '0b5c1a3e-7d2f-4e6a-9c8b-2f1e0d9c8b7a', secret: true },
+  play: async ({ canvasElement }) => {
+    const input = within(canvasElement).getByLabelText('Merriam-Webster key');
+    await expect(input).toHaveAttribute('type', 'password');
+    await expect(input).toHaveAttribute('autocomplete', 'off');
+  },
+};
 export const TextareaDisabled: Story = {
   args: { label: 'Description', textarea: true, disabled: true, value: 'Locked entry: edits are blocked until it is unlocked.' },
 };

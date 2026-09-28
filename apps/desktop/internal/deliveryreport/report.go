@@ -1,4 +1,4 @@
-// Package deliveryreport builds the Delivery page's exported report (diagnostics-delivery-and-cleanup-tools.prd.md
+// Package deliveryreport builds Master & QC's exported report (diagnostics-delivery-and-cleanup-tools.prd.md
 // Phase 7): one model rendered twice, as JSON for tools and as a self-contained HTML page for a reviewer without the
 // app, carrying the same finding IDs and review states. It is pure: the host gathers the inputs (the last measurement
 // and diagnostics check, the project's delivery profile, the review store, the installed assets) and writes the two files.

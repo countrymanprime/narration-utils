@@ -46,7 +46,7 @@ export function ProofPage({
   goToManuscript,
   goToStoryBible,
   goToWorkspace,
-  goToDelivery,
+  goToMaster,
   openChapter,
 }: {
   notify: Notify;
@@ -55,8 +55,8 @@ export function ProofPage({
   goToStoryBible: (entityId: string) => void;
   /** "Open in workspace" (edit-and-proof-workspace.prd.md Phase 4): threaded straight through to FindingDetail. */
   goToWorkspace?: (chapterId: string, findingId: string) => void;
-  /** Opens the Delivery page on a measured file and rule, for a delivery finding (delivery-platform-profiles.prd.md P12). */
-  goToDelivery: (file: string, rule?: string) => void;
+  /** Opens Master & QC on a measured file and rule, for a delivery finding (delivery-platform-profiles.prd.md P12). */
+  goToMaster: (file: string, rule?: string) => void;
   /** Opens a chapter's view, `/proof/:chapterId`. */
   openChapter: (chapterId: string) => void;
 }) {
@@ -220,7 +220,7 @@ export function ProofPage({
                   goToManuscript={goToManuscript}
                   goToStoryBible={goToStoryBible}
                   goToWorkspace={goToWorkspace}
-                  goToDelivery={goToDelivery}
+                  goToMaster={goToMaster}
                   reaperStatus={reaper.status}
                   onReaperStatusChange={reaper.refresh}
                   onCompared={compared}

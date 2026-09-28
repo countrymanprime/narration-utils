@@ -76,7 +76,7 @@ func DeliveryChecks() []DeliveryCheck {
 
 // gatingRules are the profile's rules a check is judged by: file rules on its
 // metric, measured by the app, turned on and required. An advice rule never
-// gates (its miss is a warning in the Delivery page's own terms); it is shown
+// gates (its miss is a warning in Master & QC's own terms); it is shown
 // as evidence.
 func gatingRules(profile deliveryprofile.Profile, metric string) (gating, advice []deliveryprofile.Rule) {
 	for _, rule := range profile.Rules {
@@ -232,9 +232,9 @@ func renderNotReady(render RenderStatus) (stages.UnknownCause, string, bool) {
 	case render.State != RenderCurrent:
 		return render.Cause, render.Reason, true
 	case render.MeasurementFailed:
-		return stages.CauseIncompleteRun, "The last measurement of the rendered file did not finish. Measure it again on the Delivery page.", true
+		return stages.CauseIncompleteRun, "The last measurement of the rendered file did not finish. Measure it again on Master & QC.", true
 	case render.Measurement == nil:
-		return stages.CauseNeverAnalyzed, "Measure the rendered file on the Delivery page.", true
+		return stages.CauseNeverAnalyzed, "Measure the rendered file on Master & QC.", true
 	}
 	return "", "", false
 }
@@ -275,7 +275,7 @@ func valueText(value *float64, unit string) string {
 	return text
 }
 
-// boundText writes a rule's bound the way the Delivery page states limits.
+// boundText writes a rule's bound the way Master & QC states limits.
 func boundText(rule deliveryprofile.Rule) string {
 	number := func(v float64) string { return strconv.FormatFloat(v, 'f', -1, 64) }
 	unit := ""

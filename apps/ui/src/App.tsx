@@ -29,11 +29,11 @@ import { ProofPage } from './components/proof/ProofPage';
 import { PickupsPage } from './components/pickups/PickupsPage';
 import { RedirectKeepingLocation } from './components/layout/RedirectKeepingLocation';
 import { leavesCompareRun } from './components/proof/leavesCompareRun';
-import { DeliveryPage } from './components/delivery/DeliveryPage';
+import { MasterQcPage } from './components/master/MasterQcPage';
 import { ProductionPage } from './components/production/ProductionPage';
 import { runningTimerOf, type RunningTimer } from './components/layout/TimerChip';
 import type { ProductionOverview } from './api/contracts/production';
-import { deliveryHash, parseDeliveryHash } from './components/delivery/deliveryLink';
+import { masterHash, parseMasterHash } from './components/master/masterLink';
 import { TooltipProvider } from './components/primitives/Tooltip';
 import { ErrorBoundary } from './components/primitives/ErrorBoundary';
 import { DESKTOP_HOST_API_VERSION } from './hostApi';
@@ -433,8 +433,8 @@ function AppRoutes() {
   // chapter view lands on the flag that finding backs (Navigation and deep links).
   const goToProofChapter = (chapterId: string, findingId?: string) =>
     guardedNavigate(`/proof/${encodeURIComponent(chapterId)}${findingId ? `?finding=${encodeURIComponent(findingId)}` : ''}`);
-  // A delivery finding opens the Delivery page on its file and rule: "#file=<path>&rule=<id>" (deliveryLink.ts).
-  const goToDelivery = (file: string, rule?: string) => guardedNavigate(`/delivery${deliveryHash({ file, ...(rule ? { rule } : {}) })}`);
+  // A delivery finding opens Master & QC on its file and rule: "#file=<path>&rule=<id>" (masterLink.ts).
+  const goToMaster = (file: string, rule?: string) => guardedNavigate(`/master${masterHash({ file, ...(rule ? { rule } : {}) })}`);
   // A Manuscript card's "Record in Booth" (stage-navigation-and-page-replacement.prd.md Q9): the Booth on that chapter or credits.
   const goToBooth = (target: { chapter: string } | { credits: CreditsKind }) => guardedNavigate(`/booth${boothQuery(target)}`);
 
@@ -571,7 +571,7 @@ function AppRoutes() {
                       goToManuscript={goToScript}
                       goToStoryBible={goToStoryBible}
                       goToWorkspace={(chapterId, findingId) => goToProofChapter(chapterId, findingId)}
-                      goToDelivery={goToDelivery}
+                      goToMaster={goToMaster}
                       openChapter={(chapterId) => goToProofChapter(chapterId)}
                     />
                   }
@@ -587,10 +587,12 @@ function AppRoutes() {
                 />
                 {/* The Production page moved to `/` (stage-navigation-and-page-replacement.prd.md Phase 2). */}
                 <Route path="/production" element={<RedirectKeepingLocation to="/" />} />
+                {/* Master & QC (stage-navigation-and-page-replacement.prd.md Phase 8) replaces Delivery; old links land, hash kept. */}
                 <Route
-                  path="/delivery"
-                  element={<DeliveryPage openSettings={() => guardedNavigate('/settings#delivery')} focus={parseDeliveryHash(location.hash)} />}
+                  path="/master"
+                  element={<MasterQcPage openSettings={() => guardedNavigate('/settings#delivery')} focus={parseMasterHash(location.hash)} />}
                 />
+                <Route path="/delivery" element={<RedirectKeepingLocation to="/master" />} />
                 <Route
                   path="/settings"
                   element={

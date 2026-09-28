@@ -361,7 +361,7 @@ function ChapterView({ chapterId, notify, transcript, dawFileLinked, goToManuscr
                 goToManuscript={goToManuscript}
                 goToStoryBible={goToStoryBible}
                 // A chapter's notes are about its recording; a delivery check is about a rendered file and is never one of them.
-                goToDelivery={() => undefined}
+                goToMaster={() => undefined}
                 reaperStatus={reaperStatus.status}
                 onReaperStatusChange={reaperStatus.refresh}
                 onCompared={loadFindings}

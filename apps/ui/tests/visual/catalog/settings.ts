@@ -37,7 +37,19 @@ export const settingsStates: StateEntry[] = [
     ...REFLOW,
   },
   { page: 'settings', state: 'global-proofing', description: 'Settings, Global scope / Proof category', ...REFLOW },
-  { page: 'settings', state: 'global-storybible', description: 'Settings, Global scope / Story Bible category', ...REFLOW },
+  {
+    page: 'settings',
+    state: 'global-storybible',
+    description: 'Settings, Global scope / Story Bible category, with the online dictionary panel offering a free Merriam-Webster key',
+    ...REFLOW,
+  },
+  {
+    page: 'settings',
+    state: 'global-storybible-key-saved',
+    description:
+      'Settings, Global scope / Story Bible category after the narrator saved their own Merriam-Webster key: Key saved, Replace and Remove (prep-depth P9)',
+    ...REFLOW,
+  },
   {
     page: 'settings',
     state: 'global-delivery',
