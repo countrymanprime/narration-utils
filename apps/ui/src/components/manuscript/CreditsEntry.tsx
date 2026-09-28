@@ -1,5 +1,5 @@
 import { previewParts } from '../../creditsPreviewParts';
-import { creditsParagraphs } from '../teleprompter/readerModel';
+import { creditsParagraphs } from '../booth/readerModel';
 import type { CreditsRenderResult } from '../../types';
 import { Button } from '../primitives/Button';
 import { ReaderCard } from './ReaderCard';
@@ -21,9 +21,7 @@ export function CreditsEntry({
   onToggle,
   textClass,
   onFillIn,
-  onReadAloud,
-  onBooth,
-  onCompanion,
+  onRecordInBooth,
 }: {
   kind: 'opening' | 'closing';
   preview?: CreditsRenderResult;
@@ -35,16 +33,10 @@ export function CreditsEntry({
    * shown beside the unresolved-token line whenever there is one to show. Omitted, the line renders with no button (a
    * caller that has not wired the dialog up yet). */
   onFillIn?: () => void;
-  /** Read aloud (manuscript-credits-card-parity.prd.md, Phase 2): the same header action a narration chapter has,
-   * shown only once there is something to read (`preview.words > 0`, matching the standalone Teleprompter picker). */
-  onReadAloud?: () => void;
-  /** Booth (booth-mode-and-companion-panel.prd.md Phase 1): the same header action a narration chapter has, gated the
-   * same as `onReadAloud` (`preview.words > 0`) - a credits card with a Read aloud button and no Booth button beside
-   * it left the header's fixed-width action slot (manuscript-chapter-header-alignment.prd.md) narrower than a
-   * chapter's own, breaking the alignment every row in the column shares. */
-  onBooth?: () => void;
-  /** Companion (booth-mode-and-companion-panel.prd.md Phase 7): gated the same as Read aloud and Booth, for the same reason. */
-  onCompanion?: () => void;
+  /** Record in Booth (manuscript-credits-card-parity.prd.md Phase 2's read-aloud action, now the Booth page's link,
+   * stage-navigation-and-page-replacement.prd.md Phase 4): shown only once there is something to read (`preview.words > 0`,
+   * matching the Booth's own chapter picker). */
+  onRecordInBooth?: () => void;
 }) {
   const label = KIND_LABEL[kind];
   const lines = preview ? creditsParagraphs(kind, preview.text) : [];
@@ -57,12 +49,7 @@ export function CreditsEntry({
       expanded={expanded}
       onToggleExpand={onToggle}
       wordCount={preview?.words ?? 0}
-      showReadAloud={hasWords}
-      onReadAloud={onReadAloud}
-      showBooth={hasWords}
-      onBooth={onBooth}
-      showCompanion={hasWords}
-      onCompanion={onCompanion}
+      onRecordInBooth={hasWords ? onRecordInBooth : undefined}
     >
       {preview ? (
         <div className="relative bg-[var(--surface)]">
