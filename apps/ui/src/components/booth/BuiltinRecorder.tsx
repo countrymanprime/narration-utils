@@ -62,8 +62,8 @@ export function RecorderStatus({ recorder }: { recorder: Recorder }) {
     <>
       <span className="flex flex-none items-center gap-1.5 text-xs" style={{ color: 'var(--text-muted)' }}>
         <span className="max-sm:sr-only">Input</span>
-        <LevelMeter label="Recorder input level" peak={level?.peak ?? null} rms={level?.rms ?? null} size="compact" className="w-10 sm:w-24" />
-        <span className={`${MONO} hidden whitespace-nowrap md:inline`} aria-hidden="true">
+        <LevelMeter label="Recorder input level" peak={level?.peak ?? null} rms={level?.rms ?? null} size="compact" className="w-10 sm:w-16 xl:w-24" />
+        <span className={`${MONO} hidden whitespace-nowrap xl:inline`} aria-hidden="true">
           {peakText(level?.peak)}
         </span>
       </span>
