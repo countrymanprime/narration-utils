@@ -5,6 +5,9 @@ import type {
   WorkspaceFXChainsResult,
   WorkspaceItem,
   WorkspaceParagraph,
+  WorkspacePeaks,
+  WorkspacePeaksEntry,
+  WorkspacePeaksResult,
   WorkspaceToken,
 } from '../contracts/workspace';
 import { listFromNull, optionalFromNull } from './base';
@@ -65,3 +68,24 @@ export const workspaceFXChainsResultSchema = z.object({
   names: listFromNull(z.string()),
   truncated: z.boolean(),
 }) satisfies z.ZodType<WorkspaceFXChainsResult>;
+
+// The waveform strip's peaks (edit-and-proof-workspace PRD Phase 5, ADR 0520): apps/desktop/bindings_workspace_peaks.go.
+const peaksSchema = z.object({
+  startSeconds: z.number(),
+  bucketsPerSecond: z.number(),
+  buckets: z.number(),
+  minMax: z.string(),
+  sampleRate: z.number(),
+  channels: z.number(),
+}) satisfies z.ZodType<WorkspacePeaks>;
+
+const peaksEntrySchema = z.object({
+  index: z.number(),
+  peaks: optionalFromNull(peaksSchema),
+  reason: optionalFromNull(z.string()),
+}) satisfies z.ZodType<WorkspacePeaksEntry>;
+
+export const workspacePeaksResultSchema = z.object({
+  chapterId: z.string(),
+  items: listFromNull(peaksEntrySchema),
+}) satisfies z.ZodType<WorkspacePeaksResult>;

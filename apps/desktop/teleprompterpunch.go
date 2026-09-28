@@ -9,19 +9,20 @@ import (
 	"github.com/countrymanprime/narration-utils/shell/internal/teleprompter"
 )
 
-// Punch and roll (teleprompter-manuscript-integration.prd.md Phase 12, booth-actions-enablement PRD Phase 3, ADR
-// 0246): "Punch from here" on a flag resolves the flagged word's project time from the punch anchors the poll loop
-// has recorded (teleprompterpunchpoll.go), then moves REAPER's edit cursor there minus the pre-roll setting, through
-// dawport.Puncher (CapPunch), never bridge.Actions directly. Reading REAPER's own pre-roll preference first is the
+// Punch and roll (teleprompter-manuscript-integration.prd.md Phase 12, booth-actions-enablement PRD Phase 3, ADRs
+// 0246 and 0560): "Punch from here" on a flag resolves the flagged word's project time from the punch anchors the poll
+// loop has recorded (teleprompterpunchpoll.go), else from the recording itself (the offline alignment,
+// teleprompterpunchalign.go), else from the anchors' pace, then moves REAPER's edit cursor there minus the pre-roll
+// setting, through dawport.Puncher (CapPunch), never bridge.Actions directly. Reading REAPER's own pre-roll preference first is the
 // owner-gated spike this phase does not run; the setting is the only source until it does.
 
 // defaultPunchPreRoll is what a settings value that will not parse falls back to (the same 3 s the setting's own
 // repo default and range describe, apps/desktop/settings_number.go).
 const defaultPunchPreRoll = 3.0
 
-// ErrNoPunchAnchor is TeleprompterPunchPreview/TeleprompterPunch's refusal when the anchors recorded so far cannot
-// place word at all (fewer than two anchors, teleprompter.ResolveWordTime): nothing was moved.
-var ErrNoPunchAnchor = errors.New("there's no punch anchor near this word yet: read a little further, then try again")
+// ErrNoPunchAnchor is TeleprompterPunchPreview/TeleprompterPunch's refusal when nothing can place word: fewer than two
+// anchors (teleprompter.ResolveWordTime) and no alignment from the recording. Nothing was moved.
+var ErrNoPunchAnchor = errors.New("there's no timing for this word yet: record or read a little further, then try again")
 
 // ErrNoLiveChapter is the refusal when there is no live (or just-ending) session reading a manuscript chapter to
 // punch against (teleprompter.Service.CurrentChapter): "Punch from here" only makes sense while the chapter that
@@ -63,9 +64,11 @@ func punchPreRoll(svc hostServices) float64 {
 	return preRoll
 }
 
-// resolvePunch is what preview and punch share: the live chapter, word's project time and source from its anchors,
-// and the pre-roll to use. It never touches REAPER.
-func resolvePunch(svc hostServices, word int) (chapterID string, position float64, source string, preRoll float64, err error) {
+// resolvePunch is what preview and punch share: the live chapter, word's project time and source, and the pre-roll to
+// use. The time comes from its anchors when they bracket it (SourceAnchor), else from align, the offline alignment over
+// the recording (SourceAlignment, nil to skip it), else from the anchors' pace (SourceEstimate). It never moves
+// anything in REAPER.
+func resolvePunch(svc hostServices, word int, align punchAligner) (chapterID string, position float64, source string, preRoll float64, err error) {
 	project := svc.config.projectFolder
 	if project == "" {
 		return "", 0, "", 0, errNoProject
@@ -82,6 +85,19 @@ func resolvePunch(svc hostServices, word int) (chapterID string, position float6
 		return "", 0, "", 0, err
 	}
 	position, source, ok = teleprompter.ResolveWordTime(anchors, word)
+	if ok && source == teleprompter.SourceAnchor {
+		return chapterID, position, source, punchPreRoll(svc), nil
+	}
+	var estimate *float64
+	if ok {
+		paced := position
+		estimate = &paced
+	}
+	if align != nil {
+		if aligned, found := align(chapterID, word, estimate); found {
+			return chapterID, aligned, teleprompter.SourceAlignment, punchPreRoll(svc), nil
+		}
+	}
 	if !ok {
 		return "", 0, "", 0, ErrNoPunchAnchor
 	}
@@ -90,24 +106,27 @@ func resolvePunch(svc hostServices, word int) (chapterID string, position float6
 
 // TeleprompterPunchPreview resolves word's punch time and pre-roll without moving anything in REAPER: what the
 // narrator sees before confirming "Punch from here" (Phase 12's "UI showing resolved time, its source... and pre-roll
-// before moving"). word is the flag's own script word index; the chapter is whichever one is live right now.
+// before moving"). word is the flag's own script word index; the chapter is whichever one is live right now. When the
+// anchors do not bracket the word, this runs the offline alignment (a sidecar decode of up to two minutes of the
+// recording, bounded by teleprompterLocateTimeout), so it can take a few seconds.
 func (h *Host) TeleprompterPunchPreview(word int) (string, error) {
 	svc := h.services()
-	_, position, source, preRoll, err := resolvePunch(svc, word)
+	_, position, source, preRoll, err := resolvePunch(svc, word, h.punchAlignerFor(svc, trackStateReaderFrom(svc)))
 	if err != nil {
 		return encodeBinding(refusedPunch(err), nil)
 	}
 	return encodeBinding(TeleprompterPunchResult{Outcome: "resolved", ResolvedTime: &position, Source: source, PreRoll: &preRoll}, nil)
 }
 
-// TeleprompterPunch resolves word's punch time again (the narrator may have kept reading since the preview) and
+// TeleprompterPunch resolves word's punch time again (the narrator may have kept reading since the preview; an
+// alignment of the same stretch is reused, punchAlignCache) and
 // moves REAPER's edit cursor there minus the pre-roll, through the DAW port's Puncher role. On a successful punch,
 // every anchor at or after word is dropped (the narrator is about to re-record from here, so an anchor from the take
 // being replaced would misplace the next punch, teleprompter.DropAnchorsFrom); that failing is logged, never
 // surfaced, since the punch itself already succeeded.
 func (h *Host) TeleprompterPunch(word int) (string, error) {
 	svc := h.services()
-	chapterID, position, source, preRoll, err := resolvePunch(svc, word)
+	chapterID, position, source, preRoll, err := resolvePunch(svc, word, h.punchAlignerFor(svc, trackStateReaderFrom(svc)))
 	if err != nil {
 		return encodeBinding(refusedPunch(err), nil)
 	}
