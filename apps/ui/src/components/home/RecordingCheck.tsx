@@ -16,19 +16,6 @@ import { WorkDialog } from '../primitives/WorkDialog';
 import { RecordingCheckReport } from './RecordingCheckReport';
 import { COVERAGE_REASON_TEXT, LINK_REASONS, REASON_PAGE, formatWhen, passLabel, recheckLabel } from './recordingCheckText';
 
-/**
- * A credits row's recording check reuses this same dialog (credits-in-chapter-table.prd.md Phase 3): a synthetic
- * ManuscriptChapter, never a real one and never sent anywhere as one (ADR 0150, ADR 0183 keep credits out of
- * `manuscriptChapters`) - just enough for `RecordingCheck` and `RecordingCheckReport` to run and read a credits
- * check with no change of their own. `id` matches the host's own `coverage.CreditsChapterID` ("credits-opening" /
- * "credits-closing"), and the one paragraph id matches `coverage.creditsParagraphID`'s "<id>-p0", so a reported gap
- * numbers as "paragraph 1" the same way a real chapter's first paragraph would.
- */
-export function creditsCheckChapter(kind: 'opening' | 'closing', title: string): ManuscriptChapter {
-  const id = `credits-${kind}`;
-  return { id, title, index: -1, wordCount: 0, status: 'not_started', paragraphIds: [{ id: `${id}-p0`, index: 0 }] };
-}
-
 type Refusal = Extract<CoverageStartResult, { status: 'refused' }>;
 type ModelRequired = Extract<CoverageStartResult, { status: 'asset_required' }>;
 /** The model cascade's own re-check gate (Phase 5, MC4): the same shape as ModelRequired, kept apart so the dialog
@@ -496,7 +483,7 @@ function TrackLink({ chapter, onLinked }: { chapter: ManuscriptChapter; onLinked
   if (!tracks) return <p role="status">Reading the REAPER tracks…</p>;
   return (
     <MappingConfirm
-      chapterTitle={chapter.title}
+      chapterTitle={chapterName(chapter, 'short')}
       tracks={tracks}
       busy={confirming.isBusy}
       onConfirm={(trackGuid) =>

@@ -17,6 +17,7 @@ const defaultDocxStyles = `<w:styles xmlns:w="http://schemas.openxmlformats.org/
 	`<w:style w:type="paragraph" w:styleId="Heading2"><w:name w:val="heading 2"/></w:style>` +
 	`<w:style w:type="paragraph" w:styleId="Heading3"><w:name w:val="heading 3"/></w:style>` +
 	`<w:style w:type="paragraph" w:styleId="Title"><w:name w:val="Title"/></w:style>` +
+	`<w:style w:type="paragraph" w:styleId="Subtitle"><w:name w:val="Subtitle"/></w:style>` +
 	`<w:style w:type="paragraph" w:styleId="TOCHeading"><w:name w:val="TOC Heading"/></w:style>` +
 	`<w:style w:type="paragraph" w:styleId="TOC1"><w:name w:val="toc 1"/></w:style>` +
 	`<w:style w:type="character" w:styleId="Emphasis"><w:name w:val="Emphasis"/></w:style>` +
@@ -533,5 +534,55 @@ func TestDocxTOCBelowThresholdFallsBackToHeuristicAndReportsAMismatch(t *testing
 	}
 	if !found {
 		t.Fatalf("expected the mismatch notice, got %#v", draft.Notices)
+	}
+}
+
+// TestDocxTitleAndSubtitleStylesBecomeSourceMetadata covers credits-token-setup-and-front-matter-detection.prd.md
+// Phase 4: a book's own Title-styled paragraph, immediately followed by a Subtitle-styled one, is captured into
+// Draft.SourceMetadata - distinct from a chapter's own subtitle line (TestDocxSoftBreakSubtitleReachesTheSectionForTheReview
+// and the F4 fixture below), which is not the book's title page.
+func TestDocxTitleAndSubtitleStylesBecomeSourceMetadata(t *testing.T) {
+	draft := importDocx(t, wordParagraph("Title", wordRun("After the Applause"))+
+		wordParagraph("Subtitle", wordRun("A Novel"))+
+		wordParagraph("Heading1", wordRun("Chapter One"))+
+		wordParagraph("", wordRun("It began.")))
+	if draft.SourceMetadata == nil {
+		t.Fatal("SourceMetadata is nil")
+	}
+	if got := *draft.SourceMetadata; got.Title != "After the Applause" || got.Subtitle != "A Novel" {
+		t.Fatalf("got %+v", got)
+	}
+}
+
+func TestDocxWithNoTitleStyleHasNoSourceMetadata(t *testing.T) {
+	draft := importDocx(t, wordParagraph("Heading1", wordRun("Chapter One"))+wordParagraph("", wordRun("It began.")))
+	if draft.SourceMetadata != nil {
+		t.Fatalf("SourceMetadata = %+v, want nil", draft.SourceMetadata)
+	}
+}
+
+// TestDocxChapterSubtitleStyleIsNotMistakenForTheBookSubtitle: a Subtitle-styled line under an ordinary chapter
+// heading (not a Title-styled one) is that chapter's own subtitle, per the existing F4 handling - never the book's.
+func TestDocxChapterSubtitleStyleIsNotMistakenForTheBookSubtitle(t *testing.T) {
+	draft := importDocx(t, wordParagraph("Heading1", wordRun("Chapter One"))+
+		wordParagraph("Subtitle", wordRun("The Storm"))+
+		wordParagraph("", wordRun("It began.")))
+	if draft.SourceMetadata != nil {
+		t.Fatalf("SourceMetadata = %+v, want nil (that Subtitle line belongs to the chapter, not the book)", draft.SourceMetadata)
+	}
+	if subtitleOf(draft.Paragraphs[0]) != "The Storm" {
+		t.Fatalf("the chapter's own subtitle handling must be unaffected, got %+v", draft.Paragraphs[0])
+	}
+}
+
+func TestDocxTitleStyleWithNoFollowingSubtitleCapturesTitleOnly(t *testing.T) {
+	draft := importDocx(t, wordParagraph("Title", wordRun("After the Applause"))+
+		wordParagraph("Heading1", wordRun("Chapter One"))+
+		wordParagraph("", wordRun("It began.")))
+	if draft.SourceMetadata == nil {
+		t.Fatal("SourceMetadata is nil")
+	}
+	if got := *draft.SourceMetadata; got.Title != "After the Applause" || got.Subtitle != "" {
+		t.Fatalf("got %+v", got)
 	}
 }

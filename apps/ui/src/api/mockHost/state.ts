@@ -19,6 +19,7 @@ import type { StagesSeed } from '../stagesMock';
 import type { MockResumeSeed } from '../resumeMockSeed';
 import type { MockReaper } from '../findingsMock';
 import type { MockMeasureSeed } from '../measureMock';
+import type { MockExportSeed } from '../renderEncodeMasterMock';
 import type { MockDeliveryProfileSeed } from '../deliveryProfilesMock';
 import type { MockDiagnosticsSeed } from '../diagnosticsMock';
 import type { EditingSeed } from '../editingMock';
@@ -29,6 +30,7 @@ import type { MockAssetSeed } from '../assetInstallMock';
 import type { MockUpdateSeed } from './update';
 import type { DawMockSeed } from '../dawMock';
 import type { ProvidersMockSeed } from '../providersMock';
+import type { MasteringMockSeed } from '../masteringMock';
 
 // What createMockApi boots from (the seeds), and the host state more than one domain reads or writes.
 // manuscriptCandidate boots a project with no imported manuscript but a
@@ -100,9 +102,10 @@ export type MockApiSeed = {
    * dialog shows), `off` answered Not now, and `linked` is on and, once something subscribes, runs a sync that links the
    * confident chapters and sends the batch for the toast. `unsaved` is on, with REAPER holding unsaved edits and a Sync
    * activity row from a save in REAPER (Phase 4). `pickups` is on, with the first chapter's pickup track changed since its
-   * last take-review scan (Phase 8). Unset, sync is on and has run before with nothing new, so no dialog or
+   * last take-review scan (Phase 8). `activity` is on, with Chapter 1 linked by sync and Chapter 2 by the narrator, and a Sync
+   * activity list of three batches (the engine panel's mockup-02 state, stage navigation Phase 6). Unset, sync is on and has run before with nothing new, so no dialog or
    * toast covers the other states. */
-  chapterSync?: 'ask' | 'off' | 'linked' | 'unsaved' | 'pickups';
+  chapterSync?: 'ask' | 'off' | 'linked' | 'unsaved' | 'pickups' | 'activity';
   /** Whether the mock project boots with a linked DAW project file (PRD W13/W14). Defaults to true. */
   dawFileLinked?: boolean;
   /** Makes the next `linkDawFile()` call behave like a chosen file outside the project folder (PRD W15): refused, not linked. */
@@ -164,6 +167,8 @@ export type MockApiSeed = {
   takeComparisonHold?: boolean;
   /** Holds a started measurement part way through, so its real progress can be looked at, or breaks it (diagnostics PRD Phases 1 and 5). */
   measure?: MockMeasureSeed;
+  /** Holds a started export part way through, so its real progress can be looked at (render-encode-master PRD Phase 5). */
+  renderExport?: MockExportSeed;
   /** Holds a started diagnostics check part way through, or breaks it (diagnostics PRD Phase 6). */
   diagnostics?: MockDiagnosticsSeed;
   /** Seeds the editing-readiness check mock (a refusal, a held-running state, or seeded candidates), see `EditingSeed`. */
@@ -192,6 +197,8 @@ export type MockApiSeed = {
   daw?: DawMockSeed;
   /** Seeds the provider capabilities mock (platform, installed asset counts), see `ProvidersMockSeed` (provider-ports PRD Phase 14). */
   providers?: ProvidersMockSeed;
+  /** Seeds the mastering chain mock (whether a project is open, its stored choice), see `MasteringMockSeed` (ADR 0306). */
+  mastering?: MasteringMockSeed;
 };
 
 export const wireContext = (payload: string) => ({ boundary: 'host.binding', payload });

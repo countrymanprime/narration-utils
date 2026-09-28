@@ -196,4 +196,22 @@ describe('ReaderCard (manuscript-credits-card-parity.prd.md, manuscript-chapter-
     renderCard({ wordCount: 7, onRecordInBooth: undefined });
     expect(screen.getByText('~2 s read')).toBeTruthy();
   });
+
+  // D85 #3 on issue #509, ADR 0393 (superseding ADR 0392): the header's cluster-wrap decision keys off the card's own
+  // rendered width (a CSS container query), not the viewport (`md`), so it stays correct once a narrower card can exist
+  // at a wide viewport (the Script page's mock-02 three columns). jsdom does not evaluate container queries - a real
+  // browser check is Playwright's `chapter-header-columns` driver (script.ts) plus the retail-sample and markup-dialog
+  // visual states at desktop (1440px) - so this test only pins the mechanism: the card is a query container, and the
+  // cluster's own wrap classes are container-query variants (`@min-`/`@max-`), not the old viewport ones (`md`/`max-md`).
+  it('makes the card a CSS container, and switches the header cluster on its own width, not the viewport', () => {
+    renderCard();
+    const article = document.querySelector('article')!;
+    expect(article.className).toContain('@container');
+    const header = document.querySelector('header')!;
+    expect(header.className).toMatch(/@min-\[[^\]]+\]:grid-cols-/);
+    expect(header.className).not.toMatch(/(^|\s)md:grid-cols-/);
+    const cluster = header.querySelector(':scope > div:last-child')!;
+    expect(cluster.className).toMatch(/@max-\[[^\]]+\]:col-start-2/);
+    expect(cluster.className).not.toMatch(/(^|\s)max-md:col-start-2/);
+  });
 });

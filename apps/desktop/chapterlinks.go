@@ -221,7 +221,7 @@ func readLinksProject(svc hostServices) (tracks.Project, linksProjectState, stri
 		if len(candidates) == 0 {
 			return tracks.Project{}, linksProjectNone, "No REAPER project (.rpp) file was found in this project folder."
 		}
-		return tracks.Project{}, linksProjectChoose, "Choose which REAPER project file to use on the Tracks page."
+		return tracks.Project{}, linksProjectChoose, "Choose which REAPER project file to use in the audio engine panel."
 	}
 	project, err := readProject(selected)
 	if err != nil {
@@ -230,7 +230,7 @@ func readLinksProject(svc hostServices) (tracks.Project, linksProjectState, stri
 	return project, linksProjectReady, ""
 }
 
-// summarizeTrack counts a track's items the way the Tracks page does (playable
+// summarizeTrack counts a track's items the way the audio engine panel does (playable
 // is supported with its source present) and spans them.
 func summarizeTrack(track tracks.Track, linkedChapterID string) trackSummary {
 	summary := trackSummary{

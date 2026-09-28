@@ -33,6 +33,8 @@ const REAPER_DECLARATION: Record<DawCapabilityKey, DawCapabilityLevel> = {
   fx_chains: 'experimental',
   silence_trim: 'experimental',
   item_gain: 'experimental',
+  render_with_fx: 'not_yet_available',
+  master_chain_read: 'not_yet_available',
 };
 
 const CAPABILITY_NEEDS: Record<DawCapabilityKey, DawMockNeeds> = {
@@ -57,6 +59,8 @@ const CAPABILITY_NEEDS: Record<DawCapabilityKey, DawMockNeeds> = {
   fx_chains: 'running',
   silence_trim: 'running',
   item_gain: 'running',
+  render_with_fx: 'running',
+  master_chain_read: 'running',
 };
 
 /** The host's own wording for a REAPER that is not connected or not answering, and the resolver's generic wording for
@@ -66,9 +70,14 @@ const MESSAGE_NOT_RUNNING_REAPER = 'REAPER is not answering. Check that REAPER i
 const MESSAGE_NO_ENGINE = 'No DAW is connected to this app. Open this app from your DAW to use it.';
 const MESSAGE_TURNED_OFF = 'Turned off in Settings.';
 const MESSAGE_EXPERIMENTAL_OFF = 'Experimental: switched off in Settings.';
-/** ADR 0144's sentence, for an Audacity launch (audacity-integration PRD). */
+/** ADR 0144's sentence, for what an Audacity launch does not build (audacity-integration PRD). */
 const MESSAGE_AUDACITY_NOT_YET =
   "Audacity support is not available yet. This version can't read audio from Audacity or add labels to it, so open the project from REAPER to compare it.";
+/** An Audacity launch's built but Experimental capabilities while no page opens the pipe (ADR 0355,
+ * apps/desktop/internal/dawport/audacity/audacity.go's Declaration). */
+const MESSAGE_AUDACITY_NOT_CONNECTED = "Audacity isn't connected to this app yet. This part of Audacity support is still being tested.";
+/** What the Audacity adapter builds, Experimental until the owner's verification pass (ADR 0355); the rest is not_yet_available. */
+const AUDACITY_EXPERIMENTAL: ReadonlySet<DawCapabilityKey> = new Set<DawCapabilityKey>(['navigate', 'markers']);
 
 type DawToggle = 'auto' | 'on' | 'off';
 
@@ -95,12 +104,19 @@ export type DawMockSeed = {
 
 function declarationFor(daw: DawKind): Record<string, DawCapabilityLevel> {
   if (daw === 'REAPER') return REAPER_DECLARATION;
-  if (daw === 'Audacity') return Object.fromEntries(DAW_CAPABILITIES.map(({ key }) => [key, 'not_yet_available' as const]));
+  if (daw === 'Audacity') {
+    return Object.fromEntries(
+      DAW_CAPABILITIES.map(({ key }) => [key, AUDACITY_EXPERIMENTAL.has(key) ? ('experimental' as const) : ('not_yet_available' as const)]),
+    );
+  }
   return Object.fromEntries(DAW_CAPABILITIES.map(({ key }) => [key, 'unsupported' as const]));
 }
 
 function explain(daw: DawKind, key: DawCapabilityKey, reason: DawCapabilitySupport['reason']): string {
-  if (daw === 'Audacity') return MESSAGE_AUDACITY_NOT_YET;
+  if (daw === 'Audacity') {
+    if (reason === 'not_yet') return MESSAGE_AUDACITY_NOT_YET;
+    if (reason === 'standalone' || reason === 'not_running') return MESSAGE_AUDACITY_NOT_CONNECTED;
+  }
   if (daw === 'REAPER') {
     if (reason === 'standalone') return MESSAGE_STANDALONE_REAPER;
     if (reason === 'not_running') return MESSAGE_NOT_RUNNING_REAPER;

@@ -12,7 +12,7 @@ import { projectFeedback } from './interactionFeedback/project';
 import { settingsFeedback } from './interactionFeedback/settings';
 import { storyBibleFeedback } from './interactionFeedback/storyBible';
 import { teleprompterFeedback } from './interactionFeedback/teleprompter';
-import { tracksFeedback } from './interactionFeedback/tracks';
+import { engineFeedback } from './interactionFeedback/engine';
 import { pickupsFeedback } from './interactionFeedback/pickups';
 import { proofFeedback } from './interactionFeedback/proof';
 import { editingFeedback } from './interactionFeedback/editing';
@@ -32,7 +32,7 @@ const AREAS: Array<Record<string, FeedbackRow>> = [
   settingsFeedback,
   storyBibleFeedback,
   teleprompterFeedback,
-  tracksFeedback,
+  engineFeedback,
   pickupsFeedback,
   proofFeedback,
   editingFeedback,
@@ -106,9 +106,11 @@ export const SILENT_CATCHES: Record<string, string> = {
   'src/components/booth/readerPreferences.ts#2':
     'Remembering which flag kinds the read-aloud dialog shows in localStorage (Phase 7); the choice lasts for this dialog only when storage is disabled.',
   'src/theme/ThemeContext.tsx#1': 'Remembering the theme in localStorage; the preference just does not persist when storage is disabled.',
-  'src/components/tracks/TracksPage.tsx#1':
-    'Only decides whether the "Link chapters…" button shows; without it the button is absent, same as a project with no chapters.',
-  'src/components/tracks/LinkChaptersDialog.tsx#1':
+  'src/components/engine/EnginePanel.tsx#1':
+    'Only decides whether the "Link chapters…" tool shows; without it the button is absent, same as a project with no chapters.',
+  'src/components/engine/EnginePanel.tsx#2':
+    'Only names each track\'s chapter in the engine panel\'s track list; without it the column reads "Not linked", and the Chapter links table under it reports its own read failure.',
+  'src/components/engine/LinkChaptersDialog.tsx#1':
     'Hydrates whatever stamp or read was already in flight when the dialog reopened; the live event follows anyway.',
   'src/components/pickups/usePickupsState.ts#1':
     'Hydrates whatever run was already in flight, then refreshes the count; a failure here leaves the count at its last known value, and every narrator-triggered action still shows its own failure inline.',
@@ -118,11 +120,11 @@ export const SILENT_CATCHES: Record<string, string> = {
     'Re-reads a finding after the host refused a decision, only to tell changed evidence apart; when the re-read fails too, the inline alert still shows the host reason for the refusal, so nothing is hidden.',
   'src/components/editing/EditingCandidateRow.tsx#1':
     'Re-reads a candidate after the host refused a decision, only to tell changed evidence apart; when the re-read fails too, the inline alert still shows the host reason for the refusal, so nothing is hidden (mirrors FindingDetail.tsx#1).',
-  'src/components/tracks/RetakeLanesDialog.tsx#1':
+  'src/components/engine/RetakeLanesDialog.tsx#1':
     'Hydrates whatever pick was already in flight when the dialog reopened; the list still loads and every pick shows its own failure inline.',
-  'src/components/tracks/CleanupToolsDialog.tsx#1':
+  'src/components/engine/CleanupToolsDialog.tsx#1':
     'Hydrates whatever launch was already in flight when the dialog reopened; the narrator can press Open either way, and a launch shows its own failure inline.',
-  'src/components/tracks/RenderConfigDialog.tsx#1':
+  'src/components/engine/RenderConfigDialog.tsx#1':
     'Hydrates whatever configure run was already in flight, then offers a suggested output folder when none was configured yet; the narrator can still type a folder and press Configure render either way.',
   'src/components/home/RecordingCheckReport.tsx#1':
     "A background count of the chapter's other pickups (take review, RS4 A); a failure just leaves that line out of the Pickups list, with the check's own gaps unaffected.",
@@ -130,7 +132,7 @@ export const SILENT_CATCHES: Record<string, string> = {
     "The pickup list's own background refresh (RS5 B), mirroring usePickupsState.ts#1; a failure leaves the count at whatever the subscription last reported, and the narrator can still reach the real count on the Pickups page.",
   'src/input/keymap.ts#1':
     "keymapFromBindings (input-commands-and-pedals.prd.md Phase 6): one stored gesture this build cannot parse (a hand-edited settings file, or an older/newer app's own bug) falls back to that one command's catalog default; not a narrator action, and not swallowed silently since the Keyboard & pedals panel still shows every other override normally.",
-  'src/components/tracks/CreateChapterRegionsDialog.tsx#1':
+  'src/components/engine/CreateChapterRegionsDialog.tsx#1':
     'Refreshes the preview right after a successful create, so the table shows the just-written rows as "exists"; the created counts already shown answer whether the write worked, so a failed refresh only leaves the pre-create preview in place.',
   'src/input/MidiSource.ts#1':
     "requestMIDIAccess() rejecting (denied, unsupported, or blocked by the webview host - Phase 8's spike, input-commands-and-pedals.prd.md): not a narrator action to retry, and not swallowed silently since KeyboardSource keeps every keyboard-type pedal working; MidiSource just contributes nothing rather than surfacing an error nobody in the booth can act on.",

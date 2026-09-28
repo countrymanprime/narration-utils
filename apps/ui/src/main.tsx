@@ -39,7 +39,7 @@ declare global {
 // attached yet) - a URL param rather than a window global so a Playwright
 // driver can reach it with a plain second `page.goto`, no init-script
 // plumbing needed before the app's first render.
-// `?mockMultipleRpp=1` seeds two .rpp candidates so the Tracks page shows
+// `?mockMultipleRpp=1` seeds two .rpp candidates so the audio engine panel shows
 // its choose-a-project-file prompt instead of auto-selecting the only one.
 const mockParams = new URLSearchParams(window.location.search);
 const mockNoProject = mockParams.has('mockNoProject');
@@ -100,10 +100,10 @@ const mockReaperInput = MOCK_REAPER_INPUT_SEEDS.find((seed) => seed === mockPara
 const mockResume = MOCK_RESUME_SEEDS.find((seed) => seed === mockParams.get('mockResume'));
 // `?mockRemoved=1`: the last narration chapter boots removed from recording (chapter-track-link-control.prd.md Phase 3).
 const mockRemoved = mockParams.get('mockRemoved') === '1';
-// `?mockChapterSync=ask|off|linked|unsaved|pickups`: chapter sync's consent at boot (daw-chapter-track-auto-sync.prd.md
+// `?mockChapterSync=ask|off|linked|unsaved|pickups|activity`: chapter sync's consent at boot (daw-chapter-track-auto-sync.prd.md
 // Phases 3, 4 and 8; `unsaved` is REAPER holding unsaved edits, with a Sync activity row; `pickups` is a chapter whose
-// pickup track changed since its last scan).
-const mockChapterSync = (['ask', 'off', 'linked', 'unsaved', 'pickups'] as const).find((seed) => seed === mockParams.get('mockChapterSync'));
+// pickup track changed since its last scan; `activity` is the engine panel's Sync activity with an automatic and a manual link).
+const mockChapterSync = (['ask', 'off', 'linked', 'unsaved', 'pickups', 'activity'] as const).find((seed) => seed === mockParams.get('mockChapterSync'));
 // `?mockNoDevices=1` boots the teleprompter with an empty device listing, so the
 // blocked "No microphone found" state (no typed fallback) can be seen without a host.
 const mockNoDevices = mockParams.has('mockNoDevices');
@@ -126,19 +126,25 @@ const mockCreditsSetupNarratorDefault = mockParams.get('mockCredits') === 'setup
 // `?mockPreviewError=<text>` makes the Story Bible preview fail with that text once the
 // preview voice is installed, so the failure toast can be seen without a real host.
 const mockPreviewError = mockParams.get('mockPreviewError');
-// `?mockPreviewCandidates=no-manuscript|nothing-eligible|computing|shorter|warnings` forces the Proofing page's
-// Preview panel (proofing-preview-suggestion.prd.md Phase 3) into a named state the unseeded demo book (the full
-// Alice's Adventures in Wonderland text, aliceManuscript.ts) wouldn't otherwise reach on its own - every chapter there
-// is long enough to hit the target length cleanly, so the plain default state has no warnings at all:
-// `no-manuscript`/`nothing-eligible` force PreviewApi's outcome directly (the route itself already redirects away
-// with no manuscript at all, so this is the only way to see that defensive state on the real page); `computing`
-// never resolves the read; `shorter` and `warnings` each seed one hand-built candidate (the engine's two warning
-// texts, `preview.reasonsFor` and `wholeChapterCandidate`) rather than a real short or unclassified chapter, so
-// their paragraph ids are illustrative only - opening one in the reader or copying its range lands on the chapter's
-// first paragraph rather than the exact seeded range.
-const mockPreviewCandidatesParam = (['no-manuscript', 'nothing-eligible', 'computing', 'shorter', 'warnings'] as const).find(
+// `?mockPreviewCandidates=no-manuscript|nothing-eligible|computing|shorter|warnings|pinned|pin-stale` forces the
+// Proof chapter view's Preview panel (proofing-preview-suggestion.prd.md Phase 3, moved there by stage-navigation
+// Phase 5) into a named state the unseeded demo book (the full Alice's Adventures in Wonderland text,
+// aliceManuscript.ts) wouldn't otherwise reach on its own - every chapter there is long enough to hit the target
+// length cleanly, so the plain default state has no warnings at all: `no-manuscript`/`nothing-eligible` force
+// PreviewApi's outcome directly (the route itself already redirects away with no manuscript at all, so this is
+// the only way to see that defensive state on the real page); `computing` never resolves the read; `shorter` and
+// `warnings` each seed one hand-built candidate (the engine's two warning texts, `preview.reasonsFor` and
+// `wholeChapterCandidate`) rather than a real short or unclassified chapter, so their paragraph ids are
+// illustrative only - opening one in the reader or copying its range lands on the chapter's first paragraph
+// rather than the exact seeded range. `pinned` and `pin-stale` (Phase 8) seed a narrator pin on the first
+// chapter's real paragraphs alongside the normal default candidates, the second with a `text_changed` staleness.
+const mockPreviewCandidatesParam = (['no-manuscript', 'nothing-eligible', 'computing', 'shorter', 'warnings', 'pinned', 'pin-stale'] as const).find(
   (seed) => seed === mockParams.get('mockPreviewCandidates'),
 );
+// `pinned` and `pin-stale` seed a narrator pin (Phase 8) on the demo book's first chapter alongside the normal
+// default candidates, so the pinned section can be captured with and without its stale banner.
+const MOCK_PREVIEW_PIN_CHAPTER = WIRE_CHAPTERS[0];
+const MOCK_PREVIEW_PIN_PARAGRAPH_IDS = (MOCK_PREVIEW_PIN_CHAPTER.paragraphIds ?? []).map((paragraph) => paragraph.id);
 const MOCK_PREVIEW_SHORTER_CANDIDATE: PreviewCandidate = {
   chapterId: WIRE_CHAPTERS[10].id,
   chapterTitle: WIRE_CHAPTERS[10].title,
@@ -192,33 +198,33 @@ const mockDictionary = (['missing', 'damaged'] as const).find((seed) => seed ===
 const mockImportPreview = (['markdown', 'repaired', 'text'] as const).find((kind) => kind === mockParams.get('mockImportPreview'));
 // `?mockChapterLink=missing|ambiguous|confirmed` seeds the first chapter's mapping directly, so a track-link state
 // that would otherwise need a real REAPER round trip (or several link/relink clicks) can be seen on load: `missing`
-// confirms a track GUID that is not in the mock REAPER project (Tracks page's "Track missing" state, analysis
+// confirms a track GUID that is not in the mock REAPER project (the audio engine panel's "Track missing" state, analysis
 // evidence ledger PRD Phase 7); `ambiguous` confirms it to two tracks at once (chapter-track-link-control.prd.md
 // Phase 2, TL6); `confirmed` links it to its own suggested "Chapter 1" track outright, without a Change/Confirm click.
 const mockChapterLink = (['missing', 'ambiguous', 'confirmed'] as const).find((seed) => seed === mockParams.get('mockChapterLink'));
-// `?mockLineIdentity=success|conflict|error` boots the Tracks page's "Link chapters" dialog with LineIdentityState already at that
+// `?mockLineIdentity=success|conflict|error` boots the audio engine panel's "Link chapters" dialog with LineIdentityState already at that
 // result, so its stale/conflict/drift and error states can be seen without a real REAPER round trip.
 const mockLineIdentity = (['success', 'conflict', 'error'] as const).find((seed) => seed === mockParams.get('mockLineIdentity'));
 // `?mockPickups=import-success|next-success|export-success|error` boots the Pickups page (and the Booth companion's
 // Pickups section) with PickupsState already at that result, so the remaining-count, next and export states can be seen without a real
 // REAPER round trip.
 const mockPickups = (['import-success', 'next-success', 'export-success', 'error'] as const).find((seed) => seed === mockParams.get('mockPickups'));
-// `?mockRenderConfig=success|no-regions|error` boots the Tracks page's "Prepare chapter render" dialog with
+// `?mockRenderConfig=success|no-regions|error` boots the audio engine panel's "Prepare chapter render" dialog with
 // RenderConfigState already at that result, so the confirmed-file-names, no-regions-yet and error states can be
 // seen without a real REAPER round trip.
 const mockRenderConfig = (['success', 'no-regions', 'error'] as const).find((seed) => seed === mockParams.get('mockRenderConfig'));
-// `?mockCleanupTools=launched|error` boots the Tracks page's "Cleanup tools" dialog with CleanupToolsState already at
+// `?mockCleanupTools=launched|error` boots the audio engine panel's "Cleanup tools" dialog with CleanupToolsState already at
 // that result (error: Magnolius DeClick not installed), so both can be seen without a real REAPER round trip.
 const mockCleanupTools = (['launched', 'error'] as const).find((seed) => seed === mockParams.get('mockCleanupTools'));
-// `?mockRetakeLanes=picked|error|none` boots the Tracks page's "Retakes on lanes" dialog at that result (none: a project
+// `?mockRetakeLanes=picked|error|none` boots the audio engine panel's "Retakes on lanes" dialog at that result (none: a project
 // with no fixed-lane track), so each can be seen without a real REAPER round trip.
 const mockRetakeLanes = (['picked', 'error', 'none'] as const).find((seed) => seed === mockParams.get('mockRetakeLanes'));
-// `?mockChapterTags=ready|not-rendered` boots the Tracks page's "Embed chapter tags" dialog with ChapterTagsPreview
+// `?mockChapterTags=ready|not-rendered` boots the audio engine panel's "Embed chapter tags" dialog with ChapterTagsPreview
 // already at that result, so the ready and not-yet-rendered states can be seen without a real chapter render.
 // `?mockChapterTagsEmbedError=1` makes the embed action always fail, so the error state can be seen too.
 const mockChapterTags = (['ready', 'not-rendered'] as const).find((seed) => seed === mockParams.get('mockChapterTags'));
 const mockChapterTagsEmbedError = mockParams.has('mockChapterTagsEmbedError');
-// `?mockRegionsCreateError=1` makes the Tracks page's "Create chapter regions…" dialog always fail to create, so its
+// `?mockRegionsCreateError=1` makes the audio engine panel's "Create chapter regions…" dialog always fail to create, so its
 // error state can be seen without a real REAPER round trip.
 const mockRegionsCreateError = mockParams.has('mockRegionsCreateError');
 // `?mockRegionsCapabilityOn=1` turns the 'regions' DAW capability on directly (bypassing the default Experimental-off
@@ -229,6 +235,9 @@ const mockRegionsCapabilityOn = mockParams.has('mockRegionsCapabilityOn');
 // so "Punch from here"'s enabled state - the confirm dialog in the read-aloud rail, the pickup list's own button - can
 // be captured without also exercising the Settings toggle.
 const mockPunchCapabilityOn = mockParams.has('mockPunchCapabilityOn');
+// `?mockRecordCapabilityOn=1` turns the 'record' DAW capability on directly (the same bypass), so the Booth's Record in
+// REAPER toggle, its first-time confirm and a recording's "REC 06:42" can be captured.
+const mockRecordCapabilityOn = mockParams.has('mockRecordCapabilityOn');
 // `?mockDawPlayhead=134.6` seeds the DAW port's live transport (daw_transport_changed) as playing at that project time, for
 // the companion panel's playhead badge (booth-mode-and-companion-panel.prd.md Phase 7). Without it, the transport is stopped.
 const mockDawPlayhead = Number.parseFloat(mockParams.get('mockDawPlayhead') ?? '');
@@ -320,6 +329,8 @@ const mockTakeComparisonHold = mockParams.get('mockTakeComparison') === 'running
 const mockMeasure = (['running', 'fails', 'spread'] as const).find((seed) => seed === mockParams.get('mockMeasure'));
 // `?mockDiagnostics=running|fails` does the same for the Delivery page's Diagnostics tab (diagnostics PRD Phase 6).
 const mockDiagnostics = (['running', 'fails'] as const).find((seed) => seed === mockParams.get('mockDiagnostics'));
+// `?mockRenderExport=running` does the same for the Delivery page's Master & QC tab's export job (render-encode-master.prd.md Phase 5).
+const mockRenderExportHold = mockParams.get('mockRenderExport') === 'running';
 const mockDeliveryProfile = mockParams.get('mockDeliveryProfile') === 'custom' ? ('custom' as const) : undefined;
 // `?mockProduction=on-pace|at-risk` seeds the Production page with a time log, a running timer (on-pace only), a deadline and a
 // contracted amount (production-tracking.prd.md Phase 4); with none, nothing is logged or set yet.
@@ -342,6 +353,7 @@ const mockInitial = {
   ...(mockMarkup ? { prepMarkup: MOCK_MARKUP_SEED } : {}),
   ...(mockMeasure ? { measure: mockMeasure === 'running' ? ('hold' as const) : mockMeasure === 'spread' ? ('spread' as const) : ('fails' as const) } : {}),
   ...(mockDiagnostics ? { diagnostics: mockDiagnostics === 'running' ? ('hold' as const) : ('fails' as const) } : {}),
+  ...(mockRenderExportHold ? { renderExport: 'hold' as const } : {}),
   ...(mockDeliveryProfile ? { deliveryProfile: mockDeliveryProfile } : {}),
   ...(mockProduction ? { production: PRODUCTION_SCENARIOS[mockProduction] } : {}),
   ...(mockTakeReviewScanHold ? { takeReviewScanHold: true } : {}),
@@ -371,6 +383,12 @@ const mockInitial = {
   ...(mockPreviewCandidatesParam === 'computing' ? { preview: { hold: true } } : {}),
   ...(mockPreviewCandidatesParam === 'shorter' ? { preview: { outcome: 'ok' as const, candidates: [MOCK_PREVIEW_SHORTER_CANDIDATE] } } : {}),
   ...(mockPreviewCandidatesParam === 'warnings' ? { preview: { outcome: 'ok' as const, candidates: [MOCK_PREVIEW_WARNING_CANDIDATE] } } : {}),
+  ...(mockPreviewCandidatesParam === 'pinned'
+    ? { preview: { pin: { chapterId: MOCK_PREVIEW_PIN_CHAPTER.id, paragraphIds: MOCK_PREVIEW_PIN_PARAGRAPH_IDS } } }
+    : {}),
+  ...(mockPreviewCandidatesParam === 'pin-stale'
+    ? { preview: { pin: { chapterId: MOCK_PREVIEW_PIN_CHAPTER.id, paragraphIds: MOCK_PREVIEW_PIN_PARAGRAPH_IDS, stale: 'text_changed' as const } } }
+    : {}),
   ...(mockTeleprompter ? { teleprompter: mockTeleprompter } : {}),
   ...(mockNoDevices ? { teleprompterDevices: [] } : {}),
   ...(mockLevel === undefined ? {} : { teleprompterLevel: mockLevel }),
@@ -434,6 +452,7 @@ const mockInitial = {
   ...(mockRegionsCreateError ? { regionsCreateAlwaysErrors: true } : {}),
   ...(mockRegionsCapabilityOn ? { daw: { toggles: { regions: 'on' as const } } } : {}),
   ...(mockPunchCapabilityOn ? { daw: { toggles: { punch: 'on' as const } } } : {}),
+  ...(mockRecordCapabilityOn ? { daw: { toggles: { record: 'on' as const } } } : {}),
   ...(mockCoverage || mockCoverageRefusal || mockStages === 'mixed'
     ? {
         coverage: {

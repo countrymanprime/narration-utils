@@ -61,6 +61,10 @@ var stressReaders = []stressReader{
 	{"ManuscriptNotes", func(h *Host) { _, _ = h.ManuscriptNotes("missing") }},
 	{"ManuscriptParagraphs", func(h *Host) { _, _ = h.ManuscriptParagraphs("missing") }},
 	{"PreviewCandidates", func(h *Host) { _, _ = h.PreviewCandidates() }},
+	{"PreviewPin", func(h *Host) { _, _ = h.PreviewPin() }},
+	{"PreviewPinSet (unknown chapter)", func(h *Host) { _, _ = h.PreviewPinSet("missing", []string{"missing"}) }},
+	{"PreviewPinAdjust (nothing pinned)", func(h *Host) { _, _ = h.PreviewPinAdjust("end", true) }},
+	{"PreviewPinClear", func(h *Host) { _, _ = h.PreviewPinClear() }},
 	{"ManuscriptReader", func(h *Host) { _, _ = h.ManuscriptReader() }},
 	{"ManuscriptReaderState", func(h *Host) { _, _ = h.ManuscriptReaderState() }},
 	{"ManuscriptSearch", func(h *Host) { _, _ = h.ManuscriptSearch("word") }},
@@ -107,6 +111,8 @@ var stressReaders = []stressReader{
 	}},
 	{"DawCapabilities", func(h *Host) { _, _ = h.DawCapabilities() }},
 	{"ProviderCapabilities", func(h *Host) { _, _ = h.ProviderCapabilities() }},
+	{"MasteringProviders", func(h *Host) { _, _ = h.MasteringProviders() }},
+	{"MasteringChooseProvider (clear)", func(h *Host) { _, _ = h.MasteringChooseProvider("") }},
 	{"TracksDiscover", func(h *Host) { _, _ = h.TracksDiscover() }},
 	{"TracksList", func(h *Host) { _, _ = h.TracksList() }},
 	{"TracksSelect", func(h *Host) { _, _ = h.TracksSelect("not-a-project-file.rpp") }},
@@ -160,6 +166,16 @@ var stressReaders = []stressReader{
 	{"DiagnosticsState", func(h *Host) { _, _ = h.DiagnosticsState() }},
 	{"DiagnosticsCancel (nothing running)", func(h *Host) { _, _ = h.DiagnosticsCancel() }},
 	{"DiagnosticsAnalyze (not picked)", func(h *Host) { _, _ = h.DiagnosticsAnalyze([]string{"C:/missing.wav"}, "raw_recording") }},
+	{"ExportState", func(h *Host) { _, _ = h.ExportState() }},
+	{"ExportCancel (nothing running)", func(h *Host) { _, _ = h.ExportCancel() }},
+	{"ExportStart (not picked)", func(h *Host) {
+		_, _ = h.ExportStart(ExportRequest{Items: []ExportItem{{Kind: "chapter", Title: "01", Path: "C:/missing.wav"}}})
+	}},
+	{"PackageState", func(h *Host) { _, _ = h.PackageState() }},
+	{"PackageCancel (nothing running)", func(h *Host) { _, _ = h.PackageCancel() }},
+	{"PackageStart (nothing exported)", func(h *Host) {
+		_, _ = h.PackageStart(PackageRequest{ProfileID: "acx", Items: []PackageItem{{Kind: "chapter", Path: "C:/missing.mp3"}}})
+	}},
 	{"canAttach (ProjectCreateIn's pre-check)", func(h *Host) { _ = h.canAttach() }},
 	{"CoverageStart (asset gate)", func(h *Host) { _, _ = h.CoverageStart("c-0001", nil) }},
 	{"CoverageState", func(h *Host) { _, _ = h.CoverageState() }},

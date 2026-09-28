@@ -2,14 +2,14 @@
 // (stage-navigation-and-page-replacement.prd.md Phase 4), which replaced the Teleprompter page's `teleprompter/*` rows and the
 // Manuscript's read-aloud, booth and companion dialog rows (`manuscript/read-aloud-*`, `booth-*`, `companion-*`).
 import type { StateEntry } from '../lib/types';
-import { COMPANION, REFLOW } from './shared';
+import { COMPANION, FREEZES_THE_CLOCK, REFLOW } from './shared';
 
 export const boothStates: StateEntry[] = [
   {
     page: 'booth',
     state: 'setup',
     description:
-      'Booth (stage-navigation-and-page-replacement.prd.md Phase 4, mock 03), before a session - on FocusShell: a status line (Ready, the chapter, a decorative Input meter, Companion and Exit booth Esc), the pre-session setup above the text (the Chapter picker, credits included), the resume prompt (read-aloud-resume-from-daw.prd.md Phase 1) offering where the recording ends - the matched track, "as of the project\'s last save", the sentence, and Resume from here / Start from the top / Pick a word - the rail (Voices in scene, then the reading panel) and, as the command bar, the reading controls with Play, Stop reading, the microphone, Record in REAPER and Settings',
+      'Booth (stage-navigation-and-page-replacement.prd.md Phase 4, mock 03), before a session - on FocusShell: a status line (Ready, the chapter, a decorative Input meter, Companion and Exit booth Esc), the pre-session setup above the text, the text itself full-bleed and large with no card around it (audit BO3) (the Chapter picker, credits included), the resume prompt (read-aloud-resume-from-daw.prd.md Phase 1) offering where the recording ends - the matched track, "as of the project\'s last save", the sentence, and Resume from here / Start from the top / Pick a word - the rail (Voices in scene, Coming up - the next names with a Story Bible pronunciation, audit BO8 - then the reading panel) and, as the command bar, the reading controls with Play, Stop reading, the microphone, Record in REAPER ("Chapter 1 armed", mock 06) and Settings',
     ...REFLOW,
   },
   {
@@ -115,7 +115,7 @@ export const boothStates: StateEntry[] = [
     page: 'booth',
     state: 'listening',
     description:
-      'Booth mid-session and listening (?mockTeleprompter=listening) - the status badge reads Reading, the command bar shows Listening, the word count, Pause, Stop reading and Follow (disabled, following), the setup above the text is gone, the current word highlighted and read words dimmed',
+      'Booth mid-session and listening (?mockTeleprompter=listening) - the status badge reads Reading, the status line\'s progress ("¶ 1 of N · n% · ~m:ss finished left", audit BO5) beside the chapter, the command bar shows Listening, the word count, Pause, Stop reading and Follow (disabled, following), the setup above the text is gone, the current word highlighted and read words dimmed',
   },
   {
     page: 'booth',
@@ -195,6 +195,33 @@ export const boothStates: StateEntry[] = [
       reason:
         'Below `lg` the Record in REAPER button shows its icon only (ReadingControlBar keeps the width for the controls): the REAPER state is its accessible name there, and its visible text from `lg`, where this row differs.',
     },
+  },
+  {
+    page: 'booth',
+    state: 'reaper-confirm',
+    description:
+      'Booth, Record in REAPER pressed for the first time in this project with the record capability on (?mockRecordCapabilityOn=1) - the confirm in read-aloud-control-bar mock 05\'s words: "Record in REAPER when you press Play?", the track linked to the chapter, "a recording you started in REAPER yourself is never stopped by the app" and "You will be asked this once for this project"',
+  },
+  {
+    page: 'booth',
+    state: 'reaper-rec',
+    description:
+      'Booth reading while REAPER records the take this app started (read-aloud-control-bar mock 07): Record in REAPER on, Play pressed, and the toggle showing "REC 06:42" in the danger colour (the page clock held 6 min 42 s after REAPER confirmed); the status badge reads REC · P&R',
+    ...FREEZES_THE_CLOCK,
+  },
+  {
+    page: 'booth',
+    state: 'finished-still-recording',
+    description:
+      'Booth after reading reached the end and stopped itself while REAPER goes on recording (read-aloud-control-bar mock 10, Q8 Done B, D28/D39) - "Reading finished. REAPER is still recording", "Press Stop when you are done; nothing is cut off until you do.", Stop reading enabled and highlighted, and the toggle at "REC 14:08"',
+    ...FREEZES_THE_CLOCK,
+  },
+  {
+    page: 'booth',
+    state: 'speaker-tags',
+    description:
+      "Booth on Chapter 3, the chapter prep-depth's recorded dialogue cues attribute (audit BO4, mock 03) - each attributed paragraph carries its speaker tag (ALICE) in a gutter left of the text, the unattributed ones leave it empty rather than guess; below `lg` the tag sits above its paragraph",
+    ...REFLOW,
   },
   {
     page: 'booth',

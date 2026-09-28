@@ -26,7 +26,7 @@ const healthySelfCheck = `{"ok": true, "checks": [{"name": "cmudict", "ok": true
 
 const healthyMoonshineCheck = `{"type": "engine_check", "engine": "moonshine", "ok": true, "detail": "moonshine-voice 0.1.5: native library loaded, 10 language(s)"}`
 
-const healthyCapabilities = `{"type": "capabilities", "asr": {"whisper": {"label": "Whisper", "platforms": [], "modes": ["live"], "asset": "whisper", "loadable": null}, "moonshine": {"label": "Moonshine", "platforms": ["windows"], "modes": ["live"], "asset": "moonshine", "loadable": null}}, "capture": {"dshow": {"label": "DirectShow", "platforms": ["windows"], "modes": [], "loadable": null}}}`
+const healthyCapabilities = `{"type": "capabilities", "asr": {"whisper": {"label": "Whisper", "platforms": [], "modes": ["live"], "asset": "whisper", "loadable": null}, "moonshine": {"label": "Moonshine", "platforms": ["windows"], "modes": ["live"], "asset": "moonshine", "loadable": null}}, "capture": {"dshow": {"label": "DirectShow", "platforms": ["windows"], "modes": [], "loadable": null}, "wasapi": {"label": "WASAPI", "platforms": ["windows"], "modes": [], "loadable": null}}}`
 
 const healthyGuideCapabilities = `{"type": "capabilities", "tts": {"piper": {"label": "Piper", "platforms": [], "modes": [], "asset": "tts", "loadable": null}}, "pronunciation": {"cmu": {"label": "CMU dictionary", "platforms": [], "modes": ["pronounce"], "loadable": null}, "wiktextract": {"label": "Wiktionary (via Wiktextract)", "platforms": [], "modes": ["pronounce"], "loadable": null}, "espeak": {"label": "eSpeak NG", "platforms": [], "modes": ["pronounce"], "loadable": null}}}`
 
@@ -331,7 +331,7 @@ func TestSmokeFailsWhenTheFrozenTeleprompterDidNotRegisterARowGoDeclaresForThePl
 		wants    []string
 	}{
 		"whisper missing, every platform":              {&fakeRun{caps: missingWhisper}, "linux", []string{"asr:whisper"}},
-		"windows-only rows missing, forced to windows": {&fakeRun{caps: missingMoonshineAndDshow}, "windows", []string{"asr:moonshine", "capture:dshow"}},
+		"windows-only rows missing, forced to windows": {&fakeRun{caps: missingMoonshineAndDshow}, "windows", []string{"asr:moonshine", "capture:dshow", "capture:wasapi"}},
 	} {
 		t.Run(name, func(t *testing.T) {
 			options := smokeOptionsFor(t, healthyTree(t), tc.run)
