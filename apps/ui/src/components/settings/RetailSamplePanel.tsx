@@ -131,7 +131,7 @@ export function RetailSamplePanel({ notify }: { notify: Notify }) {
         >
           Save sample
         </Button>
-        <Button variant="ghost" type="button" disabled={busy || (!sample && !answer?.problem)} onClick={() => void save('', '', 'Retail sample cleared.')}>
+        <Button variant="secondary" type="button" disabled={busy || (!sample && !answer?.problem)} onClick={() => void save('', '', 'Retail sample cleared.')}>
           Clear sample
         </Button>
       </div>

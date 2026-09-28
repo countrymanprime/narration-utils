@@ -87,7 +87,7 @@ export function CreditsRowPanel({
         <p style={MUTED}>
           Recorded: {row.recordedSeconds === undefined ? UNRECORDED_TEXT[row.recordedUnavailable ?? 'unlinked'] : formatLength(row.recordedSeconds)}
         </p>
-        <Button variant="ghost" onClick={onCheck}>
+        <Button variant="secondary" onClick={onCheck}>
           Recording check
         </Button>
       </div>

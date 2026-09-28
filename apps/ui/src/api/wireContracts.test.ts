@@ -47,7 +47,7 @@ import {
   takeReviewScanJobSchema,
 } from './schemas/takeReview';
 import { COVERAGE_EVALUATOR_REASONS, COVERAGE_REFUSAL_REASONS, coverageResultSchema, coverageStartResultSchema, coverageStateSchema } from './schemas/coverage';
-import { workspaceAlignmentResultSchema, workspacePeaksResultSchema } from './schemas/workspace';
+import { workspaceAlignmentResultSchema, workspaceFXChainsResultSchema, workspacePeaksResultSchema } from './schemas/workspace';
 import { pinnedPreviewSchema, previewResultSchema } from './schemas/preview';
 import { STAGE_REFUSAL_REASONS, STAGE_UNKNOWN_CAUSES, stageDecisionResultSchema, stageRecommendationsSchema } from './schemas/stages';
 import { proofingChooseRenderResultSchema, proofingRenderSchema } from './schemas/proofingRender';
@@ -2277,6 +2277,15 @@ describe('answers of the mock client for the settings, voice, model, transcript 
     for (const [name, answer] of answers) expectMatches(findingNavigationSchema, await answer, `mock workspace ${name}`);
   });
 
+  it("workspaceListFXChains lists the narrator's FX chains, and rejects when REAPER is not connected (edit-and-proof-workspace PRD Phase 8)", async () => {
+    const chains = await createMockApi().workspaceListFXChains();
+    expectMatches(workspaceFXChainsResultSchema, chains, 'mock workspace FX chains');
+    expect(chains.names.length).toBeGreaterThan(0);
+    expect(chains.truncated).toBe(false);
+
+    await expect(createMockApi({}, { reaper: 'standalone' }).workspaceListFXChains()).rejects.toThrow();
+  });
+
   it('the preview candidates: ok with candidates, no manuscript, and nothing eligible', async () => {
     const withCandidates = await createMockApi().previewCandidates();
     expectMatches(previewResultSchema, withCandidates, 'mock preview candidates, ok');
@@ -2675,6 +2684,7 @@ describe('answers of the mock client for the settings, voice, model, transcript 
       'coverageResult',
       'workspaceAlignment',
       'workspaceGoTo',
+      'workspaceListFXChains',
       'workspaceLoop',
       'workspacePeaks',
       'previewCandidates',

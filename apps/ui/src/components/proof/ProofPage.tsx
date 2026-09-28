@@ -179,12 +179,12 @@ export function ProofPage({
                 onChange={setChapterChoice}
                 options={[{ value: '', label: 'Choose a chapter…' }, ...chapters.map((chapter) => ({ value: chapter.id, label: chapterName(chapter) }))]}
               />
-              <Button variant="ghost" disabled={!chapterChoice} onClick={() => openChapter(chapterChoice)}>
+              <Button variant="secondary" disabled={!chapterChoice} onClick={() => openChapter(chapterChoice)}>
                 Open chapter
               </Button>
             </>
           )}
-          <Button variant="ghost" onClick={() => setScanning(true)}>
+          <Button variant="secondary" onClick={() => setScanning(true)}>
             Find pickups and duplicates…
           </Button>
         </div>

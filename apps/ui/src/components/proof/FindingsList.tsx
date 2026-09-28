@@ -98,7 +98,7 @@ export function FindingsList({
               <TableCell colSpan={showChapter ? 6 : 5} className="text-sm" style={{ color: 'var(--text-muted)' }}>
                 <p>{filtered ? 'No findings match these filters.' : 'No findings to show.'}</p>
                 {filtered && (
-                  <Button variant="ghost" className="mt-2" onClick={onClearFilters}>
+                  <Button variant="secondary" className="mt-2" onClick={onClearFilters}>
                     Clear filters
                   </Button>
                 )}
@@ -112,7 +112,7 @@ export function FindingsList({
           <span>
             Showing {findings.length} of {page.total}
           </span>
-          <Button variant="ghost" onClick={onShowMore}>
+          <Button variant="secondary" onClick={onShowMore}>
             Show more
           </Button>
         </div>

@@ -1,11 +1,13 @@
 package main
 
 import (
+	"context"
 	"errors"
 	"fmt"
 
 	"github.com/countrymanprime/narration-utils/shell/internal/bridge"
 	"github.com/countrymanprime/narration-utils/shell/internal/coverage"
+	"github.com/countrymanprime/narration-utils/shell/internal/dawport"
 )
 
 // The chapter workspace's REAPER navigation (edit-and-proof-workspace.prd.md Phase 3): Go to and Loop for a chapter
@@ -154,4 +156,52 @@ func alignmentItemAt(items []coverage.AlignmentItem, index int) (coverage.Alignm
 		}
 	}
 	return coverage.AlignmentItem{}, false
+}
+
+// FX discovery (edit-and-proof-workspace.prd.md Phase 8, EP8 B, ADR 0234): a read-only list of the narrator's own
+// FX chains, over the DAW port's FXManager role (list_fx_chains; internal/dawport/roles.go), so it is gated and
+// refused exactly as ApplyFXChain will be once Phase 9 sends it (dawport.CapFXChains, ADR 0230, ADR 0304). The
+// narrator's favourites are a Settings row (DAW.fx_favourites), not part of this read: the effects menu Phase 9
+// builds combines the two client-side, since a favourite is just a name this listing (or a future FX plug-in
+// listing) already lists.
+
+// fxManagerFrom is svc's FX chains role, or nil exactly as silenceTrimmerFrom is nil (bindings_cleanup.go): no DAW
+// port resolver, no adapter, the capability toggled off, or REAPER unreachable right now.
+func fxManagerFrom(svc hostServices) dawport.FXManager {
+	if svc.dawPortResolver == nil {
+		return nil
+	}
+	role, err := dawport.Role[dawport.FXManager](svc.dawPortResolver, dawport.CapFXChains)
+	if err != nil {
+		return nil
+	}
+	return role
+}
+
+// workspaceFXChainsAnswer is WorkspaceListFXChains' payload: bridge.FXChains as the UI receives it.
+type workspaceFXChainsAnswer struct {
+	Names     []string `json:"names"`
+	Truncated bool     `json:"truncated"`
+}
+
+func workspaceListFXChainsIn(ctx context.Context, svc hostServices) (workspaceFXChainsAnswer, error) {
+	role := fxManagerFrom(svc)
+	if role == nil {
+		return workspaceFXChainsAnswer{}, bridge.ErrUnavailable
+	}
+	chains, err := role.ListFXChains(ctx)
+	if err != nil {
+		return workspaceFXChainsAnswer{}, err
+	}
+	if chains.Names == nil {
+		chains.Names = []string{}
+	}
+	return workspaceFXChainsAnswer{Names: chains.Names, Truncated: chains.Truncated}, nil
+}
+
+// WorkspaceListFXChains lists the narrator's FX chains from REAPER's FXChains folder (list_fx_chains), by relative
+// name, sorted, capped. It changes nothing and is refused (bridge.ErrUnavailable) offline or before the DAW port's
+// FX chains capability is on, exactly as list_fx_chains itself already is (ADR 0230, ADR 0234).
+func (h *Host) WorkspaceListFXChains() (string, error) {
+	return encodeBinding(workspaceListFXChainsIn(context.Background(), h.services()))
 }

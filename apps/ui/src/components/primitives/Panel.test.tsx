@@ -42,7 +42,7 @@ describe('Panel', () => {
         title="Choose a REAPER project file"
         actions={
           <>
-            <Button variant="ghost">Rescan folder</Button>
+            <Button variant="secondary">Rescan folder</Button>
             <Button onClick={() => (used += 1)}>Use this file</Button>
           </>
         }

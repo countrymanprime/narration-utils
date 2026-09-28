@@ -51,7 +51,7 @@ export function MasterToSpecPanel({ jobs, chainLabel }: { jobs: ExportJobs; chai
       title="Master to spec"
       actions={
         !started && (
-          <Button variant="ghost" onClick={() => void jobs.pick()} pending={jobs.picking} disabled={exportRunning}>
+          <Button variant="secondary" onClick={() => void jobs.pick()} pending={jobs.picking} disabled={exportRunning}>
             Add files…
           </Button>
         )
@@ -112,7 +112,7 @@ export function MasterToSpecPanel({ jobs, chainLabel }: { jobs: ExportJobs; chai
                     </TableCell>
                     <TableCell>
                       {!started && (
-                        <Button variant="ghost" onClick={() => jobs.removeItem(item.path)}>
+                        <Button variant="secondary" onClick={() => jobs.removeItem(item.path)}>
                           Remove
                         </Button>
                       )}
@@ -140,7 +140,7 @@ export function MasterToSpecPanel({ jobs, chainLabel }: { jobs: ExportJobs; chai
             <p aria-live="polite" className="text-sm">
               {exportJob.message}
             </p>
-            <Button variant="ghost" onClick={jobs.cancelExport}>
+            <Button variant="secondary" onClick={jobs.cancelExport}>
               Cancel
             </Button>
           </div>

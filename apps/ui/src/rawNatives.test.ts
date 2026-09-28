@@ -28,7 +28,8 @@ const CEILING: Record<NativeTag, Record<string, number>> = {
     // The card's bookmark toggle and its whole-header toggle (manuscript-credits-card-parity.prd.md). `CreditsEntry.tsx`
     // now renders through this and has no raw button of its own (its old toggle button is gone, ceiling 0 below).
     'src/components/manuscript/ReaderCard.tsx': 2,
-    'src/components/project/ProjectPicker.tsx': 3,
+    // The recent-project card (a card that is a button). Its Remove and Create new clones became IconButton and Button (ADR 0595).
+    'src/components/project/ProjectPicker.tsx': 1,
     // The Script page's chapter list (stage-navigation-and-page-replacement.prd.md Phase 3, mock 02): a list row naming the
     // chapter with its current state, the same shape as ChapterNav's rows, which Button's padded, uppercase chrome does not
     // fit. One JSX `<button>`, written once inside the chapters `.map()`.
@@ -37,8 +38,6 @@ const CEILING: Record<NativeTag, Record<string, number>> = {
     // case as ReaderRail.tsx's entries below. Two JSX `<button>`s, one inside the Pronunciations rows and one inside the
     // Characters rows.
     'src/components/script/ScriptRail.tsx': 2,
-    'src/components/proof/CompareRun.tsx': 1,
-    'src/components/settings/ScopedSetting.tsx': 1,
     // The click-to-seek word ("Start here" / "Go back to here", teleprompter-manuscript-integration.prd.md Phase 4):
     // one word among hundreds inside running prose, so it needs `Button`'s bare click/keyboard semantics without its
     // padded, uppercase button chrome, which would break the text flow and read as a real action button rather than a
@@ -57,28 +56,16 @@ const CEILING: Record<NativeTag, Record<string, number>> = {
     // full-width path rows (a mono file path, which Button's uppercase chrome would mangle) stay one JSX `<button>` inside the
     // candidates `.map()`; the track rows' selection buttons went with the player.
     'src/components/engine/EnginePanel.tsx': 1,
-    // The Sync activity line's "(Undo)" (daw-chapter-track-auto-sync.prd.md mockup 02): an inline word inside a sentence, the
-    // same case as CreditsSetupDialog.tsx below.
-    'src/components/engine/ChapterSyncPanel.tsx': 1,
-    // "Open the audio engine panel", the in-text pointer that replaced the "Open Tracks" router links (Phase 6): an inline
-    // link-styled action inside a sentence, which Button's padded, uppercase chrome would break. Written once, used everywhere.
-    'src/components/engine/EnginePanelContext.tsx': 1,
     // The chapter workspace's clickable script words (edit-and-proof-workspace.prd.md Phase 2, EP5): the same case as
     // ReaderText.tsx above - one word among a chapter's worth of running prose, needing Button's bare click/keyboard
     // semantics without its padded, uppercase chrome breaking the text flow. One JSX `<button>`, written once inside
     // the tokens `.map()`.
     'src/components/proof/ScriptView.tsx': 1,
-    // The "Settings > Credits" link inside the "More fields" sentence (credits-token-setup-and-front-matter-detection.prd.md
-    // Phase 2, CS4): an inline word inside a paragraph, the same case `ReaderText.tsx` above is for - `Button`'s padded,
-    // uppercase chrome would break the sentence it sits in.
-    'src/components/credits/CreditsSetupDialog.tsx': 1,
-    // read-aloud-resume-from-daw.prd.md Phase 3's compact reconciliation notices (Change, Start from the top, Pick a word,
-    // Continue there): plain underlined text links inline in a one-line sentence, the same `ReaderText.tsx`/
-    // `CreditsSetupDialog.tsx` case above (`TextLink`, written once, reused by every call). The other is the disagree
-    // choice's own card ("a card that is a button" - two places, REAPER and Last reading - written once as `card()`,
-    // called twice): `Button`'s padded, uppercase chrome fits neither a plain link nor a card naming a source, a time and
-    // a quoted sentence.
-    'src/components/booth/ResumePrompt.tsx': 2,
+    // read-aloud-resume-from-daw.prd.md Phase 3: the disagree choice's own card ("a card that is a button" - two places, REAPER
+    // and Last reading - written once as `card()`, called twice): `Button`'s uppercase chrome does not fit a card naming a
+    // source, a time and a quoted sentence. (Its text links are `Button variant="link"` now, ADR 0595, like every underlined
+    // text action inside a sentence.)
+    'src/components/booth/ResumePrompt.tsx': 1,
   },
   select: {},
   // Reaper-automation-follow-through PRD Phase 9: the Pickups page's CSV picker (the Tracks page's `PickupsDialog` until stage-navigation-and-page-replacement.prd.md Phase 7) is a hidden native `<input type="file">`

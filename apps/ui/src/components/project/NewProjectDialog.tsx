@@ -53,7 +53,7 @@ export function NewProjectDialog({ onClose, onCreated }: Props) {
       onClose={busy ? undefined : onClose}
       actions={
         <>
-          <Button variant="ghost" onClick={onClose} disabled={busy}>
+          <Button variant="secondary" onClick={onClose} disabled={busy}>
             Cancel
           </Button>
           <Button variant="primary" pending={busy} onClick={create} disabled={!name.trim()}>
@@ -71,7 +71,7 @@ export function NewProjectDialog({ onClose, onCreated }: Props) {
       <p className="mt-3 text-sm" style={{ color: 'var(--text-muted)' }}>
         Location: <span className="font-['IBM_Plex_Mono',ui-monospace,monospace]">{parent ?? 'the default projects folder'}</span>
       </p>
-      <Button variant="ghost" className="mt-2" onClick={changeLocation} disabled={busy}>
+      <Button variant="secondary" className="mt-2" onClick={changeLocation} disabled={busy}>
         Change location…
       </Button>
     </Dialog>

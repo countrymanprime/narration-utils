@@ -27,7 +27,7 @@ function RecoveryDemo({ onError }: { onError?: (error: unknown) => void }) {
   return (
     <>
       <div className="p-6 pb-0">
-        <Button variant="ghost" onClick={() => setRepaired(true)}>
+        <Button variant="secondary" onClick={() => setRepaired(true)}>
           Repair chapter data
         </Button>
       </div>

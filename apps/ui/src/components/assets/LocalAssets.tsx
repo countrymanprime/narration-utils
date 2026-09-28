@@ -46,7 +46,7 @@ export function LocalAssets({ notify }: { notify: Notify }) {
       {loadError && (
         <div className="space-y-2 rounded-md p-3" role="alert" style={{ background: 'var(--review-soft)', color: 'var(--danger-text)' }}>
           <p>The local assets could not be listed: {loadError}</p>
-          <Button variant="ghost" className="text-xs" onClick={() => void load()}>
+          <Button variant="secondary" onClick={() => void load()}>
             Try again
           </Button>
         </div>
