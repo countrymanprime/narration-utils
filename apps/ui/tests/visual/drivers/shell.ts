@@ -7,6 +7,10 @@ export const shellDrivers: Record<string, Driver> = {
   // is not (the default states already show both disabled at the first page, so they need no row here).
   'history-enabled': async (page) => {
     await goToPage(page, 'Script');
+    // Reaching any page by one nav click also enables Back there, so the header alone is what tells this state apart
+    // from the page it landed on: focus Back for its on-button focus ring (button:focus-visible, components.css), a
+    // plain style on the button itself rather than a portalled popup that would need its own axe debt declaration.
+    await page.getByRole('button', { name: 'Back' }).focus();
   },
   // After a Back from that page, both Back and Forward are enabled.
   'history-forward': async (page) => {
