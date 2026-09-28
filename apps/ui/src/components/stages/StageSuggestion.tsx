@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import type { StageChapterRecommendation } from '../../types';
 import { Button } from '../primitives/Button';
+import { StatusBadge } from '../primitives/StatusBadge';
 import type { StageDecision, StagesState } from './useStageRecommendations';
 import { stageLabel, verdictLine } from './stageText';
 
@@ -51,9 +52,7 @@ export function StageSuggestion({
   if (contradiction) {
     return (
       <Block>
-        <span className="rounded border px-1.5 py-0.5 font-semibold" style={{ borderColor: 'var(--warn)', color: 'var(--warn-text)' }}>
-          Evidence changed since you confirmed
-        </span>
+        <StatusBadge tone="warning" look="outline" label="Evidence changed since you confirmed" />
         <Actions>
           {decision('revert', `Revert to ${stageLabel(contradiction.revertTo)}: ${title}`, `Revert to ${stageLabel(contradiction.revertTo)}`)}
           {why}
@@ -80,9 +79,7 @@ export function StageSuggestion({
     const target = stageLabel(recommendation.target);
     return (
       <Block>
-        <span className="rounded px-1.5 py-0.5 font-semibold" style={{ background: 'var(--accent-soft)', color: 'var(--accent-strong)' }}>
-          {line}
-        </span>
+        <StatusBadge tone="accent" label={line} />
         <Actions>
           {decision('confirm', `Confirm ${title} as ${target}`, 'Confirm', 'primary')}
           {decision('dismiss', `Dismiss the suggestion for ${title}`, 'Dismiss')}

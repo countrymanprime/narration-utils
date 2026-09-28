@@ -4,6 +4,7 @@ import { useApi } from '../../api/ApiContext';
 import { usePendingAction } from '../../hooks/usePendingAction';
 import type { DawCatalogEntry } from '../../types';
 import { Button } from '../primitives/Button';
+import { Dot } from '../primitives/StatusBadge';
 import type { Notify } from '../primitives/Toast';
 
 /**
@@ -81,7 +82,7 @@ export function DawCatalogPanel({
       </div>
       {entries.map((entry) => (
         <div key={entry.id} className="flex items-center gap-3 rounded-md p-3" style={{ background: 'var(--surface-2)' }}>
-          <span className="size-2 shrink-0 rounded-full" style={{ background: entry.installed ? 'var(--character)' : 'var(--non-text)' }} />
+          <Dot color={entry.installed ? 'var(--character)' : 'var(--non-text)'} />
           <div className="flex-1">
             <div className="font-medium">
               {entry.name} {entry.installed ? 'detected' : 'not detected'}

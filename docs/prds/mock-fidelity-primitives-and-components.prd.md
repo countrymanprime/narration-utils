@@ -293,7 +293,7 @@ The tables give the mock's measured spec against what the app renders today. "B"
 
 | Shape | Mock spec | App today |
 | --- | --- | --- |
-| Status pill (resolution, summary, rail status, "On track", chips) | **22 px** tall, fully rounded, 10 px side padding, Barlow ≈11–11.5 px 600 uppercase (B) | `StatusBadge chip`: 22 px, fully rounded, 8.8 px padding, 11.52 px, tracking 0.03 em. The **shape matches; the fills don't** |
+| Status pill (resolution, summary, rail status, "On track", chips) | **22 px** tall, fully rounded, 10 px side padding, Barlow ≈11–11.5 px 600, tracking ≈0.06 em, **in the label's own case** (B; "Pickup", "6 need pickup", "Query sent": Phase 2 measured it, ADR 0600) | `StatusBadge chip`: 22 px, fully rounded, 8.8 px padding, 11.52 px, tracking 0.03 em. The **shape matches; the fills don't** |
 | Tag (the Proof type badge, the Script speaker tag, the dark sets' "Retail sample"-style tags) | **15–16 px** tall, radius **≈3 px**, 6 px side padding, Barlow ≈11 px 600 uppercase (B04, B02) | none: a StatusBadge chip (22 px, round) or `SpeakerTag` (17.4 px light, 11.9 px dark, radius 3.2) |
 | Booth speaker tag | ≈26 px, radius ≈4 (B03) | `SpeakerTag` 11.9 px (line-height 1) |
 | Nav count badge | ≈16 px pill, `--surface-2`, `--text-muted` (`--accent-strong` on the selected item) | none (not built, visual audit SH5) |
