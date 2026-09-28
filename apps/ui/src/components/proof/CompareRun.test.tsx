@@ -321,6 +321,81 @@ describe('CompareRun vocabulary suggestions', () => {
   });
 });
 
+describe('CompareRun "may have changed since comparison" (reaper-automation-follow-through PRD Phase 13)', () => {
+  const resultsProps = (overrides: Partial<Parameters<typeof CompareRun>[0]> = {}) => ({
+    chapterTitle: 'Chapter 1',
+    state: { ...WIRE_TRANSCRIPT, phase: 'success' as const, rows: WIRE_DISCREPANCIES, projectChangeCount: 41 },
+    notify: vi.fn(),
+    dawFileLinked: true,
+    reviewingLast: false,
+    onReviewLast: vi.fn(),
+    onCloseLast: vi.fn(),
+    foundHere: 2,
+    ...overrides,
+  });
+
+  it('shows the label once a background check finds REAPER’s count has moved past the comparison’s baseline', async () => {
+    render(
+      <ApiProvider api={createMockApi()}>
+        <CompareRun {...resultsProps()} />
+      </ApiProvider>,
+    );
+    await waitFor(() => expect(screen.getByText('The REAPER project may have changed since this comparison.')).toBeTruthy());
+  });
+
+  it('says nothing when the checked count still matches the comparison’s baseline', async () => {
+    render(
+      <ApiProvider api={createMockApi({}, { projectState: 'unchanged' })}>
+        <CompareRun {...resultsProps()} />
+      </ApiProvider>,
+    );
+    await screen.findByText(/2 discrepancies/);
+    expect(screen.queryByText(/may have changed/)).toBeNull();
+  });
+
+  it('never checks, and never shows the label, when the comparison carries no baseline count', async () => {
+    const projectStateCheck = vi.fn().mockResolvedValue({ status: 'started' as const });
+    render(
+      <ApiProvider api={createMockApi({ projectStateCheck })}>
+        <CompareRun {...resultsProps({ state: { ...WIRE_TRANSCRIPT, phase: 'success', rows: WIRE_DISCREPANCIES, projectChangeCount: undefined } })} />
+      </ApiProvider>,
+    );
+    await screen.findByText(/2 discrepancies/);
+    expect(projectStateCheck).not.toHaveBeenCalled();
+    expect(screen.queryByText(/may have changed/)).toBeNull();
+  });
+
+  it('says nothing outside the results view, even with a baseline on the run', () => {
+    render(
+      <ApiProvider api={createMockApi()}>
+        <CompareRun {...resultsProps({ state: { ...WIRE_TRANSCRIPT, phase: 'idle', projectChangeCount: 41 } })} />
+      </ApiProvider>,
+    );
+    expect(screen.queryByText(/may have changed/)).toBeNull();
+  });
+
+  it('checks the last completed comparison’s baseline while reviewing it, not the idle live state', async () => {
+    const results = { ...WIRE_TRANSCRIPT, phase: 'success' as const, rows: WIRE_DISCREPANCIES, projectChangeCount: 41 };
+    render(
+      <ApiProvider api={createMockApi()}>
+        <CompareRun {...resultsProps({ state: WIRE_TRANSCRIPT, lastCompleted: results, reviewingLast: true })} />
+      </ApiProvider>,
+    );
+    await waitFor(() => expect(screen.getByText('The REAPER project may have changed since this comparison.')).toBeTruthy());
+  });
+
+  it('a failed check is quiet: no label, no crash', async () => {
+    render(
+      <ApiProvider api={createMockApi({}, { projectState: 'error' })}>
+        <CompareRun {...resultsProps()} />
+      </ApiProvider>,
+    );
+    await screen.findByText(/2 discrepancies/);
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(screen.queryByText(/may have changed/)).toBeNull();
+  });
+});
+
 describe('CompareRun vocabulary hints feedback', () => {
   function renderHints(overrides: Parameters<typeof createMockApi>[0] = {}) {
     const notify = vi.fn();
