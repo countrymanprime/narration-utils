@@ -247,7 +247,7 @@ describe('DeliveryPage', () => {
     const measured = contract('measure-success.json');
     renderPage({ overrides: { measureState: async () => measured }, focus: { file: 'C:/Renders/Chapter 01.wav', rule: 'acx.sample_rate' } });
     expect(await screen.findByRole('table', { name: 'Chapter 01.wav, rule by rule' })).toBeTruthy();
-    expect(screen.getByText('Opened from the Review page: sample rate in Chapter 01.wav.')).toBeTruthy();
+    expect(screen.getByText('Opened from a note on Proof: sample rate in Chapter 01.wav.')).toBeTruthy();
   });
 
   it('says so when the file a Review page finding names is not in the last measurement', async () => {

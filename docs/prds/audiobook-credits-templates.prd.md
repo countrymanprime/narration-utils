@@ -79,7 +79,7 @@ We believe templated credits filled from project data, previewed as they will be
 - [x] **C10. Retail sample.** A marker on the first five minutes of chapter one at most; it adds no time.
   **Answered 2026-09-23:** the narrator picks the retail sample range (at most 5 minutes, anywhere in the book), overriding the "first five minutes of chapter one" recommendation; it adds no time to the estimate. Phase 5 carries it.
 - [x] **C11. Recorded inside chapter files?** If narrators record credits in the chapter file, Proofing must prepend them (compare.py precedent) or it reports false extras. Recommendation: assume separate files (ACX) and document it.
-  **Settled:** separate files, as ADR 0093 words it; the Manuscript user guide (`docs/guides/using-the-app/manuscript.md`) now tells narrators to record credits as their own files.
+  **Settled:** separate files, as ADR 0093 words it; the Manuscript user guide (`docs/guides/using-the-app/script.md`) now tells narrators to record credits as their own files.
 - [x] **C12. Sequencing.** Wait for the project manifest (W1) before adding a project file, or ship with a dedicated file and migrate? Recommendation: a dedicated file behind one Go accessor so the move is a one-place change.
   **Moot:** the project manifest landed first, so credit values live on it (`project.Manifest.Credits`, `internal/credits/values.go`) and no dedicated file was needed.
 

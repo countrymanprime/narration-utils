@@ -212,7 +212,7 @@ export const teleprompterLocateResultSchema = z.union([
   }),
 ]) satisfies z.ZodType<TeleprompterLocateResult>;
 
-/** `TeleprompterResumeFollow` and `TeleprompterResumeUnfollow` (`apps/desktop/resumefollow.go`, ADR 0350). */
+/** `TeleprompterResumeFollow` and `TeleprompterResumeUnfollow` (`apps/desktop/resumefollow.go`, ADR 0353). */
 export const teleprompterResumeFollowSchema = z
   .object({ following: z.boolean(), reason: z.enum(['unavailable', 'no_track']).optional() })
   .refine((answer) => !(answer.following && answer.reason), {

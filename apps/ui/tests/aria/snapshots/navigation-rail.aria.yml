@@ -10,16 +10,15 @@
     - button "Home"
   - group "Prep":
     - /children: equal
-    - button "Manuscript"
+    - button "Script"
     - button "Story Bible"
   - group "Record":
     - /children: equal
-    - button "Teleprompter"
+    - button "Booth"
   - group "Review":
     - /children: equal
-    - button "Proofing"
+    - button "Proof"
     - button "Tracks"
-    - button "Review"
   - group "Finish":
     - /children: equal
     - button "Delivery"

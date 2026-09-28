@@ -20,6 +20,15 @@ func (h *Host) saveDeliveryFindings(job *measureJob) {
 	if job == nil || job.running() {
 		return
 	}
+	h.saveFinishedDeliveryFindings(job)
+}
+
+// saveFinishedDeliveryFindings does the save without checking the job's own running() flag: runMeasure calls it on a
+// job it knows has truly finished (its measuring loop has returned), but before job.finish() sets the job's phase to a
+// terminal one. Doing the save first, before that phase flip is visible, is what keeps a reader who learns the
+// measurement stopped (measureState, an ended-job event) from ever seeing that before the findings it produced are on
+// disk — otherwise a poll landing between the two steps finds some files' findings missing (delivery_findings_test.go).
+func (h *Host) saveFinishedDeliveryFindings(job *measureJob) {
 	h.deliveryFindingsMu.Lock()
 	defer h.deliveryFindingsMu.Unlock()
 	svc := h.services()

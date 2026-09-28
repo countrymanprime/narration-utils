@@ -2,7 +2,7 @@ import type { ChapterStatus, ManuscriptContentKind, RecordedUnavailable } from '
 import type { StageVerdict } from './stages';
 
 /**
- * Production tracking (docs/prds/production-tracking.prd.md). Phase 3: the book's deadline, contracted amount and
+ * Production tracking (the PRD, delivered and deleted; ADR 0028). Phase 3: the book's deadline, contracted amount and
  * milestones, stored on the project manifest (apps/desktop/bindings_production.go) so they survive Replace manuscript.
  * Dates are calendar dates written "YYYY-MM-DD" (ADR 0323), never a time of day.
  */
@@ -104,6 +104,26 @@ export type ProductionStartResult =
 
 export type ProductionStopResult = { stopped: true; session: ProductionSession } | { stopped: false; session: null };
 
+/**
+ * What one status report export wrote (ProductionStatusReport, production-tracking.prd.md Phase 5): the folder
+ * relative to the project (`narration-utils/production/reports`), the two file names in it, and whether the narrator
+ * chose to include the contracted amount and effective rate (off by default: a status report is often shared with
+ * someone the narrator would not otherwise tell their rate).
+ */
+export type ProductionReportExport = {
+  folder: string;
+  htmlFile: string;
+  jsonFile: string;
+  contractedAmountIncluded: boolean;
+};
+
+/**
+ * One calendar date of the book's logged-hours burndown (ProductionBurndown, production-tracking.prd.md Phase 6,
+ * Could): every hour logged by the end of that day, added up from every earlier day. Data only - a future chart
+ * primitive (out of this PRD's scope) would plot it.
+ */
+export type ProductionBurndownPoint = { date: string; hoursLogged: number };
+
 export interface ProductionApi {
   /** Reads this project's deadline, contracted amount and milestones; an empty plan when none are set. */
   productionPlan(): Promise<ProductionPlan>;
@@ -119,4 +139,14 @@ export interface ProductionApi {
   productionStartTimer(chapterId: string, stage: ChapterStatus): Promise<ProductionStartResult>;
   /** Stops the running timer; a no-op (`stopped: false`) when none runs. */
   productionStopTimer(): Promise<ProductionStopResult>;
+  /**
+   * Writes an HTML and a JSON status report (hours by stage, PFH, the deadline and milestone status, and book-wide
+   * readiness counts) into the project's sidecar folder, from exactly the same figures `productionOverview` just
+   * answered. `includeContractedAmount` writes the contracted amount and effective rate; off by default. Rejects
+   * without a project.
+   */
+  productionStatusReport(includeContractedAmount: boolean): Promise<ProductionReportExport>;
+  /** The book's logged hours by day, one point per day from the first stopped session to the last; empty until one
+   * is logged. Data only, for a future chart primitive (out of this PRD's scope). */
+  productionBurndown(): Promise<ProductionBurndownPoint[]>;
 }

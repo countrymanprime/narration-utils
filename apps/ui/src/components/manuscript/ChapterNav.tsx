@@ -4,6 +4,7 @@ import { STATUS_COLOR } from '../../chapterStatus';
 import { chapterLineNumber, isListableChapter, windowExcerpt } from '../../state';
 import type { ManuscriptChapter, ReaderBookmark, SearchHit, StageChapterRecommendation } from '../../types';
 import { Highlight } from '../primitives/Highlight';
+import { StatusBadge } from '../primitives/StatusBadge';
 import { TitleSubtitle } from '../primitives/TitleSubtitle';
 import { verdictLine } from '../stages/stageText';
 
@@ -36,6 +37,7 @@ export function ChapterNav({
   select,
   removeBookmark,
   stageSuggestions,
+  toConfirm,
 }: {
   chapters: ManuscriptChapter[];
   selectedId?: string;
@@ -54,6 +56,9 @@ export function ChapterNav({
   // chapter id. Absent chapters and every verdict but `recommended` render no marker - the nav row stays
   // dense, and Confirm/Dismiss/evidence stay on Home and the Proofing panel (Q6 option B).
   stageSuggestions?: ReadonlyMap<string, StageChapterRecommendation>;
+  // The Script page's prep status (stage-navigation-and-page-replacement.prd.md Phase 3, ADR 0392): by chapter id, the names first heard
+  // in it that the author has not confirmed. A chapter with none shows nothing.
+  toConfirm?: ReadonlyMap<string, number>;
 }) {
   const searching = Boolean(searchQuery.trim());
   const matchesFor = (chapter: ManuscriptChapter) =>
@@ -81,6 +86,7 @@ export function ChapterNav({
         const chapterBookmark = chapterBookmarks.find((item) => item.kind === 'chapter');
         const suggestion = stageSuggestions?.get(chapter.id);
         const suggested = suggestion?.verdict === 'recommended' ? verdictLine(suggestion) : undefined;
+        const unconfirmed = toConfirm?.get(chapter.id) ?? 0;
         return (
           <div key={chapter.id} className="rounded-[0.4rem]">
             <button
@@ -93,6 +99,11 @@ export function ChapterNav({
                 {suggested && (
                   <span className="mt-[0.1rem] block truncate text-[0.7rem]" style={{ color: 'var(--text-muted)' }}>
                     {suggested}
+                  </span>
+                )}
+                {unconfirmed > 0 && (
+                  <span className="mt-1 block">
+                    <StatusBadge tone="warning" label={`${unconfirmed} to confirm`} />
                   </span>
                 )}
               </span>

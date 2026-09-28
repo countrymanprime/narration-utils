@@ -20,14 +20,14 @@ const SCOPE_ORDER: readonly Scope[] = ['global', 'page', 'booth', 'dialog'];
 const SCOPE_LABEL: Record<Scope, string> = { global: 'Global', page: 'Page', booth: 'Booth', dialog: 'Dialog' };
 const SCOPE_APPLIES: Record<Scope, string> = {
   global: 'anywhere, except while a dialog is open',
-  page: 'the chapter workspace',
+  page: "a chapter's Proof view",
   booth: 'read aloud and the Teleprompter',
   dialog: 'while a dialog is open',
 };
 // The same phrase used mid-sentence ("No other command uses it ..."), Visual Spec mockup 02.
 const SCOPE_ACTIVE: Record<Scope, string> = {
   global: 'anywhere',
-  page: 'on the chapter workspace',
+  page: "on a chapter's Proof view",
   booth: 'where reading happens',
   dialog: 'in this dialog',
 };

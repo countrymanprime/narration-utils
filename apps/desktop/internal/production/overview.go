@@ -8,7 +8,7 @@ import (
 	"github.com/countrymanprime/narration-utils/shell/internal/stages"
 )
 
-// This file is Phase 4 of docs/prds/production-tracking.prd.md: the one read the Production page makes. BuildOverview
+// This file is Phase 4 of the production tracking PRD (delivered and deleted; ADR 0028): the one read the Production page makes. BuildOverview
 // is pure: the host hands it the chapters (status and measured recorded time from the manuscript, readiness from the
 // stage recommendations), the time log and the plan, and it only arranges and adds them up. It never writes a chapter
 // status and never recomputes a readiness signal (Q8 A): the board shows what the signal owners already said.

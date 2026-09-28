@@ -6,7 +6,7 @@ logic is DAW-agnostic; a thin per-DAW driver wires it into a specific host.
 - [Manuscript Guide](docs/utilities/manuscript-guide.md) (`sidecars/manuscript-guide/`, the Story Bible page) — builds a
   narrator reference (characters, places, organizations, pronunciations) from a manuscript. A downloadable spaCy language
   model makes it more accurate; without one it uses its rules-only fallback.
-- [Transcript Compare](docs/utilities/transcript-compare.md) (`sidecars/transcript-compare/`, the Proofing page) —
+- [Transcript Compare](docs/utilities/transcript-compare.md) (`sidecars/transcript-compare/`, a chapter's Proof view) —
   transcribes a recorded chapter with a local Whisper model and diffs it against the manuscript, dropping take markers at
   every discrepancy.
 - [Tracks](docs/utilities/tracks.md) (the Tracks page) — lists the tracks of a project's REAPER `.rpp` file and plays their
@@ -31,7 +31,7 @@ read the docs here in `docs/` meanwhile.
 
 ## Layout
 
-```
+```text
 narration-utils/
   apps/
     desktop/                   Go/Wails desktop host: app.go, bindings*.go, internal/ (domain services, the asset manager),
@@ -63,7 +63,7 @@ The layout and its test rule are recorded in
 ## Supported DAWs
 
 - **Reaper** — supported. Load `integrations/reaper/NarrationUtils_Launcher.lua` as
-  the one action; it opens the centered Narration Utils workspace with every tool (Proofing,
+  the one action; it opens the centered Narration Utils workspace with every tool (Proof,
   Story Bible, Teleprompter, Tracks and the manuscript reader) and their global/project settings.
 - **Audacity** — planned, not yet implemented. Audacity's scripting model
   (mod-script-pipe, label tracks instead of take markers, no ExtState-equivalent settings
@@ -171,7 +171,7 @@ Markdown, DOCX, plain text and EPUB; PDF remains intentionally disabled pending 
 
 The launcher is intentionally the only REAPER action. It starts the companion
 window, and while the window is open REAPER services only the bridge's requests:
-Proofing's comparison (reading the selected items, adding take markers, moving the
+Proof's comparison (reading the selected items, adding take markers, moving the
 cursor to a marker), stamping and reading chapter identity on items, the pickup
 list (adding, finding and resolving pickup markers), configuring a per-chapter
 render, adding a take, and reporting the open project's state. See

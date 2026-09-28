@@ -1,5 +1,5 @@
 import type { DiagnosticsFileResult, DiagnosticsSourceKind, DiagnosticsSummary, Finding } from '../../types';
-import { severityLabel } from '../review/findingFormat';
+import { severityLabel } from '../proof/findingFormat';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../primitives/Table';
 import { formatLength } from './deliveryFormat';
 import { findingKindLabel, measuredText, sourceKindLabel, thresholdText, timeRangeText } from './diagnosticsFormat';

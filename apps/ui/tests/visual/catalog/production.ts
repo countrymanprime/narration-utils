@@ -29,4 +29,12 @@ export const productionStates: StateEntry[] = [
       "Production's Delivery plan panel (?mockProduction=on-pace) with the ACX 15-minute checkpoint added from its template and not saved yet - the delivery date and contracted amount the figures use, each milestone's name, due date and note with Remove, and the template button off once the checkpoint is listed",
     ...KEEPS_DESKTOP_SCROLL,
   },
+  // Status report export (production-tracking.prd.md Phase 5)
+  {
+    page: 'production',
+    state: 'status-report',
+    description:
+      'Production (?mockProduction=on-pace) after Export status report - the HTML and JSON file names written to narration-utils/production/reports, and that the contracted amount and effective rate were left out (scrolled to the Status report panel)',
+    ...KEEPS_DESKTOP_SCROLL,
+  },
 ];

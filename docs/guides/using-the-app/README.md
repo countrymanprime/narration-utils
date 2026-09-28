@@ -15,13 +15,11 @@ Read them in order the first time, or jump straight to the page you need.
 | [Navigation](navigation.md) | The sidebar, its icon-only and drawer layouts, and locked entries. |
 | [Home](home.md) | Manuscript status, time estimates, and importing a manuscript. |
 | [Production](production.md) | Hours logged by stage, PFH and effective rate from measured audio, the delivery date, and which chapters to work on next. |
-| [Manuscript](manuscript.md) | The reader: highlights, notes, bookmarks, formatting, and themes. |
-| [Proofing](proofing.md) | Transcribing a recorded chapter and comparing it to the manuscript. |
+| [Script](script.md) | Prep: the chapter list with each chapter's prep status, the reader (highlights, notes, bookmarks, markup, formatting) and the Pronunciations, Characters and Queries rail. |
 | [Story Bible](story-bible.md) | Characters, places, and organizations with pronunciation and notes. |
-| [Teleprompter](teleprompter.md) | A live read-along that follows you as you narrate a chapter. |
+| [Booth](booth.md) | Where you record: a live read-along that follows you as you narrate a chapter, with companion mode beside your DAW. |
 | [Tracks](tracks.md) | Listing and playing the project's REAPER tracks, scanning for pickups and duplicates, and the REAPER tools: chapter stamps, pickup lists, chapter render setup and chapter tags. |
-| [Chapter workspace](workspace.md) | Listening to a chapter against its script, seeing the recording check's flags in place, and clicking a word to hear it again. Opened from Tracks or Home, not the nav. |
-| [Review](review.md) | One list of everything the app's checks found, with the evidence, and your accept, dismiss or defer decision on each. |
+| [Proof](proof.md) | Every check's findings in one list, with the evidence and your accept, dismiss or defer decision on each; and, per chapter, listening to the recording against its script, comparing it to the manuscript, and seeing the recording check's flags in place. |
 | [Delivery](delivery.md) | Measuring rendered chapter files (loudness, levels, peaks, noise floor) against limits you set yourself. |
 | [Settings](settings.md) | Global and per-project settings, appearance, and clearing project data. |
 

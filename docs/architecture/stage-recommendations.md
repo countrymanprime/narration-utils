@@ -226,14 +226,14 @@ visual states `home/stage-*`.
 
 ## Elsewhere
 
-Phase 8 added `apps/ui/src/components/proofing/ProofingStagePanel.tsx` on the Proofing page: every narration chapter
+Phase 8 added `apps/ui/src/components/proof/ProofingStagePanel.tsx` on the Proofing page (a Proof chapter view since stage navigation Phase 5): every narration chapter
 currently in `proofing`, with the same `StageSuggestion`/`StageEvidence` pair Home uses (Confirm, Dismiss, Revert, Why),
 self-fetching since the Transcript state carries no chapter id.
 
 Phase 9 added two read-only consumers, both through `useStageRecommendations` like every other reader here - neither
 confirms, dismisses or reverts:
 
-- `ChapterNav.tsx` (the Manuscript page's Chapters & Search panel) shows a non-interactive "Suggested: `<stage>`" line
+- `ChapterNav.tsx` (the Script page's Chapters & Search panel) shows a non-interactive "Suggested: `<stage>`" line
   under a chapter's title for a live `recommended` verdict only (`stageText.ts`'s `verdictLine`, Q6 option B) - the nav
   row stays dense, and every action stays on Home or the Proofing panel.
 - `TracksPage.tsx` shows a line above the Chapter links table counting chapters whose recommendation carries the
