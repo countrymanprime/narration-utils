@@ -16,7 +16,7 @@ const PERMANENT: Record<string, Reason> = {
   'src/components/primitives/inputModality.ts': { note: 'tracks the last input modality (keyboard vs pointer), not a command' },
   'src/components/primitives/Tooltip.tsx': { note: 'Escape closes the tooltip (WCAG 1.4.13), a widget key owned by the primitive, not a command' },
   'src/components/manuscript/SelectionMenu.tsx': { note: 'Escape closes the selection menu, a widget key owned by the primitive, not a command' },
-  'src/components/teleprompter/useFollowCursor.ts': { note: 'isScrollKey detects a hand scroll (ADR 0119), not a command' },
+  'src/components/booth/useFollowCursor.ts': { note: 'isScrollKey detects a hand scroll (ADR 0119), not a command' },
 };
 
 // Temporary: today's three command listeners this PRD replaces. Each entry names the phase that migrates it onto

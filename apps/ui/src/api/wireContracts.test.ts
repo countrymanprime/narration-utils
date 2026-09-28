@@ -121,7 +121,7 @@ import { unknownKeys } from './schemas/strictness';
 import { GOLDEN } from './contractGoldens';
 import { parseWire, parseWireJson, type WireContext } from './wire/parseWire';
 import { WireError } from './wire/WireError';
-import { creditsRows } from '../components/teleprompter/readerModel';
+import { creditsRows } from '../components/booth/readerModel';
 
 // ADR 0069, rule 4: the fixtures are the contract. Every payload the Go host and the Python sidecars write to
 // tests/fixtures/contracts/ is validated here by the same schemas the app runs, and so is every answer the mock client gives;
