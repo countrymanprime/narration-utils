@@ -126,7 +126,35 @@ export const teleprompterFeedback: Record<string, FeedbackRow> = {
     'ok',
     'Starts the meter-only child while the microphone popover is open and no session is running; the meter itself shows it working, an inline alert under it otherwise (the host refuses a second meter or one during a session).',
   ),
-  // Following REAPER while the resume prompt shows (read-aloud-resume-from-daw Phase 5, ADR 0352).
+  // Following REAPER while the resume prompt shows (read-aloud-resume-from-daw Phase 5, ADR 0350).
+  'src/components/teleprompter/ResumePrompt.tsx::subscribeDawTransport#1': subscription(
+    'REAPER starting to play or record settles the resume prompt (read-aloud-resume-from-daw.prd.md Phase 5, RD7, ADR 0350): the narrator is working in REAPER, so the notice steps aside without a choice being made.',
+  ),
+  'src/components/teleprompter/ResumePrompt.tsx::subscribeTeleprompterResumeFollow#1': subscription(
+    'The bounded REAPER follow\'s live events while the prompt shows for a matched track (Phase 5, ADR 0350): a cursor move retries the lookup, and REAPER playing or recording settles the prompt.',
+  ),
+  'src/components/teleprompter/ResumePrompt.tsx::teleprompterResumeFollow#1': row(
+    'effect',
+    'file-io',
+    'na',
+    'na',
+    'ui',
+    'silent',
+    'na',
+    'exempt',
+    'Starts the bounded REAPER follow for the matched track while the prompt shows (Phase 5, ADR 0350); a failure to start just means the poll never begins (SILENT_CATCHES).',
+  ),
+  'src/components/teleprompter/ResumePrompt.tsx::teleprompterResumeUnfollow#1': row(
+    'effect',
+    'file-io',
+    'na',
+    'na',
+    'ui',
+    'silent',
+    'na',
+    'exempt',
+    'Stops the follow on cleanup; a failure here is unobservable and harmless (SILENT_CATCHES).',
+  ),
   'src/components/teleprompter/useInputLevel.ts::teleprompterMeterStop#1': row(
     'effect',
     'python',
