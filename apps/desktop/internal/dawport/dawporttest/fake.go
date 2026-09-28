@@ -71,6 +71,7 @@ func NewFake(kind dawport.Kind, levels map[dawport.Capability]dawport.Level) *Fa
 		dawport.CapItemGain:        itemGainRole{r(dawport.CapItemGain)},
 		dawport.CapRenderWithFX:    renderWithFXRole{r(dawport.CapRenderWithFX)},
 		dawport.CapMasterChainRead: masterChainReadRole{r(dawport.CapMasterChainRead)},
+		dawport.CapMacroRender:     macroRenderRole{r(dawport.CapMacroRender)},
 	}
 	return f
 }
@@ -309,4 +310,10 @@ type masterChainReadRole struct{ role }
 
 func (r masterChainReadRole) ReadMasterChain(context.Context) (dawport.MasterChain, error) {
 	return dawport.MasterChain{}, r.do("ReadMasterChain")
+}
+
+type macroRenderRole struct{ role }
+
+func (r macroRenderRole) RenderWithMacro(context.Context, dawport.MacroRender) (dawport.MacroRendered, error) {
+	return dawport.MacroRendered{}, r.do("RenderWithMacro")
 }

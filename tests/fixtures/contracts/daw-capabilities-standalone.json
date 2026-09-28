@@ -30,6 +30,12 @@
       "message": "No DAW is connected to this app. Open this app from your DAW to use it.",
       "reason": "standalone"
     },
+    "macro_render": {
+      "available": false,
+      "level": "unsupported",
+      "message": "No DAW is connected to this app. Open this app from your DAW to use it.",
+      "reason": "standalone"
+    },
     "markers": {
       "available": false,
       "level": "unsupported",
