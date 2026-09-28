@@ -16,6 +16,7 @@ import type { ReaderMark } from './readerModel';
 import type { FollowCursor } from './useFollowCursor';
 import type { RecordInReaperState } from './useRecordInReaper';
 import type { TeleprompterSession } from './useTeleprompterSession';
+import { PickupsCompanionSummary } from '../pickups/PickupsCompanionSummary';
 
 type Props = {
   session: TeleprompterSession;
@@ -125,8 +126,8 @@ const TOOLBAR_BUTTON_CLASS = 'gap-1.5 px-3 py-1.5 text-[0.75rem]';
  * Companion mode's layout (booth-mode-and-companion-panel.prd.md Phase 7): `CompactShell` in the app's own window, narrowed
  * and pinned beside the DAW (Phase 6's bindings). It is the same teleprompter session the Read aloud dialog and the booth
  * show (`ReadAloudDialog` renders this in place of its `Dialog`), re-laid out for a 380 px column: REAPER's playhead in the
- * header, then the script, the note at the playhead and the chapter's pickups (both reserved for the closed-loop proofing
- * PRD, which fills them - an honest "Coming soon" until then, D3), and the gestures that work here.
+ * header, then the script, the note at the playhead (reserved for the closed-loop proofing PRD - an honest "Coming soon"
+ * until then, D3), the Pickups page's list (stage-navigation-and-page-replacement.prd.md Phase 7), and the gestures that work here.
  *
  * Play/Pause and Stop repeat `BoothView`'s few lines on the same handlers rather than share a hook with it: each surface
  * is mounted alone (one `reading.toggle` registration at a time), and those files belong to other phases in flight.
@@ -251,8 +252,8 @@ export function CompanionShell({ session: t, follow, chapterTitle, recording, ma
         <Section title="Note at playhead" badge={<StatusBadge tone="neutral" label="Coming soon" />}>
           <p style={{ color: 'var(--text-muted)' }}>The proofer&apos;s note at REAPER&apos;s playhead, with Resolve and Waive, will show here.</p>
         </Section>
-        <Section title="Pickups" badge={<StatusBadge tone="neutral" label="Coming soon" />}>
-          <p style={{ color: 'var(--text-muted)' }}>This chapter&apos;s pickups will be listed here. For now, find them in the full app.</p>
+        <Section title="Pickups">
+          <PickupsCompanionSummary />
         </Section>
         <Section title="Hotkeys">
           <dl className="grid grid-cols-[auto_1fr] items-center gap-x-3 gap-y-1.5">

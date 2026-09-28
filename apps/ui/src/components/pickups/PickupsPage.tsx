@@ -11,10 +11,9 @@ import { Panel } from '../primitives/Panel';
 import { StatusBadge } from '../primitives/StatusBadge';
 import { formatTime } from '../proof/findingFormat';
 import { useCapability } from '../../useCapability';
-import type { PickupsMoment, PickupsState } from '../../types';
+import type { PickupsMoment } from '../../types';
 import { chaptersAtPosition, type PickupChapter } from './pickupChapters';
-
-const IDLE: PickupsState = { phase: 'idle', message: '', remaining: 0, total: 0, csv: '' };
+import { usePickupsState } from './usePickupsState';
 
 // Triggers a browser "Save As" for csv, under name, without a native file-dialog binding: the WebView2 host
 // handles a download the same way a real browser does (Phase 9's "Export action").
@@ -79,7 +78,7 @@ function PickupChapterLinks({ matches }: { matches: PickupChapter[] | undefined 
 export function PickupsPage() {
   const api = useApi();
   const punchCapability = useCapability('punch');
-  const [state, setState] = useState<PickupsState>(IDLE);
+  const state = usePickupsState();
   const [rowErrors, setRowErrors] = useState<string[]>([]);
   const [requestError, setRequestError] = useState('');
   // "Punch from here" (booth-actions-enablement PRD Phase 3): the pickup's own position is already a project time, so
@@ -92,22 +91,6 @@ export function PickupsPage() {
   // What a pickup's project time is matched against to find its chapter; undefined until read, or when it cannot be.
   const [book, setBook] = useState<{ project: TracksProject; mappings: TrackMapping[]; chapters: { id: string; title: string }[] }>();
   const fileInput = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    const unsubscribe = api.subscribePickups(setState);
-    // Hydrates whatever run was already in flight, then asks for a fresh count so a narrator sees where things stand
-    // without an extra press (the "remaining count" the phase's success signal names). Count only after the hydrate
-    // settles, not in a second, independent effect: two unordered fetches racing on the same `setState` can resolve out
-    // of order and flash the page back to a stale phase after Count has already moved it on.
-    void api
-      .pickupsState()
-      .then((fetched) => {
-        setState(fetched);
-        return api.pickupsCount();
-      })
-      .catch(() => {});
-    return unsubscribe;
-  }, [api]);
 
   useEffect(() => {
     let active = true;

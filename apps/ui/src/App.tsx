@@ -24,6 +24,7 @@ import { TeleprompterPage } from './components/teleprompter/TeleprompterPage';
 import { TracksPage } from './components/tracks/TracksPage';
 import { ProofChapterPage } from './components/proof/ProofChapterPage';
 import { ProofPage } from './components/proof/ProofPage';
+import { PickupsPage } from './components/pickups/PickupsPage';
 import { RedirectKeepingLocation } from './components/layout/RedirectKeepingLocation';
 import { leavesCompareRun } from './components/proof/leavesCompareRun';
 import { DeliveryPage } from './components/delivery/DeliveryPage';
@@ -515,6 +516,8 @@ function AppRoutes() {
                   />
                 }
               />
+              {/* Pickups (stage-navigation-and-page-replacement.prd.md Phase 7) replaces the Tracks page's Pickups dialog, which had no route. */}
+              <Route path="/pickups" element={<PickupsPage />} />
               {/* Retired by Proof (stage-navigation-and-page-replacement.prd.md Phase 5, ADR 0407): old links land, query and hash kept. */}
               <Route path="/review" element={<RedirectKeepingLocation to="/proof" />} />
               <Route path="/proofing" element={<RedirectKeepingLocation to="/proof" />} />
