@@ -60,6 +60,10 @@ especially welcome:
   and milestones it keeps in `project.json`: a file that makes the app run, open, fetch or write anything, or that is read as
   something it is not instead of being kept aside and reported or refused, is in scope; one that only changes the narrator's own
   logged hours, dates or amount is the documented residual risk (threat model rows 6n and 6o).
+- The production status report it writes (only into the project's `narration-utils/production/reports` folder, never over an
+  earlier report, and without the narrator's contracted amount or effective rate unless they tick the box to include them,
+  [ADR 0406](docs/adr/0406-the-status-report-leaves-out-the-contracted-amount-and-effective-rate-unless-the-narrator-opts-in.md)); a
+  report that leaks the rate the narrator did not include is in scope.
 - Weaknesses in the release pipeline (for example an installer or checksum that does not match the reviewed build, or a release asset without valid build provenance). What the pipeline promises, and what it does not: every release asset has a SHA-256 file (it detects a damaged download, not a tampered one) and a build-provenance attestation you can check with `gh attestation verify` ([Build provenance](docs/operations/ci-and-releases.md#build-provenance)); the releases are **unsigned** by decision, so Windows SmartScreen warns and that warning alone is not a vulnerability; and the owner-only settings that back the pipeline (rulesets, the `production` environment, immutable releases, action pinning) are listed in [Tracking work on GitHub](docs/operations/github-workflow.md#repository-settings-that-only-the-owner-can-change).
 
 - The arguments and session files the app hands its local sidecars and the FFmpeg encoder, for example a value from the interface becoming a

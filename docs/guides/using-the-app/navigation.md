@@ -3,7 +3,7 @@
 # Navigation
 
 The sidebar on the left is grouped by production stage, the way a narrator's week runs: **Production** ([Home](home.md)),
-**Prep** ([Manuscript](manuscript.md), [Story Bible](story-bible.md)), **Record** ([Teleprompter](teleprompter.md)),
+**Prep** ([Script](script.md), [Story Bible](story-bible.md)), **Record** ([Booth](booth.md)),
 **Review** ([Proof](proof.md), [Tracks](tracks.md)) and **Finish** ([Delivery](delivery.md)).
 At desktop widths each group shows as a heading over its pages; narrower windows switch it to icon-only groups
 divided by a thin line, then hide it behind a hamburger menu that opens it as a slide-in drawer with the headings
@@ -15,7 +15,7 @@ In the icon-only layout, hover an icon (or tab to it) to see the page's name.
 
 ![Icon-only navigation rail with a page name shown on hover](../../images/ui/nav-rail-tooltip.webp)
 
-Manuscript, Story Bible, and Teleprompter stay locked until a manuscript has been
+Script, Story Bible, and Teleprompter stay locked until a manuscript has been
 [imported on Home](home.md). Hovering a locked entry says what is missing. Home, Tracks, Proof, and Delivery
 are always available.
 

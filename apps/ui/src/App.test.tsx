@@ -12,7 +12,6 @@ import type { GuideBuildResult, WorkJob } from './types';
 import { WIRE_CHAPTERS } from './api/mockFixtures';
 import type { JobEnded } from './api/contracts/system';
 import type { DawTransport } from './api/contracts/daw';
-import { setBoothActive } from './components/teleprompter/boothActive';
 
 // BrowserRouter reads/writes the real window.location via history.pushState,
 // which jsdom keeps alive across tests in this file - reset it so each test
@@ -106,13 +105,13 @@ describe('App (integration, driven through the mock NarrationApi)', () => {
     expect(await screen.findByRole('heading', { name: 'Welcome back' })).toBeTruthy();
   });
 
-  it('shows the Manuscript page an inline error with Retry when its chapters cannot be read, beside the notice Home raised for the same data', async () => {
+  it('shows the Script page an inline error with Retry when its chapters cannot be read, beside the notice Home raised for the same data', async () => {
     renderApp({}, { invalidPayload: 'manuscript' });
     await waitFor(() => screen.getByRole('heading', { name: 'Welcome back' }));
     // Home's audiobook estimate reads the same chapters, so it tells the narrator at once, and the notice stays (ADR 0075) ...
     const message = 'The app received data it could not read.';
     await waitFor(() => expect(screen.getAllByText(message)).toHaveLength(1));
-    fireEvent.click(screen.getAllByRole('button', { name: /Manuscript/ })[0]);
+    fireEvent.click(screen.getAllByRole('button', { name: 'Script' })[0]);
     // ... so once the page has its own inline error the same words are on screen twice, which is why the visual driver waits for both.
     expect(await screen.findByText('This page could not be loaded')).toBeTruthy();
     expect(screen.getAllByText(message)).toHaveLength(2);
@@ -154,8 +153,8 @@ describe('App (integration, driven through the mock NarrationApi)', () => {
     expect(screen.getByText(/Desktop host API version 1 is incompatible/)).toBeTruthy();
   });
 
-  it("opens Settings > Credits from the teleprompter's unresolved-token warning (credits PRD Phase 4, C6)", async () => {
-    window.history.replaceState(null, '', '/teleprompter');
+  it("opens Settings > Credits from the Booth's unresolved-token warning (credits PRD Phase 4, C6)", async () => {
+    window.history.replaceState(null, '', '/booth');
     renderApp();
     const picker = (await screen.findByLabelText('Chapter')) as HTMLSelectElement;
     await waitFor(() => expect(Array.from(picker.options, (option) => option.textContent)).toContain('Closing credits'));
@@ -261,6 +260,8 @@ describe('App (integration, driven through the mock NarrationApi)', () => {
 
   it('queues a job-end toast while the booth is recording, and shows it once recording stops (booth-mode-and-companion-panel.prd.md Phase 5)', async () => {
     let announce: ((event: JobEnded) => void) | undefined;
+    // Every subscriber hears the transport (the Booth page subscribes too, beside App's toast guard).
+    const transportListeners = new Set<(transport: DawTransport) => void>();
     let emitTransport: ((transport: DawTransport) => void) | undefined;
     renderApp({
       subscribeJobEnded: (listener) => {
@@ -268,16 +269,19 @@ describe('App (integration, driven through the mock NarrationApi)', () => {
         return () => {};
       },
       subscribeDawTransport: (listener) => {
-        emitTransport = listener;
+        transportListeners.add(listener);
+        emitTransport = (transport) => transportListeners.forEach((each) => each(transport));
         listener({ playing: false, recording: false });
-        return () => {};
+        return () => transportListeners.delete(listener);
       },
     });
     await screen.findByRole('heading', { name: 'Welcome back' });
     await waitFor(() => expect(announce).toBeDefined());
     await waitFor(() => expect(emitTransport).toBeDefined());
 
-    act(() => setBoothActive(true));
+    // The Booth is showing (stage-navigation-and-page-replacement.prd.md Phase 4: its route, not a dialog flag).
+    fireEvent.click(screen.getAllByRole('button', { name: 'Booth' })[0]);
+    await screen.findByRole('heading', { name: 'Booth' });
     act(() => emitTransport?.({ playing: true, recording: true }));
 
     act(() => announce?.({ id: 'guide-1', kind: 'story_bible', outcome: 'success', message: 'Story Bible rebuild complete.', durationMs: 4200 }));
@@ -291,9 +295,7 @@ describe('App (integration, driven through the mock NarrationApi)', () => {
 
     // Recording stops: the queued success toast now appears.
     act(() => emitTransport?.({ playing: false, recording: false }));
-    expect(within(screen.getByRole('status')).getByText('Story Bible rebuild complete.')).toBeTruthy();
-
-    setBoothActive(false);
+    expect(screen.getByText('Story Bible rebuild complete.')).toBeTruthy();
   });
 
   it('raises an OS notification for a slow job finishing while the window is unfocused, and not otherwise (N1-N4)', async () => {
@@ -432,8 +434,9 @@ describe('App (integration, driven through the mock NarrationApi)', () => {
     renderApp();
     await screen.findByRole('heading', { name: 'Welcome back' });
 
-    fireEvent.click(screen.getAllByRole('button', { name: 'Manuscript' })[0]);
-    await screen.findByRole('heading', { name: 'Manuscript' });
+    fireEvent.click(screen.getAllByRole('button', { name: 'Script' })[0]);
+    await screen.findByRole('heading', { name: 'Script' });
+    expect(window.location.pathname).toBe('/script');
 
     fireEvent.click(screen.getAllByRole('button', { name: 'Proof' })[0]);
     await screen.findByRole('heading', { name: 'Proof' });
@@ -453,7 +456,7 @@ describe('App (integration, driven through the mock NarrationApi)', () => {
     renderApp({ bootstrap: async () => ({ ...(await source.bootstrap()), manuscript: null }) });
     await screen.findByRole('heading', { name: 'Welcome back' });
 
-    for (const name of ['Manuscript', 'Story Bible', 'Teleprompter']) {
+    for (const name of ['Script', 'Story Bible', 'Booth']) {
       expect(screen.getAllByRole('button', { name }).every((button) => (button as HTMLButtonElement).disabled)).toBe(true);
     }
     expect((screen.getByRole('button', { name: 'Open Proof' }) as HTMLButtonElement).disabled).toBe(true);
@@ -462,22 +465,42 @@ describe('App (integration, driven through the mock NarrationApi)', () => {
     expect(screen.queryByRole('button', { name: 'Import legacy Word file' })).toBeNull();
   });
 
-  it('opens the Teleprompter with a manuscript, and sends a direct URL to Home without one', async () => {
+  it('opens the Booth with a manuscript, and sends a direct URL to Home without one', async () => {
     window.history.replaceState(null, '', '/');
     renderApp();
     await screen.findByRole('heading', { name: 'Welcome back' });
 
-    fireEvent.click(screen.getAllByRole('button', { name: 'Teleprompter' })[0]);
+    fireEvent.click(screen.getAllByRole('button', { name: 'Booth' })[0]);
 
-    await screen.findByRole('heading', { name: 'Teleprompter' });
-    expect(window.location.pathname).toBe('/teleprompter');
+    await screen.findByRole('heading', { name: 'Booth' });
+    expect(window.location.pathname).toBe('/booth');
     cleanup();
 
-    window.history.replaceState(null, '', '/teleprompter');
+    window.history.replaceState(null, '', '/booth');
     const source = createMockApi();
     renderApp({ bootstrap: async () => ({ ...(await source.bootstrap()), manuscript: null }) });
     await screen.findByRole('heading', { name: 'Welcome back' });
     expect(window.location.pathname).toBe('/');
+  });
+
+  // stage-navigation-and-page-replacement.prd.md Phase 4 (ADR 0407): the retired Teleprompter route lands on the Booth with its
+  // query and hash, and replaces the entry so Back never returns to the redirect.
+  it('redirects /teleprompter to /booth, keeping the query and hash', async () => {
+    window.history.replaceState(null, '', '/teleprompter?chapter=chapter-2#x');
+    renderApp();
+    await screen.findByRole('heading', { name: 'Booth' });
+    expect(window.location.pathname).toBe('/booth');
+    expect(window.location.search).toBe('?chapter=chapter-2');
+    expect(window.location.hash).toBe('#x');
+  });
+
+  it('opens Settings on the Booth category from #booth and from the old #teleprompter anchor (Q11)', async () => {
+    for (const anchor of ['#booth', '#teleprompter']) {
+      window.history.replaceState(null, '', `/settings${anchor}`);
+      renderApp();
+      expect(await screen.findByRole('heading', { name: 'Booth' })).toBeTruthy();
+      cleanup();
+    }
   });
 
   it('keeps Tracks reachable without a manuscript and lists the mock API tracks on its page', async () => {
@@ -504,7 +527,7 @@ describe('App (integration, driven through the mock NarrationApi)', () => {
     const row = await screen.findByText(/pink eyes/);
     fireEvent.click(row);
     fireEvent.click(await screen.findByRole('button', { name: 'Show in manuscript' }));
-    await waitFor(() => expect(window.location.pathname).toBe('/manuscript'));
+    await waitFor(() => expect(window.location.pathname).toBe('/script'));
   });
 
   it('opens a chapter view from Proof’s chapter picker', async () => {
@@ -559,6 +582,31 @@ describe('App (integration, driven through the mock NarrationApi)', () => {
     fireEvent.click(screen.getAllByRole('button', { name: 'Home' })[0]);
     await screen.findByRole('heading', { name: 'Welcome back' });
     expect(idleReset).not.toHaveBeenCalled();
+  });
+
+  // Stage navigation Phase 3 (ADR 0407): Script replaced the Manuscript page, and an old link still lands, hash and query included.
+  it.each(['/manuscript', '/manuscript#p5', '/manuscript#credits-closing'])('redirects %s to the Script page, which handles its hash', async (from) => {
+    window.history.replaceState(null, '', from);
+    renderApp();
+    await screen.findByRole('heading', { name: 'Script' });
+    expect(window.location.pathname).toBe('/script');
+    // The page consumes a deep link's hash and replaces it (Manuscript.tsx did the same), which shows the hash reached it.
+    await waitFor(() => expect(window.location.hash).toBe(''));
+  });
+
+  it('keeps the query and an unknown hash of a /manuscript link through the redirect', async () => {
+    window.history.replaceState(null, '', '/manuscript?from=finding#x-not-a-deep-link');
+    renderApp();
+    await screen.findByRole('heading', { name: 'Script' });
+    expect(`${window.location.pathname}${window.location.search}${window.location.hash}`).toBe('/script?from=finding#x-not-a-deep-link');
+  });
+
+  it('sends a /manuscript link to Home when there is no manuscript', async () => {
+    window.history.replaceState(null, '', '/manuscript#p5');
+    const source = createMockApi();
+    renderApp({ bootstrap: async () => ({ ...(await source.bootstrap()), manuscript: null }) });
+    await screen.findByRole('heading', { name: 'Welcome back' });
+    expect(window.location.pathname).toBe('/');
   });
 
   it('redirects a direct manuscript-dependent URL to Home when no manuscript exists', async () => {
@@ -876,7 +924,7 @@ describe('App (integration, driven through the mock NarrationApi)', () => {
     renderApp({}, { projectFolder: '' });
     await waitFor(() => expect(screen.getByText('Open a project')).toBeTruthy());
     expect(screen.queryByRole('heading', { name: 'Welcome back' })).toBeNull();
-    expect(screen.queryByRole('heading', { name: 'Manuscript' })).toBeNull();
+    expect(screen.queryByRole('heading', { name: 'Script' })).toBeNull();
     expect(screen.queryByRole('navigation')).toBeNull();
   });
 
@@ -1000,8 +1048,8 @@ describe('App Back and Forward (Phase 1)', () => {
     expect((screen.getByRole('button', { name: 'Back' }) as HTMLButtonElement).getAttribute('aria-disabled')).toBe('true');
     expect((screen.getByRole('button', { name: 'Forward' }) as HTMLButtonElement).getAttribute('aria-disabled')).toBe('true');
 
-    fireEvent.click(screen.getAllByRole('button', { name: 'Manuscript' })[0]);
-    await screen.findByRole('heading', { name: 'Manuscript' });
+    fireEvent.click(screen.getAllByRole('button', { name: 'Script' })[0]);
+    await screen.findByRole('heading', { name: 'Script' });
     await waitFor(() => expect(screen.getByRole('button', { name: 'Back' }).getAttribute('aria-disabled')).toBeNull());
 
     fireEvent.click(screen.getByRole('button', { name: 'Back' }));
@@ -1012,14 +1060,14 @@ describe('App Back and Forward (Phase 1)', () => {
     await waitFor(() => expect(screen.getByRole('button', { name: 'Forward' }).getAttribute('aria-disabled')).toBeNull());
 
     fireEvent.click(screen.getByRole('button', { name: 'Forward' }));
-    await screen.findByRole('heading', { name: 'Manuscript' });
+    await screen.findByRole('heading', { name: 'Script' });
   });
 
   it('Alt+Left and Alt+Right do what the buttons do', async () => {
     renderApp();
     await screen.findByRole('heading', { name: 'Welcome back' });
-    fireEvent.click(screen.getAllByRole('button', { name: 'Manuscript' })[0]);
-    await screen.findByRole('heading', { name: 'Manuscript' });
+    fireEvent.click(screen.getAllByRole('button', { name: 'Script' })[0]);
+    await screen.findByRole('heading', { name: 'Script' });
 
     // `code` is what the registry's KeyboardSource matches on (PRD Q1: the physical key, not the layout-dependent
     // character); a real Alt+Left keydown carries both, so the fixture does too.
@@ -1028,21 +1076,21 @@ describe('App Back and Forward (Phase 1)', () => {
     await waitFor(() => expect(screen.getByRole('button', { name: 'Forward' }).getAttribute('aria-disabled')).toBeNull());
 
     fireEvent.keyDown(document, { key: 'ArrowRight', code: 'ArrowRight', altKey: true });
-    await screen.findByRole('heading', { name: 'Manuscript' });
+    await screen.findByRole('heading', { name: 'Script' });
   });
 
   it("the mouse's back and forward buttons do what the header buttons do", async () => {
     renderApp();
     await screen.findByRole('heading', { name: 'Welcome back' });
-    fireEvent.click(screen.getAllByRole('button', { name: 'Manuscript' })[0]);
-    await screen.findByRole('heading', { name: 'Manuscript' });
+    fireEvent.click(screen.getAllByRole('button', { name: 'Script' })[0]);
+    await screen.findByRole('heading', { name: 'Script' });
 
     fireEvent.mouseUp(document, { button: 3 });
     await screen.findByRole('heading', { name: 'Welcome back' });
     await waitFor(() => expect(screen.getByRole('button', { name: 'Forward' }).getAttribute('aria-disabled')).toBeNull());
 
     fireEvent.mouseUp(document, { button: 4 });
-    await screen.findByRole('heading', { name: 'Manuscript' });
+    await screen.findByRole('heading', { name: 'Script' });
   });
 
   it('Back from dirty Settings shows the same "Unsaved settings" confirm as the nav, and completes the move on Save', async () => {
@@ -1087,15 +1135,15 @@ describe('App Back and Forward (Phase 1)', () => {
   it('Alt+Left does nothing while something on screen has role="dialog", and works again once it is gone', async () => {
     renderApp();
     await screen.findByRole('heading', { name: 'Welcome back' });
-    fireEvent.click(screen.getAllByRole('button', { name: 'Manuscript' })[0]);
-    await screen.findByRole('heading', { name: 'Manuscript' });
+    fireEvent.click(screen.getAllByRole('button', { name: 'Script' })[0]);
+    await screen.findByRole('heading', { name: 'Script' });
 
     const probe = document.createElement('div');
     probe.setAttribute('role', 'dialog');
     document.body.appendChild(probe);
     try {
       fireEvent.keyDown(document, { key: 'ArrowLeft', code: 'ArrowLeft', altKey: true });
-      expect(screen.getByRole('heading', { name: 'Manuscript' })).toBeTruthy();
+      expect(screen.getByRole('heading', { name: 'Script' })).toBeTruthy();
     } finally {
       probe.remove();
     }
@@ -1138,15 +1186,15 @@ describe('App shortcut sheet (Phase 7)', () => {
   it('while the sheet is open, Alt+Left no longer goes Back', async () => {
     renderApp();
     await screen.findByRole('heading', { name: 'Welcome back' });
-    fireEvent.click(screen.getAllByRole('button', { name: 'Manuscript' })[0]);
-    await screen.findByRole('heading', { name: 'Manuscript' });
+    fireEvent.click(screen.getAllByRole('button', { name: 'Script' })[0]);
+    await screen.findByRole('heading', { name: 'Script' });
 
     fireEvent.keyDown(document, { key: '?', code: 'Slash', shiftKey: true });
     fireEvent.keyDown(document, { key: 'ArrowLeft', code: 'ArrowLeft', altKey: true });
     // The page behind an open dialog is `aria-hidden` (ADR 0047/0048, `dialogs.spec.ts`'s isolation check), so
-    // `hidden: true` is needed to still see Manuscript's own heading underneath - it never left, only the sheet
+    // `hidden: true` is needed to still see Script's own heading underneath - it never left, only the sheet
     // covers it, which is what "Alt+Left did nothing" means here.
-    expect(screen.getByRole('heading', { name: 'Manuscript', hidden: true })).toBeTruthy();
+    expect(screen.getByRole('heading', { name: 'Script', hidden: true })).toBeTruthy();
     expect(screen.getByRole('dialog', { name: 'Keyboard shortcuts' })).toBeTruthy();
   });
 });

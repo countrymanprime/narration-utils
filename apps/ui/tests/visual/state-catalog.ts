@@ -2,10 +2,10 @@ import type { StateEntry } from './lib/types';
 import { projectStates } from './catalog/project';
 import { startupStates } from './catalog/startup';
 import { homeStates } from './catalog/home';
-import { manuscriptStates } from './catalog/manuscript';
+import { scriptStates } from './catalog/script';
 import { storybibleStates } from './catalog/storybible';
 import { tracksStates } from './catalog/tracks';
-import { teleprompterStates } from './catalog/teleprompter';
+import { boothStates } from './catalog/booth';
 import { proofStates } from './catalog/proof';
 import { proofChapterStates } from './catalog/proof-chapter';
 import { deliveryStates } from './catalog/delivery';
@@ -27,10 +27,10 @@ export const STATE_CATALOG: StateEntry[] = [
   ...projectStates,
   ...startupStates,
   ...homeStates,
-  ...manuscriptStates,
+  ...scriptStates,
   ...storybibleStates,
   ...tracksStates,
-  ...teleprompterStates,
+  ...boothStates,
   ...proofStates,
   ...proofChapterStates,
   ...deliveryStates,

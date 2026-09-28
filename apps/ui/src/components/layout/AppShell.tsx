@@ -28,9 +28,10 @@ import { EngineChip, type EngineState } from './EngineChip';
 // Phase 5: its compare run gates itself inside the chapter view) - Tracks reads the project's REAPER file directly through its own
 // discovery flow and is not gated here. The requiresDaw field stays for the next item that needs one.
 const HOME = { name: 'Home', path: '/', icon: faHouse, requiresManuscript: false, requiresDaw: false };
-const MANUSCRIPT = { name: 'Manuscript', path: '/manuscript', icon: faFileLines, requiresManuscript: true, requiresDaw: false };
+const SCRIPT = { name: 'Script', path: '/script', icon: faFileLines, requiresManuscript: true, requiresDaw: false };
 const STORY_BIBLE = { name: 'Story Bible', path: '/story-bible', icon: faBookOpen, requiresManuscript: true, requiresDaw: false };
-const TELEPROMPTER = { name: 'Teleprompter', path: '/teleprompter', icon: faScroll, requiresManuscript: true, requiresDaw: false };
+// The Record stage's one page (stage-navigation-and-page-replacement.prd.md Phase 4): it replaced the Teleprompter page.
+const BOOTH = { name: 'Booth', path: '/booth', icon: faScroll, requiresManuscript: true, requiresDaw: false };
 const TRACKS = { name: 'Tracks', path: '/tracks', icon: faLayerGroup, requiresManuscript: false, requiresDaw: false };
 // Proof (stage-navigation-and-page-replacement.prd.md Phase 5): the book's notes at /proof and a chapter's view at /proof/:chapterId,
 // replacing Review and Proofing. Not gated: take-review notes need no manuscript, the page says itself when there is nothing to
@@ -48,8 +49,8 @@ const DELIVERY = { name: 'Delivery', path: '/delivery', icon: faGaugeHigh, requi
 type NavItem = typeof HOME;
 const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
   { label: 'Production', items: [HOME] },
-  { label: 'Prep', items: [MANUSCRIPT, STORY_BIBLE] },
-  { label: 'Record', items: [TELEPROMPTER] },
+  { label: 'Prep', items: [SCRIPT, STORY_BIBLE] },
+  { label: 'Record', items: [BOOTH] },
   { label: 'Review', items: [PROOF, TRACKS] },
   { label: 'Finish', items: [DELIVERY] },
 ];
@@ -221,9 +222,7 @@ export function AppShell({
               linkingDawFile={linkingDawFile}
             />
           </header>
-          <div className={`scroll-chrome-hidden relative flex-1 overflow-y-auto ${isActivePath(pathname, '/manuscript') ? 'p-0' : 'p-4 md:p-6'}`}>
-            {children}
-          </div>
+          <div className={`scroll-chrome-hidden relative flex-1 overflow-y-auto ${isActivePath(pathname, '/script') ? 'p-0' : 'p-4 md:p-6'}`}>{children}</div>
         </main>
       </div>
     </div>

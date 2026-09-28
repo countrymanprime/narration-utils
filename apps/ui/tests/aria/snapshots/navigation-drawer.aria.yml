@@ -17,12 +17,12 @@
     - group "Prep":
       - /children: equal
       - text: Prep
-      - button "Manuscript"
+      - button "Script"
       - button "Story Bible"
     - group "Record":
       - /children: equal
       - text: Record
-      - button "Teleprompter"
+      - button "Booth"
     - group "Review":
       - /children: equal
       - text: Review

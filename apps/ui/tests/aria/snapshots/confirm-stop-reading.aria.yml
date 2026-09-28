@@ -1,0 +1,15 @@
+# Leaving the Booth while it listens (stage-navigation-and-page-replacement.prd.md Phase 4): the page behind the confirm is
+# aria-hidden, so <body> holds the alert dialog and what Base UI leaves exposed on purpose - the two empty toast live regions
+# and the ancestors of the reading controls' own status line, a live region too, so a session that stops is still announced.
+- /children: equal
+- main:
+  - region "Booth commands":
+    - toolbar "Reading controls"
+  - alert
+  - status
+- alertdialog "Stop reading?":
+  - heading "Stop reading?" [level=2]
+  - button "Close"
+  - paragraph: /Reading is still listening\. Leaving the booth stops it/
+  - button "Cancel"
+  - button "Stop and leave"
