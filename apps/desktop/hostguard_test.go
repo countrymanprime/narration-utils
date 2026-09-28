@@ -28,6 +28,7 @@ var swappableHostFields = map[string]bool{
 	"retakeLanes":     true,
 	"settings":        true,
 	"teleprompter":    true,
+	"recorder":        true,
 	"transcript":      true,
 	"coverage":        true,
 	"stages":          true,

@@ -1438,6 +1438,59 @@ export function Ready(): $CancellablePromise<{ [_ in string]?: any }> {
 }
 
 /**
+ * RecorderChooseEngine saves which engine the project records with: "daw" (REAPER, the default) or "builtin". The built-in
+ * recorder is refused, with its sentence, where its capture row is not available; nothing changes while a take records.
+ */
+export function RecorderChooseEngine(engine: string): $CancellablePromise<string> {
+    return $Call.ByID(247123031, engine);
+}
+
+/**
+ * RecorderDevices lists the input devices the built-in recorder can open. Like TeleprompterDevices, a listing problem comes
+ * back as {"devices": [], "error": "..."}, never a rejected promise.
+ */
+export function RecorderDevices(): $CancellablePromise<string> {
+    return $Call.ByID(3873686667);
+}
+
+/**
+ * RecorderMeterStart shows device's level before a take (no file is written), replacing a meter already running. It is
+ * refused while a take records.
+ */
+export function RecorderMeterStart(device: string): $CancellablePromise<string> {
+    return $Call.ByID(1811880147, device);
+}
+
+/**
+ * RecorderMeterStop ends the level meter; it leaves a take alone.
+ */
+export function RecorderMeterStop(): $CancellablePromise<string> {
+    return $Call.ByID(4289082273);
+}
+
+/**
+ * RecorderStart records a new take of device into the project's Recordings folder and remembers the device for the project.
+ * It answers once the take has started; its end arrives as "recording:state".
+ */
+export function RecorderStart(device: string): $CancellablePromise<string> {
+    return $Call.ByID(1722162476, device);
+}
+
+/**
+ * RecorderState answers the recorder's state. It changes nothing.
+ */
+export function RecorderState(): $CancellablePromise<string> {
+    return $Call.ByID(1538594405);
+}
+
+/**
+ * RecorderStop asks the take (or the meter) to end and answers at once; the take's end arrives as "recording:state".
+ */
+export function RecorderStop(): $CancellablePromise<string> {
+    return $Call.ByID(925363464);
+}
+
+/**
  * RenderConfigConfigure asks REAPER to set the render bounds to all regions, the naming pattern to the region
  * name, and the output folder to outputFolder. It never renders anything: the narrator presses Render themselves
  * once the resulting file names (RenderConfigState's targets, once the run succeeds) look right.

@@ -39,6 +39,7 @@ import (
 	"github.com/countrymanprime/narration-utils/shell/internal/pronunciationonline"
 	"github.com/countrymanprime/narration-utils/shell/internal/proofing"
 	"github.com/countrymanprime/narration-utils/shell/internal/recents"
+	"github.com/countrymanprime/narration-utils/shell/internal/recording"
 	"github.com/countrymanprime/narration-utils/shell/internal/renderconfig"
 	"github.com/countrymanprime/narration-utils/shell/internal/retakelanes"
 	"github.com/countrymanprime/narration-utils/shell/internal/runlog"
@@ -173,6 +174,8 @@ type Host struct {
 	cleanupTools    *cleanuptools.Service
 	retakeLanes     *retakelanes.Service
 	teleprompter    *teleprompter.Service
+	// recorder is the built-in recorder (native-recording-suite P2, docs/adr/0455), rebuilt with the project like teleprompter.
+	recorder *recording.Service
 	// bridge is the REAPER session's file-based IPC client (nil when launched
 	// without a REAPER session directory); take-review's create-take action
 	// (takereview.go) is its first direct consumer outside transcript.Service,
@@ -673,6 +676,12 @@ func (h *Host) configureLocked(next config) {
 	// a developer/evaluation-only opt-in, same pattern as NARRATION_DEBUG (runlog), never a Settings toggle.
 	h.teleprompter = teleprompter.New(teleprompter.Config{Project: h.config.projectFolder, SessionDir: teleprompterDir, Python: h.config.teleprompterPython, Backend: h.config.teleprompterBackend, Platform: h.platform, EvalTiming: os.Getenv("NARRATION_TELEPROMPTER_EVAL") == "1"}, h.sidecars, h.emitTeleprompterEvent, h.emitTeleprompterState)
 	h.teleprompter.SetLog(func(kind, message string) { _ = h.log.Report(kind, message) })
+	// The built-in recorder (native-recording-suite P2, docs/adr/0455) runs the same sidecar with --record over the capture
+	// port's wasapi row. An attach waits while a take records (idleLocked), so the old one can only be metering: it is stopped.
+	if h.recorder != nil {
+		h.recorder.StopMeter()
+	}
+	h.recorder = h.newRecorderLocked(teleprompterDir)
 }
 
 // packagedResources materializes the embedded release resources under the per-user cache so Python/ONNX dynamic libraries can use
@@ -968,6 +977,12 @@ func (h *Host) ServiceShutdown() error {
 		_ = live.Close(stopContext)
 		cancelStop()
 	}
+	// A built-in recorder take is finished (its partial file linked to its take name) before the sidecars are closed.
+	if recorder := h.services().recorder; recorder != nil {
+		stopContext, cancelStop := context.WithTimeout(context.Background(), 12*time.Second)
+		_ = recorder.Close(stopContext)
+		cancelStop()
+	}
 	// A REAPER recording this app started is stopped before the app quits (threat-model row 5j): otherwise REAPER
 	// keeps recording with nothing left open to stop it.
 	h.stopReadAloudRecordingOnShutdown()
@@ -1185,6 +1200,9 @@ func (h *Host) idleLocked() bool {
 		return false
 	}
 	if h.teleprompter != nil && h.teleprompter.Busy() {
+		return false
+	}
+	if h.recorder != nil && h.recorder.Busy() {
 		return false
 	}
 	return true

@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client';
 import { App } from './App';
 import { ApiProvider } from './api/ApiContext';
 import { wailsClient } from './api/wailsClient';
+import type { RecordingMockSeed } from './api/recordingMock';
 import { createMockApi } from './api/mockApi';
 import { PRODUCTION_SCENARIOS } from './api/productionMock';
 import { WIRE_CHAPTERS, WIRE_FINDINGS, WIRE_TRACKS_PROJECT, editingCandidateFor, takeReviewPickupFor } from './api/mockFixtures';
@@ -357,7 +358,21 @@ const MOCK_MARKUP_SEED: PrepMarkupSeed = [
   { chapter: 2, line: 6, words: 'Not I!', kind: 'character_tag', value: 'Lory' },
   { chapter: 2, line: 7, words: 'I thought you did', kind: 'character_tag', value: 'Mouse', stale: { reason: 'paragraph_missing' } },
 ];
+// `?mockRecorder=recording|failed|empty|no-devices|start-fails|unavailable` seeds the Booth's built-in recorder
+// (native-recording-suite Phase 2, ADR 0455), with `?mockEngine=builtin` choosing it: a take 42 s in; the last take ended on
+// its own; no takes yet; no input device listed; a device that will not open on Record; the wasapi row unavailable here.
+const MOCK_RECORDER_SEEDS: Record<string, RecordingMockSeed> = {
+  recording: { recording: true },
+  failed: { lastTakeFailed: true },
+  empty: { takes: 'none' },
+  'no-devices': { takes: 'none', devices: 'none' },
+  'start-fails': { startFails: true },
+  unavailable: { unavailable: true },
+};
+const mockRecorderParam = mockParams.get('mockRecorder') ?? '';
+const mockRecorder = Object.hasOwn(MOCK_RECORDER_SEEDS, mockRecorderParam) ? MOCK_RECORDER_SEEDS[mockRecorderParam] : undefined;
 const mockInitial = {
+  ...(mockRecorder ? { recording: mockRecorder } : {}),
   ...(mockMarkup ? { prepMarkup: MOCK_MARKUP_SEED } : {}),
   ...(mockMeasure ? { measure: mockMeasure === 'running' ? ('hold' as const) : mockMeasure === 'spread' ? ('spread' as const) : ('fails' as const) } : {}),
   ...(mockDiagnostics ? { diagnostics: mockDiagnostics === 'running' ? ('hold' as const) : ('fails' as const) } : {}),

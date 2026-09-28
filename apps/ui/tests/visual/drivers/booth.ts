@@ -59,6 +59,14 @@ async function playRecording(page: Page): Promise<void> {
   await controlBar(page).getByText('REC 00:00').waitFor();
 }
 
+// The Booth with the project on the built-in recorder (?mockEngine=builtin): waits for its takes and, unless the listing is
+// empty on purpose, for the input picker to hold the device the project last recorded with.
+async function openRecorder(page: Page, extraQuery = '', withDevice = true): Promise<void> {
+  await openBooth(page, `?mockEngine=builtin${extraQuery}`);
+  await page.getByRole('heading', { name: 'Takes' }).waitFor();
+  if (withDevice) await page.getByRole('combobox', { name: 'Recorder input' }).waitFor();
+}
+
 export const boothDrivers: Record<string, Driver> = {
   setup: async (page) => {
     await openResumePrompt(page);
@@ -346,5 +354,43 @@ export const boothDrivers: Record<string, Driver> = {
     await status(page).getByRole('button', { name: 'Companion' }).click();
     await page.getByText('Playhead 2:14.6').waitFor();
     await page.locator(LISTENING_WORD).waitFor();
+  },
+
+  // The built-in recorder (native-recording-suite Phase 2, ADR 0455): the project on "Built-in recorder", the takes listed.
+  'recorder-builtin': async (page) => {
+    await openRecorder(page);
+  },
+  // A take 42 s in: the page's Date.now() is fixed (timers still run), and the mock starts the take 42 s before it.
+  'recorder-recording': async (page) => {
+    await page.clock.setFixedTime(REC_START);
+    await openRecorder(page, '&mockRecorder=recording');
+    await controlBar(page).getByText('REC 00:42').waitFor();
+    await status(page).getByText('−14.2 pk').waitFor({ state: 'attached' });
+  },
+  'recorder-level-check': async (page) => {
+    await openRecorder(page);
+    await page.getByRole('button', { name: 'Check level' }).click();
+    await page.getByRole('button', { name: 'Stop level check' }).waitFor();
+    await status(page).getByText('−14.2 pk').waitFor({ state: 'attached' });
+  },
+  'recorder-take-failed': async (page) => {
+    await openRecorder(page, '&mockRecorder=failed');
+    await page
+      .getByText(/stopped delivering audio/)
+      .first()
+      .waitFor();
+  },
+  'recorder-no-devices': async (page) => {
+    await openRecorder(page, '&mockRecorder=no-devices', false);
+    await page.getByText('No microphone found').waitFor();
+  },
+  'recorder-start-refused': async (page) => {
+    await openRecorder(page, '&mockRecorder=start-fails');
+    await controlBar(page).getByRole('button', { name: 'Record a take' }).click();
+    await page.getByRole('alert').filter({ hasText: 'could not open' }).waitFor();
+  },
+  'recorder-unavailable': async (page) => {
+    await openBooth(page, '?mockRecorder=unavailable');
+    await page.getByText('WASAPI is not available on Linux.').waitFor();
   },
 };

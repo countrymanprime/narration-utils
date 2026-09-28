@@ -20,7 +20,8 @@ export const shellStates: StateEntry[] = [
   {
     page: 'shell',
     state: 'engine-builtin',
-    description: 'Header engine chip in its "Built-in recorder" state (?mockEngine=builtin) - UI-only, nothing selects it yet',
+    description:
+      'Header engine chip in its "Built-in recorder" state: the project records with the built-in recorder (native-recording P2, RecorderState.engine; ?mockEngine=builtin seeds the mock recorder)',
     ...REFLOW,
   },
   {

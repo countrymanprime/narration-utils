@@ -44,6 +44,7 @@ import type { MockUpdateSeed } from './update';
 import type { DawMockSeed } from '../dawMock';
 import type { ProvidersMockSeed } from '../providersMock';
 import type { MasteringMockSeed } from '../masteringMock';
+import type { RecordingMockSeed } from '../recordingMock';
 
 // What createMockApi boots from (the seeds), and the host state more than one domain reads or writes.
 // manuscriptCandidate boots a project with no imported manuscript but a
@@ -223,6 +224,8 @@ export type MockApiSeed = {
   /** `?mockZoom=`: the window's real zoom level at boot, as a fraction (1.25 is 125%; app-navigation-and-zoom-controls.prd.md
    * Phase 2). Defaults to 1.0, the same as a fresh window before Phase 3 remembers a level across launches. */
   zoom?: number;
+  /** Seeds the built-in recorder mock (engine, takes, a take recording, devices), see `RecordingMockSeed` (ADR 0455). */
+  recording?: RecordingMockSeed;
 };
 
 export const wireContext = (payload: string) => ({ boundary: 'host.binding', payload });
