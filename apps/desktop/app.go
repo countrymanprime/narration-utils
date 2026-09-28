@@ -117,11 +117,13 @@ type Host struct {
 	// PRD Phase 5); exportPicked is every path its own picker chose this session, mirroring measurePicked's own
 	// discipline (ADR 0156). packageJob assembles one profile's package from an export's own encoded files
 	// (package_job.go, Phase 4's internal/packager). h.mu guards all three; none is per project.
+	// +checklocks:mu
 	exportJob *exportJob
 	// +checklocks:mu
 	exportPicked map[string]bool
-	packageJob   *packageJobState
-	transcript   *transcript.Service
+	// +checklocks:mu
+	packageJob *packageJobState
+	transcript *transcript.Service
 	// coverage is the recording-coverage service (docs/utilities/recording-coverage.md, ADR 0128): it reads the saved .rpp and
 	// runs the Transcript Compare sidecar's --coverage mode. Swapped on every project switch like transcript; the Coverage* bindings
 	// reach it (Phase 5, bindings_coverage.go) and it fills the manuscript chapters' recordedFraction.

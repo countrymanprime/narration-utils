@@ -132,8 +132,10 @@ type exportJob struct {
 	// +checklocks:mu
 	format string
 	// +checklocks:mu
-	files       []ExportFileResult
-	weights     []int64
+	files []ExportFileResult
+	// +checklocks:mu
+	weights []int64
+	// +checklocks:mu
 	totalWeight int64
 	// +checklocks:mu
 	doneWeight int64
@@ -328,7 +330,7 @@ func (h *Host) startExport(req ExportRequest) (ExportJob, error) {
 	if encodeFile == nil {
 		encodeFile = encodeFor(format)
 	}
-	go h.runExport(ctx, job, items, svc.config.projectFolder, profile, masterFile, encodeFile)
+	go h.runExport(ctx, job, items, svc.config.projectFolder, profile, req.Master, format, masterFile, encodeFile)
 	return job.snapshot(), nil
 }
 
@@ -348,7 +350,7 @@ func encodeFor(format string) encodeFileFunc {
 // the app down, matching runMeasure.
 func (h *Host) runExport(
 	ctx context.Context, job *exportJob, items []ExportItem, projectFolder string, profile deliveryprofile.Profile,
-	masterFile masterFileFunc, encodeFile encodeFileFunc,
+	master bool, format string, masterFile masterFileFunc, encodeFile encodeFileFunc,
 ) {
 	defer job.cancel()
 	defer func() {
@@ -370,7 +372,7 @@ func (h *Host) runExport(
 		source := item.Path
 		var result *MasteringSummary
 		var masteredPath string
-		if job.master {
+		if master {
 			job.begin(index, exportFileMastering)
 			if err := os.MkdirAll(masteredDir, 0o755); err != nil {
 				job.fail(index, err)
@@ -392,9 +394,9 @@ func (h *Host) runExport(
 			job.completeStage(index, 0.5)
 		}
 		job.begin(index, exportFileEncoding)
-		encodedPath := filepath.Join(encodedDir, fmt.Sprintf("%02d-%s.%s", index+1, string(item.Kind), job.format))
+		encodedPath := filepath.Join(encodedDir, fmt.Sprintf("%02d-%s.%s", index+1, string(item.Kind), format))
 		_ = os.Remove(encodedPath)
-		spec := encodeport.Spec{Format: job.format, Progress: func(done, total time.Duration) {
+		spec := encodeport.Spec{Format: format, Progress: func(done, total time.Duration) {
 			if total > 0 {
 				job.progress(index, int64(done), int64(total))
 			}
@@ -409,7 +411,7 @@ func (h *Host) runExport(
 		if ctx.Err() != nil {
 			return
 		}
-		job.completeStage(index, weightRemaining(job.master))
+		job.completeStage(index, weightRemaining(master))
 		job.succeed(index, masteredPath, result, encodedPath)
 	}
 }
