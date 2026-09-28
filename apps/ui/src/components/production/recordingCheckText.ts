@@ -70,7 +70,7 @@ const CREDITS_CHECK_TITLE: Record<CreditsKind, string> = { opening: 'Opening cre
 
 /** The `credits-<kind>` id a credits row's check runs and reads under (ADR 0150, ADR 0333), matching the host's
  * `coverage.CreditsChapterID`. */
-export const creditsCheckId = (kind: CreditsKind): string => `credits-${kind}`;
+const creditsCheckId = (kind: CreditsKind): string => `credits-${kind}`;
 
 /** The credits kind a check id names, or undefined for a manuscript chapter id (the host's `coverage.CreditsKind`,
  * mirrored here so a mounted `RecordingCheck` can tell a credits row apart from a real chapter without importing
