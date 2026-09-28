@@ -1,4 +1,4 @@
-# 0353. The Merriam-Webster key is sealed in its own per-user file, and the online lookup is a Go-only port with a single-word rule
+# 0354. The Merriam-Webster key is sealed in its own per-user file, and the online lookup is a Go-only port with a single-word rule
 
 **Status:** Proposed
 **Date:** 2026-09-27

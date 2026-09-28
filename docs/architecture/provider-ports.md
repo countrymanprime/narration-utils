@@ -25,7 +25,7 @@ The Python adapters that fill the registries live beside the code that used to c
 
 Each sidecar is its own process, so the teleprompter's live `whisper` row and transcript compare's batch `whisper` row never share a registry.
 
-The one pronunciation source that fetches is not a row in either registry ([ADR 0405](../adr/0405-pronunciation-stays-local-first-behind-cmu-wiktextract-and-espeak-with-merriam-webster-as-the-one-narrator-keyed-online-source.md) point 2, [ADR 0353](../adr/0353-the-merriam-webster-key-is-sealed-in-its-own-per-user-file-and-the-online-lookup-is-a-go-only-port-with-a-single-word-rule.md)): Merriam-Webster runs in the Go host, on the narrator's own key, behind its own Go-only port (`internal/pronunciationonline`: `Dictionary`, adapter `merriamwebster`, fake `pronunciationonlinetest`), so `FallbackOrder` and the sidecar's `capabilities` report never include it and the offline chain cannot reach the network. The `browse` role above still never fetches.
+The one pronunciation source that fetches is not a row in either registry ([ADR 0405](../adr/0405-pronunciation-stays-local-first-behind-cmu-wiktextract-and-espeak-with-merriam-webster-as-the-one-narrator-keyed-online-source.md) point 2, [ADR 0354](../adr/0354-the-merriam-webster-key-is-sealed-in-its-own-per-user-file-and-the-online-lookup-is-a-go-only-port-with-a-single-word-rule.md)): Merriam-Webster runs in the Go host, on the narrator's own key, behind its own Go-only port (`internal/pronunciationonline`: `Dictionary`, adapter `merriamwebster`, fake `pronunciationonlinetest`), so `FallbackOrder` and the sidecar's `capabilities` report never include it and the offline chain cannot reach the network. The `browse` role above still never fetches.
 
 ## The shared vocabulary
 

@@ -344,8 +344,11 @@ func (h *Host) runMeasure(ctx context.Context, job *measureJob, paths []string, 
 		if recovered := recover(); recovered != nil {
 			broken = fmt.Errorf("%v", recovered)
 		}
+		// Save before finish() flips the job's phase to a terminal one: every file this loop measured already carries
+		// its report at this point, so the save needs nothing finish() would still set, and doing it first keeps a
+		// reader who polls the phase (measureState) from ever observing "done" before the findings are on disk.
+		h.saveFinishedDeliveryFindings(job)
 		job.finish(ctx.Err() != nil && broken == nil, broken)
-		h.saveDeliveryFindings(job)
 		h.publishMeasureEnd(job)
 	}()
 	for index, path := range paths {

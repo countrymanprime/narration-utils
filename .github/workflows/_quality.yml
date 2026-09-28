@@ -174,8 +174,10 @@ jobs:
     # `!cancelled()` on every step: a red step does not hide the ones after it.
     #   - repo-scripts: the plain-Node scripts (GitHub metadata, release, the layout guard). `always`: the layout and
     #     project guards read every tracked file.
-    #   - docs-site (tools/docs-site, ADR 0083): unit tests, a strict MkDocs build of docs/ and a link check. `always`:
-    #     docs/ belongs to no Nx project. ci.yml skips documentation-only pull requests; pages.yml builds those.
+    #   - docs-site (tools/docs-site, ADR 0083): unit tests only while GitHub Pages is paused (D75, ADR 0415) - the
+    #     strict MkDocs build and its link check over the built HTML are redundant with Docs / Links (offline)
+    #     (lychee, every pull request) and Docs / Markdown lint (changed files), so they run only from pages.yml's
+    #     manual build-site target, not here or in `pnpm check`. `always`: docs/ belongs to no Nx project.
     #   - python: ruff and pytest for libs/python, the sidecars, scripts/ and tests/fixtures.
     #   - reaper: stylua, then the bridge harness (integrations/reaper/tests: Lua 5.4 from lupa, a fake `reaper` driven
     #     through the file protocol, the mutation checks). quick-windows runs it on Windows too.
@@ -202,7 +204,7 @@ jobs:
         if: ${{ !cancelled() }}
         uses: ./.github/actions/nx-run
         with:
-          targets: lint test build
+          targets: lint test
           projects: docs-site
           always: 'true'
       - name: python

@@ -5,7 +5,7 @@
   "tags": [
     "toolchain:docs"
   ],
-  "$comment": "The public docs site (ADR 0083): MkDocs + Material reading docs/ in place. `build` is the gate: a strict MkDocs build (every warning, including a dead link or anchor, fails) and then check_site.py over the built HTML. Both run through `uv run --locked --only-group docs`, which installs the `docs` uv group into .venv on first use (it is not a default group, so the release build never has it).",
+  "$comment": "The public docs site (ADR 0083): MkDocs + Material reading docs/ in place. `build-site` is the site build: a strict MkDocs build (every warning, including a dead link or anchor, fails) and then check_site.py over the built HTML. Both run through `uv run --locked --only-group docs`, which installs the `docs` uv group into .venv on first use (it is not a default group, so the release build never has it). `build-site` is named off the default `lint format architecture knip test test-node build` check set on purpose (ADR 0415): while GitHub Pages is paused (D75), nothing needs the site built on every pull request, so `pnpm check` and `_quality.yml` run only `lint` and `test` here; `pages.yml`'s manual build still calls `build-site` directly. Restore the name `build` (and add it back to `pnpm check`'s target list and `_quality.yml`'s docs-site step) when Pages resumes.",
   "targets": {
     "lint": {
       "executor": "nx:run-commands",
@@ -26,7 +26,7 @@
         "description": "Unit tests of the include list, the link rewriting and the output link check, and MkDocs builds of a tiny tree (a dead link, a dead heading link and a stale include line each fail the build) and of the real docs/."
       }
     },
-    "build": {
+    "build-site": {
       "executor": "nx:run-commands",
       "options": {
         "commands": [
