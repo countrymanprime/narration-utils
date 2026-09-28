@@ -1,7 +1,7 @@
 {
-  "choice": null,
-  "effective": "builtin",
-  "hasProject": false,
+  "choice": "audacity",
+  "effective": "audacity",
+  "hasProject": true,
   "providers": [
     {
       "default": true,

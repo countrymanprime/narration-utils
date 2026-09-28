@@ -33,6 +33,22 @@
         "available": true,
         "level": "experimental"
       }
+    },
+    {
+      "default": false,
+      "label": "Audacity's effect macro",
+      "modes": [
+        "wav"
+      ],
+      "name": "audacity",
+      "needs": [
+        "macro_render"
+      ],
+      "needsApproval": true,
+      "support": {
+        "available": true,
+        "level": "experimental"
+      }
     }
   ]
 }

@@ -13,10 +13,10 @@ import (
 	"github.com/countrymanprime/narration-utils/shell/internal/port"
 )
 
-// TestMasteringProvidersGoldenIsCurrent pins MasteringProviders' four answers on Windows: no project, a project that chose the
-// built-in chain, a project that chose the DAW row (Experimental since render-encode-master Phase 9, so it masters with it), and a
-// project whose stored choice this version does not have (so it masters with the built-in chain, and says so).
-// UPDATE_CONTRACTS=1 rewrites tests/fixtures/contracts/mastering-providers-*.json.
+// TestMasteringProvidersGoldenIsCurrent pins MasteringProviders' five answers on Windows: no project, a project that chose the
+// built-in chain, a project that chose the DAW row (Experimental since render-encode-master Phase 9), a project that chose the
+// Audacity row (Experimental since Phase 10, ADR 0460), and a project whose stored choice this version does not have (so it
+// masters with the built-in chain, and says so). UPDATE_CONTRACTS=1 rewrites tests/fixtures/contracts/mastering-providers-*.json.
 func TestMasteringProvidersGoldenIsCurrent(t *testing.T) {
 	for _, c := range []struct {
 		name       string
@@ -26,7 +26,8 @@ func TestMasteringProvidersGoldenIsCurrent(t *testing.T) {
 		{"mastering-providers-no-project", false, ""},
 		{"mastering-providers-builtin-chosen", true, masteringport.Builtin},
 		{"mastering-providers-daw-chosen", true, masteringport.DAW},
-		{"mastering-providers-unknown-choice", true, "audacity"},
+		{"mastering-providers-audacity-chosen", true, masteringport.Audacity},
+		{"mastering-providers-unknown-choice", true, "dolby-atmos"},
 	} {
 		t.Run(c.name, func(t *testing.T) {
 			raw, err := encodeBinding(masteringProvidersPayload(masteringport.Rows, "windows", c.hasProject, c.choice), nil)
@@ -66,8 +67,8 @@ func TestAProjectWithNoChoiceMastersWithTheBuiltInChain(t *testing.T) {
 	for _, p := range state.Providers {
 		names = append(names, p.Name)
 	}
-	if !reflect.DeepEqual(names, []string{masteringport.Builtin, masteringport.DAW}) {
-		t.Fatalf("providers = %v, want [builtin daw]", names)
+	if !reflect.DeepEqual(names, []string{masteringport.Builtin, masteringport.DAW, masteringport.Audacity}) {
+		t.Fatalf("providers = %v, want [builtin daw audacity]", names)
 	}
 }
 
@@ -82,16 +83,21 @@ func TestChoosingAMasteringRowIsSavedOnTheProjectAndChecked(t *testing.T) {
 		t.Fatalf("stored %q from %s, want builtin on the project", value, source)
 	}
 
-	// The DAW row is Experimental: it can be chosen, and masters with the DAW's FX once the narrator approves each render.
+	// The DAW and Audacity rows are Experimental: each can be chosen, and masters through its own DAW capability once the
+	// narrator approves each render.
 	state = decodeMasteringProviders(t)(host.MasteringChooseProvider(masteringport.DAW))
 	if state.Choice == nil || *state.Choice != masteringport.DAW || state.Effective != masteringport.DAW || state.Notice != "" {
 		t.Fatalf("after choosing daw: %+v", state)
+	}
+	state = decodeMasteringProviders(t)(host.MasteringChooseProvider(masteringport.Audacity))
+	if state.Choice == nil || *state.Choice != masteringport.Audacity || state.Effective != masteringport.Audacity || state.Notice != "" {
+		t.Fatalf("after choosing audacity: %+v", state)
 	}
 	state = decodeMasteringProviders(t)(host.MasteringChooseProvider(masteringport.Builtin))
 	if state.Effective != masteringport.Builtin {
 		t.Fatalf("after choosing builtin again: %+v", state)
 	}
-	if _, err := host.MasteringChooseProvider("audacity"); !errors.Is(err, port.ErrNotSupported) {
+	if _, err := host.MasteringChooseProvider("dolby-atmos"); !errors.Is(err, port.ErrNotSupported) {
 		t.Fatalf("choosing an unknown row = %v, want a *port.NotSupportedError", err)
 	}
 	if value, _ := host.settings.Effective(masteringSettingsTool, masteringProviderKey, ""); value != masteringport.Builtin {
@@ -109,7 +115,7 @@ func TestChoosingAMasteringRowIsSavedOnTheProjectAndChecked(t *testing.T) {
 
 func TestAStoredChoiceThatCannotRunFallsBackAndSaysSo(t *testing.T) {
 	host := previewSuggestHost(t, previewManuscriptOK)
-	gone := "audacity"
+	gone := "dolby-atmos"
 	if err := host.settings.Save(masteringSettingsTool, "project", map[string]*string{masteringProviderKey: &gone}); err != nil {
 		t.Fatal(err)
 	}
