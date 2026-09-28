@@ -1,7 +1,22 @@
 import { z } from 'zod';
-import type { DiagnosticsEvidence, DiagnosticsFileResult, DiagnosticsJob, DiagnosticsSummary, DiagnosticsThresholds } from '../contracts/diagnostics';
+import type {
+  DiagnosticsCleanupThresholds,
+  DiagnosticsEvidence,
+  DiagnosticsFileResult,
+  DiagnosticsJob,
+  DiagnosticsSummary,
+  DiagnosticsThresholds,
+} from '../contracts/diagnostics';
 import { listFromNull } from './base';
 import { findingSchema } from './findings';
+
+const diagnosticsCleanupThresholdsSchema = z.object({
+  pad_seconds: z.number(),
+  min_breath_seconds: z.number(),
+  max_breath_seconds: z.number(),
+  breath_below_speech_db: z.number(),
+  click_above_silence_db: z.number(),
+}) satisfies z.ZodType<DiagnosticsCleanupThresholds>;
 
 const diagnosticsThresholdsSchema = z.object({
   clip_ceiling_dbfs: z.number(),
@@ -36,6 +51,7 @@ const diagnosticsFileResultSchema = z.object({
   status: z.enum(['pending', 'checking', 'checked', 'failed', 'cancelled']),
   summary: diagnosticsSummarySchema.nullable(),
   findings: listFromNull(findingSchema),
+  cleanupFindings: listFromNull(findingSchema),
   error: z.string().optional(),
 }) satisfies z.ZodType<DiagnosticsFileResult>;
 
@@ -50,5 +66,6 @@ export const diagnosticsJobSchema = z.object({
   error: z.string().optional(),
   sourceKind: z.enum(['raw_recording', 'processed_render']).nullable(),
   thresholds: diagnosticsThresholdsSchema,
+  cleanupThresholds: diagnosticsCleanupThresholdsSchema,
   files: listFromNull(diagnosticsFileResultSchema),
 }) satisfies z.ZodType<DiagnosticsJob>;

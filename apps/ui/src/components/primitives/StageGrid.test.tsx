@@ -136,4 +136,23 @@ describe('StageGrid', () => {
     await user.tab();
     await expect(user.keyboard('{Enter}')).resolves.not.toThrow();
   });
+  // It shares Table's header and row look (mock-fidelity-primitives-and-components.prd.md Phase 3).
+  it('sizes its header and rows from the row tokens, as Table does, with the cells in the middle of the row', () => {
+    render(grid());
+    const header = screen.getByRole('columnheader', { name: 'Prep' }).className;
+    expect(header).toContain('h-[var(--header-row-height)]');
+    expect(header).toContain('tracking-[var(--tracking-label)]');
+    const rowHeader = screen.getByRole('rowheader', { name: 'Chapter 1' }).className;
+    expect(rowHeader).toContain('h-[var(--row-height)]');
+    const cell = screen.getAllByRole('gridcell')[0].className;
+    expect(cell).toContain('h-[var(--row-height)]');
+    expect(cell).toContain('align-middle');
+  });
+
+  it('draws the current row in bold, and only that row', () => {
+    const cell = (row: number, col: number): StageGridCell => ({ tone: 'progress', label: `${ROWS[row]} ${COLUMNS[col]}` });
+    render(<StageGrid label="Production board" rows={ROWS} columns={COLUMNS} cell={cell} currentRow={1} />);
+    expect(screen.getAllByRole('row')[2].className).toContain('font-semibold');
+    expect(screen.getAllByRole('row')[1].className).not.toContain('font-semibold');
+  });
 });

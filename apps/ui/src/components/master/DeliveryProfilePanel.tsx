@@ -164,13 +164,13 @@ function ProfileBody({
                       {rule.id} · {rule.scope === 'file' ? 'each file' : 'book'}
                     </span>
                   </TableCell>
-                  <TableCell className="min-w-[12rem] text-sm">
+                  <TableCell className="min-w-[12rem]">
                     <Requirement rule={rule} />
                   </TableCell>
-                  <TableCell className="min-w-[12rem] text-sm">
+                  <TableCell className="min-w-[12rem]">
                     <CheckCell rule={rule} />
                   </TableCell>
-                  <TableCell className="min-w-[10rem] text-sm">
+                  <TableCell className="min-w-[10rem]">
                     <VerificationMark verification={rule.verification} />
                     {rule.verificationNote && (
                       <span className="mt-1 block text-[0.75rem]" style={MUTED}>

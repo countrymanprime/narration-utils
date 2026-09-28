@@ -5,6 +5,8 @@ import type { ProductionMilestone, ProductionPlan } from '../../api/contracts/pr
 import { Button } from '../primitives/Button';
 import { Field } from '../primitives/Field';
 import { Panel } from '../primitives/Panel';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../primitives/Table';
+import { TextField } from '../primitives/TextField';
 
 const MUTED = { color: 'var(--text-muted)' };
 const DANGER = { color: 'var(--danger-text)' };
@@ -130,33 +132,44 @@ export function PlanPanel({ onSaved }: { onSaved: () => void }) {
           No milestones yet.
         </p>
       ) : (
-        <ul aria-label="Milestones" className="mt-1 flex flex-col">
-          {milestones.map((milestone, index) => (
-            // The list is edited in place and saved whole, so a row's position is its identity until the next save.
-            <li
-              key={index}
-              className="grid items-end gap-x-3 border-t border-[var(--border)] pb-3 min-[768px]:grid-cols-2 min-[1200px]:grid-cols-[1fr_10rem_1.5fr_auto]"
-            >
-              <div>
-                <Field label="Name" value={milestone.name} onChange={(name) => change(index, { name })} />
-              </div>
-              <div>
-                <Field label="Due date" value={milestone.dueDate} onChange={(dueDate) => change(index, { dueDate })} placeholder="YYYY-MM-DD" />
-              </div>
-              <div>
-                <Field label="Note" value={milestone.note ?? ''} onChange={(note) => change(index, { note })} />
-              </div>
-              <Button
-                variant="secondary"
-                className="mt-3 justify-self-start"
-                aria-label={`Remove ${milestone.name.trim() || `milestone ${index + 1}`}`}
-                onClick={() => setMilestones((current) => current.filter((_, at) => at !== index))}
-              >
-                Remove
-              </Button>
-            </li>
-          ))}
-        </ul>
+        // A milestone is a row of the same three facts, so the list is a table: the column headers name the fields.
+        <div className="mt-1 overflow-x-auto">
+          <Table label="Milestones">
+            <TableHead>
+              <TableRow>
+                <TableHeader>Name</TableHeader>
+                <TableHeader>Due date</TableHeader>
+                <TableHeader>Note</TableHeader>
+                <TableHeader hiddenLabel="Remove" />
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {milestones.map((milestone, index) => (
+                // The list is edited in place and saved whole, so a row's position is its identity until the next save.
+                <TableRow key={index}>
+                  <TableCell className="min-w-[10rem]">
+                    <TextField label="Name" value={milestone.name} onChange={(name) => change(index, { name })} />
+                  </TableCell>
+                  <TableCell className="w-[10rem] min-w-[8rem]">
+                    <TextField label="Due date" value={milestone.dueDate} onChange={(dueDate) => change(index, { dueDate })} placeholder="YYYY-MM-DD" />
+                  </TableCell>
+                  <TableCell className="min-w-[10rem]">
+                    <TextField label="Note" value={milestone.note ?? ''} onChange={(note) => change(index, { note })} />
+                  </TableCell>
+                  <TableCell align="right">
+                    <Button
+                      variant="secondary"
+                      aria-label={`Remove ${milestone.name.trim() || `milestone ${index + 1}`}`}
+                      onClick={() => setMilestones((current) => current.filter((_, at) => at !== index))}
+                    >
+                      Remove
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
       )}
       <div className="mt-3 flex flex-wrap gap-2">
         <Button variant="secondary" disabled={!loaded} onClick={() => setMilestones((current) => [...current, { name: '', dueDate: '' }])}>

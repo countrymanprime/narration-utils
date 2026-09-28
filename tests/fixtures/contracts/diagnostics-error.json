@@ -22,6 +22,13 @@
       "long_pause_seconds": 2
     }
   },
+  "cleanupThresholds": {
+    "pad_seconds": 0.15,
+    "min_breath_seconds": 0.12,
+    "max_breath_seconds": 0.9,
+    "breath_below_speech_db": 12,
+    "click_above_silence_db": 30
+  },
   "files": [
     {
       "path": "C:/Renders/Chapter 01.wav",
@@ -29,6 +36,7 @@
       "status": "failed",
       "summary": null,
       "findings": null,
+      "cleanupFindings": null,
       "error": "the diagnostics stopped unexpectedly: runtime error: index out of range [4] with length 4"
     },
     {
@@ -36,14 +44,16 @@
       "name": "Chapter 02.wav",
       "status": "cancelled",
       "summary": null,
-      "findings": null
+      "findings": null,
+      "cleanupFindings": null
     },
     {
       "path": "C:/Renders/Chapter 03.mp3",
       "name": "Chapter 03.mp3",
       "status": "cancelled",
       "summary": null,
-      "findings": null
+      "findings": null,
+      "cleanupFindings": null
     }
   ]
 }

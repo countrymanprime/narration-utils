@@ -264,14 +264,14 @@ export function Guide({ notify, goToManuscript }: { notify: Notify; goToManuscri
                           {categoryLabel(row.category)}
                         </div>
                       </TableCell>
-                      <TableCell align="right" className="font-['IBM_Plex_Mono',ui-monospace,monospace]" style={{ color: 'var(--text-muted)' }}>
+                      <TableCell numeric style={{ color: 'var(--text-muted)' }}>
                         {row.occurrence_count}
                       </TableCell>
                     </TableRow>
                   ))}
                   {sorted.length === 0 && (
                     <TableRow>
-                      <TableCell colSpan={2} className="text-sm" style={{ color: 'var(--text-muted)' }}>
+                      <TableCell colSpan={2} style={{ color: 'var(--text-muted)' }}>
                         No matching entries.
                       </TableCell>
                     </TableRow>

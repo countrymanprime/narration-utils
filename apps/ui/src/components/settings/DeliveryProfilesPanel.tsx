@@ -5,6 +5,7 @@ import type { DeliveryProfile, DeliveryProfileEdit, DeliveryProfileRef, Delivery
 import { Button } from '../primitives/Button';
 import { ConfirmDialog } from '../primitives/ConfirmDialog';
 import { Select } from '../primitives/Select';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../primitives/Table';
 import type { Notify } from '../primitives/Toast';
 import { deliveryProfileKey, deliveryProfileTitle } from '../master/deliveryProfile';
 import { LOCK_ICON, Mark } from '../master/RuleBadges';
@@ -183,55 +184,68 @@ export function DeliveryProfilesPanel({ scope, notify }: { scope: Scope; notify:
           A built-in profile cannot be changed. Duplicate it to change its numbers or turn a rule off; a copy cannot add a kind of rule the app does not check.
           Other platforms (Findaway Voices, Author&apos;s Republic, Google Play, Kobo) are not built in yet.
         </p>
-        <ul aria-label="Delivery profiles" className="divide-y rounded-md border" style={{ borderColor: 'var(--border)' }}>
-          {state.profiles.map((profile) => {
-            const users = usedBy(profile);
-            return (
-              <li key={profile.id} className="flex flex-wrap items-center justify-between gap-3 p-3" style={{ borderColor: 'var(--border)' }}>
-                <div className="min-w-0">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="text-base font-semibold">{deliveryProfileTitle(profile)}</span>
-                    {profile.builtIn ? (
-                      <Mark tone="muted" icon={LOCK_ICON}>
-                        Built in
-                      </Mark>
-                    ) : (
-                      <Mark tone="muted">Custom</Mark>
-                    )}
-                  </div>
-                  <div className="text-xs" style={MUTED}>
-                    {describe(profile, baseOf(profile))}
-                  </div>
-                  <div className="text-xs" style={MUTED}>
-                    Used by: {users.length > 0 ? users.join(' · ') : 'no project open here'}
-                  </div>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  <Button variant="secondary" onClick={() => void duplicate(profile)} disabled={busy}>
-                    Duplicate
-                  </Button>
-                  {!profile.builtIn && (
-                    <>
-                      <Button
-                        variant="secondary"
-                        onClick={() => {
-                          setEditError(undefined);
-                          setEditing(profile);
-                        }}
-                        disabled={busy}
-                      >
-                        Edit
+        {/* A profile is a row: what it is, and what can be done with it. */}
+        <Table label="Delivery profiles">
+          <TableHead>
+            <TableRow>
+              <TableHeader>Profile</TableHeader>
+              <TableHeader hiddenLabel="Actions" />
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {state.profiles.map((profile) => {
+              const users = usedBy(profile);
+              return (
+                <TableRow key={profile.id}>
+                  <TableCell>
+                    <div className="min-w-0">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="text-base font-semibold">{deliveryProfileTitle(profile)}</span>
+                        {profile.builtIn ? (
+                          <Mark tone="muted" icon={LOCK_ICON}>
+                            Built in
+                          </Mark>
+                        ) : (
+                          <Mark tone="muted">Custom</Mark>
+                        )}
+                      </div>
+                      <div className="text-xs" style={MUTED}>
+                        {describe(profile, baseOf(profile))}
+                      </div>
+                      <div className="text-xs" style={MUTED}>
+                        Used by: {users.length > 0 ? users.join(' · ') : 'no project open here'}
+                      </div>
+                    </div>
+                  </TableCell>
+                  <TableCell align="right">
+                    <div className="flex flex-wrap justify-end gap-2">
+                      <Button variant="secondary" onClick={() => void duplicate(profile)} disabled={busy}>
+                        Duplicate
                       </Button>
-                      <Button variant="danger" onClick={() => setDeleting(profile)} disabled={busy}>
-                        Delete
-                      </Button>
-                    </>
-                  )}
-                </div>
-              </li>
-            );
-          })}
-        </ul>
+                      {!profile.builtIn && (
+                        <>
+                          <Button
+                            variant="secondary"
+                            onClick={() => {
+                              setEditError(undefined);
+                              setEditing(profile);
+                            }}
+                            disabled={busy}
+                          >
+                            Edit
+                          </Button>
+                          <Button variant="danger" onClick={() => setDeleting(profile)} disabled={busy}>
+                            Delete
+                          </Button>
+                        </>
+                      )}
+                    </div>
+                  </TableCell>
+                </TableRow>
+              );
+            })}
+          </TableBody>
+        </Table>
       </section>
       {editing && (
         <DeliveryProfileEditor profile={editing} base={baseOf(editing)} pending={busy} error={editError} onCancel={() => setEditing(undefined)} onSave={save} />

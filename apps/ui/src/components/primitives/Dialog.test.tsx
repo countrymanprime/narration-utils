@@ -6,6 +6,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { Button } from './Button';
 import { Dialog } from './Dialog';
 import { Popover } from './Popover';
+import { SlideOver } from './SlideOver';
 import { tabInsideTrap } from './tabInsideTrap';
 
 afterEach(cleanup);
@@ -312,5 +313,27 @@ describe('Dialog size="full"', () => {
     expect(within(dialog).getByRole('heading', { name: 'Read aloud' })).toBeTruthy();
     await user.keyboard('{Escape}');
     expect(onClose).toHaveBeenCalledOnce();
+  });
+});
+
+describe('Dialog backdrop', () => {
+  it('dims the page even when the dialog opens from inside a SlideOver (chapter-track-link-control/06)', async () => {
+    function Nested() {
+      const [confirming, setConfirming] = useState(false);
+      return (
+        <SlideOver open title="Track" onClose={() => {}}>
+          <button onClick={() => setConfirming(true)}>Remove</button>
+          {confirming && (
+            <Dialog title="Remove it?" onClose={() => setConfirming(false)} actions={<Button onClick={() => setConfirming(false)}>Cancel</Button>}>
+              Body
+            </Dialog>
+          )}
+        </SlideOver>
+      );
+    }
+    render(<Nested />);
+    await userEvent.click(await screen.findByRole('button', { name: 'Remove' }));
+    await screen.findByRole('dialog', { name: 'Remove it?' });
+    expect(document.querySelector('[data-dialog-backdrop]')).not.toBeNull();
   });
 });

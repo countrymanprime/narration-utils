@@ -193,7 +193,7 @@ export function LinkChaptersDialog({ chapters, tracks, onClose }: { chapters: Ma
                     options={trackOptions}
                   />
                 </TableCell>
-                <TableCell align="right">{track ? track.items.length : '–'}</TableCell>
+                <TableCell numeric>{track ? track.items.length : '–'}</TableCell>
               </TableRow>
             );
           })}
