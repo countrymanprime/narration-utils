@@ -210,7 +210,7 @@ describe('the evidence view', () => {
     const view = await screen.findByRole('dialog', { name: 'Stage suggestion: Chapter 5 — Advice from a Caterpillar' });
     expect(within(view).getByText('Can’t tell yet.')).toBeTruthy();
     expect(within(view).getByText(/never counts as done/)).toBeTruthy();
-    expect(within(view).getByText('Link the track in the recording check, or on the Tracks page.')).toBeTruthy();
+    expect(within(view).getByText('Link the track in the recording check, or in the audio engine panel.')).toBeTruthy();
     fireEvent.click(within(view).getByRole('button', { name: 'Open recording check' }));
     expect(await screen.findByRole('dialog', { name: 'Recording check: Chapter 5 — Advice from a Caterpillar' })).toBeTruthy();
   });

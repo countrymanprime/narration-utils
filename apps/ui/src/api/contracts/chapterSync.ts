@@ -71,7 +71,7 @@ export type ChapterSyncBatch = { at: string; trigger: ChapterSyncTrigger; linked
  * `lastSync`: the last sync's time, or null before the first. `batch`: set only on the answer or event of a sync that linked
  * something or found a new unmatched track. `unsavedEdits`: REAPER, running this project, has edits the saved file does not
  * have yet ("Unsaved changes in REAPER": sync reads the saved file, so they are picked up on the next save). `activity`: the
- * stored batches, newest first, at most 20 (the Tracks page's Sync activity).
+ * stored batches, newest first, at most 20 (the audio engine panel's Sync activity).
  */
 export type ChapterSyncState = {
   consent: ChapterSyncConsent;

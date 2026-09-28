@@ -146,7 +146,7 @@ func TestRecordingSignalTable(t *testing.T) {
 		{"a track matches but is not confirmed (D5)", unconfirmed, stages.SignalUnknown, stages.CauseUnconfirmedMapping, "Confirm"},
 		{"two confirmed tracks", input(never(string(ReasonMultipleTracks))), stages.SignalUnknown, stages.CauseMultipleTracks, "more than one"},
 		{"the confirmed track is gone", input(never(string(ReasonMappedTrackMissing))), stages.SignalUnknown, stages.CauseUnmappedTrack, "no longer in the saved project"},
-		{"no saved project file", input(never(string(ReasonNoProjectFile))), stages.SignalUnknown, stages.CauseProjectUnreadable, "Tracks page"},
+		{"no saved project file", input(never(string(ReasonNoProjectFile))), stages.SignalUnknown, stages.CauseProjectUnreadable, "audio engine panel"},
 		{"the saved project cannot be read", input(never(string(ReasonProjectUnreadable))), stages.SignalUnknown, stages.CauseProjectUnreadable, "could not be read"},
 		{"not a narration chapter", input(never(string(ReasonNotNarration))), stages.SignalUnknown, stages.CauseMeasurementUnavailable, "narration"},
 		{"model missing, never checked", modelMissing, stages.SignalUnknown, stages.CauseMeasurementUnavailable, "not installed"},

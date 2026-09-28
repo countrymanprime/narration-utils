@@ -1,0 +1,25 @@
+{
+  "id": "package-1",
+  "kind": "render_package",
+  "phase": "error",
+  "message": "The package could not be built: packager: a required delivery item is missing: retail sample (Needs a retail sample file.)",
+  "profile": "acx",
+  "outputDir": "C:\\Users\\Narrator\\Desktop\\Wonderland ACX",
+  "files": [],
+  "checklist": [
+    {
+      "ruleId": "acx.credits",
+      "label": "Opening and closing credits",
+      "status": "included",
+      "detail": "Opening and closing credits included as separate files."
+    },
+    {
+      "ruleId": "acx.retail_sample",
+      "label": "Retail sample",
+      "status": "missing",
+      "detail": "Needs a retail sample file."
+    }
+  ],
+  "elapsed": 1.1,
+  "error": "packager: a required delivery item is missing: retail sample (Needs a retail sample file.)"
+}

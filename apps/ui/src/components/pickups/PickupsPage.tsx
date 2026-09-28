@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { EnginePanelLink } from '../engine/EnginePanelContext';
 import { useApi } from '../../api/ApiContext';
 import type { TrackMapping } from '../../api/contracts/chapterTrackMap';
 import type { TracksProject } from '../../api/contracts/tracks';
@@ -52,7 +53,7 @@ function PickupChapterLinks({ matches }: { matches: PickupChapter[] | undefined 
   if (matches.length === 0) {
     return (
       <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
-        Not on a linked chapter track, so there is no chapter to open in Proof. Link chapters to their tracks on the Tracks page.
+        Not on a linked chapter track, so there is no chapter to open in Proof. Link chapters to their tracks in the audio engine panel. <EnginePanelLink />
       </p>
     );
   }

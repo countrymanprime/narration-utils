@@ -9,7 +9,7 @@
   "no_link": {
     "status": "no_link",
     "reason": "unlinked",
-    "message": "\"Chapter II: The Pool of Tears\" has no linked track. Link it to its REAPER track on the Tracks page.",
+    "message": "\"Chapter II: The Pool of Tears\" has no linked track. Link it to its REAPER track in the audio engine panel.",
     "playing": false,
     "recording": false
   },
@@ -56,7 +56,7 @@
   "track_missing": {
     "status": "no_link",
     "reason": "track_missing",
-    "message": "The track linked to \"Chapter I: Down the Rabbit-Hole\" is no longer in the REAPER project. Link it again on the Tracks page.",
+    "message": "The track linked to \"Chapter I: Down the Rabbit-Hole\" is no longer in the REAPER project. Link it again in the audio engine panel.",
     "trackGuid": "{11111111-1111-4111-8111-111111111111}",
     "playing": false,
     "recording": false

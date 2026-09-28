@@ -65,4 +65,6 @@ var jobKindBeginSites = map[string][]string{
 	jobKindTakeComparison:    {"startTakeComparison"},
 	jobKindMeasurement:       {"startMeasure"},
 	jobKindDiagnostics:       {"startDiagnostics"},
+	jobKindRenderExport:      {"startExport"},
+	jobKindRenderPackage:     {"startPackage"},
 }
