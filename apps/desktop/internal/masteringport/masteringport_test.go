@@ -127,9 +127,9 @@ func TestTheBuiltinRowDeclaresTheStepsItRuns(t *testing.T) {
 	entry, _ := masteringport.Rows.Lookup(masteringport.Builtin)
 	declared := entry.New().Capabilities().Chain
 	want := []masteringport.Step{
-		{Name: "EQ", Detail: "High-pass at 80 Hz"},
-		{Name: "Limiter", Detail: "Peaks held 0.5 dB under the profile's peak limit"},
-		{Name: "Gain", Detail: "Toward the profile's RMS target"},
+		{Name: "EQ", Detail: "High-pass 80 Hz"},
+		{Name: "Limiter", Detail: "0.5 dB under the peak limit"},
+		{Name: "Gain", Detail: "To the RMS target"},
 	}
 	if !reflect.DeepEqual(declared, want) {
 		t.Fatalf("declared chain = %+v, want %+v", declared, want)

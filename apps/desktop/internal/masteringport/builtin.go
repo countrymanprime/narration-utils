@@ -29,9 +29,9 @@ func (builtinChain) Name() string { return Builtin }
 
 func (builtinChain) Capabilities() Capabilities {
 	return Capabilities{Level: port.Supported, Chain: []Step{
-		{Name: "EQ", Detail: fmt.Sprintf("High-pass at %d Hz", mastering.HighPassHz)},
-		{Name: "Limiter", Detail: fmt.Sprintf("Peaks held %.1f dB under the profile's peak limit", mastering.CeilingMargin)},
-		{Name: "Gain", Detail: "Toward the profile's RMS target"},
+		{Name: "EQ", Detail: fmt.Sprintf("High-pass %d Hz", mastering.HighPassHz)},
+		{Name: "Limiter", Detail: fmt.Sprintf("%.1f dB under the peak limit", mastering.CeilingMargin)},
+		{Name: "Gain", Detail: "To the RMS target"},
 	}}
 }
 

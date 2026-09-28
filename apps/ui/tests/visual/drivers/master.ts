@@ -133,6 +133,9 @@ export const masterDrivers: Record<string, Driver> = {
     await pkg.getByRole('button', { name: 'Build packages' }).click();
     await pkg.getByText(/^Built the acx package/).waitFor();
     await pkg.getByRole('heading', { name: 'Outputs' }).waitFor();
+    // Both jobs' ends raise a toast (job:ended, ADR 0076) that would cover the package; dismiss them, as measurementEnded does.
+    const dismiss = page.getByRole('button', { name: 'Dismiss message' });
+    while ((await dismiss.count()) > 0) await dismiss.first().click();
     await scrollToTop(page, pkg);
   },
   'from-proof': async (page) => {

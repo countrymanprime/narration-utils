@@ -7,15 +7,15 @@
     {
       "chain": [
         {
-          "detail": "High-pass at 80 Hz",
+          "detail": "High-pass 80 Hz",
           "name": "EQ"
         },
         {
-          "detail": "Peaks held 0.5 dB under the profile's peak limit",
+          "detail": "0.5 dB under the peak limit",
           "name": "Limiter"
         },
         {
-          "detail": "Toward the profile's RMS target",
+          "detail": "To the RMS target",
           "name": "Gain"
         }
       ],

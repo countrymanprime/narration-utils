@@ -20,9 +20,9 @@ const ROWS: MockRow[] = [
     needs: [],
     support: { level: 'supported', available: true },
     chain: [
-      { name: 'EQ', detail: 'High-pass at 80 Hz' },
-      { name: 'Limiter', detail: "Peaks held 0.5 dB under the profile's peak limit" },
-      { name: 'Gain', detail: "Toward the profile's RMS target" },
+      { name: 'EQ', detail: 'High-pass 80 Hz' },
+      { name: 'Limiter', detail: '0.5 dB under the peak limit' },
+      { name: 'Gain', detail: 'To the RMS target' },
     ],
   },
   {

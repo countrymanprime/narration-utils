@@ -170,7 +170,7 @@ describe('MasterQcPage', () => {
       within(steps)
         .getAllByRole('listitem')
         .map((step) => step.textContent),
-    ).toEqual(['EQ · High-pass at 80 Hz', "Limiter · Peaks held 0.5 dB under the profile's peak limit", "Gain · Toward the profile's RMS target"]);
+    ).toEqual(['EQ · High-pass 80 Hz', 'Limiter · 0.5 dB under the peak limit', 'Gain · To the RMS target']);
     expect(screen.getByText(/One chain for the book: Built-in chain \(EQ, limiter, gain\)/)).toBeTruthy();
     expect(screen.queryByRole('button', { name: /Edit chain/ })).toBeNull();
   });

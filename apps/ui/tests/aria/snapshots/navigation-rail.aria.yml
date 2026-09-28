@@ -21,5 +21,5 @@
     - button "Pickups"
   - group "Finish":
     - /children: equal
-    - button "Delivery"
+    - button "Master & QC"
   - button "Settings"
