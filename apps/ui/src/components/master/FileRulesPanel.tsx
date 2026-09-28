@@ -86,20 +86,20 @@ export function FileRulesPanel({ file, profile, onClose }: { file: MeasureFileRe
               const result = file.rules.find((candidate) => candidate.ruleId === rule.id);
               return (
                 <TableRow key={rule.id}>
-                  <TableCell className="align-top">{result && <ResultMark status={result.status} />}</TableCell>
-                  <TableCell className="min-w-[8rem] align-top">
+                  <TableCell valign="top">{result && <ResultMark status={result.status} />}</TableCell>
+                  <TableCell valign="top" className="min-w-[8rem]">
                     <span className="block font-medium">{rule.label}</span>
                     <span className={`${MONO} block text-[0.72rem]`} style={MUTED}>
                       {rule.id}
                     </span>
                   </TableCell>
-                  <TableCell className="min-w-[11rem] align-top text-sm">
+                  <TableCell valign="top" className="min-w-[11rem]">
                     <ThisFile rule={rule} result={result} owner={owner} />
                   </TableCell>
-                  <TableCell className="min-w-[12rem] align-top text-sm">
+                  <TableCell valign="top" className="min-w-[12rem]">
                     <Requirement rule={rule} />
                   </TableCell>
-                  <TableCell className="min-w-[9rem] align-top text-sm">
+                  <TableCell valign="top" className="min-w-[9rem]">
                     <VerificationMark verification={rule.verification} />
                     {rule.verificationNote && (
                       <span className="mt-1 block text-[0.75rem]" style={MUTED}>

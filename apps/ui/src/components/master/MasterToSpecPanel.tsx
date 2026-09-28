@@ -82,7 +82,7 @@ export function MasterToSpecPanel({ jobs, chainLabel }: { jobs: ExportJobs; chai
                 const result = exportJob?.files.find((file) => file.path === item.path);
                 return (
                   <TableRow key={item.path}>
-                    <TableCell className="text-sm">{fileName(item.path)}</TableCell>
+                    <TableCell>{fileName(item.path)}</TableCell>
                     <TableCell>
                       {started ? (
                         KIND_OPTIONS.find((option) => option.value === item.kind)?.label
@@ -107,7 +107,7 @@ export function MasterToSpecPanel({ jobs, chainLabel }: { jobs: ExportJobs; chai
                           />
                         ))}
                     </TableCell>
-                    <TableCell className="text-sm" style={result?.status === 'failed' ? DANGER : result?.status === 'done' ? OK : MUTED}>
+                    <TableCell style={result?.status === 'failed' ? DANGER : result?.status === 'done' ? OK : MUTED}>
                       {result ? exportRowStatus(result) : 'Not started'}
                     </TableCell>
                     <TableCell>
