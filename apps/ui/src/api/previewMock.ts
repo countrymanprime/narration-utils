@@ -130,7 +130,18 @@ type StoredPin = { chapterId: string; paragraphIds: string[]; anchorText: Record
 const noPin: PinnedPreview = { present: false, stale: false, canExtendStart: false, canShrinkStart: false, canExtendEnd: false, canShrinkEnd: false };
 
 export function createPreviewMock(deps: Deps, seed?: PreviewSeed): PreviewApi {
-  let pin: StoredPin | undefined = seed?.pin ? seedPin(seed.pin, deps.paragraphs()) : undefined;
+  let pin: StoredPin | undefined;
+  // The demo manuscript (aliceManuscript.ts) loads asynchronously, so deps.paragraphs() can still be empty at
+  // createPreviewMock's own call time (mockApi.ts builds every feature mock up front, before that load settles) -
+  // the same reason createPrepMarkupMock (prepMarkupMock.ts) defers its own seed until first use. Seeding here
+  // eagerly would anchor `seed.pin` against no text at all, so every read (even the non-stale seed) would compare
+  // against real text later and report stale unconditionally.
+  let pinSeeded = false;
+  const ensurePinSeeded = (): void => {
+    if (pinSeeded) return;
+    pinSeeded = true;
+    if (seed?.pin) pin = seedPin(seed.pin, deps.paragraphs());
+  };
 
   const anchorTextFor = (paragraphIds: string[]): Record<string, string> => {
     const byId = new Map(deps.paragraphs().map((paragraph) => [paragraph.id, paragraph.text]));
@@ -144,6 +155,7 @@ export function createPreviewMock(deps: Deps, seed?: PreviewSeed): PreviewApi {
   };
 
   const resolvePin = (): PinnedPreview => {
+    ensurePinSeeded();
     if (!pin) return noPin;
     const chapter = deps.chapters().find((candidate) => candidate.id === pin!.chapterId);
     const currentById = new Map(deps.paragraphs().map((paragraph) => [paragraph.id, paragraph.text]));
@@ -201,10 +213,12 @@ export function createPreviewMock(deps: Deps, seed?: PreviewSeed): PreviewApi {
     },
     previewPin: (): Promise<PinnedPreview> => Promise.resolve(wireClone(resolvePin())),
     previewPinSet: (chapterId, paragraphIds): Promise<PinnedPreview> => {
+      pinSeeded = true;
       pin = { chapterId, paragraphIds, anchorText: anchorTextFor(paragraphIds), pinnedAt: new Date().toISOString() };
       return Promise.resolve(wireClone(resolvePin()));
     },
     previewPinAdjust: (edge, grow): Promise<PinnedPreview> => {
+      ensurePinSeeded();
       if (!pin) throw new Error('no preview is pinned');
       const chapterParagraphs = chapterParagraphsOrdered(deps.paragraphs(), pin.chapterId);
       const ids = adjustRange(chapterParagraphs, pin.paragraphIds, edge, grow);
@@ -213,6 +227,7 @@ export function createPreviewMock(deps: Deps, seed?: PreviewSeed): PreviewApi {
       return Promise.resolve(wireClone(resolvePin()));
     },
     previewPinClear: (): Promise<PinnedPreview> => {
+      pinSeeded = true;
       pin = undefined;
       return Promise.resolve(wireClone(resolvePin()));
     },
