@@ -109,7 +109,7 @@ gaps, **Repeated reads (Review)** always shows the chapter's unreviewed take-rev
 repeated reads already recorded, waiting to be compared and kept or discarded — as a count with
 **Open Proof**, or "none waiting" when there are none: a different kind of pickup from the gaps
 above it. Under that, **Pickup list** always shows the proofer's REAPER pickup markers as one
-project-wide open count with **Open pickups** — the same figure the Tracks page's Pickups list
+project-wide open count with **Open pickups**, which opens [Pickups](pickups.md) — the same figure that page
 shows, not scoped to this chapter, since attributing markers to one chapter's track span is
 ambiguous when chapter tracks share the timeline. It reads "open REAPER to count" instead of a
 number when REAPER is not running. **Paragraph detail** stays folded by default; open it to see
