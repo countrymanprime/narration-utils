@@ -28,17 +28,23 @@ type Fake struct {
 	DeviceList    []recording.Device
 	DeviceMessage string
 	// Frames is how many frames a take writes when stopped (default 48000, one second).
+	// +checklocks:mu
 	Frames int64
 	// FailWith ends a take by itself right after it starts, with this sentence as the result's error; the frames are
 	// still written.
+	// +checklocks:mu
 	FailWith string
 	// CrashWith ends a take with no result at all (the engine died), with this failure; it writes Frames first.
+	// +checklocks:mu
 	CrashWith string
 	// OpenError refuses to start.
+	// +checklocks:mu
 	OpenError error
 	// Levels are reported once each when a run starts.
+	// +checklocks:mu
 	Levels []recording.Level
 	// Runs are the runs started, in order.
+	// +checklocks:mu
 	Runs []*FakeRun
 }
 

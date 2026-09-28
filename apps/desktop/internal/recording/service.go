@@ -84,10 +84,11 @@ type Service struct {
 	engine    Engine
 	emitState func(State)
 	emitLevel func(Level)
-	current   *active
-	message   string
-	device    string
-	last      *LastTake
+	// +checklocks:mu
+	current *active
+	message string
+	device  string
+	last    *LastTake
 }
 
 // New is a recorder for config over engine. emitState gets every change and emitLevel every level report; either may be
@@ -120,6 +121,7 @@ func (s *Service) Snapshot() State {
 	return s.snapshotLocked()
 }
 
+// +checklocks:s.mu
 func (s *Service) snapshotLocked() State {
 	state := State{Phase: PhaseIdle, Device: s.device, Folder: s.Folder(), Message: s.message, Last: s.last, Takes: []Take{}}
 	except := ""

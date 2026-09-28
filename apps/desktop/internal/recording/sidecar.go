@@ -145,11 +145,14 @@ func relay(line string, events Events) {
 type sidecarRun struct {
 	child    *process.StreamChild
 	stopFile string
-	fallback string
 	mu       sync.Mutex
+	// +checklocks:mu
+	fallback string
+	// +checklocks:mu
 	stopping bool
-	failure  string
-	done     chan struct{}
+	// +checklocks:mu
+	failure string
+	done    chan struct{}
 }
 
 func (r *sidecarRun) Stop() {
