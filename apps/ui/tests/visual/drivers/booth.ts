@@ -33,6 +33,32 @@ async function openListening(page: Page, extraQuery = ''): Promise<void> {
 
 const status = (page: Page) => page.getByRole('region', { name: 'Status' });
 
+// Where the page's fake clock is paused when Play is pressed, so REAPER's recording starts at exactly this time and the
+// driver can move the clock on by a known amount (read-aloud-control-bar mocks 07 and 10: "REC 06:42", "REC 14:08").
+const REC_START = new Date('2026-09-28T10:00:00Z').getTime();
+const PAUSED_AT = REC_START + 5_000;
+
+// Record in REAPER turned on for this project (the first-time confirm answered) with the record capability on
+// (?mockRecordCapabilityOn=1), a microphone chosen and the microphone popover closed again.
+async function turnOnRecordInReaper(page: Page): Promise<void> {
+  await openResumePrompt(page, '?mockRecordCapabilityOn=1&mockLevel=-18');
+  await controlBar(page).getByRole('button', { name: 'Record in REAPER: Chapter 1 armed' }).click();
+  await page.getByRole('alertdialog', { name: 'Record in REAPER when you press Play?' }).getByRole('button', { name: 'Turn on' }).click();
+  await chooseMicrophone(page);
+  await page.keyboard.press('Escape');
+  await page.getByRole('combobox', { name: 'Microphone' }).waitFor({ state: 'detached' });
+}
+
+// Play with Record in REAPER on, on a paused fake clock: REAPER starts recording first (the mock confirms it), then
+// reading starts, and nothing moves until the driver runs the clock on.
+async function playRecording(page: Page): Promise<void> {
+  await turnOnRecordInReaper(page);
+  await page.clock.install({ time: REC_START });
+  await page.clock.pauseAt(PAUSED_AT);
+  await controlBar(page).getByRole('button', { name: 'Play' }).click();
+  await controlBar(page).getByText('REC 00:00').waitFor();
+}
+
 export const boothDrivers: Record<string, Driver> = {
   setup: async (page) => {
     await openResumePrompt(page);
@@ -184,7 +210,7 @@ export const boothDrivers: Record<string, Driver> = {
     await openSettingsPopover(page);
   },
   // The bar's REAPER state (Phase 6, ADR 0249) on the Record in REAPER toggle. The mock's default, the chapter's track
-  // armed and ready ("Chapter armed"), is what `setup` shows, so it has no row of its own.
+  // armed and ready ("Chapter 1 armed", mock 06), is what `setup` shows, so it has no row of its own.
   'reaper-not-armed': async (page) => {
     await openResumePrompt(page, '?mockReaperState=not_armed');
     await controlBar(page).getByRole('button', { name: 'Record in REAPER: Not armed' }).waitFor();
@@ -192,6 +218,40 @@ export const boothDrivers: Record<string, Driver> = {
   'reaper-recording': async (page) => {
     await openResumePrompt(page, '?mockReaperState=recording_elsewhere');
     await controlBar(page).getByRole('button', { name: 'Record in REAPER: Recording' }).waitFor();
+  },
+  // The first-time confirm turning Record in REAPER on for the project (read-aloud-control-bar mock 05).
+  'reaper-confirm': async (page) => {
+    await openResumePrompt(page, '?mockRecordCapabilityOn=1');
+    await controlBar(page).getByRole('button', { name: 'Record in REAPER: Chapter 1 armed' }).click();
+    await page.getByRole('alertdialog', { name: 'Record in REAPER when you press Play?' }).waitFor();
+  },
+  // Reading while REAPER records the take this app started (mock 07): the toggle shows "REC 06:42".
+  'reaper-rec': async (page) => {
+    await playRecording(page);
+    // A few seconds of reading, then the clock set 6 min 41 s into the take and one more second run, so the toggle's own
+    // once-a-second tick shows 06:42 without replaying the whole chapter.
+    await page.clock.runFor(5_000);
+    await page.clock.setSystemTime(PAUSED_AT + 401_000);
+    await page.clock.runFor(1_000);
+    await controlBar(page).getByText('REC 06:42').waitFor();
+    await page.locator('[data-highlight="Cursor"]').waitFor();
+  },
+  // Reading reached the end and stopped itself while REAPER keeps recording (mock 10, Q8 Done B): the bar says so and Stop,
+  // highlighted, is the way to end it. The clock runs 14 min 8 s on: the mock's replay reaches the last word, the reading
+  // stops itself five seconds later, and REAPER's take keeps counting.
+  'finished-still-recording': async (page) => {
+    await playRecording(page);
+    await page.clock.runFor(848_000);
+    await controlBar(page).getByText('Reading finished. REAPER is still recording').waitFor();
+    await controlBar(page).getByText('REC 14:08').waitFor();
+  },
+  // Speaker tags in the text's gutter (mock 03, audit BO4): Chapter 3 is the demo chapter prep-depth's recorded cues attribute.
+  'speaker-tags': async (page) => {
+    await openBooth(page);
+    await page.getByRole('combobox', { name: 'Chapter' }).selectOption({ value: 'chapter-3' });
+    const tag = page.locator('[data-speaker-tag]').first();
+    await tag.waitFor();
+    await tag.scrollIntoViewIfNeeded();
   },
   // Suspected flags (teleprompter-manuscript-integration.prd.md Phase 7): the `flagged` mock seam is a session further into
   // the chapter whose flags arrive as the Booth subscribes. The rail's key has flag swatches too, so marks are found as controls.

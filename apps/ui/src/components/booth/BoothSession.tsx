@@ -4,6 +4,8 @@ import { useApi } from '../../api/ApiContext';
 import { useCapability } from '../../useCapability';
 import { CommandScope } from '../../input/router';
 import { ConfirmDialog } from '../primitives/ConfirmDialog';
+import { recordedDemoDialogueCues, speakerLabelForParagraph } from '../manuscript/dialogueCues';
+import { comingUp } from './boothProgress';
 import { BoothView } from './BoothView';
 import { CompanionShell } from './CompanionShell';
 import { RecordInReaperConfirm } from './RecordInReaperConfirm';
@@ -113,6 +115,21 @@ export function BoothSession({ source, entities = NO_ENTITIES, notes = NO_NOTES,
   const shownFlags = useMemo(() => visibleFlags(flags, visibility, dismissed), [flags, visibility, dismissed]);
   const marks = useMemo(() => withMarks(storyMarks, flagMarks(rows, shownFlags)), [storyMarks, rows, shownFlags]);
   const chapterEntities = useMemo(() => markedEntities(storyMarks), [storyMarks]);
+  // Speaker tags in the text's gutter (mock 03, audit BO4): prep-depth's speaker attribution, from the same recorded cues
+  // and the same label rule as the Script reader (`dialogueCues.ts`), so both readers name the same speakers.
+  const speakerLabels = useMemo(() => {
+    const labels = new Map<string, string>();
+    if (!paragraphs?.length) return labels;
+    const cues = recordedDemoDialogueCues(paragraphs);
+    if (!cues.length) return labels;
+    const byId = new Map(entities.map((entity) => [entity.id, entity]));
+    for (const paragraph of paragraphs) {
+      const label = speakerLabelForParagraph(paragraph, cues, byId);
+      if (label) labels.set(paragraph.id, label);
+    }
+    return labels;
+  }, [paragraphs, entities]);
+  const upcoming = useMemo(() => comingUp(rows, storyMarks, session.cursor, Boolean(script)), [rows, storyMarks, session.cursor, script]);
   const keepFlags = useKeptFlags(isCredits ? null : chapter!.id, rows, flags, dismissed, (ids) =>
     setDismissal({ script, ids: new Set([...dismissed, ...ids]) }),
   );
@@ -158,21 +175,21 @@ export function BoothSession({ source, entities = NO_ENTITIES, notes = NO_NOTES,
     else onExit();
   };
   const requestExit = () => {
-    if (session.active) {
+    if (session.active || recording.recording) {
       setConfirmStop('exit');
       return;
     }
     finish(false);
   };
   const requestFixCredits = () => {
-    if (session.active) {
+    if (session.active || recording.recording) {
       setConfirmStop('settings');
       return;
     }
     finish(true);
   };
   const stopAndProceed = () => {
-    session.stop();
+    if (session.active) session.stop();
     recording.afterStop();
     const thenFixCredits = confirmStop === 'settings';
     setConfirmStop(null);
@@ -257,6 +274,7 @@ export function BoothSession({ source, entities = NO_ENTITIES, notes = NO_NOTES,
             follow={follow}
             chapterId={chapter?.id}
             chapterTitle={chapterTitle}
+            chapterShortTitle={chapter ? chapterName(chapter, 'short') : undefined}
             recording={recording}
             startPoint={session.startWord !== null ? { label: startLabel ?? 'a chosen word', onClear: () => setStartWord(null) } : undefined}
             marks={marks}
@@ -265,6 +283,8 @@ export function BoothSession({ source, entities = NO_ENTITIES, notes = NO_NOTES,
             setup={setup}
             rail={railElement}
             speakers={isCredits ? undefined : chapterEntities}
+            speakerLabels={speakerLabels}
+            comingUp={isCredits ? undefined : upcoming}
             onOpenSpeaker={(entity) => {
               setSelected({ kind: 'entity', entity });
               setRail({ open: true, tab: 'bible' });
@@ -276,11 +296,13 @@ export function BoothSession({ source, entities = NO_ENTITIES, notes = NO_NOTES,
       )}
       {confirmStop && (
         <ConfirmDialog
-          title="Stop reading?"
+          title={session.active ? 'Stop reading?' : 'Stop recording?'}
           body={
-            recording.recording
-              ? "Reading is still listening. Leaving the booth stops it and stops REAPER's recording."
-              : 'Reading is still listening. Leaving the booth stops it; nothing recorded in REAPER is affected.'
+            !session.active
+              ? 'Reading has finished, but REAPER is still recording. Leaving the booth stops the recording this app started.'
+              : recording.recording
+                ? "Reading is still listening. Leaving the booth stops it and stops REAPER's recording."
+                : 'Reading is still listening. Leaving the booth stops it; nothing recorded in REAPER is affected.'
           }
           confirmLabel="Stop and leave"
           confirm={stopAndProceed}
