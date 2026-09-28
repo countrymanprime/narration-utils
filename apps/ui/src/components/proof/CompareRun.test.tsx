@@ -536,3 +536,24 @@ describe('CompareRun vocabulary hints feedback', () => {
     await waitFor(() => expect(save).toHaveBeenCalledWith(['Juno', 'Zeph']));
   });
 });
+
+describe('the running phase progress bar (mock-fidelity-primitives-and-components.prd.md Phase 9)', () => {
+  it('is the real ProgressBar primitive, named and announcing its value, not a hand-drawn div', () => {
+    render(
+      <ApiProvider api={createMockApi()}>
+        <CompareRun
+          chapterTitle="Chapter 1"
+          state={{ ...WIRE_TRANSCRIPT, phase: 'running', percent: 63 }}
+          notify={vi.fn()}
+          dawFileLinked
+          reviewingLast={false}
+          onReviewLast={vi.fn()}
+          onCloseLast={vi.fn()}
+          foundHere={0}
+        />
+      </ApiProvider>,
+    );
+    const bar = screen.getByRole('progressbar', { name: 'Comparison progress' });
+    expect(bar.getAttribute('aria-valuenow')).toBe('63');
+  });
+});
