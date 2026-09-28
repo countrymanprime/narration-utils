@@ -38,11 +38,11 @@ var (
 	// ErrNoTime: the target has no time to go to.
 	ErrNoTime = errors.New("this finding has no time in the Audacity project to go to")
 	// ErrLabelNotFound: no label in the project carries the finding's identity.
-	ErrLabelNotFound = errors.New("Audacity has no label for this finding: import the findings as labels first")
+	ErrLabelNotFound = audacitybridge.Sentence("Audacity has no label for this finding: import the findings as labels first")
 	// ErrLabelAmbiguous: more than one label carries the finding's identity, so the adapter will not guess which to change.
-	ErrLabelAmbiguous = errors.New("Audacity has more than one label for this finding: delete the extra one in Audacity, then try again")
+	ErrLabelAmbiguous = audacitybridge.Sentence("Audacity has more than one label for this finding: delete the extra one in Audacity, then try again")
 	// ErrLabelLost: Audacity took AddLabel but the new label could not be found again, so it was not named.
-	ErrLabelLost = errors.New("Audacity added a label but it could not be found again to name it")
+	ErrLabelLost = audacitybridge.Sentence("Audacity added a label but it could not be found again to name it")
 )
 
 // ContextPaddingSeconds is how much audio a loop plays before and after a finding, as REAPER's loop does (bridge.ContextPaddingSeconds).

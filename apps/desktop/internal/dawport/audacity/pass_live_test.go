@@ -102,7 +102,7 @@ func TestAudacityVerificationPass(t *testing.T) {
 	}()
 	ctx := context.Background()
 	client := audacitybridge.New(audacitybridge.PipeTransport(), audacitybridge.Options{})
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 	session := NewSession(client)
 
 	// A1: the pipe is there and in step.
