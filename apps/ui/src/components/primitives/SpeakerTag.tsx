@@ -1,8 +1,10 @@
 import type { KeyboardEvent, MouseEvent } from 'react';
+import { badgeClass } from './StatusBadge';
 import { speakerColorToken } from './speakerColor';
 
-const BASE =
-  "mr-2 inline-block rounded-[0.2rem] px-[0.45em] py-[0.05em] align-middle font-['Barlow_Condensed',sans-serif] text-[0.68rem] font-semibold tracking-[0.06em] uppercase";
+// THE badge's tag shape (StatusBadge.tsx, ADR 0600): the Script's speaker tag is a 16 px tag (mock 02), and the Booth's,
+// beside a line read at the booth's script size, the 26 px `booth` tag (mock 03). Only the placement is this file's.
+const PLACEMENT = 'mr-2 align-middle';
 
 type Props = {
   label: string;
@@ -13,17 +15,20 @@ type Props = {
   /** Opens the speaker's Story Bible entry (mirrors Highlight's own onActivate), the Booth's "Voices in scene" use. */
   onActivate?: () => void;
   description?: string;
+  /** `booth`: the Booth's larger tag beside the script (booth/ReaderText). */
+  size?: 'tag' | 'booth';
 };
 
 /** A speaker's colour, the same one Highlight's `colorToken` override draws with for the Booth's "Voices in scene"
  * tags (booth/BoothView.tsx): both read the token names from speakerColor.ts, so a speaker's colour is the same
  * wherever the app names them (D85 #6, ADR 0367). */
-export function SpeakerTag({ label, speakerId, onActivate, description }: Props) {
+export function SpeakerTag({ label, speakerId, onActivate, description, size = 'tag' }: Props) {
   const token = speakerColorToken(speakerId ?? label);
-  const style = { background: `color-mix(in srgb, var(${token}) 20%, transparent)`, color: `var(${token}-text)` };
+  const style = { background: `color-mix(in srgb, var(${token}) 20%, transparent)`, color: `var(${token}-text)`, borderColor: 'transparent' };
+  const classes = `${badgeClass(size)} ${PLACEMENT}`;
   if (!onActivate)
     return (
-      <span data-speaker-tag className={BASE} style={style} aria-description={description}>
+      <span data-speaker-tag className={classes} style={style} aria-description={description}>
         {label}
       </span>
     );
@@ -38,7 +43,7 @@ export function SpeakerTag({ label, speakerId, onActivate, description }: Props)
       data-speaker-tag
       aria-label={label}
       aria-description={description}
-      className={`${BASE} cursor-pointer`}
+      className={`${classes} cursor-pointer`}
       style={style}
       onClick={activate}
       onKeyDown={(event) => {
