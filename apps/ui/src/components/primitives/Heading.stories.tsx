@@ -3,7 +3,8 @@ import { expect, within } from 'storybook/test';
 import { Heading } from './Heading';
 
 // Heading renders the page-level <h1> by default, with an optional muted line under it. `level` changes the tag only
-// (2 or 3 under another heading); the look is the same at every level.
+// (2 or 3 under another heading); the look is the same at every level. The sizes are the mocks' (ADR 0640): Barlow
+// Condensed 26 px, and a 13 px muted subtitle.
 const meta = {
   title: 'Primitives/Heading',
   component: Heading,
@@ -87,4 +88,24 @@ export const TitleOnlyOmitsSubtitle: Story = {
   play: async ({ canvasElement }) => {
     await expect(canvasElement.querySelector('p')).toBeNull();
   },
+};
+
+// Benchmark mock 05's "Master & QC": the page title is Barlow Condensed 26 px, semibold; the subtitle Plex Sans 13 px.
+export const MatchesTheMock: Story = {
+  args: { title: 'Master & QC', children: 'Measured on the rendered files, against the ACX profile.' },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const title = canvas.getByRole('heading', { level: 1, name: 'Master & QC' });
+    if (canvasElement.getBoundingClientRect().width === 0) return;
+    await document.fonts.ready;
+    await expect(getComputedStyle(title).fontSize).toBe('26px');
+    await expect(getComputedStyle(title).fontFamily).toContain('Barlow Condensed');
+    await expect(getComputedStyle(title).fontWeight).toBe('600');
+    await expect(getComputedStyle(canvas.getByText(/Measured on the rendered files/)).fontSize).toBe('13px');
+  },
+};
+
+// The start-up screen's spinner leads the title while the app opens.
+export const WithIcon: Story = {
+  args: { title: 'Opening Narration Studio…', icon: <span aria-hidden className="inline-block size-4 rounded-full border-2 border-[var(--accent)]" /> },
 };
