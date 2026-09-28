@@ -30,6 +30,7 @@ import { ProofingStagePanel } from './ProofingStagePanel';
 import { usePickupsState } from '../pickups/usePickupsState';
 import { FindingDetail } from './FindingDetail';
 import { FindingsList } from './FindingsList';
+import { NativeTakesPanel } from './NativeTakesPanel';
 import { NotesHeader, SourcesLine } from './NotesHeader';
 import { NotesStrip } from './NotesStrip';
 import { RecordingCheckCard } from './RecordingCheckCard';
@@ -376,6 +377,7 @@ function ChapterView({ chapterId, notify, transcript, dawFileLinked, goToManuscr
               )
             )}
             <RecordingCheckCard chapter={chapter} alignment={alignment} flags={checkFlags} />
+            <NativeTakesPanel chapter={chapter} />
           </div>
         </div>
         {alignment && alignment.state !== 'never' && <TransportBar player={player} reaper={reaper} />}
