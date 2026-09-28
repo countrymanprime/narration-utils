@@ -5,14 +5,16 @@ import { THEME_STORAGE_KEY } from '../../../src/theme/theme';
 import { APP_DRIVERS } from '../app.drivers';
 import { settleFrames, settlePage } from '../helpers/settle';
 import { STATE_CATALOG } from '../state-catalog';
-import { compareImages, fitTo, MATCH_BAR_PERCENT, type RgbaImage } from './compare';
-import { mockPath, scoredMocks, slugOf, type ApprovedMock } from './mocks';
+import { compareImages, crop, fitTo, MATCH_BAR_PERCENT, type RgbaImage } from './compare';
+import { chromeRegions, isChromeSpec, mockPath, scoredMocks, slugOf, type ApprovedMock } from './mocks';
 import type { MockScore } from './report';
 
 // Scores the app against every approved mock that has a target (mocks.ts): loads the app at the mock's own pixel size in the
 // mock's theme, drives it to the mock's state with the visual suite's own driver, photographs the viewport and compares it with
 // the mock (compare.ts). Writes screenshots/mock-match/<mock>.{app,diff}.png and <mock>.json, and global-teardown.ts gathers
-// the records into scores.md. `pnpm --dir apps/ui mock-match`; `-g "<mock file>"` scores one.
+// the records into scores.md. `pnpm --dir apps/ui mock-match`; `-g "<mock file>"` scores one. Where the mock draws the app's
+// shell, its nav rail and header are also scored on their own (mocks.ts `chromeRegions`), so a change to the chrome is measured
+// apart from the page. MOCK_MATCH_BASELINE=<an earlier run's scores.json> adds each score's change since that run.
 //
 // A score under the D91 bar is reported, not failed, so one run measures every state; MOCK_MATCH_ENFORCE=1 fails a state under
 // the bar (the setting a phase of mock-fidelity-primitives-and-components.prd.md runs for the states it owns).
@@ -52,6 +54,11 @@ for (const mock of scoredMocks()) {
     const png = await capture(page, mock, { width: expected.width, height: expected.height });
     const actual = fitTo(await decode(sharp(png)), expected.width, expected.height);
     const result = compareImages(expected, actual);
+    const chrome: NonNullable<MockScore['chrome']> = { spec: isChromeSpec(mock) };
+    for (const region of chromeRegions(mock, expected.width, expected.height)) {
+      const part = compareImages(crop(expected, region), crop(actual, region));
+      chrome[region.name] = { matchPercent: part.matchPercent, inkMatchPercent: part.inkMatchPercent };
+    }
     const slug = slugOf(mock.file);
     mkdirSync(OUT_DIR, { recursive: true });
     writeFileSync(`${OUT_DIR}/${slug}.app.png`, png);
@@ -65,6 +72,7 @@ for (const mock of scoredMocks()) {
       theme: mock.theme,
       matchPercent: result.matchPercent,
       inkMatchPercent: result.inkMatchPercent,
+      ...(chrome.rail || chrome.header ? { chrome } : {}),
       diff: `apps/ui/${OUT_DIR}/${slug}.diff.png`,
     };
     writeFileSync(`${OUT_DIR}/${slug}.json`, JSON.stringify(score));

@@ -142,16 +142,15 @@ export function AppShell({
         </span>
       </div>
       <nav className="flex-1 px-2 pt-[0.5625rem] pb-2">
-        {NAV_GROUPS.map((group, index) => (
-          <div key={group.label} role="group" aria-labelledby={groupHeadingId(group.label)} className="relative flex flex-col gap-[0.1875rem]">
-            {/* Mock 01 heads every group but the first, whose one item already says "Production": that heading stays for a
-                screen reader (it names the group) and is not drawn; `relative` on the group keeps the hidden heading inside it. The rest are 10 px capitals at x 19, 29 px deep with
-                the gap above the group's first item, so a heading sits 32 px between two items as the mock spaces it. */}
+        {NAV_GROUPS.map((group) => (
+          <div key={group.label} role="group" aria-labelledby={groupHeadingId(group.label)} className="flex flex-col gap-[0.1875rem]">
+            {/* Every group is headed (ADR 0407 item 3): 10 px capitals at x 19, 29 px deep with the gap above the group's first
+                item, so a heading sits 32 px between two items as mock 01 spaces it. Mock 01 draws no heading over its first group,
+                but that group also holds a Schedule item the app has no page for (ADR 0407 item 5); the drawn heading takes most of
+                that item's place, so every later item sits within 8 px of where the benchmark mocks draw it (ADR 0636). */}
             <div
               id={groupHeadingId(group.label)}
-              className={
-                index === 0 ? 'sr-only' : 'section-label px-[0.625rem] pt-[0.6875rem] pb-[0.375rem] text-[0.625rem] leading-[0.75rem] tracking-[0.1em]'
-              }
+              className="section-label px-[0.625rem] pt-[0.6875rem] pb-[0.375rem] text-[0.625rem] leading-[0.75rem] tracking-[0.1em]"
             >
               {group.label}
             </div>
