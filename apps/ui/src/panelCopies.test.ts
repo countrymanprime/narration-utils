@@ -47,7 +47,7 @@ const CEILING: Record<Copy, Record<string, number>> = {
   },
   eyebrow: {
     // The shell's nav group headings and the header's Project label (Phase 8, which owns AppShell.tsx).
-    'src/components/layout/AppShell.tsx': 4,
+    'src/components/layout/AppShell.tsx': 3,
     // Page components the page phases own: the Booth (13), Master (14) and Script (15).
     'src/components/booth/BoothView.tsx': 1,
     'src/components/booth/CompanionShell.tsx': 1,

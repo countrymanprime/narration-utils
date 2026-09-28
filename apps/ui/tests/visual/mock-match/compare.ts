@@ -249,6 +249,20 @@ export function compareImages(expected: RgbaImage, actual: RgbaImage, options: C
 /** The D91 bar: every approved-mock state reaches at least this pixel match. */
 export const MATCH_BAR_PERCENT = 90;
 
+/** The `width × height` rectangle of `image` whose top-left corner is (x, y); it must lie inside the image. */
+export function crop(image: RgbaImage, region: { x: number; y: number; width: number; height: number }): RgbaImage {
+  const { x, y, width, height } = region;
+  if (x < 0 || y < 0 || width <= 0 || height <= 0 || x + width > image.width || y + height > image.height) {
+    throw new Error(`crop ${width}×${height} at (${x}, ${y}) lies outside the ${image.width}×${image.height} image`);
+  }
+  const data = new Uint8Array(width * height * 4);
+  for (let row = 0; row < height; row++) {
+    const from = ((y + row) * image.width + x) * 4;
+    data.set(image.data.subarray(from, from + width * 4), row * width * 4);
+  }
+  return { width, height, data };
+}
+
 /**
  * Fits a capture to the mock's size without scaling: the top-left `width × height` of it, and anything the capture lacks
  * filled with magenta, so a capture that is too small scores its missing area as different instead of being stretched.

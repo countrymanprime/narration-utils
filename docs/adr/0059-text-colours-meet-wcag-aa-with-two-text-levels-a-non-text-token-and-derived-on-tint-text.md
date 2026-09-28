@@ -1,6 +1,6 @@
 # 0059. Text colours meet WCAG AA: two text levels, a non-text token, and derived on-tint text
 
-**Status:** Accepted
+**Status:** Accepted (the current nav item's accent tint is the `--accent-soft` token since [ADR 0635](0635-the-nav-rail-and-header-take-the-benchmark-sizes-and-every-header-chip-is-one-headerchip-primitive.md); its label stays `--accent-strong`)
 **Date:** 2026-09-20
 **Supersedes:**
 **Amends:** [ADR 0016](0016-highlight-primitive.md) (the colour an entity's text takes)
