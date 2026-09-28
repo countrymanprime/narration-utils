@@ -260,6 +260,18 @@ func (s *Service) Revoke(id string) error {
 	return s.writeLocked(file)
 }
 
+// RemoveAll revokes every stored reference for the project in one write
+// (character-continuity-review.prd.md Q7's "Remove voice analysis data"
+// action, delivered in Phase 6 rather than Phase 7 per owner decision D87 on
+// #509): the data-layer effect Q7 already documents as equivalent to
+// revoking each reference one at a time, done atomically instead of in a
+// read-then-loop-revoke race.
+func (s *Service) RemoveAll() error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.writeLocked(referencesFile{References: []Reference{}})
+}
+
 // References lists every stored reference, each annotated with whether the
 // region it names has changed since it was approved (Q2).
 func (s *Service) References() ([]ApprovedReference, error) {

@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/countrymanprime/narration-utils/shell/internal/bridge"
+	"github.com/countrymanprime/narration-utils/shell/internal/character"
 	"github.com/countrymanprime/narration-utils/shell/internal/cleanuptools"
 	"github.com/countrymanprime/narration-utils/shell/internal/coverage"
 	"github.com/countrymanprime/narration-utils/shell/internal/credits"
@@ -56,7 +57,7 @@ import (
 // Keep this in lockstep with apps/ui/src/hostApi.ts.  The frontend rejects
 // an older host before bootstrapping so a partial update cannot run against a
 // binding contract it does not understand.
-const hostAPIVersion = 76
+const hostAPIVersion = 77
 
 // Host is the Wails binding boundary. The frontend invokes only this bound
 // object; it never receives a loopback port or an HTTP capability.
@@ -130,6 +131,10 @@ type Host struct {
 	// own ledger records and silence_cleanup findings. Swapped on every project switch like coverage; it starts only on
 	// the narrator's own request (Q9), never in the background.
 	editing *editing.Service
+	// character is the region-approval and reference service (character-continuity-review.prd.md Phase 3,
+	// bindings_character.go). Swapped with editing on every project switch; it produces no findings and does no
+	// acoustic analysis - Phase 6's non-acoustic bindings only (owner decision D87 on #509 benches the acoustic half).
+	character *character.Service
 	// findings is the project's findings store: Transcript Compare's and the
 	// Guide's adapters save into it on every completed run
 	// (review-dashboard-and-findings-adoption.prd.md Phases 2-3), and
@@ -522,6 +527,12 @@ func (h *Host) configureLocked(next config) {
 		// DAW port PRD Phase 5d: reads the saved .rpp through the port's offline role instead of tracks.Parse directly.
 		ProjectReader: reaper.ProjectReader{},
 	}, nil)
+	h.character = character.New(character.Config{
+		Project:     h.config.projectFolder,
+		ProjectFile: func() (string, error) { return selectedProjectFile(projectFolder, settingsStore) },
+		// DAW port PRD Phase 5d: reads the saved .rpp through the port's offline role instead of tracks.Parse directly.
+		ProjectReader: reaper.ProjectReader{},
+	})
 	// Every finished comparison is recorded for the proofing pickups signal (proofing-readiness-signals PRD Phase 2).
 	h.transcript.SetRunRecorder(comparisonRecorder(h.config.projectFolder, h.manuscript, settingsStore, h.persist))
 	// The proofing delivery checks judge the chapter's render against the project's delivery profile as it is when the
