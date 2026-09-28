@@ -997,6 +997,38 @@ export function PreviewCandidates(): $CancellablePromise<string> {
 }
 
 /**
+ * PreviewPin reads the narrator's pinned window, if any, resolved against the manuscript's current text.
+ */
+export function PreviewPin(): $CancellablePromise<string> {
+    return $Call.ByID(1241542001);
+}
+
+/**
+ * PreviewPinAdjust grows or shrinks the pinned range by one paragraph at edge ("start" or "end"); grow false
+ * shrinks it instead. It is a no-op, not an error, once the range already reaches the chapter's edge or (shrinking)
+ * is down to one paragraph (preview.AdjustRange's own rule).
+ */
+export function PreviewPinAdjust(edge: string, grow: boolean): $CancellablePromise<string> {
+    return $Call.ByID(1417233170, edge, grow);
+}
+
+/**
+ * PreviewPinClear removes the pin. Clearing when nothing is pinned is not an error.
+ */
+export function PreviewPinClear(): $CancellablePromise<string> {
+    return $Call.ByID(3078643078);
+}
+
+/**
+ * PreviewPinSet pins one window: chapterID and paragraphIDs are normally a candidate's own fields, exactly as
+ * PreviewCandidates answered them, though any contiguous, in-order run of one chapter's paragraph ids is accepted
+ * (Phase 8 does not require the narrator to have started from a suggested candidate at all).
+ */
+export function PreviewPinSet(chapterID: string, paragraphIDs: string[]): $CancellablePromise<string> {
+    return $Call.ByID(3856724439, chapterID, paragraphIDs);
+}
+
+/**
  * ProductionOverview is the Production page's board, KPI figures and "Next up" list.
  */
 export function ProductionOverview(): $CancellablePromise<string> {
