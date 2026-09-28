@@ -2,6 +2,7 @@ import { useState } from 'react';
 import type { GuidePronunciation, GuidePronunciationStatus } from '../../types';
 import { Button } from '../primitives/Button';
 import { Field } from '../primitives/Field';
+import { InsetCard } from '../primitives/InsetCard';
 import { Select } from '../primitives/Select';
 import { StatusBadge } from '../primitives/StatusBadge';
 import { CommonsAudioLookup } from './CommonsAudioLookup';
@@ -66,7 +67,7 @@ export function PronunciationWork({
         </Button>
       )}
       {editing && expanded && (
-        <div className="space-y-3 rounded-[var(--control-radius)] border p-3" style={{ borderColor: 'var(--border)' }}>
+        <InsetCard className="space-y-3">
           <div className="flex flex-wrap items-end gap-2">
             <div className="min-w-[12rem] flex-1">
               <Field label="Your pronunciation" value={ipa} onChange={setIpa} disabled={disabled} placeholder="Type how you say it" error={ipaError} />
@@ -111,7 +112,7 @@ export function PronunciationWork({
               Save status
             </Button>
           </div>
-        </div>
+        </InsetCard>
       )}
     </div>
   );

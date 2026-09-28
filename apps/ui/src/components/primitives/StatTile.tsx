@@ -1,6 +1,6 @@
 import { ProgressBar } from './ProgressBar';
+import { SectionLabel } from './SectionLabel';
 
-const EYEBROW = "font-['Barlow_Condensed',sans-serif] text-[0.72rem] font-semibold tracking-[0.08em] text-[var(--text-muted)] uppercase";
 const MONO = "font-['IBM_Plex_Mono',ui-monospace,monospace]";
 
 const TONE_TEXT: Record<Exclude<StatTileTone, 'neutral'>, string> = {
@@ -37,7 +37,7 @@ export function StatTile({
 }) {
   return (
     <div className={className}>
-      <div className={EYEBROW}>{label}</div>
+      <SectionLabel as="div">{label}</SectionLabel>
       <div className={`mt-0.5 text-xl font-semibold ${MONO}`}>
         <span style={tone === 'neutral' ? undefined : { color: TONE_TEXT[tone] }}>{value}</span>
         {unit && (

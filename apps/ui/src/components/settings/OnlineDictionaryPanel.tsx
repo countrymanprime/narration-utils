@@ -4,6 +4,7 @@ import { useApi } from '../../api/ApiContext';
 import type { PronunciationOnlineKeyStatus } from '../../types';
 import { Button } from '../primitives/Button';
 import { Field } from '../primitives/Field';
+import { InsetCard } from '../primitives/InsetCard';
 import { StatusBadge } from '../primitives/StatusBadge';
 import type { Notify } from '../primitives/Toast';
 
@@ -71,7 +72,7 @@ export function OnlineDictionaryPanel({ notify }: { notify: Notify }) {
 
   const present = status?.present ?? false;
   return (
-    <section aria-labelledby="online-dictionary-heading" className="mb-4 space-y-3 rounded-md border p-3 text-sm" style={{ borderColor: 'var(--border)' }}>
+    <InsetCard as="section" aria-labelledby="online-dictionary-heading" className="mb-4 space-y-3 text-sm">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h3 id="online-dictionary-heading" className="font-medium">
           Online dictionary (Merriam-Webster)
@@ -113,6 +114,6 @@ export function OnlineDictionaryPanel({ notify }: { notify: Notify }) {
           On this system the key is kept in a file only your account can read, not in a protected credential store.
         </p>
       )}
-    </section>
+    </InsetCard>
   );
 }
