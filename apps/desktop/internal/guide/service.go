@@ -647,8 +647,8 @@ const (
 	previewTimeout = 2 * time.Minute
 	// previewCacheTag versions the cache key. Bump it when the key's inputs
 	// change so files rendered under the old key are never trusted again (v1
-	// ignored the voice id).
-	previewCacheTag = "narration-utils-tts-preview-v2"
+	// ignored the voice id; v2 to v3 added the chosen pronunciation, Phase 10).
+	previewCacheTag = "narration-utils-tts-preview-v3"
 	// wavHeaderBytes is the size of a canonical WAV header. A file no larger
 	// than that holds no samples, so it is never a usable preview.
 	wavHeaderBytes = 44
@@ -658,9 +658,12 @@ const (
 // the cache key except Model, which is the path the sidecar loads.
 type PreviewVoice struct{ ID, Model, Provider, Version string }
 
-// previewFileName is the cache file for one voice speaking one text.
-func previewFileName(voice PreviewVoice, spoken string) string {
-	key := strings.Join([]string{previewCacheTag, voice.ID, voice.Provider, voice.Version, spoken}, "\x00")
+// previewFileName is the cache file for one voice speaking one text under one pronunciation choice.
+// pronunciationKey is the entry's chosen pronunciation's IPA, or "" when it speaks the plain text (spoken)
+// unchanged: two entries with the same spelled text but different chosen pronunciations (or the same text
+// before and after a pronunciation is chosen) must never share a cached render (Phase 10).
+func previewFileName(voice PreviewVoice, spoken, pronunciationKey string) string {
+	key := strings.Join([]string{previewCacheTag, voice.ID, voice.Provider, voice.Version, spoken, pronunciationKey}, "\x00")
 	hash := sha256.Sum256([]byte(key))
 	return hex.EncodeToString(hash[:]) + ".wav"
 }
@@ -683,6 +686,34 @@ func spokenName(entities []map[string]any, id string, alias *int) string {
 		value, _ := values[*alias].(map[string]any)
 		spoken, _ := value["text"].(string)
 		return strings.TrimSpace(spoken)
+	}
+	return ""
+}
+
+// chosenPronunciationKey returns the IPA a preview will actually speak for id/alias when the narrator chose a
+// pronunciation (pronounce()/pronounce_user() mark it "chosen"; render_audio then speaks it as phonemes instead
+// of the spelled name, Phase 10), or "" when nothing changes what the preview says. previewFileName folds this
+// into the cache key so switching, or choosing, a pronunciation never reuses a stale plain-name render.
+func chosenPronunciationKey(entities []map[string]any, id string, alias *int) string {
+	for _, entity := range entities {
+		if entity["id"] != id {
+			continue
+		}
+		holder := entity
+		if alias != nil {
+			values, _ := entity["aliases"].([]any)
+			if *alias < 0 || *alias >= len(values) {
+				return ""
+			}
+			holder, _ = values[*alias].(map[string]any)
+		}
+		pronunciation, _ := holder["pronunciation"].(map[string]any)
+		chosen, _ := pronunciation["chosen"].(bool)
+		if !chosen {
+			return ""
+		}
+		ipa, _ := pronunciation["ipa"].(string)
+		return ipa
 	}
 	return ""
 }
@@ -758,7 +789,7 @@ func (s *Service) Preview(id string, alias *int, voice PreviewVoice) ([]byte, er
 	if spoken == "" {
 		return nil, fmt.Errorf("the requested Story Bible name no longer exists")
 	}
-	name := previewFileName(voice, spoken)
+	name := previewFileName(voice, spoken, chosenPronunciationKey(entities, id, alias))
 	dir := filepath.Join(s.project, "ManuscriptGuide", "audio", "tts")
 	out := filepath.Join(dir, name)
 	lock := s.previewLock(name)

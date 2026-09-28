@@ -1587,6 +1587,30 @@ def unrelate(args: argparse.Namespace) -> None:
     print("UNRELATED|" + args.entity_id)
 
 
+def _phoneme_block(ipa: str) -> str | None:
+    """Piper's own inline raw-phoneme escape (``"[[ ... ]]"``, ``PiperVoice.phonemize``) skips its espeak
+    text-to-phoneme step, speaking exactly the stored symbols instead of re-guessing them from the spelled name
+    (Phase 10, ADR 0680). ``None`` when ``ipa`` is empty or would break out of the block early.
+    """
+    text = ipa.strip()
+    if not text or "]]" in text:
+        return None
+    return f"[[{text}]]"
+
+
+def spoken_form(holder: dict[str, Any] | None, name: str) -> str:
+    """What a preview should hand to Piper for ``holder`` (an entity or an alias): its chosen pronunciation as
+    raw phonemes when it has one and it converts cleanly, else the spelled ``name``, exactly as before this phase.
+    An auto-generated pronunciation the narrator never picked (``pronounce()``/``pronounce_user()`` mark ``chosen``)
+    must not silently change what the preview says.
+    """
+    pronunciation = (holder or {}).get("pronunciation") or {}
+    if not pronunciation.get("chosen"):
+        return name
+    block = _phoneme_block(str(pronunciation.get("ipa", "")))
+    return block if block is not None else name
+
+
 def render_audio(args: argparse.Namespace) -> None:
     guide = load_json(args.guide)
     if not guide:
@@ -1595,14 +1619,17 @@ def render_audio(args: argparse.Namespace) -> None:
     if not args.piper_model:
         raise ValueError("Install a verified Piper voice before creating previews.")
     if args.alias_index is None:
-        spoken = entity["canonical_name"]
+        holder = entity
+        name = entity["canonical_name"]
         filename = args.output_name or f"{entity['id']}.wav"
     else:
         aliases = entity.get("aliases", [])
         if not 0 <= args.alias_index < len(aliases):
             raise ValueError("Alias index out of range.")
-        spoken = aliases[args.alias_index]["text"]
+        holder = aliases[args.alias_index]
+        name = holder["text"]
         filename = args.output_name or f"{entity['id']}__alias{args.alias_index}.wav"
+    spoken = spoken_form(holder, name)
     audio_dir = Path(args.audio_dir)
     audio_dir.mkdir(parents=True, exist_ok=True)
     destination = audio_dir / filename
