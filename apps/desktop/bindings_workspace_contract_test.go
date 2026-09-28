@@ -32,3 +32,33 @@ func TestContractWorkspaceNavigationBindings(t *testing.T) {
 	payload, err = host.WorkspaceGoTo("c-0001", 1)
 	check("workspace-navigation-no-item", payload, err)
 }
+
+// What WorkspacePeaks sends (edit-and-proof-workspace PRD Phase 5, ADR 0520): one item's peaks over a real WAV
+// source (workspacePeaksProject, bindings_workspace_peaks_test.go), and one item with no usable source, answering
+// a Reason instead of an error.
+func TestContractWorkspacePeaksBinding(t *testing.T) {
+	host := coverageHost(t, workspacePeaksProject(t), true, fakeAlignedCoverageSidecar())
+	if _, err := host.CoverageStart("c-0001", nil); err != nil {
+		t.Fatal(err)
+	}
+	host.services().coverage.Wait()
+
+	payload, err := host.WorkspacePeaks("c-0001")
+	if err != nil {
+		t.Fatal(err)
+	}
+	checkBindingContract(t, "workspace-peaks", payload)
+
+	// coverageProject's own fixture (unmodified media/take.wav): a real file the tracks parser sees, but not one
+	// measure.PeaksFile can decode - the item's answer is a Reason, not Peaks.
+	unusable := coverageHost(t, coverageProject(t), true, fakeAlignedCoverageSidecar())
+	if _, err := unusable.CoverageStart("c-0001", nil); err != nil {
+		t.Fatal(err)
+	}
+	unusable.services().coverage.Wait()
+	payload, err = unusable.WorkspacePeaks("c-0001")
+	if err != nil {
+		t.Fatal(err)
+	}
+	checkBindingContract(t, "workspace-peaks-no-source", payload)
+}

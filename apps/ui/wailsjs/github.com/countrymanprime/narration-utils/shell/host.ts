@@ -621,6 +621,27 @@ export function EditingCandidates(chapterID: string): $CancellablePromise<string
 }
 
 /**
+ * EditingSetSourceChoice sets chapterID's source choice (Q6: the narrator
+ * chooses per chapter) and answers the choice as stored, the same bare
+ * string shape EditingSourceChoice reads back. choice must be "items" or
+ * "render"; anything else is a rejected promise, the same as any other
+ * binding validation failure in this file.
+ */
+export function EditingSetSourceChoice(chapterID: string, choice: string): $CancellablePromise<string> {
+    return $Call.ByID(3971166288, chapterID, choice);
+}
+
+/**
+ * EditingSourceChoice reads chapterID's current source choice ("items", the
+ * default, or "render"). A missing project or store answers "items" rather
+ * than refusing, matching editing.ChoiceStore.Get's own "no choice made yet
+ * is never an error" rule.
+ */
+export function EditingSourceChoice(chapterID: string): $CancellablePromise<string> {
+    return $Call.ByID(1773421432, chapterID);
+}
+
+/**
  * EditingStart starts an editing-readiness scan of one chapter: played-range
  * empty-space (and, cached alongside it, click/breath candidates - always
  * unknown until Phase 4 validates them). It answers {status: "started",
@@ -2098,6 +2119,17 @@ export function WorkspaceGoTo(chapterID: string, tokenIndex: number): $Cancellab
  */
 export function WorkspaceLoop(chapterID: string, firstToken: number, lastToken: number): $CancellablePromise<string> {
     return $Call.ByID(465077885, chapterID, firstToken, lastToken);
+}
+
+/**
+ * WorkspacePeaks answers the waveform strip's peaks for every analyzed item of chapterID's stored alignment:
+ * each item's played range, over its active take's source file, at measure.DefaultPeaksPerSecond, from the
+ * evidence cache. It refuses only when there is no project or the chapter's alignment itself cannot be read
+ * (the same errors WorkspaceAlignment already answers) - a single item with no usable source answers a
+ * Reason instead of failing the whole call.
+ */
+export function WorkspacePeaks(chapterID: string): $CancellablePromise<string> {
+    return $Call.ByID(1143383553, chapterID);
 }
 
 // Private type creation functions
