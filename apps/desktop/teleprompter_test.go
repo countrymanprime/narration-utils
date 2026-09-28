@@ -70,7 +70,7 @@ func runFakeTeleprompterDevices() bool {
 }
 
 func runFakeTeleprompter() {
-	if runFakeTeleprompterDevices() || runFakeTeleprompterLocate() {
+	if runFakeTeleprompterDevices() || runFakeTeleprompterLocate() || runFakeTeleprompterAlign() {
 		return
 	}
 	fmt.Println(`{"type":"script","chapter":{"id":"c1","title":"One"},"tokens":4,"spans":[]}`)

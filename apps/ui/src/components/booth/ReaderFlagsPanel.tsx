@@ -59,7 +59,8 @@ type PunchState =
 
 const PUNCH_SOURCE_LABEL: Record<NonNullable<TeleprompterPunchResult['source']>, string> = {
   anchor: 'Timed from your reading just now.',
-  alignment: 'Estimated from your reading pace (no exact timing recorded this close to the word).',
+  alignment: 'Timed by finding the word in your recording.',
+  estimate: 'Estimated from your reading pace (the word could not be found in the recording).',
 };
 
 function PunchConfirmDialog({ state, onConfirm, onCancel }: { state: PunchState & { phase: 'confirm' }; onConfirm: () => void; onCancel: () => void }) {
