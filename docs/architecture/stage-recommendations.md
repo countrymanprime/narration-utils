@@ -226,7 +226,7 @@ visual states `home/stage-*`.
 
 ## Elsewhere
 
-Phase 8 added `apps/ui/src/components/proofing/ProofingStagePanel.tsx` on the Proofing page: every narration chapter
+Phase 8 added `apps/ui/src/components/proof/ProofingStagePanel.tsx` on the Proofing page (a Proof chapter view since stage navigation Phase 5): every narration chapter
 currently in `proofing`, with the same `StageSuggestion`/`StageEvidence` pair Home uses (Confirm, Dismiss, Revert, Why),
 self-fetching since the Transcript state carries no chapter id.
 

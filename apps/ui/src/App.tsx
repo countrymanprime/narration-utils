@@ -19,12 +19,13 @@ import { Home } from './components/home/Home';
 import { ScriptPage } from './components/script/ScriptPage';
 import { ProjectPicker } from './components/project/ProjectPicker';
 import { Guide } from './components/storybible/Guide';
-import { Transcript } from './components/proofing/Transcript';
 import { Settings } from './components/settings/Settings';
 import { TeleprompterPage } from './components/teleprompter/TeleprompterPage';
 import { TracksPage } from './components/tracks/TracksPage';
-import { WorkspacePage } from './components/workspace/WorkspacePage';
-import { ReviewPage } from './components/review/ReviewPage';
+import { ProofChapterPage } from './components/proof/ProofChapterPage';
+import { ProofPage } from './components/proof/ProofPage';
+import { RedirectKeepingLocation } from './components/layout/RedirectKeepingLocation';
+import { leavesCompareRun } from './components/proof/leavesCompareRun';
 import { DeliveryPage } from './components/delivery/DeliveryPage';
 import { ProductionPage } from './components/production/ProductionPage';
 import { deliveryHash, parseDeliveryHash } from './components/delivery/deliveryLink';
@@ -43,12 +44,6 @@ const SETTINGS_ANCHORS: Record<string, string> = { '#credits': 'Credits', '#deli
 // nothing on the host selects it yet and the URL does not change without a reload.
 const ENGINE = mockEngineFromLocation();
 
-/** A retired route's redirect (ADR 0407): the same query and hash on the page that replaced it, replacing the entry so Back never lands on it. */
-function RedirectKeepingLocation({ to }: { to: string }) {
-  const { search, hash } = useLocation();
-  return <Navigate to={`${to}${search}${hash}`} replace />;
-}
-
 const LIVE_UPDATES_DEGRADED = 'Some live updates from the desktop host could not be read, so what you see may be out of date. Reopen the page to refresh it.';
 
 // `nav.back`/`nav.forward`'s dialog check (input-commands-and-pedals.prd.md Phase 2): nothing yet wraps an open
@@ -61,7 +56,7 @@ const isModalOpen = () => Boolean(document.querySelector('[role="dialog"], [role
 export function App() {
   // Every build except the demo serves from the site root (base: '/', vite.config.ts), so this is a
   // no-op basename there. The demo serves under /narration-utils/demo/: without a matching basename
-  // react-router compares its routes ('/', '/proofing', ...) against the full pathname and matches
+  // react-router compares its routes ('/', '/proof', ...) against the full pathname and matches
   // nothing, so every page renders blank apart from the app shell (found by loading the built demo
   // and reading the console: "No routes matched location ...", docs/prds/public-app-demo.prd.md D3).
   return (
@@ -72,7 +67,7 @@ export function App() {
 }
 
 // A pending guarded move, either a path (the nav, a "go to" link) or a Back/Forward delta; the two guards below
-// (unsaved Settings, leaving Proofing) apply to both the same way (App.tsx:258-272, Phase 1).
+// (unsaved Settings, leaving a Proof chapter view with a run) apply to both the same way (App.tsx:258-272, Phase 1).
 type PendingMove = { kind: 'path'; path: string } | { kind: 'delta'; direction: 1 | -1 };
 
 function AppRoutes() {
@@ -85,6 +80,8 @@ function AppRoutes() {
   const guardedBackRef = useRef<() => void>(() => {});
   const guardedForwardRef = useRef<() => void>(() => {});
   const prevPathnameRef = useRef(location.pathname);
+  // The compare run's phase, read by the pop-recovery effect below without resubscribing it on every transcript event.
+  const transcriptPhaseRef = useRef<string>('idle');
   const [data, setData] = useState<Bootstrap>();
   // One queue for the whole app: messages stack instead of replacing each other, an identical one that is showing starts its time again, and
   // an error stays until it is dismissed (ADR 0075). `notify` and `dismiss` keep their identity, so a page effect that lists them never re-runs.
@@ -343,8 +340,8 @@ function AppRoutes() {
 
   // Recovery for a `popstate` the app did not start (Risk 3: a mouse-button gesture WebView2 acts on
   // despite `preventDefault`, if Phase 0 finds that happens). The move already took effect; if it left
-  // Settings dirty, push Settings back and ask, so the change is not lost silently. Leaving Proofing still
-  // resets its run either way.
+  // Settings dirty, push Settings back and ask, so the change is not lost silently. Leaving a Proof chapter view with
+  // a run still resets the run either way.
   useEffect(() => {
     if (history.unexpectedPop) {
       const leftPathname = prevPathnameRef.current;
@@ -353,7 +350,7 @@ function AppRoutes() {
         const landedAt = location.pathname + location.hash;
         navigate('/settings');
         setPendingMove({ kind: 'path', path: landedAt });
-      } else if (leftPathname === '/proofing') {
+      } else if (leavesCompareRun(leftPathname, location.pathname, transcriptPhaseRef.current)) {
         void api.transcriptReset().catch(() => {});
       }
     }
@@ -382,6 +379,7 @@ function AppRoutes() {
   // already refreshes `data` once ProjectPicker's switch/create succeeds, so
   // no callback needs to be threaded through here.
   if (!data.projectFolder) return <ProjectPicker />;
+  transcriptPhaseRef.current = data.transcript.phase;
 
   // Deep links are expressed as a URL anchor on the fixed page path, not as
   // path params - "#p123" points at paragraph 123 (its globally unique
@@ -392,19 +390,19 @@ function AppRoutes() {
   const goToScript = (chapter: string, paragraph?: number) =>
     guardedNavigate(`/script#${paragraph !== undefined ? `p${paragraph}` : `c${encodeURIComponent(chapter)}`}`);
   const goToStoryBible = (entityId: string) => guardedNavigate(`/story-bible#${encodeURIComponent(entityId)}`);
-  // "Open in workspace" (edit-and-proof-workspace.prd.md Phase 4): from Review, Home and the Manuscript. findingId is
-  // the deep link's ?finding=, so the workspace lands on the flag that finding backs (Navigation and deep links).
-  const goToWorkspace = (chapterId: string, findingId?: string) =>
-    guardedNavigate(`/tracks/chapter/${encodeURIComponent(chapterId)}${findingId ? `?finding=${encodeURIComponent(findingId)}` : ''}`);
+  // A chapter's Proof view (stage-navigation-and-page-replacement.prd.md Phase 5; edit-and-proof-workspace.prd.md's
+  // "Open in workspace"): from Proof's notes, Home and the Manuscript. findingId is the deep link's ?finding=, so the
+  // chapter view lands on the flag that finding backs (Navigation and deep links).
+  const goToProofChapter = (chapterId: string, findingId?: string) =>
+    guardedNavigate(`/proof/${encodeURIComponent(chapterId)}${findingId ? `?finding=${encodeURIComponent(findingId)}` : ''}`);
   // A delivery finding opens the Delivery page on its file and rule: "#file=<path>&rule=<id>" (deliveryLink.ts).
   const goToDelivery = (file: string, rule?: string) => guardedNavigate(`/delivery${deliveryHash({ file, ...(rule ? { rule } : {}) })}`);
 
   const guardedNavigate = (next: string) => {
     const nextPath = next.split('#')[0] || '/';
-    // The chapter workspace reads the chapter's paragraphs and alignment, both manuscript-scoped, same as the fixed
-    // routes below (edit-and-proof-workspace.prd.md Phase 2's route is the app's first parameterised path, so it
-    // needs its own startsWith check rather than joining the exact-match list).
-    if (!data.manuscript && (['/script', '/proofing', '/story-bible', '/teleprompter'].includes(nextPath) || nextPath.startsWith('/tracks/chapter/'))) {
+    // A Proof chapter view reads the chapter's paragraphs and alignment, both manuscript-scoped, same as the fixed
+    // routes below (a parameterised path, so it needs its own startsWith check rather than joining the exact-match list).
+    if (!data.manuscript && (['/script', '/story-bible', '/teleprompter'].includes(nextPath) || nextPath.startsWith('/proof/'))) {
       navigate('/', { replace: true });
       return;
     }
@@ -412,12 +410,12 @@ function AppRoutes() {
       setPendingMove({ kind: 'path', path: next });
       return;
     }
-    if (nextPath !== location.pathname && location.pathname === '/proofing') void api.transcriptReset().catch(() => {});
+    if (leavesCompareRun(location.pathname, nextPath.split('?')[0], data.transcript.phase)) void api.transcriptReset().catch(() => {});
     navigate(next);
   };
 
   // Back and Forward run the same two guards as the nav (Phase 1): dirty Settings asks first, leaving
-  // Proofing resets its run. Each moves exactly one page, and does nothing where `useAppHistory` already
+  // a Proof chapter view with a run resets the run. Each moves exactly one page, and does nothing where `useAppHistory` already
   // says there is nowhere to go (the buttons are disabled there too; this covers the shortcuts and mouse
   // buttons, which have no disabled state to rely on).
   const attemptDelta = (direction: 1 | -1) => {
@@ -425,7 +423,7 @@ function AppRoutes() {
       setPendingMove({ kind: 'delta', direction });
       return;
     }
-    if (location.pathname === '/proofing') void api.transcriptReset().catch(() => {});
+    if (leavesCompareRun(location.pathname, undefined, data.transcript.phase)) void api.transcriptReset().catch(() => {});
     if (direction === -1) history.back();
     else history.forward();
   };
@@ -464,7 +462,7 @@ function AppRoutes() {
                     go={guardedNavigate}
                     notify={setNotice}
                     goToManuscript={goToScript}
-                    goToWorkspace={goToWorkspace}
+                    goToWorkspace={goToProofChapter}
                     refreshBootstrap={refreshBootstrap}
                   />
                 }
@@ -473,7 +471,7 @@ function AppRoutes() {
                 path="/script"
                 element={
                   data.manuscript ? (
-                    <ScriptPage notify={setNotice} focusStoryBibleEntity={goToStoryBible} goToWorkspace={goToWorkspace} projectFolder={data.projectFolder} />
+                    <ScriptPage notify={setNotice} focusStoryBibleEntity={goToStoryBible} goToWorkspace={goToProofChapter} projectFolder={data.projectFolder} />
                   ) : (
                     <Navigate to="/" replace />
                   )
@@ -482,16 +480,20 @@ function AppRoutes() {
               <Route path="/manuscript" element={<RedirectKeepingLocation to="/script" />} />
               <Route path="/story-bible" element={data.manuscript ? <Guide notify={setNotice} goToManuscript={goToScript} /> : <Navigate to="/" replace />} />
               <Route
-                path="/proofing"
+                path="/teleprompter"
+                element={data.manuscript ? <TeleprompterPage onFixCredits={() => guardedNavigate('/settings#credits')} /> : <Navigate to="/" replace />}
+              />
+              <Route path="/tracks" element={<TracksPage dawFileLinked={data.dawFileLinked} onLinkDawFile={() => void linkDawFile()} notify={setNotice} />} />
+              <Route
+                path="/proof/:chapterId"
                 element={
                   data.manuscript ? (
-                    <Transcript
-                      state={data.transcript}
+                    <ProofChapterPage
                       notify={setNotice}
-                      goHome={() => guardedNavigate('/')}
-                      goToManuscript={goToScript}
+                      transcript={data.transcript}
                       dawFileLinked={data.dawFileLinked}
-                      refreshKey={data.manuscript ? `${data.manuscript.id}:${data.manuscript.importedAt}` : 'no-manuscript'}
+                      goToManuscript={goToScript}
+                      refreshKey={`${data.manuscript.id}:${data.manuscript.importedAt}`}
                     />
                   ) : (
                     <Navigate to="/" replace />
@@ -499,23 +501,25 @@ function AppRoutes() {
                 }
               />
               <Route
-                path="/teleprompter"
-                element={data.manuscript ? <TeleprompterPage onFixCredits={() => guardedNavigate('/settings#credits')} /> : <Navigate to="/" replace />}
-              />
-              <Route path="/tracks" element={<TracksPage dawFileLinked={data.dawFileLinked} onLinkDawFile={() => void linkDawFile()} notify={setNotice} />} />
-              <Route path="/tracks/chapter/:chapterId" element={data.manuscript ? <WorkspacePage notify={setNotice} /> : <Navigate to="/" replace />} />
-              <Route
-                path="/review"
+                path="/proof"
                 element={
-                  <ReviewPage
+                  <ProofPage
                     notify={setNotice}
                     hasManuscript={Boolean(data.manuscript)}
                     goToManuscript={goToScript}
                     goToStoryBible={goToStoryBible}
-                    goToWorkspace={(chapterId, findingId) => goToWorkspace(chapterId, findingId)}
+                    goToWorkspace={(chapterId, findingId) => goToProofChapter(chapterId, findingId)}
                     goToDelivery={goToDelivery}
+                    openChapter={(chapterId) => goToProofChapter(chapterId)}
                   />
                 }
+              />
+              {/* Retired by Proof (stage-navigation-and-page-replacement.prd.md Phase 5, ADR 0407): old links land, query and hash kept. */}
+              <Route path="/review" element={<RedirectKeepingLocation to="/proof" />} />
+              <Route path="/proofing" element={<RedirectKeepingLocation to="/proof" />} />
+              <Route
+                path="/tracks/chapter/:chapterId"
+                element={<RedirectKeepingLocation to={({ chapterId = '' }) => `/proof/${encodeURIComponent(chapterId)}`} />}
               />
               <Route path="/production" element={data.manuscript ? <ProductionPage /> : <Navigate to="/" replace />} />
               <Route

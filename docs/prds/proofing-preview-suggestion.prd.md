@@ -145,7 +145,7 @@ Phases 1 to 3, with Phase 4's target setting if it is cheap: the manuscript-only
 - **Quote heuristic.** Paired double quotes across straight and curly forms, counted per paragraph; a dialogue share of the window inside a band scores best. No speaker attribution.
 - **Providers for the audio layer.** Findings by range (RD-1), ledger record and staleness for a chapter (EL), recording coverage (RC), windowed analyzer findings (DX-4), pace (chapter words over recorded seconds), a paragraph-to-time mapper (Phase 6). Each provider answers `met`, `not_met` or `unknown` with a reason and action; the engine composes them. Evaluation is a read and starts no analysis.
 - **Host surface.** One read binding for candidates, later bindings for pin and clear. Host API version bumps in `apps/desktop/app.go`, `apps/desktop/app_test.go` and `apps/ui/src/hostApi.ts`, and `Host.{js,d.ts}` is regenerated (take the next number at merge). Bindings read services through `h.services()` and add a row to `stressReaders` in `hostrace_test.go` ([host binding concurrency](../architecture/host-binding-concurrency.md)). The wire contract gets a Zod schema behind `parseWire` (implementation plan D16).
-- **UI.** A `Panel` on the Proofing page with the existing `table.dtable` style; state shown as text plus icon, never colour alone; reuse SR's evidence popover if it exists by then. New primitives, if any, need stories and atlas coverage. New states get `state-catalog.ts` rows and drivers in `app.drivers.ts`, `doc-screenshots.json`, and `docs/guides/using-the-app/proofing.md` updates (`visual-catalog-sync`, `doc-screenshot-sync`; `apps/ui/src/docsGuide.test.ts` guards the guide).
+- **UI.** A `Panel` on the Proofing page with the existing `table.dtable` style; state shown as text plus icon, never colour alone; reuse SR's evidence popover if it exists by then. New primitives, if any, need stories and atlas coverage. New states get `state-catalog.ts` rows and drivers in `app.drivers.ts`, `doc-screenshots.json`, and `docs/guides/using-the-app/proof.md` updates (`visual-catalog-sync`, `doc-screenshot-sync`; `apps/ui/src/docsGuide.test.ts` guards the guide).
 - **ADR.** After code lands, use `adr-author` for the preview definition (eligibility, the audio-checked rule, findings gating). Take the next free number at merge time.
 
 **Technical Risks**
@@ -191,7 +191,7 @@ Every phase follows the `CLAUDE.md` workflow: plan (find or open the tracking is
 
 **Phase 3 - Proofing page Preview panel**
 - **Goal**: The narrator sees and uses the suggestion.
-- **Scope**: Panel on the Proofing page; states (default, computing, no manuscript, nothing eligible, shorter than target, warnings); open in reader, copy range and length; `state-catalog.ts` rows and `app.drivers.ts` drivers; `doc-screenshots.json`; `docs/guides/using-the-app/proofing.md`; PNG review at every viewport.
+- **Scope**: Panel on the Proofing page; states (default, computing, no manuscript, nothing eligible, shorter than target, warnings); open in reader, copy range and length; `state-catalog.ts` rows and `app.drivers.ts` drivers; `doc-screenshots.json`; `docs/guides/using-the-app/proof.md`; PNG review at every viewport.
 - **Success signal**: Every state reviewed as PNGs at each viewport with no sideways overflow; `pnpm check` and the visual suite green; the panel starts no analysis.
 
 **Phase 4 - Preview settings**
@@ -229,7 +229,7 @@ Phase 1 stands alone. Phases 2 and 3 are sequential; Phase 4 runs beside Phase 3
 | --- | --- | --- |
 | 1 | New `apps/desktop/internal/preview/*` | None expected |
 | 2 | `apps/desktop/{app.go,bindings.go,app_test.go}`, `apps/ui/src/{hostApi.ts,api/*}`, `Host.{js,d.ts}` | Every binding PR: the host API number is a merge-time serialization point (the later PR rebases and bumps again) |
-| 3 | `apps/ui/src/components/proofing/*`, `apps/ui/tests/visual/{state-catalog.ts,app.spec.ts,app.drivers.ts,doc-screenshots.json}`, `docs/images/ui/*`, `docs/guides/using-the-app/proofing.md` | PS Phase 6 and SR Phase 8 (Proofing page panels), VH (`Transcript.tsx`), RD-2, TR; nav-changing PRs regenerate screenshots |
+| 3 | `apps/ui/src/components/proofing/*`, `apps/ui/tests/visual/{state-catalog.ts,app.spec.ts,app.drivers.ts,doc-screenshots.json}`, `docs/images/ui/*`, `docs/guides/using-the-app/proof.md` | PS Phase 6 and SR Phase 8 (Proofing page panels), VH (`Transcript.tsx`), RD-2, TR; nav-changing PRs regenerate screenshots |
 | 4 | `apps/desktop/app.go` (`fieldSchemas`), `config/defaults.json`, `apps/desktop/internal/settings/store.go`, `Settings.tsx`, `mockFixtures.ts` | DX-2 (numeric kind), SR Phase 6, the teleprompter settings phase |
 | 5 | Preview package, findings provider | RD-1 store API, TR-4 finding shape |
 | 6 | Preview package; EL's `tracks` parser if it needs fields; fixtures | EL Phase 1, TM Phase 8, TR Phase 2 (parser), RC; land after them or rebase |

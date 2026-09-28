@@ -42,7 +42,7 @@ const CEILING: Record<NativeTag, Record<string, number>> = {
     // case as ReaderRail.tsx's entries below. Two JSX `<button>`s, one inside the Pronunciations rows and one inside the
     // Characters rows.
     'src/components/script/ScriptRail.tsx': 2,
-    'src/components/proofing/Transcript.tsx': 1,
+    'src/components/proof/CompareRun.tsx': 1,
     'src/components/settings/ScopedSetting.tsx': 1,
     // The click-to-seek word ("Start here" / "Go back to here", teleprompter-manuscript-integration.prd.md Phase 4):
     // one word among hundreds inside running prose, so it needs `Button`'s bare click/keyboard semantics without its
@@ -63,7 +63,7 @@ const CEILING: Record<NativeTag, Record<string, number>> = {
     // ReaderText.tsx above - one word among a chapter's worth of running prose, needing Button's bare click/keyboard
     // semantics without its padded, uppercase chrome breaking the text flow. One JSX `<button>`, written once inside
     // the tokens `.map()`.
-    'src/components/workspace/ScriptView.tsx': 1,
+    'src/components/proof/ScriptView.tsx': 1,
     // The "Settings > Credits" link inside the "More fields" sentence (credits-token-setup-and-front-matter-detection.prd.md
     // Phase 2, CS4): an inline word inside a paragraph, the same case `ReaderText.tsx` above is for - `Button`'s padded,
     // uppercase chrome would break the sentence it sits in.

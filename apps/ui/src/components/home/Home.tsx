@@ -18,7 +18,6 @@ import { WorkDialog } from '../primitives/WorkDialog';
 import { TooltipTarget } from '../primitives/Tooltip';
 import { IconButton } from '../primitives/IconButton';
 import type { Notify } from '../primitives/Toast';
-import { combinedRequiredReason } from '../../dawAvailability';
 
 // Import runs as a host-side job; the UI only ever displays the percent and log
 // lines the host reports while polling (ADR-0015) - it never invents progress.
@@ -341,26 +340,22 @@ export function Home({
         refreshKey={data.manuscript ? `${data.manuscript.id}:${data.manuscript.importedAt}` : 'no-manuscript'}
       />
       {(() => {
-        // Reviewing an existing comparison never needs a linked DAW file, only starting a new one does (PRD W16):
-        // the card is blocked when there is no manuscript, or when there is nothing to review yet and no DAW file
-        // is linked to start one with.
-        const startBlocked = !lastCompleted && !data.dawFileLinked;
-        const proofingBlocked = !found || startBlocked;
-        const proofingReason = !found
-          ? 'Import a manuscript to unlock Proofing.'
-          : (combinedRequiredReason({ manuscript: false, dawFile: startBlocked }) ?? 'Open Proofing');
+        // Proof (stage-navigation-and-page-replacement.prd.md Phase 5) is never gated itself - a chapter's compare run gates its own
+        // Start on the DAW - so the card only needs a manuscript to compare a recording with.
+        const proofingBlocked = !found;
+        const proofingReason = 'Import a manuscript to compare a recording with it.';
         return (
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-            <TooltipTarget text={proofingBlocked ? proofingReason : 'Open Proofing'} className="w-full">
+            <TooltipTarget text={proofingBlocked ? proofingReason : 'Open Proof'} className="w-full">
               <button
-                aria-label="Open Proofing"
+                aria-label="Open Proof"
                 disabled={proofingBlocked}
                 className="w-full rounded-lg border border-[var(--border)] bg-[var(--surface)] p-[1.1rem] text-left shadow-[var(--shadow)] transition hover:-translate-y-px disabled:pointer-events-none disabled:opacity-50"
-                onClick={() => go('/proofing')}
+                onClick={() => go('/proof')}
               >
                 <div className="mb-1 flex items-center justify-between">
                   <span className="font-['Barlow_Condensed',sans-serif] text-[0.72rem] font-semibold tracking-[0.08em] text-[var(--text-muted)] uppercase">
-                    Proofing
+                    Proof
                   </span>
                   <span
                     className="inline-flex items-center gap-[0.35rem] rounded-full px-[0.55rem] py-[0.15rem] font-['Barlow_Condensed',sans-serif] text-[0.72rem] font-semibold tracking-[0.03em] uppercase"
@@ -377,7 +372,7 @@ export function Home({
                 <div className="mt-1 text-sm" style={{ color: 'var(--text-muted)' }}>
                   {lastCompleted
                     ? `${lastCompleted.trackName || 'Selected REAPER audio'}${lastCompleted.audioItemCount ? ` · ${lastCompleted.audioItemCount} audio item${lastCompleted.audioItemCount === 1 ? '' : 's'}` : ''} · ${completedLabel(lastCompleted.completedAt)}`
-                    : 'Select audio items or a track in REAPER, then start Proofing.'}
+                    : 'Select audio items or a track in REAPER, then open a chapter on Proof.'}
                 </div>
               </button>
             </TooltipTarget>

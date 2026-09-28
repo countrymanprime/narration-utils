@@ -5,7 +5,7 @@ import { Select } from '../primitives/Select';
 import { Switch } from '../primitives/Switch';
 import { TextField } from '../primitives/TextField';
 import { Tooltip, TooltipTarget } from '../primitives/Tooltip';
-import { proofingChoiceLabel } from '../proofing/options';
+import { proofingChoiceLabel } from '../proof/options';
 import { describeNumberRange, numberProblem } from './numberSetting';
 
 const DELIVERY_LIMIT_TIP =
