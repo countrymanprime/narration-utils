@@ -354,7 +354,7 @@ export type TeleprompterPunchResult = {
   outcome: 'resolved' | 'punched' | 'refused';
   cursor?: number;
   resolvedTime?: number;
-  source?: 'anchor' | 'alignment';
+  source?: 'anchor' | 'alignment' | 'estimate';
   preRoll?: number;
   message?: string;
 };
