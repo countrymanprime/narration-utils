@@ -123,7 +123,7 @@ describe('recording check on Home', () => {
     await openBreakdown({ findings: [...WIRE_FINDINGS, takeReviewPickupFor(chapter.id, chapter.title)] });
     const dialog = await openCheck('Chapter 4');
     expect(await within(dialog).findByText('Repeated reads (Review): 1 group not reviewed yet')).toBeTruthy();
-    expect(within(dialog).getByRole('link', { name: 'Open Review' }).getAttribute('href')).toBe('/review');
+    expect(within(dialog).getByRole('link', { name: 'Open Proof' }).getAttribute('href')).toBe('/proof');
   });
 
   it('says none are waiting when the chapter has no take-review pickups of its own', async () => {
