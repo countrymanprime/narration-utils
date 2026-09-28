@@ -45,6 +45,9 @@ type Request struct {
 	Source string
 	// Region is the region a ModeDAWRegion row asks the DAW to render, by the name the host wrote.
 	Region string
+	// Macro is the exact name of the effect macro a row that needs one applies (the Audacity row, ADR 0306, ADR 0460), as the
+	// narrator's DAW lists it.
+	Macro string
 	// Destination is the new WAV. It must not exist: a master never replaces a file (ErrDestinationExists), and never writes over
 	// its source (ErrSameFile). On failure, a cancelled ctx included, nothing is left there.
 	Destination string

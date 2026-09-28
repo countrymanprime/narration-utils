@@ -23,11 +23,13 @@ func TestEveryRegisteredRowPassesTheSuite(t *testing.T) {
 	}
 }
 
-func TestTheRowsAreTheBuiltInChainThenTheDAW(t *testing.T) {
-	// D86: the built-in chain is the default; the DAW row is declared and not yet available. No Audacity row until its pipe client.
+func TestTheRowsAreTheBuiltInChainThenTheDAWThenAudacity(t *testing.T) {
+	// D86: the built-in chain is the default; the DAW and Audacity rows are both Experimental (ADR 0460), registered in the order
+	// their phases built them.
 	for _, platform := range port.Platforms {
-		if got := masteringport.Rows.Names(platform); !reflect.DeepEqual(got, []string{masteringport.Builtin, masteringport.DAW}) {
-			t.Errorf("Rows.Names(%q) = %v, want [builtin daw]", platform, got)
+		want := []string{masteringport.Builtin, masteringport.DAW, masteringport.Audacity}
+		if got := masteringport.Rows.Names(platform); !reflect.DeepEqual(got, want) {
+			t.Errorf("Rows.Names(%q) = %v, want %v", platform, got, want)
 		}
 	}
 	entry, ok := masteringport.Default(masteringport.Rows)
@@ -67,9 +69,18 @@ func TestTheDAWRowIsExperimentalAndNeedsApproval(t *testing.T) {
 }
 
 func TestAnUnknownRowIsRefused(t *testing.T) {
-	_, err := masteringport.Rows.Lookup("audacity")
-	if !errors.Is(err, port.ErrNotSupported) || err.Error() != `There is no mastering chain called "audacity".` {
-		t.Fatalf("Lookup(audacity) = %v", err)
+	_, err := masteringport.Rows.Lookup("dolby-atmos")
+	if !errors.Is(err, port.ErrNotSupported) || err.Error() != `There is no mastering chain called "dolby-atmos".` {
+		t.Fatalf("Lookup(dolby-atmos) = %v", err)
+	}
+}
+
+func TestTheAudacityRowIsExperimentalAndNeedsApproval(t *testing.T) {
+	entry, _ := masteringport.Rows.Lookup(masteringport.Audacity)
+	caps := entry.New().Capabilities()
+	want := []dawport.Capability{dawport.CapMacroRender}
+	if caps.Level != port.Experimental || !caps.NeedsApproval || !reflect.DeepEqual(caps.Needs, want) {
+		t.Fatalf("audacity Capabilities = %+v, want Experimental, approval, macro_render", caps)
 	}
 }
 
@@ -113,7 +124,7 @@ func TestANewRowIsOneRegistrationAndPassesTheSuiteWithNoOtherEdit(t *testing.T) 
 	for _, entry := range rows.Entries() {
 		t.Run(entry.Name, func(t *testing.T) { masteringporttest.Run(t, entry) })
 	}
-	if len(masteringport.Rows.Entries()) != 2 {
+	if len(masteringport.Rows.Entries()) != 3 {
 		t.Error("registering on a new registry changed the program's")
 	}
 }
