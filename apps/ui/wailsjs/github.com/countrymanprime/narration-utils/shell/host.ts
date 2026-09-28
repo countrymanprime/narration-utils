@@ -1039,6 +1039,16 @@ export function ProductionStartTimer(chapterID: string, stage: string): $Cancell
 }
 
 /**
+ * ProductionStatusReport writes the book's status report (Phase 5): hours by stage, PFH, the deadline and milestone
+ * status, and book-wide readiness counts, as an HTML and a JSON file. includeContractedAmount is the narrator's choice
+ * to write the contracted amount and the effective rate; off by default, since a status report is often shared with
+ * someone the narrator would not otherwise tell their rate. It refuses without a project.
+ */
+export function ProductionStatusReport(includeContractedAmount: boolean): $CancellablePromise<string> {
+    return $Call.ByID(1628238977, includeContractedAmount);
+}
+
+/**
  * ProductionStopTimer stops the running timer. It answers {stopped: true, session} with the session it logged, or
  * {stopped: false, session: null} when no timer was running.
  */
