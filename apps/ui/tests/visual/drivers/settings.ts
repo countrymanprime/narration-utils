@@ -29,7 +29,7 @@ export const settingsDrivers: Record<string, Driver> = {
   'global-proofing': async (page) => {
     await goToPage(page, 'Settings');
     await clickVisible(page, 'tab', 'Global');
-    await clickSettingsCategory(page, 'Proofing');
+    await clickSettingsCategory(page, 'Proof');
   },
   'global-storybible': async (page) => {
     await goToPage(page, 'Settings');
@@ -267,7 +267,7 @@ export const settingsDrivers: Record<string, Driver> = {
   'project-proofing': async (page) => {
     await goToPage(page, 'Settings');
     await clickVisible(page, 'tab', 'This Project');
-    await clickSettingsCategory(page, 'Proofing');
+    await clickSettingsCategory(page, 'Proof');
   },
   'project-storybible': async (page) => {
     await goToPage(page, 'Settings');
@@ -289,7 +289,7 @@ export const settingsDrivers: Record<string, Driver> = {
     await clickSettingsCategory(page, 'DAW Integration');
     // The header pill's own text is also "REAPER project linked" (it is a plain text node, not just its aria-label),
     // so wait on copy unique to the settings panel instead of the ambiguous status line.
-    await page.getByText('Tracks and Proofing read from the linked .rpp file.').waitFor();
+    await page.getByText('Tracks and Proof read from the linked .rpp file.').waitFor();
   },
   'project-daw-not-linked': async (page) => {
     // Reload with the mock's no-linked-DAW seam (see main.tsx): the project-scope DAW category (new in this phase,
@@ -300,7 +300,7 @@ export const settingsDrivers: Record<string, Driver> = {
     await clickVisible(page, 'tab', 'This Project');
     await clickSettingsCategory(page, 'DAW Integration');
     // Same ambiguity as the linked state: wait on the panel's own copy, not the header pill's identical text.
-    await page.getByText('Link a REAPER project (.rpp) file to unlock Tracks and Proofing.').waitFor();
+    await page.getByText('Link a REAPER project (.rpp) file to unlock Tracks and Proof.').waitFor();
   },
   'project-data': async (page) => {
     await goToPage(page, 'Settings');
@@ -360,8 +360,8 @@ export const settingsDrivers: Record<string, Driver> = {
   'dirty-footer': async (page) => {
     await goToPage(page, 'Settings');
     await clickVisible(page, 'tab', 'Global');
-    await clickSettingsCategory(page, 'Proofing');
-    // Proofing settings fields are <select> comboboxes, not pill buttons
+    await clickSettingsCategory(page, 'Proof');
+    // Proof settings fields are <select> comboboxes, not pill buttons
     // (that's a Setup-page-only control) - pick a different model to dirty it.
     await page.getByRole('combobox').first().selectOption('large-v3');
     // The unsaved-changes footer sits at the end of the page; bring it on screen.
@@ -370,7 +370,7 @@ export const settingsDrivers: Record<string, Driver> = {
   'navigate-away-confirm': async (page) => {
     await goToPage(page, 'Settings');
     await clickVisible(page, 'tab', 'Global');
-    await clickSettingsCategory(page, 'Proofing');
+    await clickSettingsCategory(page, 'Proof');
     await page.getByRole('combobox').first().selectOption('large-v3');
     // Leaving with unsaved changes asks first, so this click does not arrive at Home: it opens the confirm dialog.
     await clickNav(page, 'Home');
@@ -379,7 +379,7 @@ export const settingsDrivers: Record<string, Driver> = {
   'reset-override': async (page) => {
     await goToPage(page, 'Settings');
     await clickVisible(page, 'tab', 'This Project');
-    await clickSettingsCategory(page, 'Proofing');
+    await clickSettingsCategory(page, 'Proof');
     // The mock starts with no project override, so make one the way a narrator does: pick a value and save it. Only a
     // field that has an override shows Reset (the model select), and its row is the one that must not squeeze.
     await page.getByRole('combobox', { name: 'Default Whisper model' }).selectOption('large-v3');
@@ -392,7 +392,7 @@ export const settingsDrivers: Record<string, Driver> = {
     await dismissToast.click({ timeout: 1_000 }).catch(() => undefined);
     await dismissToast.waitFor({ state: 'detached' });
     // Clicking Save scrolled the panel to its footer: bring the top back so the category and its first row are in the shot.
-    await page.getByRole('heading', { level: 2, name: 'Proofing' }).scrollIntoViewIfNeeded();
+    await page.getByRole('heading', { level: 2, name: 'Proof' }).scrollIntoViewIfNeeded();
     await reset.hover();
   },
 };

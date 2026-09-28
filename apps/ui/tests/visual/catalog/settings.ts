@@ -36,7 +36,7 @@ export const settingsStates: StateEntry[] = [
       'Settings, Global scope / Recording check category (ADR 0131): the four number settings at their defaults (0.8, 3, 8, 3 words; ADR 0132), under a summary that labels them uncalibrated and states the rule they make',
     ...REFLOW,
   },
-  { page: 'settings', state: 'global-proofing', description: 'Settings, Global scope / Proofing category', ...REFLOW },
+  { page: 'settings', state: 'global-proofing', description: 'Settings, Global scope / Proof category', ...REFLOW },
   {
     page: 'settings',
     state: 'global-storybible',
@@ -214,7 +214,7 @@ export const settingsStates: StateEntry[] = [
       'Settings, Project scope / Recording check category: every setting unset in the project and inheriting its default, with the note that a blank project value uses the Global one',
     ...REFLOW,
   },
-  { page: 'settings', state: 'project-proofing', description: 'Settings, Project scope / Proofing category', ...REFLOW },
+  { page: 'settings', state: 'project-proofing', description: 'Settings, Project scope / Proof category', ...REFLOW },
   { page: 'settings', state: 'project-storybible', description: 'Settings, Project scope / Story Bible category', ...REFLOW },
   {
     page: 'settings',
