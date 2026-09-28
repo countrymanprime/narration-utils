@@ -285,7 +285,7 @@ export const settingsDrivers: Record<string, Driver> = {
     await clickSettingsCategory(page, 'DAW Integration');
     // The header pill's own text is also "REAPER project linked" (it is a plain text node, not just its aria-label),
     // so wait on copy unique to the settings panel instead of the ambiguous status line.
-    await page.getByText('Tracks and Proofing read from the linked .rpp file.').waitFor();
+    await page.getByText('Tracks and Proof read from the linked .rpp file.').waitFor();
   },
   'project-daw-not-linked': async (page) => {
     // Reload with the mock's no-linked-DAW seam (see main.tsx): the project-scope DAW category (new in this phase,
@@ -296,7 +296,7 @@ export const settingsDrivers: Record<string, Driver> = {
     await clickVisible(page, 'tab', 'This Project');
     await clickSettingsCategory(page, 'DAW Integration');
     // Same ambiguity as the linked state: wait on the panel's own copy, not the header pill's identical text.
-    await page.getByText('Link a REAPER project (.rpp) file to unlock Tracks and Proofing.').waitFor();
+    await page.getByText('Link a REAPER project (.rpp) file to unlock Tracks and Proof.').waitFor();
   },
   'project-data': async (page) => {
     await goToPage(page, 'Settings');
