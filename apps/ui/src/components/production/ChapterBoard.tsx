@@ -1,3 +1,4 @@
+import { faLayerGroup } from '@fortawesome/free-solid-svg-icons';
 import { describeApiError } from '../../api/errorMessage';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
@@ -119,12 +120,17 @@ export function ChapterBoard({
     if (!batch || batch.linked.length === 0 || lastBatchAt.current === batch.at) return;
     lastBatchAt.current = batch.at;
     const trackName = (guid: string) => trackLinks?.tracks.find((track) => track.guid === guid)?.name;
-    notify(chapterSyncBatchToastText(batch, trackName), 'info', {
-      label: 'Undo',
-      onAction: () => {
-        void Promise.all(batch.linked.map((link) => api.chapterSyncUndo(link.trackGuid))).catch((error) => notify(describeApiError(error), 'error'));
+    notify(
+      chapterSyncBatchToastText(batch, trackName),
+      'info',
+      {
+        label: 'Undo',
+        onAction: () => {
+          void Promise.all(batch.linked.map((link) => api.chapterSyncUndo(link.trackGuid))).catch((error) => notify(describeApiError(error), 'error'));
+        },
       },
-    });
+      faLayerGroup,
+    );
     void loadTrackLinks();
   }, [chapterSync?.batch, trackLinks, api, notify, loadTrackLinks]);
 
