@@ -3,10 +3,12 @@
 // has no scripting interface, so there every request reports that Audacity is not reachable.
 //
 // It declares Experimental exactly what it builds, until the owner's verification pass confirms it
-// (docs/operations/audacity-verification-pass.md): the port's navigate role (go to and loop a time) and markers role (add a label).
-// Session carries the Audacity-only operations the port has no capability for yet (import findings as labels, read them back, mark
-// one reviewed, export a chapter, write a hand-off label file). Every other capability stays NotYetAvailable with ADR 0144's
-// sentence; the review workflow's session on an Audacity launch still refuses every request with it (UnavailableReview).
+// (docs/operations/audacity-verification-pass.md): the port's navigate role (go to and loop a time), markers role (add a label),
+// and macro_render role (the mastering port's Audacity row, ADR 0306, ADR 0460: import a rendered WAV as its own track, apply the
+// narrator's chosen macro to it, export the result; macrorender.go). Session carries the Audacity-only operations the port has no
+// capability for yet (import findings as labels, read them back, mark one reviewed, export a chapter, write a hand-off label
+// file). Every other capability stays NotYetAvailable with ADR 0144's sentence; the review workflow's session on an Audacity
+// launch still refuses every request with it (UnavailableReview).
 //
 // Importing the package registers its factory for dawport.KindAudacity.
 package audacity
@@ -56,6 +58,7 @@ var declares = func() map[dawport.Capability]dawport.Level {
 	}
 	d[dawport.CapNavigate] = dawport.Experimental
 	d[dawport.CapMarkers] = dawport.Experimental
+	d[dawport.CapMacroRender] = dawport.Experimental
 	return d
 }()
 
@@ -95,11 +98,13 @@ func (a *Adapter) Kind() dawport.Kind { return dawport.KindAudacity }
 // Declares returns a copy of the declaration, the same on every call.
 func (a *Adapter) Declares() map[dawport.Capability]dawport.Level { return maps.Clone(declares) }
 
-// Role is the session for navigate and markers, and nil for everything else.
+// Role is the session for navigate and markers, the macro renderer for macro_render, and nil for everything else.
 func (a *Adapter) Role(c dawport.Capability) any {
 	switch c {
 	case dawport.CapNavigate, dawport.CapMarkers:
 		return a.session
+	case dawport.CapMacroRender:
+		return macroRender{a.client}
 	default:
 		return nil
 	}

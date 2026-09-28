@@ -32,6 +32,10 @@ const (
 	// capability that makes the engine render, so each use needs the narrator's approval in the UI (threat model row 5o).
 	CapRenderWithFX    Capability = "render_with_fx"
 	CapMasterChainRead Capability = "master_chain_read"
+	// CapMacroRender is the mastering port's Audacity row (ADR 0306, render-encode-master PRD Phase 10, ADR 0460): applies the
+	// narrator's chosen effect macro, then exports. Like render_with_fx it makes the engine act on the narrator's audio, so each
+	// use needs their approval (threat model row 14f).
+	CapMacroRender Capability = "macro_render"
 )
 
 // Needs is what a capability needs from the running engine before it can be used.
@@ -81,6 +85,7 @@ var specs = []Spec{
 	{CapItemGain, "Level matching", NeedsRunning, reflect.TypeFor[GainAdjuster]()},
 	{CapRenderWithFX, "Mastering with the project's FX", NeedsRunning, reflect.TypeFor[FXRenderer]()},
 	{CapMasterChainRead, "Master and track FX listing", NeedsRunning, reflect.TypeFor[MasterChainReader]()},
+	{CapMacroRender, "Mastering with an effect macro", NeedsRunning, reflect.TypeFor[MacroRenderer]()},
 }
 
 // Capabilities returns every capability's spec, in catalog order. The slice is the caller's own.

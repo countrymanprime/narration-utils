@@ -1,6 +1,6 @@
 # Manuscript Teleprompter
 
-**Status: Shipped (first cut).** The ASR sidecar, its Go host relay and the Booth page (which replaced the Teleprompter page and the Manuscript's Read aloud dialog, stage-navigation-and-page-replacement.prd.md Phase 4) exist. This document is the design record; open and planned work is specified in [teleprompter-engines-and-input-devices.prd.md](../prds/teleprompter-engines-and-input-devices.prd.md) and [teleprompter-manuscript-integration.prd.md](../prds/teleprompter-manuscript-integration.prd.md).
+**Status: Shipped (first cut).** The ASR sidecar, its Go host relay and the Booth page (which replaced the Teleprompter page and the Manuscript's Read aloud dialog, stage navigation Phase 4) exist. This document is the design record; open and planned work is specified in [teleprompter-engines-and-input-devices.prd.md](../prds/teleprompter-engines-and-input-devices.prd.md) and [teleprompter-manuscript-integration.prd.md](../prds/teleprompter-manuscript-integration.prd.md).
 
 ## Problem
 

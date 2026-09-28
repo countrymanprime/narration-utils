@@ -5,7 +5,7 @@
 
 ## Context
 
-[Stage navigation](../prds/stage-navigation-and-page-replacement.prd.md) Phase 2 replaces Home with the **Production home** at `/`, built to mock 01. The mock's chapter pipeline says "every cell opens that stage for the chapter", and the PRD says the board's cells open "the surfaces Home opened (recording check, stage evidence, editing check, chapter track panel) with the same slide-overs". Three things were left to the phase:
+Stage navigation and page replacement (`docs/prds/stage-navigation-and-page-replacement.prd.md`, delivered and deleted) Phase 2 replaces Home with the **Production home** at `/`, built to mock 01. The mock's chapter pipeline says "every cell opens that stage for the chapter", and the PRD says the board's cells open "the surfaces Home opened (recording check, stage evidence, editing check, chapter track panel) with the same slide-overs". Three things were left to the phase:
 
 - **Which cell opens which surface.** Home's table had a Track button, a status select with the stage suggestion under it (Confirm, Dismiss, Revert, Why), and a recording-check status button per row. The board has one cell per stage and no room for controls.
 - **Where the status override goes.** Home's status select was the narrator's way to set a chapter's stage by hand; the stage suggestion never moves a status on its own (ADR 0160). Losing it would be a lost capability (ADR 0407).
