@@ -59,3 +59,38 @@ export const DisabledChipIsNotChosen: Story = {
     await expect(args.onChange).not.toHaveBeenCalled();
   },
 };
+
+// The segmented look (the Master platform switch, mock-fidelity-primitives-and-components.prd.md Phase 5): one bordered
+// container, the chosen segment filled `--accent`, the label in its own case (title case here, not uppercase).
+export const Segmented: Story = {
+  args: {
+    label: 'Platform',
+    look: 'segmented',
+    value: 'acx',
+    options: [
+      { value: 'acx', label: 'ACX' },
+      { value: 'inaudio', label: 'iNaudio' },
+      { value: 'google-play', label: 'Google Play' },
+      { value: 'apple', label: 'Apple (M4B)' },
+      { value: 'kobo', label: 'Kobo' },
+    ],
+  },
+};
+
+export const SegmentedMeasuredShapes: Story = {
+  render: (args) => <ControlledGroup {...args} />,
+  args: Segmented.args,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const group = canvas.getByRole('group', { name: 'Platform' });
+    const chosen = within(group).getByRole('button', { name: 'ACX' });
+    const rest = within(group).getByRole('button', { name: 'Kobo' });
+    // Measured in the atlas's browser; jsdom (stories.test.tsx) lays nothing out and loads no stylesheet, so there the
+    // classes are what ToggleGroup.test.tsx pins.
+    const height = group.getBoundingClientRect().height;
+    if (height === 0) return;
+    await expect(height).toBeCloseTo(33, 0);
+    await expect(getComputedStyle(chosen).textTransform).not.toBe('uppercase');
+    await expect(getComputedStyle(chosen).backgroundColor).not.toBe(getComputedStyle(rest).backgroundColor);
+  },
+};
