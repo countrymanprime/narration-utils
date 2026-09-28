@@ -70,6 +70,36 @@ stops listening, then stops a recording this app started. The button also shows 
 linked track is the one armed in REAPER, and **Arm only** fixes that with one click. Record in REAPER is
 an experimental DAW action, off until you turn it on in Settings.
 
+### Recording with the built-in recorder
+
+You do not need a DAW to record. Above the chapter text, **Record with** chooses how this project
+records: **REAPER** (the default) or the **Built-in recorder**, which is **Experimental**. The choice is
+saved with the project, and the engine chip in the header then reads "Built-in recorder". It works on
+Windows only; elsewhere the choice is greyed out and says why.
+
+With the built-in recorder chosen:
+
+- **Recorder input** lists the input devices it can open, in the same picker the reading microphone uses.
+  Pick your microphone or interface. **Check level** shows its level before you record, without saving
+  anything; press it again to stop.
+- **Record** in the reading controls, where Record in REAPER was, starts a take. It turns into **REC 00:00**,
+  counting, and the status line reads "REC · Built-in", with the input meter, its peak ("−14.2 pk") and the
+  take's number ("Built-in · take 4"). Press it again to stop. Recording and reading are separate: you can
+  record with or without the prompter listening.
+- Every take is saved as a WAV file in the project's **Recordings** folder (`Take 001.wav`, `Take 002.wav`,
+  and so on), at your device's own sample rate in 24-bit, so you can drag it into a DAW later. A take is
+  written as `Take 004.partial.wav` while it records and gets its name only when it is finished. The app
+  never overwrites, edits or deletes a take.
+- **Takes** at the top of the rail lists them, newest first, with their total length. Press a take's play
+  button to hear it. A take marked **Unfinished** is one the app could not finish (it or the device stopped
+  unexpectedly); it still plays up to the last second saved. If a take ends on its own, or loses audio,
+  Takes says so once.
+- Listen through your interface's own direct monitoring: the app meters the input but does not play it
+  back to you while you record.
+
+Leaving the Booth stops a take and saves it. The built-in recorder is new: tell us how it behaves with your
+microphone, and keep a DAW to hand for anything important until it leaves Experimental.
+
 ## Reading
 
 Press Play (or Space, when focus is not in a field, button or other control) to begin at the top of the

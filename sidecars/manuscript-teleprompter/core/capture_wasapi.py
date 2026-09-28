@@ -19,10 +19,10 @@ and the one thing the dshow row cannot:
   (`narration_common.recording.Recorder`).
 
 It is **Experimental** (`LEVEL`): built and tested against a faked `sounddevice`, measured on CI's Windows runner, not yet
-through the owner's check with a real microphone (#510). Nothing calls it yet except the capabilities report; the Booth's
-"Built-in recorder" (PRD Phase 2) is its first caller. It opens only the local device and writes only the file it is
+through the owner's check with a real microphone (#510). The Booth's "Built-in recorder" (PRD Phase 2, ADR 0455) calls it
+through live_asr.py's --record, --meter and --list-devices with --capture wasapi. It opens only the local device and writes only the file it is
 given: no network, no telemetry (D72). `sounddevice` is imported only when a device is listed or opened; in a build or on
-a host without it (Linux, and the frozen sidecar until Phase 2 stops excluding it) listing says so in a sentence.
+a host without it (Linux) listing says so in a sentence.
 """
 
 import queue
