@@ -112,7 +112,7 @@ These were run on `main` at `6677fec` in this container's Chromium (1194), on 20
 | `delivery-platform-profiles/10-measured-failing-tablet-768.webp` | master/file-rules | 768×1024 | dark | 90.06 | 11.88 | Delivery became Master & QC (benchmark 05 wins where they disagree); badge fills and heights differ | Master per-file checks, StatusBadge |
 | `delivery-platform-profiles/02-measured-pass-acx.webp` | master/measured | 1440×900 | dark | 90.46 | 15.85 | As delivery-platform-profiles/10 | Master per-file checks, StatusBadge |
 | `delivery-platform-profiles/09-settings-picker-reflow-390.webp` | settings/project-delivery | 390×1100 | dark | 90.46 | 19.44 | As delivery-platform-profiles/10 | Master per-file checks, StatusBadge |
-| `app-navigation-and-zoom-controls/06-tablet-768-both-enabled-zoom-150.webp` | shell/history-forward | 768×420 | dark | 90.78 | 15.43 | Rail 224 px and 41.6 px items (spec 216 / 34); header 56 px (spec 52); chips 28 px (spec 21) | Nav rail and header (P8) |
+| `app-navigation-and-zoom-controls/06-tablet-768-both-enabled-zoom-150.webp` | shell / history-forward | 768×420 | dark | 90.78 | 15.43 | Rail 224 px and 41.6 px items (spec 216 / 34); header 56 px (spec 52); chips 28 px (spec 21) | Nav rail and header (P8) |
 | `delivery-platform-profiles/01-profile-panel-acx-rules-and-sources.webp` | master/profile-rules | 1216×1400 | dark | 91.19 | 14.40 | As delivery-platform-profiles/10 | Master per-file checks, StatusBadge |
 | `home-combined/02-home-after-summary-open.webp` | production/recording-check-complete | 1440×900 | dark | 91.55 | 18.68 | Recording check slide-over over today's Production | SlideOver (P7) |
 | `delivery-platform-profiles/03-measured-failing-acx.webp` | master/file-rules | 1440×900 | dark | 91.78 | 15.49 | As delivery-platform-profiles/10 | Master per-file checks, StatusBadge |
@@ -127,7 +127,7 @@ These were run on `main` at `6677fec` in this container's Chromium (1194), on 20
 | `chapter-track-link-control/05-slideover-track-missing.webp` | production/chapter-track-panel-missing | 1440×900 | dark | 92.73 | 18.35 | Slide-over draws a backdrop (mock: none) and 38 px buttons; dl rows | SlideOver (P7), Button |
 | `chapter-track-link-control/03-slideover-ambiguous.webp` | production/chapter-track-panel-ambiguous | 1440×900 | dark | 92.76 | 16.90 | As chapter-track-link-control/05 | SlideOver (P7), Button |
 | `edit-and-proof-workspace/01a-entry-open-workspace-from-tracks.webp` | engine/default | 1440×900 | dark | 92.76 | 19.71 | As edit-and-proof-workspace/02 | Toolbar/transport (P10), Proof chapter view |
-| `app-navigation-and-zoom-controls/02-desktop-back-enabled-zoom-125.webp` | shell/zoom-level | 1440×900 | dark | 92.83 | 28.18 | As app-navigation-and-zoom-controls/06 | Nav rail and header (P8) |
+| `app-navigation-and-zoom-controls/02-desktop-back-enabled-zoom-125.webp` | shell / zoom-level | 1440×900 | dark | 92.83 | 28.18 | As app-navigation-and-zoom-controls/06 | Nav rail and header (P8) |
 | `chapter-track-link-control/02-slideover-linked.webp` | production/chapter-track-panel-linked | 1440×900 | dark | 92.90 | 18.26 | As chapter-track-link-control/05 | SlideOver (P7), Button |
 | `app-navigation-and-zoom-controls/01a-header-crop-default.webp` | production/on-pace | 1440×110 | dark | 92.95 | 33.55 | As app-navigation-and-zoom-controls/06 | Nav rail and header (P8) |
 | `daw-chapter-track-auto-sync/02-needs-you-list-tracks-page.webp` | engine/sync-activity | 1440×900 | dark | 93.34 | 21.94 | Dialog body colour and action grouping; toast drawn on --surface (mock: inverted, --text fill) | Dialog, Toast (P7) |
@@ -138,7 +138,7 @@ These were run on `main` at `6677fec` in this container's Chromium (1194), on 20
 | `manuscript-chapter-header-alignment/01-after.webp` | script/chapter-header-columns | 1440×900 | dark | 93.87 | 19.79 | As manuscript-combined/01 | Script page (P15), Panel |
 | `chapter-track-link-control/06-remove-from-recording-confirm.webp` | production/chapter-remove-confirm | 1440×900 | dark | 94.06 | 27.42 | As chapter-track-link-control/05 | SlideOver (P7), Button |
 | `manuscript-credits-card-parity/05-read-aloud-dialog-opening-credits.webp` | booth/credits-opening | 1440×900 | dark | 94.19 | 16.16 | As manuscript-combined/01 | Script page (P15), Panel |
-| `app-navigation-and-zoom-controls/02a-header-crop-back-enabled-zoom-125.webp` | shell/zoom-level | 1440×110 | dark | 94.69 | 40.00 | As app-navigation-and-zoom-controls/06 | Nav rail and header (P8) |
+| `app-navigation-and-zoom-controls/02a-header-crop-back-enabled-zoom-125.webp` | shell / zoom-level | 1440×110 | dark | 94.69 | 40.00 | As app-navigation-and-zoom-controls/06 | Nav rail and header (P8) |
 | `credits-token-setup-and-front-matter-detection/01-setup-dialog-on-open.webp` | production/credits-setup-dialog | 1440×900 | dark | 95.59 | 20.90 | Dialog frame close to the mock; chip and button heights | Dialog (P7), StatusBadge |
 | `input-commands-and-pedals/03-settings-global-keyboard-conflict.webp` | settings/global-keyboard-conflict | 1440×900 | dark | 95.86 | 25.85 | As input-commands-and-pedals/05 | Kbd (P10) |
 | `input-commands-and-pedals/04-shortcut-sheet.webp` | global/shortcut-sheet | 1440×900 | dark | 95.86 | 19.54 | As input-commands-and-pedals/05 | Kbd (P10) |
