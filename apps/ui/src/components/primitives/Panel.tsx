@@ -1,5 +1,7 @@
 import { useId, type ReactNode } from 'react';
-import { PANEL_BODY_CLASS, PANEL_FRAME_CLASS, PANEL_HEADER_CLASS, PANEL_SUBTITLE_CLASS, PANEL_TITLE_CLASS } from './panelStyles';
+import { PANEL_BODY_CLASS, PANEL_CAPS_TITLE_CLASS, PANEL_FRAME_CLASS, PANEL_HEADER_CLASS, PANEL_SUBTITLE_CLASS, PANEL_TITLE_CLASS } from './panelStyles';
+
+type PanelTitleStyle = 'card' | 'caps';
 
 type PanelLook = {
   children: ReactNode;
@@ -13,18 +15,19 @@ type PanelLook = {
   className?: string;
 };
 
-// `subtitle`, `leading` and `actions` sit in the header row, so they need a title. A bare panel may still be named by
-// `label` when a visible title would repeat what is already on screen.
+// `titleStyle="caps"` is the dark Settings mocks' category title. `subtitle`, `leading` and `actions` sit in the header
+// row, so they need a title. A bare panel may still be named by `label` when a visible title would repeat what is already
+// on screen.
 type PanelProps = PanelLook &
   (
-    | { title?: undefined; subtitle?: undefined; leading?: undefined; actions?: undefined; label?: string }
-    | { title: string; subtitle?: ReactNode; leading?: ReactNode; actions?: ReactNode; label?: undefined }
+    | { title?: undefined; titleStyle?: undefined; subtitle?: undefined; leading?: undefined; actions?: undefined; label?: string }
+    | { title: string; titleStyle?: PanelTitleStyle; subtitle?: ReactNode; leading?: ReactNode; actions?: ReactNode; label?: undefined }
   );
 
 // A card around a group of content (ADR 0058, the look ADR 0640). With a `title` it is a named region: the title is a
 // level-2 heading (a panel sits beneath the page's level-1 heading) in a header row with a divider under it, and the
 // section is labelled by it, so a screen reader can list and jump to it. Without one it is the bare card.
-export function Panel({ title, subtitle, leading, actions, label, flush = false, scroll = false, tone, className = '', children }: PanelProps) {
+export function Panel({ title, titleStyle, subtitle, leading, actions, label, flush = false, scroll = false, tone, className = '', children }: PanelProps) {
   const titleId = useId();
   const layout = scroll ? 'flex flex-col overflow-hidden' : '';
   return (
@@ -34,7 +37,7 @@ export function Panel({ title, subtitle, leading, actions, label, flush = false,
       className={`${PANEL_FRAME_CLASS} ${layout} ${className}`}
       style={tone === 'review' ? { borderColor: 'var(--review)' } : undefined}
     >
-      {title && <PanelHeader title={title} titleId={titleId} subtitle={subtitle} leading={leading} actions={actions} />}
+      {title && <PanelHeader title={title} titleId={titleId} titleStyle={titleStyle} subtitle={subtitle} leading={leading} actions={actions} />}
       <div className={`${flush ? '[--panel-pad:0px]' : PANEL_BODY_CLASS} ${scroll ? 'min-h-0 flex-1 overflow-y-auto' : ''}`}>{children}</div>
     </section>
   );
@@ -46,21 +49,23 @@ export function Panel({ title, subtitle, leading, actions, label, flush = false,
 export function PanelHeader({
   title,
   titleId,
+  titleStyle = 'card',
   subtitle,
   leading,
   actions,
 }: {
   title: string;
   titleId?: string;
+  titleStyle?: PanelTitleStyle;
   subtitle?: ReactNode;
   leading?: ReactNode;
   actions?: ReactNode;
 }) {
   return (
     <div className={PANEL_HEADER_CLASS}>
-      <div className="flex min-w-0 flex-wrap items-baseline gap-x-2.5 gap-y-1">
+      <div className="flex min-w-0 flex-1 flex-wrap items-baseline gap-x-2.5 gap-y-1">
         {leading && <span className="flex items-center gap-2 self-center">{leading}</span>}
-        <h2 id={titleId} className={PANEL_TITLE_CLASS}>
+        <h2 id={titleId} className={titleStyle === 'caps' ? PANEL_CAPS_TITLE_CLASS : PANEL_TITLE_CLASS}>
           {title}
         </h2>
         {subtitle && <div className={PANEL_SUBTITLE_CLASS}>{subtitle}</div>}

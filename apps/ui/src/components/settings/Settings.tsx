@@ -254,7 +254,11 @@ export function Settings({
             ))}
           </TabList>
           <TabPanel value={category} className={`${PANEL_FRAME_CLASS} min-h-0 overflow-visible md:overflow-auto`}>
-            <PanelHeader title={active?.label ?? ''} subtitle={scope === 'global' ? 'Global defaults' : 'This Project — falls back to Global where unset'} />
+            <PanelHeader
+              title={active?.label ?? ''}
+              titleStyle="caps"
+              subtitle={scope === 'global' ? 'Global defaults' : 'This Project — falls back to Global where unset'}
+            />
             <div className="p-4">
               {loadError && (
                 <div className="mb-4 rounded-md p-3 text-sm" role="alert" style={{ background: 'var(--review-soft)', color: 'var(--danger-text)' }}>

@@ -381,3 +381,25 @@ export const HeaderOnItsOwn: Story = {
     await expect(within(canvasElement).getByRole('group', { name: 'Keyboard' })).toBeVisible();
   },
 };
+
+// The dark Settings mocks' category title: Barlow 17 px, uppercase, tracked. The subtitle keeps to the title's line and
+// wraps in its own box before it drops under the title.
+export const CapsTitle: Story = {
+  render: () => (
+    <div className="space-y-4">
+      <Heading title="Settings" />
+      <Panel title="Delivery" titleStyle="caps" subtitle="This Project — falls back to Global where unset">
+        <p className="text-sm">Delivery profile for this project</p>
+      </Panel>
+    </div>
+  ),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const title = canvas.getByRole('heading', { level: 2, name: 'Delivery' });
+    const subtitle = canvas.getByText(/falls back to Global/);
+    if (!(await laidOut(canvasElement))) return;
+    await expect(getComputedStyle(title).fontSize).toBe('17px');
+    await expect(getComputedStyle(title).textTransform).toBe('uppercase');
+    await expect(px(subtitle.getBoundingClientRect().left - title.getBoundingClientRect().right)).toBe(10);
+  },
+};
