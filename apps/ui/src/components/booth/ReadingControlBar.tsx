@@ -1,5 +1,5 @@
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faCircleDot, faCrosshairs, faGear, faLock, faMicrophone, faPause, faPlay, faRotate, faStop, faXmark } from '@fortawesome/free-solid-svg-icons';
+import { faCircleDot, faCrosshairs, faGear, faLock, faMicrophone, faRotate, faStop, faXmark } from '@fortawesome/free-solid-svg-icons';
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useCommand } from '../../input/useCommand';
@@ -7,9 +7,11 @@ import { useCapability } from '../../useCapability';
 import { Button } from '../primitives/Button';
 import { CapabilityGate, type CapabilityEntry } from '../primitives/CapabilityGate';
 import { IconButton } from '../primitives/IconButton';
+import { KeyHint } from '../primitives/KeyHint';
 import { LevelMeter } from '../primitives/LevelMeter';
 import { Popover } from '../primitives/Popover';
 import { ToggleGroup } from '../primitives/ToggleGroup';
+import { Toolbar, ToolbarButton } from '../primitives/Toolbar';
 import { TooltipTarget } from '../primitives/Tooltip';
 import { clockText } from './boothProgress';
 import { MicrophoneField } from './MicrophoneField';
@@ -111,26 +113,48 @@ function ReaperStateIndicator({
   const capability: CapabilityEntry = record.available ? { ...record, message: state?.message ?? error ?? 'Checking REAPER…' } : record;
   const armLabel = chapterTitle ? `Arm "${chapterTitle}" only` : 'Arm this chapter only';
   return (
+    // A group of up to three toolbar items, not one control, so each is its own `ToolbarButton` rather than the group as a
+    // whole: `CapabilityGate` gates the main toggle by cloning props onto it (Q7's disabled/aria-describedby wiring), which
+    // only reaches the real `Button` when `ToolbarButton` wraps that `CapabilityGate` from the outside (its own `render`
+    // merge lands on `CapabilityGate` itself, which ignores it harmlessly) rather than being nested inside it.
     <div className="flex items-center gap-1">
-      <CapabilityGate capability={capability}>
-        <Button aria-label={label} aria-pressed={recording.enabled} variant="secondary" className="max-w-[9rem] lg:max-w-[13rem]" onClick={recording.toggle}>
-          <FontAwesomeIcon icon={faCircleDot} className={rec || state?.recording ? 'text-[var(--danger-text)]' : undefined} />
-          {rec ? (
-            <span className="font-['IBM_Plex_Mono',ui-monospace,monospace] text-xs whitespace-nowrap text-[var(--danger-text)] normal-case">{rec}</span>
-          ) : (
-            <span className="hidden truncate lg:inline">{statusText ?? 'Record in REAPER'}</span>
-          )}
-        </Button>
-      </CapabilityGate>
+      <ToolbarButton
+        render={
+          <CapabilityGate capability={capability}>
+            <Button
+              aria-label={label}
+              aria-pressed={recording.enabled}
+              variant="secondary"
+              className="max-w-[9rem] lg:max-w-[13rem]"
+              onClick={recording.toggle}
+            >
+              <FontAwesomeIcon icon={faCircleDot} className={rec || state?.recording ? 'text-[var(--danger-text)]' : undefined} />
+              {rec ? (
+                <span className="font-['IBM_Plex_Mono',ui-monospace,monospace] text-xs whitespace-nowrap text-[var(--danger-text)] normal-case">{rec}</span>
+              ) : (
+                <span className="hidden truncate lg:inline">{statusText ?? 'Record in REAPER'}</span>
+              )}
+            </Button>
+          </CapabilityGate>
+        }
+      />
       {recording.enabled && state && ARMABLE_STATUSES.has(state.status) && (
-        <Button aria-label={armLabel} variant="secondary" onClick={() => void recording.armOnly().then(refresh)} disabled={recording.armPending}>
-          <FontAwesomeIcon icon={faLock} />
-          <span className="hidden lg:inline">Arm only</span>
-        </Button>
+        <ToolbarButton
+          render={
+            <Button aria-label={armLabel} variant="secondary" onClick={() => void recording.armOnly().then(refresh)} disabled={recording.armPending}>
+              <FontAwesomeIcon icon={faLock} />
+              <span className="hidden lg:inline">Arm only</span>
+            </Button>
+          }
+        />
       )}
-      <IconButton label="Refresh REAPER state" onClick={refresh}>
-        <FontAwesomeIcon icon={faRotate} className="text-[0.7rem]" />
-      </IconButton>
+      <ToolbarButton
+        render={
+          <IconButton label="Refresh REAPER state" onClick={refresh}>
+            <FontAwesomeIcon icon={faRotate} className="text-[0.7rem]" />
+          </IconButton>
+        }
+      />
     </div>
   );
 }
@@ -157,6 +181,12 @@ function useElapsedSeconds(since: number | undefined): number | undefined {
  * Play and Stop orchestrate `recording` (Phase 7, Q8): with the toggle on, Play asks REAPER to start recording first and
  * only starts listening once it confirms; a refusal or timeout shows why instead (`recording.error`, in the status line)
  * and nothing starts. Stop always stops listening, then stops a recording this app started.
+ *
+ * The bar composes the `Toolbar`/`ToolbarButton` primitives for its roving-tabindex toolbar semantics
+ * (mock-fidelity-primitives-and-components.prd.md Phase 13, mock 03's command bar) rather than a hand-rolled
+ * `role="toolbar"`, and gives Play/Pause's real Space shortcut a `KeyHint` (23 px cap) so it reads the way the mock's
+ * key-cap-plus-label pairs do; BO10's other labelled actions (Punch & roll, Back one sentence, Flag, Mark pickup) stay out
+ * because they have no bound command yet (booth-actions-enablement/input-commands own that).
  */
 export function ReadingControlBar({ session: t, follow, startPoint, chapterId, chapterTitle, chapterShortTitle, recording = NO_RECORDING, recorder }: Props) {
   const [micOpen, setMicOpen] = useState(false);
@@ -192,24 +222,41 @@ export function ReadingControlBar({ session: t, follow, startPoint, chapterId, c
   const modelOptions = MODELS.map((option) => ({ value: option.value, label: option.label, title: option.caption, disabled: t.active }));
 
   return (
-    <div role="toolbar" aria-label="Reading controls" className="flex flex-wrap items-center gap-x-4 gap-y-2 px-4 py-2.5">
+    // ≈64 px total (mock 03's command bar): a 32 px `Button`/`IconButton` row (`--button-height`) inside 16 px top/bottom
+    // padding, plain Tailwind utilities rather than a new token (only Phase 0b may add one to styles.css).
+    <Toolbar label="Reading controls" gapClassName="gap-x-4 gap-y-2" className="flex-wrap p-4">
       <div className="flex items-center gap-2">
+        {/* `ToolbarButton` nests inside `TooltipTarget` here, not the other way round: `TooltipTarget` only ever nests its
+            child as plain React children (never clones props onto it), so the real `Button` still gets the toolbar's roving
+            tabindex/ARIA membership from `ToolbarButton`'s own `render` merge, while the disabled-reason hint keeps working. */}
         <TooltipTarget text={t.active ? playPauseLabel : t.startReason}>
-          <Button aria-label={playPauseLabel} aria-pressed={listening} onClick={onPlayPause} disabled={playPauseDisabled}>
-            <FontAwesomeIcon icon={listening ? faPause : faPlay} />
-            <span className="hidden lg:inline">{playPauseLabel}</span>
-          </Button>
+          <ToolbarButton
+            render={
+              <Button aria-label={playPauseLabel} aria-pressed={listening} onClick={onPlayPause} disabled={playPauseDisabled}>
+                {/* The real, already-wired Space shortcut (`useCommand('reading.toggle', ...)` above), shown the way mock
+                    03's command bar shows every action: a key cap beside its label (Phase 10's `KeyHint`, 23 px in the
+                    command bar per `Kbd.tsx`). No other row here gets one - BO10's Punch & roll/Back one sentence/Flag/Mark
+                    pickup keys have no bound command yet (booth-actions-enablement/input-commands), so inventing caps for
+                    them would show a shortcut that does not exist. */}
+                <KeyHint keys={['Space']} action={playPauseLabel} size="md" />
+              </Button>
+            }
+          />
         </TooltipTarget>
-        <Button
-          aria-label="Stop reading"
-          variant="danger"
-          className={finishedRecording ? 'bg-[var(--badge-danger-fill)] ring-2 ring-[var(--danger)] ring-offset-1 ring-offset-[var(--surface)]' : undefined}
-          onClick={onStop}
-          disabled={(!t.active && !recording.recording) || t.host.phase === 'stopping'}
-        >
-          <FontAwesomeIcon icon={faStop} />
-          <span className="hidden lg:inline">Stop reading</span>
-        </Button>
+        <ToolbarButton
+          render={
+            <Button
+              aria-label="Stop reading"
+              variant="danger"
+              className={finishedRecording ? 'bg-[var(--badge-danger-fill)] ring-2 ring-[var(--danger)] ring-offset-1 ring-offset-[var(--surface)]' : undefined}
+              onClick={onStop}
+              disabled={(!t.active && !recording.recording) || t.host.phase === 'stopping'}
+            >
+              <FontAwesomeIcon icon={faStop} />
+              <span className="hidden lg:inline">Stop reading</span>
+            </Button>
+          }
+        />
       </div>
 
       <div className="order-first min-w-0 basis-full text-sm lg:order-none lg:flex-1 lg:basis-auto">
@@ -245,6 +292,9 @@ export function ReadingControlBar({ session: t, follow, startPoint, chapterId, c
       </div>
 
       {!t.active && startPoint && (
+        // Not a `StatusBadge`/`Badge`: its label is a quoted sentence fragment in normal running text (not a short
+        // Barlow-Condensed-uppercase tag like "Pickup"), and it needs an interactive icon button nested inside it to clear
+        // the point, which `Badge`'s API (a plain `label`/`icon`, or the whole badge as one `onClick`) has no room for.
         <span className="inline-flex max-w-[16rem] items-center gap-1.5 rounded-full border px-3 py-1 text-xs" style={{ borderColor: 'var(--border)' }}>
           <span className="truncate">Starts at &lsquo;{startPoint.label}&rsquo;</span>
           <IconButton label="Clear start point" onClick={startPoint.onClear} className="size-4 border-0 bg-transparent p-0 hover:bg-transparent">
@@ -255,80 +305,100 @@ export function ReadingControlBar({ session: t, follow, startPoint, chapterId, c
 
       {t.active && (
         // Always shown while a session runs, so it is where the narrator expects it; enabled only while following is paused.
-        <Button aria-label="Follow" variant="secondary" onClick={follow.resume} disabled={follow.following}>
-          <FontAwesomeIcon icon={faCrosshairs} />
-          <span className="hidden lg:inline">Follow</span>
-        </Button>
+        <ToolbarButton
+          render={
+            <Button aria-label="Follow" variant="secondary" onClick={follow.resume} disabled={follow.following}>
+              <FontAwesomeIcon icon={faCrosshairs} />
+              <span className="hidden lg:inline">Follow</span>
+            </Button>
+          }
+        />
       )}
 
       <div className="ml-auto flex items-center gap-2">
-        <Popover
-          label="Microphone"
-          side="top"
-          open={micOpen}
-          onOpenChange={setMicOpen}
-          trigger={
-            <Button aria-label={micLabel} variant="secondary" className="max-w-[9rem] lg:max-w-[13rem]">
-              <FontAwesomeIcon icon={faMicrophone} />
-              <span className="truncate">{t.device || 'Choose a microphone…'}</span>
-              <LevelMeter label="Input level" peak={level?.peak ?? null} rms={level?.rms ?? null} decorative size="compact" className="w-8 flex-none" />
-            </Button>
+        {/* The microphone and settings popovers wrap in `ToolbarButton` from the outside (`render={<Popover .../>}`), not
+            the other way round: `Popover` needs its own `trigger` prop, which it clones its open/close props onto directly
+            (the same mechanism `ToolbarButton` itself uses for `render`), so nesting a `ToolbarButton` inside that `trigger`
+            would have `Popover` merge onto `ToolbarButton`'s own narrow prop set instead of the button, dropping the click
+            handler that opens it (verified against this file's own popover-opens test before committing to this shape).
+            Wrapping the whole `Popover` in `ToolbarButton` keeps the popover's own trigger wiring untouched - only the
+            toolbar's own roving-tabindex props land on `Popover` and are harmlessly unused, same trade-off `RecordButton`
+            below takes. */}
+        <ToolbarButton
+          render={
+            <Popover
+              label="Microphone"
+              side="top"
+              open={micOpen}
+              onOpenChange={setMicOpen}
+              trigger={
+                <Button aria-label={micLabel} variant="secondary" className="max-w-[9rem] lg:max-w-[13rem]">
+                  <FontAwesomeIcon icon={faMicrophone} />
+                  <span className="truncate">{t.device || 'Choose a microphone…'}</span>
+                  <LevelMeter label="Input level" peak={level?.peak ?? null} rms={level?.rms ?? null} decorative size="compact" className="w-8 flex-none" />
+                </Button>
+              }
+            >
+              <div className="w-72 space-y-2">
+                <MicrophoneField
+                  value={t.device}
+                  onChange={t.changeDevice}
+                  devices={t.devices}
+                  error={t.devicesError}
+                  onRefresh={t.loadDevices}
+                  refreshing={t.devicesLoading}
+                />
+                <LevelMeter label="Input level" peak={level?.peak ?? null} rms={level?.rms ?? null} />
+                {levelError && (
+                  <p role="alert" className="text-xs" style={{ color: 'var(--danger-text)' }}>
+                    {levelError}
+                  </p>
+                )}
+              </div>
+            </Popover>
           }
-        >
-          <div className="w-72 space-y-2">
-            <MicrophoneField
-              value={t.device}
-              onChange={t.changeDevice}
-              devices={t.devices}
-              error={t.devicesError}
-              onRefresh={t.loadDevices}
-              refreshing={t.devicesLoading}
-            />
-            <LevelMeter label="Input level" peak={level?.peak ?? null} rms={level?.rms ?? null} />
-            {levelError && (
-              <p role="alert" className="text-xs" style={{ color: 'var(--danger-text)' }}>
-                {levelError}
-              </p>
-            )}
-          </div>
-        </Popover>
+        />
 
         {recorder?.builtin ? (
-          <RecordButton recorder={recorder} />
+          <ToolbarButton render={<RecordButton recorder={recorder} />} />
         ) : (
           chapterId && <ReaperStateIndicator chapterId={chapterId} chapterTitle={chapterTitle} chapterShortTitle={chapterShortTitle} recording={recording} />
         )}
 
-        <Popover
-          label="Settings"
-          side="top"
-          align="end"
-          trigger={
-            <IconButton label="Settings">
-              <FontAwesomeIcon icon={faGear} />
-            </IconButton>
-          }
-        >
-          <div className="flex w-64 flex-col gap-3">
-            {engineOptions.length > 1 && (
-              <div>
-                <span className={LABEL_CLASS}>Engine</span>
-                <ToggleGroup label="Engine" className="mt-1.5 flex-wrap gap-1.5" value={t.engine} onChange={t.changeEngine} options={engineOptions} />
+        <ToolbarButton
+          render={
+            <Popover
+              label="Settings"
+              side="top"
+              align="end"
+              trigger={
+                <IconButton label="Settings">
+                  <FontAwesomeIcon icon={faGear} />
+                </IconButton>
+              }
+            >
+              <div className="flex w-64 flex-col gap-3">
+                {engineOptions.length > 1 && (
+                  <div>
+                    <span className={LABEL_CLASS}>Engine</span>
+                    <ToggleGroup label="Engine" className="mt-1.5 flex-wrap gap-1.5" value={t.engine} onChange={t.changeEngine} options={engineOptions} />
+                  </div>
+                )}
+                <div>
+                  <span className={LABEL_CLASS}>{engineOptions.length > 1 ? 'Model' : `${ENGINE_LABELS[t.engine]} model`}</span>
+                  <ToggleGroup label="Model" className="mt-1.5 flex-wrap gap-1.5" value={t.model} onChange={t.changeModel} options={modelOptions} />
+                </div>
+                <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
+                  Used everywhere the app listens.{' '}
+                  <Link to="/settings#booth" className="underline">
+                    More in Settings
+                  </Link>
+                </p>
               </div>
-            )}
-            <div>
-              <span className={LABEL_CLASS}>{engineOptions.length > 1 ? 'Model' : `${ENGINE_LABELS[t.engine]} model`}</span>
-              <ToggleGroup label="Model" className="mt-1.5 flex-wrap gap-1.5" value={t.model} onChange={t.changeModel} options={modelOptions} />
-            </div>
-            <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
-              Used everywhere the app listens.{' '}
-              <Link to="/settings#booth" className="underline">
-                More in Settings
-              </Link>
-            </p>
-          </div>
-        </Popover>
+            </Popover>
+          }
+        />
       </div>
-    </div>
+    </Toolbar>
   );
 }
