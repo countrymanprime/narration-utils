@@ -19,6 +19,8 @@ import type { RecordInReaperState } from './useRecordInReaper';
 import type { FollowCursor } from './useFollowCursor';
 import { ENGINE_LABELS, MODELS, type TeleprompterSession } from './useTeleprompterSession';
 import type { ReadAloudReaperState } from '../../types';
+import { RecordButton } from './BuiltinRecorder';
+import type { Recorder } from './useRecorder';
 
 const LABEL_CLASS = 'block text-[0.82rem] font-medium text-[var(--text-muted)]';
 
@@ -42,6 +44,8 @@ type Props = {
   /** The Record-in-REAPER toggle's state and Play/Stop orchestration (Phase 7, `useRecordInReaper`), owned by
    * BoothSession since its own "Stop reading?" confirm also needs to stop a recording this app started. */
   recording?: RecordInReaperState;
+  /** The built-in recorder (native-recording-suite Phase 2): with the project on it, its Record toggle replaces Record in REAPER. */
+  recorder?: Recorder;
 };
 
 // A do-nothing RecordInReaperState for a caller that passes no `recording` (the Booth always passes one; this keeps the
@@ -154,7 +158,7 @@ function useElapsedSeconds(since: number | undefined): number | undefined {
  * only starts listening once it confirms; a refusal or timeout shows why instead (`recording.error`, in the status line)
  * and nothing starts. Stop always stops listening, then stops a recording this app started.
  */
-export function ReadingControlBar({ session: t, follow, startPoint, chapterId, chapterTitle, chapterShortTitle, recording = NO_RECORDING }: Props) {
+export function ReadingControlBar({ session: t, follow, startPoint, chapterId, chapterTitle, chapterShortTitle, recording = NO_RECORDING, recorder }: Props) {
   const [micOpen, setMicOpen] = useState(false);
   const { level, error: levelError } = useInputLevel(t.device, { active: t.active, enabled: micOpen });
   // While a session runs, listening is either live (Pause) or held (Play resumes it, Q3); while idle, Play starts one.
@@ -289,7 +293,11 @@ export function ReadingControlBar({ session: t, follow, startPoint, chapterId, c
           </div>
         </Popover>
 
-        {chapterId && <ReaperStateIndicator chapterId={chapterId} chapterTitle={chapterTitle} chapterShortTitle={chapterShortTitle} recording={recording} />}
+        {recorder?.builtin ? (
+          <RecordButton recorder={recorder} />
+        ) : (
+          chapterId && <ReaperStateIndicator chapterId={chapterId} chapterTitle={chapterTitle} chapterShortTitle={chapterShortTitle} recording={recording} />
+        )}
 
         <Popover
           label="Settings"

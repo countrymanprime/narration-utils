@@ -1,0 +1,16 @@
+{
+  "device": "",
+  "engine": "daw",
+  "folder": "",
+  "hasProject": false,
+  "last": null,
+  "message": "",
+  "phase": "idle",
+  "startedAt": null,
+  "support": {
+    "available": true,
+    "level": "experimental"
+  },
+  "take": null,
+  "takes": []
+}
