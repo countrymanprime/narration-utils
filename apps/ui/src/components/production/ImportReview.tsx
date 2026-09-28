@@ -73,7 +73,6 @@ export function ImportSummary({
     </>
   );
 }
-
 type ImportReviewProps = {
   preview: ManuscriptImportPreview;
   selection: ManuscriptImportSelection;
@@ -247,13 +246,12 @@ export function ImportReview({
                 <p className="mb-2 text-xs text-[var(--text-muted)]">Checked names become reviewable Character entries after import.</p>
                 <div className="mb-2 flex gap-2">
                   <Button
-                    variant="ghost"
-                    className="text-xs"
+                    variant="secondary"
                     onClick={() => onSelectionChange((current) => ({ ...current, characterCandidateIds: candidates.map((item) => item.id) }))}
                   >
                     Select all
                   </Button>
-                  <Button variant="ghost" className="text-xs" onClick={() => onSelectionChange((current) => ({ ...current, characterCandidateIds: [] }))}>
+                  <Button variant="secondary" onClick={() => onSelectionChange((current) => ({ ...current, characterCandidateIds: [] }))}>
                     Select none
                   </Button>
                 </div>

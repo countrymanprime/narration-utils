@@ -147,7 +147,7 @@ export function PlanPanel({ onSaved }: { onSaved: () => void }) {
                 <Field label="Note" value={milestone.note ?? ''} onChange={(note) => change(index, { note })} />
               </div>
               <Button
-                variant="ghost"
+                variant="secondary"
                 className="mt-3 justify-self-start"
                 aria-label={`Remove ${milestone.name.trim() || `milestone ${index + 1}`}`}
                 onClick={() => setMilestones((current) => current.filter((_, at) => at !== index))}
@@ -159,10 +159,10 @@ export function PlanPanel({ onSaved }: { onSaved: () => void }) {
         </ul>
       )}
       <div className="mt-3 flex flex-wrap gap-2">
-        <Button variant="ghost" disabled={!loaded} onClick={() => setMilestones((current) => [...current, { name: '', dueDate: '' }])}>
+        <Button variant="secondary" disabled={!loaded} onClick={() => setMilestones((current) => [...current, { name: '', dueDate: '' }])}>
           Add milestone
         </Button>
-        <Button variant="ghost" disabled={!loaded || hasCheckpoint} onClick={() => setMilestones((current) => [...current, { ...ACX_CHECKPOINT }])}>
+        <Button variant="secondary" disabled={!loaded || hasCheckpoint} onClick={() => setMilestones((current) => [...current, { ...ACX_CHECKPOINT }])}>
           Add the ACX 15-minute checkpoint
         </Button>
         <Button

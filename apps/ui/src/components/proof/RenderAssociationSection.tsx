@@ -50,16 +50,16 @@ export function RenderAssociationSection({ chapterId, notify }: { chapterId: str
       )}
       {info.state === 'current' && info.measurementFailed && <p style={{ color: 'var(--danger-text)' }}>The last measurement of this file failed.</p>}
       <div className="flex flex-wrap gap-2">
-        <Button variant="ghost" pending={render.busy} disabled={render.measuring} onClick={() => void render.choose()}>
+        <Button variant="secondary" pending={render.busy} disabled={render.measuring} onClick={() => void render.choose()}>
           {chooseLabel}
         </Button>
         {info.state !== 'none' && (
-          <Button variant="ghost" pending={render.busy} disabled={render.measuring} onClick={() => void render.clear()}>
+          <Button variant="secondary" pending={render.busy} disabled={render.measuring} onClick={() => void render.clear()}>
             Clear
           </Button>
         )}
         {info.state === 'current' && (
-          <Button variant="ghost" pending={render.measuring} disabled={render.busy} onClick={() => void render.measure()}>
+          <Button variant="secondary" pending={render.measuring} disabled={render.busy} onClick={() => void render.measure()}>
             Measure
           </Button>
         )}

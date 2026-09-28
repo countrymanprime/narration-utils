@@ -26,7 +26,7 @@ function Harness({ dismissible = true, withAutofocus = false, keepOpener = true 
           onClose={dismissible ? () => setOpen(false) : undefined}
           actions={
             <>
-              <Button variant="ghost" onClick={() => setOpen(false)}>
+              <Button variant="secondary" onClick={() => setOpen(false)}>
                 Cancel
               </Button>
               <Button variant="primary">Save</Button>

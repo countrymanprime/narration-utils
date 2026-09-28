@@ -113,7 +113,7 @@ function ReaperStateIndicator({
   return (
     <div className="flex items-center gap-1">
       <CapabilityGate capability={capability}>
-        <Button aria-label={label} aria-pressed={recording.enabled} variant="ghost" className="max-w-[9rem] lg:max-w-[13rem]" onClick={recording.toggle}>
+        <Button aria-label={label} aria-pressed={recording.enabled} variant="secondary" className="max-w-[9rem] lg:max-w-[13rem]" onClick={recording.toggle}>
           <FontAwesomeIcon icon={faCircleDot} className={rec || state?.recording ? 'text-[var(--danger-text)]' : undefined} />
           {rec ? (
             <span className="font-['IBM_Plex_Mono',ui-monospace,monospace] text-xs whitespace-nowrap text-[var(--danger-text)] normal-case">{rec}</span>
@@ -123,7 +123,7 @@ function ReaperStateIndicator({
         </Button>
       </CapabilityGate>
       {recording.enabled && state && ARMABLE_STATUSES.has(state.status) && (
-        <Button aria-label={armLabel} variant="ghost" onClick={() => void recording.armOnly().then(refresh)} disabled={recording.armPending}>
+        <Button aria-label={armLabel} variant="secondary" onClick={() => void recording.armOnly().then(refresh)} disabled={recording.armPending}>
           <FontAwesomeIcon icon={faLock} />
           <span className="hidden lg:inline">Arm only</span>
         </Button>
@@ -255,7 +255,7 @@ export function ReadingControlBar({ session: t, follow, startPoint, chapterId, c
 
       {t.active && (
         // Always shown while a session runs, so it is where the narrator expects it; enabled only while following is paused.
-        <Button aria-label="Follow" variant="ghost" onClick={follow.resume} disabled={follow.following}>
+        <Button aria-label="Follow" variant="secondary" onClick={follow.resume} disabled={follow.following}>
           <FontAwesomeIcon icon={faCrosshairs} />
           <span className="hidden lg:inline">Follow</span>
         </Button>
@@ -268,7 +268,7 @@ export function ReadingControlBar({ session: t, follow, startPoint, chapterId, c
           open={micOpen}
           onOpenChange={setMicOpen}
           trigger={
-            <Button aria-label={micLabel} variant="ghost" className="max-w-[9rem] lg:max-w-[13rem]">
+            <Button aria-label={micLabel} variant="secondary" className="max-w-[9rem] lg:max-w-[13rem]">
               <FontAwesomeIcon icon={faMicrophone} />
               <span className="truncate">{t.device || 'Choose a microphone…'}</span>
               <LevelMeter label="Input level" peak={level?.peak ?? null} rms={level?.rms ?? null} decorative size="compact" className="w-8 flex-none" />

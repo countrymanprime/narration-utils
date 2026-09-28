@@ -116,7 +116,7 @@ export function ScriptRail({
           </ul>
         )}
         <div className="border-t border-[var(--border)] p-3">
-          <Button variant="ghost" className="text-xs" onClick={openQueries}>
+          <Button variant="secondary" className="text-xs" onClick={openQueries}>
             Manage queries
           </Button>
         </div>

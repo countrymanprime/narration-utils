@@ -75,7 +75,7 @@ export function TakeReviewReads({
                 <div className="flex flex-wrap gap-2">
                   <TooltipTarget text={blocked ?? `Select ${name}'s item in REAPER and put the edit cursor on it`}>
                     <Button
-                      variant="ghost"
+                      variant="secondary"
                       aria-label={`Go to ${name} in REAPER`}
                       onClick={() => void goTo(index)}
                       disabled={Boolean(blocked) || action.isBlockedFor(`goto-${index}`)}
@@ -86,7 +86,7 @@ export function TakeReviewReads({
                   </TooltipTarget>
                   <TooltipTarget text={blocked ?? `Play ${name} over and over in REAPER`}>
                     <Button
-                      variant="ghost"
+                      variant="secondary"
                       aria-label={`Loop ${name} in REAPER`}
                       onClick={() => void loop(index)}
                       disabled={Boolean(blocked) || action.isBlockedFor(`loop-${index}`)}
@@ -103,27 +103,27 @@ export function TakeReviewReads({
       </ol>
       <div className="mt-3 flex flex-wrap gap-2">
         {looping && (
-          <Button variant="ghost" onClick={() => void stop()} disabled={action.isBlockedFor('stop')} pending={action.isPending('stop')}>
+          <Button variant="secondary" onClick={() => void stop()} disabled={action.isBlockedFor('stop')} pending={action.isPending('stop')}>
             Stop loop
           </Button>
         )}
         {reads.length >= 2 && (
           <TooltipTarget text="Play two reads side by side from their own audio files, without REAPER">
-            <Button variant="ghost" onClick={() => setAuditioning(true)} disabled={action.isBusy}>
+            <Button variant="secondary" onClick={() => setAuditioning(true)} disabled={action.isBusy}>
               Audition reads
             </Button>
           </TooltipTarget>
         )}
         {reads.length >= 2 && (
           <TooltipTarget text="Set each read's evidence side by side: how it read the script, and its clipping, noise, level, length and pauses">
-            <Button variant="ghost" onClick={() => setComparing(true)} disabled={action.isBusy}>
+            <Button variant="secondary" onClick={() => setComparing(true)} disabled={action.isBusy}>
               Compare takes…
             </Button>
           </TooltipTarget>
         )}
         {offersTake && (
           <TooltipTarget text={takeBlocked ?? 'Add one read as a new take on another read’s item in REAPER, after you confirm'}>
-            <Button variant="ghost" onClick={() => setAdding(true)} disabled={Boolean(takeBlocked) || action.isBusy}>
+            <Button variant="secondary" onClick={() => setAdding(true)} disabled={Boolean(takeBlocked) || action.isBusy}>
               Add as take…
             </Button>
           </TooltipTarget>

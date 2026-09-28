@@ -5,6 +5,7 @@ import { useApi } from '../../api/ApiContext';
 import type { RecorderTake } from '../../api/contracts/recording';
 import { Button } from '../primitives/Button';
 import { FIELD_LABEL_CLASSES } from '../primitives/Field';
+import { IconButton } from '../primitives/IconButton';
 import { LevelMeter } from '../primitives/LevelMeter';
 import { Panel } from '../primitives/Panel';
 import { StatusBadge } from '../primitives/StatusBadge';
@@ -98,7 +99,7 @@ export function RecordButton({ recorder }: { recorder: Recorder }) {
       <Button
         aria-label={label}
         aria-pressed={recorder.recording}
-        variant={recorder.recording ? 'danger' : 'ghost'}
+        variant={recorder.recording ? 'danger' : 'secondary'}
         onClick={recorder.toggleRecord}
         disabled={stopping || (!recorder.recording && !recorder.device)}
         pending={recorder.pending || stopping}
@@ -157,7 +158,7 @@ export function RecorderSetup({ recorder }: { recorder: Recorder }) {
               refreshing={recorder.devicesLoading}
             />
             <div className="flex flex-wrap items-center gap-2">
-              <Button variant="ghost" aria-pressed={recorder.metering} onClick={recorder.toggleMeter} disabled={!recorder.device || recorder.recording}>
+              <Button variant="secondary" aria-pressed={recorder.metering} onClick={recorder.toggleMeter} disabled={!recorder.device || recorder.recording}>
                 <FontAwesomeIcon icon={faWaveSquare} />
                 {recorder.metering ? 'Stop level check' : 'Check level'}
               </Button>
@@ -261,15 +262,9 @@ export function RecorderTakes({ recorder }: { recorder: Recorder }) {
             const playing = player.playing === take.path;
             return (
               <li key={take.path} className="flex items-center gap-2 py-1">
-                <Button
-                  variant="ghost"
-                  className="px-2! py-1!"
-                  aria-label={`${playing ? 'Stop' : 'Play'} ${take.name}`}
-                  aria-pressed={playing}
-                  onClick={() => player.toggle(take)}
-                >
+                <IconButton size="sm" label={`${playing ? 'Stop' : 'Play'} ${take.name}`} aria-pressed={playing} onClick={() => player.toggle(take)}>
                   <FontAwesomeIcon icon={playing ? faStop : faPlay} />
-                </Button>
+                </IconButton>
                 <span className="min-w-0 flex-1 truncate">{take.name}</span>
                 {take.unfinished && <StatusBadge tone="warning" label="Unfinished" />}
                 <span className={`${MONO} text-xs`} style={{ color: 'var(--text-muted)' }}>
