@@ -1,0 +1,1307 @@
+{
+ "schemaVersion": 1,
+ "source": "kara_11",
+ "chapter": "c-0011",
+ "duration_s": 732.756,
+ "sample_rate": 22050,
+ "cuts_s": [
+  13.71,
+  56.47,
+  71.83,
+  85.5,
+  115.39,
+  127.27,
+  135.08,
+  150.73,
+  172.92,
+  202.71,
+  207.48,
+  216.2,
+  226.28,
+  230.3,
+  236.67,
+  245.42,
+  260.8,
+  265.39,
+  275.45,
+  277.96,
+  281.07,
+  293.15,
+  296.69,
+  299.34,
+  305.63,
+  313.29,
+  320.94,
+  327.11,
+  342.39,
+  361.92,
+  368.1,
+  372.46,
+  377.1,
+  383.26,
+  395.79,
+  415.11,
+  423.18,
+  438.57,
+  442.25,
+  445.32,
+  454.16,
+  461.31,
+  465.03,
+  467.53,
+  470.15,
+  473.04,
+  485.86,
+  491.28,
+  496.32,
+  498.45,
+  504.91,
+  514.81,
+  518.64,
+  539.44,
+  553.97,
+  558.11,
+  562.41,
+  566.46,
+  571.27,
+  578.21,
+  584.24,
+  593.62,
+  603.75,
+  606.65,
+  620.08,
+  623.57,
+  624.22,
+  634.65,
+  650.72,
+  654.22,
+  656.16,
+  667.7,
+  678.58,
+  696.26,
+  716.45
+ ],
+ "cuts_clean": [
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  false,
+  true,
+  true,
+  true,
+  true,
+  true,
+  false,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true
+ ],
+ "paragraphs": [
+  {
+   "id": "c-0011-p001",
+   "start_s": 14.26,
+   "end_s": 55.94,
+   "matched": 1.0,
+   "sentence_cuts_s": [
+    13.71,
+    36.14,
+    49.98,
+    56.47
+   ],
+   "sentence_cuts_clean": [
+    true,
+    true,
+    true,
+    true
+   ]
+  },
+  {
+   "id": "c-0011-p002",
+   "start_s": 55.94,
+   "end_s": 71.06,
+   "matched": 1.0,
+   "sentence_cuts_s": [
+    56.47,
+    67.41,
+    71.83
+   ],
+   "sentence_cuts_clean": [
+    true,
+    true,
+    true
+   ]
+  },
+  {
+   "id": "c-0011-p003",
+   "start_s": 71.06,
+   "end_s": 84.52,
+   "matched": 1.0,
+   "sentence_cuts_s": [
+    71.83,
+    85.5
+   ],
+   "sentence_cuts_clean": [
+    true,
+    true
+   ]
+  },
+  {
+   "id": "c-0011-p004",
+   "start_s": 85.66,
+   "end_s": 114.28,
+   "matched": 0.976,
+   "sentence_cuts_s": [
+    85.5,
+    99.58,
+    111.49,
+    115.39
+   ],
+   "sentence_cuts_clean": [
+    true,
+    true,
+    true,
+    true
+   ]
+  },
+  {
+   "id": "c-0011-p005",
+   "start_s": 115.48,
+   "end_s": 126.62,
+   "matched": 0.968,
+   "sentence_cuts_s": [
+    115.39,
+    119.6,
+    121.5,
+    123.04,
+    127.27
+   ],
+   "sentence_cuts_clean": [
+    true,
+    true,
+    true,
+    true,
+    true
+   ]
+  },
+  {
+   "id": "c-0011-p006",
+   "start_s": 127.44,
+   "end_s": 134.26,
+   "matched": 0.955,
+   "sentence_cuts_s": [
+    127.27,
+    135.08
+   ],
+   "sentence_cuts_clean": [
+    true,
+    true
+   ]
+  },
+  {
+   "id": "c-0011-p007",
+   "start_s": 135.18,
+   "end_s": 149.42,
+   "matched": 1.0,
+   "sentence_cuts_s": [
+    135.08,
+    136.62,
+    144.2,
+    150.73
+   ],
+   "sentence_cuts_clean": [
+    true,
+    true,
+    true,
+    true
+   ]
+  },
+  {
+   "id": "c-0011-p008",
+   "start_s": 151.34,
+   "end_s": 171.82,
+   "matched": 1.0,
+   "sentence_cuts_s": [
+    150.73,
+    158.33,
+    166.64,
+    171.46,
+    172.92
+   ],
+   "sentence_cuts_clean": [
+    true,
+    true,
+    true,
+    true,
+    true
+   ]
+  },
+  {
+   "id": "c-0011-p009",
+   "start_s": 172.98,
+   "end_s": 201.72,
+   "matched": 1.0,
+   "sentence_cuts_s": [
+    172.92,
+    176.14,
+    184.12,
+    202.71
+   ],
+   "sentence_cuts_clean": [
+    true,
+    true,
+    true,
+    true
+   ]
+  },
+  {
+   "id": "c-0011-p010",
+   "start_s": 202.8,
+   "end_s": 205.48,
+   "matched": 1.0,
+   "sentence_cuts_s": [
+    202.71,
+    204.7,
+    207.48
+   ],
+   "sentence_cuts_clean": [
+    true,
+    true,
+    true
+   ]
+  },
+  {
+   "id": "c-0011-p011",
+   "start_s": 207.58,
+   "end_s": 214.96,
+   "matched": 1.0,
+   "sentence_cuts_s": [
+    207.48,
+    216.2
+   ],
+   "sentence_cuts_clean": [
+    true,
+    true
+   ]
+  },
+  {
+   "id": "c-0011-p012",
+   "start_s": 216.3,
+   "end_s": 225.28,
+   "matched": 1.0,
+   "sentence_cuts_s": [
+    216.2,
+    226.28
+   ],
+   "sentence_cuts_clean": [
+    true,
+    true
+   ]
+  },
+  {
+   "id": "c-0011-p013",
+   "start_s": 225.28,
+   "end_s": 229.48,
+   "matched": 1.0,
+   "sentence_cuts_s": [
+    226.28,
+    230.3
+   ],
+   "sentence_cuts_clean": [
+    true,
+    true
+   ]
+  },
+  {
+   "id": "c-0011-p014",
+   "start_s": 229.48,
+   "end_s": 235.94,
+   "matched": 1.0,
+   "sentence_cuts_s": [
+    230.3,
+    231.79,
+    233.51,
+    236.67
+   ],
+   "sentence_cuts_clean": [
+    true,
+    false,
+    true,
+    true
+   ]
+  },
+  {
+   "id": "c-0011-p015",
+   "start_s": 237.14,
+   "end_s": 244.86,
+   "matched": 1.0,
+   "sentence_cuts_s": [
+    236.67,
+    245.42
+   ],
+   "sentence_cuts_clean": [
+    true,
+    true
+   ]
+  },
+  {
+   "id": "c-0011-p016",
+   "start_s": 244.86,
+   "end_s": 259.54,
+   "matched": 1.0,
+   "sentence_cuts_s": [
+    245.42,
+    247.63,
+    252.96,
+    260.8
+   ],
+   "sentence_cuts_clean": [
+    true,
+    true,
+    true,
+    true
+   ]
+  },
+  {
+   "id": "c-0011-p017",
+   "start_s": 260.86,
+   "end_s": 263.82,
+   "matched": 1.0,
+   "sentence_cuts_s": [
+    260.8,
+    263.21,
+    265.39
+   ],
+   "sentence_cuts_clean": [
+    true,
+    true,
+    true
+   ]
+  },
+  {
+   "id": "c-0011-p018",
+   "start_s": 265.48,
+   "end_s": 274.48,
+   "matched": 1.0,
+   "sentence_cuts_s": [
+    265.39,
+    271.66,
+    275.45
+   ],
+   "sentence_cuts_clean": [
+    true,
+    true,
+    true
+   ]
+  },
+  {
+   "id": "c-0011-p019",
+   "start_s": 275.68,
+   "end_s": 277.18,
+   "matched": 1.0,
+   "sentence_cuts_s": [
+    275.45,
+    277.96
+   ],
+   "sentence_cuts_clean": [
+    true,
+    true
+   ]
+  },
+  {
+   "id": "c-0011-p020",
+   "start_s": 278.22,
+   "end_s": 279.92,
+   "matched": 1.0,
+   "sentence_cuts_s": [
+    277.96,
+    281.07
+   ],
+   "sentence_cuts_clean": [
+    true,
+    true
+   ]
+  },
+  {
+   "id": "c-0011-p021",
+   "start_s": 281.14,
+   "end_s": 291.74,
+   "matched": 1.0,
+   "sentence_cuts_s": [
+    281.07,
+    293.15
+   ],
+   "sentence_cuts_clean": [
+    true,
+    true
+   ]
+  },
+  {
+   "id": "c-0011-p022",
+   "start_s": 293.16,
+   "end_s": 295.64,
+   "matched": 1.0,
+   "sentence_cuts_s": [
+    293.15,
+    296.69
+   ],
+   "sentence_cuts_clean": [
+    true,
+    true
+   ]
+  },
+  {
+   "id": "c-0011-p023",
+   "start_s": 296.48,
+   "end_s": 298.24,
+   "matched": 1.0,
+   "sentence_cuts_s": [
+    296.69,
+    299.34
+   ],
+   "sentence_cuts_clean": [
+    true,
+    true
+   ]
+  },
+  {
+   "id": "c-0011-p024",
+   "start_s": 299.4,
+   "end_s": 304.7,
+   "matched": 1.0,
+   "sentence_cuts_s": [
+    299.34,
+    299.53,
+    305.63
+   ],
+   "sentence_cuts_clean": [
+    true,
+    true,
+    true
+   ]
+  },
+  {
+   "id": "c-0011-p025",
+   "start_s": 305.54,
+   "end_s": 312.72,
+   "matched": 1.0,
+   "sentence_cuts_s": [
+    305.63,
+    310.74,
+    313.29
+   ],
+   "sentence_cuts_clean": [
+    true,
+    false,
+    true
+   ]
+  },
+  {
+   "id": "c-0011-p026",
+   "start_s": 313.28,
+   "end_s": 319.76,
+   "matched": 1.0,
+   "sentence_cuts_s": [
+    313.29,
+    320.94
+   ],
+   "sentence_cuts_clean": [
+    true,
+    true
+   ]
+  },
+  {
+   "id": "c-0011-p027",
+   "start_s": 320.88,
+   "end_s": 325.76,
+   "matched": 1.0,
+   "sentence_cuts_s": [
+    320.94,
+    327.11
+   ],
+   "sentence_cuts_clean": [
+    true,
+    true
+   ]
+  },
+  {
+   "id": "c-0011-p028",
+   "start_s": 327.0,
+   "end_s": 340.74,
+   "matched": 1.0,
+   "sentence_cuts_s": [
+    327.11,
+    342.39
+   ],
+   "sentence_cuts_clean": [
+    true,
+    true
+   ]
+  },
+  {
+   "id": "c-0011-p029",
+   "start_s": 342.16,
+   "end_s": 360.44,
+   "matched": 1.0,
+   "sentence_cuts_s": [
+    342.39,
+    361.92
+   ],
+   "sentence_cuts_clean": [
+    true,
+    true
+   ]
+  },
+  {
+   "id": "c-0011-p030",
+   "start_s": 361.7,
+   "end_s": 367.68,
+   "matched": 1.0,
+   "sentence_cuts_s": [
+    361.92,
+    363.8,
+    365.69,
+    368.1
+   ],
+   "sentence_cuts_clean": [
+    true,
+    true,
+    true,
+    true
+   ]
+  },
+  {
+   "id": "c-0011-p031",
+   "start_s": 367.68,
+   "end_s": 372.3,
+   "matched": 1.0,
+   "sentence_cuts_s": [
+    368.1,
+    372.46
+   ],
+   "sentence_cuts_clean": [
+    true,
+    true
+   ]
+  },
+  {
+   "id": "c-0011-p032",
+   "start_s": 372.3,
+   "end_s": 376.1,
+   "matched": 1.0,
+   "sentence_cuts_s": [
+    372.46,
+    377.1
+   ],
+   "sentence_cuts_clean": [
+    true,
+    true
+   ]
+  },
+  {
+   "id": "c-0011-p033",
+   "start_s": 376.84,
+   "end_s": 382.66,
+   "matched": 1.0,
+   "sentence_cuts_s": [
+    377.1,
+    383.26
+   ],
+   "sentence_cuts_clean": [
+    true,
+    true
+   ]
+  },
+  {
+   "id": "c-0011-p034",
+   "start_s": 383.4,
+   "end_s": 394.56,
+   "matched": 1.0,
+   "sentence_cuts_s": [
+    383.26,
+    389.68,
+    395.79
+   ],
+   "sentence_cuts_clean": [
+    true,
+    true,
+    true
+   ]
+  },
+  {
+   "id": "c-0011-p035",
+   "start_s": 395.58,
+   "end_s": 413.68,
+   "matched": 1.0,
+   "sentence_cuts_s": [
+    395.79,
+    408.49,
+    415.11
+   ],
+   "sentence_cuts_clean": [
+    true,
+    true,
+    true
+   ]
+  },
+  {
+   "id": "c-0011-p036",
+   "start_s": 415.02,
+   "end_s": 421.86,
+   "matched": 1.0,
+   "sentence_cuts_s": [
+    415.11,
+    423.18
+   ],
+   "sentence_cuts_clean": [
+    true,
+    true
+   ]
+  },
+  {
+   "id": "c-0011-p037",
+   "start_s": 423.1,
+   "end_s": 437.24,
+   "matched": 1.0,
+   "sentence_cuts_s": [
+    423.18,
+    438.57
+   ],
+   "sentence_cuts_clean": [
+    true,
+    true
+   ]
+  },
+  {
+   "id": "c-0011-p038",
+   "start_s": 438.36,
+   "end_s": 440.98,
+   "matched": 1.0,
+   "sentence_cuts_s": [
+    438.57,
+    439.97,
+    442.25
+   ],
+   "sentence_cuts_clean": [
+    true,
+    true,
+    true
+   ]
+  },
+  {
+   "id": "c-0011-p039",
+   "start_s": 441.98,
+   "end_s": 445.3,
+   "matched": 1.0,
+   "sentence_cuts_s": [
+    442.25,
+    445.32
+   ],
+   "sentence_cuts_clean": [
+    true,
+    true
+   ]
+  },
+  {
+   "id": "c-0011-p040",
+   "start_s": 446.08,
+   "end_s": 452.62,
+   "matched": 0.95,
+   "sentence_cuts_s": [
+    445.32,
+    448.16,
+    450.03,
+    451.94,
+    454.16
+   ],
+   "sentence_cuts_clean": [
+    true,
+    true,
+    true,
+    true,
+    true
+   ]
+  },
+  {
+   "id": "c-0011-p041",
+   "start_s": 454.02,
+   "end_s": 460.96,
+   "matched": 1.0,
+   "sentence_cuts_s": [
+    454.16,
+    461.31
+   ],
+   "sentence_cuts_clean": [
+    true,
+    true
+   ]
+  },
+  {
+   "id": "c-0011-p042",
+   "start_s": 461.6,
+   "end_s": 464.78,
+   "matched": 1.0,
+   "sentence_cuts_s": [
+    461.31,
+    462.56,
+    465.03
+   ],
+   "sentence_cuts_clean": [
+    true,
+    true,
+    true
+   ]
+  },
+  {
+   "id": "c-0011-p043",
+   "start_s": 465.26,
+   "end_s": 467.08,
+   "matched": 1.0,
+   "sentence_cuts_s": [
+    465.03,
+    466.23,
+    467.53
+   ],
+   "sentence_cuts_clean": [
+    true,
+    true,
+    true
+   ]
+  },
+  {
+   "id": "c-0011-p044",
+   "start_s": 467.46,
+   "end_s": 469.36,
+   "matched": 1.0,
+   "sentence_cuts_s": [
+    467.53,
+    468.3,
+    470.15
+   ],
+   "sentence_cuts_clean": [
+    true,
+    true,
+    true
+   ]
+  },
+  {
+   "id": "c-0011-p045",
+   "start_s": 469.92,
+   "end_s": 472.94,
+   "matched": 1.0,
+   "sentence_cuts_s": [
+    470.15,
+    473.04
+   ],
+   "sentence_cuts_clean": [
+    true,
+    true
+   ]
+  },
+  {
+   "id": "c-0011-p046",
+   "start_s": 473.9,
+   "end_s": 484.52,
+   "matched": 1.0,
+   "sentence_cuts_s": [
+    473.04,
+    485.86
+   ],
+   "sentence_cuts_clean": [
+    true,
+    true
+   ]
+  },
+  {
+   "id": "c-0011-p047",
+   "start_s": 485.56,
+   "end_s": 489.9,
+   "matched": 1.0,
+   "sentence_cuts_s": [
+    485.86,
+    491.28
+   ],
+   "sentence_cuts_clean": [
+    true,
+    true
+   ]
+  },
+  {
+   "id": "c-0011-p048",
+   "start_s": 491.04,
+   "end_s": 494.84,
+   "matched": 1.0,
+   "sentence_cuts_s": [
+    491.28,
+    493.43,
+    496.32
+   ],
+   "sentence_cuts_clean": [
+    true,
+    true,
+    true
+   ]
+  },
+  {
+   "id": "c-0011-p049",
+   "start_s": 496.06,
+   "end_s": 498.52,
+   "matched": 1.0,
+   "sentence_cuts_s": [
+    496.32,
+    498.45
+   ],
+   "sentence_cuts_clean": [
+    true,
+    false
+   ]
+  },
+  {
+   "id": "c-0011-p050",
+   "start_s": 499.1,
+   "end_s": 503.44,
+   "matched": 1.0,
+   "sentence_cuts_s": [
+    498.45,
+    504.91
+   ],
+   "sentence_cuts_clean": [
+    false,
+    true
+   ]
+  },
+  {
+   "id": "c-0011-p051",
+   "start_s": 504.62,
+   "end_s": 513.5,
+   "matched": 1.0,
+   "sentence_cuts_s": [
+    504.91,
+    509.64,
+    514.81
+   ],
+   "sentence_cuts_clean": [
+    true,
+    true,
+    true
+   ]
+  },
+  {
+   "id": "c-0011-p052",
+   "start_s": 514.54,
+   "end_s": 517.18,
+   "matched": 1.0,
+   "sentence_cuts_s": [
+    514.81,
+    518.64
+   ],
+   "sentence_cuts_clean": [
+    true,
+    true
+   ]
+  },
+  {
+   "id": "c-0011-p053",
+   "start_s": 518.4,
+   "end_s": 537.88,
+   "matched": 1.0,
+   "sentence_cuts_s": [
+    518.64,
+    524.81,
+    528.95,
+    539.44
+   ],
+   "sentence_cuts_clean": [
+    true,
+    true,
+    true,
+    true
+   ]
+  },
+  {
+   "id": "c-0011-p054",
+   "start_s": 539.16,
+   "end_s": 553.3,
+   "matched": 0.978,
+   "sentence_cuts_s": [
+    539.44,
+    541.8,
+    553.97
+   ],
+   "sentence_cuts_clean": [
+    true,
+    true,
+    true
+   ]
+  },
+  {
+   "id": "c-0011-p055",
+   "start_s": 554.38,
+   "end_s": 557.98,
+   "matched": 1.0,
+   "sentence_cuts_s": [
+    553.97,
+    558.11
+   ],
+   "sentence_cuts_clean": [
+    true,
+    false
+   ]
+  },
+  {
+   "id": "c-0011-p056",
+   "start_s": 558.52,
+   "end_s": 562.44,
+   "matched": 1.0,
+   "sentence_cuts_s": [
+    558.11,
+    562.41
+   ],
+   "sentence_cuts_clean": [
+    false,
+    true
+   ]
+  },
+  {
+   "id": "c-0011-p057",
+   "start_s": 563.58,
+   "end_s": 566.44,
+   "matched": 1.0,
+   "sentence_cuts_s": [
+    562.41,
+    566.46
+   ],
+   "sentence_cuts_clean": [
+    true,
+    true
+   ]
+  },
+  {
+   "id": "c-0011-p058",
+   "start_s": 567.48,
+   "end_s": 571.04,
+   "matched": 1.0,
+   "sentence_cuts_s": [
+    566.46,
+    571.27
+   ],
+   "sentence_cuts_clean": [
+    true,
+    true
+   ]
+  },
+  {
+   "id": "c-0011-p059",
+   "start_s": 572.2,
+   "end_s": 577.42,
+   "matched": 1.0,
+   "sentence_cuts_s": [
+    571.27,
+    574.17,
+    574.81,
+    578.21
+   ],
+   "sentence_cuts_clean": [
+    true,
+    true,
+    true,
+    true
+   ]
+  },
+  {
+   "id": "c-0011-p060",
+   "start_s": 578.14,
+   "end_s": 584.4,
+   "matched": 1.0,
+   "sentence_cuts_s": [
+    578.21,
+    584.24
+   ],
+   "sentence_cuts_clean": [
+    true,
+    true
+   ]
+  },
+  {
+   "id": "c-0011-p061",
+   "start_s": 585.48,
+   "end_s": 591.96,
+   "matched": 1.0,
+   "sentence_cuts_s": [
+    584.24,
+    593.62
+   ],
+   "sentence_cuts_clean": [
+    true,
+    true
+   ]
+  },
+  {
+   "id": "c-0011-p062",
+   "start_s": 593.42,
+   "end_s": 601.94,
+   "matched": 1.0,
+   "sentence_cuts_s": [
+    593.62,
+    603.75
+   ],
+   "sentence_cuts_clean": [
+    true,
+    true
+   ]
+  },
+  {
+   "id": "c-0011-p063",
+   "start_s": 603.8,
+   "end_s": 605.78,
+   "matched": 1.0,
+   "sentence_cuts_s": [
+    603.75,
+    604.87,
+    606.65
+   ],
+   "sentence_cuts_clean": [
+    true,
+    true,
+    true
+   ]
+  },
+  {
+   "id": "c-0011-p064",
+   "start_s": 606.54,
+   "end_s": 618.8,
+   "matched": 1.0,
+   "sentence_cuts_s": [
+    606.65,
+    608.93,
+    620.08
+   ],
+   "sentence_cuts_clean": [
+    true,
+    true,
+    true
+   ]
+  },
+  {
+   "id": "c-0011-p065",
+   "start_s": 620.04,
+   "end_s": 622.04,
+   "matched": 1.0,
+   "sentence_cuts_s": [
+    620.08,
+    623.57
+   ],
+   "sentence_cuts_clean": [
+    true,
+    true
+   ]
+  },
+  {
+   "id": "c-0011-p066",
+   "start_s": 623.44,
+   "end_s": 624.04,
+   "matched": 0.75,
+   "sentence_cuts_s": [
+    623.57,
+    624.22
+   ],
+   "sentence_cuts_clean": [
+    true,
+    true
+   ]
+  },
+  {
+   "id": "c-0011-p067",
+   "start_s": 625.04,
+   "end_s": 633.44,
+   "matched": 1.0,
+   "sentence_cuts_s": [
+    624.22,
+    634.65
+   ],
+   "sentence_cuts_clean": [
+    true,
+    true
+   ]
+  },
+  {
+   "id": "c-0011-p068",
+   "start_s": 634.5,
+   "end_s": 649.4,
+   "matched": 1.0,
+   "sentence_cuts_s": [
+    634.65,
+    650.72
+   ],
+   "sentence_cuts_clean": [
+    true,
+    true
+   ]
+  },
+  {
+   "id": "c-0011-p069",
+   "start_s": 650.68,
+   "end_s": 652.54,
+   "matched": 1.0,
+   "sentence_cuts_s": [
+    650.72,
+    654.22
+   ],
+   "sentence_cuts_clean": [
+    true,
+    true
+   ]
+  },
+  {
+   "id": "c-0011-p070",
+   "start_s": 653.94,
+   "end_s": 656.3,
+   "matched": 1.0,
+   "sentence_cuts_s": [
+    654.22,
+    656.16
+   ],
+   "sentence_cuts_clean": [
+    true,
+    true
+   ]
+  },
+  {
+   "id": "c-0011-p071",
+   "start_s": 657.42,
+   "end_s": 667.46,
+   "matched": 1.0,
+   "sentence_cuts_s": [
+    656.16,
+    660.7,
+    662.01,
+    664.49,
+    665.42,
+    665.96,
+    667.7
+   ],
+   "sentence_cuts_clean": [
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true
+   ]
+  },
+  {
+   "id": "c-0011-p072",
+   "start_s": 668.52,
+   "end_s": 676.84,
+   "matched": 1.0,
+   "sentence_cuts_s": [
+    667.7,
+    678.58
+   ],
+   "sentence_cuts_clean": [
+    true,
+    true
+   ]
+  },
+  {
+   "id": "c-0011-p073",
+   "start_s": 678.28,
+   "end_s": 694.76,
+   "matched": 1.0,
+   "sentence_cuts_s": [
+    678.58,
+    679.15,
+    682.56,
+    684.12,
+    692.36,
+    696.26
+   ],
+   "sentence_cuts_clean": [
+    true,
+    true,
+    true,
+    true,
+    true,
+    true
+   ]
+  },
+  {
+   "id": "c-0011-p074",
+   "start_s": 695.96,
+   "end_s": 715.9,
+   "matched": 1.0,
+   "sentence_cuts_s": [
+    696.26,
+    707.72,
+    716.45
+   ],
+   "sentence_cuts_clean": [
+    true,
+    true,
+    true
+   ]
+  }
+ ]
+}

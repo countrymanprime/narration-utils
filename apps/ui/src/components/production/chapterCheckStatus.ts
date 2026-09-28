@@ -7,7 +7,7 @@ import type { ChapterSyncChapter, ChapterTrackLink } from '../../types';
 import { chapterTrackButtonState } from './chapterTrackButtonState';
 
 export type ChapterCheckStatus =
-  | { kind: 'checking'; percent?: number }
+  | { kind: 'checking'; percent?: number; background?: boolean }
   | { kind: 'current'; checkedAt: string }
   | { kind: 'stale'; reason: string; changedAt: string | null }
   | { kind: 'never'; changedAt: string | null }
@@ -21,14 +21,16 @@ export type ChapterCheckStatus =
  * project is not `ready`); `sync` is its row from `ChapterSyncState.chapters` (undefined before the first sync, or
  * for a project with no chapter-sync data yet); `checking` covers both a check this page started and one the
  * background scheduler started (Phase 7, `sync.checking`) or is already running when the page opens (`coverage`).
+ * `background` is `CoverageState.background` (ADR 0211): the host started this run on its own, so the label says so.
  */
 export function chapterCheckStatus(
   link: ChapterTrackLink | undefined,
   sync: ChapterSyncChapter | undefined,
   checking: boolean,
   percent?: number,
+  background?: boolean,
 ): ChapterCheckStatus {
-  if (checking) return { kind: 'checking', percent };
+  if (checking) return { kind: 'checking', percent, background };
   if (!link) return { kind: 'not_linked' };
   const button = chapterTrackButtonState(link);
   switch (button.kind) {
@@ -88,7 +90,8 @@ export function relativeTime(iso: string, now: number = Date.now()): string {
 export function chapterCheckStatusText(chapterTitle: string, status: ChapterCheckStatus, now?: number): { label: string; detail?: string; name: string } {
   switch (status.kind) {
     case 'checking': {
-      const label = status.percent !== undefined ? `Checking ${Math.floor(status.percent)}%` : 'Checking';
+      const base = status.percent !== undefined ? `Checking ${Math.floor(status.percent)}%` : 'Checking';
+      const label = status.background ? `${base} (background)` : base;
       return { label, name: `${label}, recording of ${chapterTitle}` };
     }
     case 'current': {

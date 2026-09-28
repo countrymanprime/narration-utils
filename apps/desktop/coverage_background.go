@@ -101,12 +101,20 @@ func (h *Host) backgroundCheckTick(now time.Time) coverage.BackgroundDecision {
 	} else {
 		power = platformPower()
 	}
-	// The heartbeat does not say yet whether REAPER is recording (a play-state bit on PROJECT_STATUS is lane B's to
-	// add), so a running REAPER leaves RecordingKnown false and background checks wait until it closes.
+	// The heartbeat's transport (ADR 0305) says whether REAPER is recording; RecordingKnown is false when REAPER is
+	// unreachable or its heartbeat has not carried the transport yet (an older script), and NextBackground treats
+	// that the same as recording (ADR 0211): a running REAPER it cannot read is never assumed idle.
+	reaperRunning := svc.reachability != nil && svc.reachability.Reachable()
+	var recordingKnown, recording bool
+	if reaperRunning {
+		if transport, ok := svc.reachability.Transport(); ok {
+			recordingKnown, recording = true, transport.Recording
+		}
+	}
 	conditions := coverage.BackgroundConditions{
 		Enabled: backgroundChecksEnabled(svc), ModelReady: modelReady, Busy: !h.idle(), Power: power,
-		ReaperRunning: svc.reachability != nil && svc.reachability.Reachable(),
-		LastActivity:  h.chapterSyncWatch.lastActivityFor(folder), Now: now,
+		ReaperRunning: reaperRunning, RecordingKnown: recordingKnown, Recording: recording,
+		LastActivity: h.chapterSyncWatch.lastActivityFor(folder), Now: now,
 	}
 
 	b := &h.backgroundChecks

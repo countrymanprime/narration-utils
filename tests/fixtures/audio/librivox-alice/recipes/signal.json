@@ -1,0 +1,100 @@
+{
+  "cases": [
+    {
+      "id": "kara_09-control",
+      "source": "kara_09",
+      "excerpt": [1, 20],
+      "description": "The unedited reading with 1 s of room tone before it and 3 s after: nothing should be found.",
+      "edits": []
+    },
+    {
+      "id": "kara_09-clipping",
+      "source": "kara_09",
+      "excerpt": [1, 20],
+      "description": "Two stretches of speech driven hot and hard-clipped: 1 s at +20 dB in paragraph 7 and 0.5 s at +14 dB in paragraph 13.",
+      "edits": [
+        {"clip": {"afterParagraph": 6, "offset": 2.0, "seconds": 1.0, "gainDb": 20}},
+        {"clip": {"afterParagraph": 12, "offset": 1.0, "seconds": 0.5, "gainDb": 14}}
+      ]
+    },
+    {
+      "id": "kara_09-level-shift",
+      "source": "kara_09",
+      "excerpt": [1, 20],
+      "description": "Everything after paragraph 10 is 9 dB quieter, as if the gain or mic distance changed between sessions.",
+      "edits": [{"gain": {"afterParagraph": 10, "db": -9}}]
+    },
+    {
+      "id": "kara_09-clicks",
+      "source": "kara_09",
+      "excerpt": [1, 20],
+      "description": "A 2 ms click peaking at -6 dBFS in the middle of the pause after paragraphs 3, 7, 12 and 17.",
+      "edits": [
+        {"clicks": {"afterParagraphs": [3, 7, 12], "peakDbfs": -6}},
+        {"clicks": {"afterParagraphs": [17], "peakDbfs": -6}, "knownIssue": "The reader's room tone in this pause sits at -49 to -52 dBFS in 10 ms windows, at the -50 dBFS silence floor, so the click has no silent flank (clickFlankWindows) and is not offered."}
+      ]
+    },
+    {
+      "id": "kara_09-quiet-clicks",
+      "source": "kara_09",
+      "excerpt": [1, 20],
+      "description": "2 ms clicks peaking at -24 dBFS, closer to a real mouth click, in the middle of the pause after paragraphs 3, 7 and 12.",
+      "edits": [{"clicks": {"afterParagraphs": [3, 7, 12], "peakDbfs": -24}}]
+    },
+    {
+      "id": "kara_09-click-before-breath",
+      "source": "kara_09",
+      "excerpt": [1, 20],
+      "description": "A 2 ms click peaking at -6 dBFS at the end of the pause after paragraph 12, just before the reader's breath.",
+      "edits": [
+        {"clicks": {"afterParagraphs": [12], "peakDbfs": -6, "place": "cut"}, "knownIssue": "A click that touches a breath is folded into one breath candidate, so it is not offered as a click."}
+      ]
+    },
+    {
+      "id": "kara_09-dead-air",
+      "source": "kara_09",
+      "excerpt": [1, 20],
+      "description": "8 s of room tone after paragraph 8 and 4 s after paragraph 15: long pauses in the read.",
+      "edits": [
+        {"insertRoomTone": {"afterParagraph": 8, "seconds": 8}},
+        {"insertRoomTone": {"afterParagraph": 15, "seconds": 4}}
+      ]
+    },
+    {
+      "id": "kara_09-dropouts",
+      "source": "kara_09",
+      "excerpt": [1, 20],
+      "description": "Exact digital silence (a dropout or a hard gate) for 0.6 s after paragraph 5 and 1.5 s after paragraph 14.",
+      "edits": [
+        {"insertDigitalSilence": {"afterParagraph": 5, "seconds": 0.6}},
+        {"insertDigitalSilence": {"afterParagraph": 14, "seconds": 1.5}}
+      ]
+    },
+    {
+      "id": "kara_09-noise-floor",
+      "source": "kara_09",
+      "excerpt": [1, 20],
+      "description": "White noise at -50 dBFS RMS over the whole file: a noise floor well above ACX's -60 dBFS.",
+      "edits": [{"hiss": {"dbfs": -50}}]
+    },
+    {
+      "id": "kara_09-room-tone-change",
+      "source": "kara_09",
+      "excerpt": [1, 20],
+      "description": "White noise at -56 dBFS RMS from the pause after paragraph 15, inside the unedited reading's one long steady room-tone stretch: the room tone rises mid-chapter but stays under the -50 dBFS silence floor.",
+      "edits": [
+        {"hiss": {"dbfs": -56, "afterParagraph": 15}, "knownIssue": "A silence's level is its mean, which on real narration is set by breath tails at -53 to -59 dBFS rather than the -67 dBFS room: the noise raises those means about 3 dB, under the 6 dB room-tone step, and a louder noise crosses the -50 dBFS silence floor and leaves no silences to measure."}
+      ]
+    },
+    {
+      "id": "kara_09-edges",
+      "source": "kara_09",
+      "excerpt": [1, 20],
+      "description": "0.15 s of room tone before the first word and 12 s after the last: head too short, tail too long for ACX.",
+      "headSeconds": 0.15,
+      "tailSeconds": 12,
+      "trimToSpeech": true,
+      "edits": []
+    }
+  ]
+}

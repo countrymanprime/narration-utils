@@ -118,4 +118,17 @@ describe('ChapterSyncPanel', () => {
     expect(screen.getByText('Room tone')).toBeTruthy();
     expect(screen.getByText(/REAPER has changes that aren’t saved yet/)).toBeTruthy();
   });
+
+  it('says why background checks wait, when they are on and something is blocking them (daw-chapter-track-auto-sync.prd.md Phase 7)', async () => {
+    const base = await createMockApi({}, {}).chapterSyncState();
+    const api = createMockApi({ chapterSyncState: async () => ({ ...base, background: { enabled: true, wait: 'recording' } }) }, {});
+    render(<ApiProvider api={api}>{<ChapterSyncPanel notify={() => {}} onChanged={() => {}} />}</ApiProvider>);
+    await screen.findByText(/REAPER is recording/);
+  });
+
+  it('says nothing about background checks when there is nothing to wait on', async () => {
+    render(<ApiProvider api={createMockApi({}, {})}>{<ChapterSyncPanel notify={() => {}} onChanged={() => {}} />}</ApiProvider>);
+    await screen.findByText(/On · last synced/);
+    expect(screen.queryByText(/Background checks/)).toBeNull();
+  });
 });
