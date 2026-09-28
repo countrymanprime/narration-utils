@@ -13,6 +13,7 @@ import { useWorkJob } from '../../hooks/useWorkJob';
 import { AssetFacts } from '../assets/AssetFacts';
 import { AssetInstallPrompt } from '../assets/AssetInstallPrompt';
 import { Heading } from '../primitives/Heading';
+import { Panel } from '../primitives/Panel';
 import { PANEL_FRAME_CLASS } from '../primitives/panelStyles';
 import { TooltipTarget } from '../primitives/Tooltip';
 import { CAT_DOT_BG } from '../manuscript/EntitySummary';
@@ -228,9 +229,9 @@ export function Guide({ notify, goToManuscript }: { notify: Notify; goToManuscri
         </TabList>
       </div>
       {tab === 'Series' ? (
-        <div className="min-h-0 flex-1 overflow-hidden rounded-lg border border-[var(--border)] bg-[var(--surface)] shadow-[var(--shadow)]">
+        <Panel label="Series" flush className="min-h-0 flex-1 overflow-hidden">
           <SeriesTab notify={notify} />
-        </div>
+        </Panel>
       ) : (
         <div className="grid min-h-0 flex-1 gap-4 max-md:h-auto lg:grid-cols-[18rem_minmax(0,1fr)] [&>*]:max-md:min-h-96">
           <TabPanel value={tab} className={`${PANEL_FRAME_CLASS} flex min-h-0 flex-col overflow-hidden`}>
