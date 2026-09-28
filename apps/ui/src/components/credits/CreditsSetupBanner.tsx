@@ -8,7 +8,7 @@ import type { Notify } from '../primitives/Toast';
 /**
  * The credits-setup banner (credits-token-setup-and-front-matter-detection.prd.md, Phase 3, CS1 C): the way back to
  * the "Set up the credits" dialog once the narrator has pressed Not now, or after Save leaves some tokens still
- * unresolved. Shown on Home and above the Manuscript credits card
+ * unresolved. Shown on the Production home and above the Manuscript credits card
  * (mockups/credits-token-setup-and-front-matter-detection/02-home-banner-after-not-now.webp,
  * 03-manuscript-banner-and-fill-in.webp) whenever `CreditsSetupState.banner` is true - which the host already limits
  * to "tokens are unresolved and the narrator has not said Don't ask" (CS2).

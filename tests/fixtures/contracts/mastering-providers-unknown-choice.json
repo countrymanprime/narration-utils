@@ -1,0 +1,39 @@
+{
+  "choice": "audacity",
+  "effective": "builtin",
+  "hasProject": true,
+  "notice": "This project chose a mastering chain this version does not have (\"audacity\"). It masters with the default, Built-in chain (EQ, limiter, gain).",
+  "providers": [
+    {
+      "default": true,
+      "label": "Built-in chain (EQ, limiter, gain)",
+      "modes": [
+        "wav"
+      ],
+      "name": "builtin",
+      "needs": [],
+      "needsApproval": false,
+      "support": {
+        "available": true,
+        "level": "supported"
+      }
+    },
+    {
+      "default": false,
+      "label": "Your DAW's FX chain",
+      "modes": [
+        "daw_region"
+      ],
+      "name": "daw",
+      "needs": [
+        "render_with_fx",
+        "master_chain_read"
+      ],
+      "needsApproval": true,
+      "support": {
+        "available": true,
+        "level": "experimental"
+      }
+    }
+  ]
+}

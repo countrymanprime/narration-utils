@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"reflect"
@@ -8,12 +9,14 @@ import (
 
 	"github.com/countrymanprime/narration-utils/shell/internal/contractfile"
 	"github.com/countrymanprime/narration-utils/shell/internal/masteringport"
+	"github.com/countrymanprime/narration-utils/shell/internal/masteringport/masteringporttest"
 	"github.com/countrymanprime/narration-utils/shell/internal/port"
 )
 
-// TestMasteringProvidersGoldenIsCurrent pins MasteringProviders' three answers on Windows: no project, a project that chose the
-// built-in chain, and a project whose stored choice is the DAW row, which is not available yet (so it masters with the built-in
-// chain, and says so). UPDATE_CONTRACTS=1 rewrites tests/fixtures/contracts/mastering-providers-*.json.
+// TestMasteringProvidersGoldenIsCurrent pins MasteringProviders' four answers on Windows: no project, a project that chose the
+// built-in chain, a project that chose the DAW row (Experimental since render-encode-master Phase 9, so it masters with it), and a
+// project whose stored choice this version does not have (so it masters with the built-in chain, and says so).
+// UPDATE_CONTRACTS=1 rewrites tests/fixtures/contracts/mastering-providers-*.json.
 func TestMasteringProvidersGoldenIsCurrent(t *testing.T) {
 	for _, c := range []struct {
 		name       string
@@ -22,7 +25,8 @@ func TestMasteringProvidersGoldenIsCurrent(t *testing.T) {
 	}{
 		{"mastering-providers-no-project", false, ""},
 		{"mastering-providers-builtin-chosen", true, masteringport.Builtin},
-		{"mastering-providers-daw-not-yet", true, masteringport.DAW},
+		{"mastering-providers-daw-chosen", true, masteringport.DAW},
+		{"mastering-providers-unknown-choice", true, "audacity"},
 	} {
 		t.Run(c.name, func(t *testing.T) {
 			raw, err := encodeBinding(masteringProvidersPayload(masteringport.Rows, "windows", c.hasProject, c.choice), nil)
@@ -78,11 +82,14 @@ func TestChoosingAMasteringRowIsSavedOnTheProjectAndChecked(t *testing.T) {
 		t.Fatalf("stored %q from %s, want builtin on the project", value, source)
 	}
 
-	// The DAW row is declared but not built: it cannot be chosen, and the choice already saved stays.
-	_, err := host.MasteringChooseProvider(masteringport.DAW)
-	var refusal *port.NotSupportedError
-	if !errors.As(err, &refusal) || refusal.Support.Reason != port.ReasonNotYet || err.Error() == "" {
-		t.Fatalf("choosing daw = %v, want a not_yet refusal with a sentence", err)
+	// The DAW row is Experimental: it can be chosen, and masters with the DAW's FX once the narrator approves each render.
+	state = decodeMasteringProviders(t)(host.MasteringChooseProvider(masteringport.DAW))
+	if state.Choice == nil || *state.Choice != masteringport.DAW || state.Effective != masteringport.DAW || state.Notice != "" {
+		t.Fatalf("after choosing daw: %+v", state)
+	}
+	state = decodeMasteringProviders(t)(host.MasteringChooseProvider(masteringport.Builtin))
+	if state.Effective != masteringport.Builtin {
+		t.Fatalf("after choosing builtin again: %+v", state)
 	}
 	if _, err := host.MasteringChooseProvider("audacity"); !errors.Is(err, port.ErrNotSupported) {
 		t.Fatalf("choosing an unknown row = %v, want a *port.NotSupportedError", err)
@@ -102,14 +109,36 @@ func TestChoosingAMasteringRowIsSavedOnTheProjectAndChecked(t *testing.T) {
 
 func TestAStoredChoiceThatCannotRunFallsBackAndSaysSo(t *testing.T) {
 	host := previewSuggestHost(t, previewManuscriptOK)
-	daw := masteringport.DAW
-	if err := host.settings.Save(masteringSettingsTool, "project", map[string]*string{masteringProviderKey: &daw}); err != nil {
+	gone := "audacity"
+	if err := host.settings.Save(masteringSettingsTool, "project", map[string]*string{masteringProviderKey: &gone}); err != nil {
 		t.Fatal(err)
 	}
 	state := decodeMasteringProviders(t)(host.MasteringProviders())
-	if state.Choice == nil || *state.Choice != masteringport.DAW || state.Effective != masteringport.Builtin || state.Notice == "" {
-		t.Fatalf("state = %+v, want the daw choice kept, builtin effective, and a notice", state)
+	if state.Choice == nil || *state.Choice != gone || state.Effective != masteringport.Builtin || state.Notice == "" {
+		t.Fatalf("state = %+v, want the stored choice kept, builtin effective, and a notice", state)
 	}
+
+	// A row that is registered but not available yet falls back the same way, with its own sentence.
+	notYet := port.Entry[masteringport.Mastering]{Name: "later", Descriptor: port.Descriptor{Label: "Later chain", Modes: []string{masteringport.ModeWAV}},
+		New: func() masteringport.Mastering { return notYetRow{} }}
+	rows := masteringport.NewRegistry()
+	rows.Register(masteringporttest.NewFake("fake", false).Entry())
+	rows.Register(notYet)
+	state = masteringProvidersPayload(rows, "windows", true, "later")
+	if state.Effective != "fake" || state.Notice != "Later chain is not available yet. This project masters with the default, Fake chain (a copy), until then." {
+		t.Fatalf("state = %+v, want the default and the not-yet sentence", state)
+	}
+}
+
+// notYetRow is a declared, unbuilt row.
+type notYetRow struct{}
+
+func (notYetRow) Name() string { return "later" }
+func (notYetRow) Capabilities() masteringport.Capabilities {
+	return masteringport.Capabilities{Level: port.NotYetAvailable}
+}
+func (notYetRow) Master(context.Context, masteringport.Request) (masteringport.Result, error) {
+	return masteringport.Result{}, masteringport.NotYetAvailable("later", "Later chain")
 }
 
 func TestChoosingAMasteringRowNeedsAProject(t *testing.T) {

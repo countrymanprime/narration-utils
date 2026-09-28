@@ -6,5 +6,6 @@ import { masteringProvidersSchema } from '../schemas/mastering';
 export const masteringGoldens: Record<string, z.ZodType> = {
   'mastering-providers-no-project.json': masteringProvidersSchema,
   'mastering-providers-builtin-chosen.json': masteringProvidersSchema,
-  'mastering-providers-daw-not-yet.json': masteringProvidersSchema,
+  'mastering-providers-daw-chosen.json': masteringProvidersSchema,
+  'mastering-providers-unknown-choice.json': masteringProvidersSchema,
 };

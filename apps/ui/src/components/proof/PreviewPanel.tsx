@@ -5,7 +5,7 @@ import type { ManuscriptChapter, PinnedPreview, PreviewCandidate, PreviewResult 
 import { chapterName } from '../../chapterName';
 import { describeApiError } from '../../api/errorMessage';
 import { useApi } from '../../api/ApiContext';
-import { describeParagraphs, formatAudioTime, paragraphRefs } from '../home/recordingCheckText';
+import { describeParagraphs, formatAudioTime, paragraphRefs } from '../production/recordingCheckText';
 import { Panel } from '../primitives/Panel';
 import { IconButton } from '../primitives/IconButton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../primitives/Table';

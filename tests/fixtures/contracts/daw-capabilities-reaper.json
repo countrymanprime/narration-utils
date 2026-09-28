@@ -38,9 +38,9 @@
     },
     "master_chain_read": {
       "available": false,
-      "level": "not_yet_available",
-      "message": "Master and track FX listing is not available with REAPER yet.",
-      "reason": "not_yet"
+      "level": "experimental",
+      "message": "Experimental: switched off in Settings.",
+      "reason": "experimental_off"
     },
     "navigate": {
       "available": false,
@@ -90,9 +90,9 @@
     },
     "render_with_fx": {
       "available": false,
-      "level": "not_yet_available",
-      "message": "Mastering with the project's FX is not available with REAPER yet.",
-      "reason": "not_yet"
+      "level": "experimental",
+      "message": "Experimental: switched off in Settings.",
+      "reason": "experimental_off"
     },
     "retake_lanes": {
       "available": false,
