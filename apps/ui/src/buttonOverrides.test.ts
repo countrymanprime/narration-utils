@@ -13,19 +13,17 @@ import { describe, expect, test } from 'vitest';
 // The files left are owned by a later phase of the same PRD, which composes the fixed primitive when it redraws its page
 // ("Ownership rule": a primitive phase does not edit a page-specific component's files).
 const CEILING: Record<string, number> = {
-  // Phase 13 (the Booth transport and reading surface, mocks 03 and 07): the top bar's Companion and Exit buttons.
-  // `CompanionShell.tsx`'s own Full app and toolbar recipe are migrated (`size="sm"`); its entry is gone.
-  'src/components/booth/BoothView.tsx': 2,
   // Phase 15 (the Script prep rail and chapter list, mock 02).
   'src/components/script/ScriptPage.tsx': 2,
   'src/components/script/ScriptRail.tsx': 1,
   // Phase 8 (the header, serial on AppShell.tsx): the zoom readout, a mono number between the zoom buttons.
   'src/components/layout/AppShell.tsx': 1,
-  // Phase 2: the Stage summary's chips are chips drawn as buttons, and become StatusBadges.
-  'src/components/stages/StageSummary.tsx': 3,
   // Phases 5 and 10: the selection menu's joined buttons become a Toolbar holding a segmented group.
   'src/components/manuscript/SelectionMenu.tsx': 4,
 };
+// Phase 13 (the Booth transport and reading surface, mocks 03 and 07): the top bar's Companion/Exit buttons and
+// `CompanionShell.tsx`'s own toolbar recipe are migrated to `size="sm"`; both entries are gone (0). Stage summary's
+// chips became `StatusBadge`s in Phase 2's own branch, already merged here; its entry is gone too.
 
 // A class that sets what `Button` owns. Variant prefixes (`max-sm:`, `hover:`) and the important mark (`!`) are stripped first.
 const LOOK =

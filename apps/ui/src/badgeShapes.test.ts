@@ -20,8 +20,12 @@ const PENDING: Record<string, Partial<Record<Shape, number>> & { owner: string }
   'src/components/layout/EngineChip.tsx': { chip: 2, dot: 2, owner: 'Phase 8' },
   'src/components/layout/TimerChip.tsx': { chip: 1, owner: 'Phase 8' },
   'src/components/booth/BuiltinRecorder.tsx': { chip: 1, dot: 1, owner: 'Phase 8 (the chip only)' },
-  // The Booth's control-bar chip.
+  // The Booth's control-bar chip (the start-point chip: a quoted sentence fragment with a nested clear button, which
+  // `Badge`'s label/icon-only API has no room for).
   'src/components/booth/ReadingControlBar.tsx': { chip: 1, owner: 'Phase 13' },
+  // The Booth's REC pill and its dot: drawn with `--rec-fill`/`--rec-text`, not a `StatusTone`, since no other page ever
+  // reuses this exact maroon (ADR 0656).
+  'src/components/booth/BoothView.tsx': { chip: 1, dot: 1, owner: 'Phase 13 (ADR 0656)' },
   // The Proof notes header's sources line and the legend's dots.
   'src/components/proof/NotesHeader.tsx': { chip: 1, owner: 'Phase 12' },
   'src/components/proof/NotesStrip.tsx': { dot: 1, owner: 'Phase 12' },
