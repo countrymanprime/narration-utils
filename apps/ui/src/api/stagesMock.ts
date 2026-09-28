@@ -85,7 +85,7 @@ const UNKNOWN_REASONS: Record<StageUnknownCause, string> = {
   unconfirmed_mapping: 'A track’s name matches this chapter. Confirm the link to check its recording.',
   multiple_tracks: 'This chapter is linked to more than one REAPER track. Keep one link.',
   measurement_unavailable: 'The recording cannot be checked here: the Whisper model Small is not installed.',
-  project_unreadable: 'Choose the saved REAPER project file on the Tracks page.',
+  project_unreadable: 'Choose the saved REAPER project file in the audio engine panel.',
   provider_error: 'could not check: the recording check results could not be read',
 };
 
@@ -99,7 +99,7 @@ const EDITING_UNKNOWN_REASONS: Partial<Record<StageUnknownCause, string>> = {
   unconfirmed_mapping: 'A track’s name matches this chapter. Confirm the link to check its editing.',
   multiple_tracks: 'This chapter is linked to more than one REAPER track. Keep one link.',
   measurement_unavailable: 'Empty space cannot be checked here yet.',
-  project_unreadable: 'Choose the saved REAPER project file on the Tracks page.',
+  project_unreadable: 'Choose the saved REAPER project file in the audio engine panel.',
   provider_error: 'could not check: the editing check results could not be read',
 };
 
@@ -110,7 +110,7 @@ const PROOFING_UNKNOWN_REASONS: Partial<Record<StageUnknownCause, string>> = {
   incomplete_run: 'The last comparison did not cover every item. Compare every item on the chapter’s track.',
   analysis_running: 'A comparison of this chapter is running.',
   unmapped_track: 'Link this chapter to its REAPER track.',
-  unconfirmed_mapping: 'A track’s name matches this chapter. Confirm the link on the Tracks page.',
+  unconfirmed_mapping: 'A track’s name matches this chapter. Confirm the link in the audio engine panel.',
   multiple_tracks: 'This chapter is linked to more than one REAPER track. Keep one link.',
   project_unreadable: 'The saved REAPER project could not be read.',
   provider_error: 'could not check: the pickup results could not be read',

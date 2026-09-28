@@ -48,7 +48,7 @@ func discoverProjectFiles(folder string, store *settings.Store) (candidates []st
 }
 
 // selectedProjectFile is the saved .rpp the analyses read (the recording
-// coverage service's Config.ProjectFile): the Tracks page's selection, with
+// coverage service's Config.ProjectFile): the audio engine panel's selection, with
 // the same errors tracksList gives when there is none.
 func selectedProjectFile(folder string, store *settings.Store) (string, error) {
 	candidates, selected, err := discoverProjectFiles(folder, store)

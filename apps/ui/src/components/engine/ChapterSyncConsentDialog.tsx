@@ -71,7 +71,7 @@ export function ChapterSyncConsentDialog({
                 ))}
               </ul>
               <p className="mt-1" style={{ color: 'var(--text-muted)' }}>
-                You choose these after syncing, on Tracks or from the chapter&rsquo;s track button on Home.
+                You choose these after syncing, in the audio engine panel or from the chapter&rsquo;s track button on Home.
               </p>
             </section>
           )}
@@ -83,7 +83,7 @@ export function ChapterSyncConsentDialog({
           )}
           {notChapters && notChapters.names !== 'None.' && (
             <section>
-              <h3 className="section-label mb-1">Tracks that are not chapters</h3>
+              <h3 className="section-label mb-1">Tracks that are not chapters ({preview.unmatched.length + preview.pickupTracks.length})</h3>
               <p>{notChapters.names}</p>
               {notChapters.note && (
                 <p className="mt-0.5" style={{ color: 'var(--text-muted)' }}>
@@ -92,7 +92,9 @@ export function ChapterSyncConsentDialog({
               )}
             </section>
           )}
-          <p style={{ color: 'var(--text-muted)' }}>You can turn chapter sync on or off later on Tracks.</p>
+          <p style={{ color: 'var(--text-muted)' }}>
+            You can turn chapter sync on or off later in the audio engine panel (the REAPER chip at the top of the window).
+          </p>
         </div>
       )}
     </Dialog>

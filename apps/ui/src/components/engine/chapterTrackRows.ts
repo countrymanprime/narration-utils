@@ -1,6 +1,6 @@
 import type { ManuscriptChapter, Track, TrackMapping } from '../../types';
 
-/** A chapter's link state for the Tracks page list (analysis evidence ledger PRD, Phase 7, Q7): `linked` when the
+/** A chapter's link state for the audio engine panel list (analysis evidence ledger PRD, Phase 7, Q7): `linked` when the
  * confirmed track still exists in the current REAPER project, `missing_track` when the confirmed trackGuid no longer
  * resolves to a track (the track was deleted or the project points elsewhere), `unlinked` when nothing is confirmed yet. */
 export type ChapterLinkState = 'linked' | 'unlinked' | 'missing_track';

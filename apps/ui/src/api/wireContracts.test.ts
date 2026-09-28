@@ -594,6 +594,12 @@ describe('answers of the mock client for the manuscript, Story Bible and project
     expect(unsaved).toMatchObject({ consent: 'on', unsavedEdits: true, batch: null });
     expect(unsaved.activity.map((row) => row.trigger)).toEqual(['watch']);
 
+    // The engine panel's Sync activity (stage navigation Phase 6): three batches, one automatic and one manual link.
+    const activity = await createMockApi({}, { chapterSync: 'activity' }).chapterSyncState();
+    expectMatches(chapterSyncStateSchema, activity, 'mock chapter sync, the engine panel activity');
+    expect(activity.activity.map((row) => row.trigger)).toEqual(['watch', 'watch', 'consent']);
+    expect(activity.chapters.slice(0, 2).map((row) => row.origin)).toEqual(['auto', 'manual']);
+
     // Phase 6: a status row per narration chapter, the recording check's own answer, with no Check press.
     expect(quiet.chapters.length).toBeGreaterThan(0);
     const staleApi = createMockApi({}, { coverage: { stale: [quiet.chapters[0].chapterId] } });

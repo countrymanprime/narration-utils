@@ -67,7 +67,7 @@ type Deps = {
 /** The sentence the host gives with each refusal (apps/desktop/internal/coverage), in short. */
 const COVERAGE_REFUSAL_MESSAGES: Record<CoverageRefusalReason, string> = {
   no_project: 'Open a project before checking a recording.',
-  no_project_file: 'Choose the saved REAPER project file on the Tracks page first.',
+  no_project_file: 'Choose the saved REAPER project file in the audio engine panel first.',
   project_unreadable: 'The saved REAPER project file could not be read.',
   no_manuscript: 'Import a manuscript before checking a recording.',
   chapter_not_found: 'That chapter is not part of the current manuscript.',

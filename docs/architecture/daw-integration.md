@@ -5,7 +5,7 @@
 ## REAPER rules
 
 - Keep business logic in Go and user-facing UI in React. The two packaged Python analysis sidecars remain Manuscript Guide and Transcript Compare. Keep only project discovery, manifest construction, marker/take mutations, and cursor navigation in REAPER Lua.
-- Reading a project's track and item metadata does not need REAPER at all: the Go `tracks` package parses the `.rpp` file directly, so the [Tracks](../utilities/tracks.md) page works in a standalone launch. The "project discovery in Lua" rule above applies to state only a running REAPER knows (selection, edit cursor, take markers); anything derivable from the saved project file stays in Go.
+- Reading a project's track and item metadata does not need REAPER at all: the Go `tracks` package parses the `.rpp` file directly, so the [Tracks](../utilities/tracks.md) list in the audio engine panel works in a standalone launch. The "project discovery in Lua" rule above applies to state only a running REAPER knows (selection, edit cursor, take markers); anything derivable from the saved project file stays in Go.
 - The installed launcher resolves its adjacent Wails executable and resource bridge; checkout paths are a development-only fallback.
 - The launcher does not read or write ExtState paths. Go resolves the shared layered JSON settings and passes explicit marker colors with the marker-export command.
 - Import `NarrationUtils_Launcher.lua` into REAPER's Action list. It starts the non-blocking native Wails workspace and its file-session bridge for REAPER-only operations. There is no loopback server, REST endpoint, browser tab, or port override.
@@ -121,7 +121,7 @@ detection (see below).
   site, two triggers — the same pattern `LocalAssets`' mount-plus-"Try again" uses), reading "Checking…" and
   disabled meanwhile, so a narrator who just installed a DAW sees it detected without leaving Settings.
 - Offers a **"Link a REAPER project file"** handoff button on a detected-but-not-yet-linked entry, which calls the
-  one shared `linkDawFile()` action Settings' project-scoped DAW panel, the header pill, and the Tracks page
+  one shared `linkDawFile()` action Settings' project-scoped DAW panel, and the audio engine panel
   already use (`project-workspace-and-daw-link.prd.md`, W19) — no separate binding, no new file dialog. It is
   hidden once a project is already linked, since it would have nothing left to offer.
 

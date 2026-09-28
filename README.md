@@ -9,7 +9,7 @@ logic is DAW-agnostic; a thin per-DAW driver wires it into a specific host.
 - [Transcript Compare](docs/utilities/transcript-compare.md) (`sidecars/transcript-compare/`, a chapter's Proof view) —
   transcribes a recorded chapter with a local Whisper model and diffs it against the manuscript, dropping take markers at
   every discrepancy.
-- [Tracks](docs/utilities/tracks.md) (the Tracks page) — lists the tracks of a project's REAPER `.rpp` file and plays their
+- [Tracks](docs/utilities/tracks.md) (the audio engine panel, opened from the header's engine chip) — lists the tracks of a project's REAPER `.rpp` file and plays their
   audio, with no running REAPER needed, and scans a track for pickups and duplicate reads. With REAPER running the launcher,
   it also stamps chapters onto REAPER items, works through a proofer's pickup list and sets up a per-chapter render; it can
   add ID3 chapter tags to a copy of a rendered MP3.

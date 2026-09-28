@@ -162,7 +162,7 @@ type FindingsMockOptions = {
   reaper?: MockReaper;
   /**
    * Findings computed from state that can change after this mock is built (edit-and-proof-workspace.prd.md Phase 4's
-   * workspaceOverlayFinding, mockApi.ts: chapter-1's track link, made only once the narrator confirms one on Tracks,
+   * workspaceOverlayFinding, mockApi.ts: chapter-1's track link, made only once the narrator confirms one in the audio engine panel,
    * a mock API call the visual suite's own driver makes after boot - not at createMockApi's boot-time seed). Called
    * fresh before every read, and any not already in the store (by id) are folded in once, keeping any decision a
    * later read or review made on one - the same rule saveAnalyzerFindings/saveFinding keep.

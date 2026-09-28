@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
+import { EnginePanelLink } from '../engine/EnginePanelContext';
 import { useApi } from '../../api/ApiContext';
 import { apiErrorMessage, describeApiError } from '../../api/errorMessage';
 import { chapterName } from '../../chapterName';
@@ -304,7 +305,8 @@ function ChapterView({ chapterId, notify, transcript, dawFileLinked, goToManuscr
         {!linkedTrackGuid && (
           <Panel title="No linked track">
             <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
-              This chapter isn&rsquo;t linked to a REAPER track yet. Link one from the Chapter links table on Tracks, then open this chapter again.
+              This chapter isn&rsquo;t linked to a REAPER track yet. Link one from the Chapter links table in the audio engine panel, then open this chapter
+              again. <EnginePanelLink />
             </p>
           </Panel>
         )}

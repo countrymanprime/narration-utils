@@ -17,12 +17,12 @@
   "no_link.arm": {
     "outcome": "refused",
     "reason": "unlinked",
-    "message": "\"Chapter II: The Pool of Tears\" has no linked track. Link it to its REAPER track on the Tracks page."
+    "message": "\"Chapter II: The Pool of Tears\" has no linked track. Link it to its REAPER track in the audio engine panel."
   },
   "no_link.start": {
     "outcome": "refused",
     "reason": "unlinked",
-    "message": "\"Chapter II: The Pool of Tears\" has no linked track. Link it to its REAPER track on the Tracks page."
+    "message": "\"Chapter II: The Pool of Tears\" has no linked track. Link it to its REAPER track in the audio engine panel."
   },
   "no_link.stop": {
     "outcome": "stopped",
@@ -111,12 +111,12 @@
   "track_missing.arm": {
     "outcome": "refused",
     "reason": "track_missing",
-    "message": "The track linked to this chapter is no longer in the REAPER project. Link it again on the Tracks page."
+    "message": "The track linked to this chapter is no longer in the REAPER project. Link it again in the audio engine panel."
   },
   "track_missing.start": {
     "outcome": "refused",
     "reason": "track_missing",
-    "message": "The track linked to this chapter is no longer in the REAPER project. Link it again on the Tracks page."
+    "message": "The track linked to this chapter is no longer in the REAPER project. Link it again in the audio engine panel."
   },
   "track_missing.stop": {
     "outcome": "stopped",

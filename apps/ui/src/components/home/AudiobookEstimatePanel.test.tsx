@@ -462,7 +462,7 @@ describe('chapter-track link control on Home', () => {
 
   it('points to the Tracks page to choose a project when more than one REAPER project file is found (TL7)', async () => {
     await openTracks({}, { tracksCandidates: ['C:/proj/one.rpp', 'C:/proj/two.rpp'] });
-    expect(screen.getByText(/Choose which REAPER project file to use on the Tracks page\./)).toBeTruthy();
+    expect(screen.getByText(/Choose which REAPER project file to use in the audio engine panel\./)).toBeTruthy();
     expect(screen.getByRole('link', { name: 'Choose it on Tracks' }).getAttribute('href')).toBe('/tracks');
   });
 });
