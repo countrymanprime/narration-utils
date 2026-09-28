@@ -94,4 +94,43 @@ describe('EditingCheckPanel', () => {
     const row = await within(dialog).findByLabelText(/Empty space at/);
     expect(within(row).getByRole('button', { name: 'No audio to hear for Empty space' })).toHaveProperty('disabled', true);
   });
+
+  // Q6 (editing-readiness-analysis.prd.md Phase 8): the per-chapter analysis-source choice.
+  describe('source choice (Q6)', () => {
+    it('shows items on this chapter’s track selected by default', async () => {
+      renderPanel({ stages: { editing: { [chapter.id]: 'met' } } });
+      const dialog = await panel();
+      await waitFor(() => expect(within(dialog).getByRole('button', { name: "Items on this chapter's track", pressed: true })).toBeTruthy());
+      expect(within(dialog).getByRole('button', { name: 'The rendered file', pressed: false })).toBeTruthy();
+      await waitFor(() => expect(within(dialog).getByText(/Source analyzed: items on the chapter's track/)).toBeTruthy());
+    });
+
+    it('switching to the rendered file calls the binding and re-reads the chapter’s state', async () => {
+      const user = userEvent.setup();
+      const { api } = renderPanel({ stages: { editing: { [chapter.id]: 'met' } } });
+      const setSpy = vi.spyOn(api, 'editingSetSourceChoice');
+      const dialog = await panel();
+      await waitFor(() => within(dialog).getByRole('button', { name: "Items on this chapter's track", pressed: true }));
+
+      await user.click(within(dialog).getByRole('button', { name: 'The rendered file' }));
+
+      await waitFor(() => expect(within(dialog).getByRole('button', { name: 'The rendered file', pressed: true })).toBeTruthy());
+      expect(setSpy).toHaveBeenCalledWith(chapter.id, 'render');
+      expect(await api.editingSourceChoice(chapter.id)).toBe('render');
+    });
+
+    it('names the render once it is the active choice, and the empty-space evidence changes with it', async () => {
+      const user = userEvent.setup();
+      renderPanel({ stages: { editing: { [chapter.id]: 'not_met' } } });
+      const dialog = await panel();
+      await waitFor(() => expect(within(dialog).getByText(/Source analyzed: items on the chapter's track/)).toBeTruthy());
+      expect(within(dialog).getByText(/1 empty-space candidate: 1\.80 s between two phrases/)).toBeTruthy();
+
+      await user.click(within(dialog).getByRole('button', { name: 'The rendered file' }));
+
+      await waitFor(() => expect(within(dialog).getByText(/Source analyzed: the rendered file \(FX and edits included\)/)).toBeTruthy());
+      // Choosing the render is an explicit, per-chapter pick - it never silently reuses the item scenario's own reason.
+      await waitFor(() => expect(within(dialog).getByText(/Checked the rendered file; no open empty-space candidate remains\./)).toBeTruthy());
+    });
+  });
 });

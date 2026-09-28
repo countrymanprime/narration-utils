@@ -54,6 +54,14 @@ func (p *SignalProvider) Signals(ctx context.Context, chapter stages.ChapterCont
 		return p.projectUnreadableSignals(view.ProjectErr, now), nil
 	}
 
+	choice, err := p.service.sourceChoice(chapter.DocumentID, chapter.ChapterID)
+	if err != nil {
+		return nil, err
+	}
+	if choice == SourceRender {
+		return p.service.renderSignals(chapter, view, now)
+	}
+
 	coverage, _, basisRecordIDs, err := p.service.gatherCoverage(chapter, view, AnalyzerSilence, AnalyzerVersion)
 	if err != nil {
 		return nil, err
@@ -95,7 +103,7 @@ func (p *SignalProvider) Signals(ctx context.Context, chapter stages.ChapterCont
 func (p *SignalProvider) projectUnreadableSignals(err error, now time.Time) []stages.Signal {
 	basis := stages.Basis{LedgerRecordIDs: []string{}}
 	emptySpace := unknownEditingSignal(
-		stages.Signal{ID: EmptySpaceSignalID, Stage: stages.StageEditing, Evidence: []stages.Evidence{processedAudioCaveat()}, Basis: basis, ComputedAt: now},
+		stages.Signal{ID: EmptySpaceSignalID, Stage: stages.StageEditing, Evidence: []stages.Evidence{processedAudioCaveat(), itemsSourceEvidence()}, Basis: basis, ComputedAt: now},
 		stages.CauseProjectUnreadable, "The saved REAPER project file could not be read: "+err.Error()+".",
 	)
 	return []stages.Signal{
@@ -174,6 +182,37 @@ func (s *Service) gatherCandidates(chapterID string) (map[string][]CandidateStat
 		return nil, err
 	}
 	for _, finding := range found {
+		class, _ := finding.Evidence["class"].(string)
+		// A source key naming the render path (Phase 8's own findings,
+		// composeAndPersistRender in render_service.go) is read separately by
+		// gatherRenderCandidates below; an absent key (every finding before
+		// Phase 8) or "items" is this, the item path's own candidate.
+		if src, _ := finding.Evidence["source"].(string); src != "" && src != "items" {
+			continue
+		}
+		byClass[class] = append(byClass[class], CandidateStatus{Open: finding.Review.Status != findings.StatusDismissed, Evidence: findingEvidence(finding)})
+	}
+	return byClass, nil
+}
+
+// gatherRenderCandidates is gatherCandidates' render-path counterpart (Q6):
+// the same already-persisted findings, filtered to the render-sourced ones a
+// render scan wrote (composeAndPersistRender, render_service.go), keyed by
+// class the same way gatherCandidates itself is.
+func (s *Service) gatherRenderCandidates(chapterID string) (map[string][]CandidateStatus, error) {
+	byClass := map[string][]CandidateStatus{}
+	if s.findings == nil {
+		return byClass, nil
+	}
+	found, err := s.findings.List(findings.Query{Analyzer: analyzerName, ChapterID: chapterID})
+	if err != nil {
+		return nil, err
+	}
+	for _, finding := range found {
+		src, _ := finding.Evidence["source"].(string)
+		if src != "render" {
+			continue
+		}
 		class, _ := finding.Evidence["class"].(string)
 		byClass[class] = append(byClass[class], CandidateStatus{Open: finding.Review.Status != findings.StatusDismissed, Evidence: findingEvidence(finding)})
 	}
