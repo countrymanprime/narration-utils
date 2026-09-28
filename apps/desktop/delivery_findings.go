@@ -55,7 +55,7 @@ func (h *Host) saveFinishedDeliveryFindings(job *measureJob) {
 		}
 		// Saved even when empty: an empty set is how every rule this file missed before resolves once it is met.
 		if _, err := svc.findings.SaveAnalyzerFindings(deliveryprofile.ReviewAnalyzer, deliveryprofile.ReviewScope(file.Report.File), fresh); err != nil {
-			h.persist.Warn("findings_save_failed", fmt.Sprintf("The delivery findings of %s were not saved for the Review page: %v", file.Name, err))
+			h.persist.Warn("findings_save_failed", fmt.Sprintf("The delivery findings of %s were not saved for Proof: %v", file.Name, err))
 		}
 	}
 }

@@ -96,7 +96,7 @@ func TestAChapterWithNoLinkNeverAsksREAPER(t *testing.T) {
 
 	unlinked := readState(t, host, reader, ids[1])
 
-	if unlinked.Status != readAloudNoLink || unlinked.Reason != readAloudUnlinked || !strings.Contains(unlinked.Message, "Tracks page") {
+	if unlinked.Status != readAloudNoLink || unlinked.Reason != readAloudUnlinked || !strings.Contains(unlinked.Message, "audio engine panel") {
 		t.Fatalf("unlinked = %+v", unlinked)
 	}
 	if len(reader.asked) != 0 {

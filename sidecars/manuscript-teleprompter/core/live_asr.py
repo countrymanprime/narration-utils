@@ -127,6 +127,10 @@ import asr_adapters  # noqa: F401
 # Registers the "dshow" row into BACKENDS (provider-ports P11); iter_microphone_chunks below looks it up rather than
 # calling devices.py/PyAV itself.
 import capture_dshow  # noqa: F401
+
+# Registers the Experimental "wasapi" row after it (native-recording-suite P1, ADR 0357): the built-in recorder's engine.
+# Nothing here opens it; --capabilities reports it, and the packaged app's smoke test checks it registered.
+import capture_wasapi  # noqa: F401
 from narration_common.logging_utils import log, set_log_file
 
 # Word and Hypothesis are the speech engine port's types (provider-ports P3); they are re-exported here so `live_asr.Hypothesis`

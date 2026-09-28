@@ -6,7 +6,7 @@ import type { StateEntry } from '../lib/types';
 import { FREEZES_THE_CLOCK, KEEPS_DESKTOP_SCROLL, LIVE_PROGRESS_MOVES_ON } from './shared';
 
 export const proofChapterStates: StateEntry[] = [
-  // The chapter workspace (edit-and-proof-workspace.prd.md Phases 2 to 4), reached from a linked chapter's "Open workspace" link.
+  // The chapter workspace (edit-and-proof-workspace.prd.md Phases 2 to 4), reached from a linked chapter's "Open in Proof" link.
   {
     page: 'proof-chapter',
     state: 'never',
@@ -34,18 +34,23 @@ export const proofChapterStates: StateEntry[] = [
     page: 'proof-chapter',
     state: 'flag-selected',
     description: 'Proof chapter view, a flag selected from the Flags panel - its script/heard text and "Play from here" shown in the panel’s detail section',
+    // Below `xl` the detail sits under the flags list, off the bottom of a reused desktop scroll position (issue #509
+    // D82 judge-duplicate fix): the driver scrolls it into view per viewport.
+    ...KEEPS_DESKTOP_SCROLL,
   },
   {
     page: 'proof-chapter',
     state: 'flag-finding-open',
     description:
       'Proof chapter view, a finding-backed flag selected (edit-and-proof-workspace.prd.md Phase 4): "From <analyzer>", Go to/Loop in REAPER for that word, and the Decision section (Accept/Dismiss/Defer, a note field) - mockups/edit-and-proof-workspace/02-flag-detail-open.webp',
+    ...KEEPS_DESKTOP_SCROLL,
   },
   {
     page: 'proof-chapter',
     state: 'flag-decided',
     description:
       'Proof chapter view, the finding-backed flag just accepted in place - "Saved as accepted." and the decision reflected, without leaving the page',
+    ...KEEPS_DESKTOP_SCROLL,
   },
   {
     page: 'proof-chapter',
@@ -74,7 +79,7 @@ export const proofChapterStates: StateEntry[] = [
     page: 'proof-chapter',
     state: 'compare-results-misread',
     description:
-      "Proof chapter view, a finished comparison's misread selected in the Flags panel - the inline script/heard diff, its marker state, Show in manuscript, Play recorded audio and Add pronunciation equivalence (the Proofing page's expanded results row)",
+      "Proof chapter view, a finished comparison's misread selected in the Flags panel - the inline script/heard diff, its marker state, Show in Script, Play recorded audio and Add pronunciation equivalence (the Proofing page's expanded results row)",
     ...KEEPS_DESKTOP_SCROLL,
   },
   {
@@ -159,6 +164,20 @@ export const proofChapterStates: StateEntry[] = [
     description:
       'Proof chapter view, the Preview panel with a full-length candidate warned for a reason other than being short (an unclassified import, ?mockPreviewCandidates=warnings) - text and an icon, never colour alone',
   },
+  // The pin and adjust UI (proofing-preview-suggestion.prd.md Phase 8): the narrator's own pinned window, settled on
+  // rather than recomputed, with edge adjustment and a stale banner when the manuscript has moved on since.
+  {
+    page: 'proof-chapter',
+    state: 'preview-pinned',
+    description:
+      'Proof chapter view, a pinned preview beneath the candidates (?mockPreviewCandidates=pinned): its range, reasons, and the edge-adjustment controls',
+  },
+  {
+    page: 'proof-chapter',
+    state: 'preview-pin-stale',
+    description:
+      'Proof chapter view, a pinned preview whose manuscript text changed since it was pinned (?mockPreviewCandidates=pin-stale) - the stale banner in text and an icon, never colour alone, beside its still-recomputed evidence',
+  },
   // The stage recommendations panel (chapter-stage-recommendations.prd.md Phase 8, proofing-readiness-signals.prd.md Phases 1 and 5):
   // every narration chapter currently in Proofing, with the StageSuggestion/StageEvidence pattern Home's breakdown table uses.
   {
@@ -182,6 +201,6 @@ export const proofChapterStates: StateEntry[] = [
     page: 'proof-chapter',
     state: 'stage-panel-evidence-unknown',
     description:
-      'Proof chapter view, the stage recommendations panel: Why opened on an unmapped-track cause (?mockProofingSignal=unmapped-track) - "Open Tracks", never "Open recording check" (stageText.ts PROOFING_CAUSE_TEXT)',
+      'Proof chapter view, the stage recommendations panel: Why opened on an unmapped-track cause (?mockProofingSignal=unmapped-track) - "Open the audio engine panel", never "Open recording check" (stageText.ts PROOFING_CAUSE_TEXT)',
   },
 ];

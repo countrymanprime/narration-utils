@@ -169,8 +169,8 @@ export function ReaderCard({
               </TooltipTarget>
             )}
             {showWorkspace ? (
-              <TooltipTarget className="relative z-[1]" text="Open the chapter workspace: listen, follow the script and see flags">
-                <Button variant="ghost" className="text-xs" aria-label={`Open workspace for ${title}`} onClick={onWorkspace}>
+              <TooltipTarget className="relative z-[1]" text="Open in Proof: listen, follow the script and see flags">
+                <Button variant="ghost" className="text-xs" aria-label={`Open in Proof for ${title}`} onClick={onWorkspace}>
                   <FontAwesomeIcon icon={faWaveSquare} />
                 </Button>
               </TooltipTarget>

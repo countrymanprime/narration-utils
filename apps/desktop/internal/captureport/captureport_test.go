@@ -22,9 +22,9 @@ func TestEveryRegisteredBackendPassesTheSuite(t *testing.T) {
 
 func TestOnlyWindowsHasABackend(t *testing.T) {
 	// The teleprompter sidecar lists and opens microphones through FFmpeg's dshow on Windows, the only supported platform
-	// (docs/adr/0412; the macOS coreaudio row was removed by D74).
+	// (docs/adr/0412; the macOS coreaudio row was removed by D74), and the built-in recorder through WASAPI (docs/adr/0357).
 	for platform, want := range map[string][]string{
-		"windows": {"dshow"},
+		"windows": {"dshow", "wasapi"},
 		"darwin":  {},
 		"linux":   {},
 	} {
@@ -41,6 +41,19 @@ func TestForWindowsIsDshow(t *testing.T) {
 	}
 	if entry.Name != captureport.DShow || entry.New().Name() != "dshow" {
 		t.Fatalf("For(windows) = %q, want dshow", entry.Name)
+	}
+}
+
+func TestWasapiIsExperimentalAndDshowSupported(t *testing.T) {
+	// The wasapi row waits for the owner's check with a real microphone (#510) before it is Supported (docs/adr/0357).
+	for name, want := range map[string]port.Level{captureport.DShow: port.Supported, captureport.WASAPI: port.Experimental} {
+		entry, err := captureport.Backends.Lookup(name)
+		if err != nil {
+			t.Fatalf("Lookup(%q): %v", name, err)
+		}
+		if got := entry.New().Level(); got != want {
+			t.Errorf("%s is %v, want %v", name, got, want)
+		}
 	}
 }
 
@@ -61,11 +74,11 @@ func TestAPlatformWithoutABackendIsRefusedWithANotSupportedError(t *testing.T) {
 }
 
 func TestAnUnknownBackendIsRefusedWithANotSupportedError(t *testing.T) {
-	_, err := captureport.Backends.Lookup("wasapi")
+	_, err := captureport.Backends.Lookup("asio")
 	if !errors.Is(err, port.ErrNotSupported) {
-		t.Fatalf("Lookup(wasapi) = %v, want a *port.NotSupportedError", err)
+		t.Fatalf("Lookup(asio) = %v, want a *port.NotSupportedError", err)
 	}
-	if want := `There is no capture backend called "wasapi".`; err.Error() != want {
+	if want := `There is no capture backend called "asio".`; err.Error() != want {
 		t.Fatalf("message = %q, want %q", err.Error(), want)
 	}
 }
@@ -74,7 +87,7 @@ func TestANewBackendIsOneRowAndPassesTheSuiteWithNoOtherEdit(t *testing.T) {
 	backends := captureport.NewRegistry()
 	for _, row := range []struct{ name, label, platform string }{
 		{"pulse", "PulseAudio", "linux"},
-		{"wasapi", "WASAPI", "windows"},
+		{"asio", "ASIO", "windows"},
 	} {
 		name := row.name
 		backends.Register(port.Entry[captureport.Backend]{

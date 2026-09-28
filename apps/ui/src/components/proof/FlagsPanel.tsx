@@ -131,9 +131,9 @@ function CompareActions({ row, actions }: { row: Discrepancy; actions: CompareFl
         )}
       </div>
       <div className="flex flex-wrap gap-2">
-        <TooltipTarget text={row.chapter ? 'Open this line in the Manuscript' : 'No manuscript source is available'}>
+        <TooltipTarget text={row.chapter ? 'Open this line in Script' : 'No manuscript source is available'}>
           <Button variant="ghost" disabled={!row.chapter} onClick={() => actions.showInManuscript(row)}>
-            Show in manuscript
+            Show in Script
           </Button>
         </TooltipTarget>
         <TooltipTarget

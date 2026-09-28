@@ -5,7 +5,7 @@
 
 ## Context
 
-[Proofing Preview Suggestion](../prds/proofing-preview-suggestion.prd.md) Phase 7 ("audio quality and performance signals") needs to know, per chapter, whether a windowed audio-quality finding (clipping, a level shift, room tone, a long pause) falls inside a suggested window, so a Sample candidate can be excluded or ranked down the same way Phase 5 already does for the RD-1 findings store's own findings (Q6, Q7).
+Proofing Preview Suggestion (delivered, PRD deleted; see [the preview suggestion](../architecture/preview-suggestion.md)) Phase 7 ("audio quality and performance signals") needs to know, per chapter, whether a windowed audio-quality finding (clipping, a level shift, room tone, a long pause) falls inside a suggested window, so a Sample candidate can be excluded or ranked down the same way Phase 5 already does for the RD-1 findings store's own findings (Q6, Q7).
 
 Reading the delivered code (not the PRD's proposal text) for [diagnostics-delivery-and-cleanup-tools.prd.md](../prds/diagnostics-delivery-and-cleanup-tools.prd.md)'s Phase 4 (DX-4, delivered): `measure.Diagnose`/`DiagnoseFile` (`apps/desktop/internal/measure/diagnostics.go`) does produce a real windowed series (`Diagnostics.ShortTermLoudness`, `.Clipping`, `.LevelShifts`, `.Silences`, `.RoomTone`, `.Pacing`) and `Diagnostics.Findings()` (`apps/desktop/internal/measure/diagnosticfindings.go:34`) does turn it into `findings.Finding` records. But:
 

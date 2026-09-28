@@ -98,3 +98,22 @@ export const StaticIsNotAButton: Story = {
     await expect(within(canvasElement).queryByRole('button')).toBeNull();
   },
 };
+
+// The Booth's "Voices in scene" tags (booth/BoothView.tsx, D85 #6, ADR 0367): colorToken overrides the kind's own
+// colour with one of the seven declared speaker tokens (speakerColor.ts), while the mark keeps its Character kind
+// and behaviour - the same primitive, only its colour source changed.
+export const PerSpeakerColour: Story = {
+  render: () => (
+    <p className="flex flex-wrap gap-2 text-sm">
+      <Highlight kind="Character" colorToken="--speaker-1">
+        Alice
+      </Highlight>
+      <Highlight kind="Character" colorToken="--speaker-3">
+        the Queen
+      </Highlight>
+      <Highlight kind="Character" colorToken="--speaker-6">
+        the Hatter
+      </Highlight>
+    </p>
+  ),
+};

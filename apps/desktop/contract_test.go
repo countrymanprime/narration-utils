@@ -284,7 +284,7 @@ func TestContractSettingsForEachScope(t *testing.T) {
 	}
 }
 
-// The Tracks page's discovery as TracksDiscover and TracksSelect send it: nothing found (a nil list, sent as null), several files and
+// The audio engine panel's discovery as TracksDiscover and TracksSelect send it: nothing found (a nil list, sent as null), several files and
 // no choice yet, and one file that is selected on its own.
 func TestContractTracksDiscovery(t *testing.T) {
 	t.Setenv("APPDATA", t.TempDir())

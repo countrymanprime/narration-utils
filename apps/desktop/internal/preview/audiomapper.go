@@ -3,7 +3,7 @@ package preview
 import "strings"
 
 // This file is Phase 6 of the proofing-preview-suggestion PRD
-// (docs/prds/proofing-preview-suggestion.prd.md#phase-6---audio-position-mapper-spike-then-build): the spike's
+// (see docs/architecture/preview-suggestion.md): the spike's
 // answer to Q8 ("how does a paragraph get an audio time range") and the mapper it decided to build.
 //
 // The spike compared Q8's three options against the delivered codebase, not against the PRD's proposal text:
@@ -16,7 +16,7 @@ import "strings"
 //     internal/tracks/extension.go already decodes them into Item.Ext with no REAPER running and no Lua change
 //     (Item.Position/Item.Length give the same project-second time range Phase 7's windowed analyzers key off of).
 //     The line-id scheme (internal/lineidentity's ComposeLineID/ParseLineID) already supports a paragraph-level
-//     id ("p-000001@<source sha256>"), not only the chapter-level id the one shipped UI trigger (Tracks page,
+//     id ("p-000001@<source sha256>"), not only the chapter-level id the one shipped UI trigger (the audio engine panel's
 //     "Link chapters") stamps today. This file re-implements that same two-field parse locally (composeLineID/
 //     parseLineID below) rather than importing internal/lineidentity, which pulls in the live bridge, the
 //     manuscript service and a stateful run model this package has no business depending on for a pure, offline
