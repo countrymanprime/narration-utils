@@ -8,6 +8,7 @@ import { tracksStates } from './catalog/tracks';
 import { teleprompterStates } from './catalog/teleprompter';
 import { proofStates } from './catalog/proof';
 import { proofChapterStates } from './catalog/proof-chapter';
+import { pickupsStates } from './catalog/pickups';
 import { deliveryStates } from './catalog/delivery';
 import { productionStates } from './catalog/production';
 import { settingsStates } from './catalog/settings';
@@ -33,6 +34,7 @@ export const STATE_CATALOG: StateEntry[] = [
   ...teleprompterStates,
   ...proofStates,
   ...proofChapterStates,
+  ...pickupsStates,
   ...deliveryStates,
   ...productionStates,
   ...settingsStates,
