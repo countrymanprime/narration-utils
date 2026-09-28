@@ -82,4 +82,19 @@ describe('Highlight colours (ADR 0059)', () => {
     expect(mark.style.color).toBe('var(--accent-contrast)');
     expect(mark.style.background).toContain('var(--accent)');
   });
+
+  // Per-speaker dialogue colours (D85 #6, ADR 0367): the Booth's "Voices in scene" tags override the kind's own
+  // colour with one of the seven declared speaker tokens (speakerColor.ts), keeping the Character kind and behaviour.
+  it('draws with colorToken instead of the kind colour when given, keeping the kind for data-highlight', () => {
+    render(
+      <Highlight kind="Character" colorToken="--speaker-3">
+        word
+      </Highlight>,
+    );
+    const mark = screen.getByText('word');
+    expect(mark.getAttribute('data-highlight')).toBe('Character');
+    expect(mark.style.color).toBe('var(--speaker-3-text)');
+    expect(mark.style.background).toBe('color-mix(in srgb, var(--speaker-3) 20%, transparent)');
+    expect(mark.style.boxShadow).toBe('inset 0 -1.5px 0 var(--speaker-3)');
+  });
 });
