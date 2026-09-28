@@ -30,9 +30,9 @@ const ALIAS_COMBOBOX = 'The alias typeahead is the one bespoke combobox and has 
 
 export const AXE_DEBT: AxeDebt[] = [
   ...NESTED_HIGHLIGHT_STATES.map((state) => ({ page: 'script', state, rules: ['nested-interactive'], reason: NESTED_MARKS })),
-  // shell/history-enabled's driver lands on (and captures) the Script page (drivers/shell.ts) with its default
-  // content, which already carries #155's nested marks; history-forward returns to Home before capturing, so it
-  // never hits this rule and needs no entry.
+  // The shell page's history-enabled driver lands on (and captures) the Script page (drivers/shell.ts) with its
+  // default content, which already carries #155's nested marks; history-forward returns to Home before capturing,
+  // so it never hits this rule and needs no entry.
   { page: 'shell', state: 'history-enabled', rules: ['nested-interactive'], reason: NESTED_MARKS },
   { page: 'script', state: 'selection-popup', rules: ['nested-interactive', 'region'], reason: `${NESTED_MARKS}; and ${PORTALLED_POPUP}` },
   { page: 'global', state: 'tooltip', rules: ['aria-hidden-focus', 'region'], reason: `${FOCUS_GUARDS}; and ${PORTALLED_POPUP}` },
