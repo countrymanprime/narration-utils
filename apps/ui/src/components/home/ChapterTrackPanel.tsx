@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faBackward, faForward, faPause, faPlay } from '@fortawesome/free-solid-svg-icons';
+import { chapterName, context } from '../../chapterName';
 import { useApi } from '../../api/ApiContext';
 import { describeApiError } from '../../api/errorMessage';
 import type { ManuscriptContentKind } from '../../api/contracts/manuscript';
@@ -30,6 +31,7 @@ export function ChapterTrackPanel({
   open,
   chapterId,
   chapterTitle,
+  subtitle,
   link,
   trackSummary,
   savedAt,
@@ -41,6 +43,7 @@ export function ChapterTrackPanel({
   open: boolean;
   chapterId: string;
   chapterTitle: string;
+  subtitle?: string;
   /** undefined while the row's own ChapterTrackLinks read is still in flight. */
   link?: ChapterTrackLink;
   /** The linked or suggested track's own facts, resolved by the caller from ChapterTrackLinks' `tracks` list. */
@@ -82,6 +85,7 @@ export function ChapterTrackPanel({
   const trackIndex = useMemo(() => (tracks ?? []).findIndex((track) => track.guid === linkedTrackGuid), [tracks, linkedTrackGuid]);
   const player = useTrackPlayback(tracks ?? [], trackIndex < 0 ? 0 : trackIndex, noop, api.mediaUrl);
   const canPlay = trackIndex >= 0 && player.canPlay;
+  const shortName = chapterName({ title: chapterTitle, subtitle }, 'short');
 
   const selectInReaper = async () => {
     if (!linkedTrackGuid) return;
@@ -136,12 +140,12 @@ export function ChapterTrackPanel({
   };
 
   return (
-    <SlideOver open={open} title={`Track: ${chapterTitle}`} onClose={onClose}>
+    <SlideOver open={open} title={chapterName({ title: chapterTitle, subtitle }, context('Track'))} onClose={onClose}>
       {!link ? (
         <p role="status">Reading the saved project…</p>
       ) : (
         <div className="space-y-4 text-sm">
-          <Header chapterTitle={chapterTitle} link={link} trackSummary={trackSummary} />
+          <Header chapterTitle={shortName} link={link} trackSummary={trackSummary} />
           {trackSummary && (
             <section aria-labelledby="chapter-track-facts" className="space-y-1.5">
               <h3 id="chapter-track-facts" className={EYEBROW}>
@@ -247,7 +251,7 @@ export function ChapterTrackPanel({
               <p role="status">Reading the REAPER tracks…</p>
             ) : (
               <MappingConfirm
-                chapterTitle={chapterTitle}
+                chapterTitle={shortName}
                 tracks={tracks}
                 linkedTrackGuid={link.track?.trackGuid}
                 linkedTrackName={link.track?.trackName}
@@ -268,7 +272,7 @@ export function ChapterTrackPanel({
         </div>
       )}
       {removeOpen && (
-        <RemoveFromRecordingDialog chapterTitle={chapterTitle} busy={busy} onConfirm={(kind) => void remove(kind)} onCancel={() => setRemoveOpen(false)} />
+        <RemoveFromRecordingDialog chapterTitle={shortName} busy={busy} onConfirm={(kind) => void remove(kind)} onCancel={() => setRemoveOpen(false)} />
       )}
     </SlideOver>
   );

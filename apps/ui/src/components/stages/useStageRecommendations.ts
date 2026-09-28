@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { chapterName } from '../../chapterName';
 import { useApi } from '../../api/ApiContext';
 import { apiErrorMessage, describeApiError } from '../../api/errorMessage';
 import { usePendingAction } from '../../hooks/usePendingAction';
@@ -22,9 +23,10 @@ export type StagesState = {
 const sentence = (text: string) => `${text.charAt(0).toUpperCase()}${text.slice(1)}${/[.!?]$/.test(text) ? '' : '.'}`;
 
 function decidedMessage(decision: StageDecision, chapter: StageChapterRecommendation, previous: StageChapterRecommendation): string {
-  if (decision === 'confirm') return `${chapter.title} moved to ${stageLabel(chapter.from)}.`;
-  if (decision === 'revert') return `${chapter.title} moved back to ${stageLabel(chapter.from)}.`;
-  return `Suggestion to move ${chapter.title} to ${previous.target ? stageLabel(previous.target) : 'the next stage'} dismissed.`;
+  const name = chapterName(chapter, 'short');
+  if (decision === 'confirm') return `${name} moved to ${stageLabel(chapter.from)}.`;
+  if (decision === 'revert') return `${name} moved back to ${stageLabel(chapter.from)}.`;
+  return `Suggestion to move ${name} to ${previous.target ? stageLabel(previous.target) : 'the next stage'} dismissed.`;
 }
 
 /**
@@ -66,7 +68,7 @@ export function useStageRecommendations({
 
   const send = (decision: StageDecision, chapter: StageChapterRecommendation): Promise<StageDecisionResult> => {
     if (decision === 'revert') return api.stageRevert(chapter.chapterId);
-    if (!chapter.target || !chapter.basisKey) return Promise.reject(new Error(`${chapter.title} has no suggestion to act on.`));
+    if (!chapter.target || !chapter.basisKey) return Promise.reject(new Error(`${chapterName(chapter, 'short')} has no suggestion to act on.`));
     return decision === 'confirm'
       ? api.stageConfirm(chapter.chapterId, chapter.target, chapter.basisKey)
       : api.stageDismiss(chapter.chapterId, chapter.target, chapter.basisKey);

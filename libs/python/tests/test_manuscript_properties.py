@@ -97,6 +97,21 @@ def test_a_well_formed_manuscript_is_accepted_unchanged(data):
     assert manuscript.validate(data) is data
 
 
+# sourceMetadata is the additive block credits-token-setup-and-front-matter-detection.prd.md Phase 4 has the Go
+# importer add for a Markdown YAML front matter block or a DOCX Title/Subtitle style: title, subtitle, author and
+# series, each present only when detected. This module never reads the field itself (the host and
+# internal/credits.Detect do), so the only promise to pin here is that its presence, in any shape, never turns a
+# manuscript that would otherwise validate into one that raises - the additive contract every future optional
+# top-level field gets.
+SOURCE_METADATA = st.dictionaries(st.sampled_from(["title", "subtitle", "author", "series"]), st.text(max_size=40), max_size=4)
+
+
+@given(VALID_MANUSCRIPTS, SOURCE_METADATA)
+def test_a_manuscript_with_source_metadata_is_accepted_unchanged(data, source_metadata):
+    with_metadata = {**data, "sourceMetadata": source_metadata}
+    assert manuscript.validate(with_metadata) is with_metadata
+
+
 @example(b"\xff\xfe not utf-8")
 @example(b"[" * 100_000)
 @given(st.binary(max_size=64))
