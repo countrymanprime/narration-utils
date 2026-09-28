@@ -92,6 +92,27 @@
   --badge-info-fill: color-mix(in srgb, var(--info) 14%, transparent);
   --badge-danger-fill: color-mix(in srgb, var(--danger) 14%, transparent);
   --badge-experimental-fill: color-mix(in srgb, var(--experimental) 14%, transparent);
+  /* Per-speaker dialogue colours (D85 #6 on #509; ADR 0366): the Script reader's speaker attribution and the Booth's
+     "Voices in scene" tags give each speaker their own colour, as the mocks show (SC7, BO4). Declared as aliases of the
+     seven entity-kind hues, the same derivation ADR 0362 used for the meter zones, so nothing here needs a second round
+     of contrast tuning: each token and its -text companion already has a passing pair under its kind name above. A
+     speaker's colour is chosen by hashing its id/name to one of these seven (SpeakerTag.tsx, speakerColor.ts); an eighth
+     speaker wraps back to --speaker-1, which is why it aliases --character - the app's existing single colour for every
+     speaker before this batch, so the wrap and the no-id fallback land on the same tone by construction. */
+  --speaker-1: var(--character);
+  --speaker-1-text: var(--character-text);
+  --speaker-2: var(--place);
+  --speaker-2-text: var(--place-text);
+  --speaker-3: var(--org);
+  --speaker-3-text: var(--org-text);
+  --speaker-4: var(--review);
+  --speaker-4-text: var(--review-text);
+  --speaker-5: var(--lore);
+  --speaker-5-text: var(--lore-text);
+  --speaker-6: var(--item);
+  --speaker-6-text: var(--item-text);
+  --speaker-7: var(--event);
+  --speaker-7-text: var(--event-text);
   --backdrop: rgba(20, 17, 12, 0.42);
   --shadow: 0 1px 2px rgba(30, 26, 16, 0.06), 0 1px 1px rgba(30, 26, 16, 0.04);
   --shadow-lg: 0 4px 16px rgba(30, 26, 16, 0.14), 0 2px 6px rgba(30, 26, 16, 0.08);

@@ -8,6 +8,7 @@ import { FocusShell } from '../primitives/FocusShell';
 import { Highlight, highlightKind } from '../primitives/Highlight';
 import { Kbd } from '../primitives/Kbd';
 import { LevelMeter } from '../primitives/LevelMeter';
+import { speakerColorToken } from '../primitives/speakerColor';
 import { StatusBadge, type StatusTone } from '../primitives/StatusBadge';
 import { TooltipTarget } from '../primitives/Tooltip';
 import { ReadingControlBar } from './ReadingControlBar';
@@ -99,10 +100,13 @@ const SECTION_LABEL = "font-['Barlow_Condensed',sans-serif] text-[0.72rem] font-
 
 /**
  * The rail's "Voices in scene" section (booth-mode-and-companion-panel.prd.md Phase 3): the chapter's Story Bible
- * characters as speaker tags in the existing `Highlight` character colour (no new primitive or colour), each opening
- * its entry in the rail's Story bible tab. The per-character voice reference clip the booth mock plays here is
- * Character Continuity Review's work (PRD D3): until it lands, the section says so honestly (Open Question 6) instead
- * of leaving a gap, so the layout does not shift when real clips arrive in this same slot.
+ * characters as speaker tags, each opening its entry in the rail's Story bible tab. Each tag draws in its own
+ * per-speaker colour (D85 #6, ADR 0366) via `Highlight`'s `colorToken` override, keyed by the same canonical name the
+ * Script reader's `SpeakerTag` hashes (manuscript/ParagraphView.tsx), so a speaker's colour matches on both pages -
+ * still the `Highlight` primitive and its Character kind/behaviour, only the colour source changed. The
+ * per-character voice reference clip the booth mock plays here is Character Continuity Review's work (PRD D3): until
+ * it lands, the section says so honestly (Open Question 6) instead of leaving a gap, so the layout does not shift
+ * when real clips arrive in this same slot.
  */
 function BoothSpeakers({ speakers, onOpenSpeaker }: { speakers: GuideEntity[]; onOpenSpeaker?: (entity: GuideEntity) => void }) {
   const headingId = useId();
@@ -118,6 +122,7 @@ function BoothSpeakers({ speakers, onOpenSpeaker }: { speakers: GuideEntity[]; o
             <li key={entity.id}>
               <Highlight
                 kind="Character"
+                colorToken={speakerColorToken(entity.canonical_name)}
                 label={onOpenSpeaker ? `${entity.canonical_name}: open in the Story bible` : undefined}
                 onActivate={onOpenSpeaker && (() => onOpenSpeaker(entity))}
               >

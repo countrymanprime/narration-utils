@@ -75,17 +75,23 @@ const TEXT_TOKEN: Partial<Record<HighlightKind, string>> = {
 // reads correctly on the reader's alternating row backgrounds. Vertical padding
 // on an inline box paints without changing line layout, which is how the
 // background fills the whole line height rather than just the glyph box.
-function highlightStyle(kind: HighlightKind): CSSProperties {
-  const token = `var(${TOKEN[kind]})`;
+//
+// `colorToken` (a bare custom-property name, e.g. `--speaker-3` from speakerColor.ts) overrides the kind's own colour
+// for the Booth's per-speaker "Voices in scene" tags (D85 #6, ADR 0366): the mark keeps its kind's `data-highlight`
+// and behaviour, only which colour it draws with changes, so it needs no new HighlightKind of its own.
+function highlightStyle(kind: HighlightKind, colorToken?: string): CSSProperties {
+  const resolvedToken = colorToken ?? TOKEN[kind];
+  const token = `var(${resolvedToken})`;
   // The negative margin cancels the mark's horizontal padding, so moving the cursor never changes where a line wraps.
   if (kind === 'Cursor') return { background: token, color: 'var(--accent-contrast)', margin: '0 -0.05em' };
   if (kind === 'Extra') return { background: 'transparent', boxShadow: `inset 0.14em 0 0 ${token}`, paddingLeft: '0.2em' };
   const decoration = FLAG_DECORATION[kind];
   if (decoration)
     return { background: 'transparent', textDecoration: `underline ${decoration} ${token}`, textDecorationThickness: '1.5px', textUnderlineOffset: '0.25em' };
+  const textToken = colorToken ? `${colorToken}-text` : TEXT_TOKEN[kind];
   return {
     background: `color-mix(in srgb, ${token} 20%, transparent)`,
-    color: TEXT_TOKEN[kind] ? `var(${TEXT_TOKEN[kind]})` : undefined,
+    color: textToken ? `var(${textToken})` : undefined,
     boxShadow: `inset 0 -1.5px 0 ${token}`,
   };
 }
@@ -100,12 +106,14 @@ type Props = {
   label?: string;
   /** More about the mark for a screen reader (what a flag heard), which the sighted reader gets from its hint. */
   description?: string;
+  /** Overrides the kind's own colour token (speakerColor.ts), for the Booth's per-speaker tags. See highlightStyle. */
+  colorToken?: string;
 };
 
-export function Highlight({ kind, children, onActivate, label, description }: Props) {
+export function Highlight({ kind, children, onActivate, label, description, colorToken }: Props) {
   if (!onActivate)
     return (
-      <mark className={BASE} style={highlightStyle(kind)} data-highlight={kind} aria-description={description}>
+      <mark className={BASE} style={highlightStyle(kind, colorToken)} data-highlight={kind} aria-description={description}>
         {children}
       </mark>
     );
@@ -121,7 +129,7 @@ export function Highlight({ kind, children, onActivate, label, description }: Pr
       aria-label={label}
       aria-description={description}
       className={`${BASE} cursor-pointer`}
-      style={highlightStyle(kind)}
+      style={highlightStyle(kind, colorToken)}
       onClick={activate}
       onKeyDown={(event) => {
         if (event.key !== 'Enter' && event.key !== ' ') return;
