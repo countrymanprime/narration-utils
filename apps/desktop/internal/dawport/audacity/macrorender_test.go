@@ -96,3 +96,33 @@ func TestRenderWithMacroStopsAtTheFirstRefusal(t *testing.T) {
 		t.Errorf("sent %q against a closed transport", server.Log())
 	}
 }
+
+// A refusal from any single step, not just the first, stops the sequence there: nothing later ever sends.
+func TestRenderWithMacroStopsAtARefusalFromAnyLaterStep(t *testing.T) {
+	cases := []struct {
+		name       string
+		sentBefore int
+		faults     []abt.Fault
+	}{
+		{"Tracks fails", 1, []abt.Fault{abt.FaultNone, abt.FaultFail}},
+		{"SelectTracks fails", 2, []abt.Fault{abt.FaultNone, abt.FaultNone, abt.FaultFail}},
+		{"ApplyMacro fails", 3, []abt.Fault{abt.FaultNone, abt.FaultNone, abt.FaultNone, abt.FaultFail}},
+		{"Export fails", 4, []abt.Fault{abt.FaultNone, abt.FaultNone, abt.FaultNone, abt.FaultNone, abt.FaultFail}},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			client, server := newTestClient(t)
+			server.Script(tc.faults...)
+			role := macroRender{client}
+			_, err := role.RenderWithMacro(t.Context(), dawport.MacroRender{
+				Source: `C:\book\ch01.wav`, Macro: "Mastering for ACX", OutputPath: `C:\book\out.wav`, Approval: "tok",
+			})
+			if err == nil {
+				t.Fatalf("RenderWithMacro succeeded despite %s", tc.name)
+			}
+			if got := len(server.Log()); got != tc.sentBefore+1 {
+				t.Errorf("sent %d commands, want %d (stop right after the refusal)", got, tc.sentBefore+1)
+			}
+		})
+	}
+}
