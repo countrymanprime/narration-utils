@@ -229,7 +229,9 @@ function Start-App {
     New-Item -ItemType Directory -Force -Path $ProfileDir | Out-Null
     $env:APPDATA = $ProfileDir
     $env:LOCALAPPDATA = $ProfileDir
-    $env:WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS = "--remote-debugging-port=$DebugPort"
+    # --remote-debugging-address is explicit (not just the port) because some Chromium builds only bind the
+    # DevTools listener to a loopback address when one is named, rather than assuming it.
+    $env:WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS = "--remote-debugging-port=$DebugPort --remote-debugging-address=127.0.0.1 --remote-allow-origins=*"
     return Start-Process -FilePath $ExePath -PassThru
 }
 
