@@ -107,6 +107,13 @@ func (r previewRig) audioDir() string {
 	return filepath.Join(r.project, "ManuscriptGuide", "audio", "tts")
 }
 
+func (r previewRig) writeGuide(t *testing.T, guideJSON string) {
+	t.Helper()
+	if err := os.WriteFile(r.service.guidePath(), []byte(guideJSON), 0o600); err != nil {
+		t.Fatal(err)
+	}
+}
+
 var testVoice = PreviewVoice{ID: "en_US-ljspeech-high", Model: "voice.onnx", Provider: "piper", Version: "1.0.0"}
 
 func TestPreviewRendersOnceAndReusesTheCachedFile(t *testing.T) {
@@ -128,7 +135,7 @@ func TestPreviewRendersOnceAndReusesTheCachedFile(t *testing.T) {
 // trusted any existing file, so every later attempt returned empty audio.
 func TestPreviewIgnoresAZeroByteCachedFileAndReplacesIt(t *testing.T) {
 	rig := newPreviewRig(t, "wav")
-	poisoned := filepath.Join(rig.audioDir(), previewFileName(testVoice, "Dawnspire"))
+	poisoned := filepath.Join(rig.audioDir(), previewFileName(testVoice, "Dawnspire", ""))
 	if err := os.MkdirAll(rig.audioDir(), 0o755); err != nil {
 		t.Fatal(err)
 	}
@@ -149,7 +156,7 @@ func TestPreviewIgnoresAZeroByteCachedFileAndReplacesIt(t *testing.T) {
 
 func TestPreviewTrustsANonEmptyCachedFileWithoutStartingTheSidecar(t *testing.T) {
 	rig := newPreviewRig(t, "fail")
-	cached := filepath.Join(rig.audioDir(), previewFileName(testVoice, "Dawnspire"))
+	cached := filepath.Join(rig.audioDir(), previewFileName(testVoice, "Dawnspire", ""))
 	if err := os.MkdirAll(rig.audioDir(), 0o755); err != nil {
 		t.Fatal(err)
 	}
@@ -171,10 +178,10 @@ func TestPreviewCacheIsKeyedOnTheVoice(t *testing.T) {
 	rig := newPreviewRig(t, "wav")
 	other := testVoice
 	other.ID = "en_GB-alba-medium"
-	if previewFileName(testVoice, "Dawnspire") == previewFileName(other, "Dawnspire") {
+	if previewFileName(testVoice, "Dawnspire", "") == previewFileName(other, "Dawnspire", "") {
 		t.Fatal("changing the voice must change the cache file name")
 	}
-	if previewFileName(testVoice, "Dawnspire") == previewFileName(testVoice, "the Spire") {
+	if previewFileName(testVoice, "Dawnspire", "") == previewFileName(testVoice, "the Spire", "") {
 		t.Fatal("changing the spoken text must change the cache file name")
 	}
 	for _, voice := range []PreviewVoice{testVoice, other, testVoice, other} {
@@ -184,6 +191,60 @@ func TestPreviewCacheIsKeyedOnTheVoice(t *testing.T) {
 	}
 	if got := rig.invocations(t); got != 2 {
 		t.Fatalf("sidecar started %d times, want 2 (once per voice)", got)
+	}
+}
+
+// A chosen pronunciation changes what render-audio actually speaks (Phase 10), so it must be part of the cache
+// key too, the same as the voice and the spoken text.
+func TestPreviewCacheIsKeyedOnTheChosenPronunciation(t *testing.T) {
+	rig := newPreviewRig(t, "wav")
+	rig.writeGuide(t, `{"entities":[{"id":"e1","canonical_name":"Dawnspire","aliases":[],
+		"pronunciation":{"ipa":"dawn","source":"user","confidence":"narrator","chosen":true}}]}`)
+	if _, err := rig.service.Preview("e1", nil, testVoice); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := os.Stat(filepath.Join(rig.audioDir(), previewFileName(testVoice, "Dawnspire", "dawn"))); err != nil {
+		t.Fatalf("a chosen pronunciation must be part of the cache file name: %v", err)
+	}
+}
+
+// Choosing a pronunciation for a name that already has a cached plain-name preview must not reuse that stale
+// file: it renders a different cache entry (previewFileName's pronunciation key differs), not the same one.
+func TestPreviewInvalidatesTheCacheWhenAPronunciationIsChosen(t *testing.T) {
+	rig := newPreviewRig(t, "wav")
+	if _, err := rig.service.Preview("e1", nil, testVoice); err != nil {
+		t.Fatal(err)
+	}
+	rig.writeGuide(t, `{"entities":[{"id":"e1","canonical_name":"Dawnspire","aliases":[],
+		"pronunciation":{"ipa":"dawn","source":"user","confidence":"narrator","chosen":true}}]}`)
+	if _, err := rig.service.Preview("e1", nil, testVoice); err != nil {
+		t.Fatal(err)
+	}
+	if got := rig.invocations(t); got != 2 {
+		t.Fatalf("sidecar started %d times, want 2 (choosing a pronunciation must invalidate the old cache entry)", got)
+	}
+}
+
+// An auto-generated pronunciation the narrator never picked must not affect the cache key: the preview still
+// speaks (and caches) the plain name until one is chosen.
+func TestPreviewCacheIgnoresAnUnchosenPronunciation(t *testing.T) {
+	rig := newPreviewRig(t, "wav")
+	cached := filepath.Join(rig.audioDir(), previewFileName(testVoice, "Dawnspire", ""))
+	if err := os.MkdirAll(rig.audioDir(), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	want := append([]byte("RIFF"), make([]byte, 100)...)
+	if err := os.WriteFile(cached, want, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	rig.writeGuide(t, `{"entities":[{"id":"e1","canonical_name":"Dawnspire","aliases":[],
+		"pronunciation":{"ipa":"guess","source":"eSpeak NG","confidence":"low"}}]}`)
+	got, err := rig.service.Preview("e1", nil, testVoice)
+	if err != nil || string(got) != string(want) {
+		t.Fatalf("preview = %d bytes, %v; an unchosen pronunciation must not change the cache key", len(got), err)
+	}
+	if rig.invocations(t) != 0 {
+		t.Fatal("an unchosen pronunciation must still serve the cached plain-name preview")
 	}
 }
 
@@ -214,7 +275,7 @@ func TestPreviewSharesOneRenderBetweenOverlappingRequests(t *testing.T) {
 
 func TestPreviewDoesNotDeleteAValidCachedFileWhenACleanupRuns(t *testing.T) {
 	rig := newPreviewRig(t, "wav")
-	cached := filepath.Join(rig.audioDir(), previewFileName(testVoice, "Dawnspire"))
+	cached := filepath.Join(rig.audioDir(), previewFileName(testVoice, "Dawnspire", ""))
 	if err := os.MkdirAll(rig.audioDir(), 0o755); err != nil {
 		t.Fatal(err)
 	}
@@ -240,7 +301,7 @@ func TestPreviewSpeaksTheAliasWhenOneIsRequested(t *testing.T) {
 	if _, err := rig.service.Preview("e1", &alias, testVoice); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := os.Stat(filepath.Join(rig.audioDir(), previewFileName(testVoice, "the Spire"))); err != nil {
+	if _, err := os.Stat(filepath.Join(rig.audioDir(), previewFileName(testVoice, "the Spire", ""))); err != nil {
 		t.Fatalf("the alias preview must be cached under the alias text: %v", err)
 	}
 }
@@ -267,7 +328,7 @@ func TestPreviewRejectsAnEmptyResultAndDoesNotKeepIt(t *testing.T) {
 			if err == nil || !strings.Contains(err.Error(), "no audio") {
 				t.Fatalf("error = %v, want a no-audio message", err)
 			}
-			if _, statErr := os.Stat(filepath.Join(rig.audioDir(), previewFileName(testVoice, "Dawnspire"))); !os.IsNotExist(statErr) {
+			if _, statErr := os.Stat(filepath.Join(rig.audioDir(), previewFileName(testVoice, "Dawnspire", ""))); !os.IsNotExist(statErr) {
 				t.Fatalf("an empty preview must be removed, stat error = %v", statErr)
 			}
 		})
