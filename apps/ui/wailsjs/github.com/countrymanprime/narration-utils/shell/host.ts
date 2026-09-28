@@ -1469,7 +1469,7 @@ export function TeleprompterReaperInput(): $CancellablePromise<string> {
 
 /**
  * TeleprompterResumeFollow starts following REAPER for chapterID's resume prompt (read-aloud-resume-from-daw PRD Phase 5,
- * ADR 0350), replacing any follow already running. trackGUID is the track the prompt's locate read ("" for the chapter's
+ * ADR 0353), replacing any follow already running. trackGUID is the track the prompt's locate read ("" for the chapter's
  * matched track); like TeleprompterLocate, a picked track must be one of the selected project's. It answers whether it
  * follows: not with no track to follow or no way to ask REAPER, which is an answer, not an error.
  */
