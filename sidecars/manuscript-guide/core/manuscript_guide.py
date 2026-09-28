@@ -1590,7 +1590,7 @@ def unrelate(args: argparse.Namespace) -> None:
 def _phoneme_block(ipa: str) -> str | None:
     """Piper's own inline raw-phoneme escape (``"[[ ... ]]"``, ``PiperVoice.phonemize``) skips its espeak
     text-to-phoneme step, speaking exactly the stored symbols instead of re-guessing them from the spelled name
-    (Phase 10, ADR 0681). ``None`` when ``ipa`` is empty or would break out of the block early.
+    (Phase 10, ADR 0680). ``None`` when ``ipa`` is empty or would break out of the block early.
     """
     text = ipa.strip()
     if not text or "]]" in text:

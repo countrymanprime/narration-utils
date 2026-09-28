@@ -1,4 +1,4 @@
-"""The Story Bible preview speaks a chosen pronunciation (story bible and import UX briefs PRD, phase 10, ADR 0681).
+"""The Story Bible preview speaks a chosen pronunciation (story bible and import UX briefs PRD, phase 10, ADR 0680).
 
 `render_audio` used to always speak the spelled name: Piper's own espeak-based grapheme-to-phoneme step ran on
 `canonical_name`/alias text every time, so an edited pronunciation had no audible effect (the gap ADR 0091 recorded).
