@@ -340,7 +340,7 @@ export const settingsDrivers: Record<string, Driver> = {
     await goToPage(page, 'Settings');
     await clickVisible(page, 'tab', 'This Project');
     await clickSettingsCategory(page, 'Credits');
-    await page.getByText(/line 1 to Chapter 3, line 3/).waitFor();
+    await page.getByText(/line 1 to Chapter 3 — A Caucus-Race and a Long Tale, line 3/).waitFor();
     await page.getByRole('heading', { name: 'Retail sample' }).scrollIntoViewIfNeeded();
   },
   // A range over 5 minutes (Chapter 1 to Chapter 12) is refused, and the refusal says why.
@@ -348,7 +348,7 @@ export const settingsDrivers: Record<string, Driver> = {
     await goToPage(page, 'Settings');
     await clickVisible(page, 'tab', 'This Project');
     await clickSettingsCategory(page, 'Credits');
-    await page.getByRole('combobox', { name: 'Sample ends in' }).selectOption({ label: 'Chapter 12' });
+    await page.getByRole('combobox', { name: 'Sample ends in' }).selectOption({ label: 'Chapter 12 — Alice’s Evidence' });
     await page.getByRole('button', { name: 'Save sample' }).click();
     await page.getByText(/at most 5 minutes/).waitFor();
     await page.getByRole('button', { name: 'Save sample' }).scrollIntoViewIfNeeded();
