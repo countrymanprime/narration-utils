@@ -84,3 +84,37 @@ func findChapter(data map[string]any, chapterID string) (map[string]any, bool) {
 	}
 	return nil, false
 }
+
+// CreditsChapterID is the id a credits row's check runs and reads under: "credits-opening" or "credits-closing",
+// matching the teleprompter's own credits script id (ADR 0150) and the row id the chapter table renders
+// (credits-in-chapter-table.prd.md Phase 2).
+func CreditsChapterID(kind string) string { return "credits-" + kind }
+
+// CreditsKind reports the credits kind a chapterID names ("opening" or "closing"), and whether it is one at all - the
+// coverage service's own dispatch between a manuscript chapter and a credits row (chapterID is never both).
+func CreditsKind(chapterID string) (kind string, ok bool) {
+	switch chapterID {
+	case CreditsChapterID("opening"):
+		return "opening", true
+	case CreditsChapterID("closing"):
+		return "closing", true
+	default:
+		return "", false
+	}
+}
+
+// creditsBasis is a credits row's basis (Phase 3's "the rendered text, not manuscript paragraphs"): title and text
+// are the same first-of-kind template render the Home row and the teleprompter show (ADR 0093, ADR 0150), so a
+// template edit that changes either changes the hash and makes a stored result stale, exactly as an edited
+// manuscript paragraph does for chapterBasis. documentID is the current manuscript's own documentId, not a fixed
+// "credits" placeholder: a credits row's confirmed track link lives in the same chapter-track-map.json as every
+// manuscript chapter's (evidence.MappingStore keeps one active document's links at a time), told apart by
+// ChapterID alone.
+func creditsBasis(documentID, kind, title, text string) ChapterBasis {
+	hash := sha256.New()
+	write := func(part string) { _, _ = fmt.Fprintf(hash, "%d:%s", len(part), part) }
+	write(kind)
+	write(title)
+	write(text)
+	return ChapterBasis{DocumentID: documentID, ChapterID: CreditsChapterID(kind), Title: title, Hash: hex.EncodeToString(hash.Sum(nil))}
+}

@@ -1029,6 +1029,14 @@ export function PreviewPinSet(chapterID: string, paragraphIDs: string[]): $Cance
 }
 
 /**
+ * ProductionBurndown is the book's logged hours by day (Phase 6, Could): data only, for a future chart primitive to
+ * plot. It reads the same time log as ProductionOverview and adds nothing to it.
+ */
+export function ProductionBurndown(): $CancellablePromise<string> {
+    return $Call.ByID(211479988);
+}
+
+/**
  * ProductionOverview is the Production page's board, KPI figures and "Next up" list.
  */
 export function ProductionOverview(): $CancellablePromise<string> {

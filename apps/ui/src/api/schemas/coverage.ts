@@ -34,6 +34,8 @@ export const COVERAGE_REFUSAL_REASONS = [
   'invalid_params',
   'manuscript_changed',
   'result_missing',
+  'credits_not_set_up',
+  'credits_changed',
 ] as const satisfies readonly CoverageRefusalReason[];
 
 export const COVERAGE_EVALUATOR_REASONS = [
