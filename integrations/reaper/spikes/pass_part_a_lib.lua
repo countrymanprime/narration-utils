@@ -1012,13 +1012,14 @@ end
 
 -- The order the rows run in, and what each may change: `witness` is what A10 compares before and after the row (every
 -- track but `except`, their arms and selection unless `arms`/`selection` is false, and the markers unless `markers` is
--- false). A1 changes the project on purpose and is not witnessed.
+-- false). A1 changes the project on purpose and is not witnessed. A4's Undo is the narrator's and undoes the last undo
+-- point there is (A1's marker, since A2 to A9b make none), so A4's witness leaves the markers out.
 M.ORDER = {
   { id = 'A1' },
   { id = 'A2', witness = {} },
   { id = 'A3', witness = {} },
   { id = 'A9b', witness = {} },
-  { id = 'A4', witness = { arms = false } },
+  { id = 'A4', witness = { arms = false, markers = false } },
   { id = 'A5', witness = { arms = false } },
   { id = 'A9', witness = { markers = false } },
   { id = 'A9c', witness = {} },
