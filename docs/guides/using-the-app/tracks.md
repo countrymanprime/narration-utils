@@ -51,8 +51,8 @@ and each group it finds is reviewed with the rest of your findings.
 
 ## REAPER tools
 
-When the project has tracks, five buttons sit beside the page title. **Link chapters…**, **Pickups…**
-and **Prepare chapter render…** change the project open in REAPER, through the Narration Utils script
+When the project has tracks, the REAPER tools sit beside the page title. **Link chapters…** and
+**Prepare chapter render…** change the project open in REAPER, through the Narration Utils script
 the launcher runs there; nothing is written until you press the dialog's action button.
 
 **Link chapters…** (shown once a manuscript is imported) stamps each chapter's identity onto the REAPER
@@ -65,12 +65,7 @@ since stamping, Chapter no longer in the manuscript, and so on). This is not the
 [Chapter links](#linking-chapters-to-tracks) list below: that list is kept by the app and changes
 nothing in REAPER, and the dialog starts with every chapter Not linked whatever the list says.
 
-**Pickups…** works with a proofer's pickup list. **Import CSV…** reads a CSV with a start time in
-seconds, a note and an optional tag on each row (a first row starting with `start` is skipped as a
-header) and adds a pickup marker in REAPER for each; rows that cannot be used are listed with the
-reason. The dialog shows how many pickups remain. **Next pickup** moves REAPER's edit cursor to the next
-open pickup and shows its note, and **Mark this pickup done** marks it resolved. **Export CSV** saves the
-pickups still open as `pickups.csv`.
+A proofer's pickup list has its own page, [Pickups](pickups.md).
 
 **Prepare chapter render…** sets REAPER's render to every chapter region, names each file after its
 region, and saves into the **Output folder** (a `renders` folder in the project to start with). Press

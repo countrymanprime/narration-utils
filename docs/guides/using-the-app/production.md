@@ -151,8 +151,8 @@ end is unfinished recording, not a pickup, so it never appears in that list. Bel
 gaps, **Repeated reads (Proof)** always shows the chapter's unreviewed take-review pickups —
 repeated reads already recorded, waiting to be compared and kept or discarded — as a count with
 **Open Proof**, or "none waiting" when there are none. Under that, **Pickup list** always shows
-the proofer's REAPER pickup markers as one project-wide open count with **Open pickups**, not
-scoped to this chapter, since attributing markers to one chapter's track span is ambiguous when
+the proofer's REAPER pickup markers as one project-wide open count with **Open pickups**, which
+opens [Pickups](pickups.md), not scoped to this chapter, since attributing markers to one chapter's track span is ambiguous when
 chapter tracks share the timeline. It reads "open REAPER to count" instead of a number when REAPER
 is not running. **Paragraph detail** stays folded by default. **Open in Proof** opens the
 chapter's view on [Proof](proof.md). Misreads, false starts, retakes and a spoken chapter title

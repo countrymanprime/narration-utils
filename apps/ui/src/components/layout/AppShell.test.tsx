@@ -30,7 +30,7 @@ describe('AppShell nav gating (PRD project-workspace-and-daw-link.prd.md, W16/W1
     for (const name of ['Script', 'Story Bible', 'Booth']) {
       expect(screen.getAllByRole('button', { name }).every((button) => (button as HTMLButtonElement).disabled)).toBe(true);
     }
-    for (const name of ['Production', 'Tracks', 'Proof', 'Delivery']) {
+    for (const name of ['Production', 'Tracks', 'Proof', 'Pickups', 'Delivery']) {
       expect(screen.getAllByRole('button', { name }).every((button) => (button as HTMLButtonElement).disabled)).toBe(false);
     }
     expect(screen.getAllByRole('group', { name: /Import a manuscript to unlock this page/ }).length).toBeGreaterThan(0);
@@ -113,9 +113,26 @@ describe('AppShell grouped navigation (Phase 1)', () => {
 
   it('lists every other page, with Production in place of Home (Phase 2), Proof in place of Proofing and Review (Phase 5) and Booth in place of the Teleprompter (Phase 4)', () => {
     renderShell();
-    for (const name of ['Production', 'Script', 'Story Bible', 'Booth', 'Proof', 'Tracks', 'Delivery', 'Settings']) {
+    for (const name of ['Production', 'Script', 'Story Bible', 'Booth', 'Proof', 'Pickups', 'Tracks', 'Delivery', 'Settings']) {
       expect(screen.getAllByRole('button', { name }).length).toBeGreaterThan(0);
     }
+  });
+
+  // Phase 7: Pickups replaces the Tracks page's Pickups dialog, as its own item right after Proof in the Review group.
+  it('lists Pickups in the Review group, after Proof', () => {
+    renderShell();
+    const review = screen.getAllByRole('group', { name: 'Review' })[0];
+    const names = within(review)
+      .getAllByRole('button')
+      .map((button) => button.textContent?.trim());
+    expect(names.slice(0, 2)).toEqual(['Proof', 'Pickups']);
+  });
+
+  it('opens /pickups from the Pickups item', () => {
+    const navigate = vi.fn();
+    renderShell({ navigate });
+    fireEvent.click(screen.getAllByRole('button', { name: 'Pickups' })[0]);
+    expect(navigate).toHaveBeenCalledWith('/pickups');
   });
 });
 

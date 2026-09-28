@@ -79,7 +79,7 @@ export function RecordingCheckReport({
     };
   }, [api, chapter.id]);
   // RS5 B (recording-check-summary.prd.md Phase 3): the proofer's pickup list, project-wide - the same figure
-  // PickupsDialog shows, kept current for as long as the panel is open. It needs REAPER running (the `pickups`
+  // the Pickups page shows, kept current for as long as the panel is open. It needs REAPER running (the `pickups`
   // capability), so a background count is only started once the capability report says it is available; failing
   // silently otherwise, like otherPickups above (SILENT_CATCHES).
   const pickupsCapability = useCapability('pickups');

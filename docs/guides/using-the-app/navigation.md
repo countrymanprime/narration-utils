@@ -4,7 +4,7 @@
 
 The sidebar on the left is grouped by production stage, the way a narrator's week runs: **Production** ([Production](production.md)),
 **Prep** ([Script](script.md), [Story Bible](story-bible.md)), **Record** ([Booth](booth.md)),
-**Review** ([Proof](proof.md), [Tracks](tracks.md)) and **Finish** ([Delivery](delivery.md)).
+**Review** ([Proof](proof.md), [Pickups](pickups.md), [Tracks](tracks.md)) and **Finish** ([Delivery](delivery.md)).
 At desktop widths each group shows as a heading over its pages; narrower windows switch it to icon-only groups
 divided by a thin line, then hide it behind a hamburger menu that opens it as a slide-in drawer with the headings
 back. [Settings](settings.md) lives at the bottom of the sidebar, in every layout, below every group.
@@ -16,7 +16,7 @@ In the icon-only layout, hover an icon (or tab to it) to see the page's name.
 ![Icon-only navigation rail with a page name shown on hover](../../images/ui/nav-rail-tooltip.webp)
 
 Script, Story Bible, and Booth stay locked until a manuscript has been
-[imported on Production](production.md#importing-the-manuscript). Hovering a locked entry says what is missing. Production, Tracks, Proof, and Delivery
+[imported on Production](production.md#importing-the-manuscript). Hovering a locked entry says what is missing. Production, Tracks, Proof, Pickups, and Delivery
 are always available.
 
 The header runs, left to right: Back and Forward (below), the project's name, and at the right the timer and

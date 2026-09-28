@@ -18,6 +18,7 @@
   - group "Review":
     - /children: equal
     - button "Proof"
+    - button "Pickups"
     - button "Tracks"
   - group "Finish":
     - /children: equal

@@ -103,39 +103,6 @@ export const tracksStates: StateEntry[] = [
   },
   {
     page: 'tracks',
-    state: 'pickups-empty',
-    description: 'Tracks, "Pickups" dialog open before any import - "No pickups yet", Next disabled, Export disabled',
-    ...KEEPS_DESKTOP_SCROLL,
-  },
-  {
-    page: 'tracks',
-    state: 'pickups-imported',
-    description: 'Tracks, "Pickups" dialog after a completed CSV import - remaining count and the import summary shown',
-  },
-  {
-    page: 'tracks',
-    state: 'pickups-import-errors',
-    description: 'Tracks, "Pickups" dialog after importing a CSV with an unusable row - the row error listed, the usable row still counted',
-  },
-  {
-    page: 'tracks',
-    state: 'pickups-next',
-    description:
-      'Tracks, "Pickups" dialog after "Next pickup" - the pickup\'s tag and note shown with "Punch from here" (gated on the DAW port\'s punch capability, booth-actions-enablement PRD Phase 3 - experimental and off by default, shown disabled here) and "Mark this pickup done"',
-  },
-  {
-    page: 'tracks',
-    state: 'pickups-next-punch-enabled',
-    description:
-      'Tracks, "Pickups" dialog after "Next pickup" with the punch capability turned on directly (booth-actions-enablement PRD Phase 3, ?mockPunchCapabilityOn=1) - "Punch from here" enabled, moving REAPER\'s edit cursor straight to the pickup\'s own position with no preview step',
-  },
-  {
-    page: 'tracks',
-    state: 'pickups-error',
-    description: 'Tracks, "Pickups" dialog when REAPER reports a problem - inline error message (reached via the ?mockPickups=error mock seam)',
-  },
-  {
-    page: 'tracks',
     state: 'render-config-prefilled',
     description: 'Tracks, "Prepare chapter render" dialog open before any configure - the suggested output folder prefilled, Configure render enabled',
   },
