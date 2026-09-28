@@ -7,8 +7,12 @@
 // imports and runs everywhere and only fails, with a sentence, where dshow is missing. So the host can say on any platform which
 // platforms have a backend.
 //
-// Nothing calls this yet except the provider capabilities binding (provider-ports P14); teleprompterinput.go's deviceLister stays
-// the test seam for the device list.
+// Each row also says how far it is supported (Level): dshow is Supported; wasapi, the built-in recorder's engine
+// (native-recording-suite P1, docs/adr/0357), is Experimental until the owner's check with a real microphone (#510).
+//
+// Nothing calls this yet except the provider capabilities binding (provider-ports P14) and the packaged app's smoke test;
+// teleprompterinput.go's deviceLister stays the test seam for the device list. The Booth's "Built-in recorder" (PRD Phase 2)
+// is the wasapi row's first caller.
 package captureport
 
 import (
@@ -17,26 +21,44 @@ import (
 	"github.com/countrymanprime/narration-utils/shell/internal/port"
 )
 
-// DShow is the DirectShow backend (FFmpeg's dshow through PyAV), as the sidecar's registry names it.
-const DShow = "dshow"
+// The backends, as the sidecar's registry names them.
+const (
+	// DShow is the DirectShow backend (FFmpeg's dshow through PyAV), the teleprompter's microphone.
+	DShow = "dshow"
+	// WASAPI is WASAPI in shared mode through PortAudio (sounddevice), which also records a take to a WAV file at the
+	// device's own rate: the built-in recorder's engine (docs/adr/0357).
+	WASAPI = "wasapi"
+)
 
 // Backend is what the host knows about one capture backend.
 type Backend interface {
 	// Name is the registry row's name.
 	Name() string
+	// Level is how far the row is supported: Supported, or Experimental while it waits for the owner's verification.
+	Level() port.Level
 }
 
-type backend struct{ name string }
+type backend struct {
+	name  string
+	level port.Level
+}
 
-func (b backend) Name() string { return b.name }
+func (b backend) Name() string      { return b.name }
+func (b backend) Level() port.Level { return b.level }
 
-// NewRegistry is a registry holding the built-in row, dshow: Windows is the only supported platform (docs/adr/0412). A test registers a fake on its own copy.
+// NewRegistry is a registry holding the built-in rows, dshow and then wasapi: Windows is the only supported platform
+// (docs/adr/0412), and dshow, registered first, stays its default. A test registers a fake on its own copy.
 func NewRegistry() *port.Registry[Backend] {
 	r := &port.Registry[Backend]{Kind: "capture backend"}
 	r.Register(port.Entry[Backend]{
 		Name:       DShow,
 		Descriptor: port.Descriptor{Label: "DirectShow", Platforms: []string{"windows"}},
-		New:        func() Backend { return backend{DShow} },
+		New:        func() Backend { return backend{DShow, port.Supported} },
+	})
+	r.Register(port.Entry[Backend]{
+		Name:       WASAPI,
+		Descriptor: port.Descriptor{Label: "WASAPI", Platforms: []string{"windows"}},
+		New:        func() Backend { return backend{WASAPI, port.Experimental} },
 	})
 	return r
 }
