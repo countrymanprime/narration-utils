@@ -4,6 +4,7 @@ import { useApi } from '../../api/ApiContext';
 import type { CreditsSetupState } from '../../types';
 import { Button } from '../primitives/Button';
 import { Panel } from '../primitives/Panel';
+import { Dot } from '../primitives/StatusBadge';
 import type { Notify } from '../primitives/Toast';
 
 /**
@@ -42,7 +43,7 @@ export function CreditsSetupBanner({
     <Panel tone="review" className="mb-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2 text-sm">
-          <span className="size-2 flex-none rounded-full" style={{ background: 'var(--review)' }} />
+          <Dot color="var(--review)" />
           <span>
             <strong>
               The credits need {tokens.length} value{tokens.length === 1 ? '' : 's'}

@@ -28,7 +28,6 @@ const CEILING: Record<Copy, Record<string, number>> = {
     'src/components/booth/CompanionShell.tsx': 1,
     'src/components/booth/ReaderRail.tsx': 1,
     'src/components/production/ProductionPage.tsx': 1,
-    'src/components/proof/FindingsList.tsx': 1,
     'src/components/proof/NotesStrip.tsx': 1,
     // Not cards. A warning on a tinted fill, which neither Panel nor InsetCard draws.
     'src/components/booth/UnresolvedCreditsWarning.tsx': 1,
