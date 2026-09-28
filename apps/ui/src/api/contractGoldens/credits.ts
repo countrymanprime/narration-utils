@@ -3,6 +3,7 @@ import type { z } from 'zod';
 import {
   creditsAnnouncementsSchema,
   creditsProjectValuesResultSchema,
+  creditsRecordedLengthsSchema,
   creditsRenderResultSchema,
   creditsSetupStateSchema,
   creditsStatusesSchema,
@@ -22,4 +23,5 @@ export const creditsGoldens: Record<string, z.ZodType> = {
   'credits-retail-sample-stale.json': retailSampleAnswerSchema,
   'credits-status-empty.json': creditsStatusesSchema,
   'credits-status-set.json': creditsStatusesSchema,
+  'credits-recorded-lengths.json': creditsRecordedLengthsSchema,
 };

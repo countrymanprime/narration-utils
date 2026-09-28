@@ -6,6 +6,9 @@ import { mockChaptersForTracks, mockChapterSuggestion } from '../chapterSuggesti
 import type { CoverageResult } from '../contracts/coverage';
 import { type MockApiSeed, mockDocumentId, type MockState } from './state';
 
+// The two credits ids ADR 0150 and ADR 0333 give a real title outside the manuscript's own chapter list.
+const CREDITS_CHECK_TITLE: Record<string, string | undefined> = { 'credits-opening': 'Opening credits', 'credits-closing': 'Closing credits' };
+
 /** The chapter-track bindings: the DAW project's tracks, the chapter links, chapter sync and chapter regions. */
 export function createChapterTracksMock(
   s: MockState,
@@ -151,8 +154,19 @@ export function createChapterTracksMock(
     chapterTrackMapConfirm: async (trackGuid, chapterId) => {
       await manuscriptReady;
       const chapter = s.chapters.find((candidate) => candidate.id === chapterId);
-      if (!chapter) throw new Error('that chapter is not part of the current manuscript');
-      const mapping: TrackMapping = { trackGuid, chapterId, chapterTitle: chapter.title, confirmedAt: new Date().toISOString(), origin: 'manual', match: null };
+      // A credits id is never a manuscript chapter (ADR 0150), so its recording check's "link a track" flow
+      // (RecordingCheck.tsx's TrackLink, generic over chapter.id) needs this to accept it too, mirroring the host's
+      // own chapterTitle fix (ADR 0333): one chapter-track-map.json, a real title stamped either way.
+      const creditsTitle = CREDITS_CHECK_TITLE[chapterId];
+      if (!chapter && !creditsTitle) throw new Error('that chapter is not part of the current manuscript');
+      const mapping: TrackMapping = {
+        trackGuid,
+        chapterId,
+        chapterTitle: chapter?.title ?? creditsTitle!,
+        confirmedAt: new Date().toISOString(),
+        origin: 'manual',
+        match: null,
+      };
       s.chapterTrackMappings = [...s.chapterTrackMappings.filter((existing) => existing.trackGuid !== trackGuid), mapping];
       return wireClone(mapping);
     },
