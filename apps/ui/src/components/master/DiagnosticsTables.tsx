@@ -149,7 +149,9 @@ export function CleanupFindingsTable({ files }: { files: readonly DiagnosticsFil
       <TableBody>
         {rows.map(({ file, finding }) => (
           <TableRow key={`${file.path}:${finding.id}`}>
-            <TableCell className={MONO}>{timeRangeText(finding)}</TableCell>
+            <TableCell numeric align="left">
+              {timeRangeText(finding)}
+            </TableCell>
             <TableCell className="min-w-[6rem] font-medium">{cleanupClassLabel(finding)}</TableCell>
             <TableCell className="min-w-[16rem] text-[0.8rem]">{finding.confidence_reason}</TableCell>
             <TableCell className="min-w-[8rem] font-['IBM_Plex_Mono',ui-monospace,monospace] text-[0.8rem]">{cleanupLevelText(finding)}</TableCell>
