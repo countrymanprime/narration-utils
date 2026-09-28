@@ -1,4 +1,4 @@
-import { formatWhen } from '../home/recordingCheckText';
+import { formatWhen } from '../production/recordingCheckText';
 import { Button } from '../primitives/Button';
 import type { Notify } from '../primitives/Toast';
 import { useProofingRender } from './useProofingRender';

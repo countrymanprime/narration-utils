@@ -221,13 +221,13 @@ run. Choosing another delivery profile judges the last measurement again, and th
 A chapter's Proof view, at `/proof/:chapterId`, is one screen to listen to a chapter's recording
 against its script, see where the recording check found a problem, and click a word to hear it again.
 It has no nav item of its own; open it from a linked chapter's **Open workspace** link in the
-[audio engine panel](navigation.md#linking-chapters-to-tracks) or on [Home](home.md), from the Manuscript chapter header,
+[audio engine panel](navigation.md#linking-chapters-to-tracks), a chapter's Proof cell or its recording check's **Open in Proof** on [Production](production.md), from the Manuscript chapter header,
 from a note's **Open chapter view** above, or from [Proof's own chapter picker](#proof) at the top of
 this page. A chapter has to be linked to a REAPER track first (see [Linking chapters to
 tracks](navigation.md#linking-chapters-to-tracks)).
 
 If the chapter hasn't been checked yet, the chapter view says so and offers **Check recording** — the
-same check [Home](home.md) runs. There's no script or player until a check exists.
+same check [Production](production.md#checking-a-chapters-recording) runs. There's no script or player until a check exists.
 
 ![Proof chapter view - a linked chapter that hasn't been checked yet](../../images/ui/proof-chapter-never.webp)
 
@@ -344,7 +344,7 @@ project, or audio.
 Above the Preview panel, **Proofing readiness** shows only while this chapter's own status is Proofing:
 its suggestion for Finalized — a badge if the evidence says it's ready, "Not ready" if a pickup is still
 open, or "Can't tell yet" with what to check next. Confirm, Dismiss, and Revert work the same way they
-do on [Home](home.md#stage-suggestions); Why opens the same evidence view, listing what was checked
+do on [Production](production.md#stage-suggestions); Why opens the same evidence view, listing what was checked
 (pickups from every tracked analyzer, and any delivery check the narrator turned on) — an open pickup's
 **Open this note** selects it in the Flags panel above without leaving the page, and an unmapped chapter
 links to the [audio engine panel](navigation.md#the-audio-engine-panel).

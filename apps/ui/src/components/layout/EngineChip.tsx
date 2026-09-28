@@ -41,7 +41,7 @@ export function EngineChip({
     );
   }
   const dawMismatch = dawFileLinked && dawReachable && !dawProjectMatches;
-  const label = dawMismatch ? 'Wrong REAPER project open' : dawFileLinked ? 'REAPER project linked' : 'No REAPER project linked';
+  const label = dawMismatch ? 'Wrong REAPER project open' : dawFileLinked ? 'REAPER linked' : 'No REAPER project linked';
   const tooltip = dawMismatch
     ? 'REAPER has a different project open than the one linked here. Open the engine panel to link the open project, or switch REAPER to the linked file.'
     : dawFileLinked

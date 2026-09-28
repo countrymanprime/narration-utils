@@ -10,11 +10,11 @@ import { RenderAssociationSection } from './RenderAssociationSection';
 
 /**
  * This chapter's proofing readiness (proofing-readiness-signals.prd.md Phase 6, in the Proof chapter view per D79):
- * the pickup roll-up and delivery-check suggestion (`StageSuggestion`, the same one Home's breakdown table uses),
+ * the pickup roll-up and delivery-check suggestion (`StageSuggestion`, the same one the Production board uses),
  * SR's evidence popover for "why", and the chapter's chosen rendered file with Choose, Clear and Measure
  * (`RenderAssociationSection`). Shown only while the chapter is in Proofing status, the same gate the pre-D79
  * Proofing page's book-wide table used - a chapter this panel confirms to Finalized simply stops showing it, since
- * SR's own confirmation and evidence-changed notice live on Home, not here.
+ * SR's own confirmation and evidence-changed notice live on the Production board, not here.
  */
 export function ProofingStagePanel({
   notify,
@@ -28,7 +28,7 @@ export function ProofingStagePanel({
   chapter: ManuscriptChapter | undefined;
   /** Opens the manuscript at a chapter and paragraph (its index in the whole manuscript). */
   goToManuscript: (chapter: string, paragraph: number) => void;
-  /** Changes after a manuscript import/replacement, like Home's own (AudiobookEstimatePanel.tsx). */
+  /** Changes after a manuscript import/replacement, like the Production board's own (ChapterBoard.tsx). */
   refreshKey: string;
   /** The chapter's status changed by Confirm or Revert, so the page's own chapter state follows. */
   onStatusChanged: (status: ChapterStatus) => void;

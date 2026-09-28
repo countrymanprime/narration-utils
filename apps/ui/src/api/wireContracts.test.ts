@@ -1395,14 +1395,18 @@ describe('answers of the mock client for the settings, voice, model, transcript 
     const chosen = await api.masteringChooseProvider('builtin');
     expectMatches(masteringProvidersSchema, chosen, 'mock mastering chains (builtin chosen)');
     expect(chosen).toEqual(readGolden('mastering-providers-builtin-chosen.json'));
-    // The DAW row is declared, not built: choosing it is refused with its sentence, and the saved choice stays.
-    await expect(api.masteringChooseProvider('daw')).rejects.toThrow("Your DAW's FX chain is not available yet.");
-    expect((await api.masteringProviders()).choice).toBe('builtin');
+    // The DAW row is Experimental (render-encode-master Phase 9): it can be chosen, and the project masters with it.
+    const daw = await api.masteringChooseProvider('daw');
+    expectMatches(masteringProvidersSchema, daw, 'mock mastering chains (daw chosen)');
+    expect(daw).toEqual(readGolden('mastering-providers-daw-chosen.json'));
+    // A row this version does not have is refused, and the saved choice stays.
+    await expect(api.masteringChooseProvider('audacity')).rejects.toThrow('There is no mastering chain called "audacity".');
+    expect((await api.masteringProviders()).choice).toBe('daw');
     expect((await api.masteringChooseProvider('')).choice).toBeNull();
 
-    const stale = await createMockApi({}, { mastering: { choice: 'daw' } }).masteringProviders();
-    expectMatches(masteringProvidersSchema, stale, 'mock mastering chains (a stored choice not available yet)');
-    expect(stale).toEqual(readGolden('mastering-providers-daw-not-yet.json'));
+    const stale = await createMockApi({}, { mastering: { choice: 'audacity' } }).masteringProviders();
+    expectMatches(masteringProvidersSchema, stale, 'mock mastering chains (a stored choice this version does not have)');
+    expect(stale).toEqual(readGolden('mastering-providers-unknown-choice.json'));
   });
 
   it('subscribeDawTransport pushes the seeded transport once, and matches the host goldens (DAW port PRD Phase 9)', () => {

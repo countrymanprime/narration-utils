@@ -12,7 +12,7 @@ function renderPanel() {
   const api = createMockApi();
   render(
     <ApiProvider api={api}>
-      <StatusReportPanel />
+      <StatusReportPanel open onClose={() => {}} />
     </ApiProvider>,
   );
   return { api };

@@ -31,16 +31,16 @@ describe('EngineChip REAPER states (unchanged from the pill)', () => {
   it('still opens the panel while a link runs, marked busy', () => {
     const onOpenEnginePanel = vi.fn();
     renderChip({ dawFileLinked: true, linkingDawFile: true, onOpenEnginePanel });
-    const chip = screen.getByRole('button', { name: /REAPER project linked/ });
+    const chip = screen.getByRole('button', { name: /^REAPER linked/ });
     expect(chip.getAttribute('aria-busy')).toBe('true');
     fireEvent.click(chip);
     expect(onOpenEnginePanel).toHaveBeenCalledTimes(1);
   });
 
-  it('shows "REAPER project linked" once one is', () => {
+  it('shows "REAPER linked" once one is', () => {
     renderChip({ dawFileLinked: true });
-    const chip = screen.getByRole('button', { name: /REAPER project linked/ });
-    expect(chip.textContent).toBe('REAPER project linked');
+    const chip = screen.getByRole('button', { name: /REAPER linked/ });
+    expect(chip.textContent).toBe('REAPER linked');
   });
 
   it('shows "Wrong REAPER project open" only when REAPER is reachable and its open project does not match', () => {
@@ -49,9 +49,9 @@ describe('EngineChip REAPER states (unchanged from the pill)', () => {
     expect(chip.textContent).toBe('Wrong REAPER project open');
   });
 
-  it('still reads "REAPER project linked" when linked but not yet confirmed reachable', () => {
+  it('still reads "REAPER linked" when linked but not yet confirmed reachable', () => {
     renderChip({ dawFileLinked: true, dawReachable: false, dawProjectMatches: false });
-    expect(screen.getByRole('button', { name: /REAPER project linked/ })).toBeTruthy();
+    expect(screen.getByRole('button', { name: /REAPER linked/ })).toBeTruthy();
     expect(screen.queryByText(/Wrong REAPER project open/)).toBeNull();
   });
 });
