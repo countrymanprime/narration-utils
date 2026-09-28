@@ -11,6 +11,10 @@ apps/ui/dist/
 apps/ui/screenshots/
 apps/ui/playwright-report/
 apps/ui/test-results/
+# A container whose Chromium is older than the pinned Playwright build (mock-match's own MOCK_MATCH_CHROMIUM
+# workaround, playwright.mock-match.config.ts) needs the same override for the other suites; kept local, never
+# committed, since it names no fixed path any other container would share.
+apps/ui/playwright*.local.config.ts
 apps/ui/coverage/
 .coverage
 .coverage.*
