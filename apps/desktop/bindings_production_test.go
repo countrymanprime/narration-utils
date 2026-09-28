@@ -4,6 +4,7 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/countrymanprime/narration-utils/shell/internal/contractfile"
 	"github.com/countrymanprime/narration-utils/shell/internal/production"
@@ -312,6 +313,9 @@ func TestProductionBurndownIsEmptyWithNothingLoggedAndCumulativeOnceItIs(t *test
 	if _, err := host.ProductionStartTimer("c-0001", "recording"); err != nil {
 		t.Fatal(err)
 	}
+	// A real, measurable gap between start and stop: two back-to-back time.Now() calls can otherwise land in the
+	// same clock tick on some CI runners, logging zero elapsed time.
+	time.Sleep(5 * time.Millisecond)
 	if _, err := host.ProductionStopTimer(); err != nil {
 		t.Fatal(err)
 	}
