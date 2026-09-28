@@ -5,7 +5,7 @@
 
 ## Context
 
-[Production Tracking](../prds/production-tracking.prd.md) Phase 4 adds the Production page. Its "Next up" list is "ranked by which chapter most threatens the deadline", and its success metric asks for an order that matches "a recorded expected order (nearest at-risk deadline first)". The concept mock (`mockups/production-tracking/01-production-home-concept.webp`, not yet owner-approved) also shows a pace projection ("On track · at current pace done Oct 9") and a burndown.
+Production Tracking (delivered and deleted; `git log --diff-filter=D -- docs/prds/production-tracking.prd.md` finds it) Phase 4 adds the Production page (how it works now is in [Production](../guides/using-the-app/production.md)). Its "Next up" list is "ranked by which chapter most threatens the deadline", and its success metric asks for an order that matches "a recorded expected order (nearest at-risk deadline first)". The concept mock (`mockups/production-tracking/01-production-home-concept.webp`, not yet owner-approved) also shows a pace projection ("On track · at current pace done Oct 9") and a burndown.
 
 Two facts limit what can honestly be computed:
 

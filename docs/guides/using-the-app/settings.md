@@ -54,11 +54,12 @@ and tail together (ACX asks for 1 to 5 seconds at each end of every file). In bo
 
 Choosing a model or a voice here never downloads it; the app asks when a feature first needs it.
 
-The **Teleprompter** category (Global scope only — the microphone, engine and model are machine facts, not a
-per-project preference) remembers the microphone, live engine and model you last chose on the
-[Teleprompter](teleprompter.md) page, and changing them here changes what the page starts with. The engine is Whisper
-(the default) or, on Windows only, Moonshine; the model is Tiny or Small for either. Choosing Moonshine does not download
-its model: the Teleprompter asks the first time you start reading with it.
+The **Booth** category (Global scope only — the microphone, engine and model are machine facts, not a
+per-project preference) remembers the microphone, live engine and model you last chose in the
+[Booth](booth.md), and changing them here changes what the Booth starts with. The engine is Whisper
+(the default) or Moonshine; the model is Tiny or Small for either. Choosing Moonshine does not download
+its model: the Booth asks the first time you start reading with it. Old links to this category by its former
+name, Teleprompter, still open it.
 
 ![Settings - Global scope, Manuscript category (note color picker)](../../images/ui/settings-manuscript.webp)
 
