@@ -13,6 +13,7 @@ import { initialSession } from './readerModel';
 import type { FollowCursor } from './useFollowCursor';
 import type { RecordInReaperState } from './useRecordInReaper';
 import type { TeleprompterSession } from './useTeleprompterSession';
+import { WIRE_PICKUPS_NEXT_SUCCESS } from '../../api/mockFixtures';
 
 afterEach(cleanup);
 
@@ -164,13 +165,21 @@ describe('CompanionShell (booth-mode-and-companion-panel.prd.md Phase 7)', () =>
     expect(within(header).getByText('Playhead stopped')).toBeTruthy();
   });
 
-  it('reserves the note-at-playhead and pickups sections with an honest "Coming soon", not an empty gap or a made-up count', () => {
+  it('reserves the note-at-playhead section with an honest "Coming soon", not an empty gap or a made-up note', () => {
     renderCompanion();
-    for (const name of ['Note at playhead', 'Pickups']) {
-      const section = screen.getByRole('region', { name });
-      expect(within(section).getByText('Coming soon')).toBeTruthy();
-      expect(within(section).queryByRole('button')).toBeNull();
-    }
+    const section = screen.getByRole('region', { name: 'Note at playhead' });
+    expect(within(section).getByText('Coming soon')).toBeTruthy();
+    expect(within(section).queryByRole('button')).toBeNull();
+  });
+
+  // stage-navigation-and-page-replacement.prd.md Phase 7: the section reads the Pickups page's list, read-only.
+  it("reads the Pickups page's list: what is left and the pickup last jumped to, with no actions of its own", async () => {
+    renderCompanion({}, { pickupsState: async () => WIRE_PICKUPS_NEXT_SUCCESS, pickupsCount: async () => ({ status: 'started' }) });
+    const section = screen.getByRole('region', { name: 'Pickups' });
+    expect(await within(section).findByText('2 pickups remaining of 2')).toBeTruthy();
+    expect(within(section).getByText(/Mispronounced "labyrinthine"/)).toBeTruthy();
+    expect(within(section).queryByText('Coming soon')).toBeNull();
+    expect(within(section).queryByRole('button')).toBeNull();
   });
 
   it('lists the gestures that work here, and says they need this window focused', () => {
