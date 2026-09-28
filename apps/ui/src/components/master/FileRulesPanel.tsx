@@ -61,7 +61,7 @@ export function FileRulesPanel({ file, profile, onClose }: { file: MeasureFileRe
       }
     >
       {report && (
-        <p className="mt-1 text-sm" style={MUTED}>
+        <p className="text-sm" style={MUTED}>
           {describeFormat(report)} · {formatLength(report.duration_seconds)}.
           {report.integrated_lufs !== null && !lufsRule
             ? ` Loudness ${formatLevel(report.integrated_lufs)} LUFS (information: ${profile.builtIn ? `${profile.platform} sets` : 'the profile has'} no LUFS rule).`
@@ -71,7 +71,7 @@ export function FileRulesPanel({ file, profile, onClose }: { file: MeasureFileRe
       )}
       {/* tabIndex: the table scrolls sideways in a narrow window, and a scrolling region must be reachable by keyboard. */}
       <div tabIndex={0} className="overflow-x-auto focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:outline-none focus-visible:ring-inset">
-        <Table label={`${file.name}, rule by rule`} className="mt-3">
+        <Table label={`${file.name}, rule by rule`} className={report ? 'mt-3' : undefined}>
           <TableHead>
             <TableRow>
               <TableHeader>Result</TableHeader>
@@ -86,20 +86,20 @@ export function FileRulesPanel({ file, profile, onClose }: { file: MeasureFileRe
               const result = file.rules.find((candidate) => candidate.ruleId === rule.id);
               return (
                 <TableRow key={rule.id}>
-                  <TableCell className="align-top">{result && <ResultMark status={result.status} />}</TableCell>
-                  <TableCell className="min-w-[8rem] align-top">
+                  <TableCell valign="top">{result && <ResultMark status={result.status} />}</TableCell>
+                  <TableCell valign="top" className="min-w-[8rem]">
                     <span className="block font-medium">{rule.label}</span>
                     <span className={`${MONO} block text-[0.72rem]`} style={MUTED}>
                       {rule.id}
                     </span>
                   </TableCell>
-                  <TableCell className="min-w-[11rem] align-top text-sm">
+                  <TableCell valign="top" className="min-w-[11rem]">
                     <ThisFile rule={rule} result={result} owner={owner} />
                   </TableCell>
-                  <TableCell className="min-w-[12rem] align-top text-sm">
+                  <TableCell valign="top" className="min-w-[12rem]">
                     <Requirement rule={rule} />
                   </TableCell>
-                  <TableCell className="min-w-[9rem] align-top text-sm">
+                  <TableCell valign="top" className="min-w-[9rem]">
                     <VerificationMark verification={rule.verification} />
                     {rule.verificationNote && (
                       <span className="mt-1 block text-[0.75rem]" style={MUTED}>

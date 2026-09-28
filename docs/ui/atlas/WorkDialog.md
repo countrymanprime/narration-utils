@@ -25,10 +25,10 @@ Storybook title: `Primitives/WorkDialog`. Source: `src/components/primitives/Wor
 ## Used by
 
 - `src/components/assets/AssetInstallPrompt.tsx`
-- `src/components/home/Home.tsx`
-- `src/components/home/RecordingCheck.tsx`
-- `src/components/review/TakeComparisonDialog.tsx`
-- `src/components/review/TakeReviewScanDialog.tsx`
+- `src/components/production/ManuscriptImport.tsx`
+- `src/components/production/RecordingCheck.tsx`
+- `src/components/proof/TakeComparisonDialog.tsx`
+- `src/components/proof/TakeReviewScanDialog.tsx`
 - `src/components/settings/UpdateDownloadDialog.tsx`
 - `src/components/settings/UpdatesPanel.tsx`
 - `src/components/storybible/Guide.tsx`

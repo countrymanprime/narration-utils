@@ -4,6 +4,8 @@ import { faBookmark as faBookmarkRegular } from '@fortawesome/free-regular-svg-i
 import { useId, type ReactNode } from 'react';
 import { readTimeLabel } from '../../state';
 import { Button } from '../primitives/Button';
+import { PANEL_FRAME_CLASS } from '../primitives/panelStyles';
+import { SectionLabel } from '../primitives/SectionLabel';
 import { StatusBadge } from '../primitives/StatusBadge';
 import { TitleSubtitle } from '../primitives/TitleSubtitle';
 import { TooltipTarget } from '../primitives/Tooltip';
@@ -82,7 +84,7 @@ export function ReaderCard({
       // arbitrary `@min-` container variant on the header. `container-type: inline-size` only contains sizing in
       // the inline axis and does not clip overflow (that needs `size`, not `inline-size`), so the header's sticky
       // positioning and the toggle's `overflow-visible` are unaffected.
-      className="@container relative mx-[var(--reader-inline)] mb-4 scroll-mt-[var(--band-h,4rem)] overflow-visible rounded-lg border border-[var(--border)] bg-[var(--surface)]"
+      className={`${PANEL_FRAME_CLASS} @container relative mx-[var(--reader-inline)] mb-4 scroll-mt-[var(--band-h,4rem)] overflow-visible`}
       data-chapter={chapterId ? title : undefined}
       data-chapter-id={chapterId}
       data-credits-entry={creditsKind}
@@ -137,12 +139,8 @@ export function ReaderCard({
           onClick={onToggleExpand}
         >
           {eyebrow && (
-            <div
-              aria-hidden="true"
-              className="font-['Barlow_Condensed',sans-serif] text-[0.68rem] font-semibold tracking-[0.08em] uppercase"
-              style={{ color: 'var(--text-muted)' }}
-            >
-              {eyebrow}
+            <div aria-hidden="true">
+              <SectionLabel>{eyebrow}</SectionLabel>
             </div>
           )}
           <h2 className="m-0 font-['Barlow_Condensed',sans-serif] text-[1.2rem] font-semibold">

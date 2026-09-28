@@ -1,15 +1,22 @@
 import type { CSSProperties, KeyboardEvent, MouseEvent, ReactNode } from 'react';
+import { TABLE_CELL_CLASS, TABLE_HEADER_CLASS, TABLE_TEXT_CLASS } from './tableStyles';
 import { Tooltip } from './Tooltip';
 
 // A presentational data table (ADR 0056). It replaces the `table.dtable` rules in components.css: the look lives here, in
 // tokens, and the parts stay the browser's own table elements (`table`, `thead`, `tbody`, `tr`, `th`, `td`), so the table
 // semantics, the column layout and the cell spanning are the platform's. It sorts, filters and selects nothing itself: the
-// caller owns the rows and reports what the user did. TanStack Table stays the option if that ever grows.
+// caller owns the rows and reports what the user did. TanStack Table stays the option if that ever grows. Its sizes and
+// type are the mocks' (tableStyles.ts, ADR 0605).
 
-// `label` names the table for a screen reader ("Chapters", "Aliases").
-export function Table({ label, className = '', children }: { label: string; className?: string; children: ReactNode }) {
+// `label` names the table for a screen reader ("Chapters", "Aliases"). `flush` runs it to the side edges of the Panel it
+// sits in, as the mocks draw a table in a card; the cells' own padding keeps the text off the card's border. It spans the
+// Panel body's padding (`--panel-pad`, ADR 0640), which is nothing in a `Panel flush`.
+export function Table({ label, flush = false, className = '', children }: { label: string; flush?: boolean; className?: string; children: ReactNode }) {
   return (
-    <table aria-label={label} className={`w-full border-collapse text-[0.86rem] ${className}`}>
+    <table
+      aria-label={label}
+      className={`border-collapse ${TABLE_TEXT_CLASS} ${flush ? '-mx-[var(--panel-pad,1rem)] w-[calc(100%+2*var(--panel-pad,1rem))]' : 'w-full'} ${className}`}
+    >
       {children}
     </table>
   );
@@ -24,26 +31,33 @@ export function TableBody({ children }: { children: ReactNode }) {
   return <tbody>{children}</tbody>;
 }
 
+// How a row stands out without being selected: `current` is the row the work is on (bold, no fill: mock 01's current
+// chapter), `highlight` is a row the page points at (the selected fill, not announced: mock 05's failing file).
+const ROW_EMPHASIS = { current: 'font-semibold', highlight: 'bg-[var(--row-selected)]' } as const;
+
 // A row. With `onActivate` it is a control: it takes a tab stop, Enter or Space on the row activates it (a press on a button
 // or link inside it does not, by key or by pointer: that control acts on its own), the pointer shows it is pressable, and `selected` marks the
-// current one (`aria-selected`) and tints it. Without `onActivate` it is a plain row. `data-row` marks a pressable row for the
+// current one (`aria-selected`) and fills it with `--row-selected`. Without `onActivate` it is a plain row. `data-row` marks a pressable row for the
 // visual suite's drivers.
 export function TableRow({
   onActivate,
   selected = false,
+  emphasis,
   className = '',
   style,
   children,
 }: {
   onActivate?: () => void;
   selected?: boolean;
+  emphasis?: keyof typeof ROW_EMPHASIS;
   className?: string;
   style?: CSSProperties;
   children: ReactNode;
 }) {
+  const emphasisClass = emphasis ? ROW_EMPHASIS[emphasis] : '';
   if (!onActivate) {
     return (
-      <tr className={className} style={style}>
+      <tr className={`${emphasisClass} ${className}`} style={style}>
         {children}
       </tr>
     );
@@ -66,7 +80,7 @@ export function TableRow({
       aria-selected={selected}
       onClick={onClick}
       onKeyDown={onKeyDown}
-      className={`cursor-pointer hover:*:bg-[var(--surface-2)] focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-[var(--accent)] ${selected ? 'bg-[var(--surface-2)]' : ''} ${className}`}
+      className={`cursor-pointer hover:*:bg-[var(--surface-2)] focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-[var(--accent)] ${selected ? 'bg-[var(--row-selected)]' : ''} ${emphasisClass} ${className}`}
       style={style}
     >
       {children}
@@ -105,7 +119,7 @@ export function TableHeader({
     <th
       scope="col"
       aria-sort={onSort ? (sorted ?? 'none') : undefined}
-      className={`relative border-b border-[var(--border)] px-[0.7rem] py-2 font-['Barlow_Condensed',sans-serif] text-[0.72rem] font-semibold tracking-[0.05em] text-[var(--text-muted)] uppercase ${CELL_ALIGN[align]} ${className}`}
+      className={`relative ${TABLE_HEADER_CLASS} ${CELL_ALIGN[align]} ${className}`}
       style={style}
     >
       {onSort ? (
@@ -129,24 +143,34 @@ export function TableHeader({
   );
 }
 
-// A data cell. Content sits at the top of the cell.
+// A data cell. Content sits in the middle of the row; `valign="top"` for a cell of several lines beside one-line cells, so
+// its first line stays level with theirs. `numeric` is a number, a time or a level: IBM Plex Mono at 13 px, right-aligned
+// unless `align="left"` says otherwise (its header takes the same align) and never broken. `muted` is secondary text (the mocks' source column): 12 px in
+// `--text-muted`, which meets 4.5:1 where the mocks' `--non-text` would not (ADR 0059).
 export function TableCell({
-  align = 'left',
+  align,
+  valign = 'middle',
+  numeric = false,
+  muted = false,
   colSpan,
   className = '',
   style,
   children,
 }: {
   align?: keyof typeof CELL_ALIGN;
+  valign?: 'middle' | 'top';
+  numeric?: boolean;
+  muted?: boolean;
   colSpan?: number;
   className?: string;
   style?: CSSProperties;
   children?: ReactNode;
 }) {
+  const right = align === 'right' || (numeric && align !== 'left');
   return (
     <td
       colSpan={colSpan}
-      className={`border-b border-[var(--border)] px-[0.7rem] py-[0.55rem] align-top ${align === 'right' ? CELL_ALIGN.right : ''} ${className}`}
+      className={`${TABLE_CELL_CLASS} ${valign === 'top' ? 'align-top' : 'align-middle'} ${right ? CELL_ALIGN.right : ''} ${numeric ? "font-['IBM_Plex_Mono',ui-monospace,monospace] text-[0.8125rem] whitespace-nowrap" : ''} ${muted ? 'text-[0.75rem] text-[var(--text-muted)]' : ''} ${className}`}
       style={style}
     >
       {children}

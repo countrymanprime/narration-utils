@@ -6,6 +6,8 @@ import { usePendingAction } from '../../hooks/usePendingAction';
 import { Button } from '../primitives/Button';
 import { Dot } from '../primitives/StatusBadge';
 import { Heading } from '../primitives/Heading';
+import { PanelHeader } from '../primitives/Panel';
+import { PANEL_FRAME_CLASS } from '../primitives/panelStyles';
 import { ConfirmDialog } from '../primitives/ConfirmDialog';
 import { Tab, TabList, TabPanel, Tabs } from '../primitives/Tabs';
 import { ToggleGroup } from '../primitives/ToggleGroup';
@@ -34,6 +36,9 @@ const SETTINGS_CATEGORIES: SettingsCategory[] = [
   { key: 'Manuscript', label: 'Manuscript', tool: 'Manuscript', scopes: ['global', 'project'] },
   // The recording check's thresholds and alignment (docs/utilities/recording-coverage.md, ADR 0131), Proposed and uncalibrated.
   { key: 'RecordingCoverage', label: 'Recording check', tool: 'RecordingCoverage', scopes: ['global', 'project'] },
+  // The silence cleanup analyzer's own thresholds (diagnostics-delivery-and-cleanup-tools.prd.md Phase 9 remainder,
+  // ADR 0238 decision 4): a saved preset is this set of values at a layer, like every other settings section.
+  { key: 'Cleanup', label: 'Silence cleanup', tool: 'Cleanup', scopes: ['global', 'project'] },
   { key: 'TranscriptCompare', label: 'Proof', tool: 'TranscriptCompare', scopes: ['global', 'project'] },
   // The preview suggestion's target, tolerance, preset and ending exclusion (delivered, PRD deleted; see
   // docs/architecture/preview-suggestion.md): the engine (PreviewCandidates) reads these on every call, layered project over global like every other tool.
@@ -251,17 +256,13 @@ export function Settings({
               </Tab>
             ))}
           </TabList>
-          <TabPanel
-            value={category}
-            className="min-h-0 overflow-visible rounded-lg border border-[var(--border)] bg-[var(--surface)] shadow-[var(--shadow)] md:overflow-auto"
-          >
-            <div className="flex items-center justify-between gap-3 border-b border-[var(--border)] px-[1.1rem] py-[0.85rem]">
-              <h2 className="font-['Barlow_Condensed',sans-serif] text-lg tracking-[0.08em] uppercase">{active?.label}</h2>
-              <span className="text-xs" style={{ color: 'var(--text-muted)' }}>
-                {scope === 'global' ? 'Global defaults' : 'This Project — falls back to Global where unset'}
-              </span>
-            </div>
-            <div className="p-[1.1rem]">
+          <TabPanel value={category} className={`${PANEL_FRAME_CLASS} min-h-0 overflow-visible md:overflow-auto`}>
+            <PanelHeader
+              title={active?.label ?? ''}
+              titleStyle="caps"
+              subtitle={scope === 'global' ? 'Global defaults' : 'This Project — falls back to Global where unset'}
+            />
+            <div className="p-4">
               {loadError && (
                 <div className="mb-4 rounded-md p-3 text-sm" role="alert" style={{ background: 'var(--review-soft)', color: 'var(--danger-text)' }}>
                   Settings could not be loaded: {loadError}. Select another category or try again.

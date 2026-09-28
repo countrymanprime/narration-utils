@@ -1,3 +1,4 @@
+import { SectionLabel } from '../primitives/SectionLabel';
 import { usePickupsState } from './usePickupsState';
 
 // Mock 07's pickups list: Plex Mono, 13 px, 29 px rows (mock-fidelity-primitives-and-components.prd.md Phase 13). The
@@ -17,7 +18,7 @@ export function PickupsCompanionSummary() {
       <p className={ROW}>{state.total > 0 ? `${state.remaining} pickup${state.remaining === 1 ? '' : 's'} remaining of ${state.total}` : 'No pickups yet'}</p>
       {next && (
         <p className={ROW}>
-          Next: {next.tag && <span className="section-label mr-1.5">{next.tag}</span>}
+          Next: {next.tag && <SectionLabel className="mr-1.5">{next.tag}</SectionLabel>}
           {next.note}
         </p>
       )}

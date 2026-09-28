@@ -2,6 +2,7 @@ import type { ManuscriptChapter } from '../../api/contracts/manuscript';
 import { chapterName } from '../../chapterName';
 import { removalKindLabel, removedWhenLabel } from './chapterRemovalText';
 import { Button } from '../primitives/Button';
+import { InsetCard } from '../primitives/InsetCard';
 import { Panel } from '../primitives/Panel';
 
 /**
@@ -26,10 +27,7 @@ export function RemovedFromRecordingList({
     <Panel title={`Removed from recording (${removed.length})`}>
       <ul className="space-y-2">
         {removed.map((chapter) => (
-          <li
-            key={chapter.id}
-            className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-[var(--border)] bg-[var(--surface-2)] px-3 py-2.5"
-          >
+          <InsetCard as="li" key={chapter.id} fill className="flex flex-wrap items-center justify-between gap-2">
             <div className="min-w-0">
               <span className="font-medium">{chapterName(chapter)}</span>
               <span className="text-sm" style={{ color: 'var(--text-muted)' }}>
@@ -41,7 +39,7 @@ export function RemovedFromRecordingList({
             <Button variant="secondary" pending={restoringId === chapter.id} onClick={() => onRestore(chapter.id)}>
               Restore
             </Button>
-          </li>
+          </InsetCard>
         ))}
       </ul>
     </Panel>

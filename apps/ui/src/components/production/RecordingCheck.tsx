@@ -10,6 +10,7 @@ import { AssetFacts } from '../assets/AssetFacts';
 import { AssetInstallPrompt } from '../assets/AssetInstallPrompt';
 import { MappingConfirm } from '../mapping/MappingConfirm';
 import { Button } from '../primitives/Button';
+import { InsetCard } from '../primitives/InsetCard';
 import { SlideOver } from '../primitives/SlideOver';
 import type { Notify } from '../primitives/Toast';
 import { WorkDialog } from '../primitives/WorkDialog';
@@ -422,11 +423,7 @@ function ReasonBlock({
   const link = unique.some((reason) => LINK_REASONS.has(reason));
   const pages = [...new Map(unique.flatMap((reason) => (REASON_PAGE[reason] ? [[REASON_PAGE[reason]!.path, REASON_PAGE[reason]!]] : []))).values()];
   return (
-    <div
-      role={tone === 'alert' ? 'alert' : undefined}
-      className="space-y-2 rounded-md border px-3 py-2"
-      style={{ borderColor: tone === 'alert' ? 'var(--danger)' : 'var(--border)', background: 'var(--surface-2)' }}
-    >
+    <InsetCard role={tone === 'alert' ? 'alert' : undefined} tone={tone === 'alert' ? 'danger' : 'neutral'} fill className="space-y-2">
       <p className="font-semibold" style={tone === 'alert' ? { color: 'var(--danger-text)' } : undefined}>
         {title}
       </p>
@@ -451,7 +448,7 @@ function ReasonBlock({
           ))}
         </div>
       )}
-    </div>
+    </InsetCard>
   );
 }
 

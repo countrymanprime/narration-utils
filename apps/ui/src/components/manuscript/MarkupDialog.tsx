@@ -4,6 +4,7 @@ import { Button } from '../primitives/Button';
 import { Dialog } from '../primitives/Dialog';
 import { Field } from '../primitives/Field';
 import { RadioGroup } from '../primitives/RadioGroup';
+import { SectionLabel } from '../primitives/SectionLabel';
 import { markName, removeMarkLabel } from './markup';
 
 // Places a script mark on the selected words (prep-depth.prd.md Phase 5): stress, a breath or a pause after them, or who
@@ -90,9 +91,9 @@ export function MarkupDialog({
       )}
       {existing.length > 0 && (
         <div className="mt-4 border-t border-[var(--border)] pt-3">
-          <div className="mb-1 font-['Barlow_Condensed',sans-serif] text-[0.72rem] font-semibold tracking-[0.08em] text-[var(--text-muted)] uppercase">
+          <SectionLabel as="div" className="mb-1">
             Already on these words
-          </div>
+          </SectionLabel>
           <ul className="space-y-1 text-sm">
             {existing.map((span) => (
               <li key={span.id} className="flex items-center justify-between gap-2">

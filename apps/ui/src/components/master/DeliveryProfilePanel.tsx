@@ -70,12 +70,12 @@ export function DeliveryProfilePanel({ state, openSettings }: { state: ProfileSt
       }
     >
       {state.status === 'loading' && (
-        <p className="mt-2 text-sm" style={MUTED}>
+        <p className="text-sm" style={MUTED}>
           Reading the delivery profile…
         </p>
       )}
       {state.status === 'error' && (
-        <p role="alert" className="mt-2 text-sm" style={{ color: 'var(--danger-text)' }}>
+        <p role="alert" className="text-sm" style={{ color: 'var(--danger-text)' }}>
           The delivery profile could not be read: {state.message}
         </p>
       )}
@@ -100,7 +100,7 @@ function ProfileBody({
   const counts = profileCounts(profile);
   const owner = requirementOwner(profile);
   return (
-    <div className="mt-2 flex flex-col gap-2">
+    <div className="flex flex-col gap-2">
       <div className="flex flex-wrap items-center gap-2">
         <h3 className="text-lg font-semibold">{deliveryProfileTitle(profile)}</h3>
         {profile.builtIn ? (
@@ -164,13 +164,13 @@ function ProfileBody({
                       {rule.id} · {rule.scope === 'file' ? 'each file' : 'book'}
                     </span>
                   </TableCell>
-                  <TableCell className="min-w-[12rem] text-sm">
+                  <TableCell className="min-w-[12rem]">
                     <Requirement rule={rule} />
                   </TableCell>
-                  <TableCell className="min-w-[12rem] text-sm">
+                  <TableCell className="min-w-[12rem]">
                     <CheckCell rule={rule} />
                   </TableCell>
-                  <TableCell className="min-w-[10rem] text-sm">
+                  <TableCell className="min-w-[10rem]">
                     <VerificationMark verification={rule.verification} />
                     {rule.verificationNote && (
                       <span className="mt-1 block text-[0.75rem]" style={MUTED}>

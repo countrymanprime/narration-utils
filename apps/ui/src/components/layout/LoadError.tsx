@@ -14,7 +14,7 @@ export function LoadError({ title, message, retry }: { title: string; message: s
     <div className="mx-auto max-w-3xl space-y-4 p-6">
       <Heading title={title} />
       <Panel title="This page could not be loaded">
-        <p role="alert" className="mt-2 text-sm" style={{ color: 'var(--text-muted)' }}>
+        <p role="alert" className="text-sm" style={{ color: 'var(--text-muted)' }}>
           {message}
         </p>
         <Button variant="primary" className="mt-4" onClick={retry}>

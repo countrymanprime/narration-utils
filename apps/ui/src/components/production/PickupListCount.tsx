@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { InsetCard } from '../primitives/InsetCard';
 
 /**
  * RS5 B (recording-check-summary.prd.md Phase 3, D22): the proofer's REAPER pickup list, shown project-wide rather
@@ -11,13 +12,13 @@ import { Link } from 'react-router-dom';
  */
 export function PickupListCount({ available, remaining }: { available: boolean; remaining?: number }) {
   return (
-    <div className="mt-2 flex flex-wrap items-center justify-between gap-2 rounded-md border border-dashed border-[var(--border)] px-3 py-2 text-sm">
+    <InsetCard dashed className="mt-2 flex flex-wrap items-center justify-between gap-2 text-sm">
       <span>Pickup list: {available ? `${remaining ?? 0} open (project-wide)` : 'open REAPER to count'}</span>
       {available && (
         <Link to="/pickups" className="font-semibold underline">
           Open pickups
         </Link>
       )}
-    </div>
+    </InsetCard>
   );
 }

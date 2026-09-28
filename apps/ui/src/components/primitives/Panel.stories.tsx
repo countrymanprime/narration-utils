@@ -3,10 +3,16 @@ import { expect, fn, userEvent, within } from 'storybook/test';
 import { Button } from './Button';
 import { Field } from './Field';
 import { Heading } from './Heading';
-import { Panel } from './Panel';
+import { InsetCard } from './InsetCard';
+import { Panel, PanelHeader } from './Panel';
+import { PANEL_FRAME_CLASS } from './panelStyles';
+import { SectionLabel } from './SectionLabel';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './Table';
 
-// Panel is a surface: border, background, padding and shadow around whatever the caller passes. Given a `title` it is a
-// named region (a level-2 heading and aria-labelledby), and `actions` sit beside the title.
+// Panel is a card: border, background, padding and shadow around whatever the caller passes. Given a `title` it is a
+// named region (a level-2 heading and aria-labelledby) with a header row over a divider: the title, a `subtitle` on its
+// line and `actions` at the right. `flush` drops the body's padding for a table; the sizes are benchmark mock 05's
+// (ADR 0640).
 const meta = {
   title: 'Primitives/Panel',
   component: Panel,
@@ -25,7 +31,7 @@ export const TitleAndDescription: Story = {
     <div className="space-y-4">
       <Heading title="Tracks" />
       <Panel title="No REAPER project file found">
-        <p className="mt-1 text-sm" style={{ color: 'var(--text-muted)' }}>
+        <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
           This project folder doesn&rsquo;t contain a .rpp file. Save your REAPER project into the folder, then reopen this page.
         </p>
       </Panel>
@@ -46,7 +52,7 @@ export const LongTitleWraps: Story = {
         title="The_Very_Long_Running_Series_Book_Three_The_Reckoning_chapter_twenty_seven_revised_v14_FINAL.rpp"
         actions={<Button variant="secondary">Rescan folder</Button>}
       >
-        <p className="mt-1 text-sm" style={{ color: 'var(--text-muted)' }}>
+        <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
           The title wraps and the action stays beside it.
         </p>
       </Panel>
@@ -71,7 +77,7 @@ export const WithHeaderAndActions: Story = {
           </>
         }
       >
-        <p className="mt-1 text-sm" style={{ color: 'var(--text-muted)' }}>
+        <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
           More than one .rpp file was found in this project folder. Choose which one to read tracks from.
         </p>
       </Panel>
@@ -90,7 +96,7 @@ export const WithHeaderNoActions: Story = {
     <div className="space-y-4">
       <Heading title="Proofing" />
       <Panel title="Choose manuscript chapter">
-        <p className="mt-1 text-sm" style={{ color: 'var(--text-muted)' }}>
+        <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
           The track name did not confidently match a chapter.
         </p>
       </Panel>
@@ -117,7 +123,7 @@ export const LongContent: Story = {
     <div className="space-y-4">
       <Heading title="Manuscript" />
       <Panel title="Chapter 12: The Salt Road">
-        <p className="mt-2 text-sm">
+        <p className="text-sm">
           The caravan left the lower city before dawn, when the fog off the estuary still hid the harbour lamps and the only sound was the creak of axles on wet
           stone. Marra rode at the rear, counting wagons the way she counted everything: twice, and then once more when she was sure no one was watching her
           lips move. By the time the sun cleared the eastern wall the road had narrowed to a causeway of packed salt, white as bone on either side of the ruts,
@@ -137,4 +143,268 @@ export const LongContent: Story = {
       </Panel>
     </div>
   ),
+};
+
+// Measured once the web fonts are in (a fallback face sets different line boxes), and only where there is layout: the
+// stories' jsdom run (stories.test.tsx) lays nothing out.
+async function laidOut(canvasElement: HTMLElement) {
+  if (canvasElement.getBoundingClientRect().width === 0) return false;
+  await document.fonts.ready;
+  return true;
+}
+
+const px = (value: number) => Math.round(value);
+
+// Benchmark mock 05's "Per-file checks" and "Mastering chain" cards: a 50 px header row (its divider included) with a
+// Barlow 19 px title and a 13 px muted subtitle 10 px after it on the same line; the body 16 px in from the frame; an
+// 8 px radius.
+export const MatchesTheMock: Story = {
+  render: () => (
+    <div className="space-y-4">
+      <Heading title="Master & QC" />
+      <Panel title="Mastering chain" subtitle="one chain for the book · runs in REAPER as an FX chain">
+        <p className="text-sm">Room-tone fill → De-click (light) → High-pass 80 Hz → Limiter −3.5 dBTP</p>
+      </Panel>
+    </div>
+  ),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const region = canvas.getByRole('region', { name: 'Mastering chain' });
+    const title = within(region).getByRole('heading', { level: 2, name: 'Mastering chain' });
+    const subtitle = canvas.getByText(/one chain for the book/);
+    if (!(await laidOut(canvasElement))) return;
+    const header = title.parentElement!.parentElement!;
+    // One line while the subtitle fits beside the title; in a narrow card it wraps inside its own box.
+    if (subtitle.getBoundingClientRect().height < 20) {
+      await expect(px(header.getBoundingClientRect().height)).toBe(50);
+      // Inline: on the title's line, 10 px after it.
+      await expect(px(subtitle.getBoundingClientRect().left - title.getBoundingClientRect().right)).toBe(10);
+    }
+    await expect(getComputedStyle(header).borderBottomWidth).toBe('1px');
+    await expect(getComputedStyle(title).fontSize).toBe('19px');
+    await expect(getComputedStyle(title).fontFamily).toContain('Barlow Condensed');
+    await expect(getComputedStyle(title).fontWeight).toBe('600');
+    await expect(getComputedStyle(subtitle).fontSize).toBe('13px');
+    const frame = region.getBoundingClientRect();
+    await expect(px(title.getBoundingClientRect().left - frame.left)).toBe(17);
+    await expect(getComputedStyle(region).borderTopLeftRadius).toBe('8px');
+    const body = canvas.getByText(/Room-tone fill/);
+    await expect(px(body.getBoundingClientRect().left - frame.left)).toBe(17);
+    await expect(px(body.getBoundingClientRect().top - header.getBoundingClientRect().bottom)).toBe(16);
+  },
+};
+
+// Mock 05's "Why it fails": buttons in the header make it 55 px (11 px above and below a 32 px button, and the divider).
+// Button is 38 px tall until the Button phase, so this measures the 11 px rather than the total.
+export const HeaderWithActions: Story = {
+  render: () => (
+    <div className="space-y-4">
+      <Heading title="Master & QC" />
+      <Panel
+        title="04 · Why it fails"
+        actions={
+          <>
+            <Button variant="ghost">Quietest 5 s</Button>
+            <Button variant="ghost">Open in REAPER</Button>
+          </>
+        }
+      >
+        <p className="text-sm">Noise floor −57.8 dB (limit −60). Steady hum at 60 Hz and 120 Hz.</p>
+      </Panel>
+    </div>
+  ),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const button = canvas.getByRole('button', { name: 'Open in REAPER' });
+    if (!(await laidOut(canvasElement))) return;
+    const header = canvas.getByRole('heading', { level: 2 }).parentElement!.parentElement!;
+    const box = header.getBoundingClientRect();
+    const narrow = box.width < 400;
+    if (narrow) return;
+    await expect(px(button.getBoundingClientRect().top - box.top)).toBe(11);
+    await expect(px(box.bottom - 1 - button.getBoundingClientRect().bottom)).toBe(11);
+    // The border and 16 px, to a pixel: the box edges fall on fractions.
+    await expect(Math.abs(box.right + 1 - button.getBoundingClientRect().right - 17)).toBeLessThanOrEqual(1);
+  },
+};
+
+// A table in a card runs to its edges under the divider (mock 05's per-file checks): `flush` drops the body's padding.
+export const FlushTable: Story = {
+  render: () => (
+    <div className="space-y-4">
+      <Heading title="Master & QC" />
+      <Panel title="Per-file checks" subtitle="measured on the rendered files" flush>
+        <Table label="Per-file checks">
+          <TableHead>
+            <TableRow>
+              <TableHeader>File</TableHeader>
+              <TableHeader align="right">Length</TableHeader>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            <TableRow>
+              <TableCell>00 Opening credits</TableCell>
+              <TableCell numeric>0:12</TableCell>
+            </TableRow>
+            <TableRow>
+              <TableCell>01 Down the Rabbit-Hole</TableCell>
+              <TableCell numeric>11:48</TableCell>
+            </TableRow>
+          </TableBody>
+        </Table>
+      </Panel>
+    </div>
+  ),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const region = canvas.getByRole('region', { name: 'Per-file checks' });
+    const table = canvas.getByRole('table', { name: 'Per-file checks' });
+    if (!(await laidOut(canvasElement))) return;
+    const frame = region.getBoundingClientRect();
+    const header = canvas.getByRole('heading', { level: 2 }).parentElement!.parentElement!;
+    await expect(px(table.getBoundingClientRect().left)).toBe(px(frame.left + 1));
+    await expect(px(table.getBoundingClientRect().right)).toBe(px(frame.right - 1));
+    await expect(px(table.getBoundingClientRect().top)).toBe(px(header.getBoundingClientRect().bottom));
+  },
+};
+
+// Some text above the table keeps its padding, and `Table flush` spans exactly the body's padding.
+export const FlushTableUnderText: Story = {
+  render: () => (
+    <div className="space-y-4">
+      <Heading title="Tracks" />
+      <Panel title="Tracks">
+        <p className="mb-2 text-sm" style={{ color: 'var(--text-muted)' }}>
+          Every track in the linked REAPER project.
+        </p>
+        <Table label="Tracks" flush>
+          <TableHead>
+            <TableRow>
+              <TableHeader>Track</TableHeader>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            <TableRow>
+              <TableCell>Narration</TableCell>
+            </TableRow>
+          </TableBody>
+        </Table>
+      </Panel>
+    </div>
+  ),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const region = canvas.getByRole('region', { name: 'Tracks' });
+    const table = canvas.getByRole('table', { name: 'Tracks' });
+    if (!(await laidOut(canvasElement))) return;
+    const frame = region.getBoundingClientRect();
+    await expect(px(table.getBoundingClientRect().left)).toBe(px(frame.left + 1));
+    await expect(px(table.getBoundingClientRect().right)).toBe(px(frame.right - 1));
+  },
+};
+
+// A bare card named for a screen reader without a visible title.
+export const LabelledWithoutTitle: Story = {
+  render: () => (
+    <Panel label="Where you stopped">
+      <p className="text-sm">You stopped at “the rabbit-hole went straight on like a tunnel”.</p>
+    </Panel>
+  ),
+  play: async ({ canvasElement }) => {
+    await expect(within(canvasElement).getByRole('region', { name: 'Where you stopped' })).toBeVisible();
+  },
+};
+
+// Something leads the title (the Story Bible's category dot), and the subtitle can hold a control.
+export const LeadingAndRichSubtitle: Story = {
+  render: () => (
+    <div className="space-y-4">
+      <Heading title="Story Bible" />
+      <Panel
+        title="Marra Venn"
+        leading={<span className="size-2.5 rounded-full" style={{ background: 'var(--accent)' }} />}
+        subtitle={<Button variant="ghost">Character</Button>}
+      >
+        <p className="text-sm">Captain of the river watch.</p>
+      </Panel>
+    </div>
+  ),
+};
+
+// The narrator's attention is needed: the frame takes the review colour.
+export const ReviewTone: Story = {
+  render: () => (
+    <Panel tone="review">
+      <p className="text-sm">
+        <strong>The credits need 2 values</strong> before they can be read.
+      </p>
+    </Panel>
+  ),
+};
+
+// The body scrolls under a header that stays put, inside the height the page gives the card.
+export const ScrollingBody: Story = {
+  render: () => (
+    <div className="space-y-4">
+      <Heading title="Story Bible" />
+      <Panel title="Aliases" scroll className="h-64">
+        <ul className="space-y-2 text-sm">
+          {Array.from({ length: 20 }, (_, index) => (
+            <li key={index}>Alias {index + 1}</li>
+          ))}
+        </ul>
+      </Panel>
+    </div>
+  ),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const heading = canvas.getByRole('heading', { level: 2, name: 'Aliases' });
+    if (!(await laidOut(canvasElement))) return;
+    const body = canvas.getByText('Alias 1').closest('ul')!.parentElement!;
+    await expect(body.scrollHeight).toBeGreaterThan(body.clientHeight);
+    await expect(heading).toBeVisible();
+  },
+};
+
+// A card that is not a section of its own (a TabPanel drawn as a card) takes the header row on its own, with the eyebrow
+// label and an inset card inside the body.
+export const HeaderOnItsOwn: Story = {
+  render: () => (
+    <div className="space-y-4">
+      <Heading title="Settings" />
+      <div role="group" aria-labelledby="settings-title" className={PANEL_FRAME_CLASS}>
+        <PanelHeader title="Keyboard" titleId="settings-title" subtitle="Global defaults" />
+        <div className="space-y-2 p-4">
+          <SectionLabel as="h3">Transport</SectionLabel>
+          <InsetCard>Play or pause: Space</InsetCard>
+        </div>
+      </div>
+    </div>
+  ),
+  play: async ({ canvasElement }) => {
+    await expect(within(canvasElement).getByRole('group', { name: 'Keyboard' })).toBeVisible();
+  },
+};
+
+// The dark Settings mocks' category title: Barlow 17 px, uppercase, tracked. The subtitle keeps to the title's line and
+// wraps in its own box before it drops under the title.
+export const CapsTitle: Story = {
+  render: () => (
+    <div className="space-y-4">
+      <Heading title="Settings" />
+      <Panel title="Delivery" titleStyle="caps" subtitle="This Project — falls back to Global where unset">
+        <p className="text-sm">Delivery profile for this project</p>
+      </Panel>
+    </div>
+  ),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const title = canvas.getByRole('heading', { level: 2, name: 'Delivery' });
+    const subtitle = canvas.getByText(/falls back to Global/);
+    if (!(await laidOut(canvasElement))) return;
+    await expect(getComputedStyle(title).fontSize).toBe('17px');
+    await expect(getComputedStyle(title).textTransform).toBe('uppercase');
+    // Beside the title while it has 10 rem (it wraps inside its own box before it drops under the title).
+    await expect(px(subtitle.getBoundingClientRect().left - title.getBoundingClientRect().right)).toBe(10);
+  },
 };

@@ -372,7 +372,6 @@ export function ReadingControlBar({ session: t, follow, startPoint, chapterId, c
             <Popover
               label="Settings"
               side="top"
-              align="end"
               trigger={
                 <IconButton label="Settings">
                   <FontAwesomeIcon icon={faGear} />

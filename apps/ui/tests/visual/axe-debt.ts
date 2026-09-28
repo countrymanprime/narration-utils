@@ -13,8 +13,6 @@ import type { AxeDebt } from './lib/validators';
 
 const PORTALLED_POPUP = 'The popup is portalled to <body>, outside the landmarks, so axe cannot place it (#157)';
 const FOCUS_GUARDS = "Base UI's own focus guards are focusable inside an aria-hidden wrapper, and the fix is upstream or a portal container (#157)";
-const ALIAS_COMBOBOX = 'The alias typeahead is the one bespoke combobox and has no expanded state, controls or option children (#156)';
-
 export const AXE_DEBT: AxeDebt[] = [
   { page: 'script', state: 'selection-popup', rules: ['region'], reason: PORTALLED_POPUP },
   { page: 'global', state: 'tooltip', rules: ['aria-hidden-focus', 'region'], reason: `${FOCUS_GUARDS}; and ${PORTALLED_POPUP}` },
@@ -22,5 +20,4 @@ export const AXE_DEBT: AxeDebt[] = [
   // The rail shows labels at the desktop width, so the hint only exists (and is only reported) below it.
   { page: 'global', state: 'nav-rail-tooltip', rules: ['region'], reason: PORTALLED_POPUP, viewports: ['small-desktop', 'tablet'] },
   { page: 'shell', state: 'history-enabled', rules: ['region'], reason: PORTALLED_POPUP },
-  { page: 'storybible', state: 'alias-typeahead', rules: ['aria-required-attr', 'aria-required-children'], reason: ALIAS_COMBOBOX },
 ];

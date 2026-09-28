@@ -4,14 +4,13 @@ import { useCapability } from '../../useCapability';
 import type { CoverageJudgement, CoverageReport, CoverageRegionKind, ManuscriptChapter } from '../../types';
 import { Button } from '../primitives/Button';
 import { Disclosure } from '../primitives/Disclosure';
+import { InsetCard } from '../primitives/InsetCard';
+import { SectionLabel } from '../primitives/SectionLabel';
 import { StatTile } from '../primitives/StatTile';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../primitives/Table';
 import { PickupListCount } from './PickupListCount';
 import { REGION_LABEL, describePosition, describeRegion, formatAudioTime, paragraphRefs, plural, recordedTo, verdict } from './recordingCheckText';
 import { TakeReviewPickups } from './TakeReviewPickups';
-
-const MONO = "font-['IBM_Plex_Mono',ui-monospace,monospace]";
-const EYEBROW = "font-['Barlow_Condensed',sans-serif] text-[0.72rem] font-semibold tracking-[0.08em] text-[var(--text-muted)] uppercase";
 
 // A pickup is one of the check's own interior gaps (recording-check-summary.prd.md, RS8, D33): a place worth reading
 // on its own. An unread start or end is unfinished recording, not a pickup (RS2 A) - recordedTo() states it in the
@@ -140,9 +139,9 @@ export function RecordingCheckReport({
         )}
       </div>
       <section aria-labelledby="recording-check-pickups">
-        <h3 id="recording-check-pickups" className={EYEBROW}>
+        <SectionLabel as="h3" id="recording-check-pickups">
           Pickups ({pickups.length})
-        </h3>
+        </SectionLabel>
         {pickups.length === 0 ? (
           <p className="mt-1 text-sm" style={{ color: 'var(--text-muted)' }}>
             None from this check.
@@ -154,10 +153,7 @@ export function RecordingCheckReport({
               const first = regionRefs.find((ref) => ref.index !== undefined);
               const position = describePosition(region);
               return (
-                <li
-                  key={`${region.kind}-${index}`}
-                  className="flex flex-wrap items-start justify-between gap-2 rounded-md border border-[var(--border)] bg-[var(--surface-2)] px-3 py-2 text-sm"
-                >
+                <InsetCard as="li" key={`${region.kind}-${index}`} fill className="flex flex-wrap items-start justify-between gap-2 text-sm">
                   <div className="min-w-0 flex-1 basis-60">
                     <div>
                       <strong>{REGION_LABEL[region.kind]}</strong> · {describeRegion(region, regionRefs)}
@@ -178,7 +174,7 @@ export function RecordingCheckReport({
                       Go to paragraph {first.number}
                     </Button>
                   )}
-                </li>
+                </InsetCard>
               );
             })}
           </ul>
@@ -213,15 +209,13 @@ export function RecordingCheckReport({
                   return (
                     <TableRow key={paragraph.id}>
                       <TableCell>{number}</TableCell>
-                      <TableCell align="right" className={MONO}>
+                      <TableCell numeric>
                         {paragraph.present} of {paragraph.tokens}
                       </TableCell>
-                      <TableCell align="right" className={MONO} style={missing > 0 ? { color: 'var(--danger-text)' } : undefined}>
+                      <TableCell numeric style={missing > 0 ? { color: 'var(--danger-text)' } : undefined}>
                         {missing > 0 ? missing : '—'}
                       </TableCell>
-                      <TableCell align="right" className={MONO}>
-                        {paragraph.longestMissingRun > 0 ? paragraph.longestMissingRun : '—'}
-                      </TableCell>
+                      <TableCell numeric>{paragraph.longestMissingRun > 0 ? paragraph.longestMissingRun : '—'}</TableCell>
                     </TableRow>
                   );
                 })}

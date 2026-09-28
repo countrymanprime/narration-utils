@@ -1,36 +1,14 @@
 /* Component classes. Imported into Tailwind's utilities layer (ahead of the generated
    utilities) so specificity decides conflicts between these rules and utility classes,
    the way it did before Tailwind 4 put components in a layer below all utilities. */
-.f-label,
+/* The eyebrow label: SectionLabel's look (ADR 0640), kept for the files a later phase migrates (sectionLabelCopies.test.ts). */
 .section-label {
   font-family: 'Barlow Condensed', sans-serif;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-.f-mono {
-  font-family: 'IBM Plex Mono', ui-monospace, monospace;
-}
-.section-label {
   font-weight: 600;
-  font-size: 0.72rem;
+  font-size: var(--font-size-label);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
   color: var(--text-muted);
-}
-.panel {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 0.5rem;
-  box-shadow: var(--shadow);
-}
-.panel-head {
-  padding: 0.85rem 1.1rem;
-  border-bottom: 1px solid var(--border);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.75rem;
-}
-.panel-body {
-  padding: 1.1rem;
 }
 .label,
 label.field-label {

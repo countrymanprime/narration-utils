@@ -31,6 +31,7 @@ import { Button } from '../primitives/Button';
 import { Field } from '../primitives/Field';
 import { ConfirmDialog } from '../primitives/ConfirmDialog';
 import { Menu } from '../primitives/Menu';
+import { Panel } from '../primitives/Panel';
 import { Tooltip, TooltipTarget } from '../primitives/Tooltip';
 import { CANONICAL_PREVIEW, previewKey, usePreviewAudio } from './usePreviewAudio';
 import { PropertiesSection } from './PropertiesSection';
@@ -40,10 +41,14 @@ import { PronunciationWork } from './PronunciationWork';
 import { pronunciationSourceLabel } from './pronunciationStatus';
 import { draftFrom, propertiesFrom, propertyProblem, sameProperties, type DraftProperty } from './propertyDraft';
 import { IconButton } from '../primitives/IconButton';
+import { Listbox, listboxOptionId } from '../primitives/Listbox';
 import { Select } from '../primitives/Select';
 import { TextField } from '../primitives/TextField';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../primitives/Table';
 import type { Notify } from '../primitives/Toast';
+
+// The alias box's popup of matching entries, named by the text box that drives it.
+const ALIAS_MATCHES_ID = 'story-bible-alias-matches';
 
 // What the form holds while an entry is being edited: the entry's own values, until the narrator changes them.
 type Draft = { name: string; description: string; personality: string; context: string; properties: DraftProperty[] };
@@ -146,12 +151,7 @@ export function GuideDetail({
     if (entity) setDraft(draftOf(entity));
   }, [entity, resetVoiceInstall]);
 
-  if (!entity)
-    return (
-      <section className="rounded-lg border border-[var(--border)] bg-[var(--surface)] p-[1.1rem] shadow-[var(--shadow)]">
-        No matching entities. Build the guide to discover names and terms.
-      </section>
-    );
+  if (!entity) return <Panel>No matching entities. Build the guide to discover names and terms.</Panel>;
   const locked = entity.locked;
   // Entries open read-only (ADR-0018): Edit reveals the form controls and Save.
   // A locked entry cannot be edited at all, and a brand-new draft is created by
@@ -360,33 +360,31 @@ export function GuideDetail({
   };
 
   return (
-    <section className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-lg border border-[var(--border)] bg-[var(--surface)] shadow-[var(--shadow)]">
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--border)] px-[1.1rem] py-[0.85rem]">
-        <div className="flex min-w-0 items-center gap-2">
-          <Dot color={CAT_DOT_BG[categoryCssName(entity.category)]} />
-          <h2 className="truncate font-semibold">{entity.canonical_name || 'New entity'}</h2>
-          <div className="flex items-center gap-2 text-sm" style={{ color: 'var(--text-muted)' }}>
-            <div style={{ position: 'relative' }}>
-              <Menu
-                triggerClassName={badgeClass('pill')}
-                triggerStyle={badgeStyle(entityBadgeColors(entity.category))}
-                disabled={locked || !(editing || isNewDraft) || mutation.isBusy}
-                items={CREATABLE_CATEGORIES.map((label) => ({
-                  key: label,
-                  label,
-                  leading: <Dot color={CAT_DOT_BG[categoryValue(label)]} />,
-                  onSelect: () => {
-                    if (isNewDraft) void createNewEntity(categoryValue(label));
-                    else void save('category', { category: categoryValue(label) }, `Category changed to ${label}.`);
-                  },
-                }))}
-              >
-                {categoryLabel(entity.category)} <FontAwesomeIcon icon={faChevronDown} />
-              </Menu>
-            </div>
-          </div>
+    <Panel
+      title={entity.canonical_name || 'New entity'}
+      leading={<Dot color={CAT_DOT_BG[categoryCssName(entity.category)]} />}
+      subtitle={
+        <div style={{ position: 'relative' }}>
+          <Menu
+            triggerClassName={badgeClass('pill')}
+            triggerStyle={badgeStyle(entityBadgeColors(entity.category))}
+            disabled={locked || !(editing || isNewDraft) || mutation.isBusy}
+            items={CREATABLE_CATEGORIES.map((label) => ({
+              key: label,
+              label,
+              leading: <Dot color={CAT_DOT_BG[categoryValue(label)]} />,
+              onSelect: () => {
+                if (isNewDraft) void createNewEntity(categoryValue(label));
+                else void save('category', { category: categoryValue(label) }, `Category changed to ${label}.`);
+              },
+            }))}
+          >
+            {categoryLabel(entity.category)} <FontAwesomeIcon icon={faChevronDown} />
+          </Menu>
         </div>
-        <div className="flex shrink-0 items-center gap-2">
+      }
+      actions={
+        <>
           <span className="mr-1 font-['IBM_Plex_Mono',ui-monospace,monospace] text-xs" style={{ color: 'var(--text-muted)' }}>
             {entity.occurrence_count} occurrences
           </span>
@@ -446,9 +444,12 @@ export function GuideDetail({
               </IconButton>
             </TooltipTarget>
           )}
-        </div>
-      </div>
-      <div className="min-h-0 flex-1 space-y-4 overflow-y-auto p-[1.1rem]">
+        </>
+      }
+      scroll
+      className="min-h-0 flex-1"
+    >
+      <div className="space-y-4">
         {locked && (
           <p className="rounded px-3 py-1.5 text-xs" style={{ background: 'var(--surface-2)', color: 'var(--text-muted)' }}>
             <FontAwesomeIcon icon={faLock} className="mr-1.5" />
@@ -534,14 +535,14 @@ export function GuideDetail({
               <TableRow>
                 <TableHeader>Alias</TableHeader>
                 <TableHeader style={{ minWidth: '9rem' }}>Pronunciation</TableHeader>
-                <TableHeader>Occurrences</TableHeader>
+                <TableHeader align="right">Occurrences</TableHeader>
                 <TableHeader hiddenLabel="Actions" />
               </TableRow>
             </TableHead>
             <TableBody>
               {entity.aliases.map((alias, index) => (
                 <TableRow key={alias.text}>
-                  <TableCell className="font-['IBM_Plex_Mono',ui-monospace,monospace] text-sm">{alias.text}</TableCell>
+                  <TableCell className="font-['IBM_Plex_Mono',ui-monospace,monospace]">{alias.text}</TableCell>
                   <TableCell>
                     <div style={{ position: 'relative', width: '100%' }}>
                       <div
@@ -569,7 +570,7 @@ export function GuideDetail({
                       </TooltipTarget>
                     </div>
                   </TableCell>
-                  <TableCell className="font-['IBM_Plex_Mono',ui-monospace,monospace]">{alias.occurrences.length}</TableCell>
+                  <TableCell numeric>{alias.occurrences.length}</TableCell>
                   <TableCell align="right">
                     <IconButton
                       label={`Remove alias ${alias.text}`}
@@ -594,6 +595,8 @@ export function GuideDetail({
               label="Add an alias or find a matching entry"
               role="combobox"
               aria-expanded={aliasMatches.length > 0}
+              aria-controls={aliasMatches.length > 0 ? ALIAS_MATCHES_ID : undefined}
+              aria-activedescendant={aliasMatches[aliasActiveIndex] ? listboxOptionId(ALIAS_MATCHES_ID, aliasMatches[aliasActiveIndex].id) : undefined}
               disabled={editingDisabled}
               value={aliasQuery}
               onChange={(value) => {
@@ -630,57 +633,44 @@ export function GuideDetail({
                 </Button>
               </div>
             ) : aliasQuery ? (
-              <div
-                className="mt-1 flex flex-col overflow-hidden rounded-[var(--control-radius)] border border-[var(--border)] bg-[var(--surface)] shadow-[var(--shadow-lg)]"
-                role="listbox"
-                aria-label="Matching Story Bible entries"
-              >
-                {aliasMatches.length > 0 ? (
-                  aliasMatches.map((match, index) => (
-                    <button
-                      key={match.id}
-                      type="button"
-                      role="option"
-                      aria-selected={index === aliasActiveIndex}
-                      className={`flex w-full items-center gap-2 border-b border-[var(--border)] px-3 py-2 text-left hover:bg-[var(--surface-2)] ${index === aliasActiveIndex ? 'bg-[var(--surface-2)]' : ''}`}
-                      onClick={() => setAliasSelectedId(match.id)}
-                    >
-                      <Dot color={CAT_DOT_BG[categoryCssName(match.category)]} />
-                      <span className="min-w-0 flex-1">
-                        <strong className="text-sm">{match.canonical_name}</strong>
-                        <span className="block text-xs" style={{ color: 'var(--text-muted)' }}>
-                          {categoryLabel(match.category)} · {match.occurrence_count} occurrence{match.occurrence_count === 1 ? '' : 's'}
-                        </span>
-                      </span>
-                    </button>
-                  ))
-                ) : (
-                  <div className="p-3 text-sm" style={{ color: 'var(--text-muted)' }}>
-                    No matching Story Bible entries.
-                  </div>
-                )}
-                <div data-alias-actions className="flex items-center justify-between p-2">
-                  <TooltipTarget text="Add alias">
-                    <IconButton
-                      label="Add alias"
-                      disabled={editingDisabled || waiting('alias')}
-                      pending={mutation.isPending('alias')}
-                      onClick={addAliasFromQuery}
-                    >
-                      <FontAwesomeIcon icon={faPlus} />
-                    </IconButton>
-                  </TooltipTarget>
-                  <TooltipTarget text="Rescan occurrences for this entry">
-                    <IconButton
-                      label="Rescan occurrences"
-                      disabled={isNewDraft || waiting('rescan')}
-                      pending={mutation.isPending('rescan')}
-                      onClick={() => void rescanOccurrences()}
-                    >
-                      <FontAwesomeIcon icon={faRotate} />
-                    </IconButton>
-                  </TooltipTarget>
-                </div>
+              <div className="mt-1">
+                <Listbox
+                  id={ALIAS_MATCHES_ID}
+                  label="Matching Story Bible entries"
+                  options={aliasMatches.map((match) => ({
+                    id: match.id,
+                    label: match.canonical_name,
+                    description: `${categoryLabel(match.category)} · ${match.occurrence_count} occurrence${match.occurrence_count === 1 ? '' : 's'}`,
+                    leading: <Dot color={CAT_DOT_BG[categoryCssName(match.category)]} />,
+                  }))}
+                  activeIndex={aliasActiveIndex}
+                  onPick={setAliasSelectedId}
+                  empty="No matching Story Bible entries."
+                  footer={
+                    <div data-alias-actions className="flex items-center justify-between p-2">
+                      <TooltipTarget text="Add alias">
+                        <IconButton
+                          label="Add alias"
+                          disabled={editingDisabled || waiting('alias')}
+                          pending={mutation.isPending('alias')}
+                          onClick={addAliasFromQuery}
+                        >
+                          <FontAwesomeIcon icon={faPlus} />
+                        </IconButton>
+                      </TooltipTarget>
+                      <TooltipTarget text="Rescan occurrences for this entry">
+                        <IconButton
+                          label="Rescan occurrences"
+                          disabled={isNewDraft || waiting('rescan')}
+                          pending={mutation.isPending('rescan')}
+                          onClick={() => void rescanOccurrences()}
+                        >
+                          <FontAwesomeIcon icon={faRotate} />
+                        </IconButton>
+                      </TooltipTarget>
+                    </div>
+                  }
+                />
               </div>
             ) : (
               <div data-alias-actions className="mt-2 flex items-center justify-between">
@@ -793,7 +783,7 @@ export function GuideDetail({
               ))}
               {entity.relationships.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={3} className="text-sm" style={{ color: 'var(--text-muted)' }}>
+                  <TableCell colSpan={3} style={{ color: 'var(--text-muted)' }}>
                     No related entries yet.
                   </TableCell>
                 </TableRow>
@@ -929,6 +919,6 @@ export function GuideDetail({
       >
         {reviewOverlayEntity && <EntitySummary entity={reviewOverlayEntity} jumpToLine={goToManuscript} />}
       </SlideOver>
-    </section>
+    </Panel>
   );
 }

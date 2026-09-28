@@ -10,7 +10,6 @@ import { deliveryProfileTitle, formatBound } from '../master/deliveryProfile';
 import { Mark } from '../master/RuleBadges';
 
 const MUTED = { color: 'var(--text-muted)' };
-const MONO = "font-['IBM_Plex_Mono',ui-monospace,monospace]";
 
 /** A length is edited in minutes; every other bound in the rule's own unit. */
 const toShown = (rule: DeliveryRule, value: number | null) =>
@@ -133,12 +132,12 @@ export function DeliveryProfileEditor({
                 const original = baseRule(rule.id);
                 return (
                   <TableRow key={rule.id}>
-                    <TableCell className="align-top">
+                    <TableCell valign="top">
                       <Switch checked={!draft.off} onChange={(on) => update(rule.id, { off: !on })}>
                         <span className="sr-only">{`${rule.label} on`}</span>
                       </Switch>
                     </TableCell>
-                    <TableCell className="min-w-[9rem] align-top" style={draft.off ? MUTED : undefined}>
+                    <TableCell valign="top" className="min-w-[9rem]" style={draft.off ? MUTED : undefined}>
                       <span className="inline-flex flex-wrap items-center gap-2 font-medium">
                         {rule.label}
                         {changed(rule) && <Mark tone="warn">Changed</Mark>}
@@ -156,7 +155,7 @@ export function DeliveryProfileEditor({
                     </TableCell>
                     {adjustable(rule) ? (
                       (['min', 'max'] as const).map((side) => (
-                        <TableCell key={side} className="min-w-[7.5rem] align-top">
+                        <TableCell key={side} valign="top" className="min-w-[7.5rem]">
                           {rule[side] === null ? (
                             <span className="text-sm" style={MUTED}>
                               none
@@ -180,11 +179,11 @@ export function DeliveryProfileEditor({
                         </TableCell>
                       ))
                     ) : (
-                      <TableCell colSpan={2} className="align-top text-sm" style={MUTED}>
+                      <TableCell colSpan={2} valign="top" style={MUTED}>
                         Fixed by {platform}; can only be turned off
                       </TableCell>
                     )}
-                    <TableCell className={`${MONO} align-top text-[0.8rem] whitespace-nowrap`} style={MUTED}>
+                    <TableCell numeric align="left" valign="top" style={MUTED}>
                       {original ? formatBound(original) : ''}
                     </TableCell>
                   </TableRow>

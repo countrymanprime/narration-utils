@@ -21,6 +21,13 @@
       "long_pause_seconds": 2
     }
   },
+  "cleanupThresholds": {
+    "pad_seconds": 0.15,
+    "min_breath_seconds": 0.12,
+    "max_breath_seconds": 0.9,
+    "breath_below_speech_db": 12,
+    "click_above_silence_db": 30
+  },
   "files": [
     {
       "path": "C:/Renders/Chapter 01.wav",
@@ -137,6 +144,148 @@
             "status": "unreviewed"
           }
         }
+      ],
+      "cleanupFindings": [
+        {
+          "schema_version": 1,
+          "id": "1e7727f80240ae7dd92f4fd7",
+          "analyzer": "diagnostics",
+          "project": {},
+          "source": {
+            "file": "C:/Renders/Chapter 01.wav"
+          },
+          "time_range": {
+            "start": 1200,
+            "end": 1201,
+            "source_start": 1200,
+            "source_end": 1201
+          },
+          "category": "silence_cleanup",
+          "severity": "info",
+          "confidence": 0.6,
+          "confidence_reason": "a silence candidate: 1.00 s below the silence floor, in a processed render; it is cut only once you approve it",
+          "evidence": {
+            "breath_below_speech_db": 12,
+            "class": "silence",
+            "click_above_silence_db": 30,
+            "duration_seconds": 1,
+            "kind": "silence_cleanup",
+            "level_dbfs": -64,
+            "max_breath_seconds": 0.9,
+            "min_breath_seconds": 0.12,
+            "min_silence_seconds": 0.3,
+            "pad_seconds": 0.15,
+            "silence_floor_dbfs": -50,
+            "source_kind": "processed_render",
+            "speech_level_dbfs": -22.5
+          },
+          "suggested_action": {
+            "kind": "split_and_trim",
+            "parameters": {
+              "class": "silence",
+              "cut_end_seconds": 1200.85,
+              "cut_start_seconds": 1200.15
+            },
+            "requires_confirmation": true
+          },
+          "review": {
+            "status": "unreviewed"
+          }
+        },
+        {
+          "schema_version": 1,
+          "id": "51b45db6c5fa167e8d91a358",
+          "analyzer": "diagnostics",
+          "project": {},
+          "source": {
+            "file": "C:/Renders/Chapter 01.wav"
+          },
+          "time_range": {
+            "start": 300.1,
+            "end": 300.5,
+            "source_start": 300.1,
+            "source_end": 300.5
+          },
+          "category": "silence_cleanup",
+          "severity": "info",
+          "confidence": 0.5,
+          "confidence_reason": "a breath candidate: quiet and strongly noise-like, of breath length, in a processed render; it is cut only once you approve it",
+          "evidence": {
+            "breath_below_speech_db": 12,
+            "class": "breath",
+            "click_above_silence_db": 30,
+            "duration_seconds": 0.39999999999997726,
+            "kind": "silence_cleanup",
+            "level_dbfs": -38,
+            "max_breath_seconds": 0.9,
+            "min_breath_seconds": 0.12,
+            "min_silence_seconds": 0.3,
+            "pad_seconds": 0.15,
+            "silence_floor_dbfs": -50,
+            "source_kind": "processed_render",
+            "speech_level_dbfs": -22.5,
+            "zero_crossing_rate": 0.42
+          },
+          "suggested_action": {
+            "kind": "split_and_trim",
+            "parameters": {
+              "class": "breath",
+              "cut_end_seconds": 300.5,
+              "cut_start_seconds": 300.1
+            },
+            "requires_confirmation": true
+          },
+          "review": {
+            "status": "unreviewed"
+          }
+        },
+        {
+          "schema_version": 1,
+          "id": "d0351abaaeece4120346e1d0",
+          "analyzer": "diagnostics",
+          "project": {},
+          "source": {
+            "file": "C:/Renders/Chapter 01.wav"
+          },
+          "time_range": {
+            "start": 450.02,
+            "end": 450.05,
+            "source_start": 450.02,
+            "source_end": 450.05
+          },
+          "category": "silence_cleanup",
+          "severity": "info",
+          "confidence": 0.6,
+          "confidence_reason": "a click candidate: a burst of 30 ms with silence on both sides, in a processed render; it is cut only once you approve it",
+          "evidence": {
+            "breath_below_speech_db": 12,
+            "class": "click",
+            "click_above_silence_db": 30,
+            "duration_seconds": 0.03000000000002956,
+            "kind": "silence_cleanup",
+            "level_dbfs": -45,
+            "max_breath_seconds": 0.9,
+            "min_breath_seconds": 0.12,
+            "min_silence_seconds": 0.3,
+            "pad_seconds": 0.15,
+            "peak_dbfs": -8,
+            "silence_floor_dbfs": -50,
+            "source_kind": "processed_render",
+            "speech_level_dbfs": -22.5
+          },
+          "suggested_action": {
+            "kind": "split_and_trim",
+            "parameters": {
+              "class": "click",
+              "cut_end_seconds": 450.065,
+              "cut_start_seconds": 450.005
+            },
+            "requires_confirmation": true
+          },
+          "review": {
+            "status": "unreviewed"
+          }
+        }
       ]
     },
     {
@@ -144,14 +293,16 @@
       "name": "Chapter 02.wav",
       "status": "checking",
       "summary": null,
-      "findings": null
+      "findings": null,
+      "cleanupFindings": null
     },
     {
       "path": "C:/Renders/Chapter 03.mp3",
       "name": "Chapter 03.mp3",
       "status": "pending",
       "summary": null,
-      "findings": null
+      "findings": null,
+      "cleanupFindings": null
     }
   ]
 }

@@ -8,6 +8,7 @@
 // part way through; `fails` breaks it at its first poll the way tests/fixtures/contracts/diagnostics-error.json pins.
 import type {
   DiagnosticsApi,
+  DiagnosticsCleanupThresholds,
   DiagnosticsFileResult,
   DiagnosticsJob,
   DiagnosticsSourceKind,
@@ -32,6 +33,15 @@ export const MOCK_DIAGNOSTICS_THRESHOLDS: DiagnosticsThresholds = {
   pauses: { min_pause_seconds: 0.3, long_pause_seconds: 2 },
 };
 
+/** The silence cleanup analyzer's own starting thresholds (measure.DefaultCleanupOptions, ADR 0238 decision 4). */
+export const MOCK_CLEANUP_THRESHOLDS: DiagnosticsCleanupThresholds = {
+  pad_seconds: 0.15,
+  min_breath_seconds: 0.12,
+  max_breath_seconds: 0.9,
+  breath_below_speech_db: 12,
+  click_above_silence_db: 30,
+};
+
 const NO_TRANSCRIPT = { status: 'unavailable', reason: 'no transcript timing for this audio' } as const;
 const label = (kind: DiagnosticsSourceKind) => (kind === 'processed_render' ? 'processed render' : 'raw recording');
 
@@ -40,7 +50,7 @@ function finding(
   id: string,
   start: number,
   end: number,
-  fields: Pick<Finding, 'category' | 'severity' | 'confidence' | 'confidence_reason' | 'evidence'>,
+  fields: Pick<Finding, 'category' | 'severity' | 'confidence' | 'confidence_reason' | 'evidence' | 'suggested_action'>,
 ): Finding {
   return {
     schema_version: 1,
@@ -99,6 +109,55 @@ function chapterFindings(path: string, kind: DiagnosticsSourceKind): Finding[] {
   ];
 }
 
+/** Chapter 01's three cleanup candidates, one of each class, as cleanup.go's CleanupFindings words them. */
+function chapterCleanupFindings(path: string, kind: DiagnosticsSourceKind): Finding[] {
+  const t = MOCK_CLEANUP_THRESHOLDS;
+  const evidence = (extra: Record<string, unknown>) => ({
+    kind: 'silence_cleanup',
+    source_kind: kind,
+    speech_level_dbfs: -22.5,
+    silence_floor_dbfs: MOCK_DIAGNOSTICS_THRESHOLDS.silence_floor_dbfs,
+    min_silence_seconds: MOCK_DIAGNOSTICS_THRESHOLDS.min_silence_seconds,
+    pad_seconds: t.pad_seconds,
+    min_breath_seconds: t.min_breath_seconds,
+    max_breath_seconds: t.max_breath_seconds,
+    breath_below_speech_db: t.breath_below_speech_db,
+    click_above_silence_db: t.click_above_silence_db,
+    ...extra,
+  });
+  const action = (klass: string, cutStart: number, cutEnd: number) => ({
+    kind: 'split_and_trim',
+    parameters: { class: klass, cut_start_seconds: cutStart, cut_end_seconds: cutEnd },
+    requires_confirmation: true,
+  });
+  return [
+    finding(path, '1e7727f80240ae7dd92f4fd7', 1200, 1201, {
+      category: 'silence_cleanup',
+      severity: 'info',
+      confidence: 0.6,
+      confidence_reason: `a silence candidate: 1.00 s below the silence floor, in a ${label(kind)}; it is cut only once you approve it`,
+      evidence: evidence({ class: 'silence', duration_seconds: 1, level_dbfs: -64 }),
+      suggested_action: action('silence', 1200.15, 1200.85),
+    }),
+    finding(path, '51b45db6c5fa167e8d91a358', 300.1, 300.5, {
+      category: 'silence_cleanup',
+      severity: 'info',
+      confidence: 0.5,
+      confidence_reason: `a breath candidate: quiet and strongly noise-like, of breath length, in a ${label(kind)}; it is cut only once you approve it`,
+      evidence: evidence({ class: 'breath', duration_seconds: 0.4, level_dbfs: -38, zero_crossing_rate: 0.42 }),
+      suggested_action: action('breath', 300.1, 300.5),
+    }),
+    finding(path, 'd0351abaaeece4120346e1d0', 450.02, 450.05, {
+      category: 'silence_cleanup',
+      severity: 'info',
+      confidence: 0.6,
+      confidence_reason: `a click candidate: a burst of 30 ms with silence on both sides, in a ${label(kind)}; it is cut only once you approve it`,
+      evidence: evidence({ class: 'click', duration_seconds: 0.03, level_dbfs: -45, peak_dbfs: -8 }),
+      suggested_action: action('click', 450.005, 450.065),
+    }),
+  ];
+}
+
 function summary(silent: boolean): DiagnosticsSummary {
   if (silent) {
     return {
@@ -142,7 +201,13 @@ function checkedMessage(checked: number, failed: number): string {
 function checkedResult(file: DiagnosticsFileResult, kind: DiagnosticsSourceKind): DiagnosticsFileResult {
   if (!/\.wave?$/i.test(file.path)) return { ...file, status: 'failed', error: 'not a RIFF/WAVE file' };
   const silent = file.path.includes('silent');
-  return { ...file, status: 'checked', summary: summary(silent), findings: silent ? [] : chapterFindings(file.path, kind) };
+  return {
+    ...file,
+    status: 'checked',
+    summary: summary(silent),
+    findings: silent ? [] : chapterFindings(file.path, kind),
+    cleanupFindings: silent ? [] : chapterCleanupFindings(file.path, kind),
+  };
 }
 
 export type MockDiagnosticsSeed = 'hold' | 'fails';
@@ -166,6 +231,7 @@ export function createDiagnosticsMock(
     elapsed: 0,
     sourceKind: null,
     thresholds: MOCK_DIAGNOSTICS_THRESHOLDS,
+    cleanupThresholds: MOCK_CLEANUP_THRESHOLDS,
     files: [],
   };
   let quarters = 0;
@@ -238,7 +304,8 @@ export function createDiagnosticsMock(
         elapsed: 0,
         sourceKind,
         thresholds: MOCK_DIAGNOSTICS_THRESHOLDS,
-        files: unique.map((path) => ({ path, name: baseName(path), status: 'pending', summary: null, findings: [] })),
+        cleanupThresholds: MOCK_CLEANUP_THRESHOLDS,
+        files: unique.map((path) => ({ path, name: baseName(path), status: 'pending', summary: null, findings: [], cleanupFindings: [] })),
       };
       if (seed === 'hold') job = { ...job, ...checking(0), percent: Math.floor(100 / (2 * unique.length)), elapsed: 12 };
       return wireClone(job);
