@@ -38,6 +38,7 @@ import { NotesStrip } from './NotesStrip';
 import { RecordingCheckCard } from './RecordingCheckCard';
 import { resolutionCounts } from './resolution';
 import { useReaperStatus } from './useReaperStatus';
+import { useDawKind } from '../../useDawKind';
 
 /** How long before a clicked word's start the app player starts, so the narrator hears it in context (EP5). */
 const PRE_ROLL_SECONDS = 1;
@@ -83,6 +84,7 @@ function ChapterView({ chapterId, notify, transcript, dawFileLinked, goToManuscr
   const api = useApi();
   const pickups = usePickupsState();
   const reaperStatus = useReaperStatus();
+  const dawKind = useDawKind();
   // The note open in mock 04's detail, by id, so a re-read of the chapter's findings shows its latest version.
   const [selectedFindingId, setSelectedFindingId] = useState<string>();
   const [searchParams] = useSearchParams();
@@ -376,6 +378,7 @@ function ChapterView({ chapterId, notify, transcript, dawFileLinked, goToManuscr
                 reaperStatus={reaperStatus.status}
                 onReaperStatusChange={reaperStatus.refresh}
                 onCompared={loadFindings}
+                dawKind={dawKind}
               />
             ) : (
               findings.length > 0 && (

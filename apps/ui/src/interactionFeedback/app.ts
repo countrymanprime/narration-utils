@@ -53,6 +53,10 @@ export const appFeedback: Record<string, FeedbackRow> = {
   'src/useCapability.ts::dawCapabilities#1': row('mount', 'file-io', 'na', 'na', 'event', 'silent', 'na', 'exempt', 'Seeds the entry useCapability exposes before the very next daw_capabilities_changed event takes over; a failed seed just leaves the capability unsupported/unavailable a moment longer, the same as an unknown capability.'),
   'src/useCapability.ts::subscribeDawCapabilities#1': subscription("The DAW port's capability report (DAW port PRD Phase 4): every caller of useCapability for the same or a different capability reads this one subscription."),
 
+  // useDawKind.ts (audacity-integration.prd.md Phase 9): the session's DAW kind, for FindingDetail's take-management gating.
+  'src/useDawKind.ts::dawCapabilities#1': row('mount', 'file-io', 'na', 'na', 'event', 'silent', 'na', 'exempt', "Seeds the kind useDawKind exposes before the very next daw_capabilities_changed event takes over; a failed seed just leaves the kind unknown a moment longer, the same as before the first answer."),
+  'src/useDawKind.ts::subscribeDawCapabilities#1': subscription("The DAW port's capability report (DAW port PRD Phase 4), the same event useCapability reads: a second subscription, since useDawKind wants the whole payload's daw field rather than one capability's entry."),
+
   // useZoom.ts (app-navigation-and-zoom-controls.prd.md Phase 2): the header's zoom group. The readout is the only feedback surface
   // (Solution Detail); every call here is instant (the binding sets/reads a number on the window, no file or network,
   // docs/architecture/threat-model.md row 3) and a failure just leaves the readout at the level it already showed.

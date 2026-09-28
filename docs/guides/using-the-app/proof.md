@@ -97,6 +97,12 @@ A finding from a script-versus-recording comparison has an **In REAPER** row. It
 opened the app from the Narration Utils action in REAPER and REAPER is still running; the app checks
 every few seconds and sends REAPER nothing until you press a button.
 
+Working from Audacity, a finding has no **In REAPER** row at all: Go to, Loop and Add marker have no
+Audacity equivalent yet, so the row is left out rather than shown off. Everything else about a
+finding — its evidence, Play ±3 s, Show in Script and your decision — works the same either way.
+
+![Proof - a finding's detail with Audacity, no In REAPER row](../../images/ui/proof-audacity-detail.webp)
+
 - **Go to in REAPER** selects the finding's item, and only that item, and puts the edit cursor on the
   spot. The page says where the cursor went.
 - **Loop in REAPER** plays the finding with two seconds either side, over and over: it sets the time
@@ -139,6 +145,11 @@ audio, so it has no REAPER row.
 ![Proof - Go to and Loop off because REAPER is not answering](../../images/ui/proof-reaper-not-connected.webp)
 
 ## Pickups and duplicates
+
+Pickups, duplicates and take comparison scan a REAPER track and act on REAPER items and takes, so they
+have no Audacity equivalent yet; a take-review group's finding has no **Reads** row and a take
+comparison's finding has no **Takes side by side** row with Audacity, the same way a plain finding has
+no In REAPER row (see [above](#going-to-a-finding-in-reaper)).
 
 **Find pickups and duplicates…** beside the page title looks for lines you recorded more than once on
 a track: a restart after a stumble, a pickup of part of a line, an exact copy, or a near-identical

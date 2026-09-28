@@ -274,3 +274,17 @@ describe('A take-review group on the Review page', () => {
     expect((await within(dialog).findByRole('alert')).textContent).toContain('no longer in the REAPER project');
   });
 });
+
+// audacity-integration.prd.md Phase 9: take review has no Audacity analog, so its whole section is left out.
+describe('Find pickups and duplicates on the Review page, with Audacity', () => {
+  it('has no Reads section for a take-review group', async () => {
+    const user = userEvent.setup();
+    renderPage({ initial: { ...withGroups, daw: { daw: 'Audacity' } } });
+    const row = (await rows()).find((candidate) => /Partial pickup/.test(candidate.textContent ?? ''));
+    if (!row) throw new Error('no row matches Partial pickup');
+    await user.click(row);
+    await screen.findByRole('heading', { level: 3, name: 'Decision' });
+    expect(screen.queryByRole('region', { name: 'Reads' })).toBeNull();
+    expect(screen.queryByRole('button', { name: /Go to.*REAPER/ })).toBeNull();
+  });
+});

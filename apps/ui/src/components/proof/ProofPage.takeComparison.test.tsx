@@ -252,3 +252,15 @@ describe('how a take comparison is worded', () => {
     expect(metricValue({ ...metrics, noise: { ...metrics.noise, status: 'unavailable' } }, 'noise').text).toBe('Unavailable: not measured');
   });
 });
+
+// audacity-integration.prd.md Phase 9: take comparison has no Audacity analog, so its whole section is left out.
+describe('Compare takes on the Review page, with Audacity', () => {
+  it('has no Takes side by side section', async () => {
+    const user = userEvent.setup();
+    renderPage({ initial: { findings: [WIRE_TAKE_COMPARISON_FINDING], daw: { daw: 'Audacity' } } });
+    await openRow(user, /side by side/);
+    await screen.findByRole('heading', { level: 3, name: 'Decision' });
+    expect(screen.queryByRole('region', { name: 'Takes side by side' })).toBeNull();
+    expect(screen.queryByRole('button', { name: /Go to.*REAPER/ })).toBeNull();
+  });
+});

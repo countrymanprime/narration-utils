@@ -165,6 +165,16 @@ export const proofStates: StateEntry[] = [
       "Proof, a take comparison's audio table - clipping, room noise, level, length and pauses, a row each with what it measures and a column per read, an unavailable figure with its reason; nothing adds the rows up",
     ...KEEPS_DESKTOP_SCROLL,
   },
+  // Dashboard integration for an Audacity-sourced project (audacity-integration.prd.md Phase 9): take management (Go
+  // to/Loop/Add marker in REAPER, take review, take comparison) has no Audacity analog, so it is left out entirely
+  // rather than shown disabled - everything else about a finding is unchanged.
+  {
+    page: 'proof',
+    state: 'audacity-detail',
+    description:
+      'Proof, the same transcript difference as detail-open, but the app is talking to Audacity - no "In REAPER" section, and Play ±3 s, Show in Script and the decision controls work exactly as they do for REAPER',
+    ...KEEPS_DESKTOP_SCROLL,
+  },
   // Delivery findings on Proof (delivery-platform-profiles.prd.md Phase 9, P12)
   {
     page: 'proof',

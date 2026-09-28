@@ -22,6 +22,7 @@ import { NotesHeader, SourcesLine } from './NotesHeader';
 import { resolutionCounts, type ResolutionCounts } from './resolution';
 import { TakeReviewScanDialog } from './TakeReviewScanDialog';
 import { useReaperStatus } from './useReaperStatus';
+import { useDawKind } from '../../useDawKind';
 
 // The notes header's chips from the summary's own counts (over the latest run), with the accepted notes split into pickups and
 // edits by reading them: the summary counts statuses, and whether an accepted note is a pickup or an edit is the note's own.
@@ -76,6 +77,7 @@ export function ProofPage({
   const [reloadKey, setReloadKey] = useState(0);
   const loadedOnce = useRef(false);
   const reaper = useReaperStatus();
+  const dawKind = useDawKind();
   const [scanning, setScanning] = useState(false);
   const [chapters, setChapters] = useState<ManuscriptChapter[]>([]);
   const [chapterChoice, setChapterChoice] = useState('');
@@ -243,6 +245,7 @@ export function ProofPage({
                   reaperStatus={reaper.status}
                   onReaperStatusChange={reaper.refresh}
                   onCompared={compared}
+                  dawKind={dawKind}
                 />
               ) : (
                 <Panel>

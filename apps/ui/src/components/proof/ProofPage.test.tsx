@@ -524,3 +524,24 @@ describe('ProofPage adds an approved marker in REAPER', () => {
     expect((await api.findingsGet('delivery-rms')).review.status).toBe('dismissed');
   });
 });
+
+// Dashboard integration (audacity-integration.prd.md Phase 9): take management has no Audacity analog, so REAPER's
+// Go to/Loop/Add marker and the take-review and take-comparison sections are left out entirely for an Audacity session,
+// not shown disabled - everything else about a finding (its evidence, its decision) works exactly as it does for REAPER.
+describe('ProofPage with Audacity', () => {
+  it('has no REAPER controls for a finding with audio, and every other action still works', async () => {
+    const user = userEvent.setup();
+    renderPage({ initial: { daw: { daw: 'Audacity' } } });
+    await openFinding(user, /pink eyes/);
+    const detail = screen.getByRole('region', { name: '0:12.4 · Misread' });
+    expect(within(detail).getByText('a White Rabbit with pink eyes')).toBeTruthy();
+    expect(screen.queryByRole('heading', { name: 'In REAPER' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Go to in REAPER' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Loop in REAPER' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Add marker in REAPER' })).toBeNull();
+    expect(within(detail).getByRole('button', { name: 'Play ±3 s' })).toBeTruthy();
+    expect(within(detail).getByRole('button', { name: 'Show in Script' })).toBeTruthy();
+    await user.click(screen.getByRole('button', { name: 'Pickup' }));
+    expect(await screen.findByText('Saved: needs a pickup.')).toBeTruthy();
+  });
+});
