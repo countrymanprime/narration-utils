@@ -30,12 +30,16 @@ export const proofDrivers: Record<string, Driver> = {
   },
   filtered: async (page) => {
     await openProof(page);
+    // Mock 04 draws no filter row (mock-fidelity-primitives-and-components.prd.md Phase 12): open the popover, so
+    // the capture shows which filters are narrowing the list rather than just the narrowed list on its own.
+    await page.getByRole('button', { name: /^Filters/ }).click();
     await page.getByRole('combobox', { name: 'Check' }).selectOption({ label: 'Local AI compare' });
     await page.getByRole('switch', { name: 'Only findings scored 50% or more' }).click();
     await waitForFindingRows(page, 1);
   },
   'filtered-empty': async (page) => {
     await openProof(page);
+    await page.getByRole('button', { name: /^Filters/ }).click();
     await page.getByRole('combobox', { name: 'Status' }).selectOption({ label: 'Deferred' });
     await page.getByText('No findings match these filters.').waitFor();
   },
@@ -65,7 +69,10 @@ export const proofDrivers: Record<string, Driver> = {
   },
   'not-in-latest-run': async (page) => {
     await openProof(page);
+    await page.getByRole('button', { name: /^Filters/ }).click();
     await page.getByRole('switch', { name: 'Include findings the latest run did not repeat' }).click();
+    // The state's capture is the opened finding, not the filters popover: close it (Escape, as Popover's own docs say).
+    await page.keyboard.press('Escape');
     await waitForFindingRows(page, 5);
     await openFindingRow(page, /Antipathies/, 'Pronunciation');
   },
