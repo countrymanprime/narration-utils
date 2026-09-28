@@ -2,7 +2,7 @@ import type { DiagnosticsFileResult, DiagnosticsSourceKind, DiagnosticsSummary, 
 import { severityLabel } from '../proof/findingFormat';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../primitives/Table';
 import { formatLength } from './deliveryFormat';
-import { findingKindLabel, measuredText, sourceKindLabel, thresholdText, timeRangeText } from './diagnosticsFormat';
+import { cleanupClassLabel, cleanupLevelText, findingKindLabel, measuredText, sourceKindLabel, thresholdText, timeRangeText } from './diagnosticsFormat';
 
 const MONO = "font-['IBM_Plex_Mono',ui-monospace,monospace] whitespace-nowrap";
 const MUTED = { color: 'var(--text-muted)' };
@@ -126,6 +126,41 @@ export function FindingsTable({ files, sourceKind }: { files: readonly Diagnosti
               <span className="font-medium">{file.name}</span>
               <span className="block text-[0.75rem]" style={MUTED}>{`${sourceKindLabel(findingSourceKind(finding, sourceKind))}, whole file`}</span>
             </TableCell>
+          </TableRow>
+        ))}
+      </TableBody>
+    </Table>
+  );
+}
+
+/**
+ * Every silence cleanup candidate in file order, then time order (ADR 0238 decision 3): its class, why the analyzer
+ * called it that and how confident it is, its level, and the file it is in. Read-only and informational: nothing here
+ * applies a cut. A candidate's own suggested split-and-trim range is not shown, since it never runs from this list.
+ */
+export function CleanupFindingsTable({ files }: { files: readonly DiagnosticsFileResult[] }) {
+  const rows = files.flatMap((file) =>
+    [...file.cleanupFindings].sort((a, b) => (a.time_range?.start ?? 0) - (b.time_range?.start ?? 0)).map((finding) => ({ file, finding })),
+  );
+  return (
+    <Table label="Silence cleanup candidates" className="mt-3">
+      <TableHead>
+        <TableRow>
+          <TableHeader>Time</TableHeader>
+          <TableHeader>Class</TableHeader>
+          <TableHeader>Why</TableHeader>
+          <TableHeader>Level</TableHeader>
+          <TableHeader>File</TableHeader>
+        </TableRow>
+      </TableHead>
+      <TableBody>
+        {rows.map(({ file, finding }) => (
+          <TableRow key={`${file.path}:${finding.id}`}>
+            <TableCell className={MONO}>{timeRangeText(finding)}</TableCell>
+            <TableCell className="min-w-[6rem] font-medium">{cleanupClassLabel(finding)}</TableCell>
+            <TableCell className="min-w-[16rem] text-[0.8rem]">{finding.confidence_reason}</TableCell>
+            <TableCell className="min-w-[8rem] font-['IBM_Plex_Mono',ui-monospace,monospace] text-[0.8rem]">{cleanupLevelText(finding)}</TableCell>
+            <TableCell className="min-w-[9rem] [overflow-wrap:anywhere]">{file.name}</TableCell>
           </TableRow>
         ))}
       </TableBody>

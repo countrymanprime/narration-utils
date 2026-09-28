@@ -1536,6 +1536,19 @@ var fieldSchemas = map[string][]fieldSchema{
 		{"record_in_reaper", "Record in REAPER", "bool", nil},
 		{"record_confirmed", "Seen the Record in REAPER confirm", "bool", nil},
 	},
+	// Cleanup is the silence cleanup analyzer's own thresholds (diagnostics-delivery-and-cleanup-tools.prd.md Phase 9
+	// remainder, ADR 0238 decision 4): measure.CleanupOptions field for field, read by cleanupSettings
+	// (cleanup_settings.go) and passed to measure.DiagnosticInput.Cleanup when a diagnostics check runs. Every key has
+	// a config/defaults.json entry mirroring measure.DefaultCleanupOptions, so an untouched store already answers the
+	// same values the analyzer would use on its own; a saved preset is this set of values at a layer, like every
+	// other settings section.
+	"Cleanup": {
+		{"pad_seconds", "Hold kept at each side of a cut silence", "number", nil},
+		{"min_breath_seconds", "Shortest run read as a breath", "number", nil},
+		{"max_breath_seconds", "Longest run read as a breath", "number", nil},
+		{"breath_below_speech_db", "How far below speech level a breath sits", "number", nil},
+		{"click_above_silence_db", "How far above the silence around it a click stands", "number", nil},
+	},
 }
 
 // capabilityFieldSchemas is one choice field (auto/on/off) per DAW port capability (dawport.Capabilities(), DAW port PRD

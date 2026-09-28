@@ -390,7 +390,7 @@ export function MasterQcPage({ openSettings, focus }: { openSettings: () => void
           </div>
           <MasterToSpecPanel jobs={jobs} chainLabel={chain?.label} />
           <MasteringChain providers={mastering.providers} problem={mastering.problem} />
-          <DiagnosticsSection measuredPaths={measuredPaths} />
+          <DiagnosticsSection measuredPaths={measuredPaths} openSettings={openSettings} />
           <ReportExportPanel busy={running} />
         </div>
         <div className="flex min-w-0 flex-col gap-4">

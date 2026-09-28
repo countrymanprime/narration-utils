@@ -34,8 +34,32 @@ func contractDiagnosed(path string) measure.Diagnostics {
 			Evidence:     measure.Evidence{Status: measure.StatusUnavailable, Reason: "no transcript timing for this audio"},
 			PauseOptions: measure.DefaultPauseOptions(),
 		},
+		// One of each cleanup class (Phase 9 remainder, ADR 0238), so the golden exercises CleanupFindings apart from
+		// Findings above: a silence past the hold, a breath below speech level, and a click between two silences.
+		Cleanup: measure.CleanupDiagnostics{
+			Options:         measure.DefaultCleanupOptions(),
+			SpeechLeveldBFS: floatPtr(-22.5),
+			Candidates: []measure.CleanupCandidate{
+				{
+					Class: measure.CleanupSilence, StartSeconds: 1200, EndSeconds: 1201, CutStart: 1200.15, CutEnd: 1200.85,
+					LeveldBFS: floatPtr(-64), Confidence: 0.6, Why: "1.00 s below the silence floor",
+				},
+				{
+					Class: measure.CleanupBreath, StartSeconds: 300.1, EndSeconds: 300.5, CutStart: 300.1, CutEnd: 300.5,
+					LeveldBFS: floatPtr(-38), ZeroCrossing: floatPtr(0.42), Confidence: 0.5,
+					Why: "quiet and strongly noise-like, of breath length",
+				},
+				{
+					Class: measure.CleanupClick, StartSeconds: 450.02, EndSeconds: 450.05, CutStart: 450.005, CutEnd: 450.065,
+					LeveldBFS: floatPtr(-45), PeakdBFS: floatPtr(-8), Confidence: 0.6,
+					Why: "a burst of 30 ms with silence on both sides",
+				},
+			},
+		},
 	}
 }
+
+func floatPtr(v float64) *float64 { return &v }
 
 // contractQuiet is a render in which nothing crossed a threshold.
 func contractQuiet(path string) measure.Diagnostics {
@@ -54,7 +78,7 @@ func contractQuiet(path string) measure.Diagnostics {
 func contractDiagnosticsJob() *diagnosticsJob {
 	job := &diagnosticsJob{
 		id: "diagnostics-1", phase: "running", started: time.Now(), cancel: func() {}, message: "Checking 3 files.",
-		sourceKind: measure.SourceProcessedRender, thresholds: measure.DefaultDiagnosticOptions(),
+		sourceKind: measure.SourceProcessedRender, thresholds: measure.DefaultDiagnosticOptions(), cleanupOptions: measure.DefaultCleanupOptions(),
 	}
 	job.logs = []string{job.message}
 	for i, path := range contractMeasurePaths {
@@ -72,6 +96,7 @@ func pinDiagnosticsJob(t *testing.T, name string, job DiagnosticsJob) {
 }
 
 func TestContractDiagnosticsBindings(t *testing.T) {
+	t.Setenv("APPDATA", t.TempDir()) // never read the real machine's global-settings.json (cleanupSettings, ADR 0238)
 	pinDiagnosticsJob(t, "diagnostics-idle", NewHost().diagnosticsState())
 
 	running := contractDiagnosticsJob()

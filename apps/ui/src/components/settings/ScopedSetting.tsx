@@ -49,6 +49,11 @@ const TOOLTIP: Record<string, string> = {
   cascade_enabled: 'Runs a fast first pass, then re-checks only what it reports missing with a stronger model, instead of one model over the whole chapter.',
   cascade_first_pass_model: 'The model for the two-pass check’s fast first pass. Independent of the Proof model above.',
   cascade_recheck_model: 'The model that re-checks anything the first pass reports missing. Should not be smaller than the first-pass model.',
+  pad_seconds: 'How much of a silence is kept on each side of a cut, so a trim never runs right up against speech.',
+  min_breath_seconds: 'The shortest quiet, noise-like run read as a breath candidate rather than silence.',
+  max_breath_seconds: 'The longest quiet, noise-like run still read as a breath candidate.',
+  breath_below_speech_db: 'How far below the read’s own speech level a quiet stretch must sit to be considered a breath.',
+  click_above_silence_db: 'How far above the silence around it a short burst’s peak must stand to be read as a click.',
 };
 const optionTip = (field: ScopedSettingField, value: string) =>
   field.key.includes('color')

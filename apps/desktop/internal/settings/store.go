@@ -142,6 +142,16 @@ var builtinDefaults = map[string]Values{
 	// gesture until the narrator remaps it (Phase 6). Global scope only (Q3: a narrator's pedal belongs to the
 	// booth, not the book), enforced in apps/desktop/app.go's saveSettings.
 	"Keymap": {"overrides": `{"version":1,"bindings":{}}`},
+	// Cleanup mirrors measure.DefaultCleanupOptions (diagnostics-delivery-and-cleanup-tools.prd.md Phase 9 remainder,
+	// ADR 0238 decision 4): the silence cleanup analyzer's own starting thresholds, read by cleanupSettings
+	// (apps/desktop/cleanup_settings.go). They are not a delivery specification, and every one can be changed here.
+	"Cleanup": {
+		"pad_seconds":            "0.15",
+		"min_breath_seconds":     "0.12",
+		"max_breath_seconds":     "0.9",
+		"breath_below_speech_db": "12",
+		"click_above_silence_db": "30",
+	},
 }
 
 // Defaults returns the repo file's values for tool, with any key the file does
