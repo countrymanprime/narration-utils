@@ -33,8 +33,8 @@ const REAPER_DECLARATION: Record<DawCapabilityKey, DawCapabilityLevel> = {
   fx_chains: 'experimental',
   silence_trim: 'experimental',
   item_gain: 'experimental',
-  render_with_fx: 'not_yet_available',
-  master_chain_read: 'not_yet_available',
+  render_with_fx: 'experimental',
+  master_chain_read: 'experimental',
 };
 
 const CAPABILITY_NEEDS: Record<DawCapabilityKey, DawMockNeeds> = {

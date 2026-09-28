@@ -3,6 +3,8 @@ package masteringporttest
 import (
 	"context"
 	"os"
+	"path/filepath"
+	"reflect"
 	"strings"
 	"testing"
 
@@ -102,7 +104,46 @@ func TestTheSuiteFailsAnUnknownModeOrCapability(t *testing.T) {
 	expectProblem(t, entry, `the DAW capability "teleport"`)
 }
 
-func TestTheSuiteReportsABuiltDAWRowItCannotYetExercise(t *testing.T) {
+// A DAW row that masters without the DAW (here, by copying the WAV) is not a DAW row: the fake DAW saw no render, and a DAW that
+// fails or renders outside the run folder does not stop it.
+func TestTheSuiteFailsADAWRowThatNeverAsksTheDAW(t *testing.T) {
 	caps := masteringport.Capabilities{Level: port.Experimental, NeedsApproval: true}
-	expectProblem(t, entryOf(broken{Fake: NewFake("daw-ish", true), caps: &caps}, masteringport.ModeDAWRegion), "no fake DAW")
+	entry := entryOf(broken{Fake: NewFake("daw-ish", true), caps: &caps}, masteringport.ModeDAWRegion)
+	expectProblem(t, entry, "asked the DAW to render 0 times")
+	expectProblem(t, entry, "reported success for a render the DAW refused")
+}
+
+func TestTheFakeDAWRefusesWhatTheBridgeRefuses(t *testing.T) {
+	project := t.TempDir()
+	daw := NewFakeDAW(project)
+	renderer := daw.Role(dawport.CapRenderWithFX).(dawport.FXRenderer)
+	runs := filepath.Join(project, "narration-utils", "mastering")
+	full := filepath.Join(runs, "full")
+	if err := os.MkdirAll(full, 0o750); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(full, "keep.wav"), []byte("keep"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	empty := filepath.Join(runs, "empty")
+	if err := os.MkdirAll(empty, 0o750); err != nil {
+		t.Fatal(err)
+	}
+	const approval = "0123456789abcdef0123456789abcdef"
+	for _, render := range []dawport.FXRender{
+		{Regions: []string{"Chapter 1"}, OutputFolder: empty},
+		{Regions: []string{"Chapter 1"}, OutputFolder: project, Approval: "a"},
+		{Regions: []string{"Chapter 1"}, OutputFolder: full, Approval: "b"},
+		{Regions: []string{"Chapter 1"}, OutputFolder: empty, Approval: approval},
+		{Regions: []string{"Chapter 1"}, OutputFolder: empty, Approval: approval},
+	} {
+		if err := renderer.RenderWithFX("r", render); err != nil {
+			t.Fatal(err)
+		}
+	}
+	want := []string{"no approval", "a folder that is not a run folder inside the project", "a folder that does not exist or is not empty",
+		"an approval used twice"}
+	if got := daw.Refusals(); !reflect.DeepEqual(got, want) {
+		t.Fatalf("Refusals = %q, want %q", got, want)
+	}
 }
