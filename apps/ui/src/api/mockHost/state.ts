@@ -29,6 +29,7 @@ import type { MockAssetSeed } from '../assetInstallMock';
 import type { MockUpdateSeed } from './update';
 import type { DawMockSeed } from '../dawMock';
 import type { ProvidersMockSeed } from '../providersMock';
+import type { MasteringMockSeed } from '../masteringMock';
 
 // What createMockApi boots from (the seeds), and the host state more than one domain reads or writes.
 // manuscriptCandidate boots a project with no imported manuscript but a
@@ -192,6 +193,8 @@ export type MockApiSeed = {
   daw?: DawMockSeed;
   /** Seeds the provider capabilities mock (platform, installed asset counts), see `ProvidersMockSeed` (provider-ports PRD Phase 14). */
   providers?: ProvidersMockSeed;
+  /** Seeds the mastering chain mock (whether a project is open, its stored choice), see `MasteringMockSeed` (ADR 0306). */
+  mastering?: MasteringMockSeed;
 };
 
 export const wireContext = (payload: string) => ({ boundary: 'host.binding', payload });

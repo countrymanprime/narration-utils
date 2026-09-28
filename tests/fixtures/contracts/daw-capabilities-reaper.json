@@ -36,6 +36,12 @@
       "message": "REAPER is not connected to this app. Open this app from the Narration Utils action in REAPER.",
       "reason": "standalone"
     },
+    "master_chain_read": {
+      "available": false,
+      "level": "not_yet_available",
+      "message": "Master and track FX listing is not available with REAPER yet.",
+      "reason": "not_yet"
+    },
     "navigate": {
       "available": false,
       "level": "supported",
@@ -81,6 +87,12 @@
       "level": "supported",
       "message": "REAPER is not connected to this app. Open this app from the Narration Utils action in REAPER.",
       "reason": "standalone"
+    },
+    "render_with_fx": {
+      "available": false,
+      "level": "not_yet_available",
+      "message": "Mastering with the project's FX is not available with REAPER yet.",
+      "reason": "not_yet"
     },
     "retake_lanes": {
       "available": false,
