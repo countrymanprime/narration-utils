@@ -6,8 +6,8 @@ import { apiErrorMessage } from '../../api/errorMessage';
 import { usePendingAction } from '../../hooks/usePendingAction';
 import type { Finding, FindingReviewStatus, ReaperStatus } from '../../types';
 import { Button } from '../primitives/Button';
-import { confidenceLabel, formatTime, STATUS_LABELS } from '../review/findingFormat';
-import { hasAudio, ReaperControls } from '../review/ReaperControls';
+import { confidenceLabel, formatTime, STATUS_LABELS } from '../proof/findingFormat';
+import { hasAudio, ReaperControls } from '../proof/ReaperControls';
 import { useRangePlayer } from '../tracks/useRangePlayer';
 import { EDITING_CLASS_LABEL, candidateAudition, candidateClass, candidateReason } from './editingCheckText';
 

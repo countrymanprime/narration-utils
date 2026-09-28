@@ -119,4 +119,4 @@ fill in a note if you want it changed.
 
 ---
 
-[← Proofing](proofing.md) · [Index](README.md) · [Booth →](booth.md)
+[← Manuscript](manuscript.md) · [Index](README.md) · [Booth →](booth.md)

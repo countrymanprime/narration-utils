@@ -17,9 +17,8 @@
     - button "Booth"
   - group "Review":
     - /children: equal
-    - button "Proofing"
+    - button "Proof"
     - button "Tracks"
-    - button "Review"
   - group "Finish":
     - /children: equal
     - button "Delivery"

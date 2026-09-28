@@ -3,12 +3,11 @@ import { projectStates } from './catalog/project';
 import { startupStates } from './catalog/startup';
 import { homeStates } from './catalog/home';
 import { manuscriptStates } from './catalog/manuscript';
-import { proofingStates } from './catalog/proofing';
 import { storybibleStates } from './catalog/storybible';
 import { tracksStates } from './catalog/tracks';
-import { workspaceStates } from './catalog/workspace';
 import { boothStates } from './catalog/booth';
-import { reviewStates } from './catalog/review';
+import { proofStates } from './catalog/proof';
+import { proofChapterStates } from './catalog/proof-chapter';
 import { deliveryStates } from './catalog/delivery';
 import { productionStates } from './catalog/production';
 import { settingsStates } from './catalog/settings';
@@ -29,12 +28,11 @@ export const STATE_CATALOG: StateEntry[] = [
   ...startupStates,
   ...homeStates,
   ...manuscriptStates,
-  ...proofingStates,
   ...storybibleStates,
   ...tracksStates,
-  ...workspaceStates,
   ...boothStates,
-  ...reviewStates,
+  ...proofStates,
+  ...proofChapterStates,
   ...deliveryStates,
   ...productionStates,
   ...settingsStates,
