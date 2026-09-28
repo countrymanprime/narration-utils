@@ -135,7 +135,7 @@ export function RecordingCheckReport({
         {actionsSlot}
         {openWorkspace && (
           <Button variant="ghost" onClick={openWorkspace}>
-            Open workspace
+            Open in Proof
           </Button>
         )}
       </div>

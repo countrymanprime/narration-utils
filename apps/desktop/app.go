@@ -114,7 +114,17 @@ type Host struct {
 	// diagnosticsJob runs the windowed diagnostics over picked files (diagnostics_job.go, the Diagnostics view); it
 	// accepts the same picked paths as measureJob. h.mu guards the pointer; it is not per project.
 	diagnosticsJob *diagnosticsJob
-	transcript     *transcript.Service
+	// exportJob masters (optionally) and encodes the narrator's picked files (export_job.go, render-encode-master
+	// PRD Phase 5); exportPicked is every path its own picker chose this session, mirroring measurePicked's own
+	// discipline (ADR 0156). packageJob assembles one profile's package from an export's own encoded files
+	// (package_job.go, Phase 4's internal/packager). h.mu guards all three; none is per project.
+	// +checklocks:mu
+	exportJob *exportJob
+	// +checklocks:mu
+	exportPicked map[string]bool
+	// +checklocks:mu
+	packageJob *packageJobState
+	transcript *transcript.Service
 	// coverage is the recording-coverage service (docs/utilities/recording-coverage.md, ADR 0128): it reads the saved .rpp and
 	// runs the Transcript Compare sidecar's --coverage mode. Swapped on every project switch like transcript; the Coverage* bindings
 	// reach it (Phase 5, bindings_coverage.go) and it fills the manuscript chapters' recordedFraction.
@@ -208,6 +218,13 @@ type Host struct {
 	// diagnoseFile is the same seam for the diagnostics job: nil means measure.DiagnoseFile.
 	// +checklocks:mu
 	diagnoseFile diagnoseFileFunc
+	// masterFile and encodeFile are seams for tests (export_job.go): nil means mastering.Master and the real
+	// encodeport.Encoders registry. pickPackageFolder is the same seam for package_job.go: nil means the operating
+	// system's folder picker.
+	masterFile        masterFileFunc
+	encodeFile        encodeFileFunc
+	assemblePackage   assembleFunc
+	pickPackageFolder func() (string, error)
 	// updates asks GitHub for a newer release and remembers the answer (ADR 0072). It is set once in NewHost and never swapped, so it is
 	// read directly, like recents.
 	updates *update.Checker

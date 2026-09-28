@@ -16,7 +16,7 @@ function renderShell(props: Partial<Parameters<typeof AppShell>[0]> = {}, daw: D
   return render(
     <ApiProvider api={api}>
       <TooltipProvider>
-        <AppShell pathname="/" navigate={() => {}} projectName="Alice" hasManuscript dawFileLinked onLinkDawFile={() => {}} history={noHistory} {...props}>
+        <AppShell pathname="/" navigate={() => {}} projectName="Alice" hasManuscript dawFileLinked onOpenEnginePanel={() => {}} history={noHistory} {...props}>
           <div>page content</div>
         </AppShell>
       </TooltipProvider>
@@ -30,7 +30,7 @@ describe('AppShell nav gating (PRD project-workspace-and-daw-link.prd.md, W16/W1
     for (const name of ['Script', 'Story Bible', 'Booth']) {
       expect(screen.getAllByRole('button', { name }).every((button) => (button as HTMLButtonElement).disabled)).toBe(true);
     }
-    for (const name of ['Home', 'Tracks', 'Proof', 'Pickups', 'Delivery']) {
+    for (const name of ['Home', 'Proof', 'Pickups', 'Delivery']) {
       expect(screen.getAllByRole('button', { name }).every((button) => (button as HTMLButtonElement).disabled)).toBe(false);
     }
     expect(screen.getAllByRole('group', { name: /Import a manuscript to unlock this page/ }).length).toBeGreaterThan(0);
@@ -52,13 +52,13 @@ describe('AppShell nav gating (PRD project-workspace-and-daw-link.prd.md, W16/W1
 });
 
 describe('AppShell header pill (PRD project-workspace-and-daw-link.prd.md, W15)', () => {
-  it('shows "No REAPER project linked" and opens the picker on click when nothing is linked', () => {
-    const onLinkDawFile = vi.fn();
-    renderShell({ dawFileLinked: false, onLinkDawFile });
+  it('shows "No REAPER project linked" and opens the engine panel on click when nothing is linked (Phase 6)', () => {
+    const onOpenEnginePanel = vi.fn();
+    renderShell({ dawFileLinked: false, onOpenEnginePanel });
     const pill = screen.getByRole('button', { name: /No REAPER project linked/ });
     expect(pill.textContent).toContain('No REAPER project linked');
     fireEvent.click(pill);
-    expect(onLinkDawFile).toHaveBeenCalledTimes(1);
+    expect(onOpenEnginePanel).toHaveBeenCalledTimes(1);
   });
 
   it('shows "REAPER project linked" once one is, and never claims to know whether REAPER is running', () => {
@@ -109,9 +109,21 @@ describe('AppShell grouped navigation (Phase 1)', () => {
 
   it('lists every other page, with Proof in place of Proofing and Review (Phase 5) and Booth in place of the Teleprompter (Phase 4)', () => {
     renderShell();
-    for (const name of ['Home', 'Script', 'Story Bible', 'Booth', 'Proof', 'Pickups', 'Tracks', 'Delivery', 'Settings']) {
+    for (const name of ['Home', 'Script', 'Story Bible', 'Booth', 'Proof', 'Pickups', 'Delivery', 'Settings']) {
       expect(screen.getAllByRole('button', { name }).length).toBeGreaterThan(0);
     }
+  });
+
+  // Phase 6: the engine panel replaces the Tracks page, so the Review group is Proof and Pickups only.
+  it('has no Tracks item: the engine chip opens what it held', () => {
+    renderShell();
+    expect(screen.queryAllByRole('button', { name: 'Tracks' })).toHaveLength(0);
+    const review = screen.getAllByRole('group', { name: 'Review' })[0];
+    expect(
+      within(review)
+        .getAllByRole('button')
+        .map((button) => button.textContent?.trim()),
+    ).toEqual(['Proof', 'Pickups']);
   });
 
   // Phase 7: Pickups replaces the Tracks page's Pickups dialog, as its own item right after Proof in the Review group.

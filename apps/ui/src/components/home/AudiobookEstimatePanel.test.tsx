@@ -286,7 +286,7 @@ describe('credits rows in the chapter table (credits-in-chapter-table.prd.md Pha
     expect(screen.getAllByText(/12 chapters/).length).toBeGreaterThan(0);
   });
 
-  it('shows the template name and a disabled Check with a reason for a configured row, and a plain dash for Actual recorded (CT4, CT6)', async () => {
+  it('shows the template name and a disabled "Not checked" with a reason for a configured row, and a plain dash for Actual recorded (CT4, CT6)', async () => {
     await openTable();
     const openingRow = within(tableRows()[1]);
     expect(openingRow.getByText('ACX minimum (opening)')).toBeTruthy();
@@ -296,6 +296,7 @@ describe('credits rows in the chapter table (credits-in-chapter-table.prd.md Pha
     expect(cells[4].textContent).toBe('—');
     const check = screen.getByRole('button', { name: 'Check recording of Opening credits' }) as HTMLButtonElement;
     expect(check.disabled).toBe(true);
+    expect(check.textContent).toBe('Not checked');
     // Both credits rows are disabled with the same reason.
     expect(screen.getAllByLabelText('The recording check reads manuscript chapters; credits are not checked yet').length).toBe(2);
   });
@@ -462,7 +463,7 @@ describe('chapter-track link control on Home', () => {
 
   it('points to the Tracks page to choose a project when more than one REAPER project file is found (TL7)', async () => {
     await openTracks({}, { tracksCandidates: ['C:/proj/one.rpp', 'C:/proj/two.rpp'] });
-    expect(screen.getByText(/Choose which REAPER project file to use on the Tracks page\./)).toBeTruthy();
+    expect(screen.getByText(/Choose which REAPER project file to use in the audio engine panel\./)).toBeTruthy();
     expect(screen.getByRole('link', { name: 'Choose it on Tracks' }).getAttribute('href')).toBe('/tracks');
   });
 });

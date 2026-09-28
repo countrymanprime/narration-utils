@@ -268,7 +268,7 @@ describe('BoothSession story bible and note marks (teleprompter-manuscript-integ
     expect(within(rail).getByRole('tab', { name: 'Story bible', selected: true })).toBeTruthy();
     expect(within(rail).getByRole('heading', { name: 'Mr. Hale' })).toBeTruthy();
     expect(within(rail).getByText('The rector.')).toBeTruthy();
-    expect(within(rail).queryByRole('button', { name: 'Go to line in Manuscript' })).toBeNull();
+    expect(within(rail).queryByRole('button', { name: 'Go to line in Script' })).toBeNull();
   });
 
   it('opens a note mark in the Notes tab with that note current', async () => {

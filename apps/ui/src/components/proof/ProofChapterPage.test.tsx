@@ -168,7 +168,7 @@ describe('ProofChapterPage findings in the text (Phase 4)', () => {
     // The mock's only flag on this chapter is the misread; "Next flag" selects it (same as the ]/[ keyboard tests).
     await user.click(await screen.findByRole('button', { name: 'Next flag' }));
     expect(await screen.findByText('From')).toBeTruthy();
-    expect(await screen.findByText(/Proofing comparison/)).toBeTruthy();
+    expect(await screen.findByText(/Local AI compare/)).toBeTruthy();
     expect(screen.getAllByText('Misread')).toHaveLength(2); // the legend row, and the selected flag's own heading - never a second flag row
   });
 
@@ -231,7 +231,7 @@ describe('ProofChapterPage findings in the text (Phase 4)', () => {
     );
     await screen.findByRole('heading', { name: `Proof · ${chapterName(chapter)}` });
     expect(await screen.findByText('From')).toBeTruthy();
-    expect(await screen.findByText(/Proofing comparison/)).toBeTruthy();
+    expect(await screen.findByText(/Local AI compare/)).toBeTruthy();
   });
 });
 

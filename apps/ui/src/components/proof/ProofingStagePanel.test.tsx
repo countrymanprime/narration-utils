@@ -63,23 +63,23 @@ describe('the Proofing page panel', () => {
     expect((await api.manuscriptChapters()).find((chapter) => chapter.id === c9.id)?.status).toBe('finalized');
   });
 
-  it('shows a not-ready verdict when a pickup is open, naming the review page in the evidence', async () => {
+  it('shows a not-ready verdict when a pickup is open, naming Proof in the evidence', async () => {
     const api = createMockApi({}, { stages: { proofing: { [c9.id]: 'not_met' } } });
     renderPanel(api);
     await waitFor(() => expect(within(row(chapterName(c9))).getByText('Not ready for Finalized')).toBeTruthy());
     fireEvent.click(within(row(chapterName(c9))).getByRole('button', { name: `Why: ${c9.title}` }));
     const view = await screen.findByRole('dialog');
     expect(within(view).getByText(/open pickup/)).toBeTruthy();
-    expect(within(view).getByText(/Review page/)).toBeTruthy();
+    expect(within(view).getByText(/Decide each on Proof/)).toBeTruthy();
   });
 
-  it('names the cause of an unknown pickup check and links to the Tracks page, never "Open recording check"', async () => {
+  it('names the cause of an unknown pickup check and opens the audio engine panel, never "Open recording check"', async () => {
     const api = createMockApi({}, { stages: { proofing: { [c9.id]: { unknown: 'unmapped_track' } } } });
     renderPanel(api);
     await waitFor(() => expect(within(row(chapterName(c9))).getByText(/no track linked/)).toBeTruthy());
     fireEvent.click(within(row(chapterName(c9))).getByRole('button', { name: `Why: ${c9.title}` }));
     const view = await screen.findByRole('dialog');
-    expect(within(view).getByRole('link', { name: 'Open Tracks' })).toBeTruthy();
+    expect(within(view).getByRole('button', { name: 'Open the audio engine panel' })).toBeTruthy();
     expect(within(view).queryByRole('button', { name: /Open recording check/ })).toBeNull();
     expect(within(view).queryByRole('button', { name: /Open editing check/ })).toBeNull();
   });

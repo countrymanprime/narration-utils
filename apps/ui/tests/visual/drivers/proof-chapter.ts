@@ -33,7 +33,20 @@ export const proofChapterDrivers: Record<string, Driver> = {
     await settlePage(page);
     await openLinkedProofChapter(page, 'Chapter 1');
     await clickVisible(page, 'button', 'Next flag');
-    await page.getByText('Play from here').waitFor();
+    // Selecting a flag previews it: ProofChapterPage's selectFlag seeks the player and auto-plays if it wasn't already
+    // (a real feature, not a driver bug). While playing, ScriptView's follow-the-word effect calls the current token's
+    // native scrollIntoView on every word, which - with no `block: 'nearest'` cap - walks the whole scrollable-ancestor
+    // chain, not just the script's own box, undoing any scroll this driver does further down the page a moment later.
+    // Pausing first makes the capture deterministic (no live elapsed readout or highlighted word either) and stops the
+    // fight, so the scroll below actually holds long enough to be screenshotted.
+    await clickVisible(page, 'button', 'Pause');
+    // Below `xl` the Flags panel's detail sits under the flags list and legend (openFindingRow's comment says the same
+    // of Proof's Notes table), so it needs scrolling into view itself - without it, a reused desktop scroll position
+    // leaves narrower viewports showing only the list, and flag-selected/flag-finding-open/flag-decided capture the
+    // same picture (KEEPS_DESKTOP_SCROLL below re-drives per viewport so this scroll happens at each width).
+    const detail = page.getByText('Play from here');
+    await detail.waitFor();
+    await detail.scrollIntoViewIfNeeded();
   },
   // edit-and-proof-workspace.prd.md Phase 4: Chapter 1's mock seeds a transcript_discrepancy finding at the same
   // misread the check already flags (mockApi.ts's workspaceOverlayFinding), so "Next flag" selects the one flag on
@@ -41,13 +54,22 @@ export const proofChapterDrivers: Record<string, Driver> = {
   'flag-finding-open': async (page) => {
     await openLinkedProofChapter(page, 'Chapter 1');
     await clickVisible(page, 'button', 'Next flag');
-    await page.getByText('Decision', { exact: true }).waitFor();
+    // See flag-selected above: pause the preview playback the selection started, so the script's follow-the-word
+    // auto-scroll stops fighting this driver's own scroll and the capture is deterministic.
+    await clickVisible(page, 'button', 'Pause');
+    const decision = page.getByText('Decision', { exact: true });
+    await decision.waitFor();
+    await decision.scrollIntoViewIfNeeded();
   },
   'flag-decided': async (page) => {
     await openLinkedProofChapter(page, 'Chapter 1');
     await clickVisible(page, 'button', 'Next flag');
+    // See flag-selected above.
+    await clickVisible(page, 'button', 'Pause');
     await clickVisible(page, 'button', 'Accept');
-    await page.getByText('Saved as accepted.').waitFor();
+    const saved = page.getByText('Saved as accepted.');
+    await saved.waitFor();
+    await saved.scrollIntoViewIfNeeded();
   },
   standalone: async (page) => {
     await page.goto('/?mockReaper=standalone');
@@ -157,6 +179,12 @@ export const proofChapterDrivers: Record<string, Driver> = {
   'preview-shorter': async (page) => {
     await openPanel(page, '/?mockPreviewCandidates=shorter', page.getByText(/shorter than the target length/));
   },
+  'preview-pinned': async (page) => {
+    await openPanel(page, '/?mockPreviewCandidates=pinned', page.getByText('Pinned preview'));
+  },
+  'preview-pin-stale': async (page) => {
+    await openPanel(page, '/?mockPreviewCandidates=pin-stale', page.getByText(/manuscript text under this pin has changed/));
+  },
   'preview-warnings': async (page) => {
     await openPanel(page, '/?mockPreviewCandidates=warnings', page.getByText(/imported before chapters were classified/));
   },
@@ -179,7 +207,7 @@ export const proofChapterDrivers: Record<string, Driver> = {
   'stage-panel-evidence-unknown': async (page) => {
     await openPanel(page, '/?mockProofingSignal=unmapped-track', page.getByText(/no track linked/));
     await clickVisible(page, 'button', /^Why: /);
-    await page.getByRole('link', { name: 'Open Tracks' }).waitFor();
+    await page.getByRole('button', { name: 'Open the audio engine panel' }).waitFor();
   },
 };
 

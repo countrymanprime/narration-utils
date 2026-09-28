@@ -41,6 +41,17 @@ export const LongContent: Story = {
   },
 };
 
+// ADR 0430: the wide panel, for a slide-over that holds what a page used to (the engine panel's tables and lists).
+export const Wide: Story = {
+  args: { size: 'wide', headingLevel: 2, title: 'Audio engine' },
+  play: async () => {
+    await expect(await screen.findByRole('heading', { level: 2, name: 'Audio engine' })).toBeVisible();
+    // The class, not a measured width: the stories also run in jsdom (stories.test.tsx), which lays nothing out.
+    const panel = await screen.findByRole('dialog', { name: 'Audio engine' });
+    await expect(panel.closest('[data-slide-over]')?.className).toContain('w-[min(44rem,100vw)]');
+  },
+};
+
 export const CustomCloseLabel: Story = { args: { closeLabel: 'Close entry details' } };
 
 export const CloseButtonInvokesOnClose: Story = {

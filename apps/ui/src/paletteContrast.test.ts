@@ -155,6 +155,18 @@ const PAIRS: PairSpec[] = [
     ['surface'],
     'var(--badge-experimental-fill)',
   ),
+  // Per-speaker dialogue colours (D85 #6, ADR 0367): --speaker-1..7 alias the seven entity-kind tokens above, so these
+  // rows are already covered by the highlight-<kind> pairs; a dedicated row per alias protects SpeakerTag/Highlight's
+  // speaker use specifically, the same reasoning as the meter-zone rows above.
+  ...([1, 2, 3, 4, 5, 6, 7] as const).map((n) =>
+    text(
+      `speaker-${n}`,
+      `SpeakerTag/Highlight (speaker ${n}): the derived kind text colour on the speaker chip's own 20% tint`,
+      `var(--speaker-${n}-text)`,
+      SURFACES,
+      tint(`speaker-${n}`, 20),
+    ),
+  ),
 ];
 
 interface KnownFailure {
@@ -363,7 +375,7 @@ const NON_TEXT_USES: Record<string, { count: number; what: string }> = {
     what: 'the DAW link status dot in the project-scope panel when nothing is linked, and the global-scope reachability dot when REAPER has not sent a recent heartbeat (Phase 7)',
   },
   'components/storybible/Guide.tsx': { count: 1, what: 'the lock icon beside a locked entry' },
-  'components/tracks/TracksPage.tsx': { count: 1, what: 'the dot of a track that has no colour' },
+  'components/engine/EnginePanel.tsx': { count: 1, what: 'the dot of a track that has no colour' },
   'styles.css': { count: 1, what: "LevelMeter's below-floor zone (Phase 1): --meter-floor is a derived alias of --non-text, not text" },
 };
 

@@ -175,7 +175,7 @@ func PickupsSignal(in PickupsInput) stages.Signal {
 	switch {
 	case openTotal > 0:
 		signal.State = stages.SignalNotMet
-		signal.Reason = fmt.Sprintf("%d open pickup(s) to clear up (%s). Decide each on the Review page; a dismissal is the only way to close one without re-recording.", openTotal, strings.Join(openParts, ", "))
+		signal.Reason = fmt.Sprintf("%d open pickup(s) to clear up (%s). Decide each on Proof; a dismissal is the only way to close one without re-recording.", openTotal, strings.Join(openParts, ", "))
 	case len(unknown) > 0:
 		first := firstByCause(unknown)
 		signal.State, signal.Cause, signal.Reason = stages.SignalUnknown, first.Cause, first.Reason

@@ -67,16 +67,17 @@ export const BOARD_COLUMNS: readonly BoardColumn[] = [
   { name: 'Delivery', kind: 'unavailable' },
 ];
 
-/** One board cell. It only reads the chapter: the board never sets a status. */
+/** One board cell. It only reads the chapter: the board never sets a status. Done and empty cells are the mock's compact
+ * glyphs (PR10); a stage still being worked keeps its full word, since the mock has no glyph for those. */
 export function boardCell(chapter: ProductionChapter, column: BoardColumn): StageGridCell {
-  if (column.kind === 'unavailable') return { tone: 'neutral', label: 'Not available' };
+  if (column.kind === 'unavailable') return { tone: 'neutral', label: DASH };
   if (column.kind === 'recorded') {
-    return { tone: 'neutral', label: chapter.recordedSeconds === null ? 'Not measured' : formatLength(chapter.recordedSeconds) };
+    return { tone: 'neutral', label: chapter.recordedSeconds === null ? DASH : formatLength(chapter.recordedSeconds) };
   }
   const at = STATUS_ORDER.indexOf(chapter.status);
   const stage = STATUS_ORDER.indexOf(column.stage);
-  if (at > stage) return { tone: 'success', label: 'Done' };
-  if (at < stage) return { tone: 'neutral', label: 'Not yet' };
+  if (at > stage) return { tone: 'success', label: '✓' };
+  if (at < stage) return { tone: 'neutral', label: DASH };
   switch (chapter.readiness?.verdict) {
     case 'recommended':
       return { tone: 'info', label: 'Ready' };
