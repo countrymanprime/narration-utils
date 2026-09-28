@@ -21,7 +21,7 @@ const SCOPE_LABEL: Record<Scope, string> = { global: 'Global', page: 'Page', boo
 const SCOPE_APPLIES: Record<Scope, string> = {
   global: 'anywhere, except while a dialog is open',
   page: "a chapter's Proof view",
-  booth: 'read aloud and the Teleprompter',
+  booth: 'the Booth and its companion panel',
   dialog: 'while a dialog is open',
 };
 // The same phrase used mid-sentence ("No other command uses it ..."), Visual Spec mockup 02.
