@@ -188,7 +188,7 @@ describe('ReaderCard (manuscript-credits-card-parity.prd.md, manuscript-chapter-
         <p />
       </ReaderCard>,
     );
-    expect(screen.getByText('Credits').getAttribute('aria-hidden')).toBe('true');
+    expect(screen.getByText('Credits').closest('[aria-hidden="true"]')).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Opening credits' })).toBeTruthy();
   });
 

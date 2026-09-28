@@ -9,6 +9,7 @@ import { RecordingCheck } from '../production/RecordingCheck';
 import { Button } from '../primitives/Button';
 import { Heading } from '../primitives/Heading';
 import { Panel } from '../primitives/Panel';
+import { SectionLabel } from '../primitives/SectionLabel';
 import type { Notify } from '../primitives/Toast';
 import type { CoverageState, Discrepancy, Finding, FindingReviewStatus, ManuscriptChapter, TrackItem, TranscriptState } from '../../types';
 import type { WorkspaceAlignmentResult, WorkspacePeaksResult, WorkspaceToken } from '../../api/contracts/workspace';
@@ -321,7 +322,7 @@ function ChapterView({ chapterId, notify, transcript, dawFileLinked, goToManuscr
             <SourcesLine analyzers={[...new Set(findings.map((finding) => finding.analyzer))]} proofer={pickups.total > 0} />
           </div>
           <div className="flex flex-wrap items-center gap-2 text-sm" style={{ color: 'var(--text-muted)' }}>
-            {alignment && <span className="section-label">{CHECK_STATE_LABEL[alignment.state]}</span>}
+            {alignment && <SectionLabel>{CHECK_STATE_LABEL[alignment.state]}</SectionLabel>}
             {alignment?.basis && <span>as of last save {formatWhen(alignment.basis.modifiedAt)}</span>}
             <Button variant="ghost" onClick={() => setChecking(true)}>
               {alignment?.state === 'never' ? 'Check recording' : 'Check again'}

@@ -2,6 +2,7 @@ import type { ManuscriptChapter } from '../../types';
 import type { WorkspaceAlignmentResult } from '../../api/contracts/workspace';
 import { formatAudioTime, formatWhen, plural } from '../production/recordingCheckText';
 import { Panel } from '../primitives/Panel';
+import { SectionLabel } from '../primitives/SectionLabel';
 import type { Flag } from './flags';
 
 /** "2 regions not read, 3 misreads, 1 read short." from the check's own flags; only the kinds it found are named. */
@@ -50,16 +51,18 @@ export function RecordingCheckCard({
   return (
     <Panel title="Recording check">
       {figures.length > 0 && (
-        <dl className="mt-3 grid grid-cols-2 gap-3">
+        <dl className="grid grid-cols-2 gap-3">
           {figures.map((figure) => (
             <div key={figure.label}>
-              <dt className="section-label">{figure.label}</dt>
+              <dt>
+                <SectionLabel>{figure.label}</SectionLabel>
+              </dt>
               <dd className="font-['Barlow_Condensed',sans-serif] text-2xl font-semibold">{figure.value}</dd>
             </div>
           ))}
         </dl>
       )}
-      <p className="mt-3 text-sm" style={{ color: 'var(--text-muted)' }}>
+      <p className={`${figures.length > 0 ? 'mt-3' : ''} text-sm`} style={{ color: 'var(--text-muted)' }}>
         {alignment.state === 'never' ? standing : `${checkSentence(flags)} ${standing}`}
       </p>
     </Panel>
