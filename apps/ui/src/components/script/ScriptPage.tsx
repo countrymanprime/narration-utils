@@ -48,13 +48,12 @@ import { LOOKUP_ACTION, useWordLookup } from '../manuscript/useWordLookup';
 import { CAT_DOT_BG, CAT_DOT_CLASS, EntitySummary } from '../manuscript/EntitySummary';
 import { IconButton } from '../primitives/IconButton';
 import type { Notify } from '../primitives/Toast';
-import { ReadAloudDialog, type ReadAloudSource } from '../teleprompter/ReadAloudDialog';
+import type { CreditsKind } from '../booth/readerModel';
 import { PronunciationQueries } from '../storybible/PronunciationQueries';
 import { ScriptChapterList, SCRIPT_SECTION_LABEL } from './ScriptChapterList';
 import { ScriptRail } from './ScriptRail';
 
-// Read aloud (teleprompter-manuscript-integration.prd.md) reads narration chapters only, matching the standalone
-// Teleprompter page's own chapter filter.
+// The Booth (stage-navigation-and-page-replacement.prd.md Phase 4) reads narration chapters only, so only they link to it.
 const isNarrationChapter = (chapter: Pick<ManuscriptChapter, 'contentKind'>) => (chapter.contentKind ?? 'narration') === 'narration';
 
 const TEXT_SIZES = ['small', 'medium', 'large'] as const;
@@ -83,6 +82,7 @@ export function ScriptPage({
   focusStoryBibleEntity,
   goToWorkspace,
   projectFolder,
+  goToBooth,
 }: {
   notify: Notify;
   focusStoryBibleEntity: (id: string) => void;
@@ -92,6 +92,8 @@ export function ScriptPage({
   goToWorkspace?: (chapterId: string) => void;
   /** Keys the credits cards' remembered open state (MC5 b): a project's own choice, not the viewer's in general. */
   projectFolder: string;
+  /** A card's "Record in Booth" (Q9): the Booth page on that chapter or credits. Omitted, the cards offer no Booth link. */
+  goToBooth?: (target: { chapter: string } | { credits: CreditsKind }) => void;
 }) {
   const api = useApi();
   const location = useLocation();
@@ -123,11 +125,6 @@ export function ScriptPage({
   const [markup, setMarkup] = useState<Record<string, PrepMarkupSpan[]>>({});
   const [pendingMarkup, setPendingMarkup] = useState<{ paragraphIndex: number; anchorStart: number; anchorEnd: number; anchorText: string }>();
   const [jumpTarget, setJumpTarget] = useState<number>();
-  const [readAloud, setReadAloud] = useState<ReadAloudSource>();
-  // Booth mode's own entry point (booth-mode-and-companion-panel.prd.md Phase 1, Open Question 1 A): the same
-  // `readAloud` source, opened in `BoothView`'s layout instead of the normal control bar. Reset by each opener, not by
-  // closing, so a stale value from the last open never leaks into the next.
-  const [readAloudMode, setReadAloudMode] = useState<'read' | 'booth' | 'companion'>('read');
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<SearchHit[]>([]);
   // The query text a result was actually fetched for - not the debounce hook's own state, so an
@@ -186,13 +183,6 @@ export function ScriptPage({
   const sampleRange = useMemo(() => retailSampleRange(chapters, retailSample), [chapters, retailSample]);
   const openingTemplate = creditsTemplates.find((template) => template.kind === 'opening');
   const closingTemplate = creditsTemplates.find((template) => template.kind === 'closing');
-  // The read-aloud dialog's notes, memoized so its marks (and every memoized row of its reader) keep their identity.
-  // Chapter mode only (manuscript-credits-card-parity.prd.md Phase 2): credits pass no story or note marks.
-  const readAloudNotes = useMemo(() => {
-    if (readAloud?.kind !== 'chapter') return [];
-    const { chapter } = readAloud;
-    return notes.filter((item) => item.chapterId === chapter.id || (!item.chapterId && item.chapter === chapter.title));
-  }, [notes, readAloud]);
 
   useEffect(() => {
     const element = bandRef.current;
@@ -720,18 +710,7 @@ export function ScriptPage({
               onToggle={() => setCreditsExpanded((current) => ({ ...current, opening: !current.opening }))}
               textClass={READER_TEXT_CLASSES[textSize]}
               onFillIn={creditsSetup ? () => setFillingInCredits(true) : undefined}
-              onReadAloud={() => {
-                setReadAloudMode('read');
-                setReadAloud({ kind: 'credits', credits: 'opening', preview: creditsPreviews.opening! });
-              }}
-              onBooth={() => {
-                setReadAloudMode('booth');
-                setReadAloud({ kind: 'credits', credits: 'opening', preview: creditsPreviews.opening! });
-              }}
-              onCompanion={() => {
-                setReadAloudMode('companion');
-                setReadAloud({ kind: 'credits', credits: 'opening', preview: creditsPreviews.opening! });
-              }}
+              onRecordInBooth={goToBooth && (() => goToBooth({ credits: 'opening' }))}
             />
           )}
           {recordedChapters.map((chapter) => {
@@ -748,23 +727,9 @@ export function ScriptPage({
                 bookmarked={Boolean(chapterBookmark)}
                 onToggleBookmark={() => void toggleChapterBookmark(chapter.id)}
                 showRetailSample={Boolean(sampleRange?.chapterIds.has(chapter.id))}
-                showReadAloud={isNarrationChapter(chapter)}
-                onReadAloud={() => {
-                  setReadAloudMode('read');
-                  setReadAloud({ kind: 'chapter', chapter });
-                }}
-                showBooth={isNarrationChapter(chapter)}
-                onBooth={() => {
-                  setReadAloudMode('booth');
-                  setReadAloud({ kind: 'chapter', chapter });
-                }}
+                onRecordInBooth={goToBooth && isNarrationChapter(chapter) ? () => goToBooth({ chapter: chapter.id }) : undefined}
                 showWorkspace={goToWorkspace !== undefined && isNarrationChapter(chapter)}
                 onWorkspace={() => goToWorkspace?.(chapter.id)}
-                showCompanion={isNarrationChapter(chapter)}
-                onCompanion={() => {
-                  setReadAloudMode('companion');
-                  setReadAloud({ kind: 'chapter', chapter });
-                }}
                 wordCount={chapter.wordCount}
               >
                 {loadingChapters.has(chapter.id) ? (
@@ -806,18 +771,7 @@ export function ScriptPage({
               onToggle={() => setCreditsExpanded((current) => ({ ...current, closing: !current.closing }))}
               textClass={READER_TEXT_CLASSES[textSize]}
               onFillIn={creditsSetup ? () => setFillingInCredits(true) : undefined}
-              onReadAloud={() => {
-                setReadAloudMode('read');
-                setReadAloud({ kind: 'credits', credits: 'closing', preview: creditsPreviews.closing! });
-              }}
-              onBooth={() => {
-                setReadAloudMode('booth');
-                setReadAloud({ kind: 'credits', credits: 'closing', preview: creditsPreviews.closing! });
-              }}
-              onCompanion={() => {
-                setReadAloudMode('companion');
-                setReadAloud({ kind: 'credits', credits: 'closing', preview: creditsPreviews.closing! });
-              }}
+              onRecordInBooth={goToBooth && (() => goToBooth({ credits: 'closing' }))}
             />
           )}
         </div>
@@ -973,16 +927,6 @@ export function ScriptPage({
         )}
       </SlideOver>
       <PronunciationQueries open={queriesOpen} onClose={() => setQueriesOpen(false)} onChanged={() => void loadQueries()} notify={notify} />
-      {readAloud && (
-        <ReadAloudDialog
-          source={readAloud}
-          entities={readAloud.kind === 'chapter' ? entities : undefined}
-          notes={readAloud.kind === 'chapter' ? readAloudNotes : undefined}
-          onClose={() => setReadAloud(undefined)}
-          onFixCredits={() => routerNavigate('/settings#credits')}
-          mode={readAloudMode}
-        />
-      )}
     </div>
   );
 }
