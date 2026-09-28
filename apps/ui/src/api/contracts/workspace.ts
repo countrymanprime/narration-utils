@@ -69,6 +69,11 @@ export type WorkspaceAlignmentResult = {
   items: WorkspaceItem[];
 };
 
+/** The narrator's FX chains, from REAPER's FXChains folder (edit-and-proof-workspace.prd.md Phase 8, ADR 0234): by
+ * relative name, sorted; truncated is true when the bridge's depth or count limit left some out. Read-only. The
+ * narrator's favourites are a Settings field (DAW.fx_favourites), not part of this read. */
+export type WorkspaceFXChainsResult = { names: string[]; truncated: boolean };
+
 export interface WorkspaceApi {
   /** Reads a chapter's stored word alignment joined with its paragraphs and items' current played ranges. Never
    * runs anything. */
@@ -80,4 +85,7 @@ export interface WorkspaceApi {
   /** Loops the chapter passage from firstToken to lastToken (inclusive, both heard on the same item) in REAPER, as
    * findingsLoop does for a finding. findingsStopLoop stops it: the workspace holds no loop state of its own. */
   workspaceLoop(chapterId: string, firstToken: number, lastToken: number): Promise<FindingNavigation>;
+  /** Lists the narrator's FX chains (list_fx_chains, Phase 8). Refused offline or before the DAW port's FX chains
+   * capability is on (the same experimental gate as Phase 9's apply). */
+  workspaceListFXChains(): Promise<WorkspaceFXChainsResult>;
 }

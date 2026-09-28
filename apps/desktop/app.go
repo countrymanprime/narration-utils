@@ -60,7 +60,7 @@ import (
 // Keep this in lockstep with apps/ui/src/hostApi.ts.  The frontend rejects
 // an older host before bootstrapping so a partial update cannot run against a
 // binding contract it does not understand.
-const hostAPIVersion = 81
+const hostAPIVersion = 82
 
 // Host is the Wails binding boundary. The frontend invokes only this bound
 // object; it never receives a loopback port or an HTTP capability.
@@ -1442,10 +1442,17 @@ var fieldSchemas = map[string][]fieldSchema{
 	// The per-capability toggles (DAW port PRD P4) come after the three above, from capabilityFieldSchemas: one
 	// choice field per dawport.Capability, labeled with the port's own narrator-facing label, so Settings lists and
 	// saves every DAW.capability.<name> row through this same generic mechanism.
+	// fx_favourites is the narrator's favourite REAPER effects (edit-and-proof-workspace PRD Phase 8, EP8 B, ADR
+	// 0234): names WorkspaceListFXChains or a future FX plug-in listing already lists, kept as one "tags" field
+	// rather than two, since a chain and a plug-in are just two shapes of name (a chain always ends ".RfxChain";
+	// ADR 0234's add_take_fx already refuses that suffix as a plug-in name, so the two are never confused). It
+	// works at either scope through the same global/project layering as every other setting; there is no separate
+	// project-only or global-only rule for it (unlike Teleprompter, Keymap or Updates above).
 	"DAW": append([]fieldSchema{
 		{"reaper_path", "REAPER executable (override)", "text", nil},
 		{"auto_start_launcher", "Start the launcher script automatically", "bool", nil},
 		{"experimental_reaper_actions", "Experimental REAPER actions", "bool", nil},
+		{"fx_favourites", "Favourite effects (FX chains and plug-ins)", "tags", nil},
 	}, capabilityFieldSchemas()...),
 	// RecordingCoverage is the recording check's four settings (docs/utilities/recording-coverage.md Q3, ADR 0131),
 	// read by coverage.ResolveSettings. The two thresholds judge a stored result on read; the two alignment settings are
@@ -1692,6 +1699,8 @@ func validateSettingValue(tool string, schema fieldSchema, value string) error {
 			return fmt.Errorf("setting %s must be %d bytes or smaller", schema.key, keymapOverridesMaxBytes)
 		}
 		return nil
+	case "tags":
+		return validateTagsSetting(schema.key, value)
 	case "color":
 		if len(value) != 6 || !isHex(value) {
 			return fmt.Errorf("setting %s must be a six-digit color", schema.key)
@@ -1706,6 +1715,35 @@ func validateSettingValue(tool string, schema fieldSchema, value string) error {
 		}
 	default:
 		return fmt.Errorf("unsupported setting kind %q for %s", schema.kind, schema.key)
+	}
+	return nil
+}
+
+// tagsFieldMaxBytes bounds a "tags" field's whole stored value: a generous cap for a narrator's whole favourites
+// list, well short of anything that would slow down loading or saving settings (keymapOverridesMaxBytes is the
+// same idea for Keymap.overrides). maxTagTermLength mirrors TagInput's own MAX_TERM_LENGTH
+// (apps/ui/src/components/primitives/TagInput.tsx): a term this long already reads as a mistake, not a name.
+const (
+	tagsFieldMaxBytes = 4096
+	maxTagTermLength  = 64
+)
+
+// validateTagsSetting checks a "tags" field's stored value: terms joined by commas (TagInput.tsx never lets a term
+// hold one, so a comma is always a separator here), each non-empty and within the UI's own term length.
+func validateTagsSetting(key, value string) error {
+	if len(value) > tagsFieldMaxBytes {
+		return fmt.Errorf("setting %s must be %d bytes or smaller", key, tagsFieldMaxBytes)
+	}
+	if value == "" {
+		return nil
+	}
+	for _, term := range strings.Split(value, ",") {
+		if strings.TrimSpace(term) == "" {
+			return fmt.Errorf("setting %s holds an empty term", key)
+		}
+		if len(term) > maxTagTermLength {
+			return fmt.Errorf("setting %s holds a term longer than %d characters", key, maxTagTermLength)
+		}
 	}
 	return nil
 }

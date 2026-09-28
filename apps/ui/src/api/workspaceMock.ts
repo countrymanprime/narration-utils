@@ -17,6 +17,7 @@ import type {
   WorkspaceAlignmentResult,
   WorkspaceApi,
   WorkspaceExtra,
+  WorkspaceFXChainsResult,
   WorkspaceItem,
   WorkspaceToken,
 } from '../types';
@@ -35,7 +36,11 @@ type Deps = {
    * workspaceLoop to answer `findingsReaperStatus`'s `loopingFindingId` and to let `findingsStopLoop` clear it, so
    * the workspace's own loop is remembered the same way a finding's is (across a poll, a leave and a return). */
   looping?: { current: string | undefined };
+  /** The narrator's FX chains for workspaceListFXChains (Phase 8): a small realistic sample when not given. */
+  fxChains?: string[];
 };
+
+const DEFAULT_MOCK_FX_CHAINS = ['Podcast Voice.RfxChain', 'Vocal Warmth.RfxChain'];
 
 const refused = (reason: FindingNavigationRefusal, message: string): FindingNavigation => ({ outcome: 'refused', reason, message });
 
@@ -225,6 +230,10 @@ export function createWorkspaceMock(deps: Deps): WorkspaceApi {
       if (deps.looping) deps.looping.current = `workspace:${chapterId}:${firstToken}-${lastToken}`;
       const start = first.start ?? 0;
       return { outcome: 'looping', loopStart: Math.max(start - LOOP_PADDING_SECONDS, 0), loopEnd: last.end + LOOP_PADDING_SECONDS };
+    },
+    workspaceListFXChains: async (): Promise<WorkspaceFXChainsResult> => {
+      if (mode !== 'connected') throw new Error('REAPER is not connected to this app: open the app from the Narration Utils action in REAPER');
+      return { names: deps.fxChains ?? DEFAULT_MOCK_FX_CHAINS, truncated: false };
     },
   };
 }

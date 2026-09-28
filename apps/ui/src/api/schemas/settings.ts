@@ -13,7 +13,7 @@ const settingFieldSchema = z
   .object({
     key: z.string(),
     label: z.string(),
-    kind: z.enum(['text', 'choice', 'color', 'bool', 'number']),
+    kind: z.enum(['text', 'choice', 'color', 'bool', 'number', 'tags']),
     // A text or colour field has no choices, which the host sends as null.
     choices: listFromNull(z.string()),
     value: z.string(),

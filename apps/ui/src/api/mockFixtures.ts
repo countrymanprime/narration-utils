@@ -743,6 +743,18 @@ export const wireSettings = (): Record<string, ScopedSettingField[]> => ({
       effectiveValue: 'false',
       effectiveSource: 'repo default',
     },
+    // DAW.fx_favourites (edit-and-proof-workspace PRD Phase 8, ADR 0234): the narrator's favourite FX chains and
+    // plug-ins, a comma-joined "tags" field, mirroring apps/desktop/app.go's fieldSchemas.
+    {
+      key: 'fx_favourites',
+      label: 'Favourite effects (FX chains and plug-ins)',
+      kind: 'tags',
+      choices: [],
+      value: '',
+      isSet: false,
+      effectiveValue: '',
+      effectiveSource: 'repo default',
+    },
     // One choice field (auto/on/off) per DAW port capability (DAW port PRD Phase 4), mirroring apps/desktop/app.go's
     // capabilityFieldSchemas: every row starts unset, its repo default "auto", like auto_start_launcher above.
     ...DAW_CAPABILITIES.map(({ key, label }): ScopedSettingField => ({

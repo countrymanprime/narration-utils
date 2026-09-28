@@ -1,5 +1,12 @@
 import { z } from 'zod';
-import type { WorkspaceAlignmentResult, WorkspaceExtra, WorkspaceItem, WorkspaceParagraph, WorkspaceToken } from '../contracts/workspace';
+import type {
+  WorkspaceAlignmentResult,
+  WorkspaceExtra,
+  WorkspaceFXChainsResult,
+  WorkspaceItem,
+  WorkspaceParagraph,
+  WorkspaceToken,
+} from '../contracts/workspace';
 import { listFromNull, optionalFromNull } from './base';
 import { COVERAGE_EVALUATOR_REASONS, COVERAGE_REFUSAL_REASONS } from './coverage';
 
@@ -53,3 +60,8 @@ export const workspaceAlignmentResultSchema = z.object({
   extras: listFromNull(extraSchema),
   items: listFromNull(itemSchema),
 }) satisfies z.ZodType<WorkspaceAlignmentResult>;
+
+export const workspaceFXChainsResultSchema = z.object({
+  names: listFromNull(z.string()),
+  truncated: z.boolean(),
+}) satisfies z.ZodType<WorkspaceFXChainsResult>;
