@@ -37,4 +37,24 @@ describe('Kbd', () => {
     expect(screen.queryByRole('img', { name: '⌫' })).toBeNull();
     expect(screen.getByRole('img', { name: 'Backspace' })).toBeTruthy();
   });
+
+  it('draws the 18 px companion/settings cap by default', () => {
+    render(<Kbd keys={['R']} />);
+    const cap = screen.getByRole('img').querySelector('kbd');
+    expect(cap?.className).toContain('h-[1.125rem]');
+  });
+
+  it('draws the 23 px booth cap when asked', () => {
+    render(<Kbd keys={['R']} size="md" />);
+    const cap = screen.getByRole('img').querySelector('kbd');
+    expect(cap?.className).toContain('h-[1.4375rem]');
+  });
+
+  it('uses Plex Mono and a 2 px bottom edge deeper than its 1 px top/left/right border', () => {
+    render(<Kbd keys={['R']} />);
+    expect(screen.getByRole('img').className).toContain("font-['IBM_Plex_Mono',ui-monospace,monospace]");
+    const cap = screen.getByRole('img').querySelector('kbd');
+    expect(cap?.className).toContain('border-b-2');
+    expect(cap?.className).toContain('border');
+  });
 });
