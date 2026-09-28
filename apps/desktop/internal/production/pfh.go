@@ -6,7 +6,7 @@ import (
 	"github.com/countrymanprime/narration-utils/shell/internal/stages"
 )
 
-// This file is Phase 2 of docs/prds/production-tracking.prd.md: PFH (hours
+// This file is Phase 2 of the production tracking PRD (delivered and deleted; ADR 0028): PFH (hours
 // worked per finished hour) and the effective hourly rate, computed only from
 // hours the narrator logged and audio the app measured (ADR 0320). Nothing
 // here falls back to the word-count estimate (Q4): a figure with no honest

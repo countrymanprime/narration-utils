@@ -10,7 +10,7 @@ import (
 	"github.com/countrymanprime/narration-utils/shell/internal/productionreport"
 )
 
-// The Production page's status report export (docs/prds/production-tracking.prd.md Phase 5). The page sends only the
+// The Production page's status report export (production tracking PRD Phase 5, delivered and deleted; ADR 0028). The page sends only the
 // narrator's one choice, whether to include the contracted amount and effective rate; the host builds the report from
 // exactly the same overview and plan the Production page just read (buildProductionOverview, bindings_production.go)
 // and writes an HTML and a JSON file into the project's narration-utils/production/reports folder. It never writes
