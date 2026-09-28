@@ -192,9 +192,15 @@ export async function openReaperControls(page: Page, reaper?: 'stale' | 'not-run
   await page.getByText('Checking whether REAPER is connected…').waitFor({ state: 'detached' });
 }
 
+// ReaperControls is a plain <div> (not a landmark, so two open at once - the editing check panel - stay unique to
+// axe), named only by its visible "In REAPER" heading; its parent is the control group these drivers act within.
+function reaperControlsGroup(page: Page): Locator {
+  return page.getByRole('heading', { name: 'In REAPER' }).locator('..');
+}
+
 // Presses a REAPER button and waits for what it answers, then scrolls the REAPER controls into view for the picture.
 export async function pressInReaper(page: Page, name: string, answer: Locator): Promise<void> {
-  await page.getByRole('region', { name: 'In REAPER' }).getByRole('button', { name }).click();
+  await reaperControlsGroup(page).getByRole('button', { name }).click();
   await showReaperControls(page, answer);
 }
 
@@ -204,7 +210,7 @@ export async function confirmApprovedMarker(page: Page): Promise<Locator> {
   await openReaperControls(page);
   await page.getByRole('button', { name: 'Accept', exact: true }).click();
   await page.getByText('Saved as accepted.').waitFor();
-  await page.getByRole('region', { name: 'In REAPER' }).getByRole('button', { name: 'Add marker in REAPER' }).click();
+  await reaperControlsGroup(page).getByRole('button', { name: 'Add marker in REAPER' }).click();
   const dialog = page.getByRole('alertdialog', { name: 'Add a marker in REAPER' });
   await dialog.waitFor();
   return dialog;
@@ -325,7 +331,7 @@ export async function compareTakes(page: Page): Promise<Locator> {
 
 export async function showReaperControls(page: Page, shown: Locator): Promise<void> {
   await shown.waitFor();
-  await page.getByRole('region', { name: 'In REAPER' }).scrollIntoViewIfNeeded();
+  await reaperControlsGroup(page).scrollIntoViewIfNeeded();
 }
 
 // Home's chapter breakdown control exists only once the chapter list has loaded, so it is the proof that the whole page
