@@ -12,6 +12,7 @@ import (
 	"fmt"
 
 	"github.com/countrymanprime/narration-utils/shell/internal/findings"
+	"github.com/countrymanprime/narration-utils/shell/internal/measure"
 )
 
 // analyzerName is this package's findings.Finding.Analyzer value, shared by
@@ -166,4 +167,72 @@ func EmptySpaceEvidenceVersion(candidate EmptySpaceCandidate) string {
 		}
 	}
 	return hashParts(parts...)
+}
+
+// ClassCandidateFinding builds one silence_cleanup finding for a click or
+// breath candidate from one item's scan (Phase 4). Project time is the item's
+// position plus the candidate's offset into the played range; the source
+// range is the played range's start plus that offset. The evidence version
+// covers the source file, the class and the source range only (Q7), so moving
+// the item or changing a threshold keeps a narrator's decision, while a
+// change to the audio at that spot asks again. The finding names the class
+// detector's version, which the signal's validated-version gate reads.
+func ClassCandidateFinding(documentID, chapterID, chapterTitle string, item ItemAudible, cleanup measure.CleanupDiagnostics, candidate measure.CleanupCandidate) findings.Finding {
+	class := string(candidate.Class)
+	version := ClickAnalyzerVersion
+	if candidate.Class == measure.CleanupBreath {
+		version = BreathAnalyzerVersion
+	}
+	project := func(offset float64) float64 { return item.Extent.Start + offset }
+	sourceStart, sourceEnd := item.PlayedRange.Start+candidate.StartSeconds, item.PlayedRange.Start+candidate.EndSeconds
+	evidenceMap := map[string]any{
+		"class": class, "analyzer_version": version,
+		"duration_seconds":     candidate.EndSeconds - candidate.StartSeconds,
+		"source_start_seconds": sourceStart, "source_end_seconds": sourceEnd,
+		"reason":                 fmt.Sprintf("a %s candidate: %s; it is cut only once you approve it", class, candidate.Why),
+		"breath_below_speech_db": cleanup.Options.BreathBelowSpeechDB,
+		"click_above_silence_db": cleanup.Options.ClickAboveSilenceDB,
+		"min_breath_seconds":     cleanup.Options.MinBreathSeconds,
+		"max_breath_seconds":     cleanup.Options.MaxBreathSeconds,
+	}
+	if candidate.LeveldBFS != nil {
+		evidenceMap["level_dbfs"] = *candidate.LeveldBFS
+	}
+	if candidate.PeakdBFS != nil {
+		evidenceMap["peak_dbfs"] = *candidate.PeakdBFS
+	}
+	if candidate.ZeroCrossing != nil {
+		evidenceMap["zero_crossing_rate"] = *candidate.ZeroCrossing
+	}
+	if cleanup.SpeechLeveldBFS != nil {
+		evidenceMap["speech_level_dbfs"] = *cleanup.SpeechLeveldBFS
+	}
+	confidence := candidate.Confidence
+	evidenceVersion := hashParts(class, item.File, formatFloat(sourceStart), formatFloat(sourceEnd))
+	finding := findings.Finding{
+		SchemaVersion: findings.SchemaVersion,
+		Analyzer:      analyzerName,
+		Source:        findings.Source{File: item.File, ItemGUID: item.ItemGUID, TakeGUID: item.TakeGUID},
+		TimeRange: &findings.TimeRange{
+			Start: project(candidate.StartSeconds), End: project(candidate.EndSeconds),
+			SourceStart: &sourceStart, SourceEnd: &sourceEnd,
+		},
+		Manuscript:       &findings.Manuscript{ChapterID: chapterID, ChapterTitle: chapterTitle},
+		Category:         findings.CategorySilenceCleanup,
+		Severity:         findings.SeverityInfo,
+		Confidence:       &confidence,
+		ConfidenceReason: "a heuristic " + class + " candidate, not a calibrated score",
+		Evidence:         evidenceMap,
+		SuggestedAction: &findings.SuggestedAction{
+			Kind: "split_and_trim",
+			Parameters: map[string]any{
+				"class": class, "cut_start_seconds": project(candidate.CutStart), "cut_end_seconds": project(candidate.CutEnd),
+			},
+			RequiresConfirmation: true,
+		},
+		Review:          findings.ReviewState{Status: findings.StatusUnreviewed},
+		EvidenceVersion: evidenceVersion,
+	}
+	finding.ID = findings.StableID(analyzerName, documentID, chapterID, class, item.ItemGUID, evidenceVersion)
+	return finding
 }

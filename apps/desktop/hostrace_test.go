@@ -180,6 +180,11 @@ var stressReaders = []stressReader{
 	{"PackageStart (nothing exported)", func(h *Host) {
 		_, _ = h.PackageStart(PackageRequest{ProfileID: "acx", Items: []PackageItem{{Kind: "chapter", Path: "C:/missing.mp3"}}})
 	}},
+	{"PackageMultiState", func(h *Host) { _, _ = h.PackageMultiState() }},
+	{"PackageMultiCancel (nothing running)", func(h *Host) { _, _ = h.PackageMultiCancel() }},
+	{"PackageStartMulti (nothing exported)", func(h *Host) {
+		_, _ = h.PackageStartMulti(MultiPackageRequest{Selections: []ProfileSelection{{ProfileID: "acx"}}, Items: []PackageItem{{Kind: "chapter", Path: "C:/missing.mp3"}}})
+	}},
 	{"canAttach (ProjectCreateIn's pre-check)", func(h *Host) { _ = h.canAttach() }},
 	{"CoverageStart (asset gate)", func(h *Host) { _, _ = h.CoverageStart("c-0001", nil) }},
 	{"CoverageState", func(h *Host) { _, _ = h.CoverageState() }},
