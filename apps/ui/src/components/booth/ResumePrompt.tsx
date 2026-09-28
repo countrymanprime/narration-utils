@@ -5,7 +5,7 @@ import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { useApi } from '../../api/ApiContext';
 import { Button } from '../primitives/Button';
-import { Panel } from '../primitives/Panel';
+import { InsetCard } from '../primitives/InsetCard';
 import { useResumeLocate, type LocateState } from './useResumeLocate';
 import { WhisperModelPrompt } from './WhisperModelPrompt';
 import type { ChapterTrackMatch, TeleprompterLocateResult, TeleprompterReading, TeleprompterResumePlace } from '../../types';
@@ -548,18 +548,17 @@ export function ResumePrompt({ chapterId, model, active, onStartWord }: Props) {
   };
 
   return (
-    <Panel label="Where you stopped">
-      <div className="flex flex-wrap items-start gap-x-3 gap-y-2 text-sm">
-        <PromptBody state={lookup.state} onChoose={choose} onRetry={lookup.retry} onAskForModel={lookup.askForModel} />
-        {lookup.prompt && (
-          <WhisperModelPrompt
-            prompt={lookup.prompt}
-            purpose="listens to the end of your recording to find where you stopped"
-            install={lookup.modelInstall}
-            dismiss={lookup.closeModelPrompt}
-          />
-        )}
-      </div>
-    </Panel>
+    // A compact bordered notice, not a Panel (ADR 0187).
+    <InsetCard role="region" aria-label="Where you stopped" className="flex flex-wrap items-start gap-x-3 gap-y-2 text-sm">
+      <PromptBody state={lookup.state} onChoose={choose} onRetry={lookup.retry} onAskForModel={lookup.askForModel} />
+      {lookup.prompt && (
+        <WhisperModelPrompt
+          prompt={lookup.prompt}
+          purpose="listens to the end of your recording to find where you stopped"
+          install={lookup.modelInstall}
+          dismiss={lookup.closeModelPrompt}
+        />
+      )}
+    </InsetCard>
   );
 }

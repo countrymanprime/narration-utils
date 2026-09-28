@@ -213,4 +213,17 @@ export const storybibleDrivers: Record<string, Driver> = {
     await clickVisible(page, 'button', 'Remove voice data…');
     await confirmDialog(page, 'Remove voice data').waitFor();
   },
+  'series-tab-empty': async (page) => {
+    await page.goto('/?mockSeries=not-in-series');
+    await settlePage(page);
+    await clickNav(page, 'Story Bible');
+    await clickVisible(page, 'tab', 'Series');
+    await page.getByText(/no other books in this series yet/i).waitFor();
+  },
+  'series-tab-populated': async (page) => {
+    await goToPage(page, 'Story Bible');
+    await clickVisible(page, 'tab', 'Series');
+    await page.getByText('Wonderland', { exact: true }).waitFor();
+    await page.getByText('Alice ref, Looking-Glass Ch. 1').waitFor();
+  },
 };

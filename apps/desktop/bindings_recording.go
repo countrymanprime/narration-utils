@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/countrymanprime/narration-utils/shell/internal/captureport"
+	"github.com/countrymanprime/narration-utils/shell/internal/manuscript"
 	"github.com/countrymanprime/narration-utils/shell/internal/port"
 	"github.com/countrymanprime/narration-utils/shell/internal/recording"
 	"github.com/countrymanprime/narration-utils/shell/internal/teleprompter"
@@ -135,6 +136,63 @@ func (h *Host) RecorderStop() (string, error) {
 		svc.recorder.Stop()
 	}
 	return encodeBinding(h.recorderState(svc, nil), nil)
+}
+
+// RecorderSetTakeLine assigns takeName the manuscript paragraph or chapter entityId as its line identity (Phase 3,
+// ADR 0485), so it joins the review pipeline the same way a REAPER item's stamped line id does (native-recording-suite
+// PRD Phase 4, "take review integration" - Phase 3 built SetTakeLine with no UI caller yet). entityId "" clears the
+// assignment. The manuscript's current source checksum is read here, never sent by the caller, so a stale UI can
+// never stamp a wrong one.
+func (h *Host) RecorderSetTakeLine(takeName, entityId string) (string, error) {
+	svc := h.services()
+	if svc.recorder == nil {
+		return "", errors.New("open a project before assigning a take a manuscript line")
+	}
+	sourceSHA256 := ""
+	if entityId != "" {
+		sourceSHA256 = recordingManuscriptSourceHash(svc.manuscript)
+		if sourceSHA256 == "" {
+			return "", errors.New("import a manuscript before assigning a take to a line")
+		}
+	}
+	if err := svc.recorder.SetTakeLine(takeName, entityId, sourceSHA256); err != nil {
+		return "", err
+	}
+	return encodeBinding(h.recorderState(svc, nil), nil)
+}
+
+// RecorderSetTakeKeeper marks or unmarks takeName the keeper among the takes assigned to its line (Phase 4, Q5):
+// narrator-confirmed, and always undoable by marking it again with keeper false or by marking a different take of the
+// same line.
+func (h *Host) RecorderSetTakeKeeper(takeName string, keeper bool) (string, error) {
+	svc := h.services()
+	if svc.recorder == nil {
+		return "", errors.New("open a project before marking a take the keeper")
+	}
+	if err := svc.recorder.SetTakeKeeper(takeName, keeper); err != nil {
+		return "", err
+	}
+	return encodeBinding(h.recorderState(svc, nil), nil)
+}
+
+// recordingManuscriptSourceHash reads the manuscript's own recorded source checksum, the same field
+// internal/lineidentity's own sourceSHA256 reads (that package's own helper is unexported, so this is this binding
+// file's own small copy of the same lookup bindings_preview.go already makes for its own purpose, not a second
+// scheme).
+func recordingManuscriptSourceHash(service *manuscript.Service) string {
+	if service == nil {
+		return ""
+	}
+	data, err := service.Load()
+	if err != nil {
+		return ""
+	}
+	source, ok := data["source"].(map[string]any)
+	if !ok {
+		return ""
+	}
+	sha, _ := source["sha256"].(string)
+	return sha
 }
 
 // builtinRecorder is the services snapshot when the project records with the built-in recorder, or the reason it cannot.

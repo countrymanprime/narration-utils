@@ -208,6 +208,99 @@ func TestATakeRemembersItsDeviceAndPlaysThroughTheMediaRoute(t *testing.T) {
 	}
 }
 
+// recordingManuscriptWithSource is previewManuscriptOK with a recorded source checksum stamped, the same shape
+// internal/lineidentity's own tests use (`"source":{"fileName":...,"sha256":...}`), since RecorderSetTakeLine reads
+// exactly that field.
+const recordingManuscriptWithSource = `{"schemaVersion":1,"documentId":"doc-1","source":{"fileName":"book.docx","sha256":"abc123"},"chapters":[` +
+	`{"id":"c-0001","title":"Chapter One","index":0,"contentKind":"narration"}` +
+	`],"paragraphs":[` +
+	`{"id":"p-000001","chapterId":"c-0001","index":0,"text":"Alice walked through the forest, alone with her thoughts."}` +
+	`]}`
+
+func recorderHostWithManuscript(t *testing.T, fake *recordingtest.Fake) *Host {
+	t.Helper()
+	host := previewSuggestHost(t, recordingManuscriptWithSource)
+	host.platform = "windows"
+	host.mu.Lock()
+	host.recorder = recording.New(recording.Config{Project: host.config.projectFolder, Grace: time.Second}, fake, nil, nil)
+	host.mu.Unlock()
+	return host
+}
+
+// TestRecorderSetTakeLineAssignsThroughTheManuscriptsOwnChecksum pins Phase 4's binding: it takes only an entity id
+// from the caller, reading the manuscript's own recorded source checksum itself so the UI can never stamp a stale
+// or wrong one (native-recording-suite PRD Phase 3's SetTakeLine, first wired to the UI here).
+func TestRecorderSetTakeLineAssignsThroughTheManuscriptsOwnChecksum(t *testing.T) {
+	fake := &recordingtest.Fake{}
+	host := recorderHostWithManuscript(t, fake)
+	folder := filepath.Join(host.config.projectFolder, recording.FolderName)
+	if err := os.MkdirAll(folder, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := recordingtest.WriteWav(filepath.Join(folder, "Take 001.wav"), 24000); err != nil {
+		t.Fatal(err)
+	}
+
+	state := recorderOf(t)(host.RecorderSetTakeLine("Take 001", "p-000001"))
+	take := state.Takes[0]
+	if take.LineID == nil || *take.LineID != "p-000001@abc123" {
+		t.Fatalf("LineID = %v, want p-000001@abc123", take.LineID)
+	}
+
+	// Clearing.
+	state = recorderOf(t)(host.RecorderSetTakeLine("Take 001", ""))
+	if state.Takes[0].LineID != nil {
+		t.Fatalf("LineID = %v, want nil after clearing", state.Takes[0].LineID)
+	}
+}
+
+func TestRecorderSetTakeLineRefusesWithNoManuscriptImported(t *testing.T) {
+	host := recorderHost(t, &recordingtest.Fake{}) // previewManuscriptOK has no source checksum
+	folder := filepath.Join(host.config.projectFolder, recording.FolderName)
+	if err := os.MkdirAll(folder, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := recordingtest.WriteWav(filepath.Join(folder, "Take 001.wav"), 24000); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := host.RecorderSetTakeLine("Take 001", "p-000001"); err == nil || !strings.Contains(err.Error(), "import a manuscript") {
+		t.Fatalf("err = %v", err)
+	}
+}
+
+func TestRecorderSetTakeLineWithoutAProjectIsRefused(t *testing.T) {
+	if _, err := NewHost().RecorderSetTakeLine("Take 001", "p-000001"); err == nil {
+		t.Fatal("assigned a line without a project")
+	}
+}
+
+// TestRecorderSetTakeKeeperMarksAndUndoes pins Phase 4's keeper binding end to end, through the host.
+func TestRecorderSetTakeKeeperMarksAndUndoes(t *testing.T) {
+	host := recorderHost(t, &recordingtest.Fake{})
+	folder := filepath.Join(host.config.projectFolder, recording.FolderName)
+	if err := os.MkdirAll(folder, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := recordingtest.WriteWav(filepath.Join(folder, "Take 001.wav"), 24000); err != nil {
+		t.Fatal(err)
+	}
+
+	state := recorderOf(t)(host.RecorderSetTakeKeeper("Take 001", true))
+	if !state.Takes[0].Keeper {
+		t.Fatal("Keeper = false, want true")
+	}
+	state = recorderOf(t)(host.RecorderSetTakeKeeper("Take 001", false))
+	if state.Takes[0].Keeper {
+		t.Fatal("Keeper = true, want false after undoing")
+	}
+}
+
+func TestRecorderSetTakeKeeperWithoutAProjectIsRefused(t *testing.T) {
+	if _, err := NewHost().RecorderSetTakeKeeper("Take 001", true); err == nil {
+		t.Fatal("marked a keeper without a project")
+	}
+}
+
 func TestTheMeterStartsAndStopsOnlyForTheBuiltInRecorder(t *testing.T) {
 	fake := &recordingtest.Fake{}
 	host := recorderHost(t, fake)

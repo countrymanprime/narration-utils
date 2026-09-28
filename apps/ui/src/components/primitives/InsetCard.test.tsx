@@ -6,7 +6,7 @@ import { InsetCard } from './InsetCard';
 afterEach(cleanup);
 
 describe('InsetCard', () => {
-  it('is a div with a 1 px border frame, a 6 px radius and 12 px inside', () => {
+  it('is a div on the surface with a 1 px border frame, a 6 px radius and 12 px inside', () => {
     render(<InsetCard>Body</InsetCard>);
     const card = screen.getByText('Body');
     expect(card.tagName).toBe('DIV');
@@ -14,7 +14,7 @@ describe('InsetCard', () => {
     expect(card.className).toContain('border');
     expect(card.className).toContain('p-3');
     expect(card.style.borderColor).toBe('var(--border)');
-    expect(card.style.background).toBe('');
+    expect(card.style.background).toBe('var(--surface)');
   });
 
   it('colours the frame by tone, fills and dashes on request', () => {

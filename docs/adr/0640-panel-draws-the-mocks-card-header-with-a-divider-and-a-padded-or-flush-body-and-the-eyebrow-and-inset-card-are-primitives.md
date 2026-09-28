@@ -37,20 +37,22 @@ The app drew the card title in IBM Plex Sans 16 px, inside the card's 17.6 px pa
   - `className` is for layout only.
 - **`PanelHeader`** is the header row on its own, for a card that is not a `section` of its own (a `TabPanel` drawn as a card). With `PANEL_FRAME_CLASS`, that card takes the same look without copying it.
 
-The dark settings panels draw their title in Barlow about 17 px, uppercase with wide tracking. The benchmark set wins over a dark set (D92), so Settings takes the 19 px sentence-case title too.
+The dark Settings mocks (delivery-platform-profiles 05 and 09, input-commands-and-pedals 01) draw a category's title differently. Its capitals are 12 px tall, so it is Barlow Condensed at 17 px, uppercase and tracked. The benchmark set has no Settings screen, so nothing there contradicts that title, and `titleStyle="caps"` draws it. The body padding is the benchmark's 16 px, not the dark set's 18 px, because the benchmark wins where both draw a thing (D92).
+
+A subtitle keeps to the title's line and wraps inside its own box while it has 10 rem, as the 390 px Settings mock draws it. Only below that does it drop under the title.
 
 **Heading** takes `--font-size-page-title` (26 px) and a 13 px muted subtitle. A new `icon` prop leads the title (the start-up screen's spinner), so the last raw page `h1`s become Headings.
 
 **SectionLabel** is a new primitive for the eyebrow: Barlow Condensed at `--font-size-label` (11 px), weight 600, uppercase, `--tracking-label` (0.1 em), `--text-muted`. `as` picks the element: a heading when it names a region, a `legend` over a fieldset, a `span` by default. The global `.section-label` class draws the same thing from the same tokens, for the files later phases own. Those files are the Script page, the Master page, the Booth and the shell's nav groups (Phase 8). This phase doesn't edit them, so the class stays until they migrate.
 
-**InsetCard** is a new primitive for a card inside a card: a 1 px border, a 6 px radius and 12 px inside it. It has these props:
+**InsetCard** is a new primitive for a card inside a card: a 1 px border, a 6 px radius and 12 px inside it, on `--surface`. That is the panel it sits in; where it sits on the page (the Booth's resume prompt) it stays an opaque card, so its text keeps the contrast it was checked at. It has these props:
 
 - `tone` colours the frame: `accent`, `warn` or `danger`.
 - `fill` sets it on `--surface-2`.
 - `dashed` marks a placeholder.
 - `as` picks `div`, `section`, `li` or `p`.
 
-It replaces the hand-drawn `rounded-md border px-3 py-2` copies. Their padding was 8 px above and below; the mock's is 12 px all round.
+It replaces the hand-drawn `rounded-md border px-3 py-2` copies. Their padding was 8 px above and below; the mock's is 12 px all round. The Booth's resume prompt is one of them: [ADR 0187](0187-the-resume-prompt-is-a-compact-notice-that-settles-once-per-dialog-open.md) made it a compact bordered notice rather than a `Panel`, and an inset card is exactly that.
 
 A source guard (`apps/ui/src/panelCopies.test.ts`, in the pattern of `rawNatives.test.ts`) counts these per file outside the primitives:
 
