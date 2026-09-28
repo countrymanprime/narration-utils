@@ -7,7 +7,7 @@ The decision and the old-to-new path map are in
 
 ## Repository layout
 
-```
+```text
 apps/
   desktop/        Go/Wails desktop host (app.go, bindings*.go, internal/, cmd/, build/: icons and the Windows setup program definition)
   ui/             React + Tailwind app; its tests/ hold the Playwright visual and atlas suites

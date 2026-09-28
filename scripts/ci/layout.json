@@ -8,6 +8,7 @@
     ".husky",
     ".lychee.toml",
     ".lycheeignore",
+    ".markdownlint-cli2.jsonc",
     ".prettierignore",
     ".prettierrc.json",
     ".vscode",

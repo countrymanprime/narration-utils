@@ -1,6 +1,6 @@
 # The public docs site (ADR 0083): MkDocs and the Material theme, built from the repository's own docs/ folder.
 # Nothing under tools/docs-site is content: `docs_dir` is docs/ itself, `include.txt` says which of its pages are published,
-# and hooks.py rewrites the links that leave the published set. Build it with `pnpm exec nx run docs-site:build`.
+# and hooks.py rewrites the links that leave the published set. Build it with `pnpm exec nx run docs-site:build-site`.
 site_name: narration-utils
 site_description: Documentation for narration-utils, a local-first toolkit for audiobook narration.
 site_url: https://countrymanprime.github.io/narration-utils/

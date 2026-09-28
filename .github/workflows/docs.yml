@@ -1,9 +1,10 @@
 name: Docs
-# The link check of every Markdown file in the repository (docs/adr/0084, docs/operations/ci-and-releases.md#the-docs-link-check).
+# The link check of every Markdown file in the repository (docs/adr/0084, docs/operations/ci-and-releases.md#the-docs-link-check),
+# and a fast Markdown style lint of the files a pull request touches (ADR 0415).
 #
 # There is deliberately NO path filter on the pull_request trigger. ci.yml skips documentation-only pull requests, so a
 # path-filtered docs job would also skip a code change that renames a file a doc links to, and a required check that
-# GitHub skips stays pending forever. This workflow runs on every pull request, so its job is safe to require later.
+# GitHub skips stays pending forever. This workflow runs on every pull request, so its jobs are safe to require later.
 #
 # links-offline reads only the repository (lychee --offline: a relative link must resolve to a file, a `#fragment` to a
 # heading of that file) and does not touch the network, so it is deterministic. links-online also follows the http(s)
@@ -18,6 +19,31 @@ concurrency:
   group: docs-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 jobs:
+  markdown-lint-changed:
+    name: Markdown lint (changed files)
+    # Only meaningful against a base to diff; the schedule and a manual run have none.
+    if: github.event_name == 'pull_request'
+    timeout-minutes: 5
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # scripts/ci/changed-markdown.mjs diffs against the merge base with the pull request's base branch, so it
+          # needs that history, not just the head commit.
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: ./.github/actions/setup-toolchain
+        with:
+          need-go: 'false'
+          need-python: 'false'
+          need-wails-tools: 'false'
+          need-stylua: 'false'
+          need-linux-native-deps: 'false'
+          pnpm-filter: narration-utils
+      - name: Lint the Markdown files this pull request adds or changes
+        env:
+          GITHUB_BASE_REF: ${{ github.base_ref }}
+        run: node scripts/ci/lint-markdown-changed.mjs --summary
   links-offline:
     name: Links (offline)
     # The scheduled run exists for the online job; the offline one has nothing to add to it.
