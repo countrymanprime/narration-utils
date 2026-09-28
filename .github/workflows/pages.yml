@@ -1,33 +1,42 @@
 name: Pages
-# PAUSED (owner decision D75, 2026-09-27): nothing is published until the main app's development is done and the site is
-# reworked. A push to main no longer runs this workflow; a pull request still runs the build job as the docs link check, and a
-# manual start builds, and deploys only when its `publish` input is ticked on main. To resume, restore the `push` trigger.
+# PAUSED (owner decision D75, 2026-09-27; narrowed further 2026-09-27, ADR 0415): nothing is published until the main
+# app's development is done and the site is reworked, and this workflow no longer runs on a pull request either (it
+# used to be the docs link check, but `Docs / Links (offline)` in .github/workflows/docs.yml already checks every
+# Markdown link and heading anchor on every pull request with lychee, and `Docs / Markdown lint (changed files)` in
+# the same workflow now catches Markdown style issues; neither needs the site built). Only `workflow_dispatch` starts
+# this workflow now: a manual run builds, and deploys only when its `publish` input is ticked on main.
 #
-# Publishes the public site to GitHub Pages after every push to main, and by hand: the docs (tools/docs-site, ADR 0083,
-# built from docs/ by MkDocs) at the root, the Storybook component atlas (apps/ui) under /storybook/, and a browser-runnable
-# demo of the app (apps/ui built with VITE_USE_MOCK_API=1, docs/prds/public-app-demo.prd.md) under /demo/. It is served at
+# Publishes the public site to GitHub Pages, by hand: the docs (tools/docs-site, ADR 0083, built from docs/ by MkDocs)
+# at the root, the Storybook component atlas (apps/ui) under /storybook/, and a browser-runnable demo of the app
+# (apps/ui built with VITE_USE_MOCK_API=1, docs/prds/public-app-demo.prd.md) under /demo/. It is served at
 # https://<owner>.github.io/narration-utils/ once the owner sets Settings > Pages > Source to "GitHub Actions" (an
 # owner-only setting, see docs/operations/github-workflow.md); until then the deploy job fails with GitHub's "Pages is not
 # enabled" message and the build job still proves the site builds.
 #
-# A pull request that changes the docs, the site project or the demo's inputs also runs the build job (path filter below),
-# and nothing else: ci.yml skips documentation-only pull requests, and those are exactly the ones that can break a link.
-# That run has a read-only token, no secret, uploads nothing and never reaches the deploy job, which also refuses any ref
-# but main (a manual start from a branch builds and stops). A fork's pull request gets a read-only token by GitHub's own
-# rule. The token is read-only everywhere except the deploy job, which alone holds `pages: write` (create the deployment)
-# and `id-token: write` (prove to Pages that the artifact came from this workflow run).
+# To resume after D75: restore both triggers below and drop the `narrowed further` clause above.
+#   on:
+#     push:
+#       branches: [main]
+#     pull_request:
+#       paths:
+#         - docs/**
+#         - tools/docs-site/**
+#         - apps/ui/.storybook/**
+#         - apps/ui/vite.config.ts
+#         - apps/ui/.env.demo
+#         - apps/ui/src/components/layout/**
+#         - pyproject.toml
+#         - uv.lock
+#         - .github/workflows/pages.yml
+#     workflow_dispatch:
+#       inputs:
+#         publish: { ... }
+#
+# A restored pull request run has a read-only token, no secret, uploads nothing and never reaches the deploy job, which
+# also refuses any ref but main (a manual start from a branch builds and stops). A fork's pull request gets a read-only
+# token by GitHub's own rule. The token is read-only everywhere except the deploy job, which alone holds `pages: write`
+# (create the deployment) and `id-token: write` (prove to Pages that the artifact came from this workflow run).
 on:
-  pull_request:
-    paths:
-      - docs/**
-      - tools/docs-site/**
-      - apps/ui/.storybook/**
-      - apps/ui/vite.config.ts
-      - apps/ui/.env.demo
-      - apps/ui/src/components/layout/**
-      - pyproject.toml
-      - uv.lock
-      - .github/workflows/pages.yml
   workflow_dispatch:
     inputs:
       publish:
@@ -35,8 +44,9 @@ on:
         type: boolean
         default: false
 permissions: {}
-# One deployment at a time, and a running one finishes: cancelling a deploy half way leaves the site stale. A pull
-# request run has its own group and is replaced by the next push to that pull request.
+# One deployment at a time, and a running one finishes: cancelling a deploy half way leaves the site stale. Only
+# workflow_dispatch starts this workflow now, so there is one group; the `pull_request` branch of this expression is
+# dead until the trigger above is restored, and restoring it needs no change here.
 concurrency:
   group: pages-${{ github.event_name == 'pull_request' && github.ref || 'deploy' }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
@@ -64,12 +74,14 @@ jobs:
       # mock API and fixture data the Playwright visual suite and Storybook already build against.
       - name: Build the demo
         run: pnpm --dir apps/ui run build:demo
-      # The same target `pnpm check` runs: a strict MkDocs build of docs/ (a dead link or heading link fails it) and the
-      # link check over the built HTML. Links to pages the include list leaves out point at this commit on GitHub.
+      # A strict MkDocs build of docs/ (a dead link or heading link fails it) and the link check over the built HTML.
+      # Links to pages the include list leaves out point at this commit on GitHub. This is the `docs-site:build-site`
+      # target, kept out of `pnpm check` and the `_quality.yml` gate while Pages is paused (ADR 0415) — this workflow
+      # is the one place it still runs, since it needs the built site to add Storybook and the demo beside it below.
       - name: Build the docs site
         env:
           DOCS_SITE_REF: ${{ github.sha }}
-        run: pnpm exec nx run docs-site:build --skip-nx-cache
+        run: pnpm exec nx run docs-site:build-site --skip-nx-cache
       - name: Add Storybook and the demo beside the docs and check every link, including the ones to them
         run: |
           set -euo pipefail
