@@ -18,10 +18,10 @@ export function SearchBar({
   return (
     <div>
       <SearchField
-        label="Search manuscript"
+        label="Search Script"
         value={query}
         onChange={onQueryChange}
-        placeholder="Search manuscript…"
+        placeholder="Search Script…"
         autoFocus={autoFocus}
         onKeyDown={(event: KeyboardEvent<HTMLInputElement>) => {
           if (event.key === 'Enter') onEnter?.();

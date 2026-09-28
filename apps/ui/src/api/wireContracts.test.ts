@@ -114,6 +114,7 @@ import { renderConfigStartResultSchema, renderConfigStateSchema, renderConfigSug
 import { cleanupToolsStartResultSchema, cleanupToolsStateSchema } from './schemas/cleanuptools';
 import { dawCapabilitiesSchema, dawTransportSchema } from './schemas/daw';
 import { providerCapabilitiesSchema } from './schemas/providers';
+import { masteringProvidersSchema } from './schemas/mastering';
 import { projectStateChangedSchema, projectStateStartResultSchema, projectStateStateSchema } from './schemas/projectstate';
 import { retakeLanesListSchema, retakeLanesStartResultSchema, retakeLanesStateSchema } from './schemas/retakelanes';
 import { chapterTagsEmbedResultSchema, chapterTagsPreviewSchema } from './schemas/chaptertags';
@@ -1359,6 +1360,25 @@ describe('answers of the mock client for the settings, voice, model, transcript 
     expect(state.pronunciation.cmu?.asset).toBeUndefined();
   });
 
+  it('masteringProviders and masteringChooseProvider match the host goldens (mastering port, ADR 0306)', async () => {
+    const none = await createMockApi({}, { mastering: { hasProject: false } }).masteringProviders();
+    expectMatches(masteringProvidersSchema, none, 'mock mastering chains (no project)');
+    expect(none).toEqual(readGolden('mastering-providers-no-project.json'));
+
+    const api = createMockApi();
+    const chosen = await api.masteringChooseProvider('builtin');
+    expectMatches(masteringProvidersSchema, chosen, 'mock mastering chains (builtin chosen)');
+    expect(chosen).toEqual(readGolden('mastering-providers-builtin-chosen.json'));
+    // The DAW row is declared, not built: choosing it is refused with its sentence, and the saved choice stays.
+    await expect(api.masteringChooseProvider('daw')).rejects.toThrow("Your DAW's FX chain is not available yet.");
+    expect((await api.masteringProviders()).choice).toBe('builtin');
+    expect((await api.masteringChooseProvider('')).choice).toBeNull();
+
+    const stale = await createMockApi({}, { mastering: { choice: 'daw' } }).masteringProviders();
+    expectMatches(masteringProvidersSchema, stale, 'mock mastering chains (a stored choice not available yet)');
+    expect(stale).toEqual(readGolden('mastering-providers-daw-not-yet.json'));
+  });
+
   it('subscribeDawTransport pushes the seeded transport once, and matches the host goldens (DAW port PRD Phase 9)', () => {
     const seen = (seed: Parameters<typeof createMockApi>[1]): unknown[] => {
       const events: unknown[] = [];
@@ -2025,6 +2045,8 @@ describe('answers of the mock client for the settings, voice, model, transcript 
       'launchDaw',
       'dawCapabilities',
       'providerCapabilities',
+      'masteringProviders',
+      'masteringChooseProvider',
       'dawCatalogList',
       'tracksDiscover',
       'tracksSelect',

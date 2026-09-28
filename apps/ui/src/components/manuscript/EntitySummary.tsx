@@ -165,8 +165,8 @@ export function EntitySummary({ entity, jumpToLine }: { entity: GuideEntity; jum
                 </p>
               </div>
               {jumpToLine && (
-                <TooltipTarget text="Go to this line in Manuscript">
-                  <IconButton label="Go to line in Manuscript" onClick={() => jumpToLine(item.chapter, item.paragraph)} className="flex-none">
+                <TooltipTarget text="Go to this line in Script">
+                  <IconButton label="Go to line in Script" onClick={() => jumpToLine(item.chapter, item.paragraph)} className="flex-none">
                     <FontAwesomeIcon icon={faFileLines} />
                   </IconButton>
                 </TooltipTarget>

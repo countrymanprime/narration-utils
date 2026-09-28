@@ -118,8 +118,9 @@ export const scriptStates: StateEntry[] = [
     description:
       'Script, Chapter 3, a dialogue line spoken by a character with no Story Bible entry (the Mouse) - the recorded demo cue has no resolved speaker, so no chip and no placeholder name (Success Metrics: "unknown renders as unattributed, never a fabricated name")',
   },
-  // Mock 02's rail (stage-navigation-and-page-replacement.prd.md Phase 3, ADR 0392): a column from `2xl` (the wide width), a panel
-  // opened from the band's Prep rail button below it. The driver picks by what the width shows, so each width loads afresh.
+  // Mock 02's rail (stage-navigation-and-page-replacement.prd.md Phase 3, ADR 0393, superseding ADR 0392): a column from
+  // 1440 px (the desktop width and up), a panel opened from the band's Prep rail button below it. The driver picks by what
+  // the width shows, so each width loads afresh.
   {
     page: 'script',
     state: 'prep-rail-characters',
