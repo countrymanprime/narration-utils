@@ -38,7 +38,13 @@ export function Panel({ title, titleStyle, subtitle, leading, actions, label, fl
       style={tone === 'review' ? { borderColor: 'var(--review)' } : undefined}
     >
       {title && <PanelHeader title={title} titleId={titleId} titleStyle={titleStyle} subtitle={subtitle} leading={leading} actions={actions} />}
-      <div className={`${flush ? '[--panel-pad:0px]' : PANEL_BODY_CLASS} ${scroll ? 'min-h-0 flex-1 overflow-y-auto' : ''}`}>{children}</div>
+      <div
+        className={`${flush ? '[--panel-pad:0px]' : PANEL_BODY_CLASS} ${scroll ? 'min-h-0 flex-1 overflow-y-auto' : ''}`}
+        // A scrolling body is a tab stop, so the keyboard can scroll it when nothing inside it takes focus.
+        {...(scroll ? { tabIndex: 0, role: 'group', 'aria-labelledby': title ? titleId : undefined, 'aria-label': title ? undefined : label } : {})}
+      >
+        {children}
+      </div>
     </section>
   );
 }
