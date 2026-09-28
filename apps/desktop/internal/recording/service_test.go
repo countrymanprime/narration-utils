@@ -10,6 +10,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/countrymanprime/narration-utils/shell/internal/captureport"
 	"github.com/countrymanprime/narration-utils/shell/internal/recording"
 	"github.com/countrymanprime/narration-utils/shell/internal/recording/recordingtest"
 )
@@ -327,5 +328,97 @@ func TestDevicesComeFromTheEngine(t *testing.T) {
 	empty, _, _ := newRecorder(t, &recordingtest.Fake{}).service.Devices(context.Background())
 	if empty == nil {
 		t.Fatal("no devices must be an empty list, not nil")
+	}
+}
+
+// blockingEngine holds every Meter/Record call open on a gate until the test releases it, so a second call made while
+// the first is still inside the engine can be observed: it must be refused before it ever reaches the engine, never
+// let to race it (the bug a security review found: two concurrent Start calls could both reach the engine, and which
+// one adopt() then kept as the active run had no relation to which one actually won the file underneath).
+type blockingEngine struct {
+	gate  chan struct{}
+	mu    sync.Mutex
+	calls int
+}
+
+func (e *blockingEngine) Backend() captureport.Backend { return recordingtest.Backend{} }
+
+func (e *blockingEngine) Devices(context.Context) ([]recording.Device, string, error) {
+	return nil, "", nil
+}
+
+func (e *blockingEngine) Meter(string, recording.Events) (recording.Run, error) { return e.start() }
+
+func (e *blockingEngine) Record(string, string, recording.Events) (recording.Run, error) {
+	return e.start()
+}
+
+func (e *blockingEngine) start() (recording.Run, error) {
+	e.mu.Lock()
+	e.calls++
+	e.mu.Unlock()
+	<-e.gate
+	return &blockingRun{done: make(chan struct{})}, nil
+}
+
+func (e *blockingEngine) callCount() int {
+	e.mu.Lock()
+	defer e.mu.Unlock()
+	return e.calls
+}
+
+type blockingRun struct {
+	once sync.Once
+	done chan struct{}
+}
+
+func (r *blockingRun) Stop()                 { go r.end() }
+func (r *blockingRun) Kill()                 { go r.end() }
+func (r *blockingRun) Done() <-chan struct{} { return r.done }
+func (r *blockingRun) Failure() string       { <-r.done; return "" }
+func (r *blockingRun) end()                  { r.once.Do(func() { close(r.done) }) }
+
+func TestASecondConcurrentStartIsRefusedNotRacedAgainstTheFirst(t *testing.T) {
+	project := t.TempDir()
+	engine := &blockingEngine{gate: make(chan struct{})}
+	service := recording.New(recording.Config{Project: project, Grace: time.Second}, engine, nil, nil)
+
+	first := make(chan error, 1)
+	go func() { first <- service.Start("Mic") }()
+
+	deadline := time.Now().Add(2 * time.Second)
+	for engine.callCount() < 1 {
+		if time.Now().After(deadline) {
+			t.Fatal("the first Start never reached the engine")
+		}
+		time.Sleep(time.Millisecond)
+	}
+
+	// The first call is now inside the engine, blocked on the gate, still holding the reservation.
+	if err := service.Start("Mic"); err == nil {
+		t.Fatal("a second Start succeeded while the first was still starting")
+	}
+	if err := service.Meter("Mic"); err == nil {
+		t.Fatal("a Meter succeeded while a Start was still starting")
+	}
+	if calls := engine.callCount(); calls != 1 {
+		t.Fatalf("a second call reached the engine while the first was still starting (calls = %d)", calls)
+	}
+
+	close(engine.gate)
+	if err := <-first; err != nil {
+		t.Fatalf("the first Start failed: %v", err)
+	}
+
+	deadline = time.Now().Add(2 * time.Second)
+	for {
+		state := service.Snapshot()
+		if state.Phase == recording.PhaseRecording && state.Take != nil && *state.Take == "Take 001" {
+			break
+		}
+		if time.Now().After(deadline) {
+			t.Fatalf("state never settled on Take 001 recording: %+v", state)
+		}
+		time.Sleep(time.Millisecond)
 	}
 }

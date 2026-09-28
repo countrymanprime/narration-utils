@@ -1,4 +1,4 @@
-// Package proofing is docs/prds/proofing-readiness-signals.prd.md: the
+// Package proofing is proofing-readiness-signals.prd.md (delivered and deleted; see ADR 0525): the
 // proofing stage's signals for the chapter stage recommendations engine
 // (apps/desktop/internal/stages). It computes, on read and from stored
 // evidence only, whether a chapter in the proofing stage has pickups left to

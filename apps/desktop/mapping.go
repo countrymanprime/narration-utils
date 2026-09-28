@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 
+	"github.com/countrymanprime/narration-utils/shell/internal/coverage"
 	"github.com/countrymanprime/narration-utils/shell/internal/evidence"
 )
 
@@ -91,6 +92,13 @@ func (h *Host) mappingClear(trackGUID string) (map[string]any, error) {
 // chapterTitle looks up chapterID's title among the current manuscript's
 // chapters, reporting false when chapterID is not one of them.
 func chapterTitle(svc hostServices, chapterID string) (string, bool, error) {
+	// A credits id is never a manuscript chapter (ADR 0150), so it never turns up in svc.manuscript.Chapters(); a
+	// credits row's link goes through the same ChapterTrackSet/ChapterTrackMapConfirm/Unlink bindings a manuscript
+	// chapter's does (ADR 0333: one chapter-track-map.json), and each calls this to validate the id and stamp the
+	// stored link with a real title, so it needs the credits titles too, not just the manuscript's own.
+	if kind, ok := coverage.CreditsKind(chapterID); ok {
+		return creditsScriptTitles[kind], true, nil
+	}
 	chapters, err := svc.manuscript.Chapters()
 	if err != nil {
 		return "", false, err

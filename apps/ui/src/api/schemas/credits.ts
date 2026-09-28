@@ -2,6 +2,8 @@ import { z } from 'zod';
 import type {
   CreditsAnnouncement,
   CreditsProjectValuesResult,
+  CreditsRecordedLength,
+  CreditsRecordedLengths,
   CreditsRenderResult,
   CreditsSetupField,
   CreditsSetupState,
@@ -85,6 +87,18 @@ export const retailSampleAnswerSchema = z.object({
 const creditsStatusSchema = z.enum(['not_started', 'recording', 'editing', 'proofing', 'finalized']);
 
 export const creditsStatusesSchema = z.record(z.string(), creditsStatusSchema) satisfies z.ZodType<CreditsStatuses>;
+
+// Mirrors apps/ui/src/api/schemas/manuscript.ts's recordedSeconds/recordedUnavailable pair (actual-recorded-column
+// PRD): exactly one of the two is present, never both.
+const creditsRecordedLengthSchema = z.union([
+  z.object({ recordedSeconds: z.number().nonnegative() }),
+  z.object({ recordedUnavailable: z.enum(['unlinked', 'multiple_tracks', 'track_missing', 'no_project']) }),
+]) satisfies z.ZodType<CreditsRecordedLength>;
+
+export const creditsRecordedLengthsSchema = z.object({
+  opening: creditsRecordedLengthSchema,
+  closing: creditsRecordedLengthSchema,
+}) satisfies z.ZodType<CreditsRecordedLengths>;
 
 const setupFieldSchema = z.object({
   token: z.string(),

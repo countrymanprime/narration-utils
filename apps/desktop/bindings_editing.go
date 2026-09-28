@@ -107,3 +107,52 @@ func (h *Host) EditingCandidates(chapterID string) (string, error) {
 	}
 	return encodeBinding(found, nil)
 }
+
+// The Q6 per-chapter source-choice bindings (docs/prds/editing-readiness-analysis.prd.md
+// Phase 8): which analysis source counts for a chapter's editing check, items
+// on its track (the default) or its rendered file. Choosing render never
+// silently replaces the item check - it is an explicit, per-chapter pick the
+// narrator makes and can change back.
+
+// EditingSourceChoice reads chapterID's current source choice ("items", the
+// default, or "render"). A missing project or store answers "items" rather
+// than refusing, matching editing.ChoiceStore.Get's own "no choice made yet
+// is never an error" rule.
+func (h *Host) EditingSourceChoice(chapterID string) (string, error) {
+	svc := h.services()
+	if svc.editing == nil {
+		return encodeBinding(string(editingpkg.SourceItems), nil)
+	}
+	choice, err := svc.editing.SourceChoice(editingDocumentID(svc), chapterID)
+	if err != nil {
+		return "", err
+	}
+	return encodeBinding(string(choice), nil)
+}
+
+// EditingSetSourceChoice sets chapterID's source choice (Q6: the narrator
+// chooses per chapter) and answers the choice as stored, the same bare
+// string shape EditingSourceChoice reads back. choice must be "items" or
+// "render"; anything else is a rejected promise, the same as any other
+// binding validation failure in this file.
+func (h *Host) EditingSetSourceChoice(chapterID, choice string) (string, error) {
+	svc := h.services()
+	if svc.editing == nil {
+		return "", errEditingNoProject
+	}
+	if err := svc.editing.SetSourceChoice(editingDocumentID(svc), chapterID, editingpkg.SourceChoice(choice)); err != nil {
+		return "", err
+	}
+	return encodeBinding(choice, nil)
+}
+
+// editingDocumentID is the manuscript's own document id, the same lookup
+// bindings_proofing_render.go's proofingRenderChapter makes for the render-
+// association bindings; a chapter's source choice is scoped by documentId
+// and chapter id exactly like a render association is.
+func editingDocumentID(svc hostServices) string {
+	if svc.manuscript == nil {
+		return ""
+	}
+	return manuscriptDocumentID(svc.manuscript)
+}

@@ -67,6 +67,10 @@ announced once, for a screen reader, after the level settles — not on every wh
 Zoom is one setting for the whole app, not a page or a project. It is not [Script](script.md)'s own Text size,
 which stays independent and multiplies with app zoom.
 
+The level is remembered across launches: quit at 125% and the app opens at 125% next time, with no flash at
+100% first. It is a machine-wide setting like the [Booth](settings.md)'s microphone, not a project one, so it
+follows you between projects rather than resetting when you switch.
+
 ## The audio engine panel
 
 Click the chip at the right of the header to open the audio engine panel over whatever page you are on.
@@ -198,6 +202,14 @@ found. **Check editing** (**Check again** once one has run) runs the scan with r
 **Cancel**; items already checked are cached, so re-checking after a small edit is fast. Every
 result carries the caveat "Analysis of source audio; take FX, item gain and fades are not
 applied", since REAPER's own processing isn't part of what's analyzed.
+
+A chapter's analysis source is your choice: **Items on this chapter's track** (the default) or
+**The rendered file**, a toggle near the top of the panel. Editing happens on items, so items stay
+the default; choosing the render is an explicit second check — its own evidence line always says
+which source was analyzed, and the render check needs a rendered file already chosen for the
+chapter (see [Proof](proof.md#delivery-checks) for choosing one). If the render changes, or
+becomes older than a later edit to the chapter's items, the render's own check reads "Can't tell
+yet" until you check it again.
 
 Each of the three classes — Empty space, Click, Breath — has its own state: **Met** (checked, no
 open candidate remains), **Not met** (one or more open candidates), or **Can't tell yet** with why

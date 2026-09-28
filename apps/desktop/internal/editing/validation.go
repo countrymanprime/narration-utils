@@ -182,7 +182,7 @@ type ClassSignalInput struct {
 // otherwise.
 func ClassSignal(in ClassSignalInput) stages.Signal {
 	signal := stages.Signal{
-		ID: in.ID, Stage: stages.StageEditing, Evidence: []stages.Evidence{processedAudioCaveat()},
+		ID: in.ID, Stage: stages.StageEditing, Evidence: []stages.Evidence{processedAudioCaveat(), itemsSourceEvidence()},
 		Basis: in.Basis, ComputedAt: in.ComputedAt,
 	}
 	open := 0

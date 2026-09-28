@@ -21,6 +21,7 @@ import { dawLaunchResultSchema, dawLinkResultSchema, projectFolderSelectionSchem
 import {
   creditsAnnouncementsSchema,
   creditsProjectValuesResultSchema,
+  creditsRecordedLengthsSchema,
   creditsSetupStateSchema,
   creditsRenderResultSchema,
   creditsStatusesSchema,
@@ -65,8 +66,8 @@ import { deliveryReportExportSchema, measureJobSchema, measurePickResultSchema }
 import { deliveryProfileSchema, deliveryProfilesStateSchema } from './schemas/deliveryProfiles';
 import { diagnosticsJobSchema } from './schemas/diagnostics';
 import { coverageResultSchema, coverageStartResultSchema, coverageStateSchema } from './schemas/coverage';
-import { editingCandidatesSchema, editingStartResultSchema, editingStateSchema } from './schemas/editing';
-import { workspaceAlignmentResultSchema } from './schemas/workspace';
+import { editingCandidatesSchema, editingSourceChoiceSchema, editingStartResultSchema, editingStateSchema } from './schemas/editing';
+import { workspaceAlignmentResultSchema, workspacePeaksResultSchema } from './schemas/workspace';
 import { pinnedPreviewSchema, previewResultSchema } from './schemas/preview';
 import { stageDecisionResultSchema, stageRecommendationsSchema } from './schemas/stages';
 import { proofingChooseRenderResultSchema, proofingRenderSchema } from './schemas/proofingRender';
@@ -350,6 +351,7 @@ export const wailsClient: NarrationApi = {
   systemCopyDiagnostics: (scope) => decode(copyDiagnosticsResultSchema, 'SystemCopyDiagnostics', host.SystemCopyDiagnostics(scope)),
   windowZoom: () => decode(windowZoomSchema, 'WindowZoom', host.WindowZoom()),
   windowSetZoom: (factor) => decode(windowZoomSchema, 'WindowSetZoom', host.WindowSetZoom(factor)),
+  windowSaveZoom: (level) => decode(voidResult, 'WindowSaveZoom', host.WindowSaveZoom(level)),
   subscribeProjectAttach: (onUpdate) => subscribeChecked('system:attached', projectAttachStateSchema, onUpdate),
   subscribeLiveUpdateHealth: (onDegraded) => liveHealth.subscribe(onDegraded),
   subscribeNotices: (onNotice) => subscribeChecked('system:notice', noticeSchema, (event) => onNotice(event.text)),
@@ -407,6 +409,12 @@ export const wailsClient: NarrationApi = {
   editingState: () => decode(editingStateSchema, 'EditingState', host.EditingState()),
   editingCancel: () => decode(voidResult, 'EditingCancel', host.EditingCancel()),
   editingCandidates: (chapterId) => decode(editingCandidatesSchema, 'EditingCandidates', host.EditingCandidates(chapterId)),
+  // Phase 8 (Q6): EditingSourceChoice/EditingSetSourceChoice are not yet in wailsjs/.../host.ts - this sandbox has no
+  // wails3 CLI to regenerate it (bindings_editing.go's own doc comment; `pnpm --dir apps/desktop bindings` fails the
+  // same way here it did for Phase 5). host.EditingSourceChoice/EditingSetSourceChoice below type-check once that
+  // regeneration adds them, the same shape every other bare-string binding above already has.
+  editingSourceChoice: (chapterId) => decode(editingSourceChoiceSchema, 'EditingSourceChoice', host.EditingSourceChoice(chapterId)),
+  editingSetSourceChoice: (chapterId, choice) => decode(editingSourceChoiceSchema, 'EditingSetSourceChoice', host.EditingSetSourceChoice(chapterId, choice)),
   cleanupPreview: (chapterId) => decode(cleanupPreviewResultSchema, 'CleanupPreview', host.CleanupPreview(chapterId)),
   cleanupApply: (chapterId) => decode(cleanupApplyResultSchema, 'CleanupApply', host.CleanupApply(chapterId)),
   levelMatchPreview: (chapterId, metric, targetValueDb, toleranceDb) =>
@@ -416,6 +424,7 @@ export const wailsClient: NarrationApi = {
   workspaceAlignment: (chapterId) => decode(workspaceAlignmentResultSchema, 'WorkspaceAlignment', host.WorkspaceAlignment(chapterId)),
   workspaceGoTo: (chapterId, tokenIndex) => decode(findingNavigationSchema, 'WorkspaceGoTo', host.WorkspaceGoTo(chapterId, tokenIndex)),
   workspaceLoop: (chapterId, firstToken, lastToken) => decode(findingNavigationSchema, 'WorkspaceLoop', host.WorkspaceLoop(chapterId, firstToken, lastToken)),
+  workspacePeaks: (chapterId) => decode(workspacePeaksResultSchema, 'WorkspacePeaks', host.WorkspacePeaks(chapterId)),
   previewCandidates: () => decode(previewResultSchema, 'PreviewCandidates', host.PreviewCandidates()),
   previewPin: () => decode(pinnedPreviewSchema, 'PreviewPin', host.PreviewPin()),
   previewPinSet: (chapterId, paragraphIds) => decode(pinnedPreviewSchema, 'PreviewPinSet', host.PreviewPinSet(chapterId, paragraphIds)),
@@ -498,6 +507,7 @@ export const wailsClient: NarrationApi = {
   saveCreditsRetailSample: (start, end) => decode(retailSampleAnswerSchema, 'CreditsSaveRetailSample', host.CreditsSaveRetailSample(start, end)),
   creditsStatuses: () => decode(creditsStatusesSchema, 'CreditsStatuses', host.CreditsStatuses()),
   setCreditsStatus: (kind, status) => decode(creditsStatusesSchema, 'CreditsSetStatus', host.CreditsSetStatus(kind, status)),
+  creditsRecordedLengths: () => decode(creditsRecordedLengthsSchema, 'CreditsRecordedLengths', host.CreditsRecordedLengths()),
   dawCatalogList: () => decode(dawCatalogListSchema, 'DawCatalogList', host.DawCatalogList()),
   dawCatalogOpenDownloadPage: (id) => decode(voidResult, 'DawCatalogOpenDownloadPage', host.DawCatalogOpenDownloadPage(id)),
   pronunciationLookupOpen: (source, word) => decode(voidResult, 'PronunciationLookupOpen', host.PronunciationLookupOpen(source, word)),

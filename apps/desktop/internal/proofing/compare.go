@@ -1,4 +1,4 @@
-// This file is Phase 2 of docs/prds/proofing-readiness-signals.prd.md: a
+// This file is Phase 2 of proofing-readiness-signals.prd.md (delivered and deleted; see ADR 0525): a
 // Transcript Compare run's chapter identity and currency (Q4, Q5). When a
 // comparison finishes, ComparisonRecorder writes one analysis evidence ledger
 // record from the run's own manifest_<run>.txt (source file, start offset and

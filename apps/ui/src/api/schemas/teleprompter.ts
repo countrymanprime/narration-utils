@@ -287,7 +287,7 @@ export const teleprompterPunchResultSchema = z
     outcome: z.enum(['resolved', 'punched', 'refused']),
     cursor: z.number().optional(),
     resolvedTime: z.number().optional(),
-    source: z.enum(['anchor', 'alignment']).optional(),
+    source: z.enum(['anchor', 'alignment', 'estimate']).optional(),
     preRoll: z.number().optional(),
     message: z.string().optional(),
   })

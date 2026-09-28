@@ -1,4 +1,4 @@
-// This file is Phase 3 of docs/prds/proofing-readiness-signals.prd.md: a
+// This file is Phase 3 of proofing-readiness-signals.prd.md (delivered and deleted; see ADR 0525): a
 // static read of the saved project's proofer PICKUP: markers (the
 // reaper-automation-follow-through PRD's Phase 8 convention, `PICKUP: <body>`
 // open and `PICKUP_DONE: <body>` resolved), attributed to a chapter by its

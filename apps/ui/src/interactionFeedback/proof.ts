@@ -43,6 +43,7 @@ export const proofFeedback: Record<string, FeedbackRow> = {
   'src/components/proof/ProofChapterPage.tsx::chapterTrackMapList#1': row('effect', 'file-io', 'na', 'na', 'ui', 'inline', 'na', 'ok', 'Finds the chapter\'s linked track, same as ChapterLinksTable\'s own read of the same binding.'),
   'src/components/proof/ProofChapterPage.tsx::tracksList#1': row('effect', 'file-io', 'na', 'na', 'ui', 'inline', 'na', 'ok', 'The linked track\'s items, to build the playlist honouring their played ranges.'),
   'src/components/proof/ProofChapterPage.tsx::workspaceAlignment#1': row('mount', 'file-io', 'na', 'na', 'ui', 'inline', 'na', 'ok', 'Reads the chapter\'s stored word alignment on open and again after a check completes (never runs one, Q14); a failure is the page\'s own inline error.'),
+  'src/components/proof/ProofChapterPage.tsx::workspacePeaks#1': row('mount', 'file-io', 'na', 'na', 'ui', 'silent', 'na', 'exempt', 'The waveform strip\'s peaks (edit-and-proof-workspace.prd.md Phase 5, ADR 0520), loaded alongside the alignment; not a narrator action to retry, and a failure just leaves the strip showing nothing this load, while the text, transport and flags (which do not depend on it) still work (interactionFeedback.catalog.ts SILENT_CATCHES).'),
   'src/components/proof/ProofChapterPage.tsx::subscribeCoverage#1': subscription('The recording check state, same subscription and job dialog (RecordingCheck) Home\'s own row uses.'),
 
   // Findings in the text (edit-and-proof-workspace.prd.md Phase 4): the chapter's findings overlay onto the check's

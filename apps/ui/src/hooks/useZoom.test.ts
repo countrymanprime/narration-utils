@@ -15,6 +15,7 @@ function fakeApi(initialLevel = 1.0) {
       level = factor;
       return { level };
     }),
+    windowSaveZoom: vi.fn(async () => undefined),
   };
 }
 
@@ -158,7 +159,7 @@ describe('useZoom', () => {
   });
 
   it('a failed initial read is silent: the readout stays at its 100% default (SILENT_CATCHES #1)', async () => {
-    const api = { windowZoom: vi.fn().mockRejectedValue(new Error('offline')), windowSetZoom: vi.fn() };
+    const api = { windowZoom: vi.fn().mockRejectedValue(new Error('offline')), windowSetZoom: vi.fn(), windowSaveZoom: vi.fn() };
     const { result } = renderHook(() => useZoom(api));
     await waitFor(() => expect(api.windowZoom).toHaveBeenCalledOnce());
     expect(result.current.level).toBe(1.0);
@@ -188,5 +189,72 @@ describe('useZoom', () => {
     });
 
     expect(result.current.level).toBe(1.25);
+  });
+
+  it('does not save the mount read back to disk (SAVE #1)', async () => {
+    vi.useFakeTimers();
+    const api = fakeApi(1.25);
+    renderHook(() => useZoom(api));
+    await act(async () => {
+      await vi.runOnlyPendingTimersAsync();
+    });
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(500);
+    });
+    expect(api.windowSaveZoom).not.toHaveBeenCalled();
+  });
+
+  it('saves the settled level, debounced, after a click (SAVE #2)', async () => {
+    vi.useFakeTimers();
+    const api = fakeApi(1.0);
+    const { result } = renderHook(() => useZoom(api));
+    await act(async () => {
+      await vi.runOnlyPendingTimersAsync();
+    });
+
+    await act(async () => result.current.zoomIn());
+    expect(api.windowSaveZoom).not.toHaveBeenCalled();
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(500);
+    });
+    expect(api.windowSaveZoom).toHaveBeenCalledExactlyOnceWith(1.1);
+  });
+
+  it('a run of wheel notches saves only the level the narrator settles on (SAVE #3)', async () => {
+    vi.useFakeTimers();
+    const api = fakeApi(1.0);
+    const { result } = renderHook(() => useZoom(api));
+    await act(async () => {
+      await vi.runOnlyPendingTimersAsync();
+    });
+
+    await act(async () => result.current.zoomIn());
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(200);
+    });
+    await act(async () => result.current.zoomIn());
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(500);
+    });
+
+    expect(api.windowSaveZoom).toHaveBeenCalledExactlyOnceWith(1.25);
+  });
+
+  it('a failed save is silent: the level stays at what it was set to (SILENT_CATCHES #4)', async () => {
+    vi.useFakeTimers();
+    const api = fakeApi(1.0);
+    api.windowSaveZoom.mockRejectedValueOnce(new Error('offline'));
+    const { result } = renderHook(() => useZoom(api));
+    await act(async () => {
+      await vi.runOnlyPendingTimersAsync();
+    });
+
+    await act(async () => result.current.zoomIn());
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(500);
+    });
+
+    expect(result.current.level).toBe(1.1);
   });
 });
