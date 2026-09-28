@@ -19,10 +19,10 @@ Script, Story Bible, and Booth stay locked until a manuscript has been
 [imported on Production](production.md#importing-the-manuscript). Hovering a locked entry says what is missing. Production, Proof, Pickups, and Delivery
 are always available.
 
-The header runs, left to right: Back and Forward (below), the project's name, and at the right the timer and
-engine chips. While a [production stage timer](production.md#the-stage-timer) runs, the timer chip counts its
-time and names the chapter ("0:42:07 · timer on Chapter 6") on every page; below the tablet width it keeps the
-clock only. With no timer running it is not there.
+The header runs, left to right: Back and Forward (below), the project's name, and at the right the timer, the
+[zoom controls](#zoom) and the engine chip. While a [production stage timer](production.md#the-stage-timer) runs,
+the timer chip counts its time and names the chapter ("0:42:07 · timer on Chapter 6") on every page; below the
+tablet width it keeps the clock only. With no timer running it is not there.
 
 The engine chip at the right of the header shows the linked audio engine, and clicking it opens the
 [audio engine panel](#the-audio-engine-panel), where the project's `.rpp` file is linked or changed:
@@ -47,6 +47,25 @@ Back and Forward respect the same checks the nav does: leaving unsaved changes i
 first, and leaving a chapter's [Proof view](proof.md#the-chapter-view) while a comparison is under way or
 showing results resets it the same way. They only move between pages — closing a slide-over, the previous
 chapter, or the previous Story Bible entry are not Back steps.
+
+## Zoom
+
+Three controls at the right of the header, before the audio engine chip, make the whole app bigger or smaller:
+`[−] [100%] [+]`. The middle button is a readout of the current level and also resets it: click it, or press
+`Ctrl+0` (`Cmd+0` on macOS), to return to 100% from any level; it is itself disabled at 100%, since there is
+nothing to reset. **Zoom out** (`Ctrl+-`, disabled at 100%) and **Zoom in** (`Ctrl+=`, disabled at 200%) step
+through 100%, 110%, 125%, 150%, 175% and 200%. The numpad's `+`, `-` and `0` keys do the same as their main-row
+equivalents.
+
+This is the app's real zoom — the same one a Ctrl+scroll or a touchpad pinch already does — not a text-size
+setting, so it reflows the whole layout through the sidebar, icon rail and drawer breakpoints exactly as a
+narrower window would. Ctrl+scroll and pinch keep working at any level, including below 100%; the readout
+follows them and stays the reset button. A level pushed above 200% by Ctrl+scroll or pinch is brought back to
+200% automatically, since layouts below the app's minimum window width get cramped past that point. A change is
+announced once, for a screen reader, after the level settles — not on every wheel notch.
+
+Zoom is one setting for the whole app, not a page or a project. It is not [Script](script.md)'s own Text size,
+which stays independent and multiplies with app zoom.
 
 ## The audio engine panel
 
