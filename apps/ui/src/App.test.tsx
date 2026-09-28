@@ -345,7 +345,12 @@ describe('App (integration, driven through the mock NarrationApi)', () => {
   });
 
   it('says so when refreshing the project after an attach fails, instead of an unhandled rejection', async () => {
-    let attach: (state: { attached: boolean }) => void = () => {};
+    // App.tsx only wires this listener up from a useEffect, a passive effect React flushes on its own
+    // schedule after the commit that renders "Welcome back" - not necessarily before it. Under load the
+    // effect can still be pending once the heading is on screen, so wait for the real listener rather than
+    // assuming the render implies the subscription (that race dropped the attach below and the message never
+    // rendered, timing the test out instead of the fix ever being exercised).
+    let attach: ((state: { attached: boolean }) => void) | undefined;
     const source = createMockApi();
     let calls = 0;
     renderApp({
@@ -359,7 +364,8 @@ describe('App (integration, driven through the mock NarrationApi)', () => {
       },
     });
     await screen.findByRole('heading', { name: 'Welcome back' });
-    act(() => attach({ attached: true }));
+    await waitFor(() => expect(attach).toBeDefined());
+    act(() => attach!({ attached: true }));
     expect(await screen.findByText(/the host is busy/)).toBeTruthy();
     expect(within(screen.getByRole('alert')).getByText(/the host is busy/)).toBeTruthy();
   });
