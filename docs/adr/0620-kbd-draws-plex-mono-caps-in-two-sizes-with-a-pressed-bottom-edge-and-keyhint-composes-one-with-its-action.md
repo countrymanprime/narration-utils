@@ -1,12 +1,12 @@
 # 0620. Kbd draws Plex Mono caps in two sizes with a pressed bottom edge, and KeyHint composes one with its action
 
-**Status:** Proposed (Phase 10 of the [mock fidelity PRD](../prds/mock-fidelity-primitives-and-components.prd.md), stream F-P10 on [#509](https://github.com/countrymanprime/narration-utils/issues/509))
+**Status:** Proposed (Phase 10 of the mock fidelity PRD, stream F-P10 on [#509](https://github.com/countrymanprime/narration-utils/issues/509))
 **Date:** 2026-09-28
 **Supersedes:** nothing recorded. [ADR 0360](0360-studio-primitives-land-as-flat-leaf-files-after-one-token-batch-and-capability-gating-is-a-primitive.md)'s "`Kbd` only draws keys" stands unchanged.
 
 ## Context
 
-The [mock fidelity PRD](../prds/mock-fidelity-primitives-and-components.prd.md)'s Phase 10 table measures `Kbd` against the benchmark mocks (03, the booth; 07, the companion): a IBM Plex Mono cap, `--surface-2` fill, a 1 px `--border`, radius 3-4 px, about 6 px side padding, drawn at **23 px** in the booth and **18 px** in the companion, each with a **2 px bottom edge** rather than a flat 1 px border all round. Today's `Kbd` (`Kbd.tsx`) uses Tailwind's `font-mono` (the system `ui-monospace` stack, not Plex Mono), one fixed 17.2 px height and a flat 1 px border.
+The mock fidelity PRD's Phase 10 table measures `Kbd` against the benchmark mocks (03, the booth; 07, the companion): a IBM Plex Mono cap, `--surface-2` fill, a 1 px `--border`, radius 3-4 px, about 6 px side padding, drawn at **23 px** in the booth and **18 px** in the companion, each with a **2 px bottom edge** rather than a flat 1 px border all round. Today's `Kbd` (`Kbd.tsx`) uses Tailwind's `font-mono` (the system `ui-monospace` stack, not Plex Mono), one fixed 17.2 px height and a flat 1 px border.
 
 The mock's command bar (mock 03) also draws a cap next to its action's name ("R" next to "Record"), a pairing the app draws nowhere: every current `Kbd` call site is either a bare cap (a chord in the shortcut sheet, Settings) or a cap glued to a button's own label by the caller's own markup (`booth/ReadingControlBar.tsx`'s `<Kbd keys={['Space']} />{playPauseLabel}`).
 

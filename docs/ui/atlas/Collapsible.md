@@ -12,4 +12,4 @@ Storybook title: `Primitives/Collapsible`. Source: `src/components/primitives/Co
 
 ## Used by
 
-- `src/components/home/AudiobookEstimatePanel.tsx`
+- nothing outside its own stories and tests yet

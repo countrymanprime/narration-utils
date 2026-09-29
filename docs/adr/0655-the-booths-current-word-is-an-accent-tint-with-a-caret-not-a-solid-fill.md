@@ -1,6 +1,6 @@
 # 0655. The Booth's current word is an accent tint with a caret, not a solid fill
 
-**Status:** Proposed (Phase 13 of the [mock fidelity PRD](../prds/mock-fidelity-primitives-and-components.prd.md), stream F-P13 on [#509](https://github.com/countrymanprime/narration-utils/issues/509))
+**Status:** Proposed (Phase 13 of the mock fidelity PRD, stream F-P13 on [#509](https://github.com/countrymanprime/narration-utils/issues/509))
 **Date:** 2026-09-28
 **Amends:** `primitives/Highlight.tsx`'s `Cursor` kind (introduced undated, before this PRD)
 

@@ -10,6 +10,7 @@ Storybook title: `Primitives/StatTile`. Source: `src/components/primitives/StatT
 - No Hint
 - With Unit
 - With Progress
+- Progress is thin and ok-toned
 - Success
 - Warning
 - Danger
@@ -19,4 +20,6 @@ Storybook title: `Primitives/StatTile`. Source: `src/components/primitives/StatT
 
 ## Used by
 
-- `src/components/home/RecordingCheckReport.tsx`
+- `src/components/primitives/StatStrip.tsx`
+- `src/components/production/RecordingCheckReport.tsx`
+- `src/components/production/productionFormat.ts`

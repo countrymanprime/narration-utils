@@ -1,6 +1,6 @@
 # 0668. A flush Table inside a scrolling ancestor puts the bleed on the scroll wrapper, not the table
 
-**Status:** Proposed (Phase 14 of the [mock fidelity PRD](../prds/mock-fidelity-primitives-and-components.prd.md), stream F-P14 on [#509](https://github.com/countrymanprime/narration-utils/issues/509))
+**Status:** Proposed (Phase 14 of the mock fidelity PRD, stream F-P14 on [#509](https://github.com/countrymanprime/narration-utils/issues/509))
 **Date:** 2026-09-28
 **Supersedes:** none (`Table`'s `flush` prop, [ADR 0605](0605-table-and-stage-grid-share-the-mocks-row-and-header-sizes-and-cells-sit-in-the-middle-of-the-row.md), did not anticipate a scrolling ancestor)
 

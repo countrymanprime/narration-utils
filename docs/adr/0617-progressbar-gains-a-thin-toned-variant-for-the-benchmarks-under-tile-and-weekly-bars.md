@@ -1,6 +1,6 @@
 # 0617. ProgressBar gains a thin, toned variant for the benchmark's under-tile and weekly bars
 
-**Status:** Proposed (Phase 9 of the [mock fidelity PRD](../prds/mock-fidelity-primitives-and-components.prd.md), stream F-P9 on [#509](https://github.com/countrymanprime/narration-utils/issues/509))
+**Status:** Proposed (Phase 9 of the mock fidelity PRD, stream F-P9 on [#509](https://github.com/countrymanprime/narration-utils/issues/509))
 **Date:** 2026-09-28
 **Supersedes:** none
 

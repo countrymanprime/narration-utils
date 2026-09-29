@@ -11,11 +11,13 @@ Storybook title: `Primitives/Tabs`. Source: `src/components/primitives/Tabs.tsx`
 - Roles And Links
 - Arrows Move And Enter Selects
 - Automatic Activation Follows Focus
+- Measured Shapes
+- Sidebar Measured Fill
 - Sidebar Uses The Vertical Arrows
 
 ## Used by
 
-- `src/components/delivery/DeliveryPage.tsx`
+- `src/components/booth/ReaderRail.tsx`
+- `src/components/script/ScriptRail.tsx`
 - `src/components/settings/Settings.tsx`
 - `src/components/storybible/Guide.tsx`
-- `src/components/teleprompter/ReaderRail.tsx`

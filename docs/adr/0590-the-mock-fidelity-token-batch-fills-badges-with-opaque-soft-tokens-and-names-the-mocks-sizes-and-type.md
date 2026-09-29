@@ -1,12 +1,12 @@
 # 0590. The mock fidelity token batch fills badges with opaque soft tokens and names the mocks' sizes and type
 
-**Status:** Proposed (Phase 0b of the [mock fidelity PRD](../prds/mock-fidelity-primitives-and-components.prd.md), stream F-0b on [#509](https://github.com/countrymanprime/narration-utils/issues/509); its Q3 and Q6 recommendations were taken per D22 and are for the owner to confirm on [#510](https://github.com/countrymanprime/narration-utils/issues/510))
+**Status:** Proposed (Phase 0b of the mock fidelity PRD, stream F-0b on [#509](https://github.com/countrymanprime/narration-utils/issues/509); its Q3 and Q6 recommendations were taken per D22 and are for the owner to confirm on [#510](https://github.com/countrymanprime/narration-utils/issues/510))
 **Date:** 2026-09-28
 **Supersedes:** [ADR 0362](0362-studio-token-batch-aliases-meter-and-badge-colours-and-a-minimal-booth-override.md)'s badge-fill clause only (its meter aliases and the `experimental` tone stand)
 
 ## Context
 
-The owner found that the merged pages don't match the approved mocks (D91): the buttons, the tables and the Production pills. The [mock fidelity PRD](../prds/mock-fidelity-primitives-and-components.prd.md) fixes this one primitive at a time (phases 1 to 15). Every phase needs colours, radii, sizes and type that `apps/ui/src/styles.css` doesn't name. [ADR 0360](0360-studio-primitives-land-as-flat-leaf-files-after-one-token-batch-and-capability-gating-is-a-primitive.md) says such tokens land in one batch, alone, before the primitives use them. Phase 0b is that batch.
+The owner found that the merged pages don't match the approved mocks (D91): the buttons, the tables and the Production pills. The mock fidelity PRD fixes this one primitive at a time (phases 1 to 15). Every phase needs colours, radii, sizes and type that `apps/ui/src/styles.css` doesn't name. [ADR 0360](0360-studio-primitives-land-as-flat-leaf-files-after-one-token-batch-and-capability-gating-is-a-primitive.md) says such tokens land in one batch, alone, before the primitives use them. Phase 0b is that batch.
 
 The PRD's spec tables give the mock values. This batch checked each value again on the benchmark mocks (`docs/research/mockups/audiobook-studio-benchmark/`), sampling pixels with sharp. The mocks are lossy WebP, so a flat fill is good to about ±3 to ±8 per channel. Four findings changed a value or a formula:
 

@@ -1,6 +1,6 @@
 # 0625. The underline tab, the sidebar tab and the segmented `ToggleGroup` are measured, and the segmented look is one container
 
-**Status:** Proposed (Phase 5 of the [mock fidelity PRD](../prds/mock-fidelity-primitives-and-components.prd.md), stream F-P5 on [#509](https://github.com/countrymanprime/narration-utils/issues/509))
+**Status:** Proposed (Phase 5 of the mock fidelity PRD, stream F-P5 on [#509](https://github.com/countrymanprime/narration-utils/issues/509))
 **Date:** 2026-09-28
 **Supersedes:** [ADR 0440](0440-master-and-qcs-platform-tabs-are-the-projects-delivery-profile-and-the-page-draws-only-what-the-host-measures.md) point 2 (the Master platform switch draws with `ToggleGroup look="segmented"`, not the default chip look it called "no primitive changes")
 **Amends:** [ADR 0054](0054-tabs-and-toggle-groups-name-and-link-what-the-hand-built-strips-left-anonymous.md) (`Tabs` and `ToggleGroup` gain the measured spec and a `look`; the roles, links and keyboard behaviour it decided are unchanged)

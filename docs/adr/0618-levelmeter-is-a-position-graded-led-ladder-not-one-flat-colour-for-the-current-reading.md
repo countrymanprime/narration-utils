@@ -1,6 +1,6 @@
 # 0618. LevelMeter is a position-graded LED ladder, not one flat colour for the current reading
 
-**Status:** Proposed (Phase 9 of the [mock fidelity PRD](../prds/mock-fidelity-primitives-and-components.prd.md), stream F-P9 on [#509](https://github.com/countrymanprime/narration-utils/issues/509))
+**Status:** Proposed (Phase 9 of the mock fidelity PRD, stream F-P9 on [#509](https://github.com/countrymanprime/narration-utils/issues/509))
 **Date:** 2026-09-28
 **Supersedes:** none (extends [ADR 0360](0360-studio-primitives-land-as-flat-leaf-files-after-one-token-batch-and-capability-gating-is-a-primitive.md) Q2's peak/RMS ballistics, which are unchanged)
 

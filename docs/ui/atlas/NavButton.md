@@ -11,6 +11,8 @@ Storybook title: `Primitives/NavButton`. Source: `src/components/primitives/NavB
 - Disabled
 - Icon Only
 - Sidebar
+- With Count
+- Active With Count
 - Icon Rail
 - Click Invokes Handler
 - Active Marks Current Page

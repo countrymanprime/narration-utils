@@ -55,6 +55,7 @@
     "macOS and Linux support, removed for now by owner decision D74 (docs/adr/0412)",
     "Languages beyond US English",
     "Team collaboration or cloud services",
-    "Manuscript Teleprompter beyond what has shipped: a default engine chosen by evaluating both, following live REAPER state, and punch-in from a word; never edits text or audio automatically"
+    "Manuscript Teleprompter beyond what has shipped: a default engine chosen by evaluating both, following live REAPER state, and punch-in from a word; never edits text or audio automatically",
+    "The rest of the benchmark mocks' pixel gap (D91; only docs/research/mockups/audiobook-studio-benchmark/ is the spec): Production's missing features, the full-window Booth with F11, Proof's per-chapter waveform, a search tab in Script, and the \"Studio\" name in the nav; Schedule, Delivery, Character Continuity review and a redesigned Story Bible each need their own PRD and mocks first"
   ]
 }

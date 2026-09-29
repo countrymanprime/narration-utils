@@ -25,13 +25,15 @@ Storybook title: `Primitives/Highlight`. Source: `src/components/primitives/High
 - Click Activates
 - Keyboard Activates
 - Static Is Not A Button
+- Per Speaker Colour
 
 ## Used by
 
+- `src/components/booth/BoothView.tsx`
+- `src/components/booth/ReaderKey.tsx`
+- `src/components/booth/ReaderText.tsx`
 - `src/components/manuscript/ChapterNav.tsx`
 - `src/components/manuscript/EntitySummary.tsx`
 - `src/components/manuscript/ParagraphView.tsx`
 - `src/components/settings/CreditsPanel.tsx`
 - `src/components/storybible/GuideDetail.tsx`
-- `src/components/teleprompter/ReaderKey.tsx`
-- `src/components/teleprompter/ReaderText.tsx`

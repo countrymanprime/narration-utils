@@ -13,4 +13,4 @@ Storybook title: `Primitives/CompactShell`. Source: `src/components/primitives/C
 
 ## Used by
 
-- nothing outside its own stories and tests yet
+- `src/components/booth/CompanionShell.tsx`

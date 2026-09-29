@@ -10,11 +10,14 @@ Storybook title: `Primitives/TagInput`. Source: `src/components/primitives/TagIn
 - Empty
 - Only Suggestions
 - Enter Adds A Term
-- Add Button Adds A Term
+- Comma Adds A Term
+- Blur Commits The Draft
+- Backspace Removes The Last Tag
 - Blank Is Not Added
 - Removing Keeps The Cursor In The Page
 - Accepting A Suggestion
 
 ## Used by
 
-- `src/components/proofing/Transcript.tsx`
+- `src/components/proof/CompareRun.tsx`
+- `src/components/settings/ScopedSetting.tsx`

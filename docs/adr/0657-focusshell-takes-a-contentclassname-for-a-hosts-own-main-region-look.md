@@ -1,6 +1,6 @@
 # 0657. `FocusShell` takes a `contentClassName` for a host's own main-region look
 
-**Status:** Proposed (Phase 13 of the [mock fidelity PRD](../prds/mock-fidelity-primitives-and-components.prd.md), stream F-P13 on [#509](https://github.com/countrymanprime/narration-utils/issues/509))
+**Status:** Proposed (Phase 13 of the mock fidelity PRD, stream F-P13 on [#509](https://github.com/countrymanprime/narration-utils/issues/509))
 **Date:** 2026-09-28
 **Amends:** `primitives/FocusShell.tsx`'s slots-only API (studio-ui-primitives.prd.md Phase 9)
 

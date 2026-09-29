@@ -1,6 +1,6 @@
 # 0667. The mastering chain's steps are Badges, and the last one is `--accent-soft`
 
-**Status:** Proposed (Phase 14 of the [mock fidelity PRD](../prds/mock-fidelity-primitives-and-components.prd.md), stream F-P14 on [#509](https://github.com/countrymanprime/narration-utils/issues/509))
+**Status:** Proposed (Phase 14 of the mock fidelity PRD, stream F-P14 on [#509](https://github.com/countrymanprime/narration-utils/issues/509))
 **Date:** 2026-09-28
 **Supersedes:** none (`MasteringChain.tsx`'s chips had no ADR of their own)
 

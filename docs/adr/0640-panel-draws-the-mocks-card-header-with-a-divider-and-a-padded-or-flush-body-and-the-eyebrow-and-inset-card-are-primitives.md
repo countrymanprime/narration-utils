@@ -1,12 +1,12 @@
 # 0640. Panel draws the mocks' card header with a divider and a padded or flush body, and the eyebrow and the inset card are primitives
 
-**Status:** Proposed (Phase 4 of the [mock fidelity PRD](../prds/mock-fidelity-primitives-and-components.prd.md), stream F-P4 on [#509](https://github.com/countrymanprime/narration-utils/issues/509))
+**Status:** Proposed (Phase 4 of the mock fidelity PRD, stream F-P4 on [#509](https://github.com/countrymanprime/narration-utils/issues/509))
 **Date:** 2026-09-28
 **Supersedes:**
 
 ## Context
 
-The owner found that the merged pages don't match the approved mocks (D91 on #509). Cards are on every page, and the [mock fidelity PRD](../prds/mock-fidelity-primitives-and-components.prd.md)'s Phase 4 gives their spec: the card header, the page title, the eyebrow label and the inset card. [ADR 0590](0590-the-mock-fidelity-token-batch-fills-badges-with-opaque-soft-tokens-and-names-the-mocks-sizes-and-type.md) added the tokens it needs (`--radius-card`, `--font-size-page-title`, `--font-size-card-title`, `--font-size-label`, `--tracking-label`).
+The owner found that the merged pages don't match the approved mocks (D91 on #509). Cards are on every page, and the mock fidelity PRD's Phase 4 gives their spec: the card header, the page title, the eyebrow label and the inset card. [ADR 0590](0590-the-mock-fidelity-token-batch-fills-badges-with-opaque-soft-tokens-and-names-the-mocks-sizes-and-type.md) added the tokens it needs (`--radius-card`, `--font-size-page-title`, `--font-size-card-title`, `--font-size-label`, `--tracking-label`).
 
 This phase measured benchmark mock 05 again, reading each edge as a change in a column or row of pixels:
 

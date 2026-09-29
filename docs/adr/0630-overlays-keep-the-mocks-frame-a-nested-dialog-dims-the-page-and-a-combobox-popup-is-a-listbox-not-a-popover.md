@@ -1,6 +1,6 @@
 # 0630. Overlays keep the mocks' frame, a nested dialog dims the page, and a combobox popup is a Listbox, not a Popover
 
-**Status:** Proposed (Phase 7 of the [mock fidelity PRD](../prds/mock-fidelity-primitives-and-components.prd.md), stream F-P7 on [#509](https://github.com/countrymanprime/narration-utils/issues/509); its Q4 recommendation and the action-order recommendation were taken per D22 and are for the owner to confirm on [#510](https://github.com/countrymanprime/narration-utils/issues/510))
+**Status:** Proposed (Phase 7 of the mock fidelity PRD, stream F-P7 on [#509](https://github.com/countrymanprime/narration-utils/issues/509); its Q4 recommendation and the action-order recommendation were taken per D22 and are for the owner to confirm on [#510](https://github.com/countrymanprime/narration-utils/issues/510))
 **Date:** 2026-09-28
 **Supersedes:** nothing. [ADR 0001](0001-import-dialog-max-width-and-overflow.md) (70vw), [ADR 0002](0002-dialog-action-button-placement.md) (action placement), [ADR 0048](0048-every-dialog-is-one-modal-shell-and-confirms-are-alert-dialogs.md) (one modal shell) and [ADR 0051](0051-the-slide-over-and-the-navigation-drawer-are-modal-base-ui-drawers.md) (modal slide-overs) stand.
 

@@ -10,11 +10,16 @@ Storybook title: `Primitives/ToggleGroup`. Source: `src/components/primitives/To
 - Second Chosen
 - Choosing Moves The Press
 - Disabled Chip Is Not Chosen
+- Segmented
+- Segmented Measured Shapes
 
 ## Used by
 
-- `src/components/delivery/DiagnosticsTab.tsx`
-- `src/components/manuscript/Manuscript.tsx`
-- `src/components/proofing/Transcript.tsx`
+- `src/components/booth/BuiltinRecorder.tsx`
+- `src/components/booth/ReadingControlBar.tsx`
+- `src/components/editing/EditingCheckPanel.tsx`
+- `src/components/master/DiagnosticsSection.tsx`
+- `src/components/master/MasterQcPage.tsx`
+- `src/components/proof/CompareRun.tsx`
+- `src/components/script/ScriptPage.tsx`
 - `src/components/settings/Settings.tsx`
-- `src/components/teleprompter/ReadingControlBar.tsx`

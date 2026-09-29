@@ -1,6 +1,6 @@
 # 0659. The companion panel's sections are full-bleed, split by rules, not cards
 
-**Status:** Proposed (Phase 13 of the [mock fidelity PRD](../prds/mock-fidelity-primitives-and-components.prd.md), stream F-P13 on [#509](https://github.com/countrymanprime/narration-utils/issues/509))
+**Status:** Proposed (Phase 13 of the mock fidelity PRD, stream F-P13 on [#509](https://github.com/countrymanprime/narration-utils/issues/509))
 **Date:** 2026-09-28
 
 ## Context

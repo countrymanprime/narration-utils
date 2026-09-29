@@ -11,8 +11,13 @@ Storybook title: `Primitives/Toolbar`. Source: `src/components/primitives/Toolba
 - Vertical Rail
 - With A Disabled Command
 - Arrows Home And End Move Focus
+- Flush Segmented Bar
 - Is Named As A Toolbar
 
 ## Used by
 
-- nothing outside its own stories and tests yet
+- `src/components/booth/CompanionShell.tsx`
+- `src/components/booth/ReadingControlBar.tsx`
+- `src/components/engine/EnginePanel.tsx`
+- `src/components/manuscript/SelectionMenu.tsx`
+- `src/components/proof/TransportBar.tsx`

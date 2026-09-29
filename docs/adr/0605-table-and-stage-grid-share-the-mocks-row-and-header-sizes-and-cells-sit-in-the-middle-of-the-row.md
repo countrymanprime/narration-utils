@@ -1,12 +1,12 @@
 # 0605. Table and StageGrid share the mocks' row and header sizes, and cells sit in the middle of the row
 
-**Status:** Proposed (Phase 3 of the [mock fidelity PRD](../prds/mock-fidelity-primitives-and-components.prd.md), stream F-P3 on [#509](https://github.com/countrymanprime/narration-utils/issues/509); StageGrid's badge cells take 4 px side padding, not 10, by [ADR 0645](0645-the-production-board-draws-mock-01s-cells-columns-and-layout-and-the-mock-wins-the-open-audit-layout-questions.md))
+**Status:** Proposed (Phase 3 of the mock fidelity PRD, stream F-P3 on [#509](https://github.com/countrymanprime/narration-utils/issues/509); StageGrid's badge cells take 4 px side padding, not 10, by [ADR 0645](0645-the-production-board-draws-mock-01s-cells-columns-and-layout-and-the-mock-wins-the-open-audit-layout-questions.md))
 **Date:** 2026-09-28
 **Supersedes:** [ADR 0056](0056-a-presentational-table-primitive-replaces-the-dtable-class-and-rows-take-the-keyboard.md)'s "`TableCell` is top-aligned" clause only (the rest of ADR 0056 stands)
 
 ## Context
 
-The owner found that the merged pages don't match the approved mocks, and the tables most of all (D91 on #509). The [mock fidelity PRD](../prds/mock-fidelity-primitives-and-components.prd.md)'s Phase 3 gives the spec for `Table` and `StageGrid`, and [ADR 0590](0590-the-mock-fidelity-token-batch-fills-badges-with-opaque-soft-tokens-and-names-the-mocks-sizes-and-type.md) added the tokens it needs (`--row-height`, `--header-row-height`, `--row-selected`, `--font-size-label`, `--tracking-label`).
+The owner found that the merged pages don't match the approved mocks, and the tables most of all (D91 on #509). The mock fidelity PRD's Phase 3 gives the spec for `Table` and `StageGrid`, and [ADR 0590](0590-the-mock-fidelity-token-batch-fills-badges-with-opaque-soft-tokens-and-names-the-mocks-sizes-and-type.md) added the tokens it needs (`--row-height`, `--header-row-height`, `--row-selected`, `--font-size-label`, `--tracking-label`).
 
 This phase measured the benchmark mocks again, finding each divider as a row of near-uniform pixels across the table:
 

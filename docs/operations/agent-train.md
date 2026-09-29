@@ -124,12 +124,22 @@ When a phase is otherwise ready (`Depends` complete, no file collision) but bloc
 - **Launch a mockup-drafting session instead**, as its own lane entry, not a phase worker: `create_session` with `tags: ["agent-train", "mockup-design"]`, a model picked like any other lane (Opus for a screen with real interaction states — a recorder, conflict or error messaging, anything with more than static layout; Sonnet for a mostly-static screen), and a prompt that:
   - names the exact states the PRD's Phase Details and Visual Spec section describe;
   - points it at `docs/design/design-system.md` and the real tokens/primitives, never a generic style;
-  - points it at two or three existing mockup sets under `docs/prds/mockups/` for tone and format precedent, and away from unrelated concept art (for example the audiobook studio benchmark set covers different screens entirely);
+  - points it at the seven benchmark mocks in `docs/research/mockups/audiobook-studio-benchmark/` for tone and format precedent, and away from everything under `docs/prds/mockups/` (older per-PRD sets drawn before the redesign, [never the spec](#which-mocks-are-the-spec));
   - says explicitly: **drafts only**, no product code for the gated phase, and the PRD's Visual Spec section is updated to list the new files as drafts pending the owner's approval — the session never marks its own work owner-approved;
   - tells it to open its own tracking issue and a normal PR, same as any worker, and never merge itself.
 - **Record it on #509** as its own lane entry. It counts toward `TARGET` like any running session, but is tracked separately from the phase queue until the owner approves it.
 - **Subscribe to its PR** (`subscribe_pr_activity`). The owner may leave review comments to iterate on the design directly with that session (or a follow-up fixer) before approving — treat that like any other reviewer round: implement the requested visual changes and push, rather than closing the PR out after one draft.
 - The gated phase itself joins the normal ready list only once the owner approves the mockups (a comment or review saying so, or the PRD's Visual Spec section no longer reads "pending"). Approval is the owner's call, never the coordinator's.
+
+## Which mocks are the spec
+
+Owner ruling, 2026-09-29, after workers kept building towards old mocks.
+
+- **The spec is one folder: `docs/research/mockups/audiobook-studio-benchmark/`,** the seven benchmark mocks (01 Production, 02 Script, 03 Booth, 04 Proof, 05 Master & QC, 06 Series voice bible, 07 companion). They are light except the Booth (03) and the companion (07). `apps/ui/tests/visual/mock-match/mocks.ts` lists them and the state each is scored against.
+- **Never look at, score against or build towards anything under `docs/prds/mockups/`.** Those per-PRD sets (`read-aloud-control-bar`, `read-aloud-resume-from-daw`, `edit-and-proof-workspace`, `delivery-platform-profiles`, `home-combined`, `manuscript-*`, `chapter-track-link-control`, `daw-chapter-track-auto-sync`, `input-commands-and-pedals` and the rest) were drawn before the redesign. They show the old shell, pages the redesign replaced and layouts the benchmark set superseded. The `*-concept.webp` copies of the benchmark mocks in that tree are byte-identical to the research files; open the research file.
+- **Theme is one app-wide setting.** Capture a state in the theme its mock is drawn in and compare like with like: light against light, dark against dark. The dark equivalents of the light mocks are worked out later; until then a light mock is not compared with a dark capture.
+- **Layout and style are the spec, not the sample data.** Don't seed demo data to make a score higher, and don't change a real title or subtitle to the mock's wording.
+- **A mock that draws a page the app doesn't have yet** (06 is the Character Continuity review page, not the Story Bible) is unscored until its own PRD and mocks exist.
 
 ## Owner standing rules
 
@@ -151,7 +161,7 @@ Decisions the owner made while the train ran (logged on #509). They bind the coo
 | **D74** | Windows only, for now (2026-09-27). Linux and macOS support is removed until the app is in a steadier state or someone uses those systems; `Build (Windows)` stays the build gate. Linux CI runners remain as hosts for platform-neutral checks (docs, the Lua harness, the browser-based UI suites), which is not Linux support |
 | **D75** | The public GitHub Pages site (docs, Storybook, demo) is paused until the main app's development is done (2026-09-27): `pages.yml` no longer deploys on a push to `main`, and (narrowed 2026-09-27, [ADR 0415](../adr/0415-while-pages-is-paused-docs-are-checked-by-lychee-and-a-changed-file-markdownlint-not-by-building-the-site.md)) no longer runs on a pull request either. Workers keep the docs link-clean through `Docs / Links (offline)` (lychee, every pull request) and `Docs / Markdown lint (changed files)` (markdownlint-cli2 on the Markdown files a pull request adds or changes), not by building the site, and don't add work that only serves the published site |
 | **D82** | Every worker owns its PRs until they merge or close (2026-09-27): it stays subscribed, and on a merge-conflict notice or a red check it merges `main` into its own branch (never rebase), fixes, re-runs its targeted checks and pushes. It keeps an hourly `send_later` check-in while a PR is open. The coordinator launches no cascade fixers; a one-PR fixer only for a PR whose own session is archived or failed. The coordinator archives the session once all its PRs are merged or closed (D78) |
-| **D91** | The approved mocks win, measured (2026-09-28). Every screen or state an approved mock covers reaches **at least 90% pixel match** against it, captured at the mock's own size and theme with the app driven to the mock's state and data (`pnpm --dir apps/ui mock-match`, [mock fidelity PRD](../prds/mock-fidelity-primitives-and-components.prd.md)). New primitives, tokens and style changes are in scope, and "the existing style is close enough" is not a reason: a difference a primitive causes is fixed in the primitive, so every consumer inherits it, never restyled locally. A UI PR's Mockup check carries a match % column; a state under 90% needs a reason the owner accepts on #510, and a tooling limit is not one |
+| **D91** | The approved mocks win, measured (2026-09-28). Every screen or state an approved mock covers reaches **at least 90% pixel match** against it, captured at the mock's own size and theme with the app driven to the mock's state (the mock is one of [the seven benchmark mocks](#which-mocks-are-the-spec), never a per-PRD set; `pnpm --dir apps/ui mock-match`, [verification tooling](verification-tooling.md#mock-match)). New primitives, tokens and style changes are in scope, and "the existing style is close enough" is not a reason: a difference a primitive causes is fixed in the primitive, so every consumer inherits it, never restyled locally. A UI PR's Mockup check carries a match % column; a state under 90% needs a reason the owner accepts on #510, and a tooling limit is not one |
 
 ## The coordinator's pass
 
@@ -243,7 +253,10 @@ No human is watching live; never wait for answers. Where a PRD leaves a question
 READ FIRST: CLAUDE.md; docs/operations/agent-train.md ("The worker protocol", "Serial points", "Lanes"); then each PRD in
 scope, in full.
 SCOPE: <PRD path> phases <N…>: <one line each>.
-MOCKUPS (D46, D91): <per phase: exact docs/prds/mockups/... files, or "none">. Open each before coding and build to match.
+MOCKUPS (D46, D91): <per phase: exact docs/research/mockups/audiobook-studio-benchmark/... files, or "none">. Open each before
+coding and build to match. NEVER look at, score against or build towards anything under docs/prds/mockups/ (older per-PRD sets
+drawn before the redesign; see "Which mocks are the spec"). Compare light to light and dark to dark by the theme the mock is
+drawn in. Layout and style are the spec, never the mock's sample data.
 Every approved-mock state reaches at least 90% pixel match: drive the app to the mock's state and data, capture at the
 mock's own size and theme, and score it (the mock and its target state in apps/ui/tests/visual/mock-match/mocks.ts, then
 `pnpm --dir apps/ui mock-match -g "<mock file>"`). The PR's "Mockup check" table is mockup | capture | match % |
@@ -251,7 +264,7 @@ remaining differences; a state under 90% needs a reason the owner can accept on 
 and a tooling limit is not one. New primitives and tokens are in scope; existing styles are not a reason: when a
 primitive, token or style doesn't draw what the mock shows, change the primitive (its <Name>.stories.tsx too, with
 design-spec-guard and an ADR for a changed design decision), don't restyle it locally on the page. The spec per
-primitive is docs/prds/mock-fidelity-primitives-and-components.prd.md.
+primitive is docs/design/design-system.md (the PRD it came from was deleted at its close-out).
 YOUR FILES: <the phases' rows from the PRD's Parallel-session table>. NEVER TOUCH: files owned by other lanes or listed for
 a running stream on #509. If you need another lane's change, comment on #509.
 ADR BLOCK: <block>. Check docs/adr/ for the next free number inside it, at write time and again before your last push.

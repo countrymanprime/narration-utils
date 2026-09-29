@@ -1,6 +1,6 @@
 # 0600. Every pill, tag and status dot is one badge primitive, with a pill, a tag and a booth shape
 
-**Status:** Proposed (Phase 2 of the [mock fidelity PRD](../prds/mock-fidelity-primitives-and-components.prd.md), stream F-P2 on [#509](https://github.com/countrymanprime/narration-utils/issues/509); its sentence-case pill label departs from the PRD's spec table on measurement, for the owner to confirm on [#510](https://github.com/countrymanprime/narration-utils/issues/510); clause 2 gains a fourth shape, `cell`, and clause 6 does not hold for it, by [ADR 0645](0645-the-production-board-draws-mock-01s-cells-columns-and-layout-and-the-mock-wins-the-open-audit-layout-questions.md))
+**Status:** Proposed (Phase 2 of the mock fidelity PRD, stream F-P2 on [#509](https://github.com/countrymanprime/narration-utils/issues/509); its sentence-case pill label departs from the PRD's spec table on measurement, for the owner to confirm on [#510](https://github.com/countrymanprime/narration-utils/issues/510); clause 2 gains a fourth shape, `cell`, and clause 6 does not hold for it, by [ADR 0645](0645-the-production-board-draws-mock-01s-cells-columns-and-layout-and-the-mock-wins-the-open-audit-layout-questions.md))
 **Date:** 2026-09-28
 **Amends:** [ADR 0360](0360-studio-primitives-land-as-flat-leaf-files-after-one-token-batch-and-capability-gating-is-a-primitive.md)'s StatusBadge tone set (Q6), which gains `accent` and `org`
 

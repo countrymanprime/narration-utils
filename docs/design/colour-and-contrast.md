@@ -45,9 +45,9 @@ D85 #6 on [#509](https://github.com/countrymanprime/narration-utils/issues/509) 
 - **Two call sites, one derivation:** `primitives/SpeakerTag.tsx` (the Script reader's chip) reads `speakerColorToken` directly; `primitives/Highlight.tsx`'s `colorToken` prop overrides a mark's own kind colour with it, so the Booth's "Voices in scene" tags stay the same `Highlight kind="Character"` mark (data attribute, activation, keyboard support) with only their colour source changed.
 - **Known limitation:** hashing by name, not a persistent id, means two speakers who share a display name draw identically, and with only seven buckets a modest cast collides more often than not (the birthday paradox) — accepted for now per ADR 0367 rather than inventing new hues, which would need a second round of hand-tuned contrast.
 
-## Mock fidelity (Phase 0b token batch)
+## Mock fidelity token batch
 
-The [mock fidelity PRD](../prds/mock-fidelity-primitives-and-components.prd.md)'s Phase 0b ([ADR 0590](../adr/0590-the-mock-fidelity-token-batch-fills-badges-with-opaque-soft-tokens-and-names-the-mocks-sizes-and-type.md)) adds the colours the benchmark mocks draw that no token named. Each one was measured on the mocks. Phases 1 to 15 move the primitives onto them, and until then nothing draws them.
+The mock fidelity work ([ADR 0590](../adr/0590-the-mock-fidelity-token-batch-fills-badges-with-opaque-soft-tokens-and-names-the-mocks-sizes-and-type.md)) added the colours the benchmark mocks draw that no token named. Each one was measured on the mocks, and every primitive now draws them: the `-soft` fills by `StatusBadge` and `Pill`, `--row-selected` by `Table` and `StageGrid`, `--reading-bg` and `--rec-fill`/`--rec-text` by the Booth, `--toast-bg`/`--toast-text` by `Toast`, `--waveform` by Proof's waveform card and `--ok-zone` by Master's book-consistency band. A colour a later mock needs is a follow-up token batch with its own `paletteContrast.test.ts` rows, never a value written into a component.
 
 | Token | Light | Dark | Pair and worst ratio (light / dark) |
 | --- | --- | --- | --- |
