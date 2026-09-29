@@ -1,6 +1,6 @@
 # 0636. The mock-match tool scores the nav rail and header apart from the page
 
-**Status:** Proposed (Phase 8 of the [mock fidelity PRD](../prds/mock-fidelity-primitives-and-components.prd.md), stream F-P8b on [#509](https://github.com/countrymanprime/narration-utils/issues/509); which mocks are the chrome's spec is for the owner to confirm on [#510](https://github.com/countrymanprime/narration-utils/issues/510))
+**Status:** Proposed (Phase 8 of the mock fidelity PRD, stream F-P8b on [#509](https://github.com/countrymanprime/narration-utils/issues/509); which mocks are the chrome's spec is for the owner to confirm on [#510](https://github.com/countrymanprime/narration-utils/issues/510))
 **Date:** 2026-09-28
 **Amends:** [ADR 0585](0585-mock-fidelity-is-a-pixel-match-at-the-mocks-own-size-and-theme-scored-by-a-tool-that-reports-and-does-not-gate.md) (what the tool reports)
 

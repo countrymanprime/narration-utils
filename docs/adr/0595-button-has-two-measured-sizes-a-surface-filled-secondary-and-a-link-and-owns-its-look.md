@@ -1,6 +1,6 @@
 # 0595. Button has two measured sizes, a surface-filled secondary and a link, and owns its look
 
-**Status:** Proposed (Phase 1 of the [mock fidelity PRD](../prds/mock-fidelity-primitives-and-components.prd.md), stream F-P1 on [#509](https://github.com/countrymanprime/narration-utils/issues/509); its Q1 and Q2 recommendations were taken per D22 and are for the owner to confirm on [#510](https://github.com/countrymanprime/narration-utils/issues/510))
+**Status:** Proposed (Phase 1 of the mock fidelity PRD, stream F-P1 on [#509](https://github.com/countrymanprime/narration-utils/issues/509); its Q1 and Q2 recommendations were taken per D22 and are for the owner to confirm on [#510](https://github.com/countrymanprime/narration-utils/issues/510))
 **Date:** 2026-09-28
 **Supersedes:** nothing. [ADR 0053](0053-icon-buttons-text-fields-and-selects-wrap-the-native-controls.md) (IconButton is 32 px) stands: the mocks draw 32 px icon buttons.
 

@@ -1,6 +1,6 @@
 # 0610. Inputs fill an unselected radio with `--surface-3`, and the focus ring is `focus-visible`, not `focus`
 
-**Status:** Proposed (Phase 6 of the [mock fidelity PRD](../prds/mock-fidelity-primitives-and-components.prd.md), stream F-P6 on [#509](https://github.com/countrymanprime/narration-utils/issues/509); its radio-fill reading is for the owner to confirm on [#510](https://github.com/countrymanprime/narration-utils/issues/510) as a D91 reason if the pixel difference still matters after this fix)
+**Status:** Proposed (Phase 6 of the mock fidelity PRD, stream F-P6 on [#509](https://github.com/countrymanprime/narration-utils/issues/509); its radio-fill reading is for the owner to confirm on [#510](https://github.com/countrymanprime/narration-utils/issues/510) as a D91 reason if the pixel difference still matters after this fix)
 **Date:** 2026-09-28
 **Supersedes:** nothing
 

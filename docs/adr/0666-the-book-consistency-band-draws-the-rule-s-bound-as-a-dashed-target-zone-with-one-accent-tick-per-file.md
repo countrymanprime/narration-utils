@@ -1,6 +1,6 @@
 # 0666. The book-consistency band draws the rule's bound as a dashed target zone, with one accent tick per file
 
-**Status:** Proposed (Phase 14 of the [mock fidelity PRD](../prds/mock-fidelity-primitives-and-components.prd.md), stream F-P14 on [#509](https://github.com/countrymanprime/narration-utils/issues/509))
+**Status:** Proposed (Phase 14 of the mock fidelity PRD, stream F-P14 on [#509](https://github.com/countrymanprime/narration-utils/issues/509))
 **Date:** 2026-09-28
 **Supersedes:** none (`BookConsistency.tsx`'s track had no ADR; delivery-platform-profiles.prd.md Phase 10 shipped it without one)
 

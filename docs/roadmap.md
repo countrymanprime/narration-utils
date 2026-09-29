@@ -64,6 +64,7 @@ catalog, integrity, UX, migration, and acceptance criteria and the
 - Languages beyond US English.
 - Team collaboration, cloud analysis, or shared project services.
 - Manuscript Teleprompter beyond what has shipped (listening on a chosen microphone with a local Whisper model, or Moonshine on Windows, word highlighting, and reviewable suspected misreads, skips, extra words and restarts in the Booth): a default engine chosen by evaluating both, following live REAPER state, and punch-in from a word; it never edits text or audio automatically. See the [Manuscript Teleprompter brief](architecture/manuscript-teleprompter.md) for the resolved design questions.
+- The rest of the approved mocks' pixel gap: 48 of the 82 scored states are under the 90% bar (owner decision D91, [Verification tooling](operations/verification-tooling.md#mock-match)). What is left is not style. It is features the mocks draw with no data behind them (the pace pill, the series chip, the burndown chart), the replaced read-aloud dialog frame that the Booth superseded, the Booth's full-screen shell (BO2), and sample data richer than the app's mock fixtures. Each closes with its own feature or fixture, not with a primitive.
 
 ## Audacity adapter
 

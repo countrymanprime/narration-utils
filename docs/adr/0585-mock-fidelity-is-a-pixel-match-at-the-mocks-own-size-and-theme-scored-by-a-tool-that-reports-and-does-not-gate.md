@@ -20,7 +20,7 @@ A percentage needs a definition. Comparing two screenshots byte for byte fails o
 
 ## Consequences
 
-- A Mockup check (D46) has a number: mock | capture | match % | remaining differences ([agent train](../operations/agent-train.md), D91), and the [mock fidelity PRD](../prds/mock-fidelity-primitives-and-components.prd.md) holds the baseline.
+- A Mockup check (D46) has a number: mock | capture | match % | remaining differences ([agent train](../operations/agent-train.md), D91), and the mock fidelity PRD holds the baseline.
 - The number is lenient on sparse screens and strict on text: the mocks' sample data differs from the app's mock data (the benchmark's "names and numbers are invented"), so a state that draws the same components with different words still loses points. A phase that can't reach 90% because of data says so on #510, which D91 allows; a tooling limit is not a reason.
 - Scores taken on different machines can differ by the rasteriser's anti-aliasing; forgiving anti-aliased pixels keeps that small, but a score near 90% should be re-run on the machine the PR's check was run on, and the PR says where.
 - Changing the threshold, the anti-aliasing rule, the capture size rule or the gate is a new ADR that supersedes this one, and the PRD's baseline is re-run with the new rule.

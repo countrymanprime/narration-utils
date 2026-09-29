@@ -1,12 +1,12 @@
 # 0651. Proof's book level draws no waveform header, because its notes span more than one chapter
 
-**Status:** Proposed (Phase 12 of the [mock fidelity PRD](../prds/mock-fidelity-primitives-and-components.prd.md), stream F-P12 on [#509](https://github.com/countrymanprime/narration-utils/issues/509); the owner confirms the reason on #510)
+**Status:** Proposed (Phase 12 of the mock fidelity PRD, stream F-P12 on [#509](https://github.com/countrymanprime/narration-utils/issues/509); the owner confirms the reason on #510)
 **Date:** 2026-09-28
 **Supersedes:** none. It extends [ADR 0470](0470-proof-follows-mock-04-pickup-edit-waived-are-words-over-the-stored-status-and-the-chapter-view-leads-with-its-notes.md)'s waveform reasoning from the chapter view to the book level.
 
 ## Context
 
-Mock 04 (`docs/prds/mockups/stage-navigation-and-page-replacement/04-proof-pickups-concept.webp`) draws a 760×109 waveform card above the notes table, with a pin at each note's time, coloured by its type. The [mock fidelity PRD](../prds/mock-fidelity-primitives-and-components.prd.md)'s Phase 12 row asks to "add the waveform header on the book view if data exists. Otherwise it is a D91 reason," and mocks.ts scores mock 04 against `proof/default`, the book level (every finding across the project, not one chapter).
+Mock 04 (`docs/prds/mockups/stage-navigation-and-page-replacement/04-proof-pickups-concept.webp`) draws a 760×109 waveform card above the notes table, with a pin at each note's time, coloured by its type. The mock fidelity PRD's Phase 12 row asks to "add the waveform header on the book view if data exists. Otherwise it is a D91 reason," and mocks.ts scores mock 04 against `proof/default`, the book level (every finding across the project, not one chapter).
 
 The mock itself draws one chapter's Proof view ("Proof · Ch 5 · Advice from a Caterpillar"), and [ADR 0470](0470-proof-follows-mock-04-pickup-edit-waived-are-words-over-the-stored-status-and-the-chapter-view-leads-with-its-notes.md) already gave that exact card to `ProofChapterPage.tsx` (D85 #2): a strip of the chapter's notes over its recording. `NotesStrip.tsx` builds that strip from a chapter's `TrackItem`s (`chapterSpan`), the same way `WaveformStrip.tsx` now draws it with real peaks in the chapter view.
 

@@ -1,6 +1,6 @@
 # 0619. MeterBar is removed: its one consumer is gone
 
-**Status:** Proposed (Phase 9 of the [mock fidelity PRD](../prds/mock-fidelity-primitives-and-components.prd.md), stream F-P9 on [#509](https://github.com/countrymanprime/narration-utils/issues/509))
+**Status:** Proposed (Phase 9 of the mock fidelity PRD, stream F-P9 on [#509](https://github.com/countrymanprime/narration-utils/issues/509))
 **Date:** 2026-09-28
 **Supersedes:** [ADR 0050](0050-the-segmented-meter-is-an-image-named-by-its-segments-and-field-wires-its-hint-and-error.md)'s `MeterBar` clause only (its `Field` clause, unrelated to this primitive, stands)
 
