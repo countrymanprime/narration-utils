@@ -130,9 +130,6 @@ Section "uninstall"
     Delete "$SMPROGRAMS\${INFO_PRODUCTNAME}.lnk"
     Delete "$SMPROGRAMS\${INFO_PRODUCTNAME} for Audacity.lnk"
     Delete "$DESKTOP\${INFO_PRODUCTNAME}.lnk"
-    Delete "$SMPROGRAMS\Narration Utils.lnk"
-    Delete "$SMPROGRAMS\Narration Utils for Audacity.lnk"
-    Delete "$DESKTOP\Narration Utils.lnk"
 
     !insertmacro wails.unassociateFiles
     !insertmacro wails.unassociateCustomProtocols
