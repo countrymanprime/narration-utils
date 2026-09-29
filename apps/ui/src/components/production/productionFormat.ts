@@ -54,9 +54,9 @@ type BoardColumn = { name: string; kind: 'recorded' } | { name: string; kind: 's
 
 /**
  * The board's columns, in mock 01's order (ADR 0645): the length, then the stages in the order the work goes. Record, Edit and
- * Proof come from the chapter's status and its current stage's readiness (the stage recommendations, read live, Q8 A). Prep and
- * Delivery have no per-chapter producer yet (prep depth, and a delivery check tied to a chapter's file), so they are a dash rather
- * than a guess (the PRD's risk table).
+ * Proof come from the chapter's status and its current stage's readiness (the stage recommendations, read live, Q8 A). Prep, Pickups,
+ * Master and QC have no per-chapter producer yet (prep depth; the pickup list is project-wide; mastering and the ACX check run on
+ * the package, not a chapter), so they are a dash rather than a guess (the PRD's risk table, N-P1 on #510).
  */
 export const BOARD_COLUMNS: readonly BoardColumn[] = [
   { name: 'Recorded', kind: 'recorded' },
@@ -64,7 +64,9 @@ export const BOARD_COLUMNS: readonly BoardColumn[] = [
   { name: 'Record', kind: 'stage', stage: 'recording' },
   { name: 'Edit', kind: 'stage', stage: 'editing' },
   { name: 'Proof', kind: 'stage', stage: 'proofing' },
-  { name: 'Delivery', kind: 'unavailable' },
+  { name: 'Pickups', kind: 'unavailable' },
+  { name: 'Master', kind: 'unavailable' },
+  { name: 'QC', kind: 'unavailable' },
 ];
 
 // Why a chapter has no Recorded length, short enough for a board cell (actual-recorded-column.prd.md's reasons).

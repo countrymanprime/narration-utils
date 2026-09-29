@@ -31,9 +31,33 @@ status report**.
 - **Hours per finished hour**: hours logged divided by measured audio. It stays a dash until both exist.
 - **Effective rate**: the contracted amount for the book divided by the hours logged, in your own
   currency. It stays a dash until a contracted amount is set.
-- **Delivery date**: the days left until the book is due. It turns to a warning in the last week while
-  chapters are unfinished, and to red once the date has passed. It stays a dash until a date is set.
-- **Chapters finalized**: how many chapters are marked Finalized.
+- **Open pickups**: the pickups REAPER last reported still open, and how many there are in all. It is a
+  dash until REAPER has counted them (open [Pickups](pickups.md) with REAPER running); Production never asks
+  REAPER to count.
+- **Delivery check**: how many chapters pass the ACX check. It is a dash until a delivery check has run.
+
+The delivery date sits in the subtitle ("delivery due Oct 14 (18 days)").
+
+## The pace pill
+
+Beside the header's buttons, the pill projects when the book will be done, and says it is a projection:
+**On track · at current pace done Oct 9**, or **Behind · at current pace done Nov 2 (19 days late)** (a
+warning up to a week late, then red). It works from two things the app measures: the day you first
+logged hours and the chapters finalized since. Until both exist it reads **Pace unknown** and says
+which is missing, and with no delivery date it gives the projected date only. It is not PFH or the
+effective rate: those never use an estimate.
+
+## This week
+
+Under **Next up**, the **This week** card shows the hours you logged in the last seven days, day by
+day. **Voice rest (last 24 h)** and **Proofer** are dashes with why: nothing reports the audio recorded
+in a day, and the app has no proofer hand-off yet.
+
+## The hours-logged chart
+
+The foot of the Chapter pipeline card draws the hours you have logged, added up day by day to today,
+with the delivery date marked. It has no plan line: the app keeps no plan or per-day history of
+finished audio to draw one from.
 
 Set the delivery date and the contracted amount under [Delivery plan](#delivery-plan).
 
@@ -67,8 +91,9 @@ Its cells:
   says: **Ready**, **Not ready**, **Not checked**, **In progress** or **Evidence changed**. A chapter
   not started yet reads a dash under Record too, and a recording check running on it reads
   **Checking 42%**.
-- **Prep** and **Delivery**: a dash, since no check reports them per chapter yet. Prep opens the
-  chapter on [Script](script.md).
+- **Prep**, **Pickups**, **Master** and **QC**: a dash, since nothing reports them per chapter yet
+  (the pickup list, mastering and the ACX check are not tied to one chapter). Prep opens the chapter
+  on [Script](script.md).
 
 The chapter's current-stage cell opens its [stage suggestion](#stage-suggestions). The other Record,
 Edit and Proof cells open that stage: the [recording check](#checking-a-chapters-recording), the

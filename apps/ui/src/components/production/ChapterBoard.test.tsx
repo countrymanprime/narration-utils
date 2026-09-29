@@ -126,13 +126,13 @@ describe('ChapterBoard', () => {
       within(grid)
         .getAllByRole('columnheader', { hidden: true })
         .map((header) => header.textContent),
-    ).toEqual(['Chapter', 'Recorded', 'Prep', 'Record', 'Edit', 'Proof', 'Delivery']);
+    ).toEqual(['Chapter', 'Recorded', 'Prep', 'Record', 'Edit', 'Proof', 'Pickups', 'Master', 'QC']);
     expect(within(grid).getAllByRole('rowheader', { hidden: true })).toHaveLength(14);
     expect(within(grid).getAllByRole('rowheader', { hidden: true })[1].textContent).toBe('Chapter 1 — Down the Rabbit-Hole');
     expect(cell('Chapter 1', 'Proof').textContent).toBe('✓');
     expect(cell('Chapter 11', 'Record').textContent).toBe('—');
     expect(cell('Chapter 11', 'Edit').textContent).toBe('—');
-    expect(cell('Chapter 1', 'Delivery').textContent).toBe('—');
+    for (const column of ['Pickups', 'Master', 'QC']) expect(cell('Chapter 1', column).textContent).toBe('—');
   });
 
   it('says so when there are no narratable chapters yet', async () => {

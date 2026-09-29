@@ -1,6 +1,6 @@
 import { faLayerGroup } from '@fortawesome/free-solid-svg-icons';
 import { describeApiError } from '../../api/errorMessage';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import type { ChapterStatus, ChapterTrackLinks, CoverageState, ManuscriptChapter } from '../../types';
 import type { ManuscriptContentKind } from '../../api/contracts/manuscript';
@@ -59,6 +59,7 @@ export function ChapterBoard({
   goToProofChapter,
   refreshKey,
   onChanged,
+  foot,
 }: {
   overview: ProductionOverview;
   notify: Notify;
@@ -70,6 +71,8 @@ export function ChapterBoard({
   refreshKey?: string;
   /** Reads the production overview again. */
   onChanged: () => void;
+  /** Drawn in the card under the board, before its slide-overs (mock 01's chart). */
+  foot?: ReactNode;
 }) {
   const api = useApi();
   const [chapters, setChapters] = useState<ManuscriptChapter[]>();
@@ -345,6 +348,7 @@ export function ChapterBoard({
           />
         </div>
       )}
+      {foot}
       {/* The removed list is a card of its own, 16 px in from the board's card as the padded body put it; the slide-overs portal out. */}
       <div className="p-4 empty:hidden">
         {chapters && <RemovedFromRecordingList chapters={chapters} restoringId={restoringId} onRestore={(chapterId) => void restore(chapterId)} />}

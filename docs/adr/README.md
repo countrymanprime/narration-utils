@@ -359,4 +359,5 @@ The table is generated from each ADR's heading and Status line ([ADR 0410](0410-
 | [0715](0715-proofs-book-level-waveform-card-belongs-to-the-chapter-its-selector-names.md) | Proof's book-level waveform card belongs to the chapter its selector names | Accepted (the owner's 2026-09-29 ruling on ADRs 0651 and 0652; stream N-B59 on #509) |
 | [0720](0720-the-booth-fills-the-whole-window-and-f11-takes-the-window-fullscreen.md) | The Booth fills the whole window and F11 takes the window fullscreen | Accepted (owner call BO2 on #510, 2026-09-29) |
 | [0725](0725-the-rail-draws-a-count-badge-only-from-a-count-the-host-reports-and-the-product-is-named-studio.md) | The rail draws a count badge only from a count the host reports, and the product is named Studio | Accepted (owner ruling 2026-09-29 on the brand name; stream N-B61 on #509) |
+| [0730](0730-production-draws-a-figure-mock-01-shows-only-from-data-the-app-has-and-says-so-otherwise.md) | Production draws a figure mock 01 shows only from data the app has, and says so otherwise | Accepted (owner ruling 2026-09-29 on #510; stream N-P1 on #509) |
 <!-- adr-index:end -->
