@@ -77,7 +77,7 @@ export const workspaceFXPluginsResultSchema = z.object({
 }) satisfies z.ZodType<WorkspaceFXPluginsResult>;
 
 // apps/desktop/bindings_workspace_fx_apply.go WorkspaceFXResult: omitempty drops a zero splits/added, so they default to 0.
-export const workspaceFXRefusalReasons = [
+const workspaceFXRefusalReasons = [
   'standalone',
   'not_running',
   'no_item',
