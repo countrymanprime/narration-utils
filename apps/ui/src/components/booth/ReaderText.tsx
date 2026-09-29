@@ -44,6 +44,8 @@ type RowWordsProps = {
   marks: ReaderMark[];
   /** Opens a mark's entry in the side rail. Absent: marks are drawn but not interactive. It never seeks or scrolls the reader. */
   onOpenMark?: (mark: ReaderMark) => void;
+  /** The companion's 16 px size: a read word under a mark keeps the mark's text colour, since muted text on a tint is under 4.5:1 there. */
+  dense?: boolean;
 };
 
 // One word, dimmed once read (unless `dim` is false: see renderMarkedSegment), underlined when skipped, filled when current. `seekable` is false inside a mark: a mark is
@@ -126,7 +128,7 @@ function renderMarkedSegment(
   };
   // Under two or more marks the tints stack, and the muted colour of a read word falls below 4.5:1 on them: there it keeps
   // the marks' own text colour (a single mark's tint passes, so it still dims).
-  const dim = layers.length < 2;
+  const dim = layers.length < 2 && !row.dense;
   const words = Array.from({ length: to - from }, (_, offset) => renderWord(row, from + offset, false, from + offset < to - 1, dim));
   const gap = separator(gaps[to - 1]);
   const ending = layers.slice(carried).reduceRight<ReactNode>((child, mark, offset) => wrap(child, mark, carried + offset), words);
@@ -169,6 +171,7 @@ function RowContent({
   onSeek,
   marks,
   onOpenMark,
+  dense,
 }: {
   row: ReaderRow;
   cursor: number;
@@ -176,6 +179,7 @@ function RowContent({
   onSeek?: (word: number) => void;
   marks: ReaderMark[];
   onOpenMark?: (mark: ReaderMark) => void;
+  dense?: boolean;
 }) {
   if (row.words !== null && row.gaps !== null)
     return (
@@ -188,17 +192,28 @@ function RowContent({
         onSeek={onSeek}
         marks={marks}
         onOpenMark={onOpenMark}
+        dense={dense}
       />
     );
   // A row the tracker does not follow (before a session, or one whose words disagree with the sidecar's) is plain text,
   // unless it carries marks: then its words are split here so the marks can be drawn, with no cursor, dimming or seek.
   if (!marks.length) return <>{row.text}</>;
-  return <UntrackedMarkedRow text={row.text} marks={marks} onOpenMark={onOpenMark} />;
+  return <UntrackedMarkedRow text={row.text} marks={marks} onOpenMark={onOpenMark} dense={dense} />;
 }
 
-function UntrackedMarkedRow({ text, marks, onOpenMark }: { text: string; marks: ReaderMark[]; onOpenMark?: (mark: ReaderMark) => void }) {
+function UntrackedMarkedRow({
+  text,
+  marks,
+  onOpenMark,
+  dense,
+}: {
+  text: string;
+  marks: ReaderMark[];
+  onOpenMark?: (mark: ReaderMark) => void;
+  dense?: boolean;
+}) {
   const { words, gaps } = useMemo(() => splitWords(text), [text]);
-  return <RowWords words={words} gaps={gaps} start={null} local={-1} skipped={NO_SKIPPED} marks={marks} onOpenMark={onOpenMark} />;
+  return <RowWords words={words} gaps={gaps} start={null} local={-1} skipped={NO_SKIPPED} marks={marks} onOpenMark={onOpenMark} dense={dense} />;
 }
 
 export function ReaderText({
@@ -258,7 +273,15 @@ export function ReaderText({
     <div ref={container} className={typeClass} aria-label="Chapter text" role="region">
       {rows.map((row) => {
         const content = (
-          <RowContent row={row} cursor={cursor} skipped={skipped} onSeek={onSeek} marks={marks?.get(row.key) ?? NO_MARKS} onOpenMark={onOpenMark} />
+          <RowContent
+            row={row}
+            cursor={cursor}
+            skipped={skipped}
+            onSeek={onSeek}
+            marks={marks?.get(row.key) ?? NO_MARKS}
+            onOpenMark={onOpenMark}
+            dense={dense}
+          />
         );
         const speaker = speakers?.get(row.key);
         // The gutter (from `lg`; below it the tag sits above its paragraph, so a narrow text column keeps its width).

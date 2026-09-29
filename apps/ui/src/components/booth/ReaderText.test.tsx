@@ -163,6 +163,14 @@ describe('ReaderText story bible and note marks (teleprompter-manuscript-integra
     expect((container.querySelector('[data-word="2"]') as HTMLElement).style.color).toBe('var(--text-muted)');
   });
 
+  it("at the dense 16 px size keeps the mark's own text colour on a read word under even one mark (axe: muted on a tint is 4.41:1)", () => {
+    const marks = new Map([['p1', [entityMark(0, 1)]]]);
+    const { container } = render(<ReaderText rows={[row()]} cursor={3} skipped={[]} follow={false} marks={marks} dense />);
+
+    expect((container.querySelector('[data-word="0"]') as HTMLElement).style.color).toBe('');
+    expect((container.querySelector('[data-word="1"]') as HTMLElement).style.color).toBe('var(--text-muted)');
+  });
+
   it('marks a row the tracker does not follow too, without word numbers or a cursor', () => {
     const marks = new Map([['p1', [entityMark(0, 1)]]]);
     const { container } = render(<ReaderText rows={[row({ words: null, gaps: null })]} cursor={0} skipped={[]} follow={false} marks={marks} />);
