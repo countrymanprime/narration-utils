@@ -920,7 +920,7 @@ export function GuideDetail({
           <AssetInstallPrompt
             ask={{
               title: 'Download local preview voice?',
-              body: `This local voice is needed to play “${ttsPrompt.aliasIndex === undefined ? entity.canonical_name : (entity.aliases[ttsPrompt.aliasIndex]?.text ?? 'this alias')}”. It is not bundled with Narration Utils and will be stored in your per-user asset cache.`,
+              body: `This local voice is needed to play “${ttsPrompt.aliasIndex === undefined ? entity.canonical_name : (entity.aliases[ttsPrompt.aliasIndex]?.text ?? 'this alias')}”. It is not bundled with Narration Studio and will be stored in your per-user asset cache.`,
               confirmLabel: 'Download voice',
             }}
             workTitle="Downloading preview voice"

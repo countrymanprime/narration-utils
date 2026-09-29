@@ -8,7 +8,7 @@ afterEach(cleanup);
 describe('AboutPanel', () => {
   it('names the application and shows the version the host reports', () => {
     render(<AboutPanel version="0.2.7" />);
-    expect(screen.getByText('Narration Utils')).toBeTruthy();
+    expect(screen.getByText('Narration Studio')).toBeTruthy();
     expect(screen.getByText('Version 0.2.7')).toBeTruthy();
     expect(screen.queryByText(/development build/i)).toBeNull();
   });

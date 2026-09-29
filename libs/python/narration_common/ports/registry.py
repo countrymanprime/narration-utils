@@ -75,7 +75,7 @@ def current_platform() -> str:
     for prefix, goos in _SYS_PLATFORMS.items():
         if sys.platform.startswith(prefix):
             return goos
-    raise NotSupportedError(sys.platform, Level.Unsupported, f"Narration Utils does not run on {sys.platform}.")
+    raise NotSupportedError(sys.platform, Level.Unsupported, f"Narration Studio does not run on {sys.platform}.")
 
 
 def _unique(values: tuple[str, ...], what: str) -> None:

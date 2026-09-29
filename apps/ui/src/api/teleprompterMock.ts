@@ -701,7 +701,7 @@ export function createTeleprompterMock(deps: Deps): TeleprompterApi {
     },
     teleprompterLocate: async (chapterId, options) => {
       await deps.ready;
-      if (deps.resume === 'error') throw new Error('Narration Utils could not read Alice.rpp: the file is locked by another program.');
+      if (deps.resume === 'error') throw new Error('Narration Studio could not read Alice.rpp: the file is locked by another program.');
       const match = seedTrackMatch(deps.trackMatch(chapterId), deps.resume);
       const chapter = findChapter(chapterId);
       if (!chapter) throw new Error('that chapter is not part of the current manuscript');

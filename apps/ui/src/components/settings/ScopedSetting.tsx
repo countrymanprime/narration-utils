@@ -57,7 +57,7 @@ const TOOLTIP: Record<string, string> = {
   model: 'Which model size the live engine loads. Tiny keeps up on most computers; Small is more accurate but needs a faster one.',
   reaper_path: 'Leave blank to auto-detect reaper.exe. Set this only when auto-detect finds the wrong install or none at all.',
   auto_start_launcher:
-    'When Narration Utils starts REAPER, also pass the Narration Utils action as a startup script, so the bridge is live immediately. Off by default: REAPER is never changed automatically.',
+    'When Narration Studio starts REAPER, also pass the Narration Utils action as a startup script, so the bridge is live immediately. Off by default: REAPER is never changed automatically.',
   suggestions_enabled: 'Turns every stage suggestion on the Production board off at once, without changing which signals are required below.',
   'recording.text_present':
     'Whether every paragraph present in order, as the recording check measures it, must be met before the Production board suggests moving a chapter from Recording to Editing.',

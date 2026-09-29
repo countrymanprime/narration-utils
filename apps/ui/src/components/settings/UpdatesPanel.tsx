@@ -111,7 +111,7 @@ export function UpdatesPanel({ formDirty = false }: { formDirty?: boolean }) {
       {status.development ? (
         <p style={{ color: 'var(--text-muted)' }}>Update checks are for releases. A development build is never offered an update.</p>
       ) : !status.platform ? (
-        <p style={{ color: 'var(--text-muted)' }}>Narration Utils has no release for this kind of computer, so there is nothing to update to.</p>
+        <p style={{ color: 'var(--text-muted)' }}>Narration Studio has no release for this kind of computer, so there is nothing to update to.</p>
       ) : (
         <>
           {/* One live region for the result, so a screen reader hears what a check found; it is remembered state, not an alert. */}
@@ -168,7 +168,7 @@ export function UpdatesPanel({ formDirty = false }: { formDirty?: boolean }) {
       {confirming && available && (
         <ConfirmDialog
           title={`Download version ${available.version}?`}
-          body={`This downloads Narration Utils ${available.version} (${Math.round(available.size / BYTES_PER_MB)} MB) from GitHub and checks it against the release's checksum. Nothing is installed yet, and you can cancel the download.`}
+          body={`This downloads Narration Studio ${available.version} (${Math.round(available.size / BYTES_PER_MB)} MB) from GitHub and checks it against the release's checksum. Nothing is installed yet, and you can cancel the download.`}
           confirmLabel="Download"
           confirm={() => {
             setConfirming(false);
@@ -194,13 +194,13 @@ export function UpdatesPanel({ formDirty = false }: { formDirty?: boolean }) {
       {confirmingInstall && available && status.downloaded && (
         <ConfirmDialog
           title={`Install version ${available.version} and restart?`}
-          body={`Narration Utils closes and starts again on version ${available.version} with the same project, and REAPER's launcher keeps working. It cannot install while an import, a Story Bible build, a download, a comparison or a teleprompter session is running. If the new version does not start, the previous one comes back by itself.`}
+          body={`Narration Studio closes and starts again on version ${available.version} with the same project, and REAPER's launcher keeps working. It cannot install while an import, a Story Bible build, a download, a comparison or a teleprompter session is running. If the new version does not start, the previous one comes back by itself.`}
           confirmLabel="Install and restart"
           confirm={() => void install(status.downloaded?.jobId ?? '', available.version)}
           cancel={() => setConfirmingInstall(false)}
         />
       )}
-      {installing && <WorkDialog title={`Installing Narration Utils ${available?.version ?? ''}`.trim()} job={installing} />}
+      {installing && <WorkDialog title={`Installing Narration Studio ${available?.version ?? ''}`.trim()} job={installing} />}
     </div>
   );
 }

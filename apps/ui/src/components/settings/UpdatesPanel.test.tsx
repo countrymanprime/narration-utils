@@ -194,7 +194,7 @@ describe('UpdatesPanel, downloading', () => {
     renderPanel('available', { updateDownload: download });
     fireEvent.click(await screen.findByRole('button', { name: 'Download update' }));
     expect(await screen.findByText(/Nothing is installed yet/)).toBeTruthy();
-    expect(screen.getByText(/downloads Narration Utils 0\.2\.7 \(400 MB\)/)).toBeTruthy();
+    expect(screen.getByText(/downloads Narration Studio 0\.2\.7 \(400 MB\)/)).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
     expect(download).not.toHaveBeenCalled();
     expect(screen.queryByRole('dialog')).toBeNull();
@@ -206,7 +206,7 @@ describe('UpdatesPanel, downloading', () => {
       renderPanel('available');
       fireEvent.click(await screen.findByRole('button', { name: 'Download update' }));
       fireEvent.click(await screen.findByRole('button', { name: 'Download' }));
-      expect(await screen.findByRole('dialog', { name: 'Download Narration Utils 0.2.7' })).toBeTruthy();
+      expect(await screen.findByRole('dialog', { name: 'Download Narration Studio 0.2.7' })).toBeTruthy();
       await act(async () => void (await vi.advanceTimersByTimeAsync(4000)));
       fireEvent.click(await screen.findByRole('button', { name: 'Close' }));
       expect((await screen.findAllByText('Version 0.2.7 is downloaded and checked.')).length).toBeGreaterThan(0);
@@ -244,7 +244,7 @@ describe('UpdatesPanel, installing', () => {
     fireEvent.click(await screen.findByRole('button', { name: 'Install and restart' }));
     // The panel behind the confirm is hidden from assistive technology, so the only reachable button of this name is the dialog's.
     fireEvent.click(await screen.findByRole('button', { name: 'Install and restart' }));
-    expect(await screen.findByRole('dialog', { name: 'Installing Narration Utils 0.2.7' })).toBeTruthy();
+    expect(await screen.findByRole('dialog', { name: 'Installing Narration Studio 0.2.7' })).toBeTruthy();
     expect(screen.getByText(/This step cannot be cancelled/)).toBeTruthy();
     expect(install).toHaveBeenCalledWith('mock-update');
   });
@@ -253,7 +253,7 @@ describe('UpdatesPanel, installing', () => {
     renderPanel('install-refused');
     fireEvent.click(await screen.findByRole('button', { name: 'Install and restart' }));
     fireEvent.click(await screen.findByRole('button', { name: 'Install and restart' }));
-    expect((await screen.findByRole('alert')).textContent).toContain('Narration Utils is busy');
+    expect((await screen.findByRole('alert')).textContent).toContain('Narration Studio is busy');
     expect(screen.queryByRole('dialog')).toBeNull();
     expect(screen.getByRole('button', { name: 'Install and restart' })).toBeTruthy();
   });
@@ -266,7 +266,7 @@ describe('UpdatesPanel, installing', () => {
       updateStatus: async () => ({
         ...found,
         canInstall: false,
-        installBlockedReason: 'Narration Utils is installed where it is not allowed to replace itself.',
+        installBlockedReason: 'Narration Studio is installed where it is not allowed to replace itself.',
         downloaded: { jobId: 'mock-update', version: '0.2.7' },
       }),
     });

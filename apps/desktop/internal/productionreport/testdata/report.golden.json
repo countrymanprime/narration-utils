@@ -2,7 +2,7 @@
   "schema_version": 1,
   "generated_at": "2026-09-27T18:00:00Z",
   "app": {
-    "name": "Narration Utils",
+    "name": "Narration Studio",
     "version": "0.9.0"
   },
   "notice": "A summary of this book's logged time, pace and readiness, made on the narrator's computer from the same figures the Production page shows. It is not an invoice or a certification: the PFH and rate come only from hours the narrator logged and audio the app measured, never an estimate presented as a fact, and a figure with no honest input is written as \"not available\".",

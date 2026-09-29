@@ -51,7 +51,7 @@ func Build(in Input) Report {
 	return Report{
 		SchemaVersion: SchemaVersion,
 		GeneratedAt:   in.GeneratedAt,
-		App:           App{Name: "Narration Utils", Version: in.AppVersion},
+		App:           App{Name: "Narration Studio", Version: in.AppVersion},
 		Notice:        notice,
 		Book:          bookOf(in.Overview),
 		Deadline:      deadlineOf(in.Overview),

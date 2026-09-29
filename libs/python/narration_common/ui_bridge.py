@@ -37,7 +37,7 @@ class BridgeCommand:
     def parse(cls, line: str) -> BridgeCommand:
         fields = decode_fields(line)
         if len(fields) < 2 or fields[0] != str(PROTOCOL_VERSION):
-            raise ValueError("Unsupported Narration Utils bridge command")
+            raise ValueError("Unsupported Narration Studio bridge command")
         return cls(action=fields[1], fields=tuple(fields[2:]))
 
 

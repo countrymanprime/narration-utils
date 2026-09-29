@@ -311,10 +311,10 @@ func TestAnUnknownJobIsAnErrorAndClosingTheAppCancelsTheDownload(t *testing.T) {
 // The payloads the download bindings send (ADR 0069).
 func TestContractUpdateJob(t *testing.T) {
 	pin := func(name string, job map[string]any) { contractfile.Check(t, name, job) }
-	pin("update-job-downloading", snapshotUpdateJob(&updateJob{id: "update-1", version: "0.2.7", phase: updatePhaseDownloading, message: "Downloading Narration Utils 0.2.7…", done: 104857600, total: 209715200}))
+	pin("update-job-downloading", snapshotUpdateJob(&updateJob{id: "update-1", version: "0.2.7", phase: updatePhaseDownloading, message: "Downloading Narration Studio 0.2.7…", done: 104857600, total: 209715200}))
 	pin("update-job-verifying", snapshotUpdateJob(&updateJob{id: "update-1", version: "0.2.7", phase: updatePhaseVerifying, message: "Checking the download against the release's checksum…", done: 209715200, total: 209715200}))
 	pin("update-job-ready", snapshotUpdateJob(&updateJob{id: "update-1", version: "0.2.7", phase: updatePhaseReady, message: "Version 0.2.7 is downloaded and checked.", done: 209715200, total: 209715200}))
-	pin("update-job-installing", snapshotUpdateJob(&updateJob{id: "update-1", version: "0.2.7", phase: updatePhaseInstalling, message: "Installing version 0.2.7. Narration Utils restarts in a moment.", done: 209715200, total: 209715200}))
+	pin("update-job-installing", snapshotUpdateJob(&updateJob{id: "update-1", version: "0.2.7", phase: updatePhaseInstalling, message: "Installing version 0.2.7. Narration Studio restarts in a moment.", done: 209715200, total: 209715200}))
 	pin("update-job-error", snapshotUpdateJob(&updateJob{id: "update-1", version: "0.2.7", phase: updatePhaseError, message: "The checksum in the release and GitHub's own record of the file disagree, so the update was not used.", errorText: "The checksum in the release and GitHub's own record of the file disagree, so the update was not used.", done: 52428800, total: 209715200}))
 	pin("update-job-cancelled", snapshotUpdateJob(&updateJob{id: "update-1", version: "0.2.7", phase: updatePhaseCancelled, message: "The update download was cancelled.", done: 52428800, total: 209715200}))
 }

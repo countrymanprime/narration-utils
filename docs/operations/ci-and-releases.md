@@ -270,8 +270,8 @@ A narrator installs from `narration-utils-<version>-windows-x64-setup.exe`, an N
   `apps/desktop/build/windows/installer`. It removes a setup program left by an earlier build first and fails when `makensis` cannot start
   or the file is not there afterwards, and `assets.mjs package` refuses to package Windows without it. The log shows `makensis version:`
   and makensis's own `Output:` line, and the job summary lists the release files with their sizes.
-- **What it does.** Per user (no elevation, `%LOCALAPPDATA%\Programs\Narration Utils`, uninstall entry under `HKCU`), `narration-utils.exe`
-  as the program name, a Start Menu shortcut and a second one, "Narration Utils for Audacity", that passes `--daw Audacity` ([ADR 0145](../adr/0145-the-audacity-launcher-is-an-installer-start-menu-entry-and-a-picker-switch-keeps-an-audacity-launch.md)),
+- **What it does.** Per user (no elevation, `%LOCALAPPDATA%\Programs\Narration Studio`, uninstall entry under `HKCU`), `narration-utils.exe`
+  as the program name, a Start Menu shortcut and a second one, "Narration Studio for Audacity", that passes `--daw Audacity` ([ADR 0145](../adr/0145-the-audacity-launcher-is-an-installer-start-menu-entry-and-a-picker-switch-keeps-an-audacity-launch.md)),
   a desktop shortcut the narrator can untick, the WebView2 runtime installed by Microsoft's
   bootstrapper only when it is missing, and an uninstaller that removes the program, the update copies (`.new`, `.old`, `.failed`) and the
   shortcuts and leaves settings, downloaded assets, the WebView2 data and project folders alone. The definition is
@@ -291,7 +291,7 @@ A narrator installs from `narration-utils-<version>-windows-x64-setup.exe`, an N
   checksum, the promote checks and the missing-installer failure. `makensis` is not on a development machine as a rule (it can be: NSIS runs on Linux,
   and the Wails v3 migration compiled `project.nsi` there against a cross-built program), so the compile is proven by the `Build (Windows)` job; an install on a clean machine is the owner's check (the first stable rehearsal, PRD phase 16).
 - **Install and uninstall by hand** for a check: run the setup program; `narration-utils-<version>-windows-x64-setup.exe /S` installs silently
-  (both shortcuts) and `"%LOCALAPPDATA%\Programs\Narration Utils\uninstall.exe" /S` removes it.
+  (both shortcuts) and `"%LOCALAPPDATA%\Programs\Narration Studio\uninstall.exe" /S` removes it.
 
 ## The packaged-app smoke test
 

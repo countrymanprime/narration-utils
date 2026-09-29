@@ -1180,7 +1180,7 @@ export const WIRE_CLEANUP_TOOLS_LAUNCHED: CleanupToolsState = {
 export const WIRE_CLEANUP_TOOLS_ERROR: CleanupToolsState = {
   runId: '1790000000000001',
   phase: 'error',
-  message: 'Magnolius DeClick is not installed in REAPER. Install it yourself (ReaPack, or Actions > Load ReaScript); Narration Utils never installs it.',
+  message: 'Magnolius DeClick is not installed in REAPER. Install it yourself (ReaPack, or Actions > Load ReaScript); Narration Studio never installs it.',
   tool: 'magnolius_declick',
   action: '',
 };
@@ -1234,7 +1234,7 @@ export const WIRE_RETAKE_LANES_ERROR: RetakeLanesState = {
   runId: '1790000000000001',
   phase: 'error',
   message:
-    'The track "Chapter 1" is not in fixed item lane mode, so it has no lanes to choose from. Narration Utils never turns lanes on or converts takes to lanes: do that in REAPER if you want to.',
+    'The track "Chapter 1" is not in fixed item lane mode, so it has no lanes to choose from. Narration Studio never turns lanes on or converts takes to lanes: do that in REAPER if you want to.',
   lineId: 'line-000012',
   itemGuid: '{3A1F0C2E-5B6D-4E7F-8091-A2B3C4D5E602}',
   trackName: 'Chapter 1',

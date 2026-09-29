@@ -365,7 +365,7 @@ func TestAttachProjectLockedRefusesWhenBusy(t *testing.T) {
 	if attached {
 		t.Fatal("busy host must refuse to attach")
 	}
-	if reason != "Narration Utils is busy, so the current project was left unchanged." {
+	if reason != "Narration Studio is busy, so the current project was left unchanged." {
 		t.Fatalf("reason = %q", reason)
 	}
 	if host.config != before {

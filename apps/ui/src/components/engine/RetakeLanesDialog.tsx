@@ -60,7 +60,7 @@ function EmptyList({ list }: { list: RetakeLanesList }) {
   return (
     <p className="mt-3 text-sm" style={{ color: 'var(--text-muted)' }}>
       {list.laneTracks === 0
-        ? 'No track in the saved project uses fixed item lanes. Record retakes into lanes in REAPER first: Narration Utils never turns lanes on or converts takes to lanes.'
+        ? 'No track in the saved project uses fixed item lanes. Record retakes into lanes in REAPER first: Narration Studio never turns lanes on or converts takes to lanes.'
         : 'No line has retakes on more than one lane of a track, so there is nothing to choose. Only items linked to manuscript lines are listed.'}
     </p>
   );
@@ -129,7 +129,7 @@ export function RetakeLanesDialog({ onClose }: { onClose: () => void }) {
       title="Retakes on lanes"
       onClose={picking ? undefined : onClose}
       escapeCloses={!picking}
-      description="Choose which lane plays for a line. A lane plays across its whole track, so choosing one silences the other lanes of that track everywhere, not only for this line. Narration Utils changes nothing else, and Undo in REAPER puts the previous lanes back."
+      description="Choose which lane plays for a line. A lane plays across its whole track, so choosing one silences the other lanes of that track everywhere, not only for this line. Narration Studio changes nothing else, and Undo in REAPER puts the previous lanes back."
       actions={
         <Button variant="secondary" onClick={onClose} disabled={picking}>
           Close

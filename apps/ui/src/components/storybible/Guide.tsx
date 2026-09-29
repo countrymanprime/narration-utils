@@ -302,7 +302,7 @@ export function Guide({ notify, goToManuscript }: { notify: Notify; goToManuscri
         <AssetInstallPrompt
           ask={{
             title: 'Download local language model?',
-            body: 'The Story Bible reads your manuscript with a language model to find people, places and organizations. It is not bundled with Narration Utils and will be stored in your per-user asset cache. You can build without it this once, with lower-quality results.',
+            body: 'The Story Bible reads your manuscript with a language model to find people, places and organizations. It is not bundled with Narration Studio and will be stored in your per-user asset cache. You can build without it this once, with lower-quality results.',
             confirmLabel: 'Download model',
             alternative: { label: 'Build with rules-only', action: () => void startBuild(true).then(closeModelPrompt) },
           }}

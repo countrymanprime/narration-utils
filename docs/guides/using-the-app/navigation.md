@@ -154,7 +154,7 @@ This one does not talk to REAPER.
 **Cleanup tools…** opens a repair tool in REAPER on the items you have selected there. Select the items
 in REAPER first, then press **Open** beside the tool. **Repair Pops/Clicks** is REAPER's own dialog
 (REAPER 7.80 or later); **Magnolius DeClick** is a free third-party script for mouth clicks, and works only
-if you installed it in REAPER yourself (ReaPack, or Actions > Load ReaScript). Narration Utils never
+if you installed it in REAPER yourself (ReaPack, or Actions > Load ReaScript). Narration Studio never
 installs it. Opening a tool changes nothing: you apply or cancel the repair in its own window, and REAPER's
 Undo takes it back. If nothing is selected, the tool is missing, or your REAPER is too old, the dialog says so.
 
@@ -163,7 +163,7 @@ the manuscript (linked with **Link chapters…**) that has retakes on more than 
 each retake's lane, its item name and whether that lane plays in the saved project. Press **Play this
 lane** beside the retake you want: that lane becomes the only one playing on its track. A lane plays
 across the whole track, so every other lane of that track goes silent, not only for this line.
-Nothing else changes, and one Undo in REAPER puts the previous lanes back. Narration Utils never turns
+Nothing else changes, and one Undo in REAPER puts the previous lanes back. Narration Studio never turns
 lanes on, converts takes to lanes or builds a comp: if a track is not in fixed-lane mode, or the retake
 has changed since you last saved, the dialog says so and changes nothing.
 

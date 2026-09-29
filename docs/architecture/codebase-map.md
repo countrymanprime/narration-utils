@@ -1,6 +1,6 @@
 # Codebase map
 
-Narration Utils names every top-level folder for the role of what is in it, and keeps its stable launch
+Narration Studio names every top-level folder for the role of what is in it, and keeps its stable launch
 and integration paths while organizing implementation around the product domain that owns its behavior.
 The decision and the old-to-new path map are in
 [ADR 0040](../adr/0040-the-repository-is-laid-out-by-role-and-each-project-is-an-nx-project.md).

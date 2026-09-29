@@ -15,7 +15,7 @@ from . import conformance
 from .capture import CHUNK_SECONDS, CaptureDescriptor, chunk_samples
 from .conformance import ConformanceError
 
-MISSING_DEVICE = "Narration Utils conformance: no such device"
+MISSING_DEVICE = "Narration Studio conformance: no such device"
 
 
 def check_listing(backend: Any, name: str) -> list[Any]:

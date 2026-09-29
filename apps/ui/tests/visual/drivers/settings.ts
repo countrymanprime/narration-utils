@@ -149,7 +149,7 @@ export const settingsDrivers: Record<string, Driver> = {
     await clickSettingsCategory(page, 'About & updates');
     await page.getByRole('button', { name: 'Download update' }).click();
     await page.getByRole('button', { name: 'Download', exact: true }).click();
-    await page.getByRole('dialog', { name: 'Download Narration Utils 0.2.7' }).waitFor();
+    await page.getByRole('dialog', { name: 'Download Narration Studio 0.2.7' }).waitFor();
     await page
       .getByText(/160 of 400 MB/)
       .first()
@@ -190,7 +190,7 @@ export const settingsDrivers: Record<string, Driver> = {
     await clickSettingsCategory(page, 'About & updates');
     await page.getByRole('button', { name: 'Install and restart' }).click();
     await confirmDialog(page, 'Install version 0.2.7 and restart?').getByRole('button', { name: 'Install and restart' }).click();
-    await page.getByRole('dialog', { name: 'Installing Narration Utils 0.2.7' }).waitFor();
+    await page.getByRole('dialog', { name: 'Installing Narration Studio 0.2.7' }).waitFor();
   },
   'about-install-refused': async (page) => {
     await page.goto('/?mockUpdate=install-refused');
@@ -200,7 +200,7 @@ export const settingsDrivers: Record<string, Driver> = {
     await clickSettingsCategory(page, 'About & updates');
     await page.getByRole('button', { name: 'Install and restart' }).click();
     await confirmDialog(page, 'Install version 0.2.7 and restart?').getByRole('button', { name: 'Install and restart' }).click();
-    await page.getByRole('alert').filter({ hasText: 'Narration Utils is busy' }).waitFor();
+    await page.getByRole('alert').filter({ hasText: 'Narration Studio is busy' }).waitFor();
   },
   'about-install-blocked': async (page) => {
     await page.goto('/?mockUpdate=install-blocked');
