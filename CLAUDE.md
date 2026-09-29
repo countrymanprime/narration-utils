@@ -11,6 +11,10 @@ New features and bugfixes in this repo have a history of silently breaking unrel
 5. **`design-spec-guard`** — if the change touches `apps/ui/src/components/primitives/` or `apps/ui/src/styles.css`, check it doesn't silently contradict a recorded ADR.
 6. **`feature-cleanup`** — dead code, stale docs, scratch artifacts, ADR bookkeeping (`adr-author` if a real decision was made), a trust-boundary check (a download, the update, a sidecar's arguments, the REAPER bridge, a file the app opens, the release pipeline: re-read its row in `docs/architecture/threat-model.md` and update it and `SECURITY.md`; a moved file, binding or event named by a diagram in `docs/architecture/` updates that diagram), final `git status` review. Re-run `full-verification-gate` after any cleanup edits.
 
+## Which mocks are the spec
+
+Build UI towards `docs/research/mockups/audiobook-studio-benchmark/` only. Never look at, score against or build towards anything under `docs/prds/mockups/`: those per-PRD sets predate the redesign. Compare light to light and dark to dark by the mock's theme, and match layout and style, not the mock's sample data. See [Which mocks are the spec](docs/operations/agent-train.md#which-mocks-are-the-spec).
+
 ## Wire contracts
 
 Anything that crosses into the UI (a Wails binding result, a live event) or that the host reads back from disk is checked where it crosses, and a new one brings its checks with it: a Zod schema in `apps/ui/src/api/schemas/`, a golden payload written by a Go or Python test (`tests/fixtures/contracts/`, regenerated with `UPDATE_CONTRACTS=1`, never edited by hand), a row in `apps/ui/src/api/wireContracts.test.ts` and a mock that passes the schema. A new REAPER event goes in the table in `apps/desktop/internal/bridge/wire.go`. No `as` cast or bare `JSON.parse` on a payload. See `docs/architecture/wire-contracts.md`.
@@ -20,10 +24,12 @@ Anything that crosses into the UI (a Wails binding result, a live event) or that
 When fixing a visual/UI bug in `apps/ui`, do not consider it done from code review or a single manual screenshot alone. Before reporting a visual fix as complete:
 
 1. Run the Playwright visual suite for the affected page/state across all viewports in `apps/ui/tests/visual/viewports.ts` (desktop, small-desktop, tablet; there is no phone viewport, ADR 0037, except that the Settings states are also captured at a 390 px `reflow` width, ADR 0061, so look at `reflow.png` for those):
+
    ```bash
    cd apps/ui
    npx playwright test tests/visual/app.spec.ts -g "<page>.*<state>"
    ```
+
 2. Open and actually look at the generated PNGs under `apps/ui/screenshots/app/<page>/<state>/<viewport>.png` for every viewport — not just the one you eyeballed live in a browser pane. A fix that looks right at one width is not verified.
 3. If the bug is about responsive/layout behavior specifically, check it at every viewport in that list, since "responsive" bugs routinely only reproduce below/above one specific breakpoint.
 

@@ -1,6 +1,6 @@
 # 0652. A book-level waveform and a denser notes list measurably lower mock 04's score, so ADR 0651 stands
 
-**Status:** Proposed (stream X-896 on [#509](https://github.com/countrymanprime/narration-utils/issues/509), replacing the archived F-P12 worker; register comment [18:35](https://github.com/countrymanprime/narration-utils/issues/509#issuecomment-5876171337))
+**Status:** Rejected (owner, 2026-09-29): Proof's waveform always belongs to the chapter being viewed and follows a chapter selector. Each chapter is its own track, so notes never span chapters and there is no book-level waveform to withhold; the chapter's waveform is built, and the selector changes it. Was: Proposed (stream X-896 on [#509](https://github.com/countrymanprime/narration-utils/issues/509), replacing the archived F-P12 worker; register comment [18:35](https://github.com/countrymanprime/narration-utils/issues/509#issuecomment-5876171337))
 **Date:** 2026-09-28
 **Supersedes:** none. It confirms [ADR 0651](0651-proofs-book-level-draws-no-waveform-header-because-its-notes-span-more-than-one-chapter.md) with measurement rather than architectural reasoning alone.
 

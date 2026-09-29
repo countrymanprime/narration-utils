@@ -10,7 +10,7 @@ import {
   MATCH_BAR_PERCENT,
   type RgbaImage,
 } from '../tests/visual/mock-match/compare';
-import { APPROVED_MOCKS, chromeRegions, isChromeSpec, mockPath, NOT_THE_SPEC, scoredMocks } from '../tests/visual/mock-match/mocks';
+import { APPROVED_MOCKS, chromeRegions, isChromeSpec, mockPath, NOT_THE_SPEC_DIR, scoredMocks, SPEC_DIR } from '../tests/visual/mock-match/mocks';
 import { formatScoreTable, type MockScore } from '../tests/visual/mock-match/report';
 import { APP_DRIVERS } from '../tests/visual/app.drivers';
 import { existsSync } from 'node:fs';
@@ -154,12 +154,13 @@ describe('the approved-mock list', () => {
     for (const file of files) expect(existsSync(mockPath(file)), file).toBe(true);
   });
 
-  test('a concept picture or copy is listed apart and never scored', () => {
-    const approved = new Set(APPROVED_MOCKS.map((mock) => mock.file));
-    for (const { file, why } of NOT_THE_SPEC) {
-      expect(existsSync(mockPath(file)), file).toBe(true);
-      expect(approved.has(file), file).toBe(false);
-      expect(why, file).toMatch(/\S/);
+  test('the spec is the research benchmark folder and never the per-PRD mock sets', () => {
+    expect(SPEC_DIR).toBe('docs/research/mockups/audiobook-studio-benchmark');
+    expect(NOT_THE_SPEC_DIR).toBe('docs/prds/mockups');
+    expect(APPROVED_MOCKS).toHaveLength(7);
+    for (const mock of APPROVED_MOCKS) {
+      expect(mockPath(mock.file).replaceAll('\\', '/'), mock.file).toContain(`/${SPEC_DIR}/`);
+      expect(mockPath(mock.file).replaceAll('\\', '/'), mock.file).not.toContain(`/${NOT_THE_SPEC_DIR}/`);
     }
   });
 
@@ -172,6 +173,15 @@ describe('the approved-mock list', () => {
       }
     }
     expect(scoredMocks().length).toBeGreaterThan(0);
+  });
+
+  test("a state is captured in its mock's theme: light against light, dark against dark", () => {
+    const themes = Object.fromEntries(APPROVED_MOCKS.map((mock) => [mock.file, mock.theme]));
+    expect(themes['03-booth.webp']).toBe('dark');
+    expect(themes['07-daw-companion.webp']).toBe('dark');
+    for (const light of ['01-production-home.webp', '02-prep-script.webp', '04-proof-pickups.webp', '05-master-delivery.webp']) {
+      expect(themes[light], light).toBe('light');
+    }
   });
 });
 
@@ -198,7 +208,7 @@ describe('chromeRegions', () => {
   };
 
   test('a benchmark mock is the chrome spec, with its 216 px rail and 52 px header', () => {
-    const mock = byFile('stage-navigation-and-page-replacement/01-production-home-concept.webp');
+    const mock = byFile('01-production-home.webp');
     expect(isChromeSpec(mock)).toBe(true);
     expect(chromeRegions(mock, 1440, 900)).toEqual([
       { name: 'rail', x: 0, y: 0, width: 216, height: 900 },
@@ -206,31 +216,9 @@ describe('chromeRegions', () => {
     ]);
   });
 
-  test('a 2026-09-24 mock draws the shell of its day: 224 px wide, the 56 px icon rail under 1400 px, none under 768', () => {
-    const wide = byFile('edit-and-proof-workspace/02-flag-detail-open.webp');
-    expect(isChromeSpec(wide)).toBe(false);
-    expect(chromeRegions(wide, 1440, 900).map((region) => [region.name, region.x, region.width, region.height])).toEqual([
-      ['rail', 0, 224, 900],
-      ['header', 224, 1216, 56],
-    ]);
-    expect(chromeRegions(byFile('edit-and-proof-workspace/02-flag-detail-open-1024.webp'), 1024, 768)[0].width).toBe(56);
-    expect(chromeRegions(byFile('input-commands-and-pedals/05-settings-global-keyboard-reflow-390.webp'), 390, 844)).toEqual([
-      { name: 'header', x: 0, y: 0, width: 390, height: 56 },
-    ]);
-  });
-
-  test('a header crop takes its geometry from the window it was cut from', () => {
-    const regions = chromeRegions(byFile('app-navigation-and-zoom-controls/01a-header-crop-default.webp'), 1440, 110);
-    expect(regions.map((region) => [region.name, region.width, region.height])).toEqual([
-      ['rail', 224, 110],
-      ['header', 1216, 56],
-    ]);
-  });
-
   test('a mock with no shell, or compared by a region of its own, has no chrome', () => {
-    expect(chromeRegions(byFile('stage-navigation-and-page-replacement/03-booth-concept.webp'), 1440, 900)).toEqual([]);
-    expect(chromeRegions(byFile('stage-navigation-and-page-replacement/07-daw-companion-concept.webp'), 420, 900)).toEqual([]);
-    expect(chromeRegions(byFile('read-aloud-control-bar/01-idle.webp'), 1440, 900)).toEqual([]);
+    expect(chromeRegions(byFile('03-booth.webp'), 1440, 900)).toEqual([]);
+    expect(chromeRegions(byFile('07-daw-companion.webp'), 420, 900)).toEqual([]);
   });
 });
 

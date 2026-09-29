@@ -56,6 +56,6 @@
     "Languages beyond US English",
     "Team collaboration or cloud services",
     "Manuscript Teleprompter beyond what has shipped: a default engine chosen by evaluating both, following live REAPER state, and punch-in from a word; never edits text or audio automatically",
-    "The rest of the approved mocks' pixel gap (48 of 82 scored states under the 90% bar, D91): features the mocks draw with no data behind them, the replaced read-aloud dialog frame, the Booth's full-screen shell, and richer sample fixtures; see docs/operations/verification-tooling.md"
+    "The rest of the benchmark mocks' pixel gap (D91; only docs/research/mockups/audiobook-studio-benchmark/ is the spec): Production's missing features, the full-window Booth with F11, Proof's per-chapter waveform, a search tab in Script, and the \"Studio\" name in the nav; Schedule, Delivery, Character Continuity review and a redesigned Story Bible each need their own PRD and mocks first"
   ]
 }
