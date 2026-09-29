@@ -252,42 +252,42 @@ export function MasterQcPage({ openSettings, focus }: { openSettings: () => void
 
   return (
     // -mt-1: the mock's title row starts 20 px under the header where the shell's page padding leaves 24.
-    <div className="mx-auto -mt-1 flex max-w-[96rem] flex-col gap-4">
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-          <Heading title="Master & QC" />
-          {profiles && profiles.profiles.length > 0 && (
-            <ToggleGroup
-              label="Delivery platform"
-              look="segmented"
-              value={profiles.projectProfile}
-              onChange={(key) => void choosePlatform(key)}
-              options={profiles.profiles.map((candidate) => ({
-                value: deliveryProfileKey(candidate),
-                label: platformName(candidate),
-                title: deliveryProfileTitle(candidate),
-                disabled: choosingPlatform || running,
-              }))}
-              className="flex-wrap gap-1.5"
-            />
-          )}
-        </div>
-        <div className="flex flex-wrap items-center gap-2 lg:ml-auto">
-          <Button variant="secondary" onClick={() => void jobs.pick()} pending={jobs.picking} disabled={jobs.exportRunning}>
-            Master all to spec…
-          </Button>
-          <Button onClick={() => void check()} pending={checking} disabled={running}>
-            {measuredPaths.length > 0 ? `Re-check ${plural(measuredPaths.length, 'file', 'files')}` : 'Check files…'}
-          </Button>
-        </div>
-      </div>
-      {platformProblem && (
-        <p role="alert" className="text-sm" style={DANGER}>
-          The platform was not changed: {platformProblem}
-        </p>
-      )}
+    <div className="mx-auto -mt-1 max-w-[96rem]">
       <div className="grid items-start gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(19rem,22.4rem)]">
         <div className="flex min-w-0 flex-col gap-4">
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+              <Heading title="Master & QC" />
+              {profiles && profiles.profiles.length > 0 && (
+                <ToggleGroup
+                  label="Delivery platform"
+                  look="segmented"
+                  value={profiles.projectProfile}
+                  onChange={(key) => void choosePlatform(key)}
+                  options={profiles.profiles.map((candidate) => ({
+                    value: deliveryProfileKey(candidate),
+                    label: platformName(candidate),
+                    title: deliveryProfileTitle(candidate),
+                    disabled: choosingPlatform || running,
+                  }))}
+                  className="flex-wrap gap-1.5"
+                />
+              )}
+            </div>
+            <div className="flex flex-wrap items-center gap-2 lg:ml-auto">
+              <Button variant="secondary" onClick={() => void jobs.pick()} pending={jobs.picking} disabled={jobs.exportRunning}>
+                Master all to spec…
+              </Button>
+              <Button onClick={() => void check()} pending={checking} disabled={running}>
+                {measuredPaths.length > 0 ? `Re-check ${plural(measuredPaths.length, 'file', 'files')}` : 'Check files…'}
+              </Button>
+            </div>
+          </div>
+          {platformProblem && (
+            <p role="alert" className="text-sm" style={DANGER}>
+              The platform was not changed: {platformProblem}
+            </p>
+          )}
           <Panel
             title="Per-file checks"
             flush

@@ -35,7 +35,10 @@ export function useMasteringProviders(): { providers?: MasteringProviders; probl
 export function MasteringChain({ providers, problem }: { providers?: MasteringProviders; problem?: string }) {
   const row = providers?.providers.find((candidate) => candidate.name === providers.effective);
   return (
-    <Panel title="Mastering chain">
+    <Panel
+      title="Mastering chain"
+      subtitle={row ? `One chain for the book: ${row.label}, the same for every platform, with each platform's own RMS window and peak limit.` : undefined}
+    >
       {problem && (
         <p role="alert" className="mt-1 text-sm" style={{ color: 'var(--danger-text)' }}>
           The mastering chain could not be read: {problem}
@@ -43,16 +46,13 @@ export function MasteringChain({ providers, problem }: { providers?: MasteringPr
       )}
       {row && (
         <>
-          <p className="mt-1 text-sm" style={MUTED}>
-            One chain for the book: {row.label}, the same for every platform, with each platform&apos;s own RMS window and peak limit.
-          </p>
           {providers?.notice && (
             <p role="status" className="mt-1 text-sm" style={{ color: 'var(--warn-text)' }}>
               {providers.notice}
             </p>
           )}
           {row.chain.length > 0 ? (
-            <ol aria-label="Mastering steps" className="mt-3 flex flex-wrap items-center gap-2">
+            <ol aria-label="Mastering steps" className="flex flex-wrap items-center gap-2">
               {row.chain.map((step, index) => {
                 // The chain's last step is the platform's own gain target, not one of the book's fixed steps (mock 05:
                 // its chip alone is --accent-soft, mock-fidelity-primitives-and-components.prd.md Phase 14).
