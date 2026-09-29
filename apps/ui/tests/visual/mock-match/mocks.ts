@@ -1,11 +1,7 @@
 // The mocks the pixel-match tool scores (D91 on #509, owner rulings of 2026-09-29). THE SPEC IS ONE FOLDER:
 //   docs/research/mockups/audiobook-studio-benchmark/   (the seven benchmark mocks, approved as the build spec, D69)
-// NOT THE SPEC, never look at, score against or build towards: everything under docs/prds/mockups/. Those per-PRD sets
-// (read-aloud-control-bar, read-aloud-resume-from-daw, edit-and-proof-workspace, delivery-platform-profiles, home-combined,
-// manuscript-*, chapter-track-link-control, daw-chapter-track-auto-sync, input-commands-and-pedals, and the rest) were drawn
-// from the app before the redesign; they show the old shell, pages the redesign replaced and layouts the benchmark set
-// superseded. The `*-concept.webp` copies of the benchmark mocks in docs/prds/mockups/stage-navigation-and-page-replacement/
-// are byte-identical to the research files and are not read either.
+// Every other mock is deleted (D96, 2026-09-29): the per-PRD sets under docs/prds/mockups/ and the crops beside them predated the
+// redesign and are gone. A new mock is added only for work being built now and is deleted when that work merges.
 // Theme: the theme is one app-wide setting, so a state is captured in the theme its mock is drawn in and compared with it:
 // light against light, dark against dark. The benchmark mocks are light except the Booth (03) and the companion (07); their
 // dark counterparts of the light mocks are worked out later. A mock with no `target` says why it is not scored.
@@ -41,9 +37,6 @@ export interface ApprovedMock {
 }
 
 export const SPEC_DIR = 'docs/research/mockups/audiobook-studio-benchmark';
-
-/** The folder that is never the spec (see the header). A test fails if a scored mock resolves under it. */
-export const NOT_THE_SPEC_DIR = 'docs/prds/mockups';
 
 export const APPROVED_MOCKS: ApprovedMock[] = [
   // Scored against its own data (?mockFidelity=01, Q5).

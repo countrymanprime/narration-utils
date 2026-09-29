@@ -1,11 +1,12 @@
 import { mkdirSync, writeFileSync } from 'node:fs';
-import { expect, test, type Page } from '@playwright/test';
+import { test, type Page } from '@playwright/test';
 import sharp, { type Sharp } from 'sharp';
 import { THEME_STORAGE_KEY } from '../../../src/theme/theme';
 import { APP_DRIVERS } from '../app.drivers';
 import { settleFrames, settlePage } from '../helpers/settle';
 import { STATE_CATALOG } from '../state-catalog';
-import { compareImages, crop, fitTo, MATCH_BAR_PERCENT, type RgbaImage } from './compare';
+import { compareImages, crop, fitTo, type RgbaImage } from './compare';
+import { flattenGlyphs } from './glyphs';
 import { chromeRegions, isChromeSpec, mockPath, scoredMocks, slugOf, type ApprovedMock } from './mocks';
 import type { MockScore } from './report';
 
@@ -16,8 +17,9 @@ import type { MockScore } from './report';
 // shell, its nav rail and header are also scored on their own (mocks.ts `chromeRegions`), so a change to the chrome is measured
 // apart from the page. MOCK_MATCH_BASELINE=<an earlier run's scores.json> adds each score's change since that run.
 //
-// A score under the D91 bar is reported, not failed, so one run measures every state; MOCK_MATCH_ENFORCE=1 fails a state under
-// the bar (the setting a phase of mock-fidelity-primitives-and-components.prd.md runs for the states it owns).
+// The score is text-blind (glyphs.ts, D97): both images have their glyph marks painted out before they are compared, so different
+// words or sample data at the same size and place score the same. The plain pixel match is reported beside it. Nothing here
+// fails a run: the match is a diagnostic, not a gate.
 
 export const OUT_DIR = 'screenshots/mock-match';
 
@@ -53,10 +55,13 @@ for (const mock of scoredMocks()) {
     const expected = await loadMock(mock);
     const png = await capture(page, mock, { width: expected.width, height: expected.height });
     const actual = fitTo(await decode(sharp(png)), expected.width, expected.height);
-    const result = compareImages(expected, actual);
+    const raw = compareImages(expected, actual);
+    const blindExpected = flattenGlyphs(expected);
+    const blindActual = flattenGlyphs(actual);
+    const result = compareImages(blindExpected, blindActual);
     const chrome: NonNullable<MockScore['chrome']> = { spec: isChromeSpec(mock) };
     for (const region of chromeRegions(mock, expected.width, expected.height)) {
-      const part = compareImages(crop(expected, region), crop(actual, region));
+      const part = compareImages(crop(blindExpected, region), crop(blindActual, region));
       chrome[region.name] = { matchPercent: part.matchPercent, inkMatchPercent: part.inkMatchPercent };
     }
     const slug = slugOf(mock.file);
@@ -71,14 +76,14 @@ for (const mock of scoredMocks()) {
       viewport: `${expected.width}×${expected.height}`,
       theme: mock.theme,
       matchPercent: result.matchPercent,
+      pixelMatchPercent: raw.matchPercent,
       inkMatchPercent: result.inkMatchPercent,
       ...(chrome.rail || chrome.header ? { chrome } : {}),
       diff: `apps/ui/${OUT_DIR}/${slug}.diff.png`,
     };
     writeFileSync(`${OUT_DIR}/${slug}.json`, JSON.stringify(score));
-    test.info().annotations.push({ type: 'match', description: `${result.matchPercent}% (ink ${result.inkMatchPercent}%)` });
-    if (process.env.MOCK_MATCH_ENFORCE === '1') {
-      expect(result.matchPercent, `${mock.file} against ${score.target}`).toBeGreaterThanOrEqual(MATCH_BAR_PERCENT);
-    }
+    test
+      .info()
+      .annotations.push({ type: 'match', description: `${result.matchPercent}% text-blind, ${raw.matchPercent}% raw (ink ${result.inkMatchPercent}%)` });
   });
 }

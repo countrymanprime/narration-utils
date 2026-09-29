@@ -944,7 +944,7 @@ export function ScriptPage({
   );
 }
 
-// Mock 02's "Markup layer" key (audit row SC3, docs/research/visual-mockup-divergence-audit.md): what each mark actually
+// Mock 02's "Markup layer" key (audit row SC3): what each mark actually
 // draws in the reader's text, not the Story Bible's category colors (those are a different key, EntitySummary's category
 // dots, shown where an entity mention is looked up - unrelated to the marks a narrator adds here). Four of the five
 // entries are the reader's real script marks (prep-depth.prd.md Phase 5, MarkupMark.tsx: a speaker chip, a dotted stress
