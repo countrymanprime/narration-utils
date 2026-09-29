@@ -16,12 +16,15 @@ import type { ReaderMark } from './readerModel';
 import type { FollowCursor } from './useFollowCursor';
 import type { RecordInReaperState } from './useRecordInReaper';
 import type { TeleprompterSession } from './useTeleprompterSession';
+import { CompanionThisChapter } from './CompanionThisChapter';
 import { PickupsCompanionSummary } from '../pickups/PickupsCompanionSummary';
 
 type Props = {
   session: TeleprompterSession;
   follow: FollowCursor;
   chapterTitle?: string;
+  /** The chapter being read, for "This chapter"; absent in credits mode. */
+  chapterId?: string;
   /** The Record-in-REAPER orchestration `BoothSession` owns, so Play and Stop here arm and stop exactly as the Booth's do. */
   recording: RecordInReaperState;
   marks?: Map<string, ReaderMark[]>;
@@ -132,7 +135,7 @@ function Section({ title, badge, children, first = false }: { title: string; bad
  * Play/Pause and Stop repeat `BoothView`'s few lines on the same handlers rather than share a hook with it: each surface
  * is mounted alone (one `reading.toggle` registration at a time), and those files belong to other phases in flight.
  */
-export function CompanionShell({ session: t, follow, chapterTitle, recording, marks, onFullApp, onOpenMark, header }: Props) {
+export function CompanionShell({ session: t, follow, chapterTitle, chapterId, recording, marks, onFullApp, onOpenMark, header }: Props) {
   const [root, setRoot] = useState<HTMLDivElement | null>(null);
   const [escapeArmed, setEscapeArmed] = useState(false);
   const escapeTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
@@ -235,12 +238,8 @@ export function CompanionShell({ session: t, follow, chapterTitle, recording, ma
             )}
           </Toolbar>
           {/* Its own scroll box, so the sections below stay in reach however long the chapter is; the cursor follows inside it. */}
-          <div className="mt-2 max-h-[45vh] overflow-y-auto">
-            {/* TODO(mock-fidelity-p13): mock 07 wants Plex 16px on a 27px line here, denser than ReaderText's own non-`large`
-                branch (21.6/33.6, `text-[1.35rem] leading-[2.1rem]`). ReaderText/ReadAlongView expose only a `large` boolean
-                (26/48 vs 21.6/33.6), no prop that reaches 16/27, and ReaderText.tsx is a parallel task's file on this branch -
-                left as-is rather than hand-rolling a CSS override or editing it here. */}
-            <ReadAlongView session={t} follow={follow} header={header} marks={marks} onOpenMark={onOpenMark} hideKey />
+          <div className="mt-2 max-h-[12rem] overflow-y-auto">
+            <ReadAlongView session={t} follow={follow} header={header} marks={marks} onOpenMark={onOpenMark} hideKey dense />
           </div>
         </Section>
         <Section title="Note at playhead" badge={<StatusBadge tone="neutral" label="Coming soon" />}>
@@ -249,24 +248,26 @@ export function CompanionShell({ session: t, follow, chapterTitle, recording, ma
         <Section title="Pickups">
           <PickupsCompanionSummary />
         </Section>
-        <Section title="Hotkeys">
-          <dl className="grid grid-cols-[auto_1fr] items-center gap-x-3 gap-y-1.5">
+        <Section title="Hotkeys (while this window has focus)">
+          {/* Mock 07's two columns of key cap and action. Only the keys this window really answers: the mock's F9-F12 work
+              from inside REAPER, which needs a global hotkey the app does not have, so they are not listed. */}
+          <dl className="grid grid-cols-[auto_1fr_auto_1fr] items-center gap-x-3 gap-y-1.5">
             <dt>
               <Kbd keys={['Space']} />
             </dt>
-            <dd>Play or pause reading</dd>
+            <dd>Play or pause</dd>
             <dt className="flex gap-1">
               <Kbd keys={['Esc']} />
               <Kbd keys={['Esc']} />
             </dt>
-            <dd>Back to the full app</dd>
+            <dd>Full app</dd>
           </dl>
           <p className="mt-2 text-xs" style={{ color: 'var(--text-muted)' }}>
-            These work only while this window has focus; hotkeys that reach it from REAPER are not available yet.
+            Hotkeys that reach this panel from REAPER are not available yet.
           </p>
         </Section>
-        <Section title="This chapter" badge={<StatusBadge tone="neutral" label="Coming soon" />}>
-          <p style={{ color: 'var(--text-muted)' }}>Its recorded length and QC status will show here.</p>
+        <Section title="This chapter">
+          <CompanionThisChapter chapterId={chapterId} />
         </Section>
       </CompactShell>
     </div>,

@@ -61,7 +61,7 @@ export const APPROVED_MOCKS: ApprovedMock[] = [
   },
   {
     file: '07-daw-companion.webp',
-    target: { page: 'booth', state: 'companion-default' },
+    target: { page: 'booth', state: 'companion-listening' },
     theme: 'dark',
     mockRegion: { x: 1020, y: 0, width: 420, height: 900 },
   },

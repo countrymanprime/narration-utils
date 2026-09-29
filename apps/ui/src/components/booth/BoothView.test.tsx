@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -129,6 +129,66 @@ describe('BoothView (booth-mode-and-companion-panel.prd.md Phases 1-2; stage-nav
     // Decorative: no accessible `meter` role of its own, unlike the microphone popover's labelled meter.
     expect(within(status).queryAllByRole('meter')).toHaveLength(0);
     expect(within(status).getByText('Input')).toBeTruthy();
+  });
+
+  describe('the Room, Mic and DAW chips (mock 03, audit BO6/BO7)', () => {
+    const chips = () => within(screen.getByRole('group', { name: 'Room, microphone and recorder' }));
+
+    it('say only what the app knows: no room reading, no microphone chosen, REAPER not recording', () => {
+      renderBooth();
+      expect(chips().getByText('Room · not measured')).toBeTruthy();
+      expect(chips().getByText('Mic · none chosen')).toBeTruthy();
+      expect(chips().getByText('REAPER · not recording')).toBeTruthy();
+    });
+
+    it('name the chosen microphone and what Play does with REAPER', () => {
+      const { rerender } = renderBooth({ session: baseSession({ device: 'USB mic' }), recording: fakeRecording({ enabled: true }) });
+      expect(chips().getByText('Mic · USB mic')).toBeTruthy();
+      expect(chips().getByText('REAPER · records with Play')).toBeTruthy();
+      rerender(boothElement({ session: baseSession({ device: 'USB mic' }), recording: fakeRecording({ enabled: true, recording: true }) }));
+      expect(chips().getByText('REAPER · recording')).toBeTruthy();
+    });
+
+    it("show the built-in recorder in REAPER's place", () => {
+      const recorder = { builtin: true, recording: false } as unknown as Parameters<typeof BoothView>[0]['recorder'];
+      renderBooth({ recorder });
+      expect(chips().getByText('Built-in recorder')).toBeTruthy();
+    });
+
+    it('read the room from the input level while nothing is being read, and keep it once reading starts', () => {
+      const handlers = new Set<(event: { type: 'level'; peak: number; rms: number }) => void>();
+      const push = (event: { type: 'level'; peak: number; rms: number }) => handlers.forEach((handler) => handler(event));
+      const api = {
+        ...createMockApi(),
+        subscribeTeleprompterEvent: (handler: Parameters<typeof handlers.add>[0]) => {
+          handlers.add(handler);
+          return () => handlers.delete(handler);
+        },
+      } as unknown as ReturnType<typeof createMockApi>;
+      const view = (active: boolean) => (
+        <MemoryRouter>
+          <ApiProvider api={api}>
+            <CommandRouter>
+              <CommandScope kind="booth">
+                <BoothView
+                  session={baseSession({ active })}
+                  follow={followCursor()}
+                  recording={fakeRecording()}
+                  rail={<div>Reading panel</div>}
+                  onExit={vi.fn()}
+                />
+              </CommandScope>
+            </CommandRouter>
+          </ApiProvider>
+        </MemoryRouter>
+      );
+      const { rerender } = render(view(false));
+      act(() => push({ type: 'level', peak: -50, rms: -64.1 }));
+      expect(chips().getByText('Room -64.1 dB')).toBeTruthy();
+      rerender(view(true));
+      act(() => push({ type: 'level', peak: -6, rms: -18 }));
+      expect(chips().getByText('Room -64.1 dB')).toBeTruthy();
+    });
   });
 
   it('draws the text full-bleed, with no bordered card (audit BO3), and a speaker tag in the gutter of each attributed paragraph (BO4)', () => {

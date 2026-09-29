@@ -1,6 +1,6 @@
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faDownLeftAndUpRightToCenter } from '@fortawesome/free-solid-svg-icons';
-import { useId, type ReactNode } from 'react';
+import { useEffect, useId, useState, type ReactNode } from 'react';
 import type { GuideEntity } from '../../types';
 import { useMediaQuery } from '../../hooks/useMediaQuery';
 import { Button } from '../primitives/Button';
@@ -9,7 +9,7 @@ import { Highlight, highlightKind } from '../primitives/Highlight';
 import { Kbd } from '../primitives/Kbd';
 import { LevelMeter } from '../primitives/LevelMeter';
 import { speakerColorToken } from '../primitives/speakerColor';
-import { StatusBadge, type StatusTone } from '../primitives/StatusBadge';
+import { Dot, StatusBadge, type StatusTone } from '../primitives/StatusBadge';
 import { pronunciationStatusInfo } from '../storybible/pronunciationStatus';
 import { TooltipTarget } from '../primitives/Tooltip';
 import { boothProgress, progressText, type ComingUpName } from './boothProgress';
@@ -63,6 +63,44 @@ type Props = {
   onExit: () => void;
 };
 
+/** The room's noise floor the ACX bar allows, in dBFS RMS: a room quieter than this reads as good. */
+const ROOM_QUIET_DB = -60;
+
+const CHIP_CLASS = 'hidden flex-none items-center gap-1.5 whitespace-nowrap min-[1180px]:inline-flex';
+
+/**
+ * The status line's Room, Mic and DAW chips (mock 03, audit BO6/BO7, owner call BO2). Each says what the app really knows and
+ * nothing the mock's sample data claims:
+ * - Room is the last input level read while nothing was being read (the microphone popover's meter, or a level the host sent
+ *   before Play): the room's noise floor, in dB. With no reading yet it says so.
+ * - Mic is the chosen microphone; "none chosen" until one is.
+ * - DAW is what Play does with REAPER (or that the built-in recorder records), from the Record-in-REAPER state.
+ */
+function BoothChips({ device, roomDb, recording, recorder }: { device: string; roomDb: number | undefined } & Pick<Props, 'recording' | 'recorder'>) {
+  const room =
+    roomDb === undefined
+      ? { tone: 'neutral' as const, label: 'Room · not measured' }
+      : { tone: roomDb <= ROOM_QUIET_DB ? ('success' as const) : ('warning' as const), label: `Room ${roomDb.toFixed(1)} dB` };
+  const mic = device.trim() ? { tone: 'success' as const, label: `Mic · ${device.trim()}` } : { tone: 'warning' as const, label: 'Mic · none chosen' };
+  const daw =
+    recorder?.builtin === true
+      ? { tone: recorder.recording ? ('danger' as const) : ('neutral' as const), label: recorder.recording ? 'Built-in · recording' : 'Built-in recorder' }
+      : recording.recording
+        ? { tone: 'danger' as const, label: 'REAPER · recording' }
+        : recording.enabled
+          ? { tone: 'success' as const, label: 'REAPER · records with Play' }
+          : { tone: 'neutral' as const, label: 'REAPER · not recording' };
+  return (
+    <div role="group" aria-label="Room, microphone and recorder" className="contents">
+      {[room, mic, daw].map((chip) => (
+        <span key={chip.label.split(' ')[0]} className={CHIP_CLASS}>
+          <StatusBadge tone={chip.tone} label={chip.label} icon={<Dot color="currentcolor" />} />
+        </span>
+      ))}
+    </div>
+  );
+}
+
 /** The booth's status line (mock 03's top bar): recording/reading state, the chapter, progress ("¶ 38 of 71 · 41% · ~8:10
  * finished left", audit BO5) and the live input level. The microphone, engine and model choices and the REAPER toggle are the command bar's (`ReadingControlBar`),
  * so the status line only reads them. */
@@ -76,6 +114,12 @@ function BoothStatus({
 }: Pick<Props, 'session' | 'chapterTitle' | 'recording' | 'recorder' | 'onCompanion' | 'onExit'>) {
   // A running session relays its own levels; before one starts the command bar's microphone popover runs the meter.
   const { level } = useInputLevel(t.device, { active: t.active, enabled: false });
+  // The room's level is the input's while nothing is being read; the last such reading stays until the next one.
+  const [roomDb, setRoomDb] = useState<number>();
+  const idleRms = !t.active ? level?.rms : undefined;
+  useEffect(() => {
+    if (idleRms !== undefined) setRoomDb(idleRms);
+  }, [idleRms]);
   const listening = t.active && !t.paused;
   const builtin = recorder?.builtin === true;
   const rec = builtin ? recorder.recording : recording.recording;
@@ -120,6 +164,7 @@ function BoothStatus({
           )}
         </span>
       )}
+      <BoothChips device={t.device} roomDb={roomDb} recording={recording} recorder={recorder} />
       <div className="ml-auto flex flex-none items-center gap-2">
         {onCompanion && (
           <TooltipTarget text="Pin a narrow companion panel beside your DAW">
@@ -268,7 +313,7 @@ export function BoothView({
       status={<BoothStatus session={t} chapterTitle={chapterTitle} recording={recording} recorder={recorder} onCompanion={onCompanion} onExit={onExit} />}
       // Mock 03's reading surface is darker than the app's `--bg` (Q6): the token has a light-theme value too, so
       // nothing is forced (D69).
-      contentClassName="bg-[var(--reading-bg)]"
+      contentClassName="bg-[var(--reading-bg)] px-[1.375rem] py-7"
       rail={railBeside ? railContent : undefined}
       // A route inside AppShell, whose own `<main>` holds this page: a second one would duplicate the landmark.
       asMain={false}

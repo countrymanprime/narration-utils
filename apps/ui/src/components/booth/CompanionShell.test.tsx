@@ -118,7 +118,7 @@ describe('CompanionShell (booth-mode-and-companion-panel.prd.md Phase 7)', () =>
     const sections = within(main)
       .getAllByRole('region')
       .map((region) => document.getElementById(region.getAttribute('aria-labelledby') ?? '')?.textContent);
-    expect(sections).toEqual(['Script', 'Note at playhead', 'Pickups', 'Hotkeys', 'This chapter']);
+    expect(sections).toEqual(['Script', 'Note at playhead', 'Pickups', 'Hotkeys (while this window has focus)', 'This chapter']);
     expect(within(main).getByText('Chapter 5 — Advice from a Caterpillar')).toBeTruthy();
   });
 
@@ -182,19 +182,19 @@ describe('CompanionShell (booth-mode-and-companion-panel.prd.md Phase 7)', () =>
     expect(within(section).queryByRole('button')).toBeNull();
   });
 
-  it('reserves the this-chapter section with an honest "Coming soon", not an empty gap or made-up numbers', () => {
-    renderCompanion();
+  it('fills the this-chapter section from the Production board, with no made-up numbers and no buttons', async () => {
+    renderCompanion({ chapterId: 'nope' });
     const section = screen.getByRole('region', { name: 'This chapter' });
-    expect(within(section).getByText('Coming soon')).toBeTruthy();
+    expect(await within(section).findByText('Nothing measured for this chapter yet.')).toBeTruthy();
     expect(within(section).queryByRole('button')).toBeNull();
   });
 
-  it('lists the gestures that work here, and says they need this window focused', () => {
+  it('lists the gestures that work here, and says the ones from REAPER are not there yet', () => {
     renderCompanion();
-    const hotkeys = screen.getByRole('region', { name: 'Hotkeys' });
-    expect(within(hotkeys).getByText('Play or pause reading')).toBeTruthy();
-    expect(within(hotkeys).getByText('Back to the full app')).toBeTruthy();
-    expect(within(hotkeys).getByText(/only while this window has focus/i)).toBeTruthy();
+    const hotkeys = screen.getByRole('region', { name: 'Hotkeys (while this window has focus)' });
+    expect(within(hotkeys).getByText('Play or pause')).toBeTruthy();
+    expect(within(hotkeys).getByText('Full app')).toBeTruthy();
+    expect(within(hotkeys).getByText(/from REAPER are not available yet/i)).toBeTruthy();
   });
 
   it('Play starts the same session the dialog would (reading.toggle), and Space does too', async () => {

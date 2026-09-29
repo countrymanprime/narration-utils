@@ -37,9 +37,9 @@ room tone at its **Head / Tail** in seconds, then its **Result**. A value that m
 red, and a true peak above ACX's advice is amber; a value the app could not measure (a silent render, or a
 file too short) is a dash, never a number, and never counted as met. The result is **Fail** when any rule
 is not met, **Pass** when every rule the app checks is met, and **Not judged** when a value could not be
-measured. Under it, "1 to check yourself" counts the rules the app did not judge for that file (the MP3
-you upload, when it measured the WAV). Above the table, the page says which rules each file missed, or
-that every rule the app checks is met, and which rules to check yourself before uploading.
+measured. Below the table, the page says which rules each file missed, or that every rule the app checks
+is met, and which rules to check yourself before uploading (the MP3 you upload, when it measured the WAV).
+A screen reader also hears how many rules each file leaves to you.
 
 ![Three files checked against ACX: a 48 kHz render that fails, a silent render not judged, and an MP3 that could not be read; beside, why the render fails](../../images/ui/master-measured.webp)
 
@@ -60,9 +60,9 @@ ACX's page, as recorded, sets no LUFS rule.
 ### Book consistency
 
 Beside why a file fails (or on its own when nothing fails), **Book consistency** shows RMS, peak and noise
-floor each as a strip: the book's minimum, median and maximum, with a tick for every measured file. A rule
-reads only the files it has actually judged, so a rule with nothing to show yet says **No measurements
-yet** rather than a zero.
+floor: the book's minimum, median and maximum for each. RMS is drawn as a strip with a tick for every
+measured file; peak and noise floor are one line each. A rule reads only the files it has actually judged,
+so a rule with nothing to show yet says **No measurements yet** rather than a zero.
 
 ## The mastering chain
 
@@ -86,9 +86,9 @@ stage writes a new file next to the app's own output: your renders are never cha
 ## The delivery package
 
 **Delivery package** on the right lists the book checklist for the chosen platform: the credits files, the
-retail sample, one section per file, consistency, and the channels being the same in every file. A rule the
-app cannot check yet says so and is never counted as met; credits and the retail sample show what the
-project already has as a line under it. Until the files are ready, the panel says what the package is
+retail sample, one section per file, consistency, and the channels being the same in every file, one line
+each. A rule the app cannot check yet is named under the list and is never counted as met; credits and the
+retail sample's own facts, and each rule's description, are read out by a screen reader. Until the files are ready, the panel says what the package is
 waiting on: files that fail a check, and files not mastered and encoded yet.
 
 **Build packages** asks for a folder and assembles the platform's package from the files mastered and

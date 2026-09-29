@@ -4,7 +4,6 @@ import { act, cleanup, render, screen, waitFor, within } from '@testing-library/
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, useLocation } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { BOOTH_HIDES_APP_SHELL } from './boothLayout';
 import { BoothPage } from './BoothPage';
 import { ApiProvider } from '../../api/ApiContext';
 import { createMockApi } from '../../api/mockApi';
@@ -108,15 +107,10 @@ const currentLocation = () => screen.getByTestId('location').textContent;
 const currentWord = () => document.querySelector('[data-highlight="Cursor"]')?.textContent;
 
 describe('BoothPage', () => {
-  it('stays inside the app shell by default, and covers it only when the BO2 switch is on (an open owner question)', async () => {
-    expect(BOOTH_HIDES_APP_SHELL).toBe(false);
+  it('fills its own window: it draws no shell of its own to hide, and no fixed cover', async () => {
     renderPage();
     await screen.findByRole('region', { name: 'Chapter text' });
-    expect(document.querySelector('[data-booth-full-screen]')).toBeNull();
-    cleanup();
-    renderPage({}, {}, undefined, { hideAppShell: true });
-    await screen.findByRole('region', { name: 'Chapter text' });
-    expect(document.querySelector('[data-booth-full-screen]')?.className).toContain('fixed inset-0');
+    expect(document.querySelector('.fixed.inset-0')).toBeNull();
   });
 
   it('needs a chapter and a microphone before it can start', async () => {

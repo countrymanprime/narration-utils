@@ -40,6 +40,8 @@ type Props = {
    * card around it. The companion panel keeps the card (its own mock 07).
    */
   fullBleed?: boolean;
+  /** The companion's dense, unboxed reading size (mock 07). */
+  dense?: boolean;
   /** Speaker tags by row key (the Booth's gutter, audit BO4; see `ReaderText`). */
   speakers?: Map<string, string>;
 };
@@ -51,7 +53,7 @@ type Props = {
  * since read-aloud-control-bar.prd.md Phase 3 - is Start/Stop, the microphone or the engine/model choice: those moved
  * into `ReadingControlBar`, which the caller renders outside this view (a `Dialog` footer, or the page's own sticky bar).
  */
-export function ReadAlongView({ session: t, follow, header, marks, onOpenMark, aside, hideKey = false, fullBleed = false, speakers }: Props) {
+export function ReadAlongView({ session: t, follow, header, marks, onOpenMark, aside, hideKey = false, fullBleed = false, dense = false, speakers }: Props) {
   const text = (
     <ReaderText
       rows={t.rows}
@@ -64,10 +66,13 @@ export function ReadAlongView({ session: t, follow, header, marks, onOpenMark, a
       onOpenMark={onOpenMark}
       speakers={speakers}
       large={fullBleed}
+      dense={dense}
     />
   );
   const main = (
-    <div className={`mx-auto w-full min-w-0 space-y-4 ${fullBleed ? 'max-w-5xl' : 'max-w-3xl'}`}>
+    // The Booth's text is left-aligned in its own surface (mock 03: the speaker gutter at 22 px, the text at 154); the card
+    // layout is centred.
+    <div className={`w-full min-w-0 space-y-4 ${dense ? '' : fullBleed ? 'max-w-[68.25rem]' : 'mx-auto max-w-3xl'}`}>
       {header}
       {(t.error || t.host.phase === 'error') && (
         <p role="alert" className="text-sm" style={{ color: 'var(--danger-text)' }}>
@@ -75,8 +80,8 @@ export function ReadAlongView({ session: t, follow, header, marks, onOpenMark, a
         </p>
       )}
       {t.rows.length > 0 &&
-        (fullBleed ? (
-          <div className="px-1 py-2 md:px-4">{text}</div>
+        (fullBleed || dense ? (
+          <div className="py-2">{text}</div>
         ) : (
           <Panel>
             {!aside && !hideKey && <ReaderKey seekable={t.active} />}

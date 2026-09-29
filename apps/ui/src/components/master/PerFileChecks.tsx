@@ -27,6 +27,12 @@ export function describeFormat(report: MeasureReport): string {
   return `${rate} · ${report.channels === 1 ? 'mono' : report.channels === 2 ? 'stereo' : `${report.channels} channels`}`;
 }
 
+/** "All files 44.1 kHz · mono" when every measured file shares one format, so a row need not repeat it; otherwise undefined. */
+export function uniformFormat(files: readonly MeasureFileResult[]): string | undefined {
+  const formats = new Set(files.flatMap((file) => (file.status === 'measured' && file.report ? [describeFormat(file.report)] : [])));
+  return formats.size === 1 ? `All files ${[...formats][0]}` : undefined;
+}
+
 /** The host's result for the profile's rule on a metric, when the profile has one for it. */
 function resultFor(file: MeasureFileResult, profile: DeliveryProfile, metrics: readonly string[]): DeliveryRuleResult | undefined {
   const rule = profile.rules.find((candidate) => candidate.scope === 'file' && metrics.includes(candidate.metric));
@@ -89,11 +95,7 @@ function ResultCell({ file }: { file: MeasureFileResult }) {
       >
         {verdict === 'fail' ? 'Fail' : verdict === 'pass' ? 'Pass' : 'Not judged'}
       </span>
-      {left > 0 && (
-        <span className="mt-0.5 block text-[0.72rem]" style={MUTED}>
-          {left} to check yourself
-        </span>
-      )}
+      {left > 0 && <span className="sr-only">{left} to check yourself</span>}
     </TableCell>
   );
 }
@@ -115,11 +117,12 @@ export function PerFileChecks({
   selected?: string;
   onSelect: (path: string) => void;
 }) {
+  const shared = uniformFormat(files) !== undefined;
   return (
     // Flush to the panel's edges (ADR 0640), but the bleed is on the caller's scroll wrapper (MasterQcPage.tsx), not
     // here: this table sits inside a horizontally-scrolling ancestor, and `flush`'s own negative margin would be
     // clipped rather than reachable by scrolling there.
-    <Table label="Per-file checks" className="mt-3">
+    <Table label="Per-file checks">
       <TableHead>
         <TableRow>
           <TableHeader>File</TableHeader>
@@ -144,7 +147,7 @@ export function PerFileChecks({
             >
               <TableCell className="min-w-[9rem] [overflow-wrap:anywhere]">
                 <span className={failed ? 'font-semibold' : 'font-medium'}>{file.name}</span>
-                {report && (
+                {report && !shared && (
                   <span className="block text-[0.72rem]" style={MUTED}>
                     {describeFormat(report)}
                   </span>

@@ -44,6 +44,8 @@ type RowWordsProps = {
   marks: ReaderMark[];
   /** Opens a mark's entry in the side rail. Absent: marks are drawn but not interactive. It never seeks or scrolls the reader. */
   onOpenMark?: (mark: ReaderMark) => void;
+  /** The companion's 16 px size: a read word under a mark keeps the mark's text colour, since muted text on a tint is under 4.5:1 there. */
+  dense?: boolean;
 };
 
 // One word, dimmed once read (unless `dim` is false: see renderMarkedSegment), underlined when skipped, filled when current. `seekable` is false inside a mark: a mark is
@@ -126,7 +128,7 @@ function renderMarkedSegment(
   };
   // Under two or more marks the tints stack, and the muted colour of a read word falls below 4.5:1 on them: there it keeps
   // the marks' own text colour (a single mark's tint passes, so it still dims).
-  const dim = layers.length < 2;
+  const dim = layers.length < 2 && !row.dense;
   const words = Array.from({ length: to - from }, (_, offset) => renderWord(row, from + offset, false, from + offset < to - 1, dim));
   const gap = separator(gaps[to - 1]);
   const ending = layers.slice(carried).reduceRight<ReactNode>((child, mark, offset) => wrap(child, mark, carried + offset), words);
@@ -169,6 +171,7 @@ function RowContent({
   onSeek,
   marks,
   onOpenMark,
+  dense,
 }: {
   row: ReaderRow;
   cursor: number;
@@ -176,6 +179,7 @@ function RowContent({
   onSeek?: (word: number) => void;
   marks: ReaderMark[];
   onOpenMark?: (mark: ReaderMark) => void;
+  dense?: boolean;
 }) {
   if (row.words !== null && row.gaps !== null)
     return (
@@ -188,17 +192,28 @@ function RowContent({
         onSeek={onSeek}
         marks={marks}
         onOpenMark={onOpenMark}
+        dense={dense}
       />
     );
   // A row the tracker does not follow (before a session, or one whose words disagree with the sidecar's) is plain text,
   // unless it carries marks: then its words are split here so the marks can be drawn, with no cursor, dimming or seek.
   if (!marks.length) return <>{row.text}</>;
-  return <UntrackedMarkedRow text={row.text} marks={marks} onOpenMark={onOpenMark} />;
+  return <UntrackedMarkedRow text={row.text} marks={marks} onOpenMark={onOpenMark} dense={dense} />;
 }
 
-function UntrackedMarkedRow({ text, marks, onOpenMark }: { text: string; marks: ReaderMark[]; onOpenMark?: (mark: ReaderMark) => void }) {
+function UntrackedMarkedRow({
+  text,
+  marks,
+  onOpenMark,
+  dense,
+}: {
+  text: string;
+  marks: ReaderMark[];
+  onOpenMark?: (mark: ReaderMark) => void;
+  dense?: boolean;
+}) {
   const { words, gaps } = useMemo(() => splitWords(text), [text]);
-  return <RowWords words={words} gaps={gaps} start={null} local={-1} skipped={NO_SKIPPED} marks={marks} onOpenMark={onOpenMark} />;
+  return <RowWords words={words} gaps={gaps} start={null} local={-1} skipped={NO_SKIPPED} marks={marks} onOpenMark={onOpenMark} dense={dense} />;
 }
 
 export function ReaderText({
@@ -212,6 +227,7 @@ export function ReaderText({
   readerRef,
   speakers,
   large = false,
+  dense = false,
 }: {
   rows: ReaderRow[];
   cursor: number;
@@ -233,6 +249,8 @@ export function ReaderText({
   speakers?: Map<string, string>;
   /** The Booth's full-bleed reading size (mock 03, audit BO3): larger type with more air between lines. */
   large?: boolean;
+  /** The companion's reading size (mock 07): 16 px on a 27 px line, for a 380 px column beside the DAW. */
+  dense?: boolean;
 }) {
   const ownRef = useRef<HTMLDivElement>(null);
   const container = readerRef ?? ownRef;
@@ -246,20 +264,30 @@ export function ReaderText({
   // The Booth's type is the measured spec (mock-fidelity-primitives-and-components.prd.md Phase 13, mock 03 Q6):
   // `--font-size-booth-script` (26 px), never below WCAG's large text at any width. With no card, a read word's muted
   // colour on a single mark's tint sits over the reading surface, which still clears large-text contrast.
-  const typeClass = large
-    ? 'space-y-7 text-[length:var(--font-size-booth-script)] leading-[calc(var(--font-size-booth-script)*var(--line-height-booth-script))]'
-    : 'space-y-5 text-[1.35rem] leading-[2.1rem]';
+  const typeClass = dense
+    ? 'space-y-3 text-base leading-[1.6875rem]'
+    : large
+      ? 'space-y-5 text-[length:var(--font-size-booth-script)] leading-[calc(var(--font-size-booth-script)*var(--line-height-booth-script))]'
+      : 'space-y-5 text-[1.35rem] leading-[2.1rem]';
   return (
     <div ref={container} className={typeClass} aria-label="Chapter text" role="region">
       {rows.map((row) => {
         const content = (
-          <RowContent row={row} cursor={cursor} skipped={skipped} onSeek={onSeek} marks={marks?.get(row.key) ?? NO_MARKS} onOpenMark={onOpenMark} />
+          <RowContent
+            row={row}
+            cursor={cursor}
+            skipped={skipped}
+            onSeek={onSeek}
+            marks={marks?.get(row.key) ?? NO_MARKS}
+            onOpenMark={onOpenMark}
+            dense={dense}
+          />
         );
         const speaker = speakers?.get(row.key);
         // The gutter (from `lg`; below it the tag sits above its paragraph, so a narrow text column keeps its width).
         if (gutter && row.kind === 'paragraph')
           return (
-            <div key={row.key} className="lg:grid lg:grid-cols-[7rem_minmax(0,1fr)] lg:gap-x-4">
+            <div key={row.key} className="lg:grid lg:grid-cols-[7rem_minmax(0,1fr)] lg:gap-x-5">
               <div className="leading-none lg:pt-[0.6em]">{speaker && <SpeakerTag label={speaker} size="booth" />}</div>
               <p className="whitespace-pre-line">{content}</p>
             </div>
@@ -268,12 +296,12 @@ export function ReaderText({
           // Source casing, never CSS capitals (chapter-title-display-consistency.prd.md Q2/Q9): what is read aloud is
           // what is shown. Stacked, like TitleSubtitle's own layout: the subtitle is a muted line under the title,
           // with a visually hidden " — " between them so the two lines still read as one name to a screen reader.
-          <h2 key={row.key} className={`font-['Barlow_Condensed',sans-serif] leading-tight tracking-[0.02em] normal-case ${gutter ? 'lg:pl-[8rem]' : ''}`}>
-            <span className="block text-[1.7rem] font-semibold">{content}</span>
+          <h2 key={row.key} className={`font-['Barlow_Condensed',sans-serif] leading-tight tracking-[0.02em] normal-case ${gutter ? 'lg:pl-[8.25rem]' : ''}`}>
+            <span className={`block font-semibold ${dense ? 'text-[1.15rem]' : 'text-[1.7rem]'}`}>{content}</span>
             {row.subtitle && (
               <>
                 <span className="sr-only"> — </span>
-                <span className="block text-[1.2rem] font-normal text-[var(--text-muted)]">{row.subtitle}</span>
+                <span className={`block font-normal text-[var(--text-muted)] ${dense ? 'text-base' : 'text-[1.2rem]'}`}>{row.subtitle}</span>
               </>
             )}
           </h2>

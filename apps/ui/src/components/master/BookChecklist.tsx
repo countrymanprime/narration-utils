@@ -75,34 +75,51 @@ export function BookChecklist({ profile, bookRules }: { profile: DeliveryProfile
   if (rules.length === 0) return null;
   const bonusFor = (ruleId: string): string | undefined =>
     ruleId === 'acx.credits' ? facts.credits : ruleId === 'acx.retail_sample' ? facts.retailSample : undefined;
+  // Mock 05 draws one line per rule. A measured value ("mono") follows the label on that line; the host's description, the
+  // "not checked by the app" reason and what the project already has are still read out, and the rules the app cannot check
+  // yet are named once under the list instead of under each rule.
+  const notChecked = rules.filter(
+    (rule) => rule.checkedBy !== 'listen' && (bookRules.find((candidate) => candidate.ruleId === rule.id)?.status ?? 'not_checked') === 'not_checked',
+  );
   return (
-    <ul aria-label="Book checklist" className="divide-y divide-[var(--border)]">
-      {rules.map((rule) => {
-        const result = bookRules.find((candidate) => candidate.ruleId === rule.id);
-        const lines = bookLines(rule, result, bonusFor(rule.id));
-        return (
-          <li key={rule.id} className="flex items-start gap-1 py-2 text-sm">
-            {rule.checkedBy === 'listen' ? (
-              <FontAwesomeIcon icon={LISTEN_ICON} aria-hidden="true" className="mt-0.5 mr-1.5 size-3.5 flex-none" style={{ color: 'var(--non-text)' }} />
-            ) : (
-              <span className="mt-0.5 flex">
-                <ResultIcon status={result?.status ?? 'not_checked'} />
-              </span>
-            )}
-            <span className="min-w-0">
-              <span className="block font-medium">
-                {rule.label}
-                <span className="sr-only">: {rule.checkedBy === 'listen' ? 'Listen' : STATUS_WORDS[result?.status ?? 'not_checked']}</span>
-              </span>
-              {lines.map((line) => (
-                <span key={line} className="block text-[0.8rem]" style={MUTED}>
-                  {line}
+    <>
+      <ul aria-label="Book checklist" className="divide-y divide-[var(--border)]">
+        {rules.map((rule) => {
+          const result = bookRules.find((candidate) => candidate.ruleId === rule.id);
+          const lines = bookLines(rule, result, bonusFor(rule.id));
+          const measured = result?.value !== null && result?.value !== undefined ? lines[0] : undefined;
+          const rest = measured ? lines.slice(1) : lines;
+          return (
+            <li key={rule.id} className="flex items-center gap-1 py-1.5 text-sm">
+              {rule.checkedBy === 'listen' ? (
+                <FontAwesomeIcon icon={LISTEN_ICON} aria-hidden="true" className="mr-1.5 size-3.5 flex-none" style={{ color: 'var(--non-text)' }} />
+              ) : (
+                <span className="flex">
+                  <ResultIcon status={result?.status ?? 'not_checked'} />
                 </span>
-              ))}
-            </span>
-          </li>
-        );
-      })}
-    </ul>
+              )}
+              <span className="min-w-0">
+                <span className="font-medium">
+                  {rule.label}
+                  <span className="sr-only">: {rule.checkedBy === 'listen' ? 'Listen' : STATUS_WORDS[result?.status ?? 'not_checked']}</span>
+                </span>
+                {measured && <span style={MUTED}> · {measured}</span>}
+                {rest.map((line) => (
+                  <span key={line} className="sr-only">
+                    {' '}
+                    {line}
+                  </span>
+                ))}
+              </span>
+            </li>
+          );
+        })}
+      </ul>
+      {notChecked.length > 0 && (
+        <p className="mt-2 text-[0.8rem]" style={MUTED}>
+          Not checked by the app yet: {notChecked.map((rule) => rule.label).join(', ')}.
+        </p>
+      )}
+    </>
   );
 }
