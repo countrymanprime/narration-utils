@@ -17,7 +17,8 @@ import { FileRulesPanel } from './FileRulesPanel';
 import { MasteringChain, useMasteringProviders } from './MasteringChain';
 import type { MasterFocus } from './masterLink';
 import { MasterToSpecPanel } from './MasterToSpecPanel';
-import { PerFileChecks } from './PerFileChecks';
+import { TooltipTarget } from '../primitives/Tooltip';
+import { PerFileChecks, uniformFormat } from './PerFileChecks';
 import { ReportExportPanel } from './ReportExportPanel';
 import { useExportJobs } from './useExportJobs';
 import { WhyItFails } from './WhyItFails';
@@ -186,6 +187,7 @@ export function MasterQcPage({ openSettings, focus }: { openSettings: () => void
   // The file "Why it fails" explains: the one the narrator pressed, else the first that fails.
   const detail = measured.find((file) => file.path === selected) ?? (selected ? undefined : measured.find((file) => fileVerdict(file) === 'fail'));
   const unavailable = measured.some((file) => file.rules.some((result) => result.status === 'not_measurable'));
+  const formatNote = uniformFormat(measured);
   const current = profile.status === 'ready' ? profile.profile : undefined;
 
   const analyze = async (paths: string[]) => {
@@ -249,7 +251,8 @@ export function MasterQcPage({ openSettings, focus }: { openSettings: () => void
   const platform = current ? platformName(current) : '…';
 
   return (
-    <div className="mx-auto flex max-w-[96rem] flex-col gap-4">
+    // -mt-1: the mock's title row starts 20 px under the header where the shell's page padding leaves 24.
+    <div className="mx-auto -mt-1 flex max-w-[96rem] flex-col gap-4">
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
         <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
           <Heading title="Master & QC" />
@@ -283,44 +286,35 @@ export function MasterQcPage({ openSettings, focus }: { openSettings: () => void
           The platform was not changed: {platformProblem}
         </p>
       )}
-      <div className="grid items-start gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(19rem,23rem)]">
+      <div className="grid items-start gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(19rem,22.4rem)]">
         <div className="flex min-w-0 flex-col gap-4">
           <Panel
             title="Per-file checks"
-            actions={
-              measuredPaths.length > 0 && (
-                <Button variant="secondary" onClick={() => void chooseOther()} pending={checking} disabled={running}>
-                  Choose other files…
-                </Button>
-              )
-            }
+            flush
+            subtitle={`measured on the rendered files · true peak (ITU-R BS.1770)${judgedBy ? ` · judged against ${deliveryProfileTitle(judgedBy)}` : ''}`}
           >
-            <p className="mt-1 text-sm" style={MUTED}>
-              Measured on the rendered files · true peak (ITU-R BS.1770){judgedBy ? ` · judged against ${deliveryProfileTitle(judgedBy)}` : ''}. Your files are
-              only read, never changed.
-            </p>
             {jobError && (
-              <p role="alert" className="mt-2 text-sm" style={DANGER}>
+              <p role="alert" className="mx-4 mt-2 text-sm" style={DANGER}>
                 The measurement could not be read: {jobError}
               </p>
             )}
             {problem && (
-              <p role="alert" className="mt-2 text-sm" style={DANGER}>
+              <p role="alert" className="mx-4 mt-2 text-sm" style={DANGER}>
                 {problem}
               </p>
             )}
             {focusNote && !focusNote.found && (
-              <p role="status" className="mt-2 text-sm" style={WARN}>
+              <p role="status" className="mx-4 mt-2 text-sm" style={WARN}>
                 {focusNote.text}
               </p>
             )}
             {job?.profileNotice && files.length > 0 && (
-              <p role="status" className="mt-2 text-sm" style={WARN}>
+              <p role="status" className="mx-4 mt-2 text-sm" style={WARN}>
                 {job.profileNotice}
               </p>
             )}
             {job && running && (
-              <div className="mt-3 flex flex-col gap-2">
+              <div className="m-4 flex flex-col gap-2">
                 <ProgressBar label="Measuring" value={job.percent} running valueText={`${job.percent}% read`} />
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <p aria-live="polite" className="text-sm">
@@ -332,22 +326,6 @@ export function MasterQcPage({ openSettings, focus }: { openSettings: () => void
                 </div>
               </div>
             )}
-            {job && ended && (
-              <div className="mt-2 text-sm">
-                {job.phase === 'error' ? (
-                  // The technical reason is on the file it broke on; the files after it were not read.
-                  <p role="alert" style={DANGER}>
-                    {job.message} Choose the files again to measure them.
-                  </p>
-                ) : (
-                  <p aria-live="polite">
-                    {job.message}
-                    {job.profile ? ` Judged against ${deliveryProfileTitle(job.profile)}.` : ''}
-                  </p>
-                )}
-                {job.profile && <JudgementSummary files={files} profile={job.profile} />}
-              </div>
-            )}
             {files.length > 0 ? (
               <>
                 {/* tabIndex: the table scrolls sideways in a narrow window, and a scrolling region must be reachable by keyboard.
@@ -356,19 +334,44 @@ export function MasterQcPage({ openSettings, focus }: { openSettings: () => void
                     margin clipped rather than reachable by scrolling. */}
                 <div
                   tabIndex={0}
-                  className="-mx-[var(--panel-pad,1rem)] w-[calc(100%+2*var(--panel-pad,1rem))] overflow-x-auto focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:outline-none focus-visible:ring-inset"
+                  className="overflow-x-auto focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:outline-none focus-visible:ring-inset"
                 >
                   {judgedBy && <PerFileChecks files={files} profile={judgedBy} selected={detail?.path} onSelect={setSelected} />}
                 </div>
-                <p className="mt-2 text-xs" style={MUTED}>
+                {/* Under the table, so the card is as tall as the mock's: what the measurement found in words, then the footnote. */}
+                {job && ended && (
+                  <div className="flex items-center justify-between gap-x-3 px-4 py-1 text-xs">
+                    <div className="min-w-0 flex-1">
+                      {job.phase === 'error' ? (
+                        // The technical reason is on the file it broke on; the files after it were not read.
+                        <p role="alert" style={DANGER}>
+                          {job.message} Choose the files again to measure them.
+                        </p>
+                      ) : (
+                        <p className="sr-only" aria-live="polite">
+                          {job.message}
+                          {job.profile ? ` Judged against ${deliveryProfileTitle(job.profile)}.` : ''}
+                        </p>
+                      )}
+                      {job.profile && <JudgementSummary files={files} profile={job.profile} />}
+                    </div>
+                    <TooltipTarget text="Your files are only read, never changed.">
+                      <Button variant="ghost" onClick={() => void chooseOther()} pending={checking} disabled={running}>
+                        Choose other files…
+                      </Button>
+                    </TooltipTarget>
+                  </div>
+                )}
+                <p className="sr-only">
                   {unavailable ? 'A dash is a value the app could not measure (silence, or too short); it is never counted as met. ' : ''}
+                  {formatNote ? `${formatNote}. ` : ''}
                   Press a file for why it fails, and for every rule with its source.
                 </p>
               </>
             ) : (
               !running &&
               !jobError && (
-                <p className="mt-2 text-sm" style={MUTED}>
+                <p className="m-4 text-sm" style={MUTED}>
                   Nothing measured yet. Check your rendered chapter files (WAV) to see them here.
                 </p>
               )
