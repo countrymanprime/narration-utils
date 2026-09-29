@@ -35,7 +35,7 @@ export function ScriptRail({
   const characters = entities.filter((entity) => entity.category === 'Character');
 
   return (
-    <Tabs value={tab} onChange={(next) => setTab(next as RailTab)} className="flex min-h-0 flex-col">
+    <Tabs value={tab} onChange={(next) => setTab(next as RailTab)} className="flex min-h-0 flex-1 flex-col">
       <TabList label="Prep" activation="automatic">
         <Tab value="pronunciations">Pronunciations · {pronounced.length}</Tab>
         <Tab value="characters">Characters · {characters.length}</Tab>
@@ -136,12 +136,13 @@ export function ScriptRail({
             </Table>
           </div>
         )}
-        <div className="border-t border-[var(--border)] p-3">
-          <Button variant="secondary" className="text-xs" onClick={openQueries}>
-            Manage queries
-          </Button>
-        </div>
       </TabPanel>
+      {/* Pinned under every tab (mock 02's actions sit below its table, whichever list it shows). */}
+      <div className="mt-auto border-t border-[var(--border)] p-3">
+        <Button variant="secondary" className="text-xs" onClick={openQueries}>
+          Manage queries
+        </Button>
+      </div>
     </Tabs>
   );
 }
