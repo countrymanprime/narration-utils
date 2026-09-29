@@ -99,6 +99,11 @@ const MODALS: { name: string; state: [string, string]; snapshot: string }[] = [
     state: ['booth', 'exit-confirm'],
     snapshot: 'confirm-stop-reading.aria.yml',
   },
+  {
+    name: 'the passage-effect confirm is an alert dialog naming the passage, with the Effect select and both actions',
+    state: ['proof-chapter', 'effects-confirm'],
+    snapshot: 'confirm-passage-effect.aria.yml',
+  },
 ];
 
 for (const modal of MODALS) {
@@ -120,6 +125,15 @@ test('the isolation check fails when the page behind a modal is exposed', async 
     }
   });
   await expect(page.locator('body')).not.toMatchAriaSnapshot({ name: 'confirm-delete-entry.aria.yml', timeout: 1000 });
+});
+
+// The right-click menu on the script (edit-and-proof-workspace.prd.md Phase 9): a menu of two menuitems, and with REAPER away
+// both are disabled and read with the reason as their description.
+test('the passage effects menu is a menu of two items, and each says why it is off when REAPER is away', async ({ page }) => {
+  await openApp(page, DESKTOP, ['proof-chapter', 'effects-menu']);
+  await expect(page.getByRole('menu')).toMatchAriaSnapshot({ name: 'menu-passage-effects.aria.yml' });
+  await openApp(page, DESKTOP, ['proof-chapter', 'effects-menu-standalone']);
+  await expect(page.getByRole('menu')).toMatchAriaSnapshot({ name: 'menu-passage-effects-standalone.aria.yml' });
 });
 
 test('the info icon is a button that says it is expanded, and its hint is a tooltip', async ({ page }) => {

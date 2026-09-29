@@ -1,0 +1,18 @@
+# The page behind a modal is aria-hidden, so <body> holds the alert dialog and the header's zoom group and toast live regions, nothing else.
+- /children: equal
+- main:
+  - group "Zoom"
+  - alert
+  - status
+- alertdialog "Add an effect to this passage":
+  - heading "Add an effect to this passage" [level=2]
+  - button "Close"
+  - paragraph: REAPER cuts this passage out of its item and adds the effect to that piece only. You can remove it in its take FX window, and one Undo in REAPER takes back the cuts and the effect together.
+  - paragraph: "Passage: Alice"
+  - combobox "Effect":
+    - 'option "JS: De-esser" [selected]'
+    - option "ReaComp (Cockos)"
+    - option "ReaEQ (Cockos)"
+    - option "ReaXcomp (Cockos)"
+  - button "Cancel"
+  - button "Add effect"

@@ -1,0 +1,4 @@
+# The right-click menu on the script: two menu items, both available while REAPER is connected.
+- menu:
+  - menuitem "Add an effect to this passage…"
+  - menuitem "Put an FX chain on the chapter's track…"
