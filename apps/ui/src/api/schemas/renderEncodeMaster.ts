@@ -8,6 +8,8 @@ import type {
   PackageChecklistItem,
   PackageJob,
   PackageManifestFile,
+  PackagePreview,
+  PackagePreviewFile,
 } from '../contracts/renderEncodeMaster';
 import { listFromNull } from './base';
 
@@ -98,3 +100,18 @@ export const multiPackageJobSchema = z.object({
   elapsed: z.number(),
   error: z.string().optional(),
 }) satisfies z.ZodType<MultiPackageJob>;
+
+const packagePreviewFileSchema = z.object({
+  kind: packageItemKindSchema,
+  title: z.string(),
+  name: z.string(),
+  problem: z.string(),
+}) satisfies z.ZodType<PackagePreviewFile>;
+
+export const packagePreviewSchema = z.object({
+  profile: z.string(),
+  platform: z.string(),
+  format: z.string(),
+  files: listFromNull(packagePreviewFileSchema),
+  problem: z.string(),
+}) satisfies z.ZodType<PackagePreview>;

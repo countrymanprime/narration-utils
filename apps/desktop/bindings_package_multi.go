@@ -27,3 +27,11 @@ func (h *Host) PackageMultiState() (string, error) {
 func (h *Host) PackageMultiCancel() (string, error) {
 	return encodeBinding(h.cancelMultiPackage(), nil)
 }
+
+// PackagePreview lists the files a delivery profile's package will create for this project, each with the name and format it
+// will have: the opening credits, one file per narration chapter, the closing credits and the retail sample the profile asks
+// for. It builds nothing and reads only the manuscript and the profile; the names come from internal/packager, the code that
+// names the files a real build writes.
+func (h *Host) PackagePreview(profileID, profileVersion string) (string, error) {
+	return encodeBinding(h.packagePreview(profileID, profileVersion))
+}

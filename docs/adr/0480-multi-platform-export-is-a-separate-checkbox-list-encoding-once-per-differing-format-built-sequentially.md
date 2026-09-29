@@ -1,6 +1,6 @@
 # 0480. Multi-platform export is a separate checkbox list, encoding once per differing format, built sequentially
 
-**Status:** Proposed
+**Status:** Proposed (point 1, the separate checkbox list, is superseded by [ADR 0745](0745-master-and-qcs-outputs-list-names-the-files-the-acx-package-will-create-and-the-multi-platform-card-is-gone.md): the card is gone from the page)
 **Date:** 2026-09-28
 
 ## Context

@@ -130,7 +130,7 @@ import { cleanupApplyResultSchema, cleanupPreviewResultSchema, levelMatchApplyRe
 import { projectStateChangedSchema, projectStateStartResultSchema, projectStateStateSchema } from './schemas/projectstate';
 import { dictionaryLookupResultSchema } from './schemas/dictionary';
 import { retakeLanesListSchema, retakeLanesStartResultSchema, retakeLanesStateSchema } from './schemas/retakelanes';
-import { exportJobSchema, multiPackageJobSchema, packageJobSchema } from './schemas/renderEncodeMaster';
+import { exportJobSchema, multiPackageJobSchema, packageJobSchema, packagePreviewSchema } from './schemas/renderEncodeMaster';
 import type { NarrationApi } from '../types';
 import * as host from '../../wailsjs/github.com/countrymanprime/narration-utils/shell/host';
 import { Events } from '@wailsio/runtime';
@@ -657,6 +657,7 @@ export const wailsClient: NarrationApi = {
   packageStart: (req) => decode(packageJobSchema, 'PackageStart', host.PackageStart(req)),
   packageState: () => decode(packageJobSchema, 'PackageState', host.PackageState()),
   packageCancel: () => decode(packageJobSchema, 'PackageCancel', host.PackageCancel()),
+  packagePreview: (profileId, profileVersion) => decode(packagePreviewSchema, 'PackagePreview', host.PackagePreview(profileId, profileVersion)),
   packageStartMulti: (req) => decode(multiPackageJobSchema, 'PackageStartMulti', host.PackageStartMulti(req)),
   packageMultiState: () => decode(multiPackageJobSchema, 'PackageMultiState', host.PackageMultiState()),
   packageMultiCancel: () => decode(multiPackageJobSchema, 'PackageMultiCancel', host.PackageMultiCancel()),

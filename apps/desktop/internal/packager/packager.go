@@ -220,7 +220,7 @@ func missingRequired(checklist []ChecklistItem) []string {
 func plan(req Request) ([]plannedFile, error) {
 	var pending []plannedFile
 	if req.CreditsOpening != nil {
-		pending = append(pending, plannedFile{Kind: KindCreditsOpening, Name: "Credits, Opening" + ext(req.CreditsOpening.Path), Item: *req.CreditsOpening})
+		pending = append(pending, plannedFile{Kind: KindCreditsOpening, Name: creditsOpeningName(ext(req.CreditsOpening.Path)), Item: *req.CreditsOpening})
 	}
 	for i, chapter := range req.Chapters {
 		name, err := chapterFileName(i+1, chapter.Title, ext(chapter.Path))
@@ -230,10 +230,10 @@ func plan(req Request) ([]plannedFile, error) {
 		pending = append(pending, plannedFile{Kind: KindChapter, Name: name, Item: chapter})
 	}
 	if req.CreditsClosing != nil {
-		pending = append(pending, plannedFile{Kind: KindCreditsClosing, Name: "Credits, Closing" + ext(req.CreditsClosing.Path), Item: *req.CreditsClosing})
+		pending = append(pending, plannedFile{Kind: KindCreditsClosing, Name: creditsClosingName(ext(req.CreditsClosing.Path)), Item: *req.CreditsClosing})
 	}
 	if req.RetailSample != nil {
-		pending = append(pending, plannedFile{Kind: KindRetailSample, Name: "Retail Sample" + ext(req.RetailSample.Path), Item: *req.RetailSample})
+		pending = append(pending, plannedFile{Kind: KindRetailSample, Name: retailSampleName(ext(req.RetailSample.Path)), Item: *req.RetailSample})
 	}
 	for _, p := range pending {
 		if p.Item.Path == "" {
