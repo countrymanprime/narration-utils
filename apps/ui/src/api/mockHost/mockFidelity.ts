@@ -4,7 +4,7 @@
 import { PRODUCTION_SCENARIOS } from '../productionMock';
 import type { MockApiSeed } from './state';
 
-export type MockFidelity = '01';
+export type MockFidelity = '01' | '05';
 
 export const MOCK_FIDELITY: Record<MockFidelity, Partial<MockApiSeed>> = {
   // Benchmark 01-production-home: chapters 1-4 finished, 5 in proof, 6 in edit, 7 being recorded (the timer runs on it),
@@ -27,6 +27,9 @@ export const MOCK_FIDELITY: Record<MockFidelity, Partial<MockApiSeed>> = {
     },
     creditsStatuses: { opening: 'finalized', closing: 'editing' },
   },
+  // Benchmark 05-master-delivery: the six rendered files of the book (the fifth over ACX's noise floor) to check, and ACX beside the
+  // four other platforms the narrator has configured. The mock's invented wording and its OUTPUTS list stay the app's own.
+  '05': { measure: 'mock-05', deliveryProfile: 'platforms' },
 };
 
-export const mockFidelityFrom = (value: string | null): MockFidelity | undefined => (value === '01' ? value : undefined);
+export const mockFidelityFrom = (value: string | null): MockFidelity | undefined => (value === '01' || value === '05' ? value : undefined);

@@ -30,6 +30,13 @@ export const masterStates: StateEntry[] = [
     description:
       'Master & QC, three files checked against ACX (mock 05) - length, RMS, true peak, noise floor and head / tail per file, the 48 kHz render failed in words as well as colour with "1 to check yourself", a silent render not judged, a file it could not read with why, and "Chapter 01.wav · Why it fails" with its suggested fix beside the book consistency',
   },
+  // mock-fidelity-primitives-and-components.prd.md Q5: benchmark mock 05's own data, the state the pixel-match tool scores.
+  {
+    page: 'master',
+    state: 'mock-fidelity-05',
+    description:
+      "Master & QC drawn with benchmark mock 05's data (?mockFidelity=05) - ACX beside four other configured platforms, the book's six rendered files checked against ACX (the fifth over the noise floor limit), RE-CHECK 6 FILES, the state mock 05 is scored against",
+  },
   {
     page: 'master',
     state: 'file-rules',

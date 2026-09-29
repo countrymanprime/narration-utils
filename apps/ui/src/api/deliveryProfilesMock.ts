@@ -414,7 +414,18 @@ export function evaluateMockBook(reports: readonly MeasureReport[], profile: Del
     });
 }
 
-export type MockDeliveryProfileSeed = 'custom';
+/** `custom` chooses "My ACX, tighter peak" for the project; `platforms` configures four more platforms beside ACX
+ * (`?mockFidelity=05`, benchmark mock 05's tabs) and leaves ACX chosen. */
+export type MockDeliveryProfileSeed = 'custom' | 'platforms';
+
+/** The platforms a narrator who delivers to several has configured beside ACX: each one a custom profile, ACX's rules under its own name. */
+const CONFIGURED_PLATFORMS = ['INaudio', 'Google Play', 'Apple (M4B)', 'Kobo'];
+
+function mockConfiguredPlatforms(): DeliveryProfile[] {
+  return CONFIGURED_PLATFORMS.map((name, index) =>
+    wireClone({ ...MOCK_ACX, id: `custom-platform-${index + 1}`, version: '', revision: 1, name, builtIn: false, basedOn: 'acx@2026-09' }),
+  );
+}
 
 const refOf = (profile: DeliveryProfile): DeliveryProfileRef => (profile.builtIn ? { id: profile.id, version: profile.version } : { id: profile.id });
 
@@ -422,7 +433,7 @@ const refOf = (profile: DeliveryProfile): DeliveryProfileRef => (profile.builtIn
 export function createDeliveryProfilesMock(
   seed?: MockDeliveryProfileSeed,
 ): DeliveryProfilesApi & { current: () => DeliveryProfile; all: () => DeliveryProfile[] } {
-  const custom: DeliveryProfile[] = seed === 'custom' ? [mockCustomProfile()] : [];
+  const custom: DeliveryProfile[] = seed === 'custom' ? [mockCustomProfile()] : seed === 'platforms' ? mockConfiguredPlatforms() : [];
   let globalDefault: DeliveryProfileRef = refOf(MOCK_ACX);
   let projectChoice: DeliveryProfileRef | null = seed === 'custom' ? refOf(custom[0]) : null;
   let nextId = 1;
