@@ -51,6 +51,70 @@ def test_the_build_time_fallback_logs_each_failed_source_in_its_own_words(monkey
     ]
 
 
+def test_a_narrators_default_source_is_tried_first(monkeypatch):
+    # story-bible-and-import-ux-briefs PRD phase 11 (the settings default): the narrator's preferred source moves to
+    # the front of the fallback chain; the rest of the chain, in its usual order, is still there if it fails.
+    import manuscript_guide
+
+    tried: list[str] = []
+
+    def fake_pronounce_source(name: str, library: str | None, source: str) -> dict[str, str]:
+        tried.append(source)
+        raise ValueError("no entry")
+
+    monkeypatch.setattr(manuscript_guide, "pronounce_source", fake_pronounce_source)
+    monkeypatch.setattr(manuscript_guide, "log", lambda message: None)
+
+    manuscript_guide.pronunciation("Zzyzxqq", None, default_source="espeak")
+    assert tried == ["espeak", "cmu", "wiktextract"]
+
+
+def test_a_narrators_default_source_is_used_once_and_not_retried(monkeypatch):
+    import manuscript_guide
+
+    tried: list[str] = []
+
+    def fake_pronounce_source(name: str, library: str | None, source: str) -> dict[str, str]:
+        tried.append(source)
+        return {"ipa": "/x/", "source": source, "confidence": "medium"}
+
+    monkeypatch.setattr(manuscript_guide, "pronounce_source", fake_pronounce_source)
+
+    assert manuscript_guide.pronunciation("Name", None, default_source="wiktextract") == {"ipa": "/x/", "source": "wiktextract", "confidence": "medium"}
+    assert tried == ["wiktextract"]
+
+
+def test_an_unregistered_default_source_is_ignored_and_the_usual_order_is_used(monkeypatch):
+    import manuscript_guide
+
+    tried: list[str] = []
+
+    def fake_pronounce_source(name: str, library: str | None, source: str) -> dict[str, str]:
+        tried.append(source)
+        return {"ipa": "/x/", "source": source, "confidence": "medium"}
+
+    monkeypatch.setattr(manuscript_guide, "pronounce_source", fake_pronounce_source)
+
+    manuscript_guide.pronunciation("Name", None, default_source="not-a-real-source")
+    assert tried == ["cmu"]
+
+
+def test_no_default_source_keeps_the_usual_order(monkeypatch):
+    import manuscript_guide
+
+    tried: list[str] = []
+
+    def fake_pronounce_source(name: str, library: str | None, source: str) -> dict[str, str]:
+        tried.append(source)
+        raise ValueError("no entry")
+
+    monkeypatch.setattr(manuscript_guide, "pronounce_source", fake_pronounce_source)
+    monkeypatch.setattr(manuscript_guide, "log", lambda message: None)
+
+    manuscript_guide.pronunciation("Name", None)
+    assert tried == ["cmu", "wiktextract", "espeak"]
+
+
 # --- CmuSource --------------------------------------------------------------------------------------------------------------------
 
 

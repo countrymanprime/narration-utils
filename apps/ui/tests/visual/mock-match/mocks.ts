@@ -51,7 +51,8 @@ export const APPROVED_MOCKS: ApprovedMock[] = [
   { file: '02-prep-script.webp', target: { page: 'script', state: 'prep-rail-pronunciations' }, theme: 'light' },
   { file: '03-booth.webp', target: { page: 'booth', state: 'speaker-tags' }, theme: 'dark' },
   { file: '04-proof-pickups.webp', target: { page: 'proof', state: 'default' }, theme: 'light' },
-  { file: '05-master-delivery.webp', target: { page: 'master', state: 'measured' }, theme: 'light' },
+  // Scored against its own fixture state (?mockFidelity=05, merged on main by N-B57).
+  { file: '05-master-delivery.webp', target: { page: 'master', state: 'mock-fidelity-05' }, theme: 'light' },
   {
     file: '06-series-voice-bible.webp',
     theme: 'light',

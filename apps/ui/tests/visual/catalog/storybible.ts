@@ -89,6 +89,13 @@ export const storybibleStates: StateEntry[] = [
   },
   {
     page: 'storybible',
+    state: 'alias-pronunciation-editing',
+    description:
+      'Story Bible, an entry in edit mode after the narrator worked on one alias’s own pronunciation (Generate/Replace, Pronunciation details, Use mine, the kept alternate): independent of the entity’s own pronunciation controls above it (story-bible-and-import-ux-briefs PRD phase 11)',
+    ...KEEPS_DESKTOP_SCROLL,
+  },
+  {
+    page: 'storybible',
     state: 'pronunciation-queries',
     description:
       'Story Bible, the Pronunciation queries slide-over: every name not yet author confirmed in reading order, the first marked sent, with the filter, the open/sent count, Export CSV and Mark sent / Mark answered (prep-depth P3)',

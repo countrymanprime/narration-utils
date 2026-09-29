@@ -121,6 +121,9 @@ export function GuideDetail({
   const mutation = usePendingAction();
   // The pronunciation controls in edit mode start closed, so edit mode stays compact, and stay open across a save's reload.
   const [pronunciationOpen, setPronunciationOpen] = useState(false);
+  // One alias's pronunciation-details panel is independent of the entity's and of every other alias's (phase 11);
+  // keyed by alias index, so it also survives a reload (aliases keep their order across a save).
+  const [aliasPronunciationOpen, setAliasPronunciationOpen] = useState<Record<number, boolean>>({});
   // An action that outlives a switch to another entry must not pull the selection back to the one it started on when it reloads.
   const currentId = useRef(entity?.id);
   currentId.current = entity?.id;
@@ -239,20 +242,28 @@ export function GuideDetail({
         notify(describeApiError(error), 'error');
       }
     });
-  const pronounceEntity = (source: 'cmu' | 'espeak') =>
-    mutation.run('pronounce', async () => {
+  // A phase-11 alias call reuses the entity's own key so the two never race (mutation is one-at-a-time, ADR 0075); the
+  // alias suffix only keeps one alias's `pending`/`waiting` state from lighting up another alias's button.
+  const pronunciationKey = (base: string, aliasIndex?: number) => (aliasIndex === undefined ? base : `${base}-alias-${aliasIndex}`);
+  const pronounceEntity = (source: 'cmu' | 'espeak', aliasIndex?: number) =>
+    mutation.run(pronunciationKey('pronounce', aliasIndex), async () => {
       try {
-        await api.guidePronounce(entity.id, source);
+        // One call site (interactionFeedback.catalog.ts keys a row per call expression, ADR 0075): aliasIndex is
+        // folded into the argument tuple rather than branched into two calls, and left out entirely for the entity
+        // (not passed as an explicit `undefined`), so a spy on the entity's own call keeps its old two-argument shape.
+        const args: Parameters<typeof api.guidePronounce> = aliasIndex === undefined ? [entity.id, source] : [entity.id, source, aliasIndex];
+        await api.guidePronounce(...args);
         notify('Pronunciation generated.');
         await reloadFor(entity.id);
       } catch (error) {
         notify(describeApiError(error), 'error');
       }
     });
-  const pronounceUser = async (ipa: string): Promise<boolean> =>
-    (await mutation.run('pronunciation-user', async () => {
+  const pronounceUser = async (ipa: string, aliasIndex?: number): Promise<boolean> =>
+    (await mutation.run(pronunciationKey('pronunciation-user', aliasIndex), async () => {
       try {
-        await api.guidePronounceUser(entity.id, ipa);
+        const args: Parameters<typeof api.guidePronounceUser> = aliasIndex === undefined ? [entity.id, ipa] : [entity.id, ipa, aliasIndex];
+        await api.guidePronounceUser(...args);
         notify('Your pronunciation is in use.');
         await reloadFor(entity.id);
         return true;
@@ -261,20 +272,23 @@ export function GuideDetail({
         return false;
       }
     })) ?? false;
-  const switchToAlternatePronunciation = () =>
-    mutation.run('pronunciation-alternate', async () => {
+  const switchToAlternatePronunciation = (aliasIndex?: number) =>
+    mutation.run(pronunciationKey('pronunciation-alternate', aliasIndex), async () => {
       try {
-        await api.guidePronunciationUseAlternate(entity.id);
+        const args: Parameters<typeof api.guidePronunciationUseAlternate> = aliasIndex === undefined ? [entity.id] : [entity.id, aliasIndex];
+        await api.guidePronunciationUseAlternate(...args);
         notify('Pronunciation switched.');
         await reloadFor(entity.id);
       } catch (error) {
         notify(describeApiError(error), 'error');
       }
     });
-  const setPronunciationStatus = (status: GuidePronunciationStatus, note: string) =>
-    mutation.run('pronunciation-status', async () => {
+  const setPronunciationStatus = (status: GuidePronunciationStatus, note: string, aliasIndex?: number) =>
+    mutation.run(pronunciationKey('pronunciation-status', aliasIndex), async () => {
       try {
-        await api.guidePronunciationSetStatus(entity.id, status, note);
+        const args: Parameters<typeof api.guidePronunciationSetStatus> =
+          aliasIndex === undefined ? [entity.id, status, note] : [entity.id, status, note, aliasIndex];
+        await api.guidePronunciationSetStatus(...args);
         notify('Pronunciation status saved.');
         await reloadFor(entity.id);
       } catch (error) {
@@ -555,26 +569,60 @@ export function GuideDetail({
                         onChange={() => undefined}
                         // The table row is compact: the inline style wins over the primitive's own mono size (a plain
                         // utility class can't be layered safely over it, see TextField.tsx).
-                        style={{ fontSize: '0.75rem', paddingRight: '2.75rem' }}
+                        style={{ fontSize: '0.75rem', paddingRight: canEdit && editing ? '4.5rem' : '2.75rem' }}
                       />
-                      <TooltipTarget
-                        text={
-                          playingPreview === previewKey(index)
-                            ? 'Pause alias pronunciation preview'
-                            : ((alias.pronunciation.ipa ? undefined : NO_PRONUNCIATION_REASON) ?? 'Play this alias pronunciation')
-                        }
-                        style={{ position: 'absolute', right: '.25rem', top: '50%', transform: 'translateY(-50%)' }}
-                      >
-                        <IconButton
-                          label={playingPreview === previewKey(index) ? 'Pause alias pronunciation' : 'Play alias pronunciation'}
-                          disabledReason={playingPreview === previewKey(index) ? undefined : alias.pronunciation.ipa ? undefined : NO_PRONUNCIATION_REASON}
-                          pending={loadingPreview === previewKey(index)}
-                          onClick={() => void playPreview(index)}
+                      <div className="flex items-center gap-1" style={{ position: 'absolute', right: '.25rem', top: '50%', transform: 'translateY(-50%)' }}>
+                        <TooltipTarget
+                          text={
+                            playingPreview === previewKey(index)
+                              ? 'Pause alias pronunciation preview'
+                              : ((alias.pronunciation.ipa ? undefined : NO_PRONUNCIATION_REASON) ?? 'Play this alias pronunciation')
+                          }
                         >
-                          <FontAwesomeIcon icon={playingPreview === previewKey(index) ? faPause : faWaveSquare} />
-                        </IconButton>
-                      </TooltipTarget>
+                          <IconButton
+                            label={playingPreview === previewKey(index) ? 'Pause alias pronunciation' : 'Play alias pronunciation'}
+                            disabledReason={playingPreview === previewKey(index) ? undefined : alias.pronunciation.ipa ? undefined : NO_PRONUNCIATION_REASON}
+                            pending={loadingPreview === previewKey(index)}
+                            onClick={() => void playPreview(index)}
+                          >
+                            <FontAwesomeIcon icon={playingPreview === previewKey(index) ? faPause : faWaveSquare} />
+                          </IconButton>
+                        </TooltipTarget>
+                        {/* Generate/Replace live in edit mode only, same rule and sources as the entity's own control above. */}
+                        {canEdit && editing && (
+                          <TooltipTarget text={alias.pronunciation.ipa ? 'Replace this pronunciation' : 'Generate a pronunciation for this name'}>
+                            <Menu
+                              disabled={mutation.isPending(pronunciationKey('pronounce', index)) || waiting(pronunciationKey('pronounce', index))}
+                              render={<IconButton label={alias.pronunciation.ipa ? 'Replace alias pronunciation' : 'Generate alias pronunciation'} />}
+                              items={[
+                                { key: 'cmu', label: 'From the CMU dictionary', onSelect: () => void pronounceEntity('cmu', index) },
+                                { key: 'espeak', label: 'From eSpeak NG', onSelect: () => void pronounceEntity('espeak', index) },
+                              ]}
+                            >
+                              <FontAwesomeIcon icon={alias.pronunciation.ipa ? faRotate : faPlus} />
+                            </Menu>
+                          </TooltipTarget>
+                        )}
+                      </div>
                     </div>
+                    {canEdit && editing && (
+                      <p className="mt-1 text-[0.7rem]" style={{ color: 'var(--text-muted)' }}>
+                        Source: {pronunciationSourceLabel(alias.pronunciation)} · Confidence: {alias.pronunciation.confidence}
+                      </p>
+                    )}
+                    <PronunciationWork
+                      key={`${entity.id}:${index}:${alias.pronunciation.source}:${alias.pronunciation.ipa}:${alias.pronunciation.status ?? ''}:${alias.pronunciation.note ?? ''}`}
+                      name={alias.text}
+                      value={alias.pronunciation}
+                      editing={canEdit && editing}
+                      expanded={Boolean(aliasPronunciationOpen[index])}
+                      onExpandedChange={(open) => setAliasPronunciationOpen((prior) => ({ ...prior, [index]: open }))}
+                      disabled={mutation.isBusy}
+                      pending={(key) => mutation.isPending(pronunciationKey(`pronunciation-${key}`, index))}
+                      onSaveUser={(ipa) => pronounceUser(ipa, index)}
+                      onUseAlternate={() => void switchToAlternatePronunciation(index)}
+                      onSaveStatus={(status, note) => void setPronunciationStatus(status, note, index)}
+                    />
                   </TableCell>
                   <TableCell numeric>{alias.occurrences.length}</TableCell>
                   <TableCell align="right">

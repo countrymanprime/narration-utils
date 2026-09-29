@@ -265,6 +265,23 @@ class ManuscriptGuideTests(unittest.TestCase):
             self.assertEqual(["Ally"], [alias["text"] for alias in entity["aliases"]])
             self.assertEqual(2, len(entity["aliases"][0]["occurrences"]))
 
+    def test_a_new_aliass_pronunciation_prefers_the_narrators_default_source(self):
+        # story-bible-and-import-ux-briefs PRD phase 11 (the settings default): --default-source reaches apply_edit's
+        # own pronunciation() call for a freshly added alias, the same way it reaches build and create. eSpeak may not
+        # be installed in every environment this test runs in, so the source is stubbed the way test_providers.py does.
+        with tempfile.TemporaryDirectory() as temporary:
+            guide_file = self._guide_with_entity(Path(temporary))
+            args = self._edit_args(guide_file, [("aliases", "Wren")])
+            args.default_source = "espeak"
+            tried = []
+            with patch.object(
+                guide, "pronounce_source", wraps=lambda name, library, source: (tried.append(source), {"ipa": "/x/", "source": source, "confidence": "high"})[1]
+            ):
+                guide.edit(args)
+            self.assertEqual("espeak", tried[0])
+            entity = json.loads(guide_file.read_text(encoding="utf-8"))["entities"][0]
+            self.assertEqual("espeak", entity["aliases"][0]["pronunciation"]["source"])
+
     def test_the_command_line_takes_a_value_that_starts_with_a_dash(self):
         with tempfile.TemporaryDirectory() as temporary:
             guide_file = self._guide_with_entity(Path(temporary))

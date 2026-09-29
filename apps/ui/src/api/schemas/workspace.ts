@@ -8,7 +8,10 @@ import type {
   WorkspacePeaks,
   WorkspacePeaksEntry,
   WorkspacePeaksResult,
+  PassageTake,
+  WorkspaceTakesResult,
   WorkspaceToken,
+  WorkspaceUseTakeResult,
 } from '../contracts/workspace';
 import { listFromNull, optionalFromNull } from './base';
 import { COVERAGE_EVALUATOR_REASONS, COVERAGE_REFUSAL_REASONS } from './coverage';
@@ -89,3 +92,45 @@ export const workspacePeaksResultSchema = z.object({
   chapterId: z.string(),
   items: listFromNull(peaksEntrySchema),
 }) satisfies z.ZodType<WorkspacePeaksResult>;
+
+// The Takes panel (edit-and-proof-workspace PRD Phase 6, ADR 0700): apps/desktop/internal/passagetakes.
+const passageTakeSchema = z.object({
+  id: z.string(),
+  source: z.enum(['item_take', 'lane_retake', 'take_review']),
+  action: z.enum(['make_active', 'pick_lane', 'add_and_activate']),
+  confirm: z.boolean(),
+  label: z.string(),
+  detail: z.string(),
+  active: z.boolean(),
+  itemGuid: z.string(),
+  takeGuid: z.string(),
+  sourceFile: z.string(),
+  sourceStart: z.number(),
+  sourceLength: z.number(),
+  usable: z.boolean(),
+  reason: z.string().optional(),
+  compared: z.boolean(),
+  fidelity: z.number().optional(),
+  notComparedReason: z.string().optional(),
+}) satisfies z.ZodType<PassageTake>;
+
+export const workspaceTakesResultSchema = z.object({
+  chapterId: z.string(),
+  firstToken: z.number(),
+  lastToken: z.number(),
+  firstParagraph: z.number(),
+  lastParagraph: z.number(),
+  words: z.number(),
+  passageId: z.string(),
+  itemGuid: z.string(),
+  message: z.string().optional(),
+  comparisonId: z.string().optional(),
+  candidates: listFromNull(passageTakeSchema),
+}) satisfies z.ZodType<WorkspaceTakesResult>;
+
+export const workspaceUseTakeResultSchema = z.object({
+  outcome: z.enum(['done', 'started', 'refused']),
+  reason: z.enum(['not_offered', 'unusable', 'stale', 'recording', 'script_outdated', 'standalone', 'not_running', 'experimental_off', 'failed']).optional(),
+  message: z.string(),
+  changed: z.boolean(),
+}) satisfies z.ZodType<WorkspaceUseTakeResult>;

@@ -43,6 +43,24 @@ def statuses(alignment):
 # the span
 
 
+def test_a_paragraph_span_is_every_sentence_of_those_paragraphs():
+    result = td.build_paragraph_span(compare, ["One two. Three four.", "Five six.", "Seven."], 0, 1)
+
+    assert (result.first_unit, result.last_unit, result.first_paragraph, result.last_paragraph) == (0, 2, 0, 1)
+    assert [w.text for w in result.words] == ["One", "two.", "Three", "four.", "Five", "six."]
+
+
+@pytest.mark.parametrize(("first", "last"), [(-1, 0), (2, 1), (0, 3)])
+def test_a_paragraph_span_outside_the_chapter_is_refused(first, last):
+    with pytest.raises(td.SpanError, match="not within"):
+        td.build_paragraph_span(compare, ["One two.", "Three four."], first, last)
+
+
+def test_paragraphs_without_sentences_are_refused():
+    with pytest.raises(td.SpanError, match="have no sentences"):
+        td.build_paragraph_span(compare, ["One two.", "", "Three."], 1, 1)
+
+
 def test_the_span_numbers_sentences_as_the_markers_do_and_keeps_only_spoken_words():
     result = td.build_span(compare, ["One two. Three — four.", "Five six."], 1, 2)
 

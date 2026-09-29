@@ -18,11 +18,22 @@ const ANOTHER_GROUP = 'the takes of another group are being compared. Wait until
  * (the group changed, the manuscript has no such chapter any more) is shown in the host's words. `onClose` gets the job as it
  * ended, or undefined when nothing ran to an end here.
  */
-export function TakeComparisonDialog({ findingId, onClose }: { findingId: string; onClose: (ended?: TakeComparisonJob) => void }) {
+export function TakeComparisonDialog({
+  findingId,
+  start,
+  onClose,
+}: {
+  /** What is compared: a take-review group's finding id, or (with `start`) a workspace passage's id, the job's findingId. */
+  findingId: string;
+  /** Starts the comparison when none runs, for a subject that is not a take-review group (the Takes panel's passage). */
+  start?: () => Promise<TakeComparisonJob>;
+  onClose: (ended?: TakeComparisonJob) => void;
+}) {
   const api = useApi();
   const [job, setJob] = useState<TakeComparisonJob>();
   const [problem, setProblem] = useState<string>();
   const started = useRef(false);
+  const startRef = useRef(start);
   const mounted = useRef(false);
 
   useEffect(() => {
@@ -40,7 +51,7 @@ export function TakeComparisonDialog({ findingId, onClose }: { findingId: string
     api
       .takeComparisonState()
       .then((state) => {
-        if (state.phase !== 'running') return api.takeComparisonStart(findingId);
+        if (state.phase !== 'running') return startRef.current ? startRef.current() : api.takeComparisonStart(findingId);
         if (state.findingId === findingId) return state;
         throw new Error(ANOTHER_GROUP);
       })
