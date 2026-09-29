@@ -15,7 +15,8 @@ export type ContextMenuItem = {
 // the same roles and keys, but opened by the area instead of a button. `onOpen` runs on the contextmenu event, before the
 // menu opens, so the caller can choose what the menu acts on (the word under the pointer) and the items reflect it. A menu
 // with no items leaves the browser's own menu alone. An item that cannot run says why instead of vanishing, and is not
-// selectable. The area keeps its own layout (`className`); the popup sits between the slide-over and the dialogs.
+// selectable. The popup is portalled into the page's <main> (else to <body>), so screen readers and axe place it inside a
+// landmark like the page it belongs to. The area keeps its own layout (`className`); the popup sits between the slide-over and the dialogs.
 export function ContextMenu({
   items,
   onOpen,
@@ -33,7 +34,7 @@ export function ContextMenu({
       <BaseContextMenu.Trigger className={className} onContextMenu={items.length > 0 || onOpen ? onOpen : undefined}>
         {children}
       </BaseContextMenu.Trigger>
-      <BaseContextMenu.Portal>
+      <BaseContextMenu.Portal container={document.querySelector('main') ?? undefined}>
         <BaseContextMenu.Positioner collisionPadding={8} className="z-[55]">
           <BaseContextMenu.Popup className="w-64 rounded-[0.4rem] border border-[var(--border)] bg-[var(--surface)] p-[0.35rem] shadow-[var(--shadow-lg)] outline-none">
             {items.map((item) => (
