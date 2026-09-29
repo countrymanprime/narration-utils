@@ -212,6 +212,7 @@ export function ReaderText({
   readerRef,
   speakers,
   large = false,
+  dense = false,
 }: {
   rows: ReaderRow[];
   cursor: number;
@@ -233,6 +234,8 @@ export function ReaderText({
   speakers?: Map<string, string>;
   /** The Booth's full-bleed reading size (mock 03, audit BO3): larger type with more air between lines. */
   large?: boolean;
+  /** The companion's reading size (mock 07): 16 px on a 27 px line, for a 380 px column beside the DAW. */
+  dense?: boolean;
 }) {
   const ownRef = useRef<HTMLDivElement>(null);
   const container = readerRef ?? ownRef;
@@ -246,9 +249,11 @@ export function ReaderText({
   // The Booth's type is the measured spec (mock-fidelity-primitives-and-components.prd.md Phase 13, mock 03 Q6):
   // `--font-size-booth-script` (26 px), never below WCAG's large text at any width. With no card, a read word's muted
   // colour on a single mark's tint sits over the reading surface, which still clears large-text contrast.
-  const typeClass = large
-    ? 'space-y-5 text-[length:var(--font-size-booth-script)] leading-[calc(var(--font-size-booth-script)*var(--line-height-booth-script))]'
-    : 'space-y-5 text-[1.35rem] leading-[2.1rem]';
+  const typeClass = dense
+    ? 'space-y-3 text-base leading-[1.6875rem]'
+    : large
+      ? 'space-y-5 text-[length:var(--font-size-booth-script)] leading-[calc(var(--font-size-booth-script)*var(--line-height-booth-script))]'
+      : 'space-y-5 text-[1.35rem] leading-[2.1rem]';
   return (
     <div ref={container} className={typeClass} aria-label="Chapter text" role="region">
       {rows.map((row) => {
@@ -269,11 +274,11 @@ export function ReaderText({
           // what is shown. Stacked, like TitleSubtitle's own layout: the subtitle is a muted line under the title,
           // with a visually hidden " — " between them so the two lines still read as one name to a screen reader.
           <h2 key={row.key} className={`font-['Barlow_Condensed',sans-serif] leading-tight tracking-[0.02em] normal-case ${gutter ? 'lg:pl-[8.25rem]' : ''}`}>
-            <span className="block text-[1.7rem] font-semibold">{content}</span>
+            <span className={`block font-semibold ${dense ? 'text-[1.15rem]' : 'text-[1.7rem]'}`}>{content}</span>
             {row.subtitle && (
               <>
                 <span className="sr-only"> — </span>
-                <span className="block text-[1.2rem] font-normal text-[var(--text-muted)]">{row.subtitle}</span>
+                <span className={`block font-normal text-[var(--text-muted)] ${dense ? 'text-base' : 'text-[1.2rem]'}`}>{row.subtitle}</span>
               </>
             )}
           </h2>

@@ -268,6 +268,7 @@ export function BoothSession({ source, entities = NO_ENTITIES, notes = NO_NOTES,
           session={session}
           follow={follow}
           chapterTitle={chapterTitle}
+          chapterId={chapter?.id}
           recording={recording}
           marks={marks}
           header={header}

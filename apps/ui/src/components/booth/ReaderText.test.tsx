@@ -230,3 +230,12 @@ describe('ReaderText flag marks (teleprompter-manuscript-integration.prd.md Phas
     expect(container.querySelector('[data-highlight="Misread"]')?.getAttribute('role')).toBeNull();
   });
 });
+
+describe('ReaderText dense size (mock 07)', () => {
+  it('reads at 16 px on a 27 px line, not the Booth or card size', () => {
+    render(<ReaderText rows={[row()]} cursor={0} skipped={[]} follow={false} dense />);
+    const region = screen.getByRole('region', { name: 'Chapter text' });
+    expect(region.className).toContain('text-base');
+    expect(region.className).toContain('leading-[1.6875rem]');
+  });
+});
