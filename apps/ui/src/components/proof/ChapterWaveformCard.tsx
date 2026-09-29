@@ -5,6 +5,7 @@ import type { TrackItem } from '../../api/contracts/tracks';
 import type { ManuscriptChapter } from '../../types';
 import { chapterName } from '../../chapterName';
 import { Button } from '../primitives/Button';
+import { Panel } from '../primitives/Panel';
 import { Select } from '../primitives/Select';
 import { buildFlags } from './flags';
 import { buildPlaylist, totalDuration } from './playlist';
@@ -57,9 +58,9 @@ export function ChapterWaveformCard({
 
   if (chapters.length === 0) {
     return (
-      <p className="rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 py-4 text-sm text-[var(--text-muted)]">
-        No chapters to show a waveform for yet.
-      </p>
+      <Panel label="Chapter waveform">
+        <p className="text-sm text-[var(--text-muted)]">No chapters to show a waveform for yet.</p>
+      </Panel>
     );
   }
 
@@ -71,29 +72,31 @@ export function ChapterWaveformCard({
       : undefined);
 
   return (
-    <section aria-label="Chapter waveform" className="rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 py-2 shadow-[var(--shadow)]">
-      {emptyText ? (
-        <p role={failed ? 'alert' : undefined} className="py-4 text-sm text-[var(--text-muted)]">
-          {emptyText}
-        </p>
-      ) : current ? (
-        <WaveformStrip
-          bare
-          playlist={playlist}
-          alignmentItems={current.alignment.items}
-          peaks={current.peaks}
-          tokens={current.alignment.tokens}
-          flags={flags}
-          elapsed={0}
-          duration={duration}
-        />
-      ) : null}
-      <div className="mt-1 flex flex-wrap items-center gap-2">
-        <span className="font-mono text-xs text-[var(--text-muted)]">0:00</span>
-        <ChapterPicker chapters={chapters} chapterId={chapterId} onChapterChange={onChapterChange} onOpenChapter={onOpenChapter} />
-        <span className="ml-auto font-mono text-xs text-[var(--text-muted)]">{formatClock(duration)}</span>
+    <Panel label="Chapter waveform" flush>
+      <div className="px-3 py-2">
+        {emptyText ? (
+          <p role={failed ? 'alert' : undefined} className="text-sm text-[var(--text-muted)]">
+            {emptyText}
+          </p>
+        ) : current ? (
+          <WaveformStrip
+            bare
+            playlist={playlist}
+            alignmentItems={current.alignment.items}
+            peaks={current.peaks}
+            tokens={current.alignment.tokens}
+            flags={flags}
+            elapsed={0}
+            duration={duration}
+          />
+        ) : null}
+        <div className="mt-1 flex flex-wrap items-center gap-2">
+          <span className="font-mono text-xs text-[var(--text-muted)]">0:00</span>
+          <ChapterPicker chapters={chapters} chapterId={chapterId} onChapterChange={onChapterChange} onOpenChapter={onOpenChapter} />
+          <span className="ml-auto font-mono text-xs text-[var(--text-muted)]">{formatClock(duration)}</span>
+        </div>
       </div>
-    </section>
+    </Panel>
   );
 }
 
