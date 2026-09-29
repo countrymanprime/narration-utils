@@ -1,3 +1,4 @@
+# A count badge on Story Bible and Proof is spoken with the name ("Proof, 3"); the number is the host's, so it is matched, not pinned.
 # The page list is pinned exactly and in order (`children: equal`): a page added, removed or moved fails here. Settings sits after it.
 # Grouped by production stage (stage-navigation-and-page-replacement.prd.md Phase 1, ADR 0407 item 3): each group is
 # a named `group`, so a group added, removed, renamed or reordered fails here too. Its visible heading text is also
@@ -14,7 +15,7 @@
       - /children: equal
       - text: Prep
       - button "Script"
-      - button "Story Bible"
+      - button /Story Bible, \d+/
     - group "Record":
       - /children: equal
       - text: Record
@@ -22,7 +23,7 @@
     - group "Review":
       - /children: equal
       - text: Review
-      - button "Proof"
+      - button /Proof, \d+/
       - button "Pickups"
     - group "Finish":
       - /children: equal

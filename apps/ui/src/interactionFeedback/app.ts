@@ -17,6 +17,11 @@ export const appFeedback: Record<string, FeedbackRow> = {
   'src/App.tsx::subscribeUpdate#1': subscription('The update check finding a newer release becomes one toast.'),
   'src/App.tsx::subscribeLiveUpdateHealth#1': subscription('Degraded live updates become one toast.'),
   'src/App.tsx::subscribeProjectAttach#1': subscription('A project attach refreshes the bootstrap or shows why it was refused.'),
+  // components/layout/useNavCounts.ts
+  'src/components/layout/useNavCounts.ts::guidePronunciationQueries#1': row('effect', 'file-io', 'na', 'na', 'ui', 'silent', 'na', 'exempt', 'The rail\'s Story Bible badge: cosmetic, read on every page move; a failed read draws no badge (never a made-up number) and the Story Bible page reports the real error.'),
+  'src/components/layout/useNavCounts.ts::findingsSummary#1': row('effect', 'file-io', 'na', 'na', 'ui', 'silent', 'na', 'exempt', 'The rail\'s Proof badge: cosmetic, read on every page move; a failed read draws no badge and the Proof page reports the real error.'),
+  'src/components/layout/useNavCounts.ts::pickupsState#1': row('effect', 'instant', 'na', 'na', 'ui', 'silent', 'na', 'exempt', 'The rail\'s Pickups badge: only what REAPER last reported (it never asks REAPER to count); a failed read draws no badge.'),
+  'src/components/layout/useNavCounts.ts::subscribePickups#1': subscription('The pickups state event, so the rail\'s Pickups badge follows a count, import or resolve run.'),
   'src/App.tsx::settingsForScope#1': row('mount', 'file-io', 'na', 'na', 'ui', 'silent', 'na', 'exempt', 'Cosmetic: the narrator\'s entity colours; the built-in colours stay if the settings cannot be read, and Settings reports the real error.'),
   'src/App.tsx::chapterSyncPreview#1': row('effect', 'file-io', 'na', 'na', 'ui', 'toast', 'na', 'ok', 'Fills the consent dialog once chapterSyncState().ask is true (daw-chapter-track-auto-sync.prd.md Phase 3); a failed read is a toast and the dialog keeps its "reading the saved project" placeholder.'),
   'src/App.tsx::chapterSyncSetEnabled#1': row('click', 'file-io', 'pending', 'pending', 'ui', 'toast', 'na', 'ok', 'Sync N chapters on the consent dialog: the button is busy until the first sync runs and the dialog closes on its own once ask flips false (the same chaptersync:state event Home\'s toast and Tracks\' panel read).'),

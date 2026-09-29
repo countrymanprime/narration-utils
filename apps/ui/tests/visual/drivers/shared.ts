@@ -118,6 +118,9 @@ export async function askForThePreviewVoice(page: Page, url: string): Promise<vo
   await page.getByRole('button', { name: 'Play preview' }).first().click();
 }
 
+// A nav item that carries a count badge is named "Proof, 14" (NavButton), so the item is found by its name and an optional count.
+const navItemName = (name: string) => new RegExp(`^${name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(, \\d+)?$`);
+
 export async function clickNav(page: Page, name: AppPage): Promise<void> {
   // Below `md` the navigation is behind an "Open navigation" button (the reflow viewport, ADR 0061): open the drawer, pick
   // the item, and wait for the drawer to close so the page behind it is the one photographed. Only when the menu button
@@ -126,11 +129,15 @@ export async function clickNav(page: Page, name: AppPage): Promise<void> {
   if (await menuButton.isVisible()) {
     await menuButton.click();
     const drawer = page.getByRole('dialog', { name: 'Navigation' });
-    await drawer.getByRole('button', { name, exact: true }).click();
+    await drawer.getByRole('button', { name: navItemName(name) }).click();
     await drawer.waitFor({ state: 'hidden' });
     return;
   }
-  await page.locator('aside:visible').first().getByRole('button', { name, exact: true }).click();
+  await page
+    .locator('aside:visible')
+    .first()
+    .getByRole('button', { name: navItemName(name) })
+    .click();
 }
 
 // Navigates through the nav and waits until the destination has arrived (its heading, and its content where that is the
