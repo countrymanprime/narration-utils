@@ -4,11 +4,11 @@ go 1.26.0
 
 require (
 	github.com/bogem/id3v2/v2 v2.1.4
-	github.com/giraffesyo/pdf v0.6.0
+	github.com/giraffesyo/pdf v0.7.0
 	github.com/wailsapp/wails/v3 v3.0.0-beta.26
-	golang.org/x/net v0.56.0
+	golang.org/x/net v0.59.0
 	golang.org/x/sys v0.48.0
-	golang.org/x/text v0.39.0
+	golang.org/x/text v0.42.0
 )
 
 require (
