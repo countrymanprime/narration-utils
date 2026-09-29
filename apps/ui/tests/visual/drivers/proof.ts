@@ -10,6 +10,7 @@ import {
   openFindingRow,
   openPickupGroup,
   openReaperControls,
+  openLinkedProofChapter,
   openProof,
   openScanDialog,
   pressInReaper,
@@ -20,7 +21,12 @@ import {
 
 export const proofDrivers: Record<string, Driver> = {
   default: async (page) => {
-    await openProof(page);
+    // Chapter 1 is linked to its track first, so the book-level waveform card draws its real stored peaks (ADR 0715)
+    // rather than its empty state; no chapter starts linked in the mock. Linking also seeds the workspace's own misread
+    // as a fifth note (the mock's lazy overlay finding).
+    await openLinkedProofChapter(page, 'Chapter 1');
+    await goToPage(page, 'Proof');
+    await waitForFindingRows(page, 5);
   },
   empty: async (page) => {
     await page.goto('/?mockFindings=empty');

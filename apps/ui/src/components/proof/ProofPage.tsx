@@ -5,14 +5,13 @@ import { useApi } from '../../api/ApiContext';
 import { describeApiError } from '../../api/errorMessage';
 import type { Finding, FindingsPage, FindingsSummary, ManuscriptChapter, TakeComparisonJob, TakeReviewScanJob } from '../../types';
 import { usePickupsState } from '../pickups/usePickupsState';
-import { chapterName } from '../../chapterName';
+import { ChapterWaveformCard } from './ChapterWaveformCard';
 import { LoadError } from '../layout/LoadError';
 import { Button } from '../primitives/Button';
 import { Heading } from '../primitives/Heading';
 import { IconButton } from '../primitives/IconButton';
 import { Panel } from '../primitives/Panel';
 import { Popover } from '../primitives/Popover';
-import { Select } from '../primitives/Select';
 import type { Notify } from '../primitives/Toast';
 import { FindingDetail } from './FindingDetail';
 import { FindingsList } from './FindingsList';
@@ -80,7 +79,9 @@ export function ProofPage({
   const dawKind = useDawKind();
   const [scanning, setScanning] = useState(false);
   const [chapters, setChapters] = useState<ManuscriptChapter[]>([]);
+  // The chapter whose waveform the card draws: the first narration chapter until the narrator picks another (ADR 0715).
   const [chapterChoice, setChapterChoice] = useState('');
+  const waveformChapterId = chapters.some((chapter) => chapter.id === chapterChoice) ? chapterChoice : (chapters[0]?.id ?? '');
 
   // The chapter picker's list: the narration chapters, the ones with a recording to proof (front and back matter have none).
   useEffect(() => {
@@ -167,97 +168,96 @@ export function ProofPage({
 
   if (loadError) return <LoadError title="Proof" message={loadError} retry={retry} />;
 
+  const waveformCard = <ChapterWaveformCard chapters={chapters} chapterId={waveformChapterId} onChapterChange={setChapterChoice} onOpenChapter={openChapter} />;
   const nothingYet = summary !== undefined && summary.total === 0 && summary.notInLatestRun === 0;
 
-  return (
-    <div className="mx-auto flex max-w-7xl flex-col gap-4">
-      <div className="flex flex-wrap items-start justify-between gap-2">
-        <div className="flex min-w-0 flex-wrap items-center gap-x-4 gap-y-2">
-          <Heading title="Proof" />
-          <SourcesLine analyzers={summary?.analyzers ?? []} proofer={pickups.total > 0} />
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          {chapters.length > 0 && (
-            <>
-              <Select
-                label="Chapter to open"
-                value={chapterChoice}
-                onChange={setChapterChoice}
-                options={[{ value: '', label: 'Choose a chapter…' }, ...chapters.map((chapter) => ({ value: chapter.id, label: chapterName(chapter) }))]}
-              />
-              <Button variant="secondary" disabled={!chapterChoice} onClick={() => openChapter(chapterChoice)}>
-                Open chapter
-              </Button>
-            </>
-          )}
-          {!nothingYet && (
-            <Popover
-              label="Filter findings"
-              side="bottom"
-              align="end"
-              trigger={
-                <IconButton label={isFiltered(filters) ? 'Filters (some are hidden)' : 'Filters'}>
-                  <FontAwesomeIcon icon={faFilter} />
-                </IconButton>
-              }
-            >
-              <div className="w-[34rem] max-w-[90vw]">
-                <ReviewFilters summary={summary} values={filters} onChange={changeFilters} />
-              </div>
-            </Popover>
-          )}
-          <Button variant="secondary" onClick={() => setScanning(true)}>
-            Find pickups and duplicates…
-          </Button>
-        </div>
+  // Mock 04's header sits over the notes column only: the note's detail column starts at the top of the page beside it.
+  const header = (
+    <div className="flex flex-wrap items-start justify-between gap-2">
+      <div className="flex min-w-0 flex-wrap items-center gap-x-4 gap-y-2">
+        <Heading title="Proof" />
+        <SourcesLine analyzers={summary?.analyzers ?? []} proofer={pickups.total > 0} />
       </div>
-      {nothingYet ? (
+      <div className="flex flex-wrap items-center gap-2">
+        {!nothingYet && (
+          <Popover
+            label="Filter findings"
+            side="bottom"
+            align="end"
+            trigger={
+              <IconButton label={isFiltered(filters) ? 'Filters (some are hidden)' : 'Filters'}>
+                <FontAwesomeIcon icon={faFilter} />
+              </IconButton>
+            }
+          >
+            <div className="w-[34rem] max-w-[90vw]">
+              <ReviewFilters summary={summary} values={filters} onChange={changeFilters} />
+            </div>
+          </Popover>
+        )}
+        <Button variant="secondary" onClick={() => setScanning(true)}>
+          Find pickups and duplicates…
+        </Button>
+      </div>
+    </div>
+  );
+
+  if (nothingYet) {
+    return (
+      <div className="mx-auto flex max-w-7xl flex-col gap-4">
+        {header}
+        {hasManuscript && waveformCard}
         <Panel title="No notes yet">
           <p className="mt-2 text-sm" style={{ color: 'var(--text-muted)' }}>
             Notes appear here when a check has something for you to look at: open a chapter and compare its recording with the script, build the Story Bible, or
             find pickups and duplicates on a track. Each one waits here until you accept, dismiss or defer it.
           </p>
         </Panel>
-      ) : (
-        <>
-          <div className="grid gap-4 xl:grid-cols-[minmax(0,1.7fr)_minmax(0,1fr)]">
-            <FindingsList
-              page={page}
-              selectedId={selected?.id}
-              onSelect={setSelected}
-              filtered={isFiltered(filters)}
-              onClearFilters={() => changeFilters({ ...EMPTY_FILTERS, sort: filters.sort })}
-              onShowMore={() => setLimit((current) => current + REVIEW_PAGE_SIZE)}
-              header={<NotesHeader total={summary?.total ?? 0} counts={headerCounts(summary, accepted)} pickups={pickups} />}
-            />
-            <div className="min-w-0">
-              {selected ? (
-                <FindingDetail
-                  // One detail per finding, so a note typed on one never shows on the next; a refreshed finding keeps it.
-                  key={selected.id}
-                  finding={selected}
-                  hasManuscript={hasManuscript}
-                  onChanged={changed}
-                  goToManuscript={goToManuscript}
-                  goToStoryBible={goToStoryBible}
-                  goToWorkspace={goToWorkspace}
-                  goToMaster={goToMaster}
-                  reaperStatus={reaper.status}
-                  onReaperStatusChange={reaper.refresh}
-                  onCompared={compared}
-                  dawKind={dawKind}
-                />
-              ) : (
-                <Panel>
-                  <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
-                    Select a note to see its evidence and decide what to do with it.
-                  </p>
-                </Panel>
-              )}
-            </div>
-          </div>
-        </>
-      )}
+        {scanning && <TakeReviewScanDialog onClose={scanClosed} />}
+      </div>
+    );
+  }
+
+  return (
+    <div className="mx-auto grid max-w-7xl gap-4 xl:grid-cols-[minmax(0,1.7fr)_minmax(0,1fr)]">
+      <div className="flex min-w-0 flex-col gap-3">
+        {header}
+        {hasManuscript && waveformCard}
+        <FindingsList
+          page={page}
+          selectedId={selected?.id}
+          onSelect={setSelected}
+          filtered={isFiltered(filters)}
+          onClearFilters={() => changeFilters({ ...EMPTY_FILTERS, sort: filters.sort })}
+          onShowMore={() => setLimit((current) => current + REVIEW_PAGE_SIZE)}
+          header={<NotesHeader total={summary?.total ?? 0} counts={headerCounts(summary, accepted)} pickups={pickups} />}
+        />
+      </div>
+      <div className="min-w-0">
+        {selected ? (
+          <FindingDetail
+            // One detail per finding, so a note typed on one never shows on the next; a refreshed finding keeps it.
+            key={selected.id}
+            finding={selected}
+            hasManuscript={hasManuscript}
+            onChanged={changed}
+            goToManuscript={goToManuscript}
+            goToStoryBible={goToStoryBible}
+            goToWorkspace={goToWorkspace}
+            goToMaster={goToMaster}
+            reaperStatus={reaper.status}
+            onReaperStatusChange={reaper.refresh}
+            onCompared={compared}
+            dawKind={dawKind}
+          />
+        ) : (
+          <Panel>
+            <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
+              Select a note to see its evidence and decide what to do with it.
+            </p>
+          </Panel>
+        )}
+      </div>
       {scanning && <TakeReviewScanDialog onClose={scanClosed} />}
     </div>
   );
