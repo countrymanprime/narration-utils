@@ -5,14 +5,13 @@ import { useApi } from '../../api/ApiContext';
 import { describeApiError } from '../../api/errorMessage';
 import type { Finding, FindingsPage, FindingsSummary, ManuscriptChapter, TakeComparisonJob, TakeReviewScanJob } from '../../types';
 import { usePickupsState } from '../pickups/usePickupsState';
-import { chapterName } from '../../chapterName';
+import { ChapterWaveformCard } from './ChapterWaveformCard';
 import { LoadError } from '../layout/LoadError';
 import { Button } from '../primitives/Button';
 import { Heading } from '../primitives/Heading';
 import { IconButton } from '../primitives/IconButton';
 import { Panel } from '../primitives/Panel';
 import { Popover } from '../primitives/Popover';
-import { Select } from '../primitives/Select';
 import type { Notify } from '../primitives/Toast';
 import { FindingDetail } from './FindingDetail';
 import { FindingsList } from './FindingsList';
@@ -80,7 +79,9 @@ export function ProofPage({
   const dawKind = useDawKind();
   const [scanning, setScanning] = useState(false);
   const [chapters, setChapters] = useState<ManuscriptChapter[]>([]);
+  // The chapter whose waveform the card draws: the first narration chapter until the narrator picks another (ADR 0715).
   const [chapterChoice, setChapterChoice] = useState('');
+  const waveformChapterId = chapters.some((chapter) => chapter.id === chapterChoice) ? chapterChoice : (chapters[0]?.id ?? '');
 
   // The chapter picker's list: the narration chapters, the ones with a recording to proof (front and back matter have none).
   useEffect(() => {
@@ -177,19 +178,6 @@ export function ProofPage({
           <SourcesLine analyzers={summary?.analyzers ?? []} proofer={pickups.total > 0} />
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          {chapters.length > 0 && (
-            <>
-              <Select
-                label="Chapter to open"
-                value={chapterChoice}
-                onChange={setChapterChoice}
-                options={[{ value: '', label: 'Choose a chapter…' }, ...chapters.map((chapter) => ({ value: chapter.id, label: chapterName(chapter) }))]}
-              />
-              <Button variant="secondary" disabled={!chapterChoice} onClick={() => openChapter(chapterChoice)}>
-                Open chapter
-              </Button>
-            </>
-          )}
           {!nothingYet && (
             <Popover
               label="Filter findings"
@@ -211,6 +199,9 @@ export function ProofPage({
           </Button>
         </div>
       </div>
+      {hasManuscript && (
+        <ChapterWaveformCard chapters={chapters} chapterId={waveformChapterId} onChapterChange={setChapterChoice} onOpenChapter={openChapter} />
+      )}
       {nothingYet ? (
         <Panel title="No notes yet">
           <p className="mt-2 text-sm" style={{ color: 'var(--text-muted)' }}>

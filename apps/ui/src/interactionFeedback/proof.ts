@@ -51,6 +51,13 @@ export const proofFeedback: Record<string, FeedbackRow> = {
   'src/components/proof/ProofChapterPage.tsx::workspacePeaks#1': row('mount', 'file-io', 'na', 'na', 'ui', 'silent', 'na', 'exempt', 'The waveform strip\'s peaks (edit-and-proof-workspace.prd.md Phase 5, ADR 0520), loaded alongside the alignment; not a narrator action to retry, and a failure just leaves the strip showing nothing this load, while the text, transport and flags (which do not depend on it) still work (interactionFeedback.catalog.ts SILENT_CATCHES).'),
   'src/components/proof/ProofChapterPage.tsx::subscribeCoverage#1': subscription('The recording check state, same subscription and job dialog (RecordingCheck) Home\'s own row uses.'),
 
+  // Proof book-level waveform card (ADR 0715): the selected chapter's track, alignment and peaks are read together on mount and on every
+  // chapter change; a failure in any of them shows the card's one inline alert, since a half-loaded waveform would mislead.
+  'src/components/proof/ChapterWaveformCard.tsx::chapterTrackMapList#1': row('effect', 'file-io', 'na', 'na', 'ui', 'inline', 'na', 'ok', 'The selected chapter track link, read with its items, alignment and peaks; a failure shows the card inline alert.'),
+  'src/components/proof/ChapterWaveformCard.tsx::tracksList#1': row('effect', 'file-io', 'na', 'na', 'ui', 'inline', 'na', 'ok', 'The linked track items, to build the playlist the waveform is laid out on; a failure shows the card inline alert.'),
+  'src/components/proof/ChapterWaveformCard.tsx::workspaceAlignment#1': row('effect', 'file-io', 'na', 'na', 'ui', 'inline', 'na', 'ok', 'The chapter stored alignment, for the flags marked on the waveform; a failure shows the card inline alert.'),
+  'src/components/proof/ChapterWaveformCard.tsx::workspacePeaks#1': row('effect', 'file-io', 'na', 'na', 'ui', 'inline', 'na', 'ok', 'The chapter stored peaks, the waveform itself; a failure shows the card inline alert rather than a made-up picture.'),
+
   // Findings in the text (edit-and-proof-workspace.prd.md Phase 4): the chapter's findings overlay onto the check's
   // own flags (findingFlags.ts's overlayFindings, a pure function - no host call, no row of its own).
   'src/components/proof/ProofChapterPage.tsx::findingsList#1': row('mount', 'file-io', 'na', 'na', 'ui', 'silent', 'na', 'exempt', 'Reads the chapter\'s findings for the text overlay, on open and again after a decision; not a narrator action to retry, and not swallowed silently since the check-derived flags (Phase 2) still show with nothing lost on a failure (interactionFeedback.catalog.ts SILENT_CATCHES).'),
