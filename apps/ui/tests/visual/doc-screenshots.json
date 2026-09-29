@@ -238,6 +238,13 @@
     "caption": "Booth - the closing credits chosen, with the unresolved-token warning above the text"
   },
   {
+    "page": "booth",
+    "state": "companion-listening",
+    "viewport": "companion",
+    "docName": "booth-companion",
+    "caption": "Booth companion - the narrow panel beside the DAW: playhead badge, the script at reading size with its controls, Note at playhead, Pickups, Hotkeys and This chapter"
+  },
+  {
     "page": "engine",
     "state": "default",
     "viewport": "desktop",
