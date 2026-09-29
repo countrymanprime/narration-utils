@@ -47,6 +47,12 @@ logged hours and the chapters finalized since. Until both exist it reads **Pace 
 which is missing, and with no delivery date it gives the projected date only. It is not PFH or the
 effective rate: those never use an estimate.
 
+## This week
+
+Under **Next up**, the **This week** card shows the hours you logged in the last seven days, day by
+day. **Voice rest (last 24 h)** and **Proofer** are dashes with why: nothing reports the audio recorded
+in a day, and the app has no proofer hand-off yet.
+
 ## The hours-logged chart
 
 The foot of the Chapter pipeline card draws the hours you have logged, added up day by day to today,

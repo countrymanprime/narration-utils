@@ -103,7 +103,18 @@ describe('ProductionPage', () => {
     await renderPage({ overrides: { productionBurndown: async () => Promise.reject(new Error('no log')) } });
     await tile('Delivery check');
     expect(await screen.findByText(/^Pace unknown · the hours could not be read$/)).toBeTruthy();
-    expect(screen.getByText('The hours logged could not be read.')).toBeTruthy();
+    // The chart and the This week card both say so.
+    expect(screen.getAllByText('The hours logged could not be read.')).toHaveLength(2);
+  });
+
+  it('draws the This week card: hours logged per day, and the rows nothing reports yet as unknown', async () => {
+    await renderPage({ initial: { production: PRODUCTION_SCENARIOS['on-pace'] } });
+    await tile('Delivery check');
+    const card = await screen.findByRole('region', { name: 'This week' });
+    expect(within(card).getByRole('list', { name: 'Hours logged per day' }).children).toHaveLength(7);
+    expect(within(card).getByText('Voice rest (last 24 h)')).toBeTruthy();
+    expect(within(card).getByText('Not measured yet: nothing reports the audio recorded in a day.')).toBeTruthy();
+    expect(within(card).getByText('No proofer set up yet.')).toBeTruthy();
   });
 
   it('says in the subtitle how many chapters and words the book has, and that no delivery date is set, with the figures explained', async () => {

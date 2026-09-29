@@ -16,6 +16,7 @@ import { Tooltip } from '../primitives/Tooltip';
 import { usePickupsRemaining, type PickupsRemaining } from './usePickupsRemaining';
 import { ChapterBoard } from './ChapterBoard';
 import { HoursLoggedChart } from './HoursLoggedChart';
+import { ThisWeekCard } from './ThisWeekCard';
 import { paceLine, paceOf, todayOf } from './productionPace';
 import { useManuscriptImport } from './ManuscriptImport';
 import { PlanPanel } from './PlanPanel';
@@ -332,8 +333,9 @@ export function ProductionPage({
               onChanged={reread}
               foot={<HoursLoggedChart points={burndown} deadline={overview.deadline} today={today} />}
             />
-            <div className="-order-1 min-[1280px]:order-none">
+            <div className="-order-1 flex flex-col gap-4 min-[1280px]:order-none">
               <NextUp items={overview.nextUp} timerRunning={running !== null} starting={starting} onStart={(item) => void start(item)} />
+              <ThisWeekCard points={burndown} today={today} />
             </div>
           </div>
           <PlanPanel onSaved={() => void read()} />
