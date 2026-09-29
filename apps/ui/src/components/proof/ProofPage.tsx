@@ -6,6 +6,7 @@ import { describeApiError } from '../../api/errorMessage';
 import type { Finding, FindingsPage, FindingsSummary, ManuscriptChapter, TakeComparisonJob, TakeReviewScanJob } from '../../types';
 import { usePickupsState } from '../pickups/usePickupsState';
 import { ChapterWaveformCard } from './ChapterWaveformCard';
+import { loadLastChapter, saveLastChapter } from './lastChapterStorage';
 import { LoadError } from '../layout/LoadError';
 import { Button } from '../primitives/Button';
 import { Heading } from '../primitives/Heading';
@@ -46,6 +47,7 @@ function headerCounts(summary: FindingsSummary | undefined, accepted: readonly F
  */
 export function ProofPage({
   notify,
+  projectFolder,
   hasManuscript,
   goToManuscript,
   goToStoryBible,
@@ -54,6 +56,8 @@ export function ProofPage({
   openChapter,
 }: {
   notify: Notify;
+  /** Keys the remembered chapter (`lastChapterStorage.ts`). */
+  projectFolder: string;
   hasManuscript: boolean;
   goToManuscript: (chapter: string, paragraph?: number) => void;
   goToStoryBible: (entityId: string) => void;
@@ -79,9 +83,11 @@ export function ProofPage({
   const dawKind = useDawKind();
   const [scanning, setScanning] = useState(false);
   const [chapters, setChapters] = useState<ManuscriptChapter[]>([]);
-  // The chapter whose waveform the card draws: the first narration chapter until the narrator picks another (ADR 0715).
-  const [chapterChoice, setChapterChoice] = useState('');
-  const waveformChapterId = chapters.some((chapter) => chapter.id === chapterChoice) ? chapterChoice : (chapters[0]?.id ?? '');
+  // The chapter whose waveform the card draws (ADR 0750, D100): the one the notes are filtered to, else the last chapter the
+  // narrator looked at in this project, else the first narration chapter.
+  const [lastChapter, setLastChapter] = useState(() => loadLastChapter(projectFolder));
+  const known = (id: string) => chapters.some((chapter) => chapter.id === id);
+  const waveformChapterId = known(filters.chapterId) ? filters.chapterId : known(lastChapter) ? lastChapter : (chapters[0]?.id ?? '');
 
   // The chapter picker's list: the narration chapters, the ones with a recording to proof (front and back matter have none).
   useEffect(() => {
@@ -168,7 +174,22 @@ export function ProofPage({
 
   if (loadError) return <LoadError title="Proof" message={loadError} retry={retry} />;
 
-  const waveformCard = <ChapterWaveformCard chapters={chapters} chapterId={waveformChapterId} onChapterChange={setChapterChoice} onOpenChapter={openChapter} />;
+  // The card's selector also narrows the notes table to that chapter; "Show all chapters" undoes it (ADR 0750, D100).
+  const pickChapter = (chapterId: string) => {
+    setLastChapter(chapterId);
+    saveLastChapter(projectFolder, chapterId);
+    changeFilters({ ...filters, chapterId });
+  };
+  const waveformCard = (
+    <ChapterWaveformCard
+      chapters={chapters}
+      chapterId={waveformChapterId}
+      onChapterChange={pickChapter}
+      onOpenChapter={openChapter}
+      notesFiltered={known(filters.chapterId)}
+      onShowAllChapters={() => changeFilters({ ...filters, chapterId: '' })}
+    />
+  );
   const nothingYet = summary !== undefined && summary.total === 0 && summary.notInLatestRun === 0;
 
   // Mock 04's header sits over the notes column only: the note's detail column starts at the top of the page beside it.

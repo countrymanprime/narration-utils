@@ -8,17 +8,28 @@ import { WIRE_FINDINGS } from '../../api/mockFixtures';
 import { TooltipProvider } from '../primitives/Tooltip';
 import type { Finding, NarrationApi } from '../../types';
 import { ProofPage } from './ProofPage';
+import { loadLastChapter, saveLastChapter } from './lastChapterStorage';
 
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  window.localStorage.clear();
+});
 
 type Initial = Parameters<typeof createMockApi>[1];
 
 function renderPage({
+  projectFolder = '/p',
   overrides = {},
   initial = {},
   hasManuscript = true,
   goToWorkspace,
-}: { overrides?: Partial<NarrationApi>; initial?: Initial; hasManuscript?: boolean; goToWorkspace?: (chapterId: string, findingId: string) => void } = {}) {
+}: {
+  projectFolder?: string;
+  overrides?: Partial<NarrationApi>;
+  initial?: Initial;
+  hasManuscript?: boolean;
+  goToWorkspace?: (chapterId: string, findingId: string) => void;
+} = {}) {
   const api = createMockApi(overrides, initial);
   const goToManuscript = vi.fn();
   const goToStoryBible = vi.fn();
@@ -28,6 +39,7 @@ function renderPage({
     <ApiProvider api={api}>
       <TooltipProvider>
         <ProofPage
+          projectFolder={projectFolder}
           notify={notify}
           hasManuscript={hasManuscript}
           goToManuscript={goToManuscript}
@@ -99,6 +111,56 @@ describe('ProofPage', () => {
     await user.click(screen.getByRole('switch', { name: 'Include findings the latest run did not repeat' }));
     await waitFor(async () => expect(await rows()).toHaveLength(2));
     expect((await rows())[1].textContent).toContain('not in the latest run');
+  });
+
+  describe('the waveform card and the chapter filter (ADR 0750, D100)', () => {
+    const picker = () => screen.findByRole('combobox', { name: 'Chapter to open' });
+
+    it('opens on the first narration chapter when the narrator has looked at none, with every note listed', async () => {
+      renderPage();
+      expect(((await picker()) as HTMLSelectElement).value).toBe('chapter-1');
+      expect(screen.queryByRole('button', { name: 'Show all chapters' })).toBeNull();
+      expect((await rows()).length).toBeGreaterThan(2);
+    });
+
+    it('opens on the last chapter the narrator looked at in this project', async () => {
+      saveLastChapter('/p', 'chapter-2');
+      renderPage();
+      await waitFor(async () => expect(((await picker()) as HTMLSelectElement).value).toBe('chapter-2'));
+    });
+
+    it("ignores another project's chapter, and a remembered chapter that no longer exists", async () => {
+      saveLastChapter('/other', 'chapter-2');
+      saveLastChapter('/p', 'gone');
+      renderPage();
+      expect(((await picker()) as HTMLSelectElement).value).toBe('chapter-1');
+    });
+
+    it('filters the notes table to the picked chapter, remembers it, and offers the way back', async () => {
+      const user = userEvent.setup();
+      const { api } = renderPage();
+      const list = vi.spyOn(api, 'findingsList');
+      const all = (await rows()).length;
+      await user.selectOptions(await picker(), 'chapter-2');
+      await waitFor(() => expect(list).toHaveBeenCalledWith(expect.objectContaining({ chapterId: 'chapter-2' })));
+      await waitFor(async () => expect((await rows()).length).toBeLessThan(all));
+      for (const row of await rows()) expect(row.textContent).toContain('Chapter 2');
+      expect(loadLastChapter('/p')).toBe('chapter-2');
+      await user.click(screen.getByRole('button', { name: 'Show all chapters' }));
+      await waitFor(async () => expect((await rows()).length).toBe(all));
+      expect(screen.queryByRole('button', { name: 'Show all chapters' })).toBeNull();
+      // Showing every chapter again leaves the card on the chapter it was on.
+      expect(((await picker()) as HTMLSelectElement).value).toBe('chapter-2');
+    });
+
+    it('moves the card to the chapter the Filters popover names', async () => {
+      const user = userEvent.setup();
+      renderPage();
+      await rows();
+      await openFilters(user);
+      await user.selectOptions(screen.getByRole('combobox', { name: 'Chapter' }), 'chapter-2');
+      await waitFor(async () => expect(((await picker()) as HTMLSelectElement).value).toBe('chapter-2'));
+    });
   });
 
   it('hides low-confidence and unscored findings with the confidence switch', async () => {
