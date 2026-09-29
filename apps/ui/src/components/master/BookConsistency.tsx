@@ -42,8 +42,21 @@ function SpreadTrack({ rule, values, stat }: { rule: DeliveryRule; values: reado
   );
 }
 
-function SpreadRow({ rule, values, stat }: { rule: DeliveryRule; values: number[]; stat?: BookSpreadStat }) {
+function SpreadRow({ rule, values, stat, compact = false }: { rule: DeliveryRule; values: number[]; stat?: BookSpreadStat; compact?: boolean }) {
   const unit = rule.unit ? ` ${rule.unit}` : '';
+  // Mock 05 draws one band for the book (RMS); the other levels a profile judges (peak, noise floor) keep their numbers on one line each.
+  if (compact) {
+    return (
+      <div className="flex flex-wrap items-baseline justify-between gap-x-3 border-t border-[var(--border)] py-1 text-sm">
+        <span className="font-medium">{rule.label}</span>
+        <span style={MUTED}>
+          {stat
+            ? `${formatRuleValue(rule, stat.min)} to ${formatRuleValue(rule, stat.max)}${unit}, median ${formatRuleValue(rule, stat.median)}${unit}`
+            : 'No measurements yet'}
+        </span>
+      </div>
+    );
+  }
   return (
     <div className="border-t border-[var(--border)] py-2.5 first:border-t-0 first:pt-0">
       <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
@@ -92,12 +105,9 @@ export function BookConsistency({ profile, files, titled = true }: { profile: De
           Book consistency
         </h3>
       )}
-      <p className="mt-1 text-sm" style={MUTED}>
-        How RMS, peak and noise floor spread across every measured file, judged against {profile.name}.
-      </p>
       <div className="mt-1">
-        {rows.map((row) => (
-          <SpreadRow key={row.rule.id} rule={row.rule} values={row.values} stat={row.stat} />
+        {rows.map((row, index) => (
+          <SpreadRow key={row.rule.id} rule={row.rule} values={row.values} stat={row.stat} compact={index > 0} />
         ))}
       </div>
     </section>
