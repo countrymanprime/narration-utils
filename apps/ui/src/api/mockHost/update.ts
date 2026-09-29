@@ -32,7 +32,7 @@ function seedUpdateStatus(seed: MockUpdateSeed | undefined): UpdateStatus {
         ...seedUpdateStatus('available'),
         canInstall: false,
         installBlockedReason:
-          'Narration Utils is installed where it is not allowed to replace itself. Download the update and replace the program yourself, or ask whoever manages this computer.',
+          'Narration Studio is installed where it is not allowed to replace itself. Download the update and replace the program yourself, or ask whoever manages this computer.',
       };
     case 'available':
     case 'found':
@@ -106,7 +106,7 @@ export function createUpdateMock(initial: MockApiSeed) {
         id: 'mock-update',
         version: available.version,
         phase: 'downloading',
-        message: `Downloading Narration Utils ${available.version}…`,
+        message: `Downloading Narration Studio ${available.version}…`,
         percent: 0,
         bytesDone: 0,
         bytesTotal: total,
@@ -145,10 +145,10 @@ export function createUpdateMock(initial: MockApiSeed) {
       if (!updateJob || updateJob.id !== jobId || updateJob.phase !== 'ready') throw new Error('The update is not downloaded yet.');
       if (initial.update === 'install-refused') {
         throw new Error(
-          'Narration Utils is busy, so the update was not installed. Finish or stop what is running (an import, a Story Bible build, a download, a comparison or a teleprompter session), then try again.',
+          'Narration Studio is busy, so the update was not installed. Finish or stop what is running (an import, a Story Bible build, a download, a comparison or a teleprompter session), then try again.',
         );
       }
-      updateJob = { ...updateJob, phase: 'installing', message: `Installing version ${updateJob.version}. Narration Utils restarts in a moment.` };
+      updateJob = { ...updateJob, phase: 'installing', message: `Installing version ${updateJob.version}. Narration Studio restarts in a moment.` };
       return wireClone(updateJob);
     },
     updateShowDownload: async () => undefined,

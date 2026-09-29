@@ -1,7 +1,7 @@
 Unicode true
 
 ####
-## The Narration Utils installer (docs/adr/0082). `scripts/release/wails-build.mjs --installer` compiles it with makensis on Wails v3
+## The Narration Studio installer (docs/adr/0082). `scripts/release/wails-build.mjs --installer` compiles it with makensis on Wails v3
 ## (docs/adr/0200): it renders wails_tools.nsh for the release version on every build (it is generated and not checked in) with
 ## `wails3 update build-assets`, and this file includes it, so only what must differ from the Wails default is here:
 ##
@@ -31,7 +31,7 @@ Unicode true
   !define REQUEST_EXECUTION_LEVEL "user"
 !endif
 !if "${WAILS_INSTALL_SCOPE}" != "user"
-  !error "Narration Utils installs per user (docs/adr/0082): the updater must be able to replace the program in its folder."
+  !error "Narration Studio installs per user (docs/adr/0082): the updater must be able to replace the program in its folder."
 !endif
 !define PRODUCT_EXECUTABLE "narration-utils.exe"
 !define UNINST_KEY_NAME "NarrationUtils"
@@ -96,6 +96,9 @@ Section "${INFO_PRODUCTNAME} (required)"
 
     !insertmacro wails.files
 
+    # Versions before the rename (docs/adr/0755) named the entries "Narration Utils"; an install over one replaces them.
+    Delete "$SMPROGRAMS\Narration Utils.lnk"
+    Delete "$SMPROGRAMS\Narration Utils for Audacity.lnk"
     CreateShortcut "$SMPROGRAMS\${INFO_PRODUCTNAME}.lnk" "$INSTDIR\${PRODUCT_EXECUTABLE}"
     # The Audacity launcher (audacity-integration PRD Phase 10): Audacity cannot start a program, so this entry does it instead,
     # with exactly --daw Audacity. The narrator picks the project in the app.
@@ -110,6 +113,7 @@ SectionEnd
 
 Section "Desktop shortcut"
     !insertmacro wails.setShellContext
+    Delete "$DESKTOP\Narration Utils.lnk"
     CreateShortCut "$DESKTOP\${INFO_PRODUCTNAME}.lnk" "$INSTDIR\${PRODUCT_EXECUTABLE}"
 SectionEnd
 
@@ -126,6 +130,9 @@ Section "uninstall"
     Delete "$SMPROGRAMS\${INFO_PRODUCTNAME}.lnk"
     Delete "$SMPROGRAMS\${INFO_PRODUCTNAME} for Audacity.lnk"
     Delete "$DESKTOP\${INFO_PRODUCTNAME}.lnk"
+    Delete "$SMPROGRAMS\Narration Utils.lnk"
+    Delete "$SMPROGRAMS\Narration Utils for Audacity.lnk"
+    Delete "$DESKTOP\Narration Utils.lnk"
 
     !insertmacro wails.unassociateFiles
     !insertmacro wails.unassociateCustomProtocols

@@ -1052,7 +1052,7 @@ func (h *Host) ServiceShutdown() error {
 
 // attachBusyReason is what the UI is told when an attach is refused because
 // in-flight work would be displaced.
-const attachBusyReason = "Narration Utils is busy, so the current project was left unchanged."
+const attachBusyReason = "Narration Studio is busy, so the current project was left unchanged."
 
 // canAttach reports, under a read lock, whether a project switch would be
 // accepted right now. It is only a pre-check: attachProjectLocked asks again
@@ -1194,9 +1194,9 @@ func unresolvedLaunchReason(next config) (string, bool) {
 
 func startupProjectFileReason(projectFile string) string {
 	if projectFile == "" {
-		return "This REAPER project has not been saved yet, so it has no file to link. Save it in REAPER, or choose or create a Narration Utils project."
+		return "This REAPER project has not been saved yet, so it has no file to link. Save it in REAPER, or choose or create a Narration Studio project."
 	}
-	return "This REAPER project isn't linked to a Narration Utils project yet. Choose or create one to link it."
+	return "This REAPER project isn't linked to a Narration Studio project yet. Choose or create one to link it."
 }
 
 // canAttachLocked implements the REAPER single-instance rule: attach a new

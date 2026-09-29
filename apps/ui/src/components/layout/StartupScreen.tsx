@@ -34,7 +34,7 @@ export function StartupScreen({ state, error, details, diagnosticId, retry }: Pr
       : state === 'timeout'
         ? 'The desktop host did not respond within 10 seconds.'
         : state === 'disconnected'
-          ? 'Lost connection to the Narration Utils server. It may have been closed or crashed - check that it is still running.'
+          ? 'Lost connection to the Narration Studio server. It may have been closed or crashed - check that it is still running.'
           : error;
   return (
     <div className="flex h-full flex-col overflow-hidden">

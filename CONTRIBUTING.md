@@ -1,6 +1,6 @@
 # Contributing
 
-Thanks for helping. Narration Utils is a local-first toolkit that helps a narrator find and review issues faster.
+Thanks for helping. Narration Studio is a local-first toolkit that helps a narrator find and review issues faster.
 It never edits audio or text automatically; see the [product boundary](docs/roadmap.md#product-boundary).
 
 ## Before you start

@@ -92,7 +92,7 @@ export function UpdateDownloadDialog({ available, close }: { available: UpdateAv
   const canCancel = job?.phase === 'downloading';
   return (
     <WorkDialog
-      title={`Download Narration Utils ${available.version}`}
+      title={`Download Narration Studio ${available.version}`}
       job={workJob}
       close={() => close(failure ? 'error' : (job?.phase ?? 'error'))}
       cancel={

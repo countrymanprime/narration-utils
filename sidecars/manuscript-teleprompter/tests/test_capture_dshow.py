@@ -168,7 +168,7 @@ def test_the_dshow_backend_passes_the_capture_ports_conformance_suite(monkeypatc
     fake_logging = _FakeAvLogging()
     _install_fake_av(monkeypatch, fake_logging, audio_by_device={DEVICE_NAME: _frames(whole * 3 + 777)})
 
-    capture_conformance.run(capture_dshow.DshowBackend(), device=DEVICE_NAME, missing_device="Narration Utils conformance: no such device")
+    capture_conformance.run(capture_dshow.DshowBackend(), device=DEVICE_NAME, missing_device="Narration Studio conformance: no such device")
 
 
 def test_the_dshow_backend_closes_the_container_once_its_stream_is_closed(monkeypatch):

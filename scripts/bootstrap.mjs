@@ -243,7 +243,7 @@ export function runBootstrap(options, dependencies = {}) {
   }
 
   (dependencies.log ?? console.log)(
-    'Narration Utils is ready. Bootstrap preloads no optional assets: the Piper voice, the Whisper models and the Story Bible language model (spaCy) are downloaded by the app itself, after a click, the first time a feature needs one (Settings > Local assets lists them all). Until the language model is installed a Story Bible build asks first and can run rules-only. To seed assets for offline work, run: pnpm run assets:seed -- --list',
+    'Narration Studio is ready. Bootstrap preloads no optional assets: the Piper voice, the Whisper models and the Story Bible language model (spaCy) are downloaded by the app itself, after a click, the first time a feature needs one (Settings > Local assets lists them all). Until the language model is installed a Story Bible build asks first and can run rules-only. To seed assets for offline work, run: pnpm run assets:seed -- --list',
   );
 }
 

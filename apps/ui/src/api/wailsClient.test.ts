@@ -381,10 +381,10 @@ describe('wailsClient', () => {
   });
 
   it('surfaces a refusal reason when switching project fails', async () => {
-    const switchProject = vi.fn().mockResolvedValue(JSON.stringify({ switched: false, reason: 'Narration Utils is busy.' }));
+    const switchProject = vi.fn().mockResolvedValue(JSON.stringify({ switched: false, reason: 'Narration Studio is busy.' }));
     standInHost({ ProjectSwitch: switchProject });
 
-    await expect(wailsClient.switchProject('C:/Projects/Alice')).resolves.toEqual({ switched: false, reason: 'Narration Utils is busy.' });
+    await expect(wailsClient.switchProject('C:/Projects/Alice')).resolves.toEqual({ switched: false, reason: 'Narration Studio is busy.' });
   });
 
   it('creates a new project under a parent directory and a name, through ProjectCreateIn', async () => {

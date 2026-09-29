@@ -90,7 +90,7 @@ func (h *Host) startUpdateDownload() (map[string]any, error) {
 	id := fmt.Sprintf("update-%d", time.Now().UnixNano())
 	ctx = runlog.WithRun(ctx, h.jobRuns.begin(h.runLog, id, jobKindAppUpdate, "version", release.Version.String()))
 	job := &updateJob{id: id, version: release.Version.String(), phase: updatePhaseDownloading, total: release.Asset.Size, cancel: cancel, started: time.Now(),
-		message: "Downloading Narration Utils " + release.Version.String() + "…"}
+		message: "Downloading Narration Studio " + release.Version.String() + "…"}
 	h.updateJob = job
 	stager := h.stager
 	h.mu.Unlock()
@@ -107,7 +107,7 @@ func (h *Host) runUpdateDownload(ctx context.Context, stager *update.Stager, rel
 		job.done, job.total = progress.Done, progress.Total
 		switch progress.Phase {
 		case update.PhaseDownloading:
-			job.phase, job.message = updatePhaseDownloading, "Downloading Narration Utils "+job.version+"…"
+			job.phase, job.message = updatePhaseDownloading, "Downloading Narration Studio "+job.version+"…"
 		case update.PhaseVerifying:
 			job.phase, job.message = updatePhaseVerifying, "Checking the download against the release's checksum…"
 		case update.PhaseUnpacking:
@@ -197,7 +197,7 @@ func (j *updateJob) beginInstall() (update.Staged, bool) {
 	if info, err := os.Lstat(j.staged.Executable); err != nil || !info.Mode().IsRegular() || info.Size() != j.staged.ExecutableSize {
 		return update.Staged{}, false
 	}
-	j.phase, j.message = updatePhaseInstalling, "Installing version "+j.version+". Narration Utils restarts in a moment."
+	j.phase, j.message = updatePhaseInstalling, "Installing version "+j.version+". Narration Studio restarts in a moment."
 	return j.staged, true
 }
 

@@ -37,7 +37,7 @@ func main() {
 	}
 	host := NewHost()
 	app := application.New(application.Options{
-		Name: "Narration Utils",
+		Name: "Narration Studio",
 		// The Host is the one bound service: the page calls only its exported methods (docs/adr/0200).
 		Services: []application.Service{application.NewService(host)},
 		// Wails finds index.html inside the embedded folder, as v2 did; /media is the host's own route (media.go).
@@ -61,7 +61,7 @@ func main() {
 func mainWindowOptions(zoom float64) application.WebviewWindowOptions {
 	return application.WebviewWindowOptions{
 		Name:                       mainWindowName,
-		Title:                      "Narration Utils",
+		Title:                      "Narration Studio",
 		Width:                      1280,
 		Height:                     860,
 		MinWidth:                   960,

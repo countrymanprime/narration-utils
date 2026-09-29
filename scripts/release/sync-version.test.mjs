@@ -37,11 +37,11 @@ test('updateJson in check mode throws on mismatch and never writes', () => {
 });
 
 test('updateWailsJsonVersion syncs the nested info.productVersion field', () => {
-  const file = tempFile('wails.json', { name: 'Narration Utils', info: { companyName: 'Narration Utils', productVersion: '0.1.0' } });
+  const file = tempFile('wails.json', { name: 'Narration Studio', info: { companyName: 'Narration Studio', productVersion: '0.1.0' } });
   assert.equal(updateWailsJsonVersion(file, '0.2.0', false), true);
   const written = JSON.parse(readFileSync(file, 'utf8'));
   assert.equal(written.info.productVersion, '0.2.0');
-  assert.equal(written.info.companyName, 'Narration Utils');
+  assert.equal(written.info.companyName, 'Narration Studio');
   assert.equal(updateWailsJsonVersion(file, '0.2.0', false), false);
 });
 

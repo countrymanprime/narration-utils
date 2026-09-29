@@ -130,7 +130,7 @@ replacing the manuscript keeps it; if its lines are gone, the panel says so and 
 
 ## Local assets
 
-The **Local assets** category of the Global scope lists every optional download Narration Utils can keep on this computer: preview
+The **Local assets** category of the Global scope lists every optional download Narration Studio can keep on this computer: preview
 voices, Whisper models for proofing comparisons, the language model the Story Bible uses and the dictionary the Script reader's
 Look up reads. Nothing here downloads by itself, and
 removing one never touches your settings or projects. The page also shows how much disk the installed ones use and the folder they
@@ -156,7 +156,7 @@ again.
 
 ## About and updates
 
-The last category of the Global scope, **About & updates**, shows which version of Narration Utils you are running and looks
+The last category of the Global scope, **About & updates**, shows which version of Narration Studio you are running and looks
 after updates.
 
 ![Settings - Global scope, About and updates category with a newer version found](../../images/ui/settings-about-updates.webp)
@@ -167,17 +167,17 @@ after updates.
 - **Update channel**: *Candidates and stable* (the default; every release so far is a release candidate) or *Stable only*.
 - **Download update** asks first, then downloads the new version with a progress bar and checks it against the release's
   checksum. You can cancel while it downloads.
-- **Install and restart** asks again, then closes Narration Utils and starts it again on the new version with the same
+- **Install and restart** asks again, then closes Narration Studio and starts it again on the new version with the same
   project. It will not install while an import, a Story Bible build, a download, a comparison or a teleprompter session is
   running: finish or stop it and try again. If the new version does not start, the previous one comes back by itself.
-- If Narration Utils is installed somewhere it is not allowed to change (for example under Program Files) it says so and
+- If Narration Studio is installed somewhere it is not allowed to change (for example under Program Files) it says so and
   offers **Show the downloaded file**, so you can replace the program yourself.
 - **Release notes** opens the release page in your browser.
 
-Narration Utils runs on Windows only, for now, so updates are for Windows.
+Narration Studio runs on Windows only, for now, so updates are for Windows.
 Releases are not yet signed, so Windows SmartScreen or your antivirus may ask about a new version the first time.
 
-If Narration Utils will not start after an update and the program file is missing from its folder, rename
+If Narration Studio will not start after an update and the program file is missing from its folder, rename
 `narration-utils.exe.old` back to `narration-utils.exe`.
 
 ---

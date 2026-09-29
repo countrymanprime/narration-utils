@@ -154,7 +154,7 @@ func CanOverwrite(path, what string) error {
 // read as something it is not or overwritten by an older app.
 func CheckVersion(found, supported int, what string) error {
 	if found > supported {
-		return fmt.Errorf("the %s data was written by a newer version of Narration Utils (schema %d, this one reads up to %d); update the app to open it", what, found, supported)
+		return fmt.Errorf("the %s data was written by a newer version of Narration Studio (schema %d, this one reads up to %d); update the app to open it", what, found, supported)
 	}
 	return nil
 }

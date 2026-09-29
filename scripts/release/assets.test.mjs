@@ -356,11 +356,11 @@ test('the verify command stays offline unless --attestations is passed, and then
 test('verifyAssets rejects a file that is not one of the release assets or their checksums', () => {
   const dir = stageRelease(['windows-x64']);
   writeFileSync(join(dir, 'Setup.exe'), 'not built by the release workflow');
-  writeFileSync(join(dir, 'Narration Utils-amd64-installer.exe'), 'the raw name Wails gives an installer, never a release asset');
+  writeFileSync(join(dir, 'Narration Studio-amd64-installer.exe'), 'the raw name Wails gives an installer, never a release asset');
   writeFileSync(join(dir, `${assetName('windows-x64', V)}.bak`), 'a stray copy');
 
   assert.deepEqual(verifyAssets(dir, V), [
-    'Unexpected file Narration Utils-amd64-installer.exe: promote publishes every file, and only the release assets are built and attested by the workflows',
+    'Unexpected file Narration Studio-amd64-installer.exe: promote publishes every file, and only the release assets are built and attested by the workflows',
     'Unexpected file Setup.exe: promote publishes every file, and only the release assets are built and attested by the workflows',
     'Unexpected file narration-utils-0.2.7-windows-x64.zip.bak: promote publishes every file, and only the release assets are built and attested by the workflows',
   ]);

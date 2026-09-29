@@ -56,7 +56,7 @@ class FasterWhisperEngine:
         from faster_whisper import WhisperModel
 
         model_size, device, model_dir = request.model, request.device, request.model_dir
-        # model_dir is a Narration Utils asset-cache directory whose contents were already hash-verified before this
+        # model_dir is a Narration Studio asset-cache directory whose contents were already hash-verified before this
         # process was started (see apps/desktop/internal/whisper). Passing it with local_files_only=True stops
         # faster-whisper/huggingface_hub from ever reaching the network here - without it, only a bare model_size
         # falls back to that legacy download path, kept for direct/manual CLI use outside the desktop host.

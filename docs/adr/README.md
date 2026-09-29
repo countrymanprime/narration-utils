@@ -359,4 +359,5 @@ The table is generated from each ADR's heading and Status line ([ADR 0410](0410-
 | [0715](0715-proofs-book-level-waveform-card-belongs-to-the-chapter-its-selector-names.md) | Proof's book-level waveform card belongs to the chapter its selector names | Accepted (the owner's 2026-09-29 ruling on ADRs 0651 and 0652; stream N-B59 on #509) |
 | [0720](0720-the-booth-fills-the-whole-window-and-f11-takes-the-window-fullscreen.md) | The Booth fills the whole window and F11 takes the window fullscreen | Accepted (owner call BO2 on #510, 2026-09-29) |
 | [0725](0725-the-rail-draws-a-count-badge-only-from-a-count-the-host-reports-and-the-product-is-named-studio.md) | The rail draws a count badge only from a count the host reports, and the product is named Studio | Accepted (owner ruling 2026-09-29 on the brand name; stream N-B61 on #509) |
+| [0755](0755-the-product-is-named-narration-studio-to-the-user-and-narration-utils-stays-on-every-name-a-file-a-key-or-reaper-holds.md) | The product is named Narration Studio to the user, and `narration-utils` stays on every name a file, a key or REAPER holds | Accepted (owner ruling D101, 2026-09-29) |
 <!-- adr-index:end -->

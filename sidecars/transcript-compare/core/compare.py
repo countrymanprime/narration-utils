@@ -434,7 +434,7 @@ def transcribe(audio_array, model_size, language, device="cpu", progress_path=No
     import asr_batch  # a sibling module: compare.py's own directory is on sys.path, frozen or not
     from narration_common.ports.asr import BatchRequest
 
-    # model_dir is a Narration Utils asset-cache directory whose contents were
+    # model_dir is a Narration Studio asset-cache directory whose contents were
     # already hash-verified before this process was started (see
     # apps/desktop/internal/whisper). Passing it with local_files_only=True stops
     # faster-whisper/huggingface_hub from ever reaching the network here -

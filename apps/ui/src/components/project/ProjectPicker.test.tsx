@@ -164,12 +164,12 @@ describe('ProjectPicker', () => {
   it('renders the refusal reason when a switch is rejected', async () => {
     renderPicker({
       selectProjectFolder: async () => ({ selected: true, path: 'C:/Projects/New-Project' }),
-      switchProject: async () => ({ switched: false, reason: 'Narration Utils is busy, so the current project was left unchanged.' }),
+      switchProject: async () => ({ switched: false, reason: 'Narration Studio is busy, so the current project was left unchanged.' }),
     });
     await waitFor(() => screen.getByRole('button', { name: /Browse/ }));
 
     fireEvent.click(screen.getByRole('button', { name: /Browse/ }));
 
-    expect(await screen.findByText('Narration Utils is busy, so the current project was left unchanged.')).toBeTruthy();
+    expect(await screen.findByText('Narration Studio is busy, so the current project was left unchanged.')).toBeTruthy();
   });
 });

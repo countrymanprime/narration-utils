@@ -11,7 +11,7 @@ export function AboutPanel({ version }: { version: string }) {
   return (
     <div className="mb-4 space-y-3 text-sm">
       <div className="rounded-md p-3" style={{ background: 'var(--surface-2)' }}>
-        <div className="font-medium">Narration Utils</div>
+        <div className="font-medium">Narration Studio</div>
         <div>Version {version}</div>
         {isDevelopmentBuild(version) && (
           <p className="mt-1" style={{ color: 'var(--text-muted)' }}>
@@ -19,7 +19,7 @@ export function AboutPanel({ version }: { version: string }) {
           </p>
         )}
       </div>
-      <p style={{ color: 'var(--text-muted)' }}>Narration Utils is free software, licensed under the GNU Affero General Public License, version 3 or later.</p>
+      <p style={{ color: 'var(--text-muted)' }}>Narration Studio is free software, licensed under the GNU Affero General Public License, version 3 or later.</p>
     </div>
   );
 }

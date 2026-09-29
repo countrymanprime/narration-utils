@@ -12,7 +12,7 @@ import (
 const quitDelay = 400 * time.Millisecond
 
 // updateBusyReason is what the narrator reads when the update is refused because work is running.
-const updateBusyReason = "Narration Utils is busy, so the update was not installed. Finish or stop what is running (an import, a Story Bible build, a download, a comparison or a teleprompter session), then try again."
+const updateBusyReason = "Narration Studio is busy, so the update was not installed. Finish or stop what is running (an import, a Story Bible build, a download, a comparison or a teleprompter session), then try again."
 
 // currentExecutable is the path of the running program with any links resolved: the path the update replaces.
 func (h *Host) currentExecutable() (string, error) {
@@ -47,7 +47,7 @@ func (h *Host) installBlockedReason() string {
 	}
 	executable, err := h.currentExecutable()
 	if err != nil {
-		return "Narration Utils could not find where it is installed."
+		return "Narration Studio could not find where it is installed."
 	}
 	if !h.writable(filepath.Dir(executable)) {
 		return update.ErrNotWritable.Error()
@@ -76,7 +76,7 @@ func (h *Host) installDownloadedUpdate(id string) (map[string]any, error) {
 	}
 	executable, err := h.currentExecutable()
 	if err != nil {
-		return nil, update.UserError("Narration Utils could not find where it is installed.")
+		return nil, update.UserError("Narration Studio could not find where it is installed.")
 	}
 	// Taking the job from ready to installing is the one step that decides which call installs: a second click, or a retry, that comes
 	// while this one is copying finds the job no longer ready and is refused, so two installs never race over the same files.

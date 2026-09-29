@@ -9,7 +9,7 @@ recent projects to reopen, or actions to browse to an existing folder or create 
 
 ## If you record in Audacity
 
-The installer adds a second Start Menu entry, **Narration Utils for Audacity**. Pin it next to Audacity's own shortcut. It opens
+The installer adds a second Start Menu entry, **Narration Studio for Audacity**. Pin it next to Audacity's own shortcut. It opens
 the app in Audacity mode on the picker above, and the project you pick or create opens as an Audacity project. Audacity cannot
 start other programs, so there is no Audacity macro or plug-in to install.
 

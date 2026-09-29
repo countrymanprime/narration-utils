@@ -12,7 +12,7 @@ closest analog). A real driver here will need its own design, not a port of `int
 
 There is deliberately no Audacity-side launcher in this folder. Nothing Audacity loads can start a program
 ([feasibility note](../../docs/research/audacity-launcher-feasibility.md)), so the installer adds a Start Menu entry,
-"Narration Utils for Audacity", that starts the app with `--daw Audacity`
+"Narration Studio for Audacity", that starts the app with `--daw Audacity`
 ([ADR 0145](../../docs/adr/0145-the-audacity-launcher-is-an-installer-start-menu-entry-and-a-picker-switch-keeps-an-audacity-launch.md)).
 The integration targets Audacity 3.x, because Audacity 4.0 ships without `mod-script-pipe`. The pipe client and the
 adapter live in the desktop host, not here: `apps/desktop/internal/audacitybridge` and `apps/desktop/internal/dawport/audacity`

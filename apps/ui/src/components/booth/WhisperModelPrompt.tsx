@@ -22,7 +22,7 @@ export function WhisperModelPrompt({
     <AssetInstallPrompt
       ask={{
         title: 'Download local Whisper model?',
-        body: `The ${prompt.model.displayName} Whisper model ${purpose}. It is not bundled with Narration Utils and will be stored in your per-user asset cache.`,
+        body: `The ${prompt.model.displayName} Whisper model ${purpose}. It is not bundled with Narration Studio and will be stored in your per-user asset cache.`,
         confirmLabel: 'Download model',
       }}
       workTitle="Downloading Whisper model"

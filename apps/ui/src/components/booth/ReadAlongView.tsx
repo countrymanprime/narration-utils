@@ -92,7 +92,7 @@ export function ReadAlongView({ session: t, follow, header, marks, onOpenMark, a
         <AssetInstallPrompt
           ask={{
             title: `Download local ${ENGINE_LABELS[t.prompt.engine]} model?`,
-            body: `The ${t.prompt.model.displayName} ${ENGINE_LABELS[t.prompt.engine]} model listens for your voice. It is not bundled with Narration Utils and will be stored in your per-user asset cache.`,
+            body: `The ${t.prompt.model.displayName} ${ENGINE_LABELS[t.prompt.engine]} model listens for your voice. It is not bundled with Narration Studio and will be stored in your per-user asset cache.`,
             confirmLabel: 'Download model',
           }}
           workTitle={`Downloading ${ENGINE_LABELS[t.prompt.engine]} model`}

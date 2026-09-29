@@ -36,7 +36,7 @@ for (const [key, title] of sections) {
 output.push(
   '## Installing on Windows',
   '',
-  `Download \`${installerName('windows-x64', version)}\` and run it. It installs Narration Utils for your user account only (no administrator prompt) and adds a Start Menu entry (plus **Narration Utils for Audacity**, which opens the app ready for an Audacity 3.x project) and, if you leave it ticked, a desktop shortcut. Uninstall it from Settings > Apps; that removes the program and the shortcuts and leaves your settings, your downloaded voices and models and your project folders alone.`,
+  `Download \`${installerName('windows-x64', version)}\` and run it. It installs Narration Studio for your user account only (no administrator prompt) and adds a Start Menu entry (plus **Narration Studio for Audacity**, which opens the app ready for an Audacity 3.x project) and, if you leave it ticked, a desktop shortcut. Uninstall it from Settings > Apps; that removes the program and the shortcuts and leaves your settings, your downloaded voices and models and your project folders alone.`,
   '',
   'This release is **unsigned**. Windows SmartScreen may say it "prevented an unrecognized app from starting": choose **More info**, then **Run anyway**. That warning is about the missing signature, not about a problem found in the file; to check the file came from this repository, follow the steps below.',
   '',
@@ -48,7 +48,7 @@ output.push(
 output.push(
   '## Licences and source',
   '',
-  `Narration Utils is free software under the AGPL-3.0-or-later licence. \`${noticesName('windows-x64', version)}\` on this release lists every third-party component in the program with its licence and licence text, includes the full AGPL text, and says where the complete source of this release is: this repository, at the tag this release was built from.`,
+  `Narration Studio is free software under the AGPL-3.0-or-later licence. \`${noticesName('windows-x64', version)}\` on this release lists every third-party component in the program with its licence and licence text, includes the full AGPL text, and says where the complete source of this release is: this repository, at the tag this release was built from.`,
   '',
 );
 // Every asset is attested by the release workflow (docs/adr/0071); say how a narrator checks one.

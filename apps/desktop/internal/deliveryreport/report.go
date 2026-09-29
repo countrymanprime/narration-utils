@@ -119,7 +119,7 @@ func Build(in Input) Report {
 	return Report{
 		SchemaVersion: SchemaVersion,
 		GeneratedAt:   in.GeneratedAt,
-		App:           App{Name: "Narration Utils", Version: in.AppVersion},
+		App:           App{Name: "Narration Studio", Version: in.AppVersion},
 		Analyzers: []Analyzer{
 			{Name: "measure", Version: measure.AnalyzerVersion, Description: "Integrated loudness (ITU-R BS.1770-4), RMS, sample and true peak, noise floor and duration of each whole file"},
 			{Name: "diagnostics", Version: measure.AnalyzerVersion, Description: "Clipping, short-term loudness shifts, silences and room-tone changes, against the thresholds listed"},

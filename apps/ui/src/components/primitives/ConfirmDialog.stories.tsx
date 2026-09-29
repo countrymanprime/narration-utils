@@ -76,7 +76,7 @@ export const WithDangerAction: Story = {
 export const WithASecondaryChoice: Story = {
   args: {
     title: 'Download local language model?',
-    body: 'The Story Bible reads your manuscript with a language model. It is not bundled with Narration Utils.',
+    body: 'The Story Bible reads your manuscript with a language model. It is not bundled with Narration Studio.',
     confirmLabel: 'Download model',
     secondaryLabel: 'Build with rules-only',
     secondary: fn(),

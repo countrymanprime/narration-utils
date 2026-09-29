@@ -16,7 +16,7 @@ const TOOLS: { key: CleanupToolKey; label: string; description: string }[] = [
   {
     key: 'magnolius_declick',
     label: 'Magnolius DeClick',
-    description: 'A free third-party script for mouth clicks. Only if you installed it in REAPER yourself: Narration Utils never installs it.',
+    description: 'A free third-party script for mouth clicks. Only if you installed it in REAPER yourself: Narration Studio never installs it.',
   },
 ];
 
@@ -49,7 +49,7 @@ export function CleanupToolsDialog({ onClose }: { onClose: () => void }) {
       title="Cleanup tools"
       onClose={running ? undefined : onClose}
       escapeCloses={!running}
-      description="Open a repair tool in REAPER on the items you have selected there. Narration Utils changes nothing itself: you apply or cancel the repair in the tool’s own window."
+      description="Open a repair tool in REAPER on the items you have selected there. Narration Studio changes nothing itself: you apply or cancel the repair in the tool’s own window."
       actions={
         <Button variant="secondary" onClick={onClose} disabled={running}>
           Close
