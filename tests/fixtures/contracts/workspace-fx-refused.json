@@ -1,5 +1,0 @@
-{
-  "outcome": "refused",
-  "reason": "crosses_items",
-  "message": "This passage crosses two REAPER items. Select words from one item at a time."
-}

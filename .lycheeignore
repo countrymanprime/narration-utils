@@ -1,5 +1,0 @@
-# Links the online run cannot check, one regular expression per line (offline mode never follows an http link).
-# Add a line only with the reason beside it.
-
-# Needs a GitHub login to open; the page exists (SECURITY.md).
-^https://github\.com/countrymanprime/narration-utils/security/advisories/new$

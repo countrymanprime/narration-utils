@@ -1,8 +1,0 @@
-{
-  "id": null,
-  "kind": "render_package_multi",
-  "phase": "idle",
-  "message": "Export files, then choose the platforms to build for.",
-  "results": [],
-  "elapsed": 0
-}

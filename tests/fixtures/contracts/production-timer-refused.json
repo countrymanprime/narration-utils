@@ -1,5 +1,0 @@
-{
-  "message": "a timer is already running on c-0001 (recording); stop it first",
-  "reason": "timer_running",
-  "status": "refused"
-}
