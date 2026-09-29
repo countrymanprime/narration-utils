@@ -11,6 +11,7 @@ import { CompanionShell } from './CompanionShell';
 import { RecordInReaperConfirm } from './RecordInReaperConfirm';
 import { useRecordInReaper } from './useRecordInReaper';
 import { useRecorder } from './useRecorder';
+import { useFullscreenKey } from './useFullscreenKey';
 import { ResumePrompt } from './ResumePrompt';
 import { ReaderRail } from './ReaderRail';
 import type { FlagSaveState } from './ReaderFlagsPanel';
@@ -81,6 +82,8 @@ const byReadingOrder = (a: ManuscriptNote, b: ManuscriptNote): number => a.parag
  */
 export function BoothSession({ source, entities = NO_ENTITIES, notes = NO_NOTES, setup, onExit, onFixCredits }: Props) {
   const [mode, setMode] = useState<'booth' | 'companion'>('booth');
+  // F11 is the whole window's fullscreen, in the Booth only (owner call BO2): the companion is a narrow panel beside the DAW.
+  useFullscreenKey(mode === 'booth');
   const isCredits = source.kind === 'credits';
   const chapter = source.kind === 'chapter' ? source.chapter : undefined;
   const session = useTeleprompterSession({
