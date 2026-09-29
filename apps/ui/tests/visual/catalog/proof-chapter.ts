@@ -69,6 +69,50 @@ export const proofChapterStates: StateEntry[] = [
       'Proof chapter view with REAPER not running (edit-and-proof-workspace PRD Phase 3) - Go to in REAPER and Loop in REAPER on the transport bar are disabled, with the reason under a tooltip; everything else still works',
     ...KEEPS_DESKTOP_SCROLL,
   },
+  // The Takes panel (edit-and-proof-workspace.prd.md Phase 6, EP6 and EP7, ADR 0700; mock 04-takes-panel-ab): the takes of the
+  // paragraph at the playhead in the chapter view's right column, heard one at a time or A/B, compared, and chosen. It shows on
+  // Chapter 1 (a current check with a live item).
+  {
+    page: 'proof-chapter',
+    state: 'takes-list',
+    description:
+      'Proof chapter view, the Takes panel opened on the first paragraph heard - "Takes · 4 alternates" with the paragraph and its word count, "Evidence per word, never a score.", the One/A-B switch, and four takes (another take of the item, a second take, a retake on a lane, a read from Find pickups), each with a play button, where it came from, "Plays now" on the one REAPER plays, Use this take on the others and "Not compared yet"',
+    ...KEEPS_DESKTOP_SCROLL,
+  },
+  {
+    page: 'proof-chapter',
+    state: 'takes-ab',
+    description:
+      'Proof chapter view, the Takes panel in A/B mode (mock 04-takes-panel-ab) - Take 1 in slot A and Take 2 in slot B, Take 2 playing (pause button, its card outlined), Swap switches A and B at the same word, Use this take on each take REAPER does not play',
+    ...KEEPS_DESKTOP_SCROLL,
+  },
+  {
+    page: 'proof-chapter',
+    state: 'takes-compared',
+    description:
+      'Proof chapter view, the takes compared - each card shows the passage’s words around where that take departs from the script with the departure marked, and one line of evidence (what it misread, its longest pause, its level against its neighbours), and the full Takes side by side comparison is drawn under the script; nothing ranks them',
+    ...KEEPS_DESKTOP_SCROLL,
+  },
+  {
+    page: 'proof-chapter',
+    state: 'takes-used',
+    description:
+      'Proof chapter view, Use this take pressed on another take of the item - "Made that take active in REAPER, in one undo step", and that take now marked "Plays now"',
+    ...KEEPS_DESKTOP_SCROLL,
+  },
+  {
+    page: 'proof-chapter',
+    state: 'takes-confirm',
+    description:
+      'Proof chapter view, Use this take pressed on a read from another item - the confirm that says REAPER adds it as a new take and makes it active (two undo steps) before anything is sent',
+  },
+  {
+    page: 'proof-chapter',
+    state: 'takes-standalone',
+    description:
+      'Proof chapter view with REAPER not running - the takes are listed and can be played, and Use this take is off on each, with the reason in a line under the list',
+    ...KEEPS_DESKTOP_SCROLL,
+  },
   // Effects on a passage (edit-and-proof-workspace.prd.md Phase 9, ADR 0705): the right-click menu on the script, and its confirm step.
   {
     page: 'proof-chapter',

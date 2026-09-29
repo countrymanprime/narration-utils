@@ -2226,5 +2226,37 @@ export function WorkspacePeaks(chapterID: string): $CancellablePromise<string> {
     return $Call.ByID(1143383553, chapterID);
 }
 
+/**
+ * WorkspaceTakes lists the takes the narrator can set beside the passage (the tokens firstToken to lastToken of the
+ * chapter's stored alignment, snapped out to whole paragraphs): the other takes of the item it was heard on, the other
+ * retakes of its line on a fixed-lane track, and reads a take-review group set beside it (EP6). It reads only; it works
+ * with REAPER closed.
+ */
+export function WorkspaceTakes(chapterID: string, firstToken: number, lastToken: number): $CancellablePromise<string> {
+    return $Call.ByID(3010134085, chapterID, firstToken, lastToken);
+}
+
+/**
+ * WorkspaceTakesCompareStart compares the passage's usable takes as the one take comparison job (ADR 0165, ADR 0700):
+ * the same sidecar mode, state and cancel as a take-review group's comparison (TakeComparisonState and
+ * TakeComparisonCancel answer for it, with the passage's id as the job's FindingID), with a manifest built from the
+ * saved project. It saves one take_comparison finding whose id is computable from the passage, so the panel reads it back.
+ */
+export function WorkspaceTakesCompareStart(chapterID: string, firstToken: number, lastToken: number): $CancellablePromise<string> {
+    return $Call.ByID(286927960, chapterID, firstToken, lastToken);
+}
+
+/**
+ * WorkspaceUseTake makes a take of the passage the one that plays (EP7, ADR 0233, ADR 0700). candidateID is one of the
+ * ids WorkspaceTakes just offered: the host re-reads the alternates from the saved project and refuses an id it does
+ * not offer, so nothing but a listed take can be chosen. What happens depends on where the take came from: another take
+ * of the item is made active (set_active_take, one undo step); another retake on a fixed-lane track becomes the lane
+ * that plays (pick_retake_lane); a read from another item is added as a take (create_take) and then made active, in
+ * one action the page confirms first. Every REAPER refusal is answered as a refused outcome and changes nothing.
+ */
+export function WorkspaceUseTake(chapterID: string, firstToken: number, lastToken: number, candidateID: string): $CancellablePromise<string> {
+    return $Call.ByID(1964370133, chapterID, firstToken, lastToken, candidateID);
+}
+
 // Private type creation functions
 const $$createType0 = $Create.Map($Create.Any, $Create.Any);

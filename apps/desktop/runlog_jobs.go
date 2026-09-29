@@ -62,7 +62,7 @@ var jobKindBeginSites = map[string][]string{
 	jobKindTranscript:         {"observe"},
 	jobKindCoverage:           {"coverageStart"},
 	jobKindTakeReview:         {"startTakeReviewScan"},
-	jobKindTakeComparison:     {"startTakeComparison"},
+	jobKindTakeComparison:     {"launchTakeComparison"},
 	jobKindMeasurement:        {"startMeasure"},
 	jobKindDiagnostics:        {"startDiagnostics"},
 	jobKindRenderExport:       {"startExport"},

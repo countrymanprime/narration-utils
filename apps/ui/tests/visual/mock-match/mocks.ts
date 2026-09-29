@@ -49,7 +49,8 @@ export const APPROVED_MOCKS: ApprovedMock[] = [
   { file: `${BENCHMARK}/02-prep-script-concept.webp`, target: { page: 'script', state: 'prep-rail-pronunciations' }, theme: 'light' },
   { file: `${BENCHMARK}/03-booth-concept.webp`, target: { page: 'booth', state: 'speaker-tags' }, theme: 'dark' },
   { file: `${BENCHMARK}/04-proof-pickups-concept.webp`, target: { page: 'proof', state: 'default' }, theme: 'light' },
-  { file: `${BENCHMARK}/05-master-delivery-concept.webp`, target: { page: 'master', state: 'measured' }, theme: 'light' },
+  // Scored against its own data (?mockFidelity=05, the same Q5 as mock 01).
+  { file: `${BENCHMARK}/05-master-delivery-concept.webp`, target: { page: 'master', state: 'mock-fidelity-05' }, theme: 'light' },
   { file: `${BENCHMARK}/06-series-voice-bible-concept.webp`, target: { page: 'storybible', state: 'series-tab-populated' }, theme: 'light' },
   {
     file: `${BENCHMARK}/07-daw-companion-concept.webp`,
@@ -227,16 +228,8 @@ export const APPROVED_MOCKS: ApprovedMock[] = [
   { file: 'edit-and-proof-workspace/02-flag-detail-open-1024.webp', target: { page: 'proof-chapter', state: 'flag-finding-open' }, theme: 'dark' },
   { file: 'edit-and-proof-workspace/03-click-word-to-seek.webp', target: { page: 'proof-chapter', state: 'note-selected' }, theme: 'dark' },
   { file: 'edit-and-proof-workspace/03-click-word-to-seek-1024.webp', target: { page: 'proof-chapter', state: 'note-selected' }, theme: 'dark' },
-  {
-    file: 'edit-and-proof-workspace/04-takes-panel-ab.webp',
-    theme: 'dark',
-    unscored: 'the takes A/B panel in the chapter view is not built (edit-and-proof Phase 5)',
-  },
-  {
-    file: 'edit-and-proof-workspace/04-takes-panel-ab-1024.webp',
-    theme: 'dark',
-    unscored: 'the takes A/B panel in the chapter view is not built (edit-and-proof Phase 5)',
-  },
+  { file: 'edit-and-proof-workspace/04-takes-panel-ab.webp', target: { page: 'proof-chapter', state: 'takes-ab' }, theme: 'dark' },
+  { file: 'edit-and-proof-workspace/04-takes-panel-ab-1024.webp', target: { page: 'proof-chapter', state: 'takes-ab' }, theme: 'dark' },
   {
     file: 'edit-and-proof-workspace/05-selection-context-menu-fx.webp',
     theme: 'dark',

@@ -5,7 +5,7 @@
 
 ## Context
 
-[ADR 0234](0234-fx-chains-go-on-tracks-and-a-passage-of-a-take-gets-one-plug-in-at-a-time.md) built the REAPER side of applying effects: `add_take_fx` puts one installed plug-in on a split-out passage of a take, and `apply_fx_chain` puts one of the narrator's `.RfxChain` files on a track, each in one undo block. Nothing in the app sent them. Phase 9 of the [edit and proof workspace](../prds/edit-and-proof-workspace.prd.md) is the screen that does: select words in the chapter's script, right-click, choose an effect. That makes the app itself change the REAPER project, so it is a trust boundary (threat model rows 5h and 5p), and it needs a menu the app does not have.
+[ADR 0234](0234-fx-chains-go-on-tracks-and-a-passage-of-a-take-gets-one-plug-in-at-a-time.md) built the REAPER side of applying effects: `add_take_fx` puts one installed plug-in on a split-out passage of a take, and `apply_fx_chain` puts one of the narrator's `.RfxChain` files on a track, each in one undo block. Nothing in the app sent them. Phase 9 of the [edit and proof workspace](../prds/edit-and-proof-workspace.prd.md) is the screen that does: select words in the chapter's script, right-click, choose an effect. That makes the app itself change the REAPER project, so it is a trust boundary (threat model rows 5h and 5q), and it needs a menu the app does not have.
 
 The owner answered the open questions on 2026-09-24 and 2026-09-25: EP9 (ADR 0234: a passage gets one plug-in, a chain goes on a track), EP10 (A: each edit is sent when the narrator confirms it, nothing is queued) and EP16 (A: no delete, cut or mute from the app).
 

@@ -53,7 +53,10 @@ import {
   workspaceFXPluginsResultSchema,
   workspaceFXResultSchema,
   workspacePeaksResultSchema,
+  workspaceTakesResultSchema,
+  workspaceUseTakeResultSchema,
 } from './schemas/workspace';
+import { USE_TAKE_MESSAGES } from './workspaceTakesMock';
 import { pinnedPreviewSchema, previewResultSchema } from './schemas/preview';
 import { STAGE_REFUSAL_REASONS, STAGE_UNKNOWN_CAUSES, stageDecisionResultSchema, stageRecommendationsSchema } from './schemas/stages';
 import { proofingChooseRenderResultSchema, proofingRenderSchema } from './schemas/proofingRender';
@@ -2333,6 +2336,85 @@ describe('answers of the mock client for the settings, voice, model, transcript 
     expect(await answers[2][1]).toMatchObject({ outcome: 'refused', reason: 'bad_range' });
   });
 
+  it('the Takes panel bindings answer: the passage takes, their comparison and every outcome of using one (edit-and-proof-workspace PRD Phase 6)', async () => {
+    const chapters = await createMockApi().manuscriptChapters();
+    const measured = chapters.find((chapter) => chapter.recordedFraction !== undefined);
+    if (!measured) throw new Error('the mock chapters carry a measured recordedFraction');
+    const [linkedTrack] = WIRE_TRACKS_PROJECT.tracks;
+    const linked = {
+      chapterTrackMappings: [
+        {
+          trackGuid: linkedTrack.guid,
+          chapterId: measured.id,
+          chapterTitle: measured.title,
+          confirmedAt: '2026-09-24T09:00:00Z',
+          origin: 'manual' as const,
+          match: null,
+        },
+      ],
+    };
+    const api = createMockApi({}, linked);
+
+    const takes = await api.workspaceTakes(measured.id, 0, 1);
+    expectMatches(workspaceTakesResultSchema, takes, 'mock workspace takes');
+    expect(takes.candidates.map((candidate) => candidate.source)).toEqual(['item_take', 'item_take', 'lane_retake', 'take_review']);
+    expect(takes.candidates.filter((candidate) => candidate.active)).toHaveLength(1);
+    expect(takes.candidates.find((candidate) => candidate.source === 'take_review')?.confirm).toBe(true);
+    expect(takes.comparisonId).toBeUndefined();
+    await expect(api.workspaceTakes(measured.id, 0, 99999)).rejects.toThrow(/not in this chapter's alignment/);
+
+    // A passage nothing was heard on has no takes and says why (the mock chapter's unheard words are its skipped paragraph).
+    const alignment = await api.workspaceAlignment(measured.id);
+    const unheard = alignment.tokens.findIndex((token) => token.item === undefined);
+    if (unheard >= 0) {
+      const none = await api.workspaceTakes(measured.id, unheard, unheard);
+      expectMatches(workspaceTakesResultSchema, none, 'mock workspace takes, none');
+      expect(none.candidates).toEqual([]);
+      expect(none.message).toMatch(/wasn't heard/);
+    }
+
+    // Comparing them is the one take comparison job, and it marks what it covered.
+    let job = await api.workspaceTakesCompareStart(measured.id, 0, 1);
+    expectMatches(takeComparisonJobSchema, job, 'mock passage comparison, started');
+    expect(job.findingId).toBe(takes.passageId);
+    while (job.phase === 'running') job = await api.takeComparisonState();
+    expect(job.phase).toBe('success');
+    const saved = await api.findingsGet(job.comparisonId ?? '');
+    expectMatches(takeComparisonEvidenceSchema, saved.evidence, 'mock passage comparison evidence');
+    const compared = await api.workspaceTakes(measured.id, 0, 1);
+    expect(compared.comparisonId).toBe(saved.id);
+    expect(compared.candidates.every((candidate) => candidate.compared && candidate.fidelity !== undefined)).toBe(true);
+
+    // Using a take: another take is made active, an already-playing one changes nothing, a lane pick starts, a read is added.
+    const [first, second, lane, read] = takes.candidates;
+    const changed = await api.workspaceUseTake(measured.id, 0, 1, second.id);
+    expectMatches(workspaceUseTakeResultSchema, changed, 'mock use take, done');
+    expect(changed).toMatchObject({ outcome: 'done', changed: true });
+    expect((await api.workspaceTakes(measured.id, 0, 1)).candidates.find((candidate) => candidate.active)?.id).toBe(second.id);
+    expect(await api.workspaceUseTake(measured.id, 0, 1, second.id)).toMatchObject({ outcome: 'done', changed: false });
+    expect(await api.workspaceUseTake(measured.id, 0, 1, lane.id)).toMatchObject({ outcome: 'started' });
+    expect(await api.workspaceUseTake(measured.id, 0, 1, read.id)).toMatchObject({ outcome: 'done', changed: true });
+    expect(await api.workspaceUseTake(measured.id, 0, 1, first.id)).toMatchObject({ outcome: 'done', changed: true });
+    const notOffered = await api.workspaceUseTake(measured.id, 0, 1, 'take:{NOT-OFFERED}:{TAKE}');
+    expectMatches(workspaceUseTakeResultSchema, notOffered, 'mock use take, not offered');
+    expect(notOffered).toMatchObject({ outcome: 'refused', reason: 'not_offered', changed: false });
+
+    // REAPER's refusals: each one refuses in the host's words and changes nothing.
+    const refusals = { standalone: 'standalone', 'not-running': 'not_running', stale: 'stale', recording: 'recording', outdated: 'script_outdated' } as const;
+    for (const [reaper, reason] of Object.entries(refusals)) {
+      const refusing = createMockApi({}, { ...linked, reaper: reaper as keyof typeof refusals });
+      const answer = await refusing.workspaceUseTake(measured.id, 0, 1, second.id);
+      expectMatches(workspaceUseTakeResultSchema, answer, `mock use take, ${reaper}`);
+      expect(answer).toMatchObject({ outcome: 'refused', reason, changed: false });
+    }
+    await expect(createMockApi().workspaceTakes(measured.id, 0, 1)).resolves.toMatchObject({ itemGuid: '' });
+  });
+
+  it("the mock's stale refusal of a take says what the host says (tests/fixtures/contracts/workspace-use-take-refused.json)", () => {
+    const golden = workspaceUseTakeResultSchema.parse(readGolden('workspace-use-take-refused.json'));
+    expect(golden).toMatchObject({ outcome: 'refused', reason: 'stale', message: USE_TAKE_MESSAGES.stale });
+  });
+
   it('the preview candidates: ok with candidates, no manuscript, and nothing eligible', async () => {
     const withCandidates = await createMockApi().previewCandidates();
     expectMatches(previewResultSchema, withCandidates, 'mock preview candidates, ok');
@@ -2736,6 +2818,9 @@ describe('answers of the mock client for the settings, voice, model, transcript 
       'workspaceAddTakeFX',
       'workspaceApplyFXChain',
       'workspaceLoop',
+      'workspaceTakes',
+      'workspaceTakesCompareStart',
+      'workspaceUseTake',
       'workspacePeaks',
       'previewCandidates',
       'previewPin',

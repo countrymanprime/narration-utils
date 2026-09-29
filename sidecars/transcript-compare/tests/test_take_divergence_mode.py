@@ -34,6 +34,7 @@ def _no_custom_equivalences(monkeypatch):
 
 
 def project(tmp_path, chapter_text=CHAPTER_TEXT):
+    texts = [chapter_text] if isinstance(chapter_text, str) else list(chapter_text)
     """A project folder laid out as the host lays it out: the manuscript under
     narration-utils/manuscript, the per-project word lists under TranscriptCompare."""
     manuscript = tmp_path / "project" / "narration-utils" / "manuscript" / "manuscript.json"
@@ -49,7 +50,7 @@ def project(tmp_path, chapter_text=CHAPTER_TEXT):
                 ],
                 "paragraphs": [
                     {"id": "f-1", "chapterId": "front", "index": 0, "text": "Chapter One"},
-                    {"id": "p-1", "chapterId": "ch-1", "index": 1, "text": chapter_text},
+                    *({"id": f"p-{n + 1}", "chapterId": "ch-1", "index": n + 1, "text": text} for n, text in enumerate(texts)),
                 ],
             }
         ),
@@ -117,6 +118,28 @@ def test_a_valid_manifest_keeps_its_takes_in_order(tmp_path):
     assert (manifest.chapter_id, manifest.first_unit, manifest.last_unit) == ("ch-1", 1, 1)
     assert [take.take_guid for take in manifest.takes] == ["{TAKE-1}", "{TAKE-2}"]
     assert manifest.takes[1].start_offset == 0.0
+
+
+def test_a_manifest_may_name_its_span_by_paragraphs_instead_of_sentences(tmp_path):
+    """The workspace's Takes panel compares a passage (whole paragraphs), and only the sidecar numbers sentences."""
+    manifest = mode.read_manifest(manifest_file(tmp_path, span={"firstParagraph": 0, "lastParagraph": 2}))
+
+    assert (manifest.first_paragraph, manifest.last_paragraph) == (0, 2)
+    assert (manifest.first_unit, manifest.last_unit) == (None, None)
+
+
+@pytest.mark.parametrize(
+    ("overrides", "message"),
+    [
+        ({"span": {"firstParagraph": 2, "lastParagraph": 1}}, "firstParagraph <= lastParagraph"),
+        ({"span": {"firstParagraph": True, "lastParagraph": 1}}, "whole paragraph numbers"),
+        ({"span": {"firstParagraph": 0}}, "missing \\['lastParagraph'\\]"),
+        ({"span": {"firstUnit": 0, "lastUnit": 1, "firstParagraph": 0, "lastParagraph": 1}}, "not both"),
+    ],
+)
+def test_a_malformed_paragraph_span_is_refused_with_what_is_wrong(tmp_path, overrides, message):
+    with pytest.raises(mode.ManifestError, match=message):
+        mode.read_manifest(manifest_file(tmp_path, **overrides))
 
 
 @pytest.mark.parametrize(
@@ -228,6 +251,33 @@ def test_an_unknown_chapter_fails_with_an_error_line_and_no_results(tmp_path):
 
 def test_a_span_past_the_chapter_fails_before_anything_is_transcribed(tmp_path):
     args = args_for(tmp_path, project(tmp_path), manifest_file(tmp_path, span={"firstUnit": 0, "lastUnit": 9}))
+
+    def must_not_transcribe(_take):
+        raise AssertionError("transcribed")
+
+    assert mode.main(Parser(), args, compare, must_not_transcribe) == mode.EXIT_FAILED
+    assert "not within the chapter" in Path(args.progress).read_text(encoding="utf-8")
+
+
+MULTI_PARAGRAPH = ["Alice was beginning to get very tired. She had nothing to do.", "Once or twice she had peeped into the book.", "Her sister was reading."]
+
+
+def test_a_paragraph_span_aligns_every_sentence_of_those_paragraphs_and_says_which_it_was(tmp_path):
+    manuscript = project(tmp_path, chapter_text=MULTI_PARAGRAPH)
+    args = args_for(tmp_path, manuscript, manifest_file(tmp_path, span={"firstParagraph": 1, "lastParagraph": 2}))
+
+    assert (
+        mode.main(Parser(), args, compare, fake_transcriber({"{TAKE-1}": "Once or twice she had peeped into the book Her sister was reading"}))
+        == mode.EXIT_DONE
+    )
+
+    span = results(args.out)[1][0][1]["span"]
+    assert (span["firstParagraph"], span["lastParagraph"]) == (1, 2)
+    assert (span["firstUnit"], span["lastUnit"]) == (2, 3)
+
+
+def test_a_paragraph_span_past_the_chapter_fails_before_anything_is_transcribed(tmp_path):
+    args = args_for(tmp_path, project(tmp_path), manifest_file(tmp_path, span={"firstParagraph": 0, "lastParagraph": 5}))
 
     def must_not_transcribe(_take):
         raise AssertionError("transcribed")

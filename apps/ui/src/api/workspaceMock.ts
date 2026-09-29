@@ -221,7 +221,7 @@ function mockPeaksFor(item: WorkspaceItem): WorkspacePeaks {
   return { startSeconds: 0, bucketsPerSecond: MOCK_BUCKETS_PER_SECOND, buckets, minMax, sampleRate: 48000, channels: 1 };
 }
 
-export function createWorkspaceMock(deps: Deps): WorkspaceApi {
+export function createWorkspaceMock(deps: Deps): Omit<WorkspaceApi, 'workspaceTakes' | 'workspaceTakesCompareStart' | 'workspaceUseTake'> {
   const mode = deps.reaper ?? 'connected';
   const target = (chapterId: string, tokenIndex: number): WorkspaceToken | undefined => tokensFor(deps, chapterId).tokens[tokenIndex];
 

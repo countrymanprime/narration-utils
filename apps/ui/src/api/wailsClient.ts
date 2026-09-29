@@ -74,6 +74,8 @@ import {
   workspaceFXPluginsResultSchema,
   workspaceFXResultSchema,
   workspacePeaksResultSchema,
+  workspaceTakesResultSchema,
+  workspaceUseTakeResultSchema,
 } from './schemas/workspace';
 import { pinnedPreviewSchema, previewResultSchema } from './schemas/preview';
 import { stageDecisionResultSchema, stageRecommendationsSchema } from './schemas/stages';
@@ -440,6 +442,12 @@ export const wailsClient: NarrationApi = {
   workspaceAddTakeFX: (chapterId, firstToken, lastToken, plugin) =>
     decode(workspaceFXResultSchema, 'WorkspaceAddTakeFX', host.WorkspaceAddTakeFX(chapterId, firstToken, lastToken, plugin)),
   workspaceApplyFXChain: (chapterId, chain) => decode(workspaceFXResultSchema, 'WorkspaceApplyFXChain', host.WorkspaceApplyFXChain(chapterId, chain)),
+  workspaceTakes: (chapterId, firstToken, lastToken) =>
+    decode(workspaceTakesResultSchema, 'WorkspaceTakes', host.WorkspaceTakes(chapterId, firstToken, lastToken)),
+  workspaceTakesCompareStart: (chapterId, firstToken, lastToken) =>
+    decode(takeComparisonJobSchema, 'WorkspaceTakesCompareStart', host.WorkspaceTakesCompareStart(chapterId, firstToken, lastToken)),
+  workspaceUseTake: (chapterId, firstToken, lastToken, candidateId) =>
+    decode(workspaceUseTakeResultSchema, 'WorkspaceUseTake', host.WorkspaceUseTake(chapterId, firstToken, lastToken, candidateId)),
   workspacePeaks: (chapterId) => decode(workspacePeaksResultSchema, 'WorkspacePeaks', host.WorkspacePeaks(chapterId)),
   previewCandidates: () => decode(previewResultSchema, 'PreviewCandidates', host.PreviewCandidates()),
   previewPin: () => decode(pinnedPreviewSchema, 'PreviewPin', host.PreviewPin()),

@@ -7,6 +7,8 @@ import {
   workspaceFXPluginsResultSchema,
   workspaceFXResultSchema,
   workspacePeaksResultSchema,
+  workspaceTakesResultSchema,
+  workspaceUseTakeResultSchema,
 } from '../schemas/workspace';
 import { findingNavigationSchema } from '../schemas/findings';
 
@@ -28,6 +30,12 @@ export const workspaceGoldens: Record<string, z.ZodType> = {
   'workspace-fx-added.json': workspaceFXResultSchema,
   'workspace-fx-applied.json': workspaceFXResultSchema,
   'workspace-fx-refused.json': workspaceFXResultSchema,
+  // WorkspaceTakes and WorkspaceUseTake (Phase 6, ADR 0700): a passage's takes from each source, none, and each outcome.
+  'workspace-takes.json': workspaceTakesResultSchema,
+  'workspace-takes-none.json': workspaceTakesResultSchema,
+  'workspace-use-take-done.json': workspaceUseTakeResultSchema,
+  'workspace-use-take-started.json': workspaceUseTakeResultSchema,
+  'workspace-use-take-refused.json': workspaceUseTakeResultSchema,
   // WorkspacePeaks (Phase 5, ADR 0520): one item's real peaks, and one item with no usable source (a Reason).
   'workspace-peaks.json': workspacePeaksResultSchema,
   'workspace-peaks-no-source.json': workspacePeaksResultSchema,

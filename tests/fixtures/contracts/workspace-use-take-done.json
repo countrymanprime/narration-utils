@@ -1,0 +1,5 @@
+{
+  "changed": true,
+  "message": "Made that take active in REAPER, in one undo step: Undo in REAPER puts the previous take back. Save the project in REAPER to bring the check up to date.",
+  "outcome": "done"
+}

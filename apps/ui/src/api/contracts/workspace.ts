@@ -1,5 +1,6 @@
 import type { CoverageReason } from './coverage';
 import type { FindingNavigation } from './findings';
+import type { TakeComparisonJob } from './takeReview';
 
 // The edit-and-proof workspace's stored word alignment (edit-and-proof-workspace.prd.md Phase 1, ADR 0242): the
 // recording check's per-token alignment (COVERAGE_TOKEN/COVERAGE_EXTRA, sidecars/transcript-compare) read back and
@@ -103,6 +104,71 @@ export type WorkspaceFXResult =
   | { outcome: 'added'; plugin: string; itemGuid: string; takeGuid: string; splits: number }
   | { outcome: 'applied'; chain: string; track: string; added: number }
   | { outcome: 'refused'; reason: WorkspaceFXRefusalReason; message: string };
+/** Where a take offered for a passage comes from (edit-and-proof-workspace.prd.md Phase 6, EP6, ADR 0700): another take
+ * of the item the passage was heard on, another retake of its line on a fixed-lane track, or a read a take-review
+ * group set beside it. */
+export type PassageTakeSource = 'item_take' | 'lane_retake' | 'take_review';
+
+/** What choosing a take does (EP7): make it the item's active take (one undo step), make its lane the one that plays,
+ * or add a read from another item as a take and make that active (two steps, so `confirm` is set). */
+export type PassageTakeAction = 'make_active' | 'pick_lane' | 'add_and_activate';
+
+/** One take the narrator can hear against the passage and choose. The id names it for `workspaceUseTake`: the page
+ * sends that id back, never a GUID, file or time (apps/desktop/internal/passagetakes). */
+export type PassageTake = {
+  id: string;
+  source: PassageTakeSource;
+  action: PassageTakeAction;
+  confirm: boolean;
+  label: string;
+  detail: string;
+  /** What plays in REAPER now. */
+  active: boolean;
+  itemGuid: string;
+  takeGuid: string;
+  /** The range of its own file the take plays, for the in-app A/B. */
+  sourceFile: string;
+  sourceStart: number;
+  sourceLength: number;
+  /** False when the take cannot be heard or chosen; `reason` says why. */
+  usable: boolean;
+  reason?: string;
+  /** Whether a saved comparison of this passage covered this take, with how much of the passage's words it matched. */
+  compared: boolean;
+  fidelity?: number;
+  notComparedReason?: string;
+};
+
+/** The Takes panel's read for a passage of a chapter (WorkspaceTakes): the passage as the host snapped it to whole
+ * paragraphs, and every take offered for it. `message` says why there are none; `comparisonId` is the saved
+ * take_comparison finding (a finding, read with findingsList), when one was made. */
+export type WorkspaceTakesResult = {
+  chapterId: string;
+  firstToken: number;
+  lastToken: number;
+  firstParagraph: number;
+  lastParagraph: number;
+  words: number;
+  passageId: string;
+  itemGuid: string;
+  message?: string;
+  comparisonId?: string;
+  candidates: PassageTake[];
+};
+
+/** Why choosing a take was refused: nothing in REAPER changed for any of these (except `failed` after the read of an
+ * add-and-activate was added, which the message says). */
+export type UseTakeRefusal =
+  'not_offered' | 'unusable' | 'stale' | 'recording' | 'script_outdated' | 'standalone' | 'not_running' | 'experimental_off' | 'failed';
+
+/** What "Use this take" did: `done` (changed says whether the active take changed), `started` (a lane pick, whose end
+ * retakeLanesState reports) or `refused`. */
+export type WorkspaceUseTakeResult = {
+  outcome: 'done' | 'started' | 'refused';
+  reason?: UseTakeRefusal;
+  message: string;
+  changed: boolean;
+};
 
 /** A waveform overview of a stretch of a WAV source (measure.Peaks, edit-and-proof-workspace.prd.md Phase 5, ADR
  * 0520): for each bucket of 1/bucketsPerSecond seconds, the lowest and highest sample over every channel, as two
@@ -147,6 +213,14 @@ export interface WorkspaceApi {
    * (apply_fx_chain, Phase 9): the host names the track, the page cannot. One undo step. Send it only after the
    * narrator confirms. */
   workspaceApplyFXChain(chapterId: string, chain: string): Promise<WorkspaceFXResult>;
+  /** Lists the takes that can be set beside a passage (the tokens firstToken to lastToken, snapped out to whole
+   * paragraphs): edit-and-proof-workspace.prd.md Phase 6. Reads only, and works with REAPER closed. */
+  workspaceTakes(chapterId: string, firstToken: number, lastToken: number): Promise<WorkspaceTakesResult>;
+  /** Compares the passage's usable takes as the one take comparison job: takeComparisonState and takeComparisonCancel
+   * answer for it, with the passage's id as the job's findingId. It saves one take_comparison finding. */
+  workspaceTakesCompareStart(chapterId: string, firstToken: number, lastToken: number): Promise<TakeComparisonJob>;
+  /** Makes a take the passage's playing one, by an id workspaceTakes offered (EP7, ADR 0233, ADR 0700). */
+  workspaceUseTake(chapterId: string, firstToken: number, lastToken: number, candidateId: string): Promise<WorkspaceUseTakeResult>;
   /** Reads the waveform strip's peaks for every analyzed item of a chapter's stored alignment (edit-and-proof-
    * workspace PRD Phase 5): host-computed from each item's active take's source file, cached by source identity. */
   workspacePeaks(chapterId: string): Promise<WorkspacePeaksResult>;
