@@ -117,6 +117,21 @@ export const storybibleDrivers: Record<string, Driver> = {
     await page.getByText('Asked the author by email.', { exact: true }).first().waitFor();
     await page.getByRole('button', { name: 'Save status' }).scrollIntoViewIfNeeded();
   },
+  'alias-pronunciation-editing': async (page) => {
+    await goToPage(page, 'Story Bible');
+    // White Rabbit has one alias, "Rabbit", with its own generated pronunciation in the fixture data.
+    await page.locator('tr[data-row]', { hasText: 'White Rabbit' }).click();
+    const unlock = page.getByRole('button', { name: 'Unlock entry' });
+    if (await unlock.count()) await unlock.click();
+    await clickVisible(page, 'button', 'Edit this entry');
+    // Scoped to the Aliases table, not the entity list's own "White Rabbit" row (which also matches /Rabbit/).
+    const row = page.getByRole('table', { name: 'Aliases' }).getByRole('row', { name: /Rabbit/ });
+    await row.getByRole('button', { name: 'Pronunciation details' }).click();
+    await row.getByRole('textbox', { name: 'Your pronunciation' }).fill('ˈɹæ.bɪt');
+    await row.getByRole('button', { name: 'Use mine' }).click();
+    await row.getByText('Also kept:').waitFor();
+    await row.getByRole('button', { name: 'Save status' }).scrollIntoViewIfNeeded();
+  },
   'entry-pronunciation-online': async (page) => {
     await saveOnlineDictionaryKey(page);
     // The "key saved" toast belongs to Settings; dismissed so it does not cover the answer this state is about.
