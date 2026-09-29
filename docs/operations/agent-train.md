@@ -141,6 +141,16 @@ Owner ruling, 2026-09-29, after workers kept building towards old mocks.
 - **Layout and style are the spec, not the sample data.** Don't seed demo data to make a score higher, and don't change a real title or subtitle to the mock's wording.
 - **A mock that draws a page the app doesn't have yet** (06 is the Character Continuity review page, not the Story Bible) is unscored until its own PRD and mocks exist.
 
+## UI PRs show their screenshots
+
+Permanent owner rule, 2026-09-29. A PR that changes what `apps/ui` draws must show the change as images in its body. Without them the work has failed: the owner rejects the PR, and the coordinator neither merges it nor counts it ready. The owner has to see that it looks better and will not trust a number.
+
+- **What to show.** A "Screenshots" section, one row per changed state at 1440×900: the benchmark mock | before (`main`) | after (the branch). Same state, viewport and fixture in the before and after captures, and the mock cropped or scaled to match. The match % for before and after sits beside each row; if the score fell, say so plainly.
+- **Other viewports.** Small-desktop and tablet (and `reflow` at 390 px for Settings) as before/after pairs in a collapsed `<details>`.
+- **Where the images live.** On a branch named `pr-images/<the PR's branch>`, never on the PR's own branch, so they don't reach `main`. Embed with `https://github.com/countrymanprime/narration-utils/blob/pr-images/<branch>/<file>.png?raw=true`. Regenerate them after every push that changes the UI.
+- **How to capture.** `cd apps/ui && npx playwright test tests/visual/app.spec.ts -g "<page>.*<state>"` writes `apps/ui/screenshots/app/<page>/<state>/<viewport>.png` (gitignored). The mocks are in `docs/research/mockups/audiobook-studio-benchmark/`.
+- **Who checks.** The worker adds them before it says the PR is ready. The coordinator checks the PR body for the images at every sweep, and does not merge a UI PR without them, whatever the score or the CI result.
+
 ## Owner standing rules
 
 Decisions the owner made while the train ran (logged on #509). They bind the coordinator and every worker, and the worker template repeats the ones a worker needs.
@@ -270,7 +280,7 @@ a running stream on #509. If you need another lane's change, comment on #509.
 ADR BLOCK: <block>. Check docs/adr/ for the next free number inside it, at write time and again before your last push.
 BRANCHES AND PRS: first PR based on the latest main; one PR per phase, each based on the previous branch; branch
 <type>/<prd-slug>-p<N>-<slug>; PR title a Conventional Commit; body = goal, what changed, local checks run with results,
-Mockup check (UI with mockups), "Base: <branch>", "Part of #<PRD issue>" (find it or create it per
+Mockup check (UI with mockups), Screenshots (any UI change; see "UI PRs show their screenshots": the PR is not ready without them), "Base: <branch>", "Part of #<PRD issue>" (find it or create it per
 docs/operations/github-workflow.md; the PRD's last phase says "Closes #<n>"), "New ADRs for review". Set each phase's
 Status cell in its own PR. The PR delivering a PRD's last phase writes the steady-state docs and deletes the PRD.
 METHOD: impact scan before touching shared code (list every consumer of what you change and its tests); tests first;
