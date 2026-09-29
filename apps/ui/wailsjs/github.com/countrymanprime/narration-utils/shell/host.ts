@@ -382,8 +382,11 @@ export function CreditsProjectValues(): $CancellablePromise<string> {
 }
 
 /**
- * CreditsRecordedLengths is a credits row's "actual recorded": the same track-based measurement every manuscript
- * chapter's Recorded column gets, read for the two credits ids from the same confirmed chapter-track-map.json.
+ * CreditsRecordedLengths is a credits row's "actual recorded" (credits-in-chapter-table.prd.md Phase 3): the same
+ * track-based measurement actual-recorded-column.prd.md gives every manuscript chapter (recordedLengthsFor), read
+ * for the two credits ids. Never an estimate (ADR 0193): a credits id has its own confirmed link, or none, in the
+ * same chapter-track-map.json every manuscript chapter uses (ADR 0333), so this reads it directly rather than
+ * through manuscript.Service's own RecordedLengths hook, which only ever sees the manuscript's own chapter ids.
  */
 export function CreditsRecordedLengths(): $CancellablePromise<string> {
     return $Call.ByID(334169345);
@@ -1868,7 +1871,8 @@ export function TeleprompterPause(paused: boolean): $CancellablePromise<string> 
 }
 
 /**
- * TeleprompterPunch resolves word's punch time again (the narrator may have kept reading since the preview) and
+ * TeleprompterPunch resolves word's punch time again (the narrator may have kept reading since the preview; an
+ * alignment of the same stretch is reused, punchAlignCache) and
  * moves REAPER's edit cursor there minus the pre-roll, through the DAW port's Puncher role. On a successful punch,
  * every anchor at or after word is dropped (the narrator is about to re-record from here, so an anchor from the take
  * being replaced would misplace the next punch, teleprompter.DropAnchorsFrom); that failing is logged, never
@@ -1881,7 +1885,9 @@ export function TeleprompterPunch(word: number): $CancellablePromise<string> {
 /**
  * TeleprompterPunchPreview resolves word's punch time and pre-roll without moving anything in REAPER: what the
  * narrator sees before confirming "Punch from here" (Phase 12's "UI showing resolved time, its source... and pre-roll
- * before moving"). word is the flag's own script word index; the chapter is whichever one is live right now.
+ * before moving"). word is the flag's own script word index; the chapter is whichever one is live right now. When the
+ * anchors do not bracket the word, this runs the offline alignment (a sidecar decode of up to two minutes of the
+ * recording, bounded by teleprompterLocateTimeout), so it can take a few seconds.
  */
 export function TeleprompterPunchPreview(word: number): $CancellablePromise<string> {
     return $Call.ByID(3160914767, word);
@@ -2147,6 +2153,15 @@ export function WindowZoom(): $CancellablePromise<string> {
 }
 
 /**
+ * WorkspaceAddTakeFX splits the passage firstToken..lastToken of chapterID out of its item and puts one installed
+ * plug-in on the middle piece's take, in one undo step in REAPER (add_take_fx, ADR 0234). Refused, with nothing sent,
+ * for a selection that cannot be placed or a REAPER that is not listening.
+ */
+export function WorkspaceAddTakeFX(chapterID: string, firstToken: number, lastToken: number, plugin: string): $CancellablePromise<string> {
+    return $Call.ByID(3923966015, chapterID, firstToken, lastToken, plugin);
+}
+
+/**
  * WorkspaceAlignment reads a chapter's stored word alignment (edit-and-proof-workspace PRD Phase 1, ADR 0242) joined
  * with its current paragraphs and its items' current played ranges (coverage.AlignmentView). It never runs anything
  * (Q14), exactly like CoverageResult, whose state, reasons and basis it shares. A stored report from before the
@@ -2157,12 +2172,28 @@ export function WorkspaceAlignment(chapterID: string): $CancellablePromise<strin
 }
 
 /**
+ * WorkspaceApplyFXChain puts one of the narrator's FX chains (a name WorkspaceListFXChains listed) on the track the
+ * chapter's newest check covered, in one undo step in REAPER (apply_fx_chain, ADR 0234). The page sends no track.
+ */
+export function WorkspaceApplyFXChain(chapterID: string, chain: string): $CancellablePromise<string> {
+    return $Call.ByID(691001412, chapterID, chain);
+}
+
+/**
  * WorkspaceGoTo selects tokenIndex's item in REAPER and puts the edit cursor on the spot it was heard, exactly as
  * FindingsGoTo does for a finding: navigate_item, sent only once the token resolves to an item REAPER can be asked
  * about and REAPER is listening.
  */
 export function WorkspaceGoTo(chapterID: string, tokenIndex: number): $CancellablePromise<string> {
     return $Call.ByID(3177963740, chapterID, tokenIndex);
+}
+
+/**
+ * WorkspaceListFX lists REAPER's installed plug-ins by name (list_fx), for the passage menu. It changes nothing and is
+ * refused offline or before the DAW port's FX chains capability is on, as WorkspaceListFXChains is.
+ */
+export function WorkspaceListFX(): $CancellablePromise<string> {
+    return $Call.ByID(10293913);
 }
 
 /**
