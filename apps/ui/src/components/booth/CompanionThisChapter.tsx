@@ -39,7 +39,7 @@ export function CompanionThisChapter({ chapterId }: { chapterId?: string }) {
   return (
     <ul className="space-y-1.5 text-sm">
       <li className="flex items-center gap-2">
-        <Dot color={chapter.recordedSeconds === null ? 'var(--non-text)' : 'var(--ok)'} />
+        <Dot color={chapter.recordedSeconds === null ? toneColors('neutral').text : 'var(--ok)'} />
         {chapter.recordedSeconds === null ? 'Recorded length not measured' : `Recorded ${clockText(chapter.recordedSeconds)}`}
       </li>
       <li className="flex items-center gap-2">
