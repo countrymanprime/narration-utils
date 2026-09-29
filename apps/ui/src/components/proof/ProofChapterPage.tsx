@@ -102,6 +102,7 @@ function ChapterView({ chapterId, notify, transcript, dawFileLinked, goToManuscr
   const [findings, setFindings] = useState<Finding[]>([]);
   const [lastCompleted, setLastCompleted] = useState<TranscriptState>();
   const [reviewingLast, setReviewingLast] = useState(false);
+  const [takesDetail, setTakesDetail] = useState<HTMLElement | null>(null);
 
   // The last completed comparison, offered for review without running again (PRD W16: it needs no linked project file).
   useEffect(() => {
@@ -408,7 +409,7 @@ function ChapterView({ chapterId, notify, transcript, dawFileLinked, goToManuscr
         )}
         {alignment && alignment.state !== 'never' && <TransportBar player={player} reaper={reaper} />}
         {alignment && (alignment.state !== 'never' || flags.length > 0) && (
-          <div className={alignment.state !== 'never' ? 'grid gap-4 lg:grid-cols-[minmax(0,1fr)_18rem]' : 'max-w-md'}>
+          <div className={alignment.state !== 'never' ? 'grid gap-4 lg:grid-cols-[minmax(0,1fr)_18rem] xl:grid-cols-[minmax(0,1fr)_22rem]' : 'max-w-md'}>
             {alignment.state !== 'never' && (
               <ScriptView
                 paragraphs={alignment.paragraphs}
@@ -419,29 +420,34 @@ function ChapterView({ chapterId, notify, transcript, dawFileLinked, goToManuscr
                 onSeekToken={seekToken}
               />
             )}
-            <FlagsPanel
-              flags={flags}
-              tokens={alignment.tokens}
-              selectedIndex={selectedFlagIndex}
-              onSelect={selectFlag}
-              onPlayFromFlag={(flag: Flag) => flag.seekTokenIndex !== undefined && seekToken(alignment.tokens[flag.seekTokenIndex])}
-              reaper={reaper}
-              onDecide={decideFlag}
-              compare={compareRows.length > 0 ? compareActions : undefined}
-            />
+            <div className="flex min-w-0 flex-col gap-4">
+              {alignment.state !== 'never' && (
+                <TakesPanel
+                  chapterId={chapterId}
+                  alignment={alignment}
+                  currentToken={currentToken}
+                  findings={findings}
+                  reaper={reaperStatus.status}
+                  onReaperStatusChange={reaperStatus.refresh}
+                  onFindingsChanged={loadFindings}
+                  detailTarget={takesDetail}
+                />
+              )}
+              <FlagsPanel
+                flags={flags}
+                tokens={alignment.tokens}
+                selectedIndex={selectedFlagIndex}
+                onSelect={selectFlag}
+                onPlayFromFlag={(flag: Flag) => flag.seekTokenIndex !== undefined && seekToken(alignment.tokens[flag.seekTokenIndex])}
+                reaper={reaper}
+                onDecide={decideFlag}
+                compare={compareRows.length > 0 ? compareActions : undefined}
+              />
+            </div>
           </div>
         )}
-        {alignment && alignment.state !== 'never' && (
-          <TakesPanel
-            chapterId={chapterId}
-            alignment={alignment}
-            currentToken={currentToken}
-            findings={findings}
-            reaper={reaperStatus.status}
-            onReaperStatusChange={reaperStatus.refresh}
-            onFindingsChanged={loadFindings}
-          />
-        )}
+        {/* The Takes panel's full comparison (words and audio measurements side by side) is drawn here, wider than its column. */}
+        <div ref={setTakesDetail} />
         <CompareRun
           chapterTitle={chapterName(chapter, 'short')}
           state={transcript}

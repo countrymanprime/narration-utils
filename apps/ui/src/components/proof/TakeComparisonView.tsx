@@ -14,7 +14,7 @@ const NO_ITEM = 'This read has no REAPER item to go to. Scan the chapter again t
 
 // How each word of the span is drawn in a read's strip. Colour is never the only sign: a word the read did not say as written
 // is underlined or struck through, and a screen reader hears what happened to it.
-const WORD_STYLE: Record<Exclude<TakeComparisonWordStatus, 'matched'>, { className: string; said: string }> = {
+export const WORD_STYLE: Record<Exclude<TakeComparisonWordStatus, 'matched'>, { className: string; said: string }> = {
   misread: { className: 'underline decoration-wavy decoration-[var(--danger-text)] underline-offset-4', said: 'misread' },
   skipped: { className: 'line-through decoration-2', said: 'left out' },
   unread: { className: 'text-[var(--text-muted)] underline decoration-dotted underline-offset-4', said: 'not reached' },

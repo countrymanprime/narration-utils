@@ -227,16 +227,8 @@ export const APPROVED_MOCKS: ApprovedMock[] = [
   { file: 'edit-and-proof-workspace/02-flag-detail-open-1024.webp', target: { page: 'proof-chapter', state: 'flag-finding-open' }, theme: 'dark' },
   { file: 'edit-and-proof-workspace/03-click-word-to-seek.webp', target: { page: 'proof-chapter', state: 'note-selected' }, theme: 'dark' },
   { file: 'edit-and-proof-workspace/03-click-word-to-seek-1024.webp', target: { page: 'proof-chapter', state: 'note-selected' }, theme: 'dark' },
-  {
-    file: 'edit-and-proof-workspace/04-takes-panel-ab.webp',
-    theme: 'dark',
-    unscored: 'the takes A/B panel in the chapter view is not built (edit-and-proof Phase 5)',
-  },
-  {
-    file: 'edit-and-proof-workspace/04-takes-panel-ab-1024.webp',
-    theme: 'dark',
-    unscored: 'the takes A/B panel in the chapter view is not built (edit-and-proof Phase 5)',
-  },
+  { file: 'edit-and-proof-workspace/04-takes-panel-ab.webp', target: { page: 'proof-chapter', state: 'takes-ab' }, theme: 'dark' },
+  { file: 'edit-and-proof-workspace/04-takes-panel-ab-1024.webp', target: { page: 'proof-chapter', state: 'takes-ab' }, theme: 'dark' },
   {
     file: 'edit-and-proof-workspace/05-selection-context-menu-fx.webp',
     theme: 'dark',

@@ -312,22 +312,26 @@ notes](#a-finding-and-your-decision) — a decision made here is the same decisi
 
 ### Choosing between takes
 
-The **Takes** panel, below the script and the Flags panel, is for a paragraph that has more than one take.
-Play or click a word, then press **Show takes for this paragraph**: the panel lists every take you can choose
-from for that paragraph, each saying where it came from — **another take of this item**, **a retake on another
-lane** of a fixed-lane track, or **a read from Find pickups** that the [pickups and duplicates
-scan](#pickups-and-duplicates) set beside it — and which one plays in REAPER now. Nothing ranks them.
+The **Takes** panel, at the top of the right column beside the script, is for a paragraph that has more than one
+take. It opens on the first paragraph the check heard; play or click a word in another paragraph and a **Show takes
+for the paragraph at the playhead** button offers that one. The panel lists every take you can choose from for the
+paragraph, each on its own card: **another take of this item**, **a retake on another lane** of a fixed-lane
+track, or **a pickup read** that the [pickups and duplicates scan](#pickups-and-duplicates) set beside it. The one REAPER plays now says
+**Plays now**. Nothing ranks them: the panel says "Evidence per word, never a score."
 
-- **Hear side by side** plays two of them from their own recordings, without REAPER (raw source, no FX or edits,
-  as in [comparing takes](#comparing-takes)), from the first to the last word of the paragraph once the takes have
-  been compared.
-- **Compare takes** transcribes each take again and sets its words beside the script, so each take says how much of
-  the paragraph it matched, with the words and the audio measurements side by side below. A take that was never
-  compared says **Not compared yet**; comparing costs a transcription of each take, so it waits until you press it.
+- **Play** on a card plays that take from its own recording, without REAPER (raw source, no FX or edits, as in
+  [comparing takes](#comparing-takes)). With **One** chosen, one take plays at a time. With **A/B**, the first two
+  takes you play take slots A and B, and **Swap** switches between them at the same word: the word the takes were
+  compared on, or the same distance into the paragraph before they were compared.
+- **Compare** transcribes each take again and sets its words beside the script. A compared take then shows the
+  words around where it departs from the script with the departure marked, and one line of evidence: what it misread
+  or left out, its longest pause, and how loud it is against its neighbours. The full comparison (every word and the
+  audio measurements side by side) appears under the script. A take that was never compared says **Not compared
+  yet**, and comparing costs a transcription of each take, so it waits until you press it.
 - **Use this take** makes that take the one that plays in REAPER, in one undo step (one **Undo** in REAPER puts the
-  previous take back). For a retake on another lane it makes that lane the one that plays. For a read from another
-  item it asks first, because REAPER adds the read as a new take on the paragraph's item and then makes it active
-  (two undo steps). It is off while REAPER is not connected, and the panel says why.
+  previous take back). For a retake on another lane it makes that lane the one that plays. For a pickup read from
+  another item it asks first, because REAPER adds the read as a new take on the paragraph's item and then makes it
+  active (two undo steps). It is off while REAPER is not connected, and the panel says why.
 
 A take whose recording is missing, or whose item has moved since the scan, is listed with the reason and cannot be
 heard or chosen. After you choose, save the project in REAPER so the recording check can read the change; the check

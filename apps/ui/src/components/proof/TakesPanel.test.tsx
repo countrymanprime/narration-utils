@@ -10,16 +10,24 @@ import { TooltipProvider } from '../primitives/Tooltip';
 import type { Finding, NarrationApi, ReaperStatus, WorkspaceAlignmentResult } from '../../types';
 import { TakesPanel } from './TakesPanel';
 
-// The A/B dialog owns real <audio> elements; jsdom has no HTMLMediaElement.play().
+// The players own real <audio> elements; jsdom has no HTMLMediaElement.play().
 class FakeAudio extends EventTarget {
+  static instances: FakeAudio[] = [];
   src = '';
   currentTime = 0;
   duration = Number.NaN;
   play = vi.fn().mockResolvedValue(undefined);
   pause = vi.fn();
+  constructor() {
+    super();
+    FakeAudio.instances.push(this);
+  }
 }
 
-beforeEach(() => vi.stubGlobal('Audio', FakeAudio));
+beforeEach(() => {
+  FakeAudio.instances = [];
+  vi.stubGlobal('Audio', FakeAudio);
+});
 afterEach(() => {
   cleanup();
   vi.unstubAllGlobals();
@@ -47,78 +55,82 @@ async function linkedApi(
   return { api, chapterId: measured.id, alignment: await api.workspaceAlignment(measured.id) };
 }
 
-/** The page's own wiring of the panel: the chapter's findings are read here and again when a comparison saves one. */
+/** The page's own wiring of the panel: the chapter's findings are read here and again when a comparison saves one, and the full comparison has a place to be drawn. */
 function Harness({
   api,
   chapterId,
   alignment,
   reaper = CONNECTED,
+  currentToken,
 }: {
   api: NarrationApi;
   chapterId: string;
   alignment: WorkspaceAlignmentResult;
   reaper?: ReaperStatus;
+  currentToken?: number;
 }) {
   const [findings, setFindings] = useState<Finding[]>([]);
+  const [detail, setDetail] = useState<HTMLElement | null>(null);
   const load = useCallback(() => void api.findingsList({ chapterId }).then((page) => setFindings(page.findings)), [api, chapterId]);
   useEffect(load, [load]);
   return (
-    <TakesPanel
-      chapterId={chapterId}
-      alignment={alignment}
-      currentToken={0}
-      findings={findings}
-      reaper={reaper}
-      onReaperStatusChange={async () => {}}
-      onFindingsChanged={load}
-    />
+    <>
+      <TakesPanel
+        chapterId={chapterId}
+        alignment={alignment}
+        currentToken={currentToken}
+        findings={findings}
+        reaper={reaper}
+        onReaperStatusChange={async () => {}}
+        onFindingsChanged={load}
+        detailTarget={detail}
+      />
+      <div ref={setDetail} data-testid="comparison-detail" />
+    </>
   );
 }
 
-async function renderPanel(options: { reaper?: ReaperStatus; initial?: Parameters<typeof createMockApi>[1] } = {}) {
+async function renderPanel(options: { reaper?: ReaperStatus; initial?: Parameters<typeof createMockApi>[1]; currentToken?: number } = {}) {
   const { api, chapterId, alignment } = await linkedApi(options.initial);
   render(
     <ApiProvider api={api}>
       <TooltipProvider>
-        <Harness api={api} chapterId={chapterId} alignment={alignment} reaper={options.reaper} />
+        <Harness api={api} chapterId={chapterId} alignment={alignment} reaper={options.reaper} currentToken={options.currentToken} />
       </TooltipProvider>
     </ApiProvider>,
   );
-  return { api, chapterId };
+  return { api, chapterId, alignment };
 }
 
-async function showTakes(user: ReturnType<typeof userEvent.setup>) {
-  await user.click(await screen.findByRole('button', { name: 'Show takes for this paragraph' }));
-  return screen.findByRole('list', { name: 'Takes of this passage' });
-}
+const takesList = () => screen.findByRole('list', { name: 'Takes of this passage' });
 
-describe('the Takes panel (edit-and-proof-workspace PRD Phase 6)', () => {
-  it('waits for the narrator to ask, then lists every take with where it came from and which one plays', async () => {
-    const user = userEvent.setup();
+describe('the Takes panel (edit-and-proof-workspace PRD Phase 6, mock 04-takes-panel-ab)', () => {
+  it('opens on the first paragraph heard and lists every take with where it came from and which one plays', async () => {
     const { api } = await renderPanel();
     const read = vi.spyOn(api, 'workspaceTakes');
-    expect(read).not.toHaveBeenCalled();
-    expect(screen.queryByRole('list', { name: 'Takes of this passage' })).toBeNull();
 
-    const list = await showTakes(user);
+    const list = await takesList();
 
+    expect(read).not.toHaveBeenCalled(); // the spy is set after the first read: the panel asked once, on its own
+    expect(screen.getByRole('heading', { name: 'Takes · 4 alternates' })).toBeTruthy();
+    expect(screen.getByText('Evidence per word, never a score.')).toBeTruthy();
+    expect(screen.getByText(/^¶1 · \d+ words$/)).toBeTruthy();
     const rows = within(list).getAllByRole('listitem');
     expect(rows).toHaveLength(4);
-    expect(within(rows[0]).getByText('Playing in REAPER')).toBeTruthy();
-    expect(within(rows[0]).getByText('Another take of this item')).toBeTruthy();
-    expect(within(rows[2]).getByText('Retake on another lane')).toBeTruthy();
-    expect(within(rows[3]).getByText('Read from Find pickups')).toBeTruthy();
-    expect(within(rows[1]).getByText('Not compared yet')).toBeTruthy();
-    expect(screen.getByText(/^Paragraph 1/)).toBeTruthy();
+    expect(within(rows[0]).getByText('Plays now')).toBeTruthy();
+    expect(within(rows[0]).getByText(/^This item · active take/)).toBeTruthy();
+    expect(within(rows[2]).getByText(/^Retake on another lane/)).toBeTruthy();
+    expect(within(rows[3]).getByText(/^Read from Find pickups/)).toBeTruthy();
+    expect(within(rows[1]).getByText(/^Not compared yet: comparing transcribes it/)).toBeTruthy();
     // Nothing ranks them.
-    expect(screen.queryByText(/best|score|rank/i)).toBeNull();
+    expect(screen.queryByText(/best|score:|rank/i)).toBeNull();
   });
 
-  it('makes another take of the item active in one request, and shows it playing', async () => {
+  it('makes another take of the item active in one request, and shows it playing in REAPER', async () => {
     const user = userEvent.setup();
     const { api } = await renderPanel();
     const useTake = vi.spyOn(api, 'workspaceUseTake');
-    const list = await showTakes(user);
+    const list = await takesList();
 
     await user.click(within(list).getByRole('button', { name: 'Use take 2' }));
 
@@ -126,9 +138,7 @@ describe('the Takes panel (edit-and-proof-workspace PRD Phase 6)', () => {
     expect(useTake).toHaveBeenCalledTimes(1);
     expect(useTake.mock.calls[0][3]).toMatch(/^take:/);
     await waitFor(() =>
-      expect(
-        within(within(screen.getByRole('list', { name: 'Takes of this passage' })).getAllByRole('listitem')[1]).getByText('Playing in REAPER'),
-      ).toBeTruthy(),
+      expect(within(within(screen.getByRole('list', { name: 'Takes of this passage' })).getAllByRole('listitem')[1]).getByText('Plays now')).toBeTruthy(),
     );
   });
 
@@ -136,15 +146,15 @@ describe('the Takes panel (edit-and-proof-workspace PRD Phase 6)', () => {
     const user = userEvent.setup();
     const { api } = await renderPanel();
     const useTake = vi.spyOn(api, 'workspaceUseTake');
-    const list = await showTakes(user);
+    const list = await takesList();
 
-    await user.click(within(list).getByRole('button', { name: /^Use read from another item/ }));
+    await user.click(within(list).getByRole('button', { name: /^Use pickup read/ }));
     const confirm = await screen.findByRole('alertdialog', { name: 'Add this read and make it active' });
     expect(useTake).not.toHaveBeenCalled();
     await user.click(within(confirm).getByRole('button', { name: 'Cancel' }));
     expect(useTake).not.toHaveBeenCalled();
 
-    await user.click(within(list).getByRole('button', { name: /^Use read from another item/ }));
+    await user.click(within(list).getByRole('button', { name: /^Use pickup read/ }));
     await user.click(within(await screen.findByRole('alertdialog')).getByRole('button', { name: 'Add and make active' }));
 
     expect((await screen.findByRole('status')).textContent).toMatch(/Added the read as a new take and made it active/);
@@ -154,86 +164,104 @@ describe('the Takes panel (edit-and-proof-workspace PRD Phase 6)', () => {
   it('starts a lane pick and says it is asking REAPER', async () => {
     const user = userEvent.setup();
     await renderPanel();
-    const list = await showTakes(user);
+    const list = await takesList();
 
     await user.click(within(list).getByRole('button', { name: /^Use retake on lane 2/ }));
 
     expect((await screen.findByRole('status')).textContent).toMatch(/Asking REAPER to play this retake/);
   });
 
-  it('cannot use a take while REAPER is not connected, and says why', async () => {
+  it('cannot use a take while REAPER is not connected, says why, and still lets the narrator hear them', async () => {
     const user = userEvent.setup();
     await renderPanel({ reaper: { connection: 'standalone', message: 'REAPER is not connected to this app.' } });
-    const list = await showTakes(user);
+    const list = await takesList();
 
-    const button = within(list).getByRole('button', { name: 'Use take 2' });
-    expect(button.hasAttribute('disabled') || button.getAttribute('aria-disabled') === 'true').toBe(true);
-    // The narrator can still hear and compare them without REAPER.
-    expect(screen.getByRole('button', { name: 'Hear side by side' }).hasAttribute('disabled')).toBe(false);
+    const use = within(list).getByRole('button', { name: 'Use take 2' });
+    expect(use.hasAttribute('disabled') || use.getAttribute('aria-disabled') === 'true').toBe(true);
+    expect(screen.getByText(/Use this take needs REAPER\. REAPER is not connected to this app\./)).toBeTruthy();
+    await user.click(within(list).getByRole('button', { name: 'Play take 2' }));
+    expect(within(list).getByRole('button', { name: 'Pause take 2' })).toBeTruthy();
   });
 
   it("shows the host's refusal in its own words when REAPER refuses", async () => {
     const user = userEvent.setup();
     await renderPanel({ initial: { reaper: 'recording' } });
-    const list = await showTakes(user);
+    const list = await takesList();
 
     await user.click(within(list).getByRole('button', { name: 'Use take 2' }));
 
     expect((await screen.findByRole('alert')).textContent).toMatch(/REAPER is recording, so nothing was changed/);
   });
 
-  it('plays two takes side by side from their raw recordings', async () => {
+  it('plays one take at a time in One mode, from its own recording', async () => {
     const user = userEvent.setup();
     await renderPanel();
-    await showTakes(user);
+    const list = await takesList();
 
-    await user.click(screen.getByRole('button', { name: 'Hear side by side' }));
+    await user.click(within(list).getByRole('button', { name: 'Play take 1' }));
+    expect(within(list).getByRole('button', { name: 'Pause take 1' })).toBeTruthy();
+    await user.click(within(list).getByRole('button', { name: 'Play take 2' }));
 
-    const dialog = await screen.findByRole('dialog', { name: 'Audition candidate reads' });
-    expect(within(dialog).getByText('Raw source, no FX or edits applied')).toBeTruthy();
-    expect(within(dialog).getByRole('combobox', { name: 'Read A' })).toBeTruthy();
-    expect(within(dialog).getByRole('combobox', { name: 'Read B' })).toBeTruthy();
+    expect(within(list).getByRole('button', { name: 'Pause take 2' })).toBeTruthy();
+    expect(within(list).queryByRole('button', { name: 'Pause take 1' })).toBeNull();
+    expect(within(list).getByRole('button', { name: 'Play take 1' })).toBeTruthy();
+    expect(FakeAudio.instances.filter((audio) => audio.play.mock.calls.length > 0)).toHaveLength(1); // one player plays each take in turn
+    expect(screen.queryByRole('button', { name: 'Swap A and B' })).toBeNull();
   });
 
-  it('compares the takes with real progress, then sets them side by side and says how much each matched', async () => {
+  it('puts two takes in slots A and B and swaps between them at the same word', async () => {
+    const user = userEvent.setup();
+    await renderPanel();
+    const list = await takesList();
+    await user.click(screen.getByRole('button', { name: 'A/B' }));
+    expect(screen.getByText('Swap switches A and B at the same word')).toBeTruthy();
+    expect((screen.getByRole('button', { name: 'Swap A and B' }) as HTMLButtonElement).disabled).toBe(true);
+
+    await user.click(within(list).getByRole('button', { name: 'Play take 1' }));
+    await user.click(within(list).getByRole('button', { name: 'Play take 2' }));
+
+    const slotA = screen.getByLabelText('Slot A');
+    const slotB = screen.getByLabelText('Slot B');
+    expect(slotA.closest('li')?.textContent).toMatch(/Take 1/);
+    expect(slotB.closest('li')?.textContent).toMatch(/Take 2/);
+    // Take 2 (B) plays now; swapping stops it and plays Take 1 (A) instead.
+    expect(within(list).getByRole('button', { name: 'Pause take 2' })).toBeTruthy();
+    await user.click(screen.getByRole('button', { name: 'Swap A and B' }));
+    expect(within(list).getByRole('button', { name: 'Pause take 1' })).toBeTruthy();
+    expect(within(list).getByRole('button', { name: 'Play take 2' })).toBeTruthy();
+  });
+
+  it('compares the takes with real progress, then says on each card how it read the passage, and draws the full comparison below', async () => {
     const user = userEvent.setup();
     const { api } = await renderPanel();
     const start = vi.spyOn(api, 'workspaceTakesCompareStart');
-    await showTakes(user);
+    const list = await takesList();
 
-    await user.click(screen.getByRole('button', { name: 'Compare takes' }));
+    await user.click(within(list).getAllByRole('button', { name: 'Compare' })[0]);
     const progress = await screen.findByRole('dialog', { name: 'Comparing takes' });
     expect(start).toHaveBeenCalledTimes(1);
     await waitFor(() => expect(within(progress).getByRole('status').textContent).toMatch(/^Compared the takes/), { timeout: 6000 });
     await user.click(within(progress).getByRole('button', { name: 'Close' }));
 
-    expect(await screen.findByRole('region', { name: 'Takes side by side' })).toBeTruthy();
+    await waitFor(() =>
+      expect(
+        within(within(screen.getByRole('list', { name: 'Takes of this passage' })).getAllByRole('listitem')[0]).getByText(/Every word matched/),
+      ).toBeTruthy(),
+    );
     const rows = within(screen.getByRole('list', { name: 'Takes of this passage' })).getAllByRole('listitem');
-    await waitFor(() => expect(within(rows[0]).getByText(/^Matched \d+% of the passage's words$/)).toBeTruthy());
-    expect(screen.getByRole('button', { name: 'Compare again' })).toBeTruthy();
+    expect(within(rows[1]).getByText(/Misread “\w+” as “remarkably”/)).toBeTruthy();
+    expect(within(screen.getByTestId('comparison-detail')).getByRole('region', { name: 'Takes side by side' })).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Compare' })).toBeNull();
   }, 20000);
 
-  it('says why there are no takes for a passage nothing was heard on', async () => {
+  it('says why there are no takes for a paragraph nothing was heard on, and offers the paragraph at the playhead', async () => {
     const user = userEvent.setup();
-    const { api, chapterId, alignment } = await linkedApi();
+    const { alignment } = await linkedApi();
     const unheard = alignment.tokens.findIndex((token) => token.item === undefined && token.p !== undefined);
     if (unheard < 0) return; // the mock chapter heard everything: nothing to say
-    render(
-      <ApiProvider api={api}>
-        <TooltipProvider>
-          <TakesPanel
-            chapterId={chapterId}
-            alignment={alignment}
-            currentToken={unheard}
-            findings={[]}
-            reaper={CONNECTED}
-            onReaperStatusChange={async () => {}}
-            onFindingsChanged={() => {}}
-          />
-        </TooltipProvider>
-      </ApiProvider>,
-    );
-    await user.click(await screen.findByRole('button', { name: 'Show takes for this paragraph' }));
+    await renderPanel({ currentToken: unheard });
+    // The panel opens on the first paragraph heard, so moving the playhead to the unheard one offers it.
+    await user.click(await screen.findByRole('button', { name: 'Show takes for the paragraph at the playhead' }));
     expect(await screen.findByText(/wasn't heard in the recording/)).toBeTruthy();
   });
 });

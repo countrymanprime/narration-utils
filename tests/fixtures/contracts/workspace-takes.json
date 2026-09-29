@@ -57,7 +57,7 @@
       "detail": "pickup.wav · found by Find pickups and duplicates (pickup)",
       "id": "read:g-1:1",
       "itemGuid": "{DDDDDDDD-0000-0000-0000-000000000004}",
-      "label": "Read from another item",
+      "label": "Pickup read",
       "notComparedReason": "None of this part of the script was heard in this take, so it is not compared with the others.",
       "source": "take_review",
       "sourceFile": "pickup.wav",

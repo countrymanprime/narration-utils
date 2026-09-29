@@ -89,13 +89,21 @@ export const proofChapterDrivers: Record<string, Driver> = {
     await goTo.waitFor();
     await goTo.scrollIntoViewIfNeeded();
   },
-  // The Takes panel (edit-and-proof-workspace.prd.md Phase 6): Chapter 1's paragraph at the playhead, its takes listed.
+  // The Takes panel (edit-and-proof-workspace.prd.md Phase 6): Chapter 1's first paragraph heard, its takes listed.
   'takes-list': async (page) => {
     await openTakes(page);
   },
+  'takes-ab': async (page) => {
+    await openTakes(page);
+    await clickVisible(page, 'button', 'A/B');
+    await clickVisible(page, 'button', 'Play take 1');
+    await clickVisible(page, 'button', 'Play take 2');
+    await page.getByRole('button', { name: 'Pause take 2' }).waitFor();
+    await takesList(page).scrollIntoViewIfNeeded();
+  },
   'takes-compared': async (page) => {
     await openTakes(page);
-    await clickVisible(page, 'button', 'Compare takes');
+    await clickVisible(page, 'button', 'Compare');
     // The mock job's stages advance one per poll; waiting them out is the same real timer compare-results-* waits on.
     const progress = page.getByRole('dialog', { name: 'Comparing takes' });
     await progress
@@ -108,23 +116,18 @@ export const proofChapterDrivers: Record<string, Driver> = {
     const dismissToast = page.getByRole('button', { name: 'Dismiss message' });
     await dismissToast.click({ timeout: 1_000 }).catch(() => undefined);
     await dismissToast.waitFor({ state: 'detached' });
-    await page.getByRole('region', { name: 'Takes', exact: true }).scrollIntoViewIfNeeded();
+    await takesList(page).scrollIntoViewIfNeeded();
   },
   'takes-used': async (page) => {
     await openTakes(page);
     await clickVisible(page, 'button', 'Use take 2');
     await page.getByText(/^Made that take active in REAPER/).waitFor();
-    await page.getByRole('region', { name: 'Takes', exact: true }).scrollIntoViewIfNeeded();
+    await takesList(page).scrollIntoViewIfNeeded();
   },
   'takes-confirm': async (page) => {
     await openTakes(page);
-    await clickVisible(page, 'button', /^Use read from another item/);
+    await clickVisible(page, 'button', /^Use pickup read/);
     await page.getByRole('alertdialog', { name: 'Add this read and make it active' }).waitFor();
-  },
-  'takes-audition': async (page) => {
-    await openTakes(page);
-    await clickVisible(page, 'button', 'Hear side by side');
-    await page.getByRole('dialog', { name: 'Audition candidate reads' }).waitFor();
   },
   'takes-standalone': async (page) => {
     await page.goto('/?mockReaper=standalone');
@@ -385,11 +388,12 @@ async function openPanel(page: Page, url: string, ready: ReturnType<Page['getByT
   await ready.first().scrollIntoViewIfNeeded();
 }
 
-// Chapter 1 opened from its track link, with the Takes panel asked for its first paragraph and scrolled into view.
+const takesList = (page: Page) => page.getByRole('list', { name: 'Takes of this passage' });
+
+// Chapter 1 opened from its track link, with the Takes panel's first paragraph read and scrolled into view.
 async function openTakes(page: Page): Promise<void> {
   await openLinkedProofChapter(page, 'Chapter 1');
   await page.getByText('Check current').waitFor();
-  await clickVisible(page, 'button', 'Show takes for this paragraph');
-  await page.getByRole('list', { name: 'Takes of this passage' }).waitFor();
-  await page.getByRole('region', { name: 'Takes', exact: true }).scrollIntoViewIfNeeded();
+  await takesList(page).waitFor();
+  await takesList(page).scrollIntoViewIfNeeded();
 }

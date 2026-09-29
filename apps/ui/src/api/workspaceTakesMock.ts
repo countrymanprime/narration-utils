@@ -157,7 +157,7 @@ export function createWorkspaceTakesMock(deps: Deps): Pick<WorkspaceApi, 'worksp
         source: 'take_review',
         action: 'add_and_activate',
         confirm: true,
-        label: 'Read from another item',
+        label: 'Pickup read',
         detail: 'pickup.wav · found by Find pickups and duplicates (pickup)',
         itemGuid: MOCK_READ_ITEM,
         takeGuid: MOCK_READ_TAKE,

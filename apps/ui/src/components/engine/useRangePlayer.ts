@@ -75,13 +75,15 @@ export function useRangePlayer(
   // Unmount (dialog closed): stop playback rather than leaving audio running behind a closed dialog.
   useEffect(() => () => audioRef.current?.pause(), []);
 
+  // `at` starts the range part way in, at a time in its own source file (the Takes panel's A/B swaps to the same word of
+  // the other take); by default it starts at the range's lead-in.
   const play = useCallback(
-    (next: AuditionRange) => {
+    (next: AuditionRange, at?: number) => {
       const audio = audioRef.current!;
       setLoadError(false);
       setRange(next);
       audio.src = mediaUrl(next.sourceFile);
-      audio.currentTime = Math.max(0, next.rangeStart - rollRef.current.pre);
+      audio.currentTime = Math.max(0, at ?? next.rangeStart - rollRef.current.pre);
       setIsPlaying(true);
       audio.play().catch((reason: unknown) => {
         // A newer play() interrupting this one (switching reads quickly) is expected, not a failure.
@@ -98,5 +100,8 @@ export function useRangePlayer(
     setIsPlaying(false);
   }, []);
 
-  return { isPlaying, loadError, loop, setLoop, play, stop, activeRange: range };
+  /** Where the audio is now, in its source file's seconds. */
+  const position = useCallback(() => audioRef.current!.currentTime, []);
+
+  return { isPlaying, loadError, loop, setLoop, play, stop, position, activeRange: range };
 }

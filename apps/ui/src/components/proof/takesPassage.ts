@@ -45,3 +45,20 @@ export function auditionRangeOf(take: PassageTake, member: TakeComparisonMember 
   const end = Math.max(...timed.map((word) => word.end ?? 0));
   return end > start ? { source_file: take.sourceFile, source_start: start, source_length: end - start } : whole;
 }
+
+type Side = { range: AuditionSource; member: TakeComparisonMember | undefined };
+
+/**
+ * Where the other take of an A/B swap starts (its own file's seconds): at the word being heard now, when the comparison timed
+ * that word in both takes; otherwise the same distance into the passage, kept inside the other take's range. `at` is where the
+ * first take is playing, in its own file's seconds.
+ */
+export function swapPosition(at: number, from: Side, to: Side): number {
+  const spoken = (member: TakeComparisonMember | undefined) => (member?.words ?? []).filter((word) => word.start !== null && word.end !== null);
+  const heard = spoken(from.member);
+  const current = [...heard].reverse().find((word) => (word.start ?? 0) <= at);
+  const same = current && spoken(to.member).find((word) => word.index === current.index);
+  if (same && same.start !== null) return same.start;
+  const end = to.range.source_start + to.range.source_length;
+  return Math.min(end, to.range.source_start + Math.max(0, at - from.range.source_start));
+}

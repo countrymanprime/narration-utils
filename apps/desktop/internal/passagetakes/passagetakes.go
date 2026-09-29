@@ -299,7 +299,7 @@ func (b *builder) takeReviewReads(target tracks.Item) {
 			}
 			b.add(Candidate{
 				ID: "read:" + group.ID + ":" + strconv.Itoa(index), Source: SourceTakeReview, Action: ActionAddAndActivate, Confirm: true,
-				Label: "Read from another item", Detail: fmt.Sprintf("%s · found by Find pickups and duplicates%s", fileName(member.SourceFile), kindSuffix(kind)),
+				Label: "Pickup read", Detail: fmt.Sprintf("%s · found by Find pickups and duplicates%s", fileName(member.SourceFile), kindSuffix(kind)),
 				ItemGUID: member.ItemGUID, TakeGUID: member.TakeGUID, SourceFile: file, SourceStart: member.SourceStart, SourceLength: member.SourceLength,
 				Usable: reason == "", Reason: reason,
 			}, Choice{FindingID: group.ID, SourceFile: file, RangeStart: member.SourceStart, RangeEnd: member.SourceStart + member.SourceLength})

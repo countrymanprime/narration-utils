@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import type { PassageTake, WorkspaceParagraph, WorkspaceToken } from '../../api/contracts/workspace';
 import type { TakeComparisonMember } from '../../api/contracts/takeReview';
-import { auditionRangeOf, paragraphPassage, passageLabel } from './takesPassage';
+import { auditionRangeOf, paragraphPassage, passageLabel, swapPosition } from './takesPassage';
+import { divergenceBrief, evidenceLine } from './takeComparisonFormat';
 
 const token = (i: number, p: string | undefined, item?: number): WorkspaceToken => ({
   i,
@@ -94,5 +95,93 @@ describe('the range of a take the A/B plays', () => {
   it('stays the whole range when the comparison timed no word of the take', () => {
     const words = [{ index: 0, status: 'unread' as const, start: null, end: null }];
     expect(auditionRangeOf(take(), member(words))).toEqual({ source_file: 'take.wav', source_start: 10, source_length: 30 });
+  });
+});
+
+describe('swapping A and B at the same word', () => {
+  const range = (start: number, length: number) => ({ source_file: 'x.wav', source_start: start, source_length: length });
+  const words = (times: Array<[number, number]>) =>
+    times.map(([start, end], index) => ({ index, status: 'matched' as const, start, end })) satisfies TakeComparisonMember['words'];
+
+  it('starts the other take at the same word when the comparison timed it in both', () => {
+    const a = {
+      range: range(10, 30),
+      member: member(
+        words([
+          [11, 11.5],
+          [12, 12.5],
+          [13, 13.5],
+        ]),
+      ),
+    };
+    const b = {
+      range: range(50, 30),
+      member: member(
+        words([
+          [51, 51.4],
+          [53, 53.4],
+          [55, 55.4],
+        ]),
+      ),
+    };
+    expect(swapPosition(12.2, a, b)).toBe(53);
+    expect(swapPosition(13.9, a, b)).toBe(55);
+  });
+
+  it('starts at the same distance into the passage when the takes were not compared', () => {
+    const a = { range: range(10, 30), member: undefined };
+    const b = { range: range(50, 30), member: undefined };
+    expect(swapPosition(14, a, b)).toBe(54);
+  });
+
+  it('stays inside the other take and never starts before it', () => {
+    const a = { range: range(10, 30), member: undefined };
+    const b = { range: range(50, 5), member: undefined };
+    expect(swapPosition(39, a, b)).toBe(55);
+    expect(swapPosition(3, a, b)).toBe(50);
+  });
+});
+
+describe("a take's card says where it departs from the script", () => {
+  const divergence = (over: Partial<TakeComparisonMember['divergences'][number]>): TakeComparisonMember['divergences'][number] => ({
+    kind: 'misread',
+    position: 'within',
+    first_word: 4,
+    last_word: 4,
+    manuscript_text: 'near',
+    audio_text: 'here',
+    start: 12.4,
+    end: 12.9,
+    ...over,
+  });
+
+  it('words each kind of departure without its time', () => {
+    expect(divergenceBrief(divergence({}))).toBe('Misread “near” as “here”');
+    expect(divergenceBrief(divergence({ kind: 'extra', audio_text: 'well' }))).toBe('Extra words “well”');
+    expect(divergenceBrief(divergence({ kind: 'skipped', manuscript_text: 'very' }))).toBe('Left out: “very”');
+    expect(divergenceBrief(divergence({ kind: 'unread', manuscript_text: 'the end' }))).toBe('Not reached: “the end”');
+  });
+
+  it('says every word matched when nothing departs, then the pause and how loud the take is against its neighbours', () => {
+    const measured = {
+      ...member([]),
+      metrics: {
+        pause_profile: { status: 'measured', min_pause_seconds: 0.3, long_pause_seconds: 2, longest_seconds: 0.4 },
+        level_consistency: {
+          status: 'measured',
+          delta_lu: -1.2,
+          neighbors_measured: 2,
+          neighbors_unavailable: 0,
+          integrated_lufs: null,
+          neighbor_median_lufs: null,
+        },
+      },
+    } as unknown as TakeComparisonMember;
+    expect(evidenceLine(measured)).toBe('Every word matched · 0.4 s pause · −1.2 dB quieter');
+  });
+
+  it('lists the departures first and leaves out what was not measured', () => {
+    const departing = { ...member([]), divergences: [divergence({}), divergence({ kind: 'skipped', manuscript_text: 'very' })] };
+    expect(evidenceLine(departing)).toBe('Misread “near” as “here” · Left out: “very”');
   });
 });
