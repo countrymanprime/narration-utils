@@ -35,6 +35,23 @@ function renderShell(props: Partial<Parameters<typeof AppShell>[0]> = {}, daw: D
   );
 }
 
+describe('AppShell on the Booth (mock 03, owner call BO2)', () => {
+  it('draws no rail, header or drawer on /booth, only the page in its own main', () => {
+    renderShell({ pathname: '/booth' });
+    expect(screen.queryByRole('navigation')).toBeNull();
+    expect(screen.queryByRole('banner')).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Open navigation' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Zoom in' })).toBeNull();
+    expect(within(screen.getByRole('main')).getByText('page content')).toBeTruthy();
+  });
+
+  it('keeps the rail and header on every other page', () => {
+    renderShell({ pathname: '/script' });
+    expect(screen.getAllByRole('button', { name: 'Booth' }).length).toBeGreaterThan(0);
+    expect(screen.getByRole('button', { name: 'Zoom in' })).toBeTruthy();
+  });
+});
+
 describe('AppShell nav gating (PRD project-workspace-and-daw-link.prd.md, W16/W17)', () => {
   it('disables the manuscript pages, and only those, when there is no manuscript', () => {
     renderShell({ hasManuscript: false, dawFileLinked: false });

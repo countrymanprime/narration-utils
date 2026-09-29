@@ -177,6 +177,17 @@ export function AppShell({
       </div>
     </>
   );
+  // The Booth fills the whole window (mock 03, owner call BO2): no rail, no header, no drawer. Exit booth (or Escape) is the way
+  // out, and the page keeps its own `<main>` so the landmark stays.
+  if (isActivePath(pathname, '/booth')) {
+    return (
+      <div className="h-full overflow-hidden bg-[var(--bg)]">
+        <main tabIndex={-1} className="size-full overflow-hidden focus:outline-none">
+          {children}
+        </main>
+      </div>
+    );
+  }
   return (
     <div className="flex h-full flex-col overflow-hidden bg-[var(--bg)]">
       <DemoBanner />

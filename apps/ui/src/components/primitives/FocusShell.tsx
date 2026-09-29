@@ -52,7 +52,11 @@ export function FocusShell({
   const Content = asMain ? 'main' : 'div';
   return (
     <div className={`flex size-full flex-col overflow-hidden bg-[var(--bg)] text-[var(--text)] ${className}`}>
-      <div role="region" aria-label={statusLabel} className="flex flex-none items-center gap-3 border-b border-[var(--border)] bg-[var(--surface)] px-4 py-2">
+      <div
+        role="region"
+        aria-label={statusLabel}
+        className="flex min-h-[3.625rem] flex-none items-center gap-3 border-b border-[var(--border)] bg-[var(--surface)] px-[1.375rem] py-2"
+      >
         {status}
       </div>
       <div className="flex min-h-0 flex-1">
@@ -65,7 +69,11 @@ export function FocusShell({
           </aside>
         )}
       </div>
-      <div role="region" aria-label={commandsLabel} className="flex flex-none items-center gap-3 border-t border-[var(--border)] bg-[var(--surface)] px-4 py-2">
+      <div
+        role="region"
+        aria-label={commandsLabel}
+        className="flex min-h-16 flex-none items-center gap-3 border-t border-[var(--border)] bg-[var(--surface)] px-[1.375rem] py-2"
+      >
         {commands}
       </div>
     </div>

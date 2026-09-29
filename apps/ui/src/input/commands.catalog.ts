@@ -50,6 +50,8 @@ export const COMMAND_CATALOG: readonly CommandDescriptor[] = [
   // Not noisy: it starts or pauses the live listening/transcription session (`useTeleprompterSession`), which plays
   // no audio of its own - unlike `workspace.play`, a recorded-audio player (PRD Q5).
   { id: 'reading.toggle', label: 'Play or pause reading', scope: 'booth', defaults: [key('Space')] },
+  // Mock 03 fills the whole window (owner call BO2, 2026-09-29): F11 also takes the window fullscreen, the platform's own key for it.
+  { id: 'booth.fullscreen', label: 'Toggle full screen', scope: 'booth', defaults: [key('F11')] },
   // Phase 7, PRD Q8: "?" is Shift+Slash on a US layout (PRD Q1: bound by physical key, so ShortcutSheet.tsx labels it
   // back from `code` for display). `global` so it opens from any screen; `findConflicts.test.ts`'s zero-conflicts
   // check over the real catalog covers it against every other command.
