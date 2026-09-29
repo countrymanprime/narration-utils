@@ -266,7 +266,7 @@ export function ProductionPage({
           </Heading>
         </div>
         <div className="flex flex-wrap items-center justify-end gap-x-3 gap-y-2">
-          {pace && <StatusBadge tone={pace.tone} label={pace.label} icon={<span aria-hidden className="size-1.5 rounded-full bg-current" />} />}
+          {pace && <StatusBadge tone={pace.tone} label={pace.label} />}
           <div role="group" aria-label="Production actions" className="flex flex-wrap items-center gap-2">
             {found && (
               <Button variant="secondary" onClick={() => void read()}>

@@ -54,6 +54,8 @@ for (const rows of AREAS) {
  * The list may only shrink: a new one needs a reason a reviewer accepts, and a narrator's action never belongs here.
  */
 export const SILENT_CATCHES: Record<string, string> = {
+  'src/components/production/usePickupsRemaining.ts#1':
+    "Production's Open pickups tile: cosmetic, only what REAPER last reported. A failed read leaves the tile a dash with its reason (never a made-up number), and the Pickups page reports the real error.",
   'src/components/production/ChapterTrackPanel.tsx#1':
     'onRemoveFromRecording already shows the failure (its own toast, in ChapterBoard) before rethrowing; this catch only stops that rejection from going unhandled and skips closing the confirm, so the narrator can retry.',
   'src/api/wailsClient.ts#1': 'The diagnostic report itself: a report that fails must not raise a second error over the one being reported.',
