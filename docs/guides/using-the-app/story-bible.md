@@ -75,7 +75,11 @@ refresh button instead, so you can replace it with the other source. Either engi
 nothing for an unusual name (most fantasy names aren't in the CMU dictionary, and the eSpeak
 fallback needs a system component many machines don't have) - the message says which, and you can
 try the other source or try again. A pronunciation you set this way is kept the next time you
-rebuild the Story Bible; an automatically generated one can still change on a rebuild.
+rebuild the Story Bible; an automatically generated one can still change on a rebuild. Each alias has
+its own **+**/refresh button beside it, independent of the entity's own name and of every other
+alias, so you can generate or replace one alias's pronunciation without touching the rest. Which
+source a *fresh* pronunciation tries first (at build time, or when you add an alias) follows
+**Settings > Story Bible > Default pronunciation source**; it never limits this button's own choice.
 
 ## Your own pronunciation, and what the author said
 
@@ -87,7 +91,8 @@ not thrown away: it shows as "Also kept", and **Use ... instead** switches back 
 yours, so you can switch again). Neither step looks anything up. Set the **Status** and a
 **Pronunciation note** (who you asked, and when) and press **Save status**. If you change a
 pronunciation the author confirmed, it goes back to Researched, because the author has not heard the
-new one. A rebuild keeps all of this.
+new one. A rebuild keeps all of this. **Pronunciation details** works the same way for an alias,
+opening independently of the entity's own panel and of every other alias.
 
 ## Looking a name up online (Merriam-Webster)
 

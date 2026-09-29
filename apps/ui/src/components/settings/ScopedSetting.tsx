@@ -40,6 +40,8 @@ const DELIVERY_LIMIT_KEYS = [
 const TOOLTIP: Record<string, string> = {
   ...Object.fromEntries(DELIVERY_LIMIT_KEYS.map((key) => [key, DELIVERY_LIMIT_TIP])),
   spacy_model: 'Controls Story Bible detection quality and build speed.',
+  default_pronunciation_source:
+    'Which source a new name’s pronunciation tries first, at build time and when you add an alias. Automatic still falls back through the others if the preferred one has nothing for the name. This never changes a pronunciation already generated, and it is separate from Generate/Replace in the Story Bible entry itself, which always lets you pick explicitly.',
   model_size: 'Default Whisper model for new comparisons.',
   chunk_seconds: 'Default transcription chunk length.',
   color_note: 'Color used for narrator note treatment.',

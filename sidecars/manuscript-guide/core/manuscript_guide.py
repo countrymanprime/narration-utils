@@ -536,11 +536,17 @@ def user_pronunciation(ipa: str) -> dict[str, Any]:
     return {"ipa": text, "source": USER_SOURCE, "confidence": "narrator"}
 
 
-def pronunciation(name: str, espeak_library: str | None) -> dict[str, str]:
+def pronunciation(name: str, espeak_library: str | None, default_source: str | None = None) -> dict[str, str]:
     # CMU is quick and high-quality for familiar names. It cannot cover most fantasy names.
     # Read-only/generated-only: there is no user-editable "say it as" respelling
     # any more, so this never needs to round-trip anything but the IPA itself.
-    for source in SOURCES.fallback_order():
+    order = SOURCES.fallback_order()
+    # default_source (story-bible-and-import-ux-briefs PRD phase 11, the settings default) only reorders the chain: an
+    # unregistered value (a stale setting from a removed source) is ignored rather than raising, and every other
+    # source is still tried afterwards in its usual order if the preferred one has nothing for this name.
+    if default_source and default_source in order:
+        order = [default_source, *(source for source in order if source != default_source)]
+    for source in order:
         try:
             return pronounce_source(name, espeak_library, source)
         except Exception as exc:  # noqa: BLE001
@@ -660,7 +666,7 @@ def evidence_entries(items: list[dict[str, str]]) -> list[dict[str, Any]]:
     ]
 
 
-def build_entities(paragraphs: list[dict[str, str]], model_name: str, espeak_library: str | None) -> list[dict[str, Any]]:
+def build_entities(paragraphs: list[dict[str, str]], model_name: str, espeak_library: str | None, default_source: str | None = None) -> list[dict[str, Any]]:
     scenes = scene_by_paragraph_id(paragraphs)
     spacy = spacy_candidates(paragraphs, model_name)
     candidates = rule_candidates(paragraphs) if spacy is None else spacy
@@ -713,7 +719,7 @@ def build_entities(paragraphs: list[dict[str, str]], model_name: str, espeak_lib
         aliases = [
             {
                 "text": name,
-                "pronunciation": pronunciation(name, espeak_library),
+                "pronunciation": pronunciation(name, espeak_library, default_source),
                 "occurrences": evidence_entries(by_literal_name.get(name, [])),
             }
             for name in alias_names
@@ -728,7 +734,7 @@ def build_entities(paragraphs: list[dict[str, str]], model_name: str, espeak_lib
                 "category": category,
                 "occurrences": canonical_evidence,
                 "occurrence_count": len(occurrences),
-                "pronunciation": pronunciation(canonical_name, espeak_library),
+                "pronunciation": pronunciation(canonical_name, espeak_library, default_source),
                 "description": direct_description(canonical_name, occurrences),
                 "personality_notes": trait_notes(canonical_name, occurrences) if category == "Character" else [],
                 "context": "",
@@ -954,7 +960,7 @@ def build(args: argparse.Namespace) -> None:
     previous = load_json(args.out)
     if args.spacy_model != RULES_ONLY:
         log(f"Extracting candidates with spaCy model {args.spacy_model}")
-    entities = build_entities(paragraphs, args.spacy_model, args.espeak_library or None)
+    entities = build_entities(paragraphs, args.spacy_model, args.espeak_library or None, getattr(args, "default_source", "") or None)
     write_progress(args.progress, "MERGE", 85, "Preserving locked edits...")
     log("Merging generated entries with locked and manual edits")
     entities = merge_locked(entities, previous)
@@ -1052,7 +1058,14 @@ def entity_properties(entity: dict[str, Any]) -> list[dict[str, str]]:
     return properties if isinstance(properties, list) else []
 
 
-def apply_edit(entity: dict[str, Any], field: str, value: str, paragraphs: list[dict[str, str]] | None, espeak_library: str | None) -> None:
+def apply_edit(
+    entity: dict[str, Any],
+    field: str,
+    value: str,
+    paragraphs: list[dict[str, str]] | None,
+    espeak_library: str | None,
+    default_source: str | None = None,
+) -> None:
     """Applies one field edit to ``entity`` in memory. Nothing is written here."""
     if entity.get("locked") and field != "locked":
         raise ValueError("This entity is locked. Unlock it before editing.")
@@ -1084,7 +1097,7 @@ def apply_edit(entity: dict[str, Any], field: str, value: str, paragraphs: list[
             new_aliases.append(
                 {
                     "text": name,
-                    "pronunciation": pronunciation(name, espeak_library),
+                    "pronunciation": pronunciation(name, espeak_library, default_source),
                     "occurrences": find_occurrences(paragraphs, name) if paragraphs is not None else [],
                 }
             )
@@ -1111,7 +1124,7 @@ def edit(args: argparse.Namespace) -> None:
     # The manuscript is read only when an alias is edited, to find where the new alias occurs.
     paragraphs = load_manuscript(args.manuscript) if "aliases" in fields and args.manuscript else None
     for field, value in zip(fields, values, strict=True):
-        apply_edit(entity, field, value, paragraphs, args.espeak_library or None)
+        apply_edit(entity, field, value, paragraphs, args.espeak_library or None, getattr(args, "default_source", "") or None)
     entity["review_state"] = "reviewed"
     write_json(args.guide, guide)
     print("EDITED|" + args.entity_id)
@@ -1247,7 +1260,7 @@ def create(args: argparse.Namespace) -> None:
     aliases = [
         {
             "text": alias_name,
-            "pronunciation": pronunciation(alias_name, args.espeak_library or None),
+            "pronunciation": pronunciation(alias_name, args.espeak_library or None, getattr(args, "default_source", "") or None),
             "occurrences": find_occurrences(paragraphs, alias_name),
         }
         for alias_name in alias_names
@@ -1258,7 +1271,7 @@ def create(args: argparse.Namespace) -> None:
         "aliases": aliases,
         "category": category,
         "occurrences": canonical_occurrences,
-        "pronunciation": pronunciation(name, args.espeak_library or None),
+        "pronunciation": pronunciation(name, args.espeak_library or None, getattr(args, "default_source", "") or None),
         "description": direct_description(name, canonical_occurrences) if canonical_occurrences else {"text": "", "evidence": {}},
         "personality_notes": [],
         "relationships": [],
@@ -1763,6 +1776,7 @@ def main() -> None:
     build_parser.add_argument("--spacy-model", default=get_default("ManuscriptGuide", "spacy_model", "en_core_web_sm"))
     build_parser.add_argument("--espeak-library", default="")
     build_parser.add_argument("--wiktextract-index", default="")
+    build_parser.add_argument("--default-source", default=get_default("ManuscriptGuide", "default_pronunciation_source", ""))
     status_parser = command.add_parser("status")
     status_parser.add_argument("--manuscript", required=True)
     status_parser.add_argument("--guide", required=True)
@@ -1775,6 +1789,7 @@ def main() -> None:
     edit_parser.add_argument("--manuscript", default="")
     edit_parser.add_argument("--espeak-library", default="")
     edit_parser.add_argument("--wiktextract-index", default="")
+    edit_parser.add_argument("--default-source", default=get_default("ManuscriptGuide", "default_pronunciation_source", ""))
     rescan_parser = command.add_parser("rescan")
     rescan_parser.add_argument("--guide", required=True)
     rescan_parser.add_argument("--manuscript", required=True)
@@ -1813,6 +1828,7 @@ def main() -> None:
     create_parser.add_argument("--properties", default="", help='the properties as one JSON list, e.g. [{"key": "Codename", "value": "Wren"}]')
     create_parser.add_argument("--espeak-library", default="")
     create_parser.add_argument("--wiktextract-index", default="")
+    create_parser.add_argument("--default-source", default=get_default("ManuscriptGuide", "default_pronunciation_source", ""))
     merge_parser = command.add_parser("merge")
     merge_parser.add_argument("--guide", required=True)
     merge_parser.add_argument("--source-id", required=True)

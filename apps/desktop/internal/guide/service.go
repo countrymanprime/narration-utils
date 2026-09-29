@@ -335,13 +335,29 @@ func (s *Service) Build(progress, log, model string) (string, error) {
 	if e := os.MkdirAll(filepath.Dir(s.guidePath()), 0755); e != nil {
 		return "", e
 	}
-	args := []string{"build", "--manuscript", s.manuscript(), "--out", s.guidePath(), "--progress", progress, "--log", log, "--spacy-model", model}
-	out, err := s.Run(args...)
+	out, err := s.Run(s.buildArgs(progress, log, model)...)
 	if err != nil {
 		return out, err
 	}
 	_ = s.SaveFindings() // best-effort; a problem here never fails a build that already succeeded (see SaveFindings)
 	return out, nil
+}
+func (s *Service) buildArgs(progress, log, model string) []string {
+	args := []string{"build", "--manuscript", s.manuscript(), "--out", s.guidePath(), "--progress", progress, "--log", log, "--spacy-model", model}
+	return append(args, s.defaultPronunciationSourceArgs()...)
+}
+
+// defaultPronunciationSourceArgs is --default-source <value> when the narrator set a preferred pronunciation source
+// (Settings > Story Bible, story-bible-and-import-ux-briefs PRD phase 11); omitted (not passed as an explicit empty
+// value) when unset, so every project's build/edit/create command line is unchanged from before this setting existed.
+// It only reorders the sidecar's own build-time fallback (manuscript_guide.py's pronunciation()); it never limits the
+// entity/alias Generate-Replace control's own explicit --source choice (Pronounce, below).
+func (s *Service) defaultPronunciationSourceArgs() []string {
+	value, _ := s.settings.Effective("ManuscriptGuide", "default_pronunciation_source", "")
+	if value == "" {
+		return nil
+	}
+	return []string{"--default-source", value}
 }
 
 func (s *Service) Edit(id, field, value string) error {
@@ -371,6 +387,9 @@ func (s *Service) editArgs(id string, values map[string]string) []string {
 	}
 	if _, editsAliases := values["aliases"]; editsAliases {
 		args = append(args, "--manuscript", s.manuscript())
+		// Only a new alias generates a pronunciation (apply_edit's "aliases" branch); every other field never reads
+		// --default-source, so it stays off their command line too.
+		args = append(args, s.defaultPronunciationSourceArgs()...)
 	}
 	return args
 }
@@ -492,7 +511,7 @@ func (s *Service) createArgs(name, category string, aliases []string, descriptio
 		encoded, _ := json.Marshal(properties) // a slice of two strings cannot fail to encode
 		args = append(args, "--properties="+string(encoded))
 	}
-	return args
+	return append(args, s.defaultPronunciationSourceArgs()...)
 }
 func (s *Service) Merge(source, target string) error {
 	_, err := s.Run("merge", "--guide", s.guidePath(), "--source-id", source, "--target-id", target)
