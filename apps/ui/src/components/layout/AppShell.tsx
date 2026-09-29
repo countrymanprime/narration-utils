@@ -26,6 +26,7 @@ import { dawCapabilityGate } from '../../dawAvailability';
 import { DemoBanner } from './DemoBanner';
 import { EngineChip, type EngineState } from './EngineChip';
 import { TimerChip, type RunningTimer } from './TimerChip';
+import type { NavCounts } from './useNavCounts';
 
 // requiresManuscript/requiresDaw name what each nav item is gated on (PRD project-workspace-and-daw-link.prd.md, Open
 // Question W16): no item needs a linked DAW project file since Proof replaced Proofing (stage-navigation-and-page-replacement.prd.md
@@ -54,6 +55,7 @@ const MASTER_QC = { name: 'Master & QC', path: '/master', icon: faGaugeHigh, req
 // page under its current name in the group its job belongs to (D3/Q5): a page is renamed only in the phase that
 // ships its replacement. Phase 2 made the Production page the home at `/` (`/production` redirects there).
 type NavItem = typeof PRODUCTION;
+const NAV_COUNT_KEYS: Record<string, keyof NavCounts> = { 'Story Bible': 'storyBible', Proof: 'proof', Pickups: 'pickups' };
 const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
   { label: 'Production', items: [PRODUCTION] },
   { label: 'Prep', items: [SCRIPT, STORY_BIBLE] },
@@ -75,6 +77,7 @@ export function AppShell({
   linkingDawFile = false,
   engine = 'daw',
   timer = null,
+  navCounts = {},
   history,
   zoom,
   children,
@@ -96,6 +99,8 @@ export function AppShell({
   engine?: EngineState;
   /** The production stage timer while it runs (Phase 2's timer chip); null hides the chip. */
   timer?: RunningTimer | null;
+  /** The rail's count badges (mock 05), from useNavCounts: a missing or zero count draws none. */
+  navCounts?: NavCounts;
   /** Page-level Back/Forward (app-navigation-and-zoom-controls.prd.md Phase 1): already guarded and gated by App.tsx. */
   history: { canGoBack: boolean; canGoForward: boolean; back: () => void; forward: () => void };
   /** The header's zoom group (app-navigation-and-zoom-controls.prd.md Phase 2): `useZoom`'s own state and actions. */
@@ -138,7 +143,7 @@ export function AppShell({
         </span>
         <span className="pb-[0.125rem] font-['Barlow_Condensed',sans-serif] leading-none uppercase">
           <b className="block text-[0.8125rem] font-bold tracking-[0.11em]">Narration</b>
-          <span className="mt-[0.4375rem] block text-[0.625rem] font-semibold tracking-[0.1em] text-[var(--text-muted)]">Console</span>
+          <span className="mt-[0.4375rem] block text-[0.625rem] font-semibold tracking-[0.1em] text-[var(--text-muted)]">Studio</span>
         </span>
       </div>
       <nav className="flex-1 px-2 pt-[0.5625rem] pb-2">
@@ -162,6 +167,7 @@ export function AppShell({
                 onClick={() => go(item.path)}
                 disabled={isDisabled(item)}
                 disabledReason={requiredReason(item)}
+                count={NAV_COUNT_KEYS[item.name] ? navCounts[NAV_COUNT_KEYS[item.name]] : undefined}
               >
                 {item.name}
               </NavButton>

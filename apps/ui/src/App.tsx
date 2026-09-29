@@ -3,6 +3,7 @@ import { BrowserRouter, Navigate, Route, Routes, useLocation, useNavigate } from
 import type { Bootstrap } from './types';
 import { useApi } from './api/ApiContext';
 import { AppShell } from './components/layout/AppShell';
+import { useNavCounts } from './components/layout/useNavCounts';
 import { StartupScreen, type StartupState } from './components/layout/StartupScreen';
 import { ToastRegion, type ToastTone } from './components/primitives/Toast';
 import { useToasts } from './hooks/useToasts';
@@ -263,6 +264,7 @@ function AppRoutes() {
   // booth is recording queues here instead - `queuedAnnouncements` - and is shown once `boothRecording` clears
   // (below), rather than interrupting a take. The OS notification above is untouched: silencing it is out of scope
   // (the PRD's "What We're NOT Building" table) and it only ever fires while the window is unfocused anyway (N1).
+  const navCounts = useNavCounts(location.pathname, Boolean(data?.manuscript));
   const boothRecording = useBoothRecording(location.pathname === '/booth');
   const boothRecordingRef = useRef(boothRecording);
   boothRecordingRef.current = boothRecording;
@@ -503,6 +505,7 @@ function AppRoutes() {
             linkingDawFile={dawLink.isBusy}
             engine={engine}
             timer={runningTimer}
+            navCounts={navCounts}
             history={{ canGoBack: history.canGoBack, canGoForward: history.canGoForward, back: guardedBack, forward: guardedForward }}
             zoom={{
               percent: zoom.percent,

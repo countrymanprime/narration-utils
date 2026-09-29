@@ -281,3 +281,29 @@ describe('AppShell running-timer chip (Phase 2)', () => {
     }
   });
 });
+
+describe('AppShell rail (mock fidelity, N-B61)', () => {
+  // Mock 01-05 draw the product's name as "NARRATION / STUDIO" (owner ruling 2026-09-29); the app said "Console".
+  it('names the product Studio, not Console', () => {
+    const { container } = renderShell();
+    expect(container.textContent).toContain('Studio');
+    expect(container.textContent).not.toContain('Console');
+  });
+
+  it('draws a count badge on Story Bible, Proof and Pickups only when it is given one', () => {
+    renderShell({ navCounts: { storyBible: 3, proof: 14, pickups: 9 } });
+    expect(screen.getByRole('button', { name: 'Story Bible, 3' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Proof, 14' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Pickups, 9' })).toBeTruthy();
+    // The icon rail has no room for a badge and keeps the plain name.
+    expect(screen.getByRole('button', { name: 'Proof' })).toBeTruthy();
+  });
+
+  it('draws no badge for a count that is missing or zero, and never on the other items', () => {
+    renderShell({ navCounts: { storyBible: 0, proof: undefined } });
+    expect(screen.queryByRole('button', { name: /Story Bible, / })).toBeNull();
+    expect(screen.queryByRole('button', { name: /Proof, / })).toBeNull();
+    expect(screen.queryByRole('button', { name: /Pickups, / })).toBeNull();
+    expect(screen.queryByRole('button', { name: /(Script|Booth|Production|Master & QC), \d/ })).toBeNull();
+  });
+});
