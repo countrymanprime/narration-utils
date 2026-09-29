@@ -859,7 +859,7 @@ describe('Script page (integration, driven through the mock NarrationApi)', () =
     expect(rail.className).not.toMatch(/(^|\s)2xl:flex/);
   });
 
-  // Audit row SC3 (docs/research/visual-mockup-divergence-audit.md): mock 02's "Markup layer" key describes the reader's
+  // Audit row SC3: mock 02's "Markup layer" key describes the reader's
   // own script marks, not the Story Bible's category colors.
   describe('the markup layer key (SC3)', () => {
     it('is titled "Markup layer", not "Marks"', async () => {

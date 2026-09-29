@@ -1,19 +1,11 @@
 import { describe, expect, test } from 'vitest';
-import {
-  backgroundOf,
-  colourDelta,
-  compareImages,
-  crop,
-  DEFAULT_THRESHOLD,
-  fitTo,
-  isAntiAliased,
-  MATCH_BAR_PERCENT,
-  type RgbaImage,
-} from '../tests/visual/mock-match/compare';
-import { APPROVED_MOCKS, chromeRegions, isChromeSpec, mockPath, NOT_THE_SPEC_DIR, scoredMocks, SPEC_DIR } from '../tests/visual/mock-match/mocks';
+import { backgroundOf, colourDelta, compareImages, crop, DEFAULT_THRESHOLD, fitTo, isAntiAliased, type RgbaImage } from '../tests/visual/mock-match/compare';
+import { APPROVED_MOCKS, chromeRegions, isChromeSpec, mockPath, scoredMocks, SPEC_DIR } from '../tests/visual/mock-match/mocks';
+import { flattenGlyphs } from '../tests/visual/mock-match/glyphs';
 import { formatScoreTable, type MockScore } from '../tests/visual/mock-match/report';
 import { APP_DRIVERS } from '../tests/visual/app.drivers';
 import { existsSync } from 'node:fs';
+import { resolve } from 'node:path';
 
 // The pixel-match tool of mock-fidelity-primitives-and-components.prd.md Phase 0 (D91 on #509): the comparison is pure, so it
 // is proved here on made-up images; the Playwright half (tests/visual/mock-match/mock-match.spec.ts) only captures and feeds it.
@@ -143,7 +135,6 @@ describe('the parts of the comparison', () => {
 
   test('the documented defaults', () => {
     expect(DEFAULT_THRESHOLD).toBe(0.1);
-    expect(MATCH_BAR_PERCENT).toBe(90);
   });
 });
 
@@ -154,13 +145,12 @@ describe('the approved-mock list', () => {
     for (const file of files) expect(existsSync(mockPath(file)), file).toBe(true);
   });
 
-  test('the spec is the research benchmark folder and never the per-PRD mock sets', () => {
+  test('the spec is the research benchmark folder and the per-PRD mock sets are gone', () => {
     expect(SPEC_DIR).toBe('docs/research/mockups/audiobook-studio-benchmark');
-    expect(NOT_THE_SPEC_DIR).toBe('docs/prds/mockups');
+    expect(existsSync(resolve(mockPath('01-production-home.webp'), '../../../../prds/mockups'))).toBe(false);
     expect(APPROVED_MOCKS).toHaveLength(7);
     for (const mock of APPROVED_MOCKS) {
       expect(mockPath(mock.file).replaceAll('\\', '/'), mock.file).toContain(`/${SPEC_DIR}/`);
-      expect(mockPath(mock.file).replaceAll('\\', '/'), mock.file).not.toContain(`/${NOT_THE_SPEC_DIR}/`);
     }
   });
 
@@ -229,16 +219,20 @@ describe('formatScoreTable', () => {
     viewport: '1440×900',
     theme: 'light',
     matchPercent,
+    pixelMatchPercent: matchPercent - 5,
     inkMatchPercent: matchPercent - 20,
     diff: `screenshots/mock-match/${file}.diff.png`,
   });
 
-  test('sorts worst first and marks the rows under the bar', () => {
+  test('sorts worst first and gives no pass or fail mark (D97)', () => {
     const table = formatScoreTable([score('a.webp', 95.5), score('b.webp', 71.25)]);
     const lines = table.split('\n');
-    expect(lines[0]).toMatch(/^\| Mock \| Page\/state \| Viewport \| Theme \| Match % \| Ink match % \|/);
+    expect(lines[0]).toMatch(/^\| Mock \| Page\/state \| Viewport \| Theme \| Match % \| Raw pixel % \| Ink match % \|/);
     expect(lines[2]).toContain('b.webp');
-    expect(lines[2]).toContain('**71.25** (under 90)');
+    expect(lines[2]).toContain('71.25');
+    expect(lines[2]).not.toContain('under');
+    expect(lines[0]).toContain('Raw pixel %');
+    expect(lines[2]).toContain('66.25');
     expect(lines[3]).toContain('95.50');
   });
 
@@ -257,5 +251,61 @@ describe('formatScoreTable', () => {
     expect(line('up.webp')).toContain('92.00 (+0.50)');
     expect(line('up.webp')).toContain('97.00 (+1.00)');
     expect(line('up.webp')).toContain('90.00 (±0.00)');
+  });
+});
+
+// Draws a word the way a rasteriser does: strokes a pixel or two wide, with gaps, so it is sparse and short.
+function drawWord(image: RgbaImage, x: number, y: number, pattern: number): void {
+  for (let letter = 0; letter < 5; letter++) {
+    const left = x + letter * 7;
+    fillRect(image, left, y, 1, 9, BLACK);
+    if ((pattern + letter) % 2 === 0) fillRect(image, left, y, 5, 1, BLACK);
+    else fillRect(image, left, y + 4, 5, 1, BLACK);
+    if ((pattern + letter) % 3 === 0) fillRect(image, left + 4, y, 1, 9, BLACK);
+  }
+}
+
+describe('flattenGlyphs (text-blind scoring, D97)', () => {
+  test('a different word at the same place scores as a match, where the plain pixel match falls', () => {
+    const mock = solid(80, 30, WHITE);
+    const app = solid(80, 30, WHITE);
+    drawWord(mock, 10, 10, 0);
+    drawWord(app, 10, 10, 1);
+    expect(compareImages(mock, app).matchPercent).toBeLessThan(99);
+    expect(compareImages(flattenGlyphs(mock), flattenGlyphs(app)).matchPercent).toBe(100);
+  });
+
+  test('a fill, a pill and a rule survive, so a missing one still lowers the score', () => {
+    const mock = solid(120, 60, WHITE);
+    fillRect(mock, 10, 10, 60, 26, [40, 90, 200]); // a pill
+    fillRect(mock, 0, 50, 120, 1, [180, 180, 180]); // a rule
+    const flat = flattenGlyphs(mock);
+    expect([...flat.data.subarray((20 * 120 + 30) * 4, (20 * 120 + 30) * 4 + 4)]).toEqual([40, 90, 200, 255]);
+    expect([...flat.data.subarray((50 * 120 + 60) * 4, (50 * 120 + 60) * 4 + 4)]).toEqual([180, 180, 180, 255]);
+    const app = solid(120, 60, WHITE);
+    fillRect(app, 0, 50, 120, 1, [180, 180, 180]);
+    expect(compareImages(flattenGlyphs(mock), flattenGlyphs(app)).matchPercent).toBeLessThan(80);
+  });
+
+  test('text inside a pill is painted in the pill colour, and a word moved to another place still differs', () => {
+    const pill: Rgb = [40, 90, 200];
+    const mock = solid(120, 40, WHITE);
+    fillRect(mock, 10, 5, 100, 30, pill);
+    drawWord(mock, 20, 15, 0);
+    for (let i = 0; i < mock.data.length; i += 4) {
+      const [r, g, b] = [mock.data[i], mock.data[i + 1], mock.data[i + 2]];
+      if (r === 0 && g === 0 && b === 0) mock.data.set([255, 255, 255, 255], i);
+    }
+    const flat = flattenGlyphs(mock);
+    expect([...flat.data.subarray((19 * 120 + 22) * 4, (19 * 120 + 22) * 4 + 4)]).toEqual([...pill, 255]);
+  });
+
+  test('is deterministic and leaves its input alone', () => {
+    const image = solid(80, 30, WHITE);
+    drawWord(image, 10, 10, 2);
+    const before = new Uint8Array(image.data);
+    const first = flattenGlyphs(image);
+    expect([...image.data]).toEqual([...before]);
+    expect([...flattenGlyphs(image).data]).toEqual([...first.data]);
   });
 });

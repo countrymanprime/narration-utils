@@ -6,7 +6,7 @@
 
 ## Context
 
-The [visual mockup divergence audit](../research/visual-mockup-divergence-audit.md) found Proof's book level and chapter view apart from the approved mock 04 (`docs/prds/mockups/stage-navigation-and-page-replacement/04-proof-pickups-concept.webp`) in its vocabulary (PF1), its header and sources (PF4, PF6), its detail buttons (PF8) and its chapter level (PC1, PF10). On 2026-09-28 the owner answered (D85 on #509: "the approved mocks win"):
+The visual mockup divergence audit (deleted 2026-09-29, D96) found Proof's book level and chapter view apart from the approved mock 04 (`docs/research/mockups/audiobook-studio-benchmark/04-proof-pickups.webp`) in its vocabulary (PF1), its header and sources (PF4, PF6), its detail buttons (PF8) and its chapter level (PC1, PF10). On 2026-09-28 the owner answered (D85 on #509: "the approved mocks win"):
 
 - #2: the chapter view is mock 04's version, a waveform plus the notes table;
 - #7: the vocabulary is the mock's, Pickup / Edit / Waived;

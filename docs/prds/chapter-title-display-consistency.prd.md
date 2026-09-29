@@ -235,7 +235,7 @@ The narrator moves between Home (the chapter table), Manuscript (cards and the C
 
 | # | Phase | Description | Status | Parallel | Depends | PRP Plan |
 | --- | --- | --- | --- | --- | --- | --- |
-| 1 | Rule, formatter, primitive, guard | `chapterName.ts`, `TitleSubtitle` primitive and stories, the source-scan guard at today's ceiling, the heading cases in the mixed-rows mock | complete — the `?mockManuscript=mixed` mock now also carries four of the owner's heading shapes (source capitals with a subtitle, no subtitle, a long subtitle, a title ending in a colon), matching `mockups/chapter-title-display-consistency/02-home-table-*.webp` | - | Q1-Q3, Q5 | - |
+| 1 | Rule, formatter, primitive, guard | `chapterName.ts`, `TitleSubtitle` primitive and stories, the source-scan guard at today's ceiling, the heading cases in the mixed-rows mock | complete — the `?mockManuscript=mixed` mock now also carries four of the owner's heading shapes (source capitals with a subtitle, no subtitle, a long subtitle, a title ending in a colon) | - | Q1-Q3, Q5 | - |
 | 2 | The owner's screens | Home table, Manuscript card heading, Chapters & Search, import review on the primitive; new visual states and driver assertions; aria update; design-system entry; ADR | complete — the Home chapter table (`AudiobookEstimatePanel.tsx`) is migrated onto `chapterName()`/`TitleSubtitle`, with a new `home/chapter-names` visual state and driver assertion (source casing, one separator); Manuscript's card heading (via `ReaderCard`), Chapters & Search (`ChapterNav.tsx`) and the import review's section rows (`ImportReview.tsx`) were already complete, with the guard ceiling lowered for all four files; design-system entry and ADR 0191 done | with 3 | 1 | - |
 | 3 | Read aloud and every other site | Reading heading without CSS capitals and with the subtitle kept (Q9); dialog title and Teleprompter select (Q4); rows 12-24 on `chapterName` (Q6); guard ceiling 0. **D79:** the Read aloud dialog and the Teleprompter page's select die in stage navigation (`docs/prds/stage-navigation-and-page-replacement.prd.md`, delivered and deleted) Phase 4; apply the heading and select rules to the Booth there, and skip edits to `ReadAloudDialog.tsx` and `TeleprompterPage.tsx`. | complete — the Booth build (stage navigation Phase 4) already carried Q9 and Q4 into `booth/{readerModel.ts,ReaderText.tsx,BoothPage.tsx}` (the reading heading is `stacked`, source-cased, subtitle kept; the chapter picker's options and `ChapterSuggestionHint` go through `chapterName()`). This phase moved the remaining rows 12-24 onto `chapterName()` at every site with the chapter's `subtitle` in scope: `stages/useStageRecommendations.ts` (decision toasts), `home/RecordingCheck.tsx`, `home/AudiobookEstimatePanel.tsx` (`ChapterTrackButton`/`ChapterTrackPanel`/`ChapterCheckStatusButton` call sites), `home/ChapterTrackPanel.tsx` (its slide-over title now `chapterName(chapter, context('Track'))`, per the Phase 2 compatibility note), `home/RemovedFromRecordingList.tsx` and `RemoveFromRecordingDialog` (via `ChapterTrackPanel`'s short name), `tracks/ChapterLinksTable.tsx`, `tracks/LinkChaptersDialog.tsx` (its REAPER stamp row stays title-only, Q7 C), `editing/EditingCheckPanel.tsx`, `settings/RetailSamplePanel.tsx`, `proof/PreviewPanel.tsx`, `proof/ProofChapterPage.tsx` → `CompareRun`, `proof/ProofingStagePanel.tsx` and `manuscript/ChapterNav.tsx`'s search-hit row. **Left as title-only** (no change): sites backed by a wire type with no `subtitle` field of its own — `ChapterSyncAutoLink`/`ChapterSyncChapterRef`/`ChapterSyncPickupTrack` (`tracks/ChapterSyncPanel.tsx`, `ChapterSyncConsentDialog.tsx`, `home/chapterSyncToastText.ts`), `FindingChapterFacet` (`proof/ReviewFilters.tsx`), the credits chapter-announcement scope (`settings/CreditsPanel.tsx`) and `GuideEvidence.chapter` (`manuscript/EntitySummary.tsx`, `storybible/GuideDetail.tsx`) — adding a subtitle to any of these is a wire-contract change ("No new wire payload" in this PRD's Technical Approach), so they stay a Phase 4 / host-parity candidate rather than being guessed at here. The guard ceiling is unchanged from Phase 2 (`AudiobookEstimatePanel.tsx`: 2, `ImportReview.tsx`: 2, `ChapterNav.tsx`: 1, `ScriptPage.tsx`: 1): each remaining count is the irreducible `subtitle={chapter.subtitle}` handoff into `TitleSubtitle`, not a site this phase moved, so literal 0 would need a primitive-level change to `TitleSubtitle`'s own props, which is out of this phase's scope. | with 2 | 1, Q4, Q6, Q9 | - |
 | 4 | Host and sidecar parity | Go and Python helpers on the same rule with a shared fixture; the three `": "` joiners replaced; delivery report and plain-text names per Q7/Q8 | complete ([ADR 0239](../adr/0239-host-and-sidecar-chapter-names-follow-the-display-rule-through-one-helper-per-language-and-matching-keys-keep-their-own-form.md), Proposed; #536). Delivered by lane B: `internal/chaptername`, `narration_common.chapter_names` and `tests/fixtures/chapter-names.json` (pytest reads it); Transcript Compare's logs, `MATCH:` summary and diff heading, and the teleprompter's chapter list. The `": "` joins that are matching keys stay (ADR 0239). This PR (stream N-A30): `apps/ui/src/chapterName.ts` gains the `plain` form and `chapterName.fixture.test.ts` reads `tests/fixtures/chapter-names.json`, proving all three languages agree; Q7's plain-text outputs are wired - `chapterregions.go` now names a chapter's REAPER region `chaptername.Name(title, subtitle, Plain)` ("Title - Subtitle"), which the render pattern (`$region`) and `bindings_chaptertags.go`'s file-basename read then carry into the render's file names and its ID3 `CHAP` titles unchanged, with no new wire payload (the subtitle travels only inside `chapterTrackLinksIn`, `json:"-"`); a chapter with no subtitle names its region exactly as before. Q8 stays the recommendation (D22): in scope for the rule and the component if the book's name is ever shown together, no current site to migrate. | with 2, 3 | 1, Q7, Q8 | - |
@@ -313,72 +313,4 @@ This work crosses no trust boundary: display text only, and file names are uncha
 
 ## Visual Spec
 
-Mockups approved by the owner on 2026-09-24. They were rendered from the real app (dark theme, the app's own fonts and components) with throwaway edits and invented sample data, so names, numbers and body text are placeholders; the layout, controls, states and wording are the spec. Each shows the recommended answer to the open questions unless its caption says it is an alternative. Where a mockup and the text above disagree, raise it before building rather than silently following either.
-
-![Before](mockups/chapter-title-display-consistency/00-before.webp)
-
-*Before* (`00-before.webp`)
-
-![Manuscript cards after](mockups/chapter-title-display-consistency/01-manuscript-cards-after.webp)
-
-*Manuscript cards after* (`01-manuscript-cards-after.webp`)
-
-![Manuscript cards before](mockups/chapter-title-display-consistency/01-manuscript-cards-before.webp)
-
-*Manuscript cards before* (`01-manuscript-cards-before.webp`)
-
-![Home table after](mockups/chapter-title-display-consistency/02-home-table-after.webp)
-
-*Home table after* (`02-home-table-after.webp`)
-
-![Home table before](mockups/chapter-title-display-consistency/02-home-table-before.webp)
-
-*Home table before* (`02-home-table-before.webp`)
-
-![Chapters search after](mockups/chapter-title-display-consistency/03-chapters-search-after.webp)
-
-*Chapters search after* (`03-chapters-search-after.webp`)
-
-![Chapters search before](mockups/chapter-title-display-consistency/03-chapters-search-before.webp)
-
-*Chapters search before* (`03-chapters-search-before.webp`)
-
-![Read aloud heading after](mockups/chapter-title-display-consistency/04-read-aloud-heading-after.webp)
-
-*Read aloud heading after* (`04-read-aloud-heading-after.webp`)
-
-![Read aloud heading before](mockups/chapter-title-display-consistency/04-read-aloud-heading-before.webp)
-
-*Read aloud heading before* (`04-read-aloud-heading-before.webp`)
-
-![Read aloud heading prologue after](mockups/chapter-title-display-consistency/05-read-aloud-heading-prologue-after.webp)
-
-*Read aloud heading prologue after* (`05-read-aloud-heading-prologue-after.webp`)
-
-![Read aloud heading prologue before](mockups/chapter-title-display-consistency/05-read-aloud-heading-prologue-before.webp)
-
-*Read aloud heading prologue before* (`05-read-aloud-heading-prologue-before.webp`)
-
-![Read aloud while reading after](mockups/chapter-title-display-consistency/06-read-aloud-while-reading-after.webp)
-
-*Read aloud while reading after* (`06-read-aloud-while-reading-after.webp`)
-
-![Read aloud while reading before](mockups/chapter-title-display-consistency/06-read-aloud-while-reading-before.webp)
-
-*Read aloud while reading before* (`06-read-aloud-while-reading-before.webp`)
-
-![Teleprompter select after](mockups/chapter-title-display-consistency/07-teleprompter-select-after.webp)
-
-*Teleprompter select after* (`07-teleprompter-select-after.webp`)
-
-![Teleprompter select before](mockups/chapter-title-display-consistency/07-teleprompter-select-before.webp)
-
-*Teleprompter select before* (`07-teleprompter-select-before.webp`)
-
-### Together with the related PRDs
-
-The same screen with every PRD that changes it applied at once.
-
-![Manuscript after](mockups/manuscript-combined/01-manuscript-after.webp)
-
-*Manuscript after* (`01-manuscript-after.webp`)
+The mockups drawn for this PRD were deleted (owner ruling D96, 2026-09-29): they predate the redesign, and only [the benchmark mocks](../research/mockups/audiobook-studio-benchmark/) are a spec. Build to the benchmark mock of the page a phase changes, where one exists, and otherwise to the text above and [the design system](../design/design-system.md). See [Which mocks are the spec](../operations/agent-train.md#which-mocks-are-the-spec).
