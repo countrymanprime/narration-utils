@@ -18,7 +18,7 @@ import {
 export const productionDrivers: Record<string, Driver> = {
   'no-data': async (page) => {
     await openProduction(page);
-    await page.getByText('No delivery date set yet').waitFor();
+    await page.getByText('No delivery check run yet').waitFor();
   },
   'on-pace': async (page) => {
     await openProduction(page, '?mockProduction=on-pace');
@@ -30,7 +30,7 @@ export const productionDrivers: Record<string, Driver> = {
   },
   'at-risk': async (page) => {
     await openProduction(page, '?mockProduction=at-risk');
-    await page.getByText(/^Due 29 Sep/).waitFor();
+    await page.getByText(/delivery due Sep 29 \(3 days\)/).waitFor();
   },
   plan: async (page) => {
     await openProduction(page, '?mockProduction=on-pace');

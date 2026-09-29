@@ -98,12 +98,14 @@ type SeededLog = {
   hoursScale: number;
   /** The chapter a timer is running on, recording; none when nothing runs. */
   running?: string;
+  /** The day the first session starts; 1 September when absent. */
+  firstDay?: string;
 };
 
 const LOGS: Record<SeedLog, SeededLog> = {
   'on-pace': { hours: SEED_HOURS, recorded: SEED_RECORDED, hoursScale: 1, running: 'chapter-6' },
   'at-risk': { hours: SEED_HOURS, recorded: SEED_RECORDED, hoursScale: 1.6 },
-  'mock-fidelity-01': { hours: MOCK_01_HOURS, recorded: MOCK_01_RECORDED, hoursScale: 1, running: 'chapter-7' },
+  'mock-fidelity-01': { hours: MOCK_01_HOURS, recorded: MOCK_01_RECORDED, hoursScale: 1, running: 'chapter-7', firstDay: '2026-09-19' },
 };
 
 function checkDate(value: string): string {
@@ -123,7 +125,7 @@ const daysLeft = (date: string) => Math.round((Date.parse(`${date}T00:00:00Z`) -
 function seededSessions(log: SeededLog): ProductionSession[] {
   const scale = log.hoursScale;
   const sessions: ProductionSession[] = [];
-  let start = Date.parse('2026-09-01T09:00:00Z');
+  let start = Date.parse(`${log.firstDay ?? '2026-09-01'}T09:00:00Z`);
   for (const [chapterId, hours] of Object.entries(log.hours)) {
     for (const stage of TIMEABLE) {
       const length = hours[stage];

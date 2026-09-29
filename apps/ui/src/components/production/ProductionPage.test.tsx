@@ -87,6 +87,25 @@ describe('ProductionPage', () => {
     expect(pickupsCount).not.toHaveBeenCalled();
   });
 
+  it('draws the pace pill and the hours-logged chart: unknown with nothing logged, a projection once chapters are finalized', async () => {
+    await renderPage();
+    await tile('Delivery check');
+    expect(screen.getByText(/^Pace unknown · no hours logged yet$/)).toBeTruthy();
+    expect(screen.getByText('No hours logged yet: start a timer on a chapter.')).toBeTruthy();
+    cleanup();
+    await renderPage({ initial: { production: PRODUCTION_SCENARIOS['on-pace'] } });
+    await tile('Delivery check');
+    expect(await screen.findByText(/at current pace done/)).toBeTruthy();
+    expect(screen.getByRole('img', { name: /^Hours logged: / })).toBeTruthy();
+  });
+
+  it('says the pace is unknown, not that the chart is empty, when the hours cannot be read', async () => {
+    await renderPage({ overrides: { productionBurndown: async () => Promise.reject(new Error('no log')) } });
+    await tile('Delivery check');
+    expect(await screen.findByText(/^Pace unknown · the hours could not be read$/)).toBeTruthy();
+    expect(screen.getByText('The hours logged could not be read.')).toBeTruthy();
+  });
+
   it('says in the subtitle how many chapters and words the book has, and that no delivery date is set, with the figures explained', async () => {
     await renderPage();
     await tile('Delivery check');

@@ -38,6 +38,21 @@ status report**.
 
 The delivery date sits in the subtitle ("delivery due Oct 14 (18 days)").
 
+## The pace pill
+
+Beside the header's buttons, the pill projects when the book will be done, and says it is a projection:
+**On track · at current pace done Oct 9**, or **Behind · at current pace done Nov 2 (19 days late)** (a
+warning up to a week late, then red). It works from two things the app measures: the day you first
+logged hours and the chapters finalized since. Until both exist it reads **Pace unknown** and says
+which is missing, and with no delivery date it gives the projected date only. It is not PFH or the
+effective rate: those never use an estimate.
+
+## The hours-logged chart
+
+The foot of the Chapter pipeline card draws the hours you have logged, added up day by day to today,
+with the delivery date marked. It has no plan line: the app keeps no plan or per-day history of
+finished audio to draw one from.
+
 Set the delivery date and the contracted amount under [Delivery plan](#delivery-plan).
 
 ## The stage timer

@@ -8,7 +8,7 @@ export const productionStates: StateEntry[] = [
     page: 'production',
     state: 'no-data',
     description:
-      "Production before anything is logged or set - every undefined figure a dash with why (no measured time, no contracted amount, no delivery date), the chapter pipeline from the chapters' statuses and stage suggestions with Prep and Delivery a dash (PR10), and Next up with Start timer",
+      "Production before anything is logged or set - every undefined figure a dash with why (no measured time, no contracted amount, no pickups counted, no delivery check), the pace pill reading unknown, the chapter pipeline from the chapters' statuses and stage suggestions with Prep, Pickups, Master and QC a dash (PR10), the hours-logged chart saying nothing is logged, and Next up with Start timer",
   },
   {
     page: 'production',
@@ -27,7 +27,7 @@ export const productionStates: StateEntry[] = [
     page: 'production',
     state: 'at-risk',
     description:
-      'Production 3 days from its delivery date with chapters unfinished (?mockProduction=at-risk) - the delivery date as a warning, a higher PFH from more hours logged, and Next up led by the chapters whose stage is held back',
+      'Production 3 days from its delivery date with chapters unfinished (?mockProduction=at-risk) - the pace pill as a warning or danger from the projected finish, a higher PFH from more hours logged, and Next up led by the chapters whose stage is held back',
   },
   {
     page: 'production',

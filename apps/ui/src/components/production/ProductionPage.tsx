@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useApi } from '../../api/ApiContext';
 import { apiErrorMessage } from '../../api/errorMessage';
-import type { ProductionNextUpItem, ProductionOverview, ProductionTotals } from '../../api/contracts/production';
+import type { ProductionBurndownPoint, ProductionNextUpItem, ProductionOverview, ProductionTotals } from '../../api/contracts/production';
 import type { Bootstrap } from '../../types';
 import { chapterName } from '../../chapterName';
 import { STATUS_LABELS } from '../../chapterStatus';
@@ -9,11 +9,14 @@ import { estimateFinishedHours } from '../../state';
 import { Button } from '../primitives/Button';
 import { Heading } from '../primitives/Heading';
 import { Panel } from '../primitives/Panel';
+import { StatusBadge } from '../primitives/StatusBadge';
 import { StatStrip } from '../primitives/StatStrip';
 import type { Notify } from '../primitives/Toast';
 import { Tooltip } from '../primitives/Tooltip';
 import { usePickupsRemaining, type PickupsRemaining } from './usePickupsRemaining';
 import { ChapterBoard } from './ChapterBoard';
+import { HoursLoggedChart } from './HoursLoggedChart';
+import { paceLine, paceOf, todayOf } from './productionPace';
 import { useManuscriptImport } from './ManuscriptImport';
 import { PlanPanel } from './PlanPanel';
 import { StatusReportPanel } from './StatusReportPanel';
@@ -22,7 +25,9 @@ import { deliveryDue, formatClock, formatPfh, formatRate, nextUpLine, stageHours
 const MUTED = { color: 'var(--text-muted)' };
 const DANGER = { color: 'var(--danger-text)' };
 
-type Load = { status: 'loading' } | { status: 'ready'; overview: ProductionOverview } | { status: 'error'; message: string };
+/** `burndown` is `null` when the hours logged could not be read: the pace and the chart say so instead of showing an empty book. */
+type Load =
+  { status: 'loading' } | { status: 'ready'; overview: ProductionOverview; burndown: ProductionBurndownPoint[] | null } | { status: 'error'; message: string };
 
 /** The KPI row (mock 01): every figure measured or logged; the only estimate, the target runtime, says it is one. */
 function Figures({ overview, pickups }: { overview: ProductionOverview; pickups: PickupsRemaining }) {
@@ -172,8 +177,8 @@ export function ProductionPage({
 
   const read = useCallback(async () => {
     try {
-      const overview = await api.productionOverview();
-      setLoad({ status: 'ready', overview });
+      const [overview, burndown] = await Promise.all([api.productionOverview(), api.productionBurndown().catch(() => null)]);
+      setLoad({ status: 'ready', overview, burndown });
       onOverview?.(overview);
     } catch (error) {
       setLoad({ status: 'error', message: apiErrorMessage(error) });
@@ -184,11 +189,10 @@ export function ProductionPage({
   useEffect(() => {
     if (!found) return;
     let active = true;
-    api
-      .productionOverview()
-      .then((overview) => {
+    Promise.all([api.productionOverview(), api.productionBurndown().catch(() => null)])
+      .then(([overview, burndown]) => {
         if (!active) return;
-        setLoad({ status: 'ready', overview });
+        setLoad({ status: 'ready', overview, burndown });
         onOverview?.(overview);
       })
       .catch((error) => active && setLoad({ status: 'error', message: apiErrorMessage(error) }));
@@ -230,6 +234,9 @@ export function ProductionPage({
   };
 
   const overview = found && load.status === 'ready' ? load.overview : undefined;
+  const burndown = found && load.status === 'ready' ? load.burndown : null;
+  const today = todayOf(overview?.deadline ?? null);
+  const pace = overview && paceLine(paceOf({ points: burndown, totals: overview.totals, deadline: overview.deadline, today }));
   const running = overview?.running ?? null;
   const subtitle = overview
     ? [
@@ -257,23 +264,26 @@ export function ProductionPage({
             )}
           </Heading>
         </div>
-        <div role="group" aria-label="Production actions" className="flex flex-wrap items-center gap-2">
-          {found && (
-            <Button variant="secondary" onClick={() => void read()}>
-              Refresh
-            </Button>
-          )}
-          {found && manuscriptImport.chooseButton}
-          {overview && (
-            <Button variant="secondary" onClick={() => setReportOpen(true)}>
-              Export status report
-            </Button>
-          )}
-          {running && (
-            <Button variant="primary" pending={stopping} onClick={() => void stop()}>
-              Stop timer
-            </Button>
-          )}
+        <div className="flex flex-wrap items-center justify-end gap-x-3 gap-y-2">
+          {pace && <StatusBadge tone={pace.tone} label={pace.label} icon={<span aria-hidden className="size-1.5 rounded-full bg-current" />} />}
+          <div role="group" aria-label="Production actions" className="flex flex-wrap items-center gap-2">
+            {found && (
+              <Button variant="secondary" onClick={() => void read()}>
+                Refresh
+              </Button>
+            )}
+            {found && manuscriptImport.chooseButton}
+            {overview && (
+              <Button variant="secondary" onClick={() => setReportOpen(true)}>
+                Export status report
+              </Button>
+            )}
+            {running && (
+              <Button variant="primary" pending={stopping} onClick={() => void stop()}>
+                Stop timer
+              </Button>
+            )}
+          </div>
         </div>
       </div>
       {manuscriptImport.dialogs}
@@ -320,6 +330,7 @@ export function ProductionPage({
               goToProofChapter={goToProofChapter}
               refreshKey={manuscriptKey}
               onChanged={reread}
+              foot={<HoursLoggedChart points={burndown} deadline={overview.deadline} today={today} />}
             />
             <div className="-order-1 min-[1280px]:order-none">
               <NextUp items={overview.nextUp} timerRunning={running !== null} starting={starting} onStart={(item) => void start(item)} />
