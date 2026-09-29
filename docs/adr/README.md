@@ -353,4 +353,5 @@ The table is generated from each ADR's heading and Status line ([ADR 0410](0410-
 | [0668](0668-a-flush-table-inside-a-scrolling-ancestor-puts-the-bleed-on-the-scroll-wrapper-not-the-table.md) | A flush Table inside a scrolling ancestor puts the bleed on the scroll wrapper, not the table | Proposed (Phase 14 of the mock fidelity PRD, stream F-P14 on #509) |
 | [0670](0670-scripts-chapter-list-keeps-its-to-confirm-count-and-shows-no-checkmark-or-percentage-until-prep-depths-rollup-lands.md) | Script's chapter list keeps its to-confirm count and shows no checkmark or percentage until prep-depth's rollup lands | Proposed |
 | [0680](0680-the-story-bible-preview-speaks-a-chosen-pronunciation-through-pipers-raw-phoneme-block.md) | The Story Bible preview speaks a chosen pronunciation through Piper's raw-phoneme block | Accepted |
+| [0700](0700-the-takes-panel-lists-a-passages-takes-from-the-saved-project-and-chooses-one-by-an-id-the-host-offered.md) | The Takes panel lists a passage's takes from the saved project and chooses one by an id the host offered | Accepted |
 <!-- adr-index:end -->

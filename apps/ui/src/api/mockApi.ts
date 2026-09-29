@@ -199,7 +199,7 @@ export function createMockApi(
     alignment: workspace.workspaceAlignment,
     paragraphs: () => s.paragraphs,
     chapterTitle: (chapterId) => s.chapters.find((chapter) => chapter.id === chapterId)?.title ?? 'Chapter',
-    comparison: (findingId) => findings.findingsGet(findingId).catch(() => undefined),
+    comparison: async (findingId) => (await findings.findingsList({ analyzer: 'take-comparison' })).findings.find((finding) => finding.id === findingId),
     beginPassageComparison,
     reaper: initial.reaper,
   });

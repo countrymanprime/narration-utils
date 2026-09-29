@@ -83,7 +83,7 @@ finds it, with every phase's evidence).
   take and the item's length never change; one undo step; provenance in take `P_EXT` (ADR 0098).
 - **Line identity stamps are not required**: spans come from alignment, and the item's own GUID is the target identity.
 - **Audition** is in the app, from raw source, with no REAPER change. A REAPER-side, timeline-context audition is later work.
-- **The app never sets the active take.** An explicit, confirmed "Make active" action is a later addition.
+- **Take review never sets the active take.** Its own screens add a take or go to one and leave the choice to REAPER. The explicit "Use this take" is the workspace Takes panel's ([ADR 0233](../adr/0233-the-app-may-make-a-take-active-by-guid-in-one-undo-step.md), [ADR 0700](../adr/0700-the-takes-panel-lists-a-passages-takes-from-the-saved-project-and-chooses-one-by-an-id-the-host-offered.md)): on Proof's chapter view, for the paragraph at the playhead, it lists the takes of that paragraph (including a group's other reads) and makes the chosen one active in one undo step, adding a read from another item as a take first, after a confirm.
 - **No composite score** anywhere: every surface shows evidence per category.
 - **Divergence** is localized by the markers' diff and Whisper word timestamps, evaluated on synthetic fixtures
   ([evaluation](../research/take-divergence-evaluation.md)); forced alignment was not needed.
@@ -101,5 +101,5 @@ finds it, with every phase's evidence).
   own provenance block (ADR 0098's open item; the scripted run in `integrations/reaper/spikes/take_review_smoke.lua` covered
   creation, active take, length and undo).
 - **Analysis time per hour of audio** and **time to locate an alternate** against the manual workflow: not measured.
-- **Later work**: narrator-adjustable weights (only once decisions accumulate), a "Make active" action, REAPER-side audition,
+- **Later work**: narrator-adjustable weights (only once decisions accumulate), REAPER-side audition,
   a cross-session index, recording-time collection of alternates, and take review for Audacity.

@@ -310,6 +310,29 @@ before it, so you hear it in context). A flag backed by a finding shows which ch
 same **Pickup** (or **Fix in edit**), **Waive**, **Defer** and note controls as on [Proof's
 notes](#a-finding-and-your-decision) — a decision made here is the same decision Proof shows.
 
+### Choosing between takes
+
+The **Takes** panel, below the script and the Flags panel, is for a paragraph that has more than one take.
+Play or click a word, then press **Show takes for this paragraph**: the panel lists every take you can choose
+from for that paragraph, each saying where it came from — **another take of this item**, **a retake on another
+lane** of a fixed-lane track, or **a read from Find pickups** that the [pickups and duplicates
+scan](#pickups-and-duplicates) set beside it — and which one plays in REAPER now. Nothing ranks them.
+
+- **Hear side by side** plays two of them from their own recordings, without REAPER (raw source, no FX or edits,
+  as in [comparing takes](#comparing-takes)), from the first to the last word of the paragraph once the takes have
+  been compared.
+- **Compare takes** transcribes each take again and sets its words beside the script, so each take says how much of
+  the paragraph it matched, with the words and the audio measurements side by side below. A take that was never
+  compared says **Not compared yet**; comparing costs a transcription of each take, so it waits until you press it.
+- **Use this take** makes that take the one that plays in REAPER, in one undo step (one **Undo** in REAPER puts the
+  previous take back). For a retake on another lane it makes that lane the one that plays. For a read from another
+  item it asks first, because REAPER adds the read as a new take on the paragraph's item and then makes it active
+  (two undo steps). It is off while REAPER is not connected, and the panel says why.
+
+A take whose recording is missing, or whose item has moved since the scan, is listed with the reason and cannot be
+heard or chosen. After you choose, save the project in REAPER so the recording check can read the change; the check
+for that chapter is out of date until then.
+
 ## Comparing the recording with the script
 
 **Compare the recording with the script**, below the flags, transcribes the chapter's recording and

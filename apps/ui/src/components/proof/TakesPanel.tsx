@@ -128,7 +128,8 @@ export function TakesPanel({ chapterId, alignment, currentToken, findings, reape
         setNotice({ tone: state.phase === 'error' ? 'problem' : 'ok', message: state.message });
         if (passage) await load(passage);
         return;
-      } catch {
+      } catch (error) {
+        setNotice({ tone: 'problem', message: `Could not tell whether REAPER made that lane play: ${apiErrorMessage(error)}` });
         return;
       }
     }
