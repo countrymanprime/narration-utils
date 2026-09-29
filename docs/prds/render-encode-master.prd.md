@@ -223,8 +223,4 @@ Phase 0 gates Phases 1 and 2 but not Phase 3 (mastering has no encoder dependenc
 
 ## Visual Spec
 
-Concept mock copied from [the audiobook studio benchmark](../research/audiobook-studio-benchmark.md#3-what-the-ideal-looks-like-concept-mocks), **owner-approved as the build spec (D69, 2026-09-27)** — kept under `mockups/render-encode-master/` marked **concept**. Dark mode is a single app-wide theme (D69): a dark mock shows the dark theme, not a per-page look. Names and numbers are placeholders.
-
-![Master & QC: per-file checks by platform, mastering chain, delivery package](mockups/render-encode-master/05-master-delivery-concept.webp)
-
-*Master, QC and delivery (concept)* (`05-master-delivery-concept.webp`) — the one mastering chain and "outputs for each platform" this PRD's Encoder and Packager ports build toward; the per-platform QC checks themselves are [Delivery Platform Profiles](delivery-platform-profiles.prd.md)' own page, which this PRD's export flow extends. This phase's PR carries the Mockup check table against it.
+The mockups drawn for this PRD were deleted (owner ruling D96, 2026-09-29): they predate the redesign, and only [the benchmark mocks](../research/mockups/audiobook-studio-benchmark/) are a spec. Build to the benchmark mock of the page a phase changes, where one exists, and otherwise to the text above and [the design system](../design/design-system.md). See [Which mocks are the spec](../operations/agent-train.md#which-mocks-are-the-spec).

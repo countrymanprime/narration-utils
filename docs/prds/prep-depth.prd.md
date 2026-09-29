@@ -250,8 +250,4 @@ Phases 1, 2 and 3 are independent of every other benchmark stream and of each ot
 
 ## Visual Spec
 
-Concept mock copied from [the audiobook studio benchmark](../research/audiobook-studio-benchmark.md#3-what-the-ideal-looks-like-concept-mocks), **owner-approved as the build spec (D69, 2026-09-27)** — kept under `mockups/prep-depth/` marked **concept**. Dark mode is a single app-wide theme (D69): a dark mock shows the dark theme, not a per-page look. Names and numbers are placeholders.
-
-![Prep: speaker-attributed script, markup, pronunciation list with sources and author queries](mockups/prep-depth/02-prep-script-concept.webp)
-
-*Prep: script, speakers and pronunciations (concept)* (`02-prep-script-concept.webp`) — the speaker-attributed dialogue, the stress/pause/character-tag markup layer, and the pronunciation list's **Say it** column, which names each answer's source per row: this PRD's Phases 1 to 5 build the row itself, and Phases 8 to 10 (D72) add the sources it can name (Wiktextract, a labelled letter-to-sound guess, Merriam-Webster) and the Commons audio link. A Mockup check table is added by whichever phase's PR builds against it.
+The mockups drawn for this PRD were deleted (owner ruling D96, 2026-09-29): they predate the redesign, and only [the benchmark mocks](../research/mockups/audiobook-studio-benchmark/) are a spec. Build to the benchmark mock of the page a phase changes, where one exists, and otherwise to the text above and [the design system](../design/design-system.md). See [Which mocks are the spec](../operations/agent-train.md#which-mocks-are-the-spec).

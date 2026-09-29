@@ -1,7 +1,5 @@
 // The score table the pixel-match tool prints and writes (screenshots/mock-match/scores.md), in the shape the PRD's
-// baseline and every UI pull request's Mockup check use (D91 on #509: mock, page/state, viewport, match %).
-
-import { MATCH_BAR_PERCENT } from './compare';
+// baseline and every UI pull request's Mockup check use (mock, page/state, viewport, match %; a diagnostic, D97 on #509).
 
 /** The match of one region of the screen (mocks.ts `chromeRegions`). */
 interface RegionScore {
@@ -14,7 +12,10 @@ export interface MockScore {
   target: string;
   viewport: string;
   theme: 'light' | 'dark';
+  /** The text-blind match (glyphs.ts): layout, features and style. The headline number. */
   matchPercent: number;
+  /** The plain pixel match, text and sample data included. */
+  pixelMatchPercent: number;
   inkMatchPercent: number;
   /**
    * The nav rail and the header scored apart from the page, where the mock draws them; `spec` when the mock's chrome is the
@@ -40,7 +41,7 @@ function region(score: RegionScore | undefined, before: RegionScore | undefined)
 }
 
 /**
- * A Markdown table of the scores, worst first, with every score under the bar marked. With a `baseline` (the `scores.json` of an
+ * A Markdown table of the scores, worst first. With a `baseline` (the `scores.json` of an
  * earlier run, MOCK_MATCH_BASELINE), each score carries its change since then, and a chrome region that fell is marked: as a
  * regression where the mock is the chrome's spec, and as an old shell where it is not.
  */
@@ -48,14 +49,13 @@ export function formatScoreTable(scores: MockScore[], baseline: MockScore[] = []
   const before = new Map(baseline.map((score) => [score.file, score]));
   const rows = [...scores].sort((a, b) => a.matchPercent - b.matchPercent || a.file.localeCompare(b.file));
   const lines = [
-    '| Mock | Page/state | Viewport | Theme | Match % | Ink match % | Rail % | Header % | Diff |',
-    '| --- | --- | --- | --- | --- | --- | --- | --- | --- |',
+    '| Mock | Page/state | Viewport | Theme | Match % | Raw pixel % | Ink match % | Rail % | Header % | Diff |',
+    '| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |',
   ];
   for (const row of rows) {
     const then = before.get(row.file);
     const change = delta(row.matchPercent, then?.matchPercent);
-    const match =
-      row.matchPercent < MATCH_BAR_PERCENT ? `**${percent(row.matchPercent)}** (under ${MATCH_BAR_PERCENT})${change}` : `${percent(row.matchPercent)}${change}`;
+    const match = `${percent(row.matchPercent)}${change}`;
     const chrome = (name: 'rail' | 'header') => {
       const cell = region(row.chrome?.[name], then?.chrome?.[name]);
       const fell = then?.chrome?.[name] && row.chrome?.[name] && row.chrome[name].matchPercent < then.chrome[name].matchPercent;
@@ -63,7 +63,7 @@ export function formatScoreTable(scores: MockScore[], baseline: MockScore[] = []
       return row.chrome?.spec ? `**${cell}** (fell)` : `${cell} (old shell)`;
     };
     lines.push(
-      `| \`${row.file}\` | ${row.target} | ${row.viewport} | ${row.theme} | ${match} | ${percent(row.inkMatchPercent)} | ${chrome('rail')} | ${chrome('header')} | \`${row.diff}\` |`,
+      `| \`${row.file}\` | ${row.target} | ${row.viewport} | ${row.theme} | ${match} | ${percent(row.pixelMatchPercent)} | ${percent(row.inkMatchPercent)} | ${chrome('rail')} | ${chrome('header')} | \`${row.diff}\` |`,
     );
   }
   return lines.join('\n');

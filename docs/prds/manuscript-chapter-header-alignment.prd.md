@@ -136,32 +136,4 @@ Cross-cutting: follows `CLAUDE.md`: an issue with `Closes #<n>`, `change-impact-
 
 ## Visual Spec
 
-Mockups approved by the owner on 2026-09-24. They were rendered from the real app (dark theme, the app's own fonts and components) with throwaway edits and invented sample data, so names, numbers and body text are placeholders; the layout, controls, states and wording are the spec. Each shows the recommended answer to the open questions unless its caption says it is an alternative. Where a mockup and the text above disagree, raise it before building rather than silently following either.
-
-![Before tablet](mockups/manuscript-chapter-header-alignment/00-before-tablet.webp)
-
-*Before tablet* (`00-before-tablet.webp`)
-
-![Before](mockups/manuscript-chapter-header-alignment/00-before.webp)
-
-*Before* (`00-before.webp`)
-
-![After](mockups/manuscript-chapter-header-alignment/01-after.webp)
-
-*After* (`01-after.webp`)
-
-![After tablet](mockups/manuscript-chapter-header-alignment/02-after-tablet.webp)
-
-*After tablet* (`02-after-tablet.webp`)
-
-![After with retail sample](mockups/manuscript-chapter-header-alignment/03-after-with-retail-sample.webp)
-
-*After with retail sample* (`03-after-with-retail-sample.webp`)
-
-### Together with the related PRDs
-
-The same screen with every PRD that changes it applied at once.
-
-![Manuscript after](mockups/manuscript-combined/01-manuscript-after.webp)
-
-*Manuscript after* (`01-manuscript-after.webp`)
+The mockups drawn for this PRD were deleted (owner ruling D96, 2026-09-29): they predate the redesign, and only [the benchmark mocks](../research/mockups/audiobook-studio-benchmark/) are a spec. Build to the benchmark mock of the page a phase changes, where one exists, and otherwise to the text above and [the design system](../design/design-system.md). See [Which mocks are the spec](../operations/agent-train.md#which-mocks-are-the-spec).

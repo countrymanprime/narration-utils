@@ -1,5 +1,4 @@
-// The pixel comparison behind `pnpm --dir apps/ui mock-match` (mock-fidelity-primitives-and-components.prd.md Phase 0, D91 on
-// #509): how much of an approved mock the app reproduces, as one number. Pure functions over RGBA buffers, so Vitest checks
+// The pixel comparison behind `pnpm --dir apps/ui mock-match` (D91, D97 on #509): how much of an approved mock the app reproduces, as one number. Pure functions over RGBA buffers, so Vitest checks
 // them (src/mockMatch.test.ts) without a browser.
 //
 // The algorithm is pixelmatch's (Mapbox, ISC), written out here rather than added as a dependency:
@@ -32,12 +31,12 @@ export interface CompareResult {
   different: number;
   /** Differing pixels forgiven as anti-aliasing. */
   antiAliased: number;
-  /** 100 × matching / total, to two decimals. This is the number the 90% bar (D91) applies to. */
+  /** 100 × matching / total, to two decimals. A diagnostic, not a gate (D97). */
   matchPercent: number;
   /**
    * The match over "ink" only: the pixels that are not the page background in at least one of the two images. A mostly empty
    * screen matches well on background alone, so this says how well the drawn parts (text, borders, fills) match. Reported
-   * beside the bar, never instead of it.
+   * beside the match, never instead of it.
    */
   inkMatchPercent: number;
   /** A picture of the difference: the mock faded to grey, differences red, anti-aliasing yellow. */
@@ -245,9 +244,6 @@ export function compareImages(expected: RgbaImage, actual: RgbaImage, options: C
     diff,
   };
 }
-
-/** The D91 bar: every approved-mock state reaches at least this pixel match. */
-export const MATCH_BAR_PERCENT = 90;
 
 /** The `width × height` rectangle of `image` whose top-left corner is (x, y); it must lie inside the image. */
 export function crop(image: RgbaImage, region: { x: number; y: number; width: number; height: number }): RgbaImage {

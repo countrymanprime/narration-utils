@@ -13,7 +13,7 @@ New features and bugfixes in this repo have a history of silently breaking unrel
 
 ## Which mocks are the spec
 
-Build UI towards `docs/research/mockups/audiobook-studio-benchmark/` only. Never look at, score against or build towards anything under `docs/prds/mockups/`: those per-PRD sets predate the redesign. Compare light to light and dark to dark by the mock's theme, and match layout and style, not the mock's sample data. See [Which mocks are the spec](docs/operations/agent-train.md#which-mocks-are-the-spec).
+Build UI towards `docs/research/mockups/audiobook-studio-benchmark/` only. Older mocks are deleted (owner ruling D96, 2026-09-29), so there is nothing else to score against or build towards; a new mock is added only for work being built now and is deleted when that work merges. Compare light to light and dark to dark by the mock's theme, and match layout and style, not the mock's sample data. See [Which mocks are the spec](docs/operations/agent-train.md#which-mocks-are-the-spec).
 
 ## A UI change ships with screenshots of the change
 

@@ -6,7 +6,7 @@
 
 ## Context
 
-On 2026-09-28 the owner found that merged pages don't line up with their approved mocks, mostly in style, and set a bar (D91 on #509): every screen or state an approved mock covers reaches **at least 90% pixel match** against it, captured at the mock's own size with the app driven to the mock's state. Before this, a pull request's Mockup check (D46) was a sentence per mock ("matches", "differs because…"), and the [visual mockup divergence audit](../research/visual-mockup-divergence-audit.md) found checks that described the wrong theme and "matches" rows that did not match.
+On 2026-09-28 the owner found that merged pages don't line up with their approved mocks, mostly in style, and set a bar (D91 on #509): every screen or state an approved mock covers reaches **at least 90% pixel match** against it, captured at the mock's own size with the app driven to the mock's state. Before this, a pull request's Mockup check (D46) was a sentence per mock ("matches", "differs because…"), and the visual mockup divergence audit (deleted 2026-09-29, D96) found checks that described the wrong theme and "matches" rows that did not match.
 
 A percentage needs a definition. Comparing two screenshots byte for byte fails on any sub-pixel text shift; comparing them by eye is what D46 already did. The visual suite deliberately has no pixel baselines ([ADR 0023](0023-visual-suite-capture-contract-and-storybook.md), [#153](https://github.com/countrymanprime/narration-utils/issues/153)), because two machines may rasterise differently; a score against a mock has the same limit, but it compares against a fixed picture, not against a previous run, and the bar is 90%, not 100%.
 

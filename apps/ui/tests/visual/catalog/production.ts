@@ -52,38 +52,33 @@ export const productionStates: StateEntry[] = [
     description:
       'Production with no imported manuscript (?mockNoManuscript=1): the page is the import - "No imported manuscript" with Import manuscript, and no figures or board (stage-navigation-and-page-replacement.prd.md Phase 2, which replaced Home)',
   },
-  // chapter-track-link-control.prd.md Phase 2: the track slide-over, from a chapter's Recorded cell (mockups/chapter-track-link-control/).
+  // chapter-track-link-control.prd.md Phase 2: the track slide-over, from a chapter's Recorded cell.
   // The renamed state (04) has no host or mock simulation yet (nothing records a track's name at confirm time to compare
   // against), so it is not captured here.
   {
     page: 'production',
     state: 'chapter-track-panel-linked',
-    description:
-      'Production, chapter track panel open on a confirmed link, showing its facts and how it was found (?mockChapterLink=confirmed, mockups/chapter-track-link-control/02-slideover-linked.webp)',
+    description: 'Production, chapter track panel open on a confirmed link, showing its facts and how it was found (?mockChapterLink=confirmed)',
   },
   {
     page: 'production',
     state: 'chapter-track-panel-ambiguous',
-    description:
-      'Production, chapter track panel open on a chapter confirmed to two tracks at once, offering to keep one (?mockChapterLink=ambiguous, TL6, mockups/chapter-track-link-control/03-slideover-ambiguous.webp)',
+    description: 'Production, chapter track panel open on a chapter confirmed to two tracks at once, offering to keep one (?mockChapterLink=ambiguous, TL6)',
   },
   {
     page: 'production',
     state: 'chapter-track-panel-missing',
-    description:
-      'Production, chapter track panel open on a confirmed link whose track is no longer in the project (?mockChapterLink=missing, mockups/chapter-track-link-control/05-slideover-track-missing.webp)',
+    description: 'Production, chapter track panel open on a confirmed link whose track is no longer in the project (?mockChapterLink=missing)',
   },
   {
     page: 'production',
     state: 'chapter-remove-confirm',
-    description:
-      'Production, "Remove from recording?" open from a chapter\'s track slide-over (chapter-track-link-control.prd.md Phase 3, mockup 06-remove-from-recording-confirm.webp)',
+    description: 'Production, "Remove from recording?" open from a chapter\'s track slide-over (chapter-track-link-control.prd.md Phase 3)',
   },
   {
     page: 'production',
     state: 'chapter-removed-list',
-    description:
-      'Production, the board with the last narration chapter already removed from recording, listed under it with Restore (?mockRemoved=1, mockup 07-removed-from-recording-list.webp)',
+    description: 'Production, the board with the last narration chapter already removed from recording, listed under it with Restore (?mockRemoved=1)',
     // The list is under the board: on the first screen beside Next up at 1440 px, below it when Next up stacks above the board.
     ...KEEPS_DESKTOP_SCROLL,
   },
@@ -91,14 +86,14 @@ export const productionStates: StateEntry[] = [
     page: 'production',
     state: 'chapter-track-no-project',
     description:
-      'Production, the board with no REAPER project found: the line above it names why, and every Recorded cell reads No project (TL7, ?mockNoRpp=1, mockups/chapter-track-link-control/08-no-project-line.webp)',
+      'Production, the board with no REAPER project found: the line above it names why, and every Recorded cell reads No project (TL7, ?mockNoRpp=1)',
     ...KEEPS_DESKTOP_SCROLL,
   },
   {
     page: 'production',
     state: 'chapter-sync-toast-undo',
     description:
-      'Production, the toast for a chapter-sync batch that just linked a track, with Undo (?mockChapterSync=linked, daw-chapter-track-auto-sync.prd.md Phase 3, S12, mockups/daw-chapter-track-auto-sync/03-auto-linked-toast-undo.webp)',
+      'Production, the toast for a chapter-sync batch that just linked a track, with Undo (?mockChapterSync=linked, daw-chapter-track-auto-sync.prd.md Phase 3, S12)',
     ...TOAST_FADES_OUT,
   },
   {
@@ -113,7 +108,7 @@ export const productionStates: StateEntry[] = [
     page: 'production',
     state: 'credits-setup-dialog',
     description:
-      'Production, "Set up the credits" dialog (credits-token-setup-and-front-matter-detection.prd.md Phase 2, CS1 C / D35, ?mockCredits=setup): Title and Author prefilled from the detected front matter with their source captions, Narrator empty with "Use for all my projects" checked (CS7 B) since no global default is set, "Don\'t ask for this project" alongside Not now and Save (mockups/credits-token-setup-and-front-matter-detection/01b-alt-setup-dialog-narrator-empty.webp)',
+      'Production, "Set up the credits" dialog (credits-token-setup-and-front-matter-detection.prd.md Phase 2, CS1 C / D35, ?mockCredits=setup): Title and Author prefilled from the detected front matter with their source captions, Narrator empty with "Use for all my projects" checked (CS7 B) since no global default is set, "Don\'t ask for this project" alongside Not now and Save',
   },
   {
     page: 'production',
@@ -125,7 +120,7 @@ export const productionStates: StateEntry[] = [
     page: 'production',
     state: 'credits-setup-banner',
     description:
-      'Production, the credits-setup banner after "Not now" - naming the unresolved tokens, "Don\'t ask for this project" and "Fill in" (credits-token-setup-and-front-matter-detection.prd.md Phase 3, mockups/credits-token-setup-and-front-matter-detection/02-home-banner-after-not-now.webp)',
+      'Production, the credits-setup banner after "Not now" - naming the unresolved tokens, "Don\'t ask for this project" and "Fill in" (credits-token-setup-and-front-matter-detection.prd.md Phase 3)',
   },
   { page: 'production', state: 'import-activity-log', description: 'Production, manuscript import finished with its live activity log populated' },
   {
