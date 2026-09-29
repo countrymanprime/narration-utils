@@ -18,17 +18,17 @@
 import type { RgbaImage } from './compare';
 
 /** The tallest bounding box (in pixels) a glyph mark may have: a 28 px heading with its descenders fits. */
-export const GLYPH_MAX_HEIGHT = 32;
+const GLYPH_MAX_HEIGHT = 32;
 /** A mark denser than this is a fill (a badge, a pill, a bar), not strokes. */
-export const GLYPH_MAX_DENSITY = 0.6;
+const GLYPH_MAX_DENSITY = 0.6;
 /** A mark this small (pixels, and bounding-box side) is a speck whatever its density. */
-export const SPECK_MAX_AREA = 24;
-export const SPECK_MAX_SIDE = 8;
+const SPECK_MAX_AREA = 24;
+const SPECK_MAX_SIDE = 8;
 /** A line: at most this thick and at least this long. It is a border or a rule, and is kept. */
-export const LINE_MAX_THICKNESS = 3;
-export const LINE_MIN_LENGTH = 16;
+const LINE_MAX_THICKNESS = 3;
+const LINE_MIN_LENGTH = 16;
 /** How far around a glyph mark (pixels) to look for the colour to paint it with. */
-export const GLYPH_FILL_MARGIN = 2;
+const GLYPH_FILL_MARGIN = 2;
 
 function keyAt(data: Uint8Array, index: number): number {
   const alpha = data[index + 3] / 255;
@@ -92,7 +92,7 @@ function label(image: RgbaImage): { labels: Int32Array; areas: Area[] } {
 }
 
 /** Whether an area is a glyph mark (see the header, step 3). */
-export function isGlyphMark(area: Pick<Area, 'minX' | 'minY' | 'maxX' | 'maxY' | 'size'>): boolean {
+function isGlyphMark(area: Pick<Area, 'minX' | 'minY' | 'maxX' | 'maxY' | 'size'>): boolean {
   const width = area.maxX - area.minX + 1;
   const height = area.maxY - area.minY + 1;
   if (Math.min(width, height) <= LINE_MAX_THICKNESS && Math.max(width, height) >= LINE_MIN_LENGTH) return false;
