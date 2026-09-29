@@ -126,6 +126,12 @@ export const masterDrivers: Record<string, Driver> = {
     await page.getByRole('progressbar', { name: 'Preparing files' }).waitFor();
     await scrollToTop(page, page.getByRole('region', { name: 'Master to spec' }));
   },
+  'outputs-preview': async (page) => {
+    await openMaster(page);
+    const pkg = page.getByRole('region', { name: 'Delivery package · ACX' });
+    await pkg.getByRole('list', { name: 'Files the package will create' }).waitFor();
+    await scrollToTop(page, pkg);
+  },
   'package-built': async (page) => {
     await openMaster(page);
     await pickFilesToMaster(page);

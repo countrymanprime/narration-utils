@@ -134,6 +134,13 @@ export const masterStates: StateEntry[] = [
   },
   {
     page: 'master',
+    state: 'outputs-preview',
+    description:
+      'Master & QC, the Delivery package before anything is built (mock 05\'s OUTPUTS list) - the files the ACX package will create for this project, one per line with the name and MP3 format each will have (opening credits, the chapters, closing credits, retail sample), a chapter whose title cannot be a file name marked instead of named, and "Build packages" waiting on the mastered files',
+    ...KEEPS_DESKTOP_SCROLL,
+  },
+  {
+    page: 'master',
     state: 'package-built',
     description:
       'Master & QC, the ACX package built from the five encoded files (mock 05\'s delivery package) - the packager\'s checklist with every rule included, the OUTPUTS folder and the files written, and "Built the acx package"',
