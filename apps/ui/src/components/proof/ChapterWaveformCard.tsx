@@ -63,38 +63,68 @@ export function ChapterWaveformCard({
     );
   }
 
+  const duration = totalDuration(playlist);
+  const emptyText =
+    failed ??
+    (current && playlist.length === 0
+      ? `${selected ? chapterName(selected) : 'This chapter'} has no recording to draw yet. Link a track to it, or record it, and its waveform appears here.`
+      : undefined);
+
   return (
-    <div className="flex flex-col gap-2">
-      <div className="flex flex-wrap items-center gap-2">
-        <Select
-          label="Chapter to open"
-          value={chapterId}
-          onChange={onChapterChange}
-          options={chapters.map((chapter) => ({ value: chapter.id, label: chapterName(chapter) }))}
-        />
-        <Button variant="secondary" disabled={!chapterId} onClick={() => onOpenChapter(chapterId)}>
-          Open chapter
-        </Button>
-      </div>
-      {failed ? (
-        <p role="alert" className="rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 py-4 text-sm text-[var(--text-muted)]">
-          {failed}
-        </p>
-      ) : current && playlist.length === 0 ? (
-        <p className="rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 py-4 text-sm text-[var(--text-muted)]">
-          {selected ? chapterName(selected) : 'This chapter'} has no recording to draw yet. Link a track to it, or record it, and its waveform appears here.
+    <section aria-label="Chapter waveform" className="rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 py-2 shadow-[var(--shadow)]">
+      {emptyText ? (
+        <p role={failed ? 'alert' : undefined} className="py-4 text-sm text-[var(--text-muted)]">
+          {emptyText}
         </p>
       ) : current ? (
         <WaveformStrip
+          bare
           playlist={playlist}
           alignmentItems={current.alignment.items}
           peaks={current.peaks}
           tokens={current.alignment.tokens}
           flags={flags}
           elapsed={0}
-          duration={totalDuration(playlist)}
+          duration={duration}
         />
       ) : null}
-    </div>
+      <div className="mt-1 flex flex-wrap items-center gap-2">
+        <span className="font-mono text-xs text-[var(--text-muted)]">0:00</span>
+        <ChapterPicker chapters={chapters} chapterId={chapterId} onChapterChange={onChapterChange} onOpenChapter={onOpenChapter} />
+        <span className="ml-auto font-mono text-xs text-[var(--text-muted)]">{formatClock(duration)}</span>
+      </div>
+    </section>
+  );
+}
+
+function formatClock(seconds: number): string {
+  const whole = Math.max(0, Math.round(seconds));
+  return `${Math.floor(whole / 60)}:${String(whole % 60).padStart(2, '0')}`;
+}
+
+/** The card's chapter selector and the button that opens that chapter's own view (`/proof/:chapterId`). */
+function ChapterPicker({
+  chapters,
+  chapterId,
+  onChapterChange,
+  onOpenChapter,
+}: {
+  chapters: readonly ManuscriptChapter[];
+  chapterId: string;
+  onChapterChange: (chapterId: string) => void;
+  onOpenChapter: (chapterId: string) => void;
+}) {
+  return (
+    <>
+      <Select
+        label="Chapter to open"
+        value={chapterId}
+        onChange={onChapterChange}
+        options={chapters.map((chapter) => ({ value: chapter.id, label: chapterName(chapter) }))}
+      />
+      <Button variant="secondary" disabled={!chapterId} onClick={() => onOpenChapter(chapterId)}>
+        Open chapter
+      </Button>
+    </>
   );
 }
