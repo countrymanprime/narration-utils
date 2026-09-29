@@ -1,3 +1,4 @@
+import { ApplyFxDialog, type FxRequest } from './ApplyFxDialog';
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { EnginePanelLink } from '../engine/EnginePanelContext';
@@ -102,6 +103,8 @@ function ChapterView({ chapterId, notify, transcript, dawFileLinked, goToManuscr
   const [findings, setFindings] = useState<Finding[]>([]);
   const [lastCompleted, setLastCompleted] = useState<TranscriptState>();
   const [reviewingLast, setReviewingLast] = useState(false);
+  // The effect the narrator is confirming for a passage or the chapter's track (edit-and-proof-workspace.prd.md Phase 9).
+  const [fxRequest, setFxRequest] = useState<FxRequest>();
   const [takesDetail, setTakesDetail] = useState<HTMLElement | null>(null);
 
   // The last completed comparison, offered for review without running again (PRD W16: it needs no linked project file).
@@ -418,6 +421,15 @@ function ChapterView({ chapterId, notify, transcript, dawFileLinked, goToManuscr
                 currentTokenIndex={currentToken}
                 isPlaying={player.isPlaying}
                 onSeekToken={seekToken}
+                effects={{
+                  blocked:
+                    reaperStatus.status === undefined
+                      ? 'Checking whether REAPER is connected…'
+                      : reaperStatus.status.connection === 'connected'
+                        ? undefined
+                        : reaperStatus.status.message,
+                  onRequest: setFxRequest,
+                }}
               />
             )}
             <div className="flex min-w-0 flex-col gap-4">
@@ -477,6 +489,19 @@ function ChapterView({ chapterId, notify, transcript, dawFileLinked, goToManuscr
             if (index !== -1) selectFlag(index);
           }}
         />
+        {fxRequest && (
+          <ApplyFxDialog
+            chapterId={chapterId}
+            request={fxRequest}
+            onClose={() => setFxRequest(undefined)}
+            onDone={(message) => {
+              setFxRequest(undefined);
+              notify(message);
+              void reaperStatus.refresh();
+              loadAlignment();
+            }}
+          />
+        )}
         {checking && (
           <RecordingCheck
             chapter={chapter}

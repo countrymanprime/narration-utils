@@ -71,6 +71,8 @@ import { editingCandidatesSchema, editingSourceChoiceSchema, editingStartResultS
 import {
   workspaceAlignmentResultSchema,
   workspaceFXChainsResultSchema,
+  workspaceFXPluginsResultSchema,
+  workspaceFXResultSchema,
   workspacePeaksResultSchema,
   workspaceTakesResultSchema,
   workspaceUseTakeResultSchema,
@@ -436,6 +438,10 @@ export const wailsClient: NarrationApi = {
   workspaceGoTo: (chapterId, tokenIndex) => decode(findingNavigationSchema, 'WorkspaceGoTo', host.WorkspaceGoTo(chapterId, tokenIndex)),
   workspaceLoop: (chapterId, firstToken, lastToken) => decode(findingNavigationSchema, 'WorkspaceLoop', host.WorkspaceLoop(chapterId, firstToken, lastToken)),
   workspaceListFXChains: () => decode(workspaceFXChainsResultSchema, 'WorkspaceListFXChains', host.WorkspaceListFXChains()),
+  workspaceListFX: () => decode(workspaceFXPluginsResultSchema, 'WorkspaceListFX', host.WorkspaceListFX()),
+  workspaceAddTakeFX: (chapterId, firstToken, lastToken, plugin) =>
+    decode(workspaceFXResultSchema, 'WorkspaceAddTakeFX', host.WorkspaceAddTakeFX(chapterId, firstToken, lastToken, plugin)),
+  workspaceApplyFXChain: (chapterId, chain) => decode(workspaceFXResultSchema, 'WorkspaceApplyFXChain', host.WorkspaceApplyFXChain(chapterId, chain)),
   workspaceTakes: (chapterId, firstToken, lastToken) =>
     decode(workspaceTakesResultSchema, 'WorkspaceTakes', host.WorkspaceTakes(chapterId, firstToken, lastToken)),
   workspaceTakesCompareStart: (chapterId, firstToken, lastToken) =>

@@ -124,3 +124,14 @@ func alignmentItems(items []ItemLine, project tracks.Project) []AlignmentItem {
 	}
 	return out
 }
+
+// ChapterTrackGUID is the REAPER track the chapter's newest coverage run covered (its ledger record's scope), or "" when
+// the chapter was never checked. The workspace puts an FX chain on this track (edit-and-proof-workspace.prd.md Phase 9,
+// ADR 0234): the page never names a track, so it cannot be steered to another one.
+func (s *Service) ChapterTrackGUID(chapterID string) string {
+	record, err := s.latestRecord(chapterID)
+	if err != nil || record == nil {
+		return ""
+	}
+	return record.Scope.TrackGUID
+}

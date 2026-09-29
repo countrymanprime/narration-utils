@@ -2153,6 +2153,15 @@ export function WindowZoom(): $CancellablePromise<string> {
 }
 
 /**
+ * WorkspaceAddTakeFX splits the passage firstToken..lastToken of chapterID out of its item and puts one installed
+ * plug-in on the middle piece's take, in one undo step in REAPER (add_take_fx, ADR 0234). Refused, with nothing sent,
+ * for a selection that cannot be placed or a REAPER that is not listening.
+ */
+export function WorkspaceAddTakeFX(chapterID: string, firstToken: number, lastToken: number, plugin: string): $CancellablePromise<string> {
+    return $Call.ByID(3923966015, chapterID, firstToken, lastToken, plugin);
+}
+
+/**
  * WorkspaceAlignment reads a chapter's stored word alignment (edit-and-proof-workspace PRD Phase 1, ADR 0242) joined
  * with its current paragraphs and its items' current played ranges (coverage.AlignmentView). It never runs anything
  * (Q14), exactly like CoverageResult, whose state, reasons and basis it shares. A stored report from before the
@@ -2163,12 +2172,28 @@ export function WorkspaceAlignment(chapterID: string): $CancellablePromise<strin
 }
 
 /**
+ * WorkspaceApplyFXChain puts one of the narrator's FX chains (a name WorkspaceListFXChains listed) on the track the
+ * chapter's newest check covered, in one undo step in REAPER (apply_fx_chain, ADR 0234). The page sends no track.
+ */
+export function WorkspaceApplyFXChain(chapterID: string, chain: string): $CancellablePromise<string> {
+    return $Call.ByID(691001412, chapterID, chain);
+}
+
+/**
  * WorkspaceGoTo selects tokenIndex's item in REAPER and puts the edit cursor on the spot it was heard, exactly as
  * FindingsGoTo does for a finding: navigate_item, sent only once the token resolves to an item REAPER can be asked
  * about and REAPER is listening.
  */
 export function WorkspaceGoTo(chapterID: string, tokenIndex: number): $CancellablePromise<string> {
     return $Call.ByID(3177963740, chapterID, tokenIndex);
+}
+
+/**
+ * WorkspaceListFX lists REAPER's installed plug-ins by name (list_fx), for the passage menu. It changes nothing and is
+ * refused offline or before the DAW port's FX chains capability is on, as WorkspaceListFXChains is.
+ */
+export function WorkspaceListFX(): $CancellablePromise<string> {
+    return $Call.ByID(10293913);
 }
 
 /**

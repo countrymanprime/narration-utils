@@ -3,6 +3,8 @@ import type {
   WorkspaceAlignmentResult,
   WorkspaceExtra,
   WorkspaceFXChainsResult,
+  WorkspaceFXPluginsResult,
+  WorkspaceFXResult,
   WorkspaceItem,
   WorkspaceParagraph,
   WorkspacePeaks,
@@ -71,6 +73,33 @@ export const workspaceFXChainsResultSchema = z.object({
   names: listFromNull(z.string()),
   truncated: z.boolean(),
 }) satisfies z.ZodType<WorkspaceFXChainsResult>;
+
+export const workspaceFXPluginsResultSchema = z.object({
+  names: listFromNull(z.string()),
+  truncated: z.boolean(),
+}) satisfies z.ZodType<WorkspaceFXPluginsResult>;
+
+// apps/desktop/bindings_workspace_fx_apply.go WorkspaceFXResult: omitempty drops a zero splits/added, so they default to 0.
+const workspaceFXRefusalReasons = [
+  'standalone',
+  'not_running',
+  'no_item',
+  'no_source_time',
+  'stale',
+  'recording',
+  'script_outdated',
+  'failed',
+  'crosses_items',
+  'bad_range',
+  'bad_name',
+  'no_track',
+] as const;
+
+export const workspaceFXResultSchema = z.discriminatedUnion('outcome', [
+  z.object({ outcome: z.literal('added'), plugin: z.string(), itemGuid: z.string(), takeGuid: z.string(), splits: z.number().default(0) }),
+  z.object({ outcome: z.literal('applied'), chain: z.string(), track: z.string(), added: z.number().default(0) }),
+  z.object({ outcome: z.literal('refused'), reason: z.enum(workspaceFXRefusalReasons), message: z.string() }),
+]) satisfies z.ZodType<WorkspaceFXResult>;
 
 // The waveform strip's peaks (edit-and-proof-workspace PRD Phase 5, ADR 0520): apps/desktop/bindings_workspace_peaks.go.
 const peaksSchema = z.object({

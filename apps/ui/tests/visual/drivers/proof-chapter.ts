@@ -136,6 +136,25 @@ export const proofChapterDrivers: Record<string, Driver> = {
     // Use this take waits for the first REAPER status poll before it can say why it is off.
     await page.getByRole('button', { name: 'Use take 2' }).and(page.locator(':disabled')).waitFor();
   },
+  // Effects on a passage (edit-and-proof-workspace.prd.md Phase 9): a right click on the first heard word of the script opens the menu.
+  'effects-menu': async (page) => {
+    await openScriptMenu(page);
+  },
+  'effects-menu-standalone': async (page) => {
+    await page.goto('/?mockReaper=standalone');
+    await settlePage(page);
+    await openScriptMenu(page);
+  },
+  'effects-confirm': async (page) => {
+    await openScriptMenu(page);
+    await page.getByRole('menuitem', { name: /Add an effect to this passage/ }).click();
+    await page.getByRole('combobox', { name: 'Effect' }).waitFor();
+  },
+  'effects-chain-confirm': async (page) => {
+    await openScriptMenu(page);
+    await page.getByRole('menuitem', { name: /Put an FX chain on the chapter/ }).click();
+    await page.getByRole('combobox', { name: 'FX chain' }).waitFor();
+  },
   // The compare run (the retired Proofing page, stage-navigation-and-page-replacement.prd.md Phase 5), on Chapter 1 opened from
   // Proof's chapter picker with no track linked, scrolled so the run fills the picture.
   'compare-setup': async (page) => {
@@ -396,4 +415,14 @@ async function openTakes(page: Page): Promise<void> {
   await page.getByText('Check current').waitFor();
   await takesList(page).waitFor();
   await takesList(page).scrollIntoViewIfNeeded();
+}
+
+// Opens the script's effects menu: Chapter 1 opened from its confirmed link, the script scrolled into view, and a right click
+// on its first word, which selects that word and opens the menu at the pointer.
+async function openScriptMenu(page: Page): Promise<void> {
+  await openLinkedProofChapter(page, 'Chapter 1');
+  const script = page.getByRole('region', { name: 'Script text' });
+  await script.scrollIntoViewIfNeeded();
+  await script.getByRole('button').first().click({ button: 'right' });
+  await page.getByRole('menuitem').first().waitFor();
 }

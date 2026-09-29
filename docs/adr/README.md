@@ -355,4 +355,5 @@ The table is generated from each ADR's heading and Status line ([ADR 0410](0410-
 | [0680](0680-the-story-bible-preview-speaks-a-chosen-pronunciation-through-pipers-raw-phoneme-block.md) | The Story Bible preview speaks a chosen pronunciation through Piper's raw-phoneme block | Accepted |
 | [0695](0695-alias-pronunciation-gets-the-entitys-own-control-and-a-default-source-only-reorders-the-automatic-fallback.md) | Alias pronunciation gets the entity's own control, and a default source only reorders the automatic fallback | Accepted |
 | [0700](0700-the-takes-panel-lists-a-passages-takes-from-the-saved-project-and-chooses-one-by-an-id-the-host-offered.md) | The Takes panel lists a passage's takes from the saved project and chooses one by an id the host offered | Accepted |
+| [0705](0705-the-workspace-adds-an-effect-to-a-passage-or-a-chain-to-the-chapters-track-only-after-the-narrator-confirms-and-the-host-names-both-targets.md) | The workspace adds an effect to a passage, or a chain to the chapter's track, only after the narrator confirms, and the host names both targets | Accepted |
 <!-- adr-index:end -->
