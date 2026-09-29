@@ -30,9 +30,21 @@ list, the same one the [Pickups](pickups.md) page works through. Import reads a 
 adds each pickup as a marker in REAPER, and says which rows it could not use; Export saves the pickups
 still open as a CSV for the proofer. Both need REAPER running.
 
-Under the page title, **Chapter to open** picks a narration chapter and **Open chapter** opens its
+Above the notes, a waveform card draws one chapter's recording, with the check's flags marked on it. It opens
+on the last chapter you looked at in this project (the first chapter until you have looked at one).
+**Chapter to open** picks another chapter, and **Open chapter** opens that chapter's
 [chapter view](#the-chapter-view) directly, without going by way of a note — useful when you want to
 listen to a chapter that has nothing to review yet.
+
+Picking a chapter also narrows the notes table to that chapter, and the card says **Notes below: this
+chapter only**. **Show all chapters** brings every chapter's notes back (Clear filters does too).
+
+![Proof - Chapter 1 picked in the waveform card: its waveform and only its notes](../../images/ui/proof-chapter-selected.webp)
+
+A chapter with no recording draws a grey placeholder waveform instead, labelled as a placeholder rather
+than the chapter's audio. Link a track to the chapter, or record it, and its own waveform appears.
+
+![Proof - Chapter 2 has no recording: a grey placeholder waveform, and only Chapter 2's notes](../../images/ui/proof-chapter-filtered.webp)
 
 ## Filtering and sorting
 
