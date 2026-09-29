@@ -47,7 +47,13 @@ import {
   takeReviewScanJobSchema,
 } from './schemas/takeReview';
 import { COVERAGE_EVALUATOR_REASONS, COVERAGE_REFUSAL_REASONS, coverageResultSchema, coverageStartResultSchema, coverageStateSchema } from './schemas/coverage';
-import { workspaceAlignmentResultSchema, workspaceFXChainsResultSchema, workspacePeaksResultSchema } from './schemas/workspace';
+import {
+  workspaceAlignmentResultSchema,
+  workspaceFXChainsResultSchema,
+  workspaceFXPluginsResultSchema,
+  workspaceFXResultSchema,
+  workspacePeaksResultSchema,
+} from './schemas/workspace';
 import { pinnedPreviewSchema, previewResultSchema } from './schemas/preview';
 import { STAGE_REFUSAL_REASONS, STAGE_UNKNOWN_CAUSES, stageDecisionResultSchema, stageRecommendationsSchema } from './schemas/stages';
 import { proofingChooseRenderResultSchema, proofingRenderSchema } from './schemas/proofingRender';
@@ -2286,6 +2292,47 @@ describe('answers of the mock client for the settings, voice, model, transcript 
     await expect(createMockApi({}, { reaper: 'standalone' }).workspaceListFXChains()).rejects.toThrow();
   });
 
+  it('the passage effects: the plug-in list, add-to-passage and chain-on-track answer the schema, and refuse what the host refuses (edit-and-proof-workspace PRD Phase 9)', async () => {
+    const measured = (await createMockApi().manuscriptChapters()).find((chapter) => chapter.recordedFraction !== undefined);
+    if (!measured) throw new Error('the mock chapters carry a measured recordedFraction');
+    // A live item needs a confirmed chapter link (the peaks test above seeds the same one).
+    const [linkedTrack] = WIRE_TRACKS_PROJECT.tracks;
+    const chapterTrackMappings = [
+      {
+        trackGuid: linkedTrack.guid,
+        chapterId: measured.id,
+        chapterTitle: measured.title,
+        confirmedAt: '2026-09-24T09:00:00Z',
+        origin: 'manual' as const,
+        match: null,
+      },
+    ];
+    const api = createMockApi({}, { chapterTrackMappings });
+    const plugins = await api.workspaceListFX();
+    expectMatches(workspaceFXPluginsResultSchema, plugins, 'mock workspace plug-ins');
+    expect(plugins.names.length).toBeGreaterThan(0);
+    await expect(createMockApi({}, { reaper: 'standalone' }).workspaceListFX()).rejects.toThrow();
+
+    const alignment = await api.workspaceAlignment(measured.id);
+    const heard = alignment.tokens.filter((token) => token.item !== undefined);
+    expect(heard.length).toBeGreaterThan(1);
+    const answers: [string, Promise<unknown>][] = [
+      ['added', api.workspaceAddTakeFX(measured.id, heard[0].i, heard[1].i, 'ReaEQ (Cockos)')],
+      ['applied', api.workspaceApplyFXChain(measured.id, 'Podcast Voice.RfxChain')],
+      ['bad range', api.workspaceAddTakeFX(measured.id, 5, 2, 'ReaEQ (Cockos)')],
+      ['outside the alignment', api.workspaceAddTakeFX(measured.id, 0, 999999, 'ReaEQ (Cockos)')],
+    ];
+    for (const reaper of ['standalone', 'not-running', 'stale', 'recording', 'outdated'] as const) {
+      const refusing = createMockApi({}, { reaper, chapterTrackMappings });
+      answers.push([`${reaper} add`, refusing.workspaceAddTakeFX(measured.id, heard[0].i, heard[1].i, 'ReaEQ (Cockos)')]);
+      answers.push([`${reaper} chain`, refusing.workspaceApplyFXChain(measured.id, 'Podcast Voice.RfxChain')]);
+    }
+    for (const [name, answer] of answers) expectMatches(workspaceFXResultSchema, await answer, `mock workspace effect ${name}`);
+    expect(await answers[0][1]).toMatchObject({ outcome: 'added', plugin: 'ReaEQ (Cockos)' });
+    expect(await answers[1][1]).toMatchObject({ outcome: 'applied', chain: 'Podcast Voice.RfxChain' });
+    expect(await answers[2][1]).toMatchObject({ outcome: 'refused', reason: 'bad_range' });
+  });
+
   it('the preview candidates: ok with candidates, no manuscript, and nothing eligible', async () => {
     const withCandidates = await createMockApi().previewCandidates();
     expectMatches(previewResultSchema, withCandidates, 'mock preview candidates, ok');
@@ -2685,6 +2732,9 @@ describe('answers of the mock client for the settings, voice, model, transcript 
       'workspaceAlignment',
       'workspaceGoTo',
       'workspaceListFXChains',
+      'workspaceListFX',
+      'workspaceAddTakeFX',
+      'workspaceApplyFXChain',
       'workspaceLoop',
       'workspacePeaks',
       'previewCandidates',
