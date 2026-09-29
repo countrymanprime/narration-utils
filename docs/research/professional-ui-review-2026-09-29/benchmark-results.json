@@ -1,0 +1,402 @@
+{
+  "config": {
+    "argv": [
+      "C:\\nvm4w\\nodejs\\node.exe",
+      "C:\\repos\\narration-utils\\apps\\ui\\node_modules\\@playwright\\test\\cli.js",
+      "test",
+      "--config",
+      "../../docs/research/professional-ui-review-2026-09-29/benchmark-capture.config.ts",
+      "-g",
+      "stage-navigation-and-page-replacement"
+    ],
+    "configFile": "C:\\repos\\narration-utils\\docs\\research\\professional-ui-review-2026-09-29\\benchmark-capture.config.ts",
+    "rootDir": "C:/repos/narration-utils/apps/ui/tests/visual/mock-match",
+    "failOnFlakyTests": false,
+    "forbidOnly": false,
+    "fullyParallel": true,
+    "globalSetup": "C:\\repos\\narration-utils\\apps\\ui\\tests\\visual\\mock-match\\global-setup.ts",
+    "globalTeardown": null,
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {
+      "actualWorkers": 4
+    },
+    "preserveOutput": "always",
+    "projects": [
+      {
+        "outputDir": "C:/repos/narration-utils/docs/research/professional-ui-review-2026-09-29/benchmark-test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 4
+        },
+        "id": "",
+        "name": "",
+        "testDir": "C:/repos/narration-utils/apps/ui/tests/visual/mock-match",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 30000
+      }
+    ],
+    "quiet": false,
+    "reporter": [
+      [
+        "list",
+        null
+      ],
+      [
+        "json",
+        {
+          "outputFile": "C:/repos/narration-utils/docs/research/professional-ui-review-2026-09-29/benchmark-results.json"
+        }
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "shard": null,
+    "tags": [],
+    "updateSnapshots": "missing",
+    "updateSourceMethod": "patch",
+    "version": "1.63.0",
+    "workers": 4,
+    "webServer": {
+      "command": "node node_modules/vite/bin/vite.js preview --outDir node_modules/.cache/mock-build --port 4173 --strictPort",
+      "cwd": "C:/repos/narration-utils/apps/ui",
+      "url": "http://localhost:4173",
+      "reuseExistingServer": false
+    }
+  },
+  "suites": [
+    {
+      "title": "mock-match.spec.ts",
+      "file": "mock-match.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "stage-navigation-and-page-replacement/01-production-home-concept.webp",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [
+                {
+                  "type": "match",
+                  "description": "82.74% (ink 25.43%)"
+                }
+              ],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2013,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-09-29T14:57:22.207Z",
+                  "annotations": [
+                    {
+                      "type": "match",
+                      "description": "82.74% (ink 25.43%)"
+                    }
+                  ],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "2cf4fd42bcb3c366cd8a-72650a4ad2151eac7d1e",
+          "file": "mock-match.spec.ts",
+          "line": 52,
+          "column": 3
+        },
+        {
+          "title": "stage-navigation-and-page-replacement/02-prep-script-concept.webp",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [
+                {
+                  "type": "match",
+                  "description": "87.05% (ink 23.84%)"
+                }
+              ],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 1,
+                  "status": "passed",
+                  "duration": 1704,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-09-29T14:57:22.202Z",
+                  "annotations": [
+                    {
+                      "type": "match",
+                      "description": "87.05% (ink 23.84%)"
+                    }
+                  ],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "2cf4fd42bcb3c366cd8a-a8b254a39a87b420cba2",
+          "file": "mock-match.spec.ts",
+          "line": 52,
+          "column": 3
+        },
+        {
+          "title": "stage-navigation-and-page-replacement/03-booth-concept.webp",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [
+                {
+                  "type": "match",
+                  "description": "89.35% (ink 33.96%)"
+                }
+              ],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 2,
+                  "parallelIndex": 2,
+                  "status": "passed",
+                  "duration": 1654,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-09-29T14:57:22.186Z",
+                  "annotations": [
+                    {
+                      "type": "match",
+                      "description": "89.35% (ink 33.96%)"
+                    }
+                  ],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "2cf4fd42bcb3c366cd8a-bcaaae32813c83d971a5",
+          "file": "mock-match.spec.ts",
+          "line": 52,
+          "column": 3
+        },
+        {
+          "title": "stage-navigation-and-page-replacement/04-proof-pickups-concept.webp",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [
+                {
+                  "type": "match",
+                  "description": "90.17% (ink 20.4%)"
+                }
+              ],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 3,
+                  "parallelIndex": 3,
+                  "status": "passed",
+                  "duration": 1479,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-09-29T14:57:22.189Z",
+                  "annotations": [
+                    {
+                      "type": "match",
+                      "description": "90.17% (ink 20.4%)"
+                    }
+                  ],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "2cf4fd42bcb3c366cd8a-56117ddb91fc892e6654",
+          "file": "mock-match.spec.ts",
+          "line": 52,
+          "column": 3
+        },
+        {
+          "title": "stage-navigation-and-page-replacement/05-master-delivery-concept.webp",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [
+                {
+                  "type": "match",
+                  "description": "86.32% (ink 19.43%)"
+                }
+              ],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 3,
+                  "parallelIndex": 3,
+                  "status": "passed",
+                  "duration": 8068,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-09-29T14:57:23.850Z",
+                  "annotations": [
+                    {
+                      "type": "match",
+                      "description": "86.32% (ink 19.43%)"
+                    }
+                  ],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "2cf4fd42bcb3c366cd8a-4e7120aa32621df0bf3c",
+          "file": "mock-match.spec.ts",
+          "line": 52,
+          "column": 3
+        },
+        {
+          "title": "stage-navigation-and-page-replacement/06-series-voice-bible-concept.webp",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [
+                {
+                  "type": "match",
+                  "description": "88.37% (ink 15.62%)"
+                }
+              ],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 2,
+                  "parallelIndex": 2,
+                  "status": "passed",
+                  "duration": 1731,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-09-29T14:57:24.019Z",
+                  "annotations": [
+                    {
+                      "type": "match",
+                      "description": "88.37% (ink 15.62%)"
+                    }
+                  ],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "2cf4fd42bcb3c366cd8a-8592aab8fc68363a8c81",
+          "file": "mock-match.spec.ts",
+          "line": 52,
+          "column": 3
+        },
+        {
+          "title": "stage-navigation-and-page-replacement/07-daw-companion-concept.webp",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [
+                {
+                  "type": "match",
+                  "description": "85.34% (ink 22.95%)"
+                }
+              ],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 1,
+                  "status": "passed",
+                  "duration": 1505,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-09-29T14:57:24.106Z",
+                  "annotations": [
+                    {
+                      "type": "match",
+                      "description": "85.34% (ink 22.95%)"
+                    }
+                  ],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "2cf4fd42bcb3c366cd8a-297e484f966a3dfae5f6",
+          "file": "mock-match.spec.ts",
+          "line": 52,
+          "column": 3
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2026-09-29T14:57:21.012Z",
+    "duration": 11682.646999999999,
+    "expected": 7,
+    "skipped": 0,
+    "unexpected": 0,
+    "flaky": 0
+  }
+}
