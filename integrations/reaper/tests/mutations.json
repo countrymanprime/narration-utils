@@ -606,6 +606,18 @@
     "replace": "local CHAIN_COUNT_LIMIT = 5000"
   },
   {
+    "name": "a chain the listing does not hold is loaded from its name",
+    "file": "narration_workspace.lua",
+    "find": "    if listed == name then\n      local path = chain_root()",
+    "replace": "    if true then\n      local path = chain_root()"
+  },
+  {
+    "name": "a plug-in is added to a take outside the undo block",
+    "file": "narration_workspace.lua",
+    "find": "  reaper.PreventUIRefresh(1)\n  reaper.Undo_BeginBlock2(0)\n  local middle, splits, failure = item, 0, nil",
+    "replace": "  reaper.PreventUIRefresh(1)\n  local middle, splits, failure = item, 0, nil"
+  },
+  {
     "name": "the chain listing is not refreshed",
     "file": "narration_workspace.lua",
     "find": "  enumerate(directory, -1)\n  local names, index = {}, 0",
