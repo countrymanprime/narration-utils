@@ -1,0 +1,4 @@
+# With REAPER away, both items are disabled and read with the reason as their description.
+- menu:
+  - menuitem "Add an effect to this passage… REAPER is not connected to this app. To go to findings in REAPER, open this app from the Narration Utils action in REAPER." [disabled]
+  - menuitem "Put an FX chain on the chapter's track… REAPER is not connected to this app. To go to findings in REAPER, open this app from the Narration Utils action in REAPER." [disabled]

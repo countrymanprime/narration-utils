@@ -4,6 +4,8 @@ import type { z } from 'zod';
 import {
   workspaceAlignmentResultSchema,
   workspaceFXChainsResultSchema,
+  workspaceFXPluginsResultSchema,
+  workspaceFXResultSchema,
   workspacePeaksResultSchema,
   workspaceTakesResultSchema,
   workspaceUseTakeResultSchema,
@@ -22,6 +24,12 @@ export const workspaceGoldens: Record<string, z.ZodType> = {
   'workspace-navigation-no-item.json': findingNavigationSchema,
   // WorkspaceListFXChains (Phase 8, ADR 0234): the narrator's FX chains by name.
   'workspace-fx-chains.json': workspaceFXChainsResultSchema,
+  // WorkspaceListFX, WorkspaceAddTakeFX and WorkspaceApplyFXChain (Phase 9, ADR 0234): the installed plug-ins, and what
+  // adding a plug-in or applying a chain did or why it was refused.
+  'workspace-fx-plugins.json': workspaceFXPluginsResultSchema,
+  'workspace-fx-added.json': workspaceFXResultSchema,
+  'workspace-fx-applied.json': workspaceFXResultSchema,
+  'workspace-fx-refused.json': workspaceFXResultSchema,
   // WorkspaceTakes and WorkspaceUseTake (Phase 6, ADR 0700): a passage's takes from each source, none, and each outcome.
   'workspace-takes.json': workspaceTakesResultSchema,
   'workspace-takes-none.json': workspaceTakesResultSchema,

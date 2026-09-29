@@ -151,3 +151,15 @@ func TestAnItemNoLongerInTheSavedProjectAnswersNotLive(t *testing.T) {
 		t.Fatalf("items = %+v", view.Items)
 	}
 }
+
+func TestChapterTrackGUIDIsTheTrackTheNewestCheckCovered(t *testing.T) {
+	p := newTestProject(t)
+	service := p.service(&fakeSidecar{})
+	if got := service.ChapterTrackGUID(testChapter); got != "" {
+		t.Fatalf("a chapter never checked has no track, got %q", got)
+	}
+	run(t, service, testRequest())
+	if got := service.ChapterTrackGUID(testChapter); got != testTrack {
+		t.Fatalf("track = %q, want %q", got, testTrack)
+	}
+}

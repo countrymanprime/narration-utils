@@ -296,6 +296,24 @@ the script yourself and it stops following until you scroll back to the highligh
 
 ![Proof chapter view - playing, the spoken word highlighted and the script following along](../../images/ui/proof-chapter-playing.webp)
 
+### Adding an effect to a passage
+
+To put an effect on a few words, click the first word, then hold Shift and click the last: the words are
+selected, and a line above the script says how many. (A plain click still plays from that word.) Right-click
+in the script and choose **Add an effect to this passage…**. A right click on one word selects just that word.
+The dialog names the passage and lists the effects REAPER has installed, your favourite effects first
+(Settings, DAW). Press **Add effect** and REAPER cuts the passage out of its item and puts the effect on that
+piece only. Nothing is sent until you press the button, and one Undo in REAPER takes back the cuts and the
+effect together.
+
+**Put an FX chain on the chapter's track…**, in the same menu, adds one of your saved FX chains to the whole
+track the chapter was checked on, which changes how everything on it sounds; one Undo takes that back too.
+A passage that spans two REAPER items is refused ("Select words from one item at a time"), and both items
+are off, with the reason, when REAPER is not connected or is recording. After an effect is added the chapter
+may need **Check again** before another effect goes on the same words, because REAPER has split the item.
+The effect and its sound are for you to check in REAPER; this version has not been listened to on a real
+chapter yet.
+
 Flags mark what the last check found, in place in the text: a skipped word is struck through, a word
 read short or differently is underlined, and a misread word shows what was actually heard beneath it.
 A run of words the check couldn't match to anything in the script shows as a small "repeat" chip

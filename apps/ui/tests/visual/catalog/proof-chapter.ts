@@ -113,6 +113,35 @@ export const proofChapterStates: StateEntry[] = [
       'Proof chapter view with REAPER not running - the takes are listed and can be played, and Use this take is off on each, with the reason in a line under the list',
     ...KEEPS_DESKTOP_SCROLL,
   },
+  // Effects on a passage (edit-and-proof-workspace.prd.md Phase 9, ADR 0705): the right-click menu on the script, and its confirm step.
+  {
+    page: 'proof-chapter',
+    state: 'effects-menu',
+    description:
+      'Proof chapter view, a right click on a script word (edit-and-proof-workspace PRD Phase 9) - the word selected and a context menu open beside it: "Add an effect to this passage…" and "Put an FX chain on the chapter’s track…"',
+    ...KEEPS_DESKTOP_SCROLL,
+  },
+  {
+    page: 'proof-chapter',
+    state: 'effects-menu-standalone',
+    description:
+      'Proof chapter view with REAPER not running, a right click on a script word - both effect items disabled, each with the reason under it (edit-and-proof-workspace PRD Phase 9)',
+    ...KEEPS_DESKTOP_SCROLL,
+  },
+  {
+    page: 'proof-chapter',
+    state: 'effects-confirm',
+    description:
+      'Proof chapter view, "Add an effect to this passage…" chosen - the confirm dialog names the passage, lists REAPER’s effects and says what REAPER will do and that one Undo takes it back (edit-and-proof-workspace PRD Phase 9)',
+    ...KEEPS_DESKTOP_SCROLL,
+  },
+  {
+    page: 'proof-chapter',
+    state: 'effects-chain-confirm',
+    description:
+      'Proof chapter view, "Put an FX chain on the chapter’s track…" chosen - the confirm dialog lists the narrator’s FX chains and says the chain changes everything on that track (edit-and-proof-workspace PRD Phase 9)',
+    ...KEEPS_DESKTOP_SCROLL,
+  },
   // The compare run (the Proofing page's setup, run and results, folded in by stage navigation Phase 5), scrolled into view.
   {
     page: 'proof-chapter',

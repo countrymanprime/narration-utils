@@ -18,6 +18,9 @@ import type {
   WorkspaceApi,
   WorkspaceExtra,
   WorkspaceFXChainsResult,
+  WorkspaceFXPluginsResult,
+  WorkspaceFXRefusalReason,
+  WorkspaceFXResult,
   WorkspaceItem,
   WorkspacePeaks,
   WorkspacePeaksEntry,
@@ -40,9 +43,15 @@ type Deps = {
   looping?: { current: string | undefined };
   /** The narrator's FX chains for workspaceListFXChains (Phase 8): a small realistic sample when not given. */
   fxChains?: string[];
+  /** REAPER's installed plug-ins for workspaceListFX (Phase 9): a small realistic sample when not given. */
+  fxPlugins?: string[];
 };
 
 const DEFAULT_MOCK_FX_CHAINS = ['Podcast Voice.RfxChain', 'Vocal Warmth.RfxChain'];
+const DEFAULT_MOCK_PLUGINS = ['JS: De-esser', 'ReaComp (Cockos)', 'ReaEQ (Cockos)', 'ReaXcomp (Cockos)'];
+const MOCK_TRACK_GUID = '{MOCK-TRACK-0000-0000-000000000001}';
+
+const fxRefused = (reason: WorkspaceFXRefusalReason, message: string): WorkspaceFXResult => ({ outcome: 'refused', reason, message });
 
 const refused = (reason: FindingNavigationRefusal, message: string): FindingNavigation => ({ outcome: 'refused', reason, message });
 
@@ -52,6 +61,14 @@ const refused = (reason: FindingNavigationRefusal, message: string): FindingNavi
 const WORKSPACE_MESSAGES = {
   noItem: "This word wasn't heard in the recording, so there's nothing to go to. Run the check again if the chapter has changed.",
   noSourceTime: 'This word has no time in its audio to loop. Go to it instead.',
+};
+
+// The passage-effect refusals in the host's words (apps/desktop/bindings_workspace_fx_apply.go).
+const FX_MESSAGES = {
+  badRange: "That selection is not in this chapter's alignment. Reload the chapter and select the words again.",
+  noItem: "These words weren't heard in the recording, so there's no audio to put an effect on. Run the check again if the chapter has changed.",
+  crossesItems: 'This passage crosses two REAPER items. Select words from one item at a time.',
+  noTrack: 'This chapter has no checked track in REAPER to put a chain on. Run the check first.',
 };
 
 /** A narration pace, for the mock's token times only (matches coverageMock.ts's own). */
@@ -259,6 +276,33 @@ export function createWorkspaceMock(deps: Deps): Omit<WorkspaceApi, 'workspaceTa
     workspaceListFXChains: async (): Promise<WorkspaceFXChainsResult> => {
       if (mode !== 'connected') throw new Error('REAPER is not connected to this app: open the app from the Narration Utils action in REAPER');
       return { names: deps.fxChains ?? DEFAULT_MOCK_FX_CHAINS, truncated: false };
+    },
+    workspaceListFX: async (): Promise<WorkspaceFXPluginsResult> => {
+      if (mode !== 'connected') throw new Error('REAPER is not connected to this app: open the app from the Narration Utils action in REAPER');
+      return { names: deps.fxPlugins ?? DEFAULT_MOCK_PLUGINS, truncated: false };
+    },
+    workspaceAddTakeFX: async (chapterId, firstToken, lastToken, plugin) => {
+      const { tokens } = tokensFor(deps, chapterId);
+      if (firstToken < 0 || lastToken < firstToken || lastToken >= tokens.length) return fxRefused('bad_range', FX_MESSAGES.badRange);
+      const first = tokens[firstToken];
+      const last = tokens[lastToken];
+      if (first?.item === undefined || last?.item === undefined) return fxRefused('no_item', FX_MESSAGES.noItem);
+      if (first.item !== last.item) return fxRefused('crosses_items', FX_MESSAGES.crossesItems);
+      const refusal = reaperRefusal(mode);
+      if (refusal?.outcome === 'refused') return fxRefused(refusal.reason, refusal.message);
+      return {
+        outcome: 'added',
+        plugin,
+        itemGuid: `{MOCK-PIECE-${firstToken}-${lastToken}}`,
+        takeGuid: `{MOCK-PIECE-TAKE-${firstToken}-${lastToken}}`,
+        splits: 2,
+      };
+    },
+    workspaceApplyFXChain: async (chapterId, chain) => {
+      if (!mockLiveItem(deps, chapterId)) return fxRefused('no_track', FX_MESSAGES.noTrack);
+      const refusal = reaperRefusal(mode);
+      if (refusal?.outcome === 'refused') return fxRefused(refusal.reason, refusal.message);
+      return { outcome: 'applied', chain, track: MOCK_TRACK_GUID, added: 2 };
     },
     workspacePeaks: async (chapterId) => {
       const liveItem = mockLiveItem(deps, chapterId);
