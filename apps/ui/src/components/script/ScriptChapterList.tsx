@@ -9,7 +9,7 @@ export const SCRIPT_SECTION_LABEL =
 // Mock 02 draws a numbered chapter as "8 · Croquet-Ground", not "Chapter 8 — The Queen's Croquet-Ground", so the column reads at a
 // glance. A chapter that is not numbered ("Prologue — Before") keeps its own name, and the full name is the hover title.
 const NUMBERED = /^chapter\s+(\d+)\s*(?:[—–:-]\s*(.+))?$/i;
-export function compactChapterName(name: string): string {
+function compactChapterName(name: string): string {
   const match = NUMBERED.exec(name.trim());
   if (!match) return name;
   return match[2] ? `${match[1]} · ${match[2]}` : match[1];
