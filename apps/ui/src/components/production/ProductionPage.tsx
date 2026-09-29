@@ -12,11 +12,12 @@ import { Panel } from '../primitives/Panel';
 import { StatStrip } from '../primitives/StatStrip';
 import type { Notify } from '../primitives/Toast';
 import { Tooltip } from '../primitives/Tooltip';
+import { usePickupsRemaining, type PickupsRemaining } from './usePickupsRemaining';
 import { ChapterBoard } from './ChapterBoard';
 import { useManuscriptImport } from './ManuscriptImport';
 import { PlanPanel } from './PlanPanel';
 import { StatusReportPanel } from './StatusReportPanel';
-import { deadlineFigure, deliveryDue, formatClock, formatPfh, formatRate, nextUpLine, stageHoursHint } from './productionFormat';
+import { deliveryDue, formatClock, formatPfh, formatRate, nextUpLine, stageHoursHint } from './productionFormat';
 
 const MUTED = { color: 'var(--text-muted)' };
 const DANGER = { color: 'var(--danger-text)' };
@@ -24,11 +25,9 @@ const DANGER = { color: 'var(--danger-text)' };
 type Load = { status: 'loading' } | { status: 'ready'; overview: ProductionOverview } | { status: 'error'; message: string };
 
 /** The KPI row (mock 01): every figure measured or logged; the only estimate, the target runtime, says it is one. */
-function Figures({ overview }: { overview: ProductionOverview }) {
+function Figures({ overview, pickups }: { overview: ProductionOverview; pickups: PickupsRemaining }) {
   const totals: ProductionTotals = overview.totals;
   const target = estimateFinishedHours(totals.wordCount);
-  const unfinished = totals.chapters - totals.finalizedChapters;
-  const deadline = deadlineFigure(overview.deadline, unfinished);
   const rateHint =
     totals.effectiveRate !== null
       ? `${formatRate(totals.contractedAmount)} contracted ÷ hours logged`
@@ -56,12 +55,13 @@ function Figures({ overview }: { overview: ProductionOverview }) {
       hint: totals.bookPfh === null ? 'Not enough measured time and logged hours yet' : 'Hours logged ÷ measured audio',
     },
     { label: 'Effective rate', value: formatRate(totals.effectiveRate), unit: totals.effectiveRate === null ? undefined : '/hr', hint: rateHint },
-    { label: 'Delivery date', value: deadline.value, hint: deadline.hint, tone: deadline.tone },
     {
-      label: 'Chapters finalized',
-      value: `${totals.finalizedChapters} / ${totals.chapters}`,
-      progress: totals.chapters > 0 ? totals.finalizedChapters / totals.chapters : undefined,
+      label: 'Open pickups',
+      value: pickups ? String(pickups.remaining) : '—',
+      hint: pickups ? `of ${pickups.total} total` : 'Not counted yet: open Pickups with REAPER running',
     },
+    // The ACX checks run on the mastered package, not per chapter, and nothing reports a result here yet (Master & QC owns them).
+    { label: 'Delivery check', value: '—', hint: 'No delivery check run yet' },
   ];
   // Mock 01 draws the six figures as one card, its tiles divided by rules (StatStrip, ADR 0615).
   return <StatStrip label="Production figures" items={tiles.map((tile) => ({ key: tile.label, ...tile }))} />;
@@ -168,6 +168,7 @@ export function ProductionPage({
   const [starting, setStarting] = useState<string>();
   const [stopping, setStopping] = useState(false);
   const [reportOpen, setReportOpen] = useState(false);
+  const pickups = usePickupsRemaining();
 
   const read = useCallback(async () => {
     try {
@@ -307,11 +308,11 @@ export function ProductionPage({
       )}
       {overview && (
         <>
-          <Figures overview={overview} />
+          <Figures overview={overview} pickups={pickups} />
           {/* Mock 01 (ADR 0645): the board with Next up in a column beside it, once the board's six columns fit beside a 340 px
               column; stacked below that, Next up leads (it is where a timer starts). minmax(0, 1fr) lets the board's panel
               shrink to the window, its grid scrolling inside it. */}
-          <div className="grid grid-cols-[minmax(0,1fr)] items-start gap-4 min-[1280px]:grid-cols-[minmax(0,1fr)_21.25rem]">
+          <div className="grid grid-cols-[minmax(0,1fr)] items-start gap-4 min-[1280px]:grid-cols-[minmax(0,1fr)_21rem]">
             <ChapterBoard
               overview={overview}
               notify={notify}

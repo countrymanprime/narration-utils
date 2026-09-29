@@ -65,22 +65,38 @@ describe('ProductionPage', () => {
     expect((await tile('Hours per finished hour')).textContent).toContain('—');
     expect((await tile('Hours per finished hour')).textContent).toContain('Not enough measured time and logged hours yet');
     expect((await tile('Effective rate')).textContent).toContain('No contracted amount set yet');
-    expect((await tile('Delivery date')).textContent).toContain('No delivery date set yet');
+    // Nothing measures a delivery check or counts pickups yet: the tiles say so instead of showing a made-up number.
+    expect((await tile('Delivery check')).textContent).toContain('—');
+    expect((await tile('Delivery check')).textContent).toContain('No delivery check run yet');
+    expect((await tile('Open pickups')).textContent).toContain('—');
     expect((await tile('Work time logged')).textContent).toContain('0:00');
     expect(within(actions()).queryByRole('button', { name: 'Stop timer' })).toBeNull();
   });
 
+  it('shows the pickups REAPER last reported as the Open pickups figure, and asks nothing of REAPER to do it', async () => {
+    const pickupsCount = vi.fn<NarrationApi['pickupsCount']>();
+    await renderPage({
+      overrides: {
+        pickupsCount,
+        pickupsState: async () => ({ phase: 'success', message: '', remaining: 9, total: 14, csv: '' }),
+      },
+    });
+    const open = await tile('Open pickups');
+    await waitFor(() => expect(open.textContent).toContain('9'));
+    expect(open.textContent).toContain('of 14 total');
+    expect(pickupsCount).not.toHaveBeenCalled();
+  });
+
   it('says in the subtitle how many chapters and words the book has, and that no delivery date is set, with the figures explained', async () => {
     await renderPage();
-    await tile('Delivery date');
+    await tile('Delivery check');
     expect(screen.getByText(/^12 chapters · [\d,]+ words · no delivery date set$/)).toBeTruthy();
     expect(screen.getByLabelText('About these figures')).toBeTruthy();
   });
 
   it('shows an on-pace book: its figures, its delivery date, the running timer and its board', async () => {
     const { onOverview } = await renderPage({ initial: { production: PRODUCTION_SCENARIOS['on-pace'] } });
-    expect((await tile('Delivery date')).textContent).toContain('18 days');
-    expect((await tile('Delivery date')).textContent).toContain('Due 14 Oct 2026');
+    await tile('Delivery check');
     expect((await tile('Effective rate')).textContent).not.toContain('—');
     expect(screen.getByText(/ · delivery due Oct 14 \(18 days\)$/)).toBeTruthy();
     // The running timer shows in the app header's chip (fed by onOverview); the page offers only its Stop.
@@ -90,13 +106,13 @@ describe('ProductionPage', () => {
       within(boardRow('Chapter 1'))
         .getAllByRole('gridcell')
         .map((cell) => cell.textContent),
-    ).toEqual(['11:48', '—', '✓', '✓', '✓', '—']);
+    ).toEqual(['11:48', '—', '✓', '✓', '✓', '—', '—', '—']);
   });
 
   // Mock 01 (ADR 0645): the six figures are one card (StatStrip), and the board and Next up sit side by side in the page's grid.
   it('draws the figures as one card of six tiles', async () => {
     await renderPage({ initial: { production: PRODUCTION_SCENARIOS['on-pace'] } });
-    await tile('Delivery date');
+    await tile('Delivery check');
     const figures = screen.getByRole('list', { name: 'Production figures' });
     expect(within(figures).getAllByRole('listitem')).toHaveLength(6);
     expect(figures.parentElement?.className).toContain('rounded-[var(--radius-card)]');
@@ -104,7 +120,8 @@ describe('ProductionPage', () => {
 
   it('marks an at-risk deadline and lists the chapters that threaten it first', async () => {
     await renderPage({ initial: { production: PRODUCTION_SCENARIOS['at-risk'] } });
-    expect((await tile('Delivery date')).textContent).toContain('3 days');
+    await tile('Delivery check');
+    expect(screen.getByText(/ · delivery due \w+ \d+ \(3 days\)$/)).toBeTruthy();
     const nextUp = screen.getByRole('list', { name: 'Next up' });
     const items = within(nextUp).getAllByRole('listitem');
     // Chapters 4-6 are recording with part of their text not read (the stage mock's not_ready), so they come first.
@@ -114,7 +131,8 @@ describe('ProductionPage', () => {
 
   it("renders the host's own payload", async () => {
     const { onOverview } = await renderPage({ overrides: { productionOverview: async () => contract('production-overview.json') } });
-    expect((await tile('Delivery date')).textContent).toContain('18 days');
+    await tile('Delivery check');
+    expect(screen.getByText(/delivery due Oct 14 \(18 days\)$/)).toBeTruthy();
     expect((await tile('Effective rate')).textContent).toContain('1,067');
     expect(within(actions()).getByRole('button', { name: 'Stop timer' })).toBeTruthy();
     expect(onOverview.mock.calls[0][0].running).not.toBeNull();
@@ -163,7 +181,7 @@ describe('ProductionPage', () => {
 
   it('reads the overview again on Refresh', async () => {
     const { api } = await renderPage();
-    await tile('Delivery date');
+    await tile('Delivery check');
     const read = vi.spyOn(api, 'productionOverview');
     const user = userEvent.setup();
     await user.click(within(actions()).getByRole('button', { name: 'Refresh' }));
@@ -172,7 +190,7 @@ describe('ProductionPage', () => {
 
   it('opens the status report export in its own slide-over', async () => {
     await renderPage();
-    await tile('Delivery date');
+    await tile('Delivery check');
     expect(screen.queryByRole('dialog', { name: 'Status report' })).toBeNull();
     const user = userEvent.setup();
     await user.click(within(actions()).getByRole('button', { name: 'Export status report' }));
@@ -182,7 +200,7 @@ describe('ProductionPage', () => {
 
   it('offers to replace the manuscript from the header', async () => {
     await renderPage();
-    await tile('Delivery date');
+    await tile('Delivery check');
     expect(within(actions()).getByRole('button', { name: 'Replace manuscript' })).toBeTruthy();
   });
 

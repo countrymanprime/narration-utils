@@ -89,7 +89,7 @@ describe('the board', () => {
   });
 
   it('says a readiness column with no producer yet is not available (PRD risk table), as a dash (PR10)', () => {
-    for (const name of ['Prep', 'Delivery']) {
+    for (const name of ['Prep', 'Pickups', 'Master', 'QC']) {
       expect(boardCell(chapter({ status: 'finalized' }), column(name))).toEqual({ tone: 'neutral', label: '—' });
     }
   });
@@ -149,7 +149,7 @@ describe('a credits row on the board', () => {
     expect(creditsCell({ ...row('recording'), recordedSeconds: 7 }, column('Recorded'))).toEqual({ tone: 'neutral', label: '0:07' });
     expect(creditsCell({ ...row('recording'), recordedUnavailable: 'track_missing' }, column('Recorded'))).toEqual({ tone: 'danger', label: 'Track missing' });
     expect(creditsCell({ status: 'recording' }, column('Recorded'))).toEqual({ tone: 'neutral', label: 'Not set up' });
-    expect(creditsCell(row('recording'), column('Delivery'))).toEqual({ tone: 'neutral', label: '—' });
+    expect(creditsCell(row('recording'), column('QC'))).toEqual({ tone: 'neutral', label: '—' });
   });
 });
 

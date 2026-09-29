@@ -31,9 +31,12 @@ status report**.
 - **Hours per finished hour**: hours logged divided by measured audio. It stays a dash until both exist.
 - **Effective rate**: the contracted amount for the book divided by the hours logged, in your own
   currency. It stays a dash until a contracted amount is set.
-- **Delivery date**: the days left until the book is due. It turns to a warning in the last week while
-  chapters are unfinished, and to red once the date has passed. It stays a dash until a date is set.
-- **Chapters finalized**: how many chapters are marked Finalized.
+- **Open pickups**: the pickups REAPER last reported still open, and how many there are in all. It is a
+  dash until REAPER has counted them (open [Pickups](pickups.md) with REAPER running); Production never asks
+  REAPER to count.
+- **Delivery check**: how many chapters pass the ACX check. It is a dash until a delivery check has run.
+
+The delivery date sits in the subtitle ("delivery due Oct 14 (18 days)").
 
 Set the delivery date and the contracted amount under [Delivery plan](#delivery-plan).
 
@@ -67,8 +70,9 @@ Its cells:
   says: **Ready**, **Not ready**, **Not checked**, **In progress** or **Evidence changed**. A chapter
   not started yet reads a dash under Record too, and a recording check running on it reads
   **Checking 42%**.
-- **Prep** and **Delivery**: a dash, since no check reports them per chapter yet. Prep opens the
-  chapter on [Script](script.md).
+- **Prep**, **Pickups**, **Master** and **QC**: a dash, since nothing reports them per chapter yet
+  (the pickup list, mastering and the ACX check are not tied to one chapter). Prep opens the chapter
+  on [Script](script.md).
 
 The chapter's current-stage cell opens its [stage suggestion](#stage-suggestions). The other Record,
 Edit and Proof cells open that stage: the [recording check](#checking-a-chapters-recording), the
