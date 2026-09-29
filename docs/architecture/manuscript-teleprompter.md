@@ -619,8 +619,7 @@ Nothing here writes to REAPER; moving REAPER's cursor to a word is punch-and-rol
 - **`estimate`**: the anchors' pace, only when the recording cannot answer.
 
 A punch after its preview reuses the preview's alignment; a successful punch drops the anchors at or after the word.
-The owner-approved mockups the prompt was built to are in
-[`docs/prds/mockups/read-aloud-resume-from-daw/`](../prds/mockups/read-aloud-resume-from-daw/01-agree.webp)
+The mockups the prompt was built to (deleted 2026-09-29, D96) showed
 (agree, disagree, recorded to the end, gone after play, checking, last reading
 only). REAPER's own behaviour of the live read (an unsaved take's file, a
 `SECTION` source's file name, a take still recording) is checked by the owner in

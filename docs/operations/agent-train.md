@@ -124,7 +124,7 @@ When a phase is otherwise ready (`Depends` complete, no file collision) but bloc
 - **Launch a mockup-drafting session instead**, as its own lane entry, not a phase worker: `create_session` with `tags: ["agent-train", "mockup-design"]`, a model picked like any other lane (Opus for a screen with real interaction states — a recorder, conflict or error messaging, anything with more than static layout; Sonnet for a mostly-static screen), and a prompt that:
   - names the exact states the PRD's Phase Details and Visual Spec section describe;
   - points it at `docs/design/design-system.md` and the real tokens/primitives, never a generic style;
-  - points it at the seven benchmark mocks in `docs/research/mockups/audiobook-studio-benchmark/` for tone and format precedent, and away from everything under `docs/prds/mockups/` (older per-PRD sets drawn before the redesign, [never the spec](#which-mocks-are-the-spec));
+  - points it at the seven benchmark mocks in `docs/research/mockups/audiobook-studio-benchmark/` for tone and format precedent (no other mock exists, [D96](#which-mocks-are-the-spec));
   - says explicitly: **drafts only**, no product code for the gated phase, and the PRD's Visual Spec section is updated to list the new files as drafts pending the owner's approval — the session never marks its own work owner-approved;
   - tells it to open its own tracking issue and a normal PR, same as any worker, and never merge itself.
 - **Record it on #509** as its own lane entry. It counts toward `TARGET` like any running session, but is tracked separately from the phase queue until the owner approves it.
@@ -136,7 +136,8 @@ When a phase is otherwise ready (`Depends` complete, no file collision) but bloc
 Owner ruling, 2026-09-29, after workers kept building towards old mocks.
 
 - **The spec is one folder: `docs/research/mockups/audiobook-studio-benchmark/`,** the seven benchmark mocks (01 Production, 02 Script, 03 Booth, 04 Proof, 05 Master & QC, 06 Series voice bible, 07 companion). They are light except the Booth (03) and the companion (07). `apps/ui/tests/visual/mock-match/mocks.ts` lists them and the state each is scored against.
-- **Never look at, score against or build towards anything under `docs/prds/mockups/`.** Those per-PRD sets (`read-aloud-control-bar`, `read-aloud-resume-from-daw`, `edit-and-proof-workspace`, `delivery-platform-profiles`, `home-combined`, `manuscript-*`, `chapter-track-link-control`, `daw-chapter-track-auto-sync`, `input-commands-and-pedals` and the rest) were drawn before the redesign. They show the old shell, pages the redesign replaced and layouts the benchmark set superseded. The `*-concept.webp` copies of the benchmark mocks in that tree are byte-identical to the research files; open the research file.
+- **Every other mock is deleted (D96, 2026-09-29).** The per-PRD sets that lived under `docs/prds/mockups/` (`read-aloud-control-bar`, `edit-and-proof-workspace`, `delivery-platform-profiles`, `home-combined`, `manuscript-*` and the rest), the `*-concept.webp` copies of the benchmark mocks and the evidence crops in `docs/research/mock-fidelity/` and `visual-audit/` were drawn before the redesign, so they are gone, together with the visual mockup divergence audit and every link to them. Don't recreate them from `git log`: they are not a spec.
+- **Only work being built now has a mock beside the benchmark.** The repo keeps three kinds of image: the seven benchmark mocks, the current-state screenshots in `docs/images/ui/`, and a new mock for a phase being built right now. A new mock goes in `docs/prds/mockups/<prd>/`, is listed in its PRD's Visual Spec, and is deleted in the PR that merges the work (the PRD's close-out PR checks this). A PRD never copies a benchmark mock; it links the research file.
 - **Theme is one app-wide setting.** Capture a state in the theme its mock is drawn in and compare like with like: light against light, dark against dark. The dark equivalents of the light mocks are worked out later; until then a light mock is not compared with a dark capture.
 - **Layout and style are the spec, not the sample data.** Don't seed demo data to make a score higher, and don't change a real title or subtitle to the mock's wording.
 - **A mock that draws a page the app doesn't have yet** (06 is the Character Continuity review page, not the Story Bible) is unscored until its own PRD and mocks exist.
@@ -264,8 +265,7 @@ READ FIRST: CLAUDE.md; docs/operations/agent-train.md ("The worker protocol", "S
 scope, in full.
 SCOPE: <PRD path> phases <N…>: <one line each>.
 MOCKUPS (D46, D91): <per phase: exact docs/research/mockups/audiobook-studio-benchmark/... files, or "none">. Open each before
-coding and build to match. NEVER look at, score against or build towards anything under docs/prds/mockups/ (older per-PRD sets
-drawn before the redesign; see "Which mocks are the spec"). Compare light to light and dark to dark by the theme the mock is
+coding and build to match. Older per-PRD mocks are deleted (D96); see "Which mocks are the spec". Compare light to light and dark to dark by the theme the mock is
 drawn in. Layout and style are the spec, never the mock's sample data.
 Every approved-mock state reaches at least 90% pixel match: drive the app to the mock's state and data, capture at the
 mock's own size and theme, and score it (the mock and its target state in apps/ui/tests/visual/mock-match/mocks.ts, then
@@ -351,5 +351,5 @@ Waves order the work, and the coordinator doesn't start a wave until everything 
 **Rules for the wave-0 PRD writers (N-D1, N-D2):**
 - Use the template in `docs/prds/README.md`.
 - Add a **Ports used** column to the phase table, naming the capabilities and roles of the DAW port, the provider ports and the UI primitives each phase needs. That column is how the coordinator knows when a phase is unblocked.
-- Copy the concept mocks the PRD uses from `docs/research/mockups/audiobook-studio-benchmark/` into `docs/prds/mockups/<prd>/`, marked **concept**. They become the D46 spec only after the owner approves them on #510; until then a UI PR's Mockup check compares against the concept and says so.
+- Link the benchmark mocks the PRD uses from `docs/research/mockups/audiobook-studio-benchmark/`; don't copy them into the PRD (D96). A PRD that needs a mock the benchmark lacks adds it under `docs/prds/mockups/<prd>/` only for work being built now, and it is deleted when that work merges.
 - Give every open question a recommendation.

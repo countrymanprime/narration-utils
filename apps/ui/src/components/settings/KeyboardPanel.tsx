@@ -94,8 +94,7 @@ function isChanged(keymap: Keymap, defaults: Keymap, commandId: CommandId): bool
   return current.length !== base.length || current.some((value, index) => value !== base[index]);
 }
 
-// The "Keys and pedals" intro copy matches the owner-approved mockups
-// (docs/prds/mockups/input-commands-and-pedals/01-settings-global-keyboard.webp); the "Changed" badge is THE pill's warn
+// The "Changed" badge is THE pill's warn
 // outline (StatusBadge, ADR 0600), the dark sets' "CHANGED".
 
 function GestureChips({ gestures }: { gestures: Gesture[] }) {

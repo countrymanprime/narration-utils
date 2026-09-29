@@ -10,10 +10,11 @@ import {
   MATCH_BAR_PERCENT,
   type RgbaImage,
 } from '../tests/visual/mock-match/compare';
-import { APPROVED_MOCKS, chromeRegions, isChromeSpec, mockPath, NOT_THE_SPEC_DIR, scoredMocks, SPEC_DIR } from '../tests/visual/mock-match/mocks';
+import { APPROVED_MOCKS, chromeRegions, isChromeSpec, mockPath, scoredMocks, SPEC_DIR } from '../tests/visual/mock-match/mocks';
 import { formatScoreTable, type MockScore } from '../tests/visual/mock-match/report';
 import { APP_DRIVERS } from '../tests/visual/app.drivers';
 import { existsSync } from 'node:fs';
+import { resolve } from 'node:path';
 
 // The pixel-match tool of mock-fidelity-primitives-and-components.prd.md Phase 0 (D91 on #509): the comparison is pure, so it
 // is proved here on made-up images; the Playwright half (tests/visual/mock-match/mock-match.spec.ts) only captures and feeds it.
@@ -154,13 +155,12 @@ describe('the approved-mock list', () => {
     for (const file of files) expect(existsSync(mockPath(file)), file).toBe(true);
   });
 
-  test('the spec is the research benchmark folder and never the per-PRD mock sets', () => {
+  test('the spec is the research benchmark folder and the per-PRD mock sets are gone', () => {
     expect(SPEC_DIR).toBe('docs/research/mockups/audiobook-studio-benchmark');
-    expect(NOT_THE_SPEC_DIR).toBe('docs/prds/mockups');
+    expect(existsSync(resolve(mockPath('01-production-home.webp'), '../../../../prds/mockups'))).toBe(false);
     expect(APPROVED_MOCKS).toHaveLength(7);
     for (const mock of APPROVED_MOCKS) {
       expect(mockPath(mock.file).replaceAll('\\', '/'), mock.file).toContain(`/${SPEC_DIR}/`);
-      expect(mockPath(mock.file).replaceAll('\\', '/'), mock.file).not.toContain(`/${NOT_THE_SPEC_DIR}/`);
     }
   });
 
