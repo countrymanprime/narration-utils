@@ -47,4 +47,13 @@ describe('Book checklist (delivery-platform-profiles.prd.md Phase 7, mock 05’s
     expect(itemFor(list, 'Credits files').textContent).toContain(': Not checked by the app');
     await waitFor(() => expect(itemFor(list, 'Retail sample').textContent).toMatch(/retail sample/i));
   });
+
+  it('draws each rule on one line and names the rules the app cannot check yet once, under the list', async () => {
+    const list = renderList(contract('measure-success.json').bookRules);
+    await waitFor(() => expect(itemFor(list, 'Credits files').textContent).toMatch(/credits template/));
+    // The host's description is read out, not drawn: the row's visible text is its label (and a measured value).
+    const description = within(itemFor(list, 'One section per file')).getByText(/Listen: each file holds one chapter/);
+    expect(description.className).toContain('sr-only');
+    expect(screen.getByText(/^Not checked by the app yet: Credits files, Retail sample\.$/)).toBeTruthy();
+  });
 });
