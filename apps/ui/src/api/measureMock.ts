@@ -3,7 +3,7 @@
 // running), a running job that reads one more quarter of a file per poll (standing in for the bytes the host reads, ADR
 // 0015), and results in the shape tests/fixtures/contracts/measure-success.json pins: a chapter with every level, a
 // render of digital silence whose levels are all unavailable (null, never a number), and a file that is not a WAV.
-// `hold` keeps a started measurement part way through; `fails` breaks it at its first poll the way
+// `mock-05` (`?mockFidelity=05`) picks the six files benchmark mock 05 draws. `hold` keeps a started measurement part way through; `fails` breaks it at its first poll the way
 // tests/fixtures/contracts/measure-error.json pins (the file being read fails, the rest are cancelled). Every answer is
 // judged against the project's delivery profile as it is when it is read, rule by rule (ADR 0179), and `onJudged` is given
 // the judged job when it ends, for the Review page's delivery findings (deliveryReviewMock.ts).
@@ -17,6 +17,18 @@ export const MOCK_MEASURE_PATHS = [
   'C:/Users/Narrator/Renders/Alice/Chapter 02 (silent).wav',
   'C:/Users/Narrator/Renders/Alice/Chapter 03.mp3',
 ];
+
+/** What the picker chooses under `?mockFidelity=05` (benchmark mock 05): the book's six rendered files, mono at 44.1 kHz, the fifth
+ * with a noise floor over ACX's limit. `duration` is seconds; `head` and `tail` are the room tone at each end. */
+const MOCK_05_FILES: readonly { name: string; duration: number; rms: number; truePeak: number; noiseFloor: number; head: number; tail: number }[] = [
+  { name: '00 Opening credits', duration: 12, rms: -20.1, truePeak: -3.4, noiseFloor: -64.8, head: 0.8, tail: 2.1 },
+  { name: '01 Down the Rabbit-Hole', duration: 708, rms: -19.6, truePeak: -3.2, noiseFloor: -63.9, head: 0.7, tail: 2.4 },
+  { name: '02 The Pool of Tears', duration: 725, rms: -19.9, truePeak: -3.1, noiseFloor: -64.2, head: 0.9, tail: 2.0 },
+  { name: '03 A Caucus-Race', duration: 631, rms: -20.2, truePeak: -3.3, noiseFloor: -63.6, head: 0.8, tail: 2.2 },
+  { name: '04 The Rabbit Sends in a Little Bill', duration: 790, rms: -20.4, truePeak: -3.6, noiseFloor: -57.8, head: 0.6, tail: 2.2 },
+  { name: 'Retail sample', duration: 280, rms: -19.8, truePeak: -3.3, noiseFloor: -64.0, head: 1.0, tail: 1.9 },
+];
+const MOCK_05_PATHS = MOCK_05_FILES.map((file) => `C:/Users/Narrator/Renders/Alice/${file.name}.wav`);
 
 const MAX_FILES = 500;
 const QUARTERS_PER_FILE = 4;
@@ -64,6 +76,29 @@ function report(path: string, silent: boolean): MeasureReport {
   };
 }
 
+function mock05Report(path: string): MeasureReport {
+  const level = MOCK_05_FILES[MOCK_05_PATHS.indexOf(path)];
+  return {
+    file: path,
+    sample_rate: 44100,
+    channels: 1,
+    duration_seconds: level.duration,
+    integrated_lufs: level.rms + 1.8,
+    rms_dbfs: level.rms,
+    sample_peak_dbfs: level.truePeak - 0.4,
+    true_peak_dbtp: level.truePeak,
+    noise_floor_dbfs: level.noiseFloor,
+    digital_silent_windows: 0,
+    head_room_tone_seconds: level.head,
+    tail_room_tone_seconds: level.tail,
+    head_digital_silence_seconds: 0,
+    tail_digital_silence_seconds: 0,
+    full_scale_samples: 0,
+    clip_run_count: 0,
+    clip_runs: [],
+  };
+}
+
 const baseName = (path: string): string => path.split(/[\\/]/).pop() ?? path;
 
 const files = (count: number): string => (count === 1 ? '1 file' : `${count} files`);
@@ -75,19 +110,19 @@ function measuredMessage(measured: number, failed: number): string {
   return `Measured ${measured} of ${files(measured + failed)}; ${failed} could not be measured.`;
 }
 
-function measuredResult(file: MeasureFileResult, index: number): MeasureFileResult {
+function measuredResult(file: MeasureFileResult, index: number, seed?: MockMeasureSeed): MeasureFileResult {
   if (!/\.wave?$/i.test(file.path)) return { ...file, status: 'failed', error: 'not a RIFF/WAVE file' };
   const silent = file.path.includes('silent');
   const hex = (index + 1).toString(16).padStart(2, '0');
   return {
     ...file,
     status: 'measured',
-    report: report(file.path, silent),
+    report: seed === 'mock-05' ? mock05Report(file.path) : report(file.path, silent),
     fingerprint: { size_bytes: silent ? 176_444 : 530_928_044, modified_at: '2026-09-23T14:02:11.5Z', sha256: hex.repeat(32) },
   };
 }
 
-export type MockMeasureSeed = 'hold' | 'fails' | 'spread';
+export type MockMeasureSeed = 'hold' | 'fails' | 'spread' | 'mock-05';
 
 const BROKE = 'runtime error: index out of range [4] with length 4';
 
@@ -238,7 +273,7 @@ export function createMeasureMock(
       job = { ...job, ...measuring(index) };
       return;
     }
-    const result = measuredResult(job.files[index], index);
+    const result = measuredResult(job.files[index], index, seed);
     const line = result.status === 'measured' ? `Measured ${result.name}.` : `${result.name} could not be measured: ${result.error}`;
     job = { ...job, files: job.files.map((file, i) => (i === index ? result : file)), logs: [...job.logs, line] };
     if (index + 1 < job.files.length) {
@@ -255,8 +290,9 @@ export function createMeasureMock(
       if (job.phase !== 'idle' && job.phase !== 'running') onJudged(judged());
     },
     measurePickFiles: async () => {
-      MOCK_MEASURE_PATHS.forEach((path) => picked.add(path));
-      return { paths: [...MOCK_MEASURE_PATHS] };
+      const chosen = seed === 'mock-05' ? MOCK_05_PATHS : MOCK_MEASURE_PATHS;
+      chosen.forEach((path) => picked.add(path));
+      return { paths: [...chosen] };
     },
     measureAnalyze: async (paths) => {
       if (paths.length === 0) throw new Error('choose at least one file to measure');

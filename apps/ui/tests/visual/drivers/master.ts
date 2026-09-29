@@ -36,6 +36,11 @@ export const masterDrivers: Record<string, Driver> = {
     await measurementEnded(page, MEASURED);
     await page.getByRole('region', { name: 'Chapter 01.wav · Why it fails' }).waitFor();
   },
+  'mock-fidelity-05': async (page) => {
+    await measureOnMaster(page, '?mockFidelity=05');
+    await measurementEnded(page, /^Measured 6 files\./);
+    await page.getByRole('region', { name: '04 The Rabbit Sends in a Little Bill.wav · Why it fails' }).waitFor();
+  },
   'file-rules': async (page) => {
     await measureOnMaster(page);
     await measurementEnded(page, MEASURED);
