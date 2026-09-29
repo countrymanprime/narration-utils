@@ -13,11 +13,11 @@ const wrap = (api: Api) =>
   };
 
 describe('useNavCounts (rail badges, N-B61)', () => {
-  it('reads the open pronunciation queries, the notes to review and the pickups remaining from the host', async () => {
+  it("reads the Story Bible's Needs Review entries, the notes to review and the pickups remaining from the host", async () => {
     const base = createMockApi({}, {});
     const api: Api = {
       ...base,
-      guidePronunciationQueries: async () => [{ status: 'open' }, { status: 'open' }, { status: 'open' }] as never,
+      guideEntities: async () => (await base.guideEntities()).map((entity, index) => ({ ...entity, category: index < 3 ? 'Needs Review' : 'Character' })),
       findingsSummary: async () => ({ ...(await base.findingsSummary()), unreviewed: 14 }),
       pickupsState: async () => ({ phase: 'counted', message: '', remaining: 9, total: 12, csv: '' }) as never,
     };
@@ -25,11 +25,33 @@ describe('useNavCounts (rail badges, N-B61)', () => {
     await waitFor(() => expect(result.current).toEqual({ storyBible: 3, proof: 14, pickups: 9 }));
   });
 
+  it('counts an entry by its category, not by its pronunciation: a name with an open query is not a Needs Review entry', async () => {
+    const base = createMockApi({}, {});
+    const [first, ...rest] = await base.guideEntities();
+    const api: Api = {
+      ...base,
+      guideEntities: async () => [{ ...first, category: 'Needs Review' }, ...rest.map((entity) => ({ ...entity, category: 'Character' }))],
+      guidePronunciationQueries: async () => {
+        throw new Error('the rail no longer asks for the queries');
+      },
+    };
+    const { result } = renderHook(() => useNavCounts('/', true), { wrapper: wrap(api) });
+    await waitFor(() => expect(result.current.storyBible).toBe(1));
+  });
+
+  it('draws no Story Bible count once every entry has a category', async () => {
+    const base = createMockApi({}, {});
+    const api: Api = { ...base, guideEntities: async () => (await base.guideEntities()).map((entity) => ({ ...entity, category: 'Character' })) };
+    const { result } = renderHook(() => useNavCounts('/', true), { wrapper: wrap(api) });
+    await waitFor(() => expect(result.current.proof).toBeDefined());
+    expect(result.current.storyBible).toBe(0);
+  });
+
   it('leaves a count out when its call fails, rather than drawing a made-up number', async () => {
     const base = createMockApi({}, {});
     const api: Api = {
       ...base,
-      guidePronunciationQueries: async () => {
+      guideEntities: async () => {
         throw new Error('no manuscript');
       },
       findingsSummary: async () => ({ ...(await base.findingsSummary()), unreviewed: 2 }),
@@ -48,7 +70,7 @@ describe('useNavCounts (rail badges, N-B61)', () => {
     let asked = false;
     const api: Api = {
       ...base,
-      guidePronunciationQueries: async () => {
+      guideEntities: async () => {
         asked = true;
         return [];
       },

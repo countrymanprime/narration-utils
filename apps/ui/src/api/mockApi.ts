@@ -228,7 +228,14 @@ export function createMockApi(
     saveFileFindings(DELIVERY_REVIEW_ANALYZER, review.files, review.findings);
     recordRenderMeasurement(job.files);
   });
-  const renderEncodeMaster = createRenderEncodeMasterMock(endJob, initial.renderExport, deliveryProfile, deliveryProfilesAll, initial.renderPackageMulti);
+  const renderEncodeMaster = createRenderEncodeMasterMock(
+    endJob,
+    initial.renderExport,
+    deliveryProfile,
+    deliveryProfilesAll,
+    initial.renderPackageMulti,
+    () => s.chapters,
+  );
   const system = createSystemMock(s, initial, {
     version: update.version,
     project,

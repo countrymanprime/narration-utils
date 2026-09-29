@@ -16,6 +16,8 @@ import type {
   MultiPackageResult,
   PackageItem,
   PackageJob,
+  PackagePreview,
+  PackagePreviewFile,
   PackageRequest,
   RenderEncodeMasterApi,
 } from '../types';
@@ -83,6 +85,41 @@ function sanitizeFolderNameMock(name: string): string {
   return /^\.*$/.test(replaced) ? 'package' : replaced;
 }
 
+/** The manuscript chapters the preview names files from: only what it reads of a chapter. */
+export type PreviewChapter = { title: string; subtitle?: string; contentKind?: string };
+
+/** The refusal internal/packager's chapterFileName gives a title a file name cannot hold, or '' when it can. */
+function titleProblem(number: number, title: string): string {
+  const trimmed = title.trim();
+  if (trimmed === '') return `chapter ${number} has no title`;
+  if (/[<>:"/\\|?*]/.test(trimmed)) return `chapter ${number}'s title "${trimmed}" cannot be used in a file name (it holds one of <>:"/\\|?*)`;
+  // eslint-disable-next-line no-control-regex -- a file name cannot hold a control character
+  if (/[\u0000-\u001f]/.test(trimmed)) return `chapter ${number}'s title cannot hold control characters`;
+  return '';
+}
+
+/** mockPackagePreview mirrors apps/desktop/package_preview.go: the opening credits, one file per narration chapter (named by its
+ * subtitle when it has one), the closing credits and the retail sample, leaving out a book rule the profile turned off. */
+function mockPackagePreview(profile: DeliveryProfile, chapters: readonly PreviewChapter[]): PackagePreview {
+  const format = requiredFormatMock(profile);
+  const answer: PackagePreview = { profile: profile.id, platform: profile.platform, format, files: [], problem: '' };
+  const narration = chapters.filter((chapter) => (chapter.contentKind ?? 'narration') === 'narration');
+  if (narration.length === 0) return { ...answer, problem: chapters.length === 0 ? 'import a manuscript first' : 'the manuscript has no narration chapters' };
+  const wants = (metric: string) => profile.rules.some((rule) => rule.scope === 'book' && rule.metric === metric && !rule.off);
+  const ext = `.${format}`;
+  const files: PackagePreviewFile[] = [];
+  const credits = wants('credits_files');
+  if (credits) files.push({ kind: 'credits_opening', title: '', name: `Credits, Opening${ext}`, problem: '' });
+  narration.forEach((chapter, index) => {
+    const title = chapter.subtitle || chapter.title;
+    const problem = titleProblem(index + 1, title);
+    files.push({ kind: 'chapter', title, name: problem ? '' : `${String(index + 1).padStart(2, '0')} - ${title.trim()}${ext}`, problem });
+  });
+  if (credits) files.push({ kind: 'credits_closing', title: '', name: `Credits, Closing${ext}`, problem: '' });
+  if (wants('retail_sample_seconds')) files.push({ kind: 'retail_sample', title: '', name: `Retail Sample${ext}`, problem: '' });
+  return { ...answer, files };
+}
+
 function packageNameForFormat(item: PackageItem, index: number, format: string): string {
   const ext = `.${format}`;
   switch (item.kind) {
@@ -112,6 +149,7 @@ export function createRenderEncodeMasterMock(
   profile: () => DeliveryProfile = () => MOCK_ACX,
   profiles: () => DeliveryProfile[] = () => [MOCK_ACX],
   multiPackageSeed?: MockExportSeed,
+  chapters: () => readonly PreviewChapter[] = () => [],
 ): RenderEncodeMasterApi {
   const hold = seed === 'hold';
   const multiHold = multiPackageSeed === 'hold';
@@ -325,6 +363,11 @@ export function createRenderEncodeMasterMock(
         publish({ id: packageJob.id ?? '', kind: 'render_package', outcome: 'cancelled', message: packageJob.message, durationMs: 500 });
       }
       return wireClone(packageJob);
+    },
+    packagePreview: async (profileId: string): Promise<PackagePreview> => {
+      const found = profiles().find((candidate) => candidate.id === profileId);
+      if (!found) throw new Error(`there is no delivery profile "${profileId}"`);
+      return wireClone(mockPackagePreview(found, chapters()));
     },
     packageStartMulti: async (req: MultiPackageRequest): Promise<MultiPackageJob> => {
       if (req.selections.length === 0) throw new Error('choose at least one platform to build for');

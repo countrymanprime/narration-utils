@@ -1,0 +1,38 @@
+{
+  "profile": "acx",
+  "platform": "ACX",
+  "format": "mp3",
+  "files": [
+    {
+      "kind": "credits_opening",
+      "title": "",
+      "name": "Credits, Opening.mp3",
+      "problem": ""
+    },
+    {
+      "kind": "chapter",
+      "title": "Down the Rabbit-Hole",
+      "name": "01 - Down the Rabbit-Hole.mp3",
+      "problem": ""
+    },
+    {
+      "kind": "chapter",
+      "title": "Chapter 2",
+      "name": "02 - Chapter 2.mp3",
+      "problem": ""
+    },
+    {
+      "kind": "credits_closing",
+      "title": "",
+      "name": "Credits, Closing.mp3",
+      "problem": ""
+    },
+    {
+      "kind": "retail_sample",
+      "title": "",
+      "name": "Retail Sample.mp3",
+      "problem": ""
+    }
+  ],
+  "problem": ""
+}

@@ -11,7 +11,7 @@ The benchmark mocks draw the rail's brand as "NARRATION / STUDIO" and put count 
 
 - The brand line in `AppShell.tsx` reads **Studio**.
 - `useNavCounts` (`components/layout/useNavCounts.ts`) reads the three counts from bindings that already exist and are already schema-checked, on every page move, and `AppShell` passes them to `NavButton`'s `count`:
-  - Story Bible: the number of open pronunciation queries (`guidePronunciationQueries`), read only once there is a manuscript.
+  - Story Bible: the number of open pronunciation queries (`guidePronunciationQueries`), read only once there is a manuscript. *(Superseded by [ADR 0746](0746-the-story-bible-rail-badge-counts-needs-review-entries.md): it counts Needs Review entries.)*
   - Proof: the notes still to review (`findingsSummary().unreviewed`), the number the Proof page's own "to review" chip shows.
   - Pickups: `pickupsState().remaining` and the `pickups:state` event, that is, what REAPER last reported. The hook never calls `pickupsCount`, so drawing the rail never talks to REAPER.
 - A failed read, or a count of zero, draws **no** badge. There is no placeholder and no cached number.

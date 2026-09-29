@@ -57,6 +57,14 @@ export type ExportJob = {
 /** One already-encoded file (an ExportJob file's own `encodedPath`) ready to package. */
 export type PackageItem = { kind: PackageItemKind; title: string; path: string };
 
+/** One file the delivery package will create, listed before anything is built (internal/packager.PlannedFile). `name` is empty
+ * when `problem` says why the chapter's title cannot be used in a file name. */
+export type PackagePreviewFile = { kind: PackageItemKind; title: string; name: string; problem: string };
+
+/** The package a delivery profile would build for this project (PackagePreview): the format its files are encoded in and every
+ * file with the name it will have. `files` is empty, with `problem` saying why, when there is no manuscript to name chapters from. */
+export type PackagePreview = { profile: string; platform: string; format: string; files: PackagePreviewFile[]; problem: string };
+
 /** What PackageStart is asked to assemble: one profile's book checklist and the encoded items ready. */
 export type PackageRequest = { profileId: string; profileVersion: string; items: PackageItem[] };
 
@@ -136,6 +144,9 @@ export interface RenderEncodeMasterApi {
   packageState(): Promise<PackageJob>;
   /** Stops a running package build. Answers the job. */
   packageCancel(): Promise<PackageJob>;
+  /** The files a profile's package will create for this project, each with the name and format it will have, named by the same
+   * code the package build writes with. Builds nothing; rejects an unknown profile. */
+  packagePreview(profileId: string, profileVersion: string): Promise<PackagePreview>;
   /** Resolves every selected profile, works out each one's required encode format, reuses the export job's own
    * encoded files for any selection matching its format, asks for one root output folder, then builds each
    * profile's package in its own subfolder, in order, as a job; rejects an empty selection, an unknown profile, a

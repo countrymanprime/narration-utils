@@ -18,7 +18,7 @@ export const appFeedback: Record<string, FeedbackRow> = {
   'src/App.tsx::subscribeLiveUpdateHealth#1': subscription('Degraded live updates become one toast.'),
   'src/App.tsx::subscribeProjectAttach#1': subscription('A project attach refreshes the bootstrap or shows why it was refused.'),
   // components/layout/useNavCounts.ts
-  'src/components/layout/useNavCounts.ts::guidePronunciationQueries#1': row('effect', 'file-io', 'na', 'na', 'ui', 'silent', 'na', 'exempt', 'The rail\'s Story Bible badge: cosmetic, read on every page move; a failed read draws no badge (never a made-up number) and the Story Bible page reports the real error.'),
+  'src/components/layout/useNavCounts.ts::guideEntities#1': row('effect', 'file-io', 'na', 'na', 'ui', 'silent', 'na', 'exempt', 'The rail\'s Story Bible badge: cosmetic, read on every page move; a failed read draws no badge (never a made-up number) and the Story Bible page reports the real error.'),
   'src/components/layout/useNavCounts.ts::findingsSummary#1': row('effect', 'file-io', 'na', 'na', 'ui', 'silent', 'na', 'exempt', 'The rail\'s Proof badge: cosmetic, read on every page move; a failed read draws no badge and the Proof page reports the real error.'),
   'src/components/layout/useNavCounts.ts::pickupsState#1': row('effect', 'instant', 'na', 'na', 'ui', 'silent', 'na', 'exempt', 'The rail\'s Pickups badge: only what REAPER last reported (it never asks REAPER to count); a failed read draws no badge.'),
   'src/components/layout/useNavCounts.ts::subscribePickups#1': subscription('The pickups state event, so the rail\'s Pickups badge follows a count, import or resolve run.'),

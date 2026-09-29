@@ -1096,6 +1096,16 @@ export function PackageMultiState(): $CancellablePromise<string> {
 }
 
 /**
+ * PackagePreview lists the files a delivery profile's package will create for this project, each with the name and format it
+ * will have: the opening credits, one file per narration chapter, the closing credits and the retail sample the profile asks
+ * for. It builds nothing and reads only the manuscript and the profile; the names come from internal/packager, the code that
+ * names the files a real build writes.
+ */
+export function PackagePreview(profileID: string, profileVersion: string): $CancellablePromise<string> {
+    return $Call.ByID(2815408714, profileID, profileVersion);
+}
+
+/**
  * PackageStart opens the operating system's folder picker, then assembles the chosen profile's package from an
  * export's own encoded files as a job, and answers it. It refuses a path that was not encoded in this session, no
  * items, an unknown profile, or a second package build while one runs. Closing the picker without choosing a folder

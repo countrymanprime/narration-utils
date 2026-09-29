@@ -16,7 +16,7 @@ import { MOCK_MEASURE_PATHS } from './measureMock';
 import { judgeMock } from './coverageMock';
 import { MOCK_REAPER_INPUT_SEEDS, MOCK_REAPER_SEEDS, mockLastReading } from './teleprompterMock';
 import { deliveryQcEvidenceSchema, deliveryReportExportSchema, measureJobSchema, measurePickResultSchema } from './schemas/measure';
-import { exportJobSchema, multiPackageJobSchema, packageJobSchema } from './schemas/renderEncodeMaster';
+import { exportJobSchema, multiPackageJobSchema, packageJobSchema, packagePreviewSchema } from './schemas/renderEncodeMaster';
 import { MOCK_EXPORT_ITEMS, MOCK_EXPORT_PATHS, createRenderEncodeMasterMock } from './renderEncodeMasterMock';
 import { deliveryProfileSchema, deliveryProfilesStateSchema } from './schemas/deliveryProfiles';
 import { MOCK_ACX, evaluateMockFile, mockCustomProfile } from './deliveryProfilesMock';
@@ -1803,6 +1803,20 @@ describe('answers of the mock client for the settings, voice, model, transcript 
     expect(built.checklist.every((entry) => entry.status !== 'missing')).toBe(true);
   });
 
+  it("packagePreview names the profile's package files for the project's narration chapters, in the shape the host pins", async () => {
+    const api = createMockApi();
+    const acx = (await api.deliveryProfiles()).profiles.find((candidate) => candidate.id === 'acx')!;
+    const preview = await api.packagePreview(acx.id, acx.version);
+    expectMatches(packagePreviewSchema, preview, 'mock package preview');
+    expect(preview.format).toBe('mp3');
+    expect(preview.files[0]).toMatchObject({ kind: 'credits_opening', name: 'Credits, Opening.mp3' });
+    expect(preview.files.at(-1)).toMatchObject({ kind: 'retail_sample', name: 'Retail Sample.mp3' });
+    const chapters = preview.files.filter((file) => file.kind === 'chapter');
+    expect(chapters.length).toBeGreaterThan(0);
+    expect(chapters[0].name).toMatch(/^01 - .+\.mp3$/);
+    await expect(api.packagePreview('no-such-profile', '')).rejects.toThrow(/no delivery profile/);
+  });
+
   it(
     "packageStartMulti reuses one profile's encoded files for a matching format and re-encodes once for a " +
       'differing one (render-encode-master PRD Phase 6), in the shape the host pins',
@@ -2677,6 +2691,7 @@ describe('answers of the mock client for the settings, voice, model, transcript 
       'packageStart',
       'packageState',
       'packageCancel',
+      'packagePreview',
       'packageStartMulti',
       'packageMultiState',
       'packageMultiCancel',

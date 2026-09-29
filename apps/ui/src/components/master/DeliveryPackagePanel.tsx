@@ -1,4 +1,4 @@
-import type { DeliveryProfile, DeliveryRuleStatus, MeasureJob, PackageChecklistStatus } from '../../types';
+import type { DeliveryProfile, DeliveryRuleStatus, MeasureJob, PackageChecklistStatus, PackagePreview } from '../../types';
 import { Button } from '../primitives/Button';
 import { Panel } from '../primitives/Panel';
 import { ProgressBar } from '../primitives/ProgressBar';
@@ -7,6 +7,7 @@ import { BookChecklist } from './BookChecklist';
 import { fileVerdict } from './fileVerdict';
 import { ResultIcon } from './RuleBadges';
 import type { ExportJobs } from './useExportJobs';
+import { usePackagePreview } from './usePackagePreview';
 
 const MUTED = { color: 'var(--text-muted)' };
 const DANGER = { color: 'var(--danger-text)' };
@@ -33,11 +34,44 @@ function waitingOn(measure: MeasureJob | undefined, jobs: ExportJobs): string | 
   return parts.length > 0 ? `Waiting on ${parts.join(' and ')}.` : undefined;
 }
 
+/** The files the package will create, before it is built: each with the name it will have, or why a chapter cannot be named. */
+function PlannedOutputs({ preview, problem }: { preview?: PackagePreview; problem?: string }) {
+  if (!preview) {
+    return problem ? (
+      <p role="alert" className="mt-1 text-sm" style={DANGER}>
+        {problem}
+      </p>
+    ) : null;
+  }
+  if (preview.files.length === 0) {
+    return (
+      <p className="mt-1 text-sm" style={MUTED}>
+        {preview.problem ? `No files to list yet: ${preview.problem}.` : 'No files to list yet.'}
+      </p>
+    );
+  }
+  return (
+    <>
+      <p className="mt-1 text-[0.8rem]" style={MUTED}>
+        {plural(preview.files.length, 'file')} · {preview.format.toUpperCase()}
+      </p>
+      <ul aria-label="Files the package will create" className="mt-1 flex flex-col gap-0.5 text-sm">
+        {preview.files.map((file, index) => (
+          <li key={`${file.kind}-${index}`} className={`${MONO} [overflow-wrap:anywhere]`} style={file.problem ? DANGER : undefined}>
+            {file.problem ? `${file.title || 'Chapter'}: ${file.problem}` : file.name}
+          </li>
+        ))}
+      </ul>
+    </>
+  );
+}
+
 /**
  * The delivery package for the platform chosen in Master & QC's tabs (stage-navigation-and-page-replacement.prd.md Phase 8, mock
  * 05's side panel; render-encode-master.prd.md Phase 5): the book checklist, then once a package is built the checklist the
  * packager judged and its outputs, the folder and every file it wrote. "Build packages" assembles the files already mastered and
- * encoded on this page. Mock 05's "Preview naming" is left out: nothing reports the package's file names before it is built.
+ * encoded on this page. The Outputs list is mock 05's "Preview naming": before a build it lists the files this project's package
+ * will create, named by the host with the code the build itself uses (packagePreview); after a build it lists the files written.
  */
 export function DeliveryPackagePanel({
   profile,
@@ -54,6 +88,7 @@ export function DeliveryPackagePanel({
   const built = packageJob && !packageRunning && packageJob.phase !== 'idle' ? packageJob : undefined;
   const canPackage = !!profile && jobs.doneFiles.length > 0 && !jobs.exportRunning && !packageRunning;
   const waiting = waitingOn(measure, jobs);
+  const { preview, problem: previewProblem } = usePackagePreview(profile);
   return (
     <Panel title={`Delivery package · ${platform}`}>
       {built && built.checklist.length > 0 ? (
@@ -80,21 +115,25 @@ export function DeliveryPackagePanel({
       ) : (
         profile && <BookChecklist profile={profile} bookRules={measure?.bookRules ?? []} />
       )}
-      {built && built.files.length > 0 && (
-        <section className="mt-3">
-          <SectionLabel as="h3">Outputs</SectionLabel>
-          <p className={`${MONO} mt-1 text-[0.8rem] [overflow-wrap:anywhere]`} style={MUTED}>
-            {built.outputDir}
-          </p>
-          <ul className="mt-1 flex flex-col gap-0.5 text-sm">
-            {built.files.map((file) => (
-              <li key={file.destPath} className={`${MONO} [overflow-wrap:anywhere]`}>
-                {file.name}
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
+      <section className="mt-3">
+        <SectionLabel as="h3">Outputs</SectionLabel>
+        {built && built.files.length > 0 ? (
+          <>
+            <p className={`${MONO} mt-1 text-[0.8rem] [overflow-wrap:anywhere]`} style={MUTED}>
+              {built.outputDir}
+            </p>
+            <ul className="mt-1 flex flex-col gap-0.5 text-sm">
+              {built.files.map((file) => (
+                <li key={file.destPath} className={`${MONO} [overflow-wrap:anywhere]`}>
+                  {file.name}
+                </li>
+              ))}
+            </ul>
+          </>
+        ) : (
+          <PlannedOutputs preview={preview} problem={previewProblem} />
+        )}
+      </section>
       <div className="mt-3 flex flex-wrap items-center gap-2">
         <Button onClick={() => profile && void jobs.startPackage(profile)} disabled={!canPackage} pending={packageRunning}>
           Build packages

@@ -95,26 +95,15 @@ waiting on: files that fail a check, and files not mastered and encoded yet.
 encoded on this page. The checklist then becomes the packager's own (each rule **Included** or **Missing**
 with why), and **Outputs** lists the folder and every file it wrote.
 
+Before you build, **Outputs** already lists the files the package will create for this project, each with the
+name and format it will have: the opening credits, one file per chapter of your manuscript (named by its
+subtitle when it has one, such as `01 - Down the Rabbit-Hole.mp3`), the closing credits and the retail sample
+the platform asks for. It builds nothing, and it uses the same naming the build itself uses, so what you read
+is what the package will hold. A chapter whose title cannot be part of a file name (it holds one of
+`< > : " / \ | ? *`) is marked instead of given a name; with no manuscript imported the list says so. After a
+build it shows the files that were written, named after the titles you gave the exported files.
+
 ![The ACX package built: the packager's checklist, and the output folder with every file it wrote](../../images/ui/master-package-built.webp)
-
-## Building packages for several platforms at once
-
-If you deliver to more than one platform, **Multi-platform export** (below Delivery package) lets you build
-all of them from the one source you already mastered and encoded, without re-encoding unless a platform
-needs a different file format. Check the box for each platform you want a package for, then **Build N
-packages**. This does not change which platform the page's checks and the delivery package above are judged
-against - that is still the platform tab; the checkboxes only choose what to build packages for.
-
-You are asked for one folder once, and each platform's package goes into its own correctly named subfolder
-of it. Two platforms that both take the same file format (most do: MP3 at the same bitrate) share the one
-set of already-encoded files; a platform that needs a different format (an M4B audiobook file, say) is
-encoded for just that once, however many platforms need it, not once per platform. Cancel stops the build
-before its next platform starts; platforms already built keep their packages, and one not yet reached is
-left waiting.
-
-Once it finishes, each platform gets its own row: built, with its folder and how many files it wrote, or why
-it could not be built (the same reasons Delivery package's own checklist would show, such as a required file
-being missing for that platform).
 
 ## The delivery profile
 
