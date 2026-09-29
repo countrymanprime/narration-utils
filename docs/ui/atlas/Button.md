@@ -7,13 +7,20 @@ Storybook title: `Primitives/Button`. Source: `src/components/primitives/Button.
 ## Stories
 
 - Primary
+- Secondary
 - Ghost
 - Danger
+- Primary Small
+- Secondary Small
+- Danger Small
+- Link
+- Header Row
+- Small Row
 - Primary Disabled
-- Ghost Disabled
+- Secondary Disabled
 - Danger Disabled
 - Primary Pending
-- Ghost Pending
+- Secondary Pending
 - Danger Pending
 - Pending Is Busy And Focusable
 - Click Invokes Handler
@@ -23,76 +30,105 @@ Storybook title: `Primitives/Button`. Source: `src/components/primitives/Button.
 
 - `src/components/assets/LocalAssetRow.tsx`
 - `src/components/assets/LocalAssets.tsx`
+- `src/components/booth/BoothView.tsx`
+- `src/components/booth/BuiltinRecorder.tsx`
+- `src/components/booth/ChapterSuggestionHint.tsx`
+- `src/components/booth/CompanionShell.tsx`
+- `src/components/booth/MicrophoneField.tsx`
+- `src/components/booth/ReaderFlagsPanel.tsx`
+- `src/components/booth/ReadingControlBar.tsx`
+- `src/components/booth/ResumePrompt.tsx`
+- `src/components/booth/UnresolvedCreditsWarning.tsx`
 - `src/components/credits/CreditsSetupBanner.tsx`
 - `src/components/credits/CreditsSetupDialog.tsx`
-- `src/components/delivery/DeliveryPage.tsx`
-- `src/components/delivery/DeliveryProfilePanel.tsx`
-- `src/components/delivery/DiagnosticsTab.tsx`
-- `src/components/delivery/FileRulesPanel.tsx`
-- `src/components/delivery/ReportExportPanel.tsx`
+- `src/components/editing/CleanupAction.tsx`
 - `src/components/editing/EditingCandidateRow.tsx`
 - `src/components/editing/EditingCheckPanel.tsx`
+- `src/components/engine/ChapterLinksTable.tsx`
+- `src/components/engine/ChapterSyncConsentDialog.tsx`
+- `src/components/engine/ChapterSyncPanel.tsx`
+- `src/components/engine/ChapterTagsDialog.tsx`
+- `src/components/engine/CleanupToolsDialog.tsx`
+- `src/components/engine/CreateChapterRegionsDialog.tsx`
+- `src/components/engine/EnginePanel.tsx`
+- `src/components/engine/EnginePanelContext.tsx`
+- `src/components/engine/LinkChaptersDialog.tsx`
+- `src/components/engine/RenderConfigDialog.tsx`
+- `src/components/engine/RetakeLanesDialog.tsx`
 - `src/components/help/ShortcutSheet.tsx`
-- `src/components/home/AudiobookEstimatePanel.tsx`
-- `src/components/home/ChapterTrackPanel.tsx`
-- `src/components/home/ImportReview.tsx`
-- `src/components/home/RecordingCheck.tsx`
-- `src/components/home/RecordingCheckReport.tsx`
-- `src/components/home/RemovedFromRecordingList.tsx`
+- `src/components/layout/AppShell.tsx`
 - `src/components/layout/LoadError.tsx`
 - `src/components/layout/StartupScreen.tsx`
 - `src/components/manuscript/AddNoteDialog.tsx`
 - `src/components/manuscript/CreditsEntry.tsx`
-- `src/components/manuscript/Manuscript.tsx`
+- `src/components/manuscript/MarkupDialog.tsx`
+- `src/components/manuscript/MarkupMark.tsx`
 - `src/components/manuscript/ReaderCard.tsx`
 - `src/components/manuscript/SelectionMenu.tsx`
 - `src/components/mapping/MappingConfirm.tsx`
+- `src/components/master/DeliveryPackagePanel.tsx`
+- `src/components/master/DeliveryProfilePanel.tsx`
+- `src/components/master/DiagnosticsSection.tsx`
+- `src/components/master/FileRulesPanel.tsx`
+- `src/components/master/MasterQcPage.tsx`
+- `src/components/master/MasterToSpecPanel.tsx`
+- `src/components/master/MultiPlatformExportPanel.tsx`
+- `src/components/master/ReportExportPanel.tsx`
+- `src/components/master/WhyItFails.tsx`
+- `src/components/pickups/PickupsPage.tsx`
 - `src/components/primitives/ConfirmDialog.tsx`
 - `src/components/primitives/ErrorBoundary.tsx`
-- `src/components/primitives/TagInput.tsx`
 - `src/components/primitives/WorkDialog.tsx`
+- `src/components/production/ChapterBoard.tsx`
+- `src/components/production/ChapterTrackPanel.tsx`
+- `src/components/production/CreditsRowPanel.tsx`
+- `src/components/production/ImportReview.tsx`
+- `src/components/production/ManuscriptImport.tsx`
+- `src/components/production/PlanPanel.tsx`
+- `src/components/production/ProductionPage.tsx`
+- `src/components/production/RecordingCheck.tsx`
+- `src/components/production/RecordingCheckReport.tsx`
+- `src/components/production/RemovedFromRecordingList.tsx`
+- `src/components/production/StatusReportPanel.tsx`
 - `src/components/project/NewProjectDialog.tsx`
 - `src/components/project/ProjectPicker.tsx`
-- `src/components/proofing/Results.tsx`
-- `src/components/proofing/Transcript.tsx`
-- `src/components/review/AuditionDialog.tsx`
-- `src/components/review/FindingDetail.tsx`
-- `src/components/review/FindingsList.tsx`
-- `src/components/review/ReaperControls.tsx`
-- `src/components/review/ReviewFilters.tsx`
-- `src/components/review/ReviewPage.tsx`
-- `src/components/review/TakeComparisonView.tsx`
-- `src/components/review/TakeReviewReads.tsx`
-- `src/components/review/TakeReviewScanDialog.tsx`
+- `src/components/proof/AuditionDialog.tsx`
+- `src/components/proof/CompareRun.tsx`
+- `src/components/proof/FindingDetail.tsx`
+- `src/components/proof/FindingsList.tsx`
+- `src/components/proof/FlagsPanel.tsx`
+- `src/components/proof/NativeTakesPanel.tsx`
+- `src/components/proof/NotesHeader.tsx`
+- `src/components/proof/ProofChapterPage.tsx`
+- `src/components/proof/ProofPage.tsx`
+- `src/components/proof/ReaperControls.tsx`
+- `src/components/proof/RenderAssociationSection.tsx`
+- `src/components/proof/ReviewFilters.tsx`
+- `src/components/proof/ScriptView.tsx`
+- `src/components/proof/TakeComparisonView.tsx`
+- `src/components/proof/TakeReviewReads.tsx`
+- `src/components/proof/TakeReviewScanDialog.tsx`
+- `src/components/proof/TransportBar.tsx`
+- `src/components/script/ScriptPage.tsx`
+- `src/components/script/ScriptRail.tsx`
+- `src/components/series/SeriesTab.tsx`
 - `src/components/settings/CreditsPanel.tsx`
 - `src/components/settings/DawCatalogPanel.tsx`
 - `src/components/settings/DeliveryProfileEditor.tsx`
 - `src/components/settings/DeliveryProfilesPanel.tsx`
 - `src/components/settings/KeyboardPanel.tsx`
+- `src/components/settings/OnlineDictionaryPanel.tsx`
 - `src/components/settings/RetailSamplePanel.tsx`
+- `src/components/settings/ScopedSetting.tsx`
 - `src/components/settings/Settings.tsx`
 - `src/components/settings/UpdatesPanel.tsx`
 - `src/components/stages/StageEvidence.tsx`
 - `src/components/stages/StageSuggestion.tsx`
 - `src/components/stages/StageSummary.tsx`
+- `src/components/storybible/CommonsAudioLookup.tsx`
 - `src/components/storybible/GuideDetail.tsx`
-- `src/components/teleprompter/ChapterSuggestionHint.tsx`
-- `src/components/teleprompter/MicrophoneField.tsx`
-- `src/components/teleprompter/ReaderFlagsPanel.tsx`
-- `src/components/teleprompter/ReadingControlBar.tsx`
-- `src/components/teleprompter/ResumePrompt.tsx`
-- `src/components/teleprompter/UnresolvedCreditsWarning.tsx`
-- `src/components/tracks/ChapterLinksTable.tsx`
-- `src/components/tracks/ChapterSyncConsentDialog.tsx`
-- `src/components/tracks/ChapterSyncPanel.tsx`
-- `src/components/tracks/ChapterTagsDialog.tsx`
-- `src/components/tracks/CleanupToolsDialog.tsx`
-- `src/components/tracks/LinkChaptersDialog.tsx`
-- `src/components/tracks/PickupsDialog.tsx`
-- `src/components/tracks/RenderConfigDialog.tsx`
-- `src/components/tracks/RetakeLanesDialog.tsx`
-- `src/components/tracks/TracksPage.tsx`
-- `src/components/workspace/FlagsPanel.tsx`
-- `src/components/workspace/ScriptView.tsx`
-- `src/components/workspace/TransportBar.tsx`
-- `src/components/workspace/WorkspacePage.tsx`
+- `src/components/storybible/OnlinePronunciationLookup.tsx`
+- `src/components/storybible/PronunciationQueries.tsx`
+- `src/components/storybible/PronunciationWork.tsx`
+- `src/components/storybible/VoiceDataPanel.tsx`
+- `src/components/storybible/VoiceReferencesSection.tsx`

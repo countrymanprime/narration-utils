@@ -15,9 +15,12 @@ Storybook title: `Primitives/LevelMeter`. Source: `src/components/primitives/Lev
 - Booth Size
 - Compact Size
 - Custom Floor And Ceiling
+- Booth input meter (mock B03)
 - Is Named And Reads Its Value
 - Silent Reads As Silent
 
 ## Used by
 
-- `src/components/teleprompter/ReadingControlBar.tsx`
+- `src/components/booth/BoothView.tsx`
+- `src/components/booth/BuiltinRecorder.tsx`
+- `src/components/booth/ReadingControlBar.tsx`

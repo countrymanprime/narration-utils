@@ -15,3 +15,4 @@ Storybook title: `Primitives/Popover`. Source: `src/components/primitives/Popove
 
 - `src/components/booth/ReadingControlBar.tsx`
 - `src/components/primitives/Dialog.tsx`
+- `src/components/proof/ProofPage.tsx`

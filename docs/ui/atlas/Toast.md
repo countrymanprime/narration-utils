@@ -40,6 +40,7 @@ Storybook title: `Primitives/Toast`. Source: `src/components/primitives/Toast.ts
 - `src/components/proof/RenderAssociationSection.tsx`
 - `src/components/proof/useProofingRender.ts`
 - `src/components/script/ScriptPage.tsx`
+- `src/components/series/SeriesTab.tsx`
 - `src/components/settings/CreditsPanel.tsx`
 - `src/components/settings/DawCatalogPanel.tsx`
 - `src/components/settings/DeliveryProfilesPanel.tsx`

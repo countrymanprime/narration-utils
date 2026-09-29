@@ -36,8 +36,11 @@ Storybook title: `Primitives/StatusBadge`. Source: `src/components/primitives/St
 - `src/components/manuscript/ChapterNav.tsx`
 - `src/components/manuscript/EntitySummary.tsx`
 - `src/components/manuscript/ReaderCard.tsx`
+- `src/components/master/MasteringChain.tsx`
+- `src/components/master/RuleBadges.tsx`
 - `src/components/pickups/PickupsPage.tsx`
 - `src/components/primitives/CapabilityGate.tsx`
+- `src/components/primitives/HeaderChip.tsx`
 - `src/components/primitives/SpeakerTag.tsx`
 - `src/components/primitives/StageGrid.tsx`
 - `src/components/proof/FindingsList.tsx`
@@ -49,6 +52,7 @@ Storybook title: `Primitives/StatusBadge`. Source: `src/components/primitives/St
 - `src/components/script/ScriptChapterList.tsx`
 - `src/components/script/ScriptPage.tsx`
 - `src/components/script/ScriptRail.tsx`
+- `src/components/series/SeriesTab.tsx`
 - `src/components/settings/DawCatalogPanel.tsx`
 - `src/components/settings/KeyboardPanel.tsx`
 - `src/components/settings/OnlineDictionaryPanel.tsx`

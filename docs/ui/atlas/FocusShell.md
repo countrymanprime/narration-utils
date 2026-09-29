@@ -12,4 +12,4 @@ Storybook title: `Primitives/FocusShell`. Source: `src/components/primitives/Foc
 
 ## Used by
 
-- nothing outside its own stories and tests yet
+- `src/components/booth/BoothView.tsx`

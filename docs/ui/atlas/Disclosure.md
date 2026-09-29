@@ -13,6 +13,6 @@ Storybook title: `Primitives/Disclosure`. Source: `src/components/primitives/Dis
 
 ## Used by
 
-- `src/components/delivery/DeliveryProfilePanel.tsx`
-- `src/components/home/ImportReview.tsx`
-- `src/components/home/RecordingCheckReport.tsx`
+- `src/components/master/DeliveryProfilePanel.tsx`
+- `src/components/production/ImportReview.tsx`
+- `src/components/production/RecordingCheckReport.tsx`
