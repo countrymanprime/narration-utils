@@ -4,7 +4,7 @@ How parallel Claude Code sessions build the planned work around the clock: one *
 
 It replaces the scheduling rules of [the implementation plan's section 8](../prds/implementation-plan.md#8-the-lane-train-2026-09-24) (the lane train of 2026-09-24):
 
-- **Kept:** D40 (the coordinator merges), D43 (the light merge gate), D44 (the visual suite and atlas run in full once, at the end) and D46 (the mockup check), plus the older D1–D39.
+- **Kept:** D40 (the coordinator merges), D43 (the light merge gate), D44 (the visual suite and atlas run in full once, at the end) and D46 (built UI is compared with its mock, amended by D97), plus the older D1–D39.
 - **Replaced:** D41 (three lanes) and D45 (hold on credits), by [Lanes](#lanes) and [Usage and autoscaling](#usage-and-autoscaling) below.
 
 The work it schedules comes from the [audiobook studio benchmark](../research/audiobook-studio-benchmark.md), and then the older PRDs' remaining phases as filler.
@@ -116,7 +116,7 @@ A lane-X stream runs with no other stream that touches the same files. A lane th
 
 Some PRDs gate a phase on **owner-approved mockups** in prose (its Phase Details or its Visual Spec section), not just in the `Depends` column. That gate never shows up in the phase table, so before adding a phase to the ready list, check its Phase Details paragraph and the PRD's Visual Spec section, not only `Depends`.
 
-Since D68 and D69 (see [Owner standing rules](#owner-standing-rules)), an existing concept mock no longer gates a phase: build against it and add the Mockup check table. The rules below still apply when a phase has **no** mockup at all.
+Since D68 and D69 (see [Owner standing rules](#owner-standing-rules)), an existing concept mock no longer gates a phase: build against it. The rules below still apply when a phase has **no** mockup at all.
 
 When a phase is otherwise ready (`Depends` complete, no file collision) but blocked solely on mockups that don't exist yet or haven't been approved (D61, owner-directed):
 
@@ -172,7 +172,9 @@ Decisions the owner made while the train ran (logged on #509). They bind the coo
 | **D74** | Windows only, for now (2026-09-27). Linux and macOS support is removed until the app is in a steadier state or someone uses those systems; `Build (Windows)` stays the build gate. Linux CI runners remain as hosts for platform-neutral checks (docs, the Lua harness, the browser-based UI suites), which is not Linux support |
 | **D75** | The public GitHub Pages site (docs, Storybook, demo) is paused until the main app's development is done (2026-09-27): `pages.yml` no longer deploys on a push to `main`, and (narrowed 2026-09-27, [ADR 0415](../adr/0415-while-pages-is-paused-docs-are-checked-by-lychee-and-a-changed-file-markdownlint-not-by-building-the-site.md)) no longer runs on a pull request either. Workers keep the docs link-clean through `Docs / Links (offline)` (lychee, every pull request) and `Docs / Markdown lint (changed files)` (markdownlint-cli2 on the Markdown files a pull request adds or changes), not by building the site, and don't add work that only serves the published site |
 | **D82** | Every worker owns its PRs until they merge or close (2026-09-27): it stays subscribed, and on a merge-conflict notice or a red check it merges `main` into its own branch (never rebase), fixes, re-runs its targeted checks and pushes. It keeps an hourly `send_later` check-in while a PR is open. The coordinator launches no cascade fixers; a one-PR fixer only for a PR whose own session is archived or failed. The coordinator archives the session once all its PRs are merged or closed (D78) |
-| **D91** | The approved mocks win, measured (2026-09-28). Every screen or state an approved mock covers reaches **at least 90% pixel match** against it, captured at the mock's own size and theme with the app driven to the mock's state (the mock is one of [the seven benchmark mocks](#which-mocks-are-the-spec), never a per-PRD set; `pnpm --dir apps/ui mock-match`, [verification tooling](verification-tooling.md#mock-match)). New primitives, tokens and style changes are in scope, and "the existing style is close enough" is not a reason: a difference a primitive causes is fixed in the primitive, so every consumer inherits it, never restyled locally. A UI PR's Mockup check carries a match % column; a state under 90% needs a reason the owner accepts on #510, and a tooling limit is not one |
+| **D91** | *(Amended by D97 below.)* The approved mocks win, measured (2026-09-28): a screen an approved mock covers is built to that mock, captured at the mock's own size and theme with the app driven to the mock's state ([the seven benchmark mocks](#which-mocks-are-the-spec); `pnpm --dir apps/ui mock-match`, [verification tooling](verification-tooling.md#mock-match)). New primitives, tokens and style changes are in scope, and "the existing style is close enough" is not a reason: a difference a primitive causes is fixed in the primitive, so every consumer inherits it, never restyled locally. The 90% bar and the "reason the owner accepts" it required are gone (D97) |
+| **D96** | Only `docs/research/mockups/audiobook-studio-benchmark/` counts (2026-09-29). Every other mock is deleted from the repo and so is anything pointing at it. Keep only mocks for work actively in development, plus the current-state screenshots in `docs/images/ui/` ([Which mocks are the spec](#which-mocks-are-the-spec)) |
+| **D97** | The 90% bar is no longer a gate (2026-09-29). Match % is a diagnostic, and it scores features and styles, not pixel-exact text or sample data (the tool paints glyphs out of both images first). No D91 reasons, no region-attribution tables, no Mockup check table. Finish building the pages; the owner does a fix-up pass afterwards. The screenshots-in-PR rule stands unchanged |
 
 ## The coordinator's pass
 
@@ -194,7 +196,7 @@ The Routine fires every 30 minutes (two hourly Routines, 30 minutes apart; D50).
    - `Build (Windows)` and `ui-dist` succeeded on the head. A docs-only PR needs `Docs / Links (offline)` instead;
    - there is no `CHANGES_REQUESTED` review and no unresolved thread whose first comment starts with 🔴;
    - a Claude Approvals check, if present, passes;
-   - a UI PR whose phase has mockups carries its Mockup check table with a match % column (D46, D91).
+   - a UI PR carries its Screenshots section ([UI PRs show their screenshots](#ui-prs-show-their-screenshots)). There is no match % bar to check (D97).
 
    Merge with `squash` and `expectedHeadSha`, then delete the branch. Don't update the other bottom PRs' branches after a merge (D73); only a PR that no longer merges cleanly gets `main` merged in.
    - **A conflict:** start one **fixer**. Use Sonnet for mechanical files (`hostAPIVersion`, ADR or PRD index rows, status cells, regenerated `Host.*`) and Opus otherwise.
@@ -264,14 +266,13 @@ No human is watching live; never wait for answers. Where a PRD leaves a question
 READ FIRST: CLAUDE.md; docs/operations/agent-train.md ("The worker protocol", "Serial points", "Lanes"); then each PRD in
 scope, in full.
 SCOPE: <PRD path> phases <N…>: <one line each>.
-MOCKUPS (D46, D91): <per phase: exact docs/research/mockups/audiobook-studio-benchmark/... files, or "none">. Open each before
+MOCKUPS (D46, D97): <per phase: exact docs/research/mockups/audiobook-studio-benchmark/... files, or "none">. Open each before
 coding and build to match. Older per-PRD mocks are deleted (D96); see "Which mocks are the spec". Compare light to light and dark to dark by the theme the mock is
 drawn in. Layout and style are the spec, never the mock's sample data.
-Every approved-mock state reaches at least 90% pixel match: drive the app to the mock's state and data, capture at the
-mock's own size and theme, and score it (the mock and its target state in apps/ui/tests/visual/mock-match/mocks.ts, then
-`pnpm --dir apps/ui mock-match -g "<mock file>"`). The PR's "Mockup check" table is mockup | capture | match % |
-remaining differences; a state under 90% needs a reason the owner can accept on #510 (live data the mock can't have),
-and a tooling limit is not one. New primitives and tokens are in scope; existing styles are not a reason: when a
+Drive the app to the mock's state and data, capture at the mock's own size and theme, and look at it beside the mock (the mock and
+its target state in apps/ui/tests/visual/mock-match/mocks.ts, then `pnpm --dir apps/ui mock-match -g "<mock file>"`). The match % is
+a diagnostic, not a gate (D97): it ignores words and sample data, so build the features and styles the mock shows and don't chase
+the number. No reasons to write, no region tables, no Mockup check table. New primitives and tokens are in scope; existing styles are not a reason: when a
 primitive, token or style doesn't draw what the mock shows, change the primitive (its <Name>.stories.tsx too, with
 design-spec-guard and an ADR for a changed design decision), don't restyle it locally on the page. The spec per
 primitive is docs/design/design-system.md (the PRD it came from was deleted at its close-out).
@@ -280,7 +281,7 @@ a running stream on #509. If you need another lane's change, comment on #509.
 ADR BLOCK: <block>. Check docs/adr/ for the next free number inside it, at write time and again before your last push.
 BRANCHES AND PRS: first PR based on the latest main; one PR per phase, each based on the previous branch; branch
 <type>/<prd-slug>-p<N>-<slug>; PR title a Conventional Commit; body = goal, what changed, local checks run with results,
-Mockup check (UI with mockups), Screenshots (any UI change; see "UI PRs show their screenshots": the PR is not ready without them), "Base: <branch>", "Part of #<PRD issue>" (find it or create it per
+Screenshots (any UI change; see "UI PRs show their screenshots": the PR is not ready without them), "Base: <branch>", "Part of #<PRD issue>" (find it or create it per
 docs/operations/github-workflow.md; the PRD's last phase says "Closes #<n>"), "New ADRs for review". Set each phase's
 Status cell in its own PR. The PR delivering a PRD's last phase writes the steady-state docs and deletes the PRD.
 METHOD: impact scan before touching shared code (list every consumer of what you change and its tests); tests first;
