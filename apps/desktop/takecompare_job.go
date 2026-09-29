@@ -139,13 +139,24 @@ func (h *Host) startTakeComparison(findingID string) (TakeComparisonJob, error) 
 	if err != nil {
 		return TakeComparisonJob{}, err
 	}
+	request := takecompare.Request{
+		Group: group, Project: project, ProjectPath: svc.config.projectFolder, ManuscriptPath: takeReviewManuscriptPath(svc.config.projectFolder),
+		ChapterID: chapterID,
+	}
+	return h.launchTakeComparison(svc, "finding_id", findingID, len(parsed.Reads), request)
+}
 
+// launchTakeComparison starts request in the background as the one take comparison job: a take-review group's
+// (startTakeComparison) or a workspace passage's (startPassageComparison, ADR 0700). subject names what is compared
+// (the group's finding id or the passage's id, the job's FindingID) under the run log attribute attribute. It fills
+// request's progress file and session folder itself.
+func (h *Host) launchTakeComparison(svc hostServices, attribute, subject string, reads int, request takecompare.Request) (TakeComparisonJob, error) {
 	ctx, cancel := context.WithCancel(context.Background())
 	id := fmt.Sprintf("take-comparison-%d", time.Now().UnixNano())
-	ctx = runlog.WithRun(ctx, h.jobRuns.begin(h.runLog, id, jobKindTakeComparison, "finding_id", findingID))
+	ctx = runlog.WithRun(ctx, h.jobRuns.begin(h.runLog, id, jobKindTakeComparison, attribute, subject))
 	job := &takeComparisonJob{
-		id: id, phase: "running", started: time.Now(), findingID: findingID, cancel: cancel,
-		message: fmt.Sprintf("Comparing %d reads.", len(parsed.Reads)),
+		id: id, phase: "running", started: time.Now(), findingID: subject, cancel: cancel,
+		message: fmt.Sprintf("Comparing %d reads.", reads),
 	}
 	job.logs = []string{job.message}
 	sessionDir := takeReviewSessionDir(svc.config.sessionDir)
@@ -161,10 +172,7 @@ func (h *Host) startTakeComparison(findingID string) (TakeComparisonJob, error) 
 	h.mu.Unlock()
 
 	comparer := &takecompare.Comparer{Runner: h.takeCompareRunnerFor(svc), Store: svc.findings}
-	request := takecompare.Request{
-		Group: group, Project: project, ProjectPath: svc.config.projectFolder, ManuscriptPath: takeReviewManuscriptPath(svc.config.projectFolder),
-		ChapterID: chapterID, ProgressPath: job.progressPath, SessionDir: sessionDir,
-	}
+	request.ProgressPath, request.SessionDir = job.progressPath, sessionDir
 	go h.runTakeComparison(ctx, job, comparer, request)
 	return job.snapshot(), nil
 }

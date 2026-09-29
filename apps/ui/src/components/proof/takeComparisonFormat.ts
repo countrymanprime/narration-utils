@@ -33,6 +33,29 @@ export function divergenceLabel(divergence: TakeComparisonMember['divergences'][
   return `${label}: “${divergence.manuscript_text}”${where}`;
 }
 
+/** One place a read departs from the script, without its time: `Misread “near” as “here”`. */
+export function divergenceBrief(divergence: TakeComparisonMember['divergences'][number]): string {
+  const label = DIVERGENCE_LABELS[divergence.kind] ?? divergence.kind;
+  if (divergence.kind === 'misread') return `${label} “${divergence.manuscript_text}” as “${divergence.audio_text}”`;
+  if (divergence.kind === 'extra') return `${label} “${divergence.audio_text}”`;
+  return `${label}: “${divergence.manuscript_text}”`;
+}
+
+/**
+ * What a take's card in the Takes panel says about it, from the comparison's own figures: where it departs from the script
+ * (or that every word matched), its longest pause and how its loudness sits against its neighbours. Evidence, never a score.
+ */
+export function evidenceLine(member: TakeComparisonMember): string {
+  const parts = member.divergences.length === 0 ? ['Every word matched'] : member.divergences.map(divergenceBrief);
+  const pause = member.metrics?.pause_profile;
+  if (pause?.status === 'measured' && pause.longest_seconds !== undefined) parts.push(`${one(pause.longest_seconds)} s pause`);
+  const level = member.metrics?.level_consistency;
+  if (level?.status === 'measured' && level.delta_lu !== null && Math.abs(level.delta_lu) >= 0.05) {
+    parts.push(`${level.delta_lu < 0 ? '−' : '+'}${one(Math.abs(level.delta_lu))} dB ${level.delta_lu < 0 ? 'quieter' : 'louder'}`);
+  }
+  return parts.join(' · ');
+}
+
 type Category = 'clipping' | 'noise' | 'level_consistency' | 'duration' | 'pause_profile';
 
 /** The measured categories in the order they are shown, each with what it measures in plain words. */

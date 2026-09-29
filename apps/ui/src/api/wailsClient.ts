@@ -68,7 +68,13 @@ import { deliveryProfileSchema, deliveryProfilesStateSchema } from './schemas/de
 import { diagnosticsJobSchema } from './schemas/diagnostics';
 import { coverageResultSchema, coverageStartResultSchema, coverageStateSchema } from './schemas/coverage';
 import { editingCandidatesSchema, editingSourceChoiceSchema, editingStartResultSchema, editingStateSchema } from './schemas/editing';
-import { workspaceAlignmentResultSchema, workspaceFXChainsResultSchema, workspacePeaksResultSchema } from './schemas/workspace';
+import {
+  workspaceAlignmentResultSchema,
+  workspaceFXChainsResultSchema,
+  workspacePeaksResultSchema,
+  workspaceTakesResultSchema,
+  workspaceUseTakeResultSchema,
+} from './schemas/workspace';
 import { pinnedPreviewSchema, previewResultSchema } from './schemas/preview';
 import { stageDecisionResultSchema, stageRecommendationsSchema } from './schemas/stages';
 import { proofingChooseRenderResultSchema, proofingRenderSchema } from './schemas/proofingRender';
@@ -430,6 +436,12 @@ export const wailsClient: NarrationApi = {
   workspaceGoTo: (chapterId, tokenIndex) => decode(findingNavigationSchema, 'WorkspaceGoTo', host.WorkspaceGoTo(chapterId, tokenIndex)),
   workspaceLoop: (chapterId, firstToken, lastToken) => decode(findingNavigationSchema, 'WorkspaceLoop', host.WorkspaceLoop(chapterId, firstToken, lastToken)),
   workspaceListFXChains: () => decode(workspaceFXChainsResultSchema, 'WorkspaceListFXChains', host.WorkspaceListFXChains()),
+  workspaceTakes: (chapterId, firstToken, lastToken) =>
+    decode(workspaceTakesResultSchema, 'WorkspaceTakes', host.WorkspaceTakes(chapterId, firstToken, lastToken)),
+  workspaceTakesCompareStart: (chapterId, firstToken, lastToken) =>
+    decode(takeComparisonJobSchema, 'WorkspaceTakesCompareStart', host.WorkspaceTakesCompareStart(chapterId, firstToken, lastToken)),
+  workspaceUseTake: (chapterId, firstToken, lastToken, candidateId) =>
+    decode(workspaceUseTakeResultSchema, 'WorkspaceUseTake', host.WorkspaceUseTake(chapterId, firstToken, lastToken, candidateId)),
   workspacePeaks: (chapterId) => decode(workspacePeaksResultSchema, 'WorkspacePeaks', host.WorkspacePeaks(chapterId)),
   previewCandidates: () => decode(previewResultSchema, 'PreviewCandidates', host.PreviewCandidates()),
   previewPin: () => decode(pinnedPreviewSchema, 'PreviewPin', host.PreviewPin()),

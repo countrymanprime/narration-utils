@@ -57,7 +57,8 @@ EXIT_FAILED = 1
 EXIT_CANCELLED = 2
 
 _MANIFEST_KEYS = frozenset({"schemaVersion", "chapterId", "span", "takes"})
-_SPAN_KEYS = frozenset({"firstUnit", "lastUnit"})
+_UNIT_SPAN_KEYS = frozenset({"firstUnit", "lastUnit"})
+_PARAGRAPH_SPAN_KEYS = frozenset({"firstParagraph", "lastParagraph"})
 _TAKE_KEYS = frozenset({"itemGuid", "takeGuid", "sourceFile", "startOffset", "length"})
 
 
@@ -78,10 +79,15 @@ class Take:
 
 @dataclass(frozen=True)
 class Manifest:
+    """The span is a run of sentence units (a take-review group's own numbering) or, for a passage the workspace
+    chose in the text, a run of the chapter's paragraphs; exactly one of the two pairs is set."""
+
     chapter_id: str
-    first_unit: int
-    last_unit: int
+    first_unit: int | None
+    last_unit: int | None
     takes: tuple[Take, ...]
+    first_paragraph: int | None = None
+    last_paragraph: int | None = None
 
 
 Transcriber = Callable[[Take], Sequence[take_divergence.Word]]
@@ -134,13 +140,22 @@ def read_manifest(path: str | os.PathLike) -> Manifest:
         raise ManifestError(f"The take-divergence manifest is not schema version {MANIFEST_SCHEMA_VERSION}")
     if not isinstance(data["chapterId"], str) or not data["chapterId"]:
         raise ManifestError("The manifest's chapterId must be a non-empty string")
-    span = _keys(data["span"], _SPAN_KEYS, "The manifest's span")
-    if not (_whole(span["firstUnit"]) and _whole(span["lastUnit"]) and span["firstUnit"] <= span["lastUnit"]):
-        raise ManifestError("The manifest's span must be two whole sentence numbers, firstUnit <= lastUnit")
+    span = data["span"]
+    if isinstance(span, dict) and span.keys() & _UNIT_SPAN_KEYS and span.keys() & _PARAGRAPH_SPAN_KEYS:
+        raise ManifestError("The manifest's span names sentences or paragraphs, not both")
+    by_paragraph = isinstance(span, dict) and bool(span.keys() & _PARAGRAPH_SPAN_KEYS)
+    span = _keys(span, _PARAGRAPH_SPAN_KEYS if by_paragraph else _UNIT_SPAN_KEYS, "The manifest's span")
+    first, last = (span["firstParagraph"], span["lastParagraph"]) if by_paragraph else (span["firstUnit"], span["lastUnit"])
+    if not (_whole(first) and _whole(last)):
+        raise ManifestError(f"The manifest's span must be two whole {'paragraph' if by_paragraph else 'sentence'} numbers")
+    if first > last:
+        raise ManifestError(f"The manifest's span must have {'firstParagraph <= lastParagraph' if by_paragraph else 'firstUnit <= lastUnit'}")
     if not isinstance(data["takes"], list) or not data["takes"]:
         raise ManifestError("The manifest's takes must be a non-empty list")
     takes = tuple(_take(raw, position) for position, raw in enumerate(data["takes"]))
-    return Manifest(data["chapterId"], span["firstUnit"], span["lastUnit"], takes)
+    if by_paragraph:
+        return Manifest(data["chapterId"], None, None, takes, first, last)
+    return Manifest(data["chapterId"], first, last, takes)
 
 
 # ---------------------------------------------------------------------------
@@ -212,7 +227,10 @@ def run(args, engine: ModuleType, transcriber: Transcriber | None = None) -> Non
     engine.check_cancelled(progress)
     engine.write_progress(progress, "MATCH", MATCH_PCT, "Finding the span in the manuscript...")
     chapter = _find_chapter(engine, args.manuscript, manifest.chapter_id)
-    span = take_divergence.build_span(engine, chapter["paragraphs"], manifest.first_unit, manifest.last_unit)
+    if manifest.first_paragraph is not None:
+        span = take_divergence.build_paragraph_span(engine, chapter["paragraphs"], manifest.first_paragraph, manifest.last_paragraph)
+    else:
+        span = take_divergence.build_span(engine, chapter["paragraphs"], manifest.first_unit, manifest.last_unit)
     transcriber = transcriber or whisper_transcriber(engine, args, _project_hints(engine, args.manuscript))
 
     lines = []

@@ -1,7 +1,13 @@
 // The golden payloads for the workspace alignment and its Phase 3 REAPER navigation: which schema owns each file in
 // tests/fixtures/contracts/ (see index.ts).
 import type { z } from 'zod';
-import { workspaceAlignmentResultSchema, workspaceFXChainsResultSchema, workspacePeaksResultSchema } from '../schemas/workspace';
+import {
+  workspaceAlignmentResultSchema,
+  workspaceFXChainsResultSchema,
+  workspacePeaksResultSchema,
+  workspaceTakesResultSchema,
+  workspaceUseTakeResultSchema,
+} from '../schemas/workspace';
 import { findingNavigationSchema } from '../schemas/findings';
 
 export const workspaceGoldens: Record<string, z.ZodType> = {
@@ -16,6 +22,12 @@ export const workspaceGoldens: Record<string, z.ZodType> = {
   'workspace-navigation-no-item.json': findingNavigationSchema,
   // WorkspaceListFXChains (Phase 8, ADR 0234): the narrator's FX chains by name.
   'workspace-fx-chains.json': workspaceFXChainsResultSchema,
+  // WorkspaceTakes and WorkspaceUseTake (Phase 6, ADR 0700): a passage's takes from each source, none, and each outcome.
+  'workspace-takes.json': workspaceTakesResultSchema,
+  'workspace-takes-none.json': workspaceTakesResultSchema,
+  'workspace-use-take-done.json': workspaceUseTakeResultSchema,
+  'workspace-use-take-started.json': workspaceUseTakeResultSchema,
+  'workspace-use-take-refused.json': workspaceUseTakeResultSchema,
   // WorkspacePeaks (Phase 5, ADR 0520): one item's real peaks, and one item with no usable source (a Reason).
   'workspace-peaks.json': workspacePeaksResultSchema,
   'workspace-peaks-no-source.json': workspacePeaksResultSchema,

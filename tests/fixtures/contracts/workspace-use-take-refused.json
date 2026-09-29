@@ -1,0 +1,6 @@
+{
+  "changed": false,
+  "message": "This take's item is no longer in the REAPER project, so nothing was changed. Run the check again to find the takes where they are now.",
+  "outcome": "refused",
+  "reason": "stale"
+}
