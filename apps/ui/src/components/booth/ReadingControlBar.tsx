@@ -224,7 +224,7 @@ export function ReadingControlBar({ session: t, follow, startPoint, chapterId, c
   return (
     // ≈64 px total (mock 03's command bar): a 32 px `Button`/`IconButton` row (`--button-height`) inside 16 px top/bottom
     // padding, plain Tailwind utilities rather than a new token (only Phase 0b may add one to styles.css).
-    <Toolbar label="Reading controls" gapClassName="gap-x-4 gap-y-2" className="flex-wrap p-4">
+    <Toolbar label="Reading controls" gapClassName="gap-x-4 gap-y-2" className="flex-wrap p-0">
       <div className="flex items-center gap-2">
         {/* `ToolbarButton` nests inside `TooltipTarget` here, not the other way round: `TooltipTarget` only ever nests its
             child as plain React children (never clones props onto it), so the real `Button` still gets the toolbar's roving

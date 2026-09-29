@@ -67,7 +67,9 @@ export function ReadAlongView({ session: t, follow, header, marks, onOpenMark, a
     />
   );
   const main = (
-    <div className={`mx-auto w-full min-w-0 space-y-4 ${fullBleed ? 'max-w-5xl' : 'max-w-3xl'}`}>
+    // The Booth's text is left-aligned in its own surface (mock 03: the speaker gutter at 22 px, the text at 154); the card
+    // layout is centred.
+    <div className={`w-full min-w-0 space-y-4 ${fullBleed ? 'max-w-[68.25rem]' : 'mx-auto max-w-3xl'}`}>
       {header}
       {(t.error || t.host.phase === 'error') && (
         <p role="alert" className="text-sm" style={{ color: 'var(--danger-text)' }}>
@@ -76,7 +78,7 @@ export function ReadAlongView({ session: t, follow, header, marks, onOpenMark, a
       )}
       {t.rows.length > 0 &&
         (fullBleed ? (
-          <div className="px-1 py-2 md:px-4">{text}</div>
+          <div className="py-2">{text}</div>
         ) : (
           <Panel>
             {!aside && !hideKey && <ReaderKey seekable={t.active} />}

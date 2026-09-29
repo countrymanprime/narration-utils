@@ -247,7 +247,7 @@ export function ReaderText({
   // `--font-size-booth-script` (26 px), never below WCAG's large text at any width. With no card, a read word's muted
   // colour on a single mark's tint sits over the reading surface, which still clears large-text contrast.
   const typeClass = large
-    ? 'space-y-7 text-[length:var(--font-size-booth-script)] leading-[calc(var(--font-size-booth-script)*var(--line-height-booth-script))]'
+    ? 'space-y-5 text-[length:var(--font-size-booth-script)] leading-[calc(var(--font-size-booth-script)*var(--line-height-booth-script))]'
     : 'space-y-5 text-[1.35rem] leading-[2.1rem]';
   return (
     <div ref={container} className={typeClass} aria-label="Chapter text" role="region">
@@ -259,7 +259,7 @@ export function ReaderText({
         // The gutter (from `lg`; below it the tag sits above its paragraph, so a narrow text column keeps its width).
         if (gutter && row.kind === 'paragraph')
           return (
-            <div key={row.key} className="lg:grid lg:grid-cols-[7rem_minmax(0,1fr)] lg:gap-x-4">
+            <div key={row.key} className="lg:grid lg:grid-cols-[7rem_minmax(0,1fr)] lg:gap-x-5">
               <div className="leading-none lg:pt-[0.6em]">{speaker && <SpeakerTag label={speaker} size="booth" />}</div>
               <p className="whitespace-pre-line">{content}</p>
             </div>
@@ -268,7 +268,7 @@ export function ReaderText({
           // Source casing, never CSS capitals (chapter-title-display-consistency.prd.md Q2/Q9): what is read aloud is
           // what is shown. Stacked, like TitleSubtitle's own layout: the subtitle is a muted line under the title,
           // with a visually hidden " — " between them so the two lines still read as one name to a screen reader.
-          <h2 key={row.key} className={`font-['Barlow_Condensed',sans-serif] leading-tight tracking-[0.02em] normal-case ${gutter ? 'lg:pl-[8rem]' : ''}`}>
+          <h2 key={row.key} className={`font-['Barlow_Condensed',sans-serif] leading-tight tracking-[0.02em] normal-case ${gutter ? 'lg:pl-[8.25rem]' : ''}`}>
             <span className="block text-[1.7rem] font-semibold">{content}</span>
             {row.subtitle && (
               <>
