@@ -852,7 +852,7 @@ describe('Script page (integration, driven through the mock NarrationApi)', () =
     renderScript();
     await waitFor(() => expect(screen.getByRole('heading', { name: 'Script' })).toBeTruthy());
     const grid = document.querySelector('.reader-page')!;
-    expect(grid.className).toContain('min-[1440px]:grid-cols-[12rem_minmax(0,1fr)_21.5rem]');
+    expect(grid.className).toContain('min-[1440px]:grid-cols-[13.5rem_minmax(0,1fr)_22.5rem]');
     expect(grid.className).not.toMatch(/(^|\s)2xl:grid-cols-/);
     const rail = screen.getByRole('complementary', { name: 'Prep' });
     expect(rail.className).toContain('min-[1440px]:flex');

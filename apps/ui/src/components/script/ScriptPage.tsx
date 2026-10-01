@@ -615,14 +615,14 @@ export function ScriptPage({
       // empirically (a real 1440px render kept two columns until this was fixed). Plain `xl:grid` alone is fine to
       // keep for turning on the grid itself - nothing else sets `display` at another breakpoint on this element, so
       // there is no such conflict for that property.
-      className="reader-page min-h-full [--reader-inline:1.5rem] max-md:[--reader-inline:1rem] min-[1280px]:grid-cols-[12rem_minmax(0,1fr)] min-[1440px]:grid-cols-[12rem_minmax(0,1fr)_21.5rem] xl:grid"
+      className="reader-page min-h-full [--reader-inline:1.5rem] max-md:[--reader-inline:1rem] min-[1280px]:grid-cols-[13.5rem_minmax(0,1fr)] min-[1440px]:grid-cols-[13.5rem_minmax(0,1fr)_22.5rem] xl:grid"
       style={{ '--band-h': `${bandHeight}px` } as CSSProperties}
     >
       {/* Mock 02's left column: the chapters with their prep status, and the key to the marks in the text. The page scrolls
           under it, so it sticks to the top of the scroll area (the header above is h-14). */}
       <aside
         aria-label="Chapters and marks"
-        className="sticky top-0 hidden h-[calc(100dvh-3.5rem)] self-start overflow-y-auto border-r border-[var(--border)] bg-[var(--surface)] p-3 xl:block"
+        className="sticky top-3 m-3 hidden h-[calc(100dvh-3.5rem-1.5rem)] self-start overflow-y-auto rounded-xl border border-[var(--border)] bg-[var(--surface)] p-3 xl:block"
       >
         <ScriptChapterList chapters={chapters} activeId={active} toConfirm={toConfirm} select={(id) => showChapter(id)} />
         <div className="mt-4 border-t border-[var(--border)] pt-3">
@@ -791,7 +791,7 @@ export function ScriptPage({
       </div>
       <aside
         aria-label="Prep"
-        className="sticky top-0 hidden h-[calc(100dvh-3.5rem)] flex-col self-start overflow-hidden border-l border-[var(--border)] bg-[var(--surface)] min-[1440px]:flex"
+        className="sticky top-3 m-3 hidden h-[calc(100dvh-3.5rem-1.5rem)] flex-col self-start overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--surface)] min-[1440px]:flex"
       >
         {rail}
       </aside>

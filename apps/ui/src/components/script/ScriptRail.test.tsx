@@ -105,6 +105,14 @@ describe('ScriptRail (stage navigation Phase 3, mock 02)', () => {
     expect(openQueries).toHaveBeenCalled();
   });
 
+  it('keeps Manage queries pinned under every tab, as mock 02 pins its actions', () => {
+    renderRail();
+    expect(screen.getByRole('tab', { name: /^Pronunciations/ }).getAttribute('aria-selected')).toBe('true');
+    expect(screen.getByRole('button', { name: 'Manage queries' })).toBeTruthy();
+    fireEvent.click(screen.getByRole('tab', { name: /^Characters/ }));
+    expect(screen.getAllByRole('button', { name: 'Manage queries' })).toHaveLength(1);
+  });
+
   it('says so while the queries load, and when every pronunciation is confirmed', () => {
     renderRail({ queries: undefined });
     expect(screen.getByRole('tab', { name: 'Queries' })).toBeTruthy();

@@ -26,7 +26,7 @@ describe('ScriptChapterList (stage navigation Phase 3, mock 02)', () => {
     render(<ScriptChapterList chapters={CHAPTERS} activeId="c2" toConfirm={new Map()} select={vi.fn()} />);
     const list = screen.getByRole('navigation', { name: 'Chapters' });
     const buttons = within(list).getAllByRole('button');
-    expect(buttons.map((button) => button.textContent)).toEqual(['Chapter 1 — Down the Rabbit-Hole', 'Chapter 2 — The Pool of Tears']);
+    expect(buttons.map((button) => button.textContent)).toEqual(['1 · Down the Rabbit-Hole', '2 · The Pool of Tears']);
     expect(
       within(list)
         .getByRole('button', { name: /The Pool of Tears/ })
@@ -39,6 +39,19 @@ describe('ScriptChapterList (stage navigation Phase 3, mock 02)', () => {
     ).toBeNull();
   });
 
+  it("draws a numbered chapter compactly as 'N · Title' (mock 02) and keeps the full name as the hover title", () => {
+    render(<ScriptChapterList chapters={CHAPTERS} activeId="c1" toConfirm={new Map()} select={vi.fn()} />);
+    const button = screen.getByRole('button', { name: /Rabbit-Hole/ });
+    expect(button.textContent).toBe('1 · Down the Rabbit-Hole');
+    expect(button.getAttribute('title')).toBe('Chapter 1 — Down the Rabbit-Hole');
+  });
+
+  it('leaves a chapter that is not numbered as it is named', () => {
+    const chapters = [chapter('p', 'Prologue — Before', 1), chapter('e', 'Epilogue', 2)];
+    render(<ScriptChapterList chapters={chapters} toConfirm={new Map()} select={vi.fn()} />);
+    expect(screen.getAllByRole('button').map((button) => button.textContent)).toEqual(['Prologue — Before', 'Epilogue']);
+  });
+
   it('opens a chapter in the reader when it is pressed', () => {
     const select = vi.fn();
     render(<ScriptChapterList chapters={CHAPTERS} activeId="c1" toConfirm={new Map()} select={select} />);
@@ -48,7 +61,7 @@ describe('ScriptChapterList (stage navigation Phase 3, mock 02)', () => {
 
   it("shows a chapter's prep status as the names in it the author has not confirmed, and nothing for a chapter with none", () => {
     render(<ScriptChapterList chapters={CHAPTERS} activeId="c1" toConfirm={new Map([['c1', 3]])} select={vi.fn()} />);
-    expect(screen.getByRole('button', { name: /Rabbit-Hole/ }).textContent).toBe('Chapter 1 — Down the Rabbit-Hole');
+    expect(screen.getByRole('button', { name: /Rabbit-Hole/ }).textContent).toBe('1 · Down the Rabbit-Hole');
     expect(screen.getByText('3 to confirm')).toBeTruthy();
     // The count sits beside the chapter's button, not inside its name, and a chapter with nothing open shows no badge.
     expect(screen.getAllByText(/to confirm/)).toHaveLength(1);
