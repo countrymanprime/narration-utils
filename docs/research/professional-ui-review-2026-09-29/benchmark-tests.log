@@ -1,0 +1,35 @@
+[WebServer] (node:8352) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 7 tests using 4 workers
+
+(node:57832) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:34768) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:52156) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:50884) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ok 2 tests\visual\mock-match\mock-match.spec.ts:52:3 › stage-navigation-and-page-replacement/04-proof-pickups-concept.webp (1.5s)
+  ok 1 tests\visual\mock-match\mock-match.spec.ts:52:3 › stage-navigation-and-page-replacement/03-booth-concept.webp (1.7s)
+  ok 3 tests\visual\mock-match\mock-match.spec.ts:52:3 › stage-navigation-and-page-replacement/02-prep-script-concept.webp (1.7s)
+  ok 4 tests\visual\mock-match\mock-match.spec.ts:52:3 › stage-navigation-and-page-replacement/01-production-home-concept.webp (2.0s)
+  ok 7 tests\visual\mock-match\mock-match.spec.ts:52:3 › stage-navigation-and-page-replacement/07-daw-companion-concept.webp (1.5s)
+  ok 6 tests\visual\mock-match\mock-match.spec.ts:52:3 › stage-navigation-and-page-replacement/06-series-voice-bible-concept.webp (1.7s)
+  ok 5 tests\visual\mock-match\mock-match.spec.ts:52:3 › stage-navigation-and-page-replacement/05-master-delivery-concept.webp (8.1s)
+
+Mock match (7 states, written to apps/ui/screenshots/mock-match/scores.md):
+
+| Mock | Page/state | Viewport | Theme | Match % | Ink match % | Rail % | Header % | Diff |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| `stage-navigation-and-page-replacement/01-production-home-concept.webp` | production/mock-fidelity-01 | 1440×900 | light | **82.74** (under 90) | 25.43 | 90.67 | 86.51 | `apps/ui/screenshots/mock-match/stage-navigation-and-page-replacement__01-production-home-concept.diff.png` |
+| `stage-navigation-and-page-replacement/07-daw-companion-concept.webp` | booth/companion-default | 420×900 | dark | **85.34** (under 90) | 22.95 | – | – | `apps/ui/screenshots/mock-match/stage-navigation-and-page-replacement__07-daw-companion-concept.diff.png` |
+| `stage-navigation-and-page-replacement/05-master-delivery-concept.webp` | master/measured | 1440×900 | light | **86.32** (under 90) | 19.43 | 95.31 | 84.77 | `apps/ui/screenshots/mock-match/stage-navigation-and-page-replacement__05-master-delivery-concept.diff.png` |
+| `stage-navigation-and-page-replacement/02-prep-script-concept.webp` | script/prep-rail-pronunciations | 1440×900 | light | **87.05** (under 90) | 23.84 | 95.49 | 84.84 | `apps/ui/screenshots/mock-match/stage-navigation-and-page-replacement__02-prep-script-concept.diff.png` |
+| `stage-navigation-and-page-replacement/06-series-voice-bible-concept.webp` | storybible/series-tab-populated | 1440×900 | light | **88.37** (under 90) | 15.62 | 95.69 | 83.39 | `apps/ui/screenshots/mock-match/stage-navigation-and-page-replacement__06-series-voice-bible-concept.diff.png` |
+| `stage-navigation-and-page-replacement/03-booth-concept.webp` | booth/speaker-tags | 1440×900 | dark | **89.35** (under 90) | 33.96 | – | – | `apps/ui/screenshots/mock-match/stage-navigation-and-page-replacement__03-booth-concept.diff.png` |
+| `stage-navigation-and-page-replacement/04-proof-pickups-concept.webp` | proof/default | 1440×900 | light | 90.17 | 20.40 | 95.40 | 84.80 | `apps/ui/screenshots/mock-match/stage-navigation-and-page-replacement__04-proof-pickups-concept.diff.png` |
+
+
+  7 passed (11.7s)

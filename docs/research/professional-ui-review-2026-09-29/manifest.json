@@ -1,0 +1,245 @@
+{
+  "createdAt": "2026-09-29T15:08:19.000Z",
+  "commit": "279735b88f7a360d3d6d412fd6e478add6e34809",
+  "runtime": "Fresh production UI bundle in explicit mock API mode; no native audio/REAPER integration validation",
+  "suite": {
+    "startTime": "2026-09-29T14:47:29.491Z",
+    "duration": 485696.718,
+    "expected": 594,
+    "skipped": 0,
+    "unexpected": 0,
+    "flaky": 0
+  },
+  "captures": [
+    {
+      "id": "production",
+      "source": "apps/ui/screenshots/app/production/mock-fidelity-01/desktop.png",
+      "state": "production/mock-fidelity-01",
+      "capturedAt": "2026-09-29T14:53:35.662Z",
+      "sha256": "c646fd37893431fe5ffb76108e04c0638d7227e4f17281ae7735e2039864268c",
+      "theme": "light"
+    },
+    {
+      "id": "script",
+      "source": "apps/ui/screenshots/app/script/prep-rail-pronunciations/desktop.png",
+      "state": "script/prep-rail-pronunciations",
+      "capturedAt": "2026-09-29T14:47:56.454Z",
+      "sha256": "99ed722e70db2715bd53dd71572a1156d9e1ea3ebe9d9f2f5baf381a85801d1f",
+      "theme": "light"
+    },
+    {
+      "id": "booth",
+      "source": "apps/ui/screenshots/mock-match/stage-navigation-and-page-replacement__03-booth-concept.app.png",
+      "state": "booth/speaker-tags",
+      "capturedAt": "2026-09-29T14:57:23.988Z",
+      "sha256": "bdd74414f769f9c9151940a643381c1d23e4ca3b56c0f2d04370b8ab6b866e81",
+      "theme": "dark"
+    },
+    {
+      "id": "proof",
+      "source": "apps/ui/screenshots/app/proof/detail-open/desktop.png",
+      "state": "proof/detail-open",
+      "capturedAt": "2026-09-29T14:50:32.312Z",
+      "sha256": "6cc1b8fbe14cd9abfde0065430d2aa204fa8148453da9d48fba5e98ae6fe1bee",
+      "theme": "light"
+    },
+    {
+      "id": "master",
+      "source": "apps/ui/screenshots/app/master/measured/desktop.png",
+      "state": "master/measured",
+      "capturedAt": "2026-09-29T14:52:37.747Z",
+      "sha256": "04548a1988c877e641da5383b655ee6b25a7f6e0c5a4ba8cdc33e341c225140f",
+      "theme": "light"
+    },
+    {
+      "id": "series",
+      "source": "apps/ui/screenshots/app/storybible/series-tab-populated/desktop.png",
+      "state": "storybible/series-tab-populated",
+      "capturedAt": "2026-09-29T14:48:38.586Z",
+      "sha256": "5ee9ad2880afdc2abf2f8bf1ec03a2f5b9a082eb0d38b3d6295e4b495466e4a2",
+      "theme": "light"
+    },
+    {
+      "id": "companion",
+      "source": "apps/ui/screenshots/mock-match/stage-navigation-and-page-replacement__07-daw-companion-concept.app.png",
+      "state": "booth/companion-default",
+      "capturedAt": "2026-09-29T14:57:25.597Z",
+      "sha256": "64c07bdbb6db7bae88d4de9bf5676ef2dfb493fa3da59c8354b0b39828248b33",
+      "theme": "dark"
+    },
+    {
+      "id": "settings",
+      "source": "apps/ui/screenshots/app/settings/global-booth/desktop.png",
+      "state": "settings/global-booth",
+      "capturedAt": "2026-09-29T14:54:38.623Z",
+      "sha256": "12be46b953f6647fbe53fade9a8ad65d1fe7acecab0c62f87281425f35849320",
+      "theme": "light"
+    },
+    {
+      "id": "import",
+      "source": "apps/ui/screenshots/app/production/import-review-characters/desktop.png",
+      "state": "production/import-review-characters",
+      "capturedAt": "2026-09-29T14:53:54.459Z",
+      "sha256": "381f05f25d0d166f652be2245ad7fff67dbd0caa41a6e684a615bd067c5d87fc",
+      "theme": "light"
+    },
+    {
+      "id": "pickups",
+      "source": "apps/ui/screenshots/app/pickups/next-in-chapter/desktop.png",
+      "state": "pickups/next-in-chapter",
+      "capturedAt": "2026-09-29T14:52:27.811Z",
+      "sha256": "1cfd98b5412e7428e5b81d50d42feb0f69b1ebce0578a0f543c63a11cf08309a",
+      "theme": "light"
+    },
+    {
+      "id": "project",
+      "source": "apps/ui/screenshots/app/project/picker-empty/desktop.png",
+      "state": "project/picker-empty",
+      "capturedAt": "2026-09-29T14:47:33.984Z",
+      "sha256": "7f299d2ed1ff00fb2082cd5c8cf28fb606b74f8bee8fefecd15a62034aa11e76",
+      "theme": "light"
+    },
+    {
+      "id": "states",
+      "source": "apps/ui/screenshots/app/proof/evidence-changed/desktop.png",
+      "state": "proof/evidence-changed",
+      "capturedAt": "2026-09-29T14:50:35.126Z",
+      "sha256": "4eb5dbb4b674aaaffae883e09b2f0c37e0bd7b512066e67477720b2362e77053",
+      "theme": "light"
+    }
+  ],
+  "supplementary": [
+    {
+      "state": "proof/default",
+      "path": "actual/proof--default.png",
+      "capturedAt": "2026-09-29T14:50:29.331Z",
+      "sha256": "68c46df42eb1f4d6f658d3e28c2bcdfad8cf35a4f556e9b48bc39655dc5a9bab"
+    },
+    {
+      "state": "proof/filtered-empty",
+      "path": "actual/proof--filtered-empty.png",
+      "capturedAt": "2026-09-29T14:50:31.281Z",
+      "sha256": "61494e0dd05c668ca4562f580e2f410a4606dbd7f89cef40eafcb9d0676cfa5a"
+    },
+    {
+      "state": "proof/reaper-not-running",
+      "path": "actual/proof--reaper-not-running.png",
+      "capturedAt": "2026-09-29T14:50:40.957Z",
+      "sha256": "ebf52bf46301be67a6e7486cabed133aa0c2ab3001514fdb4057cd6e92a89413"
+    },
+    {
+      "state": "proof/decision-saved",
+      "path": "actual/proof--decision-saved.png",
+      "capturedAt": "2026-09-29T14:50:33.336Z",
+      "sha256": "84f16201c1c9b293c3584ff561183f8e830bfb0cd17eb0c466586b07c162de54"
+    },
+    {
+      "state": "proof-chapter/note-selected",
+      "path": "actual/proof-chapter--note-selected.png",
+      "capturedAt": "2026-09-29T14:51:17.726Z",
+      "sha256": "52c9ed7220681fe85044b8579fac50b10dc46b4fbfb44f03bc9348130f2351c3"
+    },
+    {
+      "state": "production/no-manuscript",
+      "path": "actual/production--no-manuscript.png",
+      "capturedAt": "2026-09-29T14:53:40.051Z",
+      "sha256": "5dc7dcf2eb2a18d1f29755f43176c16df11381e6c9400fe3f5e990cf03da5ee9"
+    },
+    {
+      "state": "production/import-build-running",
+      "path": "actual/production--import-build-running.png",
+      "capturedAt": "2026-09-29T14:53:52.374Z",
+      "sha256": "d4691fa45b7df1e1c412153f8b983085c754cb310543ee7f74a86dadaa88145c"
+    },
+    {
+      "state": "production/import-build-failed",
+      "path": "actual/production--import-build-failed.png",
+      "capturedAt": "2026-09-29T14:53:52.410Z",
+      "sha256": "ba5def4e6aa839b9b81646d01bba3d30fbd048adc6dc03ddfc3a3fd128f9069e"
+    },
+    {
+      "state": "production/import-review-collapsed",
+      "path": "actual/production--import-review-collapsed.png",
+      "capturedAt": "2026-09-29T14:53:54.514Z",
+      "sha256": "e0d317a012aeafc207e04ddf962e63ed01db7f62fbdd557babcdf703ce6657cf"
+    },
+    {
+      "state": "production/chapter-remove-confirm",
+      "path": "actual/production--chapter-remove-confirm.png",
+      "capturedAt": "2026-09-29T14:53:42.448Z",
+      "sha256": "1005e35e9ab576a91db53b9a6c568702fa719add9917e7a0bf1863d482f683cc"
+    },
+    {
+      "state": "settings/dirty-footer",
+      "path": "actual/settings--dirty-footer.png",
+      "capturedAt": "2026-09-29T14:55:14.888Z",
+      "sha256": "3bb8595c0fea2502e5d0e986a60556c342df857cdd245565ae12dd328786ba6e"
+    },
+    {
+      "state": "settings/navigate-away-confirm",
+      "path": "actual/settings--navigate-away-confirm.png",
+      "capturedAt": "2026-09-29T14:55:16.405Z",
+      "sha256": "d52149ddcd28446147a99e75c6fb4e94d24bee39e334f1103741e7783c13793a"
+    },
+    {
+      "state": "settings/global-keyboard-conflict",
+      "path": "actual/settings--global-keyboard-conflict.png",
+      "capturedAt": "2026-09-29T14:54:26.758Z",
+      "sha256": "a3ff8c4ba43ed4835e23a38e394dc7ed2983214814aede0789a74eb002b78cf5"
+    },
+    {
+      "state": "settings/local-assets-failed",
+      "path": "actual/settings--local-assets-failed.png",
+      "capturedAt": "2026-09-29T14:54:59.902Z",
+      "sha256": "f8660700ce2a74c757bafd0d8ea1cd302b7b87fc09a33b3553746e8376b6517c"
+    },
+    {
+      "state": "master/running",
+      "path": "actual/master--running.png",
+      "capturedAt": "2026-09-29T14:52:31.696Z",
+      "sha256": "c5d907a866c4bdf18958908fcda5bb1da45ef3cfa26063385abaf4ff671c4cba"
+    },
+    {
+      "state": "master/error",
+      "path": "actual/master--error.png",
+      "capturedAt": "2026-09-29T14:52:43.566Z",
+      "sha256": "07a4d1132bedead37bd44b73329625d76d1ff4a71b97dd58cc86bdd6cec406be"
+    },
+    {
+      "state": "pickups/import-errors",
+      "path": "actual/pickups--import-errors.png",
+      "capturedAt": "2026-09-29T14:52:26.358Z",
+      "sha256": "8b11e0c00a7031b201939a82532fe0deb00c6f0e50ba2d7f1a16b116e8c45669"
+    },
+    {
+      "state": "booth/resume-disagree",
+      "path": "actual/booth--resume-disagree.png",
+      "capturedAt": "2026-09-29T14:49:21.771Z",
+      "sha256": "23ba52e981d16b2586e61bfc18c62cf559f4c99b1148e69afe2326d2d0e2b17b"
+    },
+    {
+      "state": "global/shortcut-sheet",
+      "path": "actual/global--shortcut-sheet.png",
+      "capturedAt": "2026-09-29T14:55:22.671Z",
+      "sha256": "61095900ee9050cd2ada95b7e2af094801430776a1641bce58a77a2026c628f1"
+    },
+    {
+      "state": "script/prep-rail-pronunciations · tablet 768×1024",
+      "path": "actual/script--prep-rail-pronunciations--tablet.png",
+      "capturedAt": "2026-09-29T14:47:57.173Z",
+      "sha256": "469456ff2419c1fd470447489598c58a24ed03fc587e7121a8d24a68a98f7fd1"
+    },
+    {
+      "state": "settings/global-booth · tablet 768×1024",
+      "path": "actual/settings--global-booth--tablet.png",
+      "capturedAt": "2026-09-29T14:54:39.195Z",
+      "sha256": "6d90851d2e2364e9547d970c505fd00a3865f552f009585124a6ae42e01b71c4"
+    },
+    {
+      "state": "proof/detail-open · tablet 768×1024",
+      "path": "actual/proof--detail-open--tablet.png",
+      "capturedAt": "2026-09-29T14:50:33.061Z",
+      "sha256": "23d6c806fc530fc26435c6641302456ee5782ad869e6ffbc5dbd2afe83ebed5a"
+    }
+  ]
+}

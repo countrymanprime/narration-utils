@@ -1,0 +1,5 @@
+# Local Playwright process output; the curated screenshots and JSON reports are retained.
+test-results/
+benchmark-test-results/
+# One-off local editing helper, not part of the reproducible review artifact.
+refine.cjs

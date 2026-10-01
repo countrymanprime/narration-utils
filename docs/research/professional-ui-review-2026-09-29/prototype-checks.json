@@ -1,0 +1,96 @@
+{
+  "checks": [
+    {
+      "id": "production",
+      "documentOverflow": false,
+      "bodyHeight": 900,
+      "viewport": "1440×900"
+    },
+    {
+      "id": "script",
+      "documentOverflow": false,
+      "bodyHeight": 900,
+      "viewport": "1440×900"
+    },
+    {
+      "id": "booth",
+      "documentOverflow": false,
+      "bodyHeight": 900,
+      "viewport": "1440×900"
+    },
+    {
+      "id": "proof",
+      "documentOverflow": false,
+      "bodyHeight": 900,
+      "viewport": "1440×900"
+    },
+    {
+      "id": "master",
+      "documentOverflow": false,
+      "bodyHeight": 900,
+      "viewport": "1440×900"
+    },
+    {
+      "id": "series",
+      "documentOverflow": false,
+      "bodyHeight": 900,
+      "viewport": "1440×900"
+    },
+    {
+      "id": "companion",
+      "documentOverflow": false,
+      "bodyHeight": 900,
+      "viewport": "420×900"
+    },
+    {
+      "id": "settings",
+      "documentOverflow": false,
+      "bodyHeight": 900,
+      "viewport": "1440×900"
+    },
+    {
+      "id": "import",
+      "documentOverflow": false,
+      "bodyHeight": 900,
+      "viewport": "1440×900"
+    },
+    {
+      "id": "pickups",
+      "documentOverflow": false,
+      "bodyHeight": 900,
+      "viewport": "1440×900"
+    },
+    {
+      "id": "project",
+      "documentOverflow": false,
+      "bodyHeight": 900,
+      "viewport": "1440×900"
+    },
+    {
+      "id": "states",
+      "documentOverflow": false,
+      "bodyHeight": 900,
+      "viewport": "1440×900"
+    },
+    {
+      "id": "script-tablet",
+      "documentOverflow": false
+    },
+    {
+      "id": "settings-tablet",
+      "documentOverflow": false
+    },
+    {
+      "id": "proof-tablet",
+      "documentOverflow": false
+    }
+  ],
+  "interactionChecks": [
+    "Inspector next",
+    "No matches",
+    "Clear filters",
+    "Decision feedback",
+    "Settings save feedback"
+  ],
+  "limitations": "Only named prototype actions are simulated. No audio, saving to project, import, DAW control, or backend operations."
+}
