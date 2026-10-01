@@ -9,7 +9,7 @@ dependencies = [
   "fastapi==0.141.1",
   "faster-whisper==1.2.1",
   "httpx==0.28.1",
-  "hypothesis==6.168.0",
+  "hypothesis==6.168.1",
   "moonshine-voice==0.1.5 ; sys_platform == 'win32'",
   "numpy==2.5.3",
   "phonemizer>=3.3",
@@ -20,21 +20,21 @@ dependencies = [
   "pytest==9.1.1",
   "pytest-cov==7.1.0",
   "python-docx==1.2.0",
-  "ruff==0.16.8",
+  "ruff==0.16.9",
   "sounddevice==0.5.6 ; sys_platform == 'win32'",
   "spacy>=3.7",
-  "uvicorn==0.53.0",
+  "uvicorn==0.54.0",
 ]
 
 [dependency-groups]
 # The REAPER bridge harness (integrations/reaper/tests): Lua 5.4, the major version REAPER 7 embeds, and ruff for
 # the Python runner. lupa is MIT and ships the interpreter inside its wheels, so uv.lock pins and hashes it on
 # Linux and Windows. Keep the ruff pin equal to the one in [project] above.
-lua = ["lupa==2.8", "ruff==0.16.8"]
+lua = ["lupa==2.8", "ruff==0.16.9"]
 # The public docs site (tools/docs-site, ADR 0083): MkDocs and the Material theme, exact versions. Both are build-time tools, imported by nothing in the app
 # or the sidecars. pytest and ruff are here so the docs CI job installs this group alone; keep their pins equal to [project] above.
 # Material pins mkdocs<2 (MkDocs 2.0 will not run it); do not raise either pin without re-running the spike (docs/research/docs-site-generator-spike.md).
-docs = ["mkdocs==1.6.1", "mkdocs-material==9.7.7", "pytest==9.1.1", "ruff==0.16.8"]
+docs = ["mkdocs==1.6.1", "mkdocs-material==9.7.7", "pytest==9.1.1", "ruff==0.16.9"]
 
 [tool.uv]
 package = false
