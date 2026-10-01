@@ -47,10 +47,43 @@ describe('ChapterWaveformCard', () => {
     expect(onOpenChapter).toHaveBeenCalledWith('ch-1');
   });
 
-  it('says so when the chapter has no recording, rather than drawing a fake waveform', async () => {
+  it('draws a greyed placeholder with an honest label when the chapter has no recording', async () => {
     renderCard({ tracksList: async () => ({ tracks: [] }) as never });
     expect(await screen.findByText(/has no recording to draw yet/i)).toBeTruthy();
+    expect(screen.getByText(/placeholder, not this chapter's audio/i)).toBeTruthy();
+    expect(screen.getByRole('img', { name: /placeholder waveform/i })).toBeTruthy();
     expect(screen.queryByRole('region', { name: "The chapter's waveform" })).toBeNull();
+  });
+
+  it('draws no placeholder while loading or after a failed read', async () => {
+    renderCard({ workspacePeaks: async () => Promise.reject(new Error('boom')) });
+    await waitFor(() => expect(screen.getByRole('alert')).toBeTruthy());
+    expect(screen.queryByRole('img', { name: /placeholder waveform/i })).toBeNull();
+  });
+
+  it('offers the way back to every chapter only while the notes are narrowed to it', async () => {
+    const user = userEvent.setup();
+    const api = createMockApi();
+    const onShowAllChapters = vi.fn();
+    const view = (notesFiltered: boolean) => (
+      <ApiProvider api={api}>
+        <TooltipProvider>
+          <ChapterWaveformCard
+            chapters={chapters}
+            chapterId="ch-1"
+            onChapterChange={vi.fn()}
+            onOpenChapter={vi.fn()}
+            notesFiltered={notesFiltered}
+            onShowAllChapters={onShowAllChapters}
+          />
+        </TooltipProvider>
+      </ApiProvider>
+    );
+    const { rerender } = render(view(false));
+    expect(screen.queryByRole('button', { name: 'Show all chapters' })).toBeNull();
+    rerender(view(true));
+    await user.click(screen.getByRole('button', { name: 'Show all chapters' }));
+    expect(onShowAllChapters).toHaveBeenCalledOnce();
   });
 
   it('says so when there are no chapters at all', () => {

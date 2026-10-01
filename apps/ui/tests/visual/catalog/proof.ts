@@ -12,6 +12,24 @@ export const proofStates: StateEntry[] = [
   },
   {
     page: 'proof',
+    state: 'no-recording',
+    description:
+      "Proof with no chapter linked to a track - the waveform card draws a greyed placeholder waveform labelled as not the chapter's audio (ADR 0750, D100), the notes of every chapter listed under it",
+  },
+  {
+    page: 'proof',
+    state: 'chapter-selected',
+    description:
+      "Proof, Chapter 1 (linked) picked in the waveform card's selector - its stored waveform, the notes table narrowed to that chapter and Show all chapters beside the selector (ADR 0750, D100)",
+  },
+  {
+    page: 'proof',
+    state: 'chapter-filtered',
+    description:
+      'Proof, Chapter 2 (no recording) picked in the waveform card - the placeholder waveform and the notes table narrowed to Chapter 2 with Show all chapters offered (ADR 0750, D100)',
+  },
+  {
+    page: 'proof',
     state: 'empty',
     description:
       'Proof, a project with no findings at all - "Nothing to review yet" and where findings come from (reached via the ?mockFindings=empty mock seam)',

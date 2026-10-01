@@ -24,11 +24,16 @@ export function ChapterWaveformCard({
   chapterId,
   onChapterChange,
   onOpenChapter,
+  notesFiltered = false,
+  onShowAllChapters,
 }: {
   chapters: readonly ManuscriptChapter[];
   chapterId: string;
   onChapterChange: (chapterId: string) => void;
   onOpenChapter: (chapterId: string) => void;
+  /** The notes table below is narrowed to this chapter: the card says so and offers the way back. */
+  notesFiltered?: boolean;
+  onShowAllChapters?: () => void;
 }) {
   const api = useApi();
   const [loaded, setLoaded] = useState<Loaded>();
@@ -65,19 +70,18 @@ export function ChapterWaveformCard({
   }
 
   const duration = totalDuration(playlist);
-  const emptyText =
-    failed ??
-    (current && playlist.length === 0
-      ? `${selected ? chapterName(selected) : 'This chapter'} has no recording to draw yet. Link a track to it, or record it, and its waveform appears here.`
-      : undefined);
+  const noRecording = current !== undefined && playlist.length === 0 && failed === undefined;
+  const chapterLabel = selected ? chapterName(selected) : 'This chapter';
 
   return (
     <Panel label="Chapter waveform" flush>
       <div className="px-3 py-2">
-        {emptyText ? (
-          <p role={failed ? 'alert' : undefined} className="text-sm text-[var(--text-muted)]">
-            {emptyText}
+        {failed ? (
+          <p role="alert" className="text-sm text-[var(--text-muted)]">
+            {failed}
           </p>
+        ) : noRecording ? (
+          <PlaceholderWaveform label={`${chapterLabel} has no recording to draw yet`} />
         ) : current ? (
           <WaveformStrip
             bare
@@ -93,10 +97,43 @@ export function ChapterWaveformCard({
         <div className="mt-1 flex flex-wrap items-center gap-2">
           <span className="font-mono text-xs text-[var(--text-muted)]">0:00</span>
           <ChapterPicker chapters={chapters} chapterId={chapterId} onChapterChange={onChapterChange} onOpenChapter={onOpenChapter} />
+          {notesFiltered && (
+            <span className="flex flex-wrap items-center gap-2 text-xs text-[var(--text-muted)]">
+              Notes below: this chapter only
+              <Button variant="secondary" onClick={onShowAllChapters}>
+                Show all chapters
+              </Button>
+            </span>
+          )}
           <span className="ml-auto font-mono text-xs text-[var(--text-muted)]">{formatClock(duration)}</span>
         </div>
       </div>
     </Panel>
+  );
+}
+
+// A fixed, deterministic bar pattern: it is drawn in grey and labelled as a placeholder, never as this chapter's audio.
+const PLACEHOLDER_BARS = Array.from({ length: 96 }, (_, index) => 0.18 + 0.62 * Math.abs(Math.sin(index * 0.55) * Math.cos(index * 0.17)));
+
+/** What the card draws for a chapter with no recording (ADR 0750, D100): a greyed-out waveform with an honest label. */
+function PlaceholderWaveform({ label }: { label: string }) {
+  return (
+    <figure className="m-0 flex flex-col gap-1">
+      <svg
+        role="img"
+        aria-label="Placeholder waveform, not this chapter's audio"
+        viewBox="0 0 96 52"
+        preserveAspectRatio="none"
+        className="h-[52px] w-full opacity-40"
+      >
+        {PLACEHOLDER_BARS.map((bar, index) => (
+          <rect key={index} x={index + 0.15} y={26 - 26 * bar} width={0.7} height={52 * bar} fill="var(--text-muted)" />
+        ))}
+      </svg>
+      <figcaption className="text-sm text-[var(--text-muted)]">
+        {label}. The grey shape is a placeholder, not this chapter's audio. Link a track to it, or record it, and its waveform appears here.
+      </figcaption>
+    </figure>
   );
 }
 

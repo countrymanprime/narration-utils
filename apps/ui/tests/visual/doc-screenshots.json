@@ -435,6 +435,20 @@
   },
   {
     "page": "proof",
+    "state": "chapter-selected",
+    "viewport": "desktop",
+    "docName": "proof-chapter-selected",
+    "caption": "Proof - Chapter 1 picked in the waveform card: its waveform and only its notes"
+  },
+  {
+    "page": "proof",
+    "state": "chapter-filtered",
+    "viewport": "desktop",
+    "docName": "proof-chapter-filtered",
+    "caption": "Proof - Chapter 2 has no recording: a grey placeholder waveform, and only Chapter 2's notes"
+  },
+  {
+    "page": "proof",
     "state": "detail-open",
     "viewport": "desktop",
     "docName": "proof-detail",
