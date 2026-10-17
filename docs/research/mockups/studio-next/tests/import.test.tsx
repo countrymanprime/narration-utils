@@ -3,7 +3,7 @@ import { chooseOption } from './helpers/select'
 import { closePop, closeTopModal, dismissToast, getOverlay } from '@/ui/overlay'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import Production from '@/pages/Production'
-import Settings from '@/pages/Settings'
+import { mountSettings } from './helpers/settings'
 import { modals } from '@/app/modals'
 import { ensureImportPrompt } from '@/state/commands/manuscript'
 import { OverlayHost } from '@/ui/OverlayHost'
@@ -15,7 +15,7 @@ import type { HeadingStyle } from '@/format/headings'
 
 const mount = () => render(<><Production /><OverlayHost /></>)
 /** Replacing the manuscript lives in Settings, under Manuscript. */
-const mountSettings = () => render(<><Settings /><OverlayHost /></>)
+const mountSettingsPage = () => mountSettings('project')
 beforeEach(() => resetState(createInitialState()))
 afterEach(() => {
   cleanup()
@@ -27,7 +27,7 @@ const flagOf = (id: string) => getState().data.chapters.find((c) => c.id === id)
 
 /** Settings opens the replace; Production is mounted too, where the flags it leaves behind show. */
 function replaceFlow() {
-  render(<><Settings /><Production /><OverlayHost /></>)
+  mountSettings('project', <Production />)
   fireEvent.click(document.getElementById('repl')!)
   fireEvent.click(screen.getByText('Choose a file…'))
   fireEvent.click(screen.getByRole('button', { name: 'Next: what changes' }))
@@ -39,7 +39,7 @@ describe('Import and replace', () => {
     expect(document.getElementById('repl')).toBeNull()
     expect(screen.queryByRole('button', { name: /Replace manuscript/ })).toBeNull()
     cleanup()
-    mountSettings()
+    mountSettingsPage()
     const section = screen.getByRole('heading', { name: 'Manuscript' }).closest('section') as HTMLElement
     expect(within(section).getByText(/^Imported /)).toBeInTheDocument()
     fireEvent.click(within(section).getByRole('button', { name: 'Replace manuscript…' }))
@@ -89,7 +89,7 @@ describe('Import and replace', () => {
   })
 
   it('Cancel and Back work; Escape closes', () => {
-    mountSettings()
+    mountSettingsPage()
     fireEvent.click(document.getElementById('repl')!)
     fireEvent.click(screen.getByText('Choose a file…'))
     fireEvent.click(screen.getByRole('button', { name: 'Back' }))

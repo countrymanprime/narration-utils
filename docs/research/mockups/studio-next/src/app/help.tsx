@@ -38,6 +38,7 @@ const SHORTCUT_SPEC: Spec = [
   ['Editing: timeline strip', [['S']]],
   ['Editing: clean up and effects drawer', [['Ctrl', 'Shift', 'C']]],
   ['Editing: previous / next chapter', [['Alt', '↑', '↓']]],
+  ['Open settings (Esc or Back returns)', [['Ctrl', ',']]],
   ['Undo last change', [['Ctrl', 'Z']]],
   ['Booth: record', [['Space']]],
   ['Booth: punch and roll', [['R']]],

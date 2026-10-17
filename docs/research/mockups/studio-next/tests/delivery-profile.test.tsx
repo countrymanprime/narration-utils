@@ -6,7 +6,7 @@ import { allCommands } from '@/app/registry'
 import { modals } from '@/app/modals'
 import Companion from '@/pages/Companion'
 import { ProjectPicker } from '@/pages/production/ProjectPicker'
-import Settings from '@/pages/Settings'
+import { mountSettings } from './helpers/settings'
 import { PLATFORM_PROFILES } from '@/fixtures/platforms'
 import { PlatformProfile } from '@/domain/schemas'
 import { measureOptions, measureText } from '@/selectors/milestones'
@@ -68,7 +68,7 @@ describe('Delivery profile', () => {
   })
 
   it('is changed in Settings', async () => {
-    render(<><Settings /><OverlayHost /></>)
+    mountSettings('delivery')
     expect(screen.getByRole('combobox', { name: 'Delivery profile' })).toHaveTextContent('ACX')
     await chooseOption(screen.getByRole('combobox', { name: 'Delivery profile' }), 'Other / none')
     expect(getState().data.deliveryProfile).toBe('none')

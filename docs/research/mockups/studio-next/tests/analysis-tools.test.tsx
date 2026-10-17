@@ -2,7 +2,7 @@ import { act as rtlAct, cleanup, render, screen, waitFor, within } from '@testin
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import BiblePage from '@/pages/Bible'
-import SettingsPage from '@/pages/Settings'
+import { mountSettings } from './helpers/settings'
 import { EXTRACTION_SOURCES, VERIFY_BELOW } from '@/config/extraction'
 import { ComponentSpec } from '@/domain/components'
 import { ExtractionSuggestion } from '@/domain/extraction'
@@ -295,12 +295,12 @@ describe('when to offer better analysis', () => {
 })
 
 describe('Settings: Story Bible analysis', () => {
-  const mount = () => render(<><SettingsPage /><OverlayHost /></>)
+  const mount = () => mountSettings('models')
   const row = (id: string) => document.querySelector(`[data-component="${id}"]`) as HTMLElement
 
   it('lists the four components with what each does, size, host, memory and time', () => {
     mount()
-    expect(screen.getByRole('heading', { name: 'Story Bible analysis' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Story Bible analysis tools' })).toBeInTheDocument()
     for (const s of COMPONENT_SPECS) expect(within(row(s.id)).getByText(s.name)).toBeInTheDocument()
     const facts = within(row('booknlp-small')).getByText(/from people\.ischool\.berkeley\.edu/).closest('[data-comp-facts]') as HTMLElement
     expect(facts.textContent).toContain('161 MB')

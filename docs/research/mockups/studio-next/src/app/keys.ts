@@ -5,6 +5,7 @@ import { getState, undoLast } from '@/state/store'
 import { openFind } from '@/state/commands/script'
 import { contextItemsFor, keyHandlersFor } from './registry'
 import { modals } from './modals'
+import { openSettings } from '@/state/commands/settingsPage'
 
 const isTyping = (t: EventTarget | null): boolean => {
   const el = t as HTMLElement | null
@@ -24,6 +25,7 @@ export function useGlobalKeys(): void {
       const typing = isTyping(e.target)
       const plain = !(e.ctrlKey || e.metaKey || e.altKey)
       const page = getState().ui.page
+      if ((e.ctrlKey || e.metaKey) && e.key === ',') { e.preventDefault(); openSettings({ from: page === 'settings' ? undefined : page }); return }
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); modals.palette(); return }
       if ((e.key === 'ContextMenu' || (e.shiftKey && e.key === 'F10')) && !(e.target instanceof Element && e.target.closest('input,textarea,select'))) {
         const focus = document.activeElement instanceof HTMLElement && document.activeElement !== document.body ? document.activeElement : document.getElementById('main')!

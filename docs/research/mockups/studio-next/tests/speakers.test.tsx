@@ -1,7 +1,7 @@
 import { act as rtlAct, cleanup, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import SettingsPage from '@/pages/Settings'
+import { mountSettings } from './helpers/settings'
 import { linesOf } from '@/selectors/bible'
 import { phrasesOf, unattributed } from '@/selectors/phrases'
 import { NARRATOR, entryOfSpeaker, speakerCandidates, speakerIn } from '@/selectors/speakers'
@@ -95,7 +95,7 @@ describe('speakers are derived from the Story Bible', () => {
 
 describe('Settings: Can speak', () => {
   it('has a per-type checkbox wired to the data', async () => {
-    render(<SettingsPage />)
+    mountSettings('project')
     const box = screen.getByRole('checkbox', { name: 'Can speak: Character' })
     expect(box).toHaveAttribute('aria-checked', 'true')
     expect(screen.getByRole('checkbox', { name: 'Can speak: Location' })).toHaveAttribute('aria-checked', 'false')

@@ -59,15 +59,15 @@ function Row({ s }: { s: ComponentSpec }) {
   )
 }
 
-/** Settings: the optional tools that make the Story Bible scan better. Nothing is downloaded until the narrator agrees. */
-export function AnalysisTools() {
+/** The optional tools that make the Story Bible scan better. Nothing is downloaded until the narrator agrees. `bare` draws the list without a panel, for a Settings section that has its own heading. */
+export function AnalysisTools({ bare }: { bare?: boolean }) {
   const ask = useStudio((s) => s.ui.prefs.analysisPrompt === 'ask')
-  return (
-    <section className="panel" id="analysis"><div className="ph"><h2>Story Bible analysis</h2></div>
-      <div className="pb stack" style={{ overflow: 'visible' }}>
-        <div className="comps">{componentProvider().specs().map((s) => <Row key={s.id} s={s} />)}</div>
-        <Checkbox label="Offer better analysis when scanning" labelClassName="row" checked={ask} onCheckedChange={(c) => setAnalysisPrompt(c ? 'ask' : 'basic')} />
-      </div>
-    </section>
+  const body = (
+    <div className="pb stack" style={{ overflow: 'visible', padding: bare ? 0 : undefined }}>
+      <div className="comps">{componentProvider().specs().map((s) => <Row key={s.id} s={s} />)}</div>
+      <Checkbox label="Offer better analysis when scanning" labelClassName="row" checked={ask} onCheckedChange={(c) => setAnalysisPrompt(c ? 'ask' : 'basic')} />
+    </div>
   )
+  if (bare) return <div id="analysis">{body}</div>
+  return <section className="panel" id="analysis"><div className="ph"><h2>Story Bible analysis</h2></div>{body}</section>
 }

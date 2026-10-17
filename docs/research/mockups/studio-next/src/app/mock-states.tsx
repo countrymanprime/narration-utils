@@ -3,6 +3,7 @@ import { chaptersFor } from '@/fixtures/book'
 import { DEADLINES, type MockState } from '@/state/slices/mock'
 import { update, useStudio } from '@/state/store'
 import { recheckNotes } from '@/state/commands/proof'
+import { openSettings } from '@/state/commands/settingsPage'
 import { HEADING_STYLES, type HeadingStyle } from '@/format/headings'
 import { closePop, openPopoverAt, toast } from '@/ui/overlay'
 import { modals } from './modals'
@@ -97,10 +98,21 @@ function MockStates() {
         <Radio name="net" value="online" label="Online" checked={mock.net === 'online'} onChange={() => setMock({ net: 'online' })} />
         <Radio name="net" value="offline" label="Offline" checked={mock.net === 'offline'} onChange={() => setMock({ net: 'offline' })} />
       </div>
-      <div className="sp-grp"><span className="label">Analysis tools</span>
+      <div className="sp-grp"><span className="label">Downloads (models, voices, analysis tools)</span>
         <Radio name="ahost" value="reachable" label="Reachable" checked={mock.analysisHost === 'reachable'} onChange={() => setMock({ analysisHost: 'reachable' })} />
         <Radio name="ahost" value="blocked" label="Download blocked" checked={mock.analysisHost === 'blocked'} onChange={() => setMock({ analysisHost: 'blocked' })} />
         <Radio name="ahost" value="lowdisk" label="Low disk space" checked={mock.analysisHost === 'lowdisk'} onChange={() => setMock({ analysisHost: 'lowdisk' })} />
+      </div>
+      <div className="sp-grp"><span className="label">Settings</span>
+        <Radio name="sview" value="ready" label="Ready" checked={mock.settingsView === 'ready'} onChange={() => setMock({ settingsView: 'ready' })} />
+        <Radio name="sview" value="loading" label="Loading" checked={mock.settingsView === 'loading'} onChange={() => setMock({ settingsView: 'loading' })} />
+        <Radio name="sview" value="load-error" label="Settings file cannot be read" checked={mock.settingsView === 'load-error'} onChange={() => setMock({ settingsView: 'load-error' })} />
+        <Radio name="sview" value="save-error" label="Changes cannot be saved" checked={mock.settingsView === 'save-error'} onChange={() => setMock({ settingsView: 'save-error' })} />
+        <Radio name="sassets" value="mixed" label="Some models on the disk" checked={mock.assets === 'mixed'} onChange={() => setMock({ assets: 'mixed' })} />
+        <Radio name="sassets" value="none" label="No models on the disk" checked={mock.assets === 'none'} onChange={() => setMock({ assets: 'none' })} />
+        <div className="row">
+          <button type="button" className="btn sm" id="mock-from-pickups" onClick={() => { closePop(); update((d) => { d.ui.page = 'pickups' }); openSettings({ row: 'stt.model', from: 'pickups' }) }}>Open from Pickups: transcription model</button>
+        </div>
       </div>
       <div className="sp-grp"><span className="label">Measurements</span>
         <Radio name="meas" value="available" label="Reported" checked={mock.measurements === 'available'} onChange={() => setMock({ measurements: 'available' })} />

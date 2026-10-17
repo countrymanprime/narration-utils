@@ -3,6 +3,7 @@
  * Nothing here is book data: it is where you are, what is selected, and how you like to read.
  */
 import type { ComponentJob } from '@/domain/components'
+import { initialSettings, type SettingsUi } from './settings'
 
 export type Page = 'production' | 'schedule' | 'script' | 'bible' | 'booth' | 'editing' | 'proof' | 'pickups' | 'master' | 'delivery' | 'settings'
 
@@ -250,10 +251,11 @@ export interface UiState {
   check: CheckConfig
   /** Downloads in progress or failed, by component id. */
   components: Record<string, ComponentJob>
+  settings: SettingsUi
   /** Companion window: the note shown (shares the Proof selection). */
 }
 export const initialUi = (prefs: Prefs): UiState => ({
   page: 'production', pinned: ['alice'], importPromptShown: false, chapter: '8', prefs,
   script: initialScript, proof: initialProof, editing: initialEditing, pickups: initialPickups, master: initialMaster, delivery: initialDelivery,
-  booth: initialBooth, bible: initialBible, check: initialCheck, components: {},
+  booth: initialBooth, bible: initialBible, check: initialCheck, components: {}, settings: initialSettings,
 })
