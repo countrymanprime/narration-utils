@@ -12,10 +12,10 @@ The decisions in [the index](README.md) grouped by what they govern, so a plan c
 | [Wire contracts and host bindings](#wire-contracts-and-bindings) | 10 |
 | [Accessibility and interaction feedback](#accessibility-and-interaction) | 9 |
 | [Visual testing and mock fidelity](#visual-testing-and-mock-fidelity) | 14 |
-| [Release, CI and supply chain](#release-ci-and-supply-chain) | 19 |
+| [Release, CI and supply chain](#release-ci-and-supply-chain) | 20 |
 | [Documentation and process](#docs-and-process) | 8 |
 | [Ports and providers](#ports-and-providers) | 15 |
-| [DAW integration (REAPER and Audacity)](#daw-integration) | 33 |
+| [DAW integration (REAPER and Audacity)](#daw-integration) | 34 |
 | [Assets, models and downloads](#assets-and-downloads) | 11 |
 | [Mastering, delivery and production](#mastering-delivery-and-production) | 26 |
 | [Recording check, takes and proofing](#recording-check-and-takes) | 57 |
@@ -158,6 +158,7 @@ Windows build, installer, in-app update, provenance, pinned actions, notices, li
 | [0413](0413-what-stays-of-the-other-platforms-when-windows-is-the-only-one.md) | What stays of the other platforms when Windows is the only one | Proposed |
 | [0755](0755-the-product-is-named-narration-studio-to-the-user-and-narration-utils-stays-on-every-name-a-file-a-key-or-reaper-holds.md) | The product is named Narration Studio to the user, and `narration-utils` stays on every name a file, a key or REAPER holds | Accepted |
 | [0757](0757-the-daw-reference-is-reference-docs-pinned-to-the-ports-declarations-by-a-generated-matrix-and-a-section-test.md) | The DAW reference is reference docs pinned to the port's declarations by a generated matrix and a section test | Proposed |
+| [0865](0865-a-voice-sample-is-a-clip-copied-into-the-project-folder-and-its-source-is-kept-as-provenance-only.md) | A voice sample is a clip copied into the project folder, and its source is kept as provenance only | Proposed |
 
 <a id="docs-and-process"></a>
 
@@ -241,6 +242,7 @@ The DAW port, the REAPER Lua file bridge and its harness, the Audacity pipe, and
 | [0660](0660-audacitys-finding-detail-hides-reapers-take-management-instead-of-disabling-it-through-capabilitygate.md) | Audacity's finding detail hides REAPER's take management instead of disabling it through `CapabilityGate` | Proposed |
 | [0840](0840-the-host-keeps-one-pickup-list-merged-from-the-recording-check-the-notes-and-the-narrators-lines-and-the-daw-markers-say-what-is-done.md) | The host keeps one pickup list, merged from the recording check, the notes and the narrator's lines, and the DAW's markers say what is done | Proposed |
 | [0861](0861-a-refused-daw-call-carries-one-code-stale-beside-its-sentence.md) | A refused DAW call carries one code, `stale`, beside its sentence | Proposed |
+| [0866](0866-voice-samples-play-in-the-apps-own-audio-served-by-id-and-never-through-the-daw.md) | Voice samples play in the app's own audio, served by id, and never through the DAW | Proposed |
 
 <a id="assets-and-downloads"></a>
 

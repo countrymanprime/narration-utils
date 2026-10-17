@@ -48,7 +48,7 @@ Most PRDs open with a `**Supersedes:**` or `**Source:**` line naming what they r
 
 ## Index
 
-Phase counts are the rows of each PRD's phase table. The Studio Next series (the rebuild around the working mock in [`docs/research/mockups/studio-next/`](../research/mockups/studio-next/README.md)) is the only set of open PRDs; every earlier PRD was deleted on 2026-10-10 (see [Deleted PRDs](#deleted-prds)).
+Phase counts are the rows of each PRD's phase table. The Studio Next series (the rebuild around the working mock in [`docs/research/mockups/studio-next/`](../research/mockups/studio-next/README.md)) is the main set of open PRDs, with one feature PRD beside it; every earlier PRD was deleted on 2026-10-10 (see [Deleted PRDs](#deleted-prds)).
 
 | PRD | Type | Phases | Replaces |
 | --- | --- | --- | --- |
@@ -66,6 +66,7 @@ Phase counts are the rows of each PRD's phase table. The Studio Next series (the
 | [Studio Next Script-Based Editing](studio-next-script-based-editing.prd.md) | Feature (the Editing page) | 10 | Supersedes the remaining phases of Edit and Proof Workspace |
 | [Studio Next Master, Delivery and Settings](studio-next-master-delivery-and-settings.prd.md) | Feature | 5 | None |
 | [Studio Next Cutover](studio-next-cutover.prd.md) | Close-out (deletes the mock) | 6 | None |
+| [Character Voice Samples: Mark How You Voiced a Character in Editing, Replay It from the Story Bible and the Booth](character-voice-samples.prd.md) | Feature (owner request 2026-10-17; mock approved) | 8 | None; extends the Reference clips of the Story Bible |
 
 ## Deleted PRDs
 

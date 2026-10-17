@@ -1,0 +1,363 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Voice samples draft mock</title>
+<style>
+/* Tokens copied from docs/research/mockups/studio-next/src/styles/app.css so the draft reads like the spec mock. System fonts only: nothing loads from the network. */
+:root{
+  --bg:#EFEDE7; --surface:#FBFAF7; --raised:#F4F2EC; --line:#DCD7CB; --line-strong:#BDB6A6; --btn-line:#2B2723;
+  --ink:#23201B; --muted:#5C564B; --faint:#766F60;
+  --copper:#B04F17; --copper-ink:#FFFFFF; --copper-soft:#F1DDC9; --copper-text:#8F3F0F;
+  --ok:#2F6B3E; --ok-soft:#D9EAD9; --warn:#8A5A00; --warn-soft:#F5E6BF; --bad:#A3302A; --bad-soft:#F4D6D2; --info:#2A5C86; --info-soft:#D8E5F2;
+  --spk:#6B4C9A; --spk-soft:#E6DDF3; --focus:#1F5FBF; --shadow:0 1px 2px rgba(36,33,28,.08),0 10px 28px rgba(36,33,28,.14);
+  --f-display:'Barlow Condensed','Arial Narrow',sans-serif; --f-body:'IBM Plex Sans',system-ui,sans-serif; --f-mono:'IBM Plex Mono',ui-monospace,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#14120E; --surface:#1D1A15; --raised:#26221C; --line:#38332A; --line-strong:#51493C; --btn-line:#7A7060;
+  --ink:#EDE8DE; --muted:#B0A797; --faint:#968D7D;
+  --copper:#D9803F; --copper-ink:#1A0F05; --copper-soft:#3A2617; --copper-text:#F0A06A;
+  --ok:#7DC08A; --ok-soft:#1E3324; --warn:#E3B04F; --warn-soft:#3A2D10; --bad:#F09088; --bad-soft:#40201D; --info:#8DBBE6; --info-soft:#1B2F42;
+  --spk:#B79DE0; --spk-soft:#2C2338; --focus:#7FB0FF; --shadow:0 1px 2px rgba(0,0,0,.4),0 10px 28px rgba(0,0,0,.55); color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#14120E; --surface:#1D1A15; --raised:#26221C; --line:#38332A; --line-strong:#51493C; --btn-line:#7A7060;
+  --ink:#EDE8DE; --muted:#B0A797; --faint:#968D7D;
+  --copper:#D9803F; --copper-ink:#1A0F05; --copper-soft:#3A2617; --copper-text:#F0A06A;
+  --ok:#7DC08A; --ok-soft:#1E3324; --warn:#E3B04F; --warn-soft:#3A2D10; --bad:#F09088; --bad-soft:#40201D; --info:#8DBBE6; --info-soft:#1B2F42;
+  --spk:#B79DE0; --spk-soft:#2C2338; --focus:#7FB0FF; --shadow:0 1px 2px rgba(0,0,0,.4),0 10px 28px rgba(0,0,0,.55); color-scheme:dark}
+
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font:14px/1.45 var(--f-body);margin:0;padding:16px;-webkit-font-smoothing:antialiased}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--focus);outline-offset:2px;border-radius:4px}
+h1,h2,h3{font-family:var(--f-display);font-weight:600;margin:0;letter-spacing:.01em}
+kbd{font:500 12px/1 var(--f-mono);background:var(--raised);border:1px solid var(--line-strong);border-bottom-width:2px;border-radius:4px;padding:2px 5px}
+.sub{color:var(--muted);font-size:13px}
+.label{font:600 12px var(--f-display);letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+.mono{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.spacer{flex:1}
+.row{display:flex;gap:8px;align-items:center}
+.btn{height:32px;padding:0 14px;border-radius:6px;border:1px solid var(--btn-line);background:var(--surface);font:600 13px var(--f-display);letter-spacing:.09em;text-transform:uppercase}
+.btn:hover{background:var(--raised)}
+.btn.primary{background:var(--copper);border-color:var(--copper);color:var(--copper-ink)}
+.btn.quiet{border-color:var(--line-strong);color:var(--muted)}
+.btn.ghost{border-color:transparent;background:none;color:var(--muted)}
+.btn.sm{height:28px;padding:0 10px;font-size:12px}
+.btn[disabled]{opacity:.5;cursor:not-allowed}
+.ibtn{width:32px;height:32px;border-radius:50%;border:1px solid var(--btn-line);background:var(--surface);display:inline-grid;place-items:center;flex:none;padding:0}
+.ibtn:hover{background:var(--raised)}
+.ibtn svg{width:14px;height:14px;fill:currentColor}
+.ibtn[aria-pressed="true"]{background:var(--copper);border-color:var(--copper);color:var(--copper-ink)}
+.ibtn[aria-disabled="true"]{opacity:.5;cursor:not-allowed}
+.pill{display:inline-flex;align-items:center;gap:6px;border-radius:99px;padding:2px 9px;font-size:12px;font-weight:500;white-space:nowrap}
+.pill.ok{background:var(--ok-soft);color:var(--ok)} .pill.warn{background:var(--warn-soft);color:var(--warn)} .pill.bad{background:var(--bad-soft);color:var(--bad)} .pill.neutral{background:var(--raised);color:var(--muted);border:1px solid var(--line)}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.ph{display:flex;align-items:center;gap:10px;padding:12px 16px;border-bottom:1px solid var(--line)}
+.pb{padding:16px}
+
+.bar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:16px}
+.bar h1{font-size:28px}
+.seg{display:inline-flex;border:1px solid var(--line-strong);border-radius:6px;overflow:hidden}
+.seg button{border:0;background:none;padding:4px 12px;font:600 12px var(--f-display);letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.seg button[aria-pressed="true"]{background:var(--copper-soft);color:var(--copper-text)}
+.draft{background:var(--warn-soft);color:var(--warn);border-radius:8px;padding:8px 12px;margin-bottom:16px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(380px,1fr));gap:16px;align-items:start}
+.frame{display:flex;flex-direction:column;gap:8px}
+.frame>.cap{display:flex;gap:8px;align-items:baseline}
+.frame>.cap b{font:700 15px var(--f-display);letter-spacing:.08em;text-transform:uppercase}
+
+/* Editing */
+.script{font:16px/1.9 Georgia,serif;position:relative}
+.script .w{padding:1px 0}
+.script .sel{background:var(--copper-soft);color:var(--copper-text);box-shadow:0 0 0 2px var(--copper-soft)}
+.script .cut{text-decoration:line-through;color:var(--faint)}
+.script .mark{position:relative}
+.script .mark::after{content:"";display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--spk);margin-left:3px;vertical-align:middle}
+.seltb{display:inline-flex;gap:2px;background:#23201B;color:#EDE8DE;border-radius:8px;padding:4px;box-shadow:var(--shadow);margin:6px 0}
+.seltb button{white-space:nowrap;background:none;border:0;color:inherit;border-radius:5px;padding:5px 9px;font:600 12px var(--f-display);letter-spacing:.09em;text-transform:uppercase;display:flex;gap:6px;align-items:center}
+.seltb button:hover,.seltb button.on{background:rgba(255,255,255,.14)}
+.seltb svg{width:13px;height:13px;fill:currentColor}
+.dialog{background:var(--surface);border:1px solid var(--line-strong);border-radius:12px;box-shadow:var(--shadow);max-width:460px}
+.dialog .ph h2{font-size:21px}
+.field{display:flex;flex-direction:column;gap:4px;margin-bottom:12px}
+.field label{font:600 12px var(--f-display);letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.input{height:34px;border:1px solid var(--line-strong);border-radius:6px;background:var(--bg);padding:0 10px;width:100%}
+textarea.input{height:60px;padding:8px 10px;resize:vertical}
+.range{background:var(--raised);border:1px solid var(--line);border-radius:8px;padding:10px 12px;display:flex;gap:10px;align-items:center;margin-bottom:12px}
+.range q{flex:1;font:14px Georgia,serif;color:var(--ink)}
+.alert{background:var(--bad-soft);color:var(--bad);border-radius:8px;padding:8px 12px;margin-bottom:12px}
+.check{display:flex;gap:8px;align-items:center;margin-bottom:12px}
+.foot{display:flex;gap:8px;justify-content:flex-end;align-items:center}
+
+/* Story Bible */
+.entry-h{display:flex;gap:8px;align-items:center;margin-bottom:12px}
+.entry-h h2{font-size:24px}
+.kind{background:var(--spk-soft);color:var(--spk);border-radius:99px;padding:1px 9px;font-size:12px}
+.sample{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border:1px solid var(--line);border-radius:8px;background:var(--bg);margin-bottom:8px}
+.sample .meta{flex:1;min-width:0}
+.sample .name{font-weight:600;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.sample .name span.t{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%}
+.sample .src{color:var(--muted);font-size:13px}
+.sample .src a{color:var(--copper-text)}
+.sample .note{font-size:13px;margin-top:2px}
+.prog{height:4px;border-radius:2px;background:var(--line);margin-top:6px;overflow:hidden}
+.prog i{display:block;height:100%;background:var(--copper)}
+.star{color:var(--copper);font-size:14px}
+.section-h{display:flex;align-items:center;gap:8px;margin:0 0 8px}
+
+/* Booth */
+.booth{display:grid;grid-template-columns:minmax(0,1fr) 250px;gap:12px}
+.read{font:22px/1.8 Georgia,serif;padding:12px 16px;position:relative}
+.chip{display:inline-block;border:1px solid var(--spk-soft);background:var(--spk-soft);color:var(--spk);border-radius:5px;padding:1px 8px;font:700 11px var(--f-body);letter-spacing:.12em;text-transform:uppercase;vertical-align:middle;margin-right:6px}
+.chip.sug{background:none;border-style:dashed;border-color:currentColor}
+.pop{font:14px/1.45 var(--f-body);background:var(--surface);border:1px solid var(--line-strong);border-radius:10px;box-shadow:var(--shadow);padding:10px;width:300px}
+.opt{display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:6px;min-height:36px}
+.opt[aria-selected="true"]{background:var(--copper-soft)}
+.opt .n{flex:1}
+.opt .s{color:var(--muted);font-size:12px}
+.opt .ibtn{width:28px;height:28px}
+.side .vrow{padding:8px 0;border-bottom:1px solid var(--line)}
+.side .vrow:last-child{border:0}
+.side .vh{display:flex;gap:8px;align-items:center}
+.hint{color:var(--muted);font-size:12px;margin-top:6px}
+.live{background:var(--bad-soft);color:var(--bad);border-radius:6px;padding:4px 10px;font:600 12px var(--f-display);letter-spacing:.1em;text-transform:uppercase}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="play" viewBox="0 0 16 16"><path d="M4 2.5v11l9-5.5z"/></symbol>
+  <symbol id="stop" viewBox="0 0 16 16"><rect x="3" y="3" width="10" height="10" rx="1"/></symbol>
+  <symbol id="wave" viewBox="0 0 16 16"><path d="M2 6h1.5v4H2zM5 3h1.5v10H5zM8 5h1.5v6H8zM11 2h1.5v12H11zM14 6h1v4h-1z"/></symbol>
+</svg>
+
+<div class="bar">
+  <h1>Voice samples</h1>
+  <span class="pill warn">Mock, approved 2026-10-17</span>
+  <span class="spacer"></span>
+  <div class="seg" role="group" aria-label="Theme">
+    <button type="button" data-theme-set="light" aria-pressed="false">Light</button>
+    <button type="button" data-theme-set="dark" aria-pressed="false">Dark</button>
+  </div>
+</div>
+<p class="draft">Design only (<a href="../../../prds/character-voice-samples.prd.md">PRD</a>, <a href="../../../adr/0865-a-voice-sample-is-a-clip-copied-into-the-project-folder-and-its-source-is-kept-as-provenance-only.md">ADR 0865</a>, <a href="../../../adr/0866-voice-samples-play-in-the-apps-own-audio-served-by-id-and-never-through-the-daw.md">ADR 0866</a>). Sample data is invented. Play buttons toggle their own state only; no audio plays. Tokens are the Studio Next mock's.</p>
+
+<h2 style="margin:16px 0 8px">1 · Editing</h2>
+<div class="grid">
+  <div class="frame">
+    <div class="cap"><b>Mark</b><span class="sub">Words selected; <kbd>V</kbd> or the toolbar opens the dialog</span></div>
+    <div class="panel"><div class="pb">
+      <div class="script" aria-label="Chapter 3 script">
+        “Off with <span class="w sel">his head!</span> <span class="w sel">Off with it at once,</span> <span class="w sel">I say</span>,” cried the Queen, and the whole court fell silent. <span class="w mark" title="A voice sample ends here">Nobody</span> moved.
+      </div>
+      <div class="seltb" role="toolbar" aria-label="Selection">
+        <button type="button"><svg><use href="#play"/></svg>Play</button>
+        <button type="button">Add FX</button>
+        <button type="button">Mute</button>
+        <button type="button" class="on"><svg><use href="#wave"/></svg>Voice sample <kbd style="background:rgba(255,255,255,.14);border-color:rgba(255,255,255,.3);color:inherit">V</kbd></button>
+        <button type="button">Delete</button>
+      </div>
+      <p class="hint">Also in the word menu: “Mark as voice sample…”. With nothing selected, <kbd>V</kbd> says “Select the words first.”</p>
+    </div></div>
+  </div>
+
+  <div class="frame">
+    <div class="cap"><b>Dialog</b><span class="sub">Ready to save</span></div>
+    <div class="dialog" role="dialog" aria-labelledby="d1">
+      <div class="ph"><h2 id="d1">Voice sample</h2><span class="spacer"></span><button class="btn ghost sm" type="button">Close</button></div>
+      <div class="pb">
+        <div class="field"><label for="c1">Character</label>
+          <select id="c1" class="input"><optgroup label="In this chapter"><option>The Queen of Hearts</option><option>Alice</option></optgroup><optgroup label="All characters"><option>The Hatter</option></optgroup><option>Narration</option></select>
+          <span class="sub">3 of 20 samples</span></div>
+        <div class="range"><button class="ibtn" type="button" aria-label="Play range" aria-pressed="false" data-play><svg><use href="#play"/></svg></button><q>Off with his head! Off with it at once, I say</q><span class="mono sub">6.8 s</span></div>
+        <div class="field"><label for="l1">Label <span class="sub" style="text-transform:none;letter-spacing:0">(optional)</span></label><input id="l1" class="input" value="Furious, to the court" dir="auto"></div>
+        <div class="field"><label for="n1">Note <span class="sub" style="text-transform:none;letter-spacing:0">(optional)</span></label><textarea id="n1" class="input" placeholder="How you did it: pitch up, clipped, no breaths"></textarea></div>
+        <label class="check"><input type="checkbox" checked> Make primary for The Queen of Hearts</label>
+        <p class="sub" style="margin:0 0 12px">Copies the raw recording, as it was before editing, into this project. Nothing leaves your computer.</p>
+        <div class="foot"><button class="btn quiet" type="button">Cancel</button><button class="btn primary" type="button">Save sample</button></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="frame">
+    <div class="cap"><b>Refused</b><span class="sub">The words run across two takes</span></div>
+    <div class="dialog" role="dialog" aria-labelledby="d2">
+      <div class="ph"><h2 id="d2">Voice sample</h2></div>
+      <div class="pb">
+        <div class="alert" role="alert">Choose words inside one take. These words start in take 2 and end in take 3.</div>
+        <div class="range"><button class="ibtn" type="button" aria-label="Play range" aria-disabled="true"><svg><use href="#play"/></svg></button><q>…and the whole court fell silent. Nobody moved.</q><span class="mono sub">—</span></div>
+        <div class="foot"><button class="btn quiet" type="button">Cancel</button><button class="btn primary" type="button" disabled>Save sample</button></div>
+      </div>
+    </div>
+    <p class="hint">Other refusals use the same alert: stale recording check (“Check it again, then mark the sample.”), cut words, words not heard, over 30 s, a limit reached, a source that is not a WAV.</p>
+  </div>
+
+  <div class="frame">
+    <div class="cap"><b>Saved</b><span class="sub">Toast, 10 s</span></div>
+    <div class="panel"><div class="pb row"><span class="pill ok">Saved</span><span>Saved voice sample for The Queen of Hearts.</span><span class="spacer"></span><button class="btn sm quiet" type="button">Undo</button></div></div>
+  </div>
+</div>
+
+<h2 style="margin:24px 0 8px">2 · Story Bible</h2>
+<div class="grid">
+  <div class="frame">
+    <div class="cap"><b>Character entry</b><span class="sub">Voice samples above Reference clips</span></div>
+    <div class="panel"><div class="pb">
+      <div class="entry-h"><h2>The Queen of Hearts</h2><span class="kind">Character</span></div>
+      <div class="section-h"><span class="label">Voice samples</span><span class="sub">3 · 11.4 MB</span><span class="spacer"></span><button class="btn sm quiet" type="button">Check again</button></div>
+
+      <div class="sample">
+        <button class="ibtn" type="button" aria-label="Play voice sample: Furious, to the court, 7 seconds" aria-pressed="false" data-play><svg><use href="#play"/></svg></button>
+        <div class="meta">
+          <div class="name"><span class="star" title="Primary: plays from the Booth" aria-label="Primary">★</span><span class="t">Furious, to the court</span><span class="mono sub">0:07</span></div>
+          <div class="src">Chapter 8 · “Off with his head!” · <a href="#">Open in Editing</a></div>
+          <div class="note">Pitch up, clipped, no breaths.</div>
+        </div>
+        <button class="btn ghost sm" type="button" aria-label="More">⋯</button>
+      </div>
+
+      <div class="sample">
+        <button class="ibtn" type="button" aria-label="Stop voice sample: Sulking, 12 seconds" aria-pressed="true" data-play><svg><use href="#stop"/></svg></button>
+        <div class="meta">
+          <div class="name"><span class="t">Sulking</span><span class="mono sub">0:12</span><span class="pill neutral">Playing</span></div>
+          <div class="src">Chapter 12 · “I won’t have it said…” · <a href="#">Open in Editing</a></div>
+          <div class="prog" role="progressbar" aria-label="Sample progress" aria-valuenow="40" aria-valuemin="0" aria-valuemax="100"><i style="width:40%"></i></div>
+        </div>
+        <button class="btn ghost sm" type="button" aria-label="More">⋯</button>
+      </div>
+
+      <div class="sample">
+        <button class="ibtn" type="button" aria-label="Play voice sample: Whispering, 5 seconds" aria-pressed="false" data-play><svg><use href="#play"/></svg></button>
+        <div class="meta">
+          <div class="name"><span class="t">Whispering</span><span class="mono sub">0:05</span><span class="pill warn" title="The words in this chapter changed since the sample was marked. The sample still plays.">Passage changed</span></div>
+          <div class="src">Chapter 14 · “Hush, hush…” · <a href="#">Open in Editing</a></div>
+        </div>
+        <button class="btn ghost sm" type="button" aria-label="More">⋯</button>
+      </div>
+
+      <div class="sample" style="border-color:var(--bad)">
+        <button class="ibtn" type="button" aria-label="Play voice sample: Laughing" aria-disabled="true"><svg><use href="#play"/></svg></button>
+        <div class="meta">
+          <div class="name"><span class="t">Laughing</span><span class="pill bad">Audio file missing</span></div>
+          <div class="src">The file is not in this project’s voice-samples folder. <a href="#">Mark again in Editing</a> or delete it.</div>
+        </div>
+        <button class="btn sm quiet" type="button">Delete…</button>
+      </div>
+
+      <p class="hint">Read-only entry: the ⋯ menu offers Rename and Make primary. <b>Delete…</b> and Move appear only after Edit.</p>
+      <div class="section-h" style="margin-top:16px"><span class="label">Reference clips</span><span class="sub">REAPER regions, for the continuity check</span></div>
+      <div class="sample"><div class="meta"><div class="name"><span class="t">Queen croquet, region 14</span></div><div class="src">12:04–12:19 · <span class="pill warn">Changed since approval</span></div></div><button class="btn sm quiet" type="button">Revoke</button></div>
+    </div></div>
+  </div>
+
+  <div class="frame">
+    <div class="cap"><b>Empty</b><span class="sub">A character with no sample</span></div>
+    <div class="panel"><div class="pb">
+      <div class="entry-h"><h2>The Cheshire Cat</h2><span class="kind">Character</span></div>
+      <div class="section-h"><span class="label">Voice samples</span></div>
+      <p class="sub" style="margin:0 0 8px">No voice samples yet. Mark one in Editing: select words you voiced well and press V.</p>
+      <button class="btn quiet sm" type="button">Open Editing</button>
+    </div></div>
+
+    <div class="cap" style="margin-top:8px"><b>Voice data panel</b><span class="sub">Narration and totals</span></div>
+    <div class="panel"><div class="pb">
+      <div class="section-h"><span class="label">Narration voice samples</span><span class="sub">1</span></div>
+      <div class="sample"><button class="ibtn" type="button" aria-label="Play voice sample: Narration, calm, 9 seconds" aria-pressed="false" data-play><svg><use href="#play"/></svg></button><div class="meta"><div class="name"><span class="star" aria-label="Primary">★</span><span class="t">Narration, calm</span><span class="mono sub">0:09</span></div><div class="src">Chapter 1 · <a href="#">Open in Editing</a></div></div><button class="btn ghost sm" type="button" aria-label="More">⋯</button></div>
+      <p class="sub">Voice samples use 14.2 MB of 200 MiB.</p>
+      <div class="row" style="margin-top:8px"><button class="btn sm quiet" type="button">Remove voice samples…</button><button class="btn sm quiet" type="button">Remove voice data…</button></div>
+      <div class="section-h" style="margin-top:16px"><span class="label">Samples for a character that is no longer in the Story Bible</span><span class="sub">1</span></div>
+      <div class="sample"><button class="ibtn" type="button" aria-label="Play voice sample: Growling, 4 seconds" aria-pressed="false" data-play><svg><use href="#play"/></svg></button><div class="meta"><div class="name"><span class="t">Growling</span><span class="mono sub">0:04</span></div><div class="src">Was “Bill the Lizard” · <a href="#">Move to a character</a></div></div><button class="btn sm quiet" type="button">Delete…</button></div>
+    </div></div>
+  </div>
+</div>
+
+<h2 style="margin:24px 0 8px">3 · Booth</h2>
+<div class="grid">
+  <div class="frame">
+    <div class="cap"><b>Speaker picker</b><span class="sub">A play control on a character with a sample; <kbd>Ctrl</kbd> <kbd>Enter</kbd> plays the highlighted row</span></div>
+    <div class="panel"><div class="read">
+      <span class="chip">The Queen of Hearts</span>“Off with his head!” said the Queen.
+      <div class="pop" role="dialog" aria-label="Speaker" style="margin-top:8px">
+        <input class="input" placeholder="Search speakers" aria-label="Search speakers">
+        <div class="label" style="padding:8px 4px 2px">In this chapter</div>
+        <div role="listbox" aria-label="Speakers">
+          <div class="opt" role="option" aria-selected="true" aria-describedby="h1"><span class="n">The Queen of Hearts</span><span class="s">3 samples</span><button class="ibtn" type="button" tabindex="-1" aria-hidden="true" data-play><svg><use href="#play"/></svg></button></div>
+          <div class="opt" role="option" aria-selected="false"><span class="n">Alice</span><span class="s">1 sample</span><button class="ibtn" type="button" tabindex="-1" aria-hidden="true" data-play><svg><use href="#play"/></svg></button></div>
+          <div class="opt" role="option" aria-selected="false"><span class="n">The King of Hearts</span><span class="s">no sample</span></div>
+        </div>
+        <span id="h1" class="sr">Has 3 voice samples. Press Control Enter to hear the primary one.</span>
+        <div class="label" style="padding:8px 4px 2px">Everyone else</div>
+        <div class="opt" role="option" aria-selected="false"><span class="n">The Hatter</span><span class="s">2 samples</span><button class="ibtn" type="button" tabindex="-1" aria-hidden="true" data-play><svg><use href="#play"/></svg></button></div>
+      </div>
+    </div></div>
+  </div>
+
+  <div class="frame">
+    <div class="cap"><b>Side panel</b><span class="sub">Voices in this scene</span></div>
+    <div class="panel side"><div class="pb">
+      <div class="label" style="margin-bottom:6px">Voices in this scene</div>
+      <div class="vrow">
+        <div class="vh"><button class="ibtn" type="button" aria-label="Play primary voice sample for The Queen of Hearts" aria-pressed="false" data-play><svg><use href="#play"/></svg></button><b class="n" style="flex:1">The Queen of Hearts</b><span class="pill neutral">3 samples</span></div>
+        <div class="sub" style="margin:4px 0 0 40px">Shrill, impatient, never finishes a sentence.</div>
+        <div style="margin:6px 0 0 40px">
+          <div class="row"><button class="btn ghost sm" type="button" data-play-label="Furious, to the court">★ Furious, to the court · 0:07</button></div>
+          <div class="row"><button class="btn ghost sm" type="button">Sulking · 0:12</button></div>
+        </div>
+      </div>
+      <div class="vrow">
+        <div class="vh"><button class="ibtn" type="button" aria-label="Play primary voice sample for Alice" aria-pressed="false" data-play><svg><use href="#play"/></svg></button><b class="n" style="flex:1">Alice</b><span class="pill neutral">1 sample</span></div>
+        <div class="sub" style="margin:4px 0 0 40px">Polite, curious.</div>
+      </div>
+      <div class="vrow">
+        <div class="vh"><b class="n" style="flex:1;padding-left:40px">The King of Hearts</b></div>
+        <div class="sub" style="margin:4px 0 0 40px">No voice sample yet. Mark one in Editing.</div>
+      </div>
+      <p class="hint">In the text, <kbd>V</kbd> plays the primary sample of the current phrase’s speaker; <kbd>Esc</kbd> stops it. The text does not move.</p>
+    </div></div>
+  </div>
+
+  <div class="frame">
+    <div class="cap"><b>While a take records</b><span class="sub">Play is refused</span></div>
+    <div class="panel"><div class="pb">
+      <div class="row" style="margin-bottom:10px"><span class="live">Recording</span><span class="mono">04:12</span></div>
+      <div class="vh row"><button class="ibtn" type="button" aria-label="Play primary voice sample for The Queen of Hearts. Not while recording. Stop the take first." aria-disabled="true"><svg><use href="#play"/></svg></button><b style="flex:1">The Queen of Hearts</b><span class="pill neutral">3 samples</span></div>
+      <p class="hint">Hint on the control: “Not while recording. Stop the take first.” When the DAW has gone quiet instead: “Can’t tell whether a take is recording (last heard 12 s ago).” with <u>Check again</u>.</p>
+    </div></div>
+  </div>
+
+  <div class="frame">
+    <div class="cap"><b>While the text follows your voice</b><span class="sub">Listening pauses for the sample</span></div>
+    <div class="panel"><div class="pb">
+      <div class="row" style="margin-bottom:10px"><span class="pill neutral">Listening paused while a voice sample plays</span><span class="spacer"></span><span class="mono sub">0:04 / 0:07</span></div>
+      <div class="vh row"><button class="ibtn" type="button" aria-label="Stop voice sample for The Queen of Hearts" aria-pressed="true" data-play><svg><use href="#stop"/></svg></button><b style="flex:1">The Queen of Hearts</b></div>
+      <div class="prog" role="progressbar" aria-label="Sample progress" aria-valuenow="57" aria-valuemin="0" aria-valuemax="100"><i style="width:57%"></i></div>
+      <p class="hint">Listening resumes when the sample ends or on <kbd>Esc</kbd>. Pending the phase 5 spike (PRD, unknowns).</p>
+    </div></div>
+  </div>
+</div>
+
+<div aria-live="polite" class="sr" id="live"></div>
+<script>
+const root = document.documentElement;
+const buttons = document.querySelectorAll('[data-theme-set]');
+function setTheme(t) {
+  if (t) root.setAttribute('data-theme', t); else root.removeAttribute('data-theme');
+  buttons.forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.themeSet === t)));
+}
+buttons.forEach((b) => b.addEventListener('click', () => setTheme(b.dataset.themeSet)));
+const query = new URLSearchParams(location.search).get('theme');
+setTheme(query === 'dark' || query === 'light' ? query : null);
+// Illustration only: a play control toggles its own pressed state; nothing plays.
+document.querySelectorAll('[data-play]').forEach((b) => b.addEventListener('click', () => {
+  if (b.getAttribute('aria-disabled') === 'true') return;
+  const on = b.getAttribute('aria-pressed') !== 'true';
+  document.querySelectorAll('[data-play][aria-pressed="true"]').forEach((o) => { o.setAttribute('aria-pressed', 'false'); const u = o.querySelector('use'); if (u) u.setAttribute('href', '#play'); });
+  b.setAttribute('aria-pressed', String(on));
+  const u = b.querySelector('use'); if (u) u.setAttribute('href', on ? '#stop' : '#play');
+  document.getElementById('live').textContent = on ? 'Playing voice sample' : 'Voice sample stopped';
+}));
+</script>
+</body>
+</html>
