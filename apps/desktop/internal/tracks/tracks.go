@@ -2,7 +2,7 @@
 // list a project's tracks and the media each track's items reference. It
 // does not depend on a running REAPER instance or the file-session Lua
 // bridge (integrations/reaper/narration_ui_bridge.lua): that bridge only works
-// while REAPER has NarrationUtils_Launcher.lua active for the current
+// while REAPER has NarrationStudio_Launcher.lua active for the current
 // session, whereas a standalone-launched app (docs/architecture/
 // standalone-launch.md) must be able to read tracks from a project folder
 // on its own.

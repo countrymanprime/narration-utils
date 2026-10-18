@@ -1,4 +1,4 @@
--- NarrationUtils_Launcher.lua loaded the way REAPER loads it, from an installed bundle layout
+-- NarrationStudio_Launcher.lua loaded the way REAPER loads it, from an installed bundle layout
 -- (<bundle>/resources/reaper/*.lua next to <bundle>/narration-utils), so a renamed or unlisted Lua file
 -- that the launcher `dofile`s fails here and not on a narrator's machine.
 
@@ -32,7 +32,7 @@ local function bundle(options)
   local fake = Fake.new(host)
   fake.os_name = os_name
   fake.resource_path = H.join(root, 'REAPER')
-  fake.action_path = H.join(scripts, 'NarrationUtils_Launcher.lua')
+  fake.action_path = H.join(scripts, 'NarrationStudio_Launcher.lua')
   fake.project_path = H.join(H.join(root, 'Projects'), 'Book.rpp')
   reaper = fake.reaper
   return fake, root, scripts
@@ -50,12 +50,12 @@ end
 
 H.test('the launcher starts the app with the session, project and DAW arguments, then runs the bridge', function()
   local fake, root, scripts = bundle()
-  dofile(H.join(scripts, 'NarrationUtils_Launcher.lua'))
+  dofile(H.join(scripts, 'NarrationStudio_Launcher.lua'))
   H.eq(#calls_named(fake, 'ShowMessageBox'), 0, 'no setup dialog')
   local launches = calls_named(fake, 'ExecProcess')
   H.eq(#launches, 1)
   local command = launches[1].command
-  local session_root = H.join(H.join(fake.resource_path, 'NarrationUtils'), 'sessions')
+  local session_root = H.join(H.join(fake.resource_path, 'NarrationStudio'), 'sessions')
   H.contains(command, H.join(H.join(H.join(scripts, '..'), '..'), 'narration-utils'), 'the app sits two folders above the scripts')
   H.contains(command, '--session-dir')
   H.contains(command, session_root .. package.config:sub(1, 1) .. 'hub_1001')
@@ -68,20 +68,30 @@ H.test('the launcher starts the app with the session, project and DAW arguments,
   H.eq(host.listdir(H.join(H.join(session_root, 'hub_1001'), 'commands')), {}, 'the command folder exists')
 end)
 
+H.test('the deprecated NarrationUtils_Launcher.lua still runs the launcher, so an action loaded before the rename keeps working', function()
+  local fake, _, scripts = bundle()
+  fake.action_path = H.join(scripts, 'NarrationUtils_Launcher.lua')
+  dofile(H.join(scripts, 'NarrationUtils_Launcher.lua'))
+  H.eq(#calls_named(fake, 'ShowMessageBox'), 0, 'no setup dialog')
+  H.eq(#calls_named(fake, 'ExecProcess'), 1, 'the app was started once')
+  H.contains(calls_named(fake, 'ExecProcess')[1].command, H.join(H.join(fake.resource_path, 'NarrationStudio'), 'sessions'), 'the session is in the new folder')
+  H.eq(#fake.deferred, 1, 'the bridge loop is running')
+end)
+
 H.test('the launcher reads the app path the app wrote beside it, whatever the program is called', function()
   local fake, root, scripts = bundle({ shell = false })
   local elsewhere = H.join(root, 'Program Files')
   host.makedirs(elsewhere)
   H.write_file(H.join(elsewhere, 'narration-utils-shell'), 'x')
   H.write_file(H.join(scripts, 'narration-utils-app-path.txt'), H.join(elsewhere, 'narration-utils-shell') .. '\n')
-  dofile(H.join(scripts, 'NarrationUtils_Launcher.lua'))
+  dofile(H.join(scripts, 'NarrationStudio_Launcher.lua'))
   H.contains(calls_named(fake, 'ExecProcess')[1].command, H.join(elsewhere, 'narration-utils-shell'))
 end)
 
 H.test('an unsaved project launches with an empty project folder and a placeholder name', function()
   local fake, _, scripts = bundle()
   fake.project_path = ''
-  dofile(H.join(scripts, 'NarrationUtils_Launcher.lua'))
+  dofile(H.join(scripts, 'NarrationStudio_Launcher.lua'))
   local command = calls_named(fake, 'ExecProcess')[1].command
   H.contains(command, "--project-folder ''")
   H.contains(command, "--project-name 'Unsaved REAPER project'")
@@ -96,7 +106,7 @@ end)
 H.test('the launcher passes the exact rpp path as --project-file', function()
   local fake, _, scripts = bundle()
   fake.project_path = H.join(H.join(H.join(fake.resource_path, '..'), 'Elsewhere'), 'Novel.rpp')
-  dofile(H.join(scripts, 'NarrationUtils_Launcher.lua'))
+  dofile(H.join(scripts, 'NarrationStudio_Launcher.lua'))
   local command = calls_named(fake, 'ExecProcess')[1].command
   H.contains(command, "--project-file '" .. fake.project_path .. "'")
   -- --project-folder still carries the rpp's own containing folder, unchanged:
@@ -107,7 +117,7 @@ end)
 
 H.test('without a built app the launcher explains setup and starts nothing', function()
   local fake, _, scripts = bundle({ shell = false })
-  dofile(H.join(scripts, 'NarrationUtils_Launcher.lua'))
+  dofile(H.join(scripts, 'NarrationStudio_Launcher.lua'))
   local boxes = calls_named(fake, 'ShowMessageBox')
   H.eq(#boxes, 1)
   H.eq(boxes[1].title, 'Narration Utils setup required')
@@ -118,7 +128,7 @@ end)
 H.test('a launcher beside missing libraries says so instead of failing silently', function()
   local fake, _, scripts = bundle()
   os.remove(H.join(scripts, 'narration_ui_bridge.lua'))
-  dofile(H.join(scripts, 'NarrationUtils_Launcher.lua'))
+  dofile(H.join(scripts, 'NarrationStudio_Launcher.lua'))
   local boxes = calls_named(fake, 'ShowMessageBox')
   H.eq(#boxes, 1)
   H.contains(boxes[1].text, 'Could not load Narration Utils shared libraries')
@@ -128,7 +138,7 @@ end)
 H.test('a missing feature file is reported before the app starts', function()
   local fake, _, scripts = bundle()
   os.remove(H.join(scripts, 'narration_compare.lua'))
-  dofile(H.join(scripts, 'NarrationUtils_Launcher.lua'))
+  dofile(H.join(scripts, 'NarrationStudio_Launcher.lua'))
   local boxes = calls_named(fake, 'ShowMessageBox')
   H.eq(#boxes, 1)
   H.contains(boxes[1].text, 'Could not load Narration Utils shared libraries')
@@ -141,7 +151,7 @@ end)
 -- script the launcher wrote is read back instead.
 local function launch_command(fake, scripts)
   if not fake.os_name:find('Win') then
-    dofile(H.join(scripts, 'NarrationUtils_Launcher.lua'))
+    dofile(H.join(scripts, 'NarrationStudio_Launcher.lua'))
     local launches = calls_named(fake, 'ExecProcess')
     return #launches == 1 and launches[1].command or nil
   end
@@ -150,7 +160,7 @@ local function launch_command(fake, scripts)
     captured = command
     return true
   end
-  local ok, failure = pcall(dofile, H.join(scripts, 'NarrationUtils_Launcher.lua'))
+  local ok, failure = pcall(dofile, H.join(scripts, 'NarrationStudio_Launcher.lua'))
   os.execute = real_execute
   assert(ok, failure)
   if not captured then
@@ -196,7 +206,7 @@ local function checkout(os_name, built)
   local fake = Fake.new(host)
   fake.os_name = os_name
   fake.resource_path = H.join(root, 'REAPER')
-  fake.action_path = H.join(scripts, 'NarrationUtils_Launcher.lua')
+  fake.action_path = H.join(scripts, 'NarrationStudio_Launcher.lua')
   fake.project_path = H.join(H.join(root, 'Projects'), 'Book.rpp')
   reaper = fake.reaper
   return fake, root, scripts

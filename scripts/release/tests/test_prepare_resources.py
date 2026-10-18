@@ -207,7 +207,7 @@ def test_sidecar_flag_freezes_only_that_sidecar(script, monkeypatch):
 def test_the_reaper_package_ships_the_scripts_and_not_the_harness_or_the_spikes(script, monkeypatch):
     install(monkeypatch, script, FakePyInstaller())
     source = script.ROOT / script.REAPER_DIR
-    (source / "NarrationUtils_Launcher.lua").write_text("-- launcher", encoding="utf-8")
+    (source / "NarrationStudio_Launcher.lua").write_text("-- launcher", encoding="utf-8")
     (source / "project.json").write_text("{}", encoding="utf-8")
     (source / "tests").mkdir()
     (source / "tests" / "protocol_test.lua").write_text("-- test", encoding="utf-8")
@@ -217,7 +217,7 @@ def test_the_reaper_package_ships_the_scripts_and_not_the_harness_or_the_spikes(
 
     script.main()
 
-    assert {path.name for path in script.REAPER.iterdir()} == {"NarrationUtils_Launcher.lua"}
+    assert {path.name for path in script.REAPER.iterdir()} == {"NarrationStudio_Launcher.lua"}
 
 
 def seed_freeze(module, name: str, *, tocs: bool = True) -> Path:

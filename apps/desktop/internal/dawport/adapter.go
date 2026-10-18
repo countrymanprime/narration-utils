@@ -13,7 +13,7 @@ const (
 	// KindNone is a launch with no DAW the suite drives: a standalone launch, a picker switch ("Standalone"), a developer
 	// launch without --daw, or a label it does not know.
 	KindNone Kind = iota
-	// KindREAPER is `--daw REAPER`, which NarrationUtils_Launcher.lua always passes, or a project that chose REAPER or holds a
+	// KindREAPER is `--daw REAPER`, which NarrationStudio_Launcher.lua always passes, or a project that chose REAPER or holds a
 	// REAPER project file (ProjectKind).
 	KindREAPER
 	// KindAudacity is `--daw Audacity`, or a project that chose Audacity.

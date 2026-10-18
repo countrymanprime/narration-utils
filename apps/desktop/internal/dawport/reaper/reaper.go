@@ -25,7 +25,7 @@ import (
 
 func init() { dawport.Register(dawport.KindREAPER, Factory) }
 
-// ErrNoSession: the launch has no REAPER session directory (NarrationUtils_Launcher.lua makes one), so there is no bridge to wrap.
+// ErrNoSession is returned when the launch has no REAPER session directory (NarrationStudio_Launcher.lua makes one), so there is no bridge to wrap.
 var ErrNoSession = errors.New("REAPER is not connected to this app: there is no REAPER session to talk to")
 
 // declares is the adapter's static declaration. Promoting a command once the owner's REAPER verification pass has confirmed it

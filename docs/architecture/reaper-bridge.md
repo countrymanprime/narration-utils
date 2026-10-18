@@ -6,7 +6,8 @@
 
 | File | Role |
 | --- | --- |
-| `NarrationUtils_Launcher.lua` | The one REAPER action. Finds the app executable, starts it with the session directory, project and DAW arguments, then runs the bridge loop. Its name and path are stable: the narrator imports it into REAPER's action list. |
+| `NarrationStudio_Launcher.lua` | The one REAPER action. Finds the app executable, starts it with the session directory, project and DAW arguments, then runs the bridge loop. Its name and path are stable: the narrator imports it into REAPER's action list. |
+| `NarrationUtils_Launcher.lua` | Deprecated shim that runs `NarrationStudio_Launcher.lua`, so an action loaded under the old name keeps working. Removed when the old name is retired. |
 | `narration_ui_bridge.lua` | The command loop and the registry it dispatches through: polls `commands/` from a `reaper.defer` loop, looks each command up, appends results to `events.log`. Lists the feature files in `FEATURE_FILES` and loads them next to itself. |
 | `narration_bridge_core.lua` | Shared by the bridge and every feature file: the percent-encoding and field-splitting helpers, `event`, file and path helpers, and `new_registry()`. |
 | `narration_cleanup.lua`, `narration_compare.lua`, `narration_line_identity.lua`, `narration_pickups.lua`, `narration_render.lua`, `narration_project_state.lua`, `narration_retake_lanes.lua`, `narration_take_review.lua`, `narration_navigation.lua`, `narration_track_state.lua`, `narration_track_select.lua`, `narration_transport.lua`, `narration_workspace.lua`, `narration_regions.lua`, `narration_level_normalize.lua`, `narration_punch.lua`, `narration_master_render.lua`, `narration_takes.lua`, `narration_roll.lua`, `narration_range.lua`, `narration_media_file.lua` | The commands, one file per feature (the cleanup launchers; the cleanup preview markers and approved trims; the level-match gain; punch-to; the mastering chain read and FX render; Transcript Compare; manuscript line identity; the pickup list; per-chapter render configuration; the live project-change indicator; the retake-lane pick; take creation; going to and looping a finding, and adding its approved marker; the live transport and track state; selecting a chapter's track; arming and recording; the workspace's take and FX actions; chapter and credits regions; hiding other takes; rolling again while recording; cutting words and their audio; playing and showing a file on disk). |
@@ -16,7 +17,7 @@
 
 ## The file protocol
 
-The Go host (`apps/desktop/internal/bridge`) and the Lua bridge share one session directory, `<REAPER resource path>/NarrationUtils/sessions/hub_<id>/`, created by the launcher.
+The Go host (`apps/desktop/internal/bridge`) and the Lua bridge share one session directory, `<REAPER resource path>/NarrationStudio/sessions/hub_<id>/`, created by the launcher.
 
 - **Commands** go one way. `Client.Send` writes `commands/NNNNNNNN.cmd` atomically (a `.tmp` file, then a rename) holding one line of percent-encoded, `|`-separated fields: protocol version `1`, the command name, then its arguments. The bridge reads the first line of each `.cmd` file in name order, deletes it, and dispatches. It splits at most eight fields; a payload that needs more travels as a file whose path is an argument.
 - **Events** come back through the append-only `events.log`, one percent-encoded, `|`-separated line per event with the tag first. **The first argument of every event is the run ID of the command that caused it** (the command's own first argument), so a consumer can tell its events from another's. On Windows Lua writes CRLF in text mode, so a reader trims a trailing carriage return (the Go client does).
@@ -36,7 +37,7 @@ Starting the bridge, and one Transcript Compare command travelling through it an
 sequenceDiagram
   autonumber
   actor N as Narrator
-  participant L as integrations/reaper: NarrationUtils_Launcher.lua
+  participant L as integrations/reaper: NarrationStudio_Launcher.lua
   participant Br as integrations/reaper: narration_ui_bridge.lua
   participant F as session folder: commands/, events.log
   participant C as apps/desktop: internal/bridge Client
@@ -44,7 +45,7 @@ sequenceDiagram
   participant TS as apps/desktop: internal/transcript Service
   participant H as apps/desktop: app.go transcriptLoop
   N->>L: Run the action in REAPER
-  L->>L: create NarrationUtils/sessions/hub_id/commands
+  L->>L: create NarrationStudio/sessions/hub_id/commands
   L->>H: start narration-utils.exe with --session-dir, --project-folder, --daw
   L->>Br: run(session_dir), a reaper.defer tick loop
   N->>TS: Start a comparison (TranscriptStart)
@@ -67,7 +68,7 @@ sequenceDiagram
   TS->>TS: handlePrepared, start the transcript-compare sidecar
 ```
 
-*Verified 2026-09-21 against `NarrationUtils_Launcher.lua`, `narration_ui_bridge.lua` (`M.run`, the `tick` loop), `narration_bridge_core.lua`, `apps/desktop/internal/bridge/{bridge,events,wire}.go`, `apps/desktop/internal/dawport/reaper/review.go`, `apps/desktop/internal/transcript/service.go` (`Start`, `Drain`, `Handle`) and `apps/desktop/app.go` (`transcriptLoop`, `pollTranscript`), and by the harness, which drives the same protocol ([The DAW port](daw-integration.md#the-daw-port)). The command names here are generic on purpose: every command travels this way, so the diagram does not change when one is added ([The DAW port](daw-integration.md#the-daw-port)). The threats at steps 6 to 11 are rows 5a to 5c of the [threat model](threat-model.md#5-the-reaper-file-bridge-not-in-securitymd-see-the-note-under-the-table).*
+*Verified 2026-09-21 against `NarrationStudio_Launcher.lua`, `narration_ui_bridge.lua` (`M.run`, the `tick` loop), `narration_bridge_core.lua`, `apps/desktop/internal/bridge/{bridge,events,wire}.go`, `apps/desktop/internal/dawport/reaper/review.go`, `apps/desktop/internal/transcript/service.go` (`Start`, `Drain`, `Handle`) and `apps/desktop/app.go` (`transcriptLoop`, `pollTranscript`), and by the harness, which drives the same protocol ([The DAW port](daw-integration.md#the-daw-port)). The command names here are generic on purpose: every command travels this way, so the diagram does not change when one is added ([The DAW port](daw-integration.md#the-daw-port)). The threats at steps 6 to 11 are rows 5a to 5c of the [threat model](threat-model.md#5-the-reaper-file-bridge-not-in-securitymd-see-the-note-under-the-table).*
 
 ## Reading events in the host: the fan-out
 

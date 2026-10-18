@@ -68,6 +68,7 @@ var smokeSidecars = []string{"manuscript-guide", "transcript-compare", "manuscri
 // smokeReaperFiles are the REAPER scripts a release carries: every top-level Lua file of integrations/reaper, the launcher first.
 // scripts/release/reaper-files.mjs is the build-time copy of this list, and smoke_test.go holds both to the folder.
 var smokeReaperFiles = []string{
+	"NarrationStudio_Launcher.lua",
 	"NarrationUtils_Launcher.lua",
 	"narration_bridge_core.lua",
 	"narration_cleanup.lua",

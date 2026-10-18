@@ -36,7 +36,7 @@ local session_dir = native(OUT .. '/session')
 -- bridge.New (apps/desktop/internal/bridge/bridge.go) always creates commands/ before the Lua side ever runs;
 -- reproduce that here since nothing else in this spike drives the real Go host.
 reaper.RecursiveCreateDirectory(session_dir .. BS .. 'commands', 0)
--- The real production module, loaded exactly like NarrationUtils_Launcher.lua loads it.
+-- The real production module, loaded exactly like NarrationStudio_Launcher.lua loads it.
 local bridge = dofile(REPO_REAPER .. '/narration_ui_bridge.lua')
 bridge.run(session_dir)
 

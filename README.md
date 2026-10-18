@@ -62,7 +62,7 @@ The layout and its test rule are recorded in
 
 ## Supported DAWs
 
-- **Reaper** — supported. Load `integrations/reaper/NarrationUtils_Launcher.lua` as
+- **Reaper** — supported. Load `integrations/reaper/NarrationStudio_Launcher.lua` as
   the one action; it opens the centered Narration Studio workspace with every tool (Proof,
   Story Bible, Teleprompter, Tracks and the manuscript reader) and their global/project settings.
 - **Audacity 3.x** — adapter built from the published `mod-script-pipe` spec and tested against a fake pipe server; the

@@ -154,7 +154,7 @@ The commands' logic is pinned by the bridge harness (`integrations/reaper/tests`
 
 ### Line identity: owner checklist
 
-Run steps 6 (the paste part) and 10 by hand, in REAPER with the app open; the rest is recorded above. The session folder is `<REAPER resource path>/NarrationUtils/sessions/hub_<id>/`; start it by running `NarrationUtils_Launcher.lua`. To drive a command by hand, save a one-line file such as `00000001.cmd` in that folder's `commands/` directory and read `events.log` beside it.
+Run steps 6 (the paste part) and 10 by hand, in REAPER with the app open; the rest is recorded above. The session folder is `<REAPER resource path>/NarrationStudio/sessions/hub_<id>/`; start it by running `NarrationStudio_Launcher.lua`. To drive a command by hand, save a one-line file such as `00000001.cmd` in that folder's `commands/` directory and read `events.log` beside it.
 
 1. Use a scratch project with a few audio items. Note one item's GUID (right-click item, Copy item GUID, or read it from the `.rpp`).
 2. **Stamp.** Payload `{GUID}|line-000001|First line.`, command `1|stamp_item_lines|t1|<payload path>|0`. Expect `LINES_STAMPED|t1|1|0|0|0`, an Edit menu entry "Narration Utils: stamp manuscript line IDs", and Undo removing it.
@@ -197,7 +197,7 @@ The first run of the check also saw `SelectAllMediaItems` leave an "Unselect all
 
 ### Going to a finding: owner checklist
 
-For the owner, in REAPER with audio, on a copy of a real project. Start the session by running `NarrationUtils_Launcher.lua`; the session folder is `<REAPER resource path>/NarrationUtils/sessions/hub_<id>/`. To send a command by hand, save a one-line file such as `00000001.cmd` in its `commands/` folder (fields percent-encoded, `|`-separated, starting `1|<command>|<run id>`) and read `events.log` beside it. The same steps can be run from the Review page instead (open the app from the Narration Utils action, select a Proofing finding, and use Go to in REAPER, Loop in REAPER and Stop loop); step 9 is that run.
+For the owner, in REAPER with audio, on a copy of a real project. Start the session by running `NarrationStudio_Launcher.lua`; the session folder is `<REAPER resource path>/NarrationStudio/sessions/hub_<id>/`. To send a command by hand, save a one-line file such as `00000001.cmd` in its `commands/` folder (fields percent-encoded, `|`-separated, starting `1|<command>|<run id>`) and read `events.log` beside it. The same steps can be run from the Review page instead (open the app from the Narration Utils action, select a Proofing finding, and use Go to in REAPER, Loop in REAPER and Stop loop); step 9 is that run.
 
 1. **Go to.** Copy an item's GUID (from the `.rpp`, `IGUID`). Send `1|navigate_item|n1|<GUID>||1.5`. The item alone is selected and the cursor sits 1.5 s into its audio; Edit > Undo history has no new entry.
 2. **Stale.** Delete that item, send the same command. Expect `FINDING_STALE|n1|<GUID>|item` and nothing selected.

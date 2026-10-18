@@ -72,7 +72,7 @@ func TestLaunchReaperRefusesWhenReaperCannotBeLocated(t *testing.T) {
 func TestLaunchReaperPassesTheLinkedFileAndNotTheLauncherByDefault(t *testing.T) {
 	t.Setenv("APPDATA", t.TempDir()) // never touch the real machine's global-settings.json
 	folder, rpp := linkedProject(t)
-	svc := hostServices{config: config{projectFolder: folder, reaperLauncher: "C:/app/NarrationUtils_Launcher.lua"}, settings: settings.New("", folder)}
+	svc := hostServices{config: config{projectFolder: folder, reaperLauncher: "C:/app/NarrationStudio_Launcher.lua"}, settings: settings.New("", folder)}
 	locate := func() (string, string, error) { return "C:/REAPER/reaper.exe", "uninstall_registry", nil }
 	var gotProgram string
 	var gotArgs []string
@@ -105,7 +105,7 @@ func TestLaunchReaperPassesTheLauncherScriptWhenAutoStartIsOn(t *testing.T) {
 	if err := store.Save("DAW", "global", map[string]*string{"auto_start_launcher": ptr("true")}); err != nil {
 		t.Fatal(err)
 	}
-	svc := hostServices{config: config{projectFolder: folder, reaperLauncher: "C:/app/NarrationUtils_Launcher.lua"}, settings: store}
+	svc := hostServices{config: config{projectFolder: folder, reaperLauncher: "C:/app/NarrationStudio_Launcher.lua"}, settings: store}
 	locate := func() (string, string, error) { return "C:/REAPER/reaper.exe", "uninstall_registry", nil }
 	var gotArgs []string
 	launch := func(program string, args []string) error {
@@ -115,7 +115,7 @@ func TestLaunchReaperPassesTheLauncherScriptWhenAutoStartIsOn(t *testing.T) {
 	if _, err := launchReaper(svc, nil, locate, launch); err != nil {
 		t.Fatal(err)
 	}
-	if len(gotArgs) != 2 || gotArgs[0] != rpp || gotArgs[1] != "C:/app/NarrationUtils_Launcher.lua" {
+	if len(gotArgs) != 2 || gotArgs[0] != rpp || gotArgs[1] != "C:/app/NarrationStudio_Launcher.lua" {
 		t.Fatalf("args = %v, want the linked .rpp then the launcher script", gotArgs)
 	}
 }

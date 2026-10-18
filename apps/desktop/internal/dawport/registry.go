@@ -10,7 +10,7 @@ import (
 // it: the adapter a factory builds opens and owns its own connection, so no package outside the adapter holds one (
 // apps/desktop/internal/dawport/registry.go).
 type Env struct {
-	// SessionDir is REAPER's file bridge directory, made by NarrationUtils_Launcher.lua; empty when the launch has none.
+	// SessionDir is REAPER's file bridge directory, made by NarrationStudio_Launcher.lua; empty when the launch has none.
 	SessionDir string
 	// Allowed is the launch's Resolver.Allowed: whether the declaration and the narrator's settings permit a capability. An
 	// adapter whose transport gates its own commands (REAPER's bridge.Actions) asks it before each one, so the settings are

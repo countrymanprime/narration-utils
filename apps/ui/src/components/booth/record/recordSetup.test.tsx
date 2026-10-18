@@ -21,7 +21,7 @@ beforeEach(() => forgetAppTake());
 
 afterEach(cleanup);
 
-const LAUNCHER = 'C:\\Users\\n\\AppData\\Local\\narration-utils\\runtime\\abc\\reaper\\NarrationUtils_Launcher.lua';
+const LAUNCHER = 'C:\\Users\\n\\AppData\\Local\\narration-utils\\runtime\\abc\\reaper\\NarrationStudio_Launcher.lua';
 const LINKED = { dawFileLinked: true, launcherPath: LAUNCHER };
 
 /** REAPER's setup with record refused for `reason`, everything else as the connected setup. */

@@ -67,7 +67,7 @@ When the reason is one you can fix from the Booth, a box above the footer shows 
   launcher, that runs inside REAPER. Load it once: in REAPER, choose **Actions > Show action list > New action > Load
   ReaScript** and pick the launcher file the box shows (**Copy path** copies it). Load it again after you update the app,
   because the file moves with each update. Then, with the chapter's project open in REAPER, run
-  **Script: NarrationUtils_Launcher.lua**. The app connects and Record turns on. With REAPER closed, **Open in REAPER and
+  **Script: NarrationStudio_Launcher.lua**. The app connects and Record turns on. With REAPER closed, **Open in REAPER and
   connect** opens the linked project with the launcher in one go, and from then on Launch REAPER always starts it. If no
   REAPER project is linked yet, the first step links it.
 

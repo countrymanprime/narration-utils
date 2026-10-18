@@ -50,7 +50,9 @@ Every folder above that has a `project.json` is an Nx project (all except `docs/
 
 ## Product and technical names
 
-The user-facing name is Narration Studio: the window title, About, Settings, update messages, installer texts, reports and docs. The name `narration-utils` stays wherever a file, key or host already holds it: the executable and release asset names, module paths, config and data folders, settings file names, the `NarrationUtils` uninstall key, notification ids, REAPER's `NarrationUtils_Launcher.lua` and its undo labels, and the Audacity label track named "Narration Utils" (`LabelTrackName`), which projects look up by name. Renaming any of those would orphan installed copies or existing projects.
+The user-facing name is Narration Studio: the window title, About, Settings, update messages, installer texts, reports and docs. The name `narration-utils` stays wherever a file, key or host already holds it: the executable and release asset names, module paths, config and data folders, settings file names, the `NarrationUtils` uninstall key, notification ids, REAPER's undo labels, and the Audacity label track named "Narration Utils" (`LabelTrackName`), which projects look up by name. Renaming any of those would orphan installed copies or existing projects.
+
+Two names that existing installs held are being phased out instead: REAPER's launcher is now `NarrationStudio_Launcher.lua`, with `NarrationUtils_Launcher.lua` kept as a shim so an action already loaded keeps working, and the default projects folder is `~/NarrationStudio`, with an existing `~/NarrationUtils` still used when it is the only one. The shim and the fallback go when the old name is retired ([REAPER reference](../reference/daw/reaper.md)).
 
 ## Stable boundaries
 
@@ -149,7 +151,7 @@ flowchart LR
 | `internal/assets` to Hugging Face and GitHub | Pinned URLs, size and SHA-256, staging then rename, only after the narrator confirms | [first-use provisioning](first-use-dependency-provisioning.md) |
 | `internal/update` to GitHub | The release list once a day at most; a download only after two clicks; the program is replaced on Windows | [in-app update](in-app-update.md) |
 
-The settings, the recents list and the host log live in `%APPDATA%/narration-utils`, beside the user cache (`%LOCALAPPDATA%/narration-utils`); `services` reads and writes them and no arrow is drawn for it. *Verified 2026-09-21 against `apps/desktop/app.go` (`configureLocked`, `packagedResources`), `bindings.go`, `bindings_assets.go`, `media.go`, `internal/process/`, `internal/bridge/`, `internal/assets/`, `internal/update/`, `integrations/reaper/NarrationUtils_Launcher.lua` and `apps/ui/index.html` (the fonts are bundled, #238, so the webview asks no other host). A box names the folder or file that owns it, a dashed arrow or box is a request the narrator did not ask for or a host that is not ours, and a label names the mechanism, not the intent.*
+The settings, the recents list and the host log live in `%APPDATA%/narration-utils`, beside the user cache (`%LOCALAPPDATA%/narration-utils`); `services` reads and writes them and no arrow is drawn for it. *Verified 2026-09-21 against `apps/desktop/app.go` (`configureLocked`, `packagedResources`), `bindings.go`, `bindings_assets.go`, `media.go`, `internal/process/`, `internal/bridge/`, `internal/assets/`, `internal/update/`, `integrations/reaper/NarrationStudio_Launcher.lua` and `apps/ui/index.html` (the fonts are bundled, #238, so the webview asks no other host). A box names the folder or file that owns it, a dashed arrow or box is a request the narrator did not ask for or a host that is not ours, and a label names the mechanism, not the intent.*
 
 ## Go host ownership
 

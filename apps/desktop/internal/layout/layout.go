@@ -25,7 +25,7 @@ const (
 	EncoderCatalogFile       = ConfigDir + "/encoder-assets.json"
 	AnalysisCatalogFile      = ConfigDir + "/analysis-assets.json"
 	ReaperDir                = "integrations/reaper"
-	LauncherFile             = ReaperDir + "/NarrationUtils_Launcher.lua"
+	LauncherFile             = ReaperDir + "/NarrationStudio_Launcher.lua"
 	FixturesDir              = "tests/fixtures"
 	ManuscriptGuideBackend   = "sidecars/manuscript-guide/core/manuscript_guide.py"
 	TranscriptCompareBackend = "sidecars/transcript-compare/core/compare.py"

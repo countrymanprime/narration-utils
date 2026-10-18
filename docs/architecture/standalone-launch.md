@@ -4,7 +4,7 @@
 
 ## Problem
 
-The app was originally launched only from REAPER: `integrations/reaper/NarrationUtils_Launcher.lua` resolves the current REAPER project's folder and name and passes them as `--project-folder`/`--project-name`/`--daw REAPER` when spawning the Wails executable, so the frontend never had a "no project selected" state. This document records how a launch without a project is handled.
+The app was originally launched only from REAPER: `integrations/reaper/NarrationStudio_Launcher.lua` resolves the current REAPER project's folder and name and passes them as `--project-folder`/`--project-name`/`--daw REAPER` when spawning the Wails executable, so the frontend never had a "no project selected" state. This document records how a launch without a project is handled.
 
 ## What shipped
 
@@ -13,7 +13,7 @@ The app was originally launched only from REAPER: `integrations/reaper/Narration
 - **Recent projects** live in `%APPDATA%\narration-utils\recent-projects.json` (falling back to `%USERPROFILE%\AppData\Roaming\...`, `recentProjectsPath` in `apps/desktop/app.go`), not in the project, because the list is per user. The store (`apps/desktop/internal/recents/store.go`) keeps at most 10 entries, dedupes by path case-insensitively, and drops entries whose folder no longer exists both when adding (`Touch`) and when listing (`List`). A missing or corrupt file reads as an empty list.
 - **Picker actions** (`apps/ui/src/components/project/ProjectPicker.tsx`): open a recent project or remove one from the list, "Browse..." to an existing folder, and "Create new...".
 - **"Create new" only makes the folder.** `ProjectCreate` requires an absolute path, checks that a switch would be accepted (so a refused create leaves no folder behind), runs `os.MkdirAll` on the chosen path and then `ProjectSwitch` (see [host binding concurrency](host-binding-concurrency.md)). The `narration-utils/` sidecar folders (`manuscript/`, settings and so on) are created lazily by whichever service first writes to them (for example in `apps/desktop/internal/manuscript/service.go`), and nothing scaffolds anything in REAPER: the DAW is `Standalone`.
-- **The REAPER launcher is unchanged** and still always passes `--project-folder`, `--project-name` and `--daw REAPER` (`integrations/reaper/NarrationUtils_Launcher.lua`), so the embedded launch path behaves as before.
+- **The REAPER launcher is unchanged** and still always passes `--project-folder`, `--project-name` and `--daw REAPER` (`integrations/reaper/NarrationStudio_Launcher.lua`), so the embedded launch path behaves as before.
 
 ## Packaging
 

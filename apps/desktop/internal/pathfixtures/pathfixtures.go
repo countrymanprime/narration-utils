@@ -163,7 +163,7 @@ type Place struct {
 	Name  string
 	Class Class
 
-	// Start is the stand-in for the starting folder (~/NarrationUtils): it exists, is empty of projects, and does not contain
+	// Start is the stand-in for the starting folder (~/NarrationStudio): it exists, is empty of projects, and does not contain
 	// Dir unless the class is Plain.
 	Start string
 
@@ -204,7 +204,7 @@ func Run(t *testing.T, fn func(t *testing.T, p Place)) {
 			place := b.build(t, root)
 			place.Name, place.Class = b.name, b.class
 			place.Aliases = append(place.Aliases, spellings(t, place)...)
-			place.Start = filepath.Join(root, "NarrationUtils")
+			place.Start = filepath.Join(root, "NarrationStudio")
 			if err := os.MkdirAll(place.Start, 0o755); err != nil {
 				t.Fatal(err)
 			}

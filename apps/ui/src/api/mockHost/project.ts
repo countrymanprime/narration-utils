@@ -7,9 +7,9 @@ import type { MockApiSeed } from './state';
 const ATTACH_BUSY_REASON = 'Narration Studio is busy, so the current project was left unchanged.';
 const DEFAULT_PROJECT_FOLDER = 'C:/Projects/Alice-in-Wonderland';
 const DEFAULT_PROJECT_NAME = 'Alice’s Adventures in Wonderland';
-// Mirrors the Go host's default (`~/NarrationUtils`, project.DefaultDirName): what an empty parent
+// Mirrors the Go host's default (`~/NarrationStudio`, project.DefaultDirName): what an empty parent
 // resolves to in ProjectCreateIn.
-const DEFAULT_PROJECTS_DIRECTORY = 'C:/Users/Mock/NarrationUtils';
+const DEFAULT_PROJECTS_DIRECTORY = 'C:/Users/Mock/NarrationStudio';
 
 /** Mirrors the Go backend's `filepath.Base(path)` default-naming rule for a folder chosen with no explicit name. */
 function basename(path: string): string {

@@ -99,7 +99,8 @@ H.test('every feature file the bridge loads is a Lua file in its folder, and the
   local s = H.session()
   -- The files that are not features: the launcher, the two shared helper modules, the bridge and its core.
   local infrastructure = {
-    ['NarrationUtils_Launcher.lua'] = true,
+    ['NarrationStudio_Launcher.lua'] = true,
+    ['NarrationUtils_Launcher.lua'] = true, -- the deprecated shim (#1816)
     ['reaper_common_core.lua'] = true,
     ['reaper_common_process.lua'] = true,
     ['narration_ui_bridge.lua'] = true,

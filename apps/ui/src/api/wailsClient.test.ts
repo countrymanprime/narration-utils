@@ -493,10 +493,10 @@ describe('wailsClient', () => {
   });
 
   it('reads the default projects folder through ProjectDefaultLocation', async () => {
-    const projectDefaultLocation = vi.fn().mockResolvedValue(JSON.stringify({ path: 'C:/Users/Alice/NarrationUtils' }));
+    const projectDefaultLocation = vi.fn().mockResolvedValue(JSON.stringify({ path: 'C:/Users/Alice/NarrationStudio' }));
     standInHost({ ProjectDefaultLocation: projectDefaultLocation });
 
-    await expect(wailsClient.projectDefaultLocation()).resolves.toEqual({ path: 'C:/Users/Alice/NarrationUtils' });
+    await expect(wailsClient.projectDefaultLocation()).resolves.toEqual({ path: 'C:/Users/Alice/NarrationStudio' });
     expect(projectDefaultLocation).toHaveBeenCalledWith();
   });
 

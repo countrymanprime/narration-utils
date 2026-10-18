@@ -590,9 +590,9 @@ func TestSmokeFailsWhenACatalogIsMissingOrEmpty(t *testing.T) {
 
 func TestSmokeFailsWhenAReaperScriptIsMissing(t *testing.T) {
 	tree := healthyTree(t)
-	delete(tree, resourcesRoot+"/reaper/NarrationUtils_Launcher.lua")
+	delete(tree, resourcesRoot+"/reaper/NarrationStudio_Launcher.lua")
 	report := smoke(context.Background(), smokeOptionsFor(t, tree, &fakeRun{}))
-	if detail := failedChecks(report)["reaper"]; report.OK || !strings.Contains(detail, "NarrationUtils_Launcher.lua") {
+	if detail := failedChecks(report)["reaper"]; report.OK || !strings.Contains(detail, "NarrationStudio_Launcher.lua") {
 		t.Fatalf("a package without the launcher passed or did not name it: ok=%v %q", report.OK, detail)
 	}
 }

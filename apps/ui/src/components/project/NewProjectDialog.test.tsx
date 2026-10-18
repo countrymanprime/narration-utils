@@ -68,9 +68,9 @@ describe('NewProjectDialog', () => {
   });
 
   it('shows the real default projects folder until another location is chosen', async () => {
-    renderDialog({ projectDefaultLocation: async () => ({ path: 'C:/Users/Alice/NarrationUtils' }) });
+    renderDialog({ projectDefaultLocation: async () => ({ path: 'C:/Users/Alice/NarrationStudio' }) });
 
-    expect(await screen.findByText('C:/Users/Alice/NarrationUtils')).toBeTruthy();
+    expect(await screen.findByText('C:/Users/Alice/NarrationStudio')).toBeTruthy();
     expect(screen.getByText(/default projects folder/)).toBeTruthy();
   });
 

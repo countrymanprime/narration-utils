@@ -10,7 +10,7 @@ recent projects to reopen, or actions to browse to an existing folder or create 
 ## Where new projects go
 
 **Create new…** asks for a name. **Location** shows the folder the project goes in: the default projects folder
-(`NarrationUtils` in your user folder) until you pick another with **Change location…**.
+(`NarrationStudio` in your user folder) until you pick another with **Change location…**. If you already have a `NarrationUtils` folder there and no `NarrationStudio` one, the app keeps using it; it never moves your projects.
 
 ![New Project - the location line shows the default projects folder, with Change location](../../images/ui/project-new-dialog.webp)
 

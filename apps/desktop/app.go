@@ -591,7 +591,7 @@ func (h *Host) configureLocked(next config) {
 		h.config.teleprompterPython = sidecarPath(packagedRoot, "manuscript-teleprompter")
 	}
 	if packagedRoot != "" {
-		h.config.reaperLauncher = filepath.Join(packagedRoot, "reaper", "NarrationUtils_Launcher.lua")
+		h.config.reaperLauncher = filepath.Join(packagedRoot, "reaper", "NarrationStudio_Launcher.lua")
 	} else {
 		h.config.reaperLauncher = layout.Path(h.config.repoRoot, layout.LauncherFile)
 	}
@@ -606,7 +606,7 @@ func (h *Host) configureLocked(next config) {
 	h.guide = guide.New(h.config.projectFolder, h.config.manuscriptPython, h.config.manuscriptBackend, h.settings, h.sidecars)
 	h.guide.SetPersist(h.persist)
 	h.guide.SetFindings(h.findings)
-	// The session directory is REAPER's file bridge (NarrationUtils_Launcher.lua makes it). An Audacity launch never opens it,
+	// The session directory is REAPER's file bridge (NarrationStudio_Launcher.lua makes it). An Audacity launch never opens it,
 	// even when one is passed, so nothing on that launch writes REAPER bridge commands.
 	// The project's DAW (projectdaw.go): the launch's --daw, else the project's own choice or what its folder holds.
 	projectKind := h.projectDaw(hostServices{config: h.config, settings: h.settings}).kind
@@ -1274,7 +1274,7 @@ func (h *Host) resolveProjectFileLocked(next config) config {
 }
 
 // unresolvedLaunchReason reports what to tell the narrator when a REAPER launch (--daw REAPER, set unconditionally by
-// NarrationUtils_Launcher.lua) still has no project folder after matching, so they land on the picker with nothing chosen for
+// NarrationStudio_Launcher.lua) still has no project folder after matching, so they land on the picker with nothing chosen for
 // them: an unsaved rpp (next.projectFile empty) or a saved one no project has linked yet. Any other launch without a
 // folder, an Audacity one included, lands on the picker silently: both reasons are about a REAPER project it does not have.
 func unresolvedLaunchReason(next config) (string, bool) {
@@ -1581,7 +1581,7 @@ var fieldSchemas = map[string][]fieldSchema{
 		{"punch_preroll_seconds", "Punch pre-roll (seconds)", "number", nil},
 	},
 	// DAW.reaper_path is a global override for daw.Resolve (empty means auto-detect, apps/desktop/internal/daw).
-	// DAW.auto_start_launcher: the app may pass NarrationUtils_Launcher.lua as REAPER's trailing script argument when
+	// DAW.auto_start_launcher: the app may pass NarrationStudio_Launcher.lua as REAPER's trailing script argument when
 	// it starts REAPER, so the bridge is live without the narrator running the action by hand - but only when this is on, and
 	// it defaults off.
 	// DAW.experimental_reaper_actions is an owner decision: the REAPER bridge commands built before the owner's

@@ -15,6 +15,6 @@ export const projectDrivers: Record<string, Driver> = {
     await page.goto('/?mockNoProject=1');
     await settlePage(page);
     await page.getByRole('button', { name: 'Create new…' }).click();
-    await page.getByRole('dialog', { name: 'New Project' }).getByText('C:/Users/Mock/NarrationUtils').waitFor();
+    await page.getByRole('dialog', { name: 'New Project' }).getByText('C:/Users/Mock/NarrationStudio').waitFor();
   },
 };

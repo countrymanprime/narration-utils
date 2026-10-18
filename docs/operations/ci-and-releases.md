@@ -320,7 +320,7 @@ and exits: `0` when every check passed, `1` when one failed, `2` for a bad comma
 | `guide:capabilities` | the frozen Story Bible sidecar's `capabilities` subcommand names every TTS and pronunciation row this build declares |
 | `compare:capabilities` | the frozen Transcript Compare sidecar's `--capabilities` report names every batch ASR row this build declares |
 | `catalogs` | the four approved asset catalogs load and name assets |
-| `reaper` | the launcher and its six scripts are present and the launcher points at this executable (the shipped list is `scripts/release/reaper-files.mjs`, which names `narration_undo.lua` and `narration_levels.lua` among the feature files) |
+| `reaper` | the launcher (`NarrationStudio_Launcher.lua`, plus the deprecated `NarrationUtils_Launcher.lua` shim) and its scripts are present and the launcher points at this executable (the shipped list is `scripts/release/reaper-files.mjs`, which names `narration_undo.lua` and `narration_levels.lua` among the feature files) |
 
 CI runs it in the `Smoke test the packaged app` step of `.github/actions/build-native`, on `windows-x64` only, after the Wails
 build and before the release asset is packaged, so both `Build (Windows)` in `ci.yml` and the Windows release build of

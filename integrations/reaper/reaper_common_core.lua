@@ -1,6 +1,6 @@
 -- Shared REAPER-package helpers: ExtState access and basic file/path
 -- operations. Used by every *_Run.lua / *_Configure.lua script and the
--- shared NarrationUtils_Launcher.lua in this suite.
+-- shared NarrationStudio_Launcher.lua in this suite.
 
 local M = {}
 local SEP = package.config:sub(1, 1)
@@ -66,7 +66,7 @@ end
 -- daws\reaper\*.lua script. `own_script_path` must be the CALLING script's
 -- own file path, not reaper.get_action_context() taken here - this module
 -- doesn't know whether its caller is running as REAPER's current action
--- (script_path is its own) or was dispatched via NarrationUtils_Launcher.lua
+-- (script_path is its own) or was dispatched via NarrationStudio_Launcher.lua
 -- (script_path would be the launcher's own path instead).
 function M.core_dir(own_script_path)
   local script_dir = own_script_path:match('^(.*)[\\/]') or '.'
