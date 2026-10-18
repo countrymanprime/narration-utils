@@ -1,6 +1,6 @@
 # Threat model
 
-**Status: reviewed 2026-10-16.**
+**Status: reviewed 2026-10-18.**
 **Keeping it true.** A change that touches a trust boundary below updates this file in the same pull request: the `feature-cleanup` skill and the pull request template both ask "does this add or change a trust boundary, a privilege or what the app sends off the machine?". A file the app writes and reads back for the same user is listed in [data files](../reference/data-files.md), not here, unless it names a path the host opens, a command it runs or a URL it fetches. Bump the date above when a row is re-read against the code. Do not log changes here; the history is `git log -p docs/architecture/threat-model.md`. A finding that is not fixed here is a GitHub issue ([Tracking work on GitHub](../operations/github-workflow.md)), named in its row.
 
 ## How to read it
@@ -162,7 +162,7 @@ Boundary: the Go host and the Lua bridge in REAPER exchange files in one session
 
 | # | Threat | Existing mitigation | Residual, owner |
 | --- | --- | --- | --- |
-| 7a | I: another local user reads manuscripts, audio or the Story Bible | Data lives in the user's profile and the project's own folder; the host log is capped (1 MiB plus one backup) and the run log (5 MiB plus two backups, `internal/runlog`) both record where, not what | Not encrypted, by design: it is local-first software and the operating system's account boundary is the protection. Accepted |
+| 7a | I: another local user reads manuscripts, audio or the Story Bible | Data lives in the user's profile and the project's own folder; the host log is capped (1 MiB plus one backup) and the run log (5 MiB plus two backups, `internal/runlog`) both record where, not what; the activity trace (10 MiB plus two backups, `internal/trace`, off in a published release) takes only typed fields, so a path is a class and a salted hash, an error a class and a text a length, and no field holds a sentence | Not encrypted, by design: it is local-first software and the operating system's account boundary is the protection. Accepted |
 | 7b | I: content leaves the machine by an analysis or a sidecar | No code path uploads content; the network fence in [What the app sends off the machine](#what-the-app-sends-off-the-machine) and the offline start-up test | A sidecar's own network use is not seen by the Go fence; the sidecars import no HTTP client of their own (checked 2026-09-21: only `urllib.parse` in `libs/python/narration_common/ui_bridge.py`), and the only self-downloading paths are the developer-run ones named above. Owner: maintainer |
 
 ### 8. The release pipeline (`SECURITY.md` bullet 5)

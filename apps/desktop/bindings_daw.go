@@ -120,7 +120,8 @@ func dawCapabilitiesPayload(resolver *dawport.Resolver, runtime dawport.Runtime)
 // noisy. saveSettings also calls it
 // directly right after a DAW settings save, so a toggle takes effect on the wire without waiting for the next tick.
 func (h *Host) pollDawCapabilities() {
-	resolver, runtime := h.dawResolver()
+	svc := h.services()
+	resolver, runtime := h.dawResolverFor(svc)
 	payload := dawCapabilitiesPayload(resolver, runtime)
 	encodedBytes, err := json.Marshal(payload)
 	if err != nil {
@@ -132,6 +133,7 @@ func (h *Host) pollDawCapabilities() {
 	h.dawCapabilitiesSnapshot = encoded
 	ctx := h.ctx
 	h.mu.Unlock()
+	h.traceDawPoll(concreteReachability(svc.reachability), resolver, runtime, changed)
 	if changed && ctx != nil {
 		emitEvent("daw_capabilities_changed", payload)
 	}

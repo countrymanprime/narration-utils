@@ -157,3 +157,39 @@ func (r *Reachability) Matches(linkedPath string) bool {
 	}
 	return strings.EqualFold(filepath.Clean(r.rpp), filepath.Clean(linkedPath))
 }
+
+// HeartbeatTimeout is how old the last heartbeat may be and still count as REAPER running, for a trace that records the
+// threshold beside the age it was judged against.
+func HeartbeatTimeout() time.Duration { return heartbeatTimeout }
+
+// LastSeenAge is how long ago the last heartbeat arrived, and false when none ever has (so there is no age to report).
+func (r *Reachability) LastSeenAge() (time.Duration, bool) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	if r.lastSeen.IsZero() {
+		return 0, false
+	}
+	return r.now().Sub(r.lastSeen), true
+}
+
+// MatchReason says why Matches answers as it does, as one word: ok, no_link (nothing is linked), stale (no fresh
+// heartbeat), no_project (REAPER has no project open), unsaved or path_differs. It is for the trace; Matches stays the
+// answer callers act on.
+func (r *Reachability) MatchReason(linkedPath string) string {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	switch {
+	case linkedPath == "":
+		return "no_link"
+	case !r.reachableLocked():
+		return "stale"
+	case r.rpp == "":
+		return "no_project"
+	case r.unsaved:
+		return "unsaved"
+	case !strings.EqualFold(filepath.Clean(r.rpp), filepath.Clean(linkedPath)):
+		return "path_differs"
+	default:
+		return "ok"
+	}
+}

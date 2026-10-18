@@ -36,6 +36,7 @@ func main() {
 		return
 	}
 	host := NewHost()
+	host.startTrace()
 	app := application.New(application.Options{
 		Name: "Narration Studio",
 		// The Host is the one bound service: the page calls only its exported methods.

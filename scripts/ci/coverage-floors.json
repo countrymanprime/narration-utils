@@ -25,6 +25,7 @@
     {"tool":"go","project":"apps/desktop","path":"internal/retakelanes","floor":91},
     {"tool":"go","project":"apps/desktop","path":"internal/stages","floor":100,"nonWindowsFloor":99,"nonWindowsReason":"Measured 99.7% on Linux; Windows CI reaches 100. \"folder cannot be created\" stands a file where the narration-utils folder belongs. Off Windows the read through it fails with ENOTDIR and Append stops before the write; on Windows it reads as \"not found\", so writeLocked reaches its MkdirAll error."},
     {"tool":"go","project":"apps/desktop","path":"internal/teleprompter","floor":93},
+    {"tool":"go","project":"apps/desktop","path":"internal/trace","floor":83},
     {"tool":"go","project":"apps/desktop","path":"internal/tracks","floor":96},
     {"tool":"go","project":"apps/desktop","path":"internal/update","floor":94},
     {"tool":"vitest","project":"apps/ui","path":"src/api","floor":86,"reason":"Baseline of 2026-09-20 was 69.2%; deleting the dead client/http.ts (0%) in the Knip cleanup lifted it to 71%. The directory still mixes the mock API (test infrastructure, 65%) and the Wails client glue (34%), so it is gated to stop the tested part decaying and the floor rises with tests."},

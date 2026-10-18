@@ -76,9 +76,9 @@ Risks: a scrubbed error message is the one place a deny-list remains, so it is d
 
 | # | Phase | Description | Status | Parallel | Depends |
 | --- | --- | --- | --- | --- | --- |
-| 1 | Trace package and registry | `internal/trace`, the record envelope, the field kinds, the lint ban, off by default with the ring buffer | not started | - | - |
+| 1 | Trace package and registry | `internal/trace`, the record envelope, the field kinds, the lint ban, off by default with the ring buffer | built: package, registry, canary test; the Settings switch follows | - | - |
 | 2 | Host and UI instrumentation | `withTracing`, `emitEvent`, the supervisor, lifecycle and recover wrapper; the batched UI binding | not started | - | 1 |
-| 3 | DAW connection events | Reachability flips, nil client, dispatch errors and rejected events, project match, capability availability | not started | 2 | 1 |
+| 3 | DAW connection events | Reachability flips, nil client, dispatch errors and rejected events, project match, capability availability | built: host events in `trace_host.go` | 2 | 1 |
 | 4 | Guards | The reflection test over `Host` methods, the UI coverage test, the silent-catch scan and the canary suite | not started | - | 2, 3 |
 | 5 | Export and sidecar `event()` | The diagnostics export with its preview and manifest; the sidecar call; `host.log` retires | not started | - | 4 |
 

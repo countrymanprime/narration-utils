@@ -199,3 +199,48 @@ func TestReachabilityTransportIsUnknownOnceTheHeartbeatIsStale(t *testing.T) {
 		t.Fatalf("Transport() = (%+v, true) after the heartbeat timed out: a closed REAPER is not still recording", got)
 	}
 }
+
+func TestReachabilityLastSeenAgeAndTimeout(t *testing.T) {
+	reach := NewReachability(nil)
+	clock := time.Now()
+	reach.now = func() time.Time { return clock }
+	if _, heard := reach.LastSeenAge(); heard {
+		t.Fatal("LastSeenAge() reports a heartbeat before any arrived")
+	}
+	reach.Record(bridge.Event{Fields: []string{"PROJECT_STATUS", "", "C:/p/Book.rpp", "0"}})
+	clock = clock.Add(2 * time.Second)
+	age, heard := reach.LastSeenAge()
+	if !heard || age != 2*time.Second {
+		t.Fatalf("LastSeenAge() = (%v, %v), want (2s, true)", age, heard)
+	}
+	if HeartbeatTimeout() != heartbeatTimeout {
+		t.Fatalf("HeartbeatTimeout() = %v, want %v", HeartbeatTimeout(), heartbeatTimeout)
+	}
+}
+
+func TestReachabilityMatchReasonNamesWhyAProjectDoesNotMatch(t *testing.T) {
+	reach := NewReachability(nil)
+	clock := time.Now()
+	reach.now = func() time.Time { return clock }
+	if got := reach.MatchReason("C:/p/Book.rpp"); got != "stale" {
+		t.Errorf("no heartbeat: MatchReason = %q, want stale", got)
+	}
+	reach.Record(bridge.Event{Fields: []string{"PROJECT_STATUS", "", "C:/p/Book.rpp", "0"}})
+	for linked, want := range map[string]string{"": "no_link", "c:/p/book.rpp": "ok", "C:/p/Other.rpp": "path_differs"} {
+		if got := reach.MatchReason(linked); got != want {
+			t.Errorf("linked %q: MatchReason = %q, want %s", linked, got, want)
+		}
+	}
+	reach.Record(bridge.Event{Fields: []string{"PROJECT_STATUS", "", "C:/p/Book.rpp", "1"}})
+	if got := reach.MatchReason("C:/p/Book.rpp"); got != "unsaved" {
+		t.Errorf("unsaved project: MatchReason = %q, want unsaved", got)
+	}
+	reach.Record(bridge.Event{Fields: []string{"PROJECT_STATUS", "", "", "0"}})
+	if got := reach.MatchReason("C:/p/Book.rpp"); got != "no_project" {
+		t.Errorf("no project open: MatchReason = %q, want no_project", got)
+	}
+	clock = clock.Add(heartbeatTimeout + time.Second)
+	if got := reach.MatchReason("C:/p/Book.rpp"); got != "stale" {
+		t.Errorf("old heartbeat: MatchReason = %q, want stale", got)
+	}
+}
