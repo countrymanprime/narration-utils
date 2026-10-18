@@ -47,6 +47,8 @@ export type ScopedFieldsPanelProps = {
   after?: (state: ScopedPanelState) => ReactNode;
   /** Replaces the form in a scope where the panel is not a form of fields (DAW Integration in a project); `undefined` keeps it. */
   replace?: (state: ScopedPanelState) => ReactNode;
+  /** Told when the narrator picks a value, with the form as it is now and a way to put this field back; the panel still holds the pick. */
+  onChoose?: (change: { key: string; value: string; values: Record<string, string>; revert: () => void }) => void;
 };
 
 /**
@@ -55,7 +57,7 @@ export type ScopedFieldsPanelProps = {
  * shows Save and Discard once something changed, and asks before a scope switch would drop an edit. Its edits join
  * the page's dirty flag and its leave guard through `SettingsFormsProvider`.
  */
-export function ScopedFieldsPanel({ id, title, tool, scopes, filter, notify, before, after, replace }: ScopedFieldsPanelProps) {
+export function ScopedFieldsPanel({ id, title, tool, scopes, filter, notify, before, after, replace, onChoose }: ScopedFieldsPanelProps) {
   const system = usePort('system');
   const { register } = useSettingsForms();
   const [scope, setScope] = useState<Scope>(scopes[0]!);
@@ -161,8 +163,15 @@ export function ScopedFieldsPanel({ id, title, tool, scopes, filter, notify, bef
                     scope={scope}
                     value={values[field.key] ?? ''}
                     change={(value) => {
+                      const previous = values[field.key] ?? '';
                       setValues((current) => ({ ...current, [field.key]: value }));
                       setDirty(true);
+                      onChoose?.({
+                        key: field.key,
+                        value,
+                        values: { ...values, [field.key]: value },
+                        revert: () => setValues((current) => ({ ...current, [field.key]: previous })),
+                      });
                     }}
                     onClearOverride={() => clearOverride(field.key)}
                   />

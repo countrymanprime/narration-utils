@@ -215,7 +215,10 @@ export function useBoothPage(options: BoothPageOptions) {
       roll: (_phrase, { confirmed }) => daw.roll(recordId, takeAt.current + latest.current.elapsed(), { confirmed }),
       pause,
       resume: resumeTake,
-      beginTake: (punch) => {
+      beginTake: async (punch) => {
+        // The live speech model is checked before anything records: a missing one opens its install question here, and no take begins
+        // behind it (the DAW would otherwise record while the narrator is still being asked, and while it downloads).
+        if (!(await latest.current.session.ensureModel())) return;
         takeAt.current = punch ?? recordedEnd;
         return control.toggle();
       },

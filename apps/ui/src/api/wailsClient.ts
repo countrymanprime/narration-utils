@@ -168,6 +168,7 @@ import { exportJobSchema, multiPackageJobSchema, packageFolderResultSchema, pack
 import type { NarrationApi } from '../types';
 import * as host from '../../wailsjs/github.com/countrymanprime/narration-utils/shell/host';
 import { Events } from '@wailsio/runtime';
+import { logUi } from './uiLog';
 
 /**
  * A Go method that returns an error rejected with the error's text on Wails v2. Wails v3 rejects with a `RuntimeError` whose `message`
@@ -179,11 +180,16 @@ function hostErrorText(reason: unknown): unknown {
   return reason instanceof Error && reason.name === 'RuntimeError' ? reason.message : reason;
 }
 
-async function hostResult<T>(request: Promise<T>): Promise<T> {
+async function hostResult<T>(request: Promise<T>, binding = ''): Promise<T> {
+  const started = performance.now();
   try {
-    return await request;
+    const result = await request;
+    if (binding) logUi('ui.call.ok', `${binding} ${Math.round(performance.now() - started)}ms`);
+    return result;
   } catch (reason) {
-    throw hostErrorText(reason);
+    const text = hostErrorText(reason);
+    if (binding) logUi('ui.call.fail', `${binding} ${Math.round(performance.now() - started)}ms: ${String(text)}`);
+    throw text;
   }
 }
 
@@ -270,7 +276,7 @@ function subscribeTeleprompterEvents(onEvent: (event: InferOutput<typeof telepro
 
 /** A Wails string binding: the host sends JSON text, and it is checked against `schema` before anything reads it. */
 async function decode<S extends StandardSchemaV1>(schema: S, payload: string, request: Promise<string>): Promise<InferOutput<S>> {
-  const text = await hostResult(request);
+  const text = await hostResult(request, payload);
   return checked(() => parseWireJson(schema, text, bindingContext(payload)));
 }
 
@@ -283,7 +289,7 @@ function toStartOptions({ startWord, ...rest }: TeleprompterStartOptions): Recor
 
 /** Ready and Bootstrap are the two bindings that return an object, not JSON text. */
 async function decodeObject<S extends StandardSchemaV1>(schema: S, payload: string, request: Promise<unknown>): Promise<InferOutput<S>> {
-  const value = await hostResult(request);
+  const value = await hostResult(request, payload);
   return checked(() => parseWire(schema, value, bindingContext(payload)));
 }
 

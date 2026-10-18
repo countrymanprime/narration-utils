@@ -264,6 +264,19 @@ describe('DawBanner and NoManuscript', () => {
     expect(onUseBuiltIn).toHaveBeenCalledOnce();
   });
 
+  it('the banner offers Connect, naming the DAW, only when the page can connect it', async () => {
+    const onConnect = vi.fn();
+    const { rerender } = view(<DawBanner reachable={false} daw="REAPER" onRetry={vi.fn()} onUseBuiltIn={vi.fn()} />);
+    expect(screen.queryByRole('button', { name: 'Connect REAPER' })).toBeNull();
+    rerender(
+      <TooltipProvider>
+        <DawBanner reachable={false} daw="REAPER" onRetry={vi.fn()} onConnect={onConnect} onUseBuiltIn={vi.fn()} />
+      </TooltipProvider>,
+    );
+    await userEvent.click(screen.getByRole('button', { name: 'Connect REAPER' }));
+    expect(onConnect).toHaveBeenCalledOnce();
+  });
+
   it('the no-manuscript state offers the import button given as a prop and a Set a due date icon', async () => {
     const onSetDueDate = vi.fn();
     view(<NoManuscript projectName="A project" importButton={<button type="button">Import manuscript</button>} onSetDueDate={onSetDueDate} />);

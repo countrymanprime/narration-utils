@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/fs"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"strings"
@@ -72,6 +73,11 @@ const hostAPIVersion = 136
 // Host is the Wails binding boundary. The frontend invokes only this bound
 // object; it never receives a loopback port or an HTTP capability.
 type Host struct {
+	// dawStateLogged is the last DAW state written to the run log, so a poll that finds nothing new writes nothing (dawlog.go).
+	dawStateLogMu sync.Mutex
+	// +checklocks:dawStateLogMu
+	dawStateLogged string
+
 	mu sync.RWMutex
 	// +checklocks:mu
 	ctx context.Context
@@ -374,7 +380,9 @@ type Host struct {
 	// reaperLaunch and reaperLocate are seams for tests (dawlaunch.go): nil means daw.Launch and
 	// daw.LocateReaperExecutable, the real detached spawn and the real registry lookup.
 	reaperLaunch func(program string, args []string) error
-	reaperLocate func() (path, source string, err error)
+	// reaperRunning says whether REAPER is already running; nil means daw.IsRunning.
+	reaperRunning func() bool
+	reaperLocate  func() (path, source string, err error)
 	// audacityLocate is DawChoice's seam for daw.LocateAudacityExecutable (bindings_dawchoice.go); nil means the real one.
 	audacityLocate func() (path, source string, err error)
 	// dawCatalogDetectors is a seam for tests (dawcatalog.go): nil means dawcatalog.DefaultDetectors(), the real
@@ -550,6 +558,7 @@ func (h *Host) ServiceStartup(ctx context.Context, _ application.ServiceOptions)
 	go h.chapterSyncWatchLoop(runtimeContext)
 	go h.backgroundCheckLoop(runtimeContext)
 	go h.punchAnchorLoop(runtimeContext)
+	go h.autoConnectLoop(runtimeContext)
 	go h.startupUpdateCheck(runtimeContext, delay)
 	go h.cleanStaleDownloads()
 	return nil
@@ -574,6 +583,7 @@ func (h *Host) cleanStaleDownloads() {
 func (h *Host) configureLocked(next config) {
 	next.repoRoot = layout.FindRoot(next.repoRoot)
 	h.config = next
+	h.logConfigure()
 	h.settings = settings.New(h.config.repoRoot, h.config.projectFolder)
 	h.settings.SetPersist(h.persist)
 	h.resolveDeveloperSidecars()
@@ -594,6 +604,8 @@ func (h *Host) configureLocked(next config) {
 		h.config.reaperLauncher = filepath.Join(packagedRoot, "reaper", "NarrationUtils_Launcher.lua")
 	} else {
 		h.config.reaperLauncher = layout.Path(h.config.repoRoot, layout.LauncherFile)
+		// A checkout's launcher would otherwise run whatever build sits in build/bin; point it at the program that is running.
+		_ = writeCheckoutLauncherPointer(h.config.reaperLauncher, executablePath())
 	}
 	h.manuscript = manuscript.New(h.config.projectFolder)
 	h.manuscript.SetPersist(h.persist)
@@ -807,8 +819,11 @@ func (h *Host) configureLocked(next config) {
 	}
 	// NARRATION_TELEPROMPTER_EVAL=1 is the teleprompter evaluation aid:
 	// a developer/evaluation-only opt-in, same pattern as NARRATION_DEBUG (runlog), never a Settings toggle.
-	h.teleprompter = teleprompter.New(teleprompter.Config{Project: h.config.projectFolder, SessionDir: teleprompterDir, Python: h.config.teleprompterPython, Backend: h.config.teleprompterBackend, Platform: h.platform, EvalTiming: os.Getenv("NARRATION_TELEPROMPTER_EVAL") == "1"}, h.sidecars, h.emitTeleprompterEvent, h.emitTeleprompterState)
+	h.teleprompter = teleprompter.New(teleprompter.Config{Project: h.config.projectFolder, SessionDir: teleprompterDir, Python: h.config.teleprompterPython, Backend: h.config.teleprompterBackend, Platform: h.platform, EvalTiming: os.Getenv("NARRATION_TELEPROMPTER_EVAL") == "1", EvalExtraArgs: evalExtraArgs}, h.sidecars, h.emitTeleprompterEvent, h.emitTeleprompterState)
 	h.teleprompter.SetLog(func(kind, message string) { _ = h.log.Report(kind, message) })
+	h.teleprompter.SetTrace(func(event string, attrs ...any) {
+		h.runLog.App().Event(slog.LevelInfo, event, "what the microphone delivered", attrs...)
+	})
 	// The built-in recorder runs the same sidecar with --record over the capture
 	// port's wasapi row. An attach waits while a take records (idleLocked), so the old one can only be metering: it is stopped.
 	if h.recorder != nil {
@@ -904,6 +919,20 @@ func executablePath() string {
 		return ""
 	}
 	return executable
+}
+
+// writeCheckoutLauncherPointer writes the running program's path beside a checkout's launcher script, the file the launcher reads
+// first (NarrationUtils_Launcher.lua), so the REAPER action starts this program, which the single-instance check then forwards to.
+func writeCheckoutLauncherPointer(launcher, executable string) error {
+	if launcher == "" || executable == "" {
+		return nil
+	}
+	target := filepath.Join(filepath.Dir(launcher), "narration-utils-app-path.txt")
+	temporary := target + ".tmp"
+	if err := os.WriteFile(temporary, []byte(executable+"\n"), 0o600); err != nil {
+		return err
+	}
+	return os.Rename(temporary, target)
 }
 
 func writeReaperLauncherPath(root, executable string) error {
@@ -1178,6 +1207,8 @@ func (h *Host) onSecondInstance(instance application.SecondInstanceData) {
 		}
 	}
 	h.mu.Unlock()
+	h.runLog.App().Event(slog.LevelInfo, "app.second_instance", "a second launch handed this app its arguments",
+		"attached", attached, "reason", reason, "project_given", hasArgument(instance.Args, "--project-folder"), "bridge_given", hasArgument(instance.Args, "--session-dir"))
 	if ctx != nil {
 		bringWindowForward()
 		if attached {
@@ -2126,4 +2157,22 @@ func isHex(value string) bool {
 		}
 	}
 	return true
+}
+
+// evalExtraArgs reads the evaluation aid's extra sidecar flags from teleprompter-extra-args.txt in the temp folder's narration-utils folder (whitespace
+// separated) each time a session starts, so a developer can change them between runs. A missing or unreadable file is no flags.
+func evalExtraArgs() []string {
+	text, err := os.ReadFile(filepath.Join(os.TempDir(), "narration-utils", "teleprompter-extra-args.txt"))
+	if err != nil {
+		return nil
+	}
+	return strings.Fields(string(text))
+}
+
+// evalArgsForLog is the extra sidecar flags in force for the next session, for the run log, only while the evaluation aid is on.
+func evalArgsForLog() string {
+	if os.Getenv("NARRATION_TELEPROMPTER_EVAL") != "1" {
+		return ""
+	}
+	return strings.Join(evalExtraArgs(), " ")
 }

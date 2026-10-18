@@ -35,7 +35,7 @@ const REAPER_GUIDE: DawConnectGuide = {
     label: 'Open in REAPER and connect',
     // REAPER runs a script it is started with, so the launcher connects this launch whether or not the action was loaded.
     settings: { auto_start_launcher: 'true' },
-    note: 'With REAPER closed: opens the linked project and connects. Settings then starts the link each time this app opens REAPER.',
+    note: 'Opens the linked project in REAPER and connects, or connects the REAPER you already have open. Settings then starts the link each time this app opens REAPER.',
   },
 };
 

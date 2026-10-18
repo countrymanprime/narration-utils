@@ -31,7 +31,7 @@ func linkedProject(t *testing.T) (folder, rpp string) {
 func TestLaunchReaperRefusesWithNoProjectOpen(t *testing.T) {
 	t.Setenv("APPDATA", t.TempDir()) // never touch the real machine's global-settings.json
 	svc := hostServices{settings: settings.New("", "")}
-	if _, err := launchReaper(svc, nil, nil, nil); err == nil {
+	if _, err := launchReaper(svc, nil, nil, nil, nil); err == nil {
 		t.Fatal("want an error with no project folder")
 	}
 }
@@ -40,7 +40,7 @@ func TestLaunchReaperRefusesWithNoLinkedFile(t *testing.T) {
 	t.Setenv("APPDATA", t.TempDir()) // never touch the real machine's global-settings.json
 	folder := t.TempDir()
 	svc := hostServices{config: config{projectFolder: folder}, settings: settings.New("", folder)}
-	if _, err := launchReaper(svc, nil, nil, nil); err == nil {
+	if _, err := launchReaper(svc, nil, nil, nil, nil); err == nil {
 		t.Fatal("want an error with no linked DAW project file")
 	}
 }
@@ -52,7 +52,7 @@ func TestLaunchReaperRefusesWhenTheLinkedFileNoLongerExists(t *testing.T) {
 		t.Fatal(err)
 	}
 	svc := hostServices{config: config{projectFolder: folder}, settings: settings.New("", folder)}
-	if _, err := launchReaper(svc, nil, nil, nil); err == nil {
+	if _, err := launchReaper(svc, nil, nil, nil, nil); err == nil {
 		t.Fatal("want an error when the linked file no longer resolves")
 	}
 }
@@ -62,7 +62,7 @@ func TestLaunchReaperRefusesWhenReaperCannotBeLocated(t *testing.T) {
 	folder, _ := linkedProject(t)
 	svc := hostServices{config: config{projectFolder: folder}, settings: settings.New("", folder)}
 	locate := func() (string, string, error) { return "", "", fmt.Errorf("not found") }
-	if _, err := launchReaper(svc, nil, locate, nil); err == nil {
+	if _, err := launchReaper(svc, nil, locate, nil, nil); err == nil {
 		t.Fatal("want an error when reaper.exe cannot be located")
 	}
 }
@@ -80,7 +80,7 @@ func TestLaunchReaperPassesTheLinkedFileAndNotTheLauncherByDefault(t *testing.T)
 		gotProgram, gotArgs = program, args
 		return nil
 	}
-	result, err := launchReaper(svc, nil, locate, launch)
+	result, err := launchReaper(svc, nil, locate, launch, notRunning)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -112,7 +112,7 @@ func TestLaunchReaperPassesTheLauncherScriptWhenAutoStartIsOn(t *testing.T) {
 		gotArgs = args
 		return nil
 	}
-	if _, err := launchReaper(svc, nil, locate, launch); err != nil {
+	if _, err := launchReaper(svc, nil, locate, launch, notRunning); err != nil {
 		t.Fatal(err)
 	}
 	if len(gotArgs) != 2 || gotArgs[0] != rpp || gotArgs[1] != "C:/app/NarrationUtils_Launcher.lua" {
@@ -141,7 +141,7 @@ func TestLaunchReaperASettingsOverrideWinsOverAutoDetect(t *testing.T) {
 		gotProgram = program
 		return nil
 	}
-	result, err := launchReaper(svc, nil, locate, launch)
+	result, err := launchReaper(svc, nil, locate, launch, notRunning)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -156,7 +156,56 @@ func TestLaunchReaperReportsAFailedLaunch(t *testing.T) {
 	svc := hostServices{config: config{projectFolder: folder}, settings: settings.New("", folder)}
 	locate := func() (string, string, error) { return "C:/REAPER/reaper.exe", "uninstall_registry", nil }
 	launch := func(program string, args []string) error { return fmt.Errorf("access denied") }
-	if _, err := launchReaper(svc, nil, locate, launch); err == nil {
+	if _, err := launchReaper(svc, nil, locate, launch, notRunning); err == nil {
 		t.Fatal("want an error when the launch itself fails")
 	}
 }
+
+// A REAPER that is already running takes the launcher script alone: reopening the linked file would stack a second copy of the
+// project in the narrator's open REAPER, and the launcher reads whichever project that REAPER has open.
+func TestLaunchReaperPassesOnlyTheLauncherWhenReaperIsAlreadyRunning(t *testing.T) {
+	t.Setenv("APPDATA", t.TempDir())
+	folder, _ := linkedProject(t)
+	store := settings.New("", folder)
+	store.SetPersist(nil)
+	if err := store.Save("DAW", "global", map[string]*string{"auto_start_launcher": ptr("true")}); err != nil {
+		t.Fatal(err)
+	}
+	svc := hostServices{config: config{projectFolder: folder, reaperLauncher: "C:/app/NarrationUtils_Launcher.lua"}, settings: store}
+	locate := func() (string, string, error) { return "C:/REAPER/reaper.exe", "uninstall_registry", nil }
+	var gotArgs []string
+	launch := func(program string, args []string) error {
+		gotArgs = args
+		return nil
+	}
+	running := func() bool { return true }
+	if _, err := launchReaper(svc, nil, locate, launch, running); err != nil {
+		t.Fatal(err)
+	}
+	if len(gotArgs) != 1 || gotArgs[0] != "C:/app/NarrationUtils_Launcher.lua" {
+		t.Fatalf("args = %v, want only the launcher script", gotArgs)
+	}
+}
+
+func TestLaunchReaperStillPassesTheLinkedFileWhenReaperIsRunningAndTheLauncherIsOff(t *testing.T) {
+	t.Setenv("APPDATA", t.TempDir())
+	folder, rpp := linkedProject(t)
+	store := settings.New("", folder)
+	store.SetPersist(nil)
+	svc := hostServices{config: config{projectFolder: folder, reaperLauncher: "C:/app/NarrationUtils_Launcher.lua"}, settings: store}
+	locate := func() (string, string, error) { return "C:/REAPER/reaper.exe", "uninstall_registry", nil }
+	var gotArgs []string
+	launch := func(program string, args []string) error {
+		gotArgs = args
+		return nil
+	}
+	if _, err := launchReaper(svc, nil, locate, launch, func() bool { return true }); err != nil {
+		t.Fatal(err)
+	}
+	if len(gotArgs) != 1 || gotArgs[0] != rpp {
+		t.Fatalf("args = %v, want only the linked .rpp", gotArgs)
+	}
+}
+
+// notRunning pins the "REAPER is not running" answer so a launch test never depends on the machine it runs on.
+func notRunning() bool { return false }

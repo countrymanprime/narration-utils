@@ -1,3 +1,4 @@
+import { logUi } from './api/uiLog';
 import { useCallback, useEffect, useRef, useState, type ReactElement } from 'react';
 import { BrowserRouter, Navigate, Route, Routes, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import type { Bootstrap } from './types';
@@ -156,6 +157,7 @@ function AppRoutes() {
   const api = useApi();
   const navigate = useNavigate();
   const location = useLocation();
+  useEffect(() => logUi('ui.nav', location.pathname), [location.pathname]);
   const history = useAppHistory();
   const zoom = useZoom(api);
   const journal = useJournal();

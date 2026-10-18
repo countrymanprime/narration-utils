@@ -17,6 +17,7 @@ import { RecordingCheckSummary } from '../RecordingCheckSummary';
 import { registerSettingsSection } from '../sections';
 import { UpdatesPanel } from '../UpdatesPanel';
 import { AppearancePanel } from './AppearancePanel';
+import { BoothPanel } from './BoothPanel';
 import { DawPanel } from './DawPanel';
 import { DefinitionsPanel } from './DefinitionsPanel';
 import { DeliveryProfileField } from './DeliveryProfileField';
@@ -180,7 +181,7 @@ export function SettingsPage({
           before={({ fields }) => <LocalModelCard kind="voice" fields={fields} notify={notify} />}
         />
         {/* The Booth's microphone, engine and model: the key stays the settings tool's name. */}
-        <ScopedFieldsPanel id="booth" title="Booth" tool="Teleprompter" scopes={['global']} notify={notify} />
+        <BoothPanel notify={notify} />
         <KeptPanel id="local-assets" title="Local assets">
           <LocalAssets notify={notify} />
         </KeptPanel>

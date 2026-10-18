@@ -53,6 +53,9 @@ func SupportsEngine(platform, engine string) bool {
 type Config struct {
 	Project, SessionDir, Python, Backend, Platform string
 	EvalTiming                                     bool
+	// EvalExtraArgs returns sidecar flags appended after the evaluation aid's own, read at each Start, so an A/B run can vary
+	// --decode-interval, --chunk-seconds or --no-context between sessions without a restart. Used only with EvalTiming; nil is none.
+	EvalExtraArgs func() []string
 }
 
 // PlatformOrCurrent is platform, or this process's GOOS when it is empty.
@@ -75,6 +78,12 @@ type Service struct {
 	grace time.Duration
 	// +checklocks:mu
 	dropped int
+	// +checklocks:mu
+	trace func(event string, attrs ...any)
+	// +checklocks:mu
+	input inputTrace
+	// traceNow is the clock the input summary reads; nil means time.Now (a test seam).
+	traceNow func() time.Time
 
 	state    map[string]any
 	script   json.RawMessage
@@ -310,6 +319,9 @@ func (s *Service) planSession(options map[string]string, src source) (launch, er
 	}
 	if s.config.EvalTiming {
 		args = append(args, "--timing", "--log", filepath.Join(s.config.SessionDir, fmt.Sprintf("teleprompter_%d.log", stamp)))
+		if s.config.EvalExtraArgs != nil {
+			args = append(args, s.config.EvalExtraArgs()...)
+		}
 	}
 	if s.config.Backend != "" {
 		args = append([]string{s.config.Backend}, args...)
@@ -508,6 +520,7 @@ func (s *Service) onLine(line string) {
 			defer s.notify()
 		}
 	}
+	s.traceLine(kind, raw)
 	if s.emit != nil {
 		s.emit(raw)
 	}

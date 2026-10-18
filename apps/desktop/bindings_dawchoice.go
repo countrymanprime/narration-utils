@@ -164,6 +164,7 @@ func (h *Host) dawChoice(svc hostServices) DawChoice {
 		name := filepath.Base(project.folder.linkedPath)
 		choice.LinkedFile = &name
 	}
+	h.logDawState(choice, svc.bridge != nil)
 	for _, kind := range dawport.Choosable() {
 		optionResolver, _ := dawResolverOver(svc, kind, kind == project.kind)
 		choice.Options = append(choice.Options, DawChoiceOption{

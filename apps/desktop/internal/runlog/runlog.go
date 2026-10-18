@@ -41,6 +41,9 @@ type Logger struct {
 
 	now   func() time.Time
 	newID func() string
+
+	appOnce sync.Once
+	app     *Run
 }
 
 // New returns a run logger at path. A maxBytes of 0 or less means DefaultMaxBytes. NARRATION_DEBUG=1 turns on debug

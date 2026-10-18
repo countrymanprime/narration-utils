@@ -126,6 +126,45 @@ describe('the-page-asks-for-a-manuscript-first', () => {
   });
 });
 
+describe('record-waits-for-the-live-model', () => {
+  it('asks for the missing model first and records nothing while it is asked', async () => {
+    const assetsList = vi.fn(async () => ({
+      cacheRoot: 'C:/cache',
+      totalInstalledBytes: 0,
+      assets: [
+        {
+          kind: 'whisper',
+          kindLabel: 'Whisper model',
+          id: 'tiny',
+          displayName: 'Whisper tiny',
+          version: '1',
+          publisher: 'p',
+          license: 'MIT',
+          licenseUrl: 'https://example.test/l',
+          modelCardUrl: 'https://example.test/m',
+          provenanceUrl: 'https://example.test/p',
+          attribution: 'a',
+          downloadSize: 78_000_000,
+          diskSize: 80_000_000,
+          installState: 'not_installed' as const,
+          path: 'C:/models',
+          installedAt: '',
+          verifiedAt: '',
+          activeJobId: '',
+        },
+      ],
+    }));
+    const page = renderPage({ api: { assetsList } as Partial<NarrationApi> });
+    await ready();
+    await space();
+    await settle();
+    await waitFor(() => expect(assetsList).toHaveBeenCalled());
+    await settle();
+    expect(page.daw.recordStart).not.toHaveBeenCalled();
+    expect(screen.queryByRole('button', { name: /^Stop$/ })).toBeNull();
+  });
+});
+
 describe('space-records-and-stops-and-nothing-else-records', () => {
   it('Space records and stops through the Record control', async () => {
     const page = renderPage();

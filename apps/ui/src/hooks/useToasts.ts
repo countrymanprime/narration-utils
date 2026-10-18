@@ -1,3 +1,4 @@
+import { logUi } from '../api/uiLog';
 import type { IconDefinition } from '@fortawesome/fontawesome-svg-core';
 import { useCallback, useRef, useState } from 'react';
 import type { Notify, ToastAction, ToastMessage, ToastTone } from '../components/primitives/Toast';
@@ -27,6 +28,7 @@ export function useToasts(): { messages: ToastMessage[]; notify: Notify; dismiss
   const lastId = useRef(0);
   const notify = useCallback((text: string, tone: ToastTone = 'info', action?: ToastAction, icon?: IconDefinition) => {
     if (!text) return;
+    logUi(`ui.toast.${tone}`, text);
     lastId.current += 1;
     const message = { id: lastId.current, text, tone, action, icon };
     setMessages((current) => pushToast(current, message));

@@ -69,7 +69,8 @@ type UnitProps = {
   seekWord: (unit: BoothUnit, word: number) => number;
 };
 
-const MODE_TONE: Record<Mode, string> = { done: 'text-[var(--text-muted)]', cur: 'text-[var(--text)]', next: 'text-[var(--text-muted)]' };
+// Only what has been read is dimmed: the sentence being read and every sentence not yet read keep the full text colour (the mock's --bup is --ink).
+const MODE_TONE: Record<Mode, string> = { done: 'text-[var(--text-muted)]', cur: 'text-[var(--text)]', next: 'text-[var(--text)]' };
 
 // One sentence. A click on a word seeks to it; a click between words seeks to the sentence's first word.
 const UnitView = memo(function UnitView({ unit, index, mode, wcur, words, paragraph, from, speakers, colour, onSeek, onSetSpeaker, seekWord }: UnitProps) {
@@ -124,7 +125,7 @@ const UnitView = memo(function UnitView({ unit, index, mode, wcur, words, paragr
   );
 });
 
-// The Booth's teleprompter text (the Studio Next mock's Teleprompter): the sentence being read is lit, the ones read are dimmed, the
+// The Booth's teleprompter text (the Studio Next mock's Teleprompter): the sentence being read and the ones not yet read are lit, only the ones read are dimmed, the
 // word being read is marked (an accent tint with a caret), and the line stays 40% down the box. The wheel and Page keys
 // move the view by pixels and leave the reading position alone (DQ-17). Everything it shows arrives as props; it stores nothing.
 /** About how tall a paragraph is in ems: lines of about 45 characters at a line height of 1.5, and a line at least. */

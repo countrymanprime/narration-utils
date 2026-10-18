@@ -285,7 +285,7 @@ func TestPathGuardLaunchReaperPassesTheLinkedFile(t *testing.T) {
 		launch := func(program string, got []string) error { args = got; return nil }
 		svc := hostServices{config: config{projectFolder: p.Dir}, settings: settings.New("", p.Dir)}
 		if !p.Usable {
-			if _, err := launchReaper(svc, nil, locate, launch); err == nil {
+			if _, err := launchReaper(svc, nil, locate, launch, notRunning); err == nil {
 				t.Fatalf("started REAPER for %q, which holds no linked project file (args %v)", p.Dir, args)
 			}
 			return
@@ -294,7 +294,7 @@ func TestPathGuardLaunchReaperPassesTheLinkedFile(t *testing.T) {
 			return
 		}
 		pgLinkedManifest(t, p.Dir, p.RPP)
-		if _, err := launchReaper(svc, nil, locate, launch); err != nil {
+		if _, err := launchReaper(svc, nil, locate, launch, notRunning); err != nil {
 			t.Fatalf("launchReaper(%q): %v", p.Dir, err)
 		}
 		if len(args) != 1 || !pgSameFile(args[0], p.RPP) {

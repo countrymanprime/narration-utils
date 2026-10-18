@@ -67,6 +67,11 @@ for (const rows of AREAS) {
  * The list may only shrink: a new one needs a reason a reviewer accepts, and a narrator's action never belongs here.
  */
 export const SILENT_CATCHES: Record<string, string> = {
+  'src/components/settings/page/BoothPanel.tsx#1':
+    'The model list could not be read: nothing is claimed and no question is asked; Record looks the model up again before a take begins, so a missing model still stops there.',
+  'src/api/uiLog.ts#1':
+    'The trace line is best effort: a failed write of a log line must never become an error the narrator sees or the client reports again (it would loop).',
+  'src/api/uiLog.ts#2': 'No host to write the trace line to (a test, the mock client): the call is a no-op there, never an error.',
   'src/components/schedule/SchedulePage.tsx#1':
     'Keeps the write queue going after a change failed: the change already showed its refusal in a toast, and this catch only stops the failure from holding up the next write.',
   'src/components/project/NewProjectDialog.tsx#1':

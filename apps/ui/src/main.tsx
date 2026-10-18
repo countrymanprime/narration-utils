@@ -6,6 +6,7 @@ import { createRoot } from 'react-dom/client';
 import { App } from './App';
 import { ApiProvider } from './api/ApiContext';
 import { wailsClient } from './api/wailsClient';
+import { enableUiLog } from './api/uiLog';
 import type { RecordingMockSeed } from './api/recordingMock';
 import { createMockApi } from './api/mockApi';
 import { scenarioFromToday } from './api/productionMock';
@@ -609,6 +610,7 @@ const mockInitial = {
   ),
 };
 const api = import.meta.env.VITE_USE_MOCK_API === '1' ? createMockApi(window.__NARRATION_MOCK_OVERRIDES__, mockInitial) : wailsClient;
+if (api === wailsClient) enableUiLog();
 
 createRoot(document.getElementById('root')!).render(
   <React.StrictMode>

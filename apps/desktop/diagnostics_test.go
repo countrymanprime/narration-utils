@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/countrymanprime/narration-utils/shell/internal/hostlog"
+	"github.com/countrymanprime/narration-utils/shell/internal/runlog"
 )
 
 func TestSystemReportDiagnosticWritesTheClientReportToTheHostLog(t *testing.T) {
@@ -40,5 +41,34 @@ func TestSystemReportDiagnosticNeverFailsTheCaller(t *testing.T) {
 	}
 	if _, err := (&Host{}).SystemReportDiagnostic("window_error", "boom"); err != nil {
 		t.Fatalf("a host without a log failed the binding: %v", err)
+	}
+}
+
+func TestSystemReportDiagnosticSendsUiEventsToTheRunLogAndNotTheHostLog(t *testing.T) {
+	dir := t.TempDir()
+	hostPath, runPath := filepath.Join(dir, "host.log"), filepath.Join(dir, "run.jsonl")
+	host := &Host{log: hostlog.New(hostPath, 0), runLog: runlog.New(runPath, 0)}
+
+	if _, err := host.SystemReportDiagnostic("ui.toast", "saved C:/Users/Count/Book.rpp"); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := host.SystemReportDiagnostic("ui.call.fail", "DawLaunch failed"); err != nil {
+		t.Fatal(err)
+	}
+
+	runText, err := os.ReadFile(runPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, want := range []string{`"event":"ui.toast"`, `"msg":"saved <path>"`, `"tool":"app"`, `"event":"ui.call.fail"`, `"level":"warn"`} {
+		if !strings.Contains(string(runText), want) {
+			t.Fatalf("run log missing %s:\n%s", want, runText)
+		}
+	}
+	if strings.Contains(string(runText), "Count") {
+		t.Fatalf("run log kept a user name:\n%s", runText)
+	}
+	if hostText, _ := os.ReadFile(hostPath); strings.Contains(string(hostText), "ui.") {
+		t.Fatalf("a UI trace event landed in host.log: %s", hostText)
 	}
 }

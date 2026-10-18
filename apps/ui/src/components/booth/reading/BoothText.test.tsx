@@ -46,6 +46,21 @@ function sized() {
 const translate = (el: HTMLElement) => parseFloat(/-?[\d.]+(?=px)/.exec(el.style.transform)![0]);
 const wheel = (box: HTMLElement, deltaY: number, deltaMode = 0) => act(() => void fireEvent.wheel(box, { deltaY, deltaMode }));
 
+describe('read and unread text colour', () => {
+  it('draws only what has been read in the muted colour; the sentence being read and everything not yet read keep the full text colour', () => {
+    setup();
+    const tones = (state: string) => [...document.querySelectorAll<HTMLElement>(`[data-state="${state}"]`)].map((unit) => unit.className);
+    expect(tones('done').length).toBeGreaterThan(0);
+    expect(tones('next').length).toBeGreaterThan(0);
+    for (const tone of tones('done')) expect(tone).toContain('text-[var(--text-muted)]');
+    for (const tone of tones('cur')) expect(tone).toContain('text-[var(--text)]');
+    for (const tone of tones('next')) {
+      expect(tone).toContain('text-[var(--text)]');
+      expect(tone).not.toContain('text-[var(--text-muted)]');
+    }
+  });
+});
+
 describe('one-phrase-is-lit-the-ones-read-are-dimmed-and-one-word-is-marked', () => {
   it('lights one phrase, dims the ones read and marks exactly one word with no trailing space', () => {
     setup();

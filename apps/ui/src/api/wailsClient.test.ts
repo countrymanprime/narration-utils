@@ -7,6 +7,11 @@ import { Call } from '@wailsio/runtime';
 import { wailsClient } from './wailsClient';
 import { WireError } from './wire/WireError';
 
+/** The wire-invalid and client reports a test asserts on; `ui.*` trace lines (every host call logs one) are not what it counts. */
+function diagnosticsCalled(report: { mock: { calls: unknown[][] } }): unknown[][] {
+  return report.mock.calls.filter(([kind]) => !String(kind).startsWith('ui.'));
+}
+
 // The generated bindings call the host through @wailsio/runtime (Wails v3). Each test stands a fake host in front of them: every
 // generated function forwards to the method of the same name in `fakeHost`, and a method the test did not give is missing, as an
 // unbound one would be. Events.On hands its listener a WailsEvent, whose `data` is what the host emitted, as the runtime does.
@@ -264,8 +269,8 @@ describe('wailsClient', () => {
 
     await expect(wailsClient.bootstrap()).rejects.toBeInstanceOf(WireError);
 
-    expect(report).toHaveBeenCalledTimes(1);
-    const [kind, message] = report.mock.calls[0] as [string, string];
+    expect(diagnosticsCalled(report)).toHaveLength(1);
+    const [kind, message] = diagnosticsCalled(report)[0] as [string, string];
     expect(kind).toBe('wire_invalid');
     expect(message).toContain('host.binding Bootstrap');
     expect(message).toContain('transcript');
@@ -320,7 +325,7 @@ describe('wailsClient', () => {
 
     await expect(wailsClient.updateStatus()).resolves.toEqual(status);
     await expect(wailsClient.updateCheck()).rejects.toBeInstanceOf(WireError);
-    expect(report).toHaveBeenCalledTimes(1);
+    expect(diagnosticsCalled(report)).toHaveLength(1);
   });
 
   it('enters and exits companion mode through its error-only bindings, and turns a host error into its text', async () => {
@@ -833,7 +838,7 @@ describe('live events (docs/architecture/wire-contracts.md: dropped and counted,
     client.subscribeTranscript(update);
     expect(() => emit({ ...transcript, percent: 'ten' })).not.toThrow();
     expect(update).not.toHaveBeenCalled();
-    expect(report).toHaveBeenCalledTimes(1);
+    expect(diagnosticsCalled(report)).toHaveLength(1);
     const [kind, message] = report.mock.calls[0] as [string, string];
     expect(kind).toBe('wire_invalid');
     expect(message).toContain('host.event transcript:state');
@@ -866,7 +871,7 @@ describe('live events (docs/architecture/wire-contracts.md: dropped and counted,
     for (let i = 0; i < 10; i += 1) emit({ type: 'latency', ms: 12 });
     expect(onEvent).not.toHaveBeenCalled();
     expect(degraded).not.toHaveBeenCalled();
-    expect(report).toHaveBeenCalledTimes(1);
+    expect(diagnosticsCalled(report)).toHaveLength(1);
     expect(report.mock.calls[0]?.[0]).toBe('wire_unknown_event');
     expect(report.mock.calls[0]?.[1]).toContain('latency');
   });

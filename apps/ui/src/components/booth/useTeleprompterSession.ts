@@ -1,6 +1,7 @@
-import { useCallback, useEffect, useMemo, useReducer, useState } from 'react';
+import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react';
 import { useApi } from '../../api/ApiContext';
 import { useAssetInstall } from '../../hooks/useAssetInstall';
+import { isInstallRunning } from '../../types';
 import { buildRows, creditsRows, hydrateSession, initialSession, previewRows, reduceEvent, type CreditsKind, type Session } from './readerModel';
 import { usePacedCursor } from './usePacedCursor';
 import type {
@@ -129,6 +130,9 @@ export function useTeleprompterSession({ chapterId, chapter, credits, migrateLeg
   // The model download: the shared install-poll hook, through the generic asset bindings, since the missing model is either
   // engine's (the gate's answer names the engine, which is also the asset kind). A session must not start on a view the narrator has
   // already left: the hook stops and never calls onSuccess once this hook's owner has unmounted.
+  // The install question was asked by a choice or by Record, not by a session that already started: when it is answered the model is
+  // only installed, nothing starts. `revert` puts a choice back when the question is closed without a download.
+  const gate = useRef<{ revert?: () => void } | null>(null);
   const modelInstall = useAssetInstall<AssetInstallJob>({
     start: () => {
       if (!prompt) return Promise.reject(new Error('Start reading first.'));
@@ -138,6 +142,10 @@ export function useTeleprompterSession({ chapterId, chapter, credits, migrateLeg
     cancel: (jobId) => api.assetsInstallCancel(jobId),
     onSuccess: async () => {
       setPrompt(undefined);
+      if (gate.current) {
+        gate.current = null;
+        return;
+      }
       await start();
     },
   });
@@ -270,8 +278,51 @@ export function useTeleprompterSession({ chapterId, chapter, credits, migrateLeg
   const seek = useCallback((word: number) => void api.teleprompterSeek(word).catch((reason) => setError(errorText(reason))), [api]);
 
   const closeModelPrompt = () => {
+    // A choice that asked for a download and was closed without one is put back, so the app never holds an engine it cannot run.
+    if (gate.current?.revert && !isInstallRunning(modelInstall.job ?? { phase: 'success' })) gate.current.revert();
+    gate.current = null;
     setPrompt(undefined);
     modelInstall.reset();
+  };
+
+  /**
+   * Asks the install question when `engine` and `model` are not on this computer: the host's asset list says, and a list that cannot be read
+   * claims nothing. True when the model is there (or unknown), false when the question was opened instead. `revert` runs if it is closed
+   * without a download. A take must never begin behind this question, so Record calls this first.
+   */
+  const ensureModel = async (which: { engine: string; model: string } = { engine, model }, revert?: () => void): Promise<boolean> => {
+    if (!isEngine(which.engine)) return true;
+    try {
+      const catalog = await api.assetsList();
+      const asset = catalog.assets.find((item) => item.kind === which.engine && item.id === which.model);
+      if (!asset || asset.installState === 'installed') return true;
+      gate.current = { revert };
+      setModelMissing(true);
+      modelInstall.reset();
+      setPrompt({
+        status: 'asset_required',
+        engine: which.engine,
+        model: {
+          id: asset.id,
+          provider: asset.kind,
+          displayName: asset.displayName,
+          version: asset.version,
+          publisher: asset.publisher,
+          license: asset.license,
+          licenseUrl: asset.licenseUrl,
+          modelCardUrl: asset.modelCardUrl,
+          provenanceUrl: asset.provenanceUrl,
+          attribution: asset.attribution,
+        },
+        installState: asset.installState,
+        downloadSize: asset.downloadSize,
+        diskSize: asset.diskSize,
+        installPath: asset.path,
+      });
+      return false;
+    } catch {
+      return true;
+    }
   };
 
   // Device, engine and model are machine facts kept in the global settings, so a choice made
@@ -284,12 +335,23 @@ export function useTeleprompterSession({ chapterId, chapter, credits, migrateLeg
   };
   const changeEngine = (value: string) => {
     if (!isEngine(value)) return;
+    const before = engine;
     setEngine(value);
     saveChoice(ENGINE_KEY, value);
+    // Choosing an engine whose model is not here asks for the download now, and puts the engine back if it is not downloaded.
+    void ensureModel({ engine: value, model }, () => {
+      setEngine(before);
+      saveChoice(ENGINE_KEY, before);
+    });
   };
   const changeModel = (value: string) => {
+    const before = model;
     setModel(value);
     saveChoice(MODEL_KEY, value);
+    void ensureModel({ engine, model: value }, () => {
+      setModel(before);
+      saveChoice(MODEL_KEY, before);
+    });
   };
 
   const reset = () => dispatch({ kind: 'reset' });
@@ -338,6 +400,7 @@ export function useTeleprompterSession({ chapterId, chapter, credits, migrateLeg
     seek,
     changeDevice,
     closeModelPrompt,
+    ensureModel,
     startWord,
     setStartWord,
     reset,

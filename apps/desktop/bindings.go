@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"strings"
@@ -49,6 +50,11 @@ func (h *Host) SystemReportDiagnostic(kind, message string) (string, error) {
 	// Diagnostics are deliberately local and best-effort: the UI reports a payload that did not
 	// match its schema (`wire_invalid`: boundary, payload and failing paths, never values) and its own errors, and a
 	// write that fails must not become a binding error the client would report again.
+	if strings.HasPrefix(kind, uiEventPrefix) {
+		// The UI's own trace (calls, toasts, navigation): events of the app run, not failures for host.log.
+		h.runLog.App().Event(uiEventLevel(kind), kind, message)
+		return encodeBinding(nil, nil)
+	}
 	_ = h.log.Report(kind, message)
 	return encodeBinding(nil, nil)
 }
@@ -593,6 +599,10 @@ func (h *Host) TeleprompterStart(options map[string]string) (string, error) {
 		stale.End("cancelled")
 	}
 	h.jobRuns.begin(h.runLog, teleprompterSessionRunID, "teleprompter", "engine", engine)
+	// What the session was started with: the engine and model, where it listens (the device's own name or a file) and the chapter or
+	// credits it reads. Device names are hardware names, never a path or manuscript text.
+	h.runLog.App().Event(slog.LevelInfo, "teleprompter.start", "a read-aloud session was started",
+		"engine", engine, "model", modelID, "device", options["device"], "from_file", options["wav"] != "", "credits", options["credits"], "chapter", options["chapter"], "eval_args", evalArgsForLog())
 	// `credits` ("opening" or "closing") reads the credits instead of a chapter: the host renders the text itself, so the UI names only which credits, never the text.
 	if kind := strings.TrimSpace(options["credits"]); kind != "" {
 		script, err := h.creditsScript(kind)
@@ -734,6 +744,11 @@ func (h *Host) TeleprompterDevices() (string, error) {
 	if devices == nil {
 		devices = []teleprompter.Device{}
 	}
+	names := make([]string, 0, len(devices))
+	for _, device := range devices {
+		names = append(names, device.Name)
+	}
+	h.runLog.App().Event(slog.LevelInfo, "teleprompter.devices", "the microphones the sidecar listed", "count", len(devices), "names", strings.Join(names, " | "), "error", message)
 	return encodeBinding(map[string]any{"devices": devices, "error": nonEmptyOrNil(message)}, nil)
 }
 
@@ -999,4 +1014,20 @@ func moonshineDownloadSize(model moonshine.Model) int64 {
 // track links. See manuscriptSetChapterKind.
 func (h *Host) ManuscriptSetChapterKind(chapterID, kind string) (string, error) {
 	return encodeBinding(h.manuscriptSetChapterKind(chapterID, kind))
+}
+
+// uiEventPrefix marks a SystemReportDiagnostic kind as a trace event for the run log rather than a failure for host.log.
+const uiEventPrefix = "ui."
+
+// uiEventLevel is the run-log level of a UI trace event: kinds ending ".fail" or ".error" (a failed call, an error toast) are warnings, ".ok" and ".nav" are debug detail (a
+// poll that succeeded is noise unless debug is on), and everything else, a toast or a click, is info.
+func uiEventLevel(kind string) slog.Level {
+	switch {
+	case strings.HasSuffix(kind, ".fail"), strings.HasSuffix(kind, ".error"):
+		return slog.LevelWarn
+	case strings.HasSuffix(kind, ".ok"):
+		return slog.LevelDebug
+	default:
+		return slog.LevelInfo
+	}
 }

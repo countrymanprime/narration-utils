@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"path/filepath"
 
 	"github.com/countrymanprime/narration-utils/shell/internal/daw"
 	"github.com/countrymanprime/narration-utils/shell/internal/persist"
@@ -19,7 +20,7 @@ import (
 // kill-on-close job object (internal/process/job_windows.go), so REAPER
 // outlives the app when the narrator closes it.
 func (h *Host) DawLaunch() (string, error) {
-	result, err := launchReaper(h.services(), h.persist, h.reaperLocate, h.reaperLaunch)
+	result, err := launchReaper(h.services(), h.persist, h.reaperLocate, h.reaperLaunch, h.reaperRunning)
 	if err != nil {
 		return "", err
 	}
@@ -29,7 +30,7 @@ func (h *Host) DawLaunch() (string, error) {
 // launchReaper is DawLaunch's pure logic, kept apart from the host so it can be unit tested directly with fake
 // locate/launch seams: locate defaults to daw.LocateReaperExecutable and launch to daw.Launch, exactly as
 // h.reaperLocate/h.reaperLaunch being nil means in production.
-func launchReaper(svc hostServices, reporter *persist.Reporter, locate func() (path, source string, err error), launch func(program string, args []string) error) (map[string]any, error) {
+func launchReaper(svc hostServices, reporter *persist.Reporter, locate func() (path, source string, err error), launch func(program string, args []string) error, running func() bool) (map[string]any, error) {
 	if svc.config.projectFolder == "" {
 		return nil, fmt.Errorf("open a project before starting REAPER")
 	}
@@ -56,8 +57,18 @@ func launchReaper(svc hostServices, reporter *persist.Reporter, locate func() (p
 		return nil, fmt.Errorf("could not find reaper.exe: %w", err)
 	}
 
+	if running == nil {
+		running = func() bool { return daw.IsRunning(filepath.Base(execPath)) }
+	}
+	alreadyRunning := running()
+	withLauncher := autoStart == "true" && svc.config.reaperLauncher != ""
 	args := []string{rpp}
-	if autoStart == "true" && svc.config.reaperLauncher != "" {
+	switch {
+	case alreadyRunning && withLauncher:
+		// The narrator's open REAPER runs the launcher alone: reopening the linked file would stack a second copy of the project,
+		// and the launcher reads whichever project that REAPER has open (the Booth then says if it is not the linked one).
+		args = []string{svc.config.reaperLauncher}
+	case withLauncher:
 		args = append(args, svc.config.reaperLauncher)
 	}
 

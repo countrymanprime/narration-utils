@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 // SN-P8's acceptance tests for the swapped Production page, end to end against the mock host: the Studio Next layout, the dialogs its
 // icons open, the timer and the chip's feed, chapter sync, and the row menu that keeps the features the mock has no equivalent for.
+import { APP_STARTED_AT } from './pipeline/dawConnectGrace';
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { act, cleanup, render, screen, waitFor, within } from '@testing-library/react';
@@ -30,7 +31,8 @@ async function renderPage({
   overrides = {},
   initial = {},
   onManuscriptChanged,
-}: { overrides?: Partial<NarrationApi>; initial?: Initial; onManuscriptChanged?: () => void } = {}) {
+  dawConnectGraceMs = 0,
+}: { overrides?: Partial<NarrationApi>; initial?: Initial; onManuscriptChanged?: () => void; dawConnectGraceMs?: number } = {}) {
   const api = createMockApi(overrides, initial);
   const data = await api.bootstrap();
   const onOverview = vi.fn();
@@ -51,6 +53,7 @@ async function renderPage({
             refreshBootstrap={async () => {}}
             onOverview={onOverview}
             onManuscriptChanged={onManuscriptChanged}
+            dawConnectGraceMs={dawConnectGraceMs}
           />
         </TooltipProvider>
         <OverlayHost />
@@ -179,6 +182,53 @@ describe('daw-banner-retry', () => {
     await userEvent.click(retry);
     await waitFor(() => expect(screen.queryByRole('button', { name: 'Retry' })).toBeNull());
     expect(notify).not.toHaveBeenCalledWith(expect.stringMatching(/^Still not running/));
+  });
+});
+
+describe('daw-banner-connect-grace', () => {
+  it('shows Connecting while the app has just opened, then the not-running banner if it never connects', async () => {
+    await renderPage({
+      overrides: { dawCapabilities: vi.fn(async () => structuredClone(DAW_SETUPS['reaper-off'])) },
+      dawConnectGraceMs: Date.now() - APP_STARTED_AT + 400,
+    });
+    expect(await screen.findByText('Connecting to REAPER…')).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Retry' })).toBeNull();
+    expect(await screen.findByRole('button', { name: 'Retry' }, { timeout: 3000 })).toBeTruthy();
+    expect(screen.queryByText('Connecting to REAPER…')).toBeNull();
+  });
+
+  it('never shows the banner when the host connects inside the grace', async () => {
+    let push: (next: (typeof DAW_SETUPS)['reaper']) => void = () => {};
+    await renderPage({
+      overrides: {
+        dawCapabilities: vi.fn(async () => structuredClone(DAW_SETUPS['reaper-off'])),
+        subscribeDawCapabilities: (onUpdate: typeof push) => {
+          push = onUpdate;
+          return () => {};
+        },
+      },
+      dawConnectGraceMs: 60_000, // counted from when the code loaded, so far longer than the test runs
+    });
+    await screen.findByText('Connecting to REAPER…');
+    act(() => push(structuredClone(DAW_SETUPS['reaper'])));
+    await waitFor(() => expect(screen.queryByText('Connecting to REAPER…')).toBeNull());
+    expect(screen.queryByRole('button', { name: 'Retry' })).toBeNull();
+  });
+});
+
+describe('daw-banner-follows-the-host', () => {
+  it('drops the banner when the host pushes a reachable DAW, with no Retry', async () => {
+    let push: (next: (typeof DAW_SETUPS)['reaper']) => void = () => {};
+    const subscribeDawCapabilities = vi.fn((onUpdate: typeof push) => {
+      push = onUpdate;
+      return () => {};
+    });
+    await renderPage({
+      overrides: { dawCapabilities: vi.fn(async () => structuredClone(DAW_SETUPS['reaper-off'])), subscribeDawCapabilities },
+    });
+    await screen.findByRole('button', { name: 'Retry' });
+    act(() => push(structuredClone(DAW_SETUPS['reaper'])));
+    await waitFor(() => expect(screen.queryByRole('button', { name: 'Retry' })).toBeNull());
   });
 });
 

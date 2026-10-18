@@ -132,6 +132,9 @@ func (h *Host) pollDawCapabilities() {
 	h.dawCapabilitiesSnapshot = encoded
 	ctx := h.ctx
 	h.mu.Unlock()
+	if changed {
+		h.logDawCapabilities(runtime)
+	}
 	if changed && ctx != nil {
 		emitEvent("daw_capabilities_changed", payload)
 	}

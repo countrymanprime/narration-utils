@@ -63,3 +63,5 @@ apps/ui/playwright.local.config.ts
 
 # The Wails build output (go build in apps/desktop names its binary after the directory)
 /apps/desktop/shell
+integrations/reaper/narration-utils-app-path.txt
+integrations/reaper/narration-utils-app-path.txt.tmp

@@ -697,6 +697,28 @@ func TestEvalTimingOptInAddsTimingAndLogFlags(t *testing.T) {
 	}
 }
 
+func TestEvalExtraArgsAreAppendedOnlyWhenTheEvaluationAidIsOn(t *testing.T) {
+	on := newFixture(t, "stream")
+	on.service.config.EvalTiming = true
+	on.service.config.EvalExtraArgs = func() []string { return []string{"--decode-interval", "0.25", "--no-context"} }
+	if err := on.service.Start(validOptions()); err != nil {
+		t.Fatal(err)
+	}
+	args := echoedArgs(t, on)
+	if flagValue(args, "--decode-interval") != "0.25" || !containsFlag(args, "--no-context") {
+		t.Fatalf("args = %v, want the extra evaluation flags", args)
+	}
+
+	off := newFixture(t, "stream")
+	off.service.config.EvalExtraArgs = func() []string { return []string{"--decode-interval", "0.25"} }
+	if err := off.service.Start(validOptions()); err != nil {
+		t.Fatal(err)
+	}
+	if args := echoedArgs(t, off); containsFlag(args, "--decode-interval") {
+		t.Fatalf("args = %v, extra flags must not apply without the evaluation aid", args)
+	}
+}
+
 func TestEvalTimingOffByDefaultOmitsTimingAndLogFlags(t *testing.T) {
 	f := newFixture(t, "stream")
 

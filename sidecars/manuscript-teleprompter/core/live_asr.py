@@ -1017,6 +1017,17 @@ def build_parser() -> argparse.ArgumentParser:
         help="Seconds of new audio between re-decodes of the open segment (default 0.5; smaller = faster updates, more CPU)",
     )
     ap.add_argument(
+        "--chunk-seconds",
+        type=float,
+        default=CHUNK_SECONDS,
+        help="Seconds of microphone audio handed to the engine at a time (default 0.32; smaller = less capture delay, more calls)",
+    )
+    ap.add_argument(
+        "--no-context",
+        action="store_true",
+        help="Do not bias Moonshine toward the chapter text (the whole chapter is sent as context by default); an A/B aid",
+    )
+    ap.add_argument(
         "--timing", action="store_true", help="Log each decode's wall time and, with --mic, how far behind the speaker each partial and word was emitted"
     )
     ap.add_argument("--stop-file", default=None, help="Stop cleanly (flush, then exit 0) once this sentinel file exists; how the desktop host requests a stop")
@@ -1062,10 +1073,12 @@ def main() -> None:
     tracker, script_message, chapter_text = _load_script(ap, args)
     # --context, else the chapter itself; an engine that takes no context (Whisper refuses --context) ignores it.
     args.context_text = Path(args.context).read_text(encoding="utf-8") if args.context else chapter_text
+    if args.no_context:
+        args.context_text = None
     if script_message:
         _emit(script_message)
     stream = _load_engine(args)
-    chunks = iter_wav_chunks(args.wav) if args.wav else iter_microphone_chunks(args.mic)
+    chunks = iter_wav_chunks(args.wav) if args.wav else iter_microphone_chunks(args.mic, args.chunk_seconds)
     log("Listening..." if args.mic else f"Replaying {args.wav}...")
     _run(args, stream, chunks, tracker)
 

@@ -636,7 +636,7 @@ func TestContractDawLaunch(t *testing.T) {
 	locate := func() (string, string, error) {
 		return `C:\Program Files\REAPER (x64)\reaper.exe`, "uninstall_registry", nil
 	}
-	launched, err := launchReaper(svc, nil, locate, func(string, []string) error { return nil })
+	launched, err := launchReaper(svc, nil, locate, func(string, []string) error { return nil }, notRunning)
 	if err != nil {
 		t.Fatal(err)
 	}

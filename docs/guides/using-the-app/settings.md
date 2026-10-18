@@ -144,8 +144,10 @@ Choosing a model or a voice here never downloads it; the app asks when a feature
 The **Booth** panel (Global only — the microphone, engine and model are machine facts, not a
 per-project preference) remembers the microphone, live engine and model you last chose in the
 [Booth](booth.md), and changing them here changes what the Booth starts with. The engine is Whisper
-(the default) or Moonshine; the model is `tiny` or `small` for either. Choosing Moonshine does not download
-its model: the Booth asks the first time you start reading with it. **Punch pre-roll (seconds)** is how far
+(the default) or Moonshine; the model is `tiny` or `small` for either. Choosing an engine or model whose
+files are not on this computer asks for the download straight away, with its size and where it comes from;
+closing the question without downloading puts your previous choice back. Record in the Booth also checks the
+model first, so nothing records while it is being asked for. **Punch pre-roll (seconds)** is how far
 before the word a punch-in starts. Old links to it by its former name, Teleprompter, still open it.
 
 ![Settings - Keyboard & pedals: every command by scope, with its key or pedal](../../images/ui/settings-keyboard.webp)

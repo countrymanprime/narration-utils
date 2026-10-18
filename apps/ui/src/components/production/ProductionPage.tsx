@@ -29,6 +29,7 @@ import { ProgressChart } from './overview/ProgressChart';
 import { StageBar } from './overview/StageBar';
 import { WeekCard } from './overview/WeekCard';
 import { DawBanner } from './pipeline/DawBanner';
+import { DAW_CONNECT_GRACE_MS, useConnectGrace } from './pipeline/dawConnectGrace';
 import { NextUp } from './pipeline/NextUp';
 import { NoManuscript } from './pipeline/NoManuscript';
 import { pickupChapters } from './pipeline/nextUpSources';
@@ -103,6 +104,9 @@ function TimerFigures({ overview }: { overview: ProductionOverview }) {
  * features the mock has no equivalent for (the row menu's chapter track, status override and checks, the credits rows, the Restore list)
  * stay as built.
  */
+const CONNECT_POLLS = 10;
+const CONNECT_POLL_MS = 1000;
+
 export function ProductionPage({
   data,
   go,
@@ -113,6 +117,7 @@ export function ProductionPage({
   refreshBootstrap,
   onOverview,
   onManuscriptChanged,
+  dawConnectGraceMs = DAW_CONNECT_GRACE_MS,
 }: {
   data: Bootstrap;
   go: (page: string) => void;
@@ -127,11 +132,16 @@ export function ProductionPage({
   onOverview?: (overview: ProductionOverview) => void;
   /** Says a chapter's status or kind changed here, so the chapter list other pages read is read again (`MANUSCRIPT_CHANGED`). */
   onManuscriptChanged?: () => void;
+  /** How long after the app opens an unconnected DAW shows as connecting rather than not running (tests pass 0). */
+  dawConnectGraceMs?: number;
 }) {
+  const settling = useConnectGrace(dawConnectGraceMs);
   const production = usePort('production');
   const chapterSyncPort = usePort('chapterSync');
   const measurements = usePort('measurements');
   const daw = usePort('daw');
+  const project = usePort('project');
+  const system = usePort('system');
   const found = Boolean(data.manuscript);
   const manuscriptKey = data.manuscript ? `${data.manuscript.id}:${data.manuscript.importedAt}` : 'no-manuscript';
   const manuscriptImport = useManuscriptImport({ data, go, notify, refreshBootstrap });
@@ -161,16 +171,44 @@ export function ProductionPage({
     daw.capabilities().then(setCaps, () => setCaps(undefined));
   }, [daw]);
   useEffect(() => readCaps(), [readCaps]);
+  // The host pushes the DAW picture whenever it changes (a heartbeat starts or stops, a bridge session is attached), so the banner
+  // follows without the narrator pressing Retry.
+  useEffect(() => daw.subscribeCapabilities?.(setCaps), [daw]);
   // The banner's Retry reads the DAW again and, when it is still not running, says so (the mock's toast); a DAW now running drops the banner.
   const retryDaw = useCallback(() => {
     daw.capabilities().then(
       (next) => {
         setCaps(next);
-        if (!next.reachable) notify(`Still not running. Start ${next.daw} and try again.`);
+        notify(next.reachable ? `${next.daw} is connected.` : `Still not running. Start ${next.daw} and try again.`);
       },
       (error: unknown) => notify(describeApiError(error), 'error'),
     );
   }, [daw, notify]);
+
+  // Connect starts or reaches REAPER with the launcher (a REAPER already open runs it in place), then reads the DAW until the bridge answers.
+  const [connecting, setConnecting] = useState(false);
+  const connectDaw = useCallback(async () => {
+    setConnecting(true);
+    try {
+      await system.saveSettings('DAW', 'global', { auto_start_launcher: 'true' });
+      await project.launchDaw();
+      notify('Connecting to REAPER…');
+      for (let attempt = 0; attempt < CONNECT_POLLS; attempt++) {
+        await new Promise((resolve) => setTimeout(resolve, CONNECT_POLL_MS));
+        const next = await daw.capabilities();
+        setCaps(next);
+        if (next.reachable) {
+          notify(`${next.daw} is connected.`);
+          return;
+        }
+      }
+      notify('REAPER has not connected yet. Press Retry in a moment.');
+    } catch (error) {
+      notify(describeApiError(error), 'error');
+    } finally {
+      setConnecting(false);
+    }
+  }, [daw, project, system, notify]);
 
   // The open lines of the Pickups page's list, so the tile, Next up and the pickup hours count what that page lists.
   const openLines = useOpenPickups();
@@ -303,7 +341,17 @@ export function ProductionPage({
 
   return (
     <div className="mx-auto flex max-w-[96rem] flex-col gap-4">
-      {caps && !caps.reachable && caps.daw !== 'none' && <DawBanner reachable={false} daw={caps.daw} onRetry={retryDaw} onUseBuiltIn={() => go('/settings')} />}
+      {caps && !caps.reachable && caps.daw !== 'none' && (
+        <DawBanner
+          reachable={false}
+          daw={caps.daw}
+          onRetry={retryDaw}
+          onConnect={connectDaw}
+          connecting={connecting}
+          settling={settling}
+          onUseBuiltIn={() => go('/settings')}
+        />
+      )}
       <PageHeader
         chapters={narrated.length}
         words={k.words}

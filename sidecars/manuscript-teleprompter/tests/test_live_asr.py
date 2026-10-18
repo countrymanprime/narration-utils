@@ -1167,3 +1167,12 @@ def test_capture_is_refused_for_a_reading_session(monkeypatch, capsys):
         live_asr.main()
 
     assert "--capture is only for" in capsys.readouterr().err
+
+
+def test_chunk_seconds_and_no_context_parse_from_the_cli_and_default_to_the_shipped_values():
+    base = ["--manuscript", "m.json", "--chapter", "c1", "--mic", "Mic"]
+    default = live_asr.build_parser().parse_args(base)
+    tuned = live_asr.build_parser().parse_args([*base, "--chunk-seconds", "0.1", "--no-context"])
+
+    assert (default.chunk_seconds, default.no_context) == (live_asr.CHUNK_SECONDS, False)
+    assert (tuned.chunk_seconds, tuned.no_context) == (0.1, True)
