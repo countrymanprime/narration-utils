@@ -21,6 +21,8 @@ type Entry = {
   keys?: string[];
   /** A group row or the back row: choosing it changes the list and leaves the menu open. */
   keepOpen?: boolean;
+  /** Why the command cannot run now: it stays listed, off, with this reason. */
+  disabledReason?: string;
   run: () => void;
 };
 
@@ -70,7 +72,14 @@ function JumpMenu({ keymap, runCommand, close, initialTerm = '', catalog = COMMA
         keys: gestureKeys(keymap[row.id]?.[0]),
         run: () => runCommand(row.id),
       })),
-      ...providedCommands(catalog).map((row) => ({ id: `provided-${row.id}`, group: row.group, title: row.label, hint: row.hint, run: row.run })),
+      ...providedCommands(catalog).map((row) => ({
+        id: `provided-${row.id}`,
+        group: row.group,
+        title: row.label,
+        hint: row.hint,
+        disabledReason: row.disabledReason,
+        run: row.run,
+      })),
     ],
     [catalog, keymap, runCommand],
   );
@@ -111,7 +120,8 @@ function JumpMenu({ keymap, runCommand, close, initialTerm = '', catalog = COMMA
   }, [activeOptionId]);
 
   const choose = (entry: Entry | undefined) => {
-    if (!entry) return;
+    // An off command stays listed with its reason; running it does nothing and the menu stays open.
+    if (!entry || entry.disabledReason) return;
     if (entry.id === 'back') {
       setGroup(null);
       setActive(0);
@@ -126,7 +136,14 @@ function JumpMenu({ keymap, runCommand, close, initialTerm = '', catalog = COMMA
 
   const options = entries.map<ListboxOption>((entry) => {
     const trailing: ReactNode = entry.keys ? <KeyChord keys={entry.keys} /> : entry.sub;
-    return { id: entry.id, label: entry.title, description: entry.hint, trailing, group: entry.group };
+    return {
+      id: entry.id,
+      label: entry.title,
+      description: entry.disabledReason ?? entry.hint,
+      trailing,
+      group: entry.group,
+      disabled: Boolean(entry.disabledReason),
+    };
   });
 
   return (

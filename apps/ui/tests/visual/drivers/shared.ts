@@ -121,12 +121,31 @@ export async function clickNav(page: Page, name: AppPage): Promise<void> {
 // Navigates through the nav and waits until the destination has arrived (its heading, and its content where that is the
 // same in every state), so a driver can never photograph the page it just left or one still loading: a click returns as
 // soon as it is dispatched, not when the next page has rendered.
-// A project with no manuscript (`?mockNoManuscript=1`), opened from its rail item (no page is disabled, issue 1720): the page's
-// own "import a manuscript" state, the one every page that needs the manuscript draws.
+// The address of each page, for reaching one without its rail item.
+const PAGE_PATH: Record<AppPage, string> = {
+  Production: '/',
+  Schedule: '/schedule',
+  Script: '/script',
+  'Story Bible': '/story-bible',
+  Booth: '/booth',
+  Editing: '/editing',
+  Proof: '/proof',
+  Pickups: '/pickups',
+  'Master & QC': '/master',
+  Delivery: '/delivery',
+  Settings: '/settings',
+};
+
+// A project with no manuscript (`?mockNoManuscript=1`), opened by its address: its rail item is off, so a press on it opens a
+// note instead. The page draws its own "import a manuscript" state, the one every page that needs the manuscript draws, and nothing
+// redirects.
 export async function openWithoutManuscript(page: Page, name: AppPage): Promise<void> {
   await page.goto('/?mockNoManuscript=1');
   await settlePage(page);
-  await clickNav(page, name);
+  await page.evaluate((path) => {
+    window.history.pushState(null, '', path);
+    window.dispatchEvent(new PopStateEvent('popstate'));
+  }, PAGE_PATH[name]);
   await page.getByText('This project has no manuscript yet. Import one to begin.').waitFor();
 }
 

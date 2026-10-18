@@ -1,7 +1,7 @@
 // How to reach each `editing` state in STATE_CATALOG (see app.drivers.ts): the Editing page.
 import type { Page } from '@playwright/test';
 import { settlePage } from '../helpers/settle';
-import { type Driver, clickNav, goToPage } from './shared';
+import { type Driver, goToPage, openWithoutManuscript } from './shared';
 
 /** Chapter 1 linked to its track, so its words carry their heard times. */
 const LINKED = '?mockChapterLink=confirmed';
@@ -98,9 +98,7 @@ export const editingDrivers: Record<string, Driver> = {
     await page.getByRole('button', { name: 'Retry' }).waitFor();
   },
   'no-manuscript': async (page) => {
-    await page.goto('/?mockNoManuscript=1');
-    await settlePage(page);
-    await clickNav(page, 'Editing');
+    await openWithoutManuscript(page, 'Editing');
     await page.getByRole('button', { name: 'Import manuscript' }).waitFor();
   },
 };

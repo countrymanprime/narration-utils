@@ -1,4 +1,5 @@
 import { chName } from '@/selectors/chapters'
+import { navReason } from '@/selectors/nav'
 import { go, openInScript } from '@/state/commands/nav'
 import { setPrefs, setZoom, toggleTheme } from '@/state/commands/prefs'
 import { openFind } from '@/state/commands/script'
@@ -18,8 +19,8 @@ export const ZOOMS = [0.8, 0.9, 1, 1.1, 1.25, 1.5]
 registerCommands(() => {
   const s = getState()
   const out: Command[] = []
-  const add = (g: string, l: string, fn: () => void, k = '', hint?: string): void => { out.push({ g, l, k, fn, hint }) }
-  PAGE_LIST.forEach(([p, l]) => add('Go to', 'Go to ' + l, () => go(p)))
+  const add = (g: string, l: string, fn: () => void, k = '', hint?: string, off?: string): void => { out.push({ g, l, k, fn, hint, off }) }
+  PAGE_LIST.forEach(([p, l]) => add('Go to', 'Go to ' + l, () => go(p), '', undefined, navReason(p, s.mock.hasManuscript)))
   s.data.chapters.forEach((c) => add('Chapters', 'Go to ' + chName(s.data, c), () => openInScript(c.id), '', 'chapter'))
   add('Manuscript', 'Find in the manuscript', () => openFind(), 'Ctrl F')
   add('Manuscript', 'Import manuscript…', () => modals.importFlow('import'))

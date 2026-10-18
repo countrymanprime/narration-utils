@@ -62,16 +62,71 @@ describe('AppShell on the Booth', () => {
 });
 
 describe('AppShell nav gating', () => {
-  // The mock's rail never disables an item: with no manuscript every page draws its own "import a manuscript" state (issue 1720).
-  it('disables no page when there is no manuscript: each page asks for the manuscript itself', () => {
+  const GATED = ['Schedule', 'Script', 'Story Bible', 'Booth', 'Editing', 'Proof', 'Pickups', 'Master & QC', 'Delivery'];
+  const REASON = 'Import a manuscript to unlock this page.';
+  const railItem = (name: string) => within(screen.getByRole('complementary', { name: 'Primary navigation' })).getByRole('button', { name });
+
+  // The mock's rail draws these off with no manuscript (the mock changed first), and each page still asks for the manuscript itself.
+  it('turns the nine pages that need a manuscript off with no manuscript: focusable, named, and saying why', () => {
     renderShell({ hasManuscript: false, dawFileLinked: false });
-    for (const name of ['Production', 'Schedule', 'Script', 'Story Bible', 'Booth', 'Editing', 'Proof', 'Pickups', 'Master & QC', 'Delivery']) {
-      expect(
-        screen.getAllByRole('button', { name }).every((button) => !(button as HTMLButtonElement).disabled),
-        name,
-      ).toBe(true);
+    for (const name of GATED) {
+      const item = railItem(name);
+      expect(item.getAttribute('aria-disabled'), name).toBe('true');
+      expect((item as HTMLButtonElement).disabled, name).toBe(false);
+      expect(document.getElementById(item.getAttribute('aria-describedby') ?? '')?.textContent, name).toBe(REASON);
     }
-    expect(screen.queryAllByRole('group', { name: /Import a manuscript to unlock this page/ })).toHaveLength(0);
+    for (const name of ['Production', 'Settings']) expect(railItem(name).getAttribute('aria-disabled'), name).toBeNull();
+  });
+
+  it('turns every page on once a manuscript is imported', () => {
+    renderShell({ hasManuscript: true, dawFileLinked: false });
+    for (const name of GATED) expect(railItem(name).getAttribute('aria-disabled'), name).toBeNull();
+  });
+
+  it('never navigates from an off item: a press opens a note with the reason instead', () => {
+    const navigate = vi.fn();
+    renderShell({ hasManuscript: false, navigate });
+    fireEvent.click(railItem('Proof'));
+    expect(navigate).not.toHaveBeenCalled();
+    expect(screen.getByRole('dialog', { name: 'Proof is unavailable' }).textContent).toContain(REASON);
+  });
+
+  it('keeps the page open and its item current when the manuscript goes: it turns off in place and keeps focus', () => {
+    const view = renderShell({ pathname: '/proof', hasManuscript: true });
+    railItem('Proof').focus();
+    view.rerender(
+      <ApiProvider api={createMockApi({}, { daw: {} })}>
+        <TooltipProvider>
+          <AppShell
+            pathname="/proof"
+            navigate={() => {}}
+            projectName="Alice"
+            hasManuscript={false}
+            dawFileLinked
+            onOpenEnginePanel={() => {}}
+            history={noHistory}
+            zoom={defaultZoom}
+            onOpenJump={() => {}}
+            onOpenHistory={() => {}}
+            undo={{ disabledReason: 'Nothing to undo', run: () => {} }}
+          >
+            <div>page content</div>
+          </AppShell>
+        </TooltipProvider>
+      </ApiProvider>,
+    );
+    const proof = railItem('Proof');
+    expect(proof.getAttribute('aria-disabled')).toBe('true');
+    expect(proof.getAttribute('aria-current')).toBe('page');
+    expect(screen.getByText('page content')).toBeTruthy();
+  });
+
+  it('lists the same pages off in "Go to", with the same reason and none for Production or Settings', () => {
+    const pages = shellPages({ hasManuscript: false, dawFileLinked: false });
+    expect(pages.filter((page) => page.disabledReason).map((page) => page.label)).toEqual(GATED);
+    expect(pages.find((page) => page.id === '/')?.disabledReason).toBeUndefined();
+    expect(pages.find((page) => page.id === '/settings')?.disabledReason).toBeUndefined();
+    expect(shellPages({ hasManuscript: true, dawFileLinked: false }).every((page) => !page.disabledReason)).toBe(true);
   });
 
   // Proof replaces Proofing and Review, and its compare run gates itself on
@@ -160,7 +215,7 @@ describe('AppShell grouped navigation', () => {
   });
 
   it('schedule-route-and-rail-item: "Go to Schedule" is a page with or without a manuscript', () => {
-    for (const hasManuscript of [true, false]) expect(shellPages(hasManuscript)).toContainEqual({ id: '/schedule', label: 'Schedule' });
+    for (const hasManuscript of [true, false]) expect(shellPages({ hasManuscript, dawFileLinked: false }).map((page) => page.id)).toContain('/schedule');
   });
 
   it('lists every other page, with Production in place of Home, Proof in place of Proofing and Review and Booth in place of the Teleprompter', () => {
@@ -192,7 +247,7 @@ describe('AppShell grouped navigation', () => {
   it('route-and-rail: Editing is not gated (the page asks for a manuscript itself) and is active on a chapter', () => {
     renderShell({ hasManuscript: false, dawFileLinked: false });
     expect(screen.getAllByRole('button', { name: 'Editing' }).every((button) => !(button as HTMLButtonElement).disabled)).toBe(true);
-    for (const hasManuscript of [true, false]) expect(shellPages(hasManuscript)).toContainEqual({ id: '/editing', label: 'Editing' });
+    for (const hasManuscript of [true, false]) expect(shellPages({ hasManuscript, dawFileLinked: false }).map((page) => page.id)).toContain('/editing');
     cleanup();
     renderShell({ pathname: '/editing/chapter-1' });
     expect(screen.getAllByRole('button', { name: 'Editing' }).some((button) => button.getAttribute('aria-current') === 'page')).toBe(true);
@@ -429,7 +484,7 @@ describe('AppShell rail', () => {
     expect(screen.queryByRole('button', { name: /^Pickups, / })).toBeNull();
   });
 
-  // SN-M5: Delivery sits beside Master & QC in Finish, as the mock draws it: no item is gated, the page asks for the manuscript itself.
+  // SN-M5: Delivery sits beside Master & QC in Finish, as the mock draws it.
   it('the-delivery-rail-item: Finish is Master & QC then Delivery, and Delivery opens /delivery', () => {
     const navigate = vi.fn();
     renderShell({ navigate });
@@ -443,9 +498,12 @@ describe('AppShell rail', () => {
     expect(navigate).toHaveBeenCalledWith('/delivery');
   });
 
-  it('the-delivery-rail-item: "Go to Delivery" is a page with or without a manuscript', () => {
-    expect(shellPages(true)).toContainEqual({ id: '/delivery', label: 'Delivery' });
-    expect(shellPages(false)).toContainEqual({ id: '/delivery', label: 'Delivery' });
-    expect(shellPages(false)).toContainEqual({ id: '/master', label: 'Master & QC' });
+  it('the-delivery-rail-item: "Go to Delivery" is listed with or without a manuscript, off with the reason when there is none', () => {
+    expect(shellPages({ hasManuscript: true, dawFileLinked: false })).toContainEqual({ id: '/delivery', label: 'Delivery' });
+    expect(shellPages({ hasManuscript: false, dawFileLinked: false })).toContainEqual({
+      id: '/delivery',
+      label: 'Delivery',
+      disabledReason: 'Import a manuscript to unlock this page.',
+    });
   });
 });

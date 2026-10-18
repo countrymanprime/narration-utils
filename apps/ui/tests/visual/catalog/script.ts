@@ -74,6 +74,6 @@ export const scriptStates: StateEntry[] = [
     page: 'script',
     state: 'no-manuscript',
     description:
-      'Script with no manuscript imported (?mockNoManuscript=1), opened from its rail item: the page asks for the manuscript, with Import manuscript, and does not open the import or leave for Production by itself',
+      'Script with no manuscript imported (?mockNoManuscript=1), opened by its address: the page asks for the manuscript, with Import manuscript, and does not open the import or leave for Production by itself',
   },
 ];

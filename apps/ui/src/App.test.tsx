@@ -656,14 +656,23 @@ describe('App (integration, driven through the mock NarrationApi)', () => {
     expect(window.location.pathname).toBe('/proof');
   });
 
-  it('keeps Proof reachable without a manuscript', async () => {
+  it('turns Proof off without a manuscript (a press opens its note), and its address still opens the page asking for one', async () => {
     const source = createMockApi();
     renderApp({ bootstrap: async () => ({ ...(await source.bootstrap()), manuscript: null }) });
     await screen.findByRole('heading', { level: 1, name: 'Production' });
-    const proofButtons = screen.getAllByRole('button', { name: /^Proof/ });
-    expect(proofButtons.every((button) => !(button as HTMLButtonElement).disabled)).toBe(true);
-    fireEvent.click(proofButtons[0]);
-    await screen.findByRole('heading', { name: 'Proof' });
+    const proof = within(screen.getByRole('complementary', { name: 'Primary navigation' })).getByRole('button', { name: /^Proof/ });
+    expect(proof.getAttribute('aria-disabled')).toBe('true');
+    fireEvent.click(proof);
+    expect((await screen.findByRole('dialog', { name: 'Proof is unavailable' })).textContent).toContain('Import a manuscript to unlock this page.');
+    expect(window.location.pathname).toBe('/');
+  });
+
+  it('opens Proof by its address with no manuscript: the page asks for one, with no redirect', async () => {
+    window.history.replaceState(null, '', '/proof');
+    const source = createMockApi();
+    renderApp({ bootstrap: async () => ({ ...(await source.bootstrap()), manuscript: null }) });
+    expect(await screen.findByText('This project has no manuscript yet. Import one to begin.')).toBeTruthy();
+    expect(window.location.pathname).toBe('/proof');
   });
 
   // docs/architecture/principles.md: the retired routes land on Proof, query and hash kept.

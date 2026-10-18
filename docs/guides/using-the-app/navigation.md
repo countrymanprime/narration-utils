@@ -21,9 +21,19 @@ Hover the rail (or tab into it) and it opens over the page with every label; not
 
 ![Collapsed navigation rail opened over the page on hover](../../images/ui/nav-rail-open.webp)
 
-No page is locked. With no manuscript yet, every page says so and offers **Import manuscript**, which goes to
-[Production](production.md#importing-the-manuscript); none opens the import or moves you by itself, and the rail shows no
-note counts, since the notes and pickups the project still holds belong to an earlier manuscript.
+With no manuscript yet, the pages that need one are shown off, with a small lock: **Schedule, Script, Story Bible, Booth, Editing,
+Proof, Pickups, Master & QC** and **Delivery**. **Production** (where the import is), the theme item and **Settings** stay on.
+Hover an off item, or tab to it, and a hint says "Import a manuscript to unlock this page." Press it (or press Enter on it) and a
+small note opens beside it with the same reason; nothing on the page moves, and Escape closes the note. An off item is still in
+the tab order and keeps its name, so a screen reader reads "Proof, Import a manuscript to unlock this page." The jump menu lists the
+same pages off, with the reason under each, and choosing one does nothing.
+
+![With no manuscript, the pages that need one are shown off with a lock and a note explains what unlocks Proof](../../images/ui/nav-off-note.webp)
+
+Off only decides what the rail offers. A page you reach another way (a typed address, Back, a link) opens and says so itself, with
+**Import manuscript**, which goes to [Production](production.md#importing-the-manuscript); none opens the import or moves you by itself.
+If the manuscript goes while you are on one of these pages, the page stays and asks for it, its rail item turns off where it is, and the
+rail shows no note counts, since the notes and pickups the project still holds belong to an earlier manuscript.
 
 The header runs, left to right: Back and Forward (below), the project's name, **Jump to or run…** (`Ctrl+K`), Undo and History, the timer,
 the [zoom controls](#zoom) and the engine chip. Jump to or run… opens the jump menu: type to find a page, a chapter or a command, or

@@ -19,14 +19,15 @@ export function contextItemsFor(target: Element, e: PointerInfo): CtxItem[] | nu
   return null
 }
 
-export interface Command { g: string; l: string; k?: string; hint?: string; fn: () => void }
+/** `off` is why the command cannot run now: the jump menu lists it, marks it off and says why, and running it does nothing. */
+export interface Command { g: string; l: string; k?: string; hint?: string; off?: string; fn: () => void }
 type CommandSource = () => Command[]
 const commandSources: CommandSource[] = []
 export const registerCommands = (s: CommandSource): void => { commandSources.push(s) }
 export const allCommands = (): Command[] => commandSources.flatMap((s) => s())
 
 /** A result in the jump menu that comes from searching the book (text, Story Bible entries, marks). */
-export interface PaletteItem { g: string; h: ReactNode; sub?: string; rawSub?: boolean; fn: () => void; /** a row that opens a group instead of running something */ keepOpen?: boolean }
+export interface PaletteItem { g: string; h: ReactNode; sub?: string; rawSub?: boolean; fn: () => void; /** a row that opens a group instead of running something */ keepOpen?: boolean; /** why this row cannot run now (see Command.off) */ off?: string }
 type SearchSource = (term: string) => PaletteItem[]
 const searchSources: SearchSource[] = []
 export const registerSearch = (s: SearchSource): void => { searchSources.push(s) }

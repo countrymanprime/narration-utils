@@ -54,7 +54,7 @@ The keymap (`input/keymap.ts`) is the catalogue defaults with the narrator's ove
 
 A command that exists only while data does ("Go to chapter 3") is a provided command: `{ id, group, label, hint?, run }` with no `defaults`. `registerCommandProvider` or `useCommandProvider` (`input/commandProviders.ts`) adds a function that is called each time the jump menu opens. `providedCommands` throws for a result that carries `defaults` or reuses a catalogue id. Provided commands appear in the jump menu only, not in `help`, `settings` or the keymap.
 
-`components/layout/useGoToCommands.ts` registers the "Go to <page>" commands (group "Go to") and "Go to <chapter>" commands (group "Chapters"). `App.tsx` passes the pages from `shellPages(hasManuscript)` in `AppShell.tsx` and the chapters from the `chapters` slot of the store (`studio/slots.ts`).
+`components/layout/useGoToCommands.ts` registers the "Go to <page>" commands (group "Go to") and "Go to <chapter>" commands (group "Chapters"). `App.tsx` passes the pages from `shellPages({ hasManuscript, dawFileLinked })` in `AppShell.tsx` and the chapters from the `chapters` slot of the store (`studio/slots.ts`).
 
 Tests: `input/commandProviders.test.ts`, `components/layout/useGoToCommands.test.tsx`.
 
@@ -163,6 +163,7 @@ Tests: `components/layout/HistoryPanel.test.tsx`, `studio/journal/createJournal.
 
 Settings is pinned at the foot with the theme toggle, not in a group. Groups follow production stages ([Design principles](principles.md)); [Navigation](../guides/using-the-app/navigation.md) and [Editing](../guides/using-the-app/editing.md) added Schedule, Delivery and Editing.
 
+- **Availability.** `navigation/navAvailability.ts` is the one table of what each rail page needs. The rail and the drawer (`AppShell.tsx`) and the jump menu (`shellPages`, then `useGoToCommands`) read it through `navAvailability(path, { hasManuscript, dawFileLinked })`. With no manuscript Schedule, Script, Story Bible, Booth, Editing, Proof, Pickups, Master & QC and Delivery are off: `NavButton` draws them `aria-disabled` (still focusable, named, with the reason as its description, hint and a note a press opens), and the jump menu lists them off with the reason. A routed page keeps its own "import a manuscript" state for an address reached any other way. Tests: `navigation/navAvailability.test.ts`, `components/layout/AppShell.test.tsx`, `components/primitives/NavButton.test.tsx`.
 - **Counts.** `useNavCounts(pathname, hasManuscript)` (`components/layout/useNavCounts.ts`) gives `{ proof?, pickups? }`: open notes from `findingsSummary` through `proofProgress`, and open lines from `pickupsList`. It reads again on every page move and on pickup changes. A key is absent when the host gives no count, and with no manuscript there is none; the rail draws no badge, never an invented number. No other item has a count. Test: `components/layout/useNavCounts.test.tsx`.
 - **Booth.** With a manuscript, `/booth` draws no rail, header or drawer, only the page in its own `<main>`. Test: `components/layout/AppShell.test.tsx`.
 - **Rail width.** 216 px from 1360 CSS px; below it 64 px of icons that open over the page to 236 px on hover or keyboard focus, labels kept in the markup. Below `md` the drawer replaces the rail.

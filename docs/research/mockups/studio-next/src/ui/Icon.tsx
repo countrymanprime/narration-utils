@@ -10,12 +10,12 @@ import {
   faBackwardStep, faForwardStep, faMagnifyingGlassPlus, faMagnifyingGlassMinus, faFileImport, faFileExport, faFlag,
   faArrowUpRightFromSquare, faLocationCrosshairs, faComment, faListCheck, faListOl, faUpRightAndDownLeftFromCenter,
   faEarListen, faCaretDown, faThumbtack, faNoteSticky, faCircleCheck, faPause, faArrowLeft,
-  faCircleXmark, faTriangleExclamation, faCircleInfo, faLayerGroup, faObjectUngroup, faBroom, faWandMagicSparkles, faGlobe, faBookOpen, faEye, faEyeSlash, faMicrophoneLines, faBookmark,
+  faCircleXmark, faTriangleExclamation, faCircleInfo, faLayerGroup, faObjectUngroup, faBroom, faWandMagicSparkles, faGlobe, faBookOpen, faEye, faEyeSlash, faMicrophoneLines, faBookmark, faLock,
 } from '@fortawesome/free-solid-svg-icons'
 import { faCircle as faCircleRegular, faCircleCheck as faCircleCheckRegular, faNoteSticky as faNoteStickyRegular } from '@fortawesome/free-regular-svg-icons'
 
 export const ICONS = {
-  download: faDownload, upload: faUpload, mic: faMicrophone, pencil: faPen, marker: faHighlighter,
+  lock: faLock, download: faDownload, upload: faUpload, mic: faMicrophone, pencil: faPen, marker: faHighlighter,
   search: faMagnifyingGlass, x: faXmark, check: faCheck, play: faPlay, font: faFont,
   sidebar: faTableColumns, book: faBook, copy: faCopy, plus: faPlus,
   home: faHouse, calendar: faCalendarDays, script: faFileLines, wave: faWaveSquare, gauge: faGauge, gear: faGear,

@@ -27,42 +27,30 @@ import { Button } from '../primitives/Button';
 import { KeyChord } from '../primitives/KeyCap';
 import { TooltipTarget } from '../primitives/Tooltip';
 import type { DawKind } from '../../api/contracts/daw';
-import { dawCapabilityGate } from '../../dawAvailability';
+import { navAvailability, type NavFacts } from '../../navigation/navAvailability';
 import { DemoBanner } from './DemoBanner';
 import { EngineChip, type EngineState } from './EngineChip';
 import { TimerChip, type RunningTimer } from './TimerChip';
 import type { NavCounts } from './useNavCounts';
 
-// requiresManuscript/requiresDaw name what each nav item is gated on. The Studio Next mock's rail never disables an item: with no manuscript every
-// page draws its own "import a manuscript" state (issue 1720), so no item needs one today, and none needs a linked DAW project file since Proof
-// replaced Proofing (its compare run gates itself inside the chapter view). Both fields stay for the next item that needs one.
-// The Production stage's page: the Production home at `/`, which replaced Home.
-// Not gated: with no manuscript it is where the import is.
-const PRODUCTION = { name: 'Production', path: '/', icon: faHouse, requiresManuscript: false, requiresDaw: false };
-// The Schedule (the Studio Next mock's rail): the due date, how the book pays and the milestones. Not gated: with no
-// manuscript the page asks for one.
-const SCHEDULE = { name: 'Schedule', path: '/schedule', icon: iconFor('calendar'), requiresManuscript: false, requiresDaw: false };
-const SCRIPT = { name: 'Script', path: '/script', icon: faFileLines, requiresManuscript: false, requiresDaw: false };
-const STORY_BIBLE = { name: 'Story Bible', path: '/story-bible', icon: faBookOpen, requiresManuscript: false, requiresDaw: false };
+// The rail's items. What each one needs is not here: `navAvailability` is the one table the rail, the drawer and the jump menu read.
+const PRODUCTION = { name: 'Production', path: '/', icon: faHouse };
+// The Schedule (the Studio Next mock's rail): the due date, how the book pays and the milestones.
+const SCHEDULE = { name: 'Schedule', path: '/schedule', icon: iconFor('calendar') };
+const SCRIPT = { name: 'Script', path: '/script', icon: faFileLines };
+const STORY_BIBLE = { name: 'Story Bible', path: '/story-bible', icon: faBookOpen };
 // The Record stage's one page: it replaced the Teleprompter page. Its
 // icon is a record dot, as the stage-nav mocks draw it (audit SH12).
-const BOOTH = { name: 'Booth', path: '/booth', icon: faCircleDot, requiresManuscript: false, requiresDaw: false };
-// Editing (the Studio Next mock's Editing page): the chapter's script as the editor, at /editing and /editing/:chapterId. It took the
-// chapter workspace out of Proof. Not gated: with no manuscript the page asks for one, as the mock's does.
-const EDITING = { name: 'Editing', path: '/editing', icon: iconFor('scissors'), requiresManuscript: false, requiresDaw: false };
-// Proof: the book's notes at /proof and a chapter's view at /proof/:chapterId,
-// replacing Review and Proofing. Not gated: take-review notes need no manuscript, the page says itself when there is nothing to
-// proof yet, and the compare run inside a chapter view gates itself on the DAW (CapabilityGate).
-const PROOF = { name: 'Proof', path: '/proof', icon: faWaveSquare, requiresManuscript: false, requiresDaw: false };
-// Measuring rendered chapter files. Not gated: it reads files the narrator
-// picks, so it needs neither a manuscript nor a REAPER project.
-// Pickups: the proofer's pickup list, replacing the Tracks page's
-// Pickups dialog. Not gated: its import, export and jumps talk to REAPER and each says itself when REAPER is not there.
-const PICKUPS = { name: 'Pickups', path: '/pickups', icon: faRotateLeft, requiresManuscript: false, requiresDaw: false };
-const MASTER_QC = { name: 'Master & QC', path: '/master', icon: faGaugeHigh, requiresManuscript: false, requiresDaw: false };
-// Delivery (the Studio Next mock's rail): the profile card, the package build and what is left before it. Not gated: with no
-// manuscript the page asks for one, as the mock's does.
-const DELIVERY = { name: 'Delivery', path: '/delivery', icon: iconFor('delivery'), requiresManuscript: false, requiresDaw: false };
+const BOOTH = { name: 'Booth', path: '/booth', icon: faCircleDot };
+// Editing (the Studio Next mock's Editing page): the chapter's script as the editor, at /editing and /editing/:chapterId.
+const EDITING = { name: 'Editing', path: '/editing', icon: iconFor('scissors') };
+// Proof: the book's notes at /proof and a chapter's view at /proof/:chapterId, replacing Review and Proofing.
+const PROOF = { name: 'Proof', path: '/proof', icon: faWaveSquare };
+// Pickups: the proofer's pickup list, replacing the Tracks page's Pickups dialog.
+const PICKUPS = { name: 'Pickups', path: '/pickups', icon: faRotateLeft };
+const MASTER_QC = { name: 'Master & QC', path: '/master', icon: faGaugeHigh };
+// Delivery (the Studio Next mock's rail): the profile card, the package build and what is left before it.
+const DELIVERY = { name: 'Delivery', path: '/delivery', icon: iconFor('delivery') };
 
 // Grouped by production stage: Production, Prep, Record, Edit (the Studio Next mock's own group for Editing), Review,
 // Finish, with Settings pinned at the foot (below, not a group). A page is renamed only in the change that ships its
@@ -77,11 +65,13 @@ const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
   { label: 'Review', items: [PROOF, PICKUPS] },
   { label: 'Finish', items: [MASTER_QC, DELIVERY] },
 ];
-/** The pages "Go to <page>" can open: the rail's items and Settings, minus the ones a project with no manuscript cannot show. */
-export function shellPages(hasManuscript: boolean): { id: string; label: string }[] {
-  return [...NAV_GROUPS.flatMap((group) => group.items), { name: 'Settings', path: '/settings', requiresManuscript: false }]
-    .filter((item) => hasManuscript || !item.requiresManuscript)
-    .map((item) => ({ id: item.path, label: item.name }));
+/** The pages "Go to <page>" lists: the rail's items and Settings. One the project cannot use yet is listed off, with the reason. */
+export function shellPages(facts: NavFacts): { id: string; label: string; disabledReason?: string }[] {
+  return [...NAV_GROUPS.flatMap((group) => group.items), { name: 'Settings', path: '/settings' }].map((item) => ({
+    id: item.path,
+    label: item.name,
+    disabledReason: navAvailability(item.path, facts).reason,
+  }));
 }
 const isActivePath = (pathname: string, path: string) => (path === '/' ? pathname === '/' : pathname === path || pathname.startsWith(`${path}/`));
 
@@ -151,13 +141,7 @@ export function AppShell({
     navigate(next);
   };
   const settingsActive = isActivePath(pathname, '/settings');
-  // A requiresDaw item needs a linked file only: the one that also read the DAW port's `review` capability was Proofing, whose
-  // compare run now gates itself in the Proof chapter view (CapabilityGate).
-  const gateFor = (item: NavItem) =>
-    dawCapabilityGate(
-      { manuscript: item.requiresManuscript && !hasManuscript, dawFile: item.requiresDaw && !dawFileLinked },
-      { level: 'supported', available: true },
-    );
+  const gateFor = (item: NavItem) => navAvailability(item.path, { hasManuscript, dawFileLinked });
   const isDisabled = (item: NavItem) => gateFor(item).disabled;
   const requiredReason = (item: NavItem) => gateFor(item).reason;
   const backTooltip = history.canGoBack ? 'Back (Alt+Left)' : 'Back (Alt+Left): no earlier page in this project';

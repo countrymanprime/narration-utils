@@ -35,6 +35,13 @@
     "caption": "Primary navigation - the collapsed rail opens over the page, with its labels, when you hover it"
   },
   {
+    "page": "shell",
+    "state": "nav-off-note",
+    "viewport": "desktop",
+    "docName": "nav-off-note",
+    "caption": "With no manuscript, pages that need one are shown off with a lock; pressing one explains what unlocks it"
+  },
+  {
     "page": "production",
     "state": "on-pace",
     "viewport": "desktop",

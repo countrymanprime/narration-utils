@@ -13,6 +13,8 @@ export type ListboxOption = {
   trailing?: ReactNode;
   // A heading is drawn before the first option of each run of one group. Absent on every option: no headings.
   group?: string;
+  // Off: the row is announced as unavailable and stays in the list. Its `description` should say why.
+  disabled?: boolean;
 };
 
 /** The DOM id of one option, for the combobox's `aria-activedescendant`. */
@@ -69,6 +71,7 @@ export function Listbox({
                   role="option"
                   tabIndex={-1}
                   aria-selected={selectedId === undefined ? active : selected}
+                  aria-disabled={option.disabled || undefined}
                   className={`flex w-full items-center gap-2 px-3 py-2 text-left hover:bg-[var(--surface-2)] ${active ? 'bg-[var(--surface-2)]' : ''}`}
                   // A press picks without taking focus from the text box that drives the list.
                   onMouseDown={(event) => event.preventDefault()}

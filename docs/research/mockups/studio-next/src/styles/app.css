@@ -631,3 +631,12 @@ body.booth-on .mockbtn:hover,body.cmp-on .mockbtn:hover,.mockbtn:focus-visible{o
 .cf-row{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;padding:8px 0;border-top:1px solid var(--line)}
 .cf-row.done{opacity:.65}
 .cf-text{flex:1 1 180px;min-width:0}
+
+/* A rail item that needs the manuscript: off but focusable. Text stays at the muted AA colour; a small lock, no hover fill and a plain pointer set it apart. */
+.nav[aria-disabled="true"]{color:var(--muted);cursor:default}
+.nav .lk{margin-left:auto;font-size:11px;color:var(--faint)}
+.rail-c .nav .lk{position:absolute;top:3px;right:5px;margin:0;font-size:9px}
+.rail-c .rail:hover .nav .lk,.rail-c .rail:has(:focus-visible) .nav .lk{position:static;margin:0 10px 0 auto;font-size:11px}
+.nav[aria-disabled="true"]:hover{background:none;color:var(--muted)}
+.nav[aria-disabled="true"][aria-current="page"]{background:var(--copper-soft);color:var(--copper-text)}
+.navwhy{margin:0;padding:2px 4px;font-size:13px;line-height:1.4;color:var(--ink)}

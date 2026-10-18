@@ -11,6 +11,8 @@ export type ProvidedCommand = {
   group: string;
   label: string;
   hint?: string;
+  /** Why the command cannot run now. The jump menu lists it off with this reason and running it does nothing. */
+  disabledReason?: string;
   run: () => void;
   defaults?: never;
 };

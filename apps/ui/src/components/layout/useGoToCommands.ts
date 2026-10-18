@@ -2,7 +2,11 @@ import { useEffect, useRef } from 'react';
 import { chapterName, type ChapterNameInput } from '../../chapterName';
 import { registerCommandProvider, type ProvidedCommand } from '../../input/commandProviders';
 
-export type GoToPage = { id: string; label: string };
+export type GoToPage = {
+  id: string;
+  label: string;
+  /** Set when the page is off: "Go to" is listed with this reason and does not open it. */ disabledReason?: string;
+};
 export type GoToChapter = ChapterNameInput & { id: string };
 
 /** What `go` is asked to open. The caller maps it onto its own navigation. */
@@ -34,6 +38,7 @@ export function useGoToCommands({
             id: `goto.page.${page.id}`,
             group: 'Go to',
             label: `Go to ${page.label}`,
+            disabledReason: page.disabledReason,
             run: () => open({ kind: 'page', id: page.id }),
           })),
           ...chapterList.map((chapter) => ({

@@ -56,4 +56,14 @@ describe('useGoToCommands', () => {
     const ids = providedCommands().map((c) => c.id);
     expect(new Set(ids).size).toBe(ids.length);
   });
+
+  it("passes a page's reason through, so the jump menu lists it off", () => {
+    const off: GoToPage[] = [
+      { id: 'proof', label: 'Proof', disabledReason: 'Import a manuscript to unlock this page.' },
+      { id: 'production', label: 'Production' },
+    ];
+    render(<Harness go={() => {}} pageList={off} />);
+    const rows = providedCommands().filter((c) => c.group === 'Go to');
+    expect(rows.map((c) => c.disabledReason)).toEqual(['Import a manuscript to unlock this page.', undefined]);
+  });
 });

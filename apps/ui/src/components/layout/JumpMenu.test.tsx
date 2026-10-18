@@ -225,4 +225,23 @@ describe('JumpMenu', () => {
     expect(screen.getByRole('dialog', { name: 'Jump menu' })).toBeTruthy();
     expect(field().getAttribute('aria-activedescendant')).toBe(screen.getAllByRole('option')[0]?.id);
   });
+
+  // A page the project cannot use yet is listed off with its reason, and choosing it runs nothing.
+  it('lists an off command with its reason, marks it unavailable, and runs nothing on Enter or a click while the menu stays open', async () => {
+    const run = vi.fn();
+    const off: ProvidedCommand = { ...command('t.proof', 'Go to', 'Go to Proof', run), disabledReason: 'Import a manuscript to unlock this page.' };
+    provide(command('t.prod', 'Go to', 'Go to Production'), off);
+    const { open } = mount();
+    act(() => void open());
+    const user = userEvent.setup();
+    await user.type(field(), 'go to');
+    const row = screen.getByRole('option', { name: /^Go to Proof/ });
+    expect(row.getAttribute('aria-disabled')).toBe('true');
+    expect(row.textContent).toContain('Import a manuscript to unlock this page.');
+    expect(screen.getByRole('option', { name: /^Go to Production/ }).getAttribute('aria-disabled')).toBeNull();
+    await user.click(row);
+    await user.keyboard('{ArrowDown}{Enter}');
+    expect(run).not.toHaveBeenCalled();
+    expect(screen.getByRole('dialog', { name: 'Jump menu' })).toBeTruthy();
+  });
 });

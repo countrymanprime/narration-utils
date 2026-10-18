@@ -60,6 +60,21 @@ export const shellStates: StateEntry[] = [
     pointer: 'keep',
     ...LAYOUT_BANDS,
   },
+  // With no manuscript the rail shows the pages that need one off. A press on one opens a note with the reason; the jump menu lists the same pages off.
+  {
+    page: 'shell',
+    state: 'nav-off-note',
+    description:
+      'No manuscript imported (?mockNoManuscript=1): the rail shows the nine pages that need one off with a lock, and a press on Proof opens its note with the reason, beside the item',
+    pointer: 'keep',
+    extraViewports: [...REFLOW.extraViewports, ...LAYOUT_BANDS.extraViewports],
+  },
+  {
+    page: 'shell',
+    state: 'jump-menu-off-pages',
+    description:
+      'No manuscript imported (?mockNoManuscript=1): the jump menu typed with "go to" lists the nine pages that need one off, each with its reason, and Production and Settings on',
+  },
   {
     page: 'shell',
     state: 'history-panel-open',

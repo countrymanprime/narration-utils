@@ -120,15 +120,20 @@ export const InactiveIsNotCurrent: Story = {
   },
 };
 
-// A disabled button is not actionable. Its wrapper, not the button, is what
-// keyboard users reach, and that wrapper carries the reason as a tooltip.
+// An off item is not actionable, but it is still the button keyboard users reach (aria-disabled): it keeps its name, shows the
+// reason as a hint on focus, and a press opens a note with the reason instead of running the handler.
 export const DisabledIsInert: Story = {
   args: { icon: faFileLines, children: 'Manuscript', disabled: true, disabledReason: MANUSCRIPT_REQUIRED_REASON },
   play: async ({ args, canvasElement }) => {
     const canvas = within(canvasElement);
-    await expect(canvas.getByRole('button', { name: 'Manuscript' })).toBeDisabled();
+    const button = canvas.getByRole('button', { name: 'Manuscript' });
+    await expect(button).toHaveAttribute('aria-disabled', 'true');
+    await expect(button).not.toBeDisabled();
     await userEvent.tab();
+    await expect(button).toHaveFocus();
     await expect(within(document.body).getByRole('tooltip')).toHaveTextContent(MANUSCRIPT_REQUIRED_REASON);
+    await userEvent.click(button);
+    await expect(within(document.body).getByRole('dialog', { name: 'Manuscript is unavailable' })).toHaveTextContent(MANUSCRIPT_REQUIRED_REASON);
     await expect(args.onClick).not.toHaveBeenCalled();
   },
 };

@@ -24,7 +24,7 @@ function Palette({ close, preset }: { close: () => void; preset: string }) {
     const term = (cmdOnly ? raw.slice(1) : raw).trim().toLowerCase()
     const out: PaletteItem[] = []
     const all = allCommands()
-    const row = (c: (typeof all)[number], t = ''): PaletteItem => ({ g: c.g, h: hl(c.l, t && c.l.toLowerCase().includes(t) ? t : ''), sub: c.k, rawSub: true, fn: c.fn })
+    const row = (c: (typeof all)[number], t = ''): PaletteItem => ({ g: c.g, h: hl(c.l, t && c.l.toLowerCase().includes(t) ? t : ''), sub: c.off ? 'Needs a manuscript' : c.k, rawSub: !c.off, fn: c.fn, off: c.off, keepOpen: Boolean(c.off) })
     if (!term && !cmdOnly) {
       if (group) {
         out.push({ g: group, h: '‹ All commands', fn: () => { setGroup(null); setI(0) }, keepOpen: true })
@@ -42,7 +42,7 @@ function Palette({ close, preset }: { close: () => void; preset: string }) {
   }, [q, group])
   const idx = Math.min(i, Math.max(0, items.length - 1))
   useEffect(() => { ref.current?.querySelector('[aria-selected="true"]')?.scrollIntoView({ block: 'nearest' }) }, [idx, items])
-  const run = (c?: PaletteItem): void => { if (c?.keepOpen) { c.fn(); return } close(); c?.fn() }
+  const run = (c?: PaletteItem): void => { if (c?.off) return; if (c?.keepOpen) { c.fn(); return } close(); c?.fn() }
   let last = ''
   return (
     <>
@@ -65,9 +65,9 @@ function Palette({ close, preset }: { close: () => void; preset: string }) {
           return (
             <span key={n} style={{ display: 'contents' }}>
               {head ? <li className="sec" role="presentation">{c.g}</li> : null}
-              <li role="option" aria-selected={n === idx} data-n={n} onClick={() => run(c)}>
+              <li role="option" aria-selected={n === idx} aria-disabled={c.off ? 'true' : undefined} data-tip={c.off} data-n={n} onClick={() => run(c)}>
                 <span>{c.h}</span>
-                <span className="g">{c.keepOpen ? (c.sub ? c.sub + ' ›' : '') : c.rawSub && c.sub ? <kbd>{c.sub}</kbd> : c.sub}</span>
+                <span className="g">{c.off ? c.sub : c.keepOpen ? (c.sub ? c.sub + ' ›' : '') : c.rawSub && c.sub ? <kbd>{c.sub}</kbd> : c.sub}</span>
               </li>
             </span>
           )

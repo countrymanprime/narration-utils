@@ -512,7 +512,7 @@ function AppRoutes() {
   const guardedNavigateRef = useRef<(next: string) => void>(() => {});
   const goToScriptRef = useRef<(chapter: string) => void>(() => {});
   useGoToCommands({
-    pages: shellPages(hasManuscript),
+    pages: shellPages({ hasManuscript, dawFileLinked: data?.dawFileLinked ?? false }),
     chapters,
     go: (target) => (target.kind === 'page' ? guardedNavigateRef.current(target.id) : goToScriptRef.current(target.id)),
   });

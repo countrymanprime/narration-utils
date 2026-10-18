@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { settlePage } from '../visual/helpers/settle';
 import { DESKTOP, NARROW, RAIL, openApp } from './helpers';
 
 // The role trees of the two shapes of the primary navigation: the sidebar and the drawer that replaces it below
@@ -34,4 +35,13 @@ test('the header names its page-history group, with Back and Forward', async ({ 
 test('the header names its zoom group, with zoom out, the reset readout and zoom in', async ({ page }) => {
   await openApp(page, DESKTOP);
   await expect(page.getByRole('group', { name: 'Zoom' })).toMatchAriaSnapshot({ name: 'navigation-header-zoom.aria.yml' });
+});
+
+// With no manuscript the nine pages that need one are still buttons in the list, with their names, but off; Production and
+// Settings are not. An off item stays in the tab order, so this tree has the same buttons as the sidebar above, not fewer.
+test('with no manuscript the sidebar lists the pages that need one as off buttons that keep their names', async ({ page }) => {
+  await openApp(page, DESKTOP);
+  await page.goto('/?mockNoManuscript=1');
+  await settlePage(page);
+  await expect(page.getByRole('complementary')).toMatchAriaSnapshot({ name: 'navigation-sidebar-no-manuscript.aria.yml' });
 });

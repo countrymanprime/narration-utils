@@ -1,0 +1,32 @@
+# With no manuscript the nine pages that need one are off buttons ([disabled] is aria-disabled) that keep their names and stay in
+# the list; Production, the theme item and Settings are on. Each off item is followed by the reason it is described by.
+# Partial on purpose (no `children: equal`): the page list and order are pinned by navigation-sidebar.aria.yml.
+- complementary "Primary navigation":
+  - navigation:
+    - group "Production":
+      - button "Production"
+      - button "Schedule" [disabled]
+      - text: Import a manuscript to unlock this page.
+    - group "Prep":
+      - button "Script" [disabled]
+      - text: Import a manuscript to unlock this page.
+      - button "Story Bible" [disabled]
+      - text: Import a manuscript to unlock this page.
+    - group "Record":
+      - button "Booth" [disabled]
+      - text: Import a manuscript to unlock this page.
+    - group "Edit":
+      - button "Editing" [disabled]
+      - text: Import a manuscript to unlock this page.
+    - group "Review":
+      - button "Proof" [disabled]
+      - text: Import a manuscript to unlock this page.
+      - button "Pickups" [disabled]
+      - text: Import a manuscript to unlock this page.
+    - group "Finish":
+      - button "Master & QC" [disabled]
+      - text: Import a manuscript to unlock this page.
+      - button "Delivery" [disabled]
+      - text: Import a manuscript to unlock this page.
+  - button "Dark theme"
+  - button "Settings"

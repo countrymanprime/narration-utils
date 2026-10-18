@@ -2,7 +2,7 @@
 import {
   type Driver,
   checkOnDiagnostics,
-  clickNav,
+  openWithoutManuscript,
   diagnosticsEnded,
   measurementEnded,
   measureOnMaster,
@@ -12,7 +12,6 @@ import {
   panelTitled,
   scrollToTop,
 } from './shared';
-import { settlePage } from '../helpers/settle';
 
 const MEASURED = /^Measured 2 of 3 files; 1 could not be measured\./;
 
@@ -167,9 +166,7 @@ export const masterDrivers: Record<string, Driver> = {
     await scrollToTop(page, panel);
   },
   'no-manuscript': async (page) => {
-    await page.goto('/?mockNoManuscript=1');
-    await settlePage(page);
-    await clickNav(page, 'Master & QC');
+    await openWithoutManuscript(page, 'Master & QC');
     await page.getByRole('button', { name: 'Import manuscript' }).waitFor();
   },
 };

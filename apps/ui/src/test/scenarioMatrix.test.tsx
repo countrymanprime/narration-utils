@@ -57,7 +57,7 @@ describe('matrix-renders-one-page-in-every-scenario', () => {
 
 // Every routed page, read from the app's own list (the rail's pages and Settings) so a page swap needs no edit here: a page
 // that is added, renamed or removed changes this list, not this file.
-const pages = shellPages(true);
+const pages = shellPages({ hasManuscript: true, dawFileLinked: true });
 const appCases = pages.flatMap((page) =>
   CHAPTER_SHAPES.flatMap((shape) => SCENARIO_DAW_SETUPS.map((daw) => ({ page: page.label, route: page.id, shape, daw }))),
 );

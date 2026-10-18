@@ -59,6 +59,28 @@ export const shellDrivers: Record<string, Driver> = {
     await page.locator('main .scroll-chrome-hidden').click({ button: 'right', position: { x: 6, y: 6 } });
     await page.getByRole('menu').waitFor();
   },
+  'nav-off-note': async (page) => {
+    await page.goto('/?mockNoManuscript=1');
+    await settlePage(page);
+    // Below `md` the navigation is the drawer; the item is in it. The pointer stays where the press left it, so the note is what is shown.
+    const menuButton = page.getByRole('button', { name: 'Open navigation' });
+    let scope = page.locator('aside:visible').first();
+    if (await menuButton.isVisible()) {
+      await menuButton.click();
+      scope = page.getByRole('dialog', { name: 'Navigation' });
+    }
+    // Forced: Playwright reads aria-disabled as "not enabled" and would wait forever, but an off item takes the press (it opens the note).
+    await scope.getByRole('button', { name: 'Proof' }).click({ force: true });
+    await page.getByRole('dialog', { name: 'Proof is unavailable' }).waitFor();
+  },
+  'jump-menu-off-pages': async (page) => {
+    await page.goto('/?mockNoManuscript=1');
+    await settlePage(page);
+    await page.getByRole('button', { name: /Jump to or run/ }).click();
+    const field = page.getByRole('combobox', { name: 'Jump menu' });
+    await field.fill('go to');
+    await page.getByRole('option', { name: /^Go to Proof/ }).waitFor();
+  },
   'history-panel-open': async (page) => {
     await productionLoaded(page);
     await page.getByRole('button', { name: 'History' }).click();

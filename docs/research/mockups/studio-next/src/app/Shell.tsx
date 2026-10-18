@@ -7,10 +7,12 @@ import { activeLimits } from '@/selectors/progress'
 import { openPickups } from '@/selectors/pickups'
 import { openProof } from '@/selectors/proof'
 import { go } from '@/state/commands/nav'
+import { navReason } from '@/selectors/nav'
 import { themeNow, toggleTheme } from '@/state/commands/prefs'
 import type { Page } from '@/state/types'
 import { useData, useMock, useUi } from '@/state/store'
 import { Icon, type IconName } from '@/ui/Icon'
+import { popAt } from '@/ui/overlay'
 import { Pill } from '@/ui/primitives'
 import { modals } from './modals'
 import type { Layout } from './layout'
@@ -37,14 +39,17 @@ const NAV: NavItem[] = [
 export function Rail({ layout }: { layout: Layout }) {
   const data = useData()
   const ui = useUi()
+  const hasManuscript = useMock().hasManuscript
+  // With no manuscript the notes, pickups and failures the project still holds belong to the old one: no badge says they wait.
   const counts = useMemo(() => {
+    if (!hasManuscript) return { proof: 0, pick: 0, master: 0 }
     const limits = activeLimits(data)
     return {
       proof: openProof(data),
       pick: openPickups(data),
       master: data.masterRows.filter((r) => masterFails(r, limits).length).length,
     }
-  }, [data])
+  }, [data, hasManuscript])
   const dark = themeNow(ui.prefs.theme) === 'dark'
   return (
     <nav className="rail" aria-label="Main" id="rail">
@@ -57,13 +62,7 @@ export function Rail({ layout }: { layout: Layout }) {
         typeof n === 'string' ? (
           <div className="grp" key={n}>{n}</div>
         ) : (
-          <button
-            key={n.page} type="button" className="nav" aria-label={n.label} aria-current={ui.page === n.page ? 'page' : 'false'}
-            onClick={() => go(n.page)}
-          >
-            <span className="ic"><Icon name={n.icon} /></span><span className="nl">{n.label}</span>
-            {n.count && counts[n.count] ? <span className="ct">{counts[n.count]}</span> : null}
-          </button>
+          <NavButton key={n.page} item={n} current={ui.page === n.page} why={navReason(n.page, hasManuscript)} count={n.count ? counts[n.count] : 0} />
         ),
       )}
       <div className="spacer" />
@@ -107,5 +106,28 @@ export function TopBar() {
       ) : null}
       <Pill kind={chip[0]} dot size="sm" title={chip[2]}>{chip[1]}</Pill>
     </header>
+  )
+}
+
+/**
+ * A rail item. When `why` is set it is off but stays a real, focusable button (aria-disabled, not disabled): it keeps its name,
+ * says why in its description and a hint, and a press opens a small note under it with the reason. Nothing moves on the page.
+ */
+function NavButton({ item, current, why, count }: { item: { page: Page; label: string; icon: IconName }; current: boolean; why?: string; count: number }) {
+  const whyId = 'nav-why-' + item.page
+  return (
+    <button
+      type="button" className="nav" aria-label={item.label} aria-current={current ? 'page' : 'false'}
+      aria-disabled={why ? 'true' : undefined} aria-describedby={why ? whyId : undefined} data-tip={why}
+      onClick={(e) => {
+        if (!why) { go(item.page); return }
+        popAt(e.currentTarget, () => <p className="navwhy" role="status"><b>{item.label}</b>{' '}{why}</p>)
+      }}
+    >
+      <span className="ic"><Icon name={item.icon} /></span><span className="nl">{item.label}</span>
+      {count ? <span className="ct">{count}</span> : null}
+      {why ? <span className="lk" aria-hidden="true"><Icon name="lock" /></span> : null}
+      {why ? <span id={whyId} className="sr">{why}</span> : null}
+    </button>
   )
 }

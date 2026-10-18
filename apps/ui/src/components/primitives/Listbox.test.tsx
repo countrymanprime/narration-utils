@@ -73,4 +73,20 @@ describe('Listbox', () => {
       expect(within(screen.getByRole('option')).getByText('3 ›')).toBeTruthy();
     });
   });
+
+  it('marks a disabled option aria-disabled and keeps it in the list', () => {
+    render(
+      <Listbox
+        id="l"
+        label="Pages"
+        options={[
+          { id: 'a', label: 'A' },
+          { id: 'b', label: 'B', disabled: true, description: 'Why' },
+        ]}
+        onPick={() => {}}
+      />,
+    );
+    expect(screen.getByRole('option', { name: /^B/ }).getAttribute('aria-disabled')).toBe('true');
+    expect(screen.getByRole('option', { name: /^A/ }).getAttribute('aria-disabled')).toBeNull();
+  });
 });

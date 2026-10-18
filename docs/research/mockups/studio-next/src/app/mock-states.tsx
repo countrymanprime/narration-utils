@@ -50,7 +50,7 @@ function MockStates() {
       </div>
       <div className="sp-grp"><span className="label">Manuscript</span>
         <Radio name="manuscript" value="present" label="Imported" checked={mock.hasManuscript} onChange={() => update((d) => { d.mock.hasManuscript = true; d.ui.importPromptShown = false; d.ui.script.pendingJump = null })} />
-        <Radio name="manuscript" value="none" label="No manuscript yet" checked={!mock.hasManuscript} onChange={() => update((d) => { d.mock.hasManuscript = false; d.ui.importPromptShown = false; if (d.ui.page !== 'production' && d.ui.page !== 'script') d.ui.page = 'production' })} />
+        <Radio name="manuscript" value="none" label="No manuscript yet" checked={!mock.hasManuscript} onChange={() => update((d) => { d.mock.hasManuscript = false; d.ui.importPromptShown = false })} />
         <label className="row" style={{ flexWrap: 'nowrap', gap: 8 }}><Checkbox aria-label="“Choose a file” uses a sample manuscript" checked={mock.autoSample} onCheckedChange={(c) => setMock({ autoSample: c })} /> <span>“Choose a file” uses a sample manuscript</span></label>
       </div>
       <div className="sp-grp"><span className="label">Recording setup</span>
